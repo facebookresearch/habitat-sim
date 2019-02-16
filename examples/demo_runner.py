@@ -16,7 +16,11 @@ import habitat_sim
 import habitat_sim.agent
 import habitat_sim.bindings as hsim
 from habitat_sim.utils import d3_40_colors_rgb
+
 from settings import default_sim_settings, make_cfg
+import multiprocessing
+
+_barrier = None
 
 
 class DemoRunnerType(Enum):
@@ -180,16 +184,47 @@ class DemoRunner:
 
         return start_state
 
-    def benchmark(self, settings):
-        self.set_sim_settings(settings)
+    def _bench_target(self, _idx=0):
         self.init_common()
 
-        perf = self.do_time_steps()
+        best_perf = None
+        for _ in range(3):
+
+            if _barrier is not None:
+                _barrier.wait()
+                if _idx == 0:
+                    _barrier.reset()
+
+            perf = self.do_time_steps()
+            if best_perf is None or perf["fps"] > best_perf["fps"]:
+                best_perf = perf
 
         self._sim.close()
         del self._sim
 
-        return perf
+        return best_perf
+
+    @staticmethod
+    def _pool_init(b):
+        global _barrier
+        _barrier = b
+
+    def benchmark(self, settings):
+        self.set_sim_settings(settings)
+        nprocs = settings["num_processes"]
+
+        barrier = multiprocessing.Barrier(nprocs)
+        with multiprocessing.Pool(
+            nprocs, initializer=self._pool_init, initargs=(barrier,)
+        ) as pool:
+            perfs = pool.map(self._bench_target, range(nprocs))
+
+        res = {k: [] for k in perfs[0].keys()}
+        for p in perfs:
+            for k, v in p.items():
+                res[k] += [v]
+
+        return dict(fps=sum(res["fps"]), total_time=sum(res["total_time"]) / nprocs)
 
     def example(self):
         start_state = self.init_common()

@@ -35,7 +35,6 @@ default_settings["compute_action_shortest_path"] = False
 
 default_settings["max_frames"] = args.max_frames
 
-demo_runner = dr.DemoRunner(default_settings, dr.DemoRunnerType.BENCHMARK)
 
 benchmark_items = {
     "rgb": {},
@@ -45,32 +44,46 @@ benchmark_items = {
     "rgbd_semantic": {"depth_sensor": True, "semantic_sensor": True},
 }
 
-# resolutions = [128] # (debug)
+#  resolutions = [128] # (debug)
 resolutions = [128, 256, 512]
+nprocs_tests = [1, 3, 5]
 
-performance = []
-for resolution in resolutions:
-    default_settings["width"] = default_settings["height"] = resolution
-    perf = {}
-    for key, value in benchmark_items.items():
-        print(" ---------------------- %s ------------------------ " % key)
-        settings = default_settings.copy()
-        settings.update(value)
-        perf[key] = demo_runner.benchmark(settings).get("fps")
-        print(
-            " ====== FPS (%d x %d, %s): %0.1f ======"
-            % (settings["width"], settings["height"], key, perf[key])
+performance_all = {}
+for nprocs in nprocs_tests:
+    default_settings["num_processes"] = nprocs
+    performance = []
+    for resolution in resolutions:
+        default_settings["width"] = default_settings["height"] = resolution
+        perf = {}
+        for key, value in benchmark_items.items():
+            demo_runner = dr.DemoRunner(default_settings, dr.DemoRunnerType.BENCHMARK)
+            print(" ---------------------- %s ------------------------ " % key)
+            settings = default_settings.copy()
+            settings.update(value)
+            perf[key] = demo_runner.benchmark(settings).get("fps")
+            print(
+                " ====== FPS (%d x %d, %s): %0.1f ======"
+                % (settings["width"], settings["height"], key, perf[key])
+            )
+        performance.append(perf)
+
+    performance_all[nprocs] = performance
+
+for nproc, performance in performance_all.items():
+    print(
+        " ================ Performance (FPS) NPROC={} ===================================".format(
+            nproc
         )
-    performance.append(perf)
-
-print(" ================ Performance (FPS) ===========================================")
-title = "Resolution "
-for key, value in perf.items():
-    title += "%15s" % key
-print(title)
-for idx in range(len(performance)):
-    row = "%d x %d" % (resolutions[idx], resolutions[idx])
-    for key, value in performance[idx].items():
-        row += "%15.1f" % value
-    print(row)
-print(" ==============================================================================")
+    )
+    title = "Resolution "
+    for key, value in perf.items():
+        title += "%15s" % key
+    print(title)
+    for idx in range(len(performance)):
+        row = "%d x %d" % (resolutions[idx], resolutions[idx])
+        for key, value in performance[idx].items():
+            row += "%15.1f" % value
+        print(row)
+    print(
+        " =============================================================================="
+    )
