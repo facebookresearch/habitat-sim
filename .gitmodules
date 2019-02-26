@@ -1,0 +1,39 @@
+[submodule "src/deps/googletest"]
+	path = src/deps/googletest
+	url = https://github.com/google/googletest
+[submodule "src/deps/tinyobjloader"]
+	path = src/deps/tinyobjloader
+	url = https://github.com/syoyo/tinyobjloader.git
+[submodule "src/deps/rapidjson"]
+	path = src/deps/rapidjson
+	url = https://github.com/Tencent/rapidjson.git
+[submodule "src/deps/magnum"]
+	path = src/deps/magnum
+	url = https://github.com/mosra/magnum.git
+[submodule "src/deps/corrade"]
+	path = src/deps/corrade
+	url = https://github.com/mosra/corrade.git
+[submodule "src/deps/magnum-plugins"]
+	path = src/deps/magnum-plugins
+	url = https://github.com/mosra/magnum-plugins.git
+[submodule "src/deps/glog"]
+	path = src/deps/glog
+	url = https://github.com/google/glog.git
+[submodule "src/deps/pybind11"]
+	path = src/deps/pybind11
+	url = https://github.com/pybind/pybind11.git
+[submodule "src/deps/eigen-git-mirror"]
+	path = src/deps/eigen-git-mirror
+	url = https://github.com/eigenteam/eigen-git-mirror
+[submodule "src/deps/assimp"]
+	path = src/deps/assimp
+	url = https://github.com/assimp/assimp
+[submodule "src/deps/glfw"]
+	path = src/deps/glfw
+	url = https://github.com/glfw/glfw
+[submodule "src/deps/Sophus"]
+	path = src/deps/Sophus
+	url = https://github.com/strasdat/Sophus
+[submodule "src/deps/recastnavigation"]
+	path = src/deps/recastnavigation
+	url = https://github.com/erikwijmans/recastnavigation.git

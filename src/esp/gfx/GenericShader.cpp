@@ -1,0 +1,145 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+#include "GenericShader.h"
+
+#include <Magnum/GL/Context.h>
+#include <Magnum/GL/Shader.h>
+#include <Magnum/GL/Texture.h>
+#include <Magnum/GL/Version.h>
+
+namespace esp {
+namespace gfx {
+
+// TODO: Use Corrade resource file for shader code instead of hard-coding here
+
+const static std::string GENERIC_SHADER_VS = R"(
+uniform highp mat4 transformationProjectionMatrix;
+uniform highp mat4 projectionMatrix;
+
+layout(location = 0) in highp vec4 position;
+
+#ifdef TEXTURED
+layout(location = 1) in mediump vec2 textureCoordinates;
+out mediump vec2 interpolatedTextureCoordinates;
+#endif
+
+#ifdef VERTEX_COLORED
+layout(location = 1) in vec3 color;
+#endif
+
+out vec3 v_color;
+out float v_depth;
+
+#ifdef PER_VERTEX_IDS
+flat out uint v_objectId;
+#endif
+
+void main() {
+  gl_Position = transformationProjectionMatrix * vec4(position.xyz, 1.0);
+
+  #ifdef TEXTURED
+  interpolatedTextureCoordinates = textureCoordinates;
+  #endif
+
+  vec4 pointInCameraCoords = projectionMatrix * vec4(position.xyz, 1.0);
+  pointInCameraCoords /= pointInCameraCoords.w;
+
+  #ifdef VERTEX_COLORED
+  v_color = color;
+  #endif
+  #ifdef PER_VERTEX_IDS
+  v_objectId = uint(position.w);
+  #endif
+
+  v_depth = -pointInCameraCoords.z;
+}
+)";
+
+const static std::string GENERIC_SHADER_FS = R"(
+in vec3 v_color;
+in float v_depth;
+
+#ifdef PER_VERTEX_IDS
+flat in uint v_objectId;
+#else
+uniform highp int objectIdUniform;
+#endif
+
+#ifdef TEXTURED
+uniform lowp sampler2D textureData;
+in mediump vec2 interpolatedTextureCoordinates;
+#endif
+
+#ifndef VERTEX_COLORED
+uniform lowp vec4 colorUniform;
+#endif
+
+layout(location = 0) out vec4 color;
+layout(location = 1) out float depth;
+layout(location = 2) out uint objectId;
+
+void main () {
+  vec4 baseColor =
+    #ifdef VERTEX_COLORED
+    vec4(v_color, 1.0);
+    #else
+    colorUniform;
+    #endif
+  color =
+    #ifdef TEXTURED
+    texture(textureData, interpolatedTextureCoordinates) *
+    #endif
+    baseColor;
+  depth = v_depth;
+  objectId =
+  #ifdef PER_VERTEX_IDS
+    v_objectId;
+  #else
+    uint(objectIdUniform);
+    //gl_PrimitiveID;
+  #endif
+}
+)";
+
+namespace {
+enum { TextureLayer = 0 };
+}
+
+GenericShader::GenericShader(const Flags flags) : flags_(flags) {
+  MAGNUM_ASSERT_GL_VERSION_SUPPORTED(Magnum::GL::Version::GL410);
+
+  Magnum::GL::Shader vert{Magnum::GL::Version::GL410,
+                          Magnum::GL::Shader::Type::Vertex};
+  Magnum::GL::Shader frag{Magnum::GL::Version::GL410,
+                          Magnum::GL::Shader::Type::Fragment};
+
+  vert.addSource(flags & Flag::Textured ? "#define TEXTURED\n" : "")
+      .addSource(flags & Flag::VertexColored ? "#define VERTEX_COLORED\n" : "")
+      .addSource(flags & Flag::PerVertexIds ? "#define PER_VERTEX_IDS\n" : "")
+      .addSource(GENERIC_SHADER_VS);
+  frag.addSource(flags & Flag::Textured ? "#define TEXTURED\n" : "")
+      .addSource(flags & Flag::VertexColored ? "#define VERTEX_COLORED\n" : "")
+      .addSource(flags & Flag::PerVertexIds ? "#define PER_VERTEX_IDS\n" : "")
+      .addSource(GENERIC_SHADER_FS);
+
+  CORRADE_INTERNAL_ASSERT_OUTPUT(Magnum::GL::Shader::compile({vert, frag}));
+
+  attachShaders({vert, frag});
+
+  CORRADE_INTERNAL_ASSERT_OUTPUT(link());
+
+  if (flags & Flag::Textured) {
+    setUniform(uniformLocation("textureData"), TextureLayer);
+  }
+}
+
+GenericShader& GenericShader::bindTexture(Magnum::GL::Texture2D& texture) {
+  ASSERT(flags_ & Flag::Textured);
+  texture.bind(TextureLayer);
+  return *this;
+}
+
+}  // namespace gfx
+}  // namespace esp

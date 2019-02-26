@@ -1,0 +1,24 @@
+exclude: 'build|src/deps|src/obsolete'
+
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v1.2.3
+    hooks:
+    -   id: trailing-whitespace
+    -   id: check-added-large-files
+    -   id: end-of-file-fixer
+
+-   repo: https://github.com/ambv/black
+    rev: stable
+    hooks:
+    - id: black
+      language_version: python3.6
+
+-   repo: local
+    hooks:
+    - id: clang-format
+      name: Run clang-format
+      entry: clang-format -i
+      types: [text]
+      files: '.*\.cpp|.*\.h'
+      language: system
