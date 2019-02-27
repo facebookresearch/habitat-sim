@@ -28,8 +28,9 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
    0. [Common issues](#common-issues)
    0. [Acknowledgments](#acknowledgments)
 
-#### Motivation ####
-Training robots in the real world is slow, dangerous, expensive, and not easily reproducible. AI Habitat advances an alternative paradigm — training embodied AI agents (virtual robots) in a highly photorealistic & efficient 3D simulator before transferring the learned skills to reality.
+## Motivation ##
+AI Habitat enables training of embodied AI agents (virtual robots) in a highly photorealistic & efficient 3D simulator, before transferring the learned skills to reality.
+This empowers a paradigm shift from 'internet AI' based on static datasets (e.g. ImageNet, COCO, VQA) to embodied AI where agents act within realistic environments, bringing to the fore active perception, long-term planning, learning from interaction, and holding a dialog grounded in an environment.
 
 ## Citing Habitat
 If you use the Habitat platform in your research, please cite the following technical report:
@@ -173,11 +174,12 @@ We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup
 ## Datasets
 
 - The full Matterport3D (MP3D) dataset for use with Habitat can be downloaded using the official [Matterport3D](https://niessner.github.io/Matterport/) download script as follows: `python download_mp.py --task habitat -o path/to/download/`. You only need the habitat zip archive and not the entire Matterport3D dataset. Note that this download script requires python 2.7 to run.
+- The Gibson dataset for use with Habitat can be downloaded by agreeing to the terms of use in the [Gibson](https://github.com/StanfordVL/GibsonEnv#database) repository
 - To obtain access to a test version of the full SUNCG dataset, please contact us.
 
 ## Examples
 
-Load a specific MP3D house: `examples/example.py --scene path/to/mp3d/house_id.glb`.
+Load a specific MP3D or Gibson house: `examples/example.py --scene path/to/mp3d/house_id.glb`.
 
 Load a specific SUNCG house: `examples/example.py --scene path/to/suncg/house_id/house.json`.
 
