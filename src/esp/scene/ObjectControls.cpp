@@ -97,17 +97,11 @@ ObjectControls& ObjectControls::action(SceneNode& object,
                                        bool applyFilter /* = true */) {
   if (moveFuncMap_.count(actName)) {
     if (applyFilter) {
-      const vec3f startPosition = object.getTransformation().col(3).head(3);
-      // DLOG(INFO) << "startPosition " << startPosition;
+      const vec3f startPosition = object.getAbsolutePosition();
       moveFuncMap_[actName](object, distance);
-      const vec3f endPosition = object.getTransformation().col(3).head(3);
-      // DLOG(INFO) << "endPosition " << endPosition;
-      const vec3f filteredEndPosition =
-          moveFilterFunc_(startPosition, endPosition);
-      // DLOG(INFO) << "filteredEndPosition " << filteredEndPosition;
-      auto transform = object.getTransformation();
-      transform.col(3).head(3) = filteredEndPosition;
-      object.setTransformation(transform);
+      const vec3f endPos = object.getAbsolutePosition();
+      const vec3f filteredEndPosition = moveFilterFunc_(startPosition, endPos);
+      object.translate(filteredEndPosition - endPos);
     } else {
       moveFuncMap_[actName](object, distance);
     }

@@ -9,4 +9,5 @@ import builtins
 __version__ = "0.0.1"
 
 if not getattr(builtins, "__HSIM_SETUP__", False):
+    from .agent import *
     from .simulator import *

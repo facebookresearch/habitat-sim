@@ -7,7 +7,6 @@
 namespace py = pybind11;
 using namespace py::literals;
 
-#include "esp/agent/Agent.h"
 #include "esp/core/Configuration.h"
 #include "esp/geo/OBB.h"
 #include "esp/gfx/RenderCamera.h"
@@ -32,8 +31,11 @@ using namespace esp::scene;
 using namespace esp::sensor;
 
 void initShortestPathBindings(py::module& m);
+void initGeoBindings(py::module& m);
 
 PYBIND11_MODULE(habitat_sim_bindings, m) {
+  initGeoBindings(m);
+
   py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
 
   py::class_<Configuration, Configuration::ptr>(m, "Configuration")
@@ -79,6 +81,13 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("absolute_transformation", &SceneNode::getAbsoluteTransformation, R"(
         Returns absolute transformation matrix (relative to root :py:class:`SceneNode`)
       )")
+      .def("rotation",
+           [](const SceneNode& self) { return self.getRotation().coeffs(); },
+           R"()")
+      .def("rotation",
+           [](SceneNode& self, const Eigen::Ref<const esp::vec4f> coeffs) {
+             self.setRotation(Eigen::Map<const quatf>(coeffs.data()));
+           })
       .def("absolute_position", &SceneNode::getAbsolutePosition, R"(
         Returns absolute position (relative to root :py:class:`SceneNode`)
       )")
@@ -86,24 +95,28 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       //   Returns absolute Z-axis orientation (relative to root
       //   :py:class:`SceneNode`)
       // )")
-      .def("setTransformation",
-           py::overload_cast<const mat4f&>(&SceneNode::setTransformation), R"(
+      .def("set_transformation",
+           py::overload_cast<const Eigen::Ref<const mat4f>>(
+               &SceneNode::setTransformation),
+           R"(
         Set transformation relative to parent :py:class:`SceneNode`
       )",
            "transformation"_a)
-      .def("setTransformation",
-           py::overload_cast<const vec3f&, const vec3f&, const vec3f&>(
+      .def("set_transformation",
+           py::overload_cast<const Eigen::Ref<const vec3f>,
+                             const Eigen::Ref<const vec3f>,
+                             const Eigen::Ref<const vec3f>>(
                &SceneNode::setTransformation),
            R"(
         Set this :py:class:`SceneNode`'s matrix to look at target from given position
         and orientation towards target. Semantics is same as gluLookAt.
       )",
            "position"_a, "target"_a, "up"_a)
-      .def("setTranslation", &SceneNode::setTranslation, R"(
+      .def("set_translation", &SceneNode::setTranslation, R"(
         Sets translation relative to parent :py:class:`SceneNode` to given translation
       )",
            "vector"_a)
-      .def("resetTransformation", &SceneNode::resetTransformation, R"(
+      .def("reset_transformation", &SceneNode::resetTransformation, R"(
         Reset transform relative to parent :py:class:`SceneNode` to identity
       )")
       // .def("transform", &SceneNode::transform, R"(
@@ -120,7 +133,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
         Translate relative to parent :py:class:`SceneNode` by given translation
       )",
            "vector"_a)
-      .def("translateLocal", &SceneNode::translateLocal, R"(
+      .def("translate_local", &SceneNode::translateLocal, R"(
         Translate relative to parent :py:class:`SceneNode` by given translation
         in local frame. Applies given translation before any other translation.
       )",
@@ -130,7 +143,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
         radians around given normalizedAxis.
       )",
            "angleInRad"_a, "normalizedAxis"_a)
-      .def("rotateLocal", &SceneNode::rotateLocal, R"(
+      .def("rotate_local", &SceneNode::rotateLocal, R"(
         Rotate relative to parent :py:class:`SceneNode` by given angleInRad
         radians around given normalizedAxis in local frame. Applies given
         rotation before any other rotation.
@@ -141,7 +154,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
         in local frame. Applies given rotation before any other rotation
       )",
            "angleInRad"_a)
-      .def("rotateXLocal", &SceneNode::rotateXLocal, R"(
+      .def("rotateX_local", &SceneNode::rotateXLocal, R"(
         Rotate relative to parent :py:class:`SceneNode` by given angleInRad
         radians around X axis in local frame. Applies given rotation before
         any other rotation.
@@ -152,7 +165,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
         in local frame. Applies given rotation before any other rotation
       )",
            "angleInRad"_a)
-      .def("rotateYLocal", &SceneNode::rotateYLocal, R"(
+      .def("rotateY_local", &SceneNode::rotateYLocal, R"(
         Rotate relative to parent :py:class:`SceneNode` by given angleInRad
         radians around X axis in local frame. Applies given rotation before
         any other rotation.
@@ -163,12 +176,22 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
         in local frame. Applies given rotation before any other rotation
       )",
            "angleInRad"_a)
-      .def("rotateZLocal", &SceneNode::rotateZLocal, R"(
+      .def("rotateZ_local", &SceneNode::rotateZLocal, R"(
         Rotate relative to parent :py:class:`SceneNode` by given angleInRad
         radians around X axis in local frame. Applies given rotation before
         any other rotation.
       )",
-           "angleInRad"_a);
+           "angleInRad"_a)
+      .def("normalize", [](SceneNode& self) {
+        self.setRotation(self.getRotation().normalized());
+      });
+
+  // ==== enum AttachedObjectType ====
+  py::enum_<AttachedObjectType>(m, "AttachedObjectType")
+      .value("NONE", AttachedObjectType::NONE)
+      .value("SENSOR", AttachedObjectType::SENSOR)
+      .value("AGENT", AttachedObjectType::AGENT)
+      .value("CAMERA", AttachedObjectType::CAMERA);
 
   // ==== AttachedObject ====
   // An object that is attached to a scene node.
@@ -181,7 +204,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       // create a new attached object, which is NOT attached to any scene node
       // the initial status is invalid, namely, isValid will return false
       .def(py::init(&AttachedObject::create<>))
-
       // input: the scene node this object is going to attach to
       // the initial status is valid, since the object is attached to a node
       .def(py::init(&AttachedObject::create<scene::SceneNode&>))
@@ -189,9 +211,9 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       // NOTE:
       // please always call this function to check the status
       // in order to avoid runtime errors
-      .def("is_valid", &AttachedObject::isValid,
-           R"(Returns true if the object is being attached to a scene node.)")
-
+      .def_property_readonly(
+          "is_valid", &AttachedObject::isValid,
+          R"(Returns true if the object is being attached to a scene node.)")
       .def("attach", &AttachedObject::attach,
            R"(Attaches the object to an existing scene node.)", "sceneNode"_a)
       .def("detach", &AttachedObject::detach,
@@ -200,6 +222,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            R"(get the scene node (pointer) being attached to (can be nullptr)
               PYTHON DOES NOT GET OWNERSHIP)",
            pybind11::return_value_policy::reference)
+      .def_property("object_type", &AttachedObject::getObjectType,
+                    &AttachedObject::setObjectType)
 
       // ---- functions related to rigid body transformation ----
       // Please check "isValid" before using it.
@@ -213,13 +237,25 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("get_absolute_position", &AttachedObject::getAbsolutePosition, R"(
         If it is valid, returns absolute position w.r.t. world coordinate frame
       )")
+      .def("get_rotation",
+           [](const AttachedObject& self) {
+             return self.getRotation().coeffs();
+           },
+           R"()")
+      .def("set_rotation",
+           [](AttachedObject& self, const Eigen::Ref<const esp::vec4f> coeffs) {
+             self.setRotation(Eigen::Map<const quatf>(coeffs.data()));
+           })
       .def(
           "set_transformation",
-          py::overload_cast<const mat4f&>(&AttachedObject::setTransformation),
+          py::overload_cast<const Eigen::Ref<const mat4f>>(
+              &AttachedObject::setTransformation),
           R"(If it is valid, sets transformation relative to parent scene node.)",
           "transformation"_a)
       .def("set_transformation",
-           py::overload_cast<const vec3f&, const vec3f&, const vec3f&>(
+           py::overload_cast<const Eigen::Ref<const vec3f>,
+                             const Eigen::Ref<const vec3f>,
+                             const Eigen::Ref<const vec3f>>(
                &AttachedObject::setTransformation),
            R"(
              Set the position and orientation of the object by setting
@@ -310,6 +346,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 
   // ==== SceneGraph ====
   py::class_<scene::SceneGraph>(m, "SceneGraph")
+      .def(py::init())
       .def("get_root_node",
            py::overload_cast<>(&scene::SceneGraph::getRootNode, py::const_),
            R"(
@@ -520,70 +557,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("add", &SensorSuite::add)
       .def("get", &SensorSuite::get, R"(get the sensor by id)");
 
-  // ==== AgentState ====
-  py::class_<AgentState, AgentState::ptr>(m, "AgentState")
-      .def(py::init(&AgentState::create<>))
-      .def_readwrite("position", &AgentState::position)
-      .def_readwrite("rotation", &AgentState::rotation)
-      .def_readwrite("velocity", &AgentState::velocity)
-      .def_readwrite("angular_velocity", &AgentState::angularVelocity)
-      .def_readwrite("force", &AgentState::force)
-      .def_readwrite("torque", &AgentState::torque);
-
-  // ==== ActionSpec ====
-  py::class_<ActionSpec, ActionSpec::ptr>(m, "ActionSpec")
-      .def(py::init(
-          &ActionSpec::create<const std::string&, const ActuationMap&>));
-
-  py::bind_map<std::map<std::string, ActionSpec::ptr>>(m, "ActionSpace");
-
-  // ==== AgentConfiguration ====
-  py::class_<AgentConfiguration, AgentConfiguration::ptr>(m,
-                                                          "AgentConfiguration")
-      .def(py::init(&AgentConfiguration::create<>))
-      .def_readwrite("height", &AgentConfiguration::height)
-      .def_readwrite("radius", &AgentConfiguration::radius)
-      .def_readwrite("mass", &AgentConfiguration::mass)
-      .def_readwrite("linear_acceleration",
-                     &AgentConfiguration::linearAcceleration)
-      .def_readwrite("angular_acceleration",
-                     &AgentConfiguration::angularAcceleration)
-      .def_readwrite("linear_friction", &AgentConfiguration::linearFriction)
-      .def_readwrite("angular_friction", &AgentConfiguration::angularFriction)
-      .def_readwrite("coefficient_of_restitution",
-                     &AgentConfiguration::coefficientOfRestitution)
-      .def_readwrite("sensor_specifications",
-                     &AgentConfiguration::sensorSpecifications)
-      .def_readwrite("action_space", &AgentConfiguration::actionSpace)
-      .def_readwrite("body_type", &AgentConfiguration::bodyType)
-      .def(
-          "__eq__",
-          [](const AgentConfiguration& self,
-             const AgentConfiguration& other) -> bool { return self == other; })
-      .def("__neq__",
-           [](const AgentConfiguration& self, const AgentConfiguration& other)
-               -> bool { return self != other; });
-
-  // ==== Agent (subclass of AttachedObject) ====
-  py::class_<Agent, AttachedObject, Agent::ptr>(m, "Agent")
-      .def(py::init(&Agent::create<const AgentConfiguration&>),
-           R"(agent and its sensors are initialized;
-           none of them is attached to any scene node;
-           status: "invalid" (for agent or any sensor))")
-      .def(py::init(
-               &Agent::create<const AgentConfiguration&, scene::SceneNode&>),
-           R"(agent and its sensors are initialized;
-              agent is attached to the "agentNode", and each sensor is attached to a
-              child node of the "agentNode";
-              status: "valid" (for agent or any sensor))")
-      .def("act", &Agent::act, R"()", "action_name"_a)
-      .def("get_state", &Agent::getState, R"()", "state"_a)
-      .def("set_state", &Agent::setState, R"()", "state"_a,
-           "reset_sensors"_a = true)
-      .def_property_readonly(
-          "sensors", py::overload_cast<>(&Agent::getSensorSuite, py::const_),
-          R"(Get sensor suite on the agent (const function))");
-
   // ==== SceneConfiguration ====
   py::class_<SceneConfiguration, SceneConfiguration::ptr>(m,
                                                           "SceneConfiguration")
@@ -606,13 +579,14 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   py::class_<SimulatorConfiguration, SimulatorConfiguration::ptr>(
       m, "SimulatorConfiguration")
       .def(py::init(&SimulatorConfiguration::create<>))
-      .def_readwrite("agents", &SimulatorConfiguration::agents)
       .def_readwrite("scene", &SimulatorConfiguration::scene)
       .def_readwrite("default_agent_id",
                      &SimulatorConfiguration::defaultAgentId)
       .def_readwrite("default_camera_uuid",
                      &SimulatorConfiguration::defaultCameraUuid)
       .def_readwrite("gpu_device_id", &SimulatorConfiguration::gpuDeviceId)
+      .def_readwrite("width", &SimulatorConfiguration::width)
+      .def_readwrite("height", &SimulatorConfiguration::height)
       .def_readwrite("compress_textures",
                      &SimulatorConfiguration::compressTextures)
       .def("__eq__",
@@ -631,8 +605,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   // ==== Simulator ====
   py::class_<Simulator, Simulator::ptr>(m, "Simulator")
       .def(py::init(&Simulator::create<const SimulatorConfiguration&>))
-      .def("agent", &Simulator::getAgent, R"(get the agent by id)",
-           "agent_id"_a)
       .def("get_active_scene_graph", &Simulator::getActiveSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            pybind11::return_value_policy::reference)
@@ -646,8 +618,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("seed", &Simulator::seed, R"()", "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a)
       .def("reset", &Simulator::reset, R"()")
-      .def("sample_random_agent_state", &Simulator::sampleRandomAgentState,
-           R"()", "agent_state"_a)
       .def("saveFrame", &Simulator::saveFrame, R"()", "filename"_a)
       .def("make_action_pathfinder", &Simulator::makeActionPathfinder,
            "agent_id"_a = 0);

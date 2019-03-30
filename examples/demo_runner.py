@@ -13,6 +13,7 @@ from enum import Enum
 from PIL import Image
 
 import habitat_sim
+import habitat_sim.agent
 from habitat_sim.utils import d3_40_colors_rgb
 import habitat_sim.bindings as hsim
 from settings import default_sim_settings
@@ -75,16 +76,21 @@ class DemoRunner:
                 sensor_specs.append(sensor_spec)
 
         # create agent specifications
-        agent_cfg = hsim.AgentConfiguration()
+        agent_cfg = habitat_sim.agent.AgentConfig()
         agent_cfg.sensor_specifications = sensor_specs
         agent_cfg.action_space = {
-            "move_forward": hsim.ActionSpec("moveForward", {"amount": 0.25}),
-            "look_left": hsim.ActionSpec("lookLeft", {"amount": 10}),
-            "look_right": hsim.ActionSpec("lookRight", {"amount": 10}),
+            "move_forward": habitat_sim.agent.ActionSpec(
+                "move_forward", habitat_sim.agent.ActuationSpec(amount=0.25)
+            ),
+            "turn_left": habitat_sim.agent.ActionSpec(
+                "turn_left", habitat_sim.agent.ActuationSpec(amount=10.0)
+            ),
+            "turn_right": habitat_sim.agent.ActionSpec(
+                "turn_right", habitat_sim.agent.ActuationSpec(amount=10.0)
+            ),
         }
-        sim_cfg.agents = [agent_cfg]
 
-        return sim_cfg
+        return sim_cfg, [agent_cfg]
 
     def save_color_observation(self, obs, total_frames):
         color_obs = obs["color_sensor"]
@@ -121,8 +127,7 @@ class DemoRunner:
     def init_agent_state(self, agent_id):
         # initialize the agent at a random start state
         agent = self._sim.initialize_agent(agent_id)
-        start_state = hsim.AgentState()
-        agent.get_state(start_state)
+        start_state = agent.get_state()
 
         # force starting position on first floor (try 100 samples)
         num_start_tries = 0
@@ -151,9 +156,7 @@ class DemoRunner:
         total_frames = 0
         start_time = time.time()
         action_names = list(
-            self._sim_cfg.agents[
-                self._sim_settings["default_agent"]
-            ].action_space.keys()
+            self._agent_cfgs[self._sim_settings["default_agent"]].action_space.keys()
         )
 
         while total_frames < self._sim_settings["max_frames"]:
@@ -226,8 +229,8 @@ class DemoRunner:
             input("Press Enter to continue...")
 
     def init_common(self):
-        self._sim_cfg = self.make_cfg(self._sim_settings)
-        self._sim = habitat_sim.Simulator(self._sim_cfg)
+        self._sim_cfg, self._agent_cfgs = self.make_cfg(self._sim_settings)
+        self._sim = habitat_sim.Simulator(self._sim_cfg, self._agent_cfgs)
 
         random.seed(self._sim_settings["seed"])
         self._sim.seed(self._sim_settings["seed"])

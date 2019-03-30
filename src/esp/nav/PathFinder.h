@@ -127,7 +127,8 @@ class PathFinder {
   bool findPath(ShortestPath& path);
   bool findPath(MultiGoalShortestPath& path);
 
-  vec3f tryStep(const vec3f& start, const vec3f& end);
+  vec3f tryStep(const Eigen::Ref<const vec3f> start,
+                const Eigen::Ref<const vec3f> end);
 
   bool loadNavMesh(const std::string& path);
 

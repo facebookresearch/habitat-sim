@@ -29,7 +29,7 @@ class SceneNode;
 //  is a sub-type in the SENSOR category)
 
 // Future types may include e.g., "LIGHT"
-enum AttachedObjectType {
+enum class AttachedObjectType {
   NONE = 0,
   SENSOR = 1,
   AGENT = 2,
@@ -59,6 +59,7 @@ class AttachedObject {
 
   // get the type of the attached object
   AttachedObjectType getObjectType() { return objectType_; }
+  void setObjectType(AttachedObjectType type) { objectType_ = type; }
 
   // get the scene node being attached to (can be nullptr)
   // please use return_policy = reference in pybind
@@ -80,28 +81,32 @@ class AttachedObject {
 
   // ==== set functions ====
   // set local transformation w.r.t. parent's frame
-  virtual AttachedObject& setTransformation(const mat4f& transformation);
-  virtual AttachedObject& setTransformation(const vec3f& position,
-                                            const vec3f& target,
-                                            const vec3f& up);
-  virtual AttachedObject& setTranslation(const vec3f& vector);
+  virtual AttachedObject& setTransformation(
+      const Eigen::Ref<const mat4f> transformation);
+  virtual AttachedObject& setTransformation(
+      const Eigen::Ref<const vec3f> position,
+      const Eigen::Ref<const vec3f> target,
+      const Eigen::Ref<const vec3f> up);
+  virtual AttachedObject& setTranslation(const Eigen::Ref<const vec3f> vector);
   virtual AttachedObject& setRotation(const quatf& quaternion);
 
   virtual AttachedObject& resetTransformation();
 
   // ==== rigid body transformations ====
-  virtual AttachedObject& translate(const vec3f& vector);
-  virtual AttachedObject& translateLocal(const vec3f& vector);
+  virtual AttachedObject& translate(const Eigen::Ref<const vec3f> vector);
+  virtual AttachedObject& translateLocal(const Eigen::Ref<const vec3f> vector);
 
-  virtual AttachedObject& rotate(float angleInRad, const vec3f& normalizedAxis);
+  virtual AttachedObject& rotate(float angleInRad,
+                                 const Eigen::Ref<const vec3f> normalizedAxis);
 
   // rotateLocal:
   // It means rotation is applied before all other rotations.
 
   // Rotate object using axis-angle as a local transformation.
   // normalizedAxis: in parent's frame
-  virtual AttachedObject& rotateLocal(float angleInRad,
-                                      const vec3f& normalizedAxis);
+  virtual AttachedObject& rotateLocal(
+      float angleInRad,
+      const Eigen::Ref<const vec3f> normalizedAxis);
 
   virtual AttachedObject& rotateX(float angleInRad);
   virtual AttachedObject& rotateXInDegree(float angleInDeg);
