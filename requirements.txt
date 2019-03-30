@@ -1,3 +1,5 @@
 # external requirements
 numpy
 pillow
+numpy-quaternion
+attrs

@@ -7,7 +7,6 @@
 #include "esp/assets/SceneLoader.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
-#include "esp/nav/ActionSpacePath.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneGraph.h"
@@ -113,87 +112,3 @@ TEST(NavTest, BuildNavMeshFromMeshTest) {
   pf.build(bs, mesh);
   testPathFinder(pf);
 }
-
-TEST(NavTest, ActionSpacePath) {
-  PathFinder::ptr pf = PathFinder::create();
-  pf->loadNavMesh("test.navmesh");
-  pf->seed(0);
-  agent::AgentConfiguration agentCfg;
-  scene::ObjectControls controls_;
-  const quatf startRotation(0.0, 0.0, 0.0, 1.0),
-      goalRotation(0.0, 1.0, 0.0, 0.0);
-  auto actPathfinder = nav::ActionSpacePathFinder::create_unique(
-      pf, agentCfg, controls_, startRotation);
-
-  constexpr int numTests = 5;
-  for (int i = 0; i < numTests; ++i) {
-    const vec3f goalPos = pf->getRandomNavigablePoint();
-    ShortestPath testPath;
-    do {
-      testPath.requestedEnd = goalPos;
-      testPath.requestedStart = pf->getRandomNavigablePoint();
-      pf->findPath(testPath);
-    } while (testPath.geodesicDistance > 10.0 ||
-             testPath.geodesicDistance < 5.0);
-
-    ActionSpaceShortestPath actTestPath, nextActTestPath;
-    actTestPath.requestedStart->pos_ = testPath.requestedStart;
-    actTestPath.requestedStart->rotation_ = startRotation.coeffs();
-    actTestPath.requestedEnd->pos_ = testPath.requestedEnd;
-    actTestPath.requestedEnd->rotation_ = goalRotation.coeffs();
-
-    nextActTestPath.requestedStart->pos_ = testPath.requestedStart;
-    nextActTestPath.requestedStart->rotation_ = startRotation.coeffs();
-    nextActTestPath.requestedEnd->pos_ = testPath.requestedEnd;
-    nextActTestPath.requestedEnd->rotation_ = goalRotation.coeffs();
-
-    actPathfinder->paddingRadius(0.0);
-    actPathfinder->findPath(actTestPath);
-
-    LOG(INFO) << "testPath.geodesicDistance: " << testPath.geodesicDistance;
-    LOG(INFO) << "actTestPath.geodesicDistance: "
-              << actTestPath.geodesicDistance;
-    CHECK(
-        std::abs(actTestPath.geodesicDistance - testPath.geodesicDistance) /
-            std::max(actTestPath.geodesicDistance, testPath.geodesicDistance) <
-        0.1);
-
-    actPathfinder->paddingRadius(0.2);
-    actPathfinder->findPath(actTestPath);
-
-    scene::SceneGraph dummyGraph;
-    scene::SceneNode dummy(dummyGraph.getRootNode());
-    dummy.setTranslation(testPath.requestedStart);
-    dummy.setRotation(startRotation);
-    for (const auto& act : actTestPath.actions) {
-      nextActTestPath.requestedStart->pos_ = dummy.getAbsolutePosition();
-      nextActTestPath.requestedStart->rotation_ = dummy.getRotation().coeffs();
-      actPathfinder->findNextActionAlongPath(nextActTestPath);
-
-      // Checks to make sure the predicted entire path is correct for each
-      // individual loaction
-      CHECK(act == nextActTestPath.actions[0]);
-
-      const vec3f pos = dummy.getAbsolutePosition();
-      const agent::ActionSpec::ptr& actionSpec = agentCfg.actionSpace[act];
-      controls_.getMoveFuncMap().at(actionSpec->name)(
-          dummy, actionSpec->actuation["amount"]);
-
-      vec3f newPos = pf->tryStep(pos, dummy.getAbsolutePosition());
-      dummy.setTranslation(newPos);
-    }
-
-    const double distToGoal =
-        (actTestPath.requestedEnd->pos_ - dummy.getAbsolutePosition()).norm();
-    const double angularDistToGoal =
-        Eigen::Map<const quatf>(actTestPath.requestedEnd->rotation_.data())
-            .angularDistance(dummy.getRotation());
-    LOG(INFO) << "L2 Distance to goal after following path: " << distToGoal;
-    LOG(INFO) << "Angular distance to goal after following path: "
-              << angularDistToGoal;
-
-    CHECK(distToGoal <
-          agentCfg.actionSpace["moveForward"]->actuation["amount"]);
-    CHECK(angularDistToGoal < 1e-3);
-  }
-};

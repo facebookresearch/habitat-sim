@@ -120,7 +120,7 @@ class InstallCommand(install):
         HEADLESS = self.headless
 
 
-requirements = ["numpy"]
+requirements = ["numpy", "pillow", "numpy-quaternion", "attrs"]
 
 builtins.__HSIM_SETUP__ = True
 import habitat_sim

@@ -13,8 +13,6 @@
 #include <vector>
 
 #include "esp/core/esp.h"
-#include "esp/nav/ActionSpacePath.h"
 
 PYBIND11_MAKE_OPAQUE(std::map<std::string, std::string>);
-
-PYBIND11_MAKE_OPAQUE(std::vector<esp::nav::ActionSpacePathLocation::ptr>);
+PYBIND11_MAKE_OPAQUE(std::vector<int>);

@@ -28,11 +28,11 @@ class Renderer;
 
 struct SimulatorConfiguration {
   scene::SceneConfiguration scene;
-  std::vector<agent::AgentConfiguration::ptr> agents;
   int defaultAgentId = 0;
   int gpuDeviceId = 0;
   std::string defaultCameraUuid = "rgba_camera";
   bool compressTextures = false;
+  int width = 256, height = 256;
 
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };
@@ -68,8 +68,6 @@ class Simulator {
   scene::SceneGraph& getActiveSemanticSceneGraph();
 
   void saveFrame(const std::string& filename);
-
-  std::shared_ptr<nav::ActionSpacePathFinder> makeActionPathfinder(int agentId);
 
  protected:
   WindowlessContext context_;
