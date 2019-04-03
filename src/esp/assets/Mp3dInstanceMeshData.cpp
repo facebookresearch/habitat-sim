@@ -198,7 +198,8 @@ bool Mp3dInstanceMeshData::saveSemMeshPLY(
   for (int iFace = 0; iFace < cpu_ibo_.size(); ++iFace) {
     const uint8_t nIndices = 3;
     const vec3i& indices = cpu_ibo_[iFace];
-    const int32_t segmentId = segmentIds_[iFace];
+    // The materialId corresponds to the segmentId from the .house file
+    const int32_t segmentId = materialIds_[iFace];
     int32_t objectId = ID_UNDEFINED;
     if (segmentId >= 0) {
       objectId = segmentIdToObjectIdMap.at(segmentId);

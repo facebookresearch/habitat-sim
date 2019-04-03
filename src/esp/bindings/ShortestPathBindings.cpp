@@ -13,6 +13,12 @@ using namespace py::literals;
 using namespace esp::nav;
 
 void initShortestPathBindings(py::module& m) {
+  py::class_<HitRecord>(m, "HitRecord")
+      .def(py::init())
+      .def_readwrite("hit_pos", &HitRecord::hitPos)
+      .def_readwrite("hit_normal", &HitRecord::hitNormal)
+      .def_readwrite("hit_dist", &HitRecord::hitDist);
+
   py::class_<ActionSpacePathLocation, ActionSpacePathLocation::ptr>(
       m, "ActionSpacePathLocation")
       .def(py::init(&ActionSpacePathLocation::create<>))
@@ -49,7 +55,28 @@ void initShortestPathBindings(py::module& m) {
            py::overload_cast<MultiGoalShortestPath&>(&PathFinder::findPath),
            "path"_a)
       .def("try_step", &PathFinder::tryStep, R"()", "start"_a, "end"_a)
-      .def("island_radius", &PathFinder::islandRadius, R"()", "pt"_a);
+      .def("island_radius", &PathFinder::islandRadius, R"()", "pt"_a)
+      .def("distance_to_closest_obstacle",
+           &PathFinder::distanceToClosestObstacle,
+           R"(Returns the distance to the closest obstacle.
+           If this distance is greater than :py:attr:`max_search_radius`,
+           :py:attr:`max_search_radius` is returned instead.)",
+           "pt"_a, "max_search_radius"_a = 2.0)
+      .def(
+          "closest_obstacle_surface_point",
+          &PathFinder::closestObstacleSurfacePoint,
+          R"(Returns the hit_pos, hit_normal, and hit_dist of the surface point on the closest obstacle.
+           If the returned hit_dist is equal to :py:attr:`max_search_radius`,
+           no obstacle was found.)",
+          "pt"_a, "max_search_radius"_a = 2.0)
+      .def("is_navigable", &PathFinder::isNavigable,
+           R"(Checks to see if the agent can stand at the specified point.
+          To check navigability, the point is snapped to the nearest polygon and
+          then the snapped point is compared to the original point.
+          Any amount of x-z translation indicates that the given point is not navigable.
+          The amount of y-translation allowed is specified by max_y_delta to account
+          for slight differences in floor height)",
+           "pt"_a, "max_y_delta"_a = 0.5);
 
   py::class_<ActionSpaceShortestPath, ActionSpaceShortestPath::ptr>(
       m, "ActionSpaceShortestPath")

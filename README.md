@@ -4,6 +4,8 @@
 
 --------------------------------------------------------------------------------
 
+
+
 # Habitat-Sim
 
 A flexible, high-performance 3D simulator with configurable agents, multiple sensors, and generic 3D dataset handling (with built-in support for [SUNCG](http://suncg.cs.princeton.edu/), [MatterPort3D](https://niessner.github.io/Matterport/), [Gibson](http://gibsonenv.stanford.edu/database/) and other datasets).
@@ -16,6 +18,7 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
 ---
 
 ## Table of contents
+   0. [Updates](#updates)
    0. [Motivation](#motivation)
    0. [Citing Habitat](#citing-habitat)
    0. [Details](#details)
@@ -27,6 +30,10 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
    0. [Examples](#examples)
    0. [Common issues](#common-issues)
    0. [Acknowledgments](#acknowledgments)
+
+## Updates ##
+
+* **Urgent Update** (4/2/19) There was a bug in the code used to generate the semantic meshes habitat verion of MP3D.  If you do not have a README stating this was fixed in your download of this dataset, please redownload using the `download_mp.py` script.
 
 ## Motivation ##
 AI Habitat enables training of embodied AI agents (virtual robots) in a highly photorealistic & efficient 3D simulator, before transferring the learned skills to reality.

@@ -24,6 +24,25 @@ using namespace esp;
 
 namespace esp {
 namespace nav {
+namespace {
+
+std::tuple<dtStatus, dtPolyRef, vec3f> projectToPoly(
+    const vec3f& pt,
+    const dtNavMeshQuery* navQuery,
+    const dtQueryFilter* filter) {
+  // Defines size of the bounding box to search in for the nearest polygon.  If
+  // there is no polygon inside the bounding box, the status is set to failure
+  // and polyRef == 0
+  constexpr float polyPickExt[3] = {2, 4, 2};  // [2 * dx, 2 * dy, 2 * dz]
+  dtPolyRef polyRef;
+  vec3f polyXYZ;
+  dtStatus status = navQuery->findNearestPoly(pt.data(), polyPickExt, filter,
+                                              &polyRef, polyXYZ.data());
+
+  return {status, polyRef, polyXYZ};
+}
+}  // namespace
+
 namespace impl {
 
 // Runs connected component analysis on the navmesh to figure out which polygons
@@ -714,7 +733,6 @@ bool esp::nav::PathFinder::findPath(MultiGoalShortestPath& path) {
   static const int MAX_POLYS = 256;
   dtPolyRef polys[MAX_POLYS];
   path.geodesicDistance = std::numeric_limits<float>::infinity();
-  const float polyPickExt[3] = {2, 4, 2};
   dtPolyRef startRef;
 
   // find nearest polys and path
@@ -722,8 +740,9 @@ bool esp::nav::PathFinder::findPath(MultiGoalShortestPath& path) {
   int numPoints = 0;
   int numPolys = 0;
   dtStatus status;
-  status = navQuery_->findNearestPoly(path.requestedStart.data(), polyPickExt,
-                                      filter_, &startRef, pathStart.data());
+  std::tie(status, startRef, pathStart) =
+      projectToPoly(path.requestedStart, navQuery_, filter_);
+
   if (status != DT_SUCCESS || startRef == 0) {
     return false;
   }
@@ -734,9 +753,8 @@ bool esp::nav::PathFinder::findPath(MultiGoalShortestPath& path) {
   for (const auto& rqEnd : path.requestedEnds) {
     pathEnds.emplace_back();
     endRefs.emplace_back();
-    status =
-        navQuery_->findNearestPoly(rqEnd.data(), polyPickExt, filter_,
-                                   &endRefs.back(), pathEnds.back().data());
+    std::tie(status, endRefs.back(), pathEnds.back()) =
+        projectToPoly(rqEnd, navQuery_, filter_);
 
     pathEndsCoords.emplace_back(pathEnds.back()[0]);
     pathEndsCoords.emplace_back(pathEnds.back()[1]);
@@ -807,13 +825,13 @@ bool esp::nav::PathFinder::findPath(MultiGoalShortestPath& path) {
 vec3f esp::nav::PathFinder::tryStep(const vec3f& start, const vec3f& end) {
   static const int MAX_POLYS = 256;
   dtPolyRef polys[MAX_POLYS];
-  const float polyPickExt[3] = {2, 4, 2};
+
   dtPolyRef startRef, endRef;
   vec3f pathStart, pathEnd;
-  navQuery_->findNearestPoly(start.data(), polyPickExt, filter_, &startRef,
-                             pathStart.data());
-  navQuery_->findNearestPoly(end.data(), polyPickExt, filter_, &endRef,
-                             pathEnd.data());
+  std::tie(std::ignore, startRef, pathStart) =
+      projectToPoly(start, navQuery_, filter_);
+  std::tie(std::ignore, endRef, pathEnd) =
+      projectToPoly(end, navQuery_, filter_);
   vec3f endPoint;
   int numPolys;
   navQuery_->moveAlongSurface(startRef, pathStart.data(), pathEnd.data(),
@@ -825,8 +843,8 @@ vec3f esp::nav::PathFinder::tryStep(const vec3f& start, const vec3f& end) {
   // First check to see if the endPoint as returned by `moveAlongSurface`
   // is in the same connected component as the startRef according to
   // findNearestPoly
-  navQuery_->findNearestPoly(endPoint.data(), polyPickExt, filter_, &endRef,
-                             pathEnd.data());
+  std::tie(std::ignore, endRef, std::ignore) =
+      projectToPoly(endPoint, navQuery_, filter_);
   if (!this->islandSystem_->hasConnection(startRef, endRef)) {
     // There isn't a connection!  This happens when endPoint is on an edge
     // shared between two different connected components (aka infinitely thin
@@ -854,15 +872,56 @@ vec3f esp::nav::PathFinder::tryStep(const vec3f& start, const vec3f& end) {
 }
 
 float esp::nav::PathFinder::islandRadius(const vec3f& pt) const {
-  const float polyPickExt[3] = {2, 4, 2};
   dtPolyRef ptRef;
-  vec3f polyPt;
   dtStatus status;
-  status = navQuery_->findNearestPoly(pt.data(), polyPickExt, filter_, &ptRef,
-                                      polyPt.data());
+  std::tie(status, ptRef, std::ignore) = projectToPoly(pt, navQuery_, filter_);
   if (status != DT_SUCCESS || ptRef == 0) {
     return 0.0;
   } else {
     return islandSystem_->islandRadius(ptRef);
   }
+}
+
+float esp::nav::PathFinder::distanceToClosestObstacle(
+    const vec3f& pt,
+    const float maxSearchRadius /*= 2.0*/) const {
+  return closestObstacleSurfacePoint(pt, maxSearchRadius).hitDist;
+}
+
+esp::nav::HitRecord esp::nav::PathFinder::closestObstacleSurfacePoint(
+    const vec3f& pt,
+    const float maxSearchRadius /*= 2.0*/) const {
+  dtPolyRef ptRef;
+  dtStatus status;
+  vec3f polyPt;
+  std::tie(status, ptRef, polyPt) = projectToPoly(pt, navQuery_, filter_);
+  if (status != DT_SUCCESS || ptRef == 0) {
+    return {vec3f(0, 0, 0), vec3f(0, 0, 0),
+            std::numeric_limits<float>::infinity()};
+  } else {
+    vec3f hitPos, hitNormal;
+    float hitDist;
+    navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
+                                  filter_, &hitDist, hitPos.data(),
+                                  hitNormal.data());
+    return {hitPos, hitNormal, hitDist};
+  }
+}
+
+bool esp::nav::PathFinder::isNavigable(const vec3f& pt,
+                                       const float maxYDelta /*= 0.5*/) const {
+  dtPolyRef ptRef;
+  dtStatus status;
+  vec3f polyPt;
+  std::tie(status, ptRef, polyPt) = projectToPoly(pt, navQuery_, filter_);
+
+  if (status != DT_SUCCESS || ptRef == 0)
+    return false;
+
+  if (std::abs(polyPt[1] - pt[1]) > maxYDelta ||
+      (Eigen::Vector2f(pt[0], pt[2]) - Eigen::Vector2f(polyPt[0], polyPt[2]))
+              .norm() > 1e-2)
+    return false;
+
+  return true;
 }

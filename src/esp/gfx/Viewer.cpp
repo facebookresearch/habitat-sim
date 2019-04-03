@@ -92,6 +92,8 @@ Viewer::Viewer(const Arguments& arguments)
       vec3f currentPosition = pathfinder_->tryStep(start, end);
       LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
                 << agentBodyNode_->getRotation().coeffs().transpose();
+      LOG(INFO) << "Distance to closest obstacle: "
+                << pathfinder_->distanceToClosestObstacle(currentPosition);
 
       if (computeActionPath_) {
         nav::ActionSpaceShortestPath spath;
