@@ -18,6 +18,41 @@ def test_bad_state():
         _ = agent.state
 
 
+def test_attach_dettach():
+    scene_graph = hsim.SceneGraph()
+    agent = habitat_sim.Agent()
+    agent.attach(scene_graph.get_root_node().create_child())
+    habitat_sim.errors.assert_obj_valid(agent.body)
+    for _, v in agent.sensors.items():
+        habitat_sim.errors.assert_obj_valid(v)
+
+    agent.detach()
+    with pytest.raises(habitat_sim.errors.InvalidAttachedObject):
+        habitat_sim.errors.assert_obj_valid(agent.body)
+
+    for _, v in agent.sensors.items():
+        with pytest.raises(habitat_sim.errors.InvalidAttachedObject):
+            habitat_sim.errors.assert_obj_valid(v)
+
+
+def test_reconfigure():
+    scene_graph = hsim.SceneGraph()
+    agent = habitat_sim.Agent()
+    agent.attach(scene_graph.get_root_node().create_child())
+
+    habitat_sim.errors.assert_obj_valid(agent.body)
+    for _, v in agent.sensors.items():
+        habitat_sim.errors.assert_obj_valid(v)
+
+    agent.reconfigure(agent.agent_config)
+    for _, v in agent.sensors.items():
+        habitat_sim.errors.assert_obj_valid(v)
+
+    agent.reconfigure(agent.agent_config, True)
+    for _, v in agent.sensors.items():
+        habitat_sim.errors.assert_obj_valid(v)
+
+
 def test_set_state():
     scene_graph = hsim.SceneGraph()
     agent = habitat_sim.Agent()
