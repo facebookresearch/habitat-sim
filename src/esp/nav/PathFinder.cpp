@@ -39,7 +39,7 @@ std::tuple<dtStatus, dtPolyRef, vec3f> projectToPoly(
   dtStatus status = navQuery->findNearestPoly(pt.data(), polyPickExt, filter,
                                               &polyRef, polyXYZ.data());
 
-  return {status, polyRef, polyXYZ};
+  return std::make_tuple(status, polyRef, polyXYZ);
 }
 }  // namespace
 
