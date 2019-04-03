@@ -27,6 +27,13 @@ def _noop_filter(start: np.array, end: np.array):
 
 @attr.s
 class ObjectControls(object):
+    r"""Used to implement actions
+
+    Args:
+        move_filter_fn: A function that is applied after actions to handle collisions
+            This should generally be `try_step` or the default
+    """
+
     move_filter_fn = attr.ib(default=_noop_filter)
 
     def action(
@@ -36,6 +43,15 @@ class ObjectControls(object):
         actuation_spec: ActuationSpec,
         apply_filter: bool = True,
     ):
+        r"""Performs the action specified by :py:attr:`action_name` on the object
+
+        Args:
+            obj (hsim.SceneNode): SceneNode to perform the action on
+            action_name (str): Name of the action.  Used to index the move_func_map
+                to retrieve the function which implements this action
+            actuation_spec (ActuationSpec): Specifies the parameters needed by the function
+            apply_filter (bool): Whether or not to apply the move_filter_fn after the action
+        """
         assert (
             action_name in move_func_map
         ), f"No action named {action_name} in the move map"

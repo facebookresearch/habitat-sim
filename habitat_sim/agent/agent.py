@@ -32,12 +32,25 @@ def _default_action_space():
 
 @attr.s(auto_attribs=True, slots=True)
 class ActionSpec(object):
+    r"""Defines how a specific action is implemented
+
+    Args:
+        name (str): Name of the function implementing the action in the move_func_map
+        actuation (ActuationSpec): Arguements that will be passed to the function
+    """
     name: str
     actuation: ActuationSpec
 
 
 @attr.s(auto_attribs=True, slots=True)
 class SixDOFPose(object):
+    r"""Specifies a position with 6 degrees of freedom
+
+    Args:
+        position (np.array): xyz position
+        rotation (np.quaternion): unit quaternion rotation
+    """
+
     position: np.array = np.zeros(3)
     rotation: np.quaternion = np.quaternion(1, 0, 0, 0)
 
@@ -72,6 +85,23 @@ class AgentConfig(object):
 
 @attr.s(auto_attribs=True)
 class Agent(object):
+    r"""Implements an agent with multiple sensors
+
+    Args:
+        agent_config (AgentConfig): The configuration of the agent
+
+
+    Warning:
+        Agents are given controls over a node in the scene graph, but do **not**
+        own this node.  This means that errors will occur if the owner of the scene graph
+        is deallocated.  Generally the owner of the scene graph is the Simulator.
+
+        If you'd like to have an agent to control without loading up the simulator,
+        see unit tests for the agent in `tests/test_agent.py`.  We recommend letting the
+        simulator create the agent and own the scene graph in almost all cases.  Using the scene
+        graph in python is dangerous due to differences in c++ and python memory management
+    """
+
     agent_config: AgentConfig = attr.Factory(AgentConfig)
     sensors: SensorSuite = attr.Factory(SensorSuite)
     controls: ObjectControls = attr.Factory(ObjectControls)
@@ -81,30 +111,60 @@ class Agent(object):
         self.body.object_type = hsim.AttachedObjectType.AGENT
         self.reconfigure(self.agent_config)
 
-    def reconfigure(self, agent_config: AgentConfig):
-        self.sensors.clear()
-
+    def reconfigure(self, agent_config: AgentConfig, reconfigure_sensors: bool = True):
+        r"""Re-create the agent with a new configuration
+        Args:
+            agent_config (AgentConfig): New config
+            reconfigure_sensors (bool): Whether or not to also reconfigure the sensors, there
+                are specific cases where false makes sense, but most cases are covered by true
+        """
         self.agent_config = agent_config
-        for spec in self.agent_config.sensor_specifications:
-            self.sensors.add(hsim.PinholeCamera(spec))
+
+        if reconfigure_sensors:
+            self.sensors.clear()
+            for spec in self.agent_config.sensor_specifications:
+                self.sensors.add(hsim.PinholeCamera(spec))
+
+            if self.body.is_valid:
+                for _, v in self.sensors.items():
+                    v.attach(self.scene_node.create_child())
 
     def attach(self, scene_node: hsim.SceneNode):
+        r"""Gives the agent control over the specified scene node (but **not** ownership)
+
+        The agent will recursively call attach for the sensors
+
+        Args:
+            scene_node (hsim.SceneNode)
+        """
         self.body.attach(scene_node)
         for _, v in self.sensors.items():
             if not v.is_valid:
                 v.attach(self.scene_node.create_child())
 
-    def dettach(self):
-        self.body.dettach()
-        for _, v in self.sensors.items():
-            v.dettach()
+    def detach(self):
+        r"""Detaches the agent from the its current scene_node
 
-    def act(self, action_name):
+        Recursively calls detach on any sensors
+        """
+
+        self.body.detach()
+        for _, v in self.sensors.items():
+            v.detach()
+
+    def act(self, action_id: Any):
+        r"""Take the action specified by action_id
+
+        Args:
+            action_id (Any): ID of the action.
+                Retreives the action from agent_config.action_space
+        """
+
         habitat_sim.errors.assert_obj_valid(self.body)
         assert (
-            action_name in self.agent_config.action_space
-        ), f"No action {action_name} in action space"
-        action = self.agent_config.action_space[action_name]
+            action_id in self.agent_config.action_space
+        ), f"No action {action_id} in action space"
+        action = self.agent_config.action_space[action_id]
 
         if action.name in BodyActions:
             self.controls.action(
@@ -120,7 +180,7 @@ class Agent(object):
                     apply_filter=False,
                 )
 
-    def get_state(self):
+    def get_state(self) -> AgentState:
         habitat_sim.errors.assert_obj_valid(self.body)
         state = AgentState(
             self.body.get_absolute_position(),
@@ -137,6 +197,13 @@ class Agent(object):
         return state
 
     def set_state(self, state: AgentState, reset_sensors: bool = True):
+        r"""Sets the agents state
+
+        Args:
+            state (AgentState): The state to set the agent to
+            reset_sensors (bool): Whether or not to reset the sensors to their default intrinsic/extrinsic parameters
+                before setting their extrinsic state
+        """
         habitat_sim.errors.assert_obj_valid(self.body)
 
         self.body.reset_transformation()
