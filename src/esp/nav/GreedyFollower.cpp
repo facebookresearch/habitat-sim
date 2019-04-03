@@ -83,7 +83,7 @@ nav::GreedyGeodesicFollowerImpl::calcStepAlong(
   moveForward_(&dummyNode_);
   const float newGeoDist =
       this->geoDist(dummyNode_.getAbsolutePosition(), path.requestedEnd);
-  if ((path.geodesicDistance - newGeoDist) > 0.5 * forwardAmount_ &&
+  if ((path.geodesicDistance - newGeoDist) > 0.01 * forwardAmount_ &&
       (std::get<0>(state) - dummyNode_.getAbsolutePosition()).norm() >
           0.95 * forwardAmount_) {
     return CODES::FORWARD;
@@ -107,18 +107,18 @@ int nav::GreedyGeodesicFollowerImpl::nextActionAlong(
   path.requestedEnd = end;
   pathfinder_->findPath(path);
 
-  int action = static_cast<int>(calcStepAlong(start, path));
-  if (action == 0)
-    action = static_cast<int>(checkForward(start));
+  CODES action = calcStepAlong(start, path);
+  if (action == CODES::FORWARD)
+    action = checkForward(start);
 
-  return action;
+  return static_cast<int>(action);
 }
 
 std::vector<int> nav::GreedyGeodesicFollowerImpl::findPath(
     const std::tuple<vec3f, quatf>& startState,
     const Eigen::Ref<const vec3f> end) {
   constexpr int maxActions = 1e4;
-  std::vector<int> actions;
+  std::vector<CODES> actions;
 
   std::tuple<vec3f, quatf> state = startState;
   nav::ShortestPath path;
@@ -127,38 +127,51 @@ std::vector<int> nav::GreedyGeodesicFollowerImpl::findPath(
   pathfinder_->findPath(path);
 
   do {
-    int nextAction = static_cast<int>(calcStepAlong(state, path));
-    if (nextAction == 0)
-      nextAction = static_cast<int>(checkForward(state));
+    CODES nextAction = calcStepAlong(state, path);
+    if (nextAction == CODES::FORWARD)
+      nextAction = checkForward(state);
 
-    VLOG(1) << nextAction;
     actions.push_back(nextAction);
 
     dummyNode_.setTranslation(std::get<0>(state));
     dummyNode_.setRotation(std::get<1>(state));
 
-    if (nextAction == 0) {
-      moveForward_(&dummyNode_);
+    switch (nextAction) {
+      case CODES::FORWARD:
+        moveForward_(&dummyNode_);
 
-      path.requestedStart = dummyNode_.getAbsolutePosition();
-      pathfinder_->findPath(path);
-    } else if (nextAction == 1) {
-      turnLeft_(&dummyNode_);
-    } else if (nextAction == 2) {
-      turnRight_(&dummyNode_);
+        path.requestedStart = dummyNode_.getAbsolutePosition();
+        pathfinder_->findPath(path);
+        break;
+
+      case CODES::LEFT:
+        turnLeft_(&dummyNode_);
+        break;
+
+      case CODES::RIGHT:
+        turnRight_(&dummyNode_);
+        break;
+
+      default:
+        break;
     }
 
     state = std::make_tuple(dummyNode_.getAbsolutePosition(),
                             dummyNode_.getRotation());
 
-  } while (actions.back() >= 0 && actions.size() < maxActions);
+  } while ((actions.back() != CODES::STOP && actions.back() != CODES::ERROR) &&
+           actions.size() < maxActions);
 
-  if (actions.back() == -2)
+  if (actions.back() == CODES::ERROR)
     actions.clear();
 
   if (actions.size() >= maxActions)
     actions.clear();
 
-  return actions;
+  std::vector<int> intActions;
+  for (const auto v : actions) {
+    intActions.emplace_back(static_cast<int>(v));
+  }
+  return intActions;
 }
 }  // namespace esp

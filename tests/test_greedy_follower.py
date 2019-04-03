@@ -32,12 +32,18 @@ def scene_graph():
 
 
 @pytest.fixture(scope="module")
-def pbar():
+def pbar1():
+    return tqdm.tqdm(total=len(test_navmeshes))
+
+
+@pytest.fixture(scope="module")
+def pbar2():
     return tqdm.tqdm(total=len(test_navmeshes))
 
 
 @pytest.mark.parametrize("test_navmesh", test_navmeshes)
-def test_greedy_follower(test_navmesh, scene_graph, pbar):
+def test_greedy_follower(test_navmesh, scene_graph, pbar1, pbar2):
+    pbar1.update()
     if not osp.exists(test_navmesh):
         pytest.skip(f"{test_navmesh} not found")
 
@@ -92,4 +98,4 @@ def test_greedy_follower(test_navmesh, scene_graph, pbar):
             np.linalg.norm(state.position - goal_pos) <= follower.forward_spec.amount
         ), "Didn't make it"
 
-    pbar.update()
+    pbar2.update()

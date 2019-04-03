@@ -27,12 +27,6 @@ void initShortestPathBindings(py::module& m) {
       .def_readwrite("hit_normal", &HitRecord::hitNormal)
       .def_readwrite("hit_dist", &HitRecord::hitDist);
 
-  py::class_<HitRecord>(m, "HitRecord")
-      .def(py::init())
-      .def_readwrite("hit_pos", &HitRecord::hitPos)
-      .def_readwrite("hit_normal", &HitRecord::hitNormal)
-      .def_readwrite("hit_dist", &HitRecord::hitDist);
-
   py::class_<ShortestPath, ShortestPath::ptr>(m, "ShortestPath")
       .def(py::init(&ShortestPath::create<>))
       .def_readwrite("requested_start", &ShortestPath::requestedStart)
