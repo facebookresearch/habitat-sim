@@ -13,7 +13,6 @@
 
 #include "Drawable.h"
 
-#include "esp/agent/Agent.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
@@ -39,14 +38,6 @@ Simulator::Simulator(const SimulatorConfiguration& cfg)
 
 Simulator::~Simulator() {
   LOG(INFO) << "Deconstructing Simulator";
-}
-
-void Simulator::sampleRandomAgentState(agent::AgentState::ptr agentState) {
-  agentState->position = pathfinder_->getRandomNavigablePoint();
-  const float randomAngleRad = random_.uniform_float_01() * M_PI;
-  quatf rotation(Eigen::AngleAxisf(randomAngleRad, vec3f::UnitY()));
-  agentState->rotation = rotation.coeffs();
-  // TODO: any other AgentState members should be randomized?
 }
 
 void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
@@ -176,11 +167,6 @@ std::shared_ptr<nav::PathFinder> Simulator::getPathFinder() {
   return pathfinder_;
 }
 
-std::shared_ptr<agent::Agent> Simulator::getAgent(int agentId) {
-  ASSERT(0 <= agentId && agentId < agents_.size());
-  return agents_[agentId];
-}
-
 scene::SceneGraph& Simulator::getActiveSceneGraph() {
   ASSERT(0 <= activeSceneID_ && activeSceneID_ < sceneID_.size());
   return sceneManager_.getSceneGraph(activeSceneID_);
@@ -191,44 +177,6 @@ scene::SceneGraph& Simulator::getActiveSemanticSceneGraph() {
   ASSERT(0 <= activeSemanticSceneID_ &&
          activeSemanticSceneID_ < sceneID_.size());
   return sceneManager_.getSceneGraph(activeSemanticSceneID_);
-}
-
-std::shared_ptr<nav::ActionSpacePathFinder> Simulator::makeActionPathfinder(
-    int agentId) {
-  auto agent = getAgent(agentId);
-
-  agent::AgentState::ptr state = agent::AgentState::create();
-  agent->getState(state);
-  return std::make_shared<nav::ActionSpacePathFinder>(
-      pathfinder_, agent->getConfig(), *agent->getControls(), state->rotation);
-}
-
-void Simulator::saveFrame(const std::string& filename) {
-  LOG(INFO) << "Saving frame to " << filename;
-  const auto& agent = agents_[config_.defaultAgentId];
-
-  ASSERT(0 <= activeSceneID_ && activeSceneID_ < sceneID_.size());
-  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_[activeSceneID_]);
-
-  // a smart pointer
-  auto pinholeCamera = agent->getSensorSuite().get(config_.defaultCameraUuid);
-
-  // render all the drawables in the scene graph by the sensor
-  renderer_->draw(*pinholeCamera.get(), sceneGraph);
-
-  const vec3i dims = renderer_->getSize();
-  std::vector<uint8_t> frameBytes(dims[0] * dims[1] * dims[2]);
-  renderer_->readFrameRgba(frameBytes.data());
-
-  Containers::ArrayView<uint8_t> view{frameBytes.data(), frameBytes.size()};
-  Magnum::ImageView2D img{PixelFormat::RGBA8Unorm, {dims[0], dims[1]}, view};
-
-  PluginManager::Manager<Trade::AbstractImageConverter> converterManager;
-  Corrade::Containers::Pointer<Magnum::Trade::AbstractImageConverter>
-      converter_ = converterManager.loadAndInstantiate("StbPngImageConverter");
-  converter_->exportToFile(img, filename);
-
-  LOG(INFO) << "Saved frame.";
 }
 
 bool operator==(const SimulatorConfiguration& a,
