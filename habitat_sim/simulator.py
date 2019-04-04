@@ -11,9 +11,12 @@ from habitat_sim.agent import Agent, AgentState, AgentConfig
 from habitat_sim.nav import GreedyGeodesicFollower
 from typing import List
 import numpy as np
+import os.path as osp
 
 
 class Simulator:
+    pathfinder: hsim.PathFinder
+
     def __init__(self, config, agent_cfgs: List[AgentConfig]):
         super().__init__()
         self._viewer = None
@@ -47,6 +50,22 @@ class Simulator:
             self._sim = hsim.SimulatorBackend(config)
         else:
             self._sim.reconfigure(config)
+
+        navmesh_filenname
+        if "navmesh" in config.scene.filepaths:
+            navmesh_filenname = config.scene.filepaths["navmesh"]
+        else:
+            navmesh_filenname = osp.splitext(config.scene.id)[0] + ".navmesh"
+
+        self.pathfinder = hsim.PathFinder()
+        if osp.exists(navmesh_filenname):
+            self.pathfinder.load_nav_mesh(navmesh_filenname)
+            # TODO add logging
+        else:
+            # TODO add logging
+            pass
+
+        self._sim.pathfinder = self.pathfinder
 
         self._config = config
         self.agents = [Agent(cfg) for cfg in agent_cfgs]

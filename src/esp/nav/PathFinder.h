@@ -105,7 +105,7 @@ struct NavMeshSettings {
   }
 };
 
-class PathFinder {
+class PathFinder : public std::enable_shared_from_this<PathFinder> {
  public:
   PathFinder();
   ~PathFinder() {

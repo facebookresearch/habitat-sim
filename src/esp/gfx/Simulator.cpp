@@ -85,23 +85,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     throw std::invalid_argument("Cannot load: " + sceneFilename);
   }
 
-  // create pathfinder and load navmesh if available
-  if (pathfinder_) {
-    pathfinder_.reset();
-  }
-  pathfinder_ = nav::PathFinder::create();
-  std::string navmeshFilename = io::changeExtension(sceneFilename, ".navmesh");
-  if (cfg.scene.filepaths.count("navmesh")) {
-    navmeshFilename = cfg.scene.filepaths.at("navmesh");
-  }
-  if (io::exists(navmeshFilename)) {
-    LOG(INFO) << "Loading navmesh from " << navmeshFilename;
-    pathfinder_->loadNavMesh(navmeshFilename);
-    LOG(INFO) << "Loaded.";
-  } else {
-    LOG(WARNING) << "Navmesh file not found, checked at " << navmeshFilename;
-  }
-
   // load semantic annotations if available
   if (semanticScene_) {
     semanticScene_.reset();
@@ -151,7 +134,7 @@ void Simulator::reset() {}
 
 void Simulator::seed(uint32_t newSeed) {
   random_.seed(newSeed);
-  pathfinder_->seed(newSeed);
+  pathfinder->seed(newSeed);
 }
 
 std::shared_ptr<Renderer> Simulator::getRenderer() {
@@ -160,10 +143,6 @@ std::shared_ptr<Renderer> Simulator::getRenderer() {
 
 std::shared_ptr<scene::SemanticScene> Simulator::getSemanticScene() {
   return semanticScene_;
-}
-
-std::shared_ptr<nav::PathFinder> Simulator::getPathFinder() {
-  return pathfinder_;
 }
 
 scene::SceneGraph& Simulator::getActiveSceneGraph() {
