@@ -51,7 +51,6 @@ class Simulator:
         else:
             self._sim.reconfigure(config)
 
-        navmesh_filenname
         if "navmesh" in config.scene.filepaths:
             navmesh_filenname = config.scene.filepaths["navmesh"]
         else:
@@ -65,7 +64,7 @@ class Simulator:
             # TODO add logging
             pass
 
-        self._sim.pathfinder = self.pathfinder
+        self.pathfinder = self.pathfinder
 
         self._config = config
         self.agents = [Agent(cfg) for cfg in agent_cfgs]
@@ -94,7 +93,7 @@ class Simulator:
         agent = self.get_agent(agent_id=agent_id)
         if initial_state is None:
             initial_state = AgentState()
-            initial_state.position = self._sim.pathfinder.get_random_navigable_point()
+            initial_state.position = self.pathfinder.get_random_navigable_point()
             initial_state.rotation = utils.quat_from_angle_axis(
                 np.random.uniform(0, 2.0 * np.pi), np.array([0, 1, 0])
             )
@@ -105,10 +104,6 @@ class Simulator:
 
     def sample_random_agent_state(self, state_to_return):
         return self._sim.sample_random_agent_state(state_to_return)
-
-    @property
-    def pathfinder(self):
-        return self._sim.pathfinder
 
     @property
     def semantic_scene(self):
@@ -130,17 +125,14 @@ class Simulator:
         observations = self.get_sensor_observations()
         return observations
 
-    def make_action_pathfinder(self, agent_id=0):
-        return self._sim.make_action_pathfinder(agent_id)
-
     def make_greedy_follower(self, goal_radius: float = None, agent_id=0):
         return GreedyGeodesicFollower(
-            self._sim.pathfinder, self.get_agent(agent_id), goal_radius
+            self.pathfinder, self.get_agent(agent_id), goal_radius
         )
 
     def _step_filer(self, start_pos, end_pos):
-        if self._sim.pathfinder.is_loaded:
-            end_pos = self._sim.pathfinder.try_step(start_pos, end_pos)
+        if self.pathfinder.is_loaded:
+            end_pos = self.pathfinder.try_step(start_pos, end_pos)
 
         return end_pos
 

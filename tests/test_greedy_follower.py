@@ -17,12 +17,14 @@ test_navmeshes = [
     osp.join(base_dir, "data/scene_datasets/habitat-test-scenes/van-gogh-room.navmesh"),
 ]
 
+
+test_all = False
 gibson_base = osp.join(base_dir, "data/scene_datasets/gibson_train_val")
-if osp.exists(gibson_base):
+if test_all and osp.exists(gibson_base):
     test_navmeshes += glob.glob(f"{gibson_base}/*.navmesh")
 
 mp3d_base = osp.join(base_dir, "data/scene_datasets/mp3d")
-if osp.exists(gibson_base):
+if test_all and osp.exists(gibson_base):
     test_navmeshes += glob.glob(f"{mp3d_base}/*/*.navmesh")
 
 
@@ -33,7 +35,10 @@ def scene_graph():
 
 @pytest.fixture(scope="module")
 def pbar():
-    return tqdm.tqdm(total=len(test_navmeshes))
+    if test_all:
+        return tqdm.tqdm(total=len(test_navmeshes))
+    else:
+        return None
 
 
 num_fails = 0
@@ -56,7 +61,7 @@ def test_greedy_follower(test_navmesh, scene_graph, pbar):
 
     num_tests = 500
 
-    for _ in tqdm.trange(num_tests, leave=False):
+    for _ in range(num_tests):
         state = agent.state
         while True:
             state.position = pathfinder.get_random_navigable_point()
@@ -83,8 +88,11 @@ def test_greedy_follower(test_navmesh, scene_graph, pbar):
                 <= follower.forward_spec.amount
             ), "Didn't make it"
         except:
-            num_fails += 1
-            pbar.set_postfix(num_fails=num_fails)
+            if test_all:
+                num_fails += 1
+                pbar.set_postfix(num_fails=num_fails)
+            else:
+                raise e
 
         try:
             agent.state = state
@@ -99,8 +107,12 @@ def test_greedy_follower(test_navmesh, scene_graph, pbar):
                 np.linalg.norm(state.position - goal_pos)
                 <= follower.forward_spec.amount
             ), "Didn't make it"
-        except:
-            num_fails += 1
-            pbar.set_postfix(num_fails=num_fails)
+        except Exception as e:
+            if test_all:
+                num_fails += 1
+                pbar.set_postfix(num_fails=num_fails)
+            else:
+                raise e
 
-    pbar.update()
+    if test_all:
+        pbar.update()
