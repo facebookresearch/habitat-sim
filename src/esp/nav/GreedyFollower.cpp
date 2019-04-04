@@ -83,9 +83,7 @@ nav::GreedyGeodesicFollowerImpl::calcStepAlong(
   moveForward_(&dummyNode_);
   const float newGeoDist =
       this->geoDist(dummyNode_.getAbsolutePosition(), path.requestedEnd);
-  if ((path.geodesicDistance - newGeoDist) > 0.01 * forwardAmount_ &&
-      (std::get<0>(state) - dummyNode_.getAbsolutePosition()).norm() >
-          0.95 * forwardAmount_) {
+  if ((path.geodesicDistance - newGeoDist) > 0.5 * forwardAmount_) {
     return CODES::FORWARD;
   }
 
