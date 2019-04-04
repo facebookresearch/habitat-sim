@@ -5,13 +5,13 @@
 #pragma once
 
 #include "WindowlessContext.h"
-#include "esp/agent/Agent.h"
-#include "esp/assets/ResourceManager.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
+
+#include "esp/assets/ResourceManager.h"
 
 namespace esp {
 namespace nav {
@@ -52,17 +52,9 @@ class Simulator {
 
   void seed(uint32_t newSeed);
 
-  //! sample a random valid AgentState in passed agentState
-  void sampleRandomAgentState(agent::AgentState::ptr agentState);
-
   std::shared_ptr<Renderer> getRenderer();
   std::shared_ptr<nav::PathFinder> getPathFinder();
   std::shared_ptr<scene::SemanticScene> getSemanticScene();
-  std::shared_ptr<agent::Agent> getAgent(int agentId);
-
-  std::shared_ptr<agent::Agent> addAgent(
-      const agent::AgentConfiguration& agentConfig,
-      scene::SceneNode& agentParentNode);
 
   scene::SceneGraph& getActiveSceneGraph();
   scene::SceneGraph& getActiveSemanticSceneGraph();
@@ -86,8 +78,6 @@ class Simulator {
 
   std::shared_ptr<nav::PathFinder> pathfinder_ = nullptr;
   std::shared_ptr<scene::SemanticScene> semanticScene_ = nullptr;
-
-  std::vector<std::shared_ptr<agent::Agent>> agents_;
 
   core::Random random_;
   SimulatorConfiguration config_;

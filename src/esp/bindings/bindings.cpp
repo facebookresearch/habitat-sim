@@ -22,7 +22,6 @@ using namespace py::literals;
 #include "esp/sensor/Sensor.h"
 
 using namespace esp;
-using namespace esp::agent;
 using namespace esp::core;
 using namespace esp::geo;
 using namespace esp::gfx;
@@ -617,6 +616,5 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("renderer", &Simulator::getRenderer)
       .def("seed", &Simulator::seed, R"()", "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a)
-      .def("reset", &Simulator::reset, R"()")
-      .def("saveFrame", &Simulator::saveFrame, R"()", "filename"_a);
+      .def("reset", &Simulator::reset, R"()");
 }
