@@ -125,7 +125,7 @@ class Simulator:
         observations = self.get_sensor_observations()
         return observations
 
-    def make_greedy_follower(self, goal_radius: float = None, agent_id=0):
+    def make_greedy_follower(self, agent_id: int = 0, goal_radius: float = None):
         return GreedyGeodesicFollower(
             self.pathfinder, self.get_agent(agent_id), goal_radius
         )
