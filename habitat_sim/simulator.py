@@ -53,7 +53,7 @@ class Simulator:
             self.agents[i].attach(
                 self._sim.get_active_scene_graph().get_root_node().create_child()
             )
-            self.agents[i].controls.move_filter_fn = self._step_filer
+            self.agents[i].controls.move_filter_fn = self._step_filter
 
         self._default_agent = self.get_agent(config.default_agent_id)
 
@@ -113,7 +113,7 @@ class Simulator:
     def make_action_pathfinder(self, agent_id=0):
         return self._sim.make_action_pathfinder(agent_id)
 
-    def _step_filer(self, start_pos, end_pos):
+    def _step_filter(self, start_pos, end_pos):
         if self._sim.pathfinder.is_loaded:
             end_pos = self._sim.pathfinder.try_step(start_pos, end_pos)
 
