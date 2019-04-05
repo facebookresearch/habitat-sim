@@ -18,7 +18,7 @@ def test_bad_state():
         _ = agent.state
 
 
-def test_attach_dettach():
+def test_attach_detach():
     scene_graph = hsim.SceneGraph()
     agent = habitat_sim.Agent()
     agent.attach(scene_graph.get_root_node().create_child())
