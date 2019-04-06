@@ -9,7 +9,7 @@ import habitat_sim.errors
 
 from typing import Dict, Any, List
 
-__all__ = ["ActionSpec", "SixDOFPose", "AgentState", "AgentConfig", "Agent"]
+__all__ = ["ActionSpec", "SixDOFPose", "AgentState", "AgentConfiguration", "Agent"]
 
 
 BodyActions = {
@@ -67,7 +67,7 @@ class AgentState(object):
 
 
 @attr.s(auto_attribs=True, slots=True)
-class AgentConfig(object):
+class AgentConfiguration(object):
     height: float = 1.5
     radius: float = 0.1
     mass: float = 32.0
@@ -88,7 +88,7 @@ class Agent(object):
     r"""Implements an agent with multiple sensors
 
     Args:
-        agent_config (AgentConfig): The configuration of the agent
+        agent_config (AgentConfiguration): The configuration of the agent
 
 
     Warning:
@@ -102,7 +102,7 @@ class Agent(object):
         graph in python is dangerous due to differences in c++ and python memory management
     """
 
-    agent_config: AgentConfig = attr.Factory(AgentConfig)
+    agent_config: AgentConfiguration = attr.Factory(AgentConfiguration)
     sensors: SensorSuite = attr.Factory(SensorSuite)
     controls: ObjectControls = attr.Factory(ObjectControls)
     body: hsim.AttachedObject = attr.Factory(hsim.AttachedObject)
@@ -111,10 +111,12 @@ class Agent(object):
         self.body.object_type = hsim.AttachedObjectType.AGENT
         self.reconfigure(self.agent_config)
 
-    def reconfigure(self, agent_config: AgentConfig, reconfigure_sensors: bool = True):
+    def reconfigure(
+        self, agent_config: AgentConfiguration, reconfigure_sensors: bool = True
+    ):
         r"""Re-create the agent with a new configuration
         Args:
-            agent_config (AgentConfig): New config
+            agent_config (AgentConfiguration): New config
             reconfigure_sensors (bool): Whether or not to also reconfigure the sensors, there
                 are specific cases where false makes sense, but most cases are covered by true
         """

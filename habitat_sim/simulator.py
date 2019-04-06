@@ -7,7 +7,7 @@
 import habitat_sim.bindings as hsim
 from habitat_sim import utils
 import habitat_sim.errors
-from habitat_sim.agent import Agent, AgentState, AgentConfig
+from habitat_sim.agent import Agent, AgentState, AgentConfiguration
 from typing import List
 import numpy as np
 import attr
@@ -17,7 +17,7 @@ from typing import List
 @attr.s(auto_attribs=True)
 class Configuration(object):
     sim_cfg: hsim.SimulatorConfiguration = None
-    agent_cfgs: List[AgentConfig] = None
+    agent_cfgs: List[AgentConfiguration] = None
 
 
 class Simulator:

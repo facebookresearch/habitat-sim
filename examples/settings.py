@@ -74,7 +74,7 @@ def make_cfg(settings):
             sensor_specs.append(sensor_spec)
 
     # create agent specifications
-    agent_cfg = habitat_sim.agent.AgentConfig()
+    agent_cfg = habitat_sim.agent.AgentConfiguration()
     agent_cfg.sensor_specifications = sensor_specs
     agent_cfg.action_space = {
         "move_forward": habitat_sim.agent.ActionSpec(

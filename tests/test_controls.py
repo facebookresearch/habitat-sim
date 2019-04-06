@@ -10,7 +10,7 @@ import attr
 
 def test_no_action():
     scene_graph = hsim.SceneGraph()
-    agent_config = habitat_sim.AgentConfig()
+    agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
         move_backward=habitat_sim.ActionSpec(
             "move_backward", habitat_sim.ActuationSpec(amount=0.25)
@@ -25,7 +25,7 @@ def test_no_action():
 
 def test_no_move_fun():
     scene_graph = hsim.SceneGraph()
-    agent_config = habitat_sim.AgentConfig()
+    agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
         move_forward=habitat_sim.ActionSpec(
             "DNF", habitat_sim.ActuationSpec(amount=0.25)
@@ -86,7 +86,7 @@ default_body_control_testdata = [
 @pytest.mark.parametrize("action,expected", default_body_control_testdata)
 def test_default_body_contorls(action, expected):
     scene_graph = hsim.SceneGraph()
-    agent_config = habitat_sim.AgentConfig()
+    agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
         move_backward=habitat_sim.ActionSpec(
             "move_backward", habitat_sim.ActuationSpec(amount=0.25)
@@ -161,7 +161,7 @@ default_sensor_control_testdata = [
 @pytest.mark.parametrize("action,expected", default_sensor_control_testdata)
 def test_default_sensor_contorls(action, expected):
     scene_graph = hsim.SceneGraph()
-    agent_config = habitat_sim.AgentConfig()
+    agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
         move_up=habitat_sim.ActionSpec(
             "move_up", habitat_sim.ActuationSpec(amount=0.25)
