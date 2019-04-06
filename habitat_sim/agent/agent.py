@@ -39,7 +39,7 @@ class ActionSpec(object):
         actuation (ActuationSpec): Arguements that will be passed to the function
     """
     name: str
-    actuation: ActuationSpec
+    actuation: ActuationSpec = None
 
 
 @attr.s(auto_attribs=True, slots=True)

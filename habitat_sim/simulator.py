@@ -14,7 +14,7 @@ import attr
 from typing import List
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, slots=True)
 class Configuration(object):
     sim_cfg: hsim.SimulatorConfiguration = None
     agents: List[AgentConfiguration] = None
