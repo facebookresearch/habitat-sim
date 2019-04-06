@@ -90,7 +90,7 @@ class DemoRunner:
             ),
         }
 
-        return sim_cfg, [agent_cfg]
+        return habitat_sim.Configuration(sim_cfg, [agent_cfg])
 
     def save_color_observation(self, obs, total_frames):
         color_obs = obs["color_sensor"]
@@ -156,7 +156,9 @@ class DemoRunner:
         total_frames = 0
         start_time = time.time()
         action_names = list(
-            self._agent_cfgs[self._sim_settings["default_agent"]].action_space.keys()
+            self._cfg.agent_cfgs[
+                self._sim_settings["default_agent"]
+            ].action_space.keys()
         )
 
         while total_frames < self._sim_settings["max_frames"]:
@@ -229,8 +231,8 @@ class DemoRunner:
             input("Press Enter to continue...")
 
     def init_common(self):
-        self._sim_cfg, self._agent_cfgs = self.make_cfg(self._sim_settings)
-        self._sim = habitat_sim.Simulator(self._sim_cfg, self._agent_cfgs)
+        self._cfg = self.make_cfg(self._sim_settings)
+        self._sim = habitat_sim.Simulator(self._cfg)
 
         random.seed(self._sim_settings["seed"])
         self._sim.seed(self._sim_settings["seed"])

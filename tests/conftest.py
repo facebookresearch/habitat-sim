@@ -49,7 +49,7 @@ def make_cfg(settings):
     agent_cfg = habitat_sim.agent.AgentConfig()
     agent_cfg.sensor_specifications = sensor_specs
 
-    return sim_cfg, [agent_cfg]
+    return habitat_sim.Configuration(sim_cfg, [agent_cfg])
 
 
 # Any test globally can take `sim` as an arguement and will get
@@ -65,4 +65,4 @@ def sim():
         depth_sensor=True,
     )
 
-    return habitat_sim.Simulator(*make_cfg(settings))
+    return habitat_sim.Simulator(make_cfg(settings))

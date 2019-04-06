@@ -10,16 +10,24 @@ import habitat_sim.errors
 from habitat_sim.agent import Agent, AgentState, AgentConfig
 from typing import List
 import numpy as np
+import attr
+from typing import List
+
+
+@attr.s()
+class Configuration(object):
+    sim_cfg: hsim.SimulatorConfiguration = attr.ib()
+    agent_cfgs: List[AgentConfig] = attr.ib()
 
 
 class Simulator:
-    def __init__(self, config, agent_cfgs: List[AgentConfig]):
+    def __init__(self, config: Configuration):
         super().__init__()
         self._viewer = None
         self._num_total_frames = 0
         self._sim = None
         self.agents = list()
-        self.reconfigure(config, agent_cfgs)
+        self.reconfigure(config)
 
     def close(self):
         self._sensors = None
@@ -34,30 +42,30 @@ class Simulator:
         self._sim.reset()
         return self.get_sensor_observations()
 
-    def reconfigure(self, config, agent_cfgs: List[AgentConfig]):
-        assert len(agent_cfgs) > 0
-        assert len(agent_cfgs[0].sensor_specifications) > 0
-        first_sensor_spec = agent_cfgs[0].sensor_specifications[0]
+    def reconfigure(self, config: Configuration):
+        assert len(config.agent_cfgs) > 0
+        assert len(config.agent_cfgs[0].sensor_specifications) > 0
+        first_sensor_spec = config.agent_cfgs[0].sensor_specifications[0]
 
-        config.height = first_sensor_spec.resolution[0]
-        config.width = first_sensor_spec.resolution[1]
+        config.sim_cfg.height = first_sensor_spec.resolution[0]
+        config.sim_cfg.width = first_sensor_spec.resolution[1]
 
         if self._sim is None:
-            self._sim = hsim.SimulatorBackend(config)
+            self._sim = hsim.SimulatorBackend(config.sim_cfg)
         else:
-            self._sim.reconfigure(config)
+            self._sim.reconfigure(config.sim_cfg)
 
         self._config = config
-        self.agents = [Agent(cfg) for cfg in agent_cfgs]
+        self.agents = [Agent(cfg) for cfg in config.agent_cfgs]
         for i in range(len(self.agents)):
             self.agents[i].attach(
                 self._sim.get_active_scene_graph().get_root_node().create_child()
             )
             self.agents[i].controls.move_filter_fn = self._step_filter
 
-        self._default_agent = self.get_agent(config.default_agent_id)
+        self._default_agent = self.get_agent(config.sim_cfg.default_agent_id)
 
-        agent_cfg = agent_cfgs[config.default_agent_id]
+        agent_cfg = config.agent_cfgs[config.sim_cfg.default_agent_id]
         self._sensors = {}
         for spec in agent_cfg.sensor_specifications:
             self._sensors[spec.uuid] = Sensor(
