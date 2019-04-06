@@ -14,10 +14,10 @@ import attr
 from typing import List
 
 
-@attr.s()
+@attr.s(auto_attribs=True)
 class Configuration(object):
-    sim_cfg: hsim.SimulatorConfiguration = attr.ib()
-    agent_cfgs: List[AgentConfig] = attr.ib()
+    sim_cfg: hsim.SimulatorConfiguration = None
+    agent_cfgs: List[AgentConfig] = None
 
 
 class Simulator:
