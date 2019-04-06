@@ -17,7 +17,7 @@ from typing import List
 @attr.s(auto_attribs=True)
 class Configuration(object):
     sim_cfg: hsim.SimulatorConfiguration = None
-    agent_cfgs: List[AgentConfiguration] = None
+    agents: List[AgentConfiguration] = None
 
 
 class Simulator:
@@ -43,9 +43,9 @@ class Simulator:
         return self.get_sensor_observations()
 
     def reconfigure(self, config: Configuration):
-        assert len(config.agent_cfgs) > 0
-        assert len(config.agent_cfgs[0].sensor_specifications) > 0
-        first_sensor_spec = config.agent_cfgs[0].sensor_specifications[0]
+        assert len(config.agents) > 0
+        assert len(config.agents[0].sensor_specifications) > 0
+        first_sensor_spec = config.agents[0].sensor_specifications[0]
 
         config.sim_cfg.height = first_sensor_spec.resolution[0]
         config.sim_cfg.width = first_sensor_spec.resolution[1]
@@ -56,7 +56,7 @@ class Simulator:
             self._sim.reconfigure(config.sim_cfg)
 
         self._config = config
-        self.agents = [Agent(cfg) for cfg in config.agent_cfgs]
+        self.agents = [Agent(cfg) for cfg in config.agents]
         for i in range(len(self.agents)):
             self.agents[i].attach(
                 self._sim.get_active_scene_graph().get_root_node().create_child()
@@ -65,7 +65,7 @@ class Simulator:
 
         self._default_agent = self.get_agent(config.sim_cfg.default_agent_id)
 
-        agent_cfg = config.agent_cfgs[config.sim_cfg.default_agent_id]
+        agent_cfg = config.agents[config.sim_cfg.default_agent_id]
         self._sensors = {}
         for spec in agent_cfg.sensor_specifications:
             self._sensors[spec.uuid] = Sensor(

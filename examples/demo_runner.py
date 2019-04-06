@@ -97,9 +97,7 @@ class DemoRunner:
         total_frames = 0
         start_time = time.time()
         action_names = list(
-            self._cfg.agent_cfgs[
-                self._sim_settings["default_agent"]
-            ].action_space.keys()
+            self._cfg.agents[self._sim_settings["default_agent"]].action_space.keys()
         )
 
         while total_frames < self._sim_settings["max_frames"]:
