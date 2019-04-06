@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+
+# Copyright (c) Facebook, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import attr
 import numpy as np
 from .controls import ObjectControls, ActuationSpec
@@ -7,7 +13,7 @@ import habitat_sim.bindings as hsim
 import habitat_sim.errors
 
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union
 
 __all__ = ["ActionSpec", "SixDOFPose", "AgentState", "AgentConfiguration", "Agent"]
 
@@ -52,13 +58,13 @@ class SixDOFPose(object):
     """
 
     position: np.array = np.zeros(3)
-    rotation: np.quaternion = np.quaternion(1, 0, 0, 0)
+    rotation: Union[np.quaternion, List] = np.quaternion(1, 0, 0, 0)
 
 
 @attr.s(auto_attribs=True, slots=True)
 class AgentState(object):
     position: np.array = np.zeros(3)
-    rotation: np.quaternion = np.quaternion(1, 0, 0, 0)
+    rotation: Union[np.quaternion, List] = np.quaternion(1, 0, 0, 0)
     velocity: np.array = np.zeros(3)
     angular_velocity: np.array = np.zeros(3)
     force: np.array = np.zeros(3)
@@ -208,6 +214,9 @@ class Agent(object):
         """
         habitat_sim.errors.assert_obj_valid(self.body)
 
+        if isinstance(state.rotation, list):
+            state.rotation = utils.quat_from_coeffs(state.rotation)
+
         self.body.reset_transformation()
 
         self.body.translate(state.position)
@@ -219,6 +228,9 @@ class Agent(object):
 
         for k, v in state.sensor_states.items():
             assert k in self.sensors
+            if isinstance(v.rotation, list):
+                v.rotation = utils.quat_from_coeffs(v.rotation)
+
             s = self.sensors[k]
 
             s.reset_transformation()
