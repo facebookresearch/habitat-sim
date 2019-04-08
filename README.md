@@ -30,6 +30,7 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
    0. [Examples](#examples)
    0. [Common issues](#common-issues)
    0. [Acknowledgments](#acknowledgments)
+   0. [License](#license)
    0. [References](#references)
 
 ## Updates ##
