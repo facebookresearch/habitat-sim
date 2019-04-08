@@ -79,47 +79,6 @@ def test_sensors(sensor_type, scene, has_sem, sim, make_cfg_settings):
     sim.initialize_agent(0, state)
     obs = sim.step("move_forward")
 
-    #  sim.seed(5)
-    #  np.random.seed(5)
-    #  sim.initialize_agent(0)
-    #  with open(
-    #  osp.abspath(
-    #  osp.join(
-    #  osp.dirname(__file__),
-    #  "gt_data",
-    #  "{}-state.json".format(osp.basename(osp.splitext(scene)[0])),
-    #  )
-    #  ),
-    #  "w",
-    #  ) as f:
-    #  json.dump(
-    #  dict(
-    #  pos=sim.get_agent(0).state.position.tolist(),
-    #  rot=habitat_sim.utils.quat_to_coeffs(
-    #  sim.get_agent(0).state.rotation
-    #  ).tolist(),
-    #  ),
-    #  f,
-    #  )
-
-    #  np.save(
-    #  osp.abspath(
-    #  osp.join(
-    #  osp.dirname(__file__),
-    #  "gt_data",
-    #  "{}-{}.npy".format(osp.basename(osp.splitext(scene)[0]), sensor_type),
-    #  )
-    #  ),
-    #  obs[sensor_type],
-    #  )
-    #  if sensor_type == "color_sensor":
-    #  import cv2
-
-    #  cv2.imwrite(
-    #  "{}-{}.png".format(osp.basename(osp.splitext(scene)[0]), sensor_type),
-    #  obs[sensor_type],
-    #  )
-
     assert sensor_type in obs, f"{sensor_type} not in obs"
 
     gt = np.load(
@@ -132,15 +91,7 @@ def test_sensors(sensor_type, scene, has_sem, sim, make_cfg_settings):
         )
     )
 
-    if sensor_type == "semantic_sensor":
-        assert np.sum(np.abs((obs[sensor_type] - gt))) < 1e-4 * np.prod(
-            gt.shape[0:2]
-        ), f"Incorrect {sensor_type} output"
-    else:
-        # Different GPUs and different driver version will produce slightly different
-        # images for RGB and depth, so use a big tolerance
-        assert np.linalg.norm(
-            obs[sensor_type].astype(np.float) - gt.astype(np.float)
-        ) < 5e-3 * np.linalg.norm(
-            gt.astype(np.float)
-        ), f"Incorrect {sensor_type} output"
+    # Different GPUs and different driver version will produce slightly different images
+    assert np.linalg.norm(
+        obs[sensor_type].astype(np.float) - gt.astype(np.float)
+    ) < 1.5e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
