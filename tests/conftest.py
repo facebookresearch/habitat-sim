@@ -7,15 +7,16 @@ from examples.settings import make_cfg
 
 
 _test_scene = osp.abspath(
-    osp.join(osp.dirname(__file__), "17DRP5sb8fy", "17DRP5sb8fy.glb")
+    osp.join(
+        osp.dirname(__file__),
+        "../data/scene_datasets/habitat-test-scenes/skokloster-castle.glb",
+    )
 )
 
 
-# Any test globally can take `sim` as an arguement and will get
-# the single instance of the Simulator
 @pytest.fixture(scope="session")
-def sim():
-    settings = dict(
+def make_cfg_settings():
+    return dict(
         height=480,
         width=640,
         sensor_height=1.5,
@@ -26,4 +27,9 @@ def sim():
         scene=_test_scene,
     )
 
-    return habitat_sim.Simulator(make_cfg(settings))
+
+# Any test globally can take `sim` as an arguement and will get
+# the single instance of the Simulator
+@pytest.fixture(scope="session")
+def sim(make_cfg_settings):
+    return habitat_sim.Simulator(make_cfg(make_cfg_settings))
