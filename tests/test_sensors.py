@@ -14,22 +14,8 @@ import pytest
 import os.path as osp
 import itertools
 from examples.settings import make_cfg
+import json
 
-
-_test_states = {
-    "van-gogh-room.glb": (
-        np.array([3.187_540_8, 0.176_698_76, -1.138_870_5]),
-        np.quaternion(-0.152_751_788_496_971, 0, 0.988_264_560_699_463, 0),
-    ),
-    "skokloster-castle.glb": (
-        np.array([0.953_933_9, 0.191_787_7, 12.163_067]),
-        np.quaternion(-0.152_751_788_496_971, 0, 0.988_264_560_699_463, 0),
-    ),
-    "17DRP5sb8fy.glb": (
-        np.array([-3.468_071_7, 0.072_447, -1.862_842_7]),
-        np.quaternion(-0.152_751_788_496_971, 0, 0.988_264_560_699_463, 0),
-    ),
-}
 
 _test_scenes = [
     osp.abspath(
@@ -75,13 +61,64 @@ def test_sensors(sensor_type, scene, has_sem, sim, make_cfg_settings):
     make_cfg_settings["semantic_sensor"] = has_sem
     make_cfg_settings["scene"] = scene
     sim.reconfigure(make_cfg(make_cfg_settings))
+    with open(
+        osp.abspath(
+            osp.join(
+                osp.dirname(__file__),
+                "gt_data",
+                "{}-state.json".format(osp.basename(osp.splitext(scene)[0])),
+            )
+        ),
+        "r",
+    ) as f:
+        render_state = json.load(f)
+        state = habitat_sim.AgentState()
+        state.position = render_state["pos"]
+        state.rotation = habitat_sim.utils.quat_from_coeffs(render_state["rot"])
 
-    state = habitat_sim.AgentState()
-    state.position = _test_states[osp.basename(scene)][0]
-    state.rotation = _test_states[osp.basename(scene)][1]
     sim.initialize_agent(0, state)
-
     obs = sim.step("move_forward")
+
+    #  sim.seed(5)
+    #  np.random.seed(5)
+    #  sim.initialize_agent(0)
+    #  with open(
+    #  osp.abspath(
+    #  osp.join(
+    #  osp.dirname(__file__),
+    #  "gt_data",
+    #  "{}-state.json".format(osp.basename(osp.splitext(scene)[0])),
+    #  )
+    #  ),
+    #  "w",
+    #  ) as f:
+    #  json.dump(
+    #  dict(
+    #  pos=sim.get_agent(0).state.position.tolist(),
+    #  rot=habitat_sim.utils.quat_to_coeffs(
+    #  sim.get_agent(0).state.rotation
+    #  ).tolist(),
+    #  ),
+    #  f,
+    #  )
+
+    #  np.save(
+    #  osp.abspath(
+    #  osp.join(
+    #  osp.dirname(__file__),
+    #  "gt_data",
+    #  "{}-{}.npy".format(osp.basename(osp.splitext(scene)[0]), sensor_type),
+    #  )
+    #  ),
+    #  obs[sensor_type],
+    #  )
+    #  if sensor_type == "color_sensor":
+    #  import cv2
+
+    #  cv2.imwrite(
+    #  "{}-{}.png".format(osp.basename(osp.splitext(scene)[0]), sensor_type),
+    #  obs[sensor_type],
+    #  )
 
     assert sensor_type in obs, f"{sensor_type} not in obs"
 
