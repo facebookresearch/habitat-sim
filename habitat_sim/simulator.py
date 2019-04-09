@@ -36,7 +36,7 @@ class Simulator:
         for agent in self.agents:
             agent.detach()
 
-        self.agents = None
+        self.agents = []
         self._sensors = None
         if self._sim is not None:
             del self._sim
