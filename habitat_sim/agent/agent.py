@@ -147,8 +147,7 @@ class Agent(object):
         """
         self.body.attach(scene_node)
         for _, v in self.sensors.items():
-            if not v.is_valid:
-                v.attach(self.scene_node.create_child())
+            v.attach(self.scene_node.create_child())
 
     def detach(self):
         r"""Detaches the agent from the its current scene_node

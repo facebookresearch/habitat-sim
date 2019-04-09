@@ -20,16 +20,23 @@ class Configuration(object):
     agents: List[AgentConfiguration] = None
 
 
+@attr.s
 class Simulator:
-    def __init__(self, config: Configuration):
-        super().__init__()
-        self._viewer = None
-        self._num_total_frames = 0
-        self._sim = None
-        self.agents = list()
+    config: Configuration = attr.ib()
+    agents: List = attr.ib(factory=list, init=False)
+    _sim: hsim.SimulatorBackend = attr.ib(default=None, init=False)
+    _num_total_frames: int = attr.ib(default=0, init=False)
+
+    def __attrs_post_init__(self):
+        config = self.config
+        self.config = None
         self.reconfigure(config)
 
     def close(self):
+        for agent in self.agents:
+            agent.detach()
+
+        self.agents = None
         self._sensors = None
         if self._sim is not None:
             del self._sim
@@ -42,6 +49,18 @@ class Simulator:
         self._sim.reset()
         return self.get_sensor_observations()
 
+    def _config_backend(self, config: Configuration):
+        if self._sim is None:
+            self._sim = hsim.SimulatorBackend(config.sim_cfg)
+        else:
+            self._sim.reconfigure(config.sim_cfg)
+
+    def _config_agents(self, config: Configuration):
+        if self.config is not None and self.config.agents == config.agents:
+            return
+
+        self.agents = [Agent(cfg) for cfg in config.agents]
+
     def reconfigure(self, config: Configuration):
         assert len(config.agents) > 0
         assert len(config.agents[0].sensor_specifications) > 0
@@ -50,13 +69,12 @@ class Simulator:
         config.sim_cfg.height = first_sensor_spec.resolution[0]
         config.sim_cfg.width = first_sensor_spec.resolution[1]
 
-        if self._sim is None:
-            self._sim = hsim.SimulatorBackend(config.sim_cfg)
-        else:
-            self._sim.reconfigure(config.sim_cfg)
+        if self.config == config:
+            return
 
-        self._config = config
-        self.agents = [Agent(cfg) for cfg in config.agents]
+        self._config_backend(config)
+        self._config_agents(config)
+
         for i in range(len(self.agents)):
             self.agents[i].attach(
                 self._sim.get_active_scene_graph().get_root_node().create_child()
@@ -74,6 +92,8 @@ class Simulator:
 
         for i in range(len(self.agents)):
             self.initialize_agent(i)
+
+        self.config = config
 
     def get_agent(self, agent_id):
         return self.agents[agent_id]

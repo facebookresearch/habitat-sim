@@ -525,7 +525,15 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_readwrite("resolution", &SensorSpec::resolution)
       .def_readwrite("channels", &SensorSpec::channels)
       .def_readwrite("encoding", &SensorSpec::encoding)
-      .def_readwrite("observation_space", &SensorSpec::observationSpace);
+      .def_readwrite("observation_space", &SensorSpec::observationSpace)
+      .def("__eq__",
+           [](const SensorSpec& self, const SensorSpec& other) -> bool {
+             return self == other;
+           })
+      .def("__neq__",
+           [](const SensorSpec& self, const SensorSpec& other) -> bool {
+             return self != other;
+           });
 
   // ==== Observation ====
   py::class_<Observation, Observation::ptr>(m, "Observation");

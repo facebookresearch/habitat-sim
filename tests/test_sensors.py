@@ -41,19 +41,19 @@ _test_scenes = [
 
 @pytest.mark.gfxtest
 @pytest.mark.parametrize(
-    "sensor_type,scene,has_sem",
+    "scene,has_sem,sensor_type",
     list(
         itertools.product(
-            ["color_sensor", "depth_sensor", "semantic_sensor"],
             _test_scenes[0:1],
             [True],
+            ["color_sensor", "depth_sensor", "semantic_sensor"],
         )
     )
     + list(
-        itertools.product(["color_sensor", "depth_sensor"], _test_scenes[1:], [False])
+        itertools.product(_test_scenes[1:], [False], ["color_sensor", "depth_sensor"])
     ),
 )
-def test_sensors(sensor_type, scene, has_sem, sim, make_cfg_settings):
+def test_sensors(scene, has_sem, sensor_type, sim, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
 
