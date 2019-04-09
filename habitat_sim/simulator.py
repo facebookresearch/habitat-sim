@@ -72,8 +72,10 @@ class Simulator:
         if self.config == config:
             return
 
-        self._config_backend(config)
+        # NB: Configure backend last as this gives more time for python's GC
+        # to delete any previous instances of the simulator
         self._config_agents(config)
+        self._config_backend(config)
 
         for i in range(len(self.agents)):
             self.agents[i].attach(
