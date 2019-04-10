@@ -72,6 +72,9 @@ class Simulator:
         if self.config == config:
             return
 
+        for agent in self.agents:
+            agent.detach()
+
         # NB: Configure backend last as this gives more time for python's GC
         # to delete any previous instances of the simulator
         self._config_agents(config)

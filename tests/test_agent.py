@@ -32,7 +32,6 @@ def test_attach_detach():
     for _, v in agent.sensors.items():
         habitat_sim.errors.assert_obj_valid(v)
 
-    agent.detach()
     with pytest.raises(habitat_sim.errors.InvalidAttachedObject):
         habitat_sim.errors.assert_obj_valid(agent.body)
 

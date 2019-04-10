@@ -252,3 +252,6 @@ class Agent(object):
     @state.setter
     def state(self, new_state):
         self.set_state(new_state, reset_sensors=True)
+
+    def __del__(self):
+        self.detach()
