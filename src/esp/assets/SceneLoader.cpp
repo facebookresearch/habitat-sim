@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "esp/assets/InstanceMeshData.h"
+#include "esp/assets/ReplicaInstanceMeshData.h"
 #include "esp/assets/SceneLoader.h"
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
@@ -52,6 +53,28 @@ MeshData SceneLoader::load(const AssetInfo& info) {
       mesh.ibo.push_back(quadOffset + 2);
       mesh.ibo.push_back(quadOffset + 3);
     }
+  } else if (info.type == AssetType::REPLICA_INSTANCE_MESH) {
+    ReplicaInstanceMeshData instanceMeshData;
+    instanceMeshData.loadPLY(info.filepath);
+
+    const auto& vbo = instanceMeshData.getVertexBufferObjectCPU();
+    const auto& cbo = instanceMeshData.getColorBufferObjectCPU();
+    const auto& ibo = instanceMeshData.getIndexBufferObjectCPU();
+    mesh.vbo = vbo;
+    for (const auto& c : cbo) {
+      mesh.cbo.emplace_back(c.cast<float>() / 255.0f);
+    }
+
+    for (const auto& quad : ibo) {
+      mesh.ibo.push_back(quad[0]);
+      mesh.ibo.push_back(quad[1]);
+      mesh.ibo.push_back(quad[2]);
+
+      mesh.ibo.push_back(quad[0]);
+      mesh.ibo.push_back(quad[2]);
+      mesh.ibo.push_back(quad[3]);
+    }
+
   } else {
     const aiScene* scene;
     Assimp::Importer Importer;

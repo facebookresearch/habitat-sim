@@ -17,13 +17,20 @@
 namespace esp {
 namespace assets {
 
+class InstanceMeshBase : public BaseMesh {
+ public:
+  explicit InstanceMeshBase(SupportedMeshType type) : BaseMesh{type} {};
+
+  virtual bool loadPLY(const std::string& plyFile) = 0;
+};
+
 /*
  * SurrealSim instance segmented mesh.
  * Holds a vbo where each vertex is (x, y, z, id).
  * id_to_label and id_to_node map face id to instance and node ids
  * Faces are assumed to be quads
  */
-class InstanceMeshData : public BaseMesh {
+class InstanceMeshData : public InstanceMeshBase {
  public:
   struct RenderingBuffer {
     Magnum::GL::Mesh mesh;
@@ -32,11 +39,14 @@ class InstanceMeshData : public BaseMesh {
     Magnum::GL::Buffer ibo;
   };
 
-  InstanceMeshData() : BaseMesh(SupportedMeshType::INSTANCE_MESH){};
+  InstanceMeshData() : InstanceMeshBase(SupportedMeshType::INSTANCE_MESH){};
   virtual ~InstanceMeshData(){};
 
   bool from_ply(const std::string& ply_file);
   void to_ply(const std::string& ply_file) const;
+  virtual bool loadPLY(const std::string& plyFile) override {
+    return from_ply(plyFile);
+  };
 
   std::vector<vec4f>& getVertexBufferObjectCPU() { return cpu_vbo; }
   std::vector<vec3uc>& getColorBufferObjectCPU() { return cpu_cbo; }

@@ -23,7 +23,7 @@ namespace assets {
  * MP3D object instance segmented mesh
  * Holds a vbo where each vertex is (x, y, z, objectId)
  */
-class Mp3dInstanceMeshData : public InstanceMeshBase {
+class ReplicaInstanceMeshData : public InstanceMeshBase {
  public:
   struct RenderingBuffer {
     Magnum::GL::Mesh mesh;
@@ -32,22 +32,27 @@ class Mp3dInstanceMeshData : public InstanceMeshBase {
     Magnum::GL::Buffer ibo;
   };
 
-  Mp3dInstanceMeshData() : InstanceMeshBase(SupportedMeshType::INSTANCE_MESH) {}
-  virtual ~Mp3dInstanceMeshData() {}
+  ReplicaInstanceMeshData()
+      : InstanceMeshBase(SupportedMeshType::INSTANCE_MESH) {}
+  virtual ~ReplicaInstanceMeshData() {}
 
-  //! Loads an MP3D house segmentations PLY file
-  bool loadMp3dPLY(const std::string& plyFile);
+  virtual bool loadPLY(const std::string& plyFile) override;
 
-  //! Saves semantic mesh PLY with object ids per-vertex
-  bool saveSemMeshPLY(
-      const std::string& plyFile,
-      const std::unordered_map<int, int>& segmentIdToObjectIdMap);
+  std::vector<vec3f>& getVertexBufferObjectCPU() { return cpu_vbo_; }
+  std::vector<vec3uc>& getColorBufferObjectCPU() { return cpu_cbo_; }
+  std::vector<vec4ui>& getIndexBufferObjectCPU() { return cpu_ibo_; }
 
-  //! Loads semantic mesh PLY with object ids per-vertex
-  bool loadSemMeshPLY(const std::string& plyFile);
-  virtual bool loadPLY(const std::string& plyFile) override {
-    return loadSemMeshPLY(plyFile);
-  };
+  // overloaded function, in case object passed as a const parameter to the
+  // function
+  const std::vector<vec3f>& getVertexBufferObjectCPU() const {
+    return cpu_vbo_;
+  }
+  const std::vector<vec3uc>& getColorBufferObjectCPU() const {
+    return cpu_cbo_;
+  }
+  const std::vector<vec4ui>& getIndexBufferObjectCPU() const {
+    return cpu_ibo_;
+  }
 
   // ==== rendering ====
   virtual void uploadBuffersToGPU(bool forceReload = false) override;
@@ -56,12 +61,10 @@ class Mp3dInstanceMeshData : public InstanceMeshBase {
   virtual Magnum::GL::Mesh* getMagnumGLMesh() override;
 
  protected:
-  std::vector<vec4f> cpu_vbo_;
+  std::vector<vec3f> cpu_vbo_;
   std::vector<vec3uc> cpu_cbo_;
-  std::vector<vec3i> cpu_ibo_;
-  std::vector<int> materialIds_;
-  std::vector<int> segmentIds_;
-  std::vector<int> categoryIds_;
+  std::vector<vec4ui> cpu_ibo_;
+  std::vector<uint16_t> cpu_object_ids_;
 
   // ==== rendering ====
   std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;

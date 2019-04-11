@@ -19,7 +19,8 @@ enum class AssetType {
   MP3D_INSTANCE_MESH,
   FRL_PTEX_MESH,
   FRL_INSTANCE_MESH,
-  NAVMESH
+  NAVMESH,
+  REPLICA_INSTANCE_MESH
 };
 
 //! AssetInfo stores information necessary to identify and load an Asset

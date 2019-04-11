@@ -14,7 +14,9 @@ using namespace Corrade::Utility::String;
 AssetInfo AssetInfo::fromPath(const std::string& path) {
   AssetInfo info{AssetType::UNKNOWN, path};
 
-  if (endsWith(path, "semantic_quad_mesh.ply")) {
+  if (endsWith(path, "_replica.ply")) {
+    info.type = AssetType::REPLICA_INSTANCE_MESH;
+  } else if (endsWith(path, "semantic_quad_mesh.ply")) {
     info.type = AssetType::FRL_INSTANCE_MESH;
   } else if (endsWith(path, "_semantic.ply")) {
     info.type = AssetType::MP3D_INSTANCE_MESH;

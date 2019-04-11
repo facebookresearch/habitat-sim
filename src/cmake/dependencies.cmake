@@ -104,6 +104,10 @@ message(STATUS "Bindings being generated for python at ${PYTHON_EXECUTABLE}")
 add_subdirectory("${DEPS_DIR}/pybind11")
 # find_package(pybind11 REQUIRED)
 
+# tinyply
+include_directories(SYSTEM "${DEPS_DIR}/tinyply/source")
+add_subdirectory("${DEPS_DIR}/tinyply")
+
 # gtest build
 if(BUILD_TEST)
   # store build shared libs option
