@@ -9,7 +9,6 @@ from habitat_sim.bindings.mode import use_dev_bindings
 
 if use_dev_bindings:
     from .dev_bindings import *
-
 else:
     from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
 
