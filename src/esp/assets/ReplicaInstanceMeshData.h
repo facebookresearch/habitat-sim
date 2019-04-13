@@ -11,6 +11,7 @@
 
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Mesh.h>
+#include <Magnum/GL/Texture.h>
 
 #include "BaseMesh.h"
 #include "esp/assets/InstanceMeshData.h"
@@ -25,13 +26,6 @@ namespace assets {
  */
 class ReplicaInstanceMeshData : public InstanceMeshBase {
  public:
-  struct RenderingBuffer {
-    Magnum::GL::Mesh mesh;
-    Magnum::GL::Buffer vbo;
-    Magnum::GL::Buffer cbo;
-    Magnum::GL::Buffer ibo;
-  };
-
   ReplicaInstanceMeshData()
       : InstanceMeshBase(SupportedMeshType::INSTANCE_MESH) {}
   virtual ~ReplicaInstanceMeshData() {}
@@ -65,9 +59,6 @@ class ReplicaInstanceMeshData : public InstanceMeshBase {
   std::vector<vec3uc> cpu_cbo_;
   std::vector<vec4ui> cpu_ibo_;
   std::vector<uint16_t> cpu_object_ids_;
-
-  // ==== rendering ====
-  std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
 };
 
 }  // namespace assets

@@ -67,7 +67,7 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
         shaderPrograms_[INSTANCE_MESH_SHADER] =
             std::make_shared<gfx::GenericShader>(
                 gfx::GenericShader::Flag::VertexColored |
-                gfx::GenericShader::Flag::PerVertexIds);
+                gfx::GenericShader::Flag::PrimitiveIDTextured);
       } break;
 
       case PTEX_MESH_SHADER: {
@@ -111,7 +111,7 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 
     meshes_.emplace_back(std::make_unique<PTexMeshData>());
     int index = meshes_.size() - 1;
-    auto* pTexMeshData = static_cast<PTexMeshData*>(meshes_[index].get());
+    auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_[index].get());
     pTexMeshData->load(filename, atlasDir);
 
     // update the dictionary
@@ -121,14 +121,14 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
   // create the scene graph by request
   if (parent) {
     auto* ptexShader =
-        static_cast<gfx::PTexMeshShader*>(getShaderProgram(PTEX_MESH_SHADER));
+        dynamic_cast<gfx::PTexMeshShader*>(getShaderProgram(PTEX_MESH_SHADER));
 
     auto indexPair = resourceDict_.at(filename).meshIndex;
     int start = indexPair.first;
     int end = indexPair.second;
 
     for (int iMesh = start; iMesh <= end; ++iMesh) {
-      auto* pTexMeshData = static_cast<PTexMeshData*>(meshes_[iMesh].get());
+      auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_[iMesh].get());
 
       pTexMeshData->uploadBuffersToGPU(false);
 
@@ -160,7 +160,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
     }
     int index = meshes_.size() - 1;
     auto* instanceMeshData =
-        static_cast<InstanceMeshBase*>(meshes_[index].get());
+        dynamic_cast<InstanceMeshBase*>(meshes_[index].get());
 
     LOG(INFO) << "loading instance mesh data: " << filename;
     instanceMeshData->loadPLY(filename);
@@ -178,10 +178,10 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
 
     for (int iMesh = start; iMesh <= end; ++iMesh) {
       auto* instanceMeshData =
-          static_cast<InstanceMeshData*>(meshes_[iMesh].get());
+          dynamic_cast<InstanceMeshBase*>(meshes_[iMesh].get());
       scene::SceneNode& node = parent->createChild();
       createDrawable(INSTANCE_MESH_SHADER, *instanceMeshData->getMagnumGLMesh(),
-                     node, drawables);
+                     node, drawables, instanceMeshData->getSemanticTexture());
     }
   }
 

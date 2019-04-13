@@ -28,6 +28,8 @@ class GenericShader : public Magnum::GL::AbstractShaderProgram {
     VertexColored = 1 << 1,
     //! Use per-vertex ids encoded in vertex position[3]
     PerVertexIds = 1 << 2,
+    //! Indexes a texture with the primitive id
+    PrimitiveIDTextured = 1 << 3,
   };
 
   //! Set of configuration flags

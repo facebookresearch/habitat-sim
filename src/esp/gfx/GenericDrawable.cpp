@@ -29,9 +29,10 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
       .setTransformationProjectionMatrix(camera.projectionMatrix() *
                                          transformationMatrix)
       .setProjectionMatrix(transformationMatrix);
-  if (shader.flags() & GenericShader::Flag::Textured && texture_) {
-    shader.bindTexture(*texture_);
-  }
+
+  // if (shader.flags() & GenericShader::Flag::Textured && texture_) {
+  shader.bindTexture(*texture_);
+  // }
   if (!(shader.flags() & GenericShader::Flag::VertexColored)) {
     shader.setColor(color_);
   }

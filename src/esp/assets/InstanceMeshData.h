@@ -11,6 +11,7 @@
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Mesh.h>
 
+#include <Magnum/GL/Texture.h>
 #include "BaseMesh.h"
 #include "esp/core/esp.h"
 
@@ -19,9 +20,25 @@ namespace assets {
 
 class InstanceMeshBase : public BaseMesh {
  public:
+  struct RenderingBuffer {
+    Magnum::GL::Mesh mesh;
+    Magnum::GL::Buffer vbo;
+    Magnum::GL::Buffer cbo;
+    Magnum::GL::Buffer ibo;
+    Magnum::GL::Texture2D tex;
+  };
+
   explicit InstanceMeshBase(SupportedMeshType type) : BaseMesh{type} {};
 
   virtual bool loadPLY(const std::string& plyFile) = 0;
+
+  virtual Magnum::GL::Texture2D* getSemanticTexture() {
+    return &renderingBuffer_->tex;
+  };
+
+ protected:
+  // ==== rendering ====
+  std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
 };
 
 /*
@@ -32,13 +49,6 @@ class InstanceMeshBase : public BaseMesh {
  */
 class InstanceMeshData : public InstanceMeshBase {
  public:
-  struct RenderingBuffer {
-    Magnum::GL::Mesh mesh;
-    Magnum::GL::Buffer vbo;
-    Magnum::GL::Buffer cbo;
-    Magnum::GL::Buffer ibo;
-  };
-
   InstanceMeshData() : InstanceMeshBase(SupportedMeshType::INSTANCE_MESH){};
   virtual ~InstanceMeshData(){};
 
@@ -74,9 +84,6 @@ class InstanceMeshData : public InstanceMeshBase {
 
   // Gravity direction of the mesh, this is a STATIC
   vec3f orig_gravity_dir;
-
-  // ==== rendering ====
-  std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
 };
 
 }  // namespace assets

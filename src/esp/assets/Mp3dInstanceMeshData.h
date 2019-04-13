@@ -25,13 +25,6 @@ namespace assets {
  */
 class Mp3dInstanceMeshData : public InstanceMeshBase {
  public:
-  struct RenderingBuffer {
-    Magnum::GL::Mesh mesh;
-    Magnum::GL::Buffer vbo;
-    Magnum::GL::Buffer cbo;
-    Magnum::GL::Buffer ibo;
-  };
-
   Mp3dInstanceMeshData() : InstanceMeshBase(SupportedMeshType::INSTANCE_MESH) {}
   virtual ~Mp3dInstanceMeshData() {}
 
@@ -56,15 +49,14 @@ class Mp3dInstanceMeshData : public InstanceMeshBase {
   virtual Magnum::GL::Mesh* getMagnumGLMesh() override;
 
  protected:
-  std::vector<vec4f> cpu_vbo_;
+  std::vector<vec3f> cpu_vbo_;
   std::vector<vec3uc> cpu_cbo_;
   std::vector<vec3i> cpu_ibo_;
   std::vector<int> materialIds_;
   std::vector<int> segmentIds_;
   std::vector<int> categoryIds_;
 
-  // ==== rendering ====
-  std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
+  std::vector<uint32_t> objectIds_;
 };
 
 }  // namespace assets

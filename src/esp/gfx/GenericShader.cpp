@@ -72,6 +72,11 @@ uniform lowp sampler2D textureData;
 in mediump vec2 interpolatedTextureCoordinates;
 #endif
 
+#ifdef ID_TEXTURED
+uniform highp sampler2D primTexture;
+uniform highp int texSize;
+#endif
+
 #ifndef VERTEX_COLORED
 uniform lowp vec4 colorUniform;
 #endif
@@ -79,6 +84,22 @@ uniform lowp vec4 colorUniform;
 layout(location = 0) out vec4 color;
 layout(location = 1) out float depth;
 layout(location = 2) out uint objectId;
+
+vec4 bgr_walk(float id) {
+    float ratio, r, g, b;
+    ratio = id / 5546418.0f;
+    if (ratio < 0.5) {
+      b = 0;
+      g = 2 * ratio;
+      r = 1.0 - g;
+    } else {
+      r = 0;
+      g = 2.0 * (1.0 - ratio);
+      b = 1.0 - g;
+    }
+
+    return vec4(r, g, b, 1.0);
+}
 
 void main () {
   vec4 baseColor =
@@ -99,6 +120,11 @@ void main () {
   #else
     uint(objectIdUniform);
     //gl_PrimitiveID;
+  #endif
+
+  #ifdef ID_TEXTURED
+  objectId = uint(texture(primTexture, vec2((float(gl_PrimitiveID % texSize) + 0.5f) / float(texSize),
+                                    (float(gl_PrimitiveID / texSize) + 0.5f) / float(texSize))).r);
   #endif
 }
 )";
@@ -122,6 +148,8 @@ GenericShader::GenericShader(const Flags flags) : flags_(flags) {
   frag.addSource(flags & Flag::Textured ? "#define TEXTURED\n" : "")
       .addSource(flags & Flag::VertexColored ? "#define VERTEX_COLORED\n" : "")
       .addSource(flags & Flag::PerVertexIds ? "#define PER_VERTEX_IDS\n" : "")
+      .addSource(flags & Flag::PrimitiveIDTextured ? "#define ID_TEXTURED\n"
+                                                   : "")
       .addSource(GENERIC_SHADER_FS);
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Magnum::GL::Shader::compile({vert, frag}));
@@ -133,11 +161,16 @@ GenericShader::GenericShader(const Flags flags) : flags_(flags) {
   if (flags & Flag::Textured) {
     setUniform(uniformLocation("textureData"), TextureLayer);
   }
+
+  if (flags & Flag::PrimitiveIDTextured) {
+    setUniform(uniformLocation("primTexture"), TextureLayer);
+  }
 }
 
 GenericShader& GenericShader::bindTexture(Magnum::GL::Texture2D& texture) {
-  ASSERT(flags_ & Flag::Textured);
+  ASSERT(flags_ & Flag::Textured || flags_ & Flag::PrimitiveIDTextured);
   texture.bind(TextureLayer);
+  setUniform(uniformLocation("texSize"), texture.imageSize(0).x());
   return *this;
 }
 
