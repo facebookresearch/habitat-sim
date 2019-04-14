@@ -11,7 +11,6 @@ default_sim_settings = {
     "max_frames": 1000,
     "width": 640,
     "height": 480,
-    "scene": "test.glb",  # default scene: test.glb
     "default_agent": 0,
     "sensor_height": 1.5,
     "color_sensor": True,  # RGB sensor (default: ON)
