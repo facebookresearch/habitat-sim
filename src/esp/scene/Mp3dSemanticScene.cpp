@@ -97,7 +97,8 @@ struct Mp3dRegionCategory : public SemanticCategory {
 bool SemanticScene::loadMp3dHouse(
     const std::string& houseFilename,
     SemanticScene& scene,
-    const quatf& worldRotation /* = quatf::Identity() */) {
+    const quatf& worldRotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(),
+                                                       geo::ESP_GRAVITY) */ ) {
   if (!io::exists(houseFilename)) {
     LOG(ERROR) << "Could not load file " << houseFilename;
     return false;
