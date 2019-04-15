@@ -79,9 +79,11 @@ class SemanticScene {
   }
 
   //! load SemanticScene from a Matterport3D House format filename
-  static bool loadMp3dHouse(const std::string& filename,
-                            SemanticScene& scene,
-                            const quatf& rotation = quatf::Identity());
+  static bool loadMp3dHouse(
+      const std::string& filename,
+      SemanticScene& scene,
+      const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
+                                                    geo::ESP_GRAVITY));
 
   //! load SemanticScene from a SUNCG house format file
   static bool loadSuncgHouse(const std::string& filename,
