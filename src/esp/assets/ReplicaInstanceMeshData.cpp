@@ -155,7 +155,11 @@ void ReplicaInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
 
   const size_t numTris = numQuads * 2;
   const int texSize = std::pow(2, std::ceil(std::log2(std::sqrt(numTris))));
-  float* obj_id_tex_data = new float[texSize * texSize]();
+  float* obj_id_tex_data = new float[texSize * texSize];
+  for (size_t i = 0; i < texSize * texSize; ++i) {
+    obj_id_tex_data[i] = 0;
+  }
+
   for (size_t i = 0; i < numQuads; ++i) {
     obj_id_tex_data[2 * i] = cpu_object_ids_[i];
     obj_id_tex_data[2 * i + 1] = cpu_object_ids_[i];
