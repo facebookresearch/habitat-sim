@@ -10,15 +10,11 @@ Adapted from: http://www.benjack.io/2017/06/12/python-cpp-tests.html
 
 import os
 import os.path as osp
-import re
 import sys
-import sysconfig
 import platform
 import subprocess
-import socket
 import builtins
 
-from distutils.version import LooseVersion
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 from setuptools.command.install import install
@@ -47,6 +43,18 @@ class CMakeBuild(build_ext):
             self.build_extension(ext)
 
     def build_extension(self, ext):
+        extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
+
+        root = osp.dirname(extdir)
+        mode_file = osp.join(root, "bindings/mode.py")
+        with open(mode_file, "r") as f:
+            contents = [l.strip() for l in f.readlines() if len(l.strip()) > 0]
+
+        contents[-1] = "use_dev_bindings = False"
+
+        with open(mode_file, "w") as f:
+            f.write("\n".join(contents))
+
         is_in_git = True
         try:
             subprocess.check_output(["git", "rev-parse", "--is-inside-work-tree"])
@@ -58,7 +66,6 @@ class CMakeBuild(build_ext):
                 ["git", "submodule", "update", "--init", "--recursive"]
             )
 
-        extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
             "-DPYTHON_EXECUTABLE=" + sys.executable,

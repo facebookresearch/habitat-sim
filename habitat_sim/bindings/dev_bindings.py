@@ -72,9 +72,8 @@ try:
     import habitat_sim_bindings
 except ImportError:
     msg = """
-Could not import habitat sim bindings
-Please follow the building instructions in the README
------------------------------------------------------------
+Failed to to import habitat sim bindings in developer mode
+----------------------------------------------------------
 
 """
 
