@@ -405,7 +405,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("center", &OBB::center)
       .def_property_readonly("sizes", &OBB::sizes)
       .def_property_readonly("half_extents", &OBB::halfExtents)
-      .def_property_readonly("rotation", &OBB::rotation);
+      .def_property_readonly(
+          "rotation", [](const OBB& self) { return self.rotation().coeffs(); });
 
   // ==== SemanticCategory ====
   py::class_<SemanticCategory, SemanticCategory::ptr>(m, "SemanticCategory")
