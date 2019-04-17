@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include "esp/scene/SuncgSemanticScene.h"
 #include "SemanticScene.h"
 #include "SuncgObjectCategoryMap.h"
 
@@ -16,79 +17,50 @@
 namespace esp {
 namespace scene {
 
-class SuncgSemanticObject : public SemanticObject {
- public:
-  std::string id() const override { return nodeId_; }
+std::string SuncgSemanticObject::id() const {
+  return nodeId_;
+}
 
- protected:
-  std::string nodeId_;
-  friend SemanticScene;
-  ESP_SMART_POINTERS(SuncgSemanticObject)
-};
+std::string SuncgSemanticRegion::id() const {
+  return nodeId_;
+}
 
-class SuncgSemanticRegion : public SemanticRegion {
- public:
-  std::string id() const override { return nodeId_; }
+int SuncgObjectCategory::index(const std::string& mapping) const {
+  return ID_UNDEFINED;
+}
 
- protected:
-  std::string nodeId_;
-  std::vector<int> nodeIndicesInLevel_;
-  friend SemanticScene;
-  ESP_SMART_POINTERS(SuncgSemanticRegion)
-};
-
-struct SuncgObjectCategory : public SemanticCategory {
-  SuncgObjectCategory(const std::string& nodeId, const std::string& modelId)
-      : nodeId_(nodeId), modelId_(modelId) {}
-  int index(const std::string& mapping) const override { return ID_UNDEFINED; }
-
-  std::string name(const std::string& mapping) const override {
-    if (mapping == "model_id") {
+std::string SuncgObjectCategory::name(const std::string& mapping) const {
+  if (mapping == "model_id") {
+    return modelId_;
+  } else if (mapping == "node_id") {
+    return nodeId_;
+  } else if (mapping == "category" || mapping == "") {
+    if (kSuncgObjectCategoryMap.count(modelId_) > 0) {
+      return kSuncgObjectCategoryMap.at(modelId_);
+    } else {
+      // This is a non-model object where modelId stores type (e.g., Wall)
       return modelId_;
-    } else if (mapping == "node_id") {
-      return nodeId_;
-    } else if (mapping == "category" || mapping == "") {
-      if (kSuncgObjectCategoryMap.count(modelId_) > 0) {
-        return kSuncgObjectCategoryMap.at(modelId_);
-      } else {
-        // This is a non-model object where modelId stores type (e.g., Wall)
-        return modelId_;
-      }
-    } else {
-      LOG(ERROR) << "Unknown mapping type: " << mapping;
-      return "UNKNOWN";
     }
+  } else {
+    LOG(ERROR) << "Unknown mapping type: " << mapping;
+    return "UNKNOWN";
   }
+}
 
- protected:
-  std::string nodeId_;
-  std::string modelId_;
-  friend SemanticScene;
-};
-
-struct SuncgRegionCategory : public SemanticCategory {
-  SuncgRegionCategory(const std::string& nodeId,
-                      const std::vector<std::string> categories)
-      : nodeId_(nodeId), categories_(categories) {}
-  int index(const std::string& mapping) const override {
-    // NOTE: SUNCG regions are not linearized
-    return ID_UNDEFINED;
+int SuncgRegionCategory::index(const std::string& mapping) const {
+  // NOTE: SUNCG regions are not linearized
+  return ID_UNDEFINED;
+}
+std::string SuncgRegionCategory::name(const std::string& mapping) const {
+  if (mapping == "node_id") {
+    return nodeId_;
+  } else if (mapping == "" || mapping == "category") {
+    return Corrade::Utility::String::join(categories_, ',');
+  } else {
+    LOG(ERROR) << "Unknown mapping type: " << mapping;
+    return "UNKNOWN";
   }
-  std::string name(const std::string& mapping) const override {
-    if (mapping == "node_id") {
-      return nodeId_;
-    } else if (mapping == "" || mapping == "category") {
-      return Corrade::Utility::String::join(categories_, ',');
-    } else {
-      LOG(ERROR) << "Unknown mapping type: " << mapping;
-      return "UNKNOWN";
-    }
-  }
-
- protected:
-  std::string nodeId_;
-  std::vector<std::string> categories_;
-};
+}
 
 bool SemanticScene::loadSuncgHouse(
     const std::string& houseFilename,
