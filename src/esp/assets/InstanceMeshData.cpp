@@ -246,6 +246,8 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
 
   renderingBuffer_->tex.setMinificationFilter(Magnum::SamplerFilter::Nearest)
       .setMagnificationFilter(Magnum::SamplerFilter::Nearest)
+      .setWrapping({Magnum::SamplerWrapping::ClampToEdge,
+                    Magnum::SamplerWrapping::ClampToEdge})
       .setStorage(1, Magnum::GL::TextureFormat::R32F, image.size())
       .setSubImage(0, {}, image);
 
@@ -490,6 +492,8 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
 
   renderingBuffer_->tex.setMinificationFilter(Magnum::SamplerFilter::Nearest)
       .setMagnificationFilter(Magnum::SamplerFilter::Nearest)
+      .setWrapping({Magnum::SamplerWrapping::ClampToEdge,
+                    Magnum::SamplerWrapping::ClampToEdge})
       .setStorage(1, Magnum::GL::TextureFormat::R32F, image.size())
       .setSubImage(0, {}, image);
 
