@@ -220,10 +220,10 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
     return rgb;
   }; */
 
-  const int nTris = cpu_ibo_.size();
-  const int texSize = std::pow(2, std::ceil(std::log2(std::sqrt(nTris))));
+  const int nPrims = cpu_ibo_.size();
+  const int texSize = std::pow(2, std::ceil(std::log2(std::sqrt(nPrims))));
   float* obj_id_tex_data = new float[texSize * texSize]();
-  for (size_t i = 0; i < nTris; ++i) {
+  for (size_t i = 0; i < nPrims; ++i) {
     obj_id_tex_data[i] = objectIds_[i];
   }
 
@@ -236,7 +236,7 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_->cbo.setData(cbo_float, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->ibo.setData(cpu_ibo_, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
-      .setCount(nTris * 3)
+      .setCount(nPrims * 3)
       .addVertexBuffer(renderingBuffer_->vbo, 0,
                        Magnum::GL::Attribute<0, Magnum::Vector3>{})
       .addVertexBuffer(renderingBuffer_->cbo, 0,
