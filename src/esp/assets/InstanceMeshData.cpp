@@ -4,6 +4,14 @@
 
 #include "InstanceMeshData.h"
 
+#include <Corrade/Containers/Array.h>
+#include <Magnum/GL/Texture.h>
+#include <Magnum/GL/TextureFormat.h>
+#include <Magnum/Image.h>
+#include <Magnum/Math/Functions.h>
+#include <Magnum/PixelFormat.h>
+#include <Magnum/Trade/Trade.h>
+
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -218,17 +226,42 @@ void InstanceMeshData::uploadBuffersToGPU(bool forceReload) {
     cbo_float[idx + 1] = cpu_cbo[iVert][1] / 255.0f;
     cbo_float[idx + 2] = cpu_cbo[iVert][2] / 255.0f;
   }
-  renderingBuffer_->vbo.setData(cpu_vbo, Magnum::GL::BufferUsage::StaticDraw);
+
+  const size_t numTris = numQuads * 2;
+  const int texSize = std::pow(2, std::ceil(std::log2(std::sqrt(numTris))));
+  float* obj_id_tex_data = new float[texSize * texSize]();
+
+  for (size_t i = 0; i < numQuads; ++i) {
+    obj_id_tex_data[2 * i] = cpu_vbo[4 * i][3];
+    obj_id_tex_data[2 * i + 1] = cpu_vbo[4 * i][3];
+  }
+
+  std::vector<vec3f> xyz_vbo(cpu_vbo.size());
+  for (int i = 0; i < cpu_vbo.size(); ++i) {
+    xyz_vbo[i] = cpu_vbo[i].head<3>();
+  }
+
+  Magnum::Image2D image(Magnum::PixelFormat::R32F, {texSize, texSize},
+                        Corrade::Containers::Array<char>(
+                            reinterpret_cast<char*>(obj_id_tex_data),
+                            texSize * texSize * sizeof(obj_id_tex_data[0])));
+
+  renderingBuffer_->vbo.setData(xyz_vbo, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->cbo.setData(cbo_float, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->ibo.setData(tri_ibo, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
       .setCount(tri_ibo.size())  // Set vertex/index count (numQuads * 6)
       .addVertexBuffer(renderingBuffer_->vbo, 0,
-                       Magnum::GL::Attribute<0, Magnum::Vector4>{})
+                       Magnum::GL::Attribute<0, Magnum::Vector3>{})
       .addVertexBuffer(renderingBuffer_->cbo, 0,
                        Magnum::GL::Attribute<1, Magnum::Color3>{})
       .setIndexBuffer(renderingBuffer_->ibo, 0,
                       Magnum::GL::MeshIndexType::UnsignedInt);
+
+  renderingBuffer_->tex.setMinificationFilter(Magnum::SamplerFilter::Nearest)
+      .setMagnificationFilter(Magnum::SamplerFilter::Nearest)
+      .setStorage(1, Magnum::GL::TextureFormat::R32F, image.size())
+      .setSubImage(0, {}, image);
 
   buffersOnGPU_ = true;
 }
