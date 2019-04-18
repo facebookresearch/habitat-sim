@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "esp/scene/SemanticScene.h"
+#include "SemanticScene.h"
 
 namespace esp {
 namespace scene {

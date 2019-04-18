@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "esp/scene/SuncgSemanticScene.h"
+#include "SuncgSemanticScene.h"
 #include "SemanticScene.h"
 #include "SuncgObjectCategoryMap.h"
 
