@@ -111,12 +111,15 @@ class SemanticScene {
 class SemanticLevel {
  public:
   virtual std::string id() const { return std::to_string(index_); }
+
   const std::vector<std::shared_ptr<SemanticRegion>>& regions() const {
     return regions_;
   }
+
   const std::vector<std::shared_ptr<SemanticObject>>& objects() const {
     return objects_;
   }
+
   box3f aabb() const { return bbox_; }
 
  protected:
@@ -140,11 +143,15 @@ class SemanticRegion {
       return "_" + std::to_string(index_);
     }
   }
+
   const SemanticLevel::ptr level() const { return level_; }
+
   const std::vector<std::shared_ptr<SemanticObject>>& objects() const {
     return objects_;
   }
+
   box3f aabb() const { return bbox_; }
+
   const SemanticCategory::ptr category() const { return category_; }
 
  protected:
@@ -171,9 +178,13 @@ class SemanticObject {
       return "_" + std::to_string(index_);
     }
   }
+
   const SemanticRegion::ptr region() const { return region_; }
+
   box3f aabb() const { return obb_.toAABB(); }
+
   geo::OBB obb() const { return obb_; }
+
   const SemanticCategory::ptr category() const { return category_; }
 
  protected:

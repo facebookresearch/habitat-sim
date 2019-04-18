@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include "Mp3dSemanticScene.h"
 #include "SemanticScene.h"
 
 #include <algorithm>
@@ -50,49 +51,35 @@ static const std::map<char, std::string> kRegionCategoryMap = {
     {'Z', "junk"}  // reflections of mirrors, points floating in space, etc.
 };
 
-struct Mp3dObjectCategory : public SemanticCategory {
-  int index(const std::string& mapping) const override {
-    if (mapping == "" || mapping == "mpcat40") {
-      return mpcat40Index_;
-    } else if (mapping == "raw") {
-      return categoryMappingIndex_;
-    } else {
-      LOG(ERROR) << "Unknown SemanticCategory mapping" << mapping;
-      return ID_UNDEFINED;
-    }
+int Mp3dObjectCategory::index(const std::string& mapping) const {
+  if (mapping == "" || mapping == "mpcat40") {
+    return mpcat40Index_;
+  } else if (mapping == "raw") {
+    return categoryMappingIndex_;
+  } else {
+    LOG(ERROR) << "Unknown SemanticCategory mapping" << mapping;
+    return ID_UNDEFINED;
   }
-  std::string name(const std::string& mapping) const override {
-    if (mapping == "" || mapping == "mpcat40") {
-      return mpcat40Name_;
-    } else if (mapping == "raw") {
-      return categoryMappingName_;
-    } else {
-      LOG(ERROR) << "Unknown SemanticCategory mapping" << mapping;
-      return "";
-    }
-  }
+}
 
- protected:
-  int index_ = ID_UNDEFINED;
-  int categoryMappingIndex_ = ID_UNDEFINED;
-  int mpcat40Index_ = ID_UNDEFINED;
-  std::string categoryMappingName_ = "";
-  std::string mpcat40Name_ = "";
-  friend SemanticScene;
-};
-
-struct Mp3dRegionCategory : public SemanticCategory {
-  Mp3dRegionCategory(const char labelCode) : labelCode_(labelCode) {}
-  int index(const std::string& mapping) const override {
-    return labelCode_ - 'a';
+std::string Mp3dObjectCategory::name(const std::string& mapping) const {
+  if (mapping == "" || mapping == "mpcat40") {
+    return mpcat40Name_;
+  } else if (mapping == "raw") {
+    return categoryMappingName_;
+  } else {
+    LOG(ERROR) << "Unknown SemanticCategory mapping" << mapping;
+    return "";
   }
-  std::string name(const std::string& mapping) const override {
-    return kRegionCategoryMap.at(labelCode_);
-  }
+}
 
- protected:
-  char labelCode_;
-};
+int Mp3dRegionCategory::index(const std::string& mapping) const {
+  return labelCode_ - 'a';
+}
+
+std::string Mp3dRegionCategory::name(const std::string& mapping) const {
+  return kRegionCategoryMap.at(labelCode_);
+}
 
 bool SemanticScene::loadMp3dHouse(
     const std::string& houseFilename,

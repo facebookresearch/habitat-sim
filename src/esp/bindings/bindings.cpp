@@ -14,10 +14,12 @@ using namespace py::literals;
 #include "esp/gfx/Simulator.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/AttachedObject.h"
+#include "esp/scene/Mp3dSemanticScene.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneGraph.h"
 #include "esp/scene/SceneNode.h"
 #include "esp/scene/SemanticScene.h"
+#include "esp/scene/SuncgSemanticScene.h"
 #include "esp/sensor/PinholeCamera.h"
 #include "esp/sensor/Sensor.h"
 
@@ -403,12 +405,37 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("center", &OBB::center)
       .def_property_readonly("sizes", &OBB::sizes)
       .def_property_readonly("half_extents", &OBB::halfExtents)
-      .def_property_readonly("rotation", &OBB::rotation);
+      .def_property_readonly(
+          "rotation", [](const OBB& self) { return self.rotation().coeffs(); });
 
   // ==== SemanticCategory ====
-  py::class_<SemanticCategory>(m, "SemanticCategory")
+  py::class_<SemanticCategory, SemanticCategory::ptr>(m, "SemanticCategory")
       .def("index", &SemanticCategory::index, "mapping"_a = "")
       .def("name", &SemanticCategory::name, "mapping"_a = "");
+
+  // === Mp3dObjectCategory ===
+  py::class_<Mp3dObjectCategory, SemanticCategory, Mp3dObjectCategory::ptr>(
+      m, "Mp3dObjectCategory")
+      .def("index", &Mp3dObjectCategory::index, "mapping"_a = "")
+      .def("name", &Mp3dObjectCategory::name, "mapping"_a = "");
+
+  // === Mp3dRegionCategory ===
+  py::class_<Mp3dRegionCategory, SemanticCategory, Mp3dRegionCategory::ptr>(
+      m, "Mp3dRegionCategory")
+      .def("index", &Mp3dRegionCategory::index, "mapping"_a = "")
+      .def("name", &Mp3dRegionCategory::name, "mapping"_a = "");
+
+  // === SuncgObjectCategory ===
+  py::class_<SuncgObjectCategory, SemanticCategory, SuncgObjectCategory::ptr>(
+      m, "SuncgObjectCategory")
+      .def("index", &SuncgObjectCategory::index, "mapping"_a = "")
+      .def("name", &SuncgObjectCategory::name, "mapping"_a = "");
+
+  // === SuncgRegionCategory ===
+  py::class_<SuncgRegionCategory, SemanticCategory, SuncgRegionCategory::ptr>(
+      m, "SuncgRegionCategory")
+      .def("index", &SuncgRegionCategory::index, "mapping"_a = "")
+      .def("name", &SuncgRegionCategory::name, "mapping"_a = "");
 
   // ==== SemanticLevel ====
   py::class_<SemanticLevel, SemanticLevel::ptr>(m, "SemanticLevel")
@@ -425,6 +452,15 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("category", &SemanticRegion::category)
       .def_property_readonly("objects", &SemanticRegion::objects);
 
+  // ==== SuncgSemanticRegion ====
+  py::class_<SuncgSemanticRegion, SemanticRegion, SuncgSemanticRegion::ptr>(
+      m, "SuncgSemanticRegion")
+      .def_property_readonly("id", &SuncgSemanticRegion::id)
+      .def_property_readonly("level", &SuncgSemanticRegion::level)
+      .def_property_readonly("aabb", &SuncgSemanticRegion::aabb)
+      .def_property_readonly("category", &SuncgSemanticRegion::category)
+      .def_property_readonly("objects", &SuncgSemanticRegion::objects);
+
   // ==== SemanticObject ====
   py::class_<SemanticObject, SemanticObject::ptr>(m, "SemanticObject")
       .def_property_readonly("id", &SemanticObject::id)
@@ -432,6 +468,15 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("aabb", &SemanticObject::aabb)
       .def_property_readonly("obb", &SemanticObject::obb)
       .def_property_readonly("category", &SemanticObject::category);
+
+  // ==== SuncgSemanticObject ====
+  py::class_<SuncgSemanticObject, SemanticObject, SuncgSemanticObject::ptr>(
+      m, "SuncgSemanticObject")
+      .def_property_readonly("id", &SuncgSemanticObject::id)
+      .def_property_readonly("region", &SuncgSemanticObject::region)
+      .def_property_readonly("aabb", &SuncgSemanticObject::aabb)
+      .def_property_readonly("obb", &SuncgSemanticObject::obb)
+      .def_property_readonly("category", &SuncgSemanticObject::category);
 
   // ==== SemanticScene ====
   py::class_<SemanticScene, SemanticScene::ptr>(m, "SemanticScene")

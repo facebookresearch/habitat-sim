@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+
+# Copyright (c) Facebook, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+import habitat_sim.bindings as hsim
+import habitat_sim
+import habitat_sim.utils
+import habitat_sim.errors
+import numpy as np
+import quaternion
+import pytest
+import os.path as osp
+from examples.settings import make_cfg
+
+_test_scenes = [
+    osp.abspath(
+        osp.join(
+            osp.dirname(__file__),
+            "../data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb",
+        )
+    ),
+    osp.abspath(
+        osp.join(
+            osp.dirname(__file__),
+            "../data/scene_datasets/mp3d/ur6pFq6Qu1A/ur6pFq6Qu1A.glb",
+        )
+    ),
+]
+
+
+@pytest.mark.gfxtest
+@pytest.mark.parametrize("scene", _test_scenes)
+def test_semantic_scene(scene, sim, make_cfg_settings):
+    if not osp.exists(scene):
+        pytest.skip("Skipping {}".format(scene))
+
+    make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
+    make_cfg_settings["semantic_sensor"] = False
+    make_cfg_settings["scene"] = scene
+    sim.reconfigure(make_cfg(make_cfg_settings))
+
+    scene = sim.semantic_scene
+    for obj in scene.objects:
+        obj.aabb
+        obj.aabb.sizes
+        obj.aabb.center
+        obj.id
+        obj.obb.rotation
+        obj.category.name()
+        obj.category.index()
+
+    for region in scene.regions:
+        region.id
+        region.category.name()
+        region.category.index()
+
+    for level in scene.levels:
+        level.id
