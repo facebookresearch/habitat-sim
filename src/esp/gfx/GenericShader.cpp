@@ -85,22 +85,6 @@ layout(location = 0) out vec4 color;
 layout(location = 1) out float depth;
 layout(location = 2) out uint objectId;
 
-vec4 bgr_walk(float id) {
-    float ratio, r, g, b;
-    ratio = id / 5546418.0f;
-    if (ratio < 0.5) {
-      b = 0;
-      g = 2 * ratio;
-      r = 1.0 - g;
-    } else {
-      r = 0;
-      g = 2.0 * (1.0 - ratio);
-      b = 1.0 - g;
-    }
-
-    return vec4(r, g, b, 1.0);
-}
-
 void main () {
   vec4 baseColor =
     #ifdef VERTEX_COLORED
@@ -123,8 +107,11 @@ void main () {
   #endif
 
   #ifdef ID_TEXTURED
-  objectId = uint(texture(primTexture, vec2((float(gl_PrimitiveID % texSize) + 0.5f) / float(texSize),
-                                    (float(gl_PrimitiveID / texSize) + 0.5f) / float(texSize))).r);
+  objectId = uint(
+      texture(primTexture,
+              vec2((float(gl_PrimitiveID % texSize) + 0.5f) / float(texSize),
+                   (float(gl_PrimitiveID / texSize) + 0.5f) / float(texSize)))
+          .r);
   #endif
 }
 )";
