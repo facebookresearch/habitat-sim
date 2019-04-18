@@ -118,92 +118,6 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   return true;
 }
 
-Magnum::GL::Mesh* Mp3dInstanceMeshData::getMagnumGLMesh() {
-  if (renderingBuffer_ == nullptr) {
-    return nullptr;
-  }
-  return &(renderingBuffer_->mesh);
-}
-
-void Mp3dInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
-  if (forceReload) {
-    buffersOnGPU_ = false;
-  }
-  if (buffersOnGPU_) {
-    return;
-  }
-
-  renderingBuffer_.reset();
-  renderingBuffer_ = std::make_unique<Mp3dInstanceMeshData::RenderingBuffer>();
-
-  // create uint32 ibo
-  const size_t nTris = cpu_ibo_.size();
-  std::vector<uint32_t> tri_ibo(nTris * 3);
-  for (int iTri = 0; iTri < nTris; ++iTri) {
-    const int iBase = 3 * iTri;
-    const vec3i& indices = cpu_ibo_[iTri];
-    tri_ibo[iBase + 0] = static_cast<uint32_t>(indices[0]);
-    tri_ibo[iBase + 1] = static_cast<uint32_t>(indices[1]);
-    tri_ibo[iBase + 2] = static_cast<uint32_t>(indices[2]);
-  }
-
-  // convert uchar rgb to float rgb
-  std::vector<float> cbo_float(cpu_cbo_.size() * 3);
-  for (int iVert = 0; iVert < cpu_cbo_.size(); ++iVert) {
-    const uint32_t idx = 3 * iVert;
-    cbo_float[idx + 0] = cpu_cbo_[iVert][0] / 255.0f;
-    cbo_float[idx + 1] = cpu_cbo_[iVert][1] / 255.0f;
-    cbo_float[idx + 2] = cpu_cbo_[iVert][2] / 255.0f;
-  }
-
-  /* uint32_t max_obj_id = 0;
-  for (auto& id : objectIds_) {
-    max_obj_id = std::max(id, max_obj_id);
-  }
-  auto bgr_walk = [max_obj_id](float id) {
-    const float r = id / static_cast<float>(max_obj_id);
-    vec3f rgb = vec3f::Zero();
-    if (r < 0.5) {
-      rgb[1] = 2 * r;
-      rgb[0] = 1.0 - rgb[1];
-    } else {
-      rgb[1] = 2 * (1.0 - r);
-      rgb[2] = 1.0 - rgb[1];
-    }
-    return rgb;
-  }; */
-
-  const int texSize = std::pow(2, std::ceil(std::log2(std::sqrt(nTris))));
-  float* obj_id_tex_data = new float[texSize * texSize]();
-  for (size_t i = 0; i < nTris; ++i) {
-    obj_id_tex_data[i] = objectIds_[i];
-  }
-
-  Magnum::Image2D image(Magnum::PixelFormat::R32F, {texSize, texSize},
-                        Corrade::Containers::Array<char>(
-                            reinterpret_cast<char*>(obj_id_tex_data),
-                            texSize * texSize * sizeof(obj_id_tex_data[0])));
-
-  renderingBuffer_->vbo.setData(cpu_vbo_, Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->cbo.setData(cbo_float, Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->ibo.setData(tri_ibo, Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
-      .setCount(tri_ibo.size())
-      .addVertexBuffer(renderingBuffer_->vbo, 0,
-                       Magnum::GL::Attribute<0, Magnum::Vector3>{})
-      .addVertexBuffer(renderingBuffer_->cbo, 0,
-                       Magnum::GL::Attribute<1, Magnum::Color3>{})
-      .setIndexBuffer(renderingBuffer_->ibo, 0,
-                      Magnum::GL::MeshIndexType::UnsignedInt);
-
-  renderingBuffer_->tex.setMinificationFilter(Magnum::SamplerFilter::Nearest)
-      .setMagnificationFilter(Magnum::SamplerFilter::Nearest)
-      .setStorage(1, Magnum::GL::TextureFormat::R32F, image.size())
-      .setSubImage(0, {}, image);
-
-  buffersOnGPU_ = true;
-}
-
 bool Mp3dInstanceMeshData::saveSemMeshPLY(
     const std::string& plyFile,
     const std::unordered_map<int, int>& segmentIdToObjectIdMap) {
@@ -251,7 +165,7 @@ bool Mp3dInstanceMeshData::saveSemMeshPLY(
   return true;
 }
 
-bool Mp3dInstanceMeshData::loadSemMeshPLY(const std::string& plyFile) {
+/* bool Mp3dInstanceMeshData::loadSemMeshPLY(const std::string& plyFile) {
   std::ifstream ifs(plyFile);
   if (!ifs.good()) {
     LOG(ERROR) << "Cannot open file at " << plyFile;
@@ -331,11 +245,6 @@ bool Mp3dInstanceMeshData::loadSemMeshPLY(const std::string& plyFile) {
     ifs.read(reinterpret_cast<char*>(&objectId), sizeof(objectId));
     objectIds_.emplace_back(objectId);
 
-    // store objectId in position[3] of each vertex
-    /* for (int iVertex : indices) {
-      vec4f& position = cpu_vbo_[iVertex];
-      position[3] = static_cast<float>(objectId);
-    } */
   }
 
   // MP3D semantic PLY meshes have -Z gravity
@@ -349,6 +258,7 @@ bool Mp3dInstanceMeshData::loadSemMeshPLY(const std::string& plyFile) {
   }
   return true;
 }
+*/
 
 }  // namespace assets
 }  // namespace esp

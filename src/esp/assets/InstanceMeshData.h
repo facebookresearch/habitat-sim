@@ -18,7 +18,7 @@
 namespace esp {
 namespace assets {
 
-class InstanceMeshBase : public BaseMesh {
+class GenericInstanceMeshData : public BaseMesh {
  public:
   struct RenderingBuffer {
     Magnum::GL::Mesh mesh;
@@ -28,17 +28,39 @@ class InstanceMeshBase : public BaseMesh {
     Magnum::GL::Texture2D tex;
   };
 
-  explicit InstanceMeshBase(SupportedMeshType type) : BaseMesh{type} {};
+  explicit GenericInstanceMeshData(SupportedMeshType type) : BaseMesh{type} {};
+  explicit GenericInstanceMeshData()
+      : GenericInstanceMeshData{SupportedMeshType::INSTANCE_MESH} {};
 
-  virtual bool loadPLY(const std::string& plyFile) = 0;
+  virtual bool loadPLY(const std::string& plyFile);
 
   virtual Magnum::GL::Texture2D* getSemanticTexture() {
     return &renderingBuffer_->tex;
   };
 
+  // ==== rendering ====
+  virtual void uploadBuffersToGPU(bool forceReload = false) override;
+  RenderingBuffer* getRenderingBuffer() { return renderingBuffer_.get(); }
+
+  virtual Magnum::GL::Mesh* getMagnumGLMesh() override;
+
+  const std::vector<vec3f>& getVertexBufferObjectCPU() const {
+    return cpu_vbo_;
+  }
+  const std::vector<vec3uc>& getColorBufferObjectCPU() const {
+    return cpu_cbo_;
+  }
+
+  const std::vector<vec3ui> getIndexBufferObjectCPU() const { return cpu_ibo_; }
+
  protected:
   // ==== rendering ====
   std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
+
+  std::vector<vec3f> cpu_vbo_;
+  std::vector<vec3uc> cpu_cbo_;
+  std::vector<vec3ui> cpu_ibo_;
+  std::vector<uint32_t> objectIds_;
 };
 
 /*
@@ -47,10 +69,11 @@ class InstanceMeshBase : public BaseMesh {
  * id_to_label and id_to_node map face id to instance and node ids
  * Faces are assumed to be quads
  */
-class InstanceMeshData : public InstanceMeshBase {
+class FRLInstanceMeshData : public GenericInstanceMeshData {
  public:
-  InstanceMeshData() : InstanceMeshBase(SupportedMeshType::INSTANCE_MESH){};
-  virtual ~InstanceMeshData(){};
+  FRLInstanceMeshData()
+      : GenericInstanceMeshData(SupportedMeshType::INSTANCE_MESH){};
+  virtual ~FRLInstanceMeshData(){};
 
   bool from_ply(const std::string& ply_file);
   void to_ply(const std::string& ply_file) const;

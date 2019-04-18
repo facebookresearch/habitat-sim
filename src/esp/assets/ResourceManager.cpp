@@ -28,7 +28,6 @@
 #include "InstanceMeshData.h"
 #include "Mp3dInstanceMeshData.h"
 #include "PTexMeshData.h"
-#include "ReplicaInstanceMeshData.h"
 #include "ResourceManager.h"
 
 namespace esp {
@@ -43,9 +42,8 @@ bool ResourceManager::loadScene(const AssetInfo& info,
     return false;
   }
 
-  if (info.type == AssetType::REPLICA_INSTANCE_MESH ||
-      info.type == AssetType::FRL_INSTANCE_MESH ||
-      info.type == AssetType::MP3D_INSTANCE_MESH) {
+  if (info.type == AssetType::FRL_INSTANCE_MESH ||
+      info.type == AssetType::INSTANCE_MESH) {
     return loadInstanceMeshData(info, parent, drawables);
   } else if (info.type == AssetType::FRL_PTEX_MESH) {
     return loadPTexMeshData(info, parent, drawables);
@@ -152,15 +150,13 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
     if (info.type == AssetType::FRL_INSTANCE_MESH) {
-      meshes_.emplace_back(std::make_unique<InstanceMeshData>());
-    } else if (info.type == AssetType::REPLICA_INSTANCE_MESH) {
-      meshes_.emplace_back(std::make_unique<ReplicaInstanceMeshData>());
-    } else if (info.type == AssetType::MP3D_INSTANCE_MESH) {
-      meshes_.emplace_back(std::make_unique<Mp3dInstanceMeshData>());
+      meshes_.emplace_back(std::make_unique<FRLInstanceMeshData>());
+    } else if (info.type == AssetType::INSTANCE_MESH) {
+      meshes_.emplace_back(std::make_unique<GenericInstanceMeshData>());
     }
     int index = meshes_.size() - 1;
     auto* instanceMeshData =
-        dynamic_cast<InstanceMeshBase*>(meshes_[index].get());
+        dynamic_cast<GenericInstanceMeshData*>(meshes_[index].get());
 
     LOG(INFO) << "loading instance mesh data: " << filename;
     instanceMeshData->loadPLY(filename);
@@ -178,7 +174,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
 
     for (int iMesh = start; iMesh <= end; ++iMesh) {
       auto* instanceMeshData =
-          dynamic_cast<InstanceMeshBase*>(meshes_[iMesh].get());
+          dynamic_cast<GenericInstanceMeshData*>(meshes_[iMesh].get());
       scene::SceneNode& node = parent->createChild();
       createDrawable(INSTANCE_MESH_SHADER, *instanceMeshData->getMagnumGLMesh(),
                      node, drawables, instanceMeshData->getSemanticTexture());

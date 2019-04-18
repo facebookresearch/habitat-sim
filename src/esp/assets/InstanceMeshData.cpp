@@ -12,6 +12,11 @@
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Trade/Trade.h>
 
+#include <tinyply.h>
+#include <fstream>
+#include <sstream>
+#include <vector>
+
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -30,7 +35,226 @@
 namespace esp {
 namespace assets {
 
-bool InstanceMeshData::from_ply(const std::string& ply_file) {
+namespace {
+template <typename T>
+void copyTo(std::shared_ptr<tinyply::PlyData> data, std::vector<T>& dst) {
+  dst.resize(data->count);
+  CHECK_EQ(data->buffer.size_bytes(), sizeof(T) * dst.size());
+  std::memcpy(dst.data(), data->buffer.get(), data->buffer.size_bytes());
+}
+}  // namespace
+
+bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
+  cpu_vbo_.clear();
+  cpu_cbo_.clear();
+  cpu_ibo_.clear();
+  objectIds_.clear();
+
+  std::ifstream ifs(plyFile, std::ios::binary);
+  if (!ifs.good()) {
+    LOG(ERROR) << "Cannot open file at " << plyFile;
+    return false;
+  }
+
+  tinyply::PlyFile file;
+  try {
+    if (!file.parse_header(ifs)) {
+      LOG(ERROR) << "Could not read header";
+      return false;
+    }
+  } catch (const std::exception& e) {
+    LOG(ERROR) << "Tinply error " << e.what();
+    return false;
+  }
+
+  std::shared_ptr<tinyply::PlyData> vertices, colors, face_inds, object_ids;
+
+  try {
+    vertices = file.request_properties_from_element("vertex", {"x", "y", "z"});
+  } catch (const std::exception& e) {
+    LOG(ERROR) << "tinyply exception: " << e.what();
+    return false;
+  }
+
+  try {
+    colors = file.request_properties_from_element("vertex",
+                                                  {"red", "green", "blue"});
+  } catch (const std::exception& e) {
+    LOG(ERROR) << "tinyply exception: " << e.what();
+    return false;
+  }
+
+  try {
+    face_inds =
+        file.request_properties_from_element("face", {"vertex_indices"}, 0);
+  } catch (const std::exception& e) {
+    LOG(ERROR) << "tinyply exception: " << e.what();
+    return false;
+  }
+
+  try {
+    object_ids = file.request_properties_from_element("face", {"object_id"});
+  } catch (const std::exception& e) {
+    LOG(ERROR) << "tinyply exception: " << e.what();
+    return false;
+  }
+
+  file.read(ifs);
+
+  copyTo(vertices, cpu_vbo_);
+  copyTo(colors, cpu_cbo_);
+
+  CHECK(face_inds->t == tinyply::Type::INT32 ||
+        face_inds->t == tinyply::Type::UINT32)
+      << "Unkown vertex index type "
+      << tinyply::PropertyTable[face_inds->t].str;
+
+  const int vertexPerFace =
+      face_inds->buffer.size_bytes() / (face_inds->count * sizeof(uint32_t));
+
+  if (face_inds->t == tinyply::Type::INT32) {
+    if (vertexPerFace == 3) {
+      std::vector<vec3i> tmp;
+      copyTo(face_inds, tmp);
+      cpu_ibo_.reserve(tmp.size());
+      for (auto& tri : tmp) {
+        cpu_ibo_.emplace_back(tri.cast<uint32_t>());
+      }
+    } else {
+      std::vector<vec4i> tmp;
+      copyTo(face_inds, tmp);
+      cpu_ibo_.reserve(tmp.size() * 2);
+      // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0,2,3]
+      for (auto& quad : tmp) {
+        cpu_ibo_.emplace_back(quad[0], quad[1], quad[2]);
+        cpu_ibo_.emplace_back(quad[0], quad[2], quad[3]);
+      }
+    }
+  } else {
+    if (vertexPerFace == 3) {
+      copyTo(face_inds, cpu_ibo_);
+    } else {
+      std::vector<vec4ui> tmp;
+      copyTo(face_inds, tmp);
+      cpu_ibo_.reserve(tmp.size() * 2);
+      // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0,2,3]
+      for (auto& quad : tmp) {
+        cpu_ibo_.emplace_back(quad[0], quad[1], quad[2]);
+        cpu_ibo_.emplace_back(quad[0], quad[2], quad[3]);
+      }
+    }
+  }
+
+  if (object_ids->t == tinyply::Type::INT32) {
+    std::vector<int> tmp;
+    copyTo(object_ids, tmp);
+    objectIds_.reserve(tmp.size() * (vertexPerFace == 4 ? 2 : 1));
+    for (auto& id : tmp) {
+      objectIds_.emplace_back(id);
+      if (vertexPerFace == 4)
+        objectIds_.emplace_back(id);
+    }
+  } else if (object_ids->t == tinyply::Type::UINT16) {
+    std::vector<uint16_t> tmp;
+    copyTo(object_ids, tmp);
+    objectIds_.reserve(tmp.size() * (vertexPerFace == 4 ? 2 : 1));
+    for (auto& id : tmp) {
+      objectIds_.emplace_back(id);
+      if (vertexPerFace == 4)
+        objectIds_.emplace_back(id);
+    }
+  } else {
+    LOG(ERROR) << "Cannot load object_id of type "
+               << tinyply::PropertyTable[object_ids->t].str;
+  }
+
+  // Generic Semantic PLY meshes have -Z gravity
+  const quatf T_esp_scene =
+      quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY);
+
+  for (auto& xyz : cpu_vbo_) {
+    xyz = T_esp_scene * xyz;
+  }
+
+  return true;
+}
+
+void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
+  if (forceReload) {
+    buffersOnGPU_ = false;
+  }
+  if (buffersOnGPU_) {
+    return;
+  }
+
+  renderingBuffer_.reset();
+  renderingBuffer_ =
+      std::make_unique<GenericInstanceMeshData::RenderingBuffer>();
+
+  // convert uchar rgb to float rgb
+  std::vector<vec3f> cbo_float;
+  cbo_float.reserve(cpu_cbo_.size());
+  for (const auto& c : cpu_cbo_) {
+    cbo_float.emplace_back(c.cast<float>() / 255.0f);
+  }
+
+  /* uint32_t max_obj_id = 0;
+  for (auto& id : objectIds_) {
+    max_obj_id = std::max(id, max_obj_id);
+  }
+  auto bgr_walk = [max_obj_id](float id) {
+    const float r = id / static_cast<float>(max_obj_id);
+    vec3f rgb = vec3f::Zero();
+    if (r < 0.5) {
+      rgb[1] = 2 * r;
+      rgb[0] = 1.0 - rgb[1];
+    } else {
+      rgb[1] = 2 * (1.0 - r);
+      rgb[2] = 1.0 - rgb[1];
+    }
+    return rgb;
+  }; */
+
+  const int nTris = cpu_ibo_.size();
+  const int texSize = std::pow(2, std::ceil(std::log2(std::sqrt(nTris))));
+  float* obj_id_tex_data = new float[texSize * texSize]();
+  for (size_t i = 0; i < nTris; ++i) {
+    obj_id_tex_data[i] = objectIds_[i];
+  }
+
+  Magnum::Image2D image(Magnum::PixelFormat::R32F, {texSize, texSize},
+                        Corrade::Containers::Array<char>(
+                            reinterpret_cast<char*>(obj_id_tex_data),
+                            texSize * texSize * sizeof(obj_id_tex_data[0])));
+
+  renderingBuffer_->vbo.setData(cpu_vbo_, Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->cbo.setData(cbo_float, Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->ibo.setData(cpu_ibo_, Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
+      .setCount(nTris * 3)
+      .addVertexBuffer(renderingBuffer_->vbo, 0,
+                       Magnum::GL::Attribute<0, Magnum::Vector3>{})
+      .addVertexBuffer(renderingBuffer_->cbo, 0,
+                       Magnum::GL::Attribute<1, Magnum::Color3>{})
+      .setIndexBuffer(renderingBuffer_->ibo, 0,
+                      Magnum::GL::MeshIndexType::UnsignedInt);
+
+  renderingBuffer_->tex.setMinificationFilter(Magnum::SamplerFilter::Nearest)
+      .setMagnificationFilter(Magnum::SamplerFilter::Nearest)
+      .setStorage(1, Magnum::GL::TextureFormat::R32F, image.size())
+      .setSubImage(0, {}, image);
+
+  buffersOnGPU_ = true;
+}
+
+Magnum::GL::Mesh* GenericInstanceMeshData::getMagnumGLMesh() {
+  if (renderingBuffer_ == nullptr) {
+    return nullptr;
+  }
+  return &(renderingBuffer_->mesh);
+}
+
+bool FRLInstanceMeshData::from_ply(const std::string& ply_file) {
   std::ifstream ifs(ply_file, std::ios::in);
   if (!ifs.good()) {
     return false;
@@ -127,7 +351,7 @@ bool InstanceMeshData::from_ply(const std::string& ply_file) {
   return true;
 }
 
-void InstanceMeshData::to_ply(const std::string& ply_file) const {
+void FRLInstanceMeshData::to_ply(const std::string& ply_file) const {
   const int nVertex = cpu_vbo.size();
 
   std::ofstream f(ply_file, std::ios::out | std::ios::binary);
@@ -183,14 +407,15 @@ void InstanceMeshData::to_ply(const std::string& ply_file) const {
   f.write(reinterpret_cast<const char*>(gravity_dir.data()),
           sizeof(float) * grav_size);
 }
-Magnum::GL::Mesh* InstanceMeshData::getMagnumGLMesh() {
+
+Magnum::GL::Mesh* FRLInstanceMeshData::getMagnumGLMesh() {
   if (renderingBuffer_ == nullptr) {
     return nullptr;
   }
   return &(renderingBuffer_->mesh);
 }
 
-void InstanceMeshData::uploadBuffersToGPU(bool forceReload) {
+void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {
     buffersOnGPU_ = false;
   }
@@ -199,7 +424,7 @@ void InstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   }
 
   renderingBuffer_.reset();
-  renderingBuffer_ = std::make_unique<InstanceMeshData::RenderingBuffer>();
+  renderingBuffer_ = std::make_unique<FRLInstanceMeshData::RenderingBuffer>();
 
   // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0,2,3]
   const size_t numQuads = cpu_vbo.size() / 4;

@@ -23,6 +23,7 @@
 
 namespace Eigen {
 typedef Matrix<uint8_t, 3, 1> Vector3uc;
+typedef Matrix<uint32_t, 3, 1> Vector3ui;
 typedef Matrix<uint8_t, 4, 1> Vector4uc;
 typedef Matrix<uint32_t, 4, 1> Vector4ui;
 typedef Matrix<uint64_t, 4, 1> Vector4ul;
@@ -73,8 +74,10 @@ typedef Eigen::Matrix3d mat3d;
 typedef Eigen::Matrix4d mat4d;
 typedef Eigen::Quaternionf quatf;
 typedef Eigen::Vector3uc vec3uc;
+typedef Eigen::Vector3ui vec3ui;
 typedef Eigen::Vector4uc vec4uc;
 typedef Eigen::Vector4ui vec4ui;
+typedef Eigen::Vector4i vec4i;
 typedef Eigen::Vector4ul vec4ul;
 typedef Eigen::VectorXi vecXi;
 typedef Eigen::AlignedBox3f box3f;
