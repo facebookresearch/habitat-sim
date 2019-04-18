@@ -42,8 +42,6 @@ class Mp3dInstanceMeshData : public GenericInstanceMeshData {
   std::vector<int> materialIds_;
   std::vector<int> segmentIds_;
   std::vector<int> categoryIds_;
-
-  std::vector<uint32_t> objectIds_;
 };
 
 }  // namespace assets
