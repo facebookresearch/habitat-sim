@@ -64,21 +64,24 @@ mat4f AttachedObject::getAbsoluteTransformation() const {
 
 // ==== set functions ====
 // set local transformation w.r.t. parent's frame
-AttachedObject& AttachedObject::setTransformation(const mat4f& transformation) {
+AttachedObject& AttachedObject::setTransformation(
+    const Eigen::Ref<const mat4f> transformation) {
   ASSERT(isValid());
   node_->setTransformation(transformation);
   return *this;
 }
 
-AttachedObject& AttachedObject::setTransformation(const vec3f& position,
-                                                  const vec3f& target,
-                                                  const vec3f& up) {
+AttachedObject& AttachedObject::setTransformation(
+    const Eigen::Ref<const vec3f> position,
+    const Eigen::Ref<const vec3f> target,
+    const Eigen::Ref<const vec3f> up) {
   ASSERT(isValid());
   node_->setTransformation(position, target, up);
   return *this;
 }
 
-AttachedObject& AttachedObject::setTranslation(const vec3f& vector) {
+AttachedObject& AttachedObject::setTranslation(
+    const Eigen::Ref<const vec3f> vector) {
   ASSERT(isValid());
   node_->setTranslation(vector);
   return *this;
@@ -97,20 +100,23 @@ AttachedObject& AttachedObject::resetTransformation() {
 }
 
 // ==== rigid body transformations ====
-AttachedObject& AttachedObject::translate(const vec3f& vector) {
+AttachedObject& AttachedObject::translate(
+    const Eigen::Ref<const vec3f> vector) {
   ASSERT(isValid());
   node_->translate(vector);
   return *this;
 }
 
-AttachedObject& AttachedObject::translateLocal(const vec3f& vector) {
+AttachedObject& AttachedObject::translateLocal(
+    const Eigen::Ref<const vec3f> vector) {
   ASSERT(isValid());
   node_->translateLocal(vector);
   return *this;
 }
 
-AttachedObject& AttachedObject::rotate(float angleInRad,
-                                       const vec3f& normalizedAxis) {
+AttachedObject& AttachedObject::rotate(
+    float angleInRad,
+    const Eigen::Ref<const vec3f> normalizedAxis) {
   ASSERT(isValid());
   node_->rotate(angleInRad, normalizedAxis);
   return *this;
@@ -121,8 +127,9 @@ AttachedObject& AttachedObject::rotate(float angleInRad,
 
 // Rotate object using axis-angle as a local transformation.
 // normalizedAxis: in parent's frame
-AttachedObject& AttachedObject::rotateLocal(float angleInRad,
-                                            const vec3f& normalizedAxis) {
+AttachedObject& AttachedObject::rotateLocal(
+    float angleInRad,
+    const Eigen::Ref<const vec3f> normalizedAxis) {
   ASSERT(isValid());
   node_->rotateLocal(angleInRad, normalizedAxis);
   return *this;

@@ -4,11 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import builtins
+from .agent import *
+from .controls import *
 
-__version__ = "0.0.1"
-
-if not getattr(builtins, "__HSIM_SETUP__", False):
-    from .agent import *
-    from .simulator import *
-    from .bindings import *
+# Registers the default_controls
+from .default_controls import *

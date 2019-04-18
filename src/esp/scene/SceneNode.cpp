@@ -58,15 +58,16 @@ vec3f SceneNode::getAbsolutePosition() const {
   return getAbsoluteTransformation().col(3).head(3);
 }
 
-SceneNode& SceneNode::setTransformation(const mat4f& transformMat) {
+SceneNode& SceneNode::setTransformation(
+    const Eigen::Ref<const mat4f> transformMat) {
   const auto magnumMat = Math::Matrix4<Float>::from(transformMat.data());
   MagnumObject::setTransformation(magnumMat);
   return *this;
 }
 
-SceneNode& SceneNode::setTransformation(const vec3f& position,
-                                        const vec3f& target,
-                                        const vec3f& up) {
+SceneNode& SceneNode::setTransformation(const Eigen::Ref<const vec3f> position,
+                                        const Eigen::Ref<const vec3f> target,
+                                        const Eigen::Ref<const vec3f> up) {
   MagnumObject::setTransformation(
       Matrix4::lookAt(Vector3::from(position.data()),
                       Vector3::from(target.data()), Vector3::from(up.data())));
@@ -80,7 +81,7 @@ SceneNode& SceneNode::setRotation(const quatf& q) {
   return *this;
 }
 
-SceneNode& SceneNode::setTranslation(const vec3f& vector) {
+SceneNode& SceneNode::setTranslation(const Eigen::Ref<const vec3f> vector) {
   const auto magnumVec = Math::Vector3<Float>::from(vector.data());
   MagnumObject::setTranslation(magnumVec);
   return *this;
@@ -103,26 +104,28 @@ SceneNode& SceneNode::resetTransformation() {
 //   return *this;
 // }
 
-SceneNode& SceneNode::translate(const vec3f& vector) {
+SceneNode& SceneNode::translate(const Eigen::Ref<const vec3f> vector) {
   const auto magnumVec = Math::Vector3<Float>::from(vector.data());
   MagnumObject::translate(magnumVec);
   return *this;
 }
 
-SceneNode& SceneNode::translateLocal(const vec3f& vector) {
+SceneNode& SceneNode::translateLocal(const Eigen::Ref<const vec3f> vector) {
   const auto magnumVec = Math::Vector3<Float>::from(vector.data());
   MagnumObject::translateLocal(magnumVec);
   return *this;
 }
 
-SceneNode& SceneNode::rotate(float angleInRad, const vec3f& normalizedAxis) {
+SceneNode& SceneNode::rotate(float angleInRad,
+                             const Eigen::Ref<const vec3f> normalizedAxis) {
   const auto magnumVec = Math::Vector3<Float>::from(normalizedAxis.data());
   MagnumObject::rotate(Rad{angleInRad}, magnumVec);
   return *this;
 }
 
-SceneNode& SceneNode::rotateLocal(float angleInRad,
-                                  const vec3f& normalizedAxis) {
+SceneNode& SceneNode::rotateLocal(
+    float angleInRad,
+    const Eigen::Ref<const vec3f> normalizedAxis) {
   const auto magnumVec = Math::Vector3<Float>::from(normalizedAxis.data());
   MagnumObject::rotateLocal(Rad{angleInRad}, magnumVec);
   return *this;

@@ -54,11 +54,12 @@ class SceneNode : public MagnumObject {
 
   // ==== set functions ====
   // set local transformation w.r.t. parent's frame
-  virtual SceneNode& setTransformation(const mat4f& transformation);
-  virtual SceneNode& setTransformation(const vec3f& position,
-                                       const vec3f& target,
-                                       const vec3f& up);
-  virtual SceneNode& setTranslation(const vec3f& vector);
+  virtual SceneNode& setTransformation(
+      const Eigen::Ref<const mat4f> transformation);
+  virtual SceneNode& setTransformation(const Eigen::Ref<const vec3f> position,
+                                       const Eigen::Ref<const vec3f> target,
+                                       const Eigen::Ref<const vec3f> up);
+  virtual SceneNode& setTranslation(const Eigen::Ref<const vec3f> vector);
   virtual SceneNode& setRotation(const quatf& quaternion);
 
   virtual SceneNode& resetTransformation();
@@ -67,17 +68,19 @@ class SceneNode : public MagnumObject {
   // SceneNode& transform(const mat4f& transformation);
   // SceneNode& transformLocal(const mat4f& transformation);
 
-  virtual SceneNode& translate(const vec3f& vector);
-  virtual SceneNode& translateLocal(const vec3f& vector);
+  virtual SceneNode& translate(const Eigen::Ref<const vec3f> vector);
+  virtual SceneNode& translateLocal(const Eigen::Ref<const vec3f> vector);
 
-  virtual SceneNode& rotate(float angleInRad, const vec3f& normalizedAxis);
+  virtual SceneNode& rotate(float angleInRad,
+                            const Eigen::Ref<const vec3f> normalizedAxis);
 
   // rotateLocal:
   // It means rotation is applied before all other rotations.
 
   // Rotate object using axis-angle as a local transformation.
   // normalizedAxis: in parent's frame
-  virtual SceneNode& rotateLocal(float angleInRad, const vec3f& normalizedAxis);
+  virtual SceneNode& rotateLocal(float angleInRad,
+                                 const Eigen::Ref<const vec3f> normalizedAxis);
 
   virtual SceneNode& rotateX(float angleInRad);
   virtual SceneNode& rotateXInDegree(float angleInDeg);

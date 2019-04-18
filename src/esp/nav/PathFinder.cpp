@@ -822,7 +822,8 @@ bool esp::nav::PathFinder::findPath(MultiGoalShortestPath& path) {
   return false;
 }
 
-vec3f esp::nav::PathFinder::tryStep(const vec3f& start, const vec3f& end) {
+vec3f esp::nav::PathFinder::tryStep(const Eigen::Ref<const vec3f> start,
+                                    const Eigen::Ref<const vec3f> end) {
   static const int MAX_POLYS = 256;
   dtPolyRef polys[MAX_POLYS];
 

@@ -5,9 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 modules = [
-    "AgentConfiguration",
-    "AgentState",
-    "ActionSpec",
     "SensorSpec",
     "SensorType",
     "SimulatorConfiguration",
@@ -16,5 +13,11 @@ modules = [
     "ActionSpaceShortestPath",
     "MultiGoalActionSpaceShortestPath",
     "ActionSpacePathLocation",
-    "Agent",
+    "AttachedObject",
+    "AttachedObjectType",
+    "PinholeCamera",
+    "Sensor",
+    "SceneNode",
+    "SceneGraph",
+    "geo",
 ]

@@ -56,6 +56,7 @@ void initShortestPathBindings(py::module& m) {
            "path"_a)
       .def("try_step", &PathFinder::tryStep, R"()", "start"_a, "end"_a)
       .def("island_radius", &PathFinder::islandRadius, R"()", "pt"_a)
+      .def_property_readonly("is_loaded", &PathFinder::isLoaded)
       .def("distance_to_closest_obstacle",
            &PathFinder::distanceToClosestObstacle,
            R"(Returns the distance to the closest obstacle.
