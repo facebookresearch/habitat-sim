@@ -101,19 +101,15 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
 
   file.read(ifs);
 
+  CHECK(vertices->t == tinyply::Type::FLOAT32) << "x,y,z must be floats";
   copyTo(vertices, cpu_vbo_);
+  CHECK(colors->t == tinyply::Type::UINT8) << "r,g,b must be uint8_t's";
   copyTo(colors, cpu_cbo_);
 
-  CHECK(face_inds->t == tinyply::Type::INT32 ||
-        face_inds->t == tinyply::Type::UINT32)
-      << "Unkown vertex index type "
-      << tinyply::PropertyTable[face_inds->t].str;
-
-  const int vertexPerFace =
-      face_inds->buffer.size_bytes() / (face_inds->count * sizeof(uint32_t));
-  LOG(INFO) << "vertexPerFace=" << vertexPerFace;
-
+  int vertexPerFace;
   if (face_inds->t == tinyply::Type::INT32) {
+    vertexPerFace =
+        face_inds->buffer.size_bytes() / (face_inds->count * sizeof(int));
     if (vertexPerFace == 3) {
       std::vector<vec3i> tmp;
       copyTo(face_inds, tmp);
@@ -131,7 +127,9 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
         cpu_ibo_.emplace_back(quad[0], quad[2], quad[3]);
       }
     }
-  } else {
+  } else if (face_inds->t == tinyply::Type::UINT32) {
+    vertexPerFace =
+        face_inds->buffer.size_bytes() / (face_inds->count * sizeof(uint32_t));
     if (vertexPerFace == 3) {
       copyTo(face_inds, cpu_ibo_);
     } else {
@@ -144,7 +142,12 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
         cpu_ibo_.emplace_back(quad[0], quad[2], quad[3]);
       }
     }
+  } else {
+    LOG(ERROR) << "Cannot load vertex indices of type "
+               << tinyply::PropertyTable[face_inds->t].str;
+    return false;
   }
+  VLOG(1) << "vertexPerFace=" << vertexPerFace;
 
   if (object_ids->t == tinyply::Type::INT32) {
     std::vector<int> tmp;
@@ -167,6 +170,7 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   } else {
     LOG(ERROR) << "Cannot load object_id of type "
                << tinyply::PropertyTable[object_ids->t].str;
+    return false;
   }
 
   // Generic Semantic PLY meshes have -Z gravity
