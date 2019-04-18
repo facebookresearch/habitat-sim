@@ -111,6 +111,7 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
 
   const int vertexPerFace =
       face_inds->buffer.size_bytes() / (face_inds->count * sizeof(uint32_t));
+  LOG(INFO) << "vertexPerFace=" << vertexPerFace;
 
   if (face_inds->t == tinyply::Type::INT32) {
     if (vertexPerFace == 3) {
