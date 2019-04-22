@@ -61,6 +61,7 @@ const static std::string GENERIC_SHADER_FS = R"(
 in vec3 v_color;
 in float v_depth;
 
+
 #ifdef PER_VERTEX_IDS
 flat in uint v_objectId;
 #else
@@ -103,7 +104,6 @@ void main () {
     v_objectId;
   #else
     uint(objectIdUniform);
-    //gl_PrimitiveID;
   #endif
 
   #ifdef ID_TEXTURED
@@ -111,7 +111,7 @@ void main () {
       texture(primTexture,
               vec2((float(gl_PrimitiveID % texSize) + 0.5f) / float(texSize),
                    (float(gl_PrimitiveID / texSize) + 0.5f) / float(texSize)))
-          .r);
+          .r + 0.5);
   #endif
 }
 )";
@@ -155,9 +155,13 @@ GenericShader::GenericShader(const Flags flags) : flags_(flags) {
 }
 
 GenericShader& GenericShader::bindTexture(Magnum::GL::Texture2D& texture) {
-  ASSERT(flags_ & Flag::Textured || flags_ & Flag::PrimitiveIDTextured);
+  ASSERT((flags_ & Flag::Textured) || (flags_ & Flag::PrimitiveIDTextured));
+
   texture.bind(TextureLayer);
-  setUniform(uniformLocation("texSize"), texture.imageSize(0).x());
+
+  if (flags_ & Flag::PrimitiveIDTextured)
+    setUniform(uniformLocation("texSize"), texture.imageSize(0).x());
+
   return *this;
 }
 
