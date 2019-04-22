@@ -166,3 +166,4 @@ run_example
 tests/17DRP5sb8fy
 data/
 habitat-test-scenes.zip
+habitat_sim/_ext

@@ -11,13 +11,34 @@ Adapted from: http://www.benjack.io/2017/06/12/python-cpp-tests.html
 import os
 import os.path as osp
 import sys
-import platform
 import subprocess
 import builtins
+import re
+import glob
+import json
 
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
-from setuptools.command.install import install
+
+HEADLESS = False
+FORCE_CMAKE = False
+cache_parser = re.compile(r"(?P<K>\w+?)(:\w+?|)=(?P<V>.*?)$")
+
+
+def in_git():
+    try:
+        subprocess.check_output(["git", "rev-parse", "--is-inside-work-tree"])
+        return True
+    except:
+        return False
+
+
+def has_ninja():
+    try:
+        subprocess.check_output(["ninja", "--version"])
+        return True
+    except:
+        return False
 
 
 class CMakeExtension(Extension):
@@ -26,13 +47,10 @@ class CMakeExtension(Extension):
         self.sourcedir = os.path.abspath(sourcedir)
 
 
-HEADLESS = False
-
-
 class CMakeBuild(build_ext):
     def run(self):
         try:
-            out = subprocess.check_output(["cmake", "--version"])
+            subprocess.check_output(["cmake", "--version"])
         except OSError:
             raise RuntimeError(
                 "CMake must be installed to build the following extensions: "
@@ -45,21 +63,7 @@ class CMakeBuild(build_ext):
     def build_extension(self, ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
 
-        root = osp.dirname(extdir)
-        mode_file = osp.join(root, "bindings/mode.py")
-        with open(mode_file, "r") as f:
-            contents = [l.strip() for l in f.readlines() if len(l.strip()) > 0]
-
-        contents[-1] = "use_dev_bindings = False"
-
-        with open(mode_file, "w") as f:
-            f.write("\n".join(contents))
-
-        is_in_git = True
-        try:
-            subprocess.check_output(["git", "rev-parse", "--is-inside-work-tree"])
-        except:
-            is_in_git = False
+        is_in_git = in_git()
 
         if is_in_git:
             subprocess.check_call(
@@ -69,36 +73,39 @@ class CMakeBuild(build_ext):
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
             "-DPYTHON_EXECUTABLE=" + sys.executable,
+            "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
         ]
 
         cfg = "Debug" if self.debug else "RelWithDebInfo"
         build_args = ["--config", cfg]
 
-        if platform.system() == "Windows":
-            cmake_args += [
-                "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}".format(cfg.upper(), extdir)
-            ]
-            if sys.maxsize > 2 ** 32:
-                cmake_args += ["-A", "x64"]
-            build_args += ["--", "/m"]
-        else:
-            cmake_args += ["-DCMAKE_BUILD_TYPE=" + cfg]
-            build_args += ["--", "-j"]
+        cmake_args += ["-DCMAKE_BUILD_TYPE=" + cfg]
+        build_args += ["--"]
 
-        cmake_args += ["-DBUILD_GUI_VIEWERS={}".format("ON" if not HEADLESS else "OFF")]
+        if has_ninja():
+            cmake_args += ["-GNinja"]
+        else:
+            build_args += ["-j"]
+
+        cmake_args += ["-DHEADLESS={}".format("ON" if not HEADLESS else "OFF")]
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
             env.get("CXXFLAGS", ""), self.distribution.get_version()
         )
+
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
-        subprocess.check_call(
-            ["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env
-        )
+
+        if self.run_cmake(cmake_args):
+            subprocess.check_call(
+                ["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env
+            )
+
         subprocess.check_call(
             ["cmake", "--build", "."] + build_args, cwd=self.build_temp
         )
+
         if not HEADLESS:
             link_dst = osp.join(osp.dirname(self.build_temp), "viewer")
             if not osp.islink(link_dst):
@@ -107,42 +114,109 @@ class CMakeBuild(build_ext):
                     link_dst,
                 )
 
+        if not osp.islink(osp.join(osp.dirname(self.build_temp), "utils")):
+            os.symlink(
+                osp.abspath(osp.join(self.build_temp, "utils")),
+                osp.join(osp.dirname(self.build_temp), "utils"),
+            )
+
+        self.create_compile_commands()
         print()  # Add an empty line for cleaner output
 
+    def run_cmake(self, cmake_args):
+        if FORCE_CMAKE:
+            return True
 
-class InstallCommand(install):
-    user_options = install.user_options + [
-        ("headless", None, "Build with headless and multi-gpu support")
-    ]
-    boolean_options = install.boolean_options + ["headless"]
+        cmake_cache = osp.join(self.build_temp, "CMakeCache.txt")
+        if osp.exists(cmake_cache):
+            with open(cmake_cache, "r") as f:
+                cache_contents = f.readlines()
 
-    def initialize_options(self):
-        install.initialize_options(self)
-        self.headless = False
+            for arg in cmake_args:
+                if arg[0:2] == "-G":
+                    continue
 
-    def finalize_options(self):
-        global HEADLESS
-        install.finalize_options(self)
+                k, v = arg.split("=")
+                # Strip +D
+                k = k[2:]
+                for l in cache_contents:
 
-        HEADLESS = self.headless
+                    match = cache_parser.match(l)
+                    if match is None:
+                        continue
+
+                    if match.group("K") == k and match.group("V") != v:
+                        return True
+
+            return False
+
+        return True
+
+    def create_compile_commands(self):
+        def load(filename):
+            with open(filename) as f:
+                return json.load(f)
+
+        commands = glob.glob("build/*/compile_commands.json")
+        all_commands = [entry for f in commands for entry in load(f)]
+
+        # cquery does not like c++ compiles that start with gcc.
+        # It forgets to include the c++ header directories.
+        # We can work around this by replacing the gcc calls that python
+        # setup.py generates with g++ calls instead
+        for command in all_commands:
+            if command["command"].startswith("gcc "):
+                command["command"] = "g++ " + command["command"][4:]
+
+        new_contents = json.dumps(all_commands, indent=2)
+        contents = ""
+        if os.path.exists("compile_commands.json"):
+            with open("compile_commands.json", "r") as f:
+                contents = f.read()
+        if contents != new_contents:
+            with open("compile_commands.json", "w") as f:
+                f.write(new_contents)
 
 
-requirements = ["numpy", "pillow", "numpy-quaternion", "attrs"]
+filtered_args = []
+for i, arg in enumerate(sys.argv):
+    if arg == "--headless":
+        HEADLESS = True
+        continue
 
-builtins.__HSIM_SETUP__ = True
-import habitat_sim
+    if arg == "--force-cmake" or arg == "--cmake":
+        FORCE_CMAKE = True
+        continue
 
-setup(
-    name="habitat_sim",
-    version=habitat_sim.__version__,
-    author="FAIR A-STAR",
-    description="A high performance simulator for training embodied agents",
-    long_description="",
-    packages=find_packages(),
-    install_requires=requirements,
-    # add extension module
-    ext_modules=[CMakeExtension("habitat_sim._ext.habitat_sim_bindings", "src")],
-    # add custom build_ext command
-    cmdclass=dict(build_ext=CMakeBuild, install=InstallCommand),
-    zip_safe=False,
-)
+    if arg == "--":
+        filtered_args += sys.argv[i:]
+        break
+
+    filtered_args.append(arg)
+
+sys.argv = filtered_args
+
+
+if __name__ == "__main__":
+    if os.environ("HEADLESS").lower() == "true":
+        HEADLESS = True
+
+    requirements = ["numpy", "pillow", "numpy-quaternion", "attrs"]
+
+    builtins.__HSIM_SETUP__ = True
+    import habitat_sim
+
+    setup(
+        name="habitat_sim",
+        version=habitat_sim.__version__,
+        author="FAIR A-STAR",
+        description="A high performance simulator for training embodied agents",
+        long_description="",
+        packages=find_packages(),
+        install_requires=requirements,
+        # add extension module
+        ext_modules=[CMakeExtension("habitat_sim._ext.habitat_sim_bindings", "src")],
+        # add custom build_ext command
+        cmdclass=dict(build_ext=CMakeBuild),
+        zip_safe=False,
+    )
