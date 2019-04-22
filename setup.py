@@ -198,7 +198,7 @@ sys.argv = filtered_args
 
 
 if __name__ == "__main__":
-    if os.environ("HEADLESS").lower() == "true":
+    if os.environ.get("HEADLESS", "").lower() == "true":
         HEADLESS = True
 
     requirements = ["numpy", "pillow", "numpy-quaternion", "attrs"]
