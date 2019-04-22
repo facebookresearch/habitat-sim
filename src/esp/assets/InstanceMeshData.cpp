@@ -102,32 +102,21 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   file.read(ifs);
 
   CHECK(vertices->t == tinyply::Type::FLOAT32) << "x,y,z must be floats";
+  // copyTo is a helper function to get stuff out of tinyply's format into our
+  // format it does the resize and checks to make sure everything will fit
   copyTo(vertices, cpu_vbo_);
   CHECK(colors->t == tinyply::Type::UINT8) << "r,g,b must be uint8_t's";
   copyTo(colors, cpu_cbo_);
 
   int vertexPerFace;
-  if (face_inds->t == tinyply::Type::INT32) {
-    vertexPerFace =
-        face_inds->buffer.size_bytes() / (face_inds->count * sizeof(int));
-    if (vertexPerFace == 3) {
-      std::vector<vec3i> tmp;
-      copyTo(face_inds, tmp);
-      cpu_ibo_.reserve(tmp.size());
-      for (auto& tri : tmp) {
-        cpu_ibo_.emplace_back(tri.cast<uint32_t>());
-      }
-    } else {
-      std::vector<vec4i> tmp;
-      copyTo(face_inds, tmp);
-      cpu_ibo_.reserve(tmp.size() * 2);
-      // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0,2,3]
-      for (auto& quad : tmp) {
-        cpu_ibo_.emplace_back(quad[0], quad[1], quad[2]);
-        cpu_ibo_.emplace_back(quad[0], quad[2], quad[3]);
-      }
-    }
-  } else if (face_inds->t == tinyply::Type::UINT32) {
+  // We can load int32 index buffers as uint32 index buffers as they are simply
+  // indices into an array and thus can't be negative. int32 is really uint31
+  // and can be safely reinterpret_casted to uint32
+  if (face_inds->t == tinyply::Type::INT32 ||
+      face_inds->t == tinyply::Type::UINT32) {
+    // We can figure out the number of vertices per face by dividing the number
+    // of bytes needed to store the faces by the number of faces and the size of
+    // each vertex
     vertexPerFace =
         face_inds->buffer.size_bytes() / (face_inds->count * sizeof(uint32_t));
     if (vertexPerFace == 3) {
@@ -136,7 +125,7 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
       std::vector<vec4ui> tmp;
       copyTo(face_inds, tmp);
       cpu_ibo_.reserve(tmp.size() * 2);
-      // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0,2,3]
+      // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0, 2, 3]
       for (auto& quad : tmp) {
         cpu_ibo_.emplace_back(quad[0], quad[1], quad[2]);
         cpu_ibo_.emplace_back(quad[0], quad[2], quad[3]);
@@ -147,12 +136,16 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
                << tinyply::PropertyTable[face_inds->t].str;
     return false;
   }
+
   VLOG(1) << "vertexPerFace=" << vertexPerFace;
 
+  // If the input mesh is a quad mesh, then we had to double the number of
+  // primitives, so we also need to double the size of the object IDs buffer
+  objectIds_.reserve(object_ids->count * (vertexPerFace == 4 ? 2 : 1));
   if (object_ids->t == tinyply::Type::INT32) {
     std::vector<int> tmp;
     copyTo(object_ids, tmp);
-    objectIds_.reserve(tmp.size() * (vertexPerFace == 4 ? 2 : 1));
+
     for (auto& id : tmp) {
       objectIds_.emplace_back(id);
       if (vertexPerFace == 4)
@@ -161,7 +154,7 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   } else if (object_ids->t == tinyply::Type::UINT16) {
     std::vector<uint16_t> tmp;
     copyTo(object_ids, tmp);
-    objectIds_.reserve(tmp.size() * (vertexPerFace == 4 ? 2 : 1));
+
     for (auto& id : tmp) {
       objectIds_.emplace_back(id);
       if (vertexPerFace == 4)
@@ -203,30 +196,29 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
     cbo_float.emplace_back(c.cast<float>() / 255.0f);
   }
 
-  /* uint32_t max_obj_id = 0;
-  for (auto& id : objectIds_) {
-    max_obj_id = std::max(id, max_obj_id);
-  }
-  auto bgr_walk = [max_obj_id](float id) {
-    const float r = id / static_cast<float>(max_obj_id);
-    vec3f rgb = vec3f::Zero();
-    if (r < 0.5) {
-      rgb[1] = 2 * r;
-      rgb[0] = 1.0 - rgb[1];
-    } else {
-      rgb[1] = 2 * (1.0 - r);
-      rgb[2] = 1.0 - rgb[1];
-    }
-    return rgb;
-  }; */
-
+  /*
+   * In modern OpenGL fragment sharder, we can access the ID of the current
+   * primitive and thus can index an array.  We can make a 2D texture behave
+   * like a 2D array with nearest sampling and edge clamping.
+   *
+   * Textures in OpenGL must be square and must have a sizes that are powers of
+   * 2, so first compute the size of the smallest texture that can contain our
+   * array.  Then copy the object id's buffer into the texture data buffer as
+   * floats.
+   */
   const int nPrims = cpu_ibo_.size();
   const int texSize = std::pow(2, std::ceil(std::log2(std::sqrt(nPrims))));
+  // The image takes ownership over the obj_id_tex_data array, so there is no
+  // delete
   float* obj_id_tex_data = new float[texSize * texSize]();
   for (size_t i = 0; i < nPrims; ++i) {
-    obj_id_tex_data[i] = objectIds_[i];
+    obj_id_tex_data[i] = static_cast<float>(objectIds_[i]);
   }
 
+  // Here is where we create the image that wil be uploaded to the texture.  We
+  // can index the original obj_id_tex_data array with obj_id_tex_data[primId /
+  // texSize, primId % texSize] NB: The indices will have to mapped into [0, 1]
+  // in the GLSL code
   Magnum::Image2D image(Magnum::PixelFormat::R32F, {texSize, texSize},
                         Corrade::Containers::Array<char>(
                             reinterpret_cast<char*>(obj_id_tex_data),
@@ -459,6 +451,13 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
     cbo_float[idx + 2] = cpu_cbo[iVert][2] / 255.0f;
   }
 
+  std::vector<vec3f> xyz_vbo(cpu_vbo.size());
+  for (int i = 0; i < cpu_vbo.size(); ++i) {
+    xyz_vbo[i] = cpu_vbo[i].head<3>();
+  }
+
+  // See code for GenericInstanceMeshData::uploadBuffersToGPU for comments about
+  // what's going on with this image/texture
   const size_t numTris = numQuads * 2;
   const int texSize = std::pow(2, std::ceil(std::log2(std::sqrt(numTris))));
   float* obj_id_tex_data = new float[texSize * texSize]();
@@ -466,11 +465,6 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   for (size_t i = 0; i < numQuads; ++i) {
     obj_id_tex_data[2 * i] = cpu_vbo[4 * i][3];
     obj_id_tex_data[2 * i + 1] = cpu_vbo[4 * i][3];
-  }
-
-  std::vector<vec3f> xyz_vbo(cpu_vbo.size());
-  for (int i = 0; i < cpu_vbo.size(); ++i) {
-    xyz_vbo[i] = cpu_vbo[i].head<3>();
   }
 
   Magnum::Image2D image(Magnum::PixelFormat::R32F, {texSize, texSize},
