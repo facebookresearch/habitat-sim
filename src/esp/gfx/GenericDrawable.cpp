@@ -30,12 +30,16 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                                          transformationMatrix)
       .setProjectionMatrix(transformationMatrix);
 
-  // if (shader.flags() & GenericShader::Flag::Textured && texture_) {
-  shader.bindTexture(*texture_);
-  // }
+  if (((shader.flags() & GenericShader::Flag::Textured) ||
+       (shader.flags() & GenericShader::Flag::PrimitiveIDTextured)) &&
+      texture_) {
+    shader.bindTexture(*texture_);
+  }
+
   if (!(shader.flags() & GenericShader::Flag::VertexColored)) {
     shader.setColor(color_);
   }
+
   if (!(shader.flags() & GenericShader::Flag::PerVertexIds)) {
     shader.setObjectId(node_.getId());
   }
