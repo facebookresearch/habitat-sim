@@ -13,6 +13,7 @@ case $key in
     --run-tests)
       shift
       RUN_TESTS=true
+      builder_args+=("--build-tests")
       ;;
     *)    # Forward unknown args to builder
       shift

@@ -22,6 +22,7 @@ from setuptools.command.build_ext import build_ext
 
 HEADLESS = False
 FORCE_CMAKE = False
+BUILD_TESTS = False
 cache_parser = re.compile(r"(?P<K>\w+?)(:\w+?|)=(?P<V>.*?)$")
 
 
@@ -88,6 +89,7 @@ class CMakeBuild(build_ext):
             build_args += ["-j"]
 
         cmake_args += ["-DBUILD_GUI_VIEWERS={}".format("ON" if not HEADLESS else "OFF")]
+        cmake_args += ["-DBUILD_TESTS={}".format("ON" if BUILD_TESTS else "OFF")]
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
@@ -186,6 +188,10 @@ for i, arg in enumerate(sys.argv):
 
     if arg == "--force-cmake" or arg == "--cmake":
         FORCE_CMAKE = True
+        continue
+
+    if arg == "--build-tests":
+        BUILD_TESTS = True
         continue
 
     if arg == "--":
