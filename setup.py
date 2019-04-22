@@ -87,7 +87,7 @@ class CMakeBuild(build_ext):
         else:
             build_args += ["-j"]
 
-        cmake_args += ["-DHEADLESS={}".format("ON" if not HEADLESS else "OFF")]
+        cmake_args += ["-DBUILD_GUI_VIEWERS={}".format("ON" if not HEADLESS else "OFF")]
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
