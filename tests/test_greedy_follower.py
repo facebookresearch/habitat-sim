@@ -10,7 +10,7 @@ import os
 base_dir = osp.abspath(osp.join(osp.dirname(__file__), ".."))
 
 test_navmeshes = [
-    osp.join(base_dir, "tests/17DRP5sb8fy/17DRP5sb8fy.navmesh"),
+    osp.join(base_dir, "data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.navmesh"),
     osp.join(
         base_dir, "data/scene_datasets/habitat-test-scenes/skokloster-castle.navmesh"
     ),
