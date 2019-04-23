@@ -665,7 +665,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            pybind11::return_value_policy::reference)
       .def_property_readonly("semantic_scene", &Simulator::getSemanticScene)
-      .def_readwrite("pathfinder", &Simulator::pathfinder)
       .def_property_readonly("renderer", &Simulator::getRenderer)
       .def("seed", &Simulator::seed, R"()", "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a)

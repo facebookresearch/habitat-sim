@@ -134,8 +134,6 @@ void Simulator::reset() {}
 
 void Simulator::seed(uint32_t newSeed) {
   random_.seed(newSeed);
-  if (pathfinder != nullptr)
-    pathfinder->seed(newSeed);
 }
 
 std::shared_ptr<Renderer> Simulator::getRenderer() {

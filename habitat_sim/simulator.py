@@ -9,10 +9,10 @@ from habitat_sim import utils
 import habitat_sim.errors
 from habitat_sim.agent import Agent, AgentState, AgentConfiguration
 from habitat_sim.nav import GreedyGeodesicFollower
-from typing import List
 import numpy as np
 import attr
 from typing import List
+import os.path as osp
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -26,6 +26,7 @@ class Simulator:
     config: Configuration = attr.ib()
     _sim: hsim.SimulatorBackend = attr.ib(default=None, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
+    agents: List[Agent] = attr.ib(factory=list, init=False)
 
     def __attrs_post_init__(self):
         config = self.config
@@ -61,6 +62,20 @@ class Simulator:
 
         self.agents = [Agent(cfg) for cfg in config.agents]
 
+    def _config_pathfinder(self, config: Configuration):
+        if "navmesh" in config.sim_cfg.scene.filepaths:
+            navmesh_filenname = config.sim_cfg.scene.filepaths["navmesh"]
+        else:
+            navmesh_filenname = osp.splitext(config.sim_cfg.scene.id)[0] + ".navmesh"
+
+        self.pathfinder = hsim.PathFinder()
+        if osp.exists(navmesh_filenname):
+            self.pathfinder.load_nav_mesh(navmesh_filenname)
+            # TODO add logging
+        else:
+            # TODO add logging
+            pass
+
     def reconfigure(self, config: Configuration):
         assert len(config.agents) > 0
         assert len(config.agents[0].sensor_specifications) > 0
@@ -78,20 +93,8 @@ class Simulator:
         # NB: Configure backend last as this gives more time for python's GC
         # to delete any previous instances of the simulator
         self._config_agents(config)
+        self._config_pathfinder(config)
         self._config_backend(config)
-
-        if "navmesh" in config.scene.filepaths:
-            navmesh_filenname = config.scene.filepaths["navmesh"]
-        else:
-            navmesh_filenname = osp.splitext(config.scene.id)[0] + ".navmesh"
-
-        self.pathfinder = hsim.PathFinder()
-        if osp.exists(navmesh_filenname):
-            self.pathfinder.load_nav_mesh(navmesh_filenname)
-            # TODO add logging
-        else:
-            # TODO add logging
-            pass
 
         for i in range(len(self.agents)):
             self.agents[i].attach(
@@ -157,18 +160,9 @@ class Simulator:
             self.pathfinder, self.get_agent(agent_id), goal_radius
         )
 
-    def _step_filer(self, start_pos, end_pos):
+    def _step_filter(self, start_pos, end_pos):
         if self.pathfinder.is_loaded:
             end_pos = self.pathfinder.try_step(start_pos, end_pos)
-
-        return end_pos
-
-    def __del__(self):
-        self.close()
-
-    def _step_filter(self, start_pos, end_pos):
-        if self._sim.pathfinder.is_loaded:
-            end_pos = self._sim.pathfinder.try_step(start_pos, end_pos)
 
         return end_pos
 
