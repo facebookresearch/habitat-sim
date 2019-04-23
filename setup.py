@@ -23,7 +23,29 @@ from setuptools.command.build_ext import build_ext
 HEADLESS = False
 FORCE_CMAKE = False
 BUILD_TESTS = False
-cache_parser = re.compile(r"(?P<K>\w+?)(:\w+?|)=(?P<V>.*?)$")
+
+
+filtered_args = []
+for i, arg in enumerate(sys.argv):
+    if arg == "--headless":
+        HEADLESS = True
+        continue
+
+    if arg == "--force-cmake" or arg == "--cmake":
+        FORCE_CMAKE = True
+        continue
+
+    if arg == "--build-tests":
+        BUILD_TESTS = True
+        continue
+
+    if arg == "--":
+        filtered_args += sys.argv[i:]
+        break
+
+    filtered_args.append(arg)
+
+sys.argv = filtered_args
 
 
 def in_git():
@@ -127,6 +149,8 @@ class CMakeBuild(build_ext):
         if FORCE_CMAKE:
             return True
 
+        cache_parser = re.compile(r"(?P<K>\w+?)(:\w+?|)=(?P<V>.*?)$")
+
         cmake_cache = osp.join(self.build_temp, "CMakeCache.txt")
         if osp.exists(cmake_cache):
             with open(cmake_cache, "r") as f:
@@ -176,29 +200,6 @@ class CMakeBuild(build_ext):
         if contents != new_contents:
             with open("compile_commands.json", "w") as f:
                 f.write(new_contents)
-
-
-filtered_args = []
-for i, arg in enumerate(sys.argv):
-    if arg == "--headless":
-        HEADLESS = True
-        continue
-
-    if arg == "--force-cmake" or arg == "--cmake":
-        FORCE_CMAKE = True
-        continue
-
-    if arg == "--build-tests":
-        BUILD_TESTS = True
-        continue
-
-    if arg == "--":
-        filtered_args += sys.argv[i:]
-        break
-
-    filtered_args.append(arg)
-
-sys.argv = filtered_args
 
 
 if __name__ == "__main__":
