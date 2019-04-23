@@ -64,9 +64,7 @@ class CMakeBuild(build_ext):
     def build_extension(self, ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
 
-        is_in_git = in_git()
-
-        if is_in_git:
+        if in_git():
             subprocess.check_call(
                 ["git", "submodule", "update", "--init", "--recursive"]
             )
