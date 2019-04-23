@@ -60,8 +60,6 @@ class Simulator {
 
   void saveFrame(const std::string& filename);
 
-  std::shared_ptr<nav::PathFinder> pathfinder = nullptr;
-
  protected:
   WindowlessContext context_;
   std::shared_ptr<Renderer> renderer_ = nullptr;

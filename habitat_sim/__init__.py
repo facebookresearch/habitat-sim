@@ -12,3 +12,4 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
     from .nav import *
     from .agent import *
     from .simulator import *
+    from .bindings import *

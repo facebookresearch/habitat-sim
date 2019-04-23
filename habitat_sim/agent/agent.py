@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+
+# Copyright (c) Facebook, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import attr
 import numpy as np
 from .controls import ObjectControls, ActuationSpec
@@ -7,9 +13,9 @@ import habitat_sim.bindings as hsim
 import habitat_sim.errors
 
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union
 
-__all__ = ["ActionSpec", "SixDOFPose", "AgentState", "AgentConfig", "Agent"]
+__all__ = ["ActionSpec", "SixDOFPose", "AgentState", "AgentConfiguration", "Agent"]
 
 
 BodyActions = {
@@ -39,7 +45,7 @@ class ActionSpec(object):
         actuation (ActuationSpec): Arguements that will be passed to the function
     """
     name: str
-    actuation: ActuationSpec
+    actuation: ActuationSpec = None
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -52,13 +58,13 @@ class SixDOFPose(object):
     """
 
     position: np.array = np.zeros(3)
-    rotation: np.quaternion = np.quaternion(1, 0, 0, 0)
+    rotation: Union[np.quaternion, List] = np.quaternion(1, 0, 0, 0)
 
 
 @attr.s(auto_attribs=True, slots=True)
 class AgentState(object):
     position: np.array = np.zeros(3)
-    rotation: np.quaternion = np.quaternion(1, 0, 0, 0)
+    rotation: Union[np.quaternion, List] = np.quaternion(1, 0, 0, 0)
     velocity: np.array = np.zeros(3)
     angular_velocity: np.array = np.zeros(3)
     force: np.array = np.zeros(3)
@@ -67,7 +73,7 @@ class AgentState(object):
 
 
 @attr.s(auto_attribs=True, slots=True)
-class AgentConfig(object):
+class AgentConfiguration(object):
     height: float = 1.5
     radius: float = 0.1
     mass: float = 32.0
@@ -88,7 +94,7 @@ class Agent(object):
     r"""Implements an agent with multiple sensors
 
     Args:
-        agent_config (AgentConfig): The configuration of the agent
+        agent_config (AgentConfiguration): The configuration of the agent
 
 
     Warning:
@@ -102,7 +108,7 @@ class Agent(object):
         graph in python is dangerous due to differences in c++ and python memory management
     """
 
-    agent_config: AgentConfig = attr.Factory(AgentConfig)
+    agent_config: AgentConfiguration = attr.Factory(AgentConfiguration)
     sensors: SensorSuite = attr.Factory(SensorSuite)
     controls: ObjectControls = attr.Factory(ObjectControls)
     body: hsim.AttachedObject = attr.Factory(hsim.AttachedObject)
@@ -111,10 +117,12 @@ class Agent(object):
         self.body.object_type = hsim.AttachedObjectType.AGENT
         self.reconfigure(self.agent_config)
 
-    def reconfigure(self, agent_config: AgentConfig, reconfigure_sensors: bool = True):
+    def reconfigure(
+        self, agent_config: AgentConfiguration, reconfigure_sensors: bool = True
+    ):
         r"""Re-create the agent with a new configuration
         Args:
-            agent_config (AgentConfig): New config
+            agent_config (AgentConfiguration): New config
             reconfigure_sensors (bool): Whether or not to also reconfigure the sensors, there
                 are specific cases where false makes sense, but most cases are covered by true
         """
@@ -139,8 +147,7 @@ class Agent(object):
         """
         self.body.attach(scene_node)
         for _, v in self.sensors.items():
-            if not v.is_valid:
-                v.attach(self.scene_node.create_child())
+            v.attach(self.scene_node.create_child())
 
     def detach(self):
         r"""Detaches the agent from the its current scene_node
@@ -206,6 +213,9 @@ class Agent(object):
         """
         habitat_sim.errors.assert_obj_valid(self.body)
 
+        if isinstance(state.rotation, list):
+            state.rotation = utils.quat_from_coeffs(state.rotation)
+
         self.body.reset_transformation()
 
         self.body.translate(state.position)
@@ -217,6 +227,9 @@ class Agent(object):
 
         for k, v in state.sensor_states.items():
             assert k in self.sensors
+            if isinstance(v.rotation, list):
+                v.rotation = utils.quat_from_coeffs(v.rotation)
+
             s = self.sensors[k]
 
             s.reset_transformation()
@@ -239,3 +252,6 @@ class Agent(object):
     @state.setter
     def state(self, new_state):
         self.set_state(new_state, reset_sensors=True)
+
+    def __del__(self):
+        self.detach()

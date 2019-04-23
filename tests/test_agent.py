@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+
+# Copyright (c) Facebook, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import habitat_sim.bindings as hsim
 import habitat_sim
 import habitat_sim.utils
@@ -18,7 +24,7 @@ def test_bad_state():
         _ = agent.state
 
 
-def test_attach_dettach():
+def test_attach_detach():
     scene_graph = hsim.SceneGraph()
     agent = habitat_sim.Agent()
     agent.attach(scene_graph.get_root_node().create_child())

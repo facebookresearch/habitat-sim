@@ -4,4 +4,4 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from .sensor_suite import SensorSuite
+use_dev_bindings = True

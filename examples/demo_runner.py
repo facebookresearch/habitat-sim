@@ -14,9 +14,10 @@ from PIL import Image
 
 import habitat_sim
 import habitat_sim.agent
-from habitat_sim.utils import d3_40_colors_rgb
 import habitat_sim.bindings as hsim
-from settings import default_sim_settings
+
+from habitat_sim.utils import d3_40_colors_rgb
+from settings import default_sim_settings, make_cfg
 
 
 class DemoRunnerType(Enum):
@@ -31,66 +32,6 @@ class DemoRunner:
 
     def set_sim_settings(self, sim_settings):
         self._sim_settings = sim_settings.copy()
-
-    # build SimulatorConfiguration
-    def make_cfg(self, settings):
-        sim_cfg = hsim.SimulatorConfiguration()
-        sim_cfg.gpu_device_id = 0
-        sim_cfg.scene.id = settings["scene"]
-
-        # define default sensor parameters (see src/esp/Sensor/Sensor.h)
-        sensors = {
-            "color_sensor": {  # active if sim_settings["color_sensor"]
-                "sensor_type": hsim.SensorType.COLOR,
-                "resolution": [settings["height"], settings["width"]],
-                "position": [0.0, settings["sensor_height"], 0.0],
-            },
-            "depth_sensor": {  # active if sim_settings["depth_sensor"]
-                "sensor_type": hsim.SensorType.DEPTH,
-                "resolution": [settings["height"], settings["width"]],
-                "position": [0.0, settings["sensor_height"], 0.0],
-            },
-            "semantic_sensor": {  # active if sim_settings["semantic_sensor"]
-                "sensor_type": hsim.SensorType.SEMANTIC,
-                "resolution": [settings["height"], settings["width"]],
-                "position": [0.0, settings["sensor_height"], 0.0],
-            },
-        }
-
-        # create sensor specifications
-        sensor_specs = []
-        for sensor_uuid, sensor_params in sensors.items():
-            if settings[sensor_uuid]:
-                sensor_spec = hsim.SensorSpec()
-                sensor_spec.uuid = sensor_uuid
-                sensor_spec.sensor_type = sensor_params["sensor_type"]
-                sensor_spec.resolution = sensor_params["resolution"]
-                sensor_spec.position = sensor_params["position"]
-                if not self._sim_settings["silent"]:
-                    print("==== Initialized Sensor Spec: =====")
-                    print("Sensor uuid: ", sensor_spec.uuid)
-                    print("Sensor type: ", sensor_spec.sensor_type)
-                    print("Sensor position: ", sensor_spec.position)
-                    print("===================================")
-
-                sensor_specs.append(sensor_spec)
-
-        # create agent specifications
-        agent_cfg = habitat_sim.agent.AgentConfig()
-        agent_cfg.sensor_specifications = sensor_specs
-        agent_cfg.action_space = {
-            "move_forward": habitat_sim.agent.ActionSpec(
-                "move_forward", habitat_sim.agent.ActuationSpec(amount=0.25)
-            ),
-            "turn_left": habitat_sim.agent.ActionSpec(
-                "turn_left", habitat_sim.agent.ActuationSpec(amount=10.0)
-            ),
-            "turn_right": habitat_sim.agent.ActionSpec(
-                "turn_right", habitat_sim.agent.ActuationSpec(amount=10.0)
-            ),
-        }
-
-        return sim_cfg, [agent_cfg]
 
     def save_color_observation(self, obs, total_frames):
         color_obs = obs["color_sensor"]
@@ -156,7 +97,7 @@ class DemoRunner:
         total_frames = 0
         start_time = time.time()
         action_names = list(
-            self._agent_cfgs[self._sim_settings["default_agent"]].action_space.keys()
+            self._cfg.agents[self._sim_settings["default_agent"]].action_space.keys()
         )
 
         while total_frames < self._sim_settings["max_frames"]:
@@ -229,8 +170,8 @@ class DemoRunner:
             input("Press Enter to continue...")
 
     def init_common(self):
-        self._sim_cfg, self._agent_cfgs = self.make_cfg(self._sim_settings)
-        self._sim = habitat_sim.Simulator(self._sim_cfg, self._agent_cfgs)
+        self._cfg = make_cfg(self._sim_settings)
+        self._sim = habitat_sim.Simulator(self._cfg)
 
         random.seed(self._sim_settings["seed"])
         self._sim.seed(self._sim_settings["seed"])

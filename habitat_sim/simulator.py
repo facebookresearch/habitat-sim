@@ -7,25 +7,36 @@
 import habitat_sim.bindings as hsim
 from habitat_sim import utils
 import habitat_sim.errors
-from habitat_sim.agent import Agent, AgentState, AgentConfig
+from habitat_sim.agent import Agent, AgentState, AgentConfiguration
 from habitat_sim.nav import GreedyGeodesicFollower
 from typing import List
 import numpy as np
-import os.path as osp
+import attr
+from typing import List
 
 
+@attr.s(auto_attribs=True, slots=True)
+class Configuration(object):
+    sim_cfg: hsim.SimulatorConfiguration = None
+    agents: List[AgentConfiguration] = None
+
+
+@attr.s
 class Simulator:
-    pathfinder: hsim.PathFinder
+    config: Configuration = attr.ib()
+    _sim: hsim.SimulatorBackend = attr.ib(default=None, init=False)
+    _num_total_frames: int = attr.ib(default=0, init=False)
 
-    def __init__(self, config, agent_cfgs: List[AgentConfig]):
-        super().__init__()
-        self._viewer = None
-        self._num_total_frames = 0
-        self._sim = None
-        self.agents = list()
-        self.reconfigure(config, agent_cfgs)
+    def __attrs_post_init__(self):
+        config = self.config
+        self.config = None
+        self.reconfigure(config)
 
     def close(self):
+        for agent in self.agents:
+            agent.detach()
+
+        self.agents = []
         self._sensors = None
         if self._sim is not None:
             del self._sim
@@ -38,18 +49,36 @@ class Simulator:
         self._sim.reset()
         return self.get_sensor_observations()
 
-    def reconfigure(self, config, agent_cfgs: List[AgentConfig]):
-        assert len(agent_cfgs) > 0
-        assert len(agent_cfgs[0].sensor_specifications) > 0
-        first_sensor_spec = agent_cfgs[0].sensor_specifications[0]
-
-        config.height = first_sensor_spec.resolution[0]
-        config.width = first_sensor_spec.resolution[1]
-
+    def _config_backend(self, config: Configuration):
         if self._sim is None:
-            self._sim = hsim.SimulatorBackend(config)
+            self._sim = hsim.SimulatorBackend(config.sim_cfg)
         else:
-            self._sim.reconfigure(config)
+            self._sim.reconfigure(config.sim_cfg)
+
+    def _config_agents(self, config: Configuration):
+        if self.config is not None and self.config.agents == config.agents:
+            return
+
+        self.agents = [Agent(cfg) for cfg in config.agents]
+
+    def reconfigure(self, config: Configuration):
+        assert len(config.agents) > 0
+        assert len(config.agents[0].sensor_specifications) > 0
+        first_sensor_spec = config.agents[0].sensor_specifications[0]
+
+        config.sim_cfg.height = first_sensor_spec.resolution[0]
+        config.sim_cfg.width = first_sensor_spec.resolution[1]
+
+        if self.config == config:
+            return
+
+        for agent in self.agents:
+            agent.detach()
+
+        # NB: Configure backend last as this gives more time for python's GC
+        # to delete any previous instances of the simulator
+        self._config_agents(config)
+        self._config_backend(config)
 
         if "navmesh" in config.scene.filepaths:
             navmesh_filenname = config.scene.filepaths["navmesh"]
@@ -64,19 +93,15 @@ class Simulator:
             # TODO add logging
             pass
 
-        self.pathfinder = self.pathfinder
-
-        self._config = config
-        self.agents = [Agent(cfg) for cfg in agent_cfgs]
         for i in range(len(self.agents)):
             self.agents[i].attach(
                 self._sim.get_active_scene_graph().get_root_node().create_child()
             )
-            self.agents[i].controls.move_filter_fn = self._step_filer
+            self.agents[i].controls.move_filter_fn = self._step_filter
 
-        self._default_agent = self.get_agent(config.default_agent_id)
+        self._default_agent = self.get_agent(config.sim_cfg.default_agent_id)
 
-        agent_cfg = agent_cfgs[config.default_agent_id]
+        agent_cfg = config.agents[config.sim_cfg.default_agent_id]
         self._sensors = {}
         for spec in agent_cfg.sensor_specifications:
             self._sensors[spec.uuid] = Sensor(
@@ -85,6 +110,8 @@ class Simulator:
 
         for i in range(len(self.agents)):
             self.initialize_agent(i)
+
+        self.config = config
 
     def get_agent(self, agent_id):
         return self.agents[agent_id]
@@ -133,6 +160,15 @@ class Simulator:
     def _step_filer(self, start_pos, end_pos):
         if self.pathfinder.is_loaded:
             end_pos = self.pathfinder.try_step(start_pos, end_pos)
+
+        return end_pos
+
+    def __del__(self):
+        self.close()
+
+    def _step_filter(self, start_pos, end_pos):
+        if self._sim.pathfinder.is_loaded:
+            end_pos = self._sim.pathfinder.try_step(start_pos, end_pos)
 
         return end_pos
 

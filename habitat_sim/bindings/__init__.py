@@ -5,8 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 
 from habitat_sim.bindings.modules import modules
+from habitat_sim.bindings.mode import use_dev_bindings
 
-try:
+if use_dev_bindings:
+    from .dev_bindings import *
+else:
     from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
 
     exec(
@@ -14,7 +17,5 @@ try:
             ", ".join(modules)
         )
     )
-except ImportError:
-    from .dev_bindings import *
 
 __all__ = ["SimulatorBackend"] + modules

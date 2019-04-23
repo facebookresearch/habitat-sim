@@ -24,6 +24,8 @@ class SemanticCategory {
   virtual int index(const std::string& mapping = "") const = 0;
   //! Return name of SemanticCategory under given mapping
   virtual std::string name(const std::string& mapping = "") const = 0;
+
+  ESP_SMART_POINTERS(SemanticCategory);
 };
 
 // forward declarations
@@ -79,9 +81,11 @@ class SemanticScene {
   }
 
   //! load SemanticScene from a Matterport3D House format filename
-  static bool loadMp3dHouse(const std::string& filename,
-                            SemanticScene& scene,
-                            const quatf& rotation = quatf::Identity());
+  static bool loadMp3dHouse(
+      const std::string& filename,
+      SemanticScene& scene,
+      const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
+                                                    geo::ESP_GRAVITY));
 
   //! load SemanticScene from a SUNCG house format file
   static bool loadSuncgHouse(const std::string& filename,
@@ -107,12 +111,15 @@ class SemanticScene {
 class SemanticLevel {
  public:
   virtual std::string id() const { return std::to_string(index_); }
+
   const std::vector<std::shared_ptr<SemanticRegion>>& regions() const {
     return regions_;
   }
+
   const std::vector<std::shared_ptr<SemanticObject>>& objects() const {
     return objects_;
   }
+
   box3f aabb() const { return bbox_; }
 
  protected:
@@ -130,14 +137,22 @@ class SemanticLevel {
 class SemanticRegion {
  public:
   virtual std::string id() const {
-    return level_->id() + "_" + std::to_string(index_);
+    if (level_ != nullptr) {
+      return level_->id() + "_" + std::to_string(index_);
+    } else {
+      return "_" + std::to_string(index_);
+    }
   }
-  const SemanticLevel& level() const { return *level_; }
+
+  const SemanticLevel::ptr level() const { return level_; }
+
   const std::vector<std::shared_ptr<SemanticObject>>& objects() const {
     return objects_;
   }
+
   box3f aabb() const { return bbox_; }
-  const SemanticCategory& category() const { return *category_; }
+
+  const SemanticCategory::ptr category() const { return category_; }
 
  protected:
   int index_;
@@ -157,12 +172,20 @@ class SemanticRegion {
 class SemanticObject {
  public:
   virtual std::string id() const {
-    return region_->id() + "_" + std::to_string(index_);
+    if (region_ != nullptr) {
+      return region_->id() + "_" + std::to_string(index_);
+    } else {
+      return "_" + std::to_string(index_);
+    }
   }
-  const SemanticRegion& region() const { return *region_; }
+
+  const SemanticRegion::ptr region() const { return region_; }
+
   box3f aabb() const { return obb_.toAABB(); }
+
   geo::OBB obb() const { return obb_; }
-  const SemanticCategory& category() const { return *category_; }
+
+  const SemanticCategory::ptr category() const { return category_; }
 
  protected:
   int index_;

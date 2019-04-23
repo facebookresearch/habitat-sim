@@ -9,6 +9,15 @@ import quaternion
 
 
 def quat_from_coeffs(coeffs: np.array) -> np.quaternion:
+    r"""Creates a quaternion from the coeffs returned by the simulator backend
+
+    Args:
+        coeffs (np.array): Coefficients of a quaternion in [b, c, d, a] format,
+            where q = a + bi + cj + dk
+
+    Returns:
+        np.quaternion: A quaternion from the coeffs
+    """
     quat = np.quaternion(1, 0, 0, 0)
     quat.real = coeffs[3]
     quat.imag = coeffs[0:3]
@@ -16,6 +25,15 @@ def quat_from_coeffs(coeffs: np.array) -> np.quaternion:
 
 
 def quat_to_coeffs(quat: np.quaternion) -> np.array:
+    r"""Converts a quaternion into the coeffs format the backend expects
+
+    Args:
+        quat (np.quaternion): The quaternion
+
+    Returns:
+        np.array: Coefficients of a quaternion in [b, c, d, a] format,
+            where q = a + bi + cj + dk
+    """
     coeffs = np.empty(4)
     coeffs[0:3] = quat.imag
     coeffs[3] = quat.real
@@ -23,6 +41,16 @@ def quat_to_coeffs(quat: np.quaternion) -> np.array:
 
 
 def quat_to_angle_axis(quat: np.quantile) -> (float, np.array):
+    r"""Converts a quaternion to angle axis format
+
+    Args:
+        quat (np.quaternion): The quaternion
+
+    Returns:
+        float: The angle to rotate about the axis by
+        np.array: The axis to rotate about.  If theta = 0, then this is harded coded to be the +x axis
+    """
+
     rot_vec = quaternion.as_rotation_vector(quat)
 
     theta = np.linalg.norm(rot_vec)
@@ -36,12 +64,33 @@ def quat_to_angle_axis(quat: np.quantile) -> (float, np.array):
 
 
 def quat_from_angle_axis(theta: float, axis: np.array) -> np.quaternion:
+    r"""Creates a quaternion from angle axis format
+
+    Args:
+        theta (float): The angle to rotate about the axis by
+        axis (np.array): The axis to rotate about.
+
+    Returns:
+        np.quaternion: The quaternion
+    """
     axis = axis.astype(np.float)
     axis /= np.linalg.norm(axis)
     return quaternion.from_rotation_vector(theta * axis)
 
 
 def quat_from_two_vectors(v0: np.array, v1: np.array) -> np.quaternion:
+    r"""Creates a quaternion that rotates the frist vector onto the second vector
+
+    v1 = (q * np.quaternion(0, *v0) * q.inverse()).imag
+
+    Args:
+        v0 (np.array): The starting vector, does not need to be a unit vector
+        v1 (np.array): The end vector, does not need to be a unit vector
+
+    Returns:
+        np.quaternion: The quaternion
+    """
+
     v0 = v0 / np.linalg.norm(v0)
     v1 = v1 / np.linalg.norm(v1)
     c = v0.dot(v1)
@@ -61,6 +110,16 @@ def quat_from_two_vectors(v0: np.array, v1: np.array) -> np.quaternion:
 
 
 def angle_between_quats(q1: np.quaternion, q2: np.quaternion) -> float:
+    r"""Computes the angular distance between two quaternions
+
+    Args:
+        q1 (np.quaternion)
+        q2 (np.quaternion)
+
+    Returns:
+        float: The angular distance between q1 and q2 in radians
+    """
+
     q1_inv = np.conjugate(q1)
     dq = q1_inv * q2
 
@@ -68,6 +127,17 @@ def angle_between_quats(q1: np.quaternion, q2: np.quaternion) -> float:
 
 
 def quat_rotate_vector(q: np.quaternion, v: np.array) -> np.array:
+    r"""Helper function to rotate a vector by a quaternion, simply does
+    v = (q * np.quaternion(0, *v) * q.inverse()).imag
+
+    Args:
+        q (np.quaternion): The quaternion to rotate the vector with
+        v (np.array): The vector to rotate
+
+    Returns:
+        np.array: The rotated vector
+    """
+
     vq = np.quaternion(0, 0, 0, 0)
     vq.imag = v
     return (q * vq * q.inverse()).imag
