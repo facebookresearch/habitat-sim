@@ -65,7 +65,7 @@ def has_ninja():
 
 
 def is_pip():
-    # This will is driven with python setup.py ...
+    # This will end with python if driven with python setup.py ...
     return osp.basename(os.environ.get("_", "/pip/no")).startswith("pip")
 
 
