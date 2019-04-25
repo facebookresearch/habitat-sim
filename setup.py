@@ -64,6 +64,11 @@ def has_ninja():
         return False
 
 
+def is_pip():
+    # This will is driven with python setup.py ...
+    return osp.basename(os.environ.get("_", "/pip/no")).startswith("pip")
+
+
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=""):
         Extension.__init__(self, name, sources=[])
@@ -94,7 +99,7 @@ class CMakeBuild(build_ext):
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
             "-DPYTHON_EXECUTABLE=" + sys.executable,
-            "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+            "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),
         ]
 
         cfg = "Debug" if self.debug else "RelWithDebInfo"
@@ -127,6 +132,11 @@ class CMakeBuild(build_ext):
         subprocess.check_call(
             ["cmake", "--build", "."] + build_args, cwd=self.build_temp
         )
+        print()  # Add an empty line for cleaner output
+
+        # The things following this don't work with pip
+        if is_pip():
+            return
 
         if not HEADLESS:
             link_dst = osp.join(osp.dirname(self.build_temp), "viewer")
@@ -143,7 +153,6 @@ class CMakeBuild(build_ext):
             )
 
         self.create_compile_commands()
-        print()  # Add an empty line for cleaner output
 
     def run_cmake(self, cmake_args):
         if FORCE_CMAKE:

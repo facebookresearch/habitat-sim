@@ -139,9 +139,9 @@ Previous simulation platforms that have operated on similar datasets typically p
 ## Quick installation
 
 1. Clone the repo
-1. Install Habitat-Sim via `pip install .` in your python env of choice (note: python 3 is required)
+1. Install Habitat-Sim via `python setup.py install` in your python env of choice (note: python 3 is required)
 
-    Use `HEADLESS=True pip install .` for headless systems (i.e. without an attached display) or if you need multi-gpu support.
+    Use `python setup.py install --headless` for headless systems (i.e. without an attached display) or if you need multi-gpu support.
 
     **Note**: the build requires `cmake` version 3.10 or newer. You can install cmake through `conda install cmake` or download directly from [https://cmake.org/download/](https://cmake.org/download/)
 
