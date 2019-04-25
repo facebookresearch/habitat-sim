@@ -4,7 +4,23 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from habitat_sim.bindings.modules import modules
+modules = [
+    "SensorSpec",
+    "SensorType",
+    "SimulatorConfiguration",
+    "ShortestPath",
+    "MultiGoalShortestPath",
+    "ActionSpaceShortestPath",
+    "MultiGoalActionSpaceShortestPath",
+    "ActionSpacePathLocation",
+    "AttachedObject",
+    "AttachedObjectType",
+    "PinholeCamera",
+    "Sensor",
+    "SceneNode",
+    "SceneGraph",
+    "geo",
+]
 
 from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
 
