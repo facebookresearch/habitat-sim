@@ -12,8 +12,7 @@
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Mesh.h>
 
-#include "BaseMesh.h"
-#include "esp/assets/InstanceMeshData.h"
+#include "GenericInstanceMeshData.h"
 #include "esp/core/esp.h"
 
 namespace esp {

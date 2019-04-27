@@ -6,7 +6,8 @@
 #include <string>
 #include <vector>
 
-#include "esp/assets/InstanceMeshData.h"
+#include "esp/assets/FRLInstanceMeshData.h"
+#include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/SceneLoader.h"
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
@@ -52,6 +53,7 @@ MeshData SceneLoader::load(const AssetInfo& info) {
       mesh.ibo.push_back(quadOffset + 2);
       mesh.ibo.push_back(quadOffset + 3);
     }
+
   } else if (info.type == AssetType::INSTANCE_MESH) {
     GenericInstanceMeshData instanceMeshData;
     instanceMeshData.loadPLY(info.filepath);

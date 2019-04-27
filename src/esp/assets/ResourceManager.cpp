@@ -24,8 +24,9 @@
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneGraph.h"
 
+#include "FRLInstanceMeshData.h"
+#include "GenericInstanceMeshData.h"
 #include "GltfMeshData.h"
-#include "InstanceMeshData.h"
 #include "Mp3dInstanceMeshData.h"
 #include "PTexMeshData.h"
 #include "ResourceManager.h"
