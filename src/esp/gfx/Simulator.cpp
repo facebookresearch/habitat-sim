@@ -134,9 +134,11 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     }
     LOG(INFO) << "Loaded.";
   }
-  // frl instance meshes and suncg houses contain their semantic annotations
+
+  // instance meshes and suncg houses contain their semantic annotations
   if (sceneInfo.type == assets::AssetType::FRL_INSTANCE_MESH ||
-      sceneInfo.type == assets::AssetType::SUNCG_SCENE) {
+      sceneInfo.type == assets::AssetType::SUNCG_SCENE ||
+      sceneInfo.type == assets::AssetType::INSTANCE_MESH) {
     activeSemanticSceneID_ = activeSceneID_;
   }
   // also load SemanticScene for SUNCG house file
