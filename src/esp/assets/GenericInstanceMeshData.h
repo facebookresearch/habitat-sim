@@ -53,7 +53,9 @@ class GenericInstanceMeshData : public BaseMesh {
     return cpu_cbo_;
   }
 
-  const std::vector<vec3ui> getIndexBufferObjectCPU() const { return cpu_ibo_; }
+  const std::vector<vec3ui>& getIndexBufferObjectCPU() const {
+    return cpu_ibo_;
+  }
 
  protected:
   // ==== rendering ====
