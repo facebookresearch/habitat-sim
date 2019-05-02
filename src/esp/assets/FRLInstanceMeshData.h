@@ -26,11 +26,8 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
       : GenericInstanceMeshData(SupportedMeshType::INSTANCE_MESH){};
   virtual ~FRLInstanceMeshData(){};
 
-  bool from_ply(const std::string& ply_file);
   void to_ply(const std::string& ply_file) const;
-  virtual bool loadPLY(const std::string& plyFile) override {
-    return from_ply(plyFile);
-  };
+  virtual bool loadPLY(const std::string& plyFile) override;
 
   std::vector<vec4f>& getVertexBufferObjectCPU() { return cpu_vbo; }
   std::vector<vec3uc>& getColorBufferObjectCPU() { return cpu_cbo; }

@@ -31,7 +31,7 @@ MeshData SceneLoader::load(const AssetInfo& info) {
 
   if (info.type == AssetType::FRL_INSTANCE_MESH) {
     FRLInstanceMeshData instanceMeshData;
-    instanceMeshData.from_ply(info.filepath);
+    instanceMeshData.loadPLY(info.filepath);
 
     const auto& vbo = instanceMeshData.getVertexBufferObjectCPU();
     const auto& cbo = instanceMeshData.getColorBufferObjectCPU();

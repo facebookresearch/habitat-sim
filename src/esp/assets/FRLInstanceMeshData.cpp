@@ -35,7 +35,7 @@
 namespace esp {
 namespace assets {
 
-bool FRLInstanceMeshData::from_ply(const std::string& ply_file) {
+bool FRLInstanceMeshData::loadPLY(const std::string& ply_file) {
   std::ifstream ifs(ply_file, std::ios::in);
   if (!ifs.good()) {
     return false;
