@@ -4,16 +4,17 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from typing import Any, Dict, List, Union
+
 import attr
 import numpy as np
-from .controls import ObjectControls, ActuationSpec
-from habitat_sim import utils
-from habitat_sim.sensors import SensorSuite
+
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
+from habitat_sim import utils
+from habitat_sim.sensors import SensorSuite
 
-
-from typing import Dict, Any, List, Union
+from .controls import ActuationSpec, ObjectControls
 
 __all__ = ["ActionSpec", "SixDOFPose", "AgentState", "AgentConfiguration", "Agent"]
 

@@ -1,5 +1,6 @@
 # external requirements
-numpy
-pillow
-numpy-quaternion
 attrs
+numba
+numpy
+numpy-quaternion
+pillow

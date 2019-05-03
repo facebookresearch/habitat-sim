@@ -6,7 +6,6 @@ import habitat_sim
 import habitat_sim.agent
 import habitat_sim.bindings as hsim
 
-
 default_sim_settings = {
     # settings shared by example.py and benchmark.py
     "max_frames": 1000,
