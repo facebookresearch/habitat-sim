@@ -220,7 +220,7 @@ if __name__ == "__main__":
     if os.environ.get("HEADLESS", "").lower() == "true":
         HEADLESS = True
 
-    requirements = ["attrs", "numba", "numpy" "numpy-quaternion", "pillow"]
+    requirements = ["attrs", "numba", "numpy", "numpy-quaternion", "pillow"]
 
     builtins.__HSIM_SETUP__ = True
     import habitat_sim
