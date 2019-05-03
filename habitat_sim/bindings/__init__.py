@@ -5,20 +5,20 @@
 # LICENSE file in the root directory of this source tree.
 
 modules = [
-    "SensorSpec",
-    "SensorType",
-    "SimulatorConfiguration",
-    "ShortestPath",
-    "MultiGoalShortestPath",
-    "ActionSpaceShortestPath",
-    "MultiGoalActionSpaceShortestPath",
     "ActionSpacePathLocation",
+    "ActionSpaceShortestPath",
     "AttachedObject",
     "AttachedObjectType",
+    "MultiGoalActionSpaceShortestPath",
+    "MultiGoalShortestPath",
     "PinholeCamera",
-    "Sensor",
-    "SceneNode",
     "SceneGraph",
+    "SceneNode",
+    "Sensor",
+    "SensorSpec",
+    "SensorType",
+    "ShortestPath",
+    "SimulatorConfiguration",
     "geo",
 ]
 
