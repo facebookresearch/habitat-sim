@@ -89,7 +89,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${DEPS_DIR}/magnum-plugins/modules/"
 add_subdirectory("${DEPS_DIR}/magnum-plugins")
 
 # python interpreter
-find_package(PythonInterp REQUIRED)
+find_package(PythonInterp 3.6 REQUIRED)
 
 # Search for python executable to pick up activated virtualenv/conda python
 unset(PYTHON_EXECUTABLE CACHE)

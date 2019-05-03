@@ -16,6 +16,7 @@ import os.path as osp
 import re
 import subprocess
 import sys
+from distutils.version import StrictVersion
 
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
@@ -212,6 +213,10 @@ class CMakeBuild(build_ext):
 
 
 if __name__ == "__main__":
+    assert StrictVersion(
+        "{}.{}".format(sys.version_info[0], sys.version_info[1])
+    ) >= StrictVersion("3.6"), "Must use python3.6 or newer"
+
     if os.environ.get("HEADLESS", "").lower() == "true":
         HEADLESS = True
 
