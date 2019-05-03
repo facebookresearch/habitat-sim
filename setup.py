@@ -8,16 +8,16 @@
 Adapted from: http://www.benjack.io/2017/06/12/python-cpp-tests.html
 """
 
-import os
-import os.path as osp
-import sys
-import subprocess
 import builtins
-import re
 import glob
 import json
+import os
+import os.path as osp
+import re
+import subprocess
+import sys
 
-from setuptools import setup, Extension, find_packages
+from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
 HEADLESS = False
@@ -215,7 +215,7 @@ if __name__ == "__main__":
     if os.environ.get("HEADLESS", "").lower() == "true":
         HEADLESS = True
 
-    requirements = ["numpy", "pillow", "numpy-quaternion", "attrs", "numba"]
+    requirements = ["attrs", "numba", "numpy" "numpy-quaternion", "pillow"]
 
     builtins.__HSIM_SETUP__ = True
     import habitat_sim
