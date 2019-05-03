@@ -4,13 +4,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import habitat_sim.bindings as hsim
-import habitat_sim
-import habitat_sim.utils
-import habitat_sim.errors
 import numpy as np
-import quaternion
 import pytest
+import quaternion
+
+import habitat_sim
+import habitat_sim.bindings as hsim
+import habitat_sim.errors
+import habitat_sim.utils
 
 
 def _check_state_same(s1, s2):
@@ -21,7 +22,7 @@ def _check_state_same(s1, s2):
 def test_bad_state():
     agent = habitat_sim.Agent()
     with pytest.raises(habitat_sim.errors.InvalidAttachedObject):
-        _ = agent.state
+        agent.state
 
 
 def test_attach_detach():

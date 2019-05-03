@@ -6,8 +6,10 @@
 
 
 import argparse
-import demo_runner as dr
+
 import numpy as np
+
+import demo_runner as dr
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--width", type=int, default=640)

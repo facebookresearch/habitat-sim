@@ -7,15 +7,14 @@ import os
 import random
 import sys
 import time
+from enum import Enum
 
 import numpy as np
-from enum import Enum
 from PIL import Image
 
 import habitat_sim
 import habitat_sim.agent
 import habitat_sim.bindings as hsim
-
 from habitat_sim.utils import d3_40_colors_rgb
 from settings import default_sim_settings, make_cfg
 

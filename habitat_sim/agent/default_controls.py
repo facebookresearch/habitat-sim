@@ -4,10 +4,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from .controls import register_move_fn, ActuationSpec
-from habitat_sim import utils
-import habitat_sim.bindings as hsim
 import numpy as np
+
+import habitat_sim.bindings as hsim
+from habitat_sim import utils
+
+from .controls import ActuationSpec, register_move_fn
 
 __all__ = []
 
