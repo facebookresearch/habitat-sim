@@ -7,7 +7,8 @@ set(DEPS_DIR "${CMAKE_CURRENT_LIST_DIR}/../deps")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}")
 
 find_package(OpenMP)
-find_package(OpenGL REQUIRED)
+# We don't find_package(OpenGL REQUIRED) here, but let Magnum do that instead
+# as it sets up various things related to GLVND.
 
 include_directories("deps")
 
