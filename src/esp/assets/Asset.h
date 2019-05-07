@@ -16,10 +16,10 @@ enum class AssetType {
   SUNCG_OBJECT,
   SUNCG_SCENE,
   MP3D_MESH,
-  MP3D_INSTANCE_MESH,
+  INSTANCE_MESH,
   FRL_PTEX_MESH,
   FRL_INSTANCE_MESH,
-  NAVMESH
+  NAVMESH,
 };
 
 //! AssetInfo stores information necessary to identify and load an Asset

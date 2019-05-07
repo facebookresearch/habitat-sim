@@ -6,7 +6,8 @@
 #include <string>
 #include <vector>
 
-#include "esp/assets/InstanceMeshData.h"
+#include "esp/assets/FRLInstanceMeshData.h"
+#include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/SceneLoader.h"
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
@@ -29,8 +30,8 @@ MeshData SceneLoader::load(const AssetInfo& info) {
   }
 
   if (info.type == AssetType::FRL_INSTANCE_MESH) {
-    InstanceMeshData instanceMeshData;
-    instanceMeshData.from_ply(info.filepath);
+    FRLInstanceMeshData instanceMeshData;
+    instanceMeshData.loadPLY(info.filepath);
 
     const auto& vbo = instanceMeshData.getVertexBufferObjectCPU();
     const auto& cbo = instanceMeshData.getColorBufferObjectCPU();
@@ -52,6 +53,25 @@ MeshData SceneLoader::load(const AssetInfo& info) {
       mesh.ibo.push_back(quadOffset + 2);
       mesh.ibo.push_back(quadOffset + 3);
     }
+
+  } else if (info.type == AssetType::INSTANCE_MESH) {
+    GenericInstanceMeshData instanceMeshData;
+    instanceMeshData.loadPLY(info.filepath);
+
+    const auto& vbo = instanceMeshData.getVertexBufferObjectCPU();
+    const auto& cbo = instanceMeshData.getColorBufferObjectCPU();
+    const auto& ibo = instanceMeshData.getIndexBufferObjectCPU();
+    mesh.vbo = vbo;
+    for (const auto& c : cbo) {
+      mesh.cbo.emplace_back(c.cast<float>() / 255.0f);
+    }
+
+    for (const auto& tri : ibo) {
+      mesh.ibo.push_back(tri[0]);
+      mesh.ibo.push_back(tri[1]);
+      mesh.ibo.push_back(tri[2]);
+    }
+
   } else {
     const aiScene* scene;
     Assimp::Importer Importer;

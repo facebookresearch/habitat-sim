@@ -24,8 +24,9 @@
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneGraph.h"
 
+#include "FRLInstanceMeshData.h"
+#include "GenericInstanceMeshData.h"
 #include "GltfMeshData.h"
-#include "InstanceMeshData.h"
 #include "Mp3dInstanceMeshData.h"
 #include "PTexMeshData.h"
 #include "ResourceManager.h"
@@ -42,10 +43,9 @@ bool ResourceManager::loadScene(const AssetInfo& info,
     return false;
   }
 
-  if (info.type == AssetType::FRL_INSTANCE_MESH) {
+  if (info.type == AssetType::FRL_INSTANCE_MESH ||
+      info.type == AssetType::INSTANCE_MESH) {
     return loadInstanceMeshData(info, parent, drawables);
-  } else if (info.type == AssetType::MP3D_INSTANCE_MESH) {
-    return loadMp3dInstanceMeshData(info, parent, drawables);
   } else if (info.type == AssetType::FRL_PTEX_MESH) {
     return loadPTexMeshData(info, parent, drawables);
   } else if (info.type == AssetType::SUNCG_SCENE) {
@@ -66,7 +66,7 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
         shaderPrograms_[INSTANCE_MESH_SHADER] =
             std::make_shared<gfx::GenericShader>(
                 gfx::GenericShader::Flag::VertexColored |
-                gfx::GenericShader::Flag::PerVertexIds);
+                gfx::GenericShader::Flag::PrimitiveIDTextured);
       } break;
 
       case PTEX_MESH_SHADER: {
@@ -110,7 +110,7 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 
     meshes_.emplace_back(std::make_unique<PTexMeshData>());
     int index = meshes_.size() - 1;
-    auto* pTexMeshData = static_cast<PTexMeshData*>(meshes_[index].get());
+    auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_[index].get());
     pTexMeshData->load(filename, atlasDir);
 
     // update the dictionary
@@ -120,14 +120,14 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
   // create the scene graph by request
   if (parent) {
     auto* ptexShader =
-        static_cast<gfx::PTexMeshShader*>(getShaderProgram(PTEX_MESH_SHADER));
+        dynamic_cast<gfx::PTexMeshShader*>(getShaderProgram(PTEX_MESH_SHADER));
 
     auto indexPair = resourceDict_.at(filename).meshIndex;
     int start = indexPair.first;
     int end = indexPair.second;
 
     for (int iMesh = start; iMesh <= end; ++iMesh) {
-      auto* pTexMeshData = static_cast<PTexMeshData*>(meshes_[iMesh].get());
+      auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_[iMesh].get());
 
       pTexMeshData->uploadBuffersToGPU(false);
 
@@ -150,13 +150,17 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
   // and add it to the shaderPrograms_
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
-    meshes_.emplace_back(std::make_unique<InstanceMeshData>());
+    if (info.type == AssetType::FRL_INSTANCE_MESH) {
+      meshes_.emplace_back(std::make_unique<FRLInstanceMeshData>());
+    } else if (info.type == AssetType::INSTANCE_MESH) {
+      meshes_.emplace_back(std::make_unique<GenericInstanceMeshData>());
+    }
     int index = meshes_.size() - 1;
     auto* instanceMeshData =
-        static_cast<InstanceMeshData*>(meshes_[index].get());
+        dynamic_cast<GenericInstanceMeshData*>(meshes_[index].get());
 
     LOG(INFO) << "loading instance mesh data: " << filename;
-    instanceMeshData->from_ply(filename);
+    instanceMeshData->loadPLY(filename);
     instanceMeshData->uploadBuffersToGPU(false);
     // update the dictionary
     resourceDict_.emplace(filename, MeshMetaData(index, index));
@@ -171,50 +175,10 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
 
     for (int iMesh = start; iMesh <= end; ++iMesh) {
       auto* instanceMeshData =
-          static_cast<InstanceMeshData*>(meshes_[iMesh].get());
+          dynamic_cast<GenericInstanceMeshData*>(meshes_[iMesh].get());
       scene::SceneNode& node = parent->createChild();
       createDrawable(INSTANCE_MESH_SHADER, *instanceMeshData->getMagnumGLMesh(),
-                     node, drawables);
-    }
-  }
-
-  return true;
-}
-
-// TODO the function below is nearly identical to above. Refactor so that
-// logic duplication is avoided
-bool ResourceManager::loadMp3dInstanceMeshData(const AssetInfo& info,
-                                               scene::SceneNode* parent,
-                                               DrawableGroup* drawables) {
-  // if this is a new file, load it and add it to the dictionary, create shaders
-  // and add it to the shaderPrograms_
-  const std::string& filename = info.filepath;
-  if (resourceDict_.count(filename) == 0) {
-    meshes_.emplace_back(std::make_unique<Mp3dInstanceMeshData>());
-    int index = meshes_.size() - 1;
-    auto* instanceMeshData =
-        static_cast<Mp3dInstanceMeshData*>(meshes_[index].get());
-
-    LOG(INFO) << "loading MP3D instance mesh data: " << filename;
-    instanceMeshData->loadSemMeshPLY(filename);
-    instanceMeshData->uploadBuffersToGPU(false);
-    // update the dictionary
-    resourceDict_.emplace(filename, MeshMetaData(index, index));
-  }
-
-  // create the scene graph by request
-  if (parent) {
-    LOG(INFO) << "Building SceneGraph";
-    auto indexPair = resourceDict_.at(filename).meshIndex;
-    int start = indexPair.first;
-    int end = indexPair.second;
-
-    for (int iMesh = start; iMesh <= end; ++iMesh) {
-      auto* instanceMeshData =
-          static_cast<InstanceMeshData*>(meshes_[iMesh].get());
-      scene::SceneNode& node = parent->createChild();
-      createDrawable(INSTANCE_MESH_SHADER, *instanceMeshData->getMagnumGLMesh(),
-                     node, drawables);
+                     node, drawables, instanceMeshData->getSemanticTexture());
     }
   }
 

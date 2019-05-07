@@ -37,3 +37,6 @@
 [submodule "src/deps/recastnavigation"]
 	path = src/deps/recastnavigation
 	url = https://github.com/erikwijmans/recastnavigation.git
+[submodule "src/deps/tinyply"]
+	path = src/deps/tinyply
+	url = https://github.com/ddiakopoulos/tinyply

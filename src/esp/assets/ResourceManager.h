@@ -95,10 +95,6 @@ class ResourceManager {
                             scene::SceneNode* parent,
                             DrawableGroup* drawables);
 
-  bool loadMp3dInstanceMeshData(const AssetInfo& info,
-                                scene::SceneNode* parent,
-                                DrawableGroup* drawables);
-
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent,
                            DrawableGroup* drawables);
