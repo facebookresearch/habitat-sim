@@ -16,6 +16,12 @@ if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
 endif(CCACHE_FOUND)
 
+option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
+option(USE_SYSTEM_EIGEN "Use system Eigen instead of a bundled submodule" OFF)
+option(USE_SYSTEM_MAGNUM "Use system Magnum instead of a bundled submodule" OFF)
+option(USE_SYSTEM_PYBIND11 "Use system Pybind11 instead of a bundled submodule" OFF)
+option(USE_SYSTEM_RAPIDJSON "Use system RapidJSON instead of a bundled submodule" OFF)
+
 set(BUILD_GUI_VIEWERS OFF CACHE BOOL "BUILD_GUI_VIEWERS")
 
 # set(CMAKE_BUILD_TYPE Debug)
