@@ -39,9 +39,8 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("action-path",
                "Provides actions along the action space shortest path to a "
                "random goal")
-      .addSkippedPrefix("magnum")
-      .setHelp("engine-specific options")
-      .setHelp("Displays a 3D scene file provided on command line")
+      .addSkippedPrefix("magnum", "engine-specific options")
+      .setGlobalHelp("Displays a 3D scene file provided on command line")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
