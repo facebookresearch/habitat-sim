@@ -92,7 +92,10 @@ class CMakeBuild(build_ext):
     def build_extension(self, ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
 
-        if in_git():
+        # Init & update all submodules if not already (the user might be pinned
+        # on some particular commit or have working tree changes, don't destroy
+        # those)
+        if in_git() and not os.path.exists(".git/modules"):
             subprocess.check_call(
                 ["git", "submodule", "update", "--init", "--recursive"]
             )
