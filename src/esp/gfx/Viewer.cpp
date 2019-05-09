@@ -26,7 +26,9 @@ namespace gfx {
 Viewer::Viewer(const Arguments& arguments)
     : Platform::Application{arguments,
                             Configuration{}.setTitle("Viewer").setWindowFlags(
-                                Configuration::WindowFlag::Resizable)},
+                                Configuration::WindowFlag::Resizable),
+                            GLConfiguration{}.setColorBufferSize(
+                                Vector4i(8, 8, 8, 8))},
       pathfinder_(nav::PathFinder::create()),
       controls_(),
       previousPosition_() {
