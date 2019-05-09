@@ -8,25 +8,22 @@
 Adapted from: http://www.benjack.io/2017/06/12/python-cpp-tests.html
 """
 
+import argparse
 import builtins
 import glob
 import json
 import os
 import os.path as osp
 import re
+import shlex
 import subprocess
 import sys
-import shlex
-import argparse
 from distutils.version import StrictVersion
 
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
-HEADLESS = False
-FORCE_CMAKE = False
-BUILD_TESTS = False
-CMAKE_ARGS = ""
+ARG_CACHE_BLACKLIST = {"force_cmake"}
 
 
 def build_parser():
@@ -55,9 +52,24 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
         type=str,
         default="",
         help="""Additional arguements to be passed to cmake.
-Note that you will need to do `--cmake-args="..."` as `--cmake-args "..."` will generally not be parsed correctly
+Note that you will need to do `--cmake-args="..."` as `--cmake-args "..."`
+will generally not be parsed correctly
 You may need to use --force-cmake to ensure cmake is rerun with new args.
 Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
+    )
+
+    parser.add_argument(
+        "--no-update-submodules",
+        dest="no_update_submodules",
+        action="store_true",
+        help="Don't update git submodules",
+    )
+
+    parser.add_argument(
+        "--no-cached-args",
+        dest="no_cached_args",
+        action="store_true",
+        help="Does not reload cached args for setup.py",
     )
 
     return parser
@@ -77,11 +89,6 @@ parser = build_parser()
 args, filtered_args = parser.parse_known_args(args=parseable_args)
 
 sys.argv = filtered_args + unparseable_args
-
-HEADLESS = args.headless
-BUILD_TESTS = args.build_tests
-FORCE_CMAKE = args.force_cmake
-CMAKE_ARGS = args.cmake_args
 
 
 def in_git():
@@ -125,9 +132,19 @@ class CMakeBuild(build_ext):
             self.build_extension(ext)
 
     def build_extension(self, ext):
+        args_cache_file = osp.join(self.build_temp, "setuppy_args.json")
+
+        if not is_pip() and not args.no_cached_args and osp.exists(args_cache_file):
+            with open(args_cache_file, "r") as f:
+                cached_args = json.load(f)
+
+            for k, v in cached_args.items():
+                if k not in ARG_CACHE_BLACKLIST:
+                    setattr(args, k, v)
+
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
 
-        if in_git():
+        if in_git() and not args.no_update_submodules:
             subprocess.check_call(
                 ["git", "submodule", "update", "--init", "--recursive"]
             )
@@ -137,7 +154,7 @@ class CMakeBuild(build_ext):
             "-DPYTHON_EXECUTABLE=" + sys.executable,
             "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),
         ]
-        cmake_args += shlex.split(CMAKE_ARGS)
+        cmake_args += shlex.split(args.cmake_args)
 
         cfg = "Debug" if self.debug else "RelWithDebInfo"
         build_args = ["--config", cfg]
@@ -150,8 +167,10 @@ class CMakeBuild(build_ext):
         else:
             build_args += ["-j"]
 
-        cmake_args += ["-DBUILD_GUI_VIEWERS={}".format("ON" if not HEADLESS else "OFF")]
-        cmake_args += ["-DBUILD_TESTS={}".format("ON" if BUILD_TESTS else "OFF")]
+        cmake_args += [
+            "-DBUILD_GUI_VIEWERS={}".format("ON" if not args.headless else "OFF")
+        ]
+        cmake_args += ["-DBUILD_TESTS={}".format("ON" if args.build_tests else "OFF")]
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
@@ -172,7 +191,7 @@ class CMakeBuild(build_ext):
         if is_pip():
             return
 
-        if not HEADLESS:
+        if not args.headless:
             link_dst = osp.join(osp.dirname(self.build_temp), "viewer")
             if not osp.islink(link_dst):
                 os.symlink(
@@ -187,9 +206,11 @@ class CMakeBuild(build_ext):
             )
 
         self.create_compile_commands()
+        with open(args_cache_file, "w") as f:
+            json.dump(vars(args), f, indent=4, sort_keys=True)
 
     def run_cmake(self, cmake_args):
-        if FORCE_CMAKE:
+        if args.force_cmake:
             return True
 
         cache_parser = re.compile(r"(?P<K>\w+?)(:\w+?|)=(?P<V>.*?)$")
@@ -251,10 +272,10 @@ if __name__ == "__main__":
     ) >= StrictVersion("3.6"), "Must use python3.6 or newer"
 
     if os.environ.get("HEADLESS", "").lower() == "true":
-        HEADLESS = True
+        args.headless = True
 
     if os.environ.get("CMAKE_ARGS", None) is not None:
-        CMAKE_ARGS = os.environ["CMAKE_ARGS"]
+        args.cmake_args = os.environ["CMAKE_ARGS"]
 
     requirements = ["attrs", "numba", "numpy", "numpy-quaternion", "pillow"]
 
