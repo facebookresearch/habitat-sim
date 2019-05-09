@@ -144,6 +144,9 @@ class CMakeBuild(build_ext):
 
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
 
+        # Init & update all submodules if not already (the user might be pinned
+        # on some particular commit or have working tree changes, don't destroy
+        # those)
         if in_git() and not args.no_update_submodules:
             subprocess.check_call(
                 ["git", "submodule", "update", "--init", "--recursive"]
@@ -164,8 +167,13 @@ class CMakeBuild(build_ext):
 
         if has_ninja():
             cmake_args += ["-GNinja"]
-        else:
-            build_args += ["-j"]
+        # Make it possible to *reduce* the number of jobs. Ninja requires a
+        # number passed to -j (and builds on all cores by default), while make
+        # doesn't require a number (but builds sequentially by default), so we
+        # add the argument only when it's not ninja or the number of jobs is
+        # specified.
+        if not has_ninja() or self.parallel:
+            build_args += ["-j{}".format(self.parallel) if self.parallel else "-j"]
 
         cmake_args += [
             "-DBUILD_GUI_VIEWERS={}".format("ON" if not args.headless else "OFF")
