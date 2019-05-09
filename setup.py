@@ -16,6 +16,8 @@ import os.path as osp
 import re
 import subprocess
 import sys
+import shlex
+import argparse
 from distutils.version import StrictVersion
 
 from setuptools import Extension, find_packages, setup
@@ -24,29 +26,62 @@ from setuptools.command.build_ext import build_ext
 HEADLESS = False
 FORCE_CMAKE = False
 BUILD_TESTS = False
+CMAKE_ARGS = ""
 
 
-filtered_args = []
+def build_parser():
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        "--headless",
+        dest="headless",
+        action="store_true",
+        help="""Build in headless mode.
+Use "HEADLESS=True pip install ." to build in headless mode with pip""",
+    )
+    parser.add_argument(
+        "--force-cmake",
+        "--cmake",
+        dest="force_cmake",
+        action="store_true",
+        help="Forces cmake to be rerun",
+    )
+    parser.add_argument(
+        "--build-tests", dest="build_tests", action="store_true", help="Build tests"
+    )
+    parser.add_argument(
+        "--cmake-args",
+        type=str,
+        default="",
+        help="""Additional arguements to be passed to cmake.
+Note that you will need to do `--cmake-args="..."` as `--cmake-args "..."` will generally not be parsed correctly
+You may need to use --force-cmake to ensure cmake is rerun with new args.
+Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
+    )
+
+    return parser
+
+
+parseable_args = []
+unparseable_args = []
 for i, arg in enumerate(sys.argv):
-    if arg == "--headless":
-        HEADLESS = True
-        continue
-
-    if arg == "--force-cmake" or arg == "--cmake":
-        FORCE_CMAKE = True
-        continue
-
-    if arg == "--build-tests":
-        BUILD_TESTS = True
-        continue
-
     if arg == "--":
-        filtered_args += sys.argv[i:]
+        unparseable_args = sys.argv[i:]
         break
 
-    filtered_args.append(arg)
+    parseable_args.append(arg)
 
-sys.argv = filtered_args
+
+parser = build_parser()
+args, filtered_args = parser.parse_known_args(args=parseable_args)
+
+sys.argv = filtered_args + unparseable_args
+
+HEADLESS = args.headless
+BUILD_TESTS = args.build_tests
+FORCE_CMAKE = args.force_cmake
+CMAKE_ARGS = args.cmake_args
 
 
 def in_git():
@@ -102,6 +137,7 @@ class CMakeBuild(build_ext):
             "-DPYTHON_EXECUTABLE=" + sys.executable,
             "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),
         ]
+        cmake_args += shlex.split(CMAKE_ARGS)
 
         cfg = "Debug" if self.debug else "RelWithDebInfo"
         build_args = ["--config", cfg]
@@ -122,17 +158,14 @@ class CMakeBuild(build_ext):
             env.get("CXXFLAGS", ""), self.distribution.get_version()
         )
 
-        if not os.path.exists(self.build_temp):
-            os.makedirs(self.build_temp)
-
         if self.run_cmake(cmake_args):
             subprocess.check_call(
-                ["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env
+                shlex.split("cmake -H{} -B{}".format(ext.sourcedir, self.build_temp))
+                + cmake_args,
+                env=env,
             )
 
-        subprocess.check_call(
-            ["cmake", "--build", "."] + build_args, cwd=self.build_temp
-        )
+        subprocess.check_call(shlex.split("cmake --build {}".format(self.build_temp)))
         print()  # Add an empty line for cleaner output
 
         # The things following this don't work with pip
@@ -170,7 +203,7 @@ class CMakeBuild(build_ext):
                 if arg[0:2] == "-G":
                     continue
 
-                k, v = arg.split("=")
+                k, v = arg.split("=", 1)
                 # Strip +D
                 k = k[2:]
                 for l in cache_contents:
@@ -219,6 +252,9 @@ if __name__ == "__main__":
 
     if os.environ.get("HEADLESS", "").lower() == "true":
         HEADLESS = True
+
+    if os.environ.get("CMAKE_ARGS", None) is not None:
+        CMAKE_ARGS = os.environ["CMAKE_ARGS"]
 
     requirements = ["attrs", "numba", "numpy", "numpy-quaternion", "pillow"]
 
