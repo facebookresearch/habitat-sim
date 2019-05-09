@@ -4,6 +4,7 @@
 
 #include "GenericShader.h"
 
+#include <Corrade/Containers/Reference.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Shader.h>
 #include <Magnum/GL/Texture.h>

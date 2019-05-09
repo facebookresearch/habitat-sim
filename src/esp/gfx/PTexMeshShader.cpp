@@ -8,6 +8,7 @@
 #include <sys/mman.h>
 #include <iostream>
 
+#include <Corrade/Containers/Reference.h>
 #include <Magnum/GL/BufferTextureFormat.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Shader.h>
