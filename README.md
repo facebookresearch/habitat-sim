@@ -139,6 +139,7 @@ Previous simulation platforms that have operated on similar datasets typically p
 ## Quick installation
 
 1. Clone the repo
+1. Install numpy in your python env of choice (e.g., `pip install numpy` or `conda install numpy`)
 1. Install Habitat-Sim via `python setup.py install` in your python env of choice (note: python 3 is required)
 
     Use `python setup.py install --headless` for headless systems (i.e. without an attached display) or if you need multi-gpu support.
@@ -171,6 +172,7 @@ We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup
 ## Developer installation and getting started
 
 1. Clone the repo.
+1. Install numpy in your python env of choice (e.g., `pip install numpy` or `conda install numpy`)
 1. Install dependencies in your python env of choice (e.g., `pip install -r requirements.txt`)
 1. If you are using a virtual/conda environment, make sure to use the same environment throughout the rest of the build
 1. Build using `./build.sh` or `./build.sh --headless` for headless systems (i.e. without an attached display) or if you need multi-gpu support
@@ -227,4 +229,4 @@ Habitat-Sim is MIT licensed. See the LICENSE file for details.
 
 ## References
 
-1. [Habitat: A Platform for Embodied AI Research](https://arxiv.org/abs/1904.01201). Manolis Savva, Abhishek Kadian, Oleksandr Maksymets, Yili Zhao, Erik Wijmans, Bhavana Jain, Julian Straub, Jia Liu, Vladlen Koltun, Jitendra Malik, Devi Parikh, Dhruv Batra. Tech report, arXiv:1904.01201, 2019. 
+1. [Habitat: A Platform for Embodied AI Research](https://arxiv.org/abs/1904.01201). Manolis Savva, Abhishek Kadian, Oleksandr Maksymets, Yili Zhao, Erik Wijmans, Bhavana Jain, Julian Straub, Jia Liu, Vladlen Koltun, Jitendra Malik, Devi Parikh, Dhruv Batra. Tech report, arXiv:1904.01201, 2019.

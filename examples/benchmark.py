@@ -6,8 +6,10 @@
 
 
 import argparse
-import demo_runner as dr
+
 import numpy as np
+
+import demo_runner as dr
 
 parser = argparse.ArgumentParser("Running benchmarks on simulator")
 parser.add_argument("--scene", type=str, default="test.glb")

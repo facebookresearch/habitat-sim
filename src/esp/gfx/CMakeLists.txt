@@ -62,7 +62,8 @@ target_link_libraries(gfx
 
 # Link windowed application library if needed
 if(${BUILD_GUI_VIEWERS})
-  target_link_libraries(gfx PUBLIC Magnum::Application)
+  find_package(Magnum REQUIRED GlfwApplication)
+  target_link_libraries(gfx PUBLIC Magnum::GlfwApplication)
 elseif(UNIX)
   target_compile_definitions(gfx PRIVATE __ESP_USE_EGL__)
 endif()

@@ -9,6 +9,12 @@ repos:
         args: ['--maxkb=2000']
     -   id: end-of-file-fixer
 
+-   repo: https://github.com/pre-commit/mirrors-isort
+    rev: master
+    hooks:
+    -   id: isort
+        language_version: python3.6
+
 -   repo: https://github.com/ambv/black
     rev: stable
     hooks:

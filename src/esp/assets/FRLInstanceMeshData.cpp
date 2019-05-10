@@ -2,7 +2,20 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "InstanceMeshData.h"
+#include "FRLInstanceMeshData.h"
+
+#include <Corrade/Containers/Array.h>
+#include <Magnum/GL/Texture.h>
+#include <Magnum/GL/TextureFormat.h>
+#include <Magnum/Image.h>
+#include <Magnum/Math/Functions.h>
+#include <Magnum/PixelFormat.h>
+#include <Magnum/Trade/Trade.h>
+
+#include <tinyply.h>
+#include <fstream>
+#include <sstream>
+#include <vector>
 
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -22,7 +35,7 @@
 namespace esp {
 namespace assets {
 
-bool InstanceMeshData::from_ply(const std::string& ply_file) {
+bool FRLInstanceMeshData::loadPLY(const std::string& ply_file) {
   std::ifstream ifs(ply_file, std::ios::in);
   if (!ifs.good()) {
     return false;
@@ -119,7 +132,7 @@ bool InstanceMeshData::from_ply(const std::string& ply_file) {
   return true;
 }
 
-void InstanceMeshData::to_ply(const std::string& ply_file) const {
+void FRLInstanceMeshData::to_ply(const std::string& ply_file) const {
   const int nVertex = cpu_vbo.size();
 
   std::ofstream f(ply_file, std::ios::out | std::ios::binary);
@@ -175,14 +188,15 @@ void InstanceMeshData::to_ply(const std::string& ply_file) const {
   f.write(reinterpret_cast<const char*>(gravity_dir.data()),
           sizeof(float) * grav_size);
 }
-Magnum::GL::Mesh* InstanceMeshData::getMagnumGLMesh() {
+
+Magnum::GL::Mesh* FRLInstanceMeshData::getMagnumGLMesh() {
   if (renderingBuffer_ == nullptr) {
     return nullptr;
   }
   return &(renderingBuffer_->mesh);
 }
 
-void InstanceMeshData::uploadBuffersToGPU(bool forceReload) {
+void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {
     buffersOnGPU_ = false;
   }
@@ -191,7 +205,7 @@ void InstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   }
 
   renderingBuffer_.reset();
-  renderingBuffer_ = std::make_unique<InstanceMeshData::RenderingBuffer>();
+  renderingBuffer_ = std::make_unique<FRLInstanceMeshData::RenderingBuffer>();
 
   // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0,2,3]
   const size_t numQuads = cpu_vbo.size() / 4;
@@ -218,13 +232,32 @@ void InstanceMeshData::uploadBuffersToGPU(bool forceReload) {
     cbo_float[idx + 1] = cpu_cbo[iVert][1] / 255.0f;
     cbo_float[idx + 2] = cpu_cbo[iVert][2] / 255.0f;
   }
-  renderingBuffer_->vbo.setData(cpu_vbo, Magnum::GL::BufferUsage::StaticDraw);
+
+  std::vector<vec3f> xyz_vbo(cpu_vbo.size());
+  for (int i = 0; i < cpu_vbo.size(); ++i) {
+    xyz_vbo[i] = cpu_vbo[i].head<3>();
+  }
+
+  // See code for GenericInstanceMeshData::uploadBuffersToGPU for comments about
+  // what's going on with this image/texture
+  const size_t numTris = numQuads * 2;
+  const int texSize = std::pow(2, std::ceil(std::log2(std::sqrt(numTris))));
+  float* obj_id_tex_data = new float[texSize * texSize]();
+
+  for (size_t i = 0; i < numQuads; ++i) {
+    obj_id_tex_data[2 * i] = cpu_vbo[4 * i][3];
+    obj_id_tex_data[2 * i + 1] = cpu_vbo[4 * i][3];
+  }
+
+  renderingBuffer_->tex = createInstanceTexture(obj_id_tex_data, texSize);
+
+  renderingBuffer_->vbo.setData(xyz_vbo, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->cbo.setData(cbo_float, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->ibo.setData(tri_ibo, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
       .setCount(tri_ibo.size())  // Set vertex/index count (numQuads * 6)
       .addVertexBuffer(renderingBuffer_->vbo, 0,
-                       Magnum::GL::Attribute<0, Magnum::Vector4>{})
+                       Magnum::GL::Attribute<0, Magnum::Vector3>{})
       .addVertexBuffer(renderingBuffer_->cbo, 0,
                        Magnum::GL::Attribute<1, Magnum::Color3>{})
       .setIndexBuffer(renderingBuffer_->ibo, 0,

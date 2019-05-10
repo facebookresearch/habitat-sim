@@ -29,7 +29,7 @@ struct HitRecord {
 };
 
 namespace impl {
-class ActionSpaceGraph;
+struct ActionSpaceGraph;
 class IslandSystem;
 }  // namespace impl
 

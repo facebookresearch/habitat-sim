@@ -4,15 +4,17 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import habitat_sim.bindings as hsim
-from habitat_sim import utils
-import habitat_sim.errors
-from habitat_sim.agent import Agent, AgentState, AgentConfiguration
-from habitat_sim.nav import GreedyGeodesicFollower
-import numpy as np
-import attr
-from typing import List
 import os.path as osp
+from typing import List
+
+import numpy as np
+
+import attr
+import habitat_sim.bindings as hsim
+import habitat_sim.errors
+from habitat_sim import utils
+from habitat_sim.agent import Agent, AgentConfiguration, AgentState
+from habitat_sim.nav import GreedyGeodesicFollower
 
 
 @attr.s(auto_attribs=True, slots=True)

@@ -8,10 +8,7 @@
 #include <string>
 #include <vector>
 
-#include <Magnum/GL/Buffer.h>
-#include <Magnum/GL/Mesh.h>
-
-#include "BaseMesh.h"
+#include "GenericInstanceMeshData.h"
 #include "esp/core/esp.h"
 
 namespace esp {
@@ -23,20 +20,14 @@ namespace assets {
  * id_to_label and id_to_node map face id to instance and node ids
  * Faces are assumed to be quads
  */
-class InstanceMeshData : public BaseMesh {
+class FRLInstanceMeshData : public GenericInstanceMeshData {
  public:
-  struct RenderingBuffer {
-    Magnum::GL::Mesh mesh;
-    Magnum::GL::Buffer vbo;
-    Magnum::GL::Buffer cbo;
-    Magnum::GL::Buffer ibo;
-  };
+  FRLInstanceMeshData()
+      : GenericInstanceMeshData(SupportedMeshType::INSTANCE_MESH){};
+  virtual ~FRLInstanceMeshData(){};
 
-  InstanceMeshData() : BaseMesh(SupportedMeshType::INSTANCE_MESH){};
-  virtual ~InstanceMeshData(){};
-
-  bool from_ply(const std::string& ply_file);
   void to_ply(const std::string& ply_file) const;
+  virtual bool loadPLY(const std::string& plyFile) override;
 
   std::vector<vec4f>& getVertexBufferObjectCPU() { return cpu_vbo; }
   std::vector<vec3uc>& getColorBufferObjectCPU() { return cpu_cbo; }
@@ -64,9 +55,6 @@ class InstanceMeshData : public BaseMesh {
 
   // Gravity direction of the mesh, this is a STATIC
   vec3f orig_gravity_dir;
-
-  // ==== rendering ====
-  std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
 };
 
 }  // namespace assets

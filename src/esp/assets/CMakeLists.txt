@@ -40,6 +40,7 @@ target_link_libraries(assets
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbImageConverter
     MagnumPlugins::TinyGltfImporter
+    tinyply
   PRIVATE
     assimp
     geo

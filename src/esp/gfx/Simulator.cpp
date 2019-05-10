@@ -116,11 +116,14 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     }
     LOG(INFO) << "Loaded.";
   }
-  // frl instance meshes and suncg houses contain their semantic annotations
+
+  // instance meshes and suncg houses contain their semantic annotations
   if (sceneInfo.type == assets::AssetType::FRL_INSTANCE_MESH ||
-      sceneInfo.type == assets::AssetType::SUNCG_SCENE) {
+      sceneInfo.type == assets::AssetType::SUNCG_SCENE ||
+      sceneInfo.type == assets::AssetType::INSTANCE_MESH) {
     activeSemanticSceneID_ = activeSceneID_;
   }
+
   // also load SemanticScene for SUNCG house file
   if (sceneInfo.type == assets::AssetType::SUNCG_SCENE) {
     scene::SemanticScene::loadSuncgHouse(sceneFilename, *semanticScene_);
@@ -145,14 +148,15 @@ std::shared_ptr<scene::SemanticScene> Simulator::getSemanticScene() {
 }
 
 scene::SceneGraph& Simulator::getActiveSceneGraph() {
-  ASSERT(0 <= activeSceneID_ && activeSceneID_ < sceneID_.size());
+  CHECK_GE(activeSceneID_, 0);
+  CHECK_LT(activeSceneID_, sceneID_.size());
   return sceneManager_.getSceneGraph(activeSceneID_);
 }
 
 //! return the semantic scene's SceneGraph for rendering
 scene::SceneGraph& Simulator::getActiveSemanticSceneGraph() {
-  ASSERT(0 <= activeSemanticSceneID_ &&
-         activeSemanticSceneID_ < sceneID_.size());
+  CHECK_GE(activeSemanticSceneID_, 0);
+  CHECK_LT(activeSemanticSceneID_, sceneID_.size());
   return sceneManager_.getSceneGraph(activeSemanticSceneID_);
 }
 

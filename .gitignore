@@ -166,3 +166,4 @@ run_example
 tests/17DRP5sb8fy
 data/
 *.zip
+habitat_sim/_ext

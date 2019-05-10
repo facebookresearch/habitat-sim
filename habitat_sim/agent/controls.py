@@ -4,11 +4,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import attr
+from typing import Dict
+
 import numpy as np
 import quaternion
+
+import attr
 import habitat_sim.bindings as hsim
-from typing import Dict
 from habitat_sim import utils
 
 __all__ = ["ActuationSpec", "ObjectControls"]
