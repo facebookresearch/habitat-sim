@@ -23,7 +23,7 @@ from distutils.version import StrictVersion
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
-ARG_CACHE_BLACKLIST = {"force_cmake"}
+ARG_CACHE_BLACKLIST = {"force_cmake", "cache_args"}
 
 
 def build_parser():
@@ -66,10 +66,10 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
     )
 
     parser.add_argument(
-        "--no-cached-args",
-        dest="no_cached_args",
+        "--cache-args",
+        dest="cache_args",
         action="store_true",
-        help="Does not reload cached args for setup.py",
+        help="Caches the arguements sent to setup.py and reloads them on the next invocation",
     )
 
     return parser
@@ -132,15 +132,14 @@ class CMakeBuild(build_ext):
             self.build_extension(ext)
 
     def build_extension(self, ext):
-        args_cache_file = osp.join(self.build_temp, "setuppy_args.json")
+        args_cache_file = osp.join(self.build_temp, "setuppy_args_cache.json")
 
-        if not is_pip() and not args.no_cached_args and osp.exists(args_cache_file):
+        if not args.cache_args and osp.exists(args_cache_file):
             with open(args_cache_file, "r") as f:
                 cached_args = json.load(f)
 
             for k, v in cached_args.items():
-                if k not in ARG_CACHE_BLACKLIST:
-                    setattr(args, k, v)
+                setattr(args, k, v)
 
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
 
@@ -214,8 +213,19 @@ class CMakeBuild(build_ext):
             )
 
         self.create_compile_commands()
-        with open(args_cache_file, "w") as f:
-            json.dump(vars(args), f, indent=4, sort_keys=True)
+
+        if args.cache_args:
+            with open(args_cache_file, "w") as f:
+                json.dump(
+                    {
+                        k: v
+                        for k, v in vars(args).items()
+                        if k not in ARG_CACHE_BLACKLIST
+                    },
+                    f,
+                    indent=4,
+                    sort_keys=True,
+                )
 
     def run_cmake(self, cmake_args):
         if args.force_cmake:
