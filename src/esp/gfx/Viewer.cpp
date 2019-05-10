@@ -35,7 +35,7 @@ Viewer::Viewer(const Arguments& arguments)
   Utility::Arguments args;
   args.addArgument("file")
       .setHelp("file", "file to load")
-      .addSkippedPrefix("magnum")
+      .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .parse(arguments.argc, arguments.argv);
 
