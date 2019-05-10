@@ -120,6 +120,39 @@ class CMakeExtension(Extension):
 
 
 class CMakeBuild(build_ext):
+    def finalize_options(self):
+        super().finalize_options()
+
+        cacheable_params = [
+            opt[0].replace("=", "").replace("-", "_") for opt in self.user_options
+        ]
+
+        args_cache_file = ".setuppy_args_cache.json"
+
+        if not args.cache_args and osp.exists(args_cache_file):
+            with open(args_cache_file, "r") as f:
+                cached_args = json.load(f)
+
+            for k, v in cached_args["args"].items():
+                setattr(args, k, v)
+
+            for k, v in cached_args["build_ext"].items():
+                setattr(self, k, v)
+
+        elif args.cache_args:
+            cache = dict(
+                args={
+                    k: v for k, v in vars(args).items() if k not in ARG_CACHE_BLACKLIST
+                },
+                build_ext={
+                    k: getattr(self, k)
+                    for k in cacheable_params
+                    if k not in ARG_CACHE_BLACKLIST
+                },
+            )
+            with open(args_cache_file, "w") as f:
+                json.dump(cache, f, indent=4, sort_keys=True)
+
     def run(self):
         try:
             subprocess.check_output(["cmake", "--version"])
@@ -133,15 +166,6 @@ class CMakeBuild(build_ext):
             self.build_extension(ext)
 
     def build_extension(self, ext):
-        args_cache_file = osp.join(self.build_temp, "setuppy_args_cache.json")
-
-        if not args.cache_args and osp.exists(args_cache_file):
-            with open(args_cache_file, "r") as f:
-                cached_args = json.load(f)
-
-            for k, v in cached_args.items():
-                setattr(args, k, v)
-
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
 
         # Init & update all submodules if not already (the user might be pinned
@@ -192,7 +216,9 @@ class CMakeBuild(build_ext):
                 env=env,
             )
 
-        subprocess.check_call(shlex.split("cmake --build {}".format(self.build_temp)) + build_args)
+        subprocess.check_call(
+            shlex.split("cmake --build {}".format(self.build_temp)) + build_args
+        )
         print()  # Add an empty line for cleaner output
 
         # The things following this don't work with pip
@@ -200,33 +226,14 @@ class CMakeBuild(build_ext):
             return
 
         if not args.headless:
-            link_dst = osp.join(osp.dirname(self.build_temp), "viewer")
+            link_dst = osp.join(self.build_temp, "viewer")
             if not osp.islink(link_dst):
                 os.symlink(
                     osp.abspath(osp.join(self.build_temp, "utils/viewer/viewer")),
                     link_dst,
                 )
 
-        if not osp.islink(osp.join(osp.dirname(self.build_temp), "utils")):
-            os.symlink(
-                osp.abspath(osp.join(self.build_temp, "utils")),
-                osp.join(osp.dirname(self.build_temp), "utils"),
-            )
-
         self.create_compile_commands()
-
-        if args.cache_args:
-            with open(args_cache_file, "w") as f:
-                json.dump(
-                    {
-                        k: v
-                        for k, v in vars(args).items()
-                        if k not in ARG_CACHE_BLACKLIST
-                    },
-                    f,
-                    indent=4,
-                    sort_keys=True,
-                )
 
     def run_cmake(self, cmake_args):
         if args.force_cmake:
