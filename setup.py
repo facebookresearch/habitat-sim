@@ -192,7 +192,7 @@ class CMakeBuild(build_ext):
                 env=env,
             )
 
-        subprocess.check_call(shlex.split("cmake --build {}".format(self.build_temp)))
+        subprocess.check_call(shlex.split("cmake --build {}".format(self.build_temp)) + build_args)
         print()  # Add an empty line for cleaner output
 
         # The things following this don't work with pip
