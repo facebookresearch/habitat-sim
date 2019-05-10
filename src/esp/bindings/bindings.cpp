@@ -82,9 +82,10 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("absolute_transformation", &SceneNode::getAbsoluteTransformation, R"(
         Returns absolute transformation matrix (relative to root :py:class:`SceneNode`)
       )")
-      .def("rotation",
-           [](const SceneNode& self) { return self.getRotation().coeffs(); },
-           R"()")
+      .def(
+          "rotation",
+          [](const SceneNode& self) { return self.getRotation().coeffs(); },
+          R"()")
       .def("rotation",
            [](SceneNode& self, const Eigen::Ref<const esp::vec4f> coeffs) {
              self.setRotation(Eigen::Map<const quatf>(coeffs.data()));
@@ -238,11 +239,12 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("get_absolute_position", &AttachedObject::getAbsolutePosition, R"(
         If it is valid, returns absolute position w.r.t. world coordinate frame
       )")
-      .def("get_rotation",
-           [](const AttachedObject& self) {
-             return self.getRotation().coeffs();
-           },
-           R"()")
+      .def(
+          "get_rotation",
+          [](const AttachedObject& self) {
+            return self.getRotation().coeffs();
+          },
+          R"()")
       .def("set_rotation",
            [](AttachedObject& self, const Eigen::Ref<const esp::vec4f> coeffs) {
              self.setRotation(Eigen::Map<const quatf>(coeffs.data()));
@@ -509,14 +511,15 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def(py::init(&Renderer::create<int, int>))
       .def("set_size", &Renderer::setSize, R"(Set the size of the canvas)",
            "width"_a, "height"_a)
-      .def("readFrameRgba",
-           [](Renderer& self,
-              Eigen::Ref<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic,
-                                       Eigen::RowMajor>>& img) {
-             self.readFrameRgba(img.data());
-           },
-           py::arg("img").noconvert(),
-           R"(
+      .def(
+          "readFrameRgba",
+          [](Renderer& self,
+             Eigen::Ref<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic,
+                                      Eigen::RowMajor>>& img) {
+            self.readFrameRgba(img.data());
+          },
+          py::arg("img").noconvert(),
+          R"(
       Reads RGBA frame into passed img in uint8 byte format.
 
       Parameters
@@ -535,20 +538,22 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            py::overload_cast<gfx::RenderCamera&, scene::SceneGraph&>(
                &Renderer::draw),
            R"(Draw given scene using the camera)", "camera"_a, "scene"_a)
-      .def("readFrameDepth",
-           [](Renderer& self,
-              Eigen::Ref<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic,
-                                       Eigen::RowMajor>>& img) {
-             self.readFrameDepth(img.data());
-           },
-           py::arg("img").noconvert(), R"()")
-      .def("readFrameObjectId",
-           [](Renderer& self,
-              Eigen::Ref<Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic,
-                                       Eigen::RowMajor>>& img) {
-             self.readFrameObjectId(img.data());
-           },
-           py::arg("img").noconvert(), R"()");
+      .def(
+          "readFrameDepth",
+          [](Renderer& self,
+             Eigen::Ref<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic,
+                                      Eigen::RowMajor>>& img) {
+            self.readFrameDepth(img.data());
+          },
+          py::arg("img").noconvert(), R"()")
+      .def(
+          "readFrameObjectId",
+          [](Renderer& self,
+             Eigen::Ref<Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic,
+                                      Eigen::RowMajor>>& img) {
+            self.readFrameObjectId(img.data());
+          },
+          py::arg("img").noconvert(), R"()");
 
   // TODO fill out other SensorTypes
   // ==== enum SensorType ====

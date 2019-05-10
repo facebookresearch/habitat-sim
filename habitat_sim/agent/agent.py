@@ -6,9 +6,9 @@
 
 from typing import Any, Dict, List, Union
 
-import attr
 import numpy as np
 
+import attr
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
 from habitat_sim import utils

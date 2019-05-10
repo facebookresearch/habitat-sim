@@ -1,10 +1,11 @@
-import habitat_sim.agent
-from habitat_sim import utils
-from habitat_sim import errors
-import habitat_sim.bindings as hsim
+from typing import Any, Dict, List, Optional
+
 import numpy as np
+
 import attr
-from typing import List, Dict, Any, Optional
+import habitat_sim.agent
+import habitat_sim.bindings as hsim
+from habitat_sim import errors, utils
 
 
 @attr.s
