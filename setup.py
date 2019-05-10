@@ -42,7 +42,7 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
         "--cmake",
         dest="force_cmake",
         action="store_true",
-        help="Forces cmake to be rerun",
+        help="Forces cmake to be rerun.  This argument is not cached",
     )
     parser.add_argument(
         "--build-tests", dest="build_tests", action="store_true", help="Build tests"
@@ -69,7 +69,8 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         "--cache-args",
         dest="cache_args",
         action="store_true",
-        help="Caches the arguements sent to setup.py and reloads them on the next invocation",
+        help="""Caches the arguements sent to setup.py
+        and reloads them on the next invocation.  This argument is not cached""",
     )
 
     return parser
