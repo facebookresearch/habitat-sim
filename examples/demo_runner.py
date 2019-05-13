@@ -196,6 +196,13 @@ class DemoRunner:
                     _barrier.reset()
 
             perf = self.do_time_steps()
+            # The variance introduced between runs is due to the worker threads
+            # being interrupted a different number of times by the kernel, not
+            # due to difference in the speed of the code itself.  The most
+            # accurate representation of the performance would be a run where
+            # the kernel never interrupted the workers, but this isn't
+            # feasible, so we just take the run with the least number of
+            # interrupts (the fastest) instead.
             if best_perf is None or perf["fps"] > best_perf["fps"]:
                 best_perf = perf
 
