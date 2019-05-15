@@ -40,7 +40,8 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
     shader.setColor(color_);
   }
 
-  if (!(shader.flags() & GenericShader::Flag::PerVertexIds)) {
+  if (!(shader.flags() & GenericShader::Flag::PerVertexIds) &&
+      !(shader.flags() & GenericShader::Flag::PrimitiveIDTextured)) {
     shader.setObjectId(node_.getId());
   }
   mesh_.draw(shader_);
