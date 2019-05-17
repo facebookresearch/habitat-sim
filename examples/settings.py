@@ -24,8 +24,9 @@ default_sim_settings = {
     "print_semantic_mask_stats": False,
     "compute_shortest_path": False,
     "compute_action_shortest_path": False,
-    "goal_position": [-9.423, 0.072_447, -0.373],
-    "goal_headings": [[0.0, -0.471_395, 0.0, 0.881_922], [0.0, 1.0, 0.0, 0.0]],
+    "test_scene": "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb",
+    "goal_position": [5.047, 0.199, 11.145],
+    "goal_headings": [[0, -0.980_785, 0, 0.195_090], [0.0, 1.0, 0.0, 0.0]],
 }
 
 # build SimulatorConfiguration

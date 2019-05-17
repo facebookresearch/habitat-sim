@@ -12,7 +12,11 @@ import numpy as np
 import demo_runner as dr
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--scene", type=str, required=True)
+parser.add_argument(
+    "--scene",
+    type=str,
+    default=dr.default_sim_settings["test_scene"]
+)
 parser.add_argument("--width", type=int, default=640)
 parser.add_argument("--height", type=int, default=480)
 parser.add_argument("--max_frames", type=int, default=1000)
