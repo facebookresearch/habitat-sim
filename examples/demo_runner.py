@@ -15,7 +15,7 @@ from PIL import Image
 import habitat_sim
 import habitat_sim.agent
 import habitat_sim.bindings as hsim
-from habitat_sim.utils import d3_40_colors_rgb
+import habitat_sim.utils as utils
 
 from settings import default_sim_settings, make_cfg
 import multiprocessing
@@ -44,7 +44,7 @@ class DemoRunner:
     def save_semantic_observation(self, obs, total_frames):
         semantic_obs = obs["semantic_sensor"]
         semantic_img = Image.new("P", (semantic_obs.shape[1], semantic_obs.shape[0]))
-        semantic_img.putpalette(d3_40_colors_rgb.flatten())
+        semantic_img.putpalette(utils.d3_40_colors_rgb.flatten())
         semantic_img.putdata((semantic_obs.flatten() % 40).astype(np.uint8))
         semantic_img.save("test.sem.%05d.png" % total_frames)
 
@@ -174,6 +174,13 @@ class DemoRunner:
 
     def init_common(self):
         self._cfg = make_cfg(self._sim_settings)
+        scene_file = self._sim_settings["scene"]
+
+        if not os.path.exists(scene_file) and scene_file == default_sim_settings["test_scene"]:
+            print("Test scenes not downloaded locally, downloading and extracting now...")
+            utils.download_and_unzip(default_sim_settings["test_scene_data_url"], ".")
+            print("Downloaded and extracted test scenes data.")
+
         self._sim = habitat_sim.Simulator(self._cfg)
 
         random.seed(self._sim_settings["seed"])
