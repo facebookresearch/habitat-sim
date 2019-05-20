@@ -15,8 +15,12 @@ from PIL import Image
 import habitat_sim
 import habitat_sim.agent
 import habitat_sim.bindings as hsim
-from habitat_sim.utils import d3_40_colors_rgb
+import habitat_sim.utils as utils
+
 from settings import default_sim_settings, make_cfg
+import multiprocessing
+
+_barrier = None
 
 
 class DemoRunnerType(Enum):
@@ -40,7 +44,7 @@ class DemoRunner:
     def save_semantic_observation(self, obs, total_frames):
         semantic_obs = obs["semantic_sensor"]
         semantic_img = Image.new("P", (semantic_obs.shape[1], semantic_obs.shape[0]))
-        semantic_img.putpalette(d3_40_colors_rgb.flatten())
+        semantic_img.putpalette(utils.d3_40_colors_rgb.flatten())
         semantic_img.putdata((semantic_obs.flatten() % 40).astype(np.uint8))
         semantic_img.save("test.sem.%05d.png" % total_frames)
 
@@ -170,6 +174,13 @@ class DemoRunner:
 
     def init_common(self):
         self._cfg = make_cfg(self._sim_settings)
+        scene_file = self._sim_settings["scene"]
+
+        if not os.path.exists(scene_file) and scene_file == default_sim_settings["test_scene"]:
+            print("Test scenes not downloaded locally, downloading and extracting now...")
+            utils.download_and_unzip(default_sim_settings["test_scene_data_url"], ".")
+            print("Downloaded and extracted test scenes data.")
+
         self._sim = habitat_sim.Simulator(self._cfg)
 
         random.seed(self._sim_settings["seed"])
@@ -180,16 +191,54 @@ class DemoRunner:
 
         return start_state
 
-    def benchmark(self, settings):
-        self.set_sim_settings(settings)
+    def _bench_target(self, _idx=0):
         self.init_common()
 
-        perf = self.do_time_steps()
+        best_perf = None
+        for _ in range(3):
+
+            if _barrier is not None:
+                _barrier.wait()
+                if _idx == 0:
+                    _barrier.reset()
+
+            perf = self.do_time_steps()
+            # The variance introduced between runs is due to the worker threads
+            # being interrupted a different number of times by the kernel, not
+            # due to difference in the speed of the code itself.  The most
+            # accurate representation of the performance would be a run where
+            # the kernel never interrupted the workers, but this isn't
+            # feasible, so we just take the run with the least number of
+            # interrupts (the fastest) instead.
+            if best_perf is None or perf["fps"] > best_perf["fps"]:
+                best_perf = perf
 
         self._sim.close()
         del self._sim
 
-        return perf
+        return best_perf
+
+    @staticmethod
+    def _pool_init(b):
+        global _barrier
+        _barrier = b
+
+    def benchmark(self, settings):
+        self.set_sim_settings(settings)
+        nprocs = settings["num_processes"]
+
+        barrier = multiprocessing.Barrier(nprocs)
+        with multiprocessing.Pool(
+            nprocs, initializer=self._pool_init, initargs=(barrier,)
+        ) as pool:
+            perfs = pool.map(self._bench_target, range(nprocs))
+
+        res = {k: [] for k in perfs[0].keys()}
+        for p in perfs:
+            for k, v in p.items():
+                res[k] += [v]
+
+        return dict(fps=sum(res["fps"]), total_time=sum(res["total_time"]) / nprocs)
 
     def example(self):
         start_state = self.init_common()
