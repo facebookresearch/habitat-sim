@@ -6,8 +6,9 @@
 #include <string>
 #include <unordered_map>
 
+#include "SceneLoader.h"
+
 #include "esp/assets/Mp3dInstanceMeshData.h"
-#include "esp/assets/SceneLoader.h"
 #include "esp/core/esp.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/SemanticScene.h"
