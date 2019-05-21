@@ -11,7 +11,7 @@
 #include <cmath>
 #include <limits>
 
-#include "esp/assets/SceneLoader.h"
+#include "esp/assets/MeshData.h"
 #include "esp/core/esp.h"
 
 #include "DetourNavMesh.h"

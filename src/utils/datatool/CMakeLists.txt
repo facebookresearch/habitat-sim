@@ -1,4 +1,4 @@
-set(datatool_SOURCES datatool.cpp)
+set(datatool_SOURCES datatool.cpp SceneLoader.cpp)
 
 add_executable(datatool ${datatool_SOURCES})
 

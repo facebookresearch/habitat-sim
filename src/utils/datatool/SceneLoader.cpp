@@ -2,13 +2,14 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include "SceneLoader.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
 
 #include "esp/assets/FRLInstanceMeshData.h"
 #include "esp/assets/GenericInstanceMeshData.h"
-#include "esp/assets/SceneLoader.h"
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
 #include "esp/io/io.h"
