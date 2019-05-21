@@ -28,7 +28,6 @@ find_package(Magnum
 
 find_package(MagnumPlugins
   REQUIRED
-    # AssimpImporter
     StbImageImporter
     StbImageConverter
     TinyGltfImporter
@@ -54,7 +53,6 @@ target_link_libraries(gfx
     Magnum::SceneGraph
     Magnum::Shaders
     Magnum::Trade
-    # MagnumPlugins::AssimpImporter
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbImageConverter
     MagnumPlugins::TinyGltfImporter
