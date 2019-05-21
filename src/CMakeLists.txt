@@ -58,20 +58,13 @@ add_subdirectory(esp/nav)
 add_subdirectory(esp/agent)
 add_subdirectory(esp/sensor)
 
-
-add_subdirectory(utils/datatool)
-if(BUILD_GUI_VIEWERS)
-  # add_subdirectory(utils/displayObj/)
-  add_subdirectory(utils/viewer)
+if (BUILD_DATATOOL)
+  add_subdirectory(utils/datatool)
 endif()
 
-# build main library
-#file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/media DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-# add_library(${CMAKE_PROJECT_NAME}
-#             $<TARGET_OBJECTS:assets>
-#             $<TARGET_OBJECTS:Camera>
-#             $<TARGET_OBJECTS:ShaderProgram>)
-# target_link_libraries(${CMAKE_PROJECT_NAME})
+if(${BUILD_GUI_VIEWERS})
+  add_subdirectory(utils/viewer)
+endif()
 
 # build tests
 if (BUILD_TEST)
