@@ -5,6 +5,5 @@ add_library(geo STATIC ${geo_SOURCES})
 target_link_libraries(geo
   PUBLIC
    core
-   glog
    io
 )
