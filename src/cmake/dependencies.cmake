@@ -66,24 +66,26 @@ target_compile_definitions(Detour
   PUBLIC
   DT_VIRTUAL_QUERYFILTER)
 
-# python interpreter
-find_package(PythonInterp 3.6 REQUIRED)
+if(BUILD_PYTHON_BINDINGS)
+  # python interpreter
+  find_package(PythonInterp 3.6 REQUIRED)
 
-# Search for python executable to pick up activated virtualenv/conda python
-unset(PYTHON_EXECUTABLE CACHE)
-find_program(PYTHON_EXECUTABLE
-  python
-    PATHS ENV PATH   # look in the PATH environment variable
-    NO_DEFAULT_PATH  # do not look anywhere else...
-)
-message(STATUS "Bindings being generated for python at ${PYTHON_EXECUTABLE}")
+  # Search for python executable to pick up activated virtualenv/conda python
+  unset(PYTHON_EXECUTABLE CACHE)
+  find_program(PYTHON_EXECUTABLE
+    python
+      PATHS ENV PATH   # look in the PATH environment variable
+      NO_DEFAULT_PATH  # do not look anywhere else...
+  )
+  message(STATUS "Bindings being generated for python at ${PYTHON_EXECUTABLE}")
 
-# Pybind11. Use a system package, if preferred. This needs to be before Magnum
-# so the bindings can properly detect pybind11 added as a subproject.
-if(USE_SYSTEM_PYBIND11)
-  find_package(pybind11 REQUIRED)
-else()
-  add_subdirectory("${DEPS_DIR}/pybind11")
+  # Pybind11. Use a system package, if preferred. This needs to be before Magnum
+  # so the bindings can properly detect pybind11 added as a subproject.
+  if(USE_SYSTEM_PYBIND11)
+    find_package(pybind11 REQUIRED)
+  else()
+    add_subdirectory("${DEPS_DIR}/pybind11")
+  endif()
 endif()
 
 # Magnum. Use a system package, if preferred.
@@ -110,7 +112,9 @@ if(NOT USE_SYSTEM_MAGNUM)
   set(WITH_STBIMAGECONVERTER ON CACHE BOOL "WITH_STBIMAGECONVERTER" FORCE)
   set(WITH_SDL2APPLICATION OFF CACHE BOOL "WITH_SDL2APPLICATION" FORCE)
   set(WITH_EIGEN ON CACHE BOOL "WITH_EIGEN" FORCE) # Eigen integration
-  set(WITH_PYTHON ON CACHE BOOL "" FORCE) # Python bindings
+  if(BUILD_PYTHON_BINDINGS)
+    set(WITH_PYTHON ON CACHE BOOL "" FORCE) # Python bindings
+  endif()
 
   if(BUILD_GUI_VIEWERS)
     if(NOT USE_SYSTEM_GLFW)
