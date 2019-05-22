@@ -106,23 +106,25 @@ if(NOT USE_SYSTEM_MAGNUM)
   add_subdirectory("${DEPS_DIR}/magnum-integration")
 endif()
 
-# python interpreter
-find_package(PythonInterp 3.6 REQUIRED)
+if(BUILD_PYTHON_BINDINGS)
+  # python interpreter
+  find_package(PythonInterp 3.6 REQUIRED)
 
-# Search for python executable to pick up activated virtualenv/conda python
-unset(PYTHON_EXECUTABLE CACHE)
-find_program(PYTHON_EXECUTABLE
-  python
-    PATHS ENV PATH   # look in the PATH environment variable
-    NO_DEFAULT_PATH  # do not look anywhere else...
-)
-message(STATUS "Bindings being generated for python at ${PYTHON_EXECUTABLE}")
+  # Search for python executable to pick up activated virtualenv/conda python
+  unset(PYTHON_EXECUTABLE CACHE)
+  find_program(PYTHON_EXECUTABLE
+    python
+      PATHS ENV PATH   # look in the PATH environment variable
+      NO_DEFAULT_PATH  # do not look anywhere else...
+  )
+  message(STATUS "Bindings being generated for python at ${PYTHON_EXECUTABLE}")
 
-# Pybind11. Use a system package, if preferred.
-if(USE_SYSTEM_PYBIND11)
-  find_package(pybind11 REQUIRED)
-else()
-  add_subdirectory("${DEPS_DIR}/pybind11")
+  # Pybind11. Use a system package, if preferred.
+  if(USE_SYSTEM_PYBIND11)
+    find_package(pybind11 REQUIRED)
+  else()
+    add_subdirectory("${DEPS_DIR}/pybind11")
+  endif()
 endif()
 
 # tinyply

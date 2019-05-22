@@ -183,6 +183,7 @@ class CMakeBuild(build_ext):
             )
 
         cmake_args = [
+            "-DBUILD_PYTHON_BINDINGS=ON",
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
             "-DPYTHON_EXECUTABLE=" + sys.executable,
             "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),

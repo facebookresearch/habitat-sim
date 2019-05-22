@@ -73,4 +73,7 @@ if (BUILD_TEST)
 endif()
 
 # pybind bindings
-add_subdirectory(esp/bindings)
+if(BUILD_PYTHON_BINDINGS)
+  message("Building Python bindings")
+  add_subdirectory(esp/bindings)
+endif()
