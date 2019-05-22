@@ -28,9 +28,6 @@ include_directories(SYSTEM "${DEPS_DIR}/Sophus")
 # glog
 add_subdirectory("${DEPS_DIR}/glog")
 
-# tinyobjloader
-include_directories(SYSTEM "${DEPS_DIR}/tinyobjloader")
-
 # RapidJSON. Use a system package, if preferred.
 if(USE_SYSTEM_RAPIDJSON)
   find_package(RapidJSON CONFIG REQUIRED)
