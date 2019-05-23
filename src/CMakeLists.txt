@@ -20,6 +20,8 @@ if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
 endif()
 
+# build options
+option(BUILD_PTEX_SUPPORT "Whether to build ptex mesh support" ON)
 option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
 option(USE_SYSTEM_EIGEN "Use system Eigen instead of a bundled submodule" OFF)
 option(USE_SYSTEM_MAGNUM "Use system Magnum instead of a bundled submodule" OFF)
@@ -50,6 +52,12 @@ include(cmake/dependencies.cmake)
 
 # include source dirs
 include_directories(${PROJECT_SOURCE_DIR})
+
+# compiler define for enabling ptex support
+if(BUILD_PTEX_SUPPORT)
+  message("Building with ptex support")
+  add_compile_definitions(BUILD_PTEX_SUPPORT)
+endif()
 
 # add subdirectories
 add_subdirectory(esp/core)

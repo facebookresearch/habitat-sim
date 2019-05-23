@@ -8,6 +8,11 @@ else()
   list(REMOVE_ITEM gfx_SOURCES "${CMAKE_CURRENT_LIST_DIR}/Viewer.cpp")
 endif()
 
+# If ptex support is disabled remove relevant source files
+if(NOT BUILD_PTEX_SUPPORT)
+  list(REMOVE_ITEM gfx_SOURCES "${CMAKE_CURRENT_LIST_DIR}/PTexMeshDrawable.cpp" "${CMAKE_CURRENT_LIST_DIR}/PTexMeshShader.cpp")
+endif()
+
 if ((UNIX AND NOT APPLE) AND (NOT ${BUILD_GUI_VIEWERS}))
   list(APPEND gfx_SOURCES "${DEPS_DIR}/glad/src/glad_egl.c")
 endif()

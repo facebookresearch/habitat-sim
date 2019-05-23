@@ -1,5 +1,9 @@
 file(GLOB_RECURSE assets_SOURCES "*.cpp")
 
+if(NOT BUILD_PTEX_SUPPORT)
+  list(REMOVE_ITEM assets_SOURCES ${CMAKE_CURRENT_LIST_DIR}/PTexMeshData.cpp)
+endif()
+
 find_package(Magnum
   REQUIRED
     AnyImageImporter
