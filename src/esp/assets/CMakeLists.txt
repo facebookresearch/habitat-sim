@@ -1,4 +1,15 @@
-file(GLOB_RECURSE assets_SOURCES "*.cpp")
+set(assets_SOURCES
+  Asset.cpp
+  BaseMesh.cpp
+  FRLInstanceMeshData.cpp
+  GenericInstanceMeshData.cpp
+  GltfMeshData.cpp
+  Mp3dInstanceMeshData.cpp
+  ResourceManager.cpp
+)
+if(BUILD_PTEX_SUPPORT)
+  list(APPEND assets_SOURCES PTexMeshData.cpp)
+endif()
 
 find_package(Magnum
   REQUIRED

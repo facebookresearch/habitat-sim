@@ -1,11 +1,23 @@
-file(GLOB_RECURSE gfx_SOURCES "*.cpp")
+set(gfx_SOURCES
+  Drawable.cpp
+  GenericDrawable.cpp
+  GenericShader.cpp
+  RenderCamera.cpp
+  Renderer.cpp
+  Simulator.cpp
+  WindowlessContext.cpp
+)
 
-# If not GUI build, remove Viewer source
+# If ptex support enabled add relevant source files
+if(BUILD_PTEX_SUPPORT)
+  list(APPEND gfx_SOURCES PTexMeshDrawable.cpp PTexMeshShader.cpp)
+endif()
+
+# If GUI build, add Viewer.cpp source
 # TODO(MS) Viewer really ought to be in separate module that is disabled
-if(BUILD_GUI_VIEWERS)
-  message(STATUS "Building GUI viewers")
-else()
-  list(REMOVE_ITEM gfx_SOURCES "${CMAKE_CURRENT_LIST_DIR}/Viewer.cpp")
+if(${BUILD_GUI_VIEWERS})
+  message("Building GUI viewer")
+  list(APPEND gfx_SOURCES Viewer.cpp)
 endif()
 
 if ((UNIX AND NOT APPLE) AND (NOT ${BUILD_GUI_VIEWERS}))

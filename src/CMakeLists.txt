@@ -47,6 +47,11 @@ include(cmake/dependencies.cmake)
 # include source dirs
 include_directories(${PROJECT_SOURCE_DIR})
 
+# compiler define for enabling ptex support
+if(BUILD_PTEX_SUPPORT)
+  add_compile_definitions(BUILD_PTEX_SUPPORT)
+endif()
+
 # add subdirectories
 add_subdirectory(esp/core)
 add_subdirectory(esp/geo)

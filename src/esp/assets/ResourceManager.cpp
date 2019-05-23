@@ -17,8 +17,6 @@
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/GenericShader.h"
-#include "esp/gfx/PTexMeshDrawable.h"
-#include "esp/gfx/PTexMeshShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/scene/SceneConfiguration.h"
@@ -28,8 +26,13 @@
 #include "GenericInstanceMeshData.h"
 #include "GltfMeshData.h"
 #include "Mp3dInstanceMeshData.h"
-#include "PTexMeshData.h"
 #include "ResourceManager.h"
+
+#ifdef BUILD_PTEX_SUPPORT
+#include "esp/gfx/PTexMeshDrawable.h"
+#include "esp/gfx/PTexMeshShader.h"
+#include "PTexMeshData.h"
+#endif
 
 namespace esp {
 namespace assets {
@@ -69,10 +72,12 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
                 gfx::GenericShader::Flag::PrimitiveIDTextured);
       } break;
 
+#ifdef BUILD_PTEX_SUPPORT
       case PTEX_MESH_SHADER: {
         shaderPrograms_[PTEX_MESH_SHADER] =
             std::make_shared<gfx::PTexMeshShader>();
       } break;
+#endif
 
       case COLORED_SHADER: {
         shaderPrograms_[COLORED_SHADER] =
@@ -101,6 +106,7 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
 bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
                                        scene::SceneNode* parent,
                                        DrawableGroup* drawables) {
+#ifdef BUILD_PTEX_SUPPORT
   // if this is a new file, load it and add it to the dictionary
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
@@ -140,6 +146,10 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
   }
 
   return true;
+#else
+  LOG(ERROR) << "PTex support not enabled. Define BUILD_PTEX_SUPPORT when building.";
+  return false;
+#endif
 }
 
 // semantic instance mesh import
