@@ -278,9 +278,9 @@ void PTexMeshData::loadMeshData(const std::string& meshFile) {
 
   submeshes_.clear();
   if (splitSize_ > 0.0f) {
-    std::cout << "Splitting mesh... ";
+    LOG(INFO) << "Splitting mesh... ";
     submeshes_ = splitMesh(originalMesh, splitSize_);
-    std::cout << "done" << std::endl;
+    LOG(INFO) << "done" << std::endl;
   } else {
     submeshes_.emplace_back(std::move(originalMesh));
   }
@@ -540,12 +540,12 @@ void PTexMeshData::parsePLY(const std::string& filename,
   // Not sure what to do here
   //    if(predictedFaces < numFaces)
   //    {
-  //        std::cout << "Skipping " << numFaces - predictedFaces << " missing
+  //        LOG(INFO) << "Skipping " << numFaces - predictedFaces << " missing
   //        faces" << std::endl;
   //    }
   //    else if(numFaces < predictedFaces)
   //    {
-  //        std::cout << "Ignoring " << predictedFaces - numFaces << " extra
+  //        LOG(INFO) << "Ignoring " << predictedFaces - numFaces << " extra
   //        faces" << std::endl;
   //    }
 
@@ -570,9 +570,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   }
 
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
-    std::cout << "\rLoading mesh " << iMesh + 1 << "/" << submeshes_.size()
+    LOG(INFO) << "\rLoading mesh " << iMesh + 1 << "/" << submeshes_.size()
               << "... ";
-    std::cout.flush();
 
     renderingBuffers_.emplace_back(
         std::make_unique<PTexMeshData::RenderingBuffer>());
@@ -583,10 +582,9 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     currentMesh->ibo.setData(submeshes_[iMesh].ibo,
                              Magnum::GL::BufferUsage::StaticDraw);
   }
-  std::cout << "... done" << std::endl;
+  LOG(INFO) << "... done" << std::endl;
 
-  std::cout << "Calculating mesh adjacency... ";
-  std::cout.flush();
+  LOG(INFO) << "Calculating mesh adjacency... ";
 
   std::vector<std::vector<uint32_t>> adjFaces(submeshes_.size());
 
@@ -615,9 +613,9 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     if (!io::exists(rgbFile)) {
       ASSERT(false, "Can't find " + rgbFile);
     }
-    std::cout << "\rLoading atlas " << iMesh + 1 << "/"
+    LOG(INFO) << "\rLoading atlas " << iMesh + 1 << "/"
               << renderingBuffers_.size() << "... ";
-    std::cout.flush();
+    LOG(INFO).flush();
 
     Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter> data =
         Cr::Utility::Directory::mapRead(rgbFile);
@@ -630,7 +628,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
         // .setStorage(1, GL::TextureFormat::RGB8UI, image.size())
         .setSubImage(0, {}, image);
   }
-  std::cout << "... done" << std::endl;
+  LOG(INFO) << "... done" << std::endl;
 
   buffersOnGPU_ = true;
 }

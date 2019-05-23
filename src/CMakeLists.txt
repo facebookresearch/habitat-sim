@@ -6,6 +6,10 @@ cmake_minimum_required(VERSION 3.10)
 
 project(esp)
 
+if(CMAKE_SYSTEM_NAME MATCHES "Emscripten")
+  set(EMSCRIPTEN 1)
+endif()
+
 if(MSVC)
   add_definitions(/DNOMINMAX)
 endif()

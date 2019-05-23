@@ -25,8 +25,14 @@ endif()
 # sophus
 include_directories(SYSTEM "${DEPS_DIR}/Sophus")
 
-# glog
-add_subdirectory("${DEPS_DIR}/glog")
+# glog. NOTE: emscripten does not support 32-bit targets, which glog requires.
+# Therefore we do not build glog and use a custom shim instead to emulate glog
+if(EMSCRIPTEN)
+  add_library(glog INTERFACE)
+  add_compile_definitions(USE_GLOG_SHIM)
+else()
+  add_subdirectory("${DEPS_DIR}/glog")
+endif()
 
 # RapidJSON. Use a system package, if preferred.
 if(USE_SYSTEM_RAPIDJSON)
