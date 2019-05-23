@@ -97,8 +97,8 @@ void Agent::setState(const AgentState& state,
 
   const Eigen::Map<const quatf> rot(state.rotation.data());
   CHECK_LT(std::abs(rot.norm() - 1.0),
-           2.0 * Magnum::Math::TypeTraits<float>::epsilon())
-      << state.rotation << " not a valid rotation";
+           2.0 * Magnum::Math::TypeTraits<float>::epsilon());
+      // << state.rotation << " not a valid rotation";
   setRotation(rot.normalized());
 
   if (resetSensors) {
