@@ -46,8 +46,11 @@ will register the function my_new_control with the name my_new_control
 
 
 We also define two types of actions.  BodyActions and non-BodyActions
+BodyActions move the body of the agent (thereby also moving the sensors)
+while non-BodyActions move just the sensors
 
-BodyActions move the body of the agent (thereby also moving the sensors) while non-BodyActions move just the sensors
+To denote an action as a body action, it needs to be added
+to the set of body actions: habitat_sim.agent.BodyActions
 """
 
 # We will define an action that moves the agent and turns it by some amount
