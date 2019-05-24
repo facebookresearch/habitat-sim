@@ -160,7 +160,6 @@ def _strafe_impl(
         np.deg2rad(strafe_angle), habitat_sim.geo.UP
     )
     move_ax = habitat_sim.utils.quat_rotate_vector(rotation, forward_ax)
-    print(move_ax)
 
     scene_node.translate_local(move_ax * forward_amount)
 
