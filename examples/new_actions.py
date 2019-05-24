@@ -6,8 +6,10 @@
 
 import attr
 import numpy as np
+import quaternion
 
 import habitat_sim
+import habitat_sim.utils
 from habitat_sim.agent import controls
 
 try:
@@ -41,6 +43,11 @@ def my_new_control(...):
     pass
 
 will register the function my_new_control with the name my_new_control
+
+
+We also define two types of actions.  BodyActions and non-BodyActions
+
+BodyActions move the body of the agent (thereby also moving the sensors) while non-BodyActions move just the sensors
 """
 
 # We will define an action that moves the agent and turns it by some amount
@@ -67,7 +74,7 @@ def move_forward_and_spin(
     scene_node.translate_local(forward_ax * actuation_spec.forward_amount)
 
     # Rotate about the +y (up) axis
-    rotation_ax = np.array([0, 1, 0], dtype=np.float32)
+    rotation_ax = habitat_sim.geo.UP
     scene_node.rotate_local(np.deg2rad(actuation_spec.spin_amount), rotation_ax)
     # Calling normalize is needed after rotating to deal with machine precision errors
     scene_node.normalize()
@@ -75,6 +82,11 @@ def move_forward_and_spin(
 
 # We can also register the function with a custom name
 controls.register_move_fn(move_forward_and_spin, "my_custom_name")
+
+
+# These actions are body actions, so we need to add them
+print("Current body actions", habitat_sim.agent.BodyActions)
+habitat_sim.agent.BodyActions.update({"my_custom_name", "move_forward_and_spin"})
 
 
 # Now we need to add this action to the agent's action space in the configuration!
@@ -121,4 +133,65 @@ sim.step("fwd_and_spin_double")
 print(sim.get_agent(0).state)
 
 sim.step(100)
+print(sim.get_agent(0).state)
+
+sim.close()
+del sim
+
+
+# Let's define a strafe action!
+
+
+@attr.s(auto_attribs=True, slots=True)
+class StrafeActuationSpec:
+    forward_amount: float
+    # Classic strafing is to move perpendicular (90 deg) to the forward direction
+    strafe_angle: float = 90.0
+
+
+def _strafe_impl(
+    scene_node: habitat_sim.SceneNode, forward_amount: float, strafe_angle: float
+):
+    forward_ax = scene_node.absolute_transformation()[0:3, 2]
+    rotation = habitat_sim.utils.quat_from_angle_axis(
+        np.deg2rad(strafe_angle), habitat_sim.geo.UP
+    )
+    move_ax = habitat_sim.utils.quat_rotate_vector(rotation, forward_ax)
+    print(move_ax)
+
+    scene_node.translate_local(move_ax * forward_amount)
+
+
+@controls.register_move_fn
+def strafe_left(scene_node: habitat_sim.SceneNode, actuation_spec: StrafeActuationSpec):
+    _strafe_impl(scene_node, actuation_spec.forward_amount, actuation_spec.strafe_angle)
+
+
+@controls.register_move_fn
+def strafe_right(
+    scene_node: habitat_sim.SceneNode, actuation_spec: StrafeActuationSpec
+):
+    _strafe_impl(
+        scene_node, actuation_spec.forward_amount, -actuation_spec.strafe_angle
+    )
+
+
+# These actions are body actions, so we need to add them
+habitat_sim.agent.BodyActions.update({"strafe_right", "strafe_left"})
+
+agent_config = habitat_sim.AgentConfiguration()
+agent_config.action_space["strafe_left"] = habitat_sim.ActionSpec(
+    "strafe_left", StrafeActuationSpec(0.25)
+)
+agent_config.action_space["strafe_right"] = habitat_sim.ActionSpec(
+    "strafe_right", StrafeActuationSpec(0.25)
+)
+
+sim = habitat_sim.Simulator(habitat_sim.Configuration(backend_cfg, [agent_config]))
+print(sim.get_agent(0).state)
+
+sim.step("strafe_left")
+print(sim.get_agent(0).state)
+
+sim.step("strafe_right")
 print(sim.get_agent(0).state)
