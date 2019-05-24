@@ -73,7 +73,7 @@ print(MoveAndSpinSpec(1.0, 45.0))
 def move_forward_and_spin(
     scene_node: habitat_sim.SceneNode, actuation_spec: MoveAndSpinSpec
 ):
-    forward_ax = scene_node.absolute_transformation()[0:3, 2]
+    forward_ax = scene_node.absolute_transformation()[0:3, 0:3] @ habitat_sim.geo.FRONT
     scene_node.translate_local(forward_ax * actuation_spec.forward_amount)
 
     # Rotate about the +y (up) axis
@@ -155,7 +155,7 @@ class StrafeActuationSpec:
 def _strafe_impl(
     scene_node: habitat_sim.SceneNode, forward_amount: float, strafe_angle: float
 ):
-    forward_ax = scene_node.absolute_transformation()[0:3, 2]
+    forward_ax = scene_node.absolute_transformation()[0:3, 0:3] @ habitat_sim.geo.FRONT
     rotation = habitat_sim.utils.quat_from_angle_axis(
         np.deg2rad(strafe_angle), habitat_sim.geo.UP
     )
