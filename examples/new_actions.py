@@ -110,15 +110,15 @@ _pprint(agent_config.action_space)
 backend_cfg = habitat_sim.SimulatorConfiguration()
 backend_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
 sim = habitat_sim.Simulator(habitat_sim.Configuration(backend_cfg, [agent_config]))
-_pprint(sim.get_agent(0).state)
+print(sim.get_agent(0).state)
 
 
 # Take the new actions!
 sim.step("fwd_and_spin")
-_pprint(sim.get_agent(0).state)
+print(sim.get_agent(0).state)
 
 sim.step("fwd_and_spin_double")
-_pprint(sim.get_agent(0).state)
+print(sim.get_agent(0).state)
 
 sim.step(100)
-_pprint(sim.get_agent(0).state)
+print(sim.get_agent(0).state)
