@@ -153,7 +153,7 @@ To run the above benchmarks on your machine, see instructions in the [examples](
 1. Download the test scenes from this [link](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) and extract locally.
 1. **Interactive testing**: Use the interactive viewer included with Habitat-Sim
    ```bash
-   build/viewer /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
+   build/viewer --scene /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
    ```
    You should be able to control an agent in this test scene.
    Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right).

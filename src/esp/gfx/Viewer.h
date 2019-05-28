@@ -3,7 +3,11 @@
 // LICENSE file in the root directory of this source tree.
 
 #pragma once
+#ifdef MAGNUM_TARGET_WEBGL
+#include <Magnum/Platform/Sdl2Application.h>
+#else
 #include <Magnum/Platform/GlfwApplication.h>
+#endif
 #include <Magnum/SceneGraph/Camera.h>
 
 #include "esp/agent/Agent.h"

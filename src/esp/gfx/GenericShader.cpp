@@ -27,11 +27,11 @@ out mediump vec2 interpolatedTextureCoordinates;
 #endif
 
 #ifdef VERTEX_COLORED
-layout(location = 1) in vec3 color;
+layout(location = 1) in mediump vec3 color;
 #endif
 
-out vec3 v_color;
-out float v_depth;
+out mediump vec3 v_color;
+out highp float v_depth;
 
 #ifdef PER_VERTEX_IDS
 flat out uint v_objectId;
@@ -59,8 +59,8 @@ void main() {
 )";
 
 const static std::string GENERIC_SHADER_FS = R"(
-in vec3 v_color;
-in float v_depth;
+in mediump vec3 v_color;
+in highp float v_depth;
 
 
 #ifdef PER_VERTEX_IDS
@@ -83,12 +83,12 @@ uniform highp int texSize;
 uniform lowp vec4 colorUniform;
 #endif
 
-layout(location = 0) out vec4 color;
-layout(location = 1) out float depth;
+layout(location = 0) out mediump vec4 color;
+layout(location = 1) out highp float depth;
 layout(location = 2) out uint objectId;
 
 void main () {
-  vec4 baseColor =
+  mediump vec4 baseColor =
     #ifdef VERTEX_COLORED
     vec4(v_color, 1.0);
     #else
@@ -122,12 +122,14 @@ enum { TextureLayer = 0 };
 }
 
 GenericShader::GenericShader(const Flags flags) : flags_(flags) {
-  MAGNUM_ASSERT_GL_VERSION_SUPPORTED(Magnum::GL::Version::GL410);
-
-  Magnum::GL::Shader vert{Magnum::GL::Version::GL410,
-                          Magnum::GL::Shader::Type::Vertex};
-  Magnum::GL::Shader frag{Magnum::GL::Version::GL410,
-                          Magnum::GL::Shader::Type::Fragment};
+  // MAGNUM_ASSERT_GL_VERSION_SUPPORTED(Magnum::GL::Version::GL410);
+#ifdef MAGNUM_TARGET_WEBGL
+  Magnum::GL::Version glVersion = Magnum::GL::Version::GLES300;
+#else
+  Magnum::GL::Version glVersion = Magnum::GL::Version::GL410;
+#endif
+  Magnum::GL::Shader vert{glVersion, Magnum::GL::Shader::Type::Vertex};
+  Magnum::GL::Shader frag{glVersion, Magnum::GL::Shader::Type::Fragment};
 
   vert.addSource(flags & Flag::Textured ? "#define TEXTURED\n" : "")
       .addSource(flags & Flag::VertexColored ? "#define VERTEX_COLORED\n" : "")
@@ -160,8 +162,11 @@ GenericShader& GenericShader::bindTexture(Magnum::GL::Texture2D& texture) {
 
   texture.bind(TextureLayer);
 
+// TODO this is a hack and terrible! Properly set texSize for WebGL builds
+#ifndef MAGNUM_TARGET_WEBGL
   if (flags_ & Flag::PrimitiveIDTextured)
     setUniform(uniformLocation("texSize"), texture.imageSize(0).x());
+#endif
 
   return *this;
 }
