@@ -23,3 +23,9 @@ cmake ../src \
 
 cmake --build . -- -j 4
 cmake --build . --target install -- -j 4
+
+echo "Done building."
+echo "Run:"
+echo "python -m http.server"
+echo "Then open in browser:"
+echo "http://0.0.0.0:8000/build_js/utils/viewer/viewer.html?scene=skokloster-castle.glb"
