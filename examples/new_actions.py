@@ -4,22 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import attr
-import numpy as np
-import quaternion
-
-import habitat_sim
-import habitat_sim.utils
-from habitat_sim.agent import controls
-
-try:
-    import pprint
-
-    _pprint = pprint.pprint
-except ImportError:
-    _pprint = print
-
-
 r"""
 This is a demonstration of how to add new actions to agents in habitat_sim
 
@@ -53,6 +37,22 @@ To denote an action as a body action, it needs to be added
 to the set of body actions: habitat_sim.agent.BodyActions
 """
 
+import attr
+import numpy as np
+import quaternion
+
+import habitat_sim
+import habitat_sim.utils
+from habitat_sim.agent import controls
+
+try:
+    import pprint
+
+    _pprint = pprint.pprint
+except ImportError:
+    _pprint = print
+
+
 # We will define an action that moves the agent and turns it by some amount
 
 # First, define a class to keep the parameters of the control
@@ -67,7 +67,7 @@ print(MoveAndSpinSpec(1.0, 45.0))
 
 
 # Register the control function
-# If done with the decorator sync, it will be registered with
+# If done with the decorator syntax, it will be registered with
 # the same name of the function
 @controls.register_move_fn
 def move_forward_and_spin(
