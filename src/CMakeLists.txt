@@ -21,16 +21,16 @@ if(CCACHE_FOUND)
 endif()
 
 # build options
+option(BUILD_PYTHON_BINDINGS "Whether to build python bindings" ON)
+option(BUILD_DATATOOL "Whether to build datatool utility binary" ON)
 option(BUILD_PTEX_SUPPORT "Whether to build ptex mesh support" ON)
+option(BUILD_GUI_VIEWERS "Whether to build GUI viewer utility binary" OFF)
+option(BUILD_TEST "Build test binaries" OFF)
 option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
 option(USE_SYSTEM_EIGEN "Use system Eigen instead of a bundled submodule" OFF)
 option(USE_SYSTEM_MAGNUM "Use system Magnum instead of a bundled submodule" OFF)
 option(USE_SYSTEM_PYBIND11 "Use system Pybind11 instead of a bundled submodule" OFF)
 option(USE_SYSTEM_RAPIDJSON "Use system RapidJSON instead of a bundled submodule" OFF)
-
-option(BUILD_GUI_VIEWERS "Build GUI viewers" OFF)
-
-# set(CMAKE_BUILD_TYPE Debug)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -43,9 +43,6 @@ endif()
 # avoid ld visibility warnings, should be done by CMAKE_CXX_VISIBILITY_PRESET
 # but need cmake_policy(SET CMP0063 NEW) also which seems to not work
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
-
-# build options
-option(BUILD_TEST "Build test binaries" OFF)
 
 # ---[ Dependencies
 include(cmake/dependencies.cmake)
@@ -70,16 +67,18 @@ add_subdirectory(esp/nav)
 add_subdirectory(esp/agent)
 add_subdirectory(esp/sensor)
 
-if (BUILD_DATATOOL)
+if(BUILD_DATATOOL)
+  message("Building datatool")
   add_subdirectory(utils/datatool)
 endif()
 
-if(${BUILD_GUI_VIEWERS})
+if(BUILD_GUI_VIEWERS)
+  message("Building GUI viewer")
   add_subdirectory(utils/viewer)
 endif()
 
 # build tests
-if (BUILD_TEST)
+if(BUILD_TEST)
   message("Building TESTS")
   add_subdirectory(tests)
 endif()

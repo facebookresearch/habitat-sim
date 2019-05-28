@@ -1,5 +1,5 @@
-in vec3 v_color;
-in float v_depth;
+in mediump vec3 v_color;
+in highp float v_depth;
 
 
 #ifdef PER_VERTEX_IDS
@@ -22,12 +22,12 @@ uniform highp int texSize;
 uniform lowp vec4 colorUniform;
 #endif
 
-layout(location = 0) out vec4 color;
-layout(location = 1) out float depth;
+layout(location = 0) out mediump vec4 color;
+layout(location = 1) out highp float depth;
 layout(location = 2) out uint objectId;
 
 void main () {
-  vec4 baseColor =
+  mediump vec4 baseColor =
     #ifdef VERTEX_COLORED
     vec4(v_color, 1.0);
     #else

@@ -34,8 +34,8 @@ Viewer::Viewer(const Arguments& arguments)
       controls_(),
       previousPosition_() {
   Utility::Arguments args;
-  args.addArgument("file")
-      .setHelp("file", "file to load")
+  args.addNamedArgument("scene")
+      .setHelp("scene", "scene file to load")
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .parse(arguments.argc, arguments.argv);
@@ -51,7 +51,7 @@ Viewer::Viewer(const Arguments& arguments)
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   auto& rootNode = sceneGraph.getRootNode();
   auto& drawables = sceneGraph.getDrawables();
-  const std::string& file = args.value("file");
+  const std::string& file = args.value("scene");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
   if (!resourceManager_.loadScene(info, &rootNode, &drawables)) {
     LOG(ERROR) << "cannot load " << file;
