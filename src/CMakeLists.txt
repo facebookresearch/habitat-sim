@@ -22,7 +22,7 @@ option(USE_SYSTEM_MAGNUM "Use system Magnum instead of a bundled submodule" OFF)
 option(USE_SYSTEM_PYBIND11 "Use system Pybind11 instead of a bundled submodule" OFF)
 option(USE_SYSTEM_RAPIDJSON "Use system RapidJSON instead of a bundled submodule" OFF)
 
-set(BUILD_GUI_VIEWERS OFF CACHE BOOL "BUILD_GUI_VIEWERS")
+option(BUILD_GUI_VIEWERS "Build GUI viewers" OFF)
 
 # set(CMAKE_BUILD_TYPE Debug)
 
