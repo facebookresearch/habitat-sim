@@ -25,9 +25,9 @@ def _camel_to_snake(name):
 
 @attr.s(auto_attribs=True)
 class ActuationSpec(object):
-    r"""Struct to hold paramters for the default actions
+    r"""Struct to hold parameters for the default actions
 
-    The default actions only have one paramters, the amount
+    The default actions only have one parameters, the amount
     they move the scene node by, however other actions may have any number of
     parameters and can define different structs to hold those parameters
 
@@ -56,7 +56,7 @@ class SceneNodeControl(abc.ABC):
 
         Args:
             scene_node (hsim.SceneNode): The scene node to control
-            actuation_spec (ActuationSpec): Struct holding any paramters of the control
+            actuation_spec (ActuationSpec): Struct holding any parameters of the control
         """
         pass
 
@@ -70,7 +70,7 @@ def register_move_fn(
     name: Optional[str] = None,
     body_action: bool = None,
 ):
-    r"""Registers a new control with habitat sim
+    r"""Registers a new control with Habitat-Sim
 
     See default_controls.py for an example of adding new actions
     (note that this can be done _outside_ the core habitat_sim codebase in exactly the same way)
@@ -81,9 +81,9 @@ def register_move_fn(
         name (Optional[str]): The name to register the control with
             If none, will register with the name of the controller converted to snake case
             i.e. a controller with class name MoveForward will be registered as move_forward
-        body_action (bool): Whether or not this action manipulates the agents body
+        body_action (bool): Whether or not this action manipulates the agent's body
             (thereby also moving the sensors) or manipulates just the sensors.
-            This is a non-optional keyword arguement and must be set (this is done for readability purpose)
+            This is a non-optional keyword arguement and must be set (this is done for readability)
     """
 
     assert (
