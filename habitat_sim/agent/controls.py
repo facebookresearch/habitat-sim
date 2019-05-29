@@ -8,14 +8,14 @@ import abc
 import re
 from typing import Dict, Optional, Type
 
+import attr
 import numpy as np
 import quaternion
 
-import attr
 import habitat_sim.bindings as hsim
 from habitat_sim import utils
 
-__all__ = ["ActuationSpec", "Controller", "ObjectControls"]
+__all__ = ["ActuationSpec", "SceneNodeControl", "ObjectControls"]
 
 
 def _camel_to_snake(name):
@@ -29,7 +29,7 @@ class ActuationSpec(object):
 
 
 @attr.s(auto_attribs=True, slots=True)
-class Controller(abc.ABC):
+class SceneNodeControl(abc.ABC):
     body_action: bool = False
 
     @abc.abstractmethod
@@ -37,19 +37,19 @@ class Controller(abc.ABC):
         pass
 
 
-move_func_map: Dict[str, Controller] = dict()
+move_func_map: Dict[str, SceneNodeControl] = dict()
 
 
 def register_move_fn(
-    controller: Optional[Type[Controller]] = None,
+    controller: Optional[Type[SceneNodeControl]] = None,
     *,
     name: Optional[str] = None,
     body_action: bool = False,
 ):
-    def _wrapper(controller: Type[Controller]):
+    def _wrapper(controller: Type[SceneNodeControl]):
         assert issubclass(
-            controller, Controller
-        ), "All controls must inherit from habitat_sim.agent.Controller"
+            controller, SceneNodeControl
+        ), "All controls must inherit from habitat_sim.agent.SceneNodeControl"
 
         move_func_map[
             _camel_to_snake(controller.__name__) if name is None else name
