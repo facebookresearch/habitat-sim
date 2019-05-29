@@ -23,12 +23,12 @@ def _camel_to_snake(name):
     return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
-@attr.s(auto_attribs=True, slots=True)
+@attr.s(auto_attribs=True)
 class ActuationSpec(object):
     amount: float
 
 
-@attr.s(auto_attribs=True, slots=True)
+@attr.s(auto_attribs=True)
 class SceneNodeControl(abc.ABC):
     body_action: bool = False
 

@@ -27,7 +27,7 @@ def _default_action_space():
     )
 
 
-@attr.s(auto_attribs=True, slots=True)
+@attr.s(auto_attribs=True)
 class ActionSpec(object):
     r"""Defines how a specific action is implemented
 
