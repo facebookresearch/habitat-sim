@@ -44,8 +44,12 @@ def register_move_fn(
     controller: Optional[Type[SceneNodeControl]] = None,
     *,
     name: Optional[str] = None,
-    body_action: bool = False,
+    body_action: bool = None,
 ):
+    assert (
+        body_action is not None
+    ), "body_action must be explicitly set to True or False"
+
     def _wrapper(controller: Type[SceneNodeControl]):
         assert issubclass(
             controller, SceneNodeControl
