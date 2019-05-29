@@ -44,7 +44,8 @@ class SceneNodeControl(abc.ABC):
     Control classes are used to implement agent actions.  Any new control
     must subclass this class.
 
-    See examples/new_actions.py for an example of adding new actions
+    See default_controls.py for an example of adding new actions
+    (note that this can be done _outside_ the core habitat_sim codebase in exactly the same way)
     """
 
     body_action: bool = False
@@ -70,6 +71,9 @@ def register_move_fn(
     body_action: bool = None,
 ):
     r"""Registers a new control with habitat sim
+
+    See default_controls.py for an example of adding new actions
+    (note that this can be done _outside_ the core habitat_sim codebase in exactly the same way)
 
     Args:
         controller (Optional[Type[SceneNodeControl]]): The class of the controller to register
