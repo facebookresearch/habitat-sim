@@ -188,7 +188,6 @@ We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup
 
 - The full Matterport3D (MP3D) dataset for use with Habitat can be downloaded using the official [Matterport3D](https://niessner.github.io/Matterport/) download script as follows: `python download_mp.py --task habitat -o path/to/download/`. You only need the habitat zip archive and not the entire Matterport3D dataset. Note that this download script requires python 2.7 to run.
 - The Gibson dataset for use with Habitat can be downloaded by agreeing to the terms of use in the [Gibson](https://github.com/StanfordVL/GibsonEnv#database) repository
-- To obtain access to a test version of the full SUNCG dataset, please contact us.
 
 ## Examples
 
