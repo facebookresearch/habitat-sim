@@ -271,8 +271,9 @@ class CMakeBuild(build_ext):
             with open(filename) as f:
                 return json.load(f)
 
-        commands = glob.glob("build/*/compile_commands.json")
-        all_commands = [entry for f in commands for entry in load(f)]
+        command_files = [osp.join(self.build_temp, "compile_commands.json")]
+        command_files += glob.glob("{}/*/compile_commands.json".format(self.build_temp))
+        all_commands = [entry for f in command_files for entry in load(f)]
 
         # cquery does not like c++ compiles that start with gcc.
         # It forgets to include the c++ header directories.
