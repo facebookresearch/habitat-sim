@@ -18,8 +18,9 @@ The scene_node is what the control function manipulates (or controls) and the ac
 contains any parameters needed by that control function.
 See habitat_sim/agent/default_controls.py for more example controls
 
-Controls are registered use the habitat_sim.agent.controls.register_move_fn function.
-This function takes the functor to register and, optionally, the name to register it with.
+Controls are registered using the habitat_sim.agent.controls.register_move_fn function.
+This function takes the functor to register and, optionally, the name to register it with,
+and whether or not the control effects the body or just the sensors.
 If no name is given, the functor is registered with its own name, converted to snake case.
 
 This function can also be used as a decorator
