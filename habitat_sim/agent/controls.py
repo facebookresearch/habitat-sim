@@ -4,7 +4,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Dict
+import abc
+import re
+from typing import Dict, Optional
 
 import attr
 import numpy as np
@@ -13,7 +15,12 @@ import quaternion
 import habitat_sim.bindings as hsim
 from habitat_sim import utils
 
-__all__ = ["ActuationSpec", "ObjectControls"]
+__all__ = ["ActuationSpec", "Controller", "ObjectControls"]
+
+
+def _camel_to_snake(name):
+    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -21,12 +28,35 @@ class ActuationSpec(object):
     amount: float
 
 
-move_func_map = dict()
+@attr.s(auto_attribs=True, slots=True)
+class Controller(abc.ABC):
+    body_action: bool = False
+
+    @abc.abstractmethod
+    def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
+        pass
 
 
-def register_move_fn(fn, name=None):
-    move_func_map[fn.__name__ if name is None else name] = fn
-    return fn
+move_func_map: Dict[str, Controller] = dict()
+
+
+def register_move_fn(
+    controller: Optional[Controller] = None,
+    *,
+    name: Optional[str] = None,
+    body_action: bool = False,
+):
+    def _wrapper(controller: Controller):
+        move_func_map[
+            _camel_to_snake(controller.__name__) if name is None else name
+        ] = controller(body_action)
+
+        return controller
+
+    if controller is None:
+        return _wrapper
+    else:
+        return _wrapper(controller)
 
 
 def _noop_filter(start: np.array, end: np.array):
@@ -43,6 +73,19 @@ class ObjectControls(object):
     """
 
     move_filter_fn = attr.ib(default=_noop_filter)
+
+    @staticmethod
+    def is_body_action(action_name: str):
+        r"""Checks to see if :py:attr:`action_name` is a body action
+
+        Args:
+            action_name (str): Name of the action.
+        """
+        assert (
+            action_name in move_func_map
+        ), f"No action named {action_name} in the move map"
+
+        return move_func_map[action_name].body_action
 
     def action(
         self,

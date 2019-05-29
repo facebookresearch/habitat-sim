@@ -9,7 +9,7 @@ import numpy as np
 import habitat_sim.bindings as hsim
 from habitat_sim import utils
 
-from .controls import ActuationSpec, register_move_fn
+from .controls import ActuationSpec, Controller, register_move_fn
 
 __all__ = []
 
@@ -19,68 +19,78 @@ _y_axis = 1
 _z_axis = 2
 
 
-def _move_along(obj: hsim.SceneNode, distance: float, axis: int):
-    ax = obj.absolute_transformation()[0:3, axis]
-    obj.translate_local(ax * distance)
+def _move_along(scene_node: hsim.SceneNode, distance: float, axis: int):
+    ax = scene_node.absolute_transformation()[0:3, axis]
+    scene_node.translate_local(ax * distance)
 
 
-def _rotate_local(obj: hsim.SceneNode, theta: float, axis: int):
+def _rotate_local(scene_node: hsim.SceneNode, theta: float, axis: int):
     ax = np.zeros(3, dtype=np.float32)
     ax[axis] = 1
 
-    obj.rotate_local(np.deg2rad(theta), ax)
-    obj.normalize()
+    scene_node.rotate_local(np.deg2rad(theta), ax)
+    scene_node.normalize()
+
+
+@register_move_fn(body_action=True)
+class MoveBackward(Controller):
+    def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
+        _move_along(scene_node, actuation_spec.amount, _z_axis)
+
+
+@register_move_fn(body_action=True)
+class MoveForward(Controller):
+    def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
+        _move_along(scene_node, -actuation_spec.amount, _z_axis)
+
+
+@register_move_fn(body_action=True)
+class MoveRight(Controller):
+    def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
+        _move_along(scene_node, actuation_spec.amount, _x_axis)
+
+
+@register_move_fn(body_action=True)
+class MoveLeft(Controller):
+    def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
+        _move_along(scene_node, -actuation_spec.amount, _x_axis)
 
 
 @register_move_fn
-def move_backward(obj: hsim.SceneNode, actuation_spec: ActuationSpec):
-    _move_along(obj, actuation_spec.amount, _z_axis)
+class MoveUp(Controller):
+    def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
+        _move_along(scene_node, actuation_spec.amount, _y_axis)
 
 
 @register_move_fn
-def move_forward(obj: hsim.SceneNode, actuation_spec: ActuationSpec):
-    _move_along(obj, -actuation_spec.amount, _z_axis)
+class MoveDown(Controller):
+    def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
+        _move_along(scene_node, -actuation_spec.amount, _y_axis)
 
 
 @register_move_fn
-def move_right(obj: hsim.SceneNode, actuation_spec: ActuationSpec):
-    _move_along(obj, actuation_spec.amount, _x_axis)
+class LookLeft(Controller):
+    def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
+        _rotate_local(scene_node, actuation_spec.amount, _y_axis)
 
 
 @register_move_fn
-def move_left(obj: hsim.SceneNode, actuation_spec: ActuationSpec):
-    _move_along(obj, -actuation_spec.amount, _x_axis)
+class LookRight(Controller):
+    def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
+        _rotate_local(scene_node, -actuation_spec.amount, _y_axis)
+
+
+register_move_fn(LookLeft, name="turn_left", body_action=True)
+register_move_fn(LookRight, name="turn_right", body_action=True)
 
 
 @register_move_fn
-def move_up(obj: hsim.SceneNode, actuation_spec: ActuationSpec):
-    _move_along(obj, actuation_spec.amount, _y_axis)
+class LookUp(Controller):
+    def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
+        _rotate_local(scene_node, actuation_spec.amount, _x_axis)
 
 
 @register_move_fn
-def move_down(obj: hsim.SceneNode, actuation_spec: ActuationSpec):
-    _move_along(obj, -actuation_spec.amount, _y_axis)
-
-
-@register_move_fn
-def look_left(obj: hsim.SceneNode, actuation_spec: ActuationSpec):
-    _rotate_local(obj, actuation_spec.amount, _y_axis)
-
-
-@register_move_fn
-def look_right(obj: hsim.SceneNode, actuation_spec: ActuationSpec):
-    _rotate_local(obj, -actuation_spec.amount, _y_axis)
-
-
-register_move_fn(look_left, "turn_left")
-register_move_fn(look_right, "turn_right")
-
-
-@register_move_fn
-def look_up(obj: hsim.SceneNode, actuation_spec: ActuationSpec):
-    _rotate_local(obj, actuation_spec.amount, _x_axis)
-
-
-@register_move_fn
-def look_down(obj: hsim.SceneNode, actuation_spec: ActuationSpec):
-    _rotate_local(obj, -actuation_spec.amount, _x_axis)
+class LookDown(Controller):
+    def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
+        _rotate_local(scene_node, -actuation_spec.amount, _x_axis)

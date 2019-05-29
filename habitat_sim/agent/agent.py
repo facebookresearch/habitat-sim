@@ -19,16 +19,6 @@ from .controls import ActuationSpec, ObjectControls
 __all__ = ["ActionSpec", "SixDOFPose", "AgentState", "AgentConfiguration", "Agent"]
 
 
-BodyActions = {
-    "move_right",
-    "move_left",
-    "move_forward",
-    "move_backward",
-    "turn_left",
-    "turn_right",
-}
-
-
 def _default_action_space():
     return dict(
         move_forward=ActionSpec("move_forward", ActuationSpec(amount=0.25)),
@@ -174,7 +164,7 @@ class Agent(object):
         ), f"No action {action_id} in action space"
         action = self.agent_config.action_space[action_id]
 
-        if action.name in BodyActions:
+        if self.controls.is_body_action(action.name):
             self.controls.action(
                 self.scene_node, action.name, action.actuation, apply_filter=True
             )
