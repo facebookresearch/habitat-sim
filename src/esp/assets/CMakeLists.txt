@@ -42,7 +42,7 @@ target_link_libraries(assets
     MagnumPlugins::TinyGltfImporter
     tinyply
   PRIVATE
-    assimp
+    Assimp::Assimp
     geo
     io
 )

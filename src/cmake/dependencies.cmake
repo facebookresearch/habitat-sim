@@ -43,16 +43,19 @@ endif()
 # See https://stackoverflow.com/questions/3766740/overriding-a-default-option-value-in-cmake-from-a-parent-cmakelists-txt
 
 # Assimp. Use a system package, if preferred.
-if(USE_SYSTEM_ASSIMP)
-  find_package(ASSIMP REQUIRED)
-else()
+if(NOT USE_SYSTEM_ASSIMP)
   set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "ASSIMP_BUILD_ASSIMP_TOOLS" FORCE)
   set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
   set(BUILD_SHARED_LIBS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
   add_subdirectory("${DEPS_DIR}/assimp")
-  include_directories(SYSTEM "${DEPS_DIR}/assimp/include")
-  # message(STATUS "Found ASSIMP in ${ASSIMP_INCLUDE_DIR}")
+
+  # Help FindAssimp locate everything
+  set(ASSIMP_INCLUDE_DIR "${DEPS_DIR}/assimp/include" CACHE STRING "" FORCE)
+  set(ASSIMP_LIBRARY_DEBUG assimp CACHE STRING "" FORCE)
+  set(ASSIMP_LIBRARY_RELEASE assimp CACHE STRING "" FORCE)
+  add_library(Assimp::Assimp ALIAS assimp)
 endif()
+find_package(Assimp REQUIRED)
 
 # recast
 set(RECASTNAVIGATION_DEMO OFF CACHE BOOL "RECASTNAVIGATION_DEMO" FORCE)
