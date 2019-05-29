@@ -60,7 +60,7 @@ add_subdirectory(esp/sensor)
 
 
 add_subdirectory(utils/datatool)
-if(${BUILD_GUI_VIEWERS})
+if(BUILD_GUI_VIEWERS)
   # add_subdirectory(utils/displayObj/)
   add_subdirectory(utils/viewer)
 endif()
