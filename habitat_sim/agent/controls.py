@@ -6,12 +6,12 @@
 
 import abc
 import re
-from typing import Dict, Optional
+from typing import Dict, Optional, Type
 
-import attr
 import numpy as np
 import quaternion
 
+import attr
 import habitat_sim.bindings as hsim
 from habitat_sim import utils
 
@@ -41,12 +41,16 @@ move_func_map: Dict[str, Controller] = dict()
 
 
 def register_move_fn(
-    controller: Optional[Controller] = None,
+    controller: Optional[Type[Controller]] = None,
     *,
     name: Optional[str] = None,
     body_action: bool = False,
 ):
-    def _wrapper(controller: Controller):
+    def _wrapper(controller: Type[Controller]):
+        assert issubclass(
+            controller, Controller
+        ), "All controls must inherit from habitat_sim.agent.Controller"
+
         move_func_map[
             _camel_to_snake(controller.__name__) if name is None else name
         ] = controller(body_action)
