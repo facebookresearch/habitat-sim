@@ -49,6 +49,7 @@ include_directories(${PROJECT_SOURCE_DIR})
 
 # compiler define for enabling ptex support
 if(BUILD_PTEX_SUPPORT)
+  message("Building with ptex support")
   add_compile_definitions(BUILD_PTEX_SUPPORT)
 endif()
 
@@ -64,10 +65,12 @@ add_subdirectory(esp/agent)
 add_subdirectory(esp/sensor)
 
 if(BUILD_DATATOOL)
+  message("Building datatool")
   add_subdirectory(utils/datatool)
 endif()
 
 if(BUILD_GUI_VIEWERS)
+  message("Building GUI viewer")
   add_subdirectory(utils/viewer)
 endif()
 

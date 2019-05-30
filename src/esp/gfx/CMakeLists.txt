@@ -20,7 +20,6 @@ endif()
 # If GUI build, add Viewer.cpp source
 # TODO(MS) Viewer really ought to be in separate module that is disabled
 if(BUILD_GUI_VIEWERS)
-  message("Building GUI viewer")
   list(APPEND gfx_SOURCES Viewer.cpp)
 endif()
 
