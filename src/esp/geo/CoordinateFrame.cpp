@@ -31,6 +31,10 @@ quatf CoordinateFrame::rotationWorldToFrame() const {
          R_frameUp_worldUp;
 }
 
+quatf CoordinateFrame::rotationFrameToWorld() const {
+  return rotationWorldToFrame().inverse();
+}
+
 std::string CoordinateFrame::toJson() const {
   std::stringstream ss;
   ss << "{\"up\":" << up() << ",\"front\":" << front()

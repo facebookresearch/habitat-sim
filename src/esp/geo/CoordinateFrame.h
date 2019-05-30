@@ -40,6 +40,10 @@ class CoordinateFrame {
   //! to coordinates in this CoordinateFrame
   quatf rotationWorldToFrame() const;
 
+  //! Returns quaternion representing rotation taking world coordinates
+  //! to coordinates in this CoordinateFrame
+  quatf rotationFrameToWorld() const;
+
   //! Return Transform from world coordinates to local coordinates
   Transform transformationWorldToFrame() const;
 
