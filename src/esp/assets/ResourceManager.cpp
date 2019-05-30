@@ -467,8 +467,7 @@ bool ResourceManager::createScene(Importer& importer,
 
     // create scene parent node with transformation aligning to global frame
     auto& sceneNode = parent.createChild();
-    const quatf transform =
-        quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
+    const quatf transform = info.frame.rotationWorldToFrame().inverse();
     sceneNode.setRotation(transform);
 
     // Recursively add all children
