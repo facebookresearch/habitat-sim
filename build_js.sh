@@ -19,7 +19,7 @@ cmake ../src \
     -DTARGET_WEBGL=ON \
     -DCMAKE_TOOLCHAIN_FILE="../src/deps/corrade/toolchains/generic/Emscripten-wasm.cmake" \
     -DCMAKE_INSTALL_PREFIX="." \
-    -DCMAKE_CXX_FLAGS="-s FORCE_FILESYSTEM=1 -s TOTAL_MEMORY=1677721600 --preload-file $DATA_DIR/scene_datasets/habitat-test-scenes@/" \
+    -DCMAKE_CXX_FLAGS="-s FORCE_FILESYSTEM=1 -s ALLOW_MEMORY_GROWTH=1 --preload-file $DATA_DIR/scene_datasets/habitat-test-scenes@/" \
 
 cmake --build . -- -j 4
 cmake --build . --target install -- -j 4
