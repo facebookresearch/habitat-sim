@@ -36,12 +36,12 @@ class CoordinateFrame {
   //! Returns front orientation
   vec3f back() const { return -front_; }
 
-  //! Returns quaternion representing rotation taking world coordinates
-  //! to coordinates in this CoordinateFrame
+  //! Returns quaternion representing the rotation taking direction vectors in
+  //! world coordinates to direction vectors in this CoordinateFrame
   quatf rotationWorldToFrame() const;
 
-  //! Returns quaternion representing rotation taking world coordinates
-  //! to coordinates in this CoordinateFrame
+  //! Returns quaternion representing the rotation taking direction vectors in
+  //! this CoordinateFrame to direction vectors in world coordinates
   quatf rotationFrameToWorld() const;
 
   //! Return Transform from world coordinates to local coordinates
