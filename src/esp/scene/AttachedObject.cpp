@@ -40,141 +40,14 @@ void AttachedObject::attach(SceneNode& node) {
       this;  // build the connection (SceneNode --> AttachedObject)
 }
 
-// ==== get functions ====
-// get local transformation w.r.t. parent's frame
-mat4f AttachedObject::getTransformation() const {
+SceneNode& AttachedObject::object() {
   ASSERT(isValid());
-  return node_->getTransformation();
-}
-quatf AttachedObject::getRotation() const {
-  ASSERT(isValid());
-  return node_->getRotation();
+  return *node_;
 }
 
-// get global transformation w.r.t. world frame
-vec3f AttachedObject::getAbsolutePosition() const {
+const SceneNode& AttachedObject::object() const {
   ASSERT(isValid());
-  return node_->getAbsolutePosition();
-}
-
-mat4f AttachedObject::getAbsoluteTransformation() const {
-  ASSERT(isValid());
-  return node_->getAbsoluteTransformation();
-}
-
-// ==== set functions ====
-// set local transformation w.r.t. parent's frame
-AttachedObject& AttachedObject::setTransformation(
-    const Eigen::Ref<const mat4f> transformation) {
-  ASSERT(isValid());
-  node_->setTransformation(transformation);
-  return *this;
-}
-
-AttachedObject& AttachedObject::setTransformation(
-    const Eigen::Ref<const vec3f> position,
-    const Eigen::Ref<const vec3f> target,
-    const Eigen::Ref<const vec3f> up) {
-  ASSERT(isValid());
-  node_->setTransformation(position, target, up);
-  return *this;
-}
-
-AttachedObject& AttachedObject::setTranslation(
-    const Eigen::Ref<const vec3f> vector) {
-  ASSERT(isValid());
-  node_->setTranslation(vector);
-  return *this;
-}
-
-AttachedObject& AttachedObject::setRotation(const quatf& quaternion) {
-  ASSERT(isValid());
-  node_->setRotation(quaternion);
-  return *this;
-}
-
-AttachedObject& AttachedObject::resetTransformation() {
-  ASSERT(isValid());
-  node_->resetTransformation();
-  return *this;
-}
-
-// ==== rigid body transformations ====
-AttachedObject& AttachedObject::translate(
-    const Eigen::Ref<const vec3f> vector) {
-  ASSERT(isValid());
-  node_->translate(vector);
-  return *this;
-}
-
-AttachedObject& AttachedObject::translateLocal(
-    const Eigen::Ref<const vec3f> vector) {
-  ASSERT(isValid());
-  node_->translateLocal(vector);
-  return *this;
-}
-
-AttachedObject& AttachedObject::rotate(
-    float angleInRad,
-    const Eigen::Ref<const vec3f> normalizedAxis) {
-  ASSERT(isValid());
-  node_->rotate(angleInRad, normalizedAxis);
-  return *this;
-}
-
-// rotateLocal:
-// It means rotation is applied before all other rotations.
-
-// Rotate object using axis-angle as a local transformation.
-// normalizedAxis: in parent's frame
-AttachedObject& AttachedObject::rotateLocal(
-    float angleInRad,
-    const Eigen::Ref<const vec3f> normalizedAxis) {
-  ASSERT(isValid());
-  node_->rotateLocal(angleInRad, normalizedAxis);
-  return *this;
-}
-
-AttachedObject& AttachedObject::rotateX(float angleInRad) {
-  ASSERT(isValid());
-  node_->rotateX(angleInRad);
-  return *this;
-}
-
-AttachedObject& AttachedObject::rotateXInDegree(float angleInDeg) {
-  ASSERT(isValid());
-  node_->rotateXInDegree(angleInDeg);
-  return *this;
-}
-
-AttachedObject& AttachedObject::rotateXLocal(float angleInRad) {
-  ASSERT(isValid());
-  node_->rotateXLocal(angleInRad);
-  return *this;
-}
-
-AttachedObject& AttachedObject::rotateY(float angleInRad) {
-  ASSERT(isValid());
-  node_->rotateY(angleInRad);
-  return *this;
-}
-
-AttachedObject& AttachedObject::rotateYLocal(float angleInRad) {
-  ASSERT(isValid());
-  node_->rotateYLocal(angleInRad);
-  return *this;
-}
-
-AttachedObject& AttachedObject::rotateZ(float angleInRad) {
-  ASSERT(isValid());
-  node_->rotateZ(angleInRad);
-  return *this;
-}
-
-AttachedObject& AttachedObject::rotateZLocal(float angleInRad) {
-  ASSERT(isValid());
-  node_->rotateZLocal(angleInRad);
-  return *this;
+  return *node_;
 }
 
 }  // namespace scene

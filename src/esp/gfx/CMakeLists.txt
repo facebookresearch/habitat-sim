@@ -31,6 +31,8 @@ find_package(MagnumPlugins
     TinyGltfImporter
 )
 
+find_package(MagnumIntegration REQUIRED Eigen)
+
 add_library(gfx STATIC ${gfx_SOURCES})
 
 target_include_directories(gfx
@@ -55,6 +57,7 @@ target_link_libraries(gfx
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbImageConverter
     MagnumPlugins::TinyGltfImporter
+    MagnumIntegration::Eigen
 )
 
 # Link windowed application library if needed

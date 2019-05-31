@@ -8,6 +8,7 @@ from io import BytesIO
 from urllib.request import urlopen
 from zipfile import ZipFile
 
+import magnum as mn
 import numpy as np
 import quaternion
 
@@ -42,6 +43,17 @@ def quat_to_coeffs(quat: np.quaternion) -> np.array:
     coeffs[0:3] = quat.imag
     coeffs[3] = quat.real
     return coeffs
+
+
+def quat_to_magnum(quat: np.quaternion) -> mn.Quaternion:
+    return mn.Quaternion(quat.imag, quat.real)
+
+
+def quat_from_magnum(quat: mn.Quaternion) -> np.quaternion:
+    a = np.quaternion(1, 0, 0, 0)
+    a.real = quat.scalar
+    a.imag = quat.vector
+    return a
 
 
 def quat_to_angle_axis(quat: np.quantile) -> (float, np.array):

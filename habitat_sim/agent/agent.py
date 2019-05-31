@@ -7,6 +7,8 @@
 from typing import Any, Dict, List, Union
 
 import attr
+import magnum as mn
+import magnum.scenegraph
 import numpy as np
 
 import habitat_sim.bindings as hsim
@@ -176,10 +178,7 @@ class Agent(object):
             for _, v in self.sensors.items():
                 habitat_sim.errors.assert_obj_valid(v)
                 self.controls.action(
-                    v.get_scene_node(),
-                    action.name,
-                    action.actuation,
-                    apply_filter=False,
+                    v.object, action.name, action.actuation, apply_filter=False
                 )
 
         return did_collide
@@ -187,15 +186,18 @@ class Agent(object):
     def get_state(self) -> AgentState:
         habitat_sim.errors.assert_obj_valid(self.body)
         state = AgentState(
-            self.body.get_absolute_position(),
-            utils.quat_from_coeffs(self.body.get_rotation()),
+            np.array(self.body.object.absolute_transformation()._translation),  # TODO
+            utils.quat_from_magnum(self.body.object.rotation),
         )
 
         for k, v in self.sensors.items():
             habitat_sim.errors.assert_obj_valid(v)
             state.sensor_states[k] = SixDOFPose(
-                v.get_absolute_position(),
-                state.rotation * utils.quat_from_coeffs(v.get_rotation()),
+                np.array(v.object.absolute_transformation()._translation),  # TODO
+                # TODO: not using utils.quat_from_magnum leads to an infinite cycle
+                utils.quat_from_magnum(
+                    utils.quat_to_magnum(state.rotation) * v.object.rotation
+                ),
             )
 
         return state
@@ -213,10 +215,10 @@ class Agent(object):
         if isinstance(state.rotation, list):
             state.rotation = utils.quat_from_coeffs(state.rotation)
 
-        self.body.reset_transformation()
+        self.body.object.reset_transformation()
 
-        self.body.translate(state.position)
-        self.body.set_rotation(utils.quat_to_coeffs(state.rotation))
+        self.body.object.translate(state.position)
+        self.body.object.rotation = utils.quat_to_magnum(state.rotation)
 
         if reset_sensors:
             for _, v in self.sensors.items():
@@ -229,18 +231,20 @@ class Agent(object):
 
             s = self.sensors[k]
 
-            s.reset_transformation()
-            s.translate(
+            s.object.reset_transformation()
+            s.object.translate(
                 utils.quat_rotate_vector(
                     state.rotation.inverse(), v.position - state.position
                 )
             )
-            s.set_rotation(utils.quat_to_coeffs(state.rotation.inverse() * v.rotation))
+            s.object.rotation = utils.quat_to_magnum(
+                state.rotation.inverse() * v.rotation
+            )
 
     @property
     def scene_node(self):
         habitat_sim.errors.assert_obj_valid(self.body)
-        return self.body.get_scene_node()
+        return self.body.object
 
     @property
     def state(self):

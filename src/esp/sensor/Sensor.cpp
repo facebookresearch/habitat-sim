@@ -4,6 +4,8 @@
 
 #include "Sensor.h"
 
+#include <Magnum/EigenIntegration/Integration.h>
+
 namespace esp {
 namespace sensor {
 
@@ -47,12 +49,12 @@ void Sensor::setTransformationFromSpec() {
     return;
   }
 
-  resetTransformation();
+  object().resetTransformation();
 
-  translate(spec_->position);
-  rotateX(spec_->orientation[0]);
-  rotateY(spec_->orientation[1]);
-  rotateZ(spec_->orientation[2]);
+  object().translate(Magnum::Vector3(spec_->position));
+  object().rotateX(Magnum::Rad(spec_->orientation[0]));
+  object().rotateY(Magnum::Rad(spec_->orientation[1]));
+  object().rotateZ(Magnum::Rad(spec_->orientation[2]));
 }
 
 bool operator==(const SensorSpec& a, const SensorSpec& b) {

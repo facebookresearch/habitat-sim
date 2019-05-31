@@ -4,9 +4,14 @@
 
 #include "Agent.h"
 
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/EigenIntegration/Integration.h>
+
 #include "esp/scene/ObjectControls.h"
 #include "esp/sensor/PinholeCamera.h"
 #include "esp/sensor/Sensor.h"
+
+using Magnum::EigenIntegration::cast;
 
 namespace esp {
 namespace agent {
@@ -74,7 +79,7 @@ void Agent::act(const std::string& actionName) {
                       /*applyFilter=*/true);
   } else {
     for (auto p : sensors_.getSensors()) {
-      controls_->action(*p.second->getSceneNode(), actionSpec.name,
+      controls_->action(p.second->object(), actionSpec.name,
                         actionSpec.actuation.at("amount"),
                         /*applyFilter=*/false);
     }
@@ -84,8 +89,9 @@ void Agent::act(const std::string& actionName) {
 void Agent::getState(AgentState::ptr state) const {
   ASSERT(isValid());
   // TODO this should be done less hackishly
-  state->position = getAbsolutePosition();
-  state->rotation = getRotation().coeffs();
+  state->position =
+      cast<vec3f>(object().absoluteTransformation().translation());
+  state->rotation = quatf(object().rotation()).coeffs();
   // TODO other state members when implemented
 }
 
@@ -93,13 +99,13 @@ void Agent::setState(const AgentState& state,
                      const bool resetSensors /*= true*/) {
   ASSERT(isValid());
 
-  setTranslation(state.position);
+  object().setTranslation(Magnum::Vector3(state.position));
 
   const Eigen::Map<const quatf> rot(state.rotation.data());
   CHECK_LT(std::abs(rot.norm() - 1.0),
            2.0 * Magnum::Math::TypeTraits<float>::epsilon())
       << state.rotation << " not a valid rotation";
-  setRotation(rot.normalized());
+  object().setRotation(Magnum::Quaternion(quatf(rot)).normalized());
 
   if (resetSensors) {
     for (auto p : sensors_.getSensors()) {

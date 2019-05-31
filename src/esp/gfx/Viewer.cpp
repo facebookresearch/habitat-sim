@@ -5,6 +5,7 @@
 #include "Viewer.h"
 
 #include <Corrade/Utility/Arguments.h>
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <sophus/so3.hpp>
@@ -62,9 +63,9 @@ Viewer::Viewer(const Arguments& arguments)
   agentBodyNode_ = &rootNode.createChild();
   cameraNode_ = &agentBodyNode_->createChild();
 
-  cameraNode_->translate(vec3f(0.0, cameraHeight, 0.0));
+  cameraNode_->translate({0.0f, cameraHeight, 0.0f});
 
-  agentBodyNode_->translate(vec3f(0, 0, 5));
+  agentBodyNode_->translate({0.0f, 0.0f, 5.0f});
 
   float hfov = 90.0f;
   int width = viewportSize[0];
@@ -87,7 +88,7 @@ Viewer::Viewer(const Arguments& arguments)
     controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
       vec3f currentPosition = pathfinder_->tryStep(start, end);
       LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
-                << agentBodyNode_->getRotation().coeffs().transpose();
+                << quatf(agentBodyNode_->rotation()).coeffs().transpose();
       LOG(INFO) << "Distance to closest obstacle: "
                 << pathfinder_->distanceToClosestObstacle(currentPosition);
 
@@ -95,10 +96,10 @@ Viewer::Viewer(const Arguments& arguments)
     });
 
     const vec3f position = pathfinder_->getRandomNavigablePoint();
-    agentBodyNode_->setTranslation(position);
+    agentBodyNode_->setTranslation(Vector3(position));
 
     LOG(INFO) << "Viewer initialization is done. ";
-    renderCamera_->setTransformation(cameraNode_->getAbsoluteTransformation());
+    renderCamera_->object().setTransformation(cameraNode_->absoluteTransformation());
   }  // namespace gfx
 }
 
@@ -148,11 +149,13 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   }
 
   /* Distance to origin */
-  const float distance = renderCamera_->getTransformation().col(3).z();
+  const float distance =
+      renderCamera_->object().transformation().translation().z();
 
   /* Move 15% of the distance back or forward */
-  renderCamera_->translateLocal(vec3f(
-      0, 0, distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f))));
+  renderCamera_->object().translateLocal(
+      {0.0f, 0.0f,
+       distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f))});
 
   redraw();
 }
@@ -170,8 +173,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
     return;
   }
   const auto angle = Math::angle(previousPosition_, currentPosition);
-  renderCamera_->getSceneNode()->MagnumObject::rotate(-angle,
-                                                      axis.normalized());
+  renderCamera_->object().rotate(-angle, axis.normalized());
   previousPosition_ = currentPosition;
 
   redraw();
@@ -197,7 +199,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::Nine: {
       const vec3f position = pathfinder_->getRandomNavigablePoint();
-      agentBodyNode_->setTranslation(position);
+      agentBodyNode_->setTranslation(Vector3(position));
     } break;
     case KeyEvent::Key::A:
       controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
@@ -220,7 +222,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     default:
       break;
   }
-  renderCamera_->setTransformation(cameraNode_->getAbsoluteTransformation());
+  renderCamera_->object().setTransformation(
+      cameraNode_->absoluteTransformation());
   redraw();
 }
 

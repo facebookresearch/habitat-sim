@@ -61,60 +61,16 @@ class AttachedObject {
   AttachedObjectType getObjectType() { return objectType_; }
   void setObjectType(AttachedObjectType type) { objectType_ = type; }
 
-  // get the scene node being attached to (can be nullptr)
-  // please use return_policy = reference in pybind
-  SceneNode* getSceneNode() { return node_; }
+  // Get the scene node being attached to. Expects the object is valid, call
+  // isValid() before to be sure. For consistency this is named the same as
+  // Magnum::SceneGraph::object(), only returning a derived type.
+  SceneNode& object();
+  const SceneNode& object() const;
 
   // object is valid only when it is attached to a scene node.
   // node_ can only be set in functions attach/detach, and the value is either
   // nullptr or an address that is guaranteed accessible
   inline bool isValid() const { return (node_ != nullptr); }
-
-  // ==== get functions ====
-  // get local transformation w.r.t. parent's frame
-  virtual mat4f getTransformation() const;
-  virtual quatf getRotation() const;
-
-  // get global transformation w.r.t. world frame
-  virtual vec3f getAbsolutePosition() const;
-  virtual mat4f getAbsoluteTransformation() const;
-
-  // ==== set functions ====
-  // set local transformation w.r.t. parent's frame
-  virtual AttachedObject& setTransformation(
-      const Eigen::Ref<const mat4f> transformation);
-  virtual AttachedObject& setTransformation(
-      const Eigen::Ref<const vec3f> position,
-      const Eigen::Ref<const vec3f> target,
-      const Eigen::Ref<const vec3f> up);
-  virtual AttachedObject& setTranslation(const Eigen::Ref<const vec3f> vector);
-  virtual AttachedObject& setRotation(const quatf& quaternion);
-
-  virtual AttachedObject& resetTransformation();
-
-  // ==== rigid body transformations ====
-  virtual AttachedObject& translate(const Eigen::Ref<const vec3f> vector);
-  virtual AttachedObject& translateLocal(const Eigen::Ref<const vec3f> vector);
-
-  virtual AttachedObject& rotate(float angleInRad,
-                                 const Eigen::Ref<const vec3f> normalizedAxis);
-
-  // rotateLocal:
-  // It means rotation is applied before all other rotations.
-
-  // Rotate object using axis-angle as a local transformation.
-  // normalizedAxis: in parent's frame
-  virtual AttachedObject& rotateLocal(
-      float angleInRad,
-      const Eigen::Ref<const vec3f> normalizedAxis);
-
-  virtual AttachedObject& rotateX(float angleInRad);
-  virtual AttachedObject& rotateXInDegree(float angleInDeg);
-  virtual AttachedObject& rotateXLocal(float angleInRad);
-  virtual AttachedObject& rotateY(float angleInRad);
-  virtual AttachedObject& rotateYLocal(float angleInRad);
-  virtual AttachedObject& rotateZ(float angleInRad);
-  virtual AttachedObject& rotateZLocal(float angleInRad);
 
  protected:
   // raw pointer, let the scene graph manage the memory

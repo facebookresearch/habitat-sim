@@ -242,7 +242,7 @@ class Sensor:
         # (it assumes backend simulator will guarantee it.)
 
         agent_node = self._agent.scene_node
-        agent_node.set_parent(scene.get_root_node())
+        agent_node.parent = scene.get_root_node()
 
         # draw the scene with the visual sensor:
         # it asserts the sensor is a visual sensor;

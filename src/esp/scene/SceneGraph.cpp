@@ -18,9 +18,7 @@ void SceneGraph::setDefaultRenderCamera(sensor::Sensor& sensor) {
   ASSERT(sensor.isValid());
   ASSERT(sensor.isVisualSensor());
 
-  auto* sensorNode = sensor.getSceneNode();
-
-  Magnum::Matrix4 T = sensorNode->MagnumObject::absoluteTransformation();
+  Magnum::Matrix4 T = sensor.object().absoluteTransformation();
   Magnum::Matrix3 R = T.rotationScaling();
   Magnum::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(R);
 
@@ -36,7 +34,7 @@ void SceneGraph::setDefaultRenderCamera(sensor::Sensor& sensor) {
   // obtain the *absolute* transformation from the sensor node,
   // apply it as the *relative* transformation between the default camera and
   // its parent, which is rootNode_.
-  defaultRenderCameraNode_.MagnumObject::setTransformation(T);
+  defaultRenderCameraNode_.setTransformation(T);
 
   // set the projection matrix to the default camera
   sensor.setProjectionMatrix(defaultRenderCamera_);

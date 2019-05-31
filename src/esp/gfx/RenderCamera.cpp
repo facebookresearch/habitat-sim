@@ -4,6 +4,8 @@
 
 #include "RenderCamera.h"
 
+#include <Magnum/EigenIntegration/Integration.h>
+
 using namespace Magnum;
 
 namespace esp {
@@ -23,7 +25,8 @@ RenderCamera::RenderCamera(scene::SceneNode& node,
                            const vec3f& up)
     : RenderCamera(node) {
   // once it is attached, set the transformation
-  setTransformation(eye, target, up);
+  node.setTransformation(
+      Matrix4::lookAt(Vector3{eye}, Vector3{target}, Vector3{up}));
 }
 
 void RenderCamera::attach(scene::SceneNode& node) {

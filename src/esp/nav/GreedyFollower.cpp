@@ -1,8 +1,14 @@
 #include "esp/nav/GreedyFollower.h"
+
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/EigenIntegration/Integration.h>
+
 #include "Sophus/sophus/so3.hpp"
 #include "esp/geo/geo.h"
 
 namespace esp {
+
+using Magnum::EigenIntegration::cast;
 
 // There are some cases were we can't perfectly align along the shortest path
 // and the agent will get stuck, so we need to check that forward will actually
@@ -10,34 +16,37 @@ namespace esp {
 // directions + forward will make progress, if neither do, return an error
 nav::GreedyGeodesicFollowerImpl::CODES
 nav::GreedyGeodesicFollowerImpl::checkForward(const State& state) {
-  dummyNode_.setTranslation(std::get<0>(state));
-  dummyNode_.setRotation(std::get<1>(state));
+  dummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
+  dummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
 
   moveForward_(&dummyNode_);
-  float dist_travelled =
-      (std::get<0>(state) - dummyNode_.getAbsolutePosition()).norm();
+  float dist_travelled = (Magnum::Vector3{std::get<0>(state)} -
+                          dummyNode_.absoluteTransformation().translation())
+                             .length();
 
   const float minTravel = 1e-1 * forwardAmount_;
 
   if (dist_travelled < minTravel) {
-    dummyNode_.setTranslation(std::get<0>(state));
-    dummyNode_.setRotation(std::get<1>(state));
+    dummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
+    dummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
 
     turnLeft_(&dummyNode_);
     moveForward_(&dummyNode_);
-    dist_travelled =
-        (std::get<0>(state) - dummyNode_.getAbsolutePosition()).norm();
+    dist_travelled = (Magnum::Vector3{std::get<0>(state)} -
+                      dummyNode_.absoluteTransformation().translation())
+                         .length();
     if (dist_travelled > minTravel) {
       return CODES::LEFT;
     }
 
-    dummyNode_.setTranslation(std::get<0>(state));
-    dummyNode_.setRotation(std::get<1>(state));
+    dummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
+    dummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
 
     turnRight_(&dummyNode_);
     moveForward_(&dummyNode_);
-    dist_travelled =
-        (std::get<0>(state) - dummyNode_.getAbsolutePosition()).norm();
+    dist_travelled = (Magnum::Vector3{std::get<0>(state)} -
+                      dummyNode_.absoluteTransformation().translation())
+                         .length();
     if (dist_travelled > minTravel) {
       return CODES::RIGHT;
     }
@@ -78,20 +87,21 @@ nav::GreedyGeodesicFollowerImpl::calcStepAlong(
 
   // There are some edge cases where the gradient doesn't line up with makes
   // progress the fastest, so we will always try forward
-  dummyNode_.setTranslation(std::get<0>(state));
-  dummyNode_.setRotation(std::get<1>(state));
+  dummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
+  dummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
   moveForward_(&dummyNode_);
-  const float newGeoDist =
-      this->geoDist(dummyNode_.getAbsolutePosition(), path.requestedEnd);
+  const float newGeoDist = this->geoDist(
+      cast<vec3f>(dummyNode_.absoluteTransformation().translation()),
+      path.requestedEnd);
   if ((path.geodesicDistance - newGeoDist) > 0.5 * forwardAmount_) {
     return CODES::FORWARD;
   }
 
-  dummyNode_.setTranslation(std::get<0>(state));
-  dummyNode_.setRotation(std::get<1>(state));
+  dummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
+  dummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
   turnLeft_(&dummyNode_);
 
-  if (gradDir.angularDistance(dummyNode_.getRotation()) < alpha)
+  if (gradDir.angularDistance(cast<quatf>(dummyNode_.rotation())) < alpha)
     return CODES::LEFT;
   else
     return CODES::RIGHT;
@@ -133,14 +143,15 @@ nav::GreedyGeodesicFollowerImpl::findPath(
 
     actions.push_back(nextAction);
 
-    dummyNode_.setTranslation(std::get<0>(state));
-    dummyNode_.setRotation(std::get<1>(state));
+    dummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
+    dummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
 
     switch (nextAction) {
       case CODES::FORWARD:
         moveForward_(&dummyNode_);
 
-        path.requestedStart = dummyNode_.getAbsolutePosition();
+        path.requestedStart =
+            cast<vec3f>(dummyNode_.absoluteTransformation().translation());
         pathfinder_->findPath(path);
         break;
 
@@ -156,8 +167,9 @@ nav::GreedyGeodesicFollowerImpl::findPath(
         break;
     }
 
-    state = std::make_tuple(dummyNode_.getAbsolutePosition(),
-                            dummyNode_.getRotation());
+    state = std::make_tuple(
+        cast<vec3f>(dummyNode_.absoluteTransformation().translation()),
+        cast<quatf>(dummyNode_.rotation()));
 
   } while ((actions.back() != CODES::STOP && actions.back() != CODES::ERROR) &&
            actions.size() < maxActions);
