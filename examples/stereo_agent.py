@@ -23,16 +23,13 @@ cv2 = None
 def _render(sim, display, depth=False):
     for _ in range(100):
         obs = sim.step("turn_right")
+        stereo_pair = np.concatenate([obs["left_sensor"], obs["right_sensor"]], axis=1)
+
+        if depth:
+            stereo_pair = np.clip(stereo_pair, 0, 10)
+            stereo_pair /= 10.0
 
         if display:
-            stereo_pair = np.concatenate(
-                [obs["left_sensor"], obs["right_sensor"]], axis=1
-            )
-
-            if depth:
-                stereo_pair = np.clip(stereo_pair, 0, 10)
-                stereo_pair /= 10.0
-
             cv2.imshow("stereo_pair", stereo_pair)
             k = cv2.waitKey()
             if k == ord("q"):
