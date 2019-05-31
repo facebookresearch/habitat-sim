@@ -7,8 +7,10 @@ This is a demonstration of how to create an agent with
 two cameras in a stereo pair
 
 
-This can be done by simple giving the agent two sensors (be it RGB, depth, or semantic)
-with different positions.  The cameras must have different uuid's
+This can be done by giving the agent two sensors (be it RGB, depth, or semantic)
+with different positions.
+
+Note that the cameras must have different uuid's
 """
 
 import random
