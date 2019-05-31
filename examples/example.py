@@ -31,6 +31,7 @@ parser.add_argument("--compute_shortest_path", action="store_true")
 parser.add_argument("--compute_action_shortest_path", action="store_true")
 parser.add_argument("--seed", type=int, default=1)
 parser.add_argument("--silent", action="store_true")
+parser.add_argument("--test_fps_regression", type=int, default=0)
 args = parser.parse_args()
 
 
@@ -67,3 +68,7 @@ print(
     "FPS: %0.1f" % perf["fps"],
 )
 print(" ================================================= ")
+
+assert perf["fps"] > args.test_fps_regression, \
+    "FPS is below regression threshold: %0.1f < %0.1f" % \
+    (perf["fps"], args.test_fps_regression)
