@@ -1,11 +1,11 @@
 import multiprocessing
 import os.path as osp
 
+import examples.new_actions
 import pytest
 
-import examples.new_actions
 
-
+@pytest.mark.gfxtest
 @pytest.mark.skipif(
     not osp.exists("data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"),
     reason="New actions script requires the habitat-test-scenes",
