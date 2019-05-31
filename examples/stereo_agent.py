@@ -29,6 +29,9 @@ def _render(sim, display, depth=False):
             stereo_pair = np.clip(stereo_pair, 0, 10)
             stereo_pair /= 10.0
 
+        if len(stereo_pair.shape) > 2:
+            stereo_pair = stereo_pair[..., 0:3][..., ::-1]
+
         if display:
             cv2.imshow("stereo_pair", stereo_pair)
             k = cv2.waitKey()
@@ -50,10 +53,10 @@ def main(display=True):
         "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
     )
 
-    # First, lets create a stereo RGB agent
+    # First, let's create a stereo RGB agent
     left_rgb_sensor = habitat_sim.SensorSpec()
     # Give it the uuid of left_sensor, this will also be how we
-    # index the observations to retreive the rendering from this sensor
+    # index the observations to retrieve the rendering from this sensor
     left_rgb_sensor.uuid = "left_sensor"
     left_rgb_sensor.resolution = [512, 512]
     # The left RGB sensor will be 1.5 meters off the ground
@@ -69,7 +72,7 @@ def main(display=True):
     right_rgb_sensor.position = 1.5 * habitat_sim.geo.UP + 0.25 * habitat_sim.geo.RIGHT
 
     agent_config = habitat_sim.AgentConfiguration()
-    # Now we simly set the agents list of sensor specs to be the two specs for our two sensors
+    # Now we simly set the agent's list of sensor specs to be the two specs for our two sensors
     agent_config.sensor_specifications = [left_rgb_sensor, right_rgb_sensor]
 
     sim = habitat_sim.Simulator(habitat_sim.Configuration(backend_cfg, [agent_config]))
@@ -78,12 +81,12 @@ def main(display=True):
     sim.close()
     del sim
 
-    # Now lets do the exact same thing but for a depth camera stereo pair!
+    # Now let's do the exact same thing but for a depth camera stereo pair!
     left_depth_sensor = habitat_sim.SensorSpec()
     left_depth_sensor.uuid = "left_sensor"
     left_depth_sensor.resolution = [512, 512]
     left_depth_sensor.position = 1.5 * habitat_sim.geo.UP + 0.25 * habitat_sim.geo.LEFT
-    # The only difference we need to do is set the sensor type to depth
+    # The only difference is that we set the sensor type to DEPTH
     left_depth_sensor.sensor_type = habitat_sim.SensorType.DEPTH
 
     right_depth_sensor = habitat_sim.SensorSpec()
@@ -92,7 +95,7 @@ def main(display=True):
     right_depth_sensor.position = (
         1.5 * habitat_sim.geo.UP + 0.25 * habitat_sim.geo.RIGHT
     )
-    # The only difference we need to do is set the sensor type to depth
+    # The only difference is that we set the sensor type to DEPTH
     right_depth_sensor.sensor_type = habitat_sim.SensorType.DEPTH
 
     agent_config = habitat_sim.AgentConfiguration()
