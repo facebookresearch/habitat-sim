@@ -58,7 +58,7 @@ def main(display=True):
     # Give it the uuid of left_sensor, this will also be how we
     # index the observations to retreive the rendering from this sensor
     left_rgb_sensor.uuid = "left_sensor"
-    left_rgb_sensor.resolution = [256, 256]
+    left_rgb_sensor.resolution = [512, 512]
     # The left RGB sensor will be 1.5 meters off the ground
     # and 0.25 meters to the left of the center of the agent
     left_rgb_sensor.position = 1.5 * habitat_sim.geo.UP + 0.25 * habitat_sim.geo.LEFT
@@ -66,7 +66,7 @@ def main(display=True):
     # Same deal with the right sensor
     right_rgb_sensor = habitat_sim.SensorSpec()
     right_rgb_sensor.uuid = "right_sensor"
-    right_rgb_sensor.resolution = [256, 256]
+    right_rgb_sensor.resolution = [512, 512]
     # The right RGB sensor will be 1.5 meters off the ground
     # and 0.25 meters to the right of the center of the agent
     right_rgb_sensor.position = 1.5 * habitat_sim.geo.UP + 0.25 * habitat_sim.geo.RIGHT
@@ -84,14 +84,14 @@ def main(display=True):
     # Now lets do the exact same thing but for a depth camera stereo pair!
     left_depth_sensor = habitat_sim.SensorSpec()
     left_depth_sensor.uuid = "left_sensor"
-    left_depth_sensor.resolution = [256, 256]
+    left_depth_sensor.resolution = [512, 512]
     left_depth_sensor.position = 1.5 * habitat_sim.geo.UP + 0.25 * habitat_sim.geo.LEFT
     # The only difference we need to do is set the sensor type to depth
     left_depth_sensor.sensor_type = habitat_sim.SensorType.DEPTH
 
     right_depth_sensor = habitat_sim.SensorSpec()
     right_depth_sensor.uuid = "right_sensor"
-    right_depth_sensor.resolution = [256, 256]
+    right_depth_sensor.resolution = [512, 512]
     right_depth_sensor.position = (
         1.5 * habitat_sim.geo.UP + 0.25 * habitat_sim.geo.RIGHT
     )
