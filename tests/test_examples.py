@@ -6,6 +6,7 @@ import pytest
 import examples.stereo_agent
 
 
+@pytest.mark.gfxtest
 @pytest.mark.skipif(
     not osp.exists("data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"),
     reason="Requires the habitat-test-scenes",
