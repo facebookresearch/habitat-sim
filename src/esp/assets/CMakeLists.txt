@@ -22,6 +22,8 @@ find_package(MagnumPlugins
     TinyGltfImporter
 )
 
+find_package(MagnumIntegration REQUIRED Bullet)
+
 add_library(assets STATIC ${assets_SOURCES})
 
 target_link_libraries(assets
@@ -40,12 +42,15 @@ target_link_libraries(assets
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbImageConverter
     MagnumPlugins::TinyGltfImporter
+    MagnumIntegration::Bullet
     tinyply
   PRIVATE
     assimp
     geo
     io
 )
+
+set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 
 if(OpenMP_CXX_FOUND)
   target_link_libraries(assets PUBLIC OpenMP::OpenMP_CXX)

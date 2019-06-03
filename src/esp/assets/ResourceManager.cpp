@@ -58,6 +58,103 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   }
 }
 
+bool ResourceManager::loadObject(const AssetInfo& info,
+                                 scene::SceneNode* object,
+                                 DrawableGroup* drawables /* = nullptr */) {
+  const std::string& filename = info.filepath;
+  const bool fileIsLoaded = resourceDict_.count(filename) > 0;
+
+  // if file is loaded, and no need to build the scene graph
+  if (fileIsLoaded && object == nullptr) {
+    return true;
+  }
+
+  // decide the importer type based on the suffix
+  std::string importerType = "";
+  if (Corrade::Utility::String::endsWith(filename, "gltf") ||
+      Corrade::Utility::String::endsWith(filename, "glb")) {
+    importerType = "TinyGltfImporter";
+  } else {
+    // importerType = "AssimpImporter";
+    LOG(ERROR) << "Cannot load " << filename << ". Format is not supported.";
+    return false;
+  }
+
+  // load a scene importer plugin (arg is pluginDirectory to silence warnings)
+  Magnum::PluginManager::Manager<Importer> manager("./");
+  std::unique_ptr<Importer> importer = manager.loadAndInstantiate(importerType);
+
+  if (!importer) {
+    LOG(ERROR) << "Cannot load the importer. ";
+    return false;
+  }
+
+  if (!importer->openFile(filename)) {
+    LOG(ERROR) << "Cannot open file " << filename;
+    return false;
+  }
+
+  // if this is a new file, load it and add it to the dictionary
+  if (!fileIsLoaded) {
+    MeshMetaData metaData;
+    loadTextures(*importer, &metaData);
+    loadMaterials(*importer, &metaData);
+    loadMeshes(*importer, &metaData);
+    // update the dictionary
+    resourceDict_.emplace(filename, metaData);
+  }
+
+  auto& metaData = resourceDict_.at(filename);
+  const bool forceReload = false;
+  return create3DObject(*importer, info, metaData, *object, drawables,
+                     forceReload);
+}
+
+
+bool ResourceManager::create3DObject(Importer& importer,
+                                  const AssetInfo& info,
+                                  const MeshMetaData& metaData,
+                                  scene::SceneNode& object,
+                                  DrawableGroup* drawables,
+                                  bool forceReload /* = false */) {
+  // re-bind position, normals, uv, colors etc. to the corresponding buffers
+  // under *current* gl context
+  if (forceReload) {
+    int start = metaData.meshIndex.first;
+    int end = metaData.meshIndex.second;
+    if (0 <= start && start <= end) {
+      for (int iMesh = start; iMesh <= end; ++iMesh) {
+        meshes_[iMesh]->uploadBuffersToGPU(forceReload);
+      }
+    }
+  }  // forceReload
+
+  if (importer.defaultScene() != -1) {
+    Corrade::Containers::Optional<Magnum::Trade::SceneData> sceneData =
+        importer.scene(importer.defaultScene());
+    if (!sceneData) {
+      LOG(ERROR) << "Cannot load scene, exiting";
+      return false;
+    }
+
+    const quatf transform =
+        quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
+    scene::SceneNode& sceneNode_ = static_cast<scene::SceneNode&>(object);
+    LOG(INFO) << "Creating child node " << sceneNode_.getId();
+    object.setRotation(transform);
+    
+    // Recursively add all children
+    for (auto objectID : sceneData->children3D()) {
+      createObject(importer, info, metaData, object, drawables, objectID);
+    }
+  } else {
+    LOG(ERROR) << "No default scene available, exiting";
+    return false;
+  }
+
+  return true;
+}
+
 Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
     ShaderType type) {
   if (shaderPrograms_.count(type) == 0) {
@@ -469,6 +566,8 @@ bool ResourceManager::createScene(Importer& importer,
     auto& sceneNode = parent.createChild();
     const quatf transform =
         quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
+    scene::SceneNode& sceneNode_ = static_cast<scene::SceneNode&>(sceneNode);
+    LOG(INFO) << "Creating child node " << sceneNode_.getId();
     sceneNode.setRotation(transform);
 
     // Recursively add all children
@@ -482,6 +581,7 @@ bool ResourceManager::createScene(Importer& importer,
 
   return true;
 }
+
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
                                          scene::SceneNode* parent,

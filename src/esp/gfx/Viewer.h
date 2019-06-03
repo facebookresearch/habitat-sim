@@ -8,6 +8,7 @@
 
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/assets/PhysicsManager.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/nav/ActionSpacePath.h"
 #include "esp/nav/PathFinder.h"
@@ -39,16 +40,21 @@ class Viewer : public Magnum::Platform::Application {
   void keyPressEvent(KeyEvent& event) override;
 
   assets::ResourceManager resourceManager_;
+  assets::PhysicsManager physicsManager_;
   scene::SceneManager sceneManager_;
   std::vector<int> sceneID_;
   scene::SceneNode* agentBodyNode_ = nullptr;
   scene::SceneNode* cameraNode_ = nullptr;
+  scene::SceneNode* physicalObjNode_ = nullptr;
+
+
   RenderCamera* renderCamera_ = nullptr;
   nav::PathFinder::ptr pathfinder_;
   scene::ObjectControls controls_;
   Magnum::Vector3 previousPosition_;
 
   bool computeActionPath_;
+  bool enablePhysics_;
   vec3f goalPos_;
   quatf goalHeading_;
   nav::ActionSpacePathFinder::uptr actPathfinder_;

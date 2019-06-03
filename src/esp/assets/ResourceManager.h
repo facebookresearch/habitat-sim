@@ -12,6 +12,11 @@
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Math/Color.h>
 
+#include <Magnum/MeshTools/Compile.h>
+#include <Magnum/MeshTools/Transform.h>
+#include <Magnum/SceneGraph/MatrixTransformation3D.h>
+
+
 #include "Asset.h"
 #include "BaseMesh.h"
 #include "MeshMetaData.h"
@@ -58,6 +63,19 @@ class ResourceManager {
                  DrawableGroup* drawables = nullptr);
 
   inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
+
+  // load an object. Eventually this will load from AssetInfo descriptor,
+  // whereas currently it only loads dumb cubes
+  bool loadObject(const AssetInfo& info,
+                  scene::SceneNode* object = nullptr,
+                  DrawableGroup* drawables = nullptr);
+
+  bool create3DObject(Importer& importer,
+                                  const AssetInfo& info,
+                                  const MeshMetaData& metaData,
+                                  scene::SceneNode& object,
+                                  DrawableGroup* drawables,
+                                  bool forceReload /* = false */);
 
  protected:
   //! Load textures from importer into assets, and update metaData

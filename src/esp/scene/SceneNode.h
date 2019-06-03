@@ -6,6 +6,7 @@
 
 #include "esp/core/esp.h"
 #include "esp/gfx/magnum.h"
+#include <Corrade/Containers/Containers.h>
 
 // This class provides routines to:
 // set and get local rigid body transformation of the current node w.r.t. the
@@ -38,10 +39,13 @@ class SceneNode : public MagnumObject {
   SceneNode& createChild();
 
   //! Returns node id
-  virtual int getId() { return id_; }
+  virtual int getId() const { return id_; }
 
   //! Sets node id
   virtual void setId(int id) { id_ = id; }
+
+  // ==== scene graph traversal functions ====
+  //virtual Corrade::Containers::LinkedList<scene::SceneNode>& children() const;
 
   // ==== get functions ====
   // get local transformation w.r.t. parent's frame

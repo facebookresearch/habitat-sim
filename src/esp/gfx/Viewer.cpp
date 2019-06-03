@@ -39,12 +39,15 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("action-path",
                "Provides actions along the action space shortest path to a "
                "random goal")
+      .addBooleanOption("enable-physics")
+      //.setHelp()
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
   computeActionPath_ = args.isSet("action-path");
+  enablePhysics_ = args.isSet("enable-physics");
 
   // Setup renderer and shader defaults
   GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
@@ -62,7 +65,26 @@ Viewer::Viewer(const Arguments& arguments)
     std::exit(0);
   }
 
-  // camera
+  // Set up physics
+  physicalObjNode_ = &rootNode.createChild();
+  if (enablePhysics_) {
+    physicsManager_.initPhysics();
+    // Currently default to load dumb cubes
+    std::string object_file ("/Users/jerryhe/Desktop/Projects/habitat/habitat-sim/data/objects/textured.glb");
+    assets::AssetInfo object_info = assets::AssetInfo::fromPath(object_file);
+    LOG(INFO) << "Loading object from " << object_file;
+    bool objectLoaded_ = resourceManager_.loadObject(object_info, physicalObjNode_, &drawables);
+    if (objectLoaded_) {
+      LOG(INFO) << "Loaded";
+      physicsManager_.debugSceneGraph(&rootNode);
+    } else {
+      LOG(ERROR) << "cannot load " << object_file;
+      std::exit(0);
+    }
+  }
+
+
+  // Set up camera
   renderCamera_ = &sceneGraph.getDefaultRenderCamera();
   agentBodyNode_ = &rootNode.createChild();
   cameraNode_ = &agentBodyNode_->createChild();
@@ -79,7 +101,7 @@ Viewer::Viewer(const Arguments& arguments)
   float zfar = 1000.0f;
   renderCamera_->setProjectionMatrix(width, height, znear, zfar, hfov);
 
-  // load navmesh if available
+  // Load navmesh if available
   const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
   if (io::exists(navmeshFilename)) {
     LOG(INFO) << "Loading navmesh from " << navmeshFilename;
@@ -87,8 +109,22 @@ Viewer::Viewer(const Arguments& arguments)
     LOG(INFO) << "Loaded.";
   }
 
-  // connect controls to navmesh if loaded
-  if (pathfinder_->isLoaded()) {
+  // Messing around with agent location and finding object initial position
+  LOG(INFO) << "Camera position " << cameraNode_->getAbsolutePosition();
+  Magnum::Matrix4 T = cameraNode_->MagnumObject::absoluteTransformation();
+  //auto transformation = Matrix4(cameraNode_->getAbsoluteTransformation());
+  Vector3 new_pos = T.transformPoint({0.0f, 0.0f, -1.0f});
+  LOG(INFO) << "Camera position " << T.translation().x() << " " << T.translation().y() << " " << T.translation().z();
+  //Vector3 new_pos = T.translation() + delta;
+  //Vector3 new_pos = Vector3(cameraNode_->getAbsolutePosition()) + delta;
+  LOG(INFO) << "Object new position " << new_pos.x() << " " << new_pos.y() << " " << new_pos.z();
+  LOG(INFO) << "Camera transformation" << Eigen::Map<mat4f>(T.data());
+
+  physicalObjNode_->setTranslation(vec3f(new_pos.x(), new_pos.y(), new_pos.z()));
+  //rootNode.setTranslation(vec3f(new_pos.x(), new_pos.y(), new_pos.z()));
+
+  // Connect controls to navmesh if loaded
+  /*if (pathfinder_->isLoaded()) {
     controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
       vec3f currentPosition = pathfinder_->tryStep(start, end);
       LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
@@ -148,7 +184,7 @@ Viewer::Viewer(const Arguments& arguments)
       actPathfinder_ = nav::ActionSpacePathFinder::create_unique(
           pathfinder_, agentCfg, controls_, agentBodyNode_->getRotation());
     }
-  }
+  }*/
 
   LOG(INFO) << "Viewer initialization is done. ";
   renderCamera_->setTransformation(cameraNode_->getAbsoluteTransformation());
@@ -252,22 +288,28 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       agentBodyNode_->setTranslation(position);
     } break;
     case KeyEvent::Key::A:
-      controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
+      //controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
+      controls_(*physicalObjNode_, "moveLeft", moveSensitivity);
       break;
     case KeyEvent::Key::D:
-      controls_(*agentBodyNode_, "moveRight", moveSensitivity);
+      //controls_(*agentBodyNode_, "moveRight", moveSensitivity);
+      controls_(*physicalObjNode_, "moveRight", moveSensitivity);
       break;
     case KeyEvent::Key::S:
-      controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
+      //controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
+      controls_(*physicalObjNode_, "moveBackward", moveSensitivity);
       break;
     case KeyEvent::Key::W:
-      controls_(*agentBodyNode_, "moveForward", moveSensitivity);
+      //controls_(*agentBodyNode_, "moveForward", moveSensitivity);
+      controls_(*physicalObjNode_, "moveForward", moveSensitivity);
       break;
     case KeyEvent::Key::X:
       controls_(*cameraNode_, "moveDown", moveSensitivity, false);
+      //controls_(*physicalObjNode_, "moveDown", moveSensitivity, false);
       break;
     case KeyEvent::Key::Z:
       controls_(*cameraNode_, "moveUp", moveSensitivity, false);
+      //controls_(*physicalObjNode_, "moveUp", moveSensitivity, false);
       break;
     default:
       break;
