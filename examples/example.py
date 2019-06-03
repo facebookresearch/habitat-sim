@@ -12,9 +12,13 @@ import numpy as np
 import demo_runner as dr
 
 parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--scene",
+    type=str,
+    default=dr.default_sim_settings["test_scene"]
+)
 parser.add_argument("--width", type=int, default=640)
 parser.add_argument("--height", type=int, default=480)
-parser.add_argument("--scene", type=str, default="test.glb")
 parser.add_argument("--max_frames", type=int, default=1000)
 parser.add_argument("--save_png", action="store_true")
 parser.add_argument("--sensor_height", type=float, default=1.5)
