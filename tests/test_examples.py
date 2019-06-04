@@ -1,10 +1,9 @@
 import multiprocessing
 import os.path as osp
 
-import pytest
-
 import examples.new_actions
 import examples.stereo_agent
+import pytest
 
 
 @pytest.mark.gfxtest
@@ -17,7 +16,7 @@ import examples.stereo_agent
     "example_module,args",
     [(examples.stereo_agent, (False,)), (examples.new_actions, ())],
 )
-def test_stereo_agent_example(example_module, args):
+def test_example_modules(example_module, args):
     # This test needs to be done in its own process as there is a potentially for
     # an OpenGL context clash otherwise
     mp_ctx = multiprocessing.get_context("spawn")
