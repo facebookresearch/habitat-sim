@@ -13,6 +13,7 @@
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
+//#include <Magnum/Platform/Sdl2Application.h>    ## Tried to make physics example work
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
@@ -35,8 +36,16 @@ namespace esp {
 namespace assets {
 
 
-bool PhysicsManager::initPhysics() {
+bool PhysicsManager::initPhysics(MagnumObject* scene) {
   LOG(INFO) << "Initializing Physics Engine...";  
+  _debugDraw.setMode(Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe);
+  _bWorld.setGravity({0.0f, -10.0f, 0.0f});
+  _bWorld.setDebugDrawer(&_debugDraw);
+
+  _scene = scene;  
+  _timeline.start();
+
+  LOG(INFO) << "Initialized Physics Engine.";  
   return true;
 }
 
@@ -81,88 +90,121 @@ Magnum::GL::AbstractShaderProgram* PhysicsManager::getPhysicsEngine(
 }
 
 
+// Bullet Mesh conversion adapted from: https://github.com/mosra/magnum-integration/issues/20
 void PhysicsManager::initObject(Importer& importer,
-                                   const AssetInfo& info,
-                                   const MeshMetaData& metaData,
-                                   scene::SceneNode& parent,
-                                   DrawableGroup* drawables,
-                                   int objectID) {
-  std::unique_ptr<Magnum::Trade::ObjectData3D> objectData =
-      importer.object3D(objectID);
-  if (!objectData) {
-    LOG(ERROR) << "Cannot import object " << importer.object3DName(objectID)
-               << ", skipping";
+                                const AssetInfo& info,
+                                const MeshMetaData& metaData,
+                                Magnum::Trade::MeshData3D& meshData,
+                                const std::string& shapeType /* = "TriangleMeshShape" */) {
+  // TODO (JH) should meshData better be a pointer?
+  // such that if (!meshData) return
+  if(meshData.primitive() != Magnum::MeshPrimitive::Triangles) {
+    LOG(ERROR) << "Cannot load collision mesh, skipping";
     return;
   }
+  /* this is a collision mesh, convert to bullet mesh */
+  // TODO (JH) would this introduce memory leak?
+  btIndexedMesh bulletMesh;
+  LOG(INFO) << "Mesh indices count " << meshData.indices().size();
 
-  // Add the object to the scene and set its transformation
-  scene::SceneNode& node = parent.createChild();
-  node.MagnumObject::setTransformation(objectData->transformation());
+  // TODO (JH) weight is currently hardcoded, later should load from some config file
+  float weight = meshData.indices().size() * 0.001f;
 
-  const int meshStart = metaData.meshIndex.first;
-  const int materialStart = metaData.materialIndex.first;
-  const int meshID = meshStart + objectData->instance();
+  bulletMesh.m_numTriangles = meshData.indices().size()/3;
+  bulletMesh.m_triangleIndexBase = reinterpret_cast<const unsigned char *>(meshData.indices().data());
+  bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
+  bulletMesh.m_numVertices = meshData.positions(0).size();
+  bulletMesh.m_vertexBase = reinterpret_cast<const unsigned char *>(meshData.positions(0).data());
+  bulletMesh.m_vertexStride = sizeof(Magnum::Vector3);
+  bulletMesh.m_indexType = PHY_INTEGER;
+  bulletMesh.m_vertexType = PHY_FLOAT;
 
-  // Add a drawable if the object has a mesh and the mesh is loaded
-  if (objectData->instanceType() == Magnum::Trade::ObjectInstanceType3D::Mesh &&
-      objectData->instance() != ID_UNDEFINED && meshes_[meshID]) {
-    const int materialIDLocal =
-        static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
-            ->material();
 
-    Magnum::GL::Mesh& mesh = *meshes_[meshID]->getMagnumGLMesh();
-    const int materialID = materialStart + materialIDLocal;
+  btCollisionShape* shape = nullptr;
+  auto tivArray = new btTriangleIndexVertexArray();
+  tivArray->addIndexedMesh(bulletMesh, PHY_INTEGER);
+  if(shapeType == "TriangleMeshShape") {
+      /* exact shape, but worse performance */
+      shape = new btBvhTriangleMeshShape(tivArray, true);
+  } else {
+      /* convex hull, but better performance */
+      shape = new btConvexTriangleMeshShape(tivArray, true);
+  } /* btConvexHullShape can be even more performant */
 
-    Magnum::GL::Texture2D* texture = nullptr;
-    // Material not available / not loaded, use a default material
-  }    // add a drawable
+  LOG(INFO) << "Making rigid body: before";
+  auto* object = new RigidBody{static_cast<MagnumObject&>(*_scene), weight, shape, _bWorld};
+  LOG(INFO) << "Making rigid body: after";
+  object->syncPose();            
+  //new ColoredDrawable{*ground, _shader, _box, 0xffffff_rgbf,
+  //      Matrix4::scaling({4.0f, 0.5f, 4.0f}), _drawables};
 
 }
 
 void PhysicsManager::debugSceneGraph(const MagnumObject* root) {
-    auto& children = root -> children();
-    const scene::SceneNode* root_ = static_cast<const scene::SceneNode*>(root);
-    LOG(INFO) << "SCENE NODE " << root_->getId() << " Position " << root_->getAbsolutePosition();       
-    if (!children.isEmpty()) {
-      for (const MagnumObject& child: children) {
-        PhysicsManager::debugSceneGraph(&(child));
-      }
-    } else {
-      LOG(INFO) << "SCENE NODE is leaf node."; 
+  auto& children = root -> children();
+  const scene::SceneNode* root_ = static_cast<const scene::SceneNode*>(root);
+  LOG(INFO) << "SCENE NODE " << root_->getId() << " Position " << root_->getAbsolutePosition();       
+  if (!children.isEmpty()) {
+    for (const MagnumObject& child: children) {
+      PhysicsManager::debugSceneGraph(&(child));
     }
+  } else {
+    LOG(INFO) << "SCENE NODE is leaf node."; 
+  }
 
-    // TODO (JK) Bottom up search gives bus error because scene's rootnode does
-    // not point to nullptr, but something strange
-    /*LOG(INFO) << "INSPECTING NODE " << root;
-    const scene::SceneNode* parent = static_cast<const scene::SceneNode*>(root->parent());
-    if (parent != NULL) {
-      LOG(INFO) << "SCENE NODE " << root->getId() << " parent " << parent;
-      LOG(INFO) << "SCENE NODE " << parent->getId() << " parent " << parent;
-      //debugSceneGraph(parent);
-    } else {
-      LOG(INFO) << "SCENE NODE " << root->getId() << "IS ROOT NODE";      
-    }*/
+  // TODO (JK) Bottom up search gives bus error because scene's rootnode does
+  // not point to nullptr, but something strange
+  /*LOG(INFO) << "INSPECTING NODE " << root;
+  const scene::SceneNode* parent = static_cast<const scene::SceneNode*>(root->parent());
+  if (parent != NULL) {
+    LOG(INFO) << "SCENE NODE " << root->getId() << " parent " << parent;
+    LOG(INFO) << "SCENE NODE " << parent->getId() << " parent " << parent;
+    //debugSceneGraph(parent);
+  } else {
+    LOG(INFO) << "SCENE NODE " << root->getId() << "IS ROOT NODE";      
+  }*/
 }
 
+void PhysicsManager::stepPhysics() {
+  // ==== Physics stepforward ======
+  _bWorld.stepSimulation(_timeline.previousFrameDuration(), _maxSubSteps, _fixedTimeStep);
+  //_bWorld.debugDrawWorld();
+  LOG(INFO) << "Step physics forward previous: " << _timeline.previousFrameDuration();
+}
 
-// TODO (JH) _bWorld(bWorld) syntax?
-RigidBody::RigidBody(MagnumObject* parent, Magnum::Float mass, btCollisionShape* bShape, btDynamicsWorld& bWorld): MagnumObject{parent}, _bWorld(bWorld) {
-      /* Calculate inertia so the object reacts as it should with
-         rotation and everything */
-      btVector3 bInertia(0.0f, 0.0f, 0.0f);
-      if(mass != 0.0f) bShape->calculateLocalInertia(mass, bInertia);
+void PhysicsManager::nextFrame() {
+  _timeline.nextFrame();
+}
 
-      /* Bullet rigid body setup */
-      auto* motionState = new Magnum::BulletIntegration::MotionState{*this};
-      _bRigidBody.emplace(btRigidBody::btRigidBodyConstructionInfo{
-          mass, &motionState->btMotionState(), bShape, bInertia});
-      _bRigidBody->forceActivationState(DISABLE_DEACTIVATION);
-      bWorld.addRigidBody(_bRigidBody.get());
-  }
+// TODO (JH) what role does Object3D{parent} play in example?
+RigidBody::RigidBody(MagnumObject& parent, Magnum::Float mass, btCollisionShape* bShape, btDynamicsWorld& bWorld):
+    MagnumObject{parent}, _bWorld(bWorld) {
+  /* Calculate inertia so the object reacts as it should with
+     rotation and everything */
+  //btVector3 bInertia(0.0f, 0.0f, 0.0f);
+  btVector3 bInertia(2.0f, 2.0f, 2.0f);
+  //if(mass != 0.0f) bShape->calculateLocalInertia(mass, bInertia);
+  bShape->calculateLocalInertia(300.0f, bInertia);
 
-btRigidBody& RigidBody::rigidBody() {
-  return *_bRigidBody;
-  }
+  /* Bullet rigid body setup */
+  auto* motionState = new Magnum::BulletIntegration::MotionState{*this};
+  _bRigidBody.emplace(btRigidBody::btRigidBodyConstructionInfo{
+      mass, &motionState->btMotionState(), bShape, bInertia});
+  _bRigidBody->forceActivationState(DISABLE_DEACTIVATION);
+  bWorld.addRigidBody(_bRigidBody.get());
+}
+
+RigidBody::~RigidBody() {
+    _bWorld.removeRigidBody(_bRigidBody.get());
+}
+
+btRigidBody& RigidBody::rigidBody() { return *_bRigidBody; }
+
+/* needed after changing the pose from Magnum side */
+void RigidBody::syncPose() {
+    _bRigidBody->setWorldTransform(btTransform(transformationMatrix()));
+}
+
 
 }
 }  // namespace esp

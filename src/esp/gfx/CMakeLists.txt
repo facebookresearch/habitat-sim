@@ -22,6 +22,7 @@ find_package(Magnum
     Primitives
     SceneGraph
     Shaders
+    # Sdl2Application   # Tried to make physics example work
     TextureTools
     Trade
 )

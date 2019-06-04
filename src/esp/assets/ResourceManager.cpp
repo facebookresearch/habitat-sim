@@ -59,7 +59,9 @@ bool ResourceManager::loadScene(const AssetInfo& info,
 }
 
 bool ResourceManager::loadObject(const AssetInfo& info,
+                                 PhysicsManager& _physicsManager,
                                  scene::SceneNode* object,
+                                 bool attach_physics,  /* = false */
                                  DrawableGroup* drawables /* = nullptr */) {
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
@@ -96,12 +98,24 @@ bool ResourceManager::loadObject(const AssetInfo& info,
 
   // if this is a new file, load it and add it to the dictionary
   if (!fileIsLoaded) {
-    MeshMetaData metaData;
-    loadTextures(*importer, &metaData);
-    loadMaterials(*importer, &metaData);
-    loadMeshes(*importer, &metaData);
+    MeshMetaData mMetaData;
+    loadTextures(*importer, &mMetaData);
+    loadMaterials(*importer, &mMetaData);
+    loadMeshes(*importer, &mMetaData);
     // update the dictionary
-    resourceDict_.emplace(filename, metaData);
+    if (attach_physics) {
+      //PhysicsManager::initObject(*importer, info, mMetaData);
+      for (int index = 0; index < meshes_.size(); index++) {
+        LOG(INFO) << "Initiating iMesh object " << index;
+        GltfMeshData* meshDataGL = static_cast<GltfMeshData*>(meshes_[index].get());
+
+        // getMeshData() returns Corrade::Containers::Optional<>
+        Magnum::Trade::MeshData3D & meshData = *(meshDataGL->getMeshData());
+        // TODO (JH): currently this treats scene mesh and object mesh the same way, not a good thing
+        _physicsManager.initObject(*importer, info, mMetaData, meshData);
+      }
+    }
+    resourceDict_.emplace(filename, mMetaData);
   }
 
   auto& metaData = resourceDict_.at(filename);
@@ -116,7 +130,7 @@ bool ResourceManager::create3DObject(Importer& importer,
                                   const MeshMetaData& metaData,
                                   scene::SceneNode& object,
                                   DrawableGroup* drawables,
-                                  bool forceReload /* = false */) {
+                                  bool forceReload      /* = false */) {
   // re-bind position, normals, uv, colors etc. to the corresponding buffers
   // under *current* gl context
   if (forceReload) {
@@ -145,6 +159,7 @@ bool ResourceManager::create3DObject(Importer& importer,
     
     // Recursively add all children
     for (auto objectID : sceneData->children3D()) {
+      // TODO (JH): Here assuming that root node has only 1 child?
       createObject(importer, info, metaData, object, drawables, objectID);
     }
   } else {
@@ -372,11 +387,13 @@ void ResourceManager::loadMeshes(Importer& importer, MeshMetaData* metaData) {
   metaData->setMeshIndices(meshStart, meshEnd);
 
   for (int iMesh = 0; iMesh < importer.mesh3DCount(); ++iMesh) {
-    // LOG(INFO) << "Importing mesh" << iMesh << importer.mesh3DName(iMesh);
+    LOG(INFO) << "Importing mesh " << iMesh << ": " << importer.mesh3DName(iMesh);
     meshes_.emplace_back(std::make_unique<GltfMeshData>());
     auto& currentMesh = meshes_.back();
     auto* gltfMeshData = static_cast<GltfMeshData*>(currentMesh.get());
 
+    // TODO (JH) apparently only gltfMesh allows accesing non-GL mesh data, which can be 
+    // attached with physics, others (PTex, FRLMesh, etc) do not have this implemented
     gltfMeshData->setMeshData(importer, iMesh);
     auto& meshData = gltfMeshData->getMeshData();
     if (!meshData ||

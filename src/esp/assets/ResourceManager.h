@@ -21,6 +21,8 @@
 #include "BaseMesh.h"
 #include "MeshMetaData.h"
 #include "esp/scene/SceneNode.h"
+#include "PhysicsManager.h"
+
 
 // forward declarations
 namespace Magnum {
@@ -67,7 +69,9 @@ class ResourceManager {
   // load an object. Eventually this will load from AssetInfo descriptor,
   // whereas currently it only loads dumb cubes
   bool loadObject(const AssetInfo& info,
+                  PhysicsManager& _physicsManager,
                   scene::SceneNode* object = nullptr,
+                  bool attach_physics = false,
                   DrawableGroup* drawables = nullptr);
 
   bool create3DObject(Importer& importer,
@@ -75,7 +79,7 @@ class ResourceManager {
                                   const MeshMetaData& metaData,
                                   scene::SceneNode& object,
                                   DrawableGroup* drawables,
-                                  bool forceReload /* = false */);
+                                  bool forceReload = false);
 
  protected:
   //! Load textures from importer into assets, and update metaData

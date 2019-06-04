@@ -29,6 +29,9 @@ struct MeshMetaData {
   std::pair<start, end> materialIndex =
       std::make_pair(ID_UNDEFINED, ID_UNDEFINED);
 
+  /* Physical Properties */
+  float mass;
+
   MeshMetaData(){};
   MeshMetaData(int meshStart,
                int meshEnd,

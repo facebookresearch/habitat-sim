@@ -67,16 +67,23 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Set up physics
   physicalObjNode_ = &rootNode.createChild();
+  
   if (enablePhysics_) {
-    physicsManager_.initPhysics();
     // Currently default to load dumb cubes
-    std::string object_file ("/Users/jerryhe/Desktop/Projects/habitat/habitat-sim/data/objects/textured.glb");
+    std::string object_file ("./data/objects/textured.glb");
     assets::AssetInfo object_info = assets::AssetInfo::fromPath(object_file);
     LOG(INFO) << "Loading object from " << object_file;
-    bool objectLoaded_ = resourceManager_.loadObject(object_info, physicalObjNode_, &drawables);
+    bool objectLoaded_ = resourceManager_.loadObject(object_info, physicsManager_, physicalObjNode_, true, &drawables);
     if (objectLoaded_) {
       LOG(INFO) << "Loaded";
+
+      /* Loop at 60 Hz max */
+      setSwapInterval(1);
       physicsManager_.debugSceneGraph(&rootNode);
+  
+      // ======= Init timestep, physics starts =======
+      physicsManager_.initPhysics(&rootNode);
+      //physicsManager_.initPhysics(physicalObjNode_);
     } else {
       LOG(ERROR) << "cannot load " << object_file;
       std::exit(0);
@@ -207,11 +214,15 @@ void Viewer::drawEvent() {
   if (sceneID_.size() <= 0)
     return;
 
+  physicsManager_.stepPhysics();
+
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
   swapBuffers();
+  physicsManager_.nextFrame();
+  redraw();
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {

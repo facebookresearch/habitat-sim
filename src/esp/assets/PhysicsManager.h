@@ -11,6 +11,7 @@
 
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Math/Color.h>
+#include <Magnum/Timeline.h>
 
 /* Bullet Physics Integration */
 #include <Corrade/Containers/Optional.h>
@@ -57,21 +58,20 @@ class PhysicsManager {
   // Convenience typedef for Importer class
   using Importer = Magnum::Trade::AbstractImporter;
 
-  bool initPhysics();
+  bool initPhysics(MagnumObject* scene);
   
   void initObject(Importer& importer,
-                    const AssetInfo& info,
-                    const MeshMetaData& metaData,
-                    scene::SceneNode& parent,
-                    DrawableGroup* drawables,
-                    int objectId);
+                  const AssetInfo& info,
+                  const MeshMetaData& metaData,
+                  Magnum::Trade::MeshData3D& meshData,
+                  const std::string& shapeType="TriangleMeshShape");
 
   void debugSceneGraph(const MagnumObject* root);
 
- protected:
-  // ==== physics engines ====
-  Magnum::BulletIntegration::DebugDraw _debugDraw{Magnum::NoCreate};
+  void stepPhysics();
+  void nextFrame();
 
+ protected:
   // ==== Inherited from resource manager ===
   std::vector<std::shared_ptr<BaseMesh>> meshes_;
   std::vector<std::shared_ptr<Magnum::GL::Texture2D>> textures_;
@@ -93,14 +93,31 @@ class PhysicsManager {
       shaderPrograms_;
   Magnum::GL::AbstractShaderProgram* getPhysicsEngine(ShaderType type);
 
+
+  // ==== physics engines ====
+  // The world has to live longer than the scene because RigidBody
+  // instances have to remove themselves from it on destruction
+  MagnumObject*                             _scene;
+  Magnum::BulletIntegration::DebugDraw      _debugDraw{Magnum::NoCreate};
+  btDbvtBroadphase                          _bBroadphase;
+  btDefaultCollisionConfiguration           _bCollisionConfig;
+  btCollisionDispatcher                     _bDispatcher{&_bCollisionConfig};
+  btSequentialImpulseConstraintSolver       _bSolver;
+  btDiscreteDynamicsWorld                   _bWorld{&_bDispatcher, &_bBroadphase, &_bSolver, &_bCollisionConfig};
+
+  bool _drawCubes{true}, _drawDebug{true}, _shootBox{true};
+
+  Magnum::Timeline _timeline;
+  float _maxSubSteps = 1.0f;
+  float _fixedTimeStep = 1.0f / 200.0f;
 };
 
 
 class RigidBody: public MagnumObject {
  public:
-  RigidBody(MagnumObject* parent, Magnum::Float mass, btCollisionShape* bShape, btDynamicsWorld& bWorld);
+  RigidBody(MagnumObject& parent, Magnum::Float mass, btCollisionShape* bShape, btDynamicsWorld& bWorld);
 
-  ~RigidBody() {};
+  ~RigidBody();
   btRigidBody& rigidBody();
   /* needed after changing the pose from Magnum side */
   void syncPose();
