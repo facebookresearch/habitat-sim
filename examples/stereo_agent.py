@@ -4,7 +4,7 @@
 
 r"""
 This is a demonstration of how to create an agent with
-two cameras in a stereo pair
+two cameras in a stereo pair.
 
 
 This can be done by giving the agent two sensors (be it RGB, depth, or semantic)
@@ -22,18 +22,25 @@ import habitat_sim
 cv2 = None
 
 
+# Helper function to render observations from the stereo agent
 def _render(sim, display, depth=False):
     for _ in range(100):
+        # Just spin in a circle
         obs = sim.step("turn_right")
+        # Put the two stereo observations next to eachother
         stereo_pair = np.concatenate([obs["left_sensor"], obs["right_sensor"]], axis=1)
 
+        # If it is a depth pair, manually normalize into [0, 1]
+        # so that images are always consistent
         if depth:
             stereo_pair = np.clip(stereo_pair, 0, 10)
             stereo_pair /= 10.0
 
+        # If in RGB/RGBA format, change first to RGB and change to BGR
         if len(stereo_pair.shape) > 2:
             stereo_pair = stereo_pair[..., 0:3][..., ::-1]
 
+        # display=False is used for the smoke test
         if display:
             cv2.imshow("stereo_pair", stereo_pair)
             k = cv2.waitKey()
@@ -43,6 +50,7 @@ def _render(sim, display, depth=False):
 
 def main(display=True):
     global cv2
+    # Only import cv2 if we are doing to display
     if display:
         import cv2 as _cv2
 
