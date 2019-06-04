@@ -46,6 +46,9 @@ class SceneNodeControl(abc.ABC):
 
     See default_controls.py for an example of adding new actions
     (note that this can be done _outside_ the core habitat_sim codebase in exactly the same way)
+
+    See examples/new_actions.py for an example of how to add new actions _outside_
+    the core habitat_sim package
     """
 
     body_action: bool = False
@@ -74,6 +77,9 @@ def register_move_fn(
 
     See default_controls.py for an example of adding new actions
     (note that this can be done _outside_ the core habitat_sim codebase in exactly the same way)
+
+    See examples/new_actions.py for an example of how to add new actions _outside_
+    the core habitat_sim package
 
     Args:
         controller (Optional[Type[SceneNodeControl]]): The class of the controller to register
