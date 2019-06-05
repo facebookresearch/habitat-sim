@@ -17,6 +17,7 @@ jobs:
           name: setup
           command: |
               sudo pip install -U black isort
+              pip install numpy
               pip install -r requirements.txt
       - run:
           name: run black
@@ -39,6 +40,7 @@ jobs:
               sudo apt-get update -y
               sudo apt-get install -y clang-format-7
               sudo ln -s /usr/bin/clang-format-7 /usr/bin/clang-format
+              clang-format --version
       - run:
           name: run clang-format
           command: |
