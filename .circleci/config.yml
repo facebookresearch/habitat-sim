@@ -26,7 +26,7 @@ jobs:
           name: run isort
           command: |
               isort --version
-              isort -rc habitat_sim/. examples/. tests/. setup.py --check-only
+              isort -rc habitat_sim/. examples/. tests/. setup.py --diff
   cpp_lint:
     docker:
       - image: circleci/buildpack-deps:bionic
@@ -36,7 +36,7 @@ jobs:
           name: setup
           command: |
               sudo apt-get update -y
-              sudo apt-get install -y clang-format
+              sudo apt-get install -y clang-format-7
               apt-cache search clang-format
       - run:
           name: run clang-format
