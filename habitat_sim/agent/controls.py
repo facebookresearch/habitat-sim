@@ -8,10 +8,10 @@ import abc
 import re
 from typing import Dict, Optional, Type
 
+import attr
 import numpy as np
 import quaternion
 
-import attr
 import habitat_sim.bindings as hsim
 from habitat_sim import utils
 

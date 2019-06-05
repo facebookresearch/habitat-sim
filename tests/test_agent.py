@@ -5,13 +5,13 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
+import pytest
 import quaternion
 
 import habitat_sim
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
 import habitat_sim.utils
-import pytest
 
 
 def _check_state_same(s1, s2):
