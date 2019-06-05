@@ -8,7 +8,7 @@ import habitat_sim.bindings as hsim
 from habitat_sim import errors, utils
 
 
-@attr.s
+@attr.s(auto_attribs=True)
 class GreedyGeodesicFollower(object):
     r"""Greedily fits actions to follow the geodesic shortest path
 
@@ -21,29 +21,39 @@ class GreedyGeodesicFollower(object):
             reached.  If `None`, 0.75 times the agents step size is used.
     """
 
-    pathfinder: hsim.PathFinder = attr.ib()
-    agent: habitat_sim.agent.Agent = attr.ib()
+    pathfinder: hsim.PathFinder
+    agent: habitat_sim.agent.Agent
     goal_radius: Optional[float] = attr.ib(default=None)
-    action_mapping: Dict[int, Any] = attr.ib(init=False, factory=dict)
-    impl: hsim.GreedyGeodesicFollowerImpl = attr.ib(init=False, default=None)
-    forward_spec: habitat_sim.agent.ActuationSpec = attr.ib(init=False, default=None)
-    left_spec: habitat_sim.agent.ActuationSpec = attr.ib(init=False, default=None)
-    right_spec: habitat_sim.agent.ActuationSpec = attr.ib(init=False, default=None)
+    action_mapping: Dict[hsim.GreedyFollowerCodes, Any] = attr.ib(
+        init=False, factory=dict, repr=False
+    )
+    impl: hsim.GreedyGeodesicFollowerImpl = attr.ib(
+        init=False, default=None, repr=False
+    )
+    forward_spec: habitat_sim.agent.ActuationSpec = attr.ib(
+        init=False, default=None, repr=False
+    )
+    left_spec: habitat_sim.agent.ActuationSpec = attr.ib(
+        init=False, default=None, repr=False
+    )
+    right_spec: habitat_sim.agent.ActuationSpec = attr.ib(
+        init=False, default=None, repr=False
+    )
 
     def __attrs_post_init__(self):
-        self.action_mapping[-1] = None
+        self.action_mapping[hsim.GreedyFollowerCodes.STOP] = None
 
         key, spec = self._find_action("move_forward")
         self.forward_spec = spec
-        self.action_mapping[0] = key
+        self.action_mapping[hsim.GreedyFollowerCodes.FORWARD] = key
 
         key, spec = self._find_action("turn_left")
         self.left_spec = spec
-        self.action_mapping[1] = key
+        self.action_mapping[hsim.GreedyFollowerCodes.LEFT] = key
 
         key, spec = self._find_action("turn_right")
         self.right_spec = spec
-        self.action_mapping[2] = key
+        self.action_mapping[hsim.GreedyFollowerCodes.RIGHT] = key
 
         if self.goal_radius is None:
             self.goal_radius = 0.75 * self.forward_spec.amount
@@ -96,7 +106,7 @@ class GreedyGeodesicFollower(object):
             state.position, utils.quat_to_coeffs(state.rotation), goal_pos
         )
 
-        if next_act == -2:
+        if next_act == hsim.GreedyFollowerCodes.ERROR:
             raise errors.GreedyFollowerError()
         else:
             return self.action_mapping[next_act]

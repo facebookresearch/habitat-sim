@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os.path as osp
-from typing import List
+from typing import List, Optional
 
 import attr
 import numpy as np
@@ -14,21 +14,23 @@ import habitat_sim.bindings as hsim
 import habitat_sim.errors
 from habitat_sim import utils
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
+from habitat_sim.logging import glog
 from habitat_sim.nav import GreedyGeodesicFollower
 
 
 @attr.s(auto_attribs=True, slots=True)
 class Configuration(object):
-    sim_cfg: hsim.SimulatorConfiguration = None
-    agents: List[AgentConfiguration] = None
+    sim_cfg: Optional[hsim.SimulatorConfiguration] = None
+    agents: Optional[List[AgentConfiguration]] = None
 
 
-@attr.s
+@attr.s(auto_attribs=True)
 class Simulator:
-    config: Configuration = attr.ib()
+    config: Configuration
+    agents: List[Agent] = attr.ib(factory=list, init=False)
+    pathfinder: hsim.PathFinder = attr.ib(default=None, init=False)
     _sim: hsim.SimulatorBackend = attr.ib(default=None, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
-    agents: List[Agent] = attr.ib(factory=list, init=False)
 
     def __attrs_post_init__(self):
         config = self.config
@@ -73,10 +75,11 @@ class Simulator:
         self.pathfinder = hsim.PathFinder()
         if osp.exists(navmesh_filenname):
             self.pathfinder.load_nav_mesh(navmesh_filenname)
-            # TODO add logging
+            glog.info(f"Loaded navmesh {navmesh_filenname}")
         else:
-            # TODO add logging
-            pass
+            glog.warning(
+                f"Could not find navmesh {navmesh_filenname}, no collision checking will be done"
+            )
 
     def reconfigure(self, config: Configuration):
         assert len(config.agents) > 0

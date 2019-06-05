@@ -97,9 +97,10 @@ nav::GreedyGeodesicFollowerImpl::calcStepAlong(
     return CODES::RIGHT;
 }
 
-int nav::GreedyGeodesicFollowerImpl::nextActionAlong(
+nav::GreedyGeodesicFollowerImpl::CODES
+nav::GreedyGeodesicFollowerImpl::nextActionAlong(
     const std::tuple<vec3f, quatf>& start,
-    const Eigen::Ref<const vec3f> end) {
+    const vec3f& end) {
   nav::ShortestPath path;
   path.requestedStart = std::get<0>(start);
   path.requestedEnd = end;
@@ -109,12 +110,13 @@ int nav::GreedyGeodesicFollowerImpl::nextActionAlong(
   if (action == CODES::FORWARD)
     action = checkForward(start);
 
-  return static_cast<int>(action);
+  return action;
 }
 
-std::vector<int> nav::GreedyGeodesicFollowerImpl::findPath(
+std::vector<nav::GreedyGeodesicFollowerImpl::CODES>
+nav::GreedyGeodesicFollowerImpl::findPath(
     const std::tuple<vec3f, quatf>& startState,
-    const Eigen::Ref<const vec3f> end) {
+    const vec3f& end) {
   constexpr int maxActions = 1e4;
   std::vector<CODES> actions;
 
@@ -166,10 +168,6 @@ std::vector<int> nav::GreedyGeodesicFollowerImpl::findPath(
   if (actions.size() >= maxActions)
     actions.clear();
 
-  std::vector<int> intActions;
-  for (const auto v : actions) {
-    intActions.emplace_back(static_cast<int>(v));
-  }
-  return intActions;
+  return actions;
 }
 }  // namespace esp

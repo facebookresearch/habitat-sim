@@ -19,8 +19,6 @@ using namespace esp;
 using namespace esp::nav;
 
 void initShortestPathBindings(py::module& m) {
-  py::bind_vector<std::vector<int>>(m, "VectorInt");
-
   py::class_<HitRecord>(m, "HitRecord")
       .def(py::init())
       .def_readwrite("hit_pos", &HitRecord::hitPos)
@@ -85,15 +83,21 @@ void initShortestPathBindings(py::module& m) {
               GreedyGeodesicFollowerImpl::MoveFn&,
               GreedyGeodesicFollowerImpl::MoveFn&, double, double, double>))
       .def("next_action_along",
-           py::overload_cast<const Eigen::Ref<const vec3f>,
-                             const Eigen::Ref<const vec4f>,
-                             const Eigen::Ref<const vec3f>>(
+           py::overload_cast<const vec3f&, const vec4f&, const vec3f&>(
                &GreedyGeodesicFollowerImpl::nextActionAlong),
            py::return_value_policy::move)
       .def("find_path",
-           py::overload_cast<const Eigen::Ref<const vec3f>,
-                             const Eigen::Ref<const vec4f>,
-                             const Eigen::Ref<const vec3f>>(
+           py::overload_cast<const vec3f&, const vec4f&, const vec3f&>(
                &GreedyGeodesicFollowerImpl::findPath),
            py::return_value_policy::move);
+
+  py::enum_<GreedyGeodesicFollowerImpl::CODES>(m, "GreedyFollowerCodes")
+      .value("ERROR", GreedyGeodesicFollowerImpl::CODES::ERROR)
+      .value("STOP", GreedyGeodesicFollowerImpl::CODES::STOP)
+      .value("FORWARD", GreedyGeodesicFollowerImpl::CODES::FORWARD)
+      .value("LEFT", GreedyGeodesicFollowerImpl::CODES::LEFT)
+      .value("RIGHT", GreedyGeodesicFollowerImpl::CODES::RIGHT);
+
+  py::bind_vector<std::vector<GreedyGeodesicFollowerImpl::CODES>>(
+      m, "VectorGreedyCodes");
 }
