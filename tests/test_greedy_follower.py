@@ -61,7 +61,7 @@ def test_greedy_follower(test_navmesh, scene_graph, pbar):
     agent.controls.move_filter_fn = pathfinder.try_step
     follower = habitat_sim.GreedyGeodesicFollower(pathfinder, agent)
 
-    num_tests = 500
+    num_tests = 50
 
     for _ in range(num_tests):
         state = agent.state
