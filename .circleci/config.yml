@@ -20,10 +20,12 @@ jobs:
       - run:
           name: run black
           command: |
+              black --version
               black habitat_sim/. examples/. tests/. setup.py --check
       - run:
           name: run isort
           command: |
+              isort --version
               isort -rc habitat_sim/. examples/. tests/. setup.py --check-only
   cpp_lint:
     docker:
@@ -34,7 +36,8 @@ jobs:
           name: setup
           command: |
               sudo apt-get update -y
-              sudo apt-get install -y clang-format-7
+              sudo apt-get install -y clang-format
+              apt-cache search clang-format
       - run:
           name: run clang-format
           command: |
@@ -136,4 +139,4 @@ workflows:
     jobs:
       - python_lint
       - cpp_lint
-      - build_install_test_ubuntu
+      # - build_install_test_ubuntu
