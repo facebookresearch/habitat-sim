@@ -6,7 +6,39 @@ gpu: &gpu
   environment:
     FPS_THRESHOLD: 900
 
+
 jobs:
+  python_lint:
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - checkout
+      - run:
+          name: setup
+          command: |
+              sudo pip install black isort
+      - run:
+          name: run black
+          command: |
+              black . --check
+      - run:
+          name: run isort
+          command: |
+              isort -rc . --check-only
+  cpp_lint:
+    docker:
+      - image: circleci/buildpack-deps:trusty
+    steps:
+      - checkout
+      - run:
+          name: setup
+          command: |
+              sudo apt-get update -y
+              sudo apt-get install -y clang-format-7
+      - run:
+          name: run clang-format
+          command: |
+            find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.cpp$|.*\.h$|.*\.cu$|.*\.hpp$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
   build_install_test_ubuntu:
     <<: *gpu
     steps:
