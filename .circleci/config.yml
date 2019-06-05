@@ -16,7 +16,7 @@ jobs:
       - run:
           name: setup
           command: |
-              sudo pip install black isort
+              sudo pip install -U black isort
       - run:
           name: run black
           command: |
@@ -27,7 +27,7 @@ jobs:
               isort -rc . --check-only
   cpp_lint:
     docker:
-      - image: circleci/buildpack-deps:trusty
+      - image: circleci/buildpack-deps:bionic
     steps:
       - checkout
       - run:
@@ -39,6 +39,7 @@ jobs:
           name: run clang-format
           command: |
             find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.cpp$|.*\.h$|.*\.cu$|.*\.hpp$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
+
   build_install_test_ubuntu:
     <<: *gpu
     steps:
