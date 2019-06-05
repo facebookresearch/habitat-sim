@@ -17,6 +17,7 @@ jobs:
           name: setup
           command: |
               sudo pip install -U black isort
+              pip install -r requirements.txt
       - run:
           name: run black
           command: |
@@ -26,7 +27,7 @@ jobs:
           name: run isort
           command: |
               isort --version
-              isort -rc habitat_sim/. examples/. tests/. setup.py --diff
+              isort -rc habitat_sim/. examples/. tests/. setup.py --check-only
   cpp_lint:
     docker:
       - image: circleci/buildpack-deps:bionic
@@ -37,7 +38,7 @@ jobs:
           command: |
               sudo apt-get update -y
               sudo apt-get install -y clang-format-7
-              apt-cache search clang-format
+              sudo ln -s /usr/bin/clang-format-7 /usr/bin/clang-format
       - run:
           name: run clang-format
           command: |
