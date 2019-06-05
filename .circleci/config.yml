@@ -133,4 +133,6 @@ workflows:
   version: 2
   build_and_install:
     jobs:
+      - python_lint
+      - cpp_lint
       - build_install_test_ubuntu
