@@ -136,6 +136,8 @@ Previous simulation platforms that have operated on similar datasets typically p
 
 *Note: The semantic sensor in MP3D houses currently requires the use of additional house 3D meshes with orders of magnitude more geometric complexity leading to reduced performance. We expect this to be addressed in future versions leading to speeds comparable to RGB + depth; stay tuned.
 
+To run the above benchmarks on your machine, see instructions in the [examples](#examples) section.
+
 ## Quick installation
 
 1. Clone the repo
@@ -186,7 +188,6 @@ We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup
 
 - The full Matterport3D (MP3D) dataset for use with Habitat can be downloaded using the official [Matterport3D](https://niessner.github.io/Matterport/) download script as follows: `python download_mp.py --task habitat -o path/to/download/`. You only need the habitat zip archive and not the entire Matterport3D dataset. Note that this download script requires python 2.7 to run.
 - The Gibson dataset for use with Habitat can be downloaded by agreeing to the terms of use in the [Gibson](https://github.com/StanfordVL/GibsonEnv#database) repository
-- To obtain access to a test version of the full SUNCG dataset, please contact us.
 
 ## Examples
 
@@ -195,6 +196,8 @@ Load a specific MP3D or Gibson house: `examples/example.py --scene path/to/mp3d/
 Load a specific SUNCG house: `examples/example.py --scene path/to/suncg/house_id/house.json`.
 
 Additional arguments to `example.py` are provided to change the sensor configuration, print statistics of the semantic annotations in a scene, compute action-space shortest path trajectories, and set other useful functionality. Refer to the `example.py` and `demo_runner.py` source files for an overview.
+
+To reproduce the benchmark table from above run `examples/benchmark.py --scene /path/to/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb`.
 
 ## Common issues
 

@@ -11,7 +11,6 @@ default_sim_settings = {
     "max_frames": 1000,
     "width": 640,
     "height": 480,
-    "scene": "test.glb",  # default scene: test.glb
     "default_agent": 0,
     "sensor_height": 1.5,
     "color_sensor": True,  # RGB sensor (default: ON)
@@ -25,8 +24,10 @@ default_sim_settings = {
     "print_semantic_mask_stats": False,
     "compute_shortest_path": False,
     "compute_action_shortest_path": False,
-    "goal_position": [-9.423, 0.072_447, -0.373],
-    "goal_headings": [[0.0, -0.471_395, 0.0, 0.881_922], [0.0, 1.0, 0.0, 0.0]],
+    "test_scene": "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb",
+    "test_scene_data_url": "http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip",
+    "goal_position": [5.047, 0.199, 11.145],
+    "goal_headings": [[0, -0.980_785, 0, 0.195_090], [0.0, 1.0, 0.0, 0.0]],
 }
 
 # build SimulatorConfiguration

@@ -4,8 +4,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from io import BytesIO
 import numpy as np
 import quaternion
+from urllib.request import urlopen
+from zipfile import ZipFile
 
 
 def quat_from_coeffs(coeffs: np.array) -> np.quaternion:
@@ -141,6 +144,12 @@ def quat_rotate_vector(q: np.quaternion, v: np.array) -> np.array:
     vq = np.quaternion(0, 0, 0, 0)
     vq.imag = v
     return (q * vq * q.inverse()).imag
+
+
+def download_and_unzip(file_url, local_directory):
+    response = urlopen(file_url)
+    zipfile = ZipFile(BytesIO(response.read()))
+    zipfile.extractall(path=local_directory)
 
 
 def colorize_ids(ids):

@@ -14,7 +14,7 @@ find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
-endif(CCACHE_FOUND)
+endif()
 
 option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
 option(USE_SYSTEM_EIGEN "Use system Eigen instead of a bundled submodule" OFF)
@@ -22,18 +22,18 @@ option(USE_SYSTEM_MAGNUM "Use system Magnum instead of a bundled submodule" OFF)
 option(USE_SYSTEM_PYBIND11 "Use system Pybind11 instead of a bundled submodule" OFF)
 option(USE_SYSTEM_RAPIDJSON "Use system RapidJSON instead of a bundled submodule" OFF)
 
-set(BUILD_GUI_VIEWERS OFF CACHE BOOL "BUILD_GUI_VIEWERS")
+option(BUILD_GUI_VIEWERS "Build GUI viewers" OFF)
 
 # set(CMAKE_BUILD_TYPE Debug)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-IF(NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
       "Choose build, options are: None Debug Release RelWithDebInfo MinSizeRel"
       FORCE)
-ENDIF(NOT CMAKE_BUILD_TYPE)
+endif()
 # avoid ld visibility warnings, should be done by CMAKE_CXX_VISIBILITY_PRESET
 # but need cmake_policy(SET CMP0063 NEW) also which seems to not work
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
@@ -60,7 +60,7 @@ add_subdirectory(esp/sensor)
 
 
 add_subdirectory(utils/datatool)
-if(${BUILD_GUI_VIEWERS})
+if(BUILD_GUI_VIEWERS)
   # add_subdirectory(utils/displayObj/)
   add_subdirectory(utils/viewer)
 endif()

@@ -8,12 +8,14 @@
 Adapted from: http://www.benjack.io/2017/06/12/python-cpp-tests.html
 """
 
+import argparse
 import builtins
 import glob
 import json
 import os
 import os.path as osp
 import re
+import shlex
 import subprocess
 import sys
 from distutils.version import StrictVersion
@@ -21,32 +23,73 @@ from distutils.version import StrictVersion
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
-HEADLESS = False
-FORCE_CMAKE = False
-BUILD_TESTS = False
+ARG_CACHE_BLACKLIST = {"force_cmake", "cache_args"}
 
 
-filtered_args = []
+def build_parser():
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        "--headless",
+        dest="headless",
+        action="store_true",
+        help="""Build in headless mode.
+Use "HEADLESS=True pip install ." to build in headless mode with pip""",
+    )
+    parser.add_argument(
+        "--force-cmake",
+        "--cmake",
+        dest="force_cmake",
+        action="store_true",
+        help="Forces cmake to be rerun.  This argument is not cached",
+    )
+    parser.add_argument(
+        "--build-tests", dest="build_tests", action="store_true", help="Build tests"
+    )
+    parser.add_argument(
+        "--cmake-args",
+        type=str,
+        default="",
+        help="""Additional arguements to be passed to cmake.
+Note that you will need to do `--cmake-args="..."` as `--cmake-args "..."`
+will generally not be parsed correctly
+You may need to use --force-cmake to ensure cmake is rerun with new args.
+Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
+    )
+
+    parser.add_argument(
+        "--no-update-submodules",
+        dest="no_update_submodules",
+        action="store_true",
+        help="Don't update git submodules",
+    )
+
+    parser.add_argument(
+        "--cache-args",
+        dest="cache_args",
+        action="store_true",
+        help="""Caches the arguements sent to setup.py
+        and reloads them on the next invocation.  This argument is not cached""",
+    )
+
+    return parser
+
+
+parseable_args = []
+unparseable_args = []
 for i, arg in enumerate(sys.argv):
-    if arg == "--headless":
-        HEADLESS = True
-        continue
-
-    if arg == "--force-cmake" or arg == "--cmake":
-        FORCE_CMAKE = True
-        continue
-
-    if arg == "--build-tests":
-        BUILD_TESTS = True
-        continue
-
     if arg == "--":
-        filtered_args += sys.argv[i:]
+        unparseable_args = sys.argv[i:]
         break
 
-    filtered_args.append(arg)
+    parseable_args.append(arg)
 
-sys.argv = filtered_args
+
+parser = build_parser()
+args, filtered_args = parser.parse_known_args(args=parseable_args)
+
+sys.argv = filtered_args + unparseable_args
 
 
 def in_git():
@@ -77,6 +120,39 @@ class CMakeExtension(Extension):
 
 
 class CMakeBuild(build_ext):
+    def finalize_options(self):
+        super().finalize_options()
+
+        cacheable_params = [
+            opt[0].replace("=", "").replace("-", "_") for opt in self.user_options
+        ]
+
+        args_cache_file = ".setuppy_args_cache.json"
+
+        if not args.cache_args and osp.exists(args_cache_file):
+            with open(args_cache_file, "r") as f:
+                cached_args = json.load(f)
+
+            for k, v in cached_args["args"].items():
+                setattr(args, k, v)
+
+            for k, v in cached_args["build_ext"].items():
+                setattr(self, k, v)
+
+        elif args.cache_args:
+            cache = dict(
+                args={
+                    k: v for k, v in vars(args).items() if k not in ARG_CACHE_BLACKLIST
+                },
+                build_ext={
+                    k: getattr(self, k)
+                    for k in cacheable_params
+                    if k not in ARG_CACHE_BLACKLIST
+                },
+            )
+            with open(args_cache_file, "w") as f:
+                json.dump(cache, f, indent=4, sort_keys=True)
+
     def run(self):
         try:
             subprocess.check_output(["cmake", "--version"])
@@ -92,7 +168,10 @@ class CMakeBuild(build_ext):
     def build_extension(self, ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
 
-        if in_git():
+        # Init & update all submodules if not already (the user might be pinned
+        # on some particular commit or have working tree changes, don't destroy
+        # those)
+        if in_git() and not args.no_update_submodules:
             subprocess.check_call(
                 ["git", "submodule", "update", "--init", "--recursive"]
             )
@@ -102,6 +181,7 @@ class CMakeBuild(build_ext):
             "-DPYTHON_EXECUTABLE=" + sys.executable,
             "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),
         ]
+        cmake_args += shlex.split(args.cmake_args)
 
         cfg = "Debug" if self.debug else "RelWithDebInfo"
         build_args = ["--config", cfg]
@@ -111,27 +191,33 @@ class CMakeBuild(build_ext):
 
         if has_ninja():
             cmake_args += ["-GNinja"]
-        else:
-            build_args += ["-j"]
+        # Make it possible to *reduce* the number of jobs. Ninja requires a
+        # number passed to -j (and builds on all cores by default), while make
+        # doesn't require a number (but builds sequentially by default), so we
+        # add the argument only when it's not ninja or the number of jobs is
+        # specified.
+        if not has_ninja() or self.parallel:
+            build_args += ["-j{}".format(self.parallel) if self.parallel else "-j"]
 
-        cmake_args += ["-DBUILD_GUI_VIEWERS={}".format("ON" if not HEADLESS else "OFF")]
-        cmake_args += ["-DBUILD_TESTS={}".format("ON" if BUILD_TESTS else "OFF")]
+        cmake_args += [
+            "-DBUILD_GUI_VIEWERS={}".format("ON" if not args.headless else "OFF")
+        ]
+        cmake_args += ["-DBUILD_TESTS={}".format("ON" if args.build_tests else "OFF")]
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
             env.get("CXXFLAGS", ""), self.distribution.get_version()
         )
 
-        if not os.path.exists(self.build_temp):
-            os.makedirs(self.build_temp)
-
         if self.run_cmake(cmake_args):
             subprocess.check_call(
-                ["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env
+                shlex.split("cmake -H{} -B{}".format(ext.sourcedir, self.build_temp))
+                + cmake_args,
+                env=env,
             )
 
         subprocess.check_call(
-            ["cmake", "--build", "."] + build_args, cwd=self.build_temp
+            shlex.split("cmake --build {}".format(self.build_temp)) + build_args
         )
         print()  # Add an empty line for cleaner output
 
@@ -139,24 +225,18 @@ class CMakeBuild(build_ext):
         if is_pip():
             return
 
-        if not HEADLESS:
-            link_dst = osp.join(osp.dirname(self.build_temp), "viewer")
+        if not args.headless:
+            link_dst = osp.join(self.build_temp, "viewer")
             if not osp.islink(link_dst):
                 os.symlink(
                     osp.abspath(osp.join(self.build_temp, "utils/viewer/viewer")),
                     link_dst,
                 )
 
-        if not osp.islink(osp.join(osp.dirname(self.build_temp), "utils")):
-            os.symlink(
-                osp.abspath(osp.join(self.build_temp, "utils")),
-                osp.join(osp.dirname(self.build_temp), "utils"),
-            )
-
         self.create_compile_commands()
 
     def run_cmake(self, cmake_args):
-        if FORCE_CMAKE:
+        if args.force_cmake:
             return True
 
         cache_parser = re.compile(r"(?P<K>\w+?)(:\w+?|)=(?P<V>.*?)$")
@@ -170,7 +250,7 @@ class CMakeBuild(build_ext):
                 if arg[0:2] == "-G":
                     continue
 
-                k, v = arg.split("=")
+                k, v = arg.split("=", 1)
                 # Strip +D
                 k = k[2:]
                 for l in cache_contents:
@@ -191,8 +271,9 @@ class CMakeBuild(build_ext):
             with open(filename) as f:
                 return json.load(f)
 
-        commands = glob.glob("build/*/compile_commands.json")
-        all_commands = [entry for f in commands for entry in load(f)]
+        command_files = [osp.join(self.build_temp, "compile_commands.json")]
+        command_files += glob.glob("{}/*/compile_commands.json".format(self.build_temp))
+        all_commands = [entry for f in command_files for entry in load(f)]
 
         # cquery does not like c++ compiles that start with gcc.
         # It forgets to include the c++ header directories.
@@ -218,7 +299,10 @@ if __name__ == "__main__":
     ) >= StrictVersion("3.6"), "Must use python3.6 or newer"
 
     if os.environ.get("HEADLESS", "").lower() == "true":
-        HEADLESS = True
+        args.headless = True
+
+    if os.environ.get("CMAKE_ARGS", None) is not None:
+        args.cmake_args = os.environ["CMAKE_ARGS"]
 
     requirements = ["attrs", "numba", "numpy", "numpy-quaternion", "pillow"]
 
