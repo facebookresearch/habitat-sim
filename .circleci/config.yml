@@ -20,11 +20,11 @@ jobs:
       - run:
           name: run black
           command: |
-              black . --check
+              black habitat_sim/. examples/. tests/. setup.py --check
       - run:
           name: run isort
           command: |
-              isort -rc . --check-only
+              isort -rc habitat_sim/. examples/. tests/. setup.py --check-only
   cpp_lint:
     docker:
       - image: circleci/buildpack-deps:bionic
