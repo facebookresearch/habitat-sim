@@ -17,8 +17,8 @@ jobs:
           name: setup
           command: |
               sudo pip install -U black isort
-              pip install numpy
-              pip install -r requirements.txt
+              sudo pip install numpy
+              sudo pip install -r requirements.txt
       - run:
           name: run black
           command: |
@@ -31,15 +31,15 @@ jobs:
               isort -rc habitat_sim/. examples/. tests/. setup.py --check-only
   cpp_lint:
     docker:
-      - image: circleci/buildpack-deps:bionic
+      - image: circleci/buildpack-deps:disco
     steps:
       - checkout
       - run:
           name: setup
           command: |
               sudo apt-get update -y
-              sudo apt-get install -y clang-format-7
-              sudo ln -s /usr/bin/clang-format-7 /usr/bin/clang-format
+              sudo apt-get install -y clang-format-8
+              sudo ln -s /usr/bin/clang-format-8 /usr/bin/clang-format
               clang-format --version
       - run:
           name: run clang-format
