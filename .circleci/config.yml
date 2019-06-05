@@ -82,7 +82,7 @@ jobs:
               export PYTHONPATH=$PYTHONPATH:$(pwd)
               ./build.sh --headless
               HEADLESS=True pip install -e .
-              pytest
+              pytest --ignore notebooks/
       - run:
           name: Run api tests
           command: |
