@@ -23,11 +23,13 @@ jobs:
           name: run black
           command: |
               black --version
+              black habitat_sim/. examples/. tests/. setup.py --diff
               black habitat_sim/. examples/. tests/. setup.py --check
       - run:
           name: run isort
           command: |
               isort --version
+              isort -rc habitat_sim/. examples/. tests/. setup.py --diff
               isort -rc habitat_sim/. examples/. tests/. setup.py --check-only
   cpp_lint:
     docker:
@@ -142,4 +144,4 @@ workflows:
     jobs:
       - python_lint
       - cpp_lint
-      # - build_install_test_ubuntu
+      - build_install_test_ubuntu
