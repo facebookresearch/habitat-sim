@@ -1,10 +1,9 @@
 import multiprocessing
 import os.path as osp
 
-import pytest
-
 import examples.new_actions
 import examples.stereo_agent
+import pytest
 
 
 @pytest.mark.gfxtest
