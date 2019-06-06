@@ -1,6 +1,5 @@
 # external requirements
 attrs>=19.1.0
-glog>=0.3.1
 numba
 numpy
 numpy-quaternion

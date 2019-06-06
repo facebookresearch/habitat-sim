@@ -14,7 +14,7 @@ import habitat_sim.bindings as hsim
 import habitat_sim.errors
 from habitat_sim import utils
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
-from habitat_sim.logging import glog
+from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower
 
 
@@ -75,9 +75,9 @@ class Simulator:
         self.pathfinder = hsim.PathFinder()
         if osp.exists(navmesh_filenname):
             self.pathfinder.load_nav_mesh(navmesh_filenname)
-            glog.info(f"Loaded navmesh {navmesh_filenname}")
+            logger.info(f"Loaded navmesh {navmesh_filenname}")
         else:
-            glog.warning(
+            logger.warning(
                 f"Could not find navmesh {navmesh_filenname}, no collision checking will be done"
             )
 
