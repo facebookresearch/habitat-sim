@@ -6,7 +6,7 @@ class InvalidAttachedObject(RuntimeError):
 
 
 def assert_obj_valid(obj: hsim.AttachedObject):
-    if not obj.is_valid:
+    if not obj.object:
         raise InvalidAttachedObject(
             "Attached Object is invalid.  Attached to a valid scene graph before use."
         )

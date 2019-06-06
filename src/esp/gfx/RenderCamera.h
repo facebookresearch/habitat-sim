@@ -15,7 +15,6 @@ namespace gfx {
 
 class RenderCamera : public scene::AttachedObject {
  public:
-  RenderCamera();
   RenderCamera(scene::SceneNode& node);
   RenderCamera(scene::SceneNode& node,
                const vec3f& eye,
@@ -24,9 +23,6 @@ class RenderCamera : public scene::AttachedObject {
   virtual ~RenderCamera() {
     // do nothing, let magnum handle the camera
   }
-
-  virtual void attach(scene::SceneNode& node);
-  virtual void detach();
 
   void setProjectionMatrix(int width,
                            int height,

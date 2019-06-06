@@ -9,17 +9,14 @@
 namespace esp {
 namespace sensor {
 
-Sensor::Sensor(SensorSpec::ptr spec)
-    : scene::AttachedObject(scene::AttachedObjectType::SENSOR), spec_(spec) {
+Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
+    : scene::AttachedObject(node, scene::AttachedObjectType::SENSOR),
+      spec_(spec) {
   if (spec_ == nullptr) {
     LOG(ERROR) << "Cannot initialize sensor. The specification is null.";
   }
   ASSERT(spec_ != nullptr);
-}
 
-void Sensor::attach(scene::SceneNode& node) {
-  AttachedObject::attach(node);
-  // since it is attached, set the transformation from the spec immediately
   setTransformationFromSpec();
 }
 
@@ -43,7 +40,6 @@ void SensorSuite::clear() {
 }
 
 void Sensor::setTransformationFromSpec() {
-  ASSERT(isValid());
   if (spec_ == nullptr) {
     LOG(ERROR) << "Cannot initialize sensor. the specification is null.";
     return;

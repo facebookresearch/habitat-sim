@@ -72,14 +72,11 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       Cannot apply a smart pointer to a SceneNode object.
       You can "create it and forget it".
       Simulator backend will handle the memory.)")
-      .def(py::init<scene::SceneNode&>(),
-           R"(Constructor: creates a scene node, and sets its parent.
-           PYTHON DOES NOT GET OWNERSHIP)",
-           pybind11::return_value_policy::reference)
-      .def("create_child", &scene::SceneNode::createChild,
-           R"(Creates a child node, and sets its parent to the current node.
-        PYTHON DOES NOT GET OWNERSHIP)",
-           pybind11::return_value_policy::reference);
+      .def(py::init_alias<std::reference_wrapper<scene::SceneNode>>(),
+           R"(Constructor: creates a scene node, and sets its parent.)")
+      .def(
+          "create_child", [](SceneNode& self) { return &self.createChild(); },
+          R"(Creates a child node, and sets its parent to the current node.)");
 
   // ==== enum AttachedObjectType ====
   py::enum_<AttachedObjectType>(m, "AttachedObjectType")
@@ -91,49 +88,39 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   // ==== AttachedObject ====
   // An object that is attached to a scene node.
   // Such object can be Agent, Sensor, Camera etc.
-  py::class_<AttachedObject, AttachedObject::ptr>(m, "AttachedObject",
-                                                  R"(
+  py::class_<AttachedObject, Magnum::SceneGraph::PyFeature<AttachedObject>,
+             Magnum::SceneGraph::AbstractFeature3D,
+             Magnum::SceneGraph::PyFeatureHolder<AttachedObject>>(
+      m, "AttachedObject",
+      R"(
       AttachedObject: An object that is attached to a scene node.
       Such object can be Agent, Sensor, Camera etc.
       )")
-      // create a new attached object, which is NOT attached to any scene node
-      // the initial status is invalid, namely, isValid will return false
-      .def(py::init(&AttachedObject::create<>))
       // input: the scene node this object is going to attach to
       // the initial status is valid, since the object is attached to a node
-      .def(py::init(&AttachedObject::create<scene::SceneNode&>))
+      .def(py::init_alias<std::reference_wrapper<scene::SceneNode>>())
 
-      // NOTE:
-      // please always call this function to check the status
-      // in order to avoid runtime errors
-      .def_property_readonly(
-          "is_valid", &AttachedObject::isValid,
-          R"(Returns true if the object is being attached to a scene node.)")
-      .def("attach", &AttachedObject::attach,
-           R"(Attaches the object to an existing scene node.)", "sceneNode"_a)
-      .def("detach", &AttachedObject::detach,
-           R"(Detached the object and the scene node)")
       .def_property("object_type", &AttachedObject::getObjectType,
                     &AttachedObject::setObjectType)
 
       .def_property_readonly(
           "object",
           [](AttachedObject& self) {
-            if (!self.isValid())
+            if (!&self.object())
               throw py::value_error{"attached object not valid"};
             return &self.object();
           },
           "Node this object is attached to");
 
   // ==== RenderCamera (subclass of AttachedObject) ====
-  py::class_<RenderCamera, AttachedObject, RenderCamera::ptr>(
+  py::class_<RenderCamera, Magnum::SceneGraph::PyFeature<RenderCamera>,
+             AttachedObject, Magnum::SceneGraph::PyFeatureHolder<RenderCamera>>(
       m, "Camera",
       R"(RenderCamera: subclass of AttachedObject.
       The object of this class is a camera attached
       to the scene node for rendering.)")
-      .def(py::init(&RenderCamera::create<>))
-      .def(py::init(&RenderCamera::create<SceneNode&, const vec3f&,
-                                          const vec3f&, const vec3f&>))
+      .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
+                          const vec3f&, const vec3f&, const vec3f&>())
       .def("setProjectionMatrix", &RenderCamera::setProjectionMatrix, R"(
         Set this :py:class:`Camera`'s projection matrix.
       )",
@@ -387,21 +374,24 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   py::class_<Observation, Observation::ptr>(m, "Observation");
 
   // ==== Sensor (subclass of AttachedObject) ====
-  py::class_<Sensor, AttachedObject, Sensor::ptr>(m, "Sensor")
-      .def(py::init(&Sensor::create<const SensorSpec::ptr&>))
+  py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>, AttachedObject,
+             Magnum::SceneGraph::PyFeatureHolder<Sensor>>(m, "Sensor")
+      .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
+                          const SensorSpec::ptr&>())
       .def("specification", &Sensor::specification)
       .def("set_transformation_from_spec", &Sensor::setTransformationFromSpec)
       .def("is_visual_sensor", &Sensor::isVisualSensor)
       .def("get_observation", &Sensor::getObservation);
 
   // ==== PinholeCamera (subclass of Sensor) ====
-  py::class_<sensor::PinholeCamera, sensor::Sensor, sensor::PinholeCamera::ptr>(
+  py::class_<sensor::PinholeCamera,
+             Magnum::SceneGraph::PyFeature<sensor::PinholeCamera>,
+             sensor::Sensor,
+             Magnum::SceneGraph::PyFeatureHolder<PinholeCamera>>(
       m, "PinholeCamera")
-      // initialized, not attach to any scene node, status: "invalid"
-      .def(py::init(&PinholeCamera::create<const sensor::SensorSpec::ptr&>))
       // initialized, attached to pinholeCameraNode, status: "valid"
-      .def(py::init(&PinholeCamera::create<const sensor::SensorSpec::ptr&,
-                                           scene::SceneNode&>))
+      .def(py::init<std::reference_wrapper<scene::SceneNode>,
+                    const sensor::SensorSpec::ptr&>())
       .def("set_projection_matrix", &sensor::PinholeCamera::setProjectionMatrix,
            R"(Set the width, height, near, far, and hfov,
           stored in pinhole camera to the render camera.)");

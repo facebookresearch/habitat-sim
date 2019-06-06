@@ -56,12 +56,10 @@ struct Observation {
 // Represents a sensor that provides data from the environment to an agent
 class Sensor : public scene::AttachedObject {
  public:
-  explicit Sensor(SensorSpec::ptr spec);
+  explicit Sensor(scene::SceneNode& node, SensorSpec::ptr spec);
   virtual ~Sensor() {
     // LOG(INFO) << "Deconstructing Sensor";
   }
-
-  virtual void attach(scene::SceneNode& node) override;
 
   SensorSpec::ptr specification() const { return spec_; }
 

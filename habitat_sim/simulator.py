@@ -38,9 +38,6 @@ class Simulator:
         self.reconfigure(config)
 
     def close(self):
-        for agent in self.agents:
-            agent.detach()
-
         self.agents = []
         self._sensors = None
         if self._sim is not None:
@@ -64,7 +61,12 @@ class Simulator:
         if self.config is not None and self.config.agents == config.agents:
             return
 
-        self.agents = [Agent(cfg) for cfg in config.agents]
+        self.agents = [
+            Agent(
+                self._sim.get_active_scene_graph().get_root_node().create_child(), cfg
+            )
+            for cfg in config.agents
+        ]
 
     def _config_pathfinder(self, config: Configuration):
         if "navmesh" in config.sim_cfg.scene.filepaths:
@@ -95,19 +97,15 @@ class Simulator:
         if self.config == config:
             return
 
-        for agent in self.agents:
-            agent.detach()
-
         # NB: Configure backend last as this gives more time for python's GC
         # to delete any previous instances of the simulator
+        # TODO: can't do the above, sorry -- the Agent constructor needs access
+        # to self._sim.get_active_scene_graph()
+        self._config_backend(config)
         self._config_agents(config)
         self._config_pathfinder(config)
-        self._config_backend(config)
 
         for i in range(len(self.agents)):
-            self.agents[i].attach(
-                self._sim.get_active_scene_graph().get_root_node().create_child()
-            )
             self.agents[i].controls.move_filter_fn = self._step_filter
 
         self._default_agent = self.get_agent(config.sim_cfg.default_agent_id)
@@ -218,7 +216,7 @@ class Sensor:
         # sanity check:
         # see if the sensor is attached to a scene graph, otherwise it is invalid,
         # and cannot make any observation
-        if not self._sensor_object.is_valid:
+        if not self._sensor_object.object:
             raise habitat_sim.errors.InvalidAttachedObject(
                 "Sensor observation requested but sensor is invalid.\
                  (has it been detached from a scene node?)"

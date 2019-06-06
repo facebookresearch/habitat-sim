@@ -9,13 +9,12 @@ namespace esp {
 namespace scene {
 
 SceneGraph::SceneGraph()
-    : rootNode_{world_}, defaultRenderCameraNode_{rootNode_} {
-  defaultRenderCamera_.attach(defaultRenderCameraNode_);
-}
+    : rootNode_{world_},
+      defaultRenderCameraNode_{rootNode_},
+      defaultRenderCamera_{defaultRenderCameraNode_} {}
 
 // set transformation and projection matrix to the default camera
 void SceneGraph::setDefaultRenderCamera(sensor::Sensor& sensor) {
-  ASSERT(sensor.isValid());
   ASSERT(sensor.isVisualSensor());
 
   Magnum::Matrix4 T = sensor.object().absoluteTransformation();

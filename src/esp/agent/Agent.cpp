@@ -23,13 +23,8 @@ const std::set<std::string> Agent::BodyActions = {
     // turnLeft and turnRight will take their place
     "lookLeft", "lookRight"};
 
-// Warning!!
-// agent, as well as the attached sensors, are all in "invalid" status after the
-// creation
-// user have to attach them to the scene nodes (one node for each agent, each
-// sensor) to make them enabled
-Agent::Agent(const AgentConfiguration& cfg)
-    : scene::AttachedObject(scene::AttachedObjectType::AGENT),
+Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
+    : scene::AttachedObject(agentNode, scene::AttachedObjectType::AGENT),
       configuration_(cfg),
       sensors_(),
       controls_(scene::ObjectControls::create()) {
@@ -37,21 +32,9 @@ Agent::Agent(const AgentConfiguration& cfg)
     // TODO: this should take type into account to create appropriate
     // sensor
 
-    // CAREFUL: the sensor remains "invalid" until it is attached to a
-    // scene node
-    sensors_.add(sensor::PinholeCamera::create(spec));
-  }
-}
-
-Agent::Agent(const AgentConfiguration& cfg, scene::SceneNode& agentNode)
-    : Agent(cfg) {
-  // attach the agent to the agent scene node
-  attach(agentNode);
-
-  // now, setup (attach, transform) the sensors_
-  for (auto& sensor : sensors_.getSensors()) {
     auto& sensorNode = agentNode.createChild();
-    sensor.second->attach(sensorNode);  // transformed within
+    sensors_.add(
+        sensor::PinholeCamera::create(sensorNode, spec));  // transformed within
   }
 }
 
@@ -60,21 +43,10 @@ Agent::~Agent() {
   sensors_.clear();
 }
 
-void Agent::detach() {
-  AttachedObject::detach();
-
-  // traverse all the sensors, and detach them as well
-  auto& sensors = sensors_.getSensors();
-  for (auto& sensor : sensors) {
-    sensor.second->detach();
-  }
-}
-
 void Agent::act(const std::string& actionName) {
-  ASSERT(isValid());
   const ActionSpec& actionSpec = *configuration_.actionSpace.at(actionName);
   if (BodyActions.find(actionSpec.name) != BodyActions.end()) {
-    controls_->action(*node_, actionSpec.name,
+    controls_->action(object(), actionSpec.name,
                       actionSpec.actuation.at("amount"),
                       /*applyFilter=*/true);
   } else {
@@ -87,7 +59,6 @@ void Agent::act(const std::string& actionName) {
 }
 
 void Agent::getState(AgentState::ptr state) const {
-  ASSERT(isValid());
   // TODO this should be done less hackishly
   state->position =
       cast<vec3f>(object().absoluteTransformation().translation());
@@ -97,8 +68,6 @@ void Agent::getState(AgentState::ptr state) const {
 
 void Agent::setState(const AgentState& state,
                      const bool resetSensors /*= true*/) {
-  ASSERT(isValid());
-
   object().setTranslation(Magnum::Vector3(state.position));
 
   const Eigen::Map<const quatf> rot(state.rotation.data());

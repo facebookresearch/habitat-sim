@@ -79,18 +79,11 @@ bool operator!=(const AgentConfiguration& a, const AgentConfiguration& b);
 // Represents an agent that can act within an environment
 class Agent : public scene::AttachedObject {
  public:
-  // constructor: the status of the agent, sensors is "invalid" after
-  // construction; this fits the case that user would like to initialize the
-  // agent, but decide to use it or not later
-  explicit Agent(const AgentConfiguration& cfg);
-
   // constructor: the status of the agent, sensors is "valid" after
   // construction; user can use them immediately
-  explicit Agent(const AgentConfiguration& cfg, scene::SceneNode& agentNode);
+  explicit Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg);
 
   virtual ~Agent();
-
-  virtual void detach() override;
 
   void act(const std::string& actionName);
 

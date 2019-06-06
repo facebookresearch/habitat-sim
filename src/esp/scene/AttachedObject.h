@@ -3,6 +3,9 @@
 // LICENSE file in the root directory of this source tree.
 
 #pragma once
+
+#include <Magnum/SceneGraph/AbstractFeature.h>
+
 #include "esp/core/esp.h"
 
 namespace esp {
@@ -12,11 +15,6 @@ class SceneNode;
 
 // Base class, that provides minimal interface for any object (sensor, agent
 // etc.) that can be attached to a scene node;
-
-// [SceneNode] <== (two-way pointers) ==> [AttachedObject]
-
-// ONLY AttachedObject is responsible for building/destroying the bridge, the
-// two-way pointers illustrated above.
 
 // it is user's responsibility to create new scene nodes, to which the objects
 // are attached.
@@ -36,26 +34,11 @@ enum class AttachedObjectType {
   CAMERA = 3,
 };
 
-class AttachedObject {
+class AttachedObject : public Magnum::SceneGraph::AbstractFeature3D {
  public:
   // constructor
-  AttachedObject(AttachedObjectType type = AttachedObjectType::NONE);
   AttachedObject(SceneNode& node,
                  AttachedObjectType type = AttachedObjectType::NONE);
-
-  // destructor
-  virtual ~AttachedObject() {
-    // when refernce is counted down to 0, no one use this attachment, detach it
-    // from the scene node
-    detach();
-  }
-
-  // attach the object to the scene node
-  virtual void attach(SceneNode& node);
-
-  // detach the object from the scene node
-  // (make sure detach will be called when the scene node is deconstructed)
-  virtual void detach();
 
   // get the type of the attached object
   AttachedObjectType getObjectType() { return objectType_; }
@@ -67,15 +50,7 @@ class AttachedObject {
   SceneNode& object();
   const SceneNode& object() const;
 
-  // object is valid only when it is attached to a scene node.
-  // node_ can only be set in functions attach/detach, and the value is either
-  // nullptr or an address that is guaranteed accessible
-  inline bool isValid() const { return (node_ != nullptr); }
-
  protected:
-  // raw pointer, let the scene graph manage the memory
-  SceneNode* node_ = nullptr;
-
   // the type of the attached object (e.g., sensor, agent etc.)
   // no setter is provided since it is an internal variable set by the subclass,
   // not by the user

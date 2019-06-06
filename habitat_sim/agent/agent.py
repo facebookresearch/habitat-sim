@@ -82,7 +82,7 @@ class AgentConfiguration(object):
     body_type: str = "cylinder"
 
 
-@attr.s(auto_attribs=True)
+@attr.s(init=False, auto_attribs=True)
 class Agent(object):
     r"""Implements an agent with multiple sensors
 
@@ -101,12 +101,18 @@ class Agent(object):
         graph in python is dangerous due to differences in c++ and python memory management
     """
 
-    agent_config: AgentConfiguration = attr.Factory(AgentConfiguration)
-    sensors: SensorSuite = attr.Factory(SensorSuite)
-    controls: ObjectControls = attr.Factory(ObjectControls)
-    body: hsim.AttachedObject = attr.Factory(hsim.AttachedObject)
+    agent_config: AgentConfiguration
+    sensors: SensorSuite
+    controls: ObjectControls
+    body: hsim.AttachedObject
 
-    def __attrs_post_init__(self):
+    def __init__(
+        self, scene_node: hsim.SceneNode, agent_config=None, sensors=None, controls=None
+    ):
+        self.agent_config = agent_config if agent_config else AgentConfiguration()
+        self.sensors = sensors if sensors else SensorSuite()
+        self.controls = controls if controls else ObjectControls()
+        self.body = hsim.AttachedObject(scene_node)
         self.body.object_type = hsim.AttachedObjectType.AGENT
         self.reconfigure(self.agent_config)
 
@@ -119,38 +125,15 @@ class Agent(object):
             reconfigure_sensors (bool): Whether or not to also reconfigure the sensors, there
                 are specific cases where false makes sense, but most cases are covered by true
         """
+        habitat_sim.errors.assert_obj_valid(self.body)
         self.agent_config = agent_config
 
         if reconfigure_sensors:
             self.sensors.clear()
             for spec in self.agent_config.sensor_specifications:
-                self.sensors.add(hsim.PinholeCamera(spec))
-
-            if self.body.is_valid:
-                for _, v in self.sensors.items():
-                    v.attach(self.scene_node.create_child())
-
-    def attach(self, scene_node: hsim.SceneNode):
-        r"""Gives the agent control over the specified scene node (but **not** ownership)
-
-        The agent will recursively call attach for the sensors
-
-        Args:
-            scene_node (hsim.SceneNode)
-        """
-        self.body.attach(scene_node)
-        for _, v in self.sensors.items():
-            v.attach(self.scene_node.create_child())
-
-    def detach(self):
-        r"""Detaches the agent from the its current scene_node
-
-        Recursively calls detach on any sensors
-        """
-
-        self.body.detach()
-        for _, v in self.sensors.items():
-            v.detach()
+                self.sensors.add(
+                    hsim.PinholeCamera(self.scene_node.create_child(), spec)
+                )
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id
@@ -253,6 +236,3 @@ class Agent(object):
     @state.setter
     def state(self, new_state):
         self.set_state(new_state, reset_sensors=True)
-
-    def __del__(self):
-        self.detach()
