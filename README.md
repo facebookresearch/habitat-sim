@@ -207,15 +207,17 @@ To reproduce the benchmark table from above run `examples/benchmark.py --scene /
 
 ### Code style
 
-We use `clang-format` for linting and code style enforcement of c++ code.
+We use `clang-format-8` for linting and code style enforcement of c++ code.
 Code style follows the [Google C++ guidelines](https://google.github.io/styleguide/cppguide.html).
-Install `clang-format` through `brew install clang-format` on MacOS, or by downloading binaries or sources from http://releases.llvm.org/download.html for Ubuntu etc.
+Install `clang-format-8` through `brew install clang-format` on MacOS.  For other systems, `clang-format-8` can be installed via `conda install clangdev -c conda-forge` or by downloading binaries or sources from [releases.llvm.org/download](http://releases.llvm.org/download.html).
 For vim integration add to your .vimrc file `map <C-K> :%!clang-format<cr>` and use Ctrl+K to format entire file.
 Integration plugin for [vscode](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format).
 
-We use `black` for linting python code.
-Install `black` through `pip install black`.
-We also use pre-commit hooks to ensure linting and style enforcement.
+We use `black` and `isort` for linting and code style of python code.
+Install `black` and `isort` through `pip install -U black isort`.
+They can then be ran via `black .` and `isort`.
+
+We also offer pre-commit hooks to help with automatically formatting code.
 Install the pre-commit hooks with `pip install pre-commit && pre-commit install`.
 
 ### Development Tips
