@@ -36,7 +36,7 @@ namespace esp {
 namespace assets {
 
 
-bool PhysicsManager::initPhysics(MagnumObject* scene) {
+bool PhysicsManager::initPhysics(scene::SceneNode* scene) {
   LOG(INFO) << "Initializing Physics Engine...";  
   _debugDraw.setMode(Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe);
   _bWorld.setGravity({0.0f, -10.0f, 0.0f});
@@ -132,9 +132,12 @@ void PhysicsManager::initObject(Importer& importer,
   } /* btConvexHullShape can be even more performant */
 
   LOG(INFO) << "Making rigid body: before";
-  auto* object = new RigidBody{static_cast<MagnumObject&>(*_scene), weight, shape, _bWorld};
+  //auto* object = new RigidBody{static_cast<MagnumObject&>(*_scene), weight, shape, _bWorld};
+  //auto* object = new RigidBody{static_cast<MagnumObject*>(_scene), weight, shape, _bWorld};
+
+  auto* object = new RigidBody{_scene, weight, shape, _bWorld};
   LOG(INFO) << "Making rigid body: after";
-  object->syncPose();            
+  //object->syncPose();            
   //new ColoredDrawable{*ground, _shader, _box, 0xffffff_rgbf,
   //      Matrix4::scaling({4.0f, 0.5f, 4.0f}), _drawables};
 
@@ -152,7 +155,7 @@ void PhysicsManager::debugSceneGraph(const MagnumObject* root) {
     LOG(INFO) << "SCENE NODE is leaf node."; 
   }
 
-  // TODO (JK) Bottom up search gives bus error because scene's rootnode does
+  // TODO (JH) Bottom up search gives bus error because scene's rootnode does
   // not point to nullptr, but something strange
   /*LOG(INFO) << "INSPECTING NODE " << root;
   const scene::SceneNode* parent = static_cast<const scene::SceneNode*>(root->parent());
@@ -177,8 +180,16 @@ void PhysicsManager::nextFrame() {
 }
 
 // TODO (JH) what role does Object3D{parent} play in example?
-RigidBody::RigidBody(MagnumObject& parent, Magnum::Float mass, btCollisionShape* bShape, btDynamicsWorld& bWorld):
-    MagnumObject{parent}, _bWorld(bWorld) {
+RigidBody::RigidBody(scene::SceneNode* parent, Magnum::Float mass, btCollisionShape* bShape, btDynamicsWorld& bWorld): 
+  //MagnumObject{nullptr}, 
+  scene::SceneNode{*parent},
+  _bWorld(bWorld) {
+
+  //scene::SceneNode::setParent(*parent);   // not compile: `setParent` is non-static
+  //this->setParent(parent);                // segfault
+  //MagnumObject::setParent(parent);        // segfault
+
+  LOG(INFO) << "Done inheriting parent ";
   /* Calculate inertia so the object reacts as it should with
      rotation and everything */
   //btVector3 bInertia(0.0f, 0.0f, 0.0f);

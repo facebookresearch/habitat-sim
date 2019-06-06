@@ -14,9 +14,19 @@ namespace esp {
 namespace scene {
 
 SceneNode::SceneNode(SceneNode& parent) {
+  LOG(INFO) << "Setting parent";
   setParent(parent);
+  LOG(INFO) << "Setting parent id";
   setId(parent.getId());
+  LOG(INFO) << "Setting parent done";
 }
+
+// TODO (JH): ad-hoc method
+// SceneNode::SceneNode(SceneNode* parent) {
+//   setParent(parent);
+//   setId(parent->getId());
+// }
+
 
 SceneNode::SceneNode(MagnumScene& parentNode) {
   MagnumObject& baseNode = static_cast<MagnumObject&>(*this);
@@ -32,9 +42,19 @@ SceneNode::~SceneNode() {
 }
 
 SceneNode& SceneNode::setParent(SceneNode& parent) {
+  LOG(INFO) << "Inside setting parent";
+  LOG(INFO) << "Inside setting parent " << parent.parent();
   MagnumObject::setParent(&parent);
+  LOG(INFO) << "Inside setting parent: done";
   return *this;
 }
+
+// TODO (JH): ad-hoc method
+// SceneNode& SceneNode::setParent(SceneNode* parent) {
+//   MagnumObject::setParent(parent);
+//   return *this;
+// }
+
 
 SceneNode& SceneNode::createChild() {
   // will set the parent to *this

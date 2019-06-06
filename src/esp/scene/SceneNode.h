@@ -26,12 +26,16 @@ class SceneNode : public MagnumObject {
   // terminate node (e.g., "MagnumScene" defined in SceneGraph) as its ancestor
   SceneNode() = delete;
   SceneNode(SceneNode& parent);
+  // TODO (JH): ad-hoc method
+  // SceneNode(SceneNode* parent);
   virtual ~SceneNode();
 
   // CAREFUL:
   // the parameter is a reference,
   // not a pointer, which is different from Magnum library
   virtual SceneNode& setParent(SceneNode& parent);
+  // TODO (JH): ad-hoc method
+  // virtual SceneNode& setParent(SceneNode* parent);
 
   //! Create a new child SceneNode and return it. NOTE: this SceneNode owns and
   //! is responsible for deallocating created child

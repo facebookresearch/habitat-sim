@@ -58,7 +58,7 @@ class PhysicsManager {
   // Convenience typedef for Importer class
   using Importer = Magnum::Trade::AbstractImporter;
 
-  bool initPhysics(MagnumObject* scene);
+  bool initPhysics(scene::SceneNode* scene);
   
   void initObject(Importer& importer,
                   const AssetInfo& info,
@@ -97,7 +97,7 @@ class PhysicsManager {
   // ==== physics engines ====
   // The world has to live longer than the scene because RigidBody
   // instances have to remove themselves from it on destruction
-  MagnumObject*                             _scene;
+  scene::SceneNode*                         _scene;
   Magnum::BulletIntegration::DebugDraw      _debugDraw{Magnum::NoCreate};
   btDbvtBroadphase                          _bBroadphase;
   btDefaultCollisionConfiguration           _bCollisionConfig;
@@ -113,9 +113,9 @@ class PhysicsManager {
 };
 
 
-class RigidBody: public MagnumObject {
+class RigidBody: public scene::SceneNode {
  public:
-  RigidBody(MagnumObject& parent, Magnum::Float mass, btCollisionShape* bShape, btDynamicsWorld& bWorld);
+  RigidBody(scene::SceneNode* parent, Magnum::Float mass, btCollisionShape* bShape, btDynamicsWorld& bWorld);
 
   ~RigidBody();
   btRigidBody& rigidBody();

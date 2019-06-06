@@ -82,8 +82,8 @@ Viewer::Viewer(const Arguments& arguments)
       physicsManager_.debugSceneGraph(&rootNode);
   
       // ======= Init timestep, physics starts =======
-      physicsManager_.initPhysics(&rootNode);
-      //physicsManager_.initPhysics(physicalObjNode_);
+      //physicsManager_.initPhysics(&rootNode);
+      physicsManager_.initPhysics(physicalObjNode_);
     } else {
       LOG(ERROR) << "cannot load " << object_file;
       std::exit(0);
