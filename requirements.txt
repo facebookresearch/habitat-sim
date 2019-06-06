@@ -4,3 +4,4 @@ numba
 numpy
 numpy-quaternion
 pillow
+tqdm
