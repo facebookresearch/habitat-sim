@@ -9,13 +9,13 @@ import json
 import os.path as osp
 
 import numpy as np
+import pytest
 import quaternion
 
 import habitat_sim
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
 import habitat_sim.utils
-import pytest
 from examples.settings import make_cfg
 
 _test_scenes = [

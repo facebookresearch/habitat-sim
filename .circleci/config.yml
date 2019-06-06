@@ -17,7 +17,7 @@ jobs:
           name: setup
           command: |
               sudo pip install -U black isort
-              sudo pip install numpy
+              sudo pip install numpy pytest
               sudo pip install -r requirements.txt
       - run:
           name: run black
