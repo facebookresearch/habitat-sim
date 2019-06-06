@@ -196,20 +196,15 @@ bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
     return true;
   }
 
-  // decide the importer type based on the suffix
-  std::string importerType = "";
-  if (Corrade::Utility::String::endsWith(filename, "gltf") ||
-      Corrade::Utility::String::endsWith(filename, "glb")) {
-    importerType = "TinyGltfImporter";
-  } else {
-    // importerType = "AssimpImporter";
-    LOG(ERROR) << "Cannot load " << filename << ". Format is not supported.";
-    return false;
-  }
-
   // load a scene importer plugin (arg is pluginDirectory to silence warnings)
   Magnum::PluginManager::Manager<Importer> manager("./");
-  std::unique_ptr<Importer> importer = manager.loadAndInstantiate(importerType);
+  std::unique_ptr<Importer> importer =
+      manager.loadAndInstantiate("AnySceneImporter");
+
+  // Prefer tiny_gltf for loading glTF files (Assimp is worse),
+  // prefer Assimp for OBJ files (ObjImporter is worse)
+  manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
+  manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
 
   if (!importer) {
     LOG(ERROR) << "Cannot load the importer. ";
@@ -367,52 +362,66 @@ void ResourceManager::createObject(Importer& importer,
   scene::SceneNode& node = parent.createChild();
   node.MagnumObject::setTransformation(objectData->transformation());
 
-  const int meshStart = metaData.meshIndex.first;
-  const int materialStart = metaData.materialIndex.first;
-  const int meshID = meshStart + objectData->instance();
+  const int meshIDLocal = objectData->instance();
+  const int meshID = metaData.meshIndex.first + meshIDLocal;
 
   // Add a drawable if the object has a mesh and the mesh is loaded
   if (objectData->instanceType() == Magnum::Trade::ObjectInstanceType3D::Mesh &&
-      objectData->instance() != ID_UNDEFINED && meshes_[meshID]) {
+      meshIDLocal != ID_UNDEFINED && meshes_[meshID]) {
     const int materialIDLocal =
         static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
             ->material();
-
-    Magnum::GL::Mesh& mesh = *meshes_[meshID]->getMagnumGLMesh();
-    const int materialID = materialStart + materialIDLocal;
-
-    Magnum::GL::Texture2D* texture = nullptr;
-    // Material not available / not loaded, use a default material
-    if (materialIDLocal == ID_UNDEFINED || !materials_[materialID]) {
-      createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID);
-    } else {
-      if (materials_[materialID]->flags() &
-          Magnum::Trade::PhongMaterialData::Flag::DiffuseTexture) {
-        // Textured material. If the texture failed to load, again just use
-        // a default colored material.
-        const int textureStart = metaData.textureIndex.first;
-        const int textureIndex = materials_[materialID]->diffuseTexture();
-        texture = textures_[textureStart + textureIndex].get();
-        if (texture) {
-          createDrawable(TEXTURED_SHADER, mesh, node, drawables, texture,
-                         objectID);
-        } else {
-          // Color-only material
-          createDrawable(COLORED_SHADER, mesh, node, drawables, texture,
-                         objectID, materials_[materialID]->diffuseColor());
-        }
-      } else {
-        // Color-only material
-        createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID,
-                       materials_[materialID]->diffuseColor());
-      }
-    }  // else
-  }    // add a drawable
+    createMeshObject(metaData, node, drawables, objectID, meshIDLocal,
+                     materialIDLocal);
+  }
 
   // Recursively add children
   for (auto childObjectID : objectData->children()) {
     createObject(importer, info, metaData, node, drawables, childObjectID);
   }
+}
+
+void ResourceManager::createMeshObject(const MeshMetaData& metaData,
+                                       scene::SceneNode& node,
+                                       DrawableGroup* drawables,
+                                       int objectID,
+                                       int meshIDLocal,
+                                       int materialIDLocal) {
+  const int meshStart = metaData.meshIndex.first;
+  const int meshID = meshStart + meshIDLocal;
+  Magnum::GL::Mesh& mesh = *meshes_[meshID]->getMagnumGLMesh();
+
+  const int materialStart = metaData.materialIndex.first;
+  const int materialID = materialStart + materialIDLocal;
+
+  Magnum::GL::Texture2D* texture = nullptr;
+  // Material not set / not available / not loaded, use a default material
+  if (materialIDLocal == ID_UNDEFINED ||
+      metaData.materialIndex.second == ID_UNDEFINED ||
+      !materials_[materialID]) {
+    createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID);
+  } else {
+    if (materials_[materialID]->flags() &
+        Magnum::Trade::PhongMaterialData::Flag::DiffuseTexture) {
+      // Textured material. If the texture failed to load, again just use
+      // a default colored material.
+      const int textureStart = metaData.textureIndex.first;
+      const int textureIndex = materials_[materialID]->diffuseTexture();
+      texture = textures_[textureStart + textureIndex].get();
+      if (texture) {
+        createDrawable(TEXTURED_SHADER, mesh, node, drawables, texture,
+                       objectID);
+      } else {
+        // Color-only material
+        createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID,
+                       materials_[materialID]->diffuseColor());
+      }
+    } else {
+      // Color-only material
+      createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID,
+                     materials_[materialID]->diffuseColor());
+    }
+  }  // else
 }
 
 gfx::Drawable& ResourceManager::createDrawable(
@@ -474,8 +483,19 @@ bool ResourceManager::createScene(Importer& importer,
     for (auto objectID : sceneData->children3D()) {
       createObject(importer, info, metaData, sceneNode, drawables, objectID);
     }
+  } else if (importer.mesh3DCount() && meshes_[metaData.meshIndex.first]) {
+    // no default scene --- standalone OBJ/PLY files, for example
+
+    // create scene parent node with transformation aligning to global frame
+    auto& sceneNode = parent.createChild();
+    const quatf transform = info.frame.rotationFrameToWorld();
+    sceneNode.setRotation(transform);
+
+    // take a wild guess and load the first mesh with the first material
+    createMeshObject(metaData, sceneNode, drawables, ID_UNDEFINED, 0, 0);
+
   } else {
-    LOG(ERROR) << "No default scene available, exiting";
+    LOG(ERROR) << "No default scene available and no meshes found, exiting";
     return false;
   }
 
