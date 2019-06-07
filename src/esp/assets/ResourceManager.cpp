@@ -196,8 +196,14 @@ bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
     return true;
   }
 
-  // load a scene importer plugin (arg is pluginDirectory to silence warnings)
-  Magnum::PluginManager::Manager<Importer> manager("./");
+  // Load a scene importer plugin. In case Magnum is built statically, arg is
+  // pluginDirectory to silence warnings, otherwise we *do* want it to search
+  // in the filesystem.
+  Magnum::PluginManager::Manager<Importer> manager{
+#ifdef MAGNUM_BUILD_STATIC
+      "./"
+#endif
+  };
   std::unique_ptr<Importer> importer =
       manager.loadAndInstantiate("AnySceneImporter");
 
