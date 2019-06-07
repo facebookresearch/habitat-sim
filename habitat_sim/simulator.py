@@ -4,7 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List
+import os.path as osp
+from typing import List, Optional
 
 import attr
 import numpy as np
@@ -13,18 +14,21 @@ import habitat_sim.bindings as hsim
 import habitat_sim.errors
 from habitat_sim import utils
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
+from habitat_sim.logging import logger
+from habitat_sim.nav import GreedyGeodesicFollower
 
 
 @attr.s(auto_attribs=True, slots=True)
 class Configuration(object):
-    sim_cfg: hsim.SimulatorConfiguration = None
-    agents: List[AgentConfiguration] = None
+    sim_cfg: Optional[hsim.SimulatorConfiguration] = None
+    agents: Optional[List[AgentConfiguration]] = None
 
 
-@attr.s
+@attr.s(auto_attribs=True)
 class Simulator:
-    config: Configuration = attr.ib()
-    agents: List = attr.ib(factory=list, init=False)
+    config: Configuration
+    agents: List[Agent] = attr.ib(factory=list, init=False)
+    pathfinder: hsim.PathFinder = attr.ib(default=None, init=False)
     _sim: hsim.SimulatorBackend = attr.ib(default=None, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
 
@@ -62,6 +66,21 @@ class Simulator:
 
         self.agents = [Agent(cfg) for cfg in config.agents]
 
+    def _config_pathfinder(self, config: Configuration):
+        if "navmesh" in config.sim_cfg.scene.filepaths:
+            navmesh_filenname = config.sim_cfg.scene.filepaths["navmesh"]
+        else:
+            navmesh_filenname = osp.splitext(config.sim_cfg.scene.id)[0] + ".navmesh"
+
+        self.pathfinder = hsim.PathFinder()
+        if osp.exists(navmesh_filenname):
+            self.pathfinder.load_nav_mesh(navmesh_filenname)
+            logger.info(f"Loaded navmesh {navmesh_filenname}")
+        else:
+            logger.warning(
+                f"Could not find navmesh {navmesh_filenname}, no collision checking will be done"
+            )
+
     def reconfigure(self, config: Configuration):
         assert len(config.agents) > 0
         assert len(config.agents[0].sensor_specifications) > 0
@@ -79,6 +98,7 @@ class Simulator:
         # NB: Configure backend last as this gives more time for python's GC
         # to delete any previous instances of the simulator
         self._config_agents(config)
+        self._config_pathfinder(config)
         self._config_backend(config)
 
         for i in range(len(self.agents)):
@@ -108,7 +128,7 @@ class Simulator:
         agent = self.get_agent(agent_id=agent_id)
         if initial_state is None:
             initial_state = AgentState()
-            initial_state.position = self._sim.pathfinder.get_random_navigable_point()
+            initial_state.position = self.pathfinder.get_random_navigable_point()
             initial_state.rotation = utils.quat_from_angle_axis(
                 np.random.uniform(0, 2.0 * np.pi), np.array([0, 1, 0])
             )
@@ -119,10 +139,6 @@ class Simulator:
 
     def sample_random_agent_state(self, state_to_return):
         return self._sim.sample_random_agent_state(state_to_return)
-
-    @property
-    def pathfinder(self):
-        return self._sim.pathfinder
 
     @property
     def semantic_scene(self):
@@ -147,12 +163,14 @@ class Simulator:
 
         return observations
 
-    def make_action_pathfinder(self, agent_id=0):
-        return self._sim.make_action_pathfinder(agent_id)
+    def make_greedy_follower(self, agent_id: int = 0, goal_radius: float = None):
+        return GreedyGeodesicFollower(
+            self.pathfinder, self.get_agent(agent_id), goal_radius
+        )
 
     def _step_filter(self, start_pos, end_pos):
-        if self._sim.pathfinder.is_loaded:
-            end_pos = self._sim.pathfinder.try_step(start_pos, end_pos)
+        if self.pathfinder.is_loaded:
+            end_pos = self.pathfinder.try_step(start_pos, end_pos)
 
         return end_pos
 

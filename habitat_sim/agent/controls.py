@@ -184,3 +184,12 @@ class ObjectControls(object):
             collided = (dist_moved_after_filter + EPS) < dist_moved_before_filter
 
         return collided
+
+    def __call__(
+        self,
+        obj: hsim.SceneNode,
+        action_name: str,
+        actuation_spec: ActuationSpec,
+        apply_filter: bool = True,
+    ):
+        return self.action(obj, action_name, actuation_spec, apply_filter)
