@@ -57,6 +57,8 @@ class ResourceManager {
   // Convenience typedef for Importer class
   using Importer = Magnum::Trade::AbstractImporter;
 
+  inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
+
   // load data from given AssetInfo descriptor, and store internally
   // adding loaded assets as children of given SceneNode parent
   // if drawables is provided, add all drawable nodes to it
@@ -64,22 +66,19 @@ class ResourceManager {
                  scene::SceneNode* parent = nullptr,
                  DrawableGroup* drawables = nullptr);
 
-  inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
+  bool loadPhysicalScene(const AssetInfo& info,
+                 scene::SceneNode* parent = nullptr,
+                 scene::SceneNode** sceneNode = nullptr,
+                 DrawableGroup* drawables = nullptr);
 
   // load an object. Eventually this will load from AssetInfo descriptor,
   // whereas currently it only loads dumb cubes
   bool loadObject(const AssetInfo& info,
                   PhysicsManager& _physicsManager,
-                  scene::SceneNode* object = nullptr,
-                  bool attach_physics = false,
+                  scene::SceneNode* parent = nullptr,
+                  scene::SceneNode** objNode = nullptr,
+                  bool attach_physics = true,
                   DrawableGroup* drawables = nullptr);
-
-  bool create3DObject(Importer& importer,
-                                  const AssetInfo& info,
-                                  const MeshMetaData& metaData,
-                                  scene::SceneNode& object,
-                                  DrawableGroup* drawables,
-                                  bool forceReload = false);
 
  protected:
   //! Load textures from importer into assets, and update metaData
@@ -96,7 +95,7 @@ class ResourceManager {
   bool createScene(Importer& importer,
                    const AssetInfo& info,
                    const MeshMetaData& metaData,
-                   scene::SceneNode& parent,
+                   scene::SceneNode& sceneNode,
                    DrawableGroup* drawables,
                    bool forceReload = false);
 
@@ -119,6 +118,7 @@ class ResourceManager {
 
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent,
+                           scene::SceneNode** sceneNode,
                            DrawableGroup* drawables);
 
   bool loadSUNCGHouseFile(const AssetInfo& info,

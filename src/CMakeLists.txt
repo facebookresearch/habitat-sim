@@ -54,6 +54,7 @@ add_subdirectory(esp/gfx/)
 add_subdirectory(esp/assets)
 add_subdirectory(esp/io)
 add_subdirectory(esp/scene)
+add_subdirectory(esp/physics)
 add_subdirectory(esp/nav)
 add_subdirectory(esp/agent)
 add_subdirectory(esp/sensor)
@@ -80,4 +81,4 @@ if (BUILD_TEST)
 endif()
 
 # pybind bindings
-add_subdirectory(esp/bindings)
+#add_subdirectory(esp/bindings)

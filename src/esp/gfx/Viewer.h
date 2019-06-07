@@ -15,6 +15,7 @@
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
+#include "esp/physics/BulletObject.h"
 
 // forward declaration
 namespace Corrade {
@@ -45,7 +46,11 @@ class Viewer : public Magnum::Platform::Application {
   std::vector<int> sceneID_;
   scene::SceneNode* agentBodyNode_ = nullptr;
   scene::SceneNode* cameraNode_ = nullptr;
-  scene::SceneNode* physicalObjNode_ = nullptr;
+  
+  scene::SceneNode* navSceneNode_;
+  scene::SceneNode* objNode_;
+  //physics::BulletRigidObject* physicalObj_;
+  //physics::BulletRigidObject* physicalObj_;
 
 
   RenderCamera* renderCamera_ = nullptr;

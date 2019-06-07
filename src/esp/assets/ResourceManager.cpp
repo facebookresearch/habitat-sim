@@ -43,6 +43,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
     return false;
   }
 
+  scene::SceneNode** sceneNode;
   if (info.type == AssetType::FRL_INSTANCE_MESH ||
       info.type == AssetType::INSTANCE_MESH) {
     return loadInstanceMeshData(info, parent, drawables);
@@ -51,124 +52,69 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   } else if (info.type == AssetType::SUNCG_SCENE) {
     return loadSUNCGHouseFile(info, parent, drawables);
   } else if (info.type == AssetType::MP3D_MESH) {
-    return loadGeneralMeshData(info, parent, drawables);
+    return loadGeneralMeshData(info, parent, sceneNode, drawables);
   } else {
     // Unknown type, just load general mesh data
-    return loadGeneralMeshData(info, parent, drawables);
+    return loadGeneralMeshData(info, parent, sceneNode, drawables);
   }
 }
+
+bool ResourceManager::loadPhysicalScene(const AssetInfo& info,
+                                scene::SceneNode* parent /* = nullptr */,
+                                scene::SceneNode** sceneNode /* = nullptr */,
+                                DrawableGroup* drawables /* = nullptr */) {
+  return loadGeneralMeshData(info, parent, sceneNode, drawables);
+}
+
 
 bool ResourceManager::loadObject(const AssetInfo& info,
                                  PhysicsManager& _physicsManager,
-                                 scene::SceneNode* object,
+                                 scene::SceneNode* parent,
+                                 scene::SceneNode** objNode,
                                  bool attach_physics,  /* = false */
                                  DrawableGroup* drawables /* = nullptr */) {
-  const std::string& filename = info.filepath;
-  const bool fileIsLoaded = resourceDict_.count(filename) > 0;
 
-  // if file is loaded, and no need to build the scene graph
-  if (fileIsLoaded && object == nullptr) {
-    return true;
-  }
-
-  // decide the importer type based on the suffix
-  std::string importerType = "";
-  if (Corrade::Utility::String::endsWith(filename, "gltf") ||
-      Corrade::Utility::String::endsWith(filename, "glb")) {
-    importerType = "TinyGltfImporter";
-  } else {
-    // importerType = "AssimpImporter";
-    LOG(ERROR) << "Cannot load " << filename << ". Format is not supported.";
-    return false;
-  }
-
-  // load a scene importer plugin (arg is pluginDirectory to silence warnings)
-  Magnum::PluginManager::Manager<Importer> manager("./");
-  std::unique_ptr<Importer> importer = manager.loadAndInstantiate(importerType);
-
-  if (!importer) {
-    LOG(ERROR) << "Cannot load the importer. ";
-    return false;
-  }
-
-  if (!importer->openFile(filename)) {
-    LOG(ERROR) << "Cannot open file " << filename;
-    return false;
-  }
+  scene::SceneNode* newNode;
+  bool meshSuccess = loadGeneralMeshData(info, parent, &newNode, drawables);
 
   // if this is a new file, load it and add it to the dictionary
-  if (!fileIsLoaded) {
-    MeshMetaData mMetaData;
-    loadTextures(*importer, &mMetaData);
-    loadMaterials(*importer, &mMetaData);
-    loadMeshes(*importer, &mMetaData);
-    // update the dictionary
-    if (attach_physics) {
-      //PhysicsManager::initObject(*importer, info, mMetaData);
-      for (int index = 0; index < meshes_.size(); index++) {
-        LOG(INFO) << "Initiating iMesh object " << index;
-        GltfMeshData* meshDataGL = static_cast<GltfMeshData*>(meshes_[index].get());
+  if (attach_physics) {
+    physics::BulletRigidObject* physNode = 
+      static_cast<physics::BulletRigidObject*>(newNode);
 
-        // getMeshData() returns Corrade::Containers::Optional<>
-        Magnum::Trade::MeshData3D & meshData = *(meshDataGL->getMeshData());
-        // TODO (JH): currently this treats scene mesh and object mesh the same way, not a good thing
-        _physicsManager.initObject(*importer, info, mMetaData, meshData);
-      }
-    }
-    resourceDict_.emplace(filename, mMetaData);
+    const std::string& filename = info.filepath;
+    MeshMetaData& metaData = resourceDict_.at(filename);
+    auto indexPair = metaData.meshIndex;
+    int start = indexPair.first;
+    int end = indexPair.second;
+    LOG(INFO) << "Accessing object mesh start " << start << " end " << end;
+
+    // TODO (JH) for GLB with multiple mesh files, they should
+    // be somehow binded together in physics. Currently assume
+    // there to be only 1 mesh
+    GltfMeshData* meshDataGL = static_cast<GltfMeshData*>(
+        meshes_[start].get());
+    Magnum::Trade::MeshData3D & meshData = *(
+        meshDataGL->getMeshData());
+
+
+    _physicsManager.initObject(info, metaData, meshData, 
+        physNode, "TriangleMeshShape");
+
+    //PhysicsManager::initObject(*importer, info, mMetaData);
+    //for (int index = 0; index < meshes_.size(); index++) {
+
+    // getMeshData() returns Corrade::Containers::Optional<>
+    // TODO (JH): currently this treats scene mesh and object mesh the 
+    //    same way, not a good thing
+    // _physicsManager.initObject(*importer, info, metaData, meshData, 
+    //     "TriangleMeshShape");
   }
 
-  auto& metaData = resourceDict_.at(filename);
-  const bool forceReload = false;
-  return create3DObject(*importer, info, metaData, *object, drawables,
-                     forceReload);
+  *objNode = newNode;
+  return meshSuccess;
 }
 
-
-bool ResourceManager::create3DObject(Importer& importer,
-                                  const AssetInfo& info,
-                                  const MeshMetaData& metaData,
-                                  scene::SceneNode& object,
-                                  DrawableGroup* drawables,
-                                  bool forceReload      /* = false */) {
-  // re-bind position, normals, uv, colors etc. to the corresponding buffers
-  // under *current* gl context
-  if (forceReload) {
-    int start = metaData.meshIndex.first;
-    int end = metaData.meshIndex.second;
-    if (0 <= start && start <= end) {
-      for (int iMesh = start; iMesh <= end; ++iMesh) {
-        meshes_[iMesh]->uploadBuffersToGPU(forceReload);
-      }
-    }
-  }  // forceReload
-
-  if (importer.defaultScene() != -1) {
-    Corrade::Containers::Optional<Magnum::Trade::SceneData> sceneData =
-        importer.scene(importer.defaultScene());
-    if (!sceneData) {
-      LOG(ERROR) << "Cannot load scene, exiting";
-      return false;
-    }
-
-    const quatf transform =
-        quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
-    scene::SceneNode& sceneNode_ = static_cast<scene::SceneNode&>(object);
-    LOG(INFO) << "Creating child node " << sceneNode_.getId();
-    object.setRotation(transform);
-    
-    // Recursively add all children
-    for (auto objectID : sceneData->children3D()) {
-      // TODO (JH): Here assuming that root node has only 1 child?
-      createObject(importer, info, metaData, object, drawables, objectID);
-    }
-  } else {
-    LOG(ERROR) << "No default scene available, exiting";
-    return false;
-  }
-
-  return true;
-}
 
 Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
     ShaderType type) {
@@ -299,6 +245,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
 
 bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
                                           scene::SceneNode* parent,
+                                          scene::SceneNode** sceneNode,
                                           DrawableGroup* drawables) {
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
@@ -345,8 +292,13 @@ bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
 
   auto& metaData = resourceDict_.at(filename);
   const bool forceReload = false;
-  return createScene(*importer, info, metaData, *parent, drawables,
-                     forceReload);
+
+  scene::SceneNode& newNode = parent->createChild();
+  bool success_ = createScene(*importer, info, metaData, newNode, 
+      drawables, forceReload);
+
+  *sceneNode = &newNode;
+  return success_;
 }
 
 void ResourceManager::loadMaterials(Importer& importer,
@@ -556,7 +508,7 @@ gfx::Drawable& ResourceManager::createDrawable(
 bool ResourceManager::createScene(Importer& importer,
                                   const AssetInfo& info,
                                   const MeshMetaData& metaData,
-                                  scene::SceneNode& parent,
+                                  scene::SceneNode& sceneNode,
                                   DrawableGroup* drawables,
                                   bool forceReload /* = false */) {
   // re-bind position, normals, uv, colors etc. to the corresponding buffers
@@ -578,9 +530,12 @@ bool ResourceManager::createScene(Importer& importer,
       LOG(ERROR) << "Cannot load scene, exiting";
       return false;
     }
-
     // create scene parent node with transformation aligning to global frame
-    auto& sceneNode = parent.createChild();
+    //auto& sceneNode = parent.createChild();
+    // TODO(JH): point to scene node from parent level
+    // Double pointer because directly copying `= sceneNode` is disabled
+    //*sceneNodePtr = &sceneNode;
+
     const quatf transform =
         quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
     scene::SceneNode& sceneNode_ = static_cast<scene::SceneNode&>(sceneNode);
@@ -635,7 +590,8 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
         nodeIds.push_back(id);
         objectNode.setId(nodeIndex);
         if (info.type == AssetType::SUNCG_OBJECT) {
-          loadGeneralMeshData(info, &objectNode, drawables);
+          // TODO (JH) this will break, nullptr for now
+          loadGeneralMeshData(info, &objectNode, nullptr, drawables);
         }
         return objectNode;
       };

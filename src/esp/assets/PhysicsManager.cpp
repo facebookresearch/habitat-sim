@@ -7,7 +7,6 @@
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/PixelFormat.h>
-#include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
 #include <Magnum/Trade/MeshObjectData3D.h>
 #include <Magnum/Trade/PhongMaterialData.h>
@@ -36,65 +35,28 @@ namespace esp {
 namespace assets {
 
 
-bool PhysicsManager::initPhysics(scene::SceneNode* scene) {
+bool PhysicsManager::initPhysics() {
   LOG(INFO) << "Initializing Physics Engine...";  
   _debugDraw.setMode(Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe);
-  _bWorld.setGravity({0.0f, -10.0f, 0.0f});
+  //_bWorld.setGravity({0.0f, -10.0f, 0.0f});
+  _bWorld.setGravity({0.0f, 0.0f, -10.0f});
   _bWorld.setDebugDrawer(&_debugDraw);
 
-  _scene = scene;  
+  //_scene = scene;  
   _timeline.start();
 
   LOG(INFO) << "Initialized Physics Engine.";  
   return true;
 }
 
-Magnum::GL::AbstractShaderProgram* PhysicsManager::getPhysicsEngine(
-    ShaderType type) {
-  if (shaderPrograms_.count(type) == 0) {
-    switch (type) {
-      case INSTANCE_MESH_SHADER: {
-        shaderPrograms_[INSTANCE_MESH_SHADER] =
-            std::make_shared<gfx::GenericShader>(
-                gfx::GenericShader::Flag::VertexColored |
-                gfx::GenericShader::Flag::PrimitiveIDTextured);
-      } break;
-
-      case PTEX_MESH_SHADER: {
-        shaderPrograms_[PTEX_MESH_SHADER] =
-            std::make_shared<gfx::PTexMeshShader>();
-      } break;
-
-      case COLORED_SHADER: {
-        shaderPrograms_[COLORED_SHADER] =
-            std::make_shared<gfx::GenericShader>();
-      } break;
-
-      case VERTEX_COLORED_SHADER: {
-        shaderPrograms_[VERTEX_COLORED_SHADER] =
-            std::make_shared<gfx::GenericShader>(
-                gfx::GenericShader::Flag::VertexColored);
-      } break;
-
-      case TEXTURED_SHADER: {
-        shaderPrograms_[TEXTURED_SHADER] = std::make_shared<gfx::GenericShader>(
-            gfx::GenericShader::Flag::Textured);
-      } break;
-
-      default:
-        return nullptr;
-        break;
-    }
-  }
-  return shaderPrograms_[type].get();
-}
+void PhysicsManager::getPhysicsEngine() {}
 
 
 // Bullet Mesh conversion adapted from: https://github.com/mosra/magnum-integration/issues/20
-void PhysicsManager::initObject(Importer& importer,
-                                const AssetInfo& info,
+void PhysicsManager::initObject(const AssetInfo& info,
                                 const MeshMetaData& metaData,
                                 Magnum::Trade::MeshData3D& meshData,
+                                physics::BulletRigidObject* physObject,
                                 const std::string& shapeType /* = "TriangleMeshShape" */) {
   // TODO (JH) should meshData better be a pointer?
   // such that if (!meshData) return
@@ -102,45 +64,27 @@ void PhysicsManager::initObject(Importer& importer,
     LOG(ERROR) << "Cannot load collision mesh, skipping";
     return;
   }
-  /* this is a collision mesh, convert to bullet mesh */
-  // TODO (JH) would this introduce memory leak?
-  btIndexedMesh bulletMesh;
-  LOG(INFO) << "Mesh indices count " << meshData.indices().size();
 
   // TODO (JH) weight is currently hardcoded, later should load from some config file
-  float weight = meshData.indices().size() * 0.001f;
+  float mass = 0.0f;
+  // metaData.mass
+  mass = meshData.indices().size() * 0.001f;
 
-  bulletMesh.m_numTriangles = meshData.indices().size()/3;
-  bulletMesh.m_triangleIndexBase = reinterpret_cast<const unsigned char *>(meshData.indices().data());
-  bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
-  bulletMesh.m_numVertices = meshData.positions(0).size();
-  bulletMesh.m_vertexBase = reinterpret_cast<const unsigned char *>(meshData.positions(0).data());
-  bulletMesh.m_vertexStride = sizeof(Magnum::Vector3);
-  bulletMesh.m_indexType = PHY_INTEGER;
-  bulletMesh.m_vertexType = PHY_FLOAT;
-
-
-  btCollisionShape* shape = nullptr;
-  auto tivArray = new btTriangleIndexVertexArray();
-  tivArray->addIndexedMesh(bulletMesh, PHY_INTEGER);
-  if(shapeType == "TriangleMeshShape") {
-      /* exact shape, but worse performance */
-      shape = new btBvhTriangleMeshShape(tivArray, true);
-  } else {
-      /* convex hull, but better performance */
-      shape = new btConvexTriangleMeshShape(tivArray, true);
-  } /* btConvexHullShape can be even more performant */
-
-  LOG(INFO) << "Making rigid body: before";
+  LOG(INFO) << "Initialize: before";
+  physObject->initialize(mass, meshData, _bWorld);
+  //LOG(INFO) << "Making rigid body: before, scene " << _scene;
   //auto* object = new RigidBody{static_cast<MagnumObject&>(*_scene), weight, shape, _bWorld};
   //auto* object = new RigidBody{static_cast<MagnumObject*>(_scene), weight, shape, _bWorld};
-
-  auto* object = new RigidBody{_scene, weight, shape, _bWorld};
-  LOG(INFO) << "Making rigid body: after";
-  //object->syncPose();            
+  //auto* object = new RigidBody{_scene, weight, shape, _bWorld};
+  LOG(INFO) << "Initialize: after";
+  //object->syncPose();
   //new ColoredDrawable{*ground, _shader, _box, 0xffffff_rgbf,
   //      Matrix4::scaling({4.0f, 0.5f, 4.0f}), _drawables};
 
+  // TODO: DEBUGGING PURPOSE, (JH) strangely causes segfault with redraw()
+  // maybe due to ground not being in drawables
+  //btBoxShape _bGroundShape{{4.0f, 0.5f, 4.0f}};
+  //auto* ground = new RigidBody{_scene, 10.0f, &_bGroundShape, _bWorld};
 }
 
 void PhysicsManager::debugSceneGraph(const MagnumObject* root) {
@@ -181,22 +125,16 @@ void PhysicsManager::nextFrame() {
 
 // TODO (JH) what role does Object3D{parent} play in example?
 RigidBody::RigidBody(scene::SceneNode* parent, Magnum::Float mass, btCollisionShape* bShape, btDynamicsWorld& bWorld): 
-  //MagnumObject{nullptr}, 
   scene::SceneNode{*parent},
   _bWorld(bWorld) {
 
-  //scene::SceneNode::setParent(*parent);   // not compile: `setParent` is non-static
-  //this->setParent(parent);                // segfault
-  //MagnumObject::setParent(parent);        // segfault
-
-  LOG(INFO) << "Done inheriting parent ";
+  LOG(INFO) << "Creating object mass: " << mass;
   /* Calculate inertia so the object reacts as it should with
      rotation and everything */
-  //btVector3 bInertia(0.0f, 0.0f, 0.0f);
-  btVector3 bInertia(2.0f, 2.0f, 2.0f);
-  //if(mass != 0.0f) bShape->calculateLocalInertia(mass, bInertia);
-  bShape->calculateLocalInertia(300.0f, bInertia);
-
+  btVector3 bInertia(0.0f, 0.0f, 0.0f);
+  //btVector3 bInertia(2.0f, 2.0f, 2.0f);
+  if(mass != 0.0f) bShape->calculateLocalInertia(mass, bInertia);
+  //bShape->calculateLocalInertia(300.0f, bInertia);
   /* Bullet rigid body setup */
   auto* motionState = new Magnum::BulletIntegration::MotionState{*this};
   _bRigidBody.emplace(btRigidBody::btRigidBodyConstructionInfo{

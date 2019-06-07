@@ -42,7 +42,7 @@
 //#include "magnum.h"
 #include "MeshMetaData.h"
 #include "esp/scene/SceneNode.h"
-
+#include "esp/physics/BulletObject.h"
 
 
 namespace esp {
@@ -53,17 +53,12 @@ class PhysicsManager {
   explicit PhysicsManager(){};
   ~PhysicsManager() { LOG(INFO) << "Deconstructing PhysicsManager"; }
 
-  // Stores references to a set of drawable elements
-  using DrawableGroup = Magnum::SceneGraph::DrawableGroup3D;
-  // Convenience typedef for Importer class
-  using Importer = Magnum::Trade::AbstractImporter;
-
-  bool initPhysics(scene::SceneNode* scene);
+  bool initPhysics();
   
-  void initObject(Importer& importer,
-                  const AssetInfo& info,
+  void initObject(const AssetInfo& info,
                   const MeshMetaData& metaData,
                   Magnum::Trade::MeshData3D& meshData,
+                  physics::BulletRigidObject* physObject,
                   const std::string& shapeType="TriangleMeshShape");
 
   void debugSceneGraph(const MagnumObject* root);
@@ -72,28 +67,8 @@ class PhysicsManager {
   void nextFrame();
 
  protected:
-  // ==== Inherited from resource manager ===
-  std::vector<std::shared_ptr<BaseMesh>> meshes_;
-  std::vector<std::shared_ptr<Magnum::GL::Texture2D>> textures_;
-  std::vector<std::shared_ptr<Magnum::Trade::PhongMaterialData>> materials_;
 
-  // a dictionary to check if a mesh has been loaded
-  std::map<std::string, MeshMetaData> resourceDict_;
-
-  //! Types of supported Shader programs
-  enum ShaderType {
-    INSTANCE_MESH_SHADER = 0,
-    PTEX_MESH_SHADER = 1,
-    COLORED_SHADER = 2,
-    VERTEX_COLORED_SHADER = 3,
-    TEXTURED_SHADER = 4,
-  };
-  // maps a name to the shader program
-  std::map<ShaderType, std::shared_ptr<Magnum::GL::AbstractShaderProgram>>
-      shaderPrograms_;
-  Magnum::GL::AbstractShaderProgram* getPhysicsEngine(ShaderType type);
-
-
+  void getPhysicsEngine();
   // ==== physics engines ====
   // The world has to live longer than the scene because RigidBody
   // instances have to remove themselves from it on destruction

@@ -1,4 +1,4 @@
-file(GLOB_RECURSE assets_SOURCES "*.cpp")
+file(GLOB_RECURSE physics_SOURCES "*.cpp")
 
 find_package(Magnum
   REQUIRED
@@ -24,12 +24,11 @@ find_package(MagnumPlugins
 
 find_package(MagnumIntegration REQUIRED Bullet)
 
-add_library(assets STATIC ${assets_SOURCES})
+add_library(physics STATIC ${physics_SOURCES})
 
-target_link_libraries(assets
+target_link_libraries(physics
   PUBLIC
     core
-    physics
     scene
     Magnum::AnyImageImporter
     Magnum::AnySceneImporter

@@ -72,7 +72,7 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         help="""Caches the arguements sent to setup.py
         and reloads them on the next invocation.  This argument is not cached""",
     )
-
+    # --cmake-args="-DWITH_BULLET=ON"
     return parser
 
 
