@@ -150,7 +150,7 @@ class Agent(object):
         for _, v in self.sensors.items():
             v.detach()
 
-    def act(self, action_id: Any):
+    def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id
 
         Args:
@@ -164,8 +164,9 @@ class Agent(object):
         ), f"No action {action_id} in action space"
         action = self.agent_config.action_space[action_id]
 
+        did_collide = False
         if self.controls.is_body_action(action.name):
-            self.controls.action(
+            did_collide = self.controls.action(
                 self.scene_node, action.name, action.actuation, apply_filter=True
             )
         else:
@@ -177,6 +178,8 @@ class Agent(object):
                     action.actuation,
                     apply_filter=False,
                 )
+
+        return did_collide
 
     def get_state(self) -> AgentState:
         habitat_sim.errors.assert_obj_valid(self.body)

@@ -8,14 +8,17 @@ import abc
 import re
 from typing import Dict, Optional, Type
 
+import attr
 import numpy as np
 import quaternion
 
-import attr
 import habitat_sim.bindings as hsim
 from habitat_sim import utils
 
 __all__ = ["ActuationSpec", "SceneNodeControl", "ObjectControls"]
+
+
+EPS = 1e-5
 
 
 def _camel_to_snake(name):
@@ -147,7 +150,7 @@ class ObjectControls(object):
         action_name: str,
         actuation_spec: ActuationSpec,
         apply_filter: bool = True,
-    ):
+    ) -> bool:
         r"""Performs the action specified by :py:attr:`action_name` on the object
 
         Args:
@@ -165,6 +168,12 @@ class ObjectControls(object):
         move_func_map[action_name](obj, actuation_spec)
         end_pos = obj.absolute_position()
 
+        did_collide = False
         if apply_filter:
             filter_end = self.move_filter_fn(start_pos, end_pos)
+            did_collide = (
+                np.linalg.norm(filter_end - start_pos) + EPS
+            ) < np.linalg.norm(start_pos - end_pos)
             obj.translate(filter_end - end_pos)
+
+        return did_collide

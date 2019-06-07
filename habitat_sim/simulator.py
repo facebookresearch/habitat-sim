@@ -139,9 +139,10 @@ class Simulator:
 
     def step(self, action):
         self._num_total_frames += 1
-        self._default_agent.act(action)
+        did_collide = self._default_agent.act(action)
         self._last_state = self._default_agent.get_state()
         observations = self.get_sensor_observations()
+        observations["collided"] = did_collide
         return observations
 
     def make_action_pathfinder(self, agent_id=0):
