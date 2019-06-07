@@ -168,12 +168,19 @@ class ObjectControls(object):
         move_func_map[action_name](obj, actuation_spec)
         end_pos = obj.absolute_position()
 
-        did_collide = False
+        collided = False
         if apply_filter:
             filter_end = self.move_filter_fn(start_pos, end_pos)
-            did_collide = (
-                np.linalg.norm(filter_end - start_pos) + EPS
-            ) < np.linalg.norm(start_pos - end_pos)
+            # Update the position to respect the filter
             obj.translate(filter_end - end_pos)
 
-        return did_collide
+            dist_moved_before_filter = np.linalg.norm(end_pos - start_pos)
+            dist_moved_after_filter = np.linalg.norm(filter_end - start_pos)
+
+            # NB: There are some cases where ||filter_end - end_pos|| > 0 when a
+            # collision _didn't_ happen. One such case is going up stairs.  Instead,
+            # we check to see if the the amount moved after the application of the filter
+            # is _less_ the the amount moved before the application of the filter
+            collided = (dist_moved_after_filter + EPS) < dist_moved_before_filter
+
+        return collided
