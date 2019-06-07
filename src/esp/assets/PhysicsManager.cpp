@@ -38,8 +38,8 @@ namespace assets {
 bool PhysicsManager::initPhysics() {
   LOG(INFO) << "Initializing Physics Engine...";  
   _debugDraw.setMode(Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe);
-  //_bWorld.setGravity({0.0f, -10.0f, 0.0f});
-  _bWorld.setGravity({0.0f, 0.0f, -10.0f});
+  _bWorld.setGravity({0.0f, -10.0f, 0.0f});
+  //_bWorld.setGravity({0.0f, 0.0f, -10.0f});
   _bWorld.setDebugDrawer(&_debugDraw);
 
   //_scene = scene;  
@@ -57,7 +57,8 @@ void PhysicsManager::initObject(const AssetInfo& info,
                                 const MeshMetaData& metaData,
                                 Magnum::Trade::MeshData3D& meshData,
                                 physics::BulletRigidObject* physObject,
-                                const std::string& shapeType /* = "TriangleMeshShape" */) {
+                                const std::string& shapeType, /* = "TriangleMeshShape" */
+                                bool zero_mass /* = false */) {
   // TODO (JH) should meshData better be a pointer?
   // such that if (!meshData) return
   if(meshData.primitive() != Magnum::MeshPrimitive::Triangles) {
@@ -68,7 +69,12 @@ void PhysicsManager::initObject(const AssetInfo& info,
   // TODO (JH) weight is currently hardcoded, later should load from some config file
   float mass = 0.0f;
   // metaData.mass
-  mass = meshData.indices().size() * 0.001f;
+  if (! zero_mass) {
+    mass = meshData.indices().size() * 0.001f;    
+    LOG(INFO) << "Nonzero mass";
+  } else {
+    LOG(INFO) << "Zero mass";    
+  }
 
   LOG(INFO) << "Initialize: before";
   physObject->initialize(mass, meshData, _bWorld);
@@ -116,7 +122,7 @@ void PhysicsManager::stepPhysics() {
   // ==== Physics stepforward ======
   _bWorld.stepSimulation(_timeline.previousFrameDuration(), _maxSubSteps, _fixedTimeStep);
   //_bWorld.debugDrawWorld();
-  LOG(INFO) << "Step physics forward previous: " << _timeline.previousFrameDuration();
+  //LOG(INFO) << "Step physics forward previous: " << _timeline.previousFrameDuration();
 }
 
 void PhysicsManager::nextFrame() {

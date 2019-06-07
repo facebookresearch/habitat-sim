@@ -67,8 +67,10 @@ class ResourceManager {
                  DrawableGroup* drawables = nullptr);
 
   bool loadPhysicalScene(const AssetInfo& info,
+                 PhysicsManager& _physicsManager,
                  scene::SceneNode* parent = nullptr,
                  scene::SceneNode** sceneNode = nullptr,
+                 bool attach_physics = false,
                  DrawableGroup* drawables = nullptr);
 
   // load an object. Eventually this will load from AssetInfo descriptor,

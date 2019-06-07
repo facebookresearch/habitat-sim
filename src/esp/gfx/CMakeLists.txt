@@ -47,6 +47,7 @@ target_link_libraries(gfx
     assets
     core
     io
+    physics
     Magnum::AnyImageImporter
     Magnum::AnySceneImporter
     Magnum::GL

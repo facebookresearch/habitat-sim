@@ -60,10 +60,39 @@ bool ResourceManager::loadScene(const AssetInfo& info,
 }
 
 bool ResourceManager::loadPhysicalScene(const AssetInfo& info,
-                                scene::SceneNode* parent /* = nullptr */,
-                                scene::SceneNode** sceneNode /* = nullptr */,
-                                DrawableGroup* drawables /* = nullptr */) {
-  return loadGeneralMeshData(info, parent, sceneNode, drawables);
+                                        PhysicsManager& _physicsManager,
+                                        scene::SceneNode* parent /* = nullptr */,
+                                        scene::SceneNode** sceneNode /* = nullptr */,
+                                        bool attach_physics,  /* = false */
+                                        DrawableGroup* drawables /* = nullptr */) {
+
+  scene::SceneNode* newNode;
+  bool meshSuccess = loadGeneralMeshData(info, parent, &newNode, drawables);
+  if (attach_physics) {
+    physics::BulletRigidObject* physNode = 
+      static_cast<physics::BulletRigidObject*>(newNode);
+
+    const std::string& filename = info.filepath;
+    MeshMetaData& metaData = resourceDict_.at(filename);
+    auto indexPair = metaData.meshIndex;
+    int start = indexPair.first;
+    int end = indexPair.second;
+    LOG(INFO) << "Accessing object mesh start " << start << " end " << end;
+    // TODO (JH) for GLB with multiple mesh files, they should
+    // be somehow binded together in physics. Currently assume
+    // there to be only 1 mesh
+    GltfMeshData* meshDataGL = static_cast<GltfMeshData*>(
+        meshes_[start].get());
+    Magnum::Trade::MeshData3D & meshData = *(
+        meshDataGL->getMeshData());
+
+
+    _physicsManager.initObject(info, metaData, meshData, 
+        physNode, "TriangleMeshShape", true);
+  }
+
+  *sceneNode = newNode;
+  return meshSuccess;
 }
 
 
@@ -98,8 +127,9 @@ bool ResourceManager::loadObject(const AssetInfo& info,
         meshDataGL->getMeshData());
 
 
+    // TODO (JH): mass is hacked
     _physicsManager.initObject(info, metaData, meshData, 
-        physNode, "TriangleMeshShape");
+        physNode, "TriangleMeshShape", false);
 
     //PhysicsManager::initObject(*importer, info, mMetaData);
     //for (int index = 0; index < meshes_.size(); index++) {

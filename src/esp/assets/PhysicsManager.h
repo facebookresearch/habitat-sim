@@ -59,7 +59,8 @@ class PhysicsManager {
                   const MeshMetaData& metaData,
                   Magnum::Trade::MeshData3D& meshData,
                   physics::BulletRigidObject* physObject,
-                  const std::string& shapeType="TriangleMeshShape");
+                  const std::string& shapeType="TriangleMeshShape",
+                  bool zero_mass=false);
 
   void debugSceneGraph(const MagnumObject* root);
 

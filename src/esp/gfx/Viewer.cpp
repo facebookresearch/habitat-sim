@@ -66,7 +66,7 @@ Viewer::Viewer(const Arguments& arguments)
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
   // TODO (JH) this modified `loadScene` interface
   LOG(INFO) << "Nav scene node (before)" << navSceneNode_;  
-  if (!resourceManager_.loadPhysicalScene(info, &rootNode, &navSceneNode_, &drawables)) {
+  if (!resourceManager_.loadPhysicalScene(info, physicsManager_, &rootNode, &navSceneNode_, true, &drawables)) {
     LOG(ERROR) << "cannot load " << file;
     std::exit(0);
   }
@@ -89,7 +89,8 @@ Viewer::Viewer(const Arguments& arguments)
     //LOG(INFO) << "Physical obj node's parent" << objNode_->parent();
 
     // Root node
-    bool objectLoaded_ = resourceManager_.loadObject(object_info, physicsManager_, navSceneNode_, &objNode_, true, &drawables);
+    //bool objectLoaded_ = resourceManager_.loadObject(object_info, physicsManager_, navSceneNode_, &objNode_, true, &drawables);
+    bool objectLoaded_ = resourceManager_.loadObject(object_info, physicsManager_, &rootNode, &objNode_, true, &drawables);
     if (objectLoaded_) {
       LOG(INFO) << "Loaded";
 
@@ -109,9 +110,21 @@ Viewer::Viewer(const Arguments& arguments)
   agentBodyNode_ = &rootNode.createChild();
   cameraNode_ = &agentBodyNode_->createChild();
 
-  cameraNode_->translate(vec3f(0.0, cameraHeight, 0.0));
+  // TODO (JH) hacky look back
+  //cameraNode_->rotate(Math::piHalf, vec3f(0, 0, 1));
+  //cameraNode_->translate(vec3f(0.0, cameraHeight, 0.0));
+  //cameraNode_->translate(vec3f(0.0, 0.0, cameraHeight));
+  //cameraNode_->translate(vec3f(8.0f, cameraHeight, -8.0f));
+  Magnum::Matrix4 oldT = cameraNode_->MagnumObject::absoluteTransformation();
+  LOG(INFO) << "Camera old transformation " << Eigen::Map<mat4f>(oldT.data());
+  Vector3 old_pos = oldT.transformPoint({0.0f, 0.0f, -1.0f});
+  LOG(INFO) << "Object old position " << Eigen::Map<vec3f>(old_pos.data());
+  
 
-  agentBodyNode_->translate(vec3f(0, 0, 5));
+  //agentBodyNode_->rotate(3.14f, vec3f(0, 1, 0));
+  //cameraNode_->rotate(3.14f, vec3f(0, 1, 0));       // (JH) strange this is not working
+  agentBodyNode_->translate(vec3f(0, 1.0f, 8.0f));
+
 
   float hfov = 90.0f;
   int width = viewportSize[0];
@@ -120,6 +133,13 @@ Viewer::Viewer(const Arguments& arguments)
   float znear = 0.01f;
   float zfar = 1000.0f;
   renderCamera_->setProjectionMatrix(width, height, znear, zfar, hfov);
+
+
+  // (JH) hacky way to set orientation
+  //renderCamera_->getSceneNode()->MagnumObject::rotate(Math::Rad<float>{3.14f},
+  //                                                    Vector3(0, 0, 1));
+
+
 
   // Load navmesh if available
   const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
@@ -130,9 +150,15 @@ Viewer::Viewer(const Arguments& arguments)
   }
 
   // Messing around with agent location and finding object initial position
+  LOG(INFO) << "Agent position " << agentBodyNode_->getAbsolutePosition();
   LOG(INFO) << "Camera position " << cameraNode_->getAbsolutePosition();
-  Magnum::Matrix4 T = cameraNode_->MagnumObject::absoluteTransformation();
+  LOG(INFO) << "Scene position" << navSceneNode_->getAbsolutePosition();
+  //Magnum::Matrix4 absT = cameraNode_->MagnumObject::absoluteTransformation();
+  //Magnum::Matrix4 T = cameraNode_->MagnumObject::transformationMatrix();    // Relative to agent bodynode
+  Magnum::Matrix4 absT = agentBodyNode_->MagnumObject::absoluteTransformation();
+  Magnum::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();    // Relative to agent bodynode
   //auto transformation = Matrix4(cameraNode_->getAbsoluteTransformation());
+  //Vector3 new_pos = absT.transformPoint({0.0f, 0.0f, -1.0f});
   Vector3 new_pos = T.transformPoint({0.0f, 0.0f, -1.0f});
   
   //Vector3 new_pos = Vector3(0.0f, -10.0f, 3.0f);
@@ -142,8 +168,14 @@ Viewer::Viewer(const Arguments& arguments)
   //Vector3 new_pos = Vector3(cameraNode_->getAbsolutePosition()) + delta;
   LOG(INFO) << "Object new position " << new_pos.x() << " " << new_pos.y() << " " << new_pos.z();
   LOG(INFO) << "Camera transformation" << Eigen::Map<mat4f>(T.data());
+  LOG(INFO) << "Camera abs transformation" << Eigen::Map<mat4f>(absT.data());
 
   objNode_->setTranslation(vec3f(new_pos.x(), new_pos.y(), new_pos.z()));
+  //objNode_->translate(vec3f(0, 0, 2.0f));
+  static_cast<physics::BulletRigidObject*>(objNode_)->syncPose();
+
+  Magnum::Matrix4 new_objT = objNode_->MagnumObject::transformationMatrix();
+  LOG(INFO) << "Object updated position " << Eigen::Map<vec3f>(new_objT.translation().data());
   //rootNode.setTranslation(vec3f(new_pos.x(), new_pos.y(), new_pos.z()));
 
   // Connect controls to navmesh if loaded
