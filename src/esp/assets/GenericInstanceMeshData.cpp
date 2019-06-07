@@ -130,11 +130,11 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
 
   file.read(ifs);
 
-  CHECK(vertices->t == tinyply::Type::FLOAT32) << "x,y,z must be floats";
+  if (vertices->t != tinyply::Type::FLOAT32) { LOG(ERROR) << "x,y,z must be floats"; }
   // copyTo is a helper function to get stuff out of tinyply's format into our
   // format it does the resize and checks to make sure everything will fit
   copyTo(vertices, cpu_vbo_);
-  CHECK(colors->t == tinyply::Type::UINT8) << "r,g,b must be uint8_t's";
+  if (colors->t != tinyply::Type::UINT8) { LOG(ERROR) << "r,g,b must be uint8_t's"; }
   copyTo(colors, cpu_cbo_);
 
   int vertexPerFace;
