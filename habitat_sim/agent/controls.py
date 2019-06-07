@@ -8,10 +8,10 @@ import abc
 import re
 from typing import Dict, Optional, Type
 
+import attr
 import numpy as np
 import quaternion
 
-import attr
 import habitat_sim.bindings as hsim
 from habitat_sim import utils
 
@@ -168,3 +168,12 @@ class ObjectControls(object):
         if apply_filter:
             filter_end = self.move_filter_fn(start_pos, end_pos)
             obj.translate(filter_end - end_pos)
+
+    def __call__(
+        self,
+        obj: hsim.SceneNode,
+        action_name: str,
+        actuation_spec: ActuationSpec,
+        apply_filter: bool = True,
+    ):
+        self.action(obj, action_name, actuation_spec, apply_filter)

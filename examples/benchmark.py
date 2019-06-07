@@ -12,11 +12,7 @@ import numpy as np
 import demo_runner as dr
 
 parser = argparse.ArgumentParser("Running benchmarks on simulator")
-parser.add_argument(
-    "--scene",
-    type=str,
-    default=dr.default_sim_settings["test_scene"],
-)
+parser.add_argument("--scene", type=str, default=dr.default_sim_settings["test_scene"])
 parser.add_argument(
     "--max_frames",
     type=int,
@@ -27,20 +23,20 @@ parser.add_argument(
 parser.add_argument(
     "--resolution",
     type=int,
-    nargs='+',
+    nargs="+",
     default=[128, 256, 512],
     help="Resolution r for frame (r x r).",
 )
 parser.add_argument(
     "--num_procs",
     type=int,
-    nargs='+',
+    nargs="+",
     default=[1, 3, 5],
     help="Number of concurrent processes.",
 )
 parser.add_argument(
     "--benchmark_semantic_sensor",
-    action='store_true',
+    action="store_true",
     help="Whether to enable benchmarking of semantic sensor.",
 )
 parser.add_argument("--seed", type=int, default=1)
@@ -66,14 +62,8 @@ benchmark_items = {
     "depth_only": {"color_sensor": False, "depth_sensor": True},
 }
 if args.benchmark_semantic_sensor:
-    benchmark_items["semantic_only"] = {
-        "color_sensor": False,
-        "semantic_sensor": True,
-    }
-    benchmark_items["rgbd_semantic"] = {
-        "depth_sensor": True,
-        "semantic_sensor": True,
-    }
+    benchmark_items["semantic_only"] = {"color_sensor": False, "semantic_sensor": True}
+    benchmark_items["rgbd_semantic"] = {"depth_sensor": True, "semantic_sensor": True}
 
 resolutions = args.resolution
 nprocs_tests = args.num_procs

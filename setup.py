@@ -304,7 +304,8 @@ if __name__ == "__main__":
     if os.environ.get("CMAKE_ARGS", None) is not None:
         args.cmake_args = os.environ["CMAKE_ARGS"]
 
-    requirements = ["attrs", "numba", "numpy", "numpy-quaternion", "pillow"]
+    with open("./requirements.txt", "r") as f:
+        requirements = [l.strip() for l in f.readlines() if len(l.strip()) > 0]
 
     builtins.__HSIM_SETUP__ = True
     import habitat_sim

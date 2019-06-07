@@ -9,7 +9,6 @@
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/RenderCamera.h"
-#include "esp/nav/ActionSpacePath.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneManager.h"
@@ -51,7 +50,6 @@ class Viewer : public Magnum::Platform::Application {
   bool computeActionPath_;
   vec3f goalPos_;
   quatf goalHeading_;
-  nav::ActionSpacePathFinder::uptr actPathfinder_;
 };
 
 }  // namespace gfx
