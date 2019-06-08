@@ -155,9 +155,13 @@ class Simulator:
 
     def step(self, action):
         self._num_total_frames += 1
-        self._default_agent.act(action)
+        collided = self._default_agent.act(action)
         self._last_state = self._default_agent.get_state()
+
         observations = self.get_sensor_observations()
+        # Whether or not the action taken resulted in a collision
+        observations["collided"] = collided
+
         return observations
 
     def make_greedy_follower(self, agent_id: int = 0, goal_radius: float = None):

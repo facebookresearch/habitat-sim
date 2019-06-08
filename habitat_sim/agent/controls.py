@@ -18,6 +18,10 @@ from habitat_sim import utils
 __all__ = ["ActuationSpec", "SceneNodeControl", "ObjectControls"]
 
 
+# epislon used to deal with machine precision
+EPS = 1e-5
+
+
 def _camel_to_snake(name):
     s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
     return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
@@ -147,7 +151,7 @@ class ObjectControls(object):
         action_name: str,
         actuation_spec: ActuationSpec,
         apply_filter: bool = True,
-    ):
+    ) -> bool:
         r"""Performs the action specified by :py:attr:`action_name` on the object
 
         Args:
@@ -156,6 +160,9 @@ class ObjectControls(object):
                 to retrieve the function which implements this action
             actuation_spec (ActuationSpec): Specifies the parameters needed by the function
             apply_filter (bool): Whether or not to apply the move_filter_fn after the action
+
+        Returns:
+            bool: Whether or not the action taken resulted in a collision
         """
         assert (
             action_name in move_func_map
@@ -165,9 +172,22 @@ class ObjectControls(object):
         move_func_map[action_name](obj, actuation_spec)
         end_pos = obj.absolute_position()
 
+        collided = False
         if apply_filter:
             filter_end = self.move_filter_fn(start_pos, end_pos)
+            # Update the position to respect the filter
             obj.translate(filter_end - end_pos)
+
+            dist_moved_before_filter = np.linalg.norm(end_pos - start_pos)
+            dist_moved_after_filter = np.linalg.norm(filter_end - start_pos)
+
+            # NB: There are some cases where ||filter_end - end_pos|| > 0 when a
+            # collision _didn't_ happen. One such case is going up stairs.  Instead,
+            # we check to see if the the amount moved after the application of the filter
+            # is _less_ the the amount moved before the application of the filter
+            collided = (dist_moved_after_filter + EPS) < dist_moved_before_filter
+
+        return collided
 
     def __call__(
         self,
@@ -176,4 +196,4 @@ class ObjectControls(object):
         actuation_spec: ActuationSpec,
         apply_filter: bool = True,
     ):
-        self.action(obj, action_name, actuation_spec, apply_filter)
+        return self.action(obj, action_name, actuation_spec, apply_filter)
