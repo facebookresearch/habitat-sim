@@ -18,6 +18,7 @@ from habitat_sim import utils
 __all__ = ["ActuationSpec", "SceneNodeControl", "ObjectControls"]
 
 
+# epislon used to deal with machine precision
 EPS = 1e-5
 
 
@@ -159,6 +160,9 @@ class ObjectControls(object):
                 to retrieve the function which implements this action
             actuation_spec (ActuationSpec): Specifies the parameters needed by the function
             apply_filter (bool): Whether or not to apply the move_filter_fn after the action
+
+        Returns:
+            bool: Whether or not the action taken resulted in a collision
         """
         assert (
             action_name in move_func_map

@@ -159,6 +159,7 @@ class Simulator:
         self._last_state = self._default_agent.get_state()
 
         observations = self.get_sensor_observations()
+        # Whether or not the action taken resulted in a collision
         observations["collided"] = collided
 
         return observations

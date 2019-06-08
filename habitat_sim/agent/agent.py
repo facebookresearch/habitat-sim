@@ -156,6 +156,9 @@ class Agent(object):
         Args:
             action_id (Any): ID of the action.
                 Retreives the action from agent_config.action_space
+
+        Returns:
+            bool: Whether or not the action taken resulted in a collision
         """
 
         habitat_sim.errors.assert_obj_valid(self.body)
