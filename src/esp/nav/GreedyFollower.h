@@ -14,7 +14,13 @@ class GreedyGeodesicFollowerImpl {
    * Ouputs from the greedy follower.  Used to specify which action to take next
    *or that an error occured
    **/
-  enum class CODES { ERROR = -2, STOP = -1, FORWARD = 0, LEFT = 1, RIGHT = 2 };
+  enum class CODES {
+    GF_ERROR = -2,
+    GF_STOP = -1,
+    GF_FORWARD = 0,
+    GF_LEFT = 1,
+    GF_RIGHT = 2
+  };
 
   /**
    * Helper typedef for function pointer to a function that manipulates a scene

@@ -28,7 +28,7 @@ nav::GreedyGeodesicFollowerImpl::checkForward(const State& state) {
     dist_travelled =
         (std::get<0>(state) - dummyNode_.getAbsolutePosition()).norm();
     if (dist_travelled > minTravel) {
-      return CODES::LEFT;
+      return CODES::GF_LEFT;
     }
 
     dummyNode_.setTranslation(std::get<0>(state));
@@ -39,13 +39,13 @@ nav::GreedyGeodesicFollowerImpl::checkForward(const State& state) {
     dist_travelled =
         (std::get<0>(state) - dummyNode_.getAbsolutePosition()).norm();
     if (dist_travelled > minTravel) {
-      return CODES::RIGHT;
+      return CODES::GF_RIGHT;
     }
 
-    return CODES::ERROR;
+    return CODES::GF_ERROR;
   }
 
-  return CODES::FORWARD;
+  return CODES::GF_FORWARD;
 }
 
 nav::GreedyGeodesicFollowerImpl::CODES
@@ -54,10 +54,10 @@ nav::GreedyGeodesicFollowerImpl::calcStepAlong(
     const nav::ShortestPath& path) {
   VLOG(1) << path.geodesicDistance;
   if (path.geodesicDistance == std::numeric_limits<float>::infinity())
-    return CODES::ERROR;
+    return CODES::GF_ERROR;
 
   if (path.geodesicDistance < goalDist_)
-    return CODES::STOP;
+    return CODES::GF_STOP;
 
   vec3f grad = path.points[1] - path.points[0];
   // Project into x-z plane
@@ -74,7 +74,7 @@ nav::GreedyGeodesicFollowerImpl::calcStepAlong(
   const float alpha = gradDir.angularDistance(std::get<1>(state));
   VLOG(1) << alpha;
   if (alpha <= turnAmount_ / 2.0 + 1e-3)
-    return CODES::FORWARD;
+    return CODES::GF_FORWARD;
 
   // There are some edge cases where the gradient doesn't line up with makes
   // progress the fastest, so we will always try forward
@@ -84,7 +84,7 @@ nav::GreedyGeodesicFollowerImpl::calcStepAlong(
   const float newGeoDist =
       this->geoDist(dummyNode_.getAbsolutePosition(), path.requestedEnd);
   if ((path.geodesicDistance - newGeoDist) > 0.5 * forwardAmount_) {
-    return CODES::FORWARD;
+    return CODES::GF_FORWARD;
   }
 
   dummyNode_.setTranslation(std::get<0>(state));
@@ -92,9 +92,9 @@ nav::GreedyGeodesicFollowerImpl::calcStepAlong(
   turnLeft_(&dummyNode_);
 
   if (gradDir.angularDistance(dummyNode_.getRotation()) < alpha)
-    return CODES::LEFT;
+    return CODES::GF_LEFT;
   else
-    return CODES::RIGHT;
+    return CODES::GF_RIGHT;
 }
 
 nav::GreedyGeodesicFollowerImpl::CODES
@@ -107,7 +107,7 @@ nav::GreedyGeodesicFollowerImpl::nextActionAlong(
   pathfinder_->findPath(path);
 
   CODES action = calcStepAlong(start, path);
-  if (action == CODES::FORWARD)
+  if (action == CODES::GF_FORWARD)
     action = checkForward(start);
 
   return action;
@@ -128,7 +128,7 @@ nav::GreedyGeodesicFollowerImpl::findPath(
 
   do {
     CODES nextAction = calcStepAlong(state, path);
-    if (nextAction == CODES::FORWARD)
+    if (nextAction == CODES::GF_FORWARD)
       nextAction = checkForward(state);
 
     actions.push_back(nextAction);
@@ -137,18 +137,18 @@ nav::GreedyGeodesicFollowerImpl::findPath(
     dummyNode_.setRotation(std::get<1>(state));
 
     switch (nextAction) {
-      case CODES::FORWARD:
+      case CODES::GF_FORWARD:
         moveForward_(&dummyNode_);
 
         path.requestedStart = dummyNode_.getAbsolutePosition();
         pathfinder_->findPath(path);
         break;
 
-      case CODES::LEFT:
+      case CODES::GF_LEFT:
         turnLeft_(&dummyNode_);
         break;
 
-      case CODES::RIGHT:
+      case CODES::GF_RIGHT:
         turnRight_(&dummyNode_);
         break;
 
@@ -159,10 +159,10 @@ nav::GreedyGeodesicFollowerImpl::findPath(
     state = std::make_tuple(dummyNode_.getAbsolutePosition(),
                             dummyNode_.getRotation());
 
-  } while ((actions.back() != CODES::STOP && actions.back() != CODES::ERROR) &&
+  } while ((actions.back() != CODES::GF_STOP && actions.back() != CODES::GF_ERROR) &&
            actions.size() < maxActions);
 
-  if (actions.back() == CODES::ERROR)
+  if (actions.back() == CODES::GF_ERROR)
     actions.clear();
 
   if (actions.size() >= maxActions)

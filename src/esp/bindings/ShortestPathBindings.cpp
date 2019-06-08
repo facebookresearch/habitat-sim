@@ -92,11 +92,11 @@ void initShortestPathBindings(py::module& m) {
            py::return_value_policy::move);
 
   py::enum_<GreedyGeodesicFollowerImpl::CODES>(m, "GreedyFollowerCodes")
-      .value("ERROR", GreedyGeodesicFollowerImpl::CODES::ERROR)
-      .value("STOP", GreedyGeodesicFollowerImpl::CODES::STOP)
-      .value("FORWARD", GreedyGeodesicFollowerImpl::CODES::FORWARD)
-      .value("LEFT", GreedyGeodesicFollowerImpl::CODES::LEFT)
-      .value("RIGHT", GreedyGeodesicFollowerImpl::CODES::RIGHT);
+      .value("ERROR", GreedyGeodesicFollowerImpl::CODES::GF_ERROR)
+      .value("STOP", GreedyGeodesicFollowerImpl::CODES::GF_STOP)
+      .value("FORWARD", GreedyGeodesicFollowerImpl::CODES::GF_FORWARD)
+      .value("LEFT", GreedyGeodesicFollowerImpl::CODES::GF_LEFT)
+      .value("RIGHT", GreedyGeodesicFollowerImpl::CODES::GF_RIGHT);
 
   py::bind_vector<std::vector<GreedyGeodesicFollowerImpl::CODES>>(
       m, "VectorGreedyCodes");
