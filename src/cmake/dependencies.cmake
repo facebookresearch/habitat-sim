@@ -25,14 +25,6 @@ endif()
 # sophus
 include_directories(SYSTEM "${DEPS_DIR}/Sophus")
 
-# glog. NOTE: emscripten does not support 32-bit targets, which glog requires.
-# Therefore we do not build glog and use a custom shim instead to emulate glog
-if(BUILD_WEBGL)
-  add_compile_definitions(BUILD_WEBGL USE_GLOG_SHIM)
-else()
-  add_subdirectory("${DEPS_DIR}/glog")
-endif()
-
 # RapidJSON. Use a system package, if preferred.
 if(USE_SYSTEM_RAPIDJSON)
   find_package(RapidJSON CONFIG REQUIRED)
@@ -87,7 +79,9 @@ if(NOT USE_SYSTEM_MAGNUM)
   set(WITH_SDL2APPLICATION OFF CACHE BOOL "WITH_SDL2APPLICATION" FORCE)
   set(WITH_GLFWAPPLICATION OFF CACHE BOOL "WITH_GLFWAPPLICATION" FORCE)
   set(WITH_EIGEN ON CACHE BOOL "WITH_EIGEN" FORCE)
-  if(BUILD_WEBGL)
+  add_subdirectory("${DEPS_DIR}/corrade")
+  find_package(Corrade REQUIRED)
+  if(CORRADE_TARGET_EMSCRIPTEN)
     set(WITH_SDL2APPLICATION ON CACHE BOOL "WITH_SDL2APPLICATION" FORCE)
   else()
     if(BUILD_GUI_VIEWERS)
@@ -108,10 +102,18 @@ if(NOT USE_SYSTEM_MAGNUM)
       endif()
     endif()
   endif()
-  add_subdirectory("${DEPS_DIR}/corrade")
   add_subdirectory("${DEPS_DIR}/magnum")
+  find_package(Magnum REQUIRED)
   add_subdirectory("${DEPS_DIR}/magnum-plugins")
   add_subdirectory("${DEPS_DIR}/magnum-integration")
+endif()
+
+# glog. NOTE: emscripten does not support 32-bit targets, which glog requires.
+# Therefore we do not build glog and use a custom shim instead to emulate glog
+if(CORRADE_TARGET_EMSCRIPTEN)
+  add_compile_definitions(USE_GLOG_SHIM)
+else()
+  add_subdirectory("${DEPS_DIR}/glog")
 endif()
 
 if(BUILD_PYTHON_BINDINGS)

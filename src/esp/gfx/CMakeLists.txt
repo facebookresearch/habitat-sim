@@ -8,7 +8,7 @@ set(gfx_SOURCES
 
 # If not WebGL build, also include offscreen render-reliant code
 # TODO: this should be built as well (with emscripten windowless contexts)
-if(NOT BUILD_WEBGL)
+if(NOT CORRADE_TARGET_EMSCRIPTEN)
   list(APPEND gfx_SOURCES Simulator.cpp WindowlessContext.cpp)
 endif()
 
@@ -73,7 +73,7 @@ target_link_libraries(gfx
     MagnumPlugins::TinyGltfImporter
 )
 
-if(BUILD_WEBGL)
+if(CORRADE_TARGET_EMSCRIPTEN)
   if(BUILD_GUI_VIEWERS)
     find_package(Magnum REQUIRED Sdl2Application)
     target_link_libraries(gfx PUBLIC Magnum::Sdl2Application)

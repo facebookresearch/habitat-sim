@@ -6,6 +6,6 @@ add_library(core STATIC ${core_SOURCES})
 
 target_link_libraries(core PUBLIC Corrade::Utility)
 
-if(NOT BUILD_WEBGL)
+if(NOT CORRADE_TARGET_EMSCRIPTEN)
   target_link_libraries(core PUBLIC glog)
 endif()

@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <Magnum/configure.h>
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/Mesh.h>

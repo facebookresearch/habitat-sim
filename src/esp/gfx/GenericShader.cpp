@@ -123,7 +123,7 @@ enum { TextureLayer = 0 };
 
 GenericShader::GenericShader(const Flags flags) : flags_(flags) {
   // MAGNUM_ASSERT_GL_VERSION_SUPPORTED(Magnum::GL::Version::GL410);
-#ifdef BUILD_WEBGL
+#ifdef MAGNUM_TARGET_WEBGL
   Magnum::GL::Version glVersion = Magnum::GL::Version::GLES300;
 #else
   Magnum::GL::Version glVersion = Magnum::GL::Version::GL410;
@@ -163,7 +163,7 @@ GenericShader& GenericShader::bindTexture(Magnum::GL::Texture2D& texture) {
   texture.bind(TextureLayer);
 
 // TODO this is a hack and terrible! Properly set texSize for WebGL builds
-#ifndef BUILD_WEBGL
+#ifndef MAGNUM_TARGET_WEBGL
   if (flags_ & Flag::PrimitiveIDTextured)
     setUniform(uniformLocation("texSize"), texture.imageSize(0).x());
 #endif
