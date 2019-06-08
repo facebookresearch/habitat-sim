@@ -22,6 +22,11 @@
 #include <Magnum/Platform/WindowlessWglApplication.h>
 #endif
 
+// For WebGL builds use WindowlessEglApplication
+#ifdef CORRADE_TARGET_EMSCRIPTEN
+#include <Magnum/Platform/WindowlessEglApplication.h>
+#endif
+
 #include <Magnum/Platform/GLContext.h>
 
 using namespace Magnum;

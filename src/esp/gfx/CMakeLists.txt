@@ -4,13 +4,9 @@ set(gfx_SOURCES
   GenericShader.cpp
   RenderCamera.cpp
   Renderer.cpp
+  Simulator.cpp
+  WindowlessContext.cpp
 )
-
-# If not WebGL build, also include offscreen render-reliant code
-# TODO: this should be built as well (with emscripten windowless contexts)
-if(NOT CORRADE_TARGET_EMSCRIPTEN)
-  list(APPEND gfx_SOURCES Simulator.cpp WindowlessContext.cpp)
-endif()
 
 # If ptex support enabled add relevant source files
 if(BUILD_PTEX_SUPPORT)
@@ -78,6 +74,8 @@ if(CORRADE_TARGET_EMSCRIPTEN)
     find_package(Magnum REQUIRED Sdl2Application)
     target_link_libraries(gfx PUBLIC Magnum::Sdl2Application)
   endif()
+  find_package(Magnum REQUIRED WindowlessEglApplication)
+  target_link_libraries(gfx PUBLIC Magnum::WindowlessEglApplication)
 else()  # non-WebGL build
   # Link windowed application library if needed
   if(BUILD_GUI_VIEWERS)
