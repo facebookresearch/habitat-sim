@@ -5,12 +5,12 @@
 # LICENSE file in the root directory of this source tree.
 
 modules = [
-    "ActionSpacePathLocation",
-    "ActionSpaceShortestPath",
     "AttachedObject",
     "AttachedObjectType",
-    "MultiGoalActionSpaceShortestPath",
+    "GreedyFollowerCodes",
+    "GreedyGeodesicFollowerImpl",
     "MultiGoalShortestPath",
+    "PathFinder",
     "PinholeCamera",
     "SceneGraph",
     "SceneNode",

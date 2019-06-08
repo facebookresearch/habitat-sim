@@ -87,6 +87,14 @@ class ResourceManager {
                     DrawableGroup* drawables,
                     int objectId);
 
+  //! Adds mesh and material to given object
+  void createMeshObject(const MeshMetaData& metaData,
+                        scene::SceneNode& node,
+                        DrawableGroup* drawables,
+                        int objectID,
+                        int meshIDLocal,
+                        int materialIDLocal);
+
   bool loadPTexMeshData(const AssetInfo& info,
                         scene::SceneNode* parent,
                         DrawableGroup* drawables);

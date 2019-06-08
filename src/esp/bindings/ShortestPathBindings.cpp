@@ -2,14 +2,20 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <pybind11/eigen.h>
+#include <pybind11/functional.h>
+#include <pybind11/stl.h>
 #include "esp/bindings/OpaqueTypes.h"
 
 #include "esp/agent/Agent.h"
+#include "esp/core/esp.h"
+#include "esp/nav/GreedyFollower.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/ObjectControls.h"
 
 namespace py = pybind11;
 using namespace py::literals;
+using namespace esp;
 using namespace esp::nav;
 
 void initShortestPathBindings(py::module& m) {
@@ -18,17 +24,6 @@ void initShortestPathBindings(py::module& m) {
       .def_readwrite("hit_pos", &HitRecord::hitPos)
       .def_readwrite("hit_normal", &HitRecord::hitNormal)
       .def_readwrite("hit_dist", &HitRecord::hitDist);
-
-  py::class_<ActionSpacePathLocation, ActionSpacePathLocation::ptr>(
-      m, "ActionSpacePathLocation")
-      .def(py::init(&ActionSpacePathLocation::create<>))
-      .def(py::init(&ActionSpacePathLocation::create<const esp::vec3f&,
-                                                     const esp::vec4f&>))
-      .def_readwrite("position", &ActionSpacePathLocation::pos_)
-      .def_readwrite("rotation", &ActionSpacePathLocation::rotation_);
-
-  py::bind_vector<std::vector<esp::nav::ActionSpacePathLocation::ptr>>(
-      m, "VectorActionSpacePathLocation");
 
   py::class_<ShortestPath, ShortestPath::ptr>(m, "ShortestPath")
       .def(py::init(&ShortestPath::create<>))
@@ -57,6 +52,7 @@ void initShortestPathBindings(py::module& m) {
       .def("try_step", &PathFinder::tryStep, R"()", "start"_a, "end"_a)
       .def("island_radius", &PathFinder::islandRadius, R"()", "pt"_a)
       .def_property_readonly("is_loaded", &PathFinder::isLoaded)
+      .def("load_nav_mesh", &PathFinder::loadNavMesh)
       .def("distance_to_closest_obstacle",
            &PathFinder::distanceToClosestObstacle,
            R"(Returns the distance to the closest obstacle.
@@ -79,66 +75,29 @@ void initShortestPathBindings(py::module& m) {
           for slight differences in floor height)",
            "pt"_a, "max_y_delta"_a = 0.5);
 
-  py::class_<ActionSpaceShortestPath, ActionSpaceShortestPath::ptr>(
-      m, "ActionSpaceShortestPath")
-      .def(py::init(&ActionSpaceShortestPath::create<>))
-      .def_readwrite("requested_start",
-                     &ActionSpaceShortestPath::requestedStart)
-      .def_readwrite("requested_end", &ActionSpaceShortestPath::requestedEnd)
-      .def_readwrite("points", &ActionSpaceShortestPath::points)
-      .def_readwrite("rotations", &ActionSpaceShortestPath::rotations)
-      .def_readwrite("geodesic_distance",
-                     &ActionSpaceShortestPath::geodesicDistance)
-      .def_readwrite("actions", &ActionSpaceShortestPath::actions);
+  py::class_<GreedyGeodesicFollowerImpl, GreedyGeodesicFollowerImpl::ptr>(
+      m, "GreedyGeodesicFollowerImpl")
+      .def(py::init(
+          &GreedyGeodesicFollowerImpl::create<
+              PathFinder::ptr&, GreedyGeodesicFollowerImpl::MoveFn&,
+              GreedyGeodesicFollowerImpl::MoveFn&,
+              GreedyGeodesicFollowerImpl::MoveFn&, double, double, double>))
+      .def("next_action_along",
+           py::overload_cast<const vec3f&, const vec4f&, const vec3f&>(
+               &GreedyGeodesicFollowerImpl::nextActionAlong),
+           py::return_value_policy::move)
+      .def("find_path",
+           py::overload_cast<const vec3f&, const vec4f&, const vec3f&>(
+               &GreedyGeodesicFollowerImpl::findPath),
+           py::return_value_policy::move);
 
-  py::class_<MultiGoalActionSpaceShortestPath,
-             MultiGoalActionSpaceShortestPath::ptr>(
-      m, "MultiGoalActionSpaceShortestPath")
-      .def(py::init(&MultiGoalActionSpaceShortestPath::create<>))
-      .def_readwrite("requested_start",
-                     &MultiGoalActionSpaceShortestPath::requestedStart)
-      .def_readwrite("requested_ends",
-                     &MultiGoalActionSpaceShortestPath::requestedEnds)
-      .def_readwrite("points", &MultiGoalActionSpaceShortestPath::points)
-      .def_readwrite("rotations", &MultiGoalActionSpaceShortestPath::rotations)
-      .def_readwrite("geodesic_distance",
-                     &MultiGoalActionSpaceShortestPath::geodesicDistance)
-      .def_readwrite("actions", &MultiGoalActionSpaceShortestPath::actions);
+  py::enum_<GreedyGeodesicFollowerImpl::CODES>(m, "GreedyFollowerCodes")
+      .value("ERROR", GreedyGeodesicFollowerImpl::CODES::ERROR)
+      .value("STOP", GreedyGeodesicFollowerImpl::CODES::STOP)
+      .value("FORWARD", GreedyGeodesicFollowerImpl::CODES::FORWARD)
+      .value("LEFT", GreedyGeodesicFollowerImpl::CODES::LEFT)
+      .value("RIGHT", GreedyGeodesicFollowerImpl::CODES::RIGHT);
 
-  py::class_<ActionSpacePathFinder, ActionSpacePathFinder::ptr>(
-      m, "ActionSpacePathFinder")
-      .def(py::init(&ActionSpacePathFinder::create<
-                    PathFinder::ptr&, const esp::agent::AgentConfiguration&,
-                    const esp::scene::ObjectControls&, const esp::vec4f&>))
-      .def("find_next_action_along_path",
-           py::overload_cast<ActionSpaceShortestPath&>(
-               &ActionSpacePathFinder::findNextActionAlongPath))
-      .def("find_next_action_along_path",
-           py::overload_cast<MultiGoalActionSpaceShortestPath&>(
-               &ActionSpacePathFinder::findNextActionAlongPath))
-      .def("find_path", py::overload_cast<ActionSpaceShortestPath&>(
-                            &ActionSpacePathFinder::findPath))
-      .def("find_path", py::overload_cast<MultiGoalActionSpaceShortestPath&>(
-                            &ActionSpacePathFinder::findPath))
-      .def_property(
-          "close_to_obstacle_cost_multiplier",
-          py::overload_cast<>(
-              &ActionSpacePathFinder::closeToObstacleCostMultiplier,
-              py::const_),
-          py::overload_cast<const double>(
-              &ActionSpacePathFinder::closeToObstacleCostMultiplier),
-          R"(Cost multiplier used to discourage the shortest path from being close to obstacles
-
-            If the distance to the closest obstacle is less than :py:attr:`padding_radius` after an action is taken,
-            the cost for taking that action is multiplied by :py:attr:`close_to_obstacle_cost_multiplier`
-            )")
-      .def_property(
-          "padding_radius",
-          py::overload_cast<>(&ActionSpacePathFinder::paddingRadius,
-                              py::const_),
-          py::overload_cast<const double>(
-              &ActionSpacePathFinder::paddingRadius),
-          R"(Defines the distance to the nearest obstacle at which taking an action results in the cost being multiplied
-            by :py:attr:`close_to_obstacle_cost_multiplier`
-            )");
+  py::bind_vector<std::vector<GreedyGeodesicFollowerImpl::CODES>>(
+      m, "VectorGreedyCodes");
 }
