@@ -166,15 +166,12 @@ Viewer::Viewer(const Arguments& arguments)
   LOG(INFO) << "Camera abs transformation" << Eigen::Map<mat4f>(absT.data());
 
   objNode_->setTranslation(vec3f(new_pos.x(), new_pos.y(), new_pos.z()));
-  //navSceneNode_->setTranslation(vec3f(new_pos.x(), 0.0f, new_pos.z()));
-  //objNode_->translate(vec3f(0, 0, 2.0f));
   static_cast<physics::BulletRigidObject*>(objNode_)->syncPose();
   static_cast<physics::BulletRigidObject*>(navSceneNode_)->syncPose();
 
   Magnum::Matrix4 new_objT = objNode_->MagnumObject::transformationMatrix();
   LOG(INFO) << "Object updated position " << Eigen::Map<vec3f>(new_objT.translation().data());
-  //rootNode.setTranslation(vec3f(new_pos.x(), new_pos.y(), new_pos.z()));
-
+  
   // Connect controls to navmesh if loaded
   /*if (pathfinder_->isLoaded()) {
     controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {

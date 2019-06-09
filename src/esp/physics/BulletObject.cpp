@@ -105,7 +105,7 @@ bool BulletRigidObject::initialize(Magnum::Float mass,
 	  } else {
 	  	//bShape = new btBoxShape(btVector3(1.0f,1.0f,1.0f));
 	  	//bShape = new btGImpactMeshShape(pTriMesh);
-	  	bShape = new btBoxShape(btVector3(100.0f, 100.0f, 0.05f));
+	  	bShape = new btBoxShape(btVector3(200.0f, 0.05f, 200.0f));
 	  	//bShape = new btBvhTriangleMeshShape(pTriMesh, true, true);
 	  }
 
