@@ -16,7 +16,7 @@ jobs:
       - run:
           name: setup
           command: |
-              sudo pip install -U black "isort[pyproject]" numpy pytest sphix
+              sudo pip install -U black "isort[pyproject]" numpy pytest sphinx
               sudo pip install -r requirements.txt
       - run:
           name: run black
