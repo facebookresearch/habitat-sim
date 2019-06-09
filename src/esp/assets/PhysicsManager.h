@@ -51,7 +51,7 @@ namespace assets {
 class PhysicsManager {
  public:
   explicit PhysicsManager(){};
-  ~PhysicsManager() { LOG(INFO) << "Deconstructing PhysicsManager"; }
+  ~PhysicsManager();
 
   bool initPhysics();
   
@@ -73,37 +73,20 @@ class PhysicsManager {
   // ==== physics engines ====
   // The world has to live longer than the scene because RigidBody
   // instances have to remove themselves from it on destruction
-  scene::SceneNode*                         _scene;
   Magnum::BulletIntegration::DebugDraw      _debugDraw{Magnum::NoCreate};
-  btDbvtBroadphase                          _bBroadphase;
-  btDefaultCollisionConfiguration           _bCollisionConfig;
-  btCollisionDispatcher                     _bDispatcher{&_bCollisionConfig};
-  btSequentialImpulseConstraintSolver       _bSolver;
-  btDiscreteDynamicsWorld                   _bWorld{&_bDispatcher, &_bBroadphase, &_bSolver, &_bCollisionConfig};
+  btDbvtBroadphase*                         _bBroadphase;
+  btDefaultCollisionConfiguration*          _bCollisionConfig;
+  btCollisionDispatcher*                    _bDispatcher;
+  //btCollisionDispatcher*                    _bDispatcher;
+  btSequentialImpulseConstraintSolver*      _bSolver;
+//  btDiscreteDynamicsWorld                   _bWorld{&_bDispatcher, &_bBroadphase, &_bSolver, &_bCollisionConfig};
+  btDiscreteDynamicsWorld*                  _bWorld;
 
-  bool _drawCubes{true}, _drawDebug{true}, _shootBox{true};
-
+  bool _initialized = false;
   Magnum::Timeline _timeline;
   float _maxSubSteps = 1.0f;
   float _fixedTimeStep = 1.0f / 200.0f;
 };
-
-
-class RigidBody: public scene::SceneNode {
- public:
-  RigidBody(scene::SceneNode* parent, Magnum::Float mass, btCollisionShape* bShape, btDynamicsWorld& bWorld);
-
-  ~RigidBody();
-  btRigidBody& rigidBody();
-  /* needed after changing the pose from Magnum side */
-  void syncPose();
-
- private:
-  btDynamicsWorld& _bWorld;
-  Magnum::Containers::Pointer<btRigidBody> _bRigidBody;
-};
-
-
 
 }  // namespace assets
 

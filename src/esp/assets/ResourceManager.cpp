@@ -37,13 +37,14 @@ namespace assets {
 bool ResourceManager::loadScene(const AssetInfo& info,
                                 scene::SceneNode* parent /* = nullptr */,
                                 DrawableGroup* drawables /* = nullptr */) {
+  // Deprecated
   // check if the file exists
   if (!io::exists(info.filepath)) {
     LOG(ERROR) << "Cannot load from file " << info.filepath;
     return false;
   }
 
-  scene::SceneNode** sceneNode;
+  scene::SceneNode* sceneNode = nullptr;
   if (info.type == AssetType::FRL_INSTANCE_MESH ||
       info.type == AssetType::INSTANCE_MESH) {
     return loadInstanceMeshData(info, parent, drawables);
@@ -52,32 +53,30 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   } else if (info.type == AssetType::SUNCG_SCENE) {
     return loadSUNCGHouseFile(info, parent, drawables);
   } else if (info.type == AssetType::MP3D_MESH) {
-    return loadGeneralMeshData(info, parent, sceneNode, drawables);
+    return loadGeneralMeshData(info, parent, drawables);
   } else {
     // Unknown type, just load general mesh data
-    return loadGeneralMeshData(info, parent, sceneNode, drawables);
+    return loadGeneralMeshData(info, parent, drawables);
   }
 }
 
 bool ResourceManager::loadPhysicalScene(const AssetInfo& info,
                                         PhysicsManager& _physicsManager,
                                         scene::SceneNode* parent /* = nullptr */,
-                                        scene::SceneNode** sceneNode /* = nullptr */,
                                         bool attach_physics,  /* = false */
                                         DrawableGroup* drawables /* = nullptr */) {
 
-  scene::SceneNode* newNode;
-  bool meshSuccess = loadGeneralMeshData(info, parent, &newNode, drawables);
+  bool meshSuccess = loadGeneralMeshData(info, parent, drawables);
   if (attach_physics) {
     physics::BulletRigidObject* physNode = 
-      static_cast<physics::BulletRigidObject*>(newNode);
+      static_cast<physics::BulletRigidObject*>(parent);
 
     const std::string& filename = info.filepath;
     MeshMetaData& metaData = resourceDict_.at(filename);
     auto indexPair = metaData.meshIndex;
     int start = indexPair.first;
     int end = indexPair.second;
-    LOG(INFO) << "Accessing object mesh start " << start << " end " << end;
+    LOG(INFO) << "Accessing scene mesh start " << start << " end " << end;
     // TODO (JH) for GLB with multiple mesh files, they should
     // be somehow binded together in physics. Currently assume
     // there to be only 1 mesh
@@ -86,12 +85,10 @@ bool ResourceManager::loadPhysicalScene(const AssetInfo& info,
     Magnum::Trade::MeshData3D & meshData = *(
         meshDataGL->getMeshData());
 
-
     _physicsManager.initObject(info, metaData, meshData, 
         physNode, "TriangleMeshShape", true);
   }
 
-  *sceneNode = newNode;
   return meshSuccess;
 }
 
@@ -99,17 +96,15 @@ bool ResourceManager::loadPhysicalScene(const AssetInfo& info,
 bool ResourceManager::loadObject(const AssetInfo& info,
                                  PhysicsManager& _physicsManager,
                                  scene::SceneNode* parent,
-                                 scene::SceneNode** objNode,
                                  bool attach_physics,  /* = false */
                                  DrawableGroup* drawables /* = nullptr */) {
 
-  scene::SceneNode* newNode;
-  bool meshSuccess = loadGeneralMeshData(info, parent, &newNode, drawables);
+  bool meshSuccess = loadGeneralMeshData(info, parent, drawables);
 
   // if this is a new file, load it and add it to the dictionary
   if (attach_physics) {
     physics::BulletRigidObject* physNode = 
-      static_cast<physics::BulletRigidObject*>(newNode);
+      static_cast<physics::BulletRigidObject*>(parent);
 
     const std::string& filename = info.filepath;
     MeshMetaData& metaData = resourceDict_.at(filename);
@@ -133,15 +128,8 @@ bool ResourceManager::loadObject(const AssetInfo& info,
 
     //PhysicsManager::initObject(*importer, info, mMetaData);
     //for (int index = 0; index < meshes_.size(); index++) {
-
-    // getMeshData() returns Corrade::Containers::Optional<>
-    // TODO (JH): currently this treats scene mesh and object mesh the 
-    //    same way, not a good thing
-    // _physicsManager.initObject(*importer, info, metaData, meshData, 
-    //     "TriangleMeshShape");
   }
 
-  *objNode = newNode;
   return meshSuccess;
 }
 
@@ -275,7 +263,6 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
 
 bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
                                           scene::SceneNode* parent,
-                                          scene::SceneNode** sceneNode,
                                           DrawableGroup* drawables) {
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
@@ -327,7 +314,6 @@ bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
   bool success_ = createScene(*importer, info, metaData, newNode, 
       drawables, forceReload);
 
-  *sceneNode = &newNode;
   return success_;
 }
 
@@ -560,12 +546,6 @@ bool ResourceManager::createScene(Importer& importer,
       LOG(ERROR) << "Cannot load scene, exiting";
       return false;
     }
-    // create scene parent node with transformation aligning to global frame
-    //auto& sceneNode = parent.createChild();
-    // TODO(JH): point to scene node from parent level
-    // Double pointer because directly copying `= sceneNode` is disabled
-    //*sceneNodePtr = &sceneNode;
-
     const quatf transform =
         quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
     scene::SceneNode& sceneNode_ = static_cast<scene::SceneNode&>(sceneNode);
@@ -620,8 +600,7 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
         nodeIds.push_back(id);
         objectNode.setId(nodeIndex);
         if (info.type == AssetType::SUNCG_OBJECT) {
-          // TODO (JH) this will break, nullptr for now
-          loadGeneralMeshData(info, &objectNode, nullptr, drawables);
+          loadGeneralMeshData(info, &objectNode, drawables);
         }
         return objectNode;
       };

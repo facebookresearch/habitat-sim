@@ -69,7 +69,6 @@ class ResourceManager {
   bool loadPhysicalScene(const AssetInfo& info,
                  PhysicsManager& _physicsManager,
                  scene::SceneNode* parent = nullptr,
-                 scene::SceneNode** sceneNode = nullptr,
                  bool attach_physics = false,
                  DrawableGroup* drawables = nullptr);
 
@@ -78,7 +77,6 @@ class ResourceManager {
   bool loadObject(const AssetInfo& info,
                   PhysicsManager& _physicsManager,
                   scene::SceneNode* parent = nullptr,
-                  scene::SceneNode** objNode = nullptr,
                   bool attach_physics = true,
                   DrawableGroup* drawables = nullptr);
 
@@ -120,7 +118,6 @@ class ResourceManager {
 
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent,
-                           scene::SceneNode** sceneNode,
                            DrawableGroup* drawables);
 
   bool loadSUNCGHouseFile(const AssetInfo& info,

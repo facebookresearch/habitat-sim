@@ -58,50 +58,45 @@ Viewer::Viewer(const Arguments& arguments)
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   auto& rootNode = sceneGraph.getRootNode();
 
-  //LOG(INFO) << "Let's examine sceneGraph's root node" << rootNode;
-  //LOG(INFO) << "Let's examine sceneGraph's root node parent" << (rootNode.parent());
-  auto& drawables = sceneGraph.getDrawables();
+  navSceneNode_ = &rootNode.createChild();
+  objNode_ = &navSceneNode_->createChild();
 
+  if (enablePhysics_) {
+    // ======= Init timestep, physics starts =======
+    physicsManager_.initPhysics();
+  }
+
+  auto& drawables = sceneGraph.getDrawables();
   const std::string& file = args.value("file");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
-  // TODO (JH) this modified `loadScene` interface
   LOG(INFO) << "Nav scene node (before)" << navSceneNode_;  
-  if (!resourceManager_.loadPhysicalScene(info, physicsManager_, &rootNode, &navSceneNode_, true, &drawables)) {
+  if (!resourceManager_.loadPhysicalScene(info, physicsManager_, navSceneNode_, enablePhysics_, &drawables)) {
     LOG(ERROR) << "cannot load " << file;
     std::exit(0);
   }
 
   // Set up physics
-  //objNode_ = &rootNode.createChild();
   LOG(INFO) << "Nav scene node" << navSceneNode_;
-  //objNode_ = &(navSceneNode_->createChild());
+  std::string object_file ("./data/objects/textured.glb");
+  //std::string object_file ("./data/objects/cube.glb");
+  assets::AssetInfo object_info = assets::AssetInfo::fromPath(object_file);
+  LOG(INFO) << "Loading object from " << object_file;
+  // Root node
+  //bool objectLoaded_ = resourceManager_.loadObject(object_info, physicsManager_, navSceneNode_, objNode_, enablePhysics_, &drawables);
+  bool objectLoaded_ = resourceManager_.loadObject(object_info, physicsManager_, objNode_, enablePhysics_, &drawables);
+  
+  if (objectLoaded_) {
+    if (enablePhysics_) {
 
-  if (enablePhysics_) {
-    // Currently default to load dumb cubes
-    // ======= Init timestep, physics starts =======
-    //physicsManager_.initPhysics(&rootNode);
-    //physicsManager_.initPhysics(objNode_);
-    physicsManager_.initPhysics();
-
-    std::string object_file ("./data/objects/textured.glb");
-    assets::AssetInfo object_info = assets::AssetInfo::fromPath(object_file);
-    LOG(INFO) << "Loading object from " << object_file;
-    //LOG(INFO) << "Physical obj node's parent" << objNode_->parent();
-
-    // Root node
-    //bool objectLoaded_ = resourceManager_.loadObject(object_info, physicsManager_, navSceneNode_, &objNode_, true, &drawables);
-    bool objectLoaded_ = resourceManager_.loadObject(object_info, physicsManager_, &rootNode, &objNode_, true, &drawables);
-    if (objectLoaded_) {
       LOG(INFO) << "Loaded";
 
-      /* Loop at 60 Hz max */
+      // Loop at 60 Hz max
       setSwapInterval(1);
       physicsManager_.debugSceneGraph(&rootNode);
-  
-    } else {
-      LOG(ERROR) << "cannot load " << object_file;
-      std::exit(0);
     }
+  } else {
+    LOG(ERROR) << "cannot load " << object_file;
+    std::exit(0);
   }
 
 
@@ -123,7 +118,7 @@ Viewer::Viewer(const Arguments& arguments)
 
   //agentBodyNode_->rotate(3.14f, vec3f(0, 1, 0));
   //cameraNode_->rotate(3.14f, vec3f(0, 1, 0));       // (JH) strange this is not working
-  agentBodyNode_->translate(vec3f(0, 1.0f, 8.0f));
+  agentBodyNode_->translate(vec3f(0, 1.5f, 10.0f));
 
 
   float hfov = 90.0f;
@@ -159,7 +154,7 @@ Viewer::Viewer(const Arguments& arguments)
   Magnum::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();    // Relative to agent bodynode
   //auto transformation = Matrix4(cameraNode_->getAbsoluteTransformation());
   //Vector3 new_pos = absT.transformPoint({0.0f, 0.0f, -1.0f});
-  Vector3 new_pos = T.transformPoint({0.0f, 0.0f, -1.0f});
+  Vector3 new_pos = T.transformPoint({0.0f, 0.0f, -3.0f});
   
   //Vector3 new_pos = Vector3(0.0f, -10.0f, 3.0f);
   
@@ -171,8 +166,10 @@ Viewer::Viewer(const Arguments& arguments)
   LOG(INFO) << "Camera abs transformation" << Eigen::Map<mat4f>(absT.data());
 
   objNode_->setTranslation(vec3f(new_pos.x(), new_pos.y(), new_pos.z()));
+  //navSceneNode_->setTranslation(vec3f(new_pos.x(), 0.0f, new_pos.z()));
   //objNode_->translate(vec3f(0, 0, 2.0f));
   static_cast<physics::BulletRigidObject*>(objNode_)->syncPose();
+  static_cast<physics::BulletRigidObject*>(navSceneNode_)->syncPose();
 
   Magnum::Matrix4 new_objT = objNode_->MagnumObject::transformationMatrix();
   LOG(INFO) << "Object updated position " << Eigen::Map<vec3f>(new_objT.translation().data());

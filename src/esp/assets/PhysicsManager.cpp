@@ -12,7 +12,8 @@
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
-//#include <Magnum/Platform/Sdl2Application.h>    ## Tried to make physics example work
+#include "BulletCollision/Gimpact/btGImpactShape.h"
+#include "BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h"
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
@@ -37,16 +38,38 @@ namespace assets {
 
 bool PhysicsManager::initPhysics() {
   LOG(INFO) << "Initializing Physics Engine...";  
+
+  _bCollisionConfig = new btDefaultCollisionConfiguration();
+  _bDispatcher = new btCollisionDispatcher(_bCollisionConfig);
+  //btGImpactCollisionAlgorithm::registerAlgorithm(_bDispatcher);
+  _bBroadphase = new btDbvtBroadphase();
+  _bSolver = new btSequentialImpulseConstraintSolver();
+  _bWorld = new btDiscreteDynamicsWorld(_bDispatcher, _bBroadphase, _bSolver, _bCollisionConfig);
+
+
+  //btCollisionDispatcher *dispatcher = static_cast<btCollisionDispatcher *>(_bWorld.getDispatcher());
+  //btGImpactCollisionAlgorithm::registerAlgorithm(dispatcher);
+
   _debugDraw.setMode(Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe);
-  _bWorld.setGravity({0.0f, -10.0f, 0.0f});
+  _bWorld->setGravity({0.0f, -10.0f, 0.0f});
   //_bWorld.setGravity({0.0f, 0.0f, -10.0f});
-  _bWorld.setDebugDrawer(&_debugDraw);
+  //_bWorld.setDebugDrawer(&_debugDraw);
 
-  //_scene = scene;  
   _timeline.start();
-
+  _initialized = true;
   LOG(INFO) << "Initialized Physics Engine.";  
   return true;
+}
+
+PhysicsManager::~PhysicsManager() {
+  LOG(INFO) << "Deconstructing PhysicsManager";
+  if (_initialized) {
+    delete _bCollisionConfig;
+    delete _bDispatcher;
+    delete _bBroadphase;
+    delete _bSolver;
+    delete _bWorld;
+  }
 }
 
 void PhysicsManager::getPhysicsEngine() {}
@@ -77,11 +100,7 @@ void PhysicsManager::initObject(const AssetInfo& info,
   }
 
   LOG(INFO) << "Initialize: before";
-  physObject->initialize(mass, meshData, _bWorld);
-  //LOG(INFO) << "Making rigid body: before, scene " << _scene;
-  //auto* object = new RigidBody{static_cast<MagnumObject&>(*_scene), weight, shape, _bWorld};
-  //auto* object = new RigidBody{static_cast<MagnumObject*>(_scene), weight, shape, _bWorld};
-  //auto* object = new RigidBody{_scene, weight, shape, _bWorld};
+  physObject->initialize(mass, meshData, *_bWorld);
   LOG(INFO) << "Initialize: after";
   //object->syncPose();
   //new ColoredDrawable{*ground, _shader, _box, 0xffffff_rgbf,
@@ -90,7 +109,6 @@ void PhysicsManager::initObject(const AssetInfo& info,
   // TODO: DEBUGGING PURPOSE, (JH) strangely causes segfault with redraw()
   // maybe due to ground not being in drawables
   //btBoxShape _bGroundShape{{4.0f, 0.5f, 4.0f}};
-  //auto* ground = new RigidBody{_scene, 10.0f, &_bGroundShape, _bWorld};
 }
 
 void PhysicsManager::debugSceneGraph(const MagnumObject* root) {
@@ -120,46 +138,16 @@ void PhysicsManager::debugSceneGraph(const MagnumObject* root) {
 
 void PhysicsManager::stepPhysics() {
   // ==== Physics stepforward ======
-  _bWorld.stepSimulation(_timeline.previousFrameDuration(), _maxSubSteps, _fixedTimeStep);
+  _bWorld->stepSimulation(_timeline.previousFrameDuration(), _maxSubSteps, _fixedTimeStep);
   //_bWorld.debugDrawWorld();
   //LOG(INFO) << "Step physics forward previous: " << _timeline.previousFrameDuration();
+  int numObjects = _bWorld->getNumCollisionObjects();
+  //LOG(INFO) << "Num collision objects" << numObjects;
 }
 
 void PhysicsManager::nextFrame() {
   _timeline.nextFrame();
 }
-
-// TODO (JH) what role does Object3D{parent} play in example?
-RigidBody::RigidBody(scene::SceneNode* parent, Magnum::Float mass, btCollisionShape* bShape, btDynamicsWorld& bWorld): 
-  scene::SceneNode{*parent},
-  _bWorld(bWorld) {
-
-  LOG(INFO) << "Creating object mass: " << mass;
-  /* Calculate inertia so the object reacts as it should with
-     rotation and everything */
-  btVector3 bInertia(0.0f, 0.0f, 0.0f);
-  //btVector3 bInertia(2.0f, 2.0f, 2.0f);
-  if(mass != 0.0f) bShape->calculateLocalInertia(mass, bInertia);
-  //bShape->calculateLocalInertia(300.0f, bInertia);
-  /* Bullet rigid body setup */
-  auto* motionState = new Magnum::BulletIntegration::MotionState{*this};
-  _bRigidBody.emplace(btRigidBody::btRigidBodyConstructionInfo{
-      mass, &motionState->btMotionState(), bShape, bInertia});
-  _bRigidBody->forceActivationState(DISABLE_DEACTIVATION);
-  bWorld.addRigidBody(_bRigidBody.get());
-}
-
-RigidBody::~RigidBody() {
-    _bWorld.removeRigidBody(_bRigidBody.get());
-}
-
-btRigidBody& RigidBody::rigidBody() { return *_bRigidBody; }
-
-/* needed after changing the pose from Magnum side */
-void RigidBody::syncPose() {
-    _bRigidBody->setWorldTransform(btTransform(transformationMatrix()));
-}
-
 
 }
 }  // namespace esp
