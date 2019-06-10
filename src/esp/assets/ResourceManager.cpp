@@ -49,6 +49,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
       info.type == AssetType::INSTANCE_MESH) {
     return loadInstanceMeshData(info, parent, drawables);
   } else if (info.type == AssetType::FRL_PTEX_MESH) {
+    LOG(INFO) << "Loading PTEX mesh data";
     return loadPTexMeshData(info, parent, drawables);
   } else if (info.type == AssetType::SUNCG_SCENE) {
     return loadSUNCGHouseFile(info, parent, drawables);
@@ -66,7 +67,7 @@ bool ResourceManager::loadPhysicalScene(const AssetInfo& info,
                                         bool attach_physics,  /* = false */
                                         DrawableGroup* drawables /* = nullptr */) {
 
-  bool meshSuccess = loadGeneralMeshData(info, parent, drawables);
+  bool meshSuccess = loadScene(info, parent, drawables);
   if (attach_physics) {
     physics::BulletRigidObject* physNode = 
       static_cast<physics::BulletRigidObject*>(parent);
@@ -82,11 +83,17 @@ bool ResourceManager::loadPhysicalScene(const AssetInfo& info,
     // there to be only 1 mesh
     GltfMeshData* meshDataGL = static_cast<GltfMeshData*>(
         meshes_[start].get());
+
+    LOG(INFO) << "Created mesh GL";
+
     Magnum::Trade::MeshData3D & meshData = *(
         meshDataGL->getMeshData());
+    LOG(INFO) << "Created mesh data";
 
     _physicsManager.initObject(info, metaData, meshData, 
         physNode, "TriangleMeshShape", true);
+    LOG(INFO) << "Created mesh object";
+
   }
 
   return meshSuccess;

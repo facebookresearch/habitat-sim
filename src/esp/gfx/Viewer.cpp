@@ -69,14 +69,14 @@ Viewer::Viewer(const Arguments& arguments)
   auto& drawables = sceneGraph.getDrawables();
   const std::string& file = args.value("file");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
-  LOG(INFO) << "Nav scene node (before)" << navSceneNode_;  
+  LOG(INFO) << "Nav scene node (before) " << navSceneNode_;  
   if (!resourceManager_.loadPhysicalScene(info, physicsManager_, navSceneNode_, enablePhysics_, &drawables)) {
     LOG(ERROR) << "cannot load " << file;
     std::exit(0);
   }
 
   // Set up physics
-  LOG(INFO) << "Nav scene node" << navSceneNode_;
+  LOG(INFO) << "Nav scene node (done) " << navSceneNode_;
   std::string object_file ("./data/objects/textured.glb");
   //std::string object_file ("./data/objects/cube.glb");
   assets::AssetInfo object_info = assets::AssetInfo::fromPath(object_file);
