@@ -22,6 +22,7 @@
 #include "MeshMetaData.h"
 #include "esp/scene/SceneNode.h"
 #include "PhysicsManager.h"
+#include "GltfMeshData.h"
 
 
 // forward declarations
@@ -85,7 +86,9 @@ class ResourceManager {
   void loadTextures(Importer& importer, MeshMetaData* metaData);
 
   //! Load meshes from importer into assets, and update metaData
-  void loadMeshes(Importer& importer, MeshMetaData* metaData);
+  void loadMeshes(Importer& importer, 
+                  MeshMetaData* metaData, 
+                  bool shiftOrigin=false);
 
   //! Load materials from importer into assets, and update metaData
   void loadMaterials(Importer& importer, MeshMetaData* metaData);
@@ -118,11 +121,14 @@ class ResourceManager {
 
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent,
-                           DrawableGroup* drawables);
+                           DrawableGroup* drawables,
+                           bool shiftOrigin=false);
 
   bool loadSUNCGHouseFile(const AssetInfo& info,
                           scene::SceneNode* parent,
                           DrawableGroup* drawables);
+
+  void shiftMeshDataToOrigin(GltfMeshData* meshDataGL);
 
   // ==== geometry data ====
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or
@@ -131,6 +137,8 @@ class ResourceManager {
   std::vector<std::shared_ptr<BaseMesh>> meshes_;
   std::vector<std::shared_ptr<Magnum::GL::Texture2D>> textures_;
   std::vector<std::shared_ptr<Magnum::Trade::PhongMaterialData>> materials_;
+
+  Magnum::GL::Mesh* instance_mesh;
 
   // a dictionary to check if a mesh has been loaded
   std::map<std::string, MeshMetaData> resourceDict_;

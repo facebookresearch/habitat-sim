@@ -4,6 +4,7 @@
 #include <Magnum/Trade/MeshData3D.h>
 #include <btBulletDynamicsCommon.h>
 #include "esp/core/esp.h"
+#include "esp/assets/GenericInstanceMeshData.h"
 
 namespace esp {
 namespace physics {
@@ -17,6 +18,10 @@ class BulletRigidObject: public scene::SceneNode {
   				  Magnum::Trade::MeshData3D& meshData,
   				  btDynamicsWorld& bWorld);
 
+  bool initializeFRL(Magnum::Float mass, 
+            assets::GenericInstanceMeshData* meshData,
+            btDynamicsWorld& bWorld);
+
   ~BulletRigidObject();
   btRigidBody& rigidBody();
   /* needed after changing the pose from Magnum side */
@@ -27,6 +32,11 @@ class BulletRigidObject: public scene::SceneNode {
   btDynamicsWorld* _bWorld;
   //Magnum::Containers::Pointer<btRigidBody> _bRigidBody;
   btRigidBody* _bRigidBody;
+
+  void getDimensions(Magnum::Trade::MeshData3D& meshData,
+                     float* x,
+                     float* y,
+                     float* z);
 };
 
 

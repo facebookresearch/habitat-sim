@@ -28,7 +28,6 @@
 
 #include "FRLInstanceMeshData.h"
 #include "GenericInstanceMeshData.h"
-#include "GltfMeshData.h"
 #include "Mp3dInstanceMeshData.h"
 #include "PTexMeshData.h"
 #include "ResourceManager.h"
@@ -49,6 +48,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   scene::SceneNode* sceneNode = nullptr;
   if (info.type == AssetType::FRL_INSTANCE_MESH ||
       info.type == AssetType::INSTANCE_MESH) {
+    LOG(INFO) << "Loading FRL mesh data";
     return loadInstanceMeshData(info, parent, drawables);
   } else if (info.type == AssetType::FRL_PTEX_MESH) {
     LOG(INFO) << "Loading PTEX mesh data";
@@ -79,32 +79,45 @@ bool ResourceManager::loadPhysicalScene(const AssetInfo& info,
     auto indexPair = metaData.meshIndex;
     int start = indexPair.first;
     int end = indexPair.second;
-    LOG(INFO) << "Accessing scene mesh start " << start << " end " << end;
-    // TODO (JH) for GLB with multiple mesh files, they should
-    // be somehow binded together in physics. Currently assume
-    // there to be only 1 mesh
-    GltfMeshData* meshDataGL = static_cast<GltfMeshData*>(
-        meshes_[start].get());
 
-    LOG(INFO) << "Created mesh GL";
+    // FRL Mesh
+    if (info.type == AssetType::FRL_INSTANCE_MESH ||
+      info.type == AssetType::INSTANCE_MESH) {
+      //GenericInstanceMeshData* instanceMeshData =
+      //  dynamic_cast<GenericInstanceMeshData*>(meshes_[start].get());
+      //meshData = static_cast<Magnum::Trade::MeshData3D*>(instance_mesh);
+      //LOG(INFO) << "FRL primitive " << static_cast<GltfMeshData*>(meshes_[start].get());
+      GenericInstanceMeshData* meshData = 
+          dynamic_cast<GenericInstanceMeshData*>(meshes_[start].get());
+      _physicsManager.initFRLObject(info, metaData, meshData, 
+          physNode, "TriangleMeshShape", true);
+    }  
+    // GLB Mesh
+    else {
+      LOG(INFO) << "Accessing scene mesh start " << start << " end " << end;
+      // TODO (JH) for GLB with multiple mesh files, they should
+      // be somehow binded together in physics. Currently assume
+      // there to be only 1 mesh
+      GltfMeshData* meshDataGL = static_cast<GltfMeshData*>(
+          meshes_[start].get());
+      Magnum::Trade::MeshData3D& meshData = *(meshDataGL->getMeshData());
+      // Apply in-place transformation to collision mesh, to be consistent with
+      //  display mesh
+      quatf quatf = quatf::FromTwoVectors(
+            info.frame.front(), geo::ESP_FRONT);
+      Magnum::Quaternion quat = Magnum::Quaternion(quatf);
+      //LOG(INFO) << "Creating physical scene rotation " << info.filepath << " "<< quatf.x() 
+      //    << " " << quatf.y() << " " << quatf.z() << " " << quatf.w();
+      if (float(quat.angle()) > 0.0f) {
+        Magnum::Matrix4 transform = 
+            Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
+        Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions(0));
+      }
 
-    Magnum::Trade::MeshData3D & meshData = *(
-        meshDataGL->getMeshData());
-    LOG(INFO) << "Created mesh data";
+      _physicsManager.initObject(info, metaData, meshData, 
+          physNode, "TriangleMeshShape", true);
+    }
 
-
-    // Apply in-place transformation to collision mesh, to be consistent with
-    //  display mesh
-    quatf quatf = quatf::FromTwoVectors(
-          info.frame.front(), geo::ESP_FRONT);
-    Magnum::Quaternion quat = Magnum::Quaternion(quatf);
-    Magnum::Matrix4 transform = 
-        Magnum::Matrix4::rotation(quat.angle(), quat.axis());
-    Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions(0));
-
-
-    _physicsManager.initObject(info, metaData, meshData, 
-        physNode, "TriangleMeshShape", true);
     LOG(INFO) << "Created mesh object";
 
   }
@@ -119,15 +132,23 @@ bool ResourceManager::loadObject(const AssetInfo& info,
                                  bool attach_physics,  /* = false */
                                  DrawableGroup* drawables /* = nullptr */) {
 
-  bool meshSuccess = loadGeneralMeshData(info, parent, drawables);
-
+  bool meshSuccess = loadGeneralMeshData(info, parent, drawables, true);
+  
   // if this is a new file, load it and add it to the dictionary
   if (attach_physics) {
-    physics::BulletRigidObject* physNode = 
-      static_cast<physics::BulletRigidObject*>(parent);
+    // Load convex hull
+    std::string fname;
+    fname.assign(info.filepath);
+    std::string c_fname = fname.replace(
+        fname.end()-4, fname.end(), "_convex.glb");
+    AssetInfo c_info = AssetInfo::fromPath(c_fname);
+    bool c_MeshSuccess = loadGeneralMeshData(c_info, parent, nullptr, true);
 
-    const std::string& filename = info.filepath;
-    MeshMetaData& metaData = resourceDict_.at(filename);
+    physics::BulletRigidObject* physNode = 
+        static_cast<physics::BulletRigidObject*>(parent);
+
+    //const std::string& filename = info.filepath;
+    MeshMetaData& metaData = resourceDict_.at(c_fname);
     auto indexPair = metaData.meshIndex;
     int start = indexPair.first;
     int end = indexPair.second;
@@ -141,8 +162,16 @@ bool ResourceManager::loadObject(const AssetInfo& info,
     Magnum::Trade::MeshData3D & meshData = *(
         meshDataGL->getMeshData());
 
+    // Transform for glb
+    quatf quatf = quatf::FromTwoVectors(
+          info.frame.front(), geo::ESP_FRONT);
+    Magnum::Quaternion quat = Magnum::Quaternion(quatf);
+    if (float(quat.angle()) > 0.0f) {
+      Magnum::Matrix4 transform = 
+          Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
+      Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions(0));
+    }
 
-    // TODO (JH): mass is hacked
     _physicsManager.initObject(info, metaData, meshData, 
         physNode, "TriangleMeshShape", false);
 
@@ -153,6 +182,29 @@ bool ResourceManager::loadObject(const AssetInfo& info,
   return meshSuccess;
 }
 
+void ResourceManager::shiftMeshDataToOrigin(GltfMeshData* meshDataGL) {
+  Magnum::Trade::MeshData3D& meshData = *(meshDataGL->getMeshData());
+  float minX = 999999.9f; 
+  float maxX = -999999.9f;
+  float minY = 999999.9f;
+  float maxY = -999999.9f;
+  float minZ = 999999.9f; 
+  float maxZ = -999999.9f;
+  for (int vi = 0; vi < meshData.positions(0).size(); vi ++) {
+    Magnum::Vector3 pos = meshData.positions(0)[vi];
+    if (pos.x() < minX) {minX = pos.x();}
+    if (pos.x() > maxX) {maxX = pos.x();}
+    if (pos.y() < minY) {minY = pos.y();}
+    if (pos.y() > maxY) {maxY = pos.y();}
+    if (pos.z() < minZ) {minZ = pos.z();}
+    if (pos.z() > maxZ) {maxZ = pos.z();}
+  }
+  LOG(INFO) << "Shifting data origin";
+  Magnum::Matrix4 transform = 
+      Magnum::Matrix4::translation(
+      Magnum::Vector3(-(maxX + minX)/2, -(maxY + minY)/2, -(maxZ + minZ)/2));
+  Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions(0));
+}
 
 Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
     ShaderType type) {
@@ -258,6 +310,8 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
     LOG(INFO) << "loading instance mesh data: " << filename;
     instanceMeshData->loadPLY(filename);
     instanceMeshData->uploadBuffersToGPU(false);
+
+    instance_mesh = &(instanceMeshData->getRenderingBuffer()->mesh);
     // update the dictionary
     resourceDict_.emplace(filename, MeshMetaData(index, index));
   }
@@ -283,7 +337,8 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
 
 bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
                                           scene::SceneNode* parent,
-                                          DrawableGroup* drawables) {
+                                          DrawableGroup* drawables,
+                                          bool shiftOrigin /* = false */) {
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
 
@@ -322,7 +377,7 @@ bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
     MeshMetaData metaData;
     loadTextures(*importer, &metaData);
     loadMaterials(*importer, &metaData);
-    loadMeshes(*importer, &metaData);
+    loadMeshes(*importer, &metaData, shiftOrigin);
     // update the dictionary
     resourceDict_.emplace(filename, metaData);
   }
@@ -331,9 +386,12 @@ bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
   const bool forceReload = false;
 
   scene::SceneNode& newNode = parent->createChild();
-  bool success_ = createScene(*importer, info, metaData, newNode, 
-      drawables, forceReload);
-
+  bool success_ = true;
+  if (drawables != nullptr) {
+    success_ = createScene(*importer, info, metaData, newNode, 
+        drawables, forceReload);
+  }
+  
   return success_;
 }
 
@@ -369,7 +427,9 @@ void ResourceManager::loadMaterials(Importer& importer,
   }
 }
 
-void ResourceManager::loadMeshes(Importer& importer, MeshMetaData* metaData) {
+void ResourceManager::loadMeshes(Importer& importer, 
+                                 MeshMetaData* metaData,
+                                 bool shiftOrigin /*=false*/) {
   int meshStart = meshes_.size();
   int meshEnd = meshStart + importer.mesh3DCount() - 1;
   metaData->setMeshIndices(meshStart, meshEnd);
@@ -383,6 +443,9 @@ void ResourceManager::loadMeshes(Importer& importer, MeshMetaData* metaData) {
     // TODO (JH) apparently only gltfMesh allows accesing non-GL mesh data, which can be 
     // attached with physics, others (PTex, FRLMesh, etc) do not have this implemented
     gltfMeshData->setMeshData(importer, iMesh);
+    if (shiftOrigin) {
+      shiftMeshDataToOrigin(gltfMeshData);
+    }
     auto& meshData = gltfMeshData->getMeshData();
     if (!meshData ||
         meshData->primitive() != Magnum::MeshPrimitive::Triangles) {
@@ -575,7 +638,7 @@ bool ResourceManager::createScene(Importer& importer,
     //     quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
     // scene::SceneNode& sceneNode_ = static_cast<scene::SceneNode&>(sceneNode);
     LOG(INFO) << "Creating scene node " << sceneNode_.getId();
-    LOG(INFO) << "Creating scene node rotation " << transform.x() 
+    LOG(INFO) << "Creating scene node rotation " << info.filepath << " "<< transform.x() 
         << " " << transform.y() << " " << transform.z() << " " << transform.w();
     sceneNode.setRotation(transform);
 

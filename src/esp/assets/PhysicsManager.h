@@ -40,6 +40,7 @@
 #include "Asset.h"
 #include "BaseMesh.h"
 //#include "magnum.h"
+#include "GenericInstanceMeshData.h"
 #include "MeshMetaData.h"
 #include "esp/scene/SceneNode.h"
 #include "esp/physics/BulletObject.h"
@@ -61,6 +62,13 @@ class PhysicsManager {
                   physics::BulletRigidObject* physObject,
                   const std::string& shapeType="TriangleMeshShape",
                   bool zero_mass=false);
+
+  void initFRLObject(const AssetInfo& info,
+                                const MeshMetaData& metaData,
+                                GenericInstanceMeshData* meshData,
+                                physics::BulletRigidObject* physObject,
+                                const std::string& shapeType="TriangleMeshShape",
+                                bool zero_mass=false);
 
   void debugSceneGraph(const MagnumObject* root);
 

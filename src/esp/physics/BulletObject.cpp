@@ -1,5 +1,6 @@
 
 #include <Corrade/PluginManager/Manager.h>
+#include <Corrade/Containers/Array.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/BulletIntegration/Integration.h>
@@ -17,11 +18,15 @@
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
+#include "BulletCollision/CollisionShapes/btConvexHullShape.h"
+#include "BulletCollision/CollisionShapes/btCompoundShape.h"
 
 namespace esp {
 namespace physics {
 
-// 	Bullet Mesh conversion adapted from: https://github.com/mosra/magnum-integration/issues/20
+// 	Bullet Mesh conversion adapted from: 
+//			https://github.com/mosra/magnum-integration/issues/20
+//			https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=11001
 BulletRigidObject::BulletRigidObject(scene::SceneNode* parent): 
   scene::SceneNode{*parent} {}
 
@@ -41,8 +46,6 @@ bool BulletRigidObject::initialize(Magnum::Float mass,
 
   // this code only works for Triangles only meshes 
   if (meshData.primitive() == Magnum::MeshPrimitive::Triangles) {
-
-  	
 	  // this is a collision mesh, convert to bullet mesh //
 	  btIndexedMesh bulletMesh;
 	  LOG(INFO) << "Mesh indices count " << meshData.indices().size();
@@ -55,21 +58,31 @@ bool BulletRigidObject::initialize(Magnum::Float mass,
 	  bulletMesh.m_vertexStride = sizeof(Magnum::Vector3);
 	  bulletMesh.m_indexType = PHY_INTEGER;
 	  bulletMesh.m_vertexType = PHY_FLOAT;
-
-
-	  btCollisionShape* shape = nullptr;
 	  auto tivArray = new btTriangleIndexVertexArray();
 	  tivArray->addIndexedMesh(bulletMesh, PHY_INTEGER);
+
+	  float dx, dy, dz;
+	  getDimensions(meshData, &dx, &dy, &dz);
+	  LOG(INFO) << "Dimensions dx " << dx << " dy " << dy << " dz " << dz;
   	if(mass != 0.0f) {
 	  	// TODO (JH) this should be replaced by more general collision-mesh loader
-	  	bShape = new btBoxShape(btVector3(0.13f,0.13f,0.13f));		// Cheezit box
+	  	//bShape = new btBoxShape(btVector3(dx/2, dy/2, dz/2));		// Cheezit box
+	  	btTransform t;  //position and rotation
+			t.setIdentity();
+			//t.setOrigin(btVector3(dx/2, dy/2, dz/2));
+			bShape = new btCompoundShape();
+	  	btConvexHullShape* b_Convex_Shape = new btConvexHullShape(
+	  			(const btScalar *)meshData.positions(0).data(), 
+	  			meshData.positions(0).size(), sizeof(Magnum::Vector3));
+	  	(static_cast<btCompoundShape*>(bShape))->addChildShape(t, b_Convex_Shape);
 	    //bShape = new btBoxShape(btVector3(0.3f,0.3f,0.3f));
+	    //bShape = new btGImpactMeshShape(tivArray);
 	  	bShape->calculateLocalInertia(mass, bInertia);
 	  } else {
 	    // exact shape, but worse performance
       	bShape = new btBvhTriangleMeshShape(tivArray, true);
 	  	//bShape = new btBoxShape(btVector3(1.0f,1.0f,1.0f));
-	  	//bShape = new btGImpactMeshShape(tivArray);
+	  	//bShape = new btGImpactMeshShape(tivArray);				// Never worked for me
 	  	//bShape = new btBoxShape(btVector3(200.0f, 0.05f, 200.0f));
 	  	bShape->calculateLocalInertia(mass, bInertia);
 	  }
@@ -78,53 +91,7 @@ bool BulletRigidObject::initialize(Magnum::Float mass,
       //bShape = new btConvexTriangleMeshShape(tivArray, true);
 	  //} // btConvexHullShape can be even more performant 
   
-
-
-    // create a bullet indexed mesh from our mesh data
-    /*btIndexedMesh bulletMesh;
-    bulletMesh.m_numTriangles = meshData.indices().size()/3;
-    bulletMesh.m_triangleIndexBase = (const unsigned char *)meshData.indices().data();
-    bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
-    //bulletMesh.m_numVertices = meshData.positions(0).size();
-    bulletMesh.m_numVertices = meshData.positions(0).size();
-    bulletMesh.m_vertexBase = (const unsigned char *)meshData.positions(0).data();
-    bulletMesh.m_vertexStride = sizeof(Magnum::Vector3);
-    bulletMesh.m_indexType = PHY_INTEGER;
-    bulletMesh.m_vertexType = PHY_FLOAT;
-
-    btTriangleIndexVertexArray *pTriMesh = new btTriangleIndexVertexArray();
-    pTriMesh->addIndexedMesh(bulletMesh, PHY_INTEGER);
-
-
-    //LOG(INFO) << "Creating object num tris: " << meshData.indices();
-    LOG(INFO) << "Creating object num tris: " << meshData.indices().size()/3 << " num verts: " << meshData.positions(0).size() << " sub parts " << pTriMesh->getNumSubParts();
-	  
-    // Here says that btBvhTriangleMeshShape is not the right one
-    //		https://stackoverflow.com/questions/32668218/concave-collision-detection-in-bullet
-    //		https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=10689
-    //		https://pybullet.org/Bullet/BulletFull/classbtBvhTriangleMeshShape.html
-    //		http://www.opengl-tutorial.org/miscellaneous/clicking-on-objects/picking-with-a-physics-library/
-    //bShape = new btBvhTriangleMeshShape(pTriMesh, true, true);
-	  
-	  //bShape = new btGImpactMeshShape(pTriMesh);
-	  //bShape = new btConvexTriangleMeshShape(pTriMesh, true);
-
-	  if(mass != 0.0f) {
-	  	// TODO (JH) this should be replaced by more general collision-mesh loader
-	  	bShape = new btBoxShape(btVector3(0.13f,0.13f,0.13f));		// Cheezit box
-	    //bShape = new btGImpactMeshShape(pTriMesh);
-	    //bShape = new btBoxShape(btVector3(0.3f,0.3f,0.3f));
-	  	bShape->calculateLocalInertia(mass, bInertia);
-	  } else {
-	  	//bShape = new btBoxShape(btVector3(1.0f,1.0f,1.0f));
-	  	//bShape = new btGImpactMeshShape(pTriMesh);
-	  	bShape = new btBoxShape(btVector3(200.0f, 0.05f, 200.0f));
-	  	bShape->calculateLocalInertia(mass, bInertia);
-	  	//bShape = new btBvhTriangleMeshShape(pTriMesh, true, true);
-	  }
-		*/
-
-	  /* Bullet rigid body setup */
+	  // Bullet rigid body setup
 	  auto* motionState = new Magnum::BulletIntegration::MotionState{*this};
 
 	  _bRigidBody = new btRigidBody(btRigidBody::btRigidBodyConstructionInfo{
@@ -143,13 +110,9 @@ bool BulletRigidObject::initialize(Magnum::Float mass,
 	  }
 
 	  LOG(INFO) << "Body Construction test: after";    
-	  LOG(INFO) << "Emplace: before " << & _bRigidBody;
-	  LOG(INFO) << "Emplace: after";
-
 	  _bRigidBody->forceActivationState(DISABLE_DEACTIVATION);
 	  _bRigidBody->activate(true);
 	  LOG(INFO) << "Add rigid: before";
-	  
 	  bWorld.addRigidBody(_bRigidBody);
 
   } else {
@@ -158,6 +121,97 @@ bool BulletRigidObject::initialize(Magnum::Float mass,
 
 	LOG(INFO) << "Rigid body: initialized";
 
+  _initialized = true;
+  return true;
+}
+
+void BulletRigidObject::getDimensions(Magnum::Trade::MeshData3D& meshData,
+																			float* x,
+																			float* y,
+																			float* z) {
+	float minX = 999999.9f; 
+	float maxX = -999999.9f;
+	float minY = 999999.9f;
+	float maxY = -999999.9f;
+	float minZ = 999999.9f; 
+	float maxZ = -999999.9f;
+	for (int vi = 0; vi < meshData.positions(0).size(); vi ++) {
+		Magnum::Vector3 pos = meshData.positions(0)[vi];
+		if (pos.x() < minX) {minX = pos.x();}
+		if (pos.x() > maxX) {maxX = pos.x();}
+		if (pos.y() < minY) {minY = pos.y();}
+		if (pos.y() > maxY) {maxY = pos.y();}
+		if (pos.z() < minZ) {minZ = pos.z();}
+		if (pos.z() > maxZ) {maxZ = pos.z();}
+	}
+	*x = maxX - minX;
+	*y = maxY - minY;
+	*z = maxZ - minZ;
+}
+
+bool BulletRigidObject::initializeFRL(Magnum::Float mass, 
+								      assets::GenericInstanceMeshData* meshData,
+								      btDynamicsWorld& bWorld) {
+
+  _bWorld = &bWorld;
+  btCollisionShape* bShape = nullptr;
+
+  LOG(INFO) << "Creating FRL object mass: " << mass;
+  btVector3 bInertia(0.0f, 0.0f, 0.0f);
+  btIndexedMesh bulletMesh;
+
+  Magnum::GL::Mesh* mesh = &meshData->getRenderingBuffer()->mesh;
+  Magnum::GL::Buffer* vbo = &meshData->getRenderingBuffer()->vbo;
+  Magnum::GL::Buffer* cbo = &meshData->getRenderingBuffer()->cbo;
+  Magnum::GL::Buffer* ibo = &meshData->getRenderingBuffer()->ibo;
+
+  Corrade::Containers::Array<char> v_data = vbo->data();
+  Corrade::Containers::Array<char> i_data = ibo->data();
+
+  LOG(INFO) << "FRL Mesh indices count " << mesh->count();
+  bulletMesh.m_numTriangles = mesh->count() / 3;
+  bulletMesh.m_triangleIndexBase = (unsigned char *)(i_data.data());
+  bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
+  bulletMesh.m_numVertices = mesh->count();
+  bulletMesh.m_vertexBase = (unsigned char *)(v_data.data());
+  bulletMesh.m_vertexStride = sizeof(Magnum::Vector3);
+  bulletMesh.m_indexType = PHY_INTEGER;
+  bulletMesh.m_vertexType = PHY_FLOAT;
+  btCollisionShape* shape = nullptr;
+  auto tivArray = new btTriangleIndexVertexArray();
+  tivArray->addIndexedMesh(bulletMesh, PHY_INTEGER);
+	if(mass != 0.0f) {
+  	bShape = new btBoxShape(btVector3(0.13f,0.13f,0.13f));		// Cheezit box
+  	bShape->calculateLocalInertia(mass, bInertia);
+  } else {
+    // exact shape, but worse performance
+  	bShape = new btBvhTriangleMeshShape(tivArray, true);
+  	bShape->calculateLocalInertia(mass, bInertia);
+  }
+  // Bullet rigid body setup
+  auto* motionState = new Magnum::BulletIntegration::MotionState{*this};
+  _bRigidBody = new btRigidBody(btRigidBody::btRigidBodyConstructionInfo{
+  mass, &motionState->btMotionState(), bShape, bInertia});
+
+  if (mass != 0.0f) {
+  	// TODO (JH) hardcoded for cheezit
+  	_bRigidBody->setRestitution(20.0f);
+  }
+  if (mass == 0.0f) {
+  	LOG(INFO) << "Setting FRL collision mass " << mass << " flags " << _bRigidBody ->getCollisionFlags();
+  	_bRigidBody ->setCollisionFlags( _bRigidBody ->getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT );
+  } else {
+  	LOG(INFO) << "Setting FRL  collision mass " << mass << " flags " << _bRigidBody ->getCollisionFlags();
+  }
+
+  LOG(INFO) << "FRL Body Construction test: after";    
+  
+  _bRigidBody->forceActivationState(DISABLE_DEACTIVATION);
+  _bRigidBody->activate(true);
+  LOG(INFO) << "Add rigid: before";
+  
+  bWorld.addRigidBody(_bRigidBody);
+  LOG(INFO) << "FRL body: initialized";
   _initialized = true;
   return true;
 }

@@ -79,28 +79,9 @@ Viewer::Viewer(const Arguments& arguments)
   }
 
   // Set up physics
-  LOG(INFO) << "Nav scene node (done) " << navSceneNode_;
-  std::string object_file ("./data/objects/textured.glb");
-  //std::string object_file ("./data/objects/cube.glb");
-  assets::AssetInfo object_info = assets::AssetInfo::fromPath(object_file);
-  LOG(INFO) << "Loading object from " << object_file;
-  // Root node
-  //bool objectLoaded_ = resourceManager_.loadObject(object_info, physicsManager_, navSceneNode_, objNode_, enablePhysics_, &drawables);
-  bool objectLoaded_ = resourceManager_.loadObject(object_info, physicsManager_, objNode_, enablePhysics_, &drawables);
-  
-  if (objectLoaded_) {
-    if (enablePhysics_) {
-
-      LOG(INFO) << "Loaded";
-
-      // Loop at 60 Hz max
-      setSwapInterval(1);
-      physicsManager_.debugSceneGraph(&rootNode);
-    }
-  } else {
-    LOG(ERROR) << "cannot load " << object_file;
-    std::exit(0);
-  }
+  LOG(INFO) << "Nav scene node (done) " << navSceneNode_;  
+  bool surreal_mesh = false;
+  bool castle_mesh = true;
 
 
   // Set up camera
@@ -115,15 +96,7 @@ Viewer::Viewer(const Arguments& arguments)
   //cameraNode_->translate(vec3f(8.0f, cameraHeight, -8.0f));
   Magnum::Matrix4 oldT = cameraNode_->MagnumObject::absoluteTransformation();
   LOG(INFO) << "Camera old transformation " << Eigen::Map<mat4f>(oldT.data());
-  Vector3 old_pos = oldT.transformPoint({0.0f, 0.0f, -1.0f});
-  LOG(INFO) << "Object old position " << Eigen::Map<vec3f>(old_pos.data());
   
-
-  //agentBodyNode_->rotate(3.14f, vec3f(0, 1, 0));
-  //cameraNode_->rotate(3.14f, vec3f(0, 1, 0));       // (JH) strange this is not working
-  agentBodyNode_->translate(vec3f(0, 1.5f, 10.0f));
-
-
   float hfov = 90.0f;
   int width = viewportSize[0];
   int height = viewportSize[1];
@@ -131,13 +104,6 @@ Viewer::Viewer(const Arguments& arguments)
   float znear = 0.01f;
   float zfar = 1000.0f;
   renderCamera_->setProjectionMatrix(width, height, znear, zfar, hfov);
-
-
-  // (JH) hacky way to set orientation
-  //renderCamera_->getSceneNode()->MagnumObject::rotate(Math::Rad<float>{3.14f},
-  //                                                    Vector3(0, 0, 1));
-
-
 
   // Load navmesh if available
   const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
@@ -152,28 +118,56 @@ Viewer::Viewer(const Arguments& arguments)
   LOG(INFO) << "Camera position " << cameraNode_->getAbsolutePosition();
   LOG(INFO) << "Scene position" << navSceneNode_->getAbsolutePosition();
 
-  //Magnum::Matrix4 absT = cameraNode_->MagnumObject::absoluteTransformation();
-  //Magnum::Matrix4 T = cameraNode_->MagnumObject::transformationMatrix();    // Relative to agent bodynode
-  Vector3 agent_pos = Vector3(-2.93701f, -3.53019f, 3.68798f);
-  //agentBodyNode_->setTranslation(Eigen::Map<vec3f>(agent_pos.data()));
-  //agentBodyNode_->rotate(3.14f, vec3f(0, 1, 0));
+  if (surreal_mesh) {
+    Vector3 agent_pos = Vector3(-2.93701f, -3.53019f, 3.68798f);
+    agentBodyNode_->setTranslation(Eigen::Map<vec3f>(agent_pos.data()));
+    agentBodyNode_->rotate(3.14f, vec3f(0, 1, 0));
+  } else if (castle_mesh) {
+    agentBodyNode_->rotate(3.14f, vec3f(0, 1, 0));
+    //Vector3 agent_pos = Vector3(0.0f, 0.0f, 0.0f);
+    agentBodyNode_->translate(vec3f(0, 1.4f, 10.0f));
+    //agentBodyNode_->setTranslation(Eigen::Map<vec3f>(agent_pos.data()));    
+  }
 
   Magnum::Matrix4 absT = agentBodyNode_->MagnumObject::absoluteTransformation();
   Magnum::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();    // Relative to agent bodynode
-  //auto transformation = Matrix4(cameraNode_->getAbsoluteTransformation());
-  //Vector3 new_pos = absT.transformPoint({0.0f, 0.0f, -1.0f});
-  Vector3 new_pos = T.transformPoint({0.0f, 0.0f, -3.0f});
-  
-  //Vector3 new_pos = Vector3(0.0f, -10.0f, 3.0f);
-  
+
+  Vector3 new_pos = T.transformPoint({0.0f, 0.0f, 0.0f});
+  if (castle_mesh) {
+    //new_pos = T.transformPoint({0.1f, 1.0f, -3.0f});
+    new_pos = T.transformPoint({0.1f, 1.0f, -3.0f});
+  } else if (surreal_mesh) {
+    new_pos = T.transformPoint({0.0f, 0.0f, -1.0f});
+  }
+    
   LOG(INFO) << "Camera position " << T.translation().x() << " " << T.translation().y() << " " << T.translation().z();
-  //Vector3 new_pos = T.translation() + delta;
-  //Vector3 new_pos = Vector3(cameraNode_->getAbsolutePosition()) + delta;
   LOG(INFO) << "Object new position " << new_pos.x() << " " << new_pos.y() << " " << new_pos.z();
   LOG(INFO) << "Camera transformation" << Eigen::Map<mat4f>(T.data());
   LOG(INFO) << "Camera abs transformation" << Eigen::Map<mat4f>(absT.data());
 
+  std::string object_file ("./data/objects/cheezit.glb");
+  //std::string object_file ("./data/objects/cube.glb");
+  //assets::AssetInfo object_info = 
+  //LOG(INFO) << "Loading object from " << object_file;
+  bool objectLoaded_ = resourceManager_.loadObject(
+      assets::AssetInfo::fromPath(object_file), physicsManager_, 
+      objNode_, enablePhysics_, &drawables);  
+  if (objectLoaded_) {
+    if (enablePhysics_) {
+      LOG(INFO) << "Loaded";
+      // Loop at 60 Hz max
+      setSwapInterval(1);
+      physicsManager_.debugSceneGraph(&rootNode);
+    }
+  } else {
+    LOG(ERROR) << "cannot load " << object_file;
+    std::exit(0);
+  }
+
   objNode_->setTranslation(vec3f(new_pos.x(), new_pos.y(), new_pos.z()));
+  if (castle_mesh) {
+    objNode_->rotate(3.14f/2, vec3f(0, 0, 1));
+  }
 
   static_cast<physics::BulletRigidObject*>(objNode_)->syncPose();
   static_cast<physics::BulletRigidObject*>(navSceneNode_)->syncPose();
