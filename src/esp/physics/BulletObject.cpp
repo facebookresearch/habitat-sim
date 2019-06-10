@@ -21,49 +21,67 @@
 namespace esp {
 namespace physics {
 
-// TODO (JH) what role does Object3D{parent} play in example?
-// Bullet Mesh conversion adapted from: https://github.com/mosra/magnum-integration/issues/20
+// 	Bullet Mesh conversion adapted from: https://github.com/mosra/magnum-integration/issues/20
 BulletRigidObject::BulletRigidObject(scene::SceneNode* parent): 
   scene::SceneNode{*parent} {}
 
 bool BulletRigidObject::initialize(Magnum::Float mass, 
-																	 Magnum::Trade::MeshData3D& meshData,
-															     btDynamicsWorld& bWorld){
+								   Magnum::Trade::MeshData3D& meshData,
+								   btDynamicsWorld& bWorld){
 
 	_bWorld = &bWorld;
   /* Create Bullet Object */
-  /*
-  // this is a collision mesh, convert to bullet mesh //
-  // TODO (JH) would this introduce memory leak?
-  btIndexedMesh bulletMesh;
-  LOG(INFO) << "Mesh indices count " << meshData.indices().size();
-  
-  bulletMesh.m_numTriangles = meshData.indices().size()/3;
-  bulletMesh.m_triangleIndexBase = reinterpret_cast<const unsigned char *>(meshData.indices().data());
-  bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
-  bulletMesh.m_numVertices = meshData.positions(0).size();
-  bulletMesh.m_vertexBase = reinterpret_cast<const unsigned char *>(meshData.positions(0).data());
-  bulletMesh.m_vertexStride = sizeof(Magnum::Vector3);
-  bulletMesh.m_indexType = PHY_INTEGER;
-  bulletMesh.m_vertexType = PHY_FLOAT;
-
-
-  btCollisionShape* shape = nullptr;
-  auto tivArray = new btTriangleIndexVertexArray();
-  tivArray->addIndexedMesh(bulletMesh, PHY_INTEGER);
-  if(shapeType == "TriangleMeshShape") {
-      // exact shape, but worse performance
-      shape = new btBvhTriangleMeshShape(tivArray, true);
-  } else {
-      // convex hull, but better performance
-      shape = new btConvexTriangleMeshShape(tivArray, true);
-  } // btConvexHullShape can be even more performant */
   btCollisionShape* bShape = nullptr;
 
-  /* this code only works for Triangles only meshes */
+  LOG(INFO) << "Creating object mass: " << mass;
+  // Calculate inertia so the object reacts as it should with
+  //   rotation and everything
+  btVector3 bInertia(0.0f, 0.0f, 0.0f);
+  //btVector3 bInertia(2.0f, 2.0f, 2.0f);
+
+  // this code only works for Triangles only meshes 
   if (meshData.primitive() == Magnum::MeshPrimitive::Triangles) {
-    /* create a bullet indexed mesh from our mesh data */
-    btIndexedMesh bulletMesh;
+
+  	
+	  // this is a collision mesh, convert to bullet mesh //
+	  btIndexedMesh bulletMesh;
+	  LOG(INFO) << "Mesh indices count " << meshData.indices().size();
+	  
+	  bulletMesh.m_numTriangles = meshData.indices().size()/3;
+	  bulletMesh.m_triangleIndexBase = reinterpret_cast<const unsigned char *>(meshData.indices().data());
+	  bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
+	  bulletMesh.m_numVertices = meshData.positions(0).size();
+	  bulletMesh.m_vertexBase = reinterpret_cast<const unsigned char *>(meshData.positions(0).data());
+	  bulletMesh.m_vertexStride = sizeof(Magnum::Vector3);
+	  bulletMesh.m_indexType = PHY_INTEGER;
+	  bulletMesh.m_vertexType = PHY_FLOAT;
+
+
+	  btCollisionShape* shape = nullptr;
+	  auto tivArray = new btTriangleIndexVertexArray();
+	  tivArray->addIndexedMesh(bulletMesh, PHY_INTEGER);
+  	if(mass != 0.0f) {
+	  	// TODO (JH) this should be replaced by more general collision-mesh loader
+	  	bShape = new btBoxShape(btVector3(0.13f,0.13f,0.13f));		// Cheezit box
+	    //bShape = new btBoxShape(btVector3(0.3f,0.3f,0.3f));
+	  	bShape->calculateLocalInertia(mass, bInertia);
+	  } else {
+	    // exact shape, but worse performance
+      	bShape = new btBvhTriangleMeshShape(tivArray, true);
+	  	//bShape = new btBoxShape(btVector3(1.0f,1.0f,1.0f));
+	  	//bShape = new btGImpactMeshShape(tivArray);
+	  	//bShape = new btBoxShape(btVector3(200.0f, 0.05f, 200.0f));
+	  	bShape->calculateLocalInertia(mass, bInertia);
+	  }
+	  //} else {
+      // convex hull, but better performance
+      //bShape = new btConvexTriangleMeshShape(tivArray, true);
+	  //} // btConvexHullShape can be even more performant 
+  
+
+
+    // create a bullet indexed mesh from our mesh data
+    /*btIndexedMesh bulletMesh;
     bulletMesh.m_numTriangles = meshData.indices().size()/3;
     bulletMesh.m_triangleIndexBase = (const unsigned char *)meshData.indices().data();
     bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
@@ -87,15 +105,10 @@ bool BulletRigidObject::initialize(Magnum::Float mass,
     //		https://pybullet.org/Bullet/BulletFull/classbtBvhTriangleMeshShape.html
     //		http://www.opengl-tutorial.org/miscellaneous/clicking-on-objects/picking-with-a-physics-library/
     //bShape = new btBvhTriangleMeshShape(pTriMesh, true, true);
-
-	  LOG(INFO) << "Creating object mass: " << mass;
-	  /* Calculate inertia so the object reacts as it should with
-	     rotation and everything */
-	  btVector3 bInertia(0.0f, 0.0f, 0.0f);
-	  //btVector3 bInertia(2.0f, 2.0f, 2.0f);
 	  
 	  //bShape = new btGImpactMeshShape(pTriMesh);
 	  //bShape = new btConvexTriangleMeshShape(pTriMesh, true);
+
 	  if(mass != 0.0f) {
 	  	// TODO (JH) this should be replaced by more general collision-mesh loader
 	  	bShape = new btBoxShape(btVector3(0.13f,0.13f,0.13f));		// Cheezit box
@@ -106,8 +119,10 @@ bool BulletRigidObject::initialize(Magnum::Float mass,
 	  	//bShape = new btBoxShape(btVector3(1.0f,1.0f,1.0f));
 	  	//bShape = new btGImpactMeshShape(pTriMesh);
 	  	bShape = new btBoxShape(btVector3(200.0f, 0.05f, 200.0f));
+	  	bShape->calculateLocalInertia(mass, bInertia);
 	  	//bShape = new btBvhTriangleMeshShape(pTriMesh, true, true);
 	  }
+		*/
 
 	  /* Bullet rigid body setup */
 	  auto* motionState = new Magnum::BulletIntegration::MotionState{*this};

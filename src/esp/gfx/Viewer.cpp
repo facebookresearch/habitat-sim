@@ -61,6 +61,9 @@ Viewer::Viewer(const Arguments& arguments)
   navSceneNode_ = &rootNode.createChild();
   objNode_ = &navSceneNode_->createChild();
 
+  //Magnum::Matrix4 navT = navSceneNode_->MagnumObject::absoluteTransformation();
+  //LOG(INFO) << "Scene node transformation " << Eigen::Map<mat4f>(navT.data());
+  
   if (enablePhysics_) {
     // ======= Init timestep, physics starts =======
     physicsManager_.initPhysics();
@@ -148,8 +151,13 @@ Viewer::Viewer(const Arguments& arguments)
   LOG(INFO) << "Agent position " << agentBodyNode_->getAbsolutePosition();
   LOG(INFO) << "Camera position " << cameraNode_->getAbsolutePosition();
   LOG(INFO) << "Scene position" << navSceneNode_->getAbsolutePosition();
+
   //Magnum::Matrix4 absT = cameraNode_->MagnumObject::absoluteTransformation();
   //Magnum::Matrix4 T = cameraNode_->MagnumObject::transformationMatrix();    // Relative to agent bodynode
+  Vector3 agent_pos = Vector3(-2.93701f, -3.53019f, 3.68798f);
+  //agentBodyNode_->setTranslation(Eigen::Map<vec3f>(agent_pos.data()));
+  //agentBodyNode_->rotate(3.14f, vec3f(0, 1, 0));
+
   Magnum::Matrix4 absT = agentBodyNode_->MagnumObject::absoluteTransformation();
   Magnum::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();    // Relative to agent bodynode
   //auto transformation = Matrix4(cameraNode_->getAbsoluteTransformation());
@@ -166,6 +174,7 @@ Viewer::Viewer(const Arguments& arguments)
   LOG(INFO) << "Camera abs transformation" << Eigen::Map<mat4f>(absT.data());
 
   objNode_->setTranslation(vec3f(new_pos.x(), new_pos.y(), new_pos.z()));
+
   static_cast<physics::BulletRigidObject*>(objNode_)->syncPose();
   static_cast<physics::BulletRigidObject*>(navSceneNode_)->syncPose();
 

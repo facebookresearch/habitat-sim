@@ -13,6 +13,8 @@
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/EigenIntegration/Integration.h>
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
@@ -89,6 +91,17 @@ bool ResourceManager::loadPhysicalScene(const AssetInfo& info,
     Magnum::Trade::MeshData3D & meshData = *(
         meshDataGL->getMeshData());
     LOG(INFO) << "Created mesh data";
+
+
+    // Apply in-place transformation to collision mesh, to be consistent with
+    //  display mesh
+    quatf quatf = quatf::FromTwoVectors(
+          info.frame.front(), geo::ESP_FRONT);
+    Magnum::Quaternion quat = Magnum::Quaternion(quatf);
+    Magnum::Matrix4 transform = 
+        Magnum::Matrix4::rotation(quat.angle(), quat.axis());
+    Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions(0));
+
 
     _physicsManager.initObject(info, metaData, meshData, 
         physNode, "TriangleMeshShape", true);
@@ -455,6 +468,7 @@ void ResourceManager::createObject(Importer& importer,
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
   node.MagnumObject::setTransformation(objectData->transformation());
+  LOG(INFO) << "Transformation " << Eigen::Map<mat4f>(objectData->transformation().data());
 
   const int meshStart = metaData.meshIndex.first;
   const int materialStart = metaData.materialIndex.first;
@@ -553,10 +567,16 @@ bool ResourceManager::createScene(Importer& importer,
       LOG(ERROR) << "Cannot load scene, exiting";
       return false;
     }
+
     const quatf transform =
         quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
     scene::SceneNode& sceneNode_ = static_cast<scene::SceneNode&>(sceneNode);
-    LOG(INFO) << "Creating child node " << sceneNode_.getId();
+    // const quatf transform =
+    //     quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
+    // scene::SceneNode& sceneNode_ = static_cast<scene::SceneNode&>(sceneNode);
+    LOG(INFO) << "Creating scene node " << sceneNode_.getId();
+    LOG(INFO) << "Creating scene node rotation " << transform.x() 
+        << " " << transform.y() << " " << transform.z() << " " << transform.w();
     sceneNode.setRotation(transform);
 
     // Recursively add all children
