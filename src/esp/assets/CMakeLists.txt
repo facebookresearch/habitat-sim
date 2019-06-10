@@ -4,13 +4,10 @@ find_package(Magnum
   REQUIRED
     AnyImageImporter
     AnySceneImporter
-    DebugTools
     GL
     MeshTools
-    Primitives
     SceneGraph
     Shaders
-    TextureTools
     Trade
 )
 
