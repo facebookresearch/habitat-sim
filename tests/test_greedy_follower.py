@@ -89,7 +89,7 @@ def test_greedy_follower(test_navmesh, scene_graph, pbar):
                 np.linalg.norm(end_state.position - goal_pos)
                 <= follower.forward_spec.amount
             ), "Didn't make it"
-        except:
+        except Exception as e:
             if test_all:
                 num_fails += 1
                 pbar.set_postfix(num_fails=num_fails)
