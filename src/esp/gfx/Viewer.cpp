@@ -39,7 +39,8 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("action-path",
                "Provides actions along the action space shortest path to a "
                "random goal")
-      .addOption("obj", "./data/objects/chefcan.glb").setHelp("obj", "obj file to load")
+      .addOption("obj", "./data/objects/chefcan.glb")
+      .setHelp("obj", "obj file to load")
       .addBooleanOption("enable-physics")
       //.setHelp()
       .addSkippedPrefix("magnum", "engine-specific options")
@@ -62,10 +63,10 @@ Viewer::Viewer(const Arguments& arguments)
   navSceneNode_ = &rootNode->createChild();
 
   // for (int obj_i = 0; obj_i < 1; obj_i ++) {
-  //   scene::SceneNode* node_ = &navSceneNode_->createChild();    
+  //   scene::SceneNode* node_ = &navSceneNode_->createChild();
   //   allObjNodes_.push_back(node_);
   // }
-  
+
   if (enablePhysics_) {
     // ======= Init timestep, physics starts =======
     physicsManager_.initPhysics();
@@ -74,14 +75,15 @@ Viewer::Viewer(const Arguments& arguments)
   auto& drawables = sceneGraph->getDrawables();
   const std::string& file = args.value("file");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
-  LOG(INFO) << "Nav scene node (before) " << navSceneNode_;  
-  if (!resourceManager_.loadPhysicalScene(info, physicsManager_, navSceneNode_, enablePhysics_, &drawables)) {
+  LOG(INFO) << "Nav scene node (before) " << navSceneNode_;
+  if (!resourceManager_.loadPhysicalScene(info, physicsManager_, navSceneNode_,
+                                          enablePhysics_, &drawables)) {
     LOG(ERROR) << "cannot load " << file;
     std::exit(0);
   }
 
   // Set up physics
-  LOG(INFO) << "Nav scene node (done) " << navSceneNode_;  
+  LOG(INFO) << "Nav scene node (done) " << navSceneNode_;
 
   // Set up camera
   renderCamera_ = &sceneGraph->getDefaultRenderCamera();
@@ -89,13 +91,14 @@ Viewer::Viewer(const Arguments& arguments)
   cameraNode_ = &agentBodyNode_->createChild();
 
   // TODO (JH) hacky position setting
-  //cameraNode_->rotate(Math::piHalf, vec3f(0, 0, 1));
-  //cameraNode_->translate(vec3f(0.0, cameraHeight, 0.0));
-  //cameraNode_->translate(vec3f(0.0, 0.0, cameraHeight));
-  //cameraNode_->translate(vec3f(8.0f, cameraHeight, -8.0f));
+  // cameraNode_->rotate(Math::piHalf, vec3f(0, 0, 1));
+  // cameraNode_->translate(vec3f(0.0, cameraHeight, 0.0));
+  // cameraNode_->translate(vec3f(0.0, 0.0, cameraHeight));
+  // cameraNode_->translate(vec3f(8.0f, cameraHeight, -8.0f));
   Magnum::Matrix4 oldT = cameraNode_->MagnumObject::absoluteTransformation();
-  //LOG(INFO) << "Camera old transformation " << Eigen::Map<mat4f>(oldT.data());
-  
+  // LOG(INFO) << "Camera old transformation " <<
+  // Eigen::Map<mat4f>(oldT.data());
+
   float hfov = 90.0f;
   int width = viewportSize[0];
   int height = viewportSize[1];
@@ -123,117 +126,118 @@ Viewer::Viewer(const Arguments& arguments)
     agentBodyNode_->rotate(3.14f, vec3f(0, 1, 0));
   } else if (castle_mesh) {
     agentBodyNode_->rotate(3.14f * 1.1, vec3f(0, 1, 0));
-    //Vector3 agent_pos = Vector3(0.0f, 0.0f, 0.0f);
+    // Vector3 agent_pos = Vector3(0.0f, 0.0f, 0.0f);
     agentBodyNode_->translate(vec3f(-0.8, 1.4f, 11.0f));
-    //agentBodyNode_->setTranslation(Eigen::Map<vec3f>(agent_pos.data()));    
+    // agentBodyNode_->setTranslation(Eigen::Map<vec3f>(agent_pos.data()));
   }
 
-  //std::string object_file ("./data/objects/cube.glb");
-  //assets::AssetInfo object_info = 
-  //LOG(INFO) << "Loading object from " << object_file;
+  // std::string object_file ("./data/objects/cube.glb");
+  // assets::AssetInfo object_info =
+  // LOG(INFO) << "Loading object from " << object_file;
 
-  //for (int obj_i = 0; obj_i < numObjects_; obj_i ++) {
-  //std::string object_file ("./data/objects/cheezit.glb");
-  std::string object_file (args.value("obj"));
-  // scene::SceneNode* node_ = &navSceneNode_->createChild();    
+  // for (int obj_i = 0; obj_i < numObjects_; obj_i ++) {
+  // std::string object_file ("./data/objects/cheezit.glb");
+  std::string object_file(args.value("obj"));
+  // scene::SceneNode* node_ = &navSceneNode_->createChild();
   // allObjNodes_.push_back(node_);
   // int obj_i = allObjNodes_.size();
 
   // TODO (JH) Debugging segmentation fault
-  scene::SceneNode* node_ = &navSceneNode_->createChild();    
-  allObjNodes_.push_back(node_);
-  //addObject(node_);         // This doesn't cause segfault
-  addObject();              // This gives segfault ~50% of the times
+  // scene::SceneNode* node_ = &navSceneNode_->createChild();
+  // allObjNodes_.push_back(node_);
+  // addObject(node_);         // This doesn't cause segfault
+  addObject();  // This gives segfault ~50% of the times
+  // addObject();              // This gives segfault ~50% of the times
 
   LOG(INFO) << "Viewer initialization is done. ";
   renderCamera_->setTransformation(cameraNode_->getAbsoluteTransformation());
 }  // namespace gfx
 
-
 void Viewer::addObject(scene::SceneNode* node) {
   auto& drawables = sceneGraph->getDrawables();
-  std::string object_file ("./data/objects/cheezit.glb");
+  std::string object_file("./data/objects/cheezit.glb");
   int obj_i = allObjNodes_.size();
 
   bool objectLoaded_ = resourceManager_.loadObject(
-      assets::AssetInfo::fromPath(object_file), physicsManager_, 
-      node, enablePhysics_, &drawables);  
+      assets::AssetInfo::fromPath(object_file), physicsManager_, node,
+      enablePhysics_, &drawables);
   if (!objectLoaded_) {
     LOG(ERROR) << "cannot load " << object_file;
     std::exit(0);
   }
   if (enablePhysics_) {
     LOG(INFO) << "Loaded Object " << obj_i;
-    setSwapInterval(1);   // Loop at 60 Hz max
+    setSwapInterval(1);  // Loop at 60 Hz max
     physicsManager_.debugSceneGraph(rootNode);
   }
 
-  Magnum::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();    // Relative to agent bodynode
+  Magnum::Matrix4 T =
+      agentBodyNode_
+          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 new_pos = T.transformPoint({0.0f, 0.0f, 0.0f});
   if (castle_mesh) {
-    //new_pos = T.transformPoint({0.1f, 1.0f, -3.0f});
+    // new_pos = T.transformPoint({0.1f, 1.0f, -3.0f});
     new_pos = T.transformPoint({0.1f, 1.0f, -3.0f});
   } else if (surreal_mesh) {
     new_pos = T.transformPoint({0.0f, 0.0f, -1.0f});
   }
-    
-  LOG(INFO) << "Camera position " << T.translation().x() << " " << T.translation().y() << " " << T.translation().z();
-  LOG(INFO) << "Object new position " << new_pos.x() << " " << new_pos.y() << " " << new_pos.z();
-  LOG(INFO) << "Camera transformation " << Eigen::Map<mat4f>(T.data());
 
+  LOG(INFO) << "Camera position " << T.translation().x() << " "
+            << T.translation().y() << " " << T.translation().z();
+  LOG(INFO) << "Object new position " << new_pos.x() << " " << new_pos.y()
+            << " " << new_pos.z();
+  LOG(INFO) << "Camera transformation " << Eigen::Map<mat4f>(T.data());
 
   node->setTranslation(vec3f(new_pos.x(), new_pos.y(), new_pos.z()));
   if (castle_mesh) {
-    node->rotate(3.14f/2, vec3f(0, 0, 1));
+    node->rotate(3.14f / 2, vec3f(0, 0, 1));
   }
   static_cast<physics::BulletRigidObject*>(node)->syncPose();
 }
 
 // TODO (JH): different from the one above, this function always gives segfault
 void Viewer::addObject() {
-  scene::SceneNode* node = &navSceneNode_->createChild();    
-  allObjNodes_.push_back(node);
-
   auto& drawables = sceneGraph->getDrawables();
-  std::string object_file ("./data/objects/cheezit.glb");
-  int obj_i = allObjNodes_.size();
+  std::string object_file("./data/objects/cheezit.glb");
 
+  physics::BulletRigidObject* node;
   bool objectLoaded_ = resourceManager_.loadObject(
-      assets::AssetInfo::fromPath(object_file), physicsManager_, 
-      node, enablePhysics_, &drawables);  
+      assets::AssetInfo::fromPath(object_file), physicsManager_, navSceneNode_,
+      enablePhysics_, &drawables, &node);
+
   if (!objectLoaded_) {
     LOG(ERROR) << "cannot load " << object_file;
     std::exit(0);
   }
   if (enablePhysics_) {
-    LOG(INFO) << "Loaded Object " << obj_i;
-    setSwapInterval(1);   // Loop at 60 Hz max
+    // setSwapInterval(1);   // Loop at 60 Hz max
     physicsManager_.debugSceneGraph(rootNode);
   }
 
-  Magnum::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();    // Relative to agent bodynode
+  Magnum::Matrix4 T =
+      agentBodyNode_
+          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 new_pos = T.transformPoint({0.0f, 0.0f, 0.0f});
   if (castle_mesh) {
-    //new_pos = T.transformPoint({0.1f, 1.0f, -3.0f});
+    // new_pos = T.transformPoint({0.1f, 1.0f, -3.0f});
     new_pos = T.transformPoint({0.1f, 1.0f, -3.0f});
   } else if (surreal_mesh) {
     new_pos = T.transformPoint({0.0f, 0.0f, -1.0f});
   }
-    
-  LOG(INFO) << "Camera position " << T.translation().x() << " " << T.translation().y() << " " << T.translation().z();
-  LOG(INFO) << "Object new position " << new_pos.x() << " " << new_pos.y() << " " << new_pos.z();
-  LOG(INFO) << "Camera transformation " << Eigen::Map<mat4f>(T.data());
 
+  LOG(INFO) << "Camera position " << T.translation().x() << " "
+            << T.translation().y() << " " << T.translation().z();
+  LOG(INFO) << "Object new position " << new_pos.x() << " " << new_pos.y()
+            << " " << new_pos.z();
+  LOG(INFO) << "Camera transformation " << Eigen::Map<mat4f>(T.data());
 
   node->setTranslation(vec3f(new_pos.x(), new_pos.y(), new_pos.z()));
   if (castle_mesh) {
-    node->rotate(3.14f/2, vec3f(0, 0, 1));
+    node->rotate(3.14f / 2, vec3f(0, 0, 1));
   }
-  static_cast<physics::BulletRigidObject*>(node)->syncPose();
+
+  node->syncPose();
 }
-
-
-
 
 Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
                          const Vector2i& position) {
@@ -260,7 +264,7 @@ void Viewer::drawEvent() {
   renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
   swapBuffers();
   physicsManager_.nextFrame();
-  //LOG(INFO) << "Current position " << objNode_->getAbsolutePosition();
+  // LOG(INFO) << "Current position " << objNode_->getAbsolutePosition();
   redraw();
 }
 
@@ -273,11 +277,15 @@ void Viewer::mousePressEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Left)
     previousPosition_ =
         positionOnSphere(renderCamera_->getMagnumCamera(), event.position());
+
+  event.setAccepted();
 }
 
 void Viewer::mouseReleaseEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Left)
     previousPosition_ = Vector3();
+
+  event.setAccepted();
 }
 
 void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
@@ -292,7 +300,7 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   renderCamera_->translateLocal(vec3f(
       0, 0, distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f))));
 
-  redraw();
+  event.setAccepted();
 }
 
 void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
@@ -312,7 +320,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
                                                       axis.normalized());
   previousPosition_ = currentPosition;
 
-  redraw();
+  event.setAccepted();
 }
 
 void Viewer::keyPressEvent(KeyEvent& event) {
@@ -338,49 +346,50 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       agentBodyNode_->setTranslation(position);
     } break;
     case KeyEvent::Key::P:
-      //controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
+      // controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
       controls_(*objNode_, "moveLeft", moveSensitivity);
       break;
     case KeyEvent::Key::A:
-      //controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
+      // controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
       controls_(*objNode_, "moveLeft", moveSensitivity);
       break;
     case KeyEvent::Key::D:
-      //controls_(*agentBodyNode_, "moveRight", moveSensitivity);
+      // controls_(*agentBodyNode_, "moveRight", moveSensitivity);
       controls_(*objNode_, "moveRight", moveSensitivity);
       break;
     case KeyEvent::Key::S:
-      //controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
+      // controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
       controls_(*objNode_, "moveBackward", moveSensitivity);
       break;
     case KeyEvent::Key::W:
-      //controls_(*agentBodyNode_, "moveForward", moveSensitivity);
+      // controls_(*agentBodyNode_, "moveForward", moveSensitivity);
       controls_(*objNode_, "moveForward", moveSensitivity);
       break;
     case KeyEvent::Key::X:
-      //controls_(*cameraNode_, "moveDown", moveSensitivity, false);
+      // controls_(*cameraNode_, "moveDown", moveSensitivity, false);
       controls_(*objNode_, "moveDown", moveSensitivity, false);
       break;
     case KeyEvent::Key::Z:
-      //controls_(*cameraNode_, "moveUp", moveSensitivity, false);
+      // controls_(*cameraNode_, "moveUp", moveSensitivity, false);
       controls_(*objNode_, "moveUp", moveSensitivity, false);
+      break;
+    case KeyEvent::Key::O:
+      addObject();
       break;
     default:
       break;
   }
   renderCamera_->setTransformation(cameraNode_->getAbsoluteTransformation());
-  redraw();
+  event.setAccepted();
 }
 
 }  // namespace gfx
 }  // namespace esp
 
-
-
 /*
   bool objectLoaded_ = resourceManager_.loadObject(
-      assets::AssetInfo::fromPath(object_file), physicsManager_, 
-      node_, enablePhysics_, &drawables);  
+      assets::AssetInfo::fromPath(object_file), physicsManager_,
+      node_, enablePhysics_, &drawables);
   if (!objectLoaded_) {
     LOG(ERROR) << "cannot load " << object_file;
     std::exit(0);
@@ -391,17 +400,18 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     physicsManager_.debugSceneGraph(rootNode);
   }
 
-  Magnum::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();    // Relative to agent bodynode
-  Vector3 new_pos = T.transformPoint({0.0f, 0.0f, 0.0f});
-  if (castle_mesh) {
+  Magnum::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix(); //
+  Relative to agent bodynode Vector3 new_pos = T.transformPoint({0.0f, 0.0f,
+  0.0f}); if (castle_mesh) {
     //new_pos = T.transformPoint({0.1f, 1.0f, -3.0f});
     new_pos = T.transformPoint({0.1f, 1.0f, -2.0f});
   } else if (surreal_mesh) {
     new_pos = T.transformPoint({0.0f, 0.0f, -1.0f});
   }
-    
-  LOG(INFO) << "Camera position " << T.translation().x() << " " << T.translation().y() << " " << T.translation().z();
-  LOG(INFO) << "Object new position " << new_pos.x() << " " << new_pos.y() << " " << new_pos.z();
+
+  LOG(INFO) << "Camera position " << T.translation().x() << " " <<
+  T.translation().y() << " " << T.translation().z(); LOG(INFO) << "Object new
+  position " << new_pos.x() << " " << new_pos.y() << " " << new_pos.z();
   LOG(INFO) << "Camera transformation " << Eigen::Map<mat4f>(T.data());
 
 
@@ -411,74 +421,75 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     node_->rotate(3.14f/10, vec3f(0, 1, 0));
   }
   static_cast<physics::BulletRigidObject*>(node_)->syncPose();
-  
+
   //   addObject();
   // }
   static_cast<physics::BulletRigidObject*>(navSceneNode_)->syncPose();
   */
 
-  //Magnum::Matrix4 new_objT = objNode_->MagnumObject::transformationMatrix();
-  //LOG(INFO) << "Object updated position " << Eigen::Map<vec3f>(new_objT.translation().data());
-  
-  // Connect controls to navmesh if loaded
-  /*if (pathfinder_->isLoaded()) {
-    controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
-      vec3f currentPosition = pathfinder_->tryStep(start, end);
-      LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
-                << agentBodyNode_->getRotation().coeffs().transpose();
-      LOG(INFO) << "Distance to closest obstacle: "
-                << pathfinder_->distanceToClosestObstacle(currentPosition);
+// Magnum::Matrix4 new_objT = objNode_->MagnumObject::transformationMatrix();
+// LOG(INFO) << "Object updated position " <<
+// Eigen::Map<vec3f>(new_objT.translation().data());
 
-      if (computeActionPath_) {
-        nav::ActionSpaceShortestPath spath;
-        spath.requestedEnd = nav::ActionSpacePathLocation::create(
-            goalPos_, goalHeading_.coeffs());
-
-        spath.requestedStart = nav::ActionSpacePathLocation::create(
-            currentPosition, agentBodyNode_->getRotation().coeffs());
-
-        if (!actPathfinder_->findPath(spath)) {
-          LOG(INFO) << "Could not find a path :(";
-        } else if (spath.actions.size() == 0) {
-          LOG(INFO) << "You made it!";
-        } else {
-          LOG(INFO) << "next action=" << spath.actions[0];
-          LOG(INFO) << "actions left=" << spath.actions.size();
-          LOG(INFO) << "geo dist=" << spath.geodesicDistance;
-          LOG(INFO) << "predicted next pos=" << spath.points[1].transpose();
-          LOG(INFO) << "predicted next rotation="
-                    << spath.rotations[1].transpose();
-        }
-      }
-
-      return currentPosition;
-    });
-
-    const vec3f position = pathfinder_->getRandomNavigablePoint();
-    agentBodyNode_->setTranslation(position);
+// Connect controls to navmesh if loaded
+/*if (pathfinder_->isLoaded()) {
+  controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
+    vec3f currentPosition = pathfinder_->tryStep(start, end);
+    LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
+              << agentBodyNode_->getRotation().coeffs().transpose();
+    LOG(INFO) << "Distance to closest obstacle: "
+              << pathfinder_->distanceToClosestObstacle(currentPosition);
 
     if (computeActionPath_) {
-      {
-        nav::ShortestPath path_;
-        do {
-          goalPos_ = pathfinder_->getRandomNavigablePoint();
-          goalPos_[1] = position[1];
-          path_.requestedStart = position;
-          path_.requestedEnd = goalPos_;
-          pathfinder_->findPath(path_);
-        } while ((path_.geodesicDistance < 1.0) ||
-                 (path_.geodesicDistance > 2.0));
+      nav::ActionSpaceShortestPath spath;
+      spath.requestedEnd = nav::ActionSpacePathLocation::create(
+          goalPos_, goalHeading_.coeffs());
+
+      spath.requestedStart = nav::ActionSpacePathLocation::create(
+          currentPosition, agentBodyNode_->getRotation().coeffs());
+
+      if (!actPathfinder_->findPath(spath)) {
+        LOG(INFO) << "Could not find a path :(";
+      } else if (spath.actions.size() == 0) {
+        LOG(INFO) << "You made it!";
+      } else {
+        LOG(INFO) << "next action=" << spath.actions[0];
+        LOG(INFO) << "actions left=" << spath.actions.size();
+        LOG(INFO) << "geo dist=" << spath.geodesicDistance;
+        LOG(INFO) << "predicted next pos=" << spath.points[1].transpose();
+        LOG(INFO) << "predicted next rotation="
+                  << spath.rotations[1].transpose();
       }
-
-      goalHeading_ =
-          Sophus::SO3f::exp(M_PI / 4.0 * vec3f::UnitY()).unit_quaternion();
-
-      agent::AgentConfiguration agentCfg;
-      agentCfg.actionSpace["moveForward"]->actuation["amount"] =
-          moveSensitivity;
-      agentCfg.actionSpace["lookLeft"]->actuation["amount"] = lookSensitivity;
-      agentCfg.actionSpace["lookRight"]->actuation["amount"] = lookSensitivity;
-      actPathfinder_ = nav::ActionSpacePathFinder::create_unique(
-          pathfinder_, agentCfg, controls_, agentBodyNode_->getRotation());
     }
-  }*/
+
+    return currentPosition;
+  });
+
+  const vec3f position = pathfinder_->getRandomNavigablePoint();
+  agentBodyNode_->setTranslation(position);
+
+  if (computeActionPath_) {
+    {
+      nav::ShortestPath path_;
+      do {
+        goalPos_ = pathfinder_->getRandomNavigablePoint();
+        goalPos_[1] = position[1];
+        path_.requestedStart = position;
+        path_.requestedEnd = goalPos_;
+        pathfinder_->findPath(path_);
+      } while ((path_.geodesicDistance < 1.0) ||
+               (path_.geodesicDistance > 2.0));
+    }
+
+    goalHeading_ =
+        Sophus::SO3f::exp(M_PI / 4.0 * vec3f::UnitY()).unit_quaternion();
+
+    agent::AgentConfiguration agentCfg;
+    agentCfg.actionSpace["moveForward"]->actuation["amount"] =
+        moveSensitivity;
+    agentCfg.actionSpace["lookLeft"]->actuation["amount"] = lookSensitivity;
+    agentCfg.actionSpace["lookRight"]->actuation["amount"] = lookSensitivity;
+    actPathfinder_ = nav::ActionSpacePathFinder::create_unique(
+        pathfinder_, agentCfg, controls_, agentBodyNode_->getRotation());
+  }
+}*/

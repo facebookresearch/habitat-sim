@@ -16,14 +16,12 @@
 #include <Magnum/MeshTools/Transform.h>
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
 
-
 #include "Asset.h"
 #include "BaseMesh.h"
-#include "MeshMetaData.h"
-#include "esp/scene/SceneNode.h"
-#include "PhysicsManager.h"
 #include "GltfMeshData.h"
-
+#include "MeshMetaData.h"
+#include "PhysicsManager.h"
+#include "esp/scene/SceneNode.h"
 
 // forward declarations
 namespace Magnum {
@@ -68,10 +66,10 @@ class ResourceManager {
                  DrawableGroup* drawables = nullptr);
 
   bool loadPhysicalScene(const AssetInfo& info,
-                 PhysicsManager& _physicsManager,
-                 scene::SceneNode* parent = nullptr,
-                 bool attach_physics = false,
-                 DrawableGroup* drawables = nullptr);
+                         PhysicsManager& _physicsManager,
+                         scene::SceneNode* parent = nullptr,
+                         bool attach_physics = false,
+                         DrawableGroup* drawables = nullptr);
 
   // load an object. Eventually this will load from AssetInfo descriptor,
   // whereas currently it only loads dumb cubes
@@ -79,16 +77,17 @@ class ResourceManager {
                   PhysicsManager& _physicsManager,
                   scene::SceneNode* parent = nullptr,
                   bool attach_physics = true,
-                  DrawableGroup* drawables = nullptr);
+                  DrawableGroup* drawables = nullptr,
+                  physics::BulletRigidObject** physNode = nullptr);
 
  protected:
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);
 
   //! Load meshes from importer into assets, and update metaData
-  void loadMeshes(Importer& importer, 
-                  MeshMetaData* metaData, 
-                  bool shiftOrigin=false);
+  void loadMeshes(Importer& importer,
+                  MeshMetaData* metaData,
+                  bool shiftOrigin = false);
 
   //! Load materials from importer into assets, and update metaData
   void loadMaterials(Importer& importer, MeshMetaData* metaData);
@@ -122,7 +121,8 @@ class ResourceManager {
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent,
                            DrawableGroup* drawables,
-                           bool shiftOrigin=false);
+                           bool shiftOrigin = false,
+                           scene::SceneNode* node = nullptr);
 
   bool loadSUNCGHouseFile(const AssetInfo& info,
                           scene::SceneNode* parent,

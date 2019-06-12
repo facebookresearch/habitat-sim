@@ -271,7 +271,9 @@ class CMakeBuild(build_ext):
             with open(filename) as f:
                 return json.load(f)
 
-        commands = glob.glob("build/*/compile_commands.json")
+        commands = glob.glob("build/*/compile_commands.json") + [
+            "build/compile_commands.json"
+        ]
         all_commands = [entry for f in commands for entry in load(f)]
 
         # cquery does not like c++ compiles that start with gcc.
