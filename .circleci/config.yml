@@ -6,7 +6,47 @@ gpu: &gpu
   environment:
     FPS_THRESHOLD: 900
 
+
 jobs:
+  python_lint:
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - checkout
+      - run:
+          name: setup
+          command: |
+              sudo pip install -U black "isort[pyproject]" numpy pytest sphinx
+              sudo pip install -r requirements.txt
+      - run:
+          name: run black
+          command: |
+              black --version
+              black habitat_sim/. examples/. tests/. setup.py --diff
+              black habitat_sim/. examples/. tests/. setup.py --check
+      - run:
+          name: run isort
+          command: |
+              isort --version
+              isort -rc habitat_sim/. examples/. tests/. setup.py --diff
+              isort -rc habitat_sim/. examples/. tests/. setup.py --check-only
+  cpp_lint:
+    docker:
+      - image: circleci/buildpack-deps:disco
+    steps:
+      - checkout
+      - run:
+          name: setup
+          command: |
+              sudo apt-get update -y
+              sudo apt-get install -y clang-format-8
+              sudo ln -s /usr/bin/clang-format-8 /usr/bin/clang-format
+              clang-format --version
+      - run:
+          name: run clang-format
+          command: |
+            find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.cpp$|.*\.h$|.*\.cu$|.*\.hpp$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
+
   build_install_test_ubuntu:
     <<: *gpu
     steps:
@@ -103,4 +143,6 @@ workflows:
   version: 2
   build_and_install:
     jobs:
+      - python_lint
+      - cpp_lint
       - build_install_test_ubuntu
