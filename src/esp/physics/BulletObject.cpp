@@ -125,6 +125,8 @@ bool BulletRigidObject::initialize(Magnum::Float mass,
   return true;
 }
 
+
+// Helper function to find object center
 void BulletRigidObject::getDimensions(Magnum::Trade::MeshData3D& meshData,
 																			float* x,
 																			float* y,
@@ -154,6 +156,7 @@ bool BulletRigidObject::initializeFRL(Magnum::Float mass,
 								      btDynamicsWorld& bWorld) {
 
   _bWorld = &bWorld;
+  _mass = mass;
   btCollisionShape* bShape = nullptr;
 
   LOG(INFO) << "Creating FRL object mass: " << mass;
@@ -218,7 +221,8 @@ bool BulletRigidObject::initializeFRL(Magnum::Float mass,
 
 BulletRigidObject::~BulletRigidObject() {
 	if (_initialized) {
-	  _bWorld->removeRigidBody(_bRigidBody);
+		LOG(INFO) << "Deleting object " << _mass;
+	  //_bWorld->removeRigidBody(_bRigidBody);
 	} else {
 		LOG(INFO) << "Object not initialized";
 	}

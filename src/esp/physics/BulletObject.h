@@ -33,6 +33,8 @@ class BulletRigidObject: public scene::SceneNode {
   //Magnum::Containers::Pointer<btRigidBody> _bRigidBody;
   btRigidBody* _bRigidBody;
 
+  float _mass;
+
   void getDimensions(Magnum::Trade::MeshData3D& meshData,
                      float* x,
                      float* y,

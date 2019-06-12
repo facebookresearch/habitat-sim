@@ -531,7 +531,7 @@ void ResourceManager::createObject(Importer& importer,
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
   node.MagnumObject::setTransformation(objectData->transformation());
-  LOG(INFO) << "Transformation " << Eigen::Map<mat4f>(objectData->transformation().data());
+  //LOG(INFO) << "Transformation " << Eigen::Map<mat4f>(objectData->transformation().data());
 
   const int meshStart = metaData.meshIndex.first;
   const int materialStart = metaData.materialIndex.first;

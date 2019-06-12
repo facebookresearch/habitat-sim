@@ -40,6 +40,9 @@ class Viewer : public Magnum::Platform::Application {
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
 
+  void addObject(scene::SceneNode* node);
+  void addObject();
+
   assets::ResourceManager resourceManager_;
   assets::PhysicsManager physicsManager_;
   scene::SceneManager sceneManager_;
@@ -49,9 +52,13 @@ class Viewer : public Magnum::Platform::Application {
   
   scene::SceneNode* navSceneNode_;
   scene::SceneNode* objNode_;
+
+  std::vector<scene::SceneNode*> allObjNodes_;
   //physics::BulletRigidObject* physicalObj_;
   //physics::BulletRigidObject* physicalObj_;
 
+  scene::SceneGraph* sceneGraph;
+  scene::SceneNode* rootNode;
 
   RenderCamera* renderCamera_ = nullptr;
   nav::PathFinder::ptr pathfinder_;
@@ -60,6 +67,10 @@ class Viewer : public Magnum::Platform::Application {
 
   bool computeActionPath_;
   bool enablePhysics_;
+  bool surreal_mesh = false;
+  bool castle_mesh = true;
+
+  int numObjects_ = 1;
   vec3f goalPos_;
   quatf goalHeading_;
   nav::ActionSpacePathFinder::uptr actPathfinder_;
