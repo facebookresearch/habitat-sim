@@ -1,11 +1,3 @@
-<p align="center">
-  <img width = "50%" src='docs/logos/habitat_logo_with_text_horizontal_blue.png' />
-</p>
-
---------------------------------------------------------------------------------
-
-
-
 # Habitat-Sim
 
 A flexible, high-performance 3D simulator with configurable agents, multiple sensors, and generic 3D dataset handling (with built-in support for [MatterPort3D](https://niessner.github.io/Matterport/), [Gibson](http://gibsonenv.stanford.edu/database/), [Replica](https://github.com/facebookresearch/Replica-Dataset), and other datasets).
