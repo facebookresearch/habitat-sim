@@ -136,7 +136,7 @@ def is_pip():
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=""):
         Extension.__init__(self, name, sources=[])
-        self.sourcedir = os.path.abspath(sourcedir)
+        self.sourcedir = os.path.abspath(sourcedir).replace("\\", "/")
 
 
 # populated in CMakeBuild.build_extension()
@@ -207,8 +207,8 @@ class CMakeBuild(build_ext):
 
         cmake_args = [
             "-DBUILD_PYTHON_BINDINGS=ON",
-            "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
-            "-DPYTHON_EXECUTABLE=" + sys.executable,
+            "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir.replace("\\", "/"),
+            "-DPYTHON_EXECUTABLE=" + sys.executable.replace("\\", "/"),
             "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),
         ]
         cmake_args += shlex.split(args.cmake_args)
@@ -226,8 +226,9 @@ class CMakeBuild(build_ext):
         # doesn't require a number (but builds sequentially by default), so we
         # add the argument only when it's not ninja or the number of jobs is
         # specified.
-        if not has_ninja() or self.parallel:
-            build_args += ["-j{}".format(self.parallel) if self.parallel else "-j"]
+        if sys.platform != "win32":
+            if not has_ninja() or self.parallel:
+                build_args += ["-j{}".format(self.parallel) if self.parallel else "-j"]
 
         cmake_args += [
             "-DBUILD_GUI_VIEWERS={}".format("ON" if not args.headless else "OFF")
@@ -247,13 +248,18 @@ class CMakeBuild(build_ext):
 
         if self.run_cmake(cmake_args):
             subprocess.check_call(
-                shlex.split("cmake -H{} -B{}".format(ext.sourcedir, self.build_temp))
+                shlex.split(
+                    "cmake -H{} -B{}".format(
+                        ext.sourcedir, self.build_temp.replace("\\", "/")
+                    )
+                )
                 + cmake_args,
                 env=env,
             )
 
         subprocess.check_call(
-            shlex.split("cmake --build {}".format(self.build_temp)) + build_args
+            shlex.split("cmake --build {}".format(self.build_temp.replace("\\", "/")))
+            + build_args
         )
         print()  # Add an empty line for cleaner output
 

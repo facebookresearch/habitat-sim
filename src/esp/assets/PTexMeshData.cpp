@@ -90,7 +90,7 @@ std::vector<PTexMeshData::MeshData> splitMesh(
 
 // calculate vertex grid position and code
 #pragma omp parallel for
-  for (size_t i = 0; i < mesh.vbo.size(); i++) {
+  for (int32_t i = 0; i < mesh.vbo.size(); i++) {
     const vec3f p = mesh.vbo[i].head<3>();
     vec3f pi = (p - boundingBox.min()) / splitSize;
     verts[i] = EncodeMorton3(pi.cast<int>());
@@ -109,7 +109,7 @@ std::vector<PTexMeshData::MeshData> splitMesh(
   faces.resize(numFaces);
 
 #pragma omp parallel for
-  for (size_t i = 0; i < numFaces; i++) {
+  for (int32_t i = 0; i < numFaces; i++) {
     faces[i].originalFace = i;
     faces[i].code = std::numeric_limits<uint32_t>::max();
     for (int j = 0; j < 4; j++) {
@@ -155,7 +155,7 @@ std::vector<PTexMeshData::MeshData> splitMesh(
   }
 
 #pragma omp parallel for
-  for (size_t i = 0; i < numChunks; i++) {
+  for (int32_t i = 0; i < numChunks; i++) {
     uint32_t chunkSize = chunkStart[i + 1] - chunkStart[i];
 
     std::vector<uint32_t> refdVerts;
