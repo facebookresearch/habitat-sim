@@ -32,16 +32,17 @@ _test_scenes = [
 ]
 
 
-@pytest.mark.gfxtest
 @pytest.mark.parametrize("scene", _test_scenes)
-def test_semantic_scene(scene, sim, make_cfg_settings):
+def test_semantic_scene(scene, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
 
     make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["semantic_sensor"] = False
     make_cfg_settings["scene"] = scene
-    sim.reconfigure(make_cfg(make_cfg_settings))
+    cfg = make_cfg(make_cfg_settings)
+    cfg.agents[0].sensor_specifications = []
+    sim = habitat_sim.Simulator(cfg)
 
     scene = sim.semantic_scene
     for obj in scene.objects:

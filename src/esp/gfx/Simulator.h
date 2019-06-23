@@ -61,7 +61,7 @@ class Simulator {
   void saveFrame(const std::string& filename);
 
  protected:
-  WindowlessContext context_;
+  std::unique_ptr<WindowlessContext> context_ = nullptr;
   std::shared_ptr<Renderer> renderer_ = nullptr;
   // CANNOT make the specification of resourceManager_ above the context_!
   // Because when deconstructing the resourceManager_, it needs
