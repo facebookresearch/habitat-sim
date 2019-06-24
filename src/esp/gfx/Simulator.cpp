@@ -81,6 +81,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     }
 
     // reinitalize members
+    renderer_ = nullptr;
     renderer_ = Renderer::create(width, height);
 
     auto& sceneGraph = sceneManager_.getSceneGraph(activeSceneID_);
@@ -124,6 +125,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     }
   }
 
+  semanticScene_ = nullptr;
   semanticScene_ = scene::SemanticScene::create();
   if (io::exists(houseFilename)) {
     scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
