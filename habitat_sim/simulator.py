@@ -85,12 +85,12 @@ class Simulator:
         assert len(config.agents) > 0
         if len(config.agents[0].sensor_specifications) > 0:
             first_sensor_spec = config.agents[0].sensor_specifications[0]
+            config.sim_cfg.create_renderer = True
 
             config.sim_cfg.height = first_sensor_spec.resolution[0]
             config.sim_cfg.width = first_sensor_spec.resolution[1]
         else:
-            config.sim_cfg.height = -1
-            config.sim_cfg.width = -1
+            config.sim_cfg.create_renderer = False
 
         if self.config == config:
             return

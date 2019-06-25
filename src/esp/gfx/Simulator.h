@@ -32,6 +32,7 @@ struct SimulatorConfiguration {
   int gpuDeviceId = 0;
   std::string defaultCameraUuid = "rgba_camera";
   bool compressTextures = false;
+  bool createRenderer = true;
   int width = 256, height = 256;
 
   ESP_SMART_POINTERS(SimulatorConfiguration)

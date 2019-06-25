@@ -75,7 +75,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // LOG(INFO) << "Active scene graph ID = " << activeSceneID_;
   sceneID_.push_back(activeSceneID_);
 
-  if (height != -1 || width != -1) {
+  if (cfg.createRenderer) {
     if (!context_) {
       context_ = std::make_unique<gfx::WindowlessContext>(config_.gpuDeviceId);
     }
@@ -171,7 +171,8 @@ bool operator==(const SimulatorConfiguration& a,
                 const SimulatorConfiguration& b) {
   return a.scene == b.scene && a.defaultAgentId == b.defaultAgentId &&
          a.defaultCameraUuid == b.defaultCameraUuid &&
-         a.compressTextures == b.compressTextures;
+         a.compressTextures == b.compressTextures &&
+         a.createRenderer == b.createRenderer;
 }
 
 bool operator!=(const SimulatorConfiguration& a,

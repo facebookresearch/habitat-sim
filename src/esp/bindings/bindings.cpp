@@ -646,6 +646,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_readwrite("height", &SimulatorConfiguration::height)
       .def_readwrite("compress_textures",
                      &SimulatorConfiguration::compressTextures)
+      .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
       .def("__eq__",
            [](const SimulatorConfiguration& self,
               const SimulatorConfiguration& other) -> bool {
