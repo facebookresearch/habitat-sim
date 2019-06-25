@@ -1,5 +1,3 @@
-set(MODULE_NAME "habitat_sim_bindings")
-
 pybind11_add_module(habitat_sim_bindings bindings.cpp ShortestPathBindings.cpp geoBindings.cpp)
 target_link_libraries(habitat_sim_bindings
   PUBLIC

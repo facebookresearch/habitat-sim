@@ -35,20 +35,14 @@ Viewer::Viewer(const Arguments& arguments)
   Utility::Arguments args;
   args.addArgument("file")
       .setHelp("file", "file to load")
-      .addBooleanOption("action-path")
-      .setHelp("action-path",
-               "Provides actions along the action space shortest path to a "
-               "random goal")
       .addOption("obj", "./data/objects/chefcan.glb")
       .setHelp("obj", "obj file to load")
-      .addBooleanOption("enable-physics")
-      //.setHelp()
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
+      .addBooleanOption("enable-physics")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
-  computeActionPath_ = args.isSet("action-path");
   enablePhysics_ = args.isSet("enable-physics");
 
   // Setup renderer and shader defaults
@@ -148,6 +142,30 @@ Viewer::Viewer(const Arguments& arguments)
   // addObject(node_);         // This doesn't cause segfault
   addObject();  // This gives segfault ~50% of the times
   // addObject();              // This gives segfault ~50% of the times
+  Magnum::Matrix4 T = cameraNode_->MagnumObject::absoluteTransformation();
+  //auto transformation = Matrix4(cameraNode_->getAbsoluteTransformation());
+  Vector3 new_pos = T.transformPoint({0.0f, 0.0f, -1.0f});
+  LOG(INFO) << "Camera position " << T.translation().x() << " " << T.translation().y() << " " << T.translation().z();
+  //Vector3 new_pos = T.translation() + delta;
+  //Vector3 new_pos = Vector3(cameraNode_->getAbsolutePosition()) + delta;
+  LOG(INFO) << "Object new position " << new_pos.x() << " " << new_pos.y() << " " << new_pos.z();
+  LOG(INFO) << "Camera transformation" << Eigen::Map<mat4f>(T.data());
+
+  // Connect controls to navmesh if loaded
+  /*if (pathfinder_->isLoaded()) {
+    controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
+      vec3f currentPosition = pathfinder_->tryStep(start, end);
+      LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
+                << agentBodyNode_->getRotation().coeffs().transpose();
+      LOG(INFO) << "Distance to closest obstacle: "
+                << pathfinder_->distanceToClosestObstacle(currentPosition);
+
+      return currentPosition;
+    });
+
+    const vec3f position = pathfinder_->getRandomNavigablePoint();
+    agentBodyNode_->setTranslation(position);
+  }*/
 
   LOG(INFO) << "Viewer initialization is done. ";
   renderCamera_->setTransformation(cameraNode_->getAbsoluteTransformation());

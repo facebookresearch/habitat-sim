@@ -10,3 +10,7 @@ def assert_obj_valid(obj: hsim.AttachedObject):
         raise InvalidAttachedObject(
             "Attached Object is invalid.  Attached to a valid scene graph before use."
         )
+
+
+class GreedyFollowerError(RuntimeError):
+    pass

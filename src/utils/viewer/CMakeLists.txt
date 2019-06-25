@@ -7,13 +7,10 @@ find_package(GLFW REQUIRED)
 
 find_package(Magnum
   REQUIRED
-    DebugTools
     GL
     MeshTools
-    Primitives
     SceneGraph
     Shaders
-    TextureTools
     Trade
     GlfwApplication
 )
@@ -36,10 +33,8 @@ target_link_libraries(viewer
     Magnum::GL
     Magnum::Magnum
     Magnum::MeshTools
-    Magnum::Primitives
     Magnum::SceneGraph
     Magnum::Shaders
-    Magnum::TextureTools
     Magnum::Trade
     # MagnumPlugins::AssimpImporter
     MagnumPlugins::StbImageImporter

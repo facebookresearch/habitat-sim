@@ -271,10 +271,9 @@ class CMakeBuild(build_ext):
             with open(filename) as f:
                 return json.load(f)
 
-        commands = glob.glob("build/*/compile_commands.json") + [
-            "build/compile_commands.json"
-        ]
-        all_commands = [entry for f in commands for entry in load(f)]
+        command_files = [osp.join(self.build_temp, "compile_commands.json")]
+        command_files += glob.glob("{}/*/compile_commands.json".format(self.build_temp))
+        all_commands = [entry for f in command_files for entry in load(f)]
 
         # cquery does not like c++ compiles that start with gcc.
         # It forgets to include the c++ header directories.
@@ -305,7 +304,8 @@ if __name__ == "__main__":
     if os.environ.get("CMAKE_ARGS", None) is not None:
         args.cmake_args = os.environ["CMAKE_ARGS"]
 
-    requirements = ["attrs", "numba", "numpy", "numpy-quaternion", "pillow"]
+    with open("./requirements.txt", "r") as f:
+        requirements = [l.strip() for l in f.readlines() if len(l.strip()) > 0]
 
     builtins.__HSIM_SETUP__ = True
     import habitat_sim
