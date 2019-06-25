@@ -1,14 +1,10 @@
-<p align="center">
-  <img width = "50%" src='docs/logos/habitat_logo_with_text_horizontal_blue.png' />
-</p>
-
---------------------------------------------------------------------------------
-
-
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebookresearch/habitat-sim/blob/master/LICENSE)
+[![CircleCI](https://circleci.com/gh/facebookresearch/habitat-sim.svg?style=shield)](https://circleci.com/gh/facebookresearch/habitat-sim)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/facebookresearch/habitat-sim/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
 
 # Habitat-Sim
 
-A flexible, high-performance 3D simulator with configurable agents, multiple sensors, and generic 3D dataset handling (with built-in support for [SUNCG](http://suncg.cs.princeton.edu/), [MatterPort3D](https://niessner.github.io/Matterport/), [Gibson](http://gibsonenv.stanford.edu/database/) and other datasets).
+A flexible, high-performance 3D simulator with configurable agents, multiple sensors, and generic 3D dataset handling (with built-in support for [MatterPort3D](https://niessner.github.io/Matterport/), [Gibson](http://gibsonenv.stanford.edu/database/), [Replica](https://github.com/facebookresearch/Replica-Dataset), and other datasets).
 When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves several thousand frames per second (FPS) running single-threaded, and reaches <a href="#fps_table"><b>over 10,000 FPS multi-process</b></a> on a single GPU!
 
 <p align="center">
@@ -45,8 +41,8 @@ This empowers a paradigm shift from 'internet AI' based on static datasets (e.g.
 If you use the Habitat platform in your research, please cite the following [technical report](https://arxiv.org/abs/1904.01201):
 ```
 @article{habitat19arxiv,
-  title =   {Habitat: A Platform for Embodied AI Research},
-  author =  {{Manolis Savva*}, {Abhishek Kadian*}, {Oleksandr Maksymets*}, Yili Zhao, Erik Wijmans, Bhavana Jain, Julian Straub, Jia Liu, Vladlen Koltun, Jitendra Malik, Devi Parikh and Dhruv Batra},
+  title =   {Habitat: {A} {P}latform for {E}mbodied {AI} {R}esearch},
+  author =  {{Manolis Savva*} and {Abhishek Kadian*} and {Oleksandr Maksymets*} and Yili Zhao and Erik Wijmans and Bhavana Jain and Julian Straub and Jia Liu and Vladlen Koltun and Jitendra Malik and Devi Parikh and Dhruv Batra},
   journal = {arXiv preprint arXiv:1904.01201},
   year =    {2019}
 }
@@ -188,13 +184,10 @@ We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup
 
 - The full Matterport3D (MP3D) dataset for use with Habitat can be downloaded using the official [Matterport3D](https://niessner.github.io/Matterport/) download script as follows: `python download_mp.py --task habitat -o path/to/download/`. You only need the habitat zip archive and not the entire Matterport3D dataset. Note that this download script requires python 2.7 to run.
 - The Gibson dataset for use with Habitat can be downloaded by agreeing to the terms of use in the [Gibson](https://github.com/StanfordVL/GibsonEnv#database) repository
-- To obtain access to a test version of the full SUNCG dataset, please contact us.
 
 ## Examples
 
 Load a specific MP3D or Gibson house: `examples/example.py --scene path/to/mp3d/house_id.glb`.
-
-Load a specific SUNCG house: `examples/example.py --scene path/to/suncg/house_id/house.json`.
 
 Additional arguments to `example.py` are provided to change the sensor configuration, print statistics of the semantic annotations in a scene, compute action-space shortest path trajectories, and set other useful functionality. Refer to the `example.py` and `demo_runner.py` source files for an overview.
 
@@ -208,15 +201,17 @@ To reproduce the benchmark table from above run `examples/benchmark.py --scene /
 
 ### Code style
 
-We use `clang-format` for linting and code style enforcement of c++ code.
+We use `clang-format-8` for linting and code style enforcement of c++ code.
 Code style follows the [Google C++ guidelines](https://google.github.io/styleguide/cppguide.html).
-Install `clang-format` through `brew install clang-format` on MacOS, or by downloading binaries or sources from http://releases.llvm.org/download.html for Ubuntu etc.
+Install `clang-format-8` through `brew install clang-format` on MacOS.  For other systems, `clang-format-8` can be installed via `conda install clangdev -c conda-forge` or by downloading binaries or sources from [releases.llvm.org/download](http://releases.llvm.org/download.html).
 For vim integration add to your .vimrc file `map <C-K> :%!clang-format<cr>` and use Ctrl+K to format entire file.
 Integration plugin for [vscode](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format).
 
-We use `black` for linting python code.
-Install `black` through `pip install black`.
-We also use pre-commit hooks to ensure linting and style enforcement.
+We use `black` and `isort` for linting and code style of python code.
+Install `black` and `isort` through `pip install -U black isort`.
+They can then be ran via `black .` and `isort`.
+
+We also offer pre-commit hooks to help with automatically formatting code.
 Install the pre-commit hooks with `pip install pre-commit && pre-commit install`.
 
 ### Development Tips

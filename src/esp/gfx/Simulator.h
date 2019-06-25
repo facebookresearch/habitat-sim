@@ -53,7 +53,6 @@ class Simulator {
   void seed(uint32_t newSeed);
 
   std::shared_ptr<Renderer> getRenderer();
-  std::shared_ptr<nav::PathFinder> getPathFinder();
   std::shared_ptr<scene::SemanticScene> getSemanticScene();
 
   scene::SceneGraph& getActiveSceneGraph();
@@ -76,7 +75,6 @@ class Simulator {
   int activeSemanticSceneID_ = ID_UNDEFINED;
   std::vector<int> sceneID_;
 
-  std::shared_ptr<nav::PathFinder> pathfinder_ = nullptr;
   std::shared_ptr<scene::SemanticScene> semanticScene_ = nullptr;
 
   core::Random random_;

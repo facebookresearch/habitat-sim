@@ -35,16 +35,11 @@ Viewer::Viewer(const Arguments& arguments)
   Utility::Arguments args;
   args.addArgument("file")
       .setHelp("file", "file to load")
-      .addBooleanOption("action-path")
-      .setHelp("action-path",
-               "Provides actions along the action space shortest path to a "
-               "random goal")
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
-  computeActionPath_ = args.isSet("action-path");
 
   // Setup renderer and shader defaults
   GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
@@ -96,63 +91,16 @@ Viewer::Viewer(const Arguments& arguments)
       LOG(INFO) << "Distance to closest obstacle: "
                 << pathfinder_->distanceToClosestObstacle(currentPosition);
 
-      if (computeActionPath_) {
-        nav::ActionSpaceShortestPath spath;
-        spath.requestedEnd = nav::ActionSpacePathLocation::create(
-            goalPos_, goalHeading_.coeffs());
-
-        spath.requestedStart = nav::ActionSpacePathLocation::create(
-            currentPosition, agentBodyNode_->getRotation().coeffs());
-
-        if (!actPathfinder_->findPath(spath)) {
-          LOG(INFO) << "Could not find a path :(";
-        } else if (spath.actions.size() == 0) {
-          LOG(INFO) << "You made it!";
-        } else {
-          LOG(INFO) << "next action=" << spath.actions[0];
-          LOG(INFO) << "actions left=" << spath.actions.size();
-          LOG(INFO) << "geo dist=" << spath.geodesicDistance;
-          LOG(INFO) << "predicted next pos=" << spath.points[1].transpose();
-          LOG(INFO) << "predicted next rotation="
-                    << spath.rotations[1].transpose();
-        }
-      }
-
       return currentPosition;
     });
 
     const vec3f position = pathfinder_->getRandomNavigablePoint();
     agentBodyNode_->setTranslation(position);
 
-    if (computeActionPath_) {
-      {
-        nav::ShortestPath path_;
-        do {
-          goalPos_ = pathfinder_->getRandomNavigablePoint();
-          goalPos_[1] = position[1];
-          path_.requestedStart = position;
-          path_.requestedEnd = goalPos_;
-          pathfinder_->findPath(path_);
-        } while ((path_.geodesicDistance < 1.0) ||
-                 (path_.geodesicDistance > 2.0));
-      }
-
-      goalHeading_ =
-          Sophus::SO3f::exp(M_PI / 4.0 * vec3f::UnitY()).unit_quaternion();
-
-      agent::AgentConfiguration agentCfg;
-      agentCfg.actionSpace["moveForward"]->actuation["amount"] =
-          moveSensitivity;
-      agentCfg.actionSpace["lookLeft"]->actuation["amount"] = lookSensitivity;
-      agentCfg.actionSpace["lookRight"]->actuation["amount"] = lookSensitivity;
-      actPathfinder_ = nav::ActionSpacePathFinder::create_unique(
-          pathfinder_, agentCfg, controls_, agentBodyNode_->getRotation());
-    }
-  }
-
-  LOG(INFO) << "Viewer initialization is done. ";
-  renderCamera_->setTransformation(cameraNode_->getAbsoluteTransformation());
-}  // namespace gfx
+    LOG(INFO) << "Viewer initialization is done. ";
+    renderCamera_->setTransformation(cameraNode_->getAbsoluteTransformation());
+  }  // namespace gfx
+}
 
 Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
                          const Vector2i& position) {

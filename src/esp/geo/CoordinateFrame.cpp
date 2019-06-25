@@ -26,8 +26,13 @@ CoordinateFrame::CoordinateFrame(const std::string& json) {
 }
 
 quatf CoordinateFrame::rotationWorldToFrame() const {
-  return quatf::FromTwoVectors(ESP_UP, up_) *
-         quatf::FromTwoVectors(ESP_FRONT, front_);
+  const quatf R_frameUp_worldUp = quatf::FromTwoVectors(ESP_UP, up_);
+  return quatf::FromTwoVectors(R_frameUp_worldUp * ESP_FRONT, front_) *
+         R_frameUp_worldUp;
+}
+
+quatf CoordinateFrame::rotationFrameToWorld() const {
+  return rotationWorldToFrame().inverse();
 }
 
 std::string CoordinateFrame::toJson() const {

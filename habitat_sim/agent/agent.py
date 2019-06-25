@@ -19,16 +19,6 @@ from .controls import ActuationSpec, ObjectControls
 __all__ = ["ActionSpec", "SixDOFPose", "AgentState", "AgentConfiguration", "Agent"]
 
 
-BodyActions = {
-    "move_right",
-    "move_left",
-    "move_forward",
-    "move_backward",
-    "turn_left",
-    "turn_right",
-}
-
-
 def _default_action_space():
     return dict(
         move_forward=ActionSpec("move_forward", ActuationSpec(amount=0.25)),
@@ -37,7 +27,7 @@ def _default_action_space():
     )
 
 
-@attr.s(auto_attribs=True, slots=True)
+@attr.s(auto_attribs=True)
 class ActionSpec(object):
     r"""Defines how a specific action is implemented
 
@@ -160,12 +150,15 @@ class Agent(object):
         for _, v in self.sensors.items():
             v.detach()
 
-    def act(self, action_id: Any):
+    def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id
 
         Args:
             action_id (Any): ID of the action.
                 Retreives the action from agent_config.action_space
+
+        Returns:
+            bool: Whether or not the action taken resulted in a collision
         """
 
         habitat_sim.errors.assert_obj_valid(self.body)
@@ -174,8 +167,9 @@ class Agent(object):
         ), f"No action {action_id} in action space"
         action = self.agent_config.action_space[action_id]
 
-        if action.name in BodyActions:
-            self.controls.action(
+        did_collide = False
+        if self.controls.is_body_action(action.name):
+            did_collide = self.controls.action(
                 self.scene_node, action.name, action.actuation, apply_filter=True
             )
         else:
@@ -187,6 +181,8 @@ class Agent(object):
                     action.actuation,
                     apply_filter=False,
                 )
+
+        return did_collide
 
     def get_state(self) -> AgentState:
         habitat_sim.errors.assert_obj_valid(self.body)

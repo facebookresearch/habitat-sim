@@ -2,8 +2,8 @@ file(GLOB_RECURSE gfx_SOURCES "*.cpp")
 
 # If not GUI build, remove Viewer source
 # TODO(MS) Viewer really ought to be in separate module that is disabled
-if(${BUILD_GUI_VIEWERS})
-  message("Building GUI viewers")
+if(BUILD_GUI_VIEWERS)
+  message(STATUS "Building GUI viewers")
 else()
   list(REMOVE_ITEM gfx_SOURCES "${CMAKE_CURRENT_LIST_DIR}/Viewer.cpp")
 endif()
@@ -16,13 +16,10 @@ find_package(Magnum
   REQUIRED
     AnyImageImporter
     AnySceneImporter
-    DebugTools
     GL
     MeshTools
-    Primitives
     SceneGraph
     Shaders
-    TextureTools
     Trade
 )
 
@@ -61,7 +58,7 @@ target_link_libraries(gfx
 )
 
 # Link windowed application library if needed
-if(${BUILD_GUI_VIEWERS})
+if(BUILD_GUI_VIEWERS)
   find_package(Magnum REQUIRED GlfwApplication)
   target_link_libraries(gfx PUBLIC Magnum::GlfwApplication)
 elseif(UNIX)
@@ -76,7 +73,7 @@ elseif(WIN32)
   find_package(Magnum REQUIRED WindowlessWglApplication)
   target_link_libraries(gfx PUBLIC Magnum::WindowlessWglApplication)
 elseif(UNIX)
-  if(${BUILD_GUI_VIEWERS})
+  if(BUILD_GUI_VIEWERS)
     find_package(Magnum REQUIRED WindowlessGlxApplication)
     target_link_libraries(gfx PUBLIC Magnum::WindowlessGlxApplication)
   else()

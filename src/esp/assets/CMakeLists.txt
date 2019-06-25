@@ -4,19 +4,16 @@ find_package(Magnum
   REQUIRED
     AnyImageImporter
     AnySceneImporter
-    DebugTools
     GL
     MeshTools
-    Primitives
     SceneGraph
     Shaders
-    TextureTools
     Trade
 )
 
 find_package(MagnumPlugins
   REQUIRED
-# AssimpImporter
+    AssimpImporter
     StbImageImporter
     StbImageConverter
     TinyGltfImporter
@@ -36,13 +33,13 @@ target_link_libraries(assets
     Magnum::SceneGraph
     Magnum::Shaders
     Magnum::Trade
-# MagnumPlugins::AssimpImporter
+    MagnumPlugins::AssimpImporter
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbImageConverter
     MagnumPlugins::TinyGltfImporter
     tinyply
   PRIVATE
-    assimp
+    Assimp::Assimp
     geo
     io
 )
