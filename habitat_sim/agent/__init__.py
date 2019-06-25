@@ -7,3 +7,4 @@
 from .agent import *
 from .controls import *
 from .default_controls import *
+from .pyrobot_noisy_controls import *

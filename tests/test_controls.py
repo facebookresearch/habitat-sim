@@ -4,6 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import contextlib
+
 import attr
 import numpy as np
 import pytest
@@ -200,3 +202,107 @@ def test_default_sensor_contorls(action, expected):
     for k, v in state.sensor_states.items():
         assert k in new_state.sensor_states
         _check_state_expected(v, new_state.sensor_states[k], expected)
+
+
+def smoke_pyrobot_actions():
+    scene_graph = hsim.SceneGraph()
+    agent_config = habitat_sim.AgentConfiguration()
+    agent_config.action_space = dict(
+        move_backward=habitat_sim.ActionSpec(
+            "pyrobot_noisy_move_backward",
+            habitat_sim.PyRobotNoisyActuationSpec(amount=0.25),
+        ),
+        move_forward=habitat_sim.ActionSpec(
+            "pyrobot_noisy_move_forward",
+            habitat_sim.PyRobotNoisyActuationSpec(amount=0.25),
+        ),
+        turn_left=habitat_sim.ActionSpec(
+            "pyrobot_noisy_turn_left",
+            habitat_sim.PyRobotNoisyActuationSpec(amount=10.0),
+        ),
+        turn_right=habitat_sim.ActionSpec(
+            "pyrobot_noisy_turn_right",
+            habitat_sim.PyRobotNoisyActuationSpec(amount=10.0),
+        ),
+    )
+    agent = habitat_sim.Agent(agent_config)
+    agent.attach(scene_graph.get_root_node().create_child())
+
+    for action in agent_config.action_space:
+        agent.act(action)
+
+
+@pytest.mark.parametrize("noise_multiplier", [1.0, 0.0])
+def test_pyrobot_no_noise(noise_multiplier):
+    scene_graph = hsim.SceneGraph()
+    agent_config = habitat_sim.AgentConfiguration()
+    agent_config.action_space = dict(
+        noisy_move_backward=habitat_sim.ActionSpec(
+            "pyrobot_noisy_move_backward",
+            habitat_sim.PyRobotNoisyActuationSpec(
+                amount=0.25, noise_multiplier=noise_multiplier
+            ),
+        ),
+        noisy_move_forward=habitat_sim.ActionSpec(
+            "pyrobot_noisy_move_forward",
+            habitat_sim.PyRobotNoisyActuationSpec(
+                amount=0.25, noise_multiplier=noise_multiplier
+            ),
+        ),
+        noisy_turn_left=habitat_sim.ActionSpec(
+            "pyrobot_noisy_turn_left",
+            habitat_sim.PyRobotNoisyActuationSpec(
+                amount=10.0, noise_multiplier=noise_multiplier
+            ),
+        ),
+        noisy_turn_right=habitat_sim.ActionSpec(
+            "pyrobot_noisy_turn_right",
+            habitat_sim.PyRobotNoisyActuationSpec(
+                amount=10.0, noise_multiplier=noise_multiplier
+            ),
+        ),
+        move_backward=habitat_sim.ActionSpec(
+            "move_backward", habitat_sim.ActuationSpec(amount=0.25)
+        ),
+        move_forward=habitat_sim.ActionSpec(
+            "move_forward", habitat_sim.ActuationSpec(amount=0.25)
+        ),
+        turn_left=habitat_sim.ActionSpec(
+            "turn_left", habitat_sim.ActuationSpec(amount=10.0)
+        ),
+        turn_right=habitat_sim.ActionSpec(
+            "turn_right", habitat_sim.ActuationSpec(amount=10.0)
+        ),
+    )
+    agent = habitat_sim.Agent(agent_config)
+    agent.attach(scene_graph.get_root_node().create_child())
+
+    for action in agent_config.action_space:
+        base_action = action.replace("noisy_", "")
+
+        state = agent.state
+        agent.act(base_action)
+        base_state = agent.state
+
+        agent.state = state
+
+        agent.act(f"noisy_{base_action}")
+        noisy_state = agent.state
+
+        with (
+            pytest.raises(AssertionError)
+            if noise_multiplier > 0.0
+            else contextlib.suppress()
+        ):
+            _check_state_same(base_state, noisy_state)
+
+        for k, v in base_state.sensor_states.items():
+            assert k in noisy_state.sensor_states
+            with (
+                pytest.raises(AssertionError)
+                if noise_multiplier > 0.0
+                else contextlib.suppress()
+            ):
+                _check_state_same(v, noisy_state.sensor_states[k])
+
+        agent.state = state
