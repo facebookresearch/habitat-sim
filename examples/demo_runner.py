@@ -3,6 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 
 
+import multiprocessing
 import os
 import random
 import sys
@@ -16,9 +17,7 @@ import habitat_sim
 import habitat_sim.agent
 import habitat_sim.bindings as hsim
 import habitat_sim.utils as utils
-
 from settings import default_sim_settings, make_cfg
-import multiprocessing
 
 _barrier = None
 
@@ -176,8 +175,13 @@ class DemoRunner:
         self._cfg = make_cfg(self._sim_settings)
         scene_file = self._sim_settings["scene"]
 
-        if not os.path.exists(scene_file) and scene_file == default_sim_settings["test_scene"]:
-            print("Test scenes not downloaded locally, downloading and extracting now...")
+        if (
+            not os.path.exists(scene_file)
+            and scene_file == default_sim_settings["test_scene"]
+        ):
+            print(
+                "Test scenes not downloaded locally, downloading and extracting now..."
+            )
             utils.download_and_unzip(default_sim_settings["test_scene_data_url"], ".")
             print("Downloaded and extracted test scenes data.")
 

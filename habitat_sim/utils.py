@@ -5,10 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 
 from io import BytesIO
-import numpy as np
-import quaternion
 from urllib.request import urlopen
 from zipfile import ZipFile
+
+import numpy as np
+import quaternion
 
 
 def quat_from_coeffs(coeffs: np.array) -> np.quaternion:

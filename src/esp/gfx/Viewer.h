@@ -10,7 +10,6 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/assets/PhysicsManager.h"
 #include "esp/gfx/RenderCamera.h"
-#include "esp/nav/ActionSpacePath.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneManager.h"
@@ -57,7 +56,6 @@ class Viewer : public Magnum::Platform::Application {
   bool enablePhysics_;
   vec3f goalPos_;
   quatf goalHeading_;
-  nav::ActionSpacePathFinder::uptr actPathfinder_;
 };
 
 }  // namespace gfx

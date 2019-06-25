@@ -25,6 +25,8 @@ AssetInfo AssetInfo::fromPath(const std::string& path) {
   } else if (endsWith(path, ".glb")) {
     // assumes MP3D glb with gravity = -Z
     info.type = AssetType::MP3D_MESH;
+    // Create a coordinate for the mesh by rotating the default ESP
+    // coordinate frame to -Z gravity
     info.frame = {quatf::FromTwoVectors(geo::ESP_GRAVITY, -vec3f::UnitZ())};
   }
 
