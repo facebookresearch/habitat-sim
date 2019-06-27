@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import contextlib
+import itertools
 
 import attr
 import numpy as np
@@ -204,61 +205,50 @@ def test_default_sensor_contorls(action, expected):
         _check_state_expected(v, new_state.sensor_states[k], expected)
 
 
-def smoke_pyrobot_actions():
-    scene_graph = hsim.SceneGraph()
-    agent_config = habitat_sim.AgentConfiguration()
-    agent_config.action_space = dict(
-        move_backward=habitat_sim.ActionSpec(
-            "pyrobot_noisy_move_backward",
-            habitat_sim.PyRobotNoisyActuationSpec(amount=0.25),
-        ),
-        move_forward=habitat_sim.ActionSpec(
-            "pyrobot_noisy_move_forward",
-            habitat_sim.PyRobotNoisyActuationSpec(amount=0.25),
-        ),
-        turn_left=habitat_sim.ActionSpec(
-            "pyrobot_noisy_turn_left",
-            habitat_sim.PyRobotNoisyActuationSpec(amount=10.0),
-        ),
-        turn_right=habitat_sim.ActionSpec(
-            "pyrobot_noisy_turn_right",
-            habitat_sim.PyRobotNoisyActuationSpec(amount=10.0),
-        ),
-    )
-    agent = habitat_sim.Agent(agent_config)
-    agent.attach(scene_graph.get_root_node().create_child())
-
-    for action in agent_config.action_space:
-        agent.act(action)
-
-
-@pytest.mark.parametrize("noise_multiplier", [1.0, 0.0])
-def test_pyrobot_no_noise(noise_multiplier):
+@pytest.mark.parametrize(
+    "noise_multiplier,robot,controller",
+    itertools.product(
+        [1.0, 0.0], ["LoCoBot", "LoCoBot-Lite"], ["ILQR", "Proportional", "Movebase"]
+    ),
+)
+def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
     scene_graph = hsim.SceneGraph()
     agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
         noisy_move_backward=habitat_sim.ActionSpec(
             "pyrobot_noisy_move_backward",
             habitat_sim.PyRobotNoisyActuationSpec(
-                amount=0.25, noise_multiplier=noise_multiplier
+                amount=0.25,
+                robot=robot,
+                controller=controller,
+                noise_multiplier=noise_multiplier,
             ),
         ),
         noisy_move_forward=habitat_sim.ActionSpec(
             "pyrobot_noisy_move_forward",
             habitat_sim.PyRobotNoisyActuationSpec(
-                amount=0.25, noise_multiplier=noise_multiplier
+                amount=0.25,
+                robot=robot,
+                controller=controller,
+                noise_multiplier=noise_multiplier,
             ),
         ),
         noisy_turn_left=habitat_sim.ActionSpec(
             "pyrobot_noisy_turn_left",
             habitat_sim.PyRobotNoisyActuationSpec(
-                amount=10.0, noise_multiplier=noise_multiplier
+                amount=10.0,
+                robot=robot,
+                controller=controller,
+                noise_multiplier=noise_multiplier,
             ),
         ),
         noisy_turn_right=habitat_sim.ActionSpec(
             "pyrobot_noisy_turn_right",
             habitat_sim.PyRobotNoisyActuationSpec(
-                amount=10.0, noise_multiplier=noise_multiplier
+                amount=10.0,
+                robot=robot,
+                controller=controller,
+                noise_multiplier=noise_multiplier,
             ),
         ),
         move_backward=habitat_sim.ActionSpec(

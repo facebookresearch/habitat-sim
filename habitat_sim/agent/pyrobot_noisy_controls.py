@@ -17,55 +17,103 @@ __all__ = ["PyRobotNoisyActuationSpec"]
 
 
 @attr.s(auto_attribs=True)
-class _MeanStdev:
+class _MultivariateGaussian:
     mean: np.array
     cov: np.array
 
+    def __attrs_post_init__(self):
+        self.mean = np.array(self.mean)
+        self.cov = np.array(self.cov)
+        if len(self.cov.shape) == 1:
+            self.cov = np.diag(self.cov)
+
 
 @attr.s(auto_attribs=True)
-class NoiseModel:
-    linear: _MeanStdev
-    rotation: _MeanStdev
+class MotionNoiseModel:
+    linear: _MultivariateGaussian
+    rotation: _MultivariateGaussian
 
 
 @attr.s(auto_attribs=True)
 class ControllerNoiseModel:
-    linear_motion: NoiseModel
-    rotational_motion: NoiseModel
+    linear_motion: MotionNoiseModel
+    rotational_motion: MotionNoiseModel
 
 
 @attr.s(auto_attribs=True)
 class RobotNoiseModel:
     ILQR: ControllerNoiseModel
+    Proportional: ControllerNoiseModel
+    Movebase: ControllerNoiseModel
 
     def __getitem__(self, key):
-        return getattr(self, key, None)
+        return getattr(self, key)
 
 
 noise_models = {
     "LoCoBot": RobotNoiseModel(
         ILQR=ControllerNoiseModel(
-            linear_motion=NoiseModel(
-                _MeanStdev(np.sqrt(17) * np.ones((2,)) / 1e3, np.eye(2) * 5 / 1e3),
-                _MeanStdev(0.43 * np.ones((1,)), np.eye(1) * 0.25),
+            linear_motion=MotionNoiseModel(
+                _MultivariateGaussian([0.014, 0.009], [0.006, 0.005]),
+                _MultivariateGaussian([0.008], [0.004]),
             ),
-            rotational_motion=NoiseModel(
-                _MeanStdev(np.sqrt(6) * np.ones((2,)) / 1e3, np.eye(2) * 0),
-                _MeanStdev(1.32 * np.ones((1,)), np.eye(1) * 0.68),
+            rotational_motion=MotionNoiseModel(
+                _MultivariateGaussian([0.003, 0.003], [0.002, 0.003]),
+                _MultivariateGaussian([0.023], [0.012]),
             ),
-        )
+        ),
+        Proportional=ControllerNoiseModel(
+            linear_motion=MotionNoiseModel(
+                _MultivariateGaussian([0.017, 0.042], [0.007, 0.023]),
+                _MultivariateGaussian([0.031], [0.026]),
+            ),
+            rotational_motion=MotionNoiseModel(
+                _MultivariateGaussian([0.001, 0.005], [0.001, 0.004]),
+                _MultivariateGaussian([0.043], [0.017]),
+            ),
+        ),
+        Movebase=ControllerNoiseModel(
+            linear_motion=MotionNoiseModel(
+                _MultivariateGaussian([0.074, 0.036], [0.019, 0.033]),
+                _MultivariateGaussian([0.189], [0.038]),
+            ),
+            rotational_motion=MotionNoiseModel(
+                _MultivariateGaussian([0.002, 0.003], [0.0, 0.002]),
+                _MultivariateGaussian([0.219], [0.019]),
+            ),
+        ),
     ),
     "LoCoBot-Lite": RobotNoiseModel(
         ILQR=ControllerNoiseModel(
-            linear_motion=NoiseModel(
-                _MeanStdev(np.sqrt(144) * np.ones((2,)) / 1e3, np.eye(2) * 8 / 1e3),
-                _MeanStdev(1.79 * np.ones((1,)), np.eye(1) * 1.59),
+            linear_motion=MotionNoiseModel(
+                _MultivariateGaussian([0.142, 0.023], [0.008, 0.008]),
+                _MultivariateGaussian([0.031], [0.028]),
             ),
-            rotational_motion=NoiseModel(
-                _MeanStdev(np.sqrt(3) * np.ones((2,)) / 1e3, np.eye(2) * 2 / 1e3),
-                _MeanStdev(6.97 * np.ones((1,)), np.eye(1) * 1.71),
+            rotational_motion=MotionNoiseModel(
+                _MultivariateGaussian([0.002, 0.002], [0.001, 0.002]),
+                _MultivariateGaussian([0.122], [0.03]),
             ),
-        )
+        ),
+        Proportional=ControllerNoiseModel(
+            linear_motion=MotionNoiseModel(
+                _MultivariateGaussian([0.135, 0.043], [0.007, 0.009]),
+                _MultivariateGaussian([0.049], [0.009]),
+            ),
+            rotational_motion=MotionNoiseModel(
+                _MultivariateGaussian([0.002, 0.002], [0.002, 0.001]),
+                _MultivariateGaussian([0.054], [0.061]),
+            ),
+        ),
+        Movebase=ControllerNoiseModel(
+            linear_motion=MotionNoiseModel(
+                _MultivariateGaussian([0.192, 0.117], [0.055, 0.144]),
+                _MultivariateGaussian([0.128], [0.143]),
+            ),
+            rotational_motion=MotionNoiseModel(
+                _MultivariateGaussian([0.002, 0.001], [0.001, 0.001]),
+                _MultivariateGaussian([0.173], [0.025]),
+            ),
+        ),
     ),
 }
 
@@ -74,13 +122,16 @@ noise_models = {
 class PyRobotNoisyActuationSpec(ActuationSpec):
     r"""Struct to hold parameters for pyrobot noise model
 
+    https://pyrobot.org/
+    https://github.com/facebookresearch/pyrobot
+
     Args:
         amount (float): The amount the control moves the scene node by
         robot (str): Which robot to simulate noise for.  Valid values
             are LoCoBot and LoCoBot-Lite
         controller (str): Which controller to simulate noise models for,
             Valid values are ILQR, Proportional, Movebase
-            ILQR is the default (as that is the best)
+            ILQR is the default
         noise_multiplier (float): Multiplier on the noise amount,
             useful for ablating the effect of noise
     """
@@ -88,13 +139,17 @@ class PyRobotNoisyActuationSpec(ActuationSpec):
 
     @robot.validator
     def check(self, attribute, value):
-        assert value in noise_models.keys()
+        assert value in noise_models.keys(), f"{value} not a known robot"
 
     controller: str = attr.ib(default="ILQR")
 
     @controller.validator
     def check(self, attribute, value):
-        assert value in ["ILQR"]
+        assert value in [
+            "ILQR",
+            "Proportional",
+            "Movebase",
+        ], f"{value} not a known controller"
 
     noise_multiplier: float = 1.0
 
@@ -109,7 +164,7 @@ def _noisy_action(
     translate_amount: float,
     rotate_amount: float,
     multiplier: float,
-    model: NoiseModel,
+    model: MotionNoiseModel,
 ):
     ax = scene_node.absolute_transformation()[0:3, _z_axis]
     prep_ax = np.cross(ax, hsim.geo.UP)
@@ -128,7 +183,7 @@ def _noisy_action(
     ax = np.zeros(3, dtype=np.float32)
     ax[_y_axis] = 1
 
-    scene_node.rotate_local(np.deg2rad(rotate_amount + rot_noise[0]), ax)
+    scene_node.rotate_local(np.deg2rad(rotate_amount) + rot_noise[0], ax)
     scene_node.normalize()
 
 
