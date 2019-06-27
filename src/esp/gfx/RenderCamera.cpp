@@ -12,7 +12,8 @@ namespace esp {
 namespace gfx {
 
 RenderCamera::RenderCamera(scene::SceneNode& node)
-    : scene::AttachedObject{node, scene::AttachedObjectType::CAMERA} {
+    : Magnum::SceneGraph::AbstractFeature3D{node} {
+  node.setType(scene::SceneNodeType::CAMERA);
   camera_ = new MagnumCamera(node);
 }
 

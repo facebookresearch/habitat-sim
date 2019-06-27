@@ -16,6 +16,14 @@ namespace scene {
 
 class SceneGraph;
 
+// Future types may include e.g., "LIGHT"
+enum class SceneNodeType {
+  EMPTY = 0,
+  SENSOR = 1,
+  AGENT = 2,
+  CAMERA = 3,
+};
+
 class SceneNode : public MagnumObject {
  public:
   // creating a scene node "in the air" is not allowed.
@@ -24,6 +32,10 @@ class SceneNode : public MagnumObject {
   // terminate node (e.g., "MagnumScene" defined in SceneGraph) as its ancestor
   SceneNode() = delete;
   SceneNode(SceneNode& parent);
+
+  // get the type of the attached object
+  SceneNodeType getType() { return type_; }
+  void setType(SceneNodeType type) { type_ = type; }
 
   //! Create a new child SceneNode and return it. NOTE: this SceneNode owns and
   //! is responsible for deallocating created child
@@ -42,6 +54,8 @@ class SceneNode : public MagnumObject {
   friend class SceneGraph;
   SceneNode(MagnumScene& parentNode);
 
+  // the type of the attached object (e.g., sensor, agent etc.)
+  SceneNodeType type_ = SceneNodeType::EMPTY;
   int id_ = ID_UNDEFINED;
 };
 

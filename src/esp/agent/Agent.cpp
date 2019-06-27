@@ -24,10 +24,11 @@ const std::set<std::string> Agent::BodyActions = {
     "lookLeft", "lookRight"};
 
 Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
-    : scene::AttachedObject(agentNode, scene::AttachedObjectType::AGENT),
+    : Magnum::SceneGraph::AbstractFeature3D(agentNode),
       configuration_(cfg),
       sensors_(),
       controls_(scene::ObjectControls::create()) {
+  agentNode.setType(scene::SceneNodeType::AGENT);
   for (sensor::SensorSpec::ptr spec : cfg.sensorSpecifications) {
     // TODO: this should take type into account to create appropriate
     // sensor

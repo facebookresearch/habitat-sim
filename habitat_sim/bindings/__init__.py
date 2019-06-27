@@ -5,8 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 modules = [
-    "AttachedObject",
-    "AttachedObjectType",
+    "SceneNodeType",
     "GreedyFollowerCodes",
     "GreedyGeodesicFollowerImpl",
     "MultiGoalShortestPath",

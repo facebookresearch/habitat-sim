@@ -104,7 +104,7 @@ class Agent(object):
     agent_config: AgentConfiguration
     sensors: SensorSuite
     controls: ObjectControls
-    body: hsim.AttachedObject
+    body: mn.scenegraph.AbstractFeature3D
 
     def __init__(
         self, scene_node: hsim.SceneNode, agent_config=None, sensors=None, controls=None
@@ -112,8 +112,8 @@ class Agent(object):
         self.agent_config = agent_config if agent_config else AgentConfiguration()
         self.sensors = sensors if sensors else SensorSuite()
         self.controls = controls if controls else ObjectControls()
-        self.body = hsim.AttachedObject(scene_node)
-        self.body.object_type = hsim.AttachedObjectType.AGENT
+        self.body = mn.scenegraph.AbstractFeature3D(scene_node)
+        scene_node.type = hsim.SceneNodeType.AGENT
         self.reconfigure(self.agent_config)
 
     def reconfigure(
