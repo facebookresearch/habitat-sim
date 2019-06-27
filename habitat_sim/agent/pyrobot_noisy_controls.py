@@ -125,6 +125,8 @@ class PyRobotNoisyActuationSpec(ActuationSpec):
     https://pyrobot.org/
     https://github.com/facebookresearch/pyrobot
 
+    Please cite PyRobot if you use this noise model
+
     Args:
         amount (float): The amount the control moves the scene node by
         robot (str): Which robot to simulate noise for.  Valid values
