@@ -3,6 +3,8 @@
 #include <Magnum/Trade/MeshData3D.h>
 #include <Magnum/Trade/MeshObjectData3D.h>
 #include <btBulletDynamicsCommon.h>
+#include "esp/assets/Asset.h"
+#include "esp/assets/BaseMesh.h"
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/FRLInstanceMeshData.h"
 #include "esp/core/esp.h"
@@ -14,13 +16,20 @@ class BulletRigidObject : public scene::SceneNode {
  public:
   BulletRigidObject(scene::SceneNode* parent);
 
-  bool initialize(Magnum::Float mass,
-                  Magnum::Trade::MeshData3D& meshData,
-                  btDynamicsWorld& bWorld);
+  // TODO (JH) Currently a BulletRigidObject is either a scene
+  // or an object, but cannot be both (tracked by _initialized)
+  // there is probably a better way to abstract this
+  bool initializeScene(
+      const assets::AssetInfo& info,
+      Magnum::Float mass,
+      std::vector<Magnum::Trade::MeshData3D*> meshGroup,
+      btDynamicsWorld& bWorld);
 
-  bool initializeFRL(Magnum::Float mass,
-                     assets::FRLInstanceMeshData* meshData,
-                     btDynamicsWorld& bWorld);
+  bool initializeObject(
+      const assets::AssetInfo& info,
+      Magnum::Float mass,
+      std::vector<Magnum::Trade::MeshData3D*> meshGroup,
+      btDynamicsWorld& bWorld);
 
   ~BulletRigidObject();
   btRigidBody& rigidBody();
@@ -37,11 +46,13 @@ class BulletRigidObject : public scene::SceneNode {
   btCollisionObject* _bCollisionBody;
 
   float _mass;
+  float _restitution;
 
-  void getDimensions(Magnum::Trade::MeshData3D& meshData,
-                     float* x,
-                     float* y,
-                     float* z);
+  void getDimensions(
+      Magnum::Trade::MeshData3D*,
+      float* x,
+      float* y,
+      float* z);
 };
 
 }  // namespace physics

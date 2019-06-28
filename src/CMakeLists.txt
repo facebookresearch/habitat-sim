@@ -47,6 +47,9 @@ include(cmake/dependencies.cmake)
 # include source dirs
 include_directories(${PROJECT_SOURCE_DIR})
 
+# Physics
+add_definitions(-DBT_ENABLE_PROFILE)
+
 # add subdirectories
 add_subdirectory(esp/core)
 add_subdirectory(esp/geo)

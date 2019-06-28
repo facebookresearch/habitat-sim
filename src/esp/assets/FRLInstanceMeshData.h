@@ -7,7 +7,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-
+#include <Magnum/Trade/MeshData3D.h>
 #include "GenericInstanceMeshData.h"
 #include "esp/core/esp.h"
 
@@ -25,11 +25,12 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
   FRLInstanceMeshData()
       : GenericInstanceMeshData(SupportedMeshType::INSTANCE_MESH){};
   ~FRLInstanceMeshData(){
-      delete xyz_vbo;
+      delete cpu_vbo_3;
       delete tri_ibo;
       delete cbo_float;
       delete obj_id_tex_data;
-      delete tri_ibo_i;
+      //delete meshData_;
+      //delete tri_ibo_i;
   };
 
   void to_ply(const std::string& ply_file) const;
@@ -56,9 +57,9 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
   std::vector<vec4f> cpu_vbo;
   std::vector<vec3uc> cpu_cbo;
 
-  std::vector<vec3f>* xyz_vbo     = nullptr;
+  std::vector<vec3f>* cpu_vbo_3   = nullptr;
   std::vector<uint32_t>* tri_ibo  = nullptr;
-  std::vector<int>* tri_ibo_i     = nullptr;
+  //std::vector<int>* tri_ibo_i     = nullptr;
   std::vector<float>* cbo_float   = nullptr;
   float* obj_id_tex_data          = nullptr;
 

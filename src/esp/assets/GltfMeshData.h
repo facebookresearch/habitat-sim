@@ -25,7 +25,8 @@ class GltfMeshData : public BaseMesh {
   virtual void uploadBuffersToGPU(bool forceReload = false) override;
 
   void setMeshData(Magnum::Trade::AbstractImporter& importer, int meshID);
-  Corrade::Containers::Optional<Magnum::Trade::MeshData3D>& getMeshData() {
+  Corrade::Containers::Optional<Magnum::Trade::MeshData3D>& getMeshData() 
+  override {
     return meshData_;
   }
 

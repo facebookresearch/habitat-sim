@@ -19,9 +19,16 @@ find_package(MagnumPlugins
     TinyGltfImporter
 )
 
+#find_package(Bullet)
+find_package(Bullet REQUIRED)
+
 find_package(MagnumIntegration REQUIRED Bullet)
 
-add_library(assets STATIC ${assets_SOURCES})
+add_library(assets 
+    STATIC 
+        ${assets_SOURCES}
+        ${BULLET_LIBRARIES}
+)
 
 target_link_libraries(assets
   PUBLIC
@@ -41,6 +48,7 @@ target_link_libraries(assets
     MagnumPlugins::StbImageConverter
     MagnumPlugins::TinyGltfImporter
     MagnumIntegration::Bullet
+    ${BULLET_LIBRARIES}
     tinyply
   PRIVATE
     Assimp::Assimp

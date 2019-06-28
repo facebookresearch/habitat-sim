@@ -129,6 +129,33 @@ bool FRLInstanceMeshData::loadPLY(const std::string& ply_file) {
     xyzid.head<3>() = xyz_esp;
   }
 
+  // Store vertex buffer without instance id
+  cpu_vbo_3 = new std::vector<vec3f>(cpu_vbo.size());
+  for (int i = 0; i < cpu_vbo.size(); ++i) {
+    (*cpu_vbo_3)[i] = cpu_vbo[i].head<3>();
+  }
+
+  // Compute tri index buffer
+  const size_t numQuads = cpu_vbo.size() / 4;
+  tri_ibo = new std::vector<uint32_t>(numQuads * 6);
+  for (uint32_t iQuad = 0; iQuad < numQuads; ++iQuad) {
+    const uint32_t triIdx = 6 * iQuad;
+    const uint32_t quadIdx = 4 * iQuad;
+    (*tri_ibo)[triIdx + 0] = quadIdx + 0;
+    (*tri_ibo)[triIdx + 1] = quadIdx + 1;
+    (*tri_ibo)[triIdx + 2] = quadIdx + 2;
+    (*tri_ibo)[triIdx + 3] = quadIdx + 0;
+    (*tri_ibo)[triIdx + 4] = quadIdx + 2;
+    (*tri_ibo)[triIdx + 5] = quadIdx + 3;
+  }
+
+  // Store indices, facd_ids in Magnum MeshData3D format such that
+  // later they can be accessed.
+  // Note that normal and texture data are not stored
+  meshData_ = Magnum::Trade::MeshData3D(Magnum::GL::MeshPrimitive::Triangles,
+      reinterpret_cast<std::vector<Magnum::UnsignedInt>>(tri_ibo->data()),
+      reinterpret_cast<std::vector<std::vector<Magnum::Vector3>>>(cpu_vbo_3->data()));
+
   return true;
 }
 
@@ -196,22 +223,6 @@ Magnum::GL::Mesh* FRLInstanceMeshData::getMagnumGLMesh() {
   return &(renderingBuffer_->mesh);
 }
 
-// For initializing Surreal Data in Physics
-const std::vector<vec3f> FRLInstanceMeshData::get_vbo() {
-  if (xyz_vbo == nullptr) {
-    uploadBuffersToGPU();
-  }
-  return *xyz_vbo;
-}
-
-const std::vector<int> FRLInstanceMeshData::get_ibo() {
-  if (tri_ibo_i == nullptr) {
-    uploadBuffersToGPU();
-  }
-  return *tri_ibo_i;
-}
-
-
 
 void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {
@@ -230,27 +241,7 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   // c{&data.cpu_cbo[0][0], data.cpu_cbo.size() * 3};
   // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0,2,3]
   const size_t numQuads = cpu_vbo.size() / 4;
-  tri_ibo = new std::vector<uint32_t>(numQuads * 6);
-  tri_ibo_i = new std::vector<int>(numQuads * 6);
 
-  for (uint32_t iQuad = 0; iQuad < numQuads; ++iQuad) {
-    const uint32_t triIdx = 6 * iQuad;
-    const uint32_t quadIdx = 4 * iQuad;
-    (*tri_ibo)[triIdx + 0] = quadIdx + 0;
-    (*tri_ibo)[triIdx + 1] = quadIdx + 1;
-    (*tri_ibo)[triIdx + 2] = quadIdx + 2;
-    (*tri_ibo)[triIdx + 3] = quadIdx + 0;
-    (*tri_ibo)[triIdx + 4] = quadIdx + 2;
-    (*tri_ibo)[triIdx + 5] = quadIdx + 3;
-
-    (*tri_ibo_i)[triIdx + 0] = (int)(*tri_ibo)[triIdx + 0];
-    (*tri_ibo_i)[triIdx + 1] = (int)(*tri_ibo)[triIdx + 1];
-    (*tri_ibo_i)[triIdx + 2] = (int)(*tri_ibo)[triIdx + 2];
-    (*tri_ibo_i)[triIdx + 3] = (int)(*tri_ibo)[triIdx + 3];
-    (*tri_ibo_i)[triIdx + 4] = (int)(*tri_ibo)[triIdx + 4];
-    (*tri_ibo_i)[triIdx + 5] = (int)(*tri_ibo)[triIdx + 5];
-
-  }
   
   cbo_float = new std::vector<float>(cpu_cbo.size() * 3);
   for (int iVert = 0; iVert < cpu_cbo.size(); ++iVert) {
@@ -258,11 +249,6 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
     (*cbo_float)[idx + 0] = cpu_cbo[iVert][0] / 255.0f;
     (*cbo_float)[idx + 1] = cpu_cbo[iVert][1] / 255.0f;
     (*cbo_float)[idx + 2] = cpu_cbo[iVert][2] / 255.0f;
-  }
-
-  xyz_vbo = new std::vector<vec3f>(cpu_vbo.size());
-  for (int i = 0; i < cpu_vbo.size(); ++i) {
-    (*xyz_vbo)[i] = cpu_vbo[i].head<3>();
   }
 
   // See code for GenericInstanceMeshData::uploadBuffersToGPU for comments about
@@ -278,7 +264,7 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
 
 
   renderingBuffer_->tex = createInstanceTexture(obj_id_tex_data, texSize);
-  renderingBuffer_->vbo.setData(*xyz_vbo, Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->vbo.setData(*cpu_vbo_3, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->cbo.setData(*cbo_float, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->ibo.setData(*tri_ibo, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)

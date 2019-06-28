@@ -8,7 +8,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-
+#include <Magnum/Trade/MeshData3D.h>
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Mesh.h>
 
@@ -36,11 +36,13 @@ class Mp3dInstanceMeshData : public GenericInstanceMeshData {
       const std::string& plyFile,
       const std::unordered_map<int, int>& segmentIdToObjectIdMap);
 
+
  protected:
   std::vector<vec3i> cpu_ibo_;
   std::vector<int> materialIds_;
   std::vector<int> segmentIds_;
   std::vector<int> categoryIds_;
+
 };
 
 }  // namespace assets

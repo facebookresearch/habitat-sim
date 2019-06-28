@@ -203,6 +203,13 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
     xyz = T_esp_scene * xyz;
   }
 
+  // Store indices, facd_ids in Magnum MeshData3D format such that
+  // later they can be accessed.
+  // Note that normal and texture data are not stored
+  meshData_ = new Magnum::Trade::MeshData3D(Magnum::GL::MeshPrimitive::Triangles,
+      reinterpret_cast<std::vector<Magnum::UnsignedInt>>(cpu_ibo_.data()),
+      reinterpret_cast<std::vector<std::vector<Magnum::Vector3>>>(cpu_vbo_.data()));
+
   return true;
 }
 

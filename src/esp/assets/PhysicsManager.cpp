@@ -3,6 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <functional>
+#include <ctime>
+#include <chrono>
 
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/String.h>
@@ -14,7 +16,6 @@
 #include <Magnum/Trade/TextureData.h>
 #include "BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
-#include "LinearMath/btQuickprof.h"
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
@@ -36,7 +37,9 @@
 namespace esp {
 namespace assets {
 
-bool PhysicsManager::initPhysics(scene::SceneNode* node) {
+bool PhysicsManager::initPhysics(
+      scene::SceneNode*     node,
+      bool                  do_profile) {
   LOG(INFO) << "Initializing Physics Engine...";
 
   _bCollisionConfig = new btDefaultCollisionConfiguration();
@@ -60,7 +63,9 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node) {
 
   _timeline.start();
   _initialized = true;
+  _do_profile = do_profile;
   LOG(INFO) << "Initialized Physics Engine.";
+
   return true;
 }
 
@@ -79,79 +84,116 @@ void PhysicsManager::getPhysicsEngine() {}
 
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
-bool PhysicsManager::initObject(
+bool PhysicsManager::initScene(
     const AssetInfo& info,
     const MeshMetaData& metaData,
-    Magnum::Trade::MeshData3D& meshData,
-    physics::BulletRigidObject* physObject,
-    const std::string& shapeType, /* = "TriangleMeshShape" */
-    bool zero_mass /* = false */) {
-  // TODO (JH) should meshData better be a pointer?
-  // such that if (!meshData) return
+    std::vector<Magnum::Trade::MeshData3D*> meshGroup,
+    physics::BulletRigidObject* physObject) {
 
-  if (meshData.primitive() != Magnum::MeshPrimitive::Triangles) {
-    if (meshData.primitive() == Magnum::MeshPrimitive::Lines) {
-      LOG(INFO) << "Primitive Lines";
-    }
-    if (meshData.primitive() == Magnum::MeshPrimitive::Points) {
-      LOG(INFO) << "Primitive Points";
-    }
-    if (meshData.primitive() == Magnum::MeshPrimitive::LineLoop) {
-      LOG(INFO) << "Primitive Line loop";
-    }
-    if (meshData.primitive() == Magnum::MeshPrimitive::LineStrip) {
-      LOG(INFO) << "Primitive Line Strip";
-    }
-    if (meshData.primitive() == Magnum::MeshPrimitive::TriangleStrip) {
-      LOG(INFO) << "Primitive Triangle Strip";
-    }
-    if (meshData.primitive() == Magnum::MeshPrimitive::TriangleFan) {
-      LOG(INFO) << "Primitive Triangle Fan";
-    }
-    LOG(ERROR) << "Primitive " << int(meshData.primitive());
-    LOG(ERROR) << "Cannot load collision mesh, skipping";
-    return false;
+  // Test Mesh primitive is valid
+  for (int mesh_i = 0; mesh_i < meshGroup.size(); mesh_i++) {
+    Magnum::Trade::MeshData3D* meshData = meshGroup[mesh_i];
+    if (!isMeshPrimitiveValid(meshData)) {return false;}
   }
 
-  // TODO (JH) weight is currently hardcoded, later should load from some config
-  // file
-  float mass = 0.0f;
-  // metaData.mass
-  if (!zero_mass) {
-    mass = meshData.indices().size() * 0.001f;
-    LOG(INFO) << "Nonzero mass";
-  } else {
-    LOG(INFO) << "Zero mass";
+  float mass = 0.0f;    // TODO (JH) weight is currently hardcoded
+  bool objectSuccess;
+  if (info.type == AssetType::INSTANCE_MESH) {
+    // ._semantic.ply mesh data
+    LOG(INFO) << "Initialize: before";
+    objectSuccess = physObject->initializeScene(info, mass, meshGroup, *_bWorld);
+    LOG(INFO) << "Initialize: after";
+    physObject->syncPose();
+  } 
+  else if (info.type == AssetType::FRL_INSTANCE_MESH) {
+    // FRL mesh
+    //Magnum::GL::Mesh* mesh = &meshData->getRenderingBuffer()->mesh;
+    LOG(INFO) << "Initialize FRL: before";
+    objectSuccess = physObject->initializeScene(info, mass, meshGroup, *_bWorld);
+    LOG(INFO) << "Initialize FRL: after";
   }
-
-  LOG(INFO) << "Initialize: before";
-  bool objectSuccess = physObject->initialize(mass, meshData, *_bWorld);
-  LOG(INFO) << "Initialize: after";
-  physObject->syncPose();
+  else {
+    // GLB mesh data
+    //Magnum::GL::Mesh* mesh = &meshData->getRenderingBuffer()->mesh;
+    LOG(INFO) << "Initialize FRL: before";
+    objectSuccess = physObject->initializeScene(info, mass, meshGroup, *_bWorld);
+    LOG(INFO) << "Initialize FRL: after";
+  }
 
   return objectSuccess;
 }
 
-bool PhysicsManager::initFRLObject(
+
+bool PhysicsManager::initObject(
     const AssetInfo& info,
     const MeshMetaData& metaData,
-    FRLInstanceMeshData* meshData,
-    physics::BulletRigidObject* physObject,
-    const std::string& shapeType, /* = "TriangleMeshShape" */
-    bool zero_mass /* = false */) {
-  Magnum::GL::Mesh* mesh = &meshData->getRenderingBuffer()->mesh;
-  float mass = 0.0f;
-  if (!zero_mass) {
-    mass = mesh->count() * 0.001f;
-    LOG(INFO) << "Nonzero mass";
-  } else {
-    LOG(INFO) << "Zero mass";
+    std::vector<Magnum::Trade::MeshData3D*> meshGroup,
+    physics::BulletRigidObject* physObject) {
+
+  // Test Mesh primitive is valid
+  for (int mesh_i = 0; mesh_i < meshGroup.size(); mesh_i++) {
+    Magnum::Trade::MeshData3D* meshData = meshGroup[mesh_i];
+    if (!isMeshPrimitiveValid(meshData)) {return false;}
   }
 
-  LOG(INFO) << "Initialize FRL: before";
-  bool objectSuccess = physObject->initializeFRL(mass, meshData, *_bWorld);
-  LOG(INFO) << "Initialize FRL: after";
+  bool objectSuccess;
+  float mass;
+  if (info.type == AssetType::INSTANCE_MESH) {
+    // _semantic.ply mesh
+    // TODO (JH): hacked mass value
+    mass = meshGroup[0]->indices().size() * 0.001f;
+    LOG(INFO) << "Nonzero mass";
+    LOG(INFO) << "Initialize: before";
+    objectSuccess = physObject->initializeObject(info, mass, meshGroup, *_bWorld);
+    LOG(INFO) << "Initialize: after";
+    physObject->syncPose();
+  } 
+  else if (info.type == AssetType::FRL_INSTANCE_MESH) {
+    // FRL mesh
+    mass = meshGroup[0]->indices().size() * 0.001f;
+    LOG(INFO) << "Initialize FRL: before";
+    objectSuccess = physObject->initializeObject(info, mass, meshGroup, *_bWorld);
+    LOG(INFO) << "Initialize FRL: after";
+  }
+  else {
+    // GLB mesh data
+    //Magnum::GL::Mesh* mesh = meshData->getRenderingBuffer()->mesh;
+    mass = meshGroup[0]->indices().size() * 0.001f;
+    LOG(INFO) << "Initialize FRL: before";
+    objectSuccess = physObject->initializeObject(info, mass, meshGroup, *_bWorld);
+    LOG(INFO) << "Initialize FRL: after";
+  }
+
   return objectSuccess;
+}
+
+
+bool PhysicsManager::isMeshPrimitiveValid(Magnum::Trade::MeshData3D* meshData) {
+  if (meshData->primitive() != Magnum::MeshPrimitive::Triangles) {
+    if (meshData->primitive() == Magnum::MeshPrimitive::Lines) {
+      LOG(INFO) << "Primitive Lines";
+    }
+    if (meshData->primitive() == Magnum::MeshPrimitive::Points) {
+      LOG(INFO) << "Primitive Points";
+    }
+    if (meshData->primitive() == Magnum::MeshPrimitive::LineLoop) {
+      LOG(INFO) << "Primitive Line loop";
+    }
+    if (meshData->primitive() == Magnum::MeshPrimitive::LineStrip) {
+      LOG(INFO) << "Primitive Line Strip";
+    }
+    if (meshData->primitive() == Magnum::MeshPrimitive::TriangleStrip) {
+      LOG(INFO) << "Primitive Triangle Strip";
+    }
+    if (meshData->primitive() == Magnum::MeshPrimitive::TriangleFan) {
+      LOG(INFO) << "Primitive Triangle Fan";
+    }
+    LOG(ERROR) << "Primitive " << int(meshData->primitive());
+    LOG(ERROR) << "Cannot load collision mesh, skipping";
+    return false;
+  } else {
+    return true;
+  }
 }
 
 void PhysicsManager::debugSceneGraph(const MagnumObject* root) {
@@ -175,11 +217,22 @@ void PhysicsManager::stepPhysics() {
   // ==== Physics stepforward ======
   //_bWorld->stepSimulation(_timeline.previousFrameDuration(), _maxSubSteps,
   //                        _fixedTimeStep);
+
+  auto start = std::chrono::system_clock::now();
   _bWorld->stepSimulation(_timeline.previousFrameDuration(), _maxSubSteps,
                           _fixedTimeStep);
-  //_bWorld.debugDrawWorld();
-  // LOG(INFO) << "Step physics fps: " << 1.0f /
-  // _timeline.previousFrameDuration();
+  auto end = std::chrono::system_clock::now();
+
+  std::chrono::duration<float> elapsed_seconds = end-start;
+  std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+
+  if (_do_profile) {
+    _total_frames += 1;
+    _total_time += static_cast<float>(elapsed_seconds.count());
+    LOG(INFO) << "Step physics fps: " << 1.0f / static_cast<float>(elapsed_seconds.count());
+    LOG(INFO) << "Average physics fps: " << 1.0f / (_total_time / _total_frames);
+  }
+  
   int numObjects = _bWorld->getNumCollisionObjects();
   // LOG(INFO) << "Num collision objects" << numObjects;
 }
@@ -187,7 +240,6 @@ void PhysicsManager::stepPhysics() {
 void PhysicsManager::nextFrame() {
   _timeline.nextFrame();
   checkActiveObjects();
-  //CProfileManager::dumpAll();
 }
 
 void PhysicsManager::checkActiveObjects() {

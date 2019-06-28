@@ -12,6 +12,7 @@
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Timeline.h>
+#include <Magnum/Trade/MeshData3D.h>
 
 /* Bullet Physics Integration */
 #include <Corrade/Containers/Optional.h>
@@ -54,21 +55,24 @@ class PhysicsManager {
   explicit PhysicsManager(){};
   ~PhysicsManager();
 
-  bool initPhysics(scene::SceneNode* node);
+  bool initPhysics(scene::SceneNode* node,
+                   bool do_profile);
   
-  bool initObject(const AssetInfo& info,
-                  const MeshMetaData& metaData,
-                  Magnum::Trade::MeshData3D& meshData,
-                  physics::BulletRigidObject* physObject,
-                  const std::string& shapeType="TriangleMeshShape",
-                  bool zero_mass=false);
+  //! Initialize object given mesh data
+  //! The object could contain several parts
+  bool initObject(
+      const AssetInfo& info,
+      const MeshMetaData& metaData,
+      std::vector<Magnum::Trade::MeshData3D*> meshGroup,
+      physics::BulletRigidObject* physObject);
 
-  bool initFRLObject(const AssetInfo& info,
-                     const MeshMetaData& metaData,
-                     FRLInstanceMeshData* meshData,
-                     physics::BulletRigidObject* physObject,
-                     const std::string& shapeType="TriangleMeshShape",
-                     bool zero_mass=false);
+  //! Initialize scene given mesh data
+  //! The scene could contain several components
+  bool initScene(
+      const AssetInfo& info,
+      const MeshMetaData& metaData,
+      std::vector<Magnum::Trade::MeshData3D*> meshGroup,
+      physics::BulletRigidObject* physObject);
 
   void debugSceneGraph(const MagnumObject* root);
 
@@ -80,21 +84,30 @@ class PhysicsManager {
  protected:
 
   void getPhysicsEngine();
-  // ==== physics engines ====
-  // The world has to live longer than the scene because RigidBody
-  // instances have to remove themselves from it on destruction
+
+  //! Check if mesh primitive type is valid for bullet physics engine
+  bool isMeshPrimitiveValid(Magnum::Trade::MeshData3D* meshData);
+
+  //! ==== physics engines ====
+  //! The world has to live longer than the scene because RigidBody
+  //! instances have to remove themselves from it on destruction
   Magnum::BulletIntegration::DebugDraw      _debugDraw{Magnum::NoCreate};
   btDbvtBroadphase*                         _bBroadphase;
   btDefaultCollisionConfiguration*          _bCollisionConfig;
   btCollisionDispatcher*                    _bDispatcher;
-  //btCollisionDispatcher*                    _bDispatcher;
+  //! btCollisionDispatcher*                    _bDispatcher;
   btSequentialImpulseConstraintSolver*      _bSolver;
-//  btDiscreteDynamicsWorld                   _bWorld{&_bDispatcher, &_bBroadphase, &_bSolver, &_bCollisionConfig};
+  //! btDiscreteDynamicsWorld                   
+  //      _bWorld{&_bDispatcher, &_bBroadphase, &_bSolver, &_bCollisionConfig};
   btDiscreteDynamicsWorld*                  _bWorld;
 
   scene::SceneNode* physicsNode = nullptr;
 
   bool _initialized = false;
+  bool _do_profile = false;
+  float _total_time = 0.0f;
+  int _total_frames = 0;
+
   Magnum::Timeline _timeline;
   int _maxSubSteps = 10;
   float _fixedTimeStep = 1.0f / 240.0f;

@@ -66,7 +66,13 @@ class Viewer : public Magnum::Platform::Application {
   bool computeActionPath_;
   bool enablePhysics_;
   bool surreal_mesh = false;
-  bool castle_mesh = true;
+  bool replica_mesh = false;
+  bool vangoth_mesh = true;
+  bool castle_mesh = false;
+
+  bool do_profile_ = false;
+  int  frame_limit_ = 1000;
+  int  frame_curr_ = 0;
 
   int numObjects_ = 1;
   vec3f goalPos_;

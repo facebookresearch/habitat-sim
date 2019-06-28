@@ -4,7 +4,7 @@
 
 #pragma once
 #include <Magnum/GL/Mesh.h>
-
+#include <Magnum/Trade/MeshData3D.h>
 #include "esp/core/esp.h"
 
 namespace esp {
@@ -31,6 +31,9 @@ class BaseMesh {
 
   virtual Magnum::GL::Mesh* getMagnumGLMesh() { return nullptr; }
   virtual Magnum::GL::Mesh* getMagnumGLMesh(int submeshID) { return nullptr; }
+
+  // Accessing non-GL mesh data for physics simulation
+  virtual Corrade::Containers::Optional<Magnum::Trade::MeshData3D>& getMeshData();
 
  protected:
   SupportedMeshType type_ = SupportedMeshType::NOT_DEFINED;
