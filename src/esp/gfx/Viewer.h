@@ -39,7 +39,6 @@ class Viewer : public Magnum::Platform::Application {
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
 
-  void addObject(scene::SceneNode* node);
   void addObject();
 
   assets::ResourceManager resourceManager_;
@@ -49,8 +48,8 @@ class Viewer : public Magnum::Platform::Application {
   scene::SceneNode* agentBodyNode_ = nullptr;
   scene::SceneNode* cameraNode_ = nullptr;
   
-  scene::SceneNode* navSceneNode_;
-  scene::SceneNode* objNode_;
+  scene::SceneNode* navSceneNode_ = nullptr;
+  scene::SceneNode* objNode_ = nullptr;
 
   std::vector<scene::SceneNode*> allObjNodes_;
   //physics::BulletRigidObject* physicalObj_;

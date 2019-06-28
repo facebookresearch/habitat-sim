@@ -70,57 +70,107 @@ bool ResourceManager::loadPhysicalScene(
     bool attach_physics, /* = false */
     DrawableGroup* drawables /* = nullptr */) {
   bool meshSuccess = loadScene(info, parent, drawables);
+
   if (attach_physics) {
-    physics::BulletRigidObject* physNode =
-        static_cast<physics::BulletRigidObject*>(parent);
+    physics::BulletRigidObject* physNode = new physics::BulletRigidObject(parent);
+
+    LOG(INFO) << "Physics node " << physNode;
+    if (physNode == nullptr) {
+      LOG(ERROR) << "Cannot instantiate physics node.";
+      return false;
+    }
 
     const std::string& filename = info.filepath;
     MeshMetaData& metaData = resourceDict_.at(filename);
     auto indexPair = metaData.meshIndex;
     int start = indexPair.first;
     int end = indexPair.second;
+    bool objectSuccess;
 
-    // FRL Mesh
-    if (info.type == AssetType::FRL_INSTANCE_MESH ||
-        info.type == AssetType::INSTANCE_MESH) {
-      // GenericInstanceMeshData* instanceMeshData =
-      //  dynamic_cast<GenericInstanceMeshData*>(meshes_[start].get());
-      // meshData = static_cast<Magnum::Trade::MeshData3D*>(instance_mesh);
-      // LOG(INFO) << "FRL primitive " <<
-      // static_cast<GltfMeshData*>(meshes_[start].get());
-      GenericInstanceMeshData* meshData =
-          dynamic_cast<GenericInstanceMeshData*>(meshes_[start].get());
-      _physicsManager.initFRLObject(info, metaData, meshData, physNode,
-                                    "TriangleMeshShape", true);
-    }
-    // GLB Mesh
-    else {
-      LOG(INFO) << "Accessing scene mesh start " << start << " end " << end;
-      // TODO (JH) for GLB with multiple mesh files, they should
-      // be somehow binded together in physics. Currently assume
-      // there to be only 1 mesh
-      GltfMeshData* meshDataGL =
-          static_cast<GltfMeshData*>(meshes_[start].get());
-      Magnum::Trade::MeshData3D& meshData = *(meshDataGL->getMeshData());
-      // Apply in-place transformation to collision mesh, to be consistent with
-      //  display mesh
-      quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
-      Magnum::Quaternion quat = Magnum::Quaternion(quatf);
-      // LOG(INFO) << "Creating physical scene rotation " << info.filepath << "
-      // "<< quatf.x()
-      //    << " " << quatf.y() << " " << quatf.z() << " " << quatf.w();
-      if (float(quat.angle()) > 0.0f) {
+    std::vector<Magnum::Trade::MeshData3D*> meshGroup;
+
+    LOG(INFO) << "Accessing scene mesh start " << start << " end " << end;
+    for (int mesh_i = start; mesh_i < end; mesh_i++) {
+
+      // FRL Quad Mesh
+      if (info.type == AssetType::FRL_INSTANCE_MESH) {
+        FRLInstanceMeshData* frlMeshData = 
+            dynamic_cast<FRLInstanceMeshData*>(meshes_[mesh_i].get());
+        auto& meshData = frlMeshData->getMeshData();
+        if (!meshData) {
+          LOG(ERROR) << "Cannot load the mesh, skipping";
+          continue;
+        }
+        meshGroup.push_back(&meshData);
+      } 
+
+      // PLY Instance mesh
+      else if (info.type == AssetType::INSTANCE_MESH) {
+        GenericInstanceMeshData* insMeshData = 
+            dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
+        quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
+        Magnum::Quaternion quat = Magnum::Quaternion(quatf);
+        Magnum::Matrix4 transform =
+            Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
+        auto& meshData = insMeshData->getMeshData();
+        if (!meshData) {
+          LOG(ERROR) << "Cannot load the mesh, skipping";
+          continue;
+        }
+        meshGroup.push_back(&meshData);
+        
+        /*Magnum::Trade::MeshData3D meshData(
+            reinterpret_cast<std::vector>GMesh->getRenderingBuffer()->mesh)   
+        Magnum::GL::Mesh* mesh  = &meshData->getRenderingBuffer()->mesh;
+        Magnum::GL::Buffer* vbo = &meshData->getRenderingBuffer()->vbo;
+        Magnum::GL::Buffer* cbo = &meshData->getRenderingBuffer()->cbo;
+        Magnum::GL::Buffer* ibo = &meshData->getRenderingBuffer()->ibo;*/
+        //Corrade::Containers::Array<char> v_data = vbo->data();
+        //const std::vector<vec3f> v_data = meshData->get_vbo();
+        //const std::vector<int> i_data   = meshData->get_ibo();
+        // TODO (JH): need this in order to get Replica mesh working
+        //Magnum::MeshTools::transformPointsInPlace(transform,
+        //                                          meshData->positions(0));
+      }
+
+      // GLB Mesh
+      else if (info.type == AssetType::MP3D_MESH) {
+      
+        //std::vector<std::shared_ptr<BaseMesh>> sceneMesh(&meshes_[start], &meshes[end]);
+        // Apply in-place transformation to collision mesh, to be consistent with
+        //  display mesh
+        //Magnum::Trade::MeshData3D* meshData;
+        quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
+        Magnum::Quaternion quat = Magnum::Quaternion(quatf);
+        GltfMeshData* gltfMeshData = dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
+        auto& meshData = gltfMeshData->getMeshData();
+        if (!meshData) {
+          LOG(ERROR) << "Cannot load the mesh, skipping";
+          continue;
+        }
         Magnum::Matrix4 transform =
             Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
         Magnum::MeshTools::transformPointsInPlace(transform,
-                                                  meshData.positions(0));
+                                                  meshData->positions(0));
+        meshGroup.push_back(&meshData);
+        /*LOG(INFO) << "Initializing scene";
+        LOG(INFO) << "Scene built in angle " << float(quat.angle());
+        LOG(INFO) << "Scene built in axis " << Eigen::Map<vec3f>(quat.axis().data());*/
       }
 
-      _physicsManager.initObject(info, metaData, meshData, physNode,
-                                 "TriangleMeshShape", true);
     }
 
+    bool sceneSuccess = _physicsManager.initScene(
+        info, metaData, meshGroup, physNode);
     LOG(INFO) << "Created mesh object";
+    if (!sceneSuccess) {
+      LOG(INFO) << "Physics manager failed to initialize object";
+      return false;
+    }
+
+    else {
+      return false;
+    }
   }
 
   return meshSuccess;
@@ -134,51 +184,72 @@ bool ResourceManager::loadObject(const AssetInfo& info,
                                  physics::BulletRigidObject** physNode) {
   // if this is a new file, load it and add it to the dictionary
   if (attach_physics) {
-    *physNode = new physics::BulletRigidObject(parent);
-    bool meshSuccess =
-        loadGeneralMeshData(info, parent, drawables, true, *physNode);
-    // Load convex hull
-    std::string fname;
-    fname.assign(info.filepath);
-    std::string c_fname =
-        fname.replace(fname.end() - 4, fname.end(), "_convex.glb");
-    AssetInfo c_info = AssetInfo::fromPath(c_fname);
 
-    bool c_MeshSuccess = loadGeneralMeshData(c_info, parent, nullptr, true);
+    if (info.type == AssetType::MP3D_MESH) {
+      *physNode = new physics::BulletRigidObject(parent);
+      bool meshSuccess =
+          loadGeneralMeshData(info, parent, drawables, true, *physNode);
+      bool objectSuccess;
+      // Load convex hull
+      std::string fname;
+      fname.assign(info.filepath);
+      std::string c_fname =
+          //fname.replace(fname.end() - 4, fname.end(), "VHACD.glb");
+          fname.replace(fname.end() - 4, fname.end(), "_convex.glb");
+      AssetInfo c_info = AssetInfo::fromPath(c_fname);
 
-    // const std::string& filename = info.filepath;
-    MeshMetaData& metaData = resourceDict_.at(c_fname);
-    auto indexPair = metaData.meshIndex;
-    int start = indexPair.first;
-    int end = indexPair.second;
-    LOG(INFO) << "Accessing object mesh start " << start << " end " << end;
+      // Load collision mesh, need to shift to origin
+      bool shift_Origin = true;
+      bool c_MeshSuccess = loadGeneralMeshData(c_info, parent, nullptr, shift_Origin);
 
-    // TODO (JH) for GLB with multiple mesh files, they should
-    // be somehow binded together in physics. Currently assume
-    // there to be only 1 mesh
-    GltfMeshData* meshDataGL = static_cast<GltfMeshData*>(meshes_[start].get());
-    Magnum::Trade::MeshData3D& meshData = *(meshDataGL->getMeshData());
+      // const std::string& filename = info.filepath;
+      MeshMetaData& metaData = resourceDict_.at(c_fname);
+      auto indexPair = metaData.meshIndex;
+      int start = indexPair.first;
+      int end = indexPair.second;
+      LOG(INFO) << "Accessing object mesh start " << start << " end " << end;
 
-    // Transform for glb
-    quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
-    Magnum::Quaternion quat = Magnum::Quaternion(quatf);
-    if (float(quat.angle()) > 0.0f) {
-      Magnum::Matrix4 transform =
-          Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
-      Magnum::MeshTools::transformPointsInPlace(transform,
-                                                meshData.positions(0));
+      //std::vector<std::shared_ptr<BaseMesh>> objectMesh(&meshes_[start], &meshes[end]);
+      std::vector<Magnum::Trade::MeshData3D*> meshGroup;
+      for (int mesh_i = start; mesh_i < end; mesh_i++) {
+        GltfMeshData* gltfMeshData = dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
+        auto& meshData = gltfMeshData->getMeshData();
+        meshGroup.push_back(&meshData);
+      }
+      
+      transformAxis(info, meshGroup);
+      objectSuccess = _physicsManager.initObject(info, metaData, meshGroup, *physNode);
+
+      (*physNode)->MagnumObject::setTransformation(parent->transformation());
+      (*physNode)->syncPose();
+      //LOG(INFO) << "Parent trans " << Eigen::Map<mat4f>(parent->transformation().data());
+      // PhysicsManager::initObject(*importer, info, mMetaData);
+      // for (int index = 0; index < meshes_.size(); index++) {
+      //
+      return c_MeshSuccess && objectSuccess;
+
+    } else {
+      // Objects in other formats not supported yet
+      return false;
     }
-
-    _physicsManager.initObject(info, metaData, meshData, *physNode,
-                               "TriangleMeshShape", false);
-
-    // PhysicsManager::initObject(*importer, info, mMetaData);
-    // for (int index = 0; index < meshes_.size(); index++) {
-    //
-    return c_MeshSuccess;
   } else {
     bool meshSuccess = loadGeneralMeshData(info, parent, drawables, true);
     return meshSuccess;
+  }
+}
+
+void ResourceManager::transformAxis(
+    const AssetInfo& info,
+    std::vector<Magnum::Trade::MeshData3D*> meshGroup) {
+
+  quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
+  Magnum::Quaternion quat = Magnum::Quaternion(quatf);
+  for (int iOMesh = 0; iOMesh < meshGroup.size(); iOMesh++) {
+    Magnum::Trade::MeshData3D* meshData = meshGroup[iOMesh];
+    Magnum::Matrix4 transform =
+        Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
+    Magnum::MeshTools::transformPointsInPlace(transform,
+                                              meshData->positions(0));
   }
 }
 
@@ -428,7 +499,6 @@ void ResourceManager::loadMaterials(Importer& importer,
     // it seems we have a way to just load the material once in this case,
     // as long as the materialName includes the full path to the material
     // LOG(INFO) << "Importing material" << i << importer->materialName(i);
-
     std::unique_ptr<Magnum::Trade::AbstractMaterialData> materialData =
         importer.material(iMaterial);
     if (!materialData ||
@@ -455,15 +525,20 @@ void ResourceManager::loadMeshes(Importer& importer,
   for (int iMesh = 0; iMesh < importer.mesh3DCount(); ++iMesh) {
     LOG(INFO) << "Importing mesh " << iMesh << ": "
               << importer.mesh3DName(iMesh);
-    meshes_.emplace_back(std::make_unique<GltfMeshData>());
-    auto& currentMesh = meshes_.back();
-    auto* gltfMeshData = static_cast<GltfMeshData*>(currentMesh.get());
 
     // TODO (JH) apparently only gltfMesh allows accesing non-GL mesh data,
     // which can be attached with physics, others (PTex, FRLMesh, etc) do not
     // have this implemented
+    meshes_.emplace_back(std::make_unique<GltfMeshData>());
+    auto& currentMesh = meshes_.back();
+    auto* gltfMeshData = static_cast<GltfMeshData*>(currentMesh.get());
     gltfMeshData->setMeshData(importer, iMesh);
+    
+    // Keep track of names
+    object_names_.push_back(importer.mesh3DName(iMesh));
+
     if (shiftOrigin) {
+      // Need this function in order to set center of mass
       shiftMeshDataToOrigin(gltfMeshData);
     }
     auto& meshData = gltfMeshData->getMeshData();

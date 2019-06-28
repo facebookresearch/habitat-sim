@@ -196,6 +196,23 @@ Magnum::GL::Mesh* FRLInstanceMeshData::getMagnumGLMesh() {
   return &(renderingBuffer_->mesh);
 }
 
+// For initializing Surreal Data in Physics
+const std::vector<vec3f> FRLInstanceMeshData::get_vbo() {
+  if (xyz_vbo == nullptr) {
+    uploadBuffersToGPU();
+  }
+  return *xyz_vbo;
+}
+
+const std::vector<int> FRLInstanceMeshData::get_ibo() {
+  if (tri_ibo_i == nullptr) {
+    uploadBuffersToGPU();
+  }
+  return *tri_ibo_i;
+}
+
+
+
 void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {
     buffersOnGPU_ = false;
@@ -207,55 +224,65 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_.reset();
   renderingBuffer_ = std::make_unique<FRLInstanceMeshData::RenderingBuffer>();
 
-  // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0,2,3]
-  const size_t numQuads = cpu_vbo.size() / 4;
-  std::vector<uint32_t> tri_ibo(numQuads * 6);
-  for (uint32_t iQuad = 0; iQuad < numQuads; ++iQuad) {
-    const uint32_t triIdx = 6 * iQuad;
-    const uint32_t quadIdx = 4 * iQuad;
-    tri_ibo[triIdx + 0] = quadIdx + 0;
-    tri_ibo[triIdx + 1] = quadIdx + 1;
-    tri_ibo[triIdx + 2] = quadIdx + 2;
-    tri_ibo[triIdx + 3] = quadIdx + 0;
-    tri_ibo[triIdx + 4] = quadIdx + 2;
-    tri_ibo[triIdx + 5] = quadIdx + 3;
-  }
   // std::vector<vec3ui> cbotest(data.cpu_cbo.size(), vec3ui());
   // Magnum::Containers::ArrayView<const float> v{&data.cpu_vbo[0][0],
   // data.cpu_vbo.size() * 4}; Magnum::Containers::ArrayView<const uint8_t>
   // c{&data.cpu_cbo[0][0], data.cpu_cbo.size() * 3};
+  // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0,2,3]
+  const size_t numQuads = cpu_vbo.size() / 4;
+  tri_ibo = new std::vector<uint32_t>(numQuads * 6);
+  tri_ibo_i = new std::vector<int>(numQuads * 6);
 
-  std::vector<float> cbo_float(cpu_cbo.size() * 3);
+  for (uint32_t iQuad = 0; iQuad < numQuads; ++iQuad) {
+    const uint32_t triIdx = 6 * iQuad;
+    const uint32_t quadIdx = 4 * iQuad;
+    (*tri_ibo)[triIdx + 0] = quadIdx + 0;
+    (*tri_ibo)[triIdx + 1] = quadIdx + 1;
+    (*tri_ibo)[triIdx + 2] = quadIdx + 2;
+    (*tri_ibo)[triIdx + 3] = quadIdx + 0;
+    (*tri_ibo)[triIdx + 4] = quadIdx + 2;
+    (*tri_ibo)[triIdx + 5] = quadIdx + 3;
+
+    (*tri_ibo_i)[triIdx + 0] = (int)(*tri_ibo)[triIdx + 0];
+    (*tri_ibo_i)[triIdx + 1] = (int)(*tri_ibo)[triIdx + 1];
+    (*tri_ibo_i)[triIdx + 2] = (int)(*tri_ibo)[triIdx + 2];
+    (*tri_ibo_i)[triIdx + 3] = (int)(*tri_ibo)[triIdx + 3];
+    (*tri_ibo_i)[triIdx + 4] = (int)(*tri_ibo)[triIdx + 4];
+    (*tri_ibo_i)[triIdx + 5] = (int)(*tri_ibo)[triIdx + 5];
+
+  }
+  
+  cbo_float = new std::vector<float>(cpu_cbo.size() * 3);
   for (int iVert = 0; iVert < cpu_cbo.size(); ++iVert) {
     const uint32_t idx = 3 * iVert;
-    cbo_float[idx + 0] = cpu_cbo[iVert][0] / 255.0f;
-    cbo_float[idx + 1] = cpu_cbo[iVert][1] / 255.0f;
-    cbo_float[idx + 2] = cpu_cbo[iVert][2] / 255.0f;
+    (*cbo_float)[idx + 0] = cpu_cbo[iVert][0] / 255.0f;
+    (*cbo_float)[idx + 1] = cpu_cbo[iVert][1] / 255.0f;
+    (*cbo_float)[idx + 2] = cpu_cbo[iVert][2] / 255.0f;
   }
 
-  std::vector<vec3f> xyz_vbo(cpu_vbo.size());
+  xyz_vbo = new std::vector<vec3f>(cpu_vbo.size());
   for (int i = 0; i < cpu_vbo.size(); ++i) {
-    xyz_vbo[i] = cpu_vbo[i].head<3>();
+    (*xyz_vbo)[i] = cpu_vbo[i].head<3>();
   }
 
   // See code for GenericInstanceMeshData::uploadBuffersToGPU for comments about
   // what's going on with this image/texture
   const size_t numTris = numQuads * 2;
   const int texSize = std::pow(2, std::ceil(std::log2(std::sqrt(numTris))));
-  float* obj_id_tex_data = new float[texSize * texSize]();
+  obj_id_tex_data = new float[texSize * texSize]();
 
   for (size_t i = 0; i < numQuads; ++i) {
     obj_id_tex_data[2 * i] = cpu_vbo[4 * i][3];
     obj_id_tex_data[2 * i + 1] = cpu_vbo[4 * i][3];
   }
 
-  renderingBuffer_->tex = createInstanceTexture(obj_id_tex_data, texSize);
 
-  renderingBuffer_->vbo.setData(xyz_vbo, Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->cbo.setData(cbo_float, Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->ibo.setData(tri_ibo, Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->tex = createInstanceTexture(obj_id_tex_data, texSize);
+  renderingBuffer_->vbo.setData(*xyz_vbo, Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->cbo.setData(*cbo_float, Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->ibo.setData(*tri_ibo, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
-      .setCount(tri_ibo.size())  // Set vertex/index count (numQuads * 6)
+      .setCount(tri_ibo->size())  // Set vertex/index count (numQuads * 6)
       .addVertexBuffer(renderingBuffer_->vbo, 0,
                        Magnum::GL::Attribute<0, Magnum::Vector3>{})
       .addVertexBuffer(renderingBuffer_->cbo, 0,

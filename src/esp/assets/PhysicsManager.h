@@ -54,26 +54,28 @@ class PhysicsManager {
   explicit PhysicsManager(){};
   ~PhysicsManager();
 
-  bool initPhysics();
+  bool initPhysics(scene::SceneNode* node);
   
-  void initObject(const AssetInfo& info,
+  bool initObject(const AssetInfo& info,
                   const MeshMetaData& metaData,
                   Magnum::Trade::MeshData3D& meshData,
                   physics::BulletRigidObject* physObject,
                   const std::string& shapeType="TriangleMeshShape",
                   bool zero_mass=false);
 
-  void initFRLObject(const AssetInfo& info,
-                                const MeshMetaData& metaData,
-                                GenericInstanceMeshData* meshData,
-                                physics::BulletRigidObject* physObject,
-                                const std::string& shapeType="TriangleMeshShape",
-                                bool zero_mass=false);
+  bool initFRLObject(const AssetInfo& info,
+                     const MeshMetaData& metaData,
+                     FRLInstanceMeshData* meshData,
+                     physics::BulletRigidObject* physObject,
+                     const std::string& shapeType="TriangleMeshShape",
+                     bool zero_mass=false);
 
   void debugSceneGraph(const MagnumObject* root);
 
   void stepPhysics();
   void nextFrame();
+
+  void checkActiveObjects();
 
  protected:
 
@@ -90,10 +92,12 @@ class PhysicsManager {
 //  btDiscreteDynamicsWorld                   _bWorld{&_bDispatcher, &_bBroadphase, &_bSolver, &_bCollisionConfig};
   btDiscreteDynamicsWorld*                  _bWorld;
 
+  scene::SceneNode* physicsNode = nullptr;
+
   bool _initialized = false;
   Magnum::Timeline _timeline;
-  float _maxSubSteps = 1.0f;
-  float _fixedTimeStep = 1.0f / 200.0f;
+  int _maxSubSteps = 10;
+  float _fixedTimeStep = 1.0f / 240.0f;
 };
 
 }  // namespace assets

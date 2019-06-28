@@ -14,6 +14,7 @@
 #include <Magnum/Trade/TextureData.h>
 #include "BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
+#include "LinearMath/btQuickprof.h"
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
@@ -35,7 +36,7 @@
 namespace esp {
 namespace assets {
 
-bool PhysicsManager::initPhysics() {
+bool PhysicsManager::initPhysics(scene::SceneNode* node) {
   LOG(INFO) << "Initializing Physics Engine...";
 
   _bCollisionConfig = new btDefaultCollisionConfiguration();
@@ -54,6 +55,8 @@ bool PhysicsManager::initPhysics() {
   _bWorld->setGravity({0.0f, -10.0f, 0.0f});
   //_bWorld.setGravity({0.0f, 0.0f, -10.0f});
   //_bWorld.setDebugDrawer(&_debugDraw);
+
+  physicsNode = node;
 
   _timeline.start();
   _initialized = true;
@@ -76,7 +79,7 @@ void PhysicsManager::getPhysicsEngine() {}
 
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
-void PhysicsManager::initObject(
+bool PhysicsManager::initObject(
     const AssetInfo& info,
     const MeshMetaData& metaData,
     Magnum::Trade::MeshData3D& meshData,
@@ -107,7 +110,7 @@ void PhysicsManager::initObject(
     }
     LOG(ERROR) << "Primitive " << int(meshData.primitive());
     LOG(ERROR) << "Cannot load collision mesh, skipping";
-    return;
+    return false;
   }
 
   // TODO (JH) weight is currently hardcoded, later should load from some config
@@ -122,21 +125,17 @@ void PhysicsManager::initObject(
   }
 
   LOG(INFO) << "Initialize: before";
-  physObject->initialize(mass, meshData, *_bWorld);
+  bool objectSuccess = physObject->initialize(mass, meshData, *_bWorld);
   LOG(INFO) << "Initialize: after";
-  // object->syncPose();
-  // new ColoredDrawable{*ground, _shader, _box, 0xffffff_rgbf,
-  //      Matrix4::scaling({4.0f, 0.5f, 4.0f}), _drawables};
+  physObject->syncPose();
 
-  // TODO: DEBUGGING PURPOSE, (JH) strangely causes segfault with redraw()
-  // maybe due to ground not being in drawables
-  // btBoxShape _bGroundShape{{4.0f, 0.5f, 4.0f}};
+  return objectSuccess;
 }
 
-void PhysicsManager::initFRLObject(
+bool PhysicsManager::initFRLObject(
     const AssetInfo& info,
     const MeshMetaData& metaData,
-    GenericInstanceMeshData* meshData,
+    FRLInstanceMeshData* meshData,
     physics::BulletRigidObject* physObject,
     const std::string& shapeType, /* = "TriangleMeshShape" */
     bool zero_mass /* = false */) {
@@ -150,8 +149,9 @@ void PhysicsManager::initFRLObject(
   }
 
   LOG(INFO) << "Initialize FRL: before";
-  physObject->initializeFRL(mass, meshData, *_bWorld);
+  bool objectSuccess = physObject->initializeFRL(mass, meshData, *_bWorld);
   LOG(INFO) << "Initialize FRL: after";
+  return objectSuccess;
 }
 
 void PhysicsManager::debugSceneGraph(const MagnumObject* root) {
@@ -169,19 +169,12 @@ void PhysicsManager::debugSceneGraph(const MagnumObject* root) {
 
   // TODO (JH) Bottom up search gives bus error because scene"s rootnode does
   // not point to nullptr, but something strange
-  /*LOG(INFO) << "INSPECTING NODE " << root;
-  const scene::SceneNode* parent = static_cast<const
-  scene::SceneNode*>(root->parent()); if (parent != NULL) { LOG(INFO) << "SCENE
-  NODE " << root->getId() << " parent " << parent; LOG(INFO) << "SCENE NODE " <<
-  parent->getId() << " parent " << parent;
-    //debugSceneGraph(parent);
-  } else {
-    LOG(INFO) << "SCENE NODE " << root->getId() << "IS ROOT NODE";
-  }*/
 }
 
 void PhysicsManager::stepPhysics() {
   // ==== Physics stepforward ======
+  //_bWorld->stepSimulation(_timeline.previousFrameDuration(), _maxSubSteps,
+  //                        _fixedTimeStep);
   _bWorld->stepSimulation(_timeline.previousFrameDuration(), _maxSubSteps,
                           _fixedTimeStep);
   //_bWorld.debugDrawWorld();
@@ -193,6 +186,30 @@ void PhysicsManager::stepPhysics() {
 
 void PhysicsManager::nextFrame() {
   _timeline.nextFrame();
+  checkActiveObjects();
+  //CProfileManager::dumpAll();
+}
+
+void PhysicsManager::checkActiveObjects() {
+  if (physicsNode == nullptr) {
+    return;
+  }
+  int numActive = 0;
+  int numTotal = 0;
+  for(auto& child: physicsNode->children()) {
+    physics::BulletRigidObject* childNode = dynamic_cast<
+        physics::BulletRigidObject*>(&child);
+    if (childNode == nullptr) {
+      //LOG(INFO) << "Child is null";
+    } else {
+      //LOG(INFO) << "Child is active: " << childNode->isActive();
+      numTotal += 1;
+      if (childNode->isActive()) {
+        numActive += 1;
+      }
+    }
+  }
+  LOG(INFO) << "Nodes total " << numTotal << " active " << numActive;
 }
 
 }  // namespace assets

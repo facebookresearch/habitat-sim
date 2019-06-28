@@ -24,7 +24,13 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
  public:
   FRLInstanceMeshData()
       : GenericInstanceMeshData(SupportedMeshType::INSTANCE_MESH){};
-  virtual ~FRLInstanceMeshData(){};
+  ~FRLInstanceMeshData(){
+      delete xyz_vbo;
+      delete tri_ibo;
+      delete cbo_float;
+      delete obj_id_tex_data;
+      delete tri_ibo_i;
+  };
 
   void to_ply(const std::string& ply_file) const;
   virtual bool loadPLY(const std::string& plyFile) override;
@@ -43,9 +49,18 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
 
   virtual Magnum::GL::Mesh* getMagnumGLMesh() override;
 
+  const std::vector<vec3f> get_vbo();
+  const std::vector<int> get_ibo();
+
  protected:
   std::vector<vec4f> cpu_vbo;
   std::vector<vec3uc> cpu_cbo;
+
+  std::vector<vec3f>* xyz_vbo     = nullptr;
+  std::vector<uint32_t>* tri_ibo  = nullptr;
+  std::vector<int>* tri_ibo_i     = nullptr;
+  std::vector<float>* cbo_float   = nullptr;
+  float* obj_id_tex_data          = nullptr;
 
   vecXi id_to_label;
   vecXi id_to_node;
@@ -55,6 +70,8 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
 
   // Gravity direction of the mesh, this is a STATIC
   vec3f orig_gravity_dir;
+
+  void compute_buffer();
 };
 
 }  // namespace assets
