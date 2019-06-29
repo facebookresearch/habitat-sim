@@ -175,24 +175,26 @@ def _noisy_action(
     multiplier: float,
     model: MotionNoiseModel,
 ):
-    ax = scene_node.absolute_transformation()[0:3, _z_axis]
-    prep_ax = np.cross(ax, hsim.geo.UP)
+    move_ax = scene_node.absolute_transformation()[0:3, 0:3] @ hsim.geo.FRONT
+    prep_ax = np.cross(move_ax, hsim.geo.UP)
 
+    # + EPS to make sure 0 is positive.  We multiply the mean by the sign of the translation
+    # as otherwise forward would overshoot on average and backward would undershoot, while
+    # both should overshoot
     translation_noise = multiplier * np.random.multivariate_normal(
-        model.linear.mean, model.linear.cov
+        np.sign(translate_amount + 1e-8) * model.linear.mean, model.linear.cov
     )
     scene_node.translate_local(
-        ax * (translate_amount + translation_noise[0]) + prep_ax * translation_noise[1]
+        move_ax * (translate_amount + translation_noise[0])
+        + prep_ax * translation_noise[1]
     )
 
+    # Same deal with rotation about + EPS and why we multiply by the sign
     rot_noise = multiplier * np.random.multivariate_normal(
-        model.rotation.mean, model.rotation.cov
+        np.sign(rotate_amount + 1e-8) * model.rotation.mean, model.rotation.cov
     )
 
-    ax = np.zeros(3, dtype=np.float32)
-    ax[_y_axis] = 1
-
-    scene_node.rotate_local(np.deg2rad(rotate_amount) + rot_noise[0], ax)
+    scene_node.rotate_local(np.deg2rad(rotate_amount) + rot_noise[0], hsim.geo.UP)
     scene_node.normalize()
 
 
@@ -203,7 +205,7 @@ class PyrobotNoisyMoveBackward(SceneNodeControl):
     ):
         _noisy_action(
             scene_node,
-            actuation_spec.amount,
+            -actuation_spec.amount,
             0.0,
             actuation_spec.noise_multiplier,
             pyrobot_noise_models[actuation_spec.robot][
@@ -219,7 +221,7 @@ class PyrobotNoisyMoveForward(SceneNodeControl):
     ):
         _noisy_action(
             scene_node,
-            -actuation_spec.amount,
+            actuation_spec.amount,
             0.0,
             actuation_spec.noise_multiplier,
             pyrobot_noise_models[actuation_spec.robot][

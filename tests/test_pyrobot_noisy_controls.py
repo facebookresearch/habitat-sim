@@ -109,7 +109,7 @@ def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
 
         delta_translations = []
         delta_rotations = []
-        for _ in range(200):
+        for _ in range(300):
             agent.state = state
             agent.act(f"noisy_{base_action}")
             noisy_state = agent.state
@@ -130,13 +130,15 @@ def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
 
         assert (
             np.linalg.norm(
-                noise_model.linear.mean * noise_multiplier - delta_translations.mean(0)
+                noise_model.linear.mean * noise_multiplier
+                - np.abs(delta_translations.mean(0))
             )
             < 5e-2
         )
         assert (
             np.linalg.norm(
-                noise_model.rotation.mean * noise_multiplier - delta_rotations.mean(0)
+                noise_model.rotation.mean * noise_multiplier
+                - np.abs(delta_rotations.mean(0))
             )
             < 5e-2
         )
