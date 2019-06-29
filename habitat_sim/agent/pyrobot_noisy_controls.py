@@ -50,6 +50,13 @@ class RobotNoiseModel:
         return getattr(self, key)
 
 
+r"""
+Parameters contributed from PyRobot
+https://pyrobot.org/
+https://github.com/facebookresearch/pyrobot
+
+Please cite PyRobot if you use this noise model
+"""
 noise_models = {
     "LoCoBot": RobotNoiseModel(
         ILQR=ControllerNoiseModel(
