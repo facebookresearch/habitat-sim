@@ -57,7 +57,7 @@ https://github.com/facebookresearch/pyrobot
 
 Please cite PyRobot if you use this noise model
 """
-noise_models = {
+pyrobot_noise_models = {
     "LoCoBot": RobotNoiseModel(
         ILQR=ControllerNoiseModel(
             linear_motion=MotionNoiseModel(
@@ -148,7 +148,7 @@ class PyRobotNoisyActuationSpec(ActuationSpec):
 
     @robot.validator
     def check(self, attribute, value):
-        assert value in noise_models.keys(), f"{value} not a known robot"
+        assert value in pyrobot_noise_models.keys(), f"{value} not a known robot"
 
     controller: str = attr.ib(default="ILQR")
 
@@ -206,7 +206,9 @@ class PyrobotNoisyMoveBackward(SceneNodeControl):
             actuation_spec.amount,
             0.0,
             actuation_spec.noise_multiplier,
-            noise_models[actuation_spec.robot][actuation_spec.controller].linear_motion,
+            pyrobot_noise_models[actuation_spec.robot][
+                actuation_spec.controller
+            ].linear_motion,
         )
 
 
@@ -220,7 +222,9 @@ class PyrobotNoisyMoveForward(SceneNodeControl):
             -actuation_spec.amount,
             0.0,
             actuation_spec.noise_multiplier,
-            noise_models[actuation_spec.robot][actuation_spec.controller].linear_motion,
+            pyrobot_noise_models[actuation_spec.robot][
+                actuation_spec.controller
+            ].linear_motion,
         )
 
 
@@ -234,7 +238,7 @@ class PyrobotNoisyTurnLeft(SceneNodeControl):
             0.0,
             actuation_spec.amount,
             actuation_spec.noise_multiplier,
-            noise_models[actuation_spec.robot][
+            pyrobot_noise_models[actuation_spec.robot][
                 actuation_spec.controller
             ].rotational_motion,
         )
@@ -250,7 +254,7 @@ class PyrobotNoisyTurnRight(SceneNodeControl):
             0.0,
             -actuation_spec.amount,
             actuation_spec.noise_multiplier,
-            noise_models[actuation_spec.robot][
+            pyrobot_noise_models[actuation_spec.robot][
                 actuation_spec.controller
             ].rotational_motion,
         )
