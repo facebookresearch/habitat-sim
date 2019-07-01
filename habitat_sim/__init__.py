@@ -6,7 +6,7 @@
 
 import builtins
 
-__version__ = "0.0.1"
+__version__ = "0.1.2"
 
 if not getattr(builtins, "__HSIM_SETUP__", False):
     from .nav import *
