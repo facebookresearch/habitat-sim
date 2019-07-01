@@ -247,10 +247,10 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
       std::make_unique<GenericInstanceMeshData::RenderingBuffer>();
 
   // convert uchar rgb to float rgb
-  std::vector<vec3f> cbo_float;
-  cbo_float.reserve(cpu_cbo_.size());
+  std::vector<vec3f> cbo_float_;
+  cbo_float_.reserve(cpu_cbo_.size());
   for (const auto& c : cpu_cbo_) {
-    cbo_float.emplace_back(c.cast<float>() / 255.0f);
+    cbo_float_.emplace_back(c.cast<float>() / 255.0f);
   }
 
   /*
@@ -272,7 +272,7 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_->tex = createInstanceTexture(obj_id_tex_data, texSize);
 
   renderingBuffer_->vbo.setData(cpu_vbo_, Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->cbo.setData(cbo_float, Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->cbo.setData(cbo_float_, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->ibo.setData(cpu_ibo_, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
       .setCount(nPrims * 3)

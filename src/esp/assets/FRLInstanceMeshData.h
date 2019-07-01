@@ -26,24 +26,22 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
   FRLInstanceMeshData()
       : GenericInstanceMeshData(SupportedMeshType::INSTANCE_MESH){};
   virtual ~FRLInstanceMeshData(){
-      delete cpu_vbo_3;
-      delete tri_ibo;
-      delete cbo_float;
+      delete cpu_vbo_3_;
+      delete tri_ibo_;
+      delete cbo_float_;
       delete obj_id_tex_data;
-      //delete meshData_;
-      //delete tri_ibo_i;
   };
 
   void to_ply(const std::string& ply_file) const;
   virtual bool loadPLY(const std::string& plyFile) override;
 
-  std::vector<vec4f>& getVertexBufferObjectCPU() { return cpu_vbo; }
-  std::vector<vec3uc>& getColorBufferObjectCPU() { return cpu_cbo; }
+  std::vector<vec4f>& getVertexBufferObjectCPU() { return cpu_vbo_; }
+  std::vector<vec3uc>& getColorBufferObjectCPU() { return cpu_cbo_; }
 
   // overloaded function, in case object passed as a const parameter to the
   // function
-  const std::vector<vec4f>& getVertexBufferObjectCPU() const { return cpu_vbo; }
-  const std::vector<vec3uc>& getColorBufferObjectCPU() const { return cpu_cbo; }
+  const std::vector<vec4f>& getVertexBufferObjectCPU() const { return cpu_vbo_; }
+  const std::vector<vec3uc>& getColorBufferObjectCPU() const { return cpu_cbo_; }
 
   // ==== rendering ====
   virtual void uploadBuffersToGPU(bool forceReload = false) override;
@@ -55,13 +53,12 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
   const std::vector<int> get_ibo();
 
  protected:
-  std::vector<vec4f> cpu_vbo;
-  std::vector<vec3uc> cpu_cbo;
+  std::vector<vec4f> cpu_vbo_;
+  std::vector<vec3uc> cpu_cbo_;
 
-  std::vector<vec3f>* cpu_vbo_3   = nullptr;
-  std::vector<uint32_t>* tri_ibo  = nullptr;
-  //std::vector<int>* tri_ibo_i     = nullptr;
-  std::vector<float>* cbo_float   = nullptr;
+  std::vector<vec3f>* cpu_vbo_3_   = nullptr;
+  std::vector<uint32_t>* tri_ibo_  = nullptr;
+  std::vector<float>* cbo_float_   = nullptr;
   float* obj_id_tex_data          = nullptr;
 
   vecXi id_to_label;
