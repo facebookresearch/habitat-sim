@@ -16,15 +16,10 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
-
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <fstream>
-#include <sstream>
 #include <unordered_map>
-#include <vector>
-
 #include <sophus/so3.hpp>
 
 #include "esp/core/esp.h"
@@ -78,6 +73,9 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   cpu_cbo_.clear();
   cpu_ibo_.clear();
   objectIds_.clear();
+  cpu_vbo_data_.clear();
+  cpu_ibo_data_.clear();
+
 
   std::ifstream ifs(plyFile, std::ios::binary);
   if (!ifs.good()) {
@@ -203,12 +201,35 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
     xyz = T_esp_scene * xyz;
   }
 
+  // Construct vertices for collsion meshData
+  /*cpu_vbo_data_.emplace_back(std::vector<Magnum::Vector3>());
+  for (auto& xyz : cpu_vbo_) {
+    cpu_vbo_data_[0].emplace_back(Magnum::Vector3(xyz.x(), xyz.y(), xyz.z()));
+  }*/
+
+  // Construct indices for meshData
+  /*for (auto& tri: cpu_ibo_) {
+    cpu_ibo_data_.emplace_back(reinterpret_cast<Magnum::UnsignedInt>(tri.x()));
+    cpu_ibo_data_.emplace_back(reinterpret_cast<Magnum::UnsignedInt>(tri.y()));
+    cpu_ibo_data_.emplace_back(reinterpret_cast<Magnum::UnsignedInt>(tri.z()));
+  }*/
+
   // Store indices, facd_ids in Magnum MeshData3D format such that
   // later they can be accessed.
   // Note that normal and texture data are not stored
-  meshData_ = new Magnum::Trade::MeshData3D(Magnum::GL::MeshPrimitive::Triangles,
-      reinterpret_cast<std::vector<Magnum::UnsignedInt>>(cpu_ibo_.data()),
-      reinterpret_cast<std::vector<std::vector<Magnum::Vector3>>>(cpu_vbo_.data()));
+  collisionMeshData_.setMeshPrimitive(Magnum::MeshPrimitive::Triangles);
+  collisionMeshData_.setMeshVertices(cpu_vbo_); 
+  collisionMeshData_.setMeshIndices(cpu_ibo_);
+
+  //static_cast<std::vector<Magnum::UnsignedInt>*>(cpu_ibo_.data());
+  /*Corrade::Containers::Optional<Magnum::Trade::MeshData3D>(
+      Magnum::Trade::MeshData3D(Magnum::MeshPrimitive::Triangles,
+      cpu_ibo_data_,
+      cpu_vbo_data_,
+      std::vector<std::vector<Magnum::Vector3>>(),
+      std::vector<std::vector<Magnum::Vector2>>(),
+      std::vector<std::vector<Magnum::Color4>>())
+  );*/
 
   return true;
 }

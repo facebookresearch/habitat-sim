@@ -91,6 +91,8 @@ bool FRLInstanceMeshData::loadPLY(const std::string& ply_file) {
   cpu_cbo.reserve(nVertex);
   cpu_vbo.clear();
   cpu_vbo.reserve(nVertex);
+  cpu_vbo_data_.clear();
+  cpu_ibo_data_.clear();
 
   for (int i = 0; i < nVertex; ++i) {
     vec3f xyz;
@@ -149,12 +151,33 @@ bool FRLInstanceMeshData::loadPLY(const std::string& ply_file) {
     (*tri_ibo)[triIdx + 5] = quadIdx + 3;
   }
 
+
+  // Construct vertices for meshData
+  /*cpu_vbo_data_.emplace_back(std::vector<Magnum::Vector3>());
+  for (auto& xyz : cpu_vbo) {
+    cpu_vbo_data_[0].emplace_back(Magnum::Vector3(xyz.x(), xyz.y(), xyz.z()));
+  }*/
+
+  // Construct indices for meshData
+  /*for (uint32_t index: *tri_ibo) {
+    cpu_ibo_data_.emplace_back(reinterpret_cast<Magnum::UnsignedInt>(index));
+  }*/
+
   // Store indices, facd_ids in Magnum MeshData3D format such that
   // later they can be accessed.
   // Note that normal and texture data are not stored
-  meshData_ = Magnum::Trade::MeshData3D(Magnum::GL::MeshPrimitive::Triangles,
-      reinterpret_cast<std::vector<Magnum::UnsignedInt>>(tri_ibo->data()),
-      reinterpret_cast<std::vector<std::vector<Magnum::Vector3>>>(cpu_vbo_3->data()));
+  /*meshData_ = Corrade::Containers::Optional<Magnum::Trade::MeshData3D>(
+      Magnum::Trade::MeshData3D(Magnum::MeshPrimitive::Triangles,
+      cpu_ibo_data_,
+      cpu_vbo_data_,
+      std::vector<std::vector<Magnum::Vector3>>(),
+      std::vector<std::vector<Magnum::Vector2>>(),
+      std::vector<std::vector<Magnum::Color4>>())
+  );*/
+
+  collisionMeshData_.setMeshPrimitive(Magnum::MeshPrimitive::Triangles);
+  collisionMeshData_.setMeshVertices(*cpu_vbo_3); 
+  collisionMeshData_.setMeshIndices(*tri_ibo);
 
   return true;
 }

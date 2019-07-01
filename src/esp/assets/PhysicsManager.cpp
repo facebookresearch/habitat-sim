@@ -87,12 +87,11 @@ void PhysicsManager::getPhysicsEngine() {}
 bool PhysicsManager::initScene(
     const AssetInfo& info,
     const MeshMetaData& metaData,
-    std::vector<Magnum::Trade::MeshData3D*> meshGroup,
+    std::vector<CollisionMeshData> meshGroup,
     physics::BulletRigidObject* physObject) {
 
   // Test Mesh primitive is valid
-  for (int mesh_i = 0; mesh_i < meshGroup.size(); mesh_i++) {
-    Magnum::Trade::MeshData3D* meshData = meshGroup[mesh_i];
+  for (CollisionMeshData& meshData: meshGroup) {
     if (!isMeshPrimitiveValid(meshData)) {return false;}
   }
 
@@ -100,26 +99,27 @@ bool PhysicsManager::initScene(
   bool objectSuccess;
   if (info.type == AssetType::INSTANCE_MESH) {
     // ._semantic.ply mesh data
-    LOG(INFO) << "Initialize: before";
+    LOG(INFO) << "Initialize instance: before";
     objectSuccess = physObject->initializeScene(info, mass, meshGroup, *_bWorld);
-    LOG(INFO) << "Initialize: after";
+    LOG(INFO) << "Initialize instance: after";
     physObject->syncPose();
   } 
   else if (info.type == AssetType::FRL_INSTANCE_MESH) {
     // FRL mesh
-    //Magnum::GL::Mesh* mesh = &meshData->getRenderingBuffer()->mesh;
     LOG(INFO) << "Initialize FRL: before";
     objectSuccess = physObject->initializeScene(info, mass, meshGroup, *_bWorld);
-    LOG(INFO) << "Initialize FRL: after";
+    LOG(INFO) << "Initialize FRL: after, success " << objectSuccess;
+    physObject->syncPose();
   }
   else {
     // GLB mesh data
-    //Magnum::GL::Mesh* mesh = &meshData->getRenderingBuffer()->mesh;
-    LOG(INFO) << "Initialize FRL: before";
+    LOG(INFO) << "Initialize GLB: before";
     objectSuccess = physObject->initializeScene(info, mass, meshGroup, *_bWorld);
-    LOG(INFO) << "Initialize FRL: after";
+    LOG(INFO) << "Initialize GLB: after, success " <<objectSuccess;
+    physObject->syncPose();
   }
 
+  LOG(INFO) << "Init scene done";
   return objectSuccess;
 }
 
@@ -127,12 +127,11 @@ bool PhysicsManager::initScene(
 bool PhysicsManager::initObject(
     const AssetInfo& info,
     const MeshMetaData& metaData,
-    std::vector<Magnum::Trade::MeshData3D*> meshGroup,
+    std::vector<CollisionMeshData> meshGroup,
     physics::BulletRigidObject* physObject) {
 
   // Test Mesh primitive is valid
-  for (int mesh_i = 0; mesh_i < meshGroup.size(); mesh_i++) {
-    Magnum::Trade::MeshData3D* meshData = meshGroup[mesh_i];
+  for (CollisionMeshData& meshData: meshGroup) {
     if (!isMeshPrimitiveValid(meshData)) {return false;}
   }
 
@@ -141,54 +140,53 @@ bool PhysicsManager::initObject(
   if (info.type == AssetType::INSTANCE_MESH) {
     // _semantic.ply mesh
     // TODO (JH): hacked mass value
-    mass = meshGroup[0]->indices().size() * 0.001f;
+    mass = meshGroup[0].indices.size() * 0.001f;
     LOG(INFO) << "Nonzero mass";
     LOG(INFO) << "Initialize: before";
     objectSuccess = physObject->initializeObject(info, mass, meshGroup, *_bWorld);
     LOG(INFO) << "Initialize: after";
-    physObject->syncPose();
   } 
   else if (info.type == AssetType::FRL_INSTANCE_MESH) {
     // FRL mesh
-    mass = meshGroup[0]->indices().size() * 0.001f;
+    mass = meshGroup[0].indices.size() * 0.001f;
     LOG(INFO) << "Initialize FRL: before";
     objectSuccess = physObject->initializeObject(info, mass, meshGroup, *_bWorld);
     LOG(INFO) << "Initialize FRL: after";
   }
   else {
     // GLB mesh data
-    //Magnum::GL::Mesh* mesh = meshData->getRenderingBuffer()->mesh;
-    mass = meshGroup[0]->indices().size() * 0.001f;
+    mass = meshGroup[0].indices.size() * 0.001f;
     LOG(INFO) << "Initialize FRL: before";
     objectSuccess = physObject->initializeObject(info, mass, meshGroup, *_bWorld);
     LOG(INFO) << "Initialize FRL: after";
   }
 
+  physObject->syncPose();
   return objectSuccess;
 }
 
 
-bool PhysicsManager::isMeshPrimitiveValid(Magnum::Trade::MeshData3D* meshData) {
-  if (meshData->primitive() != Magnum::MeshPrimitive::Triangles) {
-    if (meshData->primitive() == Magnum::MeshPrimitive::Lines) {
+bool PhysicsManager::isMeshPrimitiveValid(CollisionMeshData& meshData) {
+  if (meshData.primitive != Magnum::MeshPrimitive::Triangles) {
+    if (meshData.primitive == Magnum::MeshPrimitive::Lines) {
       LOG(INFO) << "Primitive Lines";
     }
-    if (meshData->primitive() == Magnum::MeshPrimitive::Points) {
+    if (meshData.primitive == Magnum::MeshPrimitive::Points) {
       LOG(INFO) << "Primitive Points";
     }
-    if (meshData->primitive() == Magnum::MeshPrimitive::LineLoop) {
+    if (meshData.primitive == Magnum::MeshPrimitive::LineLoop) {
       LOG(INFO) << "Primitive Line loop";
     }
-    if (meshData->primitive() == Magnum::MeshPrimitive::LineStrip) {
+    if (meshData.primitive == Magnum::MeshPrimitive::LineStrip) {
       LOG(INFO) << "Primitive Line Strip";
     }
-    if (meshData->primitive() == Magnum::MeshPrimitive::TriangleStrip) {
+    if (meshData.primitive == Magnum::MeshPrimitive::TriangleStrip) {
       LOG(INFO) << "Primitive Triangle Strip";
     }
-    if (meshData->primitive() == Magnum::MeshPrimitive::TriangleFan) {
+    if (meshData.primitive == Magnum::MeshPrimitive::TriangleFan) {
       LOG(INFO) << "Primitive Triangle Fan";
     }
-    LOG(ERROR) << "Primitive " << int(meshData->primitive());
+    LOG(ERROR) << "Primitive " << int(meshData.primitive);
     LOG(ERROR) << "Cannot load collision mesh, skipping";
     return false;
   } else {

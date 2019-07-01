@@ -35,6 +35,11 @@ void GltfMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
                                int meshID) {
   ASSERT(0 <= meshID && meshID < importer.mesh3DCount());
   meshData_ = importer.mesh3D(meshID);
+
+
+  collisionMeshData_.setMeshPrimitive(Magnum::MeshPrimitive::Triangles);
+  collisionMeshData_.setMeshVertices(meshData_->positions(0)); 
+  collisionMeshData_.setMeshIndices(meshData_->indices());
 }
 
 }  // namespace assets

@@ -10,6 +10,7 @@
 #include <Magnum/Trade/MeshData3D.h>
 #include "GenericInstanceMeshData.h"
 #include "esp/core/esp.h"
+#include "BaseMesh.h"
 
 namespace esp {
 namespace assets {
@@ -24,7 +25,7 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
  public:
   FRLInstanceMeshData()
       : GenericInstanceMeshData(SupportedMeshType::INSTANCE_MESH){};
-  ~FRLInstanceMeshData(){
+  virtual ~FRLInstanceMeshData(){
       delete cpu_vbo_3;
       delete tri_ibo;
       delete cbo_float;

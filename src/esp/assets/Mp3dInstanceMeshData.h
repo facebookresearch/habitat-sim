@@ -14,6 +14,7 @@
 
 #include "GenericInstanceMeshData.h"
 #include "esp/core/esp.h"
+#include "BaseMesh.h"
 
 namespace esp {
 namespace assets {
@@ -38,11 +39,10 @@ class Mp3dInstanceMeshData : public GenericInstanceMeshData {
 
 
  protected:
-  std::vector<vec3i> cpu_ibo_;
+  std::vector<vec3ui> cpu_ibo_;
   std::vector<int> materialIds_;
   std::vector<int> segmentIds_;
   std::vector<int> categoryIds_;
-
 };
 
 }  // namespace assets

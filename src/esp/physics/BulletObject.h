@@ -2,9 +2,12 @@
 
 #include <Magnum/Trade/MeshData3D.h>
 #include <Magnum/Trade/MeshObjectData3D.h>
+#include <Corrade/Containers/Optional.h>
+#include <Corrade/Containers/Reference.h>
 #include <btBulletDynamicsCommon.h>
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
+#include "esp/assets/MeshData.h"
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/FRLInstanceMeshData.h"
 #include "esp/core/esp.h"
@@ -22,13 +25,13 @@ class BulletRigidObject : public scene::SceneNode {
   bool initializeScene(
       const assets::AssetInfo& info,
       Magnum::Float mass,
-      std::vector<Magnum::Trade::MeshData3D*> meshGroup,
+      std::vector<assets::CollisionMeshData> meshGroup,
       btDynamicsWorld& bWorld);
 
   bool initializeObject(
       const assets::AssetInfo& info,
       Magnum::Float mass,
-      std::vector<Magnum::Trade::MeshData3D*> meshGroup,
+      std::vector<assets::CollisionMeshData> meshGroup,
       btDynamicsWorld& bWorld);
 
   ~BulletRigidObject();
@@ -48,11 +51,8 @@ class BulletRigidObject : public scene::SceneNode {
   float _mass;
   float _restitution;
 
-  void getDimensions(
-      Magnum::Trade::MeshData3D*,
-      float* x,
-      float* y,
-      float* z);
+  void getDimensions(assets::CollisionMeshData& meshData, 
+      float* x, float* y, float* z);
 };
 
 }  // namespace physics

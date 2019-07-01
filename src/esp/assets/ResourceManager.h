@@ -10,16 +10,16 @@
 #include <vector>
 
 #include <Magnum/GL/TextureFormat.h>
-#include <Magnum/Math/Color.h>
-
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Transform.h>
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
+#include <Corrade/Containers/Optional.h>
 
 #include "Asset.h"
 #include "BaseMesh.h"
 #include "GltfMeshData.h"
 #include "MeshMetaData.h"
+#include "MeshData.h"
 #include "PhysicsManager.h"
 #include "esp/scene/SceneNode.h"
 
@@ -141,7 +141,7 @@ class ResourceManager {
 
   void transformAxis(
       const AssetInfo& info,
-      std::vector<Magnum::Trade::MeshData3D*> meshGroup);
+      std::vector<CollisionMeshData> meshGroup);
 
   // ==== geometry data ====
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or

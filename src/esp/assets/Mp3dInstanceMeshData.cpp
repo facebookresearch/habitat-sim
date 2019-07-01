@@ -81,6 +81,8 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   cpu_vbo_.reserve(nVertex);
   cpu_ibo_.clear();
   cpu_ibo_.reserve(nFace);
+  cpu_vbo_data_.clear();
+  cpu_ibo_data_.clear();
 
   for (int i = 0; i < nVertex; ++i) {
     vec3f position;
@@ -98,7 +100,7 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
 
   for (int i = 0; i < nFace; ++i) {
     uint8_t nIndices;
-    vec3i indices;
+    vec3ui indices;
     int32_t materialId;
     int32_t segmentId;
     int32_t categoryId;
@@ -115,12 +117,33 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
     categoryIds_.emplace_back(categoryId);
   }
 
+  // Construct vertices for meshData
+  /*cpu_vbo_data_.emplace_back(std::vector<Magnum::Vector3>());
+  for (auto& xyz : cpu_vbo_) {
+    cpu_vbo_data_[0].emplace_back(Magnum::Vector3(xyz.x(), xyz.y(), xyz.z()));
+  }*/
+
+  // Construct indices for meshData
+  /*for (auto& tri: cpu_ibo_) {
+    cpu_ibo_data_.emplace_back(reinterpret_cast<Magnum::UnsignedInt>(tri.x()));
+    cpu_ibo_data_.emplace_back(reinterpret_cast<Magnum::UnsignedInt>(tri.y()));
+    cpu_ibo_data_.emplace_back(reinterpret_cast<Magnum::UnsignedInt>(tri.z()));
+  }*/
+
   // Store indices, facd_ids in Magnum MeshData3D format such that
   // later they can be accessed.
   // Note that normal and texture data are not stored
-  meshData_ = Magnum::Trade::MeshData3D(Magnum::GL::MeshPrimitive::Triangles,
-      reinterpret_cast<std::vector<Magnum::UnsignedInt>>(cpu_ibo_.data()),
-      reinterpret_cast<std::vector<std::vector<Magnum::Vector3>>>(cpu_vbo_.data()));
+  /*meshData_ = Corrade::Containers::Optional<Magnum::Trade::MeshData3D>(
+      Magnum::Trade::MeshData3D(Magnum::MeshPrimitive::Triangles,
+      cpu_ibo_data_,
+      cpu_vbo_data_,
+      std::vector<std::vector<Magnum::Vector3>>(),
+      std::vector<std::vector<Magnum::Vector2>>(),
+      std::vector<std::vector<Magnum::Color4>>())
+  );*/
+  collisionMeshData_.setMeshPrimitive(Magnum::MeshPrimitive::Triangles);
+  collisionMeshData_.setMeshVertices(cpu_vbo_); 
+  collisionMeshData_.setMeshIndices(cpu_ibo_);
 
   return true;
 }
@@ -155,7 +178,7 @@ bool Mp3dInstanceMeshData::saveSemMeshPLY(
 
   for (int iFace = 0; iFace < cpu_ibo_.size(); ++iFace) {
     const uint8_t nIndices = 3;
-    const vec3i& indices = cpu_ibo_[iFace];
+    const vec3ui& indices = cpu_ibo_[iFace];
     // The materialId corresponds to the segmentId from the .house file
     const int32_t segmentId = materialIds_[iFace];
     int32_t objectId = ID_UNDEFINED;

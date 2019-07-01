@@ -30,6 +30,7 @@
 #include "GenericInstanceMeshData.h"
 #include "Mp3dInstanceMeshData.h"
 #include "PTexMeshData.h"
+#include "MeshData.h"
 #include "ResourceManager.h"
 
 namespace esp {
@@ -48,7 +49,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   scene::SceneNode* sceneNode = nullptr;
   if (info.type == AssetType::FRL_INSTANCE_MESH ||
       info.type == AssetType::INSTANCE_MESH) {
-    LOG(INFO) << "Loading FRL mesh data";
+    LOG(INFO) << "Loading FRL/Instance mesh data";
     return loadInstanceMeshData(info, parent, drawables);
   } else if (info.type == AssetType::FRL_PTEX_MESH) {
     LOG(INFO) << "Loading PTEX mesh data";
@@ -56,9 +57,11 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   } else if (info.type == AssetType::SUNCG_SCENE) {
     return loadSUNCGHouseFile(info, parent, drawables);
   } else if (info.type == AssetType::MP3D_MESH) {
+    LOG(INFO) << "Loading MP3D mesh data";
     return loadGeneralMeshData(info, parent, drawables);
   } else {
     // Unknown type, just load general mesh data
+    LOG(INFO) << "Loading General mesh data";
     return loadGeneralMeshData(info, parent, drawables);
   }
 }
@@ -70,6 +73,7 @@ bool ResourceManager::loadPhysicalScene(
     bool attach_physics, /* = false */
     DrawableGroup* drawables /* = nullptr */) {
   bool meshSuccess = loadScene(info, parent, drawables);
+  LOG(INFO) << "Loaded mesh object, success " << meshSuccess;
 
   if (attach_physics) {
     physics::BulletRigidObject* physNode = new physics::BulletRigidObject(parent);
@@ -87,7 +91,7 @@ bool ResourceManager::loadPhysicalScene(
     int end = indexPair.second;
     bool objectSuccess;
 
-    std::vector<Magnum::Trade::MeshData3D*> meshGroup;
+    std::vector<CollisionMeshData> meshGroup;
 
     LOG(INFO) << "Accessing scene mesh start " << start << " end " << end;
     for (int mesh_i = start; mesh_i < end; mesh_i++) {
@@ -96,12 +100,8 @@ bool ResourceManager::loadPhysicalScene(
       if (info.type == AssetType::FRL_INSTANCE_MESH) {
         FRLInstanceMeshData* frlMeshData = 
             dynamic_cast<FRLInstanceMeshData*>(meshes_[mesh_i].get());
-        auto& meshData = frlMeshData->getMeshData();
-        if (!meshData) {
-          LOG(ERROR) << "Cannot load the mesh, skipping";
-          continue;
-        }
-        meshGroup.push_back(&meshData);
+        CollisionMeshData& meshData = frlMeshData->getCollisionMeshData();
+        meshGroup.push_back(meshData);
       } 
 
       // PLY Instance mesh
@@ -112,12 +112,8 @@ bool ResourceManager::loadPhysicalScene(
         Magnum::Quaternion quat = Magnum::Quaternion(quatf);
         Magnum::Matrix4 transform =
             Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
-        auto& meshData = insMeshData->getMeshData();
-        if (!meshData) {
-          LOG(ERROR) << "Cannot load the mesh, skipping";
-          continue;
-        }
-        meshGroup.push_back(&meshData);
+        CollisionMeshData& meshData = insMeshData->getCollisionMeshData();
+        meshGroup.push_back(meshData);
         
         /*Magnum::Trade::MeshData3D meshData(
             reinterpret_cast<std::vector>GMesh->getRenderingBuffer()->mesh)   
@@ -143,16 +139,12 @@ bool ResourceManager::loadPhysicalScene(
         quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
         Magnum::Quaternion quat = Magnum::Quaternion(quatf);
         GltfMeshData* gltfMeshData = dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
-        auto& meshData = gltfMeshData->getMeshData();
-        if (!meshData) {
-          LOG(ERROR) << "Cannot load the mesh, skipping";
-          continue;
-        }
+        CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
         Magnum::Matrix4 transform =
             Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
         Magnum::MeshTools::transformPointsInPlace(transform,
-                                                  meshData->positions(0));
-        meshGroup.push_back(&meshData);
+                                                  meshData.positions);
+        meshGroup.push_back(meshData);
         /*LOG(INFO) << "Initializing scene";
         LOG(INFO) << "Scene built in angle " << float(quat.angle());
         LOG(INFO) << "Scene built in axis " << Eigen::Map<vec3f>(quat.axis().data());*/
@@ -162,7 +154,8 @@ bool ResourceManager::loadPhysicalScene(
 
     bool sceneSuccess = _physicsManager.initScene(
         info, metaData, meshGroup, physNode);
-    LOG(INFO) << "Created mesh object";
+
+    LOG(INFO) << "Initialized mesh scene, success " << sceneSuccess;
     if (!sceneSuccess) {
       LOG(INFO) << "Physics manager failed to initialize object";
       return false;
@@ -210,11 +203,11 @@ bool ResourceManager::loadObject(const AssetInfo& info,
       LOG(INFO) << "Accessing object mesh start " << start << " end " << end;
 
       //std::vector<std::shared_ptr<BaseMesh>> objectMesh(&meshes_[start], &meshes[end]);
-      std::vector<Magnum::Trade::MeshData3D*> meshGroup;
+      std::vector<CollisionMeshData> meshGroup;
       for (int mesh_i = start; mesh_i < end; mesh_i++) {
         GltfMeshData* gltfMeshData = dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
-        auto& meshData = gltfMeshData->getMeshData();
-        meshGroup.push_back(&meshData);
+        CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
+        meshGroup.push_back(meshData);
       }
       
       transformAxis(info, meshGroup);
@@ -240,29 +233,28 @@ bool ResourceManager::loadObject(const AssetInfo& info,
 
 void ResourceManager::transformAxis(
     const AssetInfo& info,
-    std::vector<Magnum::Trade::MeshData3D*> meshGroup) {
+    std::vector<CollisionMeshData> meshGroup) {
 
   quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
   Magnum::Quaternion quat = Magnum::Quaternion(quatf);
-  for (int iOMesh = 0; iOMesh < meshGroup.size(); iOMesh++) {
-    Magnum::Trade::MeshData3D* meshData = meshGroup[iOMesh];
+  for (CollisionMeshData& meshData: meshGroup) {
     Magnum::Matrix4 transform =
         Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
     Magnum::MeshTools::transformPointsInPlace(transform,
-                                              meshData->positions(0));
+                                              meshData.positions);
   }
 }
 
 void ResourceManager::shiftMeshDataToOrigin(GltfMeshData* meshDataGL) {
-  Magnum::Trade::MeshData3D& meshData = *(meshDataGL->getMeshData());
+  CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
   float minX = 999999.9f;
   float maxX = -999999.9f;
   float minY = 999999.9f;
   float maxY = -999999.9f;
   float minZ = 999999.9f;
   float maxZ = -999999.9f;
-  for (int vi = 0; vi < meshData.positions(0).size(); vi++) {
-    Magnum::Vector3 pos = meshData.positions(0)[vi];
+  for (int vi = 0; vi < meshData.positions.size(); vi++) {
+    Magnum::Vector3 pos = meshData.positions[vi];
     if (pos.x() < minX) {
       minX = pos.x();
     }
@@ -285,7 +277,7 @@ void ResourceManager::shiftMeshDataToOrigin(GltfMeshData* meshDataGL) {
   LOG(INFO) << "Shifting data origin";
   Magnum::Matrix4 transform = Magnum::Matrix4::translation(Magnum::Vector3(
       -(maxX + minX) / 2, -(maxY + minY) / 2, -(maxZ + minZ) / 2));
-  Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions(0));
+  Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions);
 }
 
 Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
@@ -541,13 +533,7 @@ void ResourceManager::loadMeshes(Importer& importer,
       // Need this function in order to set center of mass
       shiftMeshDataToOrigin(gltfMeshData);
     }
-    auto& meshData = gltfMeshData->getMeshData();
-    if (!meshData ||
-        meshData->primitive() != Magnum::MeshPrimitive::Triangles) {
-      LOG(ERROR) << "Cannot load the mesh, skipping";
-      currentMesh = nullptr;
-      continue;
-    }
+    CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
 
     gltfMeshData->uploadBuffersToGPU(false);
   }

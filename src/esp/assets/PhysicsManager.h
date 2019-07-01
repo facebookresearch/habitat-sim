@@ -9,40 +9,19 @@
 #include <string>
 #include <vector>
 
-#include <Magnum/GL/TextureFormat.h>
-#include <Magnum/Math/Color.h>
-#include <Magnum/Timeline.h>
-#include <Magnum/Trade/MeshData3D.h>
-
 /* Bullet Physics Integration */
-#include <Corrade/Containers/Optional.h>
-#include <Corrade/Containers/Pointer.h>
+#include <Magnum/Trade/MeshData3D.h>
 #include <Magnum/BulletIntegration/Integration.h>
 #include <Magnum/BulletIntegration/MotionState.h>
 #include <Magnum/BulletIntegration/DebugDraw.h>
+#include <Magnum/Timeline.h>
 #include <btBulletDynamicsCommon.h>
-
-//#include <Magnum/GL/DefaultFramebuffer.h>
-//#include <Magnum/GL/Mesh.h>
-//#include <Magnum/GL/Renderer.h>
-//#include <Magnum/Math/Constants.h>
-//#include <Magnum/MeshTools/Compile.h>
-//#include <Magnum/MeshTools/Transform.h>
-//#include <Magnum/Primitives/Cube.h>
-//#include <Magnum/Primitives/UVSphere.h>
-//#include <Magnum/SceneGraph/Camera.h>
-//#include <Magnum/SceneGraph/Drawable.h>
-//#include <Magnum/SceneGraph/MatrixTransformation3D.h>
-//#include <Magnum/SceneGraph/Scene.h>
-//#include <Magnum/Shaders/Phong.h>
-//#include <Magnum/Trade/MeshData3D.h>
-
 
 #include "Asset.h"
 #include "BaseMesh.h"
-//#include "magnum.h"
 #include "GenericInstanceMeshData.h"
 #include "MeshMetaData.h"
+#include "MeshData.h"
 #include "esp/scene/SceneNode.h"
 #include "esp/physics/BulletObject.h"
 
@@ -53,7 +32,7 @@ namespace assets {
 class PhysicsManager {
  public:
   explicit PhysicsManager(){};
-  ~PhysicsManager();
+  virtual ~PhysicsManager();
 
   bool initPhysics(scene::SceneNode* node,
                    bool do_profile);
@@ -63,7 +42,7 @@ class PhysicsManager {
   bool initObject(
       const AssetInfo& info,
       const MeshMetaData& metaData,
-      std::vector<Magnum::Trade::MeshData3D*> meshGroup,
+      std::vector<CollisionMeshData> meshGroup,
       physics::BulletRigidObject* physObject);
 
   //! Initialize scene given mesh data
@@ -71,7 +50,7 @@ class PhysicsManager {
   bool initScene(
       const AssetInfo& info,
       const MeshMetaData& metaData,
-      std::vector<Magnum::Trade::MeshData3D*> meshGroup,
+      std::vector<CollisionMeshData> meshGroup,
       physics::BulletRigidObject* physObject);
 
   void debugSceneGraph(const MagnumObject* root);
@@ -86,7 +65,7 @@ class PhysicsManager {
   void getPhysicsEngine();
 
   //! Check if mesh primitive type is valid for bullet physics engine
-  bool isMeshPrimitiveValid(Magnum::Trade::MeshData3D* meshData);
+  bool isMeshPrimitiveValid(CollisionMeshData& meshData);
 
   //! ==== physics engines ====
   //! The world has to live longer than the scene because RigidBody

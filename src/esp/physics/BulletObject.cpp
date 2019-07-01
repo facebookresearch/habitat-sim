@@ -47,7 +47,7 @@ BulletRigidObject::BulletRigidObject(scene::SceneNode* parent)
 bool BulletRigidObject::initializeScene(
     const assets::AssetInfo& info,
     Magnum::Float mass,
-    std::vector<Magnum::Trade::MeshData3D*> meshGroup,
+    std::vector<assets::CollisionMeshData> meshGroup,
     btDynamicsWorld& bWorld) {
   if (_initialized) {
     LOG(ERROR) << "Cannot initialized a BulletRigidObject more than once";
@@ -67,33 +67,34 @@ bool BulletRigidObject::initializeScene(
 
   // Iterate through all mesh components for one scene
   // All components are registered as static objects
-  for (Magnum::Trade::MeshData3D* meshData: meshGroup) {    
-    std::vector<Magnum::Vector3>     v_data  = meshData->positions(0);
-    std::vector<Magnum::UnsignedInt> ui_data = meshData->indices();
-    std::vector<int> i_data;
+  for (assets::CollisionMeshData& meshData: meshGroup) {    
+    //std::vector<Magnum::Vector3>     v_data  = meshData.positions;
+    //std::vector<Magnum::UnsignedInt> ui_data = meshData.indices;
+    //std::vector<int> i_data;
     
     // Here we convert Magnum's unsigned int indices to 
     // signed indices in bullet. Assuming that it's save to 
     // cast uint to int  
-    for (uint i = 0; i < ui_data.size(); i++) {
+    /*for (uint i = 0; i < ui_data.size(); i++) {
       i_data.push_back(int(ui_data[i]));
-    }
+    }*/
 
-    LOG(INFO) << "Instance Mesh v data count "   << v_data.size();
-    LOG(INFO) << "Instance Mesh triangle count " << i_data.size() / 3;
-    LOG(INFO) << "Mesh faces -1 " << i_data[i_data.size()-1];
+    LOG(INFO) << "Instance Mesh v data count "   << meshData.positions.size();
+    LOG(INFO) << "Instance Mesh triangle count " << meshData.indices.size() / 3;
+    LOG(INFO) << "Mesh faces -1 " << meshData.indices[meshData.indices.size()-1];
 
     // Configure Bullet Mesh
     // This part is very likely to cause segfault, if done incorrectly
     // IMPORTANT: GL::Mesh.count() is not the number of vertices
-    bulletMesh.m_numTriangles        = v_data.size() / 3;
+    bulletMesh.m_numTriangles        = meshData.indices.size() / 3;
     bulletMesh.m_triangleIndexBase   = 
-        reinterpret_cast<const unsigned char*>(i_data.data());
-    bulletMesh.m_triangleIndexStride = sizeof(vec3i);
-    bulletMesh.m_numVertices         = v_data.size();
+        reinterpret_cast<const unsigned char*>(meshData.indices.data());
+    bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
+    bulletMesh.m_numVertices         = meshData.positions.size();
+    // Get the pointer to the first float of the first triangle
     bulletMesh.m_vertexBase          = 
-        reinterpret_cast<const unsigned char*>(v_data.data());
-    bulletMesh.m_vertexStride        = sizeof(vec3f);
+        reinterpret_cast<const unsigned char*>(meshData.positions.data()->data());
+    bulletMesh.m_vertexStride        = sizeof(Magnum::Vector3);
     bulletMesh.m_indexType           = PHY_INTEGER;
     bulletMesh.m_vertexType          = PHY_FLOAT;  
     auto tivArray = new btTriangleIndexVertexArray();
@@ -110,11 +111,6 @@ bool BulletRigidObject::initializeScene(
     _bCollisionBody->setCollisionFlags(_bCollisionBody->getCollisionFlags() |
                                      btCollisionObject::CF_STATIC_OBJECT);
     _bWorld->addCollisionObject(_bCollisionBody);
-    //Magnum::GL::Mesh* mesh  = &meshData->getRenderingBuffer()->mesh;
-    //Magnum::GL::Buffer* vbo = &meshData->getRenderingBuffer()->vbo;
-    //Magnum::GL::Buffer* cbo = &meshData->getRenderingBuffer()->cbo;
-    //Magnum::GL::Buffer* ibo = &meshData->getRenderingBuffer()->ibo;
-
   }
 
   LOG(INFO) << "Instance body: initialized";
@@ -127,7 +123,7 @@ bool BulletRigidObject::initializeScene(
 bool BulletRigidObject::initializeObject(
     const assets::AssetInfo& info,
     Magnum::Float mass,
-    std::vector<Magnum::Trade::MeshData3D*> meshGroup,
+    std::vector<assets::CollisionMeshData> meshGroup,
     btDynamicsWorld& bWorld) {
 
   if (_initialized) {
@@ -149,22 +145,23 @@ bool BulletRigidObject::initializeObject(
 
   // Iterate through all mesh components for one object
   // The components are combined into a convex compound shape
-  for (Magnum::Trade::MeshData3D* meshData: meshGroup) { 
+  for (assets::CollisionMeshData& meshData: meshGroup) { 
 
-    std::vector<Magnum::Vector3>     v_data  = meshData->positions(0);
-    std::vector<Magnum::UnsignedInt> ui_data = meshData->indices();
-    std::vector<vec3i> i_data;
-    LOG(INFO) << "Mesh indices count " << ui_data.size();
+    //std::vector<Magnum::Vector3>     v_data  = meshData.positions;
+    //std::vector<Magnum::UnsignedInt> ui_data = meshData.indices;
+    //std::vector<vec3i> i_data;
+    //LOG(INFO) << "Mesh indices count " << ui_data.size();
 
     // Configure Bullet Mesh
     // This part is very likely to cause segfault, if done incorrectly
-    bulletMesh.m_numTriangles        = ui_data.size() / 3;
+    bulletMesh.m_numTriangles        = meshData.indices.size() / 3;
     bulletMesh.m_triangleIndexBase   =
-        reinterpret_cast<const unsigned char*>(ui_data.data());
+        reinterpret_cast<const unsigned char*>(meshData.indices.data());
     bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
-    bulletMesh.m_numVertices         = v_data.size();
+    bulletMesh.m_numVertices         = meshData.positions.size();
+    // Get the pointer to the first float of the first triangle
     bulletMesh.m_vertexBase          =
-        reinterpret_cast<const unsigned char*>(v_data.data());
+        reinterpret_cast<const unsigned char*>(meshData.positions.data()->data());
     bulletMesh.m_vertexStride        = sizeof(Magnum::Vector3);
     bulletMesh.m_indexType           = PHY_INTEGER;
     bulletMesh.m_vertexType          = PHY_FLOAT;
@@ -185,8 +182,8 @@ bool BulletRigidObject::initializeObject(
 
     // TODO (JH): assume that the object is convex, otherwise game over
     btConvexHullShape* b_convex_shape = new btConvexHullShape(
-        reinterpret_cast<const btScalar*>(v_data.data()),
-        v_data.size(), sizeof(Magnum::Vector3));
+        static_cast<const btScalar*>(meshData.positions.data()->data()),
+        meshData.positions.size(), sizeof(Magnum::Vector3));
     b_convex_shape->setMargin(margin);
     (dynamic_cast<btCompoundShape*>(bShape))->addChildShape(t, b_convex_shape);
   }
@@ -220,7 +217,7 @@ bool BulletRigidObject::initializeObject(
 
 // Helper function to find object center
 void BulletRigidObject::getDimensions(
-      Magnum::Trade::MeshData3D* meshData,
+      assets::CollisionMeshData& meshData,
       float* x,
       float* y,
       float* z) {
@@ -230,8 +227,8 @@ void BulletRigidObject::getDimensions(
   float maxY = -999999.9f;
   float minZ = 999999.9f;
   float maxZ = -999999.9f;
-  for (uint vi = 0; vi < meshData->positions(0).size(); vi++) {
-    Magnum::Vector3 pos = meshData->positions(0)[vi];
+  for (uint vi = 0; vi < meshData.positions.size(); vi++) {
+    Magnum::Vector3 pos = meshData.positions[vi];
     if (pos.x() < minX) { minX = pos.x(); }
     if (pos.x() > maxX) { maxX = pos.x(); }
     if (pos.y() < minY) { minY = pos.y(); }

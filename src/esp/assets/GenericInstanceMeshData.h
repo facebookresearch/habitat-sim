@@ -39,21 +39,13 @@ class GenericInstanceMeshData : public BaseMesh {
   explicit GenericInstanceMeshData()
       : GenericInstanceMeshData{SupportedMeshType::INSTANCE_MESH} {};
 
-  ~GenericInstanceMeshData() {
-    //delete meshData_; 
-  }
+  virtual ~GenericInstanceMeshData() {};
 
   virtual bool loadPLY(const std::string& plyFile);
 
   virtual Magnum::GL::Texture2D* getSemanticTexture() {
     return &renderingBuffer_->tex;
   };
-
-  // ==== access non-render mesh data for physics, etc ====
-  Corrade::Containers::Optional<Magnum::Trade::MeshData3D>& getMeshData() 
-  override {
-    return meshData_;
-  }
 
   // ==== rendering ====
   virtual void uploadBuffersToGPU(bool forceReload = false) override;
@@ -73,17 +65,17 @@ class GenericInstanceMeshData : public BaseMesh {
   }
 
  protected:
-  // ==== non-rendering ===
-  Corrade::Containers::Optional<Magnum::Trade::MeshData3D> meshData_;
-
   // ==== rendering ====
   std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
 
   std::vector<vec3f> cpu_vbo_;
   std::vector<vec3uc> cpu_cbo_;
   std::vector<vec3ui> cpu_ibo_;
-  std::vector<vec3i> cpu_ibo_i_;
   std::vector<uint32_t> objectIds_;
+
+  // ==== used for constructing meshData_
+  std::vector<Magnum::UnsignedInt> cpu_ibo_data_;
+  std::vector<std::vector<Magnum::Vector3>> cpu_vbo_data_;
 };
 }  // namespace assets
 }  // namespace esp
