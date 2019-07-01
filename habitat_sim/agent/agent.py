@@ -176,10 +176,10 @@ class Agent(object):
         for k, v in self.sensors.items():
             habitat_sim.errors.assert_obj_valid(v)
             state.sensor_states[k] = SixDOFPose(
-                np.array(v.object.absolute_transformation()._translation),  # TODO
+                np.array(v.node.absolute_transformation()._translation),  # TODO.
                 # TODO: not using utils.quat_from_magnum leads to an infinite cycle
                 utils.quat_from_magnum(
-                    utils.quat_to_magnum(state.rotation) * v.object.rotation
+                    utils.quat_to_magnum(state.rotation) * v.node.rotation
                 ),
             )
 
@@ -214,13 +214,13 @@ class Agent(object):
 
             s = self.sensors[k]
 
-            s.object.reset_transformation()
-            s.object.translate(
+            s.node.reset_transformation()
+            s.node.translate(
                 utils.quat_rotate_vector(
                     state.rotation.inverse(), v.position - state.position
                 )
             )
-            s.object.rotation = utils.quat_to_magnum(
+            s.node.rotation = utils.quat_to_magnum(
                 state.rotation.inverse() * v.rotation
             )
 

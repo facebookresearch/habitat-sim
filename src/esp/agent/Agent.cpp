@@ -61,21 +61,20 @@ void Agent::act(const std::string& actionName) {
 
 void Agent::getState(AgentState::ptr state) const {
   // TODO this should be done less hackishly
-  state->position =
-      cast<vec3f>(object().absoluteTransformation().translation());
-  state->rotation = quatf(object().rotation()).coeffs();
+  state->position = cast<vec3f>(node().absoluteTransformation().translation());
+  state->rotation = quatf(node().rotation()).coeffs();
   // TODO other state members when implemented
 }
 
 void Agent::setState(const AgentState& state,
                      const bool resetSensors /*= true*/) {
-  object().setTranslation(Magnum::Vector3(state.position));
+  node().setTranslation(Magnum::Vector3(state.position));
 
   const Eigen::Map<const quatf> rot(state.rotation.data());
   CHECK_LT(std::abs(rot.norm() - 1.0),
            2.0 * Magnum::Math::TypeTraits<float>::epsilon())
       << state.rotation << " not a valid rotation";
-  object().setRotation(Magnum::Quaternion(quatf(rot)).normalized());
+  node().setRotation(Magnum::Quaternion(quatf(rot)).normalized());
 
   if (resetSensors) {
     for (auto p : sensors_.getSensors()) {

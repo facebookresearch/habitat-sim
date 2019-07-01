@@ -45,12 +45,12 @@ void Sensor::setTransformationFromSpec() {
     return;
   }
 
-  object().resetTransformation();
+  node().resetTransformation();
 
-  object().translate(Magnum::Vector3(spec_->position));
-  object().rotateX(Magnum::Rad(spec_->orientation[0]));
-  object().rotateY(Magnum::Rad(spec_->orientation[1]));
-  object().rotateZ(Magnum::Rad(spec_->orientation[2]));
+  node().translate(Magnum::Vector3(spec_->position));
+  node().rotateX(Magnum::Rad(spec_->orientation[0]));
+  node().rotateY(Magnum::Rad(spec_->orientation[1]));
+  node().rotateZ(Magnum::Rad(spec_->orientation[2]));
 }
 
 bool operator==(const SensorSpec& a, const SensorSpec& b) {

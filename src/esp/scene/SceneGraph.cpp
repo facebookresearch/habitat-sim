@@ -17,7 +17,7 @@ SceneGraph::SceneGraph()
 void SceneGraph::setDefaultRenderCamera(sensor::Sensor& sensor) {
   ASSERT(sensor.isVisualSensor());
 
-  Magnum::Matrix4 T = sensor.object().absoluteTransformation();
+  Magnum::Matrix4 T = sensor.node().absoluteTransformation();
   Magnum::Matrix3 R = T.rotationScaling();
   Magnum::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(R);
 

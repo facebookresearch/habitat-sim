@@ -99,7 +99,8 @@ Viewer::Viewer(const Arguments& arguments)
     agentBodyNode_->setTranslation(Vector3(position));
 
     LOG(INFO) << "Viewer initialization is done. ";
-    renderCamera_->object().setTransformation(cameraNode_->absoluteTransformation());
+    renderCamera_->node().setTransformation(
+        cameraNode_->absoluteTransformation());
   }  // namespace gfx
 }
 
@@ -150,10 +151,10 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
 
   /* Distance to origin */
   const float distance =
-      renderCamera_->object().transformation().translation().z();
+      renderCamera_->node().transformation().translation().z();
 
   /* Move 15% of the distance back or forward */
-  renderCamera_->object().translateLocal(
+  renderCamera_->node().translateLocal(
       {0.0f, 0.0f,
        distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f))});
 
@@ -173,7 +174,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
     return;
   }
   const auto angle = Math::angle(previousPosition_, currentPosition);
-  renderCamera_->object().rotate(-angle, axis.normalized());
+  renderCamera_->node().rotate(-angle, axis.normalized());
   previousPosition_ = currentPosition;
 
   redraw();
@@ -222,7 +223,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     default:
       break;
   }
-  renderCamera_->object().setTransformation(
+  renderCamera_->node().setTransformation(
       cameraNode_->absoluteTransformation());
   redraw();
 }
