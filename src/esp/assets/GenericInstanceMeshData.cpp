@@ -75,9 +75,6 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   cpu_cbo_.clear();
   cpu_ibo_.clear();
   objectIds_.clear();
-  cpu_vbo_data_.clear();
-  cpu_ibo_data_.clear();
-
 
   std::ifstream ifs(plyFile, std::ios::binary);
   if (!ifs.good()) {

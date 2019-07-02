@@ -83,9 +83,7 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   cpu_vbo_.reserve(nVertex);
   cpu_ibo_.clear();
   cpu_ibo_.reserve(nFace);
-  cpu_vbo_data_.clear();
-  cpu_ibo_data_.clear();
-
+  
   for (int i = 0; i < nVertex; ++i) {
     vec3f position;
     vec3f normal;

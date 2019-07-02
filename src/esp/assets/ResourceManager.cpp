@@ -30,6 +30,7 @@
 #include "GenericInstanceMeshData.h"
 #include "Mp3dInstanceMeshData.h"
 #include "PTexMeshData.h"
+#include "CollisionMeshData.h"
 #include "MeshData.h"
 #include "ResourceManager.h"
 
@@ -702,7 +703,7 @@ gfx::Drawable& ResourceManager::createDrawable(
 bool ResourceManager::createScene(Importer& importer,
                                   const AssetInfo& info,
                                   const MeshMetaData& metaData,
-                                  scene::SceneNode& sceneNode,
+                                  scene::SceneNode& parent,
                                   DrawableGroup* drawables,
                                   bool forceReload /* = false */) {
   // re-bind position, normals, uv, colors etc. to the corresponding buffers
@@ -730,21 +731,21 @@ bool ResourceManager::createScene(Importer& importer,
     const quatf transform = info.frame.rotationFrameToWorld();
     
     // create scene parent node with transformation aligning to global frame
-    sceneNode.setRotation(transform);
+    parent.setRotation(transform);
 
     // Recursively add all children
     for (auto objectID : sceneData->children3D()) {
-      createObject(importer, info, metaData, sceneNode, drawables, objectID);
+      createObject(importer, info, metaData, parent, drawables, objectID);
     }
   } else if (importer.mesh3DCount() && meshes_[metaData.meshIndex.first]) {
     // no default scene --- standalone OBJ/PLY files, for example
 
     // create scene parent node with transformation aligning to global frame
     const quatf transform = info.frame.rotationFrameToWorld();
-    sceneNode.setRotation(transform);
+    parent.setRotation(transform);
 
     // take a wild guess and load the first mesh with the first material
-    createMeshObject(metaData, sceneNode, drawables, ID_UNDEFINED, 0, 0);
+    createMeshObject(metaData, parent, drawables, ID_UNDEFINED, 0, 0);
 
   } else {
     LOG(ERROR) << "No default scene available and no meshes found, exiting";

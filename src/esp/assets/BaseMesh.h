@@ -11,6 +11,7 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Mesh.h>
 #include "esp/core/esp.h"
+#include "CollisionMeshData.h"
 #include "MeshData.h"
 
 namespace esp {
@@ -23,7 +24,6 @@ enum SupportedMeshType {
   GLTF_MESH = 2,
   NUM_SUPPORTED_MESH_TYPES = 3,
 };
-
 
 class BaseMesh {
  public:
@@ -44,10 +44,6 @@ class BaseMesh {
   virtual CollisionMeshData& getCollisionMeshData() {
     return collisionMeshData_;
   }
-  //virtual Corrade::Containers::Optional<Magnum::Trade::MeshData3D>&
-  //    getMeshData();
-
-
  protected:
   SupportedMeshType type_ = SupportedMeshType::NOT_DEFINED;
   bool buffersOnGPU_ = false;

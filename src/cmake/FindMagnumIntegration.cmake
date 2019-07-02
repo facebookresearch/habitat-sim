@@ -70,8 +70,6 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
-## TODO(JH) here forcing local with bullet magnum-integration
-set(WITH_BULLETINTEGRATION ON CACHE BOOL "WITH_BULLETINTEGRATION" FORCE)
 
 # Magnum library dependencies
 set(_MAGNUMINTEGRATION_DEPENDENCIES )

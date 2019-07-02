@@ -21,6 +21,7 @@
 #include "BaseMesh.h"
 #include "GenericInstanceMeshData.h"
 #include "MeshMetaData.h"
+#include "CollisionMeshData.h"
 #include "MeshData.h"
 #include "esp/scene/SceneNode.h"
 #include "esp/physics/BulletObject.h"
@@ -70,26 +71,24 @@ class PhysicsManager {
   //! ==== physics engines ====
   //! The world has to live longer than the scene because RigidBody
   //! instances have to remove themselves from it on destruction
-  Magnum::BulletIntegration::DebugDraw      _debugDraw{Magnum::NoCreate};
-  btDbvtBroadphase*                         _bBroadphase;
-  btDefaultCollisionConfiguration*          _bCollisionConfig;
-  btCollisionDispatcher*                    _bDispatcher;
-  //! btCollisionDispatcher*                    _bDispatcher;
-  btSequentialImpulseConstraintSolver*      _bSolver;
-  //! btDiscreteDynamicsWorld                   
-  //      _bWorld{&_bDispatcher, &_bBroadphase, &_bSolver, &_bCollisionConfig};
-  btDiscreteDynamicsWorld*                  _bWorld;
+  Magnum::BulletIntegration::DebugDraw      debugDraw_{Magnum::NoCreate};
+  btDbvtBroadphase*                         bBroadphase_;
+  btDefaultCollisionConfiguration*          bCollisionConfig_;
+  btCollisionDispatcher*                    bDispatcher_;
+  //! btCollisionDispatcher*                    bDispatcher_;
+  btSequentialImpulseConstraintSolver*      bSolver_;
+  btDiscreteDynamicsWorld*                  bWorld_;
 
   scene::SceneNode* physicsNode = nullptr;
 
-  bool _initialized = false;
-  bool _do_profile = false;
-  float _total_time = 0.0f;
-  int _total_frames = 0;
+  bool initialized_ = false;
+  bool do_profile_ = false;
+  float total_time_ = 0.0f;
+  int total_frames_ = 0;
 
-  Magnum::Timeline _timeline;
-  int _maxSubSteps = 10;
-  float _fixedTimeStep = 1.0f / 240.0f;
+  Magnum::Timeline timeline_;
+  int maxSubSteps_ = 10;
+  float fixedTimeStep_ = 1.0f / 240.0f;
 };
 
 }  // namespace assets

@@ -10,9 +10,6 @@ namespace scene {
 
 SceneGraph::SceneGraph()
     : rootNode_{world_}, defaultRenderCameraNode_{rootNode_} {
-
-  //LOG(INFO) << "Initializing SceneGraph";
-  //LOG(INFO) << "Let's look at its world " << world_.parent();
   defaultRenderCamera_.attach(defaultRenderCameraNode_);
 }
 

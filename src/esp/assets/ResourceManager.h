@@ -19,6 +19,7 @@
 #include "BaseMesh.h"
 #include "GltfMeshData.h"
 #include "MeshMetaData.h"
+#include "CollisionMeshData.h"
 #include "MeshData.h"
 #include "PhysicsManager.h"
 #include "esp/scene/SceneNode.h"

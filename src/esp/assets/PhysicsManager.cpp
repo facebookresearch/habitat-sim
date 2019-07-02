@@ -43,28 +43,28 @@ bool PhysicsManager::initPhysics(
   LOG(INFO) << "Initializing Physics Engine...";
 
   // TODO (JH): use unique pointer
-  _bCollisionConfig = new btDefaultCollisionConfiguration();
-  _bDispatcher = new btCollisionDispatcher(_bCollisionConfig);
-  btGImpactCollisionAlgorithm::registerAlgorithm(_bDispatcher);
-  _bBroadphase = new btDbvtBroadphase();
-  _bSolver = new btSequentialImpulseConstraintSolver();
-  _bWorld = new btDiscreteDynamicsWorld(_bDispatcher, _bBroadphase, _bSolver,
-                                        _bCollisionConfig);
+  bCollisionConfig_ = new btDefaultCollisionConfiguration();
+  bDispatcher_ = new btCollisionDispatcher(bCollisionConfig_);
+  btGImpactCollisionAlgorithm::registerAlgorithm(bDispatcher_);
+  bBroadphase_ = new btDbvtBroadphase();
+  bSolver_ = new btSequentialImpulseConstraintSolver();
+  bWorld_ = new btDiscreteDynamicsWorld(bDispatcher_, bBroadphase_, bSolver_,
+                                        bCollisionConfig_);
 
   // btCollisionDispatcher *dispatcher = static_cast<btCollisionDispatcher
-  // *>(_bWorld.getDispatcher());
+  // *>(bWorld_.getDispatcher());
   // btGImpactCollisionAlgorithm::registerAlgorithm(dispatcher);
 
-  _debugDraw.setMode(Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe);
-  _bWorld->setGravity({0.0f, -10.0f, 0.0f});
-  //_bWorld.setGravity({0.0f, 0.0f, -10.0f});
-  //_bWorld.setDebugDrawer(&_debugDraw);
+  debugDraw_.setMode(Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe);
+  bWorld_->setGravity({0.0f, -10.0f, 0.0f});
+  //bWorld_.setGravity({0.0f, 0.0f, -10.0f});
+  //bWorld_.setDebugDrawer(&_debugDraw);
 
   physicsNode = node;
 
-  _timeline.start();
-  _initialized = true;
-  _do_profile = do_profile;
+  timeline_.start();
+  initialized_ = true;
+  do_profile_ = do_profile;
   LOG(INFO) << "Initialized Physics Engine.";
 
   return true;
@@ -72,12 +72,12 @@ bool PhysicsManager::initPhysics(
 
 PhysicsManager::~PhysicsManager() {
   LOG(INFO) << "Deconstructing PhysicsManager";
-  if (_initialized) {
-    delete _bCollisionConfig;
-    delete _bDispatcher;
-    delete _bBroadphase;
-    delete _bSolver;
-    delete _bWorld;
+  if (initialized_) {
+    delete bCollisionConfig_;
+    delete bDispatcher_;
+    delete bBroadphase_;
+    delete bSolver_;
+    delete bWorld_;
   }
 }
 
@@ -101,21 +101,21 @@ bool PhysicsManager::initScene(
   if (info.type == AssetType::INSTANCE_MESH) {
     // ._semantic.ply mesh data
     LOG(INFO) << "Initialize instance scene: before";
-    objectSuccess = physObject->initializeScene(info, mass, meshGroup, *_bWorld);
+    objectSuccess = physObject->initializeScene(info, mass, meshGroup, *bWorld_);
     LOG(INFO) << "Initialize instance scene: after";
     //physObject->syncPose();
   } 
   else if (info.type == AssetType::FRL_INSTANCE_MESH) {
     // FRL mesh
     LOG(INFO) << "Initialize FRL scene: before";
-    objectSuccess = physObject->initializeScene(info, mass, meshGroup, *_bWorld);
+    objectSuccess = physObject->initializeScene(info, mass, meshGroup, *bWorld_);
     LOG(INFO) << "Initialize FRL scene: after, success " << objectSuccess;
     //physObject->syncPose();
   }
   else {
     // GLB mesh data
     LOG(INFO) << "Initialize GLB scene: before";
-    objectSuccess = physObject->initializeScene(info, mass, meshGroup, *_bWorld);
+    objectSuccess = physObject->initializeScene(info, mass, meshGroup, *bWorld_);
     LOG(INFO) << "Initialize GLB scene: after, success " <<objectSuccess;
     //physObject->syncPose();
   }
@@ -144,21 +144,21 @@ bool PhysicsManager::initObject(
     mass = meshGroup[0].indices.size() * 0.001f;
     LOG(INFO) << "Nonzero mass";
     LOG(INFO) << "Initialize: before";
-    objectSuccess = physObject->initializeObject(info, mass, meshGroup, *_bWorld);
+    objectSuccess = physObject->initializeObject(info, mass, meshGroup, *bWorld_);
     LOG(INFO) << "Initialize: after";
   } 
   else if (info.type == AssetType::FRL_INSTANCE_MESH) {
     // FRL mesh
     mass = meshGroup[0].indices.size() * 0.001f;
     LOG(INFO) << "Initialize FRL: before";
-    objectSuccess = physObject->initializeObject(info, mass, meshGroup, *_bWorld);
+    objectSuccess = physObject->initializeObject(info, mass, meshGroup, *bWorld_);
     LOG(INFO) << "Initialize FRL: after";
   }
   else {
     // GLB mesh data
     mass = meshGroup[0].indices.size() * 0.001f;
     LOG(INFO) << "Initialize GLB: before";
-    objectSuccess = physObject->initializeObject(info, mass, meshGroup, *_bWorld);
+    objectSuccess = physObject->initializeObject(info, mass, meshGroup, *bWorld_);
     LOG(INFO) << "Initialize GLB: after";
   }
 
@@ -166,32 +166,30 @@ bool PhysicsManager::initObject(
   return objectSuccess;
 }
 
-
+//! Check if mesh primitive is compatible with physics
 bool PhysicsManager::isMeshPrimitiveValid(CollisionMeshData& meshData) {
-  if (meshData.primitive != Magnum::MeshPrimitive::Triangles) {
-    if (meshData.primitive == Magnum::MeshPrimitive::Lines) {
-      LOG(INFO) << "Primitive Lines";
+  if (meshData.primitive == Magnum::MeshPrimitive::Triangles) {
+    // Only triangle mesh works
+    return true;
+  } else {
+    switch(meshData.primitive) {
+      case Magnum::MeshPrimitive::Lines:
+        LOG(ERROR) << "Invalid primitive: Lines";
+      case Magnum::MeshPrimitive::Points:
+        LOG(ERROR) << "Invalid primitive: Points";
+      case Magnum::MeshPrimitive::LineLoop:
+        LOG(ERROR) << "Invalid primitive Line loop";
+      case Magnum::MeshPrimitive::LineStrip:
+        LOG(ERROR) << "Invalid primitive Line Strip";
+      case Magnum::MeshPrimitive::TriangleStrip:
+        LOG(ERROR) << "Invalid primitive Triangle Strip";
+      case Magnum::MeshPrimitive::TriangleFan:
+        LOG(ERROR) << "Invalid primitive Triangle Fan";
+      default:
+        LOG(ERROR) << "Invalid primitive " << int(meshData.primitive);
     }
-    if (meshData.primitive == Magnum::MeshPrimitive::Points) {
-      LOG(INFO) << "Primitive Points";
-    }
-    if (meshData.primitive == Magnum::MeshPrimitive::LineLoop) {
-      LOG(INFO) << "Primitive Line loop";
-    }
-    if (meshData.primitive == Magnum::MeshPrimitive::LineStrip) {
-      LOG(INFO) << "Primitive Line Strip";
-    }
-    if (meshData.primitive == Magnum::MeshPrimitive::TriangleStrip) {
-      LOG(INFO) << "Primitive Triangle Strip";
-    }
-    if (meshData.primitive == Magnum::MeshPrimitive::TriangleFan) {
-      LOG(INFO) << "Primitive Triangle Fan";
-    }
-    LOG(ERROR) << "Primitive " << int(meshData.primitive);
     LOG(ERROR) << "Cannot load collision mesh, skipping";
     return false;
-  } else {
-    return true;
   }
 }
 
@@ -214,30 +212,30 @@ void PhysicsManager::debugSceneGraph(const MagnumObject* root) {
 
 void PhysicsManager::stepPhysics() {
   // ==== Physics stepforward ======
-  //_bWorld->stepSimulation(_timeline.previousFrameDuration(), _maxSubSteps,
-  //                        _fixedTimeStep);
+  //bWorld_->stepSimulation(timeline_.previousFrameDuration(), maxSubSteps_,
+  //                        fixedTimeStep_);
 
   auto start = std::chrono::system_clock::now();
-  _bWorld->stepSimulation(_timeline.previousFrameDuration(), _maxSubSteps,
-                          _fixedTimeStep);
+  bWorld_->stepSimulation(timeline_.previousFrameDuration(), maxSubSteps_,
+                          fixedTimeStep_);
   auto end = std::chrono::system_clock::now();
 
   std::chrono::duration<float> elapsed_seconds = end-start;
   std::time_t end_time = std::chrono::system_clock::to_time_t(end);
 
-  if (_do_profile) {
-    _total_frames += 1;
-    _total_time += static_cast<float>(elapsed_seconds.count());
+  if (do_profile_) {
+    total_frames_ += 1;
+    total_time_ += static_cast<float>(elapsed_seconds.count());
     LOG(INFO) << "Step physics fps: " << 1.0f / static_cast<float>(elapsed_seconds.count());
-    LOG(INFO) << "Average physics fps: " << 1.0f / (_total_time / _total_frames);
+    LOG(INFO) << "Average physics fps: " << 1.0f / (total_time_ / total_frames_);
   }
   
-  int numObjects = _bWorld->getNumCollisionObjects();
+  int numObjects = bWorld_->getNumCollisionObjects();
   // LOG(INFO) << "Num collision objects" << numObjects;
 }
 
 void PhysicsManager::nextFrame() {
-  _timeline.nextFrame();
+  timeline_.nextFrame();
   checkActiveObjects();
 }
 

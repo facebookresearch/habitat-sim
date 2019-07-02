@@ -7,14 +7,6 @@
 #include <vector>
 
 #include "esp/core/esp.h"
-#include <Magnum/GL/Mesh.h>
-#include <Corrade/Containers/Optional.h>
-#include <Corrade/Containers/Reference.h>
-#include <Magnum/Trade/MeshData3D.h>
-#include <Magnum/Magnum.h>
-#include <Magnum/Math/Color.h>
-#include <Magnum/Mesh.h>
-#include "MeshData.h"
 
 namespace esp {
 namespace assets {
@@ -31,18 +23,6 @@ struct MeshData {
   std::vector<vec3f>    cbo;
   //! Index buffer
   std::vector<uint32_t> ibo;
-};
-
-//! Reference to vertices and
-//! Usage: (1) for creating collision mesh in Bullet
-struct CollisionMeshData {
-  //! Primitive type (has to be triangle for Bullet to work)
-  Magnum::MeshPrimitive                               primitive;
-  //! Reference to Vertex positions
-  Corrade::Containers::ArrayView<Magnum::Vector3>     positions;
-  //! Reference to Vertex indices
-  Corrade::Containers::ArrayView<Magnum::UnsignedInt> indices;
-
 };
 
 }  // namespace assets

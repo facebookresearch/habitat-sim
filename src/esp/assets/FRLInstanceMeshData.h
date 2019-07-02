@@ -69,8 +69,6 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
 
   // Gravity direction of the mesh, this is a STATIC
   vec3f orig_gravity_dir;
-
-  void compute_buffer();
 };
 
 }  // namespace assets

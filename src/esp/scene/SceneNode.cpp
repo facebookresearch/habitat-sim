@@ -18,7 +18,6 @@ SceneNode::SceneNode(SceneNode& parent) {
   setId(parent.getId());
 }
 
-
 SceneNode::SceneNode(MagnumScene& parentNode) {
   MagnumObject& baseNode = static_cast<MagnumObject&>(*this);
   // call the setParent in the base class,
@@ -47,10 +46,6 @@ SceneNode& SceneNode::createChild() {
 mat4f SceneNode::getTransformation() const {
   return EigenIntegration::cast<mat4f>(MagnumObject::transformation());
 }
-
-/*Corrade::Containers::LinkedList<scene::SceneNode>& SceneNode::children() const {
-  return static_cast<Corrade::Containers::LinkedList<scene::SceneNode>&>(this->children());
-}*/
 
 quatf SceneNode::getRotation() const {
   return quatf(MagnumObject::rotation());

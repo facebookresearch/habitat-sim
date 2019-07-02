@@ -72,10 +72,6 @@ class GenericInstanceMeshData : public BaseMesh {
   std::vector<vec3uc> cpu_cbo_;
   std::vector<vec3ui> cpu_ibo_;
   std::vector<uint32_t> objectIds_;
-
-  // ==== used for constructing meshData_
-  std::vector<Magnum::UnsignedInt> cpu_ibo_data_;
-  std::vector<std::vector<Magnum::Vector3>> cpu_vbo_data_;
 };
 }  // namespace assets
 }  // namespace esp

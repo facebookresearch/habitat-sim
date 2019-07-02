@@ -88,9 +88,7 @@ bool FRLInstanceMeshData::loadPLY(const std::string& ply_file) {
   cpu_cbo_.reserve(nVertex);
   cpu_vbo_.clear();
   cpu_vbo_.reserve(nVertex);
-  cpu_vbo_data_.clear();
-  cpu_ibo_data_.clear();
-
+  
   for (int i = 0; i < nVertex; ++i) {
     vec3f xyz;
     vec3uc rgb;
@@ -134,7 +132,7 @@ bool FRLInstanceMeshData::loadPLY(const std::string& ply_file) {
     (*cpu_vbo_3_)[i] = cpu_vbo_[i].head<3>();
   }
 
-  // Compute tri index buffer
+  // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0,2,3]
   const size_t numQuads = cpu_vbo_.size() / 4;
   tri_ibo_ = new std::vector<uint32_t>(numQuads * 6);
   for (uint32_t iQuad = 0; iQuad < numQuads; ++iQuad) {
@@ -237,7 +235,6 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_.reset();
   renderingBuffer_ = std::make_unique<FRLInstanceMeshData::RenderingBuffer>();
 
-  // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0,2,3]
   const size_t numQuads = cpu_vbo_.size() / 4;
   
   cbo_float_ = new std::vector<float>(cpu_cbo_.size() * 3);

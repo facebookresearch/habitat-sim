@@ -30,7 +30,6 @@ class GltfMeshData : public BaseMesh {
     return renderingBuffer_.get();
   }
 
-  // Get GL rendering Mesh
   virtual Magnum::GL::Mesh* getMagnumGLMesh() override;
 
  protected:
