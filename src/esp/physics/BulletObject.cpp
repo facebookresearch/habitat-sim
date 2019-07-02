@@ -49,18 +49,18 @@ bool BulletRigidObject::initializeScene(
     Magnum::Float mass,
     std::vector<assets::CollisionMeshData> meshGroup,
     btDynamicsWorld& bWorld) {
-  if (_initialized) {
+  if (initialized_) {
     LOG(ERROR) << "Cannot initialized a BulletRigidObject more than once";
     return false;
   }
 
-  _bWorld = &bWorld;
+  bWorld_ = &bWorld;
   // Create Bullet Object
   btIndexedMesh bulletMesh;
   btCollisionShape* bShape = nullptr;
 
   // Object Physical Parameters
-  _mass = mass;
+  mass_ = mass;
   LOG(INFO) << "Creating Instance object mass: " << mass;
   LOG(INFO) << "Creating Instance object meshGroups: " << meshGroup.size();
   btVector3 bInertia(0.0f, 0.0f, 0.0f);
@@ -107,15 +107,15 @@ bool BulletRigidObject::initializeScene(
     bShape->calculateLocalInertia(mass, bInertia);
 
     // Bullet rigid body setup
-    _bCollisionBody = new btCollisionObject();
-    _bCollisionBody->setCollisionShape(bShape);
-    _bCollisionBody->setCollisionFlags(_bCollisionBody->getCollisionFlags() |
+    bCollisionBody_ = new btCollisionObject();
+    bCollisionBody_->setCollisionShape(bShape);
+    bCollisionBody_->setCollisionFlags(bCollisionBody_->getCollisionFlags() |
                                      btCollisionObject::CF_STATIC_OBJECT);
-    _bWorld->addCollisionObject(_bCollisionBody);
+    bWorld_->addCollisionObject(bCollisionBody_);
   }
 
   LOG(INFO) << "Instance body: initialized";
-  _initialized = true;
+  initialized_ = true;
   return true;
 
 }
@@ -127,20 +127,20 @@ bool BulletRigidObject::initializeObject(
     std::vector<assets::CollisionMeshData> meshGroup,
     btDynamicsWorld& bWorld) {
 
-  if (_initialized) {
+  if (initialized_) {
     LOG(ERROR) << "Cannot initialized a BulletRigidObject more than once";
     return false;
   }
 
   // Create Bullet Object
-  _bWorld = &bWorld;
+  bWorld_ = &bWorld;
   btCollisionShape* bShape = nullptr;
   btIndexedMesh bulletMesh;
 
   // Physical parameters
   LOG(INFO) << "Creating object mass: " << mass;
-  _mass = mass;
-  _restitution = 0.0f;
+  mass_ = mass;
+  restitution_ = 0.0f;
   float margin = 0.01f;
   btVector3 bInertia(2.0f, 2.0f, 2.0f);
 
@@ -197,13 +197,13 @@ bool BulletRigidObject::initializeObject(
   
   // Bullet rigid body setup
   auto* motionState = new Magnum::BulletIntegration::MotionState{*this};
-  _bCollisionBody = new btRigidBody(btRigidBody::btRigidBodyConstructionInfo{
+  bCollisionBody_ = new btRigidBody(btRigidBody::btRigidBodyConstructionInfo{
       mass, &motionState->btMotionState(), bShape, bInertia});
-  _bCollisionBody->setRestitution(_restitution);
+  bCollisionBody_->setRestitution(restitution_);
   LOG(INFO) << "Setting collision mass " << mass << " flags "
-            << _bCollisionBody->getCollisionFlags();
+            << bCollisionBody_->getCollisionFlags();
 
-  bWorld.addRigidBody(dynamic_cast<btRigidBody*>(_bCollisionBody));
+  bWorld.addRigidBody(dynamic_cast<btRigidBody*>(bCollisionBody_));
   //} else {
   // convex hull, but better performance
   // bShape = new btConvexTriangleMeshShape(tivArray, true);
@@ -212,7 +212,7 @@ bool BulletRigidObject::initializeObject(
   LOG(INFO) << "Body Construction test: after";
   LOG(INFO) << "Rigid body: initialized";
 
-  _initialized = true;
+  initialized_ = true;
   return true;
 }
 
@@ -245,18 +245,18 @@ void BulletRigidObject::getDimensions(
 }
 
 bool BulletRigidObject::isActive() {
-  if (!_initialized) {
+  if (!initialized_) {
     LOG(INFO) << "Node not initialized";
     return false;
   }
-  return _bCollisionBody->isActive();
+  return bCollisionBody_->isActive();
 }
 
 
 BulletRigidObject::~BulletRigidObject() {
-  if (_initialized) {
-    LOG(INFO) << "Deleting object " << _mass;
-    //_bWorld->removeRigidBody(_bRigidBody);
+  if (initialized_) {
+    LOG(INFO) << "Deleting object " << mass_;
+    //bWorld_->removeRigidBody(bRigidBody_);
   } else {
     LOG(INFO) << "Object not initialized";
   }
@@ -264,14 +264,14 @@ BulletRigidObject::~BulletRigidObject() {
 
 btRigidBody& BulletRigidObject::rigidBody() {
   LOG(INFO) << "Returning rigid body";
-  return *dynamic_cast<btRigidBody*>(_bCollisionBody);
+  return *dynamic_cast<btRigidBody*>(bCollisionBody_);
 }
 
 /* needed after changing the pose from Magnum side */
 void BulletRigidObject::syncPose() {
   LOG(INFO) << "Rigid object sync pose";
-  if (_initialized) {
-    _bCollisionBody->setWorldTransform(btTransform(transformationMatrix()));
+  if (initialized_) {
+    bCollisionBody_->setWorldTransform(btTransform(transformationMatrix()));
   } else {
     LOG(INFO) << "Object not initialized";
   }
@@ -279,131 +279,3 @@ void BulletRigidObject::syncPose() {
 
 }  // namespace physics
 }  // namespace esp
-
-/*
-if (info.type == assets::AssetType::INSTANCE_MESH) {
-    LOG(INFO) << "Creating Instance object mass: " << mass;
-    btVector3 bInertia(0.0f, 0.0f, 0.0f);
-    btIndexedMesh bulletMesh;
-
-    Magnum::GL::Mesh* mesh  = &meshData->getRenderingBuffer()->mesh;
-    const std::vector<vec3f> v_data = meshData->getVertexBufferObjectCPU();
-    const std::vector<vec3ui> i_data_ = meshData->getIndexBufferObjectCPU();
-    std::vector<vec3i> i_data;
-    for (uint vi = 0; vi < (int)i_data_.size(); vi++) {
-      vec3ui iu = i_data_[vi];
-      i_data.push_back(vec3i(static_cast<int>(iu.x()), static_cast<int>(iu.y()), 
-          static_cast<int>(iu.z())));
-    }
-
-    LOG(INFO) << "Mesh vector 0 " << v_data[0];
-    LOG(INFO) << "Mesh vector 1 " << v_data[1];
-
-    int scale = 1;
-    LOG(INFO) << "Instance Mesh v data count " << v_data.size();
-    LOG(INFO) << "Instance Mesh indices count " << mesh->count();
-    LOG(INFO) << "Instance Mesh i data count " << i_data.size();
-    LOG(INFO) << "Instance Mesh triangle count " << mesh->count() / (3 * scale);
-    LOG(INFO) << "Mesh faces -1 " << i_data[mesh->count()/ (3 * scale) -1];
-    bulletMesh.m_numTriangles = mesh->count() / (3 * scale);
-    bulletMesh.m_triangleIndexBase = 
-        reinterpret_cast<const unsigned char*>(i_data.data());
-    //bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
-    //bulletMesh.m_triangleIndexStride = 3 * 
-    //    sizeof(Magnum::GL::MeshIndexType::UnsignedInt);
-    bulletMesh.m_triangleIndexStride = sizeof(vec3ui); //3 * sizeof(unsigned int);
-    // IMPORTANT: mesh->count() is not the number of vertices
-    bulletMesh.m_numVertices = v_data.size();//mesh->count();
-    //bulletMesh.m_vertexBase = 
-    //    reinterpret_cast<const unsigned char*>(v_data.data());
-    bulletMesh.m_vertexBase = 
-        reinterpret_cast<const unsigned char*>(v_data.data());
-    //bulletMesh.m_vertexStride = sizeof(Magnum::Vector3);
-    bulletMesh.m_vertexStride = sizeof(vec3f);
-    bulletMesh.m_indexType = PHY_INTEGER;
-    bulletMesh.m_vertexType = PHY_FLOAT;
-    
-    auto tivArray = new btTriangleIndexVertexArray();
-    tivArray->addIndexedMesh(bulletMesh, PHY_INTEGER);
-  
-    // exact shape, but worse performance
-    bShape = new btBvhTriangleMeshShape(tivArray, true);
-    bShape->calculateLocalInertia(mass, bInertia);
-    // Bullet rigid body setup
-    _bCollisionBody = new btCollisionObject();
-    _bCollisionBody->setCollisionShape(bShape);
-
-  } 
-  else if (info.type == assets::AssetType::FRL_INSTANCE_MESH) 
-  {
-    _mass = mass;
-    btCollisionShape* bShape = nullptr;
-
-    LOG(INFO) << "Creating FRL object mass: " << mass;
-    btVector3 bInertia(0.0f, 0.0f, 0.0f);
-    btIndexedMesh bulletMesh;
-
-    Magnum::GL::Mesh* mesh  = &meshData->getRenderingBuffer()->mesh;
-    Magnum::GL::Buffer* vbo = &meshData->getRenderingBuffer()->vbo;
-    Magnum::GL::Buffer* cbo = &meshData->getRenderingBuffer()->cbo;
-    Magnum::GL::Buffer* ibo = &meshData->getRenderingBuffer()->ibo;
-
-    //Corrade::Containers::Array<char> v_data = vbo->data();
-    const std::vector<vec3f> v_data = meshData->get_vbo();
-    const std::vector<int> i_data   = meshData->get_ibo();
-
-    LOG(INFO) << "Mesh vector 0 " << v_data[0];
-    LOG(INFO) << "Mesh vector 1 " << v_data[1];
-
-    //Corrade::Containers::Array<char> i_data = ibo->data();
-    int scale = 5;
-
-    LOG(INFO) << "FRL Mesh indices count " << mesh->count();
-    bulletMesh.m_numTriangles = mesh->count() / (3 * scale);
-    bulletMesh.m_triangleIndexBase = 
-        reinterpret_cast<const unsigned char*>(i_data.data());
-    //bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
-    //bulletMesh.m_triangleIndexStride = 3 * 
-    //    sizeof(Magnum::GL::MeshIndexType::UnsignedInt);
-    bulletMesh.m_triangleIndexStride = 3 * sizeof(unsigned int);
-    bulletMesh.m_numVertices = v_data.size();
-    //bulletMesh.m_vertexBase = 
-    //    reinterpret_cast<const unsigned char*>(v_data.data());
-    bulletMesh.m_vertexBase = 
-        reinterpret_cast<const unsigned char*>(v_data.data());
-    //bulletMesh.m_vertexStride = sizeof(Magnum::Vector3);
-    bulletMesh.m_vertexStride = sizeof(vec3f);
-    bulletMesh.m_indexType = PHY_INTEGER;
-    bulletMesh.m_vertexType = PHY_FLOAT;
-    btCollisionShape* shape = nullptr;
-    auto tivArray = new btTriangleIndexVertexArray();
-    tivArray->addIndexedMesh(bulletMesh, PHY_INTEGER);
-    if (mass != 0.0f) {
-      return false;
-      bShape = new btBoxShape(btVector3(0.13f, 0.13f, 0.13f));  // Cheezit box
-      bShape->calculateLocalInertia(mass, bInertia);
-    } else {
-      // exact shape, but worse performance
-      bShape = new btBvhTriangleMeshShape(tivArray, true);
-      bShape->calculateLocalInertia(mass, bInertia);
-    }
-    // Bullet rigid body setup
-    auto* motionState = new Magnum::BulletIntegration::MotionState{*this};
-
-    _bCollisionBody = new btCollisionObject();
-    _bCollisionBody->setCollisionShape(bShape);
-
-  }
-  else 
-  {
-    LOG(INFO) << "GLB Object Construction";
-    bShape = new btBvhTriangleMeshShape(tivArray, true);  // exact shape, but worse performance
-    //bShape = new btBoxShape(btVector3(100.0f,0.1f, 100.0f)); // plane shape
-    //bShape = new btGImpactMeshShape(tivArray); // Never worked for me 
-    bShape->calculateLocalInertia(mass, bInertia);
-    // Bullet rigid body setup
-    auto* motionState = new Magnum::BulletIntegration::MotionState{*this};
-
-    _bCollisionBody = new btCollisionObject();
-    _bCollisionBody->setCollisionShape(bShape);
-  }*/

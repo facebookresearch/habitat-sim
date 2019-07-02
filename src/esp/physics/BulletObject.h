@@ -42,14 +42,14 @@ class BulletRigidObject : public scene::SceneNode {
   bool isActive();
 
  private:
-  bool _initialized = false;
-  btDynamicsWorld* _bWorld;
+  bool initialized_ = false;
+  btDynamicsWorld* bWorld_;
   // Magnum::Containers::Pointer<btRigidBody> _bRigidBody;
   //btRigidBody* _bRigidBody;
-  btCollisionObject* _bCollisionBody;
+  btCollisionObject* bCollisionBody_;
 
-  float _mass;
-  float _restitution;
+  float mass_;
+  float restitution_;
 
   void getDimensions(assets::CollisionMeshData& meshData, 
       float* x, float* y, float* z);

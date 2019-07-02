@@ -70,7 +70,6 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
-
 # Magnum library dependencies
 set(_MAGNUMINTEGRATION_DEPENDENCIES )
 foreach(_component ${MagnumIntegration_FIND_COMPONENTS})

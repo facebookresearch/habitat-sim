@@ -51,13 +51,17 @@ bool PhysicsManager::initPhysics(
   bWorld_ = new btDiscreteDynamicsWorld(bDispatcher_, bBroadphase_, bSolver_,
                                         bCollisionConfig_);
 
+  // TODO (JH): GImpactCollision are used for generic collisions, however
+  // in my experience they never quite work
   // btCollisionDispatcher *dispatcher = static_cast<btCollisionDispatcher
   // *>(bWorld_.getDispatcher());
   // btGImpactCollisionAlgorithm::registerAlgorithm(dispatcher);
 
   debugDraw_.setMode(Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe);
+  // TODO (JH): currently GLB meshes are y-up, the gravity direction is hardcoded
   bWorld_->setGravity({0.0f, -10.0f, 0.0f});
   //bWorld_.setGravity({0.0f, 0.0f, -10.0f});
+  // TODO (JH): debugDrawer is currently not compatible with our example cpp
   //bWorld_.setDebugDrawer(&_debugDraw);
 
   physicsNode = node;
@@ -136,32 +140,18 @@ bool PhysicsManager::initObject(
     if (!isMeshPrimitiveValid(meshData)) {return false;}
   }
 
-  bool objectSuccess;
-  float mass;
-  if (info.type == AssetType::INSTANCE_MESH) {
-    // _semantic.ply mesh
-    // TODO (JH): hacked mass value
-    mass = meshGroup[0].indices.size() * 0.001f;
-    LOG(INFO) << "Nonzero mass";
-    LOG(INFO) << "Initialize: before";
-    objectSuccess = physObject->initializeObject(info, mass, meshGroup, *bWorld_);
-    LOG(INFO) << "Initialize: after";
-  } 
-  else if (info.type == AssetType::FRL_INSTANCE_MESH) {
-    // FRL mesh
-    mass = meshGroup[0].indices.size() * 0.001f;
-    LOG(INFO) << "Initialize FRL: before";
-    objectSuccess = physObject->initializeObject(info, mass, meshGroup, *bWorld_);
-    LOG(INFO) << "Initialize FRL: after";
-  }
-  else {
-    // GLB mesh data
-    mass = meshGroup[0].indices.size() * 0.001f;
-    LOG(INFO) << "Initialize GLB: before";
-    objectSuccess = physObject->initializeObject(info, mass, meshGroup, *bWorld_);
-    LOG(INFO) << "Initialize GLB: after";
+  // TODO (JH): hacked mass value
+  float mass = meshGroup[0].indices.size() * 0.001f;;
+  switch (info.type) {
+    case AssetType::INSTANCE_MESH:      // _semantic.ply
+      LOG(INFO) << "Initialize PLY object"; break;  
+    case AssetType::FRL_INSTANCE_MESH:  // FRL mesh
+      LOG(INFO) << "Initialize FRL object"; break;
+    default:                            // GLB mesh
+      LOG(INFO) << "Initialize GLB object";
   }
 
+  bool objectSuccess = physObject->initializeObject(info, mass, meshGroup, *bWorld_);
   physObject->syncPose();
   return objectSuccess;
 }
@@ -174,17 +164,17 @@ bool PhysicsManager::isMeshPrimitiveValid(CollisionMeshData& meshData) {
   } else {
     switch(meshData.primitive) {
       case Magnum::MeshPrimitive::Lines:
-        LOG(ERROR) << "Invalid primitive: Lines";
+        LOG(ERROR) << "Invalid primitive: Lines"; break;
       case Magnum::MeshPrimitive::Points:
-        LOG(ERROR) << "Invalid primitive: Points";
+        LOG(ERROR) << "Invalid primitive: Points"; break;
       case Magnum::MeshPrimitive::LineLoop:
-        LOG(ERROR) << "Invalid primitive Line loop";
+        LOG(ERROR) << "Invalid primitive Line loop"; break;
       case Magnum::MeshPrimitive::LineStrip:
-        LOG(ERROR) << "Invalid primitive Line Strip";
+        LOG(ERROR) << "Invalid primitive Line Strip"; break;
       case Magnum::MeshPrimitive::TriangleStrip:
-        LOG(ERROR) << "Invalid primitive Triangle Strip";
+        LOG(ERROR) << "Invalid primitive Triangle Strip"; break;
       case Magnum::MeshPrimitive::TriangleFan:
-        LOG(ERROR) << "Invalid primitive Triangle Fan";
+        LOG(ERROR) << "Invalid primitive Triangle Fan"; break;
       default:
         LOG(ERROR) << "Invalid primitive " << int(meshData.primitive);
     }
@@ -198,23 +188,19 @@ void PhysicsManager::debugSceneGraph(const MagnumObject* root) {
   const scene::SceneNode* root_ = static_cast<const scene::SceneNode*>(root);
   LOG(INFO) << "SCENE NODE " << root_->getId() << " Position "
             << root_->getAbsolutePosition();
-  if (!children.isEmpty()) {
+  if (children.isEmpty()) {
+    LOG(INFO) << "SCENE NODE is leaf node.";
+  } else {
     for (const MagnumObject& child : children) {
       PhysicsManager::debugSceneGraph(&(child));
-    }
-  } else {
-    LOG(INFO) << "SCENE NODE is leaf node.";
+    }    
   }
-
   // TODO (JH) Bottom up search gives bus error because scene"s rootnode does
   // not point to nullptr, but something strange
 }
 
 void PhysicsManager::stepPhysics() {
   // ==== Physics stepforward ======
-  //bWorld_->stepSimulation(timeline_.previousFrameDuration(), maxSubSteps_,
-  //                        fixedTimeStep_);
-
   auto start = std::chrono::system_clock::now();
   bWorld_->stepSimulation(timeline_.previousFrameDuration(), maxSubSteps_,
                           fixedTimeStep_);
@@ -223,15 +209,18 @@ void PhysicsManager::stepPhysics() {
   std::chrono::duration<float> elapsed_seconds = end-start;
   std::time_t end_time = std::chrono::system_clock::to_time_t(end);
 
+  // TODO (JH): hacky way to do physics profiling. 
+  // Should later move to example.py
   if (do_profile_) {
     total_frames_ += 1;
     total_time_ += static_cast<float>(elapsed_seconds.count());
-    LOG(INFO) << "Step physics fps: " << 1.0f / static_cast<float>(elapsed_seconds.count());
-    LOG(INFO) << "Average physics fps: " << 1.0f / (total_time_ / total_frames_);
+    LOG(INFO) << "Step physics fps: " << 1.0f / 
+        static_cast<float>(elapsed_seconds.count());
+    LOG(INFO) << "Average physics fps: " << 1.0f / 
+        (total_time_ / total_frames_);
   }
   
   int numObjects = bWorld_->getNumCollisionObjects();
-  // LOG(INFO) << "Num collision objects" << numObjects;
 }
 
 void PhysicsManager::nextFrame() {
@@ -239,6 +228,10 @@ void PhysicsManager::nextFrame() {
   checkActiveObjects();
 }
 
+//! Profile function. In BulletPhysics stationery objects are
+//! marked as inactive to speed up simulation. This function
+//! helps checking how many objects are active/inactive at any
+//! time step
 void PhysicsManager::checkActiveObjects() {
   if (physicsNode == nullptr) {
     return;
