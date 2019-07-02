@@ -98,6 +98,9 @@ def test_sensors(scene, has_sem, sensor_type, sim, make_cfg_settings):
     ) < 1.5e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
 
 
+# Tests to make sure that no sensors is supported and doesn't crash
+# Also tests to make sure we can have multiple instances
+# of the simulator with no sensors
 def test_smoke_no_sensors(make_cfg_settings):
     sims = []
     for scene in _test_scenes:
