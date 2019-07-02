@@ -4,6 +4,7 @@
 
 #include "GltfMeshData.h"
 #include <Magnum/MeshTools/Compile.h>
+#include <Corrade/Containers/ArrayViewStl.h>
 
 namespace esp {
 namespace assets {
@@ -18,8 +19,9 @@ void GltfMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_.reset();
   renderingBuffer_ = std::make_unique<GltfMeshData::RenderingBuffer>();
   // position, normals, uv, colors are bound to corresponding attributes
+  LOG(INFO) << "Upload GLTF compile";
   renderingBuffer_->mesh = Magnum::MeshTools::compile(*meshData_);
-
+  LOG(INFO) << "Upload GLTF compile done";
   buffersOnGPU_ = true;
 }
 
@@ -36,10 +38,11 @@ void GltfMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
   ASSERT(0 <= meshID && meshID < importer.mesh3DCount());
   meshData_ = importer.mesh3D(meshID);
 
+  LOG(INFO) << "Loading GLTF model";
+  collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
+  collisionMeshData_.positions = meshData_->positions(0);
+  collisionMeshData_.indices   = meshData_->indices();
 
-  collisionMeshData_.setMeshPrimitive(Magnum::MeshPrimitive::Triangles);
-  collisionMeshData_.setMeshVertices(meshData_->positions(0)); 
-  collisionMeshData_.setMeshIndices(meshData_->indices());
 }
 
 }  // namespace assets

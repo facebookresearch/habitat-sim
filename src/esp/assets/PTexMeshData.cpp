@@ -13,6 +13,9 @@
 #include <vector>
 
 #include <Magnum/GL/BufferTextureFormat.h>
+#include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/ArrayView.h>
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
 

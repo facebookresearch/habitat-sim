@@ -42,6 +42,7 @@ bool PhysicsManager::initPhysics(
       bool                  do_profile) {
   LOG(INFO) << "Initializing Physics Engine...";
 
+  // TODO (JH): use unique pointer
   _bCollisionConfig = new btDefaultCollisionConfiguration();
   _bDispatcher = new btCollisionDispatcher(_bCollisionConfig);
   btGImpactCollisionAlgorithm::registerAlgorithm(_bDispatcher);
@@ -99,24 +100,24 @@ bool PhysicsManager::initScene(
   bool objectSuccess;
   if (info.type == AssetType::INSTANCE_MESH) {
     // ._semantic.ply mesh data
-    LOG(INFO) << "Initialize instance: before";
+    LOG(INFO) << "Initialize instance scene: before";
     objectSuccess = physObject->initializeScene(info, mass, meshGroup, *_bWorld);
-    LOG(INFO) << "Initialize instance: after";
-    physObject->syncPose();
+    LOG(INFO) << "Initialize instance scene: after";
+    //physObject->syncPose();
   } 
   else if (info.type == AssetType::FRL_INSTANCE_MESH) {
     // FRL mesh
-    LOG(INFO) << "Initialize FRL: before";
+    LOG(INFO) << "Initialize FRL scene: before";
     objectSuccess = physObject->initializeScene(info, mass, meshGroup, *_bWorld);
-    LOG(INFO) << "Initialize FRL: after, success " << objectSuccess;
-    physObject->syncPose();
+    LOG(INFO) << "Initialize FRL scene: after, success " << objectSuccess;
+    //physObject->syncPose();
   }
   else {
     // GLB mesh data
-    LOG(INFO) << "Initialize GLB: before";
+    LOG(INFO) << "Initialize GLB scene: before";
     objectSuccess = physObject->initializeScene(info, mass, meshGroup, *_bWorld);
-    LOG(INFO) << "Initialize GLB: after, success " <<objectSuccess;
-    physObject->syncPose();
+    LOG(INFO) << "Initialize GLB scene: after, success " <<objectSuccess;
+    //physObject->syncPose();
   }
 
   LOG(INFO) << "Init scene done";
@@ -156,9 +157,9 @@ bool PhysicsManager::initObject(
   else {
     // GLB mesh data
     mass = meshGroup[0].indices.size() * 0.001f;
-    LOG(INFO) << "Initialize FRL: before";
+    LOG(INFO) << "Initialize GLB: before";
     objectSuccess = physObject->initializeObject(info, mass, meshGroup, *_bWorld);
-    LOG(INFO) << "Initialize FRL: after";
+    LOG(INFO) << "Initialize GLB: after";
   }
 
   physObject->syncPose();

@@ -53,9 +53,7 @@ Viewer::Viewer(const Arguments& arguments)
   sceneID_.push_back(sceneID);
   sceneGraph = &sceneManager_.getSceneGraph(sceneID);
   rootNode = &sceneGraph->getRootNode();
-
   navSceneNode_ = &rootNode->createChild();
-
 
   if (enablePhysics_) {
     // ======= Init timestep, physics starts =======
@@ -81,8 +79,6 @@ Viewer::Viewer(const Arguments& arguments)
   cameraNode_ = &agentBodyNode_->createChild();
 
   // TODO (JH) hacky position setting
-  // cameraNode_->rotate(Math::piHalf, vec3f(0, 0, 1));
-  // cameraNode_->translate(vec3f(8.0f, cameraHeight, -8.0f));
   Magnum::Matrix4 oldT = cameraNode_->MagnumObject::absoluteTransformation();
 
   float hfov = 90.0f;

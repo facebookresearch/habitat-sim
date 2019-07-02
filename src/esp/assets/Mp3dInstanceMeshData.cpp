@@ -11,6 +11,8 @@
 #include <sophus/so3.hpp>
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/ArrayView.h>
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
@@ -118,32 +120,17 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   }
 
   // Construct vertices for meshData
-  /*cpu_vbo_data_.emplace_back(std::vector<Magnum::Vector3>());
-  for (auto& xyz : cpu_vbo_) {
-    cpu_vbo_data_[0].emplace_back(Magnum::Vector3(xyz.x(), xyz.y(), xyz.z()));
-  }*/
-
-  // Construct indices for meshData
-  /*for (auto& tri: cpu_ibo_) {
-    cpu_ibo_data_.emplace_back(reinterpret_cast<Magnum::UnsignedInt>(tri.x()));
-    cpu_ibo_data_.emplace_back(reinterpret_cast<Magnum::UnsignedInt>(tri.y()));
-    cpu_ibo_data_.emplace_back(reinterpret_cast<Magnum::UnsignedInt>(tri.z()));
-  }*/
-
   // Store indices, facd_ids in Magnum MeshData3D format such that
   // later they can be accessed.
   // Note that normal and texture data are not stored
-  /*meshData_ = Corrade::Containers::Optional<Magnum::Trade::MeshData3D>(
-      Magnum::Trade::MeshData3D(Magnum::MeshPrimitive::Triangles,
-      cpu_ibo_data_,
-      cpu_vbo_data_,
-      std::vector<std::vector<Magnum::Vector3>>(),
-      std::vector<std::vector<Magnum::Vector2>>(),
-      std::vector<std::vector<Magnum::Color4>>())
-  );*/
-  collisionMeshData_.setMeshPrimitive(Magnum::MeshPrimitive::Triangles);
-  collisionMeshData_.setMeshVertices(cpu_vbo_); 
-  collisionMeshData_.setMeshIndices(cpu_ibo_);
+  collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
+  collisionMeshData_.positions = \
+      Corrade::Containers::arrayCast<Magnum::Vector3>(
+      Corrade::Containers::arrayView(cpu_vbo_.data(), cpu_vbo_.size()));
+  collisionMeshData_.indices   = \
+      Corrade::Containers::arrayCast<Magnum::UnsignedInt>(
+      Corrade::Containers::arrayView(cpu_ibo_.data(), cpu_ibo_.size()));
+
 
   return true;
 }

@@ -61,7 +61,8 @@ bool BulletRigidObject::initializeScene(
 
   // Object Physical Parameters
   _mass = mass;
-    LOG(INFO) << "Creating Instance object mass: " << mass;
+  LOG(INFO) << "Creating Instance object mass: " << mass;
+  LOG(INFO) << "Creating Instance object meshGroups: " << meshGroup.size();
   btVector3 bInertia(0.0f, 0.0f, 0.0f);
   
 
@@ -268,6 +269,7 @@ btRigidBody& BulletRigidObject::rigidBody() {
 
 /* needed after changing the pose from Magnum side */
 void BulletRigidObject::syncPose() {
+  LOG(INFO) << "Rigid object sync pose";
   if (_initialized) {
     _bCollisionBody->setWorldTransform(btTransform(transformationMatrix()));
   } else {
@@ -278,10 +280,7 @@ void BulletRigidObject::syncPose() {
 }  // namespace physics
 }  // namespace esp
 
-
-
 /*
-
 if (info.type == assets::AssetType::INSTANCE_MESH) {
     LOG(INFO) << "Creating Instance object mass: " << mass;
     btVector3 bInertia(0.0f, 0.0f, 0.0f);

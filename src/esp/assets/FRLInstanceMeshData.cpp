@@ -5,6 +5,8 @@
 #include "FRLInstanceMeshData.h"
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/ArrayView.h>
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
@@ -16,15 +18,10 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
-
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <fstream>
-#include <sstream>
 #include <unordered_map>
-#include <vector>
-
 #include <sophus/so3.hpp>
 
 #include "esp/core/esp.h"
@@ -153,9 +150,13 @@ bool FRLInstanceMeshData::loadPLY(const std::string& ply_file) {
 
 
   // Construct collision meshData
-  collisionMeshData_.setMeshPrimitive(Magnum::MeshPrimitive::Triangles);
-  collisionMeshData_.setMeshVertices(*cpu_vbo_3_); 
-  collisionMeshData_.setMeshIndices(*tri_ibo_);
+  collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
+  collisionMeshData_.positions = \
+      Corrade::Containers::arrayCast<Magnum::Vector3>(
+      Corrade::Containers::arrayView(cpu_vbo_3_->data(), cpu_vbo_3_->size()));
+  collisionMeshData_.indices   = \
+      Corrade::Containers::arrayCast<Magnum::UnsignedInt>(
+      Corrade::Containers::arrayView(tri_ibo_->data(), tri_ibo_->size()));
 
   return true;
 }

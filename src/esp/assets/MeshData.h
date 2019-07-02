@@ -43,33 +43,6 @@ struct CollisionMeshData {
   //! Reference to Vertex indices
   Corrade::Containers::ArrayView<Magnum::UnsignedInt> indices;
 
-  CollisionMeshData(){};
-
-  void setMeshPrimitive(Magnum::MeshPrimitive primitive_) {
-    primitive = primitive_; 
-  }
-
-  void setMeshIndices(std::vector<vec3ui> indices_) {
-    indices = Corrade::Containers::arrayCast<Magnum::UnsignedInt>(
-      Corrade::Containers::arrayView(indices_.data(), sizeof(vec3ui)));;
-  }
-
-  void setMeshIndices(std::vector<Magnum::UnsignedInt> indices_) {
-    indices = Corrade::Containers::arrayView(
-      indices_.data(), sizeof(Magnum::UnsignedInt));;
-  }
-
-  void setMeshVertices(std::vector<vec3f> vertices_) {
-    positions = Corrade::Containers::arrayCast<Magnum::Vector3>(
-      Corrade::Containers::arrayView(vertices_.data(), sizeof(vec3f)));
-  }
-
-  void setMeshVertices(std::vector<Magnum::Vector3> vertices_) {
-    positions = Corrade::Containers::arrayView(
-      vertices_.data(), sizeof(Magnum::Vector3));
-  }
-
-
 };
 
 }  // namespace assets

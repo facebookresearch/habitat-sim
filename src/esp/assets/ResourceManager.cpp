@@ -94,10 +94,11 @@ bool ResourceManager::loadPhysicalScene(
     std::vector<CollisionMeshData> meshGroup;
 
     LOG(INFO) << "Accessing scene mesh start " << start << " end " << end;
-    for (int mesh_i = start; mesh_i < end; mesh_i++) {
+    for (int mesh_i = start; mesh_i <= end; mesh_i++) {
 
       // FRL Quad Mesh
       if (info.type == AssetType::FRL_INSTANCE_MESH) {
+        LOG(INFO) << "Loading FRL scene";
         FRLInstanceMeshData* frlMeshData = 
             dynamic_cast<FRLInstanceMeshData*>(meshes_[mesh_i].get());
         CollisionMeshData& meshData = frlMeshData->getCollisionMeshData();
@@ -106,6 +107,7 @@ bool ResourceManager::loadPhysicalScene(
 
       // PLY Instance mesh
       else if (info.type == AssetType::INSTANCE_MESH) {
+        LOG(INFO) << "Loading PLY scene";
         GenericInstanceMeshData* insMeshData = 
             dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
         quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
@@ -131,11 +133,11 @@ bool ResourceManager::loadPhysicalScene(
 
       // GLB Mesh
       else if (info.type == AssetType::MP3D_MESH) {
-      
         //std::vector<std::shared_ptr<BaseMesh>> sceneMesh(&meshes_[start], &meshes[end]);
         // Apply in-place transformation to collision mesh, to be consistent with
         //  display mesh
         //Magnum::Trade::MeshData3D* meshData;
+        LOG(INFO) << "Loading GLB scene";
         quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
         Magnum::Quaternion quat = Magnum::Quaternion(quatf);
         GltfMeshData* gltfMeshData = dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
@@ -152,16 +154,13 @@ bool ResourceManager::loadPhysicalScene(
 
     }
 
+    //bool sceneSuccess = true;
     bool sceneSuccess = _physicsManager.initScene(
         info, metaData, meshGroup, physNode);
 
     LOG(INFO) << "Initialized mesh scene, success " << sceneSuccess;
     if (!sceneSuccess) {
       LOG(INFO) << "Physics manager failed to initialize object";
-      return false;
-    }
-
-    else {
       return false;
     }
   }
@@ -187,6 +186,7 @@ bool ResourceManager::loadObject(const AssetInfo& info,
       std::string fname;
       fname.assign(info.filepath);
       std::string c_fname =
+          //TODO (JH): currently convex mesh name is hardcoded
           //fname.replace(fname.end() - 4, fname.end(), "VHACD.glb");
           fname.replace(fname.end() - 4, fname.end(), "_convex.glb");
       AssetInfo c_info = AssetInfo::fromPath(c_fname);
@@ -202,7 +202,6 @@ bool ResourceManager::loadObject(const AssetInfo& info,
       int end = indexPair.second;
       LOG(INFO) << "Accessing object mesh start " << start << " end " << end;
 
-      //std::vector<std::shared_ptr<BaseMesh>> objectMesh(&meshes_[start], &meshes[end]);
       std::vector<CollisionMeshData> meshGroup;
       for (int mesh_i = start; mesh_i < end; mesh_i++) {
         GltfMeshData* gltfMeshData = dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
@@ -216,9 +215,6 @@ bool ResourceManager::loadObject(const AssetInfo& info,
       (*physNode)->MagnumObject::setTransformation(parent->transformation());
       (*physNode)->syncPose();
       //LOG(INFO) << "Parent trans " << Eigen::Map<mat4f>(parent->transformation().data());
-      // PhysicsManager::initObject(*importer, info, mMetaData);
-      // for (int index = 0; index < meshes_.size(); index++) {
-      //
       return c_MeshSuccess && objectSuccess;
 
     } else {
@@ -278,6 +274,7 @@ void ResourceManager::shiftMeshDataToOrigin(GltfMeshData* meshDataGL) {
   Magnum::Matrix4 transform = Magnum::Matrix4::translation(Magnum::Vector3(
       -(maxX + minX) / 2, -(maxY + minY) / 2, -(maxZ + minZ) / 2));
   Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions);
+  LOG(INFO) << "Shifting data origin done";
 }
 
 Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
@@ -458,6 +455,8 @@ bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
     resourceDict_.emplace(filename, metaData);
   }
 
+  LOG(INFO) << "Load mesh/material/texture done";
+
   auto& metaData = resourceDict_.at(filename);
   const bool forceReload = false;
 
@@ -518,9 +517,6 @@ void ResourceManager::loadMeshes(Importer& importer,
     LOG(INFO) << "Importing mesh " << iMesh << ": "
               << importer.mesh3DName(iMesh);
 
-    // TODO (JH) apparently only gltfMesh allows accesing non-GL mesh data,
-    // which can be attached with physics, others (PTex, FRLMesh, etc) do not
-    // have this implemented
     meshes_.emplace_back(std::make_unique<GltfMeshData>());
     auto& currentMesh = meshes_.back();
     auto* gltfMeshData = static_cast<GltfMeshData*>(currentMesh.get());
@@ -535,7 +531,9 @@ void ResourceManager::loadMeshes(Importer& importer,
     }
     CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
 
+    LOG(INFO) << "Upload buffer to gpu";
     gltfMeshData->uploadBuffersToGPU(false);
+    LOG(INFO) << "Upload buffer to gpu done";
   }
 }
 
