@@ -98,17 +98,15 @@ def test_sensors(scene, has_sem, sensor_type, sim, make_cfg_settings):
     ) < 1.5e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
 
 
-@pytest.mark.parametrize("scene", _test_scenes)
-def test_smoke_no_sensors(scene, make_cfg_settings):
-    if not osp.exists(scene):
-        pytest.skip("Skipping {}".format(scene))
+def test_smoke_no_sensors(make_cfg_settings):
+    sims = []
+    for scene in _test_scenes:
+        if not osp.exists(scene):
+            continue
 
-    make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
-    make_cfg_settings["semantic_sensor"] = False
-    make_cfg_settings["scene"] = scene
-    cfg = make_cfg(make_cfg_settings)
-    cfg.agents[0].sensor_specifications = []
-    sim = habitat_sim.Simulator(cfg)
-
-    sim.close()
-    del sim
+        make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
+        make_cfg_settings["semantic_sensor"] = False
+        make_cfg_settings["scene"] = scene
+        cfg = make_cfg(make_cfg_settings)
+        cfg.agents[0].sensor_specifications = []
+        sims.append(habitat_sim.Simulator(cfg))
