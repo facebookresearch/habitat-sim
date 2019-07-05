@@ -113,31 +113,14 @@ bool ResourceManager::loadPhysicalScene(
             dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
         quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
         Magnum::Quaternion quat = Magnum::Quaternion(quatf);
-        Magnum::Matrix4 transform =
-            Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
+        /*Magnum::Matrix4 transform =
+            Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());*/
         CollisionMeshData& meshData = insMeshData->getCollisionMeshData();
         meshGroup.push_back(meshData);
-        
-        /*Magnum::Trade::MeshData3D meshData(
-            reinterpret_cast<std::vector>GMesh->getRenderingBuffer()->mesh)   
-        Magnum::GL::Mesh* mesh  = &meshData->getRenderingBuffer()->mesh;
-        Magnum::GL::Buffer* vbo = &meshData->getRenderingBuffer()->vbo;
-        Magnum::GL::Buffer* cbo = &meshData->getRenderingBuffer()->cbo;
-        Magnum::GL::Buffer* ibo = &meshData->getRenderingBuffer()->ibo;*/
-        //Corrade::Containers::Array<char> v_data = vbo->data();
-        //const std::vector<vec3f> v_data = meshData->get_vbo();
-        //const std::vector<int> i_data   = meshData->get_ibo();
-        // TODO (JH): need this in order to get Replica mesh working
-        //Magnum::MeshTools::transformPointsInPlace(transform,
-        //                                          meshData->positions(0));
       }
 
       // GLB Mesh
       else if (info.type == AssetType::MP3D_MESH) {
-        //std::vector<std::shared_ptr<BaseMesh>> sceneMesh(&meshes_[start], &meshes[end]);
-        // Apply in-place transformation to collision mesh, to be consistent with
-        //  display mesh
-        //Magnum::Trade::MeshData3D* meshData;
         LOG(INFO) << "Loading GLB scene";
         quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
         Magnum::Quaternion quat = Magnum::Quaternion(quatf);
@@ -148,9 +131,6 @@ bool ResourceManager::loadPhysicalScene(
         Magnum::MeshTools::transformPointsInPlace(transform,
                                                   meshData.positions);
         meshGroup.push_back(meshData);
-        /*LOG(INFO) << "Initializing scene";
-        LOG(INFO) << "Scene built in angle " << float(quat.angle());
-        LOG(INFO) << "Scene built in axis " << Eigen::Map<vec3f>(quat.axis().data());*/
       }
 
     }
@@ -446,6 +426,7 @@ bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
     return false;
   }
 
+  LOG(INFO) << "Loading file " << filename;
   // if this is a new file, load it and add it to the dictionary
   if (!fileIsLoaded) {
     MeshMetaData metaData;

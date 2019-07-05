@@ -101,31 +101,19 @@ bool PhysicsManager::initScene(
   }
 
   float mass = 0.0f;    // TODO (JH) weight is currently hardcoded
-  bool objectSuccess;
-  if (info.type == AssetType::INSTANCE_MESH) {
-    // ._semantic.ply mesh data
-    LOG(INFO) << "Initialize instance scene: before";
-    objectSuccess = physObject->initializeScene(info, mass, meshGroup, *bWorld_);
-    LOG(INFO) << "Initialize instance scene: after";
-    //physObject->syncPose();
-  } 
-  else if (info.type == AssetType::FRL_INSTANCE_MESH) {
-    // FRL mesh
-    LOG(INFO) << "Initialize FRL scene: before";
-    objectSuccess = physObject->initializeScene(info, mass, meshGroup, *bWorld_);
-    LOG(INFO) << "Initialize FRL scene: after, success " << objectSuccess;
-    //physObject->syncPose();
+  bool sceneSuccess;
+  if (info.type == AssetType::INSTANCE_MESH) {              // ._semantic.ply mesh data
+    LOG(INFO) << "Initialize instance scene";
+  } else if (info.type == AssetType::FRL_INSTANCE_MESH) {   // FRL mesh
+    LOG(INFO) << "Initialize FRL scene";
+  } else {                                                  // GLB mesh data
+    LOG(INFO) << "Initialize GLB scene";
   }
-  else {
-    // GLB mesh data
-    LOG(INFO) << "Initialize GLB scene: before";
-    objectSuccess = physObject->initializeScene(info, mass, meshGroup, *bWorld_);
-    LOG(INFO) << "Initialize GLB scene: after, success " <<objectSuccess;
-    //physObject->syncPose();
-  }
-
+  sceneSuccess = physObject->initializeScene(info, mass, meshGroup, *bWorld_);
+  //physObject->syncPose();
+  
   LOG(INFO) << "Init scene done";
-  return objectSuccess;
+  return sceneSuccess;
 }
 
 

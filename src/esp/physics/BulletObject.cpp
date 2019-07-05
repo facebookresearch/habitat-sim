@@ -69,32 +69,35 @@ bool BulletRigidObject::initializeScene(
   // Iterate through all mesh components for one scene
   // All components are registered as static objects
   for (assets::CollisionMeshData& meshData: meshGroup) {    
-    //std::vector<Magnum::Vector3>     v_data  = meshData.positions;
-    //std::vector<Magnum::UnsignedInt> ui_data = meshData.indices;
-    //std::vector<int> i_data;
-    
     // Here we convert Magnum's unsigned int indices to 
     // signed indices in bullet. Assuming that it's save to 
     // cast uint to int  
-    /*for (uint i = 0; i < ui_data.size(); i++) {
-      i_data.push_back(int(ui_data[i]));
+    Corrade::Containers::ArrayView<Magnum::Vector3>     v_data  = 
+        meshData.positions;
+    Corrade::Containers::ArrayView<Magnum::UnsignedInt> ui_data = 
+        meshData.indices;
+    LOG(INFO) << "Instance Mesh v data count "   << v_data.size();
+    LOG(INFO) << "Instance Mesh triangle count " << ui_data.size() / 3;
+    LOG(INFO) << "Last mesh face index: " << ui_data[ui_data.size()-1];
+    LOG(INFO) << "Last mesh face vertex: " << v_data[ui_data[ui_data.size()-1]][0]
+        << " " << v_data[ui_data[ui_data.size()-1]][1] 
+        << " " << v_data[ui_data[ui_data.size()-1]][2];
+
+    /*Corrade::Containers::Array<int> i_data{ui_data.size()};
+    for (uint i = 0; i < ui_data.size(); i++) {
+      i_data[i] = int(ui_data[i]);
     }*/
-
-    LOG(INFO) << "Instance Mesh v data count "   << meshData.positions.size();
-    LOG(INFO) << "Instance Mesh triangle count " << meshData.indices.size() / 3;
-    LOG(INFO) << "Mesh faces -1 " << meshData.indices[meshData.indices.size()-1];
-
     // Configure Bullet Mesh
     // This part is very likely to cause segfault, if done incorrectly
-    // IMPORTANT: GL::Mesh.count() is not the number of vertices
-    bulletMesh.m_numTriangles        = meshData.indices.size() / 3;
+    bulletMesh.m_numTriangles        = ui_data.size() / 3;
     bulletMesh.m_triangleIndexBase   = 
-        reinterpret_cast<const unsigned char*>(meshData.indices.data());
+        reinterpret_cast<const unsigned char*>(ui_data.data());
+        //reinterpret_cast<const unsigned char*>(i_data.data());
     bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
-    bulletMesh.m_numVertices         = meshData.positions.size();
-    // Get the pointer to the first float of the first triangle
+    bulletMesh.m_numVertices         = v_data.size();
     bulletMesh.m_vertexBase          = 
-        reinterpret_cast<const unsigned char*>(meshData.positions.data()->data());
+        //reinterpret_cast<const unsigned char*>(v_data.data()->data());
+        reinterpret_cast<const unsigned char*>(v_data.data());
     bulletMesh.m_vertexStride        = sizeof(Magnum::Vector3);
     bulletMesh.m_indexType           = PHY_INTEGER;
     bulletMesh.m_vertexType          = PHY_FLOAT;  
