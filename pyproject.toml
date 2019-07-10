@@ -1,6 +1,8 @@
 [tool.isort]
 skip_glob = ["*/deps/*", "*/build/*", "*/obselete/*"]
 known_third_party = ["corrade", "magnum"]
+multi_line_output = 4
+line_length = 88
 
 [tool.black]
 exclude = '''

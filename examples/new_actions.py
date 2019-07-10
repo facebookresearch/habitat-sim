@@ -16,15 +16,15 @@ def __call__(self, scene_node: habitat_sim.SceneNode, actuation_spec: habitat_si
 
 The scene_node is what the control function manipulates (or controls) and the actuation_spec
 contains any parameters needed by that control function.
-See habitat_sim/agent/default_controls.py for more example controls
+See habitat_sim/agent/controls/default_controls.py for more example controls
 
-Controls are registered using the habitat_sim.agent.controls.register_move_fn function.
+Controls are registered using the habitat_sim.register_move_fn function.
 This function takes the functor to register and, optionally, the name to register it with,
 and whether or not the control effects the body or just the sensors.
 If no name is given, the functor is registered with its own name, converted to snake case.
 
 This function can also be used as a decorator
-@controls.register_move_fn(body_action=True)
+@habitat_sim.register_move_fn(body_action=True)
 class MyNewControl(habitat_sim.SceneNodeControl):
     pass
 
@@ -46,7 +46,6 @@ import quaternion
 
 import habitat_sim
 import habitat_sim.utils
-from habitat_sim.agent import controls
 
 try:
     import pprint
@@ -71,7 +70,7 @@ def main():
 
     # Register the control functor
     # This action will be an action that effects the body, so body_action=True
-    @controls.register_move_fn(body_action=True)
+    @habitat_sim.register_move_fn(body_action=True)
     class MoveForwardAndSpin(habitat_sim.SceneNodeControl):
         def __call__(
             self, scene_node: habitat_sim.SceneNode, actuation_spec: MoveAndSpinSpec
@@ -89,12 +88,12 @@ def main():
             scene_node.rotation = scene_node.rotation.normalized()
 
     # We can also register the function with a custom name
-    controls.register_move_fn(
+    habitat_sim.register_move_fn(
         MoveForwardAndSpin, name="my_custom_name", body_action=True
     )
 
     # We can also re-register this function such that it effects just the sensors
-    controls.register_move_fn(
+    habitat_sim.register_move_fn(
         MoveForwardAndSpin, name="move_forward_and_spin_sensors", body_action=False
     )
 
@@ -173,7 +172,7 @@ def main():
 
         scene_node.translate_local(move_ax * forward_amount)
 
-    @controls.register_move_fn(body_action=True)
+    @habitat_sim.register_move_fn(body_action=True)
     class StrafeLeft(habitat_sim.SceneNodeControl):
         def __call__(
             self, scene_node: habitat_sim.SceneNode, actuation_spec: StrafeActuationSpec
@@ -182,7 +181,7 @@ def main():
                 scene_node, actuation_spec.forward_amount, actuation_spec.strafe_angle
             )
 
-    @controls.register_move_fn(body_action=True)
+    @habitat_sim.register_move_fn(body_action=True)
     class StrafeRight(habitat_sim.SceneNodeControl):
         def __call__(
             self, scene_node: habitat_sim.SceneNode, actuation_spec: StrafeActuationSpec

@@ -16,7 +16,7 @@ import habitat_sim
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
 import habitat_sim.utils
-from habitat_sim.agent.pyrobot_noisy_controls import pyrobot_noise_models
+from habitat_sim.agent.controls.pyrobot_noisy_controls import pyrobot_noise_models
 
 
 def _delta_translation(a, b):
@@ -92,8 +92,7 @@ def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
             "turn_right", habitat_sim.ActuationSpec(amount=10.0)
         ),
     )
-    agent = habitat_sim.Agent(agent_config)
-    agent.attach(scene_graph.get_root_node().create_child())
+    agent = habitat_sim.Agent(scene_graph.get_root_node().create_child(), agent_config)
 
     for base_action in set(
         act.replace("noisy_", "") for act in agent_config.action_space

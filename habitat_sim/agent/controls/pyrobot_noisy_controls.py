@@ -6,6 +6,7 @@
 
 
 import attr
+import magnum as mn
 import numpy as np
 
 import habitat_sim.bindings as hsim
@@ -168,14 +169,17 @@ _y_axis = 1
 _z_axis = 2
 
 
-def _noisy_action(
+def _noisy_action_impl(
     scene_node: hsim.SceneNode,
     translate_amount: float,
     rotate_amount: float,
     multiplier: float,
     model: MotionNoiseModel,
 ):
-    move_ax = scene_node.absolute_transformation()[0:3, 0:3] @ hsim.geo.FRONT
+    move_ax = (
+        np.array(scene_node.absolute_transformation().rotation_scaling())
+        @ hsim.geo.FRONT
+    )
     prep_ax = np.cross(move_ax, hsim.geo.UP)
 
     # + EPS to make sure 0 is positive.  We multiply the mean by the sign of the translation
@@ -194,8 +198,8 @@ def _noisy_action(
         np.sign(rotate_amount + 1e-8) * model.rotation.mean, model.rotation.cov
     )
 
-    scene_node.rotate_local(np.deg2rad(rotate_amount) + rot_noise[0], hsim.geo.UP)
-    scene_node.normalize()
+    scene_node.rotate_local(mn.Deg(rotate_amount) + mn.Rad(rot_noise[0]), hsim.geo.UP)
+    scene_node.rotation = scene_node.rotation.normalized()
 
 
 @register_move_fn(body_action=True)
@@ -203,7 +207,7 @@ class PyrobotNoisyMoveBackward(SceneNodeControl):
     def __call__(
         self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
     ):
-        _noisy_action(
+        _noisy_action_impl(
             scene_node,
             -actuation_spec.amount,
             0.0,
@@ -219,7 +223,7 @@ class PyrobotNoisyMoveForward(SceneNodeControl):
     def __call__(
         self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
     ):
-        _noisy_action(
+        _noisy_action_impl(
             scene_node,
             actuation_spec.amount,
             0.0,
@@ -235,7 +239,7 @@ class PyrobotNoisyTurnLeft(SceneNodeControl):
     def __call__(
         self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
     ):
-        _noisy_action(
+        _noisy_action_impl(
             scene_node,
             0.0,
             actuation_spec.amount,
@@ -251,7 +255,7 @@ class PyrobotNoisyTurnRight(SceneNodeControl):
     def __call__(
         self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
     ):
-        _noisy_action(
+        _noisy_action_impl(
             scene_node,
             0.0,
             -actuation_spec.amount,
