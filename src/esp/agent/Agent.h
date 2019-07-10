@@ -8,7 +8,6 @@
 #include <string>
 
 #include "esp/core/esp.h"
-#include "esp/scene/AttachedObject.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneNode.h"
 #include "esp/sensor/Sensor.h"
@@ -77,20 +76,27 @@ bool operator==(const AgentConfiguration& a, const AgentConfiguration& b);
 bool operator!=(const AgentConfiguration& a, const AgentConfiguration& b);
 
 // Represents an agent that can act within an environment
-class Agent : public scene::AttachedObject {
+class Agent : public Magnum::SceneGraph::AbstractFeature3D {
  public:
-  // constructor: the status of the agent, sensors is "invalid" after
-  // construction; this fits the case that user would like to initialize the
-  // agent, but decide to use it or not later
-  explicit Agent(const AgentConfiguration& cfg);
-
   // constructor: the status of the agent, sensors is "valid" after
   // construction; user can use them immediately
-  explicit Agent(const AgentConfiguration& cfg, scene::SceneNode& agentNode);
+  explicit Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg);
 
   virtual ~Agent();
 
-  virtual void detach() override;
+  // Get the scene node being attached to.
+  scene::SceneNode& node() { return object(); }
+  const scene::SceneNode& node() const { return object(); }
+
+  // Overloads to avoid confusion
+  scene::SceneNode& object() {
+    return static_cast<scene::SceneNode&>(
+        Magnum::SceneGraph::AbstractFeature3D::object());
+  }
+  const scene::SceneNode& object() const {
+    return static_cast<const scene::SceneNode&>(
+        Magnum::SceneGraph::AbstractFeature3D::object());
+  }
 
   void act(const std::string& actionName);
 

@@ -26,8 +26,7 @@ def test_no_action():
             "move_backward", habitat_sim.ActuationSpec(amount=0.25)
         )
     )
-    agent = habitat_sim.Agent(agent_config)
-    agent.attach(scene_graph.get_root_node().create_child())
+    agent = habitat_sim.Agent(scene_graph.get_root_node().create_child(), agent_config)
 
     with pytest.raises(AssertionError):
         agent.act("move_forward")
@@ -41,8 +40,7 @@ def test_no_move_fun():
             "DNF", habitat_sim.ActuationSpec(amount=0.25)
         )
     )
-    agent = habitat_sim.Agent(agent_config)
-    agent.attach(scene_graph.get_root_node().create_child())
+    agent = habitat_sim.Agent(scene_graph.get_root_node().create_child(), agent_config)
 
     with pytest.raises(AssertionError):
         agent.act("move_forward")
@@ -117,8 +115,7 @@ def test_default_body_contorls(action, expected):
             "turn_right", habitat_sim.ActuationSpec(amount=10.0)
         ),
     )
-    agent = habitat_sim.Agent(agent_config)
-    agent.attach(scene_graph.get_root_node().create_child())
+    agent = habitat_sim.Agent(scene_graph.get_root_node().create_child(), agent_config)
 
     state = agent.state
     agent.act(action)
@@ -192,8 +189,7 @@ def test_default_sensor_contorls(action, expected):
             "look_down", habitat_sim.ActuationSpec(amount=10.0)
         ),
     )
-    agent = habitat_sim.Agent(agent_config)
-    agent.attach(scene_graph.get_root_node().create_child())
+    agent = habitat_sim.Agent(scene_graph.get_root_node().create_child(), agent_config)
 
     state = agent.state
     agent.act(action)

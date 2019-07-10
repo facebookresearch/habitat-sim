@@ -119,6 +119,10 @@ class CMakeExtension(Extension):
         self.sourcedir = os.path.abspath(sourcedir)
 
 
+# populated in CMakeBuild.build_extension()
+_cmake_build_dir = None
+
+
 class CMakeBuild(build_ext):
     def finalize_options(self):
         super().finalize_options()
@@ -152,6 +156,11 @@ class CMakeBuild(build_ext):
             )
             with open(args_cache_file, "w") as f:
                 json.dump(cache, f, indent=4, sort_keys=True)
+
+        # Save the CMake build directory -- that's where the generated setup.py
+        # for magnum-bindings will appear which we need to run later
+        global _cmake_build_dir
+        _cmake_build_dir = self.build_temp
 
     def run(self):
         try:
@@ -294,6 +303,20 @@ class CMakeBuild(build_ext):
 
 
 if __name__ == "__main__":
+    try:
+        import magnum
+
+        has_magnum = True
+    except ImportError:
+        has_magnum = False
+
+    if not has_magnum and is_pip():
+        raise RuntimeError(
+            "Must have magnum already installed when installing habitat_sim"
+            "via pip due to limitations of setup.py\n"
+            "You can install magnum via 'python setup.py install'"
+        )
+
     assert StrictVersion(
         "{}.{}".format(sys.version_info[0], sys.version_info[1])
     ) >= StrictVersion("3.6"), "Must use python3.6 or newer"
@@ -324,3 +347,13 @@ if __name__ == "__main__":
         cmdclass=dict(build_ext=CMakeBuild),
         zip_safe=False,
     )
+
+    pymagnum_build_dir = osp.join(
+        _cmake_build_dir, "deps", "magnum-bindings", "src", "python"
+    )
+
+    if not has_magnum:
+        subprocess.check_call(shlex.split(f"pip install {pymagnum_build_dir}"))
+    else:
+        print("Assuming magnum bindings are already installed")
+        print(f"Run 'pip install {pymagnum_build_dir}' if this assumption is incorrect")

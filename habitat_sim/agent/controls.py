@@ -168,9 +168,9 @@ class ObjectControls(object):
             action_name in move_func_map
         ), f"No action named {action_name} in the move map"
 
-        start_pos = obj.absolute_position()
+        start_pos = obj.absolute_transformation()._translation
         move_func_map[action_name](obj, actuation_spec)
-        end_pos = obj.absolute_position()
+        end_pos = obj.absolute_transformation()._translation
 
         collided = False
         if apply_filter:

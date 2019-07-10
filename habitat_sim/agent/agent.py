@@ -7,6 +7,8 @@
 from typing import Any, Dict, List, Union
 
 import attr
+import magnum as mn
+import magnum.scenegraph
 import numpy as np
 
 import habitat_sim.bindings as hsim
@@ -80,7 +82,7 @@ class AgentConfiguration(object):
     body_type: str = "cylinder"
 
 
-@attr.s(auto_attribs=True)
+@attr.s(init=False, auto_attribs=True)
 class Agent(object):
     r"""Implements an agent with multiple sensors
 
@@ -99,13 +101,19 @@ class Agent(object):
         graph in python is dangerous due to differences in c++ and python memory management
     """
 
-    agent_config: AgentConfiguration = attr.Factory(AgentConfiguration)
-    sensors: SensorSuite = attr.Factory(SensorSuite)
-    controls: ObjectControls = attr.Factory(ObjectControls)
-    body: hsim.AttachedObject = attr.Factory(hsim.AttachedObject)
+    agent_config: AgentConfiguration
+    sensors: SensorSuite
+    controls: ObjectControls
+    body: mn.scenegraph.AbstractFeature3D
 
-    def __attrs_post_init__(self):
-        self.body.object_type = hsim.AttachedObjectType.AGENT
+    def __init__(
+        self, scene_node: hsim.SceneNode, agent_config=None, sensors=None, controls=None
+    ):
+        self.agent_config = agent_config if agent_config else AgentConfiguration()
+        self.sensors = sensors if sensors else SensorSuite()
+        self.controls = controls if controls else ObjectControls()
+        self.body = mn.scenegraph.AbstractFeature3D(scene_node)
+        scene_node.type = hsim.SceneNodeType.AGENT
         self.reconfigure(self.agent_config)
 
     def reconfigure(
@@ -117,38 +125,15 @@ class Agent(object):
             reconfigure_sensors (bool): Whether or not to also reconfigure the sensors, there
                 are specific cases where false makes sense, but most cases are covered by true
         """
+        habitat_sim.errors.assert_obj_valid(self.body)
         self.agent_config = agent_config
 
         if reconfigure_sensors:
             self.sensors.clear()
             for spec in self.agent_config.sensor_specifications:
-                self.sensors.add(hsim.PinholeCamera(spec))
-
-            if self.body.is_valid:
-                for _, v in self.sensors.items():
-                    v.attach(self.scene_node.create_child())
-
-    def attach(self, scene_node: hsim.SceneNode):
-        r"""Gives the agent control over the specified scene node (but **not** ownership)
-
-        The agent will recursively call attach for the sensors
-
-        Args:
-            scene_node (hsim.SceneNode)
-        """
-        self.body.attach(scene_node)
-        for _, v in self.sensors.items():
-            v.attach(self.scene_node.create_child())
-
-    def detach(self):
-        r"""Detaches the agent from the its current scene_node
-
-        Recursively calls detach on any sensors
-        """
-
-        self.body.detach()
-        for _, v in self.sensors.items():
-            v.detach()
+                self.sensors.add(
+                    hsim.PinholeCamera(self.scene_node.create_child(), spec)
+                )
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id
@@ -176,10 +161,7 @@ class Agent(object):
             for _, v in self.sensors.items():
                 habitat_sim.errors.assert_obj_valid(v)
                 self.controls.action(
-                    v.get_scene_node(),
-                    action.name,
-                    action.actuation,
-                    apply_filter=False,
+                    v.object, action.name, action.actuation, apply_filter=False
                 )
 
         return did_collide
@@ -187,15 +169,18 @@ class Agent(object):
     def get_state(self) -> AgentState:
         habitat_sim.errors.assert_obj_valid(self.body)
         state = AgentState(
-            self.body.get_absolute_position(),
-            utils.quat_from_coeffs(self.body.get_rotation()),
+            np.array(self.body.object.absolute_transformation()._translation),  # TODO
+            utils.quat_from_magnum(self.body.object.rotation),
         )
 
         for k, v in self.sensors.items():
             habitat_sim.errors.assert_obj_valid(v)
             state.sensor_states[k] = SixDOFPose(
-                v.get_absolute_position(),
-                state.rotation * utils.quat_from_coeffs(v.get_rotation()),
+                np.array(v.node.absolute_transformation()._translation),  # TODO.
+                # TODO: not using utils.quat_from_magnum leads to an infinite cycle
+                utils.quat_from_magnum(
+                    utils.quat_to_magnum(state.rotation) * v.node.rotation
+                ),
             )
 
         return state
@@ -213,10 +198,10 @@ class Agent(object):
         if isinstance(state.rotation, list):
             state.rotation = utils.quat_from_coeffs(state.rotation)
 
-        self.body.reset_transformation()
+        self.body.object.reset_transformation()
 
-        self.body.translate(state.position)
-        self.body.set_rotation(utils.quat_to_coeffs(state.rotation))
+        self.body.object.translate(state.position)
+        self.body.object.rotation = utils.quat_to_magnum(state.rotation)
 
         if reset_sensors:
             for _, v in self.sensors.items():
@@ -229,18 +214,20 @@ class Agent(object):
 
             s = self.sensors[k]
 
-            s.reset_transformation()
-            s.translate(
+            s.node.reset_transformation()
+            s.node.translate(
                 utils.quat_rotate_vector(
                     state.rotation.inverse(), v.position - state.position
                 )
             )
-            s.set_rotation(utils.quat_to_coeffs(state.rotation.inverse() * v.rotation))
+            s.node.rotation = utils.quat_to_magnum(
+                state.rotation.inverse() * v.rotation
+            )
 
     @property
     def scene_node(self):
         habitat_sim.errors.assert_obj_valid(self.body)
-        return self.body.get_scene_node()
+        return self.body.object
 
     @property
     def state(self):
@@ -249,6 +236,3 @@ class Agent(object):
     @state.setter
     def state(self, new_state):
         self.set_state(new_state, reset_sensors=True)
-
-    def __del__(self):
-        self.detach()

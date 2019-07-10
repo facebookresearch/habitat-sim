@@ -6,6 +6,7 @@
 
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/String.h>
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
@@ -483,7 +484,7 @@ bool ResourceManager::createScene(Importer& importer,
     // create scene parent node with transformation aligning to global frame
     auto& sceneNode = parent.createChild();
     const quatf transform = info.frame.rotationFrameToWorld();
-    sceneNode.setRotation(transform);
+    sceneNode.setRotation(Magnum::Quaternion(transform));
 
     // Recursively add all children
     for (auto objectID : sceneData->children3D()) {
@@ -495,7 +496,7 @@ bool ResourceManager::createScene(Importer& importer,
     // create scene parent node with transformation aligning to global frame
     auto& sceneNode = parent.createChild();
     const quatf transform = info.frame.rotationFrameToWorld();
-    sceneNode.setRotation(transform);
+    sceneNode.setRotation(Magnum::Quaternion(transform));
 
     // take a wild guess and load the first mesh with the first material
     createMeshObject(metaData, sceneNode, drawables, ID_UNDEFINED, 0, 0);
@@ -573,12 +574,13 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
         // specified in scene coordinates
         std::vector<float> transformVec;
         io::toFloatVector(node["transform"], &transformVec);
-        Eigen::Map<mat4f> transform(transformVec.data());
+        mat4f transform(transformVec.data());
         // LOG(INFO) << modelId << " " << transform;
         const AssetInfo info{
             AssetType::SUNCG_OBJECT,
             basePath + "/object/" + modelId + "/" + modelId + ".glb"};
-        createObjectFunc(info, nodeId).setTransformation(transform);
+        createObjectFunc(info, nodeId)
+            .setTransformation(Magnum::Matrix4{transform});
       } else if (nodeType == "Box") {
         // TODO(MS): create Box geometry
         createObjectFunc({}, nodeId);

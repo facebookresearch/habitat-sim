@@ -29,8 +29,7 @@ using namespace Corrade;
 namespace esp {
 namespace gfx {
 
-Simulator::Simulator(const SimulatorConfiguration& cfg)
-    : context_(cfg.gpuDeviceId) {
+Simulator::Simulator(const SimulatorConfiguration& cfg) {
   // initalize members according to cfg
   reconfigure(cfg);
 }
@@ -52,11 +51,19 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   const int height = cfg.height;
   const int width = cfg.width;
 
-  // reinitalize members
-  if (renderer_) {
-    renderer_.reset();
+  // load scene
+  std::string sceneFilename = cfg.scene.id;
+  if (cfg.scene.filepaths.count("mesh")) {
+    sceneFilename = cfg.scene.filepaths.at("mesh");
   }
-  renderer_ = Renderer::create(width, height);
+
+  std::string houseFilename = io::changeExtension(sceneFilename, ".house");
+  if (cfg.scene.filepaths.count("house")) {
+    houseFilename = cfg.scene.filepaths.at("house");
+  }
+
+  const assets::AssetInfo sceneInfo =
+      assets::AssetInfo::fromPath(sceneFilename);
 
   // initalize scene graph
   // CAREFUL!
@@ -67,61 +74,61 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   activeSceneID_ = sceneManager_.initSceneGraph();
   // LOG(INFO) << "Active scene graph ID = " << activeSceneID_;
   sceneID_.push_back(activeSceneID_);
-  auto& sceneGraph = sceneManager_.getSceneGraph(activeSceneID_);
 
-  // load scene
-  std::string sceneFilename = cfg.scene.id;
-  if (cfg.scene.filepaths.count("mesh")) {
-    sceneFilename = cfg.scene.filepaths.at("mesh");
-  }
-  auto& rootNode = sceneGraph.getRootNode();
-  auto& drawables = sceneGraph.getDrawables();
-  const assets::AssetInfo sceneInfo =
-      assets::AssetInfo::fromPath(sceneFilename);
-  resourceManager_.compressTextures(cfg.compressTextures);
-  if (!resourceManager_.loadScene(sceneInfo, &rootNode, &drawables)) {
-    LOG(ERROR) << "cannot load " << sceneFilename;
-    // Pass the error to the python through pybind11 allowing graceful exit
-    throw std::invalid_argument("Cannot load: " + sceneFilename);
-  }
-
-  // load semantic annotations if available
-  if (semanticScene_) {
-    semanticScene_.reset();
-  }
-  semanticScene_ = scene::SemanticScene::create();
-  std::string houseFilename = io::changeExtension(sceneFilename, ".house");
-  if (cfg.scene.filepaths.count("house")) {
-    houseFilename = cfg.scene.filepaths.at("house");
-  }
-  if (io::exists(houseFilename)) {
-    LOG(INFO) << "Loading house from " << houseFilename;
-    scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
-    // if semantic mesh exists, load it as well
-    // TODO: remove hardcoded filename change and use SceneConfiguration
-    const std::string semanticMeshFilename =
-        io::removeExtension(houseFilename) + "_semantic.ply";
-    if (io::exists(semanticMeshFilename)) {
-      LOG(INFO) << "Loading semantic mesh " << semanticMeshFilename;
-      activeSemanticSceneID_ = sceneManager_.initSceneGraph();
-      sceneID_.push_back(activeSemanticSceneID_);
-      auto& semanticSceneGraph =
-          sceneManager_.getSceneGraph(activeSemanticSceneID_);
-      auto& semanticRootNode = semanticSceneGraph.getRootNode();
-      auto& semanticDrawables = semanticSceneGraph.getDrawables();
-      const assets::AssetInfo semanticSceneInfo =
-          assets::AssetInfo::fromPath(semanticMeshFilename);
-      resourceManager_.loadScene(semanticSceneInfo, &semanticRootNode,
-                                 &semanticDrawables);
+  if (cfg.createRenderer) {
+    if (!context_) {
+      context_ = std::make_unique<gfx::WindowlessContext>(config_.gpuDeviceId);
     }
-    LOG(INFO) << "Loaded.";
+
+    // reinitalize members
+    renderer_ = nullptr;
+    renderer_ = Renderer::create(width, height);
+
+    auto& sceneGraph = sceneManager_.getSceneGraph(activeSceneID_);
+
+    auto& rootNode = sceneGraph.getRootNode();
+    auto& drawables = sceneGraph.getDrawables();
+    resourceManager_.compressTextures(cfg.compressTextures);
+    if (!resourceManager_.loadScene(sceneInfo, &rootNode, &drawables)) {
+      LOG(ERROR) << "cannot load " << sceneFilename;
+      // Pass the error to the python through pybind11 allowing graceful exit
+      throw std::invalid_argument("Cannot load: " + sceneFilename);
+    }
+
+    if (io::exists(houseFilename)) {
+      LOG(INFO) << "Loading house from " << houseFilename;
+      // if semantic mesh exists, load it as well
+      // TODO: remove hardcoded filename change and use SceneConfiguration
+      const std::string semanticMeshFilename =
+          io::removeExtension(houseFilename) + "_semantic.ply";
+      if (io::exists(semanticMeshFilename)) {
+        LOG(INFO) << "Loading semantic mesh " << semanticMeshFilename;
+        activeSemanticSceneID_ = sceneManager_.initSceneGraph();
+        sceneID_.push_back(activeSemanticSceneID_);
+        auto& semanticSceneGraph =
+            sceneManager_.getSceneGraph(activeSemanticSceneID_);
+        auto& semanticRootNode = semanticSceneGraph.getRootNode();
+        auto& semanticDrawables = semanticSceneGraph.getDrawables();
+        const assets::AssetInfo semanticSceneInfo =
+            assets::AssetInfo::fromPath(semanticMeshFilename);
+        resourceManager_.loadScene(semanticSceneInfo, &semanticRootNode,
+                                   &semanticDrawables);
+      }
+      LOG(INFO) << "Loaded.";
+    }
+
+    // instance meshes and suncg houses contain their semantic annotations
+    if (sceneInfo.type == assets::AssetType::FRL_INSTANCE_MESH ||
+        sceneInfo.type == assets::AssetType::SUNCG_SCENE ||
+        sceneInfo.type == assets::AssetType::INSTANCE_MESH) {
+      activeSemanticSceneID_ = activeSceneID_;
+    }
   }
 
-  // instance meshes and suncg houses contain their semantic annotations
-  if (sceneInfo.type == assets::AssetType::FRL_INSTANCE_MESH ||
-      sceneInfo.type == assets::AssetType::SUNCG_SCENE ||
-      sceneInfo.type == assets::AssetType::INSTANCE_MESH) {
-    activeSemanticSceneID_ = activeSceneID_;
+  semanticScene_ = nullptr;
+  semanticScene_ = scene::SemanticScene::create();
+  if (io::exists(houseFilename)) {
+    scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
   }
 
   // also load SemanticScene for SUNCG house file
@@ -164,7 +171,8 @@ bool operator==(const SimulatorConfiguration& a,
                 const SimulatorConfiguration& b) {
   return a.scene == b.scene && a.defaultAgentId == b.defaultAgentId &&
          a.defaultCameraUuid == b.defaultCameraUuid &&
-         a.compressTextures == b.compressTextures;
+         a.compressTextures == b.compressTextures &&
+         a.createRenderer == b.createRenderer;
 }
 
 bool operator!=(const SimulatorConfiguration& a,

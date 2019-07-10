@@ -56,8 +56,7 @@ def test_greedy_follower(test_navmesh, scene_graph, pbar):
     pathfinder.load_nav_mesh(test_navmesh)
     assert pathfinder.is_loaded
 
-    agent = habitat_sim.Agent()
-    agent.attach(scene_graph.get_root_node().create_child())
+    agent = habitat_sim.Agent(scene_graph.get_root_node().create_child())
     agent.controls.move_filter_fn = pathfinder.try_step
     follower = habitat_sim.GreedyGeodesicFollower(pathfinder, agent)
 

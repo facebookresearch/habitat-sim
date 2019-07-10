@@ -43,3 +43,6 @@
 [submodule "src/deps/magnum-integration"]
 	path = src/deps/magnum-integration
 	url = https://github.com/mosra/magnum-integration.git
+[submodule "src/deps/magnum-bindings"]
+	path = src/deps/magnum-bindings
+	url = https://github.com/mosra/magnum-bindings.git

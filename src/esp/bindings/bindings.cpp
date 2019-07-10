@@ -13,7 +13,6 @@ using namespace py::literals;
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/Simulator.h"
 #include "esp/nav/PathFinder.h"
-#include "esp/scene/AttachedObject.h"
 #include "esp/scene/Mp3dSemanticScene.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneGraph.h"
@@ -22,6 +21,8 @@ using namespace py::literals;
 #include "esp/scene/SuncgSemanticScene.h"
 #include "esp/sensor/PinholeCamera.h"
 #include "esp/sensor/Sensor.h"
+
+#include <Magnum/SceneGraph/Python.h>
 
 using namespace esp;
 using namespace esp::core;
@@ -34,10 +35,21 @@ using namespace esp::sensor;
 void initShortestPathBindings(py::module& m);
 void initGeoBindings(py::module& m);
 
+namespace {
+template <class T>
+SceneNode* nodeGetter(T& self) {
+  if (!&self.node())
+    throw py::value_error{"feature not valid"};
+  return &self.node();
+};
+}  // namespace
+
 PYBIND11_MODULE(habitat_sim_bindings, m) {
   initGeoBindings(m);
 
   py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
+
+  m.import("magnum.scenegraph");
 
   py::class_<Configuration, Configuration::ptr>(m, "Configuration")
       .def(py::init(&Configuration::create<>))
@@ -59,283 +71,38 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   // ownership and eventually free its resources, which leads to "duplicated
   // deallocation", and thus memory corruption.
 
+  // ==== enum SceneNodeType ====
+  py::enum_<SceneNodeType>(m, "SceneNodeType")
+      .value("EMPTY", SceneNodeType::EMPTY)
+      .value("SENSOR", SceneNodeType::SENSOR)
+      .value("AGENT", SceneNodeType::AGENT)
+      .value("CAMERA", SceneNodeType::CAMERA);
+
   // ==== SceneNode ====
-  py::class_<scene::SceneNode>(m, "SceneNode", R"(
+  py::class_<scene::SceneNode, Magnum::SceneGraph::PyObject<scene::SceneNode>,
+             MagnumObject,
+             Magnum::SceneGraph::PyObjectHolder<scene::SceneNode>>(
+      m, "SceneNode", R"(
       SceneNode: a node in the scene graph.
       Cannot apply a smart pointer to a SceneNode object.
       You can "create it and forget it".
       Simulator backend will handle the memory.)")
-      .def(py::init<scene::SceneNode&>(),
-           R"(Constructor: creates a scene node, and sets its parent.
-           PYTHON DOES NOT GET OWNERSHIP)",
-           pybind11::return_value_policy::reference)
-      .def("set_parent", &scene::SceneNode::setParent, R"(
-        Sets the parent scene node
-      )")
-      .def("create_child", &scene::SceneNode::createChild,
-           R"(Creates a child node, and sets its parent to the current node.
-        PYTHON DOES NOT GET OWNERSHIP)",
-           pybind11::return_value_policy::reference)
-      .def("transformation", &SceneNode::getTransformation, R"(
-        Returns transformation relative to parent :py:class:`SceneNode`
-      )")
-      .def("absolute_transformation", &SceneNode::getAbsoluteTransformation, R"(
-        Returns absolute transformation matrix (relative to root :py:class:`SceneNode`)
-      )")
+      .def(py::init_alias<std::reference_wrapper<scene::SceneNode>>(),
+           R"(Constructor: creates a scene node, and sets its parent.)")
+      .def_property("type", &SceneNode::getType, &SceneNode::setType)
       .def(
-          "rotation",
-          [](const SceneNode& self) { return self.getRotation().coeffs(); },
-          R"()")
-      .def("rotation",
-           [](SceneNode& self, const Eigen::Ref<const esp::vec4f> coeffs) {
-             self.setRotation(Eigen::Map<const quatf>(coeffs.data()));
-           })
-      .def("absolute_position", &SceneNode::getAbsolutePosition, R"(
-        Returns absolute position (relative to root :py:class:`SceneNode`)
-      )")
-      // .def("absolute_orientation_z", &SceneNode::absoluteOrientationZ, R"(
-      //   Returns absolute Z-axis orientation (relative to root
-      //   :py:class:`SceneNode`)
-      // )")
-      .def("set_transformation",
-           py::overload_cast<const Eigen::Ref<const mat4f>>(
-               &SceneNode::setTransformation),
-           R"(
-        Set transformation relative to parent :py:class:`SceneNode`
-      )",
-           "transformation"_a)
-      .def("set_transformation",
-           py::overload_cast<const Eigen::Ref<const vec3f>,
-                             const Eigen::Ref<const vec3f>,
-                             const Eigen::Ref<const vec3f>>(
-               &SceneNode::setTransformation),
-           R"(
-        Set this :py:class:`SceneNode`'s matrix to look at target from given position
-        and orientation towards target. Semantics is same as gluLookAt.
-      )",
-           "position"_a, "target"_a, "up"_a)
-      .def("set_translation", &SceneNode::setTranslation, R"(
-        Sets translation relative to parent :py:class:`SceneNode` to given translation
-      )",
-           "vector"_a)
-      .def("reset_transformation", &SceneNode::resetTransformation, R"(
-        Reset transform relative to parent :py:class:`SceneNode` to identity
-      )")
-      // .def("transform", &SceneNode::transform, R"(
-      //   Transform relative to parent :py:class:`SceneNode` by given transform
-      // )",
-      //      "transformation"_a)
-      // .def("transformLocal", &SceneNode::transform, R"(
-      //   Transform relative to parent :py:class:`SceneNode` by given transform
-      //   in local frame. Applies given transform before any other
-      //   transformation.
-      // )",
-      //      "transformation"_a)
-      .def("translate", &SceneNode::translate, R"(
-        Translate relative to parent :py:class:`SceneNode` by given translation
-      )",
-           "vector"_a)
-      .def("translate_local", &SceneNode::translateLocal, R"(
-        Translate relative to parent :py:class:`SceneNode` by given translation
-        in local frame. Applies given translation before any other translation.
-      )",
-           "vector"_a)
-      .def("rotate", &SceneNode::rotate, R"(
-        Rotate relative to parent :py:class:`SceneNode` by given angleInRad
-        radians around given normalizedAxis.
-      )",
-           "angleInRad"_a, "normalizedAxis"_a)
-      .def("rotate_local", &SceneNode::rotateLocal, R"(
-        Rotate relative to parent :py:class:`SceneNode` by given angleInRad
-        radians around given normalizedAxis in local frame. Applies given
-        rotation before any other rotation.
-      )",
-           "angleInRad"_a, "normalizedAxis"_a)
-      .def("rotateX", &SceneNode::rotateX, R"(
-        Rotate arounx X axis relative to parent :py:class:`SceneNode` by
-        in local frame. Applies given rotation before any other rotation
-      )",
-           "angleInRad"_a)
-      .def("rotateX_local", &SceneNode::rotateXLocal, R"(
-        Rotate relative to parent :py:class:`SceneNode` by given angleInRad
-        radians around X axis in local frame. Applies given rotation before
-        any other rotation.
-      )",
-           "angleInRad"_a)
-      .def("rotateY", &SceneNode::rotateY, R"(
-        Rotate arounx Y axis relative to parent :py:class:`SceneNode` by
-        in local frame. Applies given rotation before any other rotation
-      )",
-           "angleInRad"_a)
-      .def("rotateY_local", &SceneNode::rotateYLocal, R"(
-        Rotate relative to parent :py:class:`SceneNode` by given angleInRad
-        radians around X axis in local frame. Applies given rotation before
-        any other rotation.
-      )",
-           "angleInRad"_a)
-      .def("rotateZ", &SceneNode::rotateZ, R"(
-        Rotate arounx Y axis relative to parent :py:class:`SceneNode` by
-        in local frame. Applies given rotation before any other rotation
-      )",
-           "angleInRad"_a)
-      .def("rotateZ_local", &SceneNode::rotateZLocal, R"(
-        Rotate relative to parent :py:class:`SceneNode` by given angleInRad
-        radians around X axis in local frame. Applies given rotation before
-        any other rotation.
-      )",
-           "angleInRad"_a)
-      .def("normalize", [](SceneNode& self) {
-        self.setRotation(self.getRotation().normalized());
-      });
+          "create_child", [](SceneNode& self) { return &self.createChild(); },
+          R"(Creates a child node, and sets its parent to the current node.)");
 
-  // ==== enum AttachedObjectType ====
-  py::enum_<AttachedObjectType>(m, "AttachedObjectType")
-      .value("NONE", AttachedObjectType::NONE)
-      .value("SENSOR", AttachedObjectType::SENSOR)
-      .value("AGENT", AttachedObjectType::AGENT)
-      .value("CAMERA", AttachedObjectType::CAMERA);
-
-  // ==== AttachedObject ====
-  // An object that is attached to a scene node.
-  // Such object can be Agent, Sensor, Camera etc.
-  py::class_<AttachedObject, AttachedObject::ptr>(m, "AttachedObject",
-                                                  R"(
-      AttachedObject: An object that is attached to a scene node.
-      Such object can be Agent, Sensor, Camera etc.
-      )")
-      // create a new attached object, which is NOT attached to any scene node
-      // the initial status is invalid, namely, isValid will return false
-      .def(py::init(&AttachedObject::create<>))
-      // input: the scene node this object is going to attach to
-      // the initial status is valid, since the object is attached to a node
-      .def(py::init(&AttachedObject::create<scene::SceneNode&>))
-
-      // NOTE:
-      // please always call this function to check the status
-      // in order to avoid runtime errors
-      .def_property_readonly(
-          "is_valid", &AttachedObject::isValid,
-          R"(Returns true if the object is being attached to a scene node.)")
-      .def("attach", &AttachedObject::attach,
-           R"(Attaches the object to an existing scene node.)", "sceneNode"_a)
-      .def("detach", &AttachedObject::detach,
-           R"(Detached the object and the scene node)")
-      .def("get_scene_node", &AttachedObject::getSceneNode,
-           R"(get the scene node (pointer) being attached to (can be nullptr)
-              PYTHON DOES NOT GET OWNERSHIP)",
-           pybind11::return_value_policy::reference)
-      .def_property("object_type", &AttachedObject::getObjectType,
-                    &AttachedObject::setObjectType)
-
-      // ---- functions related to rigid body transformation ----
-      // Please check "isValid" before using it.
-      .def("get_transformation", &AttachedObject::getTransformation, R"(
-        If it is valid, returns transformation relative to parent scene node.
-      )")
-      .def("get_absolute_transformation",
-           &AttachedObject::getAbsoluteTransformation, R"(
-        If it is valid, returns absolute transformation matrix
-      )")
-      .def("get_absolute_position", &AttachedObject::getAbsolutePosition, R"(
-        If it is valid, returns absolute position w.r.t. world coordinate frame
-      )")
-      .def(
-          "get_rotation",
-          [](const AttachedObject& self) {
-            return self.getRotation().coeffs();
-          },
-          R"()")
-      .def("set_rotation",
-           [](AttachedObject& self, const Eigen::Ref<const esp::vec4f> coeffs) {
-             self.setRotation(Eigen::Map<const quatf>(coeffs.data()));
-           })
-      .def(
-          "set_transformation",
-          py::overload_cast<const Eigen::Ref<const mat4f>>(
-              &AttachedObject::setTransformation),
-          R"(If it is valid, sets transformation relative to parent scene node.)",
-          "transformation"_a)
-      .def("set_transformation",
-           py::overload_cast<const Eigen::Ref<const vec3f>,
-                             const Eigen::Ref<const vec3f>,
-                             const Eigen::Ref<const vec3f>>(
-               &AttachedObject::setTransformation),
-           R"(
-             Set the position and orientation of the object by setting
-             this :py:class:`AttachedObject`'s matrix to look at target from given position
-             and orientation towards target. Semantics is same as gluLookAt.
-             )",
-           "position"_a, "target"_a, "up"_a)
-      .def("set_translation", &AttachedObject::setTranslation, R"(
-        If it is valid, sets translation relative to parent scene node
-      )",
-           "vector"_a)
-      .def("reset_transformation", &AttachedObject::resetTransformation, R"(
-        If it is valid, reset transform relative to parent scene node to identity
-      )")
-      .def("translate", &AttachedObject::translate, R"(
-        If it is valid, Translate relative to parent scene node by given translation
-      )",
-           "vector"_a)
-      .def("translateLocal", &AttachedObject::translateLocal, R"(
-        If it is valid, Translate relative to parent scene node by given translation
-        in local frame. Applies given translation before any other translation.
-      )",
-           "vector"_a)
-      .def("rotate", &AttachedObject::rotate, R"(
-        If it is valid, rotate relative to parent scene node by given angleInRad
-        radians around given normalizedAxis.
-      )",
-           "angleInRad"_a, "normalizedAxis"_a)
-      .def("rotateLocal", &AttachedObject::rotateLocal, R"(
-        If it is valid, rotate relative to parent scene node by given angleInRad
-        radians around given normalizedAxis in local frame. Applies given
-        rotation before any other rotation.
-      )",
-           "angleInRad"_a, "normalizedAxis"_a)
-      .def("rotateX", &AttachedObject::rotateX, R"(
-        If it is valid, rotate arounx X axis relative to parent scene node by
-        in local frame. Applies given rotation before any other rotation
-      )",
-           "angleInRad"_a)
-      .def("rotateXLocal", &AttachedObject::rotateXLocal, R"(
-        If it is valid, rotate relative to parent scene node by given angleInRad
-        radians around X axis in local frame. Applies given rotation before
-        any other rotation.
-      )",
-           "angleInRad"_a)
-      .def("rotateY", &AttachedObject::rotateY, R"(
-        If it is valid, rotate arounx Y axis relative to parent scene node by
-        in local frame. Applies given rotation before any other rotation
-      )",
-           "angleInRad"_a)
-      .def("rotateYLocal", &AttachedObject::rotateYLocal, R"(
-        If it is valid, rotate relative to parent scene node by given angleInRad
-        radians around X axis in local frame. Applies given rotation before
-        any other rotation.
-      )",
-           "angleInRad"_a)
-      .def("rotateZ", &AttachedObject::rotateZ, R"(
-        If it is valid, rotate arounx Y axis relative to parent scene node by
-        in local frame. Applies given rotation before any other rotation
-      )",
-           "angleInRad"_a)
-      .def("rotateZLocal", &AttachedObject::rotateZLocal, R"(
-        If it is valid, rotate relative to parent scene node by given angleInRad
-        radians around X axis in local frame. Applies given rotation before
-        any other rotation.
-      )",
-           "angleInRad"_a);
-
-  // ==== RenderCamera (subclass of AttachedObject) ====
-  py::class_<RenderCamera, AttachedObject, RenderCamera::ptr>(
+  // ==== RenderCamera ====
+  py::class_<RenderCamera, Magnum::SceneGraph::PyFeature<RenderCamera>,
+             Magnum::SceneGraph::AbstractFeature3D,
+             Magnum::SceneGraph::PyFeatureHolder<RenderCamera>>(
       m, "Camera",
-      R"(RenderCamera: subclass of AttachedObject.
-      The object of this class is a camera attached
+      R"(RenderCamera: The object of this class is a camera attached
       to the scene node for rendering.)")
-      .def(py::init(&RenderCamera::create<>))
-      .def(py::init(&RenderCamera::create<SceneNode&, const vec3f&,
-                                          const vec3f&, const vec3f&>))
+      .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
+                          const vec3f&, const vec3f&, const vec3f&>())
       .def("setProjectionMatrix", &RenderCamera::setProjectionMatrix, R"(
         Set this :py:class:`Camera`'s projection matrix.
       )",
@@ -345,7 +112,11 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       )")
       .def("getCameraMatrix", &RenderCamera::getCameraMatrix, R"(
         Get this :py:class:`Camera`'s camera matrix.
-      )");
+      )")
+      .def_property_readonly("node", nodeGetter<RenderCamera>,
+                             "Node this object is attached to")
+      .def_property_readonly("object", nodeGetter<RenderCamera>,
+                             "Alias to node");
 
   // ==== SceneGraph ====
   py::class_<scene::SceneGraph>(m, "SceneGraph")
@@ -588,22 +359,29 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   // ==== Observation ====
   py::class_<Observation, Observation::ptr>(m, "Observation");
 
-  // ==== Sensor (subclass of AttachedObject) ====
-  py::class_<Sensor, AttachedObject, Sensor::ptr>(m, "Sensor")
-      .def(py::init(&Sensor::create<const SensorSpec::ptr&>))
+  // ==== Sensor ====
+  py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
+             Magnum::SceneGraph::AbstractFeature3D,
+             Magnum::SceneGraph::PyFeatureHolder<Sensor>>(m, "Sensor")
+      .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
+                          const SensorSpec::ptr&>())
       .def("specification", &Sensor::specification)
       .def("set_transformation_from_spec", &Sensor::setTransformationFromSpec)
       .def("is_visual_sensor", &Sensor::isVisualSensor)
-      .def("get_observation", &Sensor::getObservation);
+      .def("get_observation", &Sensor::getObservation)
+      .def_property_readonly("node", nodeGetter<Sensor>,
+                             "Node this object is attached to")
+      .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
 
   // ==== PinholeCamera (subclass of Sensor) ====
-  py::class_<sensor::PinholeCamera, sensor::Sensor, sensor::PinholeCamera::ptr>(
+  py::class_<sensor::PinholeCamera,
+             Magnum::SceneGraph::PyFeature<sensor::PinholeCamera>,
+             sensor::Sensor,
+             Magnum::SceneGraph::PyFeatureHolder<PinholeCamera>>(
       m, "PinholeCamera")
-      // initialized, not attach to any scene node, status: "invalid"
-      .def(py::init(&PinholeCamera::create<const sensor::SensorSpec::ptr&>))
       // initialized, attached to pinholeCameraNode, status: "valid"
-      .def(py::init(&PinholeCamera::create<const sensor::SensorSpec::ptr&,
-                                           scene::SceneNode&>))
+      .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
+                          const sensor::SensorSpec::ptr&>())
       .def("set_projection_matrix", &sensor::PinholeCamera::setProjectionMatrix,
            R"(Set the width, height, near, far, and hfov,
           stored in pinhole camera to the render camera.)");
@@ -646,6 +424,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_readwrite("height", &SimulatorConfiguration::height)
       .def_readwrite("compress_textures",
                      &SimulatorConfiguration::compressTextures)
+      .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
       .def("__eq__",
            [](const SimulatorConfiguration& self,
               const SimulatorConfiguration& other) -> bool {

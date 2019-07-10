@@ -4,20 +4,19 @@
 
 #include "Sensor.h"
 
+#include <Magnum/EigenIntegration/Integration.h>
+
 namespace esp {
 namespace sensor {
 
-Sensor::Sensor(SensorSpec::ptr spec)
-    : scene::AttachedObject(scene::AttachedObjectType::SENSOR), spec_(spec) {
+Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
+    : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(spec) {
+  node.setType(scene::SceneNodeType::SENSOR);
   if (spec_ == nullptr) {
     LOG(ERROR) << "Cannot initialize sensor. The specification is null.";
   }
   ASSERT(spec_ != nullptr);
-}
 
-void Sensor::attach(scene::SceneNode& node) {
-  AttachedObject::attach(node);
-  // since it is attached, set the transformation from the spec immediately
   setTransformationFromSpec();
 }
 
@@ -41,18 +40,17 @@ void SensorSuite::clear() {
 }
 
 void Sensor::setTransformationFromSpec() {
-  ASSERT(isValid());
   if (spec_ == nullptr) {
     LOG(ERROR) << "Cannot initialize sensor. the specification is null.";
     return;
   }
 
-  resetTransformation();
+  node().resetTransformation();
 
-  translate(spec_->position);
-  rotateX(spec_->orientation[0]);
-  rotateY(spec_->orientation[1]);
-  rotateZ(spec_->orientation[2]);
+  node().translate(Magnum::Vector3(spec_->position));
+  node().rotateX(Magnum::Rad(spec_->orientation[0]));
+  node().rotateY(Magnum::Rad(spec_->orientation[1]));
+  node().rotateZ(Magnum::Rad(spec_->orientation[2]));
 }
 
 bool operator==(const SensorSpec& a, const SensorSpec& b) {

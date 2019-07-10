@@ -4,17 +4,17 @@
 
 #include "RenderCamera.h"
 
+#include <Magnum/EigenIntegration/Integration.h>
+
 using namespace Magnum;
 
 namespace esp {
 namespace gfx {
 
-RenderCamera::RenderCamera()
-    : scene::AttachedObject(scene::AttachedObjectType::CAMERA) {}
-
-RenderCamera::RenderCamera(scene::SceneNode& node) : RenderCamera() {
-  // has to call the "attach" from the subclass
-  attach(node);
+RenderCamera::RenderCamera(scene::SceneNode& node)
+    : Magnum::SceneGraph::AbstractFeature3D{node} {
+  node.setType(scene::SceneNodeType::CAMERA);
+  camera_ = new MagnumCamera(node);
 }
 
 RenderCamera::RenderCamera(scene::SceneNode& node,
@@ -23,18 +23,8 @@ RenderCamera::RenderCamera(scene::SceneNode& node,
                            const vec3f& up)
     : RenderCamera(node) {
   // once it is attached, set the transformation
-  setTransformation(eye, target, up);
-}
-
-void RenderCamera::attach(scene::SceneNode& node) {
-  AttachedObject::attach(node);
-  // "create and forget": magnum will handle the memory
-  camera_ = new MagnumCamera(node);
-}
-
-void RenderCamera::detach() {
-  AttachedObject::detach();
-  // no need to free the camera_ since magnum will handle it
+  node.setTransformation(
+      Matrix4::lookAt(Vector3{eye}, Vector3{target}, Vector3{up}));
 }
 
 void RenderCamera::setProjectionMatrix(int width,
@@ -42,7 +32,6 @@ void RenderCamera::setProjectionMatrix(int width,
                                        float znear,
                                        float zfar,
                                        float hfov) {
-  ASSERT(isValid());
   const float aspectRatio = static_cast<float>(width) / height;
   camera_->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::NotPreserved)
       .setProjectionMatrix(
@@ -51,22 +40,18 @@ void RenderCamera::setProjectionMatrix(int width,
 }
 
 mat4f RenderCamera::getProjectionMatrix() {
-  ASSERT(isValid());
   return Eigen::Map<mat4f>(camera_->projectionMatrix().data());
 }
 
 mat4f RenderCamera::getCameraMatrix() {
-  ASSERT(isValid());
   return Eigen::Map<mat4f>(camera_->cameraMatrix().data());
 }
 
 MagnumCamera& RenderCamera::getMagnumCamera() {
-  ASSERT(isValid());
   return *camera_;
 }
 
 void RenderCamera::draw(MagnumDrawableGroup& drawables) {
-  ASSERT(isValid());
   camera_->draw(drawables);
 }
 
