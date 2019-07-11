@@ -54,24 +54,27 @@ bool BulletRigidObject::initializeScene(
     return false;
   }
 
-  bWorld_ = &bWorld;
-  // Create Bullet Object
-  btIndexedMesh bulletMesh;
-  btCollisionShape* bShape = nullptr;
+  //! Turn on scene flag
+  if (isObject_) {return false;}
+  isScene_ = true;
 
-  // Object Physical Parameters
+  //! Create Bullet Object
+  btIndexedMesh bulletMesh;
+
+  //! Object Physical Parameters
   mass_ = mass;
   LOG(INFO) << "Creating Instance object mass: " << mass;
   LOG(INFO) << "Creating Instance object meshGroups: " << meshGroup.size();
   btVector3 bInertia(0.0f, 0.0f, 0.0f);
   
 
-  // Iterate through all mesh components for one scene
-  // All components are registered as static objects
+  //! Iterate through all mesh components for one scene
+  //! All components are registered as static objects
+  tivArray_ = std::make_unique<btTriangleIndexVertexArray>();
   for (assets::CollisionMeshData& meshData: meshGroup) {    
-    // Here we convert Magnum's unsigned int indices to 
-    // signed indices in bullet. Assuming that it's save to 
-    // cast uint to int  
+    //! Here we convert Magnum's unsigned int indices to 
+    //! signed indices in bullet. Assuming that it's save to 
+    //! cast uint to int  
     Corrade::Containers::ArrayView<Magnum::Vector3>     v_data  = 
         meshData.positions;
     Corrade::Containers::ArrayView<Magnum::UnsignedInt> ui_data = 
@@ -83,38 +86,33 @@ bool BulletRigidObject::initializeScene(
         << " " << v_data[ui_data[ui_data.size()-1]][1] 
         << " " << v_data[ui_data[ui_data.size()-1]][2];
 
-    /*Corrade::Containers::Array<int> i_data{ui_data.size()};
-    for (uint i = 0; i < ui_data.size(); i++) {
-      i_data[i] = int(ui_data[i]);
-    }*/
-    // Configure Bullet Mesh
-    // This part is very likely to cause segfault, if done incorrectly
+    //! Configure Bullet Mesh
+    //! This part is very likely to cause segfault, if done incorrectly
     bulletMesh.m_numTriangles        = ui_data.size() / 3;
     bulletMesh.m_triangleIndexBase   = 
         reinterpret_cast<const unsigned char*>(ui_data.data());
-        //reinterpret_cast<const unsigned char*>(i_data.data());
     bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
     bulletMesh.m_numVertices         = v_data.size();
     bulletMesh.m_vertexBase          = 
-        //reinterpret_cast<const unsigned char*>(v_data.data()->data());
         reinterpret_cast<const unsigned char*>(v_data.data());
     bulletMesh.m_vertexStride        = sizeof(Magnum::Vector3);
     bulletMesh.m_indexType           = PHY_INTEGER;
     bulletMesh.m_vertexType          = PHY_FLOAT;  
-    auto tivArray = new btTriangleIndexVertexArray();
-    tivArray->addIndexedMesh(bulletMesh, PHY_INTEGER);   // exact shape
+    tivArray_->addIndexedMesh(bulletMesh, PHY_INTEGER);   // exact shape
     
-    // Embed 3D mesh into bullet shape
-    // btBvhTriangleMeshShape is the most generic/slow choice
-    bShape = new btBvhTriangleMeshShape(tivArray, true);
-    bShape->calculateLocalInertia(mass, bInertia);
+    //! Embed 3D mesh into bullet shape
+    //! btBvhTriangleMeshShape is the most generic/slow choice
+    bSceneShapes_.emplace_back(std::make_unique<btBvhTriangleMeshShape>(
+        tivArray_.get(), true));
+    bSceneShapes_.back()->calculateLocalInertia(mass, bInertia);
 
-    // Bullet rigid body setup
-    bCollisionBody_ = new btCollisionObject();
-    bCollisionBody_->setCollisionShape(bShape);
-    bCollisionBody_->setCollisionFlags(bCollisionBody_->getCollisionFlags() |
-                                     btCollisionObject::CF_STATIC_OBJECT);
-    bWorld_->addCollisionObject(bCollisionBody_);
+    //! Bullet rigid body setup
+    bCollisionBodies_.emplace_back(std::make_unique<btCollisionObject>());
+    bCollisionBodies_.back()->setCollisionShape(bSceneShapes_.back().get());
+    bCollisionBodies_.back()->setCollisionFlags(
+        bCollisionBodies_.back()->getCollisionFlags() |
+        btCollisionObject::CF_STATIC_OBJECT);
+    bWorld.addCollisionObject(bCollisionBodies_.back().get());
   }
 
   LOG(INFO) << "Instance body: initialized";
@@ -135,82 +133,79 @@ bool BulletRigidObject::initializeObject(
     return false;
   }
 
-  // Create Bullet Object
-  bWorld_ = &bWorld;
-  btCollisionShape* bShape = nullptr;
+  //! Turn on scene flag
+  if (isScene_) {return false;}
+  isObject_ = true;
+
+  //! Create Bullet Object
   btIndexedMesh bulletMesh;
 
-  // Physical parameters
+  //! Physical parameters
   LOG(INFO) << "Creating object mass: " << mass;
   mass_ = mass;
-  restitution_ = 0.0f;
-  float margin = 0.01f;
+  float restitution = defaultRestitution_;
+  float margin = defaultMargin_;
+  float linDamping = defaultLinDamping_;
+  float angDamping = defaultAngDamping_;
   btVector3 bInertia(2.0f, 2.0f, 2.0f);
 
-  // Iterate through all mesh components for one object
-  // The components are combined into a convex compound shape
+  //! Iterate through all mesh components for one object
+  //! The components are combined into a convex compound shape
+  bObjectShape_ = std::make_unique<btCompoundShape>();
   for (assets::CollisionMeshData& meshData: meshGroup) { 
 
-    //std::vector<Magnum::Vector3>     v_data  = meshData.positions;
-    //std::vector<Magnum::UnsignedInt> ui_data = meshData.indices;
-    //std::vector<vec3i> i_data;
-    //LOG(INFO) << "Mesh indices count " << ui_data.size();
+    Corrade::Containers::ArrayView<Magnum::Vector3>     v_data  = 
+        meshData.positions;
+    Corrade::Containers::ArrayView<Magnum::UnsignedInt> ui_data = 
+        meshData.indices;
+    LOG(INFO) << "Object mesh indices count " << ui_data.size();
 
-    // Configure Bullet Mesh
-    // This part is very likely to cause segfault, if done incorrectly
-    bulletMesh.m_numTriangles        = meshData.indices.size() / 3;
+    //! Configure Bullet Mesh
+    //! This part is very likely to cause segfault, if done incorrectly
+    bulletMesh.m_numTriangles        = ui_data.size() / 3;
     bulletMesh.m_triangleIndexBase   =
-        reinterpret_cast<const unsigned char*>(meshData.indices.data());
+        reinterpret_cast<const unsigned char*>(ui_data.data());
     bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
-    bulletMesh.m_numVertices         = meshData.positions.size();
-    // Get the pointer to the first float of the first triangle
+    bulletMesh.m_numVertices         = v_data.size();
+    //! Get the pointer to the first float of the first triangle
     bulletMesh.m_vertexBase          =
-        reinterpret_cast<const unsigned char*>(meshData.positions.data()->data());
+        reinterpret_cast<const unsigned char*>(v_data.data()->data());
     bulletMesh.m_vertexStride        = sizeof(Magnum::Vector3);
     bulletMesh.m_indexType           = PHY_INTEGER;
     bulletMesh.m_vertexType          = PHY_FLOAT;
-    //auto tivArray = new btTriangleIndexVertexArray();
-    //tivArray->addIndexedMesh(bulletMesh, PHY_INTEGER);
 
-    // Check dimension of the data
+    //! Check dimension of the data
     float dx, dy, dz;
     getDimensions(meshData, &dx, &dy, &dz);
     LOG(INFO) << "Dimensions dx " << dx << " dy " << dy << " dz " << dz;
     
-    // Cheezit box
+    //! Cheezit box
     btTransform t;        // position and rotation
-    t.setIdentity();      
-    //t.setOrigin(btVector3(dx/2, dy/2, dz/2));
+    t.setIdentity();
     t.setOrigin(btVector3(0, 0, 0));
-    bShape = new btCompoundShape();
 
-    // TODO (JH): assume that the object is convex, otherwise game over
-    btConvexHullShape* b_convex_shape = new btConvexHullShape(
+    //! TODO (JH): assume that the object is convex, otherwise game over
+    bConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
         static_cast<const btScalar*>(meshData.positions.data()->data()),
-        meshData.positions.size(), sizeof(Magnum::Vector3));
-    b_convex_shape->setMargin(margin);
-    (dynamic_cast<btCompoundShape*>(bShape))->addChildShape(t, b_convex_shape);
+        meshData.positions.size(), sizeof(Magnum::Vector3)));
+    bConvexShapes_.back()->setMargin(margin);
+    bObjectShape_->addChildShape(t, bConvexShapes_.back().get());
   }
 
-  bShape->setMargin(margin);
-  bShape->calculateLocalInertia(mass, bInertia);
-  //bShape = new btBoxShape(btVector3(0.3f,0.3f,0.3f));
-  //bShape = new btGImpactMeshShape(tivArray);
-  //bShape = new btBvhTriangleMeshShape(tivArray, true);
+  bObjectShape_->calculateLocalInertia(mass, bInertia);
   
-  // Bullet rigid body setup
-  auto* motionState = new Magnum::BulletIntegration::MotionState{*this};
-  bCollisionBody_ = new btRigidBody(btRigidBody::btRigidBodyConstructionInfo{
-      mass, &motionState->btMotionState(), bShape, bInertia});
-  bCollisionBody_->setRestitution(restitution_);
+  //! Bullet rigid body setup
+  motionState_ = new Magnum::BulletIntegration::MotionState(*this);
+  rigidBody_ = std::make_unique<btRigidBody>(
+      btRigidBody::btRigidBodyConstructionInfo{mass, 
+      &(motionState_->btMotionState()), bObjectShape_.get(), bInertia});
+  rigidBody_->setRestitution(restitution);
+  rigidBody_->setDamping(linDamping, angDamping);
   LOG(INFO) << "Setting collision mass " << mass << " flags "
-            << bCollisionBody_->getCollisionFlags();
+            << rigidBody_->getCollisionFlags();
 
-  bWorld.addRigidBody(dynamic_cast<btRigidBody*>(bCollisionBody_));
-  //} else {
-  // convex hull, but better performance
-  // bShape = new btConvexTriangleMeshShape(tivArray, true);
-  //} // btConvexHullShape can be even more performant
+  bWorld.addRigidBody(rigidBody_.get());
+  bCollisionBody_ = rigidBody_;
 
   LOG(INFO) << "Body Construction test: after";
   LOG(INFO) << "Rigid body: initialized";
@@ -252,14 +247,29 @@ bool BulletRigidObject::isActive() {
     LOG(INFO) << "Node not initialized";
     return false;
   }
-  return bCollisionBody_->isActive();
+  if (isScene_) {return false;}
+  if (isObject_) {return bCollisionBody_->isActive();}
+  
+  return false;
 }
 
+void BulletRigidObject::debugForce(
+    Magnum::SceneGraph::DrawableGroup3D& debugDrawables) {
+  //! DEBUG draw
+  debugRender_ = new Magnum::DebugTools::ForceRenderer3D(
+      *this, {0.0f, 0.0f, 0.0f}, debugExternalForce_, "bulletForce", 
+      &debugDrawables);
+  LOG(INFO) << "Force render" << debugExternalForce_.x();
+}
+
+void BulletRigidObject::setDebugForce(
+    Magnum::Vector3 force) {
+  debugExternalForce_ = force;
+}
 
 BulletRigidObject::~BulletRigidObject() {
   if (initialized_) {
     LOG(INFO) << "Deleting object " << mass_;
-    //bWorld_->removeRigidBody(bRigidBody_);
   } else {
     LOG(INFO) << "Object not initialized";
   }
@@ -267,7 +277,8 @@ BulletRigidObject::~BulletRigidObject() {
 
 btRigidBody& BulletRigidObject::rigidBody() {
   LOG(INFO) << "Returning rigid body";
-  return *dynamic_cast<btRigidBody*>(bCollisionBody_);
+  //! TODO (JH) if this is not rigid body, the function is suicidal
+  return *dynamic_cast<btRigidBody*>(bCollisionBody_.get());
 }
 
 /* needed after changing the pose from Magnum side */

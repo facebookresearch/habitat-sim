@@ -11,6 +11,7 @@
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/FRLInstanceMeshData.h"
 #include "esp/core/esp.h"
+#include <Magnum/DebugTools/ForceRenderer.h>
 
 namespace esp {
 namespace physics {
@@ -20,7 +21,7 @@ class BulletRigidObject : public scene::SceneNode {
   BulletRigidObject(scene::SceneNode* parent);
 
   // TODO (JH) Currently a BulletRigidObject is either a scene
-  // or an object, but cannot be both (tracked by _initialized)
+  // or an object, but cannot be both (tracked by _isScene/_isObject_)
   // there is probably a better way to abstract this
   bool initializeScene(
       const assets::AssetInfo& info,
@@ -41,15 +42,41 @@ class BulletRigidObject : public scene::SceneNode {
 
   bool isActive();
 
+  void debugForce(Magnum::SceneGraph::DrawableGroup3D& debugDrawables);
+
+  void setDebugForce(Magnum::Vector3 force);
+
  private:
   bool initialized_ = false;
-  btDynamicsWorld* bWorld_;
-  // Magnum::Containers::Pointer<btRigidBody> _bRigidBody;
-  //btRigidBody* _bRigidBody;
-  btCollisionObject* bCollisionBody_;
+  bool isScene_  = false;
+  bool isObject_ = false;
+
+  //! Physical scene
+  //! Scene data: triangular mesh shape
+  std::unique_ptr<btTriangleIndexVertexArray> tivArray_;
+  std::vector<std::unique_ptr<btBvhTriangleMeshShape>> bSceneShapes_;
+  std::vector<std::unique_ptr<btCollisionObject>> bCollisionBodies_;
+
+  // Physical object
+  //! Object data: Convex collision shape
+  std::unique_ptr<btCollisionObject> bCollisionBody_;
+  std::vector<std::unique_ptr<btConvexHullShape>> bConvexShapes_;
+  std::unique_ptr<btCompoundShape> bObjectShape_;
+  std::unique_ptr<btRigidBody> rigidBody_;
+
+  //! Magnum Physics Binding
+  Magnum::BulletIntegration::MotionState* motionState_;
 
   float mass_;
-  float restitution_;
+  float defaultRestitution_ = 0.1f;
+  float defaultMargin_ = 0.01f;
+  float defaultLinDamping_ = 0.2f;
+  float defaultAngDamping_ = 0.2f;
+
+  //! Debugging visualization
+  bool debugForce_;
+  Magnum::DebugTools::ForceRenderer3D* debugRender_;
+  Magnum::Vector3 debugExternalForce_ = Magnum::Vector3(0.0f, 0.0f, 0.0f);
 
   void getDimensions(assets::CollisionMeshData& meshData, 
       float* x, float* y, float* z);

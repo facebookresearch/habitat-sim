@@ -8,6 +8,7 @@ find_package(Magnum
     MeshTools
     SceneGraph
     Shaders
+    DebugTools
     Trade
 )
 
@@ -43,6 +44,7 @@ target_link_libraries(assets
     Magnum::SceneGraph
     Magnum::Shaders
     Magnum::Trade
+    Magnum::DebugTools
     MagnumPlugins::AssimpImporter
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbImageConverter

@@ -12,6 +12,7 @@
 #include "Drawable.h"
 #include "esp/io/io.h"
 
+
 using namespace Magnum;
 using namespace Math::Literals;
 using namespace Corrade;
@@ -133,7 +134,6 @@ Viewer::Viewer(const Arguments& arguments)
 }  // namespace gfx
 
 
-// TODO (JH): different from the one above, this function always gives segfault
 void Viewer::addObject() {
   auto& drawables = sceneGraph->getDrawables();
   std::string object_file("./data/objects/cheezit.glb");
@@ -152,9 +152,8 @@ void Viewer::addObject() {
     //physicsManager_.debugSceneGraph(rootNode);
   }
 
-  Magnum::Matrix4 T =
-      agentBodyNode_
-          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+  Magnum::Matrix4 T = agentBodyNode_
+      ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 new_pos = T.transformPoint({0.0f, 0.0f, 0.0f});
   if (castle_mesh) {
     // new_pos = T.transformPoint({0.1f, 1.0f, -3.0f});
@@ -172,7 +171,28 @@ void Viewer::addObject() {
   LOG(INFO) << "Camera transformation " << Eigen::Map<mat4f>(T.data());
 
   node->setTranslation(vec3f(new_pos.x(), new_pos.y(), new_pos.z()));
+  // TODO: syncPose need/should not be exposed to users
   node->syncPose();
+  lastObjectID += 1;
+}
+
+
+void Viewer::pokeLastObject() {
+  Magnum::Matrix4 T = agentBodyNode_
+      ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+  Vector3 impulse = T.transformPoint({0.0f, 0.0f, -3.0f});
+  Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
+  LOG(INFO) << "Poking object " << lastObjectID;
+  physicsManager_.applyImpulse(lastObjectID, impulse, rel_pos);
+}
+
+void Viewer::pushLastObject() {
+  Magnum::Matrix4 T = agentBodyNode_
+      ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+  Vector3 force = T.transformPoint({0.0f, 0.0f, -40.0f});
+  Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
+  LOG(INFO) << "Pushing object " << lastObjectID;
+  physicsManager_.applyForce(lastObjectID, force, rel_pos);
 }
 
 Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
@@ -203,6 +223,8 @@ void Viewer::drawEvent() {
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
+  // Draw debug forces
+  renderCamera_->getMagnumCamera().draw(physicsManager_.getDrawables());
   swapBuffers();
   physicsManager_.nextFrame();
   redraw();
@@ -285,40 +307,36 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       const vec3f position = pathfinder_->getRandomNavigablePoint();
       agentBodyNode_->setTranslation(position);
     } break;
-    case KeyEvent::Key::P:
-      // controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
-      controls_(*objNode_, "moveLeft", moveSensitivity);
-      break;
     case KeyEvent::Key::A:
       controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
       LOG(INFO) << "Agent position " << agentBodyNode_->getAbsolutePosition();
-      //controls_(*objNode_, "moveLeft", moveSensitivity);
       break;
     case KeyEvent::Key::D:
       controls_(*agentBodyNode_, "moveRight", moveSensitivity);
       LOG(INFO) << "Agent position " << agentBodyNode_->getAbsolutePosition();
-      //controls_(*objNode_, "moveRight", moveSensitivity);
       break;
     case KeyEvent::Key::S:
       controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
       LOG(INFO) << "Agent position " << agentBodyNode_->getAbsolutePosition();
-      //controls_(*objNode_, "moveBackward", moveSensitivity);
       break;
     case KeyEvent::Key::W:
       controls_(*agentBodyNode_, "moveForward", moveSensitivity);
       LOG(INFO) << "Agent position " << agentBodyNode_->getAbsolutePosition();
-      //controls_(*objNode_, "moveForward", moveSensitivity);
       break;
     case KeyEvent::Key::X:
-      // controls_(*cameraNode_, "moveDown", moveSensitivity, false);
-      controls_(*objNode_, "moveDown", moveSensitivity, false);
+      controls_(*agentBodyNode_, "moveDown", moveSensitivity, false);
       break;
     case KeyEvent::Key::Z:
-      // controls_(*cameraNode_, "moveUp", moveSensitivity, false);
-      controls_(*objNode_, "moveUp", moveSensitivity, false);
+      controls_(*agentBodyNode_, "moveUp", moveSensitivity, false);
       break;
     case KeyEvent::Key::O:
       addObject();
+      break;
+    case KeyEvent::Key::P:
+      pokeLastObject();
+      break;
+    case KeyEvent::Key::F:
+      pushLastObject();
       break;
     default:
       break;

@@ -24,6 +24,10 @@
 #include "PhysicsManager.h"
 #include "esp/scene/SceneNode.h"
 
+// Debug draw
+#include <Magnum/DebugTools/ForceRenderer.h>
+#include <Magnum/DebugTools/ResourceManager.h>
+
 // forward declarations
 namespace Magnum {
 namespace Trade {

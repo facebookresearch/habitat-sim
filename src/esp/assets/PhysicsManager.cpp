@@ -14,6 +14,8 @@
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
+#include <Magnum/Math/Color.h>
+#include <Magnum/BulletIntegration/Integration.h>
 #include "BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 
@@ -34,55 +36,48 @@
 #include "PTexMeshData.h"
 #include "PhysicsManager.h"
 
+
+
 namespace esp {
 namespace assets {
 
-bool PhysicsManager::initPhysics(
-      scene::SceneNode*     node,
-      bool                  do_profile) {
+bool PhysicsManager::initPhysics(scene::SceneNode* node,
+                                 bool do_profile) {
   LOG(INFO) << "Initializing Physics Engine...";
 
-  // TODO (JH): use unique pointer
-  bCollisionConfig_ = new btDefaultCollisionConfiguration();
-  bDispatcher_ = new btCollisionDispatcher(bCollisionConfig_);
-  btGImpactCollisionAlgorithm::registerAlgorithm(bDispatcher_);
-  bBroadphase_ = new btDbvtBroadphase();
-  bSolver_ = new btSequentialImpulseConstraintSolver();
-  bWorld_ = new btDiscreteDynamicsWorld(bDispatcher_, bBroadphase_, bSolver_,
-                                        bCollisionConfig_);
+  //! We can potentially use other collision checking algorithms, by 
+  //! uncommenting the line below
+  //btGImpactCollisionAlgorithm::registerAlgorithm(&bDispatcher_);
+  bWorld_ = std::make_shared<btDiscreteDynamicsWorld>(&bDispatcher_, 
+      &bBroadphase_, &bSolver_, &bCollisionConfig_);
 
-  // TODO (JH): GImpactCollision are used for generic collisions, however
-  // in my experience they never quite work
-  // btCollisionDispatcher *dispatcher = static_cast<btCollisionDispatcher
-  // *>(bWorld_.getDispatcher());
-  // btGImpactCollisionAlgorithm::registerAlgorithm(dispatcher);
-
-  debugDraw_.setMode(Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe);
   // TODO (JH): currently GLB meshes are y-up, the gravity direction is hardcoded
   bWorld_->setGravity({0.0f, -10.0f, 0.0f});
-  //bWorld_.setGravity({0.0f, 0.0f, -10.0f});
+  //bWorld_->setGravity({0.0f, 0.0f, -10.0f});
+
   // TODO (JH): debugDrawer is currently not compatible with our example cpp
-  //bWorld_.setDebugDrawer(&_debugDraw);
+  //debugDraw_.setMode(Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe);
+  //bWorld_->setDebugDrawer(&_debugDraw);
 
   physicsNode = node;
 
   timeline_.start();
   initialized_ = true;
   do_profile_ = do_profile;
-  LOG(INFO) << "Initialized Physics Engine.";
 
+  // Initialize debugger
+  LOG(INFO) << "Debug drawing";
+  Magnum::DebugTools::ResourceManager::instance()
+    .set("bulletForce", Magnum::DebugTools::ForceRendererOptions{}
+    .setSize(5.0f)
+    .setColor(Magnum::Color3(1.0f, 0.1f, 0.1f)));
+
+  LOG(INFO) << "Initialized Physics Engine.";
   return true;
 }
 
 PhysicsManager::~PhysicsManager() {
   LOG(INFO) << "Deconstructing PhysicsManager";
-  if (initialized_) {
-    delete bCollisionConfig_;
-    delete bDispatcher_;
-    delete bBroadphase_;
-    delete bSolver_;
-    delete bWorld_;
-  }
 }
 
 void PhysicsManager::getPhysicsEngine() {}
@@ -100,7 +95,7 @@ bool PhysicsManager::initScene(
     if (!isMeshPrimitiveValid(meshData)) {return false;}
   }
 
-  float mass = 0.0f;    // TODO (JH) weight is currently hardcoded
+  float mass = 0.0f;
   bool sceneSuccess;
   if (info.type == AssetType::INSTANCE_MESH) {              // ._semantic.ply mesh data
     LOG(INFO) << "Initialize instance scene";
@@ -109,15 +104,16 @@ bool PhysicsManager::initScene(
   } else {                                                  // GLB mesh data
     LOG(INFO) << "Initialize GLB scene";
   }
-  sceneSuccess = physObject->initializeScene(info, mass, meshGroup, *bWorld_);
+  sceneSuccess = physObject->initializeScene(info, mass, meshGroup, *bWorld_.get());
   //physObject->syncPose();
   
   LOG(INFO) << "Init scene done";
+
   return sceneSuccess;
 }
 
 
-bool PhysicsManager::initObject(
+int PhysicsManager::initObject(
     const AssetInfo& info,
     const MeshMetaData& metaData,
     std::vector<CollisionMeshData> meshGroup,
@@ -139,9 +135,19 @@ bool PhysicsManager::initObject(
       LOG(INFO) << "Initialize GLB object";
   }
 
-  bool objectSuccess = physObject->initializeObject(info, mass, meshGroup, *bWorld_);
+  bool objectSuccess = physObject->initializeObject(info, mass, meshGroup, *bWorld_.get());
   physObject->syncPose();
-  return objectSuccess;
+  // Enable force debugging
+  //physObject->debugForce(debugDrawables);
+
+  if (!objectSuccess) {return -1;}
+
+  // Maintain object resource
+  dynamicObjects_[nextObjectID_] = physObject;
+
+  // Increment simple object ID tracker
+  nextObjectID_ += 1;
+  return nextObjectID_-1;
 }
 
 //! Check if mesh primitive is compatible with physics
@@ -209,6 +215,7 @@ void PhysicsManager::stepPhysics() {
   }
   
   int numObjects = bWorld_->getNumCollisionObjects();
+
 }
 
 void PhysicsManager::nextFrame() {
@@ -239,8 +246,29 @@ void PhysicsManager::checkActiveObjects() {
       }
     }
   }
-  LOG(INFO) << "Nodes total " << numTotal << " active " << numActive;
+  //LOG(INFO) << "Nodes total " << numTotal << " active " << numActive;
 }
+
+
+void PhysicsManager::applyForce(
+      const int objectID,
+      Magnum::Vector3 force,
+      Magnum::Vector3 relPos) {
+  physics::BulletRigidObject* physObject = dynamicObjects_[objectID];
+
+  physObject->rigidBody().applyForce(btVector3(force), btVector3(relPos));
+  //physObject->setDebugForce(force);
+}
+
+void PhysicsManager::applyImpulse(
+      const int objectID,
+      Magnum::Vector3 impulse,
+      Magnum::Vector3 relPos) {
+  physics::BulletRigidObject* physObject = dynamicObjects_[objectID];
+
+  physObject->rigidBody().applyImpulse(btVector3(impulse), btVector3(relPos));
+}
+
 
 }  // namespace assets
 }  // namespace esp

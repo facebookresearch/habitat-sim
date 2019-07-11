@@ -191,11 +191,14 @@ bool ResourceManager::loadObject(const AssetInfo& info,
       }
       
       transformAxis(info, meshGroup);
-      objectSuccess = _physicsManager.initObject(info, metaData, meshGroup, *physNode);
+      int objectID = _physicsManager.initObject(info, metaData, meshGroup, *physNode);
+      //LOG(INFO) << "Object ID loaded " << objectID;
+      objectSuccess = (objectID != -1);
 
       (*physNode)->MagnumObject::setTransformation(parent->transformation());
       (*physNode)->syncPose();
       //LOG(INFO) << "Parent trans " << Eigen::Map<mat4f>(parent->transformation().data());
+
       return c_MeshSuccess && objectSuccess;
 
     } else {

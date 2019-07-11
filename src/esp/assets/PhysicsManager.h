@@ -26,6 +26,11 @@
 #include "esp/scene/SceneNode.h"
 #include "esp/physics/BulletObject.h"
 
+//#include <Magnum/Math/Angle.h>
+// Debug draw
+#include <Magnum/DebugTools/ForceRenderer.h>
+#include <Magnum/DebugTools/ResourceManager.h>
+
 
 namespace esp {
 namespace assets {
@@ -40,7 +45,7 @@ class PhysicsManager {
   
   //! Initialize object given mesh data
   //! The object could contain several parts
-  bool initObject(
+  int initObject(
       const AssetInfo& info,
       const MeshMetaData& metaData,
       std::vector<CollisionMeshData> meshGroup,
@@ -61,6 +66,19 @@ class PhysicsManager {
 
   void checkActiveObjects();
 
+  void applyForce(const int objectID,
+      Magnum::Vector3 force,
+      Magnum::Vector3 relPos);
+
+  void applyImpulse(const int objectID,
+      Magnum::Vector3 impulse,
+      Magnum::Vector3 relPos);
+
+  Magnum::SceneGraph::DrawableGroup3D& getDrawables() { return debugDrawables; }
+  const Magnum::SceneGraph::DrawableGroup3D& getDrawables() const {
+    return debugDrawables;
+  }
+
  protected:
 
   void getPhysicsEngine();
@@ -71,15 +89,22 @@ class PhysicsManager {
   //! ==== physics engines ====
   //! The world has to live longer than the scene because RigidBody
   //! instances have to remove themselves from it on destruction
-  Magnum::BulletIntegration::DebugDraw      debugDraw_{Magnum::NoCreate};
-  btDbvtBroadphase*                         bBroadphase_;
-  btDefaultCollisionConfiguration*          bCollisionConfig_;
-  btCollisionDispatcher*                    bDispatcher_;
-  //! btCollisionDispatcher*                    bDispatcher_;
-  btSequentialImpulseConstraintSolver*      bSolver_;
-  btDiscreteDynamicsWorld*                  bWorld_;
+  Magnum::BulletIntegration::DebugDraw    debugDraw_{Magnum::NoCreate};
+  btDbvtBroadphase                        bBroadphase_;
+  btDefaultCollisionConfiguration         bCollisionConfig_;
+  btSequentialImpulseConstraintSolver     bSolver_;
+  btCollisionDispatcher                   bDispatcher_{&bCollisionConfig_};
+  
+  //! The following are made ptr because we need to intialize them in constructor,
+  //! potentially with different world configurations
+  std::shared_ptr<btDiscreteDynamicsWorld>   bWorld_;
 
+  //! Used to keep track of all sceneNodes that have physical properties
   scene::SceneNode* physicsNode = nullptr;
+
+  //! ==== dynamic object resources ===
+  std::map<int, physics::BulletRigidObject*> dynamicObjects_;
+  int nextObjectID_ = 0;
 
   bool initialized_ = false;
   bool do_profile_ = false;
@@ -89,6 +114,11 @@ class PhysicsManager {
   Magnum::Timeline timeline_;
   int maxSubSteps_ = 10;
   float fixedTimeStep_ = 1.0f / 240.0f;
+
+
+  /* Debug Draw */
+  Magnum::DebugTools::ResourceManager debugManager;
+  Magnum::SceneGraph::DrawableGroup3D debugDrawables;
 };
 
 }  // namespace assets
