@@ -21,7 +21,7 @@
 #include "MeshMetaData.h"
 #include "CollisionMeshData.h"
 #include "MeshData.h"
-#include "PhysicsManager.h"
+#include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneNode.h"
 
 // Debug draw
@@ -71,7 +71,7 @@ class ResourceManager {
                  DrawableGroup* drawables = nullptr);
 
   bool loadPhysicalScene(const AssetInfo& info,
-                         PhysicsManager& _physicsManager,
+                         physics::PhysicsManager& _physicsManager,
                          scene::SceneNode* parent = nullptr,
                          bool attach_physics = false,
                          DrawableGroup* drawables = nullptr);
@@ -79,11 +79,11 @@ class ResourceManager {
   // load an object. Eventually this will load from AssetInfo descriptor,
   // whereas currently it only loads dumb cubes
   bool loadObject(const AssetInfo& info,
-                  PhysicsManager& _physicsManager,
+                  physics::PhysicsManager& _physicsManager,
                   scene::SceneNode* parent = nullptr,
                   bool attach_physics = true,
                   DrawableGroup* drawables = nullptr,
-                  physics::BulletRigidObject** physNode = nullptr);
+                  physics::RigidObject** physNode = nullptr);
 
  protected:
   //! Load textures from importer into assets, and update metaData

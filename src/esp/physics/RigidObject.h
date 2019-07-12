@@ -17,11 +17,11 @@
 namespace esp {
 namespace physics {
 
-class BulletRigidObject : public scene::SceneNode {
+class RigidObject : public scene::SceneNode {
  public:
-  BulletRigidObject(scene::SceneNode* parent);
+  RigidObject(scene::SceneNode* parent);
 
-  // TODO (JH) Currently a BulletRigidObject is either a scene
+  // TODO (JH) Currently a RigidObject is either a scene
   // or an object, but cannot be both (tracked by _isScene/_isObject_)
   // there is probably a better way to abstract this
   bool initializeScene(
@@ -36,7 +36,7 @@ class BulletRigidObject : public scene::SceneNode {
       std::vector<assets::CollisionMeshData> meshGroup,
       btDynamicsWorld& bWorld);
 
-  ~BulletRigidObject();
+  ~RigidObject();
 
   //! Check whether object is being actively simulated, or sleeping
   bool isActive();

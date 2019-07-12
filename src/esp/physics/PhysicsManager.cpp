@@ -29,17 +29,17 @@
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneGraph.h"
 
-#include "FRLInstanceMeshData.h"
-#include "GenericInstanceMeshData.h"
-#include "GltfMeshData.h"
-#include "Mp3dInstanceMeshData.h"
-#include "PTexMeshData.h"
+#include "esp/assets/FRLInstanceMeshData.h"
+#include "esp/assets/GenericInstanceMeshData.h"
+#include "esp/assets/GltfMeshData.h"
+#include "esp/assets/Mp3dInstanceMeshData.h"
+#include "esp/assets/PTexMeshData.h"
 #include "PhysicsManager.h"
 
 
 
 namespace esp {
-namespace assets {
+namespace physics {
 
 bool PhysicsManager::initPhysics(scene::SceneNode* node,
                                  bool do_profile) {
@@ -85,21 +85,21 @@ void PhysicsManager::getPhysicsEngine() {}
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
 bool PhysicsManager::initScene(
-    const AssetInfo& info,
-    const MeshMetaData& metaData,
-    std::vector<CollisionMeshData> meshGroup,
-    physics::BulletRigidObject* physObject) {
+    const assets::AssetInfo& info,
+    const assets::MeshMetaData& metaData,
+    std::vector<assets::CollisionMeshData> meshGroup,
+    physics::RigidObject* physObject) {
 
   // Test Mesh primitive is valid
-  for (CollisionMeshData& meshData: meshGroup) {
+  for (assets::CollisionMeshData& meshData: meshGroup) {
     if (!isMeshPrimitiveValid(meshData)) {return false;}
   }
 
   float mass = 0.0f;
   bool sceneSuccess;
-  if (info.type == AssetType::INSTANCE_MESH) {              // ._semantic.ply mesh data
+  if (info.type == assets::AssetType::INSTANCE_MESH) {              // ._semantic.ply mesh data
     LOG(INFO) << "Initialize instance scene";
-  } else if (info.type == AssetType::FRL_INSTANCE_MESH) {   // FRL mesh
+  } else if (info.type == assets::AssetType::FRL_INSTANCE_MESH) {   // FRL mesh
     LOG(INFO) << "Initialize FRL scene";
   } else {                                                  // GLB mesh data
     LOG(INFO) << "Initialize GLB scene";
@@ -112,22 +112,22 @@ bool PhysicsManager::initScene(
 
 
 int PhysicsManager::initObject(
-    const AssetInfo& info,
-    const MeshMetaData& metaData,
-    std::vector<CollisionMeshData> meshGroup,
-    physics::BulletRigidObject* physObject) {
+    const assets::AssetInfo& info,
+    const assets::MeshMetaData& metaData,
+    std::vector<assets::CollisionMeshData> meshGroup,
+    physics::RigidObject* physObject) {
 
   // Test Mesh primitive is valid
-  for (CollisionMeshData& meshData: meshGroup) {
+  for (assets::CollisionMeshData& meshData: meshGroup) {
     if (!isMeshPrimitiveValid(meshData)) {return false;}
   }
 
   // TODO (JH): hacked mass value
   float mass = meshGroup[0].indices.size() * 0.001f;;
   switch (info.type) {
-    case AssetType::INSTANCE_MESH:      // _semantic.ply
+    case assets::AssetType::INSTANCE_MESH:      // _semantic.ply
       LOG(INFO) << "Initialize PLY object"; break;  
-    case AssetType::FRL_INSTANCE_MESH:  // FRL mesh
+    case assets::AssetType::FRL_INSTANCE_MESH:  // FRL mesh
       LOG(INFO) << "Initialize FRL object"; break;
     default:                            // GLB mesh
       LOG(INFO) << "Initialize GLB object";
@@ -148,7 +148,7 @@ int PhysicsManager::initObject(
 }
 
 //! Check if mesh primitive is compatible with physics
-bool PhysicsManager::isMeshPrimitiveValid(CollisionMeshData& meshData) {
+bool PhysicsManager::isMeshPrimitiveValid(assets::CollisionMeshData& meshData) {
   if (meshData.primitive == Magnum::MeshPrimitive::Triangles) {
     // Only triangle mesh works
     return true;
@@ -177,8 +177,9 @@ bool PhysicsManager::isMeshPrimitiveValid(CollisionMeshData& meshData) {
 void PhysicsManager::debugSceneGraph(const MagnumObject* root) {
   auto& children = root->children();
   const scene::SceneNode* root_ = static_cast<const scene::SceneNode*>(root);
-  LOG(INFO) << "SCENE NODE " << root_->getId() << " Position "
-            << root_->getAbsolutePosition();
+  //ALEX: this was showing erro in IDE...
+  //LOG(INFO) << "SCENE NODE " << root_->getId() << " Position "
+  //          << root_->getAbsolutePosition();
   if (children.isEmpty()) {
     LOG(INFO) << "SCENE NODE is leaf node.";
   } else {
@@ -231,8 +232,8 @@ void PhysicsManager::checkActiveObjects() {
   int numActive = 0;
   int numTotal = 0;
   for(auto& child: physicsNode->children()) {
-    physics::BulletRigidObject* childNode = dynamic_cast<
-        physics::BulletRigidObject*>(&child);
+    physics::RigidObject* childNode = dynamic_cast<
+        physics::RigidObject*>(&child);
     if (childNode == nullptr) {
       //LOG(INFO) << "Child is null";
     } else {
@@ -252,7 +253,7 @@ void PhysicsManager::applyForce(
       Magnum::Vector3 force,
       Magnum::Vector3 relPos) 
 {
-  physics::BulletRigidObject* physObject = dynamicObjects_[objectID];
+  physics::RigidObject* physObject = dynamicObjects_[objectID];
   physObject->applyForce(force, relPos);
   //physObject->setDebugForce(force);
 }
@@ -262,10 +263,10 @@ void PhysicsManager::applyImpulse(
       Magnum::Vector3 impulse,
       Magnum::Vector3 relPos) 
 {
-  physics::BulletRigidObject* physObject = dynamicObjects_[objectID];
+  physics::RigidObject* physObject = dynamicObjects_[objectID];
   physObject->applyImpulse(impulse, relPos);
 }
 
 
-}  // namespace assets
+}  // namespace physics
 }  // namespace esp

@@ -138,7 +138,7 @@ void Viewer::addObject() {
   auto& drawables = sceneGraph->getDrawables();
   std::string object_file("./data/objects/cheezit.glb");
 
-  physics::BulletRigidObject* node;
+  physics::RigidObject* node;
   bool objectLoaded_ = resourceManager_.loadObject(
       assets::AssetInfo::fromPath(object_file), physicsManager_, navSceneNode_,
       enablePhysics_, &drawables, &node);

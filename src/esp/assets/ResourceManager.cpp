@@ -69,7 +69,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
 
 bool ResourceManager::loadPhysicalScene(
     const AssetInfo& info,
-    PhysicsManager& _physicsManager,
+    physics::PhysicsManager& _physicsManager,
     scene::SceneNode* parent /* = nullptr */,
     bool attach_physics, /* = false */
     DrawableGroup* drawables /* = nullptr */) {
@@ -77,7 +77,7 @@ bool ResourceManager::loadPhysicalScene(
   LOG(INFO) << "Loaded mesh object, success " << meshSuccess;
 
   if (attach_physics) {
-    physics::BulletRigidObject* physNode = new physics::BulletRigidObject(parent);
+    physics::RigidObject* physNode = new physics::RigidObject(parent);
 
     LOG(INFO) << "Physics node " << physNode;
     if (physNode == nullptr) {
@@ -152,16 +152,16 @@ bool ResourceManager::loadPhysicalScene(
 // TODO (JH): The use of double pointer is backward-incompatible here,
 // need to consult Yili
 bool ResourceManager::loadObject(const AssetInfo& info,
-                                 PhysicsManager& _physicsManager,
+                                 physics::PhysicsManager& _physicsManager,
                                  scene::SceneNode* parent,
                                  bool attach_physics, /* = false */
                                  DrawableGroup* drawables /* = nullptr */,
-                                 physics::BulletRigidObject** physNode) {
+                                 physics::RigidObject** physNode) {
   // if this is a new file, load it and add it to the dictionary
   if (attach_physics) {
 
     if (info.type == AssetType::MP3D_MESH) {
-      *physNode = new physics::BulletRigidObject(parent);
+      *physNode = new physics::RigidObject(parent);
       bool meshSuccess =
           loadGeneralMeshData(info, parent, drawables, true, *physNode);
       bool objectSuccess;

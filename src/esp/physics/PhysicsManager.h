@@ -17,14 +17,14 @@
 #include <Magnum/Timeline.h>
 #include <btBulletDynamicsCommon.h>
 
-#include "Asset.h"
-#include "BaseMesh.h"
-#include "GenericInstanceMeshData.h"
-#include "MeshMetaData.h"
-#include "CollisionMeshData.h"
-#include "MeshData.h"
+#include "esp/assets/Asset.h"
+#include "esp/assets/BaseMesh.h"
+#include "esp/assets/GenericInstanceMeshData.h"
+#include "esp/assets/MeshMetaData.h"
+#include "esp/assets/CollisionMeshData.h"
+#include "esp/assets/MeshData.h"
 #include "esp/scene/SceneNode.h"
-#include "esp/physics/BulletObject.h"
+#include "RigidObject.h"
 
 //#include <Magnum/Math/Angle.h>
 // Debug draw
@@ -33,7 +33,7 @@
 
 
 namespace esp {
-namespace assets {
+namespace physics {
 
 class PhysicsManager {
  public:
@@ -46,18 +46,18 @@ class PhysicsManager {
   //! Initialize object given mesh data
   //! The object could contain several parts
   int initObject(
-      const AssetInfo& info,
-      const MeshMetaData& metaData,
-      std::vector<CollisionMeshData> meshGroup,
-      physics::BulletRigidObject* physObject);
+      const assets::AssetInfo& info,
+      const assets::MeshMetaData& metaData,
+      std::vector<assets::CollisionMeshData> meshGroup,
+      physics::RigidObject* physObject);
 
   //! Initialize scene given mesh data
   //! The scene could contain several components
   bool initScene(
-      const AssetInfo& info,
-      const MeshMetaData& metaData,
-      std::vector<CollisionMeshData> meshGroup,
-      physics::BulletRigidObject* physObject);
+      const assets::AssetInfo& info,
+      const assets::MeshMetaData& metaData,
+      std::vector<assets::CollisionMeshData> meshGroup,
+      physics::RigidObject* physObject);
 
   void debugSceneGraph(const MagnumObject* root);
 
@@ -84,7 +84,7 @@ class PhysicsManager {
   void getPhysicsEngine();
 
   //! Check if mesh primitive type is valid for bullet physics engine
-  bool isMeshPrimitiveValid(CollisionMeshData& meshData);
+  bool isMeshPrimitiveValid(assets::CollisionMeshData& meshData);
 
   //! ==== physics engines ====
   //! The world has to live longer than the scene because RigidBody
@@ -103,7 +103,7 @@ class PhysicsManager {
   scene::SceneNode* physicsNode = nullptr;
 
   //! ==== dynamic object resources ===
-  std::map<int, physics::BulletRigidObject*> dynamicObjects_;
+  std::map<int, physics::RigidObject*> dynamicObjects_;
   int nextObjectID_ = 0;
 
   bool initialized_ = false;
@@ -121,6 +121,6 @@ class PhysicsManager {
   Magnum::SceneGraph::DrawableGroup3D debugDrawables;
 };
 
-}  // namespace assets
+}  // namespace physics
 
 }  // namespace esp

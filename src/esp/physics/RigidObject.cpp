@@ -14,19 +14,20 @@
 #include "esp/geo/geo.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneGraph.h"
+#include "esp/assets/CollisionMeshData.h"
 
 #include "BulletCollision/CollisionShapes/btCompoundShape.h"
 #include "BulletCollision/CollisionShapes/btConvexHullShape.h"
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
-#include "BulletObject.h"
+#include "RigidObject.h"
 
 
 namespace esp {
 namespace physics {
 
-BulletRigidObject::BulletRigidObject(scene::SceneNode* parent)
+RigidObject::RigidObject(scene::SceneNode* parent)
     : scene::SceneNode{*parent} {}
 
 
@@ -44,13 +45,13 @@ BulletRigidObject::BulletRigidObject(scene::SceneNode* parent)
 //!        (2) Use examples/Importers/ImportBsp
 
 
-bool BulletRigidObject::initializeScene(
+bool RigidObject::initializeScene(
     const assets::AssetInfo& info,
     Magnum::Float mass,
     std::vector<assets::CollisionMeshData> meshGroup,
     btDynamicsWorld& bWorld) {
   if (initialized_) {
-    LOG(ERROR) << "Cannot initialized a BulletRigidObject more than once";
+    LOG(ERROR) << "Cannot initialized a RigidObject more than once";
     return false;
   }
 
@@ -122,14 +123,14 @@ bool BulletRigidObject::initializeScene(
 }
 
 
-bool BulletRigidObject::initializeObject(
+bool RigidObject::initializeObject(
     const assets::AssetInfo& info,
     Magnum::Float mass,
     std::vector<assets::CollisionMeshData> meshGroup,
     btDynamicsWorld& bWorld) {
 
   if (initialized_) {
-    LOG(ERROR) << "Cannot initialized a BulletRigidObject more than once";
+    LOG(ERROR) << "Cannot initialized a RigidObject more than once";
     return false;
   }
 
@@ -218,7 +219,7 @@ bool BulletRigidObject::initializeObject(
 }
 
 // Helper function to find object center
-void BulletRigidObject::getDimensions(
+void RigidObject::getDimensions(
       assets::CollisionMeshData& meshData,
       float* x,
       float* y,
@@ -245,7 +246,7 @@ void BulletRigidObject::getDimensions(
       << minY << " maxY " << maxY << " minZ " << minZ << " maxZ " << maxZ;
 }
 
-bool BulletRigidObject::isActive() {
+bool RigidObject::isActive() {
   if (!initialized_) {
     LOG(INFO) << "Node not initialized";
     return false;
@@ -256,7 +257,7 @@ bool BulletRigidObject::isActive() {
   return false;
 }
 
-void BulletRigidObject::debugForce(
+void RigidObject::debugForce(
     Magnum::SceneGraph::DrawableGroup3D& debugDrawables) {
   //! DEBUG draw
   debugRender_ = new Magnum::DebugTools::ForceRenderer3D(
@@ -265,12 +266,12 @@ void BulletRigidObject::debugForce(
   LOG(INFO) << "Force render" << debugExternalForce_.x();
 }
 
-void BulletRigidObject::setDebugForce(
+void RigidObject::setDebugForce(
     Magnum::Vector3 force) {
   debugExternalForce_ = force;
 }
 
-BulletRigidObject::~BulletRigidObject() {
+RigidObject::~RigidObject() {
   if (initialized_) {
     LOG(INFO) << "Deleting object " << mass_;
   } else {
@@ -278,14 +279,14 @@ BulletRigidObject::~BulletRigidObject() {
   }
 }
 
-void BulletRigidObject::applyForce(Magnum::Vector3 force,
+void RigidObject::applyForce(Magnum::Vector3 force,
                                    Magnum::Vector3 relPos) {
   if (isScene_ || !initialized_) {return;}
   //! dynamic_cast is safe
   bObjectRigidBody_->applyForce(btVector3(force), btVector3(relPos));
 }
 
-void BulletRigidObject::applyImpulse(Magnum::Vector3 impulse,
+void RigidObject::applyImpulse(Magnum::Vector3 impulse,
                                      Magnum::Vector3 relPos) {
   if (isScene_ || !initialized_) {return;}
   bObjectRigidBody_->applyImpulse(btVector3(impulse), btVector3(relPos));
@@ -293,7 +294,7 @@ void BulletRigidObject::applyImpulse(Magnum::Vector3 impulse,
 
 //! Synchronize Physics transformations
 //! Needed after changing the pose from Magnum side
-void BulletRigidObject::syncPose() {
+void RigidObject::syncPose() {
   LOG(INFO) << "Rigid object sync pose";
   if (initialized_) {
     if (isScene_) {
@@ -310,14 +311,14 @@ void BulletRigidObject::syncPose() {
 }
 
 
-scene::SceneNode& BulletRigidObject::setTransformation(
+scene::SceneNode& RigidObject::setTransformation(
     const Eigen::Ref<const mat4f> transformation) {
   scene::SceneNode::setTransformation(transformation);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::setTransformation(
+scene::SceneNode& RigidObject::setTransformation(
     const Eigen::Ref<const vec3f> position,
     const Eigen::Ref<const vec3f> target,
     const Eigen::Ref<const vec3f> up) {
@@ -326,41 +327,41 @@ scene::SceneNode& BulletRigidObject::setTransformation(
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::setTranslation(
+scene::SceneNode& RigidObject::setTranslation(
     const Eigen::Ref<const vec3f> vector) {
   scene::SceneNode::setTranslation(vector);
   syncPose();
   return *this; 
 }
 
-scene::SceneNode& BulletRigidObject::setRotation(
+scene::SceneNode& RigidObject::setRotation(
     const quatf& quaternion) {
   scene::SceneNode::setRotation(quaternion);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::resetTransformation() {
+scene::SceneNode& RigidObject::resetTransformation() {
   scene::SceneNode::resetTransformation();
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::translate(
+scene::SceneNode& RigidObject::translate(
     const Eigen::Ref<const vec3f> vector) {
   scene::SceneNode::translate(vector);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::translateLocal(
+scene::SceneNode& RigidObject::translateLocal(
     const Eigen::Ref<const vec3f> vector) {
   scene::SceneNode::translateLocal(vector);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotate(
+scene::SceneNode& RigidObject::rotate(
     float angleInRad,
     const Eigen::Ref<const vec3f> normalizedAxis) {
   scene::SceneNode::rotate(angleInRad, normalizedAxis);
@@ -368,7 +369,7 @@ scene::SceneNode& BulletRigidObject::rotate(
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateLocal(
+scene::SceneNode& RigidObject::rotateLocal(
     float angleInRad,
     const Eigen::Ref<const vec3f> normalizedAxis) {
   scene::SceneNode::rotateLocal(angleInRad, normalizedAxis);
@@ -376,43 +377,43 @@ scene::SceneNode& BulletRigidObject::rotateLocal(
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateX(float angleInRad) {
+scene::SceneNode& RigidObject::rotateX(float angleInRad) {
   scene::SceneNode::rotateX(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateXInDegree(float angleInDeg) {
+scene::SceneNode& RigidObject::rotateXInDegree(float angleInDeg) {
   scene::SceneNode::rotateXInDegree(angleInDeg);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateXLocal(float angleInRad) {
+scene::SceneNode& RigidObject::rotateXLocal(float angleInRad) {
   scene::SceneNode::rotateXLocal(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateY(float angleInRad) {
+scene::SceneNode& RigidObject::rotateY(float angleInRad) {
   scene::SceneNode::rotateY(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateYLocal(float angleInRad) {
+scene::SceneNode& RigidObject::rotateYLocal(float angleInRad) {
   scene::SceneNode::rotateYLocal(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateZ(float angleInRad) {
+scene::SceneNode& RigidObject::rotateZ(float angleInRad) {
   scene::SceneNode::rotateZ(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateZLocal(float angleInRad) {
+scene::SceneNode& RigidObject::rotateZLocal(float angleInRad) {
   scene::SceneNode::rotateZLocal(angleInRad);
   syncPose();
   return *this;
