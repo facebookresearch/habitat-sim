@@ -105,8 +105,6 @@ bool PhysicsManager::initScene(
     LOG(INFO) << "Initialize GLB scene";
   }
   sceneSuccess = physObject->initializeScene(info, mass, meshGroup, *bWorld_.get());
-  //physObject->syncPose();
-  
   LOG(INFO) << "Init scene done";
 
   return sceneSuccess;
@@ -136,7 +134,6 @@ int PhysicsManager::initObject(
   }
 
   bool objectSuccess = physObject->initializeObject(info, mass, meshGroup, *bWorld_.get());
-  physObject->syncPose();
   // Enable force debugging
   //physObject->debugForce(debugDrawables);
 
@@ -253,20 +250,20 @@ void PhysicsManager::checkActiveObjects() {
 void PhysicsManager::applyForce(
       const int objectID,
       Magnum::Vector3 force,
-      Magnum::Vector3 relPos) {
+      Magnum::Vector3 relPos) 
+{
   physics::BulletRigidObject* physObject = dynamicObjects_[objectID];
-
-  physObject->rigidBody().applyForce(btVector3(force), btVector3(relPos));
+  physObject->applyForce(force, relPos);
   //physObject->setDebugForce(force);
 }
 
 void PhysicsManager::applyImpulse(
       const int objectID,
       Magnum::Vector3 impulse,
-      Magnum::Vector3 relPos) {
+      Magnum::Vector3 relPos) 
+{
   physics::BulletRigidObject* physObject = dynamicObjects_[objectID];
-
-  physObject->rigidBody().applyImpulse(btVector3(impulse), btVector3(relPos));
+  physObject->applyImpulse(impulse, relPos);
 }
 
 

@@ -11,6 +11,7 @@
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/FRLInstanceMeshData.h"
 #include "esp/core/esp.h"
+#include "esp/scene/SceneNode.h"
 #include <Magnum/DebugTools/ForceRenderer.h>
 
 namespace esp {
@@ -36,15 +37,50 @@ class BulletRigidObject : public scene::SceneNode {
       btDynamicsWorld& bWorld);
 
   ~BulletRigidObject();
-  btRigidBody& rigidBody();
-  /* needed after changing the pose from Magnum side */
-  void syncPose();
 
+  //! Check whether object is being actively simulated, or sleeping
   bool isActive();
 
+  //! Force interaction
+  void applyForce(Magnum::Vector3 force,
+                  Magnum::Vector3 relPos);
+
+  // Impulse interaction
+  void applyImpulse(Magnum::Vector3 impulse,
+                    Magnum::Vector3 relPos);
+
+  //! (Prototype) For visualizing & debugging
   void debugForce(Magnum::SceneGraph::DrawableGroup3D& debugDrawables);
 
+  //! (Prototype) For visualizing & debugging
   void setDebugForce(Magnum::Vector3 force);
+
+  // ==== Transformations ===
+  //! Need to overwrite a bunch of functions to update physical states 
+  virtual SceneNode& setTransformation(
+      const Eigen::Ref<const mat4f> transformation) override;
+  virtual SceneNode& setTransformation(const Eigen::Ref<const vec3f> position,
+                                       const Eigen::Ref<const vec3f> target,
+                                       const Eigen::Ref<const vec3f> up) override;
+  virtual SceneNode& setTranslation(const Eigen::Ref<const vec3f> vector) override;
+  virtual SceneNode& setRotation(const quatf& quaternion) override;
+
+  virtual SceneNode& resetTransformation() override;
+  virtual SceneNode& translate(const Eigen::Ref<const vec3f> vector) override;
+  virtual SceneNode& translateLocal(const Eigen::Ref<const vec3f> vector) override;
+
+  virtual SceneNode& rotate(float angleInRad,
+                            const Eigen::Ref<const vec3f> normalizedAxis) override;
+  virtual SceneNode& rotateLocal(float angleInRad,
+                                 const Eigen::Ref<const vec3f> normalizedAxis) override;
+
+  virtual SceneNode& rotateX(float angleInRad) override;
+  virtual SceneNode& rotateXInDegree(float angleInDeg) override;
+  virtual SceneNode& rotateXLocal(float angleInRad) override;
+  virtual SceneNode& rotateY(float angleInRad) override;
+  virtual SceneNode& rotateYLocal(float angleInRad) override;
+  virtual SceneNode& rotateZ(float angleInRad) override;
+  virtual SceneNode& rotateZLocal(float angleInRad) override;
 
  private:
   bool initialized_ = false;
@@ -53,19 +89,18 @@ class BulletRigidObject : public scene::SceneNode {
 
   //! Physical scene
   //! Scene data: triangular mesh shape
-  std::unique_ptr<btTriangleIndexVertexArray> tivArray_;
+  //! All components are stored as a vector of bCollisionBody_
+  std::unique_ptr<btTriangleIndexVertexArray>          bSceneArray_;
   std::vector<std::unique_ptr<btBvhTriangleMeshShape>> bSceneShapes_;
-  std::vector<std::unique_ptr<btCollisionObject>> bCollisionBodies_;
+  std::vector<std::unique_ptr<btCollisionObject>>      bSceneCollisionObjects_;
 
   // Physical object
-  //! Object data: Convex collision shape
-  std::unique_ptr<btCollisionObject> bCollisionBody_;
-  std::vector<std::unique_ptr<btConvexHullShape>> bConvexShapes_;
-  std::unique_ptr<btCompoundShape> bObjectShape_;
-  std::unique_ptr<btRigidBody> rigidBody_;
-
-  //! Magnum Physics Binding
-  Magnum::BulletIntegration::MotionState* motionState_;
+  //! Object data: Composite convex collision shape
+  //! All components are wrapped into one rigidBody_
+  std::vector<std::unique_ptr<btConvexHullShape>>      bObjectConvexShapes_;
+  std::unique_ptr<btCompoundShape>                     bObjectShape_;
+  std::unique_ptr<btRigidBody>                         bObjectRigidBody_;
+  Magnum::BulletIntegration::MotionState*              bObjectMotionState_;
 
   float mass_;
   float defaultRestitution_ = 0.1f;
@@ -80,6 +115,10 @@ class BulletRigidObject : public scene::SceneNode {
 
   void getDimensions(assets::CollisionMeshData& meshData, 
       float* x, float* y, float* z);
+
+  //! Needed after changing the pose from Magnum side
+  //! Not exposed to end user
+  void syncPose();
 };
 
 }  // namespace physics

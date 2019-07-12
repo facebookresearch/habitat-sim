@@ -171,8 +171,6 @@ void Viewer::addObject() {
   LOG(INFO) << "Camera transformation " << Eigen::Map<mat4f>(T.data());
 
   node->setTranslation(vec3f(new_pos.x(), new_pos.y(), new_pos.z()));
-  // TODO: syncPose need/should not be exposed to users
-  node->syncPose();
   lastObjectID += 1;
 }
 

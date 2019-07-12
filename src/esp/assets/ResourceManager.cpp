@@ -149,6 +149,8 @@ bool ResourceManager::loadPhysicalScene(
   return meshSuccess;
 }
 
+// TODO (JH): The use of double pointer is backward-incompatible here,
+// need to consult Yili
 bool ResourceManager::loadObject(const AssetInfo& info,
                                  PhysicsManager& _physicsManager,
                                  scene::SceneNode* parent,
@@ -195,8 +197,7 @@ bool ResourceManager::loadObject(const AssetInfo& info,
       //LOG(INFO) << "Object ID loaded " << objectID;
       objectSuccess = (objectID != -1);
 
-      (*physNode)->MagnumObject::setTransformation(parent->transformation());
-      (*physNode)->syncPose();
+      (*physNode)->setTransformation(parent->getTransformation());
       //LOG(INFO) << "Parent trans " << Eigen::Map<mat4f>(parent->transformation().data());
 
       return c_MeshSuccess && objectSuccess;
