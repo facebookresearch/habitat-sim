@@ -232,7 +232,7 @@ The Habitat project would not have been possible without the support and contrib
 * If you use the noise model from PyRobot, please cite the their [technical report](https://github.com/facebookresearch/pyrobot#citation).
 
 
-    Specifically, the noise model used for the noisy control functions named `pyrobot_*` and defined in `habitat_sim/agent/pyrobot_noisy_controls.py`
+    Specifically, the noise model used for the noisy control functions named `pyrobot_*` and defined in `habitat_sim/agent/controls/pyrobot_noisy_controls.py`
 
 
 ## License
