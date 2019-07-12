@@ -32,7 +32,8 @@ Viewer::Viewer(const Arguments& arguments)
                                 Vector4i(8, 8, 8, 8))},
       pathfinder_(nav::PathFinder::create()),
       controls_(),
-      previousPosition_() {
+      previousPosition_(),
+      physicsManager_(resourceManager_) {
   Utility::Arguments args;
   args.addArgument("file")
       .setHelp("file", "file to load")

@@ -23,6 +23,7 @@
 #include "esp/assets/MeshMetaData.h"
 #include "esp/assets/CollisionMeshData.h"
 #include "esp/assets/MeshData.h"
+#include "esp/assets/ResourceManager.h"
 #include "esp/scene/SceneNode.h"
 #include "RigidObject.h"
 
@@ -37,7 +38,7 @@ namespace physics {
 
 class PhysicsManager {
  public:
-  explicit PhysicsManager(){};
+  explicit PhysicsManager(assets::ResourceManager& _resourceManager) : resourceManager(_resourceManager) {};
   virtual ~PhysicsManager();
 
   bool initPhysics(scene::SceneNode* node,
@@ -85,6 +86,9 @@ class PhysicsManager {
 
   //! Check if mesh primitive type is valid for bullet physics engine
   bool isMeshPrimitiveValid(assets::CollisionMeshData& meshData);
+
+  //use this to instantiate physics objects from the physicsObjectLibrary_
+  assets::ResourceManager& resourceManager;
 
   //! ==== physics engines ====
   //! The world has to live longer than the scene because RigidBody

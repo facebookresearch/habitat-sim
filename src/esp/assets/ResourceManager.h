@@ -19,9 +19,10 @@
 #include "BaseMesh.h"
 #include "GltfMeshData.h"
 #include "MeshMetaData.h"
+#include "PhysicsObjectMetaData.h"
 #include "CollisionMeshData.h"
 #include "MeshData.h"
-#include "esp/physics/PhysicsManager.h"
+//#include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneNode.h"
 
 // Debug draw
@@ -43,6 +44,10 @@ class Drawable;
 }
 namespace scene {
 class SceneConfiguration;
+}
+namespace physics {
+class PhysicsManager;
+class RigidObject;
 }
 namespace assets {
 
@@ -161,6 +166,9 @@ class ResourceManager {
 
   // a dictionary to check if a mesh has been loaded
   std::map<std::string, MeshMetaData> resourceDict_;
+
+  // library of physics object parameters mapped from config filename (used by physicsManager to instantiate physical objects)
+  std::map<std::string, PhysicsObjectMetaData> physicsObjectLibrary_;
 
   //! Types of supported Shader programs
   enum ShaderType {

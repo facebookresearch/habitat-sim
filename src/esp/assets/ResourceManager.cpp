@@ -33,6 +33,7 @@
 #include "CollisionMeshData.h"
 #include "MeshData.h"
 #include "ResourceManager.h"
+#include "esp/physics/PhysicsManager.h"
 
 namespace esp {
 namespace assets {
@@ -77,6 +78,7 @@ bool ResourceManager::loadPhysicalScene(
   LOG(INFO) << "Loaded mesh object, success " << meshSuccess;
 
   if (attach_physics) {
+    //move initPhyics here
     physics::RigidObject* physNode = new physics::RigidObject(parent);
 
     LOG(INFO) << "Physics node " << physNode;
