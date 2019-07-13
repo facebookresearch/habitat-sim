@@ -52,14 +52,9 @@ void initShortestPathBindings(py::module& m) {
       .def("find_path",
            py::overload_cast<MultiGoalShortestPath&>(&PathFinder::findPath),
            "path"_a)
-      .def("try_step",
-           py::overload_cast<const Magnum::Vector3&, const Magnum::Vector3&>(
-               &PathFinder::tryStep<Magnum::Vector3>),
-           R"()", "start"_a, "end"_a)
-      .def("try_step",
-           py::overload_cast<const vec3f&, const vec3f&>(
-               &PathFinder::tryStep<vec3f>),
-           R"()", "start"_a, "end"_a)
+      .def("try_step", &PathFinder::tryStep<Magnum::Vector3>, R"()", "start"_a,
+           "end"_a)
+      .def("try_step", &PathFinder::tryStep<vec3f>, R"()", "start"_a, "end"_a)
       .def("island_radius", &PathFinder::islandRadius, R"()", "pt"_a)
       .def_property_readonly("is_loaded", &PathFinder::isLoaded)
       .def("load_nav_mesh", &PathFinder::loadNavMesh)
