@@ -19,6 +19,12 @@ _x_axis = 0
 _y_axis = 1
 _z_axis = 2
 
+_rotate_local_fns = [
+    hsim.SceneNode.rotate_x_local,
+    hsim.SceneNode.rotate_y_local,
+    hsim.SceneNode.rotate_z_local,
+]
+
 
 def _move_along(scene_node: hsim.SceneNode, distance: float, axis: int):
     ax = scene_node.absolute_transformation()[axis].xyz
@@ -26,10 +32,7 @@ def _move_along(scene_node: hsim.SceneNode, distance: float, axis: int):
 
 
 def _rotate_local(scene_node: hsim.SceneNode, theta: float, axis: int):
-    ax = np.zeros(3, dtype=np.float32)
-    ax[axis] = 1
-
-    scene_node.rotate_local(mn.Deg(theta), ax)
+    _rotate_local_fns[axis](scene_node, mn.Deg(theta))
     scene_node.rotation = scene_node.rotation.normalized()
 
 
