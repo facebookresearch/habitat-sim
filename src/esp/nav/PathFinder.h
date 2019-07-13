@@ -9,10 +9,6 @@
 
 #include "esp/core/esp.h"
 
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
-#include <Magnum/EigenIntegration/Integration.h>
-#include <Magnum/Magnum.h>
-
 // forward declarations
 class dtNavMesh;
 class dtNavMeshQuery;
@@ -131,13 +127,8 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
   bool findPath(ShortestPath& path);
   bool findPath(MultiGoalShortestPath& path);
 
-  vec3f tryStep(const vec3f& start, const vec3f& end);
-
-  Magnum::Vector3 tryStep(const Magnum::Vector3& start,
-                          const Magnum::Vector3& end) {
-    return Magnum::Vector3(tryStep(Magnum::EigenIntegration::cast<vec3f>(start),
-                                   Magnum::EigenIntegration::cast<vec3f>(end)));
-  }
+  template <typename T>
+  T tryStep(const T& start, const T& end);
 
   bool loadNavMesh(const std::string& path);
 

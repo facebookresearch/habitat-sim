@@ -7,6 +7,9 @@
 #include <pybind11/stl.h>
 #include "esp/bindings/OpaqueTypes.h"
 
+#include <Magnum/Magnum.h>
+#include <Magnum/Math/Vector3.h>
+
 #include "esp/agent/Agent.h"
 #include "esp/core/esp.h"
 #include "esp/nav/GreedyFollower.h"
@@ -51,10 +54,11 @@ void initShortestPathBindings(py::module& m) {
            "path"_a)
       .def("try_step",
            py::overload_cast<const Magnum::Vector3&, const Magnum::Vector3&>(
-               &PathFinder::tryStep),
+               &PathFinder::tryStep<Magnum::Vector3>),
            R"()", "start"_a, "end"_a)
       .def("try_step",
-           py::overload_cast<const vec3f&, const vec3f&>(&PathFinder::tryStep),
+           py::overload_cast<const vec3f&, const vec3f&>(
+               &PathFinder::tryStep<vec3f>),
            R"()", "start"_a, "end"_a)
       .def("island_radius", &PathFinder::islandRadius, R"()", "pt"_a)
       .def_property_readonly("is_loaded", &PathFinder::isLoaded)
