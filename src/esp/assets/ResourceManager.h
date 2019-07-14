@@ -63,29 +63,47 @@ class ResourceManager {
 
   inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
 
-  // load data from given AssetInfo descriptor, and store internally
-  // adding loaded assets as children of given SceneNode parent
-  // if drawables is provided, add all drawable nodes to it
+  //! Load Scene data + instantiate scene
+  //! Different from load data, load + instantiate scene is combined
   bool loadScene(const AssetInfo& info,
+                 scene::SceneNode* parent        = nullptr,
+                 DrawableGroup* drawables        = nullptr,
+                 PhysicsManager* _physicsManager = nullptr,
+                 bool attach_physics             = false);
+
+  //! Load Object data and store internally
+  //! Different from load scene, loadObject is split into 
+  //! load & instantiate
+  bool loadObjectData(const AssetInfo& info,
+                      scene::SceneNode* parent              = nullptr,
+                      PhysicsManager* _physicsManager       = nullptr,
+                      bool attach_physics                   = true,
+                      DrawableGroup* drawables              = nullptr,
+                      physics::BulletRigidObject** physNode = nullptr);
+
+  //! Instantiate Object data
+  //! Different from load scene, loadObject is split into 
+  //! load & instantiate
+  bool addObject(const AssetInfo& info,
+                 scene::SceneNode* parent              = nullptr,
+                 PhysicsManager* _physicsManager       = nullptr,
+                 bool attach_physics                   = true,
+                 DrawableGroup* drawables              = nullptr,
+                 physics::BulletRigidObject** physNode = nullptr);
+
+ protected:
+  //! Load data from given AssetInfo descriptor, and store internally
+  bool loadSceneData(const AssetInfo& info,
                  scene::SceneNode* parent = nullptr,
                  DrawableGroup* drawables = nullptr);
 
-  bool loadPhysicalScene(const AssetInfo& info,
-                         PhysicsManager& _physicsManager,
-                         scene::SceneNode* parent = nullptr,
-                         bool attach_physics = false,
-                         DrawableGroup* drawables = nullptr);
+  //! Instantiate Scene
+  //! adding loaded assets as children of given SceneNode parent
+  //! if drawables is provided, add all drawable nodes to it
+  bool addScene(const AssetInfo& info,
+                scene::SceneNode* parent = nullptr,
+                DrawableGroup* drawables = nullptr);
 
-  // load an object. Eventually this will load from AssetInfo descriptor,
-  // whereas currently it only loads dumb cubes
-  bool loadObject(const AssetInfo& info,
-                  PhysicsManager& _physicsManager,
-                  scene::SceneNode* parent = nullptr,
-                  bool attach_physics = true,
-                  DrawableGroup* drawables = nullptr,
-                  physics::BulletRigidObject** physNode = nullptr);
-
- protected:
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);
 

@@ -79,9 +79,6 @@ Viewer::Viewer(const Arguments& arguments)
   agentBodyNode_ = &rootNode->createChild();
   cameraNode_ = &agentBodyNode_->createChild();
 
-  // TODO (JH) hacky position setting
-  Magnum::Matrix4 oldT = cameraNode_->MagnumObject::absoluteTransformation();
-
   float hfov = 90.0f;
   int width = viewportSize[0];
   int height = viewportSize[1];

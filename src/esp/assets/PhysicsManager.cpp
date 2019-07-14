@@ -104,7 +104,7 @@ bool PhysicsManager::initScene(
   } else {                                                  // GLB mesh data
     LOG(INFO) << "Initialize GLB scene";
   }
-  sceneSuccess = physObject->initializeScene(info, mass, meshGroup, *bWorld_.get());
+  sceneSuccess = physObject->initializeScene(info, mass, meshGroup, *bWorld_);
   LOG(INFO) << "Init scene done";
 
   return sceneSuccess;
@@ -133,7 +133,7 @@ int PhysicsManager::initObject(
       LOG(INFO) << "Initialize GLB object";
   }
 
-  bool objectSuccess = physObject->initializeObject(info, mass, meshGroup, *bWorld_.get());
+  bool objectSuccess = physObject->initializeObject(info, mass, meshGroup, *bWorld_);
   // Enable force debugging
   //physObject->debugForce(debugDrawables);
 
@@ -243,7 +243,7 @@ void PhysicsManager::checkActiveObjects() {
       }
     }
   }
-  //LOG(INFO) << "Nodes total " << numTotal << " active " << numActive;
+  LOG(INFO) << "Nodes total " << numTotal << " active " << numActive;
 }
 
 

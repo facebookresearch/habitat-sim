@@ -37,10 +37,10 @@
 namespace esp {
 namespace assets {
 
-bool ResourceManager::loadScene(const AssetInfo& info,
-                                scene::SceneNode* parent /* = nullptr */,
-                                DrawableGroup* drawables /* = nullptr */) {
-  // Deprecated
+bool ResourceManager::loadSceneData(
+    const AssetInfo& info,
+    scene::SceneNode* parent /* = nullptr */,
+    DrawableGroup* drawables /* = nullptr */) {
   // check if the file exists
   if (!io::exists(info.filepath)) {
     LOG(ERROR) << "Cannot load from file " << info.filepath;
@@ -67,13 +67,13 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   }
 }
 
-bool ResourceManager::loadPhysicalScene(
+bool ResourceManager::loadScene(
     const AssetInfo& info,
-    PhysicsManager& _physicsManager,
-    scene::SceneNode* parent /* = nullptr */,
-    bool attach_physics, /* = false */
-    DrawableGroup* drawables /* = nullptr */) {
-  bool meshSuccess = loadScene(info, parent, drawables);
+    scene::SceneNode* parent,        /* = nullptr */
+    PhysicsManager* _physicsManager, /* = nullptr */
+    bool attach_physics,             /* = false */
+    DrawableGroup* drawables,        /* = nullptr */) {
+  bool meshSuccess = loadSceneData(info, parent, drawables);
   LOG(INFO) << "Loaded mesh object, success " << meshSuccess;
 
   if (attach_physics) {
@@ -136,7 +136,7 @@ bool ResourceManager::loadPhysicalScene(
     }
 
     //bool sceneSuccess = true;
-    bool sceneSuccess = _physicsManager.initScene(
+    bool sceneSuccess = _physicsManager->initScene(
         info, metaData, meshGroup, physNode);
 
     LOG(INFO) << "Initialized mesh scene, success " << sceneSuccess;
@@ -151,12 +151,14 @@ bool ResourceManager::loadPhysicalScene(
 
 // TODO (JH): The use of double pointer is backward-incompatible here,
 // need to consult Yili
-bool ResourceManager::loadObject(const AssetInfo& info,
-                                 PhysicsManager& _physicsManager,
-                                 scene::SceneNode* parent,
-                                 bool attach_physics, /* = false */
-                                 DrawableGroup* drawables /* = nullptr */,
-                                 physics::BulletRigidObject** physNode) {
+bool ResourceManager::loadObject(
+    const AssetInfo& info,
+    scene::SceneNode* parent,
+    bool attach_physics,              /* = false */
+    PhysicsManager* _physicsManager,  /* = nullptr */
+    DrawableGroup* drawables,         /* = nullptr */
+    physics::BulletRigidObject** physNode) 
+{
   // if this is a new file, load it and add it to the dictionary
   if (attach_physics) {
 
@@ -193,7 +195,7 @@ bool ResourceManager::loadObject(const AssetInfo& info,
       }
       
       transformAxis(info, meshGroup);
-      int objectID = _physicsManager.initObject(info, metaData, meshGroup, *physNode);
+      int objectID = _physicsManager->initObject(info, metaData, meshGroup, *physNode);
       //LOG(INFO) << "Object ID loaded " << objectID;
       objectSuccess = (objectID != -1);
 
