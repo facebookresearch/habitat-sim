@@ -176,11 +176,9 @@ def _noisy_action_impl(
     multiplier: float,
     model: MotionNoiseModel,
 ):
-    move_ax = (
-        np.array(scene_node.absolute_transformation().rotation_scaling())
-        @ hsim.geo.FRONT
-    )
-    prep_ax = np.cross(move_ax, hsim.geo.UP)
+    abs_transform = scene_node.absolute_transformation()
+    move_ax = -abs_transform[_z_axis].xyz
+    perp_ax = abs_transform[_x_axis].xyz
 
     # + EPS to make sure 0 is positive.  We multiply the mean by the sign of the translation
     # as otherwise forward would overshoot on average and backward would undershoot, while
@@ -190,7 +188,7 @@ def _noisy_action_impl(
     )
     scene_node.translate_local(
         move_ax * (translate_amount + translation_noise[0])
-        + prep_ax * translation_noise[1]
+        + perp_ax * translation_noise[1]
     )
 
     # Same deal with rotation about + EPS and why we multiply by the sign
@@ -198,7 +196,7 @@ def _noisy_action_impl(
         np.sign(rotate_amount + 1e-8) * model.rotation.mean, model.rotation.cov
     )
 
-    scene_node.rotate_local(mn.Deg(rotate_amount) + mn.Rad(rot_noise[0]), hsim.geo.UP)
+    scene_node.rotate_y_local(mn.Deg(rotate_amount) + mn.Rad(rot_noise[0]))
     scene_node.rotation = scene_node.rotation.normalized()
 
 
