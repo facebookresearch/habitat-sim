@@ -11,10 +11,11 @@ import numpy as np
 
 import habitat_sim.bindings as hsim
 from habitat_sim import utils
-
-from .controls import ActuationSpec, SceneNodeControl, register_move_fn
-
-__all__ = ["PyRobotNoisyActuationSpec"]
+from habitat_sim.agent.controls.controls import (
+    ActuationSpec,
+    SceneNodeControl,
+    register_move_fn,
+)
 
 
 @attr.s(auto_attribs=True)
@@ -164,9 +165,9 @@ class PyRobotNoisyActuationSpec(ActuationSpec):
     noise_multiplier: float = 1.0
 
 
-_x_axis = 0
-_y_axis = 1
-_z_axis = 2
+_X_AXIS = 0
+_Y_AXIS = 1
+_Z_AXIS = 2
 
 
 def _noisy_action_impl(
@@ -177,8 +178,8 @@ def _noisy_action_impl(
     model: MotionNoiseModel,
 ):
     abs_transform = scene_node.absolute_transformation()
-    move_ax = -abs_transform[_z_axis].xyz
-    perp_ax = abs_transform[_x_axis].xyz
+    move_ax = -abs_transform[_Z_AXIS].xyz
+    perp_ax = abs_transform[_X_AXIS].xyz
 
     # + EPS to make sure 0 is positive.  We multiply the mean by the sign of the translation
     # as otherwise forward would overshoot on average and backward would undershoot, while
