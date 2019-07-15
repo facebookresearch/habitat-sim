@@ -5,3 +5,5 @@
 # LICENSE file in the root directory of this source tree.
 
 from .sensor_suite import SensorSuite
+
+__all__ = ["SensorSuite"]

@@ -6,3 +6,5 @@
 
 from .agent import *
 from .controls import *
+
+__all__ = agent.__all__ + controls.__all__
