@@ -50,18 +50,18 @@ class SixDOFPose(object):
         rotation (np.quaternion): unit quaternion rotation
     """
 
-    position: np.array = np.zeros(3)
+    position: np.ndarray = np.zeros(3)
     rotation: Union[np.quaternion, List] = np.quaternion(1, 0, 0, 0)
 
 
 @attr.s(auto_attribs=True, slots=True)
 class AgentState(object):
-    position: np.array = np.zeros(3)
+    position: np.ndarray = np.zeros(3)
     rotation: Union[np.quaternion, List] = np.quaternion(1, 0, 0, 0)
-    velocity: np.array = np.zeros(3)
-    angular_velocity: np.array = np.zeros(3)
-    force: np.array = np.zeros(3)
-    torque: np.array = np.zeros(3)
+    velocity: np.ndarray = np.zeros(3)
+    angular_velocity: np.ndarray = np.zeros(3)
+    force: np.ndarray = np.zeros(3)
+    torque: np.ndarray = np.zeros(3)
     sensor_states: Dict[str, SixDOFPose] = attr.Factory(dict)
 
 
