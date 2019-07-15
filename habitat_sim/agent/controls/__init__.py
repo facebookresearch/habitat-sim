@@ -7,3 +7,11 @@
 from .controls import ActuationSpec, ObjectControls, SceneNodeControl, register_move_fn
 from .default_controls import *
 from .pyrobot_noisy_controls import PyRobotNoisyActuationSpec
+
+__all__ = [
+    "ActuationSpec",
+    "ObjectControls",
+    "SceneNodeControl",
+    "register_move_fn",
+    "PyRobotNoisyActuationSpec",
+]
