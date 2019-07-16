@@ -80,6 +80,18 @@ void initShortestPathBindings(py::module& m) {
           for slight differences in floor height)",
            "pt"_a, "max_y_delta"_a = 0.5);
 
+  // this enum is used by GreedyGeodesicFollowerImpl so it needs to be defined
+  // before it
+  py::enum_<GreedyGeodesicFollowerImpl::CODES>(m, "GreedyFollowerCodes")
+      .value("ERROR", GreedyGeodesicFollowerImpl::CODES::ERROR)
+      .value("STOP", GreedyGeodesicFollowerImpl::CODES::STOP)
+      .value("FORWARD", GreedyGeodesicFollowerImpl::CODES::FORWARD)
+      .value("LEFT", GreedyGeodesicFollowerImpl::CODES::LEFT)
+      .value("RIGHT", GreedyGeodesicFollowerImpl::CODES::RIGHT);
+
+  py::bind_vector<std::vector<GreedyGeodesicFollowerImpl::CODES>>(
+      m, "VectorGreedyCodes");
+
   py::class_<GreedyGeodesicFollowerImpl, GreedyGeodesicFollowerImpl::ptr>(
       m, "GreedyGeodesicFollowerImpl")
       .def(py::init(
@@ -95,14 +107,4 @@ void initShortestPathBindings(py::module& m) {
            py::overload_cast<const vec3f&, const vec4f&, const vec3f&>(
                &GreedyGeodesicFollowerImpl::findPath),
            py::return_value_policy::move);
-
-  py::enum_<GreedyGeodesicFollowerImpl::CODES>(m, "GreedyFollowerCodes")
-      .value("ERROR", GreedyGeodesicFollowerImpl::CODES::ERROR)
-      .value("STOP", GreedyGeodesicFollowerImpl::CODES::STOP)
-      .value("FORWARD", GreedyGeodesicFollowerImpl::CODES::FORWARD)
-      .value("LEFT", GreedyGeodesicFollowerImpl::CODES::LEFT)
-      .value("RIGHT", GreedyGeodesicFollowerImpl::CODES::RIGHT);
-
-  py::bind_vector<std::vector<GreedyGeodesicFollowerImpl::CODES>>(
-      m, "VectorGreedyCodes");
 }
