@@ -48,7 +48,7 @@ class SceneNode : public MagnumObject {
   //! Sets node id
   virtual void setId(int id) { id_ = id; }
 
-  Magnum::Vector3 translation() const {
+  Magnum::Vector3 absoluteTranslation() const {
     return this->absoluteTransformation().translation();
   }
 

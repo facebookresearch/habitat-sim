@@ -93,7 +93,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def(
           "create_child", [](SceneNode& self) { return &self.createChild(); },
           R"(Creates a child node, and sets its parent to the current node.)")
-      .def_property_readonly("translation", &SceneNode::translation);
+      .def_property_readonly("absolute_translation",
+                             &SceneNode::absoluteTranslation);
 
   // ==== RenderCamera ====
   py::class_<RenderCamera, Magnum::SceneGraph::PyFeature<RenderCamera>,

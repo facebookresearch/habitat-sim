@@ -169,13 +169,13 @@ class Agent(object):
     def get_state(self) -> AgentState:
         habitat_sim.errors.assert_obj_valid(self.body)
         state = AgentState(
-            np.array(self.body.object.translation), self.body.object.rotation
+            np.array(self.body.object.absolute_translation), self.body.object.rotation
         )
 
         for k, v in self.sensors.items():
             habitat_sim.errors.assert_obj_valid(v)
             state.sensor_states[k] = SixDOFPose(
-                np.array(v.node.translation),
+                np.array(v.node.absolute_translation),
                 utils.quat_from_magnum(state.rotation * v.node.rotation),
             )
 
