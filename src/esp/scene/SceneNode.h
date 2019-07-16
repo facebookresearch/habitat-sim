@@ -48,6 +48,10 @@ class SceneNode : public MagnumObject {
   //! Sets node id
   virtual void setId(int id) { id_ = id; }
 
+  Magnum::Vector3 absoluteTranslation() const {
+    return this->absoluteTransformation().translation();
+  }
+
  protected:
   // DO not make the following constructor public!
   // it can ONLY be called from SceneGraph class to initialize the scene graph

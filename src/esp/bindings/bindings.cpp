@@ -92,7 +92,9 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property("type", &SceneNode::getType, &SceneNode::setType)
       .def(
           "create_child", [](SceneNode& self) { return &self.createChild(); },
-          R"(Creates a child node, and sets its parent to the current node.)");
+          R"(Creates a child node, and sets its parent to the current node.)")
+      .def_property_readonly("absolute_translation",
+                             &SceneNode::absoluteTranslation);
 
   // ==== RenderCamera ====
   py::class_<RenderCamera, Magnum::SceneGraph::PyFeature<RenderCamera>,
@@ -117,6 +119,13 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<RenderCamera>,
                              "Alias to node");
+
+  // Renderer::draw() and SceneGraph::setDefaultRenderCamera needs the Sensor
+  // definition
+  py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
+             Magnum::SceneGraph::AbstractFeature3D,
+             Magnum::SceneGraph::PyFeatureHolder<Sensor>>
+      sensor(m, "Sensor");
 
   // ==== SceneGraph ====
   py::class_<scene::SceneGraph>(m, "SceneGraph")
@@ -210,6 +219,14 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("index", &SuncgRegionCategory::index, "mapping"_a = "")
       .def("name", &SuncgRegionCategory::name, "mapping"_a = "");
 
+  // These two are (cyclically) referenced by multiple classes below, define
+  // the classes first so pybind has the type definition available when binding
+  // functions
+  py::class_<SemanticObject, SemanticObject::ptr> semanticObject(
+      m, "SemanticObject");
+  py::class_<SemanticRegion, SemanticRegion::ptr> semanticRegion(
+      m, "SemanticRegion");
+
   // ==== SemanticLevel ====
   py::class_<SemanticLevel, SemanticLevel::ptr>(m, "SemanticLevel")
       .def_property_readonly("id", &SemanticLevel::id)
@@ -218,8 +235,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("objects", &SemanticLevel::objects);
 
   // ==== SemanticRegion ====
-  py::class_<SemanticRegion, SemanticRegion::ptr>(m, "SemanticRegion")
-      .def_property_readonly("id", &SemanticRegion::id)
+  semanticRegion.def_property_readonly("id", &SemanticRegion::id)
       .def_property_readonly("level", &SemanticRegion::level)
       .def_property_readonly("aabb", &SemanticRegion::aabb)
       .def_property_readonly("category", &SemanticRegion::category)
@@ -235,8 +251,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("objects", &SuncgSemanticRegion::objects);
 
   // ==== SemanticObject ====
-  py::class_<SemanticObject, SemanticObject::ptr>(m, "SemanticObject")
-      .def_property_readonly("id", &SemanticObject::id)
+  semanticObject.def_property_readonly("id", &SemanticObject::id)
       .def_property_readonly("region", &SemanticObject::region)
       .def_property_readonly("aabb", &SemanticObject::aabb)
       .def_property_readonly("obb", &SemanticObject::obb)
@@ -254,11 +269,19 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   // ==== SemanticScene ====
   py::class_<SemanticScene, SemanticScene::ptr>(m, "SemanticScene")
       .def(py::init(&SemanticScene::create<>))
-      .def_static("load_mp3d_house", &SemanticScene::loadMp3dHouse, R"(
+      .def_static(
+          "load_mp3d_house",
+          [](const std::string& filename, SemanticScene& scene,
+             const vec4f& rotation) {
+            // numpy doesn't have a quaternion equivalent, use vec4 instead
+            return SemanticScene::loadMp3dHouse(
+                filename, scene, Eigen::Map<const quatf>(rotation.data()));
+          },
+          R"(
         Loads a SemanticScene from a Matterport3D House format file into passed
         :py:class:`SemanticScene`'.
       )",
-                  "file"_a, "scene"_a, "rotation"_a)
+          "file"_a, "scene"_a, "rotation"_a)
       .def_property_readonly("aabb", &SemanticScene::aabb)
       .def_property_readonly("categories", &SemanticScene::categories)
       .def_property_readonly("levels", &SemanticScene::levels)
@@ -360,9 +383,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   py::class_<Observation, Observation::ptr>(m, "Observation");
 
   // ==== Sensor ====
-  py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
-             Magnum::SceneGraph::AbstractFeature3D,
-             Magnum::SceneGraph::PyFeatureHolder<Sensor>>(m, "Sensor")
+  sensor
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
                           const SensorSpec::ptr&>())
       .def("specification", &Sensor::specification)

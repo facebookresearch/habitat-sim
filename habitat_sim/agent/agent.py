@@ -50,18 +50,18 @@ class SixDOFPose(object):
         rotation (np.quaternion): unit quaternion rotation
     """
 
-    position: np.array = np.zeros(3)
+    position: np.ndarray = np.zeros(3)
     rotation: Union[np.quaternion, List] = np.quaternion(1, 0, 0, 0)
 
 
 @attr.s(auto_attribs=True, slots=True)
 class AgentState(object):
-    position: np.array = np.zeros(3)
+    position: np.ndarray = np.zeros(3)
     rotation: Union[np.quaternion, List] = np.quaternion(1, 0, 0, 0)
-    velocity: np.array = np.zeros(3)
-    angular_velocity: np.array = np.zeros(3)
-    force: np.array = np.zeros(3)
-    torque: np.array = np.zeros(3)
+    velocity: np.ndarray = np.zeros(3)
+    angular_velocity: np.ndarray = np.zeros(3)
+    force: np.ndarray = np.zeros(3)
+    torque: np.ndarray = np.zeros(3)
     sensor_states: Dict[str, SixDOFPose] = attr.Factory(dict)
 
 
@@ -169,19 +169,17 @@ class Agent(object):
     def get_state(self) -> AgentState:
         habitat_sim.errors.assert_obj_valid(self.body)
         state = AgentState(
-            np.array(self.body.object.absolute_transformation()._translation),  # TODO
-            utils.quat_from_magnum(self.body.object.rotation),
+            np.array(self.body.object.absolute_translation), self.body.object.rotation
         )
 
         for k, v in self.sensors.items():
             habitat_sim.errors.assert_obj_valid(v)
             state.sensor_states[k] = SixDOFPose(
-                np.array(v.node.absolute_transformation()._translation),  # TODO.
-                # TODO: not using utils.quat_from_magnum leads to an infinite cycle
-                utils.quat_from_magnum(
-                    utils.quat_to_magnum(state.rotation) * v.node.rotation
-                ),
+                np.array(v.node.absolute_translation),
+                utils.quat_from_magnum(state.rotation * v.node.rotation),
             )
+
+        state.rotation = utils.quat_from_magnum(state.rotation)
 
         return state
 

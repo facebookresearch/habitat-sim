@@ -127,8 +127,8 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
   bool findPath(ShortestPath& path);
   bool findPath(MultiGoalShortestPath& path);
 
-  vec3f tryStep(const Eigen::Ref<const vec3f> start,
-                const Eigen::Ref<const vec3f> end);
+  template <typename T>
+  T tryStep(const T& start, const T& end);
 
   bool loadNavMesh(const std::string& path);
 

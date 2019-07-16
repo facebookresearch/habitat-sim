@@ -165,9 +165,9 @@ class ObjectControls(object):
             action_name in move_func_map
         ), f"No action named {action_name} in the move map"
 
-        start_pos = obj.absolute_transformation()._translation
+        start_pos = obj.absolute_translation
         move_func_map[action_name](obj, actuation_spec)
-        end_pos = obj.absolute_transformation()._translation
+        end_pos = obj.absolute_translation
 
         collided = False
         if apply_filter:
@@ -175,8 +175,8 @@ class ObjectControls(object):
             # Update the position to respect the filter
             obj.translate(filter_end - end_pos)
 
-            dist_moved_before_filter = np.linalg.norm(end_pos - start_pos)
-            dist_moved_after_filter = np.linalg.norm(filter_end - start_pos)
+            dist_moved_before_filter = (end_pos - start_pos).dot()
+            dist_moved_after_filter = (filter_end - start_pos).dot()
 
             # NB: There are some cases where ||filter_end - end_pos|| > 0 when a
             # collision _didn't_ happen. One such case is going up stairs.  Instead,
