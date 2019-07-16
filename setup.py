@@ -23,7 +23,7 @@ from distutils.version import StrictVersion
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
-ARG_CACHE_BLACKLIST = {"force_cmake", "cache_args"}
+ARG_CACHE_BLACKLIST = {"force_cmake", "cache_args", "inplace"}
 
 
 def build_parser():
@@ -71,6 +71,15 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         action="store_true",
         help="""Caches the arguements sent to setup.py
         and reloads them on the next invocation.  This argument is not cached""",
+    )
+
+    parser.add_argument(
+        "--skip-install-magnum",
+        dest="skip_install_magnum",
+        action="store_true",
+        help="Don't install magnum.  "
+        "This is nice for incrementally building for development but "
+        "can cause install magnum bindings to fall out-of-sync",
     )
 
     return parser
@@ -303,20 +312,6 @@ class CMakeBuild(build_ext):
 
 
 if __name__ == "__main__":
-    try:
-        import magnum
-
-        has_magnum = True
-    except ImportError:
-        has_magnum = False
-
-    if not has_magnum and is_pip():
-        raise RuntimeError(
-            "Must have magnum already installed when installing habitat_sim"
-            "via pip due to limitations of setup.py\n"
-            "You can install magnum via 'python setup.py install'"
-        )
-
     assert StrictVersion(
         "{}.{}".format(sys.version_info[0], sys.version_info[1])
     ) >= StrictVersion("3.6"), "Must use python3.6 or newer"
@@ -352,8 +347,10 @@ if __name__ == "__main__":
         _cmake_build_dir, "deps", "magnum-bindings", "src", "python"
     )
 
-    if not has_magnum:
+    if not args.skip_install_magnum and not is_pip():
         subprocess.check_call(shlex.split(f"pip install {pymagnum_build_dir}"))
     else:
-        print("Assuming magnum bindings are already installed")
+        print(
+            "Assuming magnum bindings are already installed (or we're inside pip and ¯\\_('-')_/¯)"
+        )
         print(f"Run 'pip install {pymagnum_build_dir}' if this assumption is incorrect")
