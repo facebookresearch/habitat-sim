@@ -351,6 +351,6 @@ if __name__ == "__main__":
         subprocess.check_call(shlex.split(f"pip install {pymagnum_build_dir}"))
     else:
         print(
-            "Assuming magnum bindings are already installed (or we're inside pip and -\_('-')_/-)"
+            "Assuming magnum bindings are already installed (or we're inside pip and ¯\\_('-')_/¯)"
         )
         print(f"Run 'pip install {pymagnum_build_dir}' if this assumption is incorrect")
