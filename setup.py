@@ -312,20 +312,6 @@ class CMakeBuild(build_ext):
 
 
 if __name__ == "__main__":
-    try:
-        import magnum
-
-        has_magnum = True
-    except ImportError:
-        has_magnum = False
-
-    if not has_magnum and is_pip():
-        raise RuntimeError(
-            "Must have magnum already installed when installing habitat_sim"
-            "via pip due to limitations of setup.py\n"
-            "You can install magnum via 'python setup.py install'"
-        )
-
     assert StrictVersion(
         "{}.{}".format(sys.version_info[0], sys.version_info[1])
     ) >= StrictVersion("3.6"), "Must use python3.6 or newer"
@@ -361,7 +347,7 @@ if __name__ == "__main__":
         _cmake_build_dir, "deps", "magnum-bindings", "src", "python"
     )
 
-    if not args.skip_reinstall_magnum or not has_magnum:
+    if not args.skip_reinstall_magnum and not is_pip():
         subprocess.check_call(shlex.split(f"pip install {pymagnum_build_dir}"))
     else:
         print("Assuming magnum bindings are already installed")
