@@ -138,6 +138,7 @@ To run the above benchmarks on your machine, see instructions in the [examples](
 
 1. Clone the repo
 1. Install numpy in your python env of choice (e.g., `pip install numpy` or `conda install numpy`)
+1. Install dependencies in your python env of choice (e.g., `pip install -r requirements.txt`)
 1. Install Habitat-Sim via `python setup.py install` in your python env of choice (note: python 3 is required)
 
     Use `python setup.py install --headless` for headless systems (i.e. without an attached display) or if you need multi-gpu support.
@@ -218,6 +219,8 @@ Install the pre-commit hooks with `pip install pre-commit && pre-commit install`
 
 1. Install `ninja` (`sudo apt install ninja-build` on Linux, or `brew install ninja` on MacOS) for significantly faster incremental builds
 1. Install `ccache` (`sudo apt install ccache` on Linux, or `brew install ccache` on MacOS) for significantly faster clean re-builds and builds with slightly different settings
+1. You can skip reinstall magnum every time buy adding the argument of `--skip-reinstall-magnum` to either `build.sh` or `setup.py`
+1. Arguments to `build.sh` and `setup.py` can be cached between subsequent invocations with the flag `--cache-args` on the _first_ invocation.
 
 ## Acknowledgments
 The Habitat project would not have been possible without the support and contributions of many individuals. We would like to thank Xinlei Chen, Georgia Gkioxari, Daniel Gordon, Leonidas Guibas, Saurabh Gupta, Or Litany, Marcus Rohrbach, Amanpreet Singh, Devendra Singh Chaplot, Yuandong Tian, and Yuxin Wu for many helpful conversations and guidance on the design and development of the Habitat platform.

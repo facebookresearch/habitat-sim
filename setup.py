@@ -23,7 +23,7 @@ from distutils.version import StrictVersion
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
-ARG_CACHE_BLACKLIST = {"force_cmake", "cache_args"}
+ARG_CACHE_BLACKLIST = {"force_cmake", "cache_args", "inplace"}
 
 
 def build_parser():
@@ -71,6 +71,15 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         action="store_true",
         help="""Caches the arguements sent to setup.py
         and reloads them on the next invocation.  This argument is not cached""",
+    )
+
+    parser.add_argument(
+        "--skip-reinstall-magnum",
+        dest="skip_reinstall_magnum",
+        action="store_true",
+        help="Don't reinstall magnum if you already have it.  "
+        "This is nice for incrementally building for development but "
+        "can cause install magnum bindings to fall out-of-sync",
     )
 
     return parser
@@ -352,7 +361,7 @@ if __name__ == "__main__":
         _cmake_build_dir, "deps", "magnum-bindings", "src", "python"
     )
 
-    if not has_magnum:
+    if not args.skip_reinstall_magnum or not has_magnum:
         subprocess.check_call(shlex.split(f"pip install {pymagnum_build_dir}"))
     else:
         print("Assuming magnum bindings are already installed")
