@@ -74,10 +74,10 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
     )
 
     parser.add_argument(
-        "--skip-reinstall-magnum",
-        dest="skip_reinstall_magnum",
+        "--skip-install-magnum",
+        dest="skip_install_magnum",
         action="store_true",
-        help="Don't reinstall magnum if you already have it.  "
+        help="Don't install magnum.  "
         "This is nice for incrementally building for development but "
         "can cause install magnum bindings to fall out-of-sync",
     )
@@ -347,7 +347,7 @@ if __name__ == "__main__":
         _cmake_build_dir, "deps", "magnum-bindings", "src", "python"
     )
 
-    if not args.skip_reinstall_magnum and not is_pip():
+    if not args.skip_install_magnum and not is_pip():
         subprocess.check_call(shlex.split(f"pip install {pymagnum_build_dir}"))
     else:
         print("Assuming magnum bindings are already installed")
