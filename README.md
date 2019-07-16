@@ -219,7 +219,7 @@ Install the pre-commit hooks with `pip install pre-commit && pre-commit install`
 
 1. Install `ninja` (`sudo apt install ninja-build` on Linux, or `brew install ninja` on MacOS) for significantly faster incremental builds
 1. Install `ccache` (`sudo apt install ccache` on Linux, or `brew install ccache` on MacOS) for significantly faster clean re-builds and builds with slightly different settings
-1. You can skip reinstall magnum every time buy adding the argument of `--skip-reinstall-magnum` to either `build.sh` or `setup.py`
+1. You can skip reinstalling magnum every time buy adding the argument of `--skip-reinstall-magnum` to either `build.sh` or `setup.py`
 1. Arguments to `build.sh` and `setup.py` can be cached between subsequent invocations with the flag `--cache-args` on the _first_ invocation.
 
 ## Acknowledgments
