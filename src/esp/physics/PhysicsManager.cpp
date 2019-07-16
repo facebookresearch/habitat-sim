@@ -42,6 +42,8 @@ namespace esp {
 namespace physics {
 
 bool PhysicsManager::initPhysics(scene::SceneNode* node,
+                                 Magnum::Vector3d gravity,
+                                 std::string simulator, /* default: "bullet" TODO: this does nothing yet b/c there are no options */
                                  bool do_profile) {
   LOG(INFO) << "Initializing Physics Engine...";
 
@@ -51,8 +53,9 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node,
   bWorld_ = std::make_shared<btDiscreteDynamicsWorld>(&bDispatcher_, 
       &bBroadphase_, &bSolver_, &bCollisionConfig_);
 
-  // TODO (JH): currently GLB meshes are y-up, the gravity direction is hardcoded
-  bWorld_->setGravity({0.0f, -10.0f, 0.0f});
+  //currently GLB meshes are y-up
+  bWorld_->setGravity({gravity[0], gravity[1], gravity[2]});
+  //bWorld_->setGravity({0.0f, -10.0f, 0.0f});
   //bWorld_->setGravity({0.0f, 0.0f, -10.0f});
 
   // TODO (JH): debugDrawer is currently not compatible with our example cpp
@@ -192,6 +195,10 @@ void PhysicsManager::debugSceneGraph(const MagnumObject* root) {
 }
 
 void PhysicsManager::stepPhysics() {
+  //We don't step uninitialized physics sim...
+  if(!initialized_)
+    return;
+
   // ==== Physics stepforward ======
   auto start = std::chrono::system_clock::now();
   bWorld_->stepSimulation(timeline_.previousFrameDuration(), maxSubSteps_,
@@ -218,6 +225,7 @@ void PhysicsManager::stepPhysics() {
 
 void PhysicsManager::nextFrame() {
   timeline_.nextFrame();
+
   checkActiveObjects();
 }
 
@@ -229,6 +237,11 @@ void PhysicsManager::checkActiveObjects() {
   if (physicsNode == nullptr) {
     return;
   }
+  
+  //We don't check uninitialized physics sim...
+  if(!initialized_)
+    return;
+
   int numActive = 0;
   int numTotal = 0;
   for(auto& child: physicsNode->children()) {
@@ -267,6 +280,11 @@ void PhysicsManager::applyImpulse(
   physObject->applyImpulse(impulse, relPos);
 }
 
+//ALEX TODO: this function should do any engine specific setting which is necessary to change the timestep
+void PhysicsManager::setTimestep(double dt){
+  fixedTimeStep_ = dt;
+
+}
 
 }  // namespace physics
 }  // namespace esp

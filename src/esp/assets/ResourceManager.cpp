@@ -38,6 +38,7 @@
 namespace esp {
 namespace assets {
 
+//load render only scene
 bool ResourceManager::loadScene(const AssetInfo& info,
                                 scene::SceneNode* parent /* = nullptr */,
                                 DrawableGroup* drawables /* = nullptr */) {
@@ -68,17 +69,120 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   }
 }
 
-bool ResourceManager::loadPhysicalScene(
+//load physical scene
+bool ResourceManager::loadScene(
     const AssetInfo& info,
     physics::PhysicsManager& _physicsManager,
+    std::string physicsFilename, /* data/default.phys_scene_config.json */
     scene::SceneNode* parent /* = nullptr */,
     bool attach_physics, /* = false */
     DrawableGroup* drawables /* = nullptr */) {
-  bool meshSuccess = loadScene(info, parent, drawables);
+
+  //scene mesh loading
+  bool meshSuccess = false;
+  if (!io::exists(info.filepath)) {
+    LOG(ERROR) << "Cannot load from file " << info.filepath;
+    meshSuccess = false;
+  }else{
+    scene::SceneNode* sceneNode = nullptr;
+    if (info.type == AssetType::FRL_INSTANCE_MESH ||
+        info.type == AssetType::INSTANCE_MESH) {
+      LOG(INFO) << "Loading FRL/Instance mesh data";
+      meshSuccess = loadInstanceMeshData(info, parent, drawables);
+    } else if (info.type == AssetType::FRL_PTEX_MESH) {
+      LOG(INFO) << "Loading PTEX mesh data";
+      meshSuccess = loadPTexMeshData(info, parent, drawables);
+    } else if (info.type == AssetType::SUNCG_SCENE) {
+      meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
+    } else if (info.type == AssetType::MP3D_MESH) {
+      LOG(INFO) << "Loading MP3D mesh data";
+      meshSuccess = loadGeneralMeshData(info, parent, drawables);
+    } else {
+      // Unknown type, just load general mesh data
+      LOG(INFO) << "Loading General mesh data";
+      meshSuccess = loadGeneralMeshData(info, parent, drawables);
+    }
+  }
+
   LOG(INFO) << "Loaded mesh object, success " << meshSuccess;
 
+  //if physics is enabled, initialize the physical scene
   if (attach_physics) {
-    //move initPhyics here
+    LOG(INFO) << "Loading physics config... " << physicsFilename;
+
+    //Load the global scene config JSON here
+    io::JsonDocument scenePhysicsConfig = io::parseJsonFile(physicsFilename);
+    LOG(INFO) << "...parsed config ";
+
+    //load the simulator preference
+    //default is bullet simulator
+    //TODO: add more options here...
+    std::string simulator = "bullet";
+    if(scenePhysicsConfig.HasMember("physics simulator")){
+      if(scenePhysicsConfig["physics simulator"].IsString()){
+        std::string selectedSimulator = scenePhysicsConfig["physics simulator"].GetString();
+        if(selectedSimulator.compare("bullet") == 0){
+          simulator = "bullet";
+        }else{
+          //TODO: add more simulator options
+          simulator = "bullet";
+        }
+      }
+    }
+
+    //load the physics timestep
+    if(scenePhysicsConfig.HasMember("timestep")){
+      if(scenePhysicsConfig["timestep"].IsNumber()){
+        _physicsManager.setTimestep(scenePhysicsConfig["timestep"].GetDouble());
+      }
+    }
+
+    //load gravity
+    Magnum::Vector3d gravity(0,0,0);
+    if(scenePhysicsConfig.HasMember("gravity")){
+      if(scenePhysicsConfig["gravity"].IsArray()){
+        for (rapidjson::SizeType i = 0; i < scenePhysicsConfig["gravity"].Size(); i++){
+          if(!scenePhysicsConfig["gravity"][i].IsNumber()){
+            //invalid config
+            LOG(ERROR) << "Invalid value in physics gravity array"; break;
+          }else{
+            gravity[i] = scenePhysicsConfig["gravity"][i].GetDouble();
+          }
+        }
+      }
+    }
+
+    LOG(INFO) << "...loading rigid body library metadata from individual paths";
+    std::string configDirectory = physicsFilename.substr(0,physicsFilename.find_last_of("/"));
+    LOG(INFO) << "...dir = " << configDirectory;
+    //load the rigid object library metadata (no physics init yet...)
+    //ALEX NOTE: expect relative paths to the global config
+    if(scenePhysicsConfig.HasMember("rigid object paths")){
+      if(scenePhysicsConfig["rigid object paths"].IsArray()){
+        for (rapidjson::SizeType i = 0; i < scenePhysicsConfig["rigid object paths"].Size(); i++){
+          if(scenePhysicsConfig["rigid object paths"][i].IsString()){
+            //1: read the filename (relative path)
+            std::string objPhysPropertiesFilename = configDirectory;
+            objPhysPropertiesFilename.append("/").append(scenePhysicsConfig["rigid object paths"][i].GetString()).append(".phys_properties.json");
+
+            //get the absolute path
+            LOG(INFO) << "...   obj properties path = " << objPhysPropertiesFilename;
+
+            //2. loadObject()
+            loadObject(objPhysPropertiesFilename);
+          }else{
+            LOG(ERROR) << "Invalid value in physics scene config -rigid object library- array " << i;
+          }
+        }
+      }
+    }
+
+    //ALEX TODO: load objects property files from an entire directory (a property dataset...)
+
+    
+    //initialize the physical scene
+    _physicsManager.initPhysics(parent, gravity, simulator);
+
     physics::RigidObject* physNode = new physics::RigidObject(parent);
 
     LOG(INFO) << "Physics node " << physNode;
@@ -146,6 +250,7 @@ bool ResourceManager::loadPhysicalScene(
       LOG(INFO) << "Physics manager failed to initialize object";
       return false;
     }
+
   }
 
   return meshSuccess;
@@ -212,6 +317,147 @@ bool ResourceManager::loadObject(const AssetInfo& info,
     bool meshSuccess = loadGeneralMeshData(info, parent, drawables, true);
     return meshSuccess;
   }
+}
+
+//load object from config filename
+bool ResourceManager::loadObject(std::string objPhysConfigFilename){
+
+  //check for duplicate load
+  const bool objExists = physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
+  if(objExists){
+    //ALEX TODO: for now this will skip the duplicate. Is there a good reason to allow duplicates?
+    LOG(ERROR) << "Tried to load a duplicate physical object: " << objPhysConfigFilename;
+    return false;
+  }
+
+  //1. parse the config file
+  //ALEX NOTE: we could create a datastructure of parsed JSON property files before creating individual entries...
+  io::JsonDocument objPhysicsConfig = io::parseJsonFile(objPhysConfigFilename);
+
+  //2. construct a physicsObjectMetaData
+  PhysicsObjectMetaData metaData;
+
+  //3. load/check_for render and collision mesh metadata
+  //    ALEX NOTE: these paths should be relative to the properties file
+  std::string propertiesFileDirectory = objPhysConfigFilename.substr(0,objPhysConfigFilename.find_last_of("/"));
+  //load the render mesh
+  std::string renderMeshFilename = "";
+  if(objPhysicsConfig.HasMember("render mesh")){
+    if(objPhysicsConfig["render mesh"].IsString()){
+      renderMeshFilename = propertiesFileDirectory;
+      renderMeshFilename.append("/").append(objPhysicsConfig["render mesh"].GetString());
+    }
+  }
+
+  //load collision mesh
+  std::string collisionMeshFilename = "";
+  if(objPhysicsConfig.HasMember("collision mesh")){
+    if(objPhysicsConfig["collision mesh"].IsString()){
+      collisionMeshFilename = propertiesFileDirectory;
+      collisionMeshFilename.append("/").append(objPhysicsConfig["collision mesh"].GetString());
+    }
+  }
+
+  bool rendermMeshSuccess = false;
+  bool collisionMeshSuccess = false;
+  if (!renderMeshFilename.empty()){
+    const AssetInfo& renderMeshinfo = assets::AssetInfo::fromPath(renderMeshFilename);
+    rendermMeshSuccess = loadGeneralMeshData(renderMeshinfo);
+    if(!rendermMeshSuccess)
+      LOG(ERROR) << "Failed to load a physical object's mesh: " << objPhysConfigFilename << ", " << renderMeshFilename;
+  }
+  if (!collisionMeshFilename.empty()){
+    const AssetInfo& collisionMeshinfo = assets::AssetInfo::fromPath(collisionMeshFilename);
+    collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo);
+    if(!collisionMeshSuccess)
+      LOG(ERROR) << "Failed to load a physical object's mesh: " << objPhysConfigFilename << ", " << collisionMeshFilename;
+  }
+
+  if(!rendermMeshSuccess && !collisionMeshSuccess){
+    //ALEX TODO: for now we only allow objects with SOME mesh file. Failing both loads or having no mesh will cancel the load.
+    LOG(ERROR) << "Failed to load a physical object: no meshes...: " << objPhysConfigFilename;
+    return false;
+  }
+
+  metaData.renderMeshHandle = renderMeshFilename;
+  metaData.collisionMeshHandle = collisionMeshFilename;
+
+  //4. load physical properties to override defaults (set in PhysicsObjectMetaData.h)
+  //load the mass
+  if(objPhysicsConfig.HasMember("mass")){
+    if(objPhysicsConfig["mass"].IsNumber()){
+      metaData.mass = objPhysicsConfig["mass"].GetDouble();
+    }
+  }
+
+  //load the center of mass (in the local frame of the object)
+  if(objPhysicsConfig.HasMember("COM")){
+    if(objPhysicsConfig["COM"].IsArray()){
+      for (rapidjson::SizeType i = 0; i < objPhysicsConfig["COM"].Size(); i++){
+        if(!objPhysicsConfig["COM"][i].IsNumber()){
+          //invalid config
+          LOG(ERROR) << "Invalid value in object physics config COM array"; break;
+        }else{
+          metaData.COM[i] = objPhysicsConfig["COM"][i].GetDouble();
+        }
+      }
+    }
+  }
+
+  //load the friction coefficient
+  if(objPhysicsConfig.HasMember("friction coefficient")){
+    if(objPhysicsConfig["friction coefficient"].IsNumber()){
+      metaData.frictionCoefficient = objPhysicsConfig["friction coefficient"].GetDouble();
+    }
+  }
+
+  //load the restitution coefficient
+  if(objPhysicsConfig.HasMember("restitution coefficient")){
+    if(objPhysicsConfig["restitution coefficient"].IsNumber()){
+      metaData.restitutionCoefficient = objPhysicsConfig["restitution coefficient"].GetDouble();
+    }
+  }
+
+  //5. cache it
+  physicsObjectLibrary_.emplace(objPhysConfigFilename, metaData);
+  return true;
+}
+
+bool ResourceManager::loadDefaultObject(
+  std::string renderMeshFilename,
+   std::string collisionMeshFilename /* "" */   ){
+  
+  //construct a physicsObjectMetaData
+  PhysicsObjectMetaData metaData;
+
+  //load desired meshes
+  bool rendermMeshSuccess = false;
+  bool collisionMeshSuccess = false;
+  if (!renderMeshFilename.empty()){
+    const AssetInfo& renderMeshinfo = assets::AssetInfo::fromPath(renderMeshFilename);
+    rendermMeshSuccess = loadGeneralMeshData(renderMeshinfo);
+    if(!rendermMeshSuccess)
+      LOG(ERROR) << "Failed to load a physical object's mesh: " << renderMeshFilename;
+  }
+  if (!collisionMeshFilename.empty()){
+    const AssetInfo& collisionMeshinfo = assets::AssetInfo::fromPath(collisionMeshFilename);
+    collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo);
+    if(!collisionMeshSuccess)
+      LOG(ERROR) << "Failed to load a physical object's mesh: " << collisionMeshFilename;
+  }
+
+  if(!rendermMeshSuccess && !collisionMeshSuccess){
+    //ALEX TODO: for now we only allow objects with SOME mesh file. Failing both loads or having no mesh will cancel the load.
+    LOG(ERROR) << "Failed to load a physical object: no meshes...: ";
+    return false;
+  }
+
+  metaData.renderMeshHandle = renderMeshFilename;
+  metaData.collisionMeshHandle = collisionMeshFilename;
+
+  //cache it
+  physicsObjectLibrary_.emplace(renderMeshFilename, metaData);
+  return true;
 }
 
 void ResourceManager::transformAxis(
@@ -394,8 +640,8 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
 }
 
 bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
-                                          scene::SceneNode* parent,
-                                          DrawableGroup* drawables,
+                                          scene::SceneNode* parent /* nullptr */,
+                                          DrawableGroup* drawables /* nullptr */,
                                           bool shiftOrigin /* = false */,
                                           scene::SceneNode* node) {
   const std::string& filename = info.filepath;
@@ -447,6 +693,10 @@ bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
 
   auto& metaData = resourceDict_.at(filename);
   const bool forceReload = false;
+
+  //Alex: intercept nullptr scene graph nodes (default) to add mesh to metadata list without adding it to scene graph
+  if (!parent && !node)
+    return true;
 
   scene::SceneNode* newNode;
   if (node) {

@@ -41,8 +41,12 @@ class PhysicsManager {
   explicit PhysicsManager(assets::ResourceManager& _resourceManager) : resourceManager(_resourceManager) {};
   virtual ~PhysicsManager();
 
+  //load physical properties and setup the world
+  //do_profile indicates timing for FPS
   bool initPhysics(scene::SceneNode* node,
-                   bool do_profile);
+                   Magnum::Vector3d gravity,
+                   std::string simulator="bullet",
+                   bool do_profile=false);
   
   //! Initialize object given mesh data
   //! The object could contain several parts
@@ -75,6 +79,10 @@ class PhysicsManager {
       Magnum::Vector3 impulse,
       Magnum::Vector3 relPos);
 
+  void setTimestep(double dt);
+
+  double getTimestep(){return fixedTimeStep_;};
+
   Magnum::SceneGraph::DrawableGroup3D& getDrawables() { return debugDrawables; }
   const Magnum::SceneGraph::DrawableGroup3D& getDrawables() const {
     return debugDrawables;
@@ -91,6 +99,9 @@ class PhysicsManager {
   assets::ResourceManager& resourceManager;
 
   //! ==== physics engines ====
+  enum PhysicsSimulationLibrary {BULLET};
+  enum PhysicsSimulationLibrary activePhysSimLib_ = BULLET; //default
+
   //! The world has to live longer than the scene because RigidBody
   //! instances have to remove themselves from it on destruction
   Magnum::BulletIntegration::DebugDraw    debugDraw_{Magnum::NoCreate};

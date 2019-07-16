@@ -75,20 +75,26 @@ class ResourceManager {
                  scene::SceneNode* parent = nullptr,
                  DrawableGroup* drawables = nullptr);
 
-  bool loadPhysicalScene(const AssetInfo& info,
+  bool loadScene(const AssetInfo& info,
                          physics::PhysicsManager& _physicsManager,
+                         std::string physicsFilename="data/default.phys_scene_config.json",
                          scene::SceneNode* parent = nullptr,
                          bool attach_physics = false,
                          DrawableGroup* drawables = nullptr);
 
-  // load an object. Eventually this will load from AssetInfo descriptor,
-  // whereas currently it only loads dumb cubes
+  // load an object from AssetInfo descriptor (depricated)
   bool loadObject(const AssetInfo& info,
                   physics::PhysicsManager& _physicsManager,
                   scene::SceneNode* parent = nullptr,
                   bool attach_physics = true,
                   DrawableGroup* drawables = nullptr,
                   physics::RigidObject** physNode = nullptr);
+
+  //load an object into the physicsObjectLibrary_ from a physics properties filename
+  bool loadObject(std::string objPhysConfigFilename);
+
+  //load an object into the physicsObjectLibrary_ with default physical parameters from absolute path to mesh files
+  bool loadDefaultObject(std::string renderMeshFilename, std::string collisionMeshFilename="");
 
  protected:
   //! Load textures from importer into assets, and update metaData
@@ -112,7 +118,7 @@ class ResourceManager {
                    bool forceReload = false);
 
   //! Loads object with given objectId from importer and metaData, and add to
-  //! passed parent node within sceneGraph
+  //! passed parent node within sceneGraph.
   void createObject(Importer& importer,
                     const AssetInfo& info,
                     const MeshMetaData& metaData,
@@ -137,8 +143,8 @@ class ResourceManager {
                             DrawableGroup* drawables);
 
   bool loadGeneralMeshData(const AssetInfo& info,
-                           scene::SceneNode* parent,
-                           DrawableGroup* drawables,
+                           scene::SceneNode* parent = nullptr,
+                           DrawableGroup* drawables = nullptr,
                            bool shiftOrigin = false,
                            scene::SceneNode* node = nullptr);
 

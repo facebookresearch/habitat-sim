@@ -42,10 +42,13 @@ Viewer::Viewer(const Arguments& arguments)
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addBooleanOption("enable-physics")
+      .addOption("physicsConfig", "./data/default.phys_scene_config.json")
+      .setHelp("physicsConfig", "physics scene config file")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
   enablePhysics_ = args.isSet("enable-physics");
+  std::string physicsConfigFilename = args.value("physicsConfig");
 
   // Setup renderer and shader defaults
   GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
@@ -57,22 +60,26 @@ Viewer::Viewer(const Arguments& arguments)
   rootNode = &sceneGraph->getRootNode();
   navSceneNode_ = &rootNode->createChild();
 
-  if (enablePhysics_) {
-    // ======= Init timestep, physics starts =======
-    physicsManager_.initPhysics(navSceneNode_, do_profile_);
-  }
-
   auto& drawables = sceneGraph->getDrawables();
   const std::string& file = args.value("file");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
   LOG(INFO) << "Nav scene node (before) " << navSceneNode_;
-  if (!resourceManager_.loadPhysicalScene(info, physicsManager_, navSceneNode_,
-                                          enablePhysics_, &drawables)) {
-    LOG(ERROR) << "cannot load " << file;
-    std::exit(0);
+  
+  if (enablePhysics_) {
+    //physical scene
+    if (!resourceManager_.loadScene(info, physicsManager_, physicsConfigFilename, navSceneNode_,
+                                            enablePhysics_, &drawables)) {
+      LOG(ERROR) << "cannot load (physical scene) " << file;
+      std::exit(0);
+    }
+  }else{
+    //render only scene
+    if (!resourceManager_.loadScene(info, navSceneNode_, &drawables)) {
+      LOG(ERROR) << "cannot load " << file;
+      std::exit(0);
+    }
   }
 
-  // Set up physics
   LOG(INFO) << "Nav scene node (done) " << navSceneNode_;
 
   // Set up camera
@@ -125,10 +132,6 @@ Viewer::Viewer(const Arguments& arguments)
   }
 
   std::string object_file(args.value("obj"));
-
-  for (int o = 0; o < numObjects_; o++) {
-    addObject();
-  }
 
   LOG(INFO) << "Viewer initialization is done. ";
   renderCamera_->setTransformation(cameraNode_->getAbsoluteTransformation());
@@ -206,6 +209,7 @@ Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
 }
 
 void Viewer::drawEvent() {
+  LOG(INFO) << "drawEvent ";
   GL::defaultFramebuffer.clear(GL::FramebufferClear::Color |
                                GL::FramebufferClear::Depth);
   if (sceneID_.size() <= 0)
