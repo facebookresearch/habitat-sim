@@ -9,6 +9,7 @@
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/GenericInstanceMeshData.h"
+#include "esp/assets/PhysicsObjectMetaData.h"
 #include "esp/assets/FRLInstanceMeshData.h"
 #include "esp/core/esp.h"
 #include "esp/scene/SceneNode.h"
@@ -17,26 +18,24 @@
 namespace esp {
 namespace physics {
 
-class BulletRigidObject : public scene::SceneNode {
+class RigidObject : public scene::SceneNode {
  public:
-  BulletRigidObject(scene::SceneNode* parent);
+  RigidObject(scene::SceneNode* parent);
 
-  // TODO (JH) Currently a BulletRigidObject is either a scene
+  // TODO (JH) Currently a RigidObject is either a scene
   // or an object, but cannot be both (tracked by _isScene/_isObject_)
   // there is probably a better way to abstract this
   bool initializeScene(
-      const assets::AssetInfo& info,
-      Magnum::Float mass,
       std::vector<assets::CollisionMeshData> meshGroup,
       btDynamicsWorld& bWorld);
 
   bool initializeObject(
-      const assets::AssetInfo& info,
-      Magnum::Float mass,
+      assets::PhysicsObjectMetaData& metaData,
+      physics::PhysicalObjectType objectType,
       std::vector<assets::CollisionMeshData> meshGroup,
       btDynamicsWorld& bWorld);
 
-  ~BulletRigidObject();
+  ~RigidObject();
 
   //! Check whether object is being actively simulated, or sleeping
   bool isActive();
@@ -101,12 +100,6 @@ class BulletRigidObject : public scene::SceneNode {
   std::unique_ptr<btCompoundShape>                     bObjectShape_;
   std::unique_ptr<btRigidBody>                         bObjectRigidBody_;
   Magnum::BulletIntegration::MotionState*              bObjectMotionState_;
-
-  float mass_;
-  float defaultRestitution_ = 0.1f;
-  float defaultMargin_ = 0.01f;
-  float defaultLinDamping_ = 0.2f;
-  float defaultAngDamping_ = 0.2f;
 
   //! Debugging visualization
   bool debugForce_;

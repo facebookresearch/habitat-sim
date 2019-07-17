@@ -19,10 +19,12 @@
 #include "BaseMesh.h"
 #include "GltfMeshData.h"
 #include "MeshMetaData.h"
+#include "PhysicsObjectMetaData.h"
 #include "CollisionMeshData.h"
 #include "MeshData.h"
-#include "PhysicsManager.h"
 #include "esp/scene/SceneNode.h"
+#include "esp/physics/PhysicsManager.h"
+#include "esp/physics/ObjectType.h"
 
 // Debug draw
 #include <Magnum/DebugTools/ForceRenderer.h>
@@ -44,6 +46,10 @@ class Drawable;
 namespace scene {
 class SceneConfiguration;
 }
+namespace physics {
+class PhysicsManager;
+class RigidObject;
+}
 namespace assets {
 
 class ResourceManager {
@@ -53,7 +59,13 @@ class ResourceManager {
   // a common design pattern for implementing
   // subsystems such as "resource manager", thats make up an engine is
   // to define a singleton class;
-  explicit ResourceManager(){};
+  explicit ResourceManager(){
+    importer = manager.loadAndInstantiate("AnySceneImporter");
+    // Prefer tiny_gltf for loading glTF files (Assimp is worse),
+    // prefer Assimp for OBJ files (ObjImporter is worse)
+    manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
+    manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+  };
   ~ResourceManager() { LOG(INFO) << "Deconstructing ResourceManager"; }
 
   // Stores references to a set of drawable elements
@@ -64,45 +76,71 @@ class ResourceManager {
   inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
 
   //! Load Scene data + instantiate scene
-  //! Different from load data, load + instantiate scene is combined
+  //! Both load + instantiate scene
   bool loadScene(const AssetInfo& info,
-                 scene::SceneNode* parent        = nullptr,
-                 DrawableGroup* drawables        = nullptr,
-                 PhysicsManager* _physicsManager = nullptr,
-                 bool attach_physics             = false);
+                 scene::SceneNode* parent                 = nullptr,
+                 DrawableGroup* drawables                 = nullptr,
+                 physics::PhysicsManager* _physicsManager = nullptr,
+                 bool attach_physics                      = false);
 
   //! Load Object data and store internally
-  //! Different from load scene, loadObject is split into 
-  //! load & instantiate
-  bool loadObjectData(const AssetInfo& info,
-                      scene::SceneNode* parent              = nullptr,
-                      PhysicsManager* _physicsManager       = nullptr,
-                      bool attach_physics                   = true,
-                      DrawableGroup* drawables              = nullptr,
-                      physics::BulletRigidObject** physNode = nullptr);
+  //! Does not instantiate (physics & drawable)
+  //! Return index in physicsObjectList_
+  int loadObject(const std::string object_config,
+                 scene::SceneNode* parent                 = nullptr,
+                 DrawableGroup* drawables                 = nullptr);
 
-  //! Instantiate Object data
-  //! Different from load scene, loadObject is split into 
-  //! load & instantiate
-  bool addObject(const AssetInfo& info,
-                 scene::SceneNode* parent              = nullptr,
-                 PhysicsManager* _physicsManager       = nullptr,
-                 bool attach_physics                   = true,
-                 DrawableGroup* drawables              = nullptr,
-                 physics::BulletRigidObject** physNode = nullptr);
+  int addObject(const int objectID,
+                scene::SceneNode* parent,
+                DrawableGroup* drawables);
+
+  int addObject(const std::string objectKey,
+                scene::SceneNode* parent,
+                DrawableGroup* drawables);
+
+  //======== Accessor functions ========
+  std::vector<assets::CollisionMeshData> getCollisionMesh(
+      const std::string keyName);
+
+  std::vector<assets::CollisionMeshData> getCollisionMesh(
+      const int objectID);
+
+  int getObjectID(std::string keyName);
+  std::string getObjectKeyName(int objectID);
+  std::string getObjectConfig(int objectID);
+
+  PhysicsObjectMetaData& getPhysicsMetaData(
+      const std::string objectName); 
 
  protected:
+  //======== Scene Functions ========
   //! Load data from given AssetInfo descriptor, and store internally
   bool loadSceneData(const AssetInfo& info,
-                 scene::SceneNode* parent = nullptr,
-                 DrawableGroup* drawables = nullptr);
+                     scene::SceneNode* parent = nullptr,
+                     DrawableGroup* drawables = nullptr);
 
-  //! Instantiate Scene
-  //! adding loaded assets as children of given SceneNode parent
-  //! if drawables is provided, add all drawable nodes to it
-  bool addScene(const AssetInfo& info,
-                scene::SceneNode* parent = nullptr,
-                DrawableGroup* drawables = nullptr);
+  //! Instantiate Scene:
+  //! (1) create scene node
+  //! (2) upload mesh to gpu and drawables 
+  //! (optional reload of GPU-side assets)
+  void addComponent(Importer& importer,
+                    const AssetInfo& info,
+                    const MeshMetaData& metaData,
+                    scene::SceneNode& parent,
+                    DrawableGroup* drawables,
+                    int objectID);
+
+  // ======== Loading functions for mesh and texture ========
+  // Load a scene importer plugin. In case Magnum is built statically, arg is
+  // pluginDirectory to silence warnings, otherwise we *do* want it to search
+  // in the filesystem.
+  // Use importer
+  Magnum::PluginManager::Manager<Importer> manager{
+#ifdef MAGNUM_BUILD_STATIC
+      "./"
+#endif
+  };
+  std::unique_ptr<Importer> importer; 
 
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);
@@ -115,32 +153,6 @@ class ResourceManager {
   //! Load materials from importer into assets, and update metaData
   void loadMaterials(Importer& importer, MeshMetaData* metaData);
 
-  //! Loads scene assets described by metaData into given SceneGraph, optionally
-  //! forcing reload of GPU-side assets. Returns whether succeeded.
-  bool createScene(Importer& importer,
-                   const AssetInfo& info,
-                   const MeshMetaData& metaData,
-                   scene::SceneNode& sceneNode,
-                   DrawableGroup* drawables,
-                   bool forceReload = false);
-
-  //! Loads object with given objectId from importer and metaData, and add to
-  //! passed parent node within sceneGraph
-  void createObject(Importer& importer,
-                    const AssetInfo& info,
-                    const MeshMetaData& metaData,
-                    scene::SceneNode& parent,
-                    DrawableGroup* drawables,
-                    int objectId);
-
-  //! Adds mesh and material to given object
-  void createMeshObject(const MeshMetaData& metaData,
-                        scene::SceneNode& node,
-                        DrawableGroup* drawables,
-                        int objectID,
-                        int meshIDLocal,
-                        int materialIDLocal);
-
   bool loadPTexMeshData(const AssetInfo& info,
                         scene::SceneNode* parent,
                         DrawableGroup* drawables);
@@ -152,21 +164,28 @@ class ResourceManager {
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent,
                            DrawableGroup* drawables,
-                           bool shiftOrigin = false,
-                           scene::SceneNode* node = nullptr);
+                           bool shiftOrigin = false);
+
+  //! Subfunction of loadGeneralMeshData: Instantiate render componenet
+  //! Include: (1) Create scene node (2) Create drawables
+  //! Usage: (1) Create scene (2) Create object instance
+  /*bool addComponent(Importer& importer,
+                    const AssetInfo& info,
+                    scene::SceneNode* parent,
+                    DrawableGroup* drawables);*/
 
   bool loadSUNCGHouseFile(const AssetInfo& info,
                           scene::SceneNode* parent,
                           DrawableGroup* drawables);
 
-  //! Helper functions
+  // ======== Geometry helper functions ========
   void shiftMeshDataToOrigin(GltfMeshData* meshDataGL);
 
   void transformAxis(
       const AssetInfo& info,
       std::vector<CollisionMeshData> meshGroup);
 
-  // ==== geometry data ====
+  // ======== General geometry data ========
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or
   // std::optional because shared_ptr is reference type, not value type, and
   // thus we can avoiding duplicated loading
@@ -178,7 +197,31 @@ class ResourceManager {
   Magnum::GL::Mesh* instance_mesh;
 
   // a dictionary to check if a mesh has been loaded
-  std::map<std::string, MeshMetaData> resourceDict_;
+  // maps: absolutePath -> meshMetaData
+  std::map<std::string, MeshMetaData>                     resourceDict_;
+  std::map<std::string, std::vector<Magnum::UnsignedInt>> magnumMeshDict_;
+
+  // ======== Physical geometry data ========
+  // library of physics object parameters mapped from config filename (used by physicsManager to instantiate physical objects)
+  // maps: objectKey -> physicalMetaData
+  std::map<std::string, PhysicsObjectMetaData> physicsObjectLibrary_;
+  // maps: objectKey -> collesionMesh group
+  std::map<std::string, std::vector<CollisionMeshData>> collisionMeshGroups_;
+  // vector of objectKey's
+  std::vector<std::string> physicsObjectKeyList_;
+  std::vector<std::string> physicsObjectConfigList_;
+
+  // ======== Clone Object Node ========
+  
+
+  // ======== Rendering Utility Functions ========
+  //! Adds mesh and material to given object
+  void addMeshToDrawables(const MeshMetaData& metaData,
+                          scene::SceneNode& node,
+                          DrawableGroup* drawables,
+                          int objectID,
+                          int meshIDLocal,
+                          int materialIDLocal);
 
   //! Types of supported Shader programs
   enum ShaderType {

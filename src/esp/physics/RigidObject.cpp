@@ -14,19 +14,20 @@
 #include "esp/geo/geo.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneGraph.h"
+#include "esp/assets/CollisionMeshData.h"
 
 #include "BulletCollision/CollisionShapes/btCompoundShape.h"
 #include "BulletCollision/CollisionShapes/btConvexHullShape.h"
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
-#include "BulletObject.h"
+#include "RigidObject.h"
 
 
 namespace esp {
 namespace physics {
 
-BulletRigidObject::BulletRigidObject(scene::SceneNode* parent)
+RigidObject::RigidObject(scene::SceneNode* parent)
     : scene::SceneNode{*parent} {}
 
 
@@ -44,13 +45,11 @@ BulletRigidObject::BulletRigidObject(scene::SceneNode* parent)
 //!        (2) Use examples/Importers/ImportBsp
 
 
-bool BulletRigidObject::initializeScene(
-    const assets::AssetInfo& info,
-    Magnum::Float mass,
+bool RigidObject::initializeScene(
     std::vector<assets::CollisionMeshData> meshGroup,
     btDynamicsWorld& bWorld) {
   if (initialized_) {
-    LOG(ERROR) << "Cannot initialized a BulletRigidObject more than once";
+    LOG(ERROR) << "Cannot initialized a RigidObject more than once";
     return false;
   }
 
@@ -62,12 +61,8 @@ bool BulletRigidObject::initializeScene(
   btIndexedMesh bulletMesh;
 
   //! Object Physical Parameters
-  mass_ = mass;
-  LOG(INFO) << "Creating Instance object mass: " << mass;
   LOG(INFO) << "Creating Instance object meshGroups: " << meshGroup.size();
-  btVector3 bInertia(0.0f, 0.0f, 0.0f);
   
-
   //! Iterate through all mesh components for one scene
   //! All components are registered as static objects
   bSceneArray_ = std::make_unique<btTriangleIndexVertexArray>();
@@ -104,7 +99,6 @@ bool BulletRigidObject::initializeScene(
     //! btBvhTriangleMeshShape is the most generic/slow choice
     bSceneShapes_.emplace_back(std::make_unique<btBvhTriangleMeshShape>(
         bSceneArray_.get(), true));
-    bSceneShapes_.back()->calculateLocalInertia(mass, bInertia);
 
     //! Bullet rigid body setup
     bSceneCollisionObjects_.emplace_back(std::make_unique<btCollisionObject>());
@@ -122,14 +116,15 @@ bool BulletRigidObject::initializeScene(
 }
 
 
-bool BulletRigidObject::initializeObject(
-    const assets::AssetInfo& info,
-    Magnum::Float mass,
+bool RigidObject::initializeObject(
+    assets::PhysicsObjectMetaData& metaData,
+    physics::PhysicalObjectType objectType,
     std::vector<assets::CollisionMeshData> meshGroup,
     btDynamicsWorld& bWorld) {
 
+  // TODO (JH): Handling static/kinematic object type
   if (initialized_) {
-    LOG(ERROR) << "Cannot initialized a BulletRigidObject more than once";
+    LOG(ERROR) << "Cannot initialized a RigidObject more than once";
     return false;
   }
 
@@ -141,13 +136,11 @@ bool BulletRigidObject::initializeObject(
   btIndexedMesh bulletMesh;
 
   //! Physical parameters
-  LOG(INFO) << "Creating object mass: " << mass;
-  mass_ = mass;
-  float restitution = defaultRestitution_;
-  float margin = defaultMargin_;
-  float linDamping = defaultLinDamping_;
-  float angDamping = defaultAngDamping_;
-  btVector3 bInertia(2.0f, 2.0f, 2.0f);
+  LOG(INFO) << "Creating object mass: " << metaData.mass;
+  //float restitution = metaData.restitutionCoefficient;
+  float margin      = metaData.margin;
+  //float linDamping  = metaData.linDamping;
+  //float angDamping  = metaData.angDamping;
 
   //! Iterate through all mesh components for one object
   //! The components are combined into a convex compound shape
@@ -175,50 +168,57 @@ bool BulletRigidObject::initializeObject(
     bulletMesh.m_vertexType          = PHY_FLOAT;
 
     //! Check dimension of the data
-    float dx, dy, dz;
-    getDimensions(meshData, &dx, &dy, &dz);
-    LOG(INFO) << "Dimensions dx " << dx << " dy " << dy << " dz " << dz;
+    //float dx, dy, dz;
+    //getDimensions(meshData, &dx, &dy, &dz);
+    //LOG(INFO) << "Dimensions dx " << dx << " dy " << dy << " dz " << dz;
     
-    //! Cheezit box
     btTransform t;        // position and rotation
     t.setIdentity();
     t.setOrigin(btVector3(0, 0, 0));
-
     //! TODO (JH): assume that the object is convex, otherwise game over
     //! Create convex component
     bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
         static_cast<const btScalar*>(meshData.positions.data()->data()),
         meshData.positions.size(), sizeof(Magnum::Vector3)));
     bObjectConvexShapes_.back()->setMargin(margin);
-
     //! Add to compound shape stucture
     bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
   }
 
-  bObjectShape_->calculateLocalInertia(mass, bInertia);
+  //bObjectShape_->calculateLocalInertia(mass, bInertia);
   
   //! Bullet rigid body setup
   bObjectMotionState_ = new Magnum::BulletIntegration::MotionState(*this);
-  bObjectRigidBody_ = std::make_unique<btRigidBody>(
-      btRigidBody::btRigidBodyConstructionInfo{mass, 
-      &(bObjectMotionState_->btMotionState()), bObjectShape_.get(), bInertia});
-  bObjectRigidBody_->setRestitution(restitution);
-  bObjectRigidBody_->setDamping(linDamping, angDamping);
-  LOG(INFO) << "Setting collision mass " << mass << " flags "
+  btVector3 bInertia  = btVector3(metaData.intertia);
+  btRigidBody::btRigidBodyConstructionInfo info = 
+      btRigidBody::btRigidBodyConstructionInfo(metaData.mass, 
+      &(bObjectMotionState_->btMotionState()), 
+      bObjectShape_.get(), bInertia);
+  info.m_friction       = metaData.frictionCoefficient;
+  info.m_restitution    = metaData.restitutionCoefficient;
+  info.m_linearDamping  = metaData.linDamping;
+  info.m_angularDamping = metaData.angDamping;
+  //Magnum::Vector3 intertia = metaData.intertia;
+  //info.m_localInertia   = bInertia(intertia.x(), intertia.y(), intertia.z());
+
+  //! Create rigid body
+  bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
+  LOG(INFO) << "Setting collision mass " << metaData.mass << " flags "
             << bObjectRigidBody_->getCollisionFlags();
 
+  //! Add to world
   bWorld.addRigidBody(bObjectRigidBody_.get());
-
   LOG(INFO) << "Body Construction test: after";
   LOG(INFO) << "Rigid body: initialized";
 
+  //! Sync render pose with physics
   syncPose();
   initialized_ = true;
   return true;
 }
 
 // Helper function to find object center
-void BulletRigidObject::getDimensions(
+void RigidObject::getDimensions(
       assets::CollisionMeshData& meshData,
       float* x,
       float* y,
@@ -245,7 +245,7 @@ void BulletRigidObject::getDimensions(
       << minY << " maxY " << maxY << " minZ " << minZ << " maxZ " << maxZ;
 }
 
-bool BulletRigidObject::isActive() {
+bool RigidObject::isActive() {
   if (!initialized_) {
     LOG(INFO) << "Node not initialized";
     return false;
@@ -256,7 +256,7 @@ bool BulletRigidObject::isActive() {
   return false;
 }
 
-void BulletRigidObject::debugForce(
+void RigidObject::debugForce(
     Magnum::SceneGraph::DrawableGroup3D& debugDrawables) {
   //! DEBUG draw
   debugRender_ = new Magnum::DebugTools::ForceRenderer3D(
@@ -265,27 +265,27 @@ void BulletRigidObject::debugForce(
   LOG(INFO) << "Force render" << debugExternalForce_.x();
 }
 
-void BulletRigidObject::setDebugForce(
+void RigidObject::setDebugForce(
     Magnum::Vector3 force) {
   debugExternalForce_ = force;
 }
 
-BulletRigidObject::~BulletRigidObject() {
+RigidObject::~RigidObject() {
   if (initialized_) {
-    LOG(INFO) << "Deleting object " << mass_;
+    LOG(INFO) << "Deleting object ";
   } else {
     LOG(INFO) << "Object not initialized";
   }
 }
 
-void BulletRigidObject::applyForce(Magnum::Vector3 force,
+void RigidObject::applyForce(Magnum::Vector3 force,
                                    Magnum::Vector3 relPos) {
   if (isScene_ || !initialized_) {return;}
   //! dynamic_cast is safe
   bObjectRigidBody_->applyForce(btVector3(force), btVector3(relPos));
 }
 
-void BulletRigidObject::applyImpulse(Magnum::Vector3 impulse,
+void RigidObject::applyImpulse(Magnum::Vector3 impulse,
                                      Magnum::Vector3 relPos) {
   if (isScene_ || !initialized_) {return;}
   bObjectRigidBody_->applyImpulse(btVector3(impulse), btVector3(relPos));
@@ -293,14 +293,14 @@ void BulletRigidObject::applyImpulse(Magnum::Vector3 impulse,
 
 //! Synchronize Physics transformations
 //! Needed after changing the pose from Magnum side
-void BulletRigidObject::syncPose() {
-  LOG(INFO) << "Rigid object sync pose";
+void RigidObject::syncPose() {
   if (initialized_) {
     if (isScene_) {
       //! You shouldn't need to set scene transforms manually
       //! Scenes are loaded as is
       return;
     } else {
+      LOG(INFO) << "Rigid object sync pose";
       //! For syncing objects
       bObjectRigidBody_->setWorldTransform(btTransform(transformationMatrix()));
     }
@@ -310,14 +310,14 @@ void BulletRigidObject::syncPose() {
 }
 
 
-scene::SceneNode& BulletRigidObject::setTransformation(
+scene::SceneNode& RigidObject::setTransformation(
     const Eigen::Ref<const mat4f> transformation) {
   scene::SceneNode::setTransformation(transformation);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::setTransformation(
+scene::SceneNode& RigidObject::setTransformation(
     const Eigen::Ref<const vec3f> position,
     const Eigen::Ref<const vec3f> target,
     const Eigen::Ref<const vec3f> up) {
@@ -326,41 +326,42 @@ scene::SceneNode& BulletRigidObject::setTransformation(
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::setTranslation(
+scene::SceneNode& RigidObject::setTranslation(
     const Eigen::Ref<const vec3f> vector) {
+  LOG(INFO) << "Set translation " << vector;
   scene::SceneNode::setTranslation(vector);
   syncPose();
   return *this; 
 }
 
-scene::SceneNode& BulletRigidObject::setRotation(
+scene::SceneNode& RigidObject::setRotation(
     const quatf& quaternion) {
   scene::SceneNode::setRotation(quaternion);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::resetTransformation() {
+scene::SceneNode& RigidObject::resetTransformation() {
   scene::SceneNode::resetTransformation();
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::translate(
+scene::SceneNode& RigidObject::translate(
     const Eigen::Ref<const vec3f> vector) {
   scene::SceneNode::translate(vector);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::translateLocal(
+scene::SceneNode& RigidObject::translateLocal(
     const Eigen::Ref<const vec3f> vector) {
   scene::SceneNode::translateLocal(vector);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotate(
+scene::SceneNode& RigidObject::rotate(
     float angleInRad,
     const Eigen::Ref<const vec3f> normalizedAxis) {
   scene::SceneNode::rotate(angleInRad, normalizedAxis);
@@ -368,7 +369,7 @@ scene::SceneNode& BulletRigidObject::rotate(
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateLocal(
+scene::SceneNode& RigidObject::rotateLocal(
     float angleInRad,
     const Eigen::Ref<const vec3f> normalizedAxis) {
   scene::SceneNode::rotateLocal(angleInRad, normalizedAxis);
@@ -376,43 +377,43 @@ scene::SceneNode& BulletRigidObject::rotateLocal(
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateX(float angleInRad) {
+scene::SceneNode& RigidObject::rotateX(float angleInRad) {
   scene::SceneNode::rotateX(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateXInDegree(float angleInDeg) {
+scene::SceneNode& RigidObject::rotateXInDegree(float angleInDeg) {
   scene::SceneNode::rotateXInDegree(angleInDeg);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateXLocal(float angleInRad) {
+scene::SceneNode& RigidObject::rotateXLocal(float angleInRad) {
   scene::SceneNode::rotateXLocal(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateY(float angleInRad) {
+scene::SceneNode& RigidObject::rotateY(float angleInRad) {
   scene::SceneNode::rotateY(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateYLocal(float angleInRad) {
+scene::SceneNode& RigidObject::rotateYLocal(float angleInRad) {
   scene::SceneNode::rotateYLocal(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateZ(float angleInRad) {
+scene::SceneNode& RigidObject::rotateZ(float angleInRad) {
   scene::SceneNode::rotateZ(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& BulletRigidObject::rotateZLocal(float angleInRad) {
+scene::SceneNode& RigidObject::rotateZLocal(float angleInRad) {
   scene::SceneNode::rotateZLocal(angleInRad);
   syncPose();
   return *this;

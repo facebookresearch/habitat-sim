@@ -8,9 +8,10 @@
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <sophus/so3.hpp>
-
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include "Drawable.h"
 #include "esp/io/io.h"
+#include "esp/physics/ObjectType.h"
 
 
 using namespace Magnum;
@@ -32,7 +33,8 @@ Viewer::Viewer(const Arguments& arguments)
                                 Vector4i(8, 8, 8, 8))},
       pathfinder_(nav::PathFinder::create()),
       controls_(),
-      previousPosition_() {
+      previousPosition_(),
+      physicsManager_(resourceManager_) {
   Utility::Arguments args;
   args.addArgument("file")
       .setHelp("file", "file to load")
@@ -65,8 +67,8 @@ Viewer::Viewer(const Arguments& arguments)
   const std::string& file = args.value("file");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
   LOG(INFO) << "Nav scene node (before) " << navSceneNode_;
-  if (!resourceManager_.loadPhysicalScene(info, physicsManager_, navSceneNode_,
-                                          enablePhysics_, &drawables)) {
+  if (!resourceManager_.loadScene(info, navSceneNode_, &drawables, 
+      &physicsManager_, enablePhysics_)) {
     LOG(ERROR) << "cannot load " << file;
     std::exit(0);
   }
@@ -120,33 +122,29 @@ Viewer::Viewer(const Arguments& arguments)
     // agentBodyNode_->setTranslation(Eigen::Map<vec3f>(agent_pos.data()));
   }
 
-  std::string object_file(args.value("obj"));
+  //std::string object_file(args.value("obj"));
 
-  for (int o = 0; o < numObjects_; o++) {
-    addObject();
-  }
-
-  LOG(INFO) << "Viewer initialization is done. ";
   renderCamera_->setTransformation(cameraNode_->getAbsoluteTransformation());
+
+  //! Load cheezit object
+  std::string object_file("./data/objects/cheezit.glb");
+  std::string object_config("./data/objects/cheezit.config");
+  //! Do not draw or instantiate
+  cheezitID = resourceManager_.loadObject(object_config, nullptr, nullptr);
+  for (int o = 0; o < numObjects_; o++) {
+    addObject(cheezitID);
+  }
+  LOG(INFO) << "Viewer initialization is done. ";
 }  // namespace gfx
 
 
-void Viewer::addObject() {
-  auto& drawables = sceneGraph->getDrawables();
-  std::string object_file("./data/objects/cheezit.glb");
-
-  physics::BulletRigidObject* node;
-  bool objectLoaded_ = resourceManager_.loadObject(
-      assets::AssetInfo::fromPath(object_file), physicsManager_, navSceneNode_,
-      enablePhysics_, &drawables, &node);
-
-  if (!objectLoaded_) {
-    LOG(ERROR) << "cannot load " << object_file;
+void Viewer::addObject(int resourceObjectID) {
+  if (resourceObjectID < 0) {
     std::exit(0);
   }
   if (enablePhysics_) {
+    // TODO (JH) swap interval
     // setSwapInterval(1);   // Loop at 60 Hz max
-    //physicsManager_.debugSceneGraph(rootNode);
   }
 
   Magnum::Matrix4 T = agentBodyNode_
@@ -167,7 +165,12 @@ void Viewer::addObject() {
             << " " << new_pos.z();
   LOG(INFO) << "Camera transformation " << Eigen::Map<mat4f>(T.data());
 
-  node->setTranslation(vec3f(new_pos.x(), new_pos.y(), new_pos.z()));
+
+  auto& drawables = sceneGraph->getDrawables();
+  int physObjectID = physicsManager_.addObject(
+      resourceObjectID, navSceneNode_, 
+      physics::PhysicalObjectType::DYNAMIC, &drawables);
+  physicsManager_.setTranslation(physObjectID, Eigen::Map<vec3f>(new_pos.data()));
   lastObjectID += 1;
 }
 
@@ -219,7 +222,7 @@ void Viewer::drawEvent() {
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
   // Draw debug forces
-  renderCamera_->getMagnumCamera().draw(physicsManager_.getDrawables());
+  //renderCamera_->getMagnumCamera().draw(physicsManager_.getDrawables());
   swapBuffers();
   physicsManager_.nextFrame();
   redraw();
@@ -325,7 +328,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       controls_(*agentBodyNode_, "moveUp", moveSensitivity, false);
       break;
     case KeyEvent::Key::O:
-      addObject();
+      addObject(cheezitID);
       break;
     case KeyEvent::Key::P:
       pokeLastObject();

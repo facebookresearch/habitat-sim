@@ -15,6 +15,7 @@
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
+#include <Magnum/Math/Tags.h>
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
@@ -33,6 +34,7 @@
 #include "CollisionMeshData.h"
 #include "MeshData.h"
 #include "ResourceManager.h"
+#include "esp/physics/PhysicsManager.h"
 
 namespace esp {
 namespace assets {
@@ -59,32 +61,27 @@ bool ResourceManager::loadSceneData(
     return loadSUNCGHouseFile(info, parent, drawables);
   } else if (info.type == AssetType::MP3D_MESH) {
     LOG(INFO) << "Loading MP3D mesh data";
-    return loadGeneralMeshData(info, parent, drawables);
+    bool meshSuccess = loadGeneralMeshData(info, parent, drawables);
+    return meshSuccess;
   } else {
     // Unknown type, just load general mesh data
     LOG(INFO) << "Loading General mesh data";
-    return loadGeneralMeshData(info, parent, drawables);
+    bool meshSuccess = loadGeneralMeshData(info, parent, drawables);
+    return meshSuccess;
   }
 }
 
+//! Both load and instantiate scene
 bool ResourceManager::loadScene(
     const AssetInfo& info,
-    scene::SceneNode* parent,        /* = nullptr */
-    PhysicsManager* _physicsManager, /* = nullptr */
-    bool attach_physics,             /* = false */
-    DrawableGroup* drawables,        /* = nullptr */) {
+    scene::SceneNode* parent,                 /* = nullptr */
+    DrawableGroup* drawables,                 /* = nullptr */
+    physics::PhysicsManager* _physicsManager, /* = nullptr */
+    bool attach_physics                       /* = false */) {
   bool meshSuccess = loadSceneData(info, parent, drawables);
   LOG(INFO) << "Loaded mesh object, success " << meshSuccess;
 
   if (attach_physics) {
-    physics::BulletRigidObject* physNode = new physics::BulletRigidObject(parent);
-
-    LOG(INFO) << "Physics node " << physNode;
-    if (physNode == nullptr) {
-      LOG(ERROR) << "Cannot instantiate physics node.";
-      return false;
-    }
-
     const std::string& filename = info.filepath;
     MeshMetaData& metaData = resourceDict_.at(filename);
     auto indexPair = metaData.meshIndex;
@@ -132,12 +129,9 @@ bool ResourceManager::loadScene(
                                                   meshData.positions);
         meshGroup.push_back(meshData);
       }
-
     }
-
-    //bool sceneSuccess = true;
-    bool sceneSuccess = _physicsManager->initScene(
-        info, metaData, meshGroup, physNode);
+    //! Initialize collision mesh
+    bool sceneSuccess = _physicsManager->addScene(info, parent, meshGroup);
 
     LOG(INFO) << "Initialized mesh scene, success " << sceneSuccess;
     if (!sceneSuccess) {
@@ -145,42 +139,71 @@ bool ResourceManager::loadScene(
       return false;
     }
   }
-
   return meshSuccess;
 }
 
-// TODO (JH): The use of double pointer is backward-incompatible here,
-// need to consult Yili
-bool ResourceManager::loadObject(
-    const AssetInfo& info,
+// Add object by object key
+int ResourceManager::addObject(
+    const std::string objectKey,
     scene::SceneNode* parent,
-    bool attach_physics,              /* = false */
-    PhysicsManager* _physicsManager,  /* = nullptr */
-    DrawableGroup* drawables,         /* = nullptr */
-    physics::BulletRigidObject** physNode) 
+    DrawableGroup* drawables) 
 {
-  // if this is a new file, load it and add it to the dictionary
-  if (attach_physics) {
+  int objectID = getObjectID(objectKey);
+  if (objectID < 0) {
+    return -1;
+  }
+  LOG(INFO) << "Resource add object " << objectKey << " " << objectID;
+  return addObject(objectID, parent, drawables);
+}
 
-    if (info.type == AssetType::MP3D_MESH) {
-      *physNode = new physics::BulletRigidObject(parent);
-      bool meshSuccess =
-          loadGeneralMeshData(info, parent, drawables, true, *physNode);
-      bool objectSuccess;
-      // Load convex hull
-      std::string fname;
-      fname.assign(info.filepath);
-      std::string c_fname =
-          //TODO (JH): currently convex mesh name is hardcoded
-          //fname.replace(fname.end() - 4, fname.end(), "VHACD.glb");
-          fname.replace(fname.end() - 4, fname.end(), "_convex.glb");
-      AssetInfo c_info = AssetInfo::fromPath(c_fname);
+// Add object by ID
+int ResourceManager::addObject(
+    const int objectID,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables) 
+{
+  std::string object_config = getObjectConfig(objectID);
+  LOG(INFO) << "Resource add object " << object_config << " " << objectID;
+  return loadObject(object_config, parent, drawables);
+}
 
-      // Load collision mesh, need to shift to origin
-      bool shift_Origin = true;
-      bool c_MeshSuccess = loadGeneralMeshData(c_info, parent, nullptr, shift_Origin);
+//! Only load and does not instantiate object
+//! For load-only: set parent = nullptr, drawables = nullptr
+int ResourceManager::loadObject(
+    const std::string object_config,
+    scene::SceneNode* parent       /* nullptr */,
+    DrawableGroup* drawables       /* nullptr */) 
+{
+  std::string object_file("./data/objects/cheezit.glb");
+  std::string key_name("cheezit");
+  assets::AssetInfo info = assets::AssetInfo::fromPath(object_file);
+  physicsObjectLibrary_[key_name] = PhysicsObjectMetaData();
 
-      // const std::string& filename = info.filepath;
+  if (info.type == AssetType::MP3D_MESH) {
+    //! nullptr for both parent and drawables to disable immediate
+    //! instantiation
+    bool loadSuccess = loadGeneralMeshData(info, parent, drawables, true);
+    //! Load convex hull
+    std::string fname;
+    fname.assign(info.filepath);
+    std::string c_fname =
+        fname.replace(fname.end() - 4, fname.end(), "_convex.glb");
+    AssetInfo c_info = AssetInfo::fromPath(c_fname);
+
+    //! Load collision mesh, need to shift to origin
+    bool shift_Origin = true;
+    bool c_loadSuccess = loadGeneralMeshData(c_info, nullptr, 
+      nullptr, shift_Origin);
+    // const std::string& filename = info.filepath;
+    if (!c_loadSuccess) {
+      return -1;
+    }
+    //! Register mesh data to dictionary
+    PhysicsObjectMetaData& physMetaData = physicsObjectLibrary_[key_name];
+    std::vector<std::string>::iterator itr = std::find(
+        physicsObjectKeyList_.begin(), physicsObjectKeyList_.end(), key_name);
+    if (itr == physicsObjectKeyList_.cend()) { 
+
       MeshMetaData& metaData = resourceDict_.at(c_fname);
       auto indexPair = metaData.meshIndex;
       int start = indexPair.first;
@@ -188,30 +211,44 @@ bool ResourceManager::loadObject(
       LOG(INFO) << "Accessing object mesh start " << start << " end " << end;
 
       std::vector<CollisionMeshData> meshGroup;
-      for (int mesh_i = start; mesh_i < end; mesh_i++) {
-        GltfMeshData* gltfMeshData = dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
+      for (int mesh_i = start; mesh_i <= end; mesh_i++) {
+        GltfMeshData* gltfMeshData = dynamic_cast<GltfMeshData*>(
+            meshes_[mesh_i].get());
         CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
         meshGroup.push_back(meshData);
       }
       
+      //! Properly align axis direction
       transformAxis(info, meshGroup);
-      int objectID = _physicsManager->initObject(info, metaData, meshGroup, *physNode);
-      //LOG(INFO) << "Object ID loaded " << objectID;
-      objectSuccess = (objectID != -1);
 
-      (*physNode)->setTransformation(parent->getTransformation());
-      //LOG(INFO) << "Parent trans " << Eigen::Map<mat4f>(parent->transformation().data());
-
-      return c_MeshSuccess && objectSuccess;
-
+      collisionMeshGroups_[key_name] = meshGroup;
+      physicsObjectKeyList_.push_back(key_name);
+      physicsObjectConfigList_.push_back(object_config);
+      return physicsObjectKeyList_.size() - 1;
     } else {
-      // Objects in other formats not supported yet
-      return false;
+      return std::distance(physicsObjectKeyList_.begin(), itr);
     }
+
+    // TODO (JH) move this logic to somewhere else
+    //int objectID = _physicsManager->addObject(info, metaData, meshGroup);
+    //LOG(INFO) << "Object ID loaded " << objectID;
+    //objectSuccess = (objectID != -1);
+    //(*physNode)->setTransformation(parent->getTransformation());
+
   } else {
-    bool meshSuccess = loadGeneralMeshData(info, parent, drawables, true);
-    return meshSuccess;
+    //! Objects in other formats not supported yet
+    //! For instance
+    //! (1) assets::AssetType::INSTANCE_MESH: _semantic.ply
+    //! (2) assets::AssetType::FRL_INSTANCE_MESH:  FRL mesh
+    LOG(INFO) << "Cannot load non-GLB objects";
+    return -1;
   }
+}
+
+PhysicsObjectMetaData& ResourceManager::getPhysicsMetaData(
+    const std::string objectName) 
+{
+  return physicsObjectLibrary_[objectName];
 }
 
 void ResourceManager::transformAxis(
@@ -226,6 +263,39 @@ void ResourceManager::transformAxis(
     Magnum::MeshTools::transformPointsInPlace(transform,
                                               meshData.positions);
   }
+}
+
+std::vector<assets::CollisionMeshData> ResourceManager::getCollisionMesh(
+    const int objectID) {
+  if (objectID < 0 || objectID > collisionMeshGroups_.size()) {
+    return std::vector<assets::CollisionMeshData>();
+  }
+  std::string keyName = getObjectKeyName(objectID);
+  return collisionMeshGroups_[keyName];
+}
+
+std::vector<assets::CollisionMeshData> ResourceManager::getCollisionMesh(
+    const std::string keyName) {
+  return collisionMeshGroups_[keyName];
+}
+
+int ResourceManager::getObjectID(std::string keyName) {
+  std::vector<std::string>::iterator itr = std::find(
+      physicsObjectKeyList_.begin(), physicsObjectKeyList_.end(), keyName);
+  if (itr == physicsObjectKeyList_.cend()) {
+    return -1;
+  } else {
+    int objectID = std::distance(physicsObjectKeyList_.begin(), itr);
+    return objectID;
+  }
+}
+
+std::string ResourceManager::getObjectKeyName(int objectID) {
+  return physicsObjectKeyList_[objectID];
+}
+
+std::string ResourceManager::getObjectConfig(int objectID) {
+  return physicsObjectConfigList_[objectID];
 }
 
 void ResourceManager::shiftMeshDataToOrigin(GltfMeshData* meshDataGL) {
@@ -393,74 +463,106 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
   return true;
 }
 
-bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
-                                          scene::SceneNode* parent,
-                                          DrawableGroup* drawables,
-                                          bool shiftOrigin /* = false */,
-                                          scene::SceneNode* node) {
+bool ResourceManager::loadGeneralMeshData(
+    const AssetInfo& info,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables,
+    bool shiftOrigin /* = false */) 
+{
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
+  const bool drawData = parent != nullptr && drawables != nullptr;
 
-  // if file is loaded, and no need to build the scene graph
-  if (fileIsLoaded && parent == nullptr) {
+  // Mesh & metaData container
+  MeshMetaData metaData;
+  std::vector<Magnum::UnsignedInt> magnumData;
+
+  // Optional File loading
+  if (!fileIsLoaded) {
+    // if file is not loaded
+    if (!importer) {
+      LOG(ERROR) << "Cannot load the importer. ";
+      return false;
+    }
+    if (!importer->openFile(filename)) {
+      LOG(ERROR) << "Cannot open file " << filename;
+      return false;
+    }
+
+    // if this is a new file, load it and add it to the dictionary
+    loadTextures(*importer, &metaData);
+    loadMaterials(*importer, &metaData);
+    LOG(INFO) << "Total materials " << materials_.size();
+    // TODO (JH): shift origin merge with COM
+    loadMeshes(*importer, &metaData, shiftOrigin);
+    resourceDict_.emplace(filename, metaData);
+
+    // Register magnum mesh
+    LOG(INFO) << "Loading " << filename;
+    if (importer->defaultScene() != -1) {
+      Corrade::Containers::Optional<Magnum::Trade::SceneData> sceneData =
+          importer->scene(importer->defaultScene());
+      if (!sceneData) {
+        LOG(ERROR) << "Cannot load scene, exiting";
+        return false;
+      }
+      LOG(INFO) << "Load default " << importer->mesh3DCount();
+      for (uint sceneDataID: sceneData->children3D()) {
+        LOG(INFO) << "Loading child scene dataID " << sceneDataID;
+        magnumData.emplace_back(sceneDataID);
+      }
+    } else if (importer->mesh3DCount() && meshes_[metaData.meshIndex.first]) {
+      // no default scene --- standalone OBJ/PLY files, for example
+      // take a wild guess and load the first mesh with the first material
+      //addMeshToDrawables(metaData, *parent, drawables, ID_UNDEFINED, 0, 0);
+      // TODO (JH): check this part, may not be working
+      LOG(INFO) << "Load non-default";
+      magnumData.emplace_back(0);
+      LOG(INFO) << "Load 0";
+    } else {
+      LOG(ERROR) << "No default scene available and no meshes found, exiting";
+      return false;
+    }
+    magnumMeshDict_.emplace(filename, magnumData);
+
+
+    LOG(INFO) << "Load mesh/material/texture done";
+  } else {
+    metaData = resourceDict_[filename];
+  }
+
+  // Optional Instantiation
+  if (!drawData) {
+    //! Do not instantiate object
+    return true;
+  } else {
+    //! Do instantiate object
+    MeshMetaData& metaData = resourceDict_[filename];
+    const bool forceReload = false;
+    //scene::SceneNode newNode = parent->createChild();
+    // re-bind position, normals, uv, colors etc. to the corresponding buffers
+    // under *current* gl context
+    if (forceReload) {
+      int start = metaData.meshIndex.first;
+      int end = metaData.meshIndex.second;
+      if (0 <= start && start <= end) {
+        for (int iMesh = start; iMesh <= end; ++iMesh) {
+          meshes_[iMesh]->uploadBuffersToGPU(forceReload);
+        }
+      }
+    }  // forceReload
+
+    // create scene parent node with transformation aligning to global frame
+    const quatf transform = info.frame.rotationFrameToWorld();
+    parent->setRotation(transform);
+    // Recursively add all children
+    for (auto sceneDataID : magnumMeshDict_[filename]) {
+      LOG(INFO) << "Scene data ID " << sceneDataID << " " << filename; 
+      addComponent(*importer, info, metaData, *parent, drawables, sceneDataID);
+    }
     return true;
   }
 
-  // Load a scene importer plugin. In case Magnum is built statically, arg is
-  // pluginDirectory to silence warnings, otherwise we *do* want it to search
-  // in the filesystem.
-  Magnum::PluginManager::Manager<Importer> manager{
-#ifdef MAGNUM_BUILD_STATIC
-      "./"
-#endif
-  };
-  std::unique_ptr<Importer> importer =
-      manager.loadAndInstantiate("AnySceneImporter");
-
-  // Prefer tiny_gltf for loading glTF files (Assimp is worse),
-  // prefer Assimp for OBJ files (ObjImporter is worse)
-  manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
-  manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
-
-  if (!importer) {
-    LOG(ERROR) << "Cannot load the importer. ";
-    return false;
-  }
-
-  if (!importer->openFile(filename)) {
-    LOG(ERROR) << "Cannot open file " << filename;
-    return false;
-  }
-
-  LOG(INFO) << "Loading file " << filename;
-  // if this is a new file, load it and add it to the dictionary
-  if (!fileIsLoaded) {
-    MeshMetaData metaData;
-    loadTextures(*importer, &metaData);
-    loadMaterials(*importer, &metaData);
-    loadMeshes(*importer, &metaData, shiftOrigin);
-    // update the dictionary
-    resourceDict_.emplace(filename, metaData);
-  }
-
-  LOG(INFO) << "Load mesh/material/texture done";
-
-  auto& metaData = resourceDict_.at(filename);
-  const bool forceReload = false;
-
-  scene::SceneNode* newNode;
-  if (node) {
-    newNode = node;
-  } else {
-    newNode = &parent->createChild();
-  }
-  bool success_ = true;
-  if (drawables != nullptr) {
-    success_ = createScene(*importer, info, metaData, *newNode, drawables,
-                           forceReload);
-  }
-
-  return success_;
 }
 
 void ResourceManager::loadMaterials(Importer& importer,
@@ -581,16 +683,19 @@ void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
   }
 }
 
-void ResourceManager::createObject(Importer& importer,
+//! Add component to rendering stack, based on importer loading
+//! TODO (JH): decouple importer part, so that objects can be
+//! instantiated any time after initial loading
+void ResourceManager::addComponent(Importer& importer,
                                    const AssetInfo& info,
                                    const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
                                    DrawableGroup* drawables,
-                                   int objectID) {
+                                   int sceneDataID) {
   std::unique_ptr<Magnum::Trade::ObjectData3D> objectData =
-      importer.object3D(objectID);
+      importer.object3D(sceneDataID);
   if (!objectData) {
-    LOG(ERROR) << "Cannot import object " << importer.object3DName(objectID)
+    LOG(ERROR) << "Cannot import object " << importer.object3DName(sceneDataID)
                << ", skipping";
     return;
   }
@@ -598,47 +703,49 @@ void ResourceManager::createObject(Importer& importer,
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
   node.MagnumObject::setTransformation(objectData->transformation());
-  // LOG(INFO) << "Transformation " <<
-  // Eigen::Map<mat4f>(objectData->transformation().data());
 
   const int meshIDLocal = objectData->instance();
   const int meshID = metaData.meshIndex.first + meshIDLocal;
 
   // Add a drawable if the object has a mesh and the mesh is loaded
-  if (objectData->instanceType() == Magnum::Trade::ObjectInstanceType3D::Mesh &&
-      meshIDLocal != ID_UNDEFINED && meshes_[meshID]) {
+  if (objectData->instanceType() == Magnum::Trade::ObjectInstanceType3D::Mesh 
+      && meshIDLocal != ID_UNDEFINED 
+      && meshes_[meshID]) {
     const int materialIDLocal =
         static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
             ->material();
-    createMeshObject(metaData, node, drawables, objectID, meshIDLocal,
-                     materialIDLocal);
+    LOG(INFO) << "Adding drawables " << materialIDLocal;
+    addMeshToDrawables(metaData, node, drawables, sceneDataID, meshIDLocal,
+        materialIDLocal);
   }
 
   // Recursively add children
   for (auto childObjectID : objectData->children()) {
-    createObject(importer, info, metaData, node, drawables, childObjectID);
+    LOG(INFO) << "Child ID " << childObjectID;
+    addComponent(importer, info, metaData, node, drawables, childObjectID);
   }
 }
 
-void ResourceManager::createMeshObject(const MeshMetaData& metaData,
-                                       scene::SceneNode& node,
-                                       DrawableGroup* drawables,
-                                       int objectID,
-                                       int meshIDLocal,
-                                       int materialIDLocal) {
+void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
+                                         scene::SceneNode& node,
+                                         DrawableGroup* drawables,
+                                         int sceneDataID,
+                                         int meshIDLocal,
+                                         int materialIDLocal) {
   const int meshStart = metaData.meshIndex.first;
   const int meshID = meshStart + meshIDLocal;
   Magnum::GL::Mesh& mesh = *meshes_[meshID]->getMagnumGLMesh();
 
   const int materialStart = metaData.materialIndex.first;
   const int materialID = materialStart + materialIDLocal;
+  LOG(INFO) << "Adding mesh to drawable meshIDLocal " << meshIDLocal << " material id local " << materialIDLocal << " materialID " << materialID;
 
   Magnum::GL::Texture2D* texture = nullptr;
   // Material not set / not available / not loaded, use a default material
   if (materialIDLocal == ID_UNDEFINED ||
       metaData.materialIndex.second == ID_UNDEFINED ||
       !materials_[materialID]) {
-    createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID);
+    createDrawable(COLORED_SHADER, mesh, node, drawables, texture, sceneDataID);
   } else {
     if (materials_[materialID]->flags() &
         Magnum::Trade::PhongMaterialData::Flag::DiffuseTexture) {
@@ -649,16 +756,16 @@ void ResourceManager::createMeshObject(const MeshMetaData& metaData,
       texture = textures_[textureStart + textureIndex].get();
       if (texture) {
         createDrawable(TEXTURED_SHADER, mesh, node, drawables, texture,
-                       objectID);
+                       sceneDataID);
       } else {
         // Color-only material
-        createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID,
-                       materials_[materialID]->diffuseColor());
+        createDrawable(COLORED_SHADER, mesh, node, drawables, texture, 
+            sceneDataID, materials_[materialID]->diffuseColor());
       }
     } else {
       // Color-only material
-      createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID,
-                     materials_[materialID]->diffuseColor());
+      createDrawable(COLORED_SHADER, mesh, node, drawables, texture, 
+          sceneDataID, materials_[materialID]->diffuseColor());
     }
   }  // else
 }
@@ -687,60 +794,6 @@ gfx::Drawable& ResourceManager::createDrawable(
   return *drawable;
 }
 
-bool ResourceManager::createScene(Importer& importer,
-                                  const AssetInfo& info,
-                                  const MeshMetaData& metaData,
-                                  scene::SceneNode& parent,
-                                  DrawableGroup* drawables,
-                                  bool forceReload /* = false */) {
-  // re-bind position, normals, uv, colors etc. to the corresponding buffers
-  // under *current* gl context
-  if (forceReload) {
-    int start = metaData.meshIndex.first;
-    int end = metaData.meshIndex.second;
-    if (0 <= start && start <= end) {
-      for (int iMesh = start; iMesh <= end; ++iMesh) {
-        meshes_[iMesh]->uploadBuffersToGPU(forceReload);
-      }
-    }
-  }  // forceReload
-
-  if (importer.defaultScene() != -1) {
-    Corrade::Containers::Optional<Magnum::Trade::SceneData> sceneData =
-        importer.scene(importer.defaultScene());
-    if (!sceneData) {
-      LOG(ERROR) << "Cannot load scene, exiting";
-      return false;
-    }
-
-    //const quatf transform =
-    //    quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
-    const quatf transform = info.frame.rotationFrameToWorld();
-    
-    // create scene parent node with transformation aligning to global frame
-    parent.setRotation(transform);
-
-    // Recursively add all children
-    for (auto objectID : sceneData->children3D()) {
-      createObject(importer, info, metaData, parent, drawables, objectID);
-    }
-  } else if (importer.mesh3DCount() && meshes_[metaData.meshIndex.first]) {
-    // no default scene --- standalone OBJ/PLY files, for example
-
-    // create scene parent node with transformation aligning to global frame
-    const quatf transform = info.frame.rotationFrameToWorld();
-    parent.setRotation(transform);
-
-    // take a wild guess and load the first mesh with the first material
-    createMeshObject(metaData, parent, drawables, ID_UNDEFINED, 0, 0);
-
-  } else {
-    LOG(ERROR) << "No default scene available and no meshes found, exiting";
-    return false;
-  }
-
-  return true;
-}
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
                                          scene::SceneNode* parent,

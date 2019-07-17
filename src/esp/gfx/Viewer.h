@@ -8,13 +8,13 @@
 
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
-#include "esp/assets/PhysicsManager.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
-#include "esp/physics/BulletObject.h"
+#include "esp/physics/PhysicsManager.h"
+#include "esp/physics/RigidObject.h"
 
 // forward declaration
 namespace Corrade {
@@ -39,12 +39,12 @@ class Viewer : public Magnum::Platform::Application {
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
 
-  void addObject();
+  void addObject(int resourceObjectID);
   void pokeLastObject();
   void pushLastObject();
 
   assets::ResourceManager resourceManager_;
-  assets::PhysicsManager physicsManager_;
+  physics::PhysicsManager physicsManager_;
   scene::SceneManager sceneManager_;
   std::vector<int> sceneID_;
   scene::SceneNode* agentBodyNode_ = nullptr;
@@ -73,6 +73,8 @@ class Viewer : public Magnum::Platform::Application {
 
   int numObjects_ = 1;
   int lastObjectID = -1;
+
+  int cheezitID = -1;
   vec3f goalPos_;
   quatf goalHeading_;
 };
