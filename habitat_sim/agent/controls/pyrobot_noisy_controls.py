@@ -177,9 +177,10 @@ def _noisy_action_impl(
     multiplier: float,
     model: MotionNoiseModel,
 ):
-    abs_transform = scene_node.absolute_transformation()
-    move_ax = -abs_transform[_Z_AXIS].xyz
-    perp_ax = abs_transform[_X_AXIS].xyz
+    # Perform the action in the coordinate system of the node
+    transform = scene_node.transformation
+    move_ax = -transform[_Z_AXIS].xyz
+    perp_ax = transform[_X_AXIS].xyz
 
     # + EPS to make sure 0 is positive.  We multiply the mean by the sign of the translation
     # as otherwise forward would overshoot on average and backward would undershoot, while
