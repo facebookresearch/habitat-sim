@@ -6,6 +6,12 @@
 #include <stack>
 #include <unordered_map>
 
+#include <Magnum/Magnum.h>
+#include <Magnum/Math/Vector3.h>
+
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/EigenIntegration/Integration.h>
+
 #include <cstdio>
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -26,8 +32,9 @@ namespace esp {
 namespace nav {
 namespace {
 
+template <typename T>
 std::tuple<dtStatus, dtPolyRef, vec3f> projectToPoly(
-    const vec3f& pt,
+    const T& pt,
     const dtNavMeshQuery* navQuery,
     const dtQueryFilter* filter) {
   // Defines size of the bounding box to search in for the nearest polygon.  If
@@ -822,8 +829,8 @@ bool esp::nav::PathFinder::findPath(MultiGoalShortestPath& path) {
   return false;
 }
 
-vec3f esp::nav::PathFinder::tryStep(const Eigen::Ref<const vec3f> start,
-                                    const Eigen::Ref<const vec3f> end) {
+template <typename T>
+T esp::nav::PathFinder::tryStep(const T& start, const T& end) {
   static const int MAX_POLYS = 256;
   dtPolyRef polys[MAX_POLYS];
 
@@ -869,8 +876,13 @@ vec3f esp::nav::PathFinder::tryStep(const Eigen::Ref<const vec3f> start,
     endPoint = endPoint + nudgeDistance * nudgeDir;
   }
 
-  return endPoint;
+  return T{endPoint};
 }
+
+template vec3f esp::nav::PathFinder::tryStep<vec3f>(const vec3f&, const vec3f&);
+template Magnum::Vector3 esp::nav::PathFinder::tryStep<Magnum::Vector3>(
+    const Magnum::Vector3&,
+    const Magnum::Vector3&);
 
 float esp::nav::PathFinder::islandRadius(const vec3f& pt) const {
   dtPolyRef ptRef;

@@ -94,30 +94,28 @@ class PhysicsManager {
 
   //============ Set/Get object states =============
   void setTransformation(const int objectID, 
-                         const Eigen::Ref<const mat4f> trans);
-  void setTransformation(const int objectID, 
-                         const Eigen::Ref<const vec3f> position,
-                         const Eigen::Ref<const vec3f> target,
-                         const Eigen::Ref<const vec3f> up);
+                         const Magnum::Math::Matrix4<float> trans);
   void setTranslation(const int objectID, 
-                      const Eigen::Ref<const vec3f> vector);
-  void setRotation(const int objectID, const quatf& quaternion);
+                      const Magnum::Math::Vector3<float> vector);
+  void setRotation(const int objectID, 
+                   const Magnum::Math::Quaternion<float>& quaternion);
   void resetTransformation(const int objectID);
   void translate(const int objectID, 
-                 const Eigen::Ref<const vec3f> vector);
+                 const Magnum::Math::Vector3<float> vector);
   void translateLocal(const int objectID, 
-                      const Eigen::Ref<const vec3f> vector);
-  void rotate(const int objectID, float angleInRad,
-              const Eigen::Ref<const vec3f> normalizedAxis);
-  void rotateLocal(const int objectID, float angleInRad,
-                   const Eigen::Ref<const vec3f> normalizedAxis);
-  void rotateX(const int objectID, float angleInRad);
-  void rotateY(const int objectID, float angleInRad);
-  void rotateXInDegree(const int objectID, float angleInDeg);
-  void rotateXLocal(const int objectID, float angleInRad);
-  void rotateYLocal(const int objectID, float angleInRad);
-  void rotateZ(const int objectID, float angleInRad);
-  void rotateZLocal(const int objectID, float angleInRad);
+                      const Magnum::Math::Vector3<float> vector);
+  void rotate(const int objectID, 
+              const Magnum::Math::Rad<float> angleInRad,
+              const Magnum::Math::Vector3<float> normalizedAxis);
+  void rotateX(const int objectID, const Magnum::Math::Rad<float> angleInRad);
+  void rotateY(const int objectID, const Magnum::Math::Rad<float> angleInRad);
+  void rotateZ(const int objectID, const Magnum::Math::Rad<float> angleInRad);
+  void rotateXLocal(const int objectID, 
+                    const Magnum::Math::Rad<float> angleInRad);
+  void rotateYLocal(const int objectID, 
+                    const Magnum::Math::Rad<float> angleInRad);
+  void rotateZLocal(const int objectID, 
+                    const Magnum::Math::Rad<float> angleInRad);
 
 
 

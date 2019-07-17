@@ -72,7 +72,6 @@ struct Renderer::Impl {
   inline void renderExit() {}
 
   void draw(RenderCamera& camera, MagnumDrawableGroup& drawables) {
-    ASSERT(camera.isValid());
     renderEnter();
     camera.getMagnumCamera().setViewport(framebufferSize_);
     camera.draw(drawables);
@@ -80,7 +79,6 @@ struct Renderer::Impl {
   }
 
   void draw(sensor::Sensor& visualSensor, scene::SceneGraph& sceneGraph) {
-    ASSERT(visualSensor.isValid());
     ASSERT(visualSensor.isVisualSensor());
 
     // set the modelview matrix, projection matrix of the render camera;

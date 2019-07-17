@@ -311,31 +311,21 @@ void RigidObject::syncPose() {
 
 
 scene::SceneNode& RigidObject::setTransformation(
-    const Eigen::Ref<const mat4f> transformation) {
+    const Magnum::Math::Matrix4<float> transformation) {
   scene::SceneNode::setTransformation(transformation);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::setTransformation(
-    const Eigen::Ref<const vec3f> position,
-    const Eigen::Ref<const vec3f> target,
-    const Eigen::Ref<const vec3f> up) {
-  scene::SceneNode::setTransformation(position, target, up);
-  syncPose();
-  return *this;
-}
-
 scene::SceneNode& RigidObject::setTranslation(
-    const Eigen::Ref<const vec3f> vector) {
-  LOG(INFO) << "Set translation " << vector;
+    const Magnum::Math::Vector3<float> vector) {
   scene::SceneNode::setTranslation(vector);
   syncPose();
   return *this; 
 }
 
 scene::SceneNode& RigidObject::setRotation(
-    const quatf& quaternion) {
+    const Magnum::Math::Quaternion<float>& quaternion) {
   scene::SceneNode::setRotation(quaternion);
   syncPose();
   return *this;
@@ -348,72 +338,72 @@ scene::SceneNode& RigidObject::resetTransformation() {
 }
 
 scene::SceneNode& RigidObject::translate(
-    const Eigen::Ref<const vec3f> vector) {
+    const Magnum::Math::Vector3<float> vector) {
   scene::SceneNode::translate(vector);
   syncPose();
   return *this;
 }
 
 scene::SceneNode& RigidObject::translateLocal(
-    const Eigen::Ref<const vec3f> vector) {
+    const Magnum::Math::Vector3<float> vector) {
   scene::SceneNode::translateLocal(vector);
   syncPose();
   return *this;
 }
 
 scene::SceneNode& RigidObject::rotate(
-    float angleInRad,
-    const Eigen::Ref<const vec3f> normalizedAxis) {
+    const Magnum::Math::Rad<float> angleInRad,
+    const Magnum::Math::Vector3<float> normalizedAxis) {
   scene::SceneNode::rotate(angleInRad, normalizedAxis);
   syncPose();
   return *this;
 }
 
 scene::SceneNode& RigidObject::rotateLocal(
-    float angleInRad,
-    const Eigen::Ref<const vec3f> normalizedAxis) {
+    const Magnum::Math::Rad<float> angleInRad,
+    const Magnum::Math::Vector3<float> normalizedAxis) {
   scene::SceneNode::rotateLocal(angleInRad, normalizedAxis);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::rotateX(float angleInRad) {
+scene::SceneNode& RigidObject::rotateX(
+    const Magnum::Math::Rad<float> angleInRad) {
   scene::SceneNode::rotateX(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::rotateXInDegree(float angleInDeg) {
-  scene::SceneNode::rotateXInDegree(angleInDeg);
-  syncPose();
-  return *this;
-}
-
-scene::SceneNode& RigidObject::rotateXLocal(float angleInRad) {
+scene::SceneNode& RigidObject::rotateXLocal(
+    const Magnum::Math::Rad<float> angleInRad) {
   scene::SceneNode::rotateXLocal(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::rotateY(float angleInRad) {
+scene::SceneNode& RigidObject::rotateY(
+    const Magnum::Math::Rad<float> angleInRad) {
   scene::SceneNode::rotateY(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::rotateYLocal(float angleInRad) {
+scene::SceneNode& RigidObject::rotateYLocal(
+    const Magnum::Math::Rad<float> angleInRad) {
   scene::SceneNode::rotateYLocal(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::rotateZ(float angleInRad) {
+scene::SceneNode& RigidObject::rotateZ(
+    const Magnum::Math::Rad<float> angleInRad) {
   scene::SceneNode::rotateZ(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::rotateZLocal(float angleInRad) {
+scene::SceneNode& RigidObject::rotateZLocal(
+    const Magnum::Math::Rad<float> angleInRad) {
   scene::SceneNode::rotateZLocal(angleInRad);
   syncPose();
   return *this;

@@ -5,14 +5,16 @@
 # LICENSE file in the root directory of this source tree.
 
 from io import BytesIO
+from typing import Tuple
 from urllib.request import urlopen
 from zipfile import ZipFile
 
+import magnum as mn
 import numpy as np
 import quaternion
 
 
-def quat_from_coeffs(coeffs: np.array) -> np.quaternion:
+def quat_from_coeffs(coeffs: np.ndarray) -> np.quaternion:
     r"""Creates a quaternion from the coeffs returned by the simulator backend
 
     Args:
@@ -28,7 +30,7 @@ def quat_from_coeffs(coeffs: np.array) -> np.quaternion:
     return quat
 
 
-def quat_to_coeffs(quat: np.quaternion) -> np.array:
+def quat_to_coeffs(quat: np.quaternion) -> np.ndarray:
     r"""Converts a quaternion into the coeffs format the backend expects
 
     Args:
@@ -44,7 +46,18 @@ def quat_to_coeffs(quat: np.quaternion) -> np.array:
     return coeffs
 
 
-def quat_to_angle_axis(quat: np.quantile) -> (float, np.array):
+def quat_to_magnum(quat: np.quaternion) -> mn.Quaternion:
+    return mn.Quaternion(quat.imag, quat.real)
+
+
+def quat_from_magnum(quat: mn.Quaternion) -> np.quaternion:
+    a = np.quaternion(1, 0, 0, 0)
+    a.real = quat.scalar
+    a.imag = quat.vector
+    return a
+
+
+def quat_to_angle_axis(quat: np.quaternion) -> Tuple[float, np.ndarray]:
     r"""Converts a quaternion to angle axis format
 
     Args:
@@ -67,7 +80,7 @@ def quat_to_angle_axis(quat: np.quantile) -> (float, np.array):
     return (theta, w)
 
 
-def quat_from_angle_axis(theta: float, axis: np.array) -> np.quaternion:
+def quat_from_angle_axis(theta: float, axis: np.ndarray) -> np.quaternion:
     r"""Creates a quaternion from angle axis format
 
     Args:
@@ -82,7 +95,7 @@ def quat_from_angle_axis(theta: float, axis: np.array) -> np.quaternion:
     return quaternion.from_rotation_vector(theta * axis)
 
 
-def quat_from_two_vectors(v0: np.array, v1: np.array) -> np.quaternion:
+def quat_from_two_vectors(v0: np.ndarray, v1: np.ndarray) -> np.quaternion:
     r"""Creates a quaternion that rotates the frist vector onto the second vector
 
     v1 = (q * np.quaternion(0, *v0) * q.inverse()).imag
@@ -130,7 +143,7 @@ def angle_between_quats(q1: np.quaternion, q2: np.quaternion) -> float:
     return 2 * np.arctan2(np.linalg.norm(dq.imag), np.abs(dq.real))
 
 
-def quat_rotate_vector(q: np.quaternion, v: np.array) -> np.array:
+def quat_rotate_vector(q: np.quaternion, v: np.ndarray) -> np.ndarray:
     r"""Helper function to rotate a vector by a quaternion, simply does
     v = (q * np.quaternion(0, *v) * q.inverse()).imag
 

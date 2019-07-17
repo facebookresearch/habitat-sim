@@ -15,6 +15,7 @@
 #include "esp/scene/SceneNode.h"
 #include <Magnum/DebugTools/ForceRenderer.h>
 
+
 namespace esp {
 namespace physics {
 
@@ -57,29 +58,25 @@ class RigidObject : public scene::SceneNode {
   // ==== Transformations ===
   //! Need to overwrite a bunch of functions to update physical states 
   virtual SceneNode& setTransformation(
-      const Eigen::Ref<const mat4f> transformation) override;
-  virtual SceneNode& setTransformation(const Eigen::Ref<const vec3f> position,
-                                       const Eigen::Ref<const vec3f> target,
-                                       const Eigen::Ref<const vec3f> up) override;
-  virtual SceneNode& setTranslation(const Eigen::Ref<const vec3f> vector) override;
-  virtual SceneNode& setRotation(const quatf& quaternion) override;
+      const Magnum::Math::Matrix4<float> transformation);
+  virtual SceneNode& setTranslation(const Magnum::Math::Vector3<float> vector);
+  virtual SceneNode& setRotation(const Magnum::Math::Quaternion<float>& quaternion);
 
-  virtual SceneNode& resetTransformation() override;
-  virtual SceneNode& translate(const Eigen::Ref<const vec3f> vector) override;
-  virtual SceneNode& translateLocal(const Eigen::Ref<const vec3f> vector) override;
+  virtual SceneNode& resetTransformation();
+  virtual SceneNode& translate(const Magnum::Math::Vector3<float> vector);
+  virtual SceneNode& translateLocal(const Magnum::Math::Vector3<float> vector);
 
-  virtual SceneNode& rotate(float angleInRad,
-                            const Eigen::Ref<const vec3f> normalizedAxis) override;
-  virtual SceneNode& rotateLocal(float angleInRad,
-                                 const Eigen::Ref<const vec3f> normalizedAxis) override;
+  virtual SceneNode& rotate(const Magnum::Math::Rad<float> angleInRad,
+                            const Magnum::Math::Vector3<float> normalizedAxis);
+  virtual SceneNode& rotateLocal(const Magnum::Math::Rad<float> angleInRad,
+                                 const Magnum::Math::Vector3<float> normalizedAxis);
 
-  virtual SceneNode& rotateX(float angleInRad) override;
-  virtual SceneNode& rotateXInDegree(float angleInDeg) override;
-  virtual SceneNode& rotateXLocal(float angleInRad) override;
-  virtual SceneNode& rotateY(float angleInRad) override;
-  virtual SceneNode& rotateYLocal(float angleInRad) override;
-  virtual SceneNode& rotateZ(float angleInRad) override;
-  virtual SceneNode& rotateZLocal(float angleInRad) override;
+  virtual SceneNode& rotateX(const Magnum::Math::Rad<float> angleInRad);
+  virtual SceneNode& rotateY(const Magnum::Math::Rad<float> angleInRad);
+  virtual SceneNode& rotateZ(const Magnum::Math::Rad<float> angleInRad);
+  virtual SceneNode& rotateXLocal(const Magnum::Math::Rad<float> angleInRad);
+  virtual SceneNode& rotateYLocal(const Magnum::Math::Rad<float> angleInRad);
+  virtual SceneNode& rotateZLocal(const Magnum::Math::Rad<float> angleInRad);
 
  private:
   bool initialized_ = false;

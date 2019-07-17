@@ -96,3 +96,20 @@ def test_sensors(scene, has_sem, sensor_type, sim, make_cfg_settings):
     assert np.linalg.norm(
         obs[sensor_type].astype(np.float) - gt.astype(np.float)
     ) < 1.5e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
+
+
+# Tests to make sure that no sensors is supported and doesn't crash
+# Also tests to make sure we can have multiple instances
+# of the simulator with no sensors
+def test_smoke_no_sensors(make_cfg_settings):
+    sims = []
+    for scene in _test_scenes:
+        if not osp.exists(scene):
+            continue
+
+        make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
+        make_cfg_settings["semantic_sensor"] = False
+        make_cfg_settings["scene"] = scene
+        cfg = make_cfg(make_cfg_settings)
+        cfg.agents[0].sensor_specifications = []
+        sims.append(habitat_sim.Simulator(cfg))

@@ -282,25 +282,17 @@ void PhysicsManager::applyImpulse(
 
 void PhysicsManager::setTransformation(
     const int objectID, 
-    const Eigen::Ref<const mat4f> trans) {
+    const Magnum::Math::Matrix4<float> trans) {
   existingObjects_[objectID]->setTransformation(trans);
-}
-void PhysicsManager::setTransformation(
-    const int objectID, 
-    const Eigen::Ref<const vec3f> position,
-    const Eigen::Ref<const vec3f> target,
-    const Eigen::Ref<const vec3f> up) {
-  existingObjects_[objectID]->setTransformation(
-      position, target, up);
 }
 void PhysicsManager::setTranslation(
     const int objectID, 
-    const Eigen::Ref<const vec3f> vector) {
-  LOG(INFO) << "Physics set translation " << vector;
+    const Magnum::Math::Vector3<float> vector) {
   existingObjects_[objectID]->setTranslation(vector); 
 }
-void PhysicsManager::setRotation(const int objectID, 
-                                 const quatf& quaternion) {
+void PhysicsManager::setRotation(
+    const int objectID, 
+    const Magnum::Math::Quaternion<float>& quaternion) {
   existingObjects_[objectID]->setRotation(quaternion);
 }
 void PhysicsManager::resetTransformation(const int objectID) {
@@ -308,53 +300,48 @@ void PhysicsManager::resetTransformation(const int objectID) {
 }
 void PhysicsManager::translate(
     const int objectID, 
-    const Eigen::Ref<const vec3f> vector) {
+    const Magnum::Math::Vector3<float> vector) {
   existingObjects_[objectID]->translate(vector);
 }
 void PhysicsManager::translateLocal(
     const int objectID, 
-    const Eigen::Ref<const vec3f> vector) {
+    const Magnum::Math::Vector3<float> vector) {
   existingObjects_[objectID]->translateLocal(vector);
 }
 void PhysicsManager::rotate(
     const int objectID, 
-    float angleInRad,
-    const Eigen::Ref<const vec3f> normalizedAxis) {
+    const Magnum::Math::Rad<float> angleInRad,
+    const Magnum::Math::Vector3<float> normalizedAxis) {
   existingObjects_[objectID]->rotate(angleInRad, normalizedAxis); 
 }
-void PhysicsManager::rotateLocal(
+void PhysicsManager::rotateX(
     const int objectID, 
-    float angleInRad,
-    const Eigen::Ref<const vec3f> normalizedAxis) {
-  existingObjects_[objectID]->rotateLocal(
-      angleInRad, normalizedAxis); 
-}
-void PhysicsManager::rotateX(const int objectID, 
-                             float angleInRad) {
+    const Magnum::Math::Rad<float> angleInRad) {
   existingObjects_[objectID]->rotateX(angleInRad); 
 }
-void PhysicsManager::rotateY(const int objectID, 
-                             float angleInRad) {
+void PhysicsManager::rotateY(
+    const int objectID, 
+    const Magnum::Math::Rad<float> angleInRad) {
   existingObjects_[objectID]->rotateY(angleInRad); 
 }
-void PhysicsManager::rotateXInDegree(const int objectID, 
-                                     float angleInDeg) {
-  existingObjects_[objectID]->rotateXInDegree(angleInDeg); 
-}
-void PhysicsManager::rotateXLocal(const int objectID, 
-                                  float angleInRad) {
+void PhysicsManager::rotateXLocal(
+    const int objectID, 
+    const Magnum::Math::Rad<float> angleInRad) {
   existingObjects_[objectID]->rotateXLocal(angleInRad); 
 }
-void PhysicsManager::rotateYLocal(const int objectID, 
-                                  float angleInRad) {
+void PhysicsManager::rotateYLocal(
+    const int objectID, 
+    const Magnum::Math::Rad<float> angleInRad) {
   existingObjects_[objectID]->rotateYLocal(angleInRad); 
 }
-void PhysicsManager::rotateZ(const int objectID, 
-                             float angleInRad) {
+void PhysicsManager::rotateZ(
+    const int objectID, 
+    const Magnum::Math::Rad<float> angleInRad) {
   existingObjects_[objectID]->rotateZ(angleInRad); 
 }
-void PhysicsManager::rotateZLocal(const int objectID, 
-                                  float angleInRad) {
+void PhysicsManager::rotateZLocal(
+    const int objectID, 
+    const Magnum::Math::Rad<float> angleInRad) {
   existingObjects_[objectID]->rotateZLocal(angleInRad); 
 }
 

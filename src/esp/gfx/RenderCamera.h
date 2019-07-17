@@ -7,15 +7,13 @@
 #include "magnum.h"
 
 #include "esp/core/esp.h"
-#include "esp/scene/AttachedObject.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
 namespace gfx {
 
-class RenderCamera : public scene::AttachedObject {
+class RenderCamera : public Magnum::SceneGraph::AbstractFeature3D {
  public:
-  RenderCamera();
   RenderCamera(scene::SceneNode& node);
   RenderCamera(scene::SceneNode& node,
                const vec3f& eye,
@@ -25,8 +23,19 @@ class RenderCamera : public scene::AttachedObject {
     // do nothing, let magnum handle the camera
   }
 
-  virtual void attach(scene::SceneNode& node);
-  virtual void detach();
+  // Get the scene node being attached to.
+  scene::SceneNode& node() { return object(); }
+  const scene::SceneNode& node() const { return object(); }
+
+  // Overloads to avoid confusion
+  scene::SceneNode& object() {
+    return static_cast<scene::SceneNode&>(
+        Magnum::SceneGraph::AbstractFeature3D::object());
+  }
+  const scene::SceneNode& object() const {
+    return static_cast<const scene::SceneNode&>(
+        Magnum::SceneGraph::AbstractFeature3D::object());
+  }
 
   void setProjectionMatrix(int width,
                            int height,

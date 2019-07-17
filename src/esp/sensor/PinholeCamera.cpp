@@ -7,17 +7,10 @@
 namespace esp {
 namespace sensor {
 
-PinholeCamera::PinholeCamera(sensor::SensorSpec::ptr spec)
-    : sensor::Sensor(spec) {
+PinholeCamera::PinholeCamera(scene::SceneNode& pinholeCameraNode,
+                             sensor::SensorSpec::ptr spec)
+    : sensor::Sensor(pinholeCameraNode, spec) {
   setProjectionParameters(spec);
-}
-
-PinholeCamera::PinholeCamera(sensor::SensorSpec::ptr spec,
-                             scene::SceneNode& pinholeCameraNode)
-    : PinholeCamera(spec) {
-  // attatch the pinholecamera to the scene node, and immediately set the
-  // transformation (in Sensor::attach)
-  Sensor::attach(pinholeCameraNode);
 }
 
 void PinholeCamera::setProjectionParameters(SensorSpec::ptr spec) {

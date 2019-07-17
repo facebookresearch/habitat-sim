@@ -5,6 +5,7 @@
 #include "Viewer.h"
 
 #include <Corrade/Utility/Arguments.h>
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <sophus/so3.hpp>
@@ -73,13 +74,14 @@ Viewer::Viewer(const Arguments& arguments)
     std::exit(0);
   }
 
-  // Set up physics
-  LOG(INFO) << "Nav scene node (done) " << navSceneNode_;
-
-  // Set up camera
+  // camera
   renderCamera_ = &sceneGraph->getDefaultRenderCamera();
   agentBodyNode_ = &rootNode->createChild();
   cameraNode_ = &agentBodyNode_->createChild();
+
+  cameraNode_->translate({0.0f, cameraHeight, 0.0f});
+
+  agentBodyNode_->translate({0.0f, 0.0f, 5.0f});
 
   float hfov = 90.0f;
   int width = viewportSize[0];
@@ -98,33 +100,46 @@ Viewer::Viewer(const Arguments& arguments)
   }
 
   // Messing around with agent location and finding object initial position
-  LOG(INFO) << "Agent position " << agentBodyNode_->getAbsolutePosition();
-  LOG(INFO) << "Camera position " << cameraNode_->getAbsolutePosition();
-  LOG(INFO) << "Scene position" << navSceneNode_->getAbsolutePosition();
+  LOG(INFO) << "Agent position " << Eigen::Map<vec3f>(
+      agentBodyNode_->translation().data());
+  LOG(INFO) << "Camera position " << Eigen::Map<vec3f>(
+      cameraNode_->translation().data());
+  LOG(INFO) << "Scene position" << Eigen::Map<vec3f>(
+      navSceneNode_->translation().data());
 
-  if (surreal_mesh) {
-    Vector3 agent_pos = Vector3(-2.93701f, -3.53019f, 3.68798f);
-    agentBodyNode_->setTranslation(Eigen::Map<vec3f>(agent_pos.data()));
-    agentBodyNode_->rotate(3.14f, vec3f(0, 1, 0));
-  } else if (replica_mesh) {
-    Vector3 agent_pos = Vector3(0.0707106, 1.0f, -0.7898f);
-    agentBodyNode_->setTranslation(Eigen::Map<vec3f>(agent_pos.data()));
-    agentBodyNode_->rotate(3.14f, vec3f(0, 1, 0));
-  } else if (vangoth_mesh) {
-    //agentBodyNode_->rotate(3.14f * 1.1, vec3f(0, 1, 0));
-    // Vector3 agent_pos = Vector3(0.0f, 0.0f, 0.0f);
-    Vector3 agent_pos = Vector3(2.38, 1.4f, 1.74);
-    agentBodyNode_->setTranslation(Eigen::Map<vec3f>(agent_pos.data()));
-  } else if (castle_mesh) {
-    agentBodyNode_->rotate(3.14f * 1.1, vec3f(0, 1, 0));
-    // Vector3 agent_pos = Vector3(0.0f, 0.0f, 0.0f);
-    agentBodyNode_->translate(vec3f(-0.8, 1.4f, 11.0f));
-    // agentBodyNode_->setTranslation(Eigen::Map<vec3f>(agent_pos.data()));
+  if (enablePhysics_) {
+    if (surreal_mesh) {
+      Vector3 agent_pos = Vector3(-2.93701f, -3.53019f, 3.68798f);
+      agentBodyNode_->setTranslation(agent_pos);
+      agentBodyNode_->rotate(Quaternion(Vector3(0, 1, 0), 3.14f));
+    } else if (replica_mesh) {
+      Vector3 agent_pos = Vector3(0.0707106f, 1.0f, -0.7898f);
+      agentBodyNode_->setTranslation(agent_pos);
+      agentBodyNode_->rotate(Quaternion(Vector3(0, 1, 0), 3.14f));
+    } else if (vangoth_mesh) {
+      //agentBodyNode_->rotate(3.14f * 1.1, vec3f(0, 1, 0));
+      // Vector3 agent_pos = Vector3(0.0f, 0.0f, 0.0f);
+      Vector3 agent_pos = Vector3(2.38, 1.4f, 1.74);
+      agentBodyNode_->setTranslation(agent_pos);
+    } else if (castle_mesh) {
+      agentBodyNode_->rotate(Quaternion(Vector3(0, 1, 0), 3.14f * 1.1f));
+      // Vector3 agent_pos = Vector3(0.0f, 0.0f, 0.0f);
+      agentBodyNode_->translate(Vector3(-0.8f, 1.4f, 11.0f));
+      // agentBodyNode_->setTranslation(Eigen::Map<vec3f>(agent_pos.data()));
+    }
+  } else {
+    const vec3f position = pathfinder_->getRandomNavigablePoint();
+    agentBodyNode_->setTranslation(Vector3(position));
+
+    LOG(INFO) << "Viewer initialization is done. ";
+    renderCamera_->node().setTransformation(
+        cameraNode_->absoluteTransformation());
+    const vec3f position = pathfinder_->getRandomNavigablePoint();
+    agentBodyNode_->setTranslation(Vector3(position));
   }
-
   //std::string object_file(args.value("obj"));
 
-  renderCamera_->setTransformation(cameraNode_->getAbsoluteTransformation());
+  renderCamera_->node().setTransformation(cameraNode_->transformation());
 
   //! Load cheezit object
   std::string object_file("./data/objects/cheezit.glb");
@@ -135,6 +150,18 @@ Viewer::Viewer(const Arguments& arguments)
     addObject(cheezitID);
   }
   LOG(INFO) << "Viewer initialization is done. ";
+
+  // connect controls to navmesh if loaded
+  if (pathfinder_->isLoaded()) {
+    controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
+      vec3f currentPosition = pathfinder_->tryStep(start, end);
+      LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
+                << quatf(agentBodyNode_->rotation()).coeffs().transpose();
+      LOG(INFO) << "Distance to closest obstacle: "
+                << pathfinder_->distanceToClosestObstacle(currentPosition);
+      return currentPosition;
+    });
+  }
 }  // namespace gfx
 
 
@@ -165,12 +192,11 @@ void Viewer::addObject(int resourceObjectID) {
             << " " << new_pos.z();
   LOG(INFO) << "Camera transformation " << Eigen::Map<mat4f>(T.data());
 
-
   auto& drawables = sceneGraph->getDrawables();
   int physObjectID = physicsManager_.addObject(
       resourceObjectID, navSceneNode_, 
       physics::PhysicalObjectType::DYNAMIC, &drawables);
-  physicsManager_.setTranslation(physObjectID, Eigen::Map<vec3f>(new_pos.data()));
+  physicsManager_.setTranslation(physObjectID, new_pos);
   lastObjectID += 1;
 }
 
@@ -254,11 +280,13 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   }
 
   /* Distance to origin */
-  const float distance = renderCamera_->getTransformation().col(3).z();
+  const float distance =
+      renderCamera_->node().transformation().translation().z();
 
   /* Move 15% of the distance back or forward */
-  renderCamera_->translateLocal(vec3f(
-      0, 0, distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f))));
+  renderCamera_->node().translateLocal(
+      {0.0f, 0.0f,
+       distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f))});
 
   event.setAccepted();
 }
@@ -276,8 +304,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
     return;
   }
   const auto angle = Math::angle(previousPosition_, currentPosition);
-  renderCamera_->getSceneNode()->MagnumObject::rotate(-angle,
-                                                      axis.normalized());
+  renderCamera_->node().rotate(-angle, axis.normalized());
   previousPosition_ = currentPosition;
 
   event.setAccepted();
@@ -303,23 +330,27 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::Nine: {
       const vec3f position = pathfinder_->getRandomNavigablePoint();
-      agentBodyNode_->setTranslation(position);
-    } break;
+      agentBodyNode_->setTranslation(Vector3(position));
+    }  break;
     case KeyEvent::Key::A:
       controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
-      LOG(INFO) << "Agent position " << agentBodyNode_->getAbsolutePosition();
+      LOG(INFO) << "Agent position " << Eigen::Map<vec3f>(
+          agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::D:
       controls_(*agentBodyNode_, "moveRight", moveSensitivity);
-      LOG(INFO) << "Agent position " << agentBodyNode_->getAbsolutePosition();
+      LOG(INFO) << "Agent position " << Eigen::Map<vec3f>(
+          agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::S:
       controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
-      LOG(INFO) << "Agent position " << agentBodyNode_->getAbsolutePosition();
+      LOG(INFO) << "Agent position " << Eigen::Map<vec3f>(
+          agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::W:
       controls_(*agentBodyNode_, "moveForward", moveSensitivity);
-      LOG(INFO) << "Agent position " << agentBodyNode_->getAbsolutePosition();
+      LOG(INFO) << "Agent position " << Eigen::Map<vec3f>(
+          agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::X:
       controls_(*agentBodyNode_, "moveDown", moveSensitivity, false);
@@ -339,8 +370,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     default:
       break;
   }
-  renderCamera_->setTransformation(cameraNode_->getAbsoluteTransformation());
-  event.setAccepted();
+  renderCamera_->node().setTransformation(
+      cameraNode_->absoluteTransformation());
+  redraw();
 }
 
 }  // namespace gfx

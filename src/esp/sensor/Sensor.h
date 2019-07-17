@@ -7,7 +7,6 @@
 #include "esp/core/esp.h"
 
 #include "esp/gfx/RenderCamera.h"
-#include "esp/scene/AttachedObject.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -54,14 +53,26 @@ struct Observation {
 };
 
 // Represents a sensor that provides data from the environment to an agent
-class Sensor : public scene::AttachedObject {
+class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
  public:
-  explicit Sensor(SensorSpec::ptr spec);
+  explicit Sensor(scene::SceneNode& node, SensorSpec::ptr spec);
   virtual ~Sensor() {
     // LOG(INFO) << "Deconstructing Sensor";
   }
 
-  virtual void attach(scene::SceneNode& node) override;
+  // Get the scene node being attached to.
+  scene::SceneNode& node() { return object(); }
+  const scene::SceneNode& node() const { return object(); }
+
+  // Overloads to avoid confusion
+  scene::SceneNode& object() {
+    return static_cast<scene::SceneNode&>(
+        Magnum::SceneGraph::AbstractFeature3D::object());
+  }
+  const scene::SceneNode& object() const {
+    return static_cast<const scene::SceneNode&>(
+        Magnum::SceneGraph::AbstractFeature3D::object());
+  }
 
   SensorSpec::ptr specification() const { return spec_; }
 

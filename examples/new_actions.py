@@ -40,6 +40,7 @@ while non body actions move just the sensors
 """
 
 import attr
+import magnum as mn
 import numpy as np
 import quaternion
 
@@ -76,15 +77,16 @@ def main():
             self, scene_node: habitat_sim.SceneNode, actuation_spec: MoveAndSpinSpec
         ):
             forward_ax = (
-                scene_node.absolute_transformation()[0:3, 0:3] @ habitat_sim.geo.FRONT
+                np.array(scene_node.absolute_transformation().rotation_scaling())
+                @ habitat_sim.geo.FRONT
             )
             scene_node.translate_local(forward_ax * actuation_spec.forward_amount)
 
             # Rotate about the +y (up) axis
             rotation_ax = habitat_sim.geo.UP
-            scene_node.rotate_local(np.deg2rad(actuation_spec.spin_amount), rotation_ax)
+            scene_node.rotate_local(mn.Deg(actuation_spec.spin_amount), rotation_ax)
             # Calling normalize is needed after rotating to deal with machine precision errors
-            scene_node.normalize()
+            scene_node.rotation = scene_node.rotation.normalized()
 
     # We can also register the function with a custom name
     controls.register_move_fn(
@@ -161,7 +163,8 @@ def main():
         scene_node: habitat_sim.SceneNode, forward_amount: float, strafe_angle: float
     ):
         forward_ax = (
-            scene_node.absolute_transformation()[0:3, 0:3] @ habitat_sim.geo.FRONT
+            np.array(scene_node.absolute_transformation().rotation_scaling())
+            @ habitat_sim.geo.FRONT
         )
         rotation = habitat_sim.utils.quat_from_angle_axis(
             np.deg2rad(strafe_angle), habitat_sim.geo.UP

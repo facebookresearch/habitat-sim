@@ -69,6 +69,25 @@ target_compile_definitions(Detour
   PUBLIC
   DT_VIRTUAL_QUERYFILTER)
 
+# python interpreter
+find_package(PythonInterp 3.6 REQUIRED)
+
+# Search for python executable to pick up activated virtualenv/conda python
+unset(PYTHON_EXECUTABLE CACHE)
+find_program(PYTHON_EXECUTABLE
+  python
+    PATHS ENV PATH   # look in the PATH environment variable
+    NO_DEFAULT_PATH  # do not look anywhere else...
+)
+message(STATUS "Bindings being generated for python at ${PYTHON_EXECUTABLE}")
+
+# Pybind11. Use a system package, if preferred. This needs to be before Magnum
+# so the bindings can properly detect pybind11 added as a subproject.
+if(USE_SYSTEM_PYBIND11)
+  find_package(pybind11 REQUIRED)
+else()
+  add_subdirectory("${DEPS_DIR}/pybind11")
+endif()
 
 # Magnum. Use a system package, if preferred.
 if(NOT USE_SYSTEM_MAGNUM)
@@ -98,7 +117,7 @@ if(NOT USE_SYSTEM_MAGNUM)
   # Debug tool to visualize physics interaction
   set(WITH_PRIMITIVES ON CACHE BOOL "WITH_PRIMITIVES" FORCE)
   set(WITH_DEBUGTOOLS ON CACHE BOOL "WITH_DEBUGTOOLS" FORCE)
-
+  set(WITH_PYTHON ON CACHE BOOL "" FORCE) # Python bindings
 
   if(BUILD_GUI_VIEWERS)
     if(NOT USE_SYSTEM_GLFW)
@@ -125,25 +144,7 @@ if(NOT USE_SYSTEM_MAGNUM)
   add_subdirectory("${DEPS_DIR}/magnum")
   add_subdirectory("${DEPS_DIR}/magnum-plugins")
   add_subdirectory("${DEPS_DIR}/magnum-integration")
-endif()
-
-# python interpreter
-find_package(PythonInterp 3.6 REQUIRED)
-
-# Search for python executable to pick up activated virtualenv/conda python
-unset(PYTHON_EXECUTABLE CACHE)
-find_program(PYTHON_EXECUTABLE
-  python
-    PATHS ENV PATH   # look in the PATH environment variable
-    NO_DEFAULT_PATH  # do not look anywhere else...
-)
-message(STATUS "Bindings being generated for python at ${PYTHON_EXECUTABLE}")
-
-# Pybind11. Use a system package, if preferred.
-if(USE_SYSTEM_PYBIND11)
-  find_package(pybind11 REQUIRED)
-else()
-  add_subdirectory("${DEPS_DIR}/pybind11")
+  add_subdirectory("${DEPS_DIR}/magnum-bindings")
 endif()
 
 # tinyply

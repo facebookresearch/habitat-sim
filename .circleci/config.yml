@@ -123,19 +123,19 @@ jobs:
               pip install nbval
               export PYTHONPATH=$PYTHONPATH:$(pwd)
               ./build.sh --headless
-              HEADLESS=True pip install -e .
               pytest --ignore notebooks/habitat-sim-demo.ipynb
       - run:
           name: Run api tests
           command: |
               git clone https://github.com/facebookresearch/habitat-api.git
-              export PYTHONPATH=$PYTHONPATH:$(pwd)/habitat-sim
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-api
               ln -s ../habitat-sim/data data
               conda install -c  conda-forge opencv -y
               conda install -y pytorch torchvision cudatoolkit=10.0 -c pytorch
               pip install -r requirements.txt
+              pip install matplotlib
+              export PYTHONPATH=$(pwd)
               python setup.py test
 
 

@@ -20,17 +20,11 @@ namespace sensor {
 
 class PinholeCamera : public Sensor {
  public:
-  // constructor: the status of the pinhole camera is "invalid" after
-  // construction;
-  // this fits the case that user would like to initialize the
-  // sensor, but decide to use it or not later
-  explicit PinholeCamera(SensorSpec::ptr spec);
-
   // constructor: the status of the pinhole camera is "valid" after
   // construction;
   // user can use them immediately
-  explicit PinholeCamera(SensorSpec::ptr spec,
-                         scene::SceneNode& pinholeCameraNode);
+  explicit PinholeCamera(scene::SceneNode& pinholeCameraNode,
+                         SensorSpec::ptr spec);
 
   void setProjectionParameters(SensorSpec::ptr spec);
 

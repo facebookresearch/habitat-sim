@@ -91,7 +91,7 @@ class GreedyGeodesicFollower(object):
     def _turn_right(self, obj: hsim.SceneNode):
         self.agent.controls(obj, "turn_right", self.right_spec, True)
 
-    def next_action_along(self, goal_pos: np.array) -> Any:
+    def next_action_along(self, goal_pos: np.ndarray) -> Any:
         r"""Find the next action to greedily follow the geodesic shortest path from the agent's current position
         to get to the goal
 
@@ -111,7 +111,7 @@ class GreedyGeodesicFollower(object):
         else:
             return self.action_mapping[next_act]
 
-    def find_path(self, goal_pos: np.array) -> List[Any]:
+    def find_path(self, goal_pos: np.ndarray) -> List[Any]:
         r"""Finds the sequence actions that greedily follow the geodesic shortest path
         from the agent's current position to get to the goal.  This is roughly equivilent to just
         calling `next_action_along` until it returns `None`, but is faster

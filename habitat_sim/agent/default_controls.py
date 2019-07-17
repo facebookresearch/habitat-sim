@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import magnum as mn
 import numpy as np
 
 import habitat_sim.bindings as hsim
@@ -18,18 +19,21 @@ _x_axis = 0
 _y_axis = 1
 _z_axis = 2
 
+_rotate_local_fns = [
+    hsim.SceneNode.rotate_x_local,
+    hsim.SceneNode.rotate_y_local,
+    hsim.SceneNode.rotate_z_local,
+]
+
 
 def _move_along(scene_node: hsim.SceneNode, distance: float, axis: int):
-    ax = scene_node.absolute_transformation()[0:3, axis]
+    ax = scene_node.absolute_transformation()[axis].xyz
     scene_node.translate_local(ax * distance)
 
 
 def _rotate_local(scene_node: hsim.SceneNode, theta: float, axis: int):
-    ax = np.zeros(3, dtype=np.float32)
-    ax[axis] = 1
-
-    scene_node.rotate_local(np.deg2rad(theta), ax)
-    scene_node.normalize()
+    _rotate_local_fns[axis](scene_node, mn.Deg(theta))
+    scene_node.rotation = scene_node.rotation.normalized()
 
 
 @register_move_fn(body_action=True)
