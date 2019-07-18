@@ -2,7 +2,7 @@
 #include <memory>
 
 #include <gl_tensor_param.h>
-#include <torch/torch.h>
+#include <torch/extension.h>
 
 namespace gltensor {
 
@@ -16,6 +16,8 @@ class GLTensor {
 
   virtual at::Tensor Tensor();
   virtual void* Data() const { return data_ptr_; }
+  virtual void release() {};
+
 
  protected:
   GLTensor(const GLTensorParam::ptr param);

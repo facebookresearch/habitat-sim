@@ -185,6 +185,7 @@ class Sensor:
     def __init__(self, sim, agent, sensor_id):
         self._sim = sim
         self._agent = agent
+        self._gl_tensor = None
 
         # sensor is an attached object to the scene node
         # store such "attached object" in _sensor_object
@@ -204,7 +205,7 @@ class Sensor:
 
             import gl_tensor
 
-            self._buffer = gl_tensor.CudaTensor(self._sensor_object.gl_tensor_param)
+            self._gl_tensor = gl_tensor.CudaTensor(self._sensor_object.gl_tensor_param)
         else:
             if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
                 self._buffer = np.empty(
@@ -265,7 +266,7 @@ class Sensor:
             self._sim.renderer.draw(self._sensor_object, scene)
 
             if self._spec.gpu2gpu_transfer:
-                return self._buffer.Tensor().flip(0).clone()
+                return self._gl_tensor.Tensor().flip(0).squeeze(-1).clone()
             else:
                 if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
                     tgt.read_frame_object_id(self._buffer)
@@ -285,3 +286,7 @@ class Sensor:
                         ),
                         axis=0,
                     ).copy()
+
+    def __del__(self):
+        if self._gl_tensor is not None:
+            self._gl_tensor.release()

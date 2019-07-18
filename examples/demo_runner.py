@@ -103,6 +103,8 @@ class DemoRunner:
         )
 
         while total_frames < self._sim_settings["max_frames"]:
+            if total_frames == 1:
+                start_time = time.time()
             action = random.choice(action_names)
             if not self._sim_settings["silent"]:
                 print("action", action)
@@ -146,7 +148,7 @@ class DemoRunner:
         end_time = time.time()
         perf = {}
         perf["total_time"] = end_time - start_time
-        perf["fps"] = total_frames / perf["total_time"]
+        perf["fps"] = (total_frames - 1) / perf["total_time"]
 
         return perf
 

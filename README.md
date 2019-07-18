@@ -21,6 +21,7 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
    0. [Performance](#performance)
    0. [Quick installation](#quick-installation)
    0. [Testing](#Testing)
+   0. [GPU-GPU Transfer](#gpu-gpu-transfer)
    0. [Developer installation and getting started](#developer-installation-and-getting-started)
    0. [Datasets](#datasets)
    0. [Examples](#examples)
@@ -145,6 +146,7 @@ To run the above benchmarks on your machine, see instructions in the [examples](
 
     **Note**: the build requires `cmake` version 3.10 or newer. You can install cmake through `conda install cmake` or download directly from [https://cmake.org/download/](https://cmake.org/download/)
 
+
 ## Testing
 
 1. Download the test scenes from this [link](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) and extract locally.
@@ -166,6 +168,7 @@ Note that the test scenes do not provide semantic meshes.
 If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)).
 
 We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-api#docker-setup).
+
 
 
 ## Developer installation and getting started

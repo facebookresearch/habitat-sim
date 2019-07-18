@@ -122,7 +122,8 @@ jobs:
               . activate habitat
               pip install nbval
               export PYTHONPATH=$PYTHONPATH:$(pwd)
-              ./build.sh --headless
+              pip install src/deps/gl_tensor
+              ./build.sh --headless --with-gpu-gpu
               pytest --ignore notebooks/habitat-sim-demo.ipynb
       - run:
           name: Run api tests
