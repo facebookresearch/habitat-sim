@@ -1,4 +1,4 @@
-#pragma  once
+#pragma once
 #include <memory>
 
 #include <gl_tensor_param.h>
@@ -23,8 +23,10 @@ class GLTensor {
   unsigned int width_;
   unsigned int height_;
   unsigned int size_;
+  unsigned int channels_;
   void* data_ptr_;
   at::Tensor tensor_;
+  at::ScalarType type_;
 
   virtual void Update() = 0;
 };

@@ -164,13 +164,12 @@ scene::SceneGraph& Simulator::getActiveSemanticSceneGraph() {
   return sceneManager_.getSceneGraph(activeSemanticSceneID_);
 }
 
-RenderingTarget::ptr Simulator::createRenderingTarget(
-    const Magnum::Vector2i& framebufferSize) {
+RenderingTarget::ptr Simulator::createRenderingTarget(int height, int width) {
   if (context_ == nullptr)
     throw std::runtime_error(
         "Cannot create a rendering target without a rendering context");
 
-  return tgt;
+  return RenderingTarget::create(context_, height, width);
 }
 
 bool operator==(const SimulatorConfiguration& a,

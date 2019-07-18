@@ -243,6 +243,9 @@ class CMakeBuild(build_ext):
                 env=env,
             )
 
+        if not is_pip():
+            self.create_compile_commands()
+
         subprocess.check_call(
             shlex.split("cmake --build {}".format(self.build_temp)) + build_args
         )
@@ -259,8 +262,6 @@ class CMakeBuild(build_ext):
                     osp.abspath(osp.join(self.build_temp, "utils/viewer/viewer")),
                     link_dst,
                 )
-
-        self.create_compile_commands()
 
     def run_cmake(self, cmake_args):
         if args.force_cmake:

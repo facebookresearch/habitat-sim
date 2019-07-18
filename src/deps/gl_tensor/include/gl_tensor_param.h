@@ -13,6 +13,7 @@ struct GLTensorParam {
   unsigned int width_ = 0;
   unsigned int height_ = 0;
   unsigned int format_ = 0;
+  unsigned int channels_ = 0;
 };
 
 }

@@ -7,9 +7,9 @@
 import os.path as osp
 from typing import List, Optional
 
-import attr
 import numpy as np
 
+import attr
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
 from habitat_sim import utils
@@ -193,11 +193,10 @@ class Sensor:
 
         self._sensor_object.bind_rendering_target(
             self._sim.create_rendering_target(
-                np.array([self._spec.resolution[1], self._spec.resolution[0]])
+                self._spec.resolution[0], self._spec.resolution[1]
             )
         )
 
-        print(hsim.gl_tensor_enabled)
         if self._spec.gpu2gpu_transfer:
             assert (
                 hsim.gl_tensor_enabled
@@ -262,20 +261,20 @@ class Sensor:
         # default render camera in the scene so that
         # it has correct modelview matrix, projection matrix to render the scene
 
-        with self._sensor_object:
+        with self._sensor_object.rendering_target as tgt:
             self._sim.renderer.draw(self._sensor_object, scene)
 
             if self._spec.gpu2gpu_transfer:
-                return self._buffer.flip(0).clone()
+                return self._buffer.Tensor().flip(0).clone()
             else:
                 if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
-                    self._sensor_object.read_frame_object_id(self._buffer)
+                    tgt.read_frame_object_id(self._buffer)
                     return np.flip(self._buffer, axis=0).copy()
                 elif self._spec.sensor_type == hsim.SensorType.DEPTH:
-                    self._sensor_object.read_frame_depth(self._buffer)
+                    tgt.read_frame_depth(self._buffer)
                     return np.flip(self._buffer, axis=0).copy()
                 else:
-                    self._sensor_object.read_frame_rgba(self._buffer)
+                    tgt.read_frame_rgba(self._buffer)
                     return np.flip(
                         self._buffer.reshape(
                             (

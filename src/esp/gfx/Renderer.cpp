@@ -39,7 +39,7 @@ struct Renderer::Impl {
     // set the modelview matrix, projection matrix of the render camera;
     sceneGraph.setDefaultRenderCamera(visualSensor);
     sceneGraph.getDefaultRenderCamera().getMagnumCamera().setViewport(
-        visualSensor.framebufferSize());
+        visualSensor.renderingTarget()->framebufferSize());
 
     draw(sceneGraph.getDefaultRenderCamera(), sceneGraph.getDrawables());
   }

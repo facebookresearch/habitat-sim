@@ -1,7 +1,7 @@
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
-//
+
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Framebuffer.h>
@@ -14,6 +14,7 @@
 #include <Magnum/PixelFormat.h>
 
 #include "RenderingTarget.h"
+#include "magnum.h"
 
 using namespace Magnum;
 
@@ -51,7 +52,14 @@ struct RenderingTarget::Impl {
         GL::Framebuffer::Status::Complete);
   }
 
-  void renderEnter() { framebuffer_.bind(); }
+  void renderEnter() {
+    framebuffer_.bind();
+    framebuffer_.clear(GL::FramebufferClear::Color |
+                       GL::FramebufferClear::Depth);
+    framebuffer_.clearColor(1, Vector4{});
+    framebuffer_.clearColor(2, Vector4ui{});
+    framebuffer_.bind();
+  }
 
   void renderExit() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
@@ -66,11 +74,12 @@ struct RenderingTarget::Impl {
     return param;
   }
 
-  gltensor::GLTensorParam::ptr glTensorParamRGBA() const {
+  gltensor::GLTensorParam::ptr glTensorParamRgba() const {
     auto param = this->glTensorParam();
 
     param->format_ = GL_RGBA;
     param->image_ = colorBuffer_.id();
+    param->channels_ = 4;
 
     return param;
   }
@@ -80,18 +89,51 @@ struct RenderingTarget::Impl {
 
     param->format_ = GL_R32F;
     param->image_ = depthBuffer_.id();
+    param->channels_ = 1;
 
     return param;
   }
 
-  gltensor::GLTensorParam::ptr glTensorParamID() const {
+  gltensor::GLTensorParam::ptr glTensorParamId() const {
     auto param = this->glTensorParam();
 
     param->format_ = GL_R32UI;
     param->image_ = objectIdBuffer_.id();
+    param->channels_ = 1;
 
     return param;
   }
+
+  void readFrameRgba(uint8_t* ptr) {
+    framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{0});
+    Image2D rgbaImage =
+        framebuffer_.read(Range2Di::fromSize({0, 0}, framebufferSize_),
+                          {PixelFormat::RGBA8Unorm});
+    uint8_t* src_ptr = rgbaImage.data<uint8_t>();
+    std::memcpy(
+        ptr, src_ptr,
+        framebufferSize_[0] * framebufferSize_[1] * 4 * sizeof(uint8_t));
+  }
+
+  void readFrameDepth(float* ptr) {
+    framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{1});
+    Image2D depthImage = framebuffer_.read(
+        Range2Di::fromSize({0, 0}, framebufferSize_), {PixelFormat::R32F});
+    float* src_ptr = depthImage.data<float>();
+    std::memcpy(ptr, src_ptr,
+                framebufferSize_[0] * framebufferSize_[1] * sizeof(float));
+  }
+
+  void readFrameObjectId(uint32_t* ptr) {
+    framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{2});
+    Image2D objectImage = framebuffer_.read(
+        Range2Di::fromSize({0, 0}, framebufferSize_), {PixelFormat::R32UI});
+    uint32_t* src_ptr = objectImage.data<uint32_t>();
+    std::memcpy(ptr, src_ptr,
+                framebufferSize_[0] * framebufferSize_[1] * sizeof(uint32_t));
+  }
+
+  Magnum::Vector2i framebufferSize() const { return framebufferSize_; }
 
  private:
   WindowlessContext::ptr context_ = nullptr;
@@ -112,16 +154,36 @@ RenderingTarget::RenderingTarget(WindowlessContext::ptr context,
 void RenderingTarget::renderEnter() {
   pimpl_->renderEnter();
 }
-void renderExit();
-gltensor::GLTensorParam::ptr glTensorParam() const;
 
-void readFrameRgba(uint8_t* ptr);
+void RenderingTarget::renderExit() {
+  pimpl_->renderExit();
+}
 
-void readFrameDepth(float* ptr);
+gltensor::GLTensorParam::ptr RenderingTarget::glTensorParamRgba() const {
+  return pimpl_->glTensorParamRgba();
+}
+gltensor::GLTensorParam::ptr RenderingTarget::glTensorParamDepth() const {
+  return pimpl_->glTensorParamDepth();
+}
+gltensor::GLTensorParam::ptr RenderingTarget::glTensorParamId() const {
+  return pimpl_->glTensorParamId();
+}
 
-void readFrameObjectId(uint32_t* ptr);
+void RenderingTarget::readFrameRgba(uint8_t* ptr) {
+  pimpl_->readFrameRgba(ptr);
+}
 
-const Magnum::Vector2i framebufferSize() const;
+void RenderingTarget::readFrameDepth(float* ptr) {
+  pimpl_->readFrameDepth(ptr);
+}
+
+void RenderingTarget::readFrameObjectId(uint32_t* ptr) {
+  pimpl_->readFrameObjectId(ptr);
+}
+
+const Magnum::Vector2i RenderingTarget::framebufferSize() const {
+  return pimpl_->framebufferSize();
+}
 
 }  // namespace gfx
 }  // namespace esp

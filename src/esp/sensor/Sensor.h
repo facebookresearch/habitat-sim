@@ -98,7 +98,7 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
     return tgt_;
   }
 
-  gltensor::GLTensorParam glTensorParam() const;
+  gltensor::GLTensorParam::ptr glTensorParam() const;
 
  protected:
   SensorSpec::ptr spec_ = nullptr;

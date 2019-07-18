@@ -347,7 +347,51 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   // ==== Observation ====
   py::class_<Observation, Observation::ptr>(m, "Observation");
 
-  py::class_<RenderingTarget, RenderingTarget::ptr>(m, "RenderingTarget");
+  py::class_<RenderingTarget, RenderingTarget::ptr>(m, "RenderingTarget")
+      .def("__enter__",
+           [](RenderingTarget::ptr self) {
+             self->renderEnter();
+             return self;
+           })
+      .def("__exit__", [](RenderingTarget::ptr self, py::object exc_type,
+                          py::object exc_value,
+                          py::object traceback) { self->renderExit(); })
+      .def(
+          "read_frame_rgba",
+          [](RenderingTarget& self,
+             Eigen::Ref<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic,
+                                      Eigen::RowMajor>>& img) {
+            self.readFrameRgba(img.data());
+          },
+          py::arg("img").noconvert(),
+          R"(
+      Reads RGBA frame into passed img in uint8 byte format.
+
+      Parameters
+      ----------
+      img: numpy.ndarray[uint8[m, n], flags.writeable, flags.c_contiguous]
+           Numpy array array to populate with frame bytes.
+           Memory is NOT allocated to this array.
+           Assume that ``m = height`` and ``n = width * 4``.
+      )")
+      .def(
+          "read_frame_depth",
+          [](RenderingTarget& self,
+             Eigen::Ref<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic,
+                                      Eigen::RowMajor>>& img) {
+            self.readFrameDepth(img.data());
+          },
+          py::arg("img").noconvert(), R"()")
+      .def(
+          "read_frame_object_id",
+          [](RenderingTarget& self,
+             Eigen::Ref<Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic,
+                                      Eigen::RowMajor>>& img) {
+            self.readFrameObjectId(img.data());
+          },
+          py::arg("img").noconvert(), R"()")
+      .def("render_enter", &RenderingTarget::renderEnter)
+      .def("render_exit", &RenderingTarget::renderExit);
 
 #ifdef __ESP_WITH_GL_TENSOR__
   m.import("gl_tensor");
@@ -367,47 +411,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("node", nodeGetter<Sensor>,
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node")
-      .def("render_enter", &Sensor::renderEnter)
-      .def("render_exit", &Sensor::renderExit)
-      .def("__enter__", [](Sensor& self) { self.renderEnter(); })
-      .def("__exit__",
-           [](Sensor& self, py::object exc_type, py::object exc_value,
-              py::object traceback) { self.renderExit(); })
-      .def(
-          "read_frame_rgba",
-          [](Sensor& self,
-             Eigen::Ref<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic,
-                                      Eigen::RowMajor>>& img) {
-            self.readFrameRgba(img.data());
-          },
-          py::arg("img").noconvert(),
-          R"(
-      Reads RGBA frame into passed img in uint8 byte format.
-
-      Parameters
-      ----------
-      img: numpy.ndarray[uint8[m, n], flags.writeable, flags.c_contiguous]
-           Numpy array array to populate with frame bytes.
-           Memory is NOT allocated to this array.
-           Assume that ``m = height`` and ``n = width * 4``.
-      )")
-      .def(
-          "read_frame_depth",
-          [](Sensor& self,
-             Eigen::Ref<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic,
-                                      Eigen::RowMajor>>& img) {
-            self.readFrameDepth(img.data());
-          },
-          py::arg("img").noconvert(), R"()")
-      .def(
-          "read_frame_object_id",
-          [](Sensor& self,
-             Eigen::Ref<Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic,
-                                      Eigen::RowMajor>>& img) {
-            self.readFrameObjectId(img.data());
-          },
-          py::arg("img").noconvert(), R"()")
       .def("bind_rendering_target", &Sensor::bindRenderingTarget)
+      .def_property_readonly("rendering_target", &Sensor::renderingTarget)
 #ifdef __ESP_WITH_GL_TENSOR__
       .def_property_readonly("gl_tensor_param", &Sensor::glTensorParam)
 #endif

@@ -16,10 +16,28 @@ GLTensor::GLTensor(const GLTensorParam::ptr param)
     : image_(param->image_),
       width_(param->width_),
       height_(param->height_),
+      channels_(param->channels_),
       data_ptr_(nullptr) {
   assert(image_ != 0);
   assert(width_ > 0 && height_ > 0);
-  size_ = 4 * width_ * height_;
+  size_ = channels_ * width_ * height_;
+
+  switch (param->format_) {
+    case GL_RGBA:
+      type_ = at::ScalarType::Byte;
+      break;
+    case GL_R32F:
+      type_ = at::ScalarType::Float;
+      size_ *= sizeof(float);
+      break;
+    case GL_R32UI:
+      type_ = at::ScalarType::Int;
+      size_ *= 4;
+      break;
+
+    default:
+      throw std::runtime_error("GLTensor unknown format");
+  }
 }
 
 GLTensor::~GLTensor() { tensor_.reset(); }
@@ -44,8 +62,8 @@ class CudaTensor : public GLTensor {
         cudaGraphicsRegisterFlagsReadOnly));
     checkCudaErrors(cudaMalloc(&data_ptr_, size_));
     tensor_ = torch::autograd::make_variable(at::native::from_blob(
-        data_ptr_, {height_, width_, 4}, [](void *) {},
-        at::device(at::kCUDA).dtype(at::ScalarType::Byte)));
+        data_ptr_, {height_, width_, channels_}, [](void *) {},
+        at::device(at::kCUDA).dtype(type_)));
   }
 
   virtual ~CudaTensor() {
@@ -83,8 +101,8 @@ class Cpu2CudaTensor : public GLTensor {
     void *devie_data_ptr;
     checkCudaErrors(cudaHostGetDevicePointer(&devie_data_ptr, data_ptr_, 0));
     tensor_ = torch::autograd::make_variable(at::native::from_blob(
-        devie_data_ptr, {height_, width_, 4}, [](void *) {},
-        at::device(at::kCUDA).dtype(at::ScalarType::Byte)));
+        devie_data_ptr, {height_, width_, channels_}, [](void *) {},
+        at::device(at::kCUDA).dtype(type_)));
   }
 
   ~Cpu2CudaTensor() {
@@ -106,8 +124,8 @@ class CpuTensor : public GLTensor {
   CpuTensor(const GLTensorParam::ptr param) : GLTensor(param) {
     data_ptr_ = malloc(size_);
     tensor_ = torch::autograd::make_variable(at::native::from_blob(
-        data_ptr_, {height_, width_, 4}, [](void *) {},
-        at::device(at::kCPU).dtype(at::ScalarType::Byte)));
+        data_ptr_, {height_, width_, channels_}, [](void *) {},
+        at::device(at::kCPU).dtype(type_)));
   }
 
   ~CpuTensor() {

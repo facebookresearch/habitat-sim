@@ -56,89 +56,24 @@ void Sensor::setTransformationFromSpec() {
   node().rotateZ(Magnum::Rad(spec_->orientation[2]));
 }
 
-void Sensor::renderEnter() {
-  if (tgt_ == nullptr)
-    throw std::runtime_error("Sensor has no rendering target");
-
-  tgt_->framebuffer_.bind();
-  tgt_->framebuffer_.clear(GL::FramebufferClear::Color |
-                           GL::FramebufferClear::Depth);
-  tgt_->framebuffer_.clearColor(1, Vector4{});
-  tgt_->framebuffer_.clearColor(2, Vector4ui{});
-  tgt_->framebuffer_.bind();
-}
-
-void Sensor::renderExit() {}
-
-void Sensor::readFrameRgba(uint8_t* ptr) {
-  if (tgt_ == nullptr)
-    throw std::runtime_error("Sensor has no rendering target");
-  tgt_->framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{0});
-  Image2D rgbaImage = tgt_->framebuffer_.read(
-      Range2Di::fromSize({0, 0}, tgt_->framebufferSize_),
-      {PixelFormat::RGBA8Unorm});
-  uint8_t* src_ptr = rgbaImage.data<uint8_t>();
-  std::memcpy(ptr, src_ptr,
-              tgt_->framebufferSize_[0] * tgt_->framebufferSize_[1] * 4 *
-                  sizeof(uint8_t));
-}
-
-void Sensor::readFrameDepth(float* ptr) {
-  if (tgt_ == nullptr)
-    throw std::runtime_error("Sensor has no rendering target");
-  tgt_->framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{1});
-  Image2D depthImage = tgt_->framebuffer_.read(
-      Range2Di::fromSize({0, 0}, tgt_->framebufferSize_), {PixelFormat::R32F});
-  float* src_ptr = depthImage.data<float>();
-  std::memcpy(
-      ptr, src_ptr,
-      tgt_->framebufferSize_[0] * tgt_->framebufferSize_[1] * sizeof(float));
-}
-
-void Sensor::readFrameObjectId(uint32_t* ptr) {
-  if (tgt_ == nullptr)
-    throw std::runtime_error("Sensor has no rendering target");
-  tgt_->framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{2});
-  Image2D objectImage = tgt_->framebuffer_.read(
-      Range2Di::fromSize({0, 0}, tgt_->framebufferSize_), {PixelFormat::R32UI});
-  uint32_t* src_ptr = objectImage.data<uint32_t>();
-  std::memcpy(
-      ptr, src_ptr,
-      tgt_->framebufferSize_[0] * tgt_->framebufferSize_[1] * sizeof(uint32_t));
-}
-
 gltensor::GLTensorParam::ptr Sensor::glTensorParam() const {
   if (tgt_ == nullptr)
     throw std::runtime_error("Sensor has no rendering target");
-  auto param = std::make_shared<gltensor::GLTensorParam>();
-
-  param->height_ = tgt_->framebufferSize_[0];
-  param->width_ = tgt_->framebufferSize_[1];
-
-  param->target_ = GL_TEXTURE_2D;
 
   switch (spec_->sensorType) {
     case SensorType::COLOR:
-      param->format_ = GL_RGBA;
-      param->image_ = tgt_->colorBuffer_.id();
-      break;
+      return tgt_->glTensorParamRgba();
 
     case SensorType::DEPTH:
-      param->format_ = GL_R32F;
-      param->image_ = tgt_->depthBuffer_.id();
-      break;
+      return tgt_->glTensorParamDepth();
 
     case SensorType::SEMANTIC:
-      param->format_ = GL_R32UI;
-      param->image_ = tgt_->objectIdBuffer_.id();
-      break;
+      return tgt_->glTensorParamId();
 
     default:
       throw std::runtime_error(
           "GLTensor only suppots color, depth, and semantic sensors");
   }
-
-  return param;
 }
 
 bool operator==(const SensorSpec& a, const SensorSpec& b) {

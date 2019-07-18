@@ -21,14 +21,12 @@ class RenderingTarget {
   void renderEnter();
   void renderExit();
 
-  gltensor::GLTensorParam::ptr glTensorParamRGBA() const;
+  gltensor::GLTensorParam::ptr glTensorParamRgba() const;
   gltensor::GLTensorParam::ptr glTensorParamDepth() const;
   gltensor::GLTensorParam::ptr glTensorParamId() const;
 
   void readFrameRgba(uint8_t* ptr);
-
   void readFrameDepth(float* ptr);
-
   void readFrameObjectId(uint32_t* ptr);
 
   const Magnum::Vector2i framebufferSize() const;
