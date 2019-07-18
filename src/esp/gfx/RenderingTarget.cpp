@@ -66,10 +66,11 @@ struct RenderingTarget::Impl {
   gltensor::GLTensorParam::ptr glTensorParam() const {
     auto param = std::make_shared<gltensor::GLTensorParam>();
 
-    param->height_ = framebufferSize_[0];
-    param->width_ = framebufferSize_[1];
+    param->height_ = framebufferSize_[1];
+    param->width_ = framebufferSize_[0];
 
-    param->target_ = GL_TEXTURE_2D;
+    param->target_ = GL_RENDERBUFFER;
+    param->device_id_ = context_->gpuDevice();
 
     return param;
   }

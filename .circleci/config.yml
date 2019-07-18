@@ -184,21 +184,6 @@ jobs:
           name: Install api
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat;
-              if [ ! -d ./habitat-api ]
-              then
-                git clone https://github.com/facebookresearch/habitat-api.git
-              fi
-              cd habitat-api
-              pip install -r requirements.txt --progress-bar off
-              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              ln -s ../habitat-sim/data data
-              touch ~/miniconda/pip_deps_installed
-      - save_cache:
-          key: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
-          background: true
-          paths:
-            - ~/miniconda
       - run:
           name: Run api tests
           command: |

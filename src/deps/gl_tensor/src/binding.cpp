@@ -20,7 +20,9 @@ PYBIND11_MODULE(gl_tensor, m) {
   py::class_<GLTensor>(m, "GLTensor")
       .def("Tensor", &GLTensor::Tensor)
       .def("Data", &GLTensor::Data,
-           py::return_value_policy::reference_internal);
+           py::return_value_policy::reference_internal)
+      .def("release", &GLTensor::release);
+
   m.def("CudaTensor", &GLTensor::CreateCudaTensor,
         "A function which returns cuda tensor with direct memory mapping");
   m.def(

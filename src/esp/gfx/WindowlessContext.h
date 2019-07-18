@@ -15,6 +15,8 @@ class WindowlessContext {
 
   void makeCurrent();
 
+  int gpuDevice() const;
+
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(WindowlessContext)
 };
 

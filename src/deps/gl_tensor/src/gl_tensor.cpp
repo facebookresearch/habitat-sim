@@ -6,9 +6,9 @@
 #include <cuda_gl_interop.h>
 #include <cuda_runtime.h>
 #include <helper_cuda.h>
-#include <helper_cuda_gl.h>
+// #include <helper_cuda_gl.h>
 
-#include <torch/torch.h>
+#include <torch/extension.h>
 
 namespace gltensor {
 
@@ -49,44 +49,51 @@ at::Tensor GLTensor::Tensor() {
 
 class CudaTensor : public GLTensor {
  private:
-  cudaGraphicsResource *cuda_graphics_resource_;
+  unsigned int target_;
+  int device_id_;
+  cudaGraphicsResource *cuda_graphics_resource_ = nullptr;
 
  public:
-  CudaTensor(const GLTensorParam::ptr param) : GLTensor(param) {
+  CudaTensor(const GLTensorParam::ptr param)
+      : GLTensor(param),
+        target_{param->target_},
+        device_id_{param->device_id_} {
     assert(param->device_id_ >= 0);
     assert(param->target_ == GL_RENDERBUFFER ||
            param->target_ == GL_TEXTURE_2D);
-    checkCudaErrors(cudaGLSetGLDevice(param->device_id_));
-    checkCudaErrors(cudaGraphicsGLRegisterImage(
-        &cuda_graphics_resource_, image_, param->target_,
-        cudaGraphicsRegisterFlagsReadOnly));
-    checkCudaErrors(cudaMalloc(&data_ptr_, size_));
-    tensor_ = torch::autograd::make_variable(at::native::from_blob(
-        data_ptr_, {height_, width_, channels_}, [](void *) {},
-        at::device(at::kCUDA).dtype(type_)));
+    // checkCudaErrors(cudaGLSetGLDevice(param->device_id_));
+    checkCudaErrors(cudaSetDevice(param->device_id_));
+
+    tensor_ = torch::zeros(
+        {height_, width_, channels_},
+        at::device(at::Device(at::kCUDA, device_id_)).dtype(type_));
+
+    checkCudaErrors(
+        cudaGraphicsGLRegisterImage(&cuda_graphics_resource_, image_, target_,
+                                    cudaGraphicsRegisterFlagsReadOnly));
   }
 
-  virtual ~CudaTensor() {
-    if (cuda_graphics_resource_) {
+  virtual void release() {
+    if (cuda_graphics_resource_ != nullptr) {
       checkCudaErrors(cudaGraphicsUnregisterResource(cuda_graphics_resource_));
+      cuda_graphics_resource_ = nullptr;
     }
-
-    if (data_ptr_) {
-      checkCudaErrors(cudaFree(data_ptr_));
-    }
-    cudaDeviceReset();
   }
+
+  virtual ~CudaTensor() { release(); }
 
   virtual void *Data() const { return nullptr; }
 
  protected:
   void Update() {
     checkCudaErrors(cudaGraphicsMapResources(1, &cuda_graphics_resource_, 0));
+
     cudaArray *array = nullptr;
     checkCudaErrors(cudaGraphicsSubResourceGetMappedArray(
         &array, cuda_graphics_resource_, 0, 0));
-    checkCudaErrors(cudaMemcpyFromArray(data_ptr_, array, 0, 0, size_,
+    checkCudaErrors(cudaMemcpyFromArray(tensor_.data_ptr(), array, 0, 0, size_,
                                         cudaMemcpyDeviceToDevice));
+
     checkCudaErrors(cudaGraphicsUnmapResources(1, &cuda_graphics_resource_, 0));
   }
 };
@@ -95,14 +102,15 @@ class Cpu2CudaTensor : public GLTensor {
  public:
   Cpu2CudaTensor(const GLTensorParam::ptr param) : GLTensor(param) {
     assert(param->device_id_ >= 0);
-    checkCudaErrors(cudaGLSetGLDevice(param->device_id_));
+    checkCudaErrors(cudaSetDevice(param->device_id_));
+    // checkCudaErrors(cudaGLSetGLDevice(param->device_id_));
     checkCudaErrors(
         cudaHostAlloc(&data_ptr_, size_, cudaHostAllocWriteCombined));
     void *devie_data_ptr;
     checkCudaErrors(cudaHostGetDevicePointer(&devie_data_ptr, data_ptr_, 0));
-    tensor_ = torch::autograd::make_variable(at::native::from_blob(
+    tensor_ = torch::autograd::make_variable(at::from_blob(
         devie_data_ptr, {height_, width_, channels_}, [](void *) {},
-        at::device(at::kCUDA).dtype(type_)));
+        at::device(at::Device(at::kCUDA, param->device_id_)).dtype(type_)));
   }
 
   ~Cpu2CudaTensor() {
@@ -123,9 +131,9 @@ class CpuTensor : public GLTensor {
  public:
   CpuTensor(const GLTensorParam::ptr param) : GLTensor(param) {
     data_ptr_ = malloc(size_);
-    tensor_ = torch::autograd::make_variable(at::native::from_blob(
-        data_ptr_, {height_, width_, channels_}, [](void *) {},
-        at::device(at::kCPU).dtype(type_)));
+    tensor_ = torch::autograd::make_variable(
+        at::from_blob(data_ptr_, {height_, width_, channels_}, [](void *) {},
+                      at::device(at::kCPU).dtype(type_)));
   }
 
   ~CpuTensor() {

@@ -252,9 +252,7 @@ bool SemanticScene::loadMp3dHouse(
         scene.segmentToObjectIndex_[segmentId] = objectIndex;
         break;
       }
-      default: {
-        break;
-      }
+      default: { break; }
     }
   }
 
