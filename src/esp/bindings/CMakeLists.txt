@@ -14,6 +14,10 @@ target_link_libraries(habitat_sim_bindings
     sensor
 )
 
+if(WITH_GL_TENSOR)
+  target_compile_definitions(habitat_sim_bindings PRIVATE __ESP_WITH_GL_TENSOR__)
+endif()
+
 # target_include_directories(environment
 #   PUBLIC
 #     ${CMAKE_CURRENT_LIST_DIR}

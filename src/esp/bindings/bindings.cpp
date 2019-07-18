@@ -50,7 +50,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
 
   m.import("magnum.scenegraph");
-  // m.import("gl_tensor");
 
   py::class_<Configuration, Configuration::ptr>(m, "Configuration")
       .def(py::init(&Configuration::create<>))
@@ -334,6 +333,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_readwrite("resolution", &SensorSpec::resolution)
       .def_readwrite("channels", &SensorSpec::channels)
       .def_readwrite("encoding", &SensorSpec::encoding)
+      .def_readwrite("gpu2gpu_transfer", &SensorSpec::gpu2gpuTransfer)
       .def_readwrite("observation_space", &SensorSpec::observationSpace)
       .def("__eq__",
            [](const SensorSpec& self, const SensorSpec& other) -> bool {
@@ -346,6 +346,15 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 
   // ==== Observation ====
   py::class_<Observation, Observation::ptr>(m, "Observation");
+
+  py::class_<RenderingTarget, RenderingTarget::ptr>(m, "RenderingTarget");
+
+#ifdef __ESP_WITH_GL_TENSOR__
+  m.import("gl_tensor");
+  m.attr("gl_tensor_enabled") = true;
+#else
+  m.attr("gl_tensor_enabled") = false;
+#endif
 
   // ==== Sensor ====
   sensor
@@ -397,7 +406,12 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
                                       Eigen::RowMajor>>& img) {
             self.readFrameObjectId(img.data());
           },
-          py::arg("img").noconvert(), R"()");
+          py::arg("img").noconvert(), R"()")
+      .def("bind_rendering_target", &Sensor::bindRenderingTarget)
+#ifdef __ESP_WITH_GL_TENSOR__
+      .def_property_readonly("gl_tensor_param", &Sensor::glTensorParam)
+#endif
+      ;
 
   // ==== PinholeCamera (subclass of Sensor) ====
   py::class_<sensor::PinholeCamera,
@@ -446,8 +460,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_readwrite("default_camera_uuid",
                      &SimulatorConfiguration::defaultCameraUuid)
       .def_readwrite("gpu_device_id", &SimulatorConfiguration::gpuDeviceId)
-      .def_readwrite("width", &SimulatorConfiguration::width)
-      .def_readwrite("height", &SimulatorConfiguration::height)
       .def_readwrite("compress_textures",
                      &SimulatorConfiguration::compressTextures)
       .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
@@ -478,5 +490,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("renderer", &Simulator::getRenderer)
       .def("seed", &Simulator::seed, R"()", "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a)
-      .def("reset", &Simulator::reset, R"()");
+      .def("reset", &Simulator::reset, R"()")
+      .def("create_rendering_target", &Simulator::createRenderingTarget);
 }

@@ -23,6 +23,7 @@ option(USE_SYSTEM_PYBIND11 "Use system Pybind11 instead of a bundled submodule" 
 option(USE_SYSTEM_RAPIDJSON "Use system RapidJSON instead of a bundled submodule" OFF)
 
 option(BUILD_GUI_VIEWERS "Build GUI viewers" OFF)
+option(WITH_GL_TENSOR "Build Habitat-Sim with GL Tensor support" OFF)
 
 # set(CMAKE_BUILD_TYPE Debug)
 

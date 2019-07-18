@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "WindowlessContext.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
 #include "esp/scene/SceneConfiguration.h"
@@ -12,6 +11,10 @@
 #include "esp/scene/SceneNode.h"
 
 #include "esp/assets/ResourceManager.h"
+
+#include "RenderingTarget.h"
+#include "WindowlessContext.h"
+#include "magnum.h"
 
 namespace esp {
 namespace nav {
@@ -60,8 +63,11 @@ class Simulator {
 
   void saveFrame(const std::string& filename);
 
+  RenderingTarget::ptr createRenderingTarget(
+      const Magnum::Vector2i& framebufferSize);
+
  protected:
-  std::unique_ptr<WindowlessContext> context_ = nullptr;
+  std::shared_ptr<WindowlessContext> context_ = nullptr;
   std::shared_ptr<Renderer> renderer_ = nullptr;
   // CANNOT make the specification of resourceManager_ above the context_!
   // Because when deconstructing the resourceManager_, it needs

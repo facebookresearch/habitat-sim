@@ -39,7 +39,7 @@ class Simulator:
 
     def close(self):
         self.agents = []
-        self._sensors = None
+        self._sensors = {}
         if self._sim is not None:
             del self._sim
             self._sim = None
@@ -85,14 +85,10 @@ class Simulator:
 
     def reconfigure(self, config: Configuration):
         assert len(config.agents) > 0
-        if len(config.agents[0].sensor_specifications) > 0:
-            first_sensor_spec = config.agents[0].sensor_specifications[0]
-            config.sim_cfg.create_renderer = True
 
-            config.sim_cfg.height = first_sensor_spec.resolution[0]
-            config.sim_cfg.width = first_sensor_spec.resolution[1]
-        else:
-            config.sim_cfg.create_renderer = False
+        config.sim_cfg.create_renderer = any(
+            map(lambda cfg: len(cfg.sensor_specifications) > 0, config.agents)
+        )
 
         if self.config == config:
             return
@@ -193,24 +189,42 @@ class Sensor:
         # sensor is an attached object to the scene node
         # store such "attached object" in _sensor_object
         self._sensor_object = self._agent.sensors.get(sensor_id)
-
         self._spec = self._sensor_object.specification()
-        if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
-            self._buffer = np.empty(
-                (self._spec.resolution[0], self._spec.resolution[1]), dtype=np.uint32
+
+        self._sensor_object.bind_rendering_target(
+            self._sim.create_rendering_target(
+                np.array([self._spec.resolution[1], self._spec.resolution[0]])
             )
-        elif self._spec.sensor_type == hsim.SensorType.DEPTH:
-            self._buffer = np.empty(
-                (self._spec.resolution[0], self._spec.resolution[1]), dtype=np.float32
-            )
+        )
+
+        print(hsim.gl_tensor_enabled)
+        if self._spec.gpu2gpu_transfer:
+            assert (
+                hsim.gl_tensor_enabled
+            ), "Must build habitat sim with '--gl-tensor' flag for gpu2gpu-transfer"
+
+            import gl_tensor
+
+            self._buffer = gl_tensor.CudaTensor(self._sensor_object.gl_tensor_param)
         else:
-            self._buffer = np.empty(
-                (
-                    self._spec.resolution[0],
-                    self._spec.resolution[1] * self._spec.channels,
-                ),
-                dtype=np.uint8,
-            )
+            if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                self._buffer = np.empty(
+                    (self._spec.resolution[0], self._spec.resolution[1]),
+                    dtype=np.uint32,
+                )
+            elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+                self._buffer = np.empty(
+                    (self._spec.resolution[0], self._spec.resolution[1]),
+                    dtype=np.float32,
+                )
+            else:
+                self._buffer = np.empty(
+                    (
+                        self._spec.resolution[0],
+                        self._spec.resolution[1] * self._spec.channels,
+                    ),
+                    dtype=np.uint8,
+                )
 
     def get_observation(self):
         # sanity check:
@@ -251,21 +265,24 @@ class Sensor:
         with self._sensor_object:
             self._sim.renderer.draw(self._sensor_object, scene)
 
-            if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
-                self._sensor_object.read_frame_object_id(self._buffer)
-                return np.flip(self._buffer, axis=0).copy()
-            elif self._spec.sensor_type == hsim.SensorType.DEPTH:
-                self._sensor_object.read_frame_depth(self._buffer)
-                return np.flip(self._buffer, axis=0).copy()
+            if self._spec.gpu2gpu_transfer:
+                return self._buffer.flip(0).clone()
             else:
-                self._sensor_object.read_frame_rgba(self._buffer)
-                return np.flip(
-                    self._buffer.reshape(
-                        (
-                            self._spec.resolution[0],
-                            self._spec.resolution[1],
-                            self._spec.channels,
-                        )
-                    ),
-                    axis=0,
-                ).copy()
+                if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                    self._sensor_object.read_frame_object_id(self._buffer)
+                    return np.flip(self._buffer, axis=0).copy()
+                elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+                    self._sensor_object.read_frame_depth(self._buffer)
+                    return np.flip(self._buffer, axis=0).copy()
+                else:
+                    self._sensor_object.read_frame_rgba(self._buffer)
+                    return np.flip(
+                        self._buffer.reshape(
+                            (
+                                self._spec.resolution[0],
+                                self._spec.resolution[1],
+                                self._spec.channels,
+                            )
+                        ),
+                        axis=0,
+                    ).copy()

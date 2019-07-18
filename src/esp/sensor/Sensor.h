@@ -6,24 +6,11 @@
 
 #include <gl_tensor_param.h>
 
-#include <Magnum/GL/Buffer.h>
-#include <Magnum/GL/DefaultFramebuffer.h>
-#include <Magnum/GL/Framebuffer.h>
-#include <Magnum/GL/Renderbuffer.h>
-#include <Magnum/GL/RenderbufferFormat.h>
-#include <Magnum/GL/Renderer.h>
-#include <Magnum/GL/Texture.h>
-#include <Magnum/GL/TextureFormat.h>
-#include <Magnum/Image.h>
-#include <Magnum/PixelFormat.h>
-
 #include "esp/core/esp.h"
 
 #include "esp/gfx/RenderCamera.h"
-#include "esp/gfx/magnum.h"
+#include "esp/gfx/RenderingTarget.h"
 #include "esp/scene/SceneNode.h"
-
-using namespace Magnum;
 
 namespace esp {
 namespace sensor {
@@ -57,6 +44,7 @@ struct SensorSpec {
   std::string encoding = "rgba_uint8";
   // description of Sensor observation space as gym.spaces.Dict()
   std::string observationSpace = "";
+  bool gpu2gpuTransfer = false;
   ESP_SMART_POINTERS(SensorSpec)
 };
 bool operator==(const SensorSpec& a, const SensorSpec& b);
@@ -72,9 +60,7 @@ struct Observation {
 class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
  public:
   explicit Sensor(scene::SceneNode& node, SensorSpec::ptr spec);
-  virtual ~Sensor() {
-    // LOG(INFO) << "Deconstructing Sensor";
-  }
+  virtual ~Sensor() { LOG(INFO) << "Deconstructing Sensor"; }
 
   // Get the scene node being attached to.
   scene::SceneNode& node() { return object(); }
@@ -112,17 +98,20 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual void readFrameObjectId(uint32_t* ptr);
 
-  inline const Magnum::Vector2i resolution() const { return framebufferSize_; }
+  inline const Magnum::Vector2i framebufferSize() const {
+    if (tgt_ == nullptr)
+      throw std::runtime_error("Sensor has no rendering target");
+    return tgt_->framebufferSize_;
+  }
+
+  inline void bindRenderingTarget(gfx::RenderingTarget::ptr tgt) {
+    this->tgt_ = tgt;
+  }
 
  protected:
   SensorSpec::ptr spec_ = nullptr;
 
-  Magnum::Vector2i framebufferSize_;
-  GL::Renderbuffer colorBuffer_;
-  GL::Renderbuffer depthBuffer_;
-  GL::Renderbuffer objectIdBuffer_;
-  GL::Renderbuffer depthRenderbuffer_;
-  GL::Framebuffer framebuffer_;
+  gfx::RenderingTarget::ptr tgt_ = nullptr;
 
   ESP_SMART_POINTERS(Sensor)
 };
