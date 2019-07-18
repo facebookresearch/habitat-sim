@@ -170,35 +170,6 @@ RenderingTarget::ptr Simulator::createRenderingTarget(
     throw std::runtime_error(
         "Cannot create a rendering target without a rendering context");
 
-  auto tgt = RenderingTarget::create();
-  tgt->framebufferSize_ = framebufferSize;
-  tgt->colorBuffer_.setStorage(GL::RenderbufferFormat::SRGB8Alpha8,
-                               framebufferSize);
-  tgt->depthBuffer_.setStorage(GL::RenderbufferFormat::R32F, framebufferSize);
-  tgt->objectIdBuffer_.setStorage(GL::RenderbufferFormat::R32UI,
-                                  framebufferSize);
-  tgt->depthRenderbuffer_.setStorage(GL::RenderbufferFormat::Depth24Stencil8,
-                                     framebufferSize);
-
-  tgt->framebuffer_ = GL::Framebuffer{{{}, framebufferSize}};
-  tgt->framebuffer_
-      .attachRenderbuffer(GL::Framebuffer::ColorAttachment{0},
-                          tgt->colorBuffer_)
-      .attachRenderbuffer(GL::Framebuffer::ColorAttachment{1},
-                          tgt->depthBuffer_)
-      .attachRenderbuffer(GL::Framebuffer::ColorAttachment{2},
-                          tgt->objectIdBuffer_)
-      .attachRenderbuffer(GL::Framebuffer::BufferAttachment::Depth,
-                          tgt->depthRenderbuffer_)
-      .mapForDraw({{0, GL::Framebuffer::ColorAttachment{0}},
-                   {1, GL::Framebuffer::ColorAttachment{1}},
-                   {2, GL::Framebuffer::ColorAttachment{2}}});
-  CORRADE_INTERNAL_ASSERT(
-      tgt->framebuffer_.checkStatus(GL::FramebufferTarget::Draw) ==
-      GL::Framebuffer::Status::Complete);
-
-  tgt->context_ = context_;
-
   return tgt;
 }
 

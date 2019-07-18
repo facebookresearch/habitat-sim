@@ -88,25 +88,17 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual Observation getObservation();
 
-  virtual void renderEnter();
-  virtual void renderExit();
-  virtual gltensor::GLTensorParam::ptr glTensorParam() const;
-
-  virtual void readFrameRgba(uint8_t* ptr);
-
-  virtual void readFrameDepth(float* ptr);
-
-  virtual void readFrameObjectId(uint32_t* ptr);
-
-  inline const Magnum::Vector2i framebufferSize() const {
-    if (tgt_ == nullptr)
-      throw std::runtime_error("Sensor has no rendering target");
-    return tgt_->framebufferSize_;
-  }
-
   inline void bindRenderingTarget(gfx::RenderingTarget::ptr tgt) {
     this->tgt_ = tgt;
   }
+
+  inline gfx::RenderingTarget::ptr renderingTarget() {
+    if (tgt_ == nullptr)
+      throw std::runtime_error("Sensor has no rendering target");
+    return tgt_;
+  }
+
+  gltensor::GLTensorParam glTensorParam() const;
 
  protected:
   SensorSpec::ptr spec_ = nullptr;
