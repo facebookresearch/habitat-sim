@@ -48,9 +48,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // TODO can optimize to do partial re-initialization instead of from-scratch
   config_ = cfg;
 
-  const int height = cfg.height;
-  const int width = cfg.width;
-
   // load scene
   std::string sceneFilename = cfg.scene.id;
   if (cfg.scene.filepaths.count("mesh")) {
@@ -82,7 +79,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     // reinitalize members
     renderer_ = nullptr;
-    renderer_ = Renderer::create(width, height);
+    renderer_ = Renderer::create();
 
     auto& sceneGraph = sceneManager_.getSceneGraph(activeSceneID_);
 

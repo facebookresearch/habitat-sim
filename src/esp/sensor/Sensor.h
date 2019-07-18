@@ -4,10 +4,26 @@
 
 #pragma once
 
+#include <gl_tensor_param.h>
+
+#include <Magnum/GL/Buffer.h>
+#include <Magnum/GL/DefaultFramebuffer.h>
+#include <Magnum/GL/Framebuffer.h>
+#include <Magnum/GL/Renderbuffer.h>
+#include <Magnum/GL/RenderbufferFormat.h>
+#include <Magnum/GL/Renderer.h>
+#include <Magnum/GL/Texture.h>
+#include <Magnum/GL/TextureFormat.h>
+#include <Magnum/Image.h>
+#include <Magnum/PixelFormat.h>
+
 #include "esp/core/esp.h"
 
 #include "esp/gfx/RenderCamera.h"
+#include "esp/gfx/magnum.h"
 #include "esp/scene/SceneNode.h"
+
+using namespace Magnum;
 
 namespace esp {
 namespace sensor {
@@ -86,8 +102,27 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual Observation getObservation();
 
+  virtual void renderEnter();
+  virtual void renderExit();
+  virtual gltensor::GLTensorParam::ptr glTensorParam() const;
+
+  virtual void readFrameRgba(uint8_t* ptr);
+
+  virtual void readFrameDepth(float* ptr);
+
+  virtual void readFrameObjectId(uint32_t* ptr);
+
+  inline const Magnum::Vector2i resolution() const { return framebufferSize_; }
+
  protected:
   SensorSpec::ptr spec_ = nullptr;
+
+  Magnum::Vector2i framebufferSize_;
+  GL::Renderbuffer colorBuffer_;
+  GL::Renderbuffer depthBuffer_;
+  GL::Renderbuffer objectIdBuffer_;
+  GL::Renderbuffer depthRenderbuffer_;
+  GL::Framebuffer framebuffer_;
 
   ESP_SMART_POINTERS(Sensor)
 };

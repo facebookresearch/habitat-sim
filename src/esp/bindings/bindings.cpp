@@ -50,6 +50,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
 
   m.import("magnum.scenegraph");
+  // m.import("gl_tensor");
 
   py::class_<Configuration, Configuration::ptr>(m, "Configuration")
       .def(py::init(&Configuration::create<>))
@@ -302,27 +303,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 
   // ==== Renderer ====
   py::class_<Renderer, Renderer::ptr>(m, "Renderer")
-      .def(py::init(&Renderer::create<int, int>))
-      .def("set_size", &Renderer::setSize, R"(Set the size of the canvas)",
-           "width"_a, "height"_a)
-      .def(
-          "readFrameRgba",
-          [](Renderer& self,
-             Eigen::Ref<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic,
-                                      Eigen::RowMajor>>& img) {
-            self.readFrameRgba(img.data());
-          },
-          py::arg("img").noconvert(),
-          R"(
-      Reads RGBA frame into passed img in uint8 byte format.
-
-      Parameters
-      ----------
-      img: numpy.ndarray[uint8[m, n], flags.writeable, flags.c_contiguous]
-           Numpy array array to populate with frame bytes.
-           Memory is NOT allocated to this array.
-           Assume that ``m = height`` and ``n = width * 4``.
-      )")
+      .def(py::init(&Renderer::create<>))
       .def("draw",
            py::overload_cast<sensor::Sensor&, scene::SceneGraph&>(
                &Renderer::draw),
@@ -331,23 +312,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("draw",
            py::overload_cast<gfx::RenderCamera&, scene::SceneGraph&>(
                &Renderer::draw),
-           R"(Draw given scene using the camera)", "camera"_a, "scene"_a)
-      .def(
-          "readFrameDepth",
-          [](Renderer& self,
-             Eigen::Ref<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic,
-                                      Eigen::RowMajor>>& img) {
-            self.readFrameDepth(img.data());
-          },
-          py::arg("img").noconvert(), R"()")
-      .def(
-          "readFrameObjectId",
-          [](Renderer& self,
-             Eigen::Ref<Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic,
-                                      Eigen::RowMajor>>& img) {
-            self.readFrameObjectId(img.data());
-          },
-          py::arg("img").noconvert(), R"()");
+           R"(Draw given scene using the camera)", "camera"_a, "scene"_a);
 
   // TODO fill out other SensorTypes
   // ==== enum SensorType ====
@@ -392,7 +357,47 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("get_observation", &Sensor::getObservation)
       .def_property_readonly("node", nodeGetter<Sensor>,
                              "Node this object is attached to")
-      .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
+      .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node")
+      .def("render_enter", &Sensor::renderEnter)
+      .def("render_exit", &Sensor::renderExit)
+      .def("__enter__", [](Sensor& self) { self.renderEnter(); })
+      .def("__exit__",
+           [](Sensor& self, py::object exc_type, py::object exc_value,
+              py::object traceback) { self.renderExit(); })
+      .def(
+          "read_frame_rgba",
+          [](Sensor& self,
+             Eigen::Ref<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic,
+                                      Eigen::RowMajor>>& img) {
+            self.readFrameRgba(img.data());
+          },
+          py::arg("img").noconvert(),
+          R"(
+      Reads RGBA frame into passed img in uint8 byte format.
+
+      Parameters
+      ----------
+      img: numpy.ndarray[uint8[m, n], flags.writeable, flags.c_contiguous]
+           Numpy array array to populate with frame bytes.
+           Memory is NOT allocated to this array.
+           Assume that ``m = height`` and ``n = width * 4``.
+      )")
+      .def(
+          "read_frame_depth",
+          [](Sensor& self,
+             Eigen::Ref<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic,
+                                      Eigen::RowMajor>>& img) {
+            self.readFrameDepth(img.data());
+          },
+          py::arg("img").noconvert(), R"()")
+      .def(
+          "read_frame_object_id",
+          [](Sensor& self,
+             Eigen::Ref<Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic,
+                                      Eigen::RowMajor>>& img) {
+            self.readFrameObjectId(img.data());
+          },
+          py::arg("img").noconvert(), R"()");
 
   // ==== PinholeCamera (subclass of Sensor) ====
   py::class_<sensor::PinholeCamera,

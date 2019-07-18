@@ -247,23 +247,25 @@ class Sensor:
         # internally it will set the camera parameters (from the sensor) to the
         # default render camera in the scene so that
         # it has correct modelview matrix, projection matrix to render the scene
-        self._sim.renderer.draw(self._sensor_object, scene)
 
-        if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
-            self._sim.renderer.readFrameObjectId(self._buffer)
-            return np.flip(self._buffer, axis=0).copy()
-        elif self._spec.sensor_type == hsim.SensorType.DEPTH:
-            self._sim.renderer.readFrameDepth(self._buffer)
-            return np.flip(self._buffer, axis=0).copy()
-        else:
-            self._sim.renderer.readFrameRgba(self._buffer)
-            return np.flip(
-                self._buffer.reshape(
-                    (
-                        self._spec.resolution[0],
-                        self._spec.resolution[1],
-                        self._spec.channels,
-                    )
-                ),
-                axis=0,
-            ).copy()
+        with self._sensor_object:
+            self._sim.renderer.draw(self._sensor_object, scene)
+
+            if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                self._sensor_object.read_frame_object_id(self._buffer)
+                return np.flip(self._buffer, axis=0).copy()
+            elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+                self._sensor_object.read_frame_depth(self._buffer)
+                return np.flip(self._buffer, axis=0).copy()
+            else:
+                self._sensor_object.read_frame_rgba(self._buffer)
+                return np.flip(
+                    self._buffer.reshape(
+                        (
+                            self._spec.resolution[0],
+                            self._spec.resolution[1],
+                            self._spec.channels,
+                        )
+                    ),
+                    axis=0,
+                ).copy()
