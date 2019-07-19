@@ -21,10 +21,11 @@
 import os
 import sys
 
-import habitat_sim
 from docutils import nodes
 from sphinx import addnodes
 from sphinx.util.docfields import TypedField
+
+import habitat_sim
 
 sys.path.insert(0, os.path.abspath(os.path.join("..")))
 
