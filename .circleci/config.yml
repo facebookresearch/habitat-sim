@@ -188,6 +188,7 @@ jobs:
               . activate habitat; cd habitat-sim
               export PYTHONPATH=$(pwd)
               pip install src/deps/gl_tensor
+              pip install nbval
               ./build.sh --headless --with-gpu-gpu
               pytest --ignore notebooks/habitat-sim-demo.ipynb
       - run:
