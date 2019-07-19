@@ -184,7 +184,6 @@ jobs:
           name: Run sim tests
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
-              export PYTHONPATH=$(pwd)
               . activate habitat; cd habitat-sim
 
               pip install nbval
@@ -192,6 +191,8 @@ jobs:
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               pip install src/deps/gl_tensor
+
+              export PYTHONPATH=$(pwd)
               pytest --ignore notebooks/habitat-sim-demo.ipynb
       - run:
           name: Install api
