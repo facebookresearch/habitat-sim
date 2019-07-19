@@ -17,7 +17,7 @@ jobs:
           name: setup
           command: |
               sudo pip install -U black "isort[pyproject]" numpy pytest sphinx
-              sudo pip install -r requirements.txt
+              sudo pip install -r requirements.txt --progress-bar off
       - run:
           name: run black
           command: |
@@ -47,32 +47,25 @@ jobs:
           command: |
             find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.cpp$|.*\.h$|.*\.cu$|.*\.hpp$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
 
-  build_install_test_ubuntu:
+  install_and_test_ubuntu:
     <<: *gpu
     steps:
       - checkout:
           path: ./habitat-sim
       - run:
           name: Install cmake
-          no_output_timeout: 1h
+          no_output_timeout: 5m
           command: |
+              echo $(git ls-remote https://github.com/facebookresearch/habitat-api.git HEAD | awk '{ print $1}') > ./hapi_sha
+              cat ./hapi_sha
               wget https://github.com/Kitware/CMake/releases/download/v3.13.4/cmake-3.13.4-Linux-x86_64.sh
               sudo mkdir /opt/cmake
               sudo sh ./cmake-3.13.4-Linux-x86_64.sh --prefix=/opt/cmake --skip-license
               sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
       - run:
-          name: Install conda and dependencies
-          no_output_timeout: 1h
+          name: Install dependencies
+          no_output_timeout: 20m
           command: |
-              curl -o ~/miniconda.sh -O  https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-              chmod +x ~/miniconda.sh
-              ~/miniconda.sh -b -p $HOME/miniconda
-              rm ~/miniconda.sh
-              $HOME/miniconda/bin/conda install -y numpy pyyaml scipy ipython mkl mkl-include
-              export PATH=$HOME/miniconda/bin:$PATH
-              conda create -y -n habitat python=3.6
-              . activate habitat
-              conda install -y -c conda-forge ninja numpy pyyaml scipy ipython mkl mkl-include pytest
               sudo apt-get update || true
               sudo apt-get install -y --no-install-recommends \
                   build-essential \
@@ -91,59 +84,147 @@ jobs:
                   unzip || true
       - run:
           name: Install cuda
-          no_output_timeout: 1h
+          no_output_timeout: 20m
+          background: true
           command: |
               wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/cuda-repo-ubuntu1604_8.0.44-1_amd64.deb
               sudo dpkg -i cuda-repo-ubuntu1604_8.0.44-1_amd64.deb
               sudo apt-get update || true
               sudo apt-get --yes --force-yes install cuda
+              touch ./cuda_installed
               nvidia-smi
+      - restore_cache:
+          keys:
+            - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
+      - run:
+          name: Install conda and dependencies
+          no_output_timeout: 20m
+          command: |
+              if [ ! -d ~/miniconda ]
+              then
+                curl -o ~/miniconda.sh -O  https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+                chmod +x ~/miniconda.sh
+                ~/miniconda.sh -b -p $HOME/miniconda
+                rm ~/miniconda.sh
+                export PATH=$HOME/miniconda/bin:$PATH
+                conda create -y -n habitat python=3.6
+                . activate habitat
+                conda install -q -y -c conda-forge ninja numpy pytest ccache
+              fi
+      - run:
+          name: Install pytorch
+          no_output_timeout: 20m
+          background: true
+          command: |
+              if [ ! -f ~/miniconda/pytorch_installed ]
+              then
+                export PATH=$HOME/miniconda/bin:$PATH
+                . activate habitat;
+                conda install -c  conda-forge opencv -y
+                conda install -y pytorch torchvision  cudatoolkit=10.0 -c pytorch
+              fi
+              touch ~/miniconda/pytorch_installed
+      - restore_cache:
+          keys:
+            - habitat-api-{{ checksum "./hapi_sha" }}
+      - restore_cache:
+          keys:
+            - ccache-{{ arch }}-master
+            - ccache-{{ arch }}-{{ .Branch }}
+          paths:
+            - /home/circleci/.ccache
+      - run:
+          name: CCache initialization
+          command: |
+            export PATH=$HOME/miniconda/bin:$PATH
+            . activate habitat;
+            ccache --show-stats
+            ccache --zero-stats
+            ccache --max-size=10.0G
+      - run:
+          name: Build, install habitat-sim and run benchmark
+          no_output_timeout: 20m
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              pip install -r requirements.txt --progress-bar off
+              python setup.py install --headless
+      - run:
+          name: Ccache stats
+          when: always
+          command: |
+            export PATH=$HOME/miniconda/bin:$PATH
+            . activate habitat;
+            ccache --show-stats
+      - save_cache:
+          key: ccache-{{ arch }}-{{ .Branch }}
+          background: true
+          paths:
+            - /home/circleci/.ccache
       - run:
           name: Download test data
           command: |
-              cd habitat-sim
-              wget http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip
-              unzip habitat-test-scenes.zip
-              rm habitat-test-scenes.zip
+
+              if [ ! -d ./habitat-sim/data ]
+              then
+                cd habitat-sim
+                wget http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip
+                unzip habitat-test-scenes.zip
+                rm habitat-test-scenes.zip
+              fi
       - run:
-          name: Build, install habitat-sim and run benchmark
-          no_output_timeout: 1h
+          name: Run sim benchmark
           command: |
+              while [ ! -f ./cuda_installed ]; do sleep 2; done # wait for CUDA
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-sim
-              pip install -r requirements.txt
-              python setup.py install --headless
               python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
       - run:
           name: Run sim tests
           command: |
-              cd habitat-sim
               export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat
-              pip install nbval
-              export PYTHONPATH=$PYTHONPATH:$(pwd)
-              pip install src/deps/gl_tensor
+              . activate habitat; cd habitat-sim
+              export PYTHONPATH=$(pwd)
               ./build.sh --headless --with-gpu-gpu
               pytest --ignore notebooks/habitat-sim-demo.ipynb
       - run:
+          name: Install api
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              if [ ! -d ./habitat-api ]
+              then
+                git clone https://github.com/facebookresearch/habitat-api.git
+              fi
+              cd habitat-api
+              pip install -r requirements.txt --progress-bar off
+              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
+              ln -s ../habitat-sim/data data
+              touch ~/miniconda/pip_deps_installed
+      - save_cache:
+          key: conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
+          background: true
+          paths:
+            - ~/miniconda
+      - run:
           name: Run api tests
           command: |
-              git clone https://github.com/facebookresearch/habitat-api.git
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-api
-              ln -s ../habitat-sim/data data
-              conda install -c  conda-forge opencv -y
-              conda install -y pytorch torchvision cudatoolkit=10.0 -c pytorch
-              pip install -r requirements.txt
-              pip install matplotlib
-              export PYTHONPATH=$(pwd)
               python setup.py test
-
+              python setup.py develop --all
+              python -u habitat_baselines/train_ppo.py --log-file "train.log" --checkpoint-folder "data/checkpoints" --sim-gpu-id 0 --pth-gpu-id 0 --num-processes 1 --num-mini-batch 1 --num-updates 10
+      - save_cache:
+          key: habitat-api-{{ checksum "./hapi_sha" }}
+          background: true
+          paths:
+            - ./habitat-api
 
 workflows:
   version: 2
-  build_and_install:
+  install_and_test:
     jobs:
       - python_lint
       - cpp_lint
-      - build_install_test_ubuntu
+      - install_and_test_ubuntu

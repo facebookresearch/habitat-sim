@@ -1,6 +1,10 @@
 [tool.isort]
 skip_glob = ["*/deps/*", "*/build/*", "*/obselete/*"]
 known_third_party = ["corrade", "magnum", "gl_tensor"]
+multi_line_output = 3
+force_grid_wrap = 0
+line_width = 88
+include_trailing_comma = true
 
 [tool.black]
 exclude = '''
