@@ -186,6 +186,7 @@ jobs:
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-sim
               export PYTHONPATH=$(pwd)
+              pip install src/deps/gl_tensor
               ./build.sh --headless --with-gpu-gpu
               pytest --ignore notebooks/habitat-sim-demo.ipynb
       - run:
