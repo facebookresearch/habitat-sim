@@ -88,8 +88,6 @@ def main(display=True):
     sim = habitat_sim.Simulator(habitat_sim.Configuration(backend_cfg, [agent_config]))
 
     _render(sim, display)
-    sim.close()
-    del sim
 
     # Now let's do the exact same thing but for a depth camera stereo pair!
     left_depth_sensor = habitat_sim.SensorSpec()
