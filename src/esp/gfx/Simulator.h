@@ -46,10 +46,12 @@ bool operator!=(const SimulatorConfiguration& a,
 
 class Simulator {
  public:
-  explicit Simulator(const SimulatorConfiguration& cfg);
+  explicit Simulator(const SimulatorConfiguration& cfg,
+                     WindowlessContext::ptr context = nullptr);
   virtual ~Simulator();
 
-  void reconfigure(const SimulatorConfiguration& cfg);
+  void reconfigure(const SimulatorConfiguration& cfg,
+                   WindowlessContext::ptr context = nullptr);
 
   void reset();
 

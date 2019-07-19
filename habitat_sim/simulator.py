@@ -14,6 +14,7 @@ import habitat_sim.bindings as hsim
 import habitat_sim.errors
 from habitat_sim import utils
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
+from habitat_sim.gfx import WindowlessContextSingleton
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower
 
@@ -53,9 +54,19 @@ class Simulator:
 
     def _config_backend(self, config: Configuration):
         if self._sim is None:
-            self._sim = hsim.SimulatorBackend(config.sim_cfg)
+            self._sim = hsim.SimulatorBackend(
+                config.sim_cfg,
+                WindowlessContextSingleton.get(config.sim_cfg.gpu_device_id)
+                if config.sim_cfg.create_renderer
+                else None,
+            )
         else:
-            self._sim.reconfigure(config.sim_cfg)
+            self._sim.reconfigure(
+                config.sim_cfg,
+                WindowlessContextSingleton.get(config.sim_cfg.gpu_device_id)
+                if config.sim_cfg.create_renderer
+                else None,
+            )
 
     def _config_agents(self, config: Configuration):
         if self.config is not None and self.config.agents == config.agents:
