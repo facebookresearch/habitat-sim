@@ -181,6 +181,16 @@ jobs:
               . activate habitat; cd habitat-sim
               python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
       - run:
+          name: Run sim tests
+          command: |
+              cd habitat-sim
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat
+              pip install nbval
+              export PYTHONPATH=$PYTHONPATH:$(pwd)
+              ./build.sh --headless
+              pytest --ignore notebooks/habitat-sim-demo.ipynb
+      - run:
           name: Install api
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
