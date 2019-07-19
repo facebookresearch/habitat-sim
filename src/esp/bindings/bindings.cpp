@@ -484,7 +484,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   initShortestPathBindings(m);
 
   py::class_<WindowlessContext, WindowlessContext::ptr>(m, "WindowlessContext")
-      .def(py::init(&WindowlessContext::create<int>));
+      .def(py::init(&WindowlessContext::create<int>))
+      .def_property_readonly("gpu_device_id", &WindowlessContext::gpuDevice);
 
   // ==== Simulator ====
   py::class_<Simulator, Simulator::ptr>(m, "Simulator")
