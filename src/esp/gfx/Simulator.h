@@ -13,8 +13,6 @@
 #include "esp/assets/ResourceManager.h"
 
 #include "RenderingTarget.h"
-#include "WindowlessContext.h"
-#include "magnum.h"
 
 namespace esp {
 namespace nav {
@@ -46,12 +44,10 @@ bool operator!=(const SimulatorConfiguration& a,
 
 class Simulator {
  public:
-  explicit Simulator(const SimulatorConfiguration& cfg,
-                     WindowlessContext::ptr context = nullptr);
+  explicit Simulator(const SimulatorConfiguration& cfg);
   virtual ~Simulator();
 
-  void reconfigure(const SimulatorConfiguration& cfg,
-                   WindowlessContext::ptr context = nullptr);
+  void reconfigure(const SimulatorConfiguration& cfg);
 
   void reset();
 

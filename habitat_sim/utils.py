@@ -160,16 +160,6 @@ def quat_rotate_vector(q: np.quaternion, v: np.ndarray) -> np.ndarray:
     return (q * vq * q.inverse()).imag
 
 
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-
-        return cls._instances[cls]
-
-
 def download_and_unzip(file_url, local_directory):
     response = urlopen(file_url)
     zipfile = ZipFile(BytesIO(response.read()))

@@ -29,18 +29,16 @@ using namespace Corrade;
 namespace esp {
 namespace gfx {
 
-Simulator::Simulator(const SimulatorConfiguration& cfg,
-                     WindowlessContext::ptr context) {
+Simulator::Simulator(const SimulatorConfiguration& cfg) {
   // initalize members according to cfg
-  reconfigure(cfg, context);
+  reconfigure(cfg);
 }
 
 Simulator::~Simulator() {
   LOG(INFO) << "Deconstructing Simulator";
 }
 
-void Simulator::reconfigure(const SimulatorConfiguration& cfg,
-                            WindowlessContext::ptr context) {
+void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // if configuration is unchanged, just reset and return
   if (cfg == config_) {
     reset();
@@ -74,7 +72,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg,
   // LOG(INFO) << "Active scene graph ID = " << activeSceneID_;
   sceneID_.push_back(activeSceneID_);
 
-  context_ = context;
   if (cfg.createRenderer) {
     if (!context_) {
       context_ = std::make_shared<gfx::WindowlessContext>(config_.gpuDeviceId);

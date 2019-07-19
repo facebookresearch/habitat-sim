@@ -20,7 +20,6 @@ modules = [
     "SimulatorConfiguration",
     "geo",
     "gl_tensor_enabled",
-    "WindowlessContext",
 ]
 
 from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend

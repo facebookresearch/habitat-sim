@@ -483,14 +483,9 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 
   initShortestPathBindings(m);
 
-  py::class_<WindowlessContext, WindowlessContext::ptr>(m, "WindowlessContext")
-      .def(py::init(&WindowlessContext::create<int>))
-      .def_property_readonly("gpu_device_id", &WindowlessContext::gpuDevice);
-
   // ==== Simulator ====
   py::class_<Simulator, Simulator::ptr>(m, "Simulator")
-      .def(py::init(&Simulator::create<const SimulatorConfiguration&,
-                                       WindowlessContext::ptr&>))
+      .def(py::init(&Simulator::create<const SimulatorConfiguration&>))
       .def("get_active_scene_graph", &Simulator::getActiveSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            pybind11::return_value_policy::reference)
@@ -501,8 +496,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("semantic_scene", &Simulator::getSemanticScene)
       .def_property_readonly("renderer", &Simulator::getRenderer)
       .def("seed", &Simulator::seed, R"()", "new_seed"_a)
-      .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a,
-           "context"_a = nullptr)
+      .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a)
       .def("reset", &Simulator::reset, R"()")
       .def("create_rendering_target", &Simulator::createRenderingTarget);
 }

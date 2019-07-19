@@ -18,6 +18,8 @@ class RenderingTarget {
  public:
   RenderingTarget(WindowlessContext::ptr context, int height, int width);
 
+  ~RenderingTarget() { LOG(INFO) << "Deconstructing RenderingTarget"; }
+
   void renderEnter();
   void renderExit();
 

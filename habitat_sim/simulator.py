@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os.path as osp
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import attr
 import numpy as np
@@ -14,7 +14,6 @@ import habitat_sim.bindings as hsim
 import habitat_sim.errors
 from habitat_sim import utils
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
-from habitat_sim.gfx import WindowlessContextSingleton
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower
 
@@ -32,6 +31,8 @@ class Simulator:
     pathfinder: hsim.PathFinder = attr.ib(default=None, init=False)
     _sim: hsim.SimulatorBackend = attr.ib(default=None, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
+    _default_agent: Agent = attr.ib(init=False, default=None)
+    _sensors: Dict = attr.ib(factory=dict, init=False)
 
     def __attrs_post_init__(self):
         config = self.config
@@ -39,8 +40,19 @@ class Simulator:
         self.reconfigure(config)
 
     def close(self):
-        self.agents = []
+        for sensor in self._sensors.values():
+            del sensor
+
         self._sensors = {}
+
+        for agent in self.agents:
+            del agent
+
+        self.agents = []
+
+        del self._default_agent
+        self._default_agent = None
+
         if self._sim is not None:
             del self._sim
             self._sim = None
@@ -54,19 +66,9 @@ class Simulator:
 
     def _config_backend(self, config: Configuration):
         if self._sim is None:
-            self._sim = hsim.SimulatorBackend(
-                config.sim_cfg,
-                WindowlessContextSingleton.get(config.sim_cfg.gpu_device_id)
-                if config.sim_cfg.create_renderer
-                else None,
-            )
+            self._sim = hsim.SimulatorBackend(config.sim_cfg)
         else:
-            self._sim.reconfigure(
-                config.sim_cfg,
-                WindowlessContextSingleton.get(config.sim_cfg.gpu_device_id)
-                if config.sim_cfg.create_renderer
-                else None,
-            )
+            self._sim.reconfigure(config.sim_cfg)
 
     def _config_agents(self, config: Configuration):
         if self.config is not None and self.config.agents == config.agents:

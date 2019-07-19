@@ -13,6 +13,8 @@ class WindowlessContext {
  public:
   explicit WindowlessContext(int gpuDevice = 0);
 
+  ~WindowlessContext() { LOG(INFO) << "Deconstructing WindowlessContext"; }
+
   void makeCurrent();
 
   int gpuDevice() const;
