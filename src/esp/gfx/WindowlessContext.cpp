@@ -4,9 +4,11 @@
 
 #include "WindowlessContext.h"
 
-#ifdef __APPLE__
+#include <Corrade/configure.h>
+
+#if defined(CORRADE_TARGET_APPLE)
 #include <Magnum/Platform/WindowlessCglApplication.h>
-#elif __linux__
+#elif defined(CORRADE_TARGET_UNIX)
 #include <Magnum/Platform/GLContext.h>
 
 #ifdef __ESP_USE_EGL__
@@ -18,7 +20,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#elif __win32__
+#elif defined(CORRADE_TARGET_WINDOWS)
 #include <Magnum/Platform/WindowlessWglApplication.h>
 #endif
 
@@ -33,7 +35,7 @@ using namespace Magnum;
 namespace esp {
 namespace gfx {
 
-#ifdef __linux__
+#if defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
 
 namespace {
 
@@ -240,7 +242,7 @@ struct WindowlessContext::Impl {
   ESPContext::uptr glContext_ = nullptr;
 };
 
-#else  // not __linux__
+#else  // not defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
 
 struct WindowlessContext::Impl {
   Impl(int device) : glContext_({}), magnumGlContext_(NoCreate) {
