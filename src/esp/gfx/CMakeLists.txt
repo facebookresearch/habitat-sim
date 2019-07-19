@@ -40,6 +40,8 @@ target_include_directories(gfx
     "${DEPS_DIR}/glad/include"
 )
 
+target_include_directories(gfx PUBLIC ${GL_TENSOR_INCLUDE_DIRS})
+
 target_link_libraries(gfx
   PUBLIC
     assets

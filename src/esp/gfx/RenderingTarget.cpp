@@ -61,7 +61,7 @@ struct RenderingTarget::Impl {
     framebuffer_.bind();
   }
 
-  void renderExit() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
+  void renderExit() { GL::defaultFramebuffer.bind(); }
 
   gltensor::GLTensorParam::ptr glTensorParam() const {
     auto param = std::make_shared<gltensor::GLTensorParam>();
@@ -182,7 +182,7 @@ void RenderingTarget::readFrameObjectId(uint32_t* ptr) {
   pimpl_->readFrameObjectId(ptr);
 }
 
-const Magnum::Vector2i RenderingTarget::framebufferSize() const {
+Magnum::Vector2i RenderingTarget::framebufferSize() const {
   return pimpl_->framebufferSize();
 }
 

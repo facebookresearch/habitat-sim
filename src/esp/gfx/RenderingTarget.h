@@ -31,7 +31,7 @@ class RenderingTarget {
   void readFrameDepth(float* ptr);
   void readFrameObjectId(uint32_t* ptr);
 
-  const Magnum::Vector2i framebufferSize() const;
+  Magnum::Vector2i framebufferSize() const;
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(RenderingTarget);
 };

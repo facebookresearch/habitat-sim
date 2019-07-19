@@ -394,7 +394,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("render_enter", &RenderingTarget::renderEnter)
       .def("render_exit", &RenderingTarget::renderExit);
 
-#ifdef __ESP_WITH_GL_TENSOR__
+#ifdef __esp_with_gl_tensor__
   m.import("torch");
   m.import("gl_tensor");
   m.attr("gl_tensor_enabled") = true;
@@ -415,7 +415,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node")
       .def("bind_rendering_target", &Sensor::bindRenderingTarget)
       .def_property_readonly("rendering_target", &Sensor::renderingTarget)
-#ifdef __ESP_WITH_GL_TENSOR__
+#ifdef __esp_with_gl_tensor__
       .def_property_readonly("gl_tensor_param", &Sensor::glTensorParam)
 #endif
       ;

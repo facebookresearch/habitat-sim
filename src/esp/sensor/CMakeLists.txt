@@ -8,3 +8,5 @@ target_link_libraries(sensor
     gfx
     scene
 )
+
+target_include_directories(sensor PUBLIC ${GL_TENSOR_INCLUDE_DIRS})

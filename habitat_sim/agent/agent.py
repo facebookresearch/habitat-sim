@@ -14,7 +14,6 @@ import numpy as np
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
 from habitat_sim import utils
-from habitat_sim.logging import logger
 from habitat_sim.sensors import SensorSuite
 
 from .controls import ActuationSpec, ObjectControls
@@ -235,6 +234,3 @@ class Agent(object):
     @state.setter
     def state(self, new_state):
         self.set_state(new_state, reset_sensors=True)
-
-    def __del__(self):
-        logger.info("Deconstructing Agent")

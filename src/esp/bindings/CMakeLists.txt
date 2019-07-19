@@ -15,7 +15,7 @@ target_link_libraries(habitat_sim_bindings
 )
 
 if(WITH_GL_TENSOR)
-  target_compile_definitions(habitat_sim_bindings PRIVATE __ESP_WITH_GL_TENSOR__)
+  target_compile_definitions(habitat_sim_bindings PRIVATE __esp_with_gl_tensor__)
 endif()
 
 # target_include_directories(environment

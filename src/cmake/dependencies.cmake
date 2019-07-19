@@ -11,7 +11,9 @@ find_package(OpenMP)
 # as it sets up various things related to GLVND.
 
 include_directories("deps")
-include_directories("deps/gl_tensor/include")
+
+# GL Tensor
+set(GL_TENSOR_INCLUDE_DIRS ${DEPS_DIR}/gl_tensor/include PARENT)
 
 # Eigen. Use a system package, if preferred.
 if(USE_SYSTEM_EIGEN)
