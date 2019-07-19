@@ -57,22 +57,26 @@ void Sensor::setTransformationFromSpec() {
 }
 
 gltensor::GLTensorParam::ptr Sensor::glTensorParam() const {
-  if (tgt_ == nullptr)
+  if (!hasRenderingTarget())
     throw std::runtime_error("Sensor has no rendering target");
 
   switch (spec_->sensorType) {
     case SensorType::COLOR:
       return tgt_->glTensorParamRgba();
+      break;
 
     case SensorType::DEPTH:
       return tgt_->glTensorParamDepth();
+      break;
 
     case SensorType::SEMANTIC:
       return tgt_->glTensorParamId();
+      break;
 
     default:
       throw std::runtime_error(
           "GLTensor only suppots color, depth, and semantic sensors");
+      break;
   }
 }
 

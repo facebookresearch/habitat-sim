@@ -21,7 +21,7 @@ using namespace Magnum;
 namespace esp {
 namespace gfx {
 struct RenderingTarget::Impl {
-  Impl(WindowlessContext::ptr context, int height, int width)
+  Impl(WindowlessContext::ptr context, int width, int height)
       : context_{context},
         framebufferSize_(width, height),
         colorBuffer_(),
@@ -148,9 +148,9 @@ struct RenderingTarget::Impl {
 };  // namespace gfx
 
 RenderingTarget::RenderingTarget(WindowlessContext::ptr context,
-                                 int height,
-                                 int width)
-    : pimpl_(spimpl::make_unique_impl<Impl>(context, height, width)) {}
+                                 int width,
+                                 int height)
+    : pimpl_(spimpl::make_unique_impl<Impl>(context, width, height)) {}
 
 void RenderingTarget::renderEnter() {
   pimpl_->renderEnter();

@@ -88,12 +88,14 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual Observation getObservation();
 
+  inline bool hasRenderingTarget() const { return tgt_ != nullptr; }
+
   inline void bindRenderingTarget(gfx::RenderingTarget::ptr tgt) {
     this->tgt_ = tgt;
   }
 
   inline gfx::RenderingTarget::ptr renderingTarget() {
-    if (tgt_ == nullptr)
+    if (!hasRenderingTarget())
       throw std::runtime_error("Sensor has no rendering target");
     return tgt_;
   }

@@ -61,7 +61,7 @@ class Simulator {
 
   void saveFrame(const std::string& filename);
 
-  RenderingTarget::ptr createRenderingTarget(int height, int width);
+  RenderingTarget::ptr createRenderingTarget(int width, int height);
 
  protected:
   std::shared_ptr<WindowlessContext> context_ = nullptr;
