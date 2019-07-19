@@ -21,7 +21,7 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
    0. [Performance](#performance)
    0. [Quick installation](#quick-installation)
    0. [Testing](#Testing)
-   0. [GPU-GPU Transfer](#gpu-gpu-transfer)
+   0. [Rendering to GPU Tensors](#rendering-to-gpu-tensors)
    0. [Developer installation and getting started](#developer-installation-and-getting-started)
    0. [Datasets](#datasets)
    0. [Examples](#examples)
@@ -168,6 +168,23 @@ Note that the test scenes do not provide semantic meshes.
 If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)).
 
 We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-api#docker-setup).
+
+## Rendering to GPU Tensors
+
+We support rendering directly to a [PyTorch](https://pytorch.org/) tensor via CUDA-GL Interop.  In order to enable this, you will need to
+install GLTensor via
+
+```bash
+pip install src/deps/gl_tensor
+```
+
+GLTensor requires pytorch to already be installed.
+
+After building GLTensor, re-build habitat-sim with the additional argument `--with-gpu-gpu`, i.e.
+
+```bash
+python setup.py install --with-gpu-gpu
+```
 
 
 
