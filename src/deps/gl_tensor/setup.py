@@ -14,21 +14,19 @@ setup(
             sources=[
                 osp.join(base_dir, s)
                 for s in [
-                    "glad/src/glad.c",
-                    "glad/src/glad_egl.c",
                     "src/binding.cpp",
                     "src/gl_tensor.cpp",
                 ]
             ],
             include_dirs=[
                 osp.join(base_dir, s)
-                for s in ["include", "include/cuda", "glad/include"]
+                for s in ["include", "include/cuda"]
             ],
             library_dirs=[
                 "/usr/lib/x86_64-linux-gnu/",
                 "/usr/lib/x86_64-linux-gnu/nvidia-opengl",
             ],
-            libraries=["GL", "EGL"],
+            libraries=["GL"],
         )
     ],
     cmdclass={"build_ext": BuildExtension},

@@ -1,12 +1,8 @@
 #include <gl_tensor.h>
 
-#include <glad/glad.h>
-#include <glad/glad_egl.h>
-
 #include <cuda_gl_interop.h>
 #include <cuda_runtime.h>
 #include <helper_cuda.h>
-// #include <helper_cuda_gl.h>
 
 #include <torch/extension.h>
 
