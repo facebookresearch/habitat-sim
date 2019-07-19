@@ -183,6 +183,7 @@ jobs:
       - run:
           name: Run sim tests
           command: |
+              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-sim
               export PYTHONPATH=$(pwd)
@@ -200,7 +201,6 @@ jobs:
               fi
               cd habitat-api
               pip install -r requirements.txt --progress-bar off
-              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
       - save_cache:
