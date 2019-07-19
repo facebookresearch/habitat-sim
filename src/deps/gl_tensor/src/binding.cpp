@@ -18,18 +18,11 @@ PYBIND11_MODULE(gl_tensor, m) {
   py::class_<GLTensorParam, GLTensorParam::ptr>(m, "GLTensorParam");
 
   py::class_<GLTensor>(m, "GLTensor")
-      .def("Tensor", &GLTensor::Tensor)
-      .def("Data", &GLTensor::Data,
-           py::return_value_policy::reference_internal)
+      .def("tensor", &GLTensor::Tensor)
       .def("release", &GLTensor::release);
 
   m.def("CudaTensor", &GLTensor::CreateCudaTensor,
         "A function which returns cuda tensor with direct memory mapping");
-  m.def(
-      "Cpu2CudaTensor", &GLTensor::CreateCpu2CudaTensor,
-      "A function which returns cuda tensor with gpu->cpu->gpu memory copying");
-  m.def("CpuTensor", &GLTensor::CreateCpuTensor,
-        "A function which returns cpu tensor");
 
 #ifdef VERSION_INFO
   m.attr("__version__") = VERSION_INFO;

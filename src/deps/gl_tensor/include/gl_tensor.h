@@ -9,15 +9,11 @@ namespace gltensor {
 class GLTensor {
  public:
   static GLTensor* CreateCudaTensor(const GLTensorParam::ptr param);
-  static GLTensor* CreateCpu2CudaTensor(const GLTensorParam::ptr param);
-  static GLTensor* CreateCpuTensor(const GLTensorParam::ptr param);
 
   virtual ~GLTensor();
 
   virtual at::Tensor Tensor();
-  virtual void* Data() const { return data_ptr_; }
-  virtual void release() {};
-
+  virtual void release(){};
 
  protected:
   GLTensor(const GLTensorParam::ptr param);

@@ -36,7 +36,9 @@ GLTensor::GLTensor(const GLTensorParam::ptr param)
   }
 }
 
-GLTensor::~GLTensor() { tensor_.reset(); }
+GLTensor::~GLTensor() {
+  tensor_.reset();
+}
 
 at::Tensor GLTensor::Tensor() {
   Update();
@@ -47,7 +49,7 @@ class CudaTensor : public GLTensor {
  private:
   unsigned int target_;
   int device_id_;
-  cudaGraphicsResource *cuda_graphics_resource_ = nullptr;
+  cudaGraphicsResource* cuda_graphics_resource_ = nullptr;
 
  public:
   CudaTensor(const GLTensorParam::ptr param)
@@ -57,7 +59,7 @@ class CudaTensor : public GLTensor {
     assert(param->device_id_ >= 0);
     assert(param->target_ == GL_RENDERBUFFER ||
            param->target_ == GL_TEXTURE_2D);
-    // checkCudaErrors(cudaGLSetGLDevice(param->device_id_));
+
     checkCudaErrors(cudaSetDevice(param->device_id_));
 
     tensor_ = torch::zeros(
@@ -78,13 +80,11 @@ class CudaTensor : public GLTensor {
 
   virtual ~CudaTensor() { release(); }
 
-  virtual void *Data() const { return nullptr; }
-
  protected:
   void Update() {
     checkCudaErrors(cudaGraphicsMapResources(1, &cuda_graphics_resource_, 0));
 
-    cudaArray *array = nullptr;
+    cudaArray* array = nullptr;
     checkCudaErrors(cudaGraphicsSubResourceGetMappedArray(
         &array, cuda_graphics_resource_, 0, 0));
     checkCudaErrors(cudaMemcpyFromArray(tensor_.data_ptr(), array, 0, 0, size_,
@@ -94,64 +94,8 @@ class CudaTensor : public GLTensor {
   }
 };
 
-class Cpu2CudaTensor : public GLTensor {
- public:
-  Cpu2CudaTensor(const GLTensorParam::ptr param) : GLTensor(param) {
-    assert(param->device_id_ >= 0);
-    checkCudaErrors(cudaSetDevice(param->device_id_));
-    // checkCudaErrors(cudaGLSetGLDevice(param->device_id_));
-    checkCudaErrors(
-        cudaHostAlloc(&data_ptr_, size_, cudaHostAllocWriteCombined));
-    void *devie_data_ptr;
-    checkCudaErrors(cudaHostGetDevicePointer(&devie_data_ptr, data_ptr_, 0));
-    tensor_ = torch::autograd::make_variable(at::from_blob(
-        devie_data_ptr, {height_, width_, channels_}, [](void *) {},
-        at::device(at::Device(at::kCUDA, param->device_id_)).dtype(type_)));
-  }
-
-  ~Cpu2CudaTensor() {
-    if (data_ptr_) {
-      checkCudaErrors(cudaFreeHost(data_ptr_));
-    }
-    cudaDeviceReset();
-  }
-
- protected:
-  void Update() {}
-};
-
-class CpuTensor : public GLTensor {
- private:
-  void *host_data_ptr_;
-
- public:
-  CpuTensor(const GLTensorParam::ptr param) : GLTensor(param) {
-    data_ptr_ = malloc(size_);
-    tensor_ = torch::autograd::make_variable(
-        at::from_blob(data_ptr_, {height_, width_, channels_}, [](void *) {},
-                      at::device(at::kCPU).dtype(type_)));
-  }
-
-  ~CpuTensor() {
-    if (data_ptr_) {
-      free(data_ptr_);
-    }
-  }
-
- protected:
-  void Update() {}
-};
-
-GLTensor *GLTensor::CreateCudaTensor(const GLTensorParam::ptr param) {
+GLTensor* GLTensor::CreateCudaTensor(const GLTensorParam::ptr param) {
   return new CudaTensor(param);
-}
-
-GLTensor *GLTensor::CreateCpu2CudaTensor(const GLTensorParam::ptr param) {
-  return new Cpu2CudaTensor(param);
-}
-
-GLTensor *GLTensor::CreateCpuTensor(const GLTensorParam::ptr param) {
-  return new CpuTensor(param);
 }
 
 }  // namespace gltensor

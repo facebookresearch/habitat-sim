@@ -266,7 +266,7 @@ class Sensor:
             self._sim.renderer.draw(self._sensor_object, scene)
 
             if self._spec.gpu2gpu_transfer:
-                return self._gl_tensor.Tensor().flip(0).squeeze(-1).clone()
+                return self._gl_tensor.tensor().flip(0).squeeze(-1).clone()
             else:
                 if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
                     tgt.read_frame_object_id(self._buffer)
