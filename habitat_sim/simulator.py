@@ -7,9 +7,9 @@
 import os.path as osp
 from typing import Dict, List, Optional
 
-import attr
 import numpy as np
 
+import attr
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
 from habitat_sim import utils
@@ -213,7 +213,7 @@ class Sensor:
         if self._spec.gpu2gpu_transfer:
             assert (
                 hsim.gl_tensor_enabled
-            ), "Must build habitat sim with '--gl-tensor' flag for gpu2gpu-transfer"
+            ), "Must build habitat sim with '--with-gpu-gpu' flag for gpu2gpu-transfer"
 
             import gl_tensor
 
