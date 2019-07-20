@@ -50,15 +50,16 @@ struct RenderingTarget::Impl {
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(GL::FramebufferTarget::Draw) ==
         GL::Framebuffer::Status::Complete);
+
+    GL::Renderer::setClearColor(Magnum::Color4{0, 0, 0, 1});
+    GL::Renderer::setClearDepth(1.0);
   }
 
   void renderEnter() {
     framebuffer_.bind();
 
-    framebuffer_.clearDepth(1.0);
-    framebuffer_.clearColor(0, Magnum::Color4{0, 0, 0, 1.0});
-    framebuffer_.clearColor(1, Magnum::Vector4{});
-    framebuffer_.clearColor(2, Magnum::Vector4ui{});
+    framebuffer_.clear(GL::FramebufferClear::Color |
+                       GL::FramebufferClear::Depth);
   }
 
   void renderExit() {}
