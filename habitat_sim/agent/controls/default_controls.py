@@ -30,7 +30,7 @@ _rotate_local_fns = [
 
 
 def _move_along(scene_node: hsim.SceneNode, distance: float, axis: int):
-    ax = scene_node.absolute_transformation()[axis].xyz
+    ax = scene_node.transformation[axis].xyz
     scene_node.translate_local(ax * distance)
 
 

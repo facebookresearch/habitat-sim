@@ -4,14 +4,13 @@
 
 #include "PTexMeshData.h"
 
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <unistd.h>
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
 #include <vector>
 
+#include <Corrade/Containers/Array.h>
+#include <Corrade/Utility/Directory.h>
 #include <Magnum/GL/BufferTextureFormat.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
@@ -21,14 +20,10 @@
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
-#ifdef __unix__
-#define MAP_PP MAP_PRIVATE | MAP_POPULATE
-#else
-#define MAP_PP MAP_PRIVATE
-#endif
-
 static constexpr int ROTATION_SHIFT = 30;
 static constexpr int FACE_MASK = 0x3FFFFFFF;
+
+namespace Cr = Corrade;
 
 namespace esp {
 namespace assets {
@@ -505,16 +500,16 @@ void PTexMeshData::parsePLY(const std::string& filename,
 
   file.close();
 
+  Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter>
+      mmappedData = Cr::Utility::Directory::mapRead(filename);
+
   const size_t fileSize = io::fileSize(filename);
 
-  int fd = open(filename.c_str(), O_RDONLY, 0);
-  void* mmappedData = mmap(NULL, fileSize, PROT_READ, MAP_PP, fd, 0);
-
   // Parse each vertex packet and unpack
-  char* bytes = &(((char*)mmappedData)[postHeader]);
+  const char* bytes = mmappedData + postHeader;
 
   for (size_t i = 0; i < numVertices; i++) {
-    char* nextBytes = &bytes[vertexPacketSizeBytes * i];
+    const char* nextBytes = bytes + vertexPacketSizeBytes * i;
 
     memcpy(meshData.vbo[i].data(), &nextBytes[positionOffsetBytes],
            positionBytes);
@@ -529,8 +524,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
 
   const size_t bytesSoFar = postHeader + vertexPacketSizeBytes * numVertices;
 
-  bytes =
-      &(((char*)mmappedData)[postHeader + vertexPacketSizeBytes * numVertices]);
+  bytes = mmappedData + postHeader + vertexPacketSizeBytes * numVertices;
 
   // Read first face to get number of indices;
   const uint8_t faceDimensions = *bytes;
@@ -560,15 +554,11 @@ void PTexMeshData::parsePLY(const std::string& filename,
   meshData.ibo.resize(numFaces * faceDimensions);
 
   for (size_t i = 0; i < numFaces; i++) {
-    char* nextBytes = &bytes[facePacketSizeBytes * i];
+    const char* nextBytes = bytes + facePacketSizeBytes * i;
 
     memcpy(&meshData.ibo[i * faceDimensions], &nextBytes[countBytes],
            faceBytes);
   }
-
-  munmap(mmappedData, fileSize);
-
-  close(fd);
 }
 
 void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
@@ -629,21 +619,16 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
               << renderingBuffers_.size() << "... ";
     std::cout.flush();
 
-    const size_t numBytes = io::fileSize(rgbFile);
-    const int dim = static_cast<int>(std::sqrt(numBytes / 3));  // square
-    int fd = open(rgbFile.c_str(), O_RDONLY, 0);
-    void* data = mmap(NULL, numBytes, PROT_READ, MAP_PP, fd, 0);
-    Magnum::Containers::ArrayView<const void> dataView{data, numBytes};
-    Magnum::ImageView2D image(Magnum::PixelFormat::RGB8UI, {dim, dim},
-                              dataView);
+    Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter> data =
+        Cr::Utility::Directory::mapRead(rgbFile);
+    const int dim = static_cast<int>(std::sqrt(data.size() / 3));  // square
+    Magnum::ImageView2D image(Magnum::PixelFormat::RGB8UI, {dim, dim}, data);
     renderingBuffers_[iMesh]
         ->tex.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
         .setMagnificationFilter(Magnum::GL::SamplerFilter::Linear)
         .setMinificationFilter(Magnum::GL::SamplerFilter::Linear)
         // .setStorage(1, GL::TextureFormat::RGB8UI, image.size())
         .setSubImage(0, {}, image);
-    munmap(data, numBytes);
-    close(fd);
   }
   std::cout << "... done" << std::endl;
 
