@@ -1,10 +1,13 @@
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
+//
 
 #include <Magnum/GL/Buffer.h>
+#include <Magnum/GL/BufferImage.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Framebuffer.h>
+#include <Magnum/GL/PixelFormat.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/GL/Renderer.h>
@@ -108,10 +111,12 @@ struct RenderingTarget::Impl {
 
   void readFrameRgba(uint8_t* ptr) {
     framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{0});
+
     Image2D rgbaImage =
         framebuffer_.read(Range2Di::fromSize({0, 0}, framebufferSize_),
                           {PixelFormat::RGBA8Unorm});
     uint8_t* src_ptr = rgbaImage.data<uint8_t>();
+
     std::memcpy(
         ptr, src_ptr,
         framebufferSize_[0] * framebufferSize_[1] * 4 * sizeof(uint8_t));
@@ -119,18 +124,22 @@ struct RenderingTarget::Impl {
 
   void readFrameDepth(float* ptr) {
     framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{1});
+
     Image2D depthImage = framebuffer_.read(
         Range2Di::fromSize({0, 0}, framebufferSize_), {PixelFormat::R32F});
     float* src_ptr = depthImage.data<float>();
+
     std::memcpy(ptr, src_ptr,
                 framebufferSize_[0] * framebufferSize_[1] * sizeof(float));
   }
 
   void readFrameObjectId(uint32_t* ptr) {
     framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{2});
+
     Image2D objectImage = framebuffer_.read(
         Range2Di::fromSize({0, 0}, framebufferSize_), {PixelFormat::R32UI});
     uint32_t* src_ptr = objectImage.data<uint32_t>();
+
     std::memcpy(ptr, src_ptr,
                 framebufferSize_[0] * framebufferSize_[1] * sizeof(uint32_t));
   }

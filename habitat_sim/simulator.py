@@ -213,7 +213,7 @@ class Sensor:
         if self._spec.gpu2gpu_transfer:
             assert (
                 hsim.gl_tensor_enabled
-            ), "Must build habitat sim with '--gl-tensor' flag for gpu2gpu-transfer"
+            ), "Must build habitat sim with '--with-gpu-gpu' flag for gpu2gpu-transfer"
 
             import gl_tensor
 
