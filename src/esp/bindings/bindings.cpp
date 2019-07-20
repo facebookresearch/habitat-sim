@@ -499,9 +499,5 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("seed", &Simulator::seed, R"()", "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a)
       .def("reset", &Simulator::reset, R"()")
-      .def("create_rendering_target",
-           py::overload_cast<int, int>(&Simulator::createRenderingTarget))
-      .def("create_rendering_target",
-           py::overload_cast<const Magnum::Vector2i&>(
-               &Simulator::createRenderingTarget));
+      .def("create_rendering_target", &Simulator::createRenderingTarget);
 }

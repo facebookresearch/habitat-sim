@@ -16,7 +16,7 @@ namespace gfx {
 
 class RenderingTarget {
  public:
-  RenderingTarget(WindowlessContext::ptr context, int width, int height);
+  RenderingTarget(WindowlessContext::ptr context, const Magnum::Vector2i& size);
 
   ~RenderingTarget() { LOG(INFO) << "Deconstructing RenderingTarget"; }
 
