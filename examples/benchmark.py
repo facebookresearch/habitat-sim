@@ -24,7 +24,7 @@ parser.add_argument(
     "--resolution",
     type=int,
     nargs="+",
-    default=[64, 128, 256, 512, 1024],
+    default=[128, 256, 512],
     help="Resolution r for frame (r x r).",
 )
 parser.add_argument(
@@ -110,7 +110,7 @@ for nproc, performance in performance_all.items():
     )
 
 
-with open("regular_perf.json", "w") as f:
+with open("gpu2cpu_perf.json", "w") as f:
     import json
 
     json.dump(performance_all, f)

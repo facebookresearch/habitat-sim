@@ -110,13 +110,14 @@ class DemoRunner:
                 print("action", action)
             observations = self._sim.step(action)
 
-            import torch
+            if False:
+                import torch
 
-            for k, v in observations.items():
-                if isinstance(v, np.ndarray):
-                    if v.dtype == np.uint32:
-                        v = v.astype(np.int32)
-                    observations[k] = torch.from_numpy(v).to("cuda")
+                for k, v in observations.items():
+                    if isinstance(v, np.ndarray):
+                        if v.dtype == np.uint32:
+                            v = v.astype(np.int32)
+                        observations[k] = torch.from_numpy(v).to("cuda")
 
             if self._sim_settings["save_png"]:
                 if self._sim_settings["color_sensor"]:

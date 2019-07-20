@@ -166,7 +166,7 @@ class Simulator:
     def step(self, action):
         self._num_total_frames += 1
         collided = self._default_agent.act(action)
-        self._last_state = self._default_agent.get_state()
+        #  self._last_state = self._default_agent.get_state()
 
         observations = self.get_sensor_observations()
         # Whether or not the action taken resulted in a collision
@@ -278,14 +278,14 @@ class Sensor:
             self._sim.renderer.draw(self._sensor_object, scene)
 
             if self._spec.gpu2gpu_transfer:
-                return self._gl_tensor.tensor().flip(0).squeeze(-1).clone()
+                return self._gl_tensor.tensor().flip(0).squeeze(-1)
             else:
                 if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
                     tgt.read_frame_object_id(self._buffer)
-                    return np.flip(self._buffer, axis=0).copy()
+                    return np.flip(self._buffer, axis=0)
                 elif self._spec.sensor_type == hsim.SensorType.DEPTH:
                     tgt.read_frame_depth(self._buffer)
-                    return np.flip(self._buffer, axis=0).copy()
+                    return np.flip(self._buffer, axis=0)
                 else:
                     tgt.read_frame_rgba(self._buffer)
                     return np.flip(
@@ -297,7 +297,7 @@ class Sensor:
                             )
                         ),
                         axis=0,
-                    ).copy()
+                    )
 
     def __del__(self):
         if self._gl_tensor is not None:
