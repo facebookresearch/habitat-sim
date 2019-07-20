@@ -1,10 +1,14 @@
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
+//
+#include <Corrade/configure.h>
 
 #include <Magnum/GL/Buffer.h>
+#include <Magnum/GL/BufferImage.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Framebuffer.h>
+#include <Magnum/GL/PixelFormat.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
 #include <Magnum/GL/Renderer.h>
@@ -28,7 +32,14 @@ struct RenderingTarget::Impl {
         depthBuffer_(),
         objectIdBuffer_(),
         depthRenderbuffer_(),
-        framebuffer_(Magnum::NoCreate) {
+        framebuffer_(Magnum::NoCreate)
+#if defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
+        ,
+        colorPixelBuffer_(GL::PixelFormat::RGBA, GL::PixelType::UnsignedByte),
+        depthPixelBuffer_(GL::PixelFormat::Red, GL::PixelType::Float),
+        objectIdPixelBuffer_(GL::PixelFormat::Red, GL::PixelType::UnsignedInt)
+#endif
+  {
     colorBuffer_.setStorage(GL::RenderbufferFormat::SRGB8Alpha8,
                             framebufferSize_);
     depthBuffer_.setStorage(GL::RenderbufferFormat::R32F, framebufferSize_);
@@ -108,10 +119,18 @@ struct RenderingTarget::Impl {
 
   void readFrameRgba(uint8_t* ptr) {
     framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{0});
+
+#if defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
+    framebuffer_.read(Range2Di::fromSize({0, 0}, framebufferSize_),
+                      colorPixelBuffer_, GL::BufferUsage::StreamRead);
+    auto src_ptr = colorPixelBuffer_.buffer().data();
+#else
     Image2D rgbaImage =
         framebuffer_.read(Range2Di::fromSize({0, 0}, framebufferSize_),
                           {PixelFormat::RGBA8Unorm});
     uint8_t* src_ptr = rgbaImage.data<uint8_t>();
+#endif
+
     std::memcpy(
         ptr, src_ptr,
         framebufferSize_[0] * framebufferSize_[1] * 4 * sizeof(uint8_t));
@@ -119,18 +138,34 @@ struct RenderingTarget::Impl {
 
   void readFrameDepth(float* ptr) {
     framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{1});
+
+#if defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
+    framebuffer_.read(Range2Di::fromSize({0, 0}, framebufferSize_),
+                      depthPixelBuffer_, GL::BufferUsage::StreamRead);
+    auto src_ptr = depthPixelBuffer_.buffer().data();
+#else
     Image2D depthImage = framebuffer_.read(
         Range2Di::fromSize({0, 0}, framebufferSize_), {PixelFormat::R32F});
     float* src_ptr = depthImage.data<float>();
+#endif
+
     std::memcpy(ptr, src_ptr,
                 framebufferSize_[0] * framebufferSize_[1] * sizeof(float));
   }
 
   void readFrameObjectId(uint32_t* ptr) {
     framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{2});
+
+#if defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
+    framebuffer_.read(Range2Di::fromSize({0, 0}, framebufferSize_),
+                      objectIdPixelBuffer_, GL::BufferUsage::StreamRead);
+    auto src_ptr = objectIdPixelBuffer_.buffer().data();
+#else
     Image2D objectImage = framebuffer_.read(
         Range2Di::fromSize({0, 0}, framebufferSize_), {PixelFormat::R32UI});
     uint32_t* src_ptr = objectImage.data<uint32_t>();
+#endif
+
     std::memcpy(ptr, src_ptr,
                 framebufferSize_[0] * framebufferSize_[1] * sizeof(uint32_t));
   }
@@ -146,6 +181,12 @@ struct RenderingTarget::Impl {
   Magnum::GL::Renderbuffer objectIdBuffer_;
   Magnum::GL::Renderbuffer depthRenderbuffer_;
   Magnum::GL::Framebuffer framebuffer_;
+
+#if defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
+  Magnum::GL::BufferImage2D colorPixelBuffer_;
+  Magnum::GL::BufferImage2D depthPixelBuffer_;
+  Magnum::GL::BufferImage2D objectIdPixelBuffer_;
+#endif
 };  // namespace gfx
 
 RenderingTarget::RenderingTarget(WindowlessContext::ptr context,
