@@ -78,6 +78,10 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   SensorSpec::ptr specification() const { return spec_; }
 
+  inline Magnum::Vector2i framebufferSize() const {
+    return {spec_->resolution[1], spec_->resolution[0]};
+  }
+
   // can be called ONLY when it is attached to a scene node
   virtual void setTransformationFromSpec();
 
@@ -91,6 +95,8 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
   inline bool hasRenderingTarget() const { return tgt_ != nullptr; }
 
   inline void bindRenderingTarget(gfx::RenderingTarget::ptr tgt) {
+    if (tgt->framebufferSize() != framebufferSize())
+      throw std::runtime_error("RenderingTarget is not the correct size");
     this->tgt_ = tgt;
   }
 

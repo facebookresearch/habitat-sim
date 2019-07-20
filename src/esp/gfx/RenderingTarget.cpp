@@ -61,7 +61,10 @@ struct RenderingTarget::Impl {
     framebuffer_.bind();
   }
 
-  void renderExit() { GL::defaultFramebuffer.bind(); }
+  void renderExit() {
+    // TODO Decide of this is needed
+    // GL::defaultFramebuffer.bind();
+  }
 
   gltensor::GLTensorParam::ptr glTensorParam() const {
     auto param = std::make_shared<gltensor::GLTensorParam>();

@@ -414,6 +414,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node")
       .def("bind_rendering_target", &Sensor::bindRenderingTarget)
+      .def_property_readonly("framebuffer_size", &Sensor::framebufferSize)
       .def_property_readonly("rendering_target", &Sensor::renderingTarget)
 #ifdef ESP_WITH_GL_TENSOR
       .def_property_readonly("gl_tensor_param", &Sensor::glTensorParam)
@@ -498,5 +499,9 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("seed", &Simulator::seed, R"()", "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a)
       .def("reset", &Simulator::reset, R"()")
-      .def("create_rendering_target", &Simulator::createRenderingTarget);
+      .def("create_rendering_target",
+           py::overload_cast<int, int>(&Simulator::createRenderingTarget))
+      .def("create_rendering_target",
+           py::overload_cast<const Magnum::Vector2i&>(
+               &Simulator::createRenderingTarget));
 }
