@@ -7,9 +7,9 @@
 import os.path as osp
 from typing import Dict, List, Optional
 
+import attr
 import numpy as np
 
-import attr
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
 from habitat_sim import utils
