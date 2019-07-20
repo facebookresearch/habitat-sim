@@ -110,7 +110,7 @@ for nproc, performance in performance_all.items():
     )
 
 
-with open("gpu2cpu_perf.json", "w") as f:
+with open("gpu2cpu2gpu_perf.json", "w") as f:
     import json
 
     json.dump(performance_all, f)

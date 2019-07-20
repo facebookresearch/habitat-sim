@@ -101,6 +101,7 @@ class DemoRunner:
         action_names = list(
             self._cfg.agents[self._sim_settings["default_agent"]].action_space.keys()
         )
+        buffers = {}
 
         while total_frames < self._sim_settings["max_frames"]:
             if total_frames == 1:
@@ -110,14 +111,19 @@ class DemoRunner:
                 print("action", action)
             observations = self._sim.step(action)
 
-            if False:
+            if True:
                 import torch
 
                 for k, v in observations.items():
                     if isinstance(v, np.ndarray):
                         if v.dtype == np.uint32:
                             v = v.astype(np.int32)
-                        observations[k] = torch.from_numpy(v).to("cuda")
+                        v = np.ascontiguousarray(v)
+
+                        if k not in buffers:
+                            buffers[k] = torch.from_numpy(v).to("cuda")
+                        else:
+                            buffers[k].copy_(torch.from_numpy(v))
 
             if self._sim_settings["save_png"]:
                 if self._sim_settings["color_sensor"]:
@@ -210,7 +216,7 @@ class DemoRunner:
         self.init_common()
 
         best_perf = None
-        for _ in range(3):
+        for i in range(11):
 
             if _barrier is not None:
                 _barrier.wait()
@@ -225,7 +231,7 @@ class DemoRunner:
             # the kernel never interrupted the workers, but this isn't
             # feasible, so we just take the run with the least number of
             # interrupts (the fastest) instead.
-            if best_perf is None or perf["fps"] > best_perf["fps"]:
+            if i > 0 and (best_perf is None or perf["fps"] > best_perf["fps"]):
                 best_perf = perf
 
         self._sim.close()
