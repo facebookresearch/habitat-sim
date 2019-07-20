@@ -21,9 +21,9 @@ using namespace Magnum;
 namespace esp {
 namespace gfx {
 struct RenderingTarget::Impl {
-  Impl(WindowlessContext::ptr context, int width, int height)
+  Impl(WindowlessContext::ptr context, const Magnum::Vector2i& size)
       : context_{context},
-        framebufferSize_(width, height),
+        framebufferSize_(size),
         colorBuffer_(),
         depthBuffer_(),
         objectIdBuffer_(),
@@ -54,20 +54,20 @@ struct RenderingTarget::Impl {
 
   void renderEnter() {
     framebuffer_.bind();
-    framebuffer_.clear(GL::FramebufferClear::Color |
-                       GL::FramebufferClear::Depth);
-    framebuffer_.clearColor(1, Vector4{});
-    framebuffer_.clearColor(2, Vector4ui{});
-    framebuffer_.bind();
+
+    framebuffer_.clearDepth(1.0);
+    framebuffer_.clearColor(0, Magnum::Color4{0, 0, 0, 1.0});
+    framebuffer_.clearColor(1, Magnum::Vector4{});
+    framebuffer_.clearColor(2, Magnum::Vector4ui{});
   }
 
-  void renderExit() { GL::defaultFramebuffer.bind(); }
+  void renderExit() {}
 
   gltensor::GLTensorParam::ptr glTensorParam() const {
     auto param = std::make_shared<gltensor::GLTensorParam>();
 
-    param->height_ = framebufferSize_[1];
-    param->width_ = framebufferSize_[0];
+    param->height_ = framebufferSize_.y();
+    param->width_ = framebufferSize_.x();
 
     param->target_ = GL_RENDERBUFFER;
     param->device_id_ = context_->gpuDevice();
@@ -148,9 +148,8 @@ struct RenderingTarget::Impl {
 };  // namespace gfx
 
 RenderingTarget::RenderingTarget(WindowlessContext::ptr context,
-                                 int width,
-                                 int height)
-    : pimpl_(spimpl::make_unique_impl<Impl>(context, width, height)) {}
+                                 const Magnum::Vector2i& size)
+    : pimpl_(spimpl::make_unique_impl<Impl>(context, size)) {}
 
 void RenderingTarget::renderEnter() {
   pimpl_->renderEnter();

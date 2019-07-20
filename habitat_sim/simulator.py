@@ -207,9 +207,7 @@ class Sensor:
 
         # NB: Graphics APIs tend to use H x W, so use that here
         self._sensor_object.bind_rendering_target(
-            self._sim.create_rendering_target(
-                self._spec.resolution[1], self._spec.resolution[0]
-            )
+            self._sim.create_rendering_target(self._sensor_object.framebuffer_size)
         )
 
         if self._spec.gpu2gpu_transfer:

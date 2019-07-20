@@ -414,6 +414,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node")
       .def("bind_rendering_target", &Sensor::bindRenderingTarget)
+      .def_property_readonly("framebuffer_size", &Sensor::framebufferSize)
       .def_property_readonly("rendering_target", &Sensor::renderingTarget)
 #ifdef ESP_WITH_GL_TENSOR
       .def_property_readonly("gl_tensor_param", &Sensor::glTensorParam)
