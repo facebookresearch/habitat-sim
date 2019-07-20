@@ -24,7 +24,7 @@ parser.add_argument(
     "--resolution",
     type=int,
     nargs="+",
-    default=[128, 256, 512],
+    default=[64, 128, 256, 512, 1024],
     help="Resolution r for frame (r x r).",
 )
 parser.add_argument(
@@ -52,6 +52,7 @@ default_settings["print_semantic_scene"] = False
 default_settings["print_semantic_mask_stats"] = False
 default_settings["compute_shortest_path"] = False
 default_settings["compute_action_shortest_path"] = False
+default_settings["gpu2gpu"] = False
 
 default_settings["max_frames"] = args.max_frames
 
@@ -107,3 +108,9 @@ for nproc, performance in performance_all.items():
     print(
         " =============================================================================="
     )
+
+
+with open("regular_perf.json", "w") as f:
+    import json
+
+    json.dump(performance_all, f)

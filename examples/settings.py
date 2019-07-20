@@ -42,16 +42,19 @@ def make_cfg(settings):
             "sensor_type": hsim.SensorType.COLOR,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
+            "gpu2pgu": settings.get("gpu2gpu", False),
         },
         "depth_sensor": {  # active if sim_settings["depth_sensor"]
             "sensor_type": hsim.SensorType.DEPTH,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
+            "gpu2pgu": settings.get("gpu2gpu", False),
         },
         "semantic_sensor": {  # active if sim_settings["semantic_sensor"]
             "sensor_type": hsim.SensorType.SEMANTIC,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
+            "gpu2pgu": settings.get("gpu2gpu", False),
         },
     }
 
@@ -64,7 +67,7 @@ def make_cfg(settings):
             sensor_spec.sensor_type = sensor_params["sensor_type"]
             sensor_spec.resolution = sensor_params["resolution"]
             sensor_spec.position = sensor_params["position"]
-            sensor_spec.gpu2gpu_transfer = False
+            sensor_spec.gpu2gpu_transfer = sensor_params["gpu2pgu"]
             if not settings["silent"]:
                 print("==== Initialized Sensor Spec: =====")
                 print("Sensor uuid: ", sensor_spec.uuid)
