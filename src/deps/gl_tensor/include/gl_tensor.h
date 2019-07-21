@@ -8,7 +8,7 @@ namespace gltensor {
 
 class GLTensor {
  public:
-  static GLTensor* CreateCudaTensor(const GLTensorParam::ptr param);
+  static GLTensor* CreateCudaTensor(const GLTensorParam::ptr param, at::Tensor);
 
   virtual ~GLTensor();
 
@@ -16,7 +16,7 @@ class GLTensor {
   virtual void release(){};
 
  protected:
-  GLTensor(const GLTensorParam::ptr param);
+  GLTensor(const GLTensorParam::ptr param, at::Tensor);
   unsigned int image_;
   unsigned int width_;
   unsigned int height_;

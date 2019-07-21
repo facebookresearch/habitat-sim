@@ -8,12 +8,13 @@
 
 namespace gltensor {
 
-GLTensor::GLTensor(const GLTensorParam::ptr param)
+GLTensor::GLTensor(const GLTensorParam::ptr param, at::Tensor tensor)
     : image_(param->image_),
       width_(param->width_),
       height_(param->height_),
       channels_(param->channels_),
-      data_ptr_(nullptr) {
+      data_ptr_(nullptr),
+      tensor_(tensor) {
   assert(image_ != 0);
   assert(width_ > 0 && height_ > 0);
   size_ = channels_ * width_ * height_;
@@ -52,8 +53,8 @@ class CudaTensor : public GLTensor {
   cudaGraphicsResource* cuda_graphics_resource_ = nullptr;
 
  public:
-  CudaTensor(const GLTensorParam::ptr param)
-      : GLTensor(param),
+  CudaTensor(const GLTensorParam::ptr param, at::Tensor tensor)
+      : GLTensor(param, tensor),
         target_{param->target_},
         device_id_{param->device_id_} {
     assert(param->device_id_ >= 0);
@@ -61,10 +62,6 @@ class CudaTensor : public GLTensor {
            param->target_ == GL_TEXTURE_2D);
 
     checkCudaErrors(cudaSetDevice(param->device_id_));
-
-    tensor_ = torch::zeros(
-        {height_, width_, channels_},
-        at::device(at::Device(at::kCUDA, device_id_)).dtype(type_));
 
     checkCudaErrors(
         cudaGraphicsGLRegisterImage(&cuda_graphics_resource_, image_, target_,
@@ -94,8 +91,8 @@ class CudaTensor : public GLTensor {
   }
 };
 
-GLTensor* GLTensor::CreateCudaTensor(const GLTensorParam::ptr param) {
-  return new CudaTensor(param);
+GLTensor* GLTensor::CreateCudaTensor(const GLTensorParam::ptr param, at::Tensor tensor) {
+  return new CudaTensor(param, tensor);
 }
 
 }  // namespace gltensor

@@ -15,7 +15,11 @@ PYBIND11_MODULE(gl_tensor, m) {
            :toctree: _generate
     )pbdoc";
 
-  py::class_<GLTensorParam, GLTensorParam::ptr>(m, "GLTensorParam");
+  py::class_<GLTensorParam, GLTensorParam::ptr>(m, "GLTensorParam")
+      .def_readonly("device_id", &GLTensorParam::device_id_)
+      .def_readonly("width", &GLTensorParam::width_)
+      .def_readonly("height", &GLTensorParam::height_)
+      .def_readonly("channels", &GLTensorParam::channels_);
 
   py::class_<GLTensor>(m, "GLTensor")
       .def("tensor", &GLTensor::Tensor)

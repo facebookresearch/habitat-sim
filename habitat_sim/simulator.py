@@ -215,9 +215,26 @@ class Sensor:
                 hsim.gl_tensor_enabled
             ), "Must build habitat sim with '--with-gpu-gpu' flag for gpu2gpu-transfer"
 
+            import torch
             import gl_tensor
 
-            self._gl_tensor = gl_tensor.CudaTensor(self._sensor_object.gl_tensor_param)
+            resolution = self._spec.resolution
+            if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                _type = torch.int32
+            elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+                _type = torch.float32
+            else:
+                _type = torch.uint8
+
+            tensor_param = self._sensor_object.gl_tensor_param
+            _buffer = torch.empty(
+                tensor_param.height,
+                tensor_param.width,
+                tensor_param.channels,
+                device=torch.device("cuda", tensor_param.device_id),
+                dtype=_type,
+            )
+            self._gl_tensor = gl_tensor.CudaTensor(tensor_param, _buffer)
         else:
             if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
                 self._buffer = np.empty(
