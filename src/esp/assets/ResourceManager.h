@@ -119,6 +119,7 @@ class ResourceManager {
 
   PhysicsObjectMetaData& getPhysicsMetaData(const std::string configFile); 
 
+
  protected:
   //======== Scene Functions ========
   //! Instantiate Scene:
@@ -167,7 +168,6 @@ class ResourceManager {
                            scene::SceneNode* parent = nullptr, 
                            DrawableGroup* drawables = nullptr,
                            bool shiftOrigin         = false);
-
 
   bool loadSUNCGHouseFile(const AssetInfo& info,
                           scene::SceneNode* parent,

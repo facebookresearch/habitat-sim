@@ -216,6 +216,7 @@ bool ResourceManager::loadScene(
       LOG(INFO) << "Physics manager failed to initialize object";
       return false;
     }
+
   }
   return meshSuccess;
 }
@@ -517,6 +518,7 @@ int ResourceManager::loadDefaultObject(
 
   return objectID;
 }
+
 
 void ResourceManager::transformAxis(
     const AssetInfo& info,
