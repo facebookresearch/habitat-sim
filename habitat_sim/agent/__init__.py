@@ -6,4 +6,3 @@
 
 from .agent import *
 from .controls import *
-from .default_controls import *

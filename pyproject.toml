@@ -2,8 +2,8 @@
 skip_glob = ["*/deps/*", "*/build/*", "*/obselete/*"]
 known_third_party = ["corrade", "magnum"]
 multi_line_output = 3
-force_grid_wrap = 0
-line_width = 88
+force_grid_wrap = false
+line_length = 88
 include_trailing_comma = true
 
 [tool.black]
