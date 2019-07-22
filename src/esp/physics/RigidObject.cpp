@@ -99,13 +99,17 @@ bool RigidObject::initializeScene(
     //! btBvhTriangleMeshShape is the most generic/slow choice
     bSceneShapes_.emplace_back(std::make_unique<btBvhTriangleMeshShape>(
         bSceneArray_.get(), true));
+    double mass = 0.0;
+    btVector3 bInertia(0.0, 0.0, 0.0);
+    bSceneShapes_.back()->calculateLocalInertia(mass, bInertia);
 
     //! Bullet rigid body setup
     bSceneCollisionObjects_.emplace_back(std::make_unique<btCollisionObject>());
     bSceneCollisionObjects_.back()->setCollisionShape(bSceneShapes_.back().get());
-    bSceneCollisionObjects_.back()->setCollisionFlags(
+    /*bSceneCollisionObjects_.back()->setCollisionFlags(
         bSceneCollisionObjects_.back()->getCollisionFlags() |
-        btCollisionObject::CF_STATIC_OBJECT);
+        btCollisionObject::CF_STATIC_OBJECT);*/
+
     bWorld.addCollisionObject(bSceneCollisionObjects_.back().get());
   }
 
@@ -185,11 +189,14 @@ bool RigidObject::initializeObject(
     bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
   }
 
-  //bObjectShape_->calculateLocalInertia(mass, bInertia);
-  
+  //! Set properties
+  bObjectShape_->setMargin(margin);
+  btVector3 bInertia  = btVector3(metaData.inertia);
+  LOG(INFO) << "Object inertia " << bInertia.x() << " " << bInertia.y();
+  LOG(INFO) << "Object inertia " << metaData.inertia.x() << " " << metaData.inertia.y();
+
   //! Bullet rigid body setup
   bObjectMotionState_ = new Magnum::BulletIntegration::MotionState(*this);
-  btVector3 bInertia  = btVector3(metaData.intertia);
   btRigidBody::btRigidBodyConstructionInfo info = 
       btRigidBody::btRigidBodyConstructionInfo(metaData.mass, 
       &(bObjectMotionState_->btMotionState()), 
@@ -198,8 +205,8 @@ bool RigidObject::initializeObject(
   info.m_restitution    = metaData.restitutionCoefficient;
   info.m_linearDamping  = metaData.linDamping;
   info.m_angularDamping = metaData.angDamping;
-  //Magnum::Vector3 intertia = metaData.intertia;
-  //info.m_localInertia   = bInertia(intertia.x(), intertia.y(), intertia.z());
+  //Magnum::Vector3 inertia = metaData.inertia;
+  //info.m_localInertia   = bInertia(inertia.x(), inertia.y(), inertia.z());
 
   //! Create rigid body
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
@@ -279,14 +286,14 @@ RigidObject::~RigidObject() {
 }
 
 void RigidObject::applyForce(Magnum::Vector3 force,
-                                   Magnum::Vector3 relPos) {
+                             Magnum::Vector3 relPos) {
   if (isScene_ || !initialized_) {return;}
   //! dynamic_cast is safe
   bObjectRigidBody_->applyForce(btVector3(force), btVector3(relPos));
 }
 
 void RigidObject::applyImpulse(Magnum::Vector3 impulse,
-                                     Magnum::Vector3 relPos) {
+                               Magnum::Vector3 relPos) {
   if (isScene_ || !initialized_) {return;}
   bObjectRigidBody_->applyImpulse(btVector3(impulse), btVector3(relPos));
 }

@@ -44,10 +44,13 @@ Viewer::Viewer(const Arguments& arguments)
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addBooleanOption("enable-physics")
+      .addOption("physicsConfig", "./data/default.phys_scene_config.json")
+      .setHelp("physicsConfig", "physics scene config file")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
   enablePhysics_ = args.isSet("enable-physics");
+  std::string physicsConfigFilename = args.value("physicsConfig");
 
   // Setup renderer and shader defaults
   GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
@@ -59,28 +62,33 @@ Viewer::Viewer(const Arguments& arguments)
   rootNode = &sceneGraph->getRootNode();
   navSceneNode_ = &rootNode->createChild();
 
-  if (enablePhysics_) {
-    // ======= Init timestep, physics starts =======
-    physicsManager_.initPhysics(navSceneNode_, do_profile_);
-  }
-
   auto& drawables = sceneGraph->getDrawables();
   const std::string& file = args.value("file");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
   LOG(INFO) << "Nav scene node (before) " << navSceneNode_;
-  if (!resourceManager_.loadScene(info, navSceneNode_, &drawables, 
-      &physicsManager_, enablePhysics_)) {
-    LOG(ERROR) << "cannot load " << file;
-    std::exit(0);
+  
+  if (enablePhysics_) {
+    if (!resourceManager_.loadScene(info, navSceneNode_, &drawables, 
+      &physicsManager_)) {
+      LOG(ERROR) << "cannot load " << file;
+      std::exit(0);      
+    }
+  }else{
+    //render only scene
+    if (!resourceManager_.loadScene(info, navSceneNode_, &drawables)) {
+      LOG(ERROR) << "cannot load " << file;
+      std::exit(0);
+    }
   }
 
-  // camera
+  LOG(INFO) << "Nav scene node (done) " << navSceneNode_;
+
+  // Set up camera
   renderCamera_ = &sceneGraph->getDefaultRenderCamera();
   agentBodyNode_ = &rootNode->createChild();
   cameraNode_ = &agentBodyNode_->createChild();
 
   cameraNode_->translate({0.0f, cameraHeight, 0.0f});
-
   agentBodyNode_->translate({0.0f, 0.0f, 5.0f});
 
   float hfov = 90.0f;
@@ -130,50 +138,32 @@ Viewer::Viewer(const Arguments& arguments)
   } else {
     const vec3f position = pathfinder_->getRandomNavigablePoint();
     agentBodyNode_->setTranslation(Vector3(position));
-
-    LOG(INFO) << "Viewer initialization is done. ";
-    renderCamera_->node().setTransformation(
-        cameraNode_->absoluteTransformation());
-    const vec3f position = pathfinder_->getRandomNavigablePoint();
-    agentBodyNode_->setTranslation(Vector3(position));
   }
   //std::string object_file(args.value("obj"));
-
   renderCamera_->node().setTransformation(cameraNode_->transformation());
 
-  //! Load cheezit object
-  std::string object_file("./data/objects/cheezit.glb");
-  std::string object_config("./data/objects/cheezit.config");
-  //! Do not draw or instantiate
-  cheezitID = resourceManager_.loadObject(object_config, nullptr, nullptr);
-  for (int o = 0; o < numObjects_; o++) {
-    addObject(cheezitID);
-  }
-  LOG(INFO) << "Viewer initialization is done. ";
-
-  // connect controls to navmesh if loaded
-  if (pathfinder_->isLoaded()) {
-    controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
-      vec3f currentPosition = pathfinder_->tryStep(start, end);
-      LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
-                << quatf(agentBodyNode_->rotation()).coeffs().transpose();
-      LOG(INFO) << "Distance to closest obstacle: "
-                << pathfinder_->distanceToClosestObstacle(currentPosition);
-      return currentPosition;
-    });
+  if (enablePhysics_) {
+    for (int o = 0; o < numObjects_; o++) {
+      addObject("data/objects/cheezit.phys_properties.json");
+    }
+    LOG(INFO) << "Viewer initialization is done. ";    
+  } else {
+    // connect controls to navmesh if loaded
+    if (pathfinder_->isLoaded()) {
+      controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
+        vec3f currentPosition = pathfinder_->tryStep(start, end);
+        LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
+                  << quatf(agentBodyNode_->rotation()).coeffs().transpose();
+        LOG(INFO) << "Distance to closest obstacle: "
+                  << pathfinder_->distanceToClosestObstacle(currentPosition);
+        return currentPosition;
+      });
+    }
   }
 }  // namespace gfx
 
 
-void Viewer::addObject(int resourceObjectID) {
-  if (resourceObjectID < 0) {
-    std::exit(0);
-  }
-  if (enablePhysics_) {
-    // TODO (JH) swap interval
-    // setSwapInterval(1);   // Loop at 60 Hz max
-  }
-
+void Viewer::addObject(std::string configFile) {
   Magnum::Matrix4 T = agentBodyNode_
       ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 new_pos = T.transformPoint({0.0f, 0.0f, 0.0f});
@@ -193,10 +183,11 @@ void Viewer::addObject(int resourceObjectID) {
   LOG(INFO) << "Camera transformation " << Eigen::Map<mat4f>(T.data());
 
   auto& drawables = sceneGraph->getDrawables();
+  LOG(INFO) << "Before add drawables";
   int physObjectID = physicsManager_.addObject(
-      resourceObjectID, navSceneNode_, 
-      physics::PhysicalObjectType::DYNAMIC, &drawables);
+      configFile, physics::PhysicalObjectType::DYNAMIC, &drawables);
   physicsManager_.setTranslation(physObjectID, new_pos);
+  LOG(INFO) << "After add drawables";
   lastObjectID += 1;
 }
 
@@ -231,6 +222,7 @@ Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
 }
 
 void Viewer::drawEvent() {
+  LOG(INFO) << "drawEvent ";
   GL::defaultFramebuffer.clear(GL::FramebufferClear::Color |
                                GL::FramebufferClear::Depth);
   if (sceneID_.size() <= 0)
@@ -359,7 +351,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       controls_(*agentBodyNode_, "moveUp", moveSensitivity, false);
       break;
     case KeyEvent::Key::O:
-      addObject(cheezitID);
+      addObject("data/objects/cheezit.phys_properties.json");
       break;
     case KeyEvent::Key::P:
       pokeLastObject();

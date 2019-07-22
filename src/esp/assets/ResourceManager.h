@@ -81,44 +81,46 @@ class ResourceManager {
                  scene::SceneNode* parent                 = nullptr,
                  DrawableGroup* drawables                 = nullptr,
                  physics::PhysicsManager* _physicsManager = nullptr,
-                 bool attach_physics                      = false);
+                 std::string physicsFilename              = "data/default.phys_scene_config.json");
 
   //! Load Object data and store internally
   //! Does not instantiate (physics & drawable)
   //! Return index in physicsObjectList_
-  int loadObject(const std::string object_config,
-                 scene::SceneNode* parent                 = nullptr,
-                 DrawableGroup* drawables                 = nullptr);
+  int loadObject(const std::string objPhysConfigFilename,
+                 scene::SceneNode* parent,
+                 DrawableGroup* drawables);
 
+  //load an object into the physicsObjectLibrary_ from a physics properties filename
+  int loadObject(const std::string objPhysConfigFilename);
+
+  //load an object into the physicsObjectLibrary_ with default physical parameters from absolute path to mesh files
+  int loadDefaultObject(const std::string renderMeshFilename, 
+                        const std::string collisionMeshFilename="");
+
+  //! Create object with either ID or configFile name, 
+  //! e.g. "data/cheezit.phys_properties.json"
   int addObject(const int objectID,
                 scene::SceneNode* parent,
                 DrawableGroup* drawables);
 
-  int addObject(const std::string objectKey,
+  int addObject(const std::string configFile,
                 scene::SceneNode* parent,
                 DrawableGroup* drawables);
 
   //======== Accessor functions ========
   std::vector<assets::CollisionMeshData> getCollisionMesh(
-      const std::string keyName);
+      const std::string configFile);
 
   std::vector<assets::CollisionMeshData> getCollisionMesh(
       const int objectID);
 
-  int getObjectID(std::string keyName);
-  std::string getObjectKeyName(int objectID);
+  int getObjectID(std::string configFile);
   std::string getObjectConfig(int objectID);
 
-  PhysicsObjectMetaData& getPhysicsMetaData(
-      const std::string objectName); 
+  PhysicsObjectMetaData& getPhysicsMetaData(const std::string configFile); 
 
  protected:
   //======== Scene Functions ========
-  //! Load data from given AssetInfo descriptor, and store internally
-  bool loadSceneData(const AssetInfo& info,
-                     scene::SceneNode* parent = nullptr,
-                     DrawableGroup* drawables = nullptr);
-
   //! Instantiate Scene:
   //! (1) create scene node
   //! (2) upload mesh to gpu and drawables 
@@ -162,17 +164,10 @@ class ResourceManager {
                             DrawableGroup* drawables);
 
   bool loadGeneralMeshData(const AssetInfo& info,
-                           scene::SceneNode* parent,
-                           DrawableGroup* drawables,
-                           bool shiftOrigin = false);
+                           scene::SceneNode* parent = nullptr, 
+                           DrawableGroup* drawables = nullptr,
+                           bool shiftOrigin         = false);
 
-  //! Subfunction of loadGeneralMeshData: Instantiate render componenet
-  //! Include: (1) Create scene node (2) Create drawables
-  //! Usage: (1) Create scene (2) Create object instance
-  /*bool addComponent(Importer& importer,
-                    const AssetInfo& info,
-                    scene::SceneNode* parent,
-                    DrawableGroup* drawables);*/
 
   bool loadSUNCGHouseFile(const AssetInfo& info,
                           scene::SceneNode* parent,
@@ -203,12 +198,11 @@ class ResourceManager {
 
   // ======== Physical geometry data ========
   // library of physics object parameters mapped from config filename (used by physicsManager to instantiate physical objects)
-  // maps: objectKey -> physicalMetaData
+  // maps: "data/objects/cheezit.phys_properties.json" -> physicalMetaData
   std::map<std::string, PhysicsObjectMetaData> physicsObjectLibrary_;
-  // maps: objectKey -> collesionMesh group
+  // maps: "data/objects/cheezit.phys_properties.json" -> collesionMesh group
   std::map<std::string, std::vector<CollisionMeshData>> collisionMeshGroups_;
-  // vector of objectKey's
-  std::vector<std::string> physicsObjectKeyList_;
+  // vector of "data/objects/cheezit.phys_properties.json"
   std::vector<std::string> physicsObjectConfigList_;
 
   // ======== Clone Object Node ========
@@ -216,6 +210,7 @@ class ResourceManager {
 
   // ======== Rendering Utility Functions ========
   //! Adds mesh and material to given object
+  //! Note (JH): Formerly createMeshObject
   void addMeshToDrawables(const MeshMetaData& metaData,
                           scene::SceneNode& node,
                           DrawableGroup* drawables,

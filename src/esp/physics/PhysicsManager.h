@@ -47,8 +47,12 @@ class PhysicsManager {
   virtual ~PhysicsManager();
 
   //============ Initialization =============
+  //load physical properties and setup the world
+  //do_profile indicates timing for FPS
   bool initPhysics(scene::SceneNode* node,
-                   bool do_profile);
+                   Magnum::Vector3d gravity,
+                   std::string simulator      = "bullet",
+                   bool do_profile            = false);
   
   // Stores references to a set of drawable elements
   using DrawableGroup = Magnum::SceneGraph::DrawableGroup3D;
@@ -59,25 +63,26 @@ class PhysicsManager {
   //! The scene could contain several components
   bool addScene(
       const assets::AssetInfo& info,
-      scene::SceneNode* parent,
       std::vector<assets::CollisionMeshData> meshGroup);
 
   //! Initialize object given mesh data
   //! The object could contain several parts
   int addObject(
-      const std::string objectName,
-      scene::SceneNode* parent,
+      const std::string configFile,
       physics::PhysicalObjectType objectType,
       DrawableGroup* drawables);
 
   int addObject(
       const int objectID,
-      scene::SceneNode* parent,
       physics::PhysicalObjectType objectType,
       DrawableGroup* drawables);
 
   //============ Simulator functions =============
   void stepPhysics();
+
+  void setTimestep(double dt);
+
+  double getTimestep(){return fixedTimeStep_;};
 
   void nextFrame();
 
@@ -118,7 +123,6 @@ class PhysicsManager {
                     const Magnum::Math::Rad<float> angleInRad);
 
 
-
   Magnum::SceneGraph::DrawableGroup3D& getDrawables() { return debugDrawables; }
   const Magnum::SceneGraph::DrawableGroup3D& getDrawables() const {
     return debugDrawables;
@@ -133,6 +137,9 @@ class PhysicsManager {
   assets::ResourceManager& resourceManager;
 
   //! ==== physics engines ====
+  enum PhysicsSimulationLibrary {BULLET};
+  enum PhysicsSimulationLibrary activePhysSimLib_ = BULLET; //default
+
   //! The world has to live longer than the scene because RigidBody
   //! instances have to remove themselves from it on destruction
   Magnum::BulletIntegration::DebugDraw    debugDraw_{Magnum::NoCreate};
@@ -146,7 +153,9 @@ class PhysicsManager {
   std::shared_ptr<btDiscreteDynamicsWorld>   bWorld_;
 
   //! Used to keep track of all sceneNodes that have physical properties
-  scene::SceneNode* physicsNode = nullptr;
+  scene::SceneNode*                                  physicsNode_ = nullptr;
+  std::shared_ptr<physics::RigidObject>              sceneNode_   = nullptr;
+  std::vector<std::shared_ptr<physics::RigidObject>> objectNodes_;
 
   //! ==== dynamic object resources ===
   std::map<int, std::shared_ptr<physics::RigidObject>> existingObjects_;
@@ -155,8 +164,6 @@ class PhysicsManager {
   int nextObjectID_ = 0;
 
   //! ==== Rigid object memory management ====
-  std::shared_ptr<physics::RigidObject>              physScene;
-  std::vector<std::shared_ptr<physics::RigidObject>> physObjects;
 
   //! Utilities
   bool initialized_ = false;

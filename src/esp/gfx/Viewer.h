@@ -39,7 +39,7 @@ class Viewer : public Magnum::Platform::Application {
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
 
-  void addObject(int resourceObjectID);
+  void addObject(std::string configFile);
   void pokeLastObject();
   void pushLastObject();
 

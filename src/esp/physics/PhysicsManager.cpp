@@ -42,6 +42,8 @@ namespace esp {
 namespace physics {
 
 bool PhysicsManager::initPhysics(scene::SceneNode* node,
+                                 Magnum::Vector3d gravity,
+                                 std::string simulator, /* default: "bullet" TODO: this does nothing yet b/c there are no options */
                                  bool do_profile) {
   LOG(INFO) << "Initializing Physics Engine...";
 
@@ -50,16 +52,16 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node,
   //btGImpactCollisionAlgorithm::registerAlgorithm(&bDispatcher_);
   bWorld_ = std::make_shared<btDiscreteDynamicsWorld>(&bDispatcher_, 
       &bBroadphase_, &bSolver_, &bCollisionConfig_);
-
-  // TODO (JH): currently GLB meshes are y-up, the gravity direction is hardcoded
-  bWorld_->setGravity({0.0f, -10.0f, 0.0f});
-  //bWorld_->setGravity({0.0f, 0.0f, -10.0f});
+  //currently GLB meshes are y-up
+  bWorld_->setGravity({gravity[0], gravity[1], gravity[2]});
 
   // TODO (JH): debugDrawer is currently not compatible with our example cpp
   //debugDraw_.setMode(Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe);
   //bWorld_->setDebugDrawer(&_debugDraw);
 
-  physicsNode = node;
+  physicsNode_ = node;
+  //! Create new scene node
+  sceneNode_ = std::make_shared<physics::RigidObject>(physicsNode_);
 
   timeline_.start();
   initialized_ = true;
@@ -84,7 +86,6 @@ PhysicsManager::~PhysicsManager() {
 // https://github.com/mosra/magnum-integration/issues/20
 bool PhysicsManager::addScene(
     const assets::AssetInfo& info,
-    scene::SceneNode* parent,
     std::vector<assets::CollisionMeshData> meshGroup) {
 
   // Test Mesh primitive is valid
@@ -92,23 +93,17 @@ bool PhysicsManager::addScene(
     if (!isMeshPrimitiveValid(meshData)) {return false;}
   }
 
-  bool sceneSuccess;
-  if (info.type == assets::AssetType::INSTANCE_MESH) {              
-    // ._semantic.ply mesh data
-    LOG(INFO) << "Initialize instance scene";
-  } else if (info.type == assets::AssetType::FRL_INSTANCE_MESH) {   
-    // FRL mesh
-    LOG(INFO) << "Initialize FRL scene";
-  } else {                                                  
-    // GLB mesh data
-    LOG(INFO) << "Initialize GLB scene";
+  switch(info.type) {
+    case assets::AssetType::INSTANCE_MESH:
+      LOG(INFO) << "Initialize instance scene"; break; // ._semantic.ply mesh data
+    case assets::AssetType::FRL_INSTANCE_MESH:    
+      LOG(INFO) << "Initialize FRL scene"; break;      // FRL mesh
+    default:
+      LOG(INFO) << "Initialize GLB scene";             // GLB mesh data
   }
 
-  //! Create new physics object (child node of parent)
-  physScene = std::make_shared<physics::RigidObject>(parent);
-
   //! Initialize scene
-  sceneSuccess = physScene->initializeScene(meshGroup, *bWorld_);
+  bool sceneSuccess = sceneNode_->initializeScene(meshGroup, *bWorld_);
   LOG(INFO) << "Init scene done";
 
   return sceneSuccess;
@@ -117,62 +112,75 @@ bool PhysicsManager::addScene(
 
 int PhysicsManager::addObject(
     const int objectID,
-    scene::SceneNode* parent,
     PhysicalObjectType objectType,
     DrawableGroup* drawables) 
 {
-  std::string objectName = resourceManager.getObjectKeyName(objectID);
-  return addObject(objectName, parent, objectType, drawables);
+  std::string configFile = resourceManager.getObjectConfig(objectID);
+  return addObject(configFile, objectType, drawables);
 }
 
 int PhysicsManager::addObject(
-    const std::string objectName,
-    scene::SceneNode* parent,
+    const std::string configFile,
     PhysicalObjectType objectType,
     DrawableGroup* drawables) 
 {
   std::vector<assets::CollisionMeshData> meshGroup
-      = resourceManager.getCollisionMesh(objectName);
+      = resourceManager.getCollisionMesh(configFile);
 
   assets::PhysicsObjectMetaData metaData
-      = resourceManager.getPhysicsMetaData(objectName);
+      = resourceManager.getPhysicsMetaData(configFile);
 
+  LOG(INFO) << "Add object: before check";
   //! Test Mesh primitive is valid
   for (assets::CollisionMeshData& meshData: meshGroup) {
     if (!isMeshPrimitiveValid(meshData)) {return false;}
   }
+  LOG(INFO) << "Add object: before child node";  
 
   //! TODO (JH): hacked mass value
   //float mass = meshGroup[0].indices.size() * 0.001f;;
 
-  //! Create new physics object (child node of parent)
+  //! Create new physics object (child node of sceneNode_)
   std::shared_ptr<physics::RigidObject> physObject =
-      std::make_shared<physics::RigidObject>(parent);
-  physObjects.emplace_back(physObject);
+      std::make_shared<physics::RigidObject>(sceneNode_.get());
+  objectNodes_.emplace_back(physObject);
+
+  LOG(INFO) << "Add object: before initialize";
 
   //! Instantiate with mesh pointer
   bool objectSuccess = physObject->initializeObject(
       metaData, objectType, meshGroup, *bWorld_);
-  if (!objectSuccess) {return -1;}
+  if (!objectSuccess) {
+    LOG(ERROR) << "Initialize unsuccessful";
+    return -1;
+  }
   
+  LOG(INFO) << "Add object: before render stack";
+
   //! Enable force debugging
   //physObject->debugForce(debugDrawables);
 
   //! Maintain object resource
   existingObjects_[nextObjectID_]  = physObject;
-  existingObjNames_[nextObjectID_] = objectName;
+  existingObjNames_[nextObjectID_] = configFile;
   existingObjTypes_[nextObjectID_] = objectType;
   //! Increment simple object ID tracker
   nextObjectID_ += 1;
 
   //! IMPORTANT: invoke resourceManager to draw object
-  resourceManager.addObject(objectName, physObject.get(), drawables);
+  int resObjectID = resourceManager.addObject(
+      configFile, physObject.get(), drawables);
+  if (resObjectID < 0) {
+    return -1;
+  }
 
+  LOG(INFO) << "Add object: after render stack";
   return nextObjectID_-1;
 }
 
 //! Check if mesh primitive is compatible with physics
-bool PhysicsManager::isMeshPrimitiveValid(assets::CollisionMeshData& meshData) {
+bool PhysicsManager::isMeshPrimitiveValid(
+    assets::CollisionMeshData& meshData) {
   if (meshData.primitive == Magnum::MeshPrimitive::Triangles) {
     //! Only triangle mesh works
     return true;
@@ -198,7 +206,17 @@ bool PhysicsManager::isMeshPrimitiveValid(assets::CollisionMeshData& meshData) {
   }
 }
 
+
+//ALEX TODO: this function should do any engine specific setting which is necessary to change the timestep
+void PhysicsManager::setTimestep(double dt){
+  fixedTimeStep_ = dt;
+}
+
 void PhysicsManager::stepPhysics() {
+  //We don't step uninitialized physics sim...
+  if(!initialized_)
+    return;
+
   // ==== Physics stepforward ======
   auto start = std::chrono::system_clock::now();
   bWorld_->stepSimulation(timeline_.previousFrameDuration(), maxSubSteps_,
@@ -225,6 +243,7 @@ void PhysicsManager::stepPhysics() {
 
 void PhysicsManager::nextFrame() {
   timeline_.nextFrame();
+
   checkActiveObjects();
 }
 
@@ -233,12 +252,17 @@ void PhysicsManager::nextFrame() {
 //! helps checking how many objects are active/inactive at any
 //! time step
 void PhysicsManager::checkActiveObjects() {
-  if (physicsNode == nullptr) {
+  if (sceneNode_.get() == nullptr) {
     return;
   }
+  
+  //We don't check uninitialized physics sim...
+  if(!initialized_)
+    return;
+
   int numActive = 0;
   int numTotal = 0;
-  for(auto& child: physicsNode->children()) {
+  for(auto& child: sceneNode_->children()) {
     physics::RigidObject* childNode = dynamic_cast<
         physics::RigidObject*>(&child);
     if (childNode == nullptr) {

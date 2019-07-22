@@ -19,7 +19,7 @@ namespace assets {
 // render mesh, collision mesh, physical parameters:
 //“mass”
 //“COM”: in object local space (unless we preprocess the mesh such that this is origin)
-//intertia tensor
+//inertia tensor
 //“friction coefficient”
 //“restitution coefficient”
 struct PhysicsObjectMetaData {
@@ -30,7 +30,8 @@ struct PhysicsObjectMetaData {
     mass(1.0), scale(1.0), COM(Magnum::Vector3d(0)), 
     frictionCoefficient(0.5), restitutionCoefficient(0.6),
     margin(0.01), linDamping(0.2), angDamping(0.2),
-    objectType(physics::PhysicalObjectType::DYNAMIC)
+    objectType(physics::PhysicalObjectType::DYNAMIC),
+    inertia(Magnum::Vector3(0.1, 0.1, 0.1))
   {};
 
   //copy constructor
@@ -39,8 +40,8 @@ struct PhysicsObjectMetaData {
     collisionMeshHandle = val.collisionMeshHandle;
     mass = val.mass;
     scale = val.scale;
-    COM = Magnum::Vector3(val.COM);
-    //intertia = Magnum::Matrix3(val.intertia); //ALEX TODO: no copy constructor for this. Right way?
+    COM = Magnum::Vector3d(val.COM);
+    //inertia = Magnum::Matrix3(val.inertia); //ALEX TODO: no copy constructor for this. Right way?
     frictionCoefficient = val.frictionCoefficient;
     restitutionCoefficient = val.restitutionCoefficient;
   };
@@ -50,16 +51,16 @@ struct PhysicsObjectMetaData {
   std::string collisionMeshHandle;
 
   //physical properties of objects
-  float mass;
-  float margin;
-  float scale; //Alex: uniform scale. Think about mass->scale ratio defaults. Include a full transformation matrix option?
-  Magnum::Vector3 COM;
-  Magnum::Vector3 intertia; 
-  float frictionCoefficient;
-  float restitutionCoefficient;
+  double mass;
+  double margin;
+  double scale; //Alex: uniform scale. Think about mass->scale ratio defaults. Include a full transformation matrix option?
+  Magnum::Vector3d COM;
+  Magnum::Vector3 inertia; 
+  double frictionCoefficient;
+  double restitutionCoefficient;
 
-  float linDamping;
-  float angDamping;
+  double linDamping;
+  double angDamping;
 
   physics::PhysicalObjectType objectType;
 };
