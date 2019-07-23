@@ -19,6 +19,12 @@
 namespace esp {
 namespace physics {
 
+enum MotionType {
+    STATIC,
+    KINEMATIC,
+    DYNAMIC
+};
+
 class RigidObject : public scene::SceneNode {
  public:
   RigidObject(scene::SceneNode* parent);
@@ -82,6 +88,7 @@ class RigidObject : public scene::SceneNode {
   bool initialized_ = false;
   bool isScene_  = false;
   bool isObject_ = false;
+  MotionType objectMotionType;
 
   //! Physical scene
   //! Scene data: triangular mesh shape

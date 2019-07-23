@@ -333,11 +333,63 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename)
   //2. construct a physicsObjectMetaData
   PhysicsObjectMetaData physMetaData;
 
-  //3. load/check_for render and collision mesh metadata
-  //    ALEX NOTE: these paths should be relative to the properties file
+  //ALEX NOTE: these paths should be relative to the properties file
   std::string propertiesFileDirectory = objPhysConfigFilename.substr(0,
       objPhysConfigFilename.find_last_of("/"));
 
+  //3. load physical properties to override defaults (set in PhysicsObjectMetaData.h)
+  //load the mass
+  if(objPhysicsConfig.HasMember("mass")){
+    if(objPhysicsConfig["mass"].IsNumber()){
+      physMetaData.mass = objPhysicsConfig["mass"].GetDouble();
+    }
+  }
+
+  //load the center of mass (in the local frame of the object)
+  bool shouldComputeMeshBBCenter = true; //if COM is provided, use it for mesh shift
+  if(objPhysicsConfig.HasMember("COM")){
+    if(objPhysicsConfig["COM"].IsArray()){
+      for (rapidjson::SizeType i = 0; i < objPhysicsConfig["COM"].Size(); i++){
+        if(!objPhysicsConfig["COM"][i].IsNumber()){
+          //invalid config
+          LOG(ERROR) << "Invalid value in object physics config COM array"; break;
+        }else{
+          physMetaData.COM[i] = objPhysicsConfig["COM"][i].GetDouble();
+          shouldComputeMeshBBCenter = false;
+        }
+      }
+    }
+  }
+
+  //load the inertia diagonal
+  if(objPhysicsConfig.HasMember("inertia")){
+    if(objPhysicsConfig["inertia"].IsArray()){
+      for (rapidjson::SizeType i = 0; i < objPhysicsConfig["inertia"].Size(); i++){
+        if(!objPhysicsConfig["inertia"][i].IsNumber()){
+          //invalid config
+          LOG(ERROR) << "Invalid value in object physics config inertia array"; break;
+        }else{
+          physMetaData.inertia[i] = objPhysicsConfig["inertia"][i].GetDouble();
+        }
+      }
+    }
+  }
+
+  //load the friction coefficient
+  if(objPhysicsConfig.HasMember("friction coefficient")){
+    if(objPhysicsConfig["friction coefficient"].IsNumber()){
+      physMetaData.frictionCoefficient = objPhysicsConfig["friction coefficient"].GetDouble();
+    }
+  }
+
+  //load the restitution coefficient
+  if(objPhysicsConfig.HasMember("restitution coefficient")){
+    if(objPhysicsConfig["restitution coefficient"].IsNumber()){
+      physMetaData.restitutionCoefficient = objPhysicsConfig["restitution coefficient"].GetDouble();
+    }
+  }
+
+  //3. load/check_for render and collision mesh metadata
   //! Get render mesh names
   std::string renderMeshFilename = "";
   std::string collisionMeshFilename = "";
@@ -362,14 +414,24 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename)
   AssetInfo renderMeshinfo;
   AssetInfo collisionMeshinfo;
 
+  bool shiftMeshOrigin = !(physMetaData.COM[0]==0 && physMetaData.COM[1]==0 && physMetaData.COM[2]==0);
+
   //! Load rendering mesh
+  //Alex TODO: add other mesh types and unify the COM move: don't want simplified meshes to result in different rendering and collision COMs/origins
   if (!renderMeshFilename.empty()){
     renderMeshinfo = assets::AssetInfo::fromPath(renderMeshFilename);
     if (renderMeshinfo.type != AssetType::MP3D_MESH) {
       LOG(INFO) << "Cannot load non-GLB objects";
       return -1;
     }
-    renderMeshSuccess = loadGeneralMeshData(renderMeshinfo);
+    if (shouldComputeMeshBBCenter){ //compute the COM from BB center
+      LOG(INFO) << "LOADING BB CENTER COM>>>>>>>>>>>>>>>>>>>>>>>>>>>";
+      renderMeshSuccess = loadGeneralMeshData(renderMeshinfo, nullptr, nullptr, true);
+    }else if (shiftMeshOrigin){ //use the provided COM
+      renderMeshSuccess = loadGeneralMeshData(renderMeshinfo, nullptr, nullptr, true, -Magnum::Vector3(physMetaData.COM[0], physMetaData.COM[1], physMetaData.COM[2]));
+    }else{ //mesh origin already at COM
+      renderMeshSuccess = loadGeneralMeshData(renderMeshinfo);
+    }
     if(!renderMeshSuccess) {
       LOG(ERROR) << "Failed to load a physical object's render mesh: " << 
           objPhysConfigFilename << ", " << renderMeshFilename;
@@ -382,13 +444,21 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename)
       LOG(INFO) << "Cannot load non-GLB objects";
       return -1;
     }
-    collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo, 
-        nullptr, nullptr, true);
+    if (shouldComputeMeshBBCenter){ //compute the COM from BB center
+      collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo, nullptr, nullptr, true);
+    }else if (shiftMeshOrigin){ //use the provided COM
+      collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo, nullptr, nullptr, true, -Magnum::Vector3(physMetaData.COM[0], physMetaData.COM[1], physMetaData.COM[2]));
+    }else{ //mesh origin already at COM
+      collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo);
+    }
     if(!collisionMeshSuccess) {
       LOG(ERROR) << "Failed to load a physical object's collision mesh: " << 
           objPhysConfigFilename << ", " << collisionMeshFilename;
     }
   }
+
+  //Alex NOTE: if we want to save these after edit we need to save the moved mesh or save the original COM as a member of RigidBody...
+  physMetaData.COM = Magnum::Vector3d(0,0,0); //once we move the meshes, the COM is aligned with the origin...
 
   if(!renderMeshSuccess && !collisionMeshSuccess){
     //ALEX TODO: for now we only allow objects with SOME mesh file. Failing both loads or having no mesh will cancel the load.
@@ -398,42 +468,6 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename)
 
   physMetaData.renderMeshHandle = renderMeshFilename;
   physMetaData.collisionMeshHandle = collisionMeshFilename;
-
-  //4. load physical properties to override defaults (set in PhysicsObjectMetaData.h)
-  //load the mass
-  if(objPhysicsConfig.HasMember("mass")){
-    if(objPhysicsConfig["mass"].IsNumber()){
-      physMetaData.mass = objPhysicsConfig["mass"].GetDouble();
-    }
-  }
-
-  //load the center of mass (in the local frame of the object)
-  if(objPhysicsConfig.HasMember("COM")){
-    if(objPhysicsConfig["COM"].IsArray()){
-      for (rapidjson::SizeType i = 0; i < objPhysicsConfig["COM"].Size(); i++){
-        if(!objPhysicsConfig["COM"][i].IsNumber()){
-          //invalid config
-          LOG(ERROR) << "Invalid value in object physics config COM array"; break;
-        }else{
-          physMetaData.COM[i] = objPhysicsConfig["COM"][i].GetDouble();
-        }
-      }
-    }
-  }
-
-  //load the friction coefficient
-  if(objPhysicsConfig.HasMember("friction coefficient")){
-    if(objPhysicsConfig["friction coefficient"].IsNumber()){
-      physMetaData.frictionCoefficient = objPhysicsConfig["friction coefficient"].GetDouble();
-    }
-  }
-
-  //load the restitution coefficient
-  if(objPhysicsConfig.HasMember("restitution coefficient")){
-    if(objPhysicsConfig["restitution coefficient"].IsNumber()){
-      physMetaData.restitutionCoefficient = objPhysicsConfig["restitution coefficient"].GetDouble();
-    }
-  }
 
   //5. cache metaData, collision mesh Group
   physicsObjectLibrary_.emplace(objPhysConfigFilename, physMetaData);
@@ -568,38 +602,30 @@ std::string ResourceManager::getObjectConfig(int objectID) {
   return physicsObjectConfigList_[objectID];
 }
 
-void ResourceManager::shiftMeshDataToOrigin(GltfMeshData* meshDataGL) {
+
+Magnum::Vector3 ResourceManager::computeMeshBBCenter(GltfMeshData* meshDataGL){
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
-  float minX = 999999.9f;
-  float maxX = -999999.9f;
-  float minY = 999999.9f;
-  float maxY = -999999.9f;
-  float minZ = 999999.9f;
-  float maxZ = -999999.9f;
+  Magnum::Vector3 maxCorner(-999999.9), minCorner(999999.9);
   for (int vi = 0; vi < meshData.positions.size(); vi++) {
     Magnum::Vector3 pos = meshData.positions[vi];
-    if (pos.x() < minX) {
-      minX = pos.x();
-    }
-    if (pos.x() > maxX) {
-      maxX = pos.x();
-    }
-    if (pos.y() < minY) {
-      minY = pos.y();
-    }
-    if (pos.y() > maxY) {
-      maxY = pos.y();
-    }
-    if (pos.z() < minZ) {
-      minZ = pos.z();
-    }
-    if (pos.z() > maxZ) {
-      maxZ = pos.z();
-    }
+    maxCorner[0] = fmax(maxCorner.x(), pos.x());
+    maxCorner[1] = fmax(maxCorner.y(), pos.y());
+    maxCorner[2] = fmax(maxCorner.z(), pos.z());
+
+    minCorner[0] = fmin(minCorner.x(), pos.x());
+    minCorner[1] = fmin(minCorner.y(), pos.y());
+    minCorner[2] = fmin(minCorner.z(), pos.z());
   }
-  LOG(INFO) << "Shifting data origin";
-  Magnum::Matrix4 transform = Magnum::Matrix4::translation(Magnum::Vector3(
-      -(maxX + minX) / 2, -(maxY + minY) / 2, -(maxZ + minZ) / 2));
+
+  return (maxCorner+minCorner)/2.0;
+}
+
+void ResourceManager::translateMesh(GltfMeshData* meshDataGL, Magnum::Vector3 translation) {
+  CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
+  
+  Magnum::Matrix4 transform = Magnum::Matrix4::translation(translation);
+
+  LOG(INFO) << "Shifting data origin: " << translation[0] << ", " << translation[1] << ", " << translation[2];
   Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions);
   LOG(INFO) << "Shifting data origin done";
 }
@@ -737,7 +763,8 @@ bool ResourceManager::loadGeneralMeshData(
     const AssetInfo& info,
     scene::SceneNode* parent  /* = nullptr */,
     DrawableGroup* drawables  /* = nullptr */,
-    bool shiftOrigin          /* = false */) 
+    bool shiftOrigin          /* = false */,
+    Magnum::Vector3 translation /* [0,0,0] */) 
 {
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
@@ -764,8 +791,10 @@ bool ResourceManager::loadGeneralMeshData(
     LOG(INFO) << "Loaded total textures " << textures_.size();
     loadMaterials(*importer, &metaData);
     LOG(INFO) << "Loaded total materials " << materials_.size();
+    
     // TODO (JH): shift origin merge with COM
-    loadMeshes(*importer, &metaData, shiftOrigin);
+    loadMeshes(*importer, &metaData, shiftOrigin, translation);
+
     resourceDict_.emplace(filename, metaData);
 
     // Register magnum mesh
@@ -870,7 +899,9 @@ void ResourceManager::loadMaterials(Importer& importer,
 
 void ResourceManager::loadMeshes(Importer& importer,
                                  MeshMetaData* metaData,
-                                 bool shiftOrigin /*=false*/) {
+                                 bool shiftOrigin /*=false*/,
+                                 Magnum::Vector3 offset /* [0,0,0] */
+                                 ) {
   int meshStart = meshes_.size();
   int meshEnd = meshStart + importer.mesh3DCount() - 1;
   metaData->setMeshIndices(meshStart, meshEnd);
@@ -884,10 +915,16 @@ void ResourceManager::loadMeshes(Importer& importer,
     // Keep track of names
     object_names_.push_back(importer.mesh3DName(iMesh));
 
-    if (shiftOrigin) {
-      // Need this function in order to set center of mass
-      shiftMeshDataToOrigin(gltfMeshData);
+    //see if the mesh needs to be shifted
+    if (shiftOrigin){
+      //compute BB center if necessary ([0,0,0])
+      if(offset[0]==0 && offset[1]==0 && offset[2]==0)
+        offset = -computeMeshBBCenter(gltfMeshData);
+      //translate the mesh if necessary
+      if(!(offset[0]==0 && offset[1]==0 && offset[2]==0))
+        translateMesh(gltfMeshData, offset);
     }
+
     CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
     gltfMeshData->uploadBuffersToGPU(false);
     LOG(INFO) << "Loading mesh " << iMesh << "/" << importer.mesh3DCount() << " " << importer.mesh3DName(iMesh) << " done";

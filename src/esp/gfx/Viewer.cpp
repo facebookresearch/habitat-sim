@@ -2,6 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <stdlib.h>
+
 #include "Viewer.h"
 
 #include <Corrade/Utility/Arguments.h>
@@ -21,7 +23,7 @@ using namespace Corrade;
 
 constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
-constexpr float cameraHeight = 1.5f;
+constexpr float cameraHeight = 0.5f;
 
 namespace esp {
 namespace gfx {
@@ -126,7 +128,7 @@ Viewer::Viewer(const Arguments& arguments)
       agentBodyNode_->rotate(Quaternion(Vector3(0, 1, 0), 3.14f));
     } else if (vangoth_mesh) {
       //agentBodyNode_->rotate(3.14f * 1.1, vec3f(0, 1, 0));
-      // Vector3 agent_pos = Vector3(0.0f, 0.0f, 0.0f);
+      //Vector3 agent_pos = Vector3(0.0f, 0.0f, 0.0f);
       Vector3 agent_pos = Vector3(2.38, 1.4f, 1.74);
       agentBodyNode_->setTranslation(agent_pos);
     } else if (castle_mesh) {
@@ -162,7 +164,6 @@ Viewer::Viewer(const Arguments& arguments)
   }
 }  // namespace gfx
 
-
 void Viewer::addObject(std::string configFile) {
   Magnum::Matrix4 T = agentBodyNode_
       ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
@@ -187,6 +188,23 @@ void Viewer::addObject(std::string configFile) {
   int physObjectID = physicsManager_.addObject(
       configFile, physics::PhysicalObjectType::DYNAMIC, &drawables);
   physicsManager_.setTranslation(physObjectID, new_pos);
+  
+  
+  //draw random quaternion via the method: http://planning.cs.uiuc.edu/node198.html
+  double u1 = (rand()%1000)/1000.0;
+  double u2 = (rand()%1000)/1000.0;
+  double u3 = (rand()%1000)/1000.0;
+
+  Magnum::Vector3 qAxis(sqrt(1-u1)*cos(2*M_PI*u2),
+    sqrt(u1)*sin(2*M_PI*u3),
+    sqrt(u1)*cos(2*M_PI*u3)
+    );
+  physicsManager_.setRotation(physObjectID, Magnum::Quaternion(
+    qAxis,
+    sqrt(1-u1)*sin(2*M_PI*u2)
+     ));
+
+
   LOG(INFO) << "After add drawables";
   lastObjectID += 1;
 }

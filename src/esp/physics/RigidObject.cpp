@@ -56,6 +56,7 @@ bool RigidObject::initializeScene(
   //! Turn on scene flag
   if (isObject_) {return false;}
   isScene_ = true;
+  objectMotionType = STATIC;
 
   //! Create Bullet Object
   btIndexedMesh bulletMesh;
@@ -135,6 +136,7 @@ bool RigidObject::initializeObject(
   //! Turn on scene flag
   if (isScene_) {return false;}
   isObject_ = true;
+  objectMotionType = DYNAMIC; //TODO: default kineamtic unless a simulator is initialized...
 
   //! Create Bullet Object
   btIndexedMesh bulletMesh;
@@ -179,6 +181,7 @@ bool RigidObject::initializeObject(
     btTransform t;        // position and rotation
     t.setIdentity();
     t.setOrigin(btVector3(0, 0, 0));
+    //t.setOrigin(btVector3(-metaData.COM[0], -metaData.COM[1], -metaData.COM[2]));
     //! TODO (JH): assume that the object is convex, otherwise game over
     //! Create convex component
     bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
@@ -192,6 +195,10 @@ bool RigidObject::initializeObject(
   //! Set properties
   bObjectShape_->setMargin(margin);
   btVector3 bInertia  = btVector3(metaData.inertia);
+  if(bInertia[0] == 0. && bInertia[1] == 0. && bInertia[2] == 0. ){
+    //Alex: allow bullet to compute the inertia tensor if we don't have one
+
+  }
   LOG(INFO) << "Object inertia " << bInertia.x() << " " << bInertia.y();
   LOG(INFO) << "Object inertia " << metaData.inertia.x() << " " << metaData.inertia.y();
 

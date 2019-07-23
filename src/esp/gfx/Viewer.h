@@ -64,8 +64,8 @@ class Viewer : public Magnum::Platform::Application {
   bool enablePhysics_;
   bool surreal_mesh = false;
   bool replica_mesh = false;
-  bool vangoth_mesh = true;
-  bool castle_mesh = false;
+  bool vangoth_mesh = false;
+  bool castle_mesh = true;
 
   bool do_profile_ = false;
   int  frame_limit_ = 1000;

@@ -151,7 +151,9 @@ class ResourceManager {
   //! Load meshes from importer into assets, and update metaData
   void loadMeshes(Importer& importer,
                   MeshMetaData* metaData,
-                  bool shiftOrigin = false);
+                  bool shiftOrigin = false,
+                  Magnum::Vector3 offset = Magnum::Vector3(0,0,0)
+                  );
 
   //! Load materials from importer into assets, and update metaData
   void loadMaterials(Importer& importer, MeshMetaData* metaData);
@@ -164,17 +166,27 @@ class ResourceManager {
                             scene::SceneNode* parent,
                             DrawableGroup* drawables);
 
+  //load the mesh data
+  //If parent, also do scene graph
+  //if shiftOrigin: translate the mesh by "translation"
+  //  (default) if translation == [0,0,0]: compute center of mesh bounding box and then translate
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent = nullptr, 
                            DrawableGroup* drawables = nullptr,
-                           bool shiftOrigin         = false);
+                           bool shiftOrigin         = false,
+                           Magnum::Vector3 translation = Magnum::Vector3(0,0,0));
 
   bool loadSUNCGHouseFile(const AssetInfo& info,
                           scene::SceneNode* parent,
                           DrawableGroup* drawables);
 
   // ======== Geometry helper functions ========
-  void shiftMeshDataToOrigin(GltfMeshData* meshDataGL);
+  //void shiftMeshDataToOrigin(GltfMeshData* meshDataGL);
+
+  void translateMesh(GltfMeshData* meshDataGL, Magnum::Vector3 translation);
+
+  //compute center of axis aligned mesh bounding box
+  Magnum::Vector3 computeMeshBBCenter(GltfMeshData* meshDataGL);
 
   void transformAxis(
       const AssetInfo& info,
@@ -193,17 +205,17 @@ class ResourceManager {
 
   // a dictionary to check if a mesh has been loaded
   // maps: absolutePath -> meshMetaData
-  std::map<std::string, MeshMetaData>                     resourceDict_;
-  std::map<std::string, std::vector<Magnum::UnsignedInt>> magnumMeshDict_;
+  std::map<std::string, MeshMetaData>                     resourceDict_; //meshes
+  std::map<std::string, std::vector<Magnum::UnsignedInt>> magnumMeshDict_; // IDs for object mesh hierarchies NOTE: needed? to bypass "importer" reload
 
   // ======== Physical geometry data ========
   // library of physics object parameters mapped from config filename (used by physicsManager to instantiate physical objects)
   // maps: "data/objects/cheezit.phys_properties.json" -> physicalMetaData
   std::map<std::string, PhysicsObjectMetaData> physicsObjectLibrary_;
   // maps: "data/objects/cheezit.phys_properties.json" -> collesionMesh group
-  std::map<std::string, std::vector<CollisionMeshData>> collisionMeshGroups_;
+  std::map<std::string, std::vector<CollisionMeshData>> collisionMeshGroups_; // meshes for the object hierarchies
   // vector of "data/objects/cheezit.phys_properties.json"
-  std::vector<std::string> physicsObjectConfigList_;
+  std::vector<std::string> physicsObjectConfigList_; //NOTE: can't get keys from the map (easily), so store them for iteration
 
   // ======== Clone Object Node ========
   

@@ -31,7 +31,7 @@ struct PhysicsObjectMetaData {
     frictionCoefficient(0.5), restitutionCoefficient(0.6),
     margin(0.01), linDamping(0.2), angDamping(0.2),
     objectType(physics::PhysicalObjectType::DYNAMIC),
-    inertia(Magnum::Vector3(0.1, 0.1, 0.1))
+    inertia(Magnum::Vector3(0., 0., 0.))
   {};
 
   //copy constructor
@@ -41,7 +41,7 @@ struct PhysicsObjectMetaData {
     mass = val.mass;
     scale = val.scale;
     COM = Magnum::Vector3d(val.COM);
-    //inertia = Magnum::Matrix3(val.inertia); //ALEX TODO: no copy constructor for this. Right way?
+    inertia = val.inertia;
     frictionCoefficient = val.frictionCoefficient;
     restitutionCoefficient = val.restitutionCoefficient;
   };
