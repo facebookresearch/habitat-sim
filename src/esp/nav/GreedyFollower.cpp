@@ -82,7 +82,7 @@ nav::GreedyGeodesicFollowerImpl::calcStepAlong(
 
   const float alpha = gradDir.angularDistance(std::get<1>(state));
   VLOG(1) << alpha;
-  if (alpha <= turnAmount_ / 2.0 + 1e-3)
+  if (alpha <= turnAmount_ + 1e-3)
     return CODES::FORWARD;
 
   // There are some edge cases where the gradient doesn't line up with makes
@@ -93,7 +93,7 @@ nav::GreedyGeodesicFollowerImpl::calcStepAlong(
   const float newGeoDist = this->geoDist(
       cast<vec3f>(dummyNode_.absoluteTransformation().translation()),
       path.requestedEnd);
-  if ((path.geodesicDistance - newGeoDist) > 0.5 * forwardAmount_) {
+  if ((path.geodesicDistance - newGeoDist) > 0.95 * forwardAmount_) {
     return CODES::FORWARD;
   }
 
