@@ -8,6 +8,7 @@
 import attr
 import magnum as mn
 import numpy as np
+import scipy.stats
 
 import habitat_sim.bindings as hsim
 from habitat_sim import utils
@@ -19,7 +20,7 @@ from habitat_sim.agent.controls.controls import (
 
 
 @attr.s(auto_attribs=True)
-class _MultivariateGaussian:
+class _TruncatedMultivariateGaussian:
     mean: np.array
     cov: np.array
 
@@ -29,11 +30,36 @@ class _MultivariateGaussian:
         if len(self.cov.shape) == 1:
             self.cov = np.diag(self.cov)
 
+    def sample(self, truncation=None):
+        assert (
+            np.count_nonzero(self.cov - np.diag(np.diagonal(self.cov))) == 0
+        ), "Only supports diagonal covariance"
+        if truncation is not None:
+            assert len(truncation) == len(self.mean)
+
+        sample = np.zeros_like(self.mean)
+        for i in range(len(self.mean)):
+            stdev = np.sqrt(self.cov[i, i])
+            mean = self.mean[i]
+            # Always truncate to 3 standard deviations
+            a, b = -3, 3
+
+            if truncation is not None and truncation[i] is not None:
+                trunc = truncation[i]
+                if trunc[0] is not None:
+                    a = max((trunc[0] - mean) / stdev, a)
+                if trunc[1] is not None:
+                    b = min((trunc[1] - mean) / stdev, b)
+
+            sample[i] = scipy.stats.truncnorm.rvs(a, b, mean, stdev)
+
+        return sample
+
 
 @attr.s(auto_attribs=True)
 class MotionNoiseModel:
-    linear: _MultivariateGaussian
-    rotation: _MultivariateGaussian
+    linear: _TruncatedMultivariateGaussian
+    rotation: _TruncatedMultivariateGaussian
 
 
 @attr.s(auto_attribs=True)
@@ -63,64 +89,64 @@ pyrobot_noise_models = {
     "LoCoBot": RobotNoiseModel(
         ILQR=ControllerNoiseModel(
             linear_motion=MotionNoiseModel(
-                _MultivariateGaussian([0.014, 0.009], [0.006, 0.005]),
-                _MultivariateGaussian([0.008], [0.004]),
+                _TruncatedMultivariateGaussian([0.014, 0.009], [0.006, 0.005]),
+                _TruncatedMultivariateGaussian([0.008], [0.004]),
             ),
             rotational_motion=MotionNoiseModel(
-                _MultivariateGaussian([0.003, 0.003], [0.002, 0.003]),
-                _MultivariateGaussian([0.023], [0.012]),
+                _TruncatedMultivariateGaussian([0.003, 0.003], [0.002, 0.003]),
+                _TruncatedMultivariateGaussian([0.023], [0.012]),
             ),
         ),
         Proportional=ControllerNoiseModel(
             linear_motion=MotionNoiseModel(
-                _MultivariateGaussian([0.017, 0.042], [0.007, 0.023]),
-                _MultivariateGaussian([0.031], [0.026]),
+                _TruncatedMultivariateGaussian([0.017, 0.042], [0.007, 0.023]),
+                _TruncatedMultivariateGaussian([0.031], [0.026]),
             ),
             rotational_motion=MotionNoiseModel(
-                _MultivariateGaussian([0.001, 0.005], [0.001, 0.004]),
-                _MultivariateGaussian([0.043], [0.017]),
+                _TruncatedMultivariateGaussian([0.001, 0.005], [0.001, 0.004]),
+                _TruncatedMultivariateGaussian([0.043], [0.017]),
             ),
         ),
         Movebase=ControllerNoiseModel(
             linear_motion=MotionNoiseModel(
-                _MultivariateGaussian([0.074, 0.036], [0.019, 0.033]),
-                _MultivariateGaussian([0.189], [0.038]),
+                _TruncatedMultivariateGaussian([0.074, 0.036], [0.019, 0.033]),
+                _TruncatedMultivariateGaussian([0.189], [0.038]),
             ),
             rotational_motion=MotionNoiseModel(
-                _MultivariateGaussian([0.002, 0.003], [0.0, 0.002]),
-                _MultivariateGaussian([0.219], [0.019]),
+                _TruncatedMultivariateGaussian([0.002, 0.003], [0.0, 0.002]),
+                _TruncatedMultivariateGaussian([0.219], [0.019]),
             ),
         ),
     ),
     "LoCoBot-Lite": RobotNoiseModel(
         ILQR=ControllerNoiseModel(
             linear_motion=MotionNoiseModel(
-                _MultivariateGaussian([0.142, 0.023], [0.008, 0.008]),
-                _MultivariateGaussian([0.031], [0.028]),
+                _TruncatedMultivariateGaussian([0.142, 0.023], [0.008, 0.008]),
+                _TruncatedMultivariateGaussian([0.031], [0.028]),
             ),
             rotational_motion=MotionNoiseModel(
-                _MultivariateGaussian([0.002, 0.002], [0.001, 0.002]),
-                _MultivariateGaussian([0.122], [0.03]),
+                _TruncatedMultivariateGaussian([0.002, 0.002], [0.001, 0.002]),
+                _TruncatedMultivariateGaussian([0.122], [0.03]),
             ),
         ),
         Proportional=ControllerNoiseModel(
             linear_motion=MotionNoiseModel(
-                _MultivariateGaussian([0.135, 0.043], [0.007, 0.009]),
-                _MultivariateGaussian([0.049], [0.009]),
+                _TruncatedMultivariateGaussian([0.135, 0.043], [0.007, 0.009]),
+                _TruncatedMultivariateGaussian([0.049], [0.009]),
             ),
             rotational_motion=MotionNoiseModel(
-                _MultivariateGaussian([0.002, 0.002], [0.002, 0.001]),
-                _MultivariateGaussian([0.054], [0.061]),
+                _TruncatedMultivariateGaussian([0.002, 0.002], [0.002, 0.001]),
+                _TruncatedMultivariateGaussian([0.054], [0.061]),
             ),
         ),
         Movebase=ControllerNoiseModel(
             linear_motion=MotionNoiseModel(
-                _MultivariateGaussian([0.192, 0.117], [0.055, 0.144]),
-                _MultivariateGaussian([0.128], [0.143]),
+                _TruncatedMultivariateGaussian([0.192, 0.117], [0.055, 0.144]),
+                _TruncatedMultivariateGaussian([0.128], [0.143]),
             ),
             rotational_motion=MotionNoiseModel(
-                _MultivariateGaussian([0.002, 0.001], [0.001, 0.001]),
-                _MultivariateGaussian([0.173], [0.025]),
+                _TruncatedMultivariateGaussian([0.002, 0.001], [0.001, 0.001]),
+                _TruncatedMultivariateGaussian([0.173], [0.025]),
             ),
         ),
     ),
@@ -176,29 +202,47 @@ def _noisy_action_impl(
     rotate_amount: float,
     multiplier: float,
     model: MotionNoiseModel,
+    motion_type: str,
 ):
     # Perform the action in the coordinate system of the node
     transform = scene_node.transformation
     move_ax = -transform[_Z_AXIS].xyz
     perp_ax = transform[_X_AXIS].xyz
 
-    # + EPS to make sure 0 is positive.  We multiply the mean by the sign of the translation
+    if motion_type == "rotational":
+        translation_noise = multiplier * model.linear.sample()
+    else:
+        # The robot will always move a little bit.  This has to be defined based on the intended actuation
+        # as otherwise small rotation amounts would be invalid.  However, pretty quickly, we'll
+        # get to the truncation of 3 sigma
+        trunc = [(-0.95 * np.abs(translate_amount), None), None]
+
+        translation_noise = multiplier * model.linear.sample(trunc)
+
+    # + EPS to make sure 0 is positive.  We multiply by the sign of the translation
     # as otherwise forward would overshoot on average and backward would undershoot, while
     # both should overshoot
-    translation_noise = multiplier * np.random.multivariate_normal(
-        np.sign(translate_amount + 1e-8) * model.linear.mean, model.linear.cov
-    )
+    translation_noise *= np.sign(translate_amount + 1e-8)
+
     scene_node.translate_local(
         move_ax * (translate_amount + translation_noise[0])
         + perp_ax * translation_noise[1]
     )
 
-    # Same deal with rotation about + EPS and why we multiply by the sign
-    rot_noise = multiplier * np.random.multivariate_normal(
-        np.sign(rotate_amount + 1e-8) * model.rotation.mean, model.rotation.cov
-    )
+    if motion_type == "linear":
+        rot_noise = multiplier * model.rotation.sample()
+    else:
+        # The robot will always turn a little bit.  This has to be defined based on the intended actuation
+        # as otherwise small rotation amounts would be invalid.  However, pretty quickly, we'll
+        # get to the truncation of 3 sigma
+        trunc = [(-0.95 * np.abs(np.deg2rad(rotate_amount)), None)]
 
-    scene_node.rotate_y_local(mn.Deg(rotate_amount) + mn.Rad(rot_noise[0]))
+        rot_noise = multiplier * model.rotation.sample(trunc)
+
+    # Same deal with rotation about + EPS and why we multiply by the sign
+    rot_noise *= np.sign(rotate_amount + 1e-8)
+
+    scene_node.rotate_y_local(mn.Deg(rotate_amount) + mn.Rad(rot_noise))
     scene_node.rotation = scene_node.rotation.normalized()
 
 
@@ -215,6 +259,7 @@ class PyrobotNoisyMoveBackward(SceneNodeControl):
             pyrobot_noise_models[actuation_spec.robot][
                 actuation_spec.controller
             ].linear_motion,
+            "linear",
         )
 
 
@@ -231,6 +276,7 @@ class PyrobotNoisyMoveForward(SceneNodeControl):
             pyrobot_noise_models[actuation_spec.robot][
                 actuation_spec.controller
             ].linear_motion,
+            "linear",
         )
 
 
@@ -247,6 +293,7 @@ class PyrobotNoisyTurnLeft(SceneNodeControl):
             pyrobot_noise_models[actuation_spec.robot][
                 actuation_spec.controller
             ].rotational_motion,
+            "rotational",
         )
 
 
@@ -263,4 +310,5 @@ class PyrobotNoisyTurnRight(SceneNodeControl):
             pyrobot_noise_models[actuation_spec.robot][
                 actuation_spec.controller
             ].rotational_motion,
+            "rotational",
         )
