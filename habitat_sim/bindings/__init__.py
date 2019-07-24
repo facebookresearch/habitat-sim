@@ -19,6 +19,7 @@ modules = [
     "ShortestPath",
     "SimulatorConfiguration",
     "geo",
+    "simulate_redwood_depth_noise_cpu",
 ]
 
 from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend

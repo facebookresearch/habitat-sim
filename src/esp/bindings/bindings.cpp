@@ -20,6 +20,7 @@ using namespace py::literals;
 #include "esp/scene/SemanticScene.h"
 #include "esp/scene/SuncgSemanticScene.h"
 #include "esp/sensor/PinholeCamera.h"
+#include "esp/sensor/RedwoodNoiseModel.h"
 #include "esp/sensor/Sensor.h"
 
 #include <Magnum/SceneGraph/Python.h>
@@ -393,6 +394,11 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("node", nodeGetter<Sensor>,
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
+
+  m.def("simulate_redwood_depth_noise_cpu",
+        &esp::sensor::simulateRedwoodDepthCPU);
+  m.def("simulate_redwood_depth_noise_gpu",
+        &esp::sensor::simulateRedwoodDepthGPU);
 
   // ==== PinholeCamera (subclass of Sensor) ====
   py::class_<sensor::PinholeCamera,
