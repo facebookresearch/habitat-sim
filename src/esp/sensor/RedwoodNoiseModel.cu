@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <memory>
 
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
