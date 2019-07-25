@@ -22,7 +22,9 @@ except ImportError:
 @register_sensor_noise_model
 class RedwoodDepthNoiseModel(SensorNoiseModel):
     def __init__(self):
-        dist = np.load(osp.join(osp.dirname(__file__), "data", "dist-model.npy"))
+        dist = np.load(
+            osp.join(osp.dirname(__file__), "data", "redwood-depth-dist-model.npy")
+        )
 
         if has_gpu:
             self._impl = RedwoodNoiseModelGPUImpl(dist)
