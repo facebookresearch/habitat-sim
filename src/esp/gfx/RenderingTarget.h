@@ -31,9 +31,9 @@ class RenderingTarget {
   int gpuDeviceId() const;
 
 #ifdef ESP_WITH_GPU_GPU
-  void readFrameRgbaGPU(uint8_t* ptr);
-  void readFrameDepthGPU(float* ptr);
-  void readFrameObjectIdGPU(int32_t* ptr);
+  void readFrameRgbaGPU(uint8_t* devPtr);
+  void readFrameDepthGPU(float* devPtr);
+  void readFrameObjectIdGPU(int32_t* devPtr);
 #endif
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(RenderingTarget);

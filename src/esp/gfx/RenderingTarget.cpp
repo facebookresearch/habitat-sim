@@ -112,7 +112,7 @@ struct RenderingTarget::Impl {
   int gpuDeviceId() const { return this->context_->gpuDevice(); }
 
 #ifdef ESP_WITH_GPU_GPU
-  void readFrameRgbaGPU(uint8_t* ptr) {
+  void readFrameRgbaGPU(uint8_t* devPtr) {
     if (colorBufferCugl_ == nullptr)
       checkCudaErrors(cudaGraphicsGLRegisterImage(
           &colorBufferCugl_, colorBuffer_.id(), GL_RENDERBUFFER,
@@ -124,14 +124,14 @@ struct RenderingTarget::Impl {
     checkCudaErrors(
         cudaGraphicsSubResourceGetMappedArray(&array, colorBufferCugl_, 0, 0));
     checkCudaErrors(cudaMemcpyFromArray(
-        ptr, array, 0, 0,
+        devPtr, array, 0, 0,
         framebufferSize_.x() * framebufferSize_.y() * 4 * sizeof(uint8_t),
         cudaMemcpyDeviceToDevice));
 
     checkCudaErrors(cudaGraphicsUnmapResources(1, &colorBufferCugl_, 0));
   }
 
-  void readFrameDepthGPU(float* ptr) {
+  void readFrameDepthGPU(float* devPtr) {
     if (depthBufferCugl_ == nullptr)
       checkCudaErrors(cudaGraphicsGLRegisterImage(
           &depthBufferCugl_, depthBuffer_.id(), GL_RENDERBUFFER,
@@ -143,14 +143,14 @@ struct RenderingTarget::Impl {
     checkCudaErrors(
         cudaGraphicsSubResourceGetMappedArray(&array, depthBufferCugl_, 0, 0));
     checkCudaErrors(cudaMemcpyFromArray(
-        ptr, array, 0, 0,
+        devPtr, array, 0, 0,
         framebufferSize_.x() * framebufferSize_.y() * 1 * sizeof(float),
         cudaMemcpyDeviceToDevice));
 
     checkCudaErrors(cudaGraphicsUnmapResources(1, &depthBufferCugl_, 0));
   }
 
-  void readFrameObjectIdGPU(int32_t* ptr) {
+  void readFrameObjectIdGPU(int32_t* devPtr) {
     if (objecIdBufferCugl_ == nullptr)
       checkCudaErrors(cudaGraphicsGLRegisterImage(
           &objecIdBufferCugl_, objectIdBuffer_.id(), GL_RENDERBUFFER,
@@ -162,7 +162,7 @@ struct RenderingTarget::Impl {
     checkCudaErrors(cudaGraphicsSubResourceGetMappedArray(
         &array, objecIdBufferCugl_, 0, 0));
     checkCudaErrors(cudaMemcpyFromArray(
-        ptr, array, 0, 0,
+        devPtr, array, 0, 0,
         framebufferSize_.x() * framebufferSize_.y() * 1 * sizeof(int32_t),
         cudaMemcpyDeviceToDevice));
 
@@ -211,16 +211,16 @@ void RenderingTarget::renderExit() {
 }
 
 #ifdef ESP_WITH_GPU_GPU
-void RenderingTarget::readFrameRgbaGPU(uint8_t* ptr) {
-  pimpl_->readFrameRgbaGPU(ptr);
+void RenderingTarget::readFrameRgbaGPU(uint8_t* devPtr) {
+  pimpl_->readFrameRgbaGPU(devPtr);
 }
 
-void RenderingTarget::readFrameDepthGPU(float* ptr) {
-  pimpl_->readFrameDepthGPU(ptr);
+void RenderingTarget::readFrameDepthGPU(float* devPtr) {
+  pimpl_->readFrameDepthGPU(devPtr);
 }
 
-void RenderingTarget::readFrameObjectIdGPU(int32_t* ptr) {
-  pimpl_->readFrameObjectIdGPU(ptr);
+void RenderingTarget::readFrameObjectIdGPU(int32_t* devPtr) {
+  pimpl_->readFrameObjectIdGPU(devPtr);
 }
 #endif
 

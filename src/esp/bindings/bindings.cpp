@@ -395,16 +395,16 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            py::arg("img").noconvert(), R"()")
 #ifdef ESP_WITH_GPU_GPU
       .def("read_frame_rgba_gpu",
-           [](RenderingTarget& self, size_t ptr) {
-             self.readFrameRgbaGPU(reinterpret_cast<uint8_t*>(ptr));
+           [](RenderingTarget& self, size_t devPtr) {
+             self.readFrameRgbaGPU(reinterpret_cast<uint8_t*>(devPtr));
            })
       .def("read_frame_depth_gpu",
-           [](RenderingTarget& self, size_t ptr) {
-             self.readFrameDepthGPU(reinterpret_cast<float*>(ptr));
+           [](RenderingTarget& self, size_t devPtr) {
+             self.readFrameDepthGPU(reinterpret_cast<float*>(devPtr));
            })
       .def("read_frame_object_id_gpu",
-           [](RenderingTarget& self, size_t ptr) {
-             self.readFrameObjectIdGPU(reinterpret_cast<int32_t*>(ptr));
+           [](RenderingTarget& self, size_t devPtr) {
+             self.readFrameObjectIdGPU(reinterpret_cast<int32_t*>(devPtr));
            })
 #endif
       .def_property_readonly("gpu_device_id", &RenderingTarget::gpuDeviceId)
