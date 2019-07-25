@@ -292,36 +292,26 @@ class Sensor:
 
         with self._sensor_object.rendering_target as tgt:
             self._sim.renderer.draw(self._sensor_object, scene)
-            if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
-                if self._spec.gpu2gpu_transfer:
-                    import torch
 
-                    with torch.cuda.device(self._buffer.device):
+            if self._spec.gpu2gpu_transfer:
+                import torch
+
+                with torch.cuda.device(self._buffer.device):
+                    if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
                         tgt.read_frame_object_id_gpu(self._buffer.data_ptr())
-
-                    return self._buffer.flip(0).clone()
-                else:
-                    tgt.read_frame_object_id(self._buffer)
-                    return np.flip(self._buffer, axis=0).copy()
-            elif self._spec.sensor_type == hsim.SensorType.DEPTH:
-                if self._spec.gpu2gpu_transfer:
-                    import torch
-
-                    with torch.cuda.device(self._buffer.device):
+                    elif self._spec.sensor_type == hsim.SensorType.DEPTH:
                         tgt.read_frame_depth_gpu(self._buffer.data_ptr())
-
-                    return self._buffer.flip(0).clone()
-                else:
-                    tgt.read_frame_depth(self._buffer)
-                    return np.flip(self._buffer, axis=0).copy()
-            else:
-                if self._spec.gpu2gpu_transfer:
-                    import torch
-
-                    with torch.cuda.device(self._buffer.device):
+                    else:
                         tgt.read_frame_rgba_gpu(self._buffer.data_ptr())
 
                     return self._buffer.flip(0).clone()
+            else:
+                if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                    tgt.read_frame_object_id(self._buffer)
+                    return np.flip(self._buffer, axis=0).copy()
+                elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+                    tgt.read_frame_depth(self._buffer)
+                    return np.flip(self._buffer, axis=0).copy()
                 else:
                     tgt.read_frame_rgba(self._buffer)
                     return np.flip(

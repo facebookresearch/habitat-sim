@@ -40,7 +40,7 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
     parser.add_argument(
         "--with-gpu-gpu",
         action="store_true",
-        help="Build with GPU2GPU suport via GLTensor.  Requires pytorch",
+        help="Build with GPU2GPU transfer to support rendering directly to PyTorch tensors.",
     )
 
     parser.add_argument(
