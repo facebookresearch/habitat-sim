@@ -1,21 +1,14 @@
 #include "RedwoodNoiseModel.h"
 
-#include "esp/core/random.h"
-
 namespace esp {
 namespace sensor {
-namespace impl {
-RowMatrixXf simulatedRedwoodDepthKernelLauncher(
-    const Eigen::Ref<const RowMatrixXf> depth,
-    const Eigen::Ref<const RowMatrixXf> model);
-}
 
 namespace {
 constexpr int MODEL_N_DIMS = 5;
 float undistort(const int _x,
                 const int _y,
                 const float z,
-                const Eigen::Ref<const RowMatrixXf> model) {
+                const RowMatrixXf& model) {
   const int i2 = int((z + 1) / 2);
   const int i1 = i2 - 1;
   const float a = (z - (i1 * 2 + 1)) / 2.0;
@@ -32,23 +25,20 @@ float undistort(const int _x,
 }
 }  // namespace
 
-RowMatrixXf simulateRedwoodDepthCPU(const Eigen::Ref<const RowMatrixXf> depth,
-                                    const Eigen::Ref<const RowMatrixXf> model) {
-  core::Random prng;
-
-  RowMatrixXf noisyDepth = RowMatrixXf::Zero(depth.rows(), depth.cols());
+RowMatrixXf RedwoodNoiseModelCPUImpl::simulate(
+    const Eigen::Ref<const RowMatrixXf> depth) {
+  RowMatrixXf noisyDepth(depth.rows(), depth.cols());
 
   const double ymax = depth.rows() - 1, xmax = depth.cols() - 1;
 
-#pragma omp parallel for
   for (int j = 0; j <= ymax; ++j) {
     for (int i = 0; i <= xmax; ++i) {
       // Shuffle pixels
       const int y =
-          std::min(std::max(j + prng.normal_float_01() * 0.25, 0.0), ymax) +
+          std::min(std::max(j + prng_.normal_float_01() * 0.25, 0.0), ymax) +
           0.5;
       const int x =
-          std::min(std::max(i + prng.normal_float_01() * 0.25, 0.0), xmax) +
+          std::min(std::max(i + prng_.normal_float_01() * 0.25, 0.0), xmax) +
           0.5;
 
       // downsample
@@ -56,7 +46,7 @@ RowMatrixXf simulateRedwoodDepthCPU(const Eigen::Ref<const RowMatrixXf> depth,
 
       // Distortion
       const float undistorted_d =
-          undistort(x / xmax * 639.0 + 0.5, y / ymax * 479.0 + 0.5, d, model);
+          undistort(x / xmax * 639.0 + 0.5, y / ymax * 479.0 + 0.5, d, model_);
 
       // quantization and high freq noise
       if (undistorted_d == 0.0)
@@ -64,7 +54,7 @@ RowMatrixXf simulateRedwoodDepthCPU(const Eigen::Ref<const RowMatrixXf> depth,
       else
         noisyDepth(j, i) = 35.130 * 8.0 /
                            (std::round(35.130 / undistorted_d +
-                                       prng.normal_float_01() * 0.027778) *
+                                       prng_.normal_float_01() * 0.027778) *
                             8.0);
     }
   }
@@ -72,14 +62,41 @@ RowMatrixXf simulateRedwoodDepthCPU(const Eigen::Ref<const RowMatrixXf> depth,
   return noisyDepth;
 }
 
-RowMatrixXf simulateRedwoodDepthGPU(const Eigen::Ref<const RowMatrixXf> depth,
-                                    const Eigen::Ref<const RowMatrixXf> model) {
-  const float* noisyDepthData = impl::simulatedRedwoodDepthKernelLauncher(
-      depth.data(), depth.rows(), depth.cols(), model.data());
+#ifdef SENSORS_WITH_CUDA
+namespace impl {
 
-  RowMatrixXf noisyDepth = RowMatrixXf::Zero(depth.rows(), depth.cols());
-  std::memcpy(noisyDepth.data(), noisyDepthData,
-              depth.rows() * depth.cols() * sizeof(float));
+CurandStates* getCurandStates();
+void freeCurandStates(CurandStates* curandStates);
+void modelToDev(const float* __restrict__ model, float** devModel);
+void releaseDevModel(float* devModel);
+void simulateFromCPU(const float* __restrict__ depth,
+                     const int H,
+                     const int W,
+                     const float* __restrict__ devModel,
+                     CurandStates* curandStates,
+                     float* __restrict__ noisyDepth);
+}  // namespace impl
+
+RedwoodNoiseModelGPUImpl::RedwoodNoiseModelGPUImpl(
+    const Eigen::Ref<const RowMatrixXf> model) {
+  impl::modelToDev(model.data(), &devModel_);
+  curandStates_ = impl::getCurandStates();
 }
+
+RedwoodNoiseModelGPUImpl::~RedwoodNoiseModelGPUImpl() {
+  impl::releaseDevModel(devModel_);
+  impl::freeCurandStates(curandStates_);
+}
+
+RowMatrixXf RedwoodNoiseModelGPUImpl::simulateFromCPU(
+    const Eigen::Ref<const RowMatrixXf> depth) {
+  RowMatrixXf noisyDepth(depth.rows(), depth.cols());
+
+  impl::simulateFromCPU(depth.data(), depth.rows(), depth.cols(), devModel_,
+                        curandStates_, noisyDepth.data());
+  return noisyDepth;
+}
+#endif
+
 }  // namespace sensor
 }  // namespace esp

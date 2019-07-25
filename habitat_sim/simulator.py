@@ -16,6 +16,7 @@ from habitat_sim import utils
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower
+from habitat_sim.sensors.noise_models import make_sensor_noise_model
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -212,6 +213,13 @@ class Sensor:
                 dtype=np.uint8,
             )
 
+        self._noise_model = make_sensor_noise_model(self._spec.noise_model)
+        assert self._noise_model.is_valid_sensor_type(
+            self._spec.sensor_type
+        ), "Noise model '{}' is not valid for sensor '{}'".format(
+            self._spec.noise_model, self._spec.uuid
+        )
+
     def get_observation(self):
         # sanity check:
         # see if the sensor is attached to a scene graph, otherwise it is invalid,
@@ -251,13 +259,13 @@ class Sensor:
 
         if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
             self._sim.renderer.readFrameObjectId(self._buffer)
-            return np.flip(self._buffer, axis=0).copy()
+            obs = np.flip(self._buffer, axis=0).copy()
         elif self._spec.sensor_type == hsim.SensorType.DEPTH:
             self._sim.renderer.readFrameDepth(self._buffer)
-            return np.flip(self._buffer, axis=0).copy()
+            obs = np.flip(self._buffer, axis=0).copy()
         else:
             self._sim.renderer.readFrameRgba(self._buffer)
-            return np.flip(
+            obs = np.flip(
                 self._buffer.reshape(
                     (
                         self._spec.resolution[0],
@@ -267,3 +275,6 @@ class Sensor:
                 ),
                 axis=0,
             ).copy()
+
+        obs = self._noise_model.apply(obs)
+        return obs

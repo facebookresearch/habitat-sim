@@ -113,3 +113,56 @@ def test_smoke_no_sensors(make_cfg_settings):
         cfg = make_cfg(make_cfg_settings)
         cfg.agents[0].sensor_specifications = []
         sims.append(habitat_sim.Simulator(cfg))
+
+
+@pytest.mark.gfxtest
+@pytest.mark.parametrize("scene", _test_scenes)
+def test_smoke_redwood_noise(scene, sim, make_cfg_settings):
+    if not osp.exists(scene):
+        pytest.skip("Skipping {}".format(scene))
+
+    make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
+    make_cfg_settings["depth_sensor"] = True
+    make_cfg_settings["color_sensor"] = False
+    make_cfg_settings["scene"] = scene
+    hsim_cfg = make_cfg(make_cfg_settings)
+    hsim_cfg.agents[0].sensor_specifications[0].noise_model = "RedwoodDepthNoiseModel"
+
+    sim.reconfigure(hsim_cfg)
+
+    with open(
+        osp.abspath(
+            osp.join(
+                osp.dirname(__file__),
+                "gt_data",
+                "{}-state.json".format(osp.basename(osp.splitext(scene)[0])),
+            )
+        ),
+        "r",
+    ) as f:
+        render_state = json.load(f)
+        state = habitat_sim.AgentState()
+        state.position = render_state["pos"]
+        state.rotation = habitat_sim.utils.quat_from_coeffs(render_state["rot"])
+
+    sim.initialize_agent(0, state)
+    obs = sim.step("move_forward")
+
+    assert "depth_sensor" in obs
+
+    gt = np.load(
+        osp.abspath(
+            osp.join(
+                osp.dirname(__file__),
+                "gt_data",
+                "{}-{}.npy".format(
+                    osp.basename(osp.splitext(scene)[0]), "depth_sensor"
+                ),
+            )
+        )
+    )
+
+    # Different GPUs and different driver version will produce slightly different images
+    assert np.linalg.norm(
+        obs["depth_sensor"].astype(np.float) - gt.astype(np.float)
+    ) > 1.5e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
