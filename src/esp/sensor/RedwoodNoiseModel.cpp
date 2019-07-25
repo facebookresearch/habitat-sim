@@ -41,8 +41,8 @@ RowMatrixXf RedwoodNoiseModelCPUImpl::simulate(
           std::min(std::max(i + prng_.normal_float_01() * 0.25, 0.0), xmax) +
           0.5;
 
-      // downsample
-      const float d = depth(y - y % 2, x - x % 2);
+      // downsample and clip max depth
+      const float d = std::min(depth(y - y % 2, x - x % 2), 5.0f);
 
       // Distortion
       const float undistorted_d =

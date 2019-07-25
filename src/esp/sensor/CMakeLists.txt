@@ -18,12 +18,15 @@ target_link_libraries(sensor
     core
     gfx
     scene
-    ${CUDA_LIBRARIES}
 )
 
 if (CUDA_FOUND)
-  target_compile_definitions(sensor
+  target_link_libraries(sensor
     PUBLIC
-      SENSORS_WITH_CUDA
+      ${CUDA_LIBRARIES}
+  )
+  target_compile_definitions(sensor
+      PUBLIC
+        SENSORS_WITH_CUDA
   )
 endif()

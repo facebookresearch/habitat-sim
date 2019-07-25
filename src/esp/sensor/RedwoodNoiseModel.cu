@@ -63,8 +63,8 @@ __global__ void redwoodNoiseModelKernel(curandState_t* states,
       const int x =
           min(max(i + curand_normal(&curandState) * 0.25f, 0.0f), xmax) + 0.5f;
 
-      // downsample
-      const float d = depth[(y - y % 2) * W + x - x % 2];
+      // downsample and clip max depth
+      const float d = min(depth[(y - y % 2) * W + x - x % 2], 5.0f);
 
       // Distortion
       const float undistorted_d =
