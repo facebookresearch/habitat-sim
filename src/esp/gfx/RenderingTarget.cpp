@@ -110,39 +110,19 @@ struct RenderingTarget::Impl {
     return param;
   }
 
-  void readFrameRgba(uint8_t* ptr) {
-    framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{0});
-
-    Image2D rgbaImage =
-        framebuffer_.read(Range2Di::fromSize({0, 0}, framebufferSize_),
-                          {PixelFormat::RGBA8Unorm});
-    uint8_t* src_ptr = rgbaImage.data<uint8_t>();
-
-    std::memcpy(
-        ptr, src_ptr,
-        framebufferSize_[0] * framebufferSize_[1] * 4 * sizeof(uint8_t));
+  void readFrameRgba(const MutableImageView2D& view) {
+    framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{0})
+        .read({{}, framebufferSize_}, view);
   }
 
-  void readFrameDepth(float* ptr) {
-    framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{1});
-
-    Image2D depthImage = framebuffer_.read(
-        Range2Di::fromSize({0, 0}, framebufferSize_), {PixelFormat::R32F});
-    float* src_ptr = depthImage.data<float>();
-
-    std::memcpy(ptr, src_ptr,
-                framebufferSize_[0] * framebufferSize_[1] * sizeof(float));
+  void readFrameDepth(const MutableImageView2D& view) {
+    framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{1})
+        .read({{}, framebufferSize_}, view);
   }
 
-  void readFrameObjectId(uint32_t* ptr) {
-    framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{2});
-
-    Image2D objectImage = framebuffer_.read(
-        Range2Di::fromSize({0, 0}, framebufferSize_), {PixelFormat::R32UI});
-    uint32_t* src_ptr = objectImage.data<uint32_t>();
-
-    std::memcpy(ptr, src_ptr,
-                framebufferSize_[0] * framebufferSize_[1] * sizeof(uint32_t));
+  void readFrameObjectId(const MutableImageView2D& view) {
+    framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{2})
+        .read({{}, framebufferSize_}, view);
   }
 
   Magnum::Vector2i framebufferSize() const { return framebufferSize_; }
@@ -180,16 +160,17 @@ gltensor::GLTensorParam::ptr RenderingTarget::glTensorParamId() const {
   return pimpl_->glTensorParamId();
 }
 
-void RenderingTarget::readFrameRgba(uint8_t* ptr) {
-  pimpl_->readFrameRgba(ptr);
+void RenderingTarget::readFrameRgba(const Magnum::MutableImageView2D& view) {
+  pimpl_->readFrameRgba(view);
 }
 
-void RenderingTarget::readFrameDepth(float* ptr) {
-  pimpl_->readFrameDepth(ptr);
+void RenderingTarget::readFrameDepth(const Magnum::MutableImageView2D& view) {
+  pimpl_->readFrameDepth(view);
 }
 
-void RenderingTarget::readFrameObjectId(uint32_t* ptr) {
-  pimpl_->readFrameObjectId(ptr);
+void RenderingTarget::readFrameObjectId(
+    const Magnum::MutableImageView2D& view) {
+  pimpl_->readFrameObjectId(view);
 }
 
 Magnum::Vector2i RenderingTarget::framebufferSize() const {

@@ -22,6 +22,7 @@ using namespace py::literals;
 #include "esp/sensor/PinholeCamera.h"
 #include "esp/sensor/Sensor.h"
 
+#include <Magnum/Python.h>
 #include <Magnum/SceneGraph/Python.h>
 
 using namespace esp;
@@ -359,38 +360,18 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
                           py::object traceback) { self->renderExit(); })
       .def(
           "read_frame_rgba",
-          [](RenderingTarget& self,
-             Eigen::Ref<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic,
-                                      Eigen::RowMajor>>& img) {
-            self.readFrameRgba(img.data());
+          [](RenderingTarget& self, const Magnum::PyImageView<2, char>& view) {
+            self.readFrameRgba(view);
           },
-          py::arg("img").noconvert(),
-          R"(
-      Reads RGBA frame into passed img in uint8 byte format.
-
-      Parameters
-      ----------
-      img: numpy.ndarray[uint8[m, n], flags.writeable, flags.c_contiguous]
-           Numpy array array to populate with frame bytes.
-           Memory is NOT allocated to this array.
-           Assume that ``m = height`` and ``n = width * 4``.
-      )")
-      .def(
-          "read_frame_depth",
-          [](RenderingTarget& self,
-             Eigen::Ref<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic,
-                                      Eigen::RowMajor>>& img) {
-            self.readFrameDepth(img.data());
-          },
-          py::arg("img").noconvert(), R"()")
-      .def(
-          "read_frame_object_id",
-          [](RenderingTarget& self,
-             Eigen::Ref<Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic,
-                                      Eigen::RowMajor>>& img) {
-            self.readFrameObjectId(img.data());
-          },
-          py::arg("img").noconvert(), R"()")
+          "Reads RGBA frame into passed img in uint8 byte format.")
+      .def("read_frame_depth",
+           [](RenderingTarget& self, const Magnum::PyImageView<2, char>& view) {
+             self.readFrameDepth(view);
+           })
+      .def("read_frame_object_id",
+           [](RenderingTarget& self, const Magnum::PyImageView<2, char>& view) {
+             self.readFrameObjectId(view);
+           })
       .def("render_enter", &RenderingTarget::renderEnter)
       .def("render_exit", &RenderingTarget::renderExit);
 
