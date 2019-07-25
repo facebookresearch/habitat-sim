@@ -27,6 +27,7 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
    0. [Examples](#examples)
    0. [Common issues](#common-issues)
    0. [Acknowledgments](#acknowledgments)
+   0. [External Contributions](#external-contributions)
    0. [License](#license)
    0. [References](#references)
 
@@ -48,6 +49,9 @@ If you use the Habitat platform in your research, please cite the following [tec
   year =    {2019}
 }
 ```
+
+Habitat-Sim also builds on work contributed by others.  If you use contributed methods/models, please cite their works.  See the [External Contributions](#external-contributions) section
+for a list of what was externally contributed and the corresponding work/citation.
 
 ## Details
 
@@ -240,6 +244,15 @@ Install the pre-commit hooks with `pip install pre-commit && pre-commit install`
 
 ## Acknowledgments
 The Habitat project would not have been possible without the support and contributions of many individuals. We would like to thank Xinlei Chen, Georgia Gkioxari, Daniel Gordon, Leonidas Guibas, Saurabh Gupta, Or Litany, Marcus Rohrbach, Amanpreet Singh, Devendra Singh Chaplot, Yuandong Tian, and Yuxin Wu for many helpful conversations and guidance on the design and development of the Habitat platform.
+
+
+## External Contributions
+
+* If you use the noise model from PyRobot, please cite the their [technical report](https://github.com/facebookresearch/pyrobot#citation).
+
+
+    Specifically, the noise model used for the noisy control functions named `pyrobot_*` and defined in `habitat_sim/agent/controls/pyrobot_noisy_controls.py`
+
 
 ## License
 
