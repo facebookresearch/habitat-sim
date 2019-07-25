@@ -1,7 +1,6 @@
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
-//
 
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/BufferImage.h>
@@ -18,6 +17,12 @@
 
 #include "RenderingTarget.h"
 #include "magnum.h"
+
+#ifdef ESP_WITH_GPU_GPU
+#include <cuda_gl_interop.h>
+#include <cuda_runtime.h>
+#include "helper_cuda.h"
+#endif
 
 using namespace Magnum;
 
@@ -67,48 +72,6 @@ struct RenderingTarget::Impl {
 
   void renderExit() {}
 
-  gltensor::GLTensorParam::ptr glTensorParam() const {
-    auto param = std::make_shared<gltensor::GLTensorParam>();
-
-    param->height_ = framebufferSize_.y();
-    param->width_ = framebufferSize_.x();
-
-    param->target_ = GL_RENDERBUFFER;
-    param->device_id_ = context_->gpuDevice();
-
-    return param;
-  }
-
-  gltensor::GLTensorParam::ptr glTensorParamRgba() const {
-    auto param = this->glTensorParam();
-
-    param->format_ = GL_RGBA;
-    param->image_ = colorBuffer_.id();
-    param->channels_ = 4;
-
-    return param;
-  }
-
-  gltensor::GLTensorParam::ptr glTensorParamDepth() const {
-    auto param = this->glTensorParam();
-
-    param->format_ = GL_R32F;
-    param->image_ = depthBuffer_.id();
-    param->channels_ = 1;
-
-    return param;
-  }
-
-  gltensor::GLTensorParam::ptr glTensorParamId() const {
-    auto param = this->glTensorParam();
-
-    param->format_ = GL_R32UI;
-    param->image_ = objectIdBuffer_.id();
-    param->channels_ = 1;
-
-    return param;
-  }
-
   void readFrameRgba(uint8_t* ptr) {
     framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{0});
 
@@ -146,6 +109,78 @@ struct RenderingTarget::Impl {
 
   Magnum::Vector2i framebufferSize() const { return framebufferSize_; }
 
+  int gpuDeviceId() const { return this->context_->gpuDevice(); }
+
+#ifdef ESP_WITH_GPU_GPU
+  void readFrameRgbaGPU(uint8_t* ptr) {
+    if (colorBufferCugl_ == nullptr)
+      checkCudaErrors(cudaGraphicsGLRegisterImage(
+          &colorBufferCugl_, colorBuffer_.id(), GL_RENDERBUFFER,
+          cudaGraphicsRegisterFlagsReadOnly));
+
+    checkCudaErrors(cudaGraphicsMapResources(1, &colorBufferCugl_, 0));
+
+    cudaArray* array = nullptr;
+    checkCudaErrors(
+        cudaGraphicsSubResourceGetMappedArray(&array, colorBufferCugl_, 0, 0));
+    checkCudaErrors(cudaMemcpyFromArray(
+        ptr, array, 0, 0,
+        framebufferSize_.x() * framebufferSize_.y() * 4 * sizeof(uint8_t),
+        cudaMemcpyDeviceToDevice));
+
+    checkCudaErrors(cudaGraphicsUnmapResources(1, &colorBufferCugl_, 0));
+  }
+
+  void readFrameDepthGPU(float* ptr) {
+    if (depthBufferCugl_ == nullptr)
+      checkCudaErrors(cudaGraphicsGLRegisterImage(
+          &depthBufferCugl_, depthBuffer_.id(), GL_RENDERBUFFER,
+          cudaGraphicsRegisterFlagsReadOnly));
+
+    checkCudaErrors(cudaGraphicsMapResources(1, &depthBufferCugl_, 0));
+
+    cudaArray* array = nullptr;
+    checkCudaErrors(
+        cudaGraphicsSubResourceGetMappedArray(&array, depthBufferCugl_, 0, 0));
+    checkCudaErrors(cudaMemcpyFromArray(
+        ptr, array, 0, 0,
+        framebufferSize_.x() * framebufferSize_.y() * 1 * sizeof(float),
+        cudaMemcpyDeviceToDevice));
+
+    checkCudaErrors(cudaGraphicsUnmapResources(1, &depthBufferCugl_, 0));
+  }
+
+  void readFrameObjectIdGPU(int32_t* ptr) {
+    if (objecIdBufferCugl_ == nullptr)
+      checkCudaErrors(cudaGraphicsGLRegisterImage(
+          &objecIdBufferCugl_, objectIdBuffer_.id(), GL_RENDERBUFFER,
+          cudaGraphicsRegisterFlagsReadOnly));
+
+    checkCudaErrors(cudaGraphicsMapResources(1, &objecIdBufferCugl_, 0));
+
+    cudaArray* array = nullptr;
+    checkCudaErrors(cudaGraphicsSubResourceGetMappedArray(
+        &array, objecIdBufferCugl_, 0, 0));
+    checkCudaErrors(cudaMemcpyFromArray(
+        ptr, array, 0, 0,
+        framebufferSize_.x() * framebufferSize_.y() * 1 * sizeof(int32_t),
+        cudaMemcpyDeviceToDevice));
+
+    checkCudaErrors(cudaGraphicsUnmapResources(1, &objecIdBufferCugl_, 0));
+  }
+#endif
+
+  ~Impl() {
+#ifdef ESP_WITH_GPU_GPU
+    if (colorBufferCugl_ != nullptr)
+      checkCudaErrors(cudaGraphicsUnregisterResource(colorBufferCugl_));
+    if (depthBufferCugl_ != nullptr)
+      checkCudaErrors(cudaGraphicsUnregisterResource(depthBufferCugl_));
+    if (objecIdBufferCugl_ != nullptr)
+      checkCudaErrors(cudaGraphicsUnregisterResource(objecIdBufferCugl_));
+#endif
+  }
+
  private:
   WindowlessContext::ptr context_ = nullptr;
 
@@ -155,6 +190,12 @@ struct RenderingTarget::Impl {
   Magnum::GL::Renderbuffer objectIdBuffer_;
   Magnum::GL::Renderbuffer depthRenderbuffer_;
   Magnum::GL::Framebuffer framebuffer_;
+
+#ifdef ESP_WITH_GPU_GPU
+  cudaGraphicsResource_t colorBufferCugl_ = nullptr;
+  cudaGraphicsResource_t depthBufferCugl_ = nullptr;
+  cudaGraphicsResource_t objecIdBufferCugl_ = nullptr;
+#endif
 };  // namespace gfx
 
 RenderingTarget::RenderingTarget(WindowlessContext::ptr context,
@@ -169,15 +210,19 @@ void RenderingTarget::renderExit() {
   pimpl_->renderExit();
 }
 
-gltensor::GLTensorParam::ptr RenderingTarget::glTensorParamRgba() const {
-  return pimpl_->glTensorParamRgba();
+#ifdef ESP_WITH_GPU_GPU
+void RenderingTarget::readFrameRgbaGPU(uint8_t* ptr) {
+  pimpl_->readFrameRgbaGPU(ptr);
 }
-gltensor::GLTensorParam::ptr RenderingTarget::glTensorParamDepth() const {
-  return pimpl_->glTensorParamDepth();
+
+void RenderingTarget::readFrameDepthGPU(float* ptr) {
+  pimpl_->readFrameDepthGPU(ptr);
 }
-gltensor::GLTensorParam::ptr RenderingTarget::glTensorParamId() const {
-  return pimpl_->glTensorParamId();
+
+void RenderingTarget::readFrameObjectIdGPU(int32_t* ptr) {
+  pimpl_->readFrameObjectIdGPU(ptr);
 }
+#endif
 
 void RenderingTarget::readFrameRgba(uint8_t* ptr) {
   pimpl_->readFrameRgba(ptr);
@@ -189,6 +234,10 @@ void RenderingTarget::readFrameDepth(float* ptr) {
 
 void RenderingTarget::readFrameObjectId(uint32_t* ptr) {
   pimpl_->readFrameObjectId(ptr);
+}
+
+int RenderingTarget::gpuDeviceId() const {
+  return pimpl_->gpuDeviceId();
 }
 
 Magnum::Vector2i RenderingTarget::framebufferSize() const {

@@ -5,7 +5,6 @@
 #pragma once
 
 #include <Magnum/Magnum.h>
-#include <gl_tensor_param.h>
 
 #include "esp/core/esp.h"
 
@@ -23,15 +22,19 @@ class RenderingTarget {
   void renderEnter();
   void renderExit();
 
-  gltensor::GLTensorParam::ptr glTensorParamRgba() const;
-  gltensor::GLTensorParam::ptr glTensorParamDepth() const;
-  gltensor::GLTensorParam::ptr glTensorParamId() const;
+  Magnum::Vector2i framebufferSize() const;
 
   void readFrameRgba(uint8_t* ptr);
   void readFrameDepth(float* ptr);
   void readFrameObjectId(uint32_t* ptr);
 
-  Magnum::Vector2i framebufferSize() const;
+  int gpuDeviceId() const;
+
+#ifdef ESP_WITH_GPU_GPU
+  void readFrameRgbaGPU(uint8_t* ptr);
+  void readFrameDepthGPU(float* ptr);
+  void readFrameObjectIdGPU(int32_t* ptr);
+#endif
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(RenderingTarget);
 };

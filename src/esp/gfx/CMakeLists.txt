@@ -40,7 +40,20 @@ target_include_directories(gfx
     "${DEPS_DIR}/glad/include"
 )
 
-target_include_directories(gfx PUBLIC ${GL_TENSOR_INCLUDE_DIRS})
+if(WITH_GPU_GPU)
+  find_package(CUDA REQUIRED)
+
+  target_include_directories(gfx PUBLIC
+    "${CUDA_INCLUDE_DIRS}"
+    ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers)
+
+  target_link_libraries(gfx PUBLIC
+      "${CUDA_LIBRARIES}")
+
+  target_compile_definitions(gfx PUBLIC
+    ESP_WITH_GPU_GPU)
+endif()
+
 
 target_link_libraries(gfx
   PUBLIC

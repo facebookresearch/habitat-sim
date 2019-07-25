@@ -212,29 +212,28 @@ class Sensor:
 
         if self._spec.gpu2gpu_transfer:
             assert (
-                hsim.gl_tensor_enabled
+                hsim.gpu_gpu_enabled
             ), "Must build habitat sim with '--with-gpu-gpu' flag for gpu2gpu-transfer"
 
             import torch
-            import gl_tensor
+
+            device = torch.device(
+                "cuda", self._sensor_object.rendering_target.gpu_device_id
+            )
 
             resolution = self._spec.resolution
             if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
-                _type = torch.int32
+                self._buffer = torch.empty(
+                    resolution[0], resolution[1], dtype=torch.int32, device=device
+                )
             elif self._spec.sensor_type == hsim.SensorType.DEPTH:
-                _type = torch.float32
+                self._buffer = torch.empty(
+                    resolution[0], resolution[1], dtype=torch.float32, device=device
+                )
             else:
-                _type = torch.uint8
-
-            tensor_param = self._sensor_object.gl_tensor_param
-            _buffer = torch.empty(
-                tensor_param.height,
-                tensor_param.width,
-                tensor_param.channels,
-                device=torch.device("cuda", tensor_param.device_id),
-                dtype=_type,
-            )
-            self._gl_tensor = gl_tensor.CudaTensor(tensor_param, _buffer)
+                self._buffer = torch.empty(
+                    resolution[0], resolution[1], 4, dtype=torch.uint8, device=device
+                )
         else:
             if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
                 self._buffer = np.empty(
@@ -293,16 +292,36 @@ class Sensor:
 
         with self._sensor_object.rendering_target as tgt:
             self._sim.renderer.draw(self._sensor_object, scene)
+            if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                if self._spec.gpu2gpu_transfer:
+                    import torch
 
-            if self._spec.gpu2gpu_transfer:
-                return self._gl_tensor.tensor().flip(0).squeeze(-1).clone()
-            else:
-                if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                    with torch.cuda.device(self._buffer.device):
+                        tgt.read_frame_object_id_gpu(self._buffer.data_ptr())
+
+                    return self._buffer.flip(0).clone()
+                else:
                     tgt.read_frame_object_id(self._buffer)
                     return np.flip(self._buffer, axis=0).copy()
-                elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+            elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+                if self._spec.gpu2gpu_transfer:
+                    import torch
+
+                    with torch.cuda.device(self._buffer.device):
+                        tgt.read_frame_depth_gpu(self._buffer.data_ptr())
+
+                    return self._buffer.flip(0).clone()
+                else:
                     tgt.read_frame_depth(self._buffer)
                     return np.flip(self._buffer, axis=0).copy()
+            else:
+                if self._spec.gpu2gpu_transfer:
+                    import torch
+
+                    with torch.cuda.device(self._buffer.device):
+                        tgt.read_frame_rgba_gpu(self._buffer.data_ptr())
+
+                    return self._buffer.flip(0).clone()
                 else:
                     tgt.read_frame_rgba(self._buffer)
                     return np.flip(
@@ -317,5 +336,4 @@ class Sensor:
                     ).copy()
 
     def __del__(self):
-        if self._gl_tensor is not None:
-            self._gl_tensor.release()
+        pass

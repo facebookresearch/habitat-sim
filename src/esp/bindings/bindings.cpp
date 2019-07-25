@@ -90,9 +90,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>>(),
            R"(Constructor: creates a scene node, and sets its parent.)")
       .def_property("type", &SceneNode::getType, &SceneNode::setType)
-      .def(
-          "create_child", [](SceneNode& self) { return &self.createChild(); },
-          R"(Creates a child node, and sets its parent to the current node.)")
+      .def("create_child", [](SceneNode& self) { return &self.createChild(); },
+           R"(Creates a child node, and sets its parent to the current node.)")
       .def_property_readonly("absolute_translation",
                              &SceneNode::absoluteTranslation);
 
@@ -269,20 +268,20 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   // ==== SemanticScene ====
   py::class_<SemanticScene, SemanticScene::ptr>(m, "SemanticScene")
       .def(py::init(&SemanticScene::create<>))
-      .def_static(
-          "load_mp3d_house",
-          [](const std::string& filename, SemanticScene& scene,
-             const vec4f& rotation) {
-            // numpy doesn't have a quaternion equivalent, use vec4
-            // instead
-            return SemanticScene::loadMp3dHouse(
-                filename, scene, Eigen::Map<const quatf>(rotation.data()));
-          },
-          R"(
+      .def_static("load_mp3d_house",
+                  [](const std::string& filename, SemanticScene& scene,
+                     const vec4f& rotation) {
+                    // numpy doesn't have a quaternion equivalent, use vec4
+                    // instead
+                    return SemanticScene::loadMp3dHouse(
+                        filename, scene,
+                        Eigen::Map<const quatf>(rotation.data()));
+                  },
+                  R"(
         Loads a SemanticScene from a Matterport3D House format file into passed
         :py:class:`SemanticScene`'.
       )",
-          "file"_a, "scene"_a, "rotation"_a)
+                  "file"_a, "scene"_a, "rotation"_a)
       .def_property_readonly("aabb", &SemanticScene::aabb)
       .def_property_readonly("categories", &SemanticScene::categories)
       .def_property_readonly("levels", &SemanticScene::levels)
@@ -348,6 +347,12 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   // ==== Observation ====
   py::class_<Observation, Observation::ptr>(m, "Observation");
 
+  m.attr("gpu_gpu_enabled") =
+#ifdef ESP_WITH_GPU_GPU
+      true;
+#else
+      false;
+#endif
   py::class_<RenderingTarget, RenderingTarget::ptr>(m, "RenderingTarget")
       .def("__enter__",
            [](RenderingTarget::ptr self) {
@@ -357,15 +362,14 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("__exit__", [](RenderingTarget::ptr self, py::object exc_type,
                           py::object exc_value,
                           py::object traceback) { self->renderExit(); })
-      .def(
-          "read_frame_rgba",
-          [](RenderingTarget& self,
-             Eigen::Ref<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic,
-                                      Eigen::RowMajor>>& img) {
-            self.readFrameRgba(img.data());
-          },
-          py::arg("img").noconvert(),
-          R"(
+      .def("read_frame_rgba",
+           [](RenderingTarget& self,
+              Eigen::Ref<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic,
+                                       Eigen::RowMajor>>& img) {
+             self.readFrameRgba(img.data());
+           },
+           py::arg("img").noconvert(),
+           R"(
       Reads RGBA frame into passed img in uint8 byte format.
 
       Parameters
@@ -375,32 +379,37 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            Memory is NOT allocated to this array.
            Assume that ``m = height`` and ``n = width * 4``.
       )")
-      .def(
-          "read_frame_depth",
-          [](RenderingTarget& self,
-             Eigen::Ref<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic,
-                                      Eigen::RowMajor>>& img) {
-            self.readFrameDepth(img.data());
-          },
-          py::arg("img").noconvert(), R"()")
-      .def(
-          "read_frame_object_id",
-          [](RenderingTarget& self,
-             Eigen::Ref<Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic,
-                                      Eigen::RowMajor>>& img) {
-            self.readFrameObjectId(img.data());
-          },
-          py::arg("img").noconvert(), R"()")
+      .def("read_frame_depth",
+           [](RenderingTarget& self,
+              Eigen::Ref<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic,
+                                       Eigen::RowMajor>>& img) {
+             self.readFrameDepth(img.data());
+           },
+           py::arg("img").noconvert(), R"()")
+      .def("read_frame_object_id",
+           [](RenderingTarget& self,
+              Eigen::Ref<Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic,
+                                       Eigen::RowMajor>>& img) {
+             self.readFrameObjectId(img.data());
+           },
+           py::arg("img").noconvert(), R"()")
+#ifdef ESP_WITH_GPU_GPU
+      .def("read_frame_rgba_gpu",
+           [](RenderingTarget& self, size_t ptr) {
+             self.readFrameRgbaGPU(reinterpret_cast<uint8_t*>(ptr));
+           })
+      .def("read_frame_depth_gpu",
+           [](RenderingTarget& self, size_t ptr) {
+             self.readFrameDepthGPU(reinterpret_cast<float*>(ptr));
+           })
+      .def("read_frame_object_id_gpu",
+           [](RenderingTarget& self, size_t ptr) {
+             self.readFrameObjectIdGPU(reinterpret_cast<int32_t*>(ptr));
+           })
+#endif
+      .def_property_readonly("gpu_device_id", &RenderingTarget::gpuDeviceId)
       .def("render_enter", &RenderingTarget::renderEnter)
       .def("render_exit", &RenderingTarget::renderExit);
-
-#ifdef ESP_WITH_GL_TENSOR
-  m.import("torch");
-  m.import("gl_tensor");
-  m.attr("gl_tensor_enabled") = true;
-#else
-  m.attr("gl_tensor_enabled") = false;
-#endif
 
   // ==== Sensor ====
   sensor
@@ -415,11 +424,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node")
       .def("bind_rendering_target", &Sensor::bindRenderingTarget)
       .def_property_readonly("framebuffer_size", &Sensor::framebufferSize)
-      .def_property_readonly("rendering_target", &Sensor::renderingTarget)
-#ifdef ESP_WITH_GL_TENSOR
-      .def_property_readonly("gl_tensor_param", &Sensor::glTensorParam)
-#endif
-      ;
+      .def_property_readonly("rendering_target", &Sensor::renderingTarget);
 
   // ==== PinholeCamera (subclass of Sensor) ====
   py::class_<sensor::PinholeCamera,

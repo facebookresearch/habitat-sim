@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <gl_tensor_param.h>
-
 #include "esp/core/esp.h"
 
 #include "esp/gfx/RenderCamera.h"
@@ -111,8 +109,6 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
       throw std::runtime_error("Sensor has no rendering target");
     return tgt_;
   }
-
-  gltensor::GLTensorParam::ptr glTensorParam() const;
 
  protected:
   SensorSpec::ptr spec_ = nullptr;

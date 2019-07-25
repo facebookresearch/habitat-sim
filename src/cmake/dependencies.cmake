@@ -12,9 +12,6 @@ find_package(OpenMP)
 
 include_directories("deps")
 
-# GL Tensor
-set(GL_TENSOR_INCLUDE_DIRS ${DEPS_DIR}/gl_tensor/include PARENT)
-
 # Eigen. Use a system package, if preferred.
 if(USE_SYSTEM_EIGEN)
   find_package(Eigen3 REQUIRED)

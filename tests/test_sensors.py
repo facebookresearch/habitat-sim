@@ -61,7 +61,7 @@ def test_sensors(scene, has_sem, sensor_type, gpu2gpu, sim, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
 
-    if not habitat_sim.gl_tensor_enabled and gpu2gpu:
+    if not habitat_sim.gpu_gpu_enabled and gpu2gpu:
         pytest.skip("Skipping with gl-tensor test")
 
     make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}

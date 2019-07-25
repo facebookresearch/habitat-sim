@@ -19,7 +19,7 @@ modules = [
     "ShortestPath",
     "SimulatorConfiguration",
     "geo",
-    "gl_tensor_enabled",
+    "gpu_gpu_enabled",
 ]
 
 from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend

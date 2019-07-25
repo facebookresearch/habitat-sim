@@ -227,9 +227,7 @@ class CMakeBuild(build_ext):
             "-DBUILD_GUI_VIEWERS={}".format("ON" if not args.headless else "OFF")
         ]
         cmake_args += ["-DBUILD_TESTS={}".format("ON" if args.build_tests else "OFF")]
-        cmake_args += [
-            "-DWITH_GL_TENSOR={}".format("ON" if args.with_gpu_gpu else "OFF")
-        ]
+        cmake_args += ["-DWITH_GPU_GPU={}".format("ON" if args.with_gpu_gpu else "OFF")]
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(

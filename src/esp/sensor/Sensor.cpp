@@ -56,30 +56,6 @@ void Sensor::setTransformationFromSpec() {
   node().rotateZ(Magnum::Rad(spec_->orientation[2]));
 }
 
-gltensor::GLTensorParam::ptr Sensor::glTensorParam() const {
-  if (!hasRenderingTarget())
-    throw std::runtime_error("Sensor has no rendering target");
-
-  switch (spec_->sensorType) {
-    case SensorType::COLOR:
-      return tgt_->glTensorParamRgba();
-      break;
-
-    case SensorType::DEPTH:
-      return tgt_->glTensorParamDepth();
-      break;
-
-    case SensorType::SEMANTIC:
-      return tgt_->glTensorParamId();
-      break;
-
-    default:
-      throw std::runtime_error(
-          "GLTensor only suppots color, depth, and semantic sensors");
-      break;
-  }
-}
-
 bool operator==(const SensorSpec& a, const SensorSpec& b) {
   return a.uuid == b.uuid && a.sensorType == b.sensorType &&
          a.sensorSubtype == b.sensorSubtype && a.parameters == b.parameters &&
