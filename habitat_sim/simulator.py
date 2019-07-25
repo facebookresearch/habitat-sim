@@ -259,10 +259,10 @@ class Sensor:
 
         if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
             self._sim.renderer.readFrameObjectId(self._buffer)
-            obs = np.flip(self._buffer, axis=0).copy()
+            obs = np.flip(self._buffer, axis=0)
         elif self._spec.sensor_type == hsim.SensorType.DEPTH:
             self._sim.renderer.readFrameDepth(self._buffer)
-            obs = np.flip(self._buffer, axis=0).copy()
+            obs = np.flip(self._buffer, axis=0)
         else:
             self._sim.renderer.readFrameRgba(self._buffer)
             obs = np.flip(
@@ -274,7 +274,7 @@ class Sensor:
                     )
                 ),
                 axis=0,
-            ).copy()
+            )
 
         obs = self._noise_model.apply(obs)
         return obs
