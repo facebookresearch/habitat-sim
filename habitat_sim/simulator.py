@@ -307,7 +307,7 @@ class Sensor:
                     else:
                         tgt.read_frame_rgba_gpu(self._buffer.data_ptr())
 
-                    return self._buffer.flip(0)
+                    return self._buffer.flip(0).clone()
             else:
                 size = self._sensor_object.framebuffer_size
 
@@ -328,4 +328,4 @@ class Sensor:
                         )
                     )
 
-                return np.flip(self._buffer, axis=0)
+                return np.flip(self._buffer, axis=0).copy()
