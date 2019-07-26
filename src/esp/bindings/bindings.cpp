@@ -364,7 +364,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("__exit__", [](RenderingTarget::ptr self, py::object exc_type,
                           py::object exc_value,
                           py::object traceback) { self->renderExit(); })
-      .def("clear", &RenderingTarget::clear)
       .def(
           "read_frame_rgba",
           [](RenderingTarget& self, const Magnum::PyImageView<2, char>& view) {
