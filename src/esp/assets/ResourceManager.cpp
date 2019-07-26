@@ -7,6 +7,7 @@
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>

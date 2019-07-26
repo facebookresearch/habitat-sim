@@ -24,9 +24,9 @@ class RenderingTarget {
 
   Magnum::Vector2i framebufferSize() const;
 
-  void readFrameRgba(uint8_t* ptr);
-  void readFrameDepth(float* ptr);
-  void readFrameObjectId(uint32_t* ptr);
+  void readFrameRgba(const Magnum::MutableImageView2D& view);
+  void readFrameDepth(const Magnum::MutableImageView2D& view);
+  void readFrameObjectId(const Magnum::MutableImageView2D& view);
 
   int gpuDeviceId() const;
 
