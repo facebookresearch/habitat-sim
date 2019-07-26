@@ -62,7 +62,7 @@ def test_sensors(scene, has_sem, sensor_type, gpu2gpu, sim, make_cfg_settings):
         pytest.skip("Skipping {}".format(scene))
 
     if not habitat_sim.gpu_gpu_enabled and gpu2gpu:
-        pytest.skip("Skipping with gl-tensor test")
+        pytest.skip("Skipping GPU->GPU test")
 
     make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["semantic_sensor"] = has_sem

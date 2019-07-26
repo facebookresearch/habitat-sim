@@ -156,8 +156,10 @@ class Simulator:
 
     def get_sensor_observations(self):
         observations = {}
+
         for sensor_uuid, sensor in self._sensors.items():
             observations[sensor_uuid] = sensor.get_observation()
+
         return observations
 
     def last_state(self):
@@ -198,7 +200,6 @@ class Sensor:
     def __init__(self, sim, agent, sensor_id):
         self._sim = sim
         self._agent = agent
-        self._gl_tensor = None
 
         # sensor is an attached object to the scene node
         # store such "attached object" in _sensor_object
@@ -249,13 +250,20 @@ class Sensor:
                 self._buffer = np.empty(
                     (
                         self._spec.resolution[0],
-                        self._spec.resolution[1] * self._spec.channels,
+                        self._spec.resolution[1],
+                        self._spec.channels,
                     ),
                     dtype=np.uint8,
                 )
 
     def get_observation(self):
+        # draw the scene with the visual sensor:
+        # it asserts the sensor is a visual sensor;
+        # internally it will set the camera parameters (from the sensor) to the
+        # default render camera in the scene so that
+        # it has correct modelview matrix, projection matrix to render the scene
         # sanity check:
+
         # see if the sensor is attached to a scene graph, otherwise it is invalid,
         # and cannot make any observation
         if not self._sensor_object.object:
@@ -284,12 +292,6 @@ class Sensor:
         agent_node = self._agent.scene_node
         agent_node.parent = scene.get_root_node()
 
-        # draw the scene with the visual sensor:
-        # it asserts the sensor is a visual sensor;
-        # internally it will set the camera parameters (from the sensor) to the
-        # default render camera in the scene so that
-        # it has correct modelview matrix, projection matrix to render the scene
-
         with self._sensor_object.rendering_target as tgt:
             self._sim.renderer.draw(self._sensor_object, scene)
 
@@ -304,26 +306,15 @@ class Sensor:
                     else:
                         tgt.read_frame_rgba_gpu(self._buffer.data_ptr())
 
-                    return self._buffer.flip(0).clone()
+                    return self._buffer.flip(0)
             else:
                 if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
                     tgt.read_frame_object_id(self._buffer)
-                    return np.flip(self._buffer, axis=0).copy()
                 elif self._spec.sensor_type == hsim.SensorType.DEPTH:
                     tgt.read_frame_depth(self._buffer)
-                    return np.flip(self._buffer, axis=0).copy()
                 else:
-                    tgt.read_frame_rgba(self._buffer)
-                    return np.flip(
-                        self._buffer.reshape(
-                            (
-                                self._spec.resolution[0],
-                                self._spec.resolution[1],
-                                self._spec.channels,
-                            )
-                        ),
-                        axis=0,
-                    ).copy()
+                    tgt.read_frame_rgba(
+                        self._buffer.reshape(self._spec.resolution[0], -1)
+                    )
 
-    def __del__(self):
-        pass
+                return np.flip(self._buffer, axis=0)
