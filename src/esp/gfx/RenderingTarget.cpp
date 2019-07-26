@@ -64,14 +64,14 @@ struct RenderingTarget::Impl {
     GL::Renderer::setClearDepth(1.0);
   }
 
-  void renderEnter() {
-    framebuffer_.bind();
+  void renderEnter() { framebuffer_.bind(); }
 
+  void renderExit() {}
+
+  void clear() {
     framebuffer_.clear(GL::FramebufferClear::Color |
                        GL::FramebufferClear::Depth);
   }
-
-  void renderExit() {}
 
   void readFrameRgba(const MutableImageView2D& view) {
     framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{0})
@@ -189,6 +189,10 @@ void RenderingTarget::renderEnter() {
 
 void RenderingTarget::renderExit() {
   pimpl_->renderExit();
+}
+
+void RenderingTarget::clear() {
+  pimpl_->clear();
 }
 
 #ifdef ESP_WITH_GPU_GPU

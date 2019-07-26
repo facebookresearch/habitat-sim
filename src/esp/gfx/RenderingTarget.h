@@ -22,6 +22,8 @@ class RenderingTarget {
   void renderEnter();
   void renderExit();
 
+  void clear();
+
   Magnum::Vector2i framebufferSize() const;
 
   void readFrameRgba(const Magnum::MutableImageView2D& view);

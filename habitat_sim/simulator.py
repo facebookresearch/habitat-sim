@@ -156,8 +156,10 @@ class Simulator:
         return self._sim.semantic_scene
 
     def get_sensor_observations(self):
-        observations = {}
+        for _, sensor in self._sensors.items():
+            sensor.draw_observation()
 
+        observations = {}
         for sensor_uuid, sensor in self._sensors.items():
             observations[sensor_uuid] = sensor.get_observation()
 
@@ -257,7 +259,7 @@ class Sensor:
                     dtype=np.uint8,
                 )
 
-    def get_observation(self):
+    def draw_observation(self):
         # draw the scene with the visual sensor:
         # it asserts the sensor is a visual sensor;
         # internally it will set the camera parameters (from the sensor) to the
@@ -294,8 +296,12 @@ class Sensor:
         agent_node.parent = scene.get_root_node()
 
         with self._sensor_object.rendering_target as tgt:
+            tgt.clear()
             self._sim.renderer.draw(self._sensor_object, scene)
 
+    def get_observation(self):
+
+        with self._sensor_object.rendering_target as tgt:
             if self._spec.gpu2gpu_transfer:
                 import torch
 
