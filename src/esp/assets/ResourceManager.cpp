@@ -35,9 +35,46 @@
 #include "MeshData.h"
 #include "ResourceManager.h"
 #include "esp/physics/PhysicsManager.h"
+#include "esp/physics/BulletPhysicsManager.h" //Alex TODO: will this need to change for conditional build?
 
 namespace esp {
 namespace assets {
+
+bool ResourceManager::loadScene(
+    const AssetInfo& info,
+    scene::SceneNode* parent,                 /* = nullptr */
+    DrawableGroup* drawables                 /* = nullptr */) {
+
+  //scene mesh loading
+  bool meshSuccess = false;
+  if (!io::exists(info.filepath)) {
+    LOG(ERROR) << "Cannot load from file " << info.filepath;
+    meshSuccess = false;
+  }else{
+    scene::SceneNode* sceneNode = nullptr;
+    if (info.type == AssetType::FRL_INSTANCE_MESH ||
+        info.type == AssetType::INSTANCE_MESH) {
+      LOG(INFO) << "Loading FRL/Instance mesh data";
+      meshSuccess = loadInstanceMeshData(info, parent, drawables);
+    } else if (info.type == AssetType::FRL_PTEX_MESH) {
+      LOG(INFO) << "Loading PTEX mesh data";
+      meshSuccess = loadPTexMeshData(info, parent, drawables);
+    } else if (info.type == AssetType::SUNCG_SCENE) {
+      meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
+    } else if (info.type == AssetType::MP3D_MESH) {
+      LOG(INFO) << "Loading MP3D mesh data";
+      LOG(INFO) << "Parent " << parent << " drawables " << drawables;
+      meshSuccess = loadGeneralMeshData(info, parent, drawables);
+    } else {
+      // Unknown type, just load general mesh data
+      LOG(INFO) << "Loading General mesh data";
+      meshSuccess = loadGeneralMeshData(info, parent, drawables);
+    }
+  }
+
+  LOG(INFO) << "Loaded mesh scene, success " << meshSuccess << " parent " << parent << " drawables " << drawables;
+  return meshSuccess;
+}
 
 
 //! (1) load and instantiate scene
@@ -46,10 +83,11 @@ namespace assets {
 // TODO (JH): this function seems to entangle certain physicsManager functions
 bool ResourceManager::loadScene(
     const AssetInfo& info,
+    std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     scene::SceneNode* parent,                 /* = nullptr */
     DrawableGroup* drawables,                 /* = nullptr */
-    physics::PhysicsManager* _physicsManager, /* = nullptr */
-    std::string physicsFilename /* data/default.phys_scene_config.json */) {
+    std::string physicsFilename /* data/default.phys_scene_config.json */
+    ) {
 
   //scene mesh loading
   bool meshSuccess = false;
@@ -81,143 +119,143 @@ bool ResourceManager::loadScene(
   LOG(INFO) << "Loaded mesh scene, success " << meshSuccess << " parent " << parent << " drawables " << drawables;
 
   //if physics is enabled, initialize the physical scene
-  if (_physicsManager != nullptr) {
-    LOG(INFO) << "Loading physics config... " << physicsFilename;
+  LOG(INFO) << "Loading physics config... " << physicsFilename;
 
-    //Load the global scene config JSON here
-    io::JsonDocument scenePhysicsConfig = io::parseJsonFile(physicsFilename);
-    LOG(INFO) << "...parsed config ";
+  //Load the global scene config JSON here
+  io::JsonDocument scenePhysicsConfig = io::parseJsonFile(physicsFilename);
+  LOG(INFO) << "...parsed config ";
 
-    //load the simulator preference
-    //default is bullet simulator
-    //TODO: add more options here...
-    std::string simulator = "bullet";
-    if(scenePhysicsConfig.HasMember("physics simulator")){
-      if(scenePhysicsConfig["physics simulator"].IsString()){
-        std::string selectedSimulator = scenePhysicsConfig["physics simulator"].GetString();
-        if(selectedSimulator.compare("bullet") == 0){
-          simulator = "bullet";
-        }else{
-          //TODO: add more simulator options
-          simulator = "bullet";
-        }
+  //load the simulator preference
+  //default is no simulator
+  std::string simulator = "none";
+  if(scenePhysicsConfig.HasMember("physics simulator")){
+    if(scenePhysicsConfig["physics simulator"].IsString()){
+      std::string selectedSimulator = scenePhysicsConfig["physics simulator"].GetString();
+      if(selectedSimulator.compare("bullet") == 0){
+        simulator = "bullet";
+      }else{
+        //default to kinematic simulator
+        simulator = "none";
       }
     }
-
-    //load the physics timestep
-    if(scenePhysicsConfig.HasMember("timestep")){
-      if(scenePhysicsConfig["timestep"].IsNumber()){
-        if (_physicsManager != nullptr) {
-          _physicsManager->setTimestep(scenePhysicsConfig["timestep"].GetDouble());
-        }
-      }
-    }
-
-    //load gravity
-    Magnum::Vector3d gravity(0,-9.81,0);       // default gravity
-    if(scenePhysicsConfig.HasMember("gravity")){
-      if(scenePhysicsConfig["gravity"].IsArray()){
-        for (rapidjson::SizeType i = 0; i < scenePhysicsConfig["gravity"].Size(); i++){
-          if(!scenePhysicsConfig["gravity"][i].IsNumber()){
-            //invalid config
-            LOG(ERROR) << "Invalid value in physics gravity array"; break;
-          }else{
-            gravity[i] = scenePhysicsConfig["gravity"][i].GetDouble();
-          }
-        }
-      }
-    }
-
-    //! PHYSICS INIT: Use the above config to initialize physics engine
-    _physicsManager->initPhysics(parent, gravity, "bullet");
-
-    //! LOAD OBJECTS
-    LOG(INFO) << "...loading rigid body library metadata from individual paths";
-    std::string configDirectory = physicsFilename.substr(0,
-        physicsFilename.find_last_of("/"));
-    LOG(INFO) << "...dir = " << configDirectory;
-    //load the rigid object library metadata (no physics init yet...)
-    //ALEX NOTE: expect relative paths to the global config
-    if(scenePhysicsConfig.HasMember("rigid object paths")){
-      if(scenePhysicsConfig["rigid object paths"].IsArray()){
-        for (rapidjson::SizeType i = 0; 
-            i < scenePhysicsConfig["rigid object paths"].Size(); 
-            i++)
-        {
-          if(scenePhysicsConfig["rigid object paths"][i].IsString()){
-            //1: read the filename (relative path)
-            std::string objPhysPropertiesFilename = configDirectory;
-            objPhysPropertiesFilename.append("/").append(
-                scenePhysicsConfig["rigid object paths"][i].GetString()).append(
-                ".phys_properties.json");
-            //get the absolute path
-            LOG(INFO) << "...   obj properties path = " << objPhysPropertiesFilename;
-
-            //2. loadObject()
-            int sceneID = loadObject(objPhysPropertiesFilename);
-          }else{
-            LOG(ERROR) << "Invalid value in physics scene config -rigid object library- array " << i;
-          }
-        }
-      }
-    }
-    //ALEX TODO: load objects property files from an entire directory (a property dataset...)
-
-    //! CONSTRUCT SCENE
-    const std::string& filename = info.filepath;
-    MeshMetaData& metaData = resourceDict_.at(filename);
-    auto indexPair = metaData.meshIndex;
-    int start = indexPair.first;
-    int end = indexPair.second;
-
-    //! Collect collision mesh group
-    std::vector<CollisionMeshData> meshGroup;
-    LOG(INFO) << "Accessing scene mesh start " << start << " end " << end;
-    for (int mesh_i = start; mesh_i <= end; mesh_i++) {
-
-      // FRL Quad Mesh
-      if (info.type == AssetType::FRL_INSTANCE_MESH) {
-        LOG(INFO) << "Loading FRL scene";
-        FRLInstanceMeshData* frlMeshData = 
-            dynamic_cast<FRLInstanceMeshData*>(meshes_[mesh_i].get());
-        CollisionMeshData& meshData = frlMeshData->getCollisionMeshData();
-        meshGroup.push_back(meshData);
-      } 
-
-      // PLY Instance mesh
-      else if (info.type == AssetType::INSTANCE_MESH) {
-        LOG(INFO) << "Loading PLY scene";
-        GenericInstanceMeshData* insMeshData = 
-            dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
-        quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
-        Magnum::Quaternion quat = Magnum::Quaternion(quatf);
-        CollisionMeshData& meshData = insMeshData->getCollisionMeshData();
-        meshGroup.push_back(meshData);
-      }
-
-      // GLB Mesh
-      else if (info.type == AssetType::MP3D_MESH) {
-        LOG(INFO) << "Loading GLB scene";
-        quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
-        Magnum::Quaternion quat = Magnum::Quaternion(quatf);
-        GltfMeshData* gltfMeshData = dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
-        CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
-        Magnum::Matrix4 transform =
-            Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
-        Magnum::MeshTools::transformPointsInPlace(transform,
-                                                  meshData.positions);
-        meshGroup.push_back(meshData);
-      }
-    }
-    //! Initialize collision mesh
-    bool sceneSuccess = _physicsManager->addScene(info, meshGroup);
-    LOG(INFO) << "Initialized mesh scene, success " << sceneSuccess;
-    if (!sceneSuccess) {
-      LOG(INFO) << "Physics manager failed to initialize object";
-      return false;
-    }
-
   }
+
+  //load the physics timestep
+  double dt = 0.01;
+  if(scenePhysicsConfig.HasMember("timestep")){
+    if(scenePhysicsConfig["timestep"].IsNumber()){
+      dt = scenePhysicsConfig["timestep"].GetDouble();
+    }
+  }
+
+  //load gravity
+  Magnum::Vector3d gravity(0,-9.81,0);       // default gravity
+  if(scenePhysicsConfig.HasMember("gravity")){
+    if(scenePhysicsConfig["gravity"].IsArray()){
+      for (rapidjson::SizeType i = 0; i < scenePhysicsConfig["gravity"].Size(); i++){
+        if(!scenePhysicsConfig["gravity"][i].IsNumber()){
+          //invalid config
+          LOG(ERROR) << "Invalid value in physics gravity array"; break;
+        }else{
+          gravity[i] = scenePhysicsConfig["gravity"][i].GetDouble();
+        }
+      }
+    }
+  }
+
+  //! PHYSICS INIT: Use the above config to initialize physics engine
+  
+  if (simulator.compare("bullet") == 0)
+    _physicsManager.reset(new physics::BulletPhysicsManager(this));
+  _physicsManager->initPhysics(parent, gravity);
+  _physicsManager->setTimestep(dt);
+
+  //! LOAD OBJECTS
+  LOG(INFO) << "...loading rigid body library metadata from individual paths";
+  std::string configDirectory = physicsFilename.substr(0,
+      physicsFilename.find_last_of("/"));
+  LOG(INFO) << "...dir = " << configDirectory;
+  //load the rigid object library metadata (no physics init yet...)
+  //ALEX NOTE: expect relative paths to the global config
+  if(scenePhysicsConfig.HasMember("rigid object paths")){
+    if(scenePhysicsConfig["rigid object paths"].IsArray()){
+      for (rapidjson::SizeType i = 0; 
+          i < scenePhysicsConfig["rigid object paths"].Size(); 
+          i++)
+      {
+        if(scenePhysicsConfig["rigid object paths"][i].IsString()){
+          //1: read the filename (relative path)
+          std::string objPhysPropertiesFilename = configDirectory;
+          objPhysPropertiesFilename.append("/").append(
+              scenePhysicsConfig["rigid object paths"][i].GetString()).append(
+              ".phys_properties.json");
+          //get the absolute path
+          LOG(INFO) << "...   obj properties path = " << objPhysPropertiesFilename;
+
+          //2. loadObject()
+          int sceneID = loadObject(objPhysPropertiesFilename);
+        }else{
+          LOG(ERROR) << "Invalid value in physics scene config -rigid object library- array " << i;
+        }
+      }
+    }
+  }
+  //ALEX TODO: load objects property files from an entire directory (a property dataset/library...)
+
+  //! CONSTRUCT SCENE
+  const std::string& filename = info.filepath;
+  MeshMetaData& metaData = resourceDict_.at(filename);
+  auto indexPair = metaData.meshIndex;
+  int start = indexPair.first;
+  int end = indexPair.second;
+
+  //! Collect collision mesh group
+  std::vector<CollisionMeshData> meshGroup;
+  LOG(INFO) << "Accessing scene mesh start " << start << " end " << end;
+  for (int mesh_i = start; mesh_i <= end; mesh_i++) {
+
+    // FRL Quad Mesh
+    if (info.type == AssetType::FRL_INSTANCE_MESH) {
+      LOG(INFO) << "Loading FRL scene";
+      FRLInstanceMeshData* frlMeshData = 
+          dynamic_cast<FRLInstanceMeshData*>(meshes_[mesh_i].get());
+      CollisionMeshData& meshData = frlMeshData->getCollisionMeshData();
+      meshGroup.push_back(meshData);
+    } 
+
+    // PLY Instance mesh
+    else if (info.type == AssetType::INSTANCE_MESH) {
+      LOG(INFO) << "Loading PLY scene";
+      GenericInstanceMeshData* insMeshData = 
+          dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
+      quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
+      Magnum::Quaternion quat = Magnum::Quaternion(quatf);
+      CollisionMeshData& meshData = insMeshData->getCollisionMeshData();
+      meshGroup.push_back(meshData);
+    }
+
+    // GLB Mesh
+    else if (info.type == AssetType::MP3D_MESH) {
+      LOG(INFO) << "Loading GLB scene";
+      quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
+      Magnum::Quaternion quat = Magnum::Quaternion(quatf);
+      GltfMeshData* gltfMeshData = dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
+      CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
+      Magnum::Matrix4 transform =
+          Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
+      Magnum::MeshTools::transformPointsInPlace(transform,
+                                                meshData.positions);
+      meshGroup.push_back(meshData);
+    }
+  }
+  //! Initialize collision mesh
+  bool sceneSuccess = _physicsManager->addScene(info, meshGroup);
+  LOG(INFO) << "Initialized mesh scene, success " << sceneSuccess;
+  if (!sceneSuccess) {
+    LOG(INFO) << "Physics manager failed to initialize object";
+    return false;
+  }
+
   return meshSuccess;
 }
 
@@ -420,10 +458,10 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename)
   //Alex TODO: add other mesh types and unify the COM move: don't want simplified meshes to result in different rendering and collision COMs/origins
   if (!renderMeshFilename.empty()){
     renderMeshinfo = assets::AssetInfo::fromPath(renderMeshFilename);
-    if (renderMeshinfo.type != AssetType::MP3D_MESH) {
-      LOG(INFO) << "Cannot load non-GLB objects";
-      return -1;
-    }
+    //if (renderMeshinfo.type != AssetType::MP3D_MESH) {
+    //  LOG(INFO) << "Cannot load non-GLB objects";
+    //  return -1;
+    //}
     if (shouldComputeMeshBBCenter){ //compute the COM from BB center
       LOG(INFO) << "LOADING BB CENTER COM>>>>>>>>>>>>>>>>>>>>>>>>>>>";
       renderMeshSuccess = loadGeneralMeshData(renderMeshinfo, nullptr, nullptr, true);
@@ -440,10 +478,10 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename)
   //! Load collision mesh
   if (!collisionMeshFilename.empty()){
     collisionMeshinfo = assets::AssetInfo::fromPath(collisionMeshFilename);
-    if (collisionMeshinfo.type != AssetType::MP3D_MESH) {
-      LOG(INFO) << "Cannot load non-GLB objects";
-      return -1;
-    }
+    //if (collisionMeshinfo.type != AssetType::MP3D_MESH) {
+    //  LOG(INFO) << "Cannot load non-GLB objects";
+    //  return -1;
+    //}
     if (shouldComputeMeshBBCenter){ //compute the COM from BB center
       collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo, nullptr, nullptr, true);
     }else if (shiftMeshOrigin){ //use the provided COM
@@ -469,11 +507,18 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename)
   physMetaData.renderMeshHandle = renderMeshFilename;
   physMetaData.collisionMeshHandle = collisionMeshFilename;
 
+  //handle one missing mesh
+  if(!renderMeshSuccess)
+    physMetaData.renderMeshHandle = collisionMeshFilename;
+  if(!collisionMeshSuccess)
+    physMetaData.collisionMeshHandle = renderMeshFilename;
+
   //5. cache metaData, collision mesh Group
   physicsObjectLibrary_.emplace(objPhysConfigFilename, physMetaData);
   LOG(INFO) << "Config " << objPhysConfigFilename;
+  LOG(INFO) << "physMetaData.collisionMeshHandle " << physMetaData.collisionMeshHandle;
   LOG(INFO) << "Inertia " << physMetaData.inertia.x() << " " << physMetaData.inertia.y();
-  MeshMetaData& meshMetaData = resourceDict_.at(collisionMeshFilename);
+  MeshMetaData& meshMetaData = resourceDict_.at(physMetaData.collisionMeshHandle);
 
   int start = meshMetaData.meshIndex.first;
   int end   = meshMetaData.meshIndex.second;
@@ -481,13 +526,14 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename)
   //! Gather mesh components for meshGroup data
   std::vector<CollisionMeshData> meshGroup;
   for (int mesh_i = start; mesh_i <= end; mesh_i++) {
-    GltfMeshData* gltfMeshData = dynamic_cast<GltfMeshData*>(
-        meshes_[mesh_i].get());
+    GltfMeshData* gltfMeshData = dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
     CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
     meshGroup.push_back(meshData);
   }
   //! Properly align axis direction
-  transformAxis(renderMeshinfo, meshGroup);
+  //ALEX NOTE: this breaks the collision properties of some files
+  //LOG(INFO) << "Skipping  transformAxis for object meshes to avoid observed issues...";
+  //transformAxis(renderMeshinfo, meshGroup);
 
   collisionMeshGroups_.emplace(objPhysConfigFilename, meshGroup);
   LOG(INFO) << "Config filename " << objPhysConfigFilename;
@@ -560,11 +606,14 @@ void ResourceManager::transformAxis(
 
   quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
   Magnum::Quaternion quat = Magnum::Quaternion(quatf);
+  //LOG(INFO) << "quat: " << (float)(quat.angle()) << " [" << quat.axis().x() << " " << quat.axis().y() << " " << quat.axis().z() << "]";
+  Magnum::Matrix4 transform;
+  if(!(std::isnan(quat.axis().x()) || std::isnan(quat.axis().y()) || std::isnan(quat.axis().z()))){
+    transform = Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
+  }
+
   for (CollisionMeshData& meshData: meshGroup) {
-    Magnum::Matrix4 transform =
-        Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
-    Magnum::MeshTools::transformPointsInPlace(transform,
-                                              meshData.positions);
+    Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions);
   }
 }
 
@@ -774,8 +823,20 @@ bool ResourceManager::loadGeneralMeshData(
   MeshMetaData metaData;
   std::vector<Magnum::UnsignedInt> magnumData;
 
+  LOG(INFO) << "LoadingGeneralMeshData: " << filename;
+  LOG(INFO) << "  ...already loaded? " << fileIsLoaded;
+  
   // Optional File loading
   if (!fileIsLoaded) {
+
+    if(importer->isOpened())
+      LOG(ERROR) << " importer preload mesh3DCount = " << importer->mesh3DCount();
+    else
+    {
+        LOG(ERROR) << " importer no file loaded... ";
+    }
+    
+
     // if file is not loaded
     if (!importer) {
       LOG(ERROR) << "Cannot load the importer. ";
@@ -786,6 +847,8 @@ bool ResourceManager::loadGeneralMeshData(
       return false;
     }
 
+    LOG(ERROR) << " importer postload mesh3DCount = " << importer->mesh3DCount();
+
     // if this is a new file, load it and add it to the dictionary
     loadTextures(*importer, &metaData);
     LOG(INFO) << "Loaded total textures " << textures_.size();
@@ -794,11 +857,13 @@ bool ResourceManager::loadGeneralMeshData(
     
     // TODO (JH): shift origin merge with COM
     loadMeshes(*importer, &metaData, shiftOrigin, translation);
+    LOG(INFO) << "Loaded total meshes " << meshes_.size();
 
     resourceDict_.emplace(filename, metaData);
+    LOG(INFO) << "Added mesh metaData: meshes=" << metaData.meshIndex <<" materials=" << metaData.materialIndex << " textures=" << metaData.textureIndex;
 
     // Register magnum mesh
-    LOG(INFO) << "Loading " << filename;
+    LOG(INFO) << "Registering " << filename;
     if (importer->defaultScene() != -1) {
       Corrade::Containers::Optional<Magnum::Trade::SceneData> sceneData =
           importer->scene(importer->defaultScene());
@@ -825,6 +890,7 @@ bool ResourceManager::loadGeneralMeshData(
     magnumMeshDict_.emplace(filename, magnumData);
     LOG(INFO) << "Load mesh/material/texture done";
   } else {
+    LOG(INFO) << "  Loading metaData from resourceDict_";
     metaData = resourceDict_[filename];
   }
 
@@ -995,6 +1061,11 @@ void ResourceManager::addComponent(Importer& importer,
                                    scene::SceneNode& parent,
                                    DrawableGroup* drawables,
                                    int componentID) {
+  //importer.openFile(info.filename);
+  //TODO: check what is in the importer...
+  LOG(INFO) << "   ...importer object name" << importer.object3DName(componentID);
+  importer.openFile(info.filepath);
+  LOG(INFO) << "   ...importer object name" << importer.object3DName(componentID);
   std::unique_ptr<Magnum::Trade::ObjectData3D> objectData =
       importer.object3D(componentID);
   if (!objectData) {
@@ -1027,6 +1098,7 @@ void ResourceManager::addComponent(Importer& importer,
     LOG(INFO) << "Child ID " << childObjectID << " (total " << objectData->children().size() << ")";
     addComponent(importer, info, metaData, node, drawables, childObjectID);
   }
+  
 }
 
 void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,

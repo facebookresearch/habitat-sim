@@ -1,10 +1,13 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 #pragma once
 
 #include <Magnum/Trade/MeshData3D.h>
 #include <Magnum/Trade/MeshObjectData3D.h>
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Reference.h>
-#include <btBulletDynamicsCommon.h>
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/MeshData.h"
@@ -32,27 +35,24 @@ class RigidObject : public scene::SceneNode {
   // TODO (JH) Currently a RigidObject is either a scene
   // or an object, but cannot be both (tracked by _isScene/_isObject_)
   // there is probably a better way to abstract this
-  bool initializeScene(
-      std::vector<assets::CollisionMeshData> meshGroup,
-      btDynamicsWorld& bWorld);
+  virtual bool initializeScene(std::vector<assets::CollisionMeshData> meshGroup);
 
-  bool initializeObject(
+  virtual bool initializeObject(
       assets::PhysicsObjectMetaData& metaData,
       physics::PhysicalObjectType objectType,
-      std::vector<assets::CollisionMeshData> meshGroup,
-      btDynamicsWorld& bWorld);
+      std::vector<assets::CollisionMeshData> meshGroup);
 
   ~RigidObject();
 
   //! Check whether object is being actively simulated, or sleeping
-  bool isActive();
+  virtual bool isActive();
 
   //! Force interaction
-  void applyForce(Magnum::Vector3 force,
+  virtual void applyForce(Magnum::Vector3 force,
                   Magnum::Vector3 relPos);
 
   // Impulse interaction
-  void applyImpulse(Magnum::Vector3 impulse,
+  virtual void applyImpulse(Magnum::Vector3 impulse,
                     Magnum::Vector3 relPos);
 
   //! (Prototype) For visualizing & debugging
@@ -63,8 +63,7 @@ class RigidObject : public scene::SceneNode {
 
   // ==== Transformations ===
   //! Need to overwrite a bunch of functions to update physical states 
-  virtual SceneNode& setTransformation(
-      const Magnum::Math::Matrix4<float> transformation);
+  virtual SceneNode& setTransformation(const Magnum::Math::Matrix4<float> transformation);
   virtual SceneNode& setTranslation(const Magnum::Math::Vector3<float> vector);
   virtual SceneNode& setRotation(const Magnum::Math::Quaternion<float>& quaternion);
 
@@ -84,26 +83,11 @@ class RigidObject : public scene::SceneNode {
   virtual SceneNode& rotateYLocal(const Magnum::Math::Rad<float> angleInRad);
   virtual SceneNode& rotateZLocal(const Magnum::Math::Rad<float> angleInRad);
 
- private:
+ protected:
   bool initialized_ = false;
   bool isScene_  = false;
   bool isObject_ = false;
   MotionType objectMotionType;
-
-  //! Physical scene
-  //! Scene data: triangular mesh shape
-  //! All components are stored as a vector of bCollisionBody_
-  std::unique_ptr<btTriangleIndexVertexArray>          bSceneArray_;
-  std::vector<std::unique_ptr<btBvhTriangleMeshShape>> bSceneShapes_;
-  std::vector<std::unique_ptr<btCollisionObject>>      bSceneCollisionObjects_;
-
-  // Physical object
-  //! Object data: Composite convex collision shape
-  //! All components are wrapped into one rigidBody_
-  std::vector<std::unique_ptr<btConvexHullShape>>      bObjectConvexShapes_;
-  std::unique_ptr<btCompoundShape>                     bObjectShape_;
-  std::unique_ptr<btRigidBody>                         bObjectRigidBody_;
-  Magnum::BulletIntegration::MotionState*              bObjectMotionState_;
 
   //! Debugging visualization
   bool debugForce_;
@@ -115,7 +99,7 @@ class RigidObject : public scene::SceneNode {
 
   //! Needed after changing the pose from Magnum side
   //! Not exposed to end user
-  void syncPose();
+  virtual void syncPose();
 };
 
 }  // namespace physics

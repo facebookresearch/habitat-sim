@@ -23,7 +23,7 @@ using namespace Corrade;
 
 constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
-constexpr float cameraHeight = 0.5f;
+constexpr float cameraHeight = 1.5f;
 
 namespace esp {
 namespace gfx {
@@ -36,8 +36,7 @@ Viewer::Viewer(const Arguments& arguments)
                                 Vector4i(8, 8, 8, 8))},
       pathfinder_(nav::PathFinder::create()),
       controls_(),
-      previousPosition_(),
-      physicsManager_(resourceManager_) {
+      previousPosition_() {
   Utility::Arguments args;
   args.addArgument("file")
       .setHelp("file", "file to load")
@@ -70,8 +69,11 @@ Viewer::Viewer(const Arguments& arguments)
   LOG(INFO) << "Nav scene node (before) " << navSceneNode_;
   
   if (enablePhysics_) {
-    if (!resourceManager_.loadScene(info, navSceneNode_, &drawables, 
-      &physicsManager_)) {
+    //create the default physics manager and pass to resourceManager::loadScene to reseat as necessary
+    physicsManager_ = std::make_shared<physics::PhysicsManager>(&resourceManager_);
+    //physicsManager_ = std::make_shared<physics::BulletPhysicsManager>(&resourceManager_);
+    
+    if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_, &drawables)) {
       LOG(ERROR) << "cannot load " << file;
       std::exit(0);      
     }
@@ -117,33 +119,14 @@ Viewer::Viewer(const Arguments& arguments)
   LOG(INFO) << "Scene position" << Eigen::Map<vec3f>(
       navSceneNode_->translation().data());
 
-  if (enablePhysics_) {
-    if (surreal_mesh) {
-      Vector3 agent_pos = Vector3(-2.93701f, -3.53019f, 3.68798f);
-      agentBodyNode_->setTranslation(agent_pos);
-      agentBodyNode_->rotate(Quaternion(Vector3(0, 1, 0), 3.14f));
-    } else if (replica_mesh) {
-      Vector3 agent_pos = Vector3(0.0707106f, 1.0f, -0.7898f);
-      agentBodyNode_->setTranslation(agent_pos);
-      agentBodyNode_->rotate(Quaternion(Vector3(0, 1, 0), 3.14f));
-    } else if (vangoth_mesh) {
-      //agentBodyNode_->rotate(3.14f * 1.1, vec3f(0, 1, 0));
-      //Vector3 agent_pos = Vector3(0.0f, 0.0f, 0.0f);
-      Vector3 agent_pos = Vector3(2.38, 1.4f, 1.74);
-      agentBodyNode_->setTranslation(agent_pos);
-    } else if (castle_mesh) {
-      agentBodyNode_->rotate(Quaternion(Vector3(0, 1, 0), 3.14f * 1.1f));
-      // Vector3 agent_pos = Vector3(0.0f, 0.0f, 0.0f);
-      agentBodyNode_->translate(Vector3(-0.8f, 1.4f, 11.0f));
-      // agentBodyNode_->setTranslation(Eigen::Map<vec3f>(agent_pos.data()));
-    }
-  } else {
-    const vec3f position = pathfinder_->getRandomNavigablePoint();
-    agentBodyNode_->setTranslation(Vector3(position));
-  }
+  
+  const vec3f position = pathfinder_->getRandomNavigablePoint();
+  agentBodyNode_->setTranslation(Vector3(position));
+  
   //std::string object_file(args.value("obj"));
-  renderCamera_->node().setTransformation(cameraNode_->transformation());
+  renderCamera_->node().setTransformation(cameraNode_->absoluteTransformation());
 
+  /*
   if (enablePhysics_) {
     for (int o = 0; o < numObjects_; o++) {
       addObject("data/objects/cheezit.phys_properties.json");
@@ -162,12 +145,18 @@ Viewer::Viewer(const Arguments& arguments)
       });
     }
   }
+  */
 }  // namespace gfx
 
 void Viewer::addObject(std::string configFile) {
+  if(physicsManager_ == nullptr)
+    return;
+
   Magnum::Matrix4 T = agentBodyNode_
       ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  Vector3 new_pos = T.transformPoint({0.0f, 0.0f, 0.0f});
+  //Vector3 new_pos = T.transformPoint({0.0f, 0.0f, 0.0f});
+  Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
+  /*
   if (castle_mesh) {
     // new_pos = T.transformPoint({0.1f, 1.0f, -3.0f});
     new_pos = T.transformPoint({0.1f, 1.0f, -3.0f});
@@ -176,6 +165,7 @@ void Viewer::addObject(std::string configFile) {
   } else if (surreal_mesh) {
     new_pos = T.transformPoint({0.0f, 0.0f, -1.0f});
   }
+  */
 
   LOG(INFO) << "Camera position " << T.translation().x() << " "
             << T.translation().y() << " " << T.translation().z();
@@ -185,9 +175,9 @@ void Viewer::addObject(std::string configFile) {
 
   auto& drawables = sceneGraph->getDrawables();
   LOG(INFO) << "Before add drawables";
-  int physObjectID = physicsManager_.addObject(
+  int physObjectID = physicsManager_->addObject(
       configFile, physics::PhysicalObjectType::DYNAMIC, &drawables);
-  physicsManager_.setTranslation(physObjectID, new_pos);
+  physicsManager_->setTranslation(physObjectID, new_pos);
   
   
   //draw random quaternion via the method: http://planning.cs.uiuc.edu/node198.html
@@ -199,7 +189,7 @@ void Viewer::addObject(std::string configFile) {
     sqrt(u1)*sin(2*M_PI*u3),
     sqrt(u1)*cos(2*M_PI*u3)
     );
-  physicsManager_.setRotation(physObjectID, Magnum::Quaternion(
+  physicsManager_->setRotation(physObjectID, Magnum::Quaternion(
     qAxis,
     sqrt(1-u1)*sin(2*M_PI*u2)
      ));
@@ -211,21 +201,45 @@ void Viewer::addObject(std::string configFile) {
 
 
 void Viewer::pokeLastObject() {
+  if(physicsManager_ == nullptr)
+    return;
   Magnum::Matrix4 T = agentBodyNode_
       ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 impulse = T.transformPoint({0.0f, 0.0f, -3.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   LOG(INFO) << "Poking object " << lastObjectID;
-  physicsManager_.applyImpulse(lastObjectID, impulse, rel_pos);
+  physicsManager_->applyImpulse(lastObjectID, impulse, rel_pos);
 }
 
 void Viewer::pushLastObject() {
+  if(physicsManager_ == nullptr)
+    return;
   Magnum::Matrix4 T = agentBodyNode_
       ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 force = T.transformPoint({0.0f, 0.0f, -40.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   LOG(INFO) << "Pushing object " << lastObjectID;
-  physicsManager_.applyForce(lastObjectID, force, rel_pos);
+  physicsManager_->applyForce(lastObjectID, force, rel_pos);
+}
+
+//generate random direction vectors:
+Magnum::Vector3 Viewer::randomDirection(){
+  Magnum::Vector3 dir(1.0f,1.0f,1.0f);
+  while(sqrt( dir.dot()) > 1.0){
+      dir = Magnum::Vector3((float)((rand()%2000 - 1000)/1000.0),(float)((rand()%2000 - 1000)/1000.0),(float)((rand()%2000 - 1000)/1000.0));
+      LOG(INFO) << dir.x() << " " << dir.y() << " " << dir.z();
+  }
+  dir = dir/sqrt( dir.dot());
+   return dir;
+}
+
+void Viewer::wiggleLastObject() {
+  //demo of kinematic motion capability
+  //randomly translate last added object
+  if(physicsManager_ == nullptr)
+    return;
+
+  physicsManager_->translate(lastObjectID, randomDirection()*0.1);
 }
 
 Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
@@ -240,14 +254,16 @@ Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
 }
 
 void Viewer::drawEvent() {
-  LOG(INFO) << "drawEvent ";
+  //LOG(INFO) << "drawEvent ";
   GL::defaultFramebuffer.clear(GL::FramebufferClear::Color |
                                GL::FramebufferClear::Depth);
   if (sceneID_.size() <= 0)
     return;
 
   frame_curr_ += 1;
-  physicsManager_.stepPhysics();
+  if(physicsManager_ != nullptr)
+    physicsManager_->stepPhysics();
+  //LOG(INFO) << "post step ";
 
   if (do_profile_ && frame_curr_ > frame_limit_) {
     std::exit(0);
@@ -260,7 +276,9 @@ void Viewer::drawEvent() {
   // Draw debug forces
   //renderCamera_->getMagnumCamera().draw(physicsManager_.getDrawables());
   swapBuffers();
-  physicsManager_.nextFrame();
+  if(physicsManager_ != nullptr)
+    physicsManager_->nextFrame();
+  //LOG(INFO) << "post next frame ";
   redraw();
 }
 
@@ -368,14 +386,23 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Z:
       controls_(*agentBodyNode_, "moveUp", moveSensitivity, false);
       break;
-    case KeyEvent::Key::O:
-      addObject("data/objects/cheezit.phys_properties.json");
+    case KeyEvent::Key::O: {
+      //addObject("data/objects/cheezit.phys_properties.json");
+      if(physicsManager_ != nullptr){
+        int numObjects = resourceManager_.getNumLibraryObjects();
+        int randObjectID = rand()%numObjects;
+        addObject(resourceManager_.getObjectConfig(randObjectID));
+      }
+    }
       break;
     case KeyEvent::Key::P:
       pokeLastObject();
       break;
     case KeyEvent::Key::F:
       pushLastObject();
+      break;
+    case KeyEvent::Key::K:
+      wiggleLastObject();
       break;
     default:
       break;

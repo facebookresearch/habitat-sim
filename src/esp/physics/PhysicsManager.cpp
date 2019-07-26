@@ -15,9 +15,6 @@
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
 #include <Magnum/Math/Color.h>
-#include <Magnum/BulletIntegration/Integration.h>
-#include "BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h"
-#include "BulletCollision/Gimpact/btGImpactShape.h"
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
@@ -43,21 +40,8 @@ namespace physics {
 
 bool PhysicsManager::initPhysics(scene::SceneNode* node,
                                  Magnum::Vector3d gravity,
-                                 std::string simulator, /* default: "bullet" TODO: this does nothing yet b/c there are no options */
                                  bool do_profile) {
-  LOG(INFO) << "Initializing Physics Engine...";
-
-  //! We can potentially use other collision checking algorithms, by 
-  //! uncommenting the line below
-  //btGImpactCollisionAlgorithm::registerAlgorithm(&bDispatcher_);
-  bWorld_ = std::make_shared<btDiscreteDynamicsWorld>(&bDispatcher_, 
-      &bBroadphase_, &bSolver_, &bCollisionConfig_);
-  //currently GLB meshes are y-up
-  bWorld_->setGravity({gravity[0], gravity[1], gravity[2]});
-
-  // TODO (JH): debugDrawer is currently not compatible with our example cpp
-  //debugDraw_.setMode(Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe);
-  //bWorld_->setDebugDrawer(&_debugDraw);
+  LOG(INFO) << "Initializing Base Physics Engine...";
 
   physicsNode_ = node;
   //! Create new scene node
@@ -68,13 +52,13 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node,
   do_profile_ = do_profile;
 
   // Initialize debugger
-  LOG(INFO) << "Debug drawing";
-  Magnum::DebugTools::ResourceManager::instance()
-    .set("bulletForce", Magnum::DebugTools::ForceRendererOptions{}
-    .setSize(5.0f)
-    .setColor(Magnum::Color3(1.0f, 0.1f, 0.1f)));
+  //LOG(INFO) << "Debug drawing";
+  //Magnum::DebugTools::ResourceManager::instance()
+  //  .set("bulletForce", Magnum::DebugTools::ForceRendererOptions{}
+  //  .setSize(5.0f)
+  //  .setColor(Magnum::Color3(1.0f, 0.1f, 0.1f)));
 
-  LOG(INFO) << "Initialized Physics Engine.";
+  //LOG(INFO) << "Initialized Base Physics Engine.";
   return true;
 }
 
@@ -82,8 +66,7 @@ PhysicsManager::~PhysicsManager() {
   LOG(INFO) << "Deconstructing PhysicsManager";
 }
 
-// Bullet Mesh conversion adapted from:
-// https://github.com/mosra/magnum-integration/issues/20
+
 bool PhysicsManager::addScene(
     const assets::AssetInfo& info,
     std::vector<assets::CollisionMeshData> meshGroup) {
@@ -103,7 +86,7 @@ bool PhysicsManager::addScene(
   }
 
   //! Initialize scene
-  bool sceneSuccess = sceneNode_->initializeScene(meshGroup, *bWorld_);
+  bool sceneSuccess = sceneNode_->initializeScene(meshGroup);
   LOG(INFO) << "Init scene done";
 
   return sceneSuccess;
@@ -115,7 +98,7 @@ int PhysicsManager::addObject(
     PhysicalObjectType objectType,
     DrawableGroup* drawables) 
 {
-  std::string configFile = resourceManager.getObjectConfig(objectID);
+  std::string configFile = resourceManager->getObjectConfig(objectID);
   return addObject(configFile, objectType, drawables);
 }
 
@@ -125,10 +108,10 @@ int PhysicsManager::addObject(
     DrawableGroup* drawables) 
 {
   std::vector<assets::CollisionMeshData> meshGroup
-      = resourceManager.getCollisionMesh(configFile);
+      = resourceManager->getCollisionMesh(configFile);
 
   assets::PhysicsObjectMetaData metaData
-      = resourceManager.getPhysicsMetaData(configFile);
+      = resourceManager->getPhysicsMetaData(configFile);
 
   LOG(INFO) << "Add object: before check";
   //! Test Mesh primitive is valid
@@ -136,9 +119,6 @@ int PhysicsManager::addObject(
     if (!isMeshPrimitiveValid(meshData)) {return false;}
   }
   LOG(INFO) << "Add object: before child node";  
-
-  //! TODO (JH): hacked mass value
-  //float mass = meshGroup[0].indices.size() * 0.001f;;
 
   //! Create new physics object (child node of sceneNode_)
   std::shared_ptr<physics::RigidObject> physObject =
@@ -148,17 +128,13 @@ int PhysicsManager::addObject(
   LOG(INFO) << "Add object: before initialize";
 
   //! Instantiate with mesh pointer
-  bool objectSuccess = physObject->initializeObject(
-      metaData, objectType, meshGroup, *bWorld_);
+  bool objectSuccess = physObject->initializeObject(metaData, objectType, meshGroup);
   if (!objectSuccess) {
     LOG(ERROR) << "Initialize unsuccessful";
     return -1;
   }
   
   LOG(INFO) << "Add object: before render stack";
-
-  //! Enable force debugging
-  //physObject->debugForce(debugDrawables);
 
   //! Maintain object resource
   existingObjects_[nextObjectID_]  = physObject;
@@ -168,8 +144,7 @@ int PhysicsManager::addObject(
   nextObjectID_ += 1;
 
   //! IMPORTANT: invoke resourceManager to draw object
-  int resObjectID = resourceManager.addObject(
-      configFile, physObject.get(), drawables);
+  int resObjectID = resourceManager->addObject(configFile, physObject.get(), drawables);
   if (resObjectID < 0) {
     return -1;
   }
@@ -219,8 +194,7 @@ void PhysicsManager::stepPhysics() {
 
   // ==== Physics stepforward ======
   auto start = std::chrono::system_clock::now();
-  bWorld_->stepSimulation(timeline_.previousFrameDuration(), maxSubSteps_,
-                          fixedTimeStep_);
+  //Alex NOTE: simulator step goes here in derived classes...
   auto end = std::chrono::system_clock::now();
 
   std::chrono::duration<float> elapsed_seconds = end-start;
@@ -236,9 +210,8 @@ void PhysicsManager::stepPhysics() {
     LOG(INFO) << "Average physics fps: " << 1.0f / 
         (total_time_ / total_frames_);
   }
-  
-  int numObjects = bWorld_->getNumCollisionObjects();
 
+  //Alex NOTE: removed numObjects count from Bullet...
 }
 
 void PhysicsManager::nextFrame() {

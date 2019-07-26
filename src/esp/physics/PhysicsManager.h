@@ -11,11 +11,7 @@
 
 /* Bullet Physics Integration */
 #include <Magnum/Trade/MeshData3D.h>
-#include <Magnum/BulletIntegration/Integration.h>
-#include <Magnum/BulletIntegration/MotionState.h>
-#include <Magnum/BulletIntegration/DebugDraw.h>
 #include <Magnum/Timeline.h>
-#include <btBulletDynamicsCommon.h>
 
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
@@ -29,8 +25,8 @@
 
 //#include <Magnum/Math/Angle.h>
 // Debug draw
-#include <Magnum/DebugTools/ForceRenderer.h>
-#include <Magnum/DebugTools/ResourceManager.h>
+//#include <Magnum/DebugTools/ForceRenderer.h>
+//#include <Magnum/DebugTools/ResourceManager.h>
 #include "esp/physics/ObjectType.h"
 
 namespace esp {
@@ -43,15 +39,16 @@ namespace physics {
 
 class PhysicsManager {
  public:
-  explicit PhysicsManager(assets::ResourceManager& _resourceManager) : resourceManager(_resourceManager) {};
+  //explicit PhysicsManager(assets::ResourceManager& _resourceManager) : resourceManager(_resourceManager) {};
+  explicit PhysicsManager(assets::ResourceManager* _resourceManager){resourceManager=_resourceManager;};
+  
   virtual ~PhysicsManager();
 
   //============ Initialization =============
   //load physical properties and setup the world
   //do_profile indicates timing for FPS
-  bool initPhysics(scene::SceneNode* node,
+  virtual bool initPhysics(scene::SceneNode* node,
                    Magnum::Vector3d gravity,
-                   std::string simulator      = "bullet",
                    bool do_profile            = false);
   
   // Stores references to a set of drawable elements
@@ -61,24 +58,26 @@ class PhysicsManager {
   //! Initialize scene given mesh data
   //! Only one scene per simulation
   //! The scene could contain several components
-  bool addScene(
+  virtual bool addScene(
       const assets::AssetInfo& info,
       std::vector<assets::CollisionMeshData> meshGroup);
 
   //! Initialize object given mesh data
   //! The object could contain several parts
-  int addObject(
+  virtual int addObject(
       const std::string configFile,
       physics::PhysicalObjectType objectType,
       DrawableGroup* drawables);
 
+  //calls the above...
   int addObject(
       const int objectID,
       physics::PhysicalObjectType objectType,
       DrawableGroup* drawables);
 
   //============ Simulator functions =============
-  void stepPhysics();
+  virtual void stepPhysics();
+
 
   void setTimestep(double dt);
 
@@ -89,6 +88,7 @@ class PhysicsManager {
   void checkActiveObjects();
 
   //============ Interact with objects =============
+  //Alex NOTE: engine specifics handled by objects themselves...
   void applyForce(const int objectID,
       Magnum::Vector3 force,
       Magnum::Vector3 relPos);
@@ -123,10 +123,12 @@ class PhysicsManager {
                     const Magnum::Math::Rad<float> angleInRad);
 
 
+  /*
   Magnum::SceneGraph::DrawableGroup3D& getDrawables() { return debugDrawables; }
   const Magnum::SceneGraph::DrawableGroup3D& getDrawables() const {
     return debugDrawables;
   }
+  */
 
  protected:
 
@@ -134,23 +136,11 @@ class PhysicsManager {
   bool isMeshPrimitiveValid(assets::CollisionMeshData& meshData);
 
   //use this to instantiate physics objects from the physicsObjectLibrary_
-  assets::ResourceManager& resourceManager;
+  assets::ResourceManager* resourceManager;
 
   //! ==== physics engines ====
-  enum PhysicsSimulationLibrary {BULLET};
-  enum PhysicsSimulationLibrary activePhysSimLib_ = BULLET; //default
-
-  //! The world has to live longer than the scene because RigidBody
-  //! instances have to remove themselves from it on destruction
-  Magnum::BulletIntegration::DebugDraw    debugDraw_{Magnum::NoCreate};
-  btDbvtBroadphase                        bBroadphase_;
-  btDefaultCollisionConfiguration         bCollisionConfig_;
-  btSequentialImpulseConstraintSolver     bSolver_;
-  btCollisionDispatcher                   bDispatcher_{&bCollisionConfig_};
-  
-  //! The following are made ptr because we need to intialize them in constructor,
-  //! potentially with different world configurations
-  std::shared_ptr<btDiscreteDynamicsWorld>   bWorld_;
+  enum PhysicsSimulationLibrary {NONE, BULLET};
+  PhysicsSimulationLibrary activePhysSimLib_ = NONE; //default
 
   //! Used to keep track of all sceneNodes that have physical properties
   scene::SceneNode*                                  physicsNode_ = nullptr;
@@ -176,8 +166,8 @@ class PhysicsManager {
 
 
   /* Debug Draw */
-  Magnum::DebugTools::ResourceManager debugManager;
-  Magnum::SceneGraph::DrawableGroup3D debugDrawables;
+  //Magnum::DebugTools::ResourceManager debugManager;
+  //Magnum::SceneGraph::DrawableGroup3D debugDrawables;
 };
 
 }  // namespace physics

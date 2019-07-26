@@ -60,6 +60,7 @@ class ResourceManager {
   // subsystems such as "resource manager", thats make up an engine is
   // to define a singleton class;
   explicit ResourceManager(){
+    LOG(INFO) << "Constructing ResourceManager";
     importer = manager.loadAndInstantiate("AnySceneImporter");
     // Prefer tiny_gltf for loading glTF files (Assimp is worse),
     // prefer Assimp for OBJ files (ObjImporter is worse)
@@ -79,9 +80,18 @@ class ResourceManager {
   //! Both load + instantiate scene
   bool loadScene(const AssetInfo& info,
                  scene::SceneNode* parent                 = nullptr,
+                 DrawableGroup* drawables                 = nullptr);
+
+
+  //! Load Scene data + instantiate scene
+  //! Both load + instantiate scene
+  //Alex NOTE: Overloading and passing a reference to the PhysicsManager pointer so we can reseat it with the appropriate derived version
+  bool loadScene(const AssetInfo& info,
+                 std::shared_ptr<physics::PhysicsManager>& _physicsManager,
+                 scene::SceneNode* parent                 = nullptr,
                  DrawableGroup* drawables                 = nullptr,
-                 physics::PhysicsManager* _physicsManager = nullptr,
-                 std::string physicsFilename              = "data/default.phys_scene_config.json");
+                 std::string physicsFilename              = "data/default.phys_scene_config.json"
+                 );
 
   //! Load Object data and store internally
   //! Does not instantiate (physics & drawable)
@@ -118,6 +128,8 @@ class ResourceManager {
   std::string getObjectConfig(int objectID);
 
   PhysicsObjectMetaData& getPhysicsMetaData(const std::string configFile); 
+
+  int getNumLibraryObjects(){return physicsObjectConfigList_.size();};
 
 
  protected:

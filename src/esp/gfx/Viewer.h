@@ -43,8 +43,11 @@ class Viewer : public Magnum::Platform::Application {
   void pokeLastObject();
   void pushLastObject();
 
+  Magnum::Vector3 randomDirection();
+  void wiggleLastObject();
+
   assets::ResourceManager resourceManager_;
-  physics::PhysicsManager physicsManager_;
+  std::shared_ptr<physics::PhysicsManager> physicsManager_;
   scene::SceneManager sceneManager_;
   std::vector<int> sceneID_;
   scene::SceneNode* agentBodyNode_ = nullptr;

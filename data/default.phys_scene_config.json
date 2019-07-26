@@ -3,6 +3,8 @@
     "timestep": 0.01,
     "gravity": [0,-9.8,0],
     "rigid object paths":[
-        "objects/cheezit"
+        "objects/cheezit",
+        "objects/chefcan",
+        "objects/largeclamp"
     ]
 }
