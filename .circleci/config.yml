@@ -190,7 +190,6 @@ jobs:
               ./build.sh --headless --with-gpu-gpu
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pip install src/deps/gl_tensor
 
               export PYTHONPATH=$(pwd)
               pytest --ignore notebooks/habitat-sim-demo.ipynb

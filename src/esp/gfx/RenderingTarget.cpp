@@ -104,10 +104,10 @@ struct RenderingTarget::Impl {
     cudaArray* array = nullptr;
     checkCudaErrors(
         cudaGraphicsSubResourceGetMappedArray(&array, colorBufferCugl_, 0, 0));
-    checkCudaErrors(cudaMemcpyFromArray(
-        devPtr, array, 0, 0,
-        framebufferSize_.x() * framebufferSize_.y() * 4 * sizeof(uint8_t),
-        cudaMemcpyDeviceToDevice));
+    const int widthInBytes = framebufferSize_.x() * 4 * sizeof(uint8_t);
+    checkCudaErrors(cudaMemcpy2DFromArray(devPtr, widthInBytes, array, 0, 0,
+                                          widthInBytes, framebufferSize_.y(),
+                                          cudaMemcpyDeviceToDevice));
 
     checkCudaErrors(cudaGraphicsUnmapResources(1, &colorBufferCugl_, 0));
   }
@@ -123,10 +123,10 @@ struct RenderingTarget::Impl {
     cudaArray* array = nullptr;
     checkCudaErrors(
         cudaGraphicsSubResourceGetMappedArray(&array, depthBufferCugl_, 0, 0));
-    checkCudaErrors(cudaMemcpyFromArray(
-        devPtr, array, 0, 0,
-        framebufferSize_.x() * framebufferSize_.y() * 1 * sizeof(float),
-        cudaMemcpyDeviceToDevice));
+    const int widthInBytes = framebufferSize_.x() * 1 * sizeof(float);
+    checkCudaErrors(cudaMemcpy2DFromArray(devPtr, widthInBytes, array, 0, 0,
+                                          widthInBytes, framebufferSize_.y(),
+                                          cudaMemcpyDeviceToDevice));
 
     checkCudaErrors(cudaGraphicsUnmapResources(1, &depthBufferCugl_, 0));
   }
@@ -142,10 +142,10 @@ struct RenderingTarget::Impl {
     cudaArray* array = nullptr;
     checkCudaErrors(cudaGraphicsSubResourceGetMappedArray(
         &array, objecIdBufferCugl_, 0, 0));
-    checkCudaErrors(cudaMemcpyFromArray(
-        devPtr, array, 0, 0,
-        framebufferSize_.x() * framebufferSize_.y() * 1 * sizeof(int32_t),
-        cudaMemcpyDeviceToDevice));
+    const int widthInBytes = framebufferSize_.x() * 1 * sizeof(int32_t);
+    checkCudaErrors(cudaMemcpy2DFromArray(devPtr, widthInBytes, array, 0, 0,
+                                          widthInBytes, framebufferSize_.y(),
+                                          cudaMemcpyDeviceToDevice));
 
     checkCudaErrors(cudaGraphicsUnmapResources(1, &objecIdBufferCugl_, 0));
   }
