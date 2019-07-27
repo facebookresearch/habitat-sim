@@ -30,10 +30,11 @@ class _TruncatedMultivariateGaussian:
         if len(self.cov.shape) == 1:
             self.cov = np.diag(self.cov)
 
-    def sample(self, truncation=None):
         assert (
             np.count_nonzero(self.cov - np.diag(np.diagonal(self.cov))) == 0
         ), "Only supports diagonal covariance"
+
+    def sample(self, truncation=None):
         if truncation is not None:
             assert len(truncation) == len(self.mean)
 
