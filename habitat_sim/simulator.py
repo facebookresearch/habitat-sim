@@ -213,7 +213,12 @@ class Sensor:
                 dtype=np.uint8,
             )
 
-        self._noise_model = make_sensor_noise_model(self._spec.noise_model)
+        noise_model_kwargs = getattr(self._spec, "noise_model_kwargs", {})
+        # TODO get the correct GPU device ID!
+        noise_model_kwargs["gpu_device_id"] = 0
+        self._noise_model = make_sensor_noise_model(
+            self._spec.noise_model, noise_model_kwargs
+        )
         assert self._noise_model.is_valid_sensor_type(
             self._spec.sensor_type
         ), "Noise model '{}' is not valid for sensor '{}'".format(

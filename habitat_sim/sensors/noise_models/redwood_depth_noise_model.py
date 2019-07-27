@@ -13,6 +13,7 @@ from habitat_sim.sensors.noise_models.registration import (
 
 try:
     from habitat_sim._ext.habitat_sim_bindings import RedwoodNoiseModelGPUImpl
+    import torch
 
     has_gpu = True
 except ImportError:
@@ -21,13 +22,15 @@ except ImportError:
 
 @register_sensor_noise_model
 class RedwoodDepthNoiseModel(SensorNoiseModel):
-    def __init__(self):
+    def __init__(self, gpu_device_id):
+        self._gpu_device_id = gpu_device_id
+
         dist = np.load(
             osp.join(osp.dirname(__file__), "data", "redwood-depth-dist-model.npy")
         )
 
         if has_gpu:
-            self._impl = RedwoodNoiseModelGPUImpl(dist)
+            self._impl = RedwoodNoiseModelGPUImpl(dist, self._gpu_device_id)
         else:
             self._impl = RedwoodNoiseModelCPUImpl(dist)
 

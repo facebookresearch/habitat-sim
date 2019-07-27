@@ -29,13 +29,15 @@ struct CurandStates;
 }
 
 struct RedwoodNoiseModelGPUImpl {
-  RedwoodNoiseModelGPUImpl(const Eigen::Ref<const RowMatrixXf> model);
+  RedwoodNoiseModelGPUImpl(const Eigen::Ref<const RowMatrixXf> model,
+                           int gpuDeviceId);
 
   RowMatrixXf simulateFromCPU(const Eigen::Ref<const RowMatrixXf> depth);
 
   ~RedwoodNoiseModelGPUImpl();
 
  private:
+  int gpuDeviceId_;
   float* devModel_ = nullptr;
   impl::CurandStates* curandStates_ = nullptr;
 

@@ -91,8 +91,9 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>>(),
            R"(Constructor: creates a scene node, and sets its parent.)")
       .def_property("type", &SceneNode::getType, &SceneNode::setType)
-      .def("create_child", [](SceneNode& self) { return &self.createChild(); },
-           R"(Creates a child node, and sets its parent to the current node.)")
+      .def(
+          "create_child", [](SceneNode& self) { return &self.createChild(); },
+          R"(Creates a child node, and sets its parent to the current node.)")
       .def_property_readonly("absolute_translation",
                              &SceneNode::absoluteTranslation);
 
@@ -269,20 +270,20 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   // ==== SemanticScene ====
   py::class_<SemanticScene, SemanticScene::ptr>(m, "SemanticScene")
       .def(py::init(&SemanticScene::create<>))
-      .def_static("load_mp3d_house",
-                  [](const std::string& filename, SemanticScene& scene,
-                     const vec4f& rotation) {
-                    // numpy doesn't have a quaternion equivalent, use vec4
-                    // instead
-                    return SemanticScene::loadMp3dHouse(
-                        filename, scene,
-                        Eigen::Map<const quatf>(rotation.data()));
-                  },
-                  R"(
+      .def_static(
+          "load_mp3d_house",
+          [](const std::string& filename, SemanticScene& scene,
+             const vec4f& rotation) {
+            // numpy doesn't have a quaternion equivalent, use vec4
+            // instead
+            return SemanticScene::loadMp3dHouse(
+                filename, scene, Eigen::Map<const quatf>(rotation.data()));
+          },
+          R"(
         Loads a SemanticScene from a Matterport3D House format file into passed
         :py:class:`SemanticScene`'.
       )",
-                  "file"_a, "scene"_a, "rotation"_a)
+          "file"_a, "scene"_a, "rotation"_a)
       .def_property_readonly("aabb", &SemanticScene::aabb)
       .def_property_readonly("categories", &SemanticScene::categories)
       .def_property_readonly("levels", &SemanticScene::levels)
@@ -306,14 +307,15 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def(py::init(&Renderer::create<int, int>))
       .def("set_size", &Renderer::setSize, R"(Set the size of the canvas)",
            "width"_a, "height"_a)
-      .def("readFrameRgba",
-           [](Renderer& self,
-              Eigen::Ref<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic,
-                                       Eigen::RowMajor>>& img) {
-             self.readFrameRgba(img.data());
-           },
-           py::arg("img").noconvert(),
-           R"(
+      .def(
+          "readFrameRgba",
+          [](Renderer& self,
+             Eigen::Ref<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic,
+                                      Eigen::RowMajor>>& img) {
+            self.readFrameRgba(img.data());
+          },
+          py::arg("img").noconvert(),
+          R"(
       Reads RGBA frame into passed img in uint8 byte format.
 
       Parameters
@@ -332,20 +334,22 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            py::overload_cast<gfx::RenderCamera&, scene::SceneGraph&>(
                &Renderer::draw),
            R"(Draw given scene using the camera)", "camera"_a, "scene"_a)
-      .def("readFrameDepth",
-           [](Renderer& self,
-              Eigen::Ref<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic,
-                                       Eigen::RowMajor>>& img) {
-             self.readFrameDepth(img.data());
-           },
-           py::arg("img").noconvert(), R"()")
-      .def("readFrameObjectId",
-           [](Renderer& self,
-              Eigen::Ref<Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic,
-                                       Eigen::RowMajor>>& img) {
-             self.readFrameObjectId(img.data());
-           },
-           py::arg("img").noconvert(), R"()");
+      .def(
+          "readFrameDepth",
+          [](Renderer& self,
+             Eigen::Ref<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic,
+                                      Eigen::RowMajor>>& img) {
+            self.readFrameDepth(img.data());
+          },
+          py::arg("img").noconvert(), R"()")
+      .def(
+          "readFrameObjectId",
+          [](Renderer& self,
+             Eigen::Ref<Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic,
+                                      Eigen::RowMajor>>& img) {
+            self.readFrameObjectId(img.data());
+          },
+          py::arg("img").noconvert(), R"()");
 
   // TODO fill out other SensorTypes
   // ==== enum SensorType ====
@@ -356,7 +360,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .value("SEMANTIC", SensorType::SEMANTIC);
 
   // ==== SensorSpec ====
-  py::class_<SensorSpec, SensorSpec::ptr>(m, "SensorSpec")
+  py::class_<SensorSpec, SensorSpec::ptr>(m, "SensorSpec", py::dynamic_attr())
       .def(py::init(&SensorSpec::create<>))
       .def_readwrite("uuid", &SensorSpec::uuid)
       .def_readwrite("sensor_type", &SensorSpec::sensorType)
@@ -403,7 +407,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(
       m, "RedwoodNoiseModelGPUImpl")
       .def(py::init(&RedwoodNoiseModelGPUImpl::create_unique<
-                    const Eigen::Ref<const RowMatrixXf>&>))
+                    const Eigen::Ref<const RowMatrixXf>&, int>))
       .def("simulate_from_cpu", &RedwoodNoiseModelGPUImpl::simulateFromCPU);
 #endif
 

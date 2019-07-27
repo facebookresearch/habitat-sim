@@ -1,3 +1,7 @@
+#ifdef SENSORS_WITH_CUDA
+#include <cuda_runtime.h>
+#endif
+
 #include "RedwoodNoiseModel.h"
 
 namespace esp {
@@ -51,11 +55,12 @@ RowMatrixXf RedwoodNoiseModelCPUImpl::simulate(
       // quantization and high freq noise
       if (undistorted_d == 0.0)
         noisyDepth(j, i) = 0.0;
-      else
-        noisyDepth(j, i) = 35.130 * 8.0 /
-                           (std::round(35.130 / undistorted_d +
-                                       prng_.normal_float_01() * 0.027778) *
-                            8.0);
+      else {
+        const float denom = (round(35.130f / undistorted_d +
+                                   prng_.normal_float_01() * 0.027778f) *
+                             8.0f);
+        noisyDepth(j, i) = denom > 1e-5 ? (35.130f * 8.0f / denom) : 0.0;
+      }
     }
   }
 
@@ -64,11 +69,8 @@ RowMatrixXf RedwoodNoiseModelCPUImpl::simulate(
 
 #ifdef SENSORS_WITH_CUDA
 namespace impl {
-
 CurandStates* getCurandStates();
 void freeCurandStates(CurandStates* curandStates);
-void modelToDev(const float* __restrict__ model, float** devModel);
-void releaseDevModel(float* devModel);
 void simulateFromCPU(const float* __restrict__ depth,
                      const int H,
                      const int W,
@@ -77,19 +79,52 @@ void simulateFromCPU(const float* __restrict__ depth,
                      float* __restrict__ noisyDepth);
 }  // namespace impl
 
+namespace {
+struct CudaDeviceContext {
+  CudaDeviceContext(int deviceId) {
+    cudaGetDevice(&currentDevice);
+    if (deviceId != currentDevice) {
+      cudaSetDevice(deviceId);
+      setDevice = true;
+    }
+  }
+
+  ~CudaDeviceContext() {
+    if (setDevice)
+      cudaSetDevice(currentDevice);
+  }
+
+ private:
+  bool setDevice = false;
+  int currentDevice = -1;
+};
+}  // namespace
+
 RedwoodNoiseModelGPUImpl::RedwoodNoiseModelGPUImpl(
-    const Eigen::Ref<const RowMatrixXf> model) {
-  impl::modelToDev(model.data(), &devModel_);
+    const Eigen::Ref<const RowMatrixXf> model,
+    int gpuDeviceId)
+    : gpuDeviceId_{gpuDeviceId} {
+  CudaDeviceContext ctx(gpuDeviceId_);
+
+  cudaMalloc(&devModel_, model.rows() * model.cols() * sizeof(float));
+  cudaMemcpy(devModel_, model.data(),
+             model.rows() * model.cols() * sizeof(float),
+             cudaMemcpyHostToDevice);
   curandStates_ = impl::getCurandStates();
 }
 
 RedwoodNoiseModelGPUImpl::~RedwoodNoiseModelGPUImpl() {
-  impl::releaseDevModel(devModel_);
+  CudaDeviceContext ctx(gpuDeviceId_);
+
+  if (devModel_ != nullptr)
+    cudaFree(devModel_);
   impl::freeCurandStates(curandStates_);
 }
 
 RowMatrixXf RedwoodNoiseModelGPUImpl::simulateFromCPU(
     const Eigen::Ref<const RowMatrixXf> depth) {
+  CudaDeviceContext ctx(gpuDeviceId_);
+
   RowMatrixXf noisyDepth(depth.rows(), depth.cols());
 
   impl::simulateFromCPU(depth.data(), depth.rows(), depth.cols(), devModel_,

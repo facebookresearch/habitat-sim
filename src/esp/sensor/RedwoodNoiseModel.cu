@@ -6,17 +6,7 @@
 
 namespace {
 const int MODEL_N_DIMS = 5;
-const int MODEL_N_ROWS = 80;
 const int MODEL_N_COLS = 80;
-const int MODEL_N_BYTES =
-    MODEL_N_ROWS * MODEL_N_COLS * MODEL_N_DIMS * sizeof(float);
-
-__global__ void setupKernel(curandState_t* state, int seed, int n) {
-  int id = threadIdx.x + blockIdx.x * 64;
-  if (id < n) {
-    curand_init(seed + id, 1, 0, &state[id]);
-  }
-}
 
 __device__ float undistort(const int _x,
                            const int _y,
@@ -39,10 +29,10 @@ __device__ float undistort(const int _x,
     return z / f;
 }
 
-__global__ void redwoodNoiseModelKernel(curandState_t* states,
-                                        const float* __restrict__ depth,
+__global__ void redwoodNoiseModelKernel(const float* __restrict__ depth,
                                         const int H,
                                         const int W,
+                                        curandState_t* states,
                                         const float* __restrict__ model,
                                         float* __restrict__ noisyDepth) {
   const int TID = threadIdx.x;
@@ -73,12 +63,12 @@ __global__ void redwoodNoiseModelKernel(curandState_t* states,
       // quantization and high freq noise
       if (undistorted_d == 0.0f)
         noisyDepth[j * W + i] = 0.0f;
-      else
-        noisyDepth[j * W + i] =
-            35.130f * 8.0f /
-            (round(35.130f / undistorted_d +
-                   curand_normal(&curandState) * 0.027778f) *
-             8.0f);
+      else {
+        const float denom = (round(35.130f / undistorted_d +
+                                   curand_normal(&curandState) * 0.027778f) *
+                             8.0f);
+        noisyDepth[j * W + i] = denom > 1e-5 ? (35.130f * 8.0f / denom) : 0.0;
+      }
     }
   }
 }
@@ -90,6 +80,13 @@ namespace sensor {
 
 namespace impl {
 
+__global__ void curandStatesSetupKernel(curandState_t* state, int seed, int n) {
+  int id = threadIdx.x + blockIdx.x * 64;
+  if (id < n) {
+    curand_init(seed + id, 1, 0, &state[id]);
+  }
+}
+
 struct CurandStates {
   curandState_t* devStates = nullptr;
   int n_blocks_ = 0;
@@ -97,8 +94,8 @@ struct CurandStates {
     if (n_blocks > n_blocks_) {
       release();
       cudaMalloc(&devStates, n_blocks * sizeof(curandState_t));
-      setupKernel<<<std::max(n_blocks / 64, 1), 64>>>(devStates, rand(),
-                                                      n_blocks);
+      curandStatesSetupKernel<<<std::max(n_blocks / 64, 1), 64>>>(
+          devStates, rand(), n_blocks);
       n_blocks_ = n_blocks;
     }
   }
@@ -121,28 +118,18 @@ void freeCurandStates(CurandStates* curandStates) {
     delete curandStates;
 }
 
-void modelToDev(const float* __restrict__ model, float** devModel) {
-  cudaMalloc(devModel, MODEL_N_BYTES);
-  cudaMemcpy(*devModel, model, MODEL_N_BYTES, cudaMemcpyHostToDevice);
-}
-
-void releaseDevModel(float* devModel) {
-  if (devModel != nullptr)
-    cudaFree(devModel);
-}
-
 void simulateFromGPU(const float* __restrict__ devDepth,
                      const int H,
                      const int W,
                      const float* __restrict__ devModel,
                      CurandStates* curandStates,
                      float* __restrict__ devNoisyDepth) {
-  const int n_threads = std::min(std::max(W / 4, 1), 256);
+  const int n_threads = std::min(std::max(W / 4, 1), 64);
   const int n_blocks = std::max(H / 8, 1);
 
   curandStates->alloc(n_blocks);
   redwoodNoiseModelKernel<<<n_blocks, n_threads>>>(
-      curandStates->devStates, devDepth, H, W, devModel, devNoisyDepth);
+      devDepth, H, W, curandStates->devStates, devModel, devNoisyDepth);
 }
 
 void simulateFromCPU(const float* __restrict__ depth,

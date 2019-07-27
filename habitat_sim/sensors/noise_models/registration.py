@@ -3,6 +3,9 @@ from typing import Dict, Optional, Type
 
 
 class SensorNoiseModel(abc.ABC):
+    def __init__(self, gpu_device_id: Optional[int] = None):
+        self._gpu_device_id = gpu_device_id
+
     @staticmethod
     @abc.abstractmethod
     def is_valid_sensor_type(sensor_type):
@@ -44,7 +47,7 @@ def register_sensor_noise_model(
         return _wrapper(noise_model)
 
 
-def make_sensor_noise_model(name: str, **kwargs) -> SensorNoiseModel:
+def make_sensor_noise_model(name: str, kwargs) -> SensorNoiseModel:
     assert (
         name in _noise_model_map
     ), "Could not find a noise model for name '{}'".format(name)
