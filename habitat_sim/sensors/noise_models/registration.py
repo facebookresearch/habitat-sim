@@ -61,7 +61,7 @@ class NoSensorNoiseModel(SensorNoiseModel):
         return True
 
     def apply(self, x):
-        return x
+        return x.copy()
 
 
 register_sensor_noise_model(NoSensorNoiseModel, name="None")

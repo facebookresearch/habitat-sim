@@ -23,10 +23,11 @@ target_link_libraries(sensor
 if (CUDA_FOUND)
   target_link_libraries(sensor
     PUBLIC
-    ${CUDA_LIBRARIES})
+      ${CUDA_LIBRARIES}
+  )
   target_compile_definitions(sensor
-    PUBLIC
-      SENSORS_WITH_CUDA
+      PUBLIC
+        SENSORS_WITH_CUDA
   )
   target_include_directories(sensor
     PRIVATE

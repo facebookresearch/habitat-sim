@@ -3,7 +3,6 @@ import os.path as osp
 import attr
 import numpy as np
 
-import numba
 from habitat_sim._ext.habitat_sim_bindings import RedwoodNoiseModelCPUImpl
 from habitat_sim.bindings import SensorType
 from habitat_sim.sensors.noise_models.registration import (
