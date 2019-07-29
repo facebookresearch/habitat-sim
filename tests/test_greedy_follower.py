@@ -3,10 +3,10 @@ import os
 import os.path as osp
 
 import numpy as np
+import pytest
 
 import habitat_sim
 import habitat_sim.bindings as hsim
-import pytest
 import tqdm
 
 base_dir = osp.abspath(osp.join(osp.dirname(__file__), ".."))

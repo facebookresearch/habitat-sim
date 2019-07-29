@@ -1,9 +1,10 @@
 import os.path as osp
 
+import pytest
+
 import habitat_sim
 import habitat_sim.bindings as hsim
 import habitat_sim.utils
-import pytest
 from examples.settings import make_cfg
 
 _test_scene = osp.abspath(
