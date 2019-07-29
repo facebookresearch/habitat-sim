@@ -3,8 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "GltfMeshData.h"
-#include <Magnum/MeshTools/Compile.h>
 #include <Corrade/Containers/ArrayViewStl.h>
+#include <Magnum/MeshTools/Compile.h>
 
 namespace esp {
 namespace assets {
@@ -38,8 +38,7 @@ void GltfMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
 
   collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
   collisionMeshData_.positions = meshData_->positions(0);
-  collisionMeshData_.indices   = meshData_->indices();
-
+  collisionMeshData_.indices = meshData_->indices();
 }
 
 }  // namespace assets

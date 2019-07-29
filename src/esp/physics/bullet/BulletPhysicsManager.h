@@ -5,68 +5,64 @@
 #pragma once
 
 /* Bullet Physics Integration */
-#include <Magnum/Trade/MeshData3D.h>
+#include <Magnum/BulletIntegration/DebugDraw.h>
 #include <Magnum/BulletIntegration/Integration.h>
 #include <Magnum/BulletIntegration/MotionState.h>
-#include <Magnum/BulletIntegration/DebugDraw.h>
 #include <Magnum/Timeline.h>
+#include <Magnum/Trade/MeshData3D.h>
 #include <btBulletDynamicsCommon.h>
 
-#include "esp/physics/PhysicsManager.h"
 #include "BulletRigidObject.h"
+#include "esp/physics/PhysicsManager.h"
 
 namespace esp {
 namespace physics {
 
 class BulletPhysicsManager : public PhysicsManager {
  public:
-  explicit BulletPhysicsManager(assets::ResourceManager* _resourceManager) : PhysicsManager(_resourceManager) {};
+  explicit BulletPhysicsManager(assets::ResourceManager* _resourceManager)
+      : PhysicsManager(_resourceManager){};
   virtual ~BulletPhysicsManager();
 
   //============ Initialization =============
-  //load physical properties and setup the world
-  //do_profile indicates timing for FPS
+  // load physical properties and setup the world
+  // do_profile indicates timing for FPS
   bool initPhysics(scene::SceneNode* node,
                    Magnum::Vector3d gravity,
-                   bool do_profile            = false);
+                   bool do_profile = false);
 
   //============ Object/Scene Instantiation =============
   //! Initialize scene given mesh data
   //! Only one scene per simulation
   //! The scene could contain several components
-  bool addScene(
-      const assets::AssetInfo& info,
-      std::vector<assets::CollisionMeshData> meshGroup);
+  bool addScene(const assets::AssetInfo& info,
+                std::vector<assets::CollisionMeshData> meshGroup);
 
   //! Initialize object given mesh data
   //! The object could contain several parts
-  int addObject(
-      const std::string configFile,
-      physics::PhysicalObjectType objectType,
-      DrawableGroup* drawables);
+  int addObject(const std::string configFile,
+                physics::PhysicalObjectType objectType,
+                DrawableGroup* drawables);
 
   //============ Simulator functions =============
   void stepPhysics();
 
   //============ Interact with objects =============
-  //Alex NOTE: engine specifics handled by objects themselves...
+  // Alex NOTE: engine specifics handled by objects themselves...
 
-protected:
-
+ protected:
   //! The world has to live longer than the scene because RigidBody
   //! instances have to remove themselves from it on destruction
-  Magnum::BulletIntegration::DebugDraw    debugDraw_{Magnum::NoCreate};
-  btDbvtBroadphase                        bBroadphase_;
-  btDefaultCollisionConfiguration         bCollisionConfig_;
-  btSequentialImpulseConstraintSolver     bSolver_;
-  btCollisionDispatcher                   bDispatcher_{&bCollisionConfig_};
-  
-  //! The following are made ptr because we need to intialize them in constructor,
-  //! potentially with different world configurations
-  std::shared_ptr<btDiscreteDynamicsWorld>   bWorld_;
+  Magnum::BulletIntegration::DebugDraw debugDraw_{Magnum::NoCreate};
+  btDbvtBroadphase bBroadphase_;
+  btDefaultCollisionConfiguration bCollisionConfig_;
+  btSequentialImpulseConstraintSolver bSolver_;
+  btCollisionDispatcher bDispatcher_{&bCollisionConfig_};
 
+  //! The following are made ptr because we need to intialize them in
+  //! constructor, potentially with different world configurations
+  std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
 
-};//end class BulletPhysicsManager
-}//end namespace physics
-}//end namespace esp
-
+};  // end class BulletPhysicsManager
+}  // end namespace physics
+}  // end namespace esp

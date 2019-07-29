@@ -14,15 +14,15 @@
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Trade/Trade.h>
 
-#include <tinyply.h>
-#include <fstream>
-#include <sstream>
-#include <vector>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <tinyply.h>
 #include <unistd.h>
-#include <unordered_map>
+#include <fstream>
 #include <sophus/so3.hpp>
+#include <sstream>
+#include <unordered_map>
+#include <vector>
 
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
@@ -88,7 +88,7 @@ bool FRLInstanceMeshData::loadPLY(const std::string& ply_file) {
   cpu_cbo_.reserve(nVertex);
   cpu_vbo_.clear();
   cpu_vbo_.reserve(nVertex);
-  
+
   for (int i = 0; i < nVertex; ++i) {
     vec3f xyz;
     vec3uc rgb;
@@ -146,15 +146,15 @@ bool FRLInstanceMeshData::loadPLY(const std::string& ply_file) {
     (*tri_ibo_)[triIdx + 5] = quadIdx + 3;
   }
 
-
   // Construct collision meshData
   collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
-  collisionMeshData_.positions = \
+  collisionMeshData_.positions =
       Corrade::Containers::arrayCast<Magnum::Vector3>(
-      Corrade::Containers::arrayView(cpu_vbo_3_->data(), cpu_vbo_3_->size()));
-  collisionMeshData_.indices   = \
+          Corrade::Containers::arrayView(cpu_vbo_3_->data(),
+                                         cpu_vbo_3_->size()));
+  collisionMeshData_.indices =
       Corrade::Containers::arrayCast<Magnum::UnsignedInt>(
-      Corrade::Containers::arrayView(tri_ibo_->data(), tri_ibo_->size()));
+          Corrade::Containers::arrayView(tri_ibo_->data(), tri_ibo_->size()));
 
   return true;
 }
@@ -223,7 +223,6 @@ Magnum::GL::Mesh* FRLInstanceMeshData::getMagnumGLMesh() {
   return &(renderingBuffer_->mesh);
 }
 
-
 void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {
     buffersOnGPU_ = false;
@@ -236,7 +235,7 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_ = std::make_unique<FRLInstanceMeshData::RenderingBuffer>();
 
   const size_t numQuads = cpu_vbo_.size() / 4;
-  
+
   cbo_float_ = new std::vector<float>(cpu_cbo_.size() * 3);
   for (int iVert = 0; iVert < cpu_cbo_.size(); ++iVert) {
     const uint32_t idx = 3 * iVert;
@@ -256,10 +255,11 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
     obj_id_tex_data[2 * i + 1] = cpu_vbo_[4 * i][3];
   }
 
-
   renderingBuffer_->tex = createInstanceTexture(obj_id_tex_data, texSize);
-  renderingBuffer_->vbo.setData(*cpu_vbo_3_, Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->cbo.setData(*cbo_float_, Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->vbo.setData(*cpu_vbo_3_,
+                                Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->cbo.setData(*cbo_float_,
+                                Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->ibo.setData(*tri_ibo_, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
       .setCount(tri_ibo_->size())  // Set vertex/index count (numQuads * 6)

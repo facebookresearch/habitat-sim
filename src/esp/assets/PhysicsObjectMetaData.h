@@ -18,23 +18,24 @@ namespace assets {
 // for each physical object we store:
 // render mesh, collision mesh, physical parameters:
 //“mass”
-//“COM”: in object local space (unless we preprocess the mesh such that this is origin)
-//inertia tensor
-//“friction coefficient”
-//“restitution coefficient”
+//“COM”: in object local space (unless we preprocess the mesh such that this is
+// origin) inertia tensor “friction coefficient” “restitution coefficient”
 struct PhysicsObjectMetaData {
-  
-  //construct this is loadObject() from default
-  //ALEX TODO: initialize inertia to identity be default...
-  PhysicsObjectMetaData() : 
-    mass(1.0), scale(1.0), COM(Magnum::Vector3d(0)), 
-    frictionCoefficient(0.5), restitutionCoefficient(0.6),
-    margin(0.01), linDamping(0.2), angDamping(0.2),
-    objectType(physics::PhysicalObjectType::DYNAMIC),
-    inertia(Magnum::Vector3(0., 0., 0.))
-  {};
+  // construct this is loadObject() from default
+  // ALEX TODO: initialize inertia to identity be default...
+  PhysicsObjectMetaData()
+      : mass(1.0),
+        scale(1.0),
+        COM(Magnum::Vector3d(0)),
+        frictionCoefficient(0.5),
+        restitutionCoefficient(0.6),
+        margin(0.01),
+        linDamping(0.2),
+        angDamping(0.2),
+        objectType(physics::PhysicalObjectType::DYNAMIC),
+        inertia(Magnum::Vector3(0., 0., 0.)){};
 
-  //copy constructor
+  // copy constructor
   PhysicsObjectMetaData(const PhysicsObjectMetaData& val) {
     renderMeshHandle = val.renderMeshHandle;
     collisionMeshHandle = val.collisionMeshHandle;
@@ -46,16 +47,18 @@ struct PhysicsObjectMetaData {
     restitutionCoefficient = val.restitutionCoefficient;
   };
 
-  //mesh handles provide keys to find the meshes in resourceManager->resourceDict_
+  // mesh handles provide keys to find the meshes in
+  // resourceManager->resourceDict_
   std::string renderMeshHandle;
   std::string collisionMeshHandle;
 
-  //physical properties of objects
+  // physical properties of objects
   double mass;
   double margin;
-  double scale; //Alex: uniform scale. Think about mass->scale ratio defaults. Include a full transformation matrix option?
+  double scale;  // Alex: uniform scale. Think about mass->scale ratio defaults.
+                 // Include a full transformation matrix option?
   Magnum::Vector3d COM;
-  Magnum::Vector3 inertia; 
+  Magnum::Vector3 inertia;
   double frictionCoefficient;
   double restitutionCoefficient;
 

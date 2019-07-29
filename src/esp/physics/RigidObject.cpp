@@ -11,13 +11,12 @@
 #include <Magnum/Trade/TextureData.h>
 #include <mutex>
 
+#include "esp/assets/CollisionMeshData.h"
 #include "esp/geo/geo.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneGraph.h"
-#include "esp/assets/CollisionMeshData.h"
 
 #include "RigidObject.h"
-
 
 namespace esp {
 namespace physics {
@@ -25,7 +24,8 @@ namespace physics {
 RigidObject::RigidObject(scene::SceneNode* parent)
     : scene::SceneNode{*parent} {}
 
-//Alex: not much to be done without a physics/collision engine for a static scene
+// Alex: not much to be done without a physics/collision engine for a static
+// scene
 bool RigidObject::initializeScene(
     std::vector<assets::CollisionMeshData> meshGroup) {
   if (initialized_) {
@@ -34,7 +34,9 @@ bool RigidObject::initializeScene(
   }
 
   //! Turn on scene flag
-  if (isObject_) {return false;}
+  if (isObject_) {
+    return false;
+  }
   isScene_ = true;
   objectMotionType = STATIC;
 
@@ -42,12 +44,10 @@ bool RigidObject::initializeScene(
   return true;
 }
 
-
 bool RigidObject::initializeObject(
     assets::PhysicsObjectMetaData& metaData,
     physics::PhysicalObjectType objectType,
     std::vector<assets::CollisionMeshData> meshGroup) {
-
   // TODO (JH): Handling static/kinematic object type
   if (initialized_) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
@@ -55,20 +55,22 @@ bool RigidObject::initializeObject(
   }
 
   //! Turn on scene flag
-  if (isScene_) {return false;}
+  if (isScene_) {
+    return false;
+  }
   isObject_ = true;
-  objectMotionType = KINEMATIC; //default kineamtic unless a simulator is initialized...
+  objectMotionType =
+      KINEMATIC;  // default kineamtic unless a simulator is initialized...
 
   initialized_ = true;
   return true;
 }
 
 // Helper function to find object center
-void RigidObject::getDimensions(
-      assets::CollisionMeshData& meshData,
-      float* x,
-      float* y,
-      float* z) {
+void RigidObject::getDimensions(assets::CollisionMeshData& meshData,
+                                float* x,
+                                float* y,
+                                float* z) {
   float minX = 999999.9f;
   float maxX = -999999.9f;
   float minY = 999999.9f;
@@ -77,22 +79,35 @@ void RigidObject::getDimensions(
   float maxZ = -999999.9f;
   for (uint vi = 0; vi < meshData.positions.size(); vi++) {
     Magnum::Vector3 pos = meshData.positions[vi];
-    if (pos.x() < minX) { minX = pos.x(); }
-    if (pos.x() > maxX) { maxX = pos.x(); }
-    if (pos.y() < minY) { minY = pos.y(); }
-    if (pos.y() > maxY) { maxY = pos.y(); }
-    if (pos.z() < minZ) { minZ = pos.z(); }
-    if (pos.z() > maxZ) { maxZ = pos.z(); }
+    if (pos.x() < minX) {
+      minX = pos.x();
+    }
+    if (pos.x() > maxX) {
+      maxX = pos.x();
+    }
+    if (pos.y() < minY) {
+      minY = pos.y();
+    }
+    if (pos.y() > maxY) {
+      maxY = pos.y();
+    }
+    if (pos.z() < minZ) {
+      minZ = pos.z();
+    }
+    if (pos.z() > maxZ) {
+      maxZ = pos.z();
+    }
   }
   *x = maxX - minX;
   *y = maxY - minY;
   *z = maxZ - minZ;
-  LOG(INFO) << "Dimensions minX " << minX << " maxX " << maxX << " minY " 
-      << minY << " maxY " << maxY << " minZ " << minZ << " maxZ " << maxZ;
+  LOG(INFO) << "Dimensions minX " << minX << " maxX " << maxX << " minY "
+            << minY << " maxY " << maxY << " minZ " << minZ << " maxZ " << maxZ;
 }
 
 bool RigidObject::isActive() {
-  //Alex NOTE: no active objects without a physics engine... (kinematics don't count) 
+  // Alex NOTE: no active objects without a physics engine... (kinematics don't
+  // count)
   return false;
 }
 
@@ -100,13 +115,12 @@ void RigidObject::debugForce(
     Magnum::SceneGraph::DrawableGroup3D& debugDrawables) {
   //! DEBUG draw
   debugRender_ = new Magnum::DebugTools::ForceRenderer3D(
-      *this, {0.0f, 0.0f, 0.0f}, debugExternalForce_, "bulletForce", 
+      *this, {0.0f, 0.0f, 0.0f}, debugExternalForce_, "bulletForce",
       &debugDrawables);
   LOG(INFO) << "Force render" << debugExternalForce_.x();
 }
 
-void RigidObject::setDebugForce(
-    Magnum::Vector3 force) {
+void RigidObject::setDebugForce(Magnum::Vector3 force) {
   debugExternalForce_ = force;
 }
 
@@ -118,15 +132,14 @@ RigidObject::~RigidObject() {
   }
 }
 
-void RigidObject::applyForce(Magnum::Vector3 force,
-                             Magnum::Vector3 relPos) {
-  //without a physics engine we can't apply any forces...                             
+void RigidObject::applyForce(Magnum::Vector3 force, Magnum::Vector3 relPos) {
+  // without a physics engine we can't apply any forces...
   return;
 }
 
 void RigidObject::applyImpulse(Magnum::Vector3 impulse,
                                Magnum::Vector3 relPos) {
-  //without a physics engine we can't apply any forces...  
+  // without a physics engine we can't apply any forces...
   return;
 }
 
@@ -148,7 +161,7 @@ scene::SceneNode& RigidObject::setTranslation(
     const Magnum::Math::Vector3<float> vector) {
   scene::SceneNode::setTranslation(vector);
   syncPose();
-  return *this; 
+  return *this;
 }
 
 scene::SceneNode& RigidObject::setRotation(
@@ -235,7 +248,6 @@ scene::SceneNode& RigidObject::rotateZLocal(
   syncPose();
   return *this;
 }
-
 
 }  // namespace physics
 }  // namespace esp

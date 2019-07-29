@@ -4,14 +4,14 @@
 
 #pragma once
 
-#include <memory>
-#include <string>
-#include <vector>
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Mesh.h>
-#include <Magnum/Trade/MeshData3D.h>
 #include <Magnum/GL/Texture.h>
+#include <Magnum/Trade/MeshData3D.h>
+#include <memory>
+#include <string>
+#include <vector>
 #include "BaseMesh.h"
 #include "esp/core/esp.h"
 
@@ -39,7 +39,7 @@ class GenericInstanceMeshData : public BaseMesh {
   explicit GenericInstanceMeshData()
       : GenericInstanceMeshData{SupportedMeshType::INSTANCE_MESH} {};
 
-  virtual ~GenericInstanceMeshData() {};
+  virtual ~GenericInstanceMeshData(){};
 
   virtual bool loadPLY(const std::string& plyFile);
 

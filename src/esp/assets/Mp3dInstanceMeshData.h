@@ -4,17 +4,17 @@
 
 #pragma once
 
+#include <Magnum/GL/Buffer.h>
+#include <Magnum/GL/Mesh.h>
+#include <Magnum/Trade/MeshData3D.h>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <Magnum/Trade/MeshData3D.h>
-#include <Magnum/GL/Buffer.h>
-#include <Magnum/GL/Mesh.h>
 
+#include "BaseMesh.h"
 #include "GenericInstanceMeshData.h"
 #include "esp/core/esp.h"
-#include "BaseMesh.h"
 
 namespace esp {
 namespace assets {
@@ -36,7 +36,6 @@ class Mp3dInstanceMeshData : public GenericInstanceMeshData {
   bool saveSemMeshPLY(
       const std::string& plyFile,
       const std::unordered_map<int, int>& segmentIdToObjectIdMap);
-
 
  protected:
   std::vector<vec3ui> cpu_ibo_;

@@ -10,11 +10,11 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/PhysicsManager.h"
+#include "esp/physics/RigidObject.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
-#include "esp/physics/PhysicsManager.h"
-#include "esp/physics/RigidObject.h"
 
 // forward declaration
 namespace Corrade {
@@ -52,7 +52,7 @@ class Viewer : public Magnum::Platform::Application {
   std::vector<int> sceneID_;
   scene::SceneNode* agentBodyNode_ = nullptr;
   scene::SceneNode* cameraNode_ = nullptr;
-  
+
   scene::SceneNode* navSceneNode_ = nullptr;
 
   scene::SceneGraph* sceneGraph;
@@ -71,8 +71,8 @@ class Viewer : public Magnum::Platform::Application {
   bool castle_mesh = true;
 
   bool do_profile_ = false;
-  int  frame_limit_ = 1000;
-  int  frame_curr_ = 0;
+  int frame_limit_ = 1000;
+  int frame_curr_ = 0;
 
   int numObjects_ = 1;
   int lastObjectID = -1;

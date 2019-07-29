@@ -9,22 +9,22 @@
 #include <string>
 #include <vector>
 
+#include <Corrade/Containers/Optional.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Transform.h>
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
-#include <Corrade/Containers/Optional.h>
 
 #include "Asset.h"
 #include "BaseMesh.h"
+#include "CollisionMeshData.h"
 #include "GltfMeshData.h"
+#include "MeshData.h"
 #include "MeshMetaData.h"
 #include "PhysicsObjectMetaData.h"
-#include "CollisionMeshData.h"
-#include "MeshData.h"
-#include "esp/scene/SceneNode.h"
-#include "esp/physics/PhysicsManager.h"
 #include "esp/physics/ObjectType.h"
+#include "esp/physics/PhysicsManager.h"
+#include "esp/scene/SceneNode.h"
 
 // Debug draw
 #include <Magnum/DebugTools/ForceRenderer.h>
@@ -49,7 +49,7 @@ class SceneConfiguration;
 namespace physics {
 class PhysicsManager;
 class RigidObject;
-}
+}  // namespace physics
 namespace assets {
 
 class ResourceManager {
@@ -59,7 +59,7 @@ class ResourceManager {
   // a common design pattern for implementing
   // subsystems such as "resource manager", thats make up an engine is
   // to define a singleton class;
-  explicit ResourceManager(){
+  explicit ResourceManager() {
     LOG(INFO) << "Constructing ResourceManager";
     importer = manager.loadAndInstantiate("AnySceneImporter");
     // Prefer tiny_gltf for loading glTF files (Assimp is worse),
@@ -79,19 +79,19 @@ class ResourceManager {
   //! Load Scene data + instantiate scene
   //! Both load + instantiate scene
   bool loadScene(const AssetInfo& info,
-                 scene::SceneNode* parent                 = nullptr,
-                 DrawableGroup* drawables                 = nullptr);
-
+                 scene::SceneNode* parent = nullptr,
+                 DrawableGroup* drawables = nullptr);
 
   //! Load Scene data + instantiate scene
   //! Both load + instantiate scene
-  //Alex NOTE: Overloading and passing a reference to the PhysicsManager pointer so we can reseat it with the appropriate derived version
-  bool loadScene(const AssetInfo& info,
-                 std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-                 scene::SceneNode* parent                 = nullptr,
-                 DrawableGroup* drawables                 = nullptr,
-                 std::string physicsFilename              = "data/default.phys_scene_config.json"
-                 );
+  // Alex NOTE: Overloading and passing a reference to the PhysicsManager
+  // pointer so we can reseat it with the appropriate derived version
+  bool loadScene(
+      const AssetInfo& info,
+      std::shared_ptr<physics::PhysicsManager>& _physicsManager,
+      scene::SceneNode* parent = nullptr,
+      DrawableGroup* drawables = nullptr,
+      std::string physicsFilename = "data/default.phys_scene_config.json");
 
   //! Load Object data and store internally
   //! Does not instantiate (physics & drawable)
@@ -100,14 +100,16 @@ class ResourceManager {
                  scene::SceneNode* parent,
                  DrawableGroup* drawables);
 
-  //load an object into the physicsObjectLibrary_ from a physics properties filename
+  // load an object into the physicsObjectLibrary_ from a physics properties
+  // filename
   int loadObject(const std::string objPhysConfigFilename);
 
-  //load an object into the physicsObjectLibrary_ with default physical parameters from absolute path to mesh files
-  int loadDefaultObject(const std::string renderMeshFilename, 
-                        const std::string collisionMeshFilename="");
+  // load an object into the physicsObjectLibrary_ with default physical
+  // parameters from absolute path to mesh files
+  int loadDefaultObject(const std::string renderMeshFilename,
+                        const std::string collisionMeshFilename = "");
 
-  //! Create object with either ID or configFile name, 
+  //! Create object with either ID or configFile name,
   //! e.g. "data/cheezit.phys_properties.json"
   int addObject(const int objectID,
                 scene::SceneNode* parent,
@@ -121,22 +123,20 @@ class ResourceManager {
   std::vector<assets::CollisionMeshData> getCollisionMesh(
       const std::string configFile);
 
-  std::vector<assets::CollisionMeshData> getCollisionMesh(
-      const int objectID);
+  std::vector<assets::CollisionMeshData> getCollisionMesh(const int objectID);
 
   int getObjectID(std::string configFile);
   std::string getObjectConfig(int objectID);
 
-  PhysicsObjectMetaData& getPhysicsMetaData(const std::string configFile); 
+  PhysicsObjectMetaData& getPhysicsMetaData(const std::string configFile);
 
-  int getNumLibraryObjects(){return physicsObjectConfigList_.size();};
-
+  int getNumLibraryObjects() { return physicsObjectConfigList_.size(); };
 
  protected:
   //======== Scene Functions ========
   //! Instantiate Scene:
   //! (1) create scene node
-  //! (2) upload mesh to gpu and drawables 
+  //! (2) upload mesh to gpu and drawables
   //! (optional reload of GPU-side assets)
   void addComponent(Importer& importer,
                     const AssetInfo& info,
@@ -155,7 +155,7 @@ class ResourceManager {
       "./"
 #endif
   };
-  std::unique_ptr<Importer> importer; 
+  std::unique_ptr<Importer> importer;
 
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);
@@ -164,8 +164,7 @@ class ResourceManager {
   void loadMeshes(Importer& importer,
                   MeshMetaData* metaData,
                   bool shiftOrigin = false,
-                  Magnum::Vector3 offset = Magnum::Vector3(0,0,0)
-                  );
+                  Magnum::Vector3 offset = Magnum::Vector3(0, 0, 0));
 
   //! Load materials from importer into assets, and update metaData
   void loadMaterials(Importer& importer, MeshMetaData* metaData);
@@ -178,31 +177,33 @@ class ResourceManager {
                             scene::SceneNode* parent,
                             DrawableGroup* drawables);
 
-  //load the mesh data
-  //If parent, also do scene graph
-  //if shiftOrigin: translate the mesh by "translation"
-  //  (default) if translation == [0,0,0]: compute center of mesh bounding box and then translate
+  // load the mesh data
+  // If parent, also do scene graph
+  // if shiftOrigin: translate the mesh by "translation"
+  //  (default) if translation == [0,0,0]: compute center of mesh bounding box
+  //  and then translate
   bool loadGeneralMeshData(const AssetInfo& info,
-                           scene::SceneNode* parent = nullptr, 
+                           scene::SceneNode* parent = nullptr,
                            DrawableGroup* drawables = nullptr,
-                           bool shiftOrigin         = false,
-                           Magnum::Vector3 translation = Magnum::Vector3(0,0,0));
+                           bool shiftOrigin = false,
+                           Magnum::Vector3 translation = Magnum::Vector3(0,
+                                                                         0,
+                                                                         0));
 
   bool loadSUNCGHouseFile(const AssetInfo& info,
                           scene::SceneNode* parent,
                           DrawableGroup* drawables);
 
   // ======== Geometry helper functions ========
-  //void shiftMeshDataToOrigin(GltfMeshData* meshDataGL);
+  // void shiftMeshDataToOrigin(GltfMeshData* meshDataGL);
 
   void translateMesh(GltfMeshData* meshDataGL, Magnum::Vector3 translation);
 
-  //compute center of axis aligned mesh bounding box
+  // compute center of axis aligned mesh bounding box
   Magnum::Vector3 computeMeshBBCenter(GltfMeshData* meshDataGL);
 
-  void transformAxis(
-      const AssetInfo& info,
-      std::vector<CollisionMeshData> meshGroup);
+  void transformAxis(const AssetInfo& info,
+                     std::vector<CollisionMeshData> meshGroup);
 
   // ======== General geometry data ========
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or
@@ -217,20 +218,25 @@ class ResourceManager {
 
   // a dictionary to check if a mesh has been loaded
   // maps: absolutePath -> meshMetaData
-  std::map<std::string, MeshMetaData>                     resourceDict_; //meshes
-  std::map<std::string, std::vector<Magnum::UnsignedInt>> magnumMeshDict_; // IDs for object mesh hierarchies NOTE: needed? to bypass "importer" reload
+  std::map<std::string, MeshMetaData> resourceDict_;  // meshes
+  std::map<std::string, std::vector<Magnum::UnsignedInt>>
+      magnumMeshDict_;  // IDs for object mesh hierarchies NOTE: needed? to
+                        // bypass "importer" reload
 
   // ======== Physical geometry data ========
-  // library of physics object parameters mapped from config filename (used by physicsManager to instantiate physical objects)
-  // maps: "data/objects/cheezit.phys_properties.json" -> physicalMetaData
+  // library of physics object parameters mapped from config filename (used by
+  // physicsManager to instantiate physical objects) maps:
+  // "data/objects/cheezit.phys_properties.json" -> physicalMetaData
   std::map<std::string, PhysicsObjectMetaData> physicsObjectLibrary_;
   // maps: "data/objects/cheezit.phys_properties.json" -> collesionMesh group
-  std::map<std::string, std::vector<CollisionMeshData>> collisionMeshGroups_; // meshes for the object hierarchies
+  std::map<std::string, std::vector<CollisionMeshData>>
+      collisionMeshGroups_;  // meshes for the object hierarchies
   // vector of "data/objects/cheezit.phys_properties.json"
-  std::vector<std::string> physicsObjectConfigList_; //NOTE: can't get keys from the map (easily), so store them for iteration
+  std::vector<std::string>
+      physicsObjectConfigList_;  // NOTE: can't get keys from the map (easily),
+                                 // so store them for iteration
 
   // ======== Clone Object Node ========
-  
 
   // ======== Rendering Utility Functions ========
   //! Adds mesh and material to given object

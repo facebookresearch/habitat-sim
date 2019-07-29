@@ -44,7 +44,7 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
       !(shader.flags() & GenericShader::Flag::PrimitiveIDTextured)) {
     shader.setObjectId(node_.getId());
   }
-  //LOG(INFO) << "Node ID " << node_.getId();
+  // LOG(INFO) << "Node ID " << node_.getId();
   mesh_.draw(shader_);
 }
 

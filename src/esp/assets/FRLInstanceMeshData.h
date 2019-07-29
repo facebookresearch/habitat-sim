@@ -4,13 +4,13 @@
 
 #pragma once
 
+#include <Magnum/Trade/MeshData3D.h>
 #include <memory>
 #include <string>
 #include <vector>
-#include <Magnum/Trade/MeshData3D.h>
+#include "BaseMesh.h"
 #include "GenericInstanceMeshData.h"
 #include "esp/core/esp.h"
-#include "BaseMesh.h"
 
 namespace esp {
 namespace assets {
@@ -25,11 +25,11 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
  public:
   FRLInstanceMeshData()
       : GenericInstanceMeshData(SupportedMeshType::INSTANCE_MESH){};
-  virtual ~FRLInstanceMeshData(){
-      delete cpu_vbo_3_;
-      delete tri_ibo_;
-      delete cbo_float_;
-      delete obj_id_tex_data;
+  virtual ~FRLInstanceMeshData() {
+    delete cpu_vbo_3_;
+    delete tri_ibo_;
+    delete cbo_float_;
+    delete obj_id_tex_data;
   };
 
   void to_ply(const std::string& ply_file) const;
@@ -40,8 +40,12 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
 
   // overloaded function, in case object passed as a const parameter to the
   // function
-  const std::vector<vec4f>& getVertexBufferObjectCPU() const { return cpu_vbo_; }
-  const std::vector<vec3uc>& getColorBufferObjectCPU() const { return cpu_cbo_; }
+  const std::vector<vec4f>& getVertexBufferObjectCPU() const {
+    return cpu_vbo_;
+  }
+  const std::vector<vec3uc>& getColorBufferObjectCPU() const {
+    return cpu_cbo_;
+  }
 
   // ==== rendering ====
   virtual void uploadBuffersToGPU(bool forceReload = false) override;
@@ -56,10 +60,10 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
   std::vector<vec4f> cpu_vbo_;
   std::vector<vec3uc> cpu_cbo_;
 
-  std::vector<vec3f>* cpu_vbo_3_   = nullptr;
-  std::vector<uint32_t>* tri_ibo_  = nullptr;
-  std::vector<float>* cbo_float_   = nullptr;
-  float* obj_id_tex_data          = nullptr;
+  std::vector<vec3f>* cpu_vbo_3_ = nullptr;
+  std::vector<uint32_t>* tri_ibo_ = nullptr;
+  std::vector<float>* cbo_float_ = nullptr;
+  float* obj_id_tex_data = nullptr;
 
   vecXi id_to_label;
   vecXi id_to_node;

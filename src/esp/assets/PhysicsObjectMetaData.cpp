@@ -5,9 +5,5 @@
 #include "PhysicsObjectMetaData.h"
 
 namespace esp {
-namespace assets {
-
-    
-
-}
-}
+namespace assets {}
+}  // namespace esp

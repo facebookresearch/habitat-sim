@@ -83,7 +83,7 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   cpu_vbo_.reserve(nVertex);
   cpu_ibo_.clear();
   cpu_ibo_.reserve(nFace);
-  
+
   for (int i = 0; i < nVertex; ++i) {
     vec3f position;
     vec3f normal;
@@ -122,13 +122,12 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   // later they can be accessed.
   // Note that normal and texture data are not stored
   collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
-  collisionMeshData_.positions = \
+  collisionMeshData_.positions =
       Corrade::Containers::arrayCast<Magnum::Vector3>(
-      Corrade::Containers::arrayView(cpu_vbo_.data(), cpu_vbo_.size()));
-  collisionMeshData_.indices   = \
+          Corrade::Containers::arrayView(cpu_vbo_.data(), cpu_vbo_.size()));
+  collisionMeshData_.indices =
       Corrade::Containers::arrayCast<Magnum::UnsignedInt>(
-      Corrade::Containers::arrayView(cpu_ibo_.data(), cpu_ibo_.size()));
-
+          Corrade::Containers::arrayView(cpu_ibo_.data(), cpu_ibo_.size()));
 
   return true;
 }

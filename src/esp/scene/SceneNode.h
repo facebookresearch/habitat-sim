@@ -4,9 +4,9 @@
 
 #pragma once
 
+#include <Corrade/Containers/Containers.h>
 #include "esp/core/esp.h"
 #include "esp/gfx/magnum.h"
-#include <Corrade/Containers/Containers.h>
 
 // This class provides routines to:
 // set and get local rigid body transformation of the current node w.r.t. the

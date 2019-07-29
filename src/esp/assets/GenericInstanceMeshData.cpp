@@ -14,15 +14,15 @@
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Trade/Trade.h>
 
-#include <tinyply.h>
-#include <fstream>
-#include <sstream>
-#include <vector>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <tinyply.h>
 #include <unistd.h>
-#include <unordered_map>
+#include <fstream>
 #include <sophus/so3.hpp>
+#include <sstream>
+#include <unordered_map>
+#include <vector>
 
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
@@ -205,12 +205,12 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   // later they can be accessed.
   // Note that normal and texture data are not stored
   collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
-  collisionMeshData_.positions = \
+  collisionMeshData_.positions =
       Corrade::Containers::arrayCast<Magnum::Vector3>(
-      Corrade::Containers::arrayView(cpu_vbo_.data(), cpu_vbo_.size()));
-  collisionMeshData_.indices   = \
+          Corrade::Containers::arrayView(cpu_vbo_.data(), cpu_vbo_.size()));
+  collisionMeshData_.indices =
       Corrade::Containers::arrayCast<Magnum::UnsignedInt>(
-      Corrade::Containers::arrayView(cpu_ibo_.data(), cpu_ibo_.size()));
+          Corrade::Containers::arrayView(cpu_ibo_.data(), cpu_ibo_.size()));
 
   return true;
 }
@@ -253,7 +253,8 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_->tex = createInstanceTexture(obj_id_tex_data, texSize);
 
   renderingBuffer_->vbo.setData(cpu_vbo_, Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->cbo.setData(cbo_float_, Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->cbo.setData(cbo_float_,
+                                Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->ibo.setData(cpu_ibo_, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
       .setCount(nPrims * 3)

@@ -14,13 +14,13 @@ namespace assets {
 //! Raw mesh data storage
 struct MeshData {
   //! Vertex positions
-  std::vector<vec3f>    vbo;
+  std::vector<vec3f> vbo;
   //! Vertex normals
-  std::vector<vec3f>    nbo;
+  std::vector<vec3f> nbo;
   //! Texture coordinates
-  std::vector<vec2f>    tbo;
+  std::vector<vec2f> tbo;
   //! Vertex colors
-  std::vector<vec3f>    cbo;
+  std::vector<vec3f> cbo;
   //! Index buffer
   std::vector<uint32_t> ibo;
 };

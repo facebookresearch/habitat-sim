@@ -6,12 +6,7 @@ namespace esp {
 
 namespace physics {
 
-enum class PhysicalObjectType {
-  NOT_DEFINED,
-  DYNAMIC,
-  STATIC,
-  KINEMATIC
-};
+enum class PhysicalObjectType { NOT_DEFINED, DYNAMIC, STATIC, KINEMATIC };
 
-} // namespace physics
-} // namespace esp
+}  // namespace physics
+}  // namespace esp

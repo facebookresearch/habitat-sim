@@ -11,11 +11,9 @@
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <sophus/so3.hpp>
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include "Drawable.h"
 #include "esp/io/io.h"
 #include "esp/physics/ObjectType.h"
-
 
 using namespace Magnum;
 using namespace Math::Literals;
@@ -67,17 +65,20 @@ Viewer::Viewer(const Arguments& arguments)
   const std::string& file = args.value("file");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
   LOG(INFO) << "Nav scene node (before) " << navSceneNode_;
-  
+
   if (enablePhysics_) {
-    //create the default physics manager and pass to resourceManager::loadScene to reseat as necessary
-    physicsManager_ = std::make_shared<physics::PhysicsManager>(&resourceManager_);
-    
-    if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_, &drawables)) {
+    // create the default physics manager and pass to resourceManager::loadScene
+    // to reseat as necessary
+    physicsManager_ =
+        std::make_shared<physics::PhysicsManager>(&resourceManager_);
+
+    if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
+                                    &drawables)) {
       LOG(ERROR) << "cannot load " << file;
-      std::exit(0);      
+      std::exit(0);
     }
-  }else{
-    //render only scene
+  } else {
+    // render only scene
     if (!resourceManager_.loadScene(info, navSceneNode_, &drawables)) {
       LOG(ERROR) << "cannot load " << file;
       std::exit(0);
@@ -111,32 +112,32 @@ Viewer::Viewer(const Arguments& arguments)
   }
 
   // Messing around with agent location and finding object initial position
-  LOG(INFO) << "Agent position " << Eigen::Map<vec3f>(
-      agentBodyNode_->translation().data());
-  LOG(INFO) << "Camera position " << Eigen::Map<vec3f>(
-      cameraNode_->translation().data());
-  LOG(INFO) << "Scene position" << Eigen::Map<vec3f>(
-      navSceneNode_->translation().data());
+  LOG(INFO) << "Agent position "
+            << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+  LOG(INFO) << "Camera position "
+            << Eigen::Map<vec3f>(cameraNode_->translation().data());
+  LOG(INFO) << "Scene position"
+            << Eigen::Map<vec3f>(navSceneNode_->translation().data());
 
-  
   const vec3f position = pathfinder_->getRandomNavigablePoint();
   agentBodyNode_->setTranslation(Vector3(position));
-  
-  //std::string object_file(args.value("obj"));
-  renderCamera_->node().setTransformation(cameraNode_->absoluteTransformation());
+
+  // std::string object_file(args.value("obj"));
+  renderCamera_->node().setTransformation(
+      cameraNode_->absoluteTransformation());
 
   /*
   if (enablePhysics_) {
     for (int o = 0; o < numObjects_; o++) {
       addObject("data/objects/cheezit.phys_properties.json");
     }
-    LOG(INFO) << "Viewer initialization is done. ";    
+    LOG(INFO) << "Viewer initialization is done. ";
   } else {
     // connect controls to navmesh if loaded
     if (pathfinder_->isLoaded()) {
-      controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
-        vec3f currentPosition = pathfinder_->tryStep(start, end);
-        LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
+      controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end)
+  { vec3f currentPosition = pathfinder_->tryStep(start, end); LOG(INFO) <<
+  "position=" << currentPosition.transpose() << " rotation="
                   << quatf(agentBodyNode_->rotation()).coeffs().transpose();
         LOG(INFO) << "Distance to closest obstacle: "
                   << pathfinder_->distanceToClosestObstacle(currentPosition);
@@ -148,12 +149,13 @@ Viewer::Viewer(const Arguments& arguments)
 }  // namespace gfx
 
 void Viewer::addObject(std::string configFile) {
-  if(physicsManager_ == nullptr)
+  if (physicsManager_ == nullptr)
     return;
 
-  Magnum::Matrix4 T = agentBodyNode_
-      ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  //Vector3 new_pos = T.transformPoint({0.0f, 0.0f, 0.0f});
+  Magnum::Matrix4 T =
+      agentBodyNode_
+          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+  // Vector3 new_pos = T.transformPoint({0.0f, 0.0f, 0.0f});
   Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
 
   LOG(INFO) << "Camera position " << T.translation().x() << " "
@@ -167,33 +169,30 @@ void Viewer::addObject(std::string configFile) {
   int physObjectID = physicsManager_->addObject(
       configFile, physics::PhysicalObjectType::DYNAMIC, &drawables);
   physicsManager_->setTranslation(physObjectID, new_pos);
-  
-  
-  //draw random quaternion via the method: http://planning.cs.uiuc.edu/node198.html
-  double u1 = (rand()%1000)/1000.0;
-  double u2 = (rand()%1000)/1000.0;
-  double u3 = (rand()%1000)/1000.0;
 
-  Magnum::Vector3 qAxis(sqrt(1-u1)*cos(2*M_PI*u2),
-    sqrt(u1)*sin(2*M_PI*u3),
-    sqrt(u1)*cos(2*M_PI*u3)
-    );
-  physicsManager_->setRotation(physObjectID, Magnum::Quaternion(
-    qAxis,
-    sqrt(1-u1)*sin(2*M_PI*u2)
-     ));
+  // draw random quaternion via the method:
+  // http://planning.cs.uiuc.edu/node198.html
+  double u1 = (rand() % 1000) / 1000.0;
+  double u2 = (rand() % 1000) / 1000.0;
+  double u3 = (rand() % 1000) / 1000.0;
 
+  Magnum::Vector3 qAxis(sqrt(1 - u1) * cos(2 * M_PI * u2),
+                        sqrt(u1) * sin(2 * M_PI * u3),
+                        sqrt(u1) * cos(2 * M_PI * u3));
+  physicsManager_->setRotation(
+      physObjectID,
+      Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
 
   LOG(INFO) << "After add drawables";
   lastObjectID += 1;
 }
 
-
 void Viewer::pokeLastObject() {
-  if(physicsManager_ == nullptr)
+  if (physicsManager_ == nullptr)
     return;
-  Magnum::Matrix4 T = agentBodyNode_
-      ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+  Magnum::Matrix4 T =
+      agentBodyNode_
+          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 impulse = T.transformPoint({0.0f, 0.0f, -3.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   LOG(INFO) << "Poking object " << lastObjectID;
@@ -201,34 +200,37 @@ void Viewer::pokeLastObject() {
 }
 
 void Viewer::pushLastObject() {
-  if(physicsManager_ == nullptr)
+  if (physicsManager_ == nullptr)
     return;
-  Magnum::Matrix4 T = agentBodyNode_
-      ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+  Magnum::Matrix4 T =
+      agentBodyNode_
+          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 force = T.transformPoint({0.0f, 0.0f, -40.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   LOG(INFO) << "Pushing object " << lastObjectID;
   physicsManager_->applyForce(lastObjectID, force, rel_pos);
 }
 
-//generate random direction vectors:
-Magnum::Vector3 Viewer::randomDirection(){
-  Magnum::Vector3 dir(1.0f,1.0f,1.0f);
-  while(sqrt( dir.dot()) > 1.0){
-      dir = Magnum::Vector3((float)((rand()%2000 - 1000)/1000.0),(float)((rand()%2000 - 1000)/1000.0),(float)((rand()%2000 - 1000)/1000.0));
-      LOG(INFO) << dir.x() << " " << dir.y() << " " << dir.z();
+// generate random direction vectors:
+Magnum::Vector3 Viewer::randomDirection() {
+  Magnum::Vector3 dir(1.0f, 1.0f, 1.0f);
+  while (sqrt(dir.dot()) > 1.0) {
+    dir = Magnum::Vector3((float)((rand() % 2000 - 1000) / 1000.0),
+                          (float)((rand() % 2000 - 1000) / 1000.0),
+                          (float)((rand() % 2000 - 1000) / 1000.0));
+    LOG(INFO) << dir.x() << " " << dir.y() << " " << dir.z();
   }
-  dir = dir/sqrt( dir.dot());
-   return dir;
+  dir = dir / sqrt(dir.dot());
+  return dir;
 }
 
 void Viewer::wiggleLastObject() {
-  //demo of kinematic motion capability
-  //randomly translate last added object
-  if(physicsManager_ == nullptr)
+  // demo of kinematic motion capability
+  // randomly translate last added object
+  if (physicsManager_ == nullptr)
     return;
 
-  physicsManager_->translate(lastObjectID, randomDirection()*0.1);
+  physicsManager_->translate(lastObjectID, randomDirection() * 0.1);
 }
 
 Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
@@ -237,22 +239,22 @@ Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
       Vector2{position} / Vector2{camera.viewport()} - Vector2{0.5f};
   const Float length = positionNormalized.length();
   const Vector3 result(length > 1.0f
-                     ? Vector3(positionNormalized, 0.0f)
-                     : Vector3(positionNormalized, 1.0f - length));
+                           ? Vector3(positionNormalized, 0.0f)
+                           : Vector3(positionNormalized, 1.0f - length));
   return (result * Vector3::yScale(-1.0f)).normalized();
 }
 
 void Viewer::drawEvent() {
-  //LOG(INFO) << "drawEvent ";
+  // LOG(INFO) << "drawEvent ";
   GL::defaultFramebuffer.clear(GL::FramebufferClear::Color |
                                GL::FramebufferClear::Depth);
   if (sceneID_.size() <= 0)
     return;
 
   frame_curr_ += 1;
-  if(physicsManager_ != nullptr)
+  if (physicsManager_ != nullptr)
     physicsManager_->stepPhysics();
-  //LOG(INFO) << "post step ";
+  // LOG(INFO) << "post step ";
 
   if (do_profile_ && frame_curr_ > frame_limit_) {
     std::exit(0);
@@ -263,11 +265,11 @@ void Viewer::drawEvent() {
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
   // Draw debug forces
-  //renderCamera_->getMagnumCamera().draw(physicsManager_.getDrawables());
+  // renderCamera_->getMagnumCamera().draw(physicsManager_.getDrawables());
   swapBuffers();
-  if(physicsManager_ != nullptr)
+  if (physicsManager_ != nullptr)
     physicsManager_->nextFrame();
-  //LOG(INFO) << "post next frame ";
+  // LOG(INFO) << "post next frame ";
   redraw();
 }
 
@@ -348,26 +350,26 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Nine: {
       const vec3f position = pathfinder_->getRandomNavigablePoint();
       agentBodyNode_->setTranslation(Vector3(position));
-    }  break;
+    } break;
     case KeyEvent::Key::A:
       controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
-      LOG(INFO) << "Agent position " << Eigen::Map<vec3f>(
-          agentBodyNode_->translation().data());
+      LOG(INFO) << "Agent position "
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::D:
       controls_(*agentBodyNode_, "moveRight", moveSensitivity);
-      LOG(INFO) << "Agent position " << Eigen::Map<vec3f>(
-          agentBodyNode_->translation().data());
+      LOG(INFO) << "Agent position "
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::S:
       controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
-      LOG(INFO) << "Agent position " << Eigen::Map<vec3f>(
-          agentBodyNode_->translation().data());
+      LOG(INFO) << "Agent position "
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::W:
       controls_(*agentBodyNode_, "moveForward", moveSensitivity);
-      LOG(INFO) << "Agent position " << Eigen::Map<vec3f>(
-          agentBodyNode_->translation().data());
+      LOG(INFO) << "Agent position "
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::X:
       controls_(*agentBodyNode_, "moveDown", moveSensitivity, false);
@@ -376,14 +378,13 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       controls_(*agentBodyNode_, "moveUp", moveSensitivity, false);
       break;
     case KeyEvent::Key::O: {
-      //addObject("data/objects/cheezit.phys_properties.json");
-      if(physicsManager_ != nullptr){
+      // addObject("data/objects/cheezit.phys_properties.json");
+      if (physicsManager_ != nullptr) {
         int numObjects = resourceManager_.getNumLibraryObjects();
-        int randObjectID = rand()%numObjects;
+        int randObjectID = rand() % numObjects;
         addObject(resourceManager_.getObjectConfig(randObjectID));
       }
-    }
-      break;
+    } break;
     case KeyEvent::Key::P:
       pokeLastObject();
       break;
@@ -403,4 +404,3 @@ void Viewer::keyPressEvent(KeyEvent& event) {
 
 }  // namespace gfx
 }  // namespace esp
-

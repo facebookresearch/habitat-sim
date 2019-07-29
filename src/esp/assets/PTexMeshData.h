@@ -38,7 +38,7 @@ class PTexMeshData : public BaseMesh {
   };
 
   PTexMeshData() : BaseMesh(SupportedMeshType::PTEX_MESH) {}
-  virtual ~PTexMeshData() {};
+  virtual ~PTexMeshData(){};
 
   // ==== geometry ====
   void load(const std::string& meshFile, const std::string& atlasFolder);
@@ -60,7 +60,6 @@ class PTexMeshData : public BaseMesh {
   RenderingBuffer* getRenderingBuffer(int submeshID);
   virtual void uploadBuffersToGPU(bool forceReload = false) override;
   virtual Magnum::GL::Mesh* getMagnumGLMesh(int submeshID) override;
-
 
  protected:
   void loadMeshData(const std::string& meshFile);

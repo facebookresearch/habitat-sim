@@ -22,8 +22,8 @@ find_package(MagnumPlugins
 
 
 
-add_library(assets 
-    STATIC 
+add_library(assets
+    STATIC
         ${assets_SOURCES}
 )
 
