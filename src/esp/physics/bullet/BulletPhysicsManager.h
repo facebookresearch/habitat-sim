@@ -12,7 +12,7 @@
 #include <Magnum/Timeline.h>
 #include <btBulletDynamicsCommon.h>
 
-#include "PhysicsManager.h"
+#include "esp/physics/PhysicsManager.h"
 #include "BulletRigidObject.h"
 
 namespace esp {

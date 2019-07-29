@@ -19,7 +19,7 @@
 #include "esp/scene/SceneNode.h"
 #include <Magnum/DebugTools/ForceRenderer.h>
 
-#include "RigidObject.h"
+#include "esp/physics/RigidObject.h"
 
 namespace esp {
 namespace physics {

@@ -27,6 +27,7 @@ done
 my_hostname=`hostname`
 if [[ $my_hostname =~ "fair" ]]; then
   module purge
+  module load anaconda3/5.0.1
   module load cuda/9.0
   module load cudnn/v7.0-cuda.9.0
   module load gcc/7.1.0

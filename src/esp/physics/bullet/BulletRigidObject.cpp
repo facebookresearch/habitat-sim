@@ -244,12 +244,14 @@ namespace physics {
                              Magnum::Vector3 relPos) {
         if (isScene_ || !initialized_) {return;}
         //! dynamic_cast is safe
+        bObjectRigidBody_->activate();
         bObjectRigidBody_->applyForce(btVector3(force), btVector3(relPos));
     }
 
     void BulletRigidObject::applyImpulse(Magnum::Vector3 impulse,
                                 Magnum::Vector3 relPos) {
         if (isScene_ || !initialized_) {return;}
+        bObjectRigidBody_->activate();
         bObjectRigidBody_->applyImpulse(btVector3(impulse), btVector3(relPos));
     }
 

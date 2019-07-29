@@ -1,4 +1,4 @@
-file(GLOB_RECURSE physics_SOURCES "*.cpp")
+file(GLOB physics_SOURCES "*.cpp")
 
 find_package(Magnum
   REQUIRED
@@ -10,7 +10,6 @@ find_package(Magnum
     Primitives
     SceneGraph
     Shaders
-    TextureTools
     Trade
 )
 
@@ -22,9 +21,18 @@ find_package(MagnumPlugins
     TinyGltfImporter
 )
 
-find_package(MagnumIntegration REQUIRED Bullet)
-
 add_library(physics STATIC ${physics_SOURCES})
+
+if(WITH_BULLET)
+  target_compile_definitions(physics PUBLIC PHYSICS_WITH_BULLET)
+  add_subdirectory(bullet)
+
+  target_link_libraries(physics
+  PUBLIC
+  bulletphysics
+  )
+
+endif()
 
 target_link_libraries(physics
   PUBLIC
@@ -43,7 +51,6 @@ target_link_libraries(physics
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbImageConverter
     MagnumPlugins::TinyGltfImporter
-    MagnumIntegration::Bullet
     tinyply
   PRIVATE
     assimp
@@ -52,9 +59,7 @@ target_link_libraries(physics
 )
 
 
-## Enable physics profiling
-#add_compile_definitions(BT_ENABLE_PROFILE=0)
-#add_definitions(-DBT_ENABLE_PROFILE)
+
 
 set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 
