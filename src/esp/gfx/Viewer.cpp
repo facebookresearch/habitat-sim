@@ -71,7 +71,6 @@ Viewer::Viewer(const Arguments& arguments)
   if (enablePhysics_) {
     //create the default physics manager and pass to resourceManager::loadScene to reseat as necessary
     physicsManager_ = std::make_shared<physics::PhysicsManager>(&resourceManager_);
-    //physicsManager_ = std::make_shared<physics::BulletPhysicsManager>(&resourceManager_);
     
     if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_, &drawables)) {
       LOG(ERROR) << "cannot load " << file;
@@ -156,16 +155,6 @@ void Viewer::addObject(std::string configFile) {
       ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   //Vector3 new_pos = T.transformPoint({0.0f, 0.0f, 0.0f});
   Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
-  /*
-  if (castle_mesh) {
-    // new_pos = T.transformPoint({0.1f, 1.0f, -3.0f});
-    new_pos = T.transformPoint({0.1f, 1.0f, -3.0f});
-  } else if (vangoth_mesh) {
-    new_pos = T.transformPoint({0.1f, 0.0f, -1.0f});
-  } else if (surreal_mesh) {
-    new_pos = T.transformPoint({0.0f, 0.0f, -1.0f});
-  }
-  */
 
   LOG(INFO) << "Camera position " << T.translation().x() << " "
             << T.translation().y() << " " << T.translation().z();

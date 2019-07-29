@@ -35,7 +35,10 @@
 #include "MeshData.h"
 #include "ResourceManager.h"
 #include "esp/physics/PhysicsManager.h"
-#include "esp/physics/BulletPhysicsManager.h" //Alex TODO: will this need to change for conditional build?
+
+#ifdef PHYSICS_WITH_BULLET
+  #include "esp/physics/bullet/BulletPhysicsManager.h"
+#endif
 
 namespace esp {
 namespace assets {
@@ -165,8 +168,13 @@ bool ResourceManager::loadScene(
 
   //! PHYSICS INIT: Use the above config to initialize physics engine
   
-  if (simulator.compare("bullet") == 0)
-    _physicsManager.reset(new physics::BulletPhysicsManager(this));
+  if (simulator.compare("bullet") == 0){
+    #ifdef PHYSICS_WITH_BULLET
+      _physicsManager.reset(new physics::BulletPhysicsManager(this));
+    #else
+      LOG(ERROR) << "trying to use BULLET engine, but not installed";
+    #endif
+  }
   _physicsManager->initPhysics(parent, gravity);
   _physicsManager->setTimestep(dt);
 
