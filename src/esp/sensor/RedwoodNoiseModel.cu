@@ -52,8 +52,11 @@ __global__ void redwoodNoiseModelKernel(const float* __restrict__ depth,
       const int x =
           min(max(i + curand_normal(&curandState) * 0.25f, 0.0f), xmax) + 0.5f;
 
-      // downsample and clip max depth
-      const float d = min(depth[(y - y % 2) * W + x - x % 2], 5.0f);
+      // downsample
+      float d = depth[(y - y % 2) * W + x - x % 2];
+
+      // If depth is greater than 10, the sensor will probably return a zero
+      d = d > 10.0f ? 0.0f : d;
 
       // Distortion
       const float undistorted_d =
