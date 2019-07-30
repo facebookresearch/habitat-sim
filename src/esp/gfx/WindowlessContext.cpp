@@ -244,7 +244,7 @@ struct WindowlessContext::Impl {
 
   void makeCurrent() { glContext_->makeCurrent(); }
 
-  int gpuDevice() const { glContext_->gpuDevice(); }
+  int gpuDevice() const { return glContext_->gpuDevice(); }
 
   ESPContext::uptr glContext_ = nullptr;
 };
