@@ -16,6 +16,9 @@ using namespace esp::nav;
 using namespace esp::scene;
 using namespace esp::sensor;
 
+SceneConfiguration* SimulatorConfiguration_getScene(SimulatorConfiguration& config) 
+  { return &config.scene; }
+
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
 
   em::class_<SceneConfiguration>("SceneConfiguration")
@@ -31,6 +34,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::class_<SimulatorConfiguration>("SimulatorConfiguration")
       .smart_ptr_constructor("SimulatorConfiguration",
                              &SimulatorConfiguration::create<>)
+      .function("getScene", &SimulatorConfiguration_getScene, em::allow_raw_pointers())
       .property("scene", &SimulatorConfiguration::scene)
       .property("default_agent_id", &SimulatorConfiguration::defaultAgentId)
       .property("default_camera_uuid",
@@ -47,8 +51,8 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       // .function("get_active_semantic_scene_graph", &Simulator::getActiveSemanticSceneGraph)
       // .property("semantic_scene", [] (Simulator& self) { return &self.getSemanticScene(); } )
       // .property("renderer", &Simulator::getRenderer)
-      // .function("seed", &Simulator::seed)
+         .function("seed", &Simulator::seed)
       // .function("reconfigure", &Simulator::reconfigure)
-      // .function("reset", &Simulator::reset);
+         .function("reset", &Simulator::reset);
       ;
 }

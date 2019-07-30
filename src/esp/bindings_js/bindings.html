@@ -31,7 +31,7 @@
 
       var config = new Module.SimulatorConfiguration();
       console.log("config.scene.id", config.scene.id);
-      config.scene.id = "skokloster-castle.glb";
+      config.getScene().id = "skokloster-castle.glb";
       console.log("config.scene.id", config.scene.id);
 
       var sim = new Module.Simulator(config);
