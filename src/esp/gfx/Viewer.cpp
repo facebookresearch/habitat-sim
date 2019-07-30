@@ -13,7 +13,6 @@
 #include <sophus/so3.hpp>
 #include "Drawable.h"
 #include "esp/io/io.h"
-#include "esp/physics/ObjectType.h"
 
 using namespace Magnum;
 using namespace Math::Literals;
@@ -122,19 +121,9 @@ Viewer::Viewer(const Arguments& arguments)
   const vec3f position = pathfinder_->getRandomNavigablePoint();
   agentBodyNode_->setTranslation(Vector3(position));
 
-  // std::string object_file(args.value("obj"));
-  renderCamera_->node().setTransformation(
-      cameraNode_->absoluteTransformation());
-
+  // connect controls to navmesh if loaded
   /*
-  if (enablePhysics_) {
-    for (int o = 0; o < numObjects_; o++) {
-      addObject("data/objects/cheezit.phys_properties.json");
-    }
-    LOG(INFO) << "Viewer initialization is done. ";
-  } else {
-    // connect controls to navmesh if loaded
-    if (pathfinder_->isLoaded()) {
+  if (pathfinder_->isLoaded()) {
       controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end)
   { vec3f currentPosition = pathfinder_->tryStep(start, end); LOG(INFO) <<
   "position=" << currentPosition.transpose() << " rotation="
@@ -144,9 +133,14 @@ Viewer::Viewer(const Arguments& arguments)
         return currentPosition;
       });
     }
-  }
-  */
-}  // namespace gfx
+    */
+
+  renderCamera_->node().setTransformation(
+      cameraNode_->absoluteTransformation());
+
+  timeline_.start();
+
+}  // end Viewer::Viewer
 
 void Viewer::addObject(std::string configFile) {
   if (physicsManager_ == nullptr)
@@ -166,8 +160,7 @@ void Viewer::addObject(std::string configFile) {
 
   auto& drawables = sceneGraph->getDrawables();
   LOG(INFO) << "Before add drawables";
-  int physObjectID = physicsManager_->addObject(
-      configFile, physics::PhysicalObjectType::DYNAMIC, &drawables);
+  int physObjectID = physicsManager_->addObject(configFile, &drawables);
   physicsManager_->setTranslation(physObjectID, new_pos);
 
   // draw random quaternion via the method:
@@ -245,7 +238,7 @@ Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
 }
 
 void Viewer::drawEvent() {
-  // LOG(INFO) << "drawEvent ";
+  // LOG(INFO) << "start draw ";
   GL::defaultFramebuffer.clear(GL::FramebufferClear::Color |
                                GL::FramebufferClear::Depth);
   if (sceneID_.size() <= 0)
@@ -253,8 +246,7 @@ void Viewer::drawEvent() {
 
   frame_curr_ += 1;
   if (physicsManager_ != nullptr)
-    physicsManager_->stepPhysics();
-  // LOG(INFO) << "post step ";
+    physicsManager_->stepPhysics(timeline_.previousFrameDuration());
 
   if (do_profile_ && frame_curr_ > frame_limit_) {
     std::exit(0);
@@ -264,13 +256,12 @@ void Viewer::drawEvent() {
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
-  // Draw debug forces
-  // renderCamera_->getMagnumCamera().draw(physicsManager_.getDrawables());
+
   swapBuffers();
-  if (physicsManager_ != nullptr)
-    physicsManager_->nextFrame();
-  // LOG(INFO) << "post next frame ";
+  timeline_.nextFrame();
   redraw();
+  if (physicsManager_ != nullptr)
+    LOG(INFO) << "end draw world time: " << physicsManager_->getWorldTime();
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {

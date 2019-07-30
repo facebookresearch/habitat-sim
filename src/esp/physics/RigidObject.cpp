@@ -2,20 +2,6 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <Corrade/Containers/Array.h>
-#include <Corrade/PluginManager/Manager.h>
-#include <Corrade/Utility/String.h>
-#include <Magnum/PixelFormat.h>
-//#include <Magnum/Trade/PhongMaterialData.h>
-#include <Magnum/Trade/SceneData.h>
-#include <Magnum/Trade/TextureData.h>
-#include <mutex>
-
-#include "esp/assets/CollisionMeshData.h"
-#include "esp/geo/geo.h"
-#include "esp/scene/SceneConfiguration.h"
-#include "esp/scene/SceneGraph.h"
-
 #include "RigidObject.h"
 
 namespace esp {
@@ -24,8 +10,6 @@ namespace physics {
 RigidObject::RigidObject(scene::SceneNode* parent)
     : scene::SceneNode{*parent} {}
 
-// Alex: not much to be done without a physics/collision engine for a static
-// scene
 bool RigidObject::initializeScene(
     std::vector<assets::CollisionMeshData> meshGroup) {
   if (initialized_) {
@@ -46,7 +30,6 @@ bool RigidObject::initializeScene(
 
 bool RigidObject::initializeObject(
     assets::PhysicsObjectMetaData& metaData,
-    physics::PhysicalObjectType objectType,
     std::vector<assets::CollisionMeshData> meshGroup) {
   // TODO (JH): Handling static/kinematic object type
   if (initialized_) {

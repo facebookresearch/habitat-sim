@@ -10,7 +10,6 @@
 #include <vector>
 
 /* Bullet Physics Integration */
-#include <Magnum/Timeline.h>
 #include <Magnum/Trade/MeshData3D.h>
 
 #include "RigidObject.h"
@@ -20,14 +19,7 @@
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
-#include "esp/assets/ResourceManager.h"
 #include "esp/scene/SceneNode.h"
-
-//#include <Magnum/Math/Angle.h>
-// Debug draw
-//#include <Magnum/DebugTools/ForceRenderer.h>
-//#include <Magnum/DebugTools/ResourceManager.h>
-#include "esp/physics/ObjectType.h"
 
 namespace esp {
 
@@ -66,25 +58,21 @@ class PhysicsManager {
 
   //! Initialize object given mesh data
   //! The object could contain several parts
-  virtual int addObject(const std::string configFile,
-                        physics::PhysicalObjectType objectType,
-                        DrawableGroup* drawables);
+  virtual int addObject(const std::string configFile, DrawableGroup* drawables);
 
   // calls the above...
-  int addObject(const int objectID,
-                physics::PhysicalObjectType objectType,
-                DrawableGroup* drawables);
+  int addObject(const int objectID, DrawableGroup* drawables);
 
   //============ Simulator functions =============
-  virtual void stepPhysics();
+  virtual void stepPhysics(double dt = -1.0);
 
   void setTimestep(double dt);
 
   double getTimestep() { return fixedTimeStep_; };
 
-  void nextFrame();
+  double getWorldTime() { return worldTime_; };
 
-  void checkActiveObjects();
+  int checkActiveObjects();
 
   //============ Interact with objects =============
   // Alex NOTE: engine specifics handled by objects themselves...
@@ -145,7 +133,6 @@ class PhysicsManager {
 
   //! ==== dynamic object resources ===
   std::map<int, std::shared_ptr<physics::RigidObject>> existingObjects_;
-  std::map<int, PhysicalObjectType> existingObjTypes_;
   std::map<int, std::string> existingObjNames_;
   int nextObjectID_ = 0;
 
@@ -156,13 +143,10 @@ class PhysicsManager {
   bool do_profile_ = false;
   float total_time_ = 0.0f;
   int total_frames_ = 0;
-  Magnum::Timeline timeline_;
   int maxSubSteps_ = 10;
-  float fixedTimeStep_ = 1.0f / 240.0f;
+  double fixedTimeStep_ = 1.0 / 240.0;
 
-  /* Debug Draw */
-  // Magnum::DebugTools::ResourceManager debugManager;
-  // Magnum::SceneGraph::DrawableGroup3D debugDrawables;
+  double worldTime_ = 0.0;
 };
 
 }  // namespace physics

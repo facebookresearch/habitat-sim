@@ -4,20 +4,10 @@
 
 #pragma once
 
-#include <Corrade/Containers/Optional.h>
-#include <Corrade/Containers/Reference.h>
-#include <Magnum/DebugTools/ForceRenderer.h>
-#include <Magnum/Trade/MeshData3D.h>
-#include <Magnum/Trade/MeshObjectData3D.h>
 #include <btBulletDynamicsCommon.h>
 #include "esp/assets/Asset.h"
-#include "esp/assets/BaseMesh.h"
-#include "esp/assets/FRLInstanceMeshData.h"
-#include "esp/assets/GenericInstanceMeshData.h"
-#include "esp/assets/MeshData.h"
 #include "esp/assets/PhysicsObjectMetaData.h"
 #include "esp/core/esp.h"
-#include "esp/scene/SceneNode.h"
 
 #include "esp/physics/RigidObject.h"
 
@@ -34,7 +24,6 @@ class BulletRigidObject : public RigidObject {
                        btDynamicsWorld& bWorld);
 
   bool initializeObject(assets::PhysicsObjectMetaData& metaData,
-                        physics::PhysicalObjectType objectType,
                         std::vector<assets::CollisionMeshData> meshGroup,
                         btDynamicsWorld& bWorld);
 

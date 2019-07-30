@@ -7,8 +7,6 @@
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Reference.h>
 #include <Magnum/DebugTools/ForceRenderer.h>
-#include <Magnum/Trade/MeshData3D.h>
-#include <Magnum/Trade/MeshObjectData3D.h>
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/FRLInstanceMeshData.h"
@@ -35,7 +33,6 @@ class RigidObject : public scene::SceneNode {
 
   virtual bool initializeObject(
       assets::PhysicsObjectMetaData& metaData,
-      physics::PhysicalObjectType objectType,
       std::vector<assets::CollisionMeshData> meshGroup);
 
   ~RigidObject();

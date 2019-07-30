@@ -7,6 +7,7 @@
 
 #include "BulletPhysicsManager.h"
 #include "BulletRigidObject.h"
+#include "esp/assets/ResourceManager.h"
 
 namespace esp {
 namespace physics {
@@ -31,7 +32,6 @@ bool BulletPhysicsManager::initPhysics(scene::SceneNode* node,
                                          physics::BulletRigidObject>(
       std::make_shared<physics::BulletRigidObject>(physicsNode_));
 
-  timeline_.start();
   initialized_ = true;
   do_profile_ = do_profile;
 
@@ -78,7 +78,6 @@ bool BulletPhysicsManager::addScene(
 }
 
 int BulletPhysicsManager::addObject(const std::string configFile,
-                                    PhysicalObjectType objectType,
                                     DrawableGroup* drawables) {
   std::vector<assets::CollisionMeshData> meshGroup =
       resourceManager->getCollisionMesh(configFile);
@@ -86,40 +85,29 @@ int BulletPhysicsManager::addObject(const std::string configFile,
   assets::PhysicsObjectMetaData metaData =
       resourceManager->getPhysicsMetaData(configFile);
 
-  LOG(INFO) << "Add object: before check";
   //! Test Mesh primitive is valid
   for (assets::CollisionMeshData& meshData : meshGroup) {
-    LOG(INFO) << "    meshData>>>>>>>>>>";
     if (!isMeshPrimitiveValid(meshData)) {
       return false;
     }
   }
-  LOG(INFO) << "Add object: before child node";
 
   //! Create new physics object (child node of sceneNode_)
   std::shared_ptr<physics::BulletRigidObject> physObject =
       std::make_shared<physics::BulletRigidObject>(sceneNode_.get());
   objectNodes_.emplace_back(physObject);
 
-  LOG(INFO) << "Add object: before initialize";
-
   //! Instantiate with mesh pointer
   bool objectSuccess =
-      physObject->initializeObject(metaData, objectType, meshGroup, *bWorld_);
+      physObject->initializeObject(metaData, meshGroup, *bWorld_);
   if (!objectSuccess) {
-    LOG(ERROR) << "Initialize unsuccessful";
+    LOG(ERROR) << "BulletPhysicsManager::addObject - Initialize unsuccessful";
     return -1;
   }
-
-  LOG(INFO) << "Add object: before render stack";
-
-  //! Enable force debugging
-  // physObject->debugForce(debugDrawables);
 
   //! Maintain object resource
   existingObjects_[nextObjectID_] = physObject;
   existingObjNames_[nextObjectID_] = configFile;
-  existingObjTypes_[nextObjectID_] = objectType;
   //! Increment simple object ID tracker
   nextObjectID_ += 1;
 
@@ -127,29 +115,35 @@ int BulletPhysicsManager::addObject(const std::string configFile,
 
   int resObjectID =
       resourceManager->addObject(configFile, physObject.get(), drawables);
-  // int resObjectID = resourceManager->addObject(configFile, physicsNode_,
-  // drawables);
 
   if (resObjectID < 0) {
     return -1;
   }
 
-  LOG(INFO) << "Add object: after render stack";
   return nextObjectID_ - 1;
 }
 
-void BulletPhysicsManager::stepPhysics() {
+void BulletPhysicsManager::stepPhysics(double dt) {
   // We don't step uninitialized physics sim...
   if (!initialized_)
     return;
 
+  if (dt < 0)
+    dt = fixedTimeStep_;
+
   // ==== Physics stepforward ======
   auto start = std::chrono::system_clock::now();
-  bWorld_->stepSimulation(timeline_.previousFrameDuration(), maxSubSteps_,
-                          fixedTimeStep_);
+
+  // Alex NOTE: worldTime_ will always be a multiple of fixedTimeStep_
+  int numSubStepsTaken =
+      bWorld_->stepSimulation(dt, maxSubSteps_, fixedTimeStep_);
+  worldTime_ += numSubStepsTaken * fixedTimeStep_;
+
   auto end = std::chrono::system_clock::now();
 
   std::chrono::duration<float> elapsed_seconds = end - start;
+  // LOG(INFO) << "Step physics dt | compute time: " << dt << " | " <<
+  // elapsed_seconds.count();
   std::time_t end_time = std::chrono::system_clock::to_time_t(end);
 
   // TODO (JH): hacky way to do physics profiling.
@@ -163,7 +157,7 @@ void BulletPhysicsManager::stepPhysics() {
               << 1.0f / (total_time_ / total_frames_);
   }
 
-  int numObjects = bWorld_->getNumCollisionObjects();
+  // int numObjects = bWorld_->getNumCollisionObjects();
 }
 
 }  // namespace physics

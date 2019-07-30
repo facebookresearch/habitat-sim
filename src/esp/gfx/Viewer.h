@@ -5,6 +5,7 @@
 #pragma once
 #include <Magnum/Platform/GlfwApplication.h>
 #include <Magnum/SceneGraph/Camera.h>
+#include <Magnum/Timeline.h>
 
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
@@ -80,6 +81,8 @@ class Viewer : public Magnum::Platform::Application {
   int cheezitID = -1;
   vec3f goalPos_;
   quatf goalHeading_;
+
+  Magnum::Timeline timeline_;
 };
 
 }  // namespace gfx

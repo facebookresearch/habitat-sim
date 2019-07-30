@@ -8,8 +8,6 @@
 #include <Magnum/BulletIntegration/DebugDraw.h>
 #include <Magnum/BulletIntegration/Integration.h>
 #include <Magnum/BulletIntegration/MotionState.h>
-#include <Magnum/Timeline.h>
-#include <Magnum/Trade/MeshData3D.h>
 #include <btBulletDynamicsCommon.h>
 
 #include "BulletRigidObject.h"
@@ -40,12 +38,10 @@ class BulletPhysicsManager : public PhysicsManager {
 
   //! Initialize object given mesh data
   //! The object could contain several parts
-  int addObject(const std::string configFile,
-                physics::PhysicalObjectType objectType,
-                DrawableGroup* drawables);
+  int addObject(const std::string configFile, DrawableGroup* drawables);
 
   //============ Simulator functions =============
-  void stepPhysics();
+  void stepPhysics(double dt = -1.0);
 
   //============ Interact with objects =============
   // Alex NOTE: engine specifics handled by objects themselves...

@@ -22,7 +22,6 @@
 #include "MeshData.h"
 #include "MeshMetaData.h"
 #include "PhysicsObjectMetaData.h"
-#include "esp/physics/ObjectType.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneNode.h"
 

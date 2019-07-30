@@ -32,6 +32,7 @@
 #include "esp/assets/GltfMeshData.h"
 #include "esp/assets/Mp3dInstanceMeshData.h"
 #include "esp/assets/PTexMeshData.h"
+#include "esp/assets/ResourceManager.h"
 
 namespace esp {
 namespace physics {
@@ -44,19 +45,9 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node,
   physicsNode_ = node;
   //! Create new scene node
   sceneNode_ = std::make_shared<physics::RigidObject>(physicsNode_);
-
-  timeline_.start();
   initialized_ = true;
   do_profile_ = do_profile;
 
-  // Initialize debugger
-  // LOG(INFO) << "Debug drawing";
-  // Magnum::DebugTools::ResourceManager::instance()
-  //  .set("bulletForce", Magnum::DebugTools::ForceRendererOptions{}
-  //  .setSize(5.0f)
-  //  .setColor(Magnum::Color3(1.0f, 0.1f, 0.1f)));
-
-  // LOG(INFO) << "Initialized Base Physics Engine.";
   return true;
 }
 
@@ -92,15 +83,12 @@ bool PhysicsManager::addScene(
   return sceneSuccess;
 }
 
-int PhysicsManager::addObject(const int objectID,
-                              PhysicalObjectType objectType,
-                              DrawableGroup* drawables) {
+int PhysicsManager::addObject(const int objectID, DrawableGroup* drawables) {
   std::string configFile = resourceManager->getObjectConfig(objectID);
-  return addObject(configFile, objectType, drawables);
+  return addObject(configFile, drawables);
 }
 
 int PhysicsManager::addObject(const std::string configFile,
-                              PhysicalObjectType objectType,
                               DrawableGroup* drawables) {
   std::vector<assets::CollisionMeshData> meshGroup =
       resourceManager->getCollisionMesh(configFile);
@@ -125,8 +113,7 @@ int PhysicsManager::addObject(const std::string configFile,
   LOG(INFO) << "Add object: before initialize";
 
   //! Instantiate with mesh pointer
-  bool objectSuccess =
-      physObject->initializeObject(metaData, objectType, meshGroup);
+  bool objectSuccess = physObject->initializeObject(metaData, meshGroup);
   if (!objectSuccess) {
     LOG(ERROR) << "Initialize unsuccessful";
     return -1;
@@ -137,7 +124,6 @@ int PhysicsManager::addObject(const std::string configFile,
   //! Maintain object resource
   existingObjects_[nextObjectID_] = physObject;
   existingObjNames_[nextObjectID_] = configFile;
-  existingObjTypes_[nextObjectID_] = objectType;
   //! Increment simple object ID tracker
   nextObjectID_ += 1;
 
@@ -191,7 +177,7 @@ void PhysicsManager::setTimestep(double dt) {
   fixedTimeStep_ = dt;
 }
 
-void PhysicsManager::stepPhysics() {
+void PhysicsManager::stepPhysics(double dt) {
   // We don't step uninitialized physics sim...
   if (!initialized_)
     return;
@@ -215,54 +201,51 @@ void PhysicsManager::stepPhysics() {
               << 1.0f / (total_time_ / total_frames_);
   }
 
+  if (dt < 0)
+    dt = fixedTimeStep_;
+
+  // Alex TODO: handle in-between step times? Ideally dt is a multiple of
+  // fixedTimeStep_
+  double targetTime = worldTime_ + dt;
+  while (worldTime_ < targetTime)
+    worldTime_ += fixedTimeStep_;
+
   // Alex NOTE: removed numObjects count from Bullet...
-}
-
-void PhysicsManager::nextFrame() {
-  timeline_.nextFrame();
-
-  checkActiveObjects();
 }
 
 //! Profile function. In BulletPhysics stationery objects are
 //! marked as inactive to speed up simulation. This function
 //! helps checking how many objects are active/inactive at any
 //! time step
-void PhysicsManager::checkActiveObjects() {
+int PhysicsManager::checkActiveObjects() {
   if (sceneNode_.get() == nullptr) {
-    return;
+    return 0;
   }
 
   // We don't check uninitialized physics sim...
   if (!initialized_)
-    return;
+    return 0;
 
   int numActive = 0;
   int numTotal = 0;
   for (auto& child : sceneNode_->children()) {
     physics::RigidObject* childNode =
         dynamic_cast<physics::RigidObject*>(&child);
-    if (childNode == nullptr) {
-      // LOG(INFO) << "Child is null";
-    } else {
-      // LOG(INFO) << "Child is active: " << childNode->isActive();
+    if (childNode != nullptr) {
       numTotal += 1;
       if (childNode->isActive()) {
         numActive += 1;
       }
     }
   }
-  LOG(INFO) << "Nodes total " << numTotal << " active " << numActive;
+  return numActive;
 }
 
 void PhysicsManager::applyForce(const int objectID,
                                 Magnum::Vector3 force,
                                 Magnum::Vector3 relPos) {
   std::shared_ptr<physics::RigidObject> physObject = existingObjects_[objectID];
-  PhysicalObjectType objectType = existingObjTypes_[objectID];
-  if (objectType == physics::PhysicalObjectType::DYNAMIC) {
-    physObject->applyForce(force, relPos);
-  }
+  physObject->applyForce(force, relPos);
   // physObject->setDebugForce(force);
 }
 
@@ -270,10 +253,7 @@ void PhysicsManager::applyImpulse(const int objectID,
                                   Magnum::Vector3 impulse,
                                   Magnum::Vector3 relPos) {
   std::shared_ptr<physics::RigidObject> physObject = existingObjects_[objectID];
-  PhysicalObjectType objectType = existingObjTypes_[objectID];
-  if (objectType == physics::PhysicalObjectType::DYNAMIC) {
-    physObject->applyImpulse(impulse, relPos);
-  }
+  physObject->applyImpulse(impulse, relPos);
 }
 
 void PhysicsManager::setTransformation(

@@ -4,10 +4,13 @@
 
 #include <functional>
 
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
+#include <Magnum/Math/FunctionsBatch.h>
+#include <Magnum/Math/Range.h>
 #include <Magnum/Math/Tags.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Trade/AbstractImporter.h>
@@ -89,42 +92,11 @@ bool ResourceManager::loadScene(
     DrawableGroup* drawables,   /* = nullptr */
     std::string physicsFilename /* data/default.phys_scene_config.json */
 ) {
-  // scene mesh loading
-  bool meshSuccess = false;
-  if (!io::exists(info.filepath)) {
-    LOG(ERROR) << "Cannot load from file " << info.filepath;
-    meshSuccess = false;
-  } else {
-    scene::SceneNode* sceneNode = nullptr;
-    if (info.type == AssetType::FRL_INSTANCE_MESH ||
-        info.type == AssetType::INSTANCE_MESH) {
-      LOG(INFO) << "Loading FRL/Instance mesh data";
-      meshSuccess = loadInstanceMeshData(info, parent, drawables);
-    } else if (info.type == AssetType::FRL_PTEX_MESH) {
-      LOG(INFO) << "Loading PTEX mesh data";
-      meshSuccess = loadPTexMeshData(info, parent, drawables);
-    } else if (info.type == AssetType::SUNCG_SCENE) {
-      meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
-    } else if (info.type == AssetType::MP3D_MESH) {
-      LOG(INFO) << "Loading MP3D mesh data";
-      LOG(INFO) << "Parent " << parent << " drawables " << drawables;
-      meshSuccess = loadGeneralMeshData(info, parent, drawables);
-    } else {
-      // Unknown type, just load general mesh data
-      LOG(INFO) << "Loading General mesh data";
-      meshSuccess = loadGeneralMeshData(info, parent, drawables);
-    }
-  }
-
-  LOG(INFO) << "Loaded mesh scene, success " << meshSuccess << " parent "
-            << parent << " drawables " << drawables;
-
-  // if physics is enabled, initialize the physical scene
-  LOG(INFO) << "Loading physics config... " << physicsFilename;
+  // default scene mesh loading
+  bool meshSuccess = loadScene(info, parent, drawables);
 
   // Load the global scene config JSON here
   io::JsonDocument scenePhysicsConfig = io::parseJsonFile(physicsFilename);
-  LOG(INFO) << "...parsed config ";
 
   // load the simulator preference
   // default is no simulator
@@ -168,7 +140,6 @@ bool ResourceManager::loadScene(
   }
 
   //! PHYSICS INIT: Use the above config to initialize physics engine
-
   if (simulator.compare("bullet") == 0) {
 #ifdef PHYSICS_WITH_BULLET
     _physicsManager.reset(new physics::BulletPhysicsManager(this));
@@ -180,10 +151,9 @@ bool ResourceManager::loadScene(
   _physicsManager->setTimestep(dt);
 
   //! LOAD OBJECTS
-  LOG(INFO) << "...loading rigid body library metadata from individual paths";
   std::string configDirectory =
       physicsFilename.substr(0, physicsFilename.find_last_of("/"));
-  LOG(INFO) << "...dir = " << configDirectory;
+  // LOG(INFO) << "...dir = " << configDirectory;
   // load the rigid object library metadata (no physics init yet...)
   // ALEX NOTE: expect relative paths to the global config
   if (scenePhysicsConfig.HasMember("rigid object paths")) {
@@ -197,8 +167,8 @@ bool ResourceManager::loadScene(
               .append(scenePhysicsConfig["rigid object paths"][i].GetString())
               .append(".phys_properties.json");
           // get the absolute path
-          LOG(INFO) << "...   obj properties path = "
-                    << objPhysPropertiesFilename;
+          // LOG(INFO) << "...   obj properties path = " <<
+          // objPhysPropertiesFilename;
 
           // 2. loadObject()
           int sceneID = loadObject(objPhysPropertiesFilename);
@@ -222,7 +192,7 @@ bool ResourceManager::loadScene(
 
   //! Collect collision mesh group
   std::vector<CollisionMeshData> meshGroup;
-  LOG(INFO) << "Accessing scene mesh start " << start << " end " << end;
+  // LOG(INFO) << "Accessing scene mesh start " << start << " end " << end;
   for (int mesh_i = start; mesh_i <= end; mesh_i++) {
     // FRL Quad Mesh
     if (info.type == AssetType::FRL_INSTANCE_MESH) {
@@ -273,14 +243,10 @@ bool ResourceManager::loadScene(
 int ResourceManager::addObject(const std::string configFile,
                                scene::SceneNode* parent,
                                DrawableGroup* drawables) {
-  LOG(INFO) << "Resource add object " << configFile;
   int objectID = getObjectID(configFile);
   if (objectID < 0) {
     return -1;
   }
-  LOG(INFO) << "Resource add object " << configFile << " " << objectID;
-  LOG(INFO) << "Resource total object " << physicsObjectConfigList_.size();
-  LOG(INFO) << "Parent " << parent << " drawables " << drawables;
   return addObject(objectID, parent, drawables);
 }
 
@@ -289,8 +255,6 @@ int ResourceManager::addObject(const int objectID,
                                scene::SceneNode* parent,
                                DrawableGroup* drawables) {
   std::string objPhysConfigFilename = getObjectConfig(objectID);
-  LOG(INFO) << "Resource add object " << objPhysConfigFilename << " "
-            << objectID;
   int physObjectID = loadObject(objPhysConfigFilename, parent, drawables);
   return physObjectID;
 }
@@ -304,8 +268,6 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename,
   const bool objectIsLoaded =
       physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
 
-  LOG(INFO) << "Loaded mesh object, drawables " << drawables;
-
   // Find objectID in resourceManager
   int objectID = -1;
   if (!objectIsLoaded) {
@@ -317,7 +279,6 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename,
         std::find(physicsObjectConfigList_.begin(),
                   physicsObjectConfigList_.end(), objPhysConfigFilename);
     objectID = std::distance(physicsObjectConfigList_.begin(), itr);
-    LOG(INFO) << "Object ID " << objectID;
   }
 
   if (parent != nullptr and drawables != nullptr) {
@@ -333,11 +294,9 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename,
 
     MeshMetaData meshMetaData = resourceDict_[filename];
     scene::SceneNode& newNode = parent->createChild();
-    // scene::SceneNode& newNode = *parent;
     AssetInfo renderMeshinfo = AssetInfo::fromPath(filename);
 
     for (auto componentID : magnumMeshDict_[filename]) {
-      LOG(INFO) << "Scene data ID " << componentID << " " << filename;
       addComponent(*importer, renderMeshinfo, meshMetaData, newNode, drawables,
                    componentID);
     }
@@ -353,7 +312,8 @@ PhysicsObjectMetaData& ResourceManager::getPhysicsMetaData(
 
 // load object from config filename
 int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
-  LOG(INFO) << "Load object " << objPhysConfigFilename;
+  LOG(INFO) << "ResourceManager::loadObject(" << objPhysConfigFilename << ")";
+
   // check for duplicate load
   const bool objExists = physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
   if (objExists) {
@@ -394,7 +354,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
       for (rapidjson::SizeType i = 0; i < objPhysicsConfig["COM"].Size(); i++) {
         if (!objPhysicsConfig["COM"][i].IsNumber()) {
           // invalid config
-          LOG(ERROR) << "Invalid value in object physics config COM array";
+          LOG(ERROR) << " Invalid value in object physics config - COM array";
           break;
         } else {
           physMetaData.COM[i] = objPhysicsConfig["COM"][i].GetDouble();
@@ -411,7 +371,8 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
            i++) {
         if (!objPhysicsConfig["inertia"][i].IsNumber()) {
           // invalid config
-          LOG(ERROR) << "Invalid value in object physics config inertia array";
+          LOG(ERROR)
+              << " Invalid value in object physics config - inertia array";
           break;
         } else {
           physMetaData.inertia[i] = objPhysicsConfig["inertia"][i].GetDouble();
@@ -425,6 +386,9 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
     if (objPhysicsConfig["friction coefficient"].IsNumber()) {
       physMetaData.frictionCoefficient =
           objPhysicsConfig["friction coefficient"].GetDouble();
+    } else {
+      LOG(ERROR)
+          << " Invalid value in object physics config - friction coefficient";
     }
   }
 
@@ -433,6 +397,9 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
     if (objPhysicsConfig["restitution coefficient"].IsNumber()) {
       physMetaData.restitutionCoefficient =
           objPhysicsConfig["restitution coefficient"].GetDouble();
+    } else {
+      LOG(ERROR) << " Invalid value in object physics config - restitution "
+                    "coefficient";
     }
   }
 
@@ -446,6 +413,8 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
       renderMeshFilename = propertiesFileDirectory;
       renderMeshFilename.append("/").append(
           objPhysicsConfig["render mesh"].GetString());
+    } else {
+      LOG(ERROR) << " Invalid value in object physics config - render mesh";
     }
   }
   if (objPhysicsConfig.HasMember("collision mesh")) {
@@ -453,6 +422,8 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
       collisionMeshFilename = propertiesFileDirectory;
       collisionMeshFilename.append("/").append(
           objPhysicsConfig["collision mesh"].GetString());
+    } else {
+      LOG(ERROR) << " Invalid value in object physics config - collision mesh";
     }
   }
 
@@ -686,19 +657,9 @@ std::string ResourceManager::getObjectConfig(int objectID) {
 
 Magnum::Vector3 ResourceManager::computeMeshBBCenter(GltfMeshData* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
-  Magnum::Vector3 maxCorner(-999999.9), minCorner(999999.9);
-  for (int vi = 0; vi < meshData.positions.size(); vi++) {
-    Magnum::Vector3 pos = meshData.positions[vi];
-    maxCorner[0] = fmax(maxCorner.x(), pos.x());
-    maxCorner[1] = fmax(maxCorner.y(), pos.y());
-    maxCorner[2] = fmax(maxCorner.z(), pos.z());
-
-    minCorner[0] = fmin(minCorner.x(), pos.x());
-    minCorner[1] = fmin(minCorner.y(), pos.y());
-    minCorner[2] = fmin(minCorner.z(), pos.z());
-  }
-
-  return (maxCorner + minCorner) / 2.0;
+  return Magnum::Range3D{
+      Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)}
+      .center();
 }
 
 void ResourceManager::translateMesh(GltfMeshData* meshDataGL,

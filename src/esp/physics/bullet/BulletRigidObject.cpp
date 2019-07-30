@@ -120,7 +120,6 @@ bool BulletRigidObject::initializeScene(
 
 bool BulletRigidObject::initializeObject(
     assets::PhysicsObjectMetaData& metaData,
-    physics::PhysicalObjectType objectType,
     std::vector<assets::CollisionMeshData> meshGroup,
     btDynamicsWorld& bWorld) {
   // TODO (JH): Handling static/kinematic object type
@@ -134,13 +133,13 @@ bool BulletRigidObject::initializeObject(
     return false;
   }
   isObject_ = true;
-  objectMotionType = DYNAMIC;  // TODO: default dynamic for bullet simulator...
+  objectMotionType = DYNAMIC;
 
   //! Create Bullet Object
   btIndexedMesh bulletMesh;
 
   //! Physical parameters
-  LOG(INFO) << "Creating object mass: " << metaData.mass;
+  // LOG(INFO) << "Creating object mass: " << metaData.mass;
   // float restitution = metaData.restitutionCoefficient;
   float margin = metaData.margin;
   // float linDamping  = metaData.linDamping;
@@ -225,8 +224,8 @@ bool BulletRigidObject::initializeObject(
 
   //! Add to world
   bWorld.addRigidBody(bObjectRigidBody_.get());
-  LOG(INFO) << "Body Construction test: after";
-  LOG(INFO) << "Rigid body: initialized";
+  // LOG(INFO) << "Body Construction test: after";
+  // LOG(INFO) << "Rigid body: initialized";
 
   //! Sync render pose with physics
   syncPose();
@@ -278,12 +277,12 @@ void BulletRigidObject::syncPose() {
       //! Scenes are loaded as is
       return;
     } else {
-      LOG(INFO) << "Rigid object sync pose";
+      // LOG(INFO) << "Rigid object sync pose";
       //! For syncing objects
       bObjectRigidBody_->setWorldTransform(btTransform(transformationMatrix()));
     }
   } else {
-    LOG(INFO) << "Object not initialized";
+    LOG(INFO) << "BulletRigidObject::syncPose - Object not initialized";
   }
 }
 

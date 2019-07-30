@@ -6,12 +6,8 @@
 
 #include "esp/core/esp.h"
 #include "esp/gfx/magnum.h"
-#include "esp/physics/ObjectType.h"
 
 namespace esp {
-namespace physics {
-enum class PhysicalObjectType;
-}
 
 namespace assets {
 
@@ -32,7 +28,6 @@ struct PhysicsObjectMetaData {
         margin(0.01),
         linDamping(0.2),
         angDamping(0.2),
-        objectType(physics::PhysicalObjectType::DYNAMIC),
         inertia(Magnum::Vector3(0., 0., 0.)){};
 
   // copy constructor
@@ -64,8 +59,6 @@ struct PhysicsObjectMetaData {
 
   double linDamping;
   double angDamping;
-
-  physics::PhysicalObjectType objectType;
 };
 
 }  // namespace assets
