@@ -29,6 +29,14 @@ using namespace Magnum;
 
 namespace esp {
 namespace gfx {
+
+const GL::Framebuffer::ColorAttachment RgbaBuffer =
+    GL::Framebuffer::ColorAttachment{0};
+const GL::Framebuffer::ColorAttachment DepthBuffer =
+    GL::Framebuffer::ColorAttachment{1};
+const GL::Framebuffer::ColorAttachment ObjectIdBuffer =
+    GL::Framebuffer::ColorAttachment{2};
+
 struct RenderingTarget::Impl {
   Impl(WindowlessContext::ptr context, const Magnum::Vector2i& size)
       : context_{context},
@@ -44,16 +52,12 @@ struct RenderingTarget::Impl {
                                   size);
 
     framebuffer_ = GL::Framebuffer{{{}, size}};
-    framebuffer_
-        .attachRenderbuffer(GL::Framebuffer::ColorAttachment{0}, colorBuffer_)
-        .attachRenderbuffer(GL::Framebuffer::ColorAttachment{1}, depthBuffer_)
-        .attachRenderbuffer(GL::Framebuffer::ColorAttachment{2},
-                            objectIdBuffer_)
+    framebuffer_.attachRenderbuffer(RgbaBuffer, colorBuffer_)
+        .attachRenderbuffer(DepthBuffer, depthBuffer_)
+        .attachRenderbuffer(ObjectIdBuffer, objectIdBuffer_)
         .attachRenderbuffer(GL::Framebuffer::BufferAttachment::Depth,
                             depthRenderbuffer_)
-        .mapForDraw({{0, GL::Framebuffer::ColorAttachment{0}},
-                     {1, GL::Framebuffer::ColorAttachment{1}},
-                     {2, GL::Framebuffer::ColorAttachment{2}}});
+        .mapForDraw({{0, RgbaBuffer}, {1, DepthBuffer}, {2, ObjectIdBuffer}});
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(GL::FramebufferTarget::Draw) ==
         GL::Framebuffer::Status::Complete);
@@ -71,18 +75,15 @@ struct RenderingTarget::Impl {
   void renderExit() {}
 
   void readFrameRgba(const MutableImageView2D& view) {
-    framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{0})
-        .read(framebuffer_.viewport(), view);
+    framebuffer_.mapForRead(RgbaBuffer).read(framebuffer_.viewport(), view);
   }
 
   void readFrameDepth(const MutableImageView2D& view) {
-    framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{1})
-        .read(framebuffer_.viewport(), view);
+    framebuffer_.mapForRead(DepthBuffer).read(framebuffer_.viewport(), view);
   }
 
   void readFrameObjectId(const MutableImageView2D& view) {
-    framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{2})
-        .read(framebuffer_.viewport(), view);
+    framebuffer_.mapForRead(ObjectIdBuffer).read(framebuffer_.viewport(), view);
   }
 
   Magnum::Vector2i framebufferSize() const {
