@@ -85,3 +85,9 @@ if(BUILD_PYTHON_BINDINGS)
   message("Building Python bindings")
   add_subdirectory(esp/bindings)
 endif()
+
+# emscripten js bindings
+if(CORRADE_TARGET_EMSCRIPTEN)
+  message("Building Emscripten JS bindings")
+  add_subdirectory(esp/bindings_js)
+endif()
