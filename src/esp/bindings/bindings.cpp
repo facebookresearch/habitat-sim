@@ -22,6 +22,7 @@ using namespace py::literals;
 #include "esp/sensor/PinholeCamera.h"
 #include "esp/sensor/Sensor.h"
 
+#include <Magnum/ImageView.h>
 #include <Magnum/Python.h>
 #include <Magnum/SceneGraph/Python.h>
 
@@ -364,20 +365,10 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("__exit__", [](RenderingTarget::ptr self, py::object exc_type,
                           py::object exc_value,
                           py::object traceback) { self->renderExit(); })
-      .def(
-          "read_frame_rgba",
-          [](RenderingTarget& self, const Magnum::PyImageView<2, char>& view) {
-            self.readFrameRgba(view);
-          },
-          "Reads RGBA frame into passed img in uint8 byte format.")
-      .def("read_frame_depth",
-           [](RenderingTarget& self, const Magnum::PyImageView<2, char>& view) {
-             self.readFrameDepth(view);
-           })
-      .def("read_frame_object_id",
-           [](RenderingTarget& self, const Magnum::PyImageView<2, char>& view) {
-             self.readFrameObjectId(view);
-           })
+      .def("read_frame_rgba", &RenderingTarget::readFrameRgba,
+           "Reads RGBA frame into passed img in uint8 byte format.")
+      .def("read_frame_depth", &RenderingTarget::readFrameDepth)
+      .def("read_frame_object_id", &RenderingTarget::readFrameObjectId)
 #ifdef ESP_WITH_GPU_GPU
       .def("read_frame_rgba_gpu",
            [](RenderingTarget& self, size_t devPtr) {
