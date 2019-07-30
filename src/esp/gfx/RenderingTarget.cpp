@@ -32,20 +32,18 @@ namespace gfx {
 struct RenderingTarget::Impl {
   Impl(WindowlessContext::ptr context, const Magnum::Vector2i& size)
       : context_{context},
-        framebufferSize_(size),
         colorBuffer_(),
         depthBuffer_(),
         objectIdBuffer_(),
         depthRenderbuffer_(),
         framebuffer_(Magnum::NoCreate) {
-    colorBuffer_.setStorage(GL::RenderbufferFormat::SRGB8Alpha8,
-                            framebufferSize_);
-    depthBuffer_.setStorage(GL::RenderbufferFormat::R32F, framebufferSize_);
-    objectIdBuffer_.setStorage(GL::RenderbufferFormat::R32UI, framebufferSize_);
+    colorBuffer_.setStorage(GL::RenderbufferFormat::SRGB8Alpha8, size);
+    depthBuffer_.setStorage(GL::RenderbufferFormat::R32F, size);
+    objectIdBuffer_.setStorage(GL::RenderbufferFormat::R32UI, size);
     depthRenderbuffer_.setStorage(GL::RenderbufferFormat::Depth24Stencil8,
-                                  framebufferSize_);
+                                  size);
 
-    framebuffer_ = GL::Framebuffer{{{}, framebufferSize_}};
+    framebuffer_ = GL::Framebuffer{{{}, size}};
     framebuffer_
         .attachRenderbuffer(GL::Framebuffer::ColorAttachment{0}, colorBuffer_)
         .attachRenderbuffer(GL::Framebuffer::ColorAttachment{1}, depthBuffer_)
@@ -74,20 +72,22 @@ struct RenderingTarget::Impl {
 
   void readFrameRgba(const MutableImageView2D& view) {
     framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{0})
-        .read({{}, framebufferSize_}, view);
+        .read(framebuffer_.viewport(), view);
   }
 
   void readFrameDepth(const MutableImageView2D& view) {
     framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{1})
-        .read({{}, framebufferSize_}, view);
+        .read(framebuffer_.viewport(), view);
   }
 
   void readFrameObjectId(const MutableImageView2D& view) {
     framebuffer_.mapForRead(GL::Framebuffer::ColorAttachment{2})
-        .read({{}, framebufferSize_}, view);
+        .read(framebuffer_.viewport(), view);
   }
 
-  Magnum::Vector2i framebufferSize() const { return framebufferSize_; }
+  Magnum::Vector2i framebufferSize() const {
+    return framebuffer_.viewport().size();
+  }
 
   int gpuDeviceId() const { return this->context_->gpuDevice(); }
 
@@ -103,9 +103,9 @@ struct RenderingTarget::Impl {
     cudaArray* array = nullptr;
     checkCudaErrors(
         cudaGraphicsSubResourceGetMappedArray(&array, colorBufferCugl_, 0, 0));
-    const int widthInBytes = framebufferSize_.x() * 4 * sizeof(uint8_t);
+    const int widthInBytes = framebufferSize().x() * 4 * sizeof(uint8_t);
     checkCudaErrors(cudaMemcpy2DFromArray(devPtr, widthInBytes, array, 0, 0,
-                                          widthInBytes, framebufferSize_.y(),
+                                          widthInBytes, framebufferSize().y(),
                                           cudaMemcpyDeviceToDevice));
 
     checkCudaErrors(cudaGraphicsUnmapResources(1, &colorBufferCugl_, 0));
@@ -122,9 +122,9 @@ struct RenderingTarget::Impl {
     cudaArray* array = nullptr;
     checkCudaErrors(
         cudaGraphicsSubResourceGetMappedArray(&array, depthBufferCugl_, 0, 0));
-    const int widthInBytes = framebufferSize_.x() * 1 * sizeof(float);
+    const int widthInBytes = framebufferSize().x() * 1 * sizeof(float);
     checkCudaErrors(cudaMemcpy2DFromArray(devPtr, widthInBytes, array, 0, 0,
-                                          widthInBytes, framebufferSize_.y(),
+                                          widthInBytes, framebufferSize().y(),
                                           cudaMemcpyDeviceToDevice));
 
     checkCudaErrors(cudaGraphicsUnmapResources(1, &depthBufferCugl_, 0));
@@ -141,9 +141,9 @@ struct RenderingTarget::Impl {
     cudaArray* array = nullptr;
     checkCudaErrors(cudaGraphicsSubResourceGetMappedArray(
         &array, objecIdBufferCugl_, 0, 0));
-    const int widthInBytes = framebufferSize_.x() * 1 * sizeof(int32_t);
+    const int widthInBytes = framebufferSize().x() * 1 * sizeof(int32_t);
     checkCudaErrors(cudaMemcpy2DFromArray(devPtr, widthInBytes, array, 0, 0,
-                                          widthInBytes, framebufferSize_.y(),
+                                          widthInBytes, framebufferSize().y(),
                                           cudaMemcpyDeviceToDevice));
 
     checkCudaErrors(cudaGraphicsUnmapResources(1, &objecIdBufferCugl_, 0));
@@ -164,7 +164,6 @@ struct RenderingTarget::Impl {
  private:
   WindowlessContext::ptr context_ = nullptr;
 
-  Magnum::Vector2i framebufferSize_;
   Magnum::GL::Renderbuffer colorBuffer_;
   Magnum::GL::Renderbuffer depthBuffer_;
   Magnum::GL::Renderbuffer objectIdBuffer_;
