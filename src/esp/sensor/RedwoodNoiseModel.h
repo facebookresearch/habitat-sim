@@ -6,22 +6,6 @@
 namespace esp {
 namespace sensor {
 
-typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
-    RowMatrixXf;
-
-struct RedwoodNoiseModelCPUImpl {
-  RedwoodNoiseModelCPUImpl(const Eigen::Ref<const RowMatrixXf> model)
-      : model_{model} {};
-
-  RowMatrixXf simulate(const Eigen::Ref<const RowMatrixXf> depth);
-
- private:
-  RowMatrixXf model_;
-  core::Random prng_;
-
-  ESP_SMART_POINTERS(RedwoodNoiseModelCPUImpl)
-};
-
 #ifdef SENSORS_WITH_CUDA
 
 namespace impl {

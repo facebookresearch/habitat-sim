@@ -53,23 +53,24 @@ __global__ void redwoodNoiseModelKernel(const float* __restrict__ depth,
           min(max(i + curand_normal(&curandState) * 0.25f, 0.0f), xmax) + 0.5f;
 
       // downsample
-      float d = depth[(y - y % 2) * W + x - x % 2];
-
-      // If depth is greater than 10, the sensor will probably return a zero
-      d = d > 10.0f ? 0.0f : d;
-
-      // Distortion
-      const float undistorted_d =
-          undistort(x / xmax * 639.0f, y / ymax * 479.0f, d, model);
-
-      // quantization and high freq noise
-      if (undistorted_d == 0.0f)
+      const float d = depth[(y - y % 2) * W + x - x % 2];
+      // If depth is greater than 10m, the sensor will just return a zero
+      if (d >= 10.0f) {
         noisyDepth[j * W + i] = 0.0f;
-      else {
-        const float denom = (round(35.130f / undistorted_d +
-                                   curand_normal(&curandState) * 0.027778f) *
-                             8.0f);
-        noisyDepth[j * W + i] = denom > 1e-5 ? (35.130f * 8.0f / denom) : 0.0;
+      } else {
+        // Distortion
+        const float undistorted_d =
+            undistort(x / xmax * 639.0f, y / ymax * 479.0f, d, model);
+
+        // quantization and high freq noise
+        if (undistorted_d == 0.0f)
+          noisyDepth[j * W + i] = 0.0f;
+        else {
+          const float denom = (round(35.130f / undistorted_d +
+                                     curand_normal(&curandState) * 0.027778f) *
+                               8.0f);
+          noisyDepth[j * W + i] = denom > 1e-5 ? (35.130f * 8.0f / denom) : 0.0;
+        }
       }
     }
   }

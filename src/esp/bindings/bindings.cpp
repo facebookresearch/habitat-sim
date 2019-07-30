@@ -397,12 +397,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
 
-  py::class_<RedwoodNoiseModelCPUImpl, RedwoodNoiseModelCPUImpl::uptr>(
-      m, "RedwoodNoiseModelCPUImpl")
-      .def(py::init(&RedwoodNoiseModelCPUImpl::create_unique<
-                    const Eigen::Ref<const RowMatrixXf>&>))
-      .def("simulate", &RedwoodNoiseModelCPUImpl::simulate);
-
 #ifdef SENSORS_WITH_CUDA
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(
       m, "RedwoodNoiseModelGPUImpl")
