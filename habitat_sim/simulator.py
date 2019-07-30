@@ -318,20 +318,26 @@ class Sensor:
             size = self._sensor_object.framebuffer_size
 
             if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
-                tgt.read_frame_object_id(
-                    mn.MutableImageView2D(mn.PixelFormat.R32UI, size, self._buffer)
+                tgt.framebuffer.map_for_read(tgt.OBJECT_ID_BUFFER)
+                tgt.framebuffer.read(
+                    tgt.framebuffer.viewport,
+                    mn.MutableImageView2D(mn.PixelFormat.R32UI, size, self._buffer),
                 )
             elif self._spec.sensor_type == hsim.SensorType.DEPTH:
-                tgt.read_frame_depth(
-                    mn.MutableImageView2D(mn.PixelFormat.R32F, size, self._buffer)
+                tgt.framebuffer.map_for_read(tgt.DEPTH_BUFFER)
+                tgt.framebuffer.read(
+                    tgt.framebuffer.viewport,
+                    mn.MutableImageView2D(mn.PixelFormat.R32F, size, self._buffer),
                 )
             else:
-                tgt.read_frame_rgba(
+                tgt.framebuffer.map_for_read(tgt.RGBA_BUFFER)
+                tgt.framebuffer.read(
+                    tgt.framebuffer.viewport,
                     mn.MutableImageView2D(
                         mn.PixelFormat.RGBA8UNORM,
                         size,
                         self._buffer.reshape(self._spec.resolution[0], -1),
-                    )
+                    ),
                 )
 
             return np.flip(self._buffer, axis=0).copy()

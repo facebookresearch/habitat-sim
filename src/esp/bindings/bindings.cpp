@@ -22,6 +22,7 @@ using namespace py::literals;
 #include "esp/sensor/PinholeCamera.h"
 #include "esp/sensor/Sensor.h"
 
+#include <Magnum/GL/Framebuffer.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Python.h>
 #include <Magnum/SceneGraph/Python.h>
@@ -51,7 +52,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 
   py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
 
-  m.import("magnum.scenegraph");
+  py::module::import("magnum.gl");
+  py::module::import("magnum.scenegraph");
 
   py::class_<Configuration, Configuration::ptr>(m, "Configuration")
       .def(py::init(&Configuration::create<>))
@@ -365,10 +367,10 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("__exit__", [](RenderingTarget::ptr self, py::object exc_type,
                           py::object exc_value,
                           py::object traceback) { self->renderExit(); })
-      .def("read_frame_rgba", &RenderingTarget::readFrameRgba,
-           "Reads RGBA frame into passed img in uint8 byte format.")
-      .def("read_frame_depth", &RenderingTarget::readFrameDepth)
-      .def("read_frame_object_id", &RenderingTarget::readFrameObjectId)
+      .def_property_readonly("framebuffer", &RenderingTarget::framebuffer)
+      .def_readonly_static("RGBA_BUFFER", &RenderingTarget::RgbaBuffer)
+      .def_readonly_static("DEPTH_BUFFER", &RenderingTarget::DepthBuffer)
+      .def_readonly_static("OBJECT_ID_BUFFER", &RenderingTarget::ObjectIdBuffer)
 #ifdef ESP_WITH_GPU_GPU
       .def("read_frame_rgba_gpu",
            [](RenderingTarget& self, size_t devPtr) {

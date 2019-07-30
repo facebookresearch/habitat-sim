@@ -30,11 +30,11 @@ using namespace Magnum;
 namespace esp {
 namespace gfx {
 
-const GL::Framebuffer::ColorAttachment RgbaBuffer =
+const GL::Framebuffer::ColorAttachment RenderingTarget::RgbaBuffer =
     GL::Framebuffer::ColorAttachment{0};
-const GL::Framebuffer::ColorAttachment DepthBuffer =
+const GL::Framebuffer::ColorAttachment RenderingTarget::DepthBuffer =
     GL::Framebuffer::ColorAttachment{1};
-const GL::Framebuffer::ColorAttachment ObjectIdBuffer =
+const GL::Framebuffer::ColorAttachment RenderingTarget::ObjectIdBuffer =
     GL::Framebuffer::ColorAttachment{2};
 
 struct RenderingTarget::Impl {
@@ -74,21 +74,11 @@ struct RenderingTarget::Impl {
 
   void renderExit() {}
 
-  void readFrameRgba(const MutableImageView2D& view) {
-    framebuffer_.mapForRead(RgbaBuffer).read(framebuffer_.viewport(), view);
-  }
-
-  void readFrameDepth(const MutableImageView2D& view) {
-    framebuffer_.mapForRead(DepthBuffer).read(framebuffer_.viewport(), view);
-  }
-
-  void readFrameObjectId(const MutableImageView2D& view) {
-    framebuffer_.mapForRead(ObjectIdBuffer).read(framebuffer_.viewport(), view);
-  }
-
   Magnum::Vector2i framebufferSize() const {
     return framebuffer_.viewport().size();
   }
+
+  Magnum::GL::Framebuffer& framebuffer() { return framebuffer_; }
 
   int gpuDeviceId() const { return this->context_->gpuDevice(); }
 
@@ -204,25 +194,16 @@ void RenderingTarget::readFrameObjectIdGPU(int32_t* devPtr) {
 }
 #endif
 
-void RenderingTarget::readFrameRgba(const Magnum::MutableImageView2D& view) {
-  pimpl_->readFrameRgba(view);
-}
-
-void RenderingTarget::readFrameDepth(const Magnum::MutableImageView2D& view) {
-  pimpl_->readFrameDepth(view);
-}
-
-void RenderingTarget::readFrameObjectId(
-    const Magnum::MutableImageView2D& view) {
-  pimpl_->readFrameObjectId(view);
-}
-
 int RenderingTarget::gpuDeviceId() const {
   return pimpl_->gpuDeviceId();
 }
 
 Magnum::Vector2i RenderingTarget::framebufferSize() const {
   return pimpl_->framebufferSize();
+}
+
+Magnum::GL::Framebuffer& RenderingTarget::framebuffer() {
+  return pimpl_->framebuffer();
 }
 
 }  // namespace gfx

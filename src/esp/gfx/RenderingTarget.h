@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <Magnum/Magnum.h>
+#include <Magnum/GL/Framebuffer.h>
 
 #include "esp/core/esp.h"
 
@@ -15,6 +15,10 @@ namespace gfx {
 
 class RenderingTarget {
  public:
+  static const Magnum::GL::Framebuffer::ColorAttachment RgbaBuffer;
+  static const Magnum::GL::Framebuffer::ColorAttachment DepthBuffer;
+  static const Magnum::GL::Framebuffer::ColorAttachment ObjectIdBuffer;
+
   RenderingTarget(WindowlessContext::ptr context, const Magnum::Vector2i& size);
 
   ~RenderingTarget() { LOG(INFO) << "Deconstructing RenderingTarget"; }
@@ -24,9 +28,7 @@ class RenderingTarget {
 
   Magnum::Vector2i framebufferSize() const;
 
-  void readFrameRgba(const Magnum::MutableImageView2D& view);
-  void readFrameDepth(const Magnum::MutableImageView2D& view);
-  void readFrameObjectId(const Magnum::MutableImageView2D& view);
+  Magnum::GL::Framebuffer& framebuffer();
 
   int gpuDeviceId() const;
 
