@@ -77,9 +77,8 @@ class Viewer : public Magnum::Platform::Application {
   int frame_curr_ = 0;
 
   int numObjects_ = 1;
-  int lastObjectID = -1;
+  std::vector<int> objectIDs;
 
-  int cheezitID = -1;
   vec3f goalPos_;
   quatf goalHeading_;
 

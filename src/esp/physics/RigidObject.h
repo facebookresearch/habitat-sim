@@ -52,6 +52,8 @@ class RigidObject : public scene::SceneNode {
   //! (Prototype) For visualizing & debugging
   void setDebugForce(Magnum::Vector3 force);
 
+  virtual bool removeObject();
+
   // ==== Transformations ===
   //! Need to overwrite a bunch of functions to update physical states
   virtual SceneNode& setTransformation(

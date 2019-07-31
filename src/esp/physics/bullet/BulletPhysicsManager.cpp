@@ -67,11 +67,10 @@ bool BulletPhysicsManager::addScene(
   }
 
   //! Initialize scene
-  // bool sceneSuccess = sceneNode_->initializeScene(meshGroup, *bWorld_);
   bool sceneSuccess =
       std::dynamic_pointer_cast<physics::BulletRigidObject,
                                 physics::RigidObject>(sceneNode_)
-          ->initializeScene(meshGroup, *bWorld_);
+          ->initializeScene(meshGroup, bWorld_);
   LOG(INFO) << "Init scene done";
 
   return sceneSuccess;
@@ -88,7 +87,7 @@ const int BulletPhysicsManager::makeRigidObject(
   //! Instantiate with mesh pointer
   bool objectSuccess =
       dynamic_cast<physics::BulletRigidObject*>(existingObjects_.back().get())
-          ->initializeObject(metaData, meshGroup, *bWorld_);
+          ->initializeObject(metaData, meshGroup, bWorld_);
   if (!objectSuccess) {
     return -1;
   }

@@ -88,6 +88,10 @@ void RigidObject::getDimensions(assets::CollisionMeshData& meshData,
             << minY << " maxY " << maxY << " minZ " << minZ << " maxZ " << maxZ;
 }
 
+bool RigidObject::removeObject() {
+  return true;
+}
+
 bool RigidObject::isActive() {
   // Alex NOTE: no active objects without a physics engine... (kinematics don't
   // count)

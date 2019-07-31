@@ -21,11 +21,11 @@ class BulletRigidObject : public RigidObject {
   ~BulletRigidObject();
 
   bool initializeScene(std::vector<assets::CollisionMeshData> meshGroup,
-                       btDynamicsWorld& bWorld);
+                       std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
 
   bool initializeObject(assets::PhysicsObjectMetaData& metaData,
                         std::vector<assets::CollisionMeshData> meshGroup,
-                        btDynamicsWorld& bWorld);
+                        std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
 
   //! Check whether object is being actively simulated, or sleeping
   bool isActive();
@@ -36,12 +36,17 @@ class BulletRigidObject : public RigidObject {
   // Impulse interaction
   void applyImpulse(Magnum::Vector3 impulse, Magnum::Vector3 relPos);
 
+  bool removeObject();
+
  protected:
   //! Needed after changing the pose from Magnum side
   //! Not exposed to end user
   void syncPose();
 
  private:
+  //! One object can only exist in one world
+  std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
+
   //! Physical scene
   //! Scene data: triangular mesh shape
   //! All components are stored as a vector of bCollisionBody_

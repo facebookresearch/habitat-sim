@@ -42,7 +42,7 @@ BulletRigidObject::~BulletRigidObject() {
 
 bool BulletRigidObject::initializeScene(
     std::vector<assets::CollisionMeshData> meshGroup,
-    btDynamicsWorld& bWorld) {
+    std::shared_ptr<btDiscreteDynamicsWorld> bWorld) {
   if (initialized_) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
     return false;
@@ -109,11 +109,12 @@ bool BulletRigidObject::initializeScene(
         bSceneCollisionObjects_.back()->getCollisionFlags() |
         btCollisionObject::CF_STATIC_OBJECT);*/
 
-    bWorld.addCollisionObject(bSceneCollisionObjects_.back().get());
+    bWorld->addCollisionObject(bSceneCollisionObjects_.back().get());
   }
 
   LOG(INFO) << "Instance body: initialized";
   syncPose();
+  bWorld_ = bWorld;
   initialized_ = true;
   return true;
 }  // end BulletRigidObject::initializeScene
@@ -121,7 +122,7 @@ bool BulletRigidObject::initializeScene(
 bool BulletRigidObject::initializeObject(
     assets::PhysicsObjectMetaData& metaData,
     std::vector<assets::CollisionMeshData> meshGroup,
-    btDynamicsWorld& bWorld) {
+    std::shared_ptr<btDiscreteDynamicsWorld> bWorld) {
   // TODO (JH): Handling static/kinematic object type
   if (initialized_) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
@@ -139,7 +140,6 @@ bool BulletRigidObject::initializeObject(
   btIndexedMesh bulletMesh;
 
   //! Physical parameters
-  // LOG(INFO) << "Creating object mass: " << metaData.mass;
   // float restitution = metaData.restitutionCoefficient;
   float margin = metaData.margin;
   // float linDamping  = metaData.linDamping;
@@ -223,16 +223,24 @@ bool BulletRigidObject::initializeObject(
             << bObjectRigidBody_->getCollisionFlags();
 
   //! Add to world
-  bWorld.addRigidBody(bObjectRigidBody_.get());
+  bWorld->addRigidBody(bObjectRigidBody_.get());
   // LOG(INFO) << "Body Construction test: after";
   // LOG(INFO) << "Rigid body: initialized";
 
   //! Sync render pose with physics
   syncPose();
+  bWorld_ = bWorld;
   initialized_ = true;
   return true;
 
 }  // end BulletRigidObject::initializeObject
+
+bool BulletRigidObject::removeObject() {
+  bWorld_->removeRigidBody(bObjectRigidBody_.get());
+  bWorld_ = nullptr;
+  initialized_ = false;
+  return true;
+}
 
 bool BulletRigidObject::isActive() {
   if (!initialized_) {

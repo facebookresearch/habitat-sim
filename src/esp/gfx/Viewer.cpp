@@ -177,38 +177,38 @@ void Viewer::addObject(std::string configFile) {
       Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
 
   LOG(INFO) << "After add drawables";
-  lastObjectID += 1;
+  objectIDs.push_back(physObjectID);
 }
 
 void Viewer::removeLastObject() {
-  if (physicsManager_ == nullptr || lastObjectID < 0)
+  if (physicsManager_ == nullptr || objectIDs.size() == 0)
     return;
-  physicsManager_->removeObject(lastObjectID);
-  lastObjectID -= 1;
+  physicsManager_->removeObject(objectIDs.back());
+  objectIDs.pop_back();
 }
 
 void Viewer::pokeLastObject() {
-  if (physicsManager_ == nullptr)
+  if (physicsManager_ == nullptr || objectIDs.size() == 0)
     return;
   Magnum::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 impulse = T.transformPoint({0.0f, 0.0f, -3.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
-  LOG(INFO) << "Poking object " << lastObjectID;
-  physicsManager_->applyImpulse(lastObjectID, impulse, rel_pos);
+  LOG(INFO) << "Poking object " << objectIDs.back();
+  physicsManager_->applyImpulse(objectIDs.back(), impulse, rel_pos);
 }
 
 void Viewer::pushLastObject() {
-  if (physicsManager_ == nullptr)
+  if (physicsManager_ == nullptr || objectIDs.size() == 0)
     return;
   Magnum::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 force = T.transformPoint({0.0f, 0.0f, -40.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
-  LOG(INFO) << "Pushing object " << lastObjectID;
-  physicsManager_->applyForce(lastObjectID, force, rel_pos);
+  LOG(INFO) << "Pushing object " << objectIDs.back();
+  physicsManager_->applyForce(objectIDs.back(), force, rel_pos);
 }
 
 // generate random direction vectors:
@@ -227,10 +227,10 @@ Magnum::Vector3 Viewer::randomDirection() {
 void Viewer::wiggleLastObject() {
   // demo of kinematic motion capability
   // randomly translate last added object
-  if (physicsManager_ == nullptr)
+  if (physicsManager_ == nullptr || objectIDs.size() == 0)
     return;
 
-  physicsManager_->translate(lastObjectID, randomDirection() * 0.1);
+  physicsManager_->translate(objectIDs.back(), randomDirection() * 0.1);
 }
 
 Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
@@ -376,7 +376,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       controls_(*agentBodyNode_, "moveUp", moveSensitivity, false);
       break;
     case KeyEvent::Key::O: {
-      // addObject("data/objects/cheezit.phys_properties.json");
       if (physicsManager_ != nullptr) {
         int numObjects = resourceManager_.getNumLibraryObjects();
         int randObjectID = rand() % numObjects;

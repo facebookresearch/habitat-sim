@@ -124,11 +124,13 @@ int PhysicsManager::addObject(const std::string configFile,
 
 int PhysicsManager::removeObject(const int physObjectID) {
   LOG(ERROR) << "Removing object " << physObjectID;
-  if (physObjectID < 0 || physObjectID >= existingObjects_.size()) {
+  if (physObjectID < 0 || physObjectID >= existingObjects_.size() ||
+      existingObjects_[physObjectID] == nullptr) {
     LOG(ERROR) << "Failed to remove object " << physObjectID;
     return -1;
   }
   // LOG(INFO) physObject;
+  existingObjects_[physObjectID]->removeObject();
   existingObjects_[physObjectID] = nullptr;
   return physObjectID;
 }
