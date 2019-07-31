@@ -209,7 +209,7 @@ class Sensor:
         self._sensor_object = self._agent.sensors.get(sensor_id)
         self._spec = self._sensor_object.specification()
 
-        # NB: Graphics APIs tend to use H x W, so use that here
+        # NB: Graphics APIs tend to use W x H, so use that here
         self._sensor_object.bind_rendering_target(
             self._sim.create_rendering_target(self._sensor_object.framebuffer_size)
         )
