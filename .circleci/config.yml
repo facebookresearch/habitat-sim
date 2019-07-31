@@ -186,7 +186,6 @@ jobs:
               cd habitat-sim
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat
-              pip install nbval
               export PYTHONPATH=$PYTHONPATH:$(pwd)
               ./build.sh --headless
               pytest
