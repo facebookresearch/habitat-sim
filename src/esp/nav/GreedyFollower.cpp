@@ -82,17 +82,23 @@ nav::GreedyGeodesicFollowerImpl::calcStepAlong(
 
   const float alpha = gradDir.angularDistance(std::get<1>(state));
   VLOG(1) << alpha;
+  // If the angle between the gradient direction and the current heading is less
+  // than the heading change per turn, just go forward.  This check should
+  // technically be if the angle is less than half the turn amount, but using
+  // the full turn amount helps to reduce jittering (i.e.
+  // left->forward->right->forward->left->....)
   if (alpha <= turnAmount_ + 1e-3)
     return CODES::FORWARD;
 
-  // There are some edge cases where the gradient doesn't line up with makes
-  // progress the fastest, so we will always try forward
   dummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
   dummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
   moveForward_(&dummyNode_);
   const float newGeoDist = this->geoDist(
       cast<vec3f>(dummyNode_.absoluteTransformation().translation()),
       path.requestedEnd);
+  // There are some edge cases where the gradient doesn't line up with what
+  // makes progress the fastest, so we will always try forward.  This also helps
+  // reduce the amount of jittering in the path for small turn angles
   if ((path.geodesicDistance - newGeoDist) > 0.95 * forwardAmount_) {
     return CODES::FORWARD;
   }
