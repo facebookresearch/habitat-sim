@@ -83,92 +83,77 @@ bool PhysicsManager::addScene(
   return sceneSuccess;
 }
 
-int PhysicsManager::addObject(const int objectID, DrawableGroup* drawables) {
-  std::string configFile = resourceManager->getObjectConfig(objectID);
-  return addObject(configFile, drawables);
-}
+int PhysicsManager::addObject(const int resObjectID, DrawableGroup* drawables) {
+  const std::string configFile = resourceManager->getObjectConfig(resObjectID);
 
-int PhysicsManager::addObject(const std::string configFile,
-                              DrawableGroup* drawables) {
+  //! Test Mesh primitive is valid
   std::vector<assets::CollisionMeshData> meshGroup =
       resourceManager->getCollisionMesh(configFile);
-
   assets::PhysicsObjectMetaData metaData =
       resourceManager->getPhysicsMetaData(configFile);
-
-  LOG(INFO) << "Add object: before check";
-  //! Test Mesh primitive is valid
   for (assets::CollisionMeshData& meshData : meshGroup) {
     if (!isMeshPrimitiveValid(meshData)) {
       return false;
     }
   }
-  LOG(INFO) << "Add object: before child node";
-
-  //! Create new physics object (child node of sceneNode_)
-  std::shared_ptr<physics::RigidObject> physObject =
-      std::make_shared<physics::RigidObject>(sceneNode_.get());
-  objectNodes_.emplace_back(physObject);
-
-  LOG(INFO) << "Add object: before initialize";
 
   //! Instantiate with mesh pointer
-  bool objectSuccess = physObject->initializeObject(metaData, meshGroup);
-  if (!objectSuccess) {
+  const int nextObjectID_ = makeRigidObject(meshGroup, metaData);
+  if (nextObjectID_ < 0) {
     LOG(ERROR) << "Initialize unsuccessful";
     return -1;
   }
-
-  LOG(INFO) << "Add object: before render stack";
-
   //! Maintain object resource
-  existingObjects_[nextObjectID_] = physObject;
   existingObjNames_[nextObjectID_] = configFile;
-  //! Increment simple object ID tracker
-  nextObjectID_ += 1;
 
-  //! IMPORTANT: invoke resourceManager to draw object
-  int resObjectID =
-      resourceManager->addObject(configFile, physObject.get(), drawables);
-  if (resObjectID < 0) {
+  //! Draw object via resource manager
+  //! Render node as child of physics node
+  resourceManager->loadObject(configFile, existingObjects_[nextObjectID_].get(),
+                              drawables);
+
+  return nextObjectID_;
+}
+
+int PhysicsManager::addObject(const std::string configFile,
+                              DrawableGroup* drawables) {
+  int resObjectID = resourceManager->getObjectID(configFile);
+  //! Invoke resourceManager to draw object
+  int physObjectID = addObject(resObjectID, drawables);
+  return physObjectID;
+}
+
+int PhysicsManager::removeObject(const int physObjectID) {
+  LOG(ERROR) << "Removing object " << physObjectID;
+  if (physObjectID < 0 || physObjectID >= existingObjects_.size()) {
+    LOG(ERROR) << "Failed to remove object " << physObjectID;
     return -1;
   }
+  // LOG(INFO) physObject;
+  existingObjects_[physObjectID] = nullptr;
+  return physObjectID;
+}
 
-  LOG(INFO) << "Add object: after render stack";
+//! Create and initialize rigid object
+const int PhysicsManager::makeRigidObject(
+    std::vector<assets::CollisionMeshData> meshGroup,
+    assets::PhysicsObjectMetaData metaData) {
+  //! Create new physics object (child node of sceneNode_)
+  existingObjects_.emplace_back(
+      std::make_unique<physics::RigidObject>(sceneNode_.get()));
+
+  const int nextObjectID_ = existingObjects_.size();
+  //! Instantiate with mesh pointer
+  bool objectSuccess =
+      existingObjects_.back()->initializeObject(metaData, meshGroup);
+  if (!objectSuccess) {
+    return -1;
+  }
   return nextObjectID_ - 1;
 }
 
-//! Check if mesh primitive is compatible with physics
+//! Base physics manager has no requirement for mesh primitive
 bool PhysicsManager::isMeshPrimitiveValid(assets::CollisionMeshData& meshData) {
-  if (meshData.primitive == Magnum::MeshPrimitive::Triangles) {
-    //! Only triangle mesh works
-    return true;
-  } else {
-    switch (meshData.primitive) {
-      case Magnum::MeshPrimitive::Lines:
-        LOG(ERROR) << "Invalid primitive: Lines";
-        break;
-      case Magnum::MeshPrimitive::Points:
-        LOG(ERROR) << "Invalid primitive: Points";
-        break;
-      case Magnum::MeshPrimitive::LineLoop:
-        LOG(ERROR) << "Invalid primitive Line loop";
-        break;
-      case Magnum::MeshPrimitive::LineStrip:
-        LOG(ERROR) << "Invalid primitive Line Strip";
-        break;
-      case Magnum::MeshPrimitive::TriangleStrip:
-        LOG(ERROR) << "Invalid primitive Triangle Strip";
-        break;
-      case Magnum::MeshPrimitive::TriangleFan:
-        LOG(ERROR) << "Invalid primitive Triangle Fan";
-        break;
-      default:
-        LOG(ERROR) << "Invalid primitive " << int(meshData.primitive);
-    }
-    LOG(ERROR) << "Cannot load collision mesh, skipping";
-    return false;
-  }
+  return true;
 }
 
 // ALEX TODO: this function should do any engine specific setting which is
@@ -244,71 +229,99 @@ int PhysicsManager::checkActiveObjects() {
 void PhysicsManager::applyForce(const int objectID,
                                 Magnum::Vector3 force,
                                 Magnum::Vector3 relPos) {
-  std::shared_ptr<physics::RigidObject> physObject = existingObjects_[objectID];
-  physObject->applyForce(force, relPos);
+  if (existingObjects_[objectID] != nullptr) {
+    existingObjects_[objectID]->applyForce(force, relPos);
+  }
   // physObject->setDebugForce(force);
 }
 
 void PhysicsManager::applyImpulse(const int objectID,
                                   Magnum::Vector3 impulse,
                                   Magnum::Vector3 relPos) {
-  std::shared_ptr<physics::RigidObject> physObject = existingObjects_[objectID];
-  physObject->applyImpulse(impulse, relPos);
+  if (existingObjects_[objectID] != nullptr) {
+    existingObjects_[objectID]->applyImpulse(impulse, relPos);
+  }
 }
 
 void PhysicsManager::setTransformation(
     const int objectID,
     const Magnum::Math::Matrix4<float> trans) {
-  existingObjects_[objectID]->setTransformation(trans);
+  if (existingObjects_[objectID] != nullptr) {
+    existingObjects_[objectID]->setTransformation(trans);
+  }
 }
 void PhysicsManager::setTranslation(const int objectID,
                                     const Magnum::Math::Vector3<float> vector) {
-  existingObjects_[objectID]->setTranslation(vector);
+  if (existingObjects_[objectID] != nullptr) {
+    existingObjects_[objectID]->setTranslation(vector);
+  }
 }
 void PhysicsManager::setRotation(
     const int objectID,
     const Magnum::Math::Quaternion<float>& quaternion) {
-  existingObjects_[objectID]->setRotation(quaternion);
+  if (existingObjects_[objectID] != nullptr) {
+    existingObjects_[objectID]->setRotation(quaternion);
+  }
 }
 void PhysicsManager::resetTransformation(const int objectID) {
-  existingObjects_[objectID]->resetTransformation();
+  if (existingObjects_[objectID] != nullptr) {
+    existingObjects_[objectID]->resetTransformation();
+  }
 }
 void PhysicsManager::translate(const int objectID,
                                const Magnum::Math::Vector3<float> vector) {
-  existingObjects_[objectID]->translate(vector);
+  if (existingObjects_[objectID] != nullptr) {
+    existingObjects_[objectID]->translate(vector);
+  }
 }
 void PhysicsManager::translateLocal(const int objectID,
                                     const Magnum::Math::Vector3<float> vector) {
-  existingObjects_[objectID]->translateLocal(vector);
+  if (existingObjects_[objectID] != nullptr) {
+    existingObjects_[objectID]->translateLocal(vector);
+  }
 }
 void PhysicsManager::rotate(const int objectID,
                             const Magnum::Math::Rad<float> angleInRad,
                             const Magnum::Math::Vector3<float> normalizedAxis) {
-  existingObjects_[objectID]->rotate(angleInRad, normalizedAxis);
+  if (existingObjects_[objectID] != nullptr) {
+    existingObjects_[objectID]->rotate(angleInRad, normalizedAxis);
+  }
 }
 void PhysicsManager::rotateX(const int objectID,
                              const Magnum::Math::Rad<float> angleInRad) {
-  existingObjects_[objectID]->rotateX(angleInRad);
+  if (existingObjects_[objectID] != nullptr) {
+    existingObjects_[objectID]->rotateX(angleInRad);
+  }
 }
 void PhysicsManager::rotateY(const int objectID,
                              const Magnum::Math::Rad<float> angleInRad) {
-  existingObjects_[objectID]->rotateY(angleInRad);
+  if (existingObjects_[objectID] != nullptr) {
+    existingObjects_[objectID]->rotateY(angleInRad);
+  }
 }
 void PhysicsManager::rotateXLocal(const int objectID,
                                   const Magnum::Math::Rad<float> angleInRad) {
-  existingObjects_[objectID]->rotateXLocal(angleInRad);
+  if (existingObjects_[objectID] != nullptr) {
+    existingObjects_[objectID]->rotateXLocal(angleInRad);
+  }
 }
 void PhysicsManager::rotateYLocal(const int objectID,
                                   const Magnum::Math::Rad<float> angleInRad) {
-  existingObjects_[objectID]->rotateYLocal(angleInRad);
+  if (existingObjects_[objectID] != nullptr) {
+    existingObjects_[objectID]->rotateYLocal(angleInRad);
+  }
 }
 void PhysicsManager::rotateZ(const int objectID,
                              const Magnum::Math::Rad<float> angleInRad) {
-  existingObjects_[objectID]->rotateZ(angleInRad);
+  if (existingObjects_[objectID] != nullptr) {
+    existingObjects_[objectID]->rotateZ(angleInRad);
+  }
 }
 void PhysicsManager::rotateZLocal(const int objectID,
                                   const Magnum::Math::Rad<float> angleInRad) {
-  existingObjects_[objectID]->rotateZLocal(angleInRad);
+  if (existingObjects_[objectID] != nullptr) {
+    existingObjects_[objectID]->rotateZLocal(angleInRad);
+  }
 }
 
 }  // namespace physics

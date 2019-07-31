@@ -58,10 +58,13 @@ class PhysicsManager {
 
   //! Initialize object given mesh data
   //! The object could contain several parts
-  virtual int addObject(const std::string configFile, DrawableGroup* drawables);
+  int addObject(const std::string configFile, DrawableGroup* drawables);
 
   // calls the above...
-  int addObject(const int objectID, DrawableGroup* drawables);
+  int addObject(const int resObjectID, DrawableGroup* drawables);
+
+  //! Remove added object by physics object ID
+  virtual int removeObject(const int physObjectID);
 
   //============ Simulator functions =============
   virtual void stepPhysics(double dt = -1.0);
@@ -117,7 +120,12 @@ class PhysicsManager {
 
  protected:
   //! Check if mesh primitive type is valid for bullet physics engine
-  bool isMeshPrimitiveValid(assets::CollisionMeshData& meshData);
+  virtual bool isMeshPrimitiveValid(assets::CollisionMeshData& meshData);
+
+  //! Create and initialize rigid object
+  virtual const int makeRigidObject(
+      std::vector<assets::CollisionMeshData> meshGroup,
+      assets::PhysicsObjectMetaData metaData);
 
   // use this to instantiate physics objects from the physicsObjectLibrary_
   assets::ResourceManager* resourceManager;
@@ -129,10 +137,9 @@ class PhysicsManager {
   //! Used to keep track of all sceneNodes that have physical properties
   scene::SceneNode* physicsNode_ = nullptr;
   std::shared_ptr<physics::RigidObject> sceneNode_ = nullptr;
-  std::vector<std::shared_ptr<physics::RigidObject>> objectNodes_;
 
   //! ==== dynamic object resources ===
-  std::map<int, std::shared_ptr<physics::RigidObject>> existingObjects_;
+  std::vector<std::unique_ptr<physics::RigidObject>> existingObjects_;
   std::map<int, std::string> existingObjNames_;
   int nextObjectID_ = 0;
 

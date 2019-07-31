@@ -180,6 +180,13 @@ void Viewer::addObject(std::string configFile) {
   lastObjectID += 1;
 }
 
+void Viewer::removeLastObject() {
+  if (physicsManager_ == nullptr || lastObjectID < 0)
+    return;
+  physicsManager_->removeObject(lastObjectID);
+  lastObjectID -= 1;
+}
+
 void Viewer::pokeLastObject() {
   if (physicsManager_ == nullptr)
     return;
@@ -385,6 +392,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::K:
       wiggleLastObject();
       break;
+    case KeyEvent::Key::Y:
+      removeLastObject();
     default:
       break;
   }

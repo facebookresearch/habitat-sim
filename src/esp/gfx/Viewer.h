@@ -43,6 +43,7 @@ class Viewer : public Magnum::Platform::Application {
   void addObject(std::string configFile);
   void pokeLastObject();
   void pushLastObject();
+  void removeLastObject();
 
   Magnum::Vector3 randomDirection();
   void wiggleLastObject();

@@ -108,24 +108,14 @@ class ResourceManager {
   int loadDefaultObject(const std::string renderMeshFilename,
                         const std::string collisionMeshFilename = "");
 
-  //! Create object with either ID or configFile name,
-  //! e.g. "data/cheezit.phys_properties.json"
-  int addObject(const int objectID,
-                scene::SceneNode* parent,
-                DrawableGroup* drawables);
-
-  int addObject(const std::string configFile,
-                scene::SceneNode* parent,
-                DrawableGroup* drawables);
-
   //======== Accessor functions ========
   std::vector<assets::CollisionMeshData> getCollisionMesh(
       const std::string configFile);
 
   std::vector<assets::CollisionMeshData> getCollisionMesh(const int objectID);
 
-  int getObjectID(std::string configFile);
-  std::string getObjectConfig(int objectID);
+  int getObjectID(const std::string configFile);
+  std::string getObjectConfig(const int objectID);
 
   PhysicsObjectMetaData& getPhysicsMetaData(const std::string configFile);
 

@@ -77,50 +77,56 @@ bool BulletPhysicsManager::addScene(
   return sceneSuccess;
 }
 
-int BulletPhysicsManager::addObject(const std::string configFile,
-                                    DrawableGroup* drawables) {
-  std::vector<assets::CollisionMeshData> meshGroup =
-      resourceManager->getCollisionMesh(configFile);
-
-  assets::PhysicsObjectMetaData metaData =
-      resourceManager->getPhysicsMetaData(configFile);
-
-  //! Test Mesh primitive is valid
-  for (assets::CollisionMeshData& meshData : meshGroup) {
-    if (!isMeshPrimitiveValid(meshData)) {
-      return false;
-    }
-  }
-
+const int BulletPhysicsManager::makeRigidObject(
+    std::vector<assets::CollisionMeshData> meshGroup,
+    assets::PhysicsObjectMetaData metaData) {
   //! Create new physics object (child node of sceneNode_)
-  std::shared_ptr<physics::BulletRigidObject> physObject =
-      std::make_shared<physics::BulletRigidObject>(sceneNode_.get());
-  objectNodes_.emplace_back(physObject);
+  existingObjects_.emplace_back(
+      std::make_unique<physics::BulletRigidObject>(sceneNode_.get()));
 
+  const int nextObjectID_ = existingObjects_.size();
   //! Instantiate with mesh pointer
   bool objectSuccess =
-      physObject->initializeObject(metaData, meshGroup, *bWorld_);
+      dynamic_cast<physics::BulletRigidObject*>(existingObjects_.back().get())
+          ->initializeObject(metaData, meshGroup, *bWorld_);
   if (!objectSuccess) {
-    LOG(ERROR) << "BulletPhysicsManager::addObject - Initialize unsuccessful";
     return -1;
   }
-
-  //! Maintain object resource
-  existingObjects_[nextObjectID_] = physObject;
-  existingObjNames_[nextObjectID_] = configFile;
-  //! Increment simple object ID tracker
-  nextObjectID_ += 1;
-
-  //! IMPORTANT: invoke resourceManager to draw object
-
-  int resObjectID =
-      resourceManager->addObject(configFile, physObject.get(), drawables);
-
-  if (resObjectID < 0) {
-    return -1;
-  }
-
   return nextObjectID_ - 1;
+}
+
+//! Check if mesh primitive is compatible with physics
+bool BulletPhysicsManager::isMeshPrimitiveValid(
+    assets::CollisionMeshData& meshData) {
+  if (meshData.primitive == Magnum::MeshPrimitive::Triangles) {
+    //! Only triangle mesh works
+    return true;
+  } else {
+    switch (meshData.primitive) {
+      case Magnum::MeshPrimitive::Lines:
+        LOG(ERROR) << "Invalid primitive: Lines";
+        break;
+      case Magnum::MeshPrimitive::Points:
+        LOG(ERROR) << "Invalid primitive: Points";
+        break;
+      case Magnum::MeshPrimitive::LineLoop:
+        LOG(ERROR) << "Invalid primitive Line loop";
+        break;
+      case Magnum::MeshPrimitive::LineStrip:
+        LOG(ERROR) << "Invalid primitive Line Strip";
+        break;
+      case Magnum::MeshPrimitive::TriangleStrip:
+        LOG(ERROR) << "Invalid primitive Triangle Strip";
+        break;
+      case Magnum::MeshPrimitive::TriangleFan:
+        LOG(ERROR) << "Invalid primitive Triangle Fan";
+        break;
+      default:
+        LOG(ERROR) << "Invalid primitive " << int(meshData.primitive);
+    }
+    LOG(ERROR) << "Cannot load collision mesh, skipping";
+    return false;
+  }
 }
 
 void BulletPhysicsManager::stepPhysics(double dt) {

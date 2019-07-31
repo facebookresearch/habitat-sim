@@ -36,10 +36,6 @@ class BulletPhysicsManager : public PhysicsManager {
   bool addScene(const assets::AssetInfo& info,
                 std::vector<assets::CollisionMeshData> meshGroup);
 
-  //! Initialize object given mesh data
-  //! The object could contain several parts
-  int addObject(const std::string configFile, DrawableGroup* drawables);
-
   //============ Simulator functions =============
   void stepPhysics(double dt = -1.0);
 
@@ -58,6 +54,13 @@ class BulletPhysicsManager : public PhysicsManager {
   //! The following are made ptr because we need to intialize them in
   //! constructor, potentially with different world configurations
   std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
+
+ private:
+  bool isMeshPrimitiveValid(assets::CollisionMeshData& meshData);
+
+  //! Create and initialize rigid object
+  const int makeRigidObject(std::vector<assets::CollisionMeshData> meshGroup,
+                            assets::PhysicsObjectMetaData metaData);
 
 };  // end class BulletPhysicsManager
 }  // end namespace physics

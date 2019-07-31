@@ -239,26 +239,6 @@ bool ResourceManager::loadScene(
   return meshSuccess;
 }
 
-// Add object by object key
-int ResourceManager::addObject(const std::string configFile,
-                               scene::SceneNode* parent,
-                               DrawableGroup* drawables) {
-  int objectID = getObjectID(configFile);
-  if (objectID < 0) {
-    return -1;
-  }
-  return addObject(objectID, parent, drawables);
-}
-
-// Add object by ID
-int ResourceManager::addObject(const int objectID,
-                               scene::SceneNode* parent,
-                               DrawableGroup* drawables) {
-  std::string objPhysConfigFilename = getObjectConfig(objectID);
-  int physObjectID = loadObject(objPhysConfigFilename, parent, drawables);
-  return physObjectID;
-}
-
 //! Only load and does not instantiate object
 //! For load-only: set parent = nullptr, drawables = nullptr
 int ResourceManager::loadObject(const std::string objPhysConfigFilename,
