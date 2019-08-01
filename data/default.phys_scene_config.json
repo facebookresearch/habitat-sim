@@ -2,9 +2,8 @@
     "physics simulator": "bullet",
     "timestep": 0.01,
     "gravity": [0,-9.8,0],
+    "friction coefficient": 0.4,
     "rigid object paths":[
-        "objects/cheezit",
-        "objects/chefcan",
-        "objects/largeclamp"
+        "objects/cheezit"
     ]
 }

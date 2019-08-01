@@ -29,6 +29,7 @@ class RigidObject : public scene::SceneNode {
   // or an object, but cannot be both (tracked by _isScene/_isObject_)
   // there is probably a better way to abstract this
   virtual bool initializeScene(
+      assets::PhysicsSceneMetaData& sceneMetaData,
       std::vector<assets::CollisionMeshData> meshGroup);
 
   virtual bool initializeObject(
@@ -39,6 +40,8 @@ class RigidObject : public scene::SceneNode {
 
   //! Check whether object is being actively simulated, or sleeping
   virtual bool isActive();
+
+  virtual void setActive(){};
 
   //! Force interaction
   virtual void applyForce(Magnum::Vector3 force, Magnum::Vector3 relPos);

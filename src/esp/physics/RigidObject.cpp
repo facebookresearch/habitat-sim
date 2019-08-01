@@ -11,6 +11,7 @@ RigidObject::RigidObject(scene::SceneNode* parent)
     : scene::SceneNode{*parent} {}
 
 bool RigidObject::initializeScene(
+    assets::PhysicsSceneMetaData& sceneMetaData,
     std::vector<assets::CollisionMeshData> meshGroup) {
   if (initialized_) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";

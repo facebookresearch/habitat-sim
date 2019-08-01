@@ -36,6 +36,7 @@
 #include "MeshData.h"
 #include "Mp3dInstanceMeshData.h"
 #include "PTexMeshData.h"
+#include "PhysicsObjectMetaData.h"
 #include "ResourceManager.h"
 #include "esp/physics/PhysicsManager.h"
 
@@ -97,6 +98,8 @@ bool ResourceManager::loadScene(
 
   // Load the global scene config JSON here
   io::JsonDocument scenePhysicsConfig = io::parseJsonFile(physicsFilename);
+  // In-memory representation of scene meta data
+  PhysicsSceneMetaData sceneMetaData;
 
   // load the simulator preference
   // default is no simulator
@@ -115,15 +118,21 @@ bool ResourceManager::loadScene(
   }
 
   // load the physics timestep
-  double dt = 0.01;
   if (scenePhysicsConfig.HasMember("timestep")) {
     if (scenePhysicsConfig["timestep"].IsNumber()) {
-      dt = scenePhysicsConfig["timestep"].GetDouble();
+      sceneMetaData.timestep = scenePhysicsConfig["timestep"].GetDouble();
     }
   }
 
+  if (scenePhysicsConfig.HasMember("friction coefficient") &&
+      scenePhysicsConfig["friction coefficient"].IsNumber()) {
+    sceneMetaData.frictionCoefficient =
+        scenePhysicsConfig["friction coefficient"].GetDouble();
+  } else {
+    LOG(ERROR) << " Invalid value in scene config - friction coefficient";
+  }
+
   // load gravity
-  Magnum::Vector3d gravity(0, -9.81, 0);  // default gravity
   if (scenePhysicsConfig.HasMember("gravity")) {
     if (scenePhysicsConfig["gravity"].IsArray()) {
       for (rapidjson::SizeType i = 0; i < scenePhysicsConfig["gravity"].Size();
@@ -133,7 +142,8 @@ bool ResourceManager::loadScene(
           LOG(ERROR) << "Invalid value in physics gravity array";
           break;
         } else {
-          gravity[i] = scenePhysicsConfig["gravity"][i].GetDouble();
+          sceneMetaData.gravity[i] =
+              scenePhysicsConfig["gravity"][i].GetDouble();
         }
       }
     }
@@ -147,8 +157,8 @@ bool ResourceManager::loadScene(
     LOG(ERROR) << "trying to use BULLET engine, but not installed";
 #endif
   }
-  _physicsManager->initPhysics(parent, gravity);
-  _physicsManager->setTimestep(dt);
+  _physicsManager->initPhysics(parent, sceneMetaData);
+  //_physicsManager->setTimestep(dt);
 
   //! LOAD OBJECTS
   std::string configDirectory =
@@ -229,7 +239,7 @@ bool ResourceManager::loadScene(
     }
   }
   //! Initialize collision mesh
-  bool sceneSuccess = _physicsManager->addScene(info, meshGroup);
+  bool sceneSuccess = _physicsManager->addScene(info, sceneMetaData, meshGroup);
   LOG(INFO) << "Initialized mesh scene, success " << sceneSuccess;
   if (!sceneSuccess) {
     LOG(INFO) << "Physics manager failed to initialize object";

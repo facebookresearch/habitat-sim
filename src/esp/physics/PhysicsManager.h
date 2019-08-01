@@ -43,7 +43,7 @@ class PhysicsManager {
   // load physical properties and setup the world
   // do_profile indicates timing for FPS
   virtual bool initPhysics(scene::SceneNode* node,
-                           Magnum::Vector3d gravity,
+                           assets::PhysicsSceneMetaData sceneMetaData,
                            bool do_profile = false);
 
   // Stores references to a set of drawable elements
@@ -54,6 +54,7 @@ class PhysicsManager {
   //! Only one scene per simulation
   //! The scene could contain several components
   virtual bool addScene(const assets::AssetInfo& info,
+                        assets::PhysicsSceneMetaData& sceneMetaData,
                         std::vector<assets::CollisionMeshData> meshGroup);
 
   //! Initialize object given mesh data
@@ -69,11 +70,15 @@ class PhysicsManager {
   //============ Simulator functions =============
   virtual void stepPhysics(double dt = -1.0);
 
-  void setTimestep(double dt);
+  virtual void setTimestep(double dt);
+
+  virtual void setGravity(const Magnum::Vector3d gravity);
 
   double getTimestep() { return fixedTimeStep_; };
 
   double getWorldTime() { return worldTime_; };
+
+  const Magnum::Vector3d getGravity();
 
   int checkActiveObjects();
 
@@ -125,7 +130,7 @@ class PhysicsManager {
   //! Create and initialize rigid object
   virtual const int makeRigidObject(
       std::vector<assets::CollisionMeshData> meshGroup,
-      assets::PhysicsObjectMetaData metaData);
+      assets::PhysicsObjectMetaData objMetaData);
 
   // use this to instantiate physics objects from the physicsObjectLibrary_
   assets::ResourceManager* resourceManager;
@@ -141,7 +146,6 @@ class PhysicsManager {
   //! ==== dynamic object resources ===
   std::vector<std::unique_ptr<physics::RigidObject>> existingObjects_;
   std::map<int, std::string> existingObjNames_;
-  int nextObjectID_ = 0;
 
   //! ==== Rigid object memory management ====
 
@@ -152,6 +156,7 @@ class PhysicsManager {
   int total_frames_ = 0;
   int maxSubSteps_ = 10;
   double fixedTimeStep_ = 1.0 / 240.0;
+  assets::PhysicsSceneMetaData sceneMetaData_;
 
   double worldTime_ = 0.0;
 };

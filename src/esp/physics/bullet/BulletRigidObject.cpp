@@ -41,6 +41,7 @@ BulletRigidObject::~BulletRigidObject() {
 }
 
 bool BulletRigidObject::initializeScene(
+    assets::PhysicsSceneMetaData& sceneMetaData,
     std::vector<assets::CollisionMeshData> meshGroup,
     std::shared_ptr<btDiscreteDynamicsWorld> bWorld) {
   if (initialized_) {
@@ -109,6 +110,8 @@ bool BulletRigidObject::initializeScene(
         bSceneCollisionObjects_.back()->getCollisionFlags() |
         btCollisionObject::CF_STATIC_OBJECT);*/
 
+    bSceneCollisionObjects_.back()->setFriction(
+        sceneMetaData.frictionCoefficient);
     bWorld->addCollisionObject(bSceneCollisionObjects_.back().get());
   }
 
@@ -257,13 +260,17 @@ bool BulletRigidObject::isActive() {
   return false;
 }
 
-void BulletRigidObject::applyForce(Magnum::Vector3 force,
-                                   Magnum::Vector3 relPos) {
+void BulletRigidObject::setActive() {
   if (isScene_ || !initialized_) {
     return;
   }
   //! dynamic_cast is safe
-  bObjectRigidBody_->activate();
+  bObjectRigidBody_->activate(true);
+}
+
+void BulletRigidObject::applyForce(Magnum::Vector3 force,
+                                   Magnum::Vector3 relPos) {
+  setActive();
   bObjectRigidBody_->applyForce(btVector3(force), btVector3(relPos));
 }
 
@@ -272,7 +279,7 @@ void BulletRigidObject::applyImpulse(Magnum::Vector3 impulse,
   if (isScene_ || !initialized_) {
     return;
   }
-  bObjectRigidBody_->activate();
+  setActive();
   bObjectRigidBody_->applyImpulse(btVector3(impulse), btVector3(relPos));
 }
 

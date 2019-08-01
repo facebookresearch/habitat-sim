@@ -38,7 +38,7 @@ namespace esp {
 namespace physics {
 
 bool PhysicsManager::initPhysics(scene::SceneNode* node,
-                                 Magnum::Vector3d gravity,
+                                 assets::PhysicsSceneMetaData sceneMetaData,
                                  bool do_profile) {
   LOG(INFO) << "Initializing Base Physics Engine...";
 
@@ -48,6 +48,7 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node,
   initialized_ = true;
   do_profile_ = do_profile;
 
+  sceneMetaData_ = sceneMetaData;
   return true;
 }
 
@@ -57,6 +58,7 @@ PhysicsManager::~PhysicsManager() {
 
 bool PhysicsManager::addScene(
     const assets::AssetInfo& info,
+    assets::PhysicsSceneMetaData& sceneMetaData,
     std::vector<assets::CollisionMeshData> meshGroup) {
   // Test Mesh primitive is valid
   for (assets::CollisionMeshData& meshData : meshGroup) {
@@ -77,7 +79,7 @@ bool PhysicsManager::addScene(
   }
 
   //! Initialize scene
-  bool sceneSuccess = sceneNode_->initializeScene(meshGroup);
+  bool sceneSuccess = sceneNode_->initializeScene(sceneMetaData, meshGroup);
   LOG(INFO) << "Init scene done";
 
   return sceneSuccess;
@@ -161,7 +163,15 @@ bool PhysicsManager::isMeshPrimitiveValid(assets::CollisionMeshData& meshData) {
 // ALEX TODO: this function should do any engine specific setting which is
 // necessary to change the timestep
 void PhysicsManager::setTimestep(double dt) {
-  fixedTimeStep_ = dt;
+  sceneMetaData_.timestep = dt;
+}
+
+void PhysicsManager::setGravity(const Magnum::Vector3d gravity) {
+  sceneMetaData_.gravity = gravity;
+}
+
+const Magnum::Vector3d PhysicsManager::getGravity() {
+  return sceneMetaData_.gravity;
 }
 
 void PhysicsManager::stepPhysics(double dt) {
@@ -189,13 +199,13 @@ void PhysicsManager::stepPhysics(double dt) {
   }
 
   if (dt < 0)
-    dt = fixedTimeStep_;
+    dt = sceneMetaData_.timestep;
 
   // Alex TODO: handle in-between step times? Ideally dt is a multiple of
-  // fixedTimeStep_
+  // sceneMetaData_.timestep
   double targetTime = worldTime_ + dt;
   while (worldTime_ < targetTime)
-    worldTime_ += fixedTimeStep_;
+    worldTime_ += sceneMetaData_.timestep;
 
   // Alex NOTE: removed numObjects count from Bullet...
 }

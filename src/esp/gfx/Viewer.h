@@ -40,10 +40,12 @@ class Viewer : public Magnum::Platform::Application {
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
 
+  // Interactive functions
   void addObject(std::string configFile);
   void pokeLastObject();
   void pushLastObject();
   void removeLastObject();
+  void invertGravity();
 
   Magnum::Vector3 randomDirection();
   void wiggleLastObject();

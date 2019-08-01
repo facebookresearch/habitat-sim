@@ -11,6 +11,29 @@ namespace esp {
 
 namespace assets {
 
+struct PhysicsSceneMetaData {
+  PhysicsSceneMetaData()
+      : scale(1.0),
+        frictionCoefficient(0.4),
+        gravity(Magnum::Vector3d(0, -9.81, 0)),
+        timestep(0.01),
+        maxSubsteps(10){};
+
+  PhysicsSceneMetaData(const PhysicsSceneMetaData& val) {
+    gravity = val.gravity;
+    frictionCoefficient = val.frictionCoefficient;
+    scale = val.scale;
+    timestep = val.timestep;
+    maxSubsteps = val.maxSubsteps;
+  }
+
+  Magnum::Vector3d gravity;
+  double timestep;
+  double frictionCoefficient;
+  double scale;
+  int maxSubsteps;
+};
+
 // for each physical object we store:
 // render mesh, collision mesh, physical parameters:
 //“mass”

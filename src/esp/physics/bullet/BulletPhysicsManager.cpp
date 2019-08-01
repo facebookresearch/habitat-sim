@@ -12,9 +12,10 @@
 namespace esp {
 namespace physics {
 
-bool BulletPhysicsManager::initPhysics(scene::SceneNode* node,
-                                       Magnum::Vector3d gravity,
-                                       bool do_profile) {
+bool BulletPhysicsManager::initPhysics(
+    scene::SceneNode* node,
+    assets::PhysicsSceneMetaData sceneMetaData,
+    bool do_profile) {
   LOG(INFO) << "Initializing Bullet Physics Engine...";
   activePhysSimLib_ = BULLET;
 
@@ -24,7 +25,8 @@ bool BulletPhysicsManager::initPhysics(scene::SceneNode* node,
   bWorld_ = std::make_shared<btDiscreteDynamicsWorld>(
       &bDispatcher_, &bBroadphase_, &bSolver_, &bCollisionConfig_);
   // currently GLB meshes are y-up
-  bWorld_->setGravity({gravity[0], gravity[1], gravity[2]});
+  bWorld_->setGravity({sceneMetaData.gravity[0], sceneMetaData.gravity[1],
+                       sceneMetaData.gravity[2]});
 
   physicsNode_ = node;
   //! Create new scene node
@@ -34,7 +36,7 @@ bool BulletPhysicsManager::initPhysics(scene::SceneNode* node,
 
   initialized_ = true;
   do_profile_ = do_profile;
-
+  sceneMetaData_ = sceneMetaData;
   // LOG(INFO) << "Initialized Bullet Physics Engine.";
   return true;
 }
@@ -47,6 +49,7 @@ BulletPhysicsManager::~BulletPhysicsManager() {
 // https://github.com/mosra/magnum-integration/issues/20
 bool BulletPhysicsManager::addScene(
     const assets::AssetInfo& info,
+    assets::PhysicsSceneMetaData& sceneMetaData,
     std::vector<assets::CollisionMeshData> meshGroup) {
   // Test Mesh primitive is valid
   for (assets::CollisionMeshData& meshData : meshGroup) {
@@ -70,7 +73,7 @@ bool BulletPhysicsManager::addScene(
   bool sceneSuccess =
       std::dynamic_pointer_cast<physics::BulletRigidObject,
                                 physics::RigidObject>(sceneNode_)
-          ->initializeScene(meshGroup, bWorld_);
+          ->initializeScene(sceneMetaData, meshGroup, bWorld_);
   LOG(INFO) << "Init scene done";
 
   return sceneSuccess;
@@ -78,7 +81,7 @@ bool BulletPhysicsManager::addScene(
 
 const int BulletPhysicsManager::makeRigidObject(
     std::vector<assets::CollisionMeshData> meshGroup,
-    assets::PhysicsObjectMetaData metaData) {
+    assets::PhysicsObjectMetaData objMetaData) {
   //! Create new physics object (child node of sceneNode_)
   existingObjects_.emplace_back(
       std::make_unique<physics::BulletRigidObject>(sceneNode_.get()));
@@ -87,7 +90,7 @@ const int BulletPhysicsManager::makeRigidObject(
   //! Instantiate with mesh pointer
   bool objectSuccess =
       dynamic_cast<physics::BulletRigidObject*>(existingObjects_.back().get())
-          ->initializeObject(metaData, meshGroup, bWorld_);
+          ->initializeObject(objMetaData, meshGroup, bWorld_);
   if (!objectSuccess) {
     return -1;
   }
@@ -128,21 +131,36 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
   }
 }
 
+void BulletPhysicsManager::setGravity(const Magnum::Vector3d gravity) {
+  sceneMetaData_.gravity = gravity;
+  LOG(INFO) << "Gravity " << gravity[0] << ", " << gravity[1] << ", "
+            << gravity[2];
+  bWorld_->setGravity({sceneMetaData_.gravity[0], sceneMetaData_.gravity[1],
+                       sceneMetaData_.gravity[2]});
+
+  // After gravity change, need to reactive all bullet objects
+  for (int i = 0; i < existingObjects_.size(); i++) {
+    // if (existingObjects_[i].get() != nullptr) {
+    existingObjects_[i]->setActive();
+    //}
+  }
+}
+
 void BulletPhysicsManager::stepPhysics(double dt) {
   // We don't step uninitialized physics sim...
   if (!initialized_)
     return;
 
   if (dt < 0)
-    dt = fixedTimeStep_;
+    dt = sceneMetaData_.timestep;
 
   // ==== Physics stepforward ======
   auto start = std::chrono::system_clock::now();
 
-  // Alex NOTE: worldTime_ will always be a multiple of fixedTimeStep_
-  int numSubStepsTaken =
-      bWorld_->stepSimulation(dt, maxSubSteps_, fixedTimeStep_);
-  worldTime_ += numSubStepsTaken * fixedTimeStep_;
+  // Alex NOTE: worldTime_ will always be a multiple of sceneMetaData_.timestep
+  int numSubStepsTaken = bWorld_->stepSimulation(dt, sceneMetaData_.maxSubsteps,
+                                                 sceneMetaData_.timestep);
+  worldTime_ += numSubStepsTaken * sceneMetaData_.timestep;
 
   auto end = std::chrono::system_clock::now();
 

@@ -26,7 +26,7 @@ class BulletPhysicsManager : public PhysicsManager {
   // load physical properties and setup the world
   // do_profile indicates timing for FPS
   bool initPhysics(scene::SceneNode* node,
-                   Magnum::Vector3d gravity,
+                   assets::PhysicsSceneMetaData sceneMetaData,
                    bool do_profile = false);
 
   //============ Object/Scene Instantiation =============
@@ -34,10 +34,13 @@ class BulletPhysicsManager : public PhysicsManager {
   //! Only one scene per simulation
   //! The scene could contain several components
   bool addScene(const assets::AssetInfo& info,
+                assets::PhysicsSceneMetaData& sceneMetaData,
                 std::vector<assets::CollisionMeshData> meshGroup);
 
   //============ Simulator functions =============
   void stepPhysics(double dt = -1.0);
+
+  void setGravity(const Magnum::Vector3d gravity);
 
   //============ Interact with objects =============
   // Alex NOTE: engine specifics handled by objects themselves...

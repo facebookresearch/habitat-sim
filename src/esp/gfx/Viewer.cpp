@@ -187,6 +187,13 @@ void Viewer::removeLastObject() {
   objectIDs.pop_back();
 }
 
+void Viewer::invertGravity() {
+  if (physicsManager_ == nullptr)
+    return;
+  Magnum::Vector3d gravity = physicsManager_->getGravity();
+  physicsManager_->setGravity(-1 * gravity);
+}
+
 void Viewer::pokeLastObject() {
   if (physicsManager_ == nullptr || objectIDs.size() == 0)
     return;
@@ -391,8 +398,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::K:
       wiggleLastObject();
       break;
-    case KeyEvent::Key::Y:
+    case KeyEvent::Key::U:
       removeLastObject();
+      break;
+    case KeyEvent::Key::V:
+      invertGravity();
+      break;
     default:
       break;
   }

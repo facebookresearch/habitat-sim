@@ -20,7 +20,8 @@ class BulletRigidObject : public RigidObject {
 
   ~BulletRigidObject();
 
-  bool initializeScene(std::vector<assets::CollisionMeshData> meshGroup,
+  bool initializeScene(assets::PhysicsSceneMetaData& sceneMetaData,
+                       std::vector<assets::CollisionMeshData> meshGroup,
                        std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
 
   bool initializeObject(assets::PhysicsObjectMetaData& metaData,
@@ -29,6 +30,8 @@ class BulletRigidObject : public RigidObject {
 
   //! Check whether object is being actively simulated, or sleeping
   bool isActive();
+
+  void setActive();
 
   //! Force interaction
   void applyForce(Magnum::Vector3 force, Magnum::Vector3 relPos);
