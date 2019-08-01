@@ -1,6 +1,5 @@
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebookresearch/habitat-sim/blob/master/LICENSE)
 [![CircleCI](https://circleci.com/gh/facebookresearch/habitat-sim.svg?style=shield)](https://circleci.com/gh/facebookresearch/habitat-sim)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/facebookresearch/habitat-sim/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
 
 # Habitat-Sim
 
@@ -167,7 +166,7 @@ To run the above benchmarks on your machine, see instructions in the [examples](
    The agent will traverse a particular path and you should see the performance stats at the very end, something like this:
 `640 x 480, total time: 3.208 sec. FPS: 311.7`.
 Note that the test scenes do not provide semantic meshes.
-If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)).
+If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)). We have also provided an [example demo](https://aihabitat.org/habitat-api/tutorials/habitat-sim-demo.html) for reference.
 
 We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-api#docker-setup).
 
