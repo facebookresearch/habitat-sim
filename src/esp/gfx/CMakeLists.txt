@@ -33,6 +33,12 @@ find_package(MagnumPlugins
 
 find_package(MagnumIntegration REQUIRED Eigen)
 
+find_package(Corrade REQUIRED Utility)
+# TODO: enable the following flag and fix the compilation warnings
+# set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
+corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)
+list(APPEND gfx_SOURCES ${ShaderResources})
+
 add_library(gfx STATIC ${gfx_SOURCES})
 
 target_include_directories(gfx
@@ -73,6 +79,7 @@ target_link_libraries(gfx
     MagnumPlugins::StbImageConverter
     MagnumPlugins::TinyGltfImporter
     MagnumIntegration::Eigen
+    Corrade::Utility
 )
 
 # Link windowed application library if needed

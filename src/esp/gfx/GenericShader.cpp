@@ -5,117 +5,24 @@
 #include "GenericShader.h"
 
 #include <Corrade/Containers/Reference.h>
+#include <Corrade/Utility/Resource.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Shader.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/Version.h>
 
+// This is to import the "resources" at runtime.
+// When the resource is compiled into static library,
+// it must be explicitly initialized via this macro, and should be called
+// *outside* of any namespace.
+static void importShaderResources() {
+  CORRADE_RESOURCE_INITIALIZE(ShaderResources)
+}
+
 namespace esp {
 namespace gfx {
 
 // TODO: Use Corrade resource file for shader code instead of hard-coding here
-
-const static std::string GENERIC_SHADER_VS = R"(
-uniform highp mat4 transformationProjectionMatrix;
-uniform highp mat4 projectionMatrix;
-
-layout(location = 0) in highp vec4 position;
-
-#ifdef TEXTURED
-layout(location = 1) in mediump vec2 textureCoordinates;
-out mediump vec2 interpolatedTextureCoordinates;
-#endif
-
-#ifdef VERTEX_COLORED
-layout(location = 1) in vec3 color;
-#endif
-
-out vec3 v_color;
-out float v_depth;
-
-#ifdef PER_VERTEX_IDS
-flat out uint v_objectId;
-#endif
-
-void main() {
-  gl_Position = transformationProjectionMatrix * vec4(position.xyz, 1.0);
-
-  #ifdef TEXTURED
-  interpolatedTextureCoordinates = textureCoordinates;
-  #endif
-
-  vec4 pointInCameraCoords = projectionMatrix * vec4(position.xyz, 1.0);
-  pointInCameraCoords /= pointInCameraCoords.w;
-
-  #ifdef VERTEX_COLORED
-  v_color = color;
-  #endif
-  #ifdef PER_VERTEX_IDS
-  v_objectId = uint(position.w);
-  #endif
-
-  v_depth = -pointInCameraCoords.z;
-}
-)";
-
-const static std::string GENERIC_SHADER_FS = R"(
-in vec3 v_color;
-in float v_depth;
-
-
-#ifdef PER_VERTEX_IDS
-flat in uint v_objectId;
-#else
-uniform highp int objectIdUniform;
-#endif
-
-#ifdef TEXTURED
-uniform lowp sampler2D textureData;
-in mediump vec2 interpolatedTextureCoordinates;
-#endif
-
-#ifdef ID_TEXTURED
-uniform highp sampler2D primTexture;
-uniform highp int texSize;
-#endif
-
-#ifndef VERTEX_COLORED
-uniform lowp vec4 colorUniform;
-#endif
-
-layout(location = 0) out vec4 color;
-layout(location = 1) out float depth;
-layout(location = 2) out uint objectId;
-
-void main () {
-  vec4 baseColor =
-    #ifdef VERTEX_COLORED
-    vec4(v_color, 1.0);
-    #else
-    colorUniform;
-    #endif
-  color =
-    #ifdef TEXTURED
-    texture(textureData, interpolatedTextureCoordinates) *
-    #endif
-    baseColor;
-  depth = v_depth;
-  objectId =
-  #ifdef PER_VERTEX_IDS
-    v_objectId;
-  #else
-    uint(objectIdUniform);
-  #endif
-
-  #ifdef ID_TEXTURED
-  objectId = uint(
-      texture(primTexture,
-              vec2((float(gl_PrimitiveID % texSize) + 0.5f) / float(texSize),
-                   (float(gl_PrimitiveID / texSize) + 0.5f) / float(texSize)))
-          .r + 0.5);
-  #endif
-}
-)";
 
 namespace {
 enum { TextureLayer = 0 };
@@ -123,6 +30,13 @@ enum { TextureLayer = 0 };
 
 GenericShader::GenericShader(const Flags flags) : flags_(flags) {
   MAGNUM_ASSERT_GL_VERSION_SUPPORTED(Magnum::GL::Version::GL410);
+
+  if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
+    importShaderResources();
+  }
+
+  // this is not the file name, but the group name in the config file
+  const Corrade::Utility::Resource rs{"default-shaders"};
 
   Magnum::GL::Shader vert{Magnum::GL::Version::GL410,
                           Magnum::GL::Shader::Type::Vertex};
@@ -132,13 +46,13 @@ GenericShader::GenericShader(const Flags flags) : flags_(flags) {
   vert.addSource(flags & Flag::Textured ? "#define TEXTURED\n" : "")
       .addSource(flags & Flag::VertexColored ? "#define VERTEX_COLORED\n" : "")
       .addSource(flags & Flag::PerVertexIds ? "#define PER_VERTEX_IDS\n" : "")
-      .addSource(GENERIC_SHADER_VS);
+      .addSource(rs.get("generic-default-gl410.vert"));
   frag.addSource(flags & Flag::Textured ? "#define TEXTURED\n" : "")
       .addSource(flags & Flag::VertexColored ? "#define VERTEX_COLORED\n" : "")
       .addSource(flags & Flag::PerVertexIds ? "#define PER_VERTEX_IDS\n" : "")
       .addSource(flags & Flag::PrimitiveIDTextured ? "#define ID_TEXTURED\n"
                                                    : "")
-      .addSource(GENERIC_SHADER_FS);
+      .addSource(rs.get("generic-default-gl410.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Magnum::GL::Shader::compile({vert, frag}));
 

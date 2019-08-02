@@ -186,13 +186,12 @@ jobs:
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-sim
 
-              pip install nbval
               ./build.sh --headless --with-gpu-gpu
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
 
               export PYTHONPATH=$(pwd)
-              pytest --ignore notebooks/habitat-sim-demo.ipynb
+              pytest
       - run:
           name: Install api
           command: |
