@@ -54,7 +54,7 @@ bool BulletRigidObject::initializeScene(
     return false;
   }
   isScene_ = true;
-  objectMotionType = STATIC;
+  objectMotionType_ = STATIC;
 
   //! Create Bullet Object
   btIndexedMesh bulletMesh;
@@ -111,7 +111,7 @@ bool BulletRigidObject::initializeScene(
         btCollisionObject::CF_STATIC_OBJECT);*/
 
     bSceneCollisionObjects_.back()->setFriction(
-        sceneMetaData.frictionCoefficient);
+        sceneMetaData.frictionCoefficient_);
     bWorld->addCollisionObject(bSceneCollisionObjects_.back().get());
   }
 
@@ -137,14 +137,14 @@ bool BulletRigidObject::initializeObject(
     return false;
   }
   isObject_ = true;
-  objectMotionType = DYNAMIC;
+  objectMotionType_ = DYNAMIC;
 
   //! Create Bullet Object
   btIndexedMesh bulletMesh;
 
   //! Physical parameters
   // float restitution = metaData.restitutionCoefficient;
-  float margin = metaData.margin;
+  float margin = metaData.margin_;
   // float linDamping  = metaData.linDamping;
   // float angDamping  = metaData.angDamping;
 
@@ -193,12 +193,12 @@ bool BulletRigidObject::initializeObject(
   //! Set properties
   bObjectShape_->setMargin(margin);
 
-  btVector3 bInertia = btVector3(metaData.inertia);
+  btVector3 bInertia = btVector3(metaData.inertia_);
 
   if (bInertia[0] == 0. && bInertia[1] == 0. && bInertia[2] == 0.) {
     // Alex TODO: allow bullet to compute the inertia tensor if we don't have
     // one
-    bObjectShape_->calculateLocalInertia(metaData.mass,
+    bObjectShape_->calculateLocalInertia(metaData.mass_,
                                          bInertia);  // overrides bInertia
     LOG(INFO) << "Automatic object inertia computed: " << bInertia.x() << " "
               << bInertia.y() << " " << bInertia.z();
@@ -211,18 +211,18 @@ bool BulletRigidObject::initializeObject(
   bObjectMotionState_ = new Magnum::BulletIntegration::MotionState(*this);
   btRigidBody::btRigidBodyConstructionInfo info =
       btRigidBody::btRigidBodyConstructionInfo(
-          metaData.mass, &(bObjectMotionState_->btMotionState()),
+          metaData.mass_, &(bObjectMotionState_->btMotionState()),
           bObjectShape_.get(), bInertia);
-  info.m_friction = metaData.frictionCoefficient;
-  info.m_restitution = metaData.restitutionCoefficient;
-  info.m_linearDamping = metaData.linDamping;
-  info.m_angularDamping = metaData.angDamping;
+  info.m_friction = metaData.frictionCoefficient_;
+  info.m_restitution = metaData.restitutionCoefficient_;
+  info.m_linearDamping = metaData.linDamping_;
+  info.m_angularDamping = metaData.angDamping_;
   // Magnum::Vector3 inertia = metaData.inertia;
   // info.m_localInertia   = bInertia(inertia.x(), inertia.y(), inertia.z());
 
   //! Create rigid body
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
-  LOG(INFO) << "Setting collision mass " << metaData.mass << " flags "
+  LOG(INFO) << "Setting collision mass " << metaData.mass_ << " flags "
             << bObjectRigidBody_->getCollisionFlags();
 
   //! Add to world

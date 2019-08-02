@@ -86,17 +86,10 @@ class RigidObject : public scene::SceneNode {
   bool initialized_ = false;
   bool isScene_ = false;
   bool isObject_ = false;
-  MotionType objectMotionType;
+  MotionType objectMotionType_;
 
-  //! Debugging visualization
-  bool debugForce_;
-  Magnum::DebugTools::ForceRenderer3D* debugRender_;
-  Magnum::Vector3 debugExternalForce_ = Magnum::Vector3(0.0f, 0.0f, 0.0f);
-
-  void getDimensions(assets::CollisionMeshData& meshData,
-                     float* x,
-                     float* y,
-                     float* z);
+  // used only if isObject_
+  assets::PhysicsObjectMetaData physicsObjectMetaData_;
 
   //! Needed after changing the pose from Magnum side
   //! Not exposed to end user

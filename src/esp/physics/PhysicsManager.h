@@ -19,6 +19,7 @@
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
+#include "esp/assets/PhysicsObjectMetaData.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -34,7 +35,7 @@ class PhysicsManager {
   // explicit PhysicsManager(assets::ResourceManager& _resourceManager) :
   // resourceManager(_resourceManager) {};
   explicit PhysicsManager(assets::ResourceManager* _resourceManager) {
-    resourceManager = _resourceManager;
+    resourceManager_ = _resourceManager;
   };
 
   virtual ~PhysicsManager();
@@ -43,8 +44,7 @@ class PhysicsManager {
   // load physical properties and setup the world
   // do_profile indicates timing for FPS
   virtual bool initPhysics(scene::SceneNode* node,
-                           assets::PhysicsSceneMetaData sceneMetaData,
-                           bool do_profile = false);
+                           assets::PhysicsSceneMetaData sceneMetaData);
 
   // Stores references to a set of drawable elements
   using DrawableGroup = Magnum::SceneGraph::DrawableGroup3D;
@@ -74,7 +74,7 @@ class PhysicsManager {
 
   virtual void setGravity(const Magnum::Vector3d gravity);
 
-  double getTimestep() { return fixedTimeStep_; };
+  double getTimestep() { return sceneMetaData_.timestep_; };
 
   double getWorldTime() { return worldTime_; };
 
@@ -127,13 +127,19 @@ class PhysicsManager {
   //! Check if mesh primitive type is valid for bullet physics engine
   virtual bool isMeshPrimitiveValid(assets::CollisionMeshData& meshData);
 
+  // acquires an ID from either the recycledObjectIDs_ or by incrementing
+  // nextObjectID_
+  int allocateObjectID();
+
+  // recycle an objectID
+  int deallocateObjectID(int objectID);
+
   //! Create and initialize rigid object
-  virtual const int makeRigidObject(
-      std::vector<assets::CollisionMeshData> meshGroup,
-      assets::PhysicsObjectMetaData objMetaData);
+  virtual int makeRigidObject(std::vector<assets::CollisionMeshData> meshGroup,
+                              assets::PhysicsObjectMetaData objMetaData);
 
   // use this to instantiate physics objects from the physicsObjectLibrary_
-  assets::ResourceManager* resourceManager;
+  assets::ResourceManager* resourceManager_;
 
   //! ==== physics engines ====
   enum PhysicsSimulationLibrary { NONE, BULLET };
@@ -144,14 +150,16 @@ class PhysicsManager {
   std::shared_ptr<physics::RigidObject> sceneNode_ = nullptr;
 
   //! ==== dynamic object resources ===
-  std::vector<std::unique_ptr<physics::RigidObject>> existingObjects_;
-  std::map<int, std::string> existingObjNames_;
+  std::map<int, std::unique_ptr<physics::RigidObject>> existingObjects_;
+  int nextObjectID_ = 0;
+  std::vector<int>
+      recycledObjectIDs_;  // removed object IDs are pushed here and popped
+                           // first when constructing new objects.
 
   //! ==== Rigid object memory management ====
 
   //! Utilities
   bool initialized_ = false;
-  bool do_profile_ = false;
   float total_time_ = 0.0f;
   int total_frames_ = 0;
   int maxSubSteps_ = 10;

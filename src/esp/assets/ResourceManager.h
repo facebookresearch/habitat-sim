@@ -83,13 +83,33 @@ class ResourceManager {
 
   //! Load Scene data + instantiate scene
   //! Both load + instantiate scene
-  // Alex NOTE: Overloading and passing a reference to the PhysicsManager
-  // pointer so we can reseat it with the appropriate derived version
+  //! Load a physical scene from the sceneMetaData provided
+  //! reseats _physicsManager to implementation supplied in sceneMetaData
+  bool loadScene(const AssetInfo& info,
+                 std::shared_ptr<physics::PhysicsManager>& _physicsManager,
+                 PhysicsSceneMetaData sceneMetaData,
+                 scene::SceneNode* parent = nullptr,
+                 DrawableGroup* drawables = nullptr,
+                 bool resetObjectLibrary = false);
+
+  //! Load Scene data + instantiate scene
+  //! Both load + instantiate scene
+  //! Load a physical scene from a physics config file physicsFilename
+  //! reseats _physicsManager to implementation supplied in sceneMetaData
+  //! if resetObjectLibrary, clear the physicsObjectMetaData_ struct and re-load
+  //! from file.
+  //!   otherwise, add any new objects to the library if their filepaths are not
+  //!   already registered
   bool loadScene(
       const AssetInfo& info,
       std::shared_ptr<physics::PhysicsManager>& _physicsManager,
       scene::SceneNode* parent = nullptr,
       DrawableGroup* drawables = nullptr,
+      std::string physicsFilename = "data/default.phys_scene_config.json",
+      bool resetObjectLibrary = false);
+
+  // load a PhysicsSceneMetaData object from a config file
+  PhysicsSceneMetaData loadPhysicsConfig(
       std::string physicsFilename = "data/default.phys_scene_config.json");
 
   //! Load Object data and store internally

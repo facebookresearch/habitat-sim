@@ -46,6 +46,7 @@ class Viewer : public Magnum::Platform::Application {
   void pushLastObject();
   void removeLastObject();
   void invertGravity();
+  void resetScene();
 
   Magnum::Vector3 randomDirection();
   void wiggleLastObject();

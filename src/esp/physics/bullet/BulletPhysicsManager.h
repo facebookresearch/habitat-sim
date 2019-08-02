@@ -26,8 +26,7 @@ class BulletPhysicsManager : public PhysicsManager {
   // load physical properties and setup the world
   // do_profile indicates timing for FPS
   bool initPhysics(scene::SceneNode* node,
-                   assets::PhysicsSceneMetaData sceneMetaData,
-                   bool do_profile = false);
+                   assets::PhysicsSceneMetaData sceneMetaData);
 
   //============ Object/Scene Instantiation =============
   //! Initialize scene given mesh data
@@ -48,7 +47,6 @@ class BulletPhysicsManager : public PhysicsManager {
  protected:
   //! The world has to live longer than the scene because RigidBody
   //! instances have to remove themselves from it on destruction
-  Magnum::BulletIntegration::DebugDraw debugDraw_{Magnum::NoCreate};
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;
   btSequentialImpulseConstraintSolver bSolver_;
@@ -62,8 +60,8 @@ class BulletPhysicsManager : public PhysicsManager {
   bool isMeshPrimitiveValid(assets::CollisionMeshData& meshData);
 
   //! Create and initialize rigid object
-  const int makeRigidObject(std::vector<assets::CollisionMeshData> meshGroup,
-                            assets::PhysicsObjectMetaData metaData);
+  int makeRigidObject(std::vector<assets::CollisionMeshData> meshGroup,
+                      assets::PhysicsObjectMetaData metaData);
 
 };  // end class BulletPhysicsManager
 }  // end namespace physics

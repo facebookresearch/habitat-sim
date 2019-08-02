@@ -82,116 +82,72 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   return meshSuccess;
 }
 
-//! (1) load and instantiate scene
-//! (2) Read config and set physics timestep
-//! (3) Initialize physics engine
+//! (1) Read config and set physics timestep
+//! (2) loadScene() with PhysicsSceneMetaData
 // TODO (JH): this function seems to entangle certain physicsManager functions
 bool ResourceManager::loadScene(
     const AssetInfo& info,
     std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-    scene::SceneNode* parent,   /* = nullptr */
-    DrawableGroup* drawables,   /* = nullptr */
-    std::string physicsFilename /* data/default.phys_scene_config.json */
-) {
+    scene::SceneNode* parent,    /* = nullptr */
+    DrawableGroup* drawables,    /* = nullptr */
+    std::string physicsFilename, /* data/default.phys_scene_config.json */
+    bool resetObjectLibrary) {
+  // In-memory representation of scene meta data
+  PhysicsSceneMetaData sceneMetaData = loadPhysicsConfig(physicsFilename);
+
+  return loadScene(info, _physicsManager, sceneMetaData, parent, drawables);
+}
+
+// TODO: kill existing scene mesh drawables, nodes, etc... (all but meshes in
+// memory?)
+//! (1) load scene mesh
+//! (2) add drawable (if parent and drawables != nullptr)
+//! (3) consume PhysicsSceneMetaData to initialize physics simulator
+//! (4) create scene collision mesh if possible
+bool ResourceManager::loadScene(
+    const AssetInfo& info,
+    std::shared_ptr<physics::PhysicsManager>& _physicsManager,
+    PhysicsSceneMetaData sceneMetaData,
+    scene::SceneNode* parent, /* = nullptr */
+    DrawableGroup* drawables, /* = nullptr */
+    bool resetObjectLibrary) {
   // default scene mesh loading
   bool meshSuccess = loadScene(info, parent, drawables);
 
-  // Load the global scene config JSON here
-  io::JsonDocument scenePhysicsConfig = io::parseJsonFile(physicsFilename);
-  // In-memory representation of scene meta data
-  PhysicsSceneMetaData sceneMetaData;
-
-  // load the simulator preference
-  // default is no simulator
-  std::string simulator = "none";
-  if (scenePhysicsConfig.HasMember("physics simulator")) {
-    if (scenePhysicsConfig["physics simulator"].IsString()) {
-      std::string selectedSimulator =
-          scenePhysicsConfig["physics simulator"].GetString();
-      if (selectedSimulator.compare("bullet") == 0) {
-        simulator = "bullet";
-      } else {
-        // default to kinematic simulator
-        simulator = "none";
-      }
-    }
-  }
-
-  // load the physics timestep
-  if (scenePhysicsConfig.HasMember("timestep")) {
-    if (scenePhysicsConfig["timestep"].IsNumber()) {
-      sceneMetaData.timestep = scenePhysicsConfig["timestep"].GetDouble();
-    }
-  }
-
-  if (scenePhysicsConfig.HasMember("friction coefficient") &&
-      scenePhysicsConfig["friction coefficient"].IsNumber()) {
-    sceneMetaData.frictionCoefficient =
-        scenePhysicsConfig["friction coefficient"].GetDouble();
-  } else {
-    LOG(ERROR) << " Invalid value in scene config - friction coefficient";
-  }
-
-  // load gravity
-  if (scenePhysicsConfig.HasMember("gravity")) {
-    if (scenePhysicsConfig["gravity"].IsArray()) {
-      for (rapidjson::SizeType i = 0; i < scenePhysicsConfig["gravity"].Size();
-           i++) {
-        if (!scenePhysicsConfig["gravity"][i].IsNumber()) {
-          // invalid config
-          LOG(ERROR) << "Invalid value in physics gravity array";
-          break;
-        } else {
-          sceneMetaData.gravity[i] =
-              scenePhysicsConfig["gravity"][i].GetDouble();
-        }
-      }
-    }
-  }
-
   //! PHYSICS INIT: Use the above config to initialize physics engine
-  if (simulator.compare("bullet") == 0) {
+  bool defaultToNoneSimulator = true;
+  if (sceneMetaData.simulator.compare("bullet") == 0) {
 #ifdef PHYSICS_WITH_BULLET
     _physicsManager.reset(new physics::BulletPhysicsManager(this));
+    defaultToNoneSimulator = false;
 #else
     LOG(ERROR) << "trying to use BULLET engine, but not installed";
 #endif
   }
-  _physicsManager->initPhysics(parent, sceneMetaData);
-  //_physicsManager->setTimestep(dt);
 
-  //! LOAD OBJECTS
-  std::string configDirectory =
-      physicsFilename.substr(0, physicsFilename.find_last_of("/"));
-  // LOG(INFO) << "...dir = " << configDirectory;
-  // load the rigid object library metadata (no physics init yet...)
-  // ALEX NOTE: expect relative paths to the global config
-  if (scenePhysicsConfig.HasMember("rigid object paths")) {
-    if (scenePhysicsConfig["rigid object paths"].IsArray()) {
-      for (rapidjson::SizeType i = 0;
-           i < scenePhysicsConfig["rigid object paths"].Size(); i++) {
-        if (scenePhysicsConfig["rigid object paths"][i].IsString()) {
-          // 1: read the filename (relative path)
-          std::string objPhysPropertiesFilename = configDirectory;
-          objPhysPropertiesFilename.append("/")
-              .append(scenePhysicsConfig["rigid object paths"][i].GetString())
-              .append(".phys_properties.json");
-          // get the absolute path
-          // LOG(INFO) << "...   obj properties path = " <<
-          // objPhysPropertiesFilename;
-
-          // 2. loadObject()
-          int sceneID = loadObject(objPhysPropertiesFilename);
-        } else {
-          LOG(ERROR) << "Invalid value in physics scene config -rigid object "
-                        "library- array "
-                     << i;
-        }
-      }
-    }
+  // reseat to base PhysicsManager to override previous as default behavior
+  // if the desired simulator is not supported reset to "none" in metaData
+  if (defaultToNoneSimulator) {
+    LOG(INFO) << "defaulting to \"none\" simulator.";
+    _physicsManager.reset(new physics::PhysicsManager(this));
+    sceneMetaData.simulator = "none";
   }
-  // ALEX TODO: load objects property files from an entire directory (a property
-  // dataset/library...)
+
+  // clear the object metadata library if necessary
+  if (resetObjectLibrary) {
+    // TODO: test that this does not break...
+    physicsObjectLibrary_.clear();
+    collisionMeshGroups_.clear();
+    physicsObjectConfigList_.clear();
+  }
+
+  // load objects from sceneMetaData list...
+  for (auto objPhysPropertiesFilename : sceneMetaData.objectLibraryPaths) {
+    int sceneID = loadObject(objPhysPropertiesFilename);
+  }
+
+  // initialize the physics simulator
+  _physicsManager->initPhysics(parent, sceneMetaData);
 
   //! CONSTRUCT SCENE
   const std::string& filename = info.filepath;
@@ -249,6 +205,93 @@ bool ResourceManager::loadScene(
   return meshSuccess;
 }
 
+PhysicsSceneMetaData ResourceManager::loadPhysicsConfig(
+    std::string physicsFilename) {
+  // Load the global scene config JSON here
+  io::JsonDocument scenePhysicsConfig = io::parseJsonFile(physicsFilename);
+  // In-memory representation of scene meta data
+  PhysicsSceneMetaData sceneMetaData;
+
+  // load the simulator preference
+  // default is "none" simulator
+  sceneMetaData.simulator = "none";
+  if (scenePhysicsConfig.HasMember("physics simulator")) {
+    if (scenePhysicsConfig["physics simulator"].IsString()) {
+      sceneMetaData.simulator =
+          scenePhysicsConfig["physics simulator"].GetString();
+    }
+  }
+
+  // load the physics timestep
+  if (scenePhysicsConfig.HasMember("timestep")) {
+    if (scenePhysicsConfig["timestep"].IsNumber()) {
+      sceneMetaData.timestep_ = scenePhysicsConfig["timestep"].GetDouble();
+    }
+  }
+
+  if (scenePhysicsConfig.HasMember("friction coefficient") &&
+      scenePhysicsConfig["friction coefficient"].IsNumber()) {
+    sceneMetaData.frictionCoefficient_ =
+        scenePhysicsConfig["friction coefficient"].GetDouble();
+  } else {
+    LOG(ERROR) << " Invalid value in scene config - friction coefficient";
+  }
+
+  // load gravity
+  if (scenePhysicsConfig.HasMember("gravity")) {
+    if (scenePhysicsConfig["gravity"].IsArray()) {
+      for (rapidjson::SizeType i = 0; i < scenePhysicsConfig["gravity"].Size();
+           i++) {
+        if (!scenePhysicsConfig["gravity"][i].IsNumber()) {
+          // invalid config
+          LOG(ERROR) << "Invalid value in physics gravity array";
+          break;
+        } else {
+          sceneMetaData.gravity_[i] =
+              scenePhysicsConfig["gravity"][i].GetDouble();
+        }
+      }
+    }
+  }
+
+  //! Load object paths
+  std::string configDirectory =
+      physicsFilename.substr(0, physicsFilename.find_last_of("/"));
+  // LOG(INFO) << "...dir = " << configDirectory;
+  // load the rigid object library metadata (no physics init yet...)
+  // ALEX NOTE: expect relative paths to the global config
+  if (scenePhysicsConfig.HasMember("rigid object paths")) {
+    if (scenePhysicsConfig["rigid object paths"].IsArray()) {
+      for (rapidjson::SizeType i = 0;
+           i < scenePhysicsConfig["rigid object paths"].Size(); i++) {
+        if (scenePhysicsConfig["rigid object paths"][i].IsString()) {
+          // 1: read the filename (relative path)
+          std::string objPhysPropertiesFilename =
+              configDirectory + "/" +
+              scenePhysicsConfig["rigid object paths"][i].GetString() +
+              ".phys_properties.json";
+          sceneMetaData.objectLibraryPaths.push_back(objPhysPropertiesFilename);
+          // objPhysPropertiesFilename.append("/")
+          //    .append(scenePhysicsConfig["rigid object paths"][i].GetString())
+          //    .append(".phys_properties.json");
+          // get the absolute path
+          // LOG(INFO) << "...   obj properties path = " <<
+          // objPhysPropertiesFilename;
+
+          // 2. loadObject()
+          // int sceneID = loadObject(objPhysPropertiesFilename);
+        } else {
+          LOG(ERROR) << "Invalid value in physics scene config -rigid object "
+                        "library- array "
+                     << i;
+        }
+      }
+    }
+  }
+
+  return sceneMetaData;
+}
+
 //! Only load and does not instantiate object
 //! For load-only: set parent = nullptr, drawables = nullptr
 int ResourceManager::loadObject(const std::string objPhysConfigFilename,
@@ -280,7 +323,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename,
     std::vector<CollisionMeshData> meshGroup =
         collisionMeshGroups_[objPhysConfigFilename];
 
-    const std::string& filename = physMetaData.renderMeshHandle;
+    const std::string& filename = physMetaData.renderMeshHandle_;
 
     MeshMetaData meshMetaData = resourceDict_[filename];
     scene::SceneNode& newNode = parent->createChild();
@@ -332,7 +375,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   // PhysicsObjectMetaData.h) load the mass
   if (objPhysicsConfig.HasMember("mass")) {
     if (objPhysicsConfig["mass"].IsNumber()) {
-      physMetaData.mass = objPhysicsConfig["mass"].GetDouble();
+      physMetaData.mass_ = objPhysicsConfig["mass"].GetDouble();
     }
   }
 
@@ -347,7 +390,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
           LOG(ERROR) << " Invalid value in object physics config - COM array";
           break;
         } else {
-          physMetaData.COM[i] = objPhysicsConfig["COM"][i].GetDouble();
+          physMetaData.COM_[i] = objPhysicsConfig["COM"][i].GetDouble();
           shouldComputeMeshBBCenter = false;
         }
       }
@@ -365,7 +408,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
               << " Invalid value in object physics config - inertia array";
           break;
         } else {
-          physMetaData.inertia[i] = objPhysicsConfig["inertia"][i].GetDouble();
+          physMetaData.inertia_[i] = objPhysicsConfig["inertia"][i].GetDouble();
         }
       }
     }
@@ -374,7 +417,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   // load the friction coefficient
   if (objPhysicsConfig.HasMember("friction coefficient")) {
     if (objPhysicsConfig["friction coefficient"].IsNumber()) {
-      physMetaData.frictionCoefficient =
+      physMetaData.frictionCoefficient_ =
           objPhysicsConfig["friction coefficient"].GetDouble();
     } else {
       LOG(ERROR)
@@ -385,7 +428,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   // load the restitution coefficient
   if (objPhysicsConfig.HasMember("restitution coefficient")) {
     if (objPhysicsConfig["restitution coefficient"].IsNumber()) {
-      physMetaData.restitutionCoefficient =
+      physMetaData.restitutionCoefficient_ =
           objPhysicsConfig["restitution coefficient"].GetDouble();
     } else {
       LOG(ERROR) << " Invalid value in object physics config - restitution "
@@ -423,8 +466,8 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   AssetInfo collisionMeshinfo;
 
   bool shiftMeshOrigin =
-      !(physMetaData.COM[0] == 0 && physMetaData.COM[1] == 0 &&
-        physMetaData.COM[2] == 0);
+      !(physMetaData.COM_[0] == 0 && physMetaData.COM_[1] == 0 &&
+        physMetaData.COM_[2] == 0);
 
   //! Load rendering mesh
   // Alex TODO: add other mesh types and unify the COM move: don't want
@@ -443,8 +486,8 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
     } else if (shiftMeshOrigin) {  // use the provided COM
       renderMeshSuccess = loadGeneralMeshData(
           renderMeshinfo, nullptr, nullptr, true,
-          -Magnum::Vector3(physMetaData.COM[0], physMetaData.COM[1],
-                           physMetaData.COM[2]));
+          -Magnum::Vector3(physMetaData.COM_[0], physMetaData.COM_[1],
+                           physMetaData.COM_[2]));
     } else {  // mesh origin already at COM
       renderMeshSuccess = loadGeneralMeshData(renderMeshinfo);
     }
@@ -466,8 +509,8 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
     } else if (shiftMeshOrigin) {  // use the provided COM
       collisionMeshSuccess = loadGeneralMeshData(
           collisionMeshinfo, nullptr, nullptr, true,
-          -Magnum::Vector3(physMetaData.COM[0], physMetaData.COM[1],
-                           physMetaData.COM[2]));
+          -Magnum::Vector3(physMetaData.COM_[0], physMetaData.COM_[1],
+                           physMetaData.COM_[2]));
     } else {  // mesh origin already at COM
       collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo);
     }
@@ -479,7 +522,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
 
   // Alex NOTE: if we want to save these after edit we need to save the moved
   // mesh or save the original COM as a member of RigidBody...
-  physMetaData.COM = Magnum::Vector3d(
+  physMetaData.COM_ = Magnum::Vector3d(
       0, 0,
       0);  // once we move the meshes, the COM is aligned with the origin...
 
@@ -491,24 +534,24 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
     return -1;
   }
 
-  physMetaData.renderMeshHandle = renderMeshFilename;
-  physMetaData.collisionMeshHandle = collisionMeshFilename;
+  physMetaData.renderMeshHandle_ = renderMeshFilename;
+  physMetaData.collisionMeshHandle_ = collisionMeshFilename;
 
   // handle one missing mesh
   if (!renderMeshSuccess)
-    physMetaData.renderMeshHandle = collisionMeshFilename;
+    physMetaData.renderMeshHandle_ = collisionMeshFilename;
   if (!collisionMeshSuccess)
-    physMetaData.collisionMeshHandle = renderMeshFilename;
+    physMetaData.collisionMeshHandle_ = renderMeshFilename;
 
   // 5. cache metaData, collision mesh Group
   physicsObjectLibrary_.emplace(objPhysConfigFilename, physMetaData);
   LOG(INFO) << "Config " << objPhysConfigFilename;
   LOG(INFO) << "physMetaData.collisionMeshHandle "
-            << physMetaData.collisionMeshHandle;
-  LOG(INFO) << "Inertia " << physMetaData.inertia.x() << " "
-            << physMetaData.inertia.y();
+            << physMetaData.collisionMeshHandle_;
+  LOG(INFO) << "Inertia " << physMetaData.inertia_.x() << " "
+            << physMetaData.inertia_.y();
   MeshMetaData& meshMetaData =
-      resourceDict_.at(physMetaData.collisionMeshHandle);
+      resourceDict_.at(physMetaData.collisionMeshHandle_);
 
   int start = meshMetaData.meshIndex.first;
   int end = meshMetaData.meshIndex.second;
@@ -580,8 +623,8 @@ int ResourceManager::loadDefaultObject(
       return false;
     }
 
-    physMetaData.renderMeshHandle = renderMeshFilename;
-    physMetaData.collisionMeshHandle = collisionMeshFilename;
+    physMetaData.renderMeshHandle_ = renderMeshFilename;
+    physMetaData.collisionMeshHandle_ = collisionMeshFilename;
 
     // cache it
     physicsObjectLibrary_.emplace(renderMeshFilename, physMetaData);

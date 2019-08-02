@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h"
-#include "BulletCollision/Gimpact/btGImpactShape.h"
+//#include "BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h"
+//#include "BulletCollision/Gimpact/btGImpactShape.h"
 
 #include "BulletPhysicsManager.h"
 #include "BulletRigidObject.h"
@@ -14,8 +14,7 @@ namespace physics {
 
 bool BulletPhysicsManager::initPhysics(
     scene::SceneNode* node,
-    assets::PhysicsSceneMetaData sceneMetaData,
-    bool do_profile) {
+    assets::PhysicsSceneMetaData sceneMetaData) {
   LOG(INFO) << "Initializing Bullet Physics Engine...";
   activePhysSimLib_ = BULLET;
 
@@ -25,8 +24,8 @@ bool BulletPhysicsManager::initPhysics(
   bWorld_ = std::make_shared<btDiscreteDynamicsWorld>(
       &bDispatcher_, &bBroadphase_, &bSolver_, &bCollisionConfig_);
   // currently GLB meshes are y-up
-  bWorld_->setGravity({sceneMetaData.gravity[0], sceneMetaData.gravity[1],
-                       sceneMetaData.gravity[2]});
+  bWorld_->setGravity({sceneMetaData.gravity_[0], sceneMetaData.gravity_[1],
+                       sceneMetaData.gravity_[2]});
 
   physicsNode_ = node;
   //! Create new scene node
@@ -35,7 +34,6 @@ bool BulletPhysicsManager::initPhysics(
       std::make_shared<physics::BulletRigidObject>(physicsNode_));
 
   initialized_ = true;
-  do_profile_ = do_profile;
   sceneMetaData_ = sceneMetaData;
   // LOG(INFO) << "Initialized Bullet Physics Engine.";
   return true;
@@ -79,22 +77,25 @@ bool BulletPhysicsManager::addScene(
   return sceneSuccess;
 }
 
-const int BulletPhysicsManager::makeRigidObject(
+int BulletPhysicsManager::makeRigidObject(
     std::vector<assets::CollisionMeshData> meshGroup,
     assets::PhysicsObjectMetaData objMetaData) {
   //! Create new physics object (child node of sceneNode_)
-  existingObjects_.emplace_back(
+  int newObjectID = allocateObjectID();
+  existingObjects_.emplace(
+      newObjectID,
       std::make_unique<physics::BulletRigidObject>(sceneNode_.get()));
 
-  const int nextObjectID_ = existingObjects_.size();
   //! Instantiate with mesh pointer
-  bool objectSuccess =
-      dynamic_cast<physics::BulletRigidObject*>(existingObjects_.back().get())
-          ->initializeObject(objMetaData, meshGroup, bWorld_);
+  bool objectSuccess = dynamic_cast<physics::BulletRigidObject*>(
+                           existingObjects_.at(newObjectID).get())
+                           ->initializeObject(objMetaData, meshGroup, bWorld_);
   if (!objectSuccess) {
+    deallocateObjectID(newObjectID);
+    existingObjects_.erase(newObjectID);
     return -1;
   }
-  return nextObjectID_ - 1;
+  return newObjectID;
 }
 
 //! Check if mesh primitive is compatible with physics
@@ -132,17 +133,19 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
 }
 
 void BulletPhysicsManager::setGravity(const Magnum::Vector3d gravity) {
-  sceneMetaData_.gravity = gravity;
+  sceneMetaData_.gravity_ = gravity;
   LOG(INFO) << "Gravity " << gravity[0] << ", " << gravity[1] << ", "
             << gravity[2];
-  bWorld_->setGravity({sceneMetaData_.gravity[0], sceneMetaData_.gravity[1],
-                       sceneMetaData_.gravity[2]});
+  bWorld_->setGravity({sceneMetaData_.gravity_[0], sceneMetaData_.gravity_[1],
+                       sceneMetaData_.gravity_[2]});
 
   // After gravity change, need to reactive all bullet objects
-  for (int i = 0; i < existingObjects_.size(); i++) {
-    // if (existingObjects_[i].get() != nullptr) {
-    existingObjects_[i]->setActive();
-    //}
+  LOG(INFO) << "Iterate over and activate all existing objects:";
+  for (std::map<int, std::unique_ptr<physics::RigidObject>>::iterator it =
+           existingObjects_.begin();
+       it != existingObjects_.end(); ++it) {
+    LOG(INFO) << it->first << " => " << it->second;
+    it->second->setActive();
   }
 }
 
@@ -152,35 +155,21 @@ void BulletPhysicsManager::stepPhysics(double dt) {
     return;
 
   if (dt < 0)
-    dt = sceneMetaData_.timestep;
+    dt = sceneMetaData_.timestep_;
 
   // ==== Physics stepforward ======
   auto start = std::chrono::system_clock::now();
 
   // Alex NOTE: worldTime_ will always be a multiple of sceneMetaData_.timestep
-  int numSubStepsTaken = bWorld_->stepSimulation(dt, sceneMetaData_.maxSubsteps,
-                                                 sceneMetaData_.timestep);
-  worldTime_ += numSubStepsTaken * sceneMetaData_.timestep;
+  int numSubStepsTaken = bWorld_->stepSimulation(
+      dt, sceneMetaData_.maxSubsteps_, sceneMetaData_.timestep_);
+  worldTime_ += numSubStepsTaken * sceneMetaData_.timestep_;
 
   auto end = std::chrono::system_clock::now();
 
   std::chrono::duration<float> elapsed_seconds = end - start;
   // LOG(INFO) << "Step physics dt | compute time: " << dt << " | " <<
   // elapsed_seconds.count();
-  std::time_t end_time = std::chrono::system_clock::to_time_t(end);
-
-  // TODO (JH): hacky way to do physics profiling.
-  // Should later move to example.py
-  if (do_profile_) {
-    total_frames_ += 1;
-    total_time_ += static_cast<float>(elapsed_seconds.count());
-    LOG(INFO) << "Step physics fps: "
-              << 1.0f / static_cast<float>(elapsed_seconds.count());
-    LOG(INFO) << "Average physics fps: "
-              << 1.0f / (total_time_ / total_frames_);
-  }
-
-  // int numObjects = bWorld_->getNumCollisionObjects();
 }
 
 }  // namespace physics

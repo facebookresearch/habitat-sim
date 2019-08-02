@@ -142,6 +142,10 @@ Viewer::Viewer(const Arguments& arguments)
 
 }  // end Viewer::Viewer
 
+void Viewer::resetScene() {
+  // TODO
+}
+
 void Viewer::addObject(std::string configFile) {
   if (physicsManager_ == nullptr)
     return;
@@ -261,10 +265,6 @@ void Viewer::drawEvent() {
   frame_curr_ += 1;
   if (physicsManager_ != nullptr)
     physicsManager_->stepPhysics(timeline_.previousFrameDuration());
-
-  if (do_profile_ && frame_curr_ > frame_limit_) {
-    std::exit(0);
-  }
 
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
