@@ -60,62 +60,89 @@ class PhysicsManager {
   //! Initialize object given mesh data
   //! The object could contain several parts
   int addObject(const std::string configFile, DrawableGroup* drawables);
-
   // calls the above...
   int addObject(const int resObjectID, DrawableGroup* drawables);
-
   //! Remove added object by physics object ID
   virtual int removeObject(const int physObjectID);
 
   //============ Simulator functions =============
   virtual void stepPhysics(double dt = -1.0);
 
+  // =========== Global Setter functions ===========
   virtual void setTimestep(double dt);
-
   virtual void setGravity(const Magnum::Vector3d gravity);
 
-  double getTimestep() { return sceneMetaData_.timestep_; };
+  // =========== Global Getter functions ===========
+  virtual const double getTimestep() { return sceneMetaData_.timestep_; };
+  virtual const double getWorldTime() { return worldTime_; };
+  virtual const Magnum::Vector3d getGravity();
 
-  double getWorldTime() { return worldTime_; };
+  // =========== Scene Getter/Setter functions ===========
+  virtual double getSceneFrictionCoefficient() { return 0.0; };
+  virtual void setSceneFrictionCoefficient(const double frictionCoefficient){};
 
-  const Magnum::Vector3d getGravity();
+  //============ Object Transformation functions =============
+  void setTransformation(const int physObjectID,
+                         const Magnum::Math::Matrix4<float> trans);
+  void setTranslation(const int physObjectID,
+                      const Magnum::Math::Vector3<float> vector);
+  void setRotation(const int physObjectID,
+                   const Magnum::Math::Quaternion<float>& quaternion);
+  void resetTransformation(const int physObjectID);
+  void translate(const int physObjectID,
+                 const Magnum::Math::Vector3<float> vector);
+  void translateLocal(const int physObjectID,
+                      const Magnum::Math::Vector3<float> vector);
+  void rotate(const int physObjectID,
+              const Magnum::Math::Rad<float> angleInRad,
+              const Magnum::Math::Vector3<float> normalizedAxis);
+  void rotateX(const int physObjectID,
+               const Magnum::Math::Rad<float> angleInRad);
+  void rotateY(const int physObjectID,
+               const Magnum::Math::Rad<float> angleInRad);
+  void rotateZ(const int physObjectID,
+               const Magnum::Math::Rad<float> angleInRad);
+  void rotateXLocal(const int physObjectID,
+                    const Magnum::Math::Rad<float> angleInRad);
+  void rotateYLocal(const int physObjectID,
+                    const Magnum::Math::Rad<float> angleInRad);
+  void rotateZLocal(const int physObjectID,
+                    const Magnum::Math::Rad<float> angleInRad);
 
+  //============ Object Setter functions =============
+  void setMass(const int physObjectID, const double mass);
+  void setCOM(const int physObjectID, const Magnum::Vector3d COM);
+  void setInertia(const int physObjectID, const Magnum::Vector3 inertia);
+  void setScale(const int physObjectID, const double scale);
+  void setFrictionCoefficient(const int physObjectID,
+                              const double frictionCoefficient);
+  void setRestitutionCoeffcient(const int physObjectID,
+                                const double restitutionCoefficient);
+  void setLinearDamping(const int physObjectID, const double linDamping);
+  void setAngularDamping(const int physObjectID, const double angDamping);
+
+  //============ Object Getter functions =============
+  const double getMass(const int physObjectID);
+  const Magnum::Vector3d getCOM(const int physObjectID);
+  const Magnum::Vector3 getInertia(const int physObjectID);
+  const double getScale(const int physObjectID);
+  const double getFrictionCoefficient(const int physObjectID);
+  const double getRestitutionCoeffcient(const int physObjectID);
+  const double getLinearDamping(const int physObjectID);
+  const double getAngularDamping(const int physObjectID);
+
+  // =========== Debug functions ===========
   int checkActiveObjects();
 
   //============ Interact with objects =============
   // Alex NOTE: engine specifics handled by objects themselves...
-  void applyForce(const int objectID,
+  void applyForce(const int physObjectID,
                   Magnum::Vector3 force,
                   Magnum::Vector3 relPos);
 
-  void applyImpulse(const int objectID,
+  void applyImpulse(const int physObjectID,
                     Magnum::Vector3 impulse,
                     Magnum::Vector3 relPos);
-
-  //============ Set/Get object states =============
-  void setTransformation(const int objectID,
-                         const Magnum::Math::Matrix4<float> trans);
-  void setTranslation(const int objectID,
-                      const Magnum::Math::Vector3<float> vector);
-  void setRotation(const int objectID,
-                   const Magnum::Math::Quaternion<float>& quaternion);
-  void resetTransformation(const int objectID);
-  void translate(const int objectID, const Magnum::Math::Vector3<float> vector);
-  void translateLocal(const int objectID,
-                      const Magnum::Math::Vector3<float> vector);
-  void rotate(const int objectID,
-              const Magnum::Math::Rad<float> angleInRad,
-              const Magnum::Math::Vector3<float> normalizedAxis);
-  void rotateX(const int objectID, const Magnum::Math::Rad<float> angleInRad);
-  void rotateY(const int objectID, const Magnum::Math::Rad<float> angleInRad);
-  void rotateZ(const int objectID, const Magnum::Math::Rad<float> angleInRad);
-  void rotateXLocal(const int objectID,
-                    const Magnum::Math::Rad<float> angleInRad);
-  void rotateYLocal(const int objectID,
-                    const Magnum::Math::Rad<float> angleInRad);
-  void rotateZLocal(const int objectID,
-                    const Magnum::Math::Rad<float> angleInRad);
-
   /*
   Magnum::SceneGraph::DrawableGroup3D& getDrawables() { return debugDrawables; }
   const Magnum::SceneGraph::DrawableGroup3D& getDrawables() const {
@@ -131,8 +158,8 @@ class PhysicsManager {
   // nextObjectID_
   int allocateObjectID();
 
-  // recycle an objectID
-  int deallocateObjectID(int objectID);
+  // recycle an physObjectID
+  int deallocateObjectID(int physObjectID);
 
   //! Create and initialize rigid object
   virtual int makeRigidObject(std::vector<assets::CollisionMeshData> meshGroup,

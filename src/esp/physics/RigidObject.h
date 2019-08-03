@@ -40,18 +40,15 @@ class RigidObject : public scene::SceneNode {
 
   //! Check whether object is being actively simulated, or sleeping
   virtual bool isActive();
-
   virtual void setActive(){};
 
   //! Force interaction
   virtual void applyForce(Magnum::Vector3 force, Magnum::Vector3 relPos);
-
   // Impulse interaction
   virtual void applyImpulse(Magnum::Vector3 impulse, Magnum::Vector3 relPos);
 
   //! (Prototype) For visualizing & debugging
   void debugForce(Magnum::SceneGraph::DrawableGroup3D& debugDrawables);
-
   //! (Prototype) For visualizing & debugging
   void setDebugForce(Magnum::Vector3 force);
 
@@ -81,6 +78,27 @@ class RigidObject : public scene::SceneNode {
   virtual SceneNode& rotateXLocal(const Magnum::Math::Rad<float> angleInRad);
   virtual SceneNode& rotateYLocal(const Magnum::Math::Rad<float> angleInRad);
   virtual SceneNode& rotateZLocal(const Magnum::Math::Rad<float> angleInRad);
+
+  // ==== Getter/Setter functions ===
+  //! For kinematic objects they are dummies, for dynamic objects
+  //! implemented in physics-engine specific ways
+  virtual const double getMass() { return 0.0; }
+  virtual const Magnum::Vector3d getCOM() { return Magnum::Vector3d(); }
+  virtual const Magnum::Vector3 getInertia() { return Magnum::Vector3(); }
+  virtual const double getScale() { return 0.0; }
+  virtual const double getFrictionCoefficient() { return 0.0; }
+  virtual const double getRestitutionCoeffcient() { return 0.0; }
+  virtual const double getLinearDamping() { return 0.0; }
+  virtual const double getAngularDamping() { return 0.0; }
+
+  virtual void setMass(const double mass){};
+  virtual void setCOM(const Magnum::Vector3d COM){};
+  virtual void setInertia(const Magnum::Vector3 inertia){};
+  virtual void setScale(const double scale){};
+  virtual void setFrictionCoefficient(const double frictionCoefficient){};
+  virtual void setRestitutionCoeffcient(const double restitutionCoeffcient){};
+  virtual void setLinearDamping(const double linearDamping){};
+  virtual void setAngularDamping(const double angularDamping){};
 
  protected:
   bool initialized_ = false;

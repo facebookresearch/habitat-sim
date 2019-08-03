@@ -142,9 +142,9 @@ int PhysicsManager::allocateObjectID() {
   return nextObjectID_++;
 }
 
-int PhysicsManager::deallocateObjectID(int objectID) {
-  recycledObjectIDs_.push_back(objectID);
-  return objectID;
+int PhysicsManager::deallocateObjectID(int physObjectID) {
+  recycledObjectIDs_.push_back(physObjectID);
+  return physObjectID;
 }
 
 //! Create and initialize rigid object
@@ -233,100 +233,225 @@ int PhysicsManager::checkActiveObjects() {
   return numActive;
 }
 
-void PhysicsManager::applyForce(const int objectID,
+void PhysicsManager::applyForce(const int physObjectID,
                                 Magnum::Vector3 force,
                                 Magnum::Vector3 relPos) {
-  if (existingObjects_.count(objectID) > 0) {
-    existingObjects_[objectID]->applyForce(force, relPos);
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->applyForce(force, relPos);
   }
 }
 
-void PhysicsManager::applyImpulse(const int objectID,
+void PhysicsManager::applyImpulse(const int physObjectID,
                                   Magnum::Vector3 impulse,
                                   Magnum::Vector3 relPos) {
-  if (existingObjects_.count(objectID) > 0) {
-    existingObjects_[objectID]->applyImpulse(impulse, relPos);
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->applyImpulse(impulse, relPos);
   }
 }
 
 void PhysicsManager::setTransformation(
-    const int objectID,
+    const int physObjectID,
     const Magnum::Math::Matrix4<float> trans) {
-  if (existingObjects_.count(objectID) > 0) {
-    existingObjects_[objectID]->setTransformation(trans);
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->setTransformation(trans);
   }
 }
-void PhysicsManager::setTranslation(const int objectID,
+void PhysicsManager::setTranslation(const int physObjectID,
                                     const Magnum::Math::Vector3<float> vector) {
-  if (existingObjects_.count(objectID) > 0) {
-    existingObjects_[objectID]->setTranslation(vector);
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->setTranslation(vector);
   }
 }
 void PhysicsManager::setRotation(
-    const int objectID,
+    const int physObjectID,
     const Magnum::Math::Quaternion<float>& quaternion) {
-  if (existingObjects_.count(objectID) > 0) {
-    existingObjects_[objectID]->setRotation(quaternion);
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->setRotation(quaternion);
   }
 }
-void PhysicsManager::resetTransformation(const int objectID) {
-  if (existingObjects_.count(objectID) > 0) {
-    existingObjects_[objectID]->resetTransformation();
+void PhysicsManager::resetTransformation(const int physObjectID) {
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->resetTransformation();
   }
 }
-void PhysicsManager::translate(const int objectID,
+void PhysicsManager::translate(const int physObjectID,
                                const Magnum::Math::Vector3<float> vector) {
-  if (existingObjects_.count(objectID) > 0) {
-    existingObjects_[objectID]->translate(vector);
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->translate(vector);
   }
 }
-void PhysicsManager::translateLocal(const int objectID,
+void PhysicsManager::translateLocal(const int physObjectID,
                                     const Magnum::Math::Vector3<float> vector) {
-  if (existingObjects_.count(objectID) > 0) {
-    existingObjects_[objectID]->translateLocal(vector);
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->translateLocal(vector);
   }
 }
-void PhysicsManager::rotate(const int objectID,
+void PhysicsManager::rotate(const int physObjectID,
                             const Magnum::Math::Rad<float> angleInRad,
                             const Magnum::Math::Vector3<float> normalizedAxis) {
-  if (existingObjects_.count(objectID) > 0) {
-    existingObjects_[objectID]->rotate(angleInRad, normalizedAxis);
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->rotate(angleInRad, normalizedAxis);
   }
 }
-void PhysicsManager::rotateX(const int objectID,
+void PhysicsManager::rotateX(const int physObjectID,
                              const Magnum::Math::Rad<float> angleInRad) {
-  if (existingObjects_.count(objectID) > 0) {
-    existingObjects_[objectID]->rotateX(angleInRad);
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->rotateX(angleInRad);
   }
 }
-void PhysicsManager::rotateY(const int objectID,
+void PhysicsManager::rotateY(const int physObjectID,
                              const Magnum::Math::Rad<float> angleInRad) {
-  if (existingObjects_.count(objectID) > 0) {
-    existingObjects_[objectID]->rotateY(angleInRad);
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->rotateY(angleInRad);
   }
 }
-void PhysicsManager::rotateXLocal(const int objectID,
+void PhysicsManager::rotateXLocal(const int physObjectID,
                                   const Magnum::Math::Rad<float> angleInRad) {
-  if (existingObjects_.count(objectID) > 0) {
-    existingObjects_[objectID]->rotateXLocal(angleInRad);
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->rotateXLocal(angleInRad);
   }
 }
-void PhysicsManager::rotateYLocal(const int objectID,
+void PhysicsManager::rotateYLocal(const int physObjectID,
                                   const Magnum::Math::Rad<float> angleInRad) {
-  if (existingObjects_.count(objectID) > 0) {
-    existingObjects_[objectID]->rotateYLocal(angleInRad);
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->rotateYLocal(angleInRad);
   }
 }
-void PhysicsManager::rotateZ(const int objectID,
+void PhysicsManager::rotateZ(const int physObjectID,
                              const Magnum::Math::Rad<float> angleInRad) {
-  if (existingObjects_.count(objectID) > 0) {
-    existingObjects_[objectID]->rotateZ(angleInRad);
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->rotateZ(angleInRad);
   }
 }
-void PhysicsManager::rotateZLocal(const int objectID,
+void PhysicsManager::rotateZLocal(const int physObjectID,
                                   const Magnum::Math::Rad<float> angleInRad) {
-  if (existingObjects_.count(objectID) > 0) {
-    existingObjects_[objectID]->rotateZLocal(angleInRad);
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->rotateZLocal(angleInRad);
+  }
+}
+
+//============ Object Setter functions =============
+void PhysicsManager::setMass(const int physObjectID, const double mass) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->setMass(mass);
+  }
+}
+void PhysicsManager::setCOM(const int physObjectID,
+                            const Magnum::Vector3d COM) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->setCOM(COM);
+  }
+}
+void PhysicsManager::setInertia(const int physObjectID,
+                                const Magnum::Vector3 inertia) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->setInertia(inertia);
+  }
+}
+void PhysicsManager::setScale(const int physObjectID, const double scale) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->setScale(scale);
+  }
+}
+void PhysicsManager::setFrictionCoefficient(const int physObjectID,
+                                            const double frictionCoefficient) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->setFrictionCoefficient(frictionCoefficient);
+  }
+}
+void PhysicsManager::setRestitutionCoeffcient(
+    const int physObjectID,
+    const double restitutionCoefficient) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->setRestitutionCoeffcient(
+        restitutionCoefficient);
+  }
+}
+void PhysicsManager::setLinearDamping(const int physObjectID,
+                                      const double linDamping) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->setLinearDamping(linDamping);
+  }
+}
+void PhysicsManager::setAngularDamping(const int physObjectID,
+                                       const double angDamping) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->setAngularDamping(angDamping);
+  }
+}
+
+//============ Object Getter functions =============
+const double PhysicsManager::getMass(const int physObjectID) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    return existingObjects_[physObjectID]->getMass();
+  } else {
+    return -1.0;
+  }
+}
+
+const Magnum::Vector3d PhysicsManager::getCOM(const int physObjectID) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    return existingObjects_[physObjectID]->getCOM();
+  } else {
+    return Magnum::Vector3d();
+  }
+}
+const Magnum::Vector3 PhysicsManager::getInertia(const int physObjectID) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    return existingObjects_[physObjectID]->getInertia();
+  } else {
+    return Magnum::Vector3();
+  }
+}
+const double PhysicsManager::getScale(const int physObjectID) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    return existingObjects_[physObjectID]->getScale();
+  } else {
+    return -1.0;
+  }
+}
+const double PhysicsManager::getFrictionCoefficient(const int physObjectID) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    return existingObjects_[physObjectID]->getFrictionCoefficient();
+  } else {
+    return -1.0;
+  }
+}
+const double PhysicsManager::getRestitutionCoeffcient(const int physObjectID) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    return existingObjects_[physObjectID]->getRestitutionCoeffcient();
+  } else {
+    return -1.0;
+  }
+}
+const double PhysicsManager::getLinearDamping(const int physObjectID) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    return existingObjects_[physObjectID]->getLinearDamping();
+  } else {
+    return -1.0;
+  }
+}
+const double PhysicsManager::getAngularDamping(const int physObjectID) {
+  // (JH Note) TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    return existingObjects_[physObjectID]->getAngularDamping();
+  } else {
+    return -1.0;
   }
 }
 

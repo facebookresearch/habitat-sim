@@ -141,7 +141,7 @@ void BulletPhysicsManager::setGravity(const Magnum::Vector3d gravity) {
 
   // After gravity change, need to reactive all bullet objects
   LOG(INFO) << "Iterate over and activate all existing objects:";
-  for (std::map<int, std::unique_ptr<physics::RigidObject>>::iterator it =
+  for (std::map<int, std::unique_ptr<physics::BulletRigidObject>>::iterator it =
            existingObjects_.begin();
        it != existingObjects_.end(); ++it) {
     LOG(INFO) << it->first << " => " << it->second;
@@ -153,7 +153,6 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   // We don't step uninitialized physics sim...
   if (!initialized_)
     return;
-
   if (dt < 0)
     dt = sceneMetaData_.timestep_;
 
@@ -170,6 +169,21 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   std::chrono::duration<float> elapsed_seconds = end - start;
   // LOG(INFO) << "Step physics dt | compute time: " << dt << " | " <<
   // elapsed_seconds.count();
+}
+
+void BulletPhysicsManager::setMargin(const int physObjectID,
+                                     const double margin) {
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->setMargin(margin);
+  }
+}
+
+const double BulletPhysicsManager::getMargin(const int physObjectID) {
+  if (existingObjects_.count(physObjectID) > 0) {
+    return existingObjects_[physObjectID]->getMargin();
+  } else {
+    return -1.0;
+  }
 }
 
 }  // namespace physics

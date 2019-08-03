@@ -12,6 +12,7 @@
 
 #include "BulletRigidObject.h"
 #include "esp/physics/PhysicsManager.h"
+#include "esp/physics/bullet/BulletRigidObject.h"
 
 namespace esp {
 namespace physics {
@@ -44,6 +45,12 @@ class BulletPhysicsManager : public PhysicsManager {
   //============ Interact with objects =============
   // Alex NOTE: engine specifics handled by objects themselves...
 
+  //============ Bullet-specific Object Setter functions =============
+  void setMargin(const int physObjectID, const double margin);
+
+  //============ Bullet-specific Object Getter functions =============
+  const double getMargin(const int physObjectID);
+
  protected:
   //! The world has to live longer than the scene because RigidBody
   //! instances have to remove themselves from it on destruction
@@ -57,6 +64,8 @@ class BulletPhysicsManager : public PhysicsManager {
   std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
 
  private:
+  std::map<int, std::unique_ptr<physics::BulletRigidObject>> existingObjects_;
+
   bool isMeshPrimitiveValid(assets::CollisionMeshData& meshData);
 
   //! Create and initialize rigid object

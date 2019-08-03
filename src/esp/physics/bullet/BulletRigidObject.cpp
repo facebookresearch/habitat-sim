@@ -143,10 +143,7 @@ bool BulletRigidObject::initializeObject(
   btIndexedMesh bulletMesh;
 
   //! Physical parameters
-  // float restitution = metaData.restitutionCoefficient;
-  float margin = metaData.margin_;
-  // float linDamping  = metaData.linDamping;
-  // float angDamping  = metaData.angDamping;
+  double margin = metaData.margin_;
 
   //! Iterate through all mesh components for one object
   //! The components are combined into a convex compound shape
@@ -299,6 +296,75 @@ void BulletRigidObject::syncPose() {
   } else {
     LOG(INFO) << "BulletRigidObject::syncPose - Object not initialized";
   }
+}
+
+void BulletRigidObject::setMargin(const double margin) {
+  if (isScene_) {
+    return;
+  } else {
+    for (int i = 0; i < bObjectConvexShapes_.size(); i++) {
+      bObjectConvexShapes_[i]->setMargin(margin);
+    }
+    bObjectShape_->setMargin(margin);
+  }
+}
+
+void BulletRigidObject::setMass(const double mass) {}
+
+void BulletRigidObject::setCOM(const Magnum::Vector3d COM) {}
+
+void BulletRigidObject::setInertia(const Magnum::Vector3 inertia) {}
+
+void BulletRigidObject::setScale(const double scale) {}
+
+void BulletRigidObject::setFrictionCoefficient(
+    const double frictionCoefficient) {}
+
+void BulletRigidObject::setRestitutionCoeffcient(
+    const double restitutionCoeffcient) {}
+
+void BulletRigidObject::setLinearDamping(const double linearDamping) {}
+
+void BulletRigidObject::setAngularDamping(const double angularDamping) {}
+
+const double BulletRigidObject::getMargin() {
+  if (isScene_) {
+    return -1.0;
+  } else {
+    return bObjectShape_->getMargin();
+  }
+}
+
+const double BulletRigidObject::getMass() {
+  return 0.0;
+}
+
+const Magnum::Vector3d BulletRigidObject::getCOM() {
+  return Magnum::Vector3d();
+}
+
+const Magnum::Vector3 BulletRigidObject::getInertia() {
+  return Magnum::Vector3();
+}
+
+const double BulletRigidObject::getScale() {
+  return 0.0;
+}
+
+const double BulletRigidObject::getFrictionCoefficient() {
+  return 0.0;
+}
+
+const double BulletRigidObject::getRestitutionCoeffcient() {
+  return 0.0;
+}
+
+const double BulletRigidObject::getLinearDamping() {
+  return 0.0;
+}
+
+const double BulletRigidObject::getAngularDamping() {
+  return 0.0;
 }
 
 }  // namespace physics

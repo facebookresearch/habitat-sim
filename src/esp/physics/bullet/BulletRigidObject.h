@@ -30,16 +30,37 @@ class BulletRigidObject : public RigidObject {
 
   //! Check whether object is being actively simulated, or sleeping
   bool isActive();
-
   void setActive();
 
   //! Force interaction
   void applyForce(Magnum::Vector3 force, Magnum::Vector3 relPos);
-
-  // Impulse interaction
+  //! Impulse interaction
   void applyImpulse(Magnum::Vector3 impulse, Magnum::Vector3 relPos);
 
   bool removeObject();
+
+  //============ Getter/setter function =============
+  const double getMass();
+  const Magnum::Vector3d getCOM();
+  const Magnum::Vector3 getInertia();
+  const double getScale();
+  const double getFrictionCoefficient();
+  const double getRestitutionCoeffcient();
+  const double getLinearDamping();
+  const double getAngularDamping();
+  //! Return margin for object, -1.0 for scene
+  const double getMargin();
+
+  void setMass(const double mass);
+  void setCOM(const Magnum::Vector3d COM);
+  void setInertia(const Magnum::Vector3 inertia);
+  void setScale(const double scale);
+  void setFrictionCoefficient(const double frictionCoefficient);
+  void setRestitutionCoeffcient(const double restitutionCoeffcient);
+  void setLinearDamping(const double linearDamping);
+  void setAngularDamping(const double angularDamping);
+  //! Set Margin only works for objects
+  void setMargin(const double margin);
 
  protected:
   //! Needed after changing the pose from Magnum side
