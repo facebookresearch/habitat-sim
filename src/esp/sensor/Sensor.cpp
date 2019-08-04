@@ -20,10 +20,14 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
   setTransformationFromSpec();
 }
 
-Observation Sensor::getObservation() {
+bool Sensor::getObservation(gfx::Simulator& sim, Observation& obs) {
   // TODO fill out observation
-  Observation obs{};
-  return obs;
+  return false;
+}
+
+bool Sensor::getObservationSpace(ObservationSpace& space) {
+  // TODO fill out observation spacek
+  return false;
 }
 
 void SensorSuite::add(Sensor::ptr sensor) {

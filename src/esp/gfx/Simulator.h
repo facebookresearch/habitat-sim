@@ -44,14 +44,15 @@ bool operator!=(const SimulatorConfiguration& a,
 
 class Simulator {
  public:
+  explicit Simulator();
   explicit Simulator(const SimulatorConfiguration& cfg);
   virtual ~Simulator();
 
-  void reconfigure(const SimulatorConfiguration& cfg);
+  virtual void reconfigure(const SimulatorConfiguration& cfg);
 
-  void reset();
+  virtual void reset();
 
-  void seed(uint32_t newSeed);
+  virtual void seed(uint32_t newSeed);
 
   std::shared_ptr<Renderer> getRenderer();
   std::shared_ptr<scene::SemanticScene> getSemanticScene();

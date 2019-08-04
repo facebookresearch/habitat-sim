@@ -6,10 +6,15 @@
 
 #include "esp/core/esp.h"
 
+#include "esp/core/Buffer.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
+namespace gfx {
+  class Simulator;
+}
+
 namespace sensor {
 
 // Enumeration of types of sensors
@@ -24,6 +29,12 @@ enum class SensorType {
   FORCE = 7,
   TENSOR = 8,
   TEXT = 9,
+};
+
+enum class ObservationSpaceType {
+  NONE = 0,
+  TENSOR = 1,
+  TEXT = 2,
 };
 
 // Specifies the configuration parameters of a sensor
@@ -49,7 +60,15 @@ bool operator!=(const SensorSpec& a, const SensorSpec& b);
 // Represents a particular sensor Observation
 struct Observation {
   // TODO: populate this struct with raw data
+  core::Buffer::ptr buffer;
   ESP_SMART_POINTERS(Observation)
+};
+
+struct ObservationSpace {
+  ObservationSpaceType spaceType = ObservationSpaceType::TENSOR;
+  core::DataType dataType = core::DataType::DT_UINT8;
+  std::vector<size_t> shape;
+  ESP_SMART_POINTERS(ObservationSpace)
 };
 
 // Represents a sensor that provides data from the environment to an agent
@@ -84,10 +103,12 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
   // visual sensor should implement and override this function
   virtual void setProjectionMatrix(gfx::RenderCamera& targetCamera){};
 
-  virtual Observation getObservation();
+  virtual bool getObservation(gfx::Simulator& sim, Observation& obs);
+  virtual bool getObservationSpace(ObservationSpace& space);
 
  protected:
   SensorSpec::ptr spec_ = nullptr;
+  core::Buffer::ptr buffer_ = nullptr;
 
   ESP_SMART_POINTERS(Sensor)
 };
