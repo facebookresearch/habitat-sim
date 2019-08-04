@@ -35,6 +35,9 @@ class PinholeCamera : public Sensor {
   // set the projection parameters to the given render camera
   virtual void setProjectionMatrix(gfx::RenderCamera& targetCamera) override;
 
+  virtual bool getObservation(gfx::Simulator& sim, Observation& obs) override;
+  virtual bool getObservationSpace(ObservationSpace& space) override;
+
  protected:
   // projection parameters
   int width_ = 640;      // canvas width

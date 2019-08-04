@@ -62,6 +62,7 @@ add_subdirectory(esp/scene)
 add_subdirectory(esp/nav)
 add_subdirectory(esp/agent)
 add_subdirectory(esp/sensor)
+add_subdirectory(esp/sim)
 
 if(BUILD_DATATOOL)
   message("Building datatool")

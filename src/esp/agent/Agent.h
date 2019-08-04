@@ -27,7 +27,7 @@ struct AgentState {
   vec3f angularVelocity;
   vec3f force;
   vec3f torque;
-  ESP_SMART_POINTERS(AgentState);
+  ESP_SMART_POINTERS(AgentState)
 };
 
 typedef std::map<std::string, float> ActuationMap;
@@ -99,7 +99,9 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
         Magnum::SceneGraph::AbstractFeature3D::object());
   }
 
-  void act(const std::string& actionName);
+  bool act(const std::string& actionName);
+
+  bool hasAction(const std::string& actionName);
 
   void getState(AgentState::ptr state) const;
 
