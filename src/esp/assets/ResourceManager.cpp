@@ -105,14 +105,21 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
   // if this is a new file, load it and add it to the dictionary
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
-    const std::string atlasDir =
-        Corrade::Utility::String::stripSuffix(filename, "ptex_quad_mesh.ply") +
-        "ptex_textures";
+    const auto atlasDir = [=]()->std::string{
+      // backwards compatibility
+      if (Corrade::Utility::String::endsWith(filename, "ptex_quad_mesh.ply")) {
+        return (Corrade::Utility::String::stripSuffix(filename, "ptex_quad_mesh.ply") +
+        "ptex_textures");
+      }
+        // officially released Replica dataset
+        return (Corrade::Utility::String::stripSuffix(filename, "mesh.ply") +
+        "textures");
+    };
 
     meshes_.emplace_back(std::make_unique<PTexMeshData>());
     int index = meshes_.size() - 1;
     auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_[index].get());
-    pTexMeshData->load(filename, atlasDir);
+    pTexMeshData->load(filename, atlasDir());
 
     // update the dictionary
     resourceDict_.emplace(filename, MeshMetaData(index, index));

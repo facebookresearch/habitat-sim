@@ -20,6 +20,11 @@ AssetInfo AssetInfo::fromPath(const std::string& path) {
     info.type = AssetType::INSTANCE_MESH;
   } else if (endsWith(path, "ptex_quad_mesh.ply")) {
     info.type = AssetType::FRL_PTEX_MESH;
+  } else if (endsWith(path, "mesh.ply")) {
+    // Warning:
+    // The order of if clause matters. cannot move "mesh.ply" before
+    // "ptex_quad_mesh.ply" or "semantic_quad_mesh.ply"
+    info.type = AssetType::FRL_PTEX_MESH;
   } else if (endsWith(path, "house.json")) {
     info.type = AssetType::SUNCG_SCENE;
   } else if (endsWith(path, ".glb")) {

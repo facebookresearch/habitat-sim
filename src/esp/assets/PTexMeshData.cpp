@@ -14,6 +14,7 @@
 #include <Magnum/GL/BufferTextureFormat.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
+// #include <Magnum/GL/TextureFormat.h>
 
 #include "esp/core/esp.h"
 #include "esp/gfx/PTexMeshShader.h"
@@ -34,7 +35,10 @@ void PTexMeshData::load(const std::string& meshFile,
   ASSERT(io::exists(atlasFolder));
 
   // Parse parameters
-  const auto& paramsFile = atlasFolder + "/parameters.json";
+  // careful: when using "join", no leading forward slash in the file name.
+  // otherwise the corrade would think it is absolute path
+  const auto& paramsFile =
+      Corrade::Utility::Directory::join(atlasFolder, "parameters.json");
   ASSERT(io::exists(paramsFile));
   const io::JsonDocument json = io::parseJsonFile(paramsFile);
   splitSize_ = json["splitSize"].GetDouble();
@@ -203,20 +207,23 @@ void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData& mesh,
 
   std::unordered_map<uint64_t, std::vector<EdgeData>> edgeMap;
 
-  size_t numFaces = mesh.ibo.size() / 4;
+  // only works on quad meshes
+  const int polygonStride = 4;
+  size_t numFaces = mesh.ibo.size() / polygonStride;
 
   typedef std::unordered_map<uint64_t, std::vector<EdgeData>>::iterator
       EdgeIter;
-  std::vector<EdgeIter> edgeIterators(numFaces * 4);
+  std::vector<EdgeIter> edgeIterators(numFaces * polygonStride);
 
   // for each face
   for (int f = 0; f < numFaces; f++) {
     // for each edge
-    for (int e = 0; e < 4; e++) {
+    for (int e = 0; e < polygonStride; e++) {
       // add to edge to face map
-      const int e_index = f * 4 + e;
+      const int e_index = f * polygonStride + e;
       const uint32_t i0 = mesh.ibo[e_index];
-      const uint32_t i1 = mesh.ibo[f * 4 + ((e + 1) % 4)];
+      const uint32_t i1 =
+          mesh.ibo[f * polygonStride + ((e + 1) % polygonStride)];
       const uint64_t key =
           (uint64_t)std::min(i0, i1) << 32 | (uint32_t)std::max(i0, i1);
 
@@ -236,11 +243,11 @@ void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData& mesh,
     }
   }
 
-  adjFaces.resize(numFaces * 4);
+  adjFaces.resize(numFaces * polygonStride);
 
   for (int f = 0; f < numFaces; f++) {
-    for (int e = 0; e < 4; e++) {
-      const int e_index = f * 4 + e;
+    for (int e = 0; e < polygonStride; e++) {
+      const int e_index = f * polygonStride + e;
       auto it = edgeIterators[e_index];
       const std::vector<EdgeData>& adj = it->second;
 
@@ -267,13 +274,16 @@ void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData& mesh,
       }
 
       // pack adjacent face and rotation into 32-bit int
-      adjFaces[f * 4 + e] = (rot << ROTATION_SHIFT) | (adjFace & FACE_MASK);
+      adjFaces[f * polygonStride + e] =
+          (rot << ROTATION_SHIFT) | (adjFace & FACE_MASK);
     }
   }
 }
 
 void PTexMeshData::loadMeshData(const std::string& meshFile) {
   PTexMeshData::MeshData originalMesh;
+
+  std::cout << "start parsing PLY... " << std::endl;
   parsePLY(meshFile, originalMesh);
 
   submeshes_.clear();
@@ -583,7 +593,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     currentMesh->ibo.setData(submeshes_[iMesh].ibo,
                              Magnum::GL::BufferUsage::StaticDraw);
   }
-  std::cout << "... done" << std::endl;
+  std::cout << "done" << std::endl;
 
   std::cout << "Calculating mesh adjacency... ";
   std::cout.flush();
@@ -594,6 +604,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
     calculateAdjacency(submeshes_[iMesh], adjFaces[iMesh]);
   }
+  std::cout << "... done" << std::endl;
 
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
     auto& currentMesh = renderingBuffers_[iMesh];
@@ -609,28 +620,33 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
                         Magnum::GL::MeshIndexType::UnsignedInt);
   }
 
+  // load atlas data and upload them to GPU
+
+  std::cout << "loading atlas textures: " << std::endl;
   for (size_t iMesh = 0; iMesh < renderingBuffers_.size(); ++iMesh) {
-    const std::string rgbFile =
-        atlasFolder_ + "/" + std::to_string(iMesh) + "-color-ptex.rgb";
-    if (!io::exists(rgbFile)) {
-      ASSERT(false, "Can't find " + rgbFile);
-    }
+    const std::string rgbFile = Corrade::Utility::Directory::join(
+        atlasFolder_, std::to_string(iMesh) + "-color-ptex.rgb");
+
+    ASSERT(io::exists(rgbFile));
+
     std::cout << "\rLoading atlas " << iMesh + 1 << "/"
-              << renderingBuffers_.size() << "... ";
+              << renderingBuffers_.size() << " from " << rgbFile << "... ";
     std::cout.flush();
 
     Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter> data =
         Cr::Utility::Directory::mapRead(rgbFile);
     const int dim = static_cast<int>(std::sqrt(data.size() / 3));  // square
+    // atlas
     Magnum::ImageView2D image(Magnum::PixelFormat::RGB8UI, {dim, dim}, data);
     renderingBuffers_[iMesh]
         ->tex.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
         .setMagnificationFilter(Magnum::GL::SamplerFilter::Linear)
         .setMinificationFilter(Magnum::GL::SamplerFilter::Linear)
-        // .setStorage(1, GL::TextureFormat::RGB8UI, image.size())
+        // .setStorage(1, Magnum::GL::TextureFormat::RGB8UI, image.size())
         .setSubImage(0, {}, image);
+
+    std::cout << "done" << std::endl;
   }
-  std::cout << "... done" << std::endl;
 
   buffersOnGPU_ = true;
 }
