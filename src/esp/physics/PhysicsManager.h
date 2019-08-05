@@ -19,7 +19,6 @@
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
-#include "esp/assets/PhysicsObjectMetaData.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -43,8 +42,9 @@ class PhysicsManager {
   //============ Initialization =============
   // load physical properties and setup the world
   // do_profile indicates timing for FPS
-  virtual bool initPhysics(scene::SceneNode* node,
-                           assets::PhysicsSceneMetaData sceneMetaData);
+  virtual bool initPhysics(
+      scene::SceneNode* node,
+      assets::PhysicsManagerAttributes physicsManagerAttributes);
 
   // Stores references to a set of drawable elements
   using DrawableGroup = Magnum::SceneGraph::DrawableGroup3D;
@@ -54,7 +54,7 @@ class PhysicsManager {
   //! Only one scene per simulation
   //! The scene could contain several components
   virtual bool addScene(const assets::AssetInfo& info,
-                        assets::PhysicsSceneMetaData& sceneMetaData,
+                        assets::PhysicsSceneAttributes& physicsSceneAttributes,
                         std::vector<assets::CollisionMeshData> meshGroup);
 
   //! Initialize object given mesh data
@@ -70,12 +70,12 @@ class PhysicsManager {
 
   // =========== Global Setter functions ===========
   virtual void setTimestep(double dt);
-  virtual void setGravity(const Magnum::Vector3d gravity);
+  virtual void setGravity(Magnum::Vector3 gravity);
 
   // =========== Global Getter functions ===========
-  virtual const double getTimestep() { return sceneMetaData_.timestep_; };
+  virtual const double getTimestep() { return fixedTimeStep_; };
   virtual const double getWorldTime() { return worldTime_; };
-  virtual const Magnum::Vector3d getGravity();
+  virtual const Magnum::Vector3 getGravity();
 
   // =========== Scene Getter/Setter functions ===========
   virtual double getSceneFrictionCoefficient() { return 0.0; };
@@ -162,8 +162,9 @@ class PhysicsManager {
   int deallocateObjectID(int physObjectID);
 
   //! Create and initialize rigid object
-  virtual int makeRigidObject(std::vector<assets::CollisionMeshData> meshGroup,
-                              assets::PhysicsObjectMetaData objMetaData);
+  virtual int makeRigidObject(
+      std::vector<assets::CollisionMeshData> meshGroup,
+      assets::PhysicsObjectAttributes physicsObjectAttributes);
 
   // use this to instantiate physics objects from the physicsObjectLibrary_
   assets::ResourceManager* resourceManager_;
@@ -177,7 +178,7 @@ class PhysicsManager {
   std::shared_ptr<physics::RigidObject> sceneNode_ = nullptr;
 
   //! ==== dynamic object resources ===
-  std::map<int, std::unique_ptr<physics::RigidObject>> existingObjects_;
+  std::map<int, std::shared_ptr<physics::RigidObject>> existingObjects_;
   int nextObjectID_ = 0;
   std::vector<int>
       recycledObjectIDs_;  // removed object IDs are pushed here and popped
@@ -191,7 +192,7 @@ class PhysicsManager {
   int total_frames_ = 0;
   int maxSubSteps_ = 10;
   double fixedTimeStep_ = 1.0 / 240.0;
-  assets::PhysicsSceneMetaData sceneMetaData_;
+  // assets::PhysicsSceneMetaData sceneMetaData_;
 
   double worldTime_ = 0.0;
 };

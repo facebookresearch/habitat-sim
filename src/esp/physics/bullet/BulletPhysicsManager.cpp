@@ -14,7 +14,7 @@ namespace physics {
 
 bool BulletPhysicsManager::initPhysics(
     scene::SceneNode* node,
-    assets::PhysicsSceneMetaData sceneMetaData) {
+    assets::PhysicsManagerAttributes physicsManagerAttributes) {
   LOG(INFO) << "Initializing Bullet Physics Engine...";
   activePhysSimLib_ = BULLET;
 
@@ -24,8 +24,8 @@ bool BulletPhysicsManager::initPhysics(
   bWorld_ = std::make_shared<btDiscreteDynamicsWorld>(
       &bDispatcher_, &bBroadphase_, &bSolver_, &bCollisionConfig_);
   // currently GLB meshes are y-up
-  bWorld_->setGravity({sceneMetaData.gravity_[0], sceneMetaData.gravity_[1],
-                       sceneMetaData.gravity_[2]});
+  bWorld_->setGravity(
+      btVector3(physicsManagerAttributes.getMagnumVec3("gravity")));
 
   physicsNode_ = node;
   //! Create new scene node
@@ -34,8 +34,6 @@ bool BulletPhysicsManager::initPhysics(
       std::make_shared<physics::BulletRigidObject>(physicsNode_));
 
   initialized_ = true;
-  sceneMetaData_ = sceneMetaData;
-  // LOG(INFO) << "Initialized Bullet Physics Engine.";
   return true;
 }
 
@@ -47,7 +45,7 @@ BulletPhysicsManager::~BulletPhysicsManager() {
 // https://github.com/mosra/magnum-integration/issues/20
 bool BulletPhysicsManager::addScene(
     const assets::AssetInfo& info,
-    assets::PhysicsSceneMetaData& sceneMetaData,
+    assets::PhysicsSceneAttributes& physicsSceneAttributes,
     std::vector<assets::CollisionMeshData> meshGroup) {
   // Test Mesh primitive is valid
   for (assets::CollisionMeshData& meshData : meshGroup) {
@@ -71,7 +69,7 @@ bool BulletPhysicsManager::addScene(
   bool sceneSuccess =
       std::dynamic_pointer_cast<physics::BulletRigidObject,
                                 physics::RigidObject>(sceneNode_)
-          ->initializeScene(sceneMetaData, meshGroup, bWorld_);
+          ->initializeScene(physicsSceneAttributes, meshGroup, bWorld_);
   LOG(INFO) << "Init scene done";
 
   return sceneSuccess;
@@ -79,18 +77,20 @@ bool BulletPhysicsManager::addScene(
 
 int BulletPhysicsManager::makeRigidObject(
     std::vector<assets::CollisionMeshData> meshGroup,
-    assets::PhysicsObjectMetaData objMetaData) {
+    assets::PhysicsObjectAttributes physicsObjectAttributes) {
   //! Create new physics object (child node of sceneNode_)
   int newObjectID = allocateObjectID();
   existingObjects_.emplace(
       newObjectID,
-      std::make_unique<physics::BulletRigidObject>(sceneNode_.get()));
+      std::make_shared<physics::BulletRigidObject>(sceneNode_.get()));
 
   //! Instantiate with mesh pointer
-  bool objectSuccess = dynamic_cast<physics::BulletRigidObject*>(
-                           existingObjects_.at(newObjectID).get())
-                           ->initializeObject(objMetaData, meshGroup, bWorld_);
+  bool objectSuccess =
+      dynamic_cast<physics::BulletRigidObject*>(
+          existingObjects_.at(newObjectID).get())
+          ->initializeObject(physicsObjectAttributes, meshGroup, bWorld_);
   if (!objectSuccess) {
+    LOG(INFO) << "deleted";
     deallocateObjectID(newObjectID);
     existingObjects_.erase(newObjectID);
     return -1;
@@ -132,16 +132,14 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
   }
 }
 
-void BulletPhysicsManager::setGravity(const Magnum::Vector3d gravity) {
-  sceneMetaData_.gravity_ = gravity;
+void BulletPhysicsManager::setGravity(Magnum::Vector3 gravity) {
   LOG(INFO) << "Gravity " << gravity[0] << ", " << gravity[1] << ", "
             << gravity[2];
-  bWorld_->setGravity({sceneMetaData_.gravity_[0], sceneMetaData_.gravity_[1],
-                       sceneMetaData_.gravity_[2]});
 
+  bWorld_->setGravity(btVector3(gravity));
   // After gravity change, need to reactive all bullet objects
   LOG(INFO) << "Iterate over and activate all existing objects:";
-  for (std::map<int, std::unique_ptr<physics::BulletRigidObject>>::iterator it =
+  for (std::map<int, std::shared_ptr<physics::RigidObject>>::iterator it =
            existingObjects_.begin();
        it != existingObjects_.end(); ++it) {
     LOG(INFO) << it->first << " => " << it->second;
@@ -149,20 +147,25 @@ void BulletPhysicsManager::setGravity(const Magnum::Vector3d gravity) {
   }
 }
 
+const Magnum::Vector3 BulletPhysicsManager::getGravity() {
+  Magnum::Vector3 gravity(bWorld_->getGravity());
+  return gravity;
+}
+
 void BulletPhysicsManager::stepPhysics(double dt) {
   // We don't step uninitialized physics sim...
   if (!initialized_)
     return;
   if (dt < 0)
-    dt = sceneMetaData_.timestep_;
+    dt = fixedTimeStep_;
 
   // ==== Physics stepforward ======
   auto start = std::chrono::system_clock::now();
 
   // Alex NOTE: worldTime_ will always be a multiple of sceneMetaData_.timestep
-  int numSubStepsTaken = bWorld_->stepSimulation(
-      dt, sceneMetaData_.maxSubsteps_, sceneMetaData_.timestep_);
-  worldTime_ += numSubStepsTaken * sceneMetaData_.timestep_;
+  int numSubStepsTaken =
+      bWorld_->stepSimulation(dt, maxSubSteps_, fixedTimeStep_);
+  worldTime_ += numSubStepsTaken * fixedTimeStep_;
 
   auto end = std::chrono::system_clock::now();
 
@@ -174,13 +177,17 @@ void BulletPhysicsManager::stepPhysics(double dt) {
 void BulletPhysicsManager::setMargin(const int physObjectID,
                                      const double margin) {
   if (existingObjects_.count(physObjectID) > 0) {
-    existingObjects_[physObjectID]->setMargin(margin);
+    std::dynamic_pointer_cast<BulletRigidObject>(
+        existingObjects_.at(physObjectID))
+        ->setMargin(margin);
   }
 }
 
 const double BulletPhysicsManager::getMargin(const int physObjectID) {
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->getMargin();
+    return std::dynamic_pointer_cast<BulletRigidObject>(
+               existingObjects_.at(physObjectID))
+        ->getMargin();
   } else {
     return -1.0;
   }

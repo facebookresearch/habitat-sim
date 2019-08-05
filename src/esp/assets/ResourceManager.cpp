@@ -36,7 +36,6 @@
 #include "MeshData.h"
 #include "Mp3dInstanceMeshData.h"
 #include "PTexMeshData.h"
-#include "PhysicsObjectMetaData.h"
 #include "ResourceManager.h"
 #include "esp/physics/PhysicsManager.h"
 
@@ -75,6 +74,11 @@ bool ResourceManager::loadScene(const AssetInfo& info,
       LOG(INFO) << "Loading General mesh data";
       meshSuccess = loadGeneralMeshData(info, parent, drawables);
     }
+
+    // add a scene attributes for this filename or modify the existing one
+    if (meshSuccess)
+      physicsSceneLibrary_[info.filepath].setString("renderMeshHandle",
+                                                    info.filepath);
   }
 
   LOG(INFO) << "Loaded mesh scene, success " << meshSuccess << " parent "
@@ -88,14 +92,15 @@ bool ResourceManager::loadScene(const AssetInfo& info,
 bool ResourceManager::loadScene(
     const AssetInfo& info,
     std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-    scene::SceneNode* parent,    /* = nullptr */
-    DrawableGroup* drawables,    /* = nullptr */
-    std::string physicsFilename, /* data/default.phys_scene_config.json */
-    bool resetObjectLibrary) {
+    scene::SceneNode* parent, /* = nullptr */
+    DrawableGroup* drawables, /* = nullptr */
+    std::string physicsFilename /* data/default.phys_scene_config.json */) {
   // In-memory representation of scene meta data
-  PhysicsSceneMetaData sceneMetaData = loadPhysicsConfig(physicsFilename);
+  PhysicsManagerAttributes physicsManagerAttributes =
+      loadPhysicsConfig(physicsFilename);
 
-  return loadScene(info, _physicsManager, sceneMetaData, parent, drawables);
+  return loadScene(info, _physicsManager, physicsManagerAttributes, parent,
+                   drawables);
 }
 
 // TODO: kill existing scene mesh drawables, nodes, etc... (all but meshes in
@@ -107,16 +112,15 @@ bool ResourceManager::loadScene(
 bool ResourceManager::loadScene(
     const AssetInfo& info,
     std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-    PhysicsSceneMetaData sceneMetaData,
+    PhysicsManagerAttributes physicsManagerAttributes,
     scene::SceneNode* parent, /* = nullptr */
-    DrawableGroup* drawables, /* = nullptr */
-    bool resetObjectLibrary) {
+    DrawableGroup* drawables /* = nullptr */) {
   // default scene mesh loading
   bool meshSuccess = loadScene(info, parent, drawables);
 
   //! PHYSICS INIT: Use the above config to initialize physics engine
   bool defaultToNoneSimulator = true;
-  if (sceneMetaData.simulator.compare("bullet") == 0) {
+  if (physicsManagerAttributes.getString("simulator").compare("bullet") == 0) {
 #ifdef PHYSICS_WITH_BULLET
     _physicsManager.reset(new physics::BulletPhysicsManager(this));
     defaultToNoneSimulator = false;
@@ -130,24 +134,17 @@ bool ResourceManager::loadScene(
   if (defaultToNoneSimulator) {
     LOG(INFO) << "defaulting to \"none\" simulator.";
     _physicsManager.reset(new physics::PhysicsManager(this));
-    sceneMetaData.simulator = "none";
-  }
-
-  // clear the object metadata library if necessary
-  if (resetObjectLibrary) {
-    // TODO: test that this does not break...
-    physicsObjectLibrary_.clear();
-    collisionMeshGroups_.clear();
-    physicsObjectConfigList_.clear();
+    physicsManagerAttributes.setString("simulator", "none");
   }
 
   // load objects from sceneMetaData list...
-  for (auto objPhysPropertiesFilename : sceneMetaData.objectLibraryPaths) {
+  for (auto objPhysPropertiesFilename :
+       physicsManagerAttributes.getVecStrings("objectLibraryPaths")) {
     int sceneID = loadObject(objPhysPropertiesFilename);
   }
 
   // initialize the physics simulator
-  _physicsManager->initPhysics(parent, sceneMetaData);
+  _physicsManager->initPhysics(parent, physicsManagerAttributes);
 
   //! CONSTRUCT SCENE
   const std::string& filename = info.filepath;
@@ -195,7 +192,8 @@ bool ResourceManager::loadScene(
     }
   }
   //! Initialize collision mesh
-  bool sceneSuccess = _physicsManager->addScene(info, sceneMetaData, meshGroup);
+  bool sceneSuccess = _physicsManager->addScene(
+      info, physicsSceneLibrary_.at(info.filepath), meshGroup);
   LOG(INFO) << "Initialized mesh scene, success " << sceneSuccess;
   if (!sceneSuccess) {
     LOG(INFO) << "Physics manager failed to initialize object";
@@ -205,41 +203,52 @@ bool ResourceManager::loadScene(
   return meshSuccess;
 }
 
-PhysicsSceneMetaData ResourceManager::loadPhysicsConfig(
+PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
     std::string physicsFilename) {
   // Load the global scene config JSON here
   io::JsonDocument scenePhysicsConfig = io::parseJsonFile(physicsFilename);
   // In-memory representation of scene meta data
-  PhysicsSceneMetaData sceneMetaData;
+  PhysicsManagerAttributes physicsManagerAttributes;
 
   // load the simulator preference
   // default is "none" simulator
-  sceneMetaData.simulator = "none";
   if (scenePhysicsConfig.HasMember("physics simulator")) {
     if (scenePhysicsConfig["physics simulator"].IsString()) {
-      sceneMetaData.simulator =
-          scenePhysicsConfig["physics simulator"].GetString();
+      physicsManagerAttributes.setString(
+          "simulator", scenePhysicsConfig["physics simulator"].GetString());
     }
   }
 
   // load the physics timestep
   if (scenePhysicsConfig.HasMember("timestep")) {
     if (scenePhysicsConfig["timestep"].IsNumber()) {
-      sceneMetaData.timestep_ = scenePhysicsConfig["timestep"].GetDouble();
+      physicsManagerAttributes.setDouble(
+          "timestep", scenePhysicsConfig["timestep"].GetDouble());
     }
   }
 
   if (scenePhysicsConfig.HasMember("friction coefficient") &&
       scenePhysicsConfig["friction coefficient"].IsNumber()) {
-    sceneMetaData.frictionCoefficient_ =
-        scenePhysicsConfig["friction coefficient"].GetDouble();
+    physicsManagerAttributes.setDouble(
+        "frictionCoefficient",
+        scenePhysicsConfig["friction coefficient"].GetDouble());
   } else {
     LOG(ERROR) << " Invalid value in scene config - friction coefficient";
+  }
+
+  if (scenePhysicsConfig.HasMember("restitution coefficient") &&
+      scenePhysicsConfig["restitution coefficient"].IsNumber()) {
+    physicsManagerAttributes.setDouble(
+        "restitutionCoefficient",
+        scenePhysicsConfig["restitution coefficient"].GetDouble());
+  } else {
+    LOG(ERROR) << " Invalid value in scene config - restitution coefficient";
   }
 
   // load gravity
   if (scenePhysicsConfig.HasMember("gravity")) {
     if (scenePhysicsConfig["gravity"].IsArray()) {
+      Magnum::Vector3 grav;
       for (rapidjson::SizeType i = 0; i < scenePhysicsConfig["gravity"].Size();
            i++) {
         if (!scenePhysicsConfig["gravity"][i].IsNumber()) {
@@ -247,10 +256,10 @@ PhysicsSceneMetaData ResourceManager::loadPhysicsConfig(
           LOG(ERROR) << "Invalid value in physics gravity array";
           break;
         } else {
-          sceneMetaData.gravity_[i] =
-              scenePhysicsConfig["gravity"][i].GetDouble();
+          grav[i] = scenePhysicsConfig["gravity"][i].GetDouble();
         }
       }
+      physicsManagerAttributes.setMagnumVec3("gravity", grav);
     }
   }
 
@@ -262,6 +271,8 @@ PhysicsSceneMetaData ResourceManager::loadPhysicsConfig(
   // ALEX NOTE: expect relative paths to the global config
   if (scenePhysicsConfig.HasMember("rigid object paths")) {
     if (scenePhysicsConfig["rigid object paths"].IsArray()) {
+      physicsManagerAttributes.setVecStrings("objectLibraryPaths",
+                                             std::vector<std::string>());
       for (rapidjson::SizeType i = 0;
            i < scenePhysicsConfig["rigid object paths"].Size(); i++) {
         if (scenePhysicsConfig["rigid object paths"][i].IsString()) {
@@ -270,16 +281,8 @@ PhysicsSceneMetaData ResourceManager::loadPhysicsConfig(
               configDirectory + "/" +
               scenePhysicsConfig["rigid object paths"][i].GetString() +
               ".phys_properties.json";
-          sceneMetaData.objectLibraryPaths.push_back(objPhysPropertiesFilename);
-          // objPhysPropertiesFilename.append("/")
-          //    .append(scenePhysicsConfig["rigid object paths"][i].GetString())
-          //    .append(".phys_properties.json");
-          // get the absolute path
-          // LOG(INFO) << "...   obj properties path = " <<
-          // objPhysPropertiesFilename;
-
-          // 2. loadObject()
-          // int sceneID = loadObject(objPhysPropertiesFilename);
+          physicsManagerAttributes.appendVecStrings("objectLibraryPaths",
+                                                    objPhysPropertiesFilename);
         } else {
           LOG(ERROR) << "Invalid value in physics scene config -rigid object "
                         "library- array "
@@ -289,7 +292,7 @@ PhysicsSceneMetaData ResourceManager::loadPhysicsConfig(
     }
   }
 
-  return sceneMetaData;
+  return physicsManagerAttributes;
 }
 
 //! Only load and does not instantiate object
@@ -318,12 +321,13 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename,
     //! Add mesh to rendering stack
 
     // Meta data and collision mesh
-    PhysicsObjectMetaData physMetaData =
+    PhysicsObjectAttributes physicsObjectAttributes =
         physicsObjectLibrary_[objPhysConfigFilename];
     std::vector<CollisionMeshData> meshGroup =
         collisionMeshGroups_[objPhysConfigFilename];
 
-    const std::string& filename = physMetaData.renderMeshHandle_;
+    const std::string& filename =
+        physicsObjectAttributes.getString("renderMeshHandle");
 
     MeshMetaData meshMetaData = resourceDict_[filename];
     scene::SceneNode& newNode = parent->createChild();
@@ -338,7 +342,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename,
   return objectID;
 }
 
-PhysicsObjectMetaData& ResourceManager::getPhysicsMetaData(
+PhysicsObjectAttributes& ResourceManager::getPhysicsObjectAttributes(
     const std::string objectName) {
   return physicsObjectLibrary_[objectName];
 }
@@ -365,7 +369,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   io::JsonDocument objPhysicsConfig = io::parseJsonFile(objPhysConfigFilename);
 
   // 2. construct a physicsObjectMetaData
-  PhysicsObjectMetaData physMetaData;
+  PhysicsObjectAttributes physicsObjectAttributes;
 
   // ALEX NOTE: these paths should be relative to the properties file
   std::string propertiesFileDirectory =
@@ -375,31 +379,35 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   // PhysicsObjectMetaData.h) load the mass
   if (objPhysicsConfig.HasMember("mass")) {
     if (objPhysicsConfig["mass"].IsNumber()) {
-      physMetaData.mass_ = objPhysicsConfig["mass"].GetDouble();
+      physicsObjectAttributes.setDouble("mass",
+                                        objPhysicsConfig["mass"].GetDouble());
     }
   }
 
   // load the center of mass (in the local frame of the object)
-  bool shouldComputeMeshBBCenter =
-      true;  // if COM is provided, use it for mesh shift
+  bool shouldComputeMeshBBCenter = true;
+  // if COM is provided, use it for mesh shift
   if (objPhysicsConfig.HasMember("COM")) {
     if (objPhysicsConfig["COM"].IsArray()) {
+      Magnum::Vector3 COM;
       for (rapidjson::SizeType i = 0; i < objPhysicsConfig["COM"].Size(); i++) {
         if (!objPhysicsConfig["COM"][i].IsNumber()) {
           // invalid config
           LOG(ERROR) << " Invalid value in object physics config - COM array";
           break;
         } else {
-          physMetaData.COM_[i] = objPhysicsConfig["COM"][i].GetDouble();
+          COM[i] = objPhysicsConfig["COM"][i].GetDouble();
           shouldComputeMeshBBCenter = false;
         }
       }
+      physicsObjectAttributes.setMagnumVec3("COM", COM);
     }
   }
 
   // load the inertia diagonal
   if (objPhysicsConfig.HasMember("inertia")) {
     if (objPhysicsConfig["inertia"].IsArray()) {
+      Magnum::Vector3 inertia;
       for (rapidjson::SizeType i = 0; i < objPhysicsConfig["inertia"].Size();
            i++) {
         if (!objPhysicsConfig["inertia"][i].IsNumber()) {
@@ -408,17 +416,19 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
               << " Invalid value in object physics config - inertia array";
           break;
         } else {
-          physMetaData.inertia_[i] = objPhysicsConfig["inertia"][i].GetDouble();
+          inertia[i] = objPhysicsConfig["inertia"][i].GetDouble();
         }
       }
+      physicsObjectAttributes.setMagnumVec3("inertia", inertia);
     }
   }
 
   // load the friction coefficient
   if (objPhysicsConfig.HasMember("friction coefficient")) {
     if (objPhysicsConfig["friction coefficient"].IsNumber()) {
-      physMetaData.frictionCoefficient_ =
-          objPhysicsConfig["friction coefficient"].GetDouble();
+      physicsObjectAttributes.setDouble(
+          "frictionCoefficient",
+          objPhysicsConfig["friction coefficient"].GetDouble());
     } else {
       LOG(ERROR)
           << " Invalid value in object physics config - friction coefficient";
@@ -428,8 +438,9 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   // load the restitution coefficient
   if (objPhysicsConfig.HasMember("restitution coefficient")) {
     if (objPhysicsConfig["restitution coefficient"].IsNumber()) {
-      physMetaData.restitutionCoefficient_ =
-          objPhysicsConfig["restitution coefficient"].GetDouble();
+      physicsObjectAttributes.setDouble(
+          "restitutionCoefficient",
+          objPhysicsConfig["restitution coefficient"].GetDouble());
     } else {
       LOG(ERROR) << " Invalid value in object physics config - restitution "
                     "coefficient";
@@ -465,9 +476,8 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   AssetInfo renderMeshinfo;
   AssetInfo collisionMeshinfo;
 
-  bool shiftMeshOrigin =
-      !(physMetaData.COM_[0] == 0 && physMetaData.COM_[1] == 0 &&
-        physMetaData.COM_[2] == 0);
+  Magnum::Vector3 COM = physicsObjectAttributes.getMagnumVec3("COM");
+  bool shiftMeshOrigin = !(COM[0] == 0 && COM[1] == 0 && COM[2] == 0);
 
   //! Load rendering mesh
   // Alex TODO: add other mesh types and unify the COM move: don't want
@@ -484,10 +494,9 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
       renderMeshSuccess =
           loadGeneralMeshData(renderMeshinfo, nullptr, nullptr, true);
     } else if (shiftMeshOrigin) {  // use the provided COM
-      renderMeshSuccess = loadGeneralMeshData(
-          renderMeshinfo, nullptr, nullptr, true,
-          -Magnum::Vector3(physMetaData.COM_[0], physMetaData.COM_[1],
-                           physMetaData.COM_[2]));
+      renderMeshSuccess =
+          loadGeneralMeshData(renderMeshinfo, nullptr, nullptr, true,
+                              -physicsObjectAttributes.getMagnumVec3("COM"));
     } else {  // mesh origin already at COM
       renderMeshSuccess = loadGeneralMeshData(renderMeshinfo);
     }
@@ -507,10 +516,9 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
       collisionMeshSuccess =
           loadGeneralMeshData(collisionMeshinfo, nullptr, nullptr, true);
     } else if (shiftMeshOrigin) {  // use the provided COM
-      collisionMeshSuccess = loadGeneralMeshData(
-          collisionMeshinfo, nullptr, nullptr, true,
-          -Magnum::Vector3(physMetaData.COM_[0], physMetaData.COM_[1],
-                           physMetaData.COM_[2]));
+      collisionMeshSuccess =
+          loadGeneralMeshData(collisionMeshinfo, nullptr, nullptr, true,
+                              -physicsObjectAttributes.getMagnumVec3("COM"));
     } else {  // mesh origin already at COM
       collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo);
     }
@@ -522,9 +530,8 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
 
   // Alex NOTE: if we want to save these after edit we need to save the moved
   // mesh or save the original COM as a member of RigidBody...
-  physMetaData.COM_ = Magnum::Vector3d(
-      0, 0,
-      0);  // once we move the meshes, the COM is aligned with the origin...
+  physicsObjectAttributes.setMagnumVec3("COM", Magnum::Vector3(0));
+  // once we move the meshes, the COM is aligned with the origin...
 
   if (!renderMeshSuccess && !collisionMeshSuccess) {
     // ALEX TODO: for now we only allow objects with SOME mesh file. Failing
@@ -534,24 +541,25 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
     return -1;
   }
 
-  physMetaData.renderMeshHandle_ = renderMeshFilename;
-  physMetaData.collisionMeshHandle_ = collisionMeshFilename;
+  physicsObjectAttributes.setString("renderMeshHandle", renderMeshFilename);
+  physicsObjectAttributes.setString("collisionMeshHandle",
+                                    collisionMeshFilename);
 
   // handle one missing mesh
   if (!renderMeshSuccess)
-    physMetaData.renderMeshHandle_ = collisionMeshFilename;
+    physicsObjectAttributes.setString("renderMeshHandle",
+                                      collisionMeshFilename);
   if (!collisionMeshSuccess)
-    physMetaData.collisionMeshHandle_ = renderMeshFilename;
+    physicsObjectAttributes.setString("collisionMeshHandle",
+                                      renderMeshFilename);
 
   // 5. cache metaData, collision mesh Group
-  physicsObjectLibrary_.emplace(objPhysConfigFilename, physMetaData);
+  physicsObjectLibrary_.emplace(objPhysConfigFilename, physicsObjectAttributes);
   LOG(INFO) << "Config " << objPhysConfigFilename;
   LOG(INFO) << "physMetaData.collisionMeshHandle "
-            << physMetaData.collisionMeshHandle_;
-  LOG(INFO) << "Inertia " << physMetaData.inertia_.x() << " "
-            << physMetaData.inertia_.y();
-  MeshMetaData& meshMetaData =
-      resourceDict_.at(physMetaData.collisionMeshHandle_);
+            << physicsObjectAttributes.getString("collisionMeshHandle");
+  MeshMetaData& meshMetaData = resourceDict_.at(
+      physicsObjectAttributes.getString("collisionMeshHandle"));
 
   int start = meshMetaData.meshIndex.first;
   int end = meshMetaData.meshIndex.second;
@@ -574,65 +582,6 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   physicsObjectConfigList_.push_back(objPhysConfigFilename);
 
   int objectID = physicsObjectConfigList_.size() - 1;
-  return objectID;
-}
-
-// TODO (JH) there lack a keyname to store this object,
-// e.g.objPhysConfigFilename
-int ResourceManager::loadDefaultObject(
-    const std::string renderMeshFilename,
-    const std::string collisionMeshFilename /* "" */) {
-  const bool objectIsLoaded =
-      physicsObjectLibrary_.count(renderMeshFilename) > 0;
-
-  int objectID;
-  if (objectIsLoaded) {
-    std::vector<std::string>::iterator itr =
-        std::find(physicsObjectConfigList_.begin(),
-                  physicsObjectConfigList_.end(), renderMeshFilename);
-    objectID = std::distance(physicsObjectConfigList_.begin(), itr);
-
-  } else {
-    // construct a physicsObjectMetaData
-    PhysicsObjectMetaData physMetaData;
-
-    // load desired meshes
-    bool renderMeshSuccess = false;
-    bool collisionMeshSuccess = false;
-    if (!renderMeshFilename.empty()) {
-      const AssetInfo& renderMeshinfo =
-          assets::AssetInfo::fromPath(renderMeshFilename);
-      renderMeshSuccess = loadGeneralMeshData(renderMeshinfo);
-      if (!renderMeshSuccess)
-        LOG(ERROR) << "Failed to load a physical object's mesh: "
-                   << renderMeshFilename;
-    }
-    if (!collisionMeshFilename.empty()) {
-      const AssetInfo& collisionMeshinfo =
-          assets::AssetInfo::fromPath(collisionMeshFilename);
-      collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo);
-      if (!collisionMeshSuccess)
-        LOG(ERROR) << "Failed to load a physical object's mesh: "
-                   << collisionMeshFilename;
-    }
-
-    if (!renderMeshSuccess && !collisionMeshSuccess) {
-      // ALEX TODO: for now we only allow objects with SOME mesh file. Failing
-      // both loads or having no mesh will cancel the load.
-      LOG(ERROR) << "Failed to load a physical object: no meshes...: ";
-      return false;
-    }
-
-    physMetaData.renderMeshHandle_ = renderMeshFilename;
-    physMetaData.collisionMeshHandle_ = collisionMeshFilename;
-
-    // cache it
-    physicsObjectLibrary_.emplace(renderMeshFilename, physMetaData);
-    physicsObjectConfigList_.push_back(renderMeshFilename);
-
-    objectID = physicsObjectConfigList_.size() - 1;
-  }
-
   return objectID;
 }
 

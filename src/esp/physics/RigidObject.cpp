@@ -12,7 +12,7 @@ RigidObject::RigidObject(scene::SceneNode* parent)
     : scene::SceneNode{*parent} {}
 
 bool RigidObject::initializeScene(
-    assets::PhysicsSceneMetaData& sceneMetaData,
+    assets::PhysicsSceneAttributes& physicsSceneAttributes,
     std::vector<assets::CollisionMeshData> meshGroup) {
   if (initialized_) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
@@ -31,7 +31,7 @@ bool RigidObject::initializeScene(
 }
 
 bool RigidObject::initializeObject(
-    assets::PhysicsObjectMetaData& metaData,
+    assets::PhysicsObjectAttributes& physicsObjectAttributes,
     std::vector<assets::CollisionMeshData> meshGroup) {
   // TODO (JH): Handling static/kinematic object type
   if (initialized_) {

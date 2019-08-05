@@ -8,11 +8,11 @@
 #include <Corrade/Containers/Reference.h>
 #include <Magnum/DebugTools/ForceRenderer.h>
 #include "esp/assets/Asset.h"
+#include "esp/assets/Attributes.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/FRLInstanceMeshData.h"
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
-#include "esp/assets/PhysicsObjectMetaData.h"
 #include "esp/core/esp.h"
 #include "esp/scene/SceneNode.h"
 
@@ -29,11 +29,11 @@ class RigidObject : public scene::SceneNode {
   // or an object, but cannot be both (tracked by _isScene/_isObject_)
   // there is probably a better way to abstract this
   virtual bool initializeScene(
-      assets::PhysicsSceneMetaData& sceneMetaData,
+      assets::PhysicsSceneAttributes& physicsSceneAttributes,
       std::vector<assets::CollisionMeshData> meshGroup);
 
   virtual bool initializeObject(
-      assets::PhysicsObjectMetaData& metaData,
+      assets::PhysicsObjectAttributes& physicsObjectAttributes,
       std::vector<assets::CollisionMeshData> meshGroup);
 
   ~RigidObject();
@@ -100,6 +100,9 @@ class RigidObject : public scene::SceneNode {
   virtual void setLinearDamping(const double linearDamping){};
   virtual void setAngularDamping(const double angularDamping){};
 
+  // public Attributes object for user convenience.
+  assets::Attributes attributes_;
+
  protected:
   bool initialized_ = false;
   bool isScene_ = false;
@@ -107,7 +110,7 @@ class RigidObject : public scene::SceneNode {
   MotionType objectMotionType_;
 
   // used only if isObject_
-  assets::PhysicsObjectMetaData physicsObjectMetaData_;
+  // assets::PhysicsObjectMetaData physicsObjectMetaData_;
 
   //! Needed after changing the pose from Magnum side
   //! Not exposed to end user

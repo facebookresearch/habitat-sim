@@ -14,6 +14,9 @@
 #include "Drawable.h"
 #include "esp/io/io.h"
 
+// Alex debugging
+#include "esp/assets/Attributes.h"
+
 using namespace Magnum;
 using namespace Math::Literals;
 using namespace Corrade;
@@ -142,8 +145,23 @@ Viewer::Viewer(const Arguments& arguments)
 
 }  // end Viewer::Viewer
 
-void Viewer::resetScene() {
-  // TODO
+void Viewer::testAttributes() {
+  assets::Attributes attributes;
+  attributes.setDouble("weight", 10.7);
+  LOG(INFO) << attributes.listAttributes();
+  attributes.setDouble("weight", 11.5);
+  LOG(INFO) << attributes.listAttributes();
+  attributes.setDouble("distance", 100.2345246);
+  LOG(INFO) << attributes.listAttributes();
+  attributes.setDouble("length", 0.2345246);
+  attributes.setDouble("cores", 100);
+  LOG(INFO) << attributes.listAttributes();
+  attributes.eraseAs(assets::DataType::DOUBLE, "length");
+  LOG(INFO) << attributes.listAttributes();
+  attributes.setInt("cores", 100);
+  attributes.setString("name", "Jarvis");
+  attributes.setMagnumVec3("gravity", Magnum::Vector3(0, -9.8, 0));
+  LOG(INFO) << attributes.listAttributes();
 }
 
 void Viewer::addObject(std::string configFile) {
@@ -165,6 +183,8 @@ void Viewer::addObject(std::string configFile) {
   auto& drawables = sceneGraph->getDrawables();
   LOG(INFO) << "Before add drawables";
   int physObjectID = physicsManager_->addObject(configFile, &drawables);
+  // physicsManager_->getAttributes(physObjectID).setStrings("tags",
+  // std::vector<std::string>({"lance", "weapon", "knight"}));
   physicsManager_->setTranslation(physObjectID, new_pos);
 
   // draw random quaternion via the method:
@@ -194,7 +214,7 @@ void Viewer::removeLastObject() {
 void Viewer::invertGravity() {
   if (physicsManager_ == nullptr)
     return;
-  Magnum::Vector3d gravity = physicsManager_->getGravity();
+  Magnum::Vector3 gravity = physicsManager_->getGravity();
   physicsManager_->setGravity(-1 * gravity);
 }
 
@@ -403,6 +423,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::V:
       invertGravity();
+      break;
+    case KeyEvent::Key::T:  // test key
+      testAttributes();
       break;
     default:
       break;

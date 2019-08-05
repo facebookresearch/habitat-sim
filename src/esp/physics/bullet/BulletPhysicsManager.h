@@ -27,20 +27,22 @@ class BulletPhysicsManager : public PhysicsManager {
   // load physical properties and setup the world
   // do_profile indicates timing for FPS
   bool initPhysics(scene::SceneNode* node,
-                   assets::PhysicsSceneMetaData sceneMetaData);
+                   assets::PhysicsManagerAttributes physicsManagerAttributes);
 
   //============ Object/Scene Instantiation =============
   //! Initialize scene given mesh data
   //! Only one scene per simulation
   //! The scene could contain several components
   bool addScene(const assets::AssetInfo& info,
-                assets::PhysicsSceneMetaData& sceneMetaData,
+                assets::PhysicsSceneAttributes& physicsSceneAttributes,
                 std::vector<assets::CollisionMeshData> meshGroup);
 
   //============ Simulator functions =============
   void stepPhysics(double dt = -1.0);
 
-  void setGravity(const Magnum::Vector3d gravity);
+  void setGravity(Magnum::Vector3 gravity);
+
+  const Magnum::Vector3 getGravity();
 
   //============ Interact with objects =============
   // Alex NOTE: engine specifics handled by objects themselves...
@@ -64,13 +66,11 @@ class BulletPhysicsManager : public PhysicsManager {
   std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
 
  private:
-  std::map<int, std::unique_ptr<physics::BulletRigidObject>> existingObjects_;
-
   bool isMeshPrimitiveValid(assets::CollisionMeshData& meshData);
 
   //! Create and initialize rigid object
   int makeRigidObject(std::vector<assets::CollisionMeshData> meshGroup,
-                      assets::PhysicsObjectMetaData metaData);
+                      assets::PhysicsObjectAttributes physicsObjectAttributes);
 
 };  // end class BulletPhysicsManager
 }  // end namespace physics

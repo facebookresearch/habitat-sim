@@ -41,7 +41,7 @@ BulletRigidObject::~BulletRigidObject() {
 }
 
 bool BulletRigidObject::initializeScene(
-    assets::PhysicsSceneMetaData& sceneMetaData,
+    assets::PhysicsSceneAttributes& physicsSceneAttributes,
     std::vector<assets::CollisionMeshData> meshGroup,
     std::shared_ptr<btDiscreteDynamicsWorld> bWorld) {
   if (initialized_) {
@@ -111,7 +111,9 @@ bool BulletRigidObject::initializeScene(
         btCollisionObject::CF_STATIC_OBJECT);*/
 
     bSceneCollisionObjects_.back()->setFriction(
-        sceneMetaData.frictionCoefficient_);
+        physicsSceneAttributes.getDouble("frictionCoefficient"));
+    bSceneCollisionObjects_.back()->setRestitution(
+        physicsSceneAttributes.getDouble("restitutionCoefficient"));
     bWorld->addCollisionObject(bSceneCollisionObjects_.back().get());
   }
 
@@ -123,7 +125,7 @@ bool BulletRigidObject::initializeScene(
 }  // end BulletRigidObject::initializeScene
 
 bool BulletRigidObject::initializeObject(
-    assets::PhysicsObjectMetaData& metaData,
+    assets::PhysicsObjectAttributes& physicsObjectAttributes,
     std::vector<assets::CollisionMeshData> meshGroup,
     std::shared_ptr<btDiscreteDynamicsWorld> bWorld) {
   // TODO (JH): Handling static/kinematic object type
@@ -143,7 +145,7 @@ bool BulletRigidObject::initializeObject(
   btIndexedMesh bulletMesh;
 
   //! Physical parameters
-  double margin = metaData.margin_;
+  double margin = physicsObjectAttributes.getDouble("margin");
 
   //! Iterate through all mesh components for one object
   //! The components are combined into a convex compound shape
@@ -190,13 +192,15 @@ bool BulletRigidObject::initializeObject(
   //! Set properties
   bObjectShape_->setMargin(margin);
 
-  btVector3 bInertia = btVector3(metaData.inertia_);
+  btVector3 bInertia =
+      btVector3(physicsObjectAttributes.getMagnumVec3("inertia"));
 
   if (bInertia[0] == 0. && bInertia[1] == 0. && bInertia[2] == 0.) {
     // Alex TODO: allow bullet to compute the inertia tensor if we don't have
     // one
-    bObjectShape_->calculateLocalInertia(metaData.mass_,
-                                         bInertia);  // overrides bInertia
+    bObjectShape_->calculateLocalInertia(
+        physicsObjectAttributes.getDouble("mass"),
+        bInertia);  // overrides bInertia
     LOG(INFO) << "Automatic object inertia computed: " << bInertia.x() << " "
               << bInertia.y() << " " << bInertia.z();
   } else {
@@ -208,18 +212,21 @@ bool BulletRigidObject::initializeObject(
   bObjectMotionState_ = new Magnum::BulletIntegration::MotionState(*this);
   btRigidBody::btRigidBodyConstructionInfo info =
       btRigidBody::btRigidBodyConstructionInfo(
-          metaData.mass_, &(bObjectMotionState_->btMotionState()),
-          bObjectShape_.get(), bInertia);
-  info.m_friction = metaData.frictionCoefficient_;
-  info.m_restitution = metaData.restitutionCoefficient_;
-  info.m_linearDamping = metaData.linDamping_;
-  info.m_angularDamping = metaData.angDamping_;
+          physicsObjectAttributes.getDouble("mass"),
+          &(bObjectMotionState_->btMotionState()), bObjectShape_.get(),
+          bInertia);
+  info.m_friction = physicsObjectAttributes.getDouble("frictionCoefficient");
+  info.m_restitution =
+      physicsObjectAttributes.getDouble("restitutionCoefficient");
+  info.m_linearDamping = physicsObjectAttributes.getDouble("linDamping");
+  info.m_angularDamping = physicsObjectAttributes.getDouble("angDamping");
   // Magnum::Vector3 inertia = metaData.inertia;
   // info.m_localInertia   = bInertia(inertia.x(), inertia.y(), inertia.z());
 
   //! Create rigid body
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
-  LOG(INFO) << "Setting collision mass " << metaData.mass_ << " flags "
+  LOG(INFO) << "Setting collision mass "
+            << physicsObjectAttributes.getDouble("mass") << " flags "
             << bObjectRigidBody_->getCollisionFlags();
 
   //! Add to world
@@ -227,10 +234,10 @@ bool BulletRigidObject::initializeObject(
   // LOG(INFO) << "Body Construction test: after";
   // LOG(INFO) << "Rigid body: initialized";
 
-  //! Sync render pose with physics
-  syncPose();
   bWorld_ = bWorld;
   initialized_ = true;
+  //! Sync render pose with physics
+  syncPose();
   return true;
 
 }  // end BulletRigidObject::initializeObject

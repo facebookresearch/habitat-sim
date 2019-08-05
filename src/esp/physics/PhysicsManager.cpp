@@ -37,8 +37,9 @@
 namespace esp {
 namespace physics {
 
-bool PhysicsManager::initPhysics(scene::SceneNode* node,
-                                 assets::PhysicsSceneMetaData sceneMetaData) {
+bool PhysicsManager::initPhysics(
+    scene::SceneNode* node,
+    assets::PhysicsManagerAttributes physicsManagerAttributes) {
   LOG(INFO) << "Initializing Base Physics Engine...";
 
   physicsNode_ = node;
@@ -46,7 +47,6 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node,
   sceneNode_ = std::make_shared<physics::RigidObject>(physicsNode_);
   initialized_ = true;
 
-  sceneMetaData_ = sceneMetaData;
   return true;
 }
 
@@ -56,7 +56,7 @@ PhysicsManager::~PhysicsManager() {
 
 bool PhysicsManager::addScene(
     const assets::AssetInfo& info,
-    assets::PhysicsSceneMetaData& sceneMetaData,
+    assets::PhysicsSceneAttributes& physicsSceneAttributes,
     std::vector<assets::CollisionMeshData> meshGroup) {
   // Test Mesh primitive is valid
   for (assets::CollisionMeshData& meshData : meshGroup) {
@@ -77,7 +77,8 @@ bool PhysicsManager::addScene(
   }
 
   //! Initialize scene
-  bool sceneSuccess = sceneNode_->initializeScene(sceneMetaData, meshGroup);
+  bool sceneSuccess =
+      sceneNode_->initializeScene(physicsSceneAttributes, meshGroup);
   LOG(INFO) << "Init scene done";
 
   return sceneSuccess;
@@ -89,8 +90,8 @@ int PhysicsManager::addObject(const int resObjectID, DrawableGroup* drawables) {
   //! Test Mesh primitive is valid
   std::vector<assets::CollisionMeshData> meshGroup =
       resourceManager_->getCollisionMesh(configFile);
-  assets::PhysicsObjectMetaData metaData =
-      resourceManager_->getPhysicsMetaData(configFile);
+  assets::PhysicsObjectAttributes physicsObjectAttributes =
+      resourceManager_->getPhysicsObjectAttributes(configFile);
   for (assets::CollisionMeshData& meshData : meshGroup) {
     if (!isMeshPrimitiveValid(meshData)) {
       return false;
@@ -98,7 +99,10 @@ int PhysicsManager::addObject(const int resObjectID, DrawableGroup* drawables) {
   }
 
   //! Instantiate with mesh pointer
-  int nextObjectID_ = makeRigidObject(meshGroup, metaData);
+  int nextObjectID_ = makeRigidObject(meshGroup, physicsObjectAttributes);
+  LOG(INFO) << "this is the spot: " << std::to_string(nextObjectID_);
+  LOG(INFO) << "numExistingObjects = "
+            << std::to_string(existingObjects_.size());
   if (nextObjectID_ < 0) {
     LOG(ERROR) << "Initialize unsuccessful";
     return -1;
@@ -106,6 +110,7 @@ int PhysicsManager::addObject(const int resObjectID, DrawableGroup* drawables) {
 
   //! Draw object via resource manager
   //! Render node as child of physics node
+  LOG(INFO) << "this is the spot" << existingObjects_.at(nextObjectID_);
   resourceManager_->loadObject(
       configFile, existingObjects_.at(nextObjectID_).get(), drawables);
 
@@ -150,16 +155,17 @@ int PhysicsManager::deallocateObjectID(int physObjectID) {
 //! Create and initialize rigid object
 int PhysicsManager::makeRigidObject(
     std::vector<assets::CollisionMeshData> meshGroup,
-    assets::PhysicsObjectMetaData metaData) {
+    assets::PhysicsObjectAttributes physicsObjectAttributes) {
   //! Create new physics object (child node of sceneNode_)
 
   int newObjectID = allocateObjectID();
   existingObjects_.emplace(
-      newObjectID, std::make_unique<physics::RigidObject>(sceneNode_.get()));
+      newObjectID, std::make_shared<physics::RigidObject>(sceneNode_.get()));
 
   //! Instantiate with mesh pointer
   bool objectSuccess =
-      existingObjects_.at(newObjectID)->initializeObject(metaData, meshGroup);
+      existingObjects_.at(newObjectID)
+          ->initializeObject(physicsObjectAttributes, meshGroup);
   if (!objectSuccess) {
     deallocateObjectID(newObjectID);
     existingObjects_.erase(newObjectID);
@@ -176,15 +182,15 @@ bool PhysicsManager::isMeshPrimitiveValid(assets::CollisionMeshData& meshData) {
 // ALEX TODO: this function should do any engine specific setting which is
 // necessary to change the timestep
 void PhysicsManager::setTimestep(double dt) {
-  sceneMetaData_.timestep_ = dt;
+  fixedTimeStep_ = dt;
 }
 
-void PhysicsManager::setGravity(const Magnum::Vector3d gravity) {
-  sceneMetaData_.gravity_ = gravity;
+void PhysicsManager::setGravity(Magnum::Vector3 gravity) {
+  // Can't do this for kinematic simulator
 }
 
-const Magnum::Vector3d PhysicsManager::getGravity() {
-  return sceneMetaData_.gravity_;
+const Magnum::Vector3 PhysicsManager::getGravity() {
+  return Magnum::Vector3(0);
 }
 
 void PhysicsManager::stepPhysics(double dt) {
@@ -196,13 +202,14 @@ void PhysicsManager::stepPhysics(double dt) {
   // NOTE: simulator step goes here in derived classes...
 
   if (dt < 0)
-    dt = sceneMetaData_.timestep_;
+    dt = fixedTimeStep_;
 
-  // Alex TODO: handle in-between step times? Ideally dt is a multiple of
+  // handle in-between step times? Ideally dt is a multiple of
   // sceneMetaData_.timestep
   double targetTime = worldTime_ + dt;
-  while (worldTime_ < targetTime)
-    worldTime_ += sceneMetaData_.timestep_;
+  while (worldTime_ < targetTime)  // per fixed-step operations can be added
+                                   // here
+    worldTime_ += fixedTimeStep_;
 }
 
 //! Profile function. In BulletPhysics stationery objects are

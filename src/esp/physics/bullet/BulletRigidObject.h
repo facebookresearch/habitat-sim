@@ -6,7 +6,6 @@
 
 #include <btBulletDynamicsCommon.h>
 #include "esp/assets/Asset.h"
-#include "esp/assets/PhysicsObjectMetaData.h"
 #include "esp/core/esp.h"
 
 #include "esp/physics/RigidObject.h"
@@ -20,13 +19,14 @@ class BulletRigidObject : public RigidObject {
 
   ~BulletRigidObject();
 
-  bool initializeScene(assets::PhysicsSceneMetaData& sceneMetaData,
+  bool initializeScene(assets::PhysicsSceneAttributes& physicsSceneAttributes,
                        std::vector<assets::CollisionMeshData> meshGroup,
                        std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
 
-  bool initializeObject(assets::PhysicsObjectMetaData& metaData,
-                        std::vector<assets::CollisionMeshData> meshGroup,
-                        std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
+  bool initializeObject(
+      assets::PhysicsObjectAttributes& physicsObjectAttributes,
+      std::vector<assets::CollisionMeshData> meshGroup,
+      std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
 
   //! Check whether object is being actively simulated, or sleeping
   bool isActive();

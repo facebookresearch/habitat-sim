@@ -16,12 +16,12 @@
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
 
 #include "Asset.h"
+#include "Attributes.h"
 #include "BaseMesh.h"
 #include "CollisionMeshData.h"
 #include "GltfMeshData.h"
 #include "MeshData.h"
 #include "MeshMetaData.h"
-#include "PhysicsObjectMetaData.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneNode.h"
 
@@ -53,7 +53,6 @@ namespace assets {
 
 class ResourceManager {
  public:
-  // TODO:
   // Singleton
   // a common design pattern for implementing
   // subsystems such as "resource manager", thats make up an engine is
@@ -87,10 +86,9 @@ class ResourceManager {
   //! reseats _physicsManager to implementation supplied in sceneMetaData
   bool loadScene(const AssetInfo& info,
                  std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-                 PhysicsSceneMetaData sceneMetaData,
+                 PhysicsManagerAttributes physicsManagerAttributes,
                  scene::SceneNode* parent = nullptr,
-                 DrawableGroup* drawables = nullptr,
-                 bool resetObjectLibrary = false);
+                 DrawableGroup* drawables = nullptr);
 
   //! Load Scene data + instantiate scene
   //! Both load + instantiate scene
@@ -105,11 +103,10 @@ class ResourceManager {
       std::shared_ptr<physics::PhysicsManager>& _physicsManager,
       scene::SceneNode* parent = nullptr,
       DrawableGroup* drawables = nullptr,
-      std::string physicsFilename = "data/default.phys_scene_config.json",
-      bool resetObjectLibrary = false);
+      std::string physicsFilename = "data/default.phys_scene_config.json");
 
   // load a PhysicsSceneMetaData object from a config file
-  PhysicsSceneMetaData loadPhysicsConfig(
+  PhysicsManagerAttributes loadPhysicsConfig(
       std::string physicsFilename = "data/default.phys_scene_config.json");
 
   //! Load Object data and store internally
@@ -123,11 +120,6 @@ class ResourceManager {
   // filename
   int loadObject(const std::string objPhysConfigFilename);
 
-  // load an object into the physicsObjectLibrary_ with default physical
-  // parameters from absolute path to mesh files
-  int loadDefaultObject(const std::string renderMeshFilename,
-                        const std::string collisionMeshFilename = "");
-
   //======== Accessor functions ========
   std::vector<assets::CollisionMeshData> getCollisionMesh(
       const std::string configFile);
@@ -137,7 +129,8 @@ class ResourceManager {
   int getObjectID(const std::string configFile);
   std::string getObjectConfig(const int objectID);
 
-  PhysicsObjectMetaData& getPhysicsMetaData(const std::string configFile);
+  PhysicsObjectAttributes& getPhysicsObjectAttributes(
+      const std::string configFile);
 
   int getNumLibraryObjects() { return physicsObjectConfigList_.size(); };
 
@@ -236,14 +229,22 @@ class ResourceManager {
   // library of physics object parameters mapped from config filename (used by
   // physicsManager to instantiate physical objects) maps:
   // "data/objects/cheezit.phys_properties.json" -> physicalMetaData
-  std::map<std::string, PhysicsObjectMetaData> physicsObjectLibrary_;
+  std::map<std::string, PhysicsObjectAttributes> physicsObjectLibrary_;
+  // library of physics scene attributes for resetting/switching contexts
+  std::map<std::string, PhysicsSceneAttributes> physicsSceneLibrary_;
+  // library of physics manager attributes for resetting/swapping simulators or
+  // simulation parameters
+  std::map<std::string, PhysicsManagerAttributes> physicsManagerLibrary_;
+
   // maps: "data/objects/cheezit.phys_properties.json" -> collesionMesh group
   std::map<std::string, std::vector<CollisionMeshData>>
       collisionMeshGroups_;  // meshes for the object hierarchies
   // vector of "data/objects/cheezit.phys_properties.json"
   std::vector<std::string>
       physicsObjectConfigList_;  // NOTE: can't get keys from the map (easily),
-                                 // so store them for iteration
+                                 // so store them for iteration //TODO: remove
+                                 // this, unnecessary: use an iterator to get
+                                 // the keys
 
   // ======== Clone Object Node ========
 
