@@ -18,25 +18,11 @@
 #include <Magnum/GL/BufferTextureFormat.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
-// #include <Magnum/GL/TextureFormat.h>
 
 #include "esp/core/esp.h"
 #include "esp/gfx/PTexMeshShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
-
-#if __linux__
-#include <linux/version.h>
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 22)
-#define _MAP_POPULATE_AVAILABLE
-#endif
-#endif
-
-#ifdef _MAP_POPULATE_AVAILABLE
-#define MMAP_FLAGS (MAP_PRIVATE | MAP_POPULATE)
-#else
-#define MMAP_FLAGS MAP_PRIVATE
-#endif
 
 static constexpr int ROTATION_SHIFT = 30;
 static constexpr int FACE_MASK = 0x3FFFFFFF;
