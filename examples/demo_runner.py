@@ -11,12 +11,12 @@ import time
 from enum import Enum
 
 import numpy as np
+from PIL import Image
 
 import habitat_sim
 import habitat_sim.agent
 import habitat_sim.bindings as hsim
 import habitat_sim.utils as utils
-from PIL import Image
 from settings import default_sim_settings, make_cfg
 
 _barrier = None
