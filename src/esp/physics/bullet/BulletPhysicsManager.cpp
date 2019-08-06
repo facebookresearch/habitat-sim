@@ -162,16 +162,17 @@ void BulletPhysicsManager::stepPhysics(double dt) {
     dt = fixedTimeStep_;
 
   // ==== Physics stepforward ======
-  auto start = std::chrono::system_clock::now();
+  // NOTE: chrono breaks devfair build
+  // auto start = std::chrono::system_clock::now();
 
   // Alex NOTE: worldTime_ will always be a multiple of sceneMetaData_.timestep
   int numSubStepsTaken =
       bWorld_->stepSimulation(dt, maxSubSteps_, fixedTimeStep_);
   worldTime_ += numSubStepsTaken * fixedTimeStep_;
 
-  auto end = std::chrono::system_clock::now();
+  // auto end = std::chrono::system_clock::now();
 
-  std::chrono::duration<float> elapsed_seconds = end - start;
+  // std::chrono::duration<float> elapsed_seconds = end - start;
   // LOG(INFO) << "Step physics dt | compute time: " << dt << " | " <<
   // elapsed_seconds.count();
 }

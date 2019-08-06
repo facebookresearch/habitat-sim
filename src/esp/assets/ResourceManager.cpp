@@ -55,7 +55,6 @@ bool ResourceManager::loadScene(const AssetInfo& info,
     LOG(ERROR) << "Cannot load from file " << info.filepath;
     meshSuccess = false;
   } else {
-    scene::SceneNode* sceneNode = nullptr;
     if (info.type == AssetType::FRL_INSTANCE_MESH ||
         info.type == AssetType::INSTANCE_MESH) {
       LOG(INFO) << "Loading FRL/Instance mesh data";
@@ -98,6 +97,7 @@ bool ResourceManager::loadScene(
   // In-memory representation of scene meta data
   PhysicsManagerAttributes physicsManagerAttributes =
       loadPhysicsConfig(physicsFilename);
+  physicsManagerLibrary_[physicsFilename] = physicsManagerAttributes;
 
   return loadScene(info, _physicsManager, physicsManagerAttributes, parent,
                    drawables);
@@ -146,6 +146,21 @@ bool ResourceManager::loadScene(
   // initialize the physics simulator
   _physicsManager->initPhysics(parent, physicsManagerAttributes);
 
+  if (!meshSuccess) {
+    LOG(ERROR) << "Physics manager loaded. Scene mesh load failed, aborting "
+                  "scene initialization.";
+    return meshSuccess;
+  }
+
+  // TODO: enable loading of multiple scenes from file and storing individual
+  // parameters instead of scene properties in manager global config
+  physicsSceneLibrary_[info.filepath].setDouble(
+      "frictionCoefficient",
+      physicsManagerAttributes.getDouble("frictionCoefficient"));
+  physicsSceneLibrary_[info.filepath].setDouble(
+      "restitutionCoefficient",
+      physicsManagerAttributes.getDouble("restitutionCoefficient"));
+
   //! CONSTRUCT SCENE
   const std::string& filename = info.filepath;
   MeshMetaData& metaData = resourceDict_.at(filename);
@@ -171,8 +186,9 @@ bool ResourceManager::loadScene(
       LOG(INFO) << "Loading PLY scene";
       GenericInstanceMeshData* insMeshData =
           dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
-      quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
-      Magnum::Quaternion quat = Magnum::Quaternion(quatf);
+      quatf quatFront =
+          quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
+      Magnum::Quaternion quat = Magnum::Quaternion(quatFront);
       CollisionMeshData& meshData = insMeshData->getCollisionMeshData();
       meshGroup.push_back(meshData);
     }
@@ -180,8 +196,9 @@ bool ResourceManager::loadScene(
     // GLB Mesh
     else if (info.type == AssetType::MP3D_MESH) {
       LOG(INFO) << "Loading GLB scene";
-      quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
-      Magnum::Quaternion quat = Magnum::Quaternion(quatf);
+      quatf quatFront =
+          quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
+      Magnum::Quaternion quat = Magnum::Quaternion(quatFront);
       GltfMeshData* gltfMeshData =
           dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
       CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
@@ -587,8 +604,8 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
 
 void ResourceManager::transformAxis(const AssetInfo& info,
                                     std::vector<CollisionMeshData> meshGroup) {
-  quatf quatf = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
-  Magnum::Quaternion quat = Magnum::Quaternion(quatf);
+  quatf quatFront = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
+  Magnum::Quaternion quat = Magnum::Quaternion(quatFront);
   // LOG(INFO) << "quat: " << (float)(quat.angle()) << " [" << quat.axis().x()
   // << " " << quat.axis().y() << " " << quat.axis().z() << "]";
   Magnum::Matrix4 transform;

@@ -84,4 +84,4 @@ if (BUILD_TEST)
 endif()
 
 # pybind bindings
-#add_subdirectory(esp/bindings)
+add_subdirectory(esp/bindings)

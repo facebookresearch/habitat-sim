@@ -99,8 +99,8 @@ bool BulletRigidObject::initializeScene(
     bSceneShapes_.emplace_back(
         std::make_unique<btBvhTriangleMeshShape>(bSceneArray_.get(), true));
     double mass = 0.0;
-    btVector3 bInertia(0.0, 0.0, 0.0);
-    bSceneShapes_.back()->calculateLocalInertia(mass, bInertia);
+    // btVector3 bInertia(0.0, 0.0, 0.0);
+    // bSceneShapes_.back()->calculateLocalInertia(mass, bInertia);
 
     //! Bullet rigid body setup
     bSceneCollisionObjects_.emplace_back(std::make_unique<btCollisionObject>());

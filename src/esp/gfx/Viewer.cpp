@@ -162,6 +162,13 @@ void Viewer::testAttributes() {
   attributes.setString("name", "Jarvis");
   attributes.setMagnumVec3("gravity", Magnum::Vector3(0, -9.8, 0));
   LOG(INFO) << attributes.listAttributes();
+  attributes.setVecStrings("tags",
+                           std::vector<std::string>{"yes", "no", "maybe"});
+  LOG(INFO) << attributes.listAttributes();
+  attributes.appendVecStrings("tags", "go!!");
+  LOG(INFO) << attributes.listAttributes();
+  attributes.removeFromVecString("tags", "go!!");
+  LOG(INFO) << attributes.listAttributes();
 }
 
 void Viewer::addObject(std::string configFile) {

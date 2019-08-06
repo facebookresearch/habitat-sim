@@ -175,6 +175,14 @@ void Attributes::appendVecStrings(std::string key, std::string val) {
   vecStringsMap_[key].push_back(val);
 }
 
+void Attributes::removeFromVecString(std::string key, std::string val) {
+  std::vector<std::string>& stringVec = vecStringsMap_[key];
+  std::vector<std::string>::iterator position =
+      std::find(stringVec.begin(), stringVec.end(), val);
+  if (position != stringVec.end())  // == .end() means the element was not found
+    stringVec.erase(position);
+}
+
 // return a formated string exposing the current contents of the attributes maps
 std::string Attributes::listAttributes() {
   std::string attributes =

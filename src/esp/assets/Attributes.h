@@ -74,6 +74,8 @@ class Attributes {
 
   // add a string to a string vector (to avoid get/set copying)
   void appendVecStrings(std::string key, std::string val);
+  // remove a string from a string vector (to avoid get/set copying)
+  void removeFromVecString(std::string key, std::string val);
 
   // return a formated string exposing the current contents of the attributes
   // maps
