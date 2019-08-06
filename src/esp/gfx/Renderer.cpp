@@ -55,7 +55,13 @@ struct Renderer::Impl {
                             depthRenderbuffer_)
         .mapForDraw({{0, GL::Framebuffer::ColorAttachment{0}},
                      {1, GL::Framebuffer::ColorAttachment{1}},
-                     {2, GL::Framebuffer::ColorAttachment{2}}});
+#ifndef MAGNUM_TARGET_WEBGL
+    // HACK (AXC)!!! Disable to avoids following error in webgl
+    //   glClear: can't be called on integer buffers
+    // Will need to do something to get objectId to work for webgl
+                     {2, GL::Framebuffer::ColorAttachment{2}}
+#endif
+                     });
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(GL::FramebufferTarget::Draw) ==
         GL::Framebuffer::Status::Complete);
