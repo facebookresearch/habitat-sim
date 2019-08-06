@@ -16,7 +16,7 @@ jobs:
       - run:
           name: setup
           command: |
-              sudo pip install -U black "isort[pyproject]" numpy pytest sphinx
+              sudo pip install -U black "isort[pyproject]" numpy pytest sphinx pillow tqdm
               sudo pip install -r requirements.txt --progress-bar off
       - run:
           name: run black
