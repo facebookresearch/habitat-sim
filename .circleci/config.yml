@@ -166,7 +166,7 @@ jobs:
           name: Download test data
           command: |
 
-              if [ ! -d ./habitat-sim/data ]
+              if [ ! -d ./habitat-sim/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb ]
               then
                 cd habitat-sim
                 wget http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip
