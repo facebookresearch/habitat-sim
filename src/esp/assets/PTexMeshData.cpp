@@ -4,12 +4,16 @@
 
 #include "PTexMeshData.h"
 
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
 #include <vector>
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/GL/BufferTextureFormat.h>
 #include <Magnum/ImageView.h>
@@ -20,6 +24,19 @@
 #include "esp/gfx/PTexMeshShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
+
+#if __linux__
+#include <linux/version.h>
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 22)
+#define _MAP_POPULATE_AVAILABLE
+#endif
+#endif
+
+#ifdef _MAP_POPULATE_AVAILABLE
+#define MMAP_FLAGS (MAP_PRIVATE | MAP_POPULATE)
+#else
+#define MMAP_FLAGS MAP_PRIVATE
+#endif
 
 static constexpr int ROTATION_SHIFT = 30;
 static constexpr int FACE_MASK = 0x3FFFFFFF;
@@ -613,6 +630,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
                                   currentMesh->abo);
     currentMesh->abo.setData(adjFaces[iMesh],
                              Magnum::GL::BufferUsage::StaticDraw);
+
+    // experiment code (may not work):
     currentMesh->mesh.setPrimitive(Magnum::GL::MeshPrimitive::LinesAdjacency)
         .setCount(currentMesh->ibo.size() / 2)
         .addVertexBuffer(currentMesh->vbo, 0, gfx::PTexMeshShader::Position{})
@@ -627,16 +646,27 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     const std::string rgbFile = Corrade::Utility::Directory::join(
         atlasFolder_, std::to_string(iMesh) + "-color-ptex.rgb");
 
-    ASSERT(io::exists(rgbFile));
+    ASSERT(io::exists(rgbFile), Error : Cannot find the rgb file);
 
     std::cout << "\rLoading atlas " << iMesh + 1 << "/"
               << renderingBuffers_.size() << " from " << rgbFile << "... ";
     std::cout.flush();
 
-    Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter> data =
-        Cr::Utility::Directory::mapRead(rgbFile);
-    const int dim = static_cast<int>(std::sqrt(data.size() / 3));  // square
+    const size_t numBytes = io::fileSize(rgbFile);
+    const int dim = static_cast<int>(std::sqrt(numBytes / 3));  // square
+
+    // Open file
+    int fd = open(std::string(rgbFile).c_str(), O_RDONLY, 0);
+    // MAP_POPULATE does not work on mac. It is to reduce the penalty of page
+    // faults. Code should be OK without it. void* mmappedData = mmap(NULL,
+    // numBytes, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);
+    void* mmappedData = mmap(NULL, numBytes, PROT_READ, MAP_PRIVATE, fd, 0);
+
+    Corrade::Containers::ArrayView<unsigned char> data(
+        (unsigned char*)(mmappedData), numBytes);
+
     // atlas
+    // the size of each image is dim x dim x 3 (RGB), which equals to numBytes
     Magnum::ImageView2D image(Magnum::PixelFormat::RGB8UI, {dim, dim}, data);
     renderingBuffers_[iMesh]
         ->tex.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
@@ -644,6 +674,9 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
         .setMinificationFilter(Magnum::GL::SamplerFilter::Linear)
         // .setStorage(1, Magnum::GL::TextureFormat::RGB8UI, image.size())
         .setSubImage(0, {}, image);
+
+    munmap(mmappedData, numBytes);
+    close(fd);
 
     std::cout << "done" << std::endl;
   }

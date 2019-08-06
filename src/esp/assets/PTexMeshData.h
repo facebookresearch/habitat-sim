@@ -42,8 +42,7 @@ class PTexMeshData : public BaseMesh {
 
   // ==== geometry ====
   void load(const std::string& meshFile, const std::string& atlasFolder);
-  float exposure() const;
-  void setExposure(const float& val);
+
   uint32_t tileSize() const { return tileSize_; }
 
   const std::vector<MeshData>& meshes() const;
@@ -61,13 +60,29 @@ class PTexMeshData : public BaseMesh {
   virtual void uploadBuffersToGPU(bool forceReload = false) override;
   virtual Magnum::GL::Mesh* getMagnumGLMesh(int submeshID) override;
 
+  float exposure() const;
+  void setExposure(const float& val);
+
+  // TODO:
+  float gamma() const;
+  void setGamma(const float& val);
+
+  float saturation() const;
+  void setSaturation(const float& val);
+
  protected:
   void loadMeshData(const std::string& meshFile);
 
   float splitSize_ = 0.0f;
   uint32_t tileSize_ = 0;
+
   float exposure_ = 1.0f;
+  float gamma_ = 1.0f;
+  float saturation_ = 1.0f;
+  bool isHdr_ = false;
+
   std::string atlasFolder_;
+
   std::vector<MeshData> submeshes_;
 
   // ==== rendering ====
