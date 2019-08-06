@@ -49,9 +49,13 @@ class BulletPhysicsManager : public PhysicsManager {
 
   //============ Bullet-specific Object Setter functions =============
   void setMargin(const int physObjectID, const double margin);
+  void setSceneFrictionCoefficient(const double frictionCoefficient);
+  void setSceneRestitutionCoefficient(const double restitutionCoefficient);
 
   //============ Bullet-specific Object Getter functions =============
   const double getMargin(const int physObjectID);
+  const double getSceneFrictionCoefficient();
+  const double getSceneRestitutionCoefficient();
 
  protected:
   //! The world has to live longer than the scene because RigidBody

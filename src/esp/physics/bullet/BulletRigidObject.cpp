@@ -320,11 +320,12 @@ void BulletRigidObject::setMass(const double mass) {
 }
 
 void BulletRigidObject::setCOM(const Magnum::Vector3 COM) {
-  if (isScene_)
+  // Current not supported
+  /*if (isScene_)
     return;
   else
     bObjectRigidBody_->setCenterOfMassTransform(
-        btTransform(Magnum::Math::Matrix4<float>::translation(COM)));
+        btTransform(Magnum::Math::Matrix4<float>::translation(COM)));*/
 }
 
 void BulletRigidObject::setInertia(const Magnum::Vector3 inertia) {
@@ -335,10 +336,11 @@ void BulletRigidObject::setInertia(const Magnum::Vector3 inertia) {
 }
 
 void BulletRigidObject::setScale(const double scale) {
-  if (isScene_)
+  // Currently not supported
+  /*if (isScene_)
     return;
   else
-    bObjectRigidBody_->setLinearFactor(btVector3(scale, scale, scale));
+    bObjectRigidBody_->setLinearFactor(btVector3(scale, scale, scale));*/
 }
 
 void BulletRigidObject::setFrictionCoefficient(

@@ -78,8 +78,11 @@ class PhysicsManager {
   virtual const Magnum::Vector3 getGravity();
 
   // =========== Scene Getter/Setter functions ===========
-  virtual double getSceneFrictionCoefficient() { return 0.0; };
+  virtual const double getSceneFrictionCoefficient() { return 0.0; };
   virtual void setSceneFrictionCoefficient(const double frictionCoefficient){};
+  virtual const double getSceneRestitutionCoefficient() { return 0.0; };
+  virtual void setSceneRestitutionCoefficient(
+      const double restitutionCoefficient){};
 
   //============ Object Transformation functions =============
   void setTransformation(const int physObjectID,

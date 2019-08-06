@@ -185,6 +185,20 @@ void BulletPhysicsManager::setMargin(const int physObjectID,
   }
 }
 
+void BulletPhysicsManager::setSceneFrictionCoefficient(
+    const double frictionCoefficient) {
+  std::dynamic_pointer_cast<physics::BulletRigidObject, physics::RigidObject>(
+      sceneNode_)
+      ->setFrictionCoefficient(frictionCoefficient);
+}
+
+void BulletPhysicsManager::setSceneRestitutionCoefficient(
+    const double restitutionCoefficient) {
+  std::dynamic_pointer_cast<physics::BulletRigidObject, physics::RigidObject>(
+      sceneNode_)
+      ->setRestitutionCoefficient(restitutionCoefficient);
+}
+
 const double BulletPhysicsManager::getMargin(const int physObjectID) {
   if (existingObjects_.count(physObjectID) > 0) {
     return std::dynamic_pointer_cast<BulletRigidObject>(
@@ -193,6 +207,18 @@ const double BulletPhysicsManager::getMargin(const int physObjectID) {
   } else {
     return -1.0;
   }
+}
+
+const double BulletPhysicsManager::getSceneFrictionCoefficient() {
+  return std::dynamic_pointer_cast<physics::BulletRigidObject,
+                                   physics::RigidObject>(sceneNode_)
+      ->getFrictionCoefficient();
+}
+
+const double BulletPhysicsManager::getSceneRestitutionCoefficient() {
+  return std::dynamic_pointer_cast<physics::BulletRigidObject,
+                                   physics::RigidObject>(sceneNode_)
+      ->getRestitutionCoefficient();
 }
 
 }  // namespace physics
