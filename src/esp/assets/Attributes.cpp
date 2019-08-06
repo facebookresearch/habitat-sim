@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "Attributes.h"
+#include <algorithm>
 
 namespace esp {
 namespace assets {

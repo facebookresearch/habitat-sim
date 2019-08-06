@@ -73,7 +73,8 @@ bool PhysicsManager::addScene(
       LOG(INFO) << "Initialize FRL scene";
       break;  // FRL mesh
     default:
-      LOG(INFO) << "Initialize GLB scene";  // GLB mesh data
+      LOG(INFO) << "Initialize GLB scene";
+      break;  // GLB mesh data
   }
 
   //! Initialize scene
