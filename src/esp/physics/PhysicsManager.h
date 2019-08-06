@@ -111,25 +111,29 @@ class PhysicsManager {
 
   //============ Object Setter functions =============
   void setMass(const int physObjectID, const double mass);
-  void setCOM(const int physObjectID, const Magnum::Vector3d COM);
+  void setCOM(const int physObjectID, const Magnum::Vector3 COM);
   void setInertia(const int physObjectID, const Magnum::Vector3 inertia);
   void setScale(const int physObjectID, const double scale);
   void setFrictionCoefficient(const int physObjectID,
                               const double frictionCoefficient);
-  void setRestitutionCoeffcient(const int physObjectID,
-                                const double restitutionCoefficient);
+  void setRestitutionCoefficient(const int physObjectID,
+                                 const double restitutionCoefficient);
   void setLinearDamping(const int physObjectID, const double linDamping);
   void setAngularDamping(const int physObjectID, const double angDamping);
 
   //============ Object Getter functions =============
   const double getMass(const int physObjectID);
-  const Magnum::Vector3d getCOM(const int physObjectID);
+  const Magnum::Vector3 getCOM(const int physObjectID);
   const Magnum::Vector3 getInertia(const int physObjectID);
   const double getScale(const int physObjectID);
   const double getFrictionCoefficient(const int physObjectID);
-  const double getRestitutionCoeffcient(const int physObjectID);
+  const double getRestitutionCoefficient(const int physObjectID);
   const double getLinearDamping(const int physObjectID);
   const double getAngularDamping(const int physObjectID);
+
+  //============= Platform dependent function =============
+  virtual const double getMargin(const int physObjectID) { return 0.0; };
+  virtual void setMargin(const int physObjectID, const double margin){};
 
   // =========== Debug functions ===========
   int checkActiveObjects();

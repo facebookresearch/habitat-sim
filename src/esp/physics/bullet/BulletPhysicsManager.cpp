@@ -95,6 +95,8 @@ int BulletPhysicsManager::makeRigidObject(
     existingObjects_.erase(newObjectID);
     return -1;
   }
+  LOG(INFO) << "Allocate new object id " << newObjectID << " "
+            << existingObjects_.at(newObjectID);
   return newObjectID;
 }
 

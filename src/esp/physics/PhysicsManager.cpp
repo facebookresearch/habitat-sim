@@ -344,8 +344,7 @@ void PhysicsManager::setMass(const int physObjectID, const double mass) {
     existingObjects_[physObjectID]->setMass(mass);
   }
 }
-void PhysicsManager::setCOM(const int physObjectID,
-                            const Magnum::Vector3d COM) {
+void PhysicsManager::setCOM(const int physObjectID, const Magnum::Vector3 COM) {
   // (JH Note) TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
     existingObjects_[physObjectID]->setCOM(COM);
@@ -371,12 +370,12 @@ void PhysicsManager::setFrictionCoefficient(const int physObjectID,
     existingObjects_[physObjectID]->setFrictionCoefficient(frictionCoefficient);
   }
 }
-void PhysicsManager::setRestitutionCoeffcient(
+void PhysicsManager::setRestitutionCoefficient(
     const int physObjectID,
     const double restitutionCoefficient) {
   // (JH Note) TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
-    existingObjects_[physObjectID]->setRestitutionCoeffcient(
+    existingObjects_[physObjectID]->setRestitutionCoefficient(
         restitutionCoefficient);
   }
 }
@@ -405,12 +404,12 @@ const double PhysicsManager::getMass(const int physObjectID) {
   }
 }
 
-const Magnum::Vector3d PhysicsManager::getCOM(const int physObjectID) {
+const Magnum::Vector3 PhysicsManager::getCOM(const int physObjectID) {
   // (JH Note) TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
     return existingObjects_[physObjectID]->getCOM();
   } else {
-    return Magnum::Vector3d();
+    return Magnum::Vector3();
   }
 }
 const Magnum::Vector3 PhysicsManager::getInertia(const int physObjectID) {
@@ -437,10 +436,10 @@ const double PhysicsManager::getFrictionCoefficient(const int physObjectID) {
     return -1.0;
   }
 }
-const double PhysicsManager::getRestitutionCoeffcient(const int physObjectID) {
+const double PhysicsManager::getRestitutionCoefficient(const int physObjectID) {
   // (JH Note) TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->getRestitutionCoeffcient();
+    return existingObjects_[physObjectID]->getRestitutionCoefficient();
   } else {
     return -1.0;
   }

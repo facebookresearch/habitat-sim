@@ -354,6 +354,55 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   event.setAccepted();
 }
 
+void Viewer::testSetterGetters() {
+  if (physicsManager_ == nullptr || objectIDs.size() == 0)
+    return;
+
+  // Object Testing
+  // Testing : Mass
+  physicsManager_->setMass(objectIDs.back(), 10.0);
+  const double mass = physicsManager_->getMass(objectIDs.back());
+  // Testing: Inertia
+  physicsManager_->setInertia(objectIDs.back(), Magnum::Vector3(1.0, 1.0, 1.0));
+  const Magnum::Vector3 inert = physicsManager_->getInertia(objectIDs.back());
+  // Testing: scale
+  physicsManager_->setScale(objectIDs.back(), 2.0);
+  const double scale = physicsManager_->getScale(objectIDs.back());
+  // Testing: friction
+  physicsManager_->setFrictionCoefficient(objectIDs.back(), 1.0);
+  const double friction =
+      physicsManager_->getFrictionCoefficient(objectIDs.back());
+  // Testing: restitution
+  physicsManager_->setRestitutionCoefficient(objectIDs.back(), 0.9);
+  const double restitution =
+      physicsManager_->getRestitutionCoefficient(objectIDs.back());
+  // Testing: linear damping
+  physicsManager_->setLinearDamping(objectIDs.back(), 0.9);
+  const double linDamping = physicsManager_->getLinearDamping(objectIDs.back());
+  // Testing: restitution
+  physicsManager_->setAngularDamping(objectIDs.back(), 0.9);
+  const double angDamping =
+      physicsManager_->getAngularDamping(objectIDs.back());
+  // Testing: margin
+  physicsManager_->setMargin(objectIDs.back(), 0.1);
+  const double margin = physicsManager_->getMargin(objectIDs.back());
+  // Testing: COM
+  // physicsManager_->setCOM(objectIDs.back(), Magnum::Vector3(0.0, 0.0, 0.0));
+  // const Magnum::Vector3 com = physicsManager_->getCOM(objectIDs.back());
+
+  LOG(INFO) << "Object - Mass: " << mass;
+  // LOG(INFO) << "Getter - COM: " << com.x() << ", " << com.y() << ", " <<
+  // com.z();
+  LOG(INFO) << "Object - Inertia: " << inert.x() << ", " << inert.y() << ", "
+            << inert.z();
+  LOG(INFO) << "Object - scale: " << scale;
+  LOG(INFO) << "Object - friction: " << friction;
+  LOG(INFO) << "Object - restitution: " << restitution;
+  LOG(INFO) << "Object - linDamping: " << linDamping;
+  LOG(INFO) << "Object - angDamping: " << angDamping;
+  LOG(INFO) << "Object - margin: " << margin;
+}
+
 void Viewer::keyPressEvent(KeyEvent& event) {
   const auto key = event.key();
   switch (key) {
@@ -426,6 +475,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::T:  // test key
       testAttributes();
+      testSetterGetters();
       break;
     default:
       break;

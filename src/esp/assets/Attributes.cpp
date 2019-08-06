@@ -236,7 +236,7 @@ PhysicsObjectAttributes::PhysicsObjectAttributes() {
 PhysicsSceneAttributes::PhysicsSceneAttributes() {
   setMagnumVec3("gravity", Magnum::Vector3(0, -9.8, 0));
   setDouble("frictionCoefficient", 0.4);
-  setDouble("restitutionCoefficient", 0.6);
+  setDouble("restitutionCoefficient", 0.1);
   setString("renderMeshHandle", "");
   setString("collisionMeshHandle", "");
 }

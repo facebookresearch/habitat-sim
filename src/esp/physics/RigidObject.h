@@ -83,20 +83,20 @@ class RigidObject : public scene::SceneNode {
   //! For kinematic objects they are dummies, for dynamic objects
   //! implemented in physics-engine specific ways
   virtual const double getMass() { return 0.0; }
-  virtual const Magnum::Vector3d getCOM() { return Magnum::Vector3d(); }
+  virtual const Magnum::Vector3 getCOM() { return Magnum::Vector3(); }
   virtual const Magnum::Vector3 getInertia() { return Magnum::Vector3(); }
   virtual const double getScale() { return 0.0; }
   virtual const double getFrictionCoefficient() { return 0.0; }
-  virtual const double getRestitutionCoeffcient() { return 0.0; }
+  virtual const double getRestitutionCoefficient() { return 0.0; }
   virtual const double getLinearDamping() { return 0.0; }
   virtual const double getAngularDamping() { return 0.0; }
 
   virtual void setMass(const double mass){};
-  virtual void setCOM(const Magnum::Vector3d COM){};
+  virtual void setCOM(const Magnum::Vector3 COM){};
   virtual void setInertia(const Magnum::Vector3 inertia){};
   virtual void setScale(const double scale){};
   virtual void setFrictionCoefficient(const double frictionCoefficient){};
-  virtual void setRestitutionCoeffcient(const double restitutionCoeffcient){};
+  virtual void setRestitutionCoefficient(const double restitutionCoefficient){};
   virtual void setLinearDamping(const double linearDamping){};
   virtual void setAngularDamping(const double angularDamping){};
 
