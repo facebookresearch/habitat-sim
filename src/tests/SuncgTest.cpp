@@ -11,7 +11,6 @@ using namespace esp::geo;
 using namespace esp::scene;
 
 TEST(SuncgTest, Load) {
-  google::InstallFailureSignalHandler();
   SemanticScene house;
   SemanticScene::loadSuncgHouse("test.json", house);
   LOG(INFO) << "House, bbox:" << house.aabb();
