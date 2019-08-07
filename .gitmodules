@@ -1,9 +1,6 @@
 [submodule "src/deps/googletest"]
 	path = src/deps/googletest
 	url = https://github.com/google/googletest
-[submodule "src/deps/tinyobjloader"]
-	path = src/deps/tinyobjloader
-	url = https://github.com/syoyo/tinyobjloader.git
 [submodule "src/deps/rapidjson"]
 	path = src/deps/rapidjson
 	url = https://github.com/Tencent/rapidjson.git

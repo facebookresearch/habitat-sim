@@ -29,7 +29,9 @@ enum { TextureLayer = 0 };
 }
 
 GenericShader::GenericShader(const Flags flags) : flags_(flags) {
+#ifndef MAGNUM_TARGET_WEBGL
   MAGNUM_ASSERT_GL_VERSION_SUPPORTED(Magnum::GL::Version::GL410);
+#endif
 
   if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
@@ -38,10 +40,14 @@ GenericShader::GenericShader(const Flags flags) : flags_(flags) {
   // this is not the file name, but the group name in the config file
   const Corrade::Utility::Resource rs{"default-shaders"};
 
-  Magnum::GL::Shader vert{Magnum::GL::Version::GL410,
-                          Magnum::GL::Shader::Type::Vertex};
-  Magnum::GL::Shader frag{Magnum::GL::Version::GL410,
-                          Magnum::GL::Shader::Type::Fragment};
+#ifdef MAGNUM_TARGET_WEBGL
+  Magnum::GL::Version glVersion = Magnum::GL::Version::GLES300;
+#else
+  Magnum::GL::Version glVersion = Magnum::GL::Version::GL410;
+#endif
+
+  Magnum::GL::Shader vert{glVersion, Magnum::GL::Shader::Type::Vertex};
+  Magnum::GL::Shader frag{glVersion, Magnum::GL::Shader::Type::Fragment};
 
   vert.addSource(flags & Flag::Textured ? "#define TEXTURED\n" : "")
       .addSource(flags & Flag::VertexColored ? "#define VERTEX_COLORED\n" : "")
@@ -74,8 +80,11 @@ GenericShader& GenericShader::bindTexture(Magnum::GL::Texture2D& texture) {
 
   texture.bind(TextureLayer);
 
+// TODO this is a hack and terrible! Properly set texSize for WebGL builds
+#ifndef MAGNUM_TARGET_WEBGL
   if (flags_ & Flag::PrimitiveIDTextured)
     setUniform(uniformLocation("texSize"), texture.imageSize(0).x());
+#endif
 
   return *this;
 }

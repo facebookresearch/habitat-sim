@@ -6,8 +6,8 @@
 
 #include <string>
 
-#include "Asset.h"
-#include "MeshData.h"
+#include "esp/assets/Asset.h"
+#include "esp/assets/MeshData.h"
 
 namespace esp {
 namespace assets {

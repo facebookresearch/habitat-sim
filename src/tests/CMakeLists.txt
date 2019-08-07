@@ -11,7 +11,6 @@ macro(TEST TEST_NAME)
   #   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests")
 endmacro(TEST)
 
-TEST(AssetsTest assets)
 TEST(CoreTest io)
 TEST(NavTest nav assets)
 TEST(IOTest io)

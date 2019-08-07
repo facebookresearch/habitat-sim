@@ -2,13 +2,22 @@ file(GLOB_RECURSE gfx_SOURCES "*.cpp")
 
 # If not GUI build, remove Viewer source
 # TODO(MS) Viewer really ought to be in separate module that is disabled
-if(BUILD_GUI_VIEWERS)
-  message(STATUS "Building GUI viewers")
-else()
+if(NOT BUILD_GUI_VIEWERS)
   list(REMOVE_ITEM gfx_SOURCES "${CMAKE_CURRENT_LIST_DIR}/Viewer.cpp")
 endif()
 
-if ((UNIX AND NOT APPLE) AND (NOT ${BUILD_GUI_VIEWERS}))
+# If ptex support is disabled remove relevant source files
+if(NOT BUILD_PTEX_SUPPORT)
+  list(REMOVE_ITEM gfx_SOURCES "${CMAKE_CURRENT_LIST_DIR}/PTexMeshDrawable.cpp" "${CMAKE_CURRENT_LIST_DIR}/PTexMeshShader.cpp")
+endif()
+
+# If not WebGL build, also include offscreen render-reliant code
+# TODO(msb): this should be built as well (with emscripten windowless contexts)
+if(CORRADE_TARGET_EMSCRIPTEN)
+  list(REMOVE_ITEM gfx_SOURCES "${CMAKE_CURRENT_LIST_DIR}/Simulator.cpp" "${CMAKE_CURRENT_LIST_DIR}/WindowlessContext.cpp")
+endif()
+
+if ((UNIX AND NOT APPLE) AND (NOT BUILD_GUI_VIEWERS))
   list(APPEND gfx_SOURCES "${DEPS_DIR}/glad/src/glad_egl.c")
 endif()
 
@@ -25,7 +34,6 @@ find_package(Magnum
 
 find_package(MagnumPlugins
   REQUIRED
-    # AssimpImporter
     StbImageImporter
     StbImageConverter
     TinyGltfImporter
@@ -74,7 +82,6 @@ target_link_libraries(gfx
     Magnum::SceneGraph
     Magnum::Shaders
     Magnum::Trade
-    # MagnumPlugins::AssimpImporter
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbImageConverter
     MagnumPlugins::TinyGltfImporter
@@ -84,8 +91,13 @@ target_link_libraries(gfx
 
 # Link windowed application library if needed
 if(BUILD_GUI_VIEWERS)
-  find_package(Magnum REQUIRED GlfwApplication)
-  target_link_libraries(gfx PUBLIC Magnum::GlfwApplication)
+  if(CORRADE_TARGET_EMSCRIPTEN)
+    find_package(Magnum REQUIRED Sdl2Application)
+    target_link_libraries(gfx PUBLIC Magnum::Sdl2Application)
+  else()
+    find_package(Magnum REQUIRED GlfwApplication)
+    target_link_libraries(gfx PUBLIC Magnum::GlfwApplication)
+  endif()
 elseif(UNIX)
   target_compile_definitions(gfx PRIVATE __ESP_USE_EGL__)
 endif()
@@ -97,7 +109,7 @@ if(APPLE)
 elseif(WIN32)
   find_package(Magnum REQUIRED WindowlessWglApplication)
   target_link_libraries(gfx PUBLIC Magnum::WindowlessWglApplication)
-elseif(UNIX)
+elseif(UNIX AND NOT CORRADE_TARGET_EMSCRIPTEN)
   if(BUILD_GUI_VIEWERS)
     find_package(Magnum REQUIRED WindowlessGlxApplication)
     target_link_libraries(gfx PUBLIC Magnum::WindowlessGlxApplication)
