@@ -13,7 +13,7 @@ endif()
 
 # If not WebGL build, also include offscreen render-reliant code
 # TODO(msb): this should be built as well (with emscripten windowless contexts)
-if(EMSCRIPTEN)
+if(CORRADE_TARGET_EMSCRIPTEN)
   list(REMOVE_ITEM gfx_SOURCES "${CMAKE_CURRENT_LIST_DIR}/Simulator.cpp" "${CMAKE_CURRENT_LIST_DIR}/WindowlessContext.cpp")
 endif()
 
@@ -76,7 +76,7 @@ target_link_libraries(gfx
 
 # Link windowed application library if needed
 if(BUILD_GUI_VIEWERS)
-  if(EMSCRIPTEN)
+  if(CORRADE_TARGET_EMSCRIPTEN)
     find_package(Magnum REQUIRED Sdl2Application)
     target_link_libraries(gfx PUBLIC Magnum::Sdl2Application)
   else()
@@ -94,7 +94,7 @@ if(APPLE)
 elseif(WIN32)
   find_package(Magnum REQUIRED WindowlessWglApplication)
   target_link_libraries(gfx PUBLIC Magnum::WindowlessWglApplication)
-elseif(UNIX AND NOT EMSCRIPTEN)
+elseif(UNIX AND NOT CORRADE_TARGET_EMSCRIPTEN)
   if(BUILD_GUI_VIEWERS)
     find_package(Magnum REQUIRED WindowlessGlxApplication)
     target_link_libraries(gfx PUBLIC Magnum::WindowlessGlxApplication)

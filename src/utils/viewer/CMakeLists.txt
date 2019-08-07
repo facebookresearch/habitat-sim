@@ -12,7 +12,7 @@ target_link_libraries(viewer
 )
 
 # copy JS/HTML/CSS scaffolding for WebGL build
-if(EMSCRIPTEN)
+if(CORRADE_TARGET_EMSCRIPTEN)
   install(FILES
       viewer.html
       ${MAGNUM_EMSCRIPTENAPPLICATION_JS}
