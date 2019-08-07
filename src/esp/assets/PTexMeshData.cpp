@@ -289,7 +289,7 @@ void PTexMeshData::loadMeshData(const std::string& meshFile) {
   if (splitSize_ > 0.0f) {
     LOG(INFO) << "Splitting mesh... ";
     submeshes_ = splitMesh(originalMesh, splitSize_);
-    LOG(INFO) << "done" << std::endl;
+    LOG(INFO) << "Splitting mesh: Done" << std::endl;
   } else {
     submeshes_.emplace_back(std::move(originalMesh));
   }
@@ -633,8 +633,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
 
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
     LOG(INFO) << "\rLoading mesh " << iMesh + 1 << "/" << submeshes_.size()
-              << "... ";
-    LOG(INFO).flush();
+              << "... " << std::endl;
 
     renderingBuffers_.emplace_back(
         std::make_unique<PTexMeshData::RenderingBuffer>());
@@ -645,10 +644,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     currentMesh->ibo.setData(submeshes_[iMesh].ibo,
                              Magnum::GL::BufferUsage::StaticDraw);
   }
-  LOG(INFO) << "done" << std::endl;
 
   LOG(INFO) << "Calculating mesh adjacency... " << std::endl;
-
   std::vector<std::vector<uint32_t>> adjFaces(submeshes_.size());
 
   // load it if it is computed before.
@@ -696,7 +693,6 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
 
     LOG(INFO) << "\rLoading atlas " << iMesh + 1 << "/"
               << renderingBuffers_.size() << " from " << rgbFile << "... ";
-    LOG(INFO).flush();
 
     Corrade::Containers::Array<const char,
                                Corrade::Utility::Directory::MapDeleter>
@@ -714,8 +710,6 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
         .setMinificationFilter(Magnum::GL::SamplerFilter::Linear)
         .setStorage(1, Magnum::GL::TextureFormat::RGB8UI, image.size())
         .setSubImage(0, {}, image);
-
-    LOG(INFO) << "done" << std::endl;
   }
   buffersOnGPU_ = true;
 }
