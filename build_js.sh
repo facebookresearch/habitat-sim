@@ -23,6 +23,8 @@ cmake --build . --target install -- -j 4
 
 echo "Done building."
 echo "Run:"
-echo "python -m http.server"
+echo "python2 -m SimpleHTTPServer 8000"
+echo "Or:"
+echo "python3 -m http.server"
 echo "Then open in browser:"
 echo "http://0.0.0.0:8000/build_js/utils/viewer/viewer.html?scene=skokloster-castle.glb"
