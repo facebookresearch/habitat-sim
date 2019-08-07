@@ -85,7 +85,6 @@ class PTexMeshData : public BaseMesh {
   float exposure_ = 1.0f;
   float gamma_ = 1.0f;
   float saturation_ = 1.0f;
-  bool isHdr_ = false;
 
   std::string atlasFolder_;
 

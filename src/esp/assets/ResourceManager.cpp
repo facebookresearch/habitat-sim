@@ -5,8 +5,8 @@
 #include <functional>
 
 #include <Corrade/PluginManager/Manager.h>
-#include <Corrade/Utility/String.h>
 #include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Trade/AbstractImporter.h>
@@ -112,13 +112,8 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
   // if this is a new file, load it and add it to the dictionary
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
-
-    const auto atlasDir =
-        Corrade::Utility::String::endsWith(filename, "ptex_quad_mesh.ply")
-            ? Corrade::Utility::Directory::join(
-                  Corrade::Utility::Directory::path(filename), "ptex_textures")
-            : Corrade::Utility::Directory::join(
-                  Corrade::Utility::Directory::path(filename), "textures");
+    const auto atlasDir = Corrade::Utility::Directory::join(
+        Corrade::Utility::Directory::path(filename), "textures");
 
     meshes_.emplace_back(std::make_unique<PTexMeshData>());
     int index = meshes_.size() - 1;

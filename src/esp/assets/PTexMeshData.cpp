@@ -657,7 +657,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
       calculateAdjacency(submeshes_[iMesh], adjFaces[iMesh]);
     }
-    // Warning: you should have enough disk space to store the info 
+    // Warning: you should have enough disk space to store the info
     // it usually takes a couple of 100MB (usually 200+MB).
     saveAdjacency(adjFaceFilename, adjFaces);
     LOG(INFO) << "Done: it is computed and saved to: " << adjFaceFilename
@@ -683,32 +683,33 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   }
 
   // load atlas data and upload them to GPU
-
   LOG(INFO) << "loading atlas textures: " << std::endl;
   for (size_t iMesh = 0; iMesh < renderingBuffers_.size(); ++iMesh) {
-    const std::string rgbFile = Corrade::Utility::Directory::join(
-        atlasFolder_, std::to_string(iMesh) + "-color-ptex.rgb");
+    const std::string hdrFile = Corrade::Utility::Directory::join(
+        atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
 
-    ASSERT(io::exists(rgbFile), Error : Cannot find the rgb file);
+    ASSERT(io::exists(hdrFile), Error : Cannot find the.hdr file);
 
     LOG(INFO) << "\rLoading atlas " << iMesh + 1 << "/"
-              << renderingBuffers_.size() << " from " << rgbFile << "... ";
+              << renderingBuffers_.size() << " from " << hdrFile << "... ";
 
     Corrade::Containers::Array<const char,
                                Corrade::Utility::Directory::MapDeleter>
-        data = Corrade::Utility::Directory::mapRead(rgbFile);
-    // divided by 3, since there are 3 channels, R, G, B, each of which takes 1
-    // byte
-    const int dim = static_cast<int>(std::sqrt(data.size() / 3));  // square
+        data = Corrade::Utility::Directory::mapRead(hdrFile);
+    // divided by 6, since there are 3 channels, R, G, B, each of which takes 1
+    // half_float (2 bytes)
+    const int dim = static_cast<int>(std::sqrt(data.size() / 6));  // square
 
     // atlas
-    // the size of each image is dim x dim x 3 (RGB), which equals to numBytes
-    Magnum::ImageView2D image(Magnum::PixelFormat::RGB8UI, {dim, dim}, data);
+    // the size of each image is dim x dim x 3 (RGB) x 2 (half_float), which
+    // equals to numBytes
+    Magnum::ImageView2D image(Magnum::PixelFormat::RGB16F, {dim, dim}, data);
+    const int mipLevelCount = 1;
     renderingBuffers_[iMesh]
         ->tex.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
         .setMagnificationFilter(Magnum::GL::SamplerFilter::Linear)
         .setMinificationFilter(Magnum::GL::SamplerFilter::Linear)
-        .setStorage(1, Magnum::GL::TextureFormat::RGB8UI, image.size())
+        .setStorage(mipLevelCount, Magnum::GL::TextureFormat::RGB16F, image.size())
         .setSubImage(0, {}, image);
   }
   buffersOnGPU_ = true;
