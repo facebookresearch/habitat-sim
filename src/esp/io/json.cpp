@@ -22,9 +22,8 @@ JsonDocument parseJsonFile(const std::string& file) {
   fclose(pFile);
 
   if (d.HasParseError()) {
-    LOG(ERROR) << "Parse error reading " << file << std::endl
-               << "Error code " << d.GetParseError() << " at "
-               << d.GetErrorOffset();
+    LOG(ERROR) << "Parse error reading " << file << " Error code "
+               << d.GetParseError() << " at " << d.GetErrorOffset();
     throw std::runtime_error("JSON parse error");
   }
   return d;

@@ -648,7 +648,6 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   LOG(INFO) << "done" << std::endl;
 
   LOG(INFO) << "Calculating mesh adjacency... " << std::endl;
-  LOG(INFO).flush();
 
   std::vector<std::vector<uint32_t>> adjFaces(submeshes_.size());
 
@@ -718,7 +717,6 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
 
     LOG(INFO) << "done" << std::endl;
   }
-
   buffersOnGPU_ = true;
 }
 
