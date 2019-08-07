@@ -55,6 +55,12 @@ class PTexMeshData : public BaseMesh {
   static void calculateAdjacency(const MeshData& mesh,
                                  std::vector<uint32_t>& adjFaces);
 
+  // return true, if the data are loaded successfully
+  static bool loadAdjacency(const std::string& filename,
+                            std::vector<std::vector<uint32_t>>& adjFaces);
+  static void saveAdjacency(const std::string& filename,
+                            std::vector<std::vector<uint32_t>>& adjFaces);
+
   // ==== rendering ====
   RenderingBuffer* getRenderingBuffer(int submeshID);
   virtual void uploadBuffersToGPU(bool forceReload = false) override;

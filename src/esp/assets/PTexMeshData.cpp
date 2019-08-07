@@ -4,9 +4,6 @@
 
 #include "PTexMeshData.h"
 
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
@@ -16,6 +13,7 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/GL/BufferTextureFormat.h>
+#include <Magnum/GL/TextureFormat.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
 
@@ -26,8 +24,6 @@
 
 static constexpr int ROTATION_SHIFT = 30;
 static constexpr int FACE_MASK = 0x3FFFFFFF;
-
-namespace Cr = Corrade;
 
 namespace esp {
 namespace assets {
@@ -513,8 +509,9 @@ void PTexMeshData::parsePLY(const std::string& filename,
 
   file.close();
 
-  Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter>
-      mmappedData = Cr::Utility::Directory::mapRead(filename);
+  Corrade::Containers::Array<const char,
+                             Corrade::Utility::Directory::MapDeleter>
+      mmappedData = Corrade::Utility::Directory::mapRead(filename);
 
   const size_t fileSize = io::fileSize(filename);
 
@@ -572,6 +569,30 @@ void PTexMeshData::parsePLY(const std::string& filename,
     memcpy(&meshData.ibo[i * faceDimensions], &nextBytes[countBytes],
            faceBytes);
   }
+}
+
+bool PTexMeshData::loadAdjacency(const std::string& filename,
+                                 std::vector<std::vector<uint32_t>>& adjFaces) {
+  if (!io::exists(filename)) {
+    return false;
+  }
+  std::ifstream file;
+  file.open(filename, std::ios::in | std::ios::binary);
+
+  file.close();
+  return true;
+}
+
+void PTexMeshData::saveAdjacency(const std::string& filename,
+                                 std::vector<std::vector<uint32_t>>& adjFaces) {
+  std::ofstream file;
+  file.open(filename, std::ios::out | std::ios::binary);
+  if (!file.good()) {
+    std::cout << "Error: cannot open " << filename << " to save the adjacency."
+              << std::endl;
+    return;
+  }
+  file.close();
 }
 
 void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
@@ -638,18 +659,11 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
               << renderingBuffers_.size() << " from " << rgbFile << "... ";
     std::cout.flush();
 
-    const size_t numBytes = io::fileSize(rgbFile);
-    const int dim = static_cast<int>(std::sqrt(numBytes / 3));  // square
-
-    // Open file
-    int fd = open(std::string(rgbFile).c_str(), O_RDONLY, 0);
-    // MAP_POPULATE does not work on mac. It is to reduce the penalty of page
-    // faults. Code should be OK without it. void* mmappedData = mmap(NULL,
-    // numBytes, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);
-    void* mmappedData = mmap(NULL, numBytes, PROT_READ, MAP_PRIVATE, fd, 0);
-
-    Corrade::Containers::ArrayView<unsigned char> data(
-        (unsigned char*)(mmappedData), numBytes);
+    Corrade::Containers::Array<const char,
+                               Corrade::Utility::Directory::MapDeleter>
+        data = Corrade::Utility::Directory::mapRead(rgbFile);
+    // divided by 3, since there are 3 channels, R, G, B, each of which takes 1 byte
+    const int dim = static_cast<int>(std::sqrt(data.size() / 3));  // square
 
     // atlas
     // the size of each image is dim x dim x 3 (RGB), which equals to numBytes
@@ -658,11 +672,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
         ->tex.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
         .setMagnificationFilter(Magnum::GL::SamplerFilter::Linear)
         .setMinificationFilter(Magnum::GL::SamplerFilter::Linear)
-        // .setStorage(1, Magnum::GL::TextureFormat::RGB8UI, image.size())
+        .setStorage(1, Magnum::GL::TextureFormat::RGB8UI, image.size())
         .setSubImage(0, {}, image);
-
-    munmap(mmappedData, numBytes);
-    close(fd);
 
     std::cout << "done" << std::endl;
   }

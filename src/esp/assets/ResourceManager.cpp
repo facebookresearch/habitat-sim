@@ -6,6 +6,7 @@
 
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/String.h>
+#include <Corrade/Utility/Directory.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Trade/AbstractImporter.h>
@@ -105,21 +106,18 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
   // if this is a new file, load it and add it to the dictionary
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
-    const auto atlasDir = [=]()->std::string{
-      // backwards compatibility
-      if (Corrade::Utility::String::endsWith(filename, "ptex_quad_mesh.ply")) {
-        return (Corrade::Utility::String::stripSuffix(filename, "ptex_quad_mesh.ply") +
-        "ptex_textures");
-      }
-        // officially released Replica dataset
-        return (Corrade::Utility::String::stripSuffix(filename, "mesh.ply") +
-        "textures");
-    };
+
+    const auto atlasDir =
+        Corrade::Utility::String::endsWith(filename, "ptex_quad_mesh.ply")
+            ? Corrade::Utility::Directory::join(
+                  Corrade::Utility::Directory::path(filename), "ptex_textures")
+            : Corrade::Utility::Directory::join(
+                  Corrade::Utility::Directory::path(filename), "textures");
 
     meshes_.emplace_back(std::make_unique<PTexMeshData>());
     int index = meshes_.size() - 1;
     auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_[index].get());
-    pTexMeshData->load(filename, atlasDir());
+    pTexMeshData->load(filename, atlasDir);
 
     // update the dictionary
     resourceDict_.emplace(filename, MeshMetaData(index, index));
