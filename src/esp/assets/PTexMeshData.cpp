@@ -282,14 +282,14 @@ void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData& mesh,
 void PTexMeshData::loadMeshData(const std::string& meshFile) {
   PTexMeshData::MeshData originalMesh;
 
-  std::cout << "start parsing PLY... " << std::endl;
+  LOG(INFO) << "start parsing PLY... " << std::endl;
   parsePLY(meshFile, originalMesh);
 
   submeshes_.clear();
   if (splitSize_ > 0.0f) {
-    std::cout << "Splitting mesh... ";
+    LOG(INFO) << "Splitting mesh... ";
     submeshes_ = splitMesh(originalMesh, splitSize_);
-    std::cout << "done" << std::endl;
+    LOG(INFO) << "done" << std::endl;
   } else {
     submeshes_.emplace_back(std::move(originalMesh));
   }
@@ -550,12 +550,12 @@ void PTexMeshData::parsePLY(const std::string& filename,
   // Not sure what to do here
   //    if(predictedFaces < numFaces)
   //    {
-  //        std::cout << "Skipping " << numFaces - predictedFaces << " missing
+  //        LOG(INFO) << "Skipping " << numFaces - predictedFaces << " missing
   //        faces" << std::endl;
   //    }
   //    else if(numFaces < predictedFaces)
   //    {
-  //        std::cout << "Ignoring " << predictedFaces - numFaces << " extra
+  //        LOG(INFO) << "Ignoring " << predictedFaces - numFaces << " extra
   //        faces" << std::endl;
   //    }
 
@@ -600,7 +600,7 @@ void PTexMeshData::saveAdjacency(const std::string& filename,
   std::ofstream file;
   file.open(filename, std::ios::out | std::ios::binary);
   if (!file.good()) {
-    std::cout << "Error: cannot open " << filename << " to save the adjacency."
+    LOG(INFO) << "Error: cannot open " << filename << " to save the adjacency."
               << std::endl;
     return;
   }
@@ -632,9 +632,9 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   }
 
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
-    std::cout << "\rLoading mesh " << iMesh + 1 << "/" << submeshes_.size()
+    LOG(INFO) << "\rLoading mesh " << iMesh + 1 << "/" << submeshes_.size()
               << "... ";
-    std::cout.flush();
+    LOG(INFO).flush();
 
     renderingBuffers_.emplace_back(
         std::make_unique<PTexMeshData::RenderingBuffer>());
@@ -645,10 +645,10 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     currentMesh->ibo.setData(submeshes_[iMesh].ibo,
                              Magnum::GL::BufferUsage::StaticDraw);
   }
-  std::cout << "done" << std::endl;
+  LOG(INFO) << "done" << std::endl;
 
-  std::cout << "Calculating mesh adjacency... " << std::endl;
-  std::cout.flush();
+  LOG(INFO) << "Calculating mesh adjacency... " << std::endl;
+  LOG(INFO).flush();
 
   std::vector<std::vector<uint32_t>> adjFaces(submeshes_.size());
 
@@ -664,10 +664,10 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     // Warning: you should have enough disk space to store the info 
     // it usually takes a couple of 100MB (usually 200+MB).
     saveAdjacency(adjFaceFilename, adjFaces);
-    std::cout << "Done: it is computed and saved to: " << adjFaceFilename
+    LOG(INFO) << "Done: it is computed and saved to: " << adjFaceFilename
               << std::endl;
   } else {
-    std::cout << "Done: Loaded it from " << adjFaceFilename << std::endl;
+    LOG(INFO) << "Done: Loaded it from " << adjFaceFilename << std::endl;
   }
 
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
@@ -688,16 +688,16 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
 
   // load atlas data and upload them to GPU
 
-  std::cout << "loading atlas textures: " << std::endl;
+  LOG(INFO) << "loading atlas textures: " << std::endl;
   for (size_t iMesh = 0; iMesh < renderingBuffers_.size(); ++iMesh) {
     const std::string rgbFile = Corrade::Utility::Directory::join(
         atlasFolder_, std::to_string(iMesh) + "-color-ptex.rgb");
 
     ASSERT(io::exists(rgbFile), Error : Cannot find the rgb file);
 
-    std::cout << "\rLoading atlas " << iMesh + 1 << "/"
+    LOG(INFO) << "\rLoading atlas " << iMesh + 1 << "/"
               << renderingBuffers_.size() << " from " << rgbFile << "... ";
-    std::cout.flush();
+    LOG(INFO).flush();
 
     Corrade::Containers::Array<const char,
                                Corrade::Utility::Directory::MapDeleter>
@@ -716,7 +716,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
         .setStorage(1, Magnum::GL::TextureFormat::RGB8UI, image.size())
         .setSubImage(0, {}, image);
 
-    std::cout << "done" << std::endl;
+    LOG(INFO) << "done" << std::endl;
   }
 
   buffersOnGPU_ = true;
