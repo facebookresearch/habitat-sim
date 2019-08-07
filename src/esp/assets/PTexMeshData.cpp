@@ -655,12 +655,14 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   // load it if it is computed before.
   // otherwise compute it once and save it for future usage.
   const std::string adjFaceFilename =
-      Corrade::Utility::Directory::join(atlasFolder_, "../mesh.adjacency");
+      Corrade::Utility::Directory::join(atlasFolder_, "../adjFaces.bin");
   if (!loadAdjacency(adjFaceFilename, adjFaces)) {
 #pragma omp parallel for
     for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
       calculateAdjacency(submeshes_[iMesh], adjFaces[iMesh]);
     }
+    // Warning: you should have enough disk space to store the info 
+    // it usually takes a couple of 100MB (usually 200+MB).
     saveAdjacency(adjFaceFilename, adjFaces);
     std::cout << "Done: it is computed and saved to: " << adjFaceFilename
               << std::endl;
