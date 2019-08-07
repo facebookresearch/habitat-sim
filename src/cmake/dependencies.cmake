@@ -161,7 +161,9 @@ if(NOT USE_SYSTEM_MAGNUM)
   add_subdirectory("${DEPS_DIR}/magnum")
   add_subdirectory("${DEPS_DIR}/magnum-plugins")
   add_subdirectory("${DEPS_DIR}/magnum-integration")
-  add_subdirectory("${DEPS_DIR}/magnum-bindings")
+  if(BUILD_PYTHON_BINDINGS)
+    add_subdirectory("${DEPS_DIR}/magnum-bindings")
+  endif()
 endif()
 
 # tinyply
