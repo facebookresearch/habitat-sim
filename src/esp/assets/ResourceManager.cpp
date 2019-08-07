@@ -349,9 +349,17 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename,
     MeshMetaData meshMetaData = resourceDict_[filename];
     scene::SceneNode& newNode = parent->createChild();
     AssetInfo renderMeshinfo = AssetInfo::fromPath(filename);
-
+    Magnum::PluginManager::Manager<Importer> manager{
+#ifdef MAGNUM_BUILD_STATIC
+        "./"
+#endif
+    };
+    std::unique_ptr<Importer> importer =
+        manager.loadAndInstantiate("AnySceneImporter");
+    manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
+    manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
     for (auto componentID : magnumMeshDict_[filename]) {
-      addComponent(renderMeshinfo, meshMetaData, newNode, drawables,
+      addComponent(*importer, renderMeshinfo, meshMetaData, newNode, drawables,
                    componentID);
     }
   }
@@ -818,6 +826,11 @@ bool ResourceManager::loadGeneralMeshData(
 
   LOG(INFO) << "LoadingGeneralMeshData: " << filename;
   LOG(INFO) << "  ...already loaded? " << fileIsLoaded;
+  Magnum::PluginManager::Manager<Importer> manager{
+#ifdef MAGNUM_BUILD_STATIC
+      "./"
+#endif
+  };
   std::unique_ptr<Importer> importer =
       manager.loadAndInstantiate("AnySceneImporter");
   manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
@@ -903,11 +916,10 @@ bool ResourceManager::loadGeneralMeshData(
 
     const quatf transform = info.frame.rotationFrameToWorld();
     newNode.setRotation(Magnum::Math::Quaternion<float>(transform));
-    importer.reset();
     // Recursively add all children
     for (auto sceneDataID : magnumMeshDict_[filename]) {
       LOG(INFO) << "Scene data ID " << sceneDataID << " " << filename;
-      addComponent(info, metaData, newNode, drawables, sceneDataID);
+      addComponent(*importer, info, metaData, newNode, drawables, sceneDataID);
     }
     return true;
   }
@@ -1040,22 +1052,19 @@ void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
 //! Add component to rendering stack, based on importer loading
 //! TODO (JH): decouple importer part, so that objects can be
 //! instantiated any time after initial loading
-void ResourceManager::addComponent(const AssetInfo& info,
+void ResourceManager::addComponent(Importer& importer,
+                                   const AssetInfo& info,
                                    const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
                                    DrawableGroup* drawables,
                                    int componentID) {
-  std::unique_ptr<Importer> importer =
-      manager.loadAndInstantiate("AnySceneImporter");
-  manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
-  manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
-  importer->openFile(info.filepath);
+  importer.openFile(info.filepath);
   LOG(INFO) << "   ...importer object name"
-            << importer->object3DName(componentID);
+            << importer.object3DName(componentID);
   std::unique_ptr<Magnum::Trade::ObjectData3D> objectData =
-      importer->object3D(componentID);
+      importer.object3D(componentID);
   if (!objectData) {
-    LOG(ERROR) << "Cannot import object " << importer->object3DName(componentID)
+    LOG(ERROR) << "Cannot import object " << importer.object3DName(componentID)
                << ", skipping";
     return;
   }
@@ -1082,8 +1091,7 @@ void ResourceManager::addComponent(const AssetInfo& info,
   for (auto childObjectID : objectData->children()) {
     LOG(INFO) << "Child ID " << childObjectID << " (total "
               << objectData->children().size() << ")";
-    importer.reset();
-    addComponent(info, metaData, node, drawables, childObjectID);
+    addComponent(importer, info, metaData, node, drawables, childObjectID);
   }
 }
 

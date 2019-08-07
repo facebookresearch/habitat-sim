@@ -133,22 +133,12 @@ class ResourceManager {
   //! (1) create scene node
   //! (2) upload mesh to gpu and drawables
   //! (optional reload of GPU-side assets)
-  void addComponent(const AssetInfo& info,
+  void addComponent(Importer& importer,
+                    const AssetInfo& info,
                     const MeshMetaData& metaData,
                     scene::SceneNode& parent,
                     DrawableGroup* drawables,
                     int objectID);
-
-  // ======== Loading functions for mesh and texture ========
-  // Load a scene importer plugin. In case Magnum is built statically, arg is
-  // pluginDirectory to silence warnings, otherwise we *do* want it to search
-  // in the filesystem.
-  // Use importer
-  Magnum::PluginManager::Manager<Importer> manager{
-#ifdef MAGNUM_BUILD_STATIC
-      "./"
-#endif
-  };
 
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);
