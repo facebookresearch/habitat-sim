@@ -351,7 +351,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename,
     AssetInfo renderMeshinfo = AssetInfo::fromPath(filename);
 
     for (auto componentID : magnumMeshDict_[filename]) {
-      addComponent(*importer, renderMeshinfo, meshMetaData, newNode, drawables,
+      addComponent(renderMeshinfo, meshMetaData, newNode, drawables,
                    componentID);
     }
   }
@@ -818,28 +818,17 @@ bool ResourceManager::loadGeneralMeshData(
 
   LOG(INFO) << "LoadingGeneralMeshData: " << filename;
   LOG(INFO) << "  ...already loaded? " << fileIsLoaded;
+  std::unique_ptr<Importer> importer =
+      manager.loadAndInstantiate("AnySceneImporter");
+  manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
+  manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
 
   // Optional File loading
   if (!fileIsLoaded) {
-    if (importer->isOpened())
-      LOG(ERROR) << " importer preload mesh3DCount = "
-                 << importer->mesh3DCount();
-    else {
-      LOG(ERROR) << " importer no file loaded... ";
-    }
-
-    // if file is not loaded
-    if (!importer) {
-      LOG(ERROR) << "Cannot load the importer. ";
-      return false;
-    }
     if (!importer->openFile(filename)) {
       LOG(ERROR) << "Cannot open file " << filename;
       return false;
     }
-
-    LOG(ERROR) << " importer postload mesh3DCount = "
-               << importer->mesh3DCount();
 
     // if this is a new file, load it and add it to the dictionary
     loadTextures(*importer, &metaData);
@@ -914,12 +903,11 @@ bool ResourceManager::loadGeneralMeshData(
 
     const quatf transform = info.frame.rotationFrameToWorld();
     newNode.setRotation(Magnum::Math::Quaternion<float>(transform));
+    importer.reset();
     // Recursively add all children
     for (auto sceneDataID : magnumMeshDict_[filename]) {
       LOG(INFO) << "Scene data ID " << sceneDataID << " " << filename;
-      addComponent(*importer, info, metaData, newNode, drawables, sceneDataID);
-      // addComponent(*importer, info, metaData, *parent, drawables,
-      // sceneDataID);
+      addComponent(info, metaData, newNode, drawables, sceneDataID);
     }
     return true;
   }
@@ -1052,23 +1040,22 @@ void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
 //! Add component to rendering stack, based on importer loading
 //! TODO (JH): decouple importer part, so that objects can be
 //! instantiated any time after initial loading
-void ResourceManager::addComponent(Importer& importer,
-                                   const AssetInfo& info,
+void ResourceManager::addComponent(const AssetInfo& info,
                                    const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
                                    DrawableGroup* drawables,
                                    int componentID) {
-  // importer.openFile(info.filename);
-  // TODO: check what is in the importer...
+  std::unique_ptr<Importer> importer =
+      manager.loadAndInstantiate("AnySceneImporter");
+  manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
+  manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+  importer->openFile(info.filepath);
   LOG(INFO) << "   ...importer object name"
-            << importer.object3DName(componentID);
-  importer.openFile(info.filepath);
-  LOG(INFO) << "   ...importer object name"
-            << importer.object3DName(componentID);
+            << importer->object3DName(componentID);
   std::unique_ptr<Magnum::Trade::ObjectData3D> objectData =
-      importer.object3D(componentID);
+      importer->object3D(componentID);
   if (!objectData) {
-    LOG(ERROR) << "Cannot import object " << importer.object3DName(componentID)
+    LOG(ERROR) << "Cannot import object " << importer->object3DName(componentID)
                << ", skipping";
     return;
   }
@@ -1095,7 +1082,8 @@ void ResourceManager::addComponent(Importer& importer,
   for (auto childObjectID : objectData->children()) {
     LOG(INFO) << "Child ID " << childObjectID << " (total "
               << objectData->children().size() << ")";
-    addComponent(importer, info, metaData, node, drawables, childObjectID);
+    importer.reset();
+    addComponent(info, metaData, node, drawables, childObjectID);
   }
 }
 

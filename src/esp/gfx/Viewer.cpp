@@ -14,6 +14,9 @@
 #include "Drawable.h"
 #include "esp/io/io.h"
 
+#include "esp/gfx/Simulator.h"
+#include "esp/scene/SceneConfiguration.h"
+
 // Alex debugging
 #include "esp/assets/Attributes.h"
 
@@ -80,7 +83,6 @@ Viewer::Viewer(const Arguments& arguments)
       std::exit(0);
     }
   } else {
-    // render only scene
     if (!resourceManager_.loadScene(info, navSceneNode_, &drawables)) {
       LOG(ERROR) << "cannot load " << file;
       std::exit(0);
@@ -283,7 +285,6 @@ Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
 }
 
 void Viewer::drawEvent() {
-  // LOG(INFO) << "start draw ";
   GL::defaultFramebuffer.clear(GL::FramebufferClear::Color |
                                GL::FramebufferClear::Depth);
   if (sceneID_.size() <= 0)

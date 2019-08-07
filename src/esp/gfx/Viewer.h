@@ -13,7 +13,7 @@
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/RigidObject.h"
-#include "esp/physics/bullet/BulletPhysicsManager.h"
+//#include "esp/physics/bullet/BulletPhysicsManager.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"

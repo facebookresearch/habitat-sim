@@ -57,15 +57,8 @@ class ResourceManager {
   // a common design pattern for implementing
   // subsystems such as "resource manager", thats make up an engine is
   // to define a singleton class;
-  explicit ResourceManager() {
-    LOG(INFO) << "Constructing ResourceManager";
-    importer = manager.loadAndInstantiate("AnySceneImporter");
-    // Prefer tiny_gltf for loading glTF files (Assimp is worse),
-    // prefer Assimp for OBJ files (ObjImporter is worse)
-    manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
-    manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
-  };
-  ~ResourceManager() { LOG(INFO) << "Deconstructing ResourceManager"; }
+  explicit ResourceManager(){};
+  ~ResourceManager() {}
 
   // Stores references to a set of drawable elements
   using DrawableGroup = Magnum::SceneGraph::DrawableGroup3D;
@@ -140,8 +133,7 @@ class ResourceManager {
   //! (1) create scene node
   //! (2) upload mesh to gpu and drawables
   //! (optional reload of GPU-side assets)
-  void addComponent(Importer& importer,
-                    const AssetInfo& info,
+  void addComponent(const AssetInfo& info,
                     const MeshMetaData& metaData,
                     scene::SceneNode& parent,
                     DrawableGroup* drawables,
@@ -157,7 +149,6 @@ class ResourceManager {
       "./"
 #endif
   };
-  std::unique_ptr<Importer> importer;
 
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);
