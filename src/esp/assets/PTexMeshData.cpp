@@ -579,6 +579,18 @@ bool PTexMeshData::loadAdjacency(const std::string& filename,
   std::ifstream file;
   file.open(filename, std::ios::in | std::ios::binary);
 
+  uint64_t numSubMeshes = 0;
+  file.read((char*)&numSubMeshes, sizeof(uint64_t));
+  adjFaces.resize(numSubMeshes);
+
+  for (uint64_t iMesh = 0; iMesh < numSubMeshes; ++iMesh) {
+    uint64_t numAdjFaces = 0;
+    file.read((char*)&numAdjFaces, sizeof(uint64_t));
+    adjFaces[iMesh].resize(numAdjFaces);
+    uint32_t* data = adjFaces[iMesh].data();
+    file.read((char*)data, sizeof(uint32_t) * numAdjFaces);
+  }
+
   file.close();
   return true;
 }
@@ -592,6 +604,22 @@ void PTexMeshData::saveAdjacency(const std::string& filename,
               << std::endl;
     return;
   }
+
+  // storage:
+  // a uint64_t, to save the number of submeshes (N);
+  // followed by N items, each of which:
+  // a uint64_t, to save the number of adjacent faces (M) of submesh_j, then
+  // M uint32_t numbers, each of which is the adjacent face ID
+
+  uint64_t numSubMeshes = adjFaces.size();
+  file.write((char*)&numSubMeshes, sizeof(uint64_t));
+
+  for (uint64_t iMesh = 0; iMesh < numSubMeshes; ++iMesh) {
+    uint64_t numAdjFaces = adjFaces[iMesh].size();
+    file.write((char*)&numAdjFaces, sizeof(uint64_t));
+    file.write((char*)adjFaces[iMesh].data(), sizeof(uint32_t) * numAdjFaces);
+  }
+
   file.close();
 }
 
@@ -619,16 +647,26 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   }
   std::cout << "done" << std::endl;
 
-  std::cout << "Calculating mesh adjacency... ";
+  std::cout << "Calculating mesh adjacency... " << std::endl;
   std::cout.flush();
 
   std::vector<std::vector<uint32_t>> adjFaces(submeshes_.size());
 
+  // load it if it is computed before.
+  // otherwise compute it once and save it for future usage.
+  const std::string adjFaceFilename =
+      Corrade::Utility::Directory::join(atlasFolder_, "../mesh.adjacency");
+  if (!loadAdjacency(adjFaceFilename, adjFaces)) {
 #pragma omp parallel for
-  for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
-    calculateAdjacency(submeshes_[iMesh], adjFaces[iMesh]);
+    for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
+      calculateAdjacency(submeshes_[iMesh], adjFaces[iMesh]);
+    }
+    saveAdjacency(adjFaceFilename, adjFaces);
+    std::cout << "Done: it is computed and saved to: " << adjFaceFilename
+              << std::endl;
+  } else {
+    std::cout << "Done: Loaded it from " << adjFaceFilename << std::endl;
   }
-  std::cout << "... done" << std::endl;
 
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
     auto& currentMesh = renderingBuffers_[iMesh];
@@ -662,7 +700,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     Corrade::Containers::Array<const char,
                                Corrade::Utility::Directory::MapDeleter>
         data = Corrade::Utility::Directory::mapRead(rgbFile);
-    // divided by 3, since there are 3 channels, R, G, B, each of which takes 1 byte
+    // divided by 3, since there are 3 channels, R, G, B, each of which takes 1
+    // byte
     const int dim = static_cast<int>(std::sqrt(data.size() / 3));  // square
 
     // atlas
