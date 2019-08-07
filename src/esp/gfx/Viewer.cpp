@@ -34,7 +34,11 @@ Viewer::Viewer(const Arguments& arguments)
       controls_(),
       previousPosition_() {
   Utility::Arguments args;
+#ifdef CORRADE_TARGET_EMSCRIPTEN
   args.addNamedArgument("scene")
+#else
+  args.addArgument("scene")
+#endif
       .setHelp("scene", "scene file to load")
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
