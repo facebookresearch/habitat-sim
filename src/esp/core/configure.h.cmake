@@ -5,8 +5,7 @@
 #pragma once
 
 #cmakedefine ESP_WITH_EGL
-#cmakedefine BUILD_PTEX_SUPPORT
 
-#ifdef CORRADE_TARGET_EMSCRIPTEN
-#define USE_GLOG_SHIM
-#endif
+#cmakedefine ESP_WITH_PTEX_SUPPORT
+
+#cmakedefine ESP_WITH_GLOG_SHIM
