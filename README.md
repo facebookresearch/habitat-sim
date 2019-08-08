@@ -260,6 +260,6 @@ The Habitat project would not have been possible without the support and contrib
 
 Habitat-Sim is MIT licensed. See the LICENSE file for details.
 
-## References and Citation
+## References
 
 1. [Habitat: A Platform for Embodied AI Research](https://arxiv.org/abs/1904.01201). Manolis Savva, Abhishek Kadian, Oleksandr Maksymets, Yili Zhao, Erik Wijmans, Bhavana Jain, Julian Straub, Jia Liu, Vladlen Koltun, Jitendra Malik, Devi Parikh, Dhruv Batra. IEEE/CVF International Conference on Computer Vision (ICCV), 2019.
