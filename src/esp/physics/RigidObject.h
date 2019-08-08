@@ -30,11 +30,11 @@ class RigidObject : public scene::SceneNode {
   // there is probably a better way to abstract this
   virtual bool initializeScene(
       assets::PhysicsSceneAttributes& physicsSceneAttributes,
-      std::vector<assets::CollisionMeshData>& meshGroup);
+      const std::vector<assets::CollisionMeshData>& meshGroup);
 
   virtual bool initializeObject(
       assets::PhysicsObjectAttributes& physicsObjectAttributes,
-      std::vector<assets::CollisionMeshData>& meshGroup);
+      const std::vector<assets::CollisionMeshData>& meshGroup);
 
   ~RigidObject();
 
@@ -88,8 +88,8 @@ class RigidObject : public scene::SceneNode {
   virtual const double getRestitutionCoefficient() { return 0.0; }
   virtual const double getLinearDamping() { return 0.0; }
   virtual const double getAngularDamping() { return 0.0; }
-  virtual const Magnum::Vector3& getCOM();
-  virtual const Magnum::Vector3& getInertia();
+  virtual const Magnum::Vector3 getCOM();
+  virtual const Magnum::Vector3 getInertia();
 
   virtual void setMass(const double mass){};
   virtual void setCOM(const Magnum::Vector3& COM){};

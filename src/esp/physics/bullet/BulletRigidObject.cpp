@@ -36,7 +36,7 @@ BulletRigidObject::~BulletRigidObject() {}
 
 bool BulletRigidObject::initializeScene(
     assets::PhysicsSceneAttributes& physicsSceneAttributes,
-    std::vector<assets::CollisionMeshData>& meshGroup,
+    const std::vector<assets::CollisionMeshData>& meshGroup,
     std::shared_ptr<btDiscreteDynamicsWorld> bWorld) {
   if (initialized_) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
@@ -56,7 +56,7 @@ bool BulletRigidObject::initializeScene(
   //! Iterate through all mesh components for one scene
   //! All components are registered as static objects
   bSceneArray_ = std::make_unique<btTriangleIndexVertexArray>();
-  for (assets::CollisionMeshData& meshData : meshGroup) {
+  for (const assets::CollisionMeshData& meshData : meshGroup) {
     //! Here we convert Magnum's unsigned int indices to
     //! signed indices in bullet. Assuming that it's save to
     //! cast uint to int
@@ -109,7 +109,7 @@ bool BulletRigidObject::initializeScene(
 
 bool BulletRigidObject::initializeObject(
     assets::PhysicsObjectAttributes& physicsObjectAttributes,
-    std::vector<assets::CollisionMeshData>& meshGroup,
+    const std::vector<assets::CollisionMeshData>& meshGroup,
     std::shared_ptr<btDiscreteDynamicsWorld> bWorld) {
   // TODO (JH): Handling static/kinematic object type
   if (initialized_) {
@@ -133,7 +133,7 @@ bool BulletRigidObject::initializeObject(
   //! Iterate through all mesh components for one object
   //! The components are combined into a convex compound shape
   bObjectShape_ = std::make_unique<btCompoundShape>();
-  for (assets::CollisionMeshData& meshData : meshGroup) {
+  for (const assets::CollisionMeshData& meshData : meshGroup) {
     Corrade::Containers::ArrayView<Magnum::Vector3> v_data = meshData.positions;
     Corrade::Containers::ArrayView<Magnum::UnsignedInt> ui_data =
         meshData.indices;
@@ -170,16 +170,17 @@ bool BulletRigidObject::initializeObject(
       btVector3(physicsObjectAttributes.getMagnumVec3("inertia"));
 
   if (bInertia[0] == 0. && bInertia[1] == 0. && bInertia[2] == 0.) {
-    // Alex TODO: allow bullet to compute the inertia tensor if we don't have
-    // one
+    // allow bullet to compute the inertia tensor if we don't have one
     bObjectShape_->calculateLocalInertia(
         physicsObjectAttributes.getDouble("mass"),
         bInertia);  // overrides bInertia
     LOG(INFO) << "Automatic object inertia computed: " << bInertia.x() << " "
               << bInertia.y() << " " << bInertia.z();
   } else {
+    /*
     LOG(INFO) << "User provided object inertia " << bInertia.x() << " "
               << bInertia.y() << " " << bInertia.z();
+              */
   }
 
   //! Bullet rigid body setup
@@ -359,7 +360,7 @@ const double BulletRigidObject::getMass() {
     return 1.0 / bObjectRigidBody_->getInvMass();
 }
 
-const Magnum::Vector3& BulletRigidObject::getCOM() {
+const Magnum::Vector3 BulletRigidObject::getCOM() {
   // TODO: double check the position if there is any implicit transformation
   // done
   if (isScene_) {
@@ -372,7 +373,7 @@ const Magnum::Vector3& BulletRigidObject::getCOM() {
   }
 }
 
-const Magnum::Vector3& BulletRigidObject::getInertia() {
+const Magnum::Vector3 BulletRigidObject::getInertia() {
   if (isScene_) {
     const Magnum::Vector3 inertia = Magnum::Vector3();
     return inertia;

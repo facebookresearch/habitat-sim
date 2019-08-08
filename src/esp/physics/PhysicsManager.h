@@ -56,9 +56,10 @@ class PhysicsManager {
   //! Initialize scene given mesh data
   //! Only one scene per simulation
   //! The scene could contain several components
-  virtual bool addScene(const assets::AssetInfo& info,
-                        assets::PhysicsSceneAttributes& physicsSceneAttributes,
-                        std::vector<assets::CollisionMeshData>& meshGroup);
+  virtual bool addScene(
+      const assets::AssetInfo& info,
+      assets::PhysicsSceneAttributes& physicsSceneAttributes,
+      const std::vector<assets::CollisionMeshData>& meshGroup);
 
   //! Initialize object given mesh data
   //! The object could contain several parts
@@ -159,7 +160,7 @@ class PhysicsManager {
 
  protected:
   //! Check if mesh primitive type is valid for bullet physics engine
-  virtual bool isMeshPrimitiveValid(assets::CollisionMeshData& meshData);
+  virtual bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData);
 
   // acquires an ID from either the recycledObjectIDs_ or by incrementing
   // nextObjectID_
@@ -170,7 +171,7 @@ class PhysicsManager {
 
   //! Create and initialize rigid object
   virtual int makeRigidObject(
-      std::vector<assets::CollisionMeshData>& meshGroup,
+      const std::vector<assets::CollisionMeshData>& meshGroup,
       assets::PhysicsObjectAttributes physicsObjectAttributes);
 
   // use this to instantiate physics objects from the physicsObjectLibrary_

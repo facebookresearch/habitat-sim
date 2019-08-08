@@ -578,45 +578,18 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   return objectID;
 }
 
-void ResourceManager::transformAxis(const AssetInfo& info,
-                                    std::vector<CollisionMeshData>& meshGroup) {
-  quatf quatFront = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
-  Magnum::Quaternion quat = Magnum::Quaternion(quatFront);
-  Magnum::Matrix4 transform;
-  if (!(std::isnan(quat.axis().x()) || std::isnan(quat.axis().y()) ||
-        std::isnan(quat.axis().z()))) {
-    transform =
-        Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
-  }
-
-  for (CollisionMeshData& meshData : meshGroup) {
-    Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions);
-  }
-}
-
-std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
+const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
     const int objectID) {
-  if (objectID < 0 || objectID > collisionMeshGroups_.size()) {
-    std::vector<assets::CollisionMeshData> cMesh =
-        std::vector<assets::CollisionMeshData>();
-    return cMesh;
-  }
   std::string configFile = getObjectConfig(objectID);
   return collisionMeshGroups_[configFile];
 }
 
-std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
+const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
     const std::string configFile) {
-  if (collisionMeshGroups_.count(configFile) > 0) {
-    return collisionMeshGroups_[configFile];
-  } else {
-    std::vector<assets::CollisionMeshData> cMesh =
-        std::vector<assets::CollisionMeshData>();
-    return cMesh;
-  }
+  return collisionMeshGroups_[configFile];
 }
 
-int ResourceManager::getObjectID(std::string configFile) {
+int ResourceManager::getObjectID(const std::string configFile) {
   std::vector<std::string>::iterator itr =
       std::find(physicsObjectConfigList_.begin(),
                 physicsObjectConfigList_.end(), configFile);
@@ -628,7 +601,7 @@ int ResourceManager::getObjectID(std::string configFile) {
   }
 }
 
-std::string ResourceManager::getObjectConfig(int objectID) {
+std::string ResourceManager::getObjectConfig(const int objectID) {
   return physicsObjectConfigList_[objectID];
 }
 

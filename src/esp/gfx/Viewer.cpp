@@ -106,7 +106,6 @@ Viewer::Viewer(const Arguments& arguments)
   if (io::exists(navmeshFilename)) {
     LOG(INFO) << "Loading navmesh from " << navmeshFilename;
     pathfinder_->loadNavMesh(navmeshFilename);
-    LOG(INFO) << "Loaded.";
   }
 
   const vec3f position = pathfinder_->getRandomNavigablePoint();
@@ -132,32 +131,6 @@ Viewer::Viewer(const Arguments& arguments)
   timeline_.start();
 
 }  // end Viewer::Viewer
-
-void Viewer::testAttributes() {
-  assets::Attributes attributes;
-  attributes.setDouble("weight", 10.7);
-  LOG(INFO) << attributes.listAttributes();
-  attributes.setDouble("weight", 11.5);
-  LOG(INFO) << attributes.listAttributes();
-  attributes.setDouble("distance", 100.2345246);
-  LOG(INFO) << attributes.listAttributes();
-  attributes.setDouble("length", 0.2345246);
-  attributes.setDouble("cores", 100);
-  LOG(INFO) << attributes.listAttributes();
-  attributes.eraseAs(assets::DataType::DOUBLE, "length");
-  LOG(INFO) << attributes.listAttributes();
-  attributes.setInt("cores", 100);
-  attributes.setString("name", "Jarvis");
-  attributes.setMagnumVec3("gravity", Magnum::Vector3(0, -9.8, 0));
-  LOG(INFO) << attributes.listAttributes();
-  attributes.setVecStrings("tags",
-                           std::vector<std::string>{"yes", "no", "maybe"});
-  LOG(INFO) << attributes.listAttributes();
-  attributes.appendVecStrings("tags", "go!!");
-  LOG(INFO) << attributes.listAttributes();
-  attributes.removeFromVecString("tags", "go!!");
-  LOG(INFO) << attributes.listAttributes();
-}
 
 void Viewer::addObject(std::string configFile) {
   if (physicsManager_ == nullptr)
@@ -276,7 +249,8 @@ void Viewer::drawEvent() {
   timeline_.nextFrame();
   redraw();
   if (physicsManager_ != nullptr)
-    LOG(INFO) << "end draw world time: " << physicsManager_->getWorldTime();
+    LOG(INFO) << "end drawEvent world time: "
+              << physicsManager_->getWorldTime();
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
@@ -333,73 +307,6 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   previousPosition_ = currentPosition;
 
   event.setAccepted();
-}
-
-void Viewer::testSetterGetters() {
-  if (physicsManager_ == nullptr || objectIDs.size() == 0)
-    return;
-
-  int lastObjectID = objectIDs.back();
-  // Object Testing
-  // Testing : Mass
-  physicsManager_->setMass(lastObjectID, 10.0);
-  const double mass = physicsManager_->getMass(lastObjectID);
-  // Testing: Inertia
-  physicsManager_->setInertia(lastObjectID, Magnum::Vector3(1.0, 1.0, 1.0));
-  const Magnum::Vector3& inert = physicsManager_->getInertia(lastObjectID);
-  // Testing: scale
-  physicsManager_->setScale(lastObjectID, 2.0);
-  const double scale = physicsManager_->getScale(lastObjectID);
-  // Testing: friction
-  physicsManager_->setFrictionCoefficient(lastObjectID, 1.0);
-  const double objectFriction =
-      physicsManager_->getFrictionCoefficient(lastObjectID);
-  // Testing: restitution
-  physicsManager_->setRestitutionCoefficient(lastObjectID, 0.9);
-  const double objectRestitution =
-      physicsManager_->getRestitutionCoefficient(lastObjectID);
-  // Testing: linear damping
-  physicsManager_->setLinearDamping(lastObjectID, 0.9);
-  const double linDamping = physicsManager_->getLinearDamping(lastObjectID);
-  // Testing: restitution
-  physicsManager_->setAngularDamping(lastObjectID, 0.9);
-  const double angDamping = physicsManager_->getAngularDamping(lastObjectID);
-  // Testing: margin
-  physicsManager_->setMargin(lastObjectID, 0.1);
-  const double margin = physicsManager_->getMargin(lastObjectID);
-  // Testing: COM
-  physicsManager_->setCOM(lastObjectID, Magnum::Vector3(0.0, 0.0, 0.0));
-  const Magnum::Vector3& com = physicsManager_->getCOM(lastObjectID);
-
-  // Scene Testing
-  // Testing: friction
-  physicsManager_->setSceneFrictionCoefficient(1.0);
-  const double sceneFriction = physicsManager_->getSceneFrictionCoefficient();
-  // Testing: restitution
-  physicsManager_->setSceneRestitutionCoefficient(0.9);
-  const double sceneRestitution =
-      physicsManager_->getSceneRestitutionCoefficient();
-
-  // Transformation Testing
-  const Magnum::Vector3 position =
-      physicsManager_->getTranslation(lastObjectID);
-  physicsManager_->setTranslation(lastObjectID,
-                                  position + Magnum::Vector3(0.0, 1.0, 0.0));
-
-  LOG(INFO) << "Object - Mass: " << mass;
-  LOG(INFO) << "Object - COM: " << com.x() << ", " << com.y() << ", "
-            << com.z();
-  LOG(INFO) << "Object - Inertia: " << inert.x() << ", " << inert.y() << ", "
-            << inert.z();
-  LOG(INFO) << "Object - scale: " << scale;
-  LOG(INFO) << "Object - friction: " << objectFriction;
-  LOG(INFO) << "Object - restitution: " << objectRestitution;
-  LOG(INFO) << "Object - linDamping: " << linDamping;
-  LOG(INFO) << "Object - angDamping: " << angDamping;
-  LOG(INFO) << "Object - margin: " << margin;
-
-  LOG(INFO) << "Scene - friction: " << sceneFriction;
-  LOG(INFO) << "Scene - restitution: " << sceneRestitution;
 }
 
 void Viewer::keyPressEvent(KeyEvent& event) {
@@ -472,9 +379,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::V:
       invertGravity();
       break;
-    case KeyEvent::Key::T:  // test key
-      testAttributes();
-      testSetterGetters();
+    case KeyEvent::Key::T:
+      // Test key. Put what you want here...
       break;
     default:
       break;

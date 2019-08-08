@@ -13,7 +13,7 @@ RigidObject::RigidObject(scene::SceneNode* parent)
 
 bool RigidObject::initializeScene(
     assets::PhysicsSceneAttributes& physicsSceneAttributes,
-    std::vector<assets::CollisionMeshData>& meshGroup) {
+    const std::vector<assets::CollisionMeshData>& meshGroup) {
   if (initialized_) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
     return false;
@@ -32,7 +32,7 @@ bool RigidObject::initializeScene(
 
 bool RigidObject::initializeObject(
     assets::PhysicsObjectAttributes& physicsObjectAttributes,
-    std::vector<assets::CollisionMeshData>& meshGroup) {
+    const std::vector<assets::CollisionMeshData>& meshGroup) {
   // TODO (JH): Handling static/kinematic object type
   if (initialized_) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
@@ -62,11 +62,13 @@ bool RigidObject::isActive() {
 }
 
 RigidObject::~RigidObject() {
+  /*
   if (initialized_) {
     LOG(INFO) << "Deleting object ";
   } else {
     LOG(INFO) << "Object not initialized";
   }
+  */
 }
 
 void RigidObject::applyForce(Magnum::Vector3& force, Magnum::Vector3& relPos) {
@@ -186,12 +188,12 @@ scene::SceneNode& RigidObject::rotateZLocal(
   return *this;
 }
 
-const Magnum::Vector3& RigidObject::getCOM() {
+const Magnum::Vector3 RigidObject::getCOM() {
   const Magnum::Vector3 com = Magnum::Vector3();
   return com;
 }
 
-const Magnum::Vector3& RigidObject::getInertia() {
+const Magnum::Vector3 RigidObject::getInertia() {
   const Magnum::Vector3 inertia = Magnum::Vector3();
   return inertia;
 }

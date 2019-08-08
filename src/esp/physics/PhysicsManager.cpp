@@ -40,8 +40,6 @@ namespace physics {
 bool PhysicsManager::initPhysics(
     scene::SceneNode* node,
     assets::PhysicsManagerAttributes physicsManagerAttributes) {
-  LOG(INFO) << "Initializing Base Physics Engine...";
-
   physicsNode_ = node;
   //! Create new scene node
   sceneNode_ = std::make_shared<physics::RigidObject>(physicsNode_);
@@ -50,16 +48,14 @@ bool PhysicsManager::initPhysics(
   return true;
 }
 
-PhysicsManager::~PhysicsManager() {
-  LOG(INFO) << "Deconstructing PhysicsManager";
-}
+PhysicsManager::~PhysicsManager() {}
 
 bool PhysicsManager::addScene(
     const assets::AssetInfo& info,
     assets::PhysicsSceneAttributes& physicsSceneAttributes,
-    std::vector<assets::CollisionMeshData>& meshGroup) {
+    const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
-  for (assets::CollisionMeshData& meshData : meshGroup) {
+  for (const assets::CollisionMeshData& meshData : meshGroup) {
     if (!isMeshPrimitiveValid(meshData)) {
       return false;
     }
@@ -85,11 +81,11 @@ int PhysicsManager::addObject(const int resObjectID, DrawableGroup* drawables) {
   const std::string configFile = resourceManager_->getObjectConfig(resObjectID);
 
   //! Test Mesh primitive is valid
-  std::vector<assets::CollisionMeshData> meshGroup =
+  const std::vector<assets::CollisionMeshData>& meshGroup =
       resourceManager_->getCollisionMesh(configFile);
   assets::PhysicsObjectAttributes physicsObjectAttributes =
       resourceManager_->getPhysicsObjectAttributes(configFile);
-  for (assets::CollisionMeshData& meshData : meshGroup) {
+  for (const assets::CollisionMeshData& meshData : meshGroup) {
     if (!isMeshPrimitiveValid(meshData)) {
       return false;
     }
@@ -98,7 +94,7 @@ int PhysicsManager::addObject(const int resObjectID, DrawableGroup* drawables) {
   //! Instantiate with mesh pointer
   int nextObjectID_ = makeRigidObject(meshGroup, physicsObjectAttributes);
   if (nextObjectID_ < 0) {
-    LOG(ERROR) << "Initialize unsuccessful";
+    LOG(ERROR) << "makeRigidObject unsuccessful";
     return -1;
   }
 
@@ -146,7 +142,7 @@ int PhysicsManager::deallocateObjectID(int physObjectID) {
 
 //! Create and initialize rigid object
 int PhysicsManager::makeRigidObject(
-    std::vector<assets::CollisionMeshData>& meshGroup,
+    const std::vector<assets::CollisionMeshData>& meshGroup,
     assets::PhysicsObjectAttributes physicsObjectAttributes) {
   //! Create new physics object (child node of sceneNode_)
 
@@ -167,7 +163,8 @@ int PhysicsManager::makeRigidObject(
 }
 
 //! Base physics manager has no requirement for mesh primitive
-bool PhysicsManager::isMeshPrimitiveValid(assets::CollisionMeshData& meshData) {
+bool PhysicsManager::isMeshPrimitiveValid(
+    const assets::CollisionMeshData& meshData) {
   return true;
 }
 

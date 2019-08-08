@@ -15,7 +15,6 @@ namespace physics {
 bool BulletPhysicsManager::initPhysics(
     scene::SceneNode* node,
     assets::PhysicsManagerAttributes physicsManagerAttributes) {
-  LOG(INFO) << "Initializing Bullet Physics Engine...";
   activePhysSimLib_ = BULLET;
 
   //! We can potentially use other collision checking algorithms, by
@@ -37,32 +36,19 @@ bool BulletPhysicsManager::initPhysics(
   return true;
 }
 
-BulletPhysicsManager::~BulletPhysicsManager() {
-  LOG(INFO) << "Deconstructing BulletPhysicsManager";
-}
+BulletPhysicsManager::~BulletPhysicsManager() {}
 
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
 bool BulletPhysicsManager::addScene(
     const assets::AssetInfo& info,
     assets::PhysicsSceneAttributes& physicsSceneAttributes,
-    std::vector<assets::CollisionMeshData>& meshGroup) {
+    const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
-  for (assets::CollisionMeshData& meshData : meshGroup) {
+  for (const assets::CollisionMeshData& meshData : meshGroup) {
     if (!isMeshPrimitiveValid(meshData)) {
       return false;
     }
-  }
-
-  switch (info.type) {
-    case assets::AssetType::INSTANCE_MESH:
-      LOG(INFO) << "Initialize instance scene";
-      break;  // ._semantic.ply mesh data
-    case assets::AssetType::FRL_INSTANCE_MESH:
-      LOG(INFO) << "Initialize FRL scene";
-      break;  // FRL mesh
-    default:
-      LOG(INFO) << "Initialize GLB scene";  // GLB mesh data
   }
 
   //! Initialize scene
@@ -70,13 +56,12 @@ bool BulletPhysicsManager::addScene(
       std::dynamic_pointer_cast<physics::BulletRigidObject,
                                 physics::RigidObject>(sceneNode_)
           ->initializeScene(physicsSceneAttributes, meshGroup, bWorld_);
-  LOG(INFO) << "Init scene done";
 
   return sceneSuccess;
 }
 
 int BulletPhysicsManager::makeRigidObject(
-    std::vector<assets::CollisionMeshData>& meshGroup,
+    const std::vector<assets::CollisionMeshData>& meshGroup,
     assets::PhysicsObjectAttributes physicsObjectAttributes) {
   //! Create new physics object (child node of sceneNode_)
   int newObjectID = allocateObjectID();
@@ -90,19 +75,17 @@ int BulletPhysicsManager::makeRigidObject(
           existingObjects_.at(newObjectID).get())
           ->initializeObject(physicsObjectAttributes, meshGroup, bWorld_);
   if (!objectSuccess) {
-    LOG(INFO) << "deleted";
+    LOG(ERROR) << "Object load failed";
     deallocateObjectID(newObjectID);
     existingObjects_.erase(newObjectID);
     return -1;
   }
-  LOG(INFO) << "Allocate new object id " << newObjectID << " "
-            << existingObjects_.at(newObjectID);
   return newObjectID;
 }
 
 //! Check if mesh primitive is compatible with physics
 bool BulletPhysicsManager::isMeshPrimitiveValid(
-    assets::CollisionMeshData& meshData) {
+    const assets::CollisionMeshData& meshData) {
   if (meshData.primitive == Magnum::MeshPrimitive::Triangles) {
     //! Only triangle mesh works
     return true;
@@ -135,9 +118,6 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
 }
 
 void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
-  LOG(INFO) << "Gravity " << gravity[0] << ", " << gravity[1] << ", "
-            << gravity[2];
-
   bWorld_->setGravity(btVector3(gravity));
   // After gravity change, need to reactive all bullet objects
   for (std::map<int, std::shared_ptr<physics::RigidObject>>::iterator it =
@@ -159,19 +139,11 @@ void BulletPhysicsManager::stepPhysics(double dt) {
     dt = fixedTimeStep_;
 
   // ==== Physics stepforward ======
-  // NOTE: chrono breaks devfair build
-  // auto start = std::chrono::system_clock::now();
 
   // Alex NOTE: worldTime_ will always be a multiple of sceneMetaData_.timestep
   int numSubStepsTaken =
       bWorld_->stepSimulation(dt, maxSubSteps_, fixedTimeStep_);
   worldTime_ += numSubStepsTaken * fixedTimeStep_;
-
-  // auto end = std::chrono::system_clock::now();
-
-  // std::chrono::duration<float> elapsed_seconds = end - start;
-  // LOG(INFO) << "Step physics dt | compute time: " << dt << " | " <<
-  // elapsed_seconds.count();
 }
 
 void BulletPhysicsManager::setMargin(const int physObjectID,
