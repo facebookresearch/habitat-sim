@@ -268,14 +268,14 @@ void BulletRigidObject::setActive() {
   bObjectRigidBody_->activate(true);
 }
 
-void BulletRigidObject::applyForce(Magnum::Vector3 force,
-                                   Magnum::Vector3 relPos) {
+void BulletRigidObject::applyForce(Magnum::Vector3& force,
+                                   Magnum::Vector3& relPos) {
   setActive();
   bObjectRigidBody_->applyForce(btVector3(force), btVector3(relPos));
 }
 
-void BulletRigidObject::applyImpulse(Magnum::Vector3 impulse,
-                                     Magnum::Vector3 relPos) {
+void BulletRigidObject::applyImpulse(Magnum::Vector3& impulse,
+                                     Magnum::Vector3& relPos) {
   if (isScene_ || !initialized_) {
     return;
   }
@@ -319,7 +319,7 @@ void BulletRigidObject::setMass(const double mass) {
     bObjectRigidBody_->setMassProps(mass, btVector3(getInertia()));
 }
 
-void BulletRigidObject::setCOM(const Magnum::Vector3 COM) {
+void BulletRigidObject::setCOM(const Magnum::Vector3& COM) {
   // Current not supported
   /*if (isScene_)
     return;
@@ -328,7 +328,7 @@ void BulletRigidObject::setCOM(const Magnum::Vector3 COM) {
         btTransform(Magnum::Math::Matrix4<float>::translation(COM)));*/
 }
 
-void BulletRigidObject::setInertia(const Magnum::Vector3 inertia) {
+void BulletRigidObject::setInertia(const Magnum::Vector3& inertia) {
   if (isScene_)
     return;
   else
@@ -393,20 +393,28 @@ const double BulletRigidObject::getMass() {
     return 1.0 / bObjectRigidBody_->getInvMass();
 }
 
-const Magnum::Vector3 BulletRigidObject::getCOM() {
+const Magnum::Vector3& BulletRigidObject::getCOM() {
   // TODO: double check the position if there is any implicit transformation
   // done
-  if (isScene_)
-    return Magnum::Vector3();
-  else
-    return Magnum::Vector3(bObjectRigidBody_->getCenterOfMassPosition());
+  if (isScene_) {
+    const Magnum::Vector3 com = Magnum::Vector3();
+    return com;
+  } else {
+    const Magnum::Vector3 com =
+        Magnum::Vector3(bObjectRigidBody_->getCenterOfMassPosition());
+    return com;
+  }
 }
 
-const Magnum::Vector3 BulletRigidObject::getInertia() {
-  if (isScene_)
-    return Magnum::Vector3();
-  else
-    return 1.0 / Magnum::Vector3(bObjectRigidBody_->getInvInertiaDiagLocal());
+const Magnum::Vector3& BulletRigidObject::getInertia() {
+  if (isScene_) {
+    const Magnum::Vector3 inertia = Magnum::Vector3();
+    return inertia;
+  } else {
+    const Magnum::Vector3 inertia =
+        1.0 / Magnum::Vector3(bObjectRigidBody_->getInvInertiaDiagLocal());
+    return inertia;
+  }
 }
 
 const double BulletRigidObject::getScale() {

@@ -33,16 +33,16 @@ class BulletRigidObject : public RigidObject {
   void setActive();
 
   //! Force interaction
-  void applyForce(Magnum::Vector3 force, Magnum::Vector3 relPos);
+  void applyForce(Magnum::Vector3& force, Magnum::Vector3& relPos);
   //! Impulse interaction
-  void applyImpulse(Magnum::Vector3 impulse, Magnum::Vector3 relPos);
+  void applyImpulse(Magnum::Vector3& impulse, Magnum::Vector3& relPos);
 
   bool removeObject();
 
   //============ Getter/setter function =============
   const double getMass();
-  const Magnum::Vector3 getCOM();
-  const Magnum::Vector3 getInertia();
+  const Magnum::Vector3& getCOM();
+  const Magnum::Vector3& getInertia();
   const double getScale();
   const double getFrictionCoefficient();
   const double getRestitutionCoefficient();
@@ -52,8 +52,8 @@ class BulletRigidObject : public RigidObject {
   const double getMargin();
 
   void setMass(const double mass);
-  void setCOM(const Magnum::Vector3 COM);
-  void setInertia(const Magnum::Vector3 inertia);
+  void setCOM(const Magnum::Vector3& COM);
+  void setInertia(const Magnum::Vector3& inertia);
   void setScale(const double scale);
   void setFrictionCoefficient(const double frictionCoefficient);
   void setRestitutionCoefficient(const double restitutionCoefficient);

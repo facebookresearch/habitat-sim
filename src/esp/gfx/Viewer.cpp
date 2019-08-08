@@ -225,8 +225,9 @@ void Viewer::removeLastObject() {
 void Viewer::invertGravity() {
   if (physicsManager_ == nullptr)
     return;
-  Magnum::Vector3 gravity = physicsManager_->getGravity();
-  physicsManager_->setGravity(-1 * gravity);
+  const Magnum::Vector3& gravity = physicsManager_->getGravity();
+  const Magnum::Vector3 invGravity = -1 * gravity;
+  physicsManager_->setGravity(invGravity);
 }
 
 void Viewer::pokeLastObject() {
@@ -370,43 +371,42 @@ void Viewer::testSetterGetters() {
 
   // Object Testing
   // Testing : Mass
-  // physicsManager_->setMass(objectIDs.back(), 10.0);
+  physicsManager_->setMass(objectIDs.back(), 10.0);
   const double mass = physicsManager_->getMass(objectIDs.back());
   // Testing: Inertia
-  // physicsManager_->setInertia(objectIDs.back(),
-  // Magnum::Vector3(1.0, 1.0, 1.0));
-  const Magnum::Vector3 inert = physicsManager_->getInertia(objectIDs.back());
+  physicsManager_->setInertia(objectIDs.back(), Magnum::Vector3(1.0, 1.0, 1.0));
+  const Magnum::Vector3& inert = physicsManager_->getInertia(objectIDs.back());
   // Testing: scale
   physicsManager_->setScale(objectIDs.back(), 2.0);
   const double scale = physicsManager_->getScale(objectIDs.back());
   // Testing: friction
-  // physicsManager_->setFrictionCoefficient(objectIDs.back(), 1.0);
+  physicsManager_->setFrictionCoefficient(objectIDs.back(), 1.0);
   const double objectFriction =
       physicsManager_->getFrictionCoefficient(objectIDs.back());
   // Testing: restitution
-  // physicsManager_->setRestitutionCoefficient(objectIDs.back(), 0.9);
+  physicsManager_->setRestitutionCoefficient(objectIDs.back(), 0.9);
   const double objectRestitution =
       physicsManager_->getRestitutionCoefficient(objectIDs.back());
   // Testing: linear damping
-  // physicsManager_->setLinearDamping(objectIDs.back(), 0.9);
+  physicsManager_->setLinearDamping(objectIDs.back(), 0.9);
   const double linDamping = physicsManager_->getLinearDamping(objectIDs.back());
   // Testing: restitution
-  // physicsManager_->setAngularDamping(objectIDs.back(), 0.9);
+  physicsManager_->setAngularDamping(objectIDs.back(), 0.9);
   const double angDamping =
       physicsManager_->getAngularDamping(objectIDs.back());
   // Testing: margin
-  // physicsManager_->setMargin(objectIDs.back(), 0.1);
+  physicsManager_->setMargin(objectIDs.back(), 0.1);
   const double margin = physicsManager_->getMargin(objectIDs.back());
   // Testing: COM
   physicsManager_->setCOM(objectIDs.back(), Magnum::Vector3(0.0, 0.0, 0.0));
-  const Magnum::Vector3 com = physicsManager_->getCOM(objectIDs.back());
+  const Magnum::Vector3& com = physicsManager_->getCOM(objectIDs.back());
 
   // Scene Testing
   // Testing: friction
-  // physicsManager_->setSceneFrictionCoefficient(1.0);
+  physicsManager_->setSceneFrictionCoefficient(1.0);
   const double sceneFriction = physicsManager_->getSceneFrictionCoefficient();
   // Testing: restitution
-  // physicsManager_->setSceneRestitutionCoefficient(0.9);
+  physicsManager_->setSceneRestitutionCoefficient(0.9);
   const double sceneRestitution =
       physicsManager_->getSceneRestitutionCoefficient();
 

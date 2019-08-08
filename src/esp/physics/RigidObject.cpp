@@ -69,13 +69,13 @@ RigidObject::~RigidObject() {
   }
 }
 
-void RigidObject::applyForce(Magnum::Vector3 force, Magnum::Vector3 relPos) {
+void RigidObject::applyForce(Magnum::Vector3& force, Magnum::Vector3& relPos) {
   // without a physics engine we can't apply any forces...
   return;
 }
 
-void RigidObject::applyImpulse(Magnum::Vector3 impulse,
-                               Magnum::Vector3 relPos) {
+void RigidObject::applyImpulse(Magnum::Vector3& impulse,
+                               Magnum::Vector3& relPos) {
   // without a physics engine we can't apply any forces...
   return;
 }
@@ -88,14 +88,14 @@ void RigidObject::syncPose() {
 }
 
 scene::SceneNode& RigidObject::setTransformation(
-    const Magnum::Math::Matrix4<float> transformation) {
+    const Magnum::Math::Matrix4<float>& transformation) {
   scene::SceneNode::setTransformation(transformation);
   syncPose();
   return *this;
 }
 
 scene::SceneNode& RigidObject::setTranslation(
-    const Magnum::Math::Vector3<float> vector) {
+    const Magnum::Math::Vector3<float>& vector) {
   scene::SceneNode::setTranslation(vector);
   syncPose();
   return *this;
@@ -115,14 +115,14 @@ scene::SceneNode& RigidObject::resetTransformation() {
 }
 
 scene::SceneNode& RigidObject::translate(
-    const Magnum::Math::Vector3<float> vector) {
+    const Magnum::Math::Vector3<float>& vector) {
   scene::SceneNode::translate(vector);
   syncPose();
   return *this;
 }
 
 scene::SceneNode& RigidObject::translateLocal(
-    const Magnum::Math::Vector3<float> vector) {
+    const Magnum::Math::Vector3<float>& vector) {
   scene::SceneNode::translateLocal(vector);
   syncPose();
   return *this;
@@ -130,7 +130,7 @@ scene::SceneNode& RigidObject::translateLocal(
 
 scene::SceneNode& RigidObject::rotate(
     const Magnum::Math::Rad<float> angleInRad,
-    const Magnum::Math::Vector3<float> normalizedAxis) {
+    const Magnum::Math::Vector3<float>& normalizedAxis) {
   scene::SceneNode::rotate(angleInRad, normalizedAxis);
   syncPose();
   return *this;
@@ -138,7 +138,7 @@ scene::SceneNode& RigidObject::rotate(
 
 scene::SceneNode& RigidObject::rotateLocal(
     const Magnum::Math::Rad<float> angleInRad,
-    const Magnum::Math::Vector3<float> normalizedAxis) {
+    const Magnum::Math::Vector3<float>& normalizedAxis) {
   scene::SceneNode::rotateLocal(angleInRad, normalizedAxis);
   syncPose();
   return *this;
@@ -184,6 +184,16 @@ scene::SceneNode& RigidObject::rotateZLocal(
   scene::SceneNode::rotateZLocal(angleInRad);
   syncPose();
   return *this;
+}
+
+const Magnum::Vector3& RigidObject::getCOM() {
+  const Magnum::Vector3 com = Magnum::Vector3();
+  return com;
+}
+
+const Magnum::Vector3& RigidObject::getInertia() {
+  const Magnum::Vector3 inertia = Magnum::Vector3();
+  return inertia;
 }
 
 }  // namespace physics

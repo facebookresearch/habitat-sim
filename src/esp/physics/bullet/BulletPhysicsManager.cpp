@@ -134,7 +134,7 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
   }
 }
 
-void BulletPhysicsManager::setGravity(Magnum::Vector3 gravity) {
+void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   LOG(INFO) << "Gravity " << gravity[0] << ", " << gravity[1] << ", "
             << gravity[2];
 
@@ -149,7 +149,7 @@ void BulletPhysicsManager::setGravity(Magnum::Vector3 gravity) {
   }
 }
 
-const Magnum::Vector3 BulletPhysicsManager::getGravity() {
+const Magnum::Vector3& BulletPhysicsManager::getGravity() {
   Magnum::Vector3 gravity(bWorld_->getGravity());
   return gravity;
 }

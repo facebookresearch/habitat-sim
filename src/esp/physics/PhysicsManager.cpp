@@ -186,11 +186,11 @@ void PhysicsManager::setTimestep(double dt) {
   fixedTimeStep_ = dt;
 }
 
-void PhysicsManager::setGravity(Magnum::Vector3 gravity) {
+void PhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   // Can't do this for kinematic simulator
 }
 
-const Magnum::Vector3 PhysicsManager::getGravity() {
+const Magnum::Vector3& PhysicsManager::getGravity() {
   return Magnum::Vector3(0);
 }
 
@@ -242,16 +242,16 @@ int PhysicsManager::checkActiveObjects() {
 }
 
 void PhysicsManager::applyForce(const int physObjectID,
-                                Magnum::Vector3 force,
-                                Magnum::Vector3 relPos) {
+                                Magnum::Vector3& force,
+                                Magnum::Vector3& relPos) {
   if (existingObjects_.count(physObjectID) > 0) {
     existingObjects_[physObjectID]->applyForce(force, relPos);
   }
 }
 
 void PhysicsManager::applyImpulse(const int physObjectID,
-                                  Magnum::Vector3 impulse,
-                                  Magnum::Vector3 relPos) {
+                                  Magnum::Vector3& impulse,
+                                  Magnum::Vector3& relPos) {
   if (existingObjects_.count(physObjectID) > 0) {
     existingObjects_[physObjectID]->applyImpulse(impulse, relPos);
   }
@@ -259,13 +259,14 @@ void PhysicsManager::applyImpulse(const int physObjectID,
 
 void PhysicsManager::setTransformation(
     const int physObjectID,
-    const Magnum::Math::Matrix4<float> trans) {
+    const Magnum::Math::Matrix4<float>& trans) {
   if (existingObjects_.count(physObjectID) > 0) {
     existingObjects_[physObjectID]->setTransformation(trans);
   }
 }
-void PhysicsManager::setTranslation(const int physObjectID,
-                                    const Magnum::Math::Vector3<float> vector) {
+void PhysicsManager::setTranslation(
+    const int physObjectID,
+    const Magnum::Math::Vector3<float>& vector) {
   if (existingObjects_.count(physObjectID) > 0) {
     existingObjects_[physObjectID]->setTranslation(vector);
   }
@@ -283,20 +284,22 @@ void PhysicsManager::resetTransformation(const int physObjectID) {
   }
 }
 void PhysicsManager::translate(const int physObjectID,
-                               const Magnum::Math::Vector3<float> vector) {
+                               const Magnum::Math::Vector3<float>& vector) {
   if (existingObjects_.count(physObjectID) > 0) {
     existingObjects_[physObjectID]->translate(vector);
   }
 }
-void PhysicsManager::translateLocal(const int physObjectID,
-                                    const Magnum::Math::Vector3<float> vector) {
+void PhysicsManager::translateLocal(
+    const int physObjectID,
+    const Magnum::Math::Vector3<float>& vector) {
   if (existingObjects_.count(physObjectID) > 0) {
     existingObjects_[physObjectID]->translateLocal(vector);
   }
 }
-void PhysicsManager::rotate(const int physObjectID,
-                            const Magnum::Math::Rad<float> angleInRad,
-                            const Magnum::Math::Vector3<float> normalizedAxis) {
+void PhysicsManager::rotate(
+    const int physObjectID,
+    const Magnum::Math::Rad<float> angleInRad,
+    const Magnum::Math::Vector3<float>& normalizedAxis) {
   if (existingObjects_.count(physObjectID) > 0) {
     existingObjects_[physObjectID]->rotate(angleInRad, normalizedAxis);
   }
@@ -345,14 +348,15 @@ void PhysicsManager::setMass(const int physObjectID, const double mass) {
     existingObjects_[physObjectID]->setMass(mass);
   }
 }
-void PhysicsManager::setCOM(const int physObjectID, const Magnum::Vector3 COM) {
+void PhysicsManager::setCOM(const int physObjectID,
+                            const Magnum::Vector3& COM) {
   // (JH Note) TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
     existingObjects_[physObjectID]->setCOM(COM);
   }
 }
 void PhysicsManager::setInertia(const int physObjectID,
-                                const Magnum::Vector3 inertia) {
+                                const Magnum::Vector3& inertia) {
   // (JH Note) TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
     existingObjects_[physObjectID]->setInertia(inertia);
@@ -405,7 +409,7 @@ const double PhysicsManager::getMass(const int physObjectID) {
   }
 }
 
-const Magnum::Vector3 PhysicsManager::getCOM(const int physObjectID) {
+const Magnum::Vector3& PhysicsManager::getCOM(const int physObjectID) {
   // (JH Note) TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
     return existingObjects_[physObjectID]->getCOM();
@@ -413,7 +417,7 @@ const Magnum::Vector3 PhysicsManager::getCOM(const int physObjectID) {
     return Magnum::Vector3();
   }
 }
-const Magnum::Vector3 PhysicsManager::getInertia(const int physObjectID) {
+const Magnum::Vector3& PhysicsManager::getInertia(const int physObjectID) {
   // (JH Note) TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
     return existingObjects_[physObjectID]->getInertia();

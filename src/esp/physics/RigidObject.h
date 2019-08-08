@@ -43,34 +43,34 @@ class RigidObject : public scene::SceneNode {
   virtual void setActive(){};
 
   //! Force interaction
-  virtual void applyForce(Magnum::Vector3 force, Magnum::Vector3 relPos);
+  virtual void applyForce(Magnum::Vector3& force, Magnum::Vector3& relPos);
   // Impulse interaction
-  virtual void applyImpulse(Magnum::Vector3 impulse, Magnum::Vector3 relPos);
+  virtual void applyImpulse(Magnum::Vector3& impulse, Magnum::Vector3& relPos);
 
   //! (Prototype) For visualizing & debugging
   void debugForce(Magnum::SceneGraph::DrawableGroup3D& debugDrawables);
   //! (Prototype) For visualizing & debugging
-  void setDebugForce(Magnum::Vector3 force);
+  void setDebugForce(Magnum::Vector3& force);
 
   virtual bool removeObject();
 
   // ==== Transformations ===
   //! Need to overwrite a bunch of functions to update physical states
   virtual SceneNode& setTransformation(
-      const Magnum::Math::Matrix4<float> transformation);
-  virtual SceneNode& setTranslation(const Magnum::Math::Vector3<float> vector);
+      const Magnum::Math::Matrix4<float>& transformation);
+  virtual SceneNode& setTranslation(const Magnum::Math::Vector3<float>& vector);
   virtual SceneNode& setRotation(
       const Magnum::Math::Quaternion<float>& quaternion);
 
   virtual SceneNode& resetTransformation();
-  virtual SceneNode& translate(const Magnum::Math::Vector3<float> vector);
-  virtual SceneNode& translateLocal(const Magnum::Math::Vector3<float> vector);
+  virtual SceneNode& translate(const Magnum::Math::Vector3<float>& vector);
+  virtual SceneNode& translateLocal(const Magnum::Math::Vector3<float>& vector);
 
   virtual SceneNode& rotate(const Magnum::Math::Rad<float> angleInRad,
-                            const Magnum::Math::Vector3<float> normalizedAxis);
+                            const Magnum::Math::Vector3<float>& normalizedAxis);
   virtual SceneNode& rotateLocal(
       const Magnum::Math::Rad<float> angleInRad,
-      const Magnum::Math::Vector3<float> normalizedAxis);
+      const Magnum::Math::Vector3<float>& normalizedAxis);
 
   virtual SceneNode& rotateX(const Magnum::Math::Rad<float> angleInRad);
   virtual SceneNode& rotateY(const Magnum::Math::Rad<float> angleInRad);
@@ -83,17 +83,17 @@ class RigidObject : public scene::SceneNode {
   //! For kinematic objects they are dummies, for dynamic objects
   //! implemented in physics-engine specific ways
   virtual const double getMass() { return 0.0; }
-  virtual const Magnum::Vector3 getCOM() { return Magnum::Vector3(); }
-  virtual const Magnum::Vector3 getInertia() { return Magnum::Vector3(); }
   virtual const double getScale() { return 0.0; }
   virtual const double getFrictionCoefficient() { return 0.0; }
   virtual const double getRestitutionCoefficient() { return 0.0; }
   virtual const double getLinearDamping() { return 0.0; }
   virtual const double getAngularDamping() { return 0.0; }
+  virtual const Magnum::Vector3& getCOM();
+  virtual const Magnum::Vector3& getInertia();
 
   virtual void setMass(const double mass){};
-  virtual void setCOM(const Magnum::Vector3 COM){};
-  virtual void setInertia(const Magnum::Vector3 inertia){};
+  virtual void setCOM(const Magnum::Vector3& COM){};
+  virtual void setInertia(const Magnum::Vector3& inertia){};
   virtual void setScale(const double scale){};
   virtual void setFrictionCoefficient(const double frictionCoefficient){};
   virtual void setRestitutionCoefficient(const double restitutionCoefficient){};

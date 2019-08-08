@@ -40,9 +40,9 @@ class BulletPhysicsManager : public PhysicsManager {
   //============ Simulator functions =============
   void stepPhysics(double dt = -1.0);
 
-  void setGravity(Magnum::Vector3 gravity);
+  void setGravity(const Magnum::Vector3& gravity);
 
-  const Magnum::Vector3 getGravity();
+  const Magnum::Vector3& getGravity();
 
   //============ Interact with objects =============
   // Alex NOTE: engine specifics handled by objects themselves...

@@ -70,12 +70,12 @@ class PhysicsManager {
 
   // =========== Global Setter functions ===========
   virtual void setTimestep(double dt);
-  virtual void setGravity(Magnum::Vector3 gravity);
+  virtual void setGravity(const Magnum::Vector3& gravity);
 
   // =========== Global Getter functions ===========
   virtual const double getTimestep() { return fixedTimeStep_; };
   virtual const double getWorldTime() { return worldTime_; };
-  virtual const Magnum::Vector3 getGravity();
+  virtual const Magnum::Vector3& getGravity();
 
   // =========== Scene Getter/Setter functions ===========
   virtual const double getSceneFrictionCoefficient() { return 0.0; };
@@ -86,19 +86,19 @@ class PhysicsManager {
 
   //============ Object Transformation functions =============
   void setTransformation(const int physObjectID,
-                         const Magnum::Math::Matrix4<float> trans);
+                         const Magnum::Math::Matrix4<float>& trans);
   void setTranslation(const int physObjectID,
-                      const Magnum::Math::Vector3<float> vector);
+                      const Magnum::Math::Vector3<float>& vector);
   void setRotation(const int physObjectID,
                    const Magnum::Math::Quaternion<float>& quaternion);
   void resetTransformation(const int physObjectID);
   void translate(const int physObjectID,
-                 const Magnum::Math::Vector3<float> vector);
+                 const Magnum::Math::Vector3<float>& vector);
   void translateLocal(const int physObjectID,
-                      const Magnum::Math::Vector3<float> vector);
+                      const Magnum::Math::Vector3<float>& vector);
   void rotate(const int physObjectID,
               const Magnum::Math::Rad<float> angleInRad,
-              const Magnum::Math::Vector3<float> normalizedAxis);
+              const Magnum::Math::Vector3<float>& normalizedAxis);
   void rotateX(const int physObjectID,
                const Magnum::Math::Rad<float> angleInRad);
   void rotateY(const int physObjectID,
@@ -114,8 +114,8 @@ class PhysicsManager {
 
   //============ Object Setter functions =============
   void setMass(const int physObjectID, const double mass);
-  void setCOM(const int physObjectID, const Magnum::Vector3 COM);
-  void setInertia(const int physObjectID, const Magnum::Vector3 inertia);
+  void setCOM(const int physObjectID, const Magnum::Vector3& COM);
+  void setInertia(const int physObjectID, const Magnum::Vector3& inertia);
   void setScale(const int physObjectID, const double scale);
   void setFrictionCoefficient(const int physObjectID,
                               const double frictionCoefficient);
@@ -126,8 +126,8 @@ class PhysicsManager {
 
   //============ Object Getter functions =============
   const double getMass(const int physObjectID);
-  const Magnum::Vector3 getCOM(const int physObjectID);
-  const Magnum::Vector3 getInertia(const int physObjectID);
+  const Magnum::Vector3& getCOM(const int physObjectID);
+  const Magnum::Vector3& getInertia(const int physObjectID);
   const double getScale(const int physObjectID);
   const double getFrictionCoefficient(const int physObjectID);
   const double getRestitutionCoefficient(const int physObjectID);
@@ -144,12 +144,12 @@ class PhysicsManager {
   //============ Interact with objects =============
   // Alex NOTE: engine specifics handled by objects themselves...
   void applyForce(const int physObjectID,
-                  Magnum::Vector3 force,
-                  Magnum::Vector3 relPos);
+                  Magnum::Vector3& force,
+                  Magnum::Vector3& relPos);
 
   void applyImpulse(const int physObjectID,
-                    Magnum::Vector3 impulse,
-                    Magnum::Vector3 relPos);
+                    Magnum::Vector3& impulse,
+                    Magnum::Vector3& relPos);
   /*
   Magnum::SceneGraph::DrawableGroup3D& getDrawables() { return debugDrawables; }
   const Magnum::SceneGraph::DrawableGroup3D& getDrawables() const {
