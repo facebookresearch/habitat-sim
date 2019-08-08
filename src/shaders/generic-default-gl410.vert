@@ -9,11 +9,11 @@ out mediump vec2 interpolatedTextureCoordinates;
 #endif
 
 #ifdef VERTEX_COLORED
-layout(location = 1) in vec3 color;
+layout(location = 1) in mediump vec3 color;
 #endif
 
-out vec3 v_color;
-out float v_depth;
+out mediump vec3 v_color;
+out highp float v_depth;
 
 #ifdef PER_VERTEX_IDS
 flat out uint v_objectId;

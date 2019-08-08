@@ -41,10 +41,12 @@ Viewer::Viewer(const Arguments& arguments)
       controls_(),
       previousPosition_() {
   Utility::Arguments args;
-  args.addArgument("file")
-      .setHelp("file", "file to load")
-      .addOption("obj", "./data/objects/chefcan.glb")
-      .setHelp("obj", "obj file to load")
+#ifdef CORRADE_TARGET_EMSCRIPTEN
+  args.addNamedArgument("scene")
+#else
+  args.addArgument("scene")
+#endif
+      .setHelp("scene", "scene file to load")
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addBooleanOption("enable-physics")
@@ -67,7 +69,7 @@ Viewer::Viewer(const Arguments& arguments)
   navSceneNode_ = &rootNode->createChild();
 
   auto& drawables = sceneGraph->getDrawables();
-  const std::string& file = args.value("file");
+  const std::string& file = args.value("scene");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
   LOG(INFO) << "Nav scene node (before) " << navSceneNode_;
 

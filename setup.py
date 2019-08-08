@@ -54,6 +54,12 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
         "--build-tests", dest="build_tests", action="store_true", help="Build tests"
     )
     parser.add_argument(
+        "--build-datatool",
+        dest="build_datatool",
+        action="store_true",
+        help="Build data tool",
+    )
+    parser.add_argument(
         "--cmake-args",
         type=str,
         default="",
@@ -200,6 +206,7 @@ class CMakeBuild(build_ext):
             )
 
         cmake_args = [
+            "-DBUILD_PYTHON_BINDINGS=ON",
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
             "-DPYTHON_EXECUTABLE=" + sys.executable,
             "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),
@@ -225,8 +232,13 @@ class CMakeBuild(build_ext):
         cmake_args += [
             "-DBUILD_GUI_VIEWERS={}".format("ON" if not args.headless else "OFF")
         ]
-        cmake_args += ["-DBUILD_TESTS={}".format("ON" if args.build_tests else "OFF")]
+        # NOTE: BUILD_TEST is intentional as opposed to BUILD_TESTS which collides
+        # with definition used by some of our dependencies
+        cmake_args += ["-DBUILD_TEST={}".format("ON" if args.build_tests else "OFF")]
         cmake_args += ["-DWITH_BULLET={}".format("ON" if args.use_bullet else "OFF")]
+        cmake_args += [
+            "-DBUILD_DATATOOL={}".format("ON" if args.build_datatool else "OFF")
+        ]
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
