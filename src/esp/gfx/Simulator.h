@@ -35,6 +35,12 @@ struct SimulatorConfiguration {
   bool createRenderer = true;
   int width = 256, height = 256;
 
+  bool enablePhysics = false;
+  std::string physicsConfigFile =
+      "./data/default.phys_scene_config.json";  // should we instead link a
+                                                // PhysicsManagerConfiguration
+                                                // object here?
+
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };
 bool operator==(const SimulatorConfiguration& a,
@@ -54,6 +60,7 @@ class Simulator {
   void seed(uint32_t newSeed);
 
   std::shared_ptr<Renderer> getRenderer();
+  std::shared_ptr<physics::PhysicsManager> getPhysicsManager();
   std::shared_ptr<scene::SemanticScene> getSemanticScene();
 
   scene::SceneGraph& getActiveSceneGraph();
@@ -71,6 +78,9 @@ class Simulator {
   // GL::Context::current(): no current context from Magnum
   // during the deconstruction
   assets::ResourceManager resourceManager_;
+
+  std::shared_ptr<physics::PhysicsManager> physicsManager_;
+
   scene::SceneManager sceneManager_;
   int activeSceneID_ = ID_UNDEFINED;
   int activeSemanticSceneID_ = ID_UNDEFINED;

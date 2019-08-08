@@ -74,13 +74,8 @@ Viewer::Viewer(const Arguments& arguments)
   LOG(INFO) << "Nav scene node (before) " << navSceneNode_;
 
   if (enablePhysics_) {
-    // create the default physics manager and pass to resourceManager::loadScene
-    // to reseat as necessary
-    physicsManager_ =
-        std::make_shared<physics::PhysicsManager>(&resourceManager_);
-
     if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
-                                    &drawables)) {
+                                    &drawables, physicsConfigFilename)) {
       LOG(ERROR) << "cannot load " << file;
       std::exit(0);
     }
