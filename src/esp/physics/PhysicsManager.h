@@ -46,6 +46,9 @@ class PhysicsManager {
       scene::SceneNode* node,
       assets::PhysicsManagerAttributes physicsManagerAttributes);
 
+  virtual void reset(){
+      /* TODO: reset object states or clear them? Reset worldTime? Other? */};
+
   // Stores references to a set of drawable elements
   using DrawableGroup = Magnum::SceneGraph::DrawableGroup3D;
 

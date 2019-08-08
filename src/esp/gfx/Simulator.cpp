@@ -4,6 +4,8 @@
 
 #include "Simulator.h"
 
+#include <string>
+
 #include <Corrade/Containers/Pointer.h>
 #include <Corrade/Utility/String.h>
 
@@ -89,7 +91,16 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     auto& rootNode = sceneGraph.getRootNode();
     auto& drawables = sceneGraph.getDrawables();
     resourceManager_.compressTextures(cfg.compressTextures);
-    if (!resourceManager_.loadScene(sceneInfo, &rootNode, &drawables)) {
+
+    bool loadSuccess = false;
+    if (config_.enablePhysics) {
+      loadSuccess = resourceManager_.loadScene(sceneInfo, physicsManager_,
+                                               &rootNode, &drawables);
+    } else {
+      loadSuccess =
+          resourceManager_.loadScene(sceneInfo, &rootNode, &drawables);
+    }
+    if (!loadSuccess) {
       LOG(ERROR) << "cannot load " << sceneFilename;
       // Pass the error to the python through pybind11 allowing graceful exit
       throw std::invalid_argument("Cannot load: " + sceneFilename);
@@ -140,7 +151,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   reset();
 }
 
-void Simulator::reset() {}
+void Simulator::reset() {
+  if (physicsManager_ != nullptr)
+    physicsManager_.reset();  // TODO: does nothing yet
+}
 
 void Simulator::seed(uint32_t newSeed) {
   random_.seed(newSeed);
@@ -148,6 +162,10 @@ void Simulator::seed(uint32_t newSeed) {
 
 std::shared_ptr<Renderer> Simulator::getRenderer() {
   return renderer_;
+}
+
+std::shared_ptr<physics::PhysicsManager> Simulator::getPhysicsManager() {
+  return physicsManager_;
 }
 
 std::shared_ptr<scene::SemanticScene> Simulator::getSemanticScene() {
@@ -172,7 +190,9 @@ bool operator==(const SimulatorConfiguration& a,
   return a.scene == b.scene && a.defaultAgentId == b.defaultAgentId &&
          a.defaultCameraUuid == b.defaultCameraUuid &&
          a.compressTextures == b.compressTextures &&
-         a.createRenderer == b.createRenderer;
+         a.createRenderer == b.createRenderer &&
+         a.enablePhysics == b.enablePhysics &&
+         a.physicsConfigFile.compare(b.physicsConfigFile) == 0;
 }
 
 bool operator!=(const SimulatorConfiguration& a,
