@@ -6,6 +6,7 @@
     "restitution coefficient": 0.1,
     "rigid object paths":[
         "objects/cheezit",
-        "objects/chefcan"
+        "objects/chefcan",
+        "objects/banana"
     ]
 }
