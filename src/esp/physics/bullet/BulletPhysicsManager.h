@@ -35,14 +35,14 @@ class BulletPhysicsManager : public PhysicsManager {
   //! The scene could contain several components
   bool addScene(const assets::AssetInfo& info,
                 assets::PhysicsSceneAttributes& physicsSceneAttributes,
-                std::vector<assets::CollisionMeshData> meshGroup);
+                std::vector<assets::CollisionMeshData>& meshGroup);
 
   //============ Simulator functions =============
   void stepPhysics(double dt = -1.0);
 
   void setGravity(const Magnum::Vector3& gravity);
 
-  const Magnum::Vector3& getGravity();
+  const Magnum::Vector3 getGravity();
 
   //============ Interact with objects =============
   // Alex NOTE: engine specifics handled by objects themselves...
@@ -73,7 +73,7 @@ class BulletPhysicsManager : public PhysicsManager {
   bool isMeshPrimitiveValid(assets::CollisionMeshData& meshData);
 
   //! Create and initialize rigid object
-  int makeRigidObject(std::vector<assets::CollisionMeshData> meshGroup,
+  int makeRigidObject(std::vector<assets::CollisionMeshData>& meshGroup,
                       assets::PhysicsObjectAttributes physicsObjectAttributes);
 
 };  // end class BulletPhysicsManager

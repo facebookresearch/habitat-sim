@@ -58,7 +58,7 @@ class PhysicsManager {
   //! The scene could contain several components
   virtual bool addScene(const assets::AssetInfo& info,
                         assets::PhysicsSceneAttributes& physicsSceneAttributes,
-                        std::vector<assets::CollisionMeshData> meshGroup);
+                        std::vector<assets::CollisionMeshData>& meshGroup);
 
   //! Initialize object given mesh data
   //! The object could contain several parts
@@ -78,7 +78,7 @@ class PhysicsManager {
   // =========== Global Getter functions ===========
   virtual const double getTimestep() { return fixedTimeStep_; };
   virtual const double getWorldTime() { return worldTime_; };
-  virtual const Magnum::Vector3& getGravity();
+  virtual const Magnum::Vector3 getGravity();
 
   // =========== Scene Getter/Setter functions ===========
   virtual const double getSceneFrictionCoefficient() { return 0.0; };
@@ -87,35 +87,32 @@ class PhysicsManager {
   virtual void setSceneRestitutionCoefficient(
       const double restitutionCoefficient){};
 
-  //============ Object Transformation functions =============
-  void setTransformation(const int physObjectID,
-                         const Magnum::Math::Matrix4<float>& trans);
-  void setTranslation(const int physObjectID,
-                      const Magnum::Math::Vector3<float>& vector);
+  // ============ Object Transformation functions =============
+  void setTransformation(const int physObjectID, const Magnum::Matrix4& trans);
+  void setTranslation(const int physObjectID, const Magnum::Vector3& vector);
   void setRotation(const int physObjectID,
-                   const Magnum::Math::Quaternion<float>& quaternion);
+                   const Magnum::Quaternion& quaternion);
   void resetTransformation(const int physObjectID);
-  void translate(const int physObjectID,
-                 const Magnum::Math::Vector3<float>& vector);
-  void translateLocal(const int physObjectID,
-                      const Magnum::Math::Vector3<float>& vector);
-  void rotate(const int physObjectID,
-              const Magnum::Math::Rad<float> angleInRad,
-              const Magnum::Math::Vector3<float>& normalizedAxis);
-  void rotateX(const int physObjectID,
-               const Magnum::Math::Rad<float> angleInRad);
-  void rotateY(const int physObjectID,
-               const Magnum::Math::Rad<float> angleInRad);
-  void rotateZ(const int physObjectID,
-               const Magnum::Math::Rad<float> angleInRad);
-  void rotateXLocal(const int physObjectID,
-                    const Magnum::Math::Rad<float> angleInRad);
-  void rotateYLocal(const int physObjectID,
-                    const Magnum::Math::Rad<float> angleInRad);
-  void rotateZLocal(const int physObjectID,
-                    const Magnum::Math::Rad<float> angleInRad);
 
-  //============ Object Setter functions =============
+  void translate(const int physObjectID, const Magnum::Vector3& vector);
+  void translateLocal(const int physObjectID, const Magnum::Vector3& vector);
+
+  void rotate(const int physObjectID,
+              const Magnum::Rad angleInRad,
+              const Magnum::Vector3& normalizedAxis);
+  void rotateX(const int physObjectID, const Magnum::Rad angleInRad);
+  void rotateY(const int physObjectID, const Magnum::Rad angleInRad);
+  void rotateZ(const int physObjectID, const Magnum::Rad angleInRad);
+  void rotateXLocal(const int physObjectID, const Magnum::Rad angleInRad);
+  void rotateYLocal(const int physObjectID, const Magnum::Rad angleInRad);
+  void rotateZLocal(const int physObjectID, const Magnum::Rad angleInRad);
+
+  const Magnum::Matrix4 getTransformation(const int physObjectID);
+  const Magnum::Vector3 getTranslation(const int physObjectID);
+  const Magnum::Quaternion getRotation(const int physObjectID);
+
+  // ============ Object Setter functions =============
+  // Setters that interface with physics need to take
   void setMass(const int physObjectID, const double mass);
   void setCOM(const int physObjectID, const Magnum::Vector3& COM);
   void setInertia(const int physObjectID, const Magnum::Vector3& inertia);
@@ -127,17 +124,17 @@ class PhysicsManager {
   void setLinearDamping(const int physObjectID, const double linDamping);
   void setAngularDamping(const int physObjectID, const double angDamping);
 
-  //============ Object Getter functions =============
+  // ============ Object Getter functions =============
   const double getMass(const int physObjectID);
-  const Magnum::Vector3& getCOM(const int physObjectID);
-  const Magnum::Vector3& getInertia(const int physObjectID);
+  const Magnum::Vector3 getCOM(const int physObjectID);
+  const Magnum::Vector3 getInertia(const int physObjectID);
   const double getScale(const int physObjectID);
   const double getFrictionCoefficient(const int physObjectID);
   const double getRestitutionCoefficient(const int physObjectID);
   const double getLinearDamping(const int physObjectID);
   const double getAngularDamping(const int physObjectID);
 
-  //============= Platform dependent function =============
+  // ============= Platform dependent function =============
   virtual const double getMargin(const int physObjectID) { return 0.0; };
   virtual void setMargin(const int physObjectID, const double margin){};
 
@@ -173,7 +170,7 @@ class PhysicsManager {
 
   //! Create and initialize rigid object
   virtual int makeRigidObject(
-      std::vector<assets::CollisionMeshData> meshGroup,
+      std::vector<assets::CollisionMeshData>& meshGroup,
       assets::PhysicsObjectAttributes physicsObjectAttributes);
 
   // use this to instantiate physics objects from the physicsObjectLibrary_

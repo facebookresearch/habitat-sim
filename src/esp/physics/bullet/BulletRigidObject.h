@@ -20,12 +20,12 @@ class BulletRigidObject : public RigidObject {
   ~BulletRigidObject();
 
   bool initializeScene(assets::PhysicsSceneAttributes& physicsSceneAttributes,
-                       std::vector<assets::CollisionMeshData> meshGroup,
+                       std::vector<assets::CollisionMeshData>& meshGroup,
                        std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
 
   bool initializeObject(
       assets::PhysicsObjectAttributes& physicsObjectAttributes,
-      std::vector<assets::CollisionMeshData> meshGroup,
+      std::vector<assets::CollisionMeshData>& meshGroup,
       std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
 
   //! Check whether object is being actively simulated, or sleeping

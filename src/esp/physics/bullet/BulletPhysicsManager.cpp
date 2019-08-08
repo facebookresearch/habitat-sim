@@ -46,7 +46,7 @@ BulletPhysicsManager::~BulletPhysicsManager() {
 bool BulletPhysicsManager::addScene(
     const assets::AssetInfo& info,
     assets::PhysicsSceneAttributes& physicsSceneAttributes,
-    std::vector<assets::CollisionMeshData> meshGroup) {
+    std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
   for (assets::CollisionMeshData& meshData : meshGroup) {
     if (!isMeshPrimitiveValid(meshData)) {
@@ -76,7 +76,7 @@ bool BulletPhysicsManager::addScene(
 }
 
 int BulletPhysicsManager::makeRigidObject(
-    std::vector<assets::CollisionMeshData> meshGroup,
+    std::vector<assets::CollisionMeshData>& meshGroup,
     assets::PhysicsObjectAttributes physicsObjectAttributes) {
   //! Create new physics object (child node of sceneNode_)
   int newObjectID = allocateObjectID();
@@ -140,18 +140,15 @@ void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
 
   bWorld_->setGravity(btVector3(gravity));
   // After gravity change, need to reactive all bullet objects
-  LOG(INFO) << "Iterate over and activate all existing objects:";
   for (std::map<int, std::shared_ptr<physics::RigidObject>>::iterator it =
            existingObjects_.begin();
        it != existingObjects_.end(); ++it) {
-    LOG(INFO) << it->first << " => " << it->second;
     it->second->setActive();
   }
 }
 
-const Magnum::Vector3& BulletPhysicsManager::getGravity() {
-  Magnum::Vector3 gravity(bWorld_->getGravity());
-  return gravity;
+const Magnum::Vector3 BulletPhysicsManager::getGravity() {
+  return Magnum::Vector3(bWorld_->getGravity());
 }
 
 void BulletPhysicsManager::stepPhysics(double dt) {
