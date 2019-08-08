@@ -356,36 +356,36 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 #else
       false;
 #endif
-  py::class_<RenderingTarget, RenderingTarget::ptr>(m, "RenderingTarget")
+  py::class_<RenderTarget, RenderTarget::ptr>(m, "RenderTarget")
       .def("__enter__",
-           [](RenderingTarget::ptr self) {
+           [](RenderTarget::ptr self) {
              self->renderEnter();
              return self;
            })
-      .def("__exit__", [](RenderingTarget::ptr self, py::object exc_type,
-                          py::object exc_value,
-                          py::object traceback) { self->renderExit(); })
-      .def("read_frame_rgba", &RenderingTarget::readFrameRgba,
+      .def("__exit__",
+           [](RenderTarget::ptr self, py::object exc_type, py::object exc_value,
+              py::object traceback) { self->renderExit(); })
+      .def("read_frame_rgba", &RenderTarget::readFrameRgba,
            "Reads RGBA frame into passed img in uint8 byte format.")
-      .def("read_frame_depth", &RenderingTarget::readFrameDepth)
-      .def("read_frame_object_id", &RenderingTarget::readFrameObjectId)
+      .def("read_frame_depth", &RenderTarget::readFrameDepth)
+      .def("read_frame_object_id", &RenderTarget::readFrameObjectId)
 #ifdef ESP_WITH_GPU_GPU
       .def("read_frame_rgba_gpu",
-           [](RenderingTarget& self, size_t devPtr) {
+           [](RenderTarget& self, size_t devPtr) {
              self.readFrameRgbaGPU(reinterpret_cast<uint8_t*>(devPtr));
            })
       .def("read_frame_depth_gpu",
-           [](RenderingTarget& self, size_t devPtr) {
+           [](RenderTarget& self, size_t devPtr) {
              self.readFrameDepthGPU(reinterpret_cast<float*>(devPtr));
            })
       .def("read_frame_object_id_gpu",
-           [](RenderingTarget& self, size_t devPtr) {
+           [](RenderTarget& self, size_t devPtr) {
              self.readFrameObjectIdGPU(reinterpret_cast<int32_t*>(devPtr));
            })
 #endif
-      .def_property_readonly("gpu_device_id", &RenderingTarget::gpuDeviceId)
-      .def("render_enter", &RenderingTarget::renderEnter)
-      .def("render_exit", &RenderingTarget::renderExit);
+      .def_property_readonly("gpu_device_id", &RenderTarget::gpuDeviceId)
+      .def("render_enter", &RenderTarget::renderEnter)
+      .def("render_exit", &RenderTarget::renderExit);
 
   // ==== Sensor ====
   sensor
@@ -398,9 +398,9 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("node", nodeGetter<Sensor>,
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node")
-      .def("bind_rendering_target", &Sensor::bindRenderingTarget)
+      .def("bind_render_target", &Sensor::bindRenderTarget)
       .def_property_readonly("framebuffer_size", &Sensor::framebufferSize)
-      .def_property_readonly("rendering_target", &Sensor::renderingTarget);
+      .def_property_readonly("render_target", &Sensor::renderTarget);
 
   // ==== PinholeCamera (subclass of Sensor) ====
   py::class_<sensor::PinholeCamera,
@@ -480,5 +480,5 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("seed", &Simulator::seed, R"()", "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a)
       .def("reset", &Simulator::reset, R"()")
-      .def("create_rendering_target", &Simulator::createRenderingTarget);
+      .def("create_render_target", &Simulator::createRenderTarget);
 }

@@ -12,7 +12,7 @@
 
 #include "esp/assets/ResourceManager.h"
 
-#include "RenderingTarget.h"
+#include "RenderTarget.h"
 
 namespace esp {
 namespace nav {
@@ -61,7 +61,7 @@ class Simulator {
 
   void saveFrame(const std::string& filename);
 
-  RenderingTarget::ptr createRenderingTarget(const Magnum::Vector2i& size);
+  RenderTarget::ptr createRenderTarget(const Magnum::Vector2i& size);
 
  protected:
   std::shared_ptr<WindowlessContext> context_ = nullptr;

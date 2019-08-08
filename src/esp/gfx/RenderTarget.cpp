@@ -16,7 +16,7 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
 
-#include "RenderingTarget.h"
+#include "RenderTarget.h"
 #include "magnum.h"
 
 #ifdef ESP_WITH_GPU_GPU
@@ -37,7 +37,7 @@ const GL::Framebuffer::ColorAttachment DepthBuffer =
 const GL::Framebuffer::ColorAttachment ObjectIdBuffer =
     GL::Framebuffer::ColorAttachment{2};
 
-struct RenderingTarget::Impl {
+struct RenderTarget::Impl {
   Impl(WindowlessContext::ptr context, const Magnum::Vector2i& size)
       : context_{context},
         colorBuffer_(),
@@ -178,52 +178,51 @@ struct RenderingTarget::Impl {
 #endif
 };  // namespace gfx
 
-RenderingTarget::RenderingTarget(WindowlessContext::ptr context,
-                                 const Magnum::Vector2i& size)
+RenderTarget::RenderTarget(WindowlessContext::ptr context,
+                           const Magnum::Vector2i& size)
     : pimpl_(spimpl::make_unique_impl<Impl>(context, size)) {}
 
-void RenderingTarget::renderEnter() {
+void RenderTarget::renderEnter() {
   pimpl_->renderEnter();
 }
 
-void RenderingTarget::renderExit() {
+void RenderTarget::renderExit() {
   pimpl_->renderExit();
 }
 
-#ifdef ESP_WITH_GPU_GPU
-void RenderingTarget::readFrameRgbaGPU(uint8_t* devPtr) {
-  pimpl_->readFrameRgbaGPU(devPtr);
-}
-
-void RenderingTarget::readFrameDepthGPU(float* devPtr) {
-  pimpl_->readFrameDepthGPU(devPtr);
-}
-
-void RenderingTarget::readFrameObjectIdGPU(int32_t* devPtr) {
-  pimpl_->readFrameObjectIdGPU(devPtr);
-}
-#endif
-
-void RenderingTarget::readFrameRgba(const Magnum::MutableImageView2D& view) {
+void RenderTarget::readFrameRgba(const Magnum::MutableImageView2D& view) {
   pimpl_->readFrameRgba(view);
 }
 
-void RenderingTarget::readFrameDepth(const Magnum::MutableImageView2D& view) {
+void RenderTarget::readFrameDepth(const Magnum::MutableImageView2D& view) {
   pimpl_->readFrameDepth(view);
 }
 
-void RenderingTarget::readFrameObjectId(
-    const Magnum::MutableImageView2D& view) {
+void RenderTarget::readFrameObjectId(const Magnum::MutableImageView2D& view) {
   pimpl_->readFrameObjectId(view);
 }
 
-int RenderingTarget::gpuDeviceId() const {
+int RenderTarget::gpuDeviceId() const {
   return pimpl_->gpuDeviceId();
 }
 
-Magnum::Vector2i RenderingTarget::framebufferSize() const {
+Magnum::Vector2i RenderTarget::framebufferSize() const {
   return pimpl_->framebufferSize();
 }
+
+#ifdef ESP_WITH_GPU_GPU
+void RenderTarget::readFrameRgbaGPU(uint8_t* devPtr) {
+  pimpl_->readFrameRgbaGPU(devPtr);
+}
+
+void RenderTarget::readFrameDepthGPU(float* devPtr) {
+  pimpl_->readFrameDepthGPU(devPtr);
+}
+
+void RenderTarget::readFrameObjectIdGPU(int32_t* devPtr) {
+  pimpl_->readFrameObjectIdGPU(devPtr);
+}
+#endif
 
 }  // namespace gfx
 }  // namespace esp

@@ -13,11 +13,11 @@
 namespace esp {
 namespace gfx {
 
-class RenderingTarget {
+class RenderTarget {
  public:
-  RenderingTarget(WindowlessContext::ptr context, const Magnum::Vector2i& size);
+  RenderTarget(WindowlessContext::ptr context, const Magnum::Vector2i& size);
 
-  ~RenderingTarget() { LOG(INFO) << "Deconstructing RenderingTarget"; }
+  ~RenderTarget() { LOG(INFO) << "Deconstructing RenderTarget"; }
 
   void renderEnter();
   void renderExit();
@@ -31,12 +31,24 @@ class RenderingTarget {
   int gpuDeviceId() const;
 
 #ifdef ESP_WITH_GPU_GPU
+  /**
+   * Reads the RGBA frame-buffer directly into CUDA memory specified by devPtr
+   */
   void readFrameRgbaGPU(uint8_t* devPtr);
+
+  /**
+   * Reads the Depth frame-buffer directly into CUDA memory specified by devPtr
+   */
   void readFrameDepthGPU(float* devPtr);
+
+  /**
+   * Reads the ObjectID frame-buffer directly into CUDA memory specified by
+   * devPtr
+   */
   void readFrameObjectIdGPU(int32_t* devPtr);
 #endif
 
-  ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(RenderingTarget);
+  ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(RenderTarget);
 };
 
 }  // namespace gfx

@@ -210,8 +210,8 @@ class Sensor:
         self._spec = self._sensor_object.specification()
 
         # NB: Graphics APIs tend to use W x H, so use that here
-        self._sensor_object.bind_rendering_target(
-            self._sim.create_rendering_target(self._sensor_object.framebuffer_size)
+        self._sensor_object.bind_render_target(
+            self._sim.create_render_target(self._sensor_object.framebuffer_size)
         )
 
         if self._spec.gpu2gpu_transfer:
@@ -222,7 +222,7 @@ class Sensor:
             import torch
 
             device = torch.device(
-                "cuda", self._sensor_object.rendering_target.gpu_device_id
+                "cuda", self._sensor_object.render_target.gpu_device_id
             )
 
             resolution = self._spec.resolution
@@ -295,12 +295,12 @@ class Sensor:
         agent_node = self._agent.scene_node
         agent_node.parent = scene.get_root_node()
 
-        with self._sensor_object.rendering_target as tgt:
+        with self._sensor_object.render_target as tgt:
             self._sim.renderer.draw(self._sensor_object, scene)
 
     def get_observation(self):
 
-        tgt = self._sensor_object.rendering_target
+        tgt = self._sensor_object.render_target
 
         if self._spec.gpu2gpu_transfer:
             import torch

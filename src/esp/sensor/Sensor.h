@@ -7,7 +7,7 @@
 #include "esp/core/esp.h"
 
 #include "esp/gfx/RenderCamera.h"
-#include "esp/gfx/RenderingTarget.h"
+#include "esp/gfx/RenderTarget.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -96,16 +96,16 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual Observation getObservation();
 
-  bool hasRenderingTarget() const { return tgt_ != nullptr; }
+  bool hasRenderTarget() const { return tgt_ != nullptr; }
 
-  void bindRenderingTarget(gfx::RenderingTarget::ptr tgt) {
+  void bindRenderTarget(gfx::RenderTarget::ptr tgt) {
     if (tgt->framebufferSize() != framebufferSize())
-      throw std::runtime_error("RenderingTarget is not the correct size");
+      throw std::runtime_error("RenderTarget is not the correct size");
     this->tgt_ = tgt;
   }
 
-  gfx::RenderingTarget::ptr renderingTarget() {
-    if (!hasRenderingTarget())
+  gfx::RenderTarget::ptr renderTarget() {
+    if (!hasRenderTarget())
       throw std::runtime_error("Sensor has no rendering target");
     return tgt_;
   }
@@ -113,7 +113,7 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
  protected:
   SensorSpec::ptr spec_ = nullptr;
 
-  gfx::RenderingTarget::ptr tgt_ = nullptr;
+  gfx::RenderTarget::ptr tgt_ = nullptr;
 
   ESP_SMART_POINTERS(Sensor)
 };
