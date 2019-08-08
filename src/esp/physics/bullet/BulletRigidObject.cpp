@@ -32,17 +32,11 @@ namespace physics {
 BulletRigidObject::BulletRigidObject(scene::SceneNode* parent)
     : RigidObject{parent} {};
 
-BulletRigidObject::~BulletRigidObject() {
-  if (initialized_) {
-    LOG(INFO) << "Deleting object ";
-  } else {
-    LOG(INFO) << "Object not initialized";
-  }
-}
+BulletRigidObject::~BulletRigidObject() {}
 
 bool BulletRigidObject::initializeScene(
     assets::PhysicsSceneAttributes& physicsSceneAttributes,
-    std::vector<assets::CollisionMeshData> meshGroup,
+    std::vector<assets::CollisionMeshData>& meshGroup,
     std::shared_ptr<btDiscreteDynamicsWorld> bWorld) {
   if (initialized_) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
@@ -59,9 +53,6 @@ bool BulletRigidObject::initializeScene(
   //! Create Bullet Object
   btIndexedMesh bulletMesh;
 
-  //! Object Physical Parameters
-  LOG(INFO) << "Creating Instance object meshGroups: " << meshGroup.size();
-
   //! Iterate through all mesh components for one scene
   //! All components are registered as static objects
   bSceneArray_ = std::make_unique<btTriangleIndexVertexArray>();
@@ -72,13 +63,6 @@ bool BulletRigidObject::initializeScene(
     Corrade::Containers::ArrayView<Magnum::Vector3> v_data = meshData.positions;
     Corrade::Containers::ArrayView<Magnum::UnsignedInt> ui_data =
         meshData.indices;
-    LOG(INFO) << "Instance Mesh v data count " << v_data.size();
-    LOG(INFO) << "Instance Mesh triangle count " << ui_data.size() / 3;
-    LOG(INFO) << "Last mesh face index: " << ui_data[ui_data.size() - 1];
-    LOG(INFO) << "Last mesh face vertex: "
-              << v_data[ui_data[ui_data.size() - 1]][0] << " "
-              << v_data[ui_data[ui_data.size() - 1]][1] << " "
-              << v_data[ui_data[ui_data.size() - 1]][2];
 
     //! Configure Bullet Mesh
     //! This part is very likely to cause segfault, if done incorrectly
@@ -117,7 +101,6 @@ bool BulletRigidObject::initializeScene(
     bWorld->addCollisionObject(bSceneCollisionObjects_.back().get());
   }
 
-  LOG(INFO) << "Instance body: initialized";
   bWorld_ = bWorld;
   initialized_ = true;
   syncPose();
@@ -126,7 +109,7 @@ bool BulletRigidObject::initializeScene(
 
 bool BulletRigidObject::initializeObject(
     assets::PhysicsObjectAttributes& physicsObjectAttributes,
-    std::vector<assets::CollisionMeshData> meshGroup,
+    std::vector<assets::CollisionMeshData>& meshGroup,
     std::shared_ptr<btDiscreteDynamicsWorld> bWorld) {
   // TODO (JH): Handling static/kinematic object type
   if (initialized_) {
@@ -154,7 +137,6 @@ bool BulletRigidObject::initializeObject(
     Corrade::Containers::ArrayView<Magnum::Vector3> v_data = meshData.positions;
     Corrade::Containers::ArrayView<Magnum::UnsignedInt> ui_data =
         meshData.indices;
-    LOG(INFO) << "Object mesh indices count " << ui_data.size();
 
     //! Configure Bullet Mesh
     //! This part is very likely to cause segfault, if done incorrectly
@@ -170,17 +152,9 @@ bool BulletRigidObject::initializeObject(
     bulletMesh.m_indexType = PHY_INTEGER;
     bulletMesh.m_vertexType = PHY_FLOAT;
 
-    //! Check dimension of the data
-    // float dx, dy, dz;
-    // getDimensions(meshData, &dx, &dy, &dz);
-    // LOG(INFO) << "Dimensions dx " << dx << " dy " << dy << " dz " << dz;
-
     btTransform t;  // position and rotation
     t.setIdentity();
     t.setOrigin(btVector3(0, 0, 0));
-    // t.setOrigin(btVector3(-metaData.COM[0], -metaData.COM[1],
-    // -metaData.COM[2]));
-    //! TODO (JH): assume that the object is convex, otherwise game over
     //! Create convex component
     bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
         static_cast<const btScalar*>(meshData.positions.data()->data()),
@@ -225,10 +199,6 @@ bool BulletRigidObject::initializeObject(
 
   //! Create rigid body
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
-  LOG(INFO) << "Setting collision mass "
-            << physicsObjectAttributes.getDouble("mass") << " flags "
-            << bObjectRigidBody_->getCollisionFlags();
-
   //! Add to world
   bWorld->addRigidBody(bObjectRigidBody_.get());
   //! Sync render pose with physics
@@ -247,7 +217,6 @@ bool BulletRigidObject::removeObject() {
 
 bool BulletRigidObject::isActive() {
   if (!initialized_) {
-    LOG(INFO) << "Node not initialized";
     return false;
   }
   if (isScene_) {
@@ -292,12 +261,9 @@ void BulletRigidObject::syncPose() {
       //! Scenes are loaded as is
       return;
     } else {
-      // LOG(INFO) << "Rigid object sync pose";
       //! For syncing objects
       bObjectRigidBody_->setWorldTransform(btTransform(transformationMatrix()));
     }
-  } else {
-    LOG(INFO) << "BulletRigidObject::syncPose - Object not initialized";
   }
 }
 
@@ -325,7 +291,7 @@ void BulletRigidObject::setCOM(const Magnum::Vector3& COM) {
     return;
   else
     bObjectRigidBody_->setCenterOfMassTransform(
-        btTransform(Magnum::Math::Matrix4<float>::translation(COM)));*/
+        btTransform(Magnum::Matrix4<float>::translation(COM)));*/
 }
 
 void BulletRigidObject::setInertia(const Magnum::Vector3& inertia) {

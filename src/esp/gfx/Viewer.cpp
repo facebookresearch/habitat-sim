@@ -71,7 +71,6 @@ Viewer::Viewer(const Arguments& arguments)
   auto& drawables = sceneGraph->getDrawables();
   const std::string& file = args.value("scene");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
-  LOG(INFO) << "Nav scene node (before) " << navSceneNode_;
 
   if (enablePhysics_) {
     // create the default physics manager and pass to resourceManager::loadScene
@@ -90,8 +89,6 @@ Viewer::Viewer(const Arguments& arguments)
       std::exit(0);
     }
   }
-
-  LOG(INFO) << "Nav scene node (done) " << navSceneNode_;
 
   // Set up camera
   renderCamera_ = &sceneGraph->getDefaultRenderCamera();
@@ -116,14 +113,6 @@ Viewer::Viewer(const Arguments& arguments)
     pathfinder_->loadNavMesh(navmeshFilename);
     LOG(INFO) << "Loaded.";
   }
-
-  // Messing around with agent location and finding object initial position
-  LOG(INFO) << "Agent position "
-            << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
-  LOG(INFO) << "Camera position "
-            << Eigen::Map<vec3f>(cameraNode_->translation().data());
-  LOG(INFO) << "Scene position"
-            << Eigen::Map<vec3f>(navSceneNode_->translation().data());
 
   const vec3f position = pathfinder_->getRandomNavigablePoint();
   agentBodyNode_->setTranslation(Vector3(position));
@@ -182,20 +171,10 @@ void Viewer::addObject(std::string configFile) {
   Magnum::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  // Vector3 new_pos = T.transformPoint({0.0f, 0.0f, 0.0f});
   Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
 
-  LOG(INFO) << "Camera position " << T.translation().x() << " "
-            << T.translation().y() << " " << T.translation().z();
-  LOG(INFO) << "Object new position " << new_pos.x() << " " << new_pos.y()
-            << " " << new_pos.z();
-  LOG(INFO) << "Camera transformation " << Eigen::Map<mat4f>(T.data());
-
   auto& drawables = sceneGraph->getDrawables();
-  LOG(INFO) << "Before add drawables";
   int physObjectID = physicsManager_->addObject(configFile, &drawables);
-  // physicsManager_->getAttributes(physObjectID).setStrings("tags",
-  // std::vector<std::string>({"lance", "weapon", "knight"}));
   physicsManager_->setTranslation(physObjectID, new_pos);
 
   // draw random quaternion via the method:
@@ -210,8 +189,6 @@ void Viewer::addObject(std::string configFile) {
   physicsManager_->setRotation(
       physObjectID,
       Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
-
-  LOG(INFO) << "After add drawables";
   objectIDs.push_back(physObjectID);
 }
 
@@ -228,6 +205,7 @@ void Viewer::invertGravity() {
   const Magnum::Vector3& gravity = physicsManager_->getGravity();
   const Magnum::Vector3 invGravity = -1 * gravity;
   physicsManager_->setGravity(invGravity);
+  const Magnum::Vector3& newGravity = physicsManager_->getGravity();
 }
 
 void Viewer::pokeLastObject() {
@@ -238,7 +216,6 @@ void Viewer::pokeLastObject() {
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 impulse = T.transformPoint({0.0f, 0.0f, -3.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
-  LOG(INFO) << "Poking object " << objectIDs.back();
   physicsManager_->applyImpulse(objectIDs.back(), impulse, rel_pos);
 }
 
@@ -250,7 +227,6 @@ void Viewer::pushLastObject() {
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 force = T.transformPoint({0.0f, 0.0f, -40.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
-  LOG(INFO) << "Pushing object " << objectIDs.back();
   physicsManager_->applyForce(objectIDs.back(), force, rel_pos);
 }
 
@@ -261,7 +237,6 @@ Magnum::Vector3 Viewer::randomDirection() {
     dir = Magnum::Vector3((float)((rand() % 2000 - 1000) / 1000.0),
                           (float)((rand() % 2000 - 1000) / 1000.0),
                           (float)((rand() % 2000 - 1000) / 1000.0));
-    LOG(INFO) << dir.x() << " " << dir.y() << " " << dir.z();
   }
   dir = dir / sqrt(dir.dot());
   return dir;
@@ -369,37 +344,37 @@ void Viewer::testSetterGetters() {
   if (physicsManager_ == nullptr || objectIDs.size() == 0)
     return;
 
+  int lastObjectID = objectIDs.back();
   // Object Testing
   // Testing : Mass
-  physicsManager_->setMass(objectIDs.back(), 10.0);
-  const double mass = physicsManager_->getMass(objectIDs.back());
+  physicsManager_->setMass(lastObjectID, 10.0);
+  const double mass = physicsManager_->getMass(lastObjectID);
   // Testing: Inertia
-  physicsManager_->setInertia(objectIDs.back(), Magnum::Vector3(1.0, 1.0, 1.0));
-  const Magnum::Vector3& inert = physicsManager_->getInertia(objectIDs.back());
+  physicsManager_->setInertia(lastObjectID, Magnum::Vector3(1.0, 1.0, 1.0));
+  const Magnum::Vector3& inert = physicsManager_->getInertia(lastObjectID);
   // Testing: scale
-  physicsManager_->setScale(objectIDs.back(), 2.0);
-  const double scale = physicsManager_->getScale(objectIDs.back());
+  physicsManager_->setScale(lastObjectID, 2.0);
+  const double scale = physicsManager_->getScale(lastObjectID);
   // Testing: friction
-  physicsManager_->setFrictionCoefficient(objectIDs.back(), 1.0);
+  physicsManager_->setFrictionCoefficient(lastObjectID, 1.0);
   const double objectFriction =
-      physicsManager_->getFrictionCoefficient(objectIDs.back());
+      physicsManager_->getFrictionCoefficient(lastObjectID);
   // Testing: restitution
-  physicsManager_->setRestitutionCoefficient(objectIDs.back(), 0.9);
+  physicsManager_->setRestitutionCoefficient(lastObjectID, 0.9);
   const double objectRestitution =
-      physicsManager_->getRestitutionCoefficient(objectIDs.back());
+      physicsManager_->getRestitutionCoefficient(lastObjectID);
   // Testing: linear damping
-  physicsManager_->setLinearDamping(objectIDs.back(), 0.9);
-  const double linDamping = physicsManager_->getLinearDamping(objectIDs.back());
+  physicsManager_->setLinearDamping(lastObjectID, 0.9);
+  const double linDamping = physicsManager_->getLinearDamping(lastObjectID);
   // Testing: restitution
-  physicsManager_->setAngularDamping(objectIDs.back(), 0.9);
-  const double angDamping =
-      physicsManager_->getAngularDamping(objectIDs.back());
+  physicsManager_->setAngularDamping(lastObjectID, 0.9);
+  const double angDamping = physicsManager_->getAngularDamping(lastObjectID);
   // Testing: margin
-  physicsManager_->setMargin(objectIDs.back(), 0.1);
-  const double margin = physicsManager_->getMargin(objectIDs.back());
+  physicsManager_->setMargin(lastObjectID, 0.1);
+  const double margin = physicsManager_->getMargin(lastObjectID);
   // Testing: COM
-  physicsManager_->setCOM(objectIDs.back(), Magnum::Vector3(0.0, 0.0, 0.0));
-  const Magnum::Vector3& com = physicsManager_->getCOM(objectIDs.back());
+  physicsManager_->setCOM(lastObjectID, Magnum::Vector3(0.0, 0.0, 0.0));
+  const Magnum::Vector3& com = physicsManager_->getCOM(lastObjectID);
 
   // Scene Testing
   // Testing: friction
@@ -409,6 +384,12 @@ void Viewer::testSetterGetters() {
   physicsManager_->setSceneRestitutionCoefficient(0.9);
   const double sceneRestitution =
       physicsManager_->getSceneRestitutionCoefficient();
+
+  // Transformation Testing
+  const Magnum::Vector3 position =
+      physicsManager_->getTranslation(lastObjectID);
+  physicsManager_->setTranslation(lastObjectID,
+                                  position + Magnum::Vector3(0.0, 1.0, 0.0));
 
   LOG(INFO) << "Object - Mass: " << mass;
   LOG(INFO) << "Object - COM: " << com.x() << ", " << com.y() << ", "

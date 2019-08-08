@@ -60,31 +60,23 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   } else {
     if (info.type == AssetType::FRL_INSTANCE_MESH ||
         info.type == AssetType::INSTANCE_MESH) {
-      LOG(INFO) << "Loading FRL/Instance mesh data";
       meshSuccess = loadInstanceMeshData(info, parent, drawables);
     } else if (info.type == AssetType::FRL_PTEX_MESH) {
-      LOG(INFO) << "Loading PTEX mesh data";
       meshSuccess = loadPTexMeshData(info, parent, drawables);
     } else if (info.type == AssetType::SUNCG_SCENE) {
       meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
     } else if (info.type == AssetType::MP3D_MESH) {
-      LOG(INFO) << "Loading MP3D mesh data";
-      LOG(INFO) << "Parent " << parent << " drawables " << drawables;
       meshSuccess = loadGeneralMeshData(info, parent, drawables);
     } else {
       // Unknown type, just load general mesh data
-      LOG(INFO) << "Loading General mesh data";
       meshSuccess = loadGeneralMeshData(info, parent, drawables);
     }
-
     // add a scene attributes for this filename or modify the existing one
     if (meshSuccess)
       physicsSceneLibrary_[info.filepath].setString("renderMeshHandle",
                                                     info.filepath);
   }
 
-  LOG(INFO) << "Loaded mesh scene, success " << meshSuccess << " parent "
-            << parent << " drawables " << drawables;
   return meshSuccess;
 }
 
@@ -135,7 +127,6 @@ bool ResourceManager::loadScene(
   // reseat to base PhysicsManager to override previous as default behavior
   // if the desired simulator is not supported reset to "none" in metaData
   if (defaultToNoneSimulator) {
-    LOG(INFO) << "defaulting to \"none\" simulator.";
     _physicsManager.reset(new physics::PhysicsManager(this));
     physicsManagerAttributes.setString("simulator", "none");
   }
@@ -173,11 +164,9 @@ bool ResourceManager::loadScene(
 
   //! Collect collision mesh group
   std::vector<CollisionMeshData> meshGroup;
-  // LOG(INFO) << "Accessing scene mesh start " << start << " end " << end;
   for (int mesh_i = start; mesh_i <= end; mesh_i++) {
     // FRL Quad Mesh
     if (info.type == AssetType::FRL_INSTANCE_MESH) {
-      LOG(INFO) << "Loading FRL scene";
       FRLInstanceMeshData* frlMeshData =
           dynamic_cast<FRLInstanceMeshData*>(meshes_[mesh_i].get());
       CollisionMeshData& meshData = frlMeshData->getCollisionMeshData();
@@ -186,7 +175,6 @@ bool ResourceManager::loadScene(
 
     // PLY Instance mesh
     else if (info.type == AssetType::INSTANCE_MESH) {
-      LOG(INFO) << "Loading PLY scene";
       GenericInstanceMeshData* insMeshData =
           dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
       quatf quatFront =
@@ -198,7 +186,6 @@ bool ResourceManager::loadScene(
 
     // GLB Mesh
     else if (info.type == AssetType::MP3D_MESH) {
-      LOG(INFO) << "Loading GLB scene";
       quatf quatFront =
           quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
       Magnum::Quaternion quat = Magnum::Quaternion(quatFront);
@@ -214,9 +201,7 @@ bool ResourceManager::loadScene(
   //! Initialize collision mesh
   bool sceneSuccess = _physicsManager->addScene(
       info, physicsSceneLibrary_.at(info.filepath), meshGroup);
-  LOG(INFO) << "Initialized mesh scene, success " << sceneSuccess;
   if (!sceneSuccess) {
-    LOG(INFO) << "Physics manager failed to initialize object";
     return false;
   }
 
@@ -286,7 +271,6 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
   //! Load object paths
   std::string configDirectory =
       physicsFilename.substr(0, physicsFilename.find_last_of("/"));
-  // LOG(INFO) << "...dir = " << configDirectory;
   // load the rigid object library metadata (no physics init yet...)
   // ALEX NOTE: expect relative paths to the global config
   if (scenePhysicsConfig.HasMember("rigid object paths")) {
@@ -352,11 +336,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename,
     MeshMetaData meshMetaData = resourceDict_[filename];
     scene::SceneNode& newNode = parent->createChild();
     AssetInfo renderMeshinfo = AssetInfo::fromPath(filename);
-    Magnum::PluginManager::Manager<Importer> manager{
-#ifdef MAGNUM_BUILD_STATIC
-        "./"
-#endif
-    };
+    Magnum::PluginManager::Manager<Importer> manager;
     std::unique_ptr<Importer> importer =
         manager.loadAndInstantiate("AnySceneImporter");
     manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
@@ -377,8 +357,6 @@ PhysicsObjectAttributes& ResourceManager::getPhysicsObjectAttributes(
 
 // load object from config filename
 int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
-  LOG(INFO) << "ResourceManager::loadObject(" << objPhysConfigFilename << ")";
-
   // check for duplicate load
   const bool objExists = physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
   if (objExists) {
@@ -518,7 +496,6 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
     //  return -1;
     //}
     if (shouldComputeMeshBBCenter) {  // compute the COM from BB center
-      LOG(INFO) << "LOADING BB CENTER COM>>>>>>>>>>>>>>>>>>>>>>>>>>>";
       renderMeshSuccess =
           loadGeneralMeshData(renderMeshinfo, nullptr, nullptr, true);
     } else if (shiftMeshOrigin) {  // use the provided COM
@@ -536,10 +513,6 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   //! Load collision mesh
   if (!collisionMeshFilename.empty()) {
     collisionMeshinfo = assets::AssetInfo::fromPath(collisionMeshFilename);
-    // if (collisionMeshinfo.type != AssetType::MP3D_MESH) {
-    //  LOG(INFO) << "Cannot load non-GLB objects";
-    //  return -1;
-    //}
     if (shouldComputeMeshBBCenter) {  // compute the COM from BB center
       collisionMeshSuccess =
           loadGeneralMeshData(collisionMeshinfo, nullptr, nullptr, true);
@@ -583,15 +556,11 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
 
   // 5. cache metaData, collision mesh Group
   physicsObjectLibrary_.emplace(objPhysConfigFilename, physicsObjectAttributes);
-  LOG(INFO) << "Config " << objPhysConfigFilename;
-  LOG(INFO) << "physMetaData.collisionMeshHandle "
-            << physicsObjectAttributes.getString("collisionMeshHandle");
   MeshMetaData& meshMetaData = resourceDict_.at(
       physicsObjectAttributes.getString("collisionMeshHandle"));
 
   int start = meshMetaData.meshIndex.first;
   int end = meshMetaData.meshIndex.second;
-  LOG(INFO) << "Accessing object mesh start " << start << " end " << end;
   //! Gather mesh components for meshGroup data
   std::vector<CollisionMeshData> meshGroup;
   for (int mesh_i = start; mesh_i <= end; mesh_i++) {
@@ -602,11 +571,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   }
   //! Properly align axis direction
   // ALEX NOTE: this breaks the collision properties of some files
-  // LOG(INFO) << "Skipping  transformAxis for object meshes to avoid observed
-  // issues..."; transformAxis(renderMeshinfo, meshGroup);
-
   collisionMeshGroups_.emplace(objPhysConfigFilename, meshGroup);
-  LOG(INFO) << "Config filename " << objPhysConfigFilename;
   physicsObjectConfigList_.push_back(objPhysConfigFilename);
 
   int objectID = physicsObjectConfigList_.size() - 1;
@@ -614,11 +579,9 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
 }
 
 void ResourceManager::transformAxis(const AssetInfo& info,
-                                    std::vector<CollisionMeshData> meshGroup) {
+                                    std::vector<CollisionMeshData>& meshGroup) {
   quatf quatFront = quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
   Magnum::Quaternion quat = Magnum::Quaternion(quatFront);
-  // LOG(INFO) << "quat: " << (float)(quat.angle()) << " [" << quat.axis().x()
-  // << " " << quat.axis().y() << " " << quat.axis().z() << "]";
   Magnum::Matrix4 transform;
   if (!(std::isnan(quat.axis().x()) || std::isnan(quat.axis().y()) ||
         std::isnan(quat.axis().z()))) {
@@ -631,21 +594,25 @@ void ResourceManager::transformAxis(const AssetInfo& info,
   }
 }
 
-std::vector<assets::CollisionMeshData> ResourceManager::getCollisionMesh(
+std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
     const int objectID) {
   if (objectID < 0 || objectID > collisionMeshGroups_.size()) {
-    return std::vector<assets::CollisionMeshData>();
+    std::vector<assets::CollisionMeshData> cMesh =
+        std::vector<assets::CollisionMeshData>();
+    return cMesh;
   }
   std::string configFile = getObjectConfig(objectID);
   return collisionMeshGroups_[configFile];
 }
 
-std::vector<assets::CollisionMeshData> ResourceManager::getCollisionMesh(
+std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
     const std::string configFile) {
   if (collisionMeshGroups_.count(configFile) > 0) {
     return collisionMeshGroups_[configFile];
   } else {
-    return std::vector<assets::CollisionMeshData>();
+    std::vector<assets::CollisionMeshData> cMesh =
+        std::vector<assets::CollisionMeshData>();
+    return cMesh;
   }
 }
 
@@ -677,11 +644,7 @@ void ResourceManager::translateMesh(GltfMeshData* meshDataGL,
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
 
   Magnum::Matrix4 transform = Magnum::Matrix4::translation(translation);
-
-  LOG(INFO) << "Shifting data origin: " << translation[0] << ", "
-            << translation[1] << ", " << translation[2];
   Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions);
-  LOG(INFO) << "Shifting data origin done";
 }
 
 Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
@@ -793,7 +756,6 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
     auto* instanceMeshData =
         dynamic_cast<GenericInstanceMeshData*>(meshes_[index].get());
 
-    LOG(INFO) << "loading instance mesh data: " << filename;
     instanceMeshData->loadPLY(filename);
     instanceMeshData->uploadBuffersToGPU(false);
 
@@ -804,7 +766,6 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
 
   // create the scene graph by request
   if (parent) {
-    LOG(INFO) << "Building SceneGraph";
     auto indexPair = resourceDict_.at(filename).meshIndex;
     int start = indexPair.first;
     int end = indexPair.second;
@@ -835,13 +796,7 @@ bool ResourceManager::loadGeneralMeshData(
   MeshMetaData metaData;
   std::vector<Magnum::UnsignedInt> magnumData;
 
-  LOG(INFO) << "LoadingGeneralMeshData: " << filename;
-  LOG(INFO) << "  ...already loaded? " << fileIsLoaded;
-  Magnum::PluginManager::Manager<Importer> manager{
-#ifdef MAGNUM_BUILD_STATIC
-      "./"
-#endif
-  };
+  Magnum::PluginManager::Manager<Importer> manager;
   std::unique_ptr<Importer> importer =
       manager.loadAndInstantiate("AnySceneImporter");
   manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
@@ -856,21 +811,11 @@ bool ResourceManager::loadGeneralMeshData(
 
     // if this is a new file, load it and add it to the dictionary
     loadTextures(*importer, &metaData);
-    LOG(INFO) << "Loaded total textures " << textures_.size();
     loadMaterials(*importer, &metaData);
-    LOG(INFO) << "Loaded total materials " << materials_.size();
-
-    // TODO (JH): shift origin merge with COM
     loadMeshes(*importer, &metaData, shiftOrigin, translation);
-    LOG(INFO) << "Loaded total meshes " << meshes_.size();
-
     resourceDict_.emplace(filename, metaData);
-    LOG(INFO) << "Added mesh metaData: meshes=" << metaData.meshIndex
-              << " materials=" << metaData.materialIndex
-              << " textures=" << metaData.textureIndex;
 
     // Register magnum mesh
-    LOG(INFO) << "Registering " << filename;
     if (importer->defaultScene() != -1) {
       Corrade::Containers::Optional<Magnum::Trade::SceneData> sceneData =
           importer->scene(importer->defaultScene());
@@ -879,25 +824,19 @@ bool ResourceManager::loadGeneralMeshData(
         return false;
       }
       for (uint sceneDataID : sceneData->children3D()) {
-        LOG(INFO) << "Loading child scene data ID " << sceneDataID;
         magnumData.emplace_back(sceneDataID);
       }
     } else if (importer->mesh3DCount() && meshes_[metaData.meshIndex.first]) {
       // no default scene --- standalone OBJ/PLY files, for example
       // take a wild guess and load the first mesh with the first material
       // addMeshToDrawables(metaData, *parent, drawables, ID_UNDEFINED, 0, 0);
-      // TODO (JH): check this part, may not be working
-      LOG(INFO) << "Load non-default";
       magnumData.emplace_back(0);
-      LOG(INFO) << "Load 0";
     } else {
       LOG(ERROR) << "No default scene available and no meshes found, exiting";
       return false;
     }
     magnumMeshDict_.emplace(filename, magnumData);
-    LOG(INFO) << "Load mesh/material/texture done";
   } else {
-    LOG(INFO) << "  Loading metaData from resourceDict_";
     metaData = resourceDict_[filename];
   }
 
@@ -926,10 +865,9 @@ bool ResourceManager::loadGeneralMeshData(
     }  // forceReload
 
     const quatf transform = info.frame.rotationFrameToWorld();
-    newNode.setRotation(Magnum::Math::Quaternion<float>(transform));
+    newNode.setRotation(Magnum::Quaternion(transform));
     // Recursively add all children
     for (auto sceneDataID : magnumMeshDict_[filename]) {
-      LOG(INFO) << "Scene data ID " << sceneDataID << " " << filename;
       addComponent(*importer, info, metaData, newNode, drawables, sceneDataID);
     }
     return true;
@@ -950,7 +888,6 @@ void ResourceManager::loadMaterials(Importer& importer,
     // TODO:
     // it seems we have a way to just load the material once in this case,
     // as long as the materialName includes the full path to the material
-    // LOG(INFO) << "Importing material" << i << importer->materialName(i);
     std::unique_ptr<Magnum::Trade::AbstractMaterialData> materialData =
         importer.material(iMaterial);
     if (!materialData ||
@@ -964,8 +901,6 @@ void ResourceManager::loadMaterials(Importer& importer,
         static_cast<Magnum::Trade::PhongMaterialData*>(materialData.release()));
 
     currentMaterial = std::move(phongMaterialData);
-    LOG(INFO) << "Loading material " << iMaterial << "/"
-              << importer.materialCount() << " done";
   }
 }
 
@@ -999,8 +934,6 @@ void ResourceManager::loadMeshes(Importer& importer,
 
     CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
     gltfMeshData->uploadBuffersToGPU(false);
-    LOG(INFO) << "Loading mesh " << iMesh << "/" << importer.mesh3DCount()
-              << " " << importer.mesh3DName(iMesh) << " done";
   }
 }
 
@@ -1024,8 +957,6 @@ void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
     // TODO:
     // it seems we have a way to just load the image once in this case,
     // as long as the image2DName include the full path to the image
-    // LOG(INFO) << "Importing image" << textureData->image()
-    //          << importer.image2DName(textureData->image());
     Corrade::Containers::Optional<Magnum::Trade::ImageData2D> imageData =
         importer.image2D(textureData->image());
     Magnum::GL::TextureFormat format;
@@ -1055,8 +986,6 @@ void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
                     imageData->size())
         .setSubImage(0, {}, *imageData)
         .generateMipmap();
-    LOG(INFO) << "Loading texture " << iTexture << "/"
-              << importer.textureCount() << " done";
   }
 }
 
@@ -1070,8 +999,6 @@ void ResourceManager::addComponent(Importer& importer,
                                    DrawableGroup* drawables,
                                    int componentID) {
   importer.openFile(info.filepath);
-  LOG(INFO) << "   ...importer object name"
-            << importer.object3DName(componentID);
   std::unique_ptr<Magnum::Trade::ObjectData3D> objectData =
       importer.object3D(componentID);
   if (!objectData) {
@@ -1093,15 +1020,12 @@ void ResourceManager::addComponent(Importer& importer,
     const int materialIDLocal =
         static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
             ->material();
-    LOG(INFO) << "Adding drawables materialIDLocal " << materialIDLocal;
     addMeshToDrawables(metaData, node, drawables, componentID, meshIDLocal,
                        materialIDLocal);
   }
 
   // Recursively add children
   for (auto childObjectID : objectData->children()) {
-    LOG(INFO) << "Child ID " << childObjectID << " (total "
-              << objectData->children().size() << ")";
     addComponent(importer, info, metaData, node, drawables, childObjectID);
   }
 }
@@ -1118,9 +1042,6 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
 
   const int materialStart = metaData.materialIndex.first;
   const int materialID = materialStart + materialIDLocal;
-  LOG(INFO) << "Adding mesh to drawable meshIDLocal " << meshIDLocal
-            << " meshID " << meshID << " materialID " << materialID
-            << " componentID " << componentID;
 
   Magnum::GL::Texture2D* texture = nullptr;
   // Material not set / not available / not loaded, use a default material
@@ -1137,7 +1058,6 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
       const int textureIndex = materials_[materialID]->diffuseTexture();
       texture = textures_[textureStart + textureIndex].get();
       if (texture) {
-        LOG(INFO) << "Create textured drawable";
         createDrawable(TEXTURED_SHADER, mesh, node, drawables, texture,
                        componentID);
       } else {
@@ -1243,7 +1163,6 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
         std::vector<float> transformVec;
         io::toFloatVector(node["transform"], &transformVec);
         mat4f transform(transformVec.data());
-        // LOG(INFO) << modelId << " " << transform;
         const AssetInfo info{
             AssetType::SUNCG_OBJECT,
             basePath + "/object/" + modelId + "/" + modelId + ".glb"};

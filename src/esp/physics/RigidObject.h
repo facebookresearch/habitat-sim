@@ -30,11 +30,11 @@ class RigidObject : public scene::SceneNode {
   // there is probably a better way to abstract this
   virtual bool initializeScene(
       assets::PhysicsSceneAttributes& physicsSceneAttributes,
-      std::vector<assets::CollisionMeshData> meshGroup);
+      std::vector<assets::CollisionMeshData>& meshGroup);
 
   virtual bool initializeObject(
       assets::PhysicsObjectAttributes& physicsObjectAttributes,
-      std::vector<assets::CollisionMeshData> meshGroup);
+      std::vector<assets::CollisionMeshData>& meshGroup);
 
   ~RigidObject();
 

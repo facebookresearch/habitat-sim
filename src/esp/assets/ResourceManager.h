@@ -114,10 +114,10 @@ class ResourceManager {
   int loadObject(const std::string objPhysConfigFilename);
 
   //======== Accessor functions ========
-  std::vector<assets::CollisionMeshData> getCollisionMesh(
+  std::vector<assets::CollisionMeshData>& getCollisionMesh(
       const std::string configFile);
 
-  std::vector<assets::CollisionMeshData> getCollisionMesh(const int objectID);
+  std::vector<assets::CollisionMeshData>& getCollisionMesh(const int objectID);
 
   int getObjectID(const std::string configFile);
   std::string getObjectConfig(const int objectID);
@@ -186,7 +186,7 @@ class ResourceManager {
   Magnum::Vector3 computeMeshBBCenter(GltfMeshData* meshDataGL);
 
   void transformAxis(const AssetInfo& info,
-                     std::vector<CollisionMeshData> meshGroup);
+                     std::vector<CollisionMeshData>& meshGroup);
 
   // ======== General geometry data ========
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or
