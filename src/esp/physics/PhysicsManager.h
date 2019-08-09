@@ -201,7 +201,6 @@ class PhysicsManager {
   int maxSubSteps_ = 10;
   double fixedTimeStep_ = 1.0 / 240.0;
   // assets::PhysicsSceneMetaData sceneMetaData_;
-
   double worldTime_ = 0.0;
 };
 

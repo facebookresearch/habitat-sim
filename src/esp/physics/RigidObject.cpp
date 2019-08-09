@@ -14,19 +14,15 @@ RigidObject::RigidObject(scene::SceneNode* parent)
 bool RigidObject::initializeScene(
     assets::PhysicsSceneAttributes& physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
-  if (initialized_) {
+  if (rigidObjectType_ != NONE) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
     return false;
   }
 
   //! Turn on scene flag
-  if (isObject_) {
-    return false;
-  }
-  isScene_ = true;
+  rigidObjectType_ = SCENE;
   objectMotionType_ = STATIC;
 
-  initialized_ = true;
   return true;
 }
 
@@ -34,20 +30,16 @@ bool RigidObject::initializeObject(
     assets::PhysicsObjectAttributes& physicsObjectAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // TODO (JH): Handling static/kinematic object type
-  if (initialized_) {
+  if (rigidObjectType_ != NONE) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
     return false;
   }
 
   //! Turn on scene flag
-  if (isScene_) {
-    return false;
-  }
-  isObject_ = true;
-  objectMotionType_ =
-      KINEMATIC;  // default kineamtic unless a simulator is initialized...
+  rigidObjectType_ = OBJECT;
+  // default kineamtic unless a simulator is initialized...
+  objectMotionType_ = KINEMATIC;
 
-  initialized_ = true;
   return true;
 }
 
@@ -61,16 +53,6 @@ bool RigidObject::isActive() {
   return false;
 }
 
-RigidObject::~RigidObject() {
-  /*
-  if (initialized_) {
-    LOG(INFO) << "Deleting object ";
-  } else {
-    LOG(INFO) << "Object not initialized";
-  }
-  */
-}
-
 void RigidObject::applyForce(Magnum::Vector3& force, Magnum::Vector3& relPos) {
   // without a physics engine we can't apply any forces...
   return;
@@ -82,29 +64,25 @@ void RigidObject::applyImpulse(Magnum::Vector3& impulse,
   return;
 }
 
-//! Synchronize Physics transformations
-//! Needed after changing the pose from Magnum side
-//! Not needed if no physics engine to sync
 void RigidObject::syncPose() {
   return;
 }
 
 scene::SceneNode& RigidObject::setTransformation(
-    const Magnum::Math::Matrix4<float>& transformation) {
+    const Magnum::Matrix4& transformation) {
   scene::SceneNode::setTransformation(transformation);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::setTranslation(
-    const Magnum::Math::Vector3<float>& vector) {
+scene::SceneNode& RigidObject::setTranslation(const Magnum::Vector3& vector) {
   scene::SceneNode::setTranslation(vector);
   syncPose();
   return *this;
 }
 
 scene::SceneNode& RigidObject::setRotation(
-    const Magnum::Math::Quaternion<float>& quaternion) {
+    const Magnum::Quaternion& quaternion) {
   scene::SceneNode::setRotation(quaternion);
   syncPose();
   return *this;
@@ -116,73 +94,64 @@ scene::SceneNode& RigidObject::resetTransformation() {
   return *this;
 }
 
-scene::SceneNode& RigidObject::translate(
-    const Magnum::Math::Vector3<float>& vector) {
+scene::SceneNode& RigidObject::translate(const Magnum::Vector3& vector) {
   scene::SceneNode::translate(vector);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::translateLocal(
-    const Magnum::Math::Vector3<float>& vector) {
+scene::SceneNode& RigidObject::translateLocal(const Magnum::Vector3& vector) {
   scene::SceneNode::translateLocal(vector);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::rotate(
-    const Magnum::Math::Rad<float> angleInRad,
-    const Magnum::Math::Vector3<float>& normalizedAxis) {
+scene::SceneNode& RigidObject::rotate(const Magnum::Rad angleInRad,
+                                      const Magnum::Vector3& normalizedAxis) {
   scene::SceneNode::rotate(angleInRad, normalizedAxis);
   syncPose();
   return *this;
 }
 
 scene::SceneNode& RigidObject::rotateLocal(
-    const Magnum::Math::Rad<float> angleInRad,
-    const Magnum::Math::Vector3<float>& normalizedAxis) {
+    const Magnum::Rad angleInRad,
+    const Magnum::Vector3& normalizedAxis) {
   scene::SceneNode::rotateLocal(angleInRad, normalizedAxis);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::rotateX(
-    const Magnum::Math::Rad<float> angleInRad) {
+scene::SceneNode& RigidObject::rotateX(const Magnum::Rad angleInRad) {
   scene::SceneNode::rotateX(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::rotateXLocal(
-    const Magnum::Math::Rad<float> angleInRad) {
+scene::SceneNode& RigidObject::rotateXLocal(const Magnum::Rad angleInRad) {
   scene::SceneNode::rotateXLocal(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::rotateY(
-    const Magnum::Math::Rad<float> angleInRad) {
+scene::SceneNode& RigidObject::rotateY(const Magnum::Rad angleInRad) {
   scene::SceneNode::rotateY(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::rotateYLocal(
-    const Magnum::Math::Rad<float> angleInRad) {
+scene::SceneNode& RigidObject::rotateYLocal(const Magnum::Rad angleInRad) {
   scene::SceneNode::rotateYLocal(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::rotateZ(
-    const Magnum::Math::Rad<float> angleInRad) {
+scene::SceneNode& RigidObject::rotateZ(const Magnum::Rad angleInRad) {
   scene::SceneNode::rotateZ(angleInRad);
   syncPose();
   return *this;
 }
 
-scene::SceneNode& RigidObject::rotateZLocal(
-    const Magnum::Math::Rad<float> angleInRad) {
+scene::SceneNode& RigidObject::rotateZLocal(const Magnum::Rad angleInRad) {
   scene::SceneNode::rotateZLocal(angleInRad);
   syncPose();
   return *this;

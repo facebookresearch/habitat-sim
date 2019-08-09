@@ -21,11 +21,13 @@ namespace physics {
 
 enum MotionType { STATIC, KINEMATIC, DYNAMIC };
 
+enum RigidObjectType { NONE, SCENE, OBJECT };
+
 class RigidObject : public scene::SceneNode {
  public:
   RigidObject(scene::SceneNode* parent);
 
-  // TODO (JH) Currently a RigidObject is either a scene
+  // TODO: Currently a RigidObject is either a scene
   // or an object, but cannot be both (tracked by _isScene/_isObject_)
   // there is probably a better way to abstract this
   virtual bool initializeScene(
@@ -36,7 +38,7 @@ class RigidObject : public scene::SceneNode {
       assets::PhysicsObjectAttributes& physicsObjectAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
-  ~RigidObject();
+  ~RigidObject(){};
 
   //! Check whether object is being actively simulated, or sleeping
   virtual bool isActive();
@@ -56,28 +58,25 @@ class RigidObject : public scene::SceneNode {
 
   // ==== Transformations ===
   //! Need to overwrite a bunch of functions to update physical states
-  virtual SceneNode& setTransformation(
-      const Magnum::Math::Matrix4<float>& transformation);
-  virtual SceneNode& setTranslation(const Magnum::Math::Vector3<float>& vector);
-  virtual SceneNode& setRotation(
-      const Magnum::Math::Quaternion<float>& quaternion);
+  virtual SceneNode& setTransformation(const Magnum::Matrix4& transformation);
+  virtual SceneNode& setTranslation(const Magnum::Vector3& vector);
+  virtual SceneNode& setRotation(const Magnum::Quaternion& quaternion);
 
   virtual SceneNode& resetTransformation();
-  virtual SceneNode& translate(const Magnum::Math::Vector3<float>& vector);
-  virtual SceneNode& translateLocal(const Magnum::Math::Vector3<float>& vector);
+  virtual SceneNode& translate(const Magnum::Vector3& vector);
+  virtual SceneNode& translateLocal(const Magnum::Vector3& vector);
 
-  virtual SceneNode& rotate(const Magnum::Math::Rad<float> angleInRad,
-                            const Magnum::Math::Vector3<float>& normalizedAxis);
-  virtual SceneNode& rotateLocal(
-      const Magnum::Math::Rad<float> angleInRad,
-      const Magnum::Math::Vector3<float>& normalizedAxis);
+  virtual SceneNode& rotate(const Magnum::Rad angleInRad,
+                            const Magnum::Vector3& normalizedAxis);
+  virtual SceneNode& rotateLocal(const Magnum::Rad angleInRad,
+                                 const Magnum::Vector3& normalizedAxis);
 
-  virtual SceneNode& rotateX(const Magnum::Math::Rad<float> angleInRad);
-  virtual SceneNode& rotateY(const Magnum::Math::Rad<float> angleInRad);
-  virtual SceneNode& rotateZ(const Magnum::Math::Rad<float> angleInRad);
-  virtual SceneNode& rotateXLocal(const Magnum::Math::Rad<float> angleInRad);
-  virtual SceneNode& rotateYLocal(const Magnum::Math::Rad<float> angleInRad);
-  virtual SceneNode& rotateZLocal(const Magnum::Math::Rad<float> angleInRad);
+  virtual SceneNode& rotateX(const Magnum::Rad angleInRad);
+  virtual SceneNode& rotateY(const Magnum::Rad angleInRad);
+  virtual SceneNode& rotateZ(const Magnum::Rad angleInRad);
+  virtual SceneNode& rotateXLocal(const Magnum::Rad angleInRad);
+  virtual SceneNode& rotateYLocal(const Magnum::Rad angleInRad);
+  virtual SceneNode& rotateZLocal(const Magnum::Rad angleInRad);
 
   // ==== Getter/Setter functions ===
   //! For kinematic objects they are dummies, for dynamic objects
@@ -104,10 +103,8 @@ class RigidObject : public scene::SceneNode {
   assets::Attributes attributes_;
 
  protected:
-  bool initialized_ = false;
-  bool isScene_ = false;
-  bool isObject_ = false;
   MotionType objectMotionType_;
+  RigidObjectType rigidObjectType_ = NONE;
 
   // used only if isObject_
   // assets::PhysicsObjectMetaData physicsObjectMetaData_;

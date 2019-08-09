@@ -38,16 +38,13 @@ bool BulletRigidObject::initializeScene(
     assets::PhysicsSceneAttributes& physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup,
     std::shared_ptr<btDiscreteDynamicsWorld> bWorld) {
-  if (initialized_) {
+  if (rigidObjectType_ != NONE) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
     return false;
   }
 
   //! Turn on scene flag
-  if (isObject_) {
-    return false;
-  }
-  isScene_ = true;
+  rigidObjectType_ = SCENE;
   objectMotionType_ = STATIC;
 
   //! Create Bullet Object
@@ -102,7 +99,6 @@ bool BulletRigidObject::initializeScene(
   }
 
   bWorld_ = bWorld;
-  initialized_ = true;
   syncPose();
   return true;
 }  // end BulletRigidObject::initializeScene
@@ -112,16 +108,13 @@ bool BulletRigidObject::initializeObject(
     const std::vector<assets::CollisionMeshData>& meshGroup,
     std::shared_ptr<btDiscreteDynamicsWorld> bWorld) {
   // TODO (JH): Handling static/kinematic object type
-  if (initialized_) {
+  if (rigidObjectType_ != NONE) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
     return false;
   }
 
   //! Turn on scene flag
-  if (isScene_) {
-    return false;
-  }
-  isObject_ = true;
+  rigidObjectType_ = OBJECT;
   objectMotionType_ = DYNAMIC;
 
   //! Create Bullet Object
@@ -204,7 +197,6 @@ bool BulletRigidObject::initializeObject(
   bWorld->addRigidBody(bObjectRigidBody_.get());
   //! Sync render pose with physics
   bWorld_ = bWorld;
-  initialized_ = true;
   syncPose();
   return true;
 }  // end BulletRigidObject::initializeObject
@@ -212,64 +204,57 @@ bool BulletRigidObject::initializeObject(
 bool BulletRigidObject::removeObject() {
   bWorld_->removeRigidBody(bObjectRigidBody_.get());
   bWorld_ = nullptr;
-  initialized_ = false;
+  rigidObjectType_ = NONE;
   return true;
 }
 
 bool BulletRigidObject::isActive() {
-  if (!initialized_) {
+  if (rigidObjectType_ == SCENE) {
     return false;
-  }
-  if (isScene_) {
-    return false;
-  }
-  if (isObject_) {
+  } else if (rigidObjectType_ == OBJECT) {
     return bObjectRigidBody_->isActive();
+  } else {
+    return false;
   }
-
-  return false;
 }
 
 void BulletRigidObject::setActive() {
-  if (isScene_ || !initialized_) {
-    return;
+  if (rigidObjectType_ == OBJECT) {
+    bObjectRigidBody_->activate(true);
   }
-  //! dynamic_cast is safe
-  bObjectRigidBody_->activate(true);
 }
 
 void BulletRigidObject::applyForce(Magnum::Vector3& force,
                                    Magnum::Vector3& relPos) {
-  setActive();
-  bObjectRigidBody_->applyForce(btVector3(force), btVector3(relPos));
+  if (rigidObjectType_ == OBJECT) {
+    setActive();
+    bObjectRigidBody_->applyForce(btVector3(force), btVector3(relPos));
+  }
 }
 
 void BulletRigidObject::applyImpulse(Magnum::Vector3& impulse,
                                      Magnum::Vector3& relPos) {
-  if (isScene_ || !initialized_) {
-    return;
+  if (rigidObjectType_ == OBJECT) {
+    setActive();
+    bObjectRigidBody_->applyImpulse(btVector3(impulse), btVector3(relPos));
   }
-  setActive();
-  bObjectRigidBody_->applyImpulse(btVector3(impulse), btVector3(relPos));
 }
 
 //! Synchronize Physics transformations
 //! Needed after changing the pose from Magnum side
 void BulletRigidObject::syncPose() {
-  if (initialized_) {
-    if (isScene_) {
-      //! You shouldn't need to set scene transforms manually
-      //! Scenes are loaded as is
-      return;
-    } else {
-      //! For syncing objects
-      bObjectRigidBody_->setWorldTransform(btTransform(transformationMatrix()));
-    }
+  if (rigidObjectType_ == SCENE) {
+    //! You shouldn't need to set scene transforms manually
+    //! Scenes are loaded as is
+    return;
+  } else if (rigidObjectType_ == OBJECT) {
+    //! For syncing objects
+    bObjectRigidBody_->setWorldTransform(btTransform(transformationMatrix()));
   }
 }
 
 void BulletRigidObject::setMargin(const double margin) {
-  if (isScene_) {
+  if (rigidObjectType_ == SCENE) {
     return;
   } else {
     for (int i = 0; i < bObjectConvexShapes_.size(); i++) {
@@ -280,7 +265,7 @@ void BulletRigidObject::setMargin(const double margin) {
 }
 
 void BulletRigidObject::setMass(const double mass) {
-  if (isScene_)
+  if (rigidObjectType_ == SCENE)
     return;
   else
     bObjectRigidBody_->setMassProps(mass, btVector3(getInertia()));
@@ -288,7 +273,7 @@ void BulletRigidObject::setMass(const double mass) {
 
 void BulletRigidObject::setCOM(const Magnum::Vector3& COM) {
   // Current not supported
-  /*if (isScene_)
+  /*if (rigidObjectType_ == SCENE)
     return;
   else
     bObjectRigidBody_->setCenterOfMassTransform(
@@ -296,7 +281,7 @@ void BulletRigidObject::setCOM(const Magnum::Vector3& COM) {
 }
 
 void BulletRigidObject::setInertia(const Magnum::Vector3& inertia) {
-  if (isScene_)
+  if (rigidObjectType_ == SCENE)
     return;
   else
     bObjectRigidBody_->setMassProps(getMass(), btVector3(inertia));
@@ -304,7 +289,7 @@ void BulletRigidObject::setInertia(const Magnum::Vector3& inertia) {
 
 void BulletRigidObject::setScale(const double scale) {
   // Currently not supported
-  /*if (isScene_)
+  /*if (rigidObjectType_ == SCENE)
     return;
   else
     bObjectRigidBody_->setLinearFactor(btVector3(scale, scale, scale));*/
@@ -312,7 +297,7 @@ void BulletRigidObject::setScale(const double scale) {
 
 void BulletRigidObject::setFrictionCoefficient(
     const double frictionCoefficient) {
-  if (isScene_) {
+  if (rigidObjectType_ == SCENE) {
     for (int i = 0; i < bSceneCollisionObjects_.size(); i++) {
       bSceneCollisionObjects_[i]->setFriction(frictionCoefficient);
     }
@@ -323,7 +308,7 @@ void BulletRigidObject::setFrictionCoefficient(
 
 void BulletRigidObject::setRestitutionCoefficient(
     const double restitutionCoefficient) {
-  if (isScene_) {
+  if (rigidObjectType_ == SCENE) {
     for (int i = 0; i < bSceneCollisionObjects_.size(); i++) {
       bSceneCollisionObjects_[i]->setRestitution(restitutionCoefficient);
     }
@@ -333,37 +318,41 @@ void BulletRigidObject::setRestitutionCoefficient(
 }
 
 void BulletRigidObject::setLinearDamping(const double linearDamping) {
-  if (isScene_)
+  if (rigidObjectType_ == SCENE) {
     return;
-  else
+  } else {
     bObjectRigidBody_->setDamping(linearDamping, getAngularDamping());
+  }
 }
 
 void BulletRigidObject::setAngularDamping(const double angularDamping) {
-  if (isScene_)
+  if (rigidObjectType_ == SCENE) {
     return;
-  else
+  } else {
     bObjectRigidBody_->setDamping(getLinearDamping(), angularDamping);
+  }
 }
 
 const double BulletRigidObject::getMargin() {
-  if (isScene_)
+  if (rigidObjectType_ == SCENE) {
     return -1.0;
-  else
+  } else {
     return bObjectShape_->getMargin();
+  }
 }
 
 const double BulletRigidObject::getMass() {
-  if (isScene_)
+  if (rigidObjectType_ == SCENE) {
     return 0.0;
-  else
+  } else {
     return 1.0 / bObjectRigidBody_->getInvMass();
+  }
 }
 
 const Magnum::Vector3 BulletRigidObject::getCOM() {
   // TODO: double check the position if there is any implicit transformation
   // done
-  if (isScene_) {
+  if (rigidObjectType_ == SCENE) {
     const Magnum::Vector3 com = Magnum::Vector3();
     return com;
   } else {
@@ -374,7 +363,7 @@ const Magnum::Vector3 BulletRigidObject::getCOM() {
 }
 
 const Magnum::Vector3 BulletRigidObject::getInertia() {
-  if (isScene_) {
+  if (rigidObjectType_ == SCENE) {
     const Magnum::Vector3 inertia = Magnum::Vector3();
     return inertia;
   } else {
@@ -385,15 +374,16 @@ const Magnum::Vector3 BulletRigidObject::getInertia() {
 }
 
 const double BulletRigidObject::getScale() {
-  if (isScene_)
+  if (rigidObjectType_ == SCENE) {
     return 1.0;
-  // Assume uniform scale for 3D objects
-  else
+    // Assume uniform scale for 3D objects
+  } else {
     return bObjectRigidBody_->getLinearFactor().x();
+  }
 }
 
 const double BulletRigidObject::getFrictionCoefficient() {
-  if (isScene_) {
+  if (rigidObjectType_ == SCENE) {
     if (bSceneCollisionObjects_.size() == 0) {
       return 0.0;
     } else {
@@ -407,7 +397,7 @@ const double BulletRigidObject::getFrictionCoefficient() {
 
 const double BulletRigidObject::getRestitutionCoefficient() {
   // Assume uniform restitution in scene parts
-  if (isScene_) {
+  if (rigidObjectType_ == SCENE) {
     if (bSceneCollisionObjects_.size() == 0) {
       return 0.0;
     } else {
@@ -419,17 +409,19 @@ const double BulletRigidObject::getRestitutionCoefficient() {
 }
 
 const double BulletRigidObject::getLinearDamping() {
-  if (isScene_)
+  if (rigidObjectType_ == SCENE) {
     return 0.0;
-  else
+  } else {
     return bObjectRigidBody_->getLinearDamping();
+  }
 }
 
 const double BulletRigidObject::getAngularDamping() {
-  if (isScene_)
+  if (rigidObjectType_ == SCENE) {
     return 0.0;
-  else
+  } else {
     return bObjectRigidBody_->getAngularDamping();
+  }
 }
 
 }  // namespace physics

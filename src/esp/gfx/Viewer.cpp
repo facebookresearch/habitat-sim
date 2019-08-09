@@ -157,14 +157,14 @@ void Viewer::addObject(std::string configFile) {
   physicsManager_->setRotation(
       physObjectID,
       Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
-  objectIDs.push_back(physObjectID);
+  objectIDs_.push_back(physObjectID);
 }
 
 void Viewer::removeLastObject() {
-  if (physicsManager_ == nullptr || objectIDs.size() == 0)
+  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
     return;
-  physicsManager_->removeObject(objectIDs.back());
-  objectIDs.pop_back();
+  physicsManager_->removeObject(objectIDs_.back());
+  objectIDs_.pop_back();
 }
 
 void Viewer::invertGravity() {
@@ -177,25 +177,25 @@ void Viewer::invertGravity() {
 }
 
 void Viewer::pokeLastObject() {
-  if (physicsManager_ == nullptr || objectIDs.size() == 0)
+  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
     return;
   Magnum::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 impulse = T.transformPoint({0.0f, 0.0f, -3.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
-  physicsManager_->applyImpulse(objectIDs.back(), impulse, rel_pos);
+  physicsManager_->applyImpulse(objectIDs_.back(), impulse, rel_pos);
 }
 
 void Viewer::pushLastObject() {
-  if (physicsManager_ == nullptr || objectIDs.size() == 0)
+  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
     return;
   Magnum::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 force = T.transformPoint({0.0f, 0.0f, -40.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
-  physicsManager_->applyForce(objectIDs.back(), force, rel_pos);
+  physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
 }
 
 // generate random direction vectors:
@@ -213,10 +213,10 @@ Magnum::Vector3 Viewer::randomDirection() {
 void Viewer::wiggleLastObject() {
   // demo of kinematic motion capability
   // randomly translate last added object
-  if (physicsManager_ == nullptr || objectIDs.size() == 0)
+  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
     return;
 
-  physicsManager_->translate(objectIDs.back(), randomDirection() * 0.1);
+  physicsManager_->translate(objectIDs_.back(), randomDirection() * 0.1);
 }
 
 Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
@@ -236,7 +236,6 @@ void Viewer::drawEvent() {
   if (sceneID_.size() <= 0)
     return;
 
-  frame_curr_ += 1;
   if (physicsManager_ != nullptr)
     physicsManager_->stepPhysics(timeline_.previousFrameDuration());
 
