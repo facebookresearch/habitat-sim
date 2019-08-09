@@ -6,7 +6,7 @@
 
 #include <Magnum/configure.h>
 #ifdef MAGNUM_TARGET_WEBGL
-#include <Magnum/Platform/Sdl2Application.h>
+#include <Magnum/Platform/EmscriptenApplication.h>
 #else
 #include <Magnum/Platform/GlfwApplication.h>
 #endif
