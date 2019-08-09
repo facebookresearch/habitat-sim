@@ -16,6 +16,7 @@ TEST(NavTest nav assets)
 TEST(IOTest io)
 TEST(GeoTest geo)
 TEST(Mp3dTest scene)
+TEST(SimTest sim)
 TEST(SuncgTest scene)
 TEST(main)
 
