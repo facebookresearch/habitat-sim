@@ -6,6 +6,8 @@
 
 #include <Magnum/configure.h>
 #ifdef MAGNUM_TARGET_WEBGL
+// Undefine when using SDL2 Emscripten.
+#define EMSCRIPTEN_INPUT
 #include <Magnum/Platform/EmscriptenApplication.h>
 #else
 #include <Magnum/Platform/GlfwApplication.h>
@@ -42,6 +44,9 @@ class Viewer : public Magnum::Platform::Application {
   void mouseMoveEvent(MouseMoveEvent& event) override;
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
+
+  Magnum::Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
+				   const Magnum::Vector2i& position);
 
   assets::ResourceManager resourceManager_;
   scene::SceneManager sceneManager_;
