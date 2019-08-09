@@ -239,7 +239,9 @@ class CMakeBuild(build_ext):
         cmake_args += [
             "-DBUILD_DATATOOL={}".format("ON" if args.build_datatool else "OFF")
         ]
-        cmake_args += ["-DBUILD_GPU_GPU={}".format("ON" if args.build_gpu_gpu else "OFF")]
+        cmake_args += [
+            "-DBUILD_GPU_GPU={}".format("ON" if args.build_gpu_gpu else "OFF")
+        ]
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
