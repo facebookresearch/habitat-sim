@@ -268,7 +268,7 @@ void BulletRigidObject::setMass(const double mass) {
   if (rigidObjectType_ == SCENE)
     return;
   else
-    bObjectRigidBody_->setMassProps(mass, btVector3(getInertia()));
+    bObjectRigidBody_->setMassProps(mass, btVector3(getInertiaVector()));
 }
 
 void BulletRigidObject::setCOM(const Magnum::Vector3& COM) {
@@ -362,13 +362,27 @@ const Magnum::Vector3 BulletRigidObject::getCOM() {
   }
 }
 
-const Magnum::Vector3 BulletRigidObject::getInertia() {
+const Magnum::Vector3 BulletRigidObject::getInertiaVector() {
   if (rigidObjectType_ == SCENE) {
     const Magnum::Vector3 inertia = Magnum::Vector3();
     return inertia;
   } else {
     const Magnum::Vector3 inertia =
         1.0 / Magnum::Vector3(bObjectRigidBody_->getInvInertiaDiagLocal());
+    return inertia;
+  }
+}
+
+const Magnum::Matrix3 BulletRigidObject::getInertiaMatrix() {
+  if (rigidObjectType_ == SCENE) {
+    const Magnum::Matrix3 inertia = Magnum::Matrix3();
+    return inertia;
+  } else {
+    const Magnum::Vector3 vecInertia = getInertiaVector();
+    const Magnum::Matrix3 inertia =
+        Magnum::Matrix3(Magnum::Vector3(vecInertia.x(), 0, 0),
+                        Magnum::Vector3(0, vecInertia.y(), 0),
+                        Magnum::Vector3(0, 0, vecInertia.z()));
     return inertia;
   }
 }

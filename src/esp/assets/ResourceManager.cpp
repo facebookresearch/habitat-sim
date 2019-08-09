@@ -72,9 +72,10 @@ bool ResourceManager::loadScene(const AssetInfo& info,
       meshSuccess = loadGeneralMeshData(info, parent, drawables);
     }
     // add a scene attributes for this filename or modify the existing one
-    if (meshSuccess)
+    if (meshSuccess) {
       physicsSceneLibrary_[info.filepath].setString("renderMeshHandle",
                                                     info.filepath);
+    }
   }
 
   return meshSuccess;
@@ -272,7 +273,7 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
   std::string configDirectory =
       physicsFilename.substr(0, physicsFilename.find_last_of("/"));
   // load the rigid object library metadata (no physics init yet...)
-  // ALEX NOTE: expect relative paths to the global config
+  // NOTE: expect relative paths to the global config
   if (scenePhysicsConfig.HasMember("rigid object paths")) {
     if (scenePhysicsConfig["rigid object paths"].IsArray()) {
       physicsManagerAttributes.setVecStrings("objectLibraryPaths",
@@ -360,7 +361,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   // check for duplicate load
   const bool objExists = physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
   if (objExists) {
-    // ALEX TODO: for now this will skip the duplicate. Is there a good reason
+    // TODO: for now this will skip the duplicate. Is there a good reason
     // to allow duplicates?
     std::vector<std::string>::iterator itr =
         std::find(physicsObjectConfigList_.begin(),
@@ -370,14 +371,14 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   }
 
   // 1. parse the config file
-  // ALEX NOTE: we could create a datastructure of parsed JSON property files
+  // NOTE: we could create a datastructure of parsed JSON property files
   // before creating individual entries...
   io::JsonDocument objPhysicsConfig = io::parseJsonFile(objPhysConfigFilename);
 
   // 2. construct a physicsObjectMetaData
   PhysicsObjectAttributes physicsObjectAttributes;
 
-  // ALEX NOTE: these paths should be relative to the properties file
+  // NOTE: these paths should be relative to the properties file
   std::string propertiesFileDirectory =
       objPhysConfigFilename.substr(0, objPhysConfigFilename.find_last_of("/"));
 
@@ -486,7 +487,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   bool shiftMeshOrigin = !(COM[0] == 0 && COM[1] == 0 && COM[2] == 0);
 
   //! Load rendering mesh
-  // Alex TODO: add other mesh types and unify the COM move: don't want
+  // TODO: add other mesh types and unify the COM move: don't want
   // simplified meshes to result in different rendering and collision
   // COMs/origins
   if (!renderMeshFilename.empty()) {
@@ -529,13 +530,13 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
     }
   }
 
-  // Alex NOTE: if we want to save these after edit we need to save the moved
+  // NOTE: if we want to save these after edit we need to save the moved
   // mesh or save the original COM as a member of RigidBody...
   physicsObjectAttributes.setMagnumVec3("COM", Magnum::Vector3(0));
   // once we move the meshes, the COM is aligned with the origin...
 
   if (!renderMeshSuccess && !collisionMeshSuccess) {
-    // ALEX TODO: for now we only allow objects with SOME mesh file. Failing
+    // TODO: for now we only allow objects with SOME mesh file. Failing
     // both loads or having no mesh will cancel the load.
     LOG(ERROR) << "Failed to load a physical object: no meshes...: "
                << objPhysConfigFilename;
@@ -570,7 +571,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
     meshGroup.push_back(meshData);
   }
   //! Properly align axis direction
-  // ALEX NOTE: this breaks the collision properties of some files
+  // NOTE: this breaks the collision properties of some files
   collisionMeshGroups_.emplace(objPhysConfigFilename, meshGroup);
   physicsObjectConfigList_.push_back(objPhysConfigFilename);
 
@@ -732,7 +733,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
     instanceMeshData->loadPLY(filename);
     instanceMeshData->uploadBuffersToGPU(false);
 
-    instance_mesh = &(instanceMeshData->getRenderingBuffer()->mesh);
+    instance_mesh_ = &(instanceMeshData->getRenderingBuffer()->mesh);
     // update the dictionary
     resourceDict_.emplace(filename, MeshMetaData(index, index));
   }

@@ -38,14 +38,14 @@ class BulletPhysicsManager : public PhysicsManager {
                 const std::vector<assets::CollisionMeshData>& meshGroup);
 
   //============ Simulator functions =============
-  void stepPhysics(double dt = -1.0);
+  void stepPhysics(double dt);
 
   void setGravity(const Magnum::Vector3& gravity);
 
   const Magnum::Vector3 getGravity();
 
   //============ Interact with objects =============
-  // Alex NOTE: engine specifics handled by objects themselves...
+  // NOTE: engine specifics handled by objects themselves...
 
   //============ Bullet-specific Object Setter functions =============
   void setMargin(const int physObjectID, const double margin);

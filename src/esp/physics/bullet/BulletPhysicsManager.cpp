@@ -133,14 +133,16 @@ const Magnum::Vector3 BulletPhysicsManager::getGravity() {
 
 void BulletPhysicsManager::stepPhysics(double dt) {
   // We don't step uninitialized physics sim...
-  if (!initialized_)
+  if (!initialized_) {
     return;
-  if (dt < 0)
+  }
+  if (dt < 0) {
     dt = fixedTimeStep_;
+  }
 
   // ==== Physics stepforward ======
 
-  // Alex NOTE: worldTime_ will always be a multiple of sceneMetaData_.timestep
+  // NOTE: worldTime_ will always be a multiple of sceneMetaData_.timestep
   int numSubStepsTaken =
       bWorld_->stepSimulation(dt, maxSubSteps_, fixedTimeStep_);
   worldTime_ += numSubStepsTaken * fixedTimeStep_;
@@ -175,7 +177,7 @@ const double BulletPhysicsManager::getMargin(const int physObjectID) {
                existingObjects_.at(physObjectID))
         ->getMargin();
   } else {
-    return -1.0;
+    return PHYSICS_ATTR_UNDEFINED;
   }
 }
 

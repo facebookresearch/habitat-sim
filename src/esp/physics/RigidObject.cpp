@@ -48,7 +48,7 @@ bool RigidObject::removeObject() {
 }
 
 bool RigidObject::isActive() {
-  // Alex NOTE: no active objects without a physics engine... (kinematics don't
+  // NOTE: no active objects without a physics engine... (kinematics don't
   // count)
   return false;
 }
@@ -162,8 +162,13 @@ const Magnum::Vector3 RigidObject::getCOM() {
   return com;
 }
 
-const Magnum::Vector3 RigidObject::getInertia() {
+const Magnum::Vector3 RigidObject::getInertiaVector() {
   const Magnum::Vector3 inertia = Magnum::Vector3();
+  return inertia;
+}
+
+const Magnum::Matrix3 RigidObject::getInertiaMatrix() {
+  const Magnum::Matrix3 inertia = Magnum::Matrix3();
   return inertia;
 }
 

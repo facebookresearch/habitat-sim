@@ -168,7 +168,7 @@ bool PhysicsManager::isMeshPrimitiveValid(
   return true;
 }
 
-// ALEX TODO: this function should do any engine specific setting which is
+// TODO: this function should do any engine specific setting which is
 // necessary to change the timestep
 void PhysicsManager::setTimestep(double dt) {
   fixedTimeStep_ = dt;
@@ -182,16 +182,22 @@ const Magnum::Vector3 PhysicsManager::getGravity() {
   return Magnum::Vector3(0);
 }
 
+void PhysicsManager::stepPhysics() {
+  stepPhysics(0.0);
+}
+
 void PhysicsManager::stepPhysics(double dt) {
   // We don't step uninitialized physics sim...
-  if (!initialized_)
+  if (!initialized_) {
     return;
+  }
 
   // ==== Physics stepforward ======
   // NOTE: simulator step goes here in derived classes...
 
-  if (dt < 0)
+  if (dt < 0) {
     dt = fixedTimeStep_;
+  }
 
   // handle in-between step times? Ideally dt is a multiple of
   // sceneMetaData_.timestep
@@ -211,8 +217,9 @@ int PhysicsManager::checkActiveObjects() {
   }
 
   // We don't check uninitialized physics sim...
-  if (!initialized_)
+  if (!initialized_) {
     return 0;
+  }
 
   int numActive = 0;
   int numTotal = 0;
@@ -413,7 +420,7 @@ const double PhysicsManager::getMass(const int physObjectID) {
   if (existingObjects_.count(physObjectID) > 0) {
     return existingObjects_[physObjectID]->getMass();
   } else {
-    return -1.0;
+    return PHYSICS_ATTR_UNDEFINED;
   }
 }
 
@@ -425,12 +432,20 @@ const Magnum::Vector3 PhysicsManager::getCOM(const int physObjectID) {
     return Magnum::Vector3();
   }
 }
-const Magnum::Vector3 PhysicsManager::getInertia(const int physObjectID) {
+const Magnum::Vector3 PhysicsManager::getInertiaVector(const int physObjectID) {
   // TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->getInertia();
+    return existingObjects_[physObjectID]->getInertiaVector();
   } else {
     return Magnum::Vector3();
+  }
+}
+const Magnum::Matrix3 PhysicsManager::getInertiaMatrix(const int physObjectID) {
+  // TODO: talk to property library
+  if (existingObjects_.count(physObjectID) > 0) {
+    return existingObjects_[physObjectID]->getInertiaMatrix();
+  } else {
+    return Magnum::Matrix3();
   }
 }
 const double PhysicsManager::getScale(const int physObjectID) {
@@ -438,7 +453,7 @@ const double PhysicsManager::getScale(const int physObjectID) {
   if (existingObjects_.count(physObjectID) > 0) {
     return existingObjects_[physObjectID]->getScale();
   } else {
-    return -1.0;
+    return PHYSICS_ATTR_UNDEFINED;
   }
 }
 const double PhysicsManager::getFrictionCoefficient(const int physObjectID) {
@@ -446,7 +461,7 @@ const double PhysicsManager::getFrictionCoefficient(const int physObjectID) {
   if (existingObjects_.count(physObjectID) > 0) {
     return existingObjects_[physObjectID]->getFrictionCoefficient();
   } else {
-    return -1.0;
+    return PHYSICS_ATTR_UNDEFINED;
   }
 }
 const double PhysicsManager::getRestitutionCoefficient(const int physObjectID) {
@@ -454,7 +469,7 @@ const double PhysicsManager::getRestitutionCoefficient(const int physObjectID) {
   if (existingObjects_.count(physObjectID) > 0) {
     return existingObjects_[physObjectID]->getRestitutionCoefficient();
   } else {
-    return -1.0;
+    return PHYSICS_ATTR_UNDEFINED;
   }
 }
 const double PhysicsManager::getLinearDamping(const int physObjectID) {
@@ -462,7 +477,7 @@ const double PhysicsManager::getLinearDamping(const int physObjectID) {
   if (existingObjects_.count(physObjectID) > 0) {
     return existingObjects_[physObjectID]->getLinearDamping();
   } else {
-    return -1.0;
+    return PHYSICS_ATTR_UNDEFINED;
   }
 }
 const double PhysicsManager::getAngularDamping(const int physObjectID) {
@@ -470,7 +485,7 @@ const double PhysicsManager::getAngularDamping(const int physObjectID) {
   if (existingObjects_.count(physObjectID) > 0) {
     return existingObjects_[physObjectID]->getAngularDamping();
   } else {
-    return -1.0;
+    return PHYSICS_ATTR_UNDEFINED;
   }
 }
 

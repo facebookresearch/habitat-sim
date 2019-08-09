@@ -17,9 +17,6 @@
 #include "esp/gfx/Simulator.h"
 #include "esp/scene/SceneConfiguration.h"
 
-// Alex debugging
-#include "esp/assets/Attributes.h"
-
 using namespace Magnum;
 using namespace Math::Literals;
 using namespace Corrade;
@@ -64,11 +61,11 @@ Viewer::Viewer(const Arguments& arguments)
 
   int sceneID = sceneManager_.initSceneGraph();
   sceneID_.push_back(sceneID);
-  sceneGraph = &sceneManager_.getSceneGraph(sceneID);
-  rootNode = &sceneGraph->getRootNode();
-  navSceneNode_ = &rootNode->createChild();
+  sceneGraph_ = &sceneManager_.getSceneGraph(sceneID);
+  rootNode_ = &sceneGraph_->getRootNode();
+  navSceneNode_ = &rootNode_->createChild();
 
-  auto& drawables = sceneGraph->getDrawables();
+  auto& drawables = sceneGraph_->getDrawables();
   const std::string& file = args.value("scene");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
 
@@ -86,8 +83,8 @@ Viewer::Viewer(const Arguments& arguments)
   }
 
   // Set up camera
-  renderCamera_ = &sceneGraph->getDefaultRenderCamera();
-  agentBodyNode_ = &rootNode->createChild();
+  renderCamera_ = &sceneGraph_->getDefaultRenderCamera();
+  agentBodyNode_ = &rootNode_->createChild();
   cameraNode_ = &agentBodyNode_->createChild();
 
   cameraNode_->translate({0.0f, cameraHeight, 0.0f});
@@ -141,7 +138,7 @@ void Viewer::addObject(std::string configFile) {
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
 
-  auto& drawables = sceneGraph->getDrawables();
+  auto& drawables = sceneGraph_->getDrawables();
   int physObjectID = physicsManager_->addObject(configFile, &drawables);
   physicsManager_->setTranslation(physObjectID, new_pos);
 

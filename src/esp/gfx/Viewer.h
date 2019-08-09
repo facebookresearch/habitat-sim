@@ -65,8 +65,8 @@ class Viewer : public Magnum::Platform::Application {
 
   scene::SceneNode* navSceneNode_ = nullptr;
 
-  scene::SceneGraph* sceneGraph;
-  scene::SceneNode* rootNode;
+  scene::SceneGraph* sceneGraph_;
+  scene::SceneNode* rootNode_;
 
   RenderCamera* renderCamera_ = nullptr;
   nav::PathFinder::ptr pathfinder_;

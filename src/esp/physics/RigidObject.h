@@ -88,7 +88,9 @@ class RigidObject : public scene::SceneNode {
   virtual const double getLinearDamping() { return 0.0; }
   virtual const double getAngularDamping() { return 0.0; }
   virtual const Magnum::Vector3 getCOM();
-  virtual const Magnum::Vector3 getInertia();
+  // Get local inertia
+  virtual const Magnum::Vector3 getInertiaVector();
+  virtual const Magnum::Matrix3 getInertiaMatrix();
 
   virtual void setMass(const double mass){};
   virtual void setCOM(const Magnum::Vector3& COM){};

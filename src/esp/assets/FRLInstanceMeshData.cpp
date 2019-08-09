@@ -248,14 +248,14 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   // what's going on with this image/texture
   const size_t numTris = numQuads * 2;
   const int texSize = std::pow(2, std::ceil(std::log2(std::sqrt(numTris))));
-  obj_id_tex_data = new float[texSize * texSize]();
+  obj_id_tex_data_ = new float[texSize * texSize]();
 
   for (size_t i = 0; i < numQuads; ++i) {
-    obj_id_tex_data[2 * i] = cpu_vbo_[4 * i][3];
-    obj_id_tex_data[2 * i + 1] = cpu_vbo_[4 * i][3];
+    obj_id_tex_data_[2 * i] = cpu_vbo_[4 * i][3];
+    obj_id_tex_data_[2 * i + 1] = cpu_vbo_[4 * i][3];
   }
 
-  renderingBuffer_->tex = createInstanceTexture(obj_id_tex_data, texSize);
+  renderingBuffer_->tex = createInstanceTexture(obj_id_tex_data_, texSize);
   renderingBuffer_->vbo.setData(*cpu_vbo_3_,
                                 Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->cbo.setData(*cbo_float_,

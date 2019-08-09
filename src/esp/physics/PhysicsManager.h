@@ -70,7 +70,8 @@ class PhysicsManager {
   virtual int removeObject(const int physObjectID);
 
   //============ Simulator functions =============
-  virtual void stepPhysics(double dt = -1.0);
+  virtual void stepPhysics();
+  virtual void stepPhysics(double dt);
 
   // =========== Global Setter functions ===========
   virtual void setTimestep(double dt);
@@ -128,7 +129,8 @@ class PhysicsManager {
   // ============ Object Getter functions =============
   const double getMass(const int physObjectID);
   const Magnum::Vector3 getCOM(const int physObjectID);
-  const Magnum::Vector3 getInertia(const int physObjectID);
+  const Magnum::Vector3 getInertiaVector(const int physObjectID);
+  const Magnum::Matrix3 getInertiaMatrix(const int physObjectID);
   const double getScale(const int physObjectID);
   const double getFrictionCoefficient(const int physObjectID);
   const double getRestitutionCoefficient(const int physObjectID);
@@ -143,7 +145,7 @@ class PhysicsManager {
   int checkActiveObjects();
 
   //============ Interact with objects =============
-  // Alex NOTE: engine specifics handled by objects themselves...
+  // NOTE: engine specifics handled by objects themselves...
   void applyForce(const int physObjectID,
                   Magnum::Vector3& force,
                   Magnum::Vector3& relPos);
