@@ -9,7 +9,7 @@ if(CORRADE_TARGET_EMSCRIPTEN)
 endif()
 
 if(BUILD_PTEX_SUPPORT)
-  set(ESP_BUILD_PTEX_SUPPORT)
+  set(ESP_BUILD_PTEX_SUPPORT ON)
 endif()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
