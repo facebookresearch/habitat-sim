@@ -6,7 +6,7 @@
 
 #include "esp/core/configure.h"
 
-#if defined(ESP_WITH_GLOG_SHIM)
+#if defined(ESP_USE_GLOG_SHIM)
 
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
