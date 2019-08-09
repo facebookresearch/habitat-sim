@@ -39,7 +39,6 @@ include_directories(SYSTEM "${DEPS_DIR}/Sophus")
 # Therefore we do not build glog and use a custom shim instead to emulate glog
 if(CORRADE_TARGET_EMSCRIPTEN)
   add_library(glog INTERFACE)
-  add_compile_definitions(USE_GLOG_SHIM)
 else()
   add_subdirectory("${DEPS_DIR}/glog")
 endif()

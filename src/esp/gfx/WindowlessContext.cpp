@@ -11,7 +11,7 @@
 #elif defined(CORRADE_TARGET_UNIX)
 #include <Magnum/Platform/GLContext.h>
 
-#ifdef __ESP_USE_EGL__
+#ifdef ESP_BUILD_EGL_SUPPORT
 #include <glad/glad_egl.h>
 #else
 #include <Magnum/Platform/WindowlessGlxApplication.h>
@@ -48,7 +48,7 @@ struct ESPContext {
   ESP_SMART_POINTERS(ESPContext);
 };
 
-#ifdef __ESP_USE_EGL__
+#ifdef ESP_BUILD_EGL_SUPPORT
 const int MAX_DEVICES = 128;
 
 #define CHECK_EGL_ERROR()                             \
@@ -186,7 +186,7 @@ struct ESPEGLContext : ESPContext {
   ESP_SMART_POINTERS(ESPEGLContext);
 };
 
-#else  // __ESP_USE_EGL__ not defined
+#else  // ESP_BUILD_EGL_SUPPORT not defined
 
 struct ESPGLXContext : ESPContext {
   ESPGLXContext()
@@ -219,7 +219,7 @@ struct ESPGLXContext : ESPContext {
 
 struct WindowlessContext::Impl {
   Impl(int device) {
-#ifdef __ESP_USE_EGL__
+#ifdef ESP_BUILD_EGL_SUPPORT
     glContext_ = ESPEGLContext::create_unique(device);
 #else
     CHECK_EQ(device, 0)
