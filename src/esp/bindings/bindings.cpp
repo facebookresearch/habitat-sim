@@ -351,7 +351,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   py::class_<Observation, Observation::ptr>(m, "Observation");
 
   m.attr("gpu_gpu_enabled") =
-#ifdef ESP_WITH_GPU_GPU
+#ifdef ESP_BUILD_GPU_GPU
       true;
 #else
       false;
@@ -369,7 +369,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            "Reads RGBA frame into passed img in uint8 byte format.")
       .def("read_frame_depth", &RenderTarget::readFrameDepth)
       .def("read_frame_object_id", &RenderTarget::readFrameObjectId)
-#ifdef ESP_WITH_GPU_GPU
+#ifdef ESP_BUILD_GPU_GPU
       .def("read_frame_rgba_gpu",
            [](RenderTarget& self, size_t devPtr) {
              self.readFrameRgbaGPU(reinterpret_cast<uint8_t*>(devPtr));

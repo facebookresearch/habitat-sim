@@ -22,6 +22,7 @@
 #include "esp/core/logging.h"
 #include "esp/core/spimpl.h"
 
+
 namespace Eigen {
 typedef Matrix<uint8_t, 3, 1> Vector3uc;
 typedef Matrix<uint32_t, 3, 1> Vector3ui;

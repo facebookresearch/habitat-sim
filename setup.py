@@ -38,7 +38,7 @@ def build_parser():
 Use "HEADLESS=True pip install ." to build in headless mode with pip""",
     )
     parser.add_argument(
-        "--with-gpu-gpu",
+        "--build-gpu-gpu",
         action="store_true",
         help="Build with GPU2GPU transfer to support rendering directly to PyTorch tensors.",
     )
@@ -239,7 +239,7 @@ class CMakeBuild(build_ext):
         cmake_args += [
             "-DBUILD_DATATOOL={}".format("ON" if args.build_datatool else "OFF")
         ]
-        cmake_args += ["-DWITH_GPU_GPU={}".format("ON" if args.with_gpu_gpu else "OFF")]
+        cmake_args += ["-DBUILD_GPU_GPU={}".format("ON" if args.build_gpu_gpu else "OFF")]
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(

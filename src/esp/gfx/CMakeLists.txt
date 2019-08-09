@@ -54,7 +54,7 @@ target_include_directories(gfx
     "${DEPS_DIR}/glad/include"
 )
 
-if(WITH_GPU_GPU)
+if(BUILD_GPU_GPU)
   find_package(CUDA REQUIRED)
 
   target_include_directories(gfx PUBLIC
@@ -63,9 +63,6 @@ if(WITH_GPU_GPU)
 
   target_link_libraries(gfx PUBLIC
       "${CUDA_LIBRARIES}")
-
-  target_compile_definitions(gfx PUBLIC
-    ESP_WITH_GPU_GPU)
 endif()
 
 

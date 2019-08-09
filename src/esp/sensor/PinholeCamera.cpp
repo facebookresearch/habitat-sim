@@ -2,6 +2,9 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Magnum/ImageView.h>
+#include <Magnum/PixelFormat.h>
+
 #include "PinholeCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/Simulator.h"
@@ -73,11 +76,17 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
   // TODO: have different classes for the different types of sensors
   // TODO: do we need to flip axis?
   if (spec_->sensorType == SensorType::SEMANTIC) {
-    renderer->readFrameObjectId((uint32_t*)buffer_->data);
+    renderTarget()->readFrameObjectId(Magnum::MutableImageView2D{
+        Magnum::PixelFormat::R32UI, renderTarget()->framebufferSize(),
+        obs.buffer->data});
   } else if (spec_->sensorType == SensorType::DEPTH) {
-    renderer->readFrameDepth((float*)buffer_->data);
+    renderTarget()->readFrameDepth(Magnum::MutableImageView2D{
+        Magnum::PixelFormat::R32F, renderTarget()->framebufferSize(),
+        obs.buffer->data});
   } else {
-    renderer->readFrameRgba((uint8_t*)buffer_->data);
+    renderTarget()->readFrameRgba(Magnum::MutableImageView2D{
+        Magnum::PixelFormat::RGBA8Unorm, renderTarget()->framebufferSize(),
+        obs.buffer->data});
   }
 
   renderTarget()->renderExit();
