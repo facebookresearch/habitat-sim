@@ -4,8 +4,8 @@
 
 #pragma once
 
-#cmakedefine BUILD_EGL_SUPPORT
+#cmakedefine ESP_BUILD_EGL_SUPPORT
 
-#cmakedefine BUILD_PTEX_SUPPORT
+#cmakedefine ESP_BUILD_PTEX_SUPPORT
 
-#cmakedefine BUILD_GLOG_SHIM
+#cmakedefine ESP_BUILD_GLOG_SHIM
