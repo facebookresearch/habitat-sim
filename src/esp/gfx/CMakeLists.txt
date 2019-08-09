@@ -98,8 +98,6 @@ if(BUILD_GUI_VIEWERS)
     find_package(Magnum REQUIRED GlfwApplication)
     target_link_libraries(gfx PUBLIC Magnum::GlfwApplication)
   endif()
-elseif(UNIX)
-  target_compile_definitions(gfx PRIVATE __ESP_USE_EGL__)
 endif()
 
 # Link appropriate windowless library

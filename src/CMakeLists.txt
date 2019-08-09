@@ -51,10 +51,6 @@ include_directories(${PROJECT_SOURCE_DIR})
 # compiler define for enabling ptex support
 if(BUILD_PTEX_SUPPORT)
   message("Building with ptex support")
-  # This should be ideally add_compile_definitions() in the long term, but
-  # that's not available until CMake 3.12 and we don't want to cut off people
-  # on older versions.
-  add_definitions(-DBUILD_PTEX_SUPPORT)
 endif()
 
 # add subdirectories

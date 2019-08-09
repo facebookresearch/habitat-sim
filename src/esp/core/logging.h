@@ -4,7 +4,9 @@
 
 #pragma once
 
-#if defined(USE_GLOG_SHIM)
+#include "esp/core/configure.h"
+
+#if defined(ESP_BUILD_GLOG_SHIM)
 
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
