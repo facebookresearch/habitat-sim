@@ -160,8 +160,9 @@ To run the above benchmarks on your machine, see instructions in the [examples](
    Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right).
    Try to find the picture of a woman surrounded by a wreath.
    Have fun!
-1. **Physical interactions**: If you would like to try out habitat with dynamical objects (under development), first download pre-processed object set from this [link](http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip) and extract as `habitat-sim/data/objects/`. Then use
+1. **Physical interactions**: If you would like to try out habitat with dynamical objects (under development), first install [Bullet Physics](https://github.com/bulletphysics/bullet3/). Then download pre-processed object set from this [link](http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip) and extract as `habitat-sim/data/objects/`. Next use
    ```bash
+   python setup.py install --bullet    # build habitat with bullet physics
    build/viewer --enable-physics /path/to/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb
    ```
    Move around, and press O key to add object, press P/F to interact with the last added object, press V to remove, and press V key to invert gravity.
