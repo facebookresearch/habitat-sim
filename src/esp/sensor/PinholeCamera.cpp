@@ -45,6 +45,11 @@ bool PinholeCamera::getObservationSpace(ObservationSpace& space) {
 bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
   // TODO: check if sensor is valid?
   // TODO: have different classes for the different types of sensors
+  //
+  if (!hasRenderTarget())
+    return false;
+
+  renderTarget()->renderEnter();
 
   // Make sure we have memory
   if (buffer_ == nullptr) {
@@ -57,11 +62,6 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
 
   // TODO: Get appropriate render with correct resolution
   std::shared_ptr<gfx::Renderer> renderer = sim.getRenderer();
-  vec3i resolution = renderer->getSize();
-  if (resolution[0] != spec_->resolution[0] ||
-      resolution[1] != spec_->resolution[1]) {
-    renderer->setSize(spec_->resolution[0], spec_->resolution[1]);
-  }
   if (spec_->sensorType == SensorType::SEMANTIC) {
     // TODO: check sim has semantic scene graph
     renderer->draw(*this, sim.getActiveSemanticSceneGraph());
@@ -79,6 +79,9 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
   } else {
     renderer->readFrameRgba((uint8_t*)buffer_->data);
   }
+
+  renderTarget()->renderExit();
+
   return true;
 }
 

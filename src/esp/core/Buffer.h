@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #pragma once
+#include <Corrade/Containers/Array.h>
 
 #include "esp/core/esp.h"
 
@@ -33,14 +34,14 @@ class Buffer {
     alloc();
   };
   void clear();
-  virtual ~Buffer() { dealloc(); }
+  virtual ~Buffer() { dealloc(); };
 
  protected:
   void alloc();
   void dealloc();
 
  public:
-  void* data = nullptr;
+  Corrade::Containers::Array<char> data;
   size_t totalBytes = 0;
   size_t totalSize = 0;
   DataType dataType = DataType::DT_UINT8;

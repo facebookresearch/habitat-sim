@@ -42,19 +42,15 @@ void Buffer::alloc() {
     size *= this->shape[i];
   }
   if (size != this->totalSize) {
-    dealloc();
     this->totalSize = size;
     this->totalBytes = size * getDataTypeByteSize(this->dataType);
-    if (this->totalBytes > 0) {
-      this->data = malloc(this->totalBytes);
-    }
+    this->data = Corrade::Containers::Array<char>{this->totalBytes};
   }
 }
 
 void Buffer::dealloc() {
   if (this->data != nullptr) {
-    free(this->data);
-    this->data = nullptr;
+    this->data = Corrade::Containers::Array<char>{};
     this->totalSize = 0;
     this->totalBytes = 0;
   }
