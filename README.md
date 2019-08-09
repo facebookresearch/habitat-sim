@@ -184,6 +184,8 @@ We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup
    ```bash
    export PYTHONPATH=$PYTHONPATH:/path/to/habitat-sim/
    ```
+   
+  We also have a dev slack channel, please follow this [link](https://join.slack.com/t/ai-habitat/shared_invite/enQtNjY1MzM1NDE4MTk2LTZhMzdmYWMwODZlNjg5MjZiZjExOTBjOTg5MmRiZTVhOWQyNzk0OTMyN2E1ZTEzZTNjMWM0MjBkN2VhMjQxMDI) to get added to the channel.
 
 ## Datasets
 
