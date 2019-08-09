@@ -43,12 +43,12 @@ class LogMessageVoidify {
 #include <glog/stl_logging.h>
 #endif
 
-#define ASSERT(x, ...)                                                         \
-  do {                                                                         \
-    if (!(x)) {                                                                \
-      LOG(ERROR) << "Assert failed: " #x << ", " << __FILE__ << ":" << __LINE__ \
-                << std::endl;                                                  \
-      LOG(ERROR) << #__VA_ARGS__ << std::endl;                                  \
-      exit(-1);                                                                \
-    }                                                                          \
+#define ASSERT(x, ...)                                              \
+  do {                                                              \
+    if (!(x)) {                                                     \
+      LOG(ERROR) << "Assert failed: " #x << ", " << __FILE__ << ":" \
+                 << __LINE__ << std::endl;                          \
+      LOG(ERROR) << #__VA_ARGS__ << std::endl;                      \
+      exit(-1);                                                     \
+    }                                                               \
   } while (false)

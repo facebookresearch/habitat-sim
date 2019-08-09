@@ -55,6 +55,22 @@ void PTexMeshData::setExposure(const float& val) {
   exposure_ = val;
 }
 
+float PTexMeshData::gamma() const {
+  return gamma_;
+}
+
+void PTexMeshData::setGamma(const float& val) {
+  gamma_ = val;
+}
+
+float PTexMeshData::saturation() const {
+  return saturation_;
+}
+
+void PTexMeshData::setSaturation(const float& val) {
+  saturation_ = val;
+}
+
 const std::vector<PTexMeshData::MeshData>& PTexMeshData::meshes() const {
   return submeshes_;
 }
@@ -282,14 +298,15 @@ void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData& mesh,
 void PTexMeshData::loadMeshData(const std::string& meshFile) {
   PTexMeshData::MeshData originalMesh;
 
-  LOG(INFO) << "start parsing PLY... " << std::endl;
+  LOG(INFO) << "Start parsing PLY... ";
   parsePLY(meshFile, originalMesh);
+  LOG(INFO) << "Parsing PLY: Done";
 
   submeshes_.clear();
   if (splitSize_ > 0.0f) {
     LOG(INFO) << "Splitting mesh... ";
     submeshes_ = splitMesh(originalMesh, splitSize_);
-    LOG(INFO) << "Splitting mesh: Done" << std::endl;
+    LOG(INFO) << "Splitting mesh: Done";
   } else {
     submeshes_.emplace_back(std::move(originalMesh));
   }
@@ -600,8 +617,7 @@ void PTexMeshData::saveAdjacency(const std::string& filename,
   std::ofstream file;
   file.open(filename, std::ios::out | std::ios::binary);
   if (!file.good()) {
-    LOG(INFO) << "Error: cannot open " << filename << " to save the adjacency."
-              << std::endl;
+    LOG(INFO) << "Error: cannot open " << filename << " to save the adjacency.";
     return;
   }
 
@@ -632,8 +648,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   }
 
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
-    LOG(INFO) << "\rLoading mesh " << iMesh + 1 << "/" << submeshes_.size()
-              << "... " << std::endl;
+    LOG(INFO) << "Loading mesh " << iMesh + 1 << "/" << submeshes_.size()
+              << ". ";
 
     renderingBuffers_.emplace_back(
         std::make_unique<PTexMeshData::RenderingBuffer>());
@@ -645,7 +661,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
                              Magnum::GL::BufferUsage::StaticDraw);
   }
 
-  LOG(INFO) << "Calculating mesh adjacency... " << std::endl;
+  LOG(INFO) << "Calculating mesh adjacency... ";
   std::vector<std::vector<uint32_t>> adjFaces(submeshes_.size());
 
   // load it if it is computed before.
@@ -660,10 +676,9 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     // Warning: you should have enough disk space to store the info
     // it usually takes a couple of 100MB (usually 200+MB).
     saveAdjacency(adjFaceFilename, adjFaces);
-    LOG(INFO) << "Done: it is computed and saved to: " << adjFaceFilename
-              << std::endl;
+    LOG(INFO) << "Done: it is computed and saved to: " << adjFaceFilename;
   } else {
-    LOG(INFO) << "Done: Loaded it from " << adjFaceFilename << std::endl;
+    LOG(INFO) << "Done: Loaded it from " << adjFaceFilename;
   }
 
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
@@ -683,15 +698,15 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   }
 
   // load atlas data and upload them to GPU
-  LOG(INFO) << "loading atlas textures: " << std::endl;
+  LOG(INFO) << "loading atlas textures: ";
   for (size_t iMesh = 0; iMesh < renderingBuffers_.size(); ++iMesh) {
     const std::string hdrFile = Corrade::Utility::Directory::join(
         atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
 
     ASSERT(io::exists(hdrFile), Error : Cannot find the.hdr file);
 
-    LOG(INFO) << "\rLoading atlas " << iMesh + 1 << "/"
-              << renderingBuffers_.size() << " from " << hdrFile << "... ";
+    LOG(INFO) << "Loading atlas " << iMesh + 1 << "/"
+              << renderingBuffers_.size() << " from " << hdrFile << ". ";
 
     Corrade::Containers::Array<const char,
                                Corrade::Utility::Directory::MapDeleter>
@@ -709,7 +724,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
         ->tex.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
         .setMagnificationFilter(Magnum::GL::SamplerFilter::Linear)
         .setMinificationFilter(Magnum::GL::SamplerFilter::Linear)
-        .setStorage(mipLevelCount, Magnum::GL::TextureFormat::RGB16F, image.size())
+        .setStorage(mipLevelCount, Magnum::GL::TextureFormat::RGB16F,
+                    image.size())
         .setSubImage(0, {}, image);
   }
   buffersOnGPU_ = true;

@@ -69,7 +69,6 @@ class PTexMeshData : public BaseMesh {
   float exposure() const;
   void setExposure(const float& val);
 
-  // TODO:
   float gamma() const;
   void setGamma(const float& val);
 
