@@ -31,6 +31,8 @@ namespace gfx {
 
 Simulator::Simulator(const SimulatorConfiguration& cfg) {
   // initalize members according to cfg
+  // NOTE: NOT SO GREAT NOW THAT WE HAVE virtual functions
+  //       Maybe better not to do this reconfigure
   reconfigure(cfg);
 }
 
