@@ -40,9 +40,6 @@ endif()
 # but need cmake_policy(SET CMP0063 NEW) also which seems to not work
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 
-set(CONFIGURE_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR})
-
-
 # ---[ Dependencies
 include(cmake/dependencies.cmake)
 
