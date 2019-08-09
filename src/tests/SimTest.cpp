@@ -9,13 +9,14 @@
 #include <string>
 
 using esp::gfx::SimulatorConfiguration;
+using esp::nav::PathFinder;
 using esp::scene::SceneConfiguration;
 using esp::sim::SimulatorWithAgents;
-using esp::nav::PathFinder;
 
-const std::string vangogh = "../data/scene_datasets/habitat-test-scenes/van-gogh-room.glb";
-const std::string skokloster = "../data/scene_datasets/habitat-test-scenes/skokloster-castle.glb";
-
+const std::string vangogh =
+    "../data/scene_datasets/habitat-test-scenes/van-gogh-room.glb";
+const std::string skokloster =
+    "../data/scene_datasets/habitat-test-scenes/skokloster-castle.glb";
 
 TEST(SimTest, Basic) {
   SceneConfiguration scene{.id = vangogh};
