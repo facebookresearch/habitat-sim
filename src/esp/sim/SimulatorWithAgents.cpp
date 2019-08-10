@@ -87,6 +87,13 @@ agent::Agent::ptr SimulatorWithAgents::addAgent(
 
   auto& agentNode = agentParentNode.createChild();
   agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
+
+  // Add render targets to the agents sensors
+  for (auto& it : ag->getSensorSuite()->getSensors()) {
+    it.second->bindRenderTarget(
+        this->createRenderTarget(it.second->framebufferSize()));
+  }
+
   agents_.push_back(ag);
   // TODO: just do this once
   if (pathfinder_->isLoaded()) {

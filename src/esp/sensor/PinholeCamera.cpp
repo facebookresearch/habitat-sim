@@ -63,7 +63,7 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
   }
   obs.buffer = buffer_;
 
-  std::shared_ptr<gfx::Renderer> renderer = sim.getRenderer();
+  gfx::Renderer::ptr renderer = sim.getRenderer();
   if (spec_->sensorType == SensorType::SEMANTIC) {
     // TODO: check sim has semantic scene graph
     renderer->draw(*this, sim.getActiveSemanticSceneGraph());
