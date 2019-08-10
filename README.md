@@ -177,10 +177,10 @@ We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup
 
 We support transfering rendering results directly to a [PyTorch](https://pytorch.org/) tensor via CUDA-GL Interop.
 In order to enable this, you will need to
-build habitat-sim with the additional argument `--with-gpu-gpu`, i.e.
+build habitat-sim with the additional argument `--build-gpu-gpu`, i.e.
 
 ```bash
-python setup.py install --with-gpu-gpu
+python setup.py install --build-gpu-gpu
 ```
 
 Then the `gpu2gpu_transfer` flag of the sensor specification(s) needs to be set to `True`
