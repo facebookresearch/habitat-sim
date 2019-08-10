@@ -4,10 +4,7 @@
 
 #include "Sensor.h"
 
-#include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
-
-using namespace Magnum;
 
 namespace esp {
 namespace sensor {
