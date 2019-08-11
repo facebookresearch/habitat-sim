@@ -8,6 +8,8 @@
 
 #if defined(CORRADE_TARGET_APPLE)
 #include <Magnum/Platform/WindowlessCglApplication.h>
+#elif defined(CORRADE_TARGET_EMSCRIPTEN)
+#include <Magnum/Platform/WindowlessEglApplication.h>
 #elif defined(CORRADE_TARGET_UNIX)
 #include <Magnum/Platform/GLContext.h>
 
