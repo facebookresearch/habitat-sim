@@ -10,6 +10,7 @@
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
+#include <Magnum/ImageView.h>
 #include <Magnum/Math/Functions.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Trade/Trade.h>

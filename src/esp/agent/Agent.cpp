@@ -44,19 +44,29 @@ Agent::~Agent() {
   sensors_.clear();
 }
 
-void Agent::act(const std::string& actionName) {
-  const ActionSpec& actionSpec = *configuration_.actionSpace.at(actionName);
-  if (BodyActions.find(actionSpec.name) != BodyActions.end()) {
-    controls_->action(object(), actionSpec.name,
-                      actionSpec.actuation.at("amount"),
-                      /*applyFilter=*/true);
-  } else {
-    for (auto p : sensors_.getSensors()) {
-      controls_->action(p.second->object(), actionSpec.name,
+bool Agent::act(const std::string& actionName) {
+  if (hasAction(actionName)) {
+    const ActionSpec& actionSpec = *configuration_.actionSpace.at(actionName);
+    if (BodyActions.find(actionSpec.name) != BodyActions.end()) {
+      controls_->action(object(), actionSpec.name,
                         actionSpec.actuation.at("amount"),
-                        /*applyFilter=*/false);
+                        /*applyFilter=*/true);
+    } else {
+      for (auto p : sensors_.getSensors()) {
+        controls_->action(p.second->object(), actionSpec.name,
+                          actionSpec.actuation.at("amount"),
+                          /*applyFilter=*/false);
+      }
     }
+    return true;
+  } else {
+    return false;
   }
+}
+
+bool Agent::hasAction(const std::string& actionName) {
+  auto actionSpace = configuration_.actionSpace;
+  return !(actionSpace.find(actionName) == actionSpace.end());
 }
 
 void Agent::getState(AgentState::ptr state) const {

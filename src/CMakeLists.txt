@@ -51,7 +51,6 @@ add_definitions(-DBT_ENABLE_PROFILE)
 # compiler define for enabling ptex support
 if(BUILD_PTEX_SUPPORT)
   message("Building with ptex support")
-  add_compile_definitions(BUILD_PTEX_SUPPORT)
 endif()
 
 # add subdirectories
@@ -65,6 +64,7 @@ add_subdirectory(esp/physics)
 add_subdirectory(esp/nav)
 add_subdirectory(esp/agent)
 add_subdirectory(esp/sensor)
+add_subdirectory(esp/sim)
 
 if(BUILD_DATATOOL)
   message("Building datatool")

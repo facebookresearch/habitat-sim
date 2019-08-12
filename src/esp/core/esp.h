@@ -18,6 +18,7 @@
 #include <Eigen/Geometry>
 // #include <Eigen/StdVector>
 
+#include "esp/core/configure.h"
 #include "esp/core/logging.h"
 #include "esp/core/spimpl.h"
 

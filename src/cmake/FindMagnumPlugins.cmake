@@ -16,6 +16,7 @@
 #  DdsImporter                  - DDS importer
 #  DevIlImageImporter           - Image importer using DevIL
 #  DrFlacAudioImporter          - FLAC audio importer using dr_flac
+#  DrMp3AudioImporter           - MP3 audio importer using dr_mp3
 #  DrWavAudioImporter           - WAV audio importer using dr_wav
 #  Faad2AudioImporter           - AAC audio importer using FAAD2
 #  FreeTypeFont                 - FreeType font
@@ -121,11 +122,11 @@ mark_as_advanced(MAGNUMPLUGINS_INCLUDE_DIR)
 set(_MAGNUMPLUGINS_LIBRARY_COMPONENT_LIST OpenDdl)
 set(_MAGNUMPLUGINS_PLUGIN_COMPONENT_LIST
     AssimpImporter DdsImporter DevIlImageImporter
-    DrFlacAudioImporter DrWavAudioImporter Faad2AudioImporter FreeTypeFont
-    HarfBuzzFont JpegImageConverter JpegImporter MiniExrImageConverter
-    OpenGexImporter PngImageConverter PngImporter StanfordImporter
-    StbImageConverter StbImageImporter StbTrueTypeFont StbVorbisAudioImporter
-    TinyGltfImporter)
+    DrFlacAudioImporter DrMp3AudioImporter DrWavAudioImporter Faad2AudioImporter
+    FreeTypeFont HarfBuzzFont JpegImageConverter JpegImporter
+    MiniExrImageConverter OpenGexImporter PngImageConverter PngImporter
+    StanfordImporter StbImageConverter StbImageImporter StbTrueTypeFont
+    StbVorbisAudioImporter TinyGltfImporter)
 
 # Inter-component dependencies
 set(_MAGNUMPLUGINS_HarfBuzzFont_DEPENDENCIES FreeTypeFont)
@@ -279,6 +280,7 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
                 INTERFACE_LINK_LIBRARIES ${IL_LIBRARIES} ${ILU_LIBRARIES})
 
         # DrFlacAudioImporter has no dependencies
+        # DrMp3AudioImporter has no dependencies
         # DrWavAudioImporter has no dependencies
 
         # Faad2AudioImporter plugin dependencies

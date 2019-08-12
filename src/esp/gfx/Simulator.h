@@ -53,11 +53,11 @@ class Simulator {
   explicit Simulator(const SimulatorConfiguration& cfg);
   virtual ~Simulator();
 
-  void reconfigure(const SimulatorConfiguration& cfg);
+  virtual void reconfigure(const SimulatorConfiguration& cfg);
 
-  void reset();
+  virtual void reset();
 
-  void seed(uint32_t newSeed);
+  virtual void seed(uint32_t newSeed);
 
   std::shared_ptr<Renderer> getRenderer();
   std::shared_ptr<physics::PhysicsManager> getPhysicsManager();
@@ -69,6 +69,7 @@ class Simulator {
   void saveFrame(const std::string& filename);
 
  protected:
+  Simulator() {}
   std::unique_ptr<WindowlessContext> context_ = nullptr;
   std::shared_ptr<Renderer> renderer_ = nullptr;
   // CANNOT make the specification of resourceManager_ above the context_!
