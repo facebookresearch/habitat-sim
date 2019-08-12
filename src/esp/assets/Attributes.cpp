@@ -17,7 +17,7 @@ Attributes::Attributes() {
 }
 
 // return true if any container has the key
-bool Attributes::exists(std::string key) {
+bool Attributes::exists(const std::string& key) {
   if (doubleMap_.count(key) > 0)
     return true;
   if (intMap_.count(key) > 0)
@@ -33,7 +33,7 @@ bool Attributes::exists(std::string key) {
 }
 
 // check if an attribute of a specific type exists
-bool Attributes::existsAs(DataType t, std::string key) {
+bool Attributes::existsAs(DataType t, const std::string& key) {
   if (t == DOUBLE)
     if (doubleMap_.count(key) > 0)
       return true;
@@ -53,7 +53,7 @@ bool Attributes::existsAs(DataType t, std::string key) {
 }
 
 // count the number of containers with the key
-int Attributes::count(std::string key) {
+int Attributes::count(const std::string& key) {
   int numAttributes = 0;
   if (doubleMap_.count(key) > 0)
     numAttributes++;
@@ -69,7 +69,7 @@ int Attributes::count(std::string key) {
 }
 
 // erase the key from all maps
-void Attributes::eraseAll(std::string key) {
+void Attributes::eraseAll(const std::string& key) {
   if (doubleMap_.count(key) > 0)
     doubleMap_.erase(key);
   if (intMap_.count(key) > 0)
@@ -83,7 +83,7 @@ void Attributes::eraseAll(std::string key) {
 }
 
 // erase the key from a particular map
-void Attributes::eraseAs(DataType t, std::string key) {
+void Attributes::eraseAs(const DataType t, const std::string& key) {
   if (t == DOUBLE) {
     if (doubleMap_.count(key) > 0)
       doubleMap_.erase(key);
@@ -112,7 +112,7 @@ void Attributes::clear() {
 }
 
 // clear only a particular map
-void Attributes::clearAs(DataType t) {
+void Attributes::clearAs(const DataType t) {
   if (t == DOUBLE) {
     doubleMap_.clear();
   } else if (t == INT) {
@@ -131,52 +131,57 @@ void Attributes::clearAs(DataType t) {
 //----------------------------------------//
 // return the queried entry in the double map
 // will throw an exception if the key does not exist in the double map
-double Attributes::getDouble(std::string key) {
+const double Attributes::getDouble(const std::string& key) const {
   return doubleMap_.at(key);
 }
 
 // set a double attribute key->val
-void Attributes::setDouble(std::string key, double val) {
+void Attributes::setDouble(const std::string& key, const double val) {
   doubleMap_[key] = val;
 }
 
-int Attributes::getInt(std::string key) {
+const int Attributes::getInt(const std::string& key) const {
   return intMap_.at(key);
 }
 
-void Attributes::setInt(std::string key, int val) {
+void Attributes::setInt(const std::string& key, const int val) {
   intMap_[key] = val;
 }
 
-std::string Attributes::getString(std::string key) {
+const std::string& Attributes::getString(const std::string& key) const {
   return stringMap_.at(key);
 }
 
-void Attributes::setString(std::string key, std::string val) {
+void Attributes::setString(const std::string& key, const std::string& val) {
   stringMap_[key] = val;
 }
 
-Magnum::Vector3 Attributes::getMagnumVec3(std::string key) {
+const Magnum::Vector3& Attributes::getMagnumVec3(const std::string& key) const {
   return magnumVec3Map_.at(key);
 }
 
-void Attributes::setMagnumVec3(std::string key, Magnum::Vector3 val) {
+void Attributes::setMagnumVec3(const std::string& key,
+                               const Magnum::Vector3& val) {
   magnumVec3Map_[key] = val;
 }
-std::vector<std::string> Attributes::getVecStrings(std::string key) {
+const std::vector<std::string>& Attributes::getVecStrings(
+    const std::string& key) const {
   return vecStringsMap_.at(key);
 }
 
-void Attributes::setVecStrings(std::string key, std::vector<std::string> val) {
+void Attributes::setVecStrings(const std::string& key,
+                               const std::vector<std::string>& val) {
   vecStringsMap_[key] = val;
 }
 
 // add a string to a string vector (to avoid get/set copying)
-void Attributes::appendVecStrings(std::string key, std::string val) {
+void Attributes::appendVecStrings(const std::string& key,
+                                  const std::string& val) {
   vecStringsMap_[key].push_back(val);
 }
 
-void Attributes::removeFromVecString(std::string key, std::string val) {
+void Attributes::removeFromVecString(const std::string& key,
+                                     const std::string& val) {
   std::vector<std::string>& stringVec = vecStringsMap_[key];
   std::vector<std::string>::iterator position =
       std::find(stringVec.begin(), stringVec.end(), val);
@@ -190,32 +195,32 @@ std::string Attributes::listAttributes() {
       "List of attributes: \n----------------------------------------\n";
 
   attributes += "\nDoubles: \n";
-  for (auto it = doubleMap_.begin(); it != doubleMap_.end(); ++it) {
-    attributes += it->first + " : " + std::to_string(it->second) + "\n";
+  for (auto it : doubleMap_) {
+    attributes += it.first + " : " + std::to_string(it.second) + "\n";
   }
 
   attributes += "\nInts: \n";
-  for (auto it = intMap_.begin(); it != intMap_.end(); ++it) {
-    attributes += it->first + " : " + std::to_string(it->second) + "\n";
+  for (auto it : intMap_) {
+    attributes += it.first + " : " + std::to_string(it.second) + "\n";
   }
 
   attributes += "\nStrings: \n";
-  for (auto it = stringMap_.begin(); it != stringMap_.end(); ++it) {
-    attributes += it->first + " : " + it->second + "\n";
+  for (auto it : stringMap_) {
+    attributes += it.first + " : " + it.second + "\n";
   }
 
   attributes += "\nMagnum Vector3s: \n";
-  for (auto it = magnumVec3Map_.begin(); it != magnumVec3Map_.end(); ++it) {
-    attributes += it->first + " : [" + std::to_string(it->second[0]) + ", " +
-                  std::to_string(it->second[1]) + ", " +
-                  std::to_string(it->second[2]) + "]\n";
+  for (auto it : magnumVec3Map_) {
+    attributes += it.first + " : [" + std::to_string(it.second[0]) + ", " +
+                  std::to_string(it.second[1]) + ", " +
+                  std::to_string(it.second[2]) + "]\n";
   }
 
   attributes += "\nVectors of Strings: \n";
-  for (auto it = vecStringsMap_.begin(); it != vecStringsMap_.end(); ++it) {
-    attributes += it->first + " : [";
-    for (auto vs_it = it->second.begin(); vs_it != it->second.end(); ++vs_it) {
-      if (vs_it != it->second.begin())
+  for (auto it : vecStringsMap_) {
+    attributes += it.first + " : [";
+    for (auto vs_it = it.second.begin(); vs_it != it.second.end(); ++vs_it) {
+      if (vs_it != it.second.begin())
         attributes += ", ";
       attributes += *vs_it;
     }

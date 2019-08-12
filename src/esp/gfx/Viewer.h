@@ -19,7 +19,6 @@
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/RigidObject.h"
-//#include "esp/physics/bullet/BulletPhysicsManager.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
@@ -51,6 +50,8 @@ class Viewer : public Magnum::Platform::Application {
   void addObject(std::string configFile);
   void pokeLastObject();
   void pushLastObject();
+
+  void torqueLastObject();
   void removeLastObject();
   void invertGravity();
   Magnum::Vector3 randomDirection();

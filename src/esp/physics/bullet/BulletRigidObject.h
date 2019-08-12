@@ -19,12 +19,13 @@ class BulletRigidObject : public RigidObject {
 
   ~BulletRigidObject();
 
-  bool initializeScene(assets::PhysicsSceneAttributes& physicsSceneAttributes,
-                       const std::vector<assets::CollisionMeshData>& meshGroup,
-                       std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
+  bool initializeScene(
+      const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+      const std::vector<assets::CollisionMeshData>& meshGroup,
+      std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
 
   bool initializeObject(
-      assets::PhysicsObjectAttributes& physicsObjectAttributes,
+      const assets::PhysicsObjectAttributes& physicsObjectAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup,
       std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
 
@@ -32,10 +33,19 @@ class BulletRigidObject : public RigidObject {
   bool isActive();
   void setActive();
 
+  // attempt to set the motion type. Return false=failure, true=success.
+  virtual bool setMotionType(MotionType mt);
+
   //! Force interaction
-  void applyForce(Magnum::Vector3& force, Magnum::Vector3& relPos);
+  void applyForce(const Magnum::Vector3& force, const Magnum::Vector3& relPos);
   //! Impulse interaction
-  void applyImpulse(Magnum::Vector3& impulse, Magnum::Vector3& relPos);
+  void applyImpulse(const Magnum::Vector3& impulse,
+                    const Magnum::Vector3& relPos);
+
+  //! Torque interaction
+  void applyTorque(const Magnum::Vector3& torque);
+  // Impulse Torque interaction
+  void applyImpulseTorque(const Magnum::Vector3& impulse);
 
   bool removeObject();
 

@@ -144,8 +144,6 @@ bool ResourceManager::loadScene(
   // initialize the physics simulator
   _physicsManager->initPhysics(parent, physicsManagerAttributes);
 
-  LOG(INFO) << "initialized physics";
-
   if (!meshSuccess) {
     LOG(ERROR) << "Physics manager loaded. Scene mesh load failed, aborting "
                   "scene initialization.";
@@ -204,15 +202,13 @@ bool ResourceManager::loadScene(
       meshGroup.push_back(meshData);
     }
   }
-  LOG(INFO) << "adding scene";
+
   //! Initialize collision mesh
   bool sceneSuccess = _physicsManager->addScene(
       info, physicsSceneLibrary_.at(info.filepath), meshGroup);
   if (!sceneSuccess) {
     return false;
   }
-
-  LOG(INFO) << "added scene";
 
   return meshSuccess;
 }
@@ -310,7 +306,7 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
 
 //! Only load and does not instantiate object
 //! For load-only: set parent = nullptr, drawables = nullptr
-int ResourceManager::loadObject(const std::string objPhysConfigFilename,
+int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
                                 scene::SceneNode* parent,
                                 DrawableGroup* drawables) {
   // Load Object from config
@@ -360,12 +356,12 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename,
 }
 
 PhysicsObjectAttributes& ResourceManager::getPhysicsObjectAttributes(
-    const std::string objectName) {
+    const std::string& objectName) {
   return physicsObjectLibrary_[objectName];
 }
 
 // load object from config filename
-int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
+int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
   // check for duplicate load
   const bool objExists = physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
   if (objExists) {
@@ -606,7 +602,7 @@ const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
   return collisionMeshGroups_[configFile];
 }
 
-int ResourceManager::getObjectID(const std::string configFile) {
+int ResourceManager::getObjectID(const std::string& configFile) {
   std::vector<std::string>::iterator itr =
       std::find(physicsObjectConfigList_.begin(),
                 physicsObjectConfigList_.end(), configFile);
@@ -635,6 +631,8 @@ void ResourceManager::translateMesh(GltfMeshData* meshDataGL,
 
   Magnum::Matrix4 transform = Magnum::Matrix4::translation(translation);
   Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions);
+  // save the mesh transformation for future query
+  meshDataGL->meshTransform_ = transform * meshDataGL->meshTransform_;
 }
 
 Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
@@ -835,7 +833,7 @@ bool ResourceManager::loadGeneralMeshData(
     //! Do not instantiate object
     return true;
   } else {
-    // Alex: intercept nullptr scene graph nodes (default) to add mesh to
+    // intercept nullptr scene graph nodes (default) to add mesh to
     // metadata list without adding it to scene graph
     scene::SceneNode& newNode = parent->createChild();
 

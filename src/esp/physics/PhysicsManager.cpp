@@ -39,7 +39,7 @@ namespace physics {
 
 bool PhysicsManager::initPhysics(
     scene::SceneNode* node,
-    assets::PhysicsManagerAttributes physicsManagerAttributes) {
+    const assets::PhysicsManagerAttributes& physicsManagerAttributes) {
   physicsNode_ = node;
   //! Create new scene node
   sceneNode_ = new physics::RigidObject(physicsNode_);
@@ -52,7 +52,7 @@ PhysicsManager::~PhysicsManager() {}
 
 bool PhysicsManager::addScene(
     const assets::AssetInfo& info,
-    assets::PhysicsSceneAttributes& physicsSceneAttributes,
+    const assets::PhysicsSceneAttributes& physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
   for (const assets::CollisionMeshData& meshData : meshGroup) {
@@ -71,10 +71,8 @@ bool PhysicsManager::addScene(
   }
 
   //! Initialize scene
-  LOG(INFO) << "initializing scene: " << sceneNode_;
   bool sceneSuccess =
       sceneNode_->initializeScene(physicsSceneAttributes, meshGroup);
-  LOG(INFO) << "initialized scene";
   return sceneSuccess;
 }
 
@@ -107,7 +105,7 @@ int PhysicsManager::addObject(const int resObjectID, DrawableGroup* drawables) {
   return nextObjectID_;
 }
 
-int PhysicsManager::addObject(const std::string configFile,
+int PhysicsManager::addObject(const std::string& configFile,
                               DrawableGroup* drawables) {
   int resObjectID = resourceManager_->getObjectID(configFile);
   //! Invoke resourceManager to draw object
@@ -125,6 +123,22 @@ int PhysicsManager::removeObject(const int physObjectID) {
   existingObjects_.erase(physObjectID);
   deallocateObjectID(physObjectID);
   return physObjectID;
+}
+
+bool PhysicsManager::setObjectMotionType(const int physObjectID,
+                                         MotionType mt) {
+  if (existingObjects_.count(physObjectID) == 0) {
+    return false;
+  } else {
+    return existingObjects_[physObjectID]->setMotionType(mt);
+  }
+}
+
+const MotionType PhysicsManager::getObjectMotionType(const int physObjectID) {
+  if (existingObjects_.count(physObjectID) > 0) {
+    return existingObjects_[physObjectID]->getMotionType();
+  }
+  return ERROR_MOTIONTYPE;
 }
 
 int PhysicsManager::allocateObjectID() {
@@ -240,18 +254,32 @@ int PhysicsManager::checkActiveObjects() {
 }
 
 void PhysicsManager::applyForce(const int physObjectID,
-                                Magnum::Vector3& force,
-                                Magnum::Vector3& relPos) {
+                                const Magnum::Vector3& force,
+                                const Magnum::Vector3& relPos) {
   if (existingObjects_.count(physObjectID) > 0) {
     existingObjects_[physObjectID]->applyForce(force, relPos);
   }
 }
 
 void PhysicsManager::applyImpulse(const int physObjectID,
-                                  Magnum::Vector3& impulse,
-                                  Magnum::Vector3& relPos) {
+                                  const Magnum::Vector3& impulse,
+                                  const Magnum::Vector3& relPos) {
   if (existingObjects_.count(physObjectID) > 0) {
     existingObjects_[physObjectID]->applyImpulse(impulse, relPos);
+  }
+}
+
+void PhysicsManager::applyTorque(const int physObjectID,
+                                 const Magnum::Vector3& torque) {
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->applyTorque(torque);
+  }
+}
+
+void PhysicsManager::applyImpulseTorque(const int physObjectID,
+                                        const Magnum::Vector3& impulse) {
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->applyImpulseTorque(impulse);
   }
 }
 

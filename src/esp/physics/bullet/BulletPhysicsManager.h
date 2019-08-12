@@ -26,15 +26,16 @@ class BulletPhysicsManager : public PhysicsManager {
   //============ Initialization =============
   // load physical properties and setup the world
   // do_profile indicates timing for FPS
-  bool initPhysics(scene::SceneNode* node,
-                   assets::PhysicsManagerAttributes physicsManagerAttributes);
+  bool initPhysics(
+      scene::SceneNode* node,
+      const assets::PhysicsManagerAttributes& physicsManagerAttributes);
 
   //============ Object/Scene Instantiation =============
   //! Initialize scene given mesh data
   //! Only one scene per simulation
   //! The scene could contain several components
   bool addScene(const assets::AssetInfo& info,
-                assets::PhysicsSceneAttributes& physicsSceneAttributes,
+                const assets::PhysicsSceneAttributes& physicsSceneAttributes,
                 const std::vector<assets::CollisionMeshData>& meshGroup);
 
   //============ Simulator functions =============

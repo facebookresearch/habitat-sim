@@ -27,55 +27,56 @@ class Attributes {
   Attributes();
 
   // return true if any container has the key
-  bool exists(std::string key);
+  bool exists(const std::string& key);
 
   // check if an attribute of a specific type exists
-  bool existsAs(DataType t, std::string key);
+  bool existsAs(const DataType t, const std::string& key);
 
   // count the number of containers with the key
-  int count(std::string key);
+  int count(const std::string& key);
 
   // erase the key from all maps
-  void eraseAll(std::string key);
+  void eraseAll(const std::string& key);
 
   // erase the key from a particular map
-  void eraseAs(DataType t, std::string key);
+  void eraseAs(const DataType t, const std::string& key);
 
   // clear all maps
   void clear();
 
   // clear only a particular map
-  void clearAs(DataType t);
+  void clearAs(const DataType t);
 
   //----------------------------------------//
   //  Type specific getters/setters
   //----------------------------------------//
   // return the queried entry in the double map
   // will throw an exception if the key does not exist in the double map
-  double getDouble(std::string key);
+  const double getDouble(const std::string& key) const;
 
   // set a double attribute key->val
-  void setDouble(std::string key, double val);
+  void setDouble(const std::string& key, const double val);
 
-  int getInt(std::string key);
+  const int getInt(const std::string& key) const;
 
-  void setInt(std::string key, int val);
+  void setInt(const std::string& key, const int val);
 
-  std::string getString(std::string key);
+  const std::string& getString(const std::string& key) const;
 
-  void setString(std::string key, std::string val);
+  void setString(const std::string& key, const std::string& val);
 
-  Magnum::Vector3 getMagnumVec3(std::string key);
+  const Magnum::Vector3& getMagnumVec3(const std::string& key) const;
 
-  void setMagnumVec3(std::string key, Magnum::Vector3 val);
-  std::vector<std::string> getVecStrings(std::string key);
+  void setMagnumVec3(const std::string& key, const Magnum::Vector3& val);
+  const std::vector<std::string>& getVecStrings(const std::string& key) const;
 
-  void setVecStrings(std::string key, std::vector<std::string> val);
+  void setVecStrings(const std::string& key,
+                     const std::vector<std::string>& val);
 
   // add a string to a string vector (to avoid get/set copying)
-  void appendVecStrings(std::string key, std::string val);
+  void appendVecStrings(const std::string& key, const std::string& val);
   // remove a string from a string vector (to avoid get/set copying)
-  void removeFromVecString(std::string key, std::string val);
+  void removeFromVecString(const std::string& key, const std::string& val);
 
   // return a formated string exposing the current contents of the attributes
   // maps

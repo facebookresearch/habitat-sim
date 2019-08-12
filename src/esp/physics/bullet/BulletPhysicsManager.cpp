@@ -14,7 +14,7 @@ namespace physics {
 
 bool BulletPhysicsManager::initPhysics(
     scene::SceneNode* node,
-    assets::PhysicsManagerAttributes physicsManagerAttributes) {
+    const assets::PhysicsManagerAttributes& physicsManagerAttributes) {
   activePhysSimLib_ = BULLET;
 
   //! We can potentially use other collision checking algorithms, by
@@ -40,7 +40,7 @@ BulletPhysicsManager::~BulletPhysicsManager() {}
 // https://github.com/mosra/magnum-integration/issues/20
 bool BulletPhysicsManager::addScene(
     const assets::AssetInfo& info,
-    assets::PhysicsSceneAttributes& physicsSceneAttributes,
+    const assets::PhysicsSceneAttributes& physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
   for (const assets::CollisionMeshData& meshData : meshGroup) {

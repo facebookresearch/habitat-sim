@@ -44,7 +44,7 @@ class PhysicsManager {
   // do_profile indicates timing for FPS
   virtual bool initPhysics(
       scene::SceneNode* node,
-      assets::PhysicsManagerAttributes physicsManagerAttributes);
+      const assets::PhysicsManagerAttributes& physicsManagerAttributes);
 
   virtual void reset(){
       /* TODO: reset object states or clear them? Reset worldTime? Other? */};
@@ -58,16 +58,23 @@ class PhysicsManager {
   //! The scene could contain several components
   virtual bool addScene(
       const assets::AssetInfo& info,
-      assets::PhysicsSceneAttributes& physicsSceneAttributes,
+      const assets::PhysicsSceneAttributes& physicsSceneAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
   //! Initialize object given mesh data
   //! The object could contain several parts
-  int addObject(const std::string configFile, DrawableGroup* drawables);
+  int addObject(const std::string& configFile, DrawableGroup* drawables);
   // calls the above...
   int addObject(const int resObjectID, DrawableGroup* drawables);
   //! Remove added object by physics object ID
   virtual int removeObject(const int physObjectID);
+
+  // return the number of tracked existingObjects_
+  const int getNumRigidObjects() { return existingObjects_.size(); };
+
+  // get/set MotionType
+  bool setObjectMotionType(const int physObjectID, MotionType mt);
+  const MotionType getObjectMotionType(const int physObjectID);
 
   //============ Simulator functions =============
   virtual void stepPhysics();
@@ -147,18 +154,17 @@ class PhysicsManager {
   //============ Interact with objects =============
   // NOTE: engine specifics handled by objects themselves...
   void applyForce(const int physObjectID,
-                  Magnum::Vector3& force,
-                  Magnum::Vector3& relPos);
+                  const Magnum::Vector3& force,
+                  const Magnum::Vector3& relPos);
 
   void applyImpulse(const int physObjectID,
-                    Magnum::Vector3& impulse,
-                    Magnum::Vector3& relPos);
-  /*
-  Magnum::SceneGraph::DrawableGroup3D& getDrawables() { return debugDrawables; }
-  const Magnum::SceneGraph::DrawableGroup3D& getDrawables() const {
-    return debugDrawables;
-  }
-  */
+                    const Magnum::Vector3& impulse,
+                    const Magnum::Vector3& relPos);
+
+  void applyTorque(const int physObjectID, const Magnum::Vector3& torque);
+
+  void applyImpulseTorque(const int physObjectID,
+                          const Magnum::Vector3& impulse);
 
  protected:
   //! Check if mesh primitive type is valid for bullet physics engine

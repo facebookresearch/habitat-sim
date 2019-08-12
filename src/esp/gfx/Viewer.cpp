@@ -139,6 +139,8 @@ void Viewer::addObject(std::string configFile) {
   Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
 
   auto& drawables = sceneGraph_->getDrawables();
+  assets::PhysicsObjectAttributes poa =
+      resourceManager_.getPhysicsObjectAttributes(configFile);
   int physObjectID = physicsManager_->addObject(configFile, &drawables);
   physicsManager_->setTranslation(physObjectID, new_pos);
 
@@ -193,6 +195,13 @@ void Viewer::pushLastObject() {
   Vector3 force = T.transformPoint({0.0f, 0.0f, -40.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
+}
+
+void Viewer::torqueLastObject() {
+  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+    return;
+  Vector3 torque = randomDirection() * 30;
+  physicsManager_->applyTorque(objectIDs_.back(), torque);
 }
 
 // generate random direction vectors:
@@ -377,6 +386,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::T:
       // Test key. Put what you want here...
+      torqueLastObject();
       break;
     default:
       break;

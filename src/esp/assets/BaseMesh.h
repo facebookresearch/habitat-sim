@@ -13,6 +13,7 @@
 #include "CollisionMeshData.h"
 #include "MeshData.h"
 #include "esp/core/esp.h"
+#include "esp/gfx/magnum.h"
 
 namespace esp {
 namespace assets {
@@ -44,6 +45,10 @@ class BaseMesh {
   virtual CollisionMeshData& getCollisionMeshData() {
     return collisionMeshData_;
   }
+
+  // any transformations applied to the original mesh after load are stored
+  // here.
+  Magnum::Matrix4 meshTransform_;
 
  protected:
   SupportedMeshType type_ = SupportedMeshType::NOT_DEFINED;

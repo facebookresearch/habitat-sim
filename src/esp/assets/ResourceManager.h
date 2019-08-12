@@ -105,13 +105,13 @@ class ResourceManager {
   //! Load Object data and store internally
   //! Does not instantiate (physics & drawable)
   //! Return index in physicsObjectList_
-  int loadObject(const std::string objPhysConfigFilename,
+  int loadObject(const std::string& objPhysConfigFilename,
                  scene::SceneNode* parent,
                  DrawableGroup* drawables);
 
   // load an object into the physicsObjectLibrary_ from a physics properties
   // filename
-  int loadObject(const std::string objPhysConfigFilename);
+  int loadObject(const std::string& objPhysConfigFilename);
 
   //======== Accessor functions ========
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
@@ -120,13 +120,17 @@ class ResourceManager {
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
       const int objectID);
 
-  int getObjectID(const std::string configFile);
+  int getObjectID(const std::string& configFile);
   std::string getObjectConfig(const int objectID);
 
   PhysicsObjectAttributes& getPhysicsObjectAttributes(
-      const std::string configFile);
+      const std::string& configFile);
 
   int getNumLibraryObjects() { return physicsObjectConfigList_.size(); };
+
+  const Magnum::Matrix4& getMeshTransformation(const size_t meshIndex) {
+    return meshes_[meshIndex]->meshTransform_;
+  }
 
  protected:
   //======== Scene Functions ========
