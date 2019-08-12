@@ -38,18 +38,27 @@ class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
     return *this;
   }
 
+  PTexMeshShader& setClipPlane(const Magnum::Vector4& clipPlane) {
+    setUniform(uniformLocation("clipPlane"), clipPlane);
+    return *this;
+  }
+
   PTexMeshShader& setPTexUniforms(assets::PTexMeshData& ptexMeshData,
                                   int submeshID,
                                   uint32_t tileSize,
-                                  float exposure) {
+                                  float exposure,
+                                  float gamma,
+                                  float saturation) {
     setPTexUniforms(ptexMeshData.getRenderingBuffer(submeshID)->tex, tileSize,
-                    exposure);
+                    exposure, gamma, saturation);
     return *this;
   }
 
   PTexMeshShader& setPTexUniforms(Magnum::GL::Texture2D& tex,
                                   uint32_t tileSize,
-                                  float exposure) {
+                                  float exposure,
+                                  float gamma,
+                                  float saturation) {
     setUniform(uniformLocation("atlasTex"), 0);
     setUniform(uniformLocation("tileSize"), (int)tileSize);
     // Image size in given mip level 0
@@ -60,6 +69,8 @@ class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
       setUniform(uniformLocation("widthInTiles"), int(width / tileSize));
     }
     setUniform(uniformLocation("exposure"), exposure);
+    setUniform(uniformLocation("gamma"), gamma);
+    setUniform(uniformLocation("saturation"), saturation);
     return *this;
   }
 };

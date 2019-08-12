@@ -29,9 +29,12 @@ class PTexMeshDrawable : public Drawable {
                     Magnum::SceneGraph::Camera3D& camera) override;
 
   Magnum::GL::Texture2D& tex_;
-  Magnum::GL::BufferTexture& adjTex_;
+  Magnum::GL::BufferTexture& adjFaces_;
   uint32_t tileSize_;
   float exposure_;
+  float gamma_;
+  float saturation_;
+  Magnum::Vector4 clipPlane_{0.0f, 0.0f, 0.0f, 0.0f};
 };
 
 }  // namespace gfx

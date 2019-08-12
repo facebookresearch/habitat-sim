@@ -34,7 +34,7 @@ class PTexMeshData : public BaseMesh {
     Magnum::GL::Buffer vbo;
     Magnum::GL::Buffer ibo;
     Magnum::GL::Buffer abo;
-    Magnum::GL::BufferTexture adjTex;
+    Magnum::GL::BufferTexture adjFaces;
   };
 
   PTexMeshData() : BaseMesh(SupportedMeshType::PTEX_MESH) {}

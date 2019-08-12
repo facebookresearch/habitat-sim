@@ -18,16 +18,19 @@ PTexMeshDrawable::PTexMeshDrawable(
     : Drawable{node, shader, ptexMeshData.getRenderingBuffer(submeshID)->mesh,
                group},
       tex_(ptexMeshData.getRenderingBuffer(submeshID)->tex),
-      adjTex_(ptexMeshData.getRenderingBuffer(submeshID)->adjTex),
+      adjFaces_(ptexMeshData.getRenderingBuffer(submeshID)->adjFaces),
       tileSize_(ptexMeshData.tileSize()),
-      exposure_(ptexMeshData.exposure()) {}
+      exposure_(ptexMeshData.exposure()),
+      gamma_(ptexMeshData.gamma()),
+      saturation_(ptexMeshData.saturation()) {}
 
 void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                             Magnum::SceneGraph::Camera3D& camera) {
-  adjTex_.bind(1);
+  adjFaces_.bind(1);
   PTexMeshShader& ptexMeshShader = static_cast<PTexMeshShader&>(shader_);
   ptexMeshShader.bindTexture(tex_, 0)
-      .setPTexUniforms(tex_, tileSize_, exposure_)
+      .setPTexUniforms(tex_, tileSize_, exposure_, gamma_, saturation_)
+      .setClipPlane(clipPlane_)
       .setMVPMatrix(camera.projectionMatrix() * transformationMatrix);
   mesh_.draw(ptexMeshShader);
 }
