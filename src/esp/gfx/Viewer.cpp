@@ -109,9 +109,10 @@ Viewer::Viewer(const Arguments& arguments)
 }
 
 Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
-                         const Vector2i& position) {
+                                 const Vector2i& position) {
   // Convert from window to frame coordinates.
-  Vector2 framePosition = (Vector2{position} * Vector2{framebufferSize()}) / Vector2{windowSize()};
+  Vector2 framePosition =
+      (Vector2{position} * Vector2{framebufferSize()}) / Vector2{windowSize()};
   const Vector2 positionNormalized =
       framePosition / Vector2{camera.viewport()} - Vector2{0.5f};
   const Float length = positionNormalized.length();

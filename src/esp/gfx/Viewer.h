@@ -44,7 +44,7 @@ class Viewer : public Magnum::Platform::Application {
   void keyPressEvent(KeyEvent& event) override;
 
   Magnum::Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
-				   const Magnum::Vector2i& position);
+                                   const Magnum::Vector2i& position);
 
   assets::ResourceManager resourceManager_;
   scene::SceneManager sceneManager_;
