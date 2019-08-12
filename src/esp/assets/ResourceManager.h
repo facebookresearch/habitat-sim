@@ -194,7 +194,7 @@ class ResourceManager {
   std::vector<std::shared_ptr<Magnum::GL::Texture2D>> textures_;
   std::vector<std::shared_ptr<Magnum::Trade::PhongMaterialData>> materials_;
 
-  Magnum::GL::Mesh* instance_mesh;
+  Magnum::GL::Mesh* instance_mesh_;
 
   // a dictionary to check if a mesh has been loaded
   // maps: absolutePath -> meshMetaData

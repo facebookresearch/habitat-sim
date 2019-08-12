@@ -72,9 +72,10 @@ bool ResourceManager::loadScene(const AssetInfo& info,
       meshSuccess = loadGeneralMeshData(info, parent, drawables);
     }
     // add a scene attributes for this filename or modify the existing one
-    if (meshSuccess)
+    if (meshSuccess) {
       physicsSceneLibrary_[info.filepath].setString("renderMeshHandle",
                                                     info.filepath);
+    }
   }
 
   return meshSuccess;
@@ -280,7 +281,7 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
   std::string configDirectory =
       physicsFilename.substr(0, physicsFilename.find_last_of("/"));
   // load the rigid object library metadata (no physics init yet...)
-  // ALEX NOTE: expect relative paths to the global config
+  // NOTE: expect relative paths to the global config
   if (scenePhysicsConfig.HasMember("rigid object paths")) {
     if (scenePhysicsConfig["rigid object paths"].IsArray()) {
       physicsManagerAttributes.setVecStrings("objectLibraryPaths",
@@ -586,7 +587,7 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
     meshGroup.push_back(meshData);
   }
   //! Properly align axis direction
-  // ALEX NOTE: this breaks the collision properties of some files
+  // NOTE: this breaks the collision properties of some files
   collisionMeshGroups_.emplace(objPhysConfigFilename, meshGroup);
   physicsObjectConfigList_.push_back(objPhysConfigFilename);
 
@@ -748,7 +749,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
     instanceMeshData->loadPLY(filename);
     instanceMeshData->uploadBuffersToGPU(false);
 
-    instance_mesh = &(instanceMeshData->getRenderingBuffer()->mesh);
+    instance_mesh_ = &(instanceMeshData->getRenderingBuffer()->mesh);
     // update the dictionary
     resourceDict_.emplace(filename, MeshMetaData(index, index));
   }

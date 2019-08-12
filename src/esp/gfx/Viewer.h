@@ -65,8 +65,8 @@ class Viewer : public Magnum::Platform::Application {
 
   scene::SceneNode* navSceneNode_ = nullptr;
 
-  scene::SceneGraph* sceneGraph;
-  scene::SceneNode* rootNode;
+  scene::SceneGraph* sceneGraph_;
+  scene::SceneNode* rootNode_;
 
   RenderCamera* renderCamera_ = nullptr;
   nav::PathFinder::ptr pathfinder_;
@@ -75,20 +75,7 @@ class Viewer : public Magnum::Platform::Application {
 
   bool computeActionPath_;
   bool enablePhysics_;
-  bool surreal_mesh = false;
-  bool replica_mesh = false;
-  bool vangoth_mesh = false;
-  bool castle_mesh = true;
-
-  bool do_profile_ = false;
-  int frame_limit_ = 1000;
-  int frame_curr_ = 0;
-
-  int numObjects_ = 1;
-  std::vector<int> objectIDs;
-
-  vec3f goalPos_;
-  quatf goalHeading_;
+  std::vector<int> objectIDs_;
 
   Magnum::Timeline timeline_;
 };

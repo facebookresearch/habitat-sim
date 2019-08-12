@@ -42,7 +42,8 @@ class BulletRigidObject : public RigidObject {
   //============ Getter/setter function =============
   const double getMass();
   const Magnum::Vector3 getCOM();
-  const Magnum::Vector3 getInertia();
+  const Magnum::Vector3 getInertiaVector();
+  const Magnum::Matrix3 getInertiaMatrix();
   const double getScale();
   const double getFrictionCoefficient();
   const double getRestitutionCoefficient();

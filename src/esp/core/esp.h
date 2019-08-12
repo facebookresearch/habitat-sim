@@ -124,6 +124,7 @@ inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
   ESP_SHARED_PTR_PIMPL()
 
 static const int ID_UNDEFINED = -1;
+static const double PHYSICS_ATTR_UNDEFINED = -1.0;
 
 template <typename T>
 inline bool equal(const std::vector<std::shared_ptr<T>>& a,
