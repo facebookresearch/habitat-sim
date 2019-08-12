@@ -134,11 +134,16 @@ bool ResourceManager::loadScene(
   // load objects from sceneMetaData list...
   for (auto objPhysPropertiesFilename :
        physicsManagerAttributes.getVecStrings("objectLibraryPaths")) {
-    int sceneID = loadObject(objPhysPropertiesFilename);
+    LOG(INFO) << "loading object: " << objPhysPropertiesFilename;
+    int objID = loadObject(objPhysPropertiesFilename);
   }
+  LOG(INFO) << "loaded objects: "
+            << std::to_string(physicsObjectLibrary_.size());
 
   // initialize the physics simulator
   _physicsManager->initPhysics(parent, physicsManagerAttributes);
+
+  LOG(INFO) << "initialized physics";
 
   if (!meshSuccess) {
     LOG(ERROR) << "Physics manager loaded. Scene mesh load failed, aborting "
@@ -198,12 +203,15 @@ bool ResourceManager::loadScene(
       meshGroup.push_back(meshData);
     }
   }
+  LOG(INFO) << "adding scene";
   //! Initialize collision mesh
   bool sceneSuccess = _physicsManager->addScene(
       info, physicsSceneLibrary_.at(info.filepath), meshGroup);
   if (!sceneSuccess) {
     return false;
   }
+
+  LOG(INFO) << "added scene";
 
   return meshSuccess;
 }
@@ -360,8 +368,8 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   // check for duplicate load
   const bool objExists = physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
   if (objExists) {
-    // ALEX TODO: for now this will skip the duplicate. Is there a good reason
-    // to allow duplicates?
+    // TODO: this will skip the duplicate. Is there a good reason to allow
+    // duplicates?
     std::vector<std::string>::iterator itr =
         std::find(physicsObjectConfigList_.begin(),
                   physicsObjectConfigList_.end(), objPhysConfigFilename);
@@ -370,14 +378,25 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   }
 
   // 1. parse the config file
-  // ALEX NOTE: we could create a datastructure of parsed JSON property files
-  // before creating individual entries...
-  io::JsonDocument objPhysicsConfig = io::parseJsonFile(objPhysConfigFilename);
+  io::JsonDocument objPhysicsConfig;
+  if (io::exists(objPhysConfigFilename)) {
+    try {
+      objPhysicsConfig = io::parseJsonFile(objPhysConfigFilename);
+    } catch (...) {
+      LOG(ERROR) << "Failed to parse JSON: " << objPhysConfigFilename
+                 << ". Aborting loadObject.";
+      return ID_UNDEFINED;
+    }
+  } else {
+    LOG(ERROR) << "File " << objPhysConfigFilename
+               << " does not exist. Aborting loadObject.";
+    return ID_UNDEFINED;
+  }
 
   // 2. construct a physicsObjectMetaData
   PhysicsObjectAttributes physicsObjectAttributes;
 
-  // ALEX NOTE: these paths should be relative to the properties file
+  // NOTE: these paths should be relative to the properties file
   std::string propertiesFileDirectory =
       objPhysConfigFilename.substr(0, objPhysConfigFilename.find_last_of("/"));
 
@@ -486,15 +505,12 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
   bool shiftMeshOrigin = !(COM[0] == 0 && COM[1] == 0 && COM[2] == 0);
 
   //! Load rendering mesh
-  // Alex TODO: add other mesh types and unify the COM move: don't want
+  // TODO: unify the COM move: don't want
   // simplified meshes to result in different rendering and collision
   // COMs/origins
   if (!renderMeshFilename.empty()) {
     renderMeshinfo = assets::AssetInfo::fromPath(renderMeshFilename);
-    // if (renderMeshinfo.type != AssetType::MP3D_MESH) {
-    //  LOG(INFO) << "Cannot load non-GLB objects";
-    //  return -1;
-    //}
+
     if (shouldComputeMeshBBCenter) {  // compute the COM from BB center
       renderMeshSuccess =
           loadGeneralMeshData(renderMeshinfo, nullptr, nullptr, true);
@@ -529,17 +545,17 @@ int ResourceManager::loadObject(const std::string objPhysConfigFilename) {
     }
   }
 
-  // Alex NOTE: if we want to save these after edit we need to save the moved
+  // NOTE: if we want to save these after edit we need to save the moved
   // mesh or save the original COM as a member of RigidBody...
   physicsObjectAttributes.setMagnumVec3("COM", Magnum::Vector3(0));
   // once we move the meshes, the COM is aligned with the origin...
 
   if (!renderMeshSuccess && !collisionMeshSuccess) {
-    // ALEX TODO: for now we only allow objects with SOME mesh file. Failing
+    // we only allow objects with SOME mesh file. Failing
     // both loads or having no mesh will cancel the load.
     LOG(ERROR) << "Failed to load a physical object: no meshes...: "
                << objPhysConfigFilename;
-    return -1;
+    return ID_UNDEFINED;
   }
 
   physicsObjectAttributes.setString("renderMeshHandle", renderMeshFilename);
@@ -891,9 +907,6 @@ void ResourceManager::loadMeshes(Importer& importer,
     auto& currentMesh = meshes_.back();
     auto* gltfMeshData = static_cast<GltfMeshData*>(currentMesh.get());
     gltfMeshData->setMeshData(importer, iMesh);
-
-    // Keep track of names
-    object_names_.push_back(importer.mesh3DName(iMesh));
 
     // see if the mesh needs to be shifted
     if (shiftOrigin) {

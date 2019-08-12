@@ -193,7 +193,6 @@ class ResourceManager {
   std::vector<std::shared_ptr<BaseMesh>> meshes_;
   std::vector<std::shared_ptr<Magnum::GL::Texture2D>> textures_;
   std::vector<std::shared_ptr<Magnum::Trade::PhongMaterialData>> materials_;
-  std::vector<std::string> object_names_;
 
   Magnum::GL::Mesh* instance_mesh;
 

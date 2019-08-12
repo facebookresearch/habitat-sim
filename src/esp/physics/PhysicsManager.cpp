@@ -42,7 +42,7 @@ bool PhysicsManager::initPhysics(
     assets::PhysicsManagerAttributes physicsManagerAttributes) {
   physicsNode_ = node;
   //! Create new scene node
-  sceneNode_ = std::make_shared<physics::RigidObject>(physicsNode_);
+  sceneNode_ = new physics::RigidObject(physicsNode_);
   initialized_ = true;
 
   return true;
@@ -71,9 +71,10 @@ bool PhysicsManager::addScene(
   }
 
   //! Initialize scene
+  LOG(INFO) << "initializing scene: " << sceneNode_;
   bool sceneSuccess =
       sceneNode_->initializeScene(physicsSceneAttributes, meshGroup);
-
+  LOG(INFO) << "initialized scene";
   return sceneSuccess;
 }
 
@@ -100,8 +101,8 @@ int PhysicsManager::addObject(const int resObjectID, DrawableGroup* drawables) {
 
   //! Draw object via resource manager
   //! Render node as child of physics node
-  resourceManager_->loadObject(
-      configFile, existingObjects_.at(nextObjectID_).get(), drawables);
+  resourceManager_->loadObject(configFile, existingObjects_.at(nextObjectID_),
+                               drawables);
 
   return nextObjectID_;
 }
@@ -120,6 +121,7 @@ int PhysicsManager::removeObject(const int physObjectID) {
     return -1;
   }
   existingObjects_.at(physObjectID)->removeObject();
+  delete existingObjects_.at(physObjectID);
   existingObjects_.erase(physObjectID);
   deallocateObjectID(physObjectID);
   return physObjectID;
@@ -147,8 +149,7 @@ int PhysicsManager::makeRigidObject(
   //! Create new physics object (child node of sceneNode_)
 
   int newObjectID = allocateObjectID();
-  existingObjects_.emplace(
-      newObjectID, std::make_shared<physics::RigidObject>(sceneNode_.get()));
+  existingObjects_[newObjectID] = new physics::RigidObject(sceneNode_);
 
   //! Instantiate with mesh pointer
   bool objectSuccess =
@@ -156,6 +157,8 @@ int PhysicsManager::makeRigidObject(
           ->initializeObject(physicsObjectAttributes, meshGroup);
   if (!objectSuccess) {
     deallocateObjectID(newObjectID);
+    delete existingObjects_.at(newObjectID);  // TODO: check this. Could be
+                                              // null?
     existingObjects_.erase(newObjectID);
     return -1;
   }
@@ -206,7 +209,7 @@ void PhysicsManager::stepPhysics(double dt) {
 //! helps checking how many objects are active/inactive at any
 //! time step
 int PhysicsManager::checkActiveObjects() {
-  if (sceneNode_.get() == nullptr) {
+  if (sceneNode_ == nullptr) {
     return 0;
   }
 
@@ -218,7 +221,7 @@ int PhysicsManager::checkActiveObjects() {
   int numTotal = 0;
   for (auto& child : sceneNode_->children()) {
     physics::RigidObject* childNode =
-        dynamic_cast<physics::RigidObject*>(&child);
+        static_cast<physics::RigidObject*>(&child);
     if (childNode != nullptr) {
       numTotal += 1;
       if (childNode->isActive()) {

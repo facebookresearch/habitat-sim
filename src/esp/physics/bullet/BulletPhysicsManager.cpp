@@ -28,9 +28,7 @@ bool BulletPhysicsManager::initPhysics(
 
   physicsNode_ = node;
   //! Create new scene node
-  sceneNode_ = std::dynamic_pointer_cast<physics::RigidObject,
-                                         physics::BulletRigidObject>(
-      std::make_shared<physics::BulletRigidObject>(physicsNode_));
+  sceneNode_ = static_cast<RigidObject*>(new BulletRigidObject(physicsNode_));
 
   initialized_ = true;
   return true;
@@ -53,8 +51,7 @@ bool BulletPhysicsManager::addScene(
 
   //! Initialize scene
   bool sceneSuccess =
-      std::dynamic_pointer_cast<physics::BulletRigidObject,
-                                physics::RigidObject>(sceneNode_)
+      static_cast<BulletRigidObject*>(sceneNode_)
           ->initializeScene(physicsSceneAttributes, meshGroup, bWorld_);
 
   return sceneSuccess;
@@ -65,14 +62,11 @@ int BulletPhysicsManager::makeRigidObject(
     assets::PhysicsObjectAttributes physicsObjectAttributes) {
   //! Create new physics object (child node of sceneNode_)
   int newObjectID = allocateObjectID();
-  existingObjects_.emplace(
-      newObjectID,
-      std::make_shared<physics::BulletRigidObject>(sceneNode_.get()));
+  existingObjects_[newObjectID] = new BulletRigidObject(sceneNode_);
 
   //! Instantiate with mesh pointer
   bool objectSuccess =
-      dynamic_cast<physics::BulletRigidObject*>(
-          existingObjects_.at(newObjectID).get())
+      static_cast<BulletRigidObject*>(existingObjects_.at(newObjectID))
           ->initializeObject(physicsObjectAttributes, meshGroup, bWorld_);
   if (!objectSuccess) {
     LOG(ERROR) << "Object load failed";
@@ -120,7 +114,7 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
 void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   bWorld_->setGravity(btVector3(gravity));
   // After gravity change, need to reactive all bullet objects
-  for (std::map<int, std::shared_ptr<physics::RigidObject>>::iterator it =
+  for (std::map<int, physics::RigidObject*>::iterator it =
            existingObjects_.begin();
        it != existingObjects_.end(); ++it) {
     it->second->setActive();
@@ -149,30 +143,26 @@ void BulletPhysicsManager::stepPhysics(double dt) {
 void BulletPhysicsManager::setMargin(const int physObjectID,
                                      const double margin) {
   if (existingObjects_.count(physObjectID) > 0) {
-    std::dynamic_pointer_cast<BulletRigidObject>(
-        existingObjects_.at(physObjectID))
+    static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
         ->setMargin(margin);
   }
 }
 
 void BulletPhysicsManager::setSceneFrictionCoefficient(
     const double frictionCoefficient) {
-  std::dynamic_pointer_cast<physics::BulletRigidObject, physics::RigidObject>(
-      sceneNode_)
+  static_cast<BulletRigidObject*>(sceneNode_)
       ->setFrictionCoefficient(frictionCoefficient);
 }
 
 void BulletPhysicsManager::setSceneRestitutionCoefficient(
     const double restitutionCoefficient) {
-  std::dynamic_pointer_cast<physics::BulletRigidObject, physics::RigidObject>(
-      sceneNode_)
+  static_cast<BulletRigidObject*>(sceneNode_)
       ->setRestitutionCoefficient(restitutionCoefficient);
 }
 
 const double BulletPhysicsManager::getMargin(const int physObjectID) {
   if (existingObjects_.count(physObjectID) > 0) {
-    return std::dynamic_pointer_cast<BulletRigidObject>(
-               existingObjects_.at(physObjectID))
+    return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
         ->getMargin();
   } else {
     return -1.0;
@@ -180,14 +170,11 @@ const double BulletPhysicsManager::getMargin(const int physObjectID) {
 }
 
 const double BulletPhysicsManager::getSceneFrictionCoefficient() {
-  return std::dynamic_pointer_cast<physics::BulletRigidObject,
-                                   physics::RigidObject>(sceneNode_)
-      ->getFrictionCoefficient();
+  return static_cast<BulletRigidObject*>(sceneNode_)->getFrictionCoefficient();
 }
 
 const double BulletPhysicsManager::getSceneRestitutionCoefficient() {
-  return std::dynamic_pointer_cast<physics::BulletRigidObject,
-                                   physics::RigidObject>(sceneNode_)
+  return static_cast<BulletRigidObject*>(sceneNode_)
       ->getRestitutionCoefficient();
 }
 

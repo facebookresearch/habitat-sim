@@ -183,10 +183,10 @@ class PhysicsManager {
 
   //! Used to keep track of all sceneNodes that have physical properties
   scene::SceneNode* physicsNode_ = nullptr;
-  std::shared_ptr<physics::RigidObject> sceneNode_ = nullptr;
+  physics::RigidObject* sceneNode_ = nullptr;
 
   //! ==== dynamic object resources ===
-  std::map<int, std::shared_ptr<physics::RigidObject>> existingObjects_;
+  std::map<int, physics::RigidObject*> existingObjects_;
   int nextObjectID_ = 0;
   std::vector<int>
       recycledObjectIDs_;  // removed object IDs are pushed here and popped
