@@ -200,5 +200,52 @@ bool operator!=(const SimulatorConfiguration& a,
   return !(a == b);
 }
 
+// === Physics Simulator Functions ===
+
+const int Simulator::addObject(const int objectLibIndex, const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    // TODO: change implementation to support multi-world and physics worlds to
+    // own reference to a sceneGraph to avoid this.
+    auto& sceneGraph_ = sceneManager_.getSceneGraph(sceneID);
+    auto& drawables = sceneGraph_.getDrawables();
+    physicsManager_->addObject(objectLibIndex, &drawables);
+  }
+  return ID_UNDEFINED;
+}
+
+// remove object objectID instance in sceneID
+void Simulator::removeObject(const int objectID, const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    physicsManager_->removeObject(objectID);
+  }
+}
+
+// apply forces and torques to objects
+void Simulator::applyTorque(const Magnum::Vector3& tau,
+                            const int objectID,
+                            const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    physicsManager_->removeObject(objectID);
+  }
+}
+
+void Simulator::applyForce(const Magnum::Vector3& force,
+                           const Magnum::Vector3& relPos,
+                           const int objectID,
+                           const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    physicsManager_->applyForce(objectID, force, relPos);
+  }
+}
+
+// set object transform (kinemmatic control)
+void Simulator::setTransform(const Magnum::Matrix4& transform,
+                             const int objectID,
+                             const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    physicsManager_->setTransformation(objectID, transform);
+  }
+}
+
 }  // namespace gfx
 }  // namespace esp

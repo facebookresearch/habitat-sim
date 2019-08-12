@@ -76,8 +76,10 @@ bool PhysicsManager::addScene(
   return sceneSuccess;
 }
 
-int PhysicsManager::addObject(const int resObjectID, DrawableGroup* drawables) {
-  const std::string configFile = resourceManager_->getObjectConfig(resObjectID);
+int PhysicsManager::addObject(const int objectLibIndex,
+                              DrawableGroup* drawables) {
+  const std::string configFile =
+      resourceManager_->getObjectConfig(objectLibIndex);
 
   //! Test Mesh primitive is valid
   const std::vector<assets::CollisionMeshData>& meshGroup =

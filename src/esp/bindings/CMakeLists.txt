@@ -12,6 +12,7 @@ target_link_libraries(habitat_sim_bindings
     gfx
     nav
     sensor
+    physics
 )
 
 # target_include_directories(environment

@@ -29,10 +29,10 @@ class ResourceManager;
 
 namespace physics {
 
+// TODO: repurpose to manage multiple physical worlds. Currently represents
+// exactly 1 world.
 class PhysicsManager {
  public:
-  // explicit PhysicsManager(assets::ResourceManager& _resourceManager) :
-  // resourceManager(_resourceManager) {};
   explicit PhysicsManager(assets::ResourceManager* _resourceManager) {
     resourceManager_ = _resourceManager;
   };
@@ -65,7 +65,7 @@ class PhysicsManager {
   //! The object could contain several parts
   int addObject(const std::string& configFile, DrawableGroup* drawables);
   // calls the above...
-  int addObject(const int resObjectID, DrawableGroup* drawables);
+  int addObject(const int objectLibIndex, DrawableGroup* drawables);
   //! Remove added object by physics object ID
   virtual int removeObject(const int physObjectID);
 
@@ -210,6 +210,8 @@ class PhysicsManager {
   double fixedTimeStep_ = 1.0 / 240.0;
   // assets::PhysicsSceneMetaData sceneMetaData_;
   double worldTime_ = 0.0;
+
+  ESP_SMART_POINTERS(PhysicsManager)
 };
 
 }  // namespace physics

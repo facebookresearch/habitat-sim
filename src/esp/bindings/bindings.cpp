@@ -13,6 +13,7 @@ using namespace py::literals;
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/Simulator.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/PhysicsManager.h"
 #include "esp/scene/Mp3dSemanticScene.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneGraph.h"
@@ -31,6 +32,7 @@ using namespace esp::gfx;
 using namespace esp::nav;
 using namespace esp::scene;
 using namespace esp::sensor;
+using namespace esp::physics;
 
 void initShortestPathBindings(py::module& m);
 void initGeoBindings(py::module& m);
@@ -446,6 +448,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_readwrite("compress_textures",
                      &SimulatorConfiguration::compressTextures)
       .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
+      .def_readwrite("enable_physics", &SimulatorConfiguration::enablePhysics)
       .def("__eq__",
            [](const SimulatorConfiguration& self,
               const SimulatorConfiguration& other) -> bool {
@@ -471,7 +474,10 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            pybind11::return_value_policy::reference)
       .def_property_readonly("semantic_scene", &Simulator::getSemanticScene)
       .def_property_readonly("renderer", &Simulator::getRenderer)
+      .def_property_readonly("physics_manager", &Simulator::getPhysicsManager)
       .def("seed", &Simulator::seed, R"()", "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a)
-      .def("reset", &Simulator::reset, R"()");
+      .def("reset", &Simulator::reset, R"()")
+      .def("addObject", &Simulator::addObject, "R()", "object_lib_index"_a,
+           "scene_id"_a = "");
 }

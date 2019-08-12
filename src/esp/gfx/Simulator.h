@@ -68,6 +68,29 @@ class Simulator {
 
   void saveFrame(const std::string& filename);
 
+  // === Physics Simulator Functions ===
+  // TODO: support multi-scene physics (default sceneID=0 currently).
+  // create an object instance from ResourceManager
+  // physicsObjectLibrary_[objectLibIndex] in scene sceneID. return the objectID
+  // for the new object instance.
+  const int addObject(const int objectLibIndex, const int sceneID = 0);
+
+  // remove object objectID instance in sceneID
+  void removeObject(const int objectID, const int sceneID = 0);
+
+  // apply forces and torques to objects
+  void applyTorque(const Magnum::Vector3& tau,
+                   const int objectID,
+                   const int sceneID = 0);
+  void applyForce(const Magnum::Vector3& force,
+                  const Magnum::Vector3& relPos,
+                  const int objectID,
+                  const int sceneID = 0);
+  // set object transform (kinemmatic control)
+  void setTransform(const Magnum::Matrix4& transform,
+                    const int objectID,
+                    const int sceneID = 0);
+
  protected:
   std::unique_ptr<WindowlessContext> context_ = nullptr;
   std::shared_ptr<Renderer> renderer_ = nullptr;
