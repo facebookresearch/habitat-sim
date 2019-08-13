@@ -9,6 +9,7 @@
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
+#include <Magnum/Shaders/Flat.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
 #include <Magnum/Trade/MeshObjectData3D.h>
@@ -18,7 +19,8 @@
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
-#include "esp/gfx/GenericShader.h"
+#include "esp/gfx/PrimitiveIDTexturedDrawable.h"
+#include "esp/gfx/PrimitiveIDTexturedShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/scene/SceneConfiguration.h"
@@ -69,9 +71,7 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
     switch (type) {
       case INSTANCE_MESH_SHADER: {
         shaderPrograms_[INSTANCE_MESH_SHADER] =
-            std::make_shared<gfx::GenericShader>(
-                gfx::GenericShader::Flag::VertexColored |
-                gfx::GenericShader::Flag::PrimitiveIDTextured);
+            std::make_shared<gfx::PrimitiveIDTexturedShader>();
       } break;
 
 #ifdef ESP_BUILD_PTEX_SUPPORT
@@ -83,18 +83,22 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
 
       case COLORED_SHADER: {
         shaderPrograms_[COLORED_SHADER] =
-            std::make_shared<gfx::GenericShader>();
+            std::make_shared<Magnum::Shaders::Flat3D>(
+                Magnum::Shaders::Flat3D::Flag::ObjectId);
       } break;
 
       case VERTEX_COLORED_SHADER: {
         shaderPrograms_[VERTEX_COLORED_SHADER] =
-            std::make_shared<gfx::GenericShader>(
-                gfx::GenericShader::Flag::VertexColored);
+            std::make_shared<Magnum::Shaders::Flat3D>(
+                Magnum::Shaders::Flat3D::Flag::ObjectId |
+                Magnum::Shaders::Flat3D::Flag::VertexColor);
       } break;
 
       case TEXTURED_SHADER: {
-        shaderPrograms_[TEXTURED_SHADER] = std::make_shared<gfx::GenericShader>(
-            gfx::GenericShader::Flag::Textured);
+        shaderPrograms_[TEXTURED_SHADER] =
+            std::make_shared<Magnum::Shaders::Flat3D>(
+                Magnum::Shaders::Flat3D::Flag::ObjectId |
+                Magnum::Shaders::Flat3D::Flag::Textured);
       } break;
 
       default:
@@ -460,9 +464,14 @@ gfx::Drawable& ResourceManager::createDrawable(
     ASSERT(shaderType != PTEX_MESH_SHADER);
     // NOTE: this is a runtime error and will never return
     return *drawable;
+  } else if (shaderType == INSTANCE_MESH_SHADER) {
+    auto* shader = static_cast<gfx::PrimitiveIDTexturedShader*>(
+        getShaderProgram(shaderType));
+    drawable = new gfx::PrimitiveIDTexturedDrawable{node, *shader, mesh, group,
+                                                    texture};
   } else {  // all other shaders use GenericShader
     auto* shader =
-        static_cast<gfx::GenericShader*>(getShaderProgram(shaderType));
+        static_cast<Magnum::Shaders::Flat3D*>(getShaderProgram(shaderType));
     drawable = new gfx::GenericDrawable{node,    *shader,  mesh, group,
                                         texture, objectId, color};
   }
