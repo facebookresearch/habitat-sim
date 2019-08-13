@@ -54,20 +54,22 @@ endif()
 # Why all the weird options in the set() calls below?
 # See https://stackoverflow.com/questions/3766740/overriding-a-default-option-value-in-cmake-from-a-parent-cmakelists-txt
 
-# Assimp. Use a system package, if preferred.
-if(NOT USE_SYSTEM_ASSIMP)
-  set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "ASSIMP_BUILD_ASSIMP_TOOLS" FORCE)
-  set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
-  set(BUILD_SHARED_LIBS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
-  add_subdirectory("${DEPS_DIR}/assimp")
+if(BUILD_ASSIMP_SUPPORT)
+  # Assimp. Use a system package, if preferred.
+  if(NOT USE_SYSTEM_ASSIMP)
+    set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "ASSIMP_BUILD_ASSIMP_TOOLS" FORCE)
+    set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
+    add_subdirectory("${DEPS_DIR}/assimp")
 
-  # Help FindAssimp locate everything
-  set(ASSIMP_INCLUDE_DIR "${DEPS_DIR}/assimp/include" CACHE STRING "" FORCE)
-  set(ASSIMP_LIBRARY_DEBUG assimp CACHE STRING "" FORCE)
-  set(ASSIMP_LIBRARY_RELEASE assimp CACHE STRING "" FORCE)
-  add_library(Assimp::Assimp ALIAS assimp)
+    # Help FindAssimp locate everything
+    set(ASSIMP_INCLUDE_DIR "${DEPS_DIR}/assimp/include" CACHE STRING "" FORCE)
+    set(ASSIMP_LIBRARY_DEBUG assimp CACHE STRING "" FORCE)
+    set(ASSIMP_LIBRARY_RELEASE assimp CACHE STRING "" FORCE)
+    add_library(Assimp::Assimp ALIAS assimp)
+  endif()
+  find_package(Assimp REQUIRED)
 endif()
-find_package(Assimp REQUIRED)
 
 # recast
 set(RECASTNAVIGATION_DEMO OFF CACHE BOOL "RECASTNAVIGATION_DEMO" FORCE)
@@ -118,7 +120,9 @@ if(NOT USE_SYSTEM_MAGNUM)
 
   # These are not enabled by default but we need them
   set(WITH_ANYSCENEIMPORTER ON CACHE BOOL "WITH_ANYSCENEIMPORTER" FORCE)
-  set(WITH_ASSIMPIMPORTER ON CACHE BOOL "WITH_ASSIMPIMPORTER" FORCE)
+  if (BUILD_ASSIMP_SUPPORT)
+    set(WITH_ASSIMPIMPORTER ON CACHE BOOL "WITH_ASSIMPIMPORTER" FORCE)
+  endif()
   set(WITH_TINYGLTFIMPORTER ON CACHE BOOL "WITH_TINYGLTFIMPORTER" FORCE)
   set(WITH_ANYIMAGEIMPORTER ON CACHE BOOL "WITH_ANYIMAGEIMPORTER" FORCE)
   set(WITH_STBIMAGEIMPORTER ON CACHE BOOL "WITH_STBIMAGEIMPORTER" FORCE)
