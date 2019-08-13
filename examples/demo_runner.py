@@ -146,7 +146,8 @@ class DemoRunner:
         end_time = time.time()
         perf = {}
         perf["total_time"] = end_time - start_time
-        perf["fps"] = total_frames / perf["total_time"]
+        perf["frame_time"] = perf["total_time"] / total_frames
+        perf["fps"] = 1.0 / perf["frame_time"]
 
         return perf
 
@@ -214,7 +215,7 @@ class DemoRunner:
             # the kernel never interrupted the workers, but this isn't
             # feasible, so we just take the run with the least number of
             # interrupts (the fastest) instead.
-            if best_perf is None or perf["fps"] > best_perf["fps"]:
+            if best_perf is None or perf["frame_time"] < best_perf["frame_time"]:
                 best_perf = perf
 
         self._sim.close()
@@ -242,7 +243,11 @@ class DemoRunner:
             for k, v in p.items():
                 res[k] += [v]
 
-        return dict(fps=sum(res["fps"]), total_time=sum(res["total_time"]) / nprocs)
+        return dict(
+            frame_time=sum(res["frame_time"]),
+            fps=sum(res["fps"]),
+            total_time=sum(res["total_time"]) / nprocs,
+        )
 
     def example(self):
         start_state = self.init_common()
