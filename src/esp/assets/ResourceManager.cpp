@@ -9,6 +9,7 @@
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
+#include <Magnum/ImageView.h>
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/Math/Tags.h>
@@ -31,6 +32,7 @@
 #include "CollisionMeshData.h"
 #include "FRLInstanceMeshData.h"
 #include "GenericInstanceMeshData.h"
+#include "GltfMeshData.h"
 #include "MeshData.h"
 #include "Mp3dInstanceMeshData.h"
 #include "ResourceManager.h"
@@ -40,7 +42,7 @@
 #include "esp/physics/bullet/BulletPhysicsManager.h"
 #endif
 
-#ifdef BUILD_PTEX_SUPPORT
+#ifdef ESP_BUILD_PTEX_SUPPORT
 #include "PTexMeshData.h"
 #include "esp/gfx/PTexMeshDrawable.h"
 #include "esp/gfx/PTexMeshShader.h"
@@ -646,7 +648,7 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
                 gfx::GenericShader::Flag::PrimitiveIDTextured);
       } break;
 
-#ifdef BUILD_PTEX_SUPPORT
+#ifdef ESP_BUILD_PTEX_SUPPORT
       case PTEX_MESH_SHADER: {
         shaderPrograms_[PTEX_MESH_SHADER] =
             std::make_shared<gfx::PTexMeshShader>();
@@ -680,7 +682,7 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
 bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
                                        scene::SceneNode* parent,
                                        DrawableGroup* drawables) {
-#ifdef BUILD_PTEX_SUPPORT
+#ifdef ESP_BUILD_PTEX_SUPPORT
   // if this is a new file, load it and add it to the dictionary
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
@@ -721,8 +723,8 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 
   return true;
 #else
-  LOG(ERROR)
-      << "PTex support not enabled. Define BUILD_PTEX_SUPPORT when building.";
+  LOG(ERROR) << "PTex support not enabled. Enable the BUILD_PTEX_SUPPORT CMake "
+                "option when building.";
   return false;
 #endif
 }

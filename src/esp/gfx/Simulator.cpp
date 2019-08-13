@@ -33,6 +33,8 @@ namespace gfx {
 
 Simulator::Simulator(const SimulatorConfiguration& cfg) {
   // initalize members according to cfg
+  // NOTE: NOT SO GREAT NOW THAT WE HAVE virtual functions
+  //       Maybe better not to do this reconfigure
   reconfigure(cfg);
 }
 
@@ -153,7 +155,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
 void Simulator::reset() {
   if (physicsManager_ != nullptr)
-    physicsManager_.reset();  // TODO: does nothing yet
+    physicsManager_
+        ->reset();  // TODO: this does nothing yet... desired reset behavior?
 }
 
 void Simulator::seed(uint32_t newSeed) {
@@ -208,7 +211,7 @@ const int Simulator::addObject(const int objectLibIndex, const int sceneID) {
     // own reference to a sceneGraph to avoid this.
     auto& sceneGraph_ = sceneManager_.getSceneGraph(sceneID);
     auto& drawables = sceneGraph_.getDrawables();
-    physicsManager_->addObject(objectLibIndex, &drawables);
+    return physicsManager_->addObject(objectLibIndex, &drawables);
   }
   return ID_UNDEFINED;
 }
@@ -239,12 +242,71 @@ void Simulator::applyForce(const Magnum::Vector3& force,
 }
 
 // set object transform (kinemmatic control)
-void Simulator::setTransform(const Magnum::Matrix4& transform,
-                             const int objectID,
-                             const int sceneID) {
+void Simulator::setTransformation(const Magnum::Matrix4& transform,
+                                  const int objectID,
+                                  const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
     physicsManager_->setTransformation(objectID, transform);
   }
+}
+
+const Magnum::Matrix4 Simulator::getTransformation(const int objectID,
+                                                   const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->getTransformation(objectID);
+  }
+  return Magnum::Matrix4::fromDiagonal(Magnum::Vector4(1));
+}
+
+// set object translation directly
+void Simulator::setTranslation(const Magnum::Vector3& translation,
+                               const int objectID,
+                               const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    physicsManager_->setTranslation(objectID, translation);
+  }
+}
+
+const Magnum::Vector3 Simulator::getTranslation(const int objectID,
+                                                const int sceneID) {
+  // can throw if physicsManager is not initialized or either objectID/sceneID
+  // is invalid
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->getTranslation(objectID);
+  }
+  return Magnum::Vector3();
+}
+
+// set object orientation directly
+void Simulator::setRotation(const Magnum::Quaternion& rotation,
+                            const int objectID,
+                            const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    physicsManager_->setRotation(objectID, rotation);
+  }
+}
+
+const Magnum::Quaternion Simulator::getRotation(const int objectID,
+                                                const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->getRotation(objectID);
+  }
+  return Magnum::Quaternion();
+}
+
+const double Simulator::stepWorld(const double dt) {
+  if (physicsManager_ != nullptr) {
+    physicsManager_->stepPhysics(dt);
+  }
+  return getWorldTime();
+}
+
+// get the simulated world time (0 if no physics enabled)
+const double Simulator::getWorldTime() {
+  if (physicsManager_ != nullptr) {
+    return physicsManager_->getWorldTime();
+  }
+  return NO_TIME;
 }
 
 }  // namespace gfx

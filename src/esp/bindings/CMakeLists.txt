@@ -13,6 +13,7 @@ target_link_libraries(habitat_sim_bindings
     nav
     sensor
     physics
+    sim
 )
 
 # target_include_directories(environment

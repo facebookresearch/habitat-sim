@@ -3,6 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 
 
+import math
 import multiprocessing
 import os
 import random
@@ -101,6 +102,43 @@ class DemoRunner:
         action_names = list(
             self._cfg.agents[self._sim_settings["default_agent"]].action_space.keys()
         )
+
+        # load an object and position the agent for physics testing
+        if self._sim_settings["enable_physics"]:
+            object_position = np.array(
+                [-0.569043, 2.54804, 13.6156]
+            )  # above the castle table
+
+            # turn agent toward the object
+            print("turning agent toward the physics!")
+            agent_state = self._sim.get_agent(0).get_state()
+            agent_to_obj = object_position - agent_state.position
+            agent_local_forward = np.array([0, 0, -1.0])
+            flat_to_obj = agent_to_obj
+            flat_to_obj[1] = 0.0
+            flat_to_obj /= np.linalg.norm(flat_to_obj)
+            turn_angle = math.acos(np.dot(agent_local_forward, flat_to_obj))
+            agent_state.rotation = utils.quat_from_angle_axis(
+                turn_angle, np.array([0, 1.0, 0])
+            )
+            for sensor in agent_state.sensor_states:
+                agent_state.sensor_states[sensor].rotation = agent_state.rotation
+            self._sim.get_agent(0).set_state(agent_state)
+
+            # add some objects
+            object_id = self._sim.add_object(0)
+            self._sim.set_translation(object_position, object_id)
+            print("added object: " + str(object_id) + " at: " + str(object_position))
+
+            object_id = self._sim.add_object(1)
+            offset = np.array([0.25, 0, 0])
+            self._sim.set_translation(object_position + offset, object_id)
+            print("added object: " + str(object_id) + " at: " + str(object_position))
+
+            object_id = self._sim.add_object(0)
+            offset = np.array([-0.25, 0, 0])
+            self._sim.set_translation(object_position + offset, object_id)
+            print("added object: " + str(object_id) + " at: " + str(object_position))
 
         while total_frames < self._sim_settings["max_frames"]:
             action = random.choice(action_names)

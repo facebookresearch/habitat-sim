@@ -34,7 +34,6 @@ class GenericShader : public Magnum::GL::AbstractShaderProgram {
 
   //! Set of configuration flags
   typedef Corrade::Containers::EnumSet<Flag> Flags;
-  CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
 
   /**
    * @brief Constructor

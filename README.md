@@ -191,6 +191,8 @@ We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup
    ```bash
    export PYTHONPATH=$PYTHONPATH:/path/to/habitat-sim/
    ```
+   
+  We also have a dev slack channel, please follow this [link](https://join.slack.com/t/ai-habitat/shared_invite/enQtNjY1MzM1NDE4MTk2LTZhMzdmYWMwODZlNjg5MjZiZjExOTBjOTg5MmRiZTVhOWQyNzk0OTMyN2E1ZTEzZTNjMWM0MjBkN2VhMjQxMDI) to get added to the channel.
 
 ## Datasets
 
@@ -249,6 +251,6 @@ The Habitat project would not have been possible without the support and contrib
 
 Habitat-Sim is MIT licensed. See the LICENSE file for details.
 
-## References and Citation
+## References
 
 1. [Habitat: A Platform for Embodied AI Research](https://arxiv.org/abs/1904.01201). Manolis Savva, Abhishek Kadian, Oleksandr Maksymets, Yili Zhao, Erik Wijmans, Bhavana Jain, Julian Straub, Jia Liu, Vladlen Koltun, Jitendra Malik, Devi Parikh, Dhruv Batra. IEEE/CVF International Conference on Computer Vision (ICCV), 2019.

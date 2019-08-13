@@ -53,11 +53,11 @@ class Simulator {
   explicit Simulator(const SimulatorConfiguration& cfg);
   virtual ~Simulator();
 
-  void reconfigure(const SimulatorConfiguration& cfg);
+  virtual void reconfigure(const SimulatorConfiguration& cfg);
 
-  void reset();
+  virtual void reset();
 
-  void seed(uint32_t newSeed);
+  virtual void seed(uint32_t newSeed);
 
   std::shared_ptr<Renderer> getRenderer();
   std::shared_ptr<physics::PhysicsManager> getPhysicsManager();
@@ -82,16 +82,47 @@ class Simulator {
   void applyTorque(const Magnum::Vector3& tau,
                    const int objectID,
                    const int sceneID = 0);
+
   void applyForce(const Magnum::Vector3& force,
                   const Magnum::Vector3& relPos,
                   const int objectID,
                   const int sceneID = 0);
+
   // set object transform (kinemmatic control)
   void setTransform(const Magnum::Matrix4& transform,
                     const int objectID,
                     const int sceneID = 0);
 
+  const Magnum::Matrix4 getTransformation(const int objectID,
+                                          const int sceneID = 0);
+
+  void setTransformation(const Magnum::Matrix4& transform,
+                         const int objectID,
+                         const int sceneID = 0);
+  // set object translation directly
+  void setTranslation(const Magnum::Vector3& translation,
+                      const int objectID,
+                      const int sceneID = 0);
+
+  const Magnum::Vector3 getTranslation(const int objectID,
+                                       const int sceneID = 0);
+
+  // set object rotation directly
+  void setRotation(const Magnum::Quaternion& rotation,
+                   const int objectID,
+                   const int sceneID = 0);
+  const Magnum::Quaternion getRotation(const int objectID,
+                                       const int sceneID = 0);
+
+  // the physical world has a notion of time which passes during
+  // animation/simulation/action/etc... return the new world time after stepping
+  const double stepWorld(const double dt = 1.0 / 60.0);
+
+  // get the simulated world time (0 if no physics enabled)
+  const double getWorldTime();
+
  protected:
+  Simulator() {}
   std::unique_ptr<WindowlessContext> context_ = nullptr;
   std::shared_ptr<Renderer> renderer_ = nullptr;
   // CANNOT make the specification of resourceManager_ above the context_!
@@ -102,14 +133,14 @@ class Simulator {
   // during the deconstruction
   assets::ResourceManager resourceManager_;
 
-  std::shared_ptr<physics::PhysicsManager> physicsManager_;
-
   scene::SceneManager sceneManager_;
   int activeSceneID_ = ID_UNDEFINED;
   int activeSemanticSceneID_ = ID_UNDEFINED;
   std::vector<int> sceneID_;
 
   std::shared_ptr<scene::SemanticScene> semanticScene_ = nullptr;
+
+  std::shared_ptr<physics::PhysicsManager> physicsManager_ = nullptr;
 
   core::Random random_;
   SimulatorConfiguration config_;

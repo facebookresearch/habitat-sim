@@ -474,10 +474,30 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            pybind11::return_value_policy::reference)
       .def_property_readonly("semantic_scene", &Simulator::getSemanticScene)
       .def_property_readonly("renderer", &Simulator::getRenderer)
-      .def_property_readonly("physics_manager", &Simulator::getPhysicsManager)
       .def("seed", &Simulator::seed, R"()", "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a)
       .def("reset", &Simulator::reset, R"()")
-      .def("addObject", &Simulator::addObject, "R()", "object_lib_index"_a,
-           "scene_id"_a = "");
+      /* --- Physics functions --- */
+      .def("add_object", &Simulator::addObject, "R()", "object_lib_index"_a,
+           "scene_id"_a = 0)
+      .def("remove_object", &Simulator::removeObject, "R()", "object_id"_a,
+           "sceneID"_a = 0)
+      .def("step_world", &Simulator::stepWorld, "R()", "dt"_a = 1.0 / 60.0)
+      .def("get_world_time", &Simulator::getWorldTime, "R()")
+      .def("set_transformation", &Simulator::setTransformation, "R()",
+           "transform"_a, "object_id"_a, "sceneID"_a = 0)
+      .def("get_transformation", &Simulator::getTransformation, "R()",
+           "object_id"_a, "sceneID"_a = 0)
+      .def("set_translation", &Simulator::setTranslation, "R()",
+           "translation"_a, "object_id"_a, "sceneID"_a = 0)
+      .def("get_translation", &Simulator::getTranslation, "R()", "object_id"_a,
+           "sceneID"_a = 0)
+      .def("set_rotation", &Simulator::setRotation, "R()", "rotation"_a,
+           "object_id"_a, "sceneID"_a = 0)
+      .def("get_rotation", &Simulator::getRotation, "R()", "object_id"_a,
+           "sceneID"_a = 0)
+      .def("apply_force", &Simulator::applyForce, "R()", "force"_a,
+           "relative_position"_a, "object_id"_a, "sceneID"_a = 0)
+      .def("apply_torque", &Simulator::applyTorque, "R()", "torque"_a,
+           "object_id"_a, "sceneID"_a = 0);
 }

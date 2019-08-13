@@ -48,7 +48,9 @@ bool PhysicsManager::initPhysics(
   return true;
 }
 
-PhysicsManager::~PhysicsManager() {}
+PhysicsManager::~PhysicsManager() {
+  LOG(INFO) << "Deconstructing PhysicsManager";
+}
 
 bool PhysicsManager::addScene(
     const assets::AssetInfo& info,

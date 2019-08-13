@@ -211,7 +211,7 @@ class PhysicsManager {
   // assets::PhysicsSceneMetaData sceneMetaData_;
   double worldTime_ = 0.0;
 
-  ESP_SMART_POINTERS(PhysicsManager)
+  ESP_SMART_POINTERS(PhysicsManager);
 };
 
 }  // namespace physics

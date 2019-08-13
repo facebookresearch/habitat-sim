@@ -96,6 +96,8 @@ class BulletRigidObject : public RigidObject {
   std::unique_ptr<btCompoundShape> bObjectShape_;
   std::unique_ptr<btRigidBody> bObjectRigidBody_;
   Magnum::BulletIntegration::MotionState* bObjectMotionState_;
+
+  ESP_SMART_POINTERS(BulletRigidObject);
 };
 
 }  // namespace physics

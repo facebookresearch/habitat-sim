@@ -28,11 +28,13 @@ default_sim_settings = {
     "test_scene_data_url": "http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip",
     "goal_position": [5.047, 0.199, 11.145],
     "goal_headings": [[0, -0.980_785, 0, 0.195_090], [0.0, 1.0, 0.0, 0.0]],
+    "enable_physics": False,
 }
 
 # build SimulatorConfiguration
 def make_cfg(settings):
     sim_cfg = hsim.SimulatorConfiguration()
+    sim_cfg.enable_physics = settings["enable_physics"]
     sim_cfg.gpu_device_id = 0
     sim_cfg.scene.id = settings["scene"]
 
@@ -87,5 +89,13 @@ def make_cfg(settings):
             "turn_right", habitat_sim.agent.ActuationSpec(amount=10.0)
         ),
     }
+
+    # override action space to no-op to test physics
+    if sim_cfg.enable_physics:
+        agent_cfg.action_space = {
+            "move_forward": habitat_sim.agent.ActionSpec(
+                "move_forward", habitat_sim.agent.ActuationSpec(amount=0.0)
+            )
+        }
 
     return habitat_sim.Configuration(sim_cfg, [agent_cfg])

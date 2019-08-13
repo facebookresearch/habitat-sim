@@ -198,8 +198,16 @@ bool BulletRigidObject::initializeObject(
 }  // end BulletRigidObject::initializeObject
 
 bool BulletRigidObject::removeObject() {
-  bWorld_->removeRigidBody(bObjectRigidBody_.get());
-  bWorld_ = nullptr;
+  if (rigidObjectType_ == OBJECT) {
+    // remove rigid body from the world
+    bWorld_->removeRigidBody(bObjectRigidBody_.get());
+  } else if (rigidObjectType_ == SCENE) {
+    // remove collision objects from the world
+    for (auto& co : bSceneCollisionObjects_) {
+      bWorld_->removeCollisionObject(co.get());
+    }
+  }
+  bWorld_.reset();  // release shared ownership of the world
   rigidObjectType_ = NONE;
   return true;
 }

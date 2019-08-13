@@ -127,6 +127,8 @@ class RigidObject : public scene::SceneNode {
   //! Needed after changing the pose from Magnum side
   //! Not exposed to end user
   virtual void syncPose();
+
+  ESP_SMART_POINTERS(RigidObject);
 };
 
 }  // namespace physics

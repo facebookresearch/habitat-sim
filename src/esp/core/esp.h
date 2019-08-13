@@ -18,6 +18,7 @@
 #include <Eigen/Geometry>
 // #include <Eigen/StdVector>
 
+#include "esp/core/configure.h"
 #include "esp/core/logging.h"
 #include "esp/core/spimpl.h"
 
@@ -125,6 +126,8 @@ inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
 
 static const int ID_UNDEFINED = -1;
 static const double PHYSICS_ATTR_UNDEFINED = -1.0;
+
+static const double NO_TIME = 0.0;
 
 template <typename T>
 inline bool equal(const std::vector<std::shared_ptr<T>>& a,

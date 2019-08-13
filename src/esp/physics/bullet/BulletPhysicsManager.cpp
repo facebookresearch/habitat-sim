@@ -34,7 +34,14 @@ bool BulletPhysicsManager::initPhysics(
   return true;
 }
 
-BulletPhysicsManager::~BulletPhysicsManager() {}
+BulletPhysicsManager::~BulletPhysicsManager() {
+  // remove all leftover physical objects
+  for (auto& bro : existingObjects_) {
+    bro.second->removeObject();
+  }
+  // remove the physical scene from the world
+  sceneNode_->removeObject();
+}
 
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20

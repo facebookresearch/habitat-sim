@@ -157,6 +157,10 @@ void Viewer::addObject(std::string configFile) {
       physObjectID,
       Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
   objectIDs_.push_back(physObjectID);
+
+  // const Magnum::Vector3& trans =
+  // physicsManager_->getTranslation(physObjectID); LOG(INFO) << "translation: "
+  // << trans[0] << ", " << trans[1] << ", " << trans[2];
 }
 
 void Viewer::removeLastObject() {

@@ -28,6 +28,7 @@ parser.add_argument("--compute_action_shortest_path", action="store_true")
 parser.add_argument("--seed", type=int, default=1)
 parser.add_argument("--silent", action="store_true")
 parser.add_argument("--test_fps_regression", type=int, default=0)
+parser.add_argument("--enable_physics", action="store_true")
 args = parser.parse_args()
 
 
@@ -48,6 +49,7 @@ def make_settings():
     settings["compute_action_shortest_path"] = args.compute_action_shortest_path
     settings["seed"] = args.seed
     settings["silent"] = args.silent
+    settings["enable_physics"] = args.enable_physics
 
     return settings
 
