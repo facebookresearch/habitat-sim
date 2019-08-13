@@ -223,7 +223,9 @@ bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
   // Prefer tiny_gltf for loading glTF files (Assimp is worse),
   // prefer Assimp for OBJ files (ObjImporter is worse)
   manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
+#ifdef ESP_BUILD_ASSIMP_SUPPORT
   manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+#endif
 
   if (!importer) {
     LOG(ERROR) << "Cannot load the importer. ";
