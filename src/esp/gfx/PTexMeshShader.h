@@ -43,6 +43,17 @@ class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
   PTexMeshShader& setClipPlane(const Magnum::Vector4& clipPlane);
   PTexMeshShader& setAtlasTextureSize(Magnum::GL::Texture2D& texture,
                                       uint32_t tileSize);
+
+ protected:
+  // it hurts the performance to call glGetUniformLocation() every frame.
+  // therefore, cache the locations in the constructor
+  int MVPMatrixUniform_;
+  int exposureUniform_;
+  int gammaUniform_;
+  int saturationUniform_;
+  int clipPlaneUniform_;
+  int tileSizeUniform_;
+  int widthInTilesUniform_;
 };
 
 }  // namespace gfx

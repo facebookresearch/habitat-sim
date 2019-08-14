@@ -59,6 +59,14 @@ PTexMeshShader::PTexMeshShader() {
   setUniform(uniformLocation("atlasTex"), TextureBindingPointIndex::atlas);
   setUniform(uniformLocation("meshAdjFaces"),
              TextureBindingPointIndex::adjFaces);
+
+  MVPMatrixUniform_ = uniformLocation("MVP");
+  exposureUniform_ = uniformLocation("exposure");
+  gammaUniform_ = uniformLocation("gamma"); 
+  saturationUniform_ = uniformLocation("saturation");
+  clipPlaneUniform_ = uniformLocation("clipPlane");
+  tileSizeUniform_ = uniformLocation("tileSize");
+  widthInTilesUniform_ = uniformLocation("widthInTiles");
 }
 
 PTexMeshShader& PTexMeshShader::bindAtlasTexture(
@@ -74,38 +82,38 @@ PTexMeshShader& PTexMeshShader::bindAdjFacesBufferTexture(
 }
 
 PTexMeshShader& PTexMeshShader::setMVPMatrix(const Magnum::Matrix4& matrix) {
-  setUniform(uniformLocation("MVP"), matrix);
+  setUniform(MVPMatrixUniform_, matrix);
   return *this;
 }
 
 PTexMeshShader& PTexMeshShader::setExposure(float exposure) {
-  setUniform(uniformLocation("exposure"), exposure);
+  setUniform(exposureUniform_, exposure);
   return *this;
 }
 PTexMeshShader& PTexMeshShader::setGamma(float gamma) {
-  setUniform(uniformLocation("gamma"), gamma);
+  setUniform(gammaUniform_, gamma);
   return *this;
 }
 
 PTexMeshShader& PTexMeshShader::setSaturation(float saturation) {
-  setUniform(uniformLocation("saturation"), saturation);
+  setUniform(saturationUniform_, saturation);
   return *this;
 }
 
 PTexMeshShader& PTexMeshShader::setClipPlane(const Magnum::Vector4& clipPlane) {
-  setUniform(uniformLocation("clipPlane"), clipPlane);
+  setUniform(clipPlaneUniform_, clipPlane);
   return *this;
 }
 
 PTexMeshShader& PTexMeshShader::setAtlasTextureSize(Magnum::GL::Texture2D& tex,
                                                     uint32_t tileSize) {
-  setUniform(uniformLocation("tileSize"), (int)tileSize);
+  setUniform(tileSizeUniform_, (int)tileSize);
 
   // Image size in given mip level 0
   int mipLevel = 0;
   int widthEntry = 0;
   const auto width = tex.imageSize(mipLevel)[widthEntry];
-  setUniform(uniformLocation("widthInTiles"), int(width / tileSize));
+  setUniform(widthInTilesUniform_, int(width / tileSize));
   return *this;
 }
 
