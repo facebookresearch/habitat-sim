@@ -31,7 +31,7 @@
 #include "Mp3dInstanceMeshData.h"
 #include "ResourceManager.h"
 
-#ifdef BUILD_PTEX_SUPPORT
+#ifdef ESP_BUILD_PTEX_SUPPORT
 #include "PTexMeshData.h"
 #include "esp/gfx/PTexMeshDrawable.h"
 #include "esp/gfx/PTexMeshShader.h"
@@ -75,7 +75,7 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
                 gfx::GenericShader::Flag::PrimitiveIDTextured);
       } break;
 
-#ifdef BUILD_PTEX_SUPPORT
+#ifdef ESP_BUILD_PTEX_SUPPORT
       case PTEX_MESH_SHADER: {
         shaderPrograms_[PTEX_MESH_SHADER] =
             std::make_shared<gfx::PTexMeshShader>();
@@ -109,7 +109,7 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
 bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
                                        scene::SceneNode* parent,
                                        DrawableGroup* drawables) {
-#ifdef BUILD_PTEX_SUPPORT
+#ifdef ESP_BUILD_PTEX_SUPPORT
   // if this is a new file, load it and add it to the dictionary
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
@@ -149,8 +149,8 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 
   return true;
 #else
-  LOG(ERROR)
-      << "PTex support not enabled. Define BUILD_PTEX_SUPPORT when building.";
+  LOG(ERROR) << "PTex support not enabled. Enable the BUILD_PTEX_SUPPORT CMake "
+                "option when building.";
   return false;
 #endif
 }
@@ -223,7 +223,9 @@ bool ResourceManager::loadGeneralMeshData(const AssetInfo& info,
   // Prefer tiny_gltf for loading glTF files (Assimp is worse),
   // prefer Assimp for OBJ files (ObjImporter is worse)
   manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
+#ifdef ESP_BUILD_ASSIMP_SUPPORT
   manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+#endif
 
   if (!importer) {
     LOG(ERROR) << "Cannot load the importer. ";

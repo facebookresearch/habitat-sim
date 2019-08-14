@@ -6,7 +6,7 @@
 
 #include <Magnum/configure.h>
 #ifdef MAGNUM_TARGET_WEBGL
-#include <Magnum/Platform/Sdl2Application.h>
+#include <Magnum/Platform/EmscriptenApplication.h>
 #else
 #include <Magnum/Platform/GlfwApplication.h>
 #endif
@@ -42,6 +42,9 @@ class Viewer : public Magnum::Platform::Application {
   void mouseMoveEvent(MouseMoveEvent& event) override;
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
+
+  Magnum::Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
+                                   const Magnum::Vector2i& position);
 
   assets::ResourceManager resourceManager_;
   scene::SceneManager sceneManager_;

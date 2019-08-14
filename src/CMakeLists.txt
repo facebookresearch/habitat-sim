@@ -17,6 +17,7 @@ if(CCACHE_FOUND)
 endif()
 
 # build options
+option(BUILD_ASSIMP_SUPPORT "Whether to build assimp import library support" ON)
 option(BUILD_PYTHON_BINDINGS "Whether to build python bindings" ON)
 option(BUILD_DATATOOL "Whether to build datatool utility binary" ON)
 option(BUILD_PTEX_SUPPORT "Whether to build ptex mesh support" ON)
@@ -49,10 +50,6 @@ include_directories(${PROJECT_SOURCE_DIR})
 # compiler define for enabling ptex support
 if(BUILD_PTEX_SUPPORT)
   message("Building with ptex support")
-  # This should be ideally add_compile_definitions() in the long term, but
-  # that's not available until CMake 3.12 and we don't want to cut off people
-  # on older versions.
-  add_definitions(-DBUILD_PTEX_SUPPORT)
 endif()
 
 # add subdirectories
@@ -65,6 +62,7 @@ add_subdirectory(esp/scene)
 add_subdirectory(esp/nav)
 add_subdirectory(esp/agent)
 add_subdirectory(esp/sensor)
+add_subdirectory(esp/sim)
 
 if(BUILD_DATATOOL)
   message("Building datatool")

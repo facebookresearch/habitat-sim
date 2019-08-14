@@ -35,7 +35,7 @@ class SceneManager {
   // manipulation (e.g., rotate the entire scene)
   std::vector<std::unique_ptr<SceneGraph>> sceneGraphs_;
 
-  ESP_SMART_POINTERS(SceneManager);
+  ESP_SMART_POINTERS(SceneManager)
 };
 }  // namespace scene
 }  // namespace esp

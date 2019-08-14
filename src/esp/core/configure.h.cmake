@@ -2,6 +2,12 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "esp/gfx/Viewer.h"
+#pragma once
 
-MAGNUM_APPLICATION_MAIN(esp::gfx::Viewer)
+#cmakedefine ESP_BUILD_ASSIMP_SUPPORT
+
+#cmakedefine ESP_BUILD_EGL_SUPPORT
+
+#cmakedefine ESP_BUILD_PTEX_SUPPORT
+
+#cmakedefine ESP_BUILD_GLOG_SHIM
