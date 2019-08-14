@@ -34,7 +34,10 @@ default_sim_settings = {
 # build SimulatorConfiguration
 def make_cfg(settings):
     sim_cfg = hsim.SimulatorConfiguration()
-    sim_cfg.enable_physics = settings["enable_physics"]
+    if "enable_physics" in settings.keys():
+        sim_cfg.enable_physics = settings["enable_physics"]
+    else:
+        sim_cfg.enable_physics = False
     sim_cfg.gpu_device_id = 0
     sim_cfg.scene.id = settings["scene"]
 
