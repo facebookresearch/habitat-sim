@@ -27,52 +27,22 @@ class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
 
   explicit PTexMeshShader();
 
-  PTexMeshShader& bindTexture(Magnum::GL::Texture2D& texture,
-                              uint32_t textureUnit = 0) {
-    texture.bind(textureUnit);
-    return *this;
-  }
+  // ======== texture binding ========
+  // Note: the texture binding points are explicitly specified
+  // in TextureBindingPointIndex.h
+  // Cannot use "explicit uniform location" directly in shader since
+  // it requires GL4.3 (We stick to GL4.1 for MacOS).
+  PTexMeshShader& bindAtlasTexture(Magnum::GL::Texture2D& texture);
+  PTexMeshShader& bindAdjFacesBufferTexture(Magnum::GL::BufferTexture& texture);
 
-  PTexMeshShader& setMVPMatrix(const Magnum::Matrix4& matrix) {
-    setUniform(uniformLocation("MVP"), matrix);
-    return *this;
-  }
-
-  PTexMeshShader& setClipPlane(const Magnum::Vector4& clipPlane) {
-    setUniform(uniformLocation("clipPlane"), clipPlane);
-    return *this;
-  }
-
-  PTexMeshShader& setPTexUniforms(assets::PTexMeshData& ptexMeshData,
-                                  int submeshID,
-                                  uint32_t tileSize,
-                                  float exposure,
-                                  float gamma,
-                                  float saturation) {
-    setPTexUniforms(ptexMeshData.getRenderingBuffer(submeshID)->tex, tileSize,
-                    exposure, gamma, saturation);
-    return *this;
-  }
-
-  PTexMeshShader& setPTexUniforms(Magnum::GL::Texture2D& tex,
-                                  uint32_t tileSize,
-                                  float exposure,
-                                  float gamma,
-                                  float saturation) {
-    setUniform(uniformLocation("atlasTex"), 0);
-    setUniform(uniformLocation("tileSize"), (int)tileSize);
-    // Image size in given mip level 0
-    {
-      int mipLevel = 0;
-      int widthEntry = 0;
-      const auto width = tex.imageSize(mipLevel)[widthEntry];
-      setUniform(uniformLocation("widthInTiles"), int(width / tileSize));
-    }
-    setUniform(uniformLocation("exposure"), exposure);
-    setUniform(uniformLocation("gamma"), gamma);
-    setUniform(uniformLocation("saturation"), saturation);
-    return *this;
-  }
+  // ======== set uniforms ===========
+  PTexMeshShader& setMVPMatrix(const Magnum::Matrix4& matrix);
+  PTexMeshShader& setExposure(float exposure);
+  PTexMeshShader& setGamma(float gamma);
+  PTexMeshShader& setSaturation(float saturation);
+  PTexMeshShader& setClipPlane(const Magnum::Vector4& clipPlane);
+  PTexMeshShader& setAtlasTextureSize(Magnum::GL::Texture2D& texture,
+                                      uint32_t tileSize);
 };
 
 }  // namespace gfx

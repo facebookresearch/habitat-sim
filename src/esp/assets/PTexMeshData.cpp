@@ -730,6 +730,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
         .setSubImage(0, {}, image);
   }
   buffersOnGPU_ = true;
+  LOG(INFO) << "data are uploaded to GPU.";
 }
 
 PTexMeshData::RenderingBuffer* PTexMeshData::getRenderingBuffer(int submeshID) {
