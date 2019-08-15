@@ -59,13 +59,13 @@ settings = make_settings()
 demo_runner = dr.DemoRunner(settings, dr.DemoRunnerType.EXAMPLE)
 perf = demo_runner.example()
 
-print(" ============ Performance ======================== ")
+print(" ========================= Performance ======================== ")
 print(
-    " %d x %d, total time: %0.3f sec."
+    " %d x %d, total time %0.2f s,"
     % (settings["width"], settings["height"], perf["total_time"]),
-    "FPS: %0.1f" % perf["fps"],
+    "frame time %0.3f ms (%0.1f FPS)" % (perf["frame_time"] * 1000.0, perf["fps"]),
 )
-print(" ================================================= ")
+print(" ============================================================== ")
 
 assert perf["fps"] > args.test_fps_regression, (
     "FPS is below regression threshold: %0.1f < %0.1f"

@@ -790,7 +790,9 @@ bool ResourceManager::loadGeneralMeshData(
   std::unique_ptr<Importer> importer =
       manager.loadAndInstantiate("AnySceneImporter");
   manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
+#ifdef ESP_BUILD_ASSIMP_SUPPORT
   manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+#endif
 
   // Optional File loading
   if (!fileIsLoaded) {

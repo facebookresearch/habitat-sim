@@ -18,18 +18,19 @@ find_package(Magnum
 
 find_package(MagnumPlugins
   REQUIRED
-    AssimpImporter
     StbImageImporter
     StbImageConverter
     TinyGltfImporter
 )
 
+if(BUILD_ASSIMP_SUPPORT)
+  find_package(MagnumPlugins
+    REQUIRED
+      AssimpImporter
+  )
+endif()
 
-
-add_library(assets
-    STATIC
-        ${assets_SOURCES}
-)
+add_library(assets STATIC ${assets_SOURCES})
 
 target_link_libraries(assets
   PUBLIC
@@ -44,19 +45,23 @@ target_link_libraries(assets
     Magnum::SceneGraph
     Magnum::Shaders
     Magnum::Trade
-    Magnum::DebugTools
-    MagnumPlugins::AssimpImporter
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbImageConverter
     MagnumPlugins::TinyGltfImporter
     tinyply
   PRIVATE
-    Assimp::Assimp
     geo
     io
 )
 
-set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
+if(BUILD_ASSIMP_SUPPORT)
+  target_link_libraries(assets
+    PUBLIC
+      MagnumPlugins::AssimpImporter
+    PRIVATE
+      Assimp::Assimp
+  )
+endif()
 
 if(OpenMP_CXX_FOUND)
   target_link_libraries(assets PUBLIC OpenMP::OpenMP_CXX)

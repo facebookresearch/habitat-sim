@@ -72,8 +72,8 @@ target_link_libraries(gfx
 # Link windowed application library if needed
 if(BUILD_GUI_VIEWERS)
   if(CORRADE_TARGET_EMSCRIPTEN)
-    find_package(Magnum REQUIRED Sdl2Application)
-    target_link_libraries(gfx PUBLIC Magnum::Sdl2Application)
+    find_package(Magnum REQUIRED EmscriptenApplication)
+    target_link_libraries(gfx PUBLIC Magnum::EmscriptenApplication)
   else()
     find_package(Magnum REQUIRED GlfwApplication)
     target_link_libraries(gfx PUBLIC Magnum::GlfwApplication)

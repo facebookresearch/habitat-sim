@@ -62,9 +62,9 @@ struct Renderer::Impl {
   }
 
   inline void renderEnter() {
-    framebuffer_.clear(GL::FramebufferClear::Color |
-                       GL::FramebufferClear::Depth);
-    framebuffer_.clearColor(1, Vector4{});
+    framebuffer_.clearDepth(1.0);
+    framebuffer_.clearColor(0, Color4{});
+    framebuffer_.clearColor(1, Color4{});
     framebuffer_.clearColor(2, Vector4ui{});
     framebuffer_.bind();
   }
