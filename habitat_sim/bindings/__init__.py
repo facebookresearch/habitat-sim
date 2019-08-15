@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 modules = [
+    "cuda_enabled",
     "SceneNodeType",
     "GreedyFollowerCodes",
     "GreedyGeodesicFollowerImpl",
@@ -19,7 +20,6 @@ modules = [
     "ShortestPath",
     "SimulatorConfiguration",
     "geo",
-    "gpu_gpu_enabled",
 ]
 
 from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend

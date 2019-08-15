@@ -30,7 +30,7 @@ class RenderTarget {
 
   int gpuDeviceId() const;
 
-#ifdef ESP_BUILD_GPU_GPU
+#ifdef ESP_BUILD_WITH_CUDA
   /**
    * Reads the RGBA frame-buffer directly into CUDA memory specified by devPtr
    */

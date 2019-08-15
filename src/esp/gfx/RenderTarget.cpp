@@ -19,7 +19,7 @@
 #include "RenderTarget.h"
 #include "magnum.h"
 
-#ifdef ESP_BUILD_GPU_GPU
+#ifdef ESP_BUILD_WITH_CUDA
 #include <cuda_gl_interop.h>
 #include <cuda_runtime.h>
 #include "helper_cuda.h"
@@ -92,7 +92,7 @@ struct RenderTarget::Impl {
 
   int gpuDeviceId() const { return this->context_->gpuDevice(); }
 
-#ifdef ESP_BUILD_GPU_GPU
+#ifdef ESP_BUILD_WITH_CUDA
   void readFrameRgbaGPU(uint8_t* devPtr) {
     if (colorBufferCugl_ == nullptr)
       checkCudaErrors(cudaGraphicsGLRegisterImage(
@@ -152,7 +152,7 @@ struct RenderTarget::Impl {
 #endif
 
   ~Impl() {
-#ifdef ESP_BUILD_GPU_GPU
+#ifdef ESP_BUILD_WITH_CUDA
     if (colorBufferCugl_ != nullptr)
       checkCudaErrors(cudaGraphicsUnregisterResource(colorBufferCugl_));
     if (depthBufferCugl_ != nullptr)
@@ -171,7 +171,7 @@ struct RenderTarget::Impl {
   Magnum::GL::Renderbuffer depthRenderbuffer_;
   Magnum::GL::Framebuffer framebuffer_;
 
-#ifdef ESP_BUILD_GPU_GPU
+#ifdef ESP_BUILD_WITH_CUDA
   cudaGraphicsResource_t colorBufferCugl_ = nullptr;
   cudaGraphicsResource_t depthBufferCugl_ = nullptr;
   cudaGraphicsResource_t objecIdBufferCugl_ = nullptr;
@@ -210,7 +210,7 @@ Magnum::Vector2i RenderTarget::framebufferSize() const {
   return pimpl_->framebufferSize();
 }
 
-#ifdef ESP_BUILD_GPU_GPU
+#ifdef ESP_BUILD_WITH_CUDA
 void RenderTarget::readFrameRgbaGPU(uint8_t* devPtr) {
   pimpl_->readFrameRgbaGPU(devPtr);
 }

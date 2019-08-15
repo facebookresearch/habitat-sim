@@ -189,7 +189,7 @@ jobs:
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-sim
 
-              ./build.sh --headless --build-gpu-gpu
+              ./build.sh --headless
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
 

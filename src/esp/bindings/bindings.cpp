@@ -47,6 +47,13 @@ SceneNode* nodeGetter(T& self) {
 }  // namespace
 
 PYBIND11_MODULE(habitat_sim_bindings, m) {
+  m.attr("cuda_enabled") =
+#ifdef ESP_BUILD_WITH_CUDA
+      true;
+#else
+      false;
+#endif
+
   initGeoBindings(m);
 
   py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
@@ -350,12 +357,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   // ==== Observation ====
   py::class_<Observation, Observation::ptr>(m, "Observation");
 
-  m.attr("gpu_gpu_enabled") =
-#ifdef ESP_BUILD_GPU_GPU
-      true;
-#else
-      false;
-#endif
   py::class_<RenderTarget, RenderTarget::ptr>(m, "RenderTarget")
       .def("__enter__",
            [](RenderTarget::ptr self) {
@@ -369,7 +370,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            "Reads RGBA frame into passed img in uint8 byte format.")
       .def("read_frame_depth", &RenderTarget::readFrameDepth)
       .def("read_frame_object_id", &RenderTarget::readFrameObjectId)
-#ifdef ESP_BUILD_GPU_GPU
+#ifdef ESP_BUILD_WITH_CUDA
       .def("read_frame_rgba_gpu",
            [](RenderTarget& self, size_t devPtr) {
              self.readFrameRgbaGPU(reinterpret_cast<uint8_t*>(devPtr));

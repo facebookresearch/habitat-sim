@@ -54,15 +54,16 @@ target_include_directories(gfx
     "${DEPS_DIR}/glad/include"
 )
 
-if(BUILD_GPU_GPU)
-  find_package(CUDA REQUIRED)
+if(BUILD_WITH_CUDA)
+  find_package(CUDA 8.0)
+  if(CUDA_FOUND)
+    target_include_directories(gfx PUBLIC
+      "${CUDA_INCLUDE_DIRS}"
+      ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers)
 
-  target_include_directories(gfx PUBLIC
-    "${CUDA_INCLUDE_DIRS}"
-    ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers)
-
-  target_link_libraries(gfx PUBLIC
-      "${CUDA_LIBRARIES}")
+    target_link_libraries(gfx PUBLIC
+        "${CUDA_LIBRARIES}")
+  endif()
 endif()
 
 

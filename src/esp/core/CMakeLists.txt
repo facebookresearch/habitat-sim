@@ -12,8 +12,11 @@ if(BUILD_PTEX_SUPPORT)
   set(ESP_BUILD_PTEX_SUPPORT ON)
 endif()
 
-if(BUILD_GPU_GPU)
-  set(ESP_BUILD_GPU_GPU ON)
+if(BUILD_WITH_CUDA)
+  find_package(CUDA 8.0)
+  if(CUDA_FOUND)
+    set(ESP_BUILD_WITH_CUDA ON)
+  endif()
 endif()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
