@@ -89,7 +89,7 @@ agent::Agent::ptr SimulatorWithAgents::addAgent(
   agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
 
   // Add render targets to the agents sensors
-  for (auto& it : ag->getSensorSuite()->getSensors()) {
+  for (auto& it : ag->getSensorSuite().getSensors()) {
     it.second->bindRenderTarget(
         this->createRenderTarget(it.second->framebufferSize()));
   }
@@ -105,6 +105,7 @@ agent::Agent::ptr SimulatorWithAgents::addAgent(
 
   return ag;
 }
+
 agent::Agent::ptr SimulatorWithAgents::addAgent(
     const agent::AgentConfiguration& agentConfig) {
   return addAgent(agentConfig, getActiveSceneGraph().getRootNode());

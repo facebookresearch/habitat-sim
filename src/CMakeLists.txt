@@ -17,6 +17,7 @@ if(CCACHE_FOUND)
 endif()
 
 # build options
+option(BUILD_ASSIMP_SUPPORT "Whether to build assimp import library support" ON)
 option(BUILD_PYTHON_BINDINGS "Whether to build python bindings" ON)
 option(BUILD_DATATOOL "Whether to build datatool utility binary" ON)
 option(BUILD_PTEX_SUPPORT "Whether to build ptex mesh support" ON)
