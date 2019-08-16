@@ -47,6 +47,8 @@ include(cmake/dependencies.cmake)
 # include source dirs
 include_directories(${PROJECT_SOURCE_DIR})
 
+# Physics
+add_definitions(-DBT_ENABLE_PROFILE)
 # compiler define for enabling ptex support
 if(BUILD_PTEX_SUPPORT)
   message("Building with ptex support")
@@ -59,6 +61,7 @@ add_subdirectory(esp/gfx/)
 add_subdirectory(esp/assets)
 add_subdirectory(esp/io)
 add_subdirectory(esp/scene)
+add_subdirectory(esp/physics)
 add_subdirectory(esp/nav)
 add_subdirectory(esp/agent)
 add_subdirectory(esp/sensor)
@@ -84,4 +87,10 @@ endif()
 if(BUILD_PYTHON_BINDINGS)
   message("Building Python bindings")
   add_subdirectory(esp/bindings)
+endif()
+
+# emscripten js bindings
+if(CORRADE_TARGET_EMSCRIPTEN)
+  message("Building Emscripten JS bindings")
+  add_subdirectory(esp/bindings_js)
 endif()

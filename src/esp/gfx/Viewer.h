@@ -11,11 +11,14 @@
 #include <Magnum/Platform/GlfwApplication.h>
 #endif
 #include <Magnum/SceneGraph/Camera.h>
+#include <Magnum/Timeline.h>
 
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/PhysicsManager.h"
+#include "esp/physics/RigidObject.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
@@ -43,22 +46,42 @@ class Viewer : public Magnum::Platform::Application {
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
 
+  // Interactive functions
+  void addObject(std::string configFile);
+  void pokeLastObject();
+  void pushLastObject();
+
+  void torqueLastObject();
+  void removeLastObject();
+  void invertGravity();
+  Magnum::Vector3 randomDirection();
+  void wiggleLastObject();
+
   Magnum::Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
                                    const Magnum::Vector2i& position);
 
   assets::ResourceManager resourceManager_;
+  std::shared_ptr<physics::PhysicsManager> physicsManager_;
   scene::SceneManager sceneManager_;
   std::vector<int> sceneID_;
   scene::SceneNode* agentBodyNode_ = nullptr;
   scene::SceneNode* cameraNode_ = nullptr;
+
+  scene::SceneNode* navSceneNode_ = nullptr;
+
+  scene::SceneGraph* sceneGraph_;
+  scene::SceneNode* rootNode_;
+
   RenderCamera* renderCamera_ = nullptr;
   nav::PathFinder::ptr pathfinder_;
   scene::ObjectControls controls_;
   Magnum::Vector3 previousPosition_;
 
   bool computeActionPath_;
-  vec3f goalPos_;
-  quatf goalHeading_;
+  bool enablePhysics_;
+  std::vector<int> objectIDs_;
+
+  Magnum::Timeline timeline_;
 };
 
 }  // namespace gfx

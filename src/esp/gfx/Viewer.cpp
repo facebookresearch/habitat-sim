@@ -2,6 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <stdlib.h>
+
 #include "Viewer.h"
 
 #include <Corrade/Utility/Arguments.h>
@@ -9,9 +11,11 @@
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <sophus/so3.hpp>
-
 #include "Drawable.h"
 #include "esp/io/io.h"
+
+#include "esp/gfx/Simulator.h"
+#include "esp/scene/SceneConfiguration.h"
 
 using namespace Magnum;
 using namespace Math::Literals;
@@ -42,9 +46,14 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("scene", "scene file to load")
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
+      .addBooleanOption("enable-physics")
+      .addOption("physicsConfig", "./data/default.phys_scene_config.json")
+      .setHelp("physicsConfig", "physics scene config file")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
+  enablePhysics_ = args.isSet("enable-physics");
+  std::string physicsConfigFilename = args.value("physicsConfig");
 
   // Setup renderer and shader defaults
   GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
@@ -52,23 +61,33 @@ Viewer::Viewer(const Arguments& arguments)
 
   int sceneID = sceneManager_.initSceneGraph();
   sceneID_.push_back(sceneID);
-  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
-  auto& rootNode = sceneGraph.getRootNode();
-  auto& drawables = sceneGraph.getDrawables();
+  sceneGraph_ = &sceneManager_.getSceneGraph(sceneID);
+  rootNode_ = &sceneGraph_->getRootNode();
+  navSceneNode_ = &rootNode_->createChild();
+
+  auto& drawables = sceneGraph_->getDrawables();
   const std::string& file = args.value("scene");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
-  if (!resourceManager_.loadScene(info, &rootNode, &drawables)) {
-    LOG(ERROR) << "cannot load " << file;
-    std::exit(0);
+
+  if (enablePhysics_) {
+    if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
+                                    &drawables, physicsConfigFilename)) {
+      LOG(ERROR) << "cannot load " << file;
+      std::exit(0);
+    }
+  } else {
+    if (!resourceManager_.loadScene(info, navSceneNode_, &drawables)) {
+      LOG(ERROR) << "cannot load " << file;
+      std::exit(0);
+    }
   }
 
-  // camera
-  renderCamera_ = &sceneGraph.getDefaultRenderCamera();
-  agentBodyNode_ = &rootNode.createChild();
+  // Set up camera
+  renderCamera_ = &sceneGraph_->getDefaultRenderCamera();
+  agentBodyNode_ = &rootNode_->createChild();
   cameraNode_ = &agentBodyNode_->createChild();
 
   cameraNode_->translate({0.0f, cameraHeight, 0.0f});
-
   agentBodyNode_->translate({0.0f, 0.0f, 5.0f});
 
   float hfov = 90.0f;
@@ -79,33 +98,135 @@ Viewer::Viewer(const Arguments& arguments)
   float zfar = 1000.0f;
   renderCamera_->setProjectionMatrix(width, height, znear, zfar, hfov);
 
-  // load navmesh if available
+  // Load navmesh if available
   const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
   if (io::exists(navmeshFilename)) {
     LOG(INFO) << "Loading navmesh from " << navmeshFilename;
     pathfinder_->loadNavMesh(navmeshFilename);
-    LOG(INFO) << "Loaded.";
   }
 
+  const vec3f position = pathfinder_->getRandomNavigablePoint();
+  agentBodyNode_->setTranslation(Vector3(position));
+
   // connect controls to navmesh if loaded
+  /*
   if (pathfinder_->isLoaded()) {
-    controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
-      vec3f currentPosition = pathfinder_->tryStep(start, end);
-      LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
-                << quatf(agentBodyNode_->rotation()).coeffs().transpose();
-      LOG(INFO) << "Distance to closest obstacle: "
-                << pathfinder_->distanceToClosestObstacle(currentPosition);
+      controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end)
+  { vec3f currentPosition = pathfinder_->tryStep(start, end); LOG(INFO) <<
+  "position=" << currentPosition.transpose() << " rotation="
+                  << quatf(agentBodyNode_->rotation()).coeffs().transpose();
+        LOG(INFO) << "Distance to closest obstacle: "
+                  << pathfinder_->distanceToClosestObstacle(currentPosition);
+        return currentPosition;
+      });
+    }
+    */
 
-      return currentPosition;
-    });
+  renderCamera_->node().setTransformation(
+      cameraNode_->absoluteTransformation());
 
-    const vec3f position = pathfinder_->getRandomNavigablePoint();
-    agentBodyNode_->setTranslation(Vector3(position));
+  timeline_.start();
 
-    LOG(INFO) << "Viewer initialization is done. ";
-    renderCamera_->node().setTransformation(
-        cameraNode_->absoluteTransformation());
-  }  // namespace gfx
+}  // end Viewer::Viewer
+
+void Viewer::addObject(std::string configFile) {
+  if (physicsManager_ == nullptr)
+    return;
+
+  Magnum::Matrix4 T =
+      agentBodyNode_
+          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+  Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
+
+  auto& drawables = sceneGraph_->getDrawables();
+  assets::PhysicsObjectAttributes poa =
+      resourceManager_.getPhysicsObjectAttributes(configFile);
+  int physObjectID = physicsManager_->addObject(configFile, &drawables);
+  physicsManager_->setTranslation(physObjectID, new_pos);
+
+  // draw random quaternion via the method:
+  // http://planning.cs.uiuc.edu/node198.html
+  double u1 = (rand() % 1000) / 1000.0;
+  double u2 = (rand() % 1000) / 1000.0;
+  double u3 = (rand() % 1000) / 1000.0;
+
+  Magnum::Vector3 qAxis(sqrt(1 - u1) * cos(2 * M_PI * u2),
+                        sqrt(u1) * sin(2 * M_PI * u3),
+                        sqrt(u1) * cos(2 * M_PI * u3));
+  physicsManager_->setRotation(
+      physObjectID,
+      Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
+  objectIDs_.push_back(physObjectID);
+
+  // const Magnum::Vector3& trans =
+  // physicsManager_->getTranslation(physObjectID); LOG(INFO) << "translation: "
+  // << trans[0] << ", " << trans[1] << ", " << trans[2];
+}
+
+void Viewer::removeLastObject() {
+  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+    return;
+  physicsManager_->removeObject(objectIDs_.back());
+  objectIDs_.pop_back();
+}
+
+void Viewer::invertGravity() {
+  if (physicsManager_ == nullptr)
+    return;
+  const Magnum::Vector3& gravity = physicsManager_->getGravity();
+  const Magnum::Vector3 invGravity = -1 * gravity;
+  physicsManager_->setGravity(invGravity);
+  const Magnum::Vector3& newGravity = physicsManager_->getGravity();
+}
+
+void Viewer::pokeLastObject() {
+  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+    return;
+  Magnum::Matrix4 T =
+      agentBodyNode_
+          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+  Vector3 impulse = T.transformPoint({0.0f, 0.0f, -3.0f});
+  Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
+  physicsManager_->applyImpulse(objectIDs_.back(), impulse, rel_pos);
+}
+
+void Viewer::pushLastObject() {
+  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+    return;
+  Magnum::Matrix4 T =
+      agentBodyNode_
+          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+  Vector3 force = T.transformPoint({0.0f, 0.0f, -40.0f});
+  Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
+  physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
+}
+
+void Viewer::torqueLastObject() {
+  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+    return;
+  Vector3 torque = randomDirection() * 30;
+  physicsManager_->applyTorque(objectIDs_.back(), torque);
+}
+
+// generate random direction vectors:
+Magnum::Vector3 Viewer::randomDirection() {
+  Magnum::Vector3 dir(1.0f, 1.0f, 1.0f);
+  while (sqrt(dir.dot()) > 1.0) {
+    dir = Magnum::Vector3((float)((rand() % 2000 - 1000) / 1000.0),
+                          (float)((rand() % 2000 - 1000) / 1000.0),
+                          (float)((rand() % 2000 - 1000) / 1000.0));
+  }
+  dir = dir / sqrt(dir.dot());
+  return dir;
+}
+
+void Viewer::wiggleLastObject() {
+  // demo of kinematic motion capability
+  // randomly translate last added object
+  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+    return;
+
+  physicsManager_->translate(objectIDs_.back(), randomDirection() * 0.1);
 }
 
 Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
@@ -128,11 +249,20 @@ void Viewer::drawEvent() {
   if (sceneID_.size() <= 0)
     return;
 
+  if (physicsManager_ != nullptr)
+    physicsManager_->stepPhysics(timeline_.previousFrameDuration());
+
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
+
   swapBuffers();
+  timeline_.nextFrame();
+  redraw();
+  if (physicsManager_ != nullptr)
+    LOG(INFO) << "end drawEvent world time: "
+              << physicsManager_->getWorldTime();
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
@@ -144,11 +274,15 @@ void Viewer::mousePressEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Left)
     previousPosition_ =
         positionOnSphere(renderCamera_->getMagnumCamera(), event.position());
+
+  event.setAccepted();
 }
 
 void Viewer::mouseReleaseEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Left)
     previousPosition_ = Vector3();
+
+  event.setAccepted();
 }
 
 void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
@@ -165,7 +299,7 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
       {0.0f, 0.0f,
        distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f))});
 
-  redraw();
+  event.setAccepted();
 }
 
 void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
@@ -184,7 +318,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   renderCamera_->node().rotate(-angle, axis.normalized());
   previousPosition_ = currentPosition;
 
-  redraw();
+  event.setAccepted();
 }
 
 void Viewer::keyPressEvent(KeyEvent& event) {
@@ -211,21 +345,55 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::A:
       controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
+      LOG(INFO) << "Agent position "
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::D:
       controls_(*agentBodyNode_, "moveRight", moveSensitivity);
+      LOG(INFO) << "Agent position "
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::S:
       controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
+      LOG(INFO) << "Agent position "
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::W:
       controls_(*agentBodyNode_, "moveForward", moveSensitivity);
+      LOG(INFO) << "Agent position "
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::X:
-      controls_(*cameraNode_, "moveDown", moveSensitivity, false);
+      controls_(*agentBodyNode_, "moveDown", moveSensitivity, false);
       break;
     case KeyEvent::Key::Z:
-      controls_(*cameraNode_, "moveUp", moveSensitivity, false);
+      controls_(*agentBodyNode_, "moveUp", moveSensitivity, false);
+      break;
+    case KeyEvent::Key::O: {
+      if (physicsManager_ != nullptr) {
+        int numObjects = resourceManager_.getNumLibraryObjects();
+        int randObjectID = rand() % numObjects;
+        addObject(resourceManager_.getObjectConfig(randObjectID));
+      }
+    } break;
+    case KeyEvent::Key::P:
+      pokeLastObject();
+      break;
+    case KeyEvent::Key::F:
+      pushLastObject();
+      break;
+    case KeyEvent::Key::K:
+      wiggleLastObject();
+      break;
+    case KeyEvent::Key::U:
+      removeLastObject();
+      break;
+    case KeyEvent::Key::V:
+      invertGravity();
+      break;
+    case KeyEvent::Key::T:
+      // Test key. Put what you want here...
+      torqueLastObject();
       break;
     default:
       break;

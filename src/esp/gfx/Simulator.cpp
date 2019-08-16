@@ -4,6 +4,8 @@
 
 #include "Simulator.h"
 
+#include <string>
+
 #include <Corrade/Containers/Pointer.h>
 #include <Corrade/Utility/String.h>
 
@@ -91,7 +93,16 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     auto& rootNode = sceneGraph.getRootNode();
     auto& drawables = sceneGraph.getDrawables();
     resourceManager_.compressTextures(cfg.compressTextures);
-    if (!resourceManager_.loadScene(sceneInfo, &rootNode, &drawables)) {
+
+    bool loadSuccess = false;
+    if (config_.enablePhysics) {
+      loadSuccess = resourceManager_.loadScene(sceneInfo, physicsManager_,
+                                               &rootNode, &drawables);
+    } else {
+      loadSuccess =
+          resourceManager_.loadScene(sceneInfo, &rootNode, &drawables);
+    }
+    if (!loadSuccess) {
       LOG(ERROR) << "cannot load " << sceneFilename;
       // Pass the error to the python through pybind11 allowing graceful exit
       throw std::invalid_argument("Cannot load: " + sceneFilename);
@@ -142,7 +153,11 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   reset();
 }
 
-void Simulator::reset() {}
+void Simulator::reset() {
+  if (physicsManager_ != nullptr)
+    physicsManager_
+        ->reset();  // TODO: this does nothing yet... desired reset behavior?
+}
 
 void Simulator::seed(uint32_t newSeed) {
   random_.seed(newSeed);
@@ -150,6 +165,10 @@ void Simulator::seed(uint32_t newSeed) {
 
 std::shared_ptr<Renderer> Simulator::getRenderer() {
   return renderer_;
+}
+
+std::shared_ptr<physics::PhysicsManager> Simulator::getPhysicsManager() {
+  return physicsManager_;
 }
 
 std::shared_ptr<scene::SemanticScene> Simulator::getSemanticScene() {
@@ -174,12 +193,134 @@ bool operator==(const SimulatorConfiguration& a,
   return a.scene == b.scene && a.defaultAgentId == b.defaultAgentId &&
          a.defaultCameraUuid == b.defaultCameraUuid &&
          a.compressTextures == b.compressTextures &&
-         a.createRenderer == b.createRenderer;
+         a.createRenderer == b.createRenderer &&
+         a.enablePhysics == b.enablePhysics &&
+         a.physicsConfigFile.compare(b.physicsConfigFile) == 0;
 }
 
 bool operator!=(const SimulatorConfiguration& a,
                 const SimulatorConfiguration& b) {
   return !(a == b);
+}
+
+// === Physics Simulator Functions ===
+
+const int Simulator::addObject(const int objectLibIndex, const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    // TODO: change implementation to support multi-world and physics worlds to
+    // own reference to a sceneGraph to avoid this.
+    auto& sceneGraph_ = sceneManager_.getSceneGraph(sceneID);
+    auto& drawables = sceneGraph_.getDrawables();
+    return physicsManager_->addObject(objectLibIndex, &drawables);
+  }
+  return ID_UNDEFINED;
+}
+
+// return the current size of the physics object library (objects [0,size) can
+// be instanced)
+const int Simulator::getPhysicsObjectLibrarySize() {
+  return resourceManager_.getNumLibraryObjects();
+}
+
+// return a list of existing objected IDs in a physical scene
+const std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->getExistingObjectIDs();
+  }
+  return std::vector<int>();  // empty if no simulator exists
+}
+
+// remove object objectID instance in sceneID
+void Simulator::removeObject(const int objectID, const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    physicsManager_->removeObject(objectID);
+  }
+}
+
+// apply forces and torques to objects
+void Simulator::applyTorque(const Magnum::Vector3& tau,
+                            const int objectID,
+                            const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    physicsManager_->applyTorque(objectID, tau);
+  }
+}
+
+void Simulator::applyForce(const Magnum::Vector3& force,
+                           const Magnum::Vector3& relPos,
+                           const int objectID,
+                           const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    physicsManager_->applyForce(objectID, force, relPos);
+  }
+}
+
+// set object transform (kinemmatic control)
+void Simulator::setTransformation(const Magnum::Matrix4& transform,
+                                  const int objectID,
+                                  const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    physicsManager_->setTransformation(objectID, transform);
+  }
+}
+
+const Magnum::Matrix4 Simulator::getTransformation(const int objectID,
+                                                   const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->getTransformation(objectID);
+  }
+  return Magnum::Matrix4::fromDiagonal(Magnum::Vector4(1));
+}
+
+// set object translation directly
+void Simulator::setTranslation(const Magnum::Vector3& translation,
+                               const int objectID,
+                               const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    physicsManager_->setTranslation(objectID, translation);
+  }
+}
+
+const Magnum::Vector3 Simulator::getTranslation(const int objectID,
+                                                const int sceneID) {
+  // can throw if physicsManager is not initialized or either objectID/sceneID
+  // is invalid
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->getTranslation(objectID);
+  }
+  return Magnum::Vector3();
+}
+
+// set object orientation directly
+void Simulator::setRotation(const Magnum::Quaternion& rotation,
+                            const int objectID,
+                            const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    physicsManager_->setRotation(objectID, rotation);
+  }
+}
+
+const Magnum::Quaternion Simulator::getRotation(const int objectID,
+                                                const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->getRotation(objectID);
+  }
+  return Magnum::Quaternion();
+}
+
+const double Simulator::stepWorld(const double dt) {
+  if (physicsManager_ != nullptr) {
+    physicsManager_->stepPhysics(dt);
+  }
+  return getWorldTime();
+}
+
+// get the simulated world time (0 if no physics enabled)
+const double Simulator::getWorldTime() {
+  if (physicsManager_ != nullptr) {
+    return physicsManager_->getWorldTime();
+  }
+  return NO_TIME;
 }
 
 }  // namespace gfx

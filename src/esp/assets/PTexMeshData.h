@@ -38,7 +38,7 @@ class PTexMeshData : public BaseMesh {
   };
 
   PTexMeshData() : BaseMesh(SupportedMeshType::PTEX_MESH) {}
-  virtual ~PTexMeshData() {}
+  virtual ~PTexMeshData(){};
 
   // ==== geometry ====
   void load(const std::string& meshFile, const std::string& atlasFolder);

@@ -25,9 +25,6 @@ class GltfMeshData : public BaseMesh {
   virtual void uploadBuffersToGPU(bool forceReload = false) override;
 
   void setMeshData(Magnum::Trade::AbstractImporter& importer, int meshID);
-  Corrade::Containers::Optional<Magnum::Trade::MeshData3D>& getMeshData() {
-    return meshData_;
-  }
 
   virtual RenderingBuffer* getRenderingBuffer() {
     return renderingBuffer_.get();
@@ -36,7 +33,6 @@ class GltfMeshData : public BaseMesh {
   virtual Magnum::GL::Mesh* getMagnumGLMesh() override;
 
  protected:
-  Corrade::Containers::Optional<Magnum::Trade::MeshData3D> meshData_;
   // we will have to use smart pointer here since each item within the structure
   // (e.g., Magnum::GL::Mesh) does NOT have copy constructor
   std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
