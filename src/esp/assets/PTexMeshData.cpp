@@ -689,10 +689,9 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     currentMesh->abo.setData(adjFaces[iMesh],
                              Magnum::GL::BufferUsage::StaticDraw);
 
-    // experiment code (may not work):
     // using GL_LINES_ADJACENCY here to send quads to geometry shader
     currentMesh->mesh.setPrimitive(Magnum::GL::MeshPrimitive::LinesAdjacency)
-        .setCount(currentMesh->ibo.size())
+        .setCount(submeshes_[iMesh].ibo.size())
         .addVertexBuffer(currentMesh->vbo, 0, gfx::PTexMeshShader::Position{})
         .setIndexBuffer(currentMesh->ibo, 0,
                         Magnum::GL::MeshIndexType::UnsignedInt);

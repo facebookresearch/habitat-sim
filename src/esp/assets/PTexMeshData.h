@@ -81,9 +81,10 @@ class PTexMeshData : public BaseMesh {
   float splitSize_ = 0.0f;
   uint32_t tileSize_ = 0;
 
-  float exposure_ = 1.0f;
-  float gamma_ = 1.0f;
-  float saturation_ = 1.0f;
+  // based on ReplicaSDK
+  float exposure_ = 0.025f;
+  float gamma_ = 1.6969f;
+  float saturation_ = 1.5f;
 
   std::string atlasFolder_;
 

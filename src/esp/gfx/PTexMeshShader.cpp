@@ -60,6 +60,7 @@ PTexMeshShader::PTexMeshShader() {
   setUniform(uniformLocation("meshAdjFaces"),
              TextureBindingPointIndex::adjFaces);
 
+  // cache the uniform locations
   MVPMatrixUniform_ = uniformLocation("MVP");
   exposureUniform_ = uniformLocation("exposure");
   gammaUniform_ = uniformLocation("gamma"); 
@@ -91,7 +92,8 @@ PTexMeshShader& PTexMeshShader::setExposure(float exposure) {
   return *this;
 }
 PTexMeshShader& PTexMeshShader::setGamma(float gamma) {
-  setUniform(gammaUniform_, gamma);
+  // Careful: we set its inverse, not gamma directly
+  setUniform(gammaUniform_, 1.0f / gamma);
   return *this;
 }
 

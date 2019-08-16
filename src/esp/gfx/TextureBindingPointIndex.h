@@ -6,9 +6,9 @@
 
 namespace esp {
 namespace gfx {
-enum TextureBindingPointIndex {
-  atlas = 1,
-  adjFaces = 2,
+enum TextureBindingPointIndex : uint8_t {
+  atlas = 0,
+  adjFaces = 1,
 };
 }  // namespace gfx
 }  // namespace esp
