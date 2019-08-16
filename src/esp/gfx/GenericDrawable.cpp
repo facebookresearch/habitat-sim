@@ -25,10 +25,8 @@ GenericDrawable::GenericDrawable(
 void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                            Magnum::SceneGraph::Camera3D& camera) {
   GenericShader& shader = static_cast<GenericShader&>(shader_);
-  shader
-      .setTransformationProjectionMatrix(camera.projectionMatrix() *
-                                         transformationMatrix)
-      .setProjectionMatrix(transformationMatrix);
+  shader.setTransformationProjectionMatrix(camera.projectionMatrix() *
+                                           transformationMatrix);
 
   if (((shader.flags() & GenericShader::Flag::Textured) ||
        (shader.flags() & GenericShader::Flag::PrimitiveIDTextured)) &&

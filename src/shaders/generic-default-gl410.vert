@@ -1,5 +1,4 @@
 uniform highp mat4 transformationProjectionMatrix;
-uniform highp mat4 projectionMatrix;
 
 layout(location = 0) in highp vec4 position;
 
@@ -13,7 +12,6 @@ layout(location = 1) in mediump vec3 color;
 #endif
 
 out mediump vec3 v_color;
-out highp float v_depth;
 
 #ifdef PER_VERTEX_IDS
 flat out uint v_objectId;
@@ -26,15 +24,10 @@ void main() {
   interpolatedTextureCoordinates = textureCoordinates;
   #endif
 
-  vec4 pointInCameraCoords = projectionMatrix * vec4(position.xyz, 1.0);
-  pointInCameraCoords /= pointInCameraCoords.w;
-
   #ifdef VERTEX_COLORED
   v_color = color;
   #endif
   #ifdef PER_VERTEX_IDS
   v_objectId = uint(position.w);
   #endif
-
-  v_depth = -pointInCameraCoords.z;
 }

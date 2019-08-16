@@ -1,5 +1,4 @@
 in mediump vec3 v_color;
-in highp float v_depth;
 
 
 #ifdef PER_VERTEX_IDS
@@ -23,8 +22,7 @@ uniform lowp vec4 colorUniform;
 #endif
 
 layout(location = 0) out mediump vec4 color;
-layout(location = 1) out highp float depth;
-layout(location = 2) out uint objectId;
+layout(location = 1) out uint objectId;
 
 void main () {
   mediump vec4 baseColor =
@@ -38,7 +36,6 @@ void main () {
     texture(textureData, interpolatedTextureCoordinates) *
     #endif
     baseColor;
-  depth = v_depth;
   objectId =
   #ifdef PER_VERTEX_IDS
     v_objectId;

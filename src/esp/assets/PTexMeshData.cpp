@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/GL/BufferTextureFormat.h>
 #include <Magnum/ImageView.h>

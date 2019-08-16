@@ -54,10 +54,8 @@ class GenericShader : public Magnum::GL::AbstractShaderProgram {
   enum : uint8_t {
     //! color output
     ColorOutput = 0,
-    //! depth frame output
-    DepthOutput = 1,
     //! object id output
-    ObjectIdOutput = 2
+    ObjectIdOutput = 1
   };
 
   /**
@@ -72,15 +70,6 @@ class GenericShader : public Magnum::GL::AbstractShaderProgram {
   GenericShader& setTransformationProjectionMatrix(
       const Magnum::Matrix4& matrix) {
     setUniform(uniformLocation("transformationProjectionMatrix"), matrix);
-    return *this;
-  }
-
-  /**
-   * @brief Set projection matrix
-   * @return Reference to self (for method chaining)
-   */
-  GenericShader& setProjectionMatrix(const Magnum::Matrix4& matrix) {
-    setUniform(uniformLocation("projectionMatrix"), matrix);
     return *this;
   }
 
