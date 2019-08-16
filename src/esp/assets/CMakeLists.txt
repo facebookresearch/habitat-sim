@@ -12,7 +12,6 @@ find_package(Magnum
     MeshTools
     SceneGraph
     Shaders
-    DebugTools
     Trade
 )
 
