@@ -218,7 +218,6 @@ jobs:
               . activate habitat; cd habitat-api
               python setup.py develop --all
               python setup.py test
-              python -u habitat_baselines/run.py --exp-config habitat_baselines/config/pointnav/ppo_train_test.yaml --run-type train
       - save_cache:
           key: habitat-api-{{ checksum "./hapi_sha" }}
           background: true
