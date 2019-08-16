@@ -242,7 +242,7 @@ void Simulator::applyTorque(const Magnum::Vector3& tau,
                             const int objectID,
                             const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
-    physicsManager_->removeObject(objectID);
+    physicsManager_->applyTorque(objectID, tau);
   }
 }
 
