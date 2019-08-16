@@ -18,7 +18,6 @@
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
-#include "esp/gfx/GenericShader.h"
 #include "esp/gfx/PTexMeshDrawable.h"
 #include "esp/gfx/PTexMeshShader.h"
 #include "esp/io/io.h"
