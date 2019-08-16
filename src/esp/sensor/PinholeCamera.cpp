@@ -58,9 +58,8 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
   // TODO: Get appropriate render with correct resolution
   std::shared_ptr<gfx::Renderer> renderer = sim.getRenderer();
   vec3i resolution = renderer->getSize();
-  if (resolution[0] != spec_->resolution[0] ||
-      resolution[1] != spec_->resolution[1]) {
-    renderer->setSize(spec_->resolution[0], spec_->resolution[1]);
+  if (resolution[0] != width_ || resolution[1] != height_) {
+    renderer->setSize(width_, height_);
   }
   if (spec_->sensorType == SensorType::SEMANTIC) {
     // TODO: check sim has semantic scene graph
