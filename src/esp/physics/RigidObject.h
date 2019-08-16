@@ -128,7 +128,7 @@ class RigidObject : public scene::SceneNode {
   //! Not exposed to end user
   virtual void syncPose();
 
-  ESP_SMART_POINTERS(RigidObject);
+  ESP_SMART_POINTERS(RigidObject)
 };
 
 }  // namespace physics

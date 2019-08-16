@@ -77,7 +77,7 @@ class BulletPhysicsManager : public PhysicsManager {
   int makeRigidObject(const std::vector<assets::CollisionMeshData>& meshGroup,
                       assets::PhysicsObjectAttributes physicsObjectAttributes);
 
-  ESP_SMART_POINTERS(BulletPhysicsManager);
+  ESP_SMART_POINTERS(BulletPhysicsManager)
 
 };  // end class BulletPhysicsManager
 }  // end namespace physics

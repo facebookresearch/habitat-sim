@@ -30,6 +30,8 @@ if(BUILD_ASSIMP_SUPPORT)
   )
 endif()
 
+
+
 add_library(assets STATIC ${assets_SOURCES})
 
 target_link_libraries(assets

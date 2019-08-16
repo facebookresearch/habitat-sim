@@ -127,7 +127,7 @@ scene::SceneNode& RigidObject::resetTransformation() {
 }
 
 scene::SceneNode& RigidObject::translate(const Magnum::Vector3& vector) {
-  if (!objectMotionType_ == STATIC) {
+  if (objectMotionType_ != STATIC) {
     scene::SceneNode::translate(vector);
     syncPose();
   }

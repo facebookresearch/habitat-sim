@@ -126,7 +126,7 @@ class ResourceManager {
   PhysicsObjectAttributes& getPhysicsObjectAttributes(
       const std::string& configFile);
 
-  int getNumLibraryObjects() { return physicsObjectConfigList_.size(); };
+  const int getNumLibraryObjects() { return physicsObjectConfigList_.size(); };
 
   const Magnum::Matrix4& getMeshTransformation(const size_t meshIndex) {
     return meshes_[meshIndex]->meshTransform_;

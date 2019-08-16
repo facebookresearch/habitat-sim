@@ -216,6 +216,20 @@ const int Simulator::addObject(const int objectLibIndex, const int sceneID) {
   return ID_UNDEFINED;
 }
 
+// return the current size of the physics object library (objects [0,size) can
+// be instanced)
+const int Simulator::getPhysicsObjectLibrarySize() {
+  return resourceManager_.getNumLibraryObjects();
+}
+
+// return a list of existing objected IDs in a physical scene
+const std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->getExistingObjectIDs();
+  }
+  return std::vector<int>();  // empty if no simulator exists
+}
+
 // remove object objectID instance in sceneID
 void Simulator::removeObject(const int objectID, const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {

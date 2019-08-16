@@ -75,8 +75,15 @@ class Simulator {
   // for the new object instance.
   const int addObject(const int objectLibIndex, const int sceneID = 0);
 
+  // return the current size of the physics object library (objects [0,size) can
+  // be instanced)
+  const int getPhysicsObjectLibrarySize();
+
   // remove object objectID instance in sceneID
   void removeObject(const int objectID, const int sceneID = 0);
+
+  // return a list of existing objected IDs in a physical scene
+  const std::vector<int> getExistingObjectIDs(const int sceneID = 0);
 
   // apply forces and torques to objects
   void applyTorque(const Magnum::Vector3& tau,

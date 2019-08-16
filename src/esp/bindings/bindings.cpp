@@ -480,7 +480,11 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       /* --- Physics functions --- */
       .def("add_object", &Simulator::addObject, "R()", "object_lib_index"_a,
            "scene_id"_a = 0)
+      .def("get_physics_object_library_size",
+           &Simulator::getPhysicsObjectLibrarySize, "R()")
       .def("remove_object", &Simulator::removeObject, "R()", "object_id"_a,
+           "sceneID"_a = 0)
+      .def("get_existing_object_ids", &Simulator::getExistingObjectIDs, "R()",
            "sceneID"_a = 0)
       .def("step_world", &Simulator::stepWorld, "R()", "dt"_a = 1.0 / 60.0)
       .def("get_world_time", &Simulator::getWorldTime, "R()")

@@ -160,23 +160,39 @@ To run the above benchmarks on your machine, see instructions in the [examples](
    Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right).
    Try to find the picture of a woman surrounded by a wreath.
    Have fun!
-1. **Physical interactions**: If you would like to try out habitat with dynamical objects (under development), first install [Bullet Physics](https://github.com/bulletphysics/bullet3/). Then download pre-processed object set from this [link](http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip) and extract as `habitat-sim/data/objects/`. Next use
+1. **Physical interactions**: If you would like to try out habitat with dynamical objects (under development), first download our pre-processed object data-set from this [link](http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip) and extract as `habitat-sim/data/objects/`.
+
+    If you require dynamic objects, install [Bullet Physics](https://github.com/bulletphysics/bullet3/). Next use
    ```bash
    python setup.py install --bullet    # build habitat with bullet physics
+   ```
+   Otherwise, use default build
+   ```bash
+   python setup.py install     # build habitat without bullet physics
+   ```
+   To run an interactive C++ example GUI application with physics enabled run
+   ```bash
    build/viewer --enable-physics /path/to/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb
    ```
-   Move around, and press O key to add object, press P/F to interact with the last added object, press V to remove, and press V key to invert gravity.
+   Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right). Press 'o' key to add a random object, press 'p/f/t' to apply impulse/force/torque to the last added object or press 'u' to remove it. Press 'k' to kinematically nudge the last added object in a random direction. Press 'v' key to invert gravity.
 
 1. **Non-interactive testing**: Run the example script:
    ```bash
    python examples/example.py --scene /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
    ```
    The agent will traverse a particular path and you should see the performance stats at the very end, something like this:
-`640 x 480, total time: 3.208 sec. FPS: 311.7`.
-Note that the test scenes do not provide semantic meshes.
-If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)). We have also provided an [example demo](https://aihabitat.org/habitat-api/tutorials/habitat-sim-demo.html) for reference.
+  `640 x 480, total time: 3.208 sec. FPS: 311.7`.
+  Note that the test scenes do not provide semantic meshes.
+  If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)). We have also provided an [example demo](https://aihabitat.org/habitat-api/tutorials/habitat-sim-demo.html) for reference.
+
+    To run a physics example in python, follow the install and build direction in the "Physical Interactions" section of this document and then run the example.py with '--enable_physics' as follows:
+    ```bash
+    python examples/example.py --scene /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb --enable_physics
+    ```
+    Note that in this mode the agent will be frozen and oriented toward the spawned physical objects. Additionally, '--save_png' can be used to output agent visual observation frames of the physical scene to the current directory.
 
 We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-api#docker-setup).
+
 
 
 ## Developer installation and getting started
@@ -191,7 +207,7 @@ We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup
    ```bash
    export PYTHONPATH=$PYTHONPATH:/path/to/habitat-sim/
    ```
-   
+
   We also have a dev slack channel, please follow this [link](https://join.slack.com/t/ai-habitat/shared_invite/enQtNjY1MzM1NDE4MTk2LTZhMzdmYWMwODZlNjg5MjZiZjExOTBjOTg5MmRiZTVhOWQyNzk0OTMyN2E1ZTEzZTNjMWM0MjBkN2VhMjQxMDI) to get added to the channel.
 
 ## Datasets

@@ -72,6 +72,15 @@ class PhysicsManager {
   // return the number of tracked existingObjects_
   const int getNumRigidObjects() { return existingObjects_.size(); };
 
+  // return a vector of ints listing all existing object IDs
+  const std::vector<int> getExistingObjectIDs() {
+    std::vector<int> v;
+    for (auto& bro : existingObjects_) {
+      v.push_back(bro.first);
+    }
+    return v;
+  };
+
   // get/set MotionType
   bool setObjectMotionType(const int physObjectID, MotionType mt);
   const MotionType getObjectMotionType(const int physObjectID);
@@ -211,7 +220,7 @@ class PhysicsManager {
   // assets::PhysicsSceneMetaData sceneMetaData_;
   double worldTime_ = 0.0;
 
-  ESP_SMART_POINTERS(PhysicsManager);
+  ESP_SMART_POINTERS(PhysicsManager)
 };
 
 }  // namespace physics

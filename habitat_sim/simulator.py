@@ -187,8 +187,14 @@ class Simulator:
     def add_object(self, object_lib_index):
         return self._sim.add_object(object_lib_index)
 
+    def get_physics_object_library_size(self):
+        return self._sim.get_physics_object_library_size()
+
     def remove_object(self, object_id):
         self._sim.remove_object(object_id)
+
+    def get_existing_object_ids(self, scene_id=0):
+        return self._sim.get_existing_object_ids(scene_id)
 
     def set_transformation(self, transform, object_id, scene_id=0):
         self._sim.set_transformation(transform, object_id, scene_id)
