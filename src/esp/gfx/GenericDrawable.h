@@ -4,12 +4,12 @@
 
 #pragma once
 
+#include <Magnum/Shaders/Shaders.h>
+
 #include "Drawable.h"
 
 namespace esp {
 namespace gfx {
-
-class GenericShader;
 
 class GenericDrawable : public Drawable {
  public:
@@ -17,7 +17,7 @@ class GenericDrawable : public Drawable {
   //! Adds drawable to given group and uses provided texture, objectId, and
   //! color for textured, object id buffer and color shader output respectively
   explicit GenericDrawable(scene::SceneNode& node,
-                           GenericShader& shader,
+                           Magnum::Shaders::Flat3D& shader,
                            Magnum::GL::Mesh& mesh,
                            Magnum::SceneGraph::DrawableGroup3D* group = nullptr,
                            Magnum::GL::Texture2D* texture = nullptr,

@@ -138,7 +138,7 @@ class DemoRunner:
         object_init_grid = {}
         for obj_id in range(num_objects):
             rand_obj_index = random.randint(0, object_lib_size - 1)
-            rand_obj_index = 0  # overwrite for cheezit boxes only
+            # rand_obj_index = 0  # overwrite for specific object only
             object_init_cell = (
                 random.randint(-object_init_grid_dim[0], object_init_grid_dim[0]),
                 random.randint(-object_init_grid_dim[1], object_init_grid_dim[1]),
@@ -178,7 +178,7 @@ class DemoRunner:
 
         # load an object and position the agent for physics testing
         if self._sim_settings["enable_physics"]:
-            self.init_physics_test_scene(num_objects=100)
+            self.init_physics_test_scene(num_objects=10)
             print("active object ids: " + str(self._sim.get_existing_object_ids()))
 
         time_per_step = []
@@ -189,6 +189,7 @@ class DemoRunner:
                 print("action", action)
 
             start_step_time = time.time()
+            # NOTE: uncomment this for random kinematic transform setting of all objects
             # if self._sim_settings["enable_physics"]:
             #    obj_ids = self._sim.get_existing_object_ids()
             #    for obj_id in obj_ids:

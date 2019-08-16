@@ -161,7 +161,7 @@ class Simulator:
 
         # step physics by dt
         self._sim.step_world(dt)
-        print("World time is now: " + str(self._sim.get_world_time()))
+        # print("World time is now: " + str(self._sim.get_world_time()))
 
         observations = self.get_sensor_observations()
         # Whether or not the action taken resulted in a collision
