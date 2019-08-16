@@ -5,6 +5,7 @@
 #include "GenericInstanceMeshData.h"
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
@@ -14,20 +15,15 @@
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Trade/Trade.h>
 
-#include <tinyply.h>
-#include <fstream>
-#include <sstream>
-#include <vector>
-
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <tinyply.h>
 #include <unistd.h>
 #include <fstream>
+#include <sophus/so3.hpp>
 #include <sstream>
 #include <unordered_map>
 #include <vector>
-
-#include <sophus/so3.hpp>
 
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
@@ -205,6 +201,18 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
     xyz = T_esp_scene * xyz;
   }
 
+  // Construct vertices for collsion meshData
+  // Store indices, facd_ids in Magnum MeshData3D format such that
+  // later they can be accessed.
+  // Note that normal and texture data are not stored
+  collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
+  collisionMeshData_.positions =
+      Corrade::Containers::arrayCast<Magnum::Vector3>(
+          Corrade::Containers::arrayView(cpu_vbo_.data(), cpu_vbo_.size()));
+  collisionMeshData_.indices =
+      Corrade::Containers::arrayCast<Magnum::UnsignedInt>(
+          Corrade::Containers::arrayView(cpu_ibo_.data(), cpu_ibo_.size()));
+
   return true;
 }
 
@@ -221,10 +229,10 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
       std::make_unique<GenericInstanceMeshData::RenderingBuffer>();
 
   // convert uchar rgb to float rgb
-  std::vector<vec3f> cbo_float;
-  cbo_float.reserve(cpu_cbo_.size());
+  std::vector<vec3f> cbo_float_;
+  cbo_float_.reserve(cpu_cbo_.size());
   for (const auto& c : cpu_cbo_) {
-    cbo_float.emplace_back(c.cast<float>() / 255.0f);
+    cbo_float_.emplace_back(c.cast<float>() / 255.0f);
   }
 
   /*
@@ -246,7 +254,8 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_->tex = createInstanceTexture(obj_id_tex_data, texSize);
 
   renderingBuffer_->vbo.setData(cpu_vbo_, Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->cbo.setData(cbo_float, Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->cbo.setData(cbo_float_,
+                                Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->ibo.setData(cpu_ibo_, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
       .setCount(nPrims * 3)

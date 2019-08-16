@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "GltfMeshData.h"
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Magnum/MeshTools/Compile.h>
 
 namespace esp {
@@ -19,7 +20,6 @@ void GltfMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_ = std::make_unique<GltfMeshData::RenderingBuffer>();
   // position, normals, uv, colors are bound to corresponding attributes
   renderingBuffer_->mesh = Magnum::MeshTools::compile(*meshData_);
-
   buffersOnGPU_ = true;
 }
 
@@ -35,6 +35,10 @@ void GltfMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
                                int meshID) {
   ASSERT(0 <= meshID && meshID < importer.mesh3DCount());
   meshData_ = importer.mesh3D(meshID);
+
+  collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
+  collisionMeshData_.positions = meshData_->positions(0);
+  collisionMeshData_.indices = meshData_->indices();
 }
 
 }  // namespace assets

@@ -11,6 +11,8 @@
 #include <sophus/so3.hpp>
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/ArrayView.h>
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
@@ -98,7 +100,7 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
 
   for (int i = 0; i < nFace; ++i) {
     uint8_t nIndices;
-    vec3i indices;
+    vec3ui indices;
     int32_t materialId;
     int32_t segmentId;
     int32_t categoryId;
@@ -114,6 +116,18 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
     segmentIds_.emplace_back(segmentId);
     categoryIds_.emplace_back(categoryId);
   }
+
+  // Construct vertices for meshData
+  // Store indices, facd_ids in Magnum MeshData3D format such that
+  // later they can be accessed.
+  // Note that normal and texture data are not stored
+  collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
+  collisionMeshData_.positions =
+      Corrade::Containers::arrayCast<Magnum::Vector3>(
+          Corrade::Containers::arrayView(cpu_vbo_.data(), cpu_vbo_.size()));
+  collisionMeshData_.indices =
+      Corrade::Containers::arrayCast<Magnum::UnsignedInt>(
+          Corrade::Containers::arrayView(cpu_ibo_.data(), cpu_ibo_.size()));
 
   return true;
 }
@@ -148,7 +162,7 @@ bool Mp3dInstanceMeshData::saveSemMeshPLY(
 
   for (int iFace = 0; iFace < cpu_ibo_.size(); ++iFace) {
     const uint8_t nIndices = 3;
-    const vec3i& indices = cpu_ibo_[iFace];
+    const vec3ui& indices = cpu_ibo_[iFace];
     // The materialId corresponds to the segmentId from the .house file
     const int32_t segmentId = materialIds_[iFace];
     int32_t objectId = ID_UNDEFINED;

@@ -154,10 +154,14 @@ class Simulator:
     def last_state(self):
         return self._last_state
 
-    def step(self, action):
+    def step(self, action, dt=1.0 / 60.0):
         self._num_total_frames += 1
         collided = self._default_agent.act(action)
         self._last_state = self._default_agent.get_state()
+
+        # step physics by dt
+        self._sim.step_world(dt)
+        # print("World time is now: " + str(self._sim.get_world_time()))
 
         observations = self.get_sensor_observations()
         # Whether or not the action taken resulted in a collision
@@ -178,6 +182,43 @@ class Simulator:
 
     def __del__(self):
         self.close()
+
+    # --- physics functions ---
+    def add_object(self, object_lib_index):
+        return self._sim.add_object(object_lib_index)
+
+    def get_physics_object_library_size(self):
+        return self._sim.get_physics_object_library_size()
+
+    def remove_object(self, object_id):
+        self._sim.remove_object(object_id)
+
+    def get_existing_object_ids(self, scene_id=0):
+        return self._sim.get_existing_object_ids(scene_id)
+
+    def set_transformation(self, transform, object_id, scene_id=0):
+        self._sim.set_transformation(transform, object_id, scene_id)
+
+    def get_transformation(self, object_id, scene_id=0):
+        return self._sim.set_transformation(object_id, scene_id)
+
+    def set_translation(self, translation, object_id, scene_id=0):
+        self._sim.set_translation(translation, object_id, scene_id)
+
+    def get_translation(self, object_id, scene_id=0):
+        return self._sim.get_translation(object_id, scene_id)
+
+    def set_rotation(self, rotation, object_id, scene_id=0):
+        self._sim.set_rotation(rotation, object_id, scene_id)
+
+    def get_rotation(self, object_id, scene_id=0):
+        return self._sim.get_rotation(object_id, scene_id)
+
+    def apply_force(self, force, relative_position, object_id, scene_id=0):
+        self._sim.apply_force(force, relative_position, object_id, scene_id)
+
+    def apply_torque(self, torque, object_id, scene_id=0):
+        self._sim.apply_torque(torque, object_id, scene_id)
 
 
 class Sensor:

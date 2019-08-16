@@ -51,7 +51,7 @@ class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
                                   uint32_t tileSize,
                                   float exposure) {
     setUniform(uniformLocation("atlasTex"), 0);
-    setUniform(uniformLocation("tileSize"), (int)tileSize);
+    setUniform(uniformLocation("tileSize"), static_cast<int>(tileSize));
     // Image size in given mip level 0
     {
       int mipLevel = 0;

@@ -7,6 +7,7 @@
 #include <string>
 
 #include "esp/assets/Asset.h"
+#include "esp/assets/CollisionMeshData.h"
 #include "esp/assets/MeshData.h"
 
 namespace esp {
