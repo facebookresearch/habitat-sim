@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <Corrade/Containers/Containers.h>
 #include "esp/core/esp.h"
 #include "esp/gfx/magnum.h"
 
@@ -43,7 +44,7 @@ class SceneNode : public MagnumObject {
   SceneNode& createChild();
 
   //! Returns node id
-  virtual int getId() { return id_; }
+  virtual int getId() const { return id_; }
 
   //! Sets node id
   virtual void setId(int id) { id_ = id; }

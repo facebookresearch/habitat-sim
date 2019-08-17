@@ -3,7 +3,9 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "GenericDrawable.h"
-#include "GenericShader.h"
+
+#include <Magnum/Shaders/Flat.h>
+
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -11,7 +13,7 @@ namespace gfx {
 
 GenericDrawable::GenericDrawable(
     scene::SceneNode& node,
-    GenericShader& shader,
+    Magnum::Shaders::Flat3D& shader,
     Magnum::GL::Mesh& mesh,
     Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */,
     Magnum::GL::Texture2D* texture /* = nullptr */,
@@ -24,26 +26,20 @@ GenericDrawable::GenericDrawable(
 
 void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                            Magnum::SceneGraph::Camera3D& camera) {
-  GenericShader& shader = static_cast<GenericShader&>(shader_);
-  shader
-      .setTransformationProjectionMatrix(camera.projectionMatrix() *
-                                         transformationMatrix)
-      .setProjectionMatrix(transformationMatrix);
+  Magnum::Shaders::Flat3D& shader =
+      static_cast<Magnum::Shaders::Flat3D&>(shader_);
+  shader.setTransformationProjectionMatrix(camera.projectionMatrix() *
+                                           transformationMatrix);
 
-  if (((shader.flags() & GenericShader::Flag::Textured) ||
-       (shader.flags() & GenericShader::Flag::PrimitiveIDTextured)) &&
-      texture_) {
+  if ((shader.flags() & Magnum::Shaders::Flat3D::Flag::Textured) && texture_) {
     shader.bindTexture(*texture_);
   }
 
-  if (!(shader.flags() & GenericShader::Flag::VertexColored)) {
+  if (!(shader.flags() & Magnum::Shaders::Flat3D::Flag::VertexColor)) {
     shader.setColor(color_);
   }
 
-  if (!(shader.flags() & GenericShader::Flag::PerVertexIds) &&
-      !(shader.flags() & GenericShader::Flag::PrimitiveIDTextured)) {
-    shader.setObjectId(node_.getId());
-  }
+  shader.setObjectId(node_.getId());
   mesh_.draw(shader_);
 }
 

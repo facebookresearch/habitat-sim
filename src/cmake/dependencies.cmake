@@ -113,6 +113,8 @@ if(NOT USE_SYSTEM_MAGNUM)
 
   # These are enabled by default but we don't need them right now -- disabling
   # for slightly faster builds. If you need any of these, simply delete a line.
+  set(WITH_INTERCONNECT OFF CACHE BOOL "" FORCE)
+  set(WITH_TESTSUITE OFF CACHE BOOL "" FORCE)
   set(WITH_DEBUGTOOLS OFF CACHE BOOL "" FORCE)
   set(WITH_PRIMITIVES OFF CACHE BOOL "" FORCE)
   set(WITH_TEXT OFF CACHE BOOL "" FORCE)
@@ -170,6 +172,8 @@ if(NOT USE_SYSTEM_MAGNUM)
     add_subdirectory("${DEPS_DIR}/magnum-bindings")
   endif()
 endif()
+
+
 
 # tinyply
 include_directories(SYSTEM "${DEPS_DIR}/tinyply/source")

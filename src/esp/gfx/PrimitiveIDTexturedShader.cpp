@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "GenericShader.h"
+#include "PrimitiveIDTexturedShader.h"
 
 #include <Corrade/Containers/Reference.h>
 #include <Corrade/Utility/Resource.h>
@@ -22,13 +22,11 @@ static void importShaderResources() {
 namespace esp {
 namespace gfx {
 
-// TODO: Use Corrade resource file for shader code instead of hard-coding here
-
 namespace {
 enum { TextureLayer = 0 };
 }
 
-GenericShader::GenericShader(const Flags flags) : flags_(flags) {
+PrimitiveIDTexturedShader::PrimitiveIDTexturedShader() {
 #ifndef MAGNUM_TARGET_WEBGL
   MAGNUM_ASSERT_GL_VERSION_SUPPORTED(Magnum::GL::Version::GL410);
 #endif
@@ -49,16 +47,8 @@ GenericShader::GenericShader(const Flags flags) : flags_(flags) {
   Magnum::GL::Shader vert{glVersion, Magnum::GL::Shader::Type::Vertex};
   Magnum::GL::Shader frag{glVersion, Magnum::GL::Shader::Type::Fragment};
 
-  vert.addSource(flags & Flag::Textured ? "#define TEXTURED\n" : "")
-      .addSource(flags & Flag::VertexColored ? "#define VERTEX_COLORED\n" : "")
-      .addSource(flags & Flag::PerVertexIds ? "#define PER_VERTEX_IDS\n" : "")
-      .addSource(rs.get("generic-default-gl410.vert"));
-  frag.addSource(flags & Flag::Textured ? "#define TEXTURED\n" : "")
-      .addSource(flags & Flag::VertexColored ? "#define VERTEX_COLORED\n" : "")
-      .addSource(flags & Flag::PerVertexIds ? "#define PER_VERTEX_IDS\n" : "")
-      .addSource(flags & Flag::PrimitiveIDTextured ? "#define ID_TEXTURED\n"
-                                                   : "")
-      .addSource(rs.get("generic-default-gl410.frag"));
+  vert.addSource(rs.get("primitive-id-textured-gl410.vert"));
+  frag.addSource(rs.get("primitive-id-textured-gl410.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Magnum::GL::Shader::compile({vert, frag}));
 
@@ -66,24 +56,16 @@ GenericShader::GenericShader(const Flags flags) : flags_(flags) {
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(link());
 
-  if (flags & Flag::Textured) {
-    setUniform(uniformLocation("textureData"), TextureLayer);
-  }
-
-  if (flags & Flag::PrimitiveIDTextured) {
-    setUniform(uniformLocation("primTexture"), TextureLayer);
-  }
+  setUniform(uniformLocation("primTexture"), TextureLayer);
 }
 
-GenericShader& GenericShader::bindTexture(Magnum::GL::Texture2D& texture) {
-  ASSERT((flags_ & Flag::Textured) || (flags_ & Flag::PrimitiveIDTextured));
-
+PrimitiveIDTexturedShader& PrimitiveIDTexturedShader::bindTexture(
+    Magnum::GL::Texture2D& texture) {
   texture.bind(TextureLayer);
 
 // TODO this is a hack and terrible! Properly set texSize for WebGL builds
 #ifndef MAGNUM_TARGET_WEBGL
-  if (flags_ & Flag::PrimitiveIDTextured)
-    setUniform(uniformLocation("texSize"), texture.imageSize(0).x());
+  setUniform(uniformLocation("texSize"), texture.imageSize(0).x());
 #endif
 
   return *this;

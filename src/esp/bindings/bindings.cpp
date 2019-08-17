@@ -13,6 +13,7 @@ using namespace py::literals;
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/Simulator.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/PhysicsManager.h"
 #include "esp/scene/Mp3dSemanticScene.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneGraph.h"
@@ -33,6 +34,7 @@ using namespace esp::gfx;
 using namespace esp::nav;
 using namespace esp::scene;
 using namespace esp::sensor;
+using namespace esp::physics;
 
 void initShortestPathBindings(py::module& m);
 void initGeoBindings(py::module& m);
@@ -453,6 +455,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_readwrite("compress_textures",
                      &SimulatorConfiguration::compressTextures)
       .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
+      .def_readwrite("enable_physics", &SimulatorConfiguration::enablePhysics)
       .def("__eq__",
            [](const SimulatorConfiguration& self,
               const SimulatorConfiguration& other) -> bool {
@@ -481,5 +484,32 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("seed", &Simulator::seed, R"()", "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a)
       .def("reset", &Simulator::reset, R"()")
-      .def("create_render_target", &Simulator::createRenderTarget);
+      .def("create_render_target", &Simulator::createRenderTarget)
+      /* --- Physics functions --- */
+      .def("add_object", &Simulator::addObject, "R()", "object_lib_index"_a,
+           "scene_id"_a = 0)
+      .def("get_physics_object_library_size",
+           &Simulator::getPhysicsObjectLibrarySize, "R()")
+      .def("remove_object", &Simulator::removeObject, "R()", "object_id"_a,
+           "sceneID"_a = 0)
+      .def("get_existing_object_ids", &Simulator::getExistingObjectIDs, "R()",
+           "sceneID"_a = 0)
+      .def("step_world", &Simulator::stepWorld, "R()", "dt"_a = 1.0 / 60.0)
+      .def("get_world_time", &Simulator::getWorldTime, "R()")
+      .def("set_transformation", &Simulator::setTransformation, "R()",
+           "transform"_a, "object_id"_a, "sceneID"_a = 0)
+      .def("get_transformation", &Simulator::getTransformation, "R()",
+           "object_id"_a, "sceneID"_a = 0)
+      .def("set_translation", &Simulator::setTranslation, "R()",
+           "translation"_a, "object_id"_a, "sceneID"_a = 0)
+      .def("get_translation", &Simulator::getTranslation, "R()", "object_id"_a,
+           "sceneID"_a = 0)
+      .def("set_rotation", &Simulator::setRotation, "R()", "rotation"_a,
+           "object_id"_a, "sceneID"_a = 0)
+      .def("get_rotation", &Simulator::getRotation, "R()", "object_id"_a,
+           "sceneID"_a = 0)
+      .def("apply_force", &Simulator::applyForce, "R()", "force"_a,
+           "relative_position"_a, "object_id"_a, "sceneID"_a = 0)
+      .def("apply_torque", &Simulator::applyTorque, "R()", "torque"_a,
+           "object_id"_a, "sceneID"_a = 0);
 }

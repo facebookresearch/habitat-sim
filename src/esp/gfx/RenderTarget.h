@@ -15,7 +15,9 @@ namespace gfx {
 
 class RenderTarget {
  public:
-  RenderTarget(WindowlessContext::ptr context, const Magnum::Vector2i& size);
+  RenderTarget(WindowlessContext::ptr context,
+               const Magnum::Vector2i& size,
+               const Magnum::Matrix2x2& depthUnprojection);
 
   ~RenderTarget() { LOG(INFO) << "Deconstructing RenderTarget"; }
 

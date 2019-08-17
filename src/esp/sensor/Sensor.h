@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <Corrade/Containers/Optional.h>
+
 #include "esp/core/esp.h"
 
 #include "esp/core/Buffer.h"
@@ -115,6 +117,13 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual bool getObservation(gfx::Simulator& sim, Observation& obs);
   virtual bool getObservationSpace(ObservationSpace& space);
+
+  // The 2x2 matrix used to unproject depth values from those in the depth
+  // buffer to meters
+  virtual Corrade::Containers::Optional<Magnum::Matrix2x2> depthUnprojection()
+      const {
+    return Corrade::Containers::NullOpt;
+  };
 
   bool hasRenderTarget() const { return tgt_ != nullptr; }
 
