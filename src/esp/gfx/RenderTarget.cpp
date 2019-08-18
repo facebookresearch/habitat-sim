@@ -52,10 +52,8 @@ struct RenderTarget::Impl {
     depthRenderbuffer_.setStorage(GL::RenderbufferFormat::DepthComponent32F,
                                   size);
     framebuffer_ = GL::Framebuffer{{{}, size}};
-    framebuffer_
-        .attachRenderbuffer(GL::Framebuffer::ColorAttachment{0}, colorBuffer_)
-        .attachRenderbuffer(GL::Framebuffer::ColorAttachment{1},
-                            objectIdBuffer_)
+    framebuffer_.attachRenderbuffer(RgbaBuffer, colorBuffer_)
+        .attachRenderbuffer(ObjectIdBuffer, objectIdBuffer_)
         .attachRenderbuffer(GL::Framebuffer::BufferAttachment::Depth,
                             depthRenderbuffer_)
         .mapForDraw({{0, GL::Framebuffer::ColorAttachment{0}},
@@ -74,12 +72,11 @@ struct RenderTarget::Impl {
 #ifdef CORRADE_TARGET_EMSCRIPTEN
     framebuffer_.clearDepth(1.0);
     framebuffer_.clearColor(0, Magnum::Color4{});
-    framebuffer_.clearColor(1, Magnum::Color4{});
-    framebuffer_.clearColor(2, Magnum::Vector4ui{});
+    framebuffer_.clearColor(1, Magnum::Vector4ui{});
 #else
     framebuffer_.clear(GL::FramebufferClear::Color |
                        GL::FramebufferClear::Depth);
-    framebuffer_.clearColor(2, Magnum::Vector4ui{});
+    framebuffer_.clearColor(1, Magnum::Vector4ui{});
 #endif
     framebuffer_.bind();
   }
@@ -116,7 +113,7 @@ struct RenderTarget::Impl {
 
           (az + b) / (cz + d)
 
-         See the comment in draw() above for details. */
+         See the comment in PinholeCamera::depthUnprojection() for details. */
       ptr[i] =
           Math::fma(depthUnprojection_[0][0], z, depthUnprojection_[1][0]) /
           Math::fma(depthUnprojection_[0][1], z, depthUnprojection_[1][1]);
