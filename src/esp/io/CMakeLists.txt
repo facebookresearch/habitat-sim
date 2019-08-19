@@ -1,6 +1,9 @@
-file(GLOB_RECURSE io_SOURCES "*.cpp")
-
-add_library(io STATIC ${io_SOURCES})
+add_library(io STATIC
+  io.cpp
+  io.h
+  json.cpp
+  json.h
+)
 
 target_link_libraries(io
   PUBLIC

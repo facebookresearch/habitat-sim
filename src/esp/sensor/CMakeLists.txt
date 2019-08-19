@@ -1,6 +1,9 @@
-file(GLOB_RECURSE sensor_SOURCES "*.cpp")
-
-add_library(sensor STATIC ${sensor_SOURCES})
+add_library(sensor STATIC
+  PinholeCamera.cpp
+  PinholeCamera.h
+  Sensor.cpp
+  Sensor.h
+)
 
 target_link_libraries(sensor
   PUBLIC

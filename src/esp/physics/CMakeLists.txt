@@ -1,5 +1,3 @@
-file(GLOB physics_SOURCES "*.cpp")
-
 find_package(MagnumPlugins
   REQUIRED
     StbImageImporter
@@ -7,7 +5,12 @@ find_package(MagnumPlugins
     TinyGltfImporter
 )
 
-add_library(physics STATIC ${physics_SOURCES})
+add_library(physics STATIC
+  PhysicsManager.cpp
+  PhysicsManager.h
+  RigidObject.cpp
+  RigidObject.h
+)
 
 if(WITH_BULLET)
   target_compile_definitions(physics PUBLIC PHYSICS_WITH_BULLET)

@@ -1,8 +1,11 @@
-file(GLOB_RECURSE bulletphysics_SOURCES "*.cpp")
-
 find_package(MagnumIntegration REQUIRED Bullet)
 
-add_library(bulletphysics STATIC ${bulletphysics_SOURCES})
+add_library(bulletphysics STATIC
+  BulletPhysicsManager.cpp
+  BulletPhysicsManager.h
+  BulletRigidObject.cpp
+  BulletRigidObject.h
+)
 
 target_link_libraries(bulletphysics
   PUBLIC

@@ -1,6 +1,11 @@
-file(GLOB_RECURSE geo_SOURCES "*.cpp")
-
-add_library(geo STATIC ${geo_SOURCES})
+add_library(geo STATIC
+  CoordinateFrame.cpp
+  CoordinateFrame.h
+  geo.cpp
+  geo.h
+  OBB.cpp
+  OBB.h
+)
 
 target_link_libraries(geo
   PUBLIC

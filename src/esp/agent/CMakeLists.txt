@@ -1,6 +1,7 @@
-file(GLOB_RECURSE agent_SOURCES "*.cpp")
-
-add_library(agent STATIC ${agent_SOURCES})
+add_library(agent STATIC
+  Agent.cpp
+  Agent.h
+)
 
 target_link_libraries(agent
   PUBLIC
