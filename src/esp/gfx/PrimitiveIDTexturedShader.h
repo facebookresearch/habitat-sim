@@ -48,13 +48,6 @@ class PrimitiveIDTexturedShader : public Magnum::GL::AbstractShaderProgram {
     return *this;
   }
 
-  /**
-   * @brief Bind a color texture
-   * @return Reference to self (for method chaining)
-   *
-   * Expects that the shader was created with @ref Flag::Textured enabled.
-   * @see @ref setColor()
-   */
   PrimitiveIDTexturedShader& bindTexture(Magnum::GL::Texture2D& texture);
 
  private:
