@@ -190,7 +190,7 @@ jobs:
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat
               export PYTHONPATH=$PYTHONPATH:$(pwd)
-              ./build.sh --headless
+              GTEST_COLOR=yes ./build.sh --headless --run-tests
               pytest
       - run:
           name: Install api
