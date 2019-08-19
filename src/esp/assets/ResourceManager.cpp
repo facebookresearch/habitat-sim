@@ -822,7 +822,7 @@ bool ResourceManager::loadGeneralMeshData(
         LOG(ERROR) << "Cannot load scene, exiting";
         return false;
       }
-      for (uint sceneDataID : sceneData->children3D()) {
+      for (unsigned int sceneDataID : sceneData->children3D()) {
         magnumData.emplace_back(sceneDataID);
       }
     } else if (importer->mesh3DCount() && meshes_[metaData.meshIndex.first]) {
