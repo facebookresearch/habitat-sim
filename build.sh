@@ -4,6 +4,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# Propagate failures properly
+set -e
+
 builder_args=()
 while [[ $# -gt 0 ]]
 do
