@@ -56,6 +56,8 @@ PrimitiveIDTexturedShader::PrimitiveIDTexturedShader() {
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(link());
 
+  transformationProjectionMatrixUniform_ =
+      uniformLocation("transformationProjectionMatrix");
   setUniform(uniformLocation("primTexture"), TextureLayer);
 }
 

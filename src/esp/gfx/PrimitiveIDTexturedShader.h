@@ -44,7 +44,7 @@ class PrimitiveIDTexturedShader : public Magnum::GL::AbstractShaderProgram {
    */
   PrimitiveIDTexturedShader& setTransformationProjectionMatrix(
       const Magnum::Matrix4& matrix) {
-    setUniform(uniformLocation("transformationProjectionMatrix"), matrix);
+    setUniform(transformationProjectionMatrixUniform_, matrix);
     return *this;
   }
 
@@ -56,6 +56,9 @@ class PrimitiveIDTexturedShader : public Magnum::GL::AbstractShaderProgram {
    * @see @ref setColor()
    */
   PrimitiveIDTexturedShader& bindTexture(Magnum::GL::Texture2D& texture);
+
+ private:
+  int transformationProjectionMatrixUniform_;
 };
 
 }  // namespace gfx
