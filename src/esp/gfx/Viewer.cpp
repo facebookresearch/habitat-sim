@@ -103,10 +103,10 @@ Viewer::Viewer(const Arguments& arguments)
   if (io::exists(navmeshFilename)) {
     LOG(INFO) << "Loading navmesh from " << navmeshFilename;
     pathfinder_->loadNavMesh(navmeshFilename);
-  }
 
-  const vec3f position = pathfinder_->getRandomNavigablePoint();
-  agentBodyNode_->setTranslation(Vector3(position));
+    const vec3f position = pathfinder_->getRandomNavigablePoint();
+    agentBodyNode_->setTranslation(Vector3(position));
+  }
 
   // connect controls to navmesh if loaded
   /*
@@ -339,10 +339,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Down:
       controls_(*cameraNode_, "lookDown", lookSensitivity, false);
       break;
-    case KeyEvent::Key::Nine: {
-      const vec3f position = pathfinder_->getRandomNavigablePoint();
-      agentBodyNode_->setTranslation(Vector3(position));
-    } break;
+    case KeyEvent::Key::Nine:
+      if (pathfinder_->isLoaded()) {
+        const vec3f position = pathfinder_->getRandomNavigablePoint();
+        agentBodyNode_->setTranslation(Vector3(position));
+      }
+      break;
     case KeyEvent::Key::A:
       controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
       LOG(INFO) << "Agent position "
