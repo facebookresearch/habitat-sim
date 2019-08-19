@@ -40,6 +40,11 @@ include_directories(SYSTEM "${DEPS_DIR}/Sophus")
 if(CORRADE_TARGET_EMSCRIPTEN)
   add_library(glog INTERFACE)
 else()
+  # We don't want glog tests to be run as part of our build. The BUILD_TESTING
+  # variable is set by include(CTest) as an option(). In CMake 3.13+ it should
+  # be enough to do just set(BUILD_TESTING OFF) to avoid the option()
+  # overriding it, but https://cmake.org/cmake/help/latest/policy/CMP0077.html.
+  option(BUILD_TESTING "ugh" OFF)
   add_subdirectory("${DEPS_DIR}/glog")
 endif()
 
