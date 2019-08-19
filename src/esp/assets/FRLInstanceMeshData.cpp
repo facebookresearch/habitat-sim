@@ -29,6 +29,8 @@
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
+namespace Cr = Corrade;
+
 namespace esp {
 namespace assets {
 
@@ -244,18 +246,15 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
     (*cbo_float_)[idx + 2] = cpu_cbo_[iVert][2] / 255.0f;
   }
 
-  // See code for GenericInstanceMeshData::uploadBuffersToGPU for comments about
-  // what's going on with this image/texture
-  const size_t numTris = numQuads * 2;
-  const int texSize = std::pow(2, std::ceil(std::log2(std::sqrt(numTris))));
-  obj_id_tex_data_ = new float[texSize * texSize]();
-
+  /* Extract object IDs from the fourth component -- it's originally a float
+     so we have to allocate instead of using a strided array view :( */
+  Cr::Containers::Array<uint32_t> objectIds{numQuads * 2};
   for (size_t i = 0; i < numQuads; ++i) {
-    obj_id_tex_data_[2 * i] = cpu_vbo_[4 * i][3];
-    obj_id_tex_data_[2 * i + 1] = cpu_vbo_[4 * i][3];
+    objectIds[2 * i] = cpu_vbo_[4 * i][3];
+    objectIds[2 * i + 1] = cpu_vbo_[4 * i][3];
   }
+  renderingBuffer_->tex = createInstanceTexture(objectIds);
 
-  renderingBuffer_->tex = createInstanceTexture(obj_id_tex_data_, texSize);
   renderingBuffer_->vbo.setData(*cpu_vbo_3_,
                                 Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->cbo.setData(*cbo_float_,

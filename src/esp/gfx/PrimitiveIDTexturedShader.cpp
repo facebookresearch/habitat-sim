@@ -5,6 +5,7 @@
 #include "PrimitiveIDTexturedShader.h"
 
 #include <Corrade/Containers/Reference.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Resource.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Shader.h>
@@ -18,6 +19,8 @@
 static void importShaderResources() {
   CORRADE_RESOURCE_INITIALIZE(ShaderResources)
 }
+
+namespace Cr = Corrade;
 
 namespace esp {
 namespace gfx {
@@ -48,7 +51,10 @@ PrimitiveIDTexturedShader::PrimitiveIDTexturedShader() {
   Magnum::GL::Shader frag{glVersion, Magnum::GL::Shader::Type::Fragment};
 
   vert.addSource(rs.get("primitive-id-textured-gl410.vert"));
-  frag.addSource(rs.get("primitive-id-textured-gl410.frag"));
+  frag
+      .addSource(Corrade::Utility::formatString(
+          "#define PRIMITIVE_TEXTURE_WIDTH {}\n", PrimitiveIDTextureWidth))
+      .addSource(rs.get("primitive-id-textured-gl410.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Magnum::GL::Shader::compile({vert, frag}));
 
@@ -64,12 +70,6 @@ PrimitiveIDTexturedShader::PrimitiveIDTexturedShader() {
 PrimitiveIDTexturedShader& PrimitiveIDTexturedShader::bindTexture(
     Magnum::GL::Texture2D& texture) {
   texture.bind(TextureLayer);
-
-// TODO this is a hack and terrible! Properly set texSize for WebGL builds
-#ifndef MAGNUM_TARGET_WEBGL
-  setUniform(uniformLocation("texSize"), texture.imageSize(0).x());
-#endif
-
   return *this;
 }
 

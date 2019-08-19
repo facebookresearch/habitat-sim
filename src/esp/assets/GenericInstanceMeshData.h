@@ -18,12 +18,16 @@
 namespace esp {
 namespace assets {
 
-/*
- * In modern OpenGL fragment sharder, we can access the ID of the current
- * primitive and thus can index an array.  We can make a 2D texture behave
- * like a 2D array with nearest sampling and edge clamping.
- */
-Magnum::GL::Texture2D createInstanceTexture(float* data, const int texSize);
+/**
+@brief Pack primitive IDs into a texture
+
+1D texture won't be large enough so the data have to be put into a 2D texture.
+For simplicity on both the C++ and shader side the texture has a fixed width
+and height is dynamic, and addressing is done as
+`(gl_PrimitiveID % width, gl_PrimitiveID / width)`.
+*/
+Magnum::GL::Texture2D createInstanceTexture(
+    Corrade::Containers::ArrayView<uint32_t> objectIds);
 
 class GenericInstanceMeshData : public BaseMesh {
  public:

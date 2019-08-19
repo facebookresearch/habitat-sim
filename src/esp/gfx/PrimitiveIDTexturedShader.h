@@ -30,6 +30,19 @@ class PrimitiveIDTexturedShader : public Magnum::GL::AbstractShaderProgram {
   //! @brief vertex colors
   typedef Magnum::GL::Attribute<3, Magnum::Vector3> Color;
 
+  enum : int {
+    /**
+     * Hardcoded width of the primitive ID texture, since we wouldn't be able
+     * to fit it all into a 1D texture. Picking a power-of-two size as that
+     * nicely fits caches etc. Conservatively choosing 4K as 8K might not be
+     * supported on some platforms (mobile/WebGL, possibly). A 4096x4096
+     * texture fits 16M primitives, which should be enough. Smaller meshes will
+     * have the height much smaller while larger meshes are of course allowed
+     * to go beyond that -- e.g. 4096x6000 is not expected to be a problem.
+     */
+    PrimitiveIDTextureWidth = 4096
+  };
+
   //! Color attachment location per output type
   enum : uint8_t {
     //! color output

@@ -29,7 +29,6 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
     delete cpu_vbo_3_;
     delete tri_ibo_;
     delete cbo_float_;
-    delete obj_id_tex_data_;
   };
 
   void to_ply(const std::string& ply_file) const;
@@ -63,7 +62,6 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
   std::vector<vec3f>* cpu_vbo_3_ = nullptr;
   std::vector<uint32_t>* tri_ibo_ = nullptr;
   std::vector<float>* cbo_float_ = nullptr;
-  float* obj_id_tex_data_ = nullptr;
 
   vecXi id_to_label;
   vecXi id_to_node;
