@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Propagate failures properly
+set -e
+
 git submodule update --init --recursive
 
 DATA_DIR="$(pwd)/data/"
