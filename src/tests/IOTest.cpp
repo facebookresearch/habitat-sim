@@ -6,10 +6,12 @@
 #include "esp/core/esp.h"
 #include "esp/io/io.h"
 
+#include "configure.h"
+
 using namespace esp::io;
 
 TEST(IOTest, fileExistTest) {
-  std::string file = "build/tests/IOTest";
+  std::string file = FILE_THAT_EXISTS;
   bool result = exists(file);
   EXPECT_TRUE(result);
 
@@ -19,7 +21,7 @@ TEST(IOTest, fileExistTest) {
 }
 
 TEST(IOTest, fileSizeTest) {
-  std::string existingFile = "build/tests/IOTest";
+  std::string existingFile = FILE_THAT_EXISTS;
   auto result = fileSize(existingFile);
   LOG(INFO) << "File size of " << existingFile << " is " << result;
 
