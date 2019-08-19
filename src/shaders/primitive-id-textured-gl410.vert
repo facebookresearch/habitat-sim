@@ -1,7 +1,9 @@
 uniform highp mat4 transformationProjectionMatrix;
 
+// IDs corresponding to Magnum's generic attribute definitions and
+// PrimitiveIDTexturedShader::{Position,Color3}
 layout(location = 0) in highp vec4 position;
-layout(location = 1) in mediump vec3 color;
+layout(location = 3) in mediump vec3 color;
 
 out mediump vec3 v_color;
 

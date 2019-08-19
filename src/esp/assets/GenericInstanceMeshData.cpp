@@ -249,9 +249,9 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
       .setCount(cpu_ibo_.size() * 3)
       .addVertexBuffer(renderingBuffer_->vbo, 0,
-                       Magnum::GL::Attribute<0, Magnum::Vector3>{})
+                       gfx::PrimitiveIDTexturedShader::Position{})
       .addVertexBuffer(renderingBuffer_->cbo, 0,
-                       Magnum::GL::Attribute<1, Magnum::Color3>{})
+                       gfx::PrimitiveIDTexturedShader::Color3{})
       .setIndexBuffer(renderingBuffer_->ibo, 0,
                       Magnum::GL::MeshIndexType::UnsignedInt);
 

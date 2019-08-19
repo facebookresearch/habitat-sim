@@ -26,6 +26,7 @@
 
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
+#include "esp/gfx/PrimitiveIDTexturedShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
@@ -263,9 +264,9 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
       .setCount(tri_ibo_->size())  // Set vertex/index count (numQuads * 6)
       .addVertexBuffer(renderingBuffer_->vbo, 0,
-                       Magnum::GL::Attribute<0, Magnum::Vector3>{})
+                       gfx::PrimitiveIDTexturedShader::Position{})
       .addVertexBuffer(renderingBuffer_->cbo, 0,
-                       Magnum::GL::Attribute<1, Magnum::Color3>{})
+                       gfx::PrimitiveIDTexturedShader::Color3{})
       .setIndexBuffer(renderingBuffer_->ibo, 0,
                       Magnum::GL::MeshIndexType::UnsignedInt);
 

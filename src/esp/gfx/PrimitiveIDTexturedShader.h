@@ -12,6 +12,7 @@
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
+#include <Magnum/Shaders/Generic.h>
 
 #include "esp/core/esp.h"
 
@@ -26,9 +27,9 @@ class PrimitiveIDTexturedShader : public Magnum::GL::AbstractShaderProgram {
   explicit PrimitiveIDTexturedShader();
 
   //! @brief vertex positions
-  typedef Magnum::GL::Attribute<0, Magnum::Vector4> Position;
+  typedef Magnum::Shaders::Generic3D::Position Position;
   //! @brief vertex colors
-  typedef Magnum::GL::Attribute<3, Magnum::Vector3> Color;
+  typedef Magnum::Shaders::Generic3D::Color3 Color3;
 
   enum : int {
     /**
