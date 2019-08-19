@@ -1,0 +1,1 @@
+corrade_add_test(gfxDepthUnprojectionTest DepthUnprojectionTest.cpp LIBRARIES gfx)
