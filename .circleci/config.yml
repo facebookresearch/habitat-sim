@@ -189,11 +189,11 @@ jobs:
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-sim
 
-              ./build.sh --headless
+              export PYTHONPATH=$PYTHONPATH:$(pwd)
+              GTEST_COLOR=yes ./build.sh --headless --run-tests
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
 
-              export PYTHONPATH=$(pwd)
               pytest
       - run:
           name: Install api

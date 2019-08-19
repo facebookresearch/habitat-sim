@@ -82,6 +82,7 @@ endif()
 # build tests
 if(BUILD_TEST)
   message("Building TESTS")
+  enable_testing()
   add_subdirectory(tests)
 endif()
 
