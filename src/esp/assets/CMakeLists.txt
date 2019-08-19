@@ -1,7 +1,30 @@
-file(GLOB_RECURSE assets_SOURCES "*.cpp")
+set(assets_SOURCES
+  Asset.cpp
+  Asset.h
+  Attributes.cpp
+  Attributes.h
+  BaseMesh.cpp
+  BaseMesh.h
+  CollisionMeshData.h
+  FRLInstanceMeshData.cpp
+  FRLInstanceMeshData.h
+  GenericInstanceMeshData.cpp
+  GenericInstanceMeshData.h
+  GltfMeshData.cpp
+  GltfMeshData.h
+  MeshData.h
+  MeshMetaData.h
+  Mp3dInstanceMeshData.cpp
+  Mp3dInstanceMeshData.h
+  ResourceManager.cpp
+  ResourceManager.h
+)
 
-if(NOT BUILD_PTEX_SUPPORT)
-  list(REMOVE_ITEM assets_SOURCES ${CMAKE_CURRENT_LIST_DIR}/PTexMeshData.cpp)
+if(BUILD_PTEX_SUPPORT)
+  list(APPEND assets_SOURCES
+    PTexMeshData.cpp
+    PTexMeshData.h
+  )
 endif()
 
 find_package(Magnum
@@ -28,8 +51,6 @@ if(BUILD_ASSIMP_SUPPORT)
       AssimpImporter
   )
 endif()
-
-
 
 add_library(assets STATIC ${assets_SOURCES})
 

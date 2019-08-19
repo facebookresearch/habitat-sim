@@ -1,6 +1,11 @@
 find_package(MagnumBindings REQUIRED Python)
 
-pybind11_add_module(habitat_sim_bindings bindings.cpp ShortestPathBindings.cpp geoBindings.cpp)
+pybind11_add_module(habitat_sim_bindings
+  bindings.cpp
+  geoBindings.cpp
+  OpaqueTypes.h
+  ShortestPathBindings.cpp
+)
 target_link_libraries(habitat_sim_bindings
   PRIVATE
     MagnumBindings::Python

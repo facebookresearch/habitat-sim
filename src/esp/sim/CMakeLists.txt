@@ -1,6 +1,7 @@
-file(GLOB_RECURSE sim_SOURCES "*.cpp")
-
-add_library(sim STATIC ${sim_SOURCES})
+add_library(sim STATIC
+  SimulatorWithAgents.cpp
+  SimulatorWithAgents.h
+)
 
 target_link_libraries(sim
   PUBLIC
