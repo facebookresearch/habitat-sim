@@ -16,14 +16,16 @@ using namespace esp::geo;
 using namespace esp::scene;
 
 TEST(Mp3dTest, Load) {
+  const std::string filename = Cr::Utility::Directory::join(
+      SCENE_DATASETS, "mp3d/1LXtFkjw3qL/1LXtFkjw3qL.house");
+  if (!Cr::Utility::Directory::exists(filename))
+    GTEST_SKIP_("MP3D dataset not found.");
+
   SemanticScene house;
   const quatf alignGravity =
       quatf::FromTwoVectors(-vec3f::UnitZ(), ESP_GRAVITY);
   const quatf alignFront = quatf::FromTwoVectors(-vec3f::UnitX(), ESP_FRONT);
-  SemanticScene::loadMp3dHouse(
-      Cr::Utility::Directory::join(SCENE_DATASETS,
-                                   "mp3d/1LXtFkjw3qL/1LXtFkjw3qL.house"),
-      house, alignFront * alignGravity);
+  SemanticScene::loadMp3dHouse(filename, house, alignFront * alignGravity);
   LOG(INFO) << "House{nobjects:" << house.count("objects")
             << ",nlevels:" << house.count("levels")
             << ",nregions:" << house.count("regions")

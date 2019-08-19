@@ -16,11 +16,13 @@ using namespace esp::geo;
 using namespace esp::scene;
 
 TEST(SuncgTest, Load) {
+  const std::string filename = Cr::Utility::Directory::join(
+      SCENE_DATASETS, "suncg/0a0b9b45a1db29832dd84e80c1347854.json");
+  if (!Cr::Utility::Directory::exists(filename))
+    GTEST_SKIP_("SUNCG dataset not found.");
+
   SemanticScene house;
-  SemanticScene::loadSuncgHouse(
-      Cr::Utility::Directory::join(
-          SCENE_DATASETS, "suncg/0a0b9b45a1db29832dd84e80c1347854.json"),
-      house);
+  SemanticScene::loadSuncgHouse(filename, house);
   LOG(INFO) << "House, bbox:" << house.aabb();
 
   for (auto& level : house.levels()) {
