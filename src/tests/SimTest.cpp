@@ -2,11 +2,15 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/Utility/Directory.h>
 #include <gtest/gtest.h>
+#include <string>
 
 #include "esp/sim/SimulatorWithAgents.h"
 
-#include <string>
+#include "configure.h"
+
+namespace Cr = Corrade;
 
 using esp::gfx::SimulatorConfiguration;
 using esp::nav::PathFinder;
@@ -14,9 +18,11 @@ using esp::scene::SceneConfiguration;
 using esp::sim::SimulatorWithAgents;
 
 const std::string vangogh =
-    "../data/scene_datasets/habitat-test-scenes/van-gogh-room.glb";
+    Cr::Utility::Directory::join(SCENE_DATASETS,
+                                 "habitat-test-scenes/van-gogh-room.glb");
 const std::string skokloster =
-    "../data/scene_datasets/habitat-test-scenes/skokloster-castle.glb";
+    Cr::Utility::Directory::join(SCENE_DATASETS,
+                                 "habitat-test-scenes/skokloster-castle.glb");
 
 TEST(SimTest, Basic) {
   SceneConfiguration scene{.id = vangogh};

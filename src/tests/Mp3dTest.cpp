@@ -2,9 +2,14 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/Utility/Directory.h>
 #include <gtest/gtest.h>
 
 #include "esp/scene/SemanticScene.h"
+
+#include "configure.h"
+
+namespace Cr = Corrade;
 
 using namespace esp;
 using namespace esp::geo;
@@ -15,7 +20,10 @@ TEST(Mp3dTest, Load) {
   const quatf alignGravity =
       quatf::FromTwoVectors(-vec3f::UnitZ(), ESP_GRAVITY);
   const quatf alignFront = quatf::FromTwoVectors(-vec3f::UnitX(), ESP_FRONT);
-  SemanticScene::loadMp3dHouse("test.house", house, alignFront * alignGravity);
+  SemanticScene::loadMp3dHouse(
+      Cr::Utility::Directory::join(SCENE_DATASETS,
+                                   "mp3d/1LXtFkjw3qL/1LXtFkjw3qL.house"),
+      house, alignFront * alignGravity);
   LOG(INFO) << "House{nobjects:" << house.count("objects")
             << ",nlevels:" << house.count("levels")
             << ",nregions:" << house.count("regions")
