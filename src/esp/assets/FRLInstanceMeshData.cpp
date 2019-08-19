@@ -239,14 +239,6 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
 
   const size_t numQuads = cpu_vbo_.size() / 4;
 
-  cbo_float_ = new std::vector<float>(cpu_cbo_.size() * 3);
-  for (int iVert = 0; iVert < cpu_cbo_.size(); ++iVert) {
-    const uint32_t idx = 3 * iVert;
-    (*cbo_float_)[idx + 0] = cpu_cbo_[iVert][0] / 255.0f;
-    (*cbo_float_)[idx + 1] = cpu_cbo_[iVert][1] / 255.0f;
-    (*cbo_float_)[idx + 2] = cpu_cbo_[iVert][2] / 255.0f;
-  }
-
   /* Extract object IDs from the fourth component -- it's originally a float
      so we have to allocate instead of using a strided array view :( */
   Cr::Containers::Array<uint32_t> objectIds{numQuads * 2};
@@ -258,15 +250,16 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
 
   renderingBuffer_->vbo.setData(*cpu_vbo_3_,
                                 Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->cbo.setData(*cbo_float_,
-                                Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->cbo.setData(cpu_cbo_, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->ibo.setData(*tri_ibo_, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
       .setCount(tri_ibo_->size())  // Set vertex/index count (numQuads * 6)
       .addVertexBuffer(renderingBuffer_->vbo, 0,
                        gfx::PrimitiveIDTexturedShader::Position{})
-      .addVertexBuffer(renderingBuffer_->cbo, 0,
-                       gfx::PrimitiveIDTexturedShader::Color3{})
+      .addVertexBuffer(
+          renderingBuffer_->cbo, 0,
+          gfx::PrimitiveIDTexturedShader::Color3{
+              gfx::PrimitiveIDTexturedShader::Color3::DataType::UnsignedByte})
       .setIndexBuffer(renderingBuffer_->ibo, 0,
                       Magnum::GL::MeshIndexType::UnsignedInt);
 

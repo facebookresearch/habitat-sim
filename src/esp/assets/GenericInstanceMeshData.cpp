@@ -229,13 +229,6 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_ =
       std::make_unique<GenericInstanceMeshData::RenderingBuffer>();
 
-  // convert uchar rgb to float rgb
-  std::vector<vec3f> cbo_float_;
-  cbo_float_.reserve(cpu_cbo_.size());
-  for (const auto& c : cpu_cbo_) {
-    cbo_float_.emplace_back(c.cast<float>() / 255.0f);
-  }
-
   /* Pack primitive IDs into a texture. 1D texture won't be large enough so the
      data have to be put into a 2D texture. For simplicity on both the C++ and
      shader side the texture has a fixed width and height is dynamic, and
@@ -243,15 +236,16 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   ASSERT(objectIds_.size() == cpu_ibo_.size());
   renderingBuffer_->tex = createInstanceTexture(objectIds_);
   renderingBuffer_->vbo.setData(cpu_vbo_, Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->cbo.setData(cbo_float_,
-                                Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->cbo.setData(cpu_cbo_, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->ibo.setData(cpu_ibo_, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
       .setCount(cpu_ibo_.size() * 3)
       .addVertexBuffer(renderingBuffer_->vbo, 0,
                        gfx::PrimitiveIDTexturedShader::Position{})
-      .addVertexBuffer(renderingBuffer_->cbo, 0,
-                       gfx::PrimitiveIDTexturedShader::Color3{})
+      .addVertexBuffer(
+          renderingBuffer_->cbo, 0,
+          gfx::PrimitiveIDTexturedShader::Color3{
+              gfx::PrimitiveIDTexturedShader::Color3::DataType::UnsignedByte})
       .setIndexBuffer(renderingBuffer_->ibo, 0,
                       Magnum::GL::MeshIndexType::UnsignedInt);
 
