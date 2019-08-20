@@ -68,8 +68,8 @@ const struct {
 };
 
 CORRADE_NEVER_INLINE void unprojectBaseline(
-    Cr::Containers::ArrayView<float> depth,
-    const Mn::Matrix4& unprojection) {
+    const Mn::Matrix4& unprojection,
+    Cr::Containers::ArrayView<float> depth) {
   for (float& d : depth) {
     if (d == 1.0f) {
       d = 0.0f;
@@ -80,20 +80,30 @@ CORRADE_NEVER_INLINE void unprojectBaseline(
 }
 
 CORRADE_NEVER_INLINE void unprojectBaselineNoBranch(
-    Cr::Containers::ArrayView<float> depth,
-    const Mn::Matrix4& unprojection) {
+    const Mn::Matrix4& unprojection,
+    Cr::Containers::ArrayView<float> depth) {
   for (float& d : depth) {
     d = -unprojection.transformPoint(Mn::Vector3::zAxis(-d)).z();
   }
 }
 
+CORRADE_NEVER_INLINE void unprojectDepthNoBranch(
+    const Mn::Vector2& unprojection,
+    Cr::Containers::ArrayView<Mn::Float> depth) {
+  for (float& d : depth) {
+    d = unprojection[1] / (d + unprojection[0]);
+  }
+}
+
 const struct {
   const char* name;
-  void (*unprojector)(Cr::Containers::ArrayView<float>, const Mn::Matrix4&);
+  void (*unprojectorFull)(const Mn::Matrix4&, Cr::Containers::ArrayView<float>);
+  void (*unprojectorOptimized)(const Mn::Vector2&,
+                               Cr::Containers::ArrayView<float>);
   DepthShader::Flags flags;
 } UnprojectBenchmarkData[]{
-    {"", unprojectBaseline, {}},
-    {"no branch", unprojectBaselineNoBranch,
+    {"", unprojectBaseline, unprojectDepth, {}},
+    {"no branch", unprojectBaselineNoBranch, unprojectDepthNoBranch,
      DepthShader::Flag::NoFarPlanePatching},
 };
 
@@ -103,10 +113,11 @@ DepthUnprojectionTest::DepthUnprojectionTest() {
        &DepthUnprojectionTest::testGpuUnprojectExisting},
       Cr::Containers::arraySize(TestData));
 
-  addInstancedBenchmarks({&DepthUnprojectionTest::benchmarkBaseline}, 10,
+  addInstancedBenchmarks({&DepthUnprojectionTest::benchmarkBaseline}, 50,
                          Cr::Containers::arraySize(UnprojectBenchmarkData));
 
-  addBenchmarks({&DepthUnprojectionTest::benchmarkCpu}, 10);
+  addInstancedBenchmarks({&DepthUnprojectionTest::benchmarkCpu}, 50,
+                         Cr::Containers::arraySize(UnprojectBenchmarkData));
 
   addBenchmarks({&DepthUnprojectionTest::benchmarkGpuDirect}, 50,
                 BenchmarkType::GpuTime);
@@ -231,13 +242,16 @@ void DepthUnprojectionTest::benchmarkBaseline() {
   for (std::size_t i = 0; i != depth.size(); ++i)
     depth[i] = float(2 * (i % 10000)) / float(10000) - 1.0f;
 
-  CORRADE_BENCHMARK(1) { data.unprojector(depth, unprojection); }
+  CORRADE_BENCHMARK(1) { data.unprojectorFull(unprojection, depth); }
 
   CORRADE_COMPARE_AS(Mn::Math::max<float>(depth), 9.0f,
                      Cr::TestSuite::Compare::Greater);
 }
 
 void DepthUnprojectionTest::benchmarkCpu() {
+  auto&& data = UnprojectBenchmarkData[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+
   Mn::Vector2 unprojection = calculateDepthUnprojection(
       Mn::Matrix4::perspectiveProjection(60.0_degf, 1.0f, 0.001f, 100.0f));
 
@@ -246,7 +260,7 @@ void DepthUnprojectionTest::benchmarkCpu() {
   for (std::size_t i = 0; i != depth.size(); ++i)
     depth[i] = float(i % 10000) / float(10000);
 
-  CORRADE_BENCHMARK(1) { unprojectDepth(unprojection, depth); }
+  CORRADE_BENCHMARK(1) { data.unprojectorOptimized(unprojection, depth); }
 
   CORRADE_COMPARE_AS(Mn::Math::max<float>(depth), 9.0f,
                      Cr::TestSuite::Compare::Greater);
