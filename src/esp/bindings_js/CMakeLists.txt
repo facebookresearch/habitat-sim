@@ -12,7 +12,7 @@ target_link_libraries(hsim_bindings
     sim
 )
 
-set_target_properties(hsim_bindings PROPERTIES LINK_OPTIONS "--bind")
+set_target_properties(hsim_bindings PROPERTIES LINK_FLAGS "--bind")
 
 # copy JS/HTML/CSS scaffolding for WebGL build
 install(FILES
