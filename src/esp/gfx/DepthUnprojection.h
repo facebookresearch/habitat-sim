@@ -8,8 +8,55 @@
 namespace esp {
 namespace gfx {
 
-/** @brief Calculate depth unprojection coefficients */
-Magnum::Matrix2x2 calculateDepthUnprojection(
+/**
+@brief Calculate depth unprojection coefficients for @ref unprojectDepth()
+
+Given a projection transformation of vector @f$ \boldsymbol{v} @f$ using a
+matrix @f$ \boldsymbol{P} @f$ where @f$ x @f$ and @f$ y @f$ are arbitrary, the
+transformation can be reduced to a 2x2 matrix multiplication: @f[
+  \begin{array}{rcl}
+    \boldsymbol{P} \boldsymbol{v} & = & \begin{pmatrix}
+      p & 0 & 0 & 0 \\
+      0 & q & 0 & 0 \\
+      0 & 0 & a & b \\
+      0 & 0 & -1 & 0
+    \end{pmatrix} \begin{pmatrix}
+      x \\ y \\ z \\ 1
+    \end{pmatrix} \\[2.5em]
+
+    \boldsymbol{P'} \boldsymbol{v} & = & \begin{pmatrix}
+      a & b \\
+      -1 & 0
+    \end{pmatrix} \begin{pmatrix}
+      z \\ 1
+    \end{pmatrix} = \begin{pmatrix}
+      az + b \\
+      -z
+    \end{pmatrix}
+  \end{array}
+@f]
+
+In the OpenGL depth buffer, the depth values @f$ d @f$ are in range
+@f$ [ 0 ; 1 ] @f$ and the final depth value is after a perspective divide. The
+output has Z going forward, not backward, so we're looking for the value of
+@f$ -z @f$: @f[
+  \begin{array}{rcl}
+    2d - 1 & = & \cfrac{az + b}{-z} \\[1.25em]
+    -z & = & \cfrac{b}{2d + a - 1}
+  \end{array}
+@f]
+
+Finally, to reduce the amount of operations in @ref unprojectDepth(), we
+integrate the constants into @f$ a @f$ and @f$ b @f$, returning @f$ a' @f$ and
+@f$ b' @f$: @f[
+  \begin{array}{rcl}
+    -z & = & \cfrac{b}{2d + (a - 1)} \\[1.25em]
+    -z & = & \cfrac{\frac{1}{2}b}{d + \frac{1}{2}(a - 1)} \\[1.25em]
+    -z & = & \cfrac{b'}{d + a'} ; ~~~~ a' = \frac{1}{2}(a - 1),
+                                  ~~~~ b' = \frac{1}{2}b \end{array}
+@f]
+*/
+Magnum::Vector2 calculateDepthUnprojection(
     const Magnum::Matrix4& projectionMatrix);
 
 /**
@@ -23,7 +70,7 @@ Additionally to applying that calculation, if the input depth is at the far
 plane (of value @cpp 1.0f @ce), it's set to @cpp 0.0f @ce on output as
 consumers expect zeros for things that are too far.
 */
-void unprojectDepth(const Magnum::Matrix2x2& unprojection,
+void unprojectDepth(const Magnum::Vector2& unprojection,
                     Corrade::Containers::ArrayView<Magnum::Float> depth);
 
 }  // namespace gfx

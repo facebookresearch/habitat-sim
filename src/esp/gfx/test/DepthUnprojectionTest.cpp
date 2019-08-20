@@ -128,7 +128,7 @@ void DepthUnprojectionTest::benchmarkBaseline() {
 }
 
 void DepthUnprojectionTest::benchmarkCpu() {
-  Mn::Matrix2x2 unprojection = calculateDepthUnprojection(
+  Mn::Vector2 unprojection = calculateDepthUnprojection(
       Mn::Matrix4::perspectiveProjection(60.0_degf, 1.0f, 0.001f, 100.0f));
 
   Cr::Containers::Array<float> depth{Cr::Containers::NoInit,

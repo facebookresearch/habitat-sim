@@ -121,7 +121,7 @@ struct Renderer::Impl {
   GL::Renderbuffer depthRenderbuffer_;
   GL::Framebuffer framebuffer_;
 
-  Matrix2x2 depthUnprojection_;
+  Vector2 depthUnprojection_;
 };
 
 Renderer::Renderer(int width, int height)
