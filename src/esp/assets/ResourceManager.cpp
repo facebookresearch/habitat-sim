@@ -6,6 +6,7 @@
 
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/PluginManager/Manager.h>
+#include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
@@ -49,6 +50,8 @@
 #include "esp/gfx/PTexMeshDrawable.h"
 #include "esp/gfx/PTexMeshShader.h"
 #endif
+
+namespace Cr = Corrade;
 
 namespace esp {
 namespace assets {
@@ -1099,10 +1102,12 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
                                          scene::SceneNode* parent,
                                          DrawableGroup* drawables) {
   ASSERT(parent != nullptr);
-  const std::string& houseFile = houseInfo.filepath;
+  std::string houseFile = Cr::Utility::Directory::join(
+      Cr::Utility::Directory::current(), houseInfo.filepath);
   const auto& json = io::parseJsonFile(houseFile);
   const auto& levels = json["levels"].GetArray();
   std::vector<std::string> pathTokens = io::tokenize(houseFile, "/", 0, true);
+  ASSERT(pathTokens.size() >= 3);
   pathTokens.pop_back();  // house.json
   const std::string houseId = pathTokens.back();
   pathTokens.pop_back();  // <houseId>
