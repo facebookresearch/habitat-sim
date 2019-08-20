@@ -29,9 +29,20 @@ class LogMessageVoidify {
 #define GLOG_WARNING \
   Corrade::Utility::Warning {}
 #define LOG(severity) GLOG_##severity
-#define VLOG(severity) LOG(INFO)
 #define LOG_IF(severity, condition) \
   !(condition) ? (void)0 : LogMessageVoidify() & LOG(severity)
+
+#define VLOG_LEVEL 0
+
+#define VLOG_IS_ON(verboselevel) (VLOG_LEVEL >= (verboselevel))
+#define VLOG(verboselevel) LOG_IF(INFO, VLOG_IS_ON(verboselevel))
+#define VLOG_IF(verboselevel, condition) \
+  LOG_IF(INFO, (condition) && VLOG_IS_ON(verboselevel))
+#define VLOG_EVERY_N(verboselevel, n) \
+  LOG_IF_EVERY_N(INFO, VLOG_IS_ON(verboselevel), n)
+#define VLOG_IF_EVERY_N(verboselevel, condition, n) \
+  LOG_IF_EVERY_N(INFO, (condition) && VLOG_IS_ON(verboselevel), n)
+
 #define CHECK(condition) \
   LOG_IF(ERROR, !(condition)) << "Check failed: " #condition " "
 #define CHECK_EQ(a, b) CHECK(a == b)

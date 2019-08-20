@@ -10,10 +10,6 @@
 
 using namespace esp::core;
 
-TEST(CoreTest, TwoPlusTwo) {
-  EXPECT_EQ(4, 2 + 2);
-}
-
 TEST(CoreTest, ConfigurationTest) {
   Configuration cfg;
   cfg.set("myInt", 10);

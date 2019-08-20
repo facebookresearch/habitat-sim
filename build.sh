@@ -4,6 +4,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# Propagate failures properly
+set -e
+
 builder_args=()
 while [[ $# -gt 0 ]]
 do
@@ -36,18 +39,6 @@ fi
 python setup.py build_ext --inplace "${builder_args[@]}"
 
 if [ "$RUN_TESTS" = true ] ; then
-  cd ..
-  echo "Running tests..."
-  TEST_SCRIPTS=$(find "build/tests" -type f -perm +111)
-  declare -i RET_VAL=0
-  for test_script in $TEST_SCRIPTS ; do
-    echo "Running $test_script"
-    $test_script
-    RET_VAL+=$?
-  done
-  if [ "$RET_VAL" -ne 0 ] ; then
-    echo "Some tests failed."
-  else
-    echo "All tests passed."
-  fi
+  cd build
+  ctest -V
 fi
