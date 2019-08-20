@@ -2,35 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <chrono>
-#include <ctime>
-#include <functional>
-
-#include <Corrade/PluginManager/Manager.h>
-#include <Corrade/Utility/String.h>
-#include <Magnum/Math/Color.h>
-#include <Magnum/PixelFormat.h>
-#include <Magnum/Trade/ImageData.h>
-#include <Magnum/Trade/MeshObjectData3D.h>
-#include <Magnum/Trade/PhongMaterialData.h>
-#include <Magnum/Trade/SceneData.h>
-#include <Magnum/Trade/TextureData.h>
-
-#include "esp/geo/geo.h"
-#include "esp/gfx/GenericDrawable.h"
-#include "esp/gfx/PTexMeshDrawable.h"
-#include "esp/gfx/PTexMeshShader.h"
-#include "esp/io/io.h"
-#include "esp/io/json.h"
-#include "esp/scene/SceneConfiguration.h"
-#include "esp/scene/SceneGraph.h"
-
 #include "PhysicsManager.h"
-#include "esp/assets/FRLInstanceMeshData.h"
-#include "esp/assets/GenericInstanceMeshData.h"
-#include "esp/assets/GltfMeshData.h"
-#include "esp/assets/Mp3dInstanceMeshData.h"
-#include "esp/assets/PTexMeshData.h"
+#include "esp/assets/CollisionMeshData.h"
 #include "esp/assets/ResourceManager.h"
 
 namespace esp {

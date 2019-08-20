@@ -51,6 +51,8 @@
 #include "esp/gfx/PTexMeshShader.h"
 #endif
 
+namespace Cr = Corrade;
+
 namespace esp {
 namespace assets {
 
@@ -819,7 +821,7 @@ bool ResourceManager::loadGeneralMeshData(
         LOG(ERROR) << "Cannot load scene, exiting";
         return false;
       }
-      for (uint sceneDataID : sceneData->children3D()) {
+      for (unsigned int sceneDataID : sceneData->children3D()) {
         magnumData.emplace_back(sceneDataID);
       }
     } else if (importer->mesh3DCount() && meshes_[metaData.meshIndex.first]) {
@@ -1099,10 +1101,12 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
                                          scene::SceneNode* parent,
                                          DrawableGroup* drawables) {
   ASSERT(parent != nullptr);
-  const std::string& houseFile = houseInfo.filepath;
+  std::string houseFile = Cr::Utility::Directory::join(
+      Cr::Utility::Directory::current(), houseInfo.filepath);
   const auto& json = io::parseJsonFile(houseFile);
   const auto& levels = json["levels"].GetArray();
   std::vector<std::string> pathTokens = io::tokenize(houseFile, "/", 0, true);
+  ASSERT(pathTokens.size() >= 3);
   pathTokens.pop_back();  // house.json
   const std::string houseId = pathTokens.back();
   pathTokens.pop_back();  // <houseId>
