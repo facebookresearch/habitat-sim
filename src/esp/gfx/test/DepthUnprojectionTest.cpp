@@ -3,10 +3,21 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/StridedArrayView.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
-#include <Corrade/TestSuite/Tester.h>
+#include <Magnum/GL/Framebuffer.h>
+#include <Magnum/GL/Mesh.h>
+#include <Magnum/GL/OpenGLTester.h>
+#include <Magnum/GL/Texture.h>
+#include <Magnum/GL/TextureFormat.h>
+#include <Magnum/Image.h>
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Math/Matrix4.h>
+#include <Magnum/MeshTools/Compile.h>
+#include <Magnum/PixelFormat.h>
+#include <Magnum/Primitives/Plane.h>
+#include <Magnum/Shaders/Flat.h>
+#include <Magnum/Trade/MeshData3D.h>
 
 #include "esp/gfx/DepthUnprojection.h"
 
@@ -18,13 +29,17 @@ namespace gfx {
 namespace test {
 namespace {
 
-struct DepthUnprojectionTest : Cr::TestSuite::Tester {
+struct DepthUnprojectionTest : Mn::GL::OpenGLTester {
   explicit DepthUnprojectionTest();
 
   void testCpu();
+  void testGpuDirect();
+  void testGpuUnprojectExisting();
 
   void benchmarkBaseline();
   void benchmarkCpu();
+  void benchmarkGpuDirect();
+  void benchmarkGpuUnprojectExisting();
 };
 
 using namespace Mn::Math::Literals;
@@ -75,19 +90,31 @@ CORRADE_NEVER_INLINE void unprojectBaselineNoBranch(
 const struct {
   const char* name;
   void (*unprojector)(Cr::Containers::ArrayView<float>, const Mn::Matrix4&);
+  DepthShader::Flags flags;
 } UnprojectBenchmarkData[]{
-    {"", unprojectBaseline},
-    {"no branch", unprojectBaselineNoBranch},
+    {"", unprojectBaseline, {}},
+    {"no branch", unprojectBaselineNoBranch,
+     DepthShader::Flag::NoFarPlanePatching},
 };
 
 DepthUnprojectionTest::DepthUnprojectionTest() {
-  addInstancedTests({&DepthUnprojectionTest::testCpu},
-                    Cr::Containers::arraySize(TestData));
+  addInstancedTests(
+      {&DepthUnprojectionTest::testCpu, &DepthUnprojectionTest::testGpuDirect,
+       &DepthUnprojectionTest::testGpuUnprojectExisting},
+      Cr::Containers::arraySize(TestData));
 
   addInstancedBenchmarks({&DepthUnprojectionTest::benchmarkBaseline}, 10,
                          Cr::Containers::arraySize(UnprojectBenchmarkData));
 
   addBenchmarks({&DepthUnprojectionTest::benchmarkCpu}, 10);
+
+  addBenchmarks({&DepthUnprojectionTest::benchmarkGpuDirect}, 50,
+                BenchmarkType::GpuTime);
+
+  addInstancedBenchmarks(
+      {&DepthUnprojectionTest::benchmarkGpuUnprojectExisting}, 50,
+      Cr::Containers::arraySize(UnprojectBenchmarkData),
+      BenchmarkType::GpuTime);
 }
 
 void DepthUnprojectionTest::testCpu() {
@@ -103,6 +130,89 @@ void DepthUnprojectionTest::testCpu() {
   float depth[] = {Mn::Math::lerpInverted(-1.0f, 1.0f, projected.z())};
   unprojectDepth(calculateDepthUnprojection(data.projection), depth);
   CORRADE_COMPARE_WITH(depth[0], data.expected,
+                       Cr::TestSuite::Compare::around(data.depth * 0.0002f));
+}
+
+void DepthUnprojectionTest::testGpuDirect() {
+  auto&& data = TestData[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+
+  /* This makes points that are too far set to 0, which is consistent with
+     the CPU-side unprojection code */
+  Mn::GL::Renderer::setClearColor(0x000000_rgbf);
+
+  Mn::GL::Texture2D output;
+  output.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+      .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+      .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+      .setStorage(1, Mn::GL::TextureFormat::R32F, Mn::Vector2i{4});
+  Mn::GL::Framebuffer framebuffer{{{}, Mn::Vector2i{4}}};
+  framebuffer.attachTexture(Mn::GL::Framebuffer::ColorAttachment{0}, output, 0)
+      .clear(Mn::GL::FramebufferClear::Color)
+      .bind();
+
+  auto transformation =
+      Mn::Matrix4::scaling({10000.0f, 10000.0f, 1.0f}) *
+      Mn::Matrix4::translation(Mn::Vector3::zAxis(-data.depth));
+
+  /* If we're testing for the far plane, don't draw anything, just use the
+     clear color. */
+  if (!(data.depth == 100.0f && data.expected == 0.0f)) {
+    Mn::GL::Mesh mesh = Mn::MeshTools::compile(Mn::Primitives::planeSolid());
+    DepthShader shader;
+    shader.setTransformationMatrix(transformation)
+        .setProjectionMatrix(data.projection);
+    mesh.draw(shader);
+  }
+
+  MAGNUM_VERIFY_NO_GL_ERROR();
+
+  Mn::Image2D image =
+      framebuffer.read(framebuffer.viewport(), {Mn::PixelFormat::R32F});
+  CORRADE_COMPARE_WITH(image.pixels<Mn::Float>()[2][2], data.expected,
+                       Cr::TestSuite::Compare::around(data.depth * 0.0002f));
+}
+
+void DepthUnprojectionTest::testGpuUnprojectExisting() {
+  auto&& data = TestData[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+
+  Mn::Vector3 projected =
+      data.projection.transformPoint({0.95f, -0.34f, -data.depth});
+  Mn::GL::Renderer::setClearDepth(
+      Mn::Math::lerpInverted(-1.0f, 1.0f, projected.z()));
+
+  Mn::GL::Texture2D depth;
+  depth.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+      .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+      .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+      .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, Mn::Vector2i{4});
+  Mn::GL::Framebuffer framebuffer{{{}, Mn::Vector2i{4}}};
+  framebuffer
+      .attachTexture(Mn::GL::Framebuffer::BufferAttachment::Depth, depth, 0)
+      .mapForDraw(Mn::GL::Framebuffer::DrawAttachment::None)
+      .clear(Mn::GL::FramebufferClear::Depth)
+      .bind();
+
+  Mn::GL::Texture2D output;
+  output.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+      .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+      .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+      .setStorage(1, Mn::GL::TextureFormat::R32F, Mn::Vector2i{4});
+  framebuffer.detach(Mn::GL::Framebuffer::BufferAttachment::Depth)
+      .attachTexture(Mn::GL::Framebuffer::ColorAttachment{0}, output, 0)
+      .mapForDraw(Mn::GL::Framebuffer::ColorAttachment{0})
+      .clear(Mn::GL::FramebufferClear::Color);
+
+  DepthShader shader{DepthShader::Flag::UnprojectExistingDepth};
+  shader.setProjectionMatrix(data.projection).bindDepthTexture(depth);
+  Mn::GL::Mesh{}.setCount(3).draw(shader);
+
+  MAGNUM_VERIFY_NO_GL_ERROR();
+
+  Mn::Image2D image =
+      framebuffer.read(framebuffer.viewport(), {Mn::PixelFormat::R32F});
+  CORRADE_COMPARE_WITH(image.pixels<Mn::Float>()[2][2], data.expected,
                        Cr::TestSuite::Compare::around(data.depth * 0.0002f));
 }
 
@@ -140,6 +250,69 @@ void DepthUnprojectionTest::benchmarkCpu() {
 
   CORRADE_COMPARE_AS(Mn::Math::max<float>(depth), 9.0f,
                      Cr::TestSuite::Compare::Greater);
+}
+
+void DepthUnprojectionTest::benchmarkGpuDirect() {
+  Mn::GL::Texture2D output{};
+  output.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+      .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+      .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+      .setStorage(1, Mn::GL::TextureFormat::R32F, BenchmarkSize);
+  Mn::GL::Framebuffer framebuffer{{{}, BenchmarkSize}};
+  framebuffer.attachTexture(Mn::GL::Framebuffer::ColorAttachment{0}, output, 0)
+      .clear(Mn::GL::FramebufferClear::Color)
+      .bind();
+
+  auto transformation = Mn::Matrix4::scaling({10000.0f, 10000.0f, 1.0f}) *
+                        Mn::Matrix4::translation(Mn::Vector3::zAxis(-4.0f));
+
+  Mn::GL::Mesh mesh = Mn::MeshTools::compile(Mn::Primitives::planeSolid());
+  DepthShader shader;
+  shader.setTransformationMatrix(transformation)
+      .setProjectionMatrix(
+          Mn::Matrix4::perspectiveProjection(60.0_degf, 1.0f, 0.001f, 100.0f));
+
+  CORRADE_BENCHMARK(10) { mesh.draw(shader); }
+}
+
+void DepthUnprojectionTest::benchmarkGpuUnprojectExisting() {
+  auto&& data = UnprojectBenchmarkData[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+
+  Mn::Matrix4 projection =
+      Mn::Matrix4::perspectiveProjection(60.0_degf, 1.0f, 0.001f, 100.0f);
+  Mn::Vector3 projected = projection.transformPoint({0.95f, -0.34f, -4.0f});
+  Mn::GL::Renderer::setClearDepth(
+      Mn::Math::lerpInverted(-1.0f, 1.0f, projected.z()));
+
+  Mn::GL::Texture2D depth;
+  depth.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+      .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+      .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+      .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, BenchmarkSize);
+  Mn::GL::Framebuffer framebuffer{{{}, BenchmarkSize}};
+  framebuffer
+      .attachTexture(Mn::GL::Framebuffer::BufferAttachment::Depth, depth, 0)
+      .mapForDraw(Mn::GL::Framebuffer::DrawAttachment::None)
+      .clear(Mn::GL::FramebufferClear::Depth)
+      .bind();
+
+  Mn::GL::Texture2D output;
+  output.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+      .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+      .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+      .setStorage(1, Mn::GL::TextureFormat::R32F, BenchmarkSize);
+  framebuffer.detach(Mn::GL::Framebuffer::BufferAttachment::Depth)
+      .attachTexture(Mn::GL::Framebuffer::ColorAttachment{0}, output, 0)
+      .mapForDraw(Mn::GL::Framebuffer::ColorAttachment{0})
+      .clear(Mn::GL::FramebufferClear::Color);
+
+  DepthShader shader{DepthShader::Flag::UnprojectExistingDepth | data.flags};
+  shader.setProjectionMatrix(projection).bindDepthTexture(depth);
+  Mn::GL::Mesh mesh;
+  mesh.setCount(3);
+
+  CORRADE_BENCHMARK(10) { mesh.draw(shader); }
 }
 
 }  // namespace

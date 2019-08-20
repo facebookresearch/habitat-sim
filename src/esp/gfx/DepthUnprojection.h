@@ -2,11 +2,75 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <Corrade/Containers/Containers.h>
-#include <Magnum/Magnum.h>
+#include <Corrade/Containers/EnumSet.h>
+#include <Magnum/GL/AbstractShaderProgram.h>
 
 namespace esp {
 namespace gfx {
+
+/**
+@brief Depth-only shader
+
+Outputs depth values without projection applied. Can also unproject existing
+depth buffer if @ref Flag::UnprojectExistingDepth is enabled.
+@see @ref calculateDepthUnprojection(), @ref unprojectDepth()
+*/
+class DepthShader : public Magnum::GL::AbstractShaderProgram {
+ public:
+  /** @brief Flag */
+  enum class Flag {
+    /**
+     * Perform unprojection of an existing depth buffer. If enabled, instead
+     * of rendering particular polygons bind a depth texture with
+     * @ref bindDepthTexture(). The shader will then render a full-screen
+     * triangle and unprojects the depth using an inverse of the matrix
+     * passed in @ref setProjectionMatrix().
+     */
+    UnprojectExistingDepth = 1 << 0,
+
+    /**
+     * By default, depth values on the far plane are patched to have a value of
+     * @cpp 0.0f @ce (instead of @cpp 100.0f @ce or whatever the far plane is
+     * set to). This might have some performance penalty and can be turned off
+     * with this flag.
+     */
+    NoFarPlanePatching = 1 << 1
+  };
+
+  /** @brief Flags */
+  typedef Corrade::Containers::EnumSet<Flag> Flags;
+
+  /** @brief Constructor */
+  explicit DepthShader(Flags flags = {});
+
+  /**
+   * @brief Set transformation and projection matrix
+   * @return Reference to self (for method chaining)
+   *
+   * Expects that @ref Flag::UnprojectExistingDepth is not set.
+   */
+  DepthShader& setTransformationMatrix(const Magnum::Matrix4& matrix);
+
+  /**
+   * @brief Set projection matrix for unprojection
+   * @return Reference to self (for method chaining)
+   */
+  DepthShader& setProjectionMatrix(const Magnum::Matrix4& matrix);
+
+  /**
+   * @brief Bind depth texture
+   * @return Reference to self (for method chaining)
+   *
+   * Expects that @ref Flag::UnprojectExistingDepth is set.
+   */
+  DepthShader& bindDepthTexture(Magnum::GL::Texture2D& texture);
+
+ private:
+  Flags flags_;
+  int transformationMatrixUniform_, projectionMatrixOrDepthUnprojectionUniform_;
+};
+
+CORRADE_ENUMSET_OPERATORS(DepthShader::Flags)
 
 /**
 @brief Calculate depth unprojection coefficients for @ref unprojectDepth()

@@ -49,6 +49,7 @@ if(BUILD_TEST)
   message("Building TESTS")
   enable_testing()
   find_package(Corrade REQUIRED TestSuite)
+  find_package(Magnum REQUIRED OpenGLTester)
 endif()
 
 # include source dirs
