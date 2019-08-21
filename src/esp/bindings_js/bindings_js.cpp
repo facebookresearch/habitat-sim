@@ -165,6 +165,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("sensorSuite", em::select_overload<const SensorSuite&() const>(
                                    &Agent::getSensorSuite))
       .function("getState", &Agent::getState)
+      .function("setState", &Agent::setState)
       .function("hasAction", &Agent::hasAction)
       .function("act", &Agent::act);
 
