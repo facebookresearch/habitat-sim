@@ -7,6 +7,10 @@ class SimEnv {
 
   reset() {
     this.sim.reset();
+    const agent = this.sim.getAgent(this.defaultAgentId);
+    if (this.initialAgentState) {
+      agent.setState(this.initialAgentState, true);
+    }
   }
 
   step(action) {
@@ -39,8 +43,20 @@ class SimEnv {
     return converted;
   }
 
-  addAgent(config) {
-    this.sim.addAgent(this.createAgentConfig(config))
+  createAgentState(state) {
+    const converted = new Module.AgentState();
+    for (let key in state) {
+      let value = state[key];
+      converted[key] = value;
+    }
+    return converted;
+  }
+
+  addAgent(config, state) {
+    if (state) {
+      this.initialAgentState = this.createAgentState(state);
+    }
+    return this.sim.addAgent(this.createAgentConfig(config));
   }
 
   getObservationSpace(sensorId) {
@@ -50,7 +66,7 @@ class SimEnv {
   getObservation(sensorId, buffer) {
     const obs = new Module.Observation();
     this.sim.getAgentObservation(0, sensorId, obs);
-    return obs
+    return obs;
   }
 
 }

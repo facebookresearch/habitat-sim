@@ -50,13 +50,18 @@
         sensorSpecifications: sensorConfigs
       };
 
+      const agentState = {
+        position: [6.35314, 0.0099186, 19.0241],
+        rotation: [0, 0.946352, 0, 0.323138]
+      };
+
       let sceneConfig = new Module.SceneConfiguration();
       sceneConfig.id = "skokloster-castle.glb";
       let config = new Module.SimulatorConfiguration();
       config.scene = sceneConfig;
 
       const simenv = new SimEnv(config, 0);
-      const agent = simenv.addAgent(agentConfig);
+      const agent = simenv.addAgent(agentConfig, agentState);
       const task = new NavigateTask(simenv, {
         canvas: document.getElementById('canvas2d'),
         status: document.getElementById('status')
