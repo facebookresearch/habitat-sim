@@ -136,7 +136,7 @@ void DepthUnprojectionTest::testCpu() {
       data.projection.transformPoint({0.95f, -0.34f, -data.depth});
   CORRADE_COMPARE_WITH(
       -data.projection.inverted().transformPoint(projected).z(), data.depth,
-      Cr::TestSuite::Compare::around(data.depth * 0.0002f));
+      Cr::TestSuite::Compare::around(data.depth * 0.0006f));
 
   float depth[] = {Mn::Math::lerpInverted(-1.0f, 1.0f, projected.z())};
   unprojectDepth(calculateDepthUnprojection(data.projection), depth);
