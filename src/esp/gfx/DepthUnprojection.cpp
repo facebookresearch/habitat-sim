@@ -97,6 +97,10 @@ Mn::Vector2 calculateDepthUnprojection(const Mn::Matrix4& projectionMatrix) {
          0.5f;
 }
 
+/* Clang doesn't have target_clones yet: https://reviews.llvm.org/D51650 */
+#if defined(CORRADE_TARGET_X86) && defined(__GNUC__) && __GNUC__ >= 6
+__attribute__((target_clones("default", "sse4.2", "avx2")))
+#endif
 void unprojectDepth(const Mn::Vector2& unprojection,
                     Cr::Containers::ArrayView<Mn::Float> depth) {
   for (Mn::Float& d : depth) {

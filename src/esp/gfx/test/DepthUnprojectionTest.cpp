@@ -67,9 +67,31 @@ const struct {
      Mn::Matrix4::perspectiveProjection(60.0_degf, 1.0f, 0.01f, 100.0f)},
 };
 
-CORRADE_NEVER_INLINE void unprojectBaseline(
-    const Mn::Matrix4& unprojection,
-    Cr::Containers::ArrayView<float> depth) {
+/* Clang doesn't have target_clones yet: https://reviews.llvm.org/D51650 */
+#if defined(CORRADE_TARGET_X86) && defined(__GNUC__) && __GNUC__ >= 6
+#define FMV_SUPPORTED
+#endif
+
+#ifdef FMV_SUPPORTED
+__attribute__((target("default"))) const char* targetName() {
+  return "default";
+}
+
+__attribute__((target("sse4.2"))) const char* targetName() {
+  return "sse4.2";
+}
+
+__attribute__((target("avx2"))) const char* targetName() {
+  return "avx2";
+}
+#endif
+
+#ifdef FMV_SUPPORTED
+__attribute__((target_clones("default", "sse4.2", "avx2")))
+#endif
+CORRADE_NEVER_INLINE void
+unprojectBaseline(const Mn::Matrix4& unprojection,
+                  Cr::Containers::ArrayView<float> depth) {
   for (float& d : depth) {
     if (d == 1.0f) {
       d = 0.0f;
@@ -79,17 +101,23 @@ CORRADE_NEVER_INLINE void unprojectBaseline(
   }
 }
 
-CORRADE_NEVER_INLINE void unprojectBaselineNoBranch(
-    const Mn::Matrix4& unprojection,
-    Cr::Containers::ArrayView<float> depth) {
+#ifdef FMV_SUPPORTED
+__attribute__((target_clones("default", "sse4.2", "avx2")))
+#endif
+CORRADE_NEVER_INLINE void
+unprojectBaselineNoBranch(const Mn::Matrix4& unprojection,
+                          Cr::Containers::ArrayView<float> depth) {
   for (float& d : depth) {
     d = -unprojection.transformPoint(Mn::Vector3::zAxis(-d)).z();
   }
 }
 
-CORRADE_NEVER_INLINE void unprojectDepthNoBranch(
-    const Mn::Vector2& unprojection,
-    Cr::Containers::ArrayView<Mn::Float> depth) {
+#ifdef FMV_SUPPORTED
+__attribute__((target_clones("default", "sse4.2", "avx2")))
+#endif
+CORRADE_NEVER_INLINE void
+unprojectDepthNoBranch(const Mn::Vector2& unprojection,
+                       Cr::Containers::ArrayView<Mn::Float> depth) {
   for (float& d : depth) {
     d = unprojection[1] / (d + unprojection[0]);
   }
@@ -232,6 +260,15 @@ constexpr Mn::Vector2i BenchmarkSize{1536};
 void DepthUnprojectionTest::benchmarkBaseline() {
   auto&& data = UnprojectBenchmarkData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
+
+  if (testCaseInstanceId() == 0 && testCaseRepeatId() == 0) {
+#ifdef FMV_SUPPORTED
+    Mn::Debug{} << "FMV target:" << targetName();
+#else
+    Mn::Debug{}
+        << "FMV not supported by the compiler, relying on CXXFLAGS only.";
+#endif
+  }
 
   Mn::Matrix4 unprojection =
       Mn::Matrix4::perspectiveProjection(60.0_degf, 1.0f, 0.001f, 100.0f)
