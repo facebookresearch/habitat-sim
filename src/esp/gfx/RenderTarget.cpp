@@ -151,7 +151,7 @@ struct RenderTarget::Impl {
   }
 
   void readFrameDepthGPU(float* devPtr) {
-    if (depthBufferCugl_ == nullptr)
+    /* if (depthBufferCugl_ == nullptr)
       checkCudaErrors(cudaGraphicsGLRegisterImage(
           &depthBufferCugl_, depthRenderbuffer_.id(), GL_RENDERBUFFER,
           cudaGraphicsRegisterFlagsReadOnly));
@@ -166,7 +166,15 @@ struct RenderTarget::Impl {
                                           widthInBytes, framebufferSize().y(),
                                           cudaMemcpyDeviceToDevice));
 
-    checkCudaErrors(cudaGraphicsUnmapResources(1, &depthBufferCugl_, 0));
+    checkCudaErrors(cudaGraphicsUnmapResources(1, &depthBufferCugl_, 0)); */
+
+    // TODO Do this on the GPU!
+    Corrade::Containers::Array<float> depth{
+        static_cast<std::size_t>(framebufferSize().product())};
+    readFrameDepth(
+        MutableImageView2D{PixelFormat::R32F, framebufferSize(), depth});
+    cudaMemcpy(devPtr, depth.data(), depth.size() * sizeof(float),
+               cudaMemcpyHostToDevice);
   }
 
   void readFrameObjectIdGPU(int32_t* devPtr) {

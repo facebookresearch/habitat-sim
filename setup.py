@@ -39,7 +39,7 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
     )
     parser.add_argument(
         "--no-cuda",
-        action="store_false",
+        action="store_true",
         dest="no_cuda",
         help="Do not build any CUDA features regardless if CUDA is found or not.",
     )
