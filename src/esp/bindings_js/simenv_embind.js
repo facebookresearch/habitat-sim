@@ -7,10 +7,13 @@ class SimEnv {
   /**
    * Create a simulator.
    * @param {Object} config - simulator config
+   * @param {Object} episode - episode to run
    * @param {number} agentId - default agent id
    */
-  constructor(config, agentId) {
+  constructor(config, episode, agentId) {
     this.sim = new Module.Simulator(config);;
+    this.episode = episode;
+    this.initialAgentState = this.createAgentState(episode.startState);
     this.defaultAgentId = agentId;
   }
 
@@ -20,9 +23,7 @@ class SimEnv {
   reset() {
     this.sim.reset();
     const agent = this.sim.getAgent(this.defaultAgentId);
-    if (this.initialAgentState) {
-      agent.setState(this.initialAgentState, true);
-    }
+    agent.setState(this.initialAgentState, true);
   }
 
   /**
@@ -37,12 +38,8 @@ class SimEnv {
   /**
    * Add an agent to the simulation.
    * @param {Object} config - agent config
-   * @param {Object} state - initial state of agent
    */
-  addAgent(config, state) {
-    if (state) {
-      this.initialAgentState = this.createAgentState(state);
-    }
+  addAgent(config) {
     return this.sim.addAgent(this.createAgentConfig(config));
   }
 
@@ -66,7 +63,50 @@ class SimEnv {
     return obs;
   }
 
+  /**
+   * Get the distance to goal in polar coordinates.
+   * @returns {Array} [magnitude, clockwise-angle (in radians)]
+   */
+  distanceToGoal() {
+    let dst = this.episode.goal.position;
+    let state = new Module.AgentState();
+    const agent = this.sim.getAgent(this.defaultAgentId);
+    agent.getState(state);
+    let src = state.position;
+    let dv = [dst[0] - src[0], dst[1] - src[1], dst[2] - src[2]];
+    dv = this.applyRotation(dv, state.rotation);
+    return this.cartesian_to_polar(-dv[2], dv[0]);
+  }
+
   // PRIVATE methods.
+
+  // Rotate vector, v, by quaternion, q.
+  // Result r = q' * v * q where q' is the quaternion conjugate.
+  // http://www.chrobotics.com/library/understanding-quaternions
+  applyRotation(v, q) {
+    let x, y, z;
+    [x, y, z] = v;
+    let qx, qy, qz, qw;
+    [qx, qy, qz, qw] = q;
+
+    // i = q' * v
+    let ix = qw*x - qy*z + qz*y;
+    let iy = qw*y - qz*x + qx*z;
+    let iz = qw*z - qx*y + qy*x;
+    let iw = qx*x + qy*y + qz*z;
+
+    // r = i * q
+    let r = [];
+    r[0] = ix*qw + iw*qx + iy*qz - iz*qy;
+    r[1] = iy*qw + iw*qy + iz*qx - ix*qz;
+    r[2] = iz*qw + iw*qz + ix*qy - iy*qx;
+
+    return r;
+  }
+
+  cartesian_to_polar(x, y) {
+    return [Math.sqrt(x*x + y*y), Math.atan2(y, x)];
+  }
 
   createSensorSpec(config) {
     const converted = new Module.SensorSpec();
