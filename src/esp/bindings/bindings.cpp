@@ -449,6 +449,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
                      &SimulatorConfiguration::compressTextures)
       .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
       .def_readwrite("enable_physics", &SimulatorConfiguration::enablePhysics)
+      .def_readwrite("physics_config_file",
+                     &SimulatorConfiguration::physicsConfigFile)
       .def("__eq__",
            [](const SimulatorConfiguration& self,
               const SimulatorConfiguration& other) -> bool {

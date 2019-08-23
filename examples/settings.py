@@ -29,6 +29,7 @@ default_sim_settings = {
     "goal_position": [5.047, 0.199, 11.145],
     "goal_headings": [[0, -0.980_785, 0, 0.195_090], [0.0, 1.0, 0.0, 0.0]],
     "enable_physics": False,
+    "physics_config_file": "./data/default.phys_scene_config.json",
 }
 
 # build SimulatorConfiguration
@@ -38,6 +39,9 @@ def make_cfg(settings):
         sim_cfg.enable_physics = settings["enable_physics"]
     else:
         sim_cfg.enable_physics = False
+    if "physics_config_file" in settings.keys():
+        sim_cfg.physics_config_file = settings["physics_config_file"]
+    print("sim_cfg.physics_config_file = " + sim_cfg.physics_config_file)
     sim_cfg.gpu_device_id = 0
     sim_cfg.scene.id = settings["scene"]
 

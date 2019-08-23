@@ -22,10 +22,14 @@ enum class AssetType {
   NAVMESH,
 };
 
+// loading and asset info with filepath == EMPTY_SCENE creates a scene graph
+// with no scene mesh (ie. an empty scene)
+static const std::string EMPTY_SCENE = "NONE";
+
 //! AssetInfo stores information necessary to identify and load an Asset
 struct AssetInfo {
   AssetType type = AssetType::UNKNOWN;
-  std::string filepath = "";
+  std::string filepath = EMPTY_SCENE;  // empty scene
   geo::CoordinateFrame frame;
   float virtualUnitToMeters = 1.0f;
 
