@@ -82,6 +82,7 @@ struct RenderTarget::Impl {
       unprojectedDepth_ = GL::Renderbuffer{};
       unprojectedDepth_.setStorage(GL::RenderbufferFormat::R32F,
                                    framebufferSize());
+
       depthUnprojectionFrameBuffer_ = GL::Framebuffer{{{}, framebufferSize()}};
       depthUnprojectionFrameBuffer_
           .attachRenderbuffer(UnprojectedDepthBuffer, unprojectedDepth_)
@@ -99,16 +100,11 @@ struct RenderTarget::Impl {
     CORRADE_INTERNAL_ASSERT(depthShader_ != nullptr);
     initDepthUnprojector();
 
-    framebuffer_.detach(GL::Framebuffer::BufferAttachment::Depth);
-    depthShader_->bindDepthTexture(depthRenderTexture_);
-    depthShader_->setDepthUnprojection(depthUnprojection_);
-
     depthUnprojectionFrameBuffer_.bind();
+    depthShader_->bindDepthTexture(depthRenderTexture_)
+        .setDepthUnprojection(depthUnprojection_);
 
     depthUnprojectionMesh_.draw(*depthShader_);
-
-    framebuffer_.attachTexture(GL::Framebuffer::BufferAttachment::Depth,
-                               depthRenderTexture_, 0);
   }
 
   void renderEnter() {
