@@ -61,7 +61,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
                                 DrawableGroup* drawables /* = nullptr */) {
   // scene mesh loading
   bool meshSuccess = true;
-  if(info.filepath.compare("NONE") != 0){
+  if (info.filepath.compare("NONE") != 0) {
     if (!io::exists(info.filepath)) {
       LOG(ERROR) << "Cannot load from file " << info.filepath;
       meshSuccess = false;
@@ -85,9 +85,10 @@ bool ResourceManager::loadScene(const AssetInfo& info,
                                                       info.filepath);
       }
     }
-  }else{
+  } else {
     LOG(INFO) << "Loading empty scene";
-    //"NONE" string indicates desire for an empty scene (no scene mesh): welcome to the void
+    //"NONE" string indicates desire for an empty scene (no scene mesh): welcome
+    // to the void
   }
 
   return meshSuccess;
@@ -173,8 +174,8 @@ bool ResourceManager::loadScene(
 
   //! CONSTRUCT SCENE
   const std::string& filename = info.filepath;
-  //if we have a scene mesh, add it as a collision object
-  if(filename.compare("NONE") != 0){
+  // if we have a scene mesh, add it as a collision object
+  if (filename.compare("NONE") != 0) {
     MeshMetaData& metaData = resourceDict_.at(filename);
     auto indexPair = metaData.meshIndex;
     int start = indexPair.first;
@@ -212,7 +213,8 @@ bool ResourceManager::loadScene(
         CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
         Magnum::Matrix4 transform =
             Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
-        Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions);
+        Magnum::MeshTools::transformPointsInPlace(transform,
+                                                  meshData.positions);
         meshGroup.push_back(meshData);
       }
     }
