@@ -61,7 +61,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
                                 DrawableGroup* drawables /* = nullptr */) {
   // scene mesh loading
   bool meshSuccess = true;
-  if (info.filepath.compare("NONE") != 0) {
+  if (info.filepath.compare(EMPTY_SCENE) != 0) {
     if (!io::exists(info.filepath)) {
       LOG(ERROR) << "Cannot load from file " << info.filepath;
       meshSuccess = false;
@@ -87,7 +87,8 @@ bool ResourceManager::loadScene(const AssetInfo& info,
     }
   } else {
     LOG(INFO) << "Loading empty scene";
-    //"NONE" string indicates desire for an empty scene (no scene mesh): welcome
+    // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
+    // scene mesh): welcome
     // to the void
   }
 
@@ -175,7 +176,7 @@ bool ResourceManager::loadScene(
   //! CONSTRUCT SCENE
   const std::string& filename = info.filepath;
   // if we have a scene mesh, add it as a collision object
-  if (filename.compare("NONE") != 0) {
+  if (filename.compare(EMPTY_SCENE) != 0) {
     MeshMetaData& metaData = resourceDict_.at(filename);
     auto indexPair = metaData.meshIndex;
     int start = indexPair.first;
