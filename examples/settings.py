@@ -39,7 +39,8 @@ def make_cfg(settings):
         sim_cfg.enable_physics = settings["enable_physics"]
     else:
         sim_cfg.enable_physics = False
-    sim_cfg.physics_config_file = settings["physics_config_file"]
+    if "physics_config_file" in settings.keys():
+        sim_cfg.physics_config_file = settings["physics_config_file"]
     print("sim_cfg.physics_config_file = " + sim_cfg.physics_config_file)
     sim_cfg.gpu_device_id = 0
     sim_cfg.scene.id = settings["scene"]
