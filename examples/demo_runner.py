@@ -162,7 +162,9 @@ class DemoRunner:
             self._sim.set_translation(object_position + object_offset, object_id)
             print(
                 "added object: "
-                + str(object_id) +" of type " + str(rand_obj_index)
+                + str(object_id)
+                + " of type "
+                + str(rand_obj_index)
                 + " at: "
                 + str(object_position + object_offset)
                 + " | "
@@ -170,14 +172,12 @@ class DemoRunner:
             )
 
     def do_time_steps(self):
-        
+
         total_frames = 0
         start_time = time.time()
         action_names = list(
             self._cfg.agents[self._sim_settings["default_agent"]].action_space.keys()
         )
-
-        
 
         # load an object and position the agent for physics testing
         if self._sim_settings["enable_physics"]:
@@ -348,7 +348,7 @@ class DemoRunner:
         start_state = self.init_common()
 
         # initialize and compute shortest path to goal
-        if(self._sim_settings["compute_shortest_path"]):
+        if self._sim_settings["compute_shortest_path"]:
             self._shortest_path = hsim.ShortestPath()
             self.compute_shortest_path(
                 start_state.position, self._sim_settings["goal_position"]

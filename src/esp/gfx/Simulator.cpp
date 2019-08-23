@@ -76,7 +76,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // We need to make a design decision here:
   // when doing reconfigure, shall we delete all of the previous scene graphs
   activeSceneID_ = sceneManager_.initSceneGraph();
-  //LOG(INFO) << "Active scene graph ID = " << activeSceneID_;
+
+  // LOG(INFO) << "Active scene graph ID = " << activeSceneID_;
   sceneID_.push_back(activeSceneID_);
 
   if (cfg.createRenderer) {
