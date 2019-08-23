@@ -120,30 +120,30 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   // The 2x2 matrix used to unproject depth values from those in the depth
   // buffer to meters
-  virtual Corrade::Containers::Optional<Magnum::Matrix2x2> depthUnprojection()
+  virtual Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
       const {
     return Corrade::Containers::NullOpt;
   };
 
   bool hasRenderTarget() const { return tgt_ != nullptr; }
 
-  void bindRenderTarget(gfx::RenderTarget::ptr tgt) {
+  void bindRenderTarget(gfx::RenderTarget* tgt) {
     if (tgt->framebufferSize() != framebufferSize())
       throw std::runtime_error("RenderTarget is not the correct size");
-    this->tgt_ = tgt;
+    this->tgt_.reset(tgt);
   }
 
-  gfx::RenderTarget::ptr renderTarget() {
+  gfx::RenderTarget& renderTarget() {
     if (!hasRenderTarget())
       throw std::runtime_error("Sensor has no rendering target");
-    return tgt_;
+    return *tgt_;
   }
 
  protected:
   SensorSpec::ptr spec_ = nullptr;
   core::Buffer::ptr buffer_ = nullptr;
 
-  gfx::RenderTarget::ptr tgt_ = nullptr;
+  gfx::RenderTarget::uptr tgt_ = nullptr;
 
   ESP_SMART_POINTERS(Sensor)
 };

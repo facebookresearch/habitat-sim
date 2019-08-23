@@ -46,6 +46,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 # ---[ Dependencies
 include(cmake/dependencies.cmake)
 
+# build tests
+if(BUILD_TEST)
+  message("Building TESTS")
+  enable_testing()
+  find_package(Corrade REQUIRED TestSuite)
+  find_package(Magnum REQUIRED OpenGLTester)
+endif()
+
 # include source dirs
 include_directories(${PROJECT_SOURCE_DIR})
 
@@ -79,10 +87,7 @@ if(BUILD_GUI_VIEWERS)
   add_subdirectory(utils/viewer)
 endif()
 
-# build tests
 if(BUILD_TEST)
-  message("Building TESTS")
-  enable_testing()
   add_subdirectory(tests)
 endif()
 

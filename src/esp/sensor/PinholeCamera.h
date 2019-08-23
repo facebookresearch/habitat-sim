@@ -38,7 +38,7 @@ class PinholeCamera : public Sensor {
   virtual bool getObservation(gfx::Simulator& sim, Observation& obs) override;
   virtual bool getObservationSpace(ObservationSpace& space) override;
 
-  virtual Corrade::Containers::Optional<Magnum::Matrix2x2> depthUnprojection()
+  virtual Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
       const override;
 
  protected:

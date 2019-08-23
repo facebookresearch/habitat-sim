@@ -90,7 +90,7 @@ agent::Agent::ptr SimulatorWithAgents::addAgent(
 
   // Add render targets to the agents sensors
   for (auto& it : ag->getSensorSuite().getSensors()) {
-    it.second->bindRenderTarget(this->createRenderTarget(it.second));
+    this->bindRenderTarget(it.second);
   }
 
   agents_.push_back(ag);

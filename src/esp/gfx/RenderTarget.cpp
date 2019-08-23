@@ -21,6 +21,8 @@
 
 #include "esp/sensor/Sensor.h"
 
+#include "esp/gfx/DepthUnprojection.h"
+
 #ifdef ESP_BUILD_WITH_CUDA
 #include <cuda_gl_interop.h>
 #include <cuda_runtime.h>
@@ -36,28 +38,35 @@ const GL::Framebuffer::ColorAttachment RgbaBuffer =
     GL::Framebuffer::ColorAttachment{0};
 const GL::Framebuffer::ColorAttachment ObjectIdBuffer =
     GL::Framebuffer::ColorAttachment{1};
+const GL::Framebuffer::ColorAttachment UnprojectedDepthBuffer =
+    GL::Framebuffer::ColorAttachment{0};
 
 struct RenderTarget::Impl {
-  Impl(WindowlessContext::ptr context,
-       const Magnum::Vector2i& size,
-       const Magnum::Matrix2x2& depthUnprojection)
-      : context_{context},
-        colorBuffer_{},
+  Impl(const Magnum::Vector2i& size,
+       const Magnum::Vector2& depthUnprojection,
+       DepthShader* depthShader)
+      : colorBuffer_{},
         objectIdBuffer_{},
-        depthRenderbuffer_{},
+        depthRenderTexture_{},
         framebuffer_{Magnum::NoCreate},
-        depthUnprojection_{depthUnprojection} {
+        depthUnprojection_{depthUnprojection},
+        depthShader_{depthShader},
+        unprojectedDepth_{NoCreate},
+        depthUnprojectionMesh_{NoCreate},
+        depthUnprojectionFrameBuffer_{NoCreate} {
     colorBuffer_.setStorage(GL::RenderbufferFormat::SRGB8Alpha8, size);
     objectIdBuffer_.setStorage(GL::RenderbufferFormat::R32UI, size);
-    depthRenderbuffer_.setStorage(GL::RenderbufferFormat::DepthComponent32F,
-                                  size);
+    depthRenderTexture_.setMinificationFilter(GL::SamplerFilter::Nearest)
+        .setMagnificationFilter(GL::SamplerFilter::Nearest)
+        .setWrapping(GL::SamplerWrapping::ClampToEdge)
+        .setStorage(1, GL::TextureFormat::DepthComponent32F, size);
+
     framebuffer_ = GL::Framebuffer{{{}, size}};
     framebuffer_.attachRenderbuffer(RgbaBuffer, colorBuffer_)
         .attachRenderbuffer(ObjectIdBuffer, objectIdBuffer_)
-        .attachRenderbuffer(GL::Framebuffer::BufferAttachment::Depth,
-                            depthRenderbuffer_)
-        .mapForDraw({{0, GL::Framebuffer::ColorAttachment{0}},
-                     {1, GL::Framebuffer::ColorAttachment{1}}});
+        .attachTexture(GL::Framebuffer::BufferAttachment::Depth,
+                       depthRenderTexture_, 0)
+        .mapForDraw({{0, RgbaBuffer}, {1, ObjectIdBuffer}});
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(GL::FramebufferTarget::Draw) ==
         GL::Framebuffer::Status::Complete);
@@ -66,6 +75,40 @@ struct RenderTarget::Impl {
     GL::Renderer::setClearColor(Magnum::Color4{0, 0, 0, 1});
     GL::Renderer::setClearDepth(1.0);
 #endif
+  }
+
+  void initDepthUnprojector() {
+    if (depthUnprojectionMesh_.id() == 0) {
+      unprojectedDepth_ = GL::Renderbuffer{};
+      unprojectedDepth_.setStorage(GL::RenderbufferFormat::R32F,
+                                   framebufferSize());
+      depthUnprojectionFrameBuffer_ = GL::Framebuffer{{{}, framebufferSize()}};
+      depthUnprojectionFrameBuffer_
+          .attachRenderbuffer(UnprojectedDepthBuffer, unprojectedDepth_)
+          .mapForDraw({{0, UnprojectedDepthBuffer}});
+      CORRADE_INTERNAL_ASSERT(
+          framebuffer_.checkStatus(GL::FramebufferTarget::Draw) ==
+          GL::Framebuffer::Status::Complete);
+
+      depthUnprojectionMesh_ = GL::Mesh{};
+      depthUnprojectionMesh_.setCount(3);
+    }
+  }
+
+  void unprojectDepthGPU() {
+    CORRADE_INTERNAL_ASSERT(depthShader_ != nullptr);
+    initDepthUnprojector();
+
+    framebuffer_.detach(GL::Framebuffer::BufferAttachment::Depth);
+    depthShader_->bindDepthTexture(depthRenderTexture_);
+    depthShader_->setDepthUnprojection(depthUnprojection_);
+
+    depthUnprojectionFrameBuffer_.bind();
+
+    depthUnprojectionMesh_.draw(*depthShader_);
+
+    framebuffer_.attachTexture(GL::Framebuffer::BufferAttachment::Depth,
+                               depthRenderTexture_, 0);
   }
 
   void renderEnter() {
@@ -88,35 +131,17 @@ struct RenderTarget::Impl {
   }
 
   void readFrameDepth(const MutableImageView2D& view) {
-    Image2D depthImage = framebuffer_.read(
-        framebuffer_.viewport(),
-        {GL::PixelFormat::DepthComponent, GL::PixelType::Float});
-
-    /* Unproject the Z */
-    Containers::ArrayView<const Float> data =
-        Containers::arrayCast<const Float>(depthImage.data());
-    Containers::ArrayView<Float> ptr =
-        Containers::arrayCast<Float>(view.data());
-    for (std::size_t i = 0; i != data.size(); ++i) {
-      const Float z = data[i];
-
-      /* If a fragment has a depth of 1, it's due to a hole in the mesh. The
-         consumers expect 0 for things that are too far, so be nice to them.
-         We can afford using == for comparison as 1.0f has an exact
-         representation and the depth is cleared to exactly this value. */
-      if (z == 1.0f) {
-        ptr[i] = 0.0f;
-        continue;
-      }
-
-      /* The following is
-
-          (az + b) / (cz + d)
-
-         See the comment in PinholeCamera::depthUnprojection() for details. */
-      ptr[i] =
-          Math::fma(depthUnprojection_[0][0], z, depthUnprojection_[1][0]) /
-          Math::fma(depthUnprojection_[0][1], z, depthUnprojection_[1][1]);
+    if (depthShader_) {
+      unprojectDepthGPU();
+      depthUnprojectionFrameBuffer_.mapForRead(UnprojectedDepthBuffer)
+          .read(framebuffer_.viewport(), view);
+    } else {
+      MutableImageView2D depthBufferView{GL::PixelFormat::DepthComponent,
+                                         GL::PixelType::Float, view.size(),
+                                         view.data()};
+      framebuffer_.read(framebuffer_.viewport(), depthBufferView);
+      unprojectDepth(depthUnprojection_,
+                     Containers::arrayCast<Magnum::Float>(view.data()));
     }
   }
 
@@ -127,8 +152,6 @@ struct RenderTarget::Impl {
   Magnum::Vector2i framebufferSize() const {
     return framebuffer_.viewport().size();
   }
-
-  int gpuDeviceId() const { return this->context_->gpuDevice(); }
 
 #ifdef ESP_BUILD_WITH_CUDA
   void readFrameRgbaGPU(uint8_t* devPtr) {
@@ -151,9 +174,11 @@ struct RenderTarget::Impl {
   }
 
   void readFrameDepthGPU(float* devPtr) {
-    /* if (depthBufferCugl_ == nullptr)
+    unprojectDepthGPU();
+
+    if (depthBufferCugl_ == nullptr)
       checkCudaErrors(cudaGraphicsGLRegisterImage(
-          &depthBufferCugl_, depthRenderbuffer_.id(), GL_RENDERBUFFER,
+          &depthBufferCugl_, unprojectedDepth_.id(), GL_RENDERBUFFER,
           cudaGraphicsRegisterFlagsReadOnly));
 
     checkCudaErrors(cudaGraphicsMapResources(1, &depthBufferCugl_, 0));
@@ -166,15 +191,7 @@ struct RenderTarget::Impl {
                                           widthInBytes, framebufferSize().y(),
                                           cudaMemcpyDeviceToDevice));
 
-    checkCudaErrors(cudaGraphicsUnmapResources(1, &depthBufferCugl_, 0)); */
-
-    // TODO Do this on the GPU!
-    Corrade::Containers::Array<float> depth{
-        static_cast<std::size_t>(framebufferSize().product())};
-    readFrameDepth(
-        MutableImageView2D{PixelFormat::R32F, framebufferSize(), depth});
-    cudaMemcpy(devPtr, depth.data(), depth.size() * sizeof(float),
-               cudaMemcpyHostToDevice);
+    checkCudaErrors(cudaGraphicsUnmapResources(1, &depthBufferCugl_, 0));
   }
 
   void readFrameObjectIdGPU(int32_t* devPtr) {
@@ -209,14 +226,16 @@ struct RenderTarget::Impl {
   }
 
  private:
-  WindowlessContext::ptr context_ = nullptr;
-
   Magnum::GL::Renderbuffer colorBuffer_;
   Magnum::GL::Renderbuffer objectIdBuffer_;
-  Magnum::GL::Renderbuffer depthRenderbuffer_;
+  GL::Texture2D depthRenderTexture_;
   Magnum::GL::Framebuffer framebuffer_;
 
-  Matrix2x2 depthUnprojection_;
+  Vector2 depthUnprojection_;
+  DepthShader* depthShader_;
+  GL::Renderbuffer unprojectedDepth_;
+  GL::Mesh depthUnprojectionMesh_;
+  GL::Framebuffer depthUnprojectionFrameBuffer_;
 
 #ifdef ESP_BUILD_WITH_CUDA
   cudaGraphicsResource_t colorBufferCugl_ = nullptr;
@@ -225,11 +244,12 @@ struct RenderTarget::Impl {
 #endif
 };  // namespace gfx
 
-RenderTarget::RenderTarget(WindowlessContext::ptr context,
-                           const Magnum::Vector2i& size,
-                           const Magnum::Matrix2x2& depthUnprojection)
-    : pimpl_(spimpl::make_unique_impl<Impl>(context, size, depthUnprojection)) {
-}
+RenderTarget::RenderTarget(const Magnum::Vector2i& size,
+                           const Magnum::Vector2& depthUnprojection,
+                           DepthShader* depthShader)
+    : pimpl_(spimpl::make_unique_impl<Impl>(size,
+                                            depthUnprojection,
+                                            depthShader)) {}
 
 void RenderTarget::renderEnter() {
   pimpl_->renderEnter();
@@ -249,10 +269,6 @@ void RenderTarget::readFrameDepth(const Magnum::MutableImageView2D& view) {
 
 void RenderTarget::readFrameObjectId(const Magnum::MutableImageView2D& view) {
   pimpl_->readFrameObjectId(view);
-}
-
-int RenderTarget::gpuDeviceId() const {
-  return pimpl_->gpuDeviceId();
 }
 
 Magnum::Vector2i RenderTarget::framebufferSize() const {

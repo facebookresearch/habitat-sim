@@ -12,7 +12,8 @@
 
 #include "esp/assets/ResourceManager.h"
 
-#include "RenderTarget.h"
+#include "esp/gfx/RenderTarget.h"
+#include "esp/gfx/WindowlessContext.h"
 
 namespace esp {
 namespace nav {
@@ -68,23 +69,23 @@ class Simulator {
 
   void saveFrame(const std::string& filename);
 
-  RenderTarget::ptr createRenderTarget(const sensor::Sensor::ptr& sensor);
+  void bindRenderTarget(const sensor::Sensor::ptr& sensor);
   // === Physics Simulator Functions ===
   // TODO: support multi-scene physics (default sceneID=0 currently).
   // create an object instance from ResourceManager
   // physicsObjectLibrary_[objectLibIndex] in scene sceneID. return the objectID
   // for the new object instance.
-  const int addObject(const int objectLibIndex, const int sceneID = 0);
+  int addObject(const int objectLibIndex, const int sceneID = 0);
 
   // return the current size of the physics object library (objects [0,size) can
   // be instanced)
-  const int getPhysicsObjectLibrarySize();
+  int getPhysicsObjectLibrarySize();
 
   // remove object objectID instance in sceneID
   void removeObject(const int objectID, const int sceneID = 0);
 
   // return a list of existing objected IDs in a physical scene
-  const std::vector<int> getExistingObjectIDs(const int sceneID = 0);
+  std::vector<int> getExistingObjectIDs(const int sceneID = 0);
 
   // apply forces and torques to objects
   void applyTorque(const Magnum::Vector3& tau,
@@ -101,8 +102,7 @@ class Simulator {
                     const int objectID,
                     const int sceneID = 0);
 
-  const Magnum::Matrix4 getTransformation(const int objectID,
-                                          const int sceneID = 0);
+  Magnum::Matrix4 getTransformation(const int objectID, const int sceneID = 0);
 
   void setTransformation(const Magnum::Matrix4& transform,
                          const int objectID,
@@ -112,28 +112,29 @@ class Simulator {
                       const int objectID,
                       const int sceneID = 0);
 
-  const Magnum::Vector3 getTranslation(const int objectID,
-                                       const int sceneID = 0);
+  Magnum::Vector3 getTranslation(const int objectID, const int sceneID = 0);
 
   // set object rotation directly
   void setRotation(const Magnum::Quaternion& rotation,
                    const int objectID,
                    const int sceneID = 0);
-  const Magnum::Quaternion getRotation(const int objectID,
-                                       const int sceneID = 0);
+  Magnum::Quaternion getRotation(const int objectID, const int sceneID = 0);
 
   // the physical world has a notion of time which passes during
   // animation/simulation/action/etc... return the new world time after stepping
-  const double stepWorld(const double dt = 1.0 / 60.0);
+  double stepWorld(const double dt = 1.0 / 60.0);
 
   // get the simulated world time (0 if no physics enabled)
-  const double getWorldTime();
+  double getWorldTime();
+
+  int gpuDevice() const { return context_->gpuDevice(); }
 
  protected:
   Simulator(){};
 
-  std::shared_ptr<WindowlessContext> context_ = nullptr;
+  WindowlessContext::uptr context_ = nullptr;
   std::shared_ptr<Renderer> renderer_ = nullptr;
+  std::unique_ptr<DepthShader> depthShader_ = nullptr;
   // CANNOT make the specification of resourceManager_ above the context_!
   // Because when deconstructing the resourceManager_, it needs
   // the GL::Context

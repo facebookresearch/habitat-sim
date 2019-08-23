@@ -8,16 +8,20 @@
 
 #include "esp/core/esp.h"
 
-#include "WindowlessContext.h"
+#include "esp/gfx/DepthUnprojection.h"
 
 namespace esp {
 namespace gfx {
 
 class RenderTarget {
  public:
-  RenderTarget(WindowlessContext::ptr context,
-               const Magnum::Vector2i& size,
-               const Magnum::Matrix2x2& depthUnprojection);
+  RenderTarget(const Magnum::Vector2i& size,
+               const Magnum::Vector2& depthUnprojection,
+               DepthShader* depthShader);
+
+  RenderTarget(const Magnum::Vector2i& size,
+               const Magnum::Vector2& depthUnprojection)
+      : RenderTarget{size, depthUnprojection, nullptr} {};
 
   ~RenderTarget() { LOG(INFO) << "Deconstructing RenderTarget"; }
 
@@ -30,22 +34,26 @@ class RenderTarget {
   void readFrameDepth(const Magnum::MutableImageView2D& view);
   void readFrameObjectId(const Magnum::MutableImageView2D& view);
 
-  int gpuDeviceId() const;
+  // Delete copy
+  RenderTarget(const RenderTarget&) = delete;
+  RenderTarget& operator=(const RenderTarget&) = delete;
 
 #ifdef ESP_BUILD_WITH_CUDA
   /**
-   * Reads the RGBA frame-buffer directly into CUDA memory specified by devPtr
+   * @brief Reads the RGBA frame-buffer directly into CUDA memory specified by
+   * devPtr
    */
   void readFrameRgbaGPU(uint8_t* devPtr);
 
   /**
-   * Reads the Depth frame-buffer directly into CUDA memory specified by devPtr
+   * @brief Reads the Depth frame-buffer directly into CUDA memory specified by
+   * devPtr
    */
   void readFrameDepthGPU(float* devPtr);
 
   /**
-   * Reads the ObjectID frame-buffer directly into CUDA memory specified by
-   * devPtr
+   * @brief Reads the ObjectID frame-buffer directly into CUDA memory specified
+   * by devPtr
    */
   void readFrameObjectIdGPU(int32_t* devPtr);
 #endif

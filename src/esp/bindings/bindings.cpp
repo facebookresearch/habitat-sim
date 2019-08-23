@@ -359,15 +359,15 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   // ==== Observation ====
   py::class_<Observation, Observation::ptr>(m, "Observation");
 
-  py::class_<RenderTarget, RenderTarget::ptr>(m, "RenderTarget")
+  py::class_<RenderTarget>(m, "RenderTarget")
       .def("__enter__",
-           [](RenderTarget::ptr self) {
-             self->renderEnter();
-             return self;
+           [](RenderTarget& self) {
+             self.renderEnter();
+             return &self;
            })
       .def("__exit__",
-           [](RenderTarget::ptr self, py::object exc_type, py::object exc_value,
-              py::object traceback) { self->renderExit(); })
+           [](RenderTarget& self, py::object exc_type, py::object exc_value,
+              py::object traceback) { self.renderExit(); })
       .def("read_frame_rgba", &RenderTarget::readFrameRgba,
            "Reads RGBA frame into passed img in uint8 byte format.")
       .def("read_frame_depth", &RenderTarget::readFrameDepth)
@@ -386,7 +386,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
              self.readFrameObjectIdGPU(reinterpret_cast<int32_t*>(devPtr));
            })
 #endif
-      .def_property_readonly("gpu_device_id", &RenderTarget::gpuDeviceId)
       .def("render_enter", &RenderTarget::renderEnter)
       .def("render_exit", &RenderTarget::renderExit);
 
@@ -401,7 +400,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("node", nodeGetter<Sensor>,
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node")
-      .def("bind_render_target", &Sensor::bindRenderTarget)
       .def_property_readonly("framebuffer_size", &Sensor::framebufferSize)
       .def_property_readonly("render_target", &Sensor::renderTarget);
 
@@ -484,7 +482,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("seed", &Simulator::seed, R"()", "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a)
       .def("reset", &Simulator::reset, R"()")
-      .def("create_render_target", &Simulator::createRenderTarget)
+      .def("bind_render_target", &Simulator::bindRenderTarget)
+      .def_property_readonly("gpu_device", &Simulator::gpuDevice)
       /* --- Physics functions --- */
       .def("add_object", &Simulator::addObject, "R()", "object_lib_index"_a,
            "scene_id"_a = 0)

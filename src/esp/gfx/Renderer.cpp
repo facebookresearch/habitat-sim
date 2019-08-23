@@ -4,8 +4,6 @@
 
 #include "Renderer.h"
 
-#include "magnum.h"
-
 #include <Corrade/Containers/StridedArrayView.h>
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
@@ -18,6 +16,9 @@
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
 #include <Magnum/PixelFormat.h>
+
+#include "esp/gfx/DepthUnprojection.h"
+#include "esp/gfx/magnum.h"
 
 using namespace Magnum;
 

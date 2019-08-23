@@ -54,9 +54,8 @@ class Simulator:
         del self._default_agent
         self._default_agent = None
 
-        if self._sim is not None:
-            del self._sim
-            self._sim = None
+        del self._sim
+        self._sim = None
 
     def seed(self, new_seed):
         self._sim.seed(new_seed)
@@ -250,10 +249,7 @@ class Sensor:
         self._sensor_object = self._agent.sensors.get(sensor_id)
         self._spec = self._sensor_object.specification()
 
-        # NB: Graphics APIs tend to use W x H, so use that here
-        self._sensor_object.bind_render_target(
-            self._sim.create_render_target(self._sensor_object)
-        )
+        self._sim.bind_render_target(self._sensor_object)
 
         if self._spec.gpu2gpu_transfer:
             assert (
