@@ -97,8 +97,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     bool loadSuccess = false;
     if (config_.enablePhysics) {
-      loadSuccess = resourceManager_.loadScene(sceneInfo, physicsManager_,
-                                               &rootNode, &drawables);
+      loadSuccess =
+          resourceManager_.loadScene(sceneInfo, physicsManager_, &rootNode,
+                                     &drawables, cfg.physicsConfigFile);
     } else {
       loadSuccess =
           resourceManager_.loadScene(sceneInfo, &rootNode, &drawables);
