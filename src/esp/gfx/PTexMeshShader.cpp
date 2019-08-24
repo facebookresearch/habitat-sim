@@ -12,7 +12,6 @@
 #include <Magnum/PixelFormat.h>
 #include <iostream>
 #include "PTexMeshShader.h"
-#include "TextureBindingPointIndex.h"
 
 #include "esp/assets/PTexMeshData.h"
 #include "esp/core/esp.h"
@@ -29,6 +28,13 @@ using namespace Magnum;
 
 namespace esp {
 namespace gfx {
+
+namespace {
+enum TextureBindingPointIndex : uint8_t {
+  atlas = 0,
+  adjFaces = 1,
+};
+}
 
 PTexMeshShader::PTexMeshShader() {
   MAGNUM_ASSERT_GL_VERSION_SUPPORTED(GL::Version::GL410);
@@ -63,7 +69,7 @@ PTexMeshShader::PTexMeshShader() {
   // cache the uniform locations
   MVPMatrixUniform_ = uniformLocation("MVP");
   exposureUniform_ = uniformLocation("exposure");
-  gammaUniform_ = uniformLocation("gamma"); 
+  gammaUniform_ = uniformLocation("gamma");
   saturationUniform_ = uniformLocation("saturation");
   clipPlaneUniform_ = uniformLocation("clipPlane");
   tileSizeUniform_ = uniformLocation("tileSize");

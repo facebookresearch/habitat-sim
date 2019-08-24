@@ -39,7 +39,6 @@ void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
       .bindAtlasTexture(tex_)
       .bindAdjFacesBufferTexture(adjFaces_)
       .setMVPMatrix(camera.projectionMatrix() * transformationMatrix);
-
   mesh_.draw(ptexMeshShader);
 }
 

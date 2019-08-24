@@ -721,6 +721,8 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 
       for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
         scene::SceneNode& node = parent->createChild();
+        const quatf transform = info.frame.rotationFrameToWorld();
+        node.setRotation(Magnum::Quaternion(transform));
         new gfx::PTexMeshDrawable{node, *ptexShader, *pTexMeshData, jSubmesh,
                                   drawables};
       }

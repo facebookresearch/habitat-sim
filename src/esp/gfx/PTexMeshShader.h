@@ -28,8 +28,7 @@ class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
   explicit PTexMeshShader();
 
   // ======== texture binding ========
-  // Note: the texture binding points are explicitly specified
-  // in TextureBindingPointIndex.h
+  // Note: the texture binding points are explicitly specified in .cpp
   // Cannot use "explicit uniform location" directly in shader since
   // it requires GL4.3 (We stick to GL4.1 for MacOS).
   PTexMeshShader& bindAtlasTexture(Magnum::GL::Texture2D& texture);

@@ -49,6 +49,9 @@ Viewer::Viewer(const Arguments& arguments)
       .addBooleanOption("enable-physics")
       .addOption("physicsConfig", "./data/default.phys_scene_config.json")
       .setHelp("physicsConfig", "physics scene config file")
+//      .addOption("lookAt", "0.0f,1.5f,0.0f,1.5f,1.0f,0.0f,1.0f,0.0f")
+//      .setHelp("lookAt",
+//               "set initial eye, target and up dirction for the camera")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
@@ -87,8 +90,17 @@ Viewer::Viewer(const Arguments& arguments)
   agentBodyNode_ = &rootNode_->createChild();
   cameraNode_ = &agentBodyNode_->createChild();
 
+  /*
   cameraNode_->translate({0.0f, cameraHeight, 0.0f});
   agentBodyNode_->translate({0.0f, 0.0f, 5.0f});
+  */
+
+  vec3f eye(0.0f, 0.0f, 1.0f);
+  vec3f target(0.0f, 0.0f, 0.0f);
+  vec3f up(0.0f, 1.0f, 0.0f);
+
+  cameraNode_->setTransformation(
+      Matrix4::lookAt(Vector3{eye}, Vector3{target}, Vector3{up}));
 
   float hfov = 90.0f;
   int width = viewportSize[0];
@@ -99,6 +111,7 @@ Viewer::Viewer(const Arguments& arguments)
   renderCamera_->setProjectionMatrix(width, height, znear, zfar, hfov);
 
   // Load navmesh if available
+  vec3f position(0.0f, 0.0f, 0.0f);
   const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
   if (io::exists(navmeshFilename)) {
     LOG(INFO) << "Loading navmesh from " << navmeshFilename;
@@ -107,7 +120,6 @@ Viewer::Viewer(const Arguments& arguments)
     const vec3f position = pathfinder_->getRandomNavigablePoint();
     agentBodyNode_->setTranslation(Vector3(position));
   }
-
   // connect controls to navmesh if loaded
   /*
   if (pathfinder_->isLoaded()) {
@@ -126,7 +138,6 @@ Viewer::Viewer(const Arguments& arguments)
       cameraNode_->absoluteTransformation());
 
   timeline_.start();
-
 }  // end Viewer::Viewer
 
 void Viewer::addObject(std::string configFile) {

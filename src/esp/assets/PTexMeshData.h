@@ -52,6 +52,7 @@ class PTexMeshData : public BaseMesh {
   int getSize() { return submeshes_.size(); }
 
   static void parsePLY(const std::string& filename, MeshData& meshData);
+
   static void calculateAdjacency(const MeshData& mesh,
                                  std::vector<uint32_t>& adjFaces);
 
