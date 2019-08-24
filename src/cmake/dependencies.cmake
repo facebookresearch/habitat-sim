@@ -10,7 +10,6 @@ if(NOT USE_SYSTEM_MAGNUM)
   # These are enabled by default but we don't need them right now -- disabling
   # for slightly faster builds. If you need any of these, simply delete a line.
   set(WITH_INTERCONNECT OFF CACHE BOOL "" FORCE)
-  set(WITH_TESTSUITE OFF CACHE BOOL "" FORCE)
   add_subdirectory("${DEPS_DIR}/corrade")
 endif()
 find_package(Corrade REQUIRED Utility)
@@ -118,10 +117,7 @@ if(NOT USE_SYSTEM_MAGNUM)
 
   # These are enabled by default but we don't need them right now -- disabling
   # for slightly faster builds. If you need any of these, simply delete a line.
-  set(WITH_INTERCONNECT OFF CACHE BOOL "" FORCE)
-  set(WITH_TESTSUITE OFF CACHE BOOL "" FORCE)
   set(WITH_DEBUGTOOLS OFF CACHE BOOL "" FORCE)
-  set(WITH_PRIMITIVES OFF CACHE BOOL "" FORCE)
   set(WITH_TEXT OFF CACHE BOOL "" FORCE)
   set(WITH_TEXTURETOOLS OFF CACHE BOOL "" FORCE)
 
@@ -143,6 +139,9 @@ if(NOT USE_SYSTEM_MAGNUM)
   # We only support WebGL2
   if(CORRADE_TARGET_EMSCRIPTEN)
     set(TARGET_GLES2 OFF CACHE BOOL "" FORCE)
+  endif()
+  if(BUILD_TEST)
+    set(WITH_OPENGLTESTER ON CACHE BOOL "" FORCE)
   endif()
 
   if(BUILD_GUI_VIEWERS)

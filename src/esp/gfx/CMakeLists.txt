@@ -1,4 +1,6 @@
 set(gfx_SOURCES
+  DepthUnprojection.cpp
+  DepthUnprojection.h
   Drawable.cpp
   Drawable.h
   GenericDrawable.cpp
@@ -124,4 +126,8 @@ elseif(UNIX)
     find_package(Magnum REQUIRED WindowlessEglApplication)
     target_link_libraries(gfx PUBLIC Magnum::WindowlessEglApplication)
   endif()
+endif()
+
+if(BUILD_TEST)
+  add_subdirectory(test)
 endif()
