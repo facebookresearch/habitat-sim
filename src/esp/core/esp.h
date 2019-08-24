@@ -98,11 +98,11 @@ inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
   template <typename... Targs>                                \
   static inline ptr create(Targs&&... args) {                 \
     return std::make_shared<T>(std::forward<Targs>(args)...); \
-  };                                                          \
+  }                                                           \
   template <typename... Targs>                                \
   static inline uptr create_unique(Targs&&... args) {         \
     return std::make_unique<T>(std::forward<Targs>(args)...); \
-  };
+  }
 
 // pimpl macro backed by unique_ptr pointer
 #define ESP_UNIQUE_PTR_PIMPL() \

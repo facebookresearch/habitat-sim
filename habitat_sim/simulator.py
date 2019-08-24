@@ -259,9 +259,7 @@ class Sensor:
 
             import torch
 
-            device = torch.device(
-                "cuda", self._sensor_object.render_target.gpu_device_id
-            )
+            device = torch.device("cuda", self._sim.gpu_device)
 
             resolution = self._spec.resolution
             if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
