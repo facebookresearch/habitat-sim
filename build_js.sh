@@ -7,10 +7,22 @@ git submodule update --init --recursive
 
 DATA_DIR="$(pwd)/data/"
 
+mkdir -p build_corrade-rc
+pushd build_corrade-rc
+cmake ../src \
+    -DBUILD_GUI_VIEWERS=OFF \
+    -DBUILD_PYTHON_BINDINGS=OFF \
+    -DBUILD_ASSIMP_SUPPORT=OFF \
+    -DBUILD_DATATOOL=OFF \
+    -DBUILD_PTEX_SUPPORT=OFF
+cmake --build . --target corrade-rc
+popd
+
 mkdir -p build_js
 cd build_js
 
 cmake ../src \
+    -DCORRADE_RC_EXECUTABLE=../build_corrade-rc/deps/corrade/src/Corrade/Utility/corrade-rc \
     -DBUILD_GUI_VIEWERS=ON \
     -DBUILD_PYTHON_BINDINGS=OFF \
     -DBUILD_ASSIMP_SUPPORT=OFF \
@@ -21,6 +33,7 @@ cmake ../src \
     -DCMAKE_TOOLCHAIN_FILE="../src/deps/corrade/toolchains/generic/Emscripten-wasm.cmake" \
     -DCMAKE_INSTALL_PREFIX="." \
     -DCMAKE_CXX_FLAGS="-s FORCE_FILESYSTEM=1 -s ALLOW_MEMORY_GROWTH=1 --preload-file $DATA_DIR/scene_datasets/habitat-test-scenes@/" \
+    -DCMAKE_EXE_LINKER_FLAGS="-s USE_WEBGL2=1"
 
 cmake --build . -- -j 4
 cmake --build . --target install -- -j 4

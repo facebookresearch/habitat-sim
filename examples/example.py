@@ -29,6 +29,11 @@ parser.add_argument("--seed", type=int, default=1)
 parser.add_argument("--silent", action="store_true")
 parser.add_argument("--test_fps_regression", type=int, default=0)
 parser.add_argument("--enable_physics", action="store_true")
+parser.add_argument(
+    "--physics_config_file",
+    type=str,
+    default=dr.default_sim_settings["physics_config_file"],
+)
 args = parser.parse_args()
 
 
@@ -50,6 +55,7 @@ def make_settings():
     settings["seed"] = args.seed
     settings["silent"] = args.silent
     settings["enable_physics"] = args.enable_physics
+    settings["physics_config_file"] = args.physics_config_file
 
     return settings
 

@@ -1,4 +1,14 @@
+/**
+ * NavigateTask class
+ */
 class NavigateTask {
+  // PUBLIC methods.
+
+  /**
+   * Create navigate task.
+   * @param {SimEnv} sim - simulator
+   * @param {Object} components - dictionary with status and canvas elements
+   */
   constructor(sim, components) {
     this.sim = sim;
     this.sensorId = 'rgba_camera';
@@ -14,9 +24,23 @@ class NavigateTask {
     ];
   }
 
+  /**
+   * Initialize the task. Should be called once.
+   */
   init() {
     this.bindKeys();
   }
+
+  /**
+   * Reset the task.
+   */
+  reset() {
+    this.sim.reset();
+    this.setStatus('Ready');
+    this.render();
+  }
+
+  // PRIVATE methods.
 
   setStatus(text) {
     this.components.status.innerHTML = text;
@@ -34,12 +58,6 @@ class NavigateTask {
     // convert from linear to sRGB gamma
     this.applyGamma(this.imageData.data, 2.2);
     this.ctx.putImageData(this.imageData, 0, 0);
-  }
-
-  reset() {
-    this.sim.reset();
-    this.setStatus('Ready');
-    this.render();
   }
 
   handleAction(action) {

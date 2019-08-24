@@ -29,7 +29,7 @@ def _delta_rotation(a, b):
         b.rotation.inverse() * a.rotation, habitat_sim.geo.FRONT
     )
 
-    return np.arctan2(-look_dir[2], look_dir[0])
+    return np.arctan2(look_dir[0], -look_dir[2])
 
 
 @pytest.mark.parametrize(
@@ -46,7 +46,7 @@ def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
         noisy_move_backward=habitat_sim.ActionSpec(
             "pyrobot_noisy_move_backward",
             habitat_sim.PyRobotNoisyActuationSpec(
-                amount=0.25,
+                amount=1.0,
                 robot=robot,
                 controller=controller,
                 noise_multiplier=noise_multiplier,
@@ -55,7 +55,7 @@ def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
         noisy_move_forward=habitat_sim.ActionSpec(
             "pyrobot_noisy_move_forward",
             habitat_sim.PyRobotNoisyActuationSpec(
-                amount=0.25,
+                amount=1.0,
                 robot=robot,
                 controller=controller,
                 noise_multiplier=noise_multiplier,
@@ -64,7 +64,7 @@ def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
         noisy_turn_left=habitat_sim.ActionSpec(
             "pyrobot_noisy_turn_left",
             habitat_sim.PyRobotNoisyActuationSpec(
-                amount=10.0,
+                amount=90.0,
                 robot=robot,
                 controller=controller,
                 noise_multiplier=noise_multiplier,
@@ -73,23 +73,23 @@ def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
         noisy_turn_right=habitat_sim.ActionSpec(
             "pyrobot_noisy_turn_right",
             habitat_sim.PyRobotNoisyActuationSpec(
-                amount=10.0,
+                amount=90.0,
                 robot=robot,
                 controller=controller,
                 noise_multiplier=noise_multiplier,
             ),
         ),
         move_backward=habitat_sim.ActionSpec(
-            "move_backward", habitat_sim.ActuationSpec(amount=0.25)
+            "move_backward", habitat_sim.ActuationSpec(amount=1.0)
         ),
         move_forward=habitat_sim.ActionSpec(
-            "move_forward", habitat_sim.ActuationSpec(amount=0.25)
+            "move_forward", habitat_sim.ActuationSpec(amount=1.0)
         ),
         turn_left=habitat_sim.ActionSpec(
-            "turn_left", habitat_sim.ActuationSpec(amount=10.0)
+            "turn_left", habitat_sim.ActuationSpec(amount=90.0)
         ),
         turn_right=habitat_sim.ActionSpec(
-            "turn_right", habitat_sim.ActuationSpec(amount=10.0)
+            "turn_right", habitat_sim.ActuationSpec(amount=90.0)
         ),
     )
     agent = habitat_sim.Agent(scene_graph.get_root_node().create_child(), agent_config)
@@ -103,9 +103,6 @@ def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
         agent.act(base_action)
         base_state = agent.state
 
-        base_translation_delta = _delta_translation(state, base_state)
-        base_rotation_delta = _delta_rotation(state, base_state)
-
         delta_translations = []
         delta_rotations = []
         for _ in range(300):
@@ -113,12 +110,8 @@ def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
             agent.act(f"noisy_{base_action}")
             noisy_state = agent.state
 
-            delta_translations.append(
-                base_translation_delta - _delta_translation(state, noisy_state)
-            )
-            delta_rotations.append(
-                base_rotation_delta - _delta_rotation(state, noisy_state)
-            )
+            delta_translations.append(_delta_translation(base_state, noisy_state))
+            delta_rotations.append(_delta_rotation(base_state, noisy_state))
 
         delta_translations = np.stack(delta_translations)
         delta_rotations = np.stack(delta_rotations)
@@ -127,19 +120,20 @@ def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
         else:
             noise_model = pyrobot_noise_models[robot][controller].rotational_motion
 
+        EPS = 5e-2
         assert (
             np.linalg.norm(
                 noise_model.linear.mean * noise_multiplier
                 - np.abs(delta_translations.mean(0))
             )
-            < 5e-2
+            < EPS
         )
         assert (
             np.linalg.norm(
                 noise_model.rotation.mean * noise_multiplier
                 - np.abs(delta_rotations.mean(0))
             )
-            < 5e-2
+            < EPS
         )
 
         assert (
@@ -147,12 +141,12 @@ def test_pyrobot_noisy_actions(noise_multiplier, robot, controller):
                 noise_model.linear.cov * noise_multiplier
                 - np.diag(delta_translations.std(0) ** 2)
             )
-            < 5e-2
+            < EPS
         )
         assert (
             np.linalg.norm(
                 noise_model.rotation.cov * noise_multiplier
                 - (delta_rotations.std(0) ** 2)
             )
-            < 5e-2
+            < EPS
         )

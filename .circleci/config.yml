@@ -96,6 +96,19 @@ jobs:
               sudo apt-get --yes --force-yes install cuda
               touch ./cuda_installed
               nvidia-smi
+      - run:
+          name: Install emscripten
+          no_output_timeout: 20m
+          background: true
+          command: |
+              if [ ! -f ~/emscripten_installed ]
+              then
+                git clone -q https://github.com/emscripten-core/emsdk.git ~/emsdk
+                cd ~/emsdk
+                ./emsdk install 1.38.38
+                ./emsdk activate 1.38.38
+                touch ~/emscripten_installed
+              fi
       - restore_cache:
           keys:
             - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
@@ -193,13 +206,22 @@ jobs:
               GTEST_COLOR=yes ./build.sh --headless --run-tests
               pytest
       - run:
+          name: Build Javascript bindings
+          command: |
+              while [ ! -f ~/emscripten_installed ]; do sleep 2; done # wait for emscripten install
+              cd habitat-sim
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat
+              export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
+              ./build_js.sh
+      - run:
           name: Install api
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               if [ ! -d ./habitat-api ]
               then
-                git clone https://github.com/facebookresearch/habitat-api.git
+                git clone -q https://github.com/facebookresearch/habitat-api.git
               fi
               cd habitat-api
               pip install -r requirements.txt --progress-bar off
