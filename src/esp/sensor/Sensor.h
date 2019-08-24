@@ -118,21 +118,35 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
   virtual bool getObservation(gfx::Simulator& sim, Observation& obs);
   virtual bool getObservationSpace(ObservationSpace& space);
 
-  // The 2x2 matrix used to unproject depth values from those in the depth
-  // buffer to meters
+  /**
+   * @brief Returns the parameters needed to unproject depth for the sensor.
+   *
+   * Will always be @ref Corrade::Containers::NullOpt for the base sensor class
+   * as it has no projection parameters
+   */
   virtual Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
       const {
     return Corrade::Containers::NullOpt;
   };
 
+  /**
+   * @brief Checks to see if this sensor has a RenderTarget bound or not
+   */
   bool hasRenderTarget() const { return tgt_ != nullptr; }
 
+  /**
+   * @brief Binds the given given RenderTarget to the sensor.  The sensor takes
+   * ownership of the RenderTarget
+   */
   void bindRenderTarget(gfx::RenderTarget* tgt) {
     if (tgt->framebufferSize() != framebufferSize())
       throw std::runtime_error("RenderTarget is not the correct size");
     this->tgt_.reset(tgt);
   }
 
+  /**
+   * @brief Returns a reference to the sensors render target
+   */
   gfx::RenderTarget& renderTarget() {
     if (!hasRenderTarget())
       throw std::runtime_error("Sensor has no rendering target");

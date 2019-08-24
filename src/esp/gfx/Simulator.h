@@ -69,7 +69,18 @@ class Simulator {
 
   void saveFrame(const std::string& filename);
 
+  /**
+   * @brief Binds a @ref RenderTarget to the sensor
+   */
   void bindRenderTarget(const sensor::Sensor::ptr& sensor);
+
+  /**
+   * @brief The ID of the CUDA device of the OpenGL context owned by the
+   * simulator.  This will only be nonzero if the simulator is built in
+   * --headless mode on linux
+   */
+  int gpuDevice() const { return context_->gpuDevice(); }
+
   // === Physics Simulator Functions ===
   // TODO: support multi-scene physics (default sceneID=0 currently).
   // create an object instance from ResourceManager
@@ -126,8 +137,6 @@ class Simulator {
 
   // get the simulated world time (0 if no physics enabled)
   double getWorldTime();
-
-  int gpuDevice() const { return context_->gpuDevice(); }
 
  protected:
   Simulator(){};
