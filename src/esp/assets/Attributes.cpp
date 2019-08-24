@@ -131,7 +131,7 @@ void Attributes::clearAs(const DataType t) {
 //----------------------------------------//
 // return the queried entry in the double map
 // will throw an exception if the key does not exist in the double map
-const double Attributes::getDouble(const std::string& key) const {
+double Attributes::getDouble(const std::string& key) const {
   return doubleMap_.at(key);
 }
 
@@ -140,7 +140,7 @@ void Attributes::setDouble(const std::string& key, const double val) {
   doubleMap_[key] = val;
 }
 
-const int Attributes::getInt(const std::string& key) const {
+int Attributes::getInt(const std::string& key) const {
   return intMap_.at(key);
 }
 

@@ -70,10 +70,10 @@ class PhysicsManager {
   virtual int removeObject(const int physObjectID);
 
   // return the number of tracked existingObjects_
-  const int getNumRigidObjects() { return existingObjects_.size(); };
+  int getNumRigidObjects() { return existingObjects_.size(); };
 
   // return a vector of ints listing all existing object IDs
-  const std::vector<int> getExistingObjectIDs() {
+  std::vector<int> getExistingObjectIDs() {
     std::vector<int> v;
     for (auto& bro : existingObjects_) {
       v.push_back(bro.first);
@@ -83,7 +83,7 @@ class PhysicsManager {
 
   // get/set MotionType
   bool setObjectMotionType(const int physObjectID, MotionType mt);
-  const MotionType getObjectMotionType(const int physObjectID);
+  MotionType getObjectMotionType(const int physObjectID);
 
   //============ Simulator functions =============
   virtual void stepPhysics();
@@ -94,16 +94,15 @@ class PhysicsManager {
   virtual void setGravity(const Magnum::Vector3& gravity);
 
   // =========== Global Getter functions ===========
-  virtual const double getTimestep() { return fixedTimeStep_; };
-  virtual const double getWorldTime() { return worldTime_; };
-  virtual const Magnum::Vector3 getGravity();
+  virtual double getTimestep() { return fixedTimeStep_; };
+  virtual double getWorldTime() { return worldTime_; };
+  virtual Magnum::Vector3 getGravity();
 
   // =========== Scene Getter/Setter functions ===========
-  virtual const double getSceneFrictionCoefficient() { return 0.0; };
-  virtual void setSceneFrictionCoefficient(const double frictionCoefficient){};
-  virtual const double getSceneRestitutionCoefficient() { return 0.0; };
-  virtual void setSceneRestitutionCoefficient(
-      const double restitutionCoefficient){};
+  virtual double getSceneFrictionCoefficient() { return 0.0; };
+  virtual void setSceneFrictionCoefficient(const double){};
+  virtual double getSceneRestitutionCoefficient() { return 0.0; };
+  virtual void setSceneRestitutionCoefficient(const double){};
 
   // ============ Object Transformation functions =============
   void setTransformation(const int physObjectID, const Magnum::Matrix4& trans);
@@ -125,9 +124,9 @@ class PhysicsManager {
   void rotateYLocal(const int physObjectID, const Magnum::Rad angleInRad);
   void rotateZLocal(const int physObjectID, const Magnum::Rad angleInRad);
 
-  const Magnum::Matrix4 getTransformation(const int physObjectID);
-  const Magnum::Vector3 getTranslation(const int physObjectID);
-  const Magnum::Quaternion getRotation(const int physObjectID);
+  Magnum::Matrix4 getTransformation(const int physObjectID);
+  Magnum::Vector3 getTranslation(const int physObjectID);
+  Magnum::Quaternion getRotation(const int physObjectID);
 
   // ============ Object Setter functions =============
   // Setters that interface with physics need to take
@@ -143,19 +142,19 @@ class PhysicsManager {
   void setAngularDamping(const int physObjectID, const double angDamping);
 
   // ============ Object Getter functions =============
-  const double getMass(const int physObjectID);
-  const Magnum::Vector3 getCOM(const int physObjectID);
-  const Magnum::Vector3 getInertiaVector(const int physObjectID);
-  const Magnum::Matrix3 getInertiaMatrix(const int physObjectID);
-  const double getScale(const int physObjectID);
-  const double getFrictionCoefficient(const int physObjectID);
-  const double getRestitutionCoefficient(const int physObjectID);
-  const double getLinearDamping(const int physObjectID);
-  const double getAngularDamping(const int physObjectID);
+  double getMass(const int physObjectID);
+  Magnum::Vector3 getCOM(const int physObjectID);
+  Magnum::Vector3 getInertiaVector(const int physObjectID);
+  Magnum::Matrix3 getInertiaMatrix(const int physObjectID);
+  double getScale(const int physObjectID);
+  double getFrictionCoefficient(const int physObjectID);
+  double getRestitutionCoefficient(const int physObjectID);
+  double getLinearDamping(const int physObjectID);
+  double getAngularDamping(const int physObjectID);
 
   // ============= Platform dependent function =============
-  virtual const double getMargin(const int physObjectID) { return 0.0; };
-  virtual void setMargin(const int physObjectID, const double margin){};
+  virtual double getMargin(const int) { return 0.0; };
+  virtual void setMargin(const int, const double){};
 
   // =========== Debug functions ===========
   int checkActiveObjects();

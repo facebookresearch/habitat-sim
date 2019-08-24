@@ -12,8 +12,8 @@ RigidObject::RigidObject(scene::SceneNode* parent)
     : scene::SceneNode{*parent} {}
 
 bool RigidObject::initializeScene(
-    const assets::PhysicsSceneAttributes& physicsSceneAttributes,
-    const std::vector<assets::CollisionMeshData>& meshGroup) {
+    const assets::PhysicsSceneAttributes&,
+    const std::vector<assets::CollisionMeshData>&) {
   if (rigidObjectType_ != NONE) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
     return false;
@@ -27,8 +27,8 @@ bool RigidObject::initializeScene(
 }
 
 bool RigidObject::initializeObject(
-    const assets::PhysicsObjectAttributes& physicsObjectAttributes,
-    const std::vector<assets::CollisionMeshData>& meshGroup) {
+    const assets::PhysicsObjectAttributes&,
+    const std::vector<assets::CollisionMeshData>&) {
   // TODO (JH): Handling static/kinematic object type
   if (rigidObjectType_ != NONE) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
@@ -67,24 +67,22 @@ bool RigidObject::setMotionType(MotionType mt) {
   return false;
 }
 
-void RigidObject::applyForce(const Magnum::Vector3& force,
-                             const Magnum::Vector3& relPos) {
+void RigidObject::applyForce(const Magnum::Vector3&, const Magnum::Vector3&) {
   // without a physics engine we can't apply any forces...
   return;
 }
 
-void RigidObject::applyImpulse(const Magnum::Vector3& impulse,
-                               const Magnum::Vector3& relPos) {
+void RigidObject::applyImpulse(const Magnum::Vector3&, const Magnum::Vector3&) {
   // without a physics engine we can't apply any forces...
   return;
 }
 
 //! Torque interaction
-void RigidObject::applyTorque(const Magnum::Vector3& torque) {
+void RigidObject::applyTorque(const Magnum::Vector3&) {
   return;
 }
 // Impulse Torque interaction
-void RigidObject::applyImpulseTorque(const Magnum::Vector3& impulse) {
+void RigidObject::applyImpulseTorque(const Magnum::Vector3&) {
   return;
 }
 
@@ -209,17 +207,17 @@ scene::SceneNode& RigidObject::rotateZLocal(const Magnum::Rad angleInRad) {
   return *this;
 }
 
-const Magnum::Vector3 RigidObject::getCOM() {
+Magnum::Vector3 RigidObject::getCOM() {
   const Magnum::Vector3 com = Magnum::Vector3();
   return com;
 }
 
-const Magnum::Vector3 RigidObject::getInertiaVector() {
+Magnum::Vector3 RigidObject::getInertiaVector() {
   const Magnum::Vector3 inertia = Magnum::Vector3();
   return inertia;
 }
 
-const Magnum::Matrix3 RigidObject::getInertiaMatrix() {
+Magnum::Matrix3 RigidObject::getInertiaMatrix() {
   const Magnum::Matrix3 inertia = Magnum::Matrix3();
   return inertia;
 }
