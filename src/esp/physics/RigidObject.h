@@ -48,7 +48,7 @@ class RigidObject : public scene::SceneNode {
 
   // attempt to set the motion type. Return false=failure, true=success.
   virtual bool setMotionType(MotionType mt);
-  const MotionType getMotionType() { return objectMotionType_; };
+  MotionType getMotionType() { return objectMotionType_; };
 
   //! Force interaction
   virtual void applyForce(const Magnum::Vector3& force,
@@ -94,25 +94,25 @@ class RigidObject : public scene::SceneNode {
   // ==== Getter/Setter functions ===
   //! For kinematic objects they are dummies, for dynamic objects
   //! implemented in physics-engine specific ways
-  virtual const double getMass() { return 0.0; }
-  virtual const double getScale() { return 0.0; }
-  virtual const double getFrictionCoefficient() { return 0.0; }
-  virtual const double getRestitutionCoefficient() { return 0.0; }
-  virtual const double getLinearDamping() { return 0.0; }
-  virtual const double getAngularDamping() { return 0.0; }
-  virtual const Magnum::Vector3 getCOM();
+  virtual double getMass() { return 0.0; }
+  virtual double getScale() { return 0.0; }
+  virtual double getFrictionCoefficient() { return 0.0; }
+  virtual double getRestitutionCoefficient() { return 0.0; }
+  virtual double getLinearDamping() { return 0.0; }
+  virtual double getAngularDamping() { return 0.0; }
+  virtual Magnum::Vector3 getCOM();
   // Get local inertia
-  virtual const Magnum::Vector3 getInertiaVector();
-  virtual const Magnum::Matrix3 getInertiaMatrix();
+  virtual Magnum::Vector3 getInertiaVector();
+  virtual Magnum::Matrix3 getInertiaMatrix();
 
-  virtual void setMass(const double mass){};
-  virtual void setCOM(const Magnum::Vector3& COM){};
-  virtual void setInertia(const Magnum::Vector3& inertia){};
-  virtual void setScale(const double scale){};
-  virtual void setFrictionCoefficient(const double frictionCoefficient){};
-  virtual void setRestitutionCoefficient(const double restitutionCoefficient){};
-  virtual void setLinearDamping(const double linearDamping){};
-  virtual void setAngularDamping(const double angularDamping){};
+  virtual void setMass(const double){};
+  virtual void setCOM(const Magnum::Vector3&){};
+  virtual void setInertia(const Magnum::Vector3&){};
+  virtual void setScale(const double){};
+  virtual void setFrictionCoefficient(const double){};
+  virtual void setRestitutionCoefficient(const double){};
+  virtual void setLinearDamping(const double){};
+  virtual void setAngularDamping(const double){};
 
   // public Attributes object for user convenience.
   assets::Attributes attributes_;
