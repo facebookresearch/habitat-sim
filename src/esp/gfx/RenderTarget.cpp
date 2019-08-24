@@ -54,6 +54,12 @@ struct RenderTarget::Impl {
         unprojectedDepth_{NoCreate},
         depthUnprojectionMesh_{NoCreate},
         depthUnprojectionFrameBuffer_{NoCreate} {
+    if (depthShader_) {
+      CORRADE_ASSERT(
+          depthShader_->flags() & DepthShader::Flag::UnprojectExistingDepth,
+          "depthShader must be set unproject existing depth", 1);
+    }
+
     colorBuffer_.setStorage(GL::RenderbufferFormat::SRGB8Alpha8, size);
     objectIdBuffer_.setStorage(GL::RenderbufferFormat::R32UI, size);
     depthRenderTexture_.setMinificationFilter(GL::SamplerFilter::Nearest)

@@ -138,10 +138,11 @@ class Simulator:
         agent = self.get_agent(agent_id=agent_id)
         if initial_state is None:
             initial_state = AgentState()
-            initial_state.position = self.pathfinder.get_random_navigable_point()
-            initial_state.rotation = utils.quat_from_angle_axis(
-                np.random.uniform(0, 2.0 * np.pi), np.array([0, 1, 0])
-            )
+            if self.pathfinder.is_loaded:
+                initial_state.position = self.pathfinder.get_random_navigable_point()
+                initial_state.rotation = utils.quat_from_angle_axis(
+                    np.random.uniform(0, 2.0 * np.pi), np.array([0, 1, 0])
+                )
 
         agent.set_state(initial_state)
         self._last_state = agent.state

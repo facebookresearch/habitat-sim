@@ -60,29 +60,36 @@ bool ResourceManager::loadScene(const AssetInfo& info,
                                 scene::SceneNode* parent, /* = nullptr */
                                 DrawableGroup* drawables /* = nullptr */) {
   // scene mesh loading
-  bool meshSuccess = false;
-  if (!io::exists(info.filepath)) {
-    LOG(ERROR) << "Cannot load from file " << info.filepath;
-    meshSuccess = false;
-  } else {
-    if (info.type == AssetType::FRL_INSTANCE_MESH ||
-        info.type == AssetType::INSTANCE_MESH) {
-      meshSuccess = loadInstanceMeshData(info, parent, drawables);
-    } else if (info.type == AssetType::FRL_PTEX_MESH) {
-      meshSuccess = loadPTexMeshData(info, parent, drawables);
-    } else if (info.type == AssetType::SUNCG_SCENE) {
-      meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
-    } else if (info.type == AssetType::MP3D_MESH) {
-      meshSuccess = loadGeneralMeshData(info, parent, drawables);
+  bool meshSuccess = true;
+  if (info.filepath.compare(EMPTY_SCENE) != 0) {
+    if (!io::exists(info.filepath)) {
+      LOG(ERROR) << "Cannot load from file " << info.filepath;
+      meshSuccess = false;
     } else {
-      // Unknown type, just load general mesh data
-      meshSuccess = loadGeneralMeshData(info, parent, drawables);
+      if (info.type == AssetType::FRL_INSTANCE_MESH ||
+          info.type == AssetType::INSTANCE_MESH) {
+        meshSuccess = loadInstanceMeshData(info, parent, drawables);
+      } else if (info.type == AssetType::FRL_PTEX_MESH) {
+        meshSuccess = loadPTexMeshData(info, parent, drawables);
+      } else if (info.type == AssetType::SUNCG_SCENE) {
+        meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
+      } else if (info.type == AssetType::MP3D_MESH) {
+        meshSuccess = loadGeneralMeshData(info, parent, drawables);
+      } else {
+        // Unknown type, just load general mesh data
+        meshSuccess = loadGeneralMeshData(info, parent, drawables);
+      }
+      // add a scene attributes for this filename or modify the existing one
+      if (meshSuccess) {
+        physicsSceneLibrary_[info.filepath].setString("renderMeshHandle",
+                                                      info.filepath);
+      }
     }
-    // add a scene attributes for this filename or modify the existing one
-    if (meshSuccess) {
-      physicsSceneLibrary_[info.filepath].setString("renderMeshHandle",
-                                                    info.filepath);
-    }
+  } else {
+    LOG(INFO) << "Loading empty scene";
+    // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
+    // scene mesh): welcome
+    // to the void
   }
 
   return meshSuccess;
@@ -168,53 +175,57 @@ bool ResourceManager::loadScene(
 
   //! CONSTRUCT SCENE
   const std::string& filename = info.filepath;
-  MeshMetaData& metaData = resourceDict_.at(filename);
-  auto indexPair = metaData.meshIndex;
-  int start = indexPair.first;
-  int end = indexPair.second;
+  // if we have a scene mesh, add it as a collision object
+  if (filename.compare(EMPTY_SCENE) != 0) {
+    MeshMetaData& metaData = resourceDict_.at(filename);
+    auto indexPair = metaData.meshIndex;
+    int start = indexPair.first;
+    int end = indexPair.second;
 
-  //! Collect collision mesh group
-  std::vector<CollisionMeshData> meshGroup;
-  for (int mesh_i = start; mesh_i <= end; mesh_i++) {
-    // FRL Quad Mesh
-    if (info.type == AssetType::FRL_INSTANCE_MESH) {
-      FRLInstanceMeshData* frlMeshData =
-          dynamic_cast<FRLInstanceMeshData*>(meshes_[mesh_i].get());
-      CollisionMeshData& meshData = frlMeshData->getCollisionMeshData();
-      meshGroup.push_back(meshData);
+    //! Collect collision mesh group
+    std::vector<CollisionMeshData> meshGroup;
+    for (int mesh_i = start; mesh_i <= end; mesh_i++) {
+      // FRL Quad Mesh
+      if (info.type == AssetType::FRL_INSTANCE_MESH) {
+        FRLInstanceMeshData* frlMeshData =
+            dynamic_cast<FRLInstanceMeshData*>(meshes_[mesh_i].get());
+        CollisionMeshData& meshData = frlMeshData->getCollisionMeshData();
+        meshGroup.push_back(meshData);
+      }
+
+      // PLY Instance mesh
+      else if (info.type == AssetType::INSTANCE_MESH) {
+        GenericInstanceMeshData* insMeshData =
+            dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
+        quatf quatFront =
+            quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
+        Magnum::Quaternion quat = Magnum::Quaternion(quatFront);
+        CollisionMeshData& meshData = insMeshData->getCollisionMeshData();
+        meshGroup.push_back(meshData);
+      }
+
+      // GLB Mesh
+      else if (info.type == AssetType::MP3D_MESH) {
+        quatf quatFront =
+            quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
+        Magnum::Quaternion quat = Magnum::Quaternion(quatFront);
+        GltfMeshData* gltfMeshData =
+            dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
+        CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
+        Magnum::Matrix4 transform =
+            Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
+        Magnum::MeshTools::transformPointsInPlace(transform,
+                                                  meshData.positions);
+        meshGroup.push_back(meshData);
+      }
     }
 
-    // PLY Instance mesh
-    else if (info.type == AssetType::INSTANCE_MESH) {
-      GenericInstanceMeshData* insMeshData =
-          dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
-      quatf quatFront =
-          quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
-      Magnum::Quaternion quat = Magnum::Quaternion(quatFront);
-      CollisionMeshData& meshData = insMeshData->getCollisionMeshData();
-      meshGroup.push_back(meshData);
+    //! Initialize collision mesh
+    bool sceneSuccess = _physicsManager->addScene(
+        info, physicsSceneLibrary_.at(info.filepath), meshGroup);
+    if (!sceneSuccess) {
+      return false;
     }
-
-    // GLB Mesh
-    else if (info.type == AssetType::MP3D_MESH) {
-      quatf quatFront =
-          quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
-      Magnum::Quaternion quat = Magnum::Quaternion(quatFront);
-      GltfMeshData* gltfMeshData =
-          dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
-      CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
-      Magnum::Matrix4 transform =
-          Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
-      Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions);
-      meshGroup.push_back(meshData);
-    }
-  }
-
-  //! Initialize collision mesh
-  bool sceneSuccess = _physicsManager->addScene(
-      info, physicsSceneLibrary_.at(info.filepath), meshGroup);
-  if (!sceneSuccess) {
-    return false;
   }
 
   return meshSuccess;

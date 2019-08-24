@@ -73,8 +73,13 @@ class DepthShader : public Magnum::GL::AbstractShaderProgram {
    */
   DepthShader& bindDepthTexture(Magnum::GL::Texture2D& texture);
 
+  /**
+   * @brief The flags passed to the Constructor
+   */
+  const Flags& flags() const { return flags_; }
+
  private:
-  Flags flags_;
+  const Flags flags_;
   int transformationMatrixUniform_, projectionMatrixOrDepthUnprojectionUniform_;
 };
 

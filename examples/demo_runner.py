@@ -163,6 +163,8 @@ class DemoRunner:
             print(
                 "added object: "
                 + str(object_id)
+                + " of type "
+                + str(rand_obj_index)
                 + " at: "
                 + str(object_position + object_offset)
                 + " | "
@@ -170,6 +172,7 @@ class DemoRunner:
             )
 
     def do_time_steps(self):
+
         total_frames = 0
         start_time = time.time()
         action_names = list(
@@ -347,10 +350,11 @@ class DemoRunner:
         start_state = self.init_common()
 
         # initialize and compute shortest path to goal
-        self._shortest_path = hsim.ShortestPath()
-        self.compute_shortest_path(
-            start_state.position, self._sim_settings["goal_position"]
-        )
+        if self._sim_settings["compute_shortest_path"]:
+            self._shortest_path = hsim.ShortestPath()
+            self.compute_shortest_path(
+                start_state.position, self._sim_settings["goal_position"]
+            )
 
         # set the goal headings, and compute action shortest path
         if self._sim_settings["compute_action_shortest_path"]:
