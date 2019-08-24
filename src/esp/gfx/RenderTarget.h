@@ -42,7 +42,7 @@ class RenderTarget {
    * @param depthUnprojection  Depth unrpojection parameters.  See @ref
    *                           calculateDepthUnprojection()
    *
-   * Equivalent to calling RenderTarget(size, depthUnprojection, nullptr)
+   * Equivalent to calling @ref RenderTarget(size, depthUnprojection, nullptr)
    */
   RenderTarget(const Magnum::Vector2i& size,
                const Magnum::Vector2& depthUnprojection)
