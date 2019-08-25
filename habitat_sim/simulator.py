@@ -7,16 +7,18 @@
 import os.path as osp
 from typing import Dict, List, Optional
 
-import attr
 import magnum as mn
 import numpy as np
 
+import attr
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
 from habitat_sim import utils
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower
+
+torch = None
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -242,6 +244,7 @@ class Sensor:
     """
 
     def __init__(self, sim, agent, sensor_id):
+        global torch
         self._sim = sim
         self._agent = agent
 
@@ -257,7 +260,8 @@ class Sensor:
                 hsim.cuda_enabled
             ), "Must build habitat sim with cuda for gpu2gpu-transfer"
 
-            import torch
+            if torch is None:
+                import torch
 
             device = torch.device("cuda", self._sim.gpu_device)
 
@@ -339,8 +343,6 @@ class Sensor:
         tgt = self._sensor_object.render_target
 
         if self._spec.gpu2gpu_transfer:
-            import torch
-
             with torch.cuda.device(self._buffer.device):
                 if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
                     tgt.read_frame_object_id_gpu(self._buffer.data_ptr())

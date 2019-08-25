@@ -14,7 +14,7 @@ namespace esp {
 namespace gfx {
 
 /**
- * Hold the framebuffer and encapsulates the logic of retreiving rendering
+ * Holds a framebuffer and encapsulates the logic of retrieving rendering
  * results of various types (RGB, Depth, ObjectID) from the framebuffer.
  *
  * Reads the rendering results into either CPU or GPU, if compiled with CUDA,
@@ -25,7 +25,7 @@ class RenderTarget {
   /**
    * @brief Constructor
    * @param size               The size of the underlying framebuffers in WxH
-   * @param depthUnprojection  Depth unrpojection parameters.  See @ref
+   * @param depthUnprojection  Depth unprojection parameters.  See @ref
    *                           calculateDepthUnprojection()
    * @param depthShader        A DepthShader used to unproject depth on the GPU.
    *                           Unprojects the depth on the CPU if nullptr.

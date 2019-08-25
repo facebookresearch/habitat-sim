@@ -375,6 +375,21 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 #ifdef ESP_BUILD_WITH_CUDA
       .def("read_frame_rgba_gpu",
            [](RenderTarget& self, size_t devPtr) {
+             /*
+              * Python has no concept of a pointer, so PyTorch thus exposes the
+              pointer to CUDA memory as a simple size_t
+              * Thus we need to take in the pointer as a size_t and then
+              reinterpret_cast it to the correct type.
+              *
+              * What PyTorch does internally is similar to
+              * ::code
+                   uint8_t* tmp = new uint8_t[5];
+                   size_t ptr = reinterpret_cast<size_t>(tmp);
+              *
+              * so reinterpret_cast<uint8_t*> simply undoes the
+              reinterpret_cast<size_t>
+              */
+
              self.readFrameRgbaGPU(reinterpret_cast<uint8_t*>(devPtr));
            })
       .def("read_frame_depth_gpu",

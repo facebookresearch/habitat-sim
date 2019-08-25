@@ -88,7 +88,7 @@ agent::Agent::ptr SimulatorWithAgents::addAgent(
   auto& agentNode = agentParentNode.createChild();
   agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
 
-  // Add render targets to the agents sensors
+  // Add a RenderTarget to each of the agent's sensors
   for (auto& it : ag->getSensorSuite().getSensors()) {
     this->bindRenderTarget(it.second);
   }

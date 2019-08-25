@@ -202,8 +202,8 @@ void Simulator::bindRenderTarget(const sensor::Sensor::ptr& sensor) {
   if (!depthUnprojection)
     throw std::runtime_error("Sensor does not have a depthUnprojection matrix");
 
-  sensor->bindRenderTarget(new RenderTarget{
-      sensor->framebufferSize(), *depthUnprojection, depthShader_.get()});
+  sensor->bindRenderTarget(RenderTarget::create_unique(
+      sensor->framebufferSize(), *depthUnprojection, depthShader_.get()));
 }
 
 bool operator==(const SimulatorConfiguration& a,

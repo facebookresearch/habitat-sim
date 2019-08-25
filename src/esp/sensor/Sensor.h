@@ -97,12 +97,14 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   SensorSpec::ptr specification() const { return spec_; }
 
-  //! Returns the size of the framebuffer corresponding to the sensor's
-  //! resolution
+  /**
+   * @brief Return the size of the framebuffer corresponding to the sensor's
+   * resolution as a [W, H] Vector2i
+   */
   Magnum::Vector2i framebufferSize() const {
-    // NB: The sensors resolution is in H x W format as that more cleanly
-    // corresponds to the pratice of treating images as arrays that is used in
-    // modern CV and DL However, graphics frameworks expected W x H format for
+    // NB: The sensor's resolution is in H x W format as that more cleanly
+    // corresponds to the practice of treating images as arrays that is used in
+    // modern CV and DL. However, graphics frameworks expect W x H format for
     // frame buffer sizes
     return {spec_->resolution[1], spec_->resolution[0]};
   }
@@ -138,10 +140,10 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
    * @brief Binds the given given RenderTarget to the sensor.  The sensor takes
    * ownership of the RenderTarget
    */
-  void bindRenderTarget(gfx::RenderTarget* tgt) {
+  void bindRenderTarget(gfx::RenderTarget::uptr&& tgt) {
     if (tgt->framebufferSize() != framebufferSize())
       throw std::runtime_error("RenderTarget is not the correct size");
-    this->tgt_.reset(tgt);
+    tgt_ = std::move(tgt);
   }
 
   /**

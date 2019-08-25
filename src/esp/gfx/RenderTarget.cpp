@@ -19,8 +19,6 @@
 #include "RenderTarget.h"
 #include "magnum.h"
 
-#include "esp/sensor/Sensor.h"
-
 #include "esp/gfx/DepthUnprojection.h"
 
 #ifdef ESP_BUILD_WITH_CUDA
@@ -156,6 +154,10 @@ struct RenderTarget::Impl {
 
 #ifdef ESP_BUILD_WITH_CUDA
   void readFrameRgbaGPU(uint8_t* devPtr) {
+    // TODO: Consider implementing the GPU read functions with EGLImage
+    // See discussion here:
+    // https://github.com/facebookresearch/habitat-sim/pull/114#discussion_r312718502
+
     if (colorBufferCugl_ == nullptr)
       checkCudaErrors(cudaGraphicsGLRegisterImage(
           &colorBufferCugl_, colorBuffer_.id(), GL_RENDERBUFFER,

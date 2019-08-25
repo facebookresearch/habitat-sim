@@ -27,14 +27,14 @@ enum class DataType {
 
 class Buffer {
  public:
-  explicit Buffer(){};
+  explicit Buffer() {}
   explicit Buffer(const std::vector<size_t> shape, const DataType dataType) {
     this->shape = shape;
     this->dataType = dataType;
     alloc();
-  };
+  }
   void clear();
-  virtual ~Buffer() { dealloc(); };
+  virtual ~Buffer() { dealloc(); }
 
  protected:
   void alloc();
