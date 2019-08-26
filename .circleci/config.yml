@@ -208,7 +208,7 @@ jobs:
               . activate habitat; cd habitat-sim
 
               export PYTHONPATH=$PYTHONPATH:$(pwd)
-              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --run-tests
+              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --with-cuda --run-tests
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               pytest
