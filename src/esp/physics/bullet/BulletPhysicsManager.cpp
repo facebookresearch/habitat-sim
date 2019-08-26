@@ -46,7 +46,7 @@ BulletPhysicsManager::~BulletPhysicsManager() {
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
 bool BulletPhysicsManager::addScene(
-    const assets::AssetInfo& info,
+    const assets::AssetInfo&,
     const assets::PhysicsSceneAttributes& physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
@@ -128,7 +128,7 @@ void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   }
 }
 
-const Magnum::Vector3 BulletPhysicsManager::getGravity() {
+Magnum::Vector3 BulletPhysicsManager::getGravity() {
   return Magnum::Vector3(bWorld_->getGravity());
 }
 
@@ -169,7 +169,7 @@ void BulletPhysicsManager::setSceneRestitutionCoefficient(
       ->setRestitutionCoefficient(restitutionCoefficient);
 }
 
-const double BulletPhysicsManager::getMargin(const int physObjectID) {
+double BulletPhysicsManager::getMargin(const int physObjectID) {
   if (existingObjects_.count(physObjectID) > 0) {
     return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
         ->getMargin();
@@ -178,11 +178,11 @@ const double BulletPhysicsManager::getMargin(const int physObjectID) {
   }
 }
 
-const double BulletPhysicsManager::getSceneFrictionCoefficient() {
+double BulletPhysicsManager::getSceneFrictionCoefficient() {
   return static_cast<BulletRigidObject*>(sceneNode_)->getFrictionCoefficient();
 }
 
-const double BulletPhysicsManager::getSceneRestitutionCoefficient() {
+double BulletPhysicsManager::getSceneRestitutionCoefficient() {
   return static_cast<BulletRigidObject*>(sceneNode_)
       ->getRestitutionCoefficient();
 }

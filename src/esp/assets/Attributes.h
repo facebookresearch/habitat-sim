@@ -52,12 +52,12 @@ class Attributes {
   //----------------------------------------//
   // return the queried entry in the double map
   // will throw an exception if the key does not exist in the double map
-  const double getDouble(const std::string& key) const;
+  double getDouble(const std::string& key) const;
 
   // set a double attribute key->val
   void setDouble(const std::string& key, const double val);
 
-  const int getInt(const std::string& key) const;
+  int getInt(const std::string& key) const;
 
   void setInt(const std::string& key, const int val);
 

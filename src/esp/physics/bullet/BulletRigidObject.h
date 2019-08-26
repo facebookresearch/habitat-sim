@@ -50,17 +50,17 @@ class BulletRigidObject : public RigidObject {
   bool removeObject();
 
   //============ Getter/setter function =============
-  const double getMass();
-  const Magnum::Vector3 getCOM();
-  const Magnum::Vector3 getInertiaVector();
-  const Magnum::Matrix3 getInertiaMatrix();
-  const double getScale();
-  const double getFrictionCoefficient();
-  const double getRestitutionCoefficient();
-  const double getLinearDamping();
-  const double getAngularDamping();
+  double getMass();
+  Magnum::Vector3 getCOM();
+  Magnum::Vector3 getInertiaVector();
+  Magnum::Matrix3 getInertiaMatrix();
+  double getScale();
+  double getFrictionCoefficient();
+  double getRestitutionCoefficient();
+  double getLinearDamping();
+  double getAngularDamping();
   //! Return margin for object, -1.0 for scene
-  const double getMargin();
+  double getMargin();
 
   void setMass(const double mass);
   void setCOM(const Magnum::Vector3& COM);

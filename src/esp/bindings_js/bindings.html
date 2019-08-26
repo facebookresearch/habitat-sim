@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <title>Habitat</title>
   <link rel="stylesheet" href="WebApplication.css" />
+  <link rel="stylesheet" href="bindings.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
@@ -16,6 +17,7 @@
         <div id="listener">
           <canvas class="hidden" id="canvas"></canvas>
           <canvas id="canvas2d" width="640" height="480" style="transform: scaleY(-1)"></canvas>
+          <canvas id="radar"></canvas>
           <pre id="log"></pre>
           <div id="status">Initialization...</div>
           <div id="status-description"></div>
@@ -24,7 +26,6 @@
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/async/3.1.0/async.min.js"></script>
   <script src="navigate.js"></script>
   <script src="simenv_embind.js"></script>
   <script src="WindowlessEmscriptenApplication.js"></script>
@@ -50,9 +51,18 @@
         sensorSpecifications: sensorConfigs
       };
 
-      const agentState = {
-        position: [6.35314, 0.0099186, 19.0241],
-        rotation: [0, 0.946352, 0, 0.323138]
+      const startState = {
+        position: [-1.2676633596420288, 0.2047852873802185, 12.595427513122559],
+        rotation: [0, 0.4536385088584658, 0, 0.8911857849408661]
+      };
+
+      const goal = {
+        position: [2.2896811962127686, 0.11950381100177765, 16.97636604309082]
+      };
+
+      const episode = {
+        startState: startState,
+        goal: goal
       };
 
       let sceneConfig = new Module.SceneConfiguration();
@@ -60,10 +70,11 @@
       let config = new Module.SimulatorConfiguration();
       config.scene = sceneConfig;
 
-      const simenv = new SimEnv(config, 0);
-      const agent = simenv.addAgent(agentConfig, agentState);
+      const simenv = new SimEnv(config, episode, 0);
+      const agent = simenv.addAgent(agentConfig);
       const task = new NavigateTask(simenv, {
         canvas: document.getElementById('canvas2d'),
+        radar: document.getElementById('radar'),
         status: document.getElementById('status')
       });
       task.init();

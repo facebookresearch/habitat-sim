@@ -230,7 +230,9 @@ class CMakeBuild(build_ext):
             build_args += ["-j{}".format(self.parallel) if self.parallel else "-j"]
 
         cmake_args += [
-            "-DBUILD_GUI_VIEWERS={}".format("ON" if not args.headless else "OFF")
+            "-DBUILD_GUI_VIEWERS={}".format("ON" if not args.headless else "OFF"),
+            # So Magnum itself prefers EGL over GLX for windowless apps
+            "-DTARGET_HEADLESS={}".format("ON" if args.headless else "OFF"),
         ]
         # NOTE: BUILD_TEST is intentional as opposed to BUILD_TESTS which collides
         # with definition used by some of our dependencies

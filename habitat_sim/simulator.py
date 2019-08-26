@@ -201,7 +201,7 @@ class Simulator:
         self._sim.set_transformation(transform, object_id, scene_id)
 
     def get_transformation(self, object_id, scene_id=0):
-        return self._sim.set_transformation(object_id, scene_id)
+        return self._sim.get_transformation(object_id, scene_id)
 
     def set_translation(self, translation, object_id, scene_id=0):
         self._sim.set_translation(translation, object_id, scene_id)

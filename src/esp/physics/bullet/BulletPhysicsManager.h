@@ -43,7 +43,7 @@ class BulletPhysicsManager : public PhysicsManager {
 
   void setGravity(const Magnum::Vector3& gravity);
 
-  const Magnum::Vector3 getGravity();
+  Magnum::Vector3 getGravity();
 
   //============ Interact with objects =============
   // NOTE: engine specifics handled by objects themselves...
@@ -54,9 +54,9 @@ class BulletPhysicsManager : public PhysicsManager {
   void setSceneRestitutionCoefficient(const double restitutionCoefficient);
 
   //============ Bullet-specific Object Getter functions =============
-  const double getMargin(const int physObjectID);
-  const double getSceneFrictionCoefficient();
-  const double getSceneRestitutionCoefficient();
+  double getMargin(const int physObjectID);
+  double getSceneFrictionCoefficient();
+  double getSceneRestitutionCoefficient();
 
  protected:
   //! The world has to live longer than the scene because RigidBody
