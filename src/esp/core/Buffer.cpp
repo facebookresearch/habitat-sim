@@ -32,7 +32,7 @@ size_t getDataTypeByteSize(DataType dt) {
 
 void Buffer::clear() {
   if (this->data != nullptr) {
-    memset(this->data, 0, this->totalBytes);
+    memset(this->data, 0, this->data.size());
   }
 }
 
@@ -43,8 +43,8 @@ void Buffer::alloc() {
   }
   if (size != this->totalSize) {
     this->totalSize = size;
-    this->totalBytes = size * getDataTypeByteSize(this->dataType);
-    this->data = Corrade::Containers::Array<uint8_t>{this->totalBytes};
+    this->data = Corrade::Containers::Array<uint8_t>{
+        size * getDataTypeByteSize(dataType)};
   }
 }
 
@@ -52,7 +52,6 @@ void Buffer::dealloc() {
   if (this->data != nullptr) {
     this->data = Corrade::Containers::Array<uint8_t>{};
     this->totalSize = 0;
-    this->totalBytes = 0;
   }
 }
 
