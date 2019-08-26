@@ -73,11 +73,6 @@ struct RenderTarget::Impl {
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(GL::FramebufferTarget::Draw) ==
         GL::Framebuffer::Status::Complete);
-
-#ifndef CORRADE_TARGET_EMSCRIPTEN
-    GL::Renderer::setClearColor(Magnum::Color4{0, 0, 0, 1});
-    GL::Renderer::setClearDepth(1.0);
-#endif
   }
 
   void initDepthUnprojector() {
@@ -111,15 +106,9 @@ struct RenderTarget::Impl {
   }
 
   void renderEnter() {
-#ifdef CORRADE_TARGET_EMSCRIPTEN
     framebuffer_.clearDepth(1.0);
     framebuffer_.clearColor(0, Magnum::Color4{});
     framebuffer_.clearColor(1, Magnum::Vector4ui{});
-#else
-    framebuffer_.clear(GL::FramebufferClear::Color |
-                       GL::FramebufferClear::Depth);
-    framebuffer_.clearColor(1, Magnum::Vector4ui{});
-#endif
     framebuffer_.bind();
   }
 
