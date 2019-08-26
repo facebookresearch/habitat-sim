@@ -22,6 +22,11 @@ class Renderer {
   // draw the scene graph with the visual sensor provided by user
   void draw(sensor::Sensor& visualSensor, scene::SceneGraph& sceneGraph);
 
+  /**
+   * @brief Binds a @ref RenderTarget to the sensor
+   */
+  void bindRenderTarget(const sensor::Sensor::ptr& sensor);
+
   // draw the scene graph with the default camera in scene graph
   // user needs to set the default camera so that it has correct
   // modelview matrix, projection matrix to render the scene

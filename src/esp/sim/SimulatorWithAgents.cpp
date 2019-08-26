@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "SimulatorWithAgents.h"
+#include "esp/gfx/Renderer.h"
 #include "esp/io/io.h"
 
 namespace esp {
@@ -90,7 +91,7 @@ agent::Agent::ptr SimulatorWithAgents::addAgent(
 
   // Add a RenderTarget to each of the agent's sensors
   for (auto& it : ag->getSensorSuite().getSensors()) {
-    this->bindRenderTarget(it.second);
+    renderer_->bindRenderTarget(it.second);
   }
 
   agents_.push_back(ag);

@@ -87,11 +87,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       renderer_ = Renderer::create();
     }
 
-    if (!depthShader_) {
-      depthShader_ = std::make_unique<DepthShader>(
-          DepthShader::Flag::UnprojectExistingDepth);
-    }
-
     auto& sceneGraph = sceneManager_.getSceneGraph(activeSceneID_);
 
     auto& rootNode = sceneGraph.getRootNode();
@@ -191,19 +186,6 @@ scene::SceneGraph& Simulator::getActiveSemanticSceneGraph() {
   CHECK_GE(activeSemanticSceneID_, 0);
   CHECK_LT(activeSemanticSceneID_, sceneID_.size());
   return sceneManager_.getSceneGraph(activeSemanticSceneID_);
-}
-
-void Simulator::bindRenderTarget(const sensor::Sensor::ptr& sensor) {
-  if (context_ == nullptr)
-    throw std::runtime_error(
-        "Cannot create a rendering target without a rendering context");
-
-  auto depthUnprojection = sensor->depthUnprojection();
-  if (!depthUnprojection)
-    throw std::runtime_error("Sensor does not have a depthUnprojection matrix");
-
-  sensor->bindRenderTarget(RenderTarget::create_unique(
-      sensor->framebufferSize(), *depthUnprojection, depthShader_.get()));
 }
 
 bool operator==(const SimulatorConfiguration& a,

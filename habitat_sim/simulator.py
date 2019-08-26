@@ -253,7 +253,7 @@ class Sensor:
         self._sensor_object = self._agent.sensors.get(sensor_id)
         self._spec = self._sensor_object.specification()
 
-        self._sim.bind_render_target(self._sensor_object)
+        self._sim.renderer.bind_render_target(self._sensor_object)
 
         if self._spec.gpu2gpu_transfer:
             assert (

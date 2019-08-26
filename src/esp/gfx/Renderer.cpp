@@ -44,6 +44,25 @@ struct Renderer::Impl {
 
     draw(sceneGraph.getDefaultRenderCamera(), sceneGraph.getDrawables());
   }
+
+  void bindRenderTarget(const sensor::Sensor::ptr& sensor) {
+    auto depthUnprojection = sensor->depthUnprojection();
+    if (!depthUnprojection) {
+      throw std::runtime_error(
+          "Sensor does not have a depthUnprojection matrix");
+    }
+
+    if (!depthShader_) {
+      depthShader_ = std::make_unique<DepthShader>(
+          DepthShader::Flag::UnprojectExistingDepth);
+    }
+
+    sensor->bindRenderTarget(RenderTarget::create_unique(
+        sensor->framebufferSize(), *depthUnprojection, depthShader_.get()));
+  }
+
+ private:
+  std::unique_ptr<DepthShader> depthShader_ = nullptr;
 };
 
 Renderer::Renderer() : pimpl_(spimpl::make_unique_impl<Impl>()) {}
@@ -55,6 +74,10 @@ void Renderer::draw(RenderCamera& camera, scene::SceneGraph& sceneGraph) {
 void Renderer::draw(sensor::Sensor& visualSensor,
                     scene::SceneGraph& sceneGraph) {
   pimpl_->draw(visualSensor, sceneGraph);
+}
+
+void Renderer::bindRenderTarget(const sensor::Sensor::ptr& sensor) {
+  pimpl_->bindRenderTarget(sensor);
 }
 
 }  // namespace gfx
