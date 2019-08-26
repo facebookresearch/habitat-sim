@@ -35,10 +35,10 @@ class BaseMesh {
   bool setMeshType(SupportedMeshType type);
   SupportedMeshType getMeshType() { return type_; }
 
-  virtual void uploadBuffersToGPU(bool forceReload = false){};
+  virtual void uploadBuffersToGPU(bool){};
 
   virtual Magnum::GL::Mesh* getMagnumGLMesh() { return nullptr; }
-  virtual Magnum::GL::Mesh* getMagnumGLMesh(int submeshID) { return nullptr; }
+  virtual Magnum::GL::Mesh* getMagnumGLMesh(int) { return nullptr; }
 
   // Accessing non-render mesh data
   // Usage: (1) physics simulation
