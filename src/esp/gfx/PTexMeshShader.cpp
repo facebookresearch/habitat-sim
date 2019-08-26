@@ -67,14 +67,13 @@ PTexMeshShader::PTexMeshShader() {
              TextureBindingPointIndex::adjFaces);
 
   // cache the uniform locations
-  // std::map<std::string, int> uniformLocations;
-  uniformLocations_["MVP"] = uniformLocation("MVP");
-  uniformLocations_["exposure"] = uniformLocation("exposure");
-  uniformLocations_["gamma"] = uniformLocation("gamma");
-  uniformLocations_["saturation"] = uniformLocation("saturation");
-  uniformLocations_["clipPlane"] = uniformLocation("clipPlane");
-  uniformLocations_["tileSize"] = uniformLocation("tileSize");
-  uniformLocations_["widthInTiles"] = uniformLocation("widthInTiles");
+  MVPMatrixUniform_ = uniformLocation("MVP");
+  exposureUniform_ = uniformLocation("exposure");
+  gammaUniform_ = uniformLocation("gamma");
+  saturationUniform_ = uniformLocation("saturation");
+  clipPlaneUniform_ = uniformLocation("clipPlane");
+  tileSizeUniform_ = uniformLocation("tileSize");
+  widthInTilesUniform_ = uniformLocation("widthInTiles");
 }
 
 PTexMeshShader& PTexMeshShader::bindAtlasTexture(
@@ -90,39 +89,39 @@ PTexMeshShader& PTexMeshShader::bindAdjFacesBufferTexture(
 }
 
 PTexMeshShader& PTexMeshShader::setMVPMatrix(const Magnum::Matrix4& matrix) {
-  setUniform(uniformLocations_["MVP"], matrix);
+  setUniform(MVPMatrixUniform_, matrix);
   return *this;
 }
 
 PTexMeshShader& PTexMeshShader::setExposure(float exposure) {
-  setUniform(uniformLocations_["exposure"], exposure);
+  setUniform(exposureUniform_, exposure);
   return *this;
 }
 PTexMeshShader& PTexMeshShader::setGamma(float gamma) {
   // Careful: we set its inverse, not gamma directly
-  setUniform(uniformLocations_["gamma"], 1.0f / gamma);
+  setUniform(gammaUniform_, 1.0f / gamma);
   return *this;
 }
 
 PTexMeshShader& PTexMeshShader::setSaturation(float saturation) {
-  setUniform(uniformLocations_["saturation"], saturation);
+  setUniform(saturationUniform_, saturation);
   return *this;
 }
 
 PTexMeshShader& PTexMeshShader::setClipPlane(const Magnum::Vector4& clipPlane) {
-  setUniform(uniformLocations_["clipPlane"], clipPlane);
+  setUniform(clipPlaneUniform_, clipPlane);
   return *this;
 }
 
 PTexMeshShader& PTexMeshShader::setAtlasTextureSize(Magnum::GL::Texture2D& tex,
                                                     uint32_t tileSize) {
-  setUniform(uniformLocations_["tileSize"], (int)tileSize);
+  setUniform(tileSizeUniform_, (int)tileSize);
 
   // Image size in given mip level 0
   int mipLevel = 0;
   int widthEntry = 0;
   const auto width = tex.imageSize(mipLevel)[widthEntry];
-  setUniform(uniformLocations_["widthInTiles"], int(width / tileSize));
+  setUniform(widthInTilesUniform_, int(width / tileSize));
   return *this;
 }
 
