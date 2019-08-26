@@ -81,12 +81,12 @@ target_include_directories(gfx
 if(BUILD_WITH_CUDA)
   find_package(CUDA 8.0)
   if(CUDA_FOUND)
-    target_include_directories(gfx PUBLIC
-      "${CUDA_INCLUDE_DIRS}"
+    target_include_directories(gfx PRIVATE
+      ${CUDA_INCLUDE_DIRS}
       ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers)
 
     target_link_libraries(gfx PUBLIC
-        "${CUDA_LIBRARIES}")
+        ${CUDA_LIBRARIES})
   endif()
 endif()
 

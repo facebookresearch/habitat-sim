@@ -45,4 +45,4 @@ target_link_libraries(core
 
 target_include_directories(core
   PUBLIC
-    "${PROJECT_BINARY_DIR}")
+    ${PROJECT_BINARY_DIR})

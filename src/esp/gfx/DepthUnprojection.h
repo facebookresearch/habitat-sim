@@ -76,7 +76,7 @@ class DepthShader : public Magnum::GL::AbstractShaderProgram {
   /**
    * @brief The flags passed to the Constructor
    */
-  const Flags& flags() const { return flags_; }
+  Flags flags() const { return flags_; }
 
  private:
   const Flags flags_;
