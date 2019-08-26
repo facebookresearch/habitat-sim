@@ -46,13 +46,7 @@ class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
  protected:
   // it hurts the performance to call glGetUniformLocation() every frame.
   // therefore, cache the locations in the constructor
-  int MVPMatrixUniform_;
-  int exposureUniform_;
-  int gammaUniform_;
-  int saturationUniform_;
-  int clipPlaneUniform_;
-  int tileSizeUniform_;
-  int widthInTilesUniform_;
+  std::map<std::string, int> uniformLocations_;
 };
 
 }  // namespace gfx
