@@ -235,7 +235,6 @@ std::vector<PTexMeshData::MeshData> splitMesh(
   exit(-1);
   */
 
-
   // find face chunk start indices
   std::vector<uint32_t> chunkStart;
   chunkStart.push_back(0);
@@ -768,10 +767,10 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
         std::make_unique<PTexMeshData::RenderingBuffer>());
 
     auto& currentMesh = renderingBuffers_.back();
-    currentMesh->vbo.setData(submeshes_[iMesh].vbo,
-                             Magnum::GL::BufferUsage::StaticDraw);
-    currentMesh->ibo.setData(submeshes_[iMesh].ibo,
-                             Magnum::GL::BufferUsage::StaticDraw);
+    currentMesh->vertexBuffer.setData(submeshes_[iMesh].vbo,
+                                      Magnum::GL::BufferUsage::StaticDraw);
+    currentMesh->indexBuffer.setData(submeshes_[iMesh].ibo,
+                                     Magnum::GL::BufferUsage::StaticDraw);
   }
 
   LOG(INFO) << "Calculating mesh adjacency... ";
@@ -796,35 +795,50 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
 
   // exit(-1);
 
+  int maxBufferTextureTexels = 0;
+  glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxBufferTextureTexels);
+
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
     auto& currentMesh = renderingBuffers_[iMesh];
+    ASSERT(maxBufferTextureTexels >= adjFaces[iMesh].size(),
+           "Error: the number of adjacent faces is larger than the allowed "
+           "number of texels");
 
     currentMesh->adjFaces.setBuffer(Magnum::GL::BufferTextureFormat::R32UI,
-                                    currentMesh->abo);
-    currentMesh->abo.setData(adjFaces[iMesh],
-                             Magnum::GL::BufferUsage::StaticDraw);
+                                    currentMesh->adjFacesBuffer);
+    currentMesh->adjFacesBuffer.setData(adjFaces[iMesh],
+                                        Magnum::GL::BufferUsage::StaticDraw);
 
     // using GL_LINES_ADJACENCY here to send quads to geometry shader
-    currentMesh->mesh.setPrimitive(Magnum::GL::MeshPrimitive::LinesAdjacency)
+    GLintptr offset = 0;
+    currentMesh->mesh
+        .setPrimitive(Magnum::GL::MeshPrimitive::LinesAdjacency)
+        // Warning:
+        // CANNOT use currentMesh.indexBuffer.size() when calling
+        // setCount because that returns the number of bytes of the buffer, NOT
+        // the index counts
         .setCount(submeshes_[iMesh].ibo.size())
-        .addVertexBuffer(currentMesh->vbo, 0, gfx::PTexMeshShader::Position{})
-        .setIndexBuffer(currentMesh->ibo, 0,
+        .addVertexBuffer(currentMesh->vertexBuffer, offset,
+                         gfx::PTexMeshShader::Position{})
+        .setIndexBuffer(currentMesh->indexBuffer, offset,
                         Magnum::GL::MeshIndexType::UnsignedInt);
   }
   {
     std::ofstream file;
     const std::string filename =
-              Corrade::Utility::Directory::join(atlasFolder_, "../indices.bin");
+        Corrade::Utility::Directory::join(atlasFolder_, "../indices.bin");
     file.open(filename, std::ios::out | std::ios::binary);
-    for(int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
+    for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
       auto& currentMesh = submeshes_[iMesh];
-      file.write((char*)(currentMesh.ibo.data()), sizeof(uint32_t) * currentMesh.ibo.size());
-      file.write((char*)(currentMesh.vbo.data()), sizeof(vec4f) * currentMesh.vbo.size());
+      file.write((char*)(currentMesh.ibo.data()),
+                 sizeof(uint32_t) * currentMesh.ibo.size());
+      file.write((char*)(currentMesh.vbo.data()),
+                 sizeof(vec4f) * currentMesh.vbo.size());
     }
     LOG(INFO) << "Indices and vertices are saved to indices.bin";
     file.close();
   }
-  //exit(-1);
+  // exit(-1);
 
   // load atlas data and upload them to GPU
   LOG(INFO) << "loading atlas textures: ";
@@ -850,7 +864,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     Magnum::ImageView2D image(Magnum::PixelFormat::RGB16F, {dim, dim}, data);
     const int mipLevelCount = 1;
     renderingBuffers_[iMesh]
-        ->tex 
+        ->tex
         //.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
         //.setMagnificationFilter(Magnum::GL::SamplerFilter::Linear)
         //.setMinificationFilter(Magnum::GL::SamplerFilter::Linear)

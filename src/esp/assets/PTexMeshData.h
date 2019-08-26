@@ -31,9 +31,9 @@ class PTexMeshData : public BaseMesh {
   struct RenderingBuffer {
     Magnum::GL::Mesh mesh;
     Magnum::GL::Texture2D tex;
-    Magnum::GL::Buffer vbo;
-    Magnum::GL::Buffer ibo;
-    Magnum::GL::Buffer abo;
+    Magnum::GL::Buffer vertexBuffer;
+    Magnum::GL::Buffer indexBuffer;
+    Magnum::GL::Buffer adjFacesBuffer;
     Magnum::GL::BufferTexture adjFaces;
   };
 

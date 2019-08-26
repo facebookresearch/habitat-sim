@@ -49,9 +49,9 @@ Viewer::Viewer(const Arguments& arguments)
       .addBooleanOption("enable-physics")
       .addOption("physicsConfig", "./data/default.phys_scene_config.json")
       .setHelp("physicsConfig", "physics scene config file")
-//      .addOption("lookAt", "0.0f,1.5f,0.0f,1.5f,1.0f,0.0f,1.0f,0.0f")
-//      .setHelp("lookAt",
-//               "set initial eye, target and up dirction for the camera")
+      //      .addOption("lookAt", "0.0f,1.5f,0.0f,1.5f,1.0f,0.0f,1.0f,0.0f")
+      //      .setHelp("lookAt",
+      //               "set initial eye, target and up dirction for the camera")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
@@ -359,28 +359,38 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::A:
       controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
       LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data())
+                       .format(eigenFlatFormat_);
       break;
     case KeyEvent::Key::D:
       controls_(*agentBodyNode_, "moveRight", moveSensitivity);
       LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data())
+                       .format(eigenFlatFormat_);
       break;
     case KeyEvent::Key::S:
       controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
       LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data())
+                       .format(eigenFlatFormat_);
       break;
     case KeyEvent::Key::W:
       controls_(*agentBodyNode_, "moveForward", moveSensitivity);
       LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data())
+                       .format(eigenFlatFormat_);
       break;
     case KeyEvent::Key::X:
       controls_(*agentBodyNode_, "moveDown", moveSensitivity, false);
+      LOG(INFO) << "Agent position "
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data())
+                       .format(eigenFlatFormat_);
       break;
     case KeyEvent::Key::Z:
       controls_(*agentBodyNode_, "moveUp", moveSensitivity, false);
+      LOG(INFO) << "Agent position "
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data())
+                       .format(eigenFlatFormat_);
       break;
     case KeyEvent::Key::O: {
       if (physicsManager_ != nullptr) {
