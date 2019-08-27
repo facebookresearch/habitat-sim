@@ -131,7 +131,7 @@ bool FRLInstanceMeshData::loadPLY(const std::string& ply_file) {
 
   // Store vertex buffer without instance id
   cpu_vbo_3_ = new std::vector<vec3f>(cpu_vbo_.size());
-  for (int i = 0; i < cpu_vbo_.size(); ++i) {
+  for (size_t i = 0; i < cpu_vbo_.size(); ++i) {
     (*cpu_vbo_3_)[i] = cpu_vbo_[i].head<3>();
   }
 

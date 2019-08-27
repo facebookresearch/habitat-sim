@@ -150,7 +150,7 @@ bool ResourceManager::loadScene(
   for (auto objPhysPropertiesFilename :
        physicsManagerAttributes.getVecStrings("objectLibraryPaths")) {
     LOG(INFO) << "loading object: " << objPhysPropertiesFilename;
-    int objID = loadObject(objPhysPropertiesFilename);
+    loadObject(objPhysPropertiesFilename);
   }
   LOG(INFO) << "loaded objects: "
             << std::to_string(physicsObjectLibrary_.size());
@@ -197,9 +197,6 @@ bool ResourceManager::loadScene(
       else if (info.type == AssetType::INSTANCE_MESH) {
         GenericInstanceMeshData* insMeshData =
             dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
-        quatf quatFront =
-            quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
-        Magnum::Quaternion quat = Magnum::Quaternion(quatFront);
         CollisionMeshData& meshData = insMeshData->getCollisionMeshData();
         meshGroup.push_back(meshData);
       }
@@ -939,7 +936,6 @@ void ResourceManager::loadMeshes(Importer& importer,
         translateMesh(gltfMeshData, offset);
     }
 
-    CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
     gltfMeshData->uploadBuffersToGPU(false);
   }
 }
