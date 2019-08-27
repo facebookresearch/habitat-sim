@@ -18,7 +18,7 @@ class dtQueryPathState;
 namespace esp {
 // forward declaration
 namespace assets {
-class MeshData;
+struct MeshData;
 }
 namespace nav {
 

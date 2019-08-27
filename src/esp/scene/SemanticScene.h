@@ -19,7 +19,7 @@ namespace scene {
 //! Represents a semantic category
 class SemanticCategory {
  public:
-  virtual ~SemanticCategory() {}
+  virtual ~SemanticCategory() = default;
   //! Return index of SemanticCategory under given mapping
   virtual int index(const std::string& mapping = "") const = 0;
   //! Return name of SemanticCategory under given mapping
@@ -110,6 +110,7 @@ class SemanticScene {
 //! Represents a level of a SemanticScene
 class SemanticLevel {
  public:
+  virtual ~SemanticLevel() = default;
   virtual std::string id() const { return std::to_string(index_); }
 
   const std::vector<std::shared_ptr<SemanticRegion>>& regions() const {
@@ -136,6 +137,7 @@ class SemanticLevel {
 //! Represents a region (typically room) in a level of a house
 class SemanticRegion {
  public:
+  virtual ~SemanticRegion() = default;
   virtual std::string id() const {
     if (level_ != nullptr) {
       return level_->id() + "_" + std::to_string(index_);
@@ -171,6 +173,7 @@ class SemanticRegion {
 //! Represents a distinct semantically annotated object
 class SemanticObject {
  public:
+  virtual ~SemanticObject() = default;
   virtual std::string id() const {
     if (region_ != nullptr) {
       return region_->id() + "_" + std::to_string(index_);
