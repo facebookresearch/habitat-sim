@@ -4,6 +4,8 @@
 
 #include "PTexMeshDrawable.h"
 
+#include <Magnum/GL/Renderer.h>
+
 #include "esp/assets/PTexMeshData.h"
 
 namespace esp {
@@ -40,6 +42,23 @@ void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
       .bindAdjFacesBufferTexture(adjFaces_)
       .setMVPMatrix(camera.projectionMatrix() * transformationMatrix);
   mesh_.draw(ptexMeshShader);
+
+  //XXX
+  // ASSERT(Magnum::GL::Renderer::Error::NoError == Magnum::GL::Renderer::error());
+  switch (Magnum::GL::Renderer::error()) {
+    case Magnum::GL::Renderer::Error::NoError:
+      LOG(INFO) << "No error";
+      break;
+    case Magnum::GL::Renderer::Error::InvalidValue:
+      LOG(INFO) << "InvalidValue";
+      break;
+    case Magnum::GL::Renderer::Error::InvalidOperation:
+      LOG(INFO) << "InvalidOperation";
+      break;
+    default:
+      LOG(INFO) << "some other errors";
+      break;
+  }
 }
 
 }  // namespace gfx

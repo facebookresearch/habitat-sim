@@ -865,9 +865,9 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     const int mipLevelCount = 1;
     renderingBuffers_[iMesh]
         ->tex
-        //.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
-        //.setMagnificationFilter(Magnum::GL::SamplerFilter::Linear)
-        //.setMinificationFilter(Magnum::GL::SamplerFilter::Linear)
+        .setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
+        .setMagnificationFilter(Magnum::GL::SamplerFilter::Linear)
+        .setMinificationFilter(Magnum::GL::SamplerFilter::Linear)
         .setStorage(mipLevelCount, Magnum::GL::TextureFormat::RGB16F,
                     image.size())
         .setSubImage(0, {}, image);
