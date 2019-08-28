@@ -323,7 +323,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("draw",
            py::overload_cast<gfx::RenderCamera&, scene::SceneGraph&>(
                &Renderer::draw),
-           R"(Draw given scene using the camera)", "camera"_a, "scene"_a);
+           R"(Draw given scene using the camera)", "camera"_a, "scene"_a)
+      .def("bind_render_target", &Renderer::bindRenderTarget);
 
   // TODO fill out other SensorTypes
   // ==== enum SensorType ====
@@ -499,7 +500,6 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("seed", &Simulator::seed, R"()", "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a)
       .def("reset", &Simulator::reset, R"()")
-      .def("bind_render_target", &Simulator::bindRenderTarget)
       .def_property_readonly("gpu_device", &Simulator::gpuDevice)
       /* --- Physics functions --- */
       .def("add_object", &Simulator::addObject, "R()", "object_lib_index"_a,

@@ -42,7 +42,6 @@ class Buffer {
 
  public:
   Corrade::Containers::Array<uint8_t> data;
-  size_t totalBytes = 0;
   size_t totalSize = 0;
   DataType dataType = DataType::DT_UINT8;
   std::vector<size_t> shape;

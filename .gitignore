@@ -168,5 +168,6 @@ data/
 *.zip
 habitat_sim/_ext
 build_js/
+build_corrade-rc/
 
 .setuppy_args_cache.json

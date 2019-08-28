@@ -146,9 +146,17 @@ To run the above benchmarks on your machine, see instructions in the [examples](
 1. Install dependencies in your python env of choice (e.g., `pip install -r requirements.txt`)
 1. Install Habitat-Sim via `python setup.py install` in your python env of choice (note: python 3 is required)
 
-    Use `python setup.py install --headless` for headless systems (i.e. without an attached display) or if you need multi-gpu support.
+    **Headless and multiple GPU systems**
 
-    **Note**: the build requires `cmake` version 3.10 or newer. You can install cmake through `conda install cmake` or download directly from [https://cmake.org/download/](https://cmake.org/download/)
+    Add the `--headless` flag, i.e. `python setup.py install --headless`, for headless systems (i.e. without an attached display) or if you need multi-gpu support.
+
+    **Systems with CUDA**
+
+    Add the `--with-cuda` flag, i.e. `python setup.py install --with-cuda`, to build CUDA features
+
+
+
+**Note**: the build requires `cmake` version 3.10 or newer. You can install cmake through `conda install cmake` or download directly from [https://cmake.org/download/](https://cmake.org/download/)
 
 
 ## Testing
@@ -198,7 +206,7 @@ We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup
 ## Rendering to GPU Tensors
 
 We support transfering rendering results directly to a [PyTorch](https://pytorch.org/) tensor via CUDA-GL Interop.
-This feature is built by default on systems with CUDA, to enable it, set the
+This feature is built by when Habitat-Sim is compiled with CUDA, i.e. built with `--with-cuda`.  To enable it, set the
 `gpu2gpu_transfer` flag of the sensor specification(s) to `True`
 
 

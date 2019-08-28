@@ -38,10 +38,10 @@ def build_parser():
 Use "HEADLESS=True pip install ." to build in headless mode with pip""",
     )
     parser.add_argument(
-        "--no-cuda",
+        "--with-cuda",
         action="store_true",
-        dest="no_cuda",
-        help="Do not build any CUDA features regardless if CUDA is found or not.",
+        dest="with_cuda",
+        help="Build CUDA enabled features.  Requires CUDA to be installed",
     )
     parser.add_argument(
         "--bullet",
@@ -252,7 +252,7 @@ class CMakeBuild(build_ext):
         cmake_args += [
             "-DBUILD_DATATOOL={}".format("ON" if args.build_datatool else "OFF")
         ]
-        cmake_args += ["-DBUILD_WITH_CUDA={}".format("OFF" if args.no_cuda else "ON")]
+        cmake_args += ["-DBUILD_WITH_CUDA={}".format("ON" if args.with_cuda else "OFF")]
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(

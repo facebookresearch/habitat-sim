@@ -24,7 +24,7 @@ em::val Observation_getData(Observation& obs) {
   auto buffer = obs.buffer;
   if (buffer != nullptr) {
     return em::val(
-        em::typed_memory_view(buffer->totalBytes, buffer->data.data()));
+        em::typed_memory_view(buffer->data.size(), buffer->data.data()));
   } else {
     return em::val::undefined();
   }
