@@ -12,6 +12,7 @@
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
+#include <Magnum/Shaders/Generic.h>
 
 #include "esp/core/esp.h"
 
@@ -26,9 +27,22 @@ class PrimitiveIDTexturedShader : public Magnum::GL::AbstractShaderProgram {
   explicit PrimitiveIDTexturedShader();
 
   //! @brief vertex positions
-  typedef Magnum::GL::Attribute<0, Magnum::Vector4> Position;
+  typedef Magnum::Shaders::Generic3D::Position Position;
   //! @brief vertex colors
-  typedef Magnum::GL::Attribute<3, Magnum::Vector3> Color;
+  typedef Magnum::Shaders::Generic3D::Color3 Color3;
+
+  enum : int {
+    /**
+     * Hardcoded width of the primitive ID texture, since we wouldn't be able
+     * to fit it all into a 1D texture. Picking a power-of-two size as that
+     * nicely fits caches etc. Conservatively choosing 4K as 8K might not be
+     * supported on some platforms (mobile/WebGL, possibly). A 4096x4096
+     * texture fits 16M primitives, which should be enough. Smaller meshes will
+     * have the height much smaller while larger meshes are of course allowed
+     * to go beyond that -- e.g. 4096x6000 is not expected to be a problem.
+     */
+    PrimitiveIDTextureWidth = 4096
+  };
 
   //! Color attachment location per output type
   enum : uint8_t {
@@ -44,18 +58,14 @@ class PrimitiveIDTexturedShader : public Magnum::GL::AbstractShaderProgram {
    */
   PrimitiveIDTexturedShader& setTransformationProjectionMatrix(
       const Magnum::Matrix4& matrix) {
-    setUniform(uniformLocation("transformationProjectionMatrix"), matrix);
+    setUniform(transformationProjectionMatrixUniform_, matrix);
     return *this;
   }
 
-  /**
-   * @brief Bind a color texture
-   * @return Reference to self (for method chaining)
-   *
-   * Expects that the shader was created with @ref Flag::Textured enabled.
-   * @see @ref setColor()
-   */
   PrimitiveIDTexturedShader& bindTexture(Magnum::GL::Texture2D& texture);
+
+ private:
+  int transformationProjectionMatrixUniform_;
 };
 
 }  // namespace gfx
