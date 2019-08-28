@@ -132,7 +132,7 @@ class RenderTarget {
   void readFrameObjectIdGPU(int32_t* devPtr);
 #endif
 
-  ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(RenderTarget);
+  ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(RenderTarget)
 };
 
 }  // namespace gfx
