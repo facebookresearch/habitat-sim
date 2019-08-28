@@ -105,7 +105,6 @@ Viewer::Viewer(const Arguments& arguments)
   float hfov = 90.0f;
   int width = viewportSize[0];
   int height = viewportSize[1];
-  const float aspectRatio = static_cast<float>(width) / height;
   float znear = 0.01f;
   float zfar = 1000.0f;
   renderCamera_->setProjectionMatrix(width, height, znear, zfar, hfov);
@@ -187,7 +186,6 @@ void Viewer::invertGravity() {
   const Magnum::Vector3& gravity = physicsManager_->getGravity();
   const Magnum::Vector3 invGravity = -1 * gravity;
   physicsManager_->setGravity(invGravity);
-  const Magnum::Vector3& newGravity = physicsManager_->getGravity();
 }
 
 void Viewer::pokeLastObject() {

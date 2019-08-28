@@ -39,7 +39,7 @@ namespace gfx {
 class Drawable;
 }
 namespace scene {
-class SceneConfiguration;
+struct SceneConfiguration;
 }
 namespace physics {
 class PhysicsManager;
