@@ -56,8 +56,8 @@ class GreedyGeodesicFollowerImpl {
         moveForward_{moveForward},
         turnLeft_{turnLeft},
         turnRight_{turnRight},
-        goalDist_{goalDist},
         forwardAmount_{forwardAmount},
+        goalDist_{goalDist},
         turnAmount_{turnAmount} {};
 
   CODES nextActionAlong(const State& start, const vec3f& end);

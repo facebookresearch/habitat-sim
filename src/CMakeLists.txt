@@ -65,17 +65,7 @@ if(BUILD_PTEX_SUPPORT)
 endif()
 
 # add subdirectories
-add_subdirectory(esp/core)
-add_subdirectory(esp/geo)
-add_subdirectory(esp/gfx/)
-add_subdirectory(esp/assets)
-add_subdirectory(esp/io)
-add_subdirectory(esp/scene)
-add_subdirectory(esp/physics)
-add_subdirectory(esp/nav)
-add_subdirectory(esp/agent)
-add_subdirectory(esp/sensor)
-add_subdirectory(esp/sim)
+add_subdirectory(esp)
 
 if(BUILD_DATATOOL)
   message("Building datatool")

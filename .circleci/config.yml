@@ -101,19 +101,6 @@ jobs:
               sudo apt-get --yes --force-yes install cuda
               touch ./cuda_installed
               nvidia-smi
-      - run:
-          name: Install emscripten
-          no_output_timeout: 20m
-          background: true
-          command: |
-              if [ ! -f ~/emscripten_installed ]
-              then
-                git clone -q https://github.com/emscripten-core/emsdk.git ~/emsdk
-                cd ~/emsdk
-                ./emsdk install 1.38.38
-                ./emsdk activate 1.38.38
-                touch ~/emscripten_installed
-              fi
       - restore_cache:
           keys:
             - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
@@ -131,6 +118,22 @@ jobs:
                 conda create -y -n habitat python=3.6
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest ccache
+              fi
+      - run:
+          name: Install emscripten
+          no_output_timeout: 20m
+          background: true
+          command: |
+              if [ ! -f ~/emscripten_installed ]
+              then
+                export PATH=$HOME/miniconda/bin:$PATH
+                . activate habitat;
+                git clone -q https://github.com/emscripten-core/emsdk.git ~/emsdk
+                cd ~/emsdk
+                git checkout 6a4c0f98
+                ./emsdk install 1.38.38
+                ./emsdk activate 1.38.38
+                touch ~/emscripten_installed
               fi
       - run:
           name: Install pytorch

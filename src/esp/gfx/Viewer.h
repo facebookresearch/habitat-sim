@@ -77,7 +77,6 @@ class Viewer : public Magnum::Platform::Application {
   scene::ObjectControls controls_;
   Magnum::Vector3 previousPosition_;
 
-  bool computeActionPath_;
   bool enablePhysics_;
   std::vector<int> objectIDs_;
 
