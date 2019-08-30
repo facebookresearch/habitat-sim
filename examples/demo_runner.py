@@ -136,6 +136,9 @@ class DemoRunner:
         object_lib_size = self._sim.get_physics_object_library_size()
         object_init_grid_dim = (3, 1, 3)
         object_init_grid = {}
+        assert (
+            object_lib_size > 0
+        ), "!!!No objects loaded in library, aborting object instancing example!!!"
         for obj_id in range(num_objects):
             rand_obj_index = random.randint(0, object_lib_size - 1)
             # rand_obj_index = 0  # overwrite for specific object only
