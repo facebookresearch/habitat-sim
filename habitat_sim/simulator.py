@@ -23,12 +23,29 @@ torch = None
 
 @attr.s(auto_attribs=True, slots=True)
 class Configuration(object):
+    r"""Specifies how to configure the simulator.
+
+    :property sim_cfg: The configuration of the backend of the simulator
+    :property agents: A list of agent configurations
+
+    Ties together a backend config, `sim_cfg` and a list of agent
+    configurations `agents`.
+    """
+
     sim_cfg: Optional[hsim.SimulatorConfiguration] = None
     agents: Optional[List[AgentConfiguration]] = None
 
 
 @attr.s(auto_attribs=True)
 class Simulator:
+    r"""The core class of habitat-sim
+
+    :property config: configuration for the simulator
+
+    The simulator ties together the backend, the agent, controls functions,
+    and collision checking/pathfinding.
+    """
+
     config: Configuration
     agents: List[Agent] = attr.ib(factory=list, init=False)
     pathfinder: hsim.PathFinder = attr.ib(default=None, init=False)
@@ -155,6 +172,13 @@ class Simulator:
 
     @property
     def semantic_scene(self):
+        r"""The semantic scene graph
+
+        .. note-warning::
+
+            Not avaliable for all datasets
+        """
+
         return self._sim.semantic_scene
 
     def get_sensor_observations(self):

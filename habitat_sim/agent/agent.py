@@ -33,9 +33,9 @@ def _default_action_space():
 class ActionSpec(object):
     r"""Defines how a specific action is implemented
 
-    Args:
-        name (str): Name of the function implementing the action in the move_func_map
-        actuation (ActuationSpec): Arguements that will be passed to the function
+    :property name: Name of the function implementing the action in the
+        `move_func_map`
+    :property actuation: Arguments that will be passed to the function
     """
     name: str
     actuation: ActuationSpec = None
@@ -45,9 +45,8 @@ class ActionSpec(object):
 class SixDOFPose(object):
     r"""Specifies a position with 6 degrees of freedom
 
-    Args:
-        position (np.array): xyz position
-        rotation (np.quaternion): unit quaternion rotation
+    :property position: xyz position
+    :property rotation: unit quaternion rotation
     """
 
     position: np.ndarray = np.zeros(3)
@@ -86,19 +85,20 @@ class AgentConfiguration(object):
 class Agent(object):
     r"""Implements an agent with multiple sensors
 
-    Args:
-        agent_config (AgentConfiguration): The configuration of the agent
+    :property agent_config: The configuration of the agent
 
+    .. block-warning:: Warning
 
-    Warning:
-        Agents are given controls over a node in the scene graph, but do **not**
-        own this node.  This means that errors will occur if the owner of the scene graph
-        is deallocated.  Generally the owner of the scene graph is the Simulator.
+        Agents are given controls over a node in the scene graph, but do
+        **not** own this node. This means that errors will occur if the owner
+        of the scene graph is deallocated. Generally the owner of the scene
+        graph is the Simulator.
 
-        If you'd like to have an agent to control without loading up the simulator,
-        see unit tests for the agent in `tests/test_agent.py`.  We recommend letting the
-        simulator create the agent and own the scene graph in almost all cases.  Using the scene
-        graph in python is dangerous due to differences in c++ and python memory management
+        If you'd like to have an agent to control without loading up the
+        simulator, see unit tests for the agent in ``tests/test_agent.py``. We
+        recommend letting the simulator create the agent and own the scene
+        graph in almost all cases. Using the scene graph in python is dangerous
+        due to differences in c++ and python memory management.
     """
 
     agent_config: AgentConfiguration
@@ -120,10 +120,11 @@ class Agent(object):
         self, agent_config: AgentConfiguration, reconfigure_sensors: bool = True
     ):
         r"""Re-create the agent with a new configuration
-        Args:
-            agent_config (AgentConfiguration): New config
-            reconfigure_sensors (bool): Whether or not to also reconfigure the sensors, there
-                are specific cases where false makes sense, but most cases are covered by true
+
+        :param agent_config: New config
+        :param reconfigure_sensors: Whether or not to also reconfigure the
+            sensors. There are specific cases where :py:`False` makes sense,
+            but most cases are covered by :py:`True`.
         """
         habitat_sim.errors.assert_obj_valid(self.body)
         self.agent_config = agent_config
@@ -138,12 +139,9 @@ class Agent(object):
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id
 
-        Args:
-            action_id (Any): ID of the action.
-                Retreives the action from agent_config.action_space
-
-        Returns:
-            bool: Whether or not the action taken resulted in a collision
+        :param action_id: ID of the action. Retreives the action from
+            `agent_config.action_space <AgentConfiguration.action_space>`
+        :return: Whether or not the action taken resulted in a collision
         """
 
         habitat_sim.errors.assert_obj_valid(self.body)
@@ -186,10 +184,10 @@ class Agent(object):
     def set_state(self, state: AgentState, reset_sensors: bool = True):
         r"""Sets the agents state
 
-        Args:
-            state (AgentState): The state to set the agent to
-            reset_sensors (bool): Whether or not to reset the sensors to their default intrinsic/extrinsic parameters
-                before setting their extrinsic state
+        :param state: The state to set the agent to
+        :param reset_sensors: Whether or not to reset the sensors to their
+            default intrinsic/extrinsic parameters before setting their
+            extrinsic state
         """
         habitat_sim.errors.assert_obj_valid(self.body)
 
