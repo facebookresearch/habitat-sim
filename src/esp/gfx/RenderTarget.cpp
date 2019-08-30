@@ -107,7 +107,7 @@ struct RenderTarget::Impl {
 
   void renderEnter() {
     framebuffer_.clearDepth(1.0);
-    framebuffer_.clearColor(0, Magnum::Color4{});
+    framebuffer_.clearColor(0, Magnum::Color4{0, 0, 0, 1});
     framebuffer_.clearColor(1, Magnum::Vector4ui{});
     framebuffer_.bind();
   }
