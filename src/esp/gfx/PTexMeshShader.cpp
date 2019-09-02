@@ -5,7 +5,6 @@
 #include "PTexMeshShader.h"
 
 #include <fcntl.h>
-#include <sys/mman.h>
 #include <iostream>
 
 #include <Corrade/Containers/Reference.h>

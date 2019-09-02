@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.10)
 project(esp)
 
 if(MSVC)
-  add_definitions(/DNOMINMAX)
+  add_definitions(/DNOMINMAX /DEIGEN_DONT_ALIGN_STATICALLY)
 endif()
 
 find_program(CCACHE_FOUND ccache)

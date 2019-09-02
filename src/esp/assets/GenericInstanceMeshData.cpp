@@ -16,9 +16,7 @@
 #include <Magnum/Trade/Trade.h>
 
 #include <fcntl.h>
-#include <sys/mman.h>
 #include <tinyply.h>
-#include <unistd.h>
 #include <fstream>
 #include <sophus/so3.hpp>
 #include <sstream>
