@@ -8,6 +8,7 @@ from habitat_sim.agent.controls.controls import (
     ActuationSpec,
     ObjectControls,
     SceneNodeControl,
+    move_func_map,
     register_move_fn,
 )
 from habitat_sim.agent.controls.default_controls import *
@@ -16,6 +17,7 @@ from habitat_sim.agent.controls.pyrobot_noisy_controls import PyRobotNoisyActuat
 __all__ = [
     "ActuationSpec",
     "ObjectControls",
+    "move_func_map",
     "SceneNodeControl",
     "register_move_fn",
     "PyRobotNoisyActuationSpec",

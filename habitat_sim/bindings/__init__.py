@@ -4,6 +4,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# TODO: this whole thing needs to get removed, kept just for compatibility
+#   with existing code
+
 modules = [
     "SceneNodeType",
     "GreedyFollowerCodes",
