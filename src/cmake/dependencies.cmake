@@ -117,7 +117,6 @@ if(NOT USE_SYSTEM_MAGNUM)
 
   # These are enabled by default but we don't need them right now -- disabling
   # for slightly faster builds. If you need any of these, simply delete a line.
-  # set(WITH_DEBUGTOOLS OFF CACHE BOOL "" FORCE)
   set(WITH_TEXT OFF CACHE BOOL "" FORCE)
   set(WITH_TEXTURETOOLS OFF CACHE BOOL "" FORCE)
 
