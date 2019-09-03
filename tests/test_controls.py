@@ -65,15 +65,15 @@ def _check_state_expected(s1, s2, expected: ExpectedDelta):
 
 
 default_body_control_testdata = [
-    ("move_backward", ExpectedDelta(delta_pos=0.25 * hsim.geo.BACK)),
-    ("move_forward", ExpectedDelta(delta_pos=0.25 * hsim.geo.FRONT)),
-    ("move_right", ExpectedDelta(delta_pos=0.25 * hsim.geo.RIGHT)),
-    ("move_left", ExpectedDelta(delta_pos=0.25 * hsim.geo.LEFT)),
+    ("move_backward", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.BACK)),
+    ("move_forward", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.FRONT)),
+    ("move_right", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.RIGHT)),
+    ("move_left", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.LEFT)),
     (
         "turn_right",
         ExpectedDelta(
             delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(10.0), hsim.geo.GRAVITY
+                np.deg2rad(10.0), habitat_sim.geo.GRAVITY
             )
         ),
     ),
@@ -81,7 +81,7 @@ default_body_control_testdata = [
         "turn_left",
         ExpectedDelta(
             delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(10.0), hsim.geo.UP
+                np.deg2rad(10.0), habitat_sim.geo.UP
             )
         ),
     ),
@@ -125,13 +125,13 @@ def test_default_body_contorls(action, expected):
 
 
 default_sensor_control_testdata = [
-    ("move_up", ExpectedDelta(delta_pos=0.25 * hsim.geo.UP)),
-    ("move_down", ExpectedDelta(delta_pos=0.25 * hsim.geo.GRAVITY)),
+    ("move_up", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.UP)),
+    ("move_down", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.GRAVITY)),
     (
         "look_right",
         ExpectedDelta(
             delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(-10.0), hsim.geo.UP
+                np.deg2rad(-10.0), habitat_sim.geo.UP
             )
         ),
     ),
@@ -139,7 +139,7 @@ default_sensor_control_testdata = [
         "look_left",
         ExpectedDelta(
             delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(10.0), hsim.geo.UP
+                np.deg2rad(10.0), habitat_sim.geo.UP
             )
         ),
     ),
@@ -147,7 +147,7 @@ default_sensor_control_testdata = [
         "look_up",
         ExpectedDelta(
             delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(10.0), hsim.geo.RIGHT
+                np.deg2rad(10.0), habitat_sim.geo.RIGHT
             )
         ),
     ),
@@ -155,7 +155,7 @@ default_sensor_control_testdata = [
         "look_down",
         ExpectedDelta(
             delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(-10.0), hsim.geo.RIGHT
+                np.deg2rad(-10.0), habitat_sim.geo.RIGHT
             )
         ),
     ),
