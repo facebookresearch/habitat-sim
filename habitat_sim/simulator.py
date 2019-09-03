@@ -5,9 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import os.path as osp
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import attr
+import magnum as mn
 import numpy as np
 
 import habitat_sim.bindings as hsim
@@ -16,6 +17,8 @@ from habitat_sim import utils
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower
+
+torch = None
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -31,6 +34,8 @@ class Simulator:
     pathfinder: hsim.PathFinder = attr.ib(default=None, init=False)
     _sim: hsim.SimulatorBackend = attr.ib(default=None, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
+    _default_agent: Agent = attr.ib(init=False, default=None)
+    _sensors: Dict = attr.ib(factory=dict, init=False)
 
     def __attrs_post_init__(self):
         config = self.config
@@ -38,11 +43,21 @@ class Simulator:
         self.reconfigure(config)
 
     def close(self):
+        for sensor in self._sensors.values():
+            del sensor
+
+        self._sensors = {}
+
+        for agent in self.agents:
+            del agent
+
         self.agents = []
-        self._sensors = None
-        if self._sim is not None:
-            del self._sim
-            self._sim = None
+
+        del self._default_agent
+        self._default_agent = None
+
+        del self._sim
+        self._sim = None
 
     def seed(self, new_seed):
         self._sim.seed(new_seed)
@@ -85,14 +100,10 @@ class Simulator:
 
     def reconfigure(self, config: Configuration):
         assert len(config.agents) > 0
-        if len(config.agents[0].sensor_specifications) > 0:
-            first_sensor_spec = config.agents[0].sensor_specifications[0]
-            config.sim_cfg.create_renderer = True
 
-            config.sim_cfg.height = first_sensor_spec.resolution[0]
-            config.sim_cfg.width = first_sensor_spec.resolution[1]
-        else:
-            config.sim_cfg.create_renderer = False
+        config.sim_cfg.create_renderer = any(
+            map(lambda cfg: len(cfg.sensor_specifications) > 0, config.agents)
+        )
 
         if self.config == config:
             return
@@ -147,9 +158,13 @@ class Simulator:
         return self._sim.semantic_scene
 
     def get_sensor_observations(self):
+        for _, sensor in self._sensors.items():
+            sensor.draw_observation()
+
         observations = {}
         for sensor_uuid, sensor in self._sensors.items():
             observations[sensor_uuid] = sensor.get_observation()
+
         return observations
 
     def last_state(self):
@@ -229,33 +244,69 @@ class Sensor:
     """
 
     def __init__(self, sim, agent, sensor_id):
+        global torch
         self._sim = sim
         self._agent = agent
 
         # sensor is an attached object to the scene node
         # store such "attached object" in _sensor_object
         self._sensor_object = self._agent.sensors.get(sensor_id)
-
         self._spec = self._sensor_object.specification()
-        if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
-            self._buffer = np.empty(
-                (self._spec.resolution[0], self._spec.resolution[1]), dtype=np.uint32
-            )
-        elif self._spec.sensor_type == hsim.SensorType.DEPTH:
-            self._buffer = np.empty(
-                (self._spec.resolution[0], self._spec.resolution[1]), dtype=np.float32
-            )
-        else:
-            self._buffer = np.empty(
-                (
-                    self._spec.resolution[0],
-                    self._spec.resolution[1] * self._spec.channels,
-                ),
-                dtype=np.uint8,
-            )
 
-    def get_observation(self):
+        self._sim.renderer.bind_render_target(self._sensor_object)
+
+        if self._spec.gpu2gpu_transfer:
+            assert (
+                hsim.cuda_enabled
+            ), "Must build habitat sim with cuda for gpu2gpu-transfer"
+
+            if torch is None:
+                import torch
+
+            device = torch.device("cuda", self._sim.gpu_device)
+
+            resolution = self._spec.resolution
+            if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                self._buffer = torch.empty(
+                    resolution[0], resolution[1], dtype=torch.int32, device=device
+                )
+            elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+                self._buffer = torch.empty(
+                    resolution[0], resolution[1], dtype=torch.float32, device=device
+                )
+            else:
+                self._buffer = torch.empty(
+                    resolution[0], resolution[1], 4, dtype=torch.uint8, device=device
+                )
+        else:
+            if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                self._buffer = np.empty(
+                    (self._spec.resolution[0], self._spec.resolution[1]),
+                    dtype=np.uint32,
+                )
+            elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+                self._buffer = np.empty(
+                    (self._spec.resolution[0], self._spec.resolution[1]),
+                    dtype=np.float32,
+                )
+            else:
+                self._buffer = np.empty(
+                    (
+                        self._spec.resolution[0],
+                        self._spec.resolution[1],
+                        self._spec.channels,
+                    ),
+                    dtype=np.uint8,
+                )
+
+    def draw_observation(self):
+        # draw the scene with the visual sensor:
+        # it asserts the sensor is a visual sensor;
+        # internally it will set the camera parameters (from the sensor) to the
+        # default render camera in the scene so that
+        # it has correct modelview matrix, projection matrix to render the scene
         # sanity check:
+
         # see if the sensor is attached to a scene graph, otherwise it is invalid,
         # and cannot make any observation
         if not self._sensor_object.object:
@@ -284,28 +335,41 @@ class Sensor:
         agent_node = self._agent.scene_node
         agent_node.parent = scene.get_root_node()
 
-        # draw the scene with the visual sensor:
-        # it asserts the sensor is a visual sensor;
-        # internally it will set the camera parameters (from the sensor) to the
-        # default render camera in the scene so that
-        # it has correct modelview matrix, projection matrix to render the scene
-        self._sim.renderer.draw(self._sensor_object, scene)
+        with self._sensor_object.render_target as tgt:
+            self._sim.renderer.draw(self._sensor_object, scene)
 
-        if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
-            self._sim.renderer.readFrameObjectId(self._buffer)
-            return np.flip(self._buffer, axis=0).copy()
-        elif self._spec.sensor_type == hsim.SensorType.DEPTH:
-            self._sim.renderer.readFrameDepth(self._buffer)
-            return np.flip(self._buffer, axis=0).copy()
+    def get_observation(self):
+
+        tgt = self._sensor_object.render_target
+
+        if self._spec.gpu2gpu_transfer:
+            with torch.cuda.device(self._buffer.device):
+                if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                    tgt.read_frame_object_id_gpu(self._buffer.data_ptr())
+                elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+                    tgt.read_frame_depth_gpu(self._buffer.data_ptr())
+                else:
+                    tgt.read_frame_rgba_gpu(self._buffer.data_ptr())
+
+                return self._buffer.flip(0).clone()
         else:
-            self._sim.renderer.readFrameRgba(self._buffer)
-            return np.flip(
-                self._buffer.reshape(
-                    (
-                        self._spec.resolution[0],
-                        self._spec.resolution[1],
-                        self._spec.channels,
+            size = self._sensor_object.framebuffer_size
+
+            if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                tgt.read_frame_object_id(
+                    mn.MutableImageView2D(mn.PixelFormat.R32UI, size, self._buffer)
+                )
+            elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+                tgt.read_frame_depth(
+                    mn.MutableImageView2D(mn.PixelFormat.R32F, size, self._buffer)
+                )
+            else:
+                tgt.read_frame_rgba(
+                    mn.MutableImageView2D(
+                        mn.PixelFormat.RGBA8UNORM,
+                        size,
+                        self._buffer.reshape(self._spec.resolution[0], -1),
                     )
-                ),
-                axis=0,
-            ).copy()
+                )
+
+            return np.flip(self._buffer, axis=0).copy()

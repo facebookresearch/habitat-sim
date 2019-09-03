@@ -8,6 +8,7 @@
 #   with existing code
 
 modules = [
+    "cuda_enabled",
     "SceneNodeType",
     "GreedyFollowerCodes",
     "GreedyGeodesicFollowerImpl",

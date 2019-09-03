@@ -149,7 +149,6 @@ def main():
     print(sim.get_agent(0).state)
 
     sim.close()
-    del sim
 
     # Let's define a strafe action!
     @attr.s(auto_attribs=True, slots=True)

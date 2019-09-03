@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #pragma once
+#include <Corrade/Containers/Array.h>
 
 #include "esp/core/esp.h"
 
@@ -26,12 +27,12 @@ enum class DataType {
 
 class Buffer {
  public:
-  explicit Buffer(){};
+  explicit Buffer() {}
   explicit Buffer(const std::vector<size_t> shape, const DataType dataType) {
     this->shape = shape;
     this->dataType = dataType;
     alloc();
-  };
+  }
   void clear();
   virtual ~Buffer() { dealloc(); }
 
@@ -40,8 +41,7 @@ class Buffer {
   void dealloc();
 
  public:
-  void* data = nullptr;
-  size_t totalBytes = 0;
+  Corrade::Containers::Array<uint8_t> data;
   size_t totalSize = 0;
   DataType dataType = DataType::DT_UINT8;
   std::vector<size_t> shape;

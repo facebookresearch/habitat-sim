@@ -2,6 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#pragma once
+
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
 
@@ -52,6 +54,12 @@ class DepthShader : public Magnum::GL::AbstractShaderProgram {
   DepthShader& setTransformationMatrix(const Magnum::Matrix4& matrix);
 
   /**
+   * @brief Set the depth unprojection parameters directly
+   * @return Reference to self (for method chaining)
+   */
+  DepthShader& setDepthUnprojection(const Magnum::Vector2& depthUnprojection);
+
+  /**
    * @brief Set projection matrix for unprojection
    * @return Reference to self (for method chaining)
    */
@@ -65,8 +73,13 @@ class DepthShader : public Magnum::GL::AbstractShaderProgram {
    */
   DepthShader& bindDepthTexture(Magnum::GL::Texture2D& texture);
 
+  /**
+   * @brief The flags passed to the Constructor
+   */
+  Flags flags() const { return flags_; }
+
  private:
-  Flags flags_;
+  const Flags flags_;
   int transformationMatrixUniform_, projectionMatrixOrDepthUnprojectionUniform_;
 };
 

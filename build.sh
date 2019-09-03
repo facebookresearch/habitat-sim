@@ -30,8 +30,8 @@ done
 my_hostname=`hostname`
 if [[ $my_hostname =~ "fair" ]]; then
   module purge
-  module load cuda/9.0
-  module load cudnn/v7.0-cuda.9.0
+  module load cuda/10.0
+  module load cudnn/v7.4-cuda.10.0
   module load gcc/7.1.0
   module load cmake/3.10.1/gcc.5.4.0
 fi

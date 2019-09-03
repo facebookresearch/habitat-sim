@@ -2,7 +2,11 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Magnum/ImageView.h>
+#include <Magnum/PixelFormat.h>
+
 #include "PinholeCamera.h"
+#include "esp/gfx/DepthUnprojection.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/Simulator.h"
 
@@ -45,6 +49,11 @@ bool PinholeCamera::getObservationSpace(ObservationSpace& space) {
 bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
   // TODO: check if sensor is valid?
   // TODO: have different classes for the different types of sensors
+  //
+  if (!hasRenderTarget())
+    return false;
+
+  renderTarget().renderEnter();
 
   // Make sure we have memory
   if (buffer_ == nullptr) {
@@ -55,12 +64,7 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
   }
   obs.buffer = buffer_;
 
-  // TODO: Get appropriate render with correct resolution
-  std::shared_ptr<gfx::Renderer> renderer = sim.getRenderer();
-  vec3i resolution = renderer->getSize();
-  if (resolution[0] != width_ || resolution[1] != height_) {
-    renderer->setSize(width_, height_);
-  }
+  gfx::Renderer::ptr renderer = sim.getRenderer();
   if (spec_->sensorType == SensorType::SEMANTIC) {
     // TODO: check sim has semantic scene graph
     renderer->draw(*this, sim.getActiveSemanticSceneGraph());
@@ -72,13 +76,30 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
   // TODO: have different classes for the different types of sensors
   // TODO: do we need to flip axis?
   if (spec_->sensorType == SensorType::SEMANTIC) {
-    renderer->readFrameObjectId((uint32_t*)buffer_->data);
+    renderTarget().readFrameObjectId(Magnum::MutableImageView2D{
+        Magnum::PixelFormat::R32UI, renderTarget().framebufferSize(),
+        obs.buffer->data});
   } else if (spec_->sensorType == SensorType::DEPTH) {
-    renderer->readFrameDepth((float*)buffer_->data);
+    renderTarget().readFrameDepth(Magnum::MutableImageView2D{
+        Magnum::PixelFormat::R32F, renderTarget().framebufferSize(),
+        obs.buffer->data});
   } else {
-    renderer->readFrameRgba((uint8_t*)buffer_->data);
+    renderTarget().readFrameRgba(Magnum::MutableImageView2D{
+        Magnum::PixelFormat::RGBA8Unorm, renderTarget().framebufferSize(),
+        obs.buffer->data});
   }
+
+  renderTarget().renderExit();
+
   return true;
+}
+
+Corrade::Containers::Optional<Magnum::Vector2>
+PinholeCamera::depthUnprojection() const {
+  const Magnum::Matrix4 projection = Magnum::Matrix4::perspectiveProjection(
+      Magnum::Deg{hfov_}, static_cast<float>(width_) / height_, near_, far_);
+
+  return {gfx::calculateDepthUnprojection(projection)};
 }
 
 }  // namespace sensor

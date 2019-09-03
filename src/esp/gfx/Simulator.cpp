@@ -52,9 +52,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // TODO can optimize to do partial re-initialization instead of from-scratch
   config_ = cfg;
 
-  const int height = cfg.height;
-  const int width = cfg.width;
-
   // load scene
   std::string sceneFilename = cfg.scene.id;
   if (cfg.scene.filepaths.count("mesh")) {
@@ -82,12 +79,13 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
   if (cfg.createRenderer) {
     if (!context_) {
-      context_ = std::make_unique<gfx::WindowlessContext>(config_.gpuDeviceId);
+      context_ = gfx::WindowlessContext::create_unique(config_.gpuDeviceId);
     }
 
     // reinitalize members
-    renderer_ = nullptr;
-    renderer_ = Renderer::create(width, height);
+    if (!renderer_) {
+      renderer_ = Renderer::create();
+    }
 
     auto& sceneGraph = sceneManager_.getSceneGraph(activeSceneID_);
 
@@ -207,7 +205,7 @@ bool operator!=(const SimulatorConfiguration& a,
 
 // === Physics Simulator Functions ===
 
-const int Simulator::addObject(const int objectLibIndex, const int sceneID) {
+int Simulator::addObject(const int objectLibIndex, const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
     // TODO: change implementation to support multi-world and physics worlds to
     // own reference to a sceneGraph to avoid this.
@@ -220,12 +218,12 @@ const int Simulator::addObject(const int objectLibIndex, const int sceneID) {
 
 // return the current size of the physics object library (objects [0,size) can
 // be instanced)
-const int Simulator::getPhysicsObjectLibrarySize() {
+int Simulator::getPhysicsObjectLibrarySize() {
   return resourceManager_.getNumLibraryObjects();
 }
 
 // return a list of existing objected IDs in a physical scene
-const std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
+std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
     return physicsManager_->getExistingObjectIDs();
   }
@@ -266,8 +264,8 @@ void Simulator::setTransformation(const Magnum::Matrix4& transform,
   }
 }
 
-const Magnum::Matrix4 Simulator::getTransformation(const int objectID,
-                                                   const int sceneID) {
+Magnum::Matrix4 Simulator::getTransformation(const int objectID,
+                                             const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
     return physicsManager_->getTransformation(objectID);
   }
@@ -283,8 +281,8 @@ void Simulator::setTranslation(const Magnum::Vector3& translation,
   }
 }
 
-const Magnum::Vector3 Simulator::getTranslation(const int objectID,
-                                                const int sceneID) {
+Magnum::Vector3 Simulator::getTranslation(const int objectID,
+                                          const int sceneID) {
   // can throw if physicsManager is not initialized or either objectID/sceneID
   // is invalid
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
@@ -302,15 +300,15 @@ void Simulator::setRotation(const Magnum::Quaternion& rotation,
   }
 }
 
-const Magnum::Quaternion Simulator::getRotation(const int objectID,
-                                                const int sceneID) {
+Magnum::Quaternion Simulator::getRotation(const int objectID,
+                                          const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
     return physicsManager_->getRotation(objectID);
   }
   return Magnum::Quaternion();
 }
 
-const double Simulator::stepWorld(const double dt) {
+double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
     physicsManager_->stepPhysics(dt);
   }
@@ -318,7 +316,7 @@ const double Simulator::stepWorld(const double dt) {
 }
 
 // get the simulated world time (0 if no physics enabled)
-const double Simulator::getWorldTime() {
+double Simulator::getWorldTime() {
   if (physicsManager_ != nullptr) {
     return physicsManager_->getWorldTime();
   }

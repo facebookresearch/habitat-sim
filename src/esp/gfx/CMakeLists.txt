@@ -18,6 +18,8 @@ set(gfx_SOURCES
   Simulator.h
   WindowlessContext.cpp
   WindowlessContext.h
+  RenderTarget.cpp
+  RenderTarget.h
 )
 
 # If GUI build, add Viewer source
@@ -77,6 +79,21 @@ target_include_directories(gfx
   PRIVATE
     "${DEPS_DIR}/glad/include"
 )
+
+if(BUILD_WITH_CUDA)
+  find_package(CUDA 8.0 REQUIRED)
+  target_include_directories(gfx
+    PRIVATE
+      ${CUDA_INCLUDE_DIRS}
+      ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers
+  )
+
+  target_link_libraries(gfx
+    PUBLIC
+      ${CUDA_LIBRARIES}
+  )
+endif()
+
 
 target_link_libraries(gfx
   PUBLIC
