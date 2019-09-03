@@ -425,6 +425,9 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("render_enter", &RenderTarget::renderEnter)
       .def("render_exit", &RenderTarget::renderExit);
 
+  // Needed by Sensor
+  py::class_<Simulator, Simulator::ptr> simulator(m, "Simulator");
+
   // ==== Sensor ====
   sensor
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
@@ -506,8 +509,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   initShortestPathBindings(m);
 
   // ==== Simulator ====
-  py::class_<Simulator, Simulator::ptr>(m, "Simulator")
-      .def(py::init(&Simulator::create<const SimulatorConfiguration&>))
+  simulator.def(py::init(&Simulator::create<const SimulatorConfiguration&>))
       .def("get_active_scene_graph", &Simulator::getActiveSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            pybind11::return_value_policy::reference)
