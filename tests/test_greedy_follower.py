@@ -7,7 +7,6 @@ import pytest
 import tqdm
 
 import habitat_sim
-import habitat_sim.bindings as hsim
 
 base_dir = osp.abspath(osp.join(osp.dirname(__file__), ".."))
 
@@ -32,7 +31,7 @@ if test_all and osp.exists(gibson_base):
 
 @pytest.fixture(scope="session")
 def scene_graph():
-    return hsim.SceneGraph()
+    return habitat_sim.SceneGraph()
 
 
 @pytest.fixture(scope="module")
@@ -52,7 +51,7 @@ def test_greedy_follower(test_navmesh, scene_graph, pbar):
     if not osp.exists(test_navmesh):
         pytest.skip(f"{test_navmesh} not found")
 
-    pathfinder = hsim.PathFinder()
+    pathfinder = habitat_sim.PathFinder()
     pathfinder.load_nav_mesh(test_navmesh)
     assert pathfinder.is_loaded
 
@@ -67,7 +66,7 @@ def test_greedy_follower(test_navmesh, scene_graph, pbar):
         while True:
             state.position = pathfinder.get_random_navigable_point()
             goal_pos = pathfinder.get_random_navigable_point()
-            path = hsim.ShortestPath()
+            path = habitat_sim.ShortestPath()
             path.requested_start = state.position
             path.requested_end = goal_pos
 

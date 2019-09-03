@@ -10,13 +10,12 @@ import pytest
 import quaternion
 
 import habitat_sim
-import habitat_sim.bindings as hsim
 import habitat_sim.errors
 import habitat_sim.utils
 
 
 def test_no_action():
-    scene_graph = hsim.SceneGraph()
+    scene_graph = habitat_sim.SceneGraph()
     agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
         move_backward=habitat_sim.ActionSpec(
@@ -30,7 +29,7 @@ def test_no_action():
 
 
 def test_no_move_fun():
-    scene_graph = hsim.SceneGraph()
+    scene_graph = habitat_sim.SceneGraph()
     agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
         move_forward=habitat_sim.ActionSpec(
@@ -90,7 +89,7 @@ default_body_control_testdata = [
 
 @pytest.mark.parametrize("action,expected", default_body_control_testdata)
 def test_default_body_contorls(action, expected):
-    scene_graph = hsim.SceneGraph()
+    scene_graph = habitat_sim.SceneGraph()
     agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
         move_backward=habitat_sim.ActionSpec(
@@ -164,7 +163,7 @@ default_sensor_control_testdata = [
 
 @pytest.mark.parametrize("action,expected", default_sensor_control_testdata)
 def test_default_sensor_contorls(action, expected):
-    scene_graph = hsim.SceneGraph()
+    scene_graph = habitat_sim.SceneGraph()
     agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
         move_up=habitat_sim.ActionSpec(
