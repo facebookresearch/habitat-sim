@@ -3,6 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import re
 import sys
 
 # TODO make this less brittle
@@ -98,3 +99,14 @@ M_SPHINX_PARSE_DOCSTRINGS = True
 M_HTMLSANITY_SMART_QUOTES = True
 # Will people hate me if I enable this?
 # M_HTMLSANITY_HYPHENATION = True
+
+_hex_colors_src = re.compile(
+    r"""<span class="s2">&quot;0x(?P<hex>[0-9a-f]{6})&quot;</span>"""
+)
+_hex_colors_dst = r"""<span class="s2">&quot;0x\g<hex>&quot;</span><span class="m-code-color" style="background-color: #\g<hex>;"></span>"""
+
+M_CODE_FILTERS_POST = {
+    ("Python", "string_hex_colors"): lambda code: _hex_colors_src.sub(
+        _hex_colors_dst, code
+    )
+}

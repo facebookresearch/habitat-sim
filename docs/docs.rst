@@ -129,3 +129,17 @@
     ====
 
     -   `colorize_ids()`
+
+.. py:data:: habitat_sim.utils.d3_40_colors_rgb
+    :summary: Color map for semantic ID rendering.
+
+.. py:data:: habitat_sim.utils.d3_40_colors_hex
+    :summary: Color map for semantic ID rendering.
+
+    Same as `d3_40_colors_rgb`, but in a hexadecimal representation.
+
+    .. include:: ../habitat_sim/utils.py
+        :code: py
+        :start-after: # [d3_40_colors_hex]
+        :end-before: # [/d3_40_colors_hex]
+        :filters: string_hex_colors

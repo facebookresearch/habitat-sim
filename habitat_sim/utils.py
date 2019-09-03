@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from io import BytesIO
-from typing import Tuple
+from typing import List, Tuple
 from urllib.request import urlopen
 from zipfile import ZipFile
 
@@ -164,7 +164,7 @@ def colorize_ids(ids):
     return out
 
 
-d3_40_colors_rgb = np.array(
+d3_40_colors_rgb: np.ndarray = np.array(
     [
         [31, 119, 180],
         [174, 199, 232],
@@ -211,7 +211,8 @@ d3_40_colors_rgb = np.array(
 )
 
 
-d3_40_colors_hex = [
+# [d3_40_colors_hex]
+d3_40_colors_hex: List[str] = [
     "0x1f77b4",
     "0xaec7e8",
     "0xff7f0e",
@@ -253,3 +254,4 @@ d3_40_colors_hex = [
     "0xce6dbd",
     "0xde9ed6",
 ]
+# [/d3_40_colors_hex]
