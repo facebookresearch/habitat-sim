@@ -52,6 +52,8 @@ find_package(Magnum
     SceneGraph
     Shaders
     Trade
+    DebugTools
+    AnyImageConverter
 )
 
 find_package(MagnumPlugins
@@ -95,6 +97,8 @@ target_link_libraries(gfx
     MagnumPlugins::TinyGltfImporter
     MagnumIntegration::Eigen
     Corrade::Utility
+    Magnum::DebugTools
+    Magnum::AnyImageConverter
 )
 
 # Link windowed application library if needed
