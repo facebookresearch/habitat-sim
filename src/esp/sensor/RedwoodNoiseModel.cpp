@@ -64,6 +64,7 @@ void RedwoodNoiseModelGPUImpl::simulateFromGPU(const float* devDepth,
                                                const int rows,
                                                const int cols,
                                                float* devNoisyDepth) {
+  CudaDeviceContext ctx{gpuDeviceId_};
   impl::simulateFromGPU(devDepth, rows, cols, devModel_, curandStates_,
                         devNoisyDepth);
 }
