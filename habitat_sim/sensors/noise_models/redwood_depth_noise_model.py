@@ -1,9 +1,9 @@
 import os.path as osp
 
 import attr
+import numba
 import numpy as np
 
-import numba
 from habitat_sim.bindings import SensorType, cuda_enabled
 from habitat_sim.sensors.noise_models.registration import (
     SensorNoiseModel,
