@@ -21,7 +21,7 @@ PROJECT_TITLE = "Habitat"
 PROJECT_SUBTITLE = "Sim Python docs"
 MAIN_PROJECT_URL = "https://aihabitat.org"
 INPUT_MODULES = [habitat_sim]
-INPUT_DOCS = ["docs.rst"]
+INPUT_DOCS = ["docs.rst", "gfx.rst"]
 INPUT_PAGES = [
     "pages/index.rst",
     "pages/new-actions.rst",
@@ -110,3 +110,28 @@ M_CODE_FILTERS_POST = {
         _hex_colors_dst, code
     )
 }
+
+M_DOX_TAGFILES = [
+    # TODO: the path should be relative to this file
+    (
+        os.path.join(os.path.realpath(os.path.dirname(__file__)), "corrade.tag"),
+        "https://doc.magnum.graphics/corrade/",
+        ["Corrade::"],
+        ["m-doc-external"],
+    ),
+    (
+        os.path.join(os.path.realpath(os.path.dirname(__file__)), "magnum.tag"),
+        "https://doc.magnum.graphics/magnum/",
+        ["Magnum::"],
+        ["m-doc-external"],
+    ),
+    (
+        os.path.join(
+            os.path.realpath(os.path.dirname(__file__)),
+            "../build/docs/habitat-cpp/habitat-cpp.tag",
+        ),
+        "../habitat-cpp/",
+        [],
+        ["m-doc-external"],
+    ),
+]
