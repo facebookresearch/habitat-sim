@@ -100,7 +100,7 @@ namespace sensor {
 namespace impl {
 
 struct CurandStates {
-  CurandStates() : devStates{0}, n_blocks_{0} {};
+  CurandStates() : devStates(0), n_blocks_(0) {}
   void alloc(const int n_blocks) {
     if (n_blocks > n_blocks_) {
       release();
