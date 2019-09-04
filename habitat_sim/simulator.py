@@ -300,7 +300,7 @@ class Sensor:
                     dtype=np.uint8,
                 )
 
-        noise_model_kwargs = getattr(self._spec, "noise_model_kwargs", {})
+        noise_model_kwargs = self._spec.noise_model_kwargs
         noise_model_kwargs["gpu_device_id"] = self._sim.gpu_device
         self._noise_model = make_sensor_noise_model(
             self._spec.noise_model, noise_model_kwargs
