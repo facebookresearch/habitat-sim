@@ -3,6 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 
 
+import math
 import multiprocessing
 import os
 import random
@@ -95,18 +96,116 @@ class DemoRunner:
         self._sim.pathfinder.find_path(self._shortest_path)
         print("shortest_path.geodesic_distance", self._shortest_path.geodesic_distance)
 
+    def init_physics_test_scene(self, num_objects):
+        object_position = np.array(
+            [-0.569043, 2.04804, 13.6156]
+        )  # above the castle table
+
+        # turn agent toward the object
+        print("turning agent toward the physics!")
+        agent_state = self._sim.get_agent(0).get_state()
+        agent_to_obj = object_position - agent_state.position
+        agent_local_forward = np.array([0, 0, -1.0])
+        flat_to_obj = np.array([agent_to_obj[0], 0.0, agent_to_obj[2]])
+        flat_dist_to_obj = np.linalg.norm(flat_to_obj)
+        flat_to_obj /= flat_dist_to_obj
+        # move the agent closer to the objects if too far (this will be projected back to floor in set)
+        if flat_dist_to_obj > 3.0:
+            agent_state.position = object_position - flat_to_obj * 3.0
+        # unit y normal plane for rotation
+        det = (
+            flat_to_obj[0] * agent_local_forward[2]
+            - agent_local_forward[0] * flat_to_obj[2]
+        )
+        turn_angle = math.atan2(det, np.dot(agent_local_forward, flat_to_obj))
+        agent_state.rotation = utils.quat_from_angle_axis(
+            turn_angle, np.array([0, 1.0, 0])
+        )
+        # need to move the sensors too
+        for sensor in agent_state.sensor_states:
+            agent_state.sensor_states[sensor].rotation = agent_state.rotation
+            agent_state.sensor_states[
+                sensor
+            ].position = agent_state.position + np.array([0, 1.5, 0])
+        self._sim.get_agent(0).set_state(agent_state)
+
+        # hard coded dimensions of maximum bounding box for all 3 default objects:
+        max_union_bb_dim = np.array([0.125, 0.19, 0.26])
+
+        # add some objects in a grid
+        object_lib_size = self._sim.get_physics_object_library_size()
+        object_init_grid_dim = (3, 1, 3)
+        object_init_grid = {}
+        assert (
+            object_lib_size > 0
+        ), "!!!No objects loaded in library, aborting object instancing example!!!"
+        for obj_id in range(num_objects):
+            rand_obj_index = random.randint(0, object_lib_size - 1)
+            # rand_obj_index = 0  # overwrite for specific object only
+            object_init_cell = (
+                random.randint(-object_init_grid_dim[0], object_init_grid_dim[0]),
+                random.randint(-object_init_grid_dim[1], object_init_grid_dim[1]),
+                random.randint(-object_init_grid_dim[2], object_init_grid_dim[2]),
+            )
+            while object_init_cell in object_init_grid:
+                object_init_cell = (
+                    random.randint(-object_init_grid_dim[0], object_init_grid_dim[0]),
+                    random.randint(-object_init_grid_dim[1], object_init_grid_dim[1]),
+                    random.randint(-object_init_grid_dim[2], object_init_grid_dim[2]),
+                )
+            object_id = self._sim.add_object(rand_obj_index)
+            object_init_grid[object_init_cell] = object_id
+            object_offset = np.array(
+                [
+                    max_union_bb_dim[0] * object_init_cell[0],
+                    max_union_bb_dim[1] * object_init_cell[1],
+                    max_union_bb_dim[2] * object_init_cell[2],
+                ]
+            )
+            self._sim.set_translation(object_position + object_offset, object_id)
+            print(
+                "added object: "
+                + str(object_id)
+                + " of type "
+                + str(rand_obj_index)
+                + " at: "
+                + str(object_position + object_offset)
+                + " | "
+                + str(object_init_cell)
+            )
+
     def do_time_steps(self):
+
         total_frames = 0
         start_time = time.time()
         action_names = list(
             self._cfg.agents[self._sim_settings["default_agent"]].action_space.keys()
         )
 
+        # load an object and position the agent for physics testing
+        if self._sim_settings["enable_physics"]:
+            self.init_physics_test_scene(num_objects=10)
+            print("active object ids: " + str(self._sim.get_existing_object_ids()))
+
+        time_per_step = []
+
         while total_frames < self._sim_settings["max_frames"]:
+            if total_frames == 1:
+                start_time = time.time()
             action = random.choice(action_names)
             if not self._sim_settings["silent"]:
                 print("action", action)
+
+            start_step_time = time.time()
+            # NOTE: uncomment this for random kinematic transform setting of all objects
+            # if self._sim_settings["enable_physics"]:
+            #    obj_ids = self._sim.get_existing_object_ids()
+            #    for obj_id in obj_ids:
+            #        rand_nudge = np.random.uniform(-0.05,0.05,3)
+            #        cur_pos = self._sim.get_translation(obj_id)
+            #        self._sim.set_translation(cur_pos + rand_nudge, obj_id)
             observations = self._sim.step(action)
+            time_per_step.append(time.time() - start_step_time)
 
             if self._sim_settings["save_png"]:
                 if self._sim_settings["color_sensor"]:
@@ -146,7 +245,9 @@ class DemoRunner:
         end_time = time.time()
         perf = {}
         perf["total_time"] = end_time - start_time
-        perf["fps"] = total_frames / perf["total_time"]
+        perf["frame_time"] = perf["total_time"] / total_frames
+        perf["fps"] = 1.0 / perf["frame_time"]
+        perf["time_per_step"] = time_per_step
 
         return perf
 
@@ -214,7 +315,7 @@ class DemoRunner:
             # the kernel never interrupted the workers, but this isn't
             # feasible, so we just take the run with the least number of
             # interrupts (the fastest) instead.
-            if best_perf is None or perf["fps"] > best_perf["fps"]:
+            if best_perf is None or perf["frame_time"] < best_perf["frame_time"]:
                 best_perf = perf
 
         self._sim.close()
@@ -242,16 +343,21 @@ class DemoRunner:
             for k, v in p.items():
                 res[k] += [v]
 
-        return dict(fps=sum(res["fps"]), total_time=sum(res["total_time"]) / nprocs)
+        return dict(
+            frame_time=sum(res["frame_time"]),
+            fps=sum(res["fps"]),
+            total_time=sum(res["total_time"]) / nprocs,
+        )
 
     def example(self):
         start_state = self.init_common()
 
         # initialize and compute shortest path to goal
-        self._shortest_path = hsim.ShortestPath()
-        self.compute_shortest_path(
-            start_state.position, self._sim_settings["goal_position"]
-        )
+        if self._sim_settings["compute_shortest_path"]:
+            self._shortest_path = hsim.ShortestPath()
+            self.compute_shortest_path(
+                start_state.position, self._sim_settings["goal_position"]
+            )
 
         # set the goal headings, and compute action shortest path
         if self._sim_settings["compute_action_shortest_path"]:

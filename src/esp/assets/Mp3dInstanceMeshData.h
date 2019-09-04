@@ -4,14 +4,15 @@
 
 #pragma once
 
+#include <Magnum/GL/Buffer.h>
+#include <Magnum/GL/Mesh.h>
+#include <Magnum/Trade/MeshData3D.h>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-#include <Magnum/GL/Buffer.h>
-#include <Magnum/GL/Mesh.h>
-
+#include "BaseMesh.h"
 #include "GenericInstanceMeshData.h"
 #include "esp/core/esp.h"
 
@@ -37,7 +38,7 @@ class Mp3dInstanceMeshData : public GenericInstanceMeshData {
       const std::unordered_map<int, int>& segmentIdToObjectIdMap);
 
  protected:
-  std::vector<vec3i> cpu_ibo_;
+  std::vector<vec3ui> cpu_ibo_;
   std::vector<int> materialIds_;
   std::vector<int> segmentIds_;
   std::vector<int> categoryIds_;

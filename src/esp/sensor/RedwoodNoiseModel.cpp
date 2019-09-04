@@ -1,4 +1,4 @@
-#ifdef SENSORS_WITH_CUDA
+#ifdef ESP_WITH_CUDA
 
 #include <cuda_runtime.h>
 

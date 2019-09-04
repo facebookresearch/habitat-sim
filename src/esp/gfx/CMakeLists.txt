@@ -1,14 +1,47 @@
-file(GLOB_RECURSE gfx_SOURCES "*.cpp")
+set(gfx_SOURCES
+  DepthUnprojection.cpp
+  DepthUnprojection.h
+  Drawable.cpp
+  Drawable.h
+  GenericDrawable.cpp
+  GenericDrawable.h
+  magnum.h
+  PrimitiveIDTexturedDrawable.cpp
+  PrimitiveIDTexturedDrawable.h
+  PrimitiveIDTexturedShader.cpp
+  PrimitiveIDTexturedShader.h
+  RenderCamera.cpp
+  RenderCamera.h
+  Renderer.cpp
+  Renderer.h
+  Simulator.cpp
+  Simulator.h
+  WindowlessContext.cpp
+  WindowlessContext.h
+  RenderTarget.cpp
+  RenderTarget.h
+)
 
-# If not GUI build, remove Viewer source
+# If GUI build, add Viewer source
 # TODO(MS) Viewer really ought to be in separate module that is disabled
 if(BUILD_GUI_VIEWERS)
-  message(STATUS "Building GUI viewers")
-else()
-  list(REMOVE_ITEM gfx_SOURCES "${CMAKE_CURRENT_LIST_DIR}/Viewer.cpp")
+  list(APPEND gfx_SOURCES
+    Viewer.cpp
+    Viewer.h
+  )
 endif()
 
-if ((UNIX AND NOT APPLE) AND (NOT ${BUILD_GUI_VIEWERS}))
+# If ptex support is enabled add relevant source files
+if(BUILD_PTEX_SUPPORT)
+  list(APPEND gfx_SOURCES
+    PTexMeshDrawable.cpp
+    PTexMeshDrawable.h
+    PTexMeshShader.cpp
+    PTexMeshShader.h
+  )
+endif()
+
+if ((UNIX AND NOT APPLE) AND (NOT BUILD_GUI_VIEWERS))
   list(APPEND gfx_SOURCES "${DEPS_DIR}/glad/src/glad_egl.c")
 endif()
 
@@ -21,17 +54,24 @@ find_package(Magnum
     SceneGraph
     Shaders
     Trade
+    DebugTools
+    AnyImageConverter
 )
 
 find_package(MagnumPlugins
   REQUIRED
-    # AssimpImporter
     StbImageImporter
     StbImageConverter
     TinyGltfImporter
 )
 
 find_package(MagnumIntegration REQUIRED Eigen)
+
+find_package(Corrade REQUIRED Utility)
+# TODO: enable the following flag and fix the compilation warnings
+# set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
+corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)
+list(APPEND gfx_SOURCES ${ShaderResources})
 
 add_library(gfx STATIC ${gfx_SOURCES})
 
@@ -40,11 +80,27 @@ target_include_directories(gfx
     "${DEPS_DIR}/glad/include"
 )
 
+if(BUILD_WITH_CUDA)
+  find_package(CUDA 8.0 REQUIRED)
+  target_include_directories(gfx
+    PRIVATE
+      ${CUDA_INCLUDE_DIRS}
+      ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers
+  )
+
+  target_link_libraries(gfx
+    PUBLIC
+      ${CUDA_LIBRARIES}
+  )
+endif()
+
+
 target_link_libraries(gfx
   PUBLIC
     assets
     core
     io
+    physics
     Magnum::AnyImageImporter
     Magnum::AnySceneImporter
     Magnum::GL
@@ -53,19 +109,24 @@ target_link_libraries(gfx
     Magnum::SceneGraph
     Magnum::Shaders
     Magnum::Trade
-    # MagnumPlugins::AssimpImporter
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbImageConverter
     MagnumPlugins::TinyGltfImporter
     MagnumIntegration::Eigen
+    Corrade::Utility
+    Magnum::DebugTools
+    Magnum::AnyImageConverter
 )
 
 # Link windowed application library if needed
 if(BUILD_GUI_VIEWERS)
-  find_package(Magnum REQUIRED GlfwApplication)
-  target_link_libraries(gfx PUBLIC Magnum::GlfwApplication)
-elseif(UNIX)
-  target_compile_definitions(gfx PRIVATE __ESP_USE_EGL__)
+  if(CORRADE_TARGET_EMSCRIPTEN)
+    find_package(Magnum REQUIRED EmscriptenApplication)
+    target_link_libraries(gfx PUBLIC Magnum::EmscriptenApplication)
+  else()
+    find_package(Magnum REQUIRED GlfwApplication)
+    target_link_libraries(gfx PUBLIC Magnum::GlfwApplication)
+  endif()
 endif()
 
 # Link appropriate windowless library
@@ -75,6 +136,9 @@ if(APPLE)
 elseif(WIN32)
   find_package(Magnum REQUIRED WindowlessWglApplication)
   target_link_libraries(gfx PUBLIC Magnum::WindowlessWglApplication)
+elseif(CORRADE_TARGET_EMSCRIPTEN)
+  find_package(Magnum REQUIRED WindowlessEglApplication)
+  target_link_libraries(gfx PUBLIC Magnum::WindowlessEglApplication)
 elseif(UNIX)
   if(BUILD_GUI_VIEWERS)
     find_package(Magnum REQUIRED WindowlessGlxApplication)
@@ -83,4 +147,8 @@ elseif(UNIX)
     find_package(Magnum REQUIRED WindowlessEglApplication)
     target_link_libraries(gfx PUBLIC Magnum::WindowlessEglApplication)
   endif()
+endif()
+
+if(BUILD_TEST)
+  add_subdirectory(test)
 endif()

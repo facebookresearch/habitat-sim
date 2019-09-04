@@ -61,7 +61,10 @@ class NoSensorNoiseModel(SensorNoiseModel):
         return True
 
     def apply(self, x):
-        return x.copy()
+        if isinstance(x, np.ndarray):
+            return x.copy()
+        else:
+            return x.clone()
 
 
 register_sensor_noise_model(NoSensorNoiseModel, name="None")

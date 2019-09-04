@@ -2,14 +2,19 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/Utility/Directory.h>
 #include <gtest/gtest.h>
+
 #include "esp/agent/Agent.h"
-#include "esp/assets/SceneLoader.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneGraph.h"
+
+#include "configure.h"
+
+namespace Cr = Corrade;
 
 using namespace esp;
 using namespace esp::nav;
@@ -45,7 +50,8 @@ void testPathFinder(PathFinder& pf) {
 
 TEST(NavTest, PathFinderLoadTest) {
   PathFinder pf;
-  pf.loadNavMesh("test.navmesh");
+  pf.loadNavMesh(Cr::Utility::Directory::join(
+      SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
   testPathFinder(pf);
 }
 
@@ -80,7 +86,8 @@ void printRandomizedPathSet(PathFinder& pf) {
 
 TEST(NavTest, PathFinderTestCases) {
   PathFinder pf;
-  pf.loadNavMesh("test.navmesh");
+  pf.loadNavMesh(Cr::Utility::Directory::join(
+      SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
   ShortestPath testPath;
   testPath.requestedStart = vec3f(-6.493, 0.072, -3.292);
   testPath.requestedEnd = vec3f(-8.98, 0.072, -0.62);
@@ -99,16 +106,4 @@ TEST(NavTest, PathFinderTestCases) {
   CHECK_LE(std::abs(testPath.geodesicDistance -
                     (testPath.requestedStart - testPath.requestedEnd).norm()),
            0.001);
-}
-
-TEST(NavTest, BuildNavMeshFromMeshTest) {
-  using namespace esp::assets;
-  SceneLoader loader;
-  const AssetInfo info = AssetInfo::fromPath("test.glb");
-  const MeshData mesh = loader.load(info);
-  NavMeshSettings bs;
-  bs.setDefaults();
-  PathFinder pf;
-  pf.build(bs, mesh);
-  testPathFinder(pf);
 }

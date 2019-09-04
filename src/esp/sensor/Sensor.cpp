@@ -20,10 +20,14 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
   setTransformationFromSpec();
 }
 
-Observation Sensor::getObservation() {
+bool Sensor::getObservation(gfx::Simulator& sim, Observation& obs) {
   // TODO fill out observation
-  Observation obs{};
-  return obs;
+  return false;
+}
+
+bool Sensor::getObservationSpace(ObservationSpace& space) {
+  // TODO fill out observation space
+  return false;
 }
 
 void SensorSuite::add(Sensor::ptr sensor) {
@@ -59,7 +63,7 @@ bool operator==(const SensorSpec& a, const SensorSpec& b) {
          a.position == b.position && a.orientation == b.orientation &&
          a.resolution == b.resolution && a.channels == b.channels &&
          a.encoding == b.encoding && a.observationSpace == b.observationSpace &&
-         a.noiseModel == b.noiseModel;
+         a.noiseModel == b.noiseModel && a.gpu2gpuTransfer == b.gpu2gpuTransfer;
 }
 bool operator!=(const SensorSpec& a, const SensorSpec& b) {
   return !(a == b);

@@ -5,9 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import os.path as osp
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import attr
+import magnum as mn
 import numpy as np
 
 import habitat_sim.bindings as hsim
@@ -17,6 +18,8 @@ from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
+
+torch = None
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -32,6 +35,8 @@ class Simulator:
     pathfinder: hsim.PathFinder = attr.ib(default=None, init=False)
     _sim: hsim.SimulatorBackend = attr.ib(default=None, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
+    _default_agent: Agent = attr.ib(init=False, default=None)
+    _sensors: Dict = attr.ib(factory=dict, init=False)
 
     def __attrs_post_init__(self):
         config = self.config
@@ -39,11 +44,21 @@ class Simulator:
         self.reconfigure(config)
 
     def close(self):
+        for sensor in self._sensors.values():
+            del sensor
+
+        self._sensors = {}
+
+        for agent in self.agents:
+            del agent
+
         self.agents = []
-        self._sensors = None
-        if self._sim is not None:
-            del self._sim
-            self._sim = None
+
+        del self._default_agent
+        self._default_agent = None
+
+        del self._sim
+        self._sim = None
 
     def seed(self, new_seed):
         self._sim.seed(new_seed)
@@ -86,14 +101,10 @@ class Simulator:
 
     def reconfigure(self, config: Configuration):
         assert len(config.agents) > 0
-        if len(config.agents[0].sensor_specifications) > 0:
-            first_sensor_spec = config.agents[0].sensor_specifications[0]
-            config.sim_cfg.create_renderer = True
 
-            config.sim_cfg.height = first_sensor_spec.resolution[0]
-            config.sim_cfg.width = first_sensor_spec.resolution[1]
-        else:
-            config.sim_cfg.create_renderer = False
+        config.sim_cfg.create_renderer = any(
+            map(lambda cfg: len(cfg.sensor_specifications) > 0, config.agents)
+        )
 
         if self.config == config:
             return
@@ -130,10 +141,11 @@ class Simulator:
         agent = self.get_agent(agent_id=agent_id)
         if initial_state is None:
             initial_state = AgentState()
-            initial_state.position = self.pathfinder.get_random_navigable_point()
-            initial_state.rotation = utils.quat_from_angle_axis(
-                np.random.uniform(0, 2.0 * np.pi), np.array([0, 1, 0])
-            )
+            if self.pathfinder.is_loaded:
+                initial_state.position = self.pathfinder.get_random_navigable_point()
+                initial_state.rotation = utils.quat_from_angle_axis(
+                    np.random.uniform(0, 2.0 * np.pi), np.array([0, 1, 0])
+                )
 
         agent.set_state(initial_state)
         self._last_state = agent.state
@@ -147,18 +159,26 @@ class Simulator:
         return self._sim.semantic_scene
 
     def get_sensor_observations(self):
+        for _, sensor in self._sensors.items():
+            sensor.draw_observation()
+
         observations = {}
         for sensor_uuid, sensor in self._sensors.items():
             observations[sensor_uuid] = sensor.get_observation()
+
         return observations
 
     def last_state(self):
         return self._last_state
 
-    def step(self, action):
+    def step(self, action, dt=1.0 / 60.0):
         self._num_total_frames += 1
         collided = self._default_agent.act(action)
         self._last_state = self._default_agent.get_state()
+
+        # step physics by dt
+        self._sim.step_world(dt)
+        # print("World time is now: " + str(self._sim.get_world_time()))
 
         observations = self.get_sensor_observations()
         # Whether or not the action taken resulted in a collision
@@ -180,6 +200,43 @@ class Simulator:
     def __del__(self):
         self.close()
 
+    # --- physics functions ---
+    def add_object(self, object_lib_index):
+        return self._sim.add_object(object_lib_index)
+
+    def get_physics_object_library_size(self):
+        return self._sim.get_physics_object_library_size()
+
+    def remove_object(self, object_id):
+        self._sim.remove_object(object_id)
+
+    def get_existing_object_ids(self, scene_id=0):
+        return self._sim.get_existing_object_ids(scene_id)
+
+    def set_transformation(self, transform, object_id, scene_id=0):
+        self._sim.set_transformation(transform, object_id, scene_id)
+
+    def get_transformation(self, object_id, scene_id=0):
+        return self._sim.get_transformation(object_id, scene_id)
+
+    def set_translation(self, translation, object_id, scene_id=0):
+        self._sim.set_translation(translation, object_id, scene_id)
+
+    def get_translation(self, object_id, scene_id=0):
+        return self._sim.get_translation(object_id, scene_id)
+
+    def set_rotation(self, rotation, object_id, scene_id=0):
+        self._sim.set_rotation(rotation, object_id, scene_id)
+
+    def get_rotation(self, object_id, scene_id=0):
+        return self._sim.get_rotation(object_id, scene_id)
+
+    def apply_force(self, force, relative_position, object_id, scene_id=0):
+        self._sim.apply_force(force, relative_position, object_id, scene_id)
+
+    def apply_torque(self, torque, object_id, scene_id=0):
+        self._sim.apply_torque(torque, object_id, scene_id)
+
 
 class Sensor:
     r"""Wrapper around habitat_sim.Sensor
@@ -188,30 +245,60 @@ class Sensor:
     """
 
     def __init__(self, sim, agent, sensor_id):
+        global torch
         self._sim = sim
         self._agent = agent
 
         # sensor is an attached object to the scene node
         # store such "attached object" in _sensor_object
         self._sensor_object = self._agent.sensors.get(sensor_id)
-
         self._spec = self._sensor_object.specification()
-        if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
-            self._buffer = np.empty(
-                (self._spec.resolution[0], self._spec.resolution[1]), dtype=np.uint32
-            )
-        elif self._spec.sensor_type == hsim.SensorType.DEPTH:
-            self._buffer = np.empty(
-                (self._spec.resolution[0], self._spec.resolution[1]), dtype=np.float32
-            )
+
+        self._sim.renderer.bind_render_target(self._sensor_object)
+
+        if self._spec.gpu2gpu_transfer:
+            assert (
+                hsim.cuda_enabled
+            ), "Must build habitat sim with cuda for gpu2gpu-transfer"
+
+            if torch is None:
+                import torch
+
+            device = torch.device("cuda", self._sim.gpu_device)
+
+            resolution = self._spec.resolution
+            if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                self._buffer = torch.empty(
+                    resolution[0], resolution[1], dtype=torch.int32, device=device
+                )
+            elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+                self._buffer = torch.empty(
+                    resolution[0], resolution[1], dtype=torch.float32, device=device
+                )
+            else:
+                self._buffer = torch.empty(
+                    resolution[0], resolution[1], 4, dtype=torch.uint8, device=device
+                )
         else:
-            self._buffer = np.empty(
-                (
-                    self._spec.resolution[0],
-                    self._spec.resolution[1] * self._spec.channels,
-                ),
-                dtype=np.uint8,
-            )
+            if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                self._buffer = np.empty(
+                    (self._spec.resolution[0], self._spec.resolution[1]),
+                    dtype=np.uint32,
+                )
+            elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+                self._buffer = np.empty(
+                    (self._spec.resolution[0], self._spec.resolution[1]),
+                    dtype=np.float32,
+                )
+            else:
+                self._buffer = np.empty(
+                    (
+                        self._spec.resolution[0],
+                        self._spec.resolution[1],
+                        self._spec.channels,
+                    ),
+                    dtype=np.uint8,
+                )
 
         noise_model_kwargs = getattr(self._spec, "noise_model_kwargs", {})
         # TODO get the correct GPU device ID!
@@ -227,6 +314,7 @@ class Sensor:
 
     def get_observation(self):
         # sanity check:
+
         # see if the sensor is attached to a scene graph, otherwise it is invalid,
         # and cannot make any observation
         if not self._sensor_object.object:
@@ -255,31 +343,43 @@ class Sensor:
         agent_node = self._agent.scene_node
         agent_node.parent = scene.get_root_node()
 
-        # draw the scene with the visual sensor:
-        # it asserts the sensor is a visual sensor;
-        # internally it will set the camera parameters (from the sensor) to the
-        # default render camera in the scene so that
-        # it has correct modelview matrix, projection matrix to render the scene
-        self._sim.renderer.draw(self._sensor_object, scene)
+        with self._sensor_object.render_target as tgt:
+            self._sim.renderer.draw(self._sensor_object, scene)
 
-        if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
-            self._sim.renderer.readFrameObjectId(self._buffer)
-            obs = np.flip(self._buffer, axis=0)
-        elif self._spec.sensor_type == hsim.SensorType.DEPTH:
-            self._sim.renderer.readFrameDepth(self._buffer)
-            obs = np.flip(self._buffer, axis=0)
+    def get_observation(self):
+
+        tgt = self._sensor_object.render_target
+
+        if self._spec.gpu2gpu_transfer:
+            with torch.cuda.device(self._buffer.device):
+                if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                    tgt.read_frame_object_id_gpu(self._buffer.data_ptr())
+                elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+                    tgt.read_frame_depth_gpu(self._buffer.data_ptr())
+                else:
+                    tgt.read_frame_rgba_gpu(self._buffer.data_ptr())
+
+                obs = self._buffer.flip(0)
         else:
-            self._sim.renderer.readFrameRgba(self._buffer)
-            obs = np.flip(
-                self._buffer.reshape(
-                    (
-                        self._spec.resolution[0],
-                        self._spec.resolution[1],
-                        self._spec.channels,
-                    )
-                ),
-                axis=0,
-            )
+            size = self._sensor_object.framebuffer_size
 
-        obs = self._noise_model.apply(obs)
-        return obs
+            if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                tgt.read_frame_object_id(
+                    mn.MutableImageView2D(mn.PixelFormat.R32UI, size, self._buffer)
+                )
+            elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+                tgt.read_frame_depth(
+                    mn.MutableImageView2D(mn.PixelFormat.R32F, size, self._buffer)
+                )
+            else:
+                tgt.read_frame_rgba(
+                    mn.MutableImageView2D(
+                        mn.PixelFormat.RGBA8UNORM,
+                        size,
+                        self._buffer.reshape(self._spec.resolution[0], -1),
+                    )
+                )
+
+            obs = np.flip(self._buffer, axis=0)
+
+        return self._noise_model.apply(obs)

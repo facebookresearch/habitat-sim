@@ -5,6 +5,8 @@
 #include "FRLInstanceMeshData.h"
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/ArrayView.h>
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
@@ -12,25 +14,23 @@
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Trade/Trade.h>
 
-#include <tinyply.h>
-#include <fstream>
-#include <sstream>
-#include <vector>
-
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <tinyply.h>
 #include <unistd.h>
 #include <fstream>
+#include <sophus/so3.hpp>
 #include <sstream>
 #include <unordered_map>
 #include <vector>
 
-#include <sophus/so3.hpp>
-
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
+#include "esp/gfx/PrimitiveIDTexturedShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
+
+namespace Cr = Corrade;
 
 namespace esp {
 namespace assets {
@@ -87,10 +87,10 @@ bool FRLInstanceMeshData::loadPLY(const std::string& ply_file) {
   ifs.read(reinterpret_cast<char*>(id_to_label.data()),
            num_instances * sizeof(int));
 
-  cpu_cbo.clear();
-  cpu_cbo.reserve(nVertex);
-  cpu_vbo.clear();
-  cpu_vbo.reserve(nVertex);
+  cpu_cbo_.clear();
+  cpu_cbo_.reserve(nVertex);
+  cpu_vbo_.clear();
+  cpu_vbo_.reserve(nVertex);
 
   for (int i = 0; i < nVertex; ++i) {
     vec3f xyz;
@@ -102,13 +102,13 @@ bool FRLInstanceMeshData::loadPLY(const std::string& ply_file) {
     int instance_id;
     ifs.read(reinterpret_cast<char*>(&instance_id), sizeof(instance_id));
 
-    cpu_cbo.emplace_back(rgb);
+    cpu_cbo_.emplace_back(rgb);
 
     vec4f xyzid;
     xyzid.head<3>() = xyz;
     xyzid[3] = static_cast<float>(instance_id);
 
-    cpu_vbo.emplace_back(xyzid);
+    cpu_vbo_.emplace_back(xyzid);
   }
 
   int grav_size;
@@ -122,18 +122,48 @@ bool FRLInstanceMeshData::loadPLY(const std::string& ply_file) {
       quatf::FromTwoVectors(this->gravity_dir, geo::ESP_GRAVITY));
 
   this->gravity_dir = esp::geo::ESP_GRAVITY;
-  for (auto& xyzid : this->cpu_vbo) {
+  for (auto& xyzid : this->cpu_vbo_) {
     const vec3f xyz_scene = xyzid.head<3>();
     const vec3f xyz_esp = T_esp_scene * xyz_scene;
 
     xyzid.head<3>() = xyz_esp;
   }
 
+  // Store vertex buffer without instance id
+  cpu_vbo_3_ = new std::vector<vec3f>(cpu_vbo_.size());
+  for (size_t i = 0; i < cpu_vbo_.size(); ++i) {
+    (*cpu_vbo_3_)[i] = cpu_vbo_[i].head<3>();
+  }
+
+  // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0,2,3]
+  const size_t numQuads = cpu_vbo_.size() / 4;
+  tri_ibo_ = new std::vector<uint32_t>(numQuads * 6);
+  for (uint32_t iQuad = 0; iQuad < numQuads; ++iQuad) {
+    const uint32_t triIdx = 6 * iQuad;
+    const uint32_t quadIdx = 4 * iQuad;
+    (*tri_ibo_)[triIdx + 0] = quadIdx + 0;
+    (*tri_ibo_)[triIdx + 1] = quadIdx + 1;
+    (*tri_ibo_)[triIdx + 2] = quadIdx + 2;
+    (*tri_ibo_)[triIdx + 3] = quadIdx + 0;
+    (*tri_ibo_)[triIdx + 4] = quadIdx + 2;
+    (*tri_ibo_)[triIdx + 5] = quadIdx + 3;
+  }
+
+  // Construct collision meshData
+  collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
+  collisionMeshData_.positions =
+      Corrade::Containers::arrayCast<Magnum::Vector3>(
+          Corrade::Containers::arrayView(cpu_vbo_3_->data(),
+                                         cpu_vbo_3_->size()));
+  collisionMeshData_.indices =
+      Corrade::Containers::arrayCast<Magnum::UnsignedInt>(
+          Corrade::Containers::arrayView(tri_ibo_->data(), tri_ibo_->size()));
+
   return true;
 }
 
 void FRLInstanceMeshData::to_ply(const std::string& ply_file) const {
-  const int nVertex = cpu_vbo.size();
+  const int nVertex = cpu_vbo_.size();
 
   std::ofstream f(ply_file, std::ios::out | std::ios::binary);
   f << "ply" << std::endl;
@@ -173,13 +203,13 @@ void FRLInstanceMeshData::to_ply(const std::string& ply_file) const {
           num_instances * sizeof(int));
 
   for (int i = 0; i < nVertex; ++i) {
-    vec3f xyz = cpu_vbo[i].head<3>();
-    auto& rgb = cpu_cbo[i];
+    vec3f xyz = cpu_vbo_[i].head<3>();
+    auto& rgb = cpu_cbo_[i];
 
     f.write(reinterpret_cast<const char*>(xyz.data()), 3 * sizeof(float));
     f.write(reinterpret_cast<const char*>(rgb.data()), 3 * sizeof(uint8_t));
 
-    const int instance_id = std::floor(cpu_vbo[i][3] * id_to_node.size());
+    const int instance_id = std::floor(cpu_vbo_[i][3] * id_to_node.size());
     f.write(reinterpret_cast<const char*>(&instance_id), sizeof(instance_id));
   }
 
@@ -207,59 +237,29 @@ void FRLInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_.reset();
   renderingBuffer_ = std::make_unique<FRLInstanceMeshData::RenderingBuffer>();
 
-  // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0,2,3]
-  const size_t numQuads = cpu_vbo.size() / 4;
-  std::vector<uint32_t> tri_ibo(numQuads * 6);
-  for (uint32_t iQuad = 0; iQuad < numQuads; ++iQuad) {
-    const uint32_t triIdx = 6 * iQuad;
-    const uint32_t quadIdx = 4 * iQuad;
-    tri_ibo[triIdx + 0] = quadIdx + 0;
-    tri_ibo[triIdx + 1] = quadIdx + 1;
-    tri_ibo[triIdx + 2] = quadIdx + 2;
-    tri_ibo[triIdx + 3] = quadIdx + 0;
-    tri_ibo[triIdx + 4] = quadIdx + 2;
-    tri_ibo[triIdx + 5] = quadIdx + 3;
-  }
-  // std::vector<vec3ui> cbotest(data.cpu_cbo.size(), vec3ui());
-  // Magnum::Containers::ArrayView<const float> v{&data.cpu_vbo[0][0],
-  // data.cpu_vbo.size() * 4}; Magnum::Containers::ArrayView<const uint8_t>
-  // c{&data.cpu_cbo[0][0], data.cpu_cbo.size() * 3};
+  const size_t numQuads = cpu_vbo_.size() / 4;
 
-  std::vector<float> cbo_float(cpu_cbo.size() * 3);
-  for (int iVert = 0; iVert < cpu_cbo.size(); ++iVert) {
-    const uint32_t idx = 3 * iVert;
-    cbo_float[idx + 0] = cpu_cbo[iVert][0] / 255.0f;
-    cbo_float[idx + 1] = cpu_cbo[iVert][1] / 255.0f;
-    cbo_float[idx + 2] = cpu_cbo[iVert][2] / 255.0f;
-  }
-
-  std::vector<vec3f> xyz_vbo(cpu_vbo.size());
-  for (int i = 0; i < cpu_vbo.size(); ++i) {
-    xyz_vbo[i] = cpu_vbo[i].head<3>();
-  }
-
-  // See code for GenericInstanceMeshData::uploadBuffersToGPU for comments about
-  // what's going on with this image/texture
-  const size_t numTris = numQuads * 2;
-  const int texSize = std::pow(2, std::ceil(std::log2(std::sqrt(numTris))));
-  float* obj_id_tex_data = new float[texSize * texSize]();
-
+  /* Extract object IDs from the fourth component -- it's originally a float
+     so we have to allocate instead of using a strided array view :( */
+  Cr::Containers::Array<uint32_t> objectIds{numQuads * 2};
   for (size_t i = 0; i < numQuads; ++i) {
-    obj_id_tex_data[2 * i] = cpu_vbo[4 * i][3];
-    obj_id_tex_data[2 * i + 1] = cpu_vbo[4 * i][3];
+    objectIds[2 * i] = cpu_vbo_[4 * i][3];
+    objectIds[2 * i + 1] = cpu_vbo_[4 * i][3];
   }
+  renderingBuffer_->tex = createInstanceTexture(objectIds);
 
-  renderingBuffer_->tex = createInstanceTexture(obj_id_tex_data, texSize);
-
-  renderingBuffer_->vbo.setData(xyz_vbo, Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->cbo.setData(cbo_float, Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->ibo.setData(tri_ibo, Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->vbo.setData(*cpu_vbo_3_,
+                                Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->cbo.setData(cpu_cbo_, Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->ibo.setData(*tri_ibo_, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
-      .setCount(tri_ibo.size())  // Set vertex/index count (numQuads * 6)
+      .setCount(tri_ibo_->size())  // Set vertex/index count (numQuads * 6)
       .addVertexBuffer(renderingBuffer_->vbo, 0,
-                       Magnum::GL::Attribute<0, Magnum::Vector3>{})
-      .addVertexBuffer(renderingBuffer_->cbo, 0,
-                       Magnum::GL::Attribute<1, Magnum::Color3>{})
+                       gfx::PrimitiveIDTexturedShader::Position{})
+      .addVertexBuffer(
+          renderingBuffer_->cbo, 0,
+          gfx::PrimitiveIDTexturedShader::Color3{
+              gfx::PrimitiveIDTexturedShader::Color3::DataType::UnsignedByte})
       .setIndexBuffer(renderingBuffer_->ibo, 0,
                       Magnum::GL::MeshIndexType::UnsignedInt);
 

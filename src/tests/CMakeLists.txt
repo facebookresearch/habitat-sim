@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.0)
-
 macro(TEST TEST_NAME)
   add_executable(${TEST_NAME} "${TEST_NAME}.cpp")
   target_link_libraries(${TEST_NAME} core gtest_main)
@@ -7,24 +5,39 @@ macro(TEST TEST_NAME)
   foreach(DEPENDENCY IN LISTS DEPENDENCIES)
     target_link_libraries(${TEST_NAME} ${DEPENDENCY})
   endforeach()
-  # set_target_properties(${TEST_NAME} PROPERTIES FOLDER "tests"
-  #   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests")
+  add_test(${TEST_NAME} ${TEST_NAME})
 endmacro(TEST)
 
-TEST(AssetsTest assets)
-TEST(CoreTest io)
-TEST(NavTest nav assets)
-TEST(IOTest io)
-TEST(GeoTest geo)
-TEST(Mp3dTest scene)
-TEST(SuncgTest scene)
-TEST(main)
+set(SCENE_DATASETS ${CMAKE_CURRENT_SOURCE_DIR}/../../data/scene_datasets)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
+               ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
-# file(GLOB_RECURSE TEST_SRCS "*.cpp")
-# foreach(test_src ${TEST_SRCS})
-#   get_filename_component(test_name ${test_src} NAME_WE)
-#   add_executable(${test_name} "${test_src}")
-#   # target_link_libraries(${test_name} ${Caffe2_MAIN_LIBS} gtest_main)
-#   target_link_libraries(${test_name} assets glog gtest_main)
-#   add_test(NAME ${test_name} COMMAND $<TARGET_FILE:${test_name}>)
-# endforeach()
+TEST(CoreTest io)
+
+TEST(NavTest nav assets)
+target_include_directories(NavTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+TEST(IOTest io)
+target_include_directories(IOTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+TEST(GeoTest geo)
+
+TEST(Mp3dTest scene)
+target_include_directories(Mp3dTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+TEST(SimTest sim)
+target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+TEST(SuncgTest scene)
+target_include_directories(SuncgTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+# Some tests are LOUD, we don't want to include their full log (but OTOH we
+# want to have full log from others, so this is a compromise)
+set_tests_properties(
+  NavTest
+  Mp3dTest
+  SuncgTest
+  PROPERTIES ENVIRONMENT GLOG_minloglevel=1
+)
+set_tests_properties(SimTest PROPERTIES
+  ENVIRONMENT "GLOG_minloglevel=1;MAGNUM_LOG=QUIET")

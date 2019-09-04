@@ -1,8 +1,14 @@
-file(GLOB_RECURSE sensor_SOURCES "*.cpp")
+set(sensor_SOURCES
+  PinholeCamera.cpp
+  PinholeCamera.h
+  Sensor.cpp
+  Sensor.h
+  RedwoodNoiseModel.cpp
+  RedwoodNoiseModel.h
+)
 
-find_package(CUDA)
 
-if (CUDA_FOUND)
+if(BUILD_WITH_CUDA)
   list(APPEND CUDA_NVCC_FLAGS "-std=c++11;-O2")
 
   cuda_compile(cuda_kernels SHARED "RedwoodNoiseModel.cu")
@@ -20,14 +26,11 @@ target_link_libraries(sensor
     scene
 )
 
-if (CUDA_FOUND)
+if(BUILD_WITH_CUDA)
+  find_package(CUDA 8.0 REQUIRED)
   target_link_libraries(sensor
     PUBLIC
       ${CUDA_LIBRARIES}
-  )
-  target_compile_definitions(sensor
-      PUBLIC
-        SENSORS_WITH_CUDA
   )
   target_include_directories(sensor
     PRIVATE

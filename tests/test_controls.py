@@ -10,13 +10,12 @@ import pytest
 import quaternion
 
 import habitat_sim
-import habitat_sim.bindings as hsim
 import habitat_sim.errors
 import habitat_sim.utils
 
 
 def test_no_action():
-    scene_graph = hsim.SceneGraph()
+    scene_graph = habitat_sim.SceneGraph()
     agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
         move_backward=habitat_sim.ActionSpec(
@@ -30,7 +29,7 @@ def test_no_action():
 
 
 def test_no_move_fun():
-    scene_graph = hsim.SceneGraph()
+    scene_graph = habitat_sim.SceneGraph()
     agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
         move_forward=habitat_sim.ActionSpec(
@@ -65,15 +64,15 @@ def _check_state_expected(s1, s2, expected: ExpectedDelta):
 
 
 default_body_control_testdata = [
-    ("move_backward", ExpectedDelta(delta_pos=0.25 * hsim.geo.BACK)),
-    ("move_forward", ExpectedDelta(delta_pos=0.25 * hsim.geo.FRONT)),
-    ("move_right", ExpectedDelta(delta_pos=0.25 * hsim.geo.RIGHT)),
-    ("move_left", ExpectedDelta(delta_pos=0.25 * hsim.geo.LEFT)),
+    ("move_backward", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.BACK)),
+    ("move_forward", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.FRONT)),
+    ("move_right", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.RIGHT)),
+    ("move_left", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.LEFT)),
     (
         "turn_right",
         ExpectedDelta(
             delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(10.0), hsim.geo.GRAVITY
+                np.deg2rad(10.0), habitat_sim.geo.GRAVITY
             )
         ),
     ),
@@ -81,7 +80,7 @@ default_body_control_testdata = [
         "turn_left",
         ExpectedDelta(
             delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(10.0), hsim.geo.UP
+                np.deg2rad(10.0), habitat_sim.geo.UP
             )
         ),
     ),
@@ -90,7 +89,7 @@ default_body_control_testdata = [
 
 @pytest.mark.parametrize("action,expected", default_body_control_testdata)
 def test_default_body_contorls(action, expected):
-    scene_graph = hsim.SceneGraph()
+    scene_graph = habitat_sim.SceneGraph()
     agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
         move_backward=habitat_sim.ActionSpec(
@@ -125,13 +124,13 @@ def test_default_body_contorls(action, expected):
 
 
 default_sensor_control_testdata = [
-    ("move_up", ExpectedDelta(delta_pos=0.25 * hsim.geo.UP)),
-    ("move_down", ExpectedDelta(delta_pos=0.25 * hsim.geo.GRAVITY)),
+    ("move_up", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.UP)),
+    ("move_down", ExpectedDelta(delta_pos=0.25 * habitat_sim.geo.GRAVITY)),
     (
         "look_right",
         ExpectedDelta(
             delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(-10.0), hsim.geo.UP
+                np.deg2rad(-10.0), habitat_sim.geo.UP
             )
         ),
     ),
@@ -139,7 +138,7 @@ default_sensor_control_testdata = [
         "look_left",
         ExpectedDelta(
             delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(10.0), hsim.geo.UP
+                np.deg2rad(10.0), habitat_sim.geo.UP
             )
         ),
     ),
@@ -147,7 +146,7 @@ default_sensor_control_testdata = [
         "look_up",
         ExpectedDelta(
             delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(10.0), hsim.geo.RIGHT
+                np.deg2rad(10.0), habitat_sim.geo.RIGHT
             )
         ),
     ),
@@ -155,7 +154,7 @@ default_sensor_control_testdata = [
         "look_down",
         ExpectedDelta(
             delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(-10.0), hsim.geo.RIGHT
+                np.deg2rad(-10.0), habitat_sim.geo.RIGHT
             )
         ),
     ),
@@ -164,7 +163,7 @@ default_sensor_control_testdata = [
 
 @pytest.mark.parametrize("action,expected", default_sensor_control_testdata)
 def test_default_sensor_contorls(action, expected):
-    scene_graph = hsim.SceneGraph()
+    scene_graph = habitat_sim.SceneGraph()
     agent_config = habitat_sim.AgentConfiguration()
     agent_config.action_space = dict(
         move_up=habitat_sim.ActionSpec(

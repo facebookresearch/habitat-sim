@@ -1,6 +1,9 @@
-file(GLOB_RECURSE nav_SOURCES "*.cpp")
-
-add_library(nav STATIC ${nav_SOURCES})
+add_library(nav STATIC
+  GreedyFollower.cpp
+  GreedyFollower.h
+  PathFinder.cpp
+  PathFinder.h
+)
 
 target_include_directories(nav
   PRIVATE

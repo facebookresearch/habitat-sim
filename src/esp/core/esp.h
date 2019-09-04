@@ -18,6 +18,7 @@
 #include <Eigen/Geometry>
 // #include <Eigen/StdVector>
 
+#include "esp/core/configure.h"
 #include "esp/core/logging.h"
 #include "esp/core/spimpl.h"
 
@@ -97,11 +98,11 @@ inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
   template <typename... Targs>                                \
   static inline ptr create(Targs&&... args) {                 \
     return std::make_shared<T>(std::forward<Targs>(args)...); \
-  };                                                          \
+  }                                                           \
   template <typename... Targs>                                \
   static inline uptr create_unique(Targs&&... args) {         \
     return std::make_unique<T>(std::forward<Targs>(args)...); \
-  };
+  }
 
 // pimpl macro backed by unique_ptr pointer
 #define ESP_UNIQUE_PTR_PIMPL() \
@@ -124,6 +125,9 @@ inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
   ESP_SHARED_PTR_PIMPL()
 
 static const int ID_UNDEFINED = -1;
+static const double PHYSICS_ATTR_UNDEFINED = -1.0;
+
+static const double NO_TIME = 0.0;
 
 template <typename T>
 inline bool equal(const std::vector<std::shared_ptr<T>>& a,

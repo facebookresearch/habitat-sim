@@ -28,11 +28,20 @@ default_sim_settings = {
     "test_scene_data_url": "http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip",
     "goal_position": [5.047, 0.199, 11.145],
     "goal_headings": [[0, -0.980_785, 0, 0.195_090], [0.0, 1.0, 0.0, 0.0]],
+    "enable_physics": False,
+    "physics_config_file": "./data/default.phys_scene_config.json",
 }
 
 # build SimulatorConfiguration
 def make_cfg(settings):
     sim_cfg = hsim.SimulatorConfiguration()
+    if "enable_physics" in settings.keys():
+        sim_cfg.enable_physics = settings["enable_physics"]
+    else:
+        sim_cfg.enable_physics = False
+    if "physics_config_file" in settings.keys():
+        sim_cfg.physics_config_file = settings["physics_config_file"]
+    print("sim_cfg.physics_config_file = " + sim_cfg.physics_config_file)
     sim_cfg.gpu_device_id = 0
     sim_cfg.scene.id = settings["scene"]
 
@@ -64,6 +73,7 @@ def make_cfg(settings):
             sensor_spec.sensor_type = sensor_params["sensor_type"]
             sensor_spec.resolution = sensor_params["resolution"]
             sensor_spec.position = sensor_params["position"]
+            sensor_spec.gpu2gpu_transfer = False
             if not settings["silent"]:
                 print("==== Initialized Sensor Spec: =====")
                 print("Sensor uuid: ", sensor_spec.uuid)
@@ -87,5 +97,13 @@ def make_cfg(settings):
             "turn_right", habitat_sim.agent.ActuationSpec(amount=10.0)
         ),
     }
+
+    # override action space to no-op to test physics
+    if sim_cfg.enable_physics:
+        agent_cfg.action_space = {
+            "move_forward": habitat_sim.agent.ActionSpec(
+                "move_forward", habitat_sim.agent.ActuationSpec(amount=0.0)
+            )
+        }
 
     return habitat_sim.Configuration(sim_cfg, [agent_cfg])

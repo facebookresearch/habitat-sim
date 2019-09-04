@@ -8,10 +8,12 @@
 
 #if defined(CORRADE_TARGET_APPLE)
 #include <Magnum/Platform/WindowlessCglApplication.h>
+#elif defined(CORRADE_TARGET_EMSCRIPTEN)
+#include <Magnum/Platform/WindowlessEglApplication.h>
 #elif defined(CORRADE_TARGET_UNIX)
 #include <Magnum/Platform/GLContext.h>
 
-#ifdef __ESP_USE_EGL__
+#ifdef ESP_BUILD_EGL_SUPPORT
 #include <glad/glad_egl.h>
 #else
 #include <Magnum/Platform/WindowlessGlxApplication.h>
@@ -42,13 +44,14 @@ namespace {
 struct ESPContext {
   virtual void makeCurrent() = 0;
   virtual bool isValid() = 0;
+  virtual int gpuDevice() const = 0;
 
   virtual ~ESPContext(){};
 
   ESP_SMART_POINTERS(ESPContext);
 };
 
-#ifdef __ESP_USE_EGL__
+#ifdef ESP_BUILD_EGL_SUPPORT
 const int MAX_DEVICES = 128;
 
 #define CHECK_EGL_ERROR()                             \
@@ -68,7 +71,7 @@ bool isNvidiaGpuReadable(int device) {
 }
 
 struct ESPEGLContext : ESPContext {
-  ESPEGLContext(int device) : magnumGlContext_{NoCreate} {
+  ESPEGLContext(int device) : magnumGlContext_{NoCreate}, gpuDevice_{device} {
     CHECK(gladLoadEGL()) << "Failed to load EGL";
 
     static const EGLint configAttribs[] = {EGL_SURFACE_TYPE,
@@ -172,6 +175,8 @@ struct ESPEGLContext : ESPContext {
 
   bool isValid() { return isValid_; };
 
+  int gpuDevice() const { return gpuDevice_; }
+
   ~ESPEGLContext() {
     eglDestroyContext(display_, context_);
     eglTerminate(display_);
@@ -182,11 +187,12 @@ struct ESPEGLContext : ESPContext {
   EGLContext context_;
   Platform::GLContext magnumGlContext_;
   bool isValid_ = false;
+  int gpuDevice_;
 
   ESP_SMART_POINTERS(ESPEGLContext);
 };
 
-#else  // __ESP_USE_EGL__ not defined
+#else  // ESP_BUILD_EGL_SUPPORT not defined
 
 struct ESPGLXContext : ESPContext {
   ESPGLXContext()
@@ -204,6 +210,7 @@ struct ESPGLXContext : ESPContext {
 
   void makeCurrent() { glxCtx_.makeCurrent(); };
   bool isValid() { return isValid_; };
+  int gpuDevice() const { return 0; }
 
  private:
   Platform::WindowlessGlxContext glxCtx_;
@@ -219,7 +226,7 @@ struct ESPGLXContext : ESPContext {
 
 struct WindowlessContext::Impl {
   Impl(int device) {
-#ifdef __ESP_USE_EGL__
+#ifdef ESP_BUILD_EGL_SUPPORT
     glContext_ = ESPEGLContext::create_unique(device);
 #else
     CHECK_EQ(device, 0)
@@ -239,13 +246,15 @@ struct WindowlessContext::Impl {
 
   void makeCurrent() { glContext_->makeCurrent(); }
 
+  int gpuDevice() const { return glContext_->gpuDevice(); }
+
   ESPContext::uptr glContext_ = nullptr;
 };
 
 #else  // not defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
 
 struct WindowlessContext::Impl {
-  Impl(int device) : glContext_({}), magnumGlContext_(NoCreate) {
+  Impl(int) : glContext_({}), magnumGlContext_(NoCreate) {
     glContext_.makeCurrent();
     if (!magnumGlContext_.tryCreate()) {
       LOG(ERROR) << "Failed to create GL context";
@@ -255,6 +264,8 @@ struct WindowlessContext::Impl {
   ~Impl() { LOG(INFO) << "Deconstructing GL context"; }
 
   void makeCurrent() { glContext_.makeCurrent(); }
+
+  int gpuDevice() const { return 0; }
 
   Platform::WindowlessGLContext glContext_;
   Platform::GLContext magnumGlContext_;
@@ -267,6 +278,10 @@ WindowlessContext::WindowlessContext(int device /* = 0 */)
 
 void WindowlessContext::makeCurrent() {
   pimpl_->makeCurrent();
+}
+
+int WindowlessContext::gpuDevice() const {
+  return pimpl_->gpuDevice();
 }
 
 }  // namespace gfx

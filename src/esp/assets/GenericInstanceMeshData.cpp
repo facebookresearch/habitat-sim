@@ -5,32 +5,34 @@
 #include "GenericInstanceMeshData.h"
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/ArrayView.h>
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
+#include <Magnum/ImageView.h>
 #include <Magnum/Math/Functions.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Trade/Trade.h>
 
-#include <tinyply.h>
-#include <fstream>
-#include <sstream>
-#include <vector>
-
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <tinyply.h>
 #include <unistd.h>
 #include <fstream>
+#include <sophus/so3.hpp>
 #include <sstream>
 #include <unordered_map>
 #include <vector>
 
-#include <sophus/so3.hpp>
-
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
+#include "esp/gfx/PrimitiveIDTexturedShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
+
+namespace Cr = Corrade;
+namespace Mn = Magnum;
 
 namespace esp {
 namespace assets {
@@ -44,33 +46,30 @@ void copyTo(std::shared_ptr<tinyply::PlyData> data, std::vector<T>& dst) {
 }
 }  // namespace
 
-/*
- * In modern OpenGL fragment sharder, we can access the ID of the current
- * primitive and thus can index an array.  We can make a 2D texture behave
- * like a 2D array with nearest sampling and edge clamping.
- */
-Magnum::GL::Texture2D createInstanceTexture(float* data, const int texSize) {
-  /*
-   * Create the image that wil be uploaded to the texture.  We
-   * can index the original data array
-   * with image[primId / texSize, primId % texSize]
-   * NB: The indices will have to mapped into [0, 1] in the GLSL code
-   */
-  Magnum::Image2D image(
-      Magnum::PixelFormat::R32F, {texSize, texSize},
-      Corrade::Containers::Array<char>(reinterpret_cast<char*>(data),
-                                       texSize * texSize * sizeof(data[0])));
+Mn::GL::Texture2D createInstanceTexture(
+    Cr::Containers::ArrayView<std::uint32_t> objectIds) {
+  const Mn::Vector2i textureSize{
+      gfx::PrimitiveIDTexturedShader::PrimitiveIDTextureWidth,
+      int(objectIds.size() +
+          gfx::PrimitiveIDTexturedShader::PrimitiveIDTextureWidth - 1) /
+          gfx::PrimitiveIDTexturedShader::PrimitiveIDTextureWidth};
+  Cr::Containers::Array<Mn::UnsignedShort> packedObjectIds{
+      Cr::Containers::NoInit, std::size_t(textureSize.product())};
+  for (std::size_t i = 0; i != objectIds.size(); ++i) {
+    ASSERT(objectIds[i] <= 65535);
+    packedObjectIds[i] = objectIds[i];
+  }
+  Mn::GL::Texture2D texture;
+  texture.setMinificationFilter(Mn::SamplerFilter::Nearest)
+      .setMagnificationFilter(Mn::SamplerFilter::Nearest)
+      .setWrapping(
+          {Mn::SamplerWrapping::ClampToEdge, Mn::SamplerWrapping::ClampToEdge})
+      .setStorage(1, Mn::GL::TextureFormat::R16UI, textureSize)
+      .setSubImage(0, {},
+                   Mn::ImageView2D{Mn::PixelFormat::R16UI, textureSize,
+                                   packedObjectIds});
 
-  Magnum::GL::Texture2D tex;
-
-  tex.setMinificationFilter(Magnum::SamplerFilter::Nearest)
-      .setMagnificationFilter(Magnum::SamplerFilter::Nearest)
-      .setWrapping({Magnum::SamplerWrapping::ClampToEdge,
-                    Magnum::SamplerWrapping::ClampToEdge})
-      .setStorage(1, Magnum::GL::TextureFormat::R32F, image.size())
-      .setSubImage(0, {}, image);
-
-  return tex;
+  return texture;
 }
 
 bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
@@ -203,6 +202,18 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
     xyz = T_esp_scene * xyz;
   }
 
+  // Construct vertices for collsion meshData
+  // Store indices, facd_ids in Magnum MeshData3D format such that
+  // later they can be accessed.
+  // Note that normal and texture data are not stored
+  collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
+  collisionMeshData_.positions =
+      Corrade::Containers::arrayCast<Magnum::Vector3>(
+          Corrade::Containers::arrayView(cpu_vbo_.data(), cpu_vbo_.size()));
+  collisionMeshData_.indices =
+      Corrade::Containers::arrayCast<Magnum::UnsignedInt>(
+          Corrade::Containers::arrayView(cpu_ibo_.data(), cpu_ibo_.size()));
+
   return true;
 }
 
@@ -218,40 +229,23 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_ =
       std::make_unique<GenericInstanceMeshData::RenderingBuffer>();
 
-  // convert uchar rgb to float rgb
-  std::vector<vec3f> cbo_float;
-  cbo_float.reserve(cpu_cbo_.size());
-  for (const auto& c : cpu_cbo_) {
-    cbo_float.emplace_back(c.cast<float>() / 255.0f);
-  }
-
-  /*
-   * Textures in OpenGL must be square and must have a sizes that are powers of
-   * 2, so first compute the size of the smallest texture that can contain our
-   * array.  Then copy the object id's buffer into the texture data buffer as
-   * floats.
-   */
-  const int nPrims = cpu_ibo_.size();
-  const int texSize = std::pow(2, std::ceil(std::log2(std::sqrt(nPrims))));
-  // The image takes ownership over the obj_id_tex_data array, so there is no
-  // delete
-  float* obj_id_tex_data = new float[texSize * texSize]();
-  for (size_t i = 0; i < nPrims; ++i) {
-    obj_id_tex_data[i] = static_cast<float>(objectIds_[i]);
-  }
-
-  // Takes ownership of the data pointer
-  renderingBuffer_->tex = createInstanceTexture(obj_id_tex_data, texSize);
-
+  /* Pack primitive IDs into a texture. 1D texture won't be large enough so the
+     data have to be put into a 2D texture. For simplicity on both the C++ and
+     shader side the texture has a fixed width and height is dynamic, and
+     addressing is done as (gl_PrimitiveID % width, gl_PrimitiveID / width). */
+  ASSERT(objectIds_.size() == cpu_ibo_.size());
+  renderingBuffer_->tex = createInstanceTexture(objectIds_);
   renderingBuffer_->vbo.setData(cpu_vbo_, Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->cbo.setData(cbo_float, Magnum::GL::BufferUsage::StaticDraw);
+  renderingBuffer_->cbo.setData(cpu_cbo_, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->ibo.setData(cpu_ibo_, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
-      .setCount(nPrims * 3)
+      .setCount(cpu_ibo_.size() * 3)
       .addVertexBuffer(renderingBuffer_->vbo, 0,
-                       Magnum::GL::Attribute<0, Magnum::Vector3>{})
-      .addVertexBuffer(renderingBuffer_->cbo, 0,
-                       Magnum::GL::Attribute<1, Magnum::Color3>{})
+                       gfx::PrimitiveIDTexturedShader::Position{})
+      .addVertexBuffer(
+          renderingBuffer_->cbo, 0,
+          gfx::PrimitiveIDTexturedShader::Color3{
+              gfx::PrimitiveIDTexturedShader::Color3::DataType::UnsignedByte})
       .setIndexBuffer(renderingBuffer_->ibo, 0,
                       Magnum::GL::MeshIndexType::UnsignedInt);
 

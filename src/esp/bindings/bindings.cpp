@@ -13,6 +13,7 @@ using namespace py::literals;
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/Simulator.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/PhysicsManager.h"
 #include "esp/scene/Mp3dSemanticScene.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneGraph.h"
@@ -23,6 +24,8 @@ using namespace py::literals;
 #include "esp/sensor/RedwoodNoiseModel.h"
 #include "esp/sensor/Sensor.h"
 
+#include <Magnum/ImageView.h>
+#include <Magnum/Python.h>
 #include <Magnum/SceneGraph/Python.h>
 
 using namespace esp;
@@ -32,6 +35,7 @@ using namespace esp::gfx;
 using namespace esp::nav;
 using namespace esp::scene;
 using namespace esp::sensor;
+using namespace esp::physics;
 
 void initShortestPathBindings(py::module& m);
 void initGeoBindings(py::module& m);
@@ -46,6 +50,13 @@ SceneNode* nodeGetter(T& self) {
 }  // namespace
 
 PYBIND11_MODULE(habitat_sim_bindings, m) {
+  m.attr("cuda_enabled") =
+#ifdef ESP_BUILD_WITH_CUDA
+      true;
+#else
+      false;
+#endif
+
   initGeoBindings(m);
 
   py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
@@ -304,27 +315,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 
   // ==== Renderer ====
   py::class_<Renderer, Renderer::ptr>(m, "Renderer")
-      .def(py::init(&Renderer::create<int, int>))
-      .def("set_size", &Renderer::setSize, R"(Set the size of the canvas)",
-           "width"_a, "height"_a)
-      .def(
-          "readFrameRgba",
-          [](Renderer& self,
-             Eigen::Ref<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic,
-                                      Eigen::RowMajor>>& img) {
-            self.readFrameRgba(img.data());
-          },
-          py::arg("img").noconvert(),
-          R"(
-      Reads RGBA frame into passed img in uint8 byte format.
-
-      Parameters
-      ----------
-      img: numpy.ndarray[uint8[m, n], flags.writeable, flags.c_contiguous]
-           Numpy array array to populate with frame bytes.
-           Memory is NOT allocated to this array.
-           Assume that ``m = height`` and ``n = width * 4``.
-      )")
+      .def(py::init(&Renderer::create<>))
       .def("draw",
            py::overload_cast<sensor::Sensor&, scene::SceneGraph&>(
                &Renderer::draw),
@@ -334,22 +325,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            py::overload_cast<gfx::RenderCamera&, scene::SceneGraph&>(
                &Renderer::draw),
            R"(Draw given scene using the camera)", "camera"_a, "scene"_a)
-      .def(
-          "readFrameDepth",
-          [](Renderer& self,
-             Eigen::Ref<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic,
-                                      Eigen::RowMajor>>& img) {
-            self.readFrameDepth(img.data());
-          },
-          py::arg("img").noconvert(), R"()")
-      .def(
-          "readFrameObjectId",
-          [](Renderer& self,
-             Eigen::Ref<Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic,
-                                      Eigen::RowMajor>>& img) {
-            self.readFrameObjectId(img.data());
-          },
-          py::arg("img").noconvert(), R"()");
+      .def("bind_render_target", &Renderer::bindRenderTarget);
 
   // TODO fill out other SensorTypes
   // ==== enum SensorType ====
@@ -371,6 +347,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_readwrite("resolution", &SensorSpec::resolution)
       .def_readwrite("channels", &SensorSpec::channels)
       .def_readwrite("encoding", &SensorSpec::encoding)
+      .def_readwrite("gpu2gpu_transfer", &SensorSpec::gpu2gpuTransfer)
       .def_readwrite("observation_space", &SensorSpec::observationSpace)
       .def_readwrite("noise_model", &SensorSpec::noiseModel)
       .def("__eq__",
@@ -385,6 +362,51 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   // ==== Observation ====
   py::class_<Observation, Observation::ptr>(m, "Observation");
 
+  py::class_<RenderTarget>(m, "RenderTarget")
+      .def("__enter__",
+           [](RenderTarget& self) {
+             self.renderEnter();
+             return &self;
+           })
+      .def("__exit__",
+           [](RenderTarget& self, py::object exc_type, py::object exc_value,
+              py::object traceback) { self.renderExit(); })
+      .def("read_frame_rgba", &RenderTarget::readFrameRgba,
+           "Reads RGBA frame into passed img in uint8 byte format.")
+      .def("read_frame_depth", &RenderTarget::readFrameDepth)
+      .def("read_frame_object_id", &RenderTarget::readFrameObjectId)
+#ifdef ESP_BUILD_WITH_CUDA
+      .def("read_frame_rgba_gpu",
+           [](RenderTarget& self, size_t devPtr) {
+             /*
+              * Python has no concept of a pointer, so PyTorch thus exposes the
+              pointer to CUDA memory as a simple size_t
+              * Thus we need to take in the pointer as a size_t and then
+              reinterpret_cast it to the correct type.
+              *
+              * What PyTorch does internally is similar to
+              * ::code
+                   uint8_t* tmp = new uint8_t[5];
+                   size_t ptr = reinterpret_cast<size_t>(tmp);
+              *
+              * so reinterpret_cast<uint8_t*> simply undoes the
+              reinterpret_cast<size_t>
+              */
+
+             self.readFrameRgbaGPU(reinterpret_cast<uint8_t*>(devPtr));
+           })
+      .def("read_frame_depth_gpu",
+           [](RenderTarget& self, size_t devPtr) {
+             self.readFrameDepthGPU(reinterpret_cast<float*>(devPtr));
+           })
+      .def("read_frame_object_id_gpu",
+           [](RenderTarget& self, size_t devPtr) {
+             self.readFrameObjectIdGPU(reinterpret_cast<int32_t*>(devPtr));
+           })
+#endif
+      .def("render_enter", &RenderTarget::renderEnter)
+      .def("render_exit", &RenderTarget::renderExit);
+
   // ==== Sensor ====
   sensor
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
@@ -395,7 +417,9 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("get_observation", &Sensor::getObservation)
       .def_property_readonly("node", nodeGetter<Sensor>,
                              "Node this object is attached to")
-      .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
+      .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node")
+      .def_property_readonly("framebuffer_size", &Sensor::framebufferSize)
+      .def_property_readonly("render_target", &Sensor::renderTarget);
 
 #ifdef SENSORS_WITH_CUDA
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(
@@ -452,11 +476,12 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_readwrite("default_camera_uuid",
                      &SimulatorConfiguration::defaultCameraUuid)
       .def_readwrite("gpu_device_id", &SimulatorConfiguration::gpuDeviceId)
-      .def_readwrite("width", &SimulatorConfiguration::width)
-      .def_readwrite("height", &SimulatorConfiguration::height)
       .def_readwrite("compress_textures",
                      &SimulatorConfiguration::compressTextures)
       .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
+      .def_readwrite("enable_physics", &SimulatorConfiguration::enablePhysics)
+      .def_readwrite("physics_config_file",
+                     &SimulatorConfiguration::physicsConfigFile)
       .def("__eq__",
            [](const SimulatorConfiguration& self,
               const SimulatorConfiguration& other) -> bool {
@@ -484,5 +509,33 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("renderer", &Simulator::getRenderer)
       .def("seed", &Simulator::seed, R"()", "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a)
-      .def("reset", &Simulator::reset, R"()");
+      .def("reset", &Simulator::reset, R"()")
+      .def_property_readonly("gpu_device", &Simulator::gpuDevice)
+      /* --- Physics functions --- */
+      .def("add_object", &Simulator::addObject, "R()", "object_lib_index"_a,
+           "scene_id"_a = 0)
+      .def("get_physics_object_library_size",
+           &Simulator::getPhysicsObjectLibrarySize, "R()")
+      .def("remove_object", &Simulator::removeObject, "R()", "object_id"_a,
+           "sceneID"_a = 0)
+      .def("get_existing_object_ids", &Simulator::getExistingObjectIDs, "R()",
+           "sceneID"_a = 0)
+      .def("step_world", &Simulator::stepWorld, "R()", "dt"_a = 1.0 / 60.0)
+      .def("get_world_time", &Simulator::getWorldTime, "R()")
+      .def("set_transformation", &Simulator::setTransformation, "R()",
+           "transform"_a, "object_id"_a, "sceneID"_a = 0)
+      .def("get_transformation", &Simulator::getTransformation, "R()",
+           "object_id"_a, "sceneID"_a = 0)
+      .def("set_translation", &Simulator::setTranslation, "R()",
+           "translation"_a, "object_id"_a, "sceneID"_a = 0)
+      .def("get_translation", &Simulator::getTranslation, "R()", "object_id"_a,
+           "sceneID"_a = 0)
+      .def("set_rotation", &Simulator::setRotation, "R()", "rotation"_a,
+           "object_id"_a, "sceneID"_a = 0)
+      .def("get_rotation", &Simulator::getRotation, "R()", "object_id"_a,
+           "sceneID"_a = 0)
+      .def("apply_force", &Simulator::applyForce, "R()", "force"_a,
+           "relative_position"_a, "object_id"_a, "sceneID"_a = 0)
+      .def("apply_torque", &Simulator::applyTorque, "R()", "torque"_a,
+           "object_id"_a, "sceneID"_a = 0);
 }

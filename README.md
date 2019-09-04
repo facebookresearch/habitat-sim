@@ -1,6 +1,5 @@
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebookresearch/habitat-sim/blob/master/LICENSE)
 [![CircleCI](https://circleci.com/gh/facebookresearch/habitat-sim.svg?style=shield)](https://circleci.com/gh/facebookresearch/habitat-sim)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/facebookresearch/habitat-sim/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
 
 # Habitat-Sim
 
@@ -20,7 +19,8 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
    0. [Details](#details)
    0. [Performance](#performance)
    0. [Quick installation](#quick-installation)
-   0. [Testing](#Testing)
+   0. [Testing](#testing)
+   0. [Rendering to GPU Tensors](#rendering-to-gpu-tensors)
    0. [Developer installation and getting started](#developer-installation-and-getting-started)
    0. [Datasets](#datasets)
    0. [Examples](#examples)
@@ -39,13 +39,14 @@ AI Habitat enables training of embodied AI agents (virtual robots) in a highly p
 This empowers a paradigm shift from 'internet AI' based on static datasets (e.g. ImageNet, COCO, VQA) to embodied AI where agents act within realistic environments, bringing to the fore active perception, long-term planning, learning from interaction, and holding a dialog grounded in an environment.
 
 ## Citing Habitat
-If you use the Habitat platform in your research, please cite the following [technical report](https://arxiv.org/abs/1904.01201):
+If you use the Habitat platform in your research, please cite the following [paper](https://arxiv.org/abs/1904.01201):
+
 ```
-@article{habitat19arxiv,
-  title =   {Habitat: {A} {P}latform for {E}mbodied {AI} {R}esearch},
-  author =  {{Manolis Savva*} and {Abhishek Kadian*} and {Oleksandr Maksymets*} and Yili Zhao and Erik Wijmans and Bhavana Jain and Julian Straub and Jia Liu and Vladlen Koltun and Jitendra Malik and Devi Parikh and Dhruv Batra},
-  journal = {arXiv preprint arXiv:1904.01201},
-  year =    {2019}
+@inproceedings{habitat19iccv,
+  title     =     {Habitat: {A} {P}latform for {E}mbodied {AI} {R}esearch},
+  author    =     {{Manolis Savva*} and {Abhishek Kadian*} and {Oleksandr Maksymets*} and Yili Zhao and Erik Wijmans and Bhavana Jain and Julian Straub and Jia Liu and Vladlen Koltun and Jitendra Malik and Devi Parikh and Dhruv Batra},
+  booktitle =     {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      =     {2019}
 }
 ```
 
@@ -145,9 +146,18 @@ To run the above benchmarks on your machine, see instructions in the [examples](
 1. Install dependencies in your python env of choice (e.g., `pip install -r requirements.txt`)
 1. Install Habitat-Sim via `python setup.py install` in your python env of choice (note: python 3 is required)
 
-    Use `python setup.py install --headless` for headless systems (i.e. without an attached display) or if you need multi-gpu support.
+    **Headless and multiple GPU systems**
 
-    **Note**: the build requires `cmake` version 3.10 or newer. You can install cmake through `conda install cmake` or download directly from [https://cmake.org/download/](https://cmake.org/download/)
+    Add the `--headless` flag, i.e. `python setup.py install --headless`, for headless systems (i.e. without an attached display) or if you need multi-gpu support.
+
+    **Systems with CUDA**
+
+    Add the `--with-cuda` flag, i.e. `python setup.py install --with-cuda`, to build CUDA features
+
+
+
+**Note**: the build requires `cmake` version 3.10 or newer. You can install cmake through `conda install cmake` or download directly from [https://cmake.org/download/](https://cmake.org/download/)
+
 
 ## Testing
 
@@ -160,16 +170,49 @@ To run the above benchmarks on your machine, see instructions in the [examples](
    Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right).
    Try to find the picture of a woman surrounded by a wreath.
    Have fun!
+1. **Physical interactions**: If you would like to try out habitat with dynamical objects (under development), first download our pre-processed object data-set from this [link](http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip) and extract as `habitat-sim/data/objects/`.
+
+    If you require dynamic objects, install [Bullet Physics](https://github.com/bulletphysics/bullet3/). Next use
+   ```bash
+   python setup.py install --bullet    # build habitat with bullet physics
+   ```
+   Otherwise, use default build
+   ```bash
+   python setup.py install     # build habitat without bullet physics
+   ```
+   To run an interactive C++ example GUI application with physics enabled run
+   ```bash
+   build/viewer --enable-physics /path/to/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb
+   ```
+   Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right). Press 'o' key to add a random object, press 'p/f/t' to apply impulse/force/torque to the last added object or press 'u' to remove it. Press 'k' to kinematically nudge the last added object in a random direction. Press 'v' key to invert gravity.
+
 1. **Non-interactive testing**: Run the example script:
    ```bash
    python examples/example.py --scene /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
    ```
    The agent will traverse a particular path and you should see the performance stats at the very end, something like this:
-`640 x 480, total time: 3.208 sec. FPS: 311.7`.
-Note that the test scenes do not provide semantic meshes.
-If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)).
+  `640 x 480, total time: 3.208 sec. FPS: 311.7`.
+  Note that the test scenes do not provide semantic meshes.
+  If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)). We have also provided an [example demo](https://aihabitat.org/habitat-api/tutorials/habitat-sim-demo.html) for reference.
+
+    To run a physics example in python, follow the install and build direction in the "Physical Interactions" section of this document and then run the example.py with '--enable_physics' as follows:
+    ```bash
+    python examples/example.py --scene /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb --enable_physics
+    ```
+    Note that in this mode the agent will be frozen and oriented toward the spawned physical objects. Additionally, '--save_png' can be used to output agent visual observation frames of the physical scene to the current directory.
 
 We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-api#docker-setup).
+
+## Rendering to GPU Tensors
+
+We support transfering rendering results directly to a [PyTorch](https://pytorch.org/) tensor via CUDA-GL Interop.
+This feature is built by when Habitat-Sim is compiled with CUDA, i.e. built with `--with-cuda`.  To enable it, set the
+`gpu2gpu_transfer` flag of the sensor specification(s) to `True`
+
+
+This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor library being used, but we currently have only implemented support for PyTorch.
+
+
 
 
 ## Developer installation and getting started
@@ -184,6 +227,8 @@ We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup
    ```bash
    export PYTHONPATH=$PYTHONPATH:/path/to/habitat-sim/
    ```
+
+  We also have a dev slack channel, please follow this [link](https://join.slack.com/t/ai-habitat/shared_invite/enQtNjY1MzM1NDE4MTk2LTZhMzdmYWMwODZlNjg5MjZiZjExOTBjOTg5MmRiZTVhOWQyNzk0OTMyN2E1ZTEzZTNjMWM0MjBkN2VhMjQxMDI) to get added to the channel.
 
 ## Datasets
 
@@ -244,4 +289,4 @@ Habitat-Sim is MIT licensed. See the LICENSE file for details.
 
 ## References
 
-1. [Habitat: A Platform for Embodied AI Research](https://arxiv.org/abs/1904.01201). Manolis Savva, Abhishek Kadian, Oleksandr Maksymets, Yili Zhao, Erik Wijmans, Bhavana Jain, Julian Straub, Jia Liu, Vladlen Koltun, Jitendra Malik, Devi Parikh, Dhruv Batra. Tech report, arXiv:1904.01201, 2019.
+1. [Habitat: A Platform for Embodied AI Research](https://arxiv.org/abs/1904.01201). Manolis Savva, Abhishek Kadian, Oleksandr Maksymets, Yili Zhao, Erik Wijmans, Bhavana Jain, Julian Straub, Jia Liu, Vladlen Koltun, Jitendra Malik, Devi Parikh, Dhruv Batra. IEEE/CVF International Conference on Computer Vision (ICCV), 2019.

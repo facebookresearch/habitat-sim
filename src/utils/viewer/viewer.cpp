@@ -4,7 +4,4 @@
 
 #include "esp/gfx/Viewer.h"
 
-int main(int argc, char** argv) {
-  esp::gfx::Viewer app({argc, argv});
-  return app.exec();
-}
+MAGNUM_APPLICATION_MAIN(esp::gfx::Viewer)

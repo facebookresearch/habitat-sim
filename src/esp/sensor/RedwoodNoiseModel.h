@@ -6,7 +6,7 @@
 namespace esp {
 namespace sensor {
 
-#ifdef SENSORS_WITH_CUDA
+#ifdef ESP_WITH_CUDA
 
 namespace impl {
 struct CurandStates;

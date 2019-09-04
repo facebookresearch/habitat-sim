@@ -13,7 +13,6 @@ import pytest
 import quaternion
 
 import habitat_sim
-import habitat_sim.bindings as hsim
 import habitat_sim.errors
 import habitat_sim.utils
 from examples.settings import make_cfg
@@ -42,26 +41,37 @@ _test_scenes = [
 
 @pytest.mark.gfxtest
 @pytest.mark.parametrize(
-    "scene,has_sem,sensor_type",
+    "scene,has_sem,sensor_type,gpu2gpu",
     list(
         itertools.product(
             _test_scenes[0:1],
             [True],
             ["color_sensor", "depth_sensor", "semantic_sensor"],
+            [True, False],
         )
     )
     + list(
-        itertools.product(_test_scenes[1:], [False], ["color_sensor", "depth_sensor"])
+        itertools.product(
+            _test_scenes[1:], [False], ["color_sensor", "depth_sensor"], [True, False]
+        )
     ),
 )
-def test_sensors(scene, has_sem, sensor_type, sim, make_cfg_settings):
+def test_sensors(scene, has_sem, sensor_type, gpu2gpu, sim, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
+
+    if not habitat_sim.cuda_enabled and gpu2gpu:
+        pytest.skip("Skipping GPU->GPU test")
 
     make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["semantic_sensor"] = has_sem
     make_cfg_settings["scene"] = scene
-    sim.reconfigure(make_cfg(make_cfg_settings))
+
+    cfg = make_cfg(make_cfg_settings)
+    for sensor_spec in cfg.agents[0].sensor_specifications:
+        sensor_spec.gpu2gpu_transfer = gpu2gpu
+
+    sim.reconfigure(cfg)
     with open(
         osp.abspath(
             osp.join(
@@ -91,6 +101,12 @@ def test_sensors(scene, has_sem, sensor_type, sim, make_cfg_settings):
             )
         )
     )
+    if gpu2gpu:
+        import torch
+
+        for k, v in obs.items():
+            if torch.is_tensor(v):
+                obs[k] = v.cpu().numpy()
 
     # Different GPUs and different driver version will produce slightly different images
     assert np.linalg.norm(

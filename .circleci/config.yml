@@ -16,7 +16,7 @@ jobs:
       - run:
           name: setup
           command: |
-              sudo pip install -U black "isort[pyproject]" numpy pytest sphinx
+              sudo pip install -U black "isort[pyproject]" numpy pytest sphinx pillow tqdm
               sudo pip install -r requirements.txt --progress-bar off
       - run:
           name: run black
@@ -53,14 +53,22 @@ jobs:
       - checkout:
           path: ./habitat-sim
       - run:
+          name: CPU info
+          no_output_timeout: 1m
+          command: |
+              cat /proc/cpuinfo
+      - run:
           name: Install cmake
           no_output_timeout: 5m
+          # tinyply requires CMake 3.10, so stay at that version. Ubuntu 16.04
+          # has 3.5, so once tinyply is removed, we could go lower (well, if
+          # anybody actually needs that)
           command: |
               echo $(git ls-remote https://github.com/facebookresearch/habitat-api.git HEAD | awk '{ print $1}') > ./hapi_sha
               cat ./hapi_sha
-              wget https://github.com/Kitware/CMake/releases/download/v3.13.4/cmake-3.13.4-Linux-x86_64.sh
+              wget https://cmake.org/files/v3.10/cmake-3.10.3-Linux-x86_64.sh
               sudo mkdir /opt/cmake
-              sudo sh ./cmake-3.13.4-Linux-x86_64.sh --prefix=/opt/cmake --skip-license
+              sudo sh ./cmake-3.10.3-Linux-x86_64.sh --prefix=/opt/cmake --skip-license
               sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
       - run:
           name: Install dependencies
@@ -110,6 +118,22 @@ jobs:
                 conda create -y -n habitat python=3.6
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest ccache
+              fi
+      - run:
+          name: Install emscripten
+          no_output_timeout: 20m
+          background: true
+          command: |
+              if [ ! -f ~/emscripten_installed ]
+              then
+                export PATH=$HOME/miniconda/bin:$PATH
+                . activate habitat;
+                git clone -q https://github.com/emscripten-core/emsdk.git ~/emsdk
+                cd ~/emsdk
+                git checkout 6a4c0f98
+                ./emsdk install 1.38.38
+                ./emsdk activate 1.38.38
+                touch ~/emscripten_installed
               fi
       - run:
           name: Install pytorch
@@ -166,7 +190,7 @@ jobs:
           name: Download test data
           command: |
 
-              if [ ! -d ./habitat-sim/data ]
+              if [ ! -d ./habitat-sim/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb ]
               then
                 cd habitat-sim
                 wget http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip
@@ -183,13 +207,23 @@ jobs:
       - run:
           name: Run sim tests
           command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat; cd habitat-sim
+
+              export PYTHONPATH=$PYTHONPATH:$(pwd)
+              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --with-cuda --run-tests
+
+              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
+              pytest
+      - run:
+          name: Build Javascript bindings
+          command: |
+              while [ ! -f ~/emscripten_installed ]; do sleep 2; done # wait for emscripten install
               cd habitat-sim
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat
-              pip install nbval
-              export PYTHONPATH=$PYTHONPATH:$(pwd)
-              ./build.sh --headless
-              pytest --ignore notebooks/habitat-sim-demo.ipynb
+              export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
+              ./build_js.sh
       - run:
           name: Install api
           command: |
@@ -197,11 +231,10 @@ jobs:
               . activate habitat;
               if [ ! -d ./habitat-api ]
               then
-                git clone https://github.com/facebookresearch/habitat-api.git
+                git clone -q https://github.com/facebookresearch/habitat-api.git
               fi
               cd habitat-api
               pip install -r requirements.txt --progress-bar off
-              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
       - save_cache:
@@ -214,9 +247,8 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-api
-              python setup.py test
               python setup.py develop --all
-              python -u habitat_baselines/train_ppo.py --log-file "train.log" --checkpoint-folder "data/checkpoints" --sim-gpu-id 0 --pth-gpu-id 0 --num-processes 1 --num-mini-batch 1 --num-updates 10
+              python setup.py test
       - save_cache:
           key: habitat-api-{{ checksum "./hapi_sha" }}
           background: true

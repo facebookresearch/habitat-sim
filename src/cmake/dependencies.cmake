@@ -2,10 +2,19 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# OpenMP
 set(DEPS_DIR "${CMAKE_CURRENT_LIST_DIR}/../deps")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}")
 
+# Find Corrade first so we can use CORRADE_TARGET_*
+if(NOT USE_SYSTEM_MAGNUM)
+  # These are enabled by default but we don't need them right now -- disabling
+  # for slightly faster builds. If you need any of these, simply delete a line.
+  set(WITH_INTERCONNECT OFF CACHE BOOL "" FORCE)
+  add_subdirectory("${DEPS_DIR}/corrade")
+endif()
+find_package(Corrade REQUIRED Utility)
+
+# OpenMP
 find_package(OpenMP)
 # We don't find_package(OpenGL REQUIRED) here, but let Magnum do that instead
 # as it sets up various things related to GLVND.
@@ -25,11 +34,18 @@ endif()
 # sophus
 include_directories(SYSTEM "${DEPS_DIR}/Sophus")
 
-# glog
-add_subdirectory("${DEPS_DIR}/glog")
-
-# tinyobjloader
-include_directories(SYSTEM "${DEPS_DIR}/tinyobjloader")
+# glog. NOTE: emscripten does not support 32-bit targets, which glog requires.
+# Therefore we do not build glog and use a custom shim instead to emulate glog
+if(CORRADE_TARGET_EMSCRIPTEN)
+  add_library(glog INTERFACE)
+else()
+  # We don't want glog tests to be run as part of our build. The BUILD_TESTING
+  # variable is set by include(CTest) as an option(). In CMake 3.13+ it should
+  # be enough to do just set(BUILD_TESTING OFF) to avoid the option()
+  # overriding it, but https://cmake.org/cmake/help/latest/policy/CMP0077.html.
+  option(BUILD_TESTING "ugh" OFF)
+  add_subdirectory("${DEPS_DIR}/glog")
+endif()
 
 # RapidJSON. Use a system package, if preferred.
 if(USE_SYSTEM_RAPIDJSON)
@@ -42,20 +58,22 @@ endif()
 # Why all the weird options in the set() calls below?
 # See https://stackoverflow.com/questions/3766740/overriding-a-default-option-value-in-cmake-from-a-parent-cmakelists-txt
 
-# Assimp. Use a system package, if preferred.
-if(NOT USE_SYSTEM_ASSIMP)
-  set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "ASSIMP_BUILD_ASSIMP_TOOLS" FORCE)
-  set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
-  set(BUILD_SHARED_LIBS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
-  add_subdirectory("${DEPS_DIR}/assimp")
+if(BUILD_ASSIMP_SUPPORT)
+  # Assimp. Use a system package, if preferred.
+  if(NOT USE_SYSTEM_ASSIMP)
+    set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "ASSIMP_BUILD_ASSIMP_TOOLS" FORCE)
+    set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
+    add_subdirectory("${DEPS_DIR}/assimp")
 
-  # Help FindAssimp locate everything
-  set(ASSIMP_INCLUDE_DIR "${DEPS_DIR}/assimp/include" CACHE STRING "" FORCE)
-  set(ASSIMP_LIBRARY_DEBUG assimp CACHE STRING "" FORCE)
-  set(ASSIMP_LIBRARY_RELEASE assimp CACHE STRING "" FORCE)
-  add_library(Assimp::Assimp ALIAS assimp)
+    # Help FindAssimp locate everything
+    set(ASSIMP_INCLUDE_DIR "${DEPS_DIR}/assimp/include" CACHE STRING "" FORCE)
+    set(ASSIMP_LIBRARY_DEBUG assimp CACHE STRING "" FORCE)
+    set(ASSIMP_LIBRARY_RELEASE assimp CACHE STRING "" FORCE)
+    add_library(Assimp::Assimp ALIAS assimp)
+  endif()
+  find_package(Assimp REQUIRED)
 endif()
-find_package(Assimp REQUIRED)
 
 # recast
 set(RECASTNAVIGATION_DEMO OFF CACHE BOOL "RECASTNAVIGATION_DEMO" FORCE)
@@ -69,24 +87,26 @@ target_compile_definitions(Detour
   PUBLIC
   DT_VIRTUAL_QUERYFILTER)
 
-# python interpreter
-find_package(PythonInterp 3.6 REQUIRED)
+if(BUILD_PYTHON_BINDINGS)
+  # python interpreter
+  find_package(PythonInterp 3.6 REQUIRED)
 
-# Search for python executable to pick up activated virtualenv/conda python
-unset(PYTHON_EXECUTABLE CACHE)
-find_program(PYTHON_EXECUTABLE
-  python
-    PATHS ENV PATH   # look in the PATH environment variable
-    NO_DEFAULT_PATH  # do not look anywhere else...
-)
-message(STATUS "Bindings being generated for python at ${PYTHON_EXECUTABLE}")
+  # Search for python executable to pick up activated virtualenv/conda python
+  unset(PYTHON_EXECUTABLE CACHE)
+  find_program(PYTHON_EXECUTABLE
+    python
+      PATHS ENV PATH   # look in the PATH environment variable
+      NO_DEFAULT_PATH  # do not look anywhere else...
+  )
+  message(STATUS "Bindings being generated for python at ${PYTHON_EXECUTABLE}")
 
-# Pybind11. Use a system package, if preferred. This needs to be before Magnum
-# so the bindings can properly detect pybind11 added as a subproject.
-if(USE_SYSTEM_PYBIND11)
-  find_package(pybind11 REQUIRED)
-else()
-  add_subdirectory("${DEPS_DIR}/pybind11")
+  # Pybind11. Use a system package, if preferred. This needs to be before Magnum
+  # so the bindings can properly detect pybind11 added as a subproject.
+  if(USE_SYSTEM_PYBIND11)
+    find_package(pybind11 REQUIRED)
+  else()
+    add_subdirectory("${DEPS_DIR}/pybind11")
+  endif()
 endif()
 
 # Magnum. Use a system package, if preferred.
@@ -97,38 +117,51 @@ if(NOT USE_SYSTEM_MAGNUM)
 
   # These are enabled by default but we don't need them right now -- disabling
   # for slightly faster builds. If you need any of these, simply delete a line.
-  set(WITH_INTERCONNECT OFF CACHE BOOL "" FORCE)
-  set(WITH_TESTSUITE OFF CACHE BOOL "" FORCE)
-  set(WITH_DEBUGTOOLS OFF CACHE BOOL "" FORCE)
-  set(WITH_PRIMITIVES OFF CACHE BOOL "" FORCE)
   set(WITH_TEXT OFF CACHE BOOL "" FORCE)
   set(WITH_TEXTURETOOLS OFF CACHE BOOL "" FORCE)
 
   # These are not enabled by default but we need them
   set(WITH_ANYSCENEIMPORTER ON CACHE BOOL "WITH_ANYSCENEIMPORTER" FORCE)
-  set(WITH_ASSIMPIMPORTER ON CACHE BOOL "WITH_ASSIMPIMPORTER" FORCE)
+  if (BUILD_ASSIMP_SUPPORT)
+    set(WITH_ASSIMPIMPORTER ON CACHE BOOL "WITH_ASSIMPIMPORTER" FORCE)
+  endif()
   set(WITH_TINYGLTFIMPORTER ON CACHE BOOL "WITH_TINYGLTFIMPORTER" FORCE)
   set(WITH_ANYIMAGEIMPORTER ON CACHE BOOL "WITH_ANYIMAGEIMPORTER" FORCE)
+  set(WITH_ANYIMAGECONVERTER ON CACHE BOOL "WITH_ANYIMAGECONVERTER" FORCE)
   set(WITH_STBIMAGEIMPORTER ON CACHE BOOL "WITH_STBIMAGEIMPORTER" FORCE)
   set(WITH_STBIMAGECONVERTER ON CACHE BOOL "WITH_STBIMAGECONVERTER" FORCE)
-  set(WITH_SDL2APPLICATION OFF CACHE BOOL "WITH_SDL2APPLICATION" FORCE)
+  set(WITH_EMSCRIPTENAPPLICATION OFF CACHE BOOL "WITH_EMSCRIPTENAPPLICATION" FORCE)
+  set(WITH_GLFWAPPLICATION OFF CACHE BOOL "WITH_GLFWAPPLICATION" FORCE)
   set(WITH_EIGEN ON CACHE BOOL "WITH_EIGEN" FORCE) # Eigen integration
-  set(WITH_PYTHON ON CACHE BOOL "" FORCE) # Python bindings
+  if(BUILD_PYTHON_BINDINGS)
+    set(WITH_PYTHON ON CACHE BOOL "" FORCE) # Python bindings
+  endif()
+  # We only support WebGL2
+  if(CORRADE_TARGET_EMSCRIPTEN)
+    set(TARGET_GLES2 OFF CACHE BOOL "" FORCE)
+  endif()
+  if(BUILD_TEST)
+    set(WITH_OPENGLTESTER ON CACHE BOOL "" FORCE)
+  endif()
 
   if(BUILD_GUI_VIEWERS)
-    if(NOT USE_SYSTEM_GLFW)
-      add_subdirectory("${DEPS_DIR}/glfw")
+    if(CORRADE_TARGET_EMSCRIPTEN)
+      set(WITH_EMSCRIPTENAPPLICATION ON CACHE BOOL "WITH_EMSCRIPTENAPPLICATION" FORCE)
+    else()
+      if(NOT USE_SYSTEM_GLFW)
+        add_subdirectory("${DEPS_DIR}/glfw")
+      endif()
+      set(WITH_GLFWAPPLICATION ON CACHE BOOL "WITH_GLFWAPPLICATION" FORCE)
     endif()
-    set(WITH_GLFWAPPLICATION ON CACHE BOOL "WITH_GLFWAPPLICATION" FORCE)
-  else()
-    set(WITH_GLFWAPPLICATION OFF CACHE BOOL "WITH_GLFWAPPLICATION" FORCE)
   endif()
   if(APPLE)
     set(WITH_WINDOWLESSCGLAPPLICATION ON CACHE BOOL "WITH_WINDOWLESSCGLAPPLICATION" FORCE)
   elseif(WIN32)
     set(WITH_WINDOWLESSWGLAPPLICATION ON CACHE BOOL "WITH_WINDOWLESSWGLAPPLICATION" FORCE)
+  elseif(CORRADE_TARGET_EMSCRIPTEN)
+    set(WITH_WINDOWLESSEGLAPPLICATION ON  CACHE INTERNAL "WITH_WINDOWLESSEGLAPPLICATION" FORCE)
   elseif(UNIX)
-    if(${BUILD_GUI_VIEWERS})
+    if(BUILD_GUI_VIEWERS)
       set(WITH_WINDOWLESSGLXAPPLICATION ON  CACHE INTERNAL "WITH_WINDOWLESSGLXAPPLICATION" FORCE)
       set(WITH_WINDOWLESSEGLAPPLICATION OFF CACHE INTERNAL "WITH_WINDOWLESSEGLAPPLICATION" FORCE)
     else()
@@ -136,12 +169,15 @@ if(NOT USE_SYSTEM_MAGNUM)
       set(WITH_WINDOWLESSEGLAPPLICATION ON  CACHE INTERNAL "WITH_WINDOWLESSEGLAPPLICATION" FORCE)
     endif()
   endif()
-  add_subdirectory("${DEPS_DIR}/corrade")
   add_subdirectory("${DEPS_DIR}/magnum")
   add_subdirectory("${DEPS_DIR}/magnum-plugins")
   add_subdirectory("${DEPS_DIR}/magnum-integration")
-  add_subdirectory("${DEPS_DIR}/magnum-bindings")
+  if(BUILD_PYTHON_BINDINGS)
+    add_subdirectory("${DEPS_DIR}/magnum-bindings")
+  endif()
 endif()
+
+
 
 # tinyply
 include_directories(SYSTEM "${DEPS_DIR}/tinyply/source")

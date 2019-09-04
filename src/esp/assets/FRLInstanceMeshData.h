@@ -4,10 +4,11 @@
 
 #pragma once
 
+#include <Magnum/Trade/MeshData3D.h>
 #include <memory>
 #include <string>
 #include <vector>
-
+#include "BaseMesh.h"
 #include "GenericInstanceMeshData.h"
 #include "esp/core/esp.h"
 
@@ -24,18 +25,25 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
  public:
   FRLInstanceMeshData()
       : GenericInstanceMeshData(SupportedMeshType::INSTANCE_MESH){};
-  virtual ~FRLInstanceMeshData(){};
+  virtual ~FRLInstanceMeshData() {
+    delete cpu_vbo_3_;
+    delete tri_ibo_;
+  };
 
   void to_ply(const std::string& ply_file) const;
   virtual bool loadPLY(const std::string& plyFile) override;
 
-  std::vector<vec4f>& getVertexBufferObjectCPU() { return cpu_vbo; }
-  std::vector<vec3uc>& getColorBufferObjectCPU() { return cpu_cbo; }
+  std::vector<vec4f>& getVertexBufferObjectCPU() { return cpu_vbo_; }
+  std::vector<vec3uc>& getColorBufferObjectCPU() { return cpu_cbo_; }
 
   // overloaded function, in case object passed as a const parameter to the
   // function
-  const std::vector<vec4f>& getVertexBufferObjectCPU() const { return cpu_vbo; }
-  const std::vector<vec3uc>& getColorBufferObjectCPU() const { return cpu_cbo; }
+  const std::vector<vec4f>& getVertexBufferObjectCPU() const {
+    return cpu_vbo_;
+  }
+  const std::vector<vec3uc>& getColorBufferObjectCPU() const {
+    return cpu_cbo_;
+  }
 
   // ==== rendering ====
   virtual void uploadBuffersToGPU(bool forceReload = false) override;
@@ -43,9 +51,15 @@ class FRLInstanceMeshData : public GenericInstanceMeshData {
 
   virtual Magnum::GL::Mesh* getMagnumGLMesh() override;
 
+  const std::vector<vec3f> get_vbo();
+  const std::vector<int> get_ibo();
+
  protected:
-  std::vector<vec4f> cpu_vbo;
-  std::vector<vec3uc> cpu_cbo;
+  std::vector<vec4f> cpu_vbo_;
+  std::vector<vec3uc> cpu_cbo_;
+
+  std::vector<vec3f>* cpu_vbo_3_ = nullptr;
+  std::vector<uint32_t>* tri_ibo_ = nullptr;
 
   vecXi id_to_label;
   vecXi id_to_node;
