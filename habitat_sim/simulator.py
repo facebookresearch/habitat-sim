@@ -301,8 +301,7 @@ class Sensor:
                 )
 
         noise_model_kwargs = getattr(self._spec, "noise_model_kwargs", {})
-        # TODO get the correct GPU device ID!
-        noise_model_kwargs["gpu_device_id"] = 0
+        noise_model_kwargs["gpu_device_id"] = self._sim.gpu_device
         self._noise_model = make_sensor_noise_model(
             self._spec.noise_model, noise_model_kwargs
         )
@@ -312,7 +311,7 @@ class Sensor:
             self._spec.noise_model, self._spec.uuid
         )
 
-    def get_observation(self):
+    def draw_observation(self):
         # sanity check:
 
         # see if the sensor is attached to a scene graph, otherwise it is invalid,

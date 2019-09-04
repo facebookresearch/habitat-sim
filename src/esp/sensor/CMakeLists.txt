@@ -11,7 +11,7 @@ set(sensor_SOURCES
 if(BUILD_WITH_CUDA)
   list(APPEND CUDA_NVCC_FLAGS "-std=c++11;-O2")
 
-  cuda_compile(cuda_kernels SHARED "RedwoodNoiseModel.cu")
+  cuda_compile(cuda_kernels SHARED RedwoodNoiseModel.cu RedwoodNoiseModel.cuh)
 
   list(APPEND sensor_SOURCES ${cuda_kernels})
 endif()

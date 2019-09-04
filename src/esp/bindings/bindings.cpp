@@ -421,12 +421,18 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("framebuffer_size", &Sensor::framebufferSize)
       .def_property_readonly("render_target", &Sensor::renderTarget);
 
-#ifdef SENSORS_WITH_CUDA
+#ifdef ESP_BUILD_WITH_CUDA
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(
       m, "RedwoodNoiseModelGPUImpl")
       .def(py::init(&RedwoodNoiseModelGPUImpl::create_unique<
                     const Eigen::Ref<const RowMatrixXf>&, int>))
-      .def("simulate_from_cpu", &RedwoodNoiseModelGPUImpl::simulateFromCPU);
+      .def("simulate_from_cpu", &RedwoodNoiseModelGPUImpl::simulateFromCPU)
+      .def("simulate_from_gpu", [](RedwoodNoiseModel& self,
+                                   std::size_t devDepth, const int rows,
+                                   const int cols, std::size_t devNoisyDepth) {
+        self.simulateFromGPU(reinterpret_cast<const float*>(devDepth), rows,
+                             cols, reinterpret_cast<float*>(devNoisyDepth));
+      });
 #endif
 
   // ==== PinholeCamera (subclass of Sensor) ====

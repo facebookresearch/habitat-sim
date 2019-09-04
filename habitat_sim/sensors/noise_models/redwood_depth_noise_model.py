@@ -4,19 +4,15 @@ import attr
 import numba
 import numpy as np
 
-from habitat_sim.bindings import SensorType
+from habitat_sim.bindings import SensorType, cuda_enabled
 from habitat_sim.sensors.noise_models.registration import (
     SensorNoiseModel,
     register_sensor_noise_model,
 )
 
-try:
+if cuda_enabled:
     from habitat_sim._ext.habitat_sim_bindings import RedwoodNoiseModelGPUImpl
     import torch
-
-    has_gpu = True
-except ImportError:
-    has_gpu = False
 
 
 @numba.jit(nopython=True)
@@ -92,7 +88,7 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
             osp.join(osp.dirname(__file__), "data", "redwood-depth-dist-model.npy")
         )
 
-        if has_gpu:
+        if cuda_enabled:
             self._impl = RedwoodNoiseModelGPUImpl(dist, self._gpu_device_id)
         else:
             self._impl = RedwoodNoiseModelCPUImpl(dist)
@@ -102,8 +98,16 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
         return sensor_type == SensorType.DEPTH
 
     def simulate(self, gt_depth):
-        if has_gpu:
-            return self._impl.simulate_from_cpu(gt_depth)
+        if cuda_enabled:
+            if torch.is_tensor(gt_depth):
+                noisy_depth = gt_depth.clone()
+                rows, cols = gt_depth.size()
+                self._impl.simulate_from_cpu(
+                    gt_depth.data_ptr(), rows, cols, noisy_depth.data_ptr()
+                )
+                return noisy_depth
+            else:
+                return self._impl.simulate_from_cpu(gt_depth)
         else:
             return self._impl.simulate(gt_depth)
 

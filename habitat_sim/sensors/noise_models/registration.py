@@ -1,6 +1,8 @@
 import abc
 from typing import Dict, Optional, Type
 
+import numpy as np
+
 
 class SensorNoiseModel(abc.ABC):
     def __init__(self, gpu_device_id: Optional[int] = None):

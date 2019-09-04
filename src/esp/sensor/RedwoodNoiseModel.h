@@ -3,20 +3,22 @@
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
 
+#include "RedwoodNoiseModel.cuh"
+
 namespace esp {
 namespace sensor {
 
-#ifdef ESP_WITH_CUDA
-
-namespace impl {
-struct CurandStates;
-}
+#ifdef ESP_BUILD_WITH_CUDA
 
 struct RedwoodNoiseModelGPUImpl {
   RedwoodNoiseModelGPUImpl(const Eigen::Ref<const RowMatrixXf> model,
                            int gpuDeviceId);
 
   RowMatrixXf simulateFromCPU(const Eigen::Ref<const RowMatrixXf> depth);
+  void simulateFromGPU(const float* devDepth,
+                       const int rows,
+                       const int cols,
+                       float* devNoisyDepth);
 
   ~RedwoodNoiseModelGPUImpl();
 

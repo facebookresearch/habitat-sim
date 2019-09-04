@@ -1,3 +1,5 @@
+#include "RedwoodNoiseModel.cuh"
+
 #include <algorithm>
 
 #include <cuda_runtime.h>

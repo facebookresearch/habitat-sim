@@ -1,22 +1,11 @@
-#ifdef ESP_WITH_CUDA
+#include "RedwoodNoiseModel.h"
+
+#ifdef ESP_BUILD_WITH_CUDA
 
 #include <cuda_runtime.h>
 
-#include "RedwoodNoiseModel.h"
-
 namespace esp {
 namespace sensor {
-namespace impl {
-
-CurandStates* getCurandStates();
-void freeCurandStates(CurandStates* curandStates);
-void simulateFromCPU(const float* __restrict__ depth,
-                     const int H,
-                     const int W,
-                     const float* __restrict__ devModel,
-                     CurandStates* curandStates,
-                     float* __restrict__ noisyDepth);
-}  // namespace impl
 
 namespace {
 
@@ -71,6 +60,14 @@ RowMatrixXf RedwoodNoiseModelGPUImpl::simulateFromCPU(
   impl::simulateFromCPU(depth.data(), depth.rows(), depth.cols(), devModel_,
                         curandStates_, noisyDepth.data());
   return noisyDepth;
+}
+
+void RedwoodNoiseModelGPUImpl::simulateFromGPU(const float* devDepth,
+                                               const int rows,
+                                               const int cols,
+                                               float* devNoisyDepth) {
+  impl::simulateFromGPU(devDepth, rows, cols, devModel_, curandStates_,
+                        devNoisyDepth);
 }
 
 }  // namespace sensor

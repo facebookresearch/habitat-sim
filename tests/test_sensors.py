@@ -17,6 +17,47 @@ import habitat_sim.errors
 import habitat_sim.utils
 from examples.settings import make_cfg
 
+
+def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
+    with open(
+        osp.abspath(
+            osp.join(
+                osp.dirname(__file__),
+                "gt_data",
+                "{}-state.json".format(osp.basename(osp.splitext(scene)[0])),
+            )
+        ),
+        "r",
+    ) as f:
+        render_state = json.load(f)
+        state = habitat_sim.AgentState()
+        state.position = render_state["pos"]
+        state.rotation = habitat_sim.utils.quat_from_coeffs(render_state["rot"])
+
+    sim.initialize_agent(0, state)
+    obs = sim.step("move_forward")
+
+    assert sensor_type in obs, f"{sensor_type} not in obs"
+
+    gt = np.load(
+        osp.abspath(
+            osp.join(
+                osp.dirname(__file__),
+                "gt_data",
+                "{}-{}.npy".format(osp.basename(osp.splitext(scene)[0]), sensor_type),
+            )
+        )
+    )
+    if gpu2gpu:
+        import torch
+
+        for k, v in obs.items():
+            if torch.is_tensor(v):
+                obs[k] = v.cpu().numpy()
+
+    return obs, gt
+
+
 _test_scenes = [
     osp.abspath(
         osp.join(
@@ -72,41 +113,8 @@ def test_sensors(scene, has_sem, sensor_type, gpu2gpu, sim, make_cfg_settings):
         sensor_spec.gpu2gpu_transfer = gpu2gpu
 
     sim.reconfigure(cfg)
-    with open(
-        osp.abspath(
-            osp.join(
-                osp.dirname(__file__),
-                "gt_data",
-                "{}-state.json".format(osp.basename(osp.splitext(scene)[0])),
-            )
-        ),
-        "r",
-    ) as f:
-        render_state = json.load(f)
-        state = habitat_sim.AgentState()
-        state.position = render_state["pos"]
-        state.rotation = habitat_sim.utils.quat_from_coeffs(render_state["rot"])
 
-    sim.initialize_agent(0, state)
-    obs = sim.step("move_forward")
-
-    assert sensor_type in obs, f"{sensor_type} not in obs"
-
-    gt = np.load(
-        osp.abspath(
-            osp.join(
-                osp.dirname(__file__),
-                "gt_data",
-                "{}-{}.npy".format(osp.basename(osp.splitext(scene)[0]), sensor_type),
-            )
-        )
-    )
-    if gpu2gpu:
-        import torch
-
-        for k, v in obs.items():
-            if torch.is_tensor(v):
-                obs[k] = v.cpu().numpy()
+    obs, gt = _render_and_load_gt(sim, scene, sensor_type, gpu2gpu)
 
     # Different GPUs and different driver version will produce slightly different images
     assert np.linalg.norm(
@@ -132,10 +140,15 @@ def test_smoke_no_sensors(make_cfg_settings):
 
 
 @pytest.mark.gfxtest
-@pytest.mark.parametrize("scene", _test_scenes)
-def test_smoke_redwood_noise(scene, sim, make_cfg_settings):
+@pytest.mark.parametrize(
+    "scene,gpu2gpu", itertools.product(_test_scenes, [True, False])
+)
+def test_smoke_redwood_noise(scene, gpu2gpu, sim, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
+
+    if not habitat_sim.cuda_enabled and gpu2gpu:
+        pytest.skip("Skipping GPU->GPU test")
 
     make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["depth_sensor"] = True
@@ -143,42 +156,13 @@ def test_smoke_redwood_noise(scene, sim, make_cfg_settings):
     make_cfg_settings["scene"] = scene
     hsim_cfg = make_cfg(make_cfg_settings)
     hsim_cfg.agents[0].sensor_specifications[0].noise_model = "RedwoodDepthNoiseModel"
+    for sensor_spec in hsim_cfg.agents[0].sensor_specifications:
+        sensor_spec.gpu2gpu_transfer = gpu2gpu
 
     sim.reconfigure(hsim_cfg)
 
-    with open(
-        osp.abspath(
-            osp.join(
-                osp.dirname(__file__),
-                "gt_data",
-                "{}-state.json".format(osp.basename(osp.splitext(scene)[0])),
-            )
-        ),
-        "r",
-    ) as f:
-        render_state = json.load(f)
-        state = habitat_sim.AgentState()
-        state.position = render_state["pos"]
-        state.rotation = habitat_sim.utils.quat_from_coeffs(render_state["rot"])
+    obs, gt = _render_and_load_gt(sim, scene, "depth_sensor", gpu2gpu)
 
-    sim.initialize_agent(0, state)
-    obs = sim.step("move_forward")
-
-    assert "depth_sensor" in obs
-
-    gt = np.load(
-        osp.abspath(
-            osp.join(
-                osp.dirname(__file__),
-                "gt_data",
-                "{}-{}.npy".format(
-                    osp.basename(osp.splitext(scene)[0]), "depth_sensor"
-                ),
-            )
-        )
-    )
-
-    # Different GPUs and different driver version will produce slightly different images
     assert np.linalg.norm(
         obs["depth_sensor"].astype(np.float) - gt.astype(np.float)
     ) > 1.5e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
