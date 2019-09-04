@@ -7,6 +7,7 @@
 #include "Viewer.h"
 
 #include <Corrade/Utility/Arguments.h>
+#include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
@@ -415,6 +416,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::T:
       // Test key. Put what you want here...
       torqueLastObject();
+      break;
+    case KeyEvent::Key::I:
+      Magnum::DebugTools::screenshot(GL::defaultFramebuffer,
+                                     "test_image_save.png");
       break;
     default:
       break;

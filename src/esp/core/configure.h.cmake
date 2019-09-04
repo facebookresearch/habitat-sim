@@ -11,3 +11,7 @@
 #cmakedefine ESP_BUILD_PTEX_SUPPORT
 
 #cmakedefine ESP_BUILD_GLOG_SHIM
+
+#cmakedefine ESP_BUILD_WITH_CUDA
+
+#cmakedefine ESP_BUILD_WITH_BULLET

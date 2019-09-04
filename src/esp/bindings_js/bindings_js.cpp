@@ -23,8 +23,8 @@ using namespace esp::sim;
 em::val Observation_getData(Observation& obs) {
   auto buffer = obs.buffer;
   if (buffer != nullptr) {
-    return em::val(em::typed_memory_view(buffer->totalBytes,
-                                         static_cast<uint8_t*>(buffer->data)));
+    return em::val(
+        em::typed_memory_view(buffer->data.size(), buffer->data.data()));
   } else {
     return em::val::undefined();
   }
@@ -144,8 +144,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("defaultAgentId", &SimulatorConfiguration::defaultAgentId)
       .property("defaultCameraUuid", &SimulatorConfiguration::defaultCameraUuid)
       .property("gpuDeviceId", &SimulatorConfiguration::gpuDeviceId)
-      .property("width", &SimulatorConfiguration::width)
-      .property("height", &SimulatorConfiguration::height)
       .property("compressTextures", &SimulatorConfiguration::compressTextures);
 
   em::class_<AgentState>("AgentState")

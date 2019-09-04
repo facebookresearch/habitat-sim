@@ -2,17 +2,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-r"""
-This is a demonstration of how to create an agent with
-two cameras in a stereo pair.
-
-
-This can be done by giving the agent two sensors (be it RGB, depth, or semantic)
-with different positions.
-
-Note that the cameras must have different uuid's
-"""
-
 import random
 
 import numpy as np
@@ -89,7 +78,6 @@ def main(display=True):
 
     _render(sim, display)
     sim.close()
-    del sim
 
     # Now let's do the exact same thing but for a depth camera stereo pair!
     left_depth_sensor = habitat_sim.SensorSpec()
@@ -114,8 +102,6 @@ def main(display=True):
     sim = habitat_sim.Simulator(habitat_sim.Configuration(backend_cfg, [agent_config]))
 
     _render(sim, display, depth=True)
-    sim.close()
-    del sim
 
 
 if __name__ == "__main__":

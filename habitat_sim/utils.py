@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from io import BytesIO
-from typing import Tuple
+from typing import List, Tuple
 from urllib.request import urlopen
 from zipfile import ZipFile
 
@@ -17,12 +17,9 @@ import quaternion
 def quat_from_coeffs(coeffs: np.ndarray) -> np.quaternion:
     r"""Creates a quaternion from the coeffs returned by the simulator backend
 
-    Args:
-        coeffs (np.array): Coefficients of a quaternion in [b, c, d, a] format,
-            where q = a + bi + cj + dk
-
-    Returns:
-        np.quaternion: A quaternion from the coeffs
+    :param coeffs: Coefficients of a quaternion in :py:`[b, c, d, a]` format,
+        where :math:`q = a + bi + cj + dk`
+    :return: A quaternion from the coeffs
     """
     quat = np.quaternion(1, 0, 0, 0)
     quat.real = coeffs[3]
@@ -33,12 +30,9 @@ def quat_from_coeffs(coeffs: np.ndarray) -> np.quaternion:
 def quat_to_coeffs(quat: np.quaternion) -> np.ndarray:
     r"""Converts a quaternion into the coeffs format the backend expects
 
-    Args:
-        quat (np.quaternion): The quaternion
-
-    Returns:
-        np.array: Coefficients of a quaternion in [b, c, d, a] format,
-            where q = a + bi + cj + dk
+    :param quat: The quaternion
+    :return: Coefficients of a quaternion in :py:`[b, c, d, a]` format,
+        where :math:`q = a + bi + cj + dk`
     """
     coeffs = np.empty(4)
     coeffs[0:3] = quat.imag
@@ -60,12 +54,11 @@ def quat_from_magnum(quat: mn.Quaternion) -> np.quaternion:
 def quat_to_angle_axis(quat: np.quaternion) -> Tuple[float, np.ndarray]:
     r"""Converts a quaternion to angle axis format
 
-    Args:
-        quat (np.quaternion): The quaternion
-
-    Returns:
-        float: The angle to rotate about the axis by
-        np.array: The axis to rotate about.  If theta = 0, then this is harded coded to be the +x axis
+    :param quat: The quaternion
+    :return:
+        -   `float` --- The angle to rotate about the axis by
+        -   `numpy.ndarray` --- The axis to rotate about. If :math:`\theta = 0`,
+            then this is harded coded to be the +x axis
     """
 
     rot_vec = quaternion.as_rotation_vector(quat)
@@ -83,12 +76,9 @@ def quat_to_angle_axis(quat: np.quaternion) -> Tuple[float, np.ndarray]:
 def quat_from_angle_axis(theta: float, axis: np.ndarray) -> np.quaternion:
     r"""Creates a quaternion from angle axis format
 
-    Args:
-        theta (float): The angle to rotate about the axis by
-        axis (np.array): The axis to rotate about.
-
-    Returns:
-        np.quaternion: The quaternion
+    :param theta: The angle to rotate about the axis by
+    :param axis: The axis to rotate about
+    :return: The quaternion
     """
     axis = axis.astype(np.float)
     axis /= np.linalg.norm(axis)
@@ -96,16 +86,17 @@ def quat_from_angle_axis(theta: float, axis: np.ndarray) -> np.quaternion:
 
 
 def quat_from_two_vectors(v0: np.ndarray, v1: np.ndarray) -> np.quaternion:
-    r"""Creates a quaternion that rotates the frist vector onto the second vector
+    r"""Creates a quaternion that rotates the first vector onto the second vector
 
-    v1 = (q * np.quaternion(0, *v0) * q.inverse()).imag
+    :param v0: The starting vector, does not need to be a unit vector
+    :param v1: The end vector, does not need to be a unit vector
+    :return: The quaternion
 
-    Args:
-        v0 (np.array): The starting vector, does not need to be a unit vector
-        v1 (np.array): The end vector, does not need to be a unit vector
+    Calculates the quaternion q such that
 
-    Returns:
-        np.quaternion: The quaternion
+    .. code:: py
+
+        v1 = quat_rotate_vector(q, v0)
     """
 
     v0 = v0 / np.linalg.norm(v0)
@@ -129,12 +120,7 @@ def quat_from_two_vectors(v0: np.ndarray, v1: np.ndarray) -> np.quaternion:
 def angle_between_quats(q1: np.quaternion, q2: np.quaternion) -> float:
     r"""Computes the angular distance between two quaternions
 
-    Args:
-        q1 (np.quaternion)
-        q2 (np.quaternion)
-
-    Returns:
-        float: The angular distance between q1 and q2 in radians
+    :return: The angular distance between q1 and q2 in radians
     """
 
     q1_inv = np.conjugate(q1)
@@ -144,15 +130,17 @@ def angle_between_quats(q1: np.quaternion, q2: np.quaternion) -> float:
 
 
 def quat_rotate_vector(q: np.quaternion, v: np.ndarray) -> np.ndarray:
-    r"""Helper function to rotate a vector by a quaternion, simply does
-    v = (q * np.quaternion(0, *v) * q.inverse()).imag
+    r"""Helper function to rotate a vector by a quaternion
 
-    Args:
-        q (np.quaternion): The quaternion to rotate the vector with
-        v (np.array): The vector to rotate
+    :param q: The quaternion to rotate the vector with
+    :param v: The vector to rotate
+    :return: The rotated vector
 
-    Returns:
-        np.array: The rotated vector
+    Does
+
+    .. code:: py
+
+        v = (q * np.quaternion(0, *v) * q.inverse()).imag
     """
 
     vq = np.quaternion(0, 0, 0, 0)
@@ -176,7 +164,7 @@ def colorize_ids(ids):
     return out
 
 
-d3_40_colors_rgb = np.array(
+d3_40_colors_rgb: np.ndarray = np.array(
     [
         [31, 119, 180],
         [174, 199, 232],
@@ -223,7 +211,8 @@ d3_40_colors_rgb = np.array(
 )
 
 
-d3_40_colors_hex = [
+# [d3_40_colors_hex]
+d3_40_colors_hex: List[str] = [
     "0x1f77b4",
     "0xaec7e8",
     "0xff7f0e",
@@ -265,3 +254,4 @@ d3_40_colors_hex = [
     "0xce6dbd",
     "0xde9ed6",
 ]
+# [/d3_40_colors_hex]

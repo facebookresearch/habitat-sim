@@ -13,7 +13,11 @@ class WindowlessContext {
  public:
   explicit WindowlessContext(int gpuDevice = 0);
 
+  ~WindowlessContext() { LOG(INFO) << "Deconstructing WindowlessContext"; }
+
   void makeCurrent();
+
+  int gpuDevice() const;
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(WindowlessContext)
 };

@@ -37,6 +37,8 @@ void SceneGraph::setDefaultRenderCamera(sensor::Sensor& sensor) {
 
   // set the projection matrix to the default camera
   sensor.setProjectionMatrix(defaultRenderCamera_);
+
+  defaultRenderCamera_.getMagnumCamera().setViewport(sensor.framebufferSize());
 }
 
 }  // namespace scene

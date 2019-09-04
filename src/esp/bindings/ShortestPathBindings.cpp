@@ -52,32 +52,23 @@ void initShortestPathBindings(py::module& m) {
       .def("find_path",
            py::overload_cast<MultiGoalShortestPath&>(&PathFinder::findPath),
            "path"_a)
-      .def("try_step", &PathFinder::tryStep<Magnum::Vector3>, R"()", "start"_a,
+      .def("try_step", &PathFinder::tryStep<Magnum::Vector3>, "start"_a,
            "end"_a)
-      .def("try_step", &PathFinder::tryStep<vec3f>, R"()", "start"_a, "end"_a)
-      .def("island_radius", &PathFinder::islandRadius, R"()", "pt"_a)
+      .def("try_step", &PathFinder::tryStep<vec3f>, "start"_a, "end"_a)
+      .def("island_radius", &PathFinder::islandRadius, "pt"_a)
       .def_property_readonly("is_loaded", &PathFinder::isLoaded)
       .def("load_nav_mesh", &PathFinder::loadNavMesh)
       .def("distance_to_closest_obstacle",
            &PathFinder::distanceToClosestObstacle,
-           R"(Returns the distance to the closest obstacle.
-           If this distance is greater than :py:attr:`max_search_radius`,
-           :py:attr:`max_search_radius` is returned instead.)",
+           R"(Returns the distance to the closest obstacle.)", "pt"_a,
+           "max_search_radius"_a = 2.0)
+      .def("closest_obstacle_surface_point",
+           &PathFinder::closestObstacleSurfacePoint,
+           R"(Returns the hit_pos, hit_normal and hit_dist of the surface point
+          on the closest obstacle.)",
            "pt"_a, "max_search_radius"_a = 2.0)
-      .def(
-          "closest_obstacle_surface_point",
-          &PathFinder::closestObstacleSurfacePoint,
-          R"(Returns the hit_pos, hit_normal, and hit_dist of the surface point on the closest obstacle.
-           If the returned hit_dist is equal to :py:attr:`max_search_radius`,
-           no obstacle was found.)",
-          "pt"_a, "max_search_radius"_a = 2.0)
       .def("is_navigable", &PathFinder::isNavigable,
-           R"(Checks to see if the agent can stand at the specified point.
-          To check navigability, the point is snapped to the nearest polygon and
-          then the snapped point is compared to the original point.
-          Any amount of x-z translation indicates that the given point is not navigable.
-          The amount of y-translation allowed is specified by max_y_delta to account
-          for slight differences in floor height)",
+           R"(Checks to see if the agent can stand at the specified point.)",
            "pt"_a, "max_y_delta"_a = 0.5);
 
   // this enum is used by GreedyGeodesicFollowerImpl so it needs to be defined

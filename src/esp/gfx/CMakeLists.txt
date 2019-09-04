@@ -18,6 +18,8 @@ set(gfx_SOURCES
   Simulator.h
   WindowlessContext.cpp
   WindowlessContext.h
+  RenderTarget.cpp
+  RenderTarget.h
 )
 
 # If GUI build, add Viewer source
@@ -52,6 +54,8 @@ find_package(Magnum
     SceneGraph
     Shaders
     Trade
+    DebugTools
+    AnyImageConverter
 )
 
 find_package(MagnumPlugins
@@ -76,6 +80,21 @@ target_include_directories(gfx
     "${DEPS_DIR}/glad/include"
 )
 
+if(BUILD_WITH_CUDA)
+  find_package(CUDA 8.0 REQUIRED)
+  target_include_directories(gfx
+    PRIVATE
+      ${CUDA_INCLUDE_DIRS}
+      ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers
+  )
+
+  target_link_libraries(gfx
+    PUBLIC
+      ${CUDA_LIBRARIES}
+  )
+endif()
+
+
 target_link_libraries(gfx
   PUBLIC
     assets
@@ -95,6 +114,8 @@ target_link_libraries(gfx
     MagnumPlugins::TinyGltfImporter
     MagnumIntegration::Eigen
     Corrade::Utility
+    Magnum::DebugTools
+    Magnum::AnyImageConverter
 )
 
 # Link windowed application library if needed

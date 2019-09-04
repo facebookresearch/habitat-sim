@@ -73,6 +73,7 @@ def make_cfg(settings):
             sensor_spec.sensor_type = sensor_params["sensor_type"]
             sensor_spec.resolution = sensor_params["resolution"]
             sensor_spec.position = sensor_params["position"]
+            sensor_spec.gpu2gpu_transfer = False
             if not settings["silent"]:
                 print("==== Initialized Sensor Spec: =====")
                 print("Sensor uuid: ", sensor_spec.uuid)

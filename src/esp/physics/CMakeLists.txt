@@ -13,12 +13,11 @@ add_library(physics STATIC
 )
 
 if(WITH_BULLET)
-  target_compile_definitions(physics PUBLIC PHYSICS_WITH_BULLET)
   add_subdirectory(bullet)
 
   target_link_libraries(physics
-  PUBLIC
-  bulletphysics
+    PUBLIC
+      bulletphysics
   )
 endif()
 

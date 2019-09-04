@@ -28,13 +28,13 @@ def _camel_to_snake(name):
 class ActuationSpec(object):
     r"""Struct to hold parameters for the default actions
 
+    :property amount: The amount the control moves the scene node by
+
     The default actions only have one parameters, the amount
     they move the scene node by, however other actions may have any number of
     parameters and can define different structs to hold those parameters
-
-    Args:
-        amount (float): The amount the control moves the scene node by
     """
+
     amount: float
 
 
@@ -42,25 +42,28 @@ class ActuationSpec(object):
 class SceneNodeControl(abc.ABC):
     r"""Base class for all controls
 
+    :property body_action: Whether or not the control function manipulates the
+        agents body or the sensors
+
     Control classes are used to implement agent actions.  Any new control
     must subclass this class.
 
-    See default_controls.py for an example of adding new actions
-    (note that this can be done _outside_ the core habitat_sim codebase in exactly the same way)
+    See ``default_controls.py`` for an example of adding new actions. (Note
+    that this can be done *outside* the core `habitat_sim` codebase in exactly
+    the same way.)
 
-    See examples/new_actions.py for an example of how to add new actions _outside_
-    the core habitat_sim package
+    See ``examples/new_actions.py`` for an example of how to add new actions
+    *outside* the core habitat_sim package.
     """
 
     body_action: bool = False
 
     @abc.abstractmethod
-    def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
+    def __call__(self, scene_node: hsim.SceneNode, acutation_spec: ActuationSpec):
         r"""Abstract method to be overridden to implement the control
 
-        Args:
-            scene_node (hsim.SceneNode): The scene node to control
-            actuation_spec (ActuationSpec): Struct holding any parameters of the control
+        :param scene_node: The scene node to control
+        :param acutation_spec: Struct holding any parameters of the control
         """
         pass
 
@@ -76,21 +79,23 @@ def register_move_fn(
 ):
     r"""Registers a new control with Habitat-Sim
 
-    See default_controls.py for an example of adding new actions
-    (note that this can be done _outside_ the core habitat_sim codebase in exactly the same way)
+    :param controller: The class of the controller to register. If :py:`None`,
+        will return a wrapper for use with decorator syntax
+    :param name: The name to register the control with. If :py:`None`, will
+        register with the name of the controller converted to snake case,
+        i.e. a controller with class name ``MoveForward`` will be registered as
+        ``move_forward``.
+    :param body_action: Whether or not this action manipulates the agent's body
+        (thereby also moving the sensors) or manipulates just the sensors.
+        This is a non-optional keyword arguement and must be set (this is done
+        for readability).
 
-    See examples/new_actions.py for an example of how to add new actions _outside_
-    the core habitat_sim package
+    See ``default_controls.py`` for an example of adding new actions. (Note
+    that this can be done *outside* the core habitat_sim codebase in exactly
+    the same way.)
 
-    Args:
-        controller (Optional[Type[SceneNodeControl]]): The class of the controller to register
-            If none, will return a wrapper for use with decorator syntax
-        name (Optional[str]): The name to register the control with
-            If none, will register with the name of the controller converted to snake case
-            i.e. a controller with class name MoveForward will be registered as move_forward
-        body_action (bool): Whether or not this action manipulates the agent's body
-            (thereby also moving the sensors) or manipulates just the sensors.
-            This is a non-optional keyword arguement and must be set (this is done for readability)
+    See ``examples/new_actions.py`` for an example of how to add new actions
+    *outside* the core habitat_sim package.
     """
 
     assert (
@@ -122,19 +127,17 @@ def _noop_filter(start: np.array, end: np.array):
 class ObjectControls(object):
     r"""Used to implement actions
 
-    Args:
-        move_filter_fn: A function that is applied after actions to handle collisions
-            This should generally be `try_step` or the default
+    :property move_filter_fn: A function that is applied after actions to
+        handle collisions
     """
 
-    move_filter_fn = attr.ib(default=_noop_filter)
+    move_filter_fn: float = attr.ib(default=_noop_filter)
 
     @staticmethod
     def is_body_action(action_name: str):
-        r"""Checks to see if :py:attr:`action_name` is a body action
+        r"""Checks to see if :p:`action_name` is a body action
 
-        Args:
-            action_name (str): Name of the action.
+        :param action_name: Name of the action
         """
         assert (
             action_name in move_func_map
@@ -149,17 +152,16 @@ class ObjectControls(object):
         actuation_spec: ActuationSpec,
         apply_filter: bool = True,
     ) -> bool:
-        r"""Performs the action specified by :py:attr:`action_name` on the object
+        r"""Performs the action specified by :p:`action_name` on the object
 
-        Args:
-            obj (hsim.SceneNode): SceneNode to perform the action on
-            action_name (str): Name of the action.  Used to index the move_func_map
-                to retrieve the function which implements this action
-            actuation_spec (ActuationSpec): Specifies the parameters needed by the function
-            apply_filter (bool): Whether or not to apply the move_filter_fn after the action
-
-        Returns:
-            bool: Whether or not the action taken resulted in a collision
+        :param obj: `scene.SceneNode` to perform the action on
+        :param action_name: Name of the action. Used to index the
+            `move_func_map` to retrieve the function which implements
+            this action
+        :param actuation_spec: Specifies the parameters needed by the function
+        :param apply_filter: Whether or not to apply the `move_filter_fn`
+            after the action
+        :return: Whether or not the action taken resulted in a collision
         """
         assert (
             action_name in move_func_map

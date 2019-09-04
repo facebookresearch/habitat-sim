@@ -158,20 +158,18 @@ pyrobot_noise_models = {
 class PyRobotNoisyActuationSpec(ActuationSpec):
     r"""Struct to hold parameters for pyrobot noise model
 
-    https://pyrobot.org/
-    https://github.com/facebookresearch/pyrobot
+    :property robot: Which robot to simulate noise for. Valid values are
+        ``LoCoBot`` and ``LoCoBot-Lite``.
+    :property controller: Which controller to simulate noise models for. Valid
+        values are ``ILQR``, ``Proportional``; ``Movebase ILQR`` is the
+        default.
+    :property noise_multiplier: Multiplier on the noise amount, useful for
+        ablating the effect of noise.
 
-    Please cite PyRobot if you use this noise model
+    -   https://pyrobot.org/
+    -   https://github.com/facebookresearch/pyrobot
 
-    Args:
-        amount (float): The amount the control moves the scene node by
-        robot (str): Which robot to simulate noise for.  Valid values
-            are LoCoBot and LoCoBot-Lite
-        controller (str): Which controller to simulate noise models for,
-            Valid values are ILQR, Proportional, Movebase
-            ILQR is the default
-        noise_multiplier (float): Multiplier on the noise amount,
-            useful for ablating the effect of noise
+    Please cite PyRobot if you use this noise model.
     """
     robot: str = attr.ib(default="LoCoBot")
 

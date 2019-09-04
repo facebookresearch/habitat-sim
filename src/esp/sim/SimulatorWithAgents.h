@@ -35,6 +35,7 @@ class SimulatorWithAgents : public gfx::Simulator {
   int getAgentObservations(
       int agentId,
       std::map<std::string, sensor::Observation>& observations);
+
   bool getAgentObservationSpace(int agentId,
                                 const std::string& sensorId,
                                 sensor::ObservationSpace& space);

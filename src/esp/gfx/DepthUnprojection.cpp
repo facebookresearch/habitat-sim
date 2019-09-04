@@ -71,6 +71,13 @@ DepthShader::DepthShader(Flags flags) : flags_{flags} {
   }
 }
 
+DepthShader& DepthShader::setDepthUnprojection(
+    const Mn::Vector2& depthUnprojection) {
+  CORRADE_INTERNAL_ASSERT(flags_ & Flag::UnprojectExistingDepth);
+  setUniform(projectionMatrixOrDepthUnprojectionUniform_, depthUnprojection);
+  return *this;
+}
+
 DepthShader& DepthShader::setTransformationMatrix(const Mn::Matrix4& matrix) {
   CORRADE_INTERNAL_ASSERT(!(flags_ & Flag::UnprojectExistingDepth));
   setUniform(transformationMatrixUniform_, matrix);
