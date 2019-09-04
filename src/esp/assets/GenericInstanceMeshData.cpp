@@ -245,7 +245,8 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
       .addVertexBuffer(
           renderingBuffer_->cbo, 0,
           gfx::PrimitiveIDTexturedShader::Color3{
-              gfx::PrimitiveIDTexturedShader::Color3::DataType::UnsignedByte})
+              gfx::PrimitiveIDTexturedShader::Color3::DataType::UnsignedByte,
+              gfx::PrimitiveIDTexturedShader::Color3::DataOption::Normalized})
       .setIndexBuffer(renderingBuffer_->ibo, 0,
                       Magnum::GL::MeshIndexType::UnsignedInt);
 
