@@ -24,10 +24,10 @@ PTexMeshDrawable::PTexMeshDrawable(
 
 void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                             Magnum::SceneGraph::Camera3D& camera) {
-  adjTex_.bind(1);
   PTexMeshShader& ptexMeshShader = static_cast<PTexMeshShader&>(shader_);
-  ptexMeshShader.bindTexture(tex_, 0)
-      .setPTexUniforms(tex_, tileSize_, exposure_)
+  ptexMeshShader.setPTexUniforms(tex_, tileSize_, exposure_)
+      .bindAtlasTexture(tex_)
+      .bindAdjFacesBufferTexture(adjTex_)
       .setMVPMatrix(camera.projectionMatrix() * transformationMatrix);
   mesh_.draw(ptexMeshShader);
 }

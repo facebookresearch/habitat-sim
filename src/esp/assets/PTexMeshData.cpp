@@ -603,7 +603,11 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     currentMesh->abo.setData(adjFaces[iMesh],
                              Magnum::GL::BufferUsage::StaticDraw);
     currentMesh->mesh.setPrimitive(Magnum::GL::MeshPrimitive::LinesAdjacency)
-        .setCount(currentMesh->ibo.size() / 2)
+        // Warning:
+        // CANNOT use currentMesh.ibo.size() when calling
+        // setCount because that returns the number of bytes of the buffer, NOT
+        // the index counts
+        .setCount(submeshes_[iMesh].ibo.size())
         .addVertexBuffer(currentMesh->vbo, 0, gfx::PTexMeshShader::Position{})
         .setIndexBuffer(currentMesh->ibo, 0,
                         Magnum::GL::MeshIndexType::UnsignedInt);
