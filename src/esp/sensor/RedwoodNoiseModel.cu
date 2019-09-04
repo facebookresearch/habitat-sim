@@ -100,8 +100,7 @@ namespace sensor {
 namespace impl {
 
 struct CurandStates {
-  curandState_t* devStates = 0;
-  int n_blocks_ = 0;
+  CurandStates() : devStates{0}, n_blocks_{0} {};
   void alloc(const int n_blocks) {
     if (n_blocks > n_blocks_) {
       release();
@@ -120,6 +119,11 @@ struct CurandStates {
   }
 
   ~CurandStates() { release(); }
+
+  curandState_t* devStates;
+
+ private:
+  int n_blocks_;
 };
 
 CurandStates* getCurandStates() {
