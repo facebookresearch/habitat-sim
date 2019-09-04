@@ -153,6 +153,7 @@ def test_smoke_redwood_noise(scene, gpu2gpu, sim, make_cfg_settings):
     make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["depth_sensor"] = True
     make_cfg_settings["color_sensor"] = False
+    make_cfg_settings["semantic_sensor"] = False
     make_cfg_settings["scene"] = scene
     hsim_cfg = make_cfg(make_cfg_settings)
     hsim_cfg.agents[0].sensor_specifications[0].noise_model = "RedwoodDepthNoiseModel"

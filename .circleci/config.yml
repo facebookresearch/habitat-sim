@@ -208,7 +208,6 @@ jobs:
           name: Run sim tests
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-              export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
               . activate habitat; cd habitat-sim
 
               export PYTHONPATH=$PYTHONPATH:$(pwd)
@@ -229,7 +228,6 @@ jobs:
           name: Install api
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
-              export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
               . activate habitat;
               if [ ! -d ./habitat-api ]
               then
@@ -248,7 +246,6 @@ jobs:
           name: Run api tests
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
-              export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
               . activate habitat; cd habitat-api
               python setup.py develop --all
               python setup.py test
