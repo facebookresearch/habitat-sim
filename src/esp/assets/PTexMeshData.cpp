@@ -602,7 +602,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
                                   currentMesh->abo);
     currentMesh->abo.setData(adjFaces[iMesh],
                              Magnum::GL::BufferUsage::StaticDraw);
-    currentMesh->mesh.setPrimitive(Magnum::GL::MeshPrimitive::LinesAdjacency)
+    currentMesh->mesh
+        .setPrimitive(Magnum::GL::MeshPrimitive::LinesAdjacency)
         // Warning:
         // CANNOT use currentMesh.ibo.size() when calling
         // setCount because that returns the number of bytes of the buffer, NOT
