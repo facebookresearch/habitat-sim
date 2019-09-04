@@ -1,5 +1,5 @@
-r"""
-A simple Google-style logging wrapper.
+r"""A simple Google-style logging wrapper.
+
 Taken from https://github.com/benley/python-glog and adapted
 """
 
@@ -159,7 +159,7 @@ def check(condition, message=None):
 
 
 def check_eq(obj1, obj2, message=None):
-    """Raise exception with message if obj1 != obj2."""
+    """Raise exception with message if :py:`obj1 != obj2`."""
     if obj1 != obj2:
         if message is None:
             message = "Check failed: %s != %s" % (str(obj1), str(obj2))
@@ -167,7 +167,7 @@ def check_eq(obj1, obj2, message=None):
 
 
 def check_ne(obj1, obj2, message=None):
-    """Raise exception with message if obj1 == obj2."""
+    """Raise exception with message if :py:`obj1 == obj2`."""
     if obj1 == obj2:
         if message is None:
             message = "Check failed: %s == %s" % (str(obj1), str(obj2))
@@ -175,7 +175,7 @@ def check_ne(obj1, obj2, message=None):
 
 
 def check_le(obj1, obj2, message=None):
-    """Raise exception with message if not (obj1 <= obj2)."""
+    """Raise exception with message if :py:`not obj1 <= obj2`."""
     if obj1 > obj2:
         if message is None:
             message = "Check failed: %s > %s" % (str(obj1), str(obj2))
@@ -183,7 +183,7 @@ def check_le(obj1, obj2, message=None):
 
 
 def check_ge(obj1, obj2, message=None):
-    """Raise exception with message unless (obj1 >= obj2)."""
+    """Raise exception with message unless :py`obj1 >= obj2`."""
     if obj1 < obj2:
         if message is None:
             message = "Check failed: %s < %s" % (str(obj1), str(obj2))
@@ -191,7 +191,7 @@ def check_ge(obj1, obj2, message=None):
 
 
 def check_lt(obj1, obj2, message=None):
-    """Raise exception with message unless (obj1 < obj2)."""
+    """Raise exception with message unless :py:`obj1 < obj2`."""
     if obj1 >= obj2:
         if message is None:
             message = "Check failed: %s >= %s" % (str(obj1), str(obj2))
@@ -199,7 +199,7 @@ def check_lt(obj1, obj2, message=None):
 
 
 def check_gt(obj1, obj2, message=None):
-    """Raise exception with message unless (obj1 > obj2)."""
+    """Raise exception with message unless :py:`obj1 > obj2`."""
     if obj1 <= obj2:
         if message is None:
             message = "Check failed: %s <= %s" % (str(obj1), str(obj2))
@@ -207,7 +207,7 @@ def check_gt(obj1, obj2, message=None):
 
 
 def check_notnone(obj, message=None):
-    """Raise exception with message if obj is None."""
+    """Raise exception with message if :py`obj is None`."""
     if obj is None:
         if message is None:
             message = "Check failed: Object is None."

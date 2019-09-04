@@ -7,5 +7,9 @@ indent_size = 2
 trim_trailing_whitespace = true
 insert_final_newline = true
 
+# isort can't parse [*.{py,rst}], so specifying it separately
+# https://github.com/timothycrosley/isort/issues/830
 [*.py]
+indent_size = 4
+[*.rst]
 indent_size = 4

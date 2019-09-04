@@ -1,0 +1,145 @@
+..
+    Stuff defined here gets set globally for everything else:
+
+    -   use `thing` as a shortcut for :ref:`thing`
+    -   use :py:`code` for inline code with highlighted Python syntax
+..
+
+.. default-role:: ref
+
+.. role:: py(code)
+    :language: py
+
+.. attrs __init__ function docs go here
+
+.. TODO: what is _try_step?!
+.. py:function:: habitat_sim.agent.ObjectControls.__init__
+    :summary: Constructor
+    :param move_filter_fn: A function that is applied after actions to handle
+        collisions, This should generally be ``_try_step`` or the default
+
+.. docs for bindings go here -- doing all the formatting in a C++ raw string is
+    worse than a hangover
+
+.. py:class:: habitat_sim.scene.SemanticCategory
+    :summary: Base class for all semantic categories.
+
+    Different datasets and semantic types (i.e. object or region) will have
+    different information, so there are specific implementations, i.e.
+    `Mp3dObjectCategory` and `Mp3dRegionCategory`.
+
+.. py:property:: habitat_sim.scene.SemanticRegion.id
+
+    For some datasets, ``<region_id>`` portion of the full ID will be globally
+    unique, while in other datasets, it will only be unique for each level.
+
+.. py:property:: habitat_sim.scene.SemanticObject.id
+
+    For some datasets, ``<region_id>`` portion of the full ID will be globally
+    unique, while in other datasets, it will only be unique for each level.
+
+.. py:function:: habitat_sim.gfx.RenderTarget.read_frame_rgba
+    :summary: Reads RGBA frame into passed img in uint8 byte format
+
+    The argument is a `numpy.ndarray` to populate with frame bytes. Memory is
+    *not* allocated to this array. Assume that :py:`m = height` and
+    :py:`n = width * 4`.
+
+.. py:function:: habitat_sim.nav.PathFinder.distance_to_closest_obstacle
+    :summary: Returns the distance to the closest obstacle
+
+    If this distance is greater than :p:`max_search_radius`,
+    :p:`max_search_radius` is returned instead.
+
+.. py:function:: habitat_sim.nav.PathFinder.closest_obstacle_surface_point
+    :summary: Returns the `hit_pos <HitRecord.hit_pos>`,
+        `hit_normal <HitRecord.hit_normal>`, and
+        `hit_dist <HitRecord.hit_dist>` of the surface point on the closest
+        obstacle.
+
+    If the returned `hit_dist <HitRecord.hit_dist>` is equal to
+    :p:`max_search_radius`, no obstacle was found.
+
+.. py:function:: habitat_sim.nav.PathFinder.is_navigable
+    :summary: Checks to see if the agent can stand at the specified point
+
+    To check navigability, the point is snapped to the nearest polygon and then
+    the snapped point is compared to the original point. Any amount of x-z
+    translation indicates that the given point is not navigable. The amount of
+    y-translation allowed is specified by :p:`max_y_delta` to account for
+    slight differences in floor height.
+
+.. dump of whatever else was in the other PR
+
+.. py:module:: habitat_sim.agent
+
+    See also `AgentConfiguration`, `AgentState` and `SixDOFPose` for more
+    information.
+
+    Actions
+    =======
+
+    We currently have the following actions added by default. Any action not
+    registered with an explict name is given the snake case version of the
+    class name, i.e. ``MoveForward`` can be accessed with the name
+    ``move_forward``.
+
+    .. include:: ../habitat_sim/agent/controls/default_controls.py
+        :code: py
+        :start-line: 6
+
+    Action space path finding
+    =========================
+
+    See the `nav.GreedyGeodesicFollower` class.
+
+.. py:module:: habitat_sim.simulator
+
+    Core
+    ====
+
+    See `Simulator`, `Configuration` and `gfx.SimulatorConfiguration`.
+
+    Semantic Scene
+    ==============
+
+    The Semantic scene provides access to semantic information about the given
+    environement
+
+    .. note-warning::
+
+        Not avaliable for all datasets.
+
+.. py:module:: habitat_sim.utils
+
+    Quaternion Math
+    ===============
+
+    Quaternion helper functions:
+
+    -   `quat_from_coeffs()`
+    -   `quat_to_coeffs()`
+    -   `quat_from_angle_axis()`
+    -   `quat_to_angle_axis()`
+    -   `quat_from_two_vectors()`
+    -   `angle_between_quats()`
+    -   `quat_rotate_vector()`
+
+    Misc
+    ====
+
+    -   `colorize_ids()`
+
+.. py:data:: habitat_sim.utils.d3_40_colors_rgb
+    :summary: Color map for semantic ID rendering.
+
+.. py:data:: habitat_sim.utils.d3_40_colors_hex
+    :summary: Color map for semantic ID rendering.
+
+    Same as `d3_40_colors_rgb`, but in a hexadecimal representation.
+
+    .. include:: ../habitat_sim/utils.py
+        :code: py
+        :start-after: # [d3_40_colors_hex]
+        :end-before: # [/d3_40_colors_hex]
+        :filters: string_hex_colors

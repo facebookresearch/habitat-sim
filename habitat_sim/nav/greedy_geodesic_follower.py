@@ -12,13 +12,15 @@ from habitat_sim import errors, utils
 class GreedyGeodesicFollower(object):
     r"""Greedily fits actions to follow the geodesic shortest path
 
-    Args:
-        pathfinder (hsim.PathFinder): Instance of the pathfinder that has the correct navmesh already loaded
-        agent (habitat_sim.agent.Agent): Agent to fit actions for.  This agent's current configuration is used
-            to specify the actions.  The fitted actions will also correspond to keys in the agents action_space.
-            `None` is used to signify that the goal location has been reached
-        goal_radius (Optional[float]): Specifies how close the agent must get to the goal in order for it to be considered
-            reached.  If `None`, 0.75 times the agents step size is used.
+    :property pathfinder: Instance of the pathfinder that has the correct
+        navmesh already loaded
+    :property agent: Agent to fit actions for. This agent's current
+        configuration is used to specify the actions. The fitted actions will
+        also correspond to keys in the agents action_space. :py:`None` is used
+        to signify that the goal location has been reached
+    :property goal_radius: Specifies how close the agent must get to the goal
+        in order for it to be considered reached.  If :py:`None`, :py:`0.75`
+        times the agents step size is used.
     """
 
     pathfinder: hsim.PathFinder
@@ -92,14 +94,11 @@ class GreedyGeodesicFollower(object):
         self.agent.controls(obj, "turn_right", self.right_spec, True)
 
     def next_action_along(self, goal_pos: np.ndarray) -> Any:
-        r"""Find the next action to greedily follow the geodesic shortest path from the agent's current position
-        to get to the goal
+        r"""Find the next action to greedily follow the geodesic shortest path
+        from the agent's current position to get to the goal
 
-        Args:
-            goal_pos (np.array): The position of the goal
-
-        Returns:
-            Any: the action to take
+        :param goal_pos: The position of the goal
+        :return: The action to take
         """
         state = self.agent.state
         next_act = self.impl.next_action_along(
@@ -112,15 +111,14 @@ class GreedyGeodesicFollower(object):
             return self.action_mapping[next_act]
 
     def find_path(self, goal_pos: np.ndarray) -> List[Any]:
-        r"""Finds the sequence actions that greedily follow the geodesic shortest path
-        from the agent's current position to get to the goal.  This is roughly equivilent to just
-        calling `next_action_along` until it returns `None`, but is faster
+        r"""Finds the sequence actions that greedily follow the geodesic
+        shortest path from the agent's current position to get to the goal
 
-        Args:
-            goal_pos (np.array): The position of the goal
+        :param goal_pos: The position of the goal
+        :return: The list of actions to take. Ends with :py:`None`.
 
-        Returns:
-            List[Any]: The list of actions to take.  Ends with `None`
+        This is roughly equivilent to just calling `next_action_along()` until
+        it returns :py:`None`, but is faster.
         """
         state = self.agent.state
         path = self.impl.find_path(
