@@ -16,6 +16,7 @@
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/GL/BufferTextureFormat.h>
 #include <Magnum/GL/TextureFormat.h>
+#include <Magnum/GL/Renderer.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
 
@@ -795,8 +796,12 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
 
   // exit(-1);
 
+  //XXX
   int maxBufferTextureTexels = 0;
   glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxBufferTextureTexels);
+  //int maxUniformBlockSize = 0;
+  //glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBlockSize);
+  //LOG(INFO) << "Max uniform block size: " << maxUniformBlockSize;
 
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
     auto& currentMesh = renderingBuffers_[iMesh];
@@ -804,10 +809,75 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
            "Error: the number of adjacent faces is larger than the allowed "
            "number of texels");
 
-    currentMesh->adjFaces.setBuffer(Magnum::GL::BufferTextureFormat::R32UI,
+    glBindBuffer(GL_TEXTURE_BUFFER, currentMesh->adjFacesBuffer.id());
+    //glTexBuffer(GL_TEXTURE_BUFFER, GL_R32UI, currentMesh->adjFacesBuffer.id());
+    glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32UI, currentMesh->adjFacesBuffer.id());
+    //glTexBuffer(GL_TEXTURE_BUFFER, GL_R32F, currentMesh->adjFacesBuffer.id());
+    //currentMesh->adjFacesBufferTexture.setBuffer(Magnum::GL::BufferTextureFormat::R32F,
+    //currentMesh->adjFacesBufferTexture.setBuffer(Magnum::GL::BufferTextureFormat::R32UI,
+    currentMesh->adjFacesBufferTexture.setBuffer(Magnum::GL::BufferTextureFormat::RGBA32UI,
                                     currentMesh->adjFacesBuffer);
-    currentMesh->adjFacesBuffer.setData(adjFaces[iMesh],
-                                        Magnum::GL::BufferUsage::StaticDraw);
+
+    LOG(INFO) << "After setBuffer ^^^^^^^^^^^^^^";
+    switch (Magnum::GL::Renderer::error()) {
+    case Magnum::GL::Renderer::Error::NoError:
+      LOG(INFO) << "No error";
+      break;
+    case Magnum::GL::Renderer::Error::InvalidValue:
+      LOG(INFO) << "InvalidValue";
+      break;
+    case Magnum::GL::Renderer::Error::InvalidOperation:
+      LOG(INFO) << "InvalidOperation";
+      break;
+    default:
+      LOG(INFO) << "some other errors";
+      break;
+  }
+    /*
+    LOG(INFO) << "ID = " << currentMesh->adjFacesBuffer.id(); 
+    GLuint tempBuffer;
+    glGenBuffers(1, &tempBuffer);
+    glBindBuffer(GL_TEXTURE_BUFFER, tempBuffer);
+    uint32_t* tempPtr = new uint32_t[adjFaces[iMesh].size()];
+    for(int i=0; i< adjFaces[iMesh].size(); ++i) {
+      tempPtr[i] = adjFaces[iMesh][i];
+    }
+    */
+    // glBufferData(GL_TEXTURE_BUFFER, sizeof(uint32_t) * adjFaces[iMesh].size(), (void*)adjFaces[iMesh].data(), GL_STATIC_DRAW);
+    //glBufferData(GL_TEXTURE_BUFFER, sizeof(uint32_t) * adjFaces[iMesh].size(), (void*)tempPtr, GL_STATIC_DRAW);
+    //delete []tempPtr;
+
+    //glBindBuffer(GL_TEXTURE_BUFFER, currentMesh->adjFacesBuffer.id());
+    {
+      std::vector<uint32_t> adj;
+      int rgba = 4;
+      adj.resize(adjFaces[iMesh].size() * rgba);
+      for (int i = 0; i < adjFaces[iMesh].size() * rgba; ++i) {
+        if (i % 4 == 0) {
+          adj[i] = adjFaces[iMesh][i / 4];
+        } else {
+          adj[i] = 0;
+        }
+      }
+      //currentMesh->adjFacesBuffer.setData(adjFaces[iMesh],
+      currentMesh->adjFacesBuffer.setData(adj,
+          Magnum::GL::BufferUsage::StaticDraw);
+    }
+    LOG(INFO) << " After setData ++++++++++++++"; 
+    switch (Magnum::GL::Renderer::error()) {
+    case Magnum::GL::Renderer::Error::NoError:
+      LOG(INFO) << "No error";
+      break;
+    case Magnum::GL::Renderer::Error::InvalidValue:
+      LOG(INFO) << "InvalidValue";
+      break;
+    case Magnum::GL::Renderer::Error::InvalidOperation:
+      LOG(INFO) << "InvalidOperation";
+      break;
+    default:
+      LOG(INFO) << "some other errors";
+      break;
+  }
 
     // using GL_LINES_ADJACENCY here to send quads to geometry shader
     GLintptr offset = 0;

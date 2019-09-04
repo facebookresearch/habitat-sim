@@ -23,6 +23,20 @@ ivec2 RotateUVs(ivec2 p, int rot, int size) {
       return ivec2((size - 1) - p.y, p.x);
   }
 }
+/*
+ivec2 RotateUVs(ivec2 p, int rot, int size) {
+  switch (rot) {
+    case 0:
+      return p;
+    case 1:
+      return ivec2((size - 1) - p.y, p.x);
+    case 2:
+      return ivec2((size - 1) - p.x, (size - 1) - p.y);
+    case 3:
+      return ivec2(p.y, (size - 1) - p.x);
+  }
+}
+*/
 
 const uint ROTATION_SHIFT = 30;
 const uint FACE_MASK = 0x3FFFFFFF;
@@ -132,7 +146,7 @@ vec4 texelFetchAtlasAdj(sampler2D tex, int faceID, ivec2 p, int level) {
   int tsize = tileSize >> level;
 
   // fetch from adjacent face if necessary
-  faceID = indexAdjacentFaces(faceID, p, tsize);
+  // faceID = indexAdjacentFaces(faceID, p, tsize);
 
   // clamp to tile edge
   p = clamp(p, ivec2(0, 0), ivec2(tsize - 1, tsize - 1));

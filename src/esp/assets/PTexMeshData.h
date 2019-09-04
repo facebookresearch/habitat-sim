@@ -34,7 +34,9 @@ class PTexMeshData : public BaseMesh {
     Magnum::GL::Buffer vertexBuffer;
     Magnum::GL::Buffer indexBuffer;
     Magnum::GL::Buffer adjFacesBuffer;
-    Magnum::GL::BufferTexture adjFaces;
+    Magnum::GL::BufferTexture adjFacesBufferTexture;
+    RenderingBuffer():adjFacesBuffer{Magnum::GL::Buffer::TargetHint::Texture} {
+    }
   };
 
   PTexMeshData() : BaseMesh(SupportedMeshType::PTEX_MESH) {}
