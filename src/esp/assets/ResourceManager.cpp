@@ -41,7 +41,7 @@
 #include "ResourceManager.h"
 #include "esp/physics/PhysicsManager.h"
 
-#ifdef PHYSICS_WITH_BULLET
+#ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/BulletPhysicsManager.h"
 #endif
 
@@ -131,7 +131,7 @@ bool ResourceManager::loadScene(
   //! PHYSICS INIT: Use the above config to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (physicsManagerAttributes.getString("simulator").compare("bullet") == 0) {
-#ifdef PHYSICS_WITH_BULLET
+#ifdef ESP_BUILD_WITH_BULLET
     _physicsManager.reset(new physics::BulletPhysicsManager(this));
     defaultToNoneSimulator = false;
 #else

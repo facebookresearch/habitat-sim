@@ -18,6 +18,10 @@ if(BUILD_WITH_CUDA)
   set(ESP_BUILD_WITH_CUDA ON)
 endif()
 
+if(WITH_BULLET)
+  set(ESP_BUILD_WITH_BULLET ON)
+endif()
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
                ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 

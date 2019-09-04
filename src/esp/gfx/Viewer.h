@@ -61,8 +61,11 @@ class Viewer : public Magnum::Platform::Application {
                                    const Magnum::Vector2i& position);
 
   assets::ResourceManager resourceManager_;
-  std::shared_ptr<physics::PhysicsManager> physicsManager_;
+  // SceneManager must be before physicsManager_ as the physicsManager_
+  // assumes that it "owns" things owned by the scene manager
   scene::SceneManager sceneManager_;
+
+  std::shared_ptr<physics::PhysicsManager> physicsManager_;
   std::vector<int> sceneID_;
   scene::SceneNode* agentBodyNode_ = nullptr;
   scene::SceneNode* cameraNode_ = nullptr;
