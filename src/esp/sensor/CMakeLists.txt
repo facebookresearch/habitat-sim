@@ -24,22 +24,24 @@ target_link_libraries(sensor
 )
 
 if(BUILD_WITH_CUDA)
-  add_library(redwood_kernels STATIC
+  add_library(noise_model_kernels STATIC
     RedwoodNoiseModel.cu
     RedwoodNoiseModel.cuh
   )
-  target_link_libraries(redwood_kernels
+  target_link_libraries(noise_model_kernels
     PUBLIC
       ${CUDART_LIBRARY}
   )
-  target_include_directories(redwood_kernels
+  target_include_directories(noise_model_kernels
     PRIVATE
       ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
   )
+  target_compile_features(noise_model_kernels PUBLIC cxx_std_11)
+
 
   target_link_libraries(sensor
     PUBLIC
-      redwood_kernels
+      noise_model_kernels
   )
   target_include_directories(sensor
     PRIVATE

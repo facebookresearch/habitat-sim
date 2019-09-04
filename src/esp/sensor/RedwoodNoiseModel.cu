@@ -100,7 +100,7 @@ namespace sensor {
 namespace impl {
 
 struct CurandStates {
-  curandState_t* devStates = nullptr;
+  curandState_t* devStates = 0;
   int n_blocks_ = 0;
   void alloc(const int n_blocks) {
     if (n_blocks > n_blocks_) {
@@ -113,9 +113,9 @@ struct CurandStates {
   }
 
   void release() {
-    if (devStates != nullptr) {
+    if (devStates != 0) {
       cudaFree(devStates);
-      devStates = nullptr;
+      devStates = 0;
     }
   }
 
@@ -126,7 +126,7 @@ CurandStates* getCurandStates() {
   return new CurandStates();
 }
 void freeCurandStates(CurandStates* curandStates) {
-  if (curandStates != nullptr)
+  if (curandStates != 0)
     delete curandStates;
 }
 

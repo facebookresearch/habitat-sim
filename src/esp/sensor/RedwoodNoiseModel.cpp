@@ -32,7 +32,7 @@ RedwoodNoiseModelGPUImpl::RedwoodNoiseModelGPUImpl(
     const Eigen::Ref<const Eigen::RowMatrixXf> model,
     int gpuDeviceId,
     float noiseMultiplier)
-    : gpuDeviceId_{gpuDeviceId} : noiseMultiplier_{noiseMultiplier} {
+    : gpuDeviceId_{gpuDeviceId}, noiseMultiplier_{noiseMultiplier} {
   CudaDeviceContext ctx{gpuDeviceId_};
 
   cudaMalloc(&devModel_, model.rows() * model.cols() * sizeof(float));

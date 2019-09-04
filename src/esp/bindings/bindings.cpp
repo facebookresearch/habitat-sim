@@ -444,7 +444,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(
       m, "RedwoodNoiseModelGPUImpl")
       .def(py::init(&RedwoodNoiseModelGPUImpl::create_unique<
-                    const Eigen::Ref<const Eigen::RowMatrixXf>&, int>))
+                    const Eigen::Ref<const Eigen::RowMatrixXf>&, int, float>))
       .def("simulate_from_cpu", &RedwoodNoiseModelGPUImpl::simulateFromCPU)
       .def("simulate_from_gpu", [](RedwoodNoiseModelGPUImpl& self,
                                    std::size_t devDepth, const int rows,
