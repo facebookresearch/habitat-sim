@@ -78,19 +78,18 @@ __global__ void redwoodNoiseModelKernel(const float* __restrict__ depth,
   }
 }
 
+__global__ void curandStatesSetupKernel(curandState_t* state, int seed, int n) {
+  int id = threadIdx.x + blockIdx.x * 64;
+  if (id < n) {
+    curand_init(seed, id + 1, 0, &state[id]);
+  }
+}
+
 }  // namespace
 
 namespace esp {
 namespace sensor {
-
 namespace impl {
-
-__global__ void curandStatesSetupKernel(curandState_t* state, int seed, int n) {
-  int id = threadIdx.x + blockIdx.x * 64;
-  if (id < n) {
-    curand_init(seed + id, 1, 0, &state[id]);
-  }
-}
 
 struct CurandStates {
   curandState_t* devStates = nullptr;
@@ -129,7 +128,7 @@ void simulateFromGPU(const float* __restrict__ devDepth,
                      const float* __restrict__ devModel,
                      CurandStates* curandStates,
                      float* __restrict__ devNoisyDepth) {
-  const int n_threads = std::min(std::max(W / 4, 1), 64);
+  const int n_threads = std::min(std::max(W / 4, 1), 256);
   const int n_blocks = std::max(H / 8, 1);
 
   curandStates->alloc(n_blocks);
