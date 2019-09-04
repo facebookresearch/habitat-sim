@@ -1,15 +1,18 @@
 import timeit
 
 import numpy as np
+import torch
 
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
 
-gt_depth = np.random.uniform(0, 10, size=(256, 256))
+gt_depth = (
+    torch.rand(256, 256, device=torch.device("cuda", 1), dtype=torch.float32) * 10
+)
 depth_noise_model = make_sensor_noise_model(
     "RedwoodDepthNoiseModel", dict(gpu_device_id=1)
 )
 
-print(np.abs(gt_depth - depth_noise_model(gt_depth)).mean())
+print(torch.abs(gt_depth - depth_noise_model(gt_depth)).mean())
 
 
 print(

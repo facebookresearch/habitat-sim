@@ -8,13 +8,12 @@
 namespace esp {
 namespace sensor {
 
-#ifdef ESP_BUILD_WITH_CUDA
-
 struct RedwoodNoiseModelGPUImpl {
-  RedwoodNoiseModelGPUImpl(const Eigen::Ref<const RowMatrixXf> model,
+  RedwoodNoiseModelGPUImpl(const Eigen::Ref<const Eigen::RowMatrixXf> model,
                            int gpuDeviceId);
 
-  RowMatrixXf simulateFromCPU(const Eigen::Ref<const RowMatrixXf> depth);
+  Eigen::RowMatrixXf simulateFromCPU(
+      const Eigen::Ref<const Eigen::RowMatrixXf> depth);
   void simulateFromGPU(const float* devDepth,
                        const int rows,
                        const int cols,
@@ -29,7 +28,6 @@ struct RedwoodNoiseModelGPUImpl {
 
   ESP_SMART_POINTERS(RedwoodNoiseModelGPUImpl)
 };
-#endif
 
 }  // namespace sensor
 }  // namespace esp

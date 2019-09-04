@@ -1,9 +1,9 @@
 import os.path as osp
 
 import attr
-import numba
 import numpy as np
 
+import numba
 from habitat_sim.bindings import SensorType, cuda_enabled
 from habitat_sim.sensors.noise_models.registration import (
     SensorNoiseModel,
@@ -100,9 +100,9 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
     def simulate(self, gt_depth):
         if cuda_enabled:
             if torch.is_tensor(gt_depth):
-                noisy_depth = gt_depth.clone()
+                noisy_depth = torch.empty_like(gt_depth)
                 rows, cols = gt_depth.size()
-                self._impl.simulate_from_cpu(
+                self._impl.simulate_from_gpu(
                     gt_depth.data_ptr(), rows, cols, noisy_depth.data_ptr()
                 )
                 return noisy_depth
@@ -112,7 +112,4 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
             return self._impl.simulate(gt_depth)
 
     def apply(self, gt_depth):
-        return self.simulate(gt_depth)
-
-    def __call__(self, gt_depth):
         return self.simulate(gt_depth)

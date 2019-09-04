@@ -381,4 +381,4 @@ class Sensor:
 
             obs = np.flip(self._buffer, axis=0)
 
-        return self._noise_model.apply(obs)
+        return self._noise_model(obs)

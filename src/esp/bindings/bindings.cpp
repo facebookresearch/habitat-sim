@@ -21,8 +21,11 @@ using namespace py::literals;
 #include "esp/scene/SemanticScene.h"
 #include "esp/scene/SuncgSemanticScene.h"
 #include "esp/sensor/PinholeCamera.h"
-#include "esp/sensor/RedwoodNoiseModel.h"
 #include "esp/sensor/Sensor.h"
+
+#ifdef ESP_BUILD_WITH_CUDA
+#include "esp/sensor/RedwoodNoiseModel.h"
+#endif
 
 #include <Magnum/ImageView.h>
 #include <Magnum/Python.h>
@@ -425,9 +428,9 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(
       m, "RedwoodNoiseModelGPUImpl")
       .def(py::init(&RedwoodNoiseModelGPUImpl::create_unique<
-                    const Eigen::Ref<const RowMatrixXf>&, int>))
+                    const Eigen::Ref<const Eigen::RowMatrixXf>&, int>))
       .def("simulate_from_cpu", &RedwoodNoiseModelGPUImpl::simulateFromCPU)
-      .def("simulate_from_gpu", [](RedwoodNoiseModel& self,
+      .def("simulate_from_gpu", [](RedwoodNoiseModelGPUImpl& self,
                                    std::size_t devDepth, const int rows,
                                    const int cols, std::size_t devNoisyDepth) {
         self.simulateFromGPU(reinterpret_cast<const float*>(devDepth), rows,

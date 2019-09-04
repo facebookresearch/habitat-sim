@@ -1,7 +1,5 @@
 #include "RedwoodNoiseModel.h"
 
-#ifdef ESP_BUILD_WITH_CUDA
-
 #include <cuda_runtime.h>
 
 namespace esp {
@@ -31,10 +29,10 @@ struct CudaDeviceContext {
 }  // namespace
 
 RedwoodNoiseModelGPUImpl::RedwoodNoiseModelGPUImpl(
-    const Eigen::Ref<const RowMatrixXf> model,
+    const Eigen::Ref<const Eigen::RowMatrixXf> model,
     int gpuDeviceId)
     : gpuDeviceId_{gpuDeviceId} {
-  CudaDeviceContext ctx(gpuDeviceId_);
+  CudaDeviceContext ctx{gpuDeviceId_};
 
   cudaMalloc(&devModel_, model.rows() * model.cols() * sizeof(float));
   cudaMemcpy(devModel_, model.data(),
@@ -44,18 +42,18 @@ RedwoodNoiseModelGPUImpl::RedwoodNoiseModelGPUImpl(
 }
 
 RedwoodNoiseModelGPUImpl::~RedwoodNoiseModelGPUImpl() {
-  CudaDeviceContext ctx(gpuDeviceId_);
+  CudaDeviceContext ctx{gpuDeviceId_};
 
   if (devModel_ != nullptr)
     cudaFree(devModel_);
   impl::freeCurandStates(curandStates_);
 }
 
-RowMatrixXf RedwoodNoiseModelGPUImpl::simulateFromCPU(
-    const Eigen::Ref<const RowMatrixXf> depth) {
-  CudaDeviceContext ctx(gpuDeviceId_);
+Eigen::RowMatrixXf RedwoodNoiseModelGPUImpl::simulateFromCPU(
+    const Eigen::Ref<const Eigen::RowMatrixXf> depth) {
+  CudaDeviceContext ctx{gpuDeviceId_};
 
-  RowMatrixXf noisyDepth(depth.rows(), depth.cols());
+  Eigen::RowMatrixXf noisyDepth(depth.rows(), depth.cols());
 
   impl::simulateFromCPU(depth.data(), depth.rows(), depth.cols(), devModel_,
                         curandStates_, noisyDepth.data());
@@ -72,5 +70,3 @@ void RedwoodNoiseModelGPUImpl::simulateFromGPU(const float* devDepth,
 
 }  // namespace sensor
 }  // namespace esp
-
-#endif

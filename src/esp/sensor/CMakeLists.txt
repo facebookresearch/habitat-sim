@@ -3,17 +3,14 @@ set(sensor_SOURCES
   PinholeCamera.h
   Sensor.cpp
   Sensor.h
-  RedwoodNoiseModel.cpp
-  RedwoodNoiseModel.h
 )
 
 
 if(BUILD_WITH_CUDA)
-  list(APPEND CUDA_NVCC_FLAGS "-std=c++11;-O2")
-
-  cuda_compile(cuda_kernels SHARED RedwoodNoiseModel.cu RedwoodNoiseModel.cuh)
-
-  list(APPEND sensor_SOURCES ${cuda_kernels})
+  list(APPEND sensor_SOURCES
+    RedwoodNoiseModel.cpp
+    RedwoodNoiseModel.h
+  )
 endif()
 
 
@@ -27,12 +24,25 @@ target_link_libraries(sensor
 )
 
 if(BUILD_WITH_CUDA)
-  find_package(CUDA 8.0 REQUIRED)
+  add_library(redwood_kernels STATIC
+    RedwoodNoiseModel.cu
+    RedwoodNoiseModel.cuh
+  )
+  target_link_libraries(redwood_kernels
+    PUBLIC
+      ${CUDART_LIBRARY}
+  )
+  target_include_directories(redwood_kernels
+    PRIVATE
+      ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+  )
+
   target_link_libraries(sensor
     PUBLIC
-      ${CUDA_LIBRARIES}
+      redwood_kernels
   )
   target_include_directories(sensor
     PRIVATE
-    ${CUDA_INCLUDE_DIRS})
+      ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+  )
 endif()

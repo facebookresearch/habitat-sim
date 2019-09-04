@@ -27,5 +27,5 @@ repos:
       name: Run clang-format
       entry: clang-format -i -style=file
       types: [text]
-      files: '.*\.cpp|.*\.h|.*\.cu'
+      files: '.*\.cpp|.*\.h|.*\.cu|.*\.cuh'
       language: system
