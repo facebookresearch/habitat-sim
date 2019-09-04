@@ -35,6 +35,7 @@ __global__ void redwoodNoiseModelKernel(const float* __restrict__ depth,
                                         const int W,
                                         curandState_t* states,
                                         const float* __restrict__ model,
+                                        float noiseMultiplier,
                                         float* __restrict__ noisyDepth) {
   const int TID = threadIdx.x;
   const int BID = blockIdx.x;
@@ -50,9 +51,15 @@ __global__ void redwoodNoiseModelKernel(const float* __restrict__ depth,
     for (int i = TID; i < W; i += blockDim.x) {
       // Shuffle pixels
       const int y =
-          min(max(j + curand_normal(&curandState) * 0.25f, 0.0f), ymax) + 0.5f;
+          min(max(j + curand_normal(&curandState) * 0.25f * noiseMultiplier,
+                  0.0f),
+              ymax) +
+          0.5f;
       const int x =
-          min(max(i + curand_normal(&curandState) * 0.25f, 0.0f), xmax) + 0.5f;
+          min(max(i + curand_normal(&curandState) * 0.25f * noiseMultiplier,
+                  0.0f),
+              xmax) +
+          0.5f;
 
       // downsample
       const float d = depth[(y - y % 2) * W + x - x % 2];
@@ -69,7 +76,8 @@ __global__ void redwoodNoiseModelKernel(const float* __restrict__ depth,
           noisyDepth[j * W + i] = 0.0f;
         else {
           const float denom = (round(35.130f / undistorted_d +
-                                     curand_normal(&curandState) * 0.027778f) *
+                                     curand_normal(&curandState) * 0.027778f *
+                                         noiseMultiplier) *
                                8.0f);
           noisyDepth[j * W + i] = denom > 1e-5 ? (35.130f * 8.0f / denom) : 0.0;
         }
@@ -127,13 +135,15 @@ void simulateFromGPU(const float* __restrict__ devDepth,
                      const int W,
                      const float* __restrict__ devModel,
                      CurandStates* curandStates,
+                     float noiseMultiplier,
                      float* __restrict__ devNoisyDepth) {
   const int n_threads = std::min(std::max(W / 4, 1), 256);
   const int n_blocks = std::max(H / 8, 1);
 
   curandStates->alloc(n_blocks);
   redwoodNoiseModelKernel<<<n_blocks, n_threads>>>(
-      devDepth, H, W, curandStates->devStates, devModel, devNoisyDepth);
+      devDepth, H, W, curandStates->devStates, devModel, noiseMultiplier,
+      devNoisyDepth);
 }
 
 void simulateFromCPU(const float* __restrict__ depth,
@@ -141,6 +151,7 @@ void simulateFromCPU(const float* __restrict__ depth,
                      const int W,
                      const float* __restrict__ devModel,
                      CurandStates* curandStates,
+                     float noiseMultiplier,
                      float* __restrict__ noisyDepth) {
   float *devDepth, *devNoisyDepth;
   cudaMalloc(&devDepth, H * W * sizeof(float));
@@ -148,7 +159,8 @@ void simulateFromCPU(const float* __restrict__ depth,
 
   cudaMemcpy(devDepth, depth, H * W * sizeof(float), cudaMemcpyHostToDevice);
 
-  simulateFromGPU(devDepth, H, W, devModel, curandStates, devNoisyDepth);
+  simulateFromGPU(devDepth, H, W, devModel, curandStates, noiseMultiplier,
+                  devNoisyDepth);
 
   cudaMemcpy(noisyDepth, devNoisyDepth, H * W * sizeof(float),
              cudaMemcpyDeviceToHost);

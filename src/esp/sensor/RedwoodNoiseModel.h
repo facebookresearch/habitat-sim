@@ -10,7 +10,8 @@ namespace sensor {
 
 struct RedwoodNoiseModelGPUImpl {
   RedwoodNoiseModelGPUImpl(const Eigen::Ref<const Eigen::RowMatrixXf> model,
-                           int gpuDeviceId);
+                           int gpuDeviceId,
+                           float noiseMultiplier);
 
   Eigen::RowMatrixXf simulateFromCPU(
       const Eigen::Ref<const Eigen::RowMatrixXf> depth);
@@ -23,6 +24,7 @@ struct RedwoodNoiseModelGPUImpl {
 
  private:
   int gpuDeviceId_;
+  float noiseMultiplier_;
   float* devModel_ = nullptr;
   impl::CurandStates* curandStates_ = nullptr;
 

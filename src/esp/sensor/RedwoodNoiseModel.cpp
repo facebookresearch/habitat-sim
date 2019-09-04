@@ -30,8 +30,9 @@ struct CudaDeviceContext {
 
 RedwoodNoiseModelGPUImpl::RedwoodNoiseModelGPUImpl(
     const Eigen::Ref<const Eigen::RowMatrixXf> model,
-    int gpuDeviceId)
-    : gpuDeviceId_{gpuDeviceId} {
+    int gpuDeviceId,
+    float noiseMultiplier)
+    : gpuDeviceId_{gpuDeviceId} : noiseMultiplier_{noiseMultiplier} {
   CudaDeviceContext ctx{gpuDeviceId_};
 
   cudaMalloc(&devModel_, model.rows() * model.cols() * sizeof(float));
@@ -56,7 +57,7 @@ Eigen::RowMatrixXf RedwoodNoiseModelGPUImpl::simulateFromCPU(
   Eigen::RowMatrixXf noisyDepth(depth.rows(), depth.cols());
 
   impl::simulateFromCPU(depth.data(), depth.rows(), depth.cols(), devModel_,
-                        curandStates_, noisyDepth.data());
+                        curandStates_, noiseMultiplier_, noisyDepth.data());
   return noisyDepth;
 }
 
@@ -66,7 +67,7 @@ void RedwoodNoiseModelGPUImpl::simulateFromGPU(const float* devDepth,
                                                float* devNoisyDepth) {
   CudaDeviceContext ctx{gpuDeviceId_};
   impl::simulateFromGPU(devDepth, rows, cols, devModel_, curandStates_,
-                        devNoisyDepth);
+                        noiseMultiplier_, devNoisyDepth);
 }
 
 }  // namespace sensor

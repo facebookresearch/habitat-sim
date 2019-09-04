@@ -31,7 +31,7 @@ def _undistort(x, y, z, model):
 
 
 @numba.jit(nopython=True, parallel=True)
-def _simulate(gt_depth, model):
+def _simulate(gt_depth, model, noise_multiplier):
     noisy_depth = np.empty_like(gt_depth)
 
     H, W = gt_depth.shape
@@ -40,8 +40,14 @@ def _simulate(gt_depth, model):
     rand_nums = np.random.randn(H, W, 3).astype(np.float32)
     for j in range(H):
         for i in range(W):
-            y = int(min(max(j + rand_nums[j, i, 0] * 0.25, 0.0), ymax) + 0.5)
-            x = int(min(max(i + rand_nums[j, i, 1] * 0.25, 0.0), xmax) + 0.5)
+            y = int(
+                min(max(j + rand_nums[j, i, 0] * 0.25 * noise_multiplier, 0.0), ymax)
+                + 0.5
+            )
+            x = int(
+                min(max(i + rand_nums[j, i, 1] * 0.25 * noise_multiplier, 0.0), xmax)
+                + 0.5
+            )
 
             # Downsample
             d = gt_depth[y - y % 2, x - x % 2]
@@ -58,7 +64,11 @@ def _simulate(gt_depth, model):
                     noisy_depth[j, i] = 0.0
                 else:
                     denom = round(
-                        (35.130 / undistorted_d + rand_nums[j, i, 2] * 0.027778) * 8.0
+                        (
+                            35.130 / undistorted_d
+                            + rand_nums[j, i, 2] * 0.027778 * noise_multiplier
+                        )
+                        * 8.0
                     )
                     if denom <= 1e-5:
                         noisy_depth[j, i] = 0.0
@@ -71,17 +81,18 @@ def _simulate(gt_depth, model):
 @attr.s(auto_attribs=True)
 class RedwoodNoiseModelCPUImpl:
     model: np.ndarray
+    noise_multiplier: float
 
     def __attrs_post_init__(self):
         self.model = self.model.reshape(self.model.shape[0], -1, 4)
 
     def simulate(self, gt_depth):
-        return _simulate(gt_depth, self.model)
+        return _simulate(gt_depth, self.model, self.noise_multiplier)
 
 
 @register_sensor_noise_model
 class RedwoodDepthNoiseModel(SensorNoiseModel):
-    def __init__(self, gpu_device_id):
+    def __init__(self, gpu_device_id, noise_multiplier=1.0):
         self._gpu_device_id = gpu_device_id
 
         dist = np.load(
@@ -89,9 +100,11 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
         )
 
         if cuda_enabled:
-            self._impl = RedwoodNoiseModelGPUImpl(dist, self._gpu_device_id)
+            self._impl = RedwoodNoiseModelGPUImpl(
+                dist, self._gpu_device_id, noise_multiplier
+            )
         else:
-            self._impl = RedwoodNoiseModelCPUImpl(dist)
+            self._impl = RedwoodNoiseModelCPUImpl(dist, noise_multiplier)
 
     @staticmethod
     def is_valid_sensor_type(sensor_type):
