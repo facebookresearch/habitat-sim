@@ -17,6 +17,9 @@ class SensorNoiseModel(abc.ABC):
     def apply(self, x):
         pass
 
+    def __call__(self, x):
+        return self.apply(x)
+
 
 _noise_model_map: Dict[str, SensorNoiseModel] = dict()
 
