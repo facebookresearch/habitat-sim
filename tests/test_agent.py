@@ -9,7 +9,6 @@ import pytest
 import quaternion
 
 import habitat_sim
-import habitat_sim.bindings as hsim
 import habitat_sim.errors
 import habitat_sim.utils
 
@@ -20,7 +19,7 @@ def _check_state_same(s1, s2):
 
 
 def test_reconfigure():
-    scene_graph = hsim.SceneGraph()
+    scene_graph = habitat_sim.SceneGraph()
     agent = habitat_sim.Agent(scene_graph.get_root_node().create_child())
 
     habitat_sim.errors.assert_obj_valid(agent.body)
@@ -37,7 +36,7 @@ def test_reconfigure():
 
 
 def test_set_state():
-    scene_graph = hsim.SceneGraph()
+    scene_graph = habitat_sim.SceneGraph()
     agent = habitat_sim.Agent(scene_graph.get_root_node().create_child())
 
     state = agent.state
@@ -52,7 +51,7 @@ def test_set_state():
 
 
 def test_change_state():
-    scene_graph = hsim.SceneGraph()
+    scene_graph = habitat_sim.SceneGraph()
     agent = habitat_sim.Agent(scene_graph.get_root_node().create_child())
 
     for _ in range(100):

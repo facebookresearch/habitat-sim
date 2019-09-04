@@ -13,7 +13,6 @@ import pytest
 import quaternion
 
 import habitat_sim
-import habitat_sim.bindings as hsim
 import habitat_sim.errors
 import habitat_sim.utils
 from examples.settings import make_cfg
