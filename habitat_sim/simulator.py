@@ -301,9 +301,9 @@ class Sensor:
                 )
 
         noise_model_kwargs = self._spec.noise_model_kwargs
-        noise_model_kwargs["gpu_device_id"] = self._sim.gpu_device
         self._noise_model = make_sensor_noise_model(
-            self._spec.noise_model, noise_model_kwargs
+            self._spec.noise_model,
+            {"gpu_device_id": self._sim.gpu_device, **noise_model_kwargs},
         )
         assert self._noise_model.is_valid_sensor_type(
             self._spec.sensor_type

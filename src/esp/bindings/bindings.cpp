@@ -50,13 +50,6 @@ SceneNode* nodeGetter(T& self) {
     throw py::value_error{"feature not valid"};
   return &self.node();
 };
-
-struct PySensorSpec : SensorSpec {
-  py::dict noise_model_kwargs;
-
-  ESP_SMART_POINTERS(PySensorSpec)
-};
-
 }  // namespace
 
 PYBIND11_MODULE(habitat_sim_bindings, m) {
@@ -345,33 +338,39 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .value("DEPTH", SensorType::DEPTH)
       .value("SEMANTIC", SensorType::SEMANTIC);
 
-  // ==== SensorSpec ====
-  py::class_<SensorSpec, SensorSpec::ptr>(m, "SensorSpecBase");
-
-  py::class_<PySensorSpec, PySensorSpec::ptr, SensorSpec>(m, "SensorSpec")
-      .def(py::init(&PySensorSpec::create<>))
-      .def_readwrite("uuid", &PySensorSpec::uuid)
-      .def_readwrite("sensor_type", &PySensorSpec::sensorType)
-      .def_readwrite("sensor_subtype", &PySensorSpec::sensorSubtype)
-      .def_readwrite("parameters", &PySensorSpec::parameters)
-      .def_readwrite("position", &PySensorSpec::position)
-      .def_readwrite("orientation", &PySensorSpec::orientation)
-      .def_readwrite("resolution", &PySensorSpec::resolution)
-      .def_readwrite("channels", &PySensorSpec::channels)
-      .def_readwrite("encoding", &PySensorSpec::encoding)
-      .def_readwrite("gpu2gpu_transfer", &PySensorSpec::gpu2gpuTransfer)
-      .def_readwrite("observation_space", &PySensorSpec::observationSpace)
-      .def_readwrite("noise_model", &PySensorSpec::noiseModel)
-      .def_readwrite("noise_model_kwargs", &PySensorSpec::noise_model_kwargs)
+  py::class_<SensorSpec, SensorSpec::ptr>(m, "SensorSpec", py::dynamic_attr())
+      .def(py::init(&SensorSpec::create<>))
+      .def_readwrite("uuid", &SensorSpec::uuid)
+      .def_readwrite("sensor_type", &SensorSpec::sensorType)
+      .def_readwrite("sensor_subtype", &SensorSpec::sensorSubtype)
+      .def_readwrite("parameters", &SensorSpec::parameters)
+      .def_readwrite("position", &SensorSpec::position)
+      .def_readwrite("orientation", &SensorSpec::orientation)
+      .def_readwrite("resolution", &SensorSpec::resolution)
+      .def_readwrite("channels", &SensorSpec::channels)
+      .def_readwrite("encoding", &SensorSpec::encoding)
+      .def_readwrite("gpu2gpu_transfer", &SensorSpec::gpu2gpuTransfer)
+      .def_readwrite("observation_space", &SensorSpec::observationSpace)
+      .def_readwrite("noise_model", &SensorSpec::noiseModel)
+      .def_property(
+          "noise_model_kwargs",
+          [](SensorSpec& self) -> py::dict {
+            py::handle handle = py::cast(self);
+            if (!py::hasattr(handle, "__noise_model_kwargs")) {
+              py::setattr(handle, "__noise_model_kwargs", py::dict());
+            }
+            return py::getattr(handle, "__noise_model_kwargs");
+          },
+          [](SensorSpec& self, py::dict v) {
+            py::setattr(py::cast(self), "__noise_model_kwargs", v);
+          })
       .def("__eq__",
-           [](const PySensorSpec& self, const PySensorSpec& other) -> bool {
-             return dynamic_cast<const SensorSpec&>(self) ==
-                    dynamic_cast<const SensorSpec&>(other);
+           [](const SensorSpec& self, const SensorSpec& other) -> bool {
+             return self == other;
            })
       .def("__neq__",
-           [](const PySensorSpec& self, const PySensorSpec& other) -> bool {
-             return dynamic_cast<const SensorSpec&>(self) !=
-                    dynamic_cast<const SensorSpec&>(other);
+           [](const SensorSpec& self, const SensorSpec& other) -> bool {
+             return self != other;
            });
 
   // ==== Observation ====
@@ -426,11 +425,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   sensor
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
                           const SensorSpec::ptr&>())
-      .def(
-          "specification",
-          [](Sensor& self) -> PySensorSpec::ptr {
-            return std::static_pointer_cast<PySensorSpec>(self.specification());
-          })
+      .def("specification", &Sensor::specification)
       .def("set_transformation_from_spec", &Sensor::setTransformationFromSpec)
       .def("is_visual_sensor", &Sensor::isVisualSensor)
       .def("get_observation", &Sensor::getObservation)
