@@ -25,8 +25,8 @@
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
-#include "esp/gfx/PrimitiveIDTexturedDrawable.h"
-#include "esp/gfx/PrimitiveIDTexturedShader.h"
+#include "esp/gfx/PrimitiveIDDrawable.h"
+#include "esp/gfx/PrimitiveIDShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/scene/SceneConfiguration.h"
@@ -646,7 +646,7 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
     switch (type) {
       case INSTANCE_MESH_SHADER: {
         shaderPrograms_[INSTANCE_MESH_SHADER] =
-            std::make_shared<gfx::PrimitiveIDTexturedShader>();
+            std::make_shared<gfx::PrimitiveIDShader>();
       } break;
 
 #ifdef ESP_BUILD_PTEX_SUPPORT
@@ -768,7 +768,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
           dynamic_cast<GenericInstanceMeshData*>(meshes_[iMesh].get());
       scene::SceneNode& node = parent->createChild();
       createDrawable(INSTANCE_MESH_SHADER, *instanceMeshData->getMagnumGLMesh(),
-                     node, drawables, instanceMeshData->getSemanticTexture());
+                     node, drawables);
     }
   }
 
@@ -1080,10 +1080,9 @@ gfx::Drawable& ResourceManager::createDrawable(
     // NOTE: this is a runtime error and will never return
     return *drawable;
   } else if (shaderType == INSTANCE_MESH_SHADER) {
-    auto* shader = static_cast<gfx::PrimitiveIDTexturedShader*>(
-        getShaderProgram(shaderType));
-    drawable = new gfx::PrimitiveIDTexturedDrawable{node, *shader, mesh, group,
-                                                    texture};
+    auto* shader =
+        static_cast<gfx::PrimitiveIDShader*>(getShaderProgram(shaderType));
+    drawable = new gfx::PrimitiveIDDrawable{node, *shader, mesh, group};
   } else {  // all other shaders use GenericShader
     auto* shader =
         static_cast<Magnum::Shaders::Flat3D*>(getShaderProgram(shaderType));
