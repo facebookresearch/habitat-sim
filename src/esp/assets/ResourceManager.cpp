@@ -33,7 +33,6 @@
 #include "esp/scene/SceneGraph.h"
 
 #include "CollisionMeshData.h"
-#include "FRLInstanceMeshData.h"
 #include "GenericInstanceMeshData.h"
 #include "GltfMeshData.h"
 #include "MeshData.h"
@@ -66,8 +65,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
       LOG(ERROR) << "Cannot load from file " << info.filepath;
       meshSuccess = false;
     } else {
-      if (info.type == AssetType::FRL_INSTANCE_MESH ||
-          info.type == AssetType::INSTANCE_MESH) {
+      if (info.type == AssetType::INSTANCE_MESH) {
         meshSuccess = loadInstanceMeshData(info, parent, drawables);
       } else if (info.type == AssetType::FRL_PTEX_MESH) {
         meshSuccess = loadPTexMeshData(info, parent, drawables);
@@ -185,16 +183,8 @@ bool ResourceManager::loadScene(
     //! Collect collision mesh group
     std::vector<CollisionMeshData> meshGroup;
     for (int mesh_i = start; mesh_i <= end; mesh_i++) {
-      // FRL Quad Mesh
-      if (info.type == AssetType::FRL_INSTANCE_MESH) {
-        FRLInstanceMeshData* frlMeshData =
-            dynamic_cast<FRLInstanceMeshData*>(meshes_[mesh_i].get());
-        CollisionMeshData& meshData = frlMeshData->getCollisionMeshData();
-        meshGroup.push_back(meshData);
-      }
-
       // PLY Instance mesh
-      else if (info.type == AssetType::INSTANCE_MESH) {
+      if (info.type == AssetType::INSTANCE_MESH) {
         GenericInstanceMeshData* insMeshData =
             dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
         CollisionMeshData& meshData = insMeshData->getCollisionMeshData();
@@ -753,9 +743,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
   // and add it to the shaderPrograms_
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
-    if (info.type == AssetType::FRL_INSTANCE_MESH) {
-      meshes_.emplace_back(std::make_unique<FRLInstanceMeshData>());
-    } else if (info.type == AssetType::INSTANCE_MESH) {
+    if (info.type == AssetType::INSTANCE_MESH) {
       meshes_.emplace_back(std::make_unique<GenericInstanceMeshData>());
     }
     int index = meshes_.size() - 1;
