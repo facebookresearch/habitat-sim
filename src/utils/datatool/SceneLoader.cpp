@@ -37,16 +37,10 @@ MeshData SceneLoader::load(const AssetInfo& info) {
     const auto& cbo = instanceMeshData.getColorBufferObjectCPU();
     const auto& ibo = instanceMeshData.getIndexBufferObjectCPU();
     mesh.vbo = vbo;
+    mesh.ibo = ibo;
     for (const auto& c : cbo) {
       mesh.cbo.emplace_back(c.cast<float>() / 255.0f);
     }
-
-    for (const auto& tri : ibo) {
-      mesh.ibo.push_back(tri[0]);
-      mesh.ibo.push_back(tri[1]);
-      mesh.ibo.push_back(tri[2]);
-    }
-
   } else {
     const aiScene* scene;
     Assimp::Importer Importer;

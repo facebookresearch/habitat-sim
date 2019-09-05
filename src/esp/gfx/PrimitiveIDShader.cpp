@@ -2,14 +2,13 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "PrimitiveIDTexturedShader.h"
+#include "PrimitiveIDShader.h"
 
 #include <Corrade/Containers/Reference.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Resource.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Shader.h>
-#include <Magnum/GL/Texture.h>
 #include <Magnum/GL/Version.h>
 
 // This is to import the "resources" at runtime.
@@ -25,11 +24,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-namespace {
-enum { TextureLayer = 0 };
-}
-
-PrimitiveIDTexturedShader::PrimitiveIDTexturedShader() {
+PrimitiveIDShader::PrimitiveIDShader() {
 #ifndef MAGNUM_TARGET_WEBGL
   MAGNUM_ASSERT_GL_VERSION_SUPPORTED(Magnum::GL::Version::GL410);
 #endif
@@ -51,10 +46,7 @@ PrimitiveIDTexturedShader::PrimitiveIDTexturedShader() {
   Magnum::GL::Shader frag{glVersion, Magnum::GL::Shader::Type::Fragment};
 
   vert.addSource(rs.get("primitive-id-textured-gl410.vert"));
-  frag
-      .addSource(Corrade::Utility::formatString(
-          "#define PRIMITIVE_TEXTURE_WIDTH {}\n", PrimitiveIDTextureWidth))
-      .addSource(rs.get("primitive-id-textured-gl410.frag"));
+  frag.addSource(rs.get("primitive-id-textured-gl410.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Magnum::GL::Shader::compile({vert, frag}));
 
@@ -64,13 +56,6 @@ PrimitiveIDTexturedShader::PrimitiveIDTexturedShader() {
 
   transformationProjectionMatrixUniform_ =
       uniformLocation("transformationProjectionMatrix");
-  setUniform(uniformLocation("primTexture"), TextureLayer);
-}
-
-PrimitiveIDTexturedShader& PrimitiveIDTexturedShader::bindTexture(
-    Magnum::GL::Texture2D& texture) {
-  texture.bind(TextureLayer);
-  return *this;
 }
 
 }  // namespace gfx

@@ -7,7 +7,6 @@
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Mesh.h>
-#include <Magnum/GL/Texture.h>
 #include <Magnum/Trade/MeshData3D.h>
 #include <memory>
 #include <string>
@@ -18,25 +17,10 @@
 namespace esp {
 namespace assets {
 
-/**
-@brief Pack primitive IDs into a texture
-
-1D texture won't be large enough so the data have to be put into a 2D texture.
-For simplicity on both the C++ and shader side the texture has a fixed width
-and height is dynamic, and addressing is done as
-`(gl_PrimitiveID % width, gl_PrimitiveID / width)`.
-*/
-Magnum::GL::Texture2D createInstanceTexture(
-    Corrade::Containers::ArrayView<uint32_t> objectIds);
-
 class GenericInstanceMeshData : public BaseMesh {
  public:
   struct RenderingBuffer {
     Magnum::GL::Mesh mesh;
-    Magnum::GL::Buffer vbo;
-    Magnum::GL::Buffer cbo;
-    Magnum::GL::Buffer ibo;
-    Magnum::GL::Texture2D tex;
   };
 
   explicit GenericInstanceMeshData(SupportedMeshType type) : BaseMesh{type} {};
@@ -46,10 +30,6 @@ class GenericInstanceMeshData : public BaseMesh {
   virtual ~GenericInstanceMeshData(){};
 
   virtual bool loadPLY(const std::string& plyFile);
-
-  virtual Magnum::GL::Texture2D* getSemanticTexture() {
-    return &renderingBuffer_->tex;
-  };
 
   // ==== rendering ====
   virtual void uploadBuffersToGPU(bool forceReload = false) override;
@@ -64,7 +44,7 @@ class GenericInstanceMeshData : public BaseMesh {
     return cpu_cbo_;
   }
 
-  const std::vector<vec3ui>& getIndexBufferObjectCPU() const {
+  const std::vector<uint32_t>& getIndexBufferObjectCPU() const {
     return cpu_ibo_;
   }
 
@@ -74,8 +54,8 @@ class GenericInstanceMeshData : public BaseMesh {
 
   std::vector<vec3f> cpu_vbo_;
   std::vector<vec3uc> cpu_cbo_;
-  std::vector<vec3ui> cpu_ibo_;
-  std::vector<uint32_t> objectIds_;
+  std::vector<uint32_t> cpu_ibo_;
+  std::vector<uint16_t> objectIds_;
 };
 }  // namespace assets
 }  // namespace esp
