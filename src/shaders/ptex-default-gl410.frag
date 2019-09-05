@@ -1,6 +1,6 @@
 uniform int tileSize;
 uniform int widthInTiles;
-uniform samplerBuffer meshAdjFaces;
+uniform usamplerBuffer meshAdjFaces;
 
 ivec2 FaceToAtlasPos(int faceID, int tileSize) {
   ivec2 tilePos;
@@ -29,7 +29,7 @@ const uint FACE_MASK = 0x3FFFFFFF;
 
 int GetAdjFace(int face, int edge, out int rot) {
   // uint data = meshAdjFaces[face * 4 + edge];
-  uint data = uint(texelFetch(meshAdjFaces, face * 4 + edge));
+  uint data = texelFetch(meshAdjFaces, face * 4 + edge).r;
   rot = int(data >> ROTATION_SHIFT);
   return int(data & FACE_MASK);
 }
