@@ -14,16 +14,10 @@ using namespace Corrade::Utility::String;
 AssetInfo AssetInfo::fromPath(const std::string& path) {
   AssetInfo info{AssetType::UNKNOWN, path};
 
-  if (endsWith(path, "mesh_semantic.ply")) {
-    info.type = AssetType::FRL_INSTANCE_MESH;
-  } else if (endsWith(path, "_semantic.ply")) {
-    ASSERT(!endsWith(path, "mesh_semantic.ply"));
+  if (endsWith(path, "_semantic.ply")) {
     info.type = AssetType::INSTANCE_MESH;
   } else if (endsWith(path, "mesh.ply")) {
     info.type = AssetType::FRL_PTEX_MESH;
-    // the gravity in replica dataset is -Z;
-    // create a coordinate for the mesh by rotating the default ESP
-    // coordinate frame to -Z gravity
     info.frame = {quatf::FromTwoVectors(geo::ESP_GRAVITY, -vec3f::UnitZ())};
   } else if (endsWith(path, "house.json")) {
     info.type = AssetType::SUNCG_SCENE;
