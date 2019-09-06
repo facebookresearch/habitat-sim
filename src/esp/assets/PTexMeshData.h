@@ -30,11 +30,14 @@ class PTexMeshData : public BaseMesh {
 
   struct RenderingBuffer {
     Magnum::GL::Mesh mesh;
-    Magnum::GL::Texture2D tex;
-    Magnum::GL::Buffer vbo;
-    Magnum::GL::Buffer ibo;
-    Magnum::GL::Buffer abo;
-    Magnum::GL::BufferTexture adjTex;
+    Magnum::GL::Texture2D atlasTexture;
+    Magnum::GL::Buffer vertexBuffer;
+    Magnum::GL::Buffer indexBuffer;
+    Magnum::GL::Buffer adjFacesBuffer;
+    Magnum::GL::BufferTexture adjFacesBufferTexture;
+
+    RenderingBuffer()
+        : adjFacesBuffer{Magnum::GL::Buffer::TargetHint::Texture} {}
   };
 
   PTexMeshData() : BaseMesh(SupportedMeshType::PTEX_MESH) {}
