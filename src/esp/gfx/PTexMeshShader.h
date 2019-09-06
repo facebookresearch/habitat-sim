@@ -27,12 +27,11 @@ class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
 
   explicit PTexMeshShader();
 
-  PTexMeshShader& bindTexture(Magnum::GL::Texture2D& texture,
-                              uint32_t textureUnit = 0) {
-    texture.bind(textureUnit);
-    return *this;
-  }
+  // ======== texture binding ========
+  PTexMeshShader& bindAtlasTexture(Magnum::GL::Texture2D& texture);
+  PTexMeshShader& bindAdjFacesBufferTexture(Magnum::GL::BufferTexture& texture);
 
+  // ======== set uniforms ===========
   PTexMeshShader& setMVPMatrix(const Magnum::Matrix4& matrix) {
     setUniform(uniformLocation("MVP"), matrix);
     return *this;
