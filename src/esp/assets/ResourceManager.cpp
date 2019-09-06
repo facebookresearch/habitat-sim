@@ -701,9 +701,8 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
   // if this is a new file, load it and add it to the dictionary
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
-    const std::string atlasDir =
-        Corrade::Utility::String::stripSuffix(filename, "ptex_quad_mesh.ply") +
-        "ptex_textures";
+    const auto atlasDir = Corrade::Utility::Directory::join(
+        Corrade::Utility::Directory::path(filename), "textures");
 
     meshes_.emplace_back(std::make_unique<PTexMeshData>());
     int index = meshes_.size() - 1;
@@ -730,6 +729,8 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 
       for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
         scene::SceneNode& node = parent->createChild();
+        const quatf transform = info.frame.rotationFrameToWorld();
+        node.setRotation(Magnum::Quaternion(transform));
         new gfx::PTexMeshDrawable{node, *ptexShader, *pTexMeshData, jSubmesh,
                                   drawables};
       }

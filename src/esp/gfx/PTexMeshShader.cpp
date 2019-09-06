@@ -72,6 +72,9 @@ PTexMeshShader::PTexMeshShader() {
              TextureBindingPointIndex::adjFaces);
 }
 
+// Note: the texture binding points are explicitly specified above.
+// Cannot use "explicit uniform location" directly in shader since
+// it requires GL4.3 (We stick to GL4.1 for MacOS).
 PTexMeshShader& PTexMeshShader::bindAtlasTexture(
     Magnum::GL::Texture2D& texture) {
   texture.bind(TextureBindingPointIndex::atlas);
