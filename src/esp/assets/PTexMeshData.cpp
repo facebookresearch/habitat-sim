@@ -629,6 +629,13 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
                                Corrade::Utility::Directory::MapDeleter>
         data = Corrade::Utility::Directory::mapRead(rgbFile);
     const int dim = static_cast<int>(std::sqrt(data.size() / 3));  // square
+
+    // TODO:
+    // To be fixed:
+    // -) the file format is obsolete. The .rgb file is replaced by .hdr file;
+    // -) the texture format is wrong. It should be RGB16F;
+    // -) the storage should be set;
+    // MUST fix it in other PR.
     Magnum::ImageView2D image(Magnum::PixelFormat::RGB8UI, {dim, dim}, data);
     renderingBuffers_[iMesh]
         ->atlasTexture.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
