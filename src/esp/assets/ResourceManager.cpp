@@ -219,7 +219,7 @@ bool ResourceManager::loadScene(
 
     //! Initialize collision mesh
     bool sceneSuccess = _physicsManager->addScene(
-        info, physicsSceneLibrary_.at(info.filepath), meshGroup);
+        physicsSceneLibrary_.at(info.filepath), meshGroup);
     if (!sceneSuccess) {
       return false;
     }

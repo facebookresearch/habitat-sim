@@ -4,6 +4,8 @@
 
 #pragma once
 
+/** @file */
+
 #include <map>
 #include <memory>
 #include <ostream>
@@ -124,6 +126,7 @@ inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
   ESP_SMART_POINTERS(T)                         \
   ESP_SHARED_PTR_PIMPL()
 
+/** @brief Returned on failed creation or lookup of an ID */
 static const int ID_UNDEFINED = -1;
 static const double PHYSICS_ATTR_UNDEFINED = -1.0;
 

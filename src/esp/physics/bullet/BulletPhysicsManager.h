@@ -4,6 +4,10 @@
 
 #pragma once
 
+/** @file
+ * @brief Class @ref esp::physics::BulletPhysicsManager
+ */
+
 /* Bullet Physics Integration */
 #include <Magnum/BulletIntegration/DebugDraw.h>
 #include <Magnum/BulletIntegration/Integration.h>
@@ -34,8 +38,7 @@ class BulletPhysicsManager : public PhysicsManager {
   //! Initialize scene given mesh data
   //! Only one scene per simulation
   //! The scene could contain several components
-  bool addScene(const assets::AssetInfo& info,
-                const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+  bool addScene(const assets::PhysicsSceneAttributes& physicsSceneAttributes,
                 const std::vector<assets::CollisionMeshData>& meshGroup);
 
   //============ Simulator functions =============

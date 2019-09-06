@@ -4,6 +4,11 @@
 
 #pragma once
 
+/** @file
+ * @brief Class @ref esp::physics::RigidObject, enum @ref
+ * esp::physics::MotionType, enum @ref esp::physics::RigidObjectType
+ */
+
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Reference.h>
 #include <Magnum/DebugTools/ForceRenderer.h>
@@ -19,12 +24,72 @@
 namespace esp {
 namespace physics {
 
-// describes the motion type of an object. ERROR_MOTIONTYPE should never be set
-// and refers to an error (such as a query to non-existing object).
-enum MotionType { ERROR_MOTIONTYPE, STATIC, KINEMATIC, DYNAMIC };
+/**
+@brief Motion type of a @ref RigidObject.
+Defines its treatment by the simulator and operations which can be performed on
+it.
+*/
+enum MotionType {
+  /**
+   * Refers to an error (such as a query to non-existing object).
+   */
+  ERROR_MOTIONTYPE,
 
-enum RigidObjectType { NONE, SCENE, OBJECT };
+  /**
+   * The object is not expected to move and should not allow kinematic updates.
+   * Likely treated as static collision geometry. See @ref
+   * RigidObjectType::SCENE.
+   */
+  STATIC,
 
+  /**
+   * The object is expected to move kinematically, but is not simulated. Default
+   * behavior of @ref RigidObject with no physics simulator defined.
+   */
+  KINEMATIC,
+
+  /**
+   * The object is simulated and can, but should not be, updated kinematically .
+   * Default behavior of @ref RigidObject with a physics simulator defined. See
+   * @ref BulletRigidObject.
+   */
+  DYNAMIC
+
+};
+
+/**
+@brief Category of a @ref RigidObject. Defines treatment of the object in @ref
+PhysicsManager. Also denotes the status of an object as initialized or not.
+*/
+enum RigidObjectType {
+  /**
+   * The object is not initialized yet. Set as default on construction.
+   */
+  NONE,
+
+  /**
+   * The object is a @ref MotionType::STATIC scene collision geometry.
+   * See @PhysicsManager::addScene.
+   */
+  SCENE,
+
+  /**
+   * The object is a standard rigid object and should be present in @ref
+   * @PhysicsManager::existingObjects_. See @PhysicsManager::addObject.
+   */
+  OBJECT
+
+};
+
+/**
+@brief A @ref scene::SceneNode representing an individual rigid object instance.
+This may be a @ref MotionType::STATIC scene collision geometry or an object of
+any @ref MotionType which can interact with other members of a physical world.
+Must have a collision mesh.
+By default, a RigidObject is @ref MotionType::KINEMATIC without an underlying
+simulator implementation, but derived classes can be used to introduce specific
+implementations of dynamics.
+*/
 class RigidObject : public scene::SceneNode {
  public:
   RigidObject(scene::SceneNode* parent);

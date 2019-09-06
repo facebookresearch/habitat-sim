@@ -24,7 +24,6 @@ PhysicsManager::~PhysicsManager() {
 }
 
 bool PhysicsManager::addScene(
-    const assets::AssetInfo& info,
     const assets::PhysicsSceneAttributes& physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
@@ -32,15 +31,6 @@ bool PhysicsManager::addScene(
     if (!isMeshPrimitiveValid(meshData)) {
       return false;
     }
-  }
-
-  switch (info.type) {
-    case assets::AssetType::INSTANCE_MESH:
-      break;  // ._semantic.ply mesh data
-    case assets::AssetType::FRL_INSTANCE_MESH:
-      break;  // FRL mesh
-    default:
-      break;  // GLB mesh data
   }
 
   //! Initialize scene
@@ -171,10 +161,6 @@ void PhysicsManager::setGravity(const Magnum::Vector3&) {
 
 Magnum::Vector3 PhysicsManager::getGravity() {
   return Magnum::Vector3(0);
-}
-
-void PhysicsManager::stepPhysics() {
-  stepPhysics(0.0);
 }
 
 void PhysicsManager::stepPhysics(double dt) {
