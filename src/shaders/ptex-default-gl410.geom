@@ -8,12 +8,11 @@ out vec2 uv;
 void main() {
   gl_PrimitiveID = gl_PrimitiveIDIn;
 
-  // the triangle trip generated is (3, 0, 2, 1),
-  // which is is different from replicaSDK.
+  // the triangle strip generated is (3, 0, 2, 1),
+  // which is different from replicaSDK.
   // The winding of the two triangles (3, 0, 2) and (2, 0, 1)
   // is CCW.
   uv = vec2(0.0, 1.0);
-  gl_ClipDistance[0] = gl_in[3].gl_ClipDistance[0];
   gl_Position = gl_in[3].gl_Position;
   EmitVertex();
 
