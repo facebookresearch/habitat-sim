@@ -5,18 +5,15 @@
 # LICENSE file in the root directory of this source tree.
 
 
-import attr
 import magnum as mn
 import numpy as np
-import scipy.stats
 
+import attr
 import habitat_sim.bindings as hsim
+import scipy.stats
 from habitat_sim import utils
-from habitat_sim.agent.controls.controls import (
-    ActuationSpec,
-    SceneNodeControl,
-    register_move_fn,
-)
+from habitat_sim.agent.controls.controls import ActuationSpec, SceneNodeControl
+from habitat_sim.registry import registry
 
 
 @attr.s(auto_attribs=True)
@@ -245,7 +242,7 @@ def _noisy_action_impl(
     scene_node.rotation = scene_node.rotation.normalized()
 
 
-@register_move_fn(body_action=True)
+@registry.register_move_fn(body_action=True)
 class PyrobotNoisyMoveBackward(SceneNodeControl):
     def __call__(
         self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
@@ -262,7 +259,7 @@ class PyrobotNoisyMoveBackward(SceneNodeControl):
         )
 
 
-@register_move_fn(body_action=True)
+@registry.register_move_fn(body_action=True)
 class PyrobotNoisyMoveForward(SceneNodeControl):
     def __call__(
         self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
@@ -279,7 +276,7 @@ class PyrobotNoisyMoveForward(SceneNodeControl):
         )
 
 
-@register_move_fn(body_action=True)
+@registry.register_move_fn(body_action=True)
 class PyrobotNoisyTurnLeft(SceneNodeControl):
     def __call__(
         self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
@@ -296,7 +293,7 @@ class PyrobotNoisyTurnLeft(SceneNodeControl):
         )
 
 
-@register_move_fn(body_action=True)
+@registry.register_move_fn(body_action=True)
 class PyrobotNoisyTurnRight(SceneNodeControl):
     def __call__(
         self, scene_node: hsim.SceneNode, actuation_spec: PyRobotNoisyActuationSpec
