@@ -5,15 +5,15 @@
 # LICENSE file in the root directory of this source tree.
 
 
+import attr
 import magnum as mn
 import numpy as np
-
-import attr
-import habitat_sim.bindings as hsim
 import scipy.stats
+
+import habitat_sim.bindings as hsim
 from habitat_sim import utils
 from habitat_sim.agent.controls.controls import ActuationSpec, SceneNodeControl
-from habitat_sim.registry import registry
+from habitat_sim.registration import registry
 
 
 @attr.s(auto_attribs=True)
