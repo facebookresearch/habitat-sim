@@ -26,9 +26,9 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         sensor,
         simulator,
         utils,
-        registration,
     )
     from habitat_sim._ext.habitat_sim_bindings import MapStringString
+    from habitat_sim.registration import registry
 
     __all__ = [
         "agent",
@@ -44,5 +44,5 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         "simulator",
         "utils",
         "MapStringString",
-        "registration",
+        "registry",
     ]

@@ -52,7 +52,7 @@ class ObjectControls(object):
 
         :param obj: `scene.SceneNode` to perform the action on
         :param action_name: Name of the action. Used to query the
-            `registration.registry` to retrieve the function which implements
+            `registry` to retrieve the function which implements
             this action
         :param actuation_spec: Specifies the parameters needed by the function
         :param apply_filter: Whether or not to apply the `move_filter_fn`

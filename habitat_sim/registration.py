@@ -4,22 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-r"""Registry is a central source of truth in Habitat-Sim
-
-Taken from Pythia, it is inspired from Redux's
-concept of global store. Registry maintains mappings of various information
-to unique keys. Special functions in registry can be used as decorators to
-register different kind of classes.
-
-Import the global registry object using
-
-``from habitat_sim import registry``
-
-Various decorators for registry different kind of classes with unique keys
-
-- Register a movement function : ``@registry.register_move_fn``
-"""
-
 import collections
 import re
 from typing import Optional, Type
@@ -35,6 +19,19 @@ def _camel_to_snake(name):
 
 
 class registry:
+    r"""registry is a central source of truth in Habitat-Sim
+
+    Taken from Pythia, it is inspired from Redux's
+    concept of global store. registry maintains mappings of various information
+    to unique keys. Special functions in registry can be used as decorators to
+    register different kind of classes.
+
+    Import the global registry object using ``from habitat_sim import registry``.
+    Then use various decorators for registering
+    different kind of classes with unique keys
+
+    - Register a movement function : ``@registry.register_move_fn``
+    """
     mapping = collections.defaultdict(dict)
 
     @classmethod
@@ -45,10 +42,14 @@ class registry:
         name: Optional[str] = None,
         body_action: bool = None,
     ):
-        r"""Registers a new control with Habitat-Sim
+        r"""Registers a new control with Habitat-Sim. Registered conrtols can
+        then be retrieved via `get_move_fn`
 
-        :param controller: The class of the controller to register. If :py:`None`,
-            will return a wrapper for use with decorator syntax
+        See `new-actions <new-actions.html>`_ for an example of how to add new actions
+        *outside* the core habitat_sim package.
+
+        :param controller: The class of the controller to register. Must inherit from `agent.SceneNodeControl`.
+            If :py:`None`, will return a wrapper for use with decorator syntax.
         :param name: The name to register the control with. If :py:`None`, will
             register with the name of the controller converted to snake case,
             i.e. a controller with class name ``MoveForward`` will be registered as
@@ -57,13 +58,6 @@ class registry:
             (thereby also moving the sensors) or manipulates just the sensors.
             This is a non-optional keyword arguement and must be set (this is done
             for readability).
-
-        See ``default_controls.py`` for an example of adding new actions. (Note
-        that this can be done *outside* the core habitat_sim codebase in exactly
-        the same way.)
-
-        See ``examples/new_actions.py`` for an example of how to add new actions
-        *outside* the core habitat_sim package.
         """
         assert (
             body_action is not None
@@ -91,4 +85,8 @@ class registry:
 
     @classmethod
     def get_move_fn(cls, name: str) -> SceneNodeControl:
+        r"""Retrieve the move_fn register under ``name``
+
+        :param name: The name provided to `register_move_fn`
+        """
         return cls._get_impl("move_fn", name)

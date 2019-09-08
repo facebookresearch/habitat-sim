@@ -34,7 +34,7 @@ class ActionSpec(object):
     r"""Defines how a specific action is implemented
 
     :property name: Name of the function implementing the action in the
-        `registration.registry`
+        `registry`
     :property actuation: Arguments that will be passed to the function
     """
     name: str

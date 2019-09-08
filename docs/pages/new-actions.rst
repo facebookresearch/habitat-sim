@@ -20,7 +20,7 @@ actuation_spec contains any parameters needed by that control function.
 See ``habitat_sim/agent/controls/default_controls.py`` for more example
 controls.
 
-Controls are registered using `habitat_sim.registration.registry.register_move_fn`.
+Controls are registered using `habitat_sim.registry.register_move_fn`.
 This function takes the functor to register and, optionally, the name
 to register it with, and whether or not the control effects the body or just
 the sensors. If no name is given, the functor is registered with its own name,
@@ -31,9 +31,9 @@ the control functor ``MyNewControl`` with the name ``my_new_control``:
 
 .. code:: py
 
-    from habitat_sim.registration import registry
+    import habitat_sim
 
-    @registry.register_move_fn(body_action=True)
+    @habitat_sim.registry.register_move_fn(body_action=True)
     class MyNewControl(habitat_sim.SceneNodeControl):
         pass
 

@@ -82,11 +82,19 @@
     We currently have the following actions added by default. Any action not
     registered with an explict name is given the snake case version of the
     class name, i.e. ``MoveForward`` can be accessed with the name
-    ``move_forward``.
+    ``move_forward``.  See `habitat_sim.registry.register_move_fn`, `habitat_sim.agent.SceneNodeControl`,
+    and `habitat_sim.agent.ActuationSpec`
 
     .. include:: ../habitat_sim/agent/controls/default_controls.py
         :code: py
-        :start-line: 6
+        :start-line: 38
+
+    And noisy actions from PyRobot.  See `habitat_sim.agent.PyRobotNoisyActuationSpec`
+
+    .. include:: ../habitat_sim/agent/controls/pyrobot_noisy_controls.py
+        :code: py
+        :start-line: 244
+
 
     Action space path finding
     =========================
