@@ -619,7 +619,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   // load atlas data and upload them to GPU
   LOG(INFO) << "loading atlas textures: ";
   for (size_t iMesh = 0; iMesh < renderingBuffers_.size(); ++iMesh) {
-    const std::string hdrFile = Corrade::Utility::Directory::join(
+    const std::string hdrFile = Cr::Utility::Directory::join(
         atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
 
     CORRADE_ASSERT(io::exists(hdrFile), "Error : Cannot find the .hdr file ", );
@@ -627,9 +627,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     LOG(INFO) << "Loading atlas " << iMesh + 1 << "/"
               << renderingBuffers_.size() << " from " << hdrFile << ". ";
 
-    Corrade::Containers::Array<const char,
-                               Corrade::Utility::Directory::MapDeleter>
-        data = Corrade::Utility::Directory::mapRead(hdrFile);
+    Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter> data =
+        Cr::Utility::Directory::mapRead(hdrFile);
     // divided by 6, since there are 3 channels, R, G, B, each of which takes 1
     // half_float (2 bytes)
     const int dim = static_cast<int>(std::sqrt(data.size() / 6));  // square
