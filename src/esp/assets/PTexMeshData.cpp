@@ -25,6 +25,8 @@
 static constexpr int ROTATION_SHIFT = 30;
 static constexpr int FACE_MASK = 0x3FFFFFFF;
 
+namespace Cr = Corrade;
+
 namespace esp {
 namespace assets {
 
@@ -625,17 +627,10 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
               << renderingBuffers_.size() << "... ";
     LOG(INFO).flush();
 
-    Corrade::Containers::Array<const char,
-                               Corrade::Utility::Directory::MapDeleter>
-        data = Corrade::Utility::Directory::mapRead(rgbFile);
+    Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter> data =
+        Cr::Utility::Directory::mapRead(rgbFile);
     const int dim = static_cast<int>(std::sqrt(data.size() / 3));  // square
 
-    // TODO:
-    // To be fixed:
-    // -) the file format is obsolete. The .rgb file is replaced by .hdr file;
-    // -) the texture format is wrong. It should be RGB16F;
-    // -) the storage should be set;
-    // MUST fix it in other PR.
     Magnum::ImageView2D image(Magnum::PixelFormat::RGB8UI, {dim, dim}, data);
     renderingBuffers_[iMesh]
         ->atlasTexture.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
