@@ -25,15 +25,14 @@
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
-#include "esp/gfx/PrimitiveIDTexturedDrawable.h"
-#include "esp/gfx/PrimitiveIDTexturedShader.h"
+#include "esp/gfx/PrimitiveIDDrawable.h"
+#include "esp/gfx/PrimitiveIDShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneGraph.h"
 
 #include "CollisionMeshData.h"
-#include "FRLInstanceMeshData.h"
 #include "GenericInstanceMeshData.h"
 #include "GltfMeshData.h"
 #include "MeshData.h"
@@ -66,8 +65,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
       LOG(ERROR) << "Cannot load from file " << info.filepath;
       meshSuccess = false;
     } else {
-      if (info.type == AssetType::FRL_INSTANCE_MESH ||
-          info.type == AssetType::INSTANCE_MESH) {
+      if (info.type == AssetType::INSTANCE_MESH) {
         meshSuccess = loadInstanceMeshData(info, parent, drawables);
       } else if (info.type == AssetType::FRL_PTEX_MESH) {
         meshSuccess = loadPTexMeshData(info, parent, drawables);
@@ -185,16 +183,8 @@ bool ResourceManager::loadScene(
     //! Collect collision mesh group
     std::vector<CollisionMeshData> meshGroup;
     for (int mesh_i = start; mesh_i <= end; mesh_i++) {
-      // FRL Quad Mesh
-      if (info.type == AssetType::FRL_INSTANCE_MESH) {
-        FRLInstanceMeshData* frlMeshData =
-            dynamic_cast<FRLInstanceMeshData*>(meshes_[mesh_i].get());
-        CollisionMeshData& meshData = frlMeshData->getCollisionMeshData();
-        meshGroup.push_back(meshData);
-      }
-
       // PLY Instance mesh
-      else if (info.type == AssetType::INSTANCE_MESH) {
+      if (info.type == AssetType::INSTANCE_MESH) {
         GenericInstanceMeshData* insMeshData =
             dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
         CollisionMeshData& meshData = insMeshData->getCollisionMeshData();
@@ -656,7 +646,7 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
     switch (type) {
       case INSTANCE_MESH_SHADER: {
         shaderPrograms_[INSTANCE_MESH_SHADER] =
-            std::make_shared<gfx::PrimitiveIDTexturedShader>();
+            std::make_shared<gfx::PrimitiveIDShader>();
       } break;
 
 #ifdef ESP_BUILD_PTEX_SUPPORT
@@ -753,9 +743,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
   // and add it to the shaderPrograms_
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
-    if (info.type == AssetType::FRL_INSTANCE_MESH) {
-      meshes_.emplace_back(std::make_unique<FRLInstanceMeshData>());
-    } else if (info.type == AssetType::INSTANCE_MESH) {
+    if (info.type == AssetType::INSTANCE_MESH) {
       meshes_.emplace_back(std::make_unique<GenericInstanceMeshData>());
     }
     int index = meshes_.size() - 1;
@@ -781,7 +769,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
           dynamic_cast<GenericInstanceMeshData*>(meshes_[iMesh].get());
       scene::SceneNode& node = parent->createChild();
       createDrawable(INSTANCE_MESH_SHADER, *instanceMeshData->getMagnumGLMesh(),
-                     node, drawables, instanceMeshData->getSemanticTexture());
+                     node, drawables);
     }
   }
 
@@ -1093,10 +1081,9 @@ gfx::Drawable& ResourceManager::createDrawable(
     // NOTE: this is a runtime error and will never return
     return *drawable;
   } else if (shaderType == INSTANCE_MESH_SHADER) {
-    auto* shader = static_cast<gfx::PrimitiveIDTexturedShader*>(
-        getShaderProgram(shaderType));
-    drawable = new gfx::PrimitiveIDTexturedDrawable{node, *shader, mesh, group,
-                                                    texture};
+    auto* shader =
+        static_cast<gfx::PrimitiveIDShader*>(getShaderProgram(shaderType));
+    drawable = new gfx::PrimitiveIDDrawable{node, *shader, mesh, group};
   } else {  // all other shaders use GenericShader
     auto* shader =
         static_cast<Magnum::Shaders::Flat3D*>(getShaderProgram(shaderType));
