@@ -502,9 +502,8 @@ void PTexMeshData::parsePLY(const std::string& filename,
 
   file.close();
 
-  Corrade::Containers::Array<const char,
-                             Corrade::Utility::Directory::MapDeleter>
-      mmappedData = Corrade::Utility::Directory::mapRead(filename);
+  Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter>
+      mmappedData = Cr::Utility::Directory::mapRead(filename);
 
   const size_t fileSize = io::fileSize(filename);
 
