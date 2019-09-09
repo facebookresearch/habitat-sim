@@ -19,30 +19,19 @@
 namespace esp {
 namespace gfx {
 
-class PrimitiveIDTexturedShader : public Magnum::GL::AbstractShaderProgram {
+class PrimitiveIDShader : public Magnum::GL::AbstractShaderProgram {
  public:
   /**
    * @brief Constructor
    */
-  explicit PrimitiveIDTexturedShader();
+  explicit PrimitiveIDShader();
 
   //! @brief vertex positions
   typedef Magnum::Shaders::Generic3D::Position Position;
   //! @brief vertex colors
   typedef Magnum::Shaders::Generic3D::Color3 Color3;
-
-  enum : int {
-    /**
-     * Hardcoded width of the primitive ID texture, since we wouldn't be able
-     * to fit it all into a 1D texture. Picking a power-of-two size as that
-     * nicely fits caches etc. Conservatively choosing 4K as 8K might not be
-     * supported on some platforms (mobile/WebGL, possibly). A 4096x4096
-     * texture fits 16M primitives, which should be enough. Smaller meshes will
-     * have the height much smaller while larger meshes are of course allowed
-     * to go beyond that -- e.g. 4096x6000 is not expected to be a problem.
-     */
-    PrimitiveIDTextureWidth = 4096
-  };
+  //! @brief object ids
+  typedef Magnum::GL::Attribute<5, Magnum::UnsignedInt> ObjectId;
 
   //! Color attachment location per output type
   enum : uint8_t {
@@ -56,13 +45,11 @@ class PrimitiveIDTexturedShader : public Magnum::GL::AbstractShaderProgram {
    * @brief Set transformation and projection matrix
    * @return Reference to self (for method chaining)
    */
-  PrimitiveIDTexturedShader& setTransformationProjectionMatrix(
+  PrimitiveIDShader& setTransformationProjectionMatrix(
       const Magnum::Matrix4& matrix) {
     setUniform(transformationProjectionMatrixUniform_, matrix);
     return *this;
   }
-
-  PrimitiveIDTexturedShader& bindTexture(Magnum::GL::Texture2D& texture);
 
  private:
   int transformationProjectionMatrixUniform_;

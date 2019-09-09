@@ -9,26 +9,23 @@
 namespace esp {
 namespace gfx {
 
-class PrimitiveIDTexturedShader;
+class PrimitiveIDShader;
 
-class PrimitiveIDTexturedDrawable : public Drawable {
+class PrimitiveIDDrawable : public Drawable {
  public:
-  //! Create a PrimitiveIDTexturedDrawable for the given object using shader
+  //! Create a PrimitiveIDDrawable for the given object using shader
   //! and mesh. Adds drawable to given group and uses provided texture,
   //! objectId, and color for textured, object id buffer and color shader
   //! output respectively
-  explicit PrimitiveIDTexturedDrawable(
+  explicit PrimitiveIDDrawable(
       scene::SceneNode& node,
-      PrimitiveIDTexturedShader& shader,
+      PrimitiveIDShader& shader,
       Magnum::GL::Mesh& mesh,
-      Magnum::SceneGraph::DrawableGroup3D* group = nullptr,
-      Magnum::GL::Texture2D* texture = nullptr);
+      Magnum::SceneGraph::DrawableGroup3D* group = nullptr);
 
  protected:
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
                     Magnum::SceneGraph::Camera3D& camera) override;
-
-  Magnum::GL::Texture2D* texture_;
 };
 
 }  // namespace gfx
