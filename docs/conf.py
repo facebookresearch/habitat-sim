@@ -45,8 +45,11 @@ PLUGINS = [
 CLASS_INDEX_EXPAND_LEVELS = 2
 
 NAME_MAPPING = {
+    # I have no idea what is going on with this thing -- it reports itself as
+    # being from the builtins module?
+    "quaternion": "quaternion.quaternion",
     # TODO: remove once the inventory file contains this info
-    "_magnum": "magnum"
+    "_magnum": "magnum",
 }
 PYBIND11_COMPATIBILITY = True
 ATTRS_COMPATIBILITY = True
@@ -73,6 +76,12 @@ LINKS_NAVBAR2 = [
 M_SPHINX_INVENTORIES = [
     ("python.inv", "https://docs.python.org/3/", [], ["m-doc-external"]),
     ("numpy.inv", "https://docs.scipy.org/doc/numpy/", [], ["m-doc-external"]),
+    (
+        "quaternion.inv",
+        "https://quaternion.readthedocs.io/en/latest/",
+        [],
+        ["m-doc-external"],
+    ),
     (
         "magnum-bindings.inv",
         "https://doc.magnum.graphics/python/",
