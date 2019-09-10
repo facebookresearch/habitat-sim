@@ -637,16 +637,18 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     // the size of each image is dim x dim x 3 (RGB) x 2 (half_float), which
     // equals to numBytes
     Magnum::ImageView2D image(Magnum::PixelFormat::RGB16F, {dim, dim}, data);
-    const int mipLevelCount = Magnum::Math::log2(image.size().min()) + 1;
-    const int mipLevel = 0;
 
     renderingBuffers_[iMesh]
         ->tex.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
         .setMagnificationFilter(Magnum::GL::SamplerFilter::Linear)
         .setMinificationFilter(Magnum::GL::SamplerFilter::Linear)
-        .setStorage(mipLevelCount, Magnum::GL::TextureFormat::RGB16F,
-                    image.size())
-        .setSubImage(mipLevel, {}, image)
+        .setStorage(
+            Magnum::Math::log2(image.size().min()) + 1,  // mip level count
+            Magnum::GL::TextureFormat::RGB16F,
+            image.size())
+        .setSubImage(0,   // mipLevel
+                     {},  // offset
+                     image)
         .generateMipmap();
   }
 
