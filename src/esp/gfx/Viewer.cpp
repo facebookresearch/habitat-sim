@@ -13,6 +13,7 @@
 #include <Magnum/GL/Renderer.h>
 #include <sophus/so3.hpp>
 #include "Drawable.h"
+#include "esp/core/esp.h"
 #include "esp/io/io.h"
 
 #include "esp/gfx/Simulator.h"
