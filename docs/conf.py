@@ -71,23 +71,10 @@ LINKS_NAVBAR2 = [
 ]
 
 M_SPHINX_INVENTORIES = [
-    # TODO: clean up once paths are relative to this file implicitly
+    ("python.inv", "https://docs.python.org/3/", [], ["m-doc-external"]),
+    ("numpy.inv", "https://docs.scipy.org/doc/numpy/", [], ["m-doc-external"]),
     (
-        os.path.join(os.path.realpath(os.path.dirname(__file__)), "python.inv"),
-        "https://docs.python.org/3/",
-        [],
-        ["m-doc-external"],
-    ),
-    (
-        os.path.join(os.path.realpath(os.path.dirname(__file__)), "numpy.inv"),
-        "https://docs.scipy.org/doc/numpy/",
-        [],
-        ["m-doc-external"],
-    ),
-    (
-        os.path.join(
-            os.path.realpath(os.path.dirname(__file__)), "magnum-bindings.inv"
-        ),
+        "magnum-bindings.inv",
         "https://doc.magnum.graphics/python/",
         [],
         ["m-doc-external"],
@@ -112,24 +99,20 @@ M_CODE_FILTERS_POST = {
 }
 
 M_DOX_TAGFILES = [
-    # TODO: the path should be relative to this file
     (
-        os.path.join(os.path.realpath(os.path.dirname(__file__)), "corrade.tag"),
+        "corrade.tag",
         "https://doc.magnum.graphics/corrade/",
         ["Corrade::"],
         ["m-doc-external"],
     ),
     (
-        os.path.join(os.path.realpath(os.path.dirname(__file__)), "magnum.tag"),
+        "magnum.tag",
         "https://doc.magnum.graphics/magnum/",
         ["Magnum::"],
         ["m-doc-external"],
     ),
     (
-        os.path.join(
-            os.path.realpath(os.path.dirname(__file__)),
-            "../build/docs/habitat-cpp/habitat-cpp.tag",
-        ),
+        "../build/docs/habitat-cpp/habitat-cpp.tag",
         "../habitat-cpp/",
         [],
         ["m-doc-external"],
