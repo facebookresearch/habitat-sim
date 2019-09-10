@@ -7,11 +7,12 @@
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/ArrayViewStl.h>
-#include <Magnum/GL/Texture.h>
-#include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/Functions.h>
+#include <Magnum/MeshTools/CombineIndexedArrays.h>
+#include <Magnum/MeshTools/Interleave.h>
+#include <Magnum/MeshTools/RemoveDuplicates.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Trade/Trade.h>
 
@@ -27,7 +28,7 @@
 
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
-#include "esp/gfx/PrimitiveIDTexturedShader.h"
+#include "esp/gfx/PrimitiveIDShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
@@ -44,33 +45,36 @@ void copyTo(std::shared_ptr<tinyply::PlyData> data, std::vector<T>& dst) {
   CHECK_EQ(data->buffer.size_bytes(), sizeof(T) * dst.size());
   std::memcpy(dst.data(), data->buffer.get(), data->buffer.size_bytes());
 }
-}  // namespace
 
-Mn::GL::Texture2D createInstanceTexture(
-    Cr::Containers::ArrayView<std::uint32_t> objectIds) {
-  const Mn::Vector2i textureSize{
-      gfx::PrimitiveIDTexturedShader::PrimitiveIDTextureWidth,
-      int(objectIds.size() +
-          gfx::PrimitiveIDTexturedShader::PrimitiveIDTextureWidth - 1) /
-          gfx::PrimitiveIDTexturedShader::PrimitiveIDTextureWidth};
-  Cr::Containers::Array<Mn::UnsignedShort> packedObjectIds{
-      Cr::Containers::NoInit, std::size_t(textureSize.product())};
-  for (std::size_t i = 0; i != objectIds.size(); ++i) {
-    ASSERT(objectIds[i] <= 65535);
-    packedObjectIds[i] = objectIds[i];
-  }
-  Mn::GL::Texture2D texture;
-  texture.setMinificationFilter(Mn::SamplerFilter::Nearest)
-      .setMagnificationFilter(Mn::SamplerFilter::Nearest)
-      .setWrapping(
-          {Mn::SamplerWrapping::ClampToEdge, Mn::SamplerWrapping::ClampToEdge})
-      .setStorage(1, Mn::GL::TextureFormat::R16UI, textureSize)
-      .setSubImage(0, {},
-                   Mn::ImageView2D{Mn::PixelFormat::R16UI, textureSize,
-                                   packedObjectIds});
-
-  return texture;
+template <typename T>
+void copyVec3To(std::shared_ptr<tinyply::PlyData> data, std::vector<T>& dst) {
+  dst.resize(data->count * 3);
+  CHECK_EQ(data->buffer.size_bytes(), sizeof(T) * dst.size());
+  std::memcpy(dst.data(), data->buffer.get(), data->buffer.size_bytes());
 }
+
+// TODO(msb) move this specialization to Magnum/MeshTools/CombineIndexedArrays.h
+template <class T,
+          typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
+std::vector<Mn::UnsignedInt> removeDuplicates(std::vector<T>& data) {
+  std::vector<Mn::UnsignedInt> resultIndices;
+  resultIndices.reserve(data.size());
+
+  std::unordered_map<T, Mn::UnsignedInt> table;
+  size_t cursor = 0;
+  for (size_t i = 0; i < data.size(); ++i) {
+    auto val = data[i];
+    auto result = table.emplace(val, cursor);
+    if (result.second) {
+      data[cursor++] = val;
+    }
+    resultIndices.push_back(result.first->second);
+  }
+  data.resize(cursor);
+
+  return resultIndices;
+}
+}  // namespace
 
 bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   cpu_vbo_.clear();
@@ -148,15 +152,17 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
     vertexPerFace =
         face_inds->buffer.size_bytes() / (face_inds->count * sizeof(uint32_t));
     if (vertexPerFace == 3) {
-      copyTo(face_inds, cpu_ibo_);
+      copyVec3To(face_inds, cpu_ibo_);
     } else {
       std::vector<vec4ui> tmp;
       copyTo(face_inds, tmp);
-      cpu_ibo_.reserve(tmp.size() * 2);
+      cpu_ibo_.reserve(tmp.size() * 2 * 3);
       // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0, 2, 3]
       for (auto& quad : tmp) {
-        cpu_ibo_.emplace_back(quad[0], quad[1], quad[2]);
-        cpu_ibo_.emplace_back(quad[0], quad[2], quad[3]);
+        constexpr int indices[] = {0, 1, 2, 0, 2, 3};
+        for (int i : indices) {
+          cpu_ibo_.push_back(quad[i]);
+        }
       }
     }
   } else {
@@ -169,24 +175,24 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
 
   // If the input mesh is a quad mesh, then we had to double the number of
   // primitives, so we also need to double the size of the object IDs buffer
-  objectIds_.reserve(object_ids->count * (vertexPerFace == 4 ? 2 : 1));
+  int indicesPerFace = 3 * (vertexPerFace == 4 ? 2 : 1);
+  objectIds_.reserve(object_ids->count * indicesPerFace);
   if (object_ids->t == tinyply::Type::INT32) {
     std::vector<int> tmp;
     copyTo(object_ids, tmp);
 
     for (auto& id : tmp) {
-      objectIds_.emplace_back(id);
-      if (vertexPerFace == 4)
-        objectIds_.emplace_back(id);
+      ASSERT(id <= 65535);
+      for (int i = 0; i < indicesPerFace; ++i)
+        objectIds_.push_back(id);
     }
   } else if (object_ids->t == tinyply::Type::UINT16) {
     std::vector<uint16_t> tmp;
     copyTo(object_ids, tmp);
 
     for (auto& id : tmp) {
-      objectIds_.emplace_back(id);
-      if (vertexPerFace == 4)
-        objectIds_.emplace_back(id);
+      for (int i = 0; i < indicesPerFace; ++i)
+        objectIds_.push_back(id);
     }
   } else {
     LOG(ERROR) << "Cannot load object_id of type "
@@ -225,30 +231,36 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
     return;
   }
 
-  renderingBuffer_.reset();
+  // TODO(msb) This processing could all be done off-line allowing us to
+  // simply mmap a file with the vertex buffer and index buffer.
+  std::vector<Mn::UnsignedInt> objectIdIndices = removeDuplicates(objectIds_);
+  Mn::GL::Buffer vertices, indices;
+  indices.setTargetHint(Mn::GL::Buffer::TargetHint::ElementArray);
+  indices.setData(
+      Mn::MeshTools::combineIndexedArrays(
+          std::make_pair(std::cref(objectIdIndices), std::ref(objectIds_)),
+          std::make_pair(std::cref(cpu_ibo_), std::ref(cpu_vbo_)),
+          std::make_pair(std::cref(cpu_ibo_), std::ref(cpu_cbo_))),
+      Mn::GL::BufferUsage::StaticDraw);
+  vertices.setData(
+      Mn::MeshTools::interleave(cpu_vbo_, cpu_cbo_, 1, objectIds_, 2),
+      Mn::GL::BufferUsage::StaticDraw);
+
   renderingBuffer_ =
       std::make_unique<GenericInstanceMeshData::RenderingBuffer>();
-
-  /* Pack primitive IDs into a texture. 1D texture won't be large enough so the
-     data have to be put into a 2D texture. For simplicity on both the C++ and
-     shader side the texture has a fixed width and height is dynamic, and
-     addressing is done as (gl_PrimitiveID % width, gl_PrimitiveID / width). */
-  ASSERT(objectIds_.size() == cpu_ibo_.size());
-  renderingBuffer_->tex = createInstanceTexture(objectIds_);
-  renderingBuffer_->vbo.setData(cpu_vbo_, Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->cbo.setData(cpu_cbo_, Magnum::GL::BufferUsage::StaticDraw);
-  renderingBuffer_->ibo.setData(cpu_ibo_, Magnum::GL::BufferUsage::StaticDraw);
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
-      .setCount(cpu_ibo_.size() * 3)
-      .addVertexBuffer(renderingBuffer_->vbo, 0,
-                       gfx::PrimitiveIDTexturedShader::Position{})
+      .setCount(cpu_ibo_.size())
       .addVertexBuffer(
-          renderingBuffer_->cbo, 0,
-          gfx::PrimitiveIDTexturedShader::Color3{
-              gfx::PrimitiveIDTexturedShader::Color3::DataType::UnsignedByte,
-              gfx::PrimitiveIDTexturedShader::Color3::DataOption::Normalized})
-      .setIndexBuffer(renderingBuffer_->ibo, 0,
-                      Magnum::GL::MeshIndexType::UnsignedInt);
+          std::move(vertices), 0, gfx::PrimitiveIDShader::Position{},
+          gfx::PrimitiveIDShader::Color3{
+              gfx::PrimitiveIDShader::Color3::DataType::UnsignedByte,
+              gfx::PrimitiveIDShader::Color3::DataOption::Normalized},
+          1,
+          gfx::PrimitiveIDShader::ObjectId{
+              gfx::PrimitiveIDShader::ObjectId::DataType::UnsignedShort},
+          2)
+      .setIndexBuffer(std::move(indices), 0,
+                      Mn::GL::MeshIndexType::UnsignedInt);
 
   buffersOnGPU_ = true;
 }

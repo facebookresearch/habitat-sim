@@ -33,6 +33,13 @@ using namespace Magnum;
 namespace esp {
 namespace gfx {
 
+namespace {
+enum TextureBindingPointIndex : uint8_t {
+  atlas = 0,
+  adjFaces = 1,
+};
+}
+
 PTexMeshShader::PTexMeshShader() {
   MAGNUM_ASSERT_GL_VERSION_SUPPORTED(GL::Version::GL410);
 
@@ -56,6 +63,28 @@ PTexMeshShader::PTexMeshShader() {
   attachShaders({vert, geom, frag});
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(link());
+
+  // set texture binding points in the shader;
+  // see ptex fragment shader code for details
+  setUniform(uniformLocation("atlasTex"), TextureBindingPointIndex::atlas);
+  // TODO: disable the "meshAdjFaces" on Mac
+  setUniform(uniformLocation("meshAdjFaces"),
+             TextureBindingPointIndex::adjFaces);
+}
+
+// Note: the texture binding points are explicitly specified above.
+// Cannot use "explicit uniform location" directly in shader since
+// it requires GL4.3 (We stick to GL4.1 for MacOS).
+PTexMeshShader& PTexMeshShader::bindAtlasTexture(
+    Magnum::GL::Texture2D& texture) {
+  texture.bind(TextureBindingPointIndex::atlas);
+  return *this;
+}
+
+PTexMeshShader& PTexMeshShader::bindAdjFacesBufferTexture(
+    Magnum::GL::BufferTexture& texture) {
+  texture.bind(TextureBindingPointIndex::adjFaces);
+  return *this;
 }
 
 }  // namespace gfx
