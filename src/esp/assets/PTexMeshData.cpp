@@ -581,10 +581,10 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
         std::make_unique<PTexMeshData::RenderingBuffer>());
 
     auto& currentMesh = renderingBuffers_.back();
-    currentMesh->vbo.setData(submeshes_[iMesh].vbo,
-                             Magnum::GL::BufferUsage::StaticDraw);
-    currentMesh->ibo.setData(submeshes_[iMesh].ibo,
-                             Magnum::GL::BufferUsage::StaticDraw);
+    currentMesh->vertexBuffer.setData(submeshes_[iMesh].vbo,
+                                      Magnum::GL::BufferUsage::StaticDraw);
+    currentMesh->indexBuffer.setData(submeshes_[iMesh].ibo,
+                                     Magnum::GL::BufferUsage::StaticDraw);
   }
   LOG(INFO) << "... done" << std::endl;
 
@@ -600,10 +600,11 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
     auto& currentMesh = renderingBuffers_[iMesh];
 
-    currentMesh->adjTex.setBuffer(Magnum::GL::BufferTextureFormat::R32UI,
-                                  currentMesh->abo);
-    currentMesh->abo.setData(adjFaces[iMesh],
-                             Magnum::GL::BufferUsage::StaticDraw);
+    currentMesh->adjFacesBufferTexture.setBuffer(
+        Magnum::GL::BufferTextureFormat::R32UI, currentMesh->adjFacesBuffer);
+    currentMesh->adjFacesBuffer.setData(adjFaces[iMesh],
+                                        Magnum::GL::BufferUsage::StaticDraw);
+    GLintptr offset = 0;
     currentMesh->mesh
         .setPrimitive(Magnum::GL::MeshPrimitive::LinesAdjacency)
         // Warning:
@@ -611,8 +612,9 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
         // setCount because that returns the number of bytes of the buffer, NOT
         // the index counts
         .setCount(submeshes_[iMesh].ibo.size())
-        .addVertexBuffer(currentMesh->vbo, 0, gfx::PTexMeshShader::Position{})
-        .setIndexBuffer(currentMesh->ibo, 0,
+        .addVertexBuffer(currentMesh->vertexBuffer, offset,
+                         gfx::PTexMeshShader::Position{})
+        .setIndexBuffer(currentMesh->indexBuffer, offset,
                         Magnum::GL::MeshIndexType::UnsignedInt);
   }
 
@@ -639,7 +641,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     Magnum::ImageView2D image(Magnum::PixelFormat::RGB16F, {dim, dim}, data);
 
     renderingBuffers_[iMesh]
-        ->tex.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
+        ->atlasTexture.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
         .setMagnificationFilter(Magnum::GL::SamplerFilter::Linear)
         .setMinificationFilter(Magnum::GL::SamplerFilter::Linear)
         .setStorage(
