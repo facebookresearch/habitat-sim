@@ -84,15 +84,6 @@ class Viewer : public Magnum::Platform::Application {
   std::vector<int> objectIDs_;
 
   Magnum::Timeline timeline_;
-
-  const Eigen::IOFormat eigenFlatFormat_{Eigen::StreamPrecision,
-                                         Eigen::DontAlignCols,
-                                         ", ",  // coef separator
-                                         ", ",  // row separator
-                                         "",    // row prefix
-                                         "",    // col prefix
-                                         "[",   // mat prefix
-                                         "]"};  // mat suffix
 };
 
 }  // namespace gfx

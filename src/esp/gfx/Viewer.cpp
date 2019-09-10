@@ -347,38 +347,32 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::A:
       controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
       LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data())
-                       .format(eigenFlatFormat_);
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::D:
       controls_(*agentBodyNode_, "moveRight", moveSensitivity);
       LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data())
-                       .format(eigenFlatFormat_);
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::S:
       controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
       LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data())
-                       .format(eigenFlatFormat_);
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::W:
       controls_(*agentBodyNode_, "moveForward", moveSensitivity);
       LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data())
-                       .format(eigenFlatFormat_);
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::X:
       controls_(*agentBodyNode_, "moveDown", moveSensitivity, false);
       LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data())
-                       .format(eigenFlatFormat_);
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::Z:
       controls_(*agentBodyNode_, "moveUp", moveSensitivity, false);
       LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data())
-                       .format(eigenFlatFormat_);
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::O: {
       if (physicsManager_ != nullptr) {
