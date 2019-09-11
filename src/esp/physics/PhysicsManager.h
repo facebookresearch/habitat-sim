@@ -642,7 +642,7 @@ class PhysicsManager {
    * class, since the mesh has already been successfully loaded by @ref
    * esp::assets::ResourceManager.
    * @param meshData The mesh to validate.
-   * @return True if valid, False otherwise.
+   * @return true if valid, false otherwise.
    */
   virtual bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData);
 
@@ -753,7 +753,7 @@ class PhysicsManager {
   bool initialized_ = false;
 
   /** @brief Determines the maximum number of @ref fixedTimeStep_ allowed per
-   * each call of @ref stepPhysics only for @ref BulletPhysicsManger. Has no
+   * each call of @ref stepPhysics only for @ref BulletPhysicsManager. Has no
    * effect on @ref PhysicsManager base class. Candidate for removal... */
   int maxSubSteps_ = 10;
 
