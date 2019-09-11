@@ -28,7 +28,7 @@ namespace physics {
 Defines its treatment by the simulator and operations which can be performed on
 it.
 */
-enum MotionType {
+enum class MotionType {
   /**
    * Refers to an error (such as a query to non-existing object).
    */
@@ -60,7 +60,7 @@ enum MotionType {
 @brief Category of a @ref RigidObject. Defines treatment of the object in @ref
 PhysicsManager. Also denotes the status of an object as initialized or not.
 */
-enum RigidObjectType {
+enum class RigidObjectType {
   /**
    * The object is not initialized yet. Set as default on construction.
    */
@@ -444,7 +444,7 @@ class RigidObject : public scene::SceneNode {
   /** @brief The @ref RigidObjectType of the object. Identifies what role the
    * object plays in the phyiscal world. A value of @ref RigidObjectType::NONE
    * identifies the object as uninitialized.*/
-  RigidObjectType rigidObjectType_ = NONE;
+  RigidObjectType rigidObjectType_ = RigidObjectType::NONE;
 
   /** @brief Used to synchronize other simulator's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic

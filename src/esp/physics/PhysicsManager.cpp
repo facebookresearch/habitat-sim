@@ -103,7 +103,7 @@ MotionType PhysicsManager::getObjectMotionType(const int physObjectID) {
   if (existingObjects_.count(physObjectID) > 0) {
     return existingObjects_[physObjectID]->getMotionType();
   }
-  return ERROR_MOTIONTYPE;
+  return MotionType::ERROR_MOTIONTYPE;
 }
 
 int PhysicsManager::allocateObjectID() {

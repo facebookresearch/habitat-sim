@@ -161,7 +161,7 @@ class PhysicsManager {
    * manipulation by dynamic processes or kinematic control.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @param  mt The desired @refMotionType of the object to set.
+   * @param  mt The desired @ref MotionType of the object to set.
    * @return True if set was successful and False otherwise.
    */
   bool setObjectMotionType(const int physObjectID, MotionType mt);
