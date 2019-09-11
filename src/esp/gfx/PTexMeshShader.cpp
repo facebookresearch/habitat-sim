@@ -110,8 +110,9 @@ PTexMeshShader& PTexMeshShader::setSaturation(float saturation) {
   return *this;
 }
 
-PTexMeshShader& PTexMeshShader::setAtlasTextureSize(Magnum::GL::Texture2D& texture,
-                                                    uint32_t tileSize) {
+PTexMeshShader& PTexMeshShader::setAtlasTextureSize(
+    Magnum::GL::Texture2D& texture,
+    uint32_t tileSize) {
   setUniform(tileSizeUniform_, (int)tileSize);
 
   // Image size in given mip level 0
