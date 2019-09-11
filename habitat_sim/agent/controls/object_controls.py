@@ -10,7 +10,7 @@ import quaternion
 
 import habitat_sim.bindings as hsim
 from habitat_sim.agent.controls.controls import ActuationSpec
-from habitat_sim.registration import registry
+from habitat_sim.registry import registry
 
 # epislon used to deal with machine precision
 EPS = 1e-5

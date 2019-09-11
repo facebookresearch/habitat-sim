@@ -13,7 +13,7 @@ import scipy.stats
 import habitat_sim.bindings as hsim
 from habitat_sim import utils
 from habitat_sim.agent.controls.controls import ActuationSpec, SceneNodeControl
-from habitat_sim.registration import registry
+from habitat_sim.registry import registry
 
 
 @attr.s(auto_attribs=True)
