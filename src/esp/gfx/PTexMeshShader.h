@@ -45,7 +45,7 @@ class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
   // therefore, cache the locations in the constructor
   int MVPMatrixUniform_;
   int exposureUniform_;
-  int gammaUniform_;
+  int gammaInverseUniform_;
   int saturationUniform_;
   int tileSizeUniform_;
   int widthInTilesUniform_;

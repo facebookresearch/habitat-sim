@@ -69,7 +69,7 @@ PTexMeshShader::PTexMeshShader() {
   // cache the uniform locations
   MVPMatrixUniform_ = uniformLocation("MVP");
   exposureUniform_ = uniformLocation("exposure");
-  gammaUniform_ = uniformLocation("gamma");
+  gammaInverseUniform_ = uniformLocation("gammaInverse");
   saturationUniform_ = uniformLocation("saturation");
   tileSizeUniform_ = uniformLocation("tileSize");
   widthInTilesUniform_ = uniformLocation("widthInTiles");
@@ -101,7 +101,7 @@ PTexMeshShader& PTexMeshShader::setExposure(float exposure) {
 }
 PTexMeshShader& PTexMeshShader::setGamma(float gamma) {
   // Careful: we set its inverse, not gamma directly
-  setUniform(gammaUniform_, 1.0f / gamma);
+  setUniform(gammaInverseUniform_, 1.0f / gamma);
   return *this;
 }
 
