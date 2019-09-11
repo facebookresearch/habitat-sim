@@ -177,8 +177,7 @@ uniform float saturation;
 in vec2 uv;
 
 void main() {
-  vec4 c = textureAtlas(atlasTex, gl_PrimitiveID, uv * tileSize);
-	c *= exposure;
+  vec4 c = textureAtlas(atlasTex, gl_PrimitiveID, uv * tileSize) * exposure;
 	applySaturation(c, saturation);
 	c.rgb = pow(c.rgb, vec3(gamma));
 	FragColor = vec4(c.rgb, 1.0f);
