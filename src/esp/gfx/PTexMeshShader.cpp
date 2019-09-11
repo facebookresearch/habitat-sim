@@ -110,14 +110,14 @@ PTexMeshShader& PTexMeshShader::setSaturation(float saturation) {
   return *this;
 }
 
-PTexMeshShader& PTexMeshShader::setAtlasTextureSize(Magnum::GL::Texture2D& tex,
+PTexMeshShader& PTexMeshShader::setAtlasTextureSize(Magnum::GL::Texture2D& texture,
                                                     uint32_t tileSize) {
   setUniform(tileSizeUniform_, (int)tileSize);
 
   // Image size in given mip level 0
   int mipLevel = 0;
   int widthEntry = 0;
-  const auto width = tex.imageSize(mipLevel)[widthEntry];
+  const auto width = texture.imageSize(mipLevel)[widthEntry];
   setUniform(widthInTilesUniform_, int(width / tileSize));
   return *this;
 }
