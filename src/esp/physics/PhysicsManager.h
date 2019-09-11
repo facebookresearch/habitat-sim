@@ -6,7 +6,7 @@
 
 /** @file
  * @brief Class @ref esp::physics::PhysicsManager, enum @ref
- * PhysicsSimulationLibrary
+ * esp::physics::PhysicsManager::PhysicsSimulationLibrary
  */
 
 #include <map>
@@ -32,6 +32,7 @@ namespace assets {
 class ResourceManager;
 }
 
+//! core physics simulation namespace
 namespace physics {
 
 // TODO: repurpose to manage multiple physical worlds. Currently represents
@@ -56,8 +57,9 @@ class PhysicsManager {
   /**
    * @brief Construct a PhysicsManager with access to specific resourse assets.
    *
-   * @param _resourceManager    The ResourceManager which tracks the assets this
-   * PhysicsManager will have access to.
+   * @param _resourceManager    The @ref esp::assets::ResourceManager which
+   * tracks the assets this
+   * @ref PhysicsManager will have access to.
    */
   explicit PhysicsManager(assets::ResourceManager* _resourceManager) {
     resourceManager_ = _resourceManager;
@@ -102,10 +104,11 @@ class PhysicsManager {
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /** @brief Instance a physical object from an object properties template in
-   * the @ref ResourceManager::physicsObjectLibrary_.
+   * the @ref esp::assets::ResourceManager::physicsObjectLibrary_.
    *  @anchor addObject_string
    *  @param configFile The filename of the object's physical properties file
-   * used as the key to query @ref ResourceManager::physicsObjectLibrary_
+   * used as the key to query @ref
+   * esp::assets::ResourceManager::physicsObjectLibrary_
    *  @param drawables Reference to the scene graph drawables group to enable
    * rendering of the newly initialized object.
    *  @return the instanced object's ID, mapping to it in @ref
@@ -114,11 +117,11 @@ class PhysicsManager {
   int addObject(const std::string& configFile, DrawableGroup* drawables);
 
   /** @brief Instance a physical object from an object properties template in
-   * the @ref ResourceManager::physicsObjectLibrary_ by object library index.
-   * Queries the properties filename and calls @ref addObject(const std::string&
-   * configFile, DrawableGroup* drawables).
+   * the @ref esp::assets::ResourceManager::physicsObjectLibrary_ by object
+   * library index. Queries the properties filename and calls @ref
+   * addObject(const std::string& configFile, DrawableGroup* drawables).
    *  @param objectLibIndex The index of the object's template in @ref
-   * ResourceManager::physicsObjectLibrary_
+   * esp::assets::ResourceManager::physicsObjectLibrary_
    *  @param drawables Reference to the scene graph drawables group to enable
    * rendering of the newly initialized object.
    *  @return the instanced object's ID, mapping to it in @ref
@@ -227,9 +230,10 @@ class PhysicsManager {
 
   /** @brief Set the friction coefficient of the scene collision geometry. See
    * @ref sceneNode_.
-   * @param The scalar friction coefficient of the scene geometry.
+   * @param frictionCoefficient The scalar friction coefficient of the scene
+   * geometry.
    */
-  virtual void setSceneFrictionCoefficient(const double){};
+  virtual void setSceneFrictionCoefficient(const double frictionCoefficient){};
 
   /** @brief Get the current coefficient of restitution for the scene collision
    * geometry. This determines the ratio of initial to final relative velocity
@@ -242,9 +246,10 @@ class PhysicsManager {
   /** @brief Set the coefficient of restitution for the scene collision
    * geometry. See @ref sceneNode_. By default does nothing since kinametic
    * scenes have no dynamics.
-   * @param The scalar coefficient of restitution to set.
+   * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
-  virtual void setSceneRestitutionCoefficient(const double){};
+  virtual void setSceneRestitutionCoefficient(
+      const double restitutionCoefficient){};
 
   // ============ Object Transformation functions =============
 
@@ -313,6 +318,19 @@ class PhysicsManager {
   void rotate(const int physObjectID,
               const Magnum::Rad angleInRad,
               const Magnum::Vector3& normalizedAxis);
+
+  /** @brief Modify the orientation of an object kinematically by applying an
+   * axis-angle rotation to it in the local coordinate system. Calling this
+   * during simulation of a @ref MotionType::DYNAMIC object is not recommended.
+   * @param  physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param angleInRad The angle of rotation in radians.
+   * @param normalizedAxis The desired unit vector axis of rotation in the local
+   * coordinate system.
+   */
+  void rotateLocal(const int physObjectID,
+                   const Magnum::Rad angleInRad,
+                   const Magnum::Vector3& normalizedAxis);
 
   /** @brief Modify the orientation of an object kinematically by applying a
    * rotation to it about the global X axis. Calling this during simulation of a
@@ -406,25 +424,27 @@ class PhysicsManager {
    * this value. See @ref RigidObject::setCOM.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @param COM The new 3D center of mass for the object.
+   * @param COM The new 3D center of mass for the object in the local coordinate
+   * system.
    */
   void setCOM(const int physObjectID, const Magnum::Vector3& COM);
 
   /** @brief Set the diagonal of the inertia matrix for an object.
    * If an object is aligned with its principle axii of inertia, the 3x3 inertia
-   * matrix can be reduced to a diagonal. See @ref RigidObject::setIntertia.
+   * matrix can be reduced to a diagonal. See @ref
+   * RigidObject::setInertiaVector.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param inertia The new diagonal for the object's inertia matrix.
    */
-  void setInertia(const int physObjectID, const Magnum::Vector3& inertia);
+  void setInertiaVector(const int physObjectID, const Magnum::Vector3& inertia);
 
   /** @brief Set the uniform scale for an object.
    * See @ref RigidObject::setScale.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param scale The new scalar uniform scale for the object relative to its
-   * iniitally loaded meshes.
+   * initially loaded meshes.
    */
   void setScale(const int physObjectID, const double scale);
 
@@ -479,7 +499,7 @@ class PhysicsManager {
    * See @ref RigidObject::getCOM.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return Object 3D center of mass.
+   * @return Object 3D center of mass in the local coordinate system.
    */
   Magnum::Vector3 getCOM(const int physObjectID);
 
@@ -543,7 +563,7 @@ class PhysicsManager {
   // ============= Platform dependent function =============
 
   /** @brief Get the scalar collision margin of an object.
-   * See @ref RigidObject::getMargin.
+   * See @ref BulletRigidObject::getMargin.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @return The scalar collision margin of the object.
@@ -551,8 +571,8 @@ class PhysicsManager {
   virtual double getMargin(const int physObjectID) { return 0.0; };
 
   /** @brief Set the scalar collision margin of an object.
-   * See @ref RigidObject::setMargin. Nothing is set if no implementation using
-   * a collision margin is in use.
+   * See @ref BulletRigidObject::setMargin. Nothing is set if no implementation
+   * using a collision margin is in use.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param  margin The desired collision margin for the object.
@@ -563,8 +583,8 @@ class PhysicsManager {
 
   /** @brief Get the number of objects in @ref PhysicsManager::existingObjects_
    * considered active by the physics simulator currently in use. See @ref
-   * RigidObject::getActive.
-   * @return  The number of active @ref RigidObjects.
+   * RigidObject::isActive.
+   * @return  The number of active @ref RigidObject instances.
    */
   int checkActiveObjects();
 
@@ -617,7 +637,7 @@ class PhysicsManager {
   /** @brief Check if a particular mesh can be used as a collision mesh for a
    * particular physics implemenation. Always True for base @ref PhysicsManager
    * class, since the mesh has already been successfully loaded by @ref
-   * ResourceManager.
+   * esp::assets::ResourceManager.
    * @param meshData The mesh to validate.
    * @return True if valid, False otherwise.
    */
@@ -646,8 +666,8 @@ class PhysicsManager {
       const std::vector<assets::CollisionMeshData>& meshGroup,
       assets::PhysicsObjectAttributes physicsObjectAttributes);
 
-  /** @brief A pointer to a @ref ResourceManager which holds assets that can be
-   * accessed by this @ref PhysicsManager*/
+  /** @brief A pointer to a @ref esp::assets::ResourceManager which holds assets
+   * that can be accessed by this @ref PhysicsManager*/
   assets::ResourceManager* resourceManager_;
 
   //! ==== physics engines ====
@@ -680,8 +700,8 @@ class PhysicsManager {
   };
 
   /** @brief The current physics library implementation used by this
-   * @PhysicsManager. Can be used to correctly cast the @PhysicsManager to its
-   * derived type if necessary.*/
+   * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager
+   * to its derived type if necessary.*/
   PhysicsSimulationLibrary activePhysSimLib_ = NONE;  // default
 
   /**
@@ -703,7 +723,13 @@ class PhysicsManager {
   //! ==== Rigid object memory management ====
 
   /** @brief Maps object IDs to all existing physical object instances in the
-   * world. */
+   * world.
+   * @ref PhysicsManager does not own a @ref RigidObject.
+   * The @ref scene::SceneGraph has complete ownership over all @ref
+   * scene::SceneNode objects.
+   * As such, this structure should be cleared before the @ref scene::SceneGraph
+   * owning the objects or this structure will likely contain null object
+   * pointers. */
   std::map<int, physics::RigidObject*> existingObjects_;
 
   /** @brief A counter of unique object ID's allocated thus far. Used to

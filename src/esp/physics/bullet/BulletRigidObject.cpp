@@ -345,7 +345,7 @@ void BulletRigidObject::setCOM(const Magnum::Vector3&) {
         btTransform(Magnum::Matrix4<float>::translation(COM)));*/
 }
 
-void BulletRigidObject::setInertia(const Magnum::Vector3& inertia) {
+void BulletRigidObject::setInertiaVector(const Magnum::Vector3& inertia) {
   if (rigidObjectType_ == SCENE)
     return;
   else

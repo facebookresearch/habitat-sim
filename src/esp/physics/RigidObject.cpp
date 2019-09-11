@@ -90,121 +90,104 @@ void RigidObject::syncPose() {
   return;
 }
 
-scene::SceneNode& RigidObject::setTransformation(
-    const Magnum::Matrix4& transformation) {
+void RigidObject::setTransformation(const Magnum::Matrix4& transformation) {
   if (objectMotionType_ != STATIC) {
     scene::SceneNode::setTransformation(transformation);
     syncPose();
   }
-  return *this;
 }
 
-scene::SceneNode& RigidObject::setTranslation(const Magnum::Vector3& vector) {
+void RigidObject::setTranslation(const Magnum::Vector3& vector) {
   if (objectMotionType_ != STATIC) {
     scene::SceneNode::setTranslation(vector);
     syncPose();
   }
-  return *this;
 }
 
-scene::SceneNode& RigidObject::setRotation(
-    const Magnum::Quaternion& quaternion) {
+void RigidObject::setRotation(const Magnum::Quaternion& quaternion) {
   if (objectMotionType_ != STATIC) {
     scene::SceneNode::setRotation(quaternion);
     syncPose();
   }
-  return *this;
 }
 
-scene::SceneNode& RigidObject::resetTransformation() {
+void RigidObject::resetTransformation() {
   if (objectMotionType_ != STATIC) {
     scene::SceneNode::resetTransformation();
     syncPose();
   }
-  return *this;
 }
 
-scene::SceneNode& RigidObject::translate(const Magnum::Vector3& vector) {
+void RigidObject::translate(const Magnum::Vector3& vector) {
   if (objectMotionType_ != STATIC) {
     scene::SceneNode::translate(vector);
     syncPose();
   }
-  return *this;
 }
 
-scene::SceneNode& RigidObject::translateLocal(const Magnum::Vector3& vector) {
+void RigidObject::translateLocal(const Magnum::Vector3& vector) {
   if (objectMotionType_ != STATIC) {
     scene::SceneNode::translateLocal(vector);
     syncPose();
   }
-  return *this;
 }
 
-scene::SceneNode& RigidObject::rotate(const Magnum::Rad angleInRad,
-                                      const Magnum::Vector3& normalizedAxis) {
+void RigidObject::rotate(const Magnum::Rad angleInRad,
+                         const Magnum::Vector3& normalizedAxis) {
   if (objectMotionType_ != STATIC) {
     scene::SceneNode::rotate(angleInRad, normalizedAxis);
     syncPose();
   }
-  return *this;
 }
 
-scene::SceneNode& RigidObject::rotateLocal(
-    const Magnum::Rad angleInRad,
-    const Magnum::Vector3& normalizedAxis) {
+void RigidObject::rotateLocal(const Magnum::Rad angleInRad,
+                              const Magnum::Vector3& normalizedAxis) {
   if (objectMotionType_ != STATIC) {
     scene::SceneNode::rotateLocal(angleInRad, normalizedAxis);
     syncPose();
   }
-  return *this;
 }
 
-scene::SceneNode& RigidObject::rotateX(const Magnum::Rad angleInRad) {
+void RigidObject::rotateX(const Magnum::Rad angleInRad) {
   if (objectMotionType_ != STATIC) {
     scene::SceneNode::rotateX(angleInRad);
     syncPose();
   }
-  return *this;
 }
 
-scene::SceneNode& RigidObject::rotateXLocal(const Magnum::Rad angleInRad) {
+void RigidObject::rotateXLocal(const Magnum::Rad angleInRad) {
   if (objectMotionType_ != STATIC) {
     scene::SceneNode::rotateXLocal(angleInRad);
     syncPose();
   }
-  return *this;
 }
 
-scene::SceneNode& RigidObject::rotateY(const Magnum::Rad angleInRad) {
+void RigidObject::rotateY(const Magnum::Rad angleInRad) {
   if (objectMotionType_ != STATIC) {
     scene::SceneNode::rotateY(angleInRad);
     syncPose();
   }
-  return *this;
 }
 
-scene::SceneNode& RigidObject::rotateYLocal(const Magnum::Rad angleInRad) {
+void RigidObject::rotateYLocal(const Magnum::Rad angleInRad) {
   if (objectMotionType_ != STATIC) {
     scene::SceneNode::rotateYLocal(angleInRad);
     syncPose();
   }
-  return *this;
 }
 
-scene::SceneNode& RigidObject::rotateZ(const Magnum::Rad angleInRad) {
+void RigidObject::rotateZ(const Magnum::Rad angleInRad) {
   if (objectMotionType_ != STATIC) {
     scene::SceneNode::rotateZ(angleInRad);
     syncPose();
   }
-  return *this;
 }
 
-scene::SceneNode& RigidObject::rotateZLocal(const Magnum::Rad angleInRad) {
+void RigidObject::rotateZLocal(const Magnum::Rad angleInRad) {
   if (objectMotionType_ != STATIC) {
     scene::SceneNode::rotateZLocal(angleInRad);
     syncPose();
   }
-  return *this;
 }
 
 Magnum::Vector3 RigidObject::getCOM() {

@@ -64,7 +64,7 @@ class BulletRigidObject : public RigidObject {
 
   void setMass(const double mass);
   void setCOM(const Magnum::Vector3& COM);
-  void setInertia(const Magnum::Vector3& inertia);
+  void setInertiaVector(const Magnum::Vector3& inertia);
   void setScale(const double scale);
   void setFrictionCoefficient(const double frictionCoefficient);
   void setRestitutionCoefficient(const double restitutionCoefficient);

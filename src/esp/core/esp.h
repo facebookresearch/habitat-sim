@@ -59,6 +59,7 @@ std::ostream& operator<<(std::ostream& os,
 // EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix4d)
 // EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector4uc)
 
+//! core simulator namespace
 namespace esp {
 
 // basic types

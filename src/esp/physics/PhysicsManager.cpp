@@ -285,6 +285,15 @@ void PhysicsManager::rotate(const int physObjectID,
     existingObjects_[physObjectID]->rotate(angleInRad, normalizedAxis);
   }
 }
+
+void PhysicsManager::rotateLocal(const int physObjectID,
+                                 const Magnum::Rad angleInRad,
+                                 const Magnum::Vector3& normalizedAxis) {
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->rotateLocal(angleInRad, normalizedAxis);
+  }
+}
+
 void PhysicsManager::rotateX(const int physObjectID,
                              const Magnum::Rad angleInRad) {
   if (existingObjects_.count(physObjectID) > 0) {
@@ -360,11 +369,11 @@ void PhysicsManager::setCOM(const int physObjectID,
     existingObjects_[physObjectID]->setCOM(COM);
   }
 }
-void PhysicsManager::setInertia(const int physObjectID,
-                                const Magnum::Vector3& inertia) {
+void PhysicsManager::setInertiaVector(const int physObjectID,
+                                      const Magnum::Vector3& inertia) {
   // TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
-    existingObjects_[physObjectID]->setInertia(inertia);
+    existingObjects_[physObjectID]->setInertiaVector(inertia);
   }
 }
 void PhysicsManager::setScale(const int physObjectID, const double scale) {

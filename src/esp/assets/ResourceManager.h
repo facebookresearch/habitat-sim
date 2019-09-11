@@ -49,6 +49,9 @@ class RigidObject;
 }  // namespace physics
 namespace assets {
 
+/**
+@brief Loaded asset and resource manager.
+*/
 class ResourceManager {
  public:
   // Singleton

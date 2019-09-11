@@ -68,13 +68,14 @@ enum RigidObjectType {
 
   /**
    * The object is a @ref MotionType::STATIC scene collision geometry.
-   * See @PhysicsManager::addScene.
+   * See @ref PhysicsManager::addScene.
    */
   SCENE,
 
   /**
-   * The object is a standard rigid object and should be present in @ref
-   * @PhysicsManager::existingObjects_. See @PhysicsManager::addObject.
+   * The object is a standard rigid object and should be tracked in @ref
+   * PhysicsManager::existingObjects_.
+   * @ref PhysicsManager::existingObjects_. See @ref PhysicsManager::addObject.
    */
   OBJECT
 
@@ -82,114 +83,372 @@ enum RigidObjectType {
 
 /**
 @brief A @ref scene::SceneNode representing an individual rigid object instance.
-This may be a @ref MotionType::STATIC scene collision geometry or an object of
-any @ref MotionType which can interact with other members of a physical world.
-Must have a collision mesh.
-By default, a RigidObject is @ref MotionType::KINEMATIC without an underlying
-simulator implementation, but derived classes can be used to introduce specific
-implementations of dynamics.
+Note that the @ref scene::SceneGraph owns all scene nodes. This may be a @ref
+MotionType::STATIC scene collision geometry or an object of any @ref MotionType
+which can interact with other members of a physical world. Must have a collision
+mesh. By default, a RigidObject is @ref MotionType::KINEMATIC without an
+underlying simulator implementation. Derived classes can be used to introduce
+specific implementations of dynamics.
 */
 class RigidObject : public scene::SceneNode {
  public:
+  /**
+   * @brief Constructor for a @ref RigidObject.
+   * @param parent The parent @ref scene::SceneNode to this object, likely the
+   * @ref PhysicsManager::physicsNode_.
+   */
   RigidObject(scene::SceneNode* parent);
 
-  // TODO: Currently a RigidObject is either a scene
-  // or an object, but cannot be both (tracked by _isScene/_isObject_)
-  // there is probably a better way to abstract this
+  /**
+   * @brief Initializes this @ref RigidObject as static scene geometry. See @ref
+   * PhysicsManager::sceneNode_. Sets @ref rigidObjectType_ to @ref
+   * RigidObjectType::SCENE.
+   * @param physicsSceneAttributes The template structure defining relevant
+   * phyiscal parameters for the physical scene.
+   * @param meshGroup The collision mesh data for the scene.
+   * @return true if initialized successfully, false otherwise.
+   */
   virtual bool initializeScene(
       const assets::PhysicsSceneAttributes& physicsSceneAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
+  /**
+   * @brief Initializes this @ref RigidObject as a potentially moveable object.
+   * Sets @ref rigidObjectType_ to @ref RigidObjectType::OBJECT.
+   * @param physicsObjectAttributes The template structure defining relevant
+   * phyiscal parameters for the object. See @ref
+   * esp::assets::ResourceManager::physicsObjectLibrary_.
+   * @param meshGroup The collision mesh data for the object.
+   * @return true if initialized successfully, false otherwise.
+   */
   virtual bool initializeObject(
       const assets::PhysicsObjectAttributes& physicsObjectAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
+  /**
+   * @brief Destructor for a @ref RigidObject.
+   */
   ~RigidObject(){};
 
-  //! Check whether object is being actively simulated, or sleeping
+  /**
+   * @brief Check whether object is being actively simulated, or sleeping.
+   * Kinematic objects are always active, but derived dynamics implementations
+   * may not be.
+   * @return true if active, false otherwise.
+   */
   virtual bool isActive();
+
+  /**
+   * @brief Set whether object is being actively simulated, or sleeping.
+   * Kinematic objects are always active, but derived dynamics implementations
+   * may not be.
+   */
   virtual void setActive(){};
 
-  // attempt to set the motion type. Return false=failure, true=success.
+  /**
+   * @brief Set the @ref MotionType of the object. If the object is @ref
+   * ObjectType::SCENE it can only be @ref MotionType::STATIC. If the object is
+   * @ref ObjectType::OBJECT is can also be set to @ref MotionType::KINEMATIC.
+   * Only if a dervied @ref PhysicsManager implementing dynamics is in use can
+   * the object be set to @ref MotionType::DYNAMIC.
+   * @param mt The desirved @ref MotionType.
+   * @return true if successfully set, false otherwise.
+   */
   virtual bool setMotionType(MotionType mt);
+
+  /**
+   * @brief Get the @ref MotionType of the object. See @ref setMotionType.
+   * @return The object's current @ref MotionType.
+   */
   MotionType getMotionType() { return objectMotionType_; };
 
-  //! Force interaction
+  /**
+   * @brief Apply a force to an object through a dervied dynamics
+   * implementation. Does nothing for @ref MotionType::STATIC and @ref
+   * MotionType::KINEMATIC objects.
+   * @param force The desired force on the object in the global coordinate
+   * system.
+   * @param relPos The desired location of force application in the global
+   * coordinate system relative to the object's center of mass.
+   */
   virtual void applyForce(const Magnum::Vector3& force,
                           const Magnum::Vector3& relPos);
-  // Impulse Force interaction
+
+  /**
+   * @brief Apply an impulse to an object through a dervied dynamics
+   * implementation. Directly modifies the object's velocity without requiring
+   * integration through simulation. Does nothing for @ref MotionType::STATIC
+   * and @ref MotionType::KINEMATIC objects.
+   * @param impulse The desired impulse on the object in the global coordinate
+   * system.
+   * @param relPos The desired location of impulse application in the global
+   * coordinate system relative to the object's center of mass.
+   */
   virtual void applyImpulse(const Magnum::Vector3& impulse,
                             const Magnum::Vector3& relPos);
 
-  //! Torque interaction
+  /**
+   * @brief Apply an internal torque to an object through a dervied dynamics
+   * implementation. Does nothing for @ref MotionType::STATIC and @ref
+   * MotionType::KINEMATIC objects.
+   * @param torque The desired torque on the object in the local coordinate
+   * system.
+   */
   virtual void applyTorque(const Magnum::Vector3& torque);
-  // Impulse Torque interaction
+
+  /**
+   * @brief Apply an internal impulse torque to an object through a dervied
+   * dynamics implementation. Does nothing for @ref MotionType::STATIC and @ref
+   * MotionType::KINEMATIC objects.
+   * @param impulse The desired impulse torque on the object in the local
+   * coordinate system. Directly modifies the object's angular velocity without
+   * requiring integration through simulation.
+   */
   virtual void applyImpulseTorque(const Magnum::Vector3& impulse);
 
-  //! (Prototype) For visualizing & debugging
-  void debugForce(Magnum::SceneGraph::DrawableGroup3D& debugDrawables);
-  //! (Prototype) For visualizing & debugging
-  void setDebugForce(Magnum::Vector3& force);
-
+  /**
+   * @brief Remove the object from any connected physics simulator implemented
+   * by a derived @ref PhysicsManager. Does nothing for default @ref
+   * PhysicsManager.
+   * @return true if successful, false otherwise.
+   */
   virtual bool removeObject();
 
   // ==== Transformations ===
-  //! Need to overwrite a bunch of functions to update physical states
-  virtual SceneNode& setTransformation(const Magnum::Matrix4& transformation);
-  virtual SceneNode& setTranslation(const Magnum::Vector3& vector);
-  virtual SceneNode& setRotation(const Magnum::Quaternion& quaternion);
 
-  virtual SceneNode& resetTransformation();
-  virtual SceneNode& translate(const Magnum::Vector3& vector);
-  virtual SceneNode& translateLocal(const Magnum::Vector3& vector);
+  /** @brief Set the 4x4 transformation matrix of the object kinematically.
+   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
+   * recommended.
+   * @param transformation The desired 4x4 transform of the object.
+   */
+  virtual void setTransformation(const Magnum::Matrix4& transformation);
 
-  virtual SceneNode& rotate(const Magnum::Rad angleInRad,
-                            const Magnum::Vector3& normalizedAxis);
-  virtual SceneNode& rotateLocal(const Magnum::Rad angleInRad,
-                                 const Magnum::Vector3& normalizedAxis);
+  /** @brief Set the 3D position of the object kinematically.
+   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
+   * recommended.
+   * @param vector The desired 3D position of the object.
+   */
+  virtual void setTranslation(const Magnum::Vector3& vector);
 
-  virtual SceneNode& rotateX(const Magnum::Rad angleInRad);
-  virtual SceneNode& rotateY(const Magnum::Rad angleInRad);
-  virtual SceneNode& rotateZ(const Magnum::Rad angleInRad);
-  virtual SceneNode& rotateXLocal(const Magnum::Rad angleInRad);
-  virtual SceneNode& rotateYLocal(const Magnum::Rad angleInRad);
-  virtual SceneNode& rotateZLocal(const Magnum::Rad angleInRad);
+  /** @brief Set the orientation of the object kinematically.
+   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
+   * recommended.
+   * @param quaternion The desired orientation of the object.
+   */
+  virtual void setRotation(const Magnum::Quaternion& quaternion);
+
+  /** @brief Reset the transformation of the object.
+   * !!NOT IMPLEMENTED!!
+   */
+  virtual void resetTransformation();
+
+  /** @brief Modify the 3D position of the object kinematically by translation.
+   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
+   * recommended.
+   * @param vector The desired 3D vector by which to translate the object.
+   */
+  virtual void translate(const Magnum::Vector3& vector);
+
+  /** @brief Modify the 3D position of the object kinematically by translation
+   * with a vector defined in the object's local coordinate system. Calling this
+   * during simulation of a @ref MotionType::DYNAMIC object is not recommended.
+   * @param vector The desired 3D vector in the object's ocal coordiante system
+   * by which to translate the object.
+   */
+  virtual void translateLocal(const Magnum::Vector3& vector);
+
+  /** @brief Modify the orientation of the object kinematically by applying an
+   * axis-angle rotation to it. Calling this during simulation of a @ref
+   * MotionType::DYNAMIC object is not recommended.
+   * @param angleInRad The angle of rotation in radians.
+   * @param normalizedAxis The desired unit vector axis of rotation.
+   */
+  virtual void rotate(const Magnum::Rad angleInRad,
+                      const Magnum::Vector3& normalizedAxis);
+
+  /** @brief Modify the orientation of the object kinematically by applying an
+   * axis-angle rotation to it in the local coordinate system. Calling this
+   * during simulation of a @ref MotionType::DYNAMIC object is not recommended.
+   * @param angleInRad The angle of rotation in radians.
+   * @param normalizedAxis The desired unit vector axis of rotation in the local
+   * coordinate system.
+   */
+  virtual void rotateLocal(const Magnum::Rad angleInRad,
+                           const Magnum::Vector3& normalizedAxis);
+
+  /** @brief Modify the orientation of the object kinematically by applying a
+   * rotation to it about the global X axis. Calling this during simulation of a
+   * @ref MotionType::DYNAMIC object is not recommended.
+   * @param angleInRad The angle of rotation in radians.
+   */
+  virtual void rotateX(const Magnum::Rad angleInRad);
+
+  /** @brief Modify the orientation of the object kinematically by applying a
+   * rotation to it about the global Y axis. Calling this during simulation of a
+   * @ref MotionType::DYNAMIC object is not recommended.
+   * @param angleInRad The angle of rotation in radians.
+   */
+  virtual void rotateY(const Magnum::Rad angleInRad);
+
+  /** @brief Modify the orientation of the object kinematically by applying a
+   * rotation to it about the global Z axis. Calling this during simulation of a
+   * @ref MotionType::DYNAMIC object is not recommended.
+   * @param angleInRad The angle of rotation in radians.
+   */
+  virtual void rotateZ(const Magnum::Rad angleInRad);
+
+  /** @brief Modify the orientation of the object kinematically by applying a
+   * rotation to it about the local X axis. Calling this during simulation of a
+   * @ref MotionType::DYNAMIC object is not recommended.
+   * @param angleInRad The angle of rotation in radians.
+   */
+  virtual void rotateXLocal(const Magnum::Rad angleInRad);
+
+  /** @brief Modify the orientation of the object kinematically by applying a
+   * rotation to it about the local Y axis. Calling this during simulation of a
+   * @ref MotionType::DYNAMIC object is not recommended.
+   * @param angleInRad The angle of rotation in radians.
+   */
+  virtual void rotateYLocal(const Magnum::Rad angleInRad);
+
+  /** @brief Modify the orientation of the object kinematically by applying a
+   * rotation to it about the local Z axis. Calling this during simulation of a
+   * @ref MotionType::DYNAMIC object is not recommended.
+   * @param angleInRad The angle of rotation in radians.
+   */
+  virtual void rotateZLocal(const Magnum::Rad angleInRad);
 
   // ==== Getter/Setter functions ===
   //! For kinematic objects they are dummies, for dynamic objects
   //! implemented in physics-engine specific ways
+
+  /** @brief Get the mass of the object. Only used for dervied dynamic
+   * implementations of @ref RigidObject.
+   * @return The mass of the object.
+   */
   virtual double getMass() { return 0.0; }
+
+  /** @brief Get the uniform scale of the object.
+   * @return The scalar uniform scale for the object relative to its
+   * initially loaded meshes.
+   * @todo !!! not implemented !!!
+   */
   virtual double getScale() { return 0.0; }
+
+  /** @brief Get the scalar friction coefficient of the object. Only used for
+   * dervied dynamic implementations of @ref RigidObject.
+   * @return The scalar friction coefficient of the object.
+   */
   virtual double getFrictionCoefficient() { return 0.0; }
+
+  /** @brief Get the scalar coefficient of restitution  of the object. Only used
+   * for dervied dynamic implementations of @ref RigidObject.
+   * @return The scalar coefficient of restitution  of the object.
+   */
   virtual double getRestitutionCoefficient() { return 0.0; }
+
+  /** @brief Get the scalar linear damping coefficient of the object. Only used
+   * for dervied dynamic implementations of @ref RigidObject.
+   * @return The scalar linear damping coefficient of the object.
+   */
   virtual double getLinearDamping() { return 0.0; }
+
+  /** @brief Get the scalar angular damping coefficient of the object. Only used
+   * for dervied dynamic implementations of @ref RigidObject.
+   * @return The scalar angular damping coefficient of the object.
+   */
   virtual double getAngularDamping() { return 0.0; }
+
+  /** @brief Get the center of mass (COM) of the object.
+   * @return Object 3D center of mass in the local coordinate system.
+   * @todo necessary for @ref MotionType::KINEMATIC?
+   */
   virtual Magnum::Vector3 getCOM();
-  // Get local inertia
+
+  /** @brief Get the diagonal of the inertia matrix for an object.
+   * If an object is aligned with its principle axii of inertia, the 3x3 inertia
+   * matrix can be reduced to a diagonal. See @ref
+   * RigidObject::setInertiaVector.
+   * @return The diagonal of the object's inertia matrix.
+   */
   virtual Magnum::Vector3 getInertiaVector();
+
+  /** @brief Get the 3x3 inertia matrix for an object.
+   * @return The object's 3x3 inertia matrix.
+   * @todo provide a setter for the full 3x3 inertia matrix. Not all
+   * implementations will provide this option.
+   */
   virtual Magnum::Matrix3 getInertiaMatrix();
 
-  virtual void setMass(const double){};
-  virtual void setCOM(const Magnum::Vector3&){};
-  virtual void setInertia(const Magnum::Vector3&){};
-  virtual void setScale(const double){};
-  virtual void setFrictionCoefficient(const double){};
-  virtual void setRestitutionCoefficient(const double){};
-  virtual void setLinearDamping(const double){};
-  virtual void setAngularDamping(const double){};
+  /** @brief Set the mass of the object. Only used for dervied dynamic
+   * implementations of @ref RigidObject.
+   * @param mass The new mass of the object.
+   */
+  virtual void setMass(const double mass){};
 
-  // public Attributes object for user convenience.
+  /** @brief Set the center of mass (COM) of the object.
+   * @param COM Object 3D center of mass in the local coordinate system.
+   * @todo necessary for @ref MotionType::KINEMATIC?
+   */
+  virtual void setCOM(const Magnum::Vector3& COM){};
+
+  /** @brief Set the diagonal of the inertia matrix for the object.
+   * If an object is aligned with its principle axii of inertia, the 3x3 inertia
+   * matrix can be reduced to a diagonal.
+   * @param inertia The new diagonal for the object's inertia matrix.
+   */
+  virtual void setInertiaVector(const Magnum::Vector3& inertia){};
+
+  /** @brief Set the uniform scale of the object.
+   * @param scale The new scalar uniform scale for the object relative to its
+   * initially loaded meshes.
+   * @todo !!! not implemented !!!
+   */
+  virtual void setScale(const double scale){};
+
+  /** @brief Set the scalar friction coefficient of the object. Only used for
+   * dervied dynamic implementations of @ref RigidObject.
+   * @param frictionCoefficient The new scalar friction coefficient of the
+   * object.
+   */
+  virtual void setFrictionCoefficient(const double frictionCoefficient){};
+
+  /** @brief Set the scalar coefficient of restitution of the object. Only used
+   * for dervied dynamic implementations of @ref RigidObject.
+   * @param restitutionCoefficient The new scalar coefficient of restitution of
+   * the object.
+   */
+  virtual void setRestitutionCoefficient(const double restitutionCoefficient){};
+
+  /** @brief Set the scalar linear damping coefficient of the object. Only used
+   * for dervied dynamic implementations of @ref RigidObject.
+   * @param linDamping The new scalar linear damping coefficient of the object.
+   */
+  virtual void setLinearDamping(const double linDamping){};
+
+  /** @brief Set the scalar angular damping coefficient for the object.
+   * @param angDamping The new scalar angular damping coefficient for the
+   * object.
+   */
+  virtual void setAngularDamping(const double angDamping){};
+
+  /** @brief public @ref esp::assets::Attributes object for user convenience.
+   * Store whatever object attributes you want here! */
   assets::Attributes attributes_;
 
  protected:
+  /** @brief The @ref MotionType of the object. Determines what operations can
+   * be performed on this object. */
   MotionType objectMotionType_;
+
+  /** @brief The @ref RigidObjectType of the object. Identifies what role the
+   * object plays in the phyiscal world. A value of @ref RigidObjectType::NONE
+   * identifies the object as uninitialized.*/
   RigidObjectType rigidObjectType_ = NONE;
 
-  // used only if isObject_
-  // assets::PhysicsObjectMetaData physicsObjectMetaData_;
-
-  //! Needed after changing the pose from Magnum side
-  //! Not exposed to end user
+  /** @brief Used to synchronize other simulator's notion of the object state
+   * after it was changed kinematically. Called automatically on kinematic
+   * updates.*/
   virtual void syncPose();
 
   ESP_SMART_POINTERS(RigidObject)
