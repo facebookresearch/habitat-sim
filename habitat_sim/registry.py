@@ -43,7 +43,7 @@ class registry:
         body_action: bool = None,
     ):
         r"""Registers a new control with Habitat-Sim. Registered conrtols can
-        then be retrieved via `get_move_fn`
+        then be retrieved via `get_move_fn()`
 
         See `new-actions <new-actions.html>`_ for an example of how to add new actions
         *outside* the core habitat_sim package.
