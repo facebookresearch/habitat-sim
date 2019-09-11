@@ -41,8 +41,8 @@ class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
                                   int submeshID,
                                   uint32_t tileSize,
                                   float exposure) {
-    setPTexUniforms(ptexMeshData.getRenderingBuffer(submeshID)->tex, tileSize,
-                    exposure);
+    setPTexUniforms(ptexMeshData.getRenderingBuffer(submeshID)->atlasTexture,
+                    tileSize, exposure);
     return *this;
   }
 
