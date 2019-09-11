@@ -55,9 +55,10 @@ unique physical world can exist.
 class PhysicsManager {
  public:
   /**
-   * @brief Construct a PhysicsManager with access to specific resourse assets.
+   * @brief Construct a #ref PhysicsManager with access to specific resourse
+   * assets.
    *
-   * @param _resourceManager    The @ref esp::assets::ResourceManager which
+   * @param _resourceManager The @ref esp::assets::ResourceManager which
    * tracks the assets this
    * @ref PhysicsManager will have access to.
    */
@@ -96,8 +97,10 @@ class PhysicsManager {
    * Only one 'scene' may be initialized per simulated world, but this scene may
    * contain several components (e.g. GLB heirarchy).
    *
-   * @param physicsSceneAttributes
-   * @param meshGroup
+   * @param physicsSceneAttributes a structure defining physical properties of
+   * the scene.
+   * @param meshGroup collision meshs for the scene.
+   * @return true if successful and false otherwise
    */
   virtual bool addScene(
       const assets::PhysicsSceneAttributes& physicsSceneAttributes,
@@ -233,7 +236,7 @@ class PhysicsManager {
    * @param frictionCoefficient The scalar friction coefficient of the scene
    * geometry.
    */
-  virtual void setSceneFrictionCoefficient(const double frictionCoefficient){};
+  virtual void setSceneFrictionCoefficient(const double frictionCoefficient);
 
   /** @brief Get the current coefficient of restitution for the scene collision
    * geometry. This determines the ratio of initial to final relative velocity
@@ -249,7 +252,7 @@ class PhysicsManager {
    * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
   virtual void setSceneRestitutionCoefficient(
-      const double restitutionCoefficient){};
+      const double restitutionCoefficient);
 
   // ============ Object Transformation functions =============
 
@@ -568,7 +571,7 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @return The scalar collision margin of the object.
    */
-  virtual double getMargin(const int physObjectID) { return 0.0; };
+  virtual double getMargin(const int physObjectID);
 
   /** @brief Set the scalar collision margin of an object.
    * See @ref BulletRigidObject::setMargin. Nothing is set if no implementation
@@ -577,7 +580,7 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @param  margin The desired collision margin for the object.
    */
-  virtual void setMargin(const int physObjectID, const double margin){};
+  virtual void setMargin(const int physObjectID, const double margin);
 
   // =========== Debug functions ===========
 

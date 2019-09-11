@@ -205,5 +205,25 @@ Magnum::Matrix3 RigidObject::getInertiaMatrix() {
   return inertia;
 }
 
+// ====================================================================
+// Empty implementations to eliminate compiler "unused parameter" warnings
+// ====================================================================
+
+void RigidObject::setMass(const double) {}
+
+void RigidObject::setCOM(const Magnum::Vector3&) {}
+
+void RigidObject::setInertiaVector(const Magnum::Vector3&) {}
+
+void RigidObject::setScale(const double) {}
+
+void RigidObject::setFrictionCoefficient(const double) {}
+
+void RigidObject::setRestitutionCoefficient(const double) {}
+
+void RigidObject::setLinearDamping(const double) {}
+
+void RigidObject::setAngularDamping(const double) {}
+
 }  // namespace physics
 }  // namespace esp

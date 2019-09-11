@@ -384,53 +384,53 @@ class RigidObject : public scene::SceneNode {
    * implementations of @ref RigidObject.
    * @param mass The new mass of the object.
    */
-  virtual void setMass(const double mass){};
+  virtual void setMass(const double mass);
 
   /** @brief Set the center of mass (COM) of the object.
    * @param COM Object 3D center of mass in the local coordinate system.
    * @todo necessary for @ref MotionType::KINEMATIC?
    */
-  virtual void setCOM(const Magnum::Vector3& COM){};
+  virtual void setCOM(const Magnum::Vector3& COM);
 
   /** @brief Set the diagonal of the inertia matrix for the object.
    * If an object is aligned with its principle axii of inertia, the 3x3 inertia
    * matrix can be reduced to a diagonal.
    * @param inertia The new diagonal for the object's inertia matrix.
    */
-  virtual void setInertiaVector(const Magnum::Vector3& inertia){};
+  virtual void setInertiaVector(const Magnum::Vector3& inertia);
 
   /** @brief Set the uniform scale of the object.
    * @param scale The new scalar uniform scale for the object relative to its
    * initially loaded meshes.
    * @todo !!! not implemented !!!
    */
-  virtual void setScale(const double scale){};
+  virtual void setScale(const double scale);
 
   /** @brief Set the scalar friction coefficient of the object. Only used for
    * dervied dynamic implementations of @ref RigidObject.
    * @param frictionCoefficient The new scalar friction coefficient of the
    * object.
    */
-  virtual void setFrictionCoefficient(const double frictionCoefficient){};
+  virtual void setFrictionCoefficient(const double frictionCoefficient);
 
   /** @brief Set the scalar coefficient of restitution of the object. Only used
    * for dervied dynamic implementations of @ref RigidObject.
    * @param restitutionCoefficient The new scalar coefficient of restitution of
    * the object.
    */
-  virtual void setRestitutionCoefficient(const double restitutionCoefficient){};
+  virtual void setRestitutionCoefficient(const double restitutionCoefficient);
 
   /** @brief Set the scalar linear damping coefficient of the object. Only used
    * for dervied dynamic implementations of @ref RigidObject.
    * @param linDamping The new scalar linear damping coefficient of the object.
    */
-  virtual void setLinearDamping(const double linDamping){};
+  virtual void setLinearDamping(const double linDamping);
 
   /** @brief Set the scalar angular damping coefficient for the object.
    * @param angDamping The new scalar angular damping coefficient for the
    * object.
    */
-  virtual void setAngularDamping(const double angDamping){};
+  virtual void setAngularDamping(const double angDamping);
 
   /** @brief public @ref esp::assets::Attributes object for user convenience.
    * Store whatever object attributes you want here! */
