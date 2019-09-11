@@ -54,6 +54,22 @@ void PTexMeshData::setExposure(const float& val) {
   exposure_ = val;
 }
 
+float PTexMeshData::gamma() const {
+  return gamma_;
+}
+
+void PTexMeshData::setGamma(const float& val) {
+  gamma_ = val;
+}
+
+float PTexMeshData::saturation() const {
+  return saturation_;
+}
+
+void PTexMeshData::setSaturation(const float& val) {
+  saturation_ = val;
+}
+
 const std::vector<PTexMeshData::MeshData>& PTexMeshData::meshes() const {
   return submeshes_;
 }
