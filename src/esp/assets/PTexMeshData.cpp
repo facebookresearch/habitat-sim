@@ -624,7 +624,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     const std::string hdrFile = Cr::Utility::Directory::join(
         atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
 
-    CORRADE_ASSERT(io::exists(hdrFile), "Error : Cannot find the .hdr file ", );
+    CORRADE_ASSERT(io::exists(hdrFile), "Error : Cannot find the .hdr file", );
 
     LOG(INFO) << "Loading atlas " << iMesh + 1 << "/"
               << renderingBuffers_.size() << " from " << hdrFile << ". ";
@@ -634,6 +634,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     // divided by 6, since there are 3 channels, R, G, B, each of which takes 1
     // half_float (2 bytes)
     const int dim = static_cast<int>(std::sqrt(data.size() / 6));  // square
+    CORRADE_ASSERT(dim * dim * 6 == data.size(),
+                   "Error: the atlas texture is not a square", );
 
     // atlas
     // the size of each image is dim x dim x 3 (RGB) x 2 (half_float), which
