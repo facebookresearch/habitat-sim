@@ -614,6 +614,8 @@ bool PathFinder::loadNavMesh(const std::string& path) {
     return false;
   }
 
+  vec3f bmin, bmax;
+
   dtNavMesh* mesh = dtAllocNavMesh();
   if (!mesh) {
     fclose(fp);
@@ -651,11 +653,20 @@ bool PathFinder::loadNavMesh(const std::string& path) {
 
     mesh->addTile(data, tileHeader.dataSize, DT_TILE_FREE_DATA,
                   tileHeader.tileRef, 0);
+    const dtMeshTile* tile = mesh->getTileByRef(tileHeader.tileRef);
+    if (i == 0) {
+      bmin = vec3f(tile->header->bmin);
+      bmax = vec3f(tile->header->bmax);
+    } else {
+      bmin = bmin.array().min(Eigen::Array3f{tile->header->bmin});
+      bmax = bmax.array().max(Eigen::Array3f{tile->header->bmax});
+    }
   }
 
   fclose(fp);
 
   navMesh_ = mesh;
+  bounds_ = std::make_pair(bmin, bmax);
   return initNavQuery();
 }
 

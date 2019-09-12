@@ -20,3 +20,7 @@ target_link_libraries(nav
     Detour
     Recast
 )
+
+if(BUILD_TEST)
+  add_subdirectory(test)
+endif()
