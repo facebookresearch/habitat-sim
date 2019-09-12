@@ -18,7 +18,7 @@ import habitat_sim  # NOQA
 habitat_sim.logging.GlogFormatter.formatStack.__doc__ = ""
 
 PROJECT_TITLE = "Habitat"
-PROJECT_SUBTITLE = "Sim Python docs"
+PROJECT_SUBTITLE = "Sim Python Docs"
 MAIN_PROJECT_URL = "https://aihabitat.org"
 INPUT_MODULES = [habitat_sim]
 INPUT_DOCS = ["docs.rst", "gfx.rst"]
