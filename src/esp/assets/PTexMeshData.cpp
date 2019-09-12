@@ -50,7 +50,7 @@ float PTexMeshData::exposure() const {
   return exposure_;
 }
 
-void PTexMeshData::setExposure(const float& val) {
+void PTexMeshData::setExposure(float val) {
   exposure_ = val;
 }
 
@@ -58,7 +58,7 @@ float PTexMeshData::gamma() const {
   return gamma_;
 }
 
-void PTexMeshData::setGamma(const float& val) {
+void PTexMeshData::setGamma(float val) {
   gamma_ = val;
 }
 
@@ -66,7 +66,7 @@ float PTexMeshData::saturation() const {
   return saturation_;
 }
 
-void PTexMeshData::setSaturation(const float& val) {
+void PTexMeshData::setSaturation(float val) {
   saturation_ = val;
 }
 

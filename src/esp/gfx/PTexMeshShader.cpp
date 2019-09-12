@@ -69,7 +69,7 @@ PTexMeshShader::PTexMeshShader() {
   // cache the uniform locations
   MVPMatrixUniform_ = uniformLocation("MVP");
   exposureUniform_ = uniformLocation("exposure");
-  gammaInverseUniform_ = uniformLocation("gammaInverse");
+  gammaUniform_ = uniformLocation("gamma");
   saturationUniform_ = uniformLocation("saturation");
   tileSizeUniform_ = uniformLocation("tileSize");
   widthInTilesUniform_ = uniformLocation("widthInTiles");
@@ -100,8 +100,7 @@ PTexMeshShader& PTexMeshShader::setExposure(float exposure) {
   return *this;
 }
 PTexMeshShader& PTexMeshShader::setGamma(float gamma) {
-  // Careful: we set its inverse, not gamma directly
-  setUniform(gammaInverseUniform_, 1.0f / gamma);
+  setUniform(gammaUniform_, gamma);
   return *this;
 }
 
@@ -115,10 +114,9 @@ PTexMeshShader& PTexMeshShader::setAtlasTextureSize(
     uint32_t tileSize) {
   setUniform(tileSizeUniform_, (int)tileSize);
 
-  // Image size in given mip level 0
+  // get image width in given mip level 0
   int mipLevel = 0;
-  int widthEntry = 0;
-  const auto width = texture.imageSize(mipLevel)[widthEntry];
+  const auto width = texture.imageSize(mipLevel).x();
   setUniform(widthInTilesUniform_, int(width / tileSize));
   return *this;
 }
