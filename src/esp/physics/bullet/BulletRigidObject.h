@@ -323,7 +323,8 @@ class BulletRigidObject : public RigidObject {
    * See <A
    * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
    * btRigidBody</A>\::setDamping. Does not affect @ref RigidObjectType::SCENE.
-   * @param linDamping The new scalar linear damping coefficient of the object.
+   * @param linearDamping The new scalar linear damping coefficient of the
+   * object.
    */
   void setLinearDamping(const double linearDamping);
 
@@ -331,7 +332,7 @@ class BulletRigidObject : public RigidObject {
    * See <A
    * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
    * btRigidBody</A>\::setDamping. Does not affect @ref RigidObjectType::SCENE.
-   * @param angDamping The new scalar angular damping coefficient for the
+   * @param angularDamping The new scalar angular damping coefficient for the
    * object.
    */
   void setAngularDamping(const double angularDamping);
@@ -340,7 +341,7 @@ class BulletRigidObject : public RigidObject {
    * RigidObjectType::SCENE. See <A
    * HREF="https://pybullet.org/Bullet/BulletFull/classbtCompoundShape.html">
    * btCompoundShape</A>\::setMargin.
-   * @param The new scalar collision margin of the object.
+   * @param margin The new scalar collision margin of the object.
    */
   void setMargin(const double margin);
 

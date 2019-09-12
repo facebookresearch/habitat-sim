@@ -71,7 +71,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * @brief Initialize static scene collision geometry from loaded mesh data.
    * Only one 'scene' may be initialized per simulated world, but this scene may
    * contain several components (e.g. GLB heirarchy). Checks that the collision
-   * mesh can be used by Bullet. See @ref BulletRigidObject::initialzeScene.
+   * mesh can be used by Bullet. See @ref BulletRigidObject::initializeScene.
    * Bullet mesh conversion adapted from:
    * https://github.com/mosra/magnum-integration/issues/20
    * @param physicsSceneAttributes a structure defining physical properties of
