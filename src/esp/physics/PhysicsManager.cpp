@@ -495,19 +495,5 @@ double PhysicsManager::getAngularDamping(const int physObjectID) {
   }
 }
 
-// ====================================================================
-// Empty implementations to eliminate compiler "unused parameter" warnings
-// ====================================================================
-
-void PhysicsManager::setSceneFrictionCoefficient(const double) {}
-
-void PhysicsManager::setSceneRestitutionCoefficient(const double) {}
-
-double PhysicsManager::getMargin(const int) {
-  return 0.0;
-}
-
-void PhysicsManager::setMargin(const int, const double) {}
-
 }  // namespace physics
 }  // namespace esp

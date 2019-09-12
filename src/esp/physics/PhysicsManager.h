@@ -236,7 +236,8 @@ class PhysicsManager {
    * @param frictionCoefficient The scalar friction coefficient of the scene
    * geometry.
    */
-  virtual void setSceneFrictionCoefficient(const double frictionCoefficient);
+  virtual void setSceneFrictionCoefficient(
+      CORRADE_UNUSED const double frictionCoefficient){};
 
   /** @brief Get the current coefficient of restitution for the scene collision
    * geometry. This determines the ratio of initial to final relative velocity
@@ -252,7 +253,7 @@ class PhysicsManager {
    * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
   virtual void setSceneRestitutionCoefficient(
-      const double restitutionCoefficient);
+      CORRADE_UNUSED const double restitutionCoefficient){};
 
   // ============ Object Transformation functions =============
 
@@ -571,7 +572,9 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @return The scalar collision margin of the object.
    */
-  virtual double getMargin(const int physObjectID);
+  virtual double getMargin(CORRADE_UNUSED const int physObjectID) {
+    return 0.0;
+  };
 
   /** @brief Set the scalar collision margin of an object.
    * See @ref BulletRigidObject::setMargin. Nothing is set if no implementation
@@ -580,7 +583,8 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @param  margin The desired collision margin for the object.
    */
-  virtual void setMargin(const int physObjectID, const double margin);
+  virtual void setMargin(CORRADE_UNUSED const int physObjectID,
+                         CORRADE_UNUSED const double margin){};
 
   // =========== Debug functions ===========
 
