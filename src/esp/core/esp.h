@@ -32,8 +32,8 @@ typedef Matrix<uint64_t, 4, 1> Vector4ul;
 //! Eigen JSON string format specification
 static const IOFormat kJsonFormat(StreamPrecision,
                                   DontAlignCols,
-                                  ", ",  // coef separator
-                                  ", ",  // row separator
+                                  ",",   // coef separator
+                                  ",",   // row separator
                                   "",    // row prefix
                                   "",    // col prefix
                                   "[",   // mat prefix
