@@ -78,7 +78,7 @@ class PTexMeshData : public BaseMesh {
   uint32_t tileSize_ = 0;
 
   // initial values are based on ReplicaSDK
-  //! @brief expsure, the amount of light per unit area reaching the image
+  //! @brief exposure, the amount of light per unit area reaching the image
   float exposure_ = 0.025f;
 
   //! @brief gamma, the exponent applied in the gamma correction
