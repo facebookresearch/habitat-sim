@@ -404,7 +404,7 @@ void BulletRigidObject::setAngularDamping(const double angularDamping) {
 
 double BulletRigidObject::getMargin() {
   if (rigidObjectType_ == RigidObjectType::SCENE) {
-    return -1.0;
+    return 0.0;
   } else {
     return bObjectShape_->getMargin();
   }

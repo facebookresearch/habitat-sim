@@ -139,7 +139,7 @@ class RigidObject : public scene::SceneNode {
   virtual bool isActive();
 
   /**
-   * @brief Set whether object is being actively simulated, or sleeping.
+   * @brief Set an object as being actively simulated rather than sleeping.
    * Kinematic objects are always active, but derived dynamics implementations
    * may not be.
    */
@@ -360,7 +360,7 @@ class RigidObject : public scene::SceneNode {
   virtual double getAngularDamping() { return 0.0; }
 
   /** @brief Get the center of mass (COM) of the object.
-   * @return Object 3D center of mass in the local coordinate system.
+   * @return Object 3D center of mass in the global coordinate system.
    * @todo necessary for @ref MotionType::KINEMATIC?
    */
   virtual Magnum::Vector3 getCOM();
@@ -429,7 +429,8 @@ class RigidObject : public scene::SceneNode {
    */
   virtual void setLinearDamping(CORRADE_UNUSED const double linDamping){};
 
-  /** @brief Set the scalar angular damping coefficient for the object.
+  /** @brief Set the scalar angular damping coefficient for the object. Only
+   * used for dervied dynamic implementations of @ref RigidObject.
    * @param angDamping The new scalar angular damping coefficient for the
    * object.
    */
