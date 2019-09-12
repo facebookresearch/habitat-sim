@@ -136,7 +136,8 @@ class BulletPhysicsManager : public PhysicsManager {
    * See @ref BulletRigidObject::getMargin.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The scalar collision margin of the object.
+   * @return The scalar collision margin of the object or @ref
+   * esp::PHYSICS_ATTR_UNDEFINED if failed..
    */
   double getMargin(const int physObjectID);
 

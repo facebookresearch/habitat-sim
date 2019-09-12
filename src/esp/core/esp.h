@@ -127,9 +127,11 @@ inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
   ESP_SMART_POINTERS(T)                         \
   ESP_SHARED_PTR_PIMPL()
 
-/** @brief Returned on failed creation or lookup of an ID */
-static const int ID_UNDEFINED = -1;
-static const double PHYSICS_ATTR_UNDEFINED = -1.0;
+/** @brief Returned on failed creation or lookup of an ID. */
+constexpr int ID_UNDEFINED = -1;
+
+/** @brief Undefined or invalid attribute in physics property query. */
+constexpr double PHYSICS_ATTR_UNDEFINED = -1.0;
 
 static const double NO_TIME = 0.0;
 

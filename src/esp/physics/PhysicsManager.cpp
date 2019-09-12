@@ -51,7 +51,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
       resourceManager_->getPhysicsObjectAttributes(configFile);
   for (const assets::CollisionMeshData& meshData : meshGroup) {
     if (!isMeshPrimitiveValid(meshData)) {
-      return false;
+      return ID_UNDEFINED;
     }
   }
 
@@ -59,7 +59,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
   int nextObjectID_ = makeRigidObject(meshGroup, physicsObjectAttributes);
   if (nextObjectID_ < 0) {
     LOG(ERROR) << "makeRigidObject unsuccessful";
-    return -1;
+    return ID_UNDEFINED;
   }
 
   //! Draw object via resource manager
@@ -81,7 +81,7 @@ int PhysicsManager::addObject(const std::string& configFile,
 int PhysicsManager::removeObject(const int physObjectID) {
   if (existingObjects_.count(physObjectID) == 0) {
     LOG(ERROR) << "Failed to remove object: no object with ID " << physObjectID;
-    return -1;
+    return ID_UNDEFINED;
   }
   existingObjects_.at(physObjectID)->removeObject();
   delete existingObjects_.at(physObjectID);
@@ -139,7 +139,7 @@ int PhysicsManager::makeRigidObject(
     delete existingObjects_.at(newObjectID);  // TODO: check this. Could be
                                               // null?
     existingObjects_.erase(newObjectID);
-    return -1;
+    return ID_UNDEFINED;
   }
   return newObjectID;
 }

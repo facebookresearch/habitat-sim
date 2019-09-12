@@ -495,7 +495,7 @@ class PhysicsManager {
    * See @ref RigidObject::getMass.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return Object mass.
+   * @return Object mass or @ref esp::PHYSICS_ATTR_UNDEFINED if failed.
    */
   double getMass(const int physObjectID);
 
@@ -528,7 +528,7 @@ class PhysicsManager {
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @return The uniform scale of the object relative to its initialy loaded
-   * meshes.
+   * meshes or @ref esp::PHYSICS_ATTR_UNDEFINED if failed.
    */
   double getScale(const int physObjectID);
 
@@ -536,7 +536,8 @@ class PhysicsManager {
    * See @ref RigidObject::getFrictionCoefficient.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The scalar coefficient of friction of the object.
+   * @return The scalar coefficient of friction of the object or @ref
+   * esp::PHYSICS_ATTR_UNDEFINED if failed.
    */
   double getFrictionCoefficient(const int physObjectID);
 
@@ -544,7 +545,8 @@ class PhysicsManager {
    * See @ref RigidObject::getRestitutionCoefficient.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The scalar coefficient of restitution of the object.
+   * @return The scalar coefficient of restitution of the object or @ref
+   * esp::PHYSICS_ATTR_UNDEFINED if failed.
    */
   double getRestitutionCoefficient(const int physObjectID);
 
@@ -552,7 +554,8 @@ class PhysicsManager {
    * See @ref RigidObject::getLinearDamping.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The scalar linear damping coefficient of the object.
+   * @return The scalar linear damping coefficient of the object or @ref
+   * esp::PHYSICS_ATTR_UNDEFINED if failed.
    */
   double getLinearDamping(const int physObjectID);
 
@@ -560,7 +563,8 @@ class PhysicsManager {
    * See @ref RigidObject::getAngularDamping.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The scalar angular damping coefficient of the object.
+   * @return The scalar angular damping coefficient of the object or @ref
+   * esp::PHYSICS_ATTR_UNDEFINED if failed.
    */
   double getAngularDamping(const int physObjectID);
 
