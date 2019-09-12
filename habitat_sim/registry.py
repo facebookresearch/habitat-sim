@@ -18,7 +18,7 @@ def _camel_to_snake(name):
     return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
-class registry:
+class _Registry:
     r"""registry is a central source of truth in Habitat-Sim
 
     Taken from Pythia, it is inspired from Redux's
@@ -32,7 +32,7 @@ class registry:
 
     - Register a movement function : ``@registry.register_move_fn``
     """
-    mapping = collections.defaultdict(dict)
+    _mapping = collections.defaultdict(dict)
 
     @classmethod
     def register_move_fn(
@@ -68,7 +68,7 @@ class registry:
                 controller, SceneNodeControl
             ), "All controls must inherit from habitat_sim.agent.SceneNodeControl"
 
-            cls.mapping["move_fn"][
+            cls._mapping["move_fn"][
                 _camel_to_snake(controller.__name__) if name is None else name
             ] = controller(body_action)
 
@@ -81,7 +81,7 @@ class registry:
 
     @classmethod
     def _get_impl(cls, _type, name):
-        return cls.mapping[_type].get(name, None)
+        return cls._mapping[_type].get(name, None)
 
     @classmethod
     def get_move_fn(cls, name: str) -> SceneNodeControl:
@@ -90,3 +90,6 @@ class registry:
         :param name: The name provided to `register_move_fn`
         """
         return cls._get_impl("move_fn", name)
+
+
+registry = _Registry()
