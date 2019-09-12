@@ -13,6 +13,7 @@
 #include <Magnum/GL/Renderer.h>
 #include <sophus/so3.hpp>
 #include "Drawable.h"
+#include "esp/core/esp.h"
 #include "esp/io/io.h"
 
 #include "esp/gfx/Simulator.h"
@@ -382,14 +383,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::X:
       controls_(*agentBodyNode_, "moveDown", moveSensitivity, false);
       LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data())
-                       .format(eigenFlatFormat_);
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::Z:
       controls_(*agentBodyNode_, "moveUp", moveSensitivity, false);
       LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data())
-                       .format(eigenFlatFormat_);
+                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::O: {
       if (physicsManager_ != nullptr) {

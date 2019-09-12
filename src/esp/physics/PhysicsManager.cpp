@@ -37,8 +37,6 @@ bool PhysicsManager::addScene(
   switch (info.type) {
     case assets::AssetType::INSTANCE_MESH:
       break;  // ._semantic.ply mesh data
-    case assets::AssetType::FRL_INSTANCE_MESH:
-      break;  // FRL mesh
     default:
       break;  // GLB mesh data
   }

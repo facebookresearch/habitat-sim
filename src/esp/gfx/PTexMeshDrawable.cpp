@@ -19,8 +19,8 @@ PTexMeshDrawable::PTexMeshDrawable(
     Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */)
     : Drawable{node, shader, ptexMeshData.getRenderingBuffer(submeshID)->mesh,
                group},
-      tex_(ptexMeshData.getRenderingBuffer(submeshID)->tex),
-      adjFaces_(
+      atlasTexture_(ptexMeshData.getRenderingBuffer(submeshID)->atlasTexture),
+      adjFacesBufferTexture_(
           ptexMeshData.getRenderingBuffer(submeshID)->adjFacesBufferTexture),
       tileSize_(ptexMeshData.tileSize()),
       exposure_(ptexMeshData.exposure()),
@@ -38,9 +38,9 @@ void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
   ptexMeshShader.setExposure(exposure_)
       .setGamma(gamma_)
       .setSaturation(saturation_)
-      .setAtlasTextureSize(tex_, tileSize_)
-      .bindAtlasTexture(tex_)
-      .bindAdjFacesBufferTexture(adjFaces_)
+      .setAtlasTextureSize(atlasTexture_, tileSize_)
+      .bindAtlasTexture(atlasTexture_)
+      .bindAdjFacesBufferTexture(adjFacesBufferTexture_)
       .setMVPMatrix(camera.projectionMatrix() * transformationMatrix);
   mesh_.draw(ptexMeshShader);
 }

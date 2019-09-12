@@ -13,6 +13,8 @@
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/ArrayViewStl.h>
+#include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/GL/BufferTextureFormat.h>
 #include <Magnum/GL/TextureFormat.h>
@@ -27,6 +29,8 @@
 
 static constexpr int ROTATION_SHIFT = 30;
 static constexpr int FACE_MASK = 0x3FFFFFFF;
+
+namespace Cr = Corrade;
 
 namespace esp {
 namespace assets {
@@ -880,6 +884,10 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   }
 
     // using GL_LINES_ADJACENCY here to send quads to geometry shader
+    currentMesh->adjFacesBufferTexture.setBuffer(
+        Magnum::GL::BufferTextureFormat::R32UI, currentMesh->adjFacesBuffer);
+    currentMesh->adjFacesBuffer.setData(adjFaces[iMesh],
+                                        Magnum::GL::BufferUsage::StaticDraw);
     GLintptr offset = 0;
     currentMesh->mesh
         .setPrimitive(Magnum::GL::MeshPrimitive::LinesAdjacency)
@@ -913,35 +921,42 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   // load atlas data and upload them to GPU
   LOG(INFO) << "loading atlas textures: ";
   for (size_t iMesh = 0; iMesh < renderingBuffers_.size(); ++iMesh) {
-    const std::string hdrFile = Corrade::Utility::Directory::join(
+    const std::string hdrFile = Cr::Utility::Directory::join(
         atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
 
-    ASSERT(io::exists(hdrFile), Error : Cannot find the.hdr file);
+    CORRADE_ASSERT(io::exists(hdrFile),
+                   "Error : Cannot find the .hdr file " << hdrFile, );
 
     LOG(INFO) << "Loading atlas " << iMesh + 1 << "/"
               << renderingBuffers_.size() << " from " << hdrFile << ". ";
 
-    Corrade::Containers::Array<const char,
-                               Corrade::Utility::Directory::MapDeleter>
-        data = Corrade::Utility::Directory::mapRead(hdrFile);
+    Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter> data =
+        Cr::Utility::Directory::mapRead(hdrFile);
     // divided by 6, since there are 3 channels, R, G, B, each of which takes 1
     // half_float (2 bytes)
     const int dim = static_cast<int>(std::sqrt(data.size() / 6));  // square
+    CORRADE_ASSERT(dim * dim * 6 == data.size(),
+                   "Error: the atlas texture is not a square", );
 
     // atlas
     // the size of each image is dim x dim x 3 (RGB) x 2 (half_float), which
     // equals to numBytes
     Magnum::ImageView2D image(Magnum::PixelFormat::RGB16F, {dim, dim}, data);
-    const int mipLevelCount = 1;
+
     renderingBuffers_[iMesh]
-        ->tex
-        .setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
+        ->atlasTexture.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
         .setMagnificationFilter(Magnum::GL::SamplerFilter::Linear)
         .setMinificationFilter(Magnum::GL::SamplerFilter::Linear)
-        .setStorage(mipLevelCount, Magnum::GL::TextureFormat::RGB16F,
-                    image.size())
-        .setSubImage(0, {}, image);
+        .setStorage(
+            Magnum::Math::log2(image.size().min()) + 1,  // mip level count
+            Magnum::GL::TextureFormat::RGB16F,
+            image.size())
+        .setSubImage(0,   // mipLevel
+                     {},  // offset
+                     image)
+        .generateMipmap();
   }
+
   buffersOnGPU_ = true;
   LOG(INFO) << "data are uploaded to GPU.";
 }

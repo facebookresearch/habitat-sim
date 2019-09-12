@@ -21,6 +21,13 @@ popd
 mkdir -p build_js
 cd build_js
 
+SCENE_DATASETS_DIR=${DATA_DIR}/scene_datasets/mp3d/17DRP5sb8fy
+if [ ! -d ${SCENE_DATASETS_DIR} ]; then
+  echo "Cannot find mp3d scene 17DRP5sb8fy, falling back to habitat-test-scenes"
+  SCENE_DATASETS_DIR=${DATA_DIR}/scene_datasets/habitat-test-scenes
+fi
+
+
 cmake ../src \
     -DCORRADE_RC_EXECUTABLE=../build_corrade-rc/deps/corrade/src/Corrade/Utility/corrade-rc \
     -DBUILD_GUI_VIEWERS=ON \
@@ -32,7 +39,7 @@ cmake ../src \
     -DCMAKE_PREFIX_PATH="$EMSCRIPTEN" \
     -DCMAKE_TOOLCHAIN_FILE="../src/deps/corrade/toolchains/generic/Emscripten-wasm.cmake" \
     -DCMAKE_INSTALL_PREFIX="." \
-    -DCMAKE_CXX_FLAGS="-s FORCE_FILESYSTEM=1 -s ALLOW_MEMORY_GROWTH=1 --preload-file $DATA_DIR/scene_datasets/habitat-test-scenes@/" \
+    -DCMAKE_CXX_FLAGS="-s FORCE_FILESYSTEM=1 -s ALLOW_MEMORY_GROWTH=1 --preload-file ${SCENE_DATASETS_DIR}@/" \
     -DCMAKE_EXE_LINKER_FLAGS="-s USE_WEBGL2=1"
 
 cmake --build . -- -j 4

@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "esp/assets/FRLInstanceMeshData.h"
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
@@ -30,32 +29,7 @@ MeshData SceneLoader::load(const AssetInfo& info) {
     return mesh;
   }
 
-  if (info.type == AssetType::FRL_INSTANCE_MESH) {
-    FRLInstanceMeshData instanceMeshData;
-    instanceMeshData.loadPLY(info.filepath);
-
-    const auto& vbo = instanceMeshData.getVertexBufferObjectCPU();
-    const auto& cbo = instanceMeshData.getColorBufferObjectCPU();
-    const size_t numQuads = vbo.size() / 4;
-    for (size_t iQuad = 0; iQuad < numQuads; ++iQuad) {
-      const size_t quadOffset = 4 * iQuad;
-      for (size_t i = 0; i < 4; ++i) {
-        const size_t vidx = quadOffset + i;
-        mesh.vbo.push_back(vbo[vidx].head<3>());
-        mesh.cbo.push_back(cbo[vidx].cast<float>() / 255.0f);
-      }
-      assert(quadOffset + 3 < mesh.vbo.size());
-
-      mesh.ibo.push_back(quadOffset + 0);
-      mesh.ibo.push_back(quadOffset + 1);
-      mesh.ibo.push_back(quadOffset + 2);
-
-      mesh.ibo.push_back(quadOffset + 0);
-      mesh.ibo.push_back(quadOffset + 2);
-      mesh.ibo.push_back(quadOffset + 3);
-    }
-
-  } else if (info.type == AssetType::INSTANCE_MESH) {
+  if (info.type == AssetType::INSTANCE_MESH) {
     GenericInstanceMeshData instanceMeshData;
     instanceMeshData.loadPLY(info.filepath);
 
@@ -63,16 +37,10 @@ MeshData SceneLoader::load(const AssetInfo& info) {
     const auto& cbo = instanceMeshData.getColorBufferObjectCPU();
     const auto& ibo = instanceMeshData.getIndexBufferObjectCPU();
     mesh.vbo = vbo;
+    mesh.ibo = ibo;
     for (const auto& c : cbo) {
       mesh.cbo.emplace_back(c.cast<float>() / 255.0f);
     }
-
-    for (const auto& tri : ibo) {
-      mesh.ibo.push_back(tri[0]);
-      mesh.ibo.push_back(tri[1]);
-      mesh.ibo.push_back(tri[2]);
-    }
-
   } else {
     const aiScene* scene;
     Assimp::Importer Importer;
