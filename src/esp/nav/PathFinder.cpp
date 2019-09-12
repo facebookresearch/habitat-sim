@@ -26,12 +26,10 @@
 #include "DetourNode.h"
 #include "Recast.h"
 
-using namespace esp;
-
 namespace esp {
 namespace nav {
-namespace {
 
+namespace {
 template <typename T>
 std::tuple<dtStatus, dtPolyRef, vec3f> projectToPoly(
     const T& pt,
@@ -175,9 +173,8 @@ class IslandSystem {
   }
 };
 }  // namespace impl
-}  // namespace nav
-}  // namespace esp
 
+namespace {
 struct Workspace {
   rcHeightfield* solid = 0;
   unsigned char* triareas = 0;
@@ -204,14 +201,15 @@ enum PolyFlags {
   POLYFLAGS_DISABLED = 0x04,  // disabled polygon
   POLYFLAGS_ALL = 0xffff      // all abilities
 };
+}  // namespace
 
-esp::nav::PathFinder::PathFinder() : navMesh_(0), navQuery_(0), filter_(0) {
+PathFinder::PathFinder() : navMesh_(0), navQuery_(0), filter_(0) {
   filter_ = new dtQueryFilter();
   filter_->setIncludeFlags(POLYFLAGS_WALK);
   filter_->setExcludeFlags(0);
 }
 
-void esp::nav::PathFinder::free() {
+void PathFinder::free() {
   if (navMesh_) {
     dtFreeNavMesh(navMesh_);
     navMesh_ = 0;
@@ -229,13 +227,13 @@ void esp::nav::PathFinder::free() {
   }
 }
 
-bool esp::nav::PathFinder::build(const NavMeshSettings& bs,
-                                 const float* verts,
-                                 const int nverts,
-                                 const int* tris,
-                                 const int ntris,
-                                 const float* bmin,
-                                 const float* bmax) {
+bool PathFinder::build(const NavMeshSettings& bs,
+                       const float* verts,
+                       const int nverts,
+                       const int* tris,
+                       const int ntris,
+                       const float* bmin,
+                       const float* bmax) {
   Workspace ws;
   rcContext ctx;
 
@@ -540,7 +538,7 @@ bool esp::nav::PathFinder::build(const NavMeshSettings& bs,
   return true;
 }
 
-bool esp::nav::PathFinder::initNavQuery() {
+bool PathFinder::initNavQuery() {
   navQuery_ = dtAllocNavMeshQuery();
   dtStatus status = navQuery_->init(navMesh_, 2048);
   if (dtStatusFailed(status)) {
@@ -553,8 +551,8 @@ bool esp::nav::PathFinder::initNavQuery() {
   return true;
 }
 
-bool esp::nav::PathFinder::build(const NavMeshSettings& bs,
-                                 const esp::assets::MeshData& mesh) {
+bool PathFinder::build(const NavMeshSettings& bs,
+                       const esp::assets::MeshData& mesh) {
   const int numVerts = mesh.vbo.size();
   const int numIndices = mesh.ibo.size();
   const float mf = std::numeric_limits<float>::max();
@@ -578,9 +576,9 @@ bool esp::nav::PathFinder::build(const NavMeshSettings& bs,
   return success;
 }
 
-static const int NAVMESHSET_MAGIC =
-    'M' << 24 | 'S' << 16 | 'E' << 8 | 'T';  //'MSET';
-static const int NAVMESHSET_VERSION = 1;
+namespace {
+const int NAVMESHSET_MAGIC = 'M' << 24 | 'S' << 16 | 'E' << 8 | 'T';  //'MSET';
+const int NAVMESHSET_VERSION = 1;
 
 struct NavMeshSetHeader {
   int magic;
@@ -593,8 +591,9 @@ struct NavMeshTileHeader {
   dtTileRef tileRef;
   int dataSize;
 };
+}  // namespace
 
-bool esp::nav::PathFinder::loadNavMesh(const std::string& path) {
+bool PathFinder::loadNavMesh(const std::string& path) {
   FILE* fp = fopen(path.c_str(), "rb");
   if (!fp)
     return false;
@@ -660,7 +659,7 @@ bool esp::nav::PathFinder::loadNavMesh(const std::string& path) {
   return initNavQuery();
 }
 
-bool esp::nav::PathFinder::saveNavMesh(const std::string& path) {
+bool PathFinder::saveNavMesh(const std::string& path) {
   if (!navMesh_)
     return false;
 
@@ -701,7 +700,7 @@ bool esp::nav::PathFinder::saveNavMesh(const std::string& path) {
   return true;
 }
 
-void esp::nav::PathFinder::seed(uint32_t newSeed) {
+void PathFinder::seed(uint32_t newSeed) {
   // TODO: this should be using core::Random instead, but passing function
   // to navQuery_->findRandomPoint needs to be figured out first
   srand(newSeed);
@@ -712,7 +711,7 @@ static float frand() {
   return (float)rand() / (float)RAND_MAX;
 }
 
-vec3f esp::nav::PathFinder::getRandomNavigablePoint() {
+vec3f PathFinder::getRandomNavigablePoint() {
   dtPolyRef ref;
   vec3f pt;
   dtStatus status = navQuery_->findRandomPoint(filter_, frand, &ref, pt.data());
@@ -722,7 +721,7 @@ vec3f esp::nav::PathFinder::getRandomNavigablePoint() {
   return pt;
 }
 
-bool esp::nav::PathFinder::findPath(ShortestPath& path) {
+bool PathFinder::findPath(ShortestPath& path) {
   MultiGoalShortestPath tmp;
   tmp.requestedStart = path.requestedStart;
   tmp.requestedEnds.assign({path.requestedEnd});
@@ -735,7 +734,7 @@ bool esp::nav::PathFinder::findPath(ShortestPath& path) {
   return status;
 }
 
-bool esp::nav::PathFinder::findPath(MultiGoalShortestPath& path) {
+bool PathFinder::findPath(MultiGoalShortestPath& path) {
   // initialize
   static const int MAX_POLYS = 256;
   dtPolyRef polys[MAX_POLYS];
@@ -830,7 +829,7 @@ bool esp::nav::PathFinder::findPath(MultiGoalShortestPath& path) {
 }
 
 template <typename T>
-T esp::nav::PathFinder::tryStep(const T& start, const T& end) {
+T PathFinder::tryStep(const T& start, const T& end) {
   static const int MAX_POLYS = 256;
   dtPolyRef polys[MAX_POLYS];
 
@@ -879,12 +878,12 @@ T esp::nav::PathFinder::tryStep(const T& start, const T& end) {
   return T{endPoint};
 }
 
-template vec3f esp::nav::PathFinder::tryStep<vec3f>(const vec3f&, const vec3f&);
-template Magnum::Vector3 esp::nav::PathFinder::tryStep<Magnum::Vector3>(
+template vec3f PathFinder::tryStep<vec3f>(const vec3f&, const vec3f&);
+template Magnum::Vector3 PathFinder::tryStep<Magnum::Vector3>(
     const Magnum::Vector3&,
     const Magnum::Vector3&);
 
-float esp::nav::PathFinder::islandRadius(const vec3f& pt) const {
+float PathFinder::islandRadius(const vec3f& pt) const {
   dtPolyRef ptRef;
   dtStatus status;
   std::tie(status, ptRef, std::ignore) = projectToPoly(pt, navQuery_, filter_);
@@ -895,13 +894,13 @@ float esp::nav::PathFinder::islandRadius(const vec3f& pt) const {
   }
 }
 
-float esp::nav::PathFinder::distanceToClosestObstacle(
+float PathFinder::distanceToClosestObstacle(
     const vec3f& pt,
     const float maxSearchRadius /*= 2.0*/) const {
   return closestObstacleSurfacePoint(pt, maxSearchRadius).hitDist;
 }
 
-esp::nav::HitRecord esp::nav::PathFinder::closestObstacleSurfacePoint(
+HitRecord PathFinder::closestObstacleSurfacePoint(
     const vec3f& pt,
     const float maxSearchRadius /*= 2.0*/) const {
   dtPolyRef ptRef;
@@ -921,8 +920,8 @@ esp::nav::HitRecord esp::nav::PathFinder::closestObstacleSurfacePoint(
   }
 }
 
-bool esp::nav::PathFinder::isNavigable(const vec3f& pt,
-                                       const float maxYDelta /*= 0.5*/) const {
+bool PathFinder::isNavigable(const vec3f& pt,
+                             const float maxYDelta /*= 0.5*/) const {
   dtPolyRef ptRef;
   dtStatus status;
   vec3f polyPt;
@@ -938,3 +937,6 @@ bool esp::nav::PathFinder::isNavigable(const vec3f& pt,
 
   return true;
 }
+
+}  // namespace nav
+}  // namespace esp
