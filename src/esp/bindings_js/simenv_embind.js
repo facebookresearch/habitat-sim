@@ -64,6 +64,14 @@ class SimEnv {
   }
 
   /**
+   * Get the semantic scene.
+   * @returns {SemanticScene} semantic scene
+   */
+  getSemanticScene() {
+    return this.sim.getSemanticScene();
+  }
+
+  /**
    * Get the distance to goal in polar coordinates.
    * @returns {Array} [magnitude, clockwise-angle (in radians)]
    */

@@ -6,8 +6,6 @@ set(assets_SOURCES
   BaseMesh.cpp
   BaseMesh.h
   CollisionMeshData.h
-  FRLInstanceMeshData.cpp
-  FRLInstanceMeshData.h
   GenericInstanceMeshData.cpp
   GenericInstanceMeshData.h
   GltfMeshData.cpp

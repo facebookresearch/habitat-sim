@@ -17,17 +17,18 @@ PTexMeshDrawable::PTexMeshDrawable(
     Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */)
     : Drawable{node, shader, ptexMeshData.getRenderingBuffer(submeshID)->mesh,
                group},
-      tex_(ptexMeshData.getRenderingBuffer(submeshID)->tex),
-      adjTex_(ptexMeshData.getRenderingBuffer(submeshID)->adjTex),
+      atlasTexture_(ptexMeshData.getRenderingBuffer(submeshID)->atlasTexture),
+      adjFacesBufferTexture_(
+          ptexMeshData.getRenderingBuffer(submeshID)->adjFacesBufferTexture),
       tileSize_(ptexMeshData.tileSize()),
       exposure_(ptexMeshData.exposure()) {}
 
 void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                             Magnum::SceneGraph::Camera3D& camera) {
-  adjTex_.bind(1);
   PTexMeshShader& ptexMeshShader = static_cast<PTexMeshShader&>(shader_);
-  ptexMeshShader.bindTexture(tex_, 0)
-      .setPTexUniforms(tex_, tileSize_, exposure_)
+  ptexMeshShader.setPTexUniforms(atlasTexture_, tileSize_, exposure_)
+      .bindAtlasTexture(atlasTexture_)
+      .bindAdjFacesBufferTexture(adjFacesBufferTexture_)
       .setMVPMatrix(camera.projectionMatrix() * transformationMatrix);
   mesh_.draw(ptexMeshShader);
 }

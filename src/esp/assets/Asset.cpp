@@ -14,12 +14,11 @@ using namespace Corrade::Utility::String;
 AssetInfo AssetInfo::fromPath(const std::string& path) {
   AssetInfo info{AssetType::UNKNOWN, path};
 
-  if (endsWith(path, "semantic_quad_mesh.ply")) {
-    info.type = AssetType::FRL_INSTANCE_MESH;
-  } else if (endsWith(path, "_semantic.ply")) {
+  if (endsWith(path, "_semantic.ply")) {
     info.type = AssetType::INSTANCE_MESH;
-  } else if (endsWith(path, "ptex_quad_mesh.ply")) {
+  } else if (endsWith(path, "mesh.ply")) {
     info.type = AssetType::FRL_PTEX_MESH;
+    info.frame = {quatf::FromTwoVectors(geo::ESP_GRAVITY, -vec3f::UnitZ())};
   } else if (endsWith(path, "house.json")) {
     info.type = AssetType::SUNCG_SCENE;
   } else if (endsWith(path, ".glb")) {
