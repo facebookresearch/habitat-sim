@@ -120,10 +120,5 @@ M_DOX_TAGFILES = [
         ["Magnum::"],
         ["m-doc-external"],
     ),
-    (
-        "../build/docs/habitat-cpp/habitat-cpp.tag",
-        "../habitat-cpp/",
-        [],
-        ["m-doc-external"],
-    ),
+    ("../build/docs/habitat-cpp.tag", "../habitat-cpp/", [], ["m-doc-external"]),
 ]
