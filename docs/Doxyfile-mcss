@@ -8,7 +8,10 @@ XML_PROGRAMLISTING     = NO
 
 # TODO: remove
 ##! M_SHOW_UNDOCUMENTED    = YES
+
 ##! M_MAIN_PROJECT_URL = https://aihabitat.org/
+##! M_FAVICON = habitat-blue.png
+##! M_THEME_COLOR = #478cc3
 
 ##! M_CLASS_TREE_EXPAND_LEVELS = 2
 
@@ -17,8 +20,14 @@ XML_PROGRAMLISTING     = NO
 ##!  "annotated" \
 ##!  "files"
 ##! M_LINKS_NAVBAR2 = \
-##!  "<a href="../habitat-sim/index.html">Python docs</a>" \
-##!  "<a href="https://aihabitat.org/habitat-api/">Python API</a>"
+##!  "<a href="../habitat-sim/index.html">Python Docs</a>" \
+##!  "<a href="../habitat-api/index.html">Python API Docs</a>"
+##! M_PAGE_FINE_PRINT = \
+##!   "<p>Habitat Sim C++ Docs. Copyright © 2019 Facebook AI Research.<br/>Created with <a href="https://doxygen.org/">Doxygen</a> {doxygen_version} and <a href="https://mcss.mosra.cz/">m.css</a>."
+
+HTML_EXTRA_STYLESHEET = \
+    https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400i,600,600i%7CSource+Code+Pro:400,400i,600 \
+    theme.compiled.css
 
 ALIASES                = \
     "cb{1}=@code{\1}" \

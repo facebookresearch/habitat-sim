@@ -16,6 +16,17 @@ else
   mcss_path=./m.css
 fi
 
+# Regenerate the compiled CSS file
+$mcss_path/css/postprocess.py \
+  theme.css \
+  $mcss_path/css/m-grid.css \
+  $mcss_path/css/m-components.css \
+  $mcss_path/css/m-layout.css \
+  pygments-pastie.css \
+  $mcss_path/css/pygments-console.css \
+  $mcss_path/css/m-documentation.css \
+  -o theme.compiled.css
+
 # Build C++ docs first so the Python docs can make use of the tag file
 $mcss_path/documentation/doxygen.py Doxyfile-mcss
 

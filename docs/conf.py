@@ -19,6 +19,8 @@ habitat_sim.logging.GlogFormatter.formatStack.__doc__ = ""
 
 PROJECT_TITLE = "Habitat"
 PROJECT_SUBTITLE = "Sim Python Docs"
+PROJECT_LOGO = "habitat.svg"
+FAVICON = "habitat-blue.png"
 MAIN_PROJECT_URL = "https://aihabitat.org"
 INPUT_MODULES = [habitat_sim]
 INPUT_DOCS = ["docs.rst", "gfx.rst"]
@@ -70,7 +72,16 @@ LINKS_NAVBAR1 = [
 ]
 LINKS_NAVBAR2 = [
     ("C++ Docs", "../habitat-cpp/index.html", []),
-    ("Habitat API", "https://aihabitat.org/habitat-api/", []),
+    ("Python API Docs", "../habitat-api/index.html", []),
+]
+
+FINE_PRINT = f"""
+| {PROJECT_TITLE} {PROJECT_SUBTITLE}. Copyright © 2019 Facebook AI Research.
+| Created with `m.css Python doc generator <https://mcss.mosra.cz/documentation/python/>`_."""
+THEME_COLOR = "#478cc3"
+STYLESHEETS = [
+    "https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400i,600,600i%7CSource+Code+Pro:400,400i,600",
+    "theme.compiled.css",
 ]
 
 M_SPHINX_INVENTORIES = [
