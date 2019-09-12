@@ -13,6 +13,7 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/GL/BufferTextureFormat.h>
 #include <Magnum/GL/TextureFormat.h>
@@ -624,7 +625,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     const std::string hdrFile = Cr::Utility::Directory::join(
         atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
 
-    CORRADE_ASSERT(io::exists(hdrFile), "Error : Cannot find the .hdr file", );
+    CORRADE_ASSERT(io::exists(hdrFile),
+                   "Error : Cannot find the .hdr file " << hdrFile, );
 
     LOG(INFO) << "Loading atlas " << iMesh + 1 << "/"
               << renderingBuffers_.size() << " from " << hdrFile << ". ";
