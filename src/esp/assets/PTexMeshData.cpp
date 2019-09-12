@@ -12,8 +12,11 @@
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/ArrayViewStl.h>
+#include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/GL/BufferTextureFormat.h>
+#include <Magnum/GL/TextureFormat.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
 
@@ -616,29 +619,44 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
                         Magnum::GL::MeshIndexType::UnsignedInt);
   }
 
+  // load atlas data and upload them to GPU
+  LOG(INFO) << "loading atlas textures: ";
   for (size_t iMesh = 0; iMesh < renderingBuffers_.size(); ++iMesh) {
-    const std::string rgbFile =
-        atlasFolder_ + "/" + std::to_string(iMesh) + "-color-ptex.rgb";
-    if (!io::exists(rgbFile)) {
-      ASSERT(false, "Can't find " + rgbFile);
-    }
-    LOG(INFO) << "\rLoading atlas " << iMesh + 1 << "/"
-              << renderingBuffers_.size() << "... ";
-    LOG(INFO).flush();
+    const std::string hdrFile = Cr::Utility::Directory::join(
+        atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
+
+    CORRADE_ASSERT(io::exists(hdrFile),
+                   "Error : Cannot find the .hdr file " << hdrFile, );
+
+    LOG(INFO) << "Loading atlas " << iMesh + 1 << "/"
+              << renderingBuffers_.size() << " from " << hdrFile << ". ";
 
     Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter> data =
-        Cr::Utility::Directory::mapRead(rgbFile);
-    const int dim = static_cast<int>(std::sqrt(data.size() / 3));  // square
+        Cr::Utility::Directory::mapRead(hdrFile);
+    // divided by 6, since there are 3 channels, R, G, B, each of which takes 1
+    // half_float (2 bytes)
+    const int dim = static_cast<int>(std::sqrt(data.size() / 6));  // square
+    CORRADE_ASSERT(dim * dim * 6 == data.size(),
+                   "Error: the atlas texture is not a square", );
 
-    Magnum::ImageView2D image(Magnum::PixelFormat::RGB8UI, {dim, dim}, data);
+    // atlas
+    // the size of each image is dim x dim x 3 (RGB) x 2 (half_float), which
+    // equals to numBytes
+    Magnum::ImageView2D image(Magnum::PixelFormat::RGB16F, {dim, dim}, data);
+
     renderingBuffers_[iMesh]
         ->atlasTexture.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
         .setMagnificationFilter(Magnum::GL::SamplerFilter::Linear)
         .setMinificationFilter(Magnum::GL::SamplerFilter::Linear)
-        // .setStorage(1, GL::TextureFormat::RGB8UI, image.size())
-        .setSubImage(0, {}, image);
+        .setStorage(
+            Magnum::Math::log2(image.size().min()) + 1,  // mip level count
+            Magnum::GL::TextureFormat::RGB16F,
+            image.size())
+        .setSubImage(0,   // mipLevel
+                     {},  // offset
+                     image)
+        .generateMipmap();
   }
-  LOG(INFO) << "... done" << std::endl;
 
   buffersOnGPU_ = true;
 }
