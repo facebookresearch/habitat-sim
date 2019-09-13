@@ -21,7 +21,7 @@ XML_PROGRAMLISTING     = NO
 ##!  "files"
 ##! M_LINKS_NAVBAR2 = \
 ##!  "<a href="../habitat-sim/index.html">Python Docs</a>" \
-##!  "<a href="../habitat-api/index.html">Python API Docs</a>"
+##!  "<a href="../habitat-api/index.html">Habitat API Docs</a>"
 ##! M_PAGE_FINE_PRINT = \
 ##!   "<p>Habitat Sim C++ Docs. Copyright © 2019 Facebook AI Research.<br/>Created with <a href="https://doxygen.org/">Doxygen</a> {doxygen_version} and <a href="https://mcss.mosra.cz/">m.css</a>."
 

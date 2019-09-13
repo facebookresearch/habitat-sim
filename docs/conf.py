@@ -72,7 +72,7 @@ LINKS_NAVBAR1 = [
 ]
 LINKS_NAVBAR2 = [
     ("C++ Docs", "../habitat-cpp/index.html", []),
-    ("Python API Docs", "../habitat-api/index.html", []),
+    ("Habitat API Docs", "../habitat-api/index.html", []),
 ]
 
 FINE_PRINT = f"""
