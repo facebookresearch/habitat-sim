@@ -9,7 +9,7 @@ XML_PROGRAMLISTING     = NO
 # TODO: remove
 ##! M_SHOW_UNDOCUMENTED    = YES
 
-##! M_MAIN_PROJECT_URL = https://aihabitat.org/
+##! M_MAIN_PROJECT_URL = /
 ##! M_FAVICON = habitat-blue.png
 ##! M_THEME_COLOR = #478cc3
 
