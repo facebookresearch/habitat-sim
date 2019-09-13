@@ -39,7 +39,7 @@ def test_kinematics(sim):
 
     Q = habitat_sim.utils.quat_from_angle_axis(90, np.array([0, 1.0, 0]))
     print(Q)
-    sim.set_rotation(Q, object_id)
+    sim.set_rotation(habitat_sim.utils.quat_to_magnum(Q), object_id)
     print(sim.get_rotation(object_id))
     print(sim.get_transformation(object_id))
 
