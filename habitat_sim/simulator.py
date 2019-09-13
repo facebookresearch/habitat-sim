@@ -260,6 +260,9 @@ class Simulator:
     def apply_torque(self, torque, object_id, scene_id=0):
         self._sim.apply_torque(torque, object_id, scene_id)
 
+    def get_world_time(self, scene_id=0):
+        return self._sim.get_world_time()
+
 
 class Sensor:
     r"""Wrapper around habitat_sim.Sensor
