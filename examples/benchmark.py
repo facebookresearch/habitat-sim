@@ -40,6 +40,11 @@ parser.add_argument(
     help="Whether to enable benchmarking of semantic sensor.",
 )
 parser.add_argument("--seed", type=int, default=1)
+parser.add_argument(
+    "--enable_physics",
+    action="store_true",
+    help="Whether to enable phyiscs (kinematic by default or dynamics if installed with bullet) during benchmark or not.",
+)
 args = parser.parse_args()
 
 default_settings = dr.default_sim_settings.copy()
@@ -64,6 +69,9 @@ benchmark_items = {
 if args.benchmark_semantic_sensor:
     benchmark_items["semantic_only"] = {"color_sensor": False, "semantic_sensor": True}
     benchmark_items["rgbd_semantic"] = {"depth_sensor": True, "semantic_sensor": True}
+
+if args.enable_physics:
+    benchmark_items["enable_physics"] = True
 
 resolutions = args.resolution
 nprocs_tests = args.num_procs
