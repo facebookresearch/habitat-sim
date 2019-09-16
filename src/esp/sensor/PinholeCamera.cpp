@@ -2,10 +2,10 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/configure.h>
+#include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
-#include <Magnum/GL/DefaultFramebuffer.h>
-#include <Corrade/configure.h>
 
 #include "PinholeCamera.h"
 #include "esp/gfx/DepthUnprojection.h"
@@ -19,9 +19,9 @@ PinholeCamera::PinholeCamera(scene::SceneNode& pinholeCameraNode,
                              sensor::SensorSpec::ptr spec)
     : sensor::Sensor(pinholeCameraNode, spec) {
   setProjectionParameters(spec);
-  #if defined(CORRADE_TARGET_EMSCRIPTEN)
-    is_webgl_build_ = true;
-  #endif
+#ifdef CORRADE_TARGET_EMSCRIPTEN
+  is_webgl_build_ = true;
+#endif
 }
 
 void PinholeCamera::setProjectionParameters(SensorSpec::ptr spec) {

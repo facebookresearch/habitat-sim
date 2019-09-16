@@ -116,10 +116,13 @@ struct RenderTarget::Impl {
 
   void blitRgbaToDefault() {
     GL::defaultFramebuffer.clearColor(Color4{1, 0, 0, 1});
-    GL::defaultFramebuffer.clear(GL::FramebufferClear::Color|GL::FramebufferClear::Depth).bind();
+    GL::defaultFramebuffer
+        .clear(GL::FramebufferClear::Color | GL::FramebufferClear::Depth)
+        .bind();
     framebuffer_.mapForRead(RgbaBuffer);
     GL::AbstractFramebuffer::blit(framebuffer_, GL::defaultFramebuffer,
-      {{}, framebufferSize()}, GL::FramebufferBlit::Color);
+                                  {{}, framebufferSize()},
+                                  GL::FramebufferBlit::Color);
   }
 
   void readFrameRgba(const MutableImageView2D& view) {
