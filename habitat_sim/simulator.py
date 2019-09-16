@@ -231,7 +231,7 @@ class Simulator:
         return self._sim.get_physics_object_library_size()
 
     def remove_object(self, object_id):
-        self._sim.remove_object(object_id)
+        return self._sim.remove_object(object_id)
 
     def get_existing_object_ids(self, scene_id=0):
         return self._sim.get_existing_object_ids(scene_id)

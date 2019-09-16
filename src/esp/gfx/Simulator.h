@@ -88,7 +88,7 @@ class Simulator {
   int getPhysicsObjectLibrarySize();
 
   // remove object objectID instance in sceneID
-  void removeObject(const int objectID, const int sceneID = 0);
+  int removeObject(const int objectID, const int sceneID = 0);
 
   // return a list of existing objected IDs in a physical scene
   std::vector<int> getExistingObjectIDs(const int sceneID = 0);

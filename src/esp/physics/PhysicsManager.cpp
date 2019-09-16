@@ -89,7 +89,7 @@ int PhysicsManager::addObject(const std::string& configFile,
 int PhysicsManager::removeObject(const int physObjectID) {
   if (existingObjects_.count(physObjectID) == 0) {
     LOG(ERROR) << "Failed to remove object: no object with ID " << physObjectID;
-    return -1;
+    return esp::ID_UNDEFINED;
   }
   existingObjects_.at(physObjectID)->removeObject();
   delete existingObjects_.at(physObjectID);
