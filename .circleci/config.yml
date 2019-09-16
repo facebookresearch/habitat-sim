@@ -196,13 +196,16 @@ jobs:
                 wget http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip
                 unzip habitat-test-scenes.zip
                 rm habitat-test-scenes.zip
+                cd ..
               fi
 
               if [ ! -d ./habitat-sim/data/objects/cheezit.glb ]
               then
+                cd habitat-sim
                 wget http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip
                 unzip objects_v0.1.zip -d data/objects/
                 rm objects_v0.1.zip
+                cd ..
               fi
       - run:
           name: Run sim benchmark
