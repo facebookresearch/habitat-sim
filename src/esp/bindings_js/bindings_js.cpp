@@ -90,6 +90,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .element(em::index<2>())
       .element(em::index<3>());
 
+  em::value_object<std::pair<vec3f, vec3f>>("aabb")
+      .field("min", &std::pair<vec3f, vec3f>::first)
+      .field("max", &std::pair<vec3f, vec3f>::second);
+
   em::class_<AgentConfiguration>("AgentConfiguration")
       .smart_ptr_constructor("AgentConfiguration",
                              &AgentConfiguration::create<>)
@@ -111,6 +115,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
           &ActionSpec::create<const std::string&, const ActuationMap&>)
       .property("name", &ActionSpec::name)
       .property("actuation", &ActionSpec::actuation);
+
+  em::class_<PathFinder>("PathFinder")
+      .smart_ptr<PathFinder::ptr>("PathFinder::ptr")
+      .property("bounds", &PathFinder::bounds);
 
   em::class_<SensorSuite>("SensorSuite")
       .smart_ptr_constructor("SensorSuite", &SensorSuite::create<>)
@@ -221,6 +229,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
                 &Simulator_getAgentObservationSpaces)
       .function("getAgentObservationSpace", &Simulator_getAgentObservationSpace)
       .function("getAgent", &SimulatorWithAgents::getAgent)
+      .function("getPathFinder", &SimulatorWithAgents::getPathFinder)
       .function("addAgent",
                 em::select_overload<Agent::ptr(const AgentConfiguration&)>(
                     &SimulatorWithAgents::addAgent))
