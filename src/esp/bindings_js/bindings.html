@@ -15,8 +15,7 @@
     <div id="sizer">
       <div id="expander">
         <div id="listener">
-          <canvas class="hidden" id="canvas"></canvas>
-          <canvas id="canvas2d" width="640" height="480" style="transform: scaleY(-1)"></canvas>
+          <canvas id="canvas" width="640" height="480"></canvas>
           <canvas id="semantic" width="640" height="480" style="transform: scaleY(-1)"></canvas>
           <canvas id="radar"></canvas>
           <pre id="log"></pre>
@@ -86,7 +85,7 @@
       const simenv = new SimEnv(config, episode, 0);
       const agent = simenv.addAgent(agentConfig);
       const task = new NavigateTask(simenv, {
-        canvas: document.getElementById('canvas2d'),
+        canvas: document.getElementById('canvas'),
         semantic: document.getElementById('semantic'),
         radar: document.getElementById('radar'),
         status: document.getElementById('status')

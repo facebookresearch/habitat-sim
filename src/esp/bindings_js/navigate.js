@@ -12,9 +12,8 @@ class NavigateTask {
   constructor(sim, components) {
     this.sim = sim;
     this.components = components;
-    this.imageCtx = components.canvas.getContext("2d");
+    this.lastObs = null;
     let shape = this.sim.getObservationSpace("rgb").shape;
-    this.imageData = this.imageCtx.createImageData(shape.get(1), shape.get(0));
     this.semanticCtx = components.semantic.getContext("2d");
     shape = this.sim.getObservationSpace("semantic").shape;
     this.semanticImageData = this.semanticCtx.createImageData(shape.get(1), shape.get(0));
@@ -63,11 +62,9 @@ class NavigateTask {
   }
 
   renderImage() {
-    const obs = this.sim.getObservation("rgb", null);
-    this.imageData.data.set(obs.getData());
-    // convert from linear to sRGB gamma
-    this.applyGamma(this.imageData.data, 2.2);
-    this.imageCtx.putImageData(this.imageData, 0, 0);
+    // Not using this as of now, but useful for later tracking purposes
+    // Also, required to render everything on sim side
+    this.lastObs = this.sim.getObservation("rgb", null);
     this.renderRadar();
   }
 
@@ -134,9 +131,9 @@ class NavigateTask {
 
   render() {
     this.renderImage();
-    if (this.semanticObjects.size() > 0)
+    if (this.semanticObjects.size() > 0) {
       this.renderSemanticImage();
-    this.renderRadar();
+    }
   }
 
   handleAction(action) {
