@@ -197,7 +197,7 @@ jobs:
                 unzip habitat-test-scenes.zip
                 rm habitat-test-scenes.zip
                 wget http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip
-                unzip objects_v0.1.zip -d data/
+                unzip objects_v0.1.zip -d data/objects/
                 rm objects_v0.1.zip
               fi
       - run:
