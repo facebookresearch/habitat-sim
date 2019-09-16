@@ -114,6 +114,14 @@ struct RenderTarget::Impl {
 
   void renderExit() {}
 
+  void blitRgbaToDefault() {
+    GL::defaultFramebuffer.clearColor(Color4{1, 0, 0, 1});
+    GL::defaultFramebuffer.clear(GL::FramebufferClear::Color|GL::FramebufferClear::Depth).bind();
+    framebuffer_.mapForRead(RgbaBuffer);
+    GL::AbstractFramebuffer::blit(framebuffer_, GL::defaultFramebuffer,
+      {{}, framebufferSize()}, GL::FramebufferBlit::Color);
+  }
+
   void readFrameRgba(const MutableImageView2D& view) {
     framebuffer_.mapForRead(RgbaBuffer).read(framebuffer_.viewport(), view);
   }
@@ -261,6 +269,10 @@ void RenderTarget::readFrameDepth(const Magnum::MutableImageView2D& view) {
 
 void RenderTarget::readFrameObjectId(const Magnum::MutableImageView2D& view) {
   pimpl_->readFrameObjectId(view);
+}
+
+void RenderTarget::blitRgbaToDefault() {
+  pimpl_->blitRgbaToDefault();
 }
 
 Magnum::Vector2i RenderTarget::framebufferSize() const {

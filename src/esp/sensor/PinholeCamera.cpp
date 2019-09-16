@@ -4,6 +4,8 @@
 
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
+#include <Magnum/GL/DefaultFramebuffer.h>
+#include <Corrade/configure.h>
 
 #include "PinholeCamera.h"
 #include "esp/gfx/DepthUnprojection.h"
@@ -17,6 +19,9 @@ PinholeCamera::PinholeCamera(scene::SceneNode& pinholeCameraNode,
                              sensor::SensorSpec::ptr spec)
     : sensor::Sensor(pinholeCameraNode, spec) {
   setProjectionParameters(spec);
+  #if defined(CORRADE_TARGET_EMSCRIPTEN)
+    is_webgl_build_ = true;
+  #endif
 }
 
 void PinholeCamera::setProjectionParameters(SensorSpec::ptr spec) {
@@ -91,6 +96,9 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
 
   renderTarget().renderExit();
 
+  if (is_webgl_build_) {
+    renderTarget().blitRgbaToDefault();
+  }
   return true;
 }
 
