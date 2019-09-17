@@ -53,16 +53,15 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
   if (!hasRenderTarget())
     return false;
 
-  renderTarget().renderEnter();
-
   drawObservation(sim);
   readObservation(obs);
 
-  renderTarget().renderExit();
   return true;
 }
 
 void PinholeCamera::drawObservation(gfx::Simulator& sim) {
+  renderTarget().renderEnter();
+
   gfx::Renderer::ptr renderer = sim.getRenderer();
   if (spec_->sensorType == SensorType::SEMANTIC) {
     // TODO: check sim has semantic scene graph
@@ -71,6 +70,8 @@ void PinholeCamera::drawObservation(gfx::Simulator& sim) {
     // SensorType is DEPTH or any other type
     renderer->draw(*this, sim.getActiveSceneGraph());
   }
+
+  renderTarget().renderExit();
 }
 
 void PinholeCamera::readObservation(Observation& obs) {
