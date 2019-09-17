@@ -12,9 +12,7 @@ class NavigateTask {
   constructor(sim, components) {
     this.sim = sim;
     this.components = components;
-    this.imageCtx = components.canvas.getContext("2d");
     let shape = this.sim.getObservationSpace("rgb").shape;
-    this.imageData = this.imageCtx.createImageData(shape.get(1), shape.get(0));
     this.semanticCtx = components.semantic.getContext("2d");
     shape = this.sim.getObservationSpace("semantic").shape;
     this.semanticImageData = this.semanticCtx.createImageData(shape.get(1), shape.get(0));
@@ -56,22 +54,16 @@ class NavigateTask {
     this.components.status.innerHTML = text;
   }
 
-  applyGamma(data, gamma) {
-    for (let i = 0; i < data.length; i++) {
-      data[i] = Math.pow(data[i]/255.0, gamma) * 255;
-    }
-  }
-
   renderImage() {
-    const obs = this.sim.getObservation("rgb", null);
-    this.imageData.data.set(obs.getData());
-    // convert from linear to sRGB gamma
-    this.applyGamma(this.imageData.data, 2.2);
-    this.imageCtx.putImageData(this.imageData, 0, 0);
+    this.sim.displayObservation("rgb");
     this.renderRadar();
   }
 
   renderSemanticImage() {
+    if (this.semanticObjects.size() == 0) {
+      return;
+    }
+
     const obs = this.sim.getObservation("semantic", null);
     this.semantic_data = obs.getData();
     let data = this.semantic_data;
@@ -79,19 +71,19 @@ class NavigateTask {
     // TOOD(msb) implement a better colorization scheme
     for (let i = 0; i < 640*480; i++) {
       if (data[i*4] & 1) {
-	this.semanticImageData.data[i*4] = 255;
+        this.semanticImageData.data[i*4] = 255;
       } else {
-	this.semanticImageData.data[i*4] = 0;
+        this.semanticImageData.data[i*4] = 0;
       }
       if (data[i*4] & 2) {
-	this.semanticImageData.data[i*4+1] = 255;
+        this.semanticImageData.data[i*4+1] = 255;
       } else {
-	this.semanticImageData.data[i*4+1] = 0;
+        this.semanticImageData.data[i*4+1] = 0;
       }
       if (data[i*4] & 4) {
-	this.semanticImageData.data[i*4+2] = 255;
+        this.semanticImageData.data[i*4+2] = 255;
       } else {
-	this.semanticImageData.data[i*4+2] = 0;
+        this.semanticImageData.data[i*4+2] = 0;
       }
       this.semanticImageData.data[i*4 + 3] = 255;
     }
@@ -134,9 +126,7 @@ class NavigateTask {
 
   render() {
     this.renderImage();
-    if (this.semanticObjects.size() > 0)
-      this.renderSemanticImage();
-    this.renderRadar();
+    this.renderSemanticImage();
   }
 
   handleAction(action) {

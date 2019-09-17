@@ -225,6 +225,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
                 &SimulatorWithAgents::getAgentObservations)
       .function("getAgentObservation",
                 &SimulatorWithAgents::getAgentObservation)
+      .function("displayObservation", &SimulatorWithAgents::displayObservation)
       .function("getAgentObservationSpaces",
                 &Simulator_getAgentObservationSpaces)
       .function("getAgentObservationSpace", &Simulator_getAgentObservationSpace)

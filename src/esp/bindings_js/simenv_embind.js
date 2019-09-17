@@ -1,5 +1,8 @@
 /**
  * SimEnv class
+ *
+ * TODO(aps,msb) - Add support for multiple agents instead of
+ * hardcoding 0th one.
  */
 class SimEnv {
   // PUBLIC methods.
@@ -61,6 +64,15 @@ class SimEnv {
     const obs = new Module.Observation();
     this.sim.getAgentObservation(0, sensorId, obs);
     return obs;
+  }
+
+  /**
+   * Display an observation from the given sensorId
+   * to canvas selected as default frame buffer.
+   * @param {number} sensorId - id of sensor
+   */
+  displayObservation(sensorId) {
+    this.sim.displayObservation(0, sensorId);
   }
 
   /**
