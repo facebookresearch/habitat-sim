@@ -56,9 +56,7 @@ class NavigateTask {
   }
 
   renderImage() {
-    // Not using this as of now, but useful for later tracking purposes
-    // Also, required to render everything on sim side
-    this.lastObs = this.sim.getObservation("rgb", null);
+    this.sim.displayObservation("rgb");
     this.renderRadar();
   }
 
