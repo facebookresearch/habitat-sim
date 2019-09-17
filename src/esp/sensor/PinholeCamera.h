@@ -70,7 +70,6 @@ class PinholeCamera : public Sensor {
   float near_ = 0.001f;  // near clipping plane
   float far_ = 1000.0f;  // far clipping plane
   float hfov_ = 35.0f;   // field of vision (in degrees)
-  bool is_webgl_build_ = false;
 
   ESP_SMART_POINTERS(PinholeCamera)
 };
