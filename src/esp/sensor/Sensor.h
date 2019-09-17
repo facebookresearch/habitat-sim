@@ -119,6 +119,7 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual bool getObservation(gfx::Simulator& sim, Observation& obs);
   virtual bool getObservationSpace(ObservationSpace& space);
+  virtual bool displayObservation(gfx::Simulator& sim);
 
   /**
    * @brief Returns the parameters needed to unproject depth for the sensor.

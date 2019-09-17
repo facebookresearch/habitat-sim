@@ -2,8 +2,6 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <Corrade/configure.h>
-#include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
 
@@ -19,9 +17,6 @@ PinholeCamera::PinholeCamera(scene::SceneNode& pinholeCameraNode,
                              sensor::SensorSpec::ptr spec)
     : sensor::Sensor(pinholeCameraNode, spec) {
   setProjectionParameters(spec);
-#ifdef CORRADE_TARGET_EMSCRIPTEN
-  is_webgl_build_ = true;
-#endif
 }
 
 void PinholeCamera::setProjectionParameters(SensorSpec::ptr spec) {
@@ -60,15 +55,14 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
 
   renderTarget().renderEnter();
 
-  // Make sure we have memory
-  if (buffer_ == nullptr) {
-    // TODO: check if our sensor was resized and resize our buffer if needed
-    ObservationSpace space;
-    getObservationSpace(space);
-    buffer_ = core::Buffer::create(space.shape, space.dataType);
-  }
-  obs.buffer = buffer_;
+  drawObservation(sim);
+  readObservation(obs);
 
+  renderTarget().renderExit();
+  return true;
+}
+
+void PinholeCamera::drawObservation(gfx::Simulator& sim) {
   gfx::Renderer::ptr renderer = sim.getRenderer();
   if (spec_->sensorType == SensorType::SEMANTIC) {
     // TODO: check sim has semantic scene graph
@@ -77,6 +71,17 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
     // SensorType is DEPTH or any other type
     renderer->draw(*this, sim.getActiveSceneGraph());
   }
+}
+
+void PinholeCamera::readObservation(Observation& obs) {
+  // Make sure we have memory
+  if (buffer_ == nullptr) {
+    // TODO: check if our sensor was resized and resize our buffer if needed
+    ObservationSpace space;
+    getObservationSpace(space);
+    buffer_ = core::Buffer::create(space.shape, space.dataType);
+  }
+  obs.buffer = buffer_;
 
   // TODO: have different classes for the different types of sensors
   // TODO: do we need to flip axis?
@@ -93,12 +98,20 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
         Magnum::PixelFormat::RGBA8Unorm, renderTarget().framebufferSize(),
         obs.buffer->data});
   }
+}
+
+bool PinholeCamera::displayObservation(gfx::Simulator& sim) {
+  if (!hasRenderTarget()) {
+    return false;
+  }
+
+  renderTarget().renderEnter();
+
+  drawObservation(sim);
+  renderTarget().blitRgbaToDefault();
 
   renderTarget().renderExit();
 
-  if (is_webgl_build_) {
-    renderTarget().blitRgbaToDefault();
-  }
   return true;
 }
 

@@ -36,8 +36,13 @@ class PinholeCamera : public Sensor {
   virtual void setProjectionMatrix(gfx::RenderCamera& targetCamera) override;
 
   virtual bool getObservation(gfx::Simulator& sim, Observation& obs) override;
+
   virtual bool getObservationSpace(ObservationSpace& space) override;
 
+  virtual bool displayObservation(gfx::Simulator& sim) override;
+
+  void drawObservation(gfx::Simulator& sim);
+  void readObservation(Observation& obs);
   /**
    * @brief Returns the parameters needed to unproject depth for this sensor's
    * perspective projection model.
