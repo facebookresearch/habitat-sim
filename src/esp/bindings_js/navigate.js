@@ -55,12 +55,6 @@ class NavigateTask {
     this.components.status.innerHTML = text;
   }
 
-  applyGamma(data, gamma) {
-    for (let i = 0; i < data.length; i++) {
-      data[i] = Math.pow(data[i]/255.0, gamma) * 255;
-    }
-  }
-
   renderImage() {
     // Not using this as of now, but useful for later tracking purposes
     // Also, required to render everything on sim side
@@ -69,6 +63,10 @@ class NavigateTask {
   }
 
   renderSemanticImage() {
+    if (this.semanticObjects.size() == 0) {
+      return;
+    }
+
     const obs = this.sim.getObservation("semantic", null);
     this.semantic_data = obs.getData();
     let data = this.semantic_data;
@@ -76,19 +74,19 @@ class NavigateTask {
     // TOOD(msb) implement a better colorization scheme
     for (let i = 0; i < 640*480; i++) {
       if (data[i*4] & 1) {
-	this.semanticImageData.data[i*4] = 255;
+        this.semanticImageData.data[i*4] = 255;
       } else {
-	this.semanticImageData.data[i*4] = 0;
+        this.semanticImageData.data[i*4] = 0;
       }
       if (data[i*4] & 2) {
-	this.semanticImageData.data[i*4+1] = 255;
+        this.semanticImageData.data[i*4+1] = 255;
       } else {
-	this.semanticImageData.data[i*4+1] = 0;
+        this.semanticImageData.data[i*4+1] = 0;
       }
       if (data[i*4] & 4) {
-	this.semanticImageData.data[i*4+2] = 255;
+        this.semanticImageData.data[i*4+2] = 255;
       } else {
-	this.semanticImageData.data[i*4+2] = 0;
+        this.semanticImageData.data[i*4+2] = 0;
       }
       this.semanticImageData.data[i*4 + 3] = 255;
     }
@@ -131,9 +129,7 @@ class NavigateTask {
 
   render() {
     this.renderImage();
-    if (this.semanticObjects.size() > 0) {
-      this.renderSemanticImage();
-    }
+    this.renderSemanticImage();
   }
 
   handleAction(action) {

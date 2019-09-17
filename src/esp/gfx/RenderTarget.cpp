@@ -115,10 +115,6 @@ struct RenderTarget::Impl {
   void renderExit() {}
 
   void blitRgbaToDefault() {
-    GL::defaultFramebuffer.clearColor(Color4{1, 0, 0, 1});
-    GL::defaultFramebuffer
-        .clear(GL::FramebufferClear::Color | GL::FramebufferClear::Depth)
-        .bind();
     framebuffer_.mapForRead(RgbaBuffer);
     GL::AbstractFramebuffer::blit(framebuffer_, GL::defaultFramebuffer,
                                   {{}, framebufferSize()},
