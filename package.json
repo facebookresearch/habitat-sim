@@ -5,14 +5,15 @@
   "devDependencies": {
     "eslint": "^6.4.0",
     "eslint-config-prettier": "^6.3.0",
+    "eslint-plugin-html": "^6.0.0",
     "eslint-plugin-prettier": "^3.1.0",
     "prettier": "^1.18.2"
   },
   "scripts": {
     "test": "node ./src/esp/bindings_js/tests/**/*_test.js",
     "format": "prettier --trailing-comma es5 --single-quote './src/esp/bindings_js/**/*.js'",
-    "lint": "eslint ./src/esp/bindings_js",
-    "lint-fix": "eslint --fix ./src/esp/bindings_js"
+    "lint": "eslint --ext .html,.js ./src/esp/bindings_js",
+    "lint-fix": "eslint --ext .html,.js --fix ./src/esp/bindings_js"
   },
   "repository": {
     "type": "git",

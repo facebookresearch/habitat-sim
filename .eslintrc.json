@@ -1,5 +1,8 @@
 {
   "extends": ["eslint:recommended", "plugin:prettier/recommended"],
+  "plugins": [
+    "html"
+  ],
   "env": {
     "browser": true,
     "commonjs": true,
