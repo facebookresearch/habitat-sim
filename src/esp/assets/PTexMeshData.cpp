@@ -97,9 +97,9 @@ std::string PTexMeshData::atlasFolder() const {
 // the consequence is we cannot reproduce such face order in our simulator
 // using std::sort. (clang and gcc may have different implementations of
 // std::sort).
-// So this function, splitMesh is disabled, and the sub-meshes are now directly
-// dumped from ReplicaSDK, and loaded to our simulator. See loadSubMeshes(...)
-// for more details;
+// So this function, splitMesh is disabled, and the sorted faces are now
+// directly dumped from ReplicaSDK, and loaded to our simulator. See
+// loadSubMeshes(...) for more details;
 
 std::vector<PTexMeshData::MeshData> splitMesh(
     const PTexMeshData::MeshData& mesh,
@@ -432,10 +432,10 @@ void PTexMeshData::loadMeshData(const std::string& meshFile) {
   if (splitSize_ > 0.0f) {
     LOG(INFO) << "Splitting mesh... ";
 
-    // In this version, we load the sub-meshes directly from an external binary
-    // file dumped out from ReplicaSDK, and disabled the function splitMesh(...)
+    // In this version, we load the sorted faces directly from an external binary
+    // file dumped out from ReplicaSDK, and disable the function splitMesh(...)
 
-    // See details in front of the splitMesh(...)
+    // See detailed comments in front of the splitMesh(...)
     std::string subMeshesFilename =
         Corrade::Utility::Directory::join(atlasFolder_, "../sorted_faces.bin");
     submeshes_ = loadSubMeshes(originalMesh, subMeshesFilename);
