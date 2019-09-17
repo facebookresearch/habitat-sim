@@ -285,7 +285,7 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
     uint64_t numFaces = 0;
     file.read((char*)&numFaces, sizeof(uint64_t));
 
-    std::vector<uint32_t> originalFaces;
+    std::vector<uint32_t> originalFaces(numFaces);
     // load the face indices in the *original* mesh
     file.read((char*)originalFaces.data(), sizeof(uint32_t) * numFaces);
 
@@ -443,8 +443,7 @@ void PTexMeshData::loadMeshData(const std::string& meshFile) {
     // TODO:
     // re-activate the following function after the bug is fixed in ReplicaSDK.
     // submeshes_ = splitMesh(originalMesh, splitSize_);
-
-    LOG(INFO) << "done" << std::endl;
+    // LOG(INFO) << "done" << std::endl;
   } else {
     submeshes_.emplace_back(std::move(originalMesh));
   }
@@ -734,7 +733,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   }
 
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
-    LOG(INFO) << "\rLoading mesh " << iMesh + 1 << "/" << submeshes_.size()
+    LOG(INFO) << "Loading mesh " << iMesh + 1 << "/" << submeshes_.size()
               << "... ";
 
     renderingBuffers_.emplace_back(
@@ -746,8 +745,6 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     currentMesh->indexBuffer.setData(submeshes_[iMesh].ibo,
                                      Magnum::GL::BufferUsage::StaticDraw);
   }
-  LOG(INFO) << "... done" << std::endl;
-
   LOG(INFO) << "Calculating mesh adjacency... ";
 
   std::vector<std::vector<uint32_t>> adjFaces(submeshes_.size());
