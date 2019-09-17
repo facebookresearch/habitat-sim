@@ -12,7 +12,6 @@ class NavigateTask {
   constructor(sim, components) {
     this.sim = sim;
     this.components = components;
-    this.lastObs = null;
     let shape = this.sim.getObservationSpace("rgb").shape;
     this.semanticCtx = components.semantic.getContext("2d");
     shape = this.sim.getObservationSpace("semantic").shape;
