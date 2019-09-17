@@ -119,6 +119,13 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual bool getObservation(gfx::Simulator& sim, Observation& obs);
   virtual bool getObservationSpace(ObservationSpace& space);
+
+  /**
+   * @brief Display next observation from Simulator on default frame buffer
+   * @param[in] sim Instance of Simulator class for which the observation needs
+   *                to be displayed
+   * @return Whether the display process was successful or not
+   */
   virtual bool displayObservation(gfx::Simulator& sim);
 
   /**

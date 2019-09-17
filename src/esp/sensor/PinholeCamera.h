@@ -41,8 +41,20 @@ class PinholeCamera : public Sensor {
 
   virtual bool displayObservation(gfx::Simulator& sim) override;
 
+  /**
+   * @brief Draw an observation using simulator's renderer
+   * @param[in] sim Instance of Simulator class for which the observation needs
+   *                to be drawn
+   */
   void drawObservation(gfx::Simulator& sim);
+
+  /**
+   * @brief Read the observation that was rendered by the simulator
+   * @param[in,out] obs Instance of Observation class in which the observation
+   *                    will be stored
+   */
   void readObservation(Observation& obs);
+
   /**
    * @brief Returns the parameters needed to unproject depth for this sensor's
    * perspective projection model.
