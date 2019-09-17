@@ -29,6 +29,15 @@ class SimulatorWithAgents : public gfx::Simulator {
                              scene::SceneNode& agentParentNode);
   agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig);
 
+  /**
+   * @brief Displays observations on default frame buffer for a
+   * particular sensor of an agent
+   * @param agentId    Id of the agent for which the observation is to
+   *                   be returned
+   * @param sensorId   Id of the sensor for which the observation is to
+   *                   be returned
+   */
+  bool displayObservation(int agentId, const std::string& sensorId);
   bool getAgentObservation(int agentId,
                            const std::string& sensorId,
                            sensor::Observation& observation);

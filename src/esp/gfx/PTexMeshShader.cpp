@@ -13,6 +13,7 @@
 #include <iostream>
 #include "PTexMeshShader.h"
 
+#include "PTexMeshShader.h"
 #include "esp/assets/PTexMeshData.h"
 #include "esp/core/esp.h"
 #include "esp/io/io.h"
@@ -72,7 +73,6 @@ PTexMeshShader::PTexMeshShader() {
   exposureUniform_ = uniformLocation("exposure");
   gammaUniform_ = uniformLocation("gamma");
   saturationUniform_ = uniformLocation("saturation");
-  clipPlaneUniform_ = uniformLocation("clipPlane");
   tileSizeUniform_ = uniformLocation("tileSize");
   widthInTilesUniform_ = uniformLocation("widthInTiles");
 }
@@ -102,8 +102,7 @@ PTexMeshShader& PTexMeshShader::setExposure(float exposure) {
   return *this;
 }
 PTexMeshShader& PTexMeshShader::setGamma(float gamma) {
-  // Careful: we set its inverse, not gamma directly
-  setUniform(gammaUniform_, 1.0f / gamma);
+  setUniform(gammaUniform_, gamma);
   return *this;
 }
 
@@ -112,19 +111,14 @@ PTexMeshShader& PTexMeshShader::setSaturation(float saturation) {
   return *this;
 }
 
-PTexMeshShader& PTexMeshShader::setClipPlane(const Magnum::Vector4& clipPlane) {
-  setUniform(clipPlaneUniform_, clipPlane);
-  return *this;
-}
-
-PTexMeshShader& PTexMeshShader::setAtlasTextureSize(Magnum::GL::Texture2D& tex,
-                                                    uint32_t tileSize) {
+PTexMeshShader& PTexMeshShader::setAtlasTextureSize(
+    Magnum::GL::Texture2D& texture,
+    uint32_t tileSize) {
   setUniform(tileSizeUniform_, (int)tileSize);
 
-  // Image size in given mip level 0
+  // get image width in given mip level 0
   int mipLevel = 0;
-  int widthEntry = 0;
-  const auto width = tex.imageSize(mipLevel)[widthEntry];
+  const auto width = texture.imageSize(mipLevel).x();
   setUniform(widthInTilesUniform_, int(width / tileSize));
   return *this;
 }

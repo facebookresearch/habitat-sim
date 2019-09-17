@@ -35,7 +35,6 @@ class PTexMeshDrawable : public Drawable {
   float exposure_;
   float gamma_;
   float saturation_;
-  Magnum::Vector4 clipPlane_{0.0f, 0.0f, 0.0f, 0.0f};
 };
 
 }  // namespace gfx

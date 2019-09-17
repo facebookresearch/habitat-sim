@@ -135,7 +135,6 @@ class ResourceManager {
   //! (2) upload mesh to gpu and drawables
   //! (optional reload of GPU-side assets)
   void addComponent(Importer& importer,
-                    const AssetInfo& info,
                     const MeshMetaData& metaData,
                     scene::SceneNode& parent,
                     DrawableGroup* drawables,

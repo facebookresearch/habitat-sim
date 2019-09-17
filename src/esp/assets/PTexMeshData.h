@@ -44,7 +44,6 @@ class PTexMeshData : public BaseMesh {
 
   // ==== geometry ====
   void load(const std::string& meshFile, const std::string& atlasFolder);
-
   uint32_t tileSize() const { return tileSize_; }
 
   const std::vector<MeshData>& meshes() const;
@@ -70,13 +69,13 @@ class PTexMeshData : public BaseMesh {
   virtual Magnum::GL::Mesh* getMagnumGLMesh(int submeshID) override;
 
   float exposure() const;
-  void setExposure(const float& val);
+  void setExposure(float val);
 
   float gamma() const;
-  void setGamma(const float& val);
+  void setGamma(float val);
 
   float saturation() const;
-  void setSaturation(const float& val);
+  void setSaturation(float val);
 
  protected:
   void loadMeshData(const std::string& meshFile);
@@ -84,9 +83,14 @@ class PTexMeshData : public BaseMesh {
   float splitSize_ = 0.0f;
   uint32_t tileSize_ = 0;
 
-  // based on ReplicaSDK
+  // initial values are based on ReplicaSDK
+  //! @brief exposure, the amount of light per unit area reaching the image
   float exposure_ = 0.025f;
-  float gamma_ = 1.6969f;
+
+  //! @brief gamma, the exponent applied in the gamma correction
+  float gamma_ = 1.0f / 1.6969f;
+
+  //! @brief saturation, the intensity of a color
   float saturation_ = 1.5f;
 
   std::string atlasFolder_;

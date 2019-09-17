@@ -25,12 +25,7 @@ PTexMeshDrawable::PTexMeshDrawable(
       tileSize_(ptexMeshData.tileSize()),
       exposure_(ptexMeshData.exposure()),
       gamma_(ptexMeshData.gamma()),
-      saturation_(ptexMeshData.saturation()) {
-  PTexMeshShader& ptexMeshShader = static_cast<PTexMeshShader&>(shader_);
-  // clipPlane is const for every ptex mesh in this version.
-  // Set it in the constructor, not in the draw()
-  ptexMeshShader.setClipPlane(clipPlane_);
-}
+      saturation_(ptexMeshData.saturation()) {}
 
 void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                             Magnum::SceneGraph::Camera3D& camera) {

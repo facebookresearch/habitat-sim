@@ -23,31 +23,62 @@ namespace gfx {
 
 class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
  public:
+  //! @brief vertex positions
   typedef Magnum::GL::Attribute<0, Magnum::Vector4> Position;
 
+  /**
+   * @brief Constructor
+   */
   explicit PTexMeshShader();
 
   // ======== texture binding ========
+  /**
+   * @brief Bind the atlas texture
+   * @return Reference to self (for method chaining)
+   */
   PTexMeshShader& bindAtlasTexture(Magnum::GL::Texture2D& texture);
+  /**
+   *  @brief Bind the buffer texture containing the adjacent faces
+   *  @return Reference to self (for method chaining)
+   */
   PTexMeshShader& bindAdjFacesBufferTexture(Magnum::GL::BufferTexture& texture);
 
   // ======== set uniforms ===========
+  /**
+   *  @brief Set modelview and projection matrix to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
   PTexMeshShader& setMVPMatrix(const Magnum::Matrix4& matrix);
+  /**
+   *  @brief Set expsure to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
   PTexMeshShader& setExposure(float exposure);
+  /**
+   *  @brief Set gamma to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
   PTexMeshShader& setGamma(float gamma);
+  /**
+   *  @brief Set saturation to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
   PTexMeshShader& setSaturation(float saturation);
-  PTexMeshShader& setClipPlane(const Magnum::Vector4& clipPlane);
+  /**
+   *  @brief Set the tile size of the atlas texture
+   *  @return Reference to self (for method chaining)
+   */
   PTexMeshShader& setAtlasTextureSize(Magnum::GL::Texture2D& texture,
                                       uint32_t tileSize);
 
  protected:
-  // it hurts the performance to call glGetUniformLocation() every frame.
+  // it hurts the performance to call glGetUniformLocation() every frame due to
+  // string operations.
   // therefore, cache the locations in the constructor
   int MVPMatrixUniform_;
   int exposureUniform_;
   int gammaUniform_;
   int saturationUniform_;
-  int clipPlaneUniform_;
   int tileSizeUniform_;
   int widthInTilesUniform_;
 };
