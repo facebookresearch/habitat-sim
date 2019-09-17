@@ -16,6 +16,7 @@
       <div id="expander">
         <div id="listener">
           <canvas id="canvas" width="640" height="480"></canvas>
+          <canvas id="topdown" width="640" height="480" style="transform: scaleY(-1)"></canvas>
           <canvas id="semantic" width="640" height="480" style="transform: scaleY(-1)"></canvas>
           <canvas id="radar"></canvas>
           <pre id="log"></pre>
@@ -28,6 +29,7 @@
 
   <script src="navigate.js"></script>
   <script src="simenv_embind.js"></script>
+  <script src="topdown.js"></script>
   <script src="WindowlessEmscriptenApplication.js"></script>
   <script async src="hsim_bindings.js"></script>
   <script async src="runtime.js"></script>
