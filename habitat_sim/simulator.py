@@ -391,7 +391,7 @@ class Sensor:
             else:
                 tgt.read_frame_rgba(
                     mn.MutableImageView2D(
-                        mn.PixelFormat.RGBA8UNORM,
+                        mn.PixelFormat.RGBA8_UNORM,
                         size,
                         self._buffer.reshape(self._spec.resolution[0], -1),
                     )
