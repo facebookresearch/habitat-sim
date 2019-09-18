@@ -3,17 +3,10 @@ import random
 
 import numpy as np
 import pytest
+import quaternion
 
 import examples.settings
 import habitat_sim
-
-
-# return True if val_1 is within epsilon error of val_2
-def within_eps_error(val_1, val_2):
-    eps = 0.0000000001
-    if abs(val_1 - val_2) < eps:
-        return True
-    return False
 
 
 @pytest.mark.skipif(
@@ -53,18 +46,10 @@ def test_kinematics(sim):
 
     # test get and set rotation
     Q = habitat_sim.utils.quat_from_angle_axis(np.pi, np.array([0, 1.0, 0]))
+    expected = np.eye(4)
+    expected[0:3, 0:3] = quaternion.as_rotation_matrix(Q)
     sim.set_rotation(habitat_sim.utils.quat_to_magnum(Q), object_id)
-    assert np.allclose(
-        sim.get_transformation(object_id),
-        np.array(
-            [
-                [-1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, -1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ]
-        ),
-    )
+    assert np.allclose(sim.get_transformation(object_id), expected)
     assert np.allclose(
         habitat_sim.utils.quat_from_magnum(sim.get_rotation(object_id)),
         habitat_sim.utils.quat_from_coeffs(np.array([0.0, 1.0, 0.0, 0.0])),
