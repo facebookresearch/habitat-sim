@@ -25,9 +25,7 @@ namespace physics {
 @brief Dynamic scene and object manager interfacing with Bullet physics engine:
 https://github.com/bulletphysics/bullet3.
 
-See <A
-HREF="https://pybullet.org/Bullet/BulletFull/classbtDiscreteDynamicsWorld.html">
-btDiscreteDynamicsWorld</A>.
+See @ref btDiscreteDynamicsWorld.
 
 Enables @ref RigidObject simulation with @ref MotionType::DYNAMIC.
 
@@ -85,9 +83,8 @@ class BulletPhysicsManager : public PhysicsManager {
   //============ Simulator functions =============
 
   /** @brief Step the physical world forward in time. Time may only advance in
-   * increments of @ref fixedTimeStep_. See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtDiscreteDynamicsWorld.html">
-   * btDiscreteDynamicsWorld</A>\::stepSimulation.
+   * increments of @ref fixedTimeStep_. See @ref
+   * btDiscreteDynamicsWorld::stepSimulation.
    * @param dt The desired amount of time to advance the physical world.
    */
   void stepPhysics(double dt);
@@ -162,9 +159,7 @@ class BulletPhysicsManager : public PhysicsManager {
   btSequentialImpulseConstraintSolver bSolver_;
   btCollisionDispatcher bDispatcher_{&bCollisionConfig_};
 
-  /** @brief A pointer to the Bullet world. See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtDiscreteDynamicsWorld.html">
-   * btDiscreteDynamicsWorld</A> .*/
+  /** @brief A pointer to the Bullet world. See @ref btDiscreteDynamicsWorld.*/
   std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
 
  private:

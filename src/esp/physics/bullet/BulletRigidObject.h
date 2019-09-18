@@ -21,11 +21,8 @@ namespace physics {
 @brief An individual rigid object instance implementing an interface with Bullet
 physics to enable @ref MotionType::DYNAMIC objects.
 
-See <A
-HREF="https://pybullet.org/Bullet/BulletFull/classbtCollisionObject.html">
-btCollisionObject</A> for @ref RigidObjectType::SCENE and <A
-HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-btRigidBody</A> for @ref RigidObjectType::OBJECT.
+See @ref btCollisionObject for @ref RigidObjectType::SCENE and
+@ref btRigidBody for @ref RigidObjectType::OBJECT.
 
 */
 class BulletRigidObject : public RigidObject {
@@ -45,15 +42,12 @@ class BulletRigidObject : public RigidObject {
   /**
    * @brief Initializes this @ref BulletRigidObject as static scene geometry.
    * See @ref PhysicsManager::sceneNode_. Sets @ref rigidObjectType_ to @ref
-   * RigidObjectType::SCENE. See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtCollisionObject.html">
-   * btCollisionObject</A>.
+   * RigidObjectType::SCENE. See @ref btCollisionObject.
    * @param physicsSceneAttributes The template structure defining relevant
    * phyiscal parameters for the physical scene.
    * @param meshGroup The collision mesh data for the scene.
-   * @param bWorld The Bullet <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtDiscreteDynamicsWorld.html">
-   * btDiscreteDynamicsWorld</A> to which the scene should belong.
+   * @param bWorld The @ref btDiscreteDynamicsWorld to which the scene should
+   * belong.
    * @return true if initialized successfully, false otherwise.
    */
   bool initializeScene(
@@ -64,16 +58,13 @@ class BulletRigidObject : public RigidObject {
   /**
    * @brief Initializes this @ref BulletRigidObject as a @ref
    * MotionType::DYNAMIC object. Sets @ref rigidObjectType_ to @ref
-   * RigidObjectType::OBJECT. See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>
+   * RigidObjectType::OBJECT. See @ref btRigidBody.
    * @param physicsObjectAttributes The template structure defining relevant
    * phyiscal parameters for the object. See @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_.
    * @param meshGroup The collision mesh data for the object.
-   * @param bWorld The Bullet <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtDiscreteDynamicsWorld.html">
-   * btDiscreteDynamicsWorld</A> to which the object should belong.
+   * @param bWorld The @ref btDiscreteDynamicsWorld to which the object should
+   * belong.
    * @return true if initialized successfully, false otherwise.
    */
   bool initializeObject(
@@ -83,18 +74,14 @@ class BulletRigidObject : public RigidObject {
 
   /**
    * @brief Check whether object is being actively simulated, or sleeping.
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtCollisionObject.html">
-   * btCollisionObject</A>\::isActive.
+   * See @ref btCollisionObject::isActive.
    * @return true if active, false otherwise.
    */
   bool isActive();
 
   /**
    * @brief Set an object as being actively simulated rather than sleeping.
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtCollisionObject.html">
-   * btCollisionObject</A>\::activate.
+   * See @ref btCollisionObject::activate.
    */
   void setActive();
 
@@ -102,11 +89,8 @@ class BulletRigidObject : public RigidObject {
    * @brief Set the @ref MotionType of the object. If the object is @ref
    * ObjectType::SCENE it can only be @ref MotionType::STATIC. If the object is
    * @ref ObjectType::OBJECT is can also be set to @ref MotionType::KINEMATIC or
-   * @ref MotionType::DYNAMIC. See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>\::setCollisionFlags and <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtCollisionObject.html">
-   * btCollisionObject</A>\::CF_STATIC_OBJECT,CF_KINEMATIC_OBJECT.
+   * @ref MotionType::DYNAMIC. See @ref btRigidBody::setCollisionFlags and @ref
+   * btCollisionObject::CF_STATIC_OBJECT,CF_KINEMATIC_OBJECT.
    * @param mt The desirved @ref MotionType.
    * @return true if successfully set, false otherwise.
    */
@@ -116,9 +100,7 @@ class BulletRigidObject : public RigidObject {
    * @brief Apply a force to an object.
    * Does nothing for @ref MotionType::STATIC and @ref
    * MotionType::KINEMATIC objects. Calls @ref setActive().
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>\::applyForce.
+   * See @ref btRigidBody::applyForce.
    * @param force The desired linear force on the object in the global
    * coordinate system.
    * @param relPos The desired location of force application in the global
@@ -131,9 +113,7 @@ class BulletRigidObject : public RigidObject {
    * Directly modifies the object's velocity without requiring
    * integration through simulation. Does nothing for @ref MotionType::STATIC
    * and @ref MotionType::KINEMATIC objects. Calls @ref setActive().
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>\::applyImpulse.
+   * See @ref btRigidBody::applyImpulse.
    * @param impulse The desired impulse on the object in the global coordinate
    * system.
    * @param relPos The desired location of impulse application in the global
@@ -146,9 +126,7 @@ class BulletRigidObject : public RigidObject {
    * @brief Apply an internal torque to an object.
    * Does nothing for @ref MotionType::STATIC and @ref
    * MotionType::KINEMATIC objects. Calls @ref setActive().
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>\::applyTorque.
+   * See @ref btRigidBody::applyTorque.
    * @param torque The desired torque on the object in the local coordinate
    * system.
    */
@@ -158,9 +136,7 @@ class BulletRigidObject : public RigidObject {
    * @brief Apply an internal impulse torque to an object.
    * Does nothing for @ref MotionType::STATIC and @ref
    * MotionType::KINEMATIC objects. Calls @ref setActive().
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>\::applyTorqueImpulse.
+   * See @ref btRigidBody::applyTorqueImpulse.
    * @param impulse The desired impulse torque on the object in the local
    * coordinate system. Directly modifies the object's angular velocity without
    * requiring integration through simulation.
@@ -169,12 +145,9 @@ class BulletRigidObject : public RigidObject {
 
   /**
    * @brief Remove the object from the world.
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtDiscreteDynamicsWorld.html">
-   * btDiscreteDynamicsWorld</A>\::removeRigidBody for @ref
-   * RigidObjectType::OBJECT or <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtDiscreteDynamicsWorld.html">
-   * btDiscreteDynamicsWorld</A>\::removeCollisionObject for @ref
+   * See @ref btDiscreteDynamicsWorld::removeRigidBody for @ref
+   * RigidObjectType::OBJECT or @ref
+   * btDiscreteDynamicsWorld::removeCollisionObject for @ref
    * RigidObjectType::SCENE.
    * @return true if successful, false otherwise.
    */
@@ -183,18 +156,14 @@ class BulletRigidObject : public RigidObject {
   //============ Getter/setter function =============
 
   /** @brief Get the mass of the object. Returns 0.0 for @ref
-   * RigidObjectType::SCENE. See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>\::getInvMass.
+   * RigidObjectType::SCENE. See @ref btRigidBody::getInvMass.
    * @return The mass of the object.
    */
   double getMass();
 
   /** @brief Get the center of mass (COM) of the object. For Bullet, COM is
    * always the origin of the local coordinate system. Return [0,0,0] for @ref
-   * RigidObjectType::SCENE. See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>\::getCenterOfMassPosition.
+   * RigidObjectType::SCENE. See @ref btRigidBody::getCenterOfMassPosition.
    * @return Object 3D center of mass in the global coordinate system.
    */
   Magnum::Vector3 getCOM();
@@ -202,9 +171,8 @@ class BulletRigidObject : public RigidObject {
   /** @brief Get the diagonal of the inertia matrix for an object.
    * If an object is aligned with its principle axii of inertia, the 3x3 inertia
    * matrix can be reduced to a diagonal. This is expected for Bullet. See @ref
-   * BulletRigidObject::setInertiaVector. See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>\::getInvInertiaDiagLocal.
+   * BulletRigidObject::setInertiaVector. See @ref
+   * btRigidBody::getInvInertiaDiagLocal.
    * @return The diagonal of the object's inertia matrix.
    */
   Magnum::Vector3 getInertiaVector();
@@ -223,51 +191,39 @@ class BulletRigidObject : public RigidObject {
   double getScale();
 
   /** @brief Get the scalar friction coefficient of the object.
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtCollisionObject.html">
-   * btCollisionObject</A>\::getFriction.
+   * See @ref btCollisionObject::getFriction.
    * @return The scalar friction coefficient of the object.
    */
   double getFrictionCoefficient();
 
   /** @brief Get the scalar coefficient of restitution  of the object.
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtCollisionObject.html">
-   * btCollisionObject</A>\::getRestitution.
+   * See @ref btCollisionObject::getRestitution.
    * @return The scalar coefficient of restitution  of the object.
    */
   double getRestitutionCoefficient();
 
   /** @brief Get the scalar linear damping coefficient of the object.
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>\::getLinearDamping.
+   * See @ref btRigidBody::getLinearDamping.
    * @return The scalar linear damping coefficient of the object. 0.0 for @ref
    * RigidObjectType::SCENE.
    */
   double getLinearDamping();
 
   /** @brief Get the scalar angular damping coefficient of the object.
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>\::getAngularDamping.
+   * See @ref btRigidBody::getAngularDamping.
    * @return The scalar angular damping coefficient of the object. 0.0 for @ref
    * RigidObjectType::SCENE.
    */
   double getAngularDamping();
 
   /** @brief Get the scalar collision margin of an object. Retun 0.0 for a @ref
-   * RigidObjectType::SCENE. See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtCompoundShape.html">
-   * btCompoundShape</A>\::getMargin.
+   * RigidObjectType::SCENE. See @ref btCompoundShape::getMargin.
    * @return The scalar collision margin of the object.
    */
   double getMargin();
 
   /** @brief Set the mass of the object.
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>\::setMassProps. Note that changing mass should affect
+   * See @ref btRigidBody::setMassProps. Note that changing mass should affect
    * inertia, but this is not done automatically. Does not affect @ref
    * RigidObjectType::SCENE.
    * @param mass The new mass of the object.
@@ -276,20 +232,17 @@ class BulletRigidObject : public RigidObject {
 
   /** @brief Set the center of mass (COM) of the object.
    * @param COM Object 3D center of mass in the local coordinate system.
-   * !!! Currently not supported !!! All Bullet <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>s must have a COM located at thier local origins.
+   * !!! Currently not supported !!!
+   * All Bullet @ref btRigidBody objects must have a COM located at thier local
+   * origins.
    */
   void setCOM(const Magnum::Vector3& COM);
 
   /** @brief Set the diagonal of the inertia matrix for the object.
    * If an object is aligned with its principle axii of inertia, the 3x3 inertia
-   * matrix can be reduced to a diagonal. This is the requirement for Bullet <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>s. See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>\::setMassProps. Does not affect @ref
-   * RigidObjectType::SCENE.
+   * matrix can be reduced to a diagonal. This is the requirement for Bullet
+   * @ref btRigidBody objects. See @ref btRigidBody::setMassProps. Does not
+   * affect @ref RigidObjectType::SCENE.
    * @param inertia The new diagonal for the object's inertia matrix.
    */
   void setInertiaVector(const Magnum::Vector3& inertia);
@@ -302,45 +255,37 @@ class BulletRigidObject : public RigidObject {
   void setScale(const double scale);
 
   /** @brief Set the scalar friction coefficient of the object.
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtCollisionObject.html">
-   * btCollisionObject</A>\::setFriction.
+   * See @ref btCollisionObject::setFriction.
    * @param frictionCoefficient The new scalar friction coefficient of the
    * object.
    */
   void setFrictionCoefficient(const double frictionCoefficient);
 
   /** @brief Set the scalar coefficient of restitution of the object.
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtCollisionObject.html">
-   * btCollisionObject</A>\::setRestitution.
+   * See @ref btCollisionObject::setRestitution.
    * @param restitutionCoefficient The new scalar coefficient of restitution of
    * the object.
    */
   void setRestitutionCoefficient(const double restitutionCoefficient);
 
   /** @brief Set the scalar linear damping coefficient of the object.
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>\::setDamping. Does not affect @ref RigidObjectType::SCENE.
+   * See @ref btRigidBody::setDamping. Does not affect @ref
+   * RigidObjectType::SCENE.
    * @param linearDamping The new scalar linear damping coefficient of the
    * object.
    */
   void setLinearDamping(const double linearDamping);
 
   /** @brief Set the scalar angular damping coefficient for the object.
-   * See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>\::setDamping. Does not affect @ref RigidObjectType::SCENE.
+   * See @ref btRigidBody::setDamping. Does not affect @ref
+   * RigidObjectType::SCENE.
    * @param angularDamping The new scalar angular damping coefficient for the
    * object.
    */
   void setAngularDamping(const double angularDamping);
 
   /** @brief Set the scalar collision margin of an object. Does not affect @ref
-   * RigidObjectType::SCENE. See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtCompoundShape.html">
-   * btCompoundShape</A>\::setMargin.
+   * RigidObjectType::SCENE. See @ref btCompoundShape::setMargin.
    * @param margin The new scalar collision margin of the object.
    */
   void setMargin(const double margin);
@@ -348,15 +293,12 @@ class BulletRigidObject : public RigidObject {
  protected:
   /** @brief Used to synchronize Bullet's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic
-   * updates. See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>\::setWorldTransform. */
+   * updates. See @ref btRigidBody::setWorldTransform. */
   void syncPose();
 
  private:
-  /** @brief A pointer to the Bullet world to which this object belongs. See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtDiscreteDynamicsWorld.html">
-   * btDiscreteDynamicsWorld</A> .*/
+  /** @brief A pointer to the Bullet world to which this object belongs. See
+   * @ref btDiscreteDynamicsWorld.*/
   std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
 
   // === Physical scene ===
@@ -368,9 +310,7 @@ class BulletRigidObject : public RigidObject {
   std::vector<std::unique_ptr<btBvhTriangleMeshShape>> bSceneShapes_;
 
   /** @brief Scene data: All components of a @ref RigidObjectType::SCENE are
-   * stored here. See <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtCollisionObject.html">
-   * btCollisionObject</A>
+   * stored here. See @ref btCollisionObject.
    */
   std::vector<std::unique_ptr<btCollisionObject>> bSceneCollisionObjects_;
 
@@ -383,9 +323,7 @@ class BulletRigidObject : public RigidObject {
   std::unique_ptr<btCompoundShape> bObjectShape_;
 
   /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
-   * wrapped into one <A
-   * HREF="https://pybullet.org/Bullet/BulletFull/classbtRigidBody.html">
-   * btRigidBody</A>
+   * wrapped into one @ref btRigidBody.
    */
   std::unique_ptr<btRigidBody> bObjectRigidBody_;
 
