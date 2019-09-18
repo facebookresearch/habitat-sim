@@ -51,8 +51,7 @@ def test_kinematics(sim):
     sim.set_rotation(habitat_sim.utils.quat_to_magnum(Q), object_id)
     assert np.allclose(sim.get_transformation(object_id), expected)
     assert np.allclose(
-        habitat_sim.utils.quat_from_magnum(sim.get_rotation(object_id)),
-        Q,
+        habitat_sim.utils.quat_from_magnum(sim.get_rotation(object_id)), Q
     )
 
     # test object removal
