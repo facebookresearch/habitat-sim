@@ -171,3 +171,11 @@ build_js/
 build_corrade-rc/
 
 .setuppy_args_cache.json
+
+# JS
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
