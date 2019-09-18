@@ -273,13 +273,6 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
 
   std::vector<PTexMeshData::MeshData> subMeshes(numSubMeshes);
 
-  // a *vertex* lookup table:
-  // global index of the original mesh --> local index in sub-meshes
-  std::vector<int64_t> globalToLocal;
-  for (size_t iVertex = 0; iVertex < mesh.vbo.size(); ++iVertex) {
-    globalToLocal.push_back(-1);  // -1 means not set yet
-  }
-
   size_t totalFaces = 0;  // used in sanity check
   for (uint64_t iMesh = 0; iMesh < numSubMeshes; ++iMesh) {
     uint64_t numFaces = 0;
@@ -288,6 +281,11 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
     std::vector<uint32_t> originalFaces(numFaces);
     // load the face indices in the *original* mesh
     file.read((char*)originalFaces.data(), sizeof(uint32_t) * numFaces);
+    // a *vertex* lookup table:
+    // global index of the original mesh --> local index in sub-meshes
+    // (note: this table cannot be defined outside of the for loop, as a vertex
+    // in original mesh may appear in different sub-meshes.)
+    std::unordered_map<uint32_t, uint32_t> globalToLocal;
 
     // Another *vertex* lookup table:
     // local index of current sub-mesh --> global index of the original mesh
@@ -298,7 +296,7 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
       uint32_t f = originalFaces[jFace];  // face index in original mesh
       for (size_t v = 0; v < 4; ++v) {
         uint32_t global = mesh.ibo[f * 4 + v];
-        if (globalToLocal[global] < 0) {
+        if (globalToLocal.find(global) == globalToLocal.end()) {
           globalToLocal[global] = localToGlobal.size();
           localToGlobal.push_back(global);
         }
@@ -432,8 +430,9 @@ void PTexMeshData::loadMeshData(const std::string& meshFile) {
   if (splitSize_ > 0.0f) {
     LOG(INFO) << "Splitting mesh... ";
 
-    // In this version, we load the sorted faces directly from an external binary
-    // file dumped out from ReplicaSDK, and disable the function splitMesh(...)
+    // In this version, we load the sorted faces directly from an external
+    // binary file dumped out from ReplicaSDK, and disable the function
+    // splitMesh(...)
 
     // See detailed comments in front of the splitMesh(...)
     std::string subMeshesFilename =
