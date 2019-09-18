@@ -44,14 +44,14 @@ PROJECT_NUMBER         =
 # for a project that appears at the top of each page and should give viewer a
 # quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          = Sim C++ docs
+PROJECT_BRIEF          = Sim C++ Docs
 
 # With the PROJECT_LOGO tag one can specify a logo or an icon that is included
 # in the documentation. The maximum height of the logo should not exceed 55
 # pixels and the maximum width should not exceed 200 pixels. Doxygen will copy
 # the logo to the output directory.
 
-PROJECT_LOGO           =
+PROJECT_LOGO           = habitat.svg
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute) path
 # into which the generated documentation will be written. If a relative path is
@@ -2149,13 +2149,14 @@ SKIP_FUNCTION_MACROS   = YES
 
 TAGFILES              = corrade.tag=https://doc.magnum.graphics/corrade/ \
                         magnum.tag=https://doc.magnum.graphics/magnum/ \
-                        stl.tag=http://en.cppreference.com/w/
+                        stl.tag=http://en.cppreference.com/w/ \
+                        bullet.tag=https://pybullet.org/Bullet/BulletFull/
 
 # When a file name is specified after GENERATE_TAGFILE, doxygen will create a
 # tag file that is based on the input files it reads. See section "Linking to
 # external documentation" for more information about the usage of tag files.
 
-GENERATE_TAGFILE       = ../build/docs/habitat-cpp/habitat-cpp.tag
+GENERATE_TAGFILE       = ../build/docs/habitat-cpp.tag
 
 # If the ALLEXTERNALS tag is set to YES, all external class will be listed in
 # the class index. If set to NO, only the inherited external classes will be

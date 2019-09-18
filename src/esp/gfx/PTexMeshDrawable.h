@@ -32,6 +32,8 @@ class PTexMeshDrawable : public Drawable {
   Magnum::GL::BufferTexture& adjFacesBufferTexture_;
   uint32_t tileSize_;
   float exposure_;
+  float gamma_;
+  float saturation_;
 };
 
 }  // namespace gfx
