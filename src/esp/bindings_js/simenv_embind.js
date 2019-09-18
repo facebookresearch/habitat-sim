@@ -173,3 +173,5 @@ class SimEnv {
     return converted;
   }
 }
+
+export default SimEnv;

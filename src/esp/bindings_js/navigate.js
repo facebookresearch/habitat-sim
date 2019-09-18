@@ -163,3 +163,5 @@ class NavigateTask {
     });
   }
 }
+
+export default NavigateTask;

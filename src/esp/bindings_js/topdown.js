@@ -1,7 +1,6 @@
 /**
  * TopDownMap class
  */
-// eslint-disable-next-line no-unused-vars
 class TopDownMap {
   // PUBLIC methods.
 
@@ -90,3 +89,5 @@ class TopDownMap {
     return imageData;
   }
 }
+
+export default TopDownMap;

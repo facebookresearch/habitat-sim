@@ -1,7 +1,11 @@
-/*global Module, SimEnv, NavigateTask, TopDownMap, FS*/
-/** TODO(aps): Shift to babel based compilation to properly
- *  support older browsers
- */
+/*global Module */
+
+import * as fs from "fs";
+import SimEnv from "./simenv_embind";
+import NavigateTask from "./navigate";
+import TopDownMap from "./topdown";
+import "./bindings.css";
+
 Module["onRuntimeInitialized"] = function() {
   console.log("hsim_bindings initialized");
 
@@ -46,7 +50,7 @@ Module["onRuntimeInitialized"] = function() {
 
   let sceneConfig = new Module.SceneConfiguration();
   try {
-    FS.stat("17DRP5sb8fy.glb");
+    fs.stat("17DRP5sb8fy.glb");
     sceneConfig.id = "17DRP5sb8fy.glb";
   } catch (err) {
     console.log(
