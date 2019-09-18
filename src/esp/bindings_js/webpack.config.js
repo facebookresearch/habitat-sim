@@ -11,8 +11,6 @@ const config = {
     path: buildRootPath,
     filename: "bundle.js"
   },
-  // Fix around missing fs dependency error
-  node: { fs: "empty" },
   module: {
     rules: [
       // Babel loader for > ES6 compilation

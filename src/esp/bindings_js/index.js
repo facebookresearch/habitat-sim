@@ -1,6 +1,5 @@
-/*global Module */
+/*global Module, FS */
 
-import * as fs from "fs";
 import SimEnv from "./simenv_embind";
 import NavigateTask from "./navigate";
 import TopDownMap from "./topdown";
@@ -50,7 +49,7 @@ Module["onRuntimeInitialized"] = function() {
 
   let sceneConfig = new Module.SceneConfiguration();
   try {
-    fs.stat("17DRP5sb8fy.glb");
+    FS.stat("17DRP5sb8fy.glb");
     sceneConfig.id = "17DRP5sb8fy.glb";
   } catch (err) {
     console.log(
