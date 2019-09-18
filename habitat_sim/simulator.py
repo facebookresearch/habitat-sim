@@ -201,7 +201,11 @@ class Simulator:
 
         # step physics by dt
         self._sim.step_world(dt)
+
         # print("World time is now: " + str(self._sim.get_world_time()))
+        # existing_obj_ids = self._sim.get_existing_object_ids()
+        # if len(existing_obj_ids) > 0:
+        #    print(self._sim.get_translation(existing_obj_ids[0]))
 
         observations = self.get_sensor_observations()
         # Whether or not the action taken resulted in a collision

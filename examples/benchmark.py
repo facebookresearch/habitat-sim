@@ -71,7 +71,7 @@ if args.benchmark_semantic_sensor:
     benchmark_items["rgbd_semantic"] = {"depth_sensor": True, "semantic_sensor": True}
 
 if args.enable_physics:
-    benchmark_items["enable_physics"] = True
+    benchmark_items["enable_physics"] = {"enable_physics": True}
 
 resolutions = args.resolution
 nprocs_tests = args.num_procs

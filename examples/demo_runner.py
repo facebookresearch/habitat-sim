@@ -139,9 +139,14 @@ class DemoRunner:
         assert (
             object_lib_size > 0
         ), "!!!No objects loaded in library, aborting object instancing example!!!"
+
+        # clear the objects if we are re-running this initializer
+        for old_obj_id in self._sim.get_existing_object_ids():
+            self._sim.remove_object(old_obj_id)
+
         for obj_id in range(num_objects):
-            rand_obj_index = random.randint(0, object_lib_size - 1)
-            # rand_obj_index = 0  # overwrite for specific object only
+            # rand_obj_index = random.randint(0, object_lib_size - 1)
+            rand_obj_index = 0  # overwrite for specific object only
             object_init_cell = (
                 random.randint(-object_init_grid_dim[0], object_init_grid_dim[0]),
                 random.randint(-object_init_grid_dim[1], object_init_grid_dim[1]),
@@ -204,6 +209,14 @@ class DemoRunner:
             #        rand_nudge = np.random.uniform(-0.05,0.05,3)
             #        cur_pos = self._sim.get_translation(obj_id)
             #        self._sim.set_translation(cur_pos + rand_nudge, obj_id)
+
+            # NOTE: uncomment the following for dynamic applications to all objects (keeps them awake and simulating for benchmark)
+            if self._sim_settings["enable_physics"]:
+                obj_ids = self._sim.get_existing_object_ids()
+                for obj_id in obj_ids:
+                    rand_nudge = np.random.uniform(-0.05, 0.05, 3)
+                    self._sim.apply_force(rand_nudge, np.zeros(3), obj_id)
+
             observations = self._sim.step(action)
             time_per_step.append(time.time() - start_step_time)
 
