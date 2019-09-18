@@ -89,6 +89,7 @@ jobs:
                   pkg-config \
                   wget \
                   zip \
+                  libbullet-dev\
                   unzip || true
       - run:
           name: Install cuda
@@ -117,7 +118,7 @@ jobs:
                 export PATH=$HOME/miniconda/bin:$PATH
                 conda create -y -n habitat python=3.6
                 . activate habitat
-                conda install -q -y -c conda-forge ninja numpy pytest ccache bullet
+                conda install -q -y -c conda-forge ninja numpy pytest ccache
               fi
       - run:
           name: Install emscripten
@@ -227,6 +228,7 @@ jobs:
               pytest
 
               #re-install with bullet and run physics tests again
+              rm -r build
               python setup.py install --headless --bullet
               pytest tests/test_physics.py
       - run:
