@@ -10,7 +10,6 @@
 #include "esp/assets/Asset.h"
 #include "esp/assets/Attributes.h"
 #include "esp/assets/BaseMesh.h"
-#include "esp/assets/FRLInstanceMeshData.h"
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/core/esp.h"

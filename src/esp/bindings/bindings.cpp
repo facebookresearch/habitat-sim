@@ -99,6 +99,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
              Magnum::SceneGraph::PyObjectHolder<scene::SceneNode>>(
       m, "SceneNode", R"(
       SceneNode: a node in the scene graph.
+
       Cannot apply a smart pointer to a SceneNode object.
       You can "create it and forget it".
       Simulator backend will handle the memory.)")
@@ -121,14 +122,14 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
                           const vec3f&, const vec3f&, const vec3f&>())
       .def("setProjectionMatrix", &RenderCamera::setProjectionMatrix, R"(
-        Set this :py:class:`Camera`'s projection matrix.
+        Set this `Camera`'s projection matrix.
       )",
            "width"_a, "height"_a, "znear"_a, "zfar"_a, "hfov"_a)
       .def("getProjectionMatrix", &RenderCamera::getProjectionMatrix, R"(
-        Get this :py:class:`Camera`'s projection matrix.
+        Get this `Camera`'s projection matrix.
       )")
       .def("getCameraMatrix", &RenderCamera::getCameraMatrix, R"(
-        Get this :py:class:`Camera`'s camera matrix.
+        Get this `Camera`'s camera matrix.
       )")
       .def_property_readonly("node", nodeGetter<RenderCamera>,
                              "Node this object is attached to")
@@ -148,28 +149,32 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("get_root_node",
            py::overload_cast<>(&scene::SceneGraph::getRootNode, py::const_),
            R"(
-            Get the root node of the scene graph. User can specify transformation
-            of the root node w.r.t. the world frame. (const function)
-            PYTHON DOES NOT GET OWNERSHIP)",
+            Get the root node of the scene graph.
+
+            User can specify transformation of the root node w.r.t. the world
+            frame. (const function) PYTHON DOES NOT GET OWNERSHIP)",
            pybind11::return_value_policy::reference)
       .def("get_root_node",
            py::overload_cast<>(&scene::SceneGraph::getRootNode),
            R"(
-            Get the root node of the scene graph. User can specify transformation
-            of the root node w.r.t. the world frame.
-            PYTHON DOES NOT GET OWNERSHIP)",
+            Get the root node of the scene graph.
+
+            User can specify transformation of the root node w.r.t. the world
+            frame. PYTHON DOES NOT GET OWNERSHIP)",
            pybind11::return_value_policy::reference)
       .def("set_default_render_camera_parameters",
            &scene::SceneGraph::setDefaultRenderCamera,
            R"(
             Set transformation and the projection matrix to the default render camera.
-            The camera will have the same absolute transformation
-            as the target scene node after the operation.)",
+
+            The camera will have the same absolute transformation as the target
+            scene node after the operation.)",
            "targetSceneNode"_a)
       .def("get_default_render_camera",
            &scene::SceneGraph::getDefaultRenderCamera,
            R"(
             Get the default camera stored in scene graph for rendering.
+
             PYTHON DOES NOT GET OWNERSHIP)",
            pybind11::return_value_policy::reference);
 
@@ -182,6 +187,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            py::overload_cast<int>(&scene::SceneManager::getSceneGraph),
            R"(
              Get the scene graph by scene graph ID.
+
              PYTHON DOES NOT GET OWNERSHIP)",
            "sceneGraphID"_a, pybind11::return_value_policy::reference)
       .def("get_scene_graph",
@@ -189,6 +195,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
                                   py::const_),
            R"(
              Get the scene graph by scene graph ID.
+
              PYTHON DOES NOT GET OWNERSHIP)",
            "sceneGraphID"_a, pybind11::return_value_policy::reference);
 
@@ -250,11 +257,16 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("objects", &SemanticLevel::objects);
 
   // ==== SemanticRegion ====
-  semanticRegion.def_property_readonly("id", &SemanticRegion::id)
+  semanticRegion
+      .def_property_readonly(
+          "id", &SemanticRegion::id,
+          "The ID of the region, of the form ``<level_id>_<region_id>``")
       .def_property_readonly("level", &SemanticRegion::level)
       .def_property_readonly("aabb", &SemanticRegion::aabb)
-      .def_property_readonly("category", &SemanticRegion::category)
-      .def_property_readonly("objects", &SemanticRegion::objects);
+      .def_property_readonly("category", &SemanticRegion::category,
+                             "The semantic category of the region")
+      .def_property_readonly("objects", &SemanticRegion::objects,
+                             "All objects in the region");
 
   // ==== SuncgSemanticRegion ====
   py::class_<SuncgSemanticRegion, SemanticRegion, SuncgSemanticRegion::ptr>(
@@ -266,7 +278,10 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("objects", &SuncgSemanticRegion::objects);
 
   // ==== SemanticObject ====
-  semanticObject.def_property_readonly("id", &SemanticObject::id)
+  semanticObject
+      .def_property_readonly("id", &SemanticObject::id,
+                             "The ID of the object, of the form "
+                             "``<level_id>_<region_id>_<object_id>``")
       .def_property_readonly("region", &SemanticObject::region)
       .def_property_readonly("aabb", &SemanticObject::aabb)
       .def_property_readonly("obb", &SemanticObject::obb)
@@ -279,7 +294,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def_property_readonly("region", &SuncgSemanticObject::region)
       .def_property_readonly("aabb", &SuncgSemanticObject::aabb)
       .def_property_readonly("obb", &SuncgSemanticObject::obb)
-      .def_property_readonly("category", &SuncgSemanticObject::category);
+      .def_property_readonly("category", &SuncgSemanticObject::category,
+                             "The semantic category of the object.");
 
   // ==== SemanticScene ====
   py::class_<SemanticScene, SemanticScene::ptr>(m, "SemanticScene")
@@ -295,14 +311,18 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
           },
           R"(
         Loads a SemanticScene from a Matterport3D House format file into passed
-        :py:class:`SemanticScene`'.
+        `SemanticScene`.
       )",
           "file"_a, "scene"_a, "rotation"_a)
       .def_property_readonly("aabb", &SemanticScene::aabb)
-      .def_property_readonly("categories", &SemanticScene::categories)
-      .def_property_readonly("levels", &SemanticScene::levels)
-      .def_property_readonly("regions", &SemanticScene::regions)
-      .def_property_readonly("objects", &SemanticScene::objects)
+      .def_property_readonly("categories", &SemanticScene::categories,
+                             "All semantic categories in the house")
+      .def_property_readonly("levels", &SemanticScene::levels,
+                             "All levels in the house")
+      .def_property_readonly("regions", &SemanticScene::regions,
+                             "All regions in the house")
+      .def_property_readonly("objects", &SemanticScene::objects,
+                             "All object in the house")
       .def_property_readonly("semantic_index_map",
                              &SemanticScene::getSemanticIndexMap)
       .def("semantic_index_to_object_index",
@@ -389,6 +409,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            "Reads RGBA frame into passed img in uint8 byte format.")
       .def("read_frame_depth", &RenderTarget::readFrameDepth)
       .def("read_frame_object_id", &RenderTarget::readFrameObjectId)
+      .def("blit_rgba_to_default", &RenderTarget::blitRgbaToDefault)
 #ifdef ESP_BUILD_WITH_CUDA
       .def("read_frame_rgba_gpu",
            [](RenderTarget& self, size_t devPtr) {
@@ -420,6 +441,9 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 #endif
       .def("render_enter", &RenderTarget::renderEnter)
       .def("render_exit", &RenderTarget::renderExit);
+
+  // Needed by Sensor
+  py::class_<Simulator, Simulator::ptr> simulator(m, "Simulator");
 
   // ==== Sensor ====
   sensor
@@ -516,8 +540,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   initShortestPathBindings(m);
 
   // ==== Simulator ====
-  py::class_<Simulator, Simulator::ptr>(m, "Simulator")
-      .def(py::init(&Simulator::create<const SimulatorConfiguration&>))
+  simulator.def(py::init(&Simulator::create<const SimulatorConfiguration&>))
       .def("get_active_scene_graph", &Simulator::getActiveSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            pybind11::return_value_policy::reference)
@@ -527,35 +550,35 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            pybind11::return_value_policy::reference)
       .def_property_readonly("semantic_scene", &Simulator::getSemanticScene)
       .def_property_readonly("renderer", &Simulator::getRenderer)
-      .def("seed", &Simulator::seed, R"()", "new_seed"_a)
-      .def("reconfigure", &Simulator::reconfigure, R"()", "configuration"_a)
-      .def("reset", &Simulator::reset, R"()")
+      .def("seed", &Simulator::seed, "new_seed"_a)
+      .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
+      .def("reset", &Simulator::reset)
       .def_property_readonly("gpu_device", &Simulator::gpuDevice)
       /* --- Physics functions --- */
-      .def("add_object", &Simulator::addObject, "R()", "object_lib_index"_a,
+      .def("add_object", &Simulator::addObject, "object_lib_index"_a,
            "scene_id"_a = 0)
       .def("get_physics_object_library_size",
-           &Simulator::getPhysicsObjectLibrarySize, "R()")
-      .def("remove_object", &Simulator::removeObject, "R()", "object_id"_a,
+           &Simulator::getPhysicsObjectLibrarySize)
+      .def("remove_object", &Simulator::removeObject, "object_id"_a,
            "sceneID"_a = 0)
-      .def("get_existing_object_ids", &Simulator::getExistingObjectIDs, "R()",
+      .def("get_existing_object_ids", &Simulator::getExistingObjectIDs,
            "sceneID"_a = 0)
-      .def("step_world", &Simulator::stepWorld, "R()", "dt"_a = 1.0 / 60.0)
-      .def("get_world_time", &Simulator::getWorldTime, "R()")
-      .def("set_transformation", &Simulator::setTransformation, "R()",
-           "transform"_a, "object_id"_a, "sceneID"_a = 0)
-      .def("get_transformation", &Simulator::getTransformation, "R()",
+      .def("step_world", &Simulator::stepWorld, "dt"_a = 1.0 / 60.0)
+      .def("get_world_time", &Simulator::getWorldTime)
+      .def("set_transformation", &Simulator::setTransformation, "transform"_a,
            "object_id"_a, "sceneID"_a = 0)
-      .def("set_translation", &Simulator::setTranslation, "R()",
-           "translation"_a, "object_id"_a, "sceneID"_a = 0)
-      .def("get_translation", &Simulator::getTranslation, "R()", "object_id"_a,
+      .def("get_transformation", &Simulator::getTransformation, "object_id"_a,
            "sceneID"_a = 0)
-      .def("set_rotation", &Simulator::setRotation, "R()", "rotation"_a,
+      .def("set_translation", &Simulator::setTranslation, "translation"_a,
            "object_id"_a, "sceneID"_a = 0)
-      .def("get_rotation", &Simulator::getRotation, "R()", "object_id"_a,
+      .def("get_translation", &Simulator::getTranslation, "object_id"_a,
            "sceneID"_a = 0)
-      .def("apply_force", &Simulator::applyForce, "R()", "force"_a,
+      .def("set_rotation", &Simulator::setRotation, "rotation"_a, "object_id"_a,
+           "sceneID"_a = 0)
+      .def("get_rotation", &Simulator::getRotation, "object_id"_a,
+           "sceneID"_a = 0)
+      .def("apply_force", &Simulator::applyForce, "force"_a,
            "relative_position"_a, "object_id"_a, "sceneID"_a = 0)
-      .def("apply_torque", &Simulator::applyTorque, "R()", "torque"_a,
-           "object_id"_a, "sceneID"_a = 0);
+      .def("apply_torque", &Simulator::applyTorque, "torque"_a, "object_id"_a,
+           "sceneID"_a = 0);
 }

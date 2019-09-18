@@ -1,0 +1,49 @@
+@INCLUDE = Doxyfile
+
+## Patches for the m.css-generated docs. Just need to generate XML, that's it.
+
+GENERATE_HTML          = NO
+GENERATE_XML           = YES
+XML_PROGRAMLISTING     = NO
+
+# TODO: remove
+##! M_SHOW_UNDOCUMENTED    = YES
+
+##! M_MAIN_PROJECT_URL = /
+##! M_FAVICON = habitat-blue.png
+##! M_THEME_COLOR = #478cc3
+
+##! M_CLASS_TREE_EXPAND_LEVELS = 2
+
+##! M_LINKS_NAVBAR1 = \
+##!  "pages" \
+##!  "annotated" \
+##!  "files"
+##! M_LINKS_NAVBAR2 = \
+##!  "<a href="../habitat-sim/index.html">Python Docs</a>" \
+##!  "<a href="../habitat-api/index.html">Habitat API Docs</a>"
+##! M_PAGE_FINE_PRINT = \
+##!   "<p>Habitat Sim C++ Docs. Copyright © 2019 Facebook AI Research.<br/>Created with <a href="https://doxygen.org/">Doxygen</a> {doxygen_version} and <a href="https://mcss.mosra.cz/">m.css</a>."
+
+HTML_EXTRA_STYLESHEET = \
+    https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400i,600,600i%7CSource+Code+Pro:400,400i,600 \
+    theme.compiled.css
+
+ALIASES                = \
+    "cb{1}=@code{\1}" \
+    "cpp=@code{.cpp}" \
+    "glsl=@code{.glsl}" \
+    "cmake=@code{.cmake}" \
+    "ce=@endcode" \
+    "m_div{1}=@xmlonly<mcss:div xmlns:mcss=\"http://mcss.mosra.cz/doxygen/\" mcss:class=\"\1\">@endxmlonly" \
+    "m_enddiv=@xmlonly</mcss:div>@endxmlonly" \
+    "m_span{1}=@xmlonly<mcss:span xmlns:mcss=\"http://mcss.mosra.cz/doxygen/\" mcss:class=\"\1\">@endxmlonly" \
+    "m_endspan=@xmlonly</mcss:span>@endxmlonly" \
+    "m_class{1}=@xmlonly<mcss:class xmlns:mcss=\"http://mcss.mosra.cz/doxygen/\" mcss:class=\"\1\" />@endxmlonly" \
+    "m_footernavigation=@xmlonly<mcss:footernavigation xmlns:mcss=\"http://mcss.mosra.cz/doxygen/\" />@endxmlonly" \
+    "m_examplenavigation{2}=@xmlonly<mcss:examplenavigation xmlns:mcss=\"http://mcss.mosra.cz/doxygen/\" mcss:page=\"\1\" mcss:prefix=\"\2\" />@endxmlonly" \
+    "m_keywords{1}=@xmlonly<mcss:search xmlns:mcss=\"http://mcss.mosra.cz/doxygen/\" mcss:keywords=\"\1\" />@endxmlonly" \
+    "m_keyword{3}=@xmlonly<mcss:search xmlns:mcss=\"http://mcss.mosra.cz/doxygen/\" mcss:keyword=\"\1\" mcss:title=\"\2\" mcss:suffix-length=\"\3\" />@endxmlonly" \
+    "m_enum_values_as_keywords=@xmlonly<mcss:search xmlns:mcss=\"http://mcss.mosra.cz/doxygen/\" mcss:enum-values-as-keywords=\"true\" />@endxmlonly" \
+
+# kate: hl Doxyfile

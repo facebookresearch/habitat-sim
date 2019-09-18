@@ -45,8 +45,21 @@ jobs:
       - run:
           name: run clang-format
           command: |
-            find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.cpp$|.*\.h$|.*\.cu$|.*\.hpp$|.*\.cuh$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
+            find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.(cpp|h|cu|hpp|cuh)$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
 
+  js_lint:
+    docker:
+      - image: circleci/node:11.9
+    steps:
+      - checkout
+      - run:
+          name: setup
+          command: |
+            npm install
+      - run:
+          name: run eslint
+          command: |
+            npm run lint
   install_and_test_ubuntu:
     <<: *gpu
     steps:
@@ -261,4 +274,5 @@ workflows:
     jobs:
       - python_lint
       - cpp_lint
+      - js_lint
       - install_and_test_ubuntu

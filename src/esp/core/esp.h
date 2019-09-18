@@ -32,14 +32,26 @@ typedef Matrix<uint64_t, 4, 1> Vector4ul;
 typedef Matrix<float, Dynamic, Dynamic, RowMajor> RowMatrixXf;
 
 //! Eigen JSON string format specification
-static const IOFormat
-    kJsonFormat(StreamPrecision, DontAlignCols, ",", ",", "", "", "[", "]");
+static const IOFormat kJsonFormat(StreamPrecision,
+                                  DontAlignCols,
+                                  ",",   // coef separator
+                                  ",",   // row separator
+                                  "",    // row prefix
+                                  "",    // col prefix
+                                  "[",   // mat prefix
+                                  "]");  // mat suffix
 
 //! Write Eigen matrix types into ostream in JSON string format
 template <typename T, int numRows, int numCols>
 std::ostream& operator<<(std::ostream& os,
                          const Matrix<T, numRows, numCols>& matrix) {
   return os << matrix.format(kJsonFormat);
+}
+
+//! Write Eigen map into ostream in JSON string format
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const Map<T>& m) {
+  return os << m.format(kJsonFormat);
 }
 
 }  // namespace Eigen

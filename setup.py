@@ -45,13 +45,14 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
     )
     parser.add_argument(
         "--bullet",
+        "--with-bullet",
         dest="use_bullet",
         action="store_true",
         help="""Build with Bullet simulation engine.""",
     )
     parser.add_argument(
-        "--force-cmake",
         "--cmake",
+        "--force-cmake",
         dest="force_cmake",
         action="store_true",
         help="Forces cmake to be rerun.  This argument is not cached",

@@ -1,5 +1,6 @@
 import random
 
+import examples.settings
 import habitat_sim
 
 
@@ -23,3 +24,19 @@ def test_no_navmesh_smoke():
         obs = sim.step(random.choice(list(agent_config.action_space.keys())))
         # Can't collide with no navmesh
         assert not obs["collided"]
+
+
+def test_empty_scene(sim):
+    cfg_settings = examples.settings.default_sim_settings.copy()
+
+    # keyword "NONE" initializes a scene with no scene mesh
+    cfg_settings["scene"] = "NONE"
+    # test that depth sensor doesn't mind an empty scene
+    cfg_settings["depth_sensor"] = True
+
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    sim.reconfigure(hab_cfg)
+
+    # test that empty frames can be rendered without a scene mesh
+    for _ in range(2):
+        obs = sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))

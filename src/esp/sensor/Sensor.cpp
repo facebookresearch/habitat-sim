@@ -30,6 +30,11 @@ bool Sensor::getObservationSpace(ObservationSpace& space) {
   return false;
 }
 
+bool Sensor::displayObservation(gfx::Simulator& sim) {
+  // TODO fill out display observation if sensor supports it
+  return false;
+}
+
 void SensorSuite::add(Sensor::ptr sensor) {
   const std::string uuid = sensor->specification()->uuid;
   sensors_[uuid] = sensor;

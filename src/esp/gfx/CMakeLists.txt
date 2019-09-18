@@ -6,10 +6,10 @@ set(gfx_SOURCES
   GenericDrawable.cpp
   GenericDrawable.h
   magnum.h
-  PrimitiveIDTexturedDrawable.cpp
-  PrimitiveIDTexturedDrawable.h
-  PrimitiveIDTexturedShader.cpp
-  PrimitiveIDTexturedShader.h
+  PrimitiveIDDrawable.cpp
+  PrimitiveIDDrawable.h
+  PrimitiveIDShader.cpp
+  PrimitiveIDShader.h
   RenderCamera.cpp
   RenderCamera.h
   Renderer.cpp
