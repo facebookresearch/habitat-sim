@@ -2149,7 +2149,8 @@ SKIP_FUNCTION_MACROS   = YES
 
 TAGFILES              = corrade.tag=https://doc.magnum.graphics/corrade/ \
                         magnum.tag=https://doc.magnum.graphics/magnum/ \
-                        stl.tag=http://en.cppreference.com/w/
+                        stl.tag=http://en.cppreference.com/w/ \
+                        bullet.tag=https://pybullet.org/Bullet/BulletFull/
 
 # When a file name is specified after GENERATE_TAGFILE, doxygen will create a
 # tag file that is based on the input files it reads. See section "Linking to

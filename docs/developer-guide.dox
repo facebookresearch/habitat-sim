@@ -1,0 +1,34 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+namespace esp {
+
+/** @page developer-guide Developer guide
+
+<!-- TODO: this page needs to be filled with code style conventions, PR
+  workflow etc. -->
+
+@section developer-guide-tagfiles Doxygen tag files
+
+For Corrade and Magnum, up-to-date tagfiles can be found at
+https://magnum.graphics/doc-downloads/; STL tagfile is linked from there as
+well. Update the `docs/corrade.tag`, `docs/magnum.tag` and `docs/stl.tag` with
+those.
+
+For Bullet, the upstream doesn't generate or distribute a tagfile, so it's
+needed to build it manually. The current one is generated from version 2.88 and
+was created like this:
+
+@code{.sh}
+git clone https://github.com/bulletphysics/bullet3
+cd bullet3
+git checkout 2.88
+nano Doxyfile # modify it to have GENERATE_TAGFILE = bullet.tag
+doxygen # it'll complain about some CHM file, ignore that
+cp bullet.tag ../habitat-sim/docs/
+@endcode
+
+*/
+
+}
