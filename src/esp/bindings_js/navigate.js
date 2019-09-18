@@ -1,7 +1,6 @@
 /**
  * NavigateTask class
  */
-// eslint-disable-next-line no-unused-vars
 class NavigateTask {
   // PUBLIC methods.
 
