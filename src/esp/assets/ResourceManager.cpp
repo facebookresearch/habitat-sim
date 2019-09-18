@@ -351,9 +351,9 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
         manager.loadAndInstantiate("AnySceneImporter");
     manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
     manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+    importer->openFile(renderMeshinfo.filepath);
     for (auto componentID : magnumMeshDict_[filename]) {
-      addComponent(*importer, renderMeshinfo, meshMetaData, newNode, drawables,
-                   componentID);
+      addComponent(*importer, meshMetaData, newNode, drawables, componentID);
     }
   }
 
@@ -804,7 +804,6 @@ bool ResourceManager::loadGeneralMeshData(
       LOG(ERROR) << "Cannot open file " << filename;
       return false;
     }
-
     // if this is a new file, load it and add it to the dictionary
     loadTextures(*importer, &metaData);
     loadMaterials(*importer, &metaData);
@@ -860,11 +859,20 @@ bool ResourceManager::loadGeneralMeshData(
       }
     }  // forceReload
 
+    if (fileIsLoaded) {
+      // if the file was loaded, the importer didn't open the file, so open it
+      // before adding components
+      if (!importer->openFile(filename)) {
+        LOG(ERROR) << "Cannot open file " << filename;
+        return false;
+      }
+    }
+
     const quatf transform = info.frame.rotationFrameToWorld();
     newNode.setRotation(Magnum::Quaternion(transform));
     // Recursively add all children
     for (auto sceneDataID : magnumMeshDict_[filename]) {
-      addComponent(*importer, info, metaData, newNode, drawables, sceneDataID);
+      addComponent(*importer, metaData, newNode, drawables, sceneDataID);
     }
     return true;
   }
@@ -985,12 +993,10 @@ void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
 //! TODO (JH): decouple importer part, so that objects can be
 //! instantiated any time after initial loading
 void ResourceManager::addComponent(Importer& importer,
-                                   const AssetInfo& info,
                                    const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
                                    DrawableGroup* drawables,
                                    int componentID) {
-  importer.openFile(info.filepath);
   std::unique_ptr<Magnum::Trade::ObjectData3D> objectData =
       importer.object3D(componentID);
   if (!objectData) {
@@ -1018,7 +1024,7 @@ void ResourceManager::addComponent(Importer& importer,
 
   // Recursively add children
   for (auto childObjectID : objectData->children()) {
-    addComponent(importer, info, metaData, node, drawables, childObjectID);
+    addComponent(importer, metaData, node, drawables, childObjectID);
   }
 }
 

@@ -2,12 +2,6 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "PTexMeshShader.h"
-
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <iostream>
-
 #include <Corrade/Containers/Reference.h>
 #include <Corrade/Utility/Resource.h>
 #include <Magnum/GL/BufferTextureFormat.h>
@@ -17,6 +11,7 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
 
+#include "PTexMeshShader.h"
 #include "esp/assets/PTexMeshData.h"
 #include "esp/core/esp.h"
 #include "esp/io/io.h"
@@ -70,6 +65,14 @@ PTexMeshShader::PTexMeshShader() {
   // TODO: disable the "meshAdjFaces" on Mac
   setUniform(uniformLocation("meshAdjFaces"),
              TextureBindingPointIndex::adjFaces);
+
+  // cache the uniform locations
+  MVPMatrixUniform_ = uniformLocation("MVP");
+  exposureUniform_ = uniformLocation("exposure");
+  gammaUniform_ = uniformLocation("gamma");
+  saturationUniform_ = uniformLocation("saturation");
+  tileSizeUniform_ = uniformLocation("tileSize");
+  widthInTilesUniform_ = uniformLocation("widthInTiles");
 }
 
 // Note: the texture binding points are explicitly specified above.
@@ -84,6 +87,37 @@ PTexMeshShader& PTexMeshShader::bindAtlasTexture(
 PTexMeshShader& PTexMeshShader::bindAdjFacesBufferTexture(
     Magnum::GL::BufferTexture& texture) {
   texture.bind(TextureBindingPointIndex::adjFaces);
+  return *this;
+}
+
+PTexMeshShader& PTexMeshShader::setMVPMatrix(const Magnum::Matrix4& matrix) {
+  setUniform(MVPMatrixUniform_, matrix);
+  return *this;
+}
+
+PTexMeshShader& PTexMeshShader::setExposure(float exposure) {
+  setUniform(exposureUniform_, exposure);
+  return *this;
+}
+PTexMeshShader& PTexMeshShader::setGamma(float gamma) {
+  setUniform(gammaUniform_, gamma);
+  return *this;
+}
+
+PTexMeshShader& PTexMeshShader::setSaturation(float saturation) {
+  setUniform(saturationUniform_, saturation);
+  return *this;
+}
+
+PTexMeshShader& PTexMeshShader::setAtlasTextureSize(
+    Magnum::GL::Texture2D& texture,
+    uint32_t tileSize) {
+  setUniform(tileSizeUniform_, (int)tileSize);
+
+  // get image width in given mip level 0
+  int mipLevel = 0;
+  const auto width = texture.imageSize(mipLevel).x();
+  setUniform(widthInTilesUniform_, int(width / tileSize));
   return *this;
 }
 
