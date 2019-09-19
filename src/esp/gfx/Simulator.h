@@ -78,59 +78,174 @@ class Simulator {
 
   // === Physics Simulator Functions ===
   // TODO: support multi-scene physics (default sceneID=0 currently).
-  // create an object instance from ResourceManager
-  // physicsObjectLibrary_[objectLibIndex] in scene sceneID. return the objectID
-  // for the new object instance.
+
+  /**
+   * @brief Instance an object from a template index in @ref
+   * esp::assets::ResourceManager::physicsObjectLibrary_. See @ref
+   * esp::physics::PhysicsManager::addObject().
+   * @param objectLibIndex The index of the object's template in @ref
+   * esp::assets::ResourceManager::physicsObjectLibrary_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene to
+   * add an object to.
+   * @return The ID assigned to new object which identifies it in @ref
+   * esp::physics::PhysicsManager::existingObjects_ or @ref esp::ID_UNDEFINED if
+   * instancing fails.
+   */
   int addObject(const int objectLibIndex, const int sceneID = 0);
 
-  // return the current size of the physics object library (objects [0,size) can
-  // be instanced)
+  /**
+   * @brief Get the current size of the physics object library. Objects [0,size)
+   * can be instanced with @ref addObject.
+   * @return The current number of templates stored in @ref
+   * esp::assets::ResourceManager::physicsObjectLibrary_.
+   */
   int getPhysicsObjectLibrarySize();
 
-  // remove object objectID instance in sceneID
+  /**
+   * @brief Remove an instanced object by ID. See @ref
+   * esp::physics::PhysicsManager::removeObject().
+   * @param objectID The ID of the object identifying it in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene to
+   * remove the object from.
+   */
   void removeObject(const int objectID, const int sceneID = 0);
 
-  // return a list of existing objected IDs in a physical scene
+  /**
+   * @brief Get the IDs of the physics objects instanced in a physical scene.
+   * See @ref esp::physics::PhysicsManager::getExistingObjectIDs.
+   * @param sceneID !! Not used currently !! Specifies which physical scene to
+   * query.
+   * @return A vector of ID keys into @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   */
   std::vector<int> getExistingObjectIDs(const int sceneID = 0);
 
-  // apply forces and torques to objects
+  /**
+   * @brief Apply torque to an object. See @ref
+   * esp::physics::PhysicsManager::applyTorque.
+   * @param tau The desired torque to apply.
+   * @param objectID The ID of the object identifying it in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
   void applyTorque(const Magnum::Vector3& tau,
                    const int objectID,
                    const int sceneID = 0);
 
+  /**
+   * @brief Apply force to an object. See @ref
+   * esp::physics::PhysicsManager::applyForce.
+   * @param force The desired linear force to apply.
+   * @param relPos The desired location relative to the object origin at which
+   * to apply the force.
+   * @param objectID The ID of the object identifying it in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
   void applyForce(const Magnum::Vector3& force,
                   const Magnum::Vector3& relPos,
                   const int objectID,
                   const int sceneID = 0);
 
-  // set object transform (kinemmatic control)
-  void setTransform(const Magnum::Matrix4& transform,
-                    const int objectID,
-                    const int sceneID = 0);
-
+  /**
+   * @brief Get the current 4x4 transformation matrix of an object.
+   * See @ref esp::physics::PhysicsManager::getTransformation.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   * @return The 4x4 transform of the object.
+   */
   Magnum::Matrix4 getTransformation(const int objectID, const int sceneID = 0);
 
+  /**
+   * @brief Set the 4x4 transformation matrix of an object kinematically.
+   * See @ref esp::physics::PhysicsManager::setTransformation.
+   * @param transform The desired 4x4 transform of the object.
+   * @param  objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
   void setTransformation(const Magnum::Matrix4& transform,
                          const int objectID,
                          const int sceneID = 0);
-  // set object translation directly
+
+  /**
+   * @brief Set the 3D position of an object kinematically.
+   * See @ref esp::physics::PhysicsManager::setTranslation.
+   * @param translation The desired 3D position of the object.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
   void setTranslation(const Magnum::Vector3& translation,
                       const int objectID,
                       const int sceneID = 0);
 
+  /**
+   * @brief Get the current 3D position of an object.
+   * See @ref esp::physics::PhysicsManager::getTranslation.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   * @return The 3D position of the object.
+   */
   Magnum::Vector3 getTranslation(const int objectID, const int sceneID = 0);
 
-  // set object rotation directly
+  /**
+   * @brief Set the orientation of an object kinematically.
+   * See @ref esp::physics::PhysicsManager::setRotation.
+   * @param rotation The desired orientation of the object.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
   void setRotation(const Magnum::Quaternion& rotation,
                    const int objectID,
                    const int sceneID = 0);
+
+  /**
+   * @brief Get the current orientation of an object.
+   * See @ref esp::physics::PhysicsManager::getRotation.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   * @return A quaternion representation of the object's orientation.
+   */
   Magnum::Quaternion getRotation(const int objectID, const int sceneID = 0);
 
   // the physical world has a notion of time which passes during
   // animation/simulation/action/etc... return the new world time after stepping
+
+  /**
+   * @brief the physical world has a notion of time which passes during
+   * animation/simulation/action/etc... Step the physical world forward in time
+   * by a desired duration. Note that the actual duration of time passed by this
+   * step will depend on simulation time stepping mode (todo). See @ref
+   * esp::physics::PhysicsManager::stepPhysics.
+   * @todo timestepping options?
+   * @param dt The desired amount of time to advance the physical world.
+   * @return The new world time after stepping. See @ref
+   * esp::physics::PhysicsManager::worldTime_.
+   */
   double stepWorld(const double dt = 1.0 / 60.0);
 
   // get the simulated world time (0 if no physics enabled)
+  /**
+   * @brief Get the current time in the simulated world. This is always 0 if no
+   * @ref esp::physics::PhysicsManager is initialized. See @ref stepWorld. See
+   * @ref esp::physics::PhysicsManager::getWorldTime.
+   * @return The amount of time, @ref esp::physics::PhysicsManager::worldTime_,
+   * by which the physical world has advanced.
+   */
   double getWorldTime();
 
  protected:
