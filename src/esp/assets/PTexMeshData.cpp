@@ -356,8 +356,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
         ls >> s;
         CORRADE_ASSERT(s == "binary_little_endian",
                        "PTexMeshData::parsePLY: the file is not a binary file "
-                       "in little endian "
-                       "byte order", );
+                       "in little endian byte order", );
       } else if (token == "element") {
         std::string name;
         size_t size;
@@ -473,20 +472,17 @@ void PTexMeshData::parsePLY(const std::string& filename,
           } else if (name == "green") {
             CORRADE_ASSERT(lastProperty == "red",
                            "PTexMeshData::parsePLY: Properties should follow "
-                           "red, green, blue, "
-                           "(alpha) order", );
+                           "red, green, blue, (alpha) order", );
             colorDimensions = 2;
           } else if (name == "blue") {
             CORRADE_ASSERT(lastProperty == "green",
                            "PTexMeshData::parsePLY: Properties should follow "
-                           "red, green, blue, "
-                           "(alpha) order", );
+                           "red, green, blue, (alpha) order", );
             colorDimensions = 3;
           } else if (name == "alpha") {
             CORRADE_ASSERT(lastProperty == "blue",
                            "PTexMeshData::parsePLY: Properties should follow "
-                           "red, green, blue, "
-                           "(alpha) order", );
+                           "red, green, blue, (alpha) order", );
             colorDimensions = 4;
           }
         } else if (lastElement == "face") {
