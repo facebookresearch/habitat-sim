@@ -36,14 +36,14 @@ namespace assets {
 void PTexMeshData::load(const std::string& meshFile,
                         const std::string& atlasFolder) {
   CORRADE_ASSERT(io::exists(meshFile),
-                 "Mesh file " << meshFile << " does not exist.", );
+                 "Error: Mesh file " << meshFile << " does not exist.", );
   CORRADE_ASSERT(io::exists(atlasFolder),
-                 "The atlasFolder " << atlasFolder << " does not exist.", );
+                 "Error: The atlasFolder " << atlasFolder << " does not exist.", );
 
   // Parse parameters
   const auto& paramsFile = atlasFolder + "/parameters.json";
   CORRADE_ASSERT(io::exists(paramsFile),
-                 "The parameter file " << paramsFile << " does not exist.", );
+                 "Error: The parameter file " << paramsFile << " does not exist.", );
   const io::JsonDocument json = io::parseJsonFile(paramsFile);
   splitSize_ = json["splitSize"].GetDouble();
   tileSize_ = json["tileSize"].GetInt();
