@@ -73,11 +73,8 @@ if args.benchmark_semantic_sensor:
 if args.enable_physics:
     # TODO: cannot benchmark physics with no sensors as this won't create a renderer or load the scene.
     # benchmark_items["enable_physics_no_obs"] = {"color_sensor": False, "enable_physics": True}
-    benchmark_items["enable_physics_rgb"] = {"enable_physics": True}
-    benchmark_items["enable_physics_rgbd"] = {
-        "depth_sensor": True,
-        "enable_physics": True,
-    }
+    benchmark_items["phys_rgb"] = {"enable_physics": True}
+    benchmark_items["phys_rgbd"] = {"depth_sensor": True, "enable_physics": True}
 
 resolutions = args.resolution
 nprocs_tests = args.num_procs
