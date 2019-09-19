@@ -6,7 +6,6 @@
  * TODO(aps,msb) - Add support for multiple agents instead of
  * hardcoding 0th one.
  */
-// eslint-disable-next-line no-unused-vars
 class SimEnv {
   // PUBLIC methods.
 
@@ -173,3 +172,5 @@ class SimEnv {
     return converted;
   }
 }
+
+export default SimEnv;

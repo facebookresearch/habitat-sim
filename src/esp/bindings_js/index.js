@@ -1,7 +1,10 @@
-/*global Module, SimEnv, NavigateTask, TopDownMap, FS*/
-/** TODO(aps): Shift to babel based compilation to properly
- *  support older browsers
- */
+/*global Module, FS */
+
+import SimEnv from "./simenv_embind";
+import NavigateTask from "./navigate";
+import TopDownMap from "./topdown";
+import "./bindings.css";
+
 Module["onRuntimeInitialized"] = function() {
   console.log("hsim_bindings initialized");
 
