@@ -35,15 +35,18 @@ namespace assets {
 
 void PTexMeshData::load(const std::string& meshFile,
                         const std::string& atlasFolder) {
-  CORRADE_ASSERT(io::exists(meshFile),
-                 "Error: Mesh file " << meshFile << " does not exist.", );
+  CORRADE_ASSERT(
+      io::exists(meshFile),
+      "PTexMeshData::load: Mesh file " << meshFile << " does not exist.", );
   CORRADE_ASSERT(io::exists(atlasFolder),
-                 "Error: The atlasFolder " << atlasFolder << " does not exist.", );
+                 "PTexMeshData::load: The atlasFolder "
+                     << atlasFolder << " does not exist.", );
 
   // Parse parameters
   const auto& paramsFile = atlasFolder + "/parameters.json";
   CORRADE_ASSERT(io::exists(paramsFile),
-                 "Error: The parameter file " << paramsFile << " does not exist.", );
+                 "PTexMeshData::load: The parameter file "
+                     << paramsFile << " does not exist.", );
   const io::JsonDocument json = io::parseJsonFile(paramsFile);
   splitSize_ = json["splitSize"].GetDouble();
   tileSize_ = json["tileSize"].GetInt();
@@ -352,7 +355,8 @@ void PTexMeshData::parsePLY(const std::string& filename,
         std::string s;
         ls >> s;
         CORRADE_ASSERT(s == "binary_little_endian",
-                       "Error: the file is not a binary file in little endian "
+                       "PTexMeshData::parsePLY: the file is not a binary file "
+                       "in little endian "
                        "byte order", );
       } else if (token == "element") {
         std::string name;
@@ -366,9 +370,11 @@ void PTexMeshData::parsePLY(const std::string& filename,
           // Pull out number of faces
           numFaces = size;
           CORRADE_ASSERT(numFaces > 0,
-                         "Error: number of faces is not greater than 0.", );
+                         "PTexMeshData::parsePLY: number of faces is not "
+                         "greater than 0.", );
         } else {
-          CORRADE_ASSERT(false, "Error: Cannot parse element " << name, );
+          CORRADE_ASSERT(
+              false, "PTexMeshData::parsePLY: Cannot parse element " << name, );
         }
 
         // Keep track of what element we parsed last to associate the properties
@@ -388,48 +394,53 @@ void PTexMeshData::parsePLY(const std::string& filename,
           ls >> countType >> type;
 
           CORRADE_ASSERT(countType == "uchar" || countType == "uint8",
-                         "Error: Don't understand count type " << countType, );
-
-          CORRADE_ASSERT(type == "int",
-                         "Error: Don't understand index type " << type, );
+                         "PTexMeshData::parsePLY: Don't understand count type "
+                             << countType, );
 
           CORRADE_ASSERT(
-              lastElement == "face",
-              "Error: Only expecting list after face element, not after "
-                  << lastElement, );
+              type == "int",
+              "PTexMeshData::parsePLY: Don't understand index type " << type, );
+
+          CORRADE_ASSERT(lastElement == "face",
+                         "PTexMeshData::parsePLY: Only expecting list after "
+                         "face element, not after "
+                             << lastElement, );
         }
 
-        CORRADE_ASSERT(type == "float" || type == "int" || type == "uchar" ||
-                           type == "uint8",
-                       "Error: Don't understand type " << type, );
+        CORRADE_ASSERT(
+            type == "float" || type == "int" || type == "uchar" ||
+                type == "uint8",
+            "PTexMeshData::parsePLY: Don't understand type " << type, );
 
         ls >> name;
 
         // Collecting vertex property information
         if (lastElement == "vertex") {
           CORRADE_ASSERT(type != "int",
-                         "Error: Don't support 32-bit integer properties", );
+                         "PTexMeshData::parsePLY: Don't support 32-bit integer "
+                         "properties", );
 
           // Position information
           if (name == "x") {
             positionDimensions = 1;
             vertexLayout.push_back(Properties::POSITION);
             CORRADE_ASSERT(type == "float",
-                           "Error: Don't support 8-bit integer positions", );
+                           "PTexMeshData::parsePLY: Don't support 8-bit "
+                           "integer positions", );
           } else if (name == "y") {
-            CORRADE_ASSERT(
-                lastProperty == "x",
-                "Error: Properties should follow x, y, z, (w) order", );
+            CORRADE_ASSERT(lastProperty == "x",
+                           "PTexMeshData::parsePLY: Properties should follow "
+                           "x, y, z, (w) order", );
             positionDimensions = 2;
           } else if (name == "z") {
-            CORRADE_ASSERT(
-                lastProperty == "y",
-                "Error: Properties should follow x, y, z, (w) order", );
+            CORRADE_ASSERT(lastProperty == "y",
+                           "PTexMeshData::parsePLY: Properties should follow "
+                           "x, y, z, (w) order", );
             positionDimensions = 3;
           } else if (name == "w") {
-            CORRADE_ASSERT(
-                lastProperty == "z",
-                "Error: Properties should follow x, y, z, (w) order", );
+            CORRADE_ASSERT(lastProperty == "z",
+                           "PTexMeshData::parsePLY: Properties should follow "
+                           "x, y, z, (w) order", );
             positionDimensions = 4;
           }
 
@@ -438,16 +449,17 @@ void PTexMeshData::parsePLY(const std::string& filename,
             normalDimensions = 1;
             vertexLayout.push_back(Properties::NORMAL);
             CORRADE_ASSERT(type == "float",
-                           "Error: Don't support 8-bit integer normals", );
+                           "PTexMeshData::parsePLY: Don't support 8-bit "
+                           "integer normals", );
           } else if (name == "ny") {
-            CORRADE_ASSERT(
-                lastProperty == "nx",
-                "Error: Properties should follow nx, ny, nz order", );
+            CORRADE_ASSERT(lastProperty == "nx",
+                           "PTexMeshData::parsePLY: Properties should follow "
+                           "nx, ny, nz order", );
             normalDimensions = 2;
           } else if (name == "nz") {
-            CORRADE_ASSERT(
-                lastProperty == "ny",
-                "Error: Properties should follow nx, ny, nz order", );
+            CORRADE_ASSERT(lastProperty == "ny",
+                           "PTexMeshData::parsePLY: Properties should follow "
+                           "nx, ny, nz order", );
             normalDimensions = 3;
           }
 
@@ -456,31 +468,35 @@ void PTexMeshData::parsePLY(const std::string& filename,
             colorDimensions = 1;
             vertexLayout.push_back(Properties::COLOR);
             CORRADE_ASSERT(type == "uchar" || type == "uint8",
-                           "Error: Don't support non-8-bit integer colors", );
+                           "PTexMeshData::parsePLY: Don't support non-8-bit "
+                           "integer colors", );
           } else if (name == "green") {
             CORRADE_ASSERT(lastProperty == "red",
-                           "Error: Properties should follow red, green, blue, "
+                           "PTexMeshData::parsePLY: Properties should follow "
+                           "red, green, blue, "
                            "(alpha) order", );
             colorDimensions = 2;
           } else if (name == "blue") {
             CORRADE_ASSERT(lastProperty == "green",
-                           "Error: Properties should follow red, green, blue, "
+                           "PTexMeshData::parsePLY: Properties should follow "
+                           "red, green, blue, "
                            "(alpha) order", );
             colorDimensions = 3;
           } else if (name == "alpha") {
             CORRADE_ASSERT(lastProperty == "blue",
-                           "Error: Properties should follow red, green, blue, "
+                           "PTexMeshData::parsePLY: Properties should follow "
+                           "red, green, blue, "
                            "(alpha) order", );
             colorDimensions = 4;
           }
         } else if (lastElement == "face") {
-          CORRADE_ASSERT(
-              isList,
-              "Error: No idea what to do with properties following faces", );
+          CORRADE_ASSERT(isList,
+                         "PTexMeshData::parsePLY: No idea what to do with "
+                         "properties following faces", );
         } else {
-          CORRADE_ASSERT(
-              false,
-              "Error: No idea what to do with properties before elements", );
+          CORRADE_ASSERT(false,
+                         "PTexMeshData::parsePLY: No idea what to do with "
+                         "properties before elements", );
         }
 
         lastProperty = name;
@@ -492,16 +508,17 @@ void PTexMeshData::parsePLY(const std::string& filename,
         break;
       } else {
         // Something unrecognised
-        CORRADE_ASSERT(false, "Error: something is unrecognised.", );
+        CORRADE_ASSERT_UNREACHABLE();
       }
     }
 
     // Check things make sense.
-    CORRADE_ASSERT(numVertices > 0,
-                   "Error: number of vertices is not greater than 0", );
     CORRADE_ASSERT(
-        positionDimensions > 0,
-        "Error: the dimensions of the position is not greater than 0", );
+        numVertices > 0,
+        "PTexMeshData::parsePLY: number of vertices is not greater than 0", );
+    CORRADE_ASSERT(positionDimensions > 0,
+                   "PTexMeshData::parsePLY: the dimensions of the position is "
+                   "not greater than 0", );
   }
 
   meshData.vbo.resize(numVertices, vec4f(0, 0, 0, 1));
@@ -538,7 +555,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
       colorOffsetBytes = offsetSoFarBytes;
       offsetSoFarBytes += colorBytes;
     } else {
-      CORRADE_ASSERT(false, "Error: unknown.", );
+      CORRADE_ASSERT_UNREACHABLE();
     }
   }
 
@@ -576,8 +593,9 @@ void PTexMeshData::parsePLY(const std::string& filename,
   // Read first face to get number of indices;
   const uint8_t faceDimensions = *bytes;
 
-  CORRADE_ASSERT(faceDimensions == 3 || faceDimensions == 4,
-                 "Error: the dimension of a face is neither 3 nor 4.", );
+  CORRADE_ASSERT(
+      faceDimensions == 3 || faceDimensions == 4,
+      "PTexMeshData::parsePLY: the dimension of a face is neither 3 nor 4.", );
 
   const size_t countBytes = 1;
   const size_t faceBytes = faceDimensions * sizeof(uint32_t);  // uint32_t
@@ -668,8 +686,10 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     const std::string hdrFile = Cr::Utility::Directory::join(
         atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
 
-    CORRADE_ASSERT(io::exists(hdrFile),
-                   "Error : Cannot find the .hdr file " << hdrFile, );
+    CORRADE_ASSERT(
+        io::exists(hdrFile),
+        "PTexMeshData::uploadBuffersToGPU: Cannot find the .hdr file "
+            << hdrFile, );
 
     LOG(INFO) << "Loading atlas " << iMesh + 1 << "/"
               << renderingBuffers_.size() << " from " << hdrFile << ". ";
@@ -680,7 +700,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     // half_float (2 bytes)
     const int dim = static_cast<int>(std::sqrt(data.size() / 6));  // square
     CORRADE_ASSERT(dim * dim * 6 == data.size(),
-                   "Error: the atlas texture is not a square", );
+                   "PTexMeshData::uploadBuffersToGPU: the atlas texture is not "
+                   "a square", );
 
     // atlas
     // the size of each image is dim x dim x 3 (RGB) x 2 (half_float), which
@@ -706,14 +727,16 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
 
 PTexMeshData::RenderingBuffer* PTexMeshData::getRenderingBuffer(int submeshID) {
   CORRADE_ASSERT(submeshID >= 0 && submeshID < renderingBuffers_.size(),
-                 "Error: the submesh ID " << submeshID << " is out of range.",
+                 "PTexMeshData::uploadBuffersToGPU: the submesh ID "
+                     << submeshID << " is out of range.",
                  nullptr);
   return renderingBuffers_[submeshID].get();
 }
 
 Magnum::GL::Mesh* PTexMeshData::getMagnumGLMesh(int submeshID) {
   CORRADE_ASSERT(submeshID >= 0 && submeshID < renderingBuffers_.size(),
-                 "Error: the submesh ID " << submeshID << " is out of range.",
+                 "PTexMeshData::uploadBuffersToGPU: the submesh ID "
+                     << submeshID << " is out of range.",
                  nullptr);
   return &(renderingBuffers_[submeshID]->mesh);
 }
