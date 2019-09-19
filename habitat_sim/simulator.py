@@ -17,6 +17,7 @@ from habitat_sim import utils
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower
+from habitat_sim.physics import MotionType
 
 torch = None
 
@@ -239,6 +240,9 @@ class Simulator:
 
     def get_existing_object_ids(self, scene_id=0):
         return self._sim.get_existing_object_ids(scene_id)
+
+    def get_object_motion_type(self, object_id, scene_id=0):
+        return self._sim.get_object_motion_type(object_id, scene_id)
 
     def set_transformation(self, transform, object_id, scene_id=0):
         self._sim.set_transformation(transform, object_id, scene_id)
