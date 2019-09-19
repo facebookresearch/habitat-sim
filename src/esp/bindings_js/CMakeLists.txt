@@ -19,7 +19,9 @@ set(resources
     bindings.html
     bindings.css
     navigate.js
+    runtime.js
     simenv_embind.js
+    topdown.js
     ${MAGNUM_WINDOWLESSEMSCRIPTENAPPLICATION_JS}
     ${MAGNUM_WEBAPPLICATION_CSS}
 )

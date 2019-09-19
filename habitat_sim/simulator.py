@@ -231,7 +231,7 @@ class Simulator:
         return self._sim.get_physics_object_library_size()
 
     def remove_object(self, object_id):
-        self._sim.remove_object(object_id)
+        return self._sim.remove_object(object_id)
 
     def get_existing_object_ids(self, scene_id=0):
         return self._sim.get_existing_object_ids(scene_id)
@@ -259,6 +259,9 @@ class Simulator:
 
     def apply_torque(self, torque, object_id, scene_id=0):
         self._sim.apply_torque(torque, object_id, scene_id)
+
+    def get_world_time(self, scene_id=0):
+        return self._sim.get_world_time()
 
 
 class Sensor:
@@ -391,7 +394,7 @@ class Sensor:
             else:
                 tgt.read_frame_rgba(
                     mn.MutableImageView2D(
-                        mn.PixelFormat.RGBA8UNORM,
+                        mn.PixelFormat.RGBA8_UNORM,
                         size,
                         self._buffer.reshape(self._spec.resolution[0], -1),
                     )

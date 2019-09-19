@@ -46,7 +46,19 @@ jobs:
           name: run clang-format
           command: |
             find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.cpp$|.*\.h$|.*\.cu$|.*\.hpp$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
-
+  js_lint:
+    docker:
+      - image: circleci/node:11.9
+    steps:
+      - checkout
+      - run:
+          name: setup
+          command: |
+            npm install
+      - run:
+          name: run eslint
+          command: |
+            npm run lint
   install_and_test_ubuntu:
     <<: *gpu
     steps:
@@ -196,6 +208,16 @@ jobs:
                 wget http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip
                 unzip habitat-test-scenes.zip
                 rm habitat-test-scenes.zip
+                cd ..
+              fi
+
+              if [ ! -d ./habitat-sim/data/objects/cheezit.glb ]
+              then
+                cd habitat-sim
+                wget http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip
+                unzip objects_v0.1.zip -d data/objects/
+                rm objects_v0.1.zip
+                cd ..
               fi
       - run:
           name: Run sim benchmark
@@ -261,4 +283,5 @@ workflows:
     jobs:
       - python_lint
       - cpp_lint
+      - js_lint
       - install_and_test_ubuntu

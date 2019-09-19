@@ -106,12 +106,8 @@ bool PinholeCamera::displayObservation(gfx::Simulator& sim) {
     return false;
   }
 
-  renderTarget().renderEnter();
-
   drawObservation(sim);
   renderTarget().blitRgbaToDefault();
-
-  renderTarget().renderExit();
 
   return true;
 }

@@ -1,9 +1,12 @@
+/*global Module */
+
 /**
  * SimEnv class
  *
  * TODO(aps,msb) - Add support for multiple agents instead of
  * hardcoding 0th one.
  */
+// eslint-disable-next-line no-unused-vars
 class SimEnv {
   // PUBLIC methods.
 
@@ -14,7 +17,7 @@ class SimEnv {
    * @param {number} agentId - default agent id
    */
   constructor(config, episode, agentId) {
-    this.sim = new Module.Simulator(config);;
+    this.sim = new Module.Simulator(config);
     this.episode = episode;
     this.initialAgentState = this.createAgentState(episode.startState);
     this.defaultAgentId = agentId;
@@ -60,10 +63,18 @@ class SimEnv {
    * @param {number} sensorId - id of sensor
    * @returns {Observation} observation from sensor
    */
-  getObservation(sensorId, buffer) {
+  getObservation(sensorId) {
     const obs = new Module.Observation();
     this.sim.getAgentObservation(0, sensorId, obs);
     return obs;
+  }
+
+  /**
+   * Get the PathFinder for the scene.
+   * @returns {PathFinder} pathFinder of the scene
+   */
+  getPathFinder() {
+    return this.sim.getPathFinder();
   }
 
   /**
@@ -110,22 +121,22 @@ class SimEnv {
     [qx, qy, qz, qw] = q;
 
     // i = q' * v
-    let ix = qw*x - qy*z + qz*y;
-    let iy = qw*y - qz*x + qx*z;
-    let iz = qw*z - qx*y + qy*x;
-    let iw = qx*x + qy*y + qz*z;
+    let ix = qw * x - qy * z + qz * y;
+    let iy = qw * y - qz * x + qx * z;
+    let iz = qw * z - qx * y + qy * x;
+    let iw = qx * x + qy * y + qz * z;
 
     // r = i * q
     let r = [];
-    r[0] = ix*qw + iw*qx + iy*qz - iz*qy;
-    r[1] = iy*qw + iw*qy + iz*qx - ix*qz;
-    r[2] = iz*qw + iw*qz + ix*qy - iy*qx;
+    r[0] = ix * qw + iw * qx + iy * qz - iz * qy;
+    r[1] = iy * qw + iw * qy + iz * qx - ix * qz;
+    r[2] = iz * qw + iw * qz + ix * qy - iy * qx;
 
     return r;
   }
 
   cartesian_to_polar(x, y) {
-    return [Math.sqrt(x*x + y*y), Math.atan2(y, x)];
+    return [Math.sqrt(x * x + y * y), Math.atan2(y, x)];
   }
 
   createSensorSpec(config) {
@@ -141,12 +152,12 @@ class SimEnv {
     const converted = new Module.AgentConfiguration();
     for (let key in config) {
       let value = config[key];
-      if (key === 'sensorSpecifications') {
-	const sensorSpecs = new Module.VectorSensorSpec();
-	for (let c of value) {
-	  sensorSpecs.push_back(this.createSensorSpec(c));
-	}
-	value = sensorSpecs;
+      if (key === "sensorSpecifications") {
+        const sensorSpecs = new Module.VectorSensorSpec();
+        for (let c of value) {
+          sensorSpecs.push_back(this.createSensorSpec(c));
+        }
+        value = sensorSpecs;
       }
       converted[key] = value;
     }

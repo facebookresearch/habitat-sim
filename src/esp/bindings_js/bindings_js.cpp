@@ -118,7 +118,8 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
 
   em::class_<PathFinder>("PathFinder")
       .smart_ptr<PathFinder::ptr>("PathFinder::ptr")
-      .property("bounds", &PathFinder::bounds);
+      .property("bounds", &PathFinder::bounds)
+      .function("isNavigable", &PathFinder::isNavigable);
 
   em::class_<SensorSuite>("SensorSuite")
       .smart_ptr_constructor("SensorSuite", &SensorSuite::create<>)
