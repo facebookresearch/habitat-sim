@@ -253,8 +253,10 @@ jobs:
       - run:
           name: Build Javascript bindings
           command: |
-              while [ ! -f ~/emscripten_installed && ! -f ~/npm_deps_installed ]; do sleep 2; done # wait for emscripten install
+              while [ ! -f ~/emscripten_installed ]; do sleep 2; done # wait for emscripten install
+              while [ ! -f ~/npm_deps_installed ]; do sleep 2; done # wait for npm install
               cd habitat-sim
+              . ~/.bashrc
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat
               export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
