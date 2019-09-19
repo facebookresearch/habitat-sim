@@ -435,8 +435,8 @@ void PTexMeshData::loadMeshData(const std::string& meshFile) {
     // splitMesh(...)
 
     // See detailed comments in front of the splitMesh(...)
-    std::string subMeshesFilename =
-        Corrade::Utility::Directory::join(atlasFolder_, "../sorted_faces.bin");
+    std::string subMeshesFilename = Corrade::Utility::Directory::join(
+        atlasFolder_, "../habitat/sorted_faces.bin");
     submeshes_ = loadSubMeshes(originalMesh, subMeshesFilename);
 
     // TODO:
