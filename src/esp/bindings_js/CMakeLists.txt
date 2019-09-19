@@ -16,15 +16,6 @@ set_target_properties(hsim_bindings PROPERTIES LINK_FLAGS "--bind")
 
 # copy JS/HTML/CSS resources for WebGL build
 set(resources
-<<<<<<< HEAD
-    bindings.html
-    bindings.css
-    navigate.js
-    runtime.js
-    simenv_embind.js
-    topdown.js
-=======
->>>>>>> Update CMakeLists
     ${MAGNUM_WINDOWLESSEMSCRIPTENAPPLICATION_JS}
     ${MAGNUM_WEBAPPLICATION_CSS}
 )
@@ -44,7 +35,8 @@ set(bundle_files
     webpack.config.js
     index.js
     navigate.js
-    simenv_embind.js)
+    simenv_embind.js
+    topdown.js)
 
 add_custom_command(OUTPUT bundle.js
                    COMMAND npm run build -- --build_dir ${CMAKE_CURRENT_BINARY_DIR}
