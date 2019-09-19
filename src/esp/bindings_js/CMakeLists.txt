@@ -29,6 +29,16 @@ foreach(resource ${resources})
           ${path} ${CMAKE_CURRENT_BINARY_DIR}/${filename})
 endforeach()
 
+set(package_files
+    ${PROJECT_SOURCE_DIR}/../package.json)
+
+add_custom_command(OUTPUT empty.stamp
+                   COMMAND npm install
+                   COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/empty.stamp
+                   DEPENDS ${package_files}
+                   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                   COMMENT "Trying npm install")
+
 set(bundle_files
     bindings.html
     bindings.css
@@ -40,7 +50,7 @@ set(bundle_files
 
 add_custom_command(OUTPUT bundle.js
                    COMMAND npm run build -- --build_dir ${CMAKE_CURRENT_BINARY_DIR}
-                   DEPENDS hsim_bindings ${bundle_files}
+                   DEPENDS hsim_bindings ${bundle_files} empty.stamp
                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                    COMMENT "Building JS files now")
 
