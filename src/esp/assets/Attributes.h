@@ -15,46 +15,53 @@
 namespace esp {
 namespace assets {
 
-// DataTypes supported by the attributes container. Complexity of non
-// type-specific operations growths wrt to number of supported types
+/**
+ * @brief DataTypes supported by the attributes container. Complexity of non
+ * type-specific operations growths wrt to number of supported types
+ */
 enum DataType { DOUBLE, STRING, INT, MAGNUMVEC3, VEC_STRINGS };
 
-// Arbitrary map type container for storing and managing various types of
-// attribute data
+/**
+ * @brief Arbitrary map type container for storing and managing various types of
+ * attribute data
+ */
 class Attributes {
  public:
-  // constructor initializes the maps
+  //! constructor initializes the maps
   Attributes();
 
-  // return true if any container has the key
+  //! return true if any container has the key
   bool exists(const std::string& key);
 
-  // check if an attribute of a specific type exists
+  //! check if an attribute of a specific type exists
   bool existsAs(const DataType t, const std::string& key);
 
-  // count the number of containers with the key
+  //! count the number of containers with the key
   int count(const std::string& key);
 
-  // erase the key from all maps
+  //! erase the key from all maps
   void eraseAll(const std::string& key);
 
-  // erase the key from a particular map
+  //! erase the key from a particular map
   void eraseAs(const DataType t, const std::string& key);
 
-  // clear all maps
+  //! clear all maps
   void clear();
 
-  // clear only a particular map
+  //! clear only a particular map
   void clearAs(const DataType t);
 
   //----------------------------------------//
   //  Type specific getters/setters
   //----------------------------------------//
-  // return the queried entry in the double map
-  // will throw an exception if the key does not exist in the double map
+
+  /**
+   * @brief return the queried entry in the double map
+   * will throw an exception if the key does not exist in the double map
+   */
   double getDouble(const std::string& key) const;
 
-  // set a double attribute key->val
+  //! set a double attribute key->val
   void setDouble(const std::string& key, const double val);
 
   int getInt(const std::string& key) const;
@@ -73,13 +80,15 @@ class Attributes {
   void setVecStrings(const std::string& key,
                      const std::vector<std::string>& val);
 
-  // add a string to a string vector (to avoid get/set copying)
+  //! add a string to a string vector (to avoid get/set copying)
   void appendVecStrings(const std::string& key, const std::string& val);
-  // remove a string from a string vector (to avoid get/set copying)
+  //! remove a string from a string vector (to avoid get/set copying)
   void removeFromVecString(const std::string& key, const std::string& val);
 
-  // return a formated string exposing the current contents of the attributes
-  // maps
+  /**
+   * @brief return a formated string exposing the current contents of the
+   * attributes maps
+   */
   std::string listAttributes();
 
  private:
@@ -91,20 +100,22 @@ class Attributes {
 
 };  // end Attributes class
 
-// Specific Attributes instance which is constructed with a base set of physics
-// object required attributes
+/**
+ * @brief Specific Attributes instance which is constructed with a base set of
+ * physics object required attributes
+ */
 class PhysicsObjectAttributes : public Attributes {
  public:
   PhysicsObjectAttributes();
 };  // end PhysicsObjectAttributes class
 
-// attributes for a single physical scene
+//! attributes for a single physical scene
 class PhysicsSceneAttributes : public Attributes {
  public:
   PhysicsSceneAttributes();
 };  // end PhysicsSceneAttributes
 
-// attributes for a single physics manager
+//! attributes for a single physics manager
 class PhysicsManagerAttributes : public Attributes {
  public:
   PhysicsManagerAttributes();

@@ -18,8 +18,10 @@ import habitat_sim  # NOQA
 habitat_sim.logging.GlogFormatter.formatStack.__doc__ = ""
 
 PROJECT_TITLE = "Habitat"
-PROJECT_SUBTITLE = "Sim Python docs"
-MAIN_PROJECT_URL = "https://aihabitat.org"
+PROJECT_SUBTITLE = "Sim Python Docs"
+PROJECT_LOGO = "habitat.svg"
+FAVICON = "habitat-blue.png"
+MAIN_PROJECT_URL = "/"
 INPUT_MODULES = [habitat_sim]
 INPUT_DOCS = ["docs.rst", "gfx.rst"]
 INPUT_PAGES = [
@@ -45,8 +47,11 @@ PLUGINS = [
 CLASS_INDEX_EXPAND_LEVELS = 2
 
 NAME_MAPPING = {
+    # I have no idea what is going on with this thing -- it reports itself as
+    # being from the builtins module?
+    "quaternion": "quaternion.quaternion",
     # TODO: remove once the inventory file contains this info
-    "_magnum": "magnum"
+    "_magnum": "magnum",
 }
 PYBIND11_COMPATIBILITY = True
 ATTRS_COMPATIBILITY = True
@@ -67,27 +72,29 @@ LINKS_NAVBAR1 = [
 ]
 LINKS_NAVBAR2 = [
     ("C++ Docs", "../habitat-cpp/index.html", []),
-    ("Habitat API", "https://aihabitat.org/habitat-api/", []),
+    ("Habitat API Docs", "../habitat-api/index.html", []),
+]
+
+FINE_PRINT = f"""
+| {PROJECT_TITLE} {PROJECT_SUBTITLE}. Copyright © 2019 Facebook AI Research.
+| Created with `m.css Python doc generator <https://mcss.mosra.cz/documentation/python/>`_."""
+THEME_COLOR = "#478cc3"
+STYLESHEETS = [
+    "https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400i,600,600i%7CSource+Code+Pro:400,400i,600",
+    "theme.compiled.css",
 ]
 
 M_SPHINX_INVENTORIES = [
-    # TODO: clean up once paths are relative to this file implicitly
+    ("python.inv", "https://docs.python.org/3/", [], ["m-doc-external"]),
+    ("numpy.inv", "https://docs.scipy.org/doc/numpy/", [], ["m-doc-external"]),
     (
-        os.path.join(os.path.realpath(os.path.dirname(__file__)), "python.inv"),
-        "https://docs.python.org/3/",
+        "quaternion.inv",
+        "https://quaternion.readthedocs.io/en/latest/",
         [],
         ["m-doc-external"],
     ),
     (
-        os.path.join(os.path.realpath(os.path.dirname(__file__)), "numpy.inv"),
-        "https://docs.scipy.org/doc/numpy/",
-        [],
-        ["m-doc-external"],
-    ),
-    (
-        os.path.join(
-            os.path.realpath(os.path.dirname(__file__)), "magnum-bindings.inv"
-        ),
+        "magnum-bindings.inv",
         "https://doc.magnum.graphics/python/",
         [],
         ["m-doc-external"],
@@ -112,26 +119,17 @@ M_CODE_FILTERS_POST = {
 }
 
 M_DOX_TAGFILES = [
-    # TODO: the path should be relative to this file
     (
-        os.path.join(os.path.realpath(os.path.dirname(__file__)), "corrade.tag"),
+        "corrade.tag",
         "https://doc.magnum.graphics/corrade/",
         ["Corrade::"],
         ["m-doc-external"],
     ),
     (
-        os.path.join(os.path.realpath(os.path.dirname(__file__)), "magnum.tag"),
+        "magnum.tag",
         "https://doc.magnum.graphics/magnum/",
         ["Magnum::"],
         ["m-doc-external"],
     ),
-    (
-        os.path.join(
-            os.path.realpath(os.path.dirname(__file__)),
-            "../build/docs/habitat-cpp/habitat-cpp.tag",
-        ),
-        "../habitat-cpp/",
-        [],
-        ["m-doc-external"],
-    ),
+    ("../build/docs/habitat-cpp.tag", "../habitat-cpp/", [], ["m-doc-external"]),
 ]
