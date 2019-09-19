@@ -46,7 +46,6 @@ BulletPhysicsManager::~BulletPhysicsManager() {
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
 bool BulletPhysicsManager::addScene(
-    const assets::AssetInfo&,
     const assets::PhysicsSceneAttributes& physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
