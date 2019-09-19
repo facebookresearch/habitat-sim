@@ -1,8 +1,18 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
-// All of the files will be outputted in build_js
-const buildRootPath = path.resolve(__dirname).replace("src", "build_js");
+// Parse the args
+const args = require("minimist")(process.argv.slice(2));
+
+if (!args.build_dir) {
+    console.log("Specifying --build_dir option is required");
+    process.exit(1);
+}
+
+// All of the files will be outputted in build_dir argument passed
+// from command line
+const buildRootPath = path.resolve(__dirname, args.build_dir)
+console.log("Build Directory is", buildRootPath);
 
 const config = {
   target: "web",

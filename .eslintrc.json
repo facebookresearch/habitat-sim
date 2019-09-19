@@ -18,5 +18,6 @@
     "strict": ["error", "global"],
     "curly": "warn",
     "prettier/prettier": "error"
-  }
+  },
+  "parser": "babel-eslint"
 }

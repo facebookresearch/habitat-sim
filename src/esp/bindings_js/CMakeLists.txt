@@ -38,7 +38,21 @@ foreach(resource ${resources})
           ${path} ${CMAKE_CURRENT_BINARY_DIR}/${filename})
 endforeach()
 
-set(build_command npm run build)
-message(STATUS "Building JS files now")
-execute_process(COMMAND ${build_command}
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+set(bundle_files
+    bindings.html
+    bindings.css
+    webpack.config.js
+    index.js
+    navigate.js
+    simenv_embind.js)
+
+add_custom_command(OUTPUT bundle.js
+                   COMMAND npm run build -- --build_dir ${CMAKE_CURRENT_BINARY_DIR}
+                   DEPENDS hsim_bindings ${bundle_files}
+                   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                   COMMENT "Building JS files now")
+
+add_custom_target(hsim_bundle ALL
+                  DEPENDS bundle.js)
+
+add_dependencies(hsim_bundle hsim_bindings)
