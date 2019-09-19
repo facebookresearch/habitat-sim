@@ -7,9 +7,14 @@ git submodule update --init --recursive
 
 DATA_DIR="$(pwd)/data/"
 
+GENERATOR="Unix Makefiles"
+if which -s ninja; then
+  GENERATOR="Ninja"
+fi
+
 mkdir -p build_corrade-rc
 pushd build_corrade-rc
-cmake ../src \
+cmake -G "${GENERATOR}" ../src \
     -DBUILD_GUI_VIEWERS=OFF \
     -DBUILD_PYTHON_BINDINGS=OFF \
     -DBUILD_ASSIMP_SUPPORT=OFF \
@@ -28,7 +33,7 @@ if [ ! -d ${SCENE_DATASETS_DIR} ]; then
 fi
 
 
-cmake ../src \
+cmake -G "${GENERATOR}" ../src \
     -DCORRADE_RC_EXECUTABLE=../build_corrade-rc/deps/corrade/src/Corrade/Utility/corrade-rc \
     -DBUILD_GUI_VIEWERS=ON \
     -DBUILD_PYTHON_BINDINGS=OFF \
@@ -42,8 +47,12 @@ cmake ../src \
     -DCMAKE_CXX_FLAGS="-s FORCE_FILESYSTEM=1 -s ALLOW_MEMORY_GROWTH=1 --preload-file ${SCENE_DATASETS_DIR}@/" \
     -DCMAKE_EXE_LINKER_FLAGS="-s USE_WEBGL2=1"
 
-cmake --build . -- -j 4
-cmake --build . --target install -- -j 4
+if [ $# -eq 0 ]; then
+  cmake --build .
+  cmake --build . --target install
+else
+  cmake --build . --target $1
+fi
 
 echo "Done building."
 echo "Run:"
