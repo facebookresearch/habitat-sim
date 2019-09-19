@@ -70,6 +70,14 @@ class SimEnv {
   }
 
   /**
+   * Get the PathFinder for the scene.
+   * @returns {PathFinder} pathFinder of the scene
+   */
+  getPathFinder() {
+    return this.sim.getPathFinder();
+  }
+
+  /**
    * Display an observation from the given sensorId
    * to canvas selected as default frame buffer.
    * @param {number} sensorId - id of sensor

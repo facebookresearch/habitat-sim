@@ -8,10 +8,12 @@ class NavigateTask {
   /**
    * Create navigate task.
    * @param {SimEnv} sim - simulator
+   * @param {TopDownMap} topdown - TopDown Map
    * @param {Object} components - dictionary with status and canvas elements
    */
-  constructor(sim, components) {
+  constructor(sim, topdown, components) {
     this.sim = sim;
+    this.topdown = topdown;
     this.components = components;
     let shape = this.sim.getObservationSpace("rgb").shape;
     this.semanticCtx = components.semantic.getContext("2d");
@@ -54,6 +56,7 @@ class NavigateTask {
     this.sim.reset();
     this.setStatus("Ready");
     this.render();
+    this.renderTopDown(this.components.topdown);
   }
 
   // PRIVATE methods.
@@ -97,6 +100,10 @@ class NavigateTask {
     }
 
     this.semanticCtx.putImageData(this.semanticImageData, 0, 0);
+  }
+
+  renderTopDown() {
+    this.topdown.draw();
   }
 
   renderRadar() {

@@ -184,9 +184,10 @@ void PhysicsManager::stepPhysics(double dt) {
   // handle in-between step times? Ideally dt is a multiple of
   // sceneMetaData_.timestep
   double targetTime = worldTime_ + dt;
-  while (worldTime_ < targetTime)  // per fixed-step operations can be added
-                                   // here
+  while (worldTime_ < targetTime) {
+    // per fixed-step operations can be added here
     worldTime_ += fixedTimeStep_;
+  }
 }
 
 //! Profile function. In BulletPhysics stationery objects are

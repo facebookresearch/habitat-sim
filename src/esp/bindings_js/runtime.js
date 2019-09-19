@@ -1,4 +1,4 @@
-/*global Module, SimEnv, NavigateTask, FS*/
+/*global Module, SimEnv, NavigateTask, TopDownMap, FS*/
 /** TODO(aps): Shift to babel based compilation to properly
  *  support older browsers
  */
@@ -59,7 +59,11 @@ Module["onRuntimeInitialized"] = function() {
 
   const simenv = new SimEnv(config, episode, 0);
   simenv.addAgent(agentConfig);
-  const task = new NavigateTask(simenv, {
+  const topdown = new TopDownMap(
+    simenv.getPathFinder(),
+    document.getElementById("topdown")
+  );
+  const task = new NavigateTask(simenv, topdown, {
     canvas: document.getElementById("canvas"),
     semantic: document.getElementById("semantic"),
     radar: document.getElementById("radar"),
