@@ -54,8 +54,8 @@ class NavigateTask {
   reset() {
     this.sim.reset();
     this.setStatus("Ready");
+    this.topdown.start(this.sim.getAgentState().position);
     this.render();
-    this.renderTopDown(this.components.topdown);
   }
 
   // PRIVATE methods.
@@ -102,6 +102,7 @@ class NavigateTask {
   }
 
   renderTopDown() {
+    this.topdown.moveTo(this.sim.getAgentState().position);
     this.topdown.draw();
   }
 
@@ -142,6 +143,7 @@ class NavigateTask {
   render() {
     this.renderImage();
     this.renderSemanticImage();
+    this.renderTopDown();
   }
 
   handleAction(action) {

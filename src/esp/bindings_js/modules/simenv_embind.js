@@ -97,15 +97,20 @@ class SimEnv {
     return this.sim.getSemanticScene();
   }
 
+  getAgentState() {
+    let state = new Module.AgentState();
+    const agent = this.sim.getAgent(this.selectedAgentId);
+    agent.getState(state);
+    return state;
+  }
+
   /**
    * Get the distance to goal in polar coordinates.
    * @returns {Array} [magnitude, clockwise-angle (in radians)]
    */
   distanceToGoal() {
     let dst = this.episode.goal.position;
-    let state = new Module.AgentState();
-    const agent = this.sim.getAgent(this.selectedAgentId);
-    agent.getState(state);
+    let state = this.getAgentState();
     let src = state.position;
     let dv = [dst[0] - src[0], dst[1] - src[1], dst[2] - src[2]];
     dv = this.applyRotation(dv, state.rotation);
