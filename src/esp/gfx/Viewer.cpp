@@ -37,8 +37,9 @@ Viewer::Viewer(const Arguments& arguments)
     : Platform::Application{arguments,
                             Configuration{}.setTitle("Viewer").setWindowFlags(
                                 Configuration::WindowFlag::Resizable),
-                            GLConfiguration{}.setColorBufferSize(
-                                Vector4i(8, 8, 8, 8))},
+                            GLConfiguration{}
+                                .setColorBufferSize(Vector4i(8, 8, 8, 8))
+                                .setSampleCount(4)},
       pathfinder_(nav::PathFinder::create()),
       controls_(),
       previousPosition_() {
