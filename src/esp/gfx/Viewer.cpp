@@ -391,9 +391,14 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::O: {
       if (physicsManager_ != nullptr) {
         int numObjects = resourceManager_.getNumLibraryObjects();
-        int randObjectID = rand() % numObjects;
-        addObject(resourceManager_.getObjectConfig(randObjectID));
-      }
+        if (numObjects) {
+          int randObjectID = rand() % numObjects;
+          addObject(resourceManager_.getObjectConfig(randObjectID));
+        } else
+          LOG(WARNING) << "No objects loaded, can't add any";
+      } else
+        LOG(WARNING)
+            << "Run the app with --enable-physics in order to add objects";
     } break;
     case KeyEvent::Key::P:
       pokeLastObject();
