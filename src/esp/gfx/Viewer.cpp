@@ -7,6 +7,7 @@
 #include "Viewer.h"
 
 #include <Corrade/Utility/Arguments.h>
+#include <Corrade/Utility/Directory.h>
 #include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
@@ -18,6 +19,8 @@
 
 #include "esp/gfx/Simulator.h"
 #include "esp/scene/SceneConfiguration.h"
+
+#include "esp/gfx/configure.h"
 
 using namespace Magnum;
 using namespace Math::Literals;
@@ -49,13 +52,19 @@ Viewer::Viewer(const Arguments& arguments)
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addBooleanOption("enable-physics")
-      .addOption("physicsConfig", "./data/default.phys_scene_config.json")
-      .setHelp("physicsConfig", "physics scene config file")
+      .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG)
+      .setHelp("physics-config", "physics scene config file")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
   enablePhysics_ = args.isSet("enable-physics");
-  std::string physicsConfigFilename = args.value("physicsConfig");
+  std::string physicsConfigFilename = args.value("physics-config");
+  if (!Utility::Directory::exists(physicsConfigFilename)) {
+    LOG(ERROR)
+        << physicsConfigFilename
+        << " was not found, specify an existing file in --physics-config";
+    std::exit(1);
+  }
 
   // Setup renderer and shader defaults
   GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
