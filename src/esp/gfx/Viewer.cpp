@@ -136,13 +136,6 @@ Viewer::Viewer(const Arguments& arguments)
   renderCamera_->node().setTransformation(
       cameraNode_->absoluteTransformation());
 
-#ifndef ESP_BUILD_WITH_BULLET
-  if (enablePhysics_)
-    LOG(WARNING) << "Physics was enabled but the project is built without "
-                    "Bullet support, objects added with the O key won't "
-                    "interact with the environment in any way.";
-#endif
-
   timeline_.start();
 
 }  // end Viewer::Viewer

@@ -133,7 +133,11 @@ bool ResourceManager::loadScene(
     _physicsManager.reset(new physics::BulletPhysicsManager(this));
     defaultToNoneSimulator = false;
 #else
-    LOG(ERROR) << "trying to use BULLET engine, but not installed";
+    LOG(WARNING)
+        << ":\n---\nPhysics was enabled and Bullet physics engine was "
+           "specified, but the project is built without Bullet support. "
+           "Objects added to the scene will be restricted to kinematic updates "
+           "only. Reinstall with --bullet to enable Bullet dynamics.\n---";
 #endif
   }
 
