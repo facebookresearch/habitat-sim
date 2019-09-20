@@ -84,12 +84,12 @@ Viewer::Viewer(const Arguments& arguments)
     if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
                                     &drawables, physicsConfigFilename)) {
       LOG(ERROR) << "cannot load " << file;
-      std::exit(0);
+      std::exit(1);
     }
   } else {
     if (!resourceManager_.loadScene(info, navSceneNode_, &drawables)) {
       LOG(ERROR) << "cannot load " << file;
-      std::exit(0);
+      std::exit(1);
     }
   }
 
