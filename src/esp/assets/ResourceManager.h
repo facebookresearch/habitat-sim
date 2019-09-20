@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <Corrade/Containers/Optional.h>
@@ -37,6 +38,7 @@ class PhongMaterialData;
 }  // namespace Magnum
 
 namespace esp {
+
 namespace gfx {
 class Drawable;
 }
@@ -185,10 +187,14 @@ class ResourceManager {
   // ======== Geometry helper functions ========
   // void shiftMeshDataToOrigin(GltfMeshData* meshDataGL);
 
-  void translateMesh(GltfMeshData* meshDataGL, Magnum::Vector3 translation);
+  void translateMesh(BaseMesh* meshDataGL, Magnum::Vector3 translation);
 
-  // compute center of axis aligned mesh bounding box
-  Magnum::Vector3 computeMeshBBCenter(GltfMeshData* meshDataGL);
+  /**
+   * @brief Compute and return the axis aligned bounding box of a mesh.
+   * @param meshDataGL The mesh data.
+   * @return The mesh bounding box.
+   */
+  Magnum::Range3D computeMeshBB(BaseMesh* meshDataGL);
 
   // ======== General geometry data ========
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or

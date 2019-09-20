@@ -623,14 +623,13 @@ std::string ResourceManager::getObjectConfig(const int objectID) {
   return physicsObjectConfigList_[objectID];
 }
 
-Magnum::Vector3 ResourceManager::computeMeshBBCenter(GltfMeshData* meshDataGL) {
+Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
   return Magnum::Range3D{
-      Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)}
-      .center();
+      Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)};
 }
 
-void ResourceManager::translateMesh(GltfMeshData* meshDataGL,
+void ResourceManager::translateMesh(BaseMesh* meshDataGL,
                                     Magnum::Vector3 translation) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
 
@@ -808,6 +807,7 @@ bool ResourceManager::loadGeneralMeshData(
     loadTextures(*importer, &metaData);
     loadMaterials(*importer, &metaData);
     loadMeshes(*importer, &metaData, shiftOrigin, translation);
+
     resourceDict_.emplace(filename, metaData);
 
     // Register magnum mesh
@@ -926,8 +926,10 @@ void ResourceManager::loadMeshes(Importer& importer,
     // see if the mesh needs to be shifted
     if (shiftOrigin) {
       // compute BB center if necessary ([0,0,0])
-      if (offset[0] == 0 && offset[1] == 0 && offset[2] == 0)
-        offset = -computeMeshBBCenter(gltfMeshData);
+      if (offset[0] == 0 && offset[1] == 0 && offset[2] == 0) {
+        gltfMeshData->BB = computeMeshBB(gltfMeshData);
+        offset = -gltfMeshData->BB.center();
+      }
       // translate the mesh if necessary
       if (!(offset[0] == 0 && offset[1] == 0 && offset[2] == 0))
         translateMesh(gltfMeshData, offset);

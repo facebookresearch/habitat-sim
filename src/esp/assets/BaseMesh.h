@@ -8,6 +8,7 @@
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Color.h>
+#include <Magnum/Math/Range.h>
 #include <Magnum/Mesh.h>
 #include <Magnum/Trade/MeshData3D.h>
 #include "CollisionMeshData.h"
@@ -46,9 +47,13 @@ class BaseMesh {
     return collisionMeshData_;
   }
 
-  // any transformations applied to the original mesh after load are stored
+  //! Any transformations applied to the original mesh after load are stored
   // here.
   Magnum::Matrix4 meshTransform_;
+
+  //! Axis aligned bounding box of the mesh. Computed automatically on mesh
+  //! load. See @ref ResourceMananger::computeMeshBB.
+  Magnum::Range3D BB;
 
  protected:
   SupportedMeshType type_ = SupportedMeshType::NOT_DEFINED;
