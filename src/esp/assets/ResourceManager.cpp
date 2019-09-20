@@ -481,17 +481,16 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
 
   if (objPhysicsConfig.HasMember("render mesh")) {
     if (objPhysicsConfig["render mesh"].IsString()) {
-      renderMeshFilename = propertiesFileDirectory;
-      renderMeshFilename.append("/").append(
-          objPhysicsConfig["render mesh"].GetString());
+      renderMeshFilename = Cr::Utility::Directory::join(
+          propertiesFileDirectory, objPhysicsConfig["render mesh"].GetString());
     } else {
       LOG(ERROR) << " Invalid value in object physics config - render mesh";
     }
   }
   if (objPhysicsConfig.HasMember("collision mesh")) {
     if (objPhysicsConfig["collision mesh"].IsString()) {
-      collisionMeshFilename = propertiesFileDirectory;
-      collisionMeshFilename.append("/").append(
+      collisionMeshFilename = Cr::Utility::Directory::join(
+          propertiesFileDirectory,
           objPhysicsConfig["collision mesh"].GetString());
     } else {
       LOG(ERROR) << " Invalid value in object physics config - collision mesh";
