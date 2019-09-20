@@ -260,9 +260,6 @@ void Viewer::drawEvent() {
   swapBuffers();
   timeline_.nextFrame();
   redraw();
-  if (physicsManager_ != nullptr)
-    LOG(INFO) << "end drawEvent world time: "
-              << physicsManager_->getWorldTime();
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
