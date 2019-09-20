@@ -44,11 +44,14 @@ set(bundle_files
     bindings.css
     webpack.config.js
     index.js
-    navigate.js
-    simenv_embind.js
-    topdown.js)
+    modules/navigate.js
+    modules/simenv_embind.js
+    modules/topdown.js
+    modules/web_demo.js
+    modules/defaults.js)
 
 add_custom_command(OUTPUT bundle.js
+                   COMMAND npm run lint-fix
                    COMMAND npm run build -- --build_dir ${CMAKE_CURRENT_BINARY_DIR}
                    DEPENDS hsim_bindings ${bundle_files} empty.stamp
                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
