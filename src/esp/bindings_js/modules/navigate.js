@@ -56,6 +56,7 @@ class NavigateTask {
     this.setStatus("Ready");
     this.render();
     this.renderTopDown(this.components.topdown);
+    this.topdown.start(this.sim.getAgentState().position);
   }
 
   // PRIVATE methods.
@@ -148,6 +149,7 @@ class NavigateTask {
     this.sim.step(action);
     this.setStatus(action);
     this.render();
+    this.topdown.moveTo(this.sim.getAgentState().position);
   }
 
   bindKeys() {
