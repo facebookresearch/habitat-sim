@@ -2,223 +2,30 @@
 <html>
 
 <head>
-    <meta charset="UTF-8" />
-    <title>Habitat</title>
-    <link rel="stylesheet" href="WebApplication.css" />
-    <link rel="stylesheet" href="bindings.css" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <meta charset="UTF-8" />
+  <title>Habitat</title>
+  <link rel="stylesheet" href="WebApplication.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
 <body>
-    <h1>Habitat</h1>
-    <div>
-        <canvas id="canvas"></canvas>
-        <canvas id="semantic" style="transform: scaleY(-1)"></canvas>
-        <canvas id="radar"></canvas>
-        <pre id="log"></pre>
-        <div id="status">Initialization...</div>
-        <div id="status-description"></div>
-    </div>
-    <button class="stop-start">Start VR Display</button>
-    </div>
-
-    <script src="navigate.js"></script>
-    <script src="simenv_embind.js"></script>
-    <script src="WindowlessEmscriptenApplication.js"></script>
-    <script async src="hsim_bindings.js"></script>
-    <script>
-        Module["onRuntimeInitialized"] = function () {
-            console.log("hsim_bindings initialized");
-            let simenv, agent, task;
-            let vrDisplay, normalSceneFrame, vrSceneFrame;
-            let frameData = new VRFrameData();
-            const normalResolution = [480, 640];
-            const btn = document.querySelector('.stop-start');
-            let canvas = document.getElementById('canvas');
-            let previousRotation = false;
-            let previousPosition = false;
-            function buildTask(resolution, agentId) {
-                const sensorConfigs = [{
-                    uuid: 'rgb',
-                    sensorType: Module.SensorType.COLOR,
-                    resolution: resolution
-                },
-                {
-                    uuid: 'semantic',
-                    sensorType: Module.SensorType.SEMANTIC,
-                    resolution: resolution
-                }];
-
-                const agentConfig = {
-                    height: 1.5,
-                    radius: 0.1,
-                    mass: 32.0,
-                    linearAcceleration: 20.0,
-                    angularAcceleration: 4 * Math.PI,
-                    linearFriction: 0.5,
-                    angularFriction: 1.0,
-                    coefficientOfRestitution: 0.0,
-                    sensorSpecifications: sensorConfigs
-                };
-
-                // const startState = {
-                //   position: [-1.2676633596420288, 0.2047852873802185, 12.595427513122559],
-                //   rotation: [0, 0.4536385088584658, 0, 0.8911857849408661]
-                // };
-                const startState = {
-                    position: [-1.2676633596420288, 0.2047852873802185, 12.595427513122559],
-                    rotation: [0, 0.4536385088584658, 0, 0.8911857849408661]
-                };
-
-                const goal = {
-                    position: [2.2896811962127686, 0.11950381100177765, 16.97636604309082]
-                };
-
-                const episode = {
-                    startState: startState,
-                    goal: goal
-                };
-
-                let sceneConfig = new Module.SceneConfiguration();
-                sceneConfig.id = "skokloster-castle.glb";
-                let config = new Module.SimulatorConfiguration();
-                config.scene = sceneConfig;
-                console.log("Building Env");
-
-                if (!!task) {
-                    try {
-                        agent = simenv.getAgent(agentId);
-                    } catch (e) {
-                        console.log(agentConfig);
-                        agent = simenv.addAgent(agentConfig);
-                    }
-                    simenv.changeAgent(agentId);
-                    console.log("Resetting task");
-                    task.resetSim(simenv);
-                } else {
-                    console.log("Creating new task");
-                    simenv = new SimEnv(config, episode, 0);
-                    agent = simenv.addAgent(agentConfig);
-                    simenv.changeAgent(0);
-
-                    task = new NavigateTask(simenv, {
-                        canvas: canvas,
-                        semantic: document.getElementById('semantic'),
-                        radar: document.getElementById('radar'),
-                        status: document.getElementById('status')
-                    });
-                }
-                window.config = config;
-                window.sim = simenv;
-
-            }
-
-            function resetCanvas(resolution) {
-                console.log(resolution);
-                canvas.width = resolution.width;
-                canvas.height = resolution.height;
-            }
-
-            // buildTask(normalResolution, 0);
-            // task.init();
-            // task.reset();
-            // drawScene();
-
-            if (navigator.getVRDisplays) {
-                console.log('Web VR is supported');
-                navigator.getVRDisplays().then((displays) => {
-                    if (displays.length > 0) {
-                        vrDisplay = displays[0];
-                        console.log("Display found");
-                        btn.addEventListener('click', function () {
-                            if (btn.textContent === 'Start VR Display') {
-                                vrDisplay.requestPresent([{ source: canvas }]).then(function () {
-                                    console.log('Presenting to WebVR display');
-
-                                    // Set the canvas size to the size of the vrDisplay viewport
-
-                                    var leftEye = vrDisplay.getEyeParameters('left');
-                                    var rightEye = vrDisplay.getEyeParameters('right');
-
-                                    console.log(leftEye);
-                                    console.log(rightEye);
-
-                                    const width = Math.max(leftEye.renderWidth, rightEye.renderWidth) * 2;
-                                    const height = Math.max(leftEye.renderHeight, rightEye.renderHeight);
-
-
-                                    // stop the normal presentation, and start the vr presentation
-                                    window.cancelAnimationFrame(normalSceneFrame);
-                                    resetCanvas({height, width});
-                                    buildTask([height, width], 1);
-                                    simenv.reset();
-                                    drawVRScene();
-
-                                    btn.textContent = 'Exit VR display';
-                                });
-                            } else {
-                                vrDisplay.exitPresent();
-                                console.log('Stopped presenting to WebVR display');
-
-                                btn.textContent = 'Start VR Display';
-
-                                // Stop the VR presentation, and start the normal presentation
-                                vrDisplay.cancelAnimationFrame(vrSceneFrame);
-                                resetCanvas(normalResolution);
-                                buildTask(normalResolution, 0);
-                                task.init();
-                                task.reset();
-                                drawScene();
-                            }
-                        });
-                    } else {
-                        console.log("VR display not supported by this device");
-                    }
-                })
-            }
-
-            function drawScene() {
-                normalSceneFrame = window.requestAnimationFrame(drawScene);
-                task.render();
-            }
-
-            function drawVRScene() {
-                vrSceneFrame = vrDisplay.requestAnimationFrame(drawVRScene);
-                vrDisplay.getFrameData(frameData);
-                const agent = simenv.sim.getAgent(simenv.selectedAgentId);
-                let prevAgentState = simenv.createAgentState({});
-                agent.getState(prevAgentState);
-
-                const simRotation = prevAgentState.rotation.slice();
-                const simPosition = prevAgentState.position.slice();
-
-                if (!previousRotation) {
-                    previousRotation = frameData.pose.orientation.slice();
-                    previousPosition = frameData.pose.position.slice();
-                } else {
-                    const poseRotation = frameData.pose.orientation;
-                    const posePosition = frameData.pose.position;
-
-                    poseRotation.forEach((item, index) => {
-                        simRotation[index] += item - previousRotation[index];
-                    });
-                    posePosition.forEach((item, index) => {
-                        simPosition[index] += item - previousPosition[index];
-                    });
-                    previousRotation = poseRotation.slice();
-                    previousPosition = posePosition.slice();
-                }
-                let agentState = { position: simPosition, rotation: simRotation };
-                agentState = simenv.createAgentState(agentState);
-
-                agent.setState(agentState, true);
-                console.log("Rendering")
-                task.render();
-                vrDisplay.submitFrame();
-            }
-        };
-    </script>
+  <h1>Habitat</h1>
+  <div id="container">
+    <div id="fps"></div>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    <canvas id="topdown" width="640" height="480" style="transform: scaleY(-1)"></canvas>
+    <canvas id="semantic" width="640" height="480" style="transform: scaleY(-1)"></canvas>
+    <canvas id="radar"></canvas>
+    <pre id="log"></pre>
+    <div id="status">Initialization...</div>
+    <div id="status-description"></div>
+  </div>
+  <script>
+    // TODO(aps): Later move to configuration based system
+    window.vrEnabled = true;
+  </script>
+  <script src="WindowlessEmscriptenApplication.js"></script>
+  <script async src="hsim_bindings.js"></script>
 </body>
 
 </html>
