@@ -18,23 +18,36 @@ class TopDownMap {
     this.heightComponent = 2;
     this.scale = 1.0;
     this.imageData = this.createMap();
+    this.ctx.strokeStyle = "blue";
+    this.ctx.lineWidth = 3;
+    this.drawn = false;
   }
 
   /**
    * Draw the topdown map centered in the canvas.
    */
   draw() {
-    let [x, y] = this.mapCenterInset();
-    this.ctx.putImageData(this.imageData, x, y);
+    // We currently only draw the map once.
+    if (!this.drawn) {
+      let [x, y] = this.mapCenterInset();
+      this.ctx.putImageData(this.imageData, x, y);
+      this.drawn = true;
+    }
   }
 
+  /**
+   * Set the start position of the trajectory.
+   * @param {vec3f} position - start position
+   */
   start(position) {
     let [x, y] = this.convertPosition(position);
-    this.ctx.strokeStyle = "blue";
-    this.ctx.lineWidth = 3;
     this.ctx.moveTo(x, y);
   }
 
+  /**
+   * Update trajectory with new position
+   * @param {vec3f} position - new position
+   */
   moveTo(position) {
     let [x, y] = this.convertPosition(position);
     this.ctx.lineTo(x, y);
