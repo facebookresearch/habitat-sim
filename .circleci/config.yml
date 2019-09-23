@@ -160,6 +160,19 @@ jobs:
                 conda install -y pytorch torchvision  cudatoolkit=10.0 -c pytorch
               fi
               touch ~/miniconda/pytorch_installed
+      - run:
+          name: Install JavaScript dependencies
+          background: true
+          command: |
+              if [ ! -f ~/npm_deps_installed ]
+              then
+                wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
+                . ~/.bashrc
+                nvm install v11.9.0
+                nvm use v11.9.0
+                npm install
+                touch ~/npm_deps_installed
+              fi
       - restore_cache:
           keys:
             - habitat-api-{{ checksum "./hapi_sha" }}
@@ -240,11 +253,14 @@ jobs:
       - run:
           name: Build Javascript bindings
           command: |
-              while [ ! -f ~/emscripten_installed ]; do sleep 2; done # wait for emscripten install
+              # wait for npm and emscripten install
+              while [[ ! -f ~/emscripten_installed && ! -f ~/npm_deps_installed ]]; do sleep 2; done
               cd habitat-sim
+              . ~/.bashrc
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat
               export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
+              nvm use v11.9.0
               ./build_js.sh
       - run:
           name: Install api
