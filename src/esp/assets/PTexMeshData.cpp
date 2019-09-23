@@ -13,6 +13,7 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/GL/BufferTextureFormat.h>
@@ -35,18 +36,22 @@ namespace assets {
 
 void PTexMeshData::load(const std::string& meshFile,
                         const std::string& atlasFolder) {
-  CORRADE_ASSERT(
-      io::exists(meshFile),
-      "PTexMeshData::load: Mesh file " << meshFile << " does not exist.", );
-  CORRADE_ASSERT(io::exists(atlasFolder),
-                 "PTexMeshData::load: The atlasFolder "
-                     << atlasFolder << " does not exist.", );
+  if (!io::exists(meshFile)) {
+    Cr::Utility::Fatal{-1} << "PTexMeshData::load: Mesh file " << meshFile
+                           << " does not exist.";
+  }
+  if (!io::exists(atlasFolder)) {
+    Cr::Utility::Fatal{-1} << "PTexMeshData::load: The atlasFolder "
+                           << atlasFolder << " does not exist.";
+  }
 
   // Parse parameters
   const auto& paramsFile = atlasFolder + "/parameters.json";
-  CORRADE_ASSERT(io::exists(paramsFile),
-                 "PTexMeshData::load: The parameter file "
-                     << paramsFile << " does not exist.", );
+  if (io::exists(paramsFile)) {
+    Cr::Utility::Fatal{-1} << "PTexMeshData::load: The parameter file "
+                           << paramsFile << " does not exist.";
+  }
+
   const io::JsonDocument json = io::parseJsonFile(paramsFile);
   splitSize_ = json["splitSize"].GetDouble();
   tileSize_ = json["tileSize"].GetInt();
@@ -376,8 +381,8 @@ void PTexMeshData::parsePLY(const std::string& filename,
               false, "PTexMeshData::parsePLY: Cannot parse element " << name, );
         }
 
-        // Keep track of what element we parsed last to associate the properties
-        // that follow
+        // Keep track of what element we parsed last to associate the
+        // properties that follow
         lastElement = name;
       } else if (token == "property") {
         std::string type, name;
@@ -490,9 +495,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
                          "PTexMeshData::parsePLY: No idea what to do with "
                          "properties following faces", );
         } else {
-          CORRADE_ASSERT(false,
-                         "PTexMeshData::parsePLY: No idea what to do with "
-                         "properties before elements", );
+          CORRADE_ASSERT_UNREACHABLE();
         }
 
         lastProperty = name;
@@ -589,9 +592,9 @@ void PTexMeshData::parsePLY(const std::string& filename,
   // Read first face to get number of indices;
   const uint8_t faceDimensions = *bytes;
 
-  CORRADE_ASSERT(
-      faceDimensions == 3 || faceDimensions == 4,
-      "PTexMeshData::parsePLY: the dimension of a face is neither 3 nor 4.", );
+  CORRADE_ASSERT(faceDimensions == 3 || faceDimensions == 4,
+                 "PTexMeshData::parsePLY: the dimension of a face is neither "
+                 "3 nor 4.", );
 
   const size_t countBytes = 1;
   const size_t faceBytes = faceDimensions * sizeof(uint32_t);  // uint32_t
@@ -667,8 +670,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
         .setPrimitive(Magnum::GL::MeshPrimitive::LinesAdjacency)
         // Warning:
         // CANNOT use currentMesh.ibo.size() when calling
-        // setCount because that returns the number of bytes of the buffer, NOT
-        // the index counts
+        // setCount because that returns the number of bytes of the buffer,
+        // NOT the index counts
         .setCount(submeshes_[iMesh].ibo.size())
         .addVertexBuffer(currentMesh->vertexBuffer, offset,
                          gfx::PTexMeshShader::Position{})
@@ -692,8 +695,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
 
     Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter> data =
         Cr::Utility::Directory::mapRead(hdrFile);
-    // divided by 6, since there are 3 channels, R, G, B, each of which takes 1
-    // half_float (2 bytes)
+    // divided by 6, since there are 3 channels, R, G, B, each of which takes
+    // 1 half_float (2 bytes)
     const int dim = static_cast<int>(std::sqrt(data.size() / 6));  // square
     CORRADE_ASSERT(dim * dim * 6 == data.size(),
                    "PTexMeshData::uploadBuffersToGPU: the atlas texture is not "
