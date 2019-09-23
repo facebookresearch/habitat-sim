@@ -14,8 +14,6 @@
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/Math/Tags.h>
-//#include <Magnum/MeshTools/CompressIndices.h>
-//#include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Primitives/Cube.h>
