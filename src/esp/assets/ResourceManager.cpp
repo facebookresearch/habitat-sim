@@ -59,11 +59,6 @@ namespace Cr = Corrade;
 namespace esp {
 namespace assets {
 
-ResourceManager::ResourceManager() {
-  Magnum::Trade::MeshData3D cube = Magnum::Primitives::cubeWireframe();
-  primitive_meshes_.push_back(Magnum::MeshTools::compile(cube));
-}
-
 bool ResourceManager::loadScene(const AssetInfo& info,
                                 scene::SceneNode* parent, /* = nullptr */
                                 DrawableGroup* drawables /* = nullptr */) {
@@ -98,6 +93,10 @@ bool ResourceManager::loadScene(const AssetInfo& info,
     // scene mesh): welcome
     // to the void
   }
+
+  // once a scene is loaded, we should have a GL::Context so load the primitives
+  Magnum::Trade::MeshData3D cube = Magnum::Primitives::cubeWireframe();
+  primitive_meshes_.push_back(Magnum::MeshTools::compile(cube));
 
   return meshSuccess;
 }

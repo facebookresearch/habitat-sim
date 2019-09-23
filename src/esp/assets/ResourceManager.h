@@ -60,7 +60,7 @@ class ResourceManager {
   // a common design pattern for implementing
   // subsystems such as "resource manager", thats make up an engine is
   // to define a singleton class;
-  explicit ResourceManager();
+  explicit ResourceManager(){};
   ~ResourceManager() {}
 
   // Stores references to a set of drawable elements
