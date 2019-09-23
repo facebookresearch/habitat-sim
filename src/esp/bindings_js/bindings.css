@@ -8,3 +8,8 @@
   z-index: 9;
   pointer-events: none;
 }
+
+#fps {
+  text-align: right;
+  padding-right: 1em;
+}

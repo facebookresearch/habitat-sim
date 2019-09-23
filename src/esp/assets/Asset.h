@@ -8,6 +8,8 @@
 #include "esp/geo/CoordinateFrame.h"
 
 namespace esp {
+
+//! Asset management namespace
 namespace assets {
 
 //! Supported Asset types
