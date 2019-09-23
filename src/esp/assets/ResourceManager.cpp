@@ -133,7 +133,11 @@ bool ResourceManager::loadScene(
     _physicsManager.reset(new physics::BulletPhysicsManager(this));
     defaultToNoneSimulator = false;
 #else
-    LOG(ERROR) << "trying to use BULLET engine, but not installed";
+    LOG(WARNING)
+        << ":\n---\nPhysics was enabled and Bullet physics engine was "
+           "specified, but the project is built without Bullet support. "
+           "Objects added to the scene will be restricted to kinematic updates "
+           "only. Reinstall with --bullet to enable Bullet dynamics.\n---";
 #endif
   }
 
@@ -481,17 +485,16 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
 
   if (objPhysicsConfig.HasMember("render mesh")) {
     if (objPhysicsConfig["render mesh"].IsString()) {
-      renderMeshFilename = propertiesFileDirectory;
-      renderMeshFilename.append("/").append(
-          objPhysicsConfig["render mesh"].GetString());
+      renderMeshFilename = Cr::Utility::Directory::join(
+          propertiesFileDirectory, objPhysicsConfig["render mesh"].GetString());
     } else {
       LOG(ERROR) << " Invalid value in object physics config - render mesh";
     }
   }
   if (objPhysicsConfig.HasMember("collision mesh")) {
     if (objPhysicsConfig["collision mesh"].IsString()) {
-      collisionMeshFilename = propertiesFileDirectory;
-      collisionMeshFilename.append("/").append(
+      collisionMeshFilename = Cr::Utility::Directory::join(
+          propertiesFileDirectory,
           objPhysicsConfig["collision mesh"].GetString());
     } else {
       LOG(ERROR) << " Invalid value in object physics config - collision mesh";
