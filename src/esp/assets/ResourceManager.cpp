@@ -14,7 +14,10 @@
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/Math/Tags.h>
+#include <Magnum/MeshTools/CompressIndices.h>
+#include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/PixelFormat.h>
+#include <Magnum/Primitives/Cube.h>
 #include <Magnum/Shaders/Flat.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
@@ -332,6 +335,9 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
   }
 
   if (parent != nullptr and drawables != nullptr) {
+    //! add the bounding box also
+    const bool drawBB = true;
+
     //! Add mesh to rendering stack
 
     // Meta data and collision mesh
@@ -354,6 +360,35 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
     importer->openFile(renderMeshinfo.filepath);
     for (auto componentID : magnumMeshDict_[filename]) {
       addComponent(*importer, meshMetaData, newNode, drawables, componentID);
+
+      // also add the bounding box as a drawable mesh
+      if (drawBB) {
+        Magnum::Vector3 scale = meshes_[componentID]->BB.size();
+        Magnum::Trade::MeshData3D cube = Magnum::Primitives::cubeWireframe();
+
+        Magnum::GL::Buffer vertices;
+        vertices.setData(cube.positions(0));
+
+        Magnum::Containers::Array<char> indexData;
+        Magnum::MeshIndexType indexType;
+        Magnum::UnsignedInt indexStart, indexEnd;
+        std::tie(indexData, indexType, indexStart, indexEnd) =
+            Magnum::MeshTools::compressIndices(cube.indices());
+        Magnum::GL::Buffer indices;
+        indices.setData(indexData);
+
+        Magnum::GL::Mesh gl_cube = Magnum::MeshTools::compile(cube);
+        gl_cube.setPrimitive(cube.primitive())
+            .setCount(cube.indices().size())
+            .addVertexBuffer(std::move(vertices), 0)
+            .setIndexBuffer(std::move(indices), 0, indexType, indexStart,
+                            indexEnd);
+
+        scene::SceneNode& node = newNode.createChild();
+        node.MagnumObject::setScaling(scale);
+        gfx::Drawable& cube_drawable = createDrawable(
+            ShaderType::COLORED_SHADER, gl_cube, node, drawables);
+      }
     }
   }
 
@@ -840,6 +875,8 @@ bool ResourceManager::loadGeneralMeshData(
     //! Do not instantiate object
     return true;
   } else {
+    LOG(INFO) << "loading drawable mesh";
+
     // intercept nullptr scene graph nodes (default) to add mesh to
     // metadata list without adding it to scene graph
     scene::SceneNode& newNode = parent->createChild();
@@ -874,6 +911,7 @@ bool ResourceManager::loadGeneralMeshData(
     for (auto sceneDataID : magnumMeshDict_[filename]) {
       addComponent(*importer, metaData, newNode, drawables, sceneDataID);
     }
+
     return true;
   }
 }
@@ -923,16 +961,20 @@ void ResourceManager::loadMeshes(Importer& importer,
     auto* gltfMeshData = static_cast<GltfMeshData*>(currentMesh.get());
     gltfMeshData->setMeshData(importer, iMesh);
 
+    // compute the mesh bounding box regardless of shifting
+    gltfMeshData->BB = computeMeshBB(gltfMeshData);
+
     // see if the mesh needs to be shifted
     if (shiftOrigin) {
       // compute BB center if necessary ([0,0,0])
       if (offset[0] == 0 && offset[1] == 0 && offset[2] == 0) {
-        gltfMeshData->BB = computeMeshBB(gltfMeshData);
         offset = -gltfMeshData->BB.center();
       }
-      // translate the mesh if necessary
-      if (!(offset[0] == 0 && offset[1] == 0 && offset[2] == 0))
+      // shift the mesh if necessary
+      if (!(offset[0] == 0 && offset[1] == 0 && offset[2] == 0)) {
         translateMesh(gltfMeshData, offset);
+        gltfMeshData->BB = gltfMeshData->BB.translated(offset);
+      }
     }
 
     gltfMeshData->uploadBuffersToGPU(false);

@@ -150,7 +150,8 @@ class ResourceManager {
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);
 
-  //! Load meshes from importer into assets, and update metaData
+  //! Load meshes from importer into assets, compute bounding boxes, and update
+  //! metaData
   void loadMeshes(Importer& importer,
                   MeshMetaData* metaData,
                   bool shiftOrigin = false,
