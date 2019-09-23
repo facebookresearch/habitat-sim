@@ -256,8 +256,7 @@ std::vector<PTexMeshData::MeshData> splitMesh(
 //  PTexLib.cpp in ReplicaSDK.
 //  and the name is hard-coded as "sorted_faces.bin" in the simulator.
 
-// Put it a level higher than the "atlasFolder_" (usually the same level as the
-// mesh.ply).
+// Put it in the sub-folder, "habitat".
 
 std::vector<PTexMeshData::MeshData> loadSubMeshes(
     const PTexMeshData::MeshData& mesh,
