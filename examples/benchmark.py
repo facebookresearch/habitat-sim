@@ -45,6 +45,18 @@ parser.add_argument(
     action="store_true",
     help="Whether to enable phyiscs (kinematic by default or dynamics if installed with bullet) during benchmark or not.",
 )
+parser.add_argument(
+    "--num_objects",
+    type=int,
+    default=10,
+    help="Number of objects to spawn if enable_physics is true.",
+)
+parser.add_argument(
+    "--test_object_index",
+    type=int,
+    default=0,
+    help="Index the objects to spawn if enable_physics is true. -1 indicates random.",
+)
 args = parser.parse_args()
 
 default_settings = dr.default_sim_settings.copy()
@@ -75,6 +87,8 @@ if args.enable_physics:
     # benchmark_items["enable_physics_no_obs"] = {"color_sensor": False, "enable_physics": True}
     benchmark_items["phys_rgb"] = {"enable_physics": True}
     benchmark_items["phys_rgbd"] = {"depth_sensor": True, "enable_physics": True}
+    default_settings["num_objects"] = args.num_objects
+    default_settings["test_object_index"] = args.test_object_index
 
 resolutions = args.resolution
 nprocs_tests = args.num_procs
@@ -91,10 +105,10 @@ for nprocs in nprocs_tests:
             print(" ---------------------- %s ------------------------ " % key)
             settings = default_settings.copy()
             settings.update(value)
-            perf[key] = demo_runner.benchmark(settings).get("fps")
+            perf[key] = demo_runner.benchmark(settings)
             print(
                 " ====== FPS (%d x %d, %s): %0.1f ======"
-                % (settings["width"], settings["height"], key, perf[key])
+                % (settings["width"], settings["height"], key, perf[key].get("fps"))
             )
         performance.append(perf)
 
@@ -113,8 +127,28 @@ for nproc, performance in performance_all.items():
     for idx in range(len(performance)):
         row = "%d x %d" % (resolutions[idx], resolutions[idx])
         for key, value in performance[idx].items():
-            row += "\t%-8.1f" % value
+            row += "\t%-8.1f" % value.get("fps")
         print(row)
     print(
         " =============================================================================="
     )
+
+    # also print the average time per simulation step (including object perturbations)
+    if args.enable_physics:
+        print(
+            " ================ Performance (step time: seconds) NPROC={} ===================================".format(
+                nproc
+            )
+        )
+        title = "Resolution "
+        for key, value in perf.items():
+            title += "\t%-10s" % key
+        print(title)
+        for idx in range(len(performance)):
+            row = "%d x %d" % (resolutions[idx], resolutions[idx])
+            for key, value in performance[idx].items():
+                row += "\t%-8.5f" % value.get("avg_sim_step_time")
+            print(row)
+        print(
+            " =============================================================================="
+        )

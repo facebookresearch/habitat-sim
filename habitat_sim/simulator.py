@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os.path as osp
+import time
 from typing import Dict, List, Optional
 
 import attr
@@ -54,6 +55,7 @@ class Simulator:
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent: Agent = attr.ib(init=False, default=None)
     _sensors: Dict = attr.ib(factory=dict, init=False)
+    _previous_step_time = 0.0  # track the compute time of each step
 
     def __attrs_post_init__(self):
         config = self.config
@@ -201,7 +203,9 @@ class Simulator:
         self._last_state = self._default_agent.get_state()
 
         # step physics by dt
+        step_start_Time = time.time()
         self._sim.step_world(dt)
+        _previous_step_time = time.time() - step_start_Time
 
         observations = self.get_sensor_observations()
         # Whether or not the action taken resulted in a collision

@@ -147,7 +147,10 @@ class DemoRunner:
 
         for obj_id in range(num_objects):
             # rand_obj_index = random.randint(0, object_lib_size - 1)
-            rand_obj_index = 0  # overwrite for specific object only
+            # rand_obj_index = 0  # overwrite for specific object only
+            rand_obj_index = self._sim_settings.get("test_object_index")
+            if rand_obj_index < 0:  # get random object on -1
+                rand_obj_index = random.randint(0, object_lib_size - 1)
             object_init_cell = (
                 random.randint(-object_init_grid_dim[0], object_init_grid_dim[0]),
                 random.randint(-object_init_grid_dim[1], object_init_grid_dim[1]),
@@ -182,6 +185,7 @@ class DemoRunner:
 
     def do_time_steps(self):
 
+        total_sim_step_time = 0.0
         total_frames = 0
         start_time = time.time()
         action_names = list(
@@ -190,7 +194,9 @@ class DemoRunner:
 
         # load an object and position the agent for physics testing
         if self._sim_settings["enable_physics"]:
-            self.init_physics_test_scene(num_objects=10)
+            self.init_physics_test_scene(
+                num_objects=self._sim_settings.get("num_objects")
+            )
             print("active object ids: " + str(self._sim.get_existing_object_ids()))
 
         time_per_step = []
@@ -216,8 +222,14 @@ class DemoRunner:
                     elif self._sim.get_object_motion_type(obj_id) == MotionType.DYNAMIC:
                         self._sim.apply_force(rand_nudge, np.zeros(3), obj_id)
 
+            # get "interaction" time
+            total_sim_step_time += time.time() - start_step_time
+
             observations = self._sim.step(action)
             time_per_step.append(time.time() - start_step_time)
+
+            # get simulation step time without sensor observations
+            total_sim_step_time += self._sim._previous_step_time
 
             if self._sim_settings["save_png"]:
                 if self._sim_settings["color_sensor"]:
@@ -260,6 +272,7 @@ class DemoRunner:
         perf["frame_time"] = perf["total_time"] / total_frames
         perf["fps"] = 1.0 / perf["frame_time"]
         perf["time_per_step"] = time_per_step
+        perf["avg_sim_step_time"] = total_sim_step_time / total_frames
 
         return perf
 
@@ -359,6 +372,7 @@ class DemoRunner:
             frame_time=sum(res["frame_time"]),
             fps=sum(res["fps"]),
             total_time=sum(res["total_time"]) / nprocs,
+            avg_sim_step_time=sum(res["avg_sim_step_time"]) / nprocs,
         )
 
     def example(self):
