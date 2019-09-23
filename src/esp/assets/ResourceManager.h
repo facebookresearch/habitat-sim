@@ -60,7 +60,7 @@ class ResourceManager {
   // a common design pattern for implementing
   // subsystems such as "resource manager", thats make up an engine is
   // to define a singleton class;
-  explicit ResourceManager(){};
+  explicit ResourceManager();
   ~ResourceManager() {}
 
   // Stores references to a set of drawable elements
@@ -110,7 +110,8 @@ class ResourceManager {
   //! Return index in physicsObjectList_
   int loadObject(const std::string& objPhysConfigFilename,
                  scene::SceneNode* parent,
-                 DrawableGroup* drawables);
+                 DrawableGroup* drawables,
+                 bool drawBB = false);
 
   // load an object into the physicsObjectLibrary_ from a physics properties
   // filename
@@ -145,7 +146,8 @@ class ResourceManager {
                     const MeshMetaData& metaData,
                     scene::SceneNode& parent,
                     DrawableGroup* drawables,
-                    int objectID);
+                    int objectID,
+                    bool addBB = false);
 
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);
@@ -225,6 +227,8 @@ class ResourceManager {
   // library of physics manager attributes for resetting/swapping simulators or
   // simulation parameters
   std::map<std::string, PhysicsManagerAttributes> physicsManagerLibrary_;
+
+  std::vector<Magnum::GL::Mesh> primitive_meshes_;
 
   // maps: "data/objects/cheezit.phys_properties.json" -> collesionMesh group
   std::map<std::string, std::vector<CollisionMeshData>>

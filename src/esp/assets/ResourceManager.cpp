@@ -14,8 +14,9 @@
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/Math/Tags.h>
-#include <Magnum/MeshTools/CompressIndices.h>
-#include <Magnum/MeshTools/Interleave.h>
+//#include <Magnum/MeshTools/CompressIndices.h>
+//#include <Magnum/MeshTools/Interleave.h>
+#include <Magnum/MeshTools/Compile.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Primitives/Cube.h>
 #include <Magnum/Shaders/Flat.h>
@@ -57,6 +58,11 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace assets {
+
+ResourceManager::ResourceManager() {
+  Magnum::Trade::MeshData3D cube = Magnum::Primitives::cubeWireframe();
+  primitive_meshes_.push_back(Magnum::MeshTools::compile(cube));
+}
 
 bool ResourceManager::loadScene(const AssetInfo& info,
                                 scene::SceneNode* parent, /* = nullptr */
@@ -316,7 +322,8 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
 //! For load-only: set parent = nullptr, drawables = nullptr
 int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
                                 scene::SceneNode* parent,
-                                DrawableGroup* drawables) {
+                                DrawableGroup* drawables,
+                                bool drawBB) {
   // Load Object from config
   const bool objectIsLoaded =
       physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
@@ -335,9 +342,6 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
   }
 
   if (parent != nullptr and drawables != nullptr) {
-    //! add the bounding box also
-    const bool drawBB = true;
-
     //! Add mesh to rendering stack
 
     // Meta data and collision mesh
@@ -359,36 +363,8 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
     manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
     importer->openFile(renderMeshinfo.filepath);
     for (auto componentID : magnumMeshDict_[filename]) {
-      addComponent(*importer, meshMetaData, newNode, drawables, componentID);
-
-      // also add the bounding box as a drawable mesh
-      if (drawBB) {
-        Magnum::Vector3 scale = meshes_[componentID]->BB.size();
-        Magnum::Trade::MeshData3D cube = Magnum::Primitives::cubeWireframe();
-
-        Magnum::GL::Buffer vertices;
-        vertices.setData(cube.positions(0));
-
-        Magnum::Containers::Array<char> indexData;
-        Magnum::MeshIndexType indexType;
-        Magnum::UnsignedInt indexStart, indexEnd;
-        std::tie(indexData, indexType, indexStart, indexEnd) =
-            Magnum::MeshTools::compressIndices(cube.indices());
-        Magnum::GL::Buffer indices;
-        indices.setData(indexData);
-
-        Magnum::GL::Mesh gl_cube = Magnum::MeshTools::compile(cube);
-        gl_cube.setPrimitive(cube.primitive())
-            .setCount(cube.indices().size())
-            .addVertexBuffer(std::move(vertices), 0)
-            .setIndexBuffer(std::move(indices), 0, indexType, indexStart,
-                            indexEnd);
-
-        scene::SceneNode& node = newNode.createChild();
-        node.MagnumObject::setScaling(scale);
-        gfx::Drawable& cube_drawable = createDrawable(
-            ShaderType::COLORED_SHADER, gl_cube, node, drawables);
-      }
+      addComponent(*importer, meshMetaData, newNode, drawables, componentID,
+                   drawBB);
     }
   }
 
@@ -1040,7 +1016,8 @@ void ResourceManager::addComponent(Importer& importer,
                                    const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
                                    DrawableGroup* drawables,
-                                   int componentID) {
+                                   int componentID,
+                                   bool addBB) {
   std::unique_ptr<Magnum::Trade::ObjectData3D> objectData =
       importer.object3D(componentID);
   if (!objectData) {
@@ -1064,11 +1041,18 @@ void ResourceManager::addComponent(Importer& importer,
             ->material();
     addMeshToDrawables(metaData, node, drawables, componentID, meshIDLocal,
                        materialIDLocal);
+    if (addBB) {
+      Magnum::Vector3 scale = meshes_[meshID]->BB.size() / 2.0;
+      scene::SceneNode& nodeBB = node.createChild();
+      nodeBB.MagnumObject::setScaling(scale);
+      gfx::Drawable& cube_drawable = createDrawable(
+          ShaderType::COLORED_SHADER, primitive_meshes_[0], nodeBB, drawables);
+    }
   }
 
   // Recursively add children
   for (auto childObjectID : objectData->children()) {
-    addComponent(importer, metaData, node, drawables, childObjectID);
+    addComponent(importer, metaData, node, drawables, childObjectID, addBB);
   }
 }
 

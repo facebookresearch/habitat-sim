@@ -65,7 +65,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
   //! Draw object via resource manager
   //! Render node as child of physics node
   resourceManager_->loadObject(configFile, existingObjects_.at(nextObjectID_),
-                               drawables);
+                               drawables, false);
 
   return nextObjectID_;
 }
