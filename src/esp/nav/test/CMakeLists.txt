@@ -4,7 +4,6 @@
 
 find_package(Corrade REQUIRED Utility TestSuite)
 
-set(SCENE_DATASETS ${CMAKE_CURRENT_SOURCE_DIR}/../../../../data/scene_datasets)
 configure_file(configure.h.cmake
                ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
