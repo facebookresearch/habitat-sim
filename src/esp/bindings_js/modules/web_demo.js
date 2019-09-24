@@ -1,4 +1,4 @@
-/* global FS, Module */
+/* global Module */
 import { defaultAgentConfig, defaultEpisode } from "./defaults";
 import SimEnv from "./simenv_embind";
 import TopDownMap from "./topdown";
@@ -10,15 +10,7 @@ class WebDemo {
     episode = defaultEpisode
   ) {
     this.sceneConfig = new Module.SceneConfiguration();
-    try {
-      FS.stat("17DRP5sb8fy.glb");
-      this.sceneConfig.id = "17DRP5sb8fy.glb";
-    } catch (err) {
-      console.log(
-        "Can't find 17DRP5sb8fy.glb. Falling back to skokloster-castle.glb which doesn't have semantic information."
-      );
-      this.sceneConfig.id = "skokloster-castle.glb";
-    }
+    this.sceneConfig.id = Module.scene;
     this.config = new Module.SimulatorConfiguration();
     this.config.scene = this.sceneConfig;
 
