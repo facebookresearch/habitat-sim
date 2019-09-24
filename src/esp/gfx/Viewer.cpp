@@ -264,6 +264,16 @@ void Viewer::removePrimitiveDrawable(int index) {
   }
 }
 
+void Viewer::highlightNavmeshIsland() {
+  const vec3f position = pathfinder_->getRandomNavigablePoint();
+  float rad = pathfinder_->islandRadius(position);
+  // addPrimitiveDrawable(esp::assets::ResourceManager::AvailablePrimitives::WIRE_CYLINDER);
+  addPrimitiveDrawable(
+      esp::assets::ResourceManager::AvailablePrimitives::SOLID_SPHERE);
+  primitiveNodes_.back()->setTranslation(Magnum::Vector3(position));
+  // primitiveNodes_.back()->setScaling(Magnum::Vector3{rad, 10.0, rad});
+}
+
 Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
                                  const Vector2i& position) {
   // Convert from window to frame coordinates.
@@ -458,6 +468,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // remove the first primitive
       removePrimitiveDrawable(0);
     } break;
+
+    case KeyEvent::Key::N: {
+      highlightNavmeshIsland();
+    } break;
+
     default:
       break;
   }

@@ -116,7 +116,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
       4, 4, 16,
       1));  // hemi-sphere rings, cylinder rings, segments (/4), half-length
   primitiveMeshes.push_back(Magnum::Primitives::cylinderWireframe(
-      4, 16, 1));  // rings, segments (/4), half-length
+      16, 16, 1));  // rings, segments (/4), half-length
   primitiveMeshes.push_back(Magnum::Primitives::cylinderSolid(
       4, 16, 1));  // rings, segments (/4), half-length
 

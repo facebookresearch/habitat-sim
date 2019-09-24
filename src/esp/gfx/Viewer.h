@@ -61,6 +61,8 @@ class Viewer : public Magnum::Platform::Application {
 
   void removePrimitiveDrawable(int index);
 
+  void highlightNavmeshIsland();
+
   Magnum::Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
                                    const Magnum::Vector2i& position);
 
