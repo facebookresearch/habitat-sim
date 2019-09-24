@@ -378,7 +378,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
                          "greater than 0.", );
         } else {
           CORRADE_ASSERT(
-              false, "PTexMeshData::parsePLY: Cannot parse element " << name, );
+              false, "PTexMeshData::parsePLY: Cannot parse element" << name, );
         }
 
         // Keep track of what element we parsed last to associate the
@@ -398,23 +398,23 @@ void PTexMeshData::parsePLY(const std::string& filename,
           ls >> countType >> type;
 
           CORRADE_ASSERT(countType == "uchar" || countType == "uint8",
-                         "PTexMeshData::parsePLY: Don't understand count type "
+                         "PTexMeshData::parsePLY: Don't understand count type"
                              << countType, );
 
           CORRADE_ASSERT(
               type == "int",
-              "PTexMeshData::parsePLY: Don't understand index type " << type, );
+              "PTexMeshData::parsePLY: Don't understand index type" << type, );
 
           CORRADE_ASSERT(lastElement == "face",
                          "PTexMeshData::parsePLY: Only expecting list after "
-                         "face element, not after "
+                         "face element, not after"
                              << lastElement, );
         }
 
         CORRADE_ASSERT(
             type == "float" || type == "int" || type == "uchar" ||
                 type == "uint8",
-            "PTexMeshData::parsePLY: Don't understand type " << type, );
+            "PTexMeshData::parsePLY: Don't understand type" << type, );
 
         ls >> name;
 
@@ -687,7 +687,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
 
     CORRADE_ASSERT(
         io::exists(hdrFile),
-        "PTexMeshData::uploadBuffersToGPU: Cannot find the .hdr file "
+        "PTexMeshData::uploadBuffersToGPU: Cannot find the .hdr file"
             << hdrFile, );
 
     LOG(INFO) << "Loading atlas " << iMesh + 1 << "/"
@@ -726,16 +726,16 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
 
 PTexMeshData::RenderingBuffer* PTexMeshData::getRenderingBuffer(int submeshID) {
   CORRADE_ASSERT(submeshID >= 0 && submeshID < renderingBuffers_.size(),
-                 "PTexMeshData::uploadBuffersToGPU: the submesh ID "
-                     << submeshID << " is out of range.",
+                 "PTexMeshData::uploadBuffersToGPU: the submesh ID"
+                     << submeshID << "is out of range.",
                  nullptr);
   return renderingBuffers_[submeshID].get();
 }
 
 Magnum::GL::Mesh* PTexMeshData::getMagnumGLMesh(int submeshID) {
   CORRADE_ASSERT(submeshID >= 0 && submeshID < renderingBuffers_.size(),
-                 "PTexMeshData::uploadBuffersToGPU: the submesh ID "
-                     << submeshID << " is out of range.",
+                 "PTexMeshData::uploadBuffersToGPU: the submesh ID"
+                     << submeshID << "is out of range.",
                  nullptr);
   return &(renderingBuffers_[submeshID]->mesh);
 }
