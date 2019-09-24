@@ -223,7 +223,7 @@ This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor
 1. If you are using a virtual/conda environment, make sure to use the same environment throughout the rest of the build
 1. Build using `./build.sh` or `./build.sh --headless` for headless systems (i.e. without an attached display) or if you need multi-gpu support
 1. Test the build as described above (except that the interactive viewer is at `build/utils/viewer/viewer`).
-1. For use with [Habitat-API](https://github.com/facebookresearch/habitat-api) and your own python code, add habitat-sim to your `PYTHONPATH` (not necessary if you used `python setup.py install` instead of `build.sh`). For example modify your `.bashrc` (or `.bash_profile` in Mac osx) file by adding the line:
+1. For use with [Habitat-API](https://github.com/facebookresearch/habitat-api) and your own python code, add habitat-sim to your `PYTHONPATH` (not necessary if you used `python setup.py install` instead of `build.sh`). For example modify your `.bashrc` (or `.bash_profile` in MacOS) file by adding the line:
    ```bash
    export PYTHONPATH=$PYTHONPATH:/path/to/habitat-sim/
    ```
@@ -271,7 +271,7 @@ Install the pre-commit hooks with `pip install pre-commit && pre-commit install`
 
 1. Install `ninja` (`sudo apt install ninja-build` on Linux, or `brew install ninja` on MacOS) for significantly faster incremental builds
 1. Install `ccache` (`sudo apt install ccache` on Linux, or `brew install ccache` on MacOS) for significantly faster clean re-builds and builds with slightly different settings
-1. You can skip reinstalling magnum every time buy adding the argument of `--skip-install-magnum` to either `build.sh` or `setup.py`.  Note that you will still need to install magnum bindings once.
+1. You can skip reinstalling magnum every time by adding the argument of `--skip-install-magnum` to either `build.sh` or `setup.py`.  Note that you will still need to install magnum bindings once.
 1. Arguments to `build.sh` and `setup.py` can be cached between subsequent invocations with the flag `--cache-args` on the _first_ invocation.
 
 ## Acknowledgments
