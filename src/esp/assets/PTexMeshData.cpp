@@ -37,19 +37,19 @@ namespace assets {
 void PTexMeshData::load(const std::string& meshFile,
                         const std::string& atlasFolder) {
   if (!io::exists(meshFile)) {
-    Cr::Utility::Fatal{-1} << "PTexMeshData::load: Mesh file " << meshFile
-                           << " does not exist.";
+    Cr::Utility::Fatal{-1} << "PTexMeshData::load: Mesh file" << meshFile
+                           << "does not exist.";
   }
   if (!io::exists(atlasFolder)) {
-    Cr::Utility::Fatal{-1} << "PTexMeshData::load: The atlasFolder "
-                           << atlasFolder << " does not exist.";
+    Cr::Utility::Fatal{-1} << "PTexMeshData::load: The atlasFolder"
+                           << atlasFolder << "does not exist.";
   }
 
   // Parse parameters
   const auto& paramsFile = atlasFolder + "/parameters.json";
   if (io::exists(paramsFile)) {
-    Cr::Utility::Fatal{-1} << "PTexMeshData::load: The parameter file "
-                           << paramsFile << " does not exist.";
+    Cr::Utility::Fatal{-1} << "PTexMeshData::load: The parameter file"
+                           << paramsFile << "does not exist.";
   }
 
   const io::JsonDocument json = io::parseJsonFile(paramsFile);
