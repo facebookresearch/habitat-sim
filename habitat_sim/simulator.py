@@ -107,9 +107,13 @@ class Simulator:
             scene_basename = osp.basename(config.sim_cfg.scene.id)
             if scene_basename == "mesh.ply":
                 scene_dir = osp.dirname(config.sim_cfg.scene.id)
-                navmesh_filenname = osp.join(scene_dir, "habitat", "mesh_semantic.navmesh")
+                navmesh_filenname = osp.join(
+                    scene_dir, "habitat", "mesh_semantic.navmesh"
+                )
             else:
-                navmesh_filenname = osp.splitext(config.sim_cfg.scene.id)[0] + ".navmesh"
+                navmesh_filenname = (
+                    osp.splitext(config.sim_cfg.scene.id)[0] + ".navmesh"
+                )
 
         self.pathfinder = hsim.PathFinder()
         if osp.exists(navmesh_filenname):
