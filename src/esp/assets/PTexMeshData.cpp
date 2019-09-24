@@ -495,6 +495,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
                          "PTexMeshData::parsePLY: No idea what to do with "
                          "properties following faces", );
         } else {
+          // No idea what to do with properties before elements
           CORRADE_ASSERT_UNREACHABLE();
         }
 
