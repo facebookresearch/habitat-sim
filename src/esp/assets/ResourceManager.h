@@ -63,6 +63,23 @@ class ResourceManager {
   explicit ResourceManager(){};
   ~ResourceManager() {}
 
+  //! Primitive types with meshes compiled in @ref primitive_meshes_ and ready
+  //! to be added to the scene with @ref addPrimitiveToDrawables.
+  enum AvailablePrimitives {
+    WIRE_CUBE = 0,
+    SOLID_CUBE = 1,
+    SOLID_SPHERE = 2,
+    WIRE_CONE = 3,
+    SOLID_CONE = 4,
+    WIRE_CAPSULE = 5,
+    SOLID_CAPSULE = 6,
+    WIRE_CYLINDER = 7,
+    SOLID_CYLINDER = 8,
+
+    //! Tracks the number of available primitives.
+    FINAL_NUM_PRIMITIVES_COUNTER
+  };
+
   // Stores references to a set of drawable elements
   using DrawableGroup = Magnum::SceneGraph::DrawableGroup3D;
   // Convenience typedef for Importer class
@@ -137,7 +154,8 @@ class ResourceManager {
 
   void addPrimitiveToDrawables(int primitiveID,
                                scene::SceneNode& node,
-                               DrawableGroup* drawables);
+                               DrawableGroup* drawables,
+                               const Magnum::Color4& color = Magnum::Color4{1});
 
  protected:
   //======== Scene Functions ========

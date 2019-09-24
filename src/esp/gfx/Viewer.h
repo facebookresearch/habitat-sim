@@ -57,6 +57,10 @@ class Viewer : public Magnum::Platform::Application {
   Magnum::Vector3 randomDirection();
   void wiggleLastObject();
 
+  void addPrimitiveDrawable(int primitiveID);
+
+  void removePrimitiveDrawable(int index);
+
   Magnum::Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
                                    const Magnum::Vector2i& position);
 
@@ -74,6 +78,8 @@ class Viewer : public Magnum::Platform::Application {
 
   scene::SceneGraph* sceneGraph_;
   scene::SceneNode* rootNode_;
+
+  std::vector<scene::SceneNode*> primitiveNodes_;
 
   RenderCamera* renderCamera_ = nullptr;
   nav::PathFinder::ptr pathfinder_;

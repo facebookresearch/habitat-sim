@@ -239,6 +239,31 @@ void Viewer::wiggleLastObject() {
   physicsManager_->translate(objectIDs_.back(), randomDirection() * 0.1);
 }
 
+void Viewer::addPrimitiveDrawable(int primitiveID) {
+  Magnum::Matrix4 T =
+      agentBodyNode_
+          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+  Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
+
+  Magnum::Color4 rand_color((float)((rand() % 1000) / 1000.0),
+                            (float)((rand() % 1000) / 1000.0),
+                            (float)((rand() % 1000) / 1000.0), 1.0);
+
+  primitiveNodes_.push_back(&rootNode_->createChild());
+  primitiveNodes_.back()->setTranslation(new_pos);
+  primitiveNodes_.back()->setScaling(Magnum::Vector3{0.2});
+  resourceManager_.addPrimitiveToDrawables(primitiveID, *primitiveNodes_.back(),
+                                           &sceneGraph_->getDrawables(),
+                                           rand_color);
+}
+
+void Viewer::removePrimitiveDrawable(int index) {
+  if (index >= 0 && index < primitiveNodes_.size()) {
+    delete primitiveNodes_[index];
+    primitiveNodes_.erase(primitiveNodes_.begin() + index);
+  }
+}
+
 Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
                                  const Vector2i& position) {
   // Convert from window to frame coordinates.
@@ -423,6 +448,16 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       Magnum::DebugTools::screenshot(GL::defaultFramebuffer,
                                      "test_image_save.png");
       break;
+    case KeyEvent::Key::Equal: {
+      int randPrimitiveID = rand() %
+                            esp::assets::ResourceManager::AvailablePrimitives::
+                                FINAL_NUM_PRIMITIVES_COUNTER;
+      addPrimitiveDrawable(randPrimitiveID);
+    } break;
+    case KeyEvent::Key::Minus: {
+      // remove the first primitive
+      removePrimitiveDrawable(0);
+    } break;
     default:
       break;
   }

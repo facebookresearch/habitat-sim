@@ -16,7 +16,6 @@
 #include <Magnum/Math/Tags.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/PixelFormat.h>
-#include <Magnum/Primitives/Cube.h>
 #include <Magnum/Shaders/Flat.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
@@ -24,6 +23,13 @@
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
 #include <Magnum/Trade/TextureData.h>
+
+// primitives
+#include <Magnum/Primitives/Capsule.h>
+#include <Magnum/Primitives/Cone.h>
+#include <Magnum/Primitives/Cube.h>
+#include <Magnum/Primitives/Cylinder.h>
+#include <Magnum/Primitives/Icosphere.h>
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
@@ -93,8 +99,31 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   }
 
   // once a scene is loaded, we should have a GL::Context so load the primitives
-  Magnum::Trade::MeshData3D cube = Magnum::Primitives::cubeWireframe();
-  primitive_meshes_.push_back(Magnum::MeshTools::compile(cube));
+  // default parameters defined here
+  std::vector<Magnum::Trade::MeshData3D> primitiveMeshes;
+  primitiveMeshes.push_back(Magnum::Primitives::cubeWireframe());
+  primitiveMeshes.push_back(Magnum::Primitives::cubeSolid());
+  primitiveMeshes.push_back(
+      Magnum::Primitives::icosphereSolid(2));  // subdivisions
+  primitiveMeshes.push_back(
+      Magnum::Primitives::coneWireframe(16, 1));  // segments (/4), half-length
+  primitiveMeshes.push_back(Magnum::Primitives::coneSolid(
+      4, 16, 1));  // rings, segments (/4), half-length
+  primitiveMeshes.push_back(Magnum::Primitives::capsule3DWireframe(
+      4, 4, 16,
+      1));  // hemi-sphere rings, cylinder rings, segments (/4), half-length
+  primitiveMeshes.push_back(Magnum::Primitives::capsule3DSolid(
+      4, 4, 16,
+      1));  // hemi-sphere rings, cylinder rings, segments (/4), half-length
+  primitiveMeshes.push_back(Magnum::Primitives::cylinderWireframe(
+      4, 16, 1));  // rings, segments (/4), half-length
+  primitiveMeshes.push_back(Magnum::Primitives::cylinderSolid(
+      4, 16, 1));  // rings, segments (/4), half-length
+
+  for (auto& primitive : primitiveMeshes) {
+    primitive_meshes_.push_back(Magnum::MeshTools::compile(
+        primitive, {Magnum::MeshTools::CompileFlag::GenerateFlatNormals}));
+  }
 
   return meshSuccess;
 }
@@ -1091,10 +1120,11 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
 
 void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
-                                              DrawableGroup* drawables) {
+                                              DrawableGroup* drawables,
+                                              const Magnum::Color4& color) {
   if (primitiveID >= 0 && primitiveID < primitive_meshes_.size()) {
     createDrawable(ShaderType::COLORED_SHADER, primitive_meshes_[primitiveID],
-                   node, drawables);
+                   node, drawables, nullptr, ID_UNDEFINED, color);
   }
 }
 
