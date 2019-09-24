@@ -54,7 +54,6 @@ class NavigateTask {
   reset() {
     this.sim.reset();
     this.setStatus("Ready");
-    this.topdown.start(this.sim.getAgentState().position);
     this.render();
   }
 
@@ -103,7 +102,6 @@ class NavigateTask {
 
   renderTopDown() {
     this.topdown.moveTo(this.sim.getAgentState().position);
-    this.topdown.draw();
   }
 
   renderRadar() {
