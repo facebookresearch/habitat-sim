@@ -397,10 +397,16 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::V:
       invertGravity();
       break;
-    case KeyEvent::Key::T:
+    case KeyEvent::Key::B: {
+      // toggle a random object's bounding box draw
+      int numObjects = physicsManager_->getNumRigidObjects();
+      int randObjectID = rand() % numObjects;
+      physicsManager_->toggleBBDraw(randObjectID, &sceneGraph_->getDrawables());
+    } break;
+    case KeyEvent::Key::T: {
       // Test key. Put what you want here...
       torqueLastObject();
-      break;
+    } break;
     case KeyEvent::Key::I:
       Magnum::DebugTools::screenshot(GL::defaultFramebuffer,
                                      "test_image_save.png");

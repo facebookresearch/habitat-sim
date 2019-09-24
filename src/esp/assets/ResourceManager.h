@@ -110,8 +110,7 @@ class ResourceManager {
   //! Return index in physicsObjectList_
   int loadObject(const std::string& objPhysConfigFilename,
                  scene::SceneNode* parent,
-                 DrawableGroup* drawables,
-                 bool drawBB = false);
+                 DrawableGroup* drawables);
 
   // load an object into the physicsObjectLibrary_ from a physics properties
   // filename
@@ -136,6 +135,10 @@ class ResourceManager {
     return meshes_[meshIndex]->meshTransform_;
   }
 
+  void addPrimitiveToDrawables(int primitiveID,
+                               scene::SceneNode& node,
+                               DrawableGroup* drawables);
+
  protected:
   //======== Scene Functions ========
   //! Instantiate Scene:
@@ -146,8 +149,7 @@ class ResourceManager {
                     const MeshMetaData& metaData,
                     scene::SceneNode& parent,
                     DrawableGroup* drawables,
-                    int objectID,
-                    bool addBB = false);
+                    int objectID);
 
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);

@@ -6,6 +6,8 @@
 #include "esp/assets/CollisionMeshData.h"
 #include "esp/assets/ResourceManager.h"
 
+#include <Magnum/Math/Range.h>
+
 namespace esp {
 namespace physics {
 
@@ -49,10 +51,15 @@ int PhysicsManager::addObject(const int objectLibIndex,
       resourceManager_->getCollisionMesh(configFile);
   assets::PhysicsObjectAttributes physicsObjectAttributes =
       resourceManager_->getPhysicsObjectAttributes(configFile);
+
+  Magnum::Range3D BB;
   for (const assets::CollisionMeshData& meshData : meshGroup) {
     if (!isMeshPrimitiveValid(meshData)) {
       return ID_UNDEFINED;
     }
+    Magnum::Range3D collisionMeshBB{
+        Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)};
+    BB = join(BB, collisionMeshBB);
   }
 
   //! Instantiate with mesh pointer
@@ -65,7 +72,9 @@ int PhysicsManager::addObject(const int objectLibIndex,
   //! Draw object via resource manager
   //! Render node as child of physics node
   resourceManager_->loadObject(configFile, existingObjects_.at(nextObjectID_),
-                               drawables, true);
+                               drawables);
+
+  existingObjects_.at(nextObjectID_)->localBB_ = BB;
 
   return nextObjectID_;
 }
@@ -493,6 +502,25 @@ double PhysicsManager::getAngularDamping(const int physObjectID) {
     return existingObjects_[physObjectID]->getAngularDamping();
   } else {
     return PHYSICS_ATTR_UNDEFINED;
+  }
+}
+
+void PhysicsManager::toggleBBDraw(int physObjectID, DrawableGroup* drawables) {
+  if (existingObjects_.count(physObjectID) > 0) {
+    if (existingObjects_[physObjectID]->BBNode_) {
+      // destroy the node
+      delete existingObjects_[physObjectID]->BBNode_;
+      existingObjects_[physObjectID]->BBNode_ = nullptr;
+    } else {
+      // add a new BBNode
+      Magnum::Vector3 scale =
+          existingObjects_[physObjectID]->localBB_.size() / 2.0;
+      existingObjects_[physObjectID]->BBNode_ =
+          &existingObjects_[physObjectID]->createChild();
+      existingObjects_[physObjectID]->BBNode_->MagnumObject::setScaling(scale);
+      resourceManager_->addPrimitiveToDrawables(
+          0, *existingObjects_[physObjectID]->BBNode_, drawables);
+    }
   }
 }
 

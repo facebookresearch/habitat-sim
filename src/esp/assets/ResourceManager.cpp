@@ -319,8 +319,7 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
 //! For load-only: set parent = nullptr, drawables = nullptr
 int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
                                 scene::SceneNode* parent,
-                                DrawableGroup* drawables,
-                                bool drawBB) {
+                                DrawableGroup* drawables) {
   // Load Object from config
   const bool objectIsLoaded =
       physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
@@ -360,8 +359,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
     manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
     importer->openFile(renderMeshinfo.filepath);
     for (auto componentID : magnumMeshDict_[filename]) {
-      addComponent(*importer, meshMetaData, newNode, drawables, componentID,
-                   drawBB);
+      addComponent(*importer, meshMetaData, newNode, drawables, componentID);
     }
   }
 
@@ -1013,8 +1011,7 @@ void ResourceManager::addComponent(Importer& importer,
                                    const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
                                    DrawableGroup* drawables,
-                                   int componentID,
-                                   bool addBB) {
+                                   int componentID) {
   std::unique_ptr<Magnum::Trade::ObjectData3D> objectData =
       importer.object3D(componentID);
   if (!objectData) {
@@ -1038,18 +1035,11 @@ void ResourceManager::addComponent(Importer& importer,
             ->material();
     addMeshToDrawables(metaData, node, drawables, componentID, meshIDLocal,
                        materialIDLocal);
-    if (addBB) {
-      Magnum::Vector3 scale = meshes_[meshID]->BB.size() / 2.0;
-      scene::SceneNode& nodeBB = node.createChild();
-      nodeBB.MagnumObject::setScaling(scale);
-      gfx::Drawable& cube_drawable = createDrawable(
-          ShaderType::COLORED_SHADER, primitive_meshes_[0], nodeBB, drawables);
-    }
   }
 
   // Recursively add children
   for (auto childObjectID : objectData->children()) {
-    addComponent(importer, metaData, node, drawables, childObjectID, addBB);
+    addComponent(importer, metaData, node, drawables, childObjectID);
   }
 }
 
@@ -1094,6 +1084,15 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                      componentID, materials_[materialID]->diffuseColor());
     }
   }  // else
+}
+
+void ResourceManager::addPrimitiveToDrawables(int primitiveID,
+                                              scene::SceneNode& node,
+                                              DrawableGroup* drawables) {
+  if (primitiveID >= 0 && primitiveID < primitive_meshes_.size()) {
+    createDrawable(ShaderType::COLORED_SHADER, primitive_meshes_[primitiveID],
+                   node, drawables);
+  }
 }
 
 gfx::Drawable& ResourceManager::createDrawable(
