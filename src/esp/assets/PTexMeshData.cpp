@@ -685,10 +685,9 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     const std::string hdrFile = Cr::Utility::Directory::join(
         atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
 
-    CORRADE_ASSERT(
-        io::exists(hdrFile),
-        "PTexMeshData::uploadBuffersToGPU: Cannot find the .hdr file"
-            << hdrFile, );
+    CORRADE_ASSERT(io::exists(hdrFile),
+                   "PTexMeshData::uploadBuffersToGPU: Cannot find the .hdr file"
+                       << hdrFile, );
 
     LOG(INFO) << "Loading atlas " << iMesh + 1 << "/"
               << renderingBuffers_.size() << " from " << hdrFile << ". ";
