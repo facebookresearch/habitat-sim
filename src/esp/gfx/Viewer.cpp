@@ -265,12 +265,13 @@ void Viewer::removePrimitiveDrawable(int index) {
 
 void Viewer::highlightNavmeshIsland() {
   const vec3f position = pathfinder_->getRandomNavigablePoint();
-  float rad = pathfinder_->islandRadius(position);
+  // float rad = pathfinder_->islandRadius(position);
+  float rad = pathfinder_->distanceToClosestObstacle(position);
   // addPrimitiveDrawable(esp::assets::ResourceManager::AvailablePrimitives::WIRE_CYLINDER);
   addPrimitiveDrawable(
       esp::assets::ResourceManager::AvailablePrimitives::SOLID_SPHERE);
   primitiveNodes_.back()->setTranslation(Magnum::Vector3(position));
-  // primitiveNodes_.back()->setScaling(Magnum::Vector3{rad, 10.0, rad});
+  primitiveNodes_.back()->setScaling(Magnum::Vector3{rad, 0.2, rad});
 }
 
 Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
