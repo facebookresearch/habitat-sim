@@ -136,7 +136,7 @@ for nproc, performance in performance_all.items():
     # also print the average time per simulation step (including object perturbations)
     if args.enable_physics:
         print(
-            " ================ Performance (step time: seconds) NPROC={} ===================================".format(
+            " ================ Performance (step time: milliseconds) NPROC={} ===================================".format(
                 nproc
             )
         )
@@ -147,7 +147,7 @@ for nproc, performance in performance_all.items():
         for idx in range(len(performance)):
             row = "%d x %d" % (resolutions[idx], resolutions[idx])
             for key, value in performance[idx].items():
-                row += "\t%-8.5f" % value.get("avg_sim_step_time")
+                row += "\t%-8.2f" % (value.get("avg_sim_step_time") * 1000)
             print(row)
         print(
             " =============================================================================="
