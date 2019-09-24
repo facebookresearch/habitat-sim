@@ -13,7 +13,6 @@ import numpy as np
 import quaternion
 
 import habitat_sim.bindings as hsim
-from habitat_sim import utils
 
 # epislon used to deal with machine precision
 EPS = 1e-5
