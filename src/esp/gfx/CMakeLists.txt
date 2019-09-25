@@ -6,10 +6,10 @@ set(gfx_SOURCES
   GenericDrawable.cpp
   GenericDrawable.h
   magnum.h
-  PrimitiveIDTexturedDrawable.cpp
-  PrimitiveIDTexturedDrawable.h
-  PrimitiveIDTexturedShader.cpp
-  PrimitiveIDTexturedShader.h
+  PrimitiveIDDrawable.cpp
+  PrimitiveIDDrawable.h
+  PrimitiveIDShader.cpp
+  PrimitiveIDShader.h
   RenderCamera.cpp
   RenderCamera.h
   Renderer.cpp
@@ -72,6 +72,12 @@ find_package(Corrade REQUIRED Utility)
 # set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)
 list(APPEND gfx_SOURCES ${ShaderResources})
+
+if(BUILD_GUI_VIEWERS)
+  set(ESP_DEFAULT_PHYS_SCENE_CONFIG ${PROJECT_SOURCE_DIR}/../data/default.phys_scene_config.json)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
+                 ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
+endif()
 
 add_library(gfx STATIC ${gfx_SOURCES})
 

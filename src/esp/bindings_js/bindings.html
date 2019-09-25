@@ -5,7 +5,6 @@
   <meta charset="UTF-8" />
   <title>Habitat</title>
   <link rel="stylesheet" href="WebApplication.css" />
-  <link rel="stylesheet" href="bindings.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
@@ -15,8 +14,9 @@
     <div id="sizer">
       <div id="expander">
         <div id="listener">
-          <canvas class="hidden" id="canvas"></canvas>
-          <canvas id="canvas2d" width="640" height="480" style="transform: scaleY(-1)"></canvas>
+          <canvas id="canvas" width="640" height="480"></canvas>
+          <canvas id="topdown" width="640" height="480"></canvas>
+          <canvas id="semantic" width="640" height="480" style="transform: scaleY(-1)"></canvas>
           <canvas id="radar"></canvas>
           <pre id="log"></pre>
           <div id="status">Initialization...</div>
@@ -26,64 +26,7 @@
     </div>
   </div>
 
-  <script src="navigate.js"></script>
-  <script src="simenv_embind.js"></script>
   <script src="WindowlessEmscriptenApplication.js"></script>
   <script async src="hsim_bindings.js"></script>
-  <script>
-    Module["onRuntimeInitialized"] = function() {
-      console.log("hsim_bindings initialized");
-
-      const sensorConfigs = [{
-        name: 'rgba_camera',
-        resolution: [480, 640]
-      }];
-
-      const agentConfig = {
-        height: 1.5,
-        radius: 0.1,
-        mass: 32.0,
-        linearAcceleration: 20.0,
-        angularAcceleration: 4*Math.PI,
-        linearFriction: 0.5,
-        angularFriction: 1.0,
-        coefficientOfRestitution: 0.0,
-        sensorSpecifications: sensorConfigs
-      };
-
-      const startState = {
-        position: [-1.2676633596420288, 0.2047852873802185, 12.595427513122559],
-        rotation: [0, 0.4536385088584658, 0, 0.8911857849408661]
-      };
-
-      const goal = {
-        position: [2.2896811962127686, 0.11950381100177765, 16.97636604309082]
-      };
-
-      const episode = {
-        startState: startState,
-        goal: goal
-      };
-
-      let sceneConfig = new Module.SceneConfiguration();
-      sceneConfig.id = "skokloster-castle.glb";
-      let config = new Module.SimulatorConfiguration();
-      config.scene = sceneConfig;
-
-      const simenv = new SimEnv(config, episode, 0);
-      const agent = simenv.addAgent(agentConfig);
-      const task = new NavigateTask(simenv, {
-        canvas: document.getElementById('canvas2d'),
-        radar: document.getElementById('radar'),
-        status: document.getElementById('status')
-      });
-      task.init();
-      task.reset();
-
-      window.config = config;
-      window.sim = simenv;
-    };
-  </script>
 </body>
-
 </html>

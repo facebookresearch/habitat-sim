@@ -28,10 +28,12 @@ class PTexMeshDrawable : public Drawable {
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
                     Magnum::SceneGraph::Camera3D& camera) override;
 
-  Magnum::GL::Texture2D& tex_;
-  Magnum::GL::BufferTexture& adjTex_;
+  Magnum::GL::Texture2D& atlasTexture_;
+  Magnum::GL::BufferTexture& adjFacesBufferTexture_;
   uint32_t tileSize_;
   float exposure_;
+  float gamma_;
+  float saturation_;
 };
 
 }  // namespace gfx

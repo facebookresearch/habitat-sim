@@ -53,16 +53,14 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
   if (!hasRenderTarget())
     return false;
 
-  renderTarget().renderEnter();
+  drawObservation(sim);
+  readObservation(obs);
 
-  // Make sure we have memory
-  if (buffer_ == nullptr) {
-    // TODO: check if our sensor was resized and resize our buffer if needed
-    ObservationSpace space;
-    getObservationSpace(space);
-    buffer_ = core::Buffer::create(space.shape, space.dataType);
-  }
-  obs.buffer = buffer_;
+  return true;
+}
+
+void PinholeCamera::drawObservation(gfx::Simulator& sim) {
+  renderTarget().renderEnter();
 
   gfx::Renderer::ptr renderer = sim.getRenderer();
   if (spec_->sensorType == SensorType::SEMANTIC) {
@@ -72,6 +70,19 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
     // SensorType is DEPTH or any other type
     renderer->draw(*this, sim.getActiveSceneGraph());
   }
+
+  renderTarget().renderExit();
+}
+
+void PinholeCamera::readObservation(Observation& obs) {
+  // Make sure we have memory
+  if (buffer_ == nullptr) {
+    // TODO: check if our sensor was resized and resize our buffer if needed
+    ObservationSpace space;
+    getObservationSpace(space);
+    buffer_ = core::Buffer::create(space.shape, space.dataType);
+  }
+  obs.buffer = buffer_;
 
   // TODO: have different classes for the different types of sensors
   // TODO: do we need to flip axis?
@@ -88,8 +99,15 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
         Magnum::PixelFormat::RGBA8Unorm, renderTarget().framebufferSize(),
         obs.buffer->data});
   }
+}
 
-  renderTarget().renderExit();
+bool PinholeCamera::displayObservation(gfx::Simulator& sim) {
+  if (!hasRenderTarget()) {
+    return false;
+  }
+
+  drawObservation(sim);
+  renderTarget().blitRgbaToDefault();
 
   return true;
 }

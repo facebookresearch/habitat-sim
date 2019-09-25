@@ -25,15 +25,14 @@
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
-#include "esp/gfx/PrimitiveIDTexturedDrawable.h"
-#include "esp/gfx/PrimitiveIDTexturedShader.h"
+#include "esp/gfx/PrimitiveIDDrawable.h"
+#include "esp/gfx/PrimitiveIDShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneGraph.h"
 
 #include "CollisionMeshData.h"
-#include "FRLInstanceMeshData.h"
 #include "GenericInstanceMeshData.h"
 #include "GltfMeshData.h"
 #include "MeshData.h"
@@ -66,8 +65,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
       LOG(ERROR) << "Cannot load from file " << info.filepath;
       meshSuccess = false;
     } else {
-      if (info.type == AssetType::FRL_INSTANCE_MESH ||
-          info.type == AssetType::INSTANCE_MESH) {
+      if (info.type == AssetType::INSTANCE_MESH) {
         meshSuccess = loadInstanceMeshData(info, parent, drawables);
       } else if (info.type == AssetType::FRL_PTEX_MESH) {
         meshSuccess = loadPTexMeshData(info, parent, drawables);
@@ -135,7 +133,11 @@ bool ResourceManager::loadScene(
     _physicsManager.reset(new physics::BulletPhysicsManager(this));
     defaultToNoneSimulator = false;
 #else
-    LOG(ERROR) << "trying to use BULLET engine, but not installed";
+    LOG(WARNING)
+        << ":\n---\nPhysics was enabled and Bullet physics engine was "
+           "specified, but the project is built without Bullet support. "
+           "Objects added to the scene will be restricted to kinematic updates "
+           "only. Reinstall with --bullet to enable Bullet dynamics.\n---";
 #endif
   }
 
@@ -185,16 +187,8 @@ bool ResourceManager::loadScene(
     //! Collect collision mesh group
     std::vector<CollisionMeshData> meshGroup;
     for (int mesh_i = start; mesh_i <= end; mesh_i++) {
-      // FRL Quad Mesh
-      if (info.type == AssetType::FRL_INSTANCE_MESH) {
-        FRLInstanceMeshData* frlMeshData =
-            dynamic_cast<FRLInstanceMeshData*>(meshes_[mesh_i].get());
-        CollisionMeshData& meshData = frlMeshData->getCollisionMeshData();
-        meshGroup.push_back(meshData);
-      }
-
       // PLY Instance mesh
-      else if (info.type == AssetType::INSTANCE_MESH) {
+      if (info.type == AssetType::INSTANCE_MESH) {
         GenericInstanceMeshData* insMeshData =
             dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
         CollisionMeshData& meshData = insMeshData->getCollisionMeshData();
@@ -219,7 +213,7 @@ bool ResourceManager::loadScene(
 
     //! Initialize collision mesh
     bool sceneSuccess = _physicsManager->addScene(
-        info, physicsSceneLibrary_.at(info.filepath), meshGroup);
+        physicsSceneLibrary_.at(info.filepath), meshGroup);
     if (!sceneSuccess) {
       return false;
     }
@@ -361,9 +355,9 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
         manager.loadAndInstantiate("AnySceneImporter");
     manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
     manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+    importer->openFile(renderMeshinfo.filepath);
     for (auto componentID : magnumMeshDict_[filename]) {
-      addComponent(*importer, renderMeshinfo, meshMetaData, newNode, drawables,
-                   componentID);
+      addComponent(*importer, meshMetaData, newNode, drawables, componentID);
     }
   }
 
@@ -491,17 +485,16 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
 
   if (objPhysicsConfig.HasMember("render mesh")) {
     if (objPhysicsConfig["render mesh"].IsString()) {
-      renderMeshFilename = propertiesFileDirectory;
-      renderMeshFilename.append("/").append(
-          objPhysicsConfig["render mesh"].GetString());
+      renderMeshFilename = Cr::Utility::Directory::join(
+          propertiesFileDirectory, objPhysicsConfig["render mesh"].GetString());
     } else {
       LOG(ERROR) << " Invalid value in object physics config - render mesh";
     }
   }
   if (objPhysicsConfig.HasMember("collision mesh")) {
     if (objPhysicsConfig["collision mesh"].IsString()) {
-      collisionMeshFilename = propertiesFileDirectory;
-      collisionMeshFilename.append("/").append(
+      collisionMeshFilename = Cr::Utility::Directory::join(
+          propertiesFileDirectory,
           objPhysicsConfig["collision mesh"].GetString());
     } else {
       LOG(ERROR) << " Invalid value in object physics config - collision mesh";
@@ -656,7 +649,7 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
     switch (type) {
       case INSTANCE_MESH_SHADER: {
         shaderPrograms_[INSTANCE_MESH_SHADER] =
-            std::make_shared<gfx::PrimitiveIDTexturedShader>();
+            std::make_shared<gfx::PrimitiveIDShader>();
       } break;
 
 #ifdef ESP_BUILD_PTEX_SUPPORT
@@ -753,9 +746,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
   // and add it to the shaderPrograms_
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
-    if (info.type == AssetType::FRL_INSTANCE_MESH) {
-      meshes_.emplace_back(std::make_unique<FRLInstanceMeshData>());
-    } else if (info.type == AssetType::INSTANCE_MESH) {
+    if (info.type == AssetType::INSTANCE_MESH) {
       meshes_.emplace_back(std::make_unique<GenericInstanceMeshData>());
     }
     int index = meshes_.size() - 1;
@@ -781,7 +772,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
           dynamic_cast<GenericInstanceMeshData*>(meshes_[iMesh].get());
       scene::SceneNode& node = parent->createChild();
       createDrawable(INSTANCE_MESH_SHADER, *instanceMeshData->getMagnumGLMesh(),
-                     node, drawables, instanceMeshData->getSemanticTexture());
+                     node, drawables);
     }
   }
 
@@ -816,7 +807,6 @@ bool ResourceManager::loadGeneralMeshData(
       LOG(ERROR) << "Cannot open file " << filename;
       return false;
     }
-
     // if this is a new file, load it and add it to the dictionary
     loadTextures(*importer, &metaData);
     loadMaterials(*importer, &metaData);
@@ -872,11 +862,20 @@ bool ResourceManager::loadGeneralMeshData(
       }
     }  // forceReload
 
+    if (fileIsLoaded) {
+      // if the file was loaded, the importer didn't open the file, so open it
+      // before adding components
+      if (!importer->openFile(filename)) {
+        LOG(ERROR) << "Cannot open file " << filename;
+        return false;
+      }
+    }
+
     const quatf transform = info.frame.rotationFrameToWorld();
     newNode.setRotation(Magnum::Quaternion(transform));
     // Recursively add all children
     for (auto sceneDataID : magnumMeshDict_[filename]) {
-      addComponent(*importer, info, metaData, newNode, drawables, sceneDataID);
+      addComponent(*importer, metaData, newNode, drawables, sceneDataID);
     }
     return true;
   }
@@ -997,12 +996,10 @@ void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
 //! TODO (JH): decouple importer part, so that objects can be
 //! instantiated any time after initial loading
 void ResourceManager::addComponent(Importer& importer,
-                                   const AssetInfo& info,
                                    const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
                                    DrawableGroup* drawables,
                                    int componentID) {
-  importer.openFile(info.filepath);
   std::unique_ptr<Magnum::Trade::ObjectData3D> objectData =
       importer.object3D(componentID);
   if (!objectData) {
@@ -1030,7 +1027,7 @@ void ResourceManager::addComponent(Importer& importer,
 
   // Recursively add children
   for (auto childObjectID : objectData->children()) {
-    addComponent(importer, info, metaData, node, drawables, childObjectID);
+    addComponent(importer, metaData, node, drawables, childObjectID);
   }
 }
 
@@ -1093,10 +1090,9 @@ gfx::Drawable& ResourceManager::createDrawable(
     // NOTE: this is a runtime error and will never return
     return *drawable;
   } else if (shaderType == INSTANCE_MESH_SHADER) {
-    auto* shader = static_cast<gfx::PrimitiveIDTexturedShader*>(
-        getShaderProgram(shaderType));
-    drawable = new gfx::PrimitiveIDTexturedDrawable{node, *shader, mesh, group,
-                                                    texture};
+    auto* shader =
+        static_cast<gfx::PrimitiveIDShader*>(getShaderProgram(shaderType));
+    drawable = new gfx::PrimitiveIDDrawable{node, *shader, mesh, group};
   } else {  // all other shaders use GenericShader
     auto* shader =
         static_cast<Magnum::Shaders::Flat3D*>(getShaderProgram(shaderType));

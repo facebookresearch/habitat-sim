@@ -1,0 +1,55 @@
+{
+  "name": "habitat-sim",
+  "version": "0.1.2",
+  "description": "A high performance simulator for training embodied agents",
+  "devDependencies": {
+    "@babel/core": "^7.6.0",
+    "@babel/plugin-proposal-class-properties": "^7.5.5",
+    "@babel/preset-env": "^7.6.0",
+    "babel-eslint": "^10.0.3",
+    "babel-loader": "^8.0.6",
+    "css-loader": "^3.2.0",
+    "eslint": "^6.4.0",
+    "eslint-config-prettier": "^6.3.0",
+    "eslint-loader": "^3.0.0",
+    "eslint-plugin-html": "^6.0.0",
+    "eslint-plugin-prettier": "^3.1.0",
+    "html-webpack-plugin": "^3.2.0",
+    "minimist": "^1.2.0",
+    "prettier": "^1.18.2",
+    "style-loader": "^1.0.0",
+    "webpack": "^4.40.2",
+    "webpack-cli": "^3.3.9"
+  },
+  "scripts": {
+    "test": "node ./src/esp/bindings_js/tests/**/*_test.js",
+    "format": "prettier --trailing-comma es5 --single-quote './src/esp/bindings_js/**/*.js'",
+    "build": "webpack --config ./src/esp/bindings_js/webpack.config.js",
+    "lint": "eslint --ext .html,.js ./src/esp/bindings_js",
+    "lint-fix": "eslint --ext .html,.js --fix ./src/esp/bindings_js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebookresearch/habitat-sim.git"
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-env"
+    ],
+    "plugins": [
+      "@babel/plugin-proposal-class-properties"
+    ]
+  },
+  "keywords": [
+    "embodied",
+    "sim",
+    "ai",
+    "agents"
+  ],
+  "author": "FAIR A-STAR",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/facebookresearch/habitat-sim/issues"
+  },
+  "homepage": "https://github.com/facebookresearch/habitat-sim#readme"
+}

@@ -4,6 +4,8 @@
 
 #pragma once
 
+/** @file */
+
 #include <map>
 #include <memory>
 #include <ostream>
@@ -30,14 +32,26 @@ typedef Matrix<uint32_t, 4, 1> Vector4ui;
 typedef Matrix<uint64_t, 4, 1> Vector4ul;
 
 //! Eigen JSON string format specification
-static const IOFormat
-    kJsonFormat(StreamPrecision, DontAlignCols, ",", ",", "", "", "[", "]");
+static const IOFormat kJsonFormat(StreamPrecision,
+                                  DontAlignCols,
+                                  ",",   // coef separator
+                                  ",",   // row separator
+                                  "",    // row prefix
+                                  "",    // col prefix
+                                  "[",   // mat prefix
+                                  "]");  // mat suffix
 
 //! Write Eigen matrix types into ostream in JSON string format
 template <typename T, int numRows, int numCols>
 std::ostream& operator<<(std::ostream& os,
                          const Matrix<T, numRows, numCols>& matrix) {
   return os << matrix.format(kJsonFormat);
+}
+
+//! Write Eigen map into ostream in JSON string format
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const Map<T>& m) {
+  return os << m.format(kJsonFormat);
 }
 
 }  // namespace Eigen
@@ -57,6 +71,7 @@ std::ostream& operator<<(std::ostream& os,
 // EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix4d)
 // EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector4uc)
 
+//! core simulator namespace
 namespace esp {
 
 // basic types
@@ -124,8 +139,11 @@ inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
   ESP_SMART_POINTERS(T)                         \
   ESP_SHARED_PTR_PIMPL()
 
-static const int ID_UNDEFINED = -1;
-static const double PHYSICS_ATTR_UNDEFINED = -1.0;
+/** @brief Returned on failed creation or lookup of an ID. */
+constexpr int ID_UNDEFINED = -1;
+
+/** @brief Undefined or invalid attribute in physics property query. */
+constexpr double PHYSICS_ATTR_UNDEFINED = -1.0;
 
 static const double NO_TIME = 0.0;
 

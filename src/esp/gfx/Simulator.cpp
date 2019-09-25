@@ -131,8 +131,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     }
 
     // instance meshes and suncg houses contain their semantic annotations
-    if (sceneInfo.type == assets::AssetType::FRL_INSTANCE_MESH ||
-        sceneInfo.type == assets::AssetType::SUNCG_SCENE ||
+    if (sceneInfo.type == assets::AssetType::SUNCG_SCENE ||
         sceneInfo.type == assets::AssetType::INSTANCE_MESH) {
       activeSemanticSceneID_ = activeSceneID_;
     }
@@ -231,10 +230,11 @@ std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
 }
 
 // remove object objectID instance in sceneID
-void Simulator::removeObject(const int objectID, const int sceneID) {
+int Simulator::removeObject(const int objectID, const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
-    physicsManager_->removeObject(objectID);
+    return physicsManager_->removeObject(objectID);
   }
+  return ID_UNDEFINED;
 }
 
 // apply forces and torques to objects

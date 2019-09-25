@@ -24,7 +24,6 @@ PhysicsManager::~PhysicsManager() {
 }
 
 bool PhysicsManager::addScene(
-    const assets::AssetInfo& info,
     const assets::PhysicsSceneAttributes& physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
@@ -32,15 +31,6 @@ bool PhysicsManager::addScene(
     if (!isMeshPrimitiveValid(meshData)) {
       return false;
     }
-  }
-
-  switch (info.type) {
-    case assets::AssetType::INSTANCE_MESH:
-      break;  // ._semantic.ply mesh data
-    case assets::AssetType::FRL_INSTANCE_MESH:
-      break;  // FRL mesh
-    default:
-      break;  // GLB mesh data
   }
 
   //! Initialize scene
@@ -61,7 +51,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
       resourceManager_->getPhysicsObjectAttributes(configFile);
   for (const assets::CollisionMeshData& meshData : meshGroup) {
     if (!isMeshPrimitiveValid(meshData)) {
-      return false;
+      return ID_UNDEFINED;
     }
   }
 
@@ -69,7 +59,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
   int nextObjectID_ = makeRigidObject(meshGroup, physicsObjectAttributes);
   if (nextObjectID_ < 0) {
     LOG(ERROR) << "makeRigidObject unsuccessful";
-    return -1;
+    return ID_UNDEFINED;
   }
 
   //! Draw object via resource manager
@@ -91,7 +81,7 @@ int PhysicsManager::addObject(const std::string& configFile,
 int PhysicsManager::removeObject(const int physObjectID) {
   if (existingObjects_.count(physObjectID) == 0) {
     LOG(ERROR) << "Failed to remove object: no object with ID " << physObjectID;
-    return -1;
+    return ID_UNDEFINED;
   }
   existingObjects_.at(physObjectID)->removeObject();
   delete existingObjects_.at(physObjectID);
@@ -113,7 +103,7 @@ MotionType PhysicsManager::getObjectMotionType(const int physObjectID) {
   if (existingObjects_.count(physObjectID) > 0) {
     return existingObjects_[physObjectID]->getMotionType();
   }
-  return ERROR_MOTIONTYPE;
+  return MotionType::ERROR_MOTIONTYPE;
 }
 
 int PhysicsManager::allocateObjectID() {
@@ -149,7 +139,7 @@ int PhysicsManager::makeRigidObject(
     delete existingObjects_.at(newObjectID);  // TODO: check this. Could be
                                               // null?
     existingObjects_.erase(newObjectID);
-    return -1;
+    return ID_UNDEFINED;
   }
   return newObjectID;
 }
@@ -173,10 +163,6 @@ Magnum::Vector3 PhysicsManager::getGravity() {
   return Magnum::Vector3(0);
 }
 
-void PhysicsManager::stepPhysics() {
-  stepPhysics(0.0);
-}
-
 void PhysicsManager::stepPhysics(double dt) {
   // We don't step uninitialized physics sim...
   if (!initialized_) {
@@ -193,9 +179,10 @@ void PhysicsManager::stepPhysics(double dt) {
   // handle in-between step times? Ideally dt is a multiple of
   // sceneMetaData_.timestep
   double targetTime = worldTime_ + dt;
-  while (worldTime_ < targetTime)  // per fixed-step operations can be added
-                                   // here
+  while (worldTime_ < targetTime) {
+    // per fixed-step operations can be added here
     worldTime_ += fixedTimeStep_;
+  }
 }
 
 //! Profile function. In BulletPhysics stationery objects are
@@ -299,6 +286,15 @@ void PhysicsManager::rotate(const int physObjectID,
     existingObjects_[physObjectID]->rotate(angleInRad, normalizedAxis);
   }
 }
+
+void PhysicsManager::rotateLocal(const int physObjectID,
+                                 const Magnum::Rad angleInRad,
+                                 const Magnum::Vector3& normalizedAxis) {
+  if (existingObjects_.count(physObjectID) > 0) {
+    existingObjects_[physObjectID]->rotateLocal(angleInRad, normalizedAxis);
+  }
+}
+
 void PhysicsManager::rotateX(const int physObjectID,
                              const Magnum::Rad angleInRad) {
   if (existingObjects_.count(physObjectID) > 0) {
@@ -374,11 +370,11 @@ void PhysicsManager::setCOM(const int physObjectID,
     existingObjects_[physObjectID]->setCOM(COM);
   }
 }
-void PhysicsManager::setInertia(const int physObjectID,
-                                const Magnum::Vector3& inertia) {
+void PhysicsManager::setInertiaVector(const int physObjectID,
+                                      const Magnum::Vector3& inertia) {
   // TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
-    existingObjects_[physObjectID]->setInertia(inertia);
+    existingObjects_[physObjectID]->setInertiaVector(inertia);
   }
 }
 void PhysicsManager::setScale(const int physObjectID, const double scale) {

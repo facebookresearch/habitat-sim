@@ -8,6 +8,8 @@
 #include "esp/geo/CoordinateFrame.h"
 
 namespace esp {
+
+//! Asset management namespace
 namespace assets {
 
 //! Supported Asset types
@@ -18,7 +20,7 @@ enum class AssetType {
   MP3D_MESH,
   INSTANCE_MESH,
   FRL_PTEX_MESH,
-  FRL_INSTANCE_MESH,
+  UNKNOWN2,
   NAVMESH,
 };
 

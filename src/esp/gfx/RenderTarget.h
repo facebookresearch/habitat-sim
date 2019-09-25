@@ -95,6 +95,12 @@ class RenderTarget {
    */
   void readFrameObjectId(const Magnum::MutableImageView2D& view);
 
+  /**
+   * @brief Blits the rgba buffer from internal FBO to default frame buffer
+   * which in case of EmscriptenApplication will be a canvas element.
+   */
+  void blitRgbaToDefault();
+
   // @brief Delete copy Constructor
   RenderTarget(const RenderTarget&) = delete;
   // @brief Delete copy operator
