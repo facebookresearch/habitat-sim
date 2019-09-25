@@ -351,7 +351,11 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
                  "match it from the ptex mesh.",
                  {});
 
-  return subMeshes;
+  LOG(INFO) << "The number of quads: " << totalFaces << ", which equals to "
+            << totalFaces * 2
+            << "triangles.";
+
+      return subMeshes;
 }
 
 void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData& mesh,
