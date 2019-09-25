@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 from io import BytesIO
 from typing import List, Tuple
 from urllib.request import urlopen
@@ -12,6 +13,34 @@ from zipfile import ZipFile
 import magnum as mn
 import numpy as np
 import quaternion
+
+
+def gen_minimal_phys_prop_files(path_to_dir, file_types={".glb"}):
+    r"""Scans a directory for files of a desired type and creates minimal <name>.phys_properties.json files for each.
+
+    :param path_to_dir: The directory to scan and create files in
+    :param file_types: A list of file endings to create property files for.
+    """
+    if not os.path.exists(path_to_dir):
+        print(
+            "gen_minimal_phys_prop_files error! Directory does not exist: "
+            + str(path_to_dir)
+        )
+        return
+
+    if len(file_types) == 0:
+        print("gen_minimal_phys_prop_files error! No file types specified.")
+        return
+
+    for file in os.listdir(path_to_dir):
+        for file_type in file_types:
+            if file.endswith(file_type):
+                filename = os.path.join(path_to_dir, file)
+                print(filename)
+                f = open(filename[: -len(file_type)] + ".phys_properties.json", "w+")
+                f.write("{\n")
+                f.write('"render mesh": "' + file[: -len(file_type)] + '"' + "\n")
+                f.write("}")
 
 
 def quat_from_coeffs(coeffs: np.ndarray) -> np.quaternion:
