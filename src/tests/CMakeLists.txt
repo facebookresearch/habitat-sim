@@ -8,7 +8,6 @@ macro(TEST TEST_NAME)
   add_test(${TEST_NAME} ${TEST_NAME})
 endmacro(TEST)
 
-set(SCENE_DATASETS ${CMAKE_CURRENT_SOURCE_DIR}/../../data/scene_datasets)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
                ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
