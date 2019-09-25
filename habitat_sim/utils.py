@@ -39,7 +39,7 @@ def gen_minimal_phys_prop_files(path_to_dir, file_types={".glb"}):
                 print(filename)
                 f = open(filename[: -len(file_type)] + ".phys_properties.json", "w+")
                 f.write("{\n")
-                f.write('"render mesh": "' + file[: -len(file_type)] + '"' + "\n")
+                f.write('"render mesh": "' + file + '"' + "\n")
                 f.write("}")
 
 
