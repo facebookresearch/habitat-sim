@@ -24,3 +24,5 @@ export const defaultEpisode = {
 };
 
 export const defaultResolution = { height: 480, width: 640 };
+
+export const defaultScene = "skokloster-castle.glb";
