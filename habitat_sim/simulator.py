@@ -13,10 +13,10 @@ import numpy as np
 
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
-from habitat_sim import utils
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower
+from habitat_sim.utils.common import quat_from_angle_axis
 
 torch = None
 
@@ -171,7 +171,7 @@ class Simulator:
             initial_state = AgentState()
             if self.pathfinder.is_loaded:
                 initial_state.position = self.pathfinder.get_random_navigable_point()
-                initial_state.rotation = utils.quat_from_angle_axis(
+                initial_state.rotation = quat_from_angle_axis(
                     np.random.uniform(0, 2.0 * np.pi), np.array([0, 1, 0])
                 )
 

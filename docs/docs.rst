@@ -110,7 +110,7 @@
 
         Not avaliable for all datasets.
 
-.. py:module:: habitat_sim.utils
+.. py:module:: habitat_sim.utils.common
 
     Quaternion Math
     ===============
@@ -130,15 +130,15 @@
 
     -   `colorize_ids()`
 
-.. py:data:: habitat_sim.utils.d3_40_colors_rgb
+.. py:data:: habitat_sim.utils.common.d3_40_colors_rgb
     :summary: Color map for semantic ID rendering.
 
-.. py:data:: habitat_sim.utils.d3_40_colors_hex
+.. py:data:: habitat_sim.utils.common.d3_40_colors_hex
     :summary: Color map for semantic ID rendering.
 
     Same as `d3_40_colors_rgb`, but in a hexadecimal representation.
 
-    .. include:: ../habitat_sim/utils.py
+    .. include:: ../habitat_sim/utils/common.py
         :code: py
         :start-after: # [d3_40_colors_hex]
         :end-before: # [/d3_40_colors_hex]

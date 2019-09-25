@@ -10,7 +10,7 @@ import numpy as np
 import quaternion
 
 import habitat_sim
-import habitat_sim.utils
+from habitat_sim.utils.common import quat_from_angle_axis, quat_rotate_vector
 
 try:
     import pprint
@@ -129,10 +129,8 @@ def main():
             np.array(scene_node.absolute_transformation().rotation_scaling())
             @ habitat_sim.geo.FRONT
         )
-        rotation = habitat_sim.utils.quat_from_angle_axis(
-            np.deg2rad(strafe_angle), habitat_sim.geo.UP
-        )
-        move_ax = habitat_sim.utils.quat_rotate_vector(rotation, forward_ax)
+        rotation = quat_from_angle_axis(np.deg2rad(strafe_angle), habitat_sim.geo.UP)
+        move_ax = quat_rotate_vector(rotation, forward_ax)
 
         scene_node.translate_local(move_ax * forward_amount)
 
