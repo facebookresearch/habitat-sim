@@ -43,7 +43,13 @@ else()
   # variable is set by include(CTest) as an option(). In CMake 3.13+ it should
   # be enough to do just set(BUILD_TESTING OFF) to avoid the option()
   # overriding it, but https://cmake.org/cmake/help/latest/policy/CMP0077.html.
-  option(BUILD_TESTING "ugh" OFF)
+  option(BUILD_TESTING "" OFF)
+  # glog has gflags as an optional dependency, which we don't supply. In some
+  # cases it'll result in system libs being picked up, leading to errors like
+  # described in https://github.com/facebookresearch/habitat-sim/issues/205 or
+  # https://github.com/facebookresearch/habitat-sim/issues/179. We don't need
+  # anything from gflags, so just disable them completely.
+  set(WITH_GFLAGS OFF CACHE BOOL "" FORCE)
   add_subdirectory("${DEPS_DIR}/glog")
 endif()
 
