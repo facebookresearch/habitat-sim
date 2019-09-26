@@ -365,6 +365,9 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
     for (auto componentID : magnumMeshDict_[filename]) {
       addComponent(*importer, meshMetaData, newNode, drawables, componentID);
     }
+    // compute the full BB hierarchy for the new tree.
+    parent->computeCumulativeBB();
+    Cr::Utility::Debug() << "New object BB: " << parent->cumulativeBB_;
   }
 
   return objectID;
@@ -1038,6 +1041,11 @@ void ResourceManager::addComponent(Importer& importer,
             ->material();
     addMeshToDrawables(metaData, node, drawables, componentID, meshIDLocal,
                        materialIDLocal);
+
+    // compute the bounding box for the mesh we are adding
+    BaseMesh* mesh = meshes_[meshID].get();
+    node.meshBB_ = computeMeshBB(mesh);
+    Cr::Utility::Debug() << "Node mesh bounding box: " << node.meshBB_;
   }
 
   // Recursively add children
