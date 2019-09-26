@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "esp/assets/CollisionMeshData.h"
 #include "esp/core/esp.h"
 
 // forward declarations
@@ -121,6 +122,10 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
              const float* bmin,
              const float* bmax);
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
+
+  //! build conversion from newer mesh format @ref esp::assets::BaseMesh.
+  bool build(const NavMeshSettings& bs,
+             const std::vector<esp::assets::CollisionMeshData>& meshes);
 
   vec3f getRandomNavigablePoint();
 

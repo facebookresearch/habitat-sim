@@ -7,6 +7,7 @@
 #include "Viewer.h"
 
 #include <Corrade/Utility/Arguments.h>
+#include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
@@ -117,6 +118,14 @@ Viewer::Viewer(const Arguments& arguments)
 
     const vec3f position = pathfinder_->getRandomNavigablePoint();
     agentBodyNode_->setTranslation(Vector3(position));
+  } else {
+    LOG(INFO) << "trying to build navmesh from " << file;
+    LOG(INFO) << "available collision meshes: ";
+    for (int i = 0; i < resourceManager_.getNumLibraryObjects(); i++)
+      LOG(INFO) << resourceManager_.getObjectConfig(i);
+
+    // pathfinder_->build(nav::NavMeshSettings(),
+    // resourceManager_.getCollisionMesh(0));
   }
 
   // connect controls to navmesh if loaded
@@ -265,13 +274,56 @@ void Viewer::removePrimitiveDrawable(int index) {
 
 void Viewer::highlightNavmeshIsland() {
   const vec3f position = pathfinder_->getRandomNavigablePoint();
+  // vec3f position(-5.7589, 0.120596, 9.3611);
+  // vec3f position(1.44672,0,-3.26787);
   // float rad = pathfinder_->islandRadius(position);
   float rad = pathfinder_->distanceToClosestObstacle(position);
+  // LOG(INFO) << "Location: " << position << ", radius: " << rad;
   // addPrimitiveDrawable(esp::assets::ResourceManager::AvailablePrimitives::WIRE_CYLINDER);
   addPrimitiveDrawable(
       esp::assets::ResourceManager::AvailablePrimitives::SOLID_SPHERE);
   primitiveNodes_.back()->setTranslation(Magnum::Vector3(position));
   primitiveNodes_.back()->setScaling(Magnum::Vector3{rad, 0.2, rad});
+  /*
+  int numObjects = resourceManager_.getNumLibraryObjects();
+  if (!numObjects) {
+    return;
+  }
+  std::string configFile =
+  resourceManager_.getObjectConfig(sequentialItemSpawnID_); auto& drawables =
+  sceneGraph_->getDrawables(); assets::PhysicsObjectAttributes poa =
+      resourceManager_.getPhysicsObjectAttributes(configFile);
+  int physObjectID = physicsManager_->addObject(configFile, &drawables);
+  Magnum::Range3D BB = physicsManager_->getObjectLocalBoundingBox(physObjectID);
+  Magnum::Vector3 offset(0.0, BB.sizeY(), 0.0);
+  physicsManager_->setTranslation(physObjectID, Magnum::Vector3(position));
+  objectIDs_.push_back(physObjectID);
+  sequentialItemSpawnID_ = (sequentialItemSpawnID_+1)%numObjects;
+  */
+}
+
+void Viewer::incrementallyAddObjects() {
+  // const vec3f position = pathfinder_->getRandomNavigablePoint();
+  // vec3f position(-5.7589, 0.120596, 9.3611);
+  vec3f position(1.44672, 0.03, -3.26787);
+
+  int numObjects = resourceManager_.getNumLibraryObjects();
+  if (!numObjects) {
+    return;
+  }
+  std::string configFile =
+      resourceManager_.getObjectConfig(sequentialItemSpawnID_);
+  auto& drawables = sceneGraph_->getDrawables();
+  assets::PhysicsObjectAttributes poa =
+      resourceManager_.getPhysicsObjectAttributes(configFile);
+  int physObjectID = physicsManager_->addObject(configFile, &drawables);
+  LOG(INFO) << "Added object: " << configFile;
+  Magnum::Range3D BB = physicsManager_->getObjectLocalBoundingBox(physObjectID);
+  Magnum::Vector3 offset(0.0, BB.sizeY(), 0.0);
+  physicsManager_->setTranslation(physObjectID, Magnum::Vector3(position));
+  Corrade::Utility::Debug() << physicsManager_->getTransformation(physObjectID);
+  objectIDs_.push_back(physObjectID);
+  sequentialItemSpawnID_ = (sequentialItemSpawnID_ + 1) % numObjects;
 }
 
 Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
@@ -470,7 +522,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
 
     case KeyEvent::Key::N: {
-      highlightNavmeshIsland();
+      // highlightNavmeshIsland();
+      incrementallyAddObjects();
     } break;
 
     default:

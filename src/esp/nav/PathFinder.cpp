@@ -17,6 +17,7 @@
 #include <cmath>
 #include <limits>
 
+#include "esp/assets/BaseMesh.h"
 #include "esp/assets/MeshData.h"
 #include "esp/core/esp.h"
 
@@ -571,6 +572,34 @@ bool PathFinder::build(const NavMeshSettings& bs,
   }
 
   const bool success = build(bs, mesh.vbo[0].data(), numVerts, indices,
+                             numIndices / 3, bmin.data(), bmax.data());
+  delete[] indices;
+  return success;
+}
+
+bool PathFinder::build(
+    const NavMeshSettings& bs,
+    const std::vector<esp::assets::CollisionMeshData>& meshes) {
+  LOG(INFO) << "building navmesh from " << meshes.size()
+            << " collision meshes...";
+  const esp::assets::CollisionMeshData& mesh = meshes[0];
+
+  const int numVerts = mesh.positions.size();
+  const int numIndices = mesh.indices.size();
+
+  Magnum::Range3D bb{Magnum::Math::minmax<Magnum::Vector3>(mesh.positions)};
+
+  int* indices = new int[numIndices];
+  for (int i = 0; i < numIndices; i++) {
+    indices[i] = static_cast<int>(mesh.indices[i]);
+  }
+
+  Magnum::Vector3 bbmax = bb.max();
+  Magnum::Vector3 bbmin = bb.min();
+  vec3f bmin(bbmin[0], bbmin[1], bbmin[2]);
+  vec3f bmax(bbmax[0], bbmax[1], bbmax[2]);
+
+  const bool success = build(bs, mesh.positions[0].data(), numVerts, indices,
                              numIndices / 3, bmin.data(), bmax.data());
   delete[] indices;
   return success;

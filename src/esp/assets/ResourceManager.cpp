@@ -6,6 +6,7 @@
 
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/PluginManager/Manager.h>
+#include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
@@ -321,7 +322,6 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
   std::string configDirectory =
       physicsFilename.substr(0, physicsFilename.find_last_of("/"));
   // load the rigid object library metadata (no physics init yet...)
-  // NOTE: expect relative paths to the global config
   if (scenePhysicsConfig.HasMember("rigid object paths")) {
     if (scenePhysicsConfig["rigid object paths"].IsArray()) {
       physicsManagerAttributes.setVecStrings("objectLibraryPaths",
@@ -411,6 +411,11 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
     MeshMetaData meshMetaData = resourceDict_[filename];
     scene::SceneNode& newNode = parent->createChild();
     AssetInfo renderMeshinfo = AssetInfo::fromPath(filename);
+
+    // TODO: remove? testing
+    // const quatf transform = renderMeshinfo.frame.rotationFrameToWorld();
+    // newNode.setRotation(Magnum::Quaternion(transform));
+
     Magnum::PluginManager::Manager<Importer> manager;
     std::unique_ptr<Importer> importer =
         manager.loadAndInstantiate("AnySceneImporter");
@@ -1005,6 +1010,15 @@ void ResourceManager::loadMeshes(Importer& importer,
         gltfMeshData->BB = gltfMeshData->BB.translated(offset);
       }
     }
+
+    esp::vec3f cen(gltfMeshData->BB.center()[0], gltfMeshData->BB.center()[1],
+                   gltfMeshData->BB.center()[2]);
+    esp::vec3f min(gltfMeshData->BB.min()[0], gltfMeshData->BB.min()[1],
+                   gltfMeshData->BB.min()[2]);
+    esp::vec3f max(gltfMeshData->BB.max()[0], gltfMeshData->BB.max()[1],
+                   gltfMeshData->BB.max()[2]);
+    LOG(INFO) << "gltfMeshData->BB: c=" << cen << ", min=" << min
+              << ", max=" << max;
 
     gltfMeshData->uploadBuffersToGPU(false);
   }

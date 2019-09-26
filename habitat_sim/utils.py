@@ -43,6 +43,42 @@ def gen_minimal_phys_prop_files(path_to_dir, file_types={".glb"}):
                 f.write("}")
 
 
+# TODO: deletet this later
+def delete_files_from(
+    directory,
+    filenames=[
+        1467327,
+        1099139,
+        1462893,
+        1073238,
+        1077820,
+        1090615,
+        1072374,
+        1066102,
+        1183841,
+        1072206,
+        1072499,
+        1073047,
+        1073034,
+        1071976,
+        1392932,
+        1643646,
+        1076305,
+        1643775,
+    ],
+):
+    if not os.path.exists(directory):
+        print(
+            "gen_minimal_phys_prop_files error! Directory does not exist: "
+            + str(directory)
+        )
+        return
+    for file in os.listdir(directory):
+        for filename in filenames:
+            if file[: len(str(filename))] == str(filename):
+                os.remove(os.path.join(directory, file))
+
+
 def quat_from_coeffs(coeffs: np.ndarray) -> np.quaternion:
     r"""Creates a quaternion from the coeffs returned by the simulator backend
 

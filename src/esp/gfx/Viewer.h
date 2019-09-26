@@ -63,6 +63,8 @@ class Viewer : public Magnum::Platform::Application {
 
   void highlightNavmeshIsland();
 
+  void incrementallyAddObjects();
+
   Magnum::Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
                                    const Magnum::Vector2i& position);
 
@@ -90,6 +92,7 @@ class Viewer : public Magnum::Platform::Application {
 
   bool enablePhysics_;
   std::vector<int> objectIDs_;
+  int sequentialItemSpawnID_ = 0;
 
   Magnum::Timeline timeline_;
 };

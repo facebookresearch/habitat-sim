@@ -177,6 +177,13 @@ class PhysicsManager {
    */
   MotionType getObjectMotionType(const int physObjectID);
 
+  /** @brief Get the local bounding box of an object.
+   * @param  physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return The object's bounding box or an empty range.
+   */
+  Magnum::Range3D getObjectLocalBoundingBox(const int physObjectID);
+
   //============ Simulator functions =============
 
   /** @brief Step the physical world forward in time. Time may only advance in
