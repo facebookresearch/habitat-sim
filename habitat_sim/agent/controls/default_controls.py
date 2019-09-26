@@ -5,10 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import magnum as mn
-import numpy as np
 
 import habitat_sim.bindings as hsim
-from habitat_sim import utils
 from habitat_sim.agent.controls.controls import ActuationSpec, SceneNodeControl
 from habitat_sim.registry import registry
 
