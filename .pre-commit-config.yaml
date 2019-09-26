@@ -19,6 +19,7 @@ repos:
     hooks:
     -   id: isort
         language_version: python3.6
+        exclude: docs/
         additional_dependencies: [toml]
 
 -   repo: https://github.com/ambv/black
