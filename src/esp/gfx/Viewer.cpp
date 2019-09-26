@@ -120,18 +120,17 @@ Viewer::Viewer(const Arguments& arguments)
   }
 
   // connect controls to navmesh if loaded
-  /*
   if (pathfinder_->isLoaded()) {
-      controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end)
-  { vec3f currentPosition = pathfinder_->tryStep(start, end); LOG(INFO) <<
-  "position=" << currentPosition.transpose() << " rotation="
-                  << quatf(agentBodyNode_->rotation()).coeffs().transpose();
-        LOG(INFO) << "Distance to closest obstacle: "
-                  << pathfinder_->distanceToClosestObstacle(currentPosition);
-        return currentPosition;
-      });
-    }
-    */
+    controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
+      vec3f currentPosition = pathfinder_->tryStep(start, end);
+      LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
+                << quatf(agentBodyNode_->rotation()).coeffs().transpose();
+      LOG(INFO) << "Distance to closest obstacle: "
+                << pathfinder_->distanceToClosestObstacle(currentPosition);
+
+      return currentPosition;
+    });
+  }
 
   renderCamera_->node().setTransformation(
       cameraNode_->absoluteTransformation());
