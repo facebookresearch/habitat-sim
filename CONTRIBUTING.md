@@ -2,18 +2,18 @@
 We want to make contributing to this project as easy and transparent as
 possible.
 
-## Developer workflow
-- Active development should happen on your fork of the repositories
-- Name your PR in a way that unambiguously identifies the feature or fix
-- Follow the contribution guide to ensure code is conformant with conventions and style
+## Developer Workflow
+- Active development should happen on your fork of the repositories.
+- Name your PR in a way that unambiguously identifies the feature or fix.
+- Follow the contribution guide to ensure your code is conformant to the conventions and style.
 - Try to make small, logically independent, self-documenting commits (and reflect this in the commit messages by providing brief rationale/change summary). Feel free to amend and force push changes to your PR if necessary.
-- Encouraging to create draft PRs to gather early feedback
+- We encourage creating draft PRs to gather early feedback.
 - Request reviews from at least one Habitat core team member (if the scope of changes necessitates this, two or more reviewers is recommended)
-- We have adopted squash-and-merge as the policy for incorporating PRs into the master branch.  We encourage more smaller/focused PRs rather than big PRs with many independent changes.  This also enables more velocity by merging PRs into master quickly and reducing the need to rebase due to changes on master.
+- We have adopted squash-and-merge as the policy for incorporating PRs into the master branch.  We encourage more smaller/focused PRs rather than big PRs with many independent changes.  This also enables faster development by merging PRs into master quickly and reducing the need to rebase due to changes on master.
 - While working on a PR, try to religiously keep your fork up-to-date with master by rebasing as necessary.  Note that the above recommendation for smaller and more frequent PRs reduces the burden of rebasing.
-- We expect PR ready for final review only if Continues Integration tests are passing.
-- Recommended: after getting a PR through reviews/feedback and merging into master, delete the branch to de-clutter
-- Reach out to us with questions or suggestions on our Slack channel
+- We expect PR ready for final review only if Continuous Integration tests are passing.
+- Recommended: after getting a PR through reviews/feedback and is merged into master, delete the branch to de-clutter noise.
+- Reach out to us with questions or suggestions on our Slack channel.
 - If you haven't already, complete the Contributor License Agreement ("CLA").
 
 ## Contributor License Agreement ("CLA")
@@ -27,7 +27,7 @@ We use [semantic versioning](https://semver.org/). To prepare a release:
 3. Make sure all tests are passing.
 4. Create a release tag with change log summary using the github release interface (release tag should follow semantic versioning as described above)
 
-Stable version is assigned by Habitat core team based on regularly tested versions
+Stable versions are regularly assigned by Habitat core team after rigorous testing.
 
 ## Issues
 We use [GitHub issues](../../issues) to track public bugs. Please ensure your description is
@@ -41,17 +41,17 @@ clear and has sufficient instructions to be able to reproduce the issue.
   - Use `clang-format` for style enforcement and linting. Install clang-format through `brew install clang-format` on MacOS, or by downloading [binaries or sources](http://releases.llvm.org/download.html) for Ubuntu etc.
 - Python
   - We follow PEP8 and use typing
-  - Use `black` for style enforcement and linting. Install black through pip install black. 
+  - Use `black` for style enforcement and linting. Install black through `pip install black`. 
   
 We also use pre-commit hooks to ensure linting and style enforcement. Install the pre-commit hooks with `pip install pre-commit && pre-commit install`.
 
 ## Documentation
-- Our documentation style is based on Magnum / Corrade and uses a similar build system
-- A good example of the documentation style is in esp::gfx::DepthUnprojection (DepthUnprojection.h)
+- Our documentation style is based on Magnum / Corrade and uses a similar build system.
+- A good example of the documentation style is in esp::gfx::DepthUnprojection (DepthUnprojection.h).
 - Documentation of PRs is highly encouraged!
 
 ## Developer tips
-- Install **ninja** (`sudo apt install ninja-build` on Linux, or `brew install ninja` on MacOS) for significantly faster incremental builds
+- Install **ninja** (`sudo apt install ninja-build` on Linux, or `brew install ninja` on MacOS) for significantly faster incremental builds.
 - Install **ccache** (`sudo apt install ccache` on Linux, or `brew install ccache` on MacOS) for significantly faster clean re-builds and builds with slightly different settings
 
 
