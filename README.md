@@ -223,7 +223,7 @@ This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor
 1. If you are using a virtual/conda environment, make sure to use the same environment throughout the rest of the build
 1. Build using `./build.sh` or `./build.sh --headless` for headless systems (i.e. without an attached display) or if you need multi-gpu support
 1. Test the build as described above (except that the interactive viewer is at `build/utils/viewer/viewer`).
-1. For use with [Habitat-API](https://github.com/facebookresearch/habitat-api) and your own python code, add habitat-sim to your `PYTHONPATH` (not necessary if you used `python setup.py install` instead of `build.sh`). For example modify your `.bashrc` (or `.bash_profile` in MacOS) file by adding the line:
+1. For use with [Habitat-API](https://github.com/facebookresearch/habitat-api) and your own python code, add habitat-sim to your `PYTHONPATH` (not necessary if you used `python setup.py install` instead of `build.sh`). For example modify your `.bashrc` (or `.bash_profile` in macOS) file by adding the line:
    ```bash
    export PYTHONPATH=$PYTHONPATH:/path/to/habitat-sim/
    ```
@@ -245,7 +245,7 @@ To reproduce the benchmark table from above run `examples/benchmark.py --scene /
 
 ## Common issues
 
-- Build is tested on Ubuntu 16.04 with gcc 7.1.0, Fedora 28 with gcc 7.3.1, and MacOS 10.13.6 with Xcode 10 and clang-1000.10.25.5. If you experience compilation issues, please open an issue with the details of your OS and compiler versions.
+- Build is tested on Ubuntu 16.04 with gcc 7.1.0, Fedora 28 with gcc 7.3.1, and macOS 10.13.6 with Xcode 10 and clang-1000.10.25.5. If you experience compilation issues, please open an issue with the details of your OS and compiler versions.
 - If you are running on a remote machine and experience display errors when initializing the simulator, ensure you do not have `DISPLAY` defined in your environment (run `unset DISPLAY` to undefine the variable)
 - If your machine has a custom installation location for the nvidia OpenGL and EGL drivers, you may need to manually provide the `EGL_LIBRARY` path to cmake as follows.  Add `-DEGL_LIBRARY=/usr/lib/x86_64-linux-gnu/nvidia-opengl/libEGL.so` to the `build.sh` command line invoking cmake. When running any executable adjust the environment as follows: `LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/nvidia-opengl:${LD_LIBRARY_PATH} examples/example.py`.
 
@@ -253,7 +253,7 @@ To reproduce the benchmark table from above run `examples/benchmark.py --scene /
 
 We use `clang-format-8` for linting and code style enforcement of c++ code.
 Code style follows the [Google C++ guidelines](https://google.github.io/styleguide/cppguide.html).
-Install `clang-format-8` through `brew install clang-format` on MacOS.  For other systems, `clang-format-8` can be installed via `conda install clangdev -c conda-forge` or by downloading binaries or sources from [releases.llvm.org/download](http://releases.llvm.org/download.html).
+Install `clang-format-8` through `brew install clang-format` on macOS.  For other systems, `clang-format-8` can be installed via `conda install clangdev -c conda-forge` or by downloading binaries or sources from [releases.llvm.org/download](http://releases.llvm.org/download.html).
 For vim integration add to your .vimrc file `map <C-K> :%!clang-format<cr>` and use Ctrl+K to format entire file.
 Integration plugin for [vscode](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format).
 
@@ -269,8 +269,8 @@ Install the pre-commit hooks with `pip install pre-commit && pre-commit install`
 
 ### Development Tips
 
-1. Install `ninja` (`sudo apt install ninja-build` on Linux, or `brew install ninja` on MacOS) for significantly faster incremental builds
-1. Install `ccache` (`sudo apt install ccache` on Linux, or `brew install ccache` on MacOS) for significantly faster clean re-builds and builds with slightly different settings
+1. Install `ninja` (`sudo apt install ninja-build` on Linux, or `brew install ninja` on macOS) for significantly faster incremental builds
+1. Install `ccache` (`sudo apt install ccache` on Linux, or `brew install ccache` on macOS) for significantly faster clean re-builds and builds with slightly different settings
 1. You can skip reinstalling magnum every time by adding the argument of `--skip-install-magnum` to either `build.sh` or `setup.py`.  Note that you will still need to install magnum bindings once.
 1. Arguments to `build.sh` and `setup.py` can be cached between subsequent invocations with the flag `--cache-args` on the _first_ invocation.
 
