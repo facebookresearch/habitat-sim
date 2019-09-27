@@ -519,6 +519,8 @@ void PhysicsManager::toggleBBDraw(int physObjectID, DrawableGroup* drawables) {
       existingObjects_[physObjectID]->BBNode_ =
           &existingObjects_[physObjectID]->createChild();
       existingObjects_[physObjectID]->BBNode_->MagnumObject::setScaling(scale);
+      existingObjects_[physObjectID]->BBNode_->MagnumObject::setTranslation(
+          existingObjects_[physObjectID]->localBB_.center());
       resourceManager_->addPrimitiveToDrawables(
           0, *existingObjects_[physObjectID]->BBNode_, drawables);
     }

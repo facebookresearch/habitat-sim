@@ -25,7 +25,7 @@ SceneNode& SceneNode::createChild() {
   return *node;
 }
 
-//! @brief recursivles compute the cumulative bounding box of this node's tree.
+//! @brief recursively compute the cumulative bounding box of this node's tree.
 const Magnum::Range3D& SceneNode::computeCumulativeBB() {
   // first copy from your precomputed mesh bb
   cumulativeBB_ = Magnum::Range3D(meshBB_);
@@ -36,8 +36,32 @@ const Magnum::Range3D& SceneNode::computeCumulativeBB() {
     // Better way?
     try {
       SceneNode* child_node = static_cast<SceneNode*>(child);
-      cumulativeBB_ =
-          Magnum::Math::join(cumulativeBB_, child_node->computeCumulativeBB());
+      child_node->computeCumulativeBB();
+      std::vector<Magnum::Vector3> corners;
+      corners.push_back(child_node->transformation().transformPoint(
+          child_node->cumulativeBB_.frontBottomLeft()));
+      corners.push_back(child_node->transformation().transformPoint(
+          child_node->cumulativeBB_.frontBottomRight()));
+      corners.push_back(child_node->transformation().transformPoint(
+          child_node->cumulativeBB_.frontTopLeft()));
+      corners.push_back(child_node->transformation().transformPoint(
+          child_node->cumulativeBB_.frontTopRight()));
+
+      corners.push_back(child_node->transformation().transformPoint(
+          child_node->cumulativeBB_.backTopLeft()));
+      corners.push_back(child_node->transformation().transformPoint(
+          child_node->cumulativeBB_.backTopRight()));
+      corners.push_back(child_node->transformation().transformPoint(
+          child_node->cumulativeBB_.backBottomLeft()));
+      corners.push_back(child_node->transformation().transformPoint(
+          child_node->cumulativeBB_.backBottomRight()));
+
+      Corrade::Utility::Debug() << child_node->transformation();
+
+      Magnum::Range3D transformedBB{
+          Magnum::Math::minmax<Magnum::Vector3>(corners)};
+
+      cumulativeBB_ = Magnum::Math::join(cumulativeBB_, transformedBB);
     } catch (...) {
       // TODO: need a warning here?
     }
