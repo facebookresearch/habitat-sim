@@ -5,6 +5,7 @@
 #pragma once
 
 #include <Corrade/Containers/Containers.h>
+#include <Magnum/Math/Range.h>
 #include "esp/core/esp.h"
 #include "esp/gfx/magnum.h"
 
@@ -52,6 +53,12 @@ class SceneNode : public MagnumObject {
   Magnum::Vector3 absoluteTranslation() const {
     return this->absoluteTransformation().translation();
   }
+
+  Magnum::Range3D meshBB_;
+
+  Magnum::Range3D cumulativeBB_;
+
+  const Magnum::Range3D& computeCumulativeBB();
 
  protected:
   // DO not make the following constructor public!

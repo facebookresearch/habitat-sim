@@ -72,8 +72,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
   assets::PhysicsObjectAttributes physicsObjectAttributes =
       resourceManager_->getPhysicsObjectAttributes(configFile);
 
-  Magnum::Range3D BB;
-  LOG(INFO) << "generating object bounding box";
+  /*Magnum::Range3D BB;
   for (const assets::CollisionMeshData& meshData : meshGroup) {
     if (!isMeshPrimitiveValid(meshData)) {
       LOG(WARNING) << "skipping this mesh...";
@@ -91,11 +90,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
     LOG(INFO) << "mesh BB: c=" << cen << ", min=" << min << ", max=" << max;
 
     BB = join(BB, collisionMeshBB);
-  }
-  esp::vec3f cen(BB.center()[0], BB.center()[1], BB.center()[2]);
-  esp::vec3f min(BB.min()[0], BB.min()[1], BB.min()[2]);
-  esp::vec3f max(BB.max()[0], BB.max()[1], BB.max()[2]);
-  LOG(INFO) << "final BB: c=" << cen << ", min=" << min << ", max=" << max;
+  }*/
 
   //! Instantiate with mesh pointer
   int nextObjectID_ = makeRigidObject(meshGroup, physicsObjectAttributes);
@@ -109,10 +104,8 @@ int PhysicsManager::addObject(const int objectLibIndex,
   resourceManager_->loadObject(configFile, existingObjects_.at(nextObjectID_),
                                drawables);
 
-  LOG(INFO) << " peaking into node hierarchy:";
-  recursive_scenegraph_peak(*existingObjects_.at(nextObjectID_), *physicsNode_);
-
-  existingObjects_.at(nextObjectID_)->localBB_ = BB;
+  existingObjects_.at(nextObjectID_)->localBB_ =
+      existingObjects_.at(nextObjectID_)->cumulativeBB_;
 
   return nextObjectID_;
 }
@@ -564,6 +557,8 @@ void PhysicsManager::toggleBBDraw(int physObjectID, DrawableGroup* drawables) {
       existingObjects_[physObjectID]->BBNode_ =
           &existingObjects_[physObjectID]->createChild();
       existingObjects_[physObjectID]->BBNode_->MagnumObject::setScaling(scale);
+      existingObjects_[physObjectID]->BBNode_->MagnumObject::setTranslation(
+          existingObjects_[physObjectID]->localBB_.center());
       resourceManager_->addPrimitiveToDrawables(
           0, *existingObjects_[physObjectID]->BBNode_, drawables);
     }
