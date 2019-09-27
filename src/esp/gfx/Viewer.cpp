@@ -28,7 +28,7 @@ using namespace Corrade;
 
 constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
-constexpr float colorSensorHeight = 1.5f;
+constexpr float rgbSensorHeight = 1.5f;
 
 namespace esp {
 namespace gfx {
@@ -97,9 +97,9 @@ Viewer::Viewer(const Arguments& arguments)
   // Set up camera
   renderCamera_ = &sceneGraph_->getDefaultRenderCamera();
   agentBodyNode_ = &rootNode_->createChild();
-  colorSensorNode_ = &agentBodyNode_->createChild();
+  rgbSensorNode_ = &agentBodyNode_->createChild();
 
-  colorSensorNode_->translate({0.0f, colorSensorHeight, 0.0f});
+  rgbSensorNode_->translate({0.0f, rgbSensorHeight, 0.0f});
   agentBodyNode_->translate({0.0f, 0.0f, 5.0f});
 
   float hfov = 90.0f;
@@ -133,7 +133,7 @@ Viewer::Viewer(const Arguments& arguments)
   }
 
   renderCamera_->node().setTransformation(
-      colorSensorNode_->absoluteTransformation());
+      rgbSensorNode_->absoluteTransformation());
 
   timeline_.start();
 
@@ -340,10 +340,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       controls_(*agentBodyNode_, "lookRight", lookSensitivity);
       break;
     case KeyEvent::Key::Up:
-      controls_(*colorSensorNode_, "lookUp", lookSensitivity, false);
+      controls_(*rgbSensorNode_, "lookUp", lookSensitivity, false);
       break;
     case KeyEvent::Key::Down:
-      controls_(*colorSensorNode_, "lookDown", lookSensitivity, false);
+      controls_(*rgbSensorNode_, "lookDown", lookSensitivity, false);
       break;
     case KeyEvent::Key::Nine:
       if (pathfinder_->isLoaded()) {
@@ -420,7 +420,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
   }
   renderCamera_->node().setTransformation(
-      colorSensorNode_->absoluteTransformation());
+      rgbSensorNode_->absoluteTransformation());
   redraw();
 }
 
