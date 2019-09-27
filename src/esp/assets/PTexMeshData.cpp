@@ -47,7 +47,7 @@ void PTexMeshData::load(const std::string& meshFile,
 
   // Parse parameters
   const auto& paramsFile = atlasFolder + "/parameters.json";
-  if (io::exists(paramsFile)) {
+  if (!io::exists(paramsFile)) {
     Cr::Utility::Fatal{-1} << "PTexMeshData::load: The parameter file"
                            << paramsFile << "does not exist.";
   }
