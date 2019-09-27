@@ -26,6 +26,8 @@ Module.preRun.push(() => {
   if (config.semantic === "mp3d") {
     preload(fileNoExtension + ".house");
     preload(fileNoExtension + "_semantic.ply");
+  } else if (config.semantic === "replica") {
+    preload("info_semantic.json");
   }
 });
 

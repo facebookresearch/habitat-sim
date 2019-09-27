@@ -14,12 +14,11 @@ class NavigateTask {
     this.sim = sim;
     this.topdown = topdown;
     this.components = components;
-    let shape = this.sim.getObservationSpace("rgb").shape;
     this.semanticCtx = components.semantic.getContext("2d");
-    shape = this.sim.getObservationSpace("semantic").shape;
+    this.semanticShape = this.sim.getObservationSpace("semantic").shape;
     this.semanticImageData = this.semanticCtx.createImageData(
-      shape.get(1),
-      shape.get(0)
+      this.semanticShape.get(1),
+      this.semanticShape.get(0)
     );
     this.semanticObjects = this.sim.sim.getSemanticScene().objects;
     components.canvas.onmousedown = e => {
@@ -35,9 +34,15 @@ class NavigateTask {
   }
 
   handleMouseDown(event) {
-    let objectId = this.semantic_data[
-      (640 * event.offsetY + event.offsetX) * 4
-    ];
+    const height = this.semanticShape.get(0);
+    const width = this.semanticShape.get(1);
+    const offsetY = height - 1 - event.offsetY; /* flip-Y */
+    const offsetX = event.offsetX;
+    let objectId = new Uint32Array(
+      this.semantic_data.buffer,
+      this.semantic_data.byteOffset,
+      this.semantic_data.length / 4
+    )[width * offsetY + offsetX];
     this.setStatus(this.semanticObjects.get(objectId).category.getName(""));
   }
 
@@ -75,21 +80,26 @@ class NavigateTask {
 
     const obs = this.sim.getObservation("semantic", null);
     this.semantic_data = obs.getData();
-    let data = this.semantic_data;
+    const object_ids = new Uint32Array(
+      this.semantic_data.buffer,
+      this.semantic_data.byteOffset,
+      this.semantic_data.length / 4
+    );
 
     // TOOD(msb) implement a better colorization scheme
-    for (let i = 0; i < 640 * 480; i++) {
-      if (data[i * 4] & 1) {
+    for (let i = 0; i < object_ids.length; i++) {
+      const object_id = object_ids[i];
+      if (object_id & 1) {
         this.semanticImageData.data[i * 4] = 255;
       } else {
         this.semanticImageData.data[i * 4] = 0;
       }
-      if (data[i * 4] & 2) {
+      if (object_id & 2) {
         this.semanticImageData.data[i * 4 + 1] = 255;
       } else {
         this.semanticImageData.data[i * 4 + 1] = 0;
       }
-      if (data[i * 4] & 4) {
+      if (object_id & 4) {
         this.semanticImageData.data[i * 4 + 2] = 255;
       } else {
         this.semanticImageData.data[i * 4 + 2] = 0;

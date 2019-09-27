@@ -42,7 +42,8 @@ class WebDemo {
       {
         uuid: "semantic",
         sensorType: Module.SensorType.SEMANTIC,
-        resolution: [480, 640]
+        resolution: [480, 640],
+        channels: 1
       }
     ];
 
