@@ -353,7 +353,7 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
 
   LOG(INFO) << "The number of quads: " << totalFaces << ", which equals to "
             << totalFaces * 2
-            << "triangles.";
+            << " triangles.";
 
       return subMeshes;
 }
