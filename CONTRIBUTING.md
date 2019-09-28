@@ -8,7 +8,7 @@ possible.
 - Follow the contribution guide to ensure your code is conformant to the conventions and style.
 - Try to make small, logically independent, self-documenting commits (and reflect this in the commit messages by providing brief rationale/change summary).
 - We encourage creating draft PRs to gather early feedback.
-- Request reviews from at least one Habitat core team member (if the scope of changes necessitates this, two or more reviewers is recommended)
+- Request reviews from at least one Habitat core team member (if the scope of changes necessitates, request from two or more reviewers).
 - We have adopted squash-and-merge as the policy for incorporating PRs into the master branch.  We encourage more smaller/focused PRs rather than big PRs with many independent changes.  This also enables faster development by merging PRs into master quickly and reducing the need to rebase due to changes on master.
 - While working on a PR, try to religiously keep your fork up-to-date with master by rebasing as necessary.  Note that the above recommendation for smaller and more frequent PRs reduces the burden of rebasing.
 - We expect PR ready for final review only if Continuous Integration tests are passing.
