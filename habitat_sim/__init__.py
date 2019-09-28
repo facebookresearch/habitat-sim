@@ -9,8 +9,6 @@ import builtins
 __version__ = "0.1.2"
 
 if not getattr(builtins, "__HSIM_SETUP__", False):
-    from habitat_sim import sensors
-
     # TODO: all those import * should get removed, kept only for compatibility
     #   with existing code
     from habitat_sim.nav import *
