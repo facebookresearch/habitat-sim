@@ -11,13 +11,24 @@ __version__ = "0.1.2"
 if not getattr(builtins, "__HSIM_SETUP__", False):
     # TODO: all those import * should get removed, kept only for compatibility
     #   with existing code
-    from .nav import *
-    from .agent import *
-    from .simulator import *
-    from .bindings import *
+    from habitat_sim.nav import *
+    from habitat_sim.agent import *
+    from habitat_sim.simulator import *
+    from habitat_sim.bindings import *
 
-    from . import agent, geo, gfx, logging, nav, scene, sensor, simulator, utils
-    from ._ext.habitat_sim_bindings import MapStringString
+    from habitat_sim import (
+        agent,
+        geo,
+        gfx,
+        logging,
+        nav,
+        scene,
+        sensor,
+        simulator,
+        utils,
+    )
+    from habitat_sim._ext.habitat_sim_bindings import MapStringString
+    from habitat_sim.registry import registry
 
     __all__ = [
         "agent",
@@ -33,4 +44,5 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         "simulator",
         "utils",
         "MapStringString",
+        "registry",
     ]

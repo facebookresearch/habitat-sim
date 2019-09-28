@@ -13,11 +13,11 @@ import numpy as np
 
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
-from habitat_sim import utils
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
+from habitat_sim.utils.common import quat_from_angle_axis
 
 torch = None
 
@@ -105,7 +105,19 @@ class Simulator:
         if "navmesh" in config.sim_cfg.scene.filepaths:
             navmesh_filenname = config.sim_cfg.scene.filepaths["navmesh"]
         else:
-            navmesh_filenname = osp.splitext(config.sim_cfg.scene.id)[0] + ".navmesh"
+            scene_basename = osp.basename(config.sim_cfg.scene.id)
+            # "mesh.ply" is identified as a replica model, whose navmesh
+            # is named as "mesh_semantic.navmesh" and is placed in the
+            # subfolder called "habitat" (a level deeper than the "mesh.ply")
+            if scene_basename == "mesh.ply":
+                scene_dir = osp.dirname(config.sim_cfg.scene.id)
+                navmesh_filenname = osp.join(
+                    scene_dir, "habitat", "mesh_semantic.navmesh"
+                )
+            else:
+                navmesh_filenname = (
+                    osp.splitext(config.sim_cfg.scene.id)[0] + ".navmesh"
+                )
 
         self.pathfinder = hsim.PathFinder()
         if osp.exists(navmesh_filenname):
@@ -160,7 +172,7 @@ class Simulator:
             initial_state = AgentState()
             if self.pathfinder.is_loaded:
                 initial_state.position = self.pathfinder.get_random_navigable_point()
-                initial_state.rotation = utils.quat_from_angle_axis(
+                initial_state.rotation = quat_from_angle_axis(
                     np.random.uniform(0, 2.0 * np.pi), np.array([0, 1, 0])
                 )
 
@@ -232,7 +244,7 @@ class Simulator:
         return self._sim.get_physics_object_library_size()
 
     def remove_object(self, object_id):
-        self._sim.remove_object(object_id)
+        return self._sim.remove_object(object_id)
 
     def get_existing_object_ids(self, scene_id=0):
         return self._sim.get_existing_object_ids(scene_id)
@@ -260,6 +272,9 @@ class Simulator:
 
     def apply_torque(self, torque, object_id, scene_id=0):
         self._sim.apply_torque(torque, object_id, scene_id)
+
+    def get_world_time(self, scene_id=0):
+        return self._sim.get_world_time()
 
 
 class Sensor:

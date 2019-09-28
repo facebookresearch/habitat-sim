@@ -1,17 +1,18 @@
 /**
  * NavigateTask class
  */
-// eslint-disable-next-line no-unused-vars
 class NavigateTask {
   // PUBLIC methods.
 
   /**
    * Create navigate task.
    * @param {SimEnv} sim - simulator
+   * @param {TopDownMap} topdown - TopDown Map
    * @param {Object} components - dictionary with status and canvas elements
    */
-  constructor(sim, components) {
+  constructor(sim, topdown, components) {
     this.sim = sim;
+    this.topdown = topdown;
     this.components = components;
     let shape = this.sim.getObservationSpace("rgb").shape;
     this.semanticCtx = components.semantic.getContext("2d");
@@ -99,6 +100,10 @@ class NavigateTask {
     this.semanticCtx.putImageData(this.semanticImageData, 0, 0);
   }
 
+  renderTopDown() {
+    this.topdown.moveTo(this.sim.getAgentState().position);
+  }
+
   renderRadar() {
     const width = 100,
       height = 100;
@@ -136,6 +141,7 @@ class NavigateTask {
   render() {
     this.renderImage();
     this.renderSemanticImage();
+    this.renderTopDown();
   }
 
   handleAction(action) {
@@ -156,3 +162,5 @@ class NavigateTask {
     });
   }
 }
+
+export default NavigateTask;

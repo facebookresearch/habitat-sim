@@ -4,6 +4,8 @@
 
 #pragma once
 
+/** @file */
+
 #include <map>
 #include <memory>
 #include <string>
@@ -47,6 +49,9 @@ class RigidObject;
 }  // namespace physics
 namespace assets {
 
+/**
+@brief Loaded asset and resource manager.
+*/
 class ResourceManager {
  public:
   // Singleton
@@ -206,6 +211,7 @@ class ResourceManager {
   // library of physics object parameters mapped from config filename (used by
   // physicsManager to instantiate physical objects) maps:
   // "data/objects/cheezit.phys_properties.json" -> physicalMetaData
+  /** @brief Maps property filenames to physical object templates. */
   std::map<std::string, PhysicsObjectAttributes> physicsObjectLibrary_;
   // library of physics scene attributes for resetting/switching contexts
   std::map<std::string, PhysicsSceneAttributes> physicsSceneLibrary_;

@@ -6,7 +6,6 @@
  * TODO(aps,msb) - Add support for multiple agents instead of
  * hardcoding 0th one.
  */
-// eslint-disable-next-line no-unused-vars
 class SimEnv {
   // PUBLIC methods.
 
@@ -20,7 +19,7 @@ class SimEnv {
     this.sim = new Module.Simulator(config);
     this.episode = episode;
     this.initialAgentState = this.createAgentState(episode.startState);
-    this.defaultAgentId = agentId;
+    this.selectedAgentId = agentId;
   }
 
   /**
@@ -28,8 +27,12 @@ class SimEnv {
    */
   reset() {
     this.sim.reset();
-    const agent = this.sim.getAgent(this.defaultAgentId);
+    const agent = this.sim.getAgent(this.selectedAgentId);
     agent.setState(this.initialAgentState, true);
+  }
+
+  changeAgent(agentId) {
+    this.selectedAgentId = agentId;
   }
 
   /**
@@ -37,7 +40,7 @@ class SimEnv {
    * @param {string} action - action to take
    */
   step(action) {
-    const agent = this.sim.getAgent(this.defaultAgentId);
+    const agent = this.sim.getAgent(this.selectedAgentId);
     agent.act(action);
   }
 
@@ -55,7 +58,7 @@ class SimEnv {
    * @returns {ObservationSpace} observation space of sensor
    */
   getObservationSpace(sensorId) {
-    return this.sim.getAgentObservationSpace(this.defaultAgentId, sensorId);
+    return this.sim.getAgentObservationSpace(this.selectedAgentId, sensorId);
   }
 
   /**
@@ -67,6 +70,14 @@ class SimEnv {
     const obs = new Module.Observation();
     this.sim.getAgentObservation(0, sensorId, obs);
     return obs;
+  }
+
+  /**
+   * Get the PathFinder for the scene.
+   * @returns {PathFinder} pathFinder of the scene
+   */
+  getPathFinder() {
+    return this.sim.getPathFinder();
   }
 
   /**
@@ -86,15 +97,20 @@ class SimEnv {
     return this.sim.getSemanticScene();
   }
 
+  getAgentState() {
+    let state = new Module.AgentState();
+    const agent = this.sim.getAgent(this.selectedAgentId);
+    agent.getState(state);
+    return state;
+  }
+
   /**
    * Get the distance to goal in polar coordinates.
    * @returns {Array} [magnitude, clockwise-angle (in radians)]
    */
   distanceToGoal() {
     let dst = this.episode.goal.position;
-    let state = new Module.AgentState();
-    const agent = this.sim.getAgent(this.defaultAgentId);
-    agent.getState(state);
+    let state = this.getAgentState();
     let src = state.position;
     let dv = [dst[0] - src[0], dst[1] - src[1], dst[2] - src[2]];
     dv = this.applyRotation(dv, state.rotation);
@@ -165,3 +181,5 @@ class SimEnv {
     return converted;
   }
 }
+
+export default SimEnv;

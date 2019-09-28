@@ -43,7 +43,13 @@ else()
   # variable is set by include(CTest) as an option(). In CMake 3.13+ it should
   # be enough to do just set(BUILD_TESTING OFF) to avoid the option()
   # overriding it, but https://cmake.org/cmake/help/latest/policy/CMP0077.html.
-  option(BUILD_TESTING "ugh" OFF)
+  option(BUILD_TESTING "" OFF)
+  # glog has gflags as an optional dependency, which we don't supply. In some
+  # cases it'll result in system libs being picked up, leading to errors like
+  # described in https://github.com/facebookresearch/habitat-sim/issues/205 or
+  # https://github.com/facebookresearch/habitat-sim/issues/179. We don't need
+  # anything from gflags, so just disable them completely.
+  set(WITH_GFLAGS OFF CACHE BOOL "" FORCE)
   add_subdirectory("${DEPS_DIR}/glog")
 endif()
 
@@ -88,16 +94,20 @@ target_compile_definitions(Detour
   DT_VIRTUAL_QUERYFILTER)
 
 if(BUILD_PYTHON_BINDINGS)
-  # python interpreter
+  # Before calling find_package(PythonInterp) search for python executable not
+  # in the default paths to pick up activated virtualenv/conda python
+  find_program(PYTHON_EXECUTABLE
+    # macOS still defaults to `python` being Python 2, so look for `python3`
+    # first
+    NAMES python3 python
+    PATHS ENV PATH   # look in the PATH environment variable
+    NO_DEFAULT_PATH  # do not look anywhere else...
+  )
+
+  # Let the Find module do proper version checks on what we found (it uses the
+  # same PYTHON_EXECUTABLE variable, will pick it up from the cache)
   find_package(PythonInterp 3.6 REQUIRED)
 
-  # Search for python executable to pick up activated virtualenv/conda python
-  unset(PYTHON_EXECUTABLE CACHE)
-  find_program(PYTHON_EXECUTABLE
-    python
-      PATHS ENV PATH   # look in the PATH environment variable
-      NO_DEFAULT_PATH  # do not look anywhere else...
-  )
   message(STATUS "Bindings being generated for python at ${PYTHON_EXECUTABLE}")
 
   # Pybind11. Use a system package, if preferred. This needs to be before Magnum

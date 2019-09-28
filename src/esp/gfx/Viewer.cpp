@@ -7,6 +7,7 @@
 #include "Viewer.h"
 
 #include <Corrade/Utility/Arguments.h>
+#include <Corrade/Utility/Directory.h>
 #include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
@@ -19,13 +20,15 @@
 #include "esp/gfx/Simulator.h"
 #include "esp/scene/SceneConfiguration.h"
 
+#include "esp/gfx/configure.h"
+
 using namespace Magnum;
 using namespace Math::Literals;
 using namespace Corrade;
 
 constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
-constexpr float cameraHeight = 1.5f;
+constexpr float rgbSensorHeight = 1.5f;
 
 namespace esp {
 namespace gfx {
@@ -34,8 +37,9 @@ Viewer::Viewer(const Arguments& arguments)
     : Platform::Application{arguments,
                             Configuration{}.setTitle("Viewer").setWindowFlags(
                                 Configuration::WindowFlag::Resizable),
-                            GLConfiguration{}.setColorBufferSize(
-                                Vector4i(8, 8, 8, 8))},
+                            GLConfiguration{}
+                                .setColorBufferSize(Vector4i(8, 8, 8, 8))
+                                .setSampleCount(4)},
       pathfinder_(nav::PathFinder::create()),
       controls_(),
       previousPosition_() {
@@ -49,13 +53,19 @@ Viewer::Viewer(const Arguments& arguments)
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addBooleanOption("enable-physics")
-      .addOption("physicsConfig", "./data/default.phys_scene_config.json")
-      .setHelp("physicsConfig", "physics scene config file")
+      .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG)
+      .setHelp("physics-config", "physics scene config file")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
   enablePhysics_ = args.isSet("enable-physics");
-  std::string physicsConfigFilename = args.value("physicsConfig");
+  std::string physicsConfigFilename = args.value("physics-config");
+  if (!Utility::Directory::exists(physicsConfigFilename)) {
+    LOG(ERROR)
+        << physicsConfigFilename
+        << " was not found, specify an existing file in --physics-config";
+    std::exit(1);
+  }
 
   // Setup renderer and shader defaults
   GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
@@ -75,21 +85,21 @@ Viewer::Viewer(const Arguments& arguments)
     if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
                                     &drawables, physicsConfigFilename)) {
       LOG(ERROR) << "cannot load " << file;
-      std::exit(0);
+      std::exit(1);
     }
   } else {
     if (!resourceManager_.loadScene(info, navSceneNode_, &drawables)) {
       LOG(ERROR) << "cannot load " << file;
-      std::exit(0);
+      std::exit(1);
     }
   }
 
   // Set up camera
   renderCamera_ = &sceneGraph_->getDefaultRenderCamera();
   agentBodyNode_ = &rootNode_->createChild();
-  cameraNode_ = &agentBodyNode_->createChild();
+  rgbSensorNode_ = &agentBodyNode_->createChild();
 
-  cameraNode_->translate({0.0f, cameraHeight, 0.0f});
+  rgbSensorNode_->translate({0.0f, rgbSensorHeight, 0.0f});
   agentBodyNode_->translate({0.0f, 0.0f, 5.0f});
 
   float hfov = 90.0f;
@@ -110,21 +120,20 @@ Viewer::Viewer(const Arguments& arguments)
   }
 
   // connect controls to navmesh if loaded
-  /*
   if (pathfinder_->isLoaded()) {
-      controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end)
-  { vec3f currentPosition = pathfinder_->tryStep(start, end); LOG(INFO) <<
-  "position=" << currentPosition.transpose() << " rotation="
-                  << quatf(agentBodyNode_->rotation()).coeffs().transpose();
-        LOG(INFO) << "Distance to closest obstacle: "
-                  << pathfinder_->distanceToClosestObstacle(currentPosition);
-        return currentPosition;
-      });
-    }
-    */
+    controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
+      vec3f currentPosition = pathfinder_->tryStep(start, end);
+      LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
+                << quatf(agentBodyNode_->rotation()).coeffs().transpose();
+      LOG(INFO) << "Distance to closest obstacle: "
+                << pathfinder_->distanceToClosestObstacle(currentPosition);
+
+      return currentPosition;
+    });
+  }
 
   renderCamera_->node().setTransformation(
-      cameraNode_->absoluteTransformation());
+      rgbSensorNode_->absoluteTransformation());
 
   timeline_.start();
 
@@ -260,9 +269,6 @@ void Viewer::drawEvent() {
   swapBuffers();
   timeline_.nextFrame();
   redraw();
-  if (physicsManager_ != nullptr)
-    LOG(INFO) << "end drawEvent world time: "
-              << physicsManager_->getWorldTime();
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
@@ -334,10 +340,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       controls_(*agentBodyNode_, "lookRight", lookSensitivity);
       break;
     case KeyEvent::Key::Up:
-      controls_(*cameraNode_, "lookUp", lookSensitivity, false);
+      controls_(*rgbSensorNode_, "lookUp", lookSensitivity, false);
       break;
     case KeyEvent::Key::Down:
-      controls_(*cameraNode_, "lookDown", lookSensitivity, false);
+      controls_(*rgbSensorNode_, "lookDown", lookSensitivity, false);
       break;
     case KeyEvent::Key::Nine:
       if (pathfinder_->isLoaded()) {
@@ -378,9 +384,14 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::O: {
       if (physicsManager_ != nullptr) {
         int numObjects = resourceManager_.getNumLibraryObjects();
-        int randObjectID = rand() % numObjects;
-        addObject(resourceManager_.getObjectConfig(randObjectID));
-      }
+        if (numObjects) {
+          int randObjectID = rand() % numObjects;
+          addObject(resourceManager_.getObjectConfig(randObjectID));
+        } else
+          LOG(WARNING) << "No objects loaded, can't add any";
+      } else
+        LOG(WARNING)
+            << "Run the app with --enable-physics in order to add objects";
     } break;
     case KeyEvent::Key::P:
       pokeLastObject();
@@ -409,7 +420,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
   }
   renderCamera_->node().setTransformation(
-      cameraNode_->absoluteTransformation());
+      rgbSensorNode_->absoluteTransformation());
   redraw();
 }
 

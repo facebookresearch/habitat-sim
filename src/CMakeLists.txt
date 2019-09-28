@@ -23,12 +23,15 @@ if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
 endif()
 
+set(SCENE_DATASETS ${CMAKE_CURRENT_SOURCE_DIR}/../data/scene_datasets)
+
 # build options
 option(BUILD_ASSIMP_SUPPORT "Whether to build assimp import library support" ON)
 option(BUILD_PYTHON_BINDINGS "Whether to build python bindings" ON)
 option(BUILD_DATATOOL "Whether to build datatool utility binary" ON)
 option(BUILD_PTEX_SUPPORT "Whether to build ptex mesh support" ON)
 option(BUILD_GUI_VIEWERS "Whether to build GUI viewer utility binary" OFF)
+option(BUILD_WITH_BULLET "Build Habitat-Sim with Bullet physics enabled -- Requires Bullet" OFF)
 option(BUILD_TEST "Build test binaries" OFF)
 option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
 option(USE_SYSTEM_EIGEN "Use system Eigen instead of a bundled submodule" OFF)

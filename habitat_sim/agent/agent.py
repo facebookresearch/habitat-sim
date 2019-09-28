@@ -8,13 +8,17 @@ from typing import Any, Dict, List, Union
 
 import attr
 import magnum as mn
-import magnum.scenegraph
 import numpy as np
 
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
-from habitat_sim import utils
 from habitat_sim.sensors import SensorSuite
+from habitat_sim.utils.common import (
+    quat_from_coeffs,
+    quat_from_magnum,
+    quat_rotate_vector,
+    quat_to_magnum,
+)
 
 from .controls import ActuationSpec, ObjectControls
 
@@ -34,7 +38,7 @@ class ActionSpec(object):
     r"""Defines how a specific action is implemented
 
     :property name: Name of the function implementing the action in the
-        `move_func_map`
+        `registry`
     :property actuation: Arguments that will be passed to the function
     """
     name: str
@@ -174,10 +178,10 @@ class Agent(object):
             habitat_sim.errors.assert_obj_valid(v)
             state.sensor_states[k] = SixDOFPose(
                 np.array(v.node.absolute_translation),
-                utils.quat_from_magnum(state.rotation * v.node.rotation),
+                quat_from_magnum(state.rotation * v.node.rotation),
             )
 
-        state.rotation = utils.quat_from_magnum(state.rotation)
+        state.rotation = quat_from_magnum(state.rotation)
 
         return state
 
@@ -192,12 +196,12 @@ class Agent(object):
         habitat_sim.errors.assert_obj_valid(self.body)
 
         if isinstance(state.rotation, list):
-            state.rotation = utils.quat_from_coeffs(state.rotation)
+            state.rotation = quat_from_coeffs(state.rotation)
 
         self.body.object.reset_transformation()
 
         self.body.object.translate(state.position)
-        self.body.object.rotation = utils.quat_to_magnum(state.rotation)
+        self.body.object.rotation = quat_to_magnum(state.rotation)
 
         if reset_sensors:
             for _, v in self.sensors.items():
@@ -206,19 +210,17 @@ class Agent(object):
         for k, v in state.sensor_states.items():
             assert k in self.sensors
             if isinstance(v.rotation, list):
-                v.rotation = utils.quat_from_coeffs(v.rotation)
+                v.rotation = quat_from_coeffs(v.rotation)
 
             s = self.sensors[k]
 
             s.node.reset_transformation()
             s.node.translate(
-                utils.quat_rotate_vector(
+                quat_rotate_vector(
                     state.rotation.inverse(), v.position - state.position
                 )
             )
-            s.node.rotation = utils.quat_to_magnum(
-                state.rotation.inverse() * v.rotation
-            )
+            s.node.rotation = quat_to_magnum(state.rotation.inverse() * v.rotation)
 
     @property
     def scene_node(self):

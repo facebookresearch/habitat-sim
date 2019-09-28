@@ -14,8 +14,8 @@ import quaternion
 
 import habitat_sim
 import habitat_sim.errors
-import habitat_sim.utils
 from examples.settings import make_cfg
+from habitat_sim.utils.common import quat_from_coeffs
 
 
 def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
