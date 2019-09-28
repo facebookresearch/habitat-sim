@@ -9,6 +9,8 @@ import builtins
 __version__ = "0.1.2"
 
 if not getattr(builtins, "__HSIM_SETUP__", False):
+    from habitat_sim.registry import registry
+
     # TODO: all those import * should get removed, kept only for compatibility
     #   with existing code
     from habitat_sim.nav import *
@@ -28,7 +30,6 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         utils,
     )
     from habitat_sim._ext.habitat_sim_bindings import MapStringString
-    from habitat_sim.registry import registry
 
     __all__ = [
         "agent",

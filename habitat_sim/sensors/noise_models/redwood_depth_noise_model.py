@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+
+# Copyright (c) Facebook, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import os.path as osp
 
 import attr
@@ -5,10 +11,8 @@ import numba
 import numpy as np
 
 from habitat_sim.bindings import SensorType, cuda_enabled
-from habitat_sim.sensors.noise_models.registration import (
-    SensorNoiseModel,
-    register_sensor_noise_model,
-)
+from habitat_sim.registry import registry
+from habitat_sim.sensors.noise_models.registration import SensorNoiseModel
 
 if cuda_enabled:
     from habitat_sim._ext.habitat_sim_bindings import RedwoodNoiseModelGPUImpl

@@ -8,7 +8,8 @@ import collections
 import re
 from typing import Optional, Type
 
-from habitat_sim.agent.controls import SceneNodeControl
+from habitat_sim.agent.controls.controls import SceneNodeControl
+from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
 __all__ = ["registry"]
 
@@ -80,6 +81,38 @@ class _Registry:
             return _wrapper(controller)
 
     @classmethod
+    def register_noise_model(
+        cls,
+        noise_model: Optional[Type[SensorNoiseModel]] = None,
+        *,
+        name: Optional[str] = None,
+    ):
+        r"""Registers a new sensor noise model with Habitat-Sim
+
+        :param noise_model: The class of the noise model to register
+            If none, will return a wrapper for use with decorator syntax
+        :param name: The name to register the noise model with
+            If none, will register with the name of the controller converted to snake case
+            i.e. a controller with class name MoveForward will be registered as move_forward
+        """
+
+        def _wrapper(noise_model: Type[SensorNoiseModel]):
+            assert issubclass(
+                controller, SensorNoiseModel
+            ), "All noise_models must inherit from habitat_sim.sensor.SensorNoiseModel"
+
+            cls._mapping["sensor_noise_model"][
+                noise_model.__name__ if name is None else name
+            ] = noise_model
+
+            return controller
+
+        if controller is None:
+            return _wrapper
+        else:
+            return _wrapper(noise_model)
+
+    @classmethod
     def _get_impl(cls, _type, name):
         return cls._mapping[_type].get(name, None)
 
@@ -90,6 +123,14 @@ class _Registry:
         :param name: The name provided to `register_move_fn`
         """
         return cls._get_impl("move_fn", name)
+
+    @classmethod
+    def get_noise_model(cls, name: str) -> Type[SensorNoiseModel]:
+        r"""Retrieve the noise_model register under ``name``
+
+        :param name: The name provided to `register_noise_model`
+        """
+        return cls._get_impl("sensor_noise_model", name)
 
 
 registry = _Registry()
