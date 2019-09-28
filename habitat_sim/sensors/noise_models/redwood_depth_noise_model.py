@@ -12,7 +12,7 @@ import numpy as np
 
 from habitat_sim.bindings import SensorType, cuda_enabled
 from habitat_sim.registry import registry
-from habitat_sim.sensors.noise_models.registration import SensorNoiseModel
+from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
 if cuda_enabled:
     from habitat_sim._ext.habitat_sim_bindings import RedwoodNoiseModelGPUImpl
@@ -94,7 +94,7 @@ class RedwoodNoiseModelCPUImpl:
         return _simulate(gt_depth, self.model, self.noise_multiplier)
 
 
-@register_sensor_noise_model
+@registry.register_noise_model
 class RedwoodDepthNoiseModel(SensorNoiseModel):
     def __init__(self, gpu_device_id, noise_multiplier=1.0):
         self._gpu_device_id = gpu_device_id

@@ -8,9 +8,6 @@ import collections
 import re
 from typing import Optional, Type
 
-from habitat_sim.agent.controls.controls import SceneNodeControl
-from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
-
 __all__ = ["registry"]
 
 
@@ -38,7 +35,7 @@ class _Registry:
     @classmethod
     def register_move_fn(
         cls,
-        controller: Optional[Type[SceneNodeControl]] = None,
+        controller: Optional[Type] = None,
         *,
         name: Optional[str] = None,
         body_action: bool = None,
@@ -63,6 +60,7 @@ class _Registry:
         assert (
             body_action is not None
         ), "body_action must be explicitly set to True or False"
+        from habitat_sim.agent.controls.controls import SceneNodeControl
 
         def _wrapper(controller: Type[SceneNodeControl]):
             assert issubclass(
@@ -82,32 +80,29 @@ class _Registry:
 
     @classmethod
     def register_noise_model(
-        cls,
-        noise_model: Optional[Type[SensorNoiseModel]] = None,
-        *,
-        name: Optional[str] = None,
+        cls, noise_model: Optional[Type] = None, *, name: Optional[str] = None
     ):
         r"""Registers a new sensor noise model with Habitat-Sim
 
         :param noise_model: The class of the noise model to register
             If none, will return a wrapper for use with decorator syntax
         :param name: The name to register the noise model with
-            If none, will register with the name of the controller converted to snake case
-            i.e. a controller with class name MoveForward will be registered as move_forward
+            If none, will register with the name of the noise_model
         """
+        from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
         def _wrapper(noise_model: Type[SensorNoiseModel]):
             assert issubclass(
-                controller, SensorNoiseModel
+                noise_model, SensorNoiseModel
             ), "All noise_models must inherit from habitat_sim.sensor.SensorNoiseModel"
 
             cls._mapping["sensor_noise_model"][
                 noise_model.__name__ if name is None else name
             ] = noise_model
 
-            return controller
+            return noise_model
 
-        if controller is None:
+        if noise_model is None:
             return _wrapper
         else:
             return _wrapper(noise_model)
@@ -117,7 +112,7 @@ class _Registry:
         return cls._mapping[_type].get(name, None)
 
     @classmethod
-    def get_move_fn(cls, name: str) -> SceneNodeControl:
+    def get_move_fn(cls, name: str):
         r"""Retrieve the move_fn register under ``name``
 
         :param name: The name provided to `register_move_fn`
@@ -125,7 +120,7 @@ class _Registry:
         return cls._get_impl("move_fn", name)
 
     @classmethod
-    def get_noise_model(cls, name: str) -> Type[SensorNoiseModel]:
+    def get_noise_model(cls, name: str):
         r"""Retrieve the noise_model register under ``name``
 
         :param name: The name provided to `register_noise_model`

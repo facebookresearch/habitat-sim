@@ -32,7 +32,7 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
         render_state = json.load(f)
         state = habitat_sim.AgentState()
         state.position = render_state["pos"]
-        state.rotation = habitat_sim.utils.quat_from_coeffs(render_state["rot"])
+        state.rotation = quat_from_coeffs(render_state["rot"])
 
     sim.initialize_agent(0, state)
     obs = sim.step("move_forward")
