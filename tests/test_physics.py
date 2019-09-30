@@ -6,7 +6,11 @@ import pytest
 import quaternion
 
 import examples.settings
-import habitat_sim
+from habitat_sim.utils.common import (
+    quat_from_angle_axis,
+    quat_from_magnum,
+    quat_to_magnum,
+)
 
 
 @pytest.mark.skipif(
@@ -45,14 +49,12 @@ def test_kinematics(sim):
     assert np.allclose(sim.get_transformation(object_id), I)
 
     # test get and set rotation
-    Q = habitat_sim.utils.quat_from_angle_axis(np.pi, np.array([0, 1.0, 0]))
+    Q = quat_from_angle_axis(np.pi, np.array([0, 1.0, 0]))
     expected = np.eye(4)
     expected[0:3, 0:3] = quaternion.as_rotation_matrix(Q)
-    sim.set_rotation(habitat_sim.utils.quat_to_magnum(Q), object_id)
+    sim.set_rotation(quat_to_magnum(Q), object_id)
     assert np.allclose(sim.get_transformation(object_id), expected)
-    assert np.allclose(
-        habitat_sim.utils.quat_from_magnum(sim.get_rotation(object_id)), Q
-    )
+    assert np.allclose(quat_from_magnum(sim.get_rotation(object_id)), Q)
 
     # test object removal
     old_object_id = sim.remove_object(object_id)

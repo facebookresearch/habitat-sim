@@ -11,7 +11,7 @@ import quaternion
 
 import habitat_sim
 import habitat_sim.errors
-import habitat_sim.utils
+from habitat_sim.utils.common import angle_between_quats, quat_from_angle_axis
 
 
 def test_no_action():
@@ -50,15 +50,13 @@ class ExpectedDelta:
 
 def _check_state_same(s1, s2):
     assert np.allclose(s1.position, s2.position)
-    assert habitat_sim.utils.angle_between_quats(s1.rotation, s2.rotation) < 1e-5
+    assert angle_between_quats(s1.rotation, s2.rotation) < 1e-5
 
 
 def _check_state_expected(s1, s2, expected: ExpectedDelta):
     assert np.linalg.norm(s2.position - s1.position - expected.delta_pos) < 1e-5
     assert (
-        habitat_sim.utils.angle_between_quats(
-            s2.rotation * expected.delta_rot.inverse(), s1.rotation
-        )
+        angle_between_quats(s2.rotation * expected.delta_rot.inverse(), s1.rotation)
         < 1e-5
     )
 
@@ -71,17 +69,13 @@ default_body_control_testdata = [
     (
         "turn_right",
         ExpectedDelta(
-            delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(10.0), habitat_sim.geo.GRAVITY
-            )
+            delta_rot=quat_from_angle_axis(np.deg2rad(10.0), habitat_sim.geo.GRAVITY)
         ),
     ),
     (
         "turn_left",
         ExpectedDelta(
-            delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(10.0), habitat_sim.geo.UP
-            )
+            delta_rot=quat_from_angle_axis(np.deg2rad(10.0), habitat_sim.geo.UP)
         ),
     ),
 ]
@@ -129,33 +123,25 @@ default_sensor_control_testdata = [
     (
         "look_right",
         ExpectedDelta(
-            delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(-10.0), habitat_sim.geo.UP
-            )
+            delta_rot=quat_from_angle_axis(np.deg2rad(-10.0), habitat_sim.geo.UP)
         ),
     ),
     (
         "look_left",
         ExpectedDelta(
-            delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(10.0), habitat_sim.geo.UP
-            )
+            delta_rot=quat_from_angle_axis(np.deg2rad(10.0), habitat_sim.geo.UP)
         ),
     ),
     (
         "look_up",
         ExpectedDelta(
-            delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(10.0), habitat_sim.geo.RIGHT
-            )
+            delta_rot=quat_from_angle_axis(np.deg2rad(10.0), habitat_sim.geo.RIGHT)
         ),
     ),
     (
         "look_down",
         ExpectedDelta(
-            delta_rot=habitat_sim.utils.quat_from_angle_axis(
-                np.deg2rad(-10.0), habitat_sim.geo.RIGHT
-            )
+            delta_rot=quat_from_angle_axis(np.deg2rad(-10.0), habitat_sim.geo.RIGHT)
         ),
     ),
 ]

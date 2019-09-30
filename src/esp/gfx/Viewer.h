@@ -68,7 +68,7 @@ class Viewer : public Magnum::Platform::Application {
   std::shared_ptr<physics::PhysicsManager> physicsManager_;
   std::vector<int> sceneID_;
   scene::SceneNode* agentBodyNode_ = nullptr;
-  scene::SceneNode* cameraNode_ = nullptr;
+  scene::SceneNode* rgbSensorNode_ = nullptr;
 
   scene::SceneNode* navSceneNode_ = nullptr;
 

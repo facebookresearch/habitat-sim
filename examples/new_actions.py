@@ -10,7 +10,7 @@ import numpy as np
 import quaternion
 
 import habitat_sim
-import habitat_sim.utils
+from habitat_sim.utils.common import quat_from_angle_axis, quat_rotate_vector
 
 try:
     import pprint
@@ -35,7 +35,7 @@ def main():
 
     # Register the control functor
     # This action will be an action that effects the body, so body_action=True
-    @habitat_sim.register_move_fn(body_action=True)
+    @habitat_sim.registry.register_move_fn(body_action=True)
     class MoveForwardAndSpin(habitat_sim.SceneNodeControl):
         def __call__(
             self, scene_node: habitat_sim.SceneNode, actuation_spec: MoveAndSpinSpec
@@ -53,12 +53,12 @@ def main():
             scene_node.rotation = scene_node.rotation.normalized()
 
     # We can also register the function with a custom name
-    habitat_sim.register_move_fn(
+    habitat_sim.registry.register_move_fn(
         MoveForwardAndSpin, name="my_custom_name", body_action=True
     )
 
     # We can also re-register this function such that it effects just the sensors
-    habitat_sim.register_move_fn(
+    habitat_sim.registry.register_move_fn(
         MoveForwardAndSpin, name="move_forward_and_spin_sensors", body_action=False
     )
 
@@ -129,14 +129,12 @@ def main():
             np.array(scene_node.absolute_transformation().rotation_scaling())
             @ habitat_sim.geo.FRONT
         )
-        rotation = habitat_sim.utils.quat_from_angle_axis(
-            np.deg2rad(strafe_angle), habitat_sim.geo.UP
-        )
-        move_ax = habitat_sim.utils.quat_rotate_vector(rotation, forward_ax)
+        rotation = quat_from_angle_axis(np.deg2rad(strafe_angle), habitat_sim.geo.UP)
+        move_ax = quat_rotate_vector(rotation, forward_ax)
 
         scene_node.translate_local(move_ax * forward_amount)
 
-    @habitat_sim.register_move_fn(body_action=True)
+    @habitat_sim.registry.register_move_fn(body_action=True)
     class StrafeLeft(habitat_sim.SceneNodeControl):
         def __call__(
             self, scene_node: habitat_sim.SceneNode, actuation_spec: StrafeActuationSpec
@@ -145,7 +143,7 @@ def main():
                 scene_node, actuation_spec.forward_amount, actuation_spec.strafe_angle
             )
 
-    @habitat_sim.register_move_fn(body_action=True)
+    @habitat_sim.registry.register_move_fn(body_action=True)
     class StrafeRight(habitat_sim.SceneNodeControl):
         def __call__(
             self, scene_node: habitat_sim.SceneNode, actuation_spec: StrafeActuationSpec
