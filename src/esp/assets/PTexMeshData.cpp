@@ -279,18 +279,19 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
   CORRADE_ASSERT(file.good(), "Error: cannot open the file " << filename, {});
 
   uint64_t numSubMeshes = 0;
-  file.read((char*)&numSubMeshes, sizeof(uint64_t));
+  file.read(reinterpret_cast<char*>(&numSubMeshes), sizeof(uint64_t));
 
   std::vector<PTexMeshData::MeshData> subMeshes(numSubMeshes);
 
   size_t totalFaces = 0;  // used in sanity check
   for (uint64_t iMesh = 0; iMesh < numSubMeshes; ++iMesh) {
     uint64_t numFaces = 0;
-    file.read((char*)&numFaces, sizeof(uint64_t));
+    file.read(reinterpret_cast<char*>(&numFaces), sizeof(uint64_t));
 
     std::vector<uint32_t> originalFaces(numFaces);
     // load the face indices in the *original* mesh
-    file.read((char*)originalFaces.data(), sizeof(uint32_t) * numFaces);
+    file.read(reinterpret_cast<char*>(originalFaces.data()),
+              sizeof(uint32_t) * numFaces);
     // a *vertex* lookup table:
     // global index of the original mesh --> local index in sub-meshes
     // (note: this table cannot be defined outside of the for loop, as a vertex
