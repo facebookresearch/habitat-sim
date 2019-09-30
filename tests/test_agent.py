@@ -50,6 +50,7 @@ def test_set_state():
 
 
 def test_change_state():
+    np.random.seed()
     scene_graph = habitat_sim.SceneGraph()
     agent = habitat_sim.Agent(scene_graph.get_root_node().create_child())
 
