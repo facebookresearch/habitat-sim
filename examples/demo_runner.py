@@ -7,18 +7,21 @@ import math
 import multiprocessing
 import os
 import random
-import sys
 import time
 from enum import Enum
 
 import numpy as np
 from PIL import Image
+from settings import default_sim_settings, make_cfg
 
 import habitat_sim
 import habitat_sim.agent
 import habitat_sim.bindings as hsim
-import habitat_sim.utils as utils
-from settings import default_sim_settings, make_cfg
+from habitat_sim.utils.common import (
+    d3_40_colors_rgb,
+    download_and_unzip,
+    quat_from_angle_axis,
+)
 
 _barrier = None
 
@@ -44,7 +47,7 @@ class DemoRunner:
     def save_semantic_observation(self, obs, total_frames):
         semantic_obs = obs["semantic_sensor"]
         semantic_img = Image.new("P", (semantic_obs.shape[1], semantic_obs.shape[0]))
-        semantic_img.putpalette(utils.d3_40_colors_rgb.flatten())
+        semantic_img.putpalette(d3_40_colors_rgb.flatten())
         semantic_img.putdata((semantic_obs.flatten() % 40).astype(np.uint8))
         semantic_img.save("test.sem.%05d.png" % total_frames)
 
@@ -118,9 +121,7 @@ class DemoRunner:
             - agent_local_forward[0] * flat_to_obj[2]
         )
         turn_angle = math.atan2(det, np.dot(agent_local_forward, flat_to_obj))
-        agent_state.rotation = utils.quat_from_angle_axis(
-            turn_angle, np.array([0, 1.0, 0])
-        )
+        agent_state.rotation = quat_from_angle_axis(turn_angle, np.array([0, 1.0, 0]))
         # need to move the sensors too
         for sensor in agent_state.sensor_states:
             agent_state.sensor_states[sensor].rotation = agent_state.rotation
@@ -283,7 +284,7 @@ class DemoRunner:
             print(
                 "Test scenes not downloaded locally, downloading and extracting now..."
             )
-            utils.download_and_unzip(default_sim_settings["test_scene_data_url"], ".")
+            download_and_unzip(default_sim_settings["test_scene_data_url"], ".")
             print("Downloaded and extracted test scenes data.")
 
         self._sim = habitat_sim.Simulator(self._cfg)

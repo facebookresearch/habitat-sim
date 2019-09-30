@@ -7,9 +7,8 @@
 
 import argparse
 
-import numpy as np
-
 import demo_runner as dr
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--scene", type=str, default=dr.default_sim_settings["test_scene"])

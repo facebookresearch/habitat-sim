@@ -249,9 +249,7 @@ class CMakeBuild(build_ext):
         # NOTE: BUILD_TEST is intentional as opposed to BUILD_TESTS which collides
         # with definition used by some of our dependencies
         cmake_args += ["-DBUILD_TEST={}".format("ON" if args.build_tests else "OFF")]
-        cmake_args += [
-            "-DBUILD_WITH_BULLET={}".format("ON" if args.with_bullet else "OFF")
-        ]
+        cmake_args += ["-DWITH_BULLET={}".format("ON" if args.with_bullet else "OFF")]
         cmake_args += [
             "-DBUILD_DATATOOL={}".format("ON" if args.build_datatool else "OFF")
         ]
