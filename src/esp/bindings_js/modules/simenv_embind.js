@@ -66,9 +66,8 @@ class SimEnv {
    * @param {number} sensorId - id of sensor
    * @returns {Observation} observation from sensor
    */
-  getObservation(sensorId) {
-    const obs = new Module.Observation();
-    this.sim.getAgentObservation(0, sensorId, obs);
+  getObservation(sensorId, obs) {
+    this.sim.getAgentObservation(this.selectedAgentId, sensorId, obs);
     return obs;
   }
 
