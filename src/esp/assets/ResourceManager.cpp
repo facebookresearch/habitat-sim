@@ -412,10 +412,6 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
     scene::SceneNode& newNode = parent->createChild();
     AssetInfo renderMeshinfo = AssetInfo::fromPath(filename);
 
-    // TODO: remove? testing
-    // const quatf transform = renderMeshinfo.frame.rotationFrameToWorld();
-    // newNode.setRotation(Magnum::Quaternion(transform));
-
     Magnum::PluginManager::Manager<Importer> manager;
     std::unique_ptr<Importer> importer =
         manager.loadAndInstantiate("AnySceneImporter");
@@ -430,6 +426,10 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
     Cr::Utility::Debug() << "New object BB: " << parent->cumulativeBB_
                          << ", size: " << parent->cumulativeBB_.size()
                          << ", center: " << parent->cumulativeBB_.center();
+    // set the transform such that the center is the origin
+    newNode.translateLocal(-parent->cumulativeBB_.center());
+    parent->cumulativeBB_ =
+        parent->cumulativeBB_.translated(-parent->cumulativeBB_.center());
   }
 
   return objectID;

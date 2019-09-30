@@ -130,7 +130,7 @@ class PhysicsManager {
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  int addObject(const int objectLibIndex, DrawableGroup* drawables);
+  virtual int addObject(const int objectLibIndex, DrawableGroup* drawables);
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref
@@ -653,6 +653,19 @@ class PhysicsManager {
 
   //! Toggle drawing of the object bounding box.
   void toggleBBDraw(int physObjectID, DrawableGroup* drawables);
+
+  //! Not implemented for default @ref PhysicsManager. See @ref
+  //! BulletPhysicsManager.
+  virtual int getNumOverlappingObjectPairs(
+      CORRADE_UNUSED bool computeCollisions) {
+    return PHYSICS_ATTR_UNDEFINED;
+  };
+
+  //! Not implemented for default @ref PhysicsManager. See @ref
+  //! BulletPhysicsManager.
+  virtual bool contactTest(CORRADE_UNUSED const int physObjectID) {
+    return false;
+  };
 
  protected:
   /** @brief Check if a particular mesh can be used as a collision mesh for a

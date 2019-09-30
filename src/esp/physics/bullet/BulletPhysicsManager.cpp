@@ -63,6 +63,22 @@ bool BulletPhysicsManager::addScene(
   return sceneSuccess;
 }
 
+int BulletPhysicsManager::addObject(const int objectLibIndex,
+                                    DrawableGroup* drawables) {
+  // Do default load first
+  int objID = PhysicsManager::addObject(objectLibIndex, drawables);
+
+  // Then set the collision shape to the bounding box if necessary
+  if (objID != ID_UNDEFINED) {
+    BulletRigidObject* bro =
+        static_cast<BulletRigidObject*>(existingObjects_.at(objID));
+    if (bro->collisionFromBB_) {
+      bro->setCollisionFromBB();
+    }
+  }
+  return objID;
+}
+
 int BulletPhysicsManager::makeRigidObject(
     const std::vector<assets::CollisionMeshData>& meshGroup,
     assets::PhysicsObjectAttributes physicsObjectAttributes) {
@@ -184,6 +200,24 @@ double BulletPhysicsManager::getSceneFrictionCoefficient() {
 double BulletPhysicsManager::getSceneRestitutionCoefficient() {
   return static_cast<BulletRigidObject*>(sceneNode_)
       ->getRestitutionCoefficient();
+}
+
+int BulletPhysicsManager::getNumOverlappingObjectPairs(bool computeCollisions) {
+  if (computeCollisions) {
+    LOG(INFO) << "computing collisions";
+    bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
+  }
+  return bWorld_->getCollisionWorld()->getPairCache()->getNumOverlappingPairs();
+}
+
+bool BulletPhysicsManager::contactTest(const int physObjectID) {
+  if (existingObjects_.count(physObjectID) > 0) {
+    bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
+    return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+        ->contactTest();
+  } else {
+    return false;
+  }
 }
 
 }  // namespace physics

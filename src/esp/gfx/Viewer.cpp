@@ -23,6 +23,13 @@
 
 #include "esp/gfx/configure.h"
 
+#include "esp/nav/PathFinder.h"
+#include "utils/datatool/SceneLoader.h"
+
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
+#include <assimp/Importer.hpp>
+
 using namespace Magnum;
 using namespace Math::Literals;
 using namespace Corrade;
@@ -81,6 +88,7 @@ Viewer::Viewer(const Arguments& arguments)
   auto& drawables = sceneGraph_->getDrawables();
   const std::string& file = args.value("scene");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
+  sceneInfo_ = info;
 
   if (enablePhysics_) {
     if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
@@ -127,6 +135,12 @@ Viewer::Viewer(const Arguments& arguments)
     // pathfinder_->build(nav::NavMeshSettings(),
     // resourceManager_.getCollisionMesh(0));
   }
+
+  incrementallyAddObjects();
+  LOG(INFO) << "Re-build navmesh from scene mesh +";
+  reconstructNavMesh();
+  const vec3f position = pathfinder_->getRandomNavigablePoint();
+  agentBodyNode_->setTranslation(Vector3(position));
 
   // connect controls to navmesh if loaded
   if (pathfinder_->isLoaded()) {
@@ -176,6 +190,7 @@ void Viewer::addObject(std::string configFile) {
       physObjectID,
       Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
   objectIDs_.push_back(physObjectID);
+  physicsManager_->toggleBBDraw(physObjectID, &drawables);
 
   // const Magnum::Vector3& trans =
   // physicsManager_->getTranslation(physObjectID); LOG(INFO) << "translation: "
@@ -302,10 +317,102 @@ void Viewer::highlightNavmeshIsland() {
   */
 }
 
+assets::MeshData Viewer::load(const assets::AssetInfo& info) {
+  assets::MeshData mesh;
+  if (!esp::io::exists(info.filepath)) {
+    LOG(ERROR) << "Could not find file " << info.filepath;
+    return mesh;
+  }
+
+  if (info.type == assets::AssetType::INSTANCE_MESH) {
+    assets::GenericInstanceMeshData instanceMeshData;
+    instanceMeshData.loadPLY(info.filepath);
+
+    const auto& vbo = instanceMeshData.getVertexBufferObjectCPU();
+    const auto& cbo = instanceMeshData.getColorBufferObjectCPU();
+    const auto& ibo = instanceMeshData.getIndexBufferObjectCPU();
+    mesh.vbo = vbo;
+    mesh.ibo = ibo;
+    for (const auto& c : cbo) {
+      mesh.cbo.emplace_back(c.cast<float>() / 255.0f);
+    }
+  } else {
+    const aiScene* scene;
+    Assimp::Importer Importer;
+
+    // Flags for loading the mesh
+    static const int assimpFlags =
+        aiProcess_Triangulate | aiProcess_PreTransformVertices;
+
+    scene = Importer.ReadFile(info.filepath.c_str(), assimpFlags);
+
+    const quatf alignSceneToEspGravity =
+        quatf::FromTwoVectors(info.frame.gravity(), esp::geo::ESP_GRAVITY);
+
+    // Iterate through all meshes in the file and extract the vertex components
+    for (uint32_t m = 0, indexBase = 0; m < scene->mNumMeshes; ++m) {
+      const aiMesh& assimpMesh = *scene->mMeshes[m];
+      for (uint32_t v = 0; v < assimpMesh.mNumVertices; ++v) {
+        // Use Eigen::Map to convert ASSIMP vectors to eigen vectors
+        const Eigen::Map<const vec3f> xyz_scene(&assimpMesh.mVertices[v].x);
+        const vec3f xyz_esp = alignSceneToEspGravity * xyz_scene;
+        mesh.vbo.push_back(xyz_esp);
+
+        if (assimpMesh.mNormals) {
+          const Eigen::Map<const vec3f> normal_scene(&assimpMesh.mNormals[v].x);
+          const vec3f normal_esp = alignSceneToEspGravity * normal_scene;
+          mesh.nbo.push_back(normal_esp);
+        }
+
+        if (assimpMesh.HasTextureCoords(0)) {
+          const Eigen::Map<const vec2f> texCoord(
+              &assimpMesh.mTextureCoords[0][v].x);
+          mesh.tbo.push_back(texCoord);
+        }
+
+        if (assimpMesh.HasVertexColors(0)) {
+          const Eigen::Map<const vec3f> color(&assimpMesh.mColors[0][v].r);
+          mesh.cbo.push_back(color);
+        }
+      }  // vertices
+
+      // Generate and append index buffer for mesh
+      for (uint32_t f = 0; f < assimpMesh.mNumFaces; ++f) {
+        const aiFace& face = assimpMesh.mFaces[f];
+        for (uint32_t i = 0; i < face.mNumIndices; ++i) {
+          mesh.ibo.push_back(face.mIndices[i] + indexBase);
+        }
+      }  // faces
+      indexBase += assimpMesh.mNumVertices;
+    }  // meshes
+  }
+
+  LOG(INFO) << "Loaded " << mesh.vbo.size() << " vertices, " << mesh.ibo.size()
+            << " indices";
+
+  return mesh;
+}
+
+void Viewer::reconstructNavMesh() {
+  assets::MeshData mesh = load(sceneInfo_);
+
+  // now add the bounding boxes to the mesh
+  // TODO:
+  for (auto id : objectIDs_) {
+    Magnum::Range3D BB = physicsManager_->getObjectLocalBoundingBox(id);
+  }
+
+  nav::NavMeshSettings bs;
+  bs.setDefaults();
+
+  if (!pathfinder_->build(bs, mesh)) {
+    LOG(ERROR) << "Failed to build navmesh";
+  }
+}
+
 void Viewer::incrementallyAddObjects() {
-  // const vec3f position = pathfinder_->getRandomNavigablePoint();
-  // vec3f position(-5.7589, 0.120596, 9.3611);
-  vec3f position(1.44672, 0.03, -3.26787);
+  // vec3f position(-5.7589, 0.120596, 9.3611); //skokloster
+  // vec3f position(1.44672, 0.03, -3.26787); //CODA room
 
   int numObjects = resourceManager_.getNumLibraryObjects();
   if (!numObjects) {
@@ -317,10 +424,47 @@ void Viewer::incrementallyAddObjects() {
   assets::PhysicsObjectAttributes poa =
       resourceManager_.getPhysicsObjectAttributes(configFile);
   int physObjectID = physicsManager_->addObject(configFile, &drawables);
+  physicsManager_->setObjectMotionType(physObjectID,
+                                       physics::MotionType::KINEMATIC);
   LOG(INFO) << "Added object: " << configFile;
   Magnum::Range3D BB = physicsManager_->getObjectLocalBoundingBox(physObjectID);
-  Magnum::Vector3 offset(0.0, BB.sizeY(), 0.0);
-  physicsManager_->setTranslation(physObjectID, Magnum::Vector3(position));
+
+  // find a place to put the object
+
+  int tries = 0;
+  bool placedWell = false;
+  while (!placedWell && tries < 99) {
+    float rad = 0;
+    vec3f position;
+    while ((rad < BB.sizeX() / 2.0 || rad < BB.sizeZ() / 2.0) && tries < 99) {
+      position = pathfinder_->getRandomNavigablePoint();
+      rad = pathfinder_->distanceToClosestObstacle(position);
+      tries++;
+    }
+
+    Magnum::Vector3 offset(0.0, BB.sizeY() / 2.0, 0.0);
+    physicsManager_->setTranslation(physObjectID,
+                                    Magnum::Vector3(position) + offset);
+
+    // now pick an orientation
+    Magnum::Quaternion R = Magnum::Quaternion::rotation(
+        Rad((rand() % 1000 / 1000.0) * M_PI * 2.0), Magnum::Vector3(0, 1.0, 0));
+    physicsManager_->setRotation(physObjectID, R);
+
+    // LOG(INFO) << "num overlapping pairs: " <<
+    // physicsManager_->getNumOverlappingObjectPairs(true);
+    placedWell = !physicsManager_->contactTest(physObjectID);
+    // LOG(INFO) << "new object overlapping?: " <<
+    // physicsManager_->contactTest(physObjectID);
+  }
+
+  if (!placedWell) {
+    // remove the object!
+    physicsManager_->removeObject(physObjectID);
+    return;
+  }
+
+  LOG(INFO) << "found a place in " << tries << "tries.";
   Corrade::Utility::Debug() << physicsManager_->getTransformation(physObjectID);
   objectIDs_.push_back(physObjectID);
   sequentialItemSpawnID_ = (sequentialItemSpawnID_ + 1) % numObjects;
@@ -520,9 +664,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // remove the first primitive
       removePrimitiveDrawable(0);
     } break;
-
     case KeyEvent::Key::N: {
-      // highlightNavmeshIsland();
+      highlightNavmeshIsland();
+
+    } break;
+    case KeyEvent::Key::M: {
       incrementallyAddObjects();
     } break;
 

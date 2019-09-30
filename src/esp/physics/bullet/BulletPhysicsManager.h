@@ -80,6 +80,8 @@ class BulletPhysicsManager : public PhysicsManager {
   bool addScene(const assets::PhysicsSceneAttributes& physicsSceneAttributes,
                 const std::vector<assets::CollisionMeshData>& meshGroup);
 
+  int addObject(const int objectLibIndex, DrawableGroup* drawables);
+
   //============ Simulator functions =============
 
   /** @brief Step the physical world forward in time. Time may only advance in
@@ -152,6 +154,20 @@ class BulletPhysicsManager : public PhysicsManager {
    * @return The scalar coefficient of restitution for the scene geometry.
    */
   double getSceneRestitutionCoefficient();
+
+  /**
+   * @brief Performs a discrete collision detection pass if requested and
+   * returns the number of overlapping collision pairs.
+   * @param computeCollisions Determines whether or not a fresh pass of
+   * collision detection is performed before returning cached data.
+   * @return The number of intersecting collision pairs.
+   */
+  int getNumOverlappingObjectPairs(bool computeCollisions = false);
+
+  /**
+   * TODO:
+   */
+  bool contactTest(const int physObjectID);
 
  protected:
   btDbvtBroadphase bBroadphase_;

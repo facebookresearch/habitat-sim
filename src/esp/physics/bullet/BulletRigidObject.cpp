@@ -6,6 +6,7 @@
 #include <Magnum/BulletIntegration/Integration.h>
 #include <Magnum/BulletIntegration/MotionState.h>
 
+#include "BulletCollision/CollisionDispatch/btCollisionWorld.h"
 #include "BulletCollision/CollisionShapes/btCompoundShape.h"
 #include "BulletCollision/CollisionShapes/btConvexHullShape.h"
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
@@ -28,6 +29,25 @@
 
 namespace esp {
 namespace physics {
+
+struct SimulationContactResultCallback
+    : public btCollisionWorld::ContactResultCallback {
+  bool bCollision;
+
+  SimulationContactResultCallback() { bCollision = false; }
+
+  btScalar addSingleResult(btManifoldPoint& cp,
+                           const btCollisionObjectWrapper* colObj0Wrap,
+                           int partId0,
+                           int index0,
+                           const btCollisionObjectWrapper* colObj1Wrap,
+                           int partId1,
+                           int index1) {
+    // If cp distance less than threshold
+    bCollision = true;
+    return 0;
+  }
+};
 
 BulletRigidObject::BulletRigidObject(scene::SceneNode* parent)
     : RigidObject{parent} {};
@@ -117,45 +137,56 @@ bool BulletRigidObject::initializeObject(
   rigidObjectType_ = RigidObjectType::OBJECT;
   objectMotionType_ = MotionType::DYNAMIC;
 
-  //! Create Bullet Object
-  btIndexedMesh bulletMesh;
-
   //! Physical parameters
   double margin = physicsObjectAttributes.getDouble("margin");
 
-  //! Iterate through all mesh components for one object
-  //! The components are combined into a convex compound shape
-  bObjectShape_ = std::make_unique<btCompoundShape>();
-  for (const assets::CollisionMeshData& meshData : meshGroup) {
-    Corrade::Containers::ArrayView<Magnum::Vector3> v_data = meshData.positions;
-    Corrade::Containers::ArrayView<Magnum::UnsignedInt> ui_data =
-        meshData.indices;
+  bool useCollisionBB = true;
 
-    //! Configure Bullet Mesh
-    //! This part is very likely to cause segfault, if done incorrectly
-    bulletMesh.m_numTriangles = ui_data.size() / 3;
-    bulletMesh.m_triangleIndexBase =
-        reinterpret_cast<const unsigned char*>(ui_data.data());
-    bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
-    bulletMesh.m_numVertices = v_data.size();
-    //! Get the pointer to the first float of the first triangle
-    bulletMesh.m_vertexBase =
-        reinterpret_cast<const unsigned char*>(v_data.data()->data());
-    bulletMesh.m_vertexStride = sizeof(Magnum::Vector3);
-    bulletMesh.m_indexType = PHY_INTEGER;
-    bulletMesh.m_vertexType = PHY_FLOAT;
+  if (useCollisionBB) {
+    collisionFromBB_ = true;
+    // set a dummy shape for now. We will use the added BB object to correct
+    // this later
+    bObjectShape_ = std::make_unique<btBoxShape>(btVector3());
+  } else {
+    //! Create Bullet Object
+    btIndexedMesh bulletMesh;
+    //! Iterate through all mesh components for one object
+    //! The components are combined into a convex compound shape
+    bObjectShape_ = std::make_unique<btCompoundShape>();
+    for (const assets::CollisionMeshData& meshData : meshGroup) {
+      Corrade::Containers::ArrayView<Magnum::Vector3> v_data =
+          meshData.positions;
+      Corrade::Containers::ArrayView<Magnum::UnsignedInt> ui_data =
+          meshData.indices;
 
-    btTransform t;  // position and rotation
-    t.setIdentity();
-    t.setOrigin(btVector3(0, 0, 0));
-    //! Create convex component
-    bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
-        static_cast<const btScalar*>(meshData.positions.data()->data()),
-        meshData.positions.size(), sizeof(Magnum::Vector3)));
-    bObjectConvexShapes_.back()->setMargin(margin);
-    //! Add to compound shape stucture
-    bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
+      //! Configure Bullet Mesh
+      //! This part is very likely to cause segfault, if done incorrectly
+      bulletMesh.m_numTriangles = ui_data.size() / 3;
+      bulletMesh.m_triangleIndexBase =
+          reinterpret_cast<const unsigned char*>(ui_data.data());
+      bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
+      bulletMesh.m_numVertices = v_data.size();
+      //! Get the pointer to the first float of the first triangle
+      bulletMesh.m_vertexBase =
+          reinterpret_cast<const unsigned char*>(v_data.data()->data());
+      bulletMesh.m_vertexStride = sizeof(Magnum::Vector3);
+      bulletMesh.m_indexType = PHY_INTEGER;
+      bulletMesh.m_vertexType = PHY_FLOAT;
+
+      btTransform t;  // position and rotation
+      t.setIdentity();
+      t.setOrigin(btVector3(0, 0, 0));
+      //! Create convex component
+      bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
+          static_cast<const btScalar*>(meshData.positions.data()->data()),
+          meshData.positions.size(), sizeof(Magnum::Vector3)));
+      bObjectConvexShapes_.back()->setMargin(margin);
+      //! Add to compound shape stucture
+      static_cast<btCompoundShape*>(bObjectShape_.get())
+          ->addChildShape(t, bObjectConvexShapes_.back().get());
+    }
   }
+
   //! Set properties
   bObjectShape_->setMargin(margin);
 
@@ -184,9 +215,6 @@ bool BulletRigidObject::initializeObject(
   info.m_linearDamping = physicsObjectAttributes.getDouble("linDamping");
   info.m_angularDamping = physicsObjectAttributes.getDouble("angDamping");
 
-  // Magnum::Vector3 inertia = metaData.inertia;
-  // info.m_localInertia   = bInertia(inertia.x(), inertia.y(), inertia.z());
-
   //! Create rigid body
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
   //! Add to world
@@ -196,6 +224,20 @@ bool BulletRigidObject::initializeObject(
   syncPose();
   return true;
 }  // end BulletRigidObject::initializeObject
+
+void BulletRigidObject::setCollisionFromBB() {
+  btVector3 dim(cumulativeBB_.size() / 2.0);
+  bObjectShape_ = std::make_unique<btBoxShape>(dim);
+  bObjectRigidBody_->setCollisionShape(bObjectShape_.get());
+
+  btVector3 bInertia(getInertiaVector());
+
+  // allow bullet to compute the inertia tensor if we don't have one
+  bObjectShape_->calculateLocalInertia(getMass(),
+                                       bInertia);  // overrides bInertia
+
+  setInertiaVector(Magnum::Vector3(bInertia));
+}
 
 bool BulletRigidObject::removeObject() {
   if (rigidObjectType_ == RigidObjectType::OBJECT) {
@@ -242,6 +284,7 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
       bObjectRigidBody_->setCollisionFlags(
           bObjectRigidBody_->getCollisionFlags() &
           ~btCollisionObject::CF_STATIC_OBJECT);
+      bObjectRigidBody_->setActivationState(DISABLE_DEACTIVATION);
       objectMotionType_ = MotionType::KINEMATIC;
       bWorld_->addRigidBody(bObjectRigidBody_.get());
       return true;
@@ -354,6 +397,7 @@ void BulletRigidObject::setInertiaVector(const Magnum::Vector3& inertia) {
     return;
   else
     bObjectRigidBody_->setMassProps(getMass(), btVector3(inertia));
+  LOG(INFO) << "the set worked";
 }
 
 void BulletRigidObject::setScale(const double) {
@@ -502,6 +546,13 @@ double BulletRigidObject::getAngularDamping() {
   } else {
     return bObjectRigidBody_->getAngularDamping();
   }
+}
+
+bool BulletRigidObject::contactTest() {
+  SimulationContactResultCallback src;
+  bWorld_->getCollisionWorld()->contactTest(bObjectRigidBody_.get(), src);
+  LOG(INFO) << "collision detected = " << src.bCollision;
+  return src.bCollision;
 }
 
 }  // namespace physics

@@ -61,6 +61,10 @@ class Viewer : public Magnum::Platform::Application {
 
   void removePrimitiveDrawable(int index);
 
+  assets::MeshData load(const assets::AssetInfo& info);
+
+  void reconstructNavMesh();
+
   void highlightNavmeshIsland();
 
   void incrementallyAddObjects();
@@ -95,6 +99,8 @@ class Viewer : public Magnum::Platform::Application {
   int sequentialItemSpawnID_ = 0;
 
   Magnum::Timeline timeline_;
+
+  assets::AssetInfo sceneInfo_;
 };
 
 }  // namespace gfx
