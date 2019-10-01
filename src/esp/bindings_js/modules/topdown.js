@@ -1,3 +1,9 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+import { throttle } from "./utils";
+
 /**
  * TopDownMap class
  */
@@ -50,20 +56,28 @@ class TopDownMap {
    * Update trajectory with new position
    * @param {vec3f} position - new position
    */
-  moveTo(position) {
-    /*
-     * If we've gone up or down a floor, we need to create a new map.
-     * A change in Y of 0.25 should be sufficient as a test.
-     */
-    if (
-      position[1] < this.currentY - 0.25 ||
-      position[1] > this.currentY + 0.25
-    ) {
-      this.start(position);
+  moveTo(position, throttleAmount = 0) {
+    if (throttleAmount !== 0) {
+      if (!this.throttledMoveTo) {
+        this.throttledMoveTo = throttle(this.moveTo.bind(this), throttleAmount);
+      }
+      this.throttledMoveTo(position);
     } else {
-      let [x, y] = this.convertPosition(position);
-      this.ctx.lineTo(x, y);
-      this.ctx.stroke();
+      console.log("move to called");
+      /*
+       * If we've gone up or down a floor, we need to create a new map.
+       * A change in Y of 0.25 should be sufficient as a test.
+       */
+      if (
+        position[1] < this.currentY - 0.25 ||
+        position[1] > this.currentY + 0.25
+      ) {
+        this.start(position);
+      } else {
+        let [x, y] = this.convertPosition(position);
+        this.ctx.lineTo(x, y);
+        this.ctx.stroke();
+      }
     }
   }
 
