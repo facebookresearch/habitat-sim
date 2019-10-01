@@ -2,20 +2,31 @@
 
 import WebDemo from "./modules/web_demo";
 import VRDemo from "./modules/vr_demo";
+import { defaultScene } from "./modules/defaults";
 import "./bindings.css";
 
+function preload(file) {
+  FS.createPreloadedFile("/", file, file, true, false);
+}
+
 Module.preRun.push(() => {
-  let scene = "skokloster-castle.glb";
+  let config = {};
+  config.scene = defaultScene;
   for (let arg of window.location.search.substr(1).split("&")) {
     let [key, value] = arg.split("=");
-    if (key === "scene" && value) {
-      scene = value;
+    if (key && value) {
+      config[key] = value;
     }
   }
-  FS.createPreloadedFile("/", scene, scene, true, false);
+  const scene = config.scene;
+  preload(scene);
   Module.scene = scene;
-  const navmesh = scene.substr(0, scene.lastIndexOf(".")) + ".navmesh";
-  FS.createPreloadedFile("/", navmesh, navmesh, true, false);
+  const fileNoExtension = scene.substr(0, scene.lastIndexOf("."));
+  preload(fileNoExtension + ".navmesh");
+  if (config.semantic === "mp3d") {
+    preload(fileNoExtension + ".house");
+    preload(fileNoExtension + "_semantic.ply");
+  }
 });
 
 Module.onRuntimeInitialized = () => {

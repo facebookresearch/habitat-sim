@@ -11,7 +11,6 @@
 
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Reference.h>
-#include <Magnum/DebugTools/ForceRenderer.h>
 #include "esp/assets/Asset.h"
 #include "esp/assets/Attributes.h"
 #include "esp/assets/BaseMesh.h"

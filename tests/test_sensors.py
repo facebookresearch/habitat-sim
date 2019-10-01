@@ -14,8 +14,8 @@ import quaternion
 
 import habitat_sim
 import habitat_sim.errors
-import habitat_sim.utils
 from examples.settings import make_cfg
+from habitat_sim.utils.common import quat_from_coeffs
 
 _test_scenes = [
     osp.abspath(
@@ -85,7 +85,7 @@ def test_sensors(scene, has_sem, sensor_type, gpu2gpu, sim, make_cfg_settings):
         render_state = json.load(f)
         state = habitat_sim.AgentState()
         state.position = render_state["pos"]
-        state.rotation = habitat_sim.utils.quat_from_coeffs(render_state["rot"])
+        state.rotation = quat_from_coeffs(render_state["rot"])
 
     sim.initialize_agent(0, state)
     obs = sim.step("move_forward")

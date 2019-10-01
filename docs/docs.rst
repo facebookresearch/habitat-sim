@@ -82,11 +82,19 @@
     We currently have the following actions added by default. Any action not
     registered with an explict name is given the snake case version of the
     class name, i.e. ``MoveForward`` can be accessed with the name
-    ``move_forward``.
+    ``move_forward``.  See `registry.register_move_fn`, `SceneNodeControl`,
+    and `ActuationSpec`
 
     .. include:: ../habitat_sim/agent/controls/default_controls.py
         :code: py
-        :start-line: 6
+        :start-line: 38
+
+    And noisy actions from PyRobot.  See `PyRobotNoisyActuationSpec`
+
+    .. include:: ../habitat_sim/agent/controls/pyrobot_noisy_controls.py
+        :code: py
+        :start-line: 244
+
 
     Action space path finding
     =========================
@@ -110,7 +118,7 @@
 
         Not avaliable for all datasets.
 
-.. py:module:: habitat_sim.utils
+.. py:module:: habitat_sim.utils.common
 
     Quaternion Math
     ===============
@@ -130,15 +138,15 @@
 
     -   `colorize_ids()`
 
-.. py:data:: habitat_sim.utils.d3_40_colors_rgb
+.. py:data:: habitat_sim.utils.common.d3_40_colors_rgb
     :summary: Color map for semantic ID rendering.
 
-.. py:data:: habitat_sim.utils.d3_40_colors_hex
+.. py:data:: habitat_sim.utils.common.d3_40_colors_hex
     :summary: Color map for semantic ID rendering.
 
     Same as `d3_40_colors_rgb`, but in a hexadecimal representation.
 
-    .. include:: ../habitat_sim/utils.py
+    .. include:: ../habitat_sim/utils/common.py
         :code: py
         :start-after: # [d3_40_colors_hex]
         :end-before: # [/d3_40_colors_hex]
