@@ -8,15 +8,21 @@
     A noise model can be applied to a sensor by specifying the name of the noise
     model in the `sensor.SensorSpec.noise_model` feild.
     Arguments can be passed to the noise model constructor as keyword arguments using
-    the `sensor.SensorSpec.noise_model_kwargs` field.
+    the `sensor.SensorSpec.noise_model_kwargs` field. For instance, to use the `RedwoodDepthNoiseModel`
+    with a ``noise_multiplier`` of 5
+
+    .. code:: py
+
+        sensor_spec.noise_model = "RedwoodDepthNoiseModel"
+        sensor_spec.noise_model_kwargs = dict(noise_multiplier=5)
+
 
 
     These noise models are commonly the result of contributions from various research projects.
     If you use a noise model in your research, please cite the relevant work specified by the docummentation
 
 
-    Depth Noise Models
-    ------------------
+    **Depth Noise Models**
 
     * Redwood Noise Model for PrimSense depth cameras: `RedwoodDepthNoiseModel`
 
