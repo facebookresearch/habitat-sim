@@ -22,15 +22,6 @@ set(gfx_SOURCES
   RenderTarget.h
 )
 
-# If GUI build, add Viewer source
-# TODO(MS) Viewer really ought to be in separate module that is disabled
-if(BUILD_GUI_VIEWERS)
-  list(APPEND gfx_SOURCES
-    Viewer.cpp
-    Viewer.h
-  )
-endif()
-
 # If ptex support is enabled add relevant source files
 if(BUILD_PTEX_SUPPORT)
   list(APPEND gfx_SOURCES
@@ -54,7 +45,6 @@ find_package(Magnum
     SceneGraph
     Shaders
     Trade
-    DebugTools
     AnyImageConverter
 )
 
@@ -120,7 +110,6 @@ target_link_libraries(gfx
     MagnumPlugins::TinyGltfImporter
     MagnumIntegration::Eigen
     Corrade::Utility
-    Magnum::DebugTools
     Magnum::AnyImageConverter
 )
 
