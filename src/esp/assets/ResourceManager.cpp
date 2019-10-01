@@ -879,8 +879,6 @@ bool ResourceManager::loadGeneralMeshData(
     //! Do not instantiate object
     return true;
   } else {
-    LOG(INFO) << "loading drawable mesh";
-
     // intercept nullptr scene graph nodes (default) to add mesh to
     // metadata list without adding it to scene graph
     scene::SceneNode& newNode = parent->createChild();
@@ -915,7 +913,6 @@ bool ResourceManager::loadGeneralMeshData(
     for (auto sceneDataID : magnumMeshDict_[filename]) {
       addComponent(*importer, metaData, newNode, drawables, sceneDataID);
     }
-
     return true;
   }
 }

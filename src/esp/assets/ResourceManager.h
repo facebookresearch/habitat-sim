@@ -38,7 +38,6 @@ class PhongMaterialData;
 }  // namespace Magnum
 
 namespace esp {
-
 namespace gfx {
 class Drawable;
 }
@@ -135,6 +134,15 @@ class ResourceManager {
     return meshes_[meshIndex]->meshTransform_;
   }
 
+  /**
+   * @brief Create a new drawable primitive attached to the desired @ref
+   * SceneNode. See @ref primitive_meshes_.
+   * @param primitiveID The index of the primitive in @ref primitive_meshes_.
+   * @param node The @ref SceneNode to which the primitive drawable will be
+   * attached.
+   * @param drawables The @ref DrawableGroup with which the primitive will be
+   * rendered.
+   */
   void addPrimitiveToDrawables(int primitiveID,
                                scene::SceneNode& node,
                                DrawableGroup* drawables);
@@ -230,6 +238,10 @@ class ResourceManager {
   // simulation parameters
   std::map<std::string, PhysicsManagerAttributes> physicsManagerLibrary_;
 
+  /**
+   * @brief Primitive meshes available for instancing via @ref
+   * addPrimitiveToDrawables for debugging or visualization purposes.
+   */
   std::vector<Magnum::GL::Mesh> primitive_meshes_;
 
   // maps: "data/objects/cheezit.phys_properties.json" -> collesionMesh group
