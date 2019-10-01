@@ -295,21 +295,16 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
         if (scenePhysicsConfig["rigid object paths"][i].IsString()) {
           std::string filename =
               scenePhysicsConfig["rigid object paths"][i].GetString();
-          std::string directory = configDirectory + "/";
-          // if it ends with "/", treat as directory and try to load the whole
-          // thing
-          if (filename.back() == '/') {
-            std::string absoluteDirPath =
-                Cr::Utility::Directory::join(directory, filename);
-            LOG(INFO) << "Parsing object library directory: " + absoluteDirPath;
-            if (Cr::Utility::Directory::exists(absoluteDirPath)) {
-              for (auto& file : Cr::Utility::Directory::list(absoluteDirPath)) {
+          std::string absolutePath =
+              Cr::Utility::Directory::join(configDirectory, filename);
+          if (Cr::Utility::Directory::isDirectory(absolutePath)) {
+            LOG(INFO) << "Parsing object library directory: " + absolutePath;
+            if (Cr::Utility::Directory::exists(absolutePath)) {
+              for (auto& file : Cr::Utility::Directory::list(absolutePath)) {
                 std::string absoluteSubfilePath =
-                    Cr::Utility::Directory::join(absoluteDirPath, file);
-                if (absoluteSubfilePath.find(".phys_properties.json") !=
-                    std::string::npos) {
-                  // LOG(INFO) << "Adding " << absoluteSubfilePath << " to
-                  // object library.";
+                    Cr::Utility::Directory::join(absolutePath, file);
+                if (Cr::Utility::String::endsWith(absoluteSubfilePath,
+                                                  ".phys_properties.json")) {
                   physicsManagerAttributes.appendVecStrings(
                       "objectLibraryPaths", absoluteSubfilePath);
                 }
@@ -320,9 +315,8 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
             }
           } else {
             // 1: parse the filename (relative or global path)
-            filename += ".phys_properties.json";
             std::string objPhysPropertiesFilename =
-                Cr::Utility::Directory::join(directory, filename);
+                absolutePath + ".phys_properties.json";
             physicsManagerAttributes.appendVecStrings(
                 "objectLibraryPaths", objPhysPropertiesFilename);
           }
