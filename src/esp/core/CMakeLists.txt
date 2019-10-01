@@ -18,7 +18,7 @@ if(BUILD_WITH_CUDA)
   set(ESP_BUILD_WITH_CUDA ON)
 endif()
 
-if(BUILD_WITH_BULLET)
+if(WITH_BULLET)
   set(ESP_BUILD_WITH_BULLET ON)
 endif()
 
