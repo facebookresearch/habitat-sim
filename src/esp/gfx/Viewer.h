@@ -69,6 +69,12 @@ class Viewer : public Magnum::Platform::Application {
 
   void incrementallyAddObjects();
 
+  // Add an object to the scene at a location drawn from the navmesh. Consider
+  // existing objects and do not overlap. Uses rejection sampling.
+  int addAndPlaceObjectFromNavmesh(int objLibraryID);
+
+  void generateRandomScene(int numObjects);
+
   Magnum::Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
                                    const Magnum::Vector2i& position);
 

@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <stdlib.h>
+#include <chrono>
 
 #include "Viewer.h"
 
@@ -135,12 +136,6 @@ Viewer::Viewer(const Arguments& arguments)
     // pathfinder_->build(nav::NavMeshSettings(),
     // resourceManager_.getCollisionMesh(0));
   }
-
-  incrementallyAddObjects();
-  LOG(INFO) << "Re-build navmesh from scene mesh +";
-  reconstructNavMesh();
-  const vec3f position = pathfinder_->getRandomNavigablePoint();
-  agentBodyNode_->setTranslation(Vector3(position));
 
   // connect controls to navmesh if loaded
   if (pathfinder_->isLoaded()) {
@@ -393,13 +388,40 @@ assets::MeshData Viewer::load(const assets::AssetInfo& info) {
   return mesh;
 }
 
+vec3f toEig(Magnum::Vector3 v) {
+  return vec3f(v[0], v[1], v[2]);
+}
+
 void Viewer::reconstructNavMesh() {
+  pathfinder_.reset(new esp::nav::PathFinder);
+
   assets::MeshData mesh = load(sceneInfo_);
 
   // now add the bounding boxes to the mesh
   // TODO:
   for (auto id : objectIDs_) {
     Magnum::Range3D BB = physicsManager_->getObjectLocalBoundingBox(id);
+    Magnum::Matrix4 T = physicsManager_->getTransformation(id);
+
+    // index base for newly added BB corners
+    uint32_t ixb = mesh.vbo.size();
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.frontTopLeft())));
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.frontTopRight())));
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.frontBottomLeft())));
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.frontBottomRight())));
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.backTopLeft())));
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.backTopRight())));
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.backBottomLeft())));
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.backBottomRight())));
+
+    // now add the faces
+    std::vector<uint32_t> indices{0, 1, 2, 1, 3, 2, 1, 5, 7, 1, 7, 3,
+                                  0, 4, 5, 0, 5, 1, 0, 2, 6, 0, 6, 4,
+                                  4, 6, 7, 4, 7, 5, 2, 6, 3, 6, 7, 3};
+
+    for (auto i : indices) {
+      mesh.ibo.push_back(i + ixb);
+    }
   }
 
   nav::NavMeshSettings bs;
@@ -407,7 +429,11 @@ void Viewer::reconstructNavMesh() {
 
   if (!pathfinder_->build(bs, mesh)) {
     LOG(ERROR) << "Failed to build navmesh";
+    return;
   }
+
+  // pathfinder_->initNavQuery();
+  LOG(INFO) << "reconstruct navmesh successful";
 }
 
 void Viewer::incrementallyAddObjects() {
@@ -418,19 +444,21 @@ void Viewer::incrementallyAddObjects() {
   if (!numObjects) {
     return;
   }
-  std::string configFile =
-      resourceManager_.getObjectConfig(sequentialItemSpawnID_);
+  addAndPlaceObjectFromNavmesh(sequentialItemSpawnID_);
+  sequentialItemSpawnID_ = (sequentialItemSpawnID_ + 1) % numObjects;
+}
+
+int Viewer::addAndPlaceObjectFromNavmesh(int objLibraryID) {
+  std::string configFile = resourceManager_.getObjectConfig(objLibraryID);
   auto& drawables = sceneGraph_->getDrawables();
   assets::PhysicsObjectAttributes poa =
       resourceManager_.getPhysicsObjectAttributes(configFile);
   int physObjectID = physicsManager_->addObject(configFile, &drawables);
   physicsManager_->setObjectMotionType(physObjectID,
                                        physics::MotionType::KINEMATIC);
-  LOG(INFO) << "Added object: " << configFile;
   Magnum::Range3D BB = physicsManager_->getObjectLocalBoundingBox(physObjectID);
 
   // find a place to put the object
-
   int tries = 0;
   bool placedWell = false;
   while (!placedWell && tries < 99) {
@@ -461,13 +489,34 @@ void Viewer::incrementallyAddObjects() {
   if (!placedWell) {
     // remove the object!
     physicsManager_->removeObject(physObjectID);
-    return;
+    return ID_UNDEFINED;
+  }
+  objectIDs_.push_back(physObjectID);
+  return physObjectID;
+}
+
+void Viewer::generateRandomScene(int numObjects) {
+  auto start = std::chrono::steady_clock::now();
+  // empty the scene
+  for (auto id : physicsManager_->getExistingObjectIDs()) {
+    physicsManager_->removeObject(id);
+  }
+  objectIDs_.clear();
+
+  // add new objects to the scene
+  for (int i = 0; i < numObjects; i++) {
+    int randObjLibID = rand() % resourceManager_.getNumLibraryObjects();
+    addAndPlaceObjectFromNavmesh(randObjLibID);
   }
 
-  LOG(INFO) << "found a place in " << tries << "tries.";
-  Corrade::Utility::Debug() << physicsManager_->getTransformation(physObjectID);
-  objectIDs_.push_back(physObjectID);
-  sequentialItemSpawnID_ = (sequentialItemSpawnID_ + 1) % numObjects;
+  // rebuild the navmesh with the new item bounding boxes and draw an agent
+  // position
+  reconstructNavMesh();
+  const vec3f position = pathfinder_->getRandomNavigablePoint();
+  agentBodyNode_->setTranslation(Vector3(position));
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::steady_clock::now() - start);
+  LOG(INFO) << "We reset the scene in " << duration.count() << " milliseconds!";
 }
 
 Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
@@ -666,10 +715,18 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::N: {
       highlightNavmeshIsland();
-
     } break;
     case KeyEvent::Key::M: {
       incrementallyAddObjects();
+    } break;
+    case KeyEvent::Key::R: {
+      // reset the agent position
+      const vec3f position = pathfinder_->getRandomNavigablePoint();
+      agentBodyNode_->setTranslation(Vector3(position));
+    } break;
+    case KeyEvent::Key::Period: {
+      // regenerate the roomw ith obstacles
+      generateRandomScene(10);
     } break;
 
     default:
