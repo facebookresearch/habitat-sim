@@ -6,12 +6,7 @@
 
 #include <string>
 
-#include <Corrade/Containers/Pointer.h>
-#include <Corrade/Utility/String.h>
-
-#include <Magnum/ImageView.h>
-#include <Magnum/PixelFormat.h>
-#include <Magnum/Trade/AbstractImageConverter.h>
+#include <Corrade/Utility/Directory.h>
 
 #include "Drawable.h"
 
@@ -24,9 +19,7 @@
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/PinholeCamera.h"
 
-using namespace Magnum;
-using namespace Math::Literals;
-using namespace Corrade;
+namespace Cr = Corrade;
 
 namespace esp {
 namespace gfx {
@@ -139,13 +132,24 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
   semanticScene_ = nullptr;
   semanticScene_ = scene::SemanticScene::create();
-  if (io::exists(houseFilename)) {
-    scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
-  }
-
-  // also load SemanticScene for SUNCG house file
-  if (sceneInfo.type == assets::AssetType::SUNCG_SCENE) {
-    scene::SemanticScene::loadSuncgHouse(sceneFilename, *semanticScene_);
+  switch (sceneInfo.type) {
+    case assets::AssetType::INSTANCE_MESH:
+      houseFilename = Cr::Utility::Directory::join(
+          Cr::Utility::Directory::path(houseFilename), "info_semantic.json");
+      if (io::exists(houseFilename)) {
+        scene::SemanticScene::loadReplicaHouse(houseFilename, *semanticScene_);
+      }
+      break;
+    case assets::AssetType::MP3D_MESH:
+      if (io::exists(houseFilename)) {
+        scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
+      }
+      break;
+    case assets::AssetType::SUNCG_SCENE:
+      scene::SemanticScene::loadSuncgHouse(sceneFilename, *semanticScene_);
+      break;
+    default:
+      break;
   }
 
   // now reset to sample agent state
