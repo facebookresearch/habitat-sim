@@ -5,8 +5,8 @@
 /**
  *
  * @param {function} func Function to be throttled
- * @param {int} timeout Milliseconds for which throttle will be called
- * `func` will be called atleast one in timeout timeframe.
+ * @param {int} timeout Milliseconds interval after which throttle will be called,
+ * `func` will be called at least once in the timeout timeframe.
  */
 export function throttle(func, timeout = 500) {
   let active = false;

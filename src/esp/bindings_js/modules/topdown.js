@@ -55,15 +55,15 @@ class TopDownMap {
   /**
    * Update trajectory with new position
    * @param {vec3f} position - new position
+   * @param {int} throttleMs - time gap for throttle
    */
-  moveTo(position, throttleAmount = 0) {
-    if (throttleAmount !== 0) {
+  moveTo(position, throttleMs = 0) {
+    if (throttleMs !== 0) {
       if (!this.throttledMoveTo) {
-        this.throttledMoveTo = throttle(this.moveTo.bind(this), throttleAmount);
+        this.throttledMoveTo = throttle(this.moveTo.bind(this), throttleMs);
       }
       this.throttledMoveTo(position);
     } else {
-      console.log("move to called");
       /*
        * If we've gone up or down a floor, we need to create a new map.
        * A change in Y of 0.25 should be sufficient as a test.
