@@ -6,16 +6,20 @@ import os
 import re
 import sys
 
+
 # TODO make this less brittle
 sys.path = [
     os.path.join(os.path.dirname(__file__), "../"),
     # os.path.join(os.path.dirname(__file__), '../build-bundledmagnum/src/deps/magnum-bindings/src/python/')
 ] + sys.path
 
+
 import habitat_sim  # NOQA
 
 # TODO: remove once m.css handles class hierarchies better
 habitat_sim.logging.GlogFormatter.formatStack.__doc__ = ""
+# Monkey patch the registry to be the _Registry class instead of the singleton for docs
+habitat_sim.registry = type(habitat_sim.registry)
 
 PROJECT_TITLE = "Habitat"
 PROJECT_SUBTITLE = "Sim Python Docs"
