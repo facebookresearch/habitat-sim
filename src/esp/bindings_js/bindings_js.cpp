@@ -145,6 +145,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("position", &SensorSpec::position)
       .property("orientation", &SensorSpec::orientation)
       .property("resolution", &SensorSpec::resolution)
+      .property("channels", &SensorSpec::channels)
       .property("parameters", &SensorSpec::parameters);
 
   em::class_<Sensor>("Sensor").function("specification",
