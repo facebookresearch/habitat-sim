@@ -7,19 +7,35 @@
 import abc
 from typing import Dict, Optional, Type
 
+import attr
 
+from habitat_sim.sensor import SensorType
+
+
+@attr.s(auto_attribs=True, kw_only=True)
 class SensorNoiseModel(abc.ABC):
-    def __init__(self, gpu_device_id: Optional[int] = None):
-        self._gpu_device_id = gpu_device_id
+    r"""Base class for all sensor noise models
+
+    :param gpu_device_id: The ID of the CUDA device to use (only applicable to
+    noise models that proivde a CUDA implementation and, generally, if habitat-sim was build with ``--with-cuda``)
+    """
+    gpu_device_id: Optional[int] = None
 
     @staticmethod
     @abc.abstractmethod
-    def is_valid_sensor_type(sensor_type):
+    def is_valid_sensor_type(sensor_type: SensorType):
+        r"""Used to determine whether or not the noise model
+        is applicable to the sensor type
+        """
         pass
 
     @abc.abstractmethod
-    def apply(self, x):
+    def apply(self, sensor_observation):
+        r"""Applies the noise model to the sensor observation
+        """
         pass
 
-    def __call__(self, x):
-        return self.apply(x)
+    def __call__(self, sensor_observation):
+        r"""Alias of `apply()`
+        """
+        return self.apply(sensor_observation)

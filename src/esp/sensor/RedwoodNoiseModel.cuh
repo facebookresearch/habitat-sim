@@ -11,7 +11,9 @@ namespace impl {
 struct CurandStates;
 
 CurandStates* getCurandStates();
+
 void freeCurandStates(CurandStates* curandStates);
+
 void simulateFromCPU(const float* __restrict__ depth,
                      const int H,
                      const int W,

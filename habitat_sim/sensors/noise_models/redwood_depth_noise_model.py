@@ -95,20 +95,21 @@ class RedwoodNoiseModelCPUImpl:
 
 
 @registry.register_noise_model
+@attr.s(auto_attribs=True, kw_only=True)
 class RedwoodDepthNoiseModel(SensorNoiseModel):
-    def __init__(self, gpu_device_id, noise_multiplier=1.0):
-        self._gpu_device_id = gpu_device_id
+    noise_multiplier: float = 1.0
 
+    def __attrs_post_init__(self):
         dist = np.load(
             osp.join(osp.dirname(__file__), "data", "redwood-depth-dist-model.npy")
         )
 
         if cuda_enabled:
             self._impl = RedwoodNoiseModelGPUImpl(
-                dist, self._gpu_device_id, noise_multiplier
+                dist, self.gpu_device_id, self.noise_multiplier
             )
         else:
-            self._impl = RedwoodNoiseModelCPUImpl(dist, noise_multiplier)
+            self._impl = RedwoodNoiseModelCPUImpl(dist, self.noise_multiplier)
 
     @staticmethod
     def is_valid_sensor_type(sensor_type):
@@ -129,4 +130,6 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
             return self._impl.simulate(gt_depth)
 
     def apply(self, gt_depth):
+        r"""Alias of `simulate()` to conform to base-class and expected API
+        """
         return self.simulate(gt_depth)

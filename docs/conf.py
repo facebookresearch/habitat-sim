@@ -27,7 +27,7 @@ PROJECT_LOGO = "habitat.svg"
 FAVICON = "habitat-blue.png"
 MAIN_PROJECT_URL = "/"
 INPUT_MODULES = [habitat_sim]
-INPUT_DOCS = ["docs.rst", "gfx.rst"]
+INPUT_DOCS = ["docs.rst", "gfx.rst", "noise_models.rst"]
 INPUT_PAGES = [
     "pages/index.rst",
     "pages/new-actions.rst",

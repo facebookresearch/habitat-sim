@@ -40,7 +40,7 @@ class _Registry:
         name: Optional[str] = None,
         body_action: bool = None,
     ):
-        r"""Registers a new control with Habitat-Sim. Registered conrtols can
+        r"""Registers a new control with Habitat-Sim. Registered controls can
         then be retrieved via `get_move_fn()`
 
         See `new-actions <new-actions.html>`_ for an example of how to add new actions
@@ -85,9 +85,9 @@ class _Registry:
         r"""Registers a new sensor noise model with Habitat-Sim
 
         :param noise_model: The class of the noise model to register
-            If none, will return a wrapper for use with decorator syntax
+            If `None`, will return a wrapper for use with decorator syntax
         :param name: The name to register the noise model with
-            If none, will register with the name of the noise_model
+            If `None`, will register with the name of the noise_model
         """
         from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
