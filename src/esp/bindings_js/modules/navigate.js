@@ -38,10 +38,10 @@ class NavigateTask {
     const width = this.semanticShape.get(1);
     const offsetY = height - 1 - event.offsetY; /* flip-Y */
     const offsetX = event.offsetX;
-    let objectId = new Uint32Array(
-      this.semantic_data.buffer,
-      this.semantic_data.byteOffset,
-      this.semantic_data.length / 4
+    const objectId = new Uint32Array(
+      this.semanticData.buffer,
+      this.semanticData.byteOffset,
+      this.semanticData.length / 4
     )[width * offsetY + offsetX];
     this.setStatus(this.semanticObjects.get(objectId).category.getName(""));
   }
@@ -79,27 +79,27 @@ class NavigateTask {
     }
 
     const obs = this.sim.getObservation("semantic", null);
-    this.semantic_data = obs.getData();
-    const object_ids = new Uint32Array(
-      this.semantic_data.buffer,
-      this.semantic_data.byteOffset,
-      this.semantic_data.length / 4
+    this.semanticData = obs.getData();
+    const objectIds = new Uint32Array(
+      this.semanticData.buffer,
+      this.semanticData.byteOffset,
+      this.semanticData.length / 4
     );
 
     // TOOD(msb) implement a better colorization scheme
-    for (let i = 0; i < object_ids.length; i++) {
-      const object_id = object_ids[i];
-      if (object_id & 1) {
+    for (let i = 0; i < objectIds.length; i++) {
+      const objectId = objectIds[i];
+      if (objectId & 1) {
         this.semanticImageData.data[i * 4] = 255;
       } else {
         this.semanticImageData.data[i * 4] = 0;
       }
-      if (object_id & 2) {
+      if (objectId & 2) {
         this.semanticImageData.data[i * 4 + 1] = 255;
       } else {
         this.semanticImageData.data[i * 4 + 1] = 0;
       }
-      if (object_id & 4) {
+      if (objectId & 4) {
         this.semanticImageData.data[i * 4 + 2] = 255;
       } else {
         this.semanticImageData.data[i * 4 + 2] = 0;
