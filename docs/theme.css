@@ -5,7 +5,7 @@
   --font-size: 16px;
   --code-font-size: 0.9em; /* *not* rem, so it follows surrounding font size */
   --line-height: normal;
-  --paragraph-indent: 1.5rem;
+  --paragraph-indent: 0.0rem;
   --paragraph-align: justify;
   --link-decoration: underline;
   --link-decoration-nav: none;
