@@ -50,7 +50,8 @@ def test_set_state():
 
 
 def test_change_state():
-    np.random.seed()
+    random_state = np.random.get_state()
+    np.random.seed(233)
     scene_graph = habitat_sim.SceneGraph()
     agent = habitat_sim.Agent(scene_graph.get_root_node().create_child())
 
@@ -74,3 +75,5 @@ def test_change_state():
         for k, v in state.sensor_states.items():
             assert k in new_state.sensor_states
             _check_state_same(v, new_state.sensor_states[k])
+
+    np.random.set_state(random_state)
