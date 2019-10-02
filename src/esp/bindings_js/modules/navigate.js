@@ -1,3 +1,7 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 /*global Module */
 
 /**
@@ -114,7 +118,7 @@ class NavigateTask {
   }
 
   renderTopDown() {
-    this.topdown.moveTo(this.sim.getAgentState().position);
+    this.topdown.moveTo(this.sim.getAgentState().position, 500);
   }
 
   renderRadar() {
@@ -151,10 +155,12 @@ class NavigateTask {
     ctx.fill();
   }
 
-  render() {
+  render(options = { renderTopDown: true }) {
     this.renderImage();
     this.renderSemanticImage();
-    this.renderTopDown();
+    if (options.renderTopDown) {
+      this.renderTopDown();
+    }
   }
 
   handleAction(action) {
