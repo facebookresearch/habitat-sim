@@ -170,10 +170,9 @@ class NavigateTask {
   }
 
   bindKeys() {
-    document.addEventListener("keyup", event => {
-      const key = String.fromCharCode(event.which).toLowerCase();
+    document.addEventListener("keydown", event => {
       for (let a of this.actions) {
-        if (key === a.key) {
+        if (event.key === a.key) {
           this.handleAction(a.name);
           break;
         }
