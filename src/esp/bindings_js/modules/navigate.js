@@ -2,6 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+/*global Module */
+
 /**
  * NavigateTask class
  */
@@ -24,6 +26,7 @@ class NavigateTask {
       this.semanticShape.get(1),
       this.semanticShape.get(0)
     );
+    this.semanticObservation = new Module.Observation();
     this.semanticObjects = this.sim.sim.getSemanticScene().objects;
     components.canvas.onmousedown = e => {
       this.handleMouseDown(e);
@@ -82,8 +85,8 @@ class NavigateTask {
       return;
     }
 
-    const obs = this.sim.getObservation("semantic", null);
-    this.semanticData = obs.getData();
+    this.sim.getObservation("semantic", this.semanticObservation);
+    this.semanticData = this.semanticObservation.getData();
     const objectIds = new Uint32Array(
       this.semanticData.buffer,
       this.semanticData.byteOffset,
