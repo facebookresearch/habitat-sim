@@ -13,7 +13,6 @@
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Timeline.h>
 
-#include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/nav/PathFinder.h"
