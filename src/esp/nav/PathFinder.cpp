@@ -50,8 +50,6 @@ std::tuple<dtStatus, dtPolyRef, vec3f> projectToPoly(
   if (std::isnan(polyXYZ[0]))
     status = DT_FAILURE;
 
-  polyXYZ = vec3f{};
-
   return std::make_tuple(status, polyRef, polyXYZ);
 }
 }  // namespace
