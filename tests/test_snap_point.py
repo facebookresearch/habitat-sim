@@ -18,13 +18,14 @@ def test_data():
     return pf, pf.get_random_navigable_point()
 
 
-@hypothesis.given(nx=st.floats(-20, 20), ny=st.floats(-5, 5), nz=st.floats(-20, 20))
+@hypothesis.given(
+    nudge=st.tuples(st.floats(-20, 20), st.floats(-5, 5), st.floats(-20, 20))
+)
 @hypothesis.settings(max_examples=int(1e3))
-def test_snap_point(nx, ny, nz, test_data):
+def test_snap_point(nudge, test_data):
     pf, start_pt = test_data
 
-    n = np.array([nx, ny, nz])
-    pt = start_pt + n
+    pt = start_pt + nudge
 
     proj_pt = pf.snap_point(pt)
     hypothesis.assume(not math.isnan(proj_pt[0]))
