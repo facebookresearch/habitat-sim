@@ -6,6 +6,7 @@
 
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
+#include "esp/physics/RigidObject.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
@@ -14,6 +15,8 @@
 
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
+
+#include "esp/nav/PathFinder.h"
 
 namespace esp {
 namespace nav {
@@ -112,6 +115,23 @@ class Simulator {
    * or @ref esp::ID_UNDEFINED if failed.
    */
   int removeObject(const int objectID, const int sceneID = 0);
+
+  /**
+   * @brief Get the @ref esp::physics::MotionType of an object.
+   * See @ref esp::physics::PhysicsManager::getExistingObjectIDs.
+   * @param objectID The ID of the object identifying it in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene to
+   * query.
+   * @return The @ref esp::physics::MotionType of the object or @ref
+   * esp::physics::MotionType::ERROR_MOTIONTYPE if query failed.
+   */
+  esp::physics::MotionType getObjectMotionType(const int objectID,
+                                               const int sceneID = 0);
+
+  void setObjectMotionType(esp::physics::MotionType mt,
+                           const int objectID,
+                           const int sceneID = 0);
 
   /**
    * @brief Get the IDs of the physics objects instanced in a physical scene.
@@ -249,6 +269,16 @@ class Simulator {
    * by which the physical world has advanced.
    */
   double getWorldTime();
+
+  /**
+   * @brief Recompute the navmesh for the current scene optionally including
+   * physical object bounding boxes.
+   */
+  std::shared_ptr<nav::PathFinder> recomputeNavMesh(bool includeObjectBBs);
+
+  Magnum::Range3D getObjLocalBB(const int objectID, const int sceneID = 0);
+
+  bool contactTest(const int objectID, const int sceneID = 0);
 
  protected:
   Simulator(){};

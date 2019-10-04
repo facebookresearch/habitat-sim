@@ -486,6 +486,15 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
     }
   }
 
+  // optional set bounding box as collision object
+  if (objPhysicsConfig.HasMember("use bounding box for collision")) {
+    if (objPhysicsConfig["use bounding box for collision"].IsBool()) {
+      physicsObjectAttributes.setBool(
+          "useBoundingBoxForCollision",
+          objPhysicsConfig["use bounding box for collision"].GetBool());
+    }
+  }
+
   // load the center of mass (in the local frame of the object)
   bool shouldComputeMeshBBCenter = true;
   // if COM is provided, use it for mesh shift

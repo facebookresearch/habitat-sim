@@ -41,6 +41,7 @@ bool PhysicsManager::addScene(
   return sceneSuccess;
 }
 
+/*
 void recursive_scenegraph_peak(esp::scene::SceneNode& node,
                                esp::scene::SceneNode& prev_node) {
   // Corrade::Utility::Debug() << "node: " << node.getId() << " child of: " <<
@@ -60,6 +61,7 @@ void recursive_scenegraph_peak(esp::scene::SceneNode& node,
     child = child->nextSibling();
   }
 }
+*/
 
 int PhysicsManager::addObject(const int objectLibIndex,
                               DrawableGroup* drawables) {

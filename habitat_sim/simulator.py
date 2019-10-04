@@ -16,6 +16,7 @@ import habitat_sim.errors
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower
+from habitat_sim.physics import MotionType
 from habitat_sim.utils.common import quat_from_angle_axis
 
 torch = None
@@ -229,6 +230,7 @@ class Simulator:
     def _step_filter(self, start_pos, end_pos):
         if self.pathfinder.is_loaded:
             end_pos = self.pathfinder.try_step(start_pos, end_pos)
+            # print("filter step: " + str(end_pos-start_pos))
 
         return end_pos
 
@@ -244,6 +246,12 @@ class Simulator:
 
     def remove_object(self, object_id):
         return self._sim.remove_object(object_id)
+
+    def get_object_motion_type(self, object_id, scene_id=0):
+        return self._sim.get_object_motion_type(object_id, scene_id)
+
+    def set_object_motion_type(self, mt, object_id, scene_id=0):
+        self._sim.set_object_motion_type(mt, object_id, scene_id)
 
     def get_existing_object_ids(self, scene_id=0):
         return self._sim.get_existing_object_ids(scene_id)
@@ -274,6 +282,15 @@ class Simulator:
 
     def get_world_time(self, scene_id=0):
         return self._sim.get_world_time()
+
+    def recompute_navmesh(self):
+        self.pathfinder = self._sim.recompute_navmesh(True)
+
+    def get_object_local_bb(self, object_id, scene_id=0):
+        return self._sim.get_obj_local_bb(object_id, scene_id)
+
+    def contact_test(self, object_id, scene_id=0):
+        return self._sim.contact_test(object_id, scene_id)
 
 
 class Sensor:

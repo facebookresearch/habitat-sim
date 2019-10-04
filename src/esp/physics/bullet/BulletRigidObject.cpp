@@ -140,10 +140,13 @@ bool BulletRigidObject::initializeObject(
   //! Physical parameters
   double margin = physicsObjectAttributes.getDouble("margin");
 
-  bool useCollisionBB = true;
+  if (physicsObjectAttributes.existsAs(esp::assets::DataType::BOOL,
+                                       "useBoundingBoxForCollision")) {
+    collisionFromBB_ =
+        physicsObjectAttributes.getBool("useBoundingBoxForCollision");
+  }
 
-  if (useCollisionBB) {
-    collisionFromBB_ = true;
+  if (collisionFromBB_) {
     // set a dummy shape for now. We will use the added BB object to correct
     // this later
     bObjectShape_ = std::make_unique<btBoxShape>(btVector3());
@@ -284,7 +287,7 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
       bObjectRigidBody_->setCollisionFlags(
           bObjectRigidBody_->getCollisionFlags() &
           ~btCollisionObject::CF_STATIC_OBJECT);
-      bObjectRigidBody_->setActivationState(DISABLE_DEACTIVATION);
+      // bObjectRigidBody_->setActivationState(DISABLE_DEACTIVATION);
       objectMotionType_ = MotionType::KINEMATIC;
       bWorld_->addRigidBody(bObjectRigidBody_.get());
       return true;

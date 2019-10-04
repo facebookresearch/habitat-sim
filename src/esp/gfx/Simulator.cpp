@@ -10,6 +10,7 @@
 #include <Corrade/Utility/String.h>
 
 #include <Magnum/ImageView.h>
+#include <Magnum/Math/Range.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Trade/AbstractImageConverter.h>
 
@@ -23,6 +24,10 @@
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/PinholeCamera.h"
+
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
+#include <assimp/Importer.hpp>
 
 using namespace Magnum;
 using namespace Math::Literals;
@@ -321,6 +326,164 @@ double Simulator::getWorldTime() {
     return physicsManager_->getWorldTime();
   }
   return NO_TIME;
+}
+
+assets::MeshData load(const assets::AssetInfo& info) {
+  assets::MeshData mesh;
+  if (!esp::io::exists(info.filepath)) {
+    LOG(ERROR) << "Could not find file " << info.filepath;
+    return mesh;
+  }
+
+  if (info.type == assets::AssetType::INSTANCE_MESH) {
+    assets::GenericInstanceMeshData instanceMeshData;
+    instanceMeshData.loadPLY(info.filepath);
+
+    const auto& vbo = instanceMeshData.getVertexBufferObjectCPU();
+    const auto& cbo = instanceMeshData.getColorBufferObjectCPU();
+    const auto& ibo = instanceMeshData.getIndexBufferObjectCPU();
+    mesh.vbo = vbo;
+    mesh.ibo = ibo;
+    for (const auto& c : cbo) {
+      mesh.cbo.emplace_back(c.cast<float>() / 255.0f);
+    }
+  } else {
+    const aiScene* scene;
+    Assimp::Importer Importer;
+
+    // Flags for loading the mesh
+    static const int assimpFlags =
+        aiProcess_Triangulate | aiProcess_PreTransformVertices;
+
+    scene = Importer.ReadFile(info.filepath.c_str(), assimpFlags);
+
+    const quatf alignSceneToEspGravity =
+        quatf::FromTwoVectors(info.frame.gravity(), esp::geo::ESP_GRAVITY);
+
+    // Iterate through all meshes in the file and extract the vertex components
+    for (uint32_t m = 0, indexBase = 0; m < scene->mNumMeshes; ++m) {
+      const aiMesh& assimpMesh = *scene->mMeshes[m];
+      for (uint32_t v = 0; v < assimpMesh.mNumVertices; ++v) {
+        // Use Eigen::Map to convert ASSIMP vectors to eigen vectors
+        const Eigen::Map<const vec3f> xyz_scene(&assimpMesh.mVertices[v].x);
+        const vec3f xyz_esp = alignSceneToEspGravity * xyz_scene;
+        mesh.vbo.push_back(xyz_esp);
+
+        if (assimpMesh.mNormals) {
+          const Eigen::Map<const vec3f> normal_scene(&assimpMesh.mNormals[v].x);
+          const vec3f normal_esp = alignSceneToEspGravity * normal_scene;
+          mesh.nbo.push_back(normal_esp);
+        }
+
+        if (assimpMesh.HasTextureCoords(0)) {
+          const Eigen::Map<const vec2f> texCoord(
+              &assimpMesh.mTextureCoords[0][v].x);
+          mesh.tbo.push_back(texCoord);
+        }
+
+        if (assimpMesh.HasVertexColors(0)) {
+          const Eigen::Map<const vec3f> color(&assimpMesh.mColors[0][v].r);
+          mesh.cbo.push_back(color);
+        }
+      }  // vertices
+
+      // Generate and append index buffer for mesh
+      for (uint32_t f = 0; f < assimpMesh.mNumFaces; ++f) {
+        const aiFace& face = assimpMesh.mFaces[f];
+        for (uint32_t i = 0; i < face.mNumIndices; ++i) {
+          mesh.ibo.push_back(face.mIndices[i] + indexBase);
+        }
+      }  // faces
+      indexBase += assimpMesh.mNumVertices;
+    }  // meshes
+  }
+
+  LOG(INFO) << "Loaded " << mesh.vbo.size() << " vertices, " << mesh.ibo.size()
+            << " indices";
+
+  return mesh;
+}
+
+vec3f toEig(Magnum::Vector3 v) {
+  return vec3f(v[0], v[1], v[2]);
+}
+
+std::shared_ptr<nav::PathFinder> Simulator::recomputeNavMesh(
+    bool includeObjectBBs) {
+  // sceneManager_.
+  std::shared_ptr<nav::PathFinder> pf = std::make_shared<nav::PathFinder>();
+
+  const assets::AssetInfo info = assets::AssetInfo::fromPath(config_.scene.id);
+
+  assets::MeshData mesh = load(info);
+
+  // now add the bounding boxes to the mesh
+  for (auto id : physicsManager_->getExistingObjectIDs()) {
+    Magnum::Range3D BB = physicsManager_->getObjectLocalBoundingBox(id);
+    Magnum::Matrix4 T = physicsManager_->getTransformation(id);
+
+    // index base for newly added BB corners
+    uint32_t ixb = mesh.vbo.size();
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.frontTopLeft())));
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.frontTopRight())));
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.frontBottomLeft())));
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.frontBottomRight())));
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.backTopLeft())));
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.backTopRight())));
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.backBottomLeft())));
+    mesh.vbo.push_back(toEig(T.transformPoint(BB.backBottomRight())));
+
+    // now add the faces
+    std::vector<uint32_t> indices{0, 1, 2, 1, 3, 2, 1, 5, 7, 1, 7, 3,
+                                  0, 4, 5, 0, 5, 1, 0, 2, 6, 0, 6, 4,
+                                  4, 6, 7, 4, 7, 5, 2, 6, 3, 6, 7, 3};
+
+    for (auto i : indices) {
+      mesh.ibo.push_back(i + ixb);
+    }
+  }
+
+  nav::NavMeshSettings bs;
+  bs.setDefaults();
+  // bs.agentRadius *= 5.0;
+
+  if (!pf->build(bs, mesh)) {
+    LOG(ERROR) << "Failed to build navmesh";
+  }
+
+  LOG(INFO) << "reconstruct navmesh successful";
+  return pf;
+}
+
+Magnum::Range3D Simulator::getObjLocalBB(const int objectID,
+                                         const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->getObjectLocalBoundingBox(objectID);
+  }
+  return Magnum::Range3D();
+}
+
+bool Simulator::contactTest(const int objectID, const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->contactTest(objectID);
+  }
+  return false;
+}
+
+esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
+                                                        const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->getObjectMotionType(objectID);
+  }
+  return esp::physics::MotionType::ERROR_MOTIONTYPE;
+}
+
+void Simulator::setObjectMotionType(esp::physics::MotionType mt,
+                                    const int objectID,
+                                    const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    physicsManager_->setObjectMotionType(objectID, mt);
+  }
 }
 
 }  // namespace gfx

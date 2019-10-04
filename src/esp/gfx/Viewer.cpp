@@ -167,8 +167,9 @@ void Viewer::addObject(std::string configFile) {
   Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
 
   auto& drawables = sceneGraph_->getDrawables();
-  assets::PhysicsObjectAttributes poa =
+  assets::PhysicsObjectAttributes& poa =
       resourceManager_.getPhysicsObjectAttributes(configFile);
+  // poa.setBool("useBoundingBoxForCollision", true);
   int physObjectID = physicsManager_->addObject(configFile, &drawables);
   physicsManager_->setTranslation(physObjectID, new_pos);
 
@@ -398,7 +399,6 @@ void Viewer::reconstructNavMesh() {
   assets::MeshData mesh = load(sceneInfo_);
 
   // now add the bounding boxes to the mesh
-  // TODO:
   for (auto id : objectIDs_) {
     Magnum::Range3D BB = physicsManager_->getObjectLocalBoundingBox(id);
     Magnum::Matrix4 T = physicsManager_->getTransformation(id);
@@ -432,7 +432,6 @@ void Viewer::reconstructNavMesh() {
     return;
   }
 
-  // pathfinder_->initNavQuery();
   LOG(INFO) << "reconstruct navmesh successful";
 }
 
