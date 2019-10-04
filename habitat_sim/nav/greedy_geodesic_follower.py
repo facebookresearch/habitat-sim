@@ -5,7 +5,8 @@ import numpy as np
 
 import habitat_sim.agent
 import habitat_sim.bindings as hsim
-from habitat_sim import errors, utils
+from habitat_sim import errors
+from habitat_sim.utils.common import quat_to_coeffs
 
 
 @attr.s(auto_attribs=True)
@@ -102,7 +103,7 @@ class GreedyGeodesicFollower(object):
         """
         state = self.agent.state
         next_act = self.impl.next_action_along(
-            state.position, utils.quat_to_coeffs(state.rotation), goal_pos
+            state.position, quat_to_coeffs(state.rotation), goal_pos
         )
 
         if next_act == hsim.GreedyFollowerCodes.ERROR:
@@ -122,7 +123,7 @@ class GreedyGeodesicFollower(object):
         """
         state = self.agent.state
         path = self.impl.find_path(
-            state.position, utils.quat_to_coeffs(state.rotation), goal_pos
+            state.position, quat_to_coeffs(state.rotation), goal_pos
         )
 
         if len(path) == 0:

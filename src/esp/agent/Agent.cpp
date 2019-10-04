@@ -16,12 +16,9 @@ using Magnum::EigenIntegration::cast;
 namespace esp {
 namespace agent {
 
-const std::set<std::string> Agent::BodyActions = {
-    "moveRight", "moveLeft", "moveForward", "moveBackward", "turnLeft",
-    "turnRight",
-    // TODO lookLeft and lookRight should not be body actions
-    // turnLeft and turnRight will take their place
-    "lookLeft", "lookRight"};
+const std::set<std::string> Agent::BodyActions = {"moveRight",   "moveLeft",
+                                                  "moveForward", "moveBackward",
+                                                  "turnLeft",    "turnRight"};
 
 Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
     : Magnum::SceneGraph::AbstractFeature3D(agentNode),

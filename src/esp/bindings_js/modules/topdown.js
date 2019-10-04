@@ -1,3 +1,9 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+import { throttle } from "./utils";
+
 /**
  * TopDownMap class
  */
@@ -17,22 +23,20 @@ class TopDownMap {
     this.widthComponent = 0;
     this.heightComponent = 2;
     this.scale = 1.0;
-    this.imageData = this.createMap();
     this.ctx.strokeStyle = "blue";
     this.ctx.lineWidth = 3;
-    this.drawn = false;
+    this.currentY = -Infinity;
   }
 
   /**
    * Draw the topdown map centered in the canvas.
    */
   draw() {
-    // We currently only draw the map once.
-    if (!this.drawn) {
-      let [x, y] = this.mapCenterInset();
-      this.ctx.putImageData(this.imageData, x, y);
-      this.drawn = true;
-    }
+    const ctx = this.ctx;
+    const canvas = this.canvas;
+    const [x, y] = this.mapCenterInset();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.putImageData(this.imageData, x, y);
   }
 
   /**
@@ -40,18 +44,41 @@ class TopDownMap {
    * @param {vec3f} position - start position
    */
   start(position) {
-    let [x, y] = this.convertPosition(position);
+    this.currentY = position[1];
+    this.imageData = this.createMap();
+    this.draw();
+    const [x, y] = this.convertPosition(position);
+    this.ctx.beginPath();
     this.ctx.moveTo(x, y);
   }
 
   /**
    * Update trajectory with new position
    * @param {vec3f} position - new position
+   * @param {int} throttleMs - time gap for throttle
    */
-  moveTo(position) {
-    let [x, y] = this.convertPosition(position);
-    this.ctx.lineTo(x, y);
-    this.ctx.stroke();
+  moveTo(position, throttleMs = 0) {
+    if (throttleMs !== 0) {
+      if (!this.throttledMoveTo) {
+        this.throttledMoveTo = throttle(this.moveTo.bind(this), throttleMs);
+      }
+      this.throttledMoveTo(position);
+    } else {
+      /*
+       * If we've gone up or down a floor, we need to create a new map.
+       * A change in Y of 0.25 should be sufficient as a test.
+       */
+      if (
+        position[1] < this.currentY - 0.25 ||
+        position[1] > this.currentY + 0.25
+      ) {
+        this.start(position);
+      } else {
+        let [x, y] = this.convertPosition(position);
+        this.ctx.lineTo(x, y);
+        this.ctx.stroke();
+      }
+    }
   }
 
   // PRIVATE methods.
@@ -118,7 +145,7 @@ class TopDownMap {
     for (i = 0; i < heightInPixels; i++) {
       let x = this.bounds.min[this.widthComponent] + increment / 2;
       for (j = 0; j < widthInPixels; j++) {
-        let point = [0, 0, 0];
+        let point = [0, this.currentY, 0];
         point[this.widthComponent] = x;
         point[this.heightComponent] = y;
         let isNavigable = this.pathFinder.isNavigable(point, 0.5);

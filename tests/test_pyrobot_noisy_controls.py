@@ -4,10 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import contextlib
 import itertools
 
-import attr
 import numpy as np
 import pytest
 import quaternion
@@ -15,7 +13,7 @@ import quaternion
 import habitat_sim
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
-import habitat_sim.utils
+import habitat_sim.utils.common
 from habitat_sim.agent.controls.pyrobot_noisy_controls import pyrobot_noise_models
 
 
@@ -25,7 +23,7 @@ def _delta_translation(a, b):
 
 
 def _delta_rotation(a, b):
-    look_dir = habitat_sim.utils.quat_rotate_vector(
+    look_dir = habitat_sim.utils.common.quat_rotate_vector(
         b.rotation.inverse() * a.rotation, habitat_sim.geo.FRONT
     )
 

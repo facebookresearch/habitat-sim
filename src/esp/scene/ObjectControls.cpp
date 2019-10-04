@@ -44,14 +44,14 @@ SceneNode& moveForward(SceneNode& object, float distance) {
   return moveBackward(object, -distance);
 }
 
-SceneNode& lookLeft(SceneNode& object, float angleInDegrees) {
+SceneNode& turnLeft(SceneNode& object, float angleInDegrees) {
   object.rotateYLocal(Magnum::Deg(angleInDegrees));
   object.setRotation(object.rotation().normalized());
   return object;
 }
 
-SceneNode& lookRight(SceneNode& object, float angleInDegrees) {
-  return lookLeft(object, -angleInDegrees);
+SceneNode& turnRight(SceneNode& object, float angleInDegrees) {
+  return turnLeft(object, -angleInDegrees);
 }
 
 SceneNode& lookUp(SceneNode& object, float angleInDegrees) {
@@ -71,15 +71,10 @@ ObjectControls::ObjectControls() {
   moveFuncMap_["moveDown"] = &moveDown;
   moveFuncMap_["moveForward"] = &moveForward;
   moveFuncMap_["moveBackward"] = &moveBackward;
-  moveFuncMap_["lookLeft"] = &lookLeft;
-  moveFuncMap_["lookRight"] = &lookRight;
+  moveFuncMap_["turnLeft"] = &turnLeft;
+  moveFuncMap_["turnRight"] = &turnRight;
   moveFuncMap_["lookUp"] = &lookUp;
   moveFuncMap_["lookDown"] = &lookDown;
-
-  // TODO Do we need a different function for turnLeft vs. lookLeft?
-  // Those should just be body vs. sensor, but should check
-  moveFuncMap_["turnLeft"] = &lookLeft;
-  moveFuncMap_["turnRight"] = &lookRight;
 }
 
 ObjectControls& ObjectControls::setMoveFilterFunction(
