@@ -22,15 +22,6 @@ set(gfx_SOURCES
   RenderTarget.h
 )
 
-# If GUI build, add Viewer source
-# TODO(MS) Viewer really ought to be in separate module that is disabled
-if(BUILD_GUI_VIEWERS)
-  list(APPEND gfx_SOURCES
-    Viewer.cpp
-    Viewer.h
-  )
-endif()
-
 # If ptex support is enabled add relevant source files
 if(BUILD_PTEX_SUPPORT)
   list(APPEND gfx_SOURCES
@@ -54,7 +45,6 @@ find_package(Magnum
     SceneGraph
     Shaders
     Trade
-    DebugTools
     AnyImageConverter
 )
 
@@ -72,6 +62,12 @@ find_package(Corrade REQUIRED Utility)
 # set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)
 list(APPEND gfx_SOURCES ${ShaderResources})
+
+if(BUILD_GUI_VIEWERS)
+  set(ESP_DEFAULT_PHYS_SCENE_CONFIG ${PROJECT_SOURCE_DIR}/../data/default.phys_scene_config.json)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
+                 ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
+endif()
 
 add_library(gfx STATIC ${gfx_SOURCES})
 
@@ -114,7 +110,6 @@ target_link_libraries(gfx
     MagnumPlugins::TinyGltfImporter
     MagnumIntegration::Eigen
     Corrade::Utility
-    Magnum::DebugTools
     Magnum::AnyImageConverter
 )
 

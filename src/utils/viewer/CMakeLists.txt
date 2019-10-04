@@ -1,3 +1,8 @@
+find_package(Magnum
+  REQUIRED
+    DebugTools
+)
+
 set(viewer_SOURCES viewer.cpp)
 
 #set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
@@ -9,6 +14,7 @@ target_link_libraries(viewer
     gfx
     nav
     scene
+    Magnum::DebugTools
 )
 
 # copy JS/HTML/CSS scaffolding for WebGL build

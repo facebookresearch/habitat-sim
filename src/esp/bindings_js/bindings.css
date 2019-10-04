@@ -1,3 +1,7 @@
+/** Copyright (c) Facebook, Inc. and its affiliates.
+ *  This source code is licensed under the MIT license found in the
+ *  LICENSE file in the root directory of this source tree.
+ */
 #radar {
   position: absolute;
   top: 70%;
@@ -7,4 +11,9 @@
   height: 100;
   z-index: 9;
   pointer-events: none;
+}
+
+#fps {
+  text-align: right;
+  padding-right: 1em;
 }

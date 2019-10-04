@@ -46,7 +46,7 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
     parser.add_argument(
         "--bullet",
         "--with-bullet",
-        dest="use_bullet",
+        dest="with_bullet",
         action="store_true",
         help="""Build with Bullet simulation engine.""",
     )
@@ -249,7 +249,9 @@ class CMakeBuild(build_ext):
         # NOTE: BUILD_TEST is intentional as opposed to BUILD_TESTS which collides
         # with definition used by some of our dependencies
         cmake_args += ["-DBUILD_TEST={}".format("ON" if args.build_tests else "OFF")]
-        cmake_args += ["-DWITH_BULLET={}".format("ON" if args.use_bullet else "OFF")]
+        cmake_args += [
+            "-DBUILD_WITH_BULLET={}".format("ON" if args.with_bullet else "OFF")
+        ]
         cmake_args += [
             "-DBUILD_DATATOOL={}".format("ON" if args.build_datatool else "OFF")
         ]

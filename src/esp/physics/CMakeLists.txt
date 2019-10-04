@@ -12,7 +12,7 @@ add_library(physics STATIC
   RigidObject.h
 )
 
-if(WITH_BULLET)
+if(BUILD_WITH_BULLET)
   add_subdirectory(bullet)
 
   target_link_libraries(physics

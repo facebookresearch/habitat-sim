@@ -3,7 +3,6 @@ import os.path as osp
 import pytest
 
 import habitat_sim
-import habitat_sim.utils
 from examples.settings import make_cfg
 
 _test_scene = osp.abspath(
