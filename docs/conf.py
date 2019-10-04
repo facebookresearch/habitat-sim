@@ -20,6 +20,9 @@ import habitat_sim  # NOQA
 habitat_sim.logging.GlogFormatter.formatStack.__doc__ = ""
 # Monkey patch the registry to be the _Registry class instead of the singleton for docs
 habitat_sim.registry = type(habitat_sim.registry)
+# TODO: remove once utils/__init__.py is removed again
+habitat_sim.utils.__all__.remove("quat_from_angle_axis")
+habitat_sim.utils.__all__.remove("quat_rotate_vector")
 
 PROJECT_TITLE = "Habitat"
 PROJECT_SUBTITLE = "Sim Python Docs"

@@ -1,0 +1,17 @@
+@INCLUDE = Doxyfile-mcss
+
+OUTPUT_DIRECTORY       = ../build/docs-public/
+
+##! M_HTML_HEADER = "<!-- Global site tag (gtag.js) - Google Analytics -->" \
+##!  "<script async src="https://www.googletagmanager.com/gtag/js?id=UA-66408458-4"></script>" \
+##!  "<script>" \
+##!  " window.dataLayer = window.dataLayer || [];" \
+##!  " function gtag(){dataLayer.push(arguments);}" \
+##!  " gtag('js', new Date());" \
+##!  " gtag('config', 'UA-66408458-4');" \
+##!  "</script>"
+##! M_SEARCH_DOWNLOAD_BINARY = YES
+##! M_SEARCH_BASE_URL = https://aihabitat.org/docs/habitat-cpp/
+##! M_SEARCH_EXTERNAL_URL = "https://google.com/search?q=site:aihabitat.org+{query}"
+
+# kate: hl Doxyfile

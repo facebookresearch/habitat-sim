@@ -26,12 +26,19 @@ class SensorNoiseModel(abc.ABC):
     def is_valid_sensor_type(sensor_type: SensorType):
         r"""Used to determine whether or not the noise model
         is applicable to the sensor type
+
+        :return: True if this noise model can be applied to this sensor input type
         """
         pass
 
     @abc.abstractmethod
     def apply(self, sensor_observation):
         r"""Applies the noise model to the sensor observation
+
+        :param sensor_observation: The clean sensor observation.
+            Should not be modified.
+
+        :return: The sensor observation with noise applied.
         """
         pass
 

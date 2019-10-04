@@ -1,3 +1,7 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 /* global Module */
 import { defaultAgentConfig, defaultEpisode } from "./defaults";
 import SimEnv from "./simenv_embind";
@@ -42,7 +46,8 @@ class WebDemo {
       {
         uuid: "semantic",
         sensorType: Module.SensorType.SEMANTIC,
-        resolution: [480, 640]
+        resolution: [480, 640],
+        channels: 1
       }
     ];
 

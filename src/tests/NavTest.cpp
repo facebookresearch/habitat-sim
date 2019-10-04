@@ -5,7 +5,6 @@
 #include <Corrade/Utility/Directory.h>
 #include <gtest/gtest.h>
 
-#include "esp/agent/Agent.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
 #include "esp/nav/PathFinder.h"
