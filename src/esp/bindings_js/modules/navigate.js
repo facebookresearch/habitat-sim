@@ -36,6 +36,8 @@ class NavigateTask {
       { name: "moveForward", key: "w" },
       { name: "turnLeft", key: "a" },
       { name: "turnRight", key: "d" },
+      { name: "lookUp", key: "ArrowUp" },
+      { name: "lookDown", key: "ArrowDown" },
       { name: "done", key: " " }
     ];
   }
