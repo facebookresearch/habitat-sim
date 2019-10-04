@@ -13,7 +13,6 @@
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Timeline.h>
 
-#include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/nav/PathFinder.h"
@@ -405,10 +404,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       std::exit(0);
       break;
     case KeyEvent::Key::Left:
-      controls_(*agentBodyNode_, "lookLeft", lookSensitivity);
+      controls_(*agentBodyNode_, "turnLeft", lookSensitivity);
       break;
     case KeyEvent::Key::Right:
-      controls_(*agentBodyNode_, "lookRight", lookSensitivity);
+      controls_(*agentBodyNode_, "turnRight", lookSensitivity);
       break;
     case KeyEvent::Key::Up:
       controls_(*rgbSensorNode_, "lookUp", lookSensitivity, false);

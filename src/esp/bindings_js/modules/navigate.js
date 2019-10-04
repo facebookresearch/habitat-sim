@@ -34,8 +34,8 @@ class NavigateTask {
     this.radarCtx = components.radar.getContext("2d");
     this.actions = [
       { name: "moveForward", key: "w" },
-      { name: "lookLeft", key: "a" },
-      { name: "lookRight", key: "d" },
+      { name: "turnLeft", key: "a" },
+      { name: "turnRight", key: "d" },
       { name: "done", key: " " }
     ];
   }
