@@ -164,7 +164,8 @@ We highly recommend installing an [miniconda](https://docs.conda.io/en/latest/mi
     Linux (Tested with Ubuntu 18.04 with gcc 7.4.0)
    ```bash
    sudo apt-get update || true
-   # Let's get the essentials for EGL support:
+   # These are fairly ubiquitous packages and your system likely has them already, 
+   # but if not, let's get the essentials for EGL support:
    sudo apt-get install -y --no-install-recommends \
         libjpeg-dev libglm-dev libgl1-mesa-glx libegl1-mesa-dev mesa-utils xorg-dev freeglut3-dev
    ```
@@ -175,7 +176,7 @@ We highly recommend installing an [miniconda](https://docs.conda.io/en/latest/mi
 
     Default build (for machines with a display attached)
    ```bash
-   # Assuming we're still within conda habitat environment
+   # Assuming we're still within habitat conda environment
    python setup.py install
    ```
 
@@ -189,17 +190,18 @@ We highly recommend installing an [miniconda](https://docs.conda.io/en/latest/mi
    python setup.py install --with-cuda
    ```
 
-
    (Under development) With physics simulation via [Bullet Physics SDK](https://github.com/bulletphysics/bullet3/): 
    First, install [Bullet Physics](https://github.com/bulletphysics/bullet3/). Next use
    ```bash
    python setup.py install --bullet    # build habitat with bullet physics
    ```
 
-   Note: some Linux distributions might require an additional `--user` flag to deal with permission issues. 
+   Note1: some Linux distributions might require an additional `--user` flag to deal with permission issues. 
+   
+   Note2: for active development in Habitat, you might find `./build.sh` instead of `python setup.py install` more useful. 
 
 
-1. [Optional] For use with [Habitat-API](https://github.com/facebookresearch/habitat-api) and your own python code, add habitat-sim to your `PYTHONPATH`. For example modify your `.bashrc` (or `.bash_profile` in Mac OS X) file by adding the line:
+1. [Optional; Needed only with `build.sh`] For use with [Habitat-API](https://github.com/facebookresearch/habitat-api) and your own python code, add habitat-sim to your `PYTHONPATH`. For example modify your `.bashrc` (or `.bash_profile` in Mac OS X) file by adding the line:
    ```bash
    export PYTHONPATH=$PYTHONPATH:/path/to/habitat-sim/
    ```
