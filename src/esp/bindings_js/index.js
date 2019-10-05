@@ -6,6 +6,7 @@
 
 import WebDemo from "./modules/web_demo";
 import VRDemo from "./modules/vr_demo";
+import ViewerDemo from "./modules/viewer_demo";
 import { defaultScene } from "./modules/defaults";
 import "./bindings.css";
 
@@ -43,6 +44,8 @@ Module.onRuntimeInitialized = () => {
       console.log("Web VR is supported");
       demo = new VRDemo();
     }
+  } else if (window.viewerEnabled) {
+    demo = new ViewerDemo();
   }
 
   if (!demo) {
