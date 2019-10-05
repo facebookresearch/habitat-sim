@@ -142,7 +142,7 @@ We provide a pre-built docker container for habitat-api and habitat-sim, refer t
 
 ### From Source
 
-We highly recommend installing an [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/distribution/#download-section) environment (note: python>=3.6 is required). Once you have Anaconda installed, here are the instructions.
+We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/distribution/#download-section) environment (note: python>=3.6 is required). Once you have Anaconda installed, here are the instructions.
 
 
 1. Clone this github repository. 
