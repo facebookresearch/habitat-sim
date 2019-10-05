@@ -3,7 +3,6 @@
 // LICENSE file in the root directory of this source tree.
 
 import WebDemo from "./web_demo";
-import { defaultAgentConfig } from "./defaults";
 import "../viewer.css";
 
 class ViewerDemo extends WebDemo {
