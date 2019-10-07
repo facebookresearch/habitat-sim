@@ -12,12 +12,15 @@ test("throttle should work properly", () => {
     }
   }
 
-  return new Promise((resolve) => {
-    interval = window.setInterval(throttle(() => incrementCounter(resolve), 500), 50);
-  }).then((count) => {
+  return new Promise(resolve => {
+    interval = window.setInterval(
+      throttle(() => incrementCounter(resolve), 500),
+      50
+    );
+  }).then(count => {
     window.clearInterval(interval);
     expect(count).toEqual(5);
     expect(Date.now() - startTime).toBeGreaterThan(2500);
     return count;
-  })
+  });
 });
