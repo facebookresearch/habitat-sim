@@ -305,7 +305,11 @@ void Viewer::wiggleLastObject() {
   if (physicsManager_ == nullptr || objectIDs_.size() == 0)
     return;
 
-  physicsManager_->translate(objectIDs_.back(), randomDirection() * 0.1);
+  Magnum::Vector3 randDir = randomDirection();
+  // Only allow +Y so dynamic objects don't push through the floor.
+  randDir[1] = abs(randDir[1]);
+
+  physicsManager_->translate(objectIDs_.back(), randDir * 0.1);
 }
 
 Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
