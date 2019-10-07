@@ -45,7 +45,7 @@ requirements:
     {{ environ.get('CONDA_BULLET_FEATURE', '') }}
 
 build:
-  binary_relocation: False
+  binary_relocation: True
   detect_binary_files_with_prefix: False
   script_env:
     - HEADLESS

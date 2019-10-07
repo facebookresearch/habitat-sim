@@ -6,7 +6,7 @@ import itertools
 import os
 
 build_cmd_template = """
-conda debug \
+conda build \
   --python {PY_VER} \
   --channel conda-forge \
   --no-test \
