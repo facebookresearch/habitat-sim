@@ -303,5 +303,5 @@ workflows:
     jobs:
       - python_lint
       - cpp_lint
-      - js_lint
+      - js_lint_and_test
       - install_and_test_ubuntu
