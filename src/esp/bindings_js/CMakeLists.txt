@@ -54,7 +54,8 @@ set(bundle_files
     modules/topdown.js
     modules/web_demo.js
     modules/defaults.js
-    modules/vr_demo.js)
+    modules/vr_demo.js
+    modules/utils.js)
 
 add_custom_command(OUTPUT bundle.js
                    COMMAND npm run lint-fix
