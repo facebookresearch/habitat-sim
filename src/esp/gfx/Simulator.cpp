@@ -241,6 +241,14 @@ int Simulator::removeObject(const int objectID, const int sceneID) {
   return ID_UNDEFINED;
 }
 
+esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
+                                                        const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->getObjectMotionType(objectID);
+  }
+  return esp::physics::MotionType::ERROR_MOTIONTYPE;
+}
+
 // apply forces and torques to objects
 void Simulator::applyTorque(const Magnum::Vector3& tau,
                             const int objectID,
