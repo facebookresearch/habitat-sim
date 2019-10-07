@@ -335,11 +335,6 @@ void Viewer::drawEvent() {
   if (physicsManager_ != nullptr)
     physicsManager_->stepPhysics(timeline_.previousFrameDuration());
 
-  for (auto id : physicsManager_->getExistingObjectIDs()) {
-    Corrade::Utility::Debug()
-        << "Object position: " << physicsManager_->getTranslation(id);
-  }
-
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
