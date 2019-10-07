@@ -13,6 +13,14 @@ requirements:
     - pkg-config # [unix]
     - {{ compiler('c') }} # [not osx]
     - {{ compiler('cxx') }} # [not osx]
+    - {{ cdt('libpng-devel') }} # [linux]
+    - {{ cdt('xorg-x11-proto-devel') }}  # [linux]
+    - {{ cdt('mesa-libgl-devel') }}      # [linux]
+    - {{ cdt('libx11-devel') }}          # [linux]
+    - {{ cdt('libxext-devel') }}         # [linux]
+    - {{ cdt('libxrender-devel') }}      # [linux]
+    - {{ cdt('mesa-libgl-devel') }}      # [linux]
+    - {{ cdt('mesa-dri-drivers') }}      # [linux]
     {{ environ.get('CONDA_BULLET', '') }}
 
 
@@ -23,7 +31,7 @@ requirements:
     - setuptools
     - attrs>=19.1.0
     - numba
-    - numpy >=1.16.1
+    - numpy
     - quaternion
     - pillow
     - scipy>=1.3.0
@@ -32,7 +40,7 @@ requirements:
   run:
     - attrs>=19.1.0
     - numba
-    - numpy >=1.16.1
+    - numpy
     - quaternion
     - pillow
     - scipy>=1.3.0
@@ -45,7 +53,7 @@ requirements:
     {{ environ.get('CONDA_BULLET_FEATURE', '') }}
 
 build:
-  binary_relocation: False
+  binary_relocation: True
   detect_binary_files_with_prefix: False
   script_env:
     - HEADLESS

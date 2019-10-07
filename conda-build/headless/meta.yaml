@@ -5,3 +5,4 @@ package:
 build:
   track_features:
       - headless
+  noarch: generic
