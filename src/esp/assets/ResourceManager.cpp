@@ -17,7 +17,7 @@
 #include <Magnum/Math/Tags.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/PixelFormat.h>
-#include <Magnum/Shaders/Flat.h>
+#include <Magnum/Shaders/Phong.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
 #include <Magnum/Trade/MeshObjectData3D.h>
@@ -740,27 +740,44 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
 
       case COLORED_SHADER: {
         shaderPrograms_[COLORED_SHADER] =
-            std::make_shared<Magnum::Shaders::Flat3D>(
-                Magnum::Shaders::Flat3D::Flag::ObjectId);
+            std::make_shared<Magnum::Shaders::Phong>(
+                Magnum::Shaders::Phong::Flag::ObjectId, 3 /*lights*/);
       } break;
 
       case VERTEX_COLORED_SHADER: {
         shaderPrograms_[VERTEX_COLORED_SHADER] =
-            std::make_shared<Magnum::Shaders::Flat3D>(
-                Magnum::Shaders::Flat3D::Flag::ObjectId |
-                Magnum::Shaders::Flat3D::Flag::VertexColor);
+            std::make_shared<Magnum::Shaders::Phong>(
+                Magnum::Shaders::Phong::Flag::ObjectId |
+                    Magnum::Shaders::Phong::Flag::VertexColor,
+                3 /*lights*/);
       } break;
 
       case TEXTURED_SHADER: {
         shaderPrograms_[TEXTURED_SHADER] =
-            std::make_shared<Magnum::Shaders::Flat3D>(
-                Magnum::Shaders::Flat3D::Flag::ObjectId |
-                Magnum::Shaders::Flat3D::Flag::Textured);
+            std::make_shared<Magnum::Shaders::Phong>(
+                Magnum::Shaders::Phong::Flag::ObjectId |
+                    Magnum::Shaders::Phong::Flag::DiffuseTexture,
+                3 /*lights*/);
       } break;
 
       default:
         return nullptr;
         break;
+    }
+
+    /* Default setup for Phong, shared by all models */
+    if (type == COLORED_SHADER || type == VERTEX_COLORED_SHADER ||
+        type == TEXTURED_SHADER) {
+      using namespace Magnum::Math::Literals;
+
+      static_cast<Magnum::Shaders::Phong&>(*shaderPrograms_[TEXTURED_SHADER])
+          .setLightPositions({Magnum::Vector3{10.0f, 10.0f, 10.0f} * 100.0f,
+                              Magnum::Vector3{-5.0f, -5.0f, 10.0f} * 100.0f,
+                              Magnum::Vector3{0.0f, 10.0f, -10.0f} * 100.0f})
+          .setLightColors({0xffffff_rgbf * 0.8f, 0xffcccc_rgbf * 0.8f,
+                           0xccccff_rgbf * 0.8f})
+          .setSpecularColor(0x11111100_rgbaf)
+          .setShininess(80.0f);
     }
   }
   return shaderPrograms_[type].get();
@@ -1209,7 +1226,7 @@ gfx::Drawable& ResourceManager::createDrawable(
     drawable = new gfx::PrimitiveIDDrawable{node, *shader, mesh, group};
   } else {  // all other shaders use GenericShader
     auto* shader =
-        static_cast<Magnum::Shaders::Flat3D*>(getShaderProgram(shaderType));
+        static_cast<Magnum::Shaders::Phong*>(getShaderProgram(shaderType));
     drawable = new gfx::GenericDrawable{node,    *shader,  mesh, group,
                                         texture, objectId, color};
   }

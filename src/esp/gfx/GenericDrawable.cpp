@@ -4,7 +4,7 @@
 
 #include "GenericDrawable.h"
 
-#include <Magnum/Shaders/Flat.h>
+#include <Magnum/Shaders/Phong.h>
 
 #include "esp/scene/SceneNode.h"
 
@@ -13,7 +13,7 @@ namespace gfx {
 
 GenericDrawable::GenericDrawable(
     scene::SceneNode& node,
-    Magnum::Shaders::Flat3D& shader,
+    Magnum::Shaders::Phong& shader,
     Magnum::GL::Mesh& mesh,
     Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */,
     Magnum::GL::Texture2D* texture /* = nullptr */,
@@ -26,20 +26,22 @@ GenericDrawable::GenericDrawable(
 
 void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                            Magnum::SceneGraph::Camera3D& camera) {
-  Magnum::Shaders::Flat3D& shader =
-      static_cast<Magnum::Shaders::Flat3D&>(shader_);
-  shader.setTransformationProjectionMatrix(camera.projectionMatrix() *
-                                           transformationMatrix);
+  Magnum::Shaders::Phong& shader =
+      static_cast<Magnum::Shaders::Phong&>(shader_);
+  shader.setTransformationMatrix(transformationMatrix)
+      .setProjectionMatrix(camera.projectionMatrix())
+      .setNormalMatrix(transformationMatrix.rotationScaling())
+      .setObjectId(node_.getId());
 
-  if ((shader.flags() & Magnum::Shaders::Flat3D::Flag::Textured) && texture_) {
-    shader.bindTexture(*texture_);
+  if ((shader.flags() & Magnum::Shaders::Phong::Flag::DiffuseTexture) &&
+      texture_) {
+    shader.bindDiffuseTexture(*texture_);
   }
 
-  if (!(shader.flags() & Magnum::Shaders::Flat3D::Flag::VertexColor)) {
-    shader.setColor(color_);
+  if (!(shader.flags() & Magnum::Shaders::Phong::Flag::VertexColor)) {
+    shader.setDiffuseColor(color_);
   }
 
-  shader.setObjectId(node_.getId());
   mesh_.draw(shader_);
 }
 
