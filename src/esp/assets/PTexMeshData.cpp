@@ -36,11 +36,6 @@ namespace assets {
 
 void PTexMeshData::load(const std::string& meshFile,
                         const std::string& atlasFolder) {
-#ifdef __APPLE__
-  Cr::Utility::Fatal{-1} << "PTexMeshData::load: PTex mesh is not supported on "
-                            "Mac in current version.";
-#endif
-
   if (!io::exists(meshFile)) {
     Cr::Utility::Fatal{-1} << "PTexMeshData::load: Mesh file" << meshFile
                            << "does not exist.";
@@ -797,6 +792,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     currentMesh->indexBuffer.setData(submeshes_[iMesh].ibo,
                                      Magnum::GL::BufferUsage::StaticDraw);
   }
+#ifndef __APPLE__
   LOG(INFO) << "Calculating mesh adjacency... ";
 
   std::vector<std::vector<uint32_t>> adjFaces(submeshes_.size());
@@ -805,14 +801,17 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
     calculateAdjacency(submeshes_[iMesh], adjFaces[iMesh]);
   }
+#endif
 
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
     auto& currentMesh = renderingBuffers_[iMesh];
 
+#ifndef __APPLE__
     currentMesh->adjFacesBufferTexture.setBuffer(
         Magnum::GL::BufferTextureFormat::R32UI, currentMesh->adjFacesBuffer);
     currentMesh->adjFacesBuffer.setData(adjFaces[iMesh],
                                         Magnum::GL::BufferUsage::StaticDraw);
+#endif
     GLintptr offset = 0;
     currentMesh->mesh
         .setPrimitive(Magnum::GL::MeshPrimitive::LinesAdjacency)
