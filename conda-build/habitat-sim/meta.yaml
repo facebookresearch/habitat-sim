@@ -1,0 +1,61 @@
+package:
+  name: habitat-sim
+  version: 1.2
+
+source:
+  path: "{{ environ.get('HSIM_SOURCE_PATH') }}"
+
+
+requirements:
+  build:
+    - cmake
+    - ninja
+    - pkg-config # [unix]
+    - {{ compiler('c') }} # [not osx]
+    - {{ compiler('cxx') }} # [not osx]
+    {{ environ.get('CONDA_BULLET', '') }}
+
+
+
+  host:
+    - python x.x
+    - pip
+    - setuptools
+    - attrs>=19.1.0
+    - numba
+    - numpy >=1.16.1
+    - quaternion
+    - pillow
+    - scipy>=1.3.0
+    - tqdm
+
+  run:
+    - attrs>=19.1.0
+    - numba
+    - numpy >=1.16.1
+    - quaternion
+    - pillow
+    - scipy>=1.3.0
+    - tqdm
+    {{ environ.get('CONDA_CUDATOOLKIT_CONSTRAINT', '') }}
+    {{ environ.get('CONDA_BULLET', '') }}
+
+  features:
+    {{ environ.get('CONDA_HEADLESS_FEATURE', '') }}
+    {{ environ.get('CONDA_BULLET_FEATURE', '') }}
+
+build:
+  binary_relocation: False
+  detect_binary_files_with_prefix: False
+  script_env:
+    - HEADLESS
+    - WITH_CUDA
+    - WITH_BULLET
+
+
+about:
+  home: https://aihabitat.org
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A flexible, high-performance 3D simulator for Embodied AI research.
