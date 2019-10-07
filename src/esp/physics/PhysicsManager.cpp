@@ -52,16 +52,6 @@ int PhysicsManager::addObject(const int objectLibIndex,
   assets::PhysicsObjectAttributes physicsObjectAttributes =
       resourceManager_->getPhysicsObjectAttributes(configFile);
 
-  /*Magnum::Range3D BB;
-  for (const assets::CollisionMeshData& meshData : meshGroup) {
-    if (!isMeshPrimitiveValid(meshData)) {
-      return ID_UNDEFINED;
-    }
-    Magnum::Range3D collisionMeshBB{
-        Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)};
-    BB = join(BB, collisionMeshBB);
-  }*/
-
   //! Instantiate with mesh pointer
   int nextObjectID_ = makeRigidObject(meshGroup, physicsObjectAttributes);
   if (nextObjectID_ < 0) {

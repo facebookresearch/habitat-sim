@@ -56,8 +56,6 @@ const Magnum::Range3D& SceneNode::computeCumulativeBB() {
       corners.push_back(child_node->transformation().transformPoint(
           child_node->cumulativeBB_.backBottomRight()));
 
-      Corrade::Utility::Debug() << child_node->transformation();
-
       Magnum::Range3D transformedBB{
           Magnum::Math::minmax<Magnum::Vector3>(corners)};
 

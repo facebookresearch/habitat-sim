@@ -386,9 +386,6 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
     }
     // compute the full BB hierarchy for the new tree.
     parent->computeCumulativeBB();
-    Cr::Utility::Debug() << "New object BB: " << parent->cumulativeBB_
-                         << ", size: " << parent->cumulativeBB_.size()
-                         << ", center: " << parent->cumulativeBB_.center();
   }
 
   return objectID;
@@ -1047,7 +1044,6 @@ void ResourceManager::addComponent(Importer& importer,
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
   node.MagnumObject::setTransformation(objectData->transformation());
-  Cr::Utility::Debug() << "Node transform: " << objectData->transformation();
 
   const int meshIDLocal = objectData->instance();
   const int meshID = metaData.meshIndex.first + meshIDLocal;
@@ -1064,7 +1060,6 @@ void ResourceManager::addComponent(Importer& importer,
     // compute the bounding box for the mesh we are adding
     BaseMesh* mesh = meshes_[meshID].get();
     node.meshBB_ = computeMeshBB(mesh);
-    Cr::Utility::Debug() << "Node mesh bounding box: " << node.meshBB_;
   }
 
   // Recursively add children

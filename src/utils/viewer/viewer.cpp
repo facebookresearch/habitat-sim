@@ -487,6 +487,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       Magnum::DebugTools::screenshot(GL::defaultFramebuffer,
                                      "test_image_save.png");
       break;
+    case KeyEvent::Key::B: {
+      // toggle bounding box on random object
+      int randObjID = rand() % physicsManager_->getExistingObjectIDs().size();
+      physicsManager_->toggleBBDraw(randObjID, &sceneGraph_->getDrawables());
+    } break;
     default:
       break;
   }
