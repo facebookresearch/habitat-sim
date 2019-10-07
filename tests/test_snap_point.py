@@ -15,6 +15,7 @@ def test_data():
         "data/scene_datasets/habitat-test-scenes/skokloster-castle.navmesh"
     )
 
+    # The test point won't be deterministic
     return pf, pf.get_random_navigable_point()
 
 
