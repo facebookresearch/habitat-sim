@@ -1,13 +1,15 @@
 #!/bin/bash
 
 
-build_args=()
+build_args=(--skip-install-magnum)
 if [ ${HEADLESS} == "1" ]; then
   build_args+=("--headless")
 fi
 
 if [ ${WITH_CUDA} = "1" ]; then
   build_args+=("--with-cuda")
+  export CUDA_HOME=/public/apps/cuda/${CUDA_VER}
+  build_args+=(--cmake-args="-DCUDA_TOOLKIT_ROOT_DIR=${CUDA_HOME}")
 fi
 
 if [ ${WITH_BULLET} == "1" ]; then
@@ -15,12 +17,13 @@ if [ ${WITH_BULLET} == "1" ]; then
 fi
 
 if [ $(uname) == "Linux" ]; then
-  export CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/usr/lib/x86_64-linux-gnu
   cp -r /usr/include/EGL ${PREFIX}/include/.
   cp -r /usr/include/X11 ${PREFIX}/include/.
+  export CMAKE_PREFIX_PATH=${PREFIX}:${CMAKE_PREFIX_PATH}
 fi
 
 ${PYTHON} setup.py install "${build_args[@]}"
+${PYTHON} -m pip install build/deps/magnum-bindings/src/python
 
 
 if [ -f "build/viewer" ]; then
