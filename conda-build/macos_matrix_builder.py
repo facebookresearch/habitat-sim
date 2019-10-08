@@ -30,7 +30,7 @@ def build_parser():
 def main():
     args = build_parser().parse_args()
     py_vers = ["3.6"]
-    bullet_modes = [True, False][1:]
+    bullet_modes = [True, False][0:1]
 
     for py_ver, use_bullet in itertools.product(py_vers, bullet_modes):
         env = os.environ.copy()
@@ -43,8 +43,13 @@ def main():
         if use_bullet:
             output_folder += "bullet_"
             env["CONDA_BULLET"] = "- bullet"
+            env["CONDA_BULLET_FEATURE"] = "- withbullet"
+        else:
+            env["CONDA_BULLET"] = ""
+            env["CONDA_BULLET_FEATURE"] = ""
 
         output_folder += "osx"
+        env["HSIM_BUILD_STRING"] = output_folder
 
         call(
             build_cmd_template.format(PY_VER=py_ver, OUTPUT_FOLDER=output_folder),

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-build_args=()
+build_args=(--skip-install-magnum)
 if [ ${HEADLESS} == "1" ]; then
   build_args+=("--headless")
 fi
@@ -21,6 +21,7 @@ if [ $(uname) == "Linux" ]; then
 fi
 
 ${PYTHON} setup.py install "${build_args[@]}"
+${PYTHON} -m pip install build/deps/magnum-bindings/src/python
 
 
 if [ -f "build/viewer" ]; then
@@ -30,8 +31,11 @@ fi
 pushd ${PREFIX}
 
 corrade_bindings=$(find . -name "*_corrade*so")
+echo ${corrade_bindings}
 magnum_bindings=$(find . -name "*_magnum*so")
+echo ${magnum_bindings}
 hsim_bindings=$(find . -name "*habitat_sim_bindings*so")
+echo ${hsim_bindings}
 ext_folder=$(dirname ${corrade_bindings})/habitat_sim/_ext
 
 if [ $(uname) == "Darwin" ]; then
