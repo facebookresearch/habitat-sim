@@ -3,8 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Magnum/ImageView.h>
-#include <Magnum/PixelFormat.h>
 #include <Magnum/Math/Algorithms/GramSchmidt.h>
+#include <Magnum/PixelFormat.h>
 
 #include "PinholeCamera.h"
 #include "esp/gfx/DepthUnprojection.h"
@@ -29,21 +29,23 @@ void PinholeCamera::setProjectionParameters(SensorSpec::ptr spec) {
   hfov_ = std::atof(spec_->parameters.at("hfov").c_str());
 }
 
-PinholeCamera& PinholeCamera::setProjectionMatrix(gfx::RenderCamera& targetCamera) {
+PinholeCamera& PinholeCamera::setProjectionMatrix(
+    gfx::RenderCamera& targetCamera) {
   targetCamera.setProjectionMatrix(width_, height_, near_, far_, hfov_);
   return *this;
 }
 
-PinholeCamera& PinholeCamera::setModelViewMatrix(gfx::RenderCamera& targetCamera) {
+PinholeCamera& PinholeCamera::setModelViewMatrix(
+    gfx::RenderCamera& targetCamera) {
   Magnum::Matrix4 T = this->node().absoluteTransformation();
   Magnum::Matrix3 R = T.rotationScaling();
   Magnum::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(R);
 
   VLOG(1) << "||R - GS(R)|| = "
-    << Eigen::Map<mat3f>((R - T.rotationShear()).data()).norm();
+          << Eigen::Map<mat3f>((R - T.rotationShear()).data()).norm();
 
   T = Magnum::Matrix4::from(R, T.translation()) *
-    Magnum::Matrix4::scaling(T.scaling());
+      Magnum::Matrix4::scaling(T.scaling());
 
   // set the transformation to the camera
   // so that the camera has the correct modelview matrix for rendering;

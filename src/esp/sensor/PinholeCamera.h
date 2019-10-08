@@ -33,9 +33,11 @@ class PinholeCamera : public Sensor {
   bool isVisualSensor() override { return true; }
 
   // set the projection parameters to the given render camera
-  virtual PinholeCamera& setProjectionMatrix(gfx::RenderCamera& targetCamera) override;
+  virtual PinholeCamera& setProjectionMatrix(
+      gfx::RenderCamera& targetCamera) override;
   // set the modelview parameters to the given render camera
-  virtual PinholeCamera& setModelViewMatrix(gfx::RenderCamera& targetCamera) override;
+  virtual PinholeCamera& setModelViewMatrix(
+      gfx::RenderCamera& targetCamera) override;
   // set the view port parameters to the given render camera
   virtual PinholeCamera& setViewport(gfx::RenderCamera& targetCamera) override;
 
