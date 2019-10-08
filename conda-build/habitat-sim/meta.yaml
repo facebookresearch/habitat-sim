@@ -11,16 +11,9 @@ requirements:
     - cmake
     - ninja
     - pkg-config # [unix]
-    - {{ compiler('c') }} # [not osx]
-    - {{ compiler('cxx') }} # [not osx]
     - {{ cdt('libpng-devel') }} # [linux]
     - {{ cdt('xorg-x11-proto-devel') }}  # [linux]
-    - {{ cdt('mesa-libgl-devel') }}      # [linux]
-    - {{ cdt('libx11-devel') }}          # [linux]
-    - {{ cdt('libxext-devel') }}         # [linux]
-    - {{ cdt('libxrender-devel') }}      # [linux]
-    - {{ cdt('mesa-libgl-devel') }}      # [linux]
-    - {{ cdt('mesa-dri-drivers') }}      # [linux]
+    - {{ cdt('libxxf86vm-devel') }}      # [linux]
     {{ environ.get('CONDA_BULLET', '') }}
 
 
@@ -36,6 +29,16 @@ requirements:
     - pillow
     - scipy>=1.3.0
     - tqdm
+    - libglu                             # [linux]
+    - libxcb                             # [linux]
+    - xorg-libx11                        # [linux]
+    - xorg-libxau                        # [linux]
+    - xorg-libxext                       # [linux]
+    - xorg-libxfixes                     # [linux]
+    - xorg-libxi                         # [linux]
+    - xorg-libxrandr         # [linux]
+    - xorg-libxinerama       # [linux]
+    - xorg-libxcursor        # [linux]
 
   run:
     - attrs>=19.1.0
@@ -45,6 +48,15 @@ requirements:
     - pillow
     - scipy>=1.3.0
     - tqdm
+    - libxcb                             # [linux]
+    - xorg-libx11                        # [linux]
+    - xorg-libxau                        # [linux]
+    - xorg-libxext                       # [linux]
+    - xorg-libxfixes                     # [linux]
+    - xorg-libxi                         # [linux]
+    - xorg-libxrandr         # [linux]
+    - xorg-libxcursor        # [linux]
+
     {{ environ.get('CONDA_CUDATOOLKIT_CONSTRAINT', '') }}
     {{ environ.get('CONDA_BULLET') }}
 
@@ -57,10 +69,11 @@ build:
     - HEADLESS
     - WITH_CUDA
     - WITH_BULLET
+    - CUDA_VER
+
   features:
     {{ environ.get('CONDA_HEADLESS_FEATURE', '') }}
-    {{ environ.get('CONDA_BULLET_FEATURE') }}
-
+    {{ environ.get('CONDA_BULLET_FEATURE', '') }}
 
 about:
   home: https://aihabitat.org
