@@ -87,57 +87,6 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
    * 1.85093, 2.88244, -2.30123
    * 4.45093, 2.88244, -2.30123
    */
-  /*
-  shader.setTransformationMatrix(transformationMatrix)
-      .setProjectionMatrix(camera.projectionMatrix())
-      .setNormalMatrix(transformationMatrix.rotationScaling())
-      .setObjectId(node_.getId())
-      .setLightPositions({
-    transformationMatrix.inverted().transformPoint(Magnum::Vector3{0.0f, -10.0f,
-  0.0f} * 100.0f),
-                                transformationMatrix.inverted().transformPoint(Magnum::Vector3{0.0f,
-  -10.0f, 0.0f} * 100.0f),
-                                transformationMatrix.inverted().transformPoint(Magnum::Vector3{0.0f,
-  -10.0f, 0.0f} * 100.0f)
-                                });
-  shader.setTransformationMatrix(transformationMatrix)
-      .setProjectionMatrix(camera.projectionMatrix())
-      .setNormalMatrix(node_.transformation().rotationScaling())
-      .setObjectId(node_.getId());
-  */
-
-  // Corrade::Utility::Debug() << " draw node " << node_.getId() << " transform:
-  // " << transformationMatrix << " absolute T: " <<
-  // node_.absoluteTransformation();
-
-  // transformationMatrix.transformPoint(Magnum::Vector3{10.0f, 10.0f, 10.0f} *
-  // 100.0f);
-
-  /*
-  shader.setLightPositions({
-    transformationMatrix.inverted().transformPoint(Magnum::Vector3{10.0f, 10.0f, 10.0f}
-  * 100.0f),
-                                transformationMatrix.inverted().transformPoint(Magnum::Vector3{-5.0f,
-  -5.0f, 10.0f} * 100.0f),
-                                transformationMatrix.inverted().transformPoint(Magnum::Vector3{0.0f,
-  10.0f, -10.0f} * 100.0f)
-                                });
-
-
-  shader.setLightPositions({
-    transformationMatrix.transformPoint(Magnum::Vector3{0.0f, -10.0f, 0.0f} *
-  100.0f), transformationMatrix.transformPoint(Magnum::Vector3{0.0f, -10.0f,
-  0.0f} * 100.0f), transformationMatrix.transformPoint(Magnum::Vector3{0.0f,
-  -10.0f, 0.0f} * 100.0f)
-                                });
-
-
-  shader.setLightPositions({
-      Magnum::Vector3{0.0f, -10.0f, 0.0f} * 100.0f,
-      Magnum::Vector3{0.0f, -10.0f, 0.0f} * 100.0f,
-      Magnum::Vector3{0.0f, -10.0f, 0.0f} * 100.0f
-    });
-    */
 
   if ((shader.flags() & Magnum::Shaders::Phong::Flag::DiffuseTexture) &&
       texture_) {

@@ -157,14 +157,6 @@ class ResourceManager {
                                DrawableGroup* drawables,
                                const Magnum::Color4& color = Magnum::Color4{1});
 
-  //----------------------
-  // Move Fast research code XD
-
-  std::vector<Magnum::Vector3> phongLightPositions;
-  std::vector<float> phongLightIntensities;
-
-  //----------------------
-
  protected:
   //======== Scene Functions ========
   //! Instantiate Scene:
