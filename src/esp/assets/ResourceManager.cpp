@@ -17,6 +17,7 @@
 #include <Magnum/Math/Tags.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/PixelFormat.h>
+#include <Magnum/Shaders/Flat.h>
 #include <Magnum/Shaders/Phong.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
@@ -74,6 +75,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
       LOG(ERROR) << "Cannot load from file " << info.filepath;
       meshSuccess = false;
     } else {
+      Cr::Utility::Debug() << "AssetType: " << int(info.type);
       if (info.type == AssetType::INSTANCE_MESH) {
         meshSuccess = loadInstanceMeshData(info, parent, drawables);
       } else if (info.type == AssetType::FRL_PTEX_MESH) {
@@ -81,7 +83,8 @@ bool ResourceManager::loadScene(const AssetInfo& info,
       } else if (info.type == AssetType::SUNCG_SCENE) {
         meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
       } else if (info.type == AssetType::MP3D_MESH) {
-        meshSuccess = loadGeneralMeshData(info, parent, drawables);
+        // hard code: scenes are flat shaded!
+        meshSuccess = loadGeneralMeshData(info, parent, drawables, true);
       } else {
         // Unknown type, just load general mesh data
         meshSuccess = loadGeneralMeshData(info, parent, drawables);
@@ -123,7 +126,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
 
   for (auto& primitive : primitiveMeshes) {
     primitive_meshes_.push_back(Magnum::MeshTools::compile(
-        primitive, {Magnum::MeshTools::CompileFlag::GenerateFlatNormals}));
+        primitive, {Magnum::MeshTools::CompileFlag::GenerateSmoothNormals}));
   }
 
   return meshSuccess;
@@ -601,7 +604,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
           loadGeneralMeshData(renderMeshinfo, nullptr, nullptr, true);
     } else if (shiftMeshOrigin) {  // use the provided COM
       renderMeshSuccess =
-          loadGeneralMeshData(renderMeshinfo, nullptr, nullptr, true,
+          loadGeneralMeshData(renderMeshinfo, nullptr, nullptr, true, false,
                               -physicsObjectAttributes.getMagnumVec3("COM"));
     } else {  // mesh origin already at COM
       renderMeshSuccess = loadGeneralMeshData(renderMeshinfo);
@@ -619,7 +622,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
           loadGeneralMeshData(collisionMeshinfo, nullptr, nullptr, true);
     } else if (shiftMeshOrigin) {  // use the provided COM
       collisionMeshSuccess =
-          loadGeneralMeshData(collisionMeshinfo, nullptr, nullptr, true,
+          loadGeneralMeshData(collisionMeshinfo, nullptr, nullptr, true, false,
                               -physicsObjectAttributes.getMagnumVec3("COM"));
     } else {  // mesh origin already at COM
       collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo);
@@ -723,7 +726,9 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
 }
 
 Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
-    ShaderType type) {
+    ShaderType type,
+    bool flatShading) {
+  Cr::Utility::Debug() << " getShaderProgram : Shader Type: " << type;
   if (shaderPrograms_.count(type) == 0) {
     switch (type) {
       case INSTANCE_MESH_SHADER: {
@@ -741,7 +746,7 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
       case COLORED_SHADER: {
         shaderPrograms_[COLORED_SHADER] =
             std::make_shared<Magnum::Shaders::Phong>(
-                Magnum::Shaders::Phong::Flag::ObjectId, 3 /*lights*/);
+                Magnum::Shaders::Phong::Flag::ObjectId, 6 /*lights*/);
       } break;
 
       case VERTEX_COLORED_SHADER: {
@@ -749,7 +754,7 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
             std::make_shared<Magnum::Shaders::Phong>(
                 Magnum::Shaders::Phong::Flag::ObjectId |
                     Magnum::Shaders::Phong::Flag::VertexColor,
-                3 /*lights*/);
+                6 /*lights*/);
       } break;
 
       case TEXTURED_SHADER: {
@@ -757,7 +762,14 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
             std::make_shared<Magnum::Shaders::Phong>(
                 Magnum::Shaders::Phong::Flag::ObjectId |
                     Magnum::Shaders::Phong::Flag::DiffuseTexture,
-                3 /*lights*/);
+                6 /*lights*/);
+      } break;
+
+      case FLAT_TEXTURED_SHADER: {
+        shaderPrograms_[FLAT_TEXTURED_SHADER] =
+            std::make_shared<Magnum::Shaders::Flat3D>(
+                Magnum::Shaders::Flat3D::Flag::ObjectId |
+                Magnum::Shaders::Flat3D::Flag::Textured);
       } break;
 
       default:
@@ -770,14 +782,41 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
         type == TEXTURED_SHADER) {
       using namespace Magnum::Math::Literals;
 
-      static_cast<Magnum::Shaders::Phong&>(*shaderPrograms_[TEXTURED_SHADER])
-          .setLightPositions({Magnum::Vector3{10.0f, 10.0f, 10.0f} * 100.0f,
-                              Magnum::Vector3{-5.0f, -5.0f, 10.0f} * 100.0f,
-                              Magnum::Vector3{0.0f, 10.0f, -10.0f} * 100.0f})
-          .setLightColors({0xffffff_rgbf * 0.8f, 0xffcccc_rgbf * 0.8f,
-                           0xccccff_rgbf * 0.8f})
-          .setSpecularColor(0x11111100_rgbaf)
-          .setShininess(80.0f);
+      float lightIntensity = 0.2;
+
+      if (shaderPrograms_.count(COLORED_SHADER)) {
+        static_cast<Magnum::Shaders::Phong&>(*shaderPrograms_[COLORED_SHADER])
+            .setLightPositions({Magnum::Vector3{10.0f, 10.0f, 10.0f} * 100.0f,
+                                Magnum::Vector3{-5.0f, -5.0f, 10.0f} * 100.0f,
+                                Magnum::Vector3{0.0f, 10.0f, -10.0f} * 100.0f,
+                                Magnum::Vector3{0.0f, 10.0f, -10.0f} * 100.0f,
+                                Magnum::Vector3{0.0f, 10.0f, -10.0f} * 100.0f,
+                                Magnum::Vector3{0.0f, 10.0f, -10.0f} * 100.0f})
+            .setLightColors(
+                {0xffffff_rgbf * lightIntensity, 0xffffff_rgbf * lightIntensity,
+                 0xffffff_rgbf * lightIntensity, 0xffffff_rgbf * lightIntensity,
+                 0xffffff_rgbf * lightIntensity,
+                 0xffffff_rgbf * lightIntensity})
+            .setSpecularColor(0x11111100_rgbaf)
+            .setShininess(20.0f);
+      }
+
+      if (shaderPrograms_.count(TEXTURED_SHADER)) {
+        static_cast<Magnum::Shaders::Phong&>(*shaderPrograms_[TEXTURED_SHADER])
+            .setLightPositions({Magnum::Vector3{10.0f, 10.0f, 10.0f} * 100.0f,
+                                Magnum::Vector3{-5.0f, -5.0f, 10.0f} * 100.0f,
+                                Magnum::Vector3{0.0f, 10.0f, -10.0f} * 100.0f,
+                                Magnum::Vector3{0.0f, 10.0f, -10.0f} * 100.0f,
+                                Magnum::Vector3{0.0f, 10.0f, -10.0f} * 100.0f,
+                                Magnum::Vector3{0.0f, 10.0f, -10.0f} * 100.0f})
+            .setLightColors(
+                {0xffffff_rgbf * lightIntensity, 0xffffff_rgbf * lightIntensity,
+                 0xffffff_rgbf * lightIntensity, 0xffffff_rgbf * lightIntensity,
+                 0xffffff_rgbf * lightIntensity,
+                 0xffffff_rgbf * lightIntensity})
+            .setSpecularColor(0x11111100_rgbaf)
+            .setShininess(20.0f);
+      }
     }
   }
   return shaderPrograms_[type].get();
@@ -879,6 +918,7 @@ bool ResourceManager::loadGeneralMeshData(
     const AssetInfo& info,
     scene::SceneNode* parent /* = nullptr */,
     DrawableGroup* drawables /* = nullptr */,
+    bool flatShading,
     bool shiftOrigin /* = false */,
     Magnum::Vector3 translation /* [0,0,0] */) {
   const std::string& filename = info.filepath;
@@ -974,7 +1014,8 @@ bool ResourceManager::loadGeneralMeshData(
     newNode.setRotation(Magnum::Quaternion(transform));
     // Recursively add all children
     for (auto sceneDataID : magnumMeshDict_[filename]) {
-      addComponent(*importer, metaData, newNode, drawables, sceneDataID);
+      addComponent(*importer, metaData, newNode, drawables, sceneDataID,
+                   flatShading);
     }
 
     return true;
@@ -1114,7 +1155,8 @@ void ResourceManager::addComponent(Importer& importer,
                                    const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
                                    DrawableGroup* drawables,
-                                   int componentID) {
+                                   int componentID,
+                                   bool flatShading) {
   std::unique_ptr<Magnum::Trade::ObjectData3D> objectData =
       importer.object3D(componentID);
   if (!objectData) {
@@ -1138,7 +1180,7 @@ void ResourceManager::addComponent(Importer& importer,
         static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
             ->material();
     addMeshToDrawables(metaData, node, drawables, componentID, meshIDLocal,
-                       materialIDLocal);
+                       materialIDLocal, flatShading);
 
     // compute the bounding box for the mesh we are adding
     BaseMesh* mesh = meshes_[meshID].get();
@@ -1148,7 +1190,8 @@ void ResourceManager::addComponent(Importer& importer,
 
   // Recursively add children
   for (auto childObjectID : objectData->children()) {
-    addComponent(importer, metaData, node, drawables, childObjectID);
+    addComponent(importer, metaData, node, drawables, childObjectID,
+                 flatShading);
   }
 }
 
@@ -1157,7 +1200,8 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                                          DrawableGroup* drawables,
                                          int componentID,
                                          int meshIDLocal,
-                                         int materialIDLocal) {
+                                         int materialIDLocal,
+                                         bool flatShading) {
   const int meshStart = metaData.meshIndex.first;
   const int meshID = meshStart + meshIDLocal;
   Magnum::GL::Mesh& mesh = *meshes_[meshID]->getMagnumGLMesh();
@@ -1170,7 +1214,8 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
   if (materialIDLocal == ID_UNDEFINED ||
       metaData.materialIndex.second == ID_UNDEFINED ||
       !materials_[materialID]) {
-    createDrawable(COLORED_SHADER, mesh, node, drawables, texture, componentID);
+    createDrawable(COLORED_SHADER, mesh, node, drawables, texture, componentID,
+                   flatShading);
   } else {
     if (materials_[materialID]->flags() &
         Magnum::Trade::PhongMaterialData::Flag::DiffuseTexture) {
@@ -1181,16 +1226,18 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
       texture = textures_[textureStart + textureIndex].get();
       if (texture) {
         createDrawable(TEXTURED_SHADER, mesh, node, drawables, texture,
-                       componentID);
+                       componentID, flatShading);
       } else {
         // Color-only material
         createDrawable(COLORED_SHADER, mesh, node, drawables, texture,
-                       componentID, materials_[materialID]->diffuseColor());
+                       componentID, flatShading,
+                       materials_[materialID]->diffuseColor());
       }
     } else {
       // Color-only material
       createDrawable(COLORED_SHADER, mesh, node, drawables, texture,
-                     componentID, materials_[materialID]->diffuseColor());
+                     componentID, flatShading,
+                     materials_[materialID]->diffuseColor());
     }
   }  // else
 }
@@ -1201,7 +1248,7 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               const Magnum::Color4& color) {
   if (primitiveID >= 0 && primitiveID < primitive_meshes_.size()) {
     createDrawable(ShaderType::COLORED_SHADER, primitive_meshes_[primitiveID],
-                   node, drawables, nullptr, ID_UNDEFINED, color);
+                   node, drawables, nullptr, ID_UNDEFINED, false, color);
   }
 }
 
@@ -1212,7 +1259,9 @@ gfx::Drawable& ResourceManager::createDrawable(
     Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */,
     Magnum::GL::Texture2D* texture /* = nullptr */,
     int objectId /* = ID_UNDEFINED */,
+    bool flatShading,
     const Magnum::Color4& color /* = Magnum::Color4{1} */) {
+  Cr::Utility::Debug() << "ShaderType: " << shaderType;
   gfx::Drawable* drawable = nullptr;
   if (shaderType == PTEX_MESH_SHADER) {
     LOG(ERROR)
@@ -1224,6 +1273,11 @@ gfx::Drawable& ResourceManager::createDrawable(
     auto* shader =
         static_cast<gfx::PrimitiveIDShader*>(getShaderProgram(shaderType));
     drawable = new gfx::PrimitiveIDDrawable{node, *shader, mesh, group};
+  } else if (flatShading) {
+    auto* shader = static_cast<Magnum::Shaders::Flat3D*>(
+        getShaderProgram(FLAT_TEXTURED_SHADER));
+    drawable = new gfx::GenericFlatDrawable{node,    *shader,  mesh, group,
+                                            texture, objectId, color};
   } else {  // all other shaders use GenericShader
     auto* shader =
         static_cast<Magnum::Shaders::Phong*>(getShaderProgram(shaderType));

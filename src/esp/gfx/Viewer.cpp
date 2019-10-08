@@ -37,7 +37,8 @@ using namespace Corrade;
 
 constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
-constexpr float rgbSensorHeight = 1.5f;
+// constexpr float rgbSensorHeight = 1.5f;
+constexpr float rgbSensorHeight = 0.6f;
 
 namespace esp {
 namespace gfx {
@@ -548,6 +549,8 @@ void Viewer::drawEvent() {
 
   swapBuffers();
   timeline_.nextFrame();
+  // Corrade::Utility::Debug() << "Drawing \n
+  // -----------------------------------";
   redraw();
 }
 
@@ -651,7 +654,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
-    case KeyEvent::Key::X:
+
+    /*case KeyEvent::Key::X:
       controls_(*agentBodyNode_, "moveDown", moveSensitivity, false);
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
@@ -661,6 +665,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
+      */
     case KeyEvent::Key::O: {
       if (physicsManager_ != nullptr) {
         int numObjects = resourceManager_.getNumLibraryObjects();
@@ -703,10 +708,13 @@ void Viewer::keyPressEvent(KeyEvent& event) {
                                      "test_image_save.png");
       break;
     case KeyEvent::Key::Equal: {
+      /*
       int randPrimitiveID = rand() %
                             esp::assets::ResourceManager::AvailablePrimitives::
                                 FINAL_NUM_PRIMITIVES_COUNTER;
       addPrimitiveDrawable(randPrimitiveID);
+       */
+      addPrimitiveDrawable(assets::ResourceManager::SOLID_SPHERE);
     } break;
     case KeyEvent::Key::Minus: {
       // remove the first primitive
@@ -726,6 +734,25 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Period: {
       // regenerate the roomw ith obstacles
       generateRandomScene(10);
+    } break;
+
+    case KeyEvent::Key::X: {
+      primitiveNodes_.back()->translate(Magnum::Vector3(0.1, 0.0, 0.0) *
+                                        multiplier_);
+      Corrade::Utility::Debug() << primitiveNodes_.back()->translation();
+    } break;
+    case KeyEvent::Key::Y: {
+      primitiveNodes_.back()->translate(Magnum::Vector3(0.0, 0.1, 0.0) *
+                                        multiplier_);
+      Corrade::Utility::Debug() << primitiveNodes_.back()->translation();
+    } break;
+    case KeyEvent::Key::Z: {
+      primitiveNodes_.back()->translate(Magnum::Vector3(0.0, 0.0, 0.1) *
+                                        multiplier_);
+      Corrade::Utility::Debug() << primitiveNodes_.back()->translation();
+    } break;
+    case KeyEvent::Key::Comma: {
+      multiplier_ *= -1;
     } break;
 
     default:

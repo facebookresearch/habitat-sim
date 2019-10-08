@@ -157,6 +157,14 @@ class ResourceManager {
                                DrawableGroup* drawables,
                                const Magnum::Color4& color = Magnum::Color4{1});
 
+  //----------------------
+  // Move Fast research code XD
+
+  std::vector<Magnum::Vector3> phongLightPositions;
+  std::vector<float> phongLightIntensities;
+
+  //----------------------
+
  protected:
   //======== Scene Functions ========
   //! Instantiate Scene:
@@ -167,7 +175,8 @@ class ResourceManager {
                     const MeshMetaData& metaData,
                     scene::SceneNode& parent,
                     DrawableGroup* drawables,
-                    int objectID);
+                    int objectID,
+                    bool flatShading = false);
 
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);
@@ -198,6 +207,7 @@ class ResourceManager {
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent = nullptr,
                            DrawableGroup* drawables = nullptr,
+                           bool flatShading = false,
                            bool shiftOrigin = false,
                            Magnum::Vector3 translation = Magnum::Vector3(0,
                                                                          0,
@@ -270,7 +280,8 @@ class ResourceManager {
                           DrawableGroup* drawables,
                           int objectID,
                           int meshIDLocal,
-                          int materialIDLocal);
+                          int materialIDLocal,
+                          bool flatShading = false);
 
   //! Types of supported Shader programs
   enum ShaderType {
@@ -279,6 +290,8 @@ class ResourceManager {
     COLORED_SHADER = 2,
     VERTEX_COLORED_SHADER = 3,
     TEXTURED_SHADER = 4,
+
+    FLAT_TEXTURED_SHADER = 5,
   };
 
   // maps a name to the shader program
@@ -286,7 +299,8 @@ class ResourceManager {
       shaderPrograms_;
 
   //! Return Shader of given type, creating if necessary
-  Magnum::GL::AbstractShaderProgram* getShaderProgram(ShaderType type);
+  Magnum::GL::AbstractShaderProgram* getShaderProgram(ShaderType type,
+                                                      bool flatShading = false);
 
   //! Create a Drawable with given ShaderType for the given Mesh and SceneNode
   //! If DrawableGroup3D group is given add created Drawable to the group
@@ -299,6 +313,7 @@ class ResourceManager {
       Magnum::SceneGraph::DrawableGroup3D* group = nullptr,
       Magnum::GL::Texture2D* texture = nullptr,
       int objectId = ID_UNDEFINED,
+      bool flatShading = false,
       const Magnum::Color4& color = Magnum::Color4{1});
 
   bool compressTextures_ = false;

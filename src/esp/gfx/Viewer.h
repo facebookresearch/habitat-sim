@@ -107,6 +107,8 @@ class Viewer : public Magnum::Platform::Application {
   Magnum::Timeline timeline_;
 
   assets::AssetInfo sceneInfo_;
+
+  int multiplier_ = 1.0;
 };
 
 }  // namespace gfx
