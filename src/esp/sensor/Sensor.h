@@ -114,8 +114,14 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual bool isVisualSensor() { return false; }
 
-  // visual sensor should implement and override this function
-  virtual void setProjectionMatrix(gfx::RenderCamera& targetCamera){};
+  // visual sensor should implement and override the following functions
+  virtual Sensor& setProjectionMatrix(gfx::RenderCamera& targetCamera) {
+    return *this;
+  }
+  virtual Sensor& setModelViewMatrix(gfx::RenderCamera& targetCamera) {
+    return *this;
+  }
+  virtual Sensor& setViewport(gfx::RenderCamera& targetCamera) { return *this; }
 
   virtual bool getObservation(gfx::Simulator& sim, Observation& obs);
   virtual bool getObservationSpace(ObservationSpace& space);
