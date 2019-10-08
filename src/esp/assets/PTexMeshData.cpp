@@ -792,7 +792,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     currentMesh->indexBuffer.setData(submeshes_[iMesh].ibo,
                                      Magnum::GL::BufferUsage::StaticDraw);
   }
-#ifndef __APPLE__
+#ifndef CORRADE_TARGET_APPLE
   LOG(INFO) << "Calculating mesh adjacency... ";
 
   std::vector<std::vector<uint32_t>> adjFaces(submeshes_.size());
@@ -806,7 +806,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
     auto& currentMesh = renderingBuffers_[iMesh];
 
-#ifndef __APPLE__
+#ifndef CORRADE_TARGET_APPLE
     currentMesh->adjFacesBufferTexture.setBuffer(
         Magnum::GL::BufferTextureFormat::R32UI, currentMesh->adjFacesBuffer);
     currentMesh->adjFacesBuffer.setData(adjFaces[iMesh],

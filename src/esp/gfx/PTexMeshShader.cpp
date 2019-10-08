@@ -31,7 +31,7 @@ namespace gfx {
 namespace {
 enum TextureBindingPointIndex : uint8_t {
   atlas = 0,
-#ifndef __APPLE__
+#ifndef CORRADE_TARGET_APPLE
   adjFaces = 1,
 #endif
 };
@@ -53,8 +53,8 @@ PTexMeshShader::PTexMeshShader() {
 
   vert.addSource(rs.get("ptex-default-gl410.vert"));
   geom.addSource(rs.get("ptex-default-gl410.geom"));
-#ifdef __APPLE__
-  frag.addSource("#define DISABLED_ON_MACOSX\n");
+#ifdef CORRADE_TARGET_APPLE
+  frag.addSource("#define CORRADE_TARGET_APPLE\n");
 #endif
   frag.addSource(rs.get("ptex-default-gl410.frag"));
 
@@ -67,7 +67,7 @@ PTexMeshShader::PTexMeshShader() {
   // set texture binding points in the shader;
   // see ptex fragment shader code for details
   setUniform(uniformLocation("atlasTex"), TextureBindingPointIndex::atlas);
-#ifndef __APPLE__
+#ifndef CORRADE_TARGET_APPLE
   setUniform(uniformLocation("meshAdjFaces"),
              TextureBindingPointIndex::adjFaces);
 #endif
@@ -92,7 +92,7 @@ PTexMeshShader& PTexMeshShader::bindAtlasTexture(
 
 PTexMeshShader& PTexMeshShader::bindAdjFacesBufferTexture(
     Magnum::GL::BufferTexture& texture) {
-#ifndef __APPLE__
+#ifndef CORRADE_TARGET_APPLE
   texture.bind(TextureBindingPointIndex::adjFaces);
 #endif
   return *this;

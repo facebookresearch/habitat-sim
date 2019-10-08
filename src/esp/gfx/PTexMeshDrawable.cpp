@@ -18,7 +18,7 @@ PTexMeshDrawable::PTexMeshDrawable(
     : Drawable{node, shader, ptexMeshData.getRenderingBuffer(submeshID)->mesh,
                group},
       atlasTexture_(ptexMeshData.getRenderingBuffer(submeshID)->atlasTexture),
-#ifndef __APPLE__
+#ifndef CORRADE_TARGET_APPLE
       adjFacesBufferTexture_(
           ptexMeshData.getRenderingBuffer(submeshID)->adjFacesBufferTexture),
 #endif
@@ -36,7 +36,7 @@ void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
       .setSaturation(saturation_)
       .setAtlasTextureSize(atlasTexture_, tileSize_)
       .bindAtlasTexture(atlasTexture_)
-#ifndef __APPLE__
+#ifndef CORRADE_TARGET_APPLE
       .bindAdjFacesBufferTexture(adjFacesBufferTexture_)
 #endif
       .setMVPMatrix(camera.projectionMatrix() * transformationMatrix);
