@@ -13,6 +13,14 @@ requirements:
     - pkg-config # [unix]
     - {{ compiler('c') }} # [not osx]
     - {{ compiler('cxx') }} # [not osx]
+    - {{ cdt('libpng-devel') }} # [linux]
+    - {{ cdt('xorg-x11-proto-devel') }}  # [linux]
+    - {{ cdt('mesa-libgl-devel') }}      # [linux]
+    - {{ cdt('libx11-devel') }}          # [linux]
+    - {{ cdt('libxext-devel') }}         # [linux]
+    - {{ cdt('libxrender-devel') }}      # [linux]
+    - {{ cdt('mesa-libgl-devel') }}      # [linux]
+    - {{ cdt('mesa-dri-drivers') }}      # [linux]
     {{ environ.get('CONDA_BULLET', '') }}
 
 
