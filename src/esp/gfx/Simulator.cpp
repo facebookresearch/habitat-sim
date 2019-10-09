@@ -101,12 +101,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       throw std::invalid_argument("Cannot load: " + sceneFilename);
     }
 
-    activeSemanticSceneID_ = activeSceneID_;
-    auto& semanticSceneGraph =
-        sceneManager_.getSceneGraph(activeSemanticSceneID_);
-    auto& semanticRootNode = semanticSceneGraph.getRootNode();
-    auto& semanticDrawables = semanticSceneGraph.getDrawables();
-
     if (io::exists(houseFilename)) {
       LOG(INFO) << "Loading house from " << houseFilename;
       // if semantic mesh exists, load it as well
@@ -131,7 +125,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     // instance meshes and suncg houses contain their semantic annotations
     if (sceneInfo.type == assets::AssetType::SUNCG_SCENE ||
-        sceneInfo.type == assets::AssetType::INSTANCE_MESH) {
+        sceneInfo.type == assets::AssetType::INSTANCE_MESH ||
+        sceneFilename.compare(assets::EMPTY_SCENE) == 0) {
       activeSemanticSceneID_ = activeSceneID_;
     }
   }
