@@ -40,9 +40,15 @@ std::tuple<dtStatus, dtPolyRef, vec3f> projectToPoly(
   // and polyRef == 0
   constexpr float polyPickExt[3] = {2, 4, 2};  // [2 * dx, 2 * dy, 2 * dz]
   dtPolyRef polyRef;
-  vec3f polyXYZ;
+  // Initialize with all NANs at dtStatusSucceed(status) == true does NOT mean
+  // that it found a point to project to..........
+  vec3f polyXYZ{NAN, NAN, NAN};
   dtStatus status = navQuery->findNearestPoly(pt.data(), polyPickExt, filter,
                                               &polyRef, polyXYZ.data());
+
+  // So let's call it a failure if it didn't actually find a point....
+  if (std::isnan(polyXYZ[0]))
+    status = DT_FAILURE;
 
   return std::make_tuple(status, polyRef, polyXYZ);
 }
@@ -856,6 +862,9 @@ T PathFinder::tryStep(const T& start, const T& end) {
                               filter_, endPoint.data(), polys, &numPolys,
                               MAX_POLYS);
 
+  if (numPolys == 0)
+    return {NAN, NAN, NAN};
+
   // Hack to deal with infinitely thin walls in recast allowing you to
   // transition between two different connected components
   // First check to see if the endPoint as returned by `moveAlongSurface`
@@ -893,6 +902,24 @@ template vec3f PathFinder::tryStep<vec3f>(const vec3f&, const vec3f&);
 template Magnum::Vector3 PathFinder::tryStep<Magnum::Vector3>(
     const Magnum::Vector3&,
     const Magnum::Vector3&);
+
+template <typename T>
+T PathFinder::snapPoint(const T& pt) {
+  dtStatus status;
+  vec3f projectedPt;
+  std::tie(status, std::ignore, projectedPt) =
+      projectToPoly(pt, navQuery_, filter_);
+
+  if (dtStatusSucceed(status)) {
+    return T{projectedPt};
+  } else {
+    return {NAN, NAN, NAN};
+  }
+}
+
+template vec3f PathFinder::snapPoint<vec3f>(const vec3f& pt);
+template Magnum::Vector3 PathFinder::snapPoint<Magnum::Vector3>(
+    const Magnum::Vector3& pt);
 
 float PathFinder::islandRadius(const vec3f& pt) const {
   dtPolyRef ptRef;

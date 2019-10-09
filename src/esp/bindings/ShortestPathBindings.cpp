@@ -10,7 +10,6 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
 
-#include "esp/agent/Agent.h"
 #include "esp/core/esp.h"
 #include "esp/nav/GreedyFollower.h"
 #include "esp/nav/PathFinder.h"
@@ -56,6 +55,8 @@ void initShortestPathBindings(py::module& m) {
       .def("try_step", &PathFinder::tryStep<Magnum::Vector3>, "start"_a,
            "end"_a)
       .def("try_step", &PathFinder::tryStep<vec3f>, "start"_a, "end"_a)
+      .def("snap_point", &PathFinder::snapPoint<Magnum::Vector3>)
+      .def("snap_point", &PathFinder::snapPoint<vec3f>)
       .def("island_radius", &PathFinder::islandRadius, "pt"_a)
       .def_property_readonly("is_loaded", &PathFinder::isLoaded)
       .def("load_nav_mesh", &PathFinder::loadNavMesh)

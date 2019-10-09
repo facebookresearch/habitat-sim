@@ -6,8 +6,10 @@
 
 import WebDemo from "./modules/web_demo";
 import VRDemo from "./modules/vr_demo";
+import ViewerDemo from "./modules/viewer_demo";
 import { defaultScene } from "./modules/defaults";
 import "./bindings.css";
+import { checkWebAssemblySupport, checkWebgl2Support } from "./modules/utils";
 
 function preload(file) {
   FS.createPreloadedFile("/", file, file, true, false);
@@ -43,6 +45,8 @@ Module.onRuntimeInitialized = () => {
       console.log("Web VR is supported");
       demo = new VRDemo();
     }
+  } else if (window.viewerEnabled) {
+    demo = new ViewerDemo();
   }
 
   if (!demo) {
@@ -50,3 +54,29 @@ Module.onRuntimeInitialized = () => {
   }
   demo.display();
 };
+
+function checkSupport() {
+  const webgl2Support = checkWebgl2Support();
+  let message = "";
+
+  if (!webgl2Support) {
+    message = "WebGL2 is not supported on your browser. ";
+  } else if (webgl2Support === 1) {
+    message = "WebGL2 is supported on your browser, but not enabled. ";
+  }
+
+  const webasmSupport = checkWebAssemblySupport();
+
+  if (!webasmSupport) {
+    message += "Web Assembly is not supported in your browser";
+  }
+
+  if (message.length > 0) {
+    const warningElement = document.getElementById("warning");
+    warningElement.innerHTML = message;
+    // Remove the default hidden class
+    warningElement.className = "";
+  }
+}
+
+checkSupport();
