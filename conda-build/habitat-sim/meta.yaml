@@ -41,6 +41,7 @@ requirements:
     - xorg-libxcursor        # [linux]
 
   run:
+    - python x.x
     - attrs>=19.1.0
     - numba
     - numpy
