@@ -496,13 +496,15 @@ double PhysicsManager::getAngularDamping(const int physObjectID) {
   }
 }
 
-void PhysicsManager::toggleBBDraw(int physObjectID, DrawableGroup* drawables) {
+void PhysicsManager::setObjectBBDraw(int physObjectID,
+                                     DrawableGroup* drawables,
+                                     bool drawBB) {
   if (existingObjects_.count(physObjectID) > 0) {
-    if (existingObjects_[physObjectID]->BBNode_) {
+    if (existingObjects_[physObjectID]->BBNode_ && !drawBB) {
       // destroy the node
       delete existingObjects_[physObjectID]->BBNode_;
       existingObjects_[physObjectID]->BBNode_ = nullptr;
-    } else {
+    } else if (drawBB) {
       // add a new BBNode
       Magnum::Vector3 scale =
           existingObjects_[physObjectID]->localBB_.size() / 2.0;

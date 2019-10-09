@@ -644,8 +644,8 @@ class PhysicsManager {
   void applyImpulseTorque(const int physObjectID,
                           const Magnum::Vector3& impulse);
 
-  //! Toggle drawing of the object bounding box.
-  void toggleBBDraw(int physObjectID, DrawableGroup* drawables);
+  //! Set drawing of the object bounding box.
+  void setObjectBBDraw(int physObjectID, DrawableGroup* drawables, bool drawBB);
 
  protected:
   /** @brief Check if a particular mesh can be used as a collision mesh for a
