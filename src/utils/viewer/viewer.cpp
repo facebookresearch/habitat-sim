@@ -97,7 +97,6 @@ class Viewer : public Magnum::Platform::Application {
   scene::ObjectControls controls_;
   Magnum::Vector3 previousPosition_;
 
-  bool enablePhysics_;
   std::vector<int> objectIDs_;
 
   Magnum::Timeline timeline_;
@@ -128,14 +127,6 @@ Viewer::Viewer(const Arguments& arguments)
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
-  enablePhysics_ = args.isSet("enable-physics");
-  std::string physicsConfigFilename = args.value("physics-config");
-  if (!Utility::Directory::exists(physicsConfigFilename)) {
-    LOG(ERROR)
-        << physicsConfigFilename
-        << " was not found, specify an existing file in --physics-config";
-    std::exit(1);
-  }
 
   // Setup renderer and shader defaults
   GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
@@ -151,16 +142,20 @@ Viewer::Viewer(const Arguments& arguments)
   const std::string& file = args.value("scene");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
 
-  if (enablePhysics_) {
+  if (args.isSet("enable-physics")) {
+    std::string physicsConfigFilename = args.value("physics-config");
+    if (!Utility::Directory::exists(physicsConfigFilename)) {
+      LOG(FATAL)
+          << physicsConfigFilename
+          << " was not found, specify an existing file in --physics-config";
+    }
     if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
                                     &drawables, physicsConfigFilename)) {
-      LOG(ERROR) << "cannot load " << file;
-      std::exit(1);
+      LOG(FATAL) << "cannot load " << file;
     }
   } else {
     if (!resourceManager_.loadScene(info, navSceneNode_, &drawables)) {
-      LOG(ERROR) << "cannot load " << file;
-      std::exit(1);
+      LOG(FATAL) << "cannot load " << file;
     }
   }
 
