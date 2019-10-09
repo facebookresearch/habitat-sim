@@ -218,7 +218,7 @@ int Simulator::addObject(const int objectLibIndex, const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
     // TODO: change implementation to support multi-world and physics worlds to
     // own reference to a sceneGraph to avoid this.
-    auto& sceneGraph_ = sceneManager_.getSceneGraph(sceneID);
+    auto& sceneGraph_ = sceneManager_.getSceneGraph(activeSceneID_);
     auto& drawables = sceneGraph_.getDrawables();
     return physicsManager_->addObject(objectLibIndex, &drawables);
   }

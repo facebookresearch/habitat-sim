@@ -8,6 +8,7 @@
     "@babel/preset-env": "^7.6.0",
     "babel-eslint": "^10.0.3",
     "babel-loader": "^8.0.6",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
     "css-loader": "^3.2.0",
     "eslint": "^6.4.0",
     "eslint-config-prettier": "^6.3.0",
@@ -15,6 +16,7 @@
     "eslint-plugin-html": "^6.0.0",
     "eslint-plugin-prettier": "^3.1.0",
     "html-webpack-plugin": "^3.2.0",
+    "jest": "^24.9.0",
     "minimist": "^1.2.0",
     "prettier": "^1.18.2",
     "style-loader": "^1.0.0",
@@ -22,7 +24,7 @@
     "webpack-cli": "^3.3.9"
   },
   "scripts": {
-    "test": "node ./src/esp/bindings_js/tests/**/*_test.js",
+    "test": "jest ./src/esp/bindings_js/tests/",
     "format": "prettier --trailing-comma es5 --single-quote './src/esp/bindings_js/**/*.js'",
     "build": "webpack --config ./src/esp/bindings_js/webpack.config.js",
     "lint": "eslint --ext .html,.js ./src/esp/bindings_js",
@@ -38,7 +40,14 @@
     ],
     "plugins": [
       "@babel/plugin-proposal-class-properties"
-    ]
+    ],
+    "env": {
+      "test": {
+        "plugins": [
+          "transform-es2015-modules-commonjs"
+        ]
+      }
+    }
   },
   "keywords": [
     "embodied",

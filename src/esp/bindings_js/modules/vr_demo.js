@@ -4,12 +4,11 @@
 
 /* global VRFrameData */
 import WebDemo from "./web_demo";
-import { defaultResolution, defaultAgentConfig } from "./defaults";
+import { defaultAgentConfig, defaultEpisode } from "./defaults";
 
 class VRDemo extends WebDemo {
   normalSceneFrame;
   vrSceneFrame;
-  canvasElement;
   fpsElement;
   lastPaintTime;
   frameData = new VRFrameData();
@@ -19,7 +18,6 @@ class VRDemo extends WebDemo {
   fps = 0;
   skipFrames = 60;
   currentFramesSkipped = 0;
-  currentResolution = defaultResolution;
 
   constructor(canvasId = "canvas", fpsId = "fps") {
     super();
@@ -31,13 +29,20 @@ class VRDemo extends WebDemo {
     this.setUpVR();
   }
 
+  initializeModules(
+    agentConfig = defaultAgentConfig,
+    episode = defaultEpisode,
+    initializeTopDown = false
+  ) {
+    super.initializeModules(agentConfig, episode, initializeTopDown);
+  }
+
   setUpVR() {
     navigator.getVRDisplays().then(displays => {
       if (displays.length > 0) {
         this.setupDisplay(displays[0]);
       } else {
         console.log("VR display not supported by this device");
-        super.initializeModules();
         super.display();
       }
     });
@@ -69,31 +74,6 @@ class VRDemo extends WebDemo {
     const height = Math.max(leftEye.renderHeight, rightEye.renderHeight);
     this.currentResolution = { height, width };
     this.resetCanvas(this.currentResolution);
-  }
-
-  resetCanvas = resolution => {
-    this.canvasElement.width = resolution.width;
-    this.canvasElement.height = resolution.height;
-  };
-
-  /**
-   * @override
-   */
-  updateAgentConfigWithSensors(agentConfig = defaultAgentConfig) {
-    agentConfig = super.updateAgentConfigWithSensors(agentConfig);
-    agentConfig = this.updateAgentConfigWithResolution(agentConfig);
-    return agentConfig;
-  }
-
-  updateAgentConfigWithResolution(agentConfig) {
-    agentConfig.sensorSpecifications.forEach(sensorConfig => {
-      sensorConfig.resolution = [
-        this.currentResolution.height,
-        this.currentResolution.width
-      ];
-    });
-
-    return agentConfig;
   }
 
   drawVRScene() {
