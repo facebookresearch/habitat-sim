@@ -115,6 +115,12 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
           io::removeExtension(houseFilename) + "_semantic.ply";
       if (io::exists(semanticMeshFilename)) {
         LOG(INFO) << "Loading semantic mesh " << semanticMeshFilename;
+        activeSemanticSceneID_ = sceneManager_.initSceneGraph();
+        sceneID_.push_back(activeSemanticSceneID_);
+        auto& semanticSceneGraph =
+            sceneManager_.getSceneGraph(activeSemanticSceneID_);
+        auto& semanticRootNode = semanticSceneGraph.getRootNode();
+        auto& semanticDrawables = semanticSceneGraph.getDrawables();
         const assets::AssetInfo semanticSceneInfo =
             assets::AssetInfo::fromPath(semanticMeshFilename);
         resourceManager_.loadScene(semanticSceneInfo, &semanticRootNode,
