@@ -133,7 +133,11 @@ bool ResourceManager::loadScene(
     _physicsManager.reset(new physics::BulletPhysicsManager(this));
     defaultToNoneSimulator = false;
 #else
-    LOG(ERROR) << "trying to use BULLET engine, but not installed";
+    LOG(WARNING)
+        << ":\n---\nPhysics was enabled and Bullet physics engine was "
+           "specified, but the project is built without Bullet support. "
+           "Objects added to the scene will be restricted to kinematic updates "
+           "only. Reinstall with --bullet to enable Bullet dynamics.\n---";
 #endif
   }
 
@@ -282,7 +286,6 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
   std::string configDirectory =
       physicsFilename.substr(0, physicsFilename.find_last_of("/"));
   // load the rigid object library metadata (no physics init yet...)
-  // NOTE: expect relative paths to the global config
   if (scenePhysicsConfig.HasMember("rigid object paths")) {
     if (scenePhysicsConfig["rigid object paths"].IsArray()) {
       physicsManagerAttributes.setVecStrings("objectLibraryPaths",
@@ -290,13 +293,33 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
       for (rapidjson::SizeType i = 0;
            i < scenePhysicsConfig["rigid object paths"].Size(); i++) {
         if (scenePhysicsConfig["rigid object paths"][i].IsString()) {
-          // 1: read the filename (relative path)
-          std::string objPhysPropertiesFilename =
-              configDirectory + "/" +
-              scenePhysicsConfig["rigid object paths"][i].GetString() +
-              ".phys_properties.json";
-          physicsManagerAttributes.appendVecStrings("objectLibraryPaths",
-                                                    objPhysPropertiesFilename);
+          std::string filename =
+              scenePhysicsConfig["rigid object paths"][i].GetString();
+          std::string absolutePath =
+              Cr::Utility::Directory::join(configDirectory, filename);
+          if (Cr::Utility::Directory::isDirectory(absolutePath)) {
+            LOG(INFO) << "Parsing object library directory: " + absolutePath;
+            if (Cr::Utility::Directory::exists(absolutePath)) {
+              for (auto& file : Cr::Utility::Directory::list(absolutePath)) {
+                std::string absoluteSubfilePath =
+                    Cr::Utility::Directory::join(absolutePath, file);
+                if (Cr::Utility::String::endsWith(absoluteSubfilePath,
+                                                  ".phys_properties.json")) {
+                  physicsManagerAttributes.appendVecStrings(
+                      "objectLibraryPaths", absoluteSubfilePath);
+                }
+              }
+            } else {
+              LOG(WARNING)
+                  << "The specified directory does not exist. Aborting parse.";
+            }
+          } else {
+            // 1: parse the filename (relative or global path)
+            std::string objPhysPropertiesFilename =
+                absolutePath + ".phys_properties.json";
+            physicsManagerAttributes.appendVecStrings(
+                "objectLibraryPaths", objPhysPropertiesFilename);
+          }
         } else {
           LOG(ERROR) << "Invalid value in physics scene config -rigid object "
                         "library- array "
@@ -481,17 +504,16 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
 
   if (objPhysicsConfig.HasMember("render mesh")) {
     if (objPhysicsConfig["render mesh"].IsString()) {
-      renderMeshFilename = propertiesFileDirectory;
-      renderMeshFilename.append("/").append(
-          objPhysicsConfig["render mesh"].GetString());
+      renderMeshFilename = Cr::Utility::Directory::join(
+          propertiesFileDirectory, objPhysicsConfig["render mesh"].GetString());
     } else {
       LOG(ERROR) << " Invalid value in object physics config - render mesh";
     }
   }
   if (objPhysicsConfig.HasMember("collision mesh")) {
     if (objPhysicsConfig["collision mesh"].IsString()) {
-      collisionMeshFilename = propertiesFileDirectory;
-      collisionMeshFilename.append("/").append(
+      collisionMeshFilename = Cr::Utility::Directory::join(
+          propertiesFileDirectory,
           objPhysicsConfig["collision mesh"].GetString());
     } else {
       LOG(ERROR) << " Invalid value in object physics config - collision mesh";

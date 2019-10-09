@@ -31,9 +31,11 @@ namespace gfx {
 namespace {
 enum TextureBindingPointIndex : uint8_t {
   atlas = 0,
+#ifndef CORRADE_TARGET_APPLE
   adjFaces = 1,
+#endif
 };
-}
+}  // namespace
 
 PTexMeshShader::PTexMeshShader() {
   MAGNUM_ASSERT_GL_VERSION_SUPPORTED(GL::Version::GL410);
@@ -51,6 +53,9 @@ PTexMeshShader::PTexMeshShader() {
 
   vert.addSource(rs.get("ptex-default-gl410.vert"));
   geom.addSource(rs.get("ptex-default-gl410.geom"));
+#ifdef CORRADE_TARGET_APPLE
+  frag.addSource("#define CORRADE_TARGET_APPLE\n");
+#endif
   frag.addSource(rs.get("ptex-default-gl410.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(GL::Shader::compile({vert, geom, frag}));
@@ -62,9 +67,10 @@ PTexMeshShader::PTexMeshShader() {
   // set texture binding points in the shader;
   // see ptex fragment shader code for details
   setUniform(uniformLocation("atlasTex"), TextureBindingPointIndex::atlas);
-  // TODO: disable the "meshAdjFaces" on Mac
+#ifndef CORRADE_TARGET_APPLE
   setUniform(uniformLocation("meshAdjFaces"),
              TextureBindingPointIndex::adjFaces);
+#endif
 
   // cache the uniform locations
   MVPMatrixUniform_ = uniformLocation("MVP");
@@ -86,7 +92,9 @@ PTexMeshShader& PTexMeshShader::bindAtlasTexture(
 
 PTexMeshShader& PTexMeshShader::bindAdjFacesBufferTexture(
     Magnum::GL::BufferTexture& texture) {
+#ifndef CORRADE_TARGET_APPLE
   texture.bind(TextureBindingPointIndex::adjFaces);
+#endif
   return *this;
 }
 

@@ -3,6 +3,8 @@ add_library(scene STATIC
   Mp3dSemanticScene.h
   ObjectControls.cpp
   ObjectControls.h
+  ReplicaSemanticScene.cpp
+  ReplicaSemanticScene.h
   SceneConfiguration.cpp
   SceneConfiguration.h
   SceneGraph.cpp

@@ -7,18 +7,22 @@ import math
 import multiprocessing
 import os
 import random
-import sys
 import time
 from enum import Enum
 
 import numpy as np
 from PIL import Image
+from settings import default_sim_settings, make_cfg
 
 import habitat_sim
 import habitat_sim.agent
 import habitat_sim.bindings as hsim
-import habitat_sim.utils as utils
-from settings import default_sim_settings, make_cfg
+from habitat_sim.physics import MotionType
+from habitat_sim.utils.common import (
+    d3_40_colors_rgb,
+    download_and_unzip,
+    quat_from_angle_axis,
+)
 
 _barrier = None
 
@@ -44,7 +48,7 @@ class DemoRunner:
     def save_semantic_observation(self, obs, total_frames):
         semantic_obs = obs["semantic_sensor"]
         semantic_img = Image.new("P", (semantic_obs.shape[1], semantic_obs.shape[0]))
-        semantic_img.putpalette(utils.d3_40_colors_rgb.flatten())
+        semantic_img.putpalette(d3_40_colors_rgb.flatten())
         semantic_img.putdata((semantic_obs.flatten() % 40).astype(np.uint8))
         semantic_img.save("test.sem.%05d.png" % total_frames)
 
@@ -118,9 +122,7 @@ class DemoRunner:
             - agent_local_forward[0] * flat_to_obj[2]
         )
         turn_angle = math.atan2(det, np.dot(agent_local_forward, flat_to_obj))
-        agent_state.rotation = utils.quat_from_angle_axis(
-            turn_angle, np.array([0, 1.0, 0])
-        )
+        agent_state.rotation = quat_from_angle_axis(turn_angle, np.array([0, 1.0, 0]))
         # need to move the sensors too
         for sensor in agent_state.sensor_states:
             agent_state.sensor_states[sensor].rotation = agent_state.rotation
@@ -139,9 +141,17 @@ class DemoRunner:
         assert (
             object_lib_size > 0
         ), "!!!No objects loaded in library, aborting object instancing example!!!"
+
+        # clear the objects if we are re-running this initializer
+        for old_obj_id in self._sim.get_existing_object_ids():
+            self._sim.remove_object(old_obj_id)
+
         for obj_id in range(num_objects):
-            rand_obj_index = random.randint(0, object_lib_size - 1)
+            # rand_obj_index = random.randint(0, object_lib_size - 1)
             # rand_obj_index = 0  # overwrite for specific object only
+            rand_obj_index = self._sim_settings.get("test_object_index")
+            if rand_obj_index < 0:  # get random object on -1
+                rand_obj_index = random.randint(0, object_lib_size - 1)
             object_init_cell = (
                 random.randint(-object_init_grid_dim[0], object_init_grid_dim[0]),
                 random.randint(-object_init_grid_dim[1], object_init_grid_dim[1]),
@@ -176,6 +186,7 @@ class DemoRunner:
 
     def do_time_steps(self):
 
+        total_sim_step_time = 0.0
         total_frames = 0
         start_time = time.time()
         action_names = list(
@@ -184,7 +195,9 @@ class DemoRunner:
 
         # load an object and position the agent for physics testing
         if self._sim_settings["enable_physics"]:
-            self.init_physics_test_scene(num_objects=10)
+            self.init_physics_test_scene(
+                num_objects=self._sim_settings.get("num_objects")
+            )
             print("active object ids: " + str(self._sim.get_existing_object_ids()))
 
         time_per_step = []
@@ -197,15 +210,27 @@ class DemoRunner:
                 print("action", action)
 
             start_step_time = time.time()
-            # NOTE: uncomment this for random kinematic transform setting of all objects
-            # if self._sim_settings["enable_physics"]:
-            #    obj_ids = self._sim.get_existing_object_ids()
-            #    for obj_id in obj_ids:
-            #        rand_nudge = np.random.uniform(-0.05,0.05,3)
-            #        cur_pos = self._sim.get_translation(obj_id)
-            #        self._sim.set_translation(cur_pos + rand_nudge, obj_id)
+
+            # apply kinematic or dynamic control to all objects based on their MotionType
+            if self._sim_settings["enable_physics"]:
+                obj_ids = self._sim.get_existing_object_ids()
+                for obj_id in obj_ids:
+                    rand_nudge = np.random.uniform(-0.05, 0.05, 3)
+                    if self._sim.get_object_motion_type(obj_id) == MotionType.KINEMATIC:
+                        # TODO: just bind the trnslate function instead of emulating it here.
+                        cur_pos = self._sim.get_translation(obj_id)
+                        self._sim.set_translation(cur_pos + rand_nudge, obj_id)
+                    elif self._sim.get_object_motion_type(obj_id) == MotionType.DYNAMIC:
+                        self._sim.apply_force(rand_nudge, np.zeros(3), obj_id)
+
+            # get "interaction" time
+            total_sim_step_time += time.time() - start_step_time
+
             observations = self._sim.step(action)
             time_per_step.append(time.time() - start_step_time)
+
+            # get simulation step time without sensor observations
+            total_sim_step_time += self._sim._previous_step_time
 
             if self._sim_settings["save_png"]:
                 if self._sim_settings["color_sensor"]:
@@ -248,6 +273,7 @@ class DemoRunner:
         perf["frame_time"] = perf["total_time"] / total_frames
         perf["fps"] = 1.0 / perf["frame_time"]
         perf["time_per_step"] = time_per_step
+        perf["avg_sim_step_time"] = total_sim_step_time / total_frames
 
         return perf
 
@@ -283,7 +309,7 @@ class DemoRunner:
             print(
                 "Test scenes not downloaded locally, downloading and extracting now..."
             )
-            utils.download_and_unzip(default_sim_settings["test_scene_data_url"], ".")
+            download_and_unzip(default_sim_settings["test_scene_data_url"], ".")
             print("Downloaded and extracted test scenes data.")
 
         self._sim = habitat_sim.Simulator(self._cfg)
@@ -347,6 +373,7 @@ class DemoRunner:
             frame_time=sum(res["frame_time"]),
             fps=sum(res["fps"]),
             total_time=sum(res["total_time"]) / nprocs,
+            avg_sim_step_time=sum(res["avg_sim_step_time"]) / nprocs,
         )
 
     def example(self):

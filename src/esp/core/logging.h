@@ -24,10 +24,12 @@ class LogMessageVoidify {
 
 #define GLOG_INFO \
   Corrade::Utility::Debug {}
-#define GLOG_ERROR \
-  Corrade::Utility::Error {}
 #define GLOG_WARNING \
   Corrade::Utility::Warning {}
+#define GLOG_ERROR \
+  Corrade::Utility::Error {}
+#define GLOG_FATAL \
+  Corrade::Utility::Fatal {}
 #define LOG(severity) GLOG_##severity
 #define LOG_IF(severity, condition) \
   !(condition) ? (void)0 : LogMessageVoidify() & LOG(severity)

@@ -16,7 +16,7 @@
 .. py:function:: habitat_sim.agent.ObjectControls.__init__
     :summary: Constructor
     :param move_filter_fn: A function that is applied after actions to handle
-        collisions, This should generally be ``_try_step`` or the default
+        collisions, This should generally be `nav.PathFinder.try_step`
 
 .. docs for bindings go here -- doing all the formatting in a C++ raw string is
     worse than a hangover
@@ -69,6 +69,22 @@
     y-translation allowed is specified by :p:`max_y_delta` to account for
     slight differences in floor height.
 
+.. py:function:: habitat_sim.nav.PathFinder.try_step
+    :summary: Find a valid location for the agent to actually step to when it attempts to step between start and end
+
+    :param start: The starting location of the agent
+    :param end: The desired end location
+    :return: The actual ending location, if such a location exists, or ``{NAN, NAN, NAN}``
+
+.. py:function:: habitat_sim.nav.PathFinder.snap_point
+    :summary: Snaps a point to the closet navigable location
+
+    Will only search within a 4x8x4 cube centerred around the point.
+    If there is no navigable location within that cube, no navigable point will be found.
+
+    :param pt: The starting location of the agent
+    :return: The navigable point, if one exists, or ``{NAN, NAN, NAN}``
+
 .. dump of whatever else was in the other PR
 
 .. py:module:: habitat_sim.agent
@@ -82,11 +98,19 @@
     We currently have the following actions added by default. Any action not
     registered with an explict name is given the snake case version of the
     class name, i.e. ``MoveForward`` can be accessed with the name
-    ``move_forward``.
+    ``move_forward``.  See `registry.register_move_fn`, `SceneNodeControl`,
+    and `ActuationSpec`
 
     .. include:: ../habitat_sim/agent/controls/default_controls.py
         :code: py
-        :start-line: 6
+        :start-line: 38
+
+    And noisy actions from PyRobot.  See `PyRobotNoisyActuationSpec`
+
+    .. include:: ../habitat_sim/agent/controls/pyrobot_noisy_controls.py
+        :code: py
+        :start-line: 244
+
 
     Action space path finding
     =========================
@@ -110,7 +134,7 @@
 
         Not avaliable for all datasets.
 
-.. py:module:: habitat_sim.utils
+.. py:module:: habitat_sim.utils.common
 
     Quaternion Math
     ===============
@@ -130,15 +154,15 @@
 
     -   `colorize_ids()`
 
-.. py:data:: habitat_sim.utils.d3_40_colors_rgb
+.. py:data:: habitat_sim.utils.common.d3_40_colors_rgb
     :summary: Color map for semantic ID rendering.
 
-.. py:data:: habitat_sim.utils.d3_40_colors_hex
+.. py:data:: habitat_sim.utils.common.d3_40_colors_hex
     :summary: Color map for semantic ID rendering.
 
     Same as `d3_40_colors_rgb`, but in a hexadecimal representation.
 
-    .. include:: ../habitat_sim/utils.py
+    .. include:: ../habitat_sim/utils/common.py
         :code: py
         :start-after: # [d3_40_colors_hex]
         :end-before: # [/d3_40_colors_hex]

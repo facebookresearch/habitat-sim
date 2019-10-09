@@ -88,6 +88,11 @@ class SemanticScene {
                                                     geo::ESP_GRAVITY));
 
   //! load SemanticScene from a SUNCG house format file
+  static bool loadReplicaHouse(const std::string& filename,
+                               SemanticScene& scene,
+                               const quatf& rotation = quatf::Identity());
+
+  //! load SemanticScene from a SUNCG house format file
   static bool loadSuncgHouse(const std::string& filename,
                              SemanticScene& scene,
                              const quatf& rotation = quatf::Identity());

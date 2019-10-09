@@ -1,3 +1,7 @@
+<!-- Copyright (c) Facebook, Inc. and its affiliates.
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.-->
+
 <!DOCTYPE html>
 <html>
 
@@ -5,18 +9,18 @@
   <meta charset="UTF-8" />
   <title>Habitat</title>
   <link rel="stylesheet" href="WebApplication.css" />
-  <link rel="stylesheet" href="bindings.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
 <body>
+  <div class="hidden" id="warning"></div>
   <h1>Habitat</h1>
   <div id="container">
     <div id="sizer">
       <div id="expander">
         <div id="listener">
           <canvas id="canvas" width="640" height="480"></canvas>
-          <canvas id="topdown" width="640" height="480" style="transform: scaleY(-1)"></canvas>
+          <canvas id="topdown" width="640" height="480"></canvas>
           <canvas id="semantic" width="640" height="480" style="transform: scaleY(-1)"></canvas>
           <canvas id="radar"></canvas>
           <pre id="log"></pre>
@@ -27,12 +31,7 @@
     </div>
   </div>
 
-  <script src="navigate.js"></script>
-  <script src="simenv_embind.js"></script>
-  <script src="topdown.js"></script>
   <script src="WindowlessEmscriptenApplication.js"></script>
   <script async src="hsim_bindings.js"></script>
-  <script async src="runtime.js"></script>
 </body>
-
 </html>

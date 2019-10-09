@@ -1,7 +1,12 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+/*global Module */
+
 /**
  * NavigateTask class
  */
-// eslint-disable-next-line no-unused-vars
 class NavigateTask {
   // PUBLIC methods.
 
@@ -11,34 +16,53 @@ class NavigateTask {
    * @param {TopDownMap} topdown - TopDown Map
    * @param {Object} components - dictionary with status and canvas elements
    */
-  constructor(sim, topdown, components) {
+  constructor(sim, components) {
     this.sim = sim;
-    this.topdown = topdown;
     this.components = components;
-    let shape = this.sim.getObservationSpace("rgb").shape;
-    this.semanticCtx = components.semantic.getContext("2d");
-    shape = this.sim.getObservationSpace("semantic").shape;
-    this.semanticImageData = this.semanticCtx.createImageData(
-      shape.get(1),
-      shape.get(0)
-    );
-    this.semanticObjects = this.sim.sim.getSemanticScene().objects;
-    components.canvas.onmousedown = e => {
-      this.handleMouseDown(e);
-    };
-    this.radarCtx = components.radar.getContext("2d");
+    this.topdown = components.topdown;
+    this.semanticsEnabled = false;
+    this.radarEnabled = false;
+
+    if (this.components.semantics) {
+      this.semanticsEnabled = true;
+      this.semanticCtx = components.semantic.getContext("2d");
+      this.semanticShape = this.sim.getObservationSpace("semantic").shape;
+      this.semanticImageData = this.semanticCtx.createImageData(
+        this.semanticShape.get(1),
+        this.semanticShape.get(0)
+      );
+      this.semanticObservation = new Module.Observation();
+      this.semanticObjects = this.sim.sim.getSemanticScene().objects;
+      components.canvas.onmousedown = e => {
+        this.handleMouseDown(e);
+      };
+    }
+
+    if (this.components.radar) {
+      this.radarEnabled = true;
+      this.radarCtx = components.radar.getContext("2d");
+    }
+
     this.actions = [
       { name: "moveForward", key: "w" },
-      { name: "lookLeft", key: "a" },
-      { name: "lookRight", key: "d" },
+      { name: "turnLeft", key: "a" },
+      { name: "turnRight", key: "d" },
+      { name: "lookUp", key: "ArrowUp" },
+      { name: "lookDown", key: "ArrowDown" },
       { name: "done", key: " " }
     ];
   }
 
   handleMouseDown(event) {
-    let objectId = this.semantic_data[
-      (640 * event.offsetY + event.offsetX) * 4
-    ];
+    const height = this.semanticShape.get(0);
+    const width = this.semanticShape.get(1);
+    const offsetY = height - 1 - event.offsetY; /* flip-Y */
+    const offsetX = event.offsetX;
+    const objectId = new Uint32Array(
+      this.semanticData.buffer,
+      this.semanticData.byteOffset,
+      this.semanticData.length / 4
+    )[width * offsetY + offsetX];
     this.setStatus(this.semanticObjects.get(objectId).category.getName(""));
   }
 
@@ -56,7 +80,6 @@ class NavigateTask {
     this.sim.reset();
     this.setStatus("Ready");
     this.render();
-    this.renderTopDown(this.components.topdown);
   }
 
   // PRIVATE methods.
@@ -71,27 +94,32 @@ class NavigateTask {
   }
 
   renderSemanticImage() {
-    if (this.semanticObjects.size() == 0) {
+    if (!this.semanticsEnabled || this.semanticObjects.size() == 0) {
       return;
     }
 
-    const obs = this.sim.getObservation("semantic", null);
-    this.semantic_data = obs.getData();
-    let data = this.semantic_data;
+    this.sim.getObservation("semantic", this.semanticObservation);
+    this.semanticData = this.semanticObservation.getData();
+    const objectIds = new Uint32Array(
+      this.semanticData.buffer,
+      this.semanticData.byteOffset,
+      this.semanticData.length / 4
+    );
 
     // TOOD(msb) implement a better colorization scheme
-    for (let i = 0; i < 640 * 480; i++) {
-      if (data[i * 4] & 1) {
+    for (let i = 0; i < objectIds.length; i++) {
+      const objectId = objectIds[i];
+      if (objectId & 1) {
         this.semanticImageData.data[i * 4] = 255;
       } else {
         this.semanticImageData.data[i * 4] = 0;
       }
-      if (data[i * 4] & 2) {
+      if (objectId & 2) {
         this.semanticImageData.data[i * 4 + 1] = 255;
       } else {
         this.semanticImageData.data[i * 4 + 1] = 0;
       }
-      if (data[i * 4] & 4) {
+      if (objectId & 4) {
         this.semanticImageData.data[i * 4 + 2] = 255;
       } else {
         this.semanticImageData.data[i * 4 + 2] = 0;
@@ -102,11 +130,16 @@ class NavigateTask {
     this.semanticCtx.putImageData(this.semanticImageData, 0, 0);
   }
 
-  renderTopDown() {
-    this.topdown.draw();
+  renderTopDown(options) {
+    if (options.renderTopDown && this.topdown !== null) {
+      this.topdown.moveTo(this.sim.getAgentState().position, 500);
+    }
   }
 
   renderRadar() {
+    if (!this.radarEnabled) {
+      return;
+    }
     const width = 100,
       height = 100;
     let radius = width / 2;
@@ -140,9 +173,10 @@ class NavigateTask {
     ctx.fill();
   }
 
-  render() {
+  render(options = { renderTopDown: true }) {
     this.renderImage();
     this.renderSemanticImage();
+    this.renderTopDown(options);
   }
 
   handleAction(action) {
@@ -152,10 +186,9 @@ class NavigateTask {
   }
 
   bindKeys() {
-    document.addEventListener("keyup", event => {
-      const key = String.fromCharCode(event.which).toLowerCase();
+    document.addEventListener("keydown", event => {
       for (let a of this.actions) {
-        if (key === a.key) {
+        if (event.key === a.key) {
           this.handleAction(a.name);
           break;
         }
@@ -163,3 +196,5 @@ class NavigateTask {
     });
   }
 }
+
+export default NavigateTask;
