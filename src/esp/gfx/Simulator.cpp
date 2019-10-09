@@ -121,16 +121,17 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
                                    &semanticDrawables);
       }
       LOG(INFO) << "Loaded.";
-    }else{
+    } else {
       activeSemanticSceneID_ = activeSceneID_;
       // instance meshes and suncg houses contain their semantic annotations
       // empty scene has none to worry about
-      if ( !(sceneInfo.type == assets::AssetType::SUNCG_SCENE ||
-        sceneInfo.type == assets::AssetType::INSTANCE_MESH ||
-        sceneFilename.compare(assets::EMPTY_SCENE) == 0)) {
-          //TODO: programmatic generation of semantic meshes when no annotiations are provided.
-          LOG(WARNING)
-            << ":\n---\n The active scene does not contain semantic annotations. \n---";
+      if (!(sceneInfo.type == assets::AssetType::SUNCG_SCENE ||
+            sceneInfo.type == assets::AssetType::INSTANCE_MESH ||
+            sceneFilename.compare(assets::EMPTY_SCENE) == 0)) {
+        // TODO: programmatic generation of semantic meshes when no annotiations
+        // are provided.
+        LOG(WARNING) << ":\n---\n The active scene does not contain semantic "
+                        "annotations. \n---";
       }
     }
   }
