@@ -46,13 +46,16 @@ add_custom_command(OUTPUT empty.stamp
 set(bundle_files
     bindings.html
     webvr.html
+    viewer.html
     bindings.css
+    viewer.css
     webpack.config.js
     index.js
     modules/navigate.js
     modules/simenv_embind.js
     modules/topdown.js
     modules/web_demo.js
+    modules/viewer_demo.js
     modules/defaults.js
     modules/vr_demo.js)
 

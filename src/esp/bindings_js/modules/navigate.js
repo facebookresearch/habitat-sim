@@ -16,22 +16,33 @@ class NavigateTask {
    * @param {TopDownMap} topdown - TopDown Map
    * @param {Object} components - dictionary with status and canvas elements
    */
-  constructor(sim, topdown, components) {
+  constructor(sim, components) {
     this.sim = sim;
-    this.topdown = topdown;
     this.components = components;
-    this.semanticCtx = components.semantic.getContext("2d");
-    this.semanticShape = this.sim.getObservationSpace("semantic").shape;
-    this.semanticImageData = this.semanticCtx.createImageData(
-      this.semanticShape.get(1),
-      this.semanticShape.get(0)
-    );
-    this.semanticObservation = new Module.Observation();
-    this.semanticObjects = this.sim.sim.getSemanticScene().objects;
-    components.canvas.onmousedown = e => {
-      this.handleMouseDown(e);
-    };
-    this.radarCtx = components.radar.getContext("2d");
+    this.topdown = components.topdown;
+    this.semanticsEnabled = false;
+    this.radarEnabled = false;
+
+    if (this.components.semantics) {
+      this.semanticsEnabled = true;
+      this.semanticCtx = components.semantic.getContext("2d");
+      this.semanticShape = this.sim.getObservationSpace("semantic").shape;
+      this.semanticImageData = this.semanticCtx.createImageData(
+        this.semanticShape.get(1),
+        this.semanticShape.get(0)
+      );
+      this.semanticObservation = new Module.Observation();
+      this.semanticObjects = this.sim.sim.getSemanticScene().objects;
+      components.canvas.onmousedown = e => {
+        this.handleMouseDown(e);
+      };
+    }
+
+    if (this.components.radar) {
+      this.radarEnabled = true;
+      this.radarCtx = components.radar.getContext("2d");
+    }
+
     this.actions = [
       { name: "moveForward", key: "w" },
       { name: "turnLeft", key: "a" },
@@ -83,7 +94,7 @@ class NavigateTask {
   }
 
   renderSemanticImage() {
-    if (this.semanticObjects.size() == 0) {
+    if (!this.semanticsEnabled || this.semanticObjects.size() == 0) {
       return;
     }
 
@@ -119,11 +130,16 @@ class NavigateTask {
     this.semanticCtx.putImageData(this.semanticImageData, 0, 0);
   }
 
-  renderTopDown() {
-    this.topdown.moveTo(this.sim.getAgentState().position, 500);
+  renderTopDown(options) {
+    if (options.renderTopDown && this.topdown !== null) {
+      this.topdown.moveTo(this.sim.getAgentState().position, 500);
+    }
   }
 
   renderRadar() {
+    if (!this.radarEnabled) {
+      return;
+    }
     const width = 100,
       height = 100;
     let radius = width / 2;
@@ -160,9 +176,7 @@ class NavigateTask {
   render(options = { renderTopDown: true }) {
     this.renderImage();
     this.renderSemanticImage();
-    if (options.renderTopDown) {
-      this.renderTopDown();
-    }
+    this.renderTopDown(options);
   }
 
   handleAction(action) {
