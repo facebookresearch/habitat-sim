@@ -32,10 +32,8 @@ const Magnum::Range3D& SceneNode::computeCumulativeBB() {
   auto* child = children().first();
 
   while (child != nullptr) {
-    // try catch before cast incase a non scene node child is attached here.
-    // Better way?
-    try {
-      SceneNode* child_node = static_cast<SceneNode*>(child);
+    SceneNode* child_node = dynamic_cast<SceneNode*>(child);
+    if (child_node != nullptr) {
       child_node->computeCumulativeBB();
       std::vector<Magnum::Vector3> corners;
       corners.push_back(child_node->transformation().transformPoint(
@@ -60,8 +58,6 @@ const Magnum::Range3D& SceneNode::computeCumulativeBB() {
           Magnum::Math::minmax<Magnum::Vector3>(corners)};
 
       cumulativeBB_ = Magnum::Math::join(cumulativeBB_, transformedBB);
-    } catch (...) {
-      // TODO: need a warning here?
     }
     child = child->nextSibling();
   }
