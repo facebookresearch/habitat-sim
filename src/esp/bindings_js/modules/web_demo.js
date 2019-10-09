@@ -26,7 +26,6 @@ class WebDemo {
     this.sceneConfig.id = Module.scene;
     this.config = new Module.SimulatorConfiguration();
     this.config.scene = this.sceneConfig;
-    this.topdownInitialized = initializeTopDown;
     this.simenv = new SimEnv(this.config, episode, 0);
 
     agentConfig = this.updateAgentConfigWithSensors({ ...agentConfig });
@@ -74,10 +73,10 @@ class WebDemo {
     return agentConfig;
   }
 
-  resetCanvas = resolution => {
+  resetCanvas(resolution) {
     this.canvasElement.width = resolution.width;
     this.canvasElement.height = resolution.height;
-  };
+  }
 
   updateAgentConfigWithResolution(agentConfig) {
     agentConfig.sensorSpecifications.forEach(sensorConfig => {

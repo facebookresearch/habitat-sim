@@ -130,8 +130,10 @@ class NavigateTask {
     this.semanticCtx.putImageData(this.semanticImageData, 0, 0);
   }
 
-  renderTopDown() {
-    this.topdown.moveTo(this.sim.getAgentState().position, 500);
+  renderTopDown(options) {
+    if (options.renderTopDown && this.topdown !== null) {
+      this.topdown.moveTo(this.sim.getAgentState().position, 500);
+    }
   }
 
   renderRadar() {
@@ -174,9 +176,7 @@ class NavigateTask {
   render(options = { renderTopDown: true }) {
     this.renderImage();
     this.renderSemanticImage();
-    if (options.renderTopDown && this.topdown !== null) {
-      this.renderTopDown();
-    }
+    this.renderTopDown(options);
   }
 
   handleAction(action) {
