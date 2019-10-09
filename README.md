@@ -22,6 +22,7 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
    0. [Testing](#testing)
    0. [Rendering to GPU Tensors](#rendering-to-gpu-tensors)
    0. [Developer installation and getting started](#developer-installation-and-getting-started)
+   0. [WebGL](#webgl)
    0. [Datasets](#datasets)
    0. [Examples](#examples)
    0. [Common issues](#common-issues)
@@ -229,6 +230,20 @@ This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor
    ```
 
   We also have a dev slack channel, please follow this [link](https://join.slack.com/t/ai-habitat/shared_invite/enQtNjY1MzM1NDE4MTk2LTZhMzdmYWMwODZlNjg5MjZiZjExOTBjOTg5MmRiZTVhOWQyNzk0OTMyN2E1ZTEzZTNjMWM0MjBkN2VhMjQxMDI) to get added to the channel.
+
+## WebGL
+
+1. Download the [test scenes](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) and extract locally to habitat-sim creating habitat-sim/data.
+1. Download and install [emscripten](https://emscripten.org/docs/getting_started/downloads.html) (version 1.38.38 is verified to work)
+1. Set EMSCRIPTEN in your environment
+   ```bash
+   export EMSCRIPTEN=/pathto/emsdk/fastcomp/emscripten
+1. Build using `./build.js`
+1. Run webserver
+   ```bash
+   python3 -m http.server
+   ```
+1. Open <http://0.0.0.0:8000/build_js/esp/bindings_js/bindings.html>
 
 ## Datasets
 
