@@ -1,4 +1,4 @@
-import { throttle } from "../modules/utils";
+import { throttle, getInfoSemanticUrl } from "../modules/utils";
 
 test("throttle should work properly", () => {
   let count = 0;
@@ -22,5 +22,24 @@ test("throttle should work properly", () => {
     expect(count).toEqual(5);
     expect(Date.now() - startTime).toBeGreaterThan(2500);
     return count;
+  });
+});
+
+test("info semantic.json should have correct path", () => {
+  const scenePaths = [
+    "https://some_path.com/x/mesh.ply",
+    "./some_path/mesh.ply",
+    "mesh.ply",
+    "/mesh.ply"
+  ];
+  const expectedInfoPaths = [
+    "https://some_path.com/x/info_semantic.json",
+    "./some_path/info_semantic.json",
+    "info_semantic.json",
+    "/info_semantic.json"
+  ];
+
+  scenePaths.forEach((item, index) => {
+    expect(getInfoSemanticUrl(item)).toEqual(expectedInfoPaths[index]);
   });
 });
