@@ -15,7 +15,7 @@ SceneGraph::SceneGraph()
 void SceneGraph::setDefaultRenderCamera(sensor::Sensor& sensor) {
   ASSERT(sensor.isVisualSensor());
 
-  sensor.setModelViewMatrix(defaultRenderCamera_)
+  sensor.setTransformationMatrix(defaultRenderCamera_)
       .setProjectionMatrix(defaultRenderCamera_)
       .setViewport(defaultRenderCamera_);
 }

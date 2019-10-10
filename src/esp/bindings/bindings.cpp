@@ -452,8 +452,9 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       // initialized, attached to pinholeCameraNode, status: "valid"
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
                           const sensor::SensorSpec::ptr&>())
-      .def("set_modelview_matrix", &sensor::PinholeCamera::setModelViewMatrix,
-           R"(Compute and set the modelview matrix to the render camera.)")
+      .def("set_transformation_matrix",
+           &sensor::PinholeCamera::setTransformationMatrix,
+           R"(Compute and set the transformation matrix to the render camera.)")
       .def("set_projection_matrix", &sensor::PinholeCamera::setProjectionMatrix,
            R"(Set the width, height, near, far, and hfov,
           stored in pinhole camera to the render camera.)")

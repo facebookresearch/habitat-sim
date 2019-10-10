@@ -35,25 +35,33 @@ PinholeCamera& PinholeCamera::setProjectionMatrix(
   return *this;
 }
 
-PinholeCamera& PinholeCamera::setModelViewMatrix(
+PinholeCamera& PinholeCamera::setTransformationMatrix(
     gfx::RenderCamera& targetCamera) {
-  Magnum::Matrix4 T = this->node().absoluteTransformation();
-  Magnum::Matrix3 R = T.rotationScaling();
-  Magnum::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(R);
+  Magnum::Matrix4 absTransform = this->node().absoluteTransformation();
+  Magnum::Matrix3 rotation = absTransform.rotationScaling();
+  Magnum::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(rotation);
 
   VLOG(1) << "||R - GS(R)|| = "
-          << Eigen::Map<mat3f>((R - T.rotationShear()).data()).norm();
+          << Eigen::Map<mat3f>((rotation - absTransform.rotationShear()).data())
+                 .norm();
 
-  T = Magnum::Matrix4::from(R, T.translation()) *
-      Magnum::Matrix4::scaling(T.scaling());
+  auto relativeTransform =
+      Magnum::Matrix4::from(rotation, absTransform.translation()) *
+      Magnum::Matrix4::scaling(absTransform.scaling());
 
   // set the transformation to the camera
   // so that the camera has the correct modelview matrix for rendering;
   // to do it,
   // obtain the *absolute* transformation from the sensor node,
-  // apply it as the *relative* transformation between the default camera and
-  // its parent, which is rootNode_.
-  targetCamera.node().setTransformation(T);
+  // apply it as the *relative* transformation between the camera and
+  // its parent
+  auto parent = targetCamera.node().parent();
+  // if parent is the root node, then skip it!
+  if (parent != nullptr) {
+    relativeTransform =
+        parent->absoluteTransformation().inverted() * absTransform;
+  }
+  targetCamera.node().setTransformation(relativeTransform);
   return *this;
 }
 
