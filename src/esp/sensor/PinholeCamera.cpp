@@ -59,7 +59,7 @@ PinholeCamera& PinholeCamera::setTransformationMatrix(
   // if parent is the root node, then skip it!
   if (parent != nullptr) {
     relativeTransform =
-        parent->absoluteTransformation().inverted() * absTransform;
+        parent->absoluteTransformation().inverted() * relativeTransform;
   }
   targetCamera.node().setTransformation(relativeTransform);
   return *this;
