@@ -9,6 +9,18 @@ LICENSE file in the root directory of this source tree.-->
   <title>Habitat</title>
   <link rel="stylesheet" href="WebApplication.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Check need to make this work on habitat website -->
+  <script>
+    (function(l) {
+      if (l.href.indexOf("habitat-website") !== -1) {
+        var splits = l.href.split("/");
+        splits = splits.slice(splits.indexOf("habitat-website") + 1);
+        splits = ["https://aihabitat.org"].concat(splits);
+        splits = splits.join("/");
+        l.href = splits;
+      }
+    })(window.location);
+  </script>
 </head>
 
 <body>
