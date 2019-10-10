@@ -12,7 +12,7 @@ namespace sensor {
 namespace {
 
 struct CudaDeviceContext {
-  CudaDeviceContext(int deviceId) {
+  CudaDeviceContext(const int deviceId) {
     cudaGetDevice(&currentDevice);
     if (deviceId != currentDevice) {
       cudaSetDevice(deviceId);
@@ -34,8 +34,8 @@ struct CudaDeviceContext {
 
 RedwoodNoiseModelGPUImpl::RedwoodNoiseModelGPUImpl(
     const Eigen::Ref<const Eigen::RowMatrixXf> model,
-    int gpuDeviceId,
-    float noiseMultiplier)
+    const int gpuDeviceId,
+    const float noiseMultiplier)
     : gpuDeviceId_{gpuDeviceId}, noiseMultiplier_{noiseMultiplier} {
   CudaDeviceContext ctx{gpuDeviceId_};
 

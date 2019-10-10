@@ -40,8 +40,8 @@ struct RedwoodNoiseModelGPUImpl {
    *                          level
    */
   RedwoodNoiseModelGPUImpl(const Eigen::Ref<const Eigen::RowMatrixXf> model,
-                           int gpuDeviceId,
-                           float noiseMultiplier);
+                           const int gpuDeviceId,
+                           const float noiseMultiplier);
 
   /**
    * @brief Simulates noisy depth from clean depth.  The input is assumed to be
@@ -73,8 +73,8 @@ struct RedwoodNoiseModelGPUImpl {
   ~RedwoodNoiseModelGPUImpl();
 
  private:
-  int gpuDeviceId_;
-  float noiseMultiplier_;
+  const int gpuDeviceId_;
+  const float noiseMultiplier_;
   float* devModel_ = nullptr;
   impl::CurandStates* curandStates_ = nullptr;
 

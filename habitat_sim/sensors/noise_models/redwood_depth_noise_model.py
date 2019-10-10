@@ -10,8 +10,9 @@ import attr
 import numba
 import numpy as np
 
-from habitat_sim.bindings import SensorType, cuda_enabled
+from habitat_sim.bindings import cuda_enabled
 from habitat_sim.registry import registry
+from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
 if cuda_enabled:
@@ -112,7 +113,7 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
             self._impl = RedwoodNoiseModelCPUImpl(dist, self.noise_multiplier)
 
     @staticmethod
-    def is_valid_sensor_type(sensor_type):
+    def is_valid_sensor_type(sensor_type: SensorType) -> bool:
         return sensor_type == SensorType.DEPTH
 
     def simulate(self, gt_depth):

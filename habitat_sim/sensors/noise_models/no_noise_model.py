@@ -7,13 +7,14 @@
 import numpy as np
 
 from habitat_sim.registry import registry
+from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
 
 @registry.register_noise_model(name="None")
 class NoSensorNoiseModel(SensorNoiseModel):
     @staticmethod
-    def is_valid_sensor_type(sensor_type):
+    def is_valid_sensor_type(sensor_type: SensorType) -> bool:
         return True
 
     def apply(self, x):

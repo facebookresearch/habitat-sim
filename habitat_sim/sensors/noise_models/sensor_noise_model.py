@@ -23,7 +23,7 @@ class SensorNoiseModel(abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
-    def is_valid_sensor_type(sensor_type: SensorType):
+    def is_valid_sensor_type(sensor_type: SensorType) -> bool:
         r"""Used to determine whether or not the noise model
         is applicable to the sensor type
 

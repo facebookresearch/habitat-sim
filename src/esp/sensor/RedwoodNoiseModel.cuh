@@ -19,7 +19,7 @@ void simulateFromCPU(const float* __restrict__ depth,
                      const int W,
                      const float* __restrict__ devModel,
                      CurandStates* curandStates,
-                     float noiseMultiplier,
+                     const float noiseMultiplier,
                      float* __restrict__ noisyDepth);
 
 void simulateFromGPU(const float* __restrict__ devDepth,
@@ -27,7 +27,7 @@ void simulateFromGPU(const float* __restrict__ devDepth,
                      const int W,
                      const float* __restrict__ devModel,
                      CurandStates* curandStates,
-                     float noiseMultiplier,
+                     const float noiseMultiplier,
                      float* __restrict__ devNoisyDepth);
 }  // namespace impl
 }  // namespace sensor

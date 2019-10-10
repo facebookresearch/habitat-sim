@@ -39,7 +39,7 @@ __global__ void redwoodNoiseModelKernel(const float* __restrict__ depth,
                                         const int W,
                                         curandState_t* states,
                                         const float* __restrict__ model,
-                                        float noiseMultiplier,
+                                        const float noiseMultiplier,
                                         float* __restrict__ noisyDepth) {
   const int TID = threadIdx.x;
   const int BID = blockIdx.x;
@@ -143,7 +143,7 @@ void simulateFromGPU(const float* __restrict__ devDepth,
                      const int W,
                      const float* __restrict__ devModel,
                      CurandStates* curandStates,
-                     float noiseMultiplier,
+                     const float noiseMultiplier,
                      float* __restrict__ devNoisyDepth) {
   const int n_threads = std::min(std::max(W / 4, 1), 256);
   const int n_blocks = std::max(H / 8, 1);
@@ -159,7 +159,7 @@ void simulateFromCPU(const float* __restrict__ depth,
                      const int W,
                      const float* __restrict__ devModel,
                      CurandStates* curandStates,
-                     float noiseMultiplier,
+                     const float noiseMultiplier,
                      float* __restrict__ noisyDepth) {
   float *devDepth, *devNoisyDepth;
   cudaMalloc(&devDepth, H * W * sizeof(float));
