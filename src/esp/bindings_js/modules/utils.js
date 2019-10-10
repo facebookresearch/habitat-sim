@@ -78,3 +78,13 @@ export function checkWebgl2Support() {
     return 2;
   }
 }
+
+export function getInfoSemanticUrl(mainUrl) {
+  if (mainUrl.indexOf("http") !== 0) {
+    return "info_semantic.json";
+  }
+  const splits = mainUrl.split("/");
+  splits.pop();
+  const url = splits.join("/");
+  return url + "/info_semantic.json";
+}
