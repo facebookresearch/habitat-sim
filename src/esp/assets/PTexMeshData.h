@@ -79,7 +79,7 @@ class PTexMeshData : public BaseMesh {
 
   // initial values are based on ReplicaSDK
   //! @brief exposure, the amount of light per unit area reaching the image
-  float exposure_ = 0.025f;
+  float exposure_ = 0.0125f;
 
   //! @brief gamma, the exponent applied in the gamma correction
   float gamma_ = 1.0f / 1.6969f;

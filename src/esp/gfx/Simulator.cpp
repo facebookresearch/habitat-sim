@@ -121,12 +121,18 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
                                    &semanticDrawables);
       }
       LOG(INFO) << "Loaded.";
-    }
-
-    // instance meshes and suncg houses contain their semantic annotations
-    if (sceneInfo.type == assets::AssetType::SUNCG_SCENE ||
-        sceneInfo.type == assets::AssetType::INSTANCE_MESH) {
+    } else {
       activeSemanticSceneID_ = activeSceneID_;
+      // instance meshes and suncg houses contain their semantic annotations
+      // empty scene has none to worry about
+      if (!(sceneInfo.type == assets::AssetType::SUNCG_SCENE ||
+            sceneInfo.type == assets::AssetType::INSTANCE_MESH ||
+            sceneFilename.compare(assets::EMPTY_SCENE) == 0)) {
+        // TODO: programmatic generation of semantic meshes when no annotiations
+        // are provided.
+        LOG(WARNING) << ":\n---\n The active scene does not contain semantic "
+                        "annotations. \n---";
+      }
     }
   }
 
@@ -212,7 +218,7 @@ int Simulator::addObject(const int objectLibIndex, const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
     // TODO: change implementation to support multi-world and physics worlds to
     // own reference to a sceneGraph to avoid this.
-    auto& sceneGraph_ = sceneManager_.getSceneGraph(sceneID);
+    auto& sceneGraph_ = sceneManager_.getSceneGraph(activeSceneID_);
     auto& drawables = sceneGraph_.getDrawables();
     return physicsManager_->addObject(objectLibIndex, &drawables);
   }
@@ -239,6 +245,14 @@ int Simulator::removeObject(const int objectID, const int sceneID) {
     return physicsManager_->removeObject(objectID);
   }
   return ID_UNDEFINED;
+}
+
+esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
+                                                        const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->getObjectMotionType(objectID);
+  }
+  return esp::physics::MotionType::ERROR_MOTIONTYPE;
 }
 
 // apply forces and torques to objects

@@ -16,7 +16,7 @@ jobs:
       - run:
           name: setup
           command: |
-              sudo pip install -U black "isort[pyproject]" numpy pytest sphinx pillow tqdm
+              sudo pip install -U black "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
               sudo pip install -r requirements.txt --progress-bar off
       - run:
           name: run black
@@ -47,7 +47,7 @@ jobs:
           command: |
             find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.(cpp|h|cu|hpp|cuh)$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
 
-  js_lint:
+  js_lint_and_test:
     docker:
       - image: circleci/node:11.9
     steps:
@@ -60,6 +60,10 @@ jobs:
           name: run eslint
           command: |
             npm run lint
+      - run:
+          name: run tests
+          command: |
+            npm run test
   install_and_test_ubuntu:
     <<: *gpu
     steps:
@@ -130,7 +134,7 @@ jobs:
                 export PATH=$HOME/miniconda/bin:$PATH
                 conda create -y -n habitat python=3.6
                 . activate habitat
-                conda install -q -y -c conda-forge ninja numpy pytest ccache
+                conda install -q -y -c conda-forge ninja numpy pytest ccache hypothesis
               fi
       - run:
           name: Install emscripten
@@ -300,5 +304,5 @@ workflows:
     jobs:
       - python_lint
       - cpp_lint
-      - js_lint
+      - js_lint_and_test
       - install_and_test_ubuntu

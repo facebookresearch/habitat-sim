@@ -130,6 +130,9 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
   template <typename T>
   T tryStep(const T& start, const T& end);
 
+  template <typename T>
+  T snapPoint(const T& pt);
+
   bool loadNavMesh(const std::string& path);
 
   bool saveNavMesh(const std::string& path);

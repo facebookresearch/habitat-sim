@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os.path as osp
+import time
 from typing import Dict, List, Optional
 
 import attr
@@ -16,6 +17,7 @@ import habitat_sim.errors
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower
+from habitat_sim.physics import MotionType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.utils.common import quat_from_angle_axis
 
@@ -54,6 +56,7 @@ class Simulator:
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent: Agent = attr.ib(init=False, default=None)
     _sensors: Dict = attr.ib(factory=dict, init=False)
+    _previous_step_time = 0.0  # track the compute time of each step
 
     def __attrs_post_init__(self):
         config = self.config
@@ -213,8 +216,9 @@ class Simulator:
         self._last_state = self._default_agent.get_state()
 
         # step physics by dt
+        step_start_Time = time.time()
         self._sim.step_world(dt)
-        # print("World time is now: " + str(self._sim.get_world_time()))
+        _previous_step_time = time.time() - step_start_Time
 
         observations = self.get_sensor_observations()
         # Whether or not the action taken resulted in a collision
@@ -248,6 +252,9 @@ class Simulator:
 
     def get_existing_object_ids(self, scene_id=0):
         return self._sim.get_existing_object_ids(scene_id)
+
+    def get_object_motion_type(self, object_id, scene_id=0):
+        return self._sim.get_object_motion_type(object_id, scene_id)
 
     def set_transformation(self, transform, object_id, scene_id=0):
         self._sim.set_transformation(transform, object_id, scene_id)
