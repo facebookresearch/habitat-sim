@@ -37,6 +37,10 @@ PinholeCamera& PinholeCamera::setProjectionMatrix(
 
 PinholeCamera& PinholeCamera::setTransformationMatrix(
     gfx::RenderCamera& targetCamera) {
+  CORRADE_ASSERT(!scene::SceneGraph::isRootNode(targetCamera.node()),
+                 "PinholeCamera::setTransformationMatrix: target camera cannot "
+                 "be on the root node of the scene graph",
+                 *this);
   Magnum::Matrix4 absTransform = this->node().absoluteTransformation();
   Magnum::Matrix3 rotation = absTransform.rotationScaling();
   Magnum::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(rotation);
@@ -55,11 +59,12 @@ PinholeCamera& PinholeCamera::setTransformationMatrix(
   // obtain the *absolute* transformation from the sensor node,
   // apply it as the *relative* transformation between the camera and
   // its parent
-  auto parent = targetCamera.node().parent();
-  // if parent is the root node, then skip it!
-  if (parent != nullptr) {
+  auto camParent = targetCamera.node().parent();
+  // if camera's parent is the root node, skip it!
+  if (!scene::SceneGraph::isRootNode(
+          *static_cast<scene::SceneNode*>(camParent))) {
     relativeTransform =
-        parent->absoluteTransformation().inverted() * relativeTransform;
+        camParent->absoluteTransformation().inverted() * relativeTransform;
   }
   targetCamera.node().setTransformation(relativeTransform);
   return *this;
