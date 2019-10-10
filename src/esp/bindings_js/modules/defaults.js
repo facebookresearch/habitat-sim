@@ -29,4 +29,7 @@ export const defaultEpisode = {
 
 export const defaultResolution = { height: 480, width: 640 };
 
-export const defaultScene = "skokloster-castle.glb";
+export const defaultScene =
+  window.location.href.indexOf("localhost") === -1
+    ? "https://habitat-demo.s3-us-west-2.amazonaws.com/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
+    : "skokloster-castle.glb";
