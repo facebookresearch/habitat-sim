@@ -257,7 +257,7 @@ jobs:
               pytest
 
               #re-install with bullet and run physics tests again
-              python setup.py install --headless --bullet
+              ./build.sh --headless --bullet
               pytest tests/test_physics.py
       - run:
           name: Build Javascript bindings
