@@ -105,6 +105,7 @@ jobs:
                   pkg-config \
                   wget \
                   zip \
+                  libbullet-dev\
                   unzip || true
       - run:
           name: Install cuda
@@ -250,10 +251,15 @@ jobs:
               . activate habitat; cd habitat-sim
 
               export PYTHONPATH=$PYTHONPATH:$(pwd)
-              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --with-cuda --run-tests
+              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               pytest
+
+              #re-install without bullet and run physics tests again
+              #TODO: instead of reinstall, do this with configuration
+              ./build.sh --headless
+              pytest tests/test_physics.py
       - run:
           name: Build Javascript bindings
           command: |
