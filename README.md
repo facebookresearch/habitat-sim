@@ -238,12 +238,12 @@ This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor
 1. Set EMSCRIPTEN in your environment
    ```bash
    export EMSCRIPTEN=/pathto/emsdk/fastcomp/emscripten
-1. Build using `./build.js`
+1. Build using `./build_js.sh`
 1. Run webserver
    ```bash
-   python3 -m http.server
+   python -m http.server 8000 --bind 127.0.0.1
    ```
-1. Open <http://0.0.0.0:8000/build_js/esp/bindings_js/bindings.html>
+1. Open <http://127.0.0.1:8000/build_js/esp/bindings_js/bindings.html>
 
 ## Datasets
 
