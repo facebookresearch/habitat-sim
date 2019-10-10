@@ -35,7 +35,7 @@ using namespace Magnum;
 using namespace Math::Literals;
 using namespace Corrade;
 
-constexpr float moveSensitivity = 0.1f;
+constexpr float moveSensitivity = 0.25f;
 constexpr float lookSensitivity = 11.25f;
 // constexpr float rgbSensorHeight = 1.5f;
 constexpr float rgbSensorHeight = 0.6f;
@@ -150,6 +150,8 @@ Viewer::Viewer(const Arguments& arguments)
       return currentPosition;
     });
   }
+
+  pathfinder_->setMaxSlideDist(0.01);
 
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());

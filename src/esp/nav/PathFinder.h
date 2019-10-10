@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <Magnum/Magnum.h>
 #include <string>
 #include <vector>
 
@@ -132,8 +133,9 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
   bool findPath(ShortestPath& path);
   bool findPath(MultiGoalShortestPath& path);
 
-  template <typename T>
-  T tryStep(const T& start, const T& end);
+  vec3f tryStep(const vec3f& start, const vec3f& end);
+  Magnum::Vector3 tryStep(const Magnum::Vector3& start,
+                          const Magnum::Vector3& end);
 
   bool loadNavMesh(const std::string& path);
 
@@ -157,6 +159,9 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
 
   std::pair<vec3f, vec3f> bounds() const { return bounds_; }
 
+  float getMaxSlideDist() const;
+  void setMaxSlideDist(const float newMaxSlideDist);
+
   friend impl::ActionSpaceGraph;
 
  protected:
@@ -169,6 +174,9 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
   dtNavMeshQuery* navQuery_;
   dtQueryFilter* filter_;
   std::pair<vec3f, vec3f> bounds_;
+
+  float maxSlideDist_ = 1e5;
+
   ESP_SMART_POINTERS(PathFinder)
 };
 

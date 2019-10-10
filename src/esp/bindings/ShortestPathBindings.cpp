@@ -53,10 +53,14 @@ void initShortestPathBindings(py::module& m) {
       .def("find_path",
            py::overload_cast<MultiGoalShortestPath&>(&PathFinder::findPath),
            "path"_a)
-      .def("try_step", &PathFinder::tryStep<Magnum::Vector3>, "start"_a,
-           "end"_a)
-      .def("try_step", &PathFinder::tryStep<vec3f>, "start"_a, "end"_a)
-      .def("island_radius", &PathFinder::islandRadius, "pt"_a)
+      .def("try_step",
+           py::overload_cast<const vec3f&, const vec3f&>(&PathFinder::tryStep),
+           R"()", "start"_a, "end"_a)
+      .def("try_step",
+           py::overload_cast<const Magnum::Vector3&, const Magnum::Vector3&>(
+               &PathFinder::tryStep),
+           R"()", "start"_a, "end"_a)
+      .def("island_radius", &PathFinder::islandRadius, R"()", "pt"_a)
       .def_property_readonly("is_loaded", &PathFinder::isLoaded)
       .def("load_nav_mesh", &PathFinder::loadNavMesh)
       .def("distance_to_closest_obstacle",
@@ -70,7 +74,9 @@ void initShortestPathBindings(py::module& m) {
            "pt"_a, "max_search_radius"_a = 2.0)
       .def("is_navigable", &PathFinder::isNavigable,
            R"(Checks to see if the agent can stand at the specified point.)",
-           "pt"_a, "max_y_delta"_a = 0.5);
+           "pt"_a, "max_y_delta"_a = 0.5)
+      .def_property("max_slide_dist", &PathFinder::getMaxSlideDist,
+                    &PathFinder::setMaxSlideDist);
 
   // this enum is used by GreedyGeodesicFollowerImpl so it needs to be defined
   // before it

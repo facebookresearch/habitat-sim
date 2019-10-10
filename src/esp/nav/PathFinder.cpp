@@ -27,6 +27,8 @@
 #include "DetourNode.h"
 #include "Recast.h"
 
+namespace Mn = Magnum;
+
 namespace esp {
 namespace nav {
 
@@ -97,7 +99,7 @@ class IslandSystem {
     }
   }
 
-  inline bool hasConnection(dtPolyRef startRef, dtPolyRef endRef) const {
+  bool hasConnection(dtPolyRef startRef, dtPolyRef endRef) const {
     // If both polygons are on the same island, there must be a path between
     // them
     auto itStart = polyToIsland_.find(startRef);
@@ -111,7 +113,7 @@ class IslandSystem {
     return itStart->second == itEnd->second;
   }
 
-  inline float islandRadius(dtPolyRef ref) const {
+  float islandRadius(dtPolyRef ref) const {
     auto itRef = polyToIsland_.find(ref);
     if (itRef == polyToIsland_.end())
       return 0.0;
@@ -868,28 +870,68 @@ bool PathFinder::findPath(MultiGoalShortestPath& path) {
   return false;
 }
 
-template <typename T>
-T PathFinder::tryStep(const T& start, const T& end) {
-  static const int MAX_POLYS = 256;
+  namespace {
+  std::tuple<dtPolyRef, vec3f> applyMoveAlongSurface(
+    const vec3f& start,
+    const vec3f& end,
+    const dtNavMeshQuery* navQuery,
+    const dtQueryFilter* filter) {
+  const int MAX_POLYS = 256;
+  int numPolys;
   dtPolyRef polys[MAX_POLYS];
 
-  dtPolyRef startRef, endRef;
+  dtPolyRef startPoly;
   vec3f pathStart, pathEnd;
-  std::tie(std::ignore, startRef, pathStart) =
-      projectToPoly(start, navQuery_, filter_);
-  std::tie(std::ignore, endRef, pathEnd) =
-      projectToPoly(end, navQuery_, filter_);
+  std::tie(std::ignore, startPoly, pathStart) =
+      projectToPoly(start, navQuery, filter);
+  std::tie(std::ignore, std::ignore, pathEnd) =
+      projectToPoly(end, navQuery, filter);
+
   vec3f endPoint;
-  int numPolys;
-  navQuery_->moveAlongSurface(startRef, pathStart.data(), pathEnd.data(),
-                              filter_, endPoint.data(), polys, &numPolys,
-                              MAX_POLYS);
+  navQuery->moveAlongSurface(startPoly, pathStart.data(), pathEnd.data(),
+                             filter, endPoint.data(), polys, &numPolys,
+                             MAX_POLYS);
+
+  return std::make_tuple(polys[numPolys - 1], endPoint);
+}
+
+bool didCollide(const vec3f& start,
+                const vec3f& predEnd,
+                const vec3f& actualEnd) {
+  return ((actualEnd - start).norm() + 1e-5) < (predEnd - start).norm();
+}
+}  // namespace
+
+vec3f PathFinder::tryStep(const vec3f& start, const vec3f& end) {
+  // Decreasing the stepSize increases the effective friction between the
+  // agent and the wall
+  const float stepSize = maxSlideDist_;
+  const vec3f stepDir = (end - start).normalized();
+  const int numSteps = std::ceil((end - start).norm() / stepSize);
+  const float realStepSize = (end - start).norm() / numSteps;
+
+  dtPolyRef trueEndPolyRef;
+  vec3f currentPos{start};
+  for (int i = 0; i < numSteps; ++i) {
+    vec3f prevPos = currentPos;
+
+    std::tie(trueEndPolyRef, currentPos) = applyMoveAlongSurface(
+        currentPos, currentPos + stepDir * realStepSize, navQuery_, filter_);
+
+    if (didCollide(prevPos, prevPos + stepDir * realStepSize, currentPos)) {
+      break;
+    }
+  }
+  vec3f endPoint{currentPos};
 
   // Hack to deal with infinitely thin walls in recast allowing you to
   // transition between two different connected components
   // First check to see if the endPoint as returned by `moveAlongSurface`
   // is in the same connected component as the startRef according to
   // findNearestPoly
+  dtPolyRef startRef, endRef;
+  std::tie(std::ignore, startRef, std::ignore) =
+      projectToPoly(start, navQuery_, filter_);
   std::tie(std::ignore, endRef, std::ignore) =
       projectToPoly(endPoint, navQuery_, filter_);
   if (!this->islandSystem_->hasConnection(startRef, endRef)) {
@@ -900,7 +942,7 @@ T PathFinder::tryStep(const T& start, const T& end) {
     // endPoint to be in through the polys list
     const dtMeshTile* tile = 0;
     const dtPoly* poly = 0;
-    navMesh_->getTileAndPolyByRefUnsafe(polys[numPolys - 1], &tile, &poly);
+    navMesh_->getTileAndPolyByRefUnsafe(trueEndPolyRef, &tile, &poly);
 
     // Calculate the center of the polygon we want the points to be in
     vec3f polyCenter = vec3f::Zero();
@@ -915,13 +957,21 @@ T PathFinder::tryStep(const T& start, const T& end) {
     endPoint = endPoint + nudgeDistance * nudgeDir;
   }
 
-  return T{endPoint};
+  return endPoint;
 }
 
-template vec3f PathFinder::tryStep<vec3f>(const vec3f&, const vec3f&);
-template Magnum::Vector3 PathFinder::tryStep<Magnum::Vector3>(
-    const Magnum::Vector3&,
-    const Magnum::Vector3&);
+Mn::Vector3 PathFinder::tryStep(const Mn::Vector3& start,
+                                const Mn::Vector3& end) {
+  return Mn::Vector3{tryStep(Mn::EigenIntegration::cast<vec3f>(start),
+                             Mn::EigenIntegration::cast<vec3f>(end))};
+}
+
+void PathFinder::setMaxSlideDist(const float newMaxSlideDist) {
+  maxSlideDist_ = newMaxSlideDist;
+}
+float PathFinder::getMaxSlideDist() const {
+  return maxSlideDist_;
+}
 
 float PathFinder::islandRadius(const vec3f& pt) const {
   dtPolyRef ptRef;
