@@ -12,4 +12,5 @@ target_link_libraries(geo
    core
    glog
    io
+   gfx
 )

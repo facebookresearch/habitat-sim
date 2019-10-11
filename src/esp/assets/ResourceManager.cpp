@@ -667,6 +667,8 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
   Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions);
   // save the mesh transformation for future query
   meshDataGL->meshTransform_ = transform * meshDataGL->meshTransform_;
+
+  meshDataGL->BB = meshDataGL->BB.translated(translation);
 }
 
 Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
@@ -837,7 +839,6 @@ bool ResourceManager::loadGeneralMeshData(
     loadTextures(*importer, &metaData);
     loadMaterials(*importer, &metaData);
     loadMeshes(*importer, &metaData, shiftOrigin, translation);
-
     resourceDict_.emplace(filename, metaData);
 
     // Register magnum mesh
@@ -953,19 +954,24 @@ void ResourceManager::loadMeshes(Importer& importer,
     auto* gltfMeshData = static_cast<GltfMeshData*>(currentMesh.get());
     gltfMeshData->setMeshData(importer, iMesh);
 
-    // compute the mesh bounding box regardless of shifting
+    // compute the mesh bounding box
     gltfMeshData->BB = computeMeshBB(gltfMeshData);
 
     // see if the mesh needs to be shifted
+    // NOTE: Bullet physics requires that rigid object origins are aligned with
+    // their centers of mass. Shifting is done to accomidate this constraint for
+    // objects with a single mesh.
+    // TODO: Rework this to appropriately compute the shift for objects with a
+    // heirarchy of meshes.
     if (shiftOrigin) {
-      // compute BB center if necessary ([0,0,0])
-      if (offset[0] == 0 && offset[1] == 0 && offset[2] == 0) {
+      // shift by BB center if no offset was provided (indicated by offset =
+      // [0,0,0])
+      if (offset == Magnum::Vector3{0, 0, 0}) {
         offset = -gltfMeshData->BB.center();
       }
       // shift the mesh if necessary
-      if (!(offset[0] == 0 && offset[1] == 0 && offset[2] == 0)) {
+      if (offset != Magnum::Vector3{0, 0, 0}) {
         translateMesh(gltfMeshData, offset);
-        gltfMeshData->BB = gltfMeshData->BB.translated(offset);
       }
     }
 
@@ -1114,10 +1120,9 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
 void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
                                               DrawableGroup* drawables) {
-  if (primitiveID >= 0 && primitiveID < primitive_meshes_.size()) {
-    createDrawable(ShaderType::COLORED_SHADER, primitive_meshes_[primitiveID],
-                   node, drawables);
-  }
+  CHECK(primitiveID >= 0 && primitiveID < primitive_meshes_.size());
+  createDrawable(ShaderType::COLORED_SHADER, primitive_meshes_[primitiveID],
+                 node, drawables);
 }
 
 gfx::Drawable& ResourceManager::createDrawable(

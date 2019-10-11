@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "SceneNode.h"
+#include "esp/geo/geo.h"
 
 using namespace Magnum;
 
@@ -35,27 +36,9 @@ const Magnum::Range3D& SceneNode::computeCumulativeBB() {
     SceneNode* child_node = dynamic_cast<SceneNode*>(child);
     if (child_node != nullptr) {
       child_node->computeCumulativeBB();
-      std::vector<Magnum::Vector3> corners;
-      corners.push_back(child_node->transformation().transformPoint(
-          child_node->cumulativeBB_.frontBottomLeft()));
-      corners.push_back(child_node->transformation().transformPoint(
-          child_node->cumulativeBB_.frontBottomRight()));
-      corners.push_back(child_node->transformation().transformPoint(
-          child_node->cumulativeBB_.frontTopLeft()));
-      corners.push_back(child_node->transformation().transformPoint(
-          child_node->cumulativeBB_.frontTopRight()));
 
-      corners.push_back(child_node->transformation().transformPoint(
-          child_node->cumulativeBB_.backTopLeft()));
-      corners.push_back(child_node->transformation().transformPoint(
-          child_node->cumulativeBB_.backTopRight()));
-      corners.push_back(child_node->transformation().transformPoint(
-          child_node->cumulativeBB_.backBottomLeft()));
-      corners.push_back(child_node->transformation().transformPoint(
-          child_node->cumulativeBB_.backBottomRight()));
-
-      Magnum::Range3D transformedBB{
-          Magnum::Math::minmax<Magnum::Vector3>(corners)};
+      Magnum::Range3D transformedBB = esp::geo::getTransformedBB(
+          child_node->cumulativeBB_, child_node->transformation());
 
       cumulativeBB_ = Magnum::Math::join(cumulativeBB_, transformedBB);
     }
