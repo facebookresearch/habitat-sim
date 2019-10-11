@@ -9,7 +9,11 @@ import VRDemo from "./modules/vr_demo";
 import ViewerDemo from "./modules/viewer_demo";
 import { defaultScene } from "./modules/defaults";
 import "./bindings.css";
-import { checkWebAssemblySupport, checkWebgl2Support } from "./modules/utils";
+import {
+  checkWebAssemblySupport,
+  checkWebgl2Support,
+  getInfoSemanticUrl
+} from "./modules/utils";
 
 function preload(url) {
   let file = url;
@@ -33,12 +37,13 @@ Module.preRun.push(() => {
   const scene = config.scene;
   Module.scene = preload(scene);
   const fileNoExtension = scene.substr(0, scene.lastIndexOf("."));
+
   preload(fileNoExtension + ".navmesh");
   if (config.semantic === "mp3d") {
     preload(fileNoExtension + ".house");
     preload(fileNoExtension + "_semantic.ply");
   } else if (config.semantic === "replica") {
-    preload("info_semantic.json");
+    preload(getInfoSemanticUrl(config.scene));
   }
 });
 
