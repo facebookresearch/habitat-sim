@@ -41,12 +41,12 @@ clear and has sufficient instructions to be able to reproduce the issue.
   - Use `clang-format` for style enforcement and linting. Install clang-format through `brew install clang-format` on MacOS, or by downloading [binaries or sources](http://releases.llvm.org/download.html) for Ubuntu etc.
 - Python
   - We follow PEP8 and use [typing](https://docs.python.org/3/library/typing.html).
-  - Use `black` for style enforcement and linting. Install black through `pip install black`. 
-  
+  - Use `black` for style enforcement and linting. Install black through `pip install black`.
+
 We also use pre-commit hooks to ensure linting and style enforcement. Install the pre-commit hooks with `pip install pre-commit && pre-commit install`.
 
 ## Documentation
-- Our documentation style is based on Magnum / Corrade and uses a similar build system.
+- Our documentation style is based on Magnum / Corrade and uses [a similar build system](https://mcss.mosra.cz/documentation/doxygen/).
 - A good example of the documentation style is in esp::gfx::DepthUnprojection (DepthUnprojection.h).
 - Documentation of PRs is highly encouraged!
 
