@@ -15,22 +15,22 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
 ---
 
 ## Table of contents
-   0. [Motivation](#motivation)
-   0. [Citing Habitat](#citing-habitat)
-   0. [Details](#details)
-   0. [Performance](#performance)
-   0. [Installation](#installation)
-   0. [Common build issues](#common-build-issues)
-   0. [Testing](#testing)
-   0. [Common testing issues](#common-testing-issues)
-   0. [Rendering to GPU Tensors](#rendering-to-gpu-tensors)
-   0. [WebGL](#webgl)
-   0. [Datasets](#datasets)
-   0. [Examples](#examples)
-   0. [Acknowledgments](#acknowledgments)
-   0. [External Contributions](#external-contributions)
-   0. [License](#license)
-   0. [References](#references)
+   1. [Motivation](#motivation)
+   1. [Citing Habitat](#citing-habitat)
+   1. [Details](#details)
+   1. [Performance](#performance)
+   1. [Installation](#installation)
+   1. [Common build issues](#common-build-issues)
+   1. [Testing](#testing)
+   1. [Common testing issues](#common-testing-issues)
+   1. [Rendering to GPU Tensors](#rendering-to-gpu-tensors)
+   1. [WebGL](#webgl)
+   1. [Datasets](#datasets)
+   1. [Examples](#examples)
+   1. [Acknowledgments](#acknowledgments)
+   1. [External Contributions](#external-contributions)
+   1. [License](#license)
+   1. [References](#references)
 
 ## Motivation ##
 AI Habitat enables training of embodied AI agents (virtual robots) in a highly photorealistic & efficient 3D simulator, before transferring the learned skills to reality.
@@ -258,7 +258,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
   `640 x 480, total time: 3.208 sec. FPS: 311.7`.
   Note that the test scenes do not provide semantic meshes.
   If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)). 
-  We have also provided an [example demo](https://aihabitat.org/habitat-api/tutorials/habitat-sim-demo.html) for reference.
+  We have also provided an [example demo](https://aihabitat.org/docs/habitat-api/habitat-api-demo.html) for reference.
 
     To run a physics example in python (after building with "Physics simulation via Bullet"):
     ```bash
