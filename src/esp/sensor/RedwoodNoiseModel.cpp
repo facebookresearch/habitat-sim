@@ -12,7 +12,7 @@ namespace sensor {
 namespace {
 
 struct CudaDeviceContext {
-  CudaDeviceContext(const int deviceId) {
+  explicit CudaDeviceContext(const int deviceId) {
     cudaGetDevice(&currentDevice);
     if (deviceId != currentDevice) {
       cudaSetDevice(deviceId);
