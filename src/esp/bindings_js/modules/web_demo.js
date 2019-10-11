@@ -11,6 +11,7 @@ import {
 import SimEnv from "./simenv_embind";
 import TopDownMap from "./topdown";
 import NavigateTask from "./navigate";
+import { buildConfigFromURLParameters } from "./utils";
 
 class WebDemo {
   currentResolution = defaultResolution;
@@ -89,7 +90,12 @@ class WebDemo {
     return agentConfig;
   }
 
-  display(agentConfig = defaultAgentConfig, episode = defaultEpisode) {
+  display(agentConfig = defaultAgentConfig, episode = {}) {
+    const config = buildConfigFromURLParameters();
+    if (config.useDefaultEpisode) {
+      episode = defaultEpisode;
+    }
+
     this.initializeModules(agentConfig, episode);
 
     this.task.init();

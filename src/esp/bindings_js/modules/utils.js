@@ -91,3 +91,13 @@ export function getInfoSemanticUrl(mainUrl) {
   }
   return splits.join("/") + infoSemanticPath;
 }
+
+export function buildConfigFromURLParameters(config = {}) {
+  for (let arg of window.location.search.substr(1).split("&")) {
+    let [key, value] = arg.split("=");
+    if (key && value) {
+      config[key] = decodeURIComponent(value);
+    }
+  }
+  return config;
+}

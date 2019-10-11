@@ -12,7 +12,8 @@ import "./bindings.css";
 import {
   checkWebAssemblySupport,
   checkWebgl2Support,
-  getInfoSemanticUrl
+  getInfoSemanticUrl,
+  buildConfigFromURLParameters
 } from "./modules/utils";
 
 function preload(url) {
@@ -28,12 +29,7 @@ function preload(url) {
 Module.preRun.push(() => {
   let config = {};
   config.scene = defaultScene;
-  for (let arg of window.location.search.substr(1).split("&")) {
-    let [key, value] = arg.split("=");
-    if (key && value) {
-      config[key] = value;
-    }
-  }
+  buildConfigFromURLParameters(config);
   const scene = config.scene;
   Module.scene = preload(scene);
   const fileNoExtension = scene.substr(0, scene.lastIndexOf("."));
@@ -62,6 +58,7 @@ Module.onRuntimeInitialized = () => {
   if (!demo) {
     demo = new WebDemo();
   }
+
   demo.display();
 };
 

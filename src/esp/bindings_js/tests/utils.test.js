@@ -1,4 +1,8 @@
-import { throttle, getInfoSemanticUrl } from "../modules/utils";
+import {
+  throttle,
+  getInfoSemanticUrl,
+  buildConfigFromURLParameters
+} from "../modules/utils";
 
 test("throttle should work properly", () => {
   let count = 0;
@@ -42,4 +46,15 @@ test("info semantic.json should have correct path", () => {
   scenePaths.forEach((item, index) => {
     expect(getInfoSemanticUrl(item)).toEqual(expectedInfoPaths[index]);
   });
+});
+
+test("configuration should be built from url parameters", () => {
+  delete window.location;
+  window.location = {};
+  window.location.search = "?a=b&c&d=true&e=1";
+  const config = buildConfigFromURLParameters();
+  expect(config.a).toEqual("b");
+  expect(config.c).toBeUndefined();
+  expect(config.d).toEqual("true");
+  expect(config.e).toEqual("1");
 });
