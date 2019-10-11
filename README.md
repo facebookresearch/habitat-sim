@@ -6,6 +6,8 @@
 A flexible, high-performance 3D simulator with configurable agents, multiple sensors, and generic 3D dataset handling (with built-in support for [MatterPort3D](https://niessner.github.io/Matterport/), [Gibson](http://gibsonenv.stanford.edu/database/), [Replica](https://github.com/facebookresearch/Replica-Dataset), and other datasets).
 When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves several thousand frames per second (FPS) running single-threaded, and reaches <a href="#fps_table"><b>over 10,000 FPS multi-process</b></a> on a single GPU!
 
+[Try Habitat in your browser!](https://aihabitat.org/demo)
+
 <p align="center">
   <img src="docs/images/habitat_compressed.gif" height="400">
 </p>
@@ -22,6 +24,7 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
    0. [Testing](#testing)
    0. [Common testing issues](#common-testing-issues)
    0. [Rendering to GPU Tensors](#rendering-to-gpu-tensors)
+   0. [WebGL](#webgl)
    0. [Datasets](#datasets)
    0. [Examples](#examples)
    0. [Acknowledgments](#acknowledgments)
@@ -291,6 +294,20 @@ This feature is built by when Habitat-Sim is compiled with CUDA, i.e. built with
 
 This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor library being used, but we currently have only implemented support for PyTorch.
 
+
+## WebGL
+
+1. Download the [test scenes](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) and extract locally to habitat-sim creating habitat-sim/data.
+1. Download and install [emscripten](https://emscripten.org/docs/getting_started/downloads.html) (version 1.38.38 is verified to work)
+1. Set EMSCRIPTEN in your environment
+   ```bash
+   export EMSCRIPTEN=/pathto/emsdk/fastcomp/emscripten
+1. Build using `./build_js.sh`
+1. Run webserver
+   ```bash
+   python -m http.server 8000 --bind 127.0.0.1
+   ```
+1. Open <http://127.0.0.1:8000/build_js/esp/bindings_js/bindings.html>
 
 ## Datasets
 

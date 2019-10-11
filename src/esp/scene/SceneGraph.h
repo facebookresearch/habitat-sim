@@ -34,6 +34,10 @@ class SceneGraph {
 
   gfx::RenderCamera& getDefaultRenderCamera() { return defaultRenderCamera_; }
 
+  /* @brief check if the scene node is the root node of the scene graph.
+   */
+  static bool isRootNode(SceneNode& node);
+
  protected:
   MagnumScene world_;
 
