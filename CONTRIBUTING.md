@@ -16,7 +16,7 @@ possible.
 - Reach out to us with questions or suggestions on our Slack channel.
 - If you haven't already, complete [the Contributor License Agreement ("CLA")](https://code.facebook.com/cla).
 
-## Contributor License Agreement ("CLA")
+## Contributor License Agreement ("CLA").
 In order to accept your pull request, we need you to submit a CLA. You only need
 to do this once to work on any of Facebook's open source projects. Complete your CLA [here](https://code.facebook.com/cla).
 
