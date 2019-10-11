@@ -90,12 +90,10 @@ class WebDemo {
     return agentConfig;
   }
 
-  display(agentConfig = defaultAgentConfig, episode) {
+  display(agentConfig = defaultAgentConfig, episode = {}) {
     const config = buildConfigFromURLParameters();
     if (config.useDefaultEpisode) {
       episode = defaultEpisode;
-    } else {
-      episode = {};
     }
 
     this.initializeModules(agentConfig, episode);
