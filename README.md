@@ -148,18 +148,17 @@ We provide a pre-built docker container for habitat-api and habitat-sim, refer t
 We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/distribution/#download-section) environment (note: python>=3.6 is required). Once you have Anaconda installed, here are the instructions.
 
 
-1. Clone this github repository. 
+1. Clone this github repository.
    ```bash
-   git clone https://github.com/facebookresearch/habitat-sim.git
+   # Checkout the latest stable release
+   git clone --branch stable git@github.com:facebookresearch/habitat-sim.git
    cd habitat-sim
-   # Checkout the latest stable release (repeated version number is not a typo)
-   git checkout -b v0.1.2 v0.1.2 
    ```
-   
-   List of stable releases is [available here](https://github.com/facebookresearch/habitat-sim/releases). Master branch contains 'bleeding edge' code and under active development. 
 
-1. Install Dependencies 
-  
+   List of stable releases is [available here](https://github.com/facebookresearch/habitat-sim/releases). Master branch contains 'bleeding edge' code and under active development.
+
+1. Install Dependencies
+
     Common
    ```bash
    # We require python>=3.6 and cmake>=3.10
@@ -171,15 +170,15 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
     Linux (Tested with Ubuntu 18.04 with gcc 7.4.0)
    ```bash
    sudo apt-get update || true
-   # These are fairly ubiquitous packages and your system likely has them already, 
+   # These are fairly ubiquitous packages and your system likely has them already,
    # but if not, let's get the essentials for EGL support:
    sudo apt-get install -y --no-install-recommends \
         libjpeg-dev libglm-dev libgl1-mesa-glx libegl1-mesa-dev mesa-utils xorg-dev freeglut3-dev
    ```
 
-   See this [configuration for a full list of dependencies](https://github.com/facebookresearch/habitat-sim/blob/master/.circleci/config.yml#L64) that our CI installs on a clean Ubuntu VM. If you run into build errors later, this is a good place to check if all dependencies are installed. 
+   See this [configuration for a full list of dependencies](https://github.com/facebookresearch/habitat-sim/blob/master/.circleci/config.yml#L64) that our CI installs on a clean Ubuntu VM. If you run into build errors later, this is a good place to check if all dependencies are installed.
 
-1. Build Habitat-Sim 
+1. Build Habitat-Sim
 
     Default build (for machines with a display attached)
    ```bash
@@ -197,15 +196,15 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    python setup.py install --with-cuda
    ```
 
-   (Under development) With physics simulation via [Bullet Physics SDK](https://github.com/bulletphysics/bullet3/): 
+   (Under development) With physics simulation via [Bullet Physics SDK](https://github.com/bulletphysics/bullet3/):
    First, install [Bullet Physics](https://github.com/bulletphysics/bullet3/). Next use
    ```bash
    python setup.py install --bullet    # build habitat with bullet physics
    ```
 
-   Note1: some Linux distributions might require an additional `--user` flag to deal with permission issues. 
-   
-   Note2: for active development in Habitat, you might find `./build.sh` instead of `python setup.py install` more useful. 
+   Note1: some Linux distributions might require an additional `--user` flag to deal with permission issues.
+
+   Note2: for active development in Habitat, you might find `./build.sh` instead of `python setup.py install` more useful.
 
 
 1. [Only if using `build.sh`] For use with [Habitat-API](https://github.com/facebookresearch/habitat-api) and your own python code, add habitat-sim to your `PYTHONPATH`. For example modify your `.bashrc` (or `.bash_profile` in Mac OS X) file by adding the line:
@@ -217,7 +216,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 
 - If your machine has a custom installation location for the nvidia OpenGL and EGL drivers, you may need to manually provide the `EGL_LIBRARY` path to cmake as follows.  Add `-DEGL_LIBRARY=/usr/lib/x86_64-linux-gnu/nvidia-opengl/libEGL.so` to the `build.sh` command line invoking cmake. When running any executable adjust the environment as follows: `LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/nvidia-opengl:${LD_LIBRARY_PATH} examples/example.py`.
 
-- By default, the build process uses all cores available on the system to parallelize. On some virtual machines, this might result in running out of memory. You can serialize the build process via: 
+- By default, the build process uses all cores available on the system to parallelize. On some virtual machines, this might result in running out of memory. You can serialize the build process via:
    ```bash
    python setup.py build_ext --parallel 1 install
    ```
@@ -245,10 +244,10 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    ```bash
    build/viewer --enable-physics /path/to/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb
    ```
-   Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right). 
-   Press 'o' key to add a random object, press 'p/f/t' to apply impulse/force/torque to the last added object or press 'u' to remove it. 
-   Press 'k' to kinematically nudge the last added object in a random direction. 
-   Press 'v' key to invert gravity. 
+   Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right).
+   Press 'o' key to add a random object, press 'p/f/t' to apply impulse/force/torque to the last added object or press 'u' to remove it.
+   Press 'k' to kinematically nudge the last added object in a random direction.
+   Press 'v' key to invert gravity.
 
 1. **Non-interactive testing**: Run the example script:
    ```bash
@@ -257,7 +256,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    The agent will traverse a particular path and you should see the performance stats at the very end, something like this:
   `640 x 480, total time: 3.208 sec. FPS: 311.7`.
   Note that the test scenes do not provide semantic meshes.
-  If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)). 
+  If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)).
   We have also provided an [example demo](https://aihabitat.org/docs/habitat-api/habitat-api-demo.html) for reference.
 
     To run a physics example in python (after building with "Physics simulation via Bullet"):
@@ -277,14 +276,14 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 
   ensure you do not have `DISPLAY` defined in your environment (run `unset DISPLAY` to undefine the variable)
 
-- If you see libGL errors like: 
+- If you see libGL errors like:
 
    ```bash
     X11: The DISPLAY environment variable is missing
     Could not initialize GLFW
    ```
 
-    chances are your libGL is located at a non-standard location. See e.g. [this issue](https://askubuntu.com/questions/541343/problems-with-libgl-fbconfigs-swrast-through-each-update). 
+    chances are your libGL is located at a non-standard location. See e.g. [this issue](https://askubuntu.com/questions/541343/problems-with-libgl-fbconfigs-swrast-through-each-update).
 
 ## Rendering to GPU Tensors
 
