@@ -9,9 +9,14 @@
 namespace esp {
 namespace physics {
 
-bool PhysicsManager::initPhysics(scene::SceneNode* node,
-                                 const assets::PhysicsManagerAttributes&) {
+bool PhysicsManager::initPhysics(
+    scene::SceneNode* node,
+    const assets::PhysicsManagerAttributes& physicsManagerAttributes) {
   physicsNode_ = node;
+
+  // Copy over relevant configuration
+  fixedTimeStep_ = physicsManagerAttributes.getDouble("timestep");
+
   //! Create new scene node
   sceneNode_ = new physics::RigidObject(physicsNode_);
   initialized_ = true;

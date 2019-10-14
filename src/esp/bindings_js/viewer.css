@@ -1,0 +1,31 @@
+.viewer-canvas {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  overflow: hidden;
+}
+
+.hidden {
+  display: hidden;
+}
+
+.tooltip {
+  color: #fff;
+  background-color: #666;
+  line-height: 2;
+  border-radius: 2px;
+  top: 0;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  position: absolute;
+  z-index: 100;
+  text-align: center;
+  width: 100%;
+}
+
+.mobile-warning {
+  position: absolute;
+  bottom: 5px;
+}

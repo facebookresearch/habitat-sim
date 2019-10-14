@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Magnum/ImageView.h>
+#include <Magnum/Math/Algorithms/GramSchmidt.h>
 #include <Magnum/PixelFormat.h>
 
 #include "PinholeCamera.h"
@@ -28,8 +29,50 @@ void PinholeCamera::setProjectionParameters(SensorSpec::ptr spec) {
   hfov_ = std::atof(spec_->parameters.at("hfov").c_str());
 }
 
-void PinholeCamera::setProjectionMatrix(gfx::RenderCamera& targetCamera) {
+PinholeCamera& PinholeCamera::setProjectionMatrix(
+    gfx::RenderCamera& targetCamera) {
   targetCamera.setProjectionMatrix(width_, height_, near_, far_, hfov_);
+  return *this;
+}
+
+PinholeCamera& PinholeCamera::setTransformationMatrix(
+    gfx::RenderCamera& targetCamera) {
+  CORRADE_ASSERT(!scene::SceneGraph::isRootNode(targetCamera.node()),
+                 "PinholeCamera::setTransformationMatrix: target camera cannot "
+                 "be on the root node of the scene graph",
+                 *this);
+  Magnum::Matrix4 absTransform = this->node().absoluteTransformation();
+  Magnum::Matrix3 rotation = absTransform.rotationScaling();
+  Magnum::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(rotation);
+
+  VLOG(1) << "||R - GS(R)|| = "
+          << Eigen::Map<mat3f>((rotation - absTransform.rotationShear()).data())
+                 .norm();
+
+  auto relativeTransform =
+      Magnum::Matrix4::from(rotation, absTransform.translation()) *
+      Magnum::Matrix4::scaling(absTransform.scaling());
+
+  // set the transformation to the camera
+  // so that the camera has the correct modelview matrix for rendering;
+  // to do it,
+  // obtain the *absolute* transformation from the sensor node,
+  // apply it as the *relative* transformation between the camera and
+  // its parent
+  auto camParent = targetCamera.node().parent();
+  // if camera's parent is the root node, skip it!
+  if (!scene::SceneGraph::isRootNode(
+          *static_cast<scene::SceneNode*>(camParent))) {
+    relativeTransform =
+        camParent->absoluteTransformation().inverted() * relativeTransform;
+  }
+  targetCamera.node().setTransformation(relativeTransform);
+  return *this;
+}
+
+PinholeCamera& PinholeCamera::setViewport(gfx::RenderCamera& targetCamera) {
+  targetCamera.getMagnumCamera().setViewport(this->framebufferSize());
+  return *this;
 }
 
 bool PinholeCamera::getObservationSpace(ObservationSpace& space) {

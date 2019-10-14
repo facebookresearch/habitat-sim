@@ -42,10 +42,10 @@ def test_no_move_fun():
         agent.act("move_forward")
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, cmp=False)
 class ExpectedDelta:
-    delta_pos: np.array = np.array([0, 0, 0])
-    delta_rot: np.quaternion = np.quaternion(1, 0, 0, 0)
+    delta_pos: np.ndarray = attr.Factory(lambda: np.array([0, 0, 0]))
+    delta_rot: np.quaternion = attr.Factory(lambda: np.quaternion(1, 0, 0, 0))
 
 
 def _check_state_same(s1, s2):

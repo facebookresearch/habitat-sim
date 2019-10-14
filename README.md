@@ -6,6 +6,8 @@
 A flexible, high-performance 3D simulator with configurable agents, multiple sensors, and generic 3D dataset handling (with built-in support for [MatterPort3D](https://niessner.github.io/Matterport/), [Gibson](http://gibsonenv.stanford.edu/database/), [Replica](https://github.com/facebookresearch/Replica-Dataset), and other datasets).
 When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves several thousand frames per second (FPS) running single-threaded, and reaches <a href="#fps_table"><b>over 10,000 FPS multi-process</b></a> on a single GPU!
 
+[Try Habitat in your browser!](https://aihabitat.org/demo)
+
 <p align="center">
   <img src="docs/images/habitat_compressed.gif" height="400">
 </p>
@@ -13,26 +15,22 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
 ---
 
 ## Table of contents
-   0. [Updates](#updates)
-   0. [Motivation](#motivation)
-   0. [Citing Habitat](#citing-habitat)
-   0. [Details](#details)
-   0. [Performance](#performance)
-   0. [Quick installation](#quick-installation)
-   0. [Testing](#testing)
-   0. [Rendering to GPU Tensors](#rendering-to-gpu-tensors)
-   0. [Developer installation and getting started](#developer-installation-and-getting-started)
-   0. [Datasets](#datasets)
-   0. [Examples](#examples)
-   0. [Common issues](#common-issues)
-   0. [Acknowledgments](#acknowledgments)
-   0. [External Contributions](#external-contributions)
-   0. [License](#license)
-   0. [References](#references)
-
-## Updates ##
-
-* **Urgent Update** (4/2/19) There was a bug in the code used to generate the semantic meshes habitat verion of MP3D.  If you do not have a README stating this was fixed in your download of this dataset, please redownload using the `download_mp.py` script.
+   1. [Motivation](#motivation)
+   1. [Citing Habitat](#citing-habitat)
+   1. [Details](#details)
+   1. [Performance](#performance)
+   1. [Installation](#installation)
+   1. [Common build issues](#common-build-issues)
+   1. [Testing](#testing)
+   1. [Common testing issues](#common-testing-issues)
+   1. [Rendering to GPU Tensors](#rendering-to-gpu-tensors)
+   1. [WebGL](#webgl)
+   1. [Datasets](#datasets)
+   1. [Examples](#examples)
+   1. [Acknowledgments](#acknowledgments)
+   1. [External Contributions](#external-contributions)
+   1. [License](#license)
+   1. [References](#references)
 
 ## Motivation ##
 AI Habitat enables training of embodied AI agents (virtual robots) in a highly photorealistic & efficient 3D simulator, before transferring the learned skills to reality.
@@ -139,52 +137,117 @@ Previous simulation platforms that have operated on similar datasets typically p
 
 To run the above benchmarks on your machine, see instructions in the [examples](#examples) section.
 
-## Quick installation
+## Installation
 
-1. Clone the repo
-1. Install numpy in your python env of choice (e.g., `pip install numpy` or `conda install numpy`)
-1. Install dependencies in your python env of choice (e.g., `pip install -r requirements.txt`)
-1. Install Habitat-Sim via `python setup.py install` in your python env of choice (note: python 3 is required)
+### Docker Image
 
-    **Headless and multiple GPU systems**
+We provide a pre-built docker container for habitat-api and habitat-sim, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-api#docker-setup).
 
-    Add the `--headless` flag, i.e. `python setup.py install --headless`, for headless systems (i.e. without an attached display) or if you need multi-gpu support.
+### From Source
 
-    **Systems with CUDA**
-
-    Add the `--with-cuda` flag, i.e. `python setup.py install --with-cuda`, to build CUDA features
+We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/distribution/#download-section) environment (note: python>=3.6 is required). Once you have Anaconda installed, here are the instructions.
 
 
+1. Clone this github repository.
+   ```bash
+   # Checkout the latest stable release
+   git clone --branch stable git@github.com:facebookresearch/habitat-sim.git
+   cd habitat-sim
+   ```
 
-**Note**: the build requires `cmake` version 3.10 or newer. You can install cmake through `conda install cmake` or download directly from [https://cmake.org/download/](https://cmake.org/download/)
+   List of stable releases is [available here](https://github.com/facebookresearch/habitat-sim/releases). Master branch contains 'bleeding edge' code and under active development.
 
+1. Install Dependencies
+
+    Common
+   ```bash
+   # We require python>=3.6 and cmake>=3.10
+   conda create -n habitat python=3.6 cmake=3.14.0
+   conda activate habitat
+   pip install -r requirements.txt
+   ```
+
+    Linux (Tested with Ubuntu 18.04 with gcc 7.4.0)
+   ```bash
+   sudo apt-get update || true
+   # These are fairly ubiquitous packages and your system likely has them already,
+   # but if not, let's get the essentials for EGL support:
+   sudo apt-get install -y --no-install-recommends \
+        libjpeg-dev libglm-dev libgl1-mesa-glx libegl1-mesa-dev mesa-utils xorg-dev freeglut3-dev
+   ```
+
+   See this [configuration for a full list of dependencies](https://github.com/facebookresearch/habitat-sim/blob/master/.circleci/config.yml#L64) that our CI installs on a clean Ubuntu VM. If you run into build errors later, this is a good place to check if all dependencies are installed.
+
+1. Build Habitat-Sim
+
+    Default build (for machines with a display attached)
+   ```bash
+   # Assuming we're still within habitat conda environment
+   python setup.py install
+   ```
+
+    For headless systems (i.e. without an attached display, e.g. in a cluster) and multiple GPU systems
+   ```bash
+   python setup.py install --headless
+   ```
+
+    For systems with CUDA (to build CUDA features)
+   ```bash
+   python setup.py install --with-cuda
+   ```
+
+   (Under development) With physics simulation via [Bullet Physics SDK](https://github.com/bulletphysics/bullet3/):
+   First, install [Bullet Physics](https://github.com/bulletphysics/bullet3/). Next use
+   ```bash
+   python setup.py install --bullet    # build habitat with bullet physics
+   ```
+
+   Note1: some Linux distributions might require an additional `--user` flag to deal with permission issues.
+
+   Note2: for active development in Habitat, you might find `./build.sh` instead of `python setup.py install` more useful.
+
+
+1. [Only if using `build.sh`] For use with [Habitat-API](https://github.com/facebookresearch/habitat-api) and your own python code, add habitat-sim to your `PYTHONPATH`. For example modify your `.bashrc` (or `.bash_profile` in Mac OS X) file by adding the line:
+   ```bash
+   export PYTHONPATH=$PYTHONPATH:/path/to/habitat-sim/
+   ```
+
+## Common build issues
+
+- If your machine has a custom installation location for the nvidia OpenGL and EGL drivers, you may need to manually provide the `EGL_LIBRARY` path to cmake as follows.  Add `-DEGL_LIBRARY=/usr/lib/x86_64-linux-gnu/nvidia-opengl/libEGL.so` to the `build.sh` command line invoking cmake. When running any executable adjust the environment as follows: `LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/nvidia-opengl:${LD_LIBRARY_PATH} examples/example.py`.
+
+- By default, the build process uses all cores available on the system to parallelize. On some virtual machines, this might result in running out of memory. You can serialize the build process via:
+   ```bash
+   python setup.py build_ext --parallel 1 install
+   ```
+
+- Build is tested on Tested with Ubuntu 18.04 with gcc 7.4.0 and MacOS 10.13.6 with Xcode 10 and clang-1000.10.25.5. If you experience compilation issues, please open an issue with the details of your OS and compiler versions.
+
+  We also have a dev slack channel, please follow this [link](https://join.slack.com/t/ai-habitat/shared_invite/enQtNjY1MzM1NDE4MTk2LTZhMzdmYWMwODZlNjg5MjZiZjExOTBjOTg5MmRiZTVhOWQyNzk0OTMyN2E1ZTEzZTNjMWM0MjBkN2VhMjQxMDI) to get added to the channel.
 
 ## Testing
 
 1. Download the test scenes from this [link](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) and extract locally.
+
 1. **Interactive testing**: Use the interactive viewer included with Habitat-Sim
    ```bash
-   build/viewer /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
+   ./build/viewer /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
    ```
    You should be able to control an agent in this test scene.
    Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right).
    Try to find the picture of a woman surrounded by a wreath.
    Have fun!
-1. **Physical interactions**: If you would like to try out habitat with dynamical objects (under development), first download our pre-processed object data-set from this [link](http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip) and extract as `habitat-sim/data/objects/`.
 
-    If you require dynamic objects, install [Bullet Physics](https://github.com/bulletphysics/bullet3/). Next use
-   ```bash
-   python setup.py install --bullet    # build habitat with bullet physics
-   ```
-   Otherwise, use default build
-   ```bash
-   python setup.py install     # build habitat without bullet physics
-   ```
+1. **Physical interactions**: If you would like to try out habitat with dynamical objects, first download our pre-processed object data-set from this [link](http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip) and extract as `habitat-sim/data/objects/`.
+
    To run an interactive C++ example GUI application with physics enabled run
    ```bash
    build/viewer --enable-physics /path/to/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb
    ```
-   Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right). Press 'o' key to add a random object, press 'p/f/t' to apply impulse/force/torque to the last added object or press 'u' to remove it. Press 'k' to kinematically nudge the last added object in a random direction. Press 'v' key to invert gravity.
+   Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right).
+   Press 'o' key to add a random object, press 'p/f/t' to apply impulse/force/torque to the last added object or press 'u' to remove it.
+   Press 'k' to kinematically nudge the last added object in a random direction.
+   Press 'v' key to invert gravity.
 
 1. **Non-interactive testing**: Run the example script:
    ```bash
@@ -193,15 +256,34 @@ To run the above benchmarks on your machine, see instructions in the [examples](
    The agent will traverse a particular path and you should see the performance stats at the very end, something like this:
   `640 x 480, total time: 3.208 sec. FPS: 311.7`.
   Note that the test scenes do not provide semantic meshes.
-  If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)). We have also provided an [example demo](https://aihabitat.org/habitat-api/tutorials/habitat-sim-demo.html) for reference.
+  If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)).
+  We have also provided an [example demo](https://aihabitat.org/docs/habitat-api/habitat-api-demo.html) for reference.
 
-    To run a physics example in python, follow the install and build direction in the "Physical Interactions" section of this document and then run the example.py with '--enable_physics' as follows:
+    To run a physics example in python (after building with "Physics simulation via Bullet"):
     ```bash
     python examples/example.py --scene /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb --enable_physics
     ```
-    Note that in this mode the agent will be frozen and oriented toward the spawned physical objects. Additionally, '--save_png' can be used to output agent visual observation frames of the physical scene to the current directory.
+    Note that in this mode the agent will be frozen and oriented toward the spawned physical objects. Additionally, `--save_png` can be used to output agent visual observation frames of the physical scene to the current directory.
 
-We also provide a docker setup for habitat-stack, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-api#docker-setup).
+
+## Common testing issues
+
+- If you are running on a remote machine and experience display errors when initializing the simulator, e.g.
+   ```bash
+    X11: The DISPLAY environment variable is missing
+    Could not initialize GLFW
+   ```
+
+  ensure you do not have `DISPLAY` defined in your environment (run `unset DISPLAY` to undefine the variable)
+
+- If you see libGL errors like:
+
+   ```bash
+    X11: The DISPLAY environment variable is missing
+    Could not initialize GLFW
+   ```
+
+    chances are your libGL is located at a non-standard location. See e.g. [this issue](https://askubuntu.com/questions/541343/problems-with-libgl-fbconfigs-swrast-through-each-update).
 
 ## Rendering to GPU Tensors
 
@@ -209,26 +291,22 @@ We support transfering rendering results directly to a [PyTorch](https://pytorch
 This feature is built by when Habitat-Sim is compiled with CUDA, i.e. built with `--with-cuda`.  To enable it, set the
 `gpu2gpu_transfer` flag of the sensor specification(s) to `True`
 
-
 This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor library being used, but we currently have only implemented support for PyTorch.
 
 
+## WebGL
 
-
-## Developer installation and getting started
-
-1. Clone the repo.
-1. Install numpy in your python env of choice (e.g., `pip install numpy` or `conda install numpy`)
-1. Install dependencies in your python env of choice (e.g., `pip install -r requirements.txt`)
-1. If you are using a virtual/conda environment, make sure to use the same environment throughout the rest of the build
-1. Build using `./build.sh` or `./build.sh --headless` for headless systems (i.e. without an attached display) or if you need multi-gpu support
-1. Test the build as described above (except that the interactive viewer is at `build/utils/viewer/viewer`).
-1. For use with [Habitat-API](https://github.com/facebookresearch/habitat-api) and your own python code, add habitat-sim to your `PYTHONPATH` (not necessary if you used `python setup.py install` instead of `build.sh`). For example modify your `.bashrc` (or `.bash_profile` in macOS) file by adding the line:
+1. Download the [test scenes](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) and extract locally to habitat-sim creating habitat-sim/data.
+1. Download and install [emscripten](https://emscripten.org/docs/getting_started/downloads.html) (version 1.38.38 is verified to work)
+1. Set EMSCRIPTEN in your environment
    ```bash
-   export PYTHONPATH=$PYTHONPATH:/path/to/habitat-sim/
+   export EMSCRIPTEN=/pathto/emsdk/fastcomp/emscripten
+1. Build using `./build_js.sh`
+1. Run webserver
+   ```bash
+   python -m http.server 8000 --bind 127.0.0.1
    ```
-
-  We also have a dev slack channel, please follow this [link](https://join.slack.com/t/ai-habitat/shared_invite/enQtNjY1MzM1NDE4MTk2LTZhMzdmYWMwODZlNjg5MjZiZjExOTBjOTg5MmRiZTVhOWQyNzk0OTMyN2E1ZTEzZTNjMWM0MjBkN2VhMjQxMDI) to get added to the channel.
+1. Open <http://127.0.0.1:8000/build_js/esp/bindings_js/bindings.html>
 
 ## Datasets
 
@@ -243,13 +321,8 @@ Additional arguments to `example.py` are provided to change the sensor configura
 
 To reproduce the benchmark table from above run `examples/benchmark.py --scene /path/to/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb`.
 
-## Common issues
 
-- Build is tested on Ubuntu 16.04 with gcc 7.1.0, Fedora 28 with gcc 7.3.1, and macOS 10.13.6 with Xcode 10 and clang-1000.10.25.5. If you experience compilation issues, please open an issue with the details of your OS and compiler versions.
-- If you are running on a remote machine and experience display errors when initializing the simulator, ensure you do not have `DISPLAY` defined in your environment (run `unset DISPLAY` to undefine the variable)
-- If your machine has a custom installation location for the nvidia OpenGL and EGL drivers, you may need to manually provide the `EGL_LIBRARY` path to cmake as follows.  Add `-DEGL_LIBRARY=/usr/lib/x86_64-linux-gnu/nvidia-opengl/libEGL.so` to the `build.sh` command line invoking cmake. When running any executable adjust the environment as follows: `LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/nvidia-opengl:${LD_LIBRARY_PATH} examples/example.py`.
-
-### Code style
+## Code style
 
 We use `clang-format-8` for linting and code style enforcement of c++ code.
 Code style follows the [Google C++ guidelines](https://google.github.io/styleguide/cppguide.html).
@@ -267,7 +340,7 @@ Install these dependencies through `npm install`. Then, for fixing linting/forma
 We also offer pre-commit hooks to help with automatically formatting code.
 Install the pre-commit hooks with `pip install pre-commit && pre-commit install`.
 
-### Development Tips
+## Development Tips
 
 1. Install `ninja` (`sudo apt install ninja-build` on Linux, or `brew install ninja` on macOS) for significantly faster incremental builds
 1. Install `ccache` (`sudo apt install ccache` on Linux, or `brew install ccache` on macOS) for significantly faster clean re-builds and builds with slightly different settings
