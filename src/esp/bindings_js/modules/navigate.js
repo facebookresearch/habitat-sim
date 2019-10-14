@@ -190,6 +190,7 @@ class NavigateTask {
       for (let a of this.actions) {
         if (event.key === a.key) {
           this.handleAction(a.name);
+          event.preventDefault();
           break;
         }
       }
