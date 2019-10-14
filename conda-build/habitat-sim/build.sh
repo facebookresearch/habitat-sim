@@ -33,8 +33,11 @@ fi
 pushd ${PREFIX}
 
 corrade_bindings=$(find . -name "*_corrade*so")
+echo ${corrade_bindings}
 magnum_bindings=$(find . -name "*_magnum*so")
+echo ${magnum_bindings}
 hsim_bindings=$(find . -name "*habitat_sim_bindings*so")
+echo ${hsim_bindings}
 ext_folder=$(dirname ${corrade_bindings})/habitat_sim/_ext
 
 if [ $(uname) == "Darwin" ]; then

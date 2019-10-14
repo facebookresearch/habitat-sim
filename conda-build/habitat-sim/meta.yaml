@@ -41,6 +41,7 @@ requirements:
     - xorg-libxcursor        # [linux]
 
   run:
+    - python x.x
     - attrs>=19.1.0
     - numba
     - numpy
@@ -58,7 +59,7 @@ requirements:
     - xorg-libxcursor        # [linux]
 
     {{ environ.get('CONDA_CUDATOOLKIT_CONSTRAINT', '') }}
-    {{ environ.get('CONDA_BULLET', '') }}
+    {{ environ.get('CONDA_BULLET') }}
 
 
 build:
