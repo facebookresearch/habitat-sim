@@ -23,7 +23,7 @@ class NavigateTask {
     this.semanticsEnabled = false;
     this.radarEnabled = false;
 
-    if (this.components.semantics) {
+    if (this.components.semantic) {
       this.semanticsEnabled = true;
       this.semanticCtx = components.semantic.getContext("2d");
       this.semanticShape = this.sim.getObservationSpace("semantic").shape;
