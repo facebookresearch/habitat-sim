@@ -159,7 +159,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param projTrans The composed projection and transformation matrix for the
    * render camera.
    */
-  virtual void debugDraw(const Magnum::Matrix4& projTrans);
+  virtual void debugDraw(const Magnum::Matrix4& projTrans) override;
 
  protected:
   btDbvtBroadphase bBroadphase_;
