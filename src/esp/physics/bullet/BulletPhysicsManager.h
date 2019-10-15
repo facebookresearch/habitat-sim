@@ -153,6 +153,14 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   double getSceneRestitutionCoefficient();
 
+  /** @brief Render the debugging visualizations provided by @ref
+   * Magnum::BulletIntegration::DebugDraw. This draws wireframes for all
+   * collision objects.
+   * @param projTrans The composed projection and transformation matrix for the
+   * render camera.
+   */
+  virtual void debugDraw(const Magnum::Matrix4& projTrans) override;
+
  protected:
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;
@@ -161,6 +169,8 @@ class BulletPhysicsManager : public PhysicsManager {
 
   /** @brief A pointer to the Bullet world. See @ref btDiscreteDynamicsWorld.*/
   std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
+
+  Magnum::BulletIntegration::DebugDraw debugDrawer_;
 
  private:
   /** @brief Check if a particular mesh can be used as a collision mesh for
