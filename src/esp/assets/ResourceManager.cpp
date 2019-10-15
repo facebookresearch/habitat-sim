@@ -819,7 +819,6 @@ bool ResourceManager::loadGeneralMeshData(
       LOG(ERROR) << "Cannot open file " << filename;
       return false;
     }
-    LOG(INFO) << "opened file " << filename;
     // if this is a new file, load it and add it to the dictionary
     loadTextures(*importer, &metaData);
     loadMaterials(*importer, &metaData);
@@ -960,14 +959,10 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
     return;
   }
 
-  LOG(INFO) << "loadMeshHierarchy: " << componentID << " T: ";
-
   // Add the new node to the hierarchy and set its transformation
   parent.children.push_back(MeshTransformNode());
   parent.children.back().T = objectData->transformation();
   parent.children.back().componentID = componentID;
-
-  Cr::Utility::Debug() << parent.children.back().T;
 
   const int meshIDLocal = objectData->instance();
 
@@ -978,8 +973,6 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
     parent.children.back().materialIDLocal =
         static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
             ->material();
-    LOG(INFO) << "  mesh: " << meshIDLocal
-              << " material: " << parent.children.back().materialIDLocal;
   }
 
   // Recursively add children
@@ -1047,9 +1040,6 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
                                    DrawableGroup* drawables,
                                    MeshTransformNode& meshTransformNode) {
-  LOG(INFO) << "addComponent: " << meshTransformNode.componentID << " T: ";
-  Cr::Utility::Debug() << meshTransformNode.T;
-
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
   node.MagnumObject::setTransformation(meshTransformNode.T);
@@ -1062,8 +1052,6 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
     const int materialIDLocal = meshTransformNode.materialIDLocal;
     addMeshToDrawables(metaData, node, drawables, meshTransformNode.componentID,
                        meshIDLocal, materialIDLocal);
-    LOG(INFO) << "  mesh: " << meshIDLocal
-              << " material: " << meshTransformNode.materialIDLocal;
   }
 
   // Recursively add children
