@@ -153,7 +153,13 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   double getSceneRestitutionCoefficient();
 
-  virtual void debugDraw(Magnum::Matrix4 projTrans);
+  /** @brief Render the debugging visualizations provided by @ref
+   * Magnum::BulletIntegration::DebugDraw. This draws wireframes for all
+   * collision objects.
+   * @param projTrans The composed projection and transformation matrix for the
+   * render camera.
+   */
+  virtual void debugDraw(const Magnum::Matrix4& projTrans);
 
  protected:
   btDbvtBroadphase bBroadphase_;

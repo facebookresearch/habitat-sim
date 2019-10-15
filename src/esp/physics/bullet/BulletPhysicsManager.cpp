@@ -193,7 +193,7 @@ double BulletPhysicsManager::getSceneRestitutionCoefficient() {
       ->getRestitutionCoefficient();
 }
 
-void BulletPhysicsManager::debugDraw(Magnum::Matrix4 projTrans) {
+void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) {
   debugDrawer_.setTransformationProjectionMatrix(projTrans);
   bWorld_->debugDrawWorld();
 }
