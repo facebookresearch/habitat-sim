@@ -153,7 +153,7 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   double getSceneRestitutionCoefficient();
 
-  virtual void debugDraw(Magnum::Matrix4 projTrans);
+  virtual void debugDraw(Magnum::Matrix4 projTrans) override;
 
  protected:
   btDbvtBroadphase bBroadphase_;
