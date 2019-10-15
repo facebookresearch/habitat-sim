@@ -139,11 +139,10 @@ class ResourceManager {
   //! (1) create scene node
   //! (2) upload mesh to gpu and drawables
   //! (optional reload of GPU-side assets)
-  void addComponent(Importer& importer,
-                    const MeshMetaData& metaData,
+  void addComponent(const MeshMetaData& metaData,
                     scene::SceneNode& parent,
                     DrawableGroup* drawables,
-                    int objectID);
+                    MeshTransformNode& meshTransformNode);
 
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);
@@ -153,6 +152,11 @@ class ResourceManager {
                   MeshMetaData* metaData,
                   bool shiftOrigin = false,
                   Magnum::Vector3 offset = Magnum::Vector3(0, 0, 0));
+
+  //! Load the mesh transformation hierarchy for the imported file
+  void loadMeshHierarchy(Importer& importer,
+                         MeshTransformNode& parent,
+                         int componentID);
 
   //! Load materials from importer into assets, and update metaData
   void loadMaterials(Importer& importer, MeshMetaData* metaData);

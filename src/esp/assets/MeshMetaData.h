@@ -5,9 +5,45 @@
 #pragma once
 
 #include "esp/core/esp.h"
+#include "esp/gfx/magnum.h"
 
 namespace esp {
 namespace assets {
+
+//! Some mesh files include a transformation hierarchy. A @ref MeshTransformNode
+//! stores this hierarchy and indices for the meshes at each level such that it
+//! can be reused to instances meshes later.
+struct MeshTransformNode {
+  //! mesh ID within @ref MeshMetaData::meshIndex
+  int meshIDLocal;
+
+  //! material ID within @ref MeshMetaData::materialIndex
+  int materialIDLocal;
+
+  //! Object ID in the original file
+  int componentID;
+
+  std::vector<MeshTransformNode> children;
+
+  //! Node local transform
+  Magnum::Matrix4 T;
+
+  MeshTransformNode() {
+    meshIDLocal = ID_UNDEFINED;
+    materialIDLocal = ID_UNDEFINED;
+    componentID = ID_UNDEFINED;
+  };
+
+  MeshTransformNode(const MeshTransformNode& val) {
+    componentID = val.componentID;
+    meshIDLocal = val.meshIDLocal;
+    materialIDLocal = val.materialIDLocal;
+    T = Magnum::Matrix4(val.T);
+    for (auto& child : val.children) {
+      children.push_back(MeshTransformNode(child));
+    }
+  }
+};
 
 // for each scene (mesh file),
 // we store the data based on the resource type: 'mesh', 'texture', and
@@ -29,6 +65,8 @@ struct MeshMetaData {
   std::pair<start, end> materialIndex =
       std::make_pair(ID_UNDEFINED, ID_UNDEFINED);
 
+  MeshTransformNode root;
+
   MeshMetaData(){};
   MeshMetaData(int meshStart,
                int meshEnd,
@@ -44,6 +82,7 @@ struct MeshMetaData {
     meshIndex = val.meshIndex;
     textureIndex = val.textureIndex;
     materialIndex = val.materialIndex;
+    root = MeshTransformNode(val.root);
   }
   void setMeshIndices(int meshStart, int meshEnd) {
     meshIndex.first = meshStart;
