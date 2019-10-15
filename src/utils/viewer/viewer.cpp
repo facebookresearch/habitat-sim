@@ -83,6 +83,9 @@ class Viewer : public Magnum::Platform::Application {
   scene::SceneManager sceneManager_;
 
   std::shared_ptr<physics::PhysicsManager> physicsManager_;
+
+  bool debugBullet_ = false;
+
   std::vector<int> sceneID_;
   scene::SceneNode* agentBodyNode_ = nullptr;
   scene::SceneNode* rgbSensorNode_ = nullptr;
@@ -122,6 +125,7 @@ Viewer::Viewer(const Arguments& arguments)
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addBooleanOption("enable-physics")
+      .addBooleanOption("debug-bullet")
       .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG)
       .setHelp("physics-config", "physics scene config file")
       .parse(arguments.argc, arguments.argv);
@@ -152,6 +156,9 @@ Viewer::Viewer(const Arguments& arguments)
     if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
                                     &drawables, physicsConfigFilename)) {
       LOG(FATAL) << "cannot load " << file;
+    }
+    if (args.isSet("debug-bullet")) {
+      debugBullet_ = true;
     }
   } else {
     if (!resourceManager_.loadScene(info, navSceneNode_, &drawables)) {
@@ -334,6 +341,13 @@ void Viewer::drawEvent() {
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
+
+  if (debugBullet_) {
+    Magnum::Matrix4 camM(renderCamera_->getCameraMatrix());
+    Magnum::Matrix4 projM(renderCamera_->getProjectionMatrix());
+
+    physicsManager_->debugDraw(projM * camM);
+  }
 
   swapBuffers();
   timeline_.nextFrame();

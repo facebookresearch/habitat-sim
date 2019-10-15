@@ -23,6 +23,11 @@ bool BulletPhysicsManager::initPhysics(
   bWorld_ = std::make_shared<btDiscreteDynamicsWorld>(
       &bDispatcher_, &bBroadphase_, &bSolver_, &bCollisionConfig_);
 
+  debugDrawer_.setMode(
+      Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe |
+      Magnum::BulletIntegration::DebugDraw::Mode::DrawConstraints);
+  bWorld_->setDebugDrawer(&debugDrawer_);
+
   // Copy over relevant configuration
   fixedTimeStep_ = physicsManagerAttributes.getDouble("timestep");
   // currently GLB meshes are y-up
@@ -186,6 +191,11 @@ double BulletPhysicsManager::getSceneFrictionCoefficient() {
 double BulletPhysicsManager::getSceneRestitutionCoefficient() {
   return static_cast<BulletRigidObject*>(sceneNode_)
       ->getRestitutionCoefficient();
+}
+
+void BulletPhysicsManager::debugDraw(Magnum::Matrix4 projTrans) {
+  debugDrawer_.setTransformationProjectionMatrix(projTrans);
+  bWorld_->debugDrawWorld();
 }
 
 }  // namespace physics
