@@ -153,6 +153,8 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   double getSceneRestitutionCoefficient();
 
+  virtual void debugDraw(Magnum::Matrix4 projTrans);
+
  protected:
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;
@@ -161,6 +163,8 @@ class BulletPhysicsManager : public PhysicsManager {
 
   /** @brief A pointer to the Bullet world. See @ref btDiscreteDynamicsWorld.*/
   std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
+
+  Magnum::BulletIntegration::DebugDraw debugDrawer_;
 
  private:
   /** @brief Check if a particular mesh can be used as a collision mesh for
