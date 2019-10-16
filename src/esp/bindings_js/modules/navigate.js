@@ -186,15 +186,19 @@ class NavigateTask {
   }
 
   bindKeys() {
-    document.addEventListener("keydown", event => {
-      for (let a of this.actions) {
-        if (event.key === a.key) {
-          this.handleAction(a.name);
-          event.preventDefault();
-          break;
+    document.addEventListener(
+      "keydown",
+      event => {
+        for (let a of this.actions) {
+          if (event.key === a.key) {
+            this.handleAction(a.name);
+            event.preventDefault();
+            break;
+          }
         }
-      }
-    });
+      },
+      true
+    );
   }
 }
 
