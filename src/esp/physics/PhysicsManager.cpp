@@ -501,25 +501,23 @@ double PhysicsManager::getAngularDamping(const int physObjectID) {
 void PhysicsManager::setObjectBBDraw(int physObjectID,
                                      DrawableGroup* drawables,
                                      bool drawBB) {
-  if (existingObjects_.count(physObjectID) > 0) {
-    if (existingObjects_[physObjectID]->BBNode_ && !drawBB) {
-      // destroy the node
-      delete existingObjects_[physObjectID]->BBNode_;
-      existingObjects_[physObjectID]->BBNode_ = nullptr;
-    } else if (drawBB) {
-      // add a new BBNode
-      Magnum::Vector3 scale =
-          existingObjects_[physObjectID]->getCumulativeBB().size() / 2.0;
-      existingObjects_[physObjectID]->BBNode_ =
-          &existingObjects_[physObjectID]->createChild();
-      existingObjects_[physObjectID]->BBNode_->MagnumObject::setScaling(scale);
-      existingObjects_[physObjectID]->BBNode_->MagnumObject::setTranslation(
-          existingObjects_[physObjectID]->getCumulativeBB().center());
-      resourceManager_->addPrimitiveToDrawables(
-          0, *existingObjects_[physObjectID]->BBNode_, drawables);
-    }
+  CHECK(existingObjects_.count(physObjectID) > 0);
+  if (existingObjects_[physObjectID]->BBNode_ && !drawBB) {
+    // destroy the node
+    delete existingObjects_[physObjectID]->BBNode_;
+    existingObjects_[physObjectID]->BBNode_ = nullptr;
+  } else if (drawBB) {
+    // add a new BBNode
+    Magnum::Vector3 scale =
+        existingObjects_[physObjectID]->getCumulativeBB().size() / 2.0;
+    existingObjects_[physObjectID]->BBNode_ =
+        &existingObjects_[physObjectID]->createChild();
+    existingObjects_[physObjectID]->BBNode_->MagnumObject::setScaling(scale);
+    existingObjects_[physObjectID]->BBNode_->MagnumObject::setTranslation(
+        existingObjects_[physObjectID]->getCumulativeBB().center());
+    resourceManager_->addPrimitiveToDrawables(
+        0, *existingObjects_[physObjectID]->BBNode_, drawables);
   }
 }
-
 }  // namespace physics
 }  // namespace esp
