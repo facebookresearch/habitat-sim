@@ -33,19 +33,11 @@ class ObjectSensor {
       }
     }
     for (let i = 0; i < objects.size(); i++) {
-      const object = objects.get(i);
-      if (
-        object &&
-        object.category &&
-        object.category.getIndex("") === categoryIndex
-      ) {
+      const object = objects.get(i) || {};
+      if (object.category && object.category.getIndex("") === categoryIndex) {
         this.objectIds.push(i);
       }
     }
-
-    console.log(this.objectIds);
-    console.log(semanticShape);
-    console.log("looking for " + objectClass);
   }
 
   /**

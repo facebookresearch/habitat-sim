@@ -134,7 +134,7 @@ class NavigateTask {
     }
 
     this.sim.getObservation("semantic", this.semanticObservation);
-    let rawSemanticBuffer = this.semanticObservation.getData();
+    const rawSemanticBuffer = this.semanticObservation.getData();
     const objectIds = new Uint32Array(
       rawSemanticBuffer.buffer,
       rawSemanticBuffer.byteOffset,
