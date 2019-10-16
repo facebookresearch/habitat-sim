@@ -650,7 +650,8 @@ class PhysicsManager {
    * @param projTrans The composed projection and transformation matrix for the
    * render camera.
    */
-  virtual void debugDraw(CORRADE_UNUSED const Magnum::Matrix4& projTrans){};
+  virtual void debugDraw(
+      CORRADE_UNUSED const Magnum::Matrix4& projTrans) const {};
 
  protected:
   /** @brief Check if a particular mesh can be used as a collision mesh for a
