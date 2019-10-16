@@ -222,29 +222,33 @@ class NavigateTask {
   }
 
   bindKeys() {
-    document.addEventListener("keydown", event => {
-      if (event.key === " " && this.objectSensor) {
-        event.preventDefault();
-        const iou = this.objectSensor.computeIOU(this.semanticData);
-        if (iou > parseFloat(window.config.iou) * IOU_TOLERANCE) {
-          this.setSuccessStatus(
-            "You found the " + window.config.category + "!"
-          );
-        } else if (iou > 0) {
-          this.setWarningStatus("IoU is too low. Please get a better view.");
-        } else {
-          this.setErrorStatus(window.config.category + " not found!");
-        }
-        return;
-      }
-      for (let a of this.actions) {
-        if (event.key === a.key) {
-          this.handleAction(a.name);
+    document.addEventListener(
+      "keydown",
+      event => {
+        if (event.key === " " && this.objectSensor) {
           event.preventDefault();
-          break;
+          const iou = this.objectSensor.computeIOU(this.semanticData);
+          if (iou > parseFloat(window.config.iou) * IOU_TOLERANCE) {
+            this.setSuccessStatus(
+              "You found the " + window.config.category + "!"
+            );
+          } else if (iou > 0) {
+            this.setWarningStatus("IoU is too low. Please get a better view.");
+          } else {
+            this.setErrorStatus(window.config.category + " not found!");
+          }
+          return;
         }
-      }
-    });
+        for (let a of this.actions) {
+          if (event.key === a.key) {
+            this.handleAction(a.name);
+            event.preventDefault();
+            break;
+          }
+        }
+      },
+      true
+    );
   }
 }
 
