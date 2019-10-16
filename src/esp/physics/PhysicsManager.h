@@ -644,7 +644,13 @@ class PhysicsManager {
   void applyImpulseTorque(const int physObjectID,
                           const Magnum::Vector3& impulse);
 
-  virtual void debugDraw(CORRADE_UNUSED Magnum::Matrix4 projTrans){};
+  /** @brief Render any debugging visualizations provided by the underlying
+   * physics simulator implementation. By default does nothing. See @ref
+   * BulletPhysicsManager::debugDraw.
+   * @param projTrans The composed projection and transformation matrix for the
+   * render camera.
+   */
+  virtual void debugDraw(CORRADE_UNUSED const Magnum::Matrix4& projTrans){};
 
  protected:
   /** @brief Check if a particular mesh can be used as a collision mesh for a
