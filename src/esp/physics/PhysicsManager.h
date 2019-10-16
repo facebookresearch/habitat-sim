@@ -648,6 +648,16 @@ class PhysicsManager {
   virtual void debugDraw(CORRADE_UNUSED const Magnum::Matrix4& projTrans){};
 
  protected:
+  /** @brief Check that a given object ID is valid (i.e. it refers to an
+   * existing object). Terminate the program and report an error if not. This
+   * function is intended to unify object ID checking for @ref PhysicsManager
+   * functions.
+   * @param physObjectID The object ID to validate.
+   */
+  virtual void assertIDValidity(const int physObjectID) const {
+    CHECK(existingObjects_.count(physObjectID) > 0);
+  };
+
   /** @brief Check if a particular mesh can be used as a collision mesh for a
    * particular physics implemenation. Always True for base @ref PhysicsManager
    * class, since the mesh has already been successfully loaded by @ref

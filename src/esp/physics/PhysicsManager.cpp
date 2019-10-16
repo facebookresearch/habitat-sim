@@ -84,7 +84,7 @@ int PhysicsManager::addObject(const std::string& configFile,
 }
 
 int PhysicsManager::removeObject(const int physObjectID) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_.at(physObjectID)->removeObject();
   delete existingObjects_.at(physObjectID);
   existingObjects_.erase(physObjectID);
@@ -94,12 +94,12 @@ int PhysicsManager::removeObject(const int physObjectID) {
 
 bool PhysicsManager::setObjectMotionType(const int physObjectID,
                                          MotionType mt) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   return existingObjects_[physObjectID]->setMotionType(mt);
 }
 
 MotionType PhysicsManager::getObjectMotionType(const int physObjectID) const {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getMotionType();
 }
 
@@ -214,204 +214,204 @@ int PhysicsManager::checkActiveObjects() {
 void PhysicsManager::applyForce(const int physObjectID,
                                 const Magnum::Vector3& force,
                                 const Magnum::Vector3& relPos) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->applyForce(force, relPos);
 }
 
 void PhysicsManager::applyImpulse(const int physObjectID,
                                   const Magnum::Vector3& impulse,
                                   const Magnum::Vector3& relPos) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->applyImpulse(impulse, relPos);
 }
 
 void PhysicsManager::applyTorque(const int physObjectID,
                                  const Magnum::Vector3& torque) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->applyTorque(torque);
 }
 
 void PhysicsManager::applyImpulseTorque(const int physObjectID,
                                         const Magnum::Vector3& impulse) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->applyImpulseTorque(impulse);
 }
 
 void PhysicsManager::setTransformation(const int physObjectID,
                                        const Magnum::Matrix4& trans) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->setTransformation(trans);
 }
 void PhysicsManager::setTranslation(const int physObjectID,
                                     const Magnum::Vector3& vector) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->setTranslation(vector);
 }
 void PhysicsManager::setRotation(const int physObjectID,
                                  const Magnum::Quaternion& quaternion) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->setRotation(quaternion);
 }
 void PhysicsManager::resetTransformation(const int physObjectID) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->resetTransformation();
 }
 void PhysicsManager::translate(const int physObjectID,
                                const Magnum::Vector3& vector) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->translate(vector);
 }
 void PhysicsManager::translateLocal(const int physObjectID,
                                     const Magnum::Vector3& vector) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->translateLocal(vector);
 }
 void PhysicsManager::rotate(const int physObjectID,
                             const Magnum::Rad angleInRad,
                             const Magnum::Vector3& normalizedAxis) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->rotate(angleInRad, normalizedAxis);
 }
 
 void PhysicsManager::rotateLocal(const int physObjectID,
                                  const Magnum::Rad angleInRad,
                                  const Magnum::Vector3& normalizedAxis) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->rotateLocal(angleInRad, normalizedAxis);
 }
 
 void PhysicsManager::rotateX(const int physObjectID,
                              const Magnum::Rad angleInRad) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->rotateX(angleInRad);
 }
 void PhysicsManager::rotateY(const int physObjectID,
                              const Magnum::Rad angleInRad) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->rotateY(angleInRad);
 }
 void PhysicsManager::rotateXLocal(const int physObjectID,
                                   const Magnum::Rad angleInRad) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->rotateXLocal(angleInRad);
 }
 void PhysicsManager::rotateYLocal(const int physObjectID,
                                   const Magnum::Rad angleInRad) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->rotateYLocal(angleInRad);
 }
 void PhysicsManager::rotateZ(const int physObjectID,
                              const Magnum::Rad angleInRad) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->rotateZ(angleInRad);
 }
 void PhysicsManager::rotateZLocal(const int physObjectID,
                                   const Magnum::Rad angleInRad) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->rotateZLocal(angleInRad);
 }
 
 Magnum::Matrix4 PhysicsManager::getTransformation(
     const int physObjectID) const {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->transformation();
 }
 
 Magnum::Vector3 PhysicsManager::getTranslation(const int physObjectID) const {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->translation();
 }
 
 Magnum::Quaternion PhysicsManager::getRotation(const int physObjectID) const {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->rotation();
 }
 
 //============ Object Setter functions =============
 void PhysicsManager::setMass(const int physObjectID, const double mass) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->setMass(mass);
 }
 void PhysicsManager::setCOM(const int physObjectID,
                             const Magnum::Vector3& COM) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->setCOM(COM);
 }
 void PhysicsManager::setInertiaVector(const int physObjectID,
                                       const Magnum::Vector3& inertia) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->setInertiaVector(inertia);
 }
 void PhysicsManager::setScale(const int physObjectID, const double scale) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->setScale(scale);
 }
 void PhysicsManager::setFrictionCoefficient(const int physObjectID,
                                             const double frictionCoefficient) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->setFrictionCoefficient(frictionCoefficient);
 }
 void PhysicsManager::setRestitutionCoefficient(
     const int physObjectID,
     const double restitutionCoefficient) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->setRestitutionCoefficient(
       restitutionCoefficient);
 }
 void PhysicsManager::setLinearDamping(const int physObjectID,
                                       const double linDamping) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->setLinearDamping(linDamping);
 }
 void PhysicsManager::setAngularDamping(const int physObjectID,
                                        const double angDamping) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   existingObjects_[physObjectID]->setAngularDamping(angDamping);
 }
 
 //============ Object Getter functions =============
 double PhysicsManager::getMass(const int physObjectID) const {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getMass();
 }
 
 Magnum::Vector3 PhysicsManager::getCOM(const int physObjectID) const {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getCOM();
 }
 
 Magnum::Vector3 PhysicsManager::getInertiaVector(const int physObjectID) const {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getInertiaVector();
 }
 
 Magnum::Matrix3 PhysicsManager::getInertiaMatrix(const int physObjectID) const {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getInertiaMatrix();
 }
 
 double PhysicsManager::getScale(const int physObjectID) const {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getScale();
 }
 
 double PhysicsManager::getFrictionCoefficient(const int physObjectID) const {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getFrictionCoefficient();
 }
 
 double PhysicsManager::getRestitutionCoefficient(const int physObjectID) const {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getRestitutionCoefficient();
 }
 
 double PhysicsManager::getLinearDamping(const int physObjectID) const {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getLinearDamping();
 }
 
 double PhysicsManager::getAngularDamping(const int physObjectID) const {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getAngularDamping();
 }
 

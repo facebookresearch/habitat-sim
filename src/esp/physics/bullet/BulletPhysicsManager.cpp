@@ -157,7 +157,7 @@ void BulletPhysicsManager::stepPhysics(double dt) {
 
 void BulletPhysicsManager::setMargin(const int physObjectID,
                                      const double margin) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
       ->setMargin(margin);
 }
@@ -175,7 +175,7 @@ void BulletPhysicsManager::setSceneRestitutionCoefficient(
 }
 
 double BulletPhysicsManager::getMargin(const int physObjectID) const {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
       ->getMargin();
 }
