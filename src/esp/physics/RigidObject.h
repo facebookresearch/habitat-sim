@@ -443,10 +443,6 @@ class RigidObject : public scene::SceneNode {
   //! drawing is off. See @ref toggleBBDraw().
   SceneNode* BBNode_ = nullptr;
 
-  //! The bounding box for all mesh componenets of a @ref RigidObject in the
-  //! local space (i.e., before scaling).
-  Magnum::Range3D localBB_;
-
  protected:
   /** @brief The @ref MotionType of the object. Determines what operations can
    * be performed on this object. */

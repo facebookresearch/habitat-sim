@@ -1065,7 +1065,7 @@ void ResourceManager::addComponent(Importer& importer,
 
     // compute the bounding box for the mesh we are adding
     BaseMesh* mesh = meshes_[meshID].get();
-    node.meshBB_ = computeMeshBB(mesh);
+    node.setMeshBB(computeMeshBB(mesh));
   }
 
   // Recursively add children

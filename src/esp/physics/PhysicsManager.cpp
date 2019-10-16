@@ -69,9 +69,6 @@ int PhysicsManager::addObject(const int objectLibIndex,
   resourceManager_->loadObject(configFile, existingObjects_.at(nextObjectID_),
                                drawables);
 
-  existingObjects_.at(nextObjectID_)->localBB_ =
-      existingObjects_.at(nextObjectID_)->cumulativeBB_;
-
   return nextObjectID_;
 }
 
@@ -512,12 +509,12 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
     } else if (drawBB) {
       // add a new BBNode
       Magnum::Vector3 scale =
-          existingObjects_[physObjectID]->localBB_.size() / 2.0;
+          existingObjects_[physObjectID]->getCumulativeBB().size() / 2.0;
       existingObjects_[physObjectID]->BBNode_ =
           &existingObjects_[physObjectID]->createChild();
       existingObjects_[physObjectID]->BBNode_->MagnumObject::setScaling(scale);
       existingObjects_[physObjectID]->BBNode_->MagnumObject::setTranslation(
-          existingObjects_[physObjectID]->localBB_.center());
+          existingObjects_[physObjectID]->getCumulativeBB().center());
       resourceManager_->addPrimitiveToDrawables(
           0, *existingObjects_[physObjectID]->BBNode_, drawables);
     }
