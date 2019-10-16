@@ -172,8 +172,7 @@ class PhysicsManager {
   /** @brief Get the @ref MotionType of an object.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The object's @ref MotionType, or @ref MotionType::ERROR_MOTIONTYPE
-   * if the object is not found.
+   * @return The object's @ref MotionType
    */
   MotionType getObjectMotionType(const int physObjectID) const;
 
@@ -528,7 +527,7 @@ class PhysicsManager {
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @return The uniform scale of the object relative to its initialy loaded
-   * meshes or @ref esp::PHYSICS_ATTR_UNDEFINED if failed.
+   * meshes.
    */
   double getScale(const int physObjectID) const;
 
@@ -536,8 +535,7 @@ class PhysicsManager {
    * See @ref RigidObject::getFrictionCoefficient.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The scalar coefficient of friction of the object or @ref
-   * esp::PHYSICS_ATTR_UNDEFINED if failed.
+   * @return The scalar coefficient of friction of the object.
    */
   double getFrictionCoefficient(const int physObjectID) const;
 
@@ -545,8 +543,7 @@ class PhysicsManager {
    * See @ref RigidObject::getRestitutionCoefficient.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The scalar coefficient of restitution of the object or @ref
-   * esp::PHYSICS_ATTR_UNDEFINED if failed.
+   * @return The scalar coefficient of restitution of the object.
    */
   double getRestitutionCoefficient(const int physObjectID) const;
 
@@ -554,8 +551,7 @@ class PhysicsManager {
    * See @ref RigidObject::getLinearDamping.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The scalar linear damping coefficient of the object or @ref
-   * esp::PHYSICS_ATTR_UNDEFINED if failed.
+   * @return The scalar linear damping coefficient of the object.
    */
   double getLinearDamping(const int physObjectID) const;
 
@@ -563,8 +559,7 @@ class PhysicsManager {
    * See @ref RigidObject::getAngularDamping.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The scalar angular damping coefficient of the object or @ref
-   * esp::PHYSICS_ATTR_UNDEFINED if failed.
+   * @return The scalar angular damping coefficient of the object
    */
   double getAngularDamping(const int physObjectID) const;
 
@@ -654,6 +649,16 @@ class PhysicsManager {
       CORRADE_UNUSED const Magnum::Matrix4& projTrans) const {};
 
  protected:
+  /** @brief Check that a given object ID is valid (i.e. it refers to an
+   * existing object). Terminate the program and report an error if not. This
+   * function is intended to unify object ID checking for @ref PhysicsManager
+   * functions.
+   * @param physObjectID The object ID to validate.
+   */
+  virtual void assertIDValidity(const int physObjectID) const {
+    CHECK(existingObjects_.count(physObjectID) > 0);
+  };
+
   /** @brief Check if a particular mesh can be used as a collision mesh for a
    * particular physics implemenation. Always True for base @ref PhysicsManager
    * class, since the mesh has already been successfully loaded by @ref
