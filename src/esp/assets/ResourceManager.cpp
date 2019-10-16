@@ -847,7 +847,6 @@ bool ResourceManager::loadGeneralMeshData(
       LOG(ERROR) << "No default scene available and no meshes found, exiting";
       return false;
     }
-
     magnumMeshDict_.emplace(filename, magnumData);
   } else {
     metaData = resourceDict_[filename];
@@ -864,7 +863,6 @@ bool ResourceManager::loadGeneralMeshData(
 
     //! Do instantiate object
     MeshMetaData& metaData = resourceDict_[filename];
-
     const bool forceReload = false;
     // re-bind position, normals, uv, colors etc. to the corresponding buffers
     // under *current* gl context
