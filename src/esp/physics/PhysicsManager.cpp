@@ -104,9 +104,9 @@ bool PhysicsManager::setObjectMotionType(const int physObjectID,
   }
 }
 
-MotionType PhysicsManager::getObjectMotionType(const int physObjectID) {
+MotionType PhysicsManager::getObjectMotionType(const int physObjectID) const {
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->getMotionType();
+    return existingObjects_.at(physObjectID)->getMotionType();
   }
   return MotionType::ERROR_MOTIONTYPE;
 }
@@ -164,7 +164,7 @@ void PhysicsManager::setGravity(const Magnum::Vector3&) {
   // Can't do this for kinematic simulator
 }
 
-Magnum::Vector3 PhysicsManager::getGravity() {
+Magnum::Vector3 PhysicsManager::getGravity() const {
   return Magnum::Vector3(0);
 }
 
@@ -337,25 +337,26 @@ void PhysicsManager::rotateZLocal(const int physObjectID,
   }
 }
 
-Magnum::Matrix4 PhysicsManager::getTransformation(const int physObjectID) {
+Magnum::Matrix4 PhysicsManager::getTransformation(
+    const int physObjectID) const {
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->transformation();
+    return existingObjects_.at(physObjectID)->transformation();
   } else {
     return Magnum::Matrix4();
   }
 }
 
-Magnum::Vector3 PhysicsManager::getTranslation(const int physObjectID) {
+Magnum::Vector3 PhysicsManager::getTranslation(const int physObjectID) const {
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->translation();
+    return existingObjects_.at(physObjectID)->translation();
   } else {
     return Magnum::Vector3();
   }
 }
 
-Magnum::Quaternion PhysicsManager::getRotation(const int physObjectID) {
+Magnum::Quaternion PhysicsManager::getRotation(const int physObjectID) const {
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->rotation();
+    return existingObjects_.at(physObjectID)->rotation();
   } else {
     return Magnum::Quaternion();
   }
@@ -420,82 +421,82 @@ void PhysicsManager::setAngularDamping(const int physObjectID,
 }
 
 //============ Object Getter functions =============
-double PhysicsManager::getMass(const int physObjectID) {
+double PhysicsManager::getMass(const int physObjectID) const {
   // TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->getMass();
+    return existingObjects_.at(physObjectID)->getMass();
   } else {
     return PHYSICS_ATTR_UNDEFINED;
   }
 }
 
-Magnum::Vector3 PhysicsManager::getCOM(const int physObjectID) {
+Magnum::Vector3 PhysicsManager::getCOM(const int physObjectID) const {
   // TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->getCOM();
+    return existingObjects_.at(physObjectID)->getCOM();
   } else {
     return Magnum::Vector3();
   }
 }
 
-Magnum::Vector3 PhysicsManager::getInertiaVector(const int physObjectID) {
+Magnum::Vector3 PhysicsManager::getInertiaVector(const int physObjectID) const {
   // TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->getInertiaVector();
+    return existingObjects_.at(physObjectID)->getInertiaVector();
   } else {
     return Magnum::Vector3();
   }
 }
 
-Magnum::Matrix3 PhysicsManager::getInertiaMatrix(const int physObjectID) {
+Magnum::Matrix3 PhysicsManager::getInertiaMatrix(const int physObjectID) const {
   // TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->getInertiaMatrix();
+    return existingObjects_.at(physObjectID)->getInertiaMatrix();
   } else {
     return Magnum::Matrix3();
   }
 }
 
-double PhysicsManager::getScale(const int physObjectID) {
+double PhysicsManager::getScale(const int physObjectID) const {
   // TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->getScale();
+    return existingObjects_.at(physObjectID)->getScale();
   } else {
     return PHYSICS_ATTR_UNDEFINED;
   }
 }
 
-double PhysicsManager::getFrictionCoefficient(const int physObjectID) {
+double PhysicsManager::getFrictionCoefficient(const int physObjectID) const {
   // TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->getFrictionCoefficient();
+    return existingObjects_.at(physObjectID)->getFrictionCoefficient();
   } else {
     return PHYSICS_ATTR_UNDEFINED;
   }
 }
 
-double PhysicsManager::getRestitutionCoefficient(const int physObjectID) {
+double PhysicsManager::getRestitutionCoefficient(const int physObjectID) const {
   // TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->getRestitutionCoefficient();
+    return existingObjects_.at(physObjectID)->getRestitutionCoefficient();
   } else {
     return PHYSICS_ATTR_UNDEFINED;
   }
 }
 
-double PhysicsManager::getLinearDamping(const int physObjectID) {
+double PhysicsManager::getLinearDamping(const int physObjectID) const {
   // TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->getLinearDamping();
+    return existingObjects_.at(physObjectID)->getLinearDamping();
   } else {
     return PHYSICS_ATTR_UNDEFINED;
   }
 }
 
-double PhysicsManager::getAngularDamping(const int physObjectID) {
+double PhysicsManager::getAngularDamping(const int physObjectID) const {
   // TODO: talk to property library
   if (existingObjects_.count(physObjectID) > 0) {
-    return existingObjects_[physObjectID]->getAngularDamping();
+    return existingObjects_.at(physObjectID)->getAngularDamping();
   } else {
     return PHYSICS_ATTR_UNDEFINED;
   }
