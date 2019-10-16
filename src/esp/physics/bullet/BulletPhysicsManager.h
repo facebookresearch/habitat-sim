@@ -159,7 +159,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param projTrans The composed projection and transformation matrix for the
    * render camera.
    */
-  virtual void debugDraw(const Magnum::Matrix4& projTrans) override;
+  virtual void debugDraw(const Magnum::Matrix4& projTrans) const override;
 
  protected:
   btDbvtBroadphase bBroadphase_;
@@ -170,7 +170,7 @@ class BulletPhysicsManager : public PhysicsManager {
   /** @brief A pointer to the Bullet world. See @ref btDiscreteDynamicsWorld.*/
   std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
 
-  Magnum::BulletIntegration::DebugDraw debugDrawer_;
+  mutable Magnum::BulletIntegration::DebugDraw debugDrawer_;
 
  private:
   /** @brief Check if a particular mesh can be used as a collision mesh for
