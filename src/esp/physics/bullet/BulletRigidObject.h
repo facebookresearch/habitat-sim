@@ -10,6 +10,8 @@
 
 #include <btBulletDynamicsCommon.h>
 #include "esp/assets/Asset.h"
+#include "esp/assets/BaseMesh.h"
+#include "esp/assets/MeshMetaData.h"
 #include "esp/core/esp.h"
 
 #include "esp/physics/RigidObject.h"
@@ -67,10 +69,19 @@ class BulletRigidObject : public RigidObject {
    * belong.
    * @return true if initialized successfully, false otherwise.
    */
+  // TODO: update docs here
   bool initializeObject(
       const assets::PhysicsObjectAttributes& physicsObjectAttributes,
+      std::shared_ptr<btDiscreteDynamicsWorld> bWorld,
+      const assets::MeshMetaData& metaData,
+      const std::vector<assets::CollisionMeshData>& meshGroup);
+
+  // TODO: add docs here
+  void constructBulletConvexCompoundFromMeshes(
+      std::unique_ptr<btCompoundShape>& bCompound,
+      Magnum::Matrix4& T,
       const std::vector<assets::CollisionMeshData>& meshGroup,
-      std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
+      const assets::MeshTransformNode& node);
 
   /**
    * @brief Check whether object is being actively simulated, or sleeping.

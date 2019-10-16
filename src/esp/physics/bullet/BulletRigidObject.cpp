@@ -103,11 +103,44 @@ bool BulletRigidObject::initializeScene(
   return true;
 }  // end BulletRigidObject::initializeScene
 
+// recursively create the convex mesh shapes and add them to the compound in a
+// flat manner by accumulating transformations down the tree
+void BulletRigidObject::constructBulletConvexCompoundFromMeshes(
+    std::unique_ptr<btCompoundShape>& bCompound,
+    Magnum::Matrix4& T,
+    const std::vector<assets::CollisionMeshData>& meshGroup,
+    const assets::MeshTransformNode& node) {
+  Magnum::Matrix4 cT = T * node.T;
+  btTransform t(cT);
+  // Corrade::Utility::Debug() << t;
+  // t.setOrigin(cT.translation());
+  // t.setRotation(
+  if (node.meshIDLocal != ID_UNDEFINED) {
+    // This node has a mesh, so add it to the compound
+
+    const assets::CollisionMeshData& mesh = meshGroup[node.meshIDLocal];
+
+    bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
+        static_cast<const btScalar*>(mesh.positions.data()->data()),
+        mesh.positions.size(), sizeof(Magnum::Vector3)));
+
+    // TODO: need this for child shapes?
+    // bObjectConvexShapes_.back()->setMargin(margin);
+
+    //! Add to compound shape stucture
+    bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
+  }
+
+  for (auto& child : node.children) {
+    constructBulletConvexCompoundFromMeshes(bCompound, cT, meshGroup, child);
+  }
+}
+
 bool BulletRigidObject::initializeObject(
     const assets::PhysicsObjectAttributes& physicsObjectAttributes,
-    const std::vector<assets::CollisionMeshData>& meshGroup,
-    std::shared_ptr<btDiscreteDynamicsWorld> bWorld) {
-  // TODO (JH): Handling static/kinematic object type
+    std::shared_ptr<btDiscreteDynamicsWorld> bWorld,
+    const assets::MeshMetaData& metaData,
+    const std::vector<assets::CollisionMeshData>& meshGroup) {
   if (rigidObjectType_ != RigidObjectType::NONE) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
     return false;
@@ -126,36 +159,10 @@ bool BulletRigidObject::initializeObject(
   //! Iterate through all mesh components for one object
   //! The components are combined into a convex compound shape
   bObjectShape_ = std::make_unique<btCompoundShape>();
-  for (const assets::CollisionMeshData& meshData : meshGroup) {
-    Corrade::Containers::ArrayView<Magnum::Vector3> v_data = meshData.positions;
-    Corrade::Containers::ArrayView<Magnum::UnsignedInt> ui_data =
-        meshData.indices;
+  Magnum::Matrix4 T;  // TODO: this should translate to the COM
+  constructBulletConvexCompoundFromMeshes(bObjectShape_, T, meshGroup,
+                                          metaData.root);
 
-    //! Configure Bullet Mesh
-    //! This part is very likely to cause segfault, if done incorrectly
-    bulletMesh.m_numTriangles = ui_data.size() / 3;
-    bulletMesh.m_triangleIndexBase =
-        reinterpret_cast<const unsigned char*>(ui_data.data());
-    bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
-    bulletMesh.m_numVertices = v_data.size();
-    //! Get the pointer to the first float of the first triangle
-    bulletMesh.m_vertexBase =
-        reinterpret_cast<const unsigned char*>(v_data.data()->data());
-    bulletMesh.m_vertexStride = sizeof(Magnum::Vector3);
-    bulletMesh.m_indexType = PHY_INTEGER;
-    bulletMesh.m_vertexType = PHY_FLOAT;
-
-    btTransform t;  // position and rotation
-    t.setIdentity();
-    t.setOrigin(btVector3(0, 0, 0));
-    //! Create convex component
-    bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
-        static_cast<const btScalar*>(meshData.positions.data()->data()),
-        meshData.positions.size(), sizeof(Magnum::Vector3)));
-    bObjectConvexShapes_.back()->setMargin(margin);
-    //! Add to compound shape stucture
-    bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
-  }
   //! Set properties
   bObjectShape_->setMargin(margin);
 
@@ -184,9 +191,6 @@ bool BulletRigidObject::initializeObject(
   info.m_linearDamping = physicsObjectAttributes.getDouble("linDamping");
   info.m_angularDamping = physicsObjectAttributes.getDouble("angDamping");
 
-  // Magnum::Vector3 inertia = metaData.inertia;
-  // info.m_localInertia   = bInertia(inertia.x(), inertia.y(), inertia.z());
-
   //! Create rigid body
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
   //! Add to world
@@ -195,7 +199,7 @@ bool BulletRigidObject::initializeObject(
   bWorld_ = bWorld;
   syncPose();
   return true;
-}  // end BulletRigidObject::initializeObject
+}
 
 bool BulletRigidObject::removeObject() {
   if (rigidObjectType_ == RigidObjectType::OBJECT) {

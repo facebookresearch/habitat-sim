@@ -5,8 +5,8 @@
     "friction coefficient": 0.4,
     "restitution coefficient": 0.1,
     "rigid object paths":[
-        "objects/cheezit",
+        "objects/wayfair_50_norugs_edited",
         "objects/chefcan",
-        "objects/banana"
+        "objects/cheezit"
     ]
 }

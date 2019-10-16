@@ -131,7 +131,12 @@ class ResourceManager {
 
   const Magnum::Matrix4& getMeshTransformation(const size_t meshIndex) {
     return meshes_[meshIndex]->meshTransform_;
-  }
+  };
+
+  const MeshMetaData& getMeshMetaData(std::string filename) {
+    CHECK(resourceDict_.count(filename) > 0);
+    return resourceDict_.at(filename);
+  };
 
  protected:
   //======== Scene Functions ========
