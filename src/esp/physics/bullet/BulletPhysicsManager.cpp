@@ -135,7 +135,7 @@ void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   }
 }
 
-Magnum::Vector3 BulletPhysicsManager::getGravity() {
+Magnum::Vector3 BulletPhysicsManager::getGravity() const {
   return Magnum::Vector3(bWorld_->getGravity());
 }
 
@@ -174,17 +174,17 @@ void BulletPhysicsManager::setSceneRestitutionCoefficient(
       ->setRestitutionCoefficient(restitutionCoefficient);
 }
 
-double BulletPhysicsManager::getMargin(const int physObjectID) {
+double BulletPhysicsManager::getMargin(const int physObjectID) const {
   CHECK(existingObjects_.count(physObjectID) > 0);
   return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
       ->getMargin();
 }
 
-double BulletPhysicsManager::getSceneFrictionCoefficient() {
+double BulletPhysicsManager::getSceneFrictionCoefficient() const {
   return static_cast<BulletRigidObject*>(sceneNode_)->getFrictionCoefficient();
 }
 
-double BulletPhysicsManager::getSceneRestitutionCoefficient() {
+double BulletPhysicsManager::getSceneRestitutionCoefficient() const {
   return static_cast<BulletRigidObject*>(sceneNode_)
       ->getRestitutionCoefficient();
 }
