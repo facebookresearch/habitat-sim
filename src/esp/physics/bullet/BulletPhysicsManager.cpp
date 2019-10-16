@@ -157,10 +157,9 @@ void BulletPhysicsManager::stepPhysics(double dt) {
 
 void BulletPhysicsManager::setMargin(const int physObjectID,
                                      const double margin) {
-  if (existingObjects_.count(physObjectID) > 0) {
-    static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
-        ->setMargin(margin);
-  }
+  CHECK(existingObjects_.count(physObjectID) > 0);
+  static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+      ->setMargin(margin);
 }
 
 void BulletPhysicsManager::setSceneFrictionCoefficient(
@@ -176,12 +175,9 @@ void BulletPhysicsManager::setSceneRestitutionCoefficient(
 }
 
 double BulletPhysicsManager::getMargin(const int physObjectID) {
-  if (existingObjects_.count(physObjectID) > 0) {
-    return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
-        ->getMargin();
-  } else {
-    return PHYSICS_ATTR_UNDEFINED;
-  }
+  CHECK(existingObjects_.count(physObjectID) > 0);
+  return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+      ->getMargin();
 }
 
 double BulletPhysicsManager::getSceneFrictionCoefficient() {

@@ -172,8 +172,7 @@ class PhysicsManager {
   /** @brief Get the @ref MotionType of an object.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The object's @ref MotionType, or @ref MotionType::ERROR_MOTIONTYPE
-   * if the object is not found.
+   * @return The object's @ref MotionType
    */
   MotionType getObjectMotionType(const int physObjectID);
 
