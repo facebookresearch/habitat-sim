@@ -1,3 +1,7 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
@@ -50,6 +54,11 @@ const config = {
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, "webvr.html"),
       filename: path.resolve(buildRootPath, "webvr.html"),
+      hash: true
+    }),
+    new HtmlWebpackPlugin({
+      template: path.resolve(__dirname, "viewer.html"),
+      filename: path.resolve(buildRootPath, "viewer.html"),
       hash: true
     })
   ],

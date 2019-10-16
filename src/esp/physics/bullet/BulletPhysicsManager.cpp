@@ -22,6 +22,14 @@ bool BulletPhysicsManager::initPhysics(
   // btGImpactCollisionAlgorithm::registerAlgorithm(&bDispatcher_);
   bWorld_ = std::make_shared<btDiscreteDynamicsWorld>(
       &bDispatcher_, &bBroadphase_, &bSolver_, &bCollisionConfig_);
+
+  debugDrawer_.setMode(
+      Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe |
+      Magnum::BulletIntegration::DebugDraw::Mode::DrawConstraints);
+  bWorld_->setDebugDrawer(&debugDrawer_);
+
+  // Copy over relevant configuration
+  fixedTimeStep_ = physicsManagerAttributes.getDouble("timestep");
   // currently GLB meshes are y-up
   bWorld_->setGravity(
       btVector3(physicsManagerAttributes.getMagnumVec3("gravity")));
@@ -141,7 +149,6 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   }
 
   // ==== Physics stepforward ======
-
   // NOTE: worldTime_ will always be a multiple of sceneMetaData_.timestep
   int numSubStepsTaken =
       bWorld_->stepSimulation(dt, maxSubSteps_, fixedTimeStep_);
@@ -184,6 +191,11 @@ double BulletPhysicsManager::getSceneFrictionCoefficient() {
 double BulletPhysicsManager::getSceneRestitutionCoefficient() {
   return static_cast<BulletRigidObject*>(sceneNode_)
       ->getRestitutionCoefficient();
+}
+
+void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) {
+  debugDrawer_.setTransformationProjectionMatrix(projTrans);
+  bWorld_->debugDrawWorld();
 }
 
 }  // namespace physics

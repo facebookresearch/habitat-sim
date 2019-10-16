@@ -1,9 +1,11 @@
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
+#include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/Debug.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "SceneGraph.h"
-#include <Magnum/Math/Algorithms/GramSchmidt.h>
 
 namespace esp {
 namespace scene {
@@ -13,32 +15,21 @@ SceneGraph::SceneGraph()
       defaultRenderCameraNode_{rootNode_},
       defaultRenderCamera_{defaultRenderCameraNode_} {}
 
-// set transformation and projection matrix to the default camera
+// set transformation, projection matrix, viewport to the default camera
 void SceneGraph::setDefaultRenderCamera(sensor::Sensor& sensor) {
   ASSERT(sensor.isVisualSensor());
 
-  Magnum::Matrix4 T = sensor.node().absoluteTransformation();
-  Magnum::Matrix3 R = T.rotationScaling();
-  Magnum::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(R);
+  sensor.setTransformationMatrix(defaultRenderCamera_)
+      .setProjectionMatrix(defaultRenderCamera_)
+      .setViewport(defaultRenderCamera_);
+}
 
-  VLOG(1) << "||R - GS(R)|| = "
-          << Eigen::Map<mat3f>((R - T.rotationShear()).data()).norm();
-
-  T = Magnum::Matrix4::from(R, T.translation()) *
-      Magnum::Matrix4::scaling(T.scaling());
-
-  // set the transformation to the default camera
-  // so that the camera has the correct modelview matrix for rendering;
-  // to do it,
-  // obtain the *absolute* transformation from the sensor node,
-  // apply it as the *relative* transformation between the default camera and
-  // its parent, which is rootNode_.
-  defaultRenderCameraNode_.setTransformation(T);
-
-  // set the projection matrix to the default camera
-  sensor.setProjectionMatrix(defaultRenderCamera_);
-
-  defaultRenderCamera_.getMagnumCamera().setViewport(sensor.framebufferSize());
+bool SceneGraph::isRootNode(SceneNode& node) {
+  auto parent = node.parent();
+  // if the parent is null, it means the node is the world_ node.
+  CORRADE_ASSERT(parent != nullptr,
+                 "SceneGraph::isRootNode: the node is illegal.", false);
+  return (parent->parent() == nullptr ? true : false);
 }
 
 }  // namespace scene

@@ -452,9 +452,14 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       // initialized, attached to pinholeCameraNode, status: "valid"
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
                           const sensor::SensorSpec::ptr&>())
+      .def("set_transformation_matrix",
+           &sensor::PinholeCamera::setTransformationMatrix,
+           R"(Compute and set the transformation matrix to the render camera.)")
       .def("set_projection_matrix", &sensor::PinholeCamera::setProjectionMatrix,
            R"(Set the width, height, near, far, and hfov,
-          stored in pinhole camera to the render camera.)");
+          stored in pinhole camera to the render camera.)")
+      .def("set_viewport", &sensor::PinholeCamera::setViewport,
+           R"(Set the viewport to the render camera)");
 
   // ==== SensorSuite ====
   py::class_<SensorSuite, SensorSuite::ptr>(m, "SensorSuite")
@@ -509,6 +514,13 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 
   initShortestPathBindings(m);
 
+  // ==== enum object MotionType ====
+  py::enum_<MotionType>(m, "MotionType")
+      .value("ERROR_MOTIONTYPE", MotionType::ERROR_MOTIONTYPE)
+      .value("STATIC", MotionType::STATIC)
+      .value("KINEMATIC", MotionType::KINEMATIC)
+      .value("DYNAMIC", MotionType::DYNAMIC);
+
   // ==== Simulator ====
   simulator.def(py::init(&Simulator::create<const SimulatorConfiguration&>))
       .def("get_active_scene_graph", &Simulator::getActiveSceneGraph,
@@ -531,6 +543,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            &Simulator::getPhysicsObjectLibrarySize)
       .def("remove_object", &Simulator::removeObject, "object_id"_a,
            "sceneID"_a = 0)
+      .def("get_object_motion_type", &Simulator::getObjectMotionType,
+           "object_id"_a, "sceneID"_a = 0)
       .def("get_existing_object_ids", &Simulator::getExistingObjectIDs,
            "sceneID"_a = 0)
       .def("step_world", &Simulator::stepWorld, "dt"_a = 1.0 / 60.0)

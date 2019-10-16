@@ -30,6 +30,8 @@ default_sim_settings = {
     "goal_headings": [[0, -0.980_785, 0, 0.195_090], [0.0, 1.0, 0.0, 0.0]],
     "enable_physics": False,
     "physics_config_file": "./data/default.phys_scene_config.json",
+    "num_objects": 10,
+    "test_object_index": 0,
 }
 
 # build SimulatorConfiguration

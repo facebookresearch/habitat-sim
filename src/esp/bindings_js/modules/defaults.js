@@ -1,3 +1,7 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 export const defaultAgentConfig = {
   height: 1.5,
   radius: 0.1,
@@ -25,4 +29,9 @@ export const defaultEpisode = {
 
 export const defaultResolution = { height: 480, width: 640 };
 
-export const defaultScene = "skokloster-castle.glb";
+export const defaultScene =
+  window.location.href.indexOf("localhost") === -1
+    ? "https://habitat-resources.s3.amazonaws.com/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
+    : "skokloster-castle.glb";
+
+export const infoSemanticFileName = "info_semantic.json";

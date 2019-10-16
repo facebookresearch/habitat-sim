@@ -29,7 +29,9 @@ class PTexMeshDrawable : public Drawable {
                     Magnum::SceneGraph::Camera3D& camera) override;
 
   Magnum::GL::Texture2D& atlasTexture_;
+#ifndef CORRADE_TARGET_APPLE
   Magnum::GL::BufferTexture& adjFacesBufferTexture_;
+#endif
   uint32_t tileSize_;
   float exposure_;
   float gamma_;

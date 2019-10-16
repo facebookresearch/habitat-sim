@@ -1,0 +1,43 @@
+<!-- Copyright (c) Facebook, Inc. and its affiliates.
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.-->
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Habitat</title>
+  <link rel="stylesheet" href="WebApplication.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Check need to make this work on habitat website -->
+  <script>
+    (function(l) {
+      if (l.href.indexOf("habitat-website") !== -1) {
+        var splits = l.href.split("/");
+        splits = splits.slice(splits.indexOf("habitat-website") + 1);
+        splits = ["https://aihabitat.org"].concat(splits);
+        splits = splits.join("/");
+        l.href = splits;
+      }
+    })(window.location);
+  </script>
+</head>
+
+<body>
+  <div id="container">
+    <div class="tooltip">Use W/A/D to move around</div>
+    <canvas class="viewer-canvas" id="canvas"></canvas>
+    <canvas id="radar"></canvas>
+    <pre class="hidden" id="log"></pre>
+    <div id="status">Initialization...</div>
+    <div id="status-description"></div>
+    <div class="mobile-warning">This demo doesn't support mobile devices and only works with latest desktop Chrome.</div>
+  </div>
+  <script>
+    window.viewerEnabled = true;
+  </script>
+  <script src="WindowlessEmscriptenApplication.js"></script>
+  <script async src="hsim_bindings.js"></script>
+</body>
+
+</html>

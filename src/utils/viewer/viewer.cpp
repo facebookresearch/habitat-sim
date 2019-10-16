@@ -13,7 +13,6 @@
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Timeline.h>
 
-#include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/nav/PathFinder.h"
@@ -84,6 +83,9 @@ class Viewer : public Magnum::Platform::Application {
   scene::SceneManager sceneManager_;
 
   std::shared_ptr<physics::PhysicsManager> physicsManager_;
+
+  bool debugBullet_ = false;
+
   std::vector<int> sceneID_;
   scene::SceneNode* agentBodyNode_ = nullptr;
   scene::SceneNode* rgbSensorNode_ = nullptr;
@@ -98,7 +100,6 @@ class Viewer : public Magnum::Platform::Application {
   scene::ObjectControls controls_;
   Magnum::Vector3 previousPosition_;
 
-  bool enablePhysics_;
   std::vector<int> objectIDs_;
 
   bool drawObjectBBs = false;
@@ -126,19 +127,12 @@ Viewer::Viewer(const Arguments& arguments)
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addBooleanOption("enable-physics")
+      .addBooleanOption("debug-bullet")
       .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG)
       .setHelp("physics-config", "physics scene config file")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
-  enablePhysics_ = args.isSet("enable-physics");
-  std::string physicsConfigFilename = args.value("physics-config");
-  if (!Utility::Directory::exists(physicsConfigFilename)) {
-    LOG(ERROR)
-        << physicsConfigFilename
-        << " was not found, specify an existing file in --physics-config";
-    std::exit(1);
-  }
 
   // Setup renderer and shader defaults
   GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
@@ -154,16 +148,23 @@ Viewer::Viewer(const Arguments& arguments)
   const std::string& file = args.value("scene");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
 
-  if (enablePhysics_) {
+  if (args.isSet("enable-physics")) {
+    std::string physicsConfigFilename = args.value("physics-config");
+    if (!Utility::Directory::exists(physicsConfigFilename)) {
+      LOG(FATAL)
+          << physicsConfigFilename
+          << " was not found, specify an existing file in --physics-config";
+    }
     if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
                                     &drawables, physicsConfigFilename)) {
-      LOG(ERROR) << "cannot load " << file;
-      std::exit(1);
+      LOG(FATAL) << "cannot load " << file;
+    }
+    if (args.isSet("debug-bullet")) {
+      debugBullet_ = true;
     }
   } else {
     if (!resourceManager_.loadScene(info, navSceneNode_, &drawables)) {
-      LOG(ERROR) << "cannot load " << file;
-      std::exit(1);
+      LOG(FATAL) << "cannot load " << file;
     }
   }
 
@@ -308,7 +309,11 @@ void Viewer::wiggleLastObject() {
   if (physicsManager_ == nullptr || objectIDs_.size() == 0)
     return;
 
-  physicsManager_->translate(objectIDs_.back(), randomDirection() * 0.1);
+  Magnum::Vector3 randDir = randomDirection();
+  // Only allow +Y so dynamic objects don't push through the floor.
+  randDir[1] = abs(randDir[1]);
+
+  physicsManager_->translate(objectIDs_.back(), randDir * 0.1);
 }
 
 Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
@@ -338,6 +343,13 @@ void Viewer::drawEvent() {
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
+
+  if (debugBullet_) {
+    Magnum::Matrix4 camM(renderCamera_->getCameraMatrix());
+    Magnum::Matrix4 projM(renderCamera_->getProjectionMatrix());
+
+    physicsManager_->debugDraw(projM * camM);
+  }
 
   swapBuffers();
   timeline_.nextFrame();
@@ -407,10 +419,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       std::exit(0);
       break;
     case KeyEvent::Key::Left:
-      controls_(*agentBodyNode_, "lookLeft", lookSensitivity);
+      controls_(*agentBodyNode_, "turnLeft", lookSensitivity);
       break;
     case KeyEvent::Key::Right:
-      controls_(*agentBodyNode_, "lookRight", lookSensitivity);
+      controls_(*agentBodyNode_, "turnRight", lookSensitivity);
       break;
     case KeyEvent::Key::Up:
       controls_(*rgbSensorNode_, "lookUp", lookSensitivity, false);
