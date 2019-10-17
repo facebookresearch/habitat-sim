@@ -639,6 +639,9 @@ class PhysicsManager {
   void applyImpulseTorque(const int physObjectID,
                           const Magnum::Vector3& impulse);
 
+  //! Set drawing of the object bounding box.
+  void setObjectBBDraw(int physObjectID, DrawableGroup* drawables, bool drawBB);
+
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref
    * BulletPhysicsManager::debugDraw.
