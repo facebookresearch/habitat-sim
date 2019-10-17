@@ -6,6 +6,11 @@ import habitat_sim
 import habitat_sim.agent
 import habitat_sim.bindings as hsim
 
+import os
+
+
+assert "PHYSICS_CONFIG" in os.environ, "Please specify PHYSICS_CONFIG environment variable"
+
 default_sim_settings = {
     # settings shared by example.py and benchmark.py
     "max_frames": 1000,
@@ -29,7 +34,7 @@ default_sim_settings = {
     "goal_position": [5.047, 0.199, 11.145],
     "goal_headings": [[0, -0.980_785, 0, 0.195_090], [0.0, 1.0, 0.0, 0.0]],
     "enable_physics": False,
-    "physics_config_file": "./data/default.phys_scene_config.json",
+    "physics_config_file": os.environ.get("PHYSICS_CONFIG"),
 }
 
 # build SimulatorConfiguration
