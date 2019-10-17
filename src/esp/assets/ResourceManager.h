@@ -168,10 +168,7 @@ class ResourceManager {
 
   //! Load meshes from importer into assets, compute bounding boxes, and update
   //! metaData
-  void loadMeshes(Importer& importer,
-                  MeshMetaData* metaData,
-                  bool shiftOrigin = false,
-                  Magnum::Vector3 offset = Magnum::Vector3(0, 0, 0));
+  void loadMeshes(Importer& importer, MeshMetaData* metaData);
 
   //! Load the mesh transformation hierarchy for the imported file
   void loadMeshHierarchy(Importer& importer,
@@ -191,16 +188,9 @@ class ResourceManager {
 
   // load the mesh data
   // If parent, also do scene graph
-  // if shiftOrigin: translate the mesh by "translation"
-  //  (default) if translation == [0,0,0]: compute center of mesh bounding box
-  //  and then translate
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent = nullptr,
-                           DrawableGroup* drawables = nullptr,
-                           bool shiftOrigin = false,
-                           Magnum::Vector3 translation = Magnum::Vector3(0,
-                                                                         0,
-                                                                         0));
+                           DrawableGroup* drawables = nullptr);
 
   bool loadSUNCGHouseFile(const AssetInfo& info,
                           scene::SceneNode* parent,

@@ -294,13 +294,6 @@ void BulletRigidObject::shiftOrigin(const Magnum::Vector3& shift) {
   // recompute the Aabb once when done
   bObjectShape_->recalculateLocalAabb();
   computeCumulativeBB();
-
-  // TODO: make this optional if inertia is provided?
-  btVector3 bInertia;
-  bObjectShape_->calculateLocalInertia(getMass(), bInertia);
-  LOG(INFO) << "Automatic object inertia re-computed: " << bInertia.x() << " "
-            << bInertia.y() << " " << bInertia.z();
-  bObjectRigidBody_->setMassProps(getMass(), bInertia);
 }
 
 void BulletRigidObject::applyForce(const Magnum::Vector3& force,

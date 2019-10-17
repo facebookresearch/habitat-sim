@@ -69,7 +69,15 @@ int PhysicsManager::addObject(const int objectLibIndex,
   resourceManager_->loadObject(configFile, existingObjects_.at(nextObjectID_),
                                drawables);
 
-  existingObjects_.at(nextObjectID_)->shiftOriginToBBCenter();
+  if (physicsObjectAttributes.existsAs(assets::DataType::BOOL,
+                                       "COM_provided")) {
+    // if the COM is provided, shift by that
+    existingObjects_.at(nextObjectID_)
+        ->shiftOrigin(physicsObjectAttributes.getMagnumVec3("COM"));
+  } else {
+    // otherwise use the bounding box center
+    existingObjects_.at(nextObjectID_)->shiftOriginToBBCenter();
+  }
 
   return nextObjectID_;
 }
@@ -426,38 +434,13 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
     // add a new BBNode
     Magnum::Vector3 scale =
         existingObjects_[physObjectID]->getCumulativeBB().size() / 2.0;
-
     existingObjects_[physObjectID]->BBNode_ =
         &existingObjects_[physObjectID]->createChild();
-
-    /*
     existingObjects_[physObjectID]->BBNode_->MagnumObject::setScaling(scale);
     existingObjects_[physObjectID]->BBNode_->MagnumObject::setTranslation(
         existingObjects_[physObjectID]->getCumulativeBB().center());
     resourceManager_->addPrimitiveToDrawables(
         0, *existingObjects_[physObjectID]->BBNode_, drawables);
-     */
-
-    // bounding box sub-node
-    scene::SceneNode& bbSubNode =
-        existingObjects_[physObjectID]->BBNode_->createChild();
-    bbSubNode.MagnumObject::setScaling(scale);
-    bbSubNode.MagnumObject::setTranslation(
-        existingObjects_[physObjectID]->getCumulativeBB().center());
-    resourceManager_->addPrimitiveToDrawables(0, bbSubNode, drawables);
-
-    // axis node
-    scene::SceneNode& axisSubNode =
-        existingObjects_[physObjectID]->BBNode_->createChild();
-    scene::SceneNode& xAxisSubNode = axisSubNode.createChild();
-    xAxisSubNode.MagnumObject::setScaling(Magnum::Vector3{1.0, 0.1, 0.1});
-    resourceManager_->addPrimitiveToDrawables(0, xAxisSubNode, drawables);
-    scene::SceneNode& yAxisSubNode = axisSubNode.createChild();
-    yAxisSubNode.MagnumObject::setScaling(Magnum::Vector3{0.1, 1.0, 0.1});
-    resourceManager_->addPrimitiveToDrawables(0, yAxisSubNode, drawables);
-    scene::SceneNode& zAxisSubNode = axisSubNode.createChild();
-    zAxisSubNode.MagnumObject::setScaling(Magnum::Vector3{0.1, 0.1, 1.0});
-    resourceManager_->addPrimitiveToDrawables(0, zAxisSubNode, drawables);
   }
 }
 }  // namespace physics
