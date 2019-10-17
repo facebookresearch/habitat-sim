@@ -135,7 +135,7 @@ void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   }
 }
 
-Magnum::Vector3 BulletPhysicsManager::getGravity() {
+Magnum::Vector3 BulletPhysicsManager::getGravity() const {
   return Magnum::Vector3(bWorld_->getGravity());
 }
 
@@ -157,10 +157,9 @@ void BulletPhysicsManager::stepPhysics(double dt) {
 
 void BulletPhysicsManager::setMargin(const int physObjectID,
                                      const double margin) {
-  if (existingObjects_.count(physObjectID) > 0) {
-    static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
-        ->setMargin(margin);
-  }
+  assertIDValidity(physObjectID);
+  static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+      ->setMargin(margin);
 }
 
 void BulletPhysicsManager::setSceneFrictionCoefficient(
@@ -175,25 +174,22 @@ void BulletPhysicsManager::setSceneRestitutionCoefficient(
       ->setRestitutionCoefficient(restitutionCoefficient);
 }
 
-double BulletPhysicsManager::getMargin(const int physObjectID) {
-  if (existingObjects_.count(physObjectID) > 0) {
-    return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
-        ->getMargin();
-  } else {
-    return PHYSICS_ATTR_UNDEFINED;
-  }
+double BulletPhysicsManager::getMargin(const int physObjectID) const {
+  assertIDValidity(physObjectID);
+  return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+      ->getMargin();
 }
 
-double BulletPhysicsManager::getSceneFrictionCoefficient() {
+double BulletPhysicsManager::getSceneFrictionCoefficient() const {
   return static_cast<BulletRigidObject*>(sceneNode_)->getFrictionCoefficient();
 }
 
-double BulletPhysicsManager::getSceneRestitutionCoefficient() {
+double BulletPhysicsManager::getSceneRestitutionCoefficient() const {
   return static_cast<BulletRigidObject*>(sceneNode_)
       ->getRestitutionCoefficient();
 }
 
-void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) {
+void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
   debugDrawer_.setTransformationProjectionMatrix(projTrans);
   bWorld_->debugDrawWorld();
 }

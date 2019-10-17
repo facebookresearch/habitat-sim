@@ -3,6 +3,9 @@
 // LICENSE file in the root directory of this source tree.
 
 /*global Module */
+import ObjectSensor from "./object_sensor";
+
+const IOU_TOLERANCE = 0.5;
 
 /**
  * NavigateTask class
@@ -32,7 +35,28 @@ class NavigateTask {
         this.semanticShape.get(0)
       );
       this.semanticObservation = new Module.Observation();
-      this.semanticObjects = this.sim.sim.getSemanticScene().objects;
+      this.semanticScene = this.sim.sim.getSemanticScene();
+      this.semanticObjects = this.semanticScene.objects;
+
+      if (window.config.category) {
+        const scopeWidth = this.components.scope.offsetWidth;
+        const scopeHeight = this.components.scope.offsetHeight;
+        const scopeInsetX = (this.components.canvas.width - scopeWidth) / 2;
+        const scopeInsetY = (this.components.canvas.height - scopeHeight) / 2;
+        const objectSearchRect = {
+          left: scopeInsetX,
+          top: scopeInsetY,
+          right: scopeInsetX + scopeWidth,
+          bottom: scopeInsetY + scopeHeight
+        };
+        this.objectSensor = new ObjectSensor(
+          objectSearchRect,
+          this.semanticShape,
+          this.semanticScene,
+          window.config.category
+        );
+      }
+
       components.canvas.onmousedown = e => {
         this.handleMouseDown(e);
       };
@@ -48,8 +72,7 @@ class NavigateTask {
       { name: "turnLeft", key: "a" },
       { name: "turnRight", key: "d" },
       { name: "lookUp", key: "ArrowUp" },
-      { name: "lookDown", key: "ArrowDown" },
-      { name: "done", key: " " }
+      { name: "lookDown", key: "ArrowDown" }
     ];
   }
 
@@ -58,11 +81,7 @@ class NavigateTask {
     const width = this.semanticShape.get(1);
     const offsetY = height - 1 - event.offsetY; /* flip-Y */
     const offsetX = event.offsetX;
-    const objectId = new Uint32Array(
-      this.semanticData.buffer,
-      this.semanticData.byteOffset,
-      this.semanticData.length / 4
-    )[width * offsetY + offsetX];
+    const objectId = this.semanticData[width * offsetY + offsetX];
     this.setStatus(this.semanticObjects.get(objectId).category.getName(""));
   }
 
@@ -85,6 +104,22 @@ class NavigateTask {
   // PRIVATE methods.
 
   setStatus(text) {
+    this.components.status.style = "color:white";
+    this.components.status.innerHTML = text;
+  }
+
+  setErrorStatus(text) {
+    this.components.status.style = "color:red";
+    this.components.status.innerHTML = text;
+  }
+
+  setWarningStatus(text) {
+    this.components.status.style = "color:orange";
+    this.components.status.innerHTML = text;
+  }
+
+  setSuccessStatus(text) {
+    this.components.status.style = "color:green";
     this.components.status.innerHTML = text;
   }
 
@@ -99,12 +134,13 @@ class NavigateTask {
     }
 
     this.sim.getObservation("semantic", this.semanticObservation);
-    this.semanticData = this.semanticObservation.getData();
+    const rawSemanticBuffer = this.semanticObservation.getData();
     const objectIds = new Uint32Array(
-      this.semanticData.buffer,
-      this.semanticData.byteOffset,
-      this.semanticData.length / 4
+      rawSemanticBuffer.buffer,
+      rawSemanticBuffer.byteOffset,
+      rawSemanticBuffer.length / 4
     );
+    this.semanticData = objectIds;
 
     // TOOD(msb) implement a better colorization scheme
     for (let i = 0; i < objectIds.length; i++) {
@@ -186,15 +222,33 @@ class NavigateTask {
   }
 
   bindKeys() {
-    document.addEventListener("keydown", event => {
-      for (let a of this.actions) {
-        if (event.key === a.key) {
-          this.handleAction(a.name);
+    document.addEventListener(
+      "keydown",
+      event => {
+        if (event.key === " " && this.objectSensor) {
           event.preventDefault();
-          break;
+          const iou = this.objectSensor.computeIOU(this.semanticData);
+          if (iou > parseFloat(window.config.iou) * IOU_TOLERANCE) {
+            this.setSuccessStatus(
+              "You found the " + window.config.category + "!"
+            );
+          } else if (iou > 0) {
+            this.setWarningStatus("IoU is too low. Please get a better view.");
+          } else {
+            this.setErrorStatus(window.config.category + " not found!");
+          }
+          return;
         }
-      }
-    });
+        for (let a of this.actions) {
+          if (event.key === a.key) {
+            this.handleAction(a.name);
+            event.preventDefault();
+            break;
+          }
+        }
+      },
+      true
+    );
   }
 }
 
