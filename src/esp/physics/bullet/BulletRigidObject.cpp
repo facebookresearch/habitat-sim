@@ -277,6 +277,32 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
   return false;
 }
 
+void BulletRigidObject::shiftOrigin(const Magnum::Vector3& shift) {
+  Corrade::Utility::Debug() << "shiftOrigin: " << shift;
+
+  // shift each child node
+  for (auto& child : children()) {
+    child.translate(shift);
+  }
+
+  // shift all children of the parent collision shape
+  for (int i = 0; i < bObjectShape_->getNumChildShapes(); i++) {
+    btTransform cT = bObjectShape_->getChildTransform(i);
+    cT.setOrigin(cT.getOrigin() + btVector3(shift));
+    bObjectShape_->updateChildTransform(i, cT, false);
+  }
+  // recompute the Aabb once when done
+  bObjectShape_->recalculateLocalAabb();
+  computeCumulativeBB();
+
+  // TODO: make this optional if inertia is provided?
+  btVector3 bInertia;
+  bObjectShape_->calculateLocalInertia(getMass(), bInertia);
+  LOG(INFO) << "Automatic object inertia re-computed: " << bInertia.x() << " "
+            << bInertia.y() << " " << bInertia.z();
+  bObjectRigidBody_->setMassProps(getMass(), bInertia);
+}
+
 void BulletRigidObject::applyForce(const Magnum::Vector3& force,
                                    const Magnum::Vector3& relPos) {
   if (rigidObjectType_ == RigidObjectType::OBJECT &&

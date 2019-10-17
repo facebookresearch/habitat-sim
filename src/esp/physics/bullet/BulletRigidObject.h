@@ -107,6 +107,9 @@ class BulletRigidObject : public RigidObject {
    */
   virtual bool setMotionType(MotionType mt);
 
+  //! TODO: doc
+  void shiftOrigin(const Magnum::Vector3& shift) override;
+
   /**
    * @brief Apply a force to an object.
    * Does nothing for @ref MotionType::STATIC and @ref

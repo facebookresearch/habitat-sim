@@ -831,7 +831,8 @@ bool ResourceManager::loadGeneralMeshData(
     // if this is a new file, load it and add it to the dictionary
     loadTextures(*importer, &metaData);
     loadMaterials(*importer, &metaData);
-    loadMeshes(*importer, &metaData, shiftOrigin, translation);
+    // loadMeshes(*importer, &metaData, shiftOrigin, translation);
+    loadMeshes(*importer, &metaData, false);
     resourceDict_.emplace(filename, metaData);
 
     // Register magnum mesh

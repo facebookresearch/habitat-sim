@@ -161,6 +161,12 @@ class RigidObject : public scene::SceneNode {
    */
   MotionType getMotionType() { return objectMotionType_; };
 
+  //! TODO: doc this
+  virtual void shiftOrigin(const Magnum::Vector3& shift);
+
+  //! TODO: doc this
+  void shiftOriginToBBCenter();
+
   /**
    * @brief Apply a force to an object through a dervied dynamics
    * implementation. Does nothing for @ref MotionType::STATIC and @ref
