@@ -48,8 +48,10 @@ class WebDemo {
       topdown: this.topdown,
       canvas: this.canvasElement,
       semantic: document.getElementById("semantic"),
+      scoreboard: document.getElementById("scoreboard"),
       radar: document.getElementById("radar"),
       scope: document.getElementById("scope"),
+      score: document.getElementById("score"),
       status: document.getElementById("status")
     });
   }

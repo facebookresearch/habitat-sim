@@ -25,6 +25,7 @@ class NavigateTask {
     this.topdown = components.topdown;
     this.semanticsEnabled = false;
     this.radarEnabled = false;
+    this.score = 0;
 
     if (this.components.semantic) {
       this.semanticsEnabled = true;
@@ -76,6 +77,41 @@ class NavigateTask {
     ];
   }
 
+  updateScoreboard() {
+    let topScores = [];
+    if (localStorage.topScores) {
+      topScores = JSON.parse(localStorage.topScores);
+    }
+    const user = window.prompt("Enter 3 initials for recording high score");
+    let index;
+    for (index = 0; index < topScores.length; index++) {
+      if (topScores[index].score > this.score) {
+        break;
+      }
+    }
+    if (index <= 10) {
+      topScores.splice(index, 0, { name: user, score: this.score });
+      if (topScores.length > 10) {
+        topScores.pop();
+      }
+    }
+    let scoreHtml = "<H1>High Scores</H1><table>";
+    scoreHtml += "<tr><th>Rank</th><th>Player</th><th>Score</th></tr>";
+    for (let i = 0; i < topScores.length; i++) {
+      const topScore = topScores[i];
+      scoreHtml += "<tr>";
+      scoreHtml += "<td>" + (i + 1) + "</td>";
+      scoreHtml += "<td>" + topScore.name + "</td>";
+      scoreHtml += "<td>" + topScore.score + "</td>";
+      scoreHtml += "</tr>";
+    }
+    scoreHtml += "</table>";
+    this.components.scoreboard.style.visibility = "visible";
+    this.components.scoreboard.innerHTML = scoreHtml;
+    console.log(topScores);
+    localStorage.topScores = JSON.stringify(topScores);
+  }
+
   handleMouseDown(event) {
     const height = this.semanticShape.get(0);
     const width = this.semanticShape.get(1);
@@ -102,6 +138,10 @@ class NavigateTask {
   }
 
   // PRIVATE methods.
+
+  updateScore() {
+    this.components.score.innerHTML = this.score;
+  }
 
   setStatus(text) {
     this.components.status.style = "color:white";
@@ -219,6 +259,8 @@ class NavigateTask {
     this.sim.step(action);
     this.setStatus(action);
     this.render();
+    ++this.score;
+    this.updateScore();
   }
 
   bindKeys() {
@@ -232,6 +274,7 @@ class NavigateTask {
             this.setSuccessStatus(
               "You found the " + window.config.category + "!"
             );
+            this.updateScoreboard();
           } else if (iou > 0) {
             this.setWarningStatus("IoU is too low. Please get a better view.");
           } else {
