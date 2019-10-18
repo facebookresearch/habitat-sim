@@ -48,13 +48,14 @@ def _test_keep_agent_tgt():
     agent_config = habitat_sim.AgentConfiguration()
 
     sim_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
+    agents = []
 
-    sim = habitat_sim.Simulator(habitat_sim.Configuration(sim_cfg, [agent_config]))
+    for _ in range(3):
+        sim = habitat_sim.Simulator(habitat_sim.Configuration(sim_cfg, [agent_config]))
 
-    agent = sim.get_agent(0)
+        agents.append(sim.get_agent(0))
 
-    sim.close()
-    sim = None
+        sim.close()
 
 
 # Make sure you can keep a reference to an agent alive without crashing
