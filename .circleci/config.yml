@@ -1,11 +1,12 @@
-version: 2
+version: 2.1
 gpu: &gpu
   machine:
     image: ubuntu-1604:201903-01
   resource_class: gpu.small
   environment:
     FPS_THRESHOLD: 900
-
+    CODECOV_TOKEN: c211f0c9-bc0c-46dc-8e2d-96d64a00a712
+    CMAKE_CXX_FLAGS: --coverage
 
 jobs:
   python_lint:
@@ -260,6 +261,10 @@ jobs:
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
               pytest tests/test_physics.py
+      - run:
+          name: Codecoverage reports upload
+          command: |
+            bash <(curl -s https://codecov.io/bash) -f coverage.info
       - run:
           name: Build Javascript bindings
           command: |
