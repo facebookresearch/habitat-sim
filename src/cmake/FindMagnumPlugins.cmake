@@ -13,6 +13,8 @@
 # This command will not try to find any actual plugin. The plugins are:
 #
 #  AssimpImporter               - Assimp importer
+#  BasisImageConverter          - Basis image converter
+#  BasisImporter                - Basis importer
 #  DdsImporter                  - DDS importer
 #  DevIlImageImporter           - Image importer using DevIL
 #  DrFlacAudioImporter          - FLAC audio importer using dr_flac
@@ -69,6 +71,7 @@
 #
 #   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
+#   Copyright © 2019 Jonathan Hale <squareys@googlemail.com>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
 #   copy of this software and associated documentation files (the "Software"),
@@ -121,7 +124,7 @@ mark_as_advanced(MAGNUMPLUGINS_INCLUDE_DIR)
 # components from other repositories)
 set(_MAGNUMPLUGINS_LIBRARY_COMPONENT_LIST OpenDdl)
 set(_MAGNUMPLUGINS_PLUGIN_COMPONENT_LIST
-    AssimpImporter DdsImporter DevIlImageImporter
+    AssimpImporter BasisImageConverter BasisImporter DdsImporter DevIlImageImporter
     DrFlacAudioImporter DrMp3AudioImporter DrWavAudioImporter Faad2AudioImporter
     FreeTypeFont HarfBuzzFont JpegImageConverter JpegImporter
     MiniExrImageConverter OpenGexImporter PngImageConverter PngImporter
@@ -271,6 +274,25 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
             set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
                 INTERFACE_LINK_LIBRARIES Assimp::Assimp)
 
+        # BasisImageConverter / BasisImporter has only compiled-in
+        # dependencies, except in case of vcpkg, then we need to link to a
+        # library. Use a similar logic as in FindBasisUniversal, so in case an
+        # user wants to disable this, they can point BASIS_UNIVERSAL_DIR to
+        # something else (or just anything, because in that case it'll be a
+        # no-op.
+        elseif(_component STREQUAL BasisImageConverter)
+            find_package(basisu CONFIG QUIET)
+            if(basisu_FOUND AND NOT BASIS_UNIVERSAL_DIR)
+                set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
+                    INTERFACE_LINK_LIBRARIES basisu_encoder)
+            endif()
+        elseif(_component STREQUAL BasisImporter)
+            find_package(basisu CONFIG QUIET)
+            if(basisu_FOUND AND NOT BASIS_UNIVERSAL_DIR)
+                set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
+                    INTERFACE_LINK_LIBRARIES basisu_transcoder)
+            endif()
+
         # DdsImporter has no dependencies
 
         # DevIlImageImporter plugin dependencies
@@ -320,22 +342,8 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
             set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
                 INTERFACE_LINK_LIBRARIES HarfBuzz::HarfBuzz)
 
-        # JpegImageConverter plugin dependencies
-        elseif(_component STREQUAL JpegImageConverter)
-            find_package(JPEG)
-            # Need to handle special cases where both debug and release
-            # libraries are available (in form of debug;A;optimized;B in
-            # JPEG_LIBRARIES), thus appending them one by one
-            if(JPEG_LIBRARY_DEBUG AND JPEG_LIBRARY_RELEASE)
-                set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
-                    INTERFACE_LINK_LIBRARIES "$<$<NOT:$<CONFIG:Debug>>:${JPEG_LIBRARY_RELEASE}>;$<$<CONFIG:Debug>:${JPEG_LIBRARY_DEBUG}>")
-            else()
-                set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
-                    INTERFACE_LINK_LIBRARIES ${JPEG_LIBRARIES})
-            endif()
-
-        # JpegImporter plugin dependencies
-        elseif(_component STREQUAL JpegImporter)
+        # JpegImporter / JpegImageConverter plugin dependencies
+        elseif(_component STREQUAL JpegImageConverter OR _component STREQUAL JpegImporter)
             find_package(JPEG)
             # Need to handle special cases where both debug and release
             # libraries are available (in form of debug;A;optimized;B in
@@ -352,29 +360,19 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
         # No special setup for the OpenDdl library
         # OpenGexImporter has no dependencies
 
-        # PngImageConverter plugin dependencies
-        elseif(_component STREQUAL PngImageConverter)
+        # PngImageConverter / PngImporter plugin dependencies
+        elseif(_component STREQUAL PngImageConverter OR _component STREQUAL PngImporter)
             find_package(PNG)
             # Need to handle special cases where both debug and release
             # libraries are available (in form of debug;A;optimized;B in
-            # PNG_LIBRARIES), thus appending them one by one
+            # PNG_LIBRARIES), thus appending them one by one. Imported target
+            # that would make this obsolete is unfortunately only since CMake
+            # 3.5. We need to link to zlib explicitly in this case as well
+            # (whereas PNG_LIBRARIES contains that already), fortunately zlib
+            # has an imported target in 3.4 already.
             if(PNG_LIBRARY_DEBUG AND PNG_LIBRARY_RELEASE)
                 set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
-                    INTERFACE_LINK_LIBRARIES "$<$<NOT:$<CONFIG:Debug>>:${PNG_LIBRARY_RELEASE}>;$<$<CONFIG:Debug>:${PNG_LIBRARY_DEBUG}>")
-            else()
-                set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
-                    INTERFACE_LINK_LIBRARIES ${PNG_LIBRARIES})
-            endif()
-
-        # PngImporter plugin dependencies
-        elseif(_component STREQUAL PngImporter)
-            find_package(PNG)
-            # Need to handle special cases where both debug and release
-            # libraries are available (in form of debug;A;optimized;B in
-            # PNG_LIBRARIES), thus appending them one by one
-            if(PNG_LIBRARY_DEBUG AND PNG_LIBRARY_RELEASE)
-                set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
-                    INTERFACE_LINK_LIBRARIES "$<$<NOT:$<CONFIG:Debug>>:${PNG_LIBRARY_RELEASE}>;$<$<CONFIG:Debug>:${PNG_LIBRARY_DEBUG}>")
+                    INTERFACE_LINK_LIBRARIES "$<$<NOT:$<CONFIG:Debug>>:${PNG_LIBRARY_RELEASE}>;$<$<CONFIG:Debug>:${PNG_LIBRARY_DEBUG}>" ZLIB::ZLIB)
             else()
                 set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
                     INTERFACE_LINK_LIBRARIES ${PNG_LIBRARIES})
