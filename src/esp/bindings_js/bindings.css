@@ -2,6 +2,11 @@
  *  This source code is licensed under the MIT license found in the
  *  LICENSE file in the root directory of this source tree.
  */
+
+#instructions {
+  text-align: center;
+}
+
 #radar {
   position: absolute;
   top: 70%;
@@ -28,19 +33,19 @@
   height: 240px;
   z-index: 9;
   pointer-events: none;
+  display: none;
 }
 
 #score {
   position: absolute;
   top: 5%;
   right: 5%;
-  width: 100;
-  height: 50;
   z-index: 9;
   pointer-events: none;
   color: yellow;
   font-size: x-large;
   font-weight: bold;
+  display: none;
 }
 
 #scoreboard {
@@ -51,6 +56,10 @@
   background-color: #444;
   visibility: hidden;
   pointer-events: none;
+}
+
+#topdown {
+  display: none;
 }
 
 #fps {

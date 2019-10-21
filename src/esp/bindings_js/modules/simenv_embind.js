@@ -27,6 +27,17 @@ class SimEnv {
     if (Object.keys(episode).length > 0) {
       this.initialAgentState = this.createAgentState(episode.startState);
     }
+    if (window.config.initialPosition) {
+      var state = new Module.AgentState();
+      state.position = JSON.parse(window.config.initialPosition);
+      // Set rotation to a sane default.
+      state.rotation = [0, 0.454, 0, 0.891];
+      if (window.config.initialRotation) {
+        state.rotation = JSON.parse(window.config.initialRotation);
+      }
+      this.initialAgentState = state;
+    }
+
     this.selectedAgentId = agentId;
   }
 

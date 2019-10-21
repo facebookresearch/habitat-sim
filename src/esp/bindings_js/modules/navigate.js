@@ -40,6 +40,8 @@ class NavigateTask {
       this.semanticObjects = this.semanticScene.objects;
 
       if (window.config.category) {
+        this.components.scope.style.display = "block";
+        this.components.score.style.display = "block";
         const scopeWidth = this.components.scope.offsetWidth;
         const scopeHeight = this.components.scope.offsetHeight;
         const scopeInsetX = (this.components.canvas.width - scopeWidth) / 2;
@@ -79,8 +81,9 @@ class NavigateTask {
 
   updateScoreboard() {
     let topScores = [];
-    if (localStorage.topScores) {
-      topScores = JSON.parse(localStorage.topScores);
+    const topScoresKey = window.config.category + "TopScores";
+    if (localStorage[topScoresKey]) {
+      topScores = JSON.parse(localStorage[topScoresKey]);
     }
     const user = window.prompt("Enter 3 initials for recording high score");
     let index;
@@ -108,8 +111,10 @@ class NavigateTask {
     scoreHtml += "</table>";
     this.components.scoreboard.style.visibility = "visible";
     this.components.scoreboard.innerHTML = scoreHtml;
-    console.log(topScores);
-    localStorage.topScores = JSON.stringify(topScores);
+    localStorage[topScoresKey] = JSON.stringify(topScores);
+    setTimeout(() => {
+      window.location = "index.html";
+    }, 3000);
   }
 
   handleMouseDown(event) {
@@ -274,7 +279,10 @@ class NavigateTask {
             this.setSuccessStatus(
               "You found the " + window.config.category + "!"
             );
-            this.updateScoreboard();
+            document.getElementById("topdown").style.display = "block";
+            setTimeout(() => {
+              this.updateScoreboard();
+            }, 1000);
           } else if (iou > 0) {
             this.setWarningStatus("IoU is too low. Please get a better view.");
           } else {
