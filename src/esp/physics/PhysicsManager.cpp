@@ -6,6 +6,8 @@
 #include "esp/assets/CollisionMeshData.h"
 #include "esp/assets/ResourceManager.h"
 
+#include <Magnum/Math/Range.h>
+
 namespace esp {
 namespace physics {
 
@@ -54,11 +56,6 @@ int PhysicsManager::addObject(const int objectLibIndex,
       resourceManager_->getCollisionMesh(configFile);
   assets::PhysicsObjectAttributes physicsObjectAttributes =
       resourceManager_->getPhysicsObjectAttributes(configFile);
-  for (const assets::CollisionMeshData& meshData : meshGroup) {
-    if (!isMeshPrimitiveValid(meshData)) {
-      return ID_UNDEFINED;
-    }
-  }
 
   //! Instantiate with mesh pointer
   int nextObjectID_ = makeRigidObject(meshGroup, physicsObjectAttributes);
@@ -415,5 +412,26 @@ double PhysicsManager::getAngularDamping(const int physObjectID) const {
   return existingObjects_.at(physObjectID)->getAngularDamping();
 }
 
+void PhysicsManager::setObjectBBDraw(int physObjectID,
+                                     DrawableGroup* drawables,
+                                     bool drawBB) {
+  assertIDValidity(physObjectID);
+  if (existingObjects_[physObjectID]->BBNode_ && !drawBB) {
+    // destroy the node
+    delete existingObjects_[physObjectID]->BBNode_;
+    existingObjects_[physObjectID]->BBNode_ = nullptr;
+  } else if (drawBB) {
+    // add a new BBNode
+    Magnum::Vector3 scale =
+        existingObjects_[physObjectID]->getCumulativeBB().size() / 2.0;
+    existingObjects_[physObjectID]->BBNode_ =
+        &existingObjects_[physObjectID]->createChild();
+    existingObjects_[physObjectID]->BBNode_->MagnumObject::setScaling(scale);
+    existingObjects_[physObjectID]->BBNode_->MagnumObject::setTranslation(
+        existingObjects_[physObjectID]->getCumulativeBB().center());
+    resourceManager_->addPrimitiveToDrawables(
+        0, *existingObjects_[physObjectID]->BBNode_, drawables);
+  }
+}
 }  // namespace physics
 }  // namespace esp

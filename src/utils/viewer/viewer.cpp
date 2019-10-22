@@ -102,6 +102,8 @@ class Viewer : public Magnum::Platform::Application {
 
   std::vector<int> objectIDs_;
 
+  bool drawObjectBBs = false;
+
   Magnum::Timeline timeline_;
 };
 
@@ -499,6 +501,14 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       Magnum::DebugTools::screenshot(GL::defaultFramebuffer,
                                      "test_image_save.png");
       break;
+    case KeyEvent::Key::B: {
+      // toggle bounding box on objects
+      drawObjectBBs = !drawObjectBBs;
+      for (auto id : physicsManager_->getExistingObjectIDs()) {
+        physicsManager_->setObjectBBDraw(id, &sceneGraph_->getDrawables(),
+                                         drawObjectBBs);
+      }
+    } break;
     default:
       break;
   }

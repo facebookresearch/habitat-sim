@@ -49,6 +49,7 @@ class WebDemo {
       canvas: this.canvasElement,
       semantic: document.getElementById("semantic"),
       radar: document.getElementById("radar"),
+      scope: document.getElementById("scope"),
       status: document.getElementById("status")
     });
   }
