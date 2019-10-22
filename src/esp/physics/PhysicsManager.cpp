@@ -73,7 +73,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
                                        "COM_provided")) {
     // if the COM is provided, shift by that
     existingObjects_.at(nextObjectID_)
-        ->shiftOrigin(physicsObjectAttributes.getMagnumVec3("COM"));
+        ->shiftOrigin(-physicsObjectAttributes.getMagnumVec3("COM"));
   } else {
     // otherwise use the bounding box center
     existingObjects_.at(nextObjectID_)->shiftOriginToBBCenter();

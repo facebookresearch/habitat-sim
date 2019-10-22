@@ -81,7 +81,8 @@ class BulletRigidObject : public RigidObject {
       std::unique_ptr<btCompoundShape>& bCompound,
       Magnum::Matrix4& T,
       const std::vector<assets::CollisionMeshData>& meshGroup,
-      const assets::MeshTransformNode& node);
+      const assets::MeshTransformNode& node,
+      bool join = true);
 
   /**
    * @brief Check whether object is being actively simulated, or sleeping.

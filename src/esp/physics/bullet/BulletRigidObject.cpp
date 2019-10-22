@@ -105,34 +105,53 @@ bool BulletRigidObject::initializeScene(
 
 // recursively create the convex mesh shapes and add them to the compound in a
 // flat manner by accumulating transformations down the tree
+// TODO: btConvexHullShape stores a copy of the points, can we improve memory?
 void BulletRigidObject::constructBulletConvexCompoundFromMeshes(
     std::unique_ptr<btCompoundShape>& bCompound,
     Magnum::Matrix4& T,
     const std::vector<assets::CollisionMeshData>& meshGroup,
-    const assets::MeshTransformNode& node) {
+    const assets::MeshTransformNode& node,
+    bool join) {
   Magnum::Matrix4 cT = T * node.T;
   btTransform t(cT);
-  // Corrade::Utility::Debug() << t;
-  // t.setOrigin(cT.translation());
-  // t.setRotation(
+
   if (node.meshIDLocal != ID_UNDEFINED) {
     // This node has a mesh, so add it to the compound
 
     const assets::CollisionMeshData& mesh = meshGroup[node.meshIDLocal];
 
-    bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
-        static_cast<const btScalar*>(mesh.positions.data()->data()),
-        mesh.positions.size(), sizeof(Magnum::Vector3)));
+    if (join) {
+      // add all points to a single convex instead of compounding (more stable)
+      if (bObjectConvexShapes_.empty()) {
+        // create the convex if it does not exist
+        bObjectConvexShapes_.emplace_back(
+            std::make_unique<btConvexHullShape>());
+      }
+
+      // add points
+      for (auto& v : mesh.positions) {
+        bObjectConvexShapes_.back()->addPoint(btVector3(cT.transformPoint(v)),
+                                              false);
+      }
+      bObjectConvexShapes_.back()->recalcLocalAabb();
+
+    } else {
+      // create a new convex from the transformed mesh component and add it to
+      // the compound
+      bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
+          static_cast<const btScalar*>(mesh.positions.data()->data()),
+          mesh.positions.size(), sizeof(Magnum::Vector3)));
+
+      bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
+    }
 
     // TODO: need this for child shapes?
     // bObjectConvexShapes_.back()->setMargin(margin);
-
-    //! Add to compound shape stucture
-    bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
   }
 
   for (auto& child : node.children) {
-    constructBulletConvexCompoundFromMeshes(bCompound, cT, meshGroup, child);
+    constructBulletConvexCompoundFromMeshes(bCompound, cT, meshGroup, child,
+                                            join);
   }
 }
 
@@ -156,12 +175,22 @@ bool BulletRigidObject::initializeObject(
   //! Physical parameters
   double margin = physicsObjectAttributes.getDouble("margin");
 
+  bool joinCollisionMeshes =
+      physicsObjectAttributes.getBool("joinCollisionMeshes");
+
   //! Iterate through all mesh components for one object
   //! The components are combined into a convex compound shape
   bObjectShape_ = std::make_unique<btCompoundShape>();
   Magnum::Matrix4 T;  // TODO: this should translate to the COM
   constructBulletConvexCompoundFromMeshes(bObjectShape_, T, meshGroup,
-                                          metaData.root);
+                                          metaData.root, joinCollisionMeshes);
+
+  // add the final object after joining meshes
+  if (joinCollisionMeshes) {
+    btTransform t;
+    t.setIdentity();
+    bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
+  }
 
   //! Set properties
   bObjectShape_->setMargin(margin);
