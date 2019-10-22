@@ -501,6 +501,18 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
     }
   }
 
+  //! Get collision configuration options if specified
+  if (objPhysicsConfig.HasMember("join collision meshes")) {
+    if (objPhysicsConfig["join collision meshes"].IsBool()) {
+      physicsObjectAttributes.setBool(
+          "joinCollisionMeshes",
+          objPhysicsConfig["join collision meshes"].GetBool());
+    } else {
+      LOG(ERROR)
+          << " Invalid value in object physics config - join collision meshes";
+    }
+  }
+
   // 3. load/check_for render and collision mesh metadata
   //! Get render mesh names
   std::string renderMeshFilename = "";
@@ -583,8 +595,6 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
     CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
     meshGroup.push_back(meshData);
   }
-  //! Properly align axis direction
-  // NOTE: this breaks the collision properties of some files
   collisionMeshGroups_.emplace(objPhysConfigFilename, meshGroup);
   physicsObjectConfigList_.push_back(objPhysConfigFilename);
 
