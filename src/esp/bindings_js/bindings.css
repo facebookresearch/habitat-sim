@@ -11,6 +11,23 @@
   height: 100;
   z-index: 9;
   pointer-events: none;
+  visibility: hidden;
+}
+
+#scope {
+  position: absolute;
+  border-color: red;
+  border-style: dashed;
+  border-width: 5px;
+  opacity: 0.4;
+  top: 50%;
+  left: 50%;
+  margin-left: -160px;
+  margin-top: -120px;
+  width: 320px;
+  height: 240px;
+  z-index: 9;
+  pointer-events: none;
 }
 
 #fps {
@@ -30,5 +47,5 @@
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }

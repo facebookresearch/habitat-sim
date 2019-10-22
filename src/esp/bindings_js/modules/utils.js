@@ -1,3 +1,5 @@
+import { infoSemanticFileName } from "./defaults";
+
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
@@ -77,4 +79,25 @@ export function checkWebgl2Support() {
   } else {
     return 2;
   }
+}
+
+export function getInfoSemanticUrl(mainUrl) {
+  const splits = mainUrl.split("/");
+  const moreThanOne = splits.length > 1;
+  splits.pop();
+  let infoSemanticPath = infoSemanticFileName;
+  if (moreThanOne) {
+    infoSemanticPath = "/" + infoSemanticPath;
+  }
+  return splits.join("/") + infoSemanticPath;
+}
+
+export function buildConfigFromURLParameters(config = {}) {
+  for (let arg of window.location.search.substr(1).split("&")) {
+    let [key, value] = arg.split("=");
+    if (key && value) {
+      config[key] = decodeURIComponent(value);
+    }
+  }
+  return config;
 }

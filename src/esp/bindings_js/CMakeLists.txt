@@ -51,6 +51,7 @@ set(bundle_files
     viewer.css
     webpack.config.js
     index.js
+    modules/object_sensor.js
     modules/navigate.js
     modules/simenv_embind.js
     modules/topdown.js

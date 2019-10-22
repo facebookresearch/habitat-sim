@@ -9,31 +9,38 @@ import VRDemo from "./modules/vr_demo";
 import ViewerDemo from "./modules/viewer_demo";
 import { defaultScene } from "./modules/defaults";
 import "./bindings.css";
-import { checkWebAssemblySupport, checkWebgl2Support } from "./modules/utils";
+import {
+  checkWebAssemblySupport,
+  checkWebgl2Support,
+  getInfoSemanticUrl,
+  buildConfigFromURLParameters
+} from "./modules/utils";
 
-function preload(file) {
-  FS.createPreloadedFile("/", file, file, true, false);
+function preload(url) {
+  let file = url;
+  if (url.indexOf("http") === 0) {
+    const splits = url.split("/");
+    file = splits[splits.length - 1];
+  }
+  FS.createPreloadedFile("/", file, url, true, false);
+  return file;
 }
 
 Module.preRun.push(() => {
   let config = {};
   config.scene = defaultScene;
-  for (let arg of window.location.search.substr(1).split("&")) {
-    let [key, value] = arg.split("=");
-    if (key && value) {
-      config[key] = value;
-    }
-  }
+  buildConfigFromURLParameters(config);
+  window.config = config;
   const scene = config.scene;
-  preload(scene);
-  Module.scene = scene;
+  Module.scene = preload(scene);
   const fileNoExtension = scene.substr(0, scene.lastIndexOf("."));
+
   preload(fileNoExtension + ".navmesh");
   if (config.semantic === "mp3d") {
     preload(fileNoExtension + ".house");
     preload(fileNoExtension + "_semantic.ply");
   } else if (config.semantic === "replica") {
-    preload("info_semantic.json");
+    preload(getInfoSemanticUrl(config.scene));
   }
 });
 
@@ -52,6 +59,7 @@ Module.onRuntimeInitialized = () => {
   if (!demo) {
     demo = new WebDemo();
   }
+
   demo.display();
 };
 

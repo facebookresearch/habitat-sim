@@ -19,10 +19,14 @@ class SimEnv {
    * @param {Object} episode - episode to run
    * @param {number} agentId - default agent id
    */
-  constructor(config, episode, agentId) {
+  constructor(config, episode = {}, agentId = 0) {
     this.sim = new Module.Simulator(config);
     this.episode = episode;
-    this.initialAgentState = this.createAgentState(episode.startState);
+    this.initialAgentState = null;
+
+    if (Object.keys(episode).length > 0) {
+      this.initialAgentState = this.createAgentState(episode.startState);
+    }
     this.selectedAgentId = agentId;
   }
 
@@ -31,8 +35,10 @@ class SimEnv {
    */
   reset() {
     this.sim.reset();
-    const agent = this.sim.getAgent(this.selectedAgentId);
-    agent.setState(this.initialAgentState, true);
+    if (this.initialAgentState !== null) {
+      const agent = this.sim.getAgent(this.selectedAgentId);
+      agent.setState(this.initialAgentState, true);
+    }
   }
 
   changeAgent(agentId) {
@@ -112,6 +118,9 @@ class SimEnv {
    * @returns {Array} [magnitude, clockwise-angle (in radians)]
    */
   distanceToGoal() {
+    if (Object.keys(this.episode).length === 0) {
+      return [0, 0];
+    }
     let dst = this.episode.goal.position;
     let state = this.getAgentState();
     let src = state.position;
