@@ -439,6 +439,10 @@ class RigidObject : public scene::SceneNode {
    * Store whatever object attributes you want here! */
   assets::Attributes attributes_;
 
+  //! The @ref SceneNode of a bounding box debug drawable. If nullptr, BB
+  //! drawing is off. See @ref toggleBBDraw().
+  SceneNode* BBNode_ = nullptr;
+
  protected:
   /** @brief The @ref MotionType of the object. Determines what operations can
    * be performed on this object. */

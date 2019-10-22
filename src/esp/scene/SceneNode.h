@@ -5,6 +5,7 @@
 #pragma once
 
 #include <Corrade/Containers/Containers.h>
+#include <Magnum/Math/Range.h>
 #include "esp/core/esp.h"
 #include "esp/gfx/magnum.h"
 
@@ -53,6 +54,20 @@ class SceneNode : public MagnumObject {
     return this->absoluteTransformation().translation();
   }
 
+  //! recursively compute the cumulative bounding box of the full scene graph
+  //! tree for which this node is the root
+  const Magnum::Range3D& computeCumulativeBB();
+
+  //! return the local bounding box for meshes stored at this node
+  const Magnum::Range3D& getMeshBB() const { return meshBB_; };
+
+  //! return the cumulative bounding box of the full scene graph tree for which
+  //! this node is the root
+  const Magnum::Range3D& getCumulativeBB() const { return cumulativeBB_; };
+
+  //! set local bounding box for meshes stored at this node
+  void setMeshBB(Magnum::Range3D meshBB) { meshBB_ = meshBB; };
+
  protected:
   // DO not make the following constructor public!
   // it can ONLY be called from SceneGraph class to initialize the scene graph
@@ -62,6 +77,13 @@ class SceneNode : public MagnumObject {
   // the type of the attached object (e.g., sensor, agent etc.)
   SceneNodeType type_ = SceneNodeType::EMPTY;
   int id_ = ID_UNDEFINED;
+
+  //! the local bounding box for meshes stored at this node
+  Magnum::Range3D meshBB_;
+
+  //! the cumulative bounding box of the full scene graph tree for which this
+  //! node is the root
+  Magnum::Range3D cumulativeBB_;
 };
 
 }  // namespace scene
