@@ -10,6 +10,11 @@ from habitat_sim.registry import registry
 from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
+try:
+    import torch
+except ImportError:
+    torch = None
+
 
 @registry.register_noise_model(name="None")
 class NoSensorNoiseModel(SensorNoiseModel):
@@ -20,5 +25,7 @@ class NoSensorNoiseModel(SensorNoiseModel):
     def apply(self, x):
         if isinstance(x, np.ndarray):
             return x.copy()
-        else:
+        elif torch is not None and torch.is_tensor(x):
             return x.clone()
+        else:
+            return x
