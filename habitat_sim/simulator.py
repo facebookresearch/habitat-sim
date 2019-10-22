@@ -64,11 +64,13 @@ class Simulator:
 
     def close(self):
         for sensor in self._sensors.values():
+            sensor.close()
             del sensor
 
         self._sensors = {}
 
         for agent in self.agents:
+            agent.close()
             del agent
 
         self.agents = []
@@ -296,7 +298,7 @@ class Sensor:
 
         # sensor is an attached object to the scene node
         # store such "attached object" in _sensor_object
-        self._sensor_object = self._agent.sensors.get(sensor_id)
+        self._sensor_object = self._agent._sensors.get(sensor_id)
         self._spec = self._sensor_object.specification()
 
         self._sim.renderer.bind_render_target(self._sensor_object)
@@ -420,3 +422,8 @@ class Sensor:
                 )
 
             return np.flip(self._buffer, axis=0).copy()
+
+    def close(self):
+        self._sim = None
+        self._agent = None
+        self._sensor_object = None

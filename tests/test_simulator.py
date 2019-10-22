@@ -1,3 +1,4 @@
+import multiprocessing
 import random
 
 import examples.settings
@@ -40,3 +41,32 @@ def test_empty_scene(sim):
     # test that empty frames can be rendered without a scene mesh
     for _ in range(2):
         obs = sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
+
+
+def _test_keep_agent_tgt():
+    sim_cfg = habitat_sim.SimulatorConfiguration()
+    agent_config = habitat_sim.AgentConfiguration()
+
+    sim_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
+    agents = []
+
+    for _ in range(3):
+        sim = habitat_sim.Simulator(habitat_sim.Configuration(sim_cfg, [agent_config]))
+
+        agents.append(sim.get_agent(0))
+
+        sim.close()
+
+
+# Make sure you can keep a reference to an agent alive without crashing
+def test_keep_agent():
+    mp_ctx = multiprocessing.get_context("spawn")
+
+    # Run this test in a subprocess as things with OpenGL
+    # contexts get messy
+    p = mp_ctx.Process(target=_test_keep_agent_tgt)
+
+    p.start()
+    p.join()
+
+    assert p.exitcode == 0

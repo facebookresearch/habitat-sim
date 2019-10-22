@@ -425,7 +425,7 @@ double PhysicsManager::getAngularDamping(const int physObjectID) const {
 void PhysicsManager::setObjectBBDraw(int physObjectID,
                                      DrawableGroup* drawables,
                                      bool drawBB) {
-  CHECK(existingObjects_.count(physObjectID) > 0);
+  assertIDValidity(physObjectID);
   if (existingObjects_[physObjectID]->BBNode_ && !drawBB) {
     // destroy the node
     delete existingObjects_[physObjectID]->BBNode_;
