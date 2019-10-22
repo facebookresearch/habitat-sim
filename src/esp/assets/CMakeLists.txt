@@ -34,6 +34,7 @@ find_package(Magnum
     SceneGraph
     Shaders
     Trade
+    Primitives
 )
 
 find_package(MagnumPlugins
@@ -65,6 +66,7 @@ target_link_libraries(assets
     Magnum::SceneGraph
     Magnum::Shaders
     Magnum::Trade
+    Magnum::Primitives
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbImageConverter
     MagnumPlugins::TinyGltfImporter

@@ -14,7 +14,9 @@
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/Math/Tags.h>
+#include <Magnum/MeshTools/Compile.h>
 #include <Magnum/PixelFormat.h>
+#include <Magnum/Primitives/Cube.h>
 #include <Magnum/Shaders/Flat.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
@@ -89,6 +91,10 @@ bool ResourceManager::loadScene(const AssetInfo& info,
     // scene mesh): welcome
     // to the void
   }
+
+  // once a scene is loaded, we should have a GL::Context so load the primitives
+  Magnum::Trade::MeshData3D cube = Magnum::Primitives::cubeWireframe();
+  primitive_meshes_.push_back(Magnum::MeshTools::compile(cube));
 
   return meshSuccess;
 }
@@ -371,6 +377,8 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
     for (auto componentID : magnumMeshDict_[filename]) {
       addComponent(meshMetaData, *parent, drawables, meshMetaData.root);
     }
+    // compute the full BB hierarchy for the new tree.
+    parent->computeCumulativeBB();
   }
 
   return objectID;
@@ -638,14 +646,13 @@ std::string ResourceManager::getObjectConfig(const int objectID) {
   return physicsObjectConfigList_[objectID];
 }
 
-Magnum::Vector3 ResourceManager::computeMeshBBCenter(GltfMeshData* meshDataGL) {
+Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
   return Magnum::Range3D{
-      Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)}
-      .center();
+      Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)};
 }
 
-void ResourceManager::translateMesh(GltfMeshData* meshDataGL,
+void ResourceManager::translateMesh(BaseMesh* meshDataGL,
                                     Magnum::Vector3 translation) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
 
@@ -653,6 +660,8 @@ void ResourceManager::translateMesh(GltfMeshData* meshDataGL,
   Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions);
   // save the mesh transformation for future query
   meshDataGL->meshTransform_ = transform * meshDataGL->meshTransform_;
+
+  meshDataGL->BB = meshDataGL->BB.translated(translation);
 }
 
 Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
@@ -931,14 +940,25 @@ void ResourceManager::loadMeshes(Importer& importer,
     auto* gltfMeshData = static_cast<GltfMeshData*>(currentMesh.get());
     gltfMeshData->setMeshData(importer, iMesh);
 
+    // compute the mesh bounding box
+    gltfMeshData->BB = computeMeshBB(gltfMeshData);
+
     // see if the mesh needs to be shifted
+    // NOTE: Bullet physics requires that rigid object origins are aligned with
+    // their centers of mass. Shifting is done to accomidate this constraint for
+    // objects with a single mesh.
+    // TODO: Rework this to appropriately compute the shift for objects with a
+    // heirarchy of meshes.
     if (shiftOrigin) {
-      // compute BB center if necessary ([0,0,0])
-      if (offset[0] == 0 && offset[1] == 0 && offset[2] == 0)
-        offset = -computeMeshBBCenter(gltfMeshData);
-      // translate the mesh if necessary
-      if (!(offset[0] == 0 && offset[1] == 0 && offset[2] == 0))
+      // shift by BB center if no offset was provided (indicated by offset =
+      // [0,0,0])
+      if (offset == Magnum::Vector3{0, 0, 0}) {
+        offset = -gltfMeshData->BB.center();
+      }
+      // shift the mesh if necessary
+      if (offset != Magnum::Vector3{0, 0, 0}) {
         translateMesh(gltfMeshData, offset);
+      }
     }
 
     gltfMeshData->uploadBuffersToGPU(false);
@@ -1050,6 +1070,10 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
     const int materialIDLocal = meshTransformNode.materialIDLocal;
     addMeshToDrawables(metaData, node, drawables, meshTransformNode.componentID,
                        meshIDLocal, materialIDLocal);
+
+    // compute the bounding box for the mesh we are adding
+    BaseMesh* mesh = meshes_[meshID].get();
+    node.setMeshBB(computeMeshBB(mesh));
   }
 
   // Recursively add children
@@ -1099,6 +1123,14 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                      componentID, materials_[materialID]->diffuseColor());
     }
   }  // else
+}
+
+void ResourceManager::addPrimitiveToDrawables(int primitiveID,
+                                              scene::SceneNode& node,
+                                              DrawableGroup* drawables) {
+  CHECK(primitiveID >= 0 && primitiveID < primitive_meshes_.size());
+  createDrawable(ShaderType::COLORED_SHADER, primitive_meshes_[primitiveID],
+                 node, drawables);
 }
 
 gfx::Drawable& ResourceManager::createDrawable(

@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <Corrade/Containers/Optional.h>
@@ -138,6 +139,19 @@ class ResourceManager {
     return resourceDict_.at(filename);
   };
 
+  /**
+   * @brief Create a new drawable primitive attached to the desired @ref
+   * SceneNode. See @ref primitive_meshes_.
+   * @param primitiveID The index of the primitive in @ref primitive_meshes_.
+   * @param node The @ref SceneNode to which the primitive drawable will be
+   * attached.
+   * @param drawables The @ref DrawableGroup with which the primitive will be
+   * rendered.
+   */
+  void addPrimitiveToDrawables(int primitiveID,
+                               scene::SceneNode& node,
+                               DrawableGroup* drawables);
+
  protected:
   //======== Scene Functions ========
   //! Instantiate Scene:
@@ -152,7 +166,8 @@ class ResourceManager {
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);
 
-  //! Load meshes from importer into assets, and update metaData
+  //! Load meshes from importer into assets, compute bounding boxes, and update
+  //! metaData
   void loadMeshes(Importer& importer,
                   MeshMetaData* metaData,
                   bool shiftOrigin = false,
@@ -194,10 +209,14 @@ class ResourceManager {
   // ======== Geometry helper functions ========
   // void shiftMeshDataToOrigin(GltfMeshData* meshDataGL);
 
-  void translateMesh(GltfMeshData* meshDataGL, Magnum::Vector3 translation);
+  void translateMesh(BaseMesh* meshDataGL, Magnum::Vector3 translation);
 
-  // compute center of axis aligned mesh bounding box
-  Magnum::Vector3 computeMeshBBCenter(GltfMeshData* meshDataGL);
+  /**
+   * @brief Compute and return the axis aligned bounding box of a mesh.
+   * @param meshDataGL The mesh data.
+   * @return The mesh bounding box.
+   */
+  Magnum::Range3D computeMeshBB(BaseMesh* meshDataGL);
 
   // ======== General geometry data ========
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or
@@ -227,6 +246,12 @@ class ResourceManager {
   // library of physics manager attributes for resetting/swapping simulators or
   // simulation parameters
   std::map<std::string, PhysicsManagerAttributes> physicsManagerLibrary_;
+
+  /**
+   * @brief Primitive meshes available for instancing via @ref
+   * addPrimitiveToDrawables for debugging or visualization purposes.
+   */
+  std::vector<Magnum::GL::Mesh> primitive_meshes_;
 
   // maps: "data/objects/cheezit.phys_properties.json" -> collesionMesh group
   std::map<std::string, std::vector<CollisionMeshData>>
