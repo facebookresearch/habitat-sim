@@ -40,6 +40,8 @@
 
     If you use this noise model, please cite::
 
+    .. code:: bibtex
+
         @inproceedings{choi2015robust,
           title={Robust reconstruction of indoor scenes},
           author={Choi, Sungjoon and Zhou, Qian-Yi and Koltun, Vladlen},
