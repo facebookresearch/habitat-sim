@@ -20,6 +20,8 @@ if cuda_enabled:
     import torch
 
 
+# Read about the noise model here: http://www.alexteichman.com/octo/clams/
+# Original source code: http://redwood-data.org/indoor/data/simdepth.py
 @numba.jit(nopython=True)
 def _undistort(x, y, z, model):
     i2 = int((z + 1) / 2)
@@ -61,6 +63,8 @@ def _simulate(gt_depth, model, noise_multiplier):
                 noisy_depth[j, i] = 0.0
             else:
                 # Distort
+                # The noise model was originally made for a 640x480 sensor,
+                # so re-map our arbitrarily sized sensor to that size!
                 undistorted_d = _undistort(
                     int(x / xmax * 639.0 + 0.5), int(y / ymax * 479.0 + 0.5), d, model
                 )

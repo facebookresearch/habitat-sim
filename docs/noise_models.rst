@@ -52,4 +52,4 @@
 
 .. py:function:: habitat_sim.sensors.noise_models.RedwoodDepthNoiseModel.__init__
     :param gpu_device_id: The ID of CUDA device to use (only applicable if habitat-sim was built with ``--with-cuda``)
-    :param noise_multiplier: Multipler for the Guassian random-variables.  This reduces or increase the amount of noise
+    :param noise_multiplier: Multipler for the Gaussian random-variables.  This reduces or increases the amount of noise

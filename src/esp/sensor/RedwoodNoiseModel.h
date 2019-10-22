@@ -32,10 +32,10 @@ struct RedwoodNoiseModelGPUImpl {
    * @brief Constructor
    * @param model             The distortion model from
    *                          http://redwood-data.org/indoor/data/dist-model.txt
-   *                          The 3rd dimensions is assumed to have been
+   *                          The 3rd dimension is assumed to have been
    *                          flattened into the second
    * @param gpuDeviceId       The CUDA device ID to use
-   * @param noiseMultiplier   Multiplier for the Guassian random-variables. This
+   * @param noiseMultiplier   Multiplier for the Gaussian random-variables. This
    *                          can be used to increase or decrease the noise
    *                          level
    */
@@ -45,7 +45,8 @@ struct RedwoodNoiseModelGPUImpl {
 
   /**
    * @brief Simulates noisy depth from clean depth.  The input is assumed to be
-   * on the CPU and the output will be on the CPU
+   * on the CPU and the output will be on the CPU.  If the input isn't on the
+   * CPU, bad things happen, segfaults happen.
    *
    * @param[in] depth  Clean depth, i.e. depth from habitat's depth shader
    * @return Simulated noisy depth
@@ -55,7 +56,8 @@ struct RedwoodNoiseModelGPUImpl {
 
   /**
    * @brief Similar to @ref simulateFromCPU() but the input and output are
-   * assumed to be on the GPU
+   * assumed to be on the GPU.  If they aren't, bad things happen, segfaults
+   * happen.
    *
    * @param[in] devDepth        Device pointer to the clean depth
    *                            Assumed to be a continguous array in row-major

@@ -13,6 +13,8 @@ namespace {
 const int MODEL_N_DIMS = 5;
 const int MODEL_N_COLS = 80;
 
+// Read about the noise model here: http://www.alexteichman.com/octo/clams/
+// Original source code: http://redwood-data.org/indoor/data/simdepth.py
 __device__ float undistort(const int _x,
                            const int _y,
                            const float z,
@@ -72,6 +74,8 @@ __global__ void redwoodNoiseModelKernel(const float* __restrict__ depth,
         noisyDepth[j * W + i] = 0.0f;
       } else {
         // Distortion
+        // The noise model was originally made for a 640x480 sensor,
+        // so re-map our arbitrarily sized sensor to that size!
         const float undistorted_d =
             undistort(x / xmax * 639.0f, y / ymax * 479.0f, d, model);
 

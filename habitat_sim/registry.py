@@ -121,7 +121,7 @@ class _Registry:
 
     @classmethod
     def get_noise_model(cls, name: str):
-        r"""Retrieve the noise_model register under ``name``
+        r"""Retrieve the noise_model registered under ``name``
 
         :param name: The name provided to `register_noise_model`
         """
