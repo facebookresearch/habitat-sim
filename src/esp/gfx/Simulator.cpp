@@ -409,8 +409,8 @@ vec3f toEig(Magnum::Vector3 v) {
 }
 
 std::shared_ptr<nav::PathFinder> Simulator::recomputeNavMesh(
-    bool includeObjectBBs) {
-  // sceneManager_.
+    bool includeObjectBBs,
+    float agent_radius) {
   std::shared_ptr<nav::PathFinder> pf = std::make_shared<nav::PathFinder>();
 
   const assets::AssetInfo info = assets::AssetInfo::fromPath(config_.scene.id);
@@ -445,7 +445,7 @@ std::shared_ptr<nav::PathFinder> Simulator::recomputeNavMesh(
 
   nav::NavMeshSettings bs;
   bs.setDefaults();
-  // bs.agentRadius *= 5.0;
+  bs.agentRadius = agent_radius;
 
   if (!pf->build(bs, mesh)) {
     LOG(ERROR) << "Failed to build navmesh";

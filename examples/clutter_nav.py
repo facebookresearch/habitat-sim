@@ -7,7 +7,6 @@ import os
 import random
 
 import numpy as np
-from demo_runner import DemoRunner, DemoRunnerType
 from PIL import Image
 from settings import default_sim_settings
 
@@ -78,6 +77,7 @@ def add_and_place_object_from_navmesh(obj_template_id, sim):
 
 
 def main():
+    os.system("rm -r clutter_nav_output")
     os.system("mkdir clutter_nav_output")
 
     # grab an esay format for storing sim settings
@@ -141,12 +141,12 @@ def main():
     sim.seed(settings["seed"])
 
     total_frames = 0
-    for episode in range(5):
+    for episode in range(2):
         # construct the scene
         gen_clutter(sim, 12)
 
         # rebuild the navmesh
-        sim.recompute_navmesh()
+        sim.recompute_navmesh(agent_radius=agent_cfg.radius)
 
         # place the agent
         agent = sim.initialize_agent(settings["default_agent"])
@@ -200,7 +200,7 @@ def main():
 
     # create a video with ffmpeg
     os.system(
-        "ffmpeg -r 20 -f image2 -s 1920x1080 -i clutter_nav_output/test.rgba.%05d.png -crf 25 -pix_fmt yuv420p clutter_nav_output/test.mp4"
+        "ffmpeg -r 20 -f image2 -s 1920x1080 -i clutter_nav_output/test.rgba.%05d.png -crf 15 -pix_fmt yuv420p clutter_nav_output/test.mp4"
     )
     os.system("open clutter_nav_output/test.mp4")
 

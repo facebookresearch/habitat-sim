@@ -562,7 +562,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            "relative_position"_a, "object_id"_a, "sceneID"_a = 0)
       .def("apply_torque", &Simulator::applyTorque, "torque"_a, "object_id"_a,
            "sceneID"_a = 0)
-      .def("recompute_navmesh", &Simulator::recomputeNavMesh, "include_BBs"_a)
+      .def("recompute_navmesh", &Simulator::recomputeNavMesh, "include_BBs"_a,
+           "agent_radius"_a)
       .def("get_obj_local_bb", &Simulator::getObjLocalBB, "object_id"_a,
            "sceneID"_a = 0)
       .def("contact_test", &Simulator::contactTest, "object_id"_a,

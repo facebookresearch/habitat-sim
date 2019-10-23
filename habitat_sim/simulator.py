@@ -283,8 +283,8 @@ class Simulator:
     def get_world_time(self, scene_id=0):
         return self._sim.get_world_time()
 
-    def recompute_navmesh(self):
-        self.pathfinder = self._sim.recompute_navmesh(True)
+    def recompute_navmesh(self, agent_radius=0.1):
+        self.pathfinder = self._sim.recompute_navmesh(True, agent_radius)
 
     def get_object_local_bb(self, object_id, scene_id=0):
         return self._sim.get_obj_local_bb(object_id, scene_id)
