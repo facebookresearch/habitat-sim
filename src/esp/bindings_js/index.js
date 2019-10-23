@@ -16,8 +16,16 @@ import {
   buildConfigFromURLParameters
 } from "./modules/utils";
 
-function cacheUrlBlob(fs, url, blob) {
-  fs.root.getFile(url, { create: true }, fileEntry => {
+// https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
+async function digestMessage(message) {
+  const msgUint8 = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function cacheBlob(fs, filename, blob) {
+  fs.root.getFile(filename, { create: true }, fileEntry => {
     fileEntry.createWriter(function(fileWriter) {
       fileWriter.write(blob);
     });
@@ -25,25 +33,20 @@ function cacheUrlBlob(fs, url, blob) {
 }
 
 async function cacheUrl(fs, url) {
-  let file = url;
-  if (url.indexOf("http") === 0) {
-    const splits = url.split("/");
-    file = splits[splits.length - 1];
-  }
-
-  let dirEntries = await new Promise((resolve, reject) => {
+  const dirEntries = await new Promise((resolve, reject) => {
     fs.root.createReader().readEntries(resolve, reject);
   });
 
   let blob;
-  let entry = dirEntries.find(e => e.name === file);
+  const urlDigest = await digestMessage(url);
+  let entry = dirEntries.find(e => e.name === urlDigest);
   if (entry) {
     blob = await new Promise((resolve, reject) => {
       entry.file(resolve, reject);
     });
   } else {
     blob = await fetch(url).then(response => response.blob());
-    cacheUrlBlob(fs, url, blob);
+    cacheBlob(fs, urlDigest, blob);
   }
 
   return window.URL.createObjectURL(blob);
@@ -64,7 +67,7 @@ function preload(url, file = null) {
 Module.preRun.push(async () => {
   Module.addRunDependency("initFs");
   // https://developer.chrome.com/apps/offline_storage#query
-  const requestedBytes = 1024 * 1024 * 3000; // 300MB
+  const requestedBytes = 1024 * 1024 * 300; // 300MB
   const grantedBytes = await new Promise((resolve, reject) => {
     navigator.webkitPersistentStorage.requestQuota(
       requestedBytes,
