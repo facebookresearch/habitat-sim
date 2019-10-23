@@ -25,8 +25,8 @@ struct MeshTransformNode {
 
   std::vector<MeshTransformNode> children;
 
-  //! Node local transform
-  Magnum::Matrix4 T;
+  //! Node local transform to the parent frame
+  Magnum::Matrix4 T_parent_local;
 
   MeshTransformNode() {
     meshIDLocal = ID_UNDEFINED;
@@ -34,11 +34,13 @@ struct MeshTransformNode {
     componentID = ID_UNDEFINED;
   };
 
+  //! copy constructor which duplicates the @ref MeshTransformNode tree of which
+  //! val is the root.
   MeshTransformNode(const MeshTransformNode& val) {
     componentID = val.componentID;
     meshIDLocal = val.meshIDLocal;
     materialIDLocal = val.materialIDLocal;
-    T = Magnum::Matrix4(val.T);
+    T_parent_local = Magnum::Matrix4(val.T_parent_local);
     for (auto& child : val.children) {
       children.push_back(MeshTransformNode(child));
     }

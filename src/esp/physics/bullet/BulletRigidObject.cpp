@@ -110,11 +110,8 @@ void BulletRigidObject::constructBulletConvexCompoundFromMeshes(
     Magnum::Matrix4& T,
     const std::vector<assets::CollisionMeshData>& meshGroup,
     const assets::MeshTransformNode& node) {
-  Magnum::Matrix4 cT = T * node.T;
+  Magnum::Matrix4 cT = T * node.T_parent_local;
   btTransform t(cT);
-  // Corrade::Utility::Debug() << t;
-  // t.setOrigin(cT.translation());
-  // t.setRotation(
   if (node.meshIDLocal != ID_UNDEFINED) {
     // This node has a mesh, so add it to the compound
 
