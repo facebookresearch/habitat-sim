@@ -16,8 +16,26 @@ import {
   buildConfigFromURLParameters
 } from "./modules/utils";
 
-function preload(url) {
-  let file = url;
+function cacheUrlBlob(fs, url, blob) {
+  fs.root.getFile(url, { create: true }, fileEntry => {
+    fileEntry.createWriter(function(fileWriter) {
+      fileWriter.write(blob);
+    });
+  });
+}
+
+function cacheUrl(fs, url) {
+  fetch(url)
+    .then(response => response.blob())
+    .then(blob => {
+      cacheUrlBlob(fs, url, blob);
+    });
+}
+
+function preload(url, file = null) {
+  if (!file) {
+    file = url;
+  }
   if (url.indexOf("http") === 0) {
     const splits = url.split("/");
     file = splits[splits.length - 1];
@@ -26,13 +44,74 @@ function preload(url) {
   return file;
 }
 
-Module.preRun.push(() => {
-  let config = {};
-  config.scene = defaultScene;
-  buildConfigFromURLParameters(config);
-  window.config = config;
+function resolveAfter2Seconds() {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve("resolved");
+    }, 2000);
+  });
+}
+
+async function asyncCall() {
+  console.log("calling");
+  var result = await resolveAfter2Seconds();
+  console.log(result);
+  // expected output: 'resolved'
+}
+
+let cachedScene;
+
+async function onInitFs(fs) {
+  Module.preRun.push(() => {
+    console.log("preload time");
+  });
+
+  let dirEntries = await new Promise((resolve, reject) => {
+    fs.root.createReader().readEntries(resolve, reject);
+  });
+
+  console.log(dirEntries);
+
+  if (!window.config.scene) {
+    cacheUrl(fs, window.config.scene);
+  }
+
+  let blob = await new Promise((resolve, reject) => {
+    dirEntries[0].file(resolve, reject);
+  });
+
+  const url = window.URL.createObjectURL(blob);
+  cachedScene = url;
+  console.log("Opened file system: " + fs.name);
+  Module.preRun.push(preloadFiles);
+}
+
+asyncCall();
+window.config = {};
+window.config.scene = defaultScene;
+buildConfigFromURLParameters(window.config);
+
+// https://developer.chrome.com/apps/offline_storage#query
+var requestedBytes = 1024 * 1024 * 3000; // 300MB
+navigator.webkitPersistentStorage.requestQuota(
+  requestedBytes,
+  function(grantedBytes) {
+    window.webkitRequestFileSystem(window.PERSISTENT, grantedBytes, onInitFs);
+  },
+  function(e) {
+    console.log("Error", e);
+  }
+);
+
+function preloadFiles() {
+  const config = window.config;
   const scene = config.scene;
-  Module.scene = preload(scene);
+  if (cachedScene) {
+    console.log(cachedScene);
+    Module.scene = preload(cachedScene, "mesh_semantic.ply");
+  } else {
+    Module.scene = preload(scene);
+  }
   const fileNoExtension = scene.substr(0, scene.lastIndexOf("."));
 
   preload(fileNoExtension + ".navmesh");
@@ -42,7 +121,7 @@ Module.preRun.push(() => {
   } else if (config.semantic === "replica") {
     preload(getInfoSemanticUrl(config.scene));
   }
-});
+}
 
 Module.onRuntimeInitialized = () => {
   console.log("hsim_bindings initialized");
