@@ -372,17 +372,10 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
     const std::string& filename =
         physicsObjectAttributes.getString("renderMeshHandle");
 
-    MeshMetaData meshMetaData = resourceDict_[filename];
-    scene::SceneNode& newNode = parent->createChild();
-    AssetInfo renderMeshinfo = AssetInfo::fromPath(filename);
-    Magnum::PluginManager::Manager<Importer> manager;
-    std::unique_ptr<Importer> importer =
-        manager.loadAndInstantiate("AnySceneImporter");
-    manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
-    manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
-    importer->openFile(renderMeshinfo.filepath);
+    MeshMetaData& meshMetaData = resourceDict_[filename];
+
     for (auto componentID : magnumMeshDict_[filename]) {
-      addComponent(*importer, meshMetaData, newNode, drawables, componentID);
+      addComponent(meshMetaData, *parent, drawables, meshMetaData.root);
     }
     // compute the full BB hierarchy for the new tree.
     parent->computeCumulativeBB();
@@ -851,12 +844,14 @@ bool ResourceManager::loadGeneralMeshData(
       }
       for (unsigned int sceneDataID : sceneData->children3D()) {
         magnumData.emplace_back(sceneDataID);
+        loadMeshHierarchy(*importer, resourceDict_[filename].root, sceneDataID);
       }
     } else if (importer->mesh3DCount() && meshes_[metaData.meshIndex.first]) {
       // no default scene --- standalone OBJ/PLY files, for example
       // take a wild guess and load the first mesh with the first material
       // addMeshToDrawables(metaData, *parent, drawables, ID_UNDEFINED, 0, 0);
       magnumData.emplace_back(0);
+      loadMeshHierarchy(*importer, resourceDict_[filename].root, 0);
     } else {
       LOG(ERROR) << "No default scene available and no meshes found, exiting";
       return false;
@@ -890,20 +885,11 @@ bool ResourceManager::loadGeneralMeshData(
       }
     }  // forceReload
 
-    if (fileIsLoaded) {
-      // if the file was loaded, the importer didn't open the file, so open it
-      // before adding components
-      if (!importer->openFile(filename)) {
-        LOG(ERROR) << "Cannot open file " << filename;
-        return false;
-      }
-    }
-
     const quatf transform = info.frame.rotationFrameToWorld();
     newNode.setRotation(Magnum::Quaternion(transform));
     // Recursively add all children
     for (auto sceneDataID : magnumMeshDict_[filename]) {
-      addComponent(*importer, metaData, newNode, drawables, sceneDataID);
+      addComponent(metaData, newNode, drawables, metaData.root);
     }
     return true;
   }
@@ -979,6 +965,40 @@ void ResourceManager::loadMeshes(Importer& importer,
   }
 }
 
+//! Recursively load the transformation chain specified by the mesh file
+void ResourceManager::loadMeshHierarchy(Importer& importer,
+                                        MeshTransformNode& parent,
+                                        int componentID) {
+  std::unique_ptr<Magnum::Trade::ObjectData3D> objectData =
+      importer.object3D(componentID);
+  if (!objectData) {
+    LOG(ERROR) << "Cannot import object " << importer.object3DName(componentID)
+               << ", skipping";
+    return;
+  }
+
+  // Add the new node to the hierarchy and set its transformation
+  parent.children.push_back(MeshTransformNode());
+  parent.children.back().T_parent_local = objectData->transformation();
+  parent.children.back().componentID = componentID;
+
+  const int meshIDLocal = objectData->instance();
+
+  // Add a mesh index
+  if (objectData->instanceType() == Magnum::Trade::ObjectInstanceType3D::Mesh &&
+      meshIDLocal != ID_UNDEFINED) {
+    parent.children.back().meshIDLocal = meshIDLocal;
+    parent.children.back().materialIDLocal =
+        static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
+            ->material();
+  }
+
+  // Recursively add children
+  for (auto childObjectID : objectData->children()) {
+    loadMeshHierarchy(importer, parent.children.back(), childObjectID);
+  }
+}
+
 void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
   int textureStart = textures_.size();
   int textureEnd = textureStart + importer.textureCount() - 1;
@@ -1034,34 +1054,22 @@ void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
 //! Add component to rendering stack, based on importer loading
 //! TODO (JH): decouple importer part, so that objects can be
 //! instantiated any time after initial loading
-void ResourceManager::addComponent(Importer& importer,
-                                   const MeshMetaData& metaData,
+void ResourceManager::addComponent(const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
                                    DrawableGroup* drawables,
-                                   int componentID) {
-  std::unique_ptr<Magnum::Trade::ObjectData3D> objectData =
-      importer.object3D(componentID);
-  if (!objectData) {
-    LOG(ERROR) << "Cannot import object " << importer.object3DName(componentID)
-               << ", skipping";
-    return;
-  }
-
+                                   MeshTransformNode& meshTransformNode) {
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
-  node.MagnumObject::setTransformation(objectData->transformation());
+  node.MagnumObject::setTransformation(meshTransformNode.T_parent_local);
 
-  const int meshIDLocal = objectData->instance();
-  const int meshID = metaData.meshIndex.first + meshIDLocal;
+  const int meshIDLocal = meshTransformNode.meshIDLocal;
 
   // Add a drawable if the object has a mesh and the mesh is loaded
-  if (objectData->instanceType() == Magnum::Trade::ObjectInstanceType3D::Mesh &&
-      meshIDLocal != ID_UNDEFINED && meshes_[meshID]) {
-    const int materialIDLocal =
-        static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
-            ->material();
-    addMeshToDrawables(metaData, node, drawables, componentID, meshIDLocal,
-                       materialIDLocal);
+  if (meshIDLocal != ID_UNDEFINED) {
+    const int meshID = metaData.meshIndex.first + meshIDLocal;
+    const int materialIDLocal = meshTransformNode.materialIDLocal;
+    addMeshToDrawables(metaData, node, drawables, meshTransformNode.componentID,
+                       meshIDLocal, materialIDLocal);
 
     // compute the bounding box for the mesh we are adding
     BaseMesh* mesh = meshes_[meshID].get();
@@ -1069,8 +1077,8 @@ void ResourceManager::addComponent(Importer& importer,
   }
 
   // Recursively add children
-  for (auto childObjectID : objectData->children()) {
-    addComponent(importer, metaData, node, drawables, childObjectID);
+  for (auto& child : meshTransformNode.children) {
+    addComponent(metaData, node, drawables, child);
   }
 }
 
