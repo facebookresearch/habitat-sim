@@ -979,7 +979,7 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
 
   // Add the new node to the hierarchy and set its transformation
   parent.children.push_back(MeshTransformNode());
-  parent.children.back().T = objectData->transformation();
+  parent.children.back().T_parent_local = objectData->transformation();
   parent.children.back().componentID = componentID;
 
   const int meshIDLocal = objectData->instance();
@@ -1060,7 +1060,7 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
                                    MeshTransformNode& meshTransformNode) {
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
-  node.MagnumObject::setTransformation(meshTransformNode.T);
+  node.MagnumObject::setTransformation(meshTransformNode.T_parent_local);
 
   const int meshIDLocal = meshTransformNode.meshIDLocal;
 
