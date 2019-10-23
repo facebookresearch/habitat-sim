@@ -274,7 +274,8 @@ class Simulator {
    * @brief Recompute the navmesh for the current scene optionally including
    * physical object bounding boxes.
    */
-  std::shared_ptr<nav::PathFinder> recomputeNavMesh(bool includeObjectBBs);
+  std::shared_ptr<nav::PathFinder> recomputeNavMesh(bool includeObjectBBs,
+                                                    float agent_radius);
 
   Magnum::Range3D getObjLocalBB(const int objectID, const int sceneID = 0);
 
