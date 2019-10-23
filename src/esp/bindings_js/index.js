@@ -24,12 +24,29 @@ function cacheUrlBlob(fs, url, blob) {
   });
 }
 
-function cacheUrl(fs, url) {
-  fetch(url)
-    .then(response => response.blob())
-    .then(blob => {
-      cacheUrlBlob(fs, url, blob);
+async function cacheUrl(fs, url) {
+  let file = url;
+  if (url.indexOf("http") === 0) {
+    const splits = url.split("/");
+    file = splits[splits.length - 1];
+  }
+
+  let dirEntries = await new Promise((resolve, reject) => {
+    fs.root.createReader().readEntries(resolve, reject);
+  });
+
+  let blob;
+  let entry = dirEntries.find(e => e.name === file);
+  if (entry) {
+    blob = await new Promise((resolve, reject) => {
+      entry.file(resolve, reject);
     });
+  } else {
+    blob = await fetch(url).then(response => response.blob());
+    cacheUrlBlob(fs, url, blob);
+  }
+
+  return window.URL.createObjectURL(blob);
 }
 
 function preload(url, file = null) {
@@ -44,70 +61,39 @@ function preload(url, file = null) {
   return file;
 }
 
-function resolveAfter2Seconds() {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      resolve("resolved");
-    }, 2000);
+Module.preRun.push(async () => {
+  Module.addRunDependency("initFs");
+  // https://developer.chrome.com/apps/offline_storage#query
+  const requestedBytes = 1024 * 1024 * 3000; // 300MB
+  const grantedBytes = await new Promise((resolve, reject) => {
+    navigator.webkitPersistentStorage.requestQuota(
+      requestedBytes,
+      resolve,
+      reject
+    );
   });
-}
-
-async function asyncCall() {
-  console.log("calling");
-  var result = await resolveAfter2Seconds();
-  console.log(result);
-  // expected output: 'resolved'
-}
-
-let cachedScene;
-
-async function onInitFs(fs) {
-  Module.preRun.push(() => {
-    console.log("preload time");
+  const fs = await new Promise((resolve, reject) => {
+    window.webkitRequestFileSystem(
+      window.PERSISTENT,
+      grantedBytes,
+      resolve,
+      reject
+    );
   });
 
-  let dirEntries = await new Promise((resolve, reject) => {
-    fs.root.createReader().readEntries(resolve, reject);
-  });
+  let config = {};
+  config.scene = defaultScene;
+  buildConfigFromURLParameters(config);
 
-  console.log(dirEntries);
+  const cachedScene = await cacheUrl(fs, config.scene);
+  preloadFiles(config, cachedScene);
+  window.config = config;
+  Module.removeRunDependency("initFs");
+});
 
-  if (!window.config.scene) {
-    cacheUrl(fs, window.config.scene);
-  }
-
-  let blob = await new Promise((resolve, reject) => {
-    dirEntries[0].file(resolve, reject);
-  });
-
-  const url = window.URL.createObjectURL(blob);
-  cachedScene = url;
-  console.log("Opened file system: " + fs.name);
-  Module.preRun.push(preloadFiles);
-}
-
-asyncCall();
-window.config = {};
-window.config.scene = defaultScene;
-buildConfigFromURLParameters(window.config);
-
-// https://developer.chrome.com/apps/offline_storage#query
-var requestedBytes = 1024 * 1024 * 3000; // 300MB
-navigator.webkitPersistentStorage.requestQuota(
-  requestedBytes,
-  function(grantedBytes) {
-    window.webkitRequestFileSystem(window.PERSISTENT, grantedBytes, onInitFs);
-  },
-  function(e) {
-    console.log("Error", e);
-  }
-);
-
-function preloadFiles() {
-  const config = window.config;
+function preloadFiles(config, cachedScene) {
   const scene = config.scene;
   if (cachedScene) {
-    console.log(cachedScene);
     Module.scene = preload(cachedScene, "mesh_semantic.ply");
   } else {
     Module.scene = preload(scene);
