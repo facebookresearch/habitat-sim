@@ -90,8 +90,9 @@ def main():
     sim_cfg = hsim.SimulatorConfiguration()
     sim_cfg.enable_physics = True
 
-    sim_cfg.scene.id = "/Users/alexclegg/downloads/matterpak_Va2ovXYc6it/empty_room.glb"
+    # sim_cfg.scene.id = "/Users/alexclegg/downloads/matterpak_Va2ovXYc6it/empty_room.glb"
     # sim_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
+    sim_cfg.scene.id = "/private/home/akadian/sim2real/sim2real/data/scene_datasets/coda/empty_room.glb"
 
     sim_cfg.gpu_device_id = 0
 

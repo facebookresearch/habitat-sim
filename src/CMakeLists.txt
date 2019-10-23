@@ -73,6 +73,8 @@ add_subdirectory(esp)
 if(BUILD_DATATOOL)
   message("Building datatool")
   add_subdirectory(utils/datatool)
+else()
+  message("Not building datatool")
 endif()
 
 if(BUILD_GUI_VIEWERS)
