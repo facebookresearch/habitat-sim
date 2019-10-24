@@ -26,6 +26,8 @@ class NavigateTask {
     this.semanticsEnabled = false;
     this.radarEnabled = false;
     this.score = 0;
+    this.distance = 0.0;
+    this.currentPosition = null;
 
     if (this.components.semantic) {
       this.semanticsEnabled = true;
@@ -40,6 +42,8 @@ class NavigateTask {
       this.semanticObjects = this.semanticScene.objects;
 
       if (window.config.category) {
+        document.getElementById("category").style.display = "block";
+        document.getElementById("category").innerHTML = window.config.category;
         this.components.scope.style.display = "block";
         this.components.score.style.display = "block";
         const scopeWidth = this.components.scope.offsetWidth;
@@ -85,27 +89,31 @@ class NavigateTask {
     if (localStorage[topScoresKey]) {
       topScores = JSON.parse(localStorage[topScoresKey]);
     }
+    // Remove topScores with old schema
+    if (topScores.length && topScores[0].score) {
+      topScores = [];
+    }
     const user = window.prompt("Enter 3 initials for recording high score");
     let index;
     for (index = 0; index < topScores.length; index++) {
-      if (topScores[index].score > this.score) {
+      if (topScores[index].distance > this.distance) {
         break;
       }
     }
     if (index <= 10) {
-      topScores.splice(index, 0, { name: user, score: this.score });
+      topScores.splice(index, 0, { name: user, distance: this.distance });
       if (topScores.length > 10) {
         topScores.pop();
       }
     }
     let scoreHtml = "<H1>High Scores</H1><table>";
-    scoreHtml += "<tr><th>Rank</th><th>Player</th><th>Score</th></tr>";
+    scoreHtml += "<tr><th>Rank</th><th>Player</th><th>Distance (m)</th></tr>";
     for (let i = 0; i < topScores.length; i++) {
       const topScore = topScores[i];
       scoreHtml += "<tr>";
       scoreHtml += "<td>" + (i + 1) + "</td>";
       scoreHtml += "<td>" + topScore.name + "</td>";
-      scoreHtml += "<td>" + topScore.score + "</td>";
+      scoreHtml += "<td>" + topScore.distance.toFixed(2) + "</td>";
       scoreHtml += "</tr>";
     }
     scoreHtml += "</table>";
@@ -114,7 +122,7 @@ class NavigateTask {
     localStorage[topScoresKey] = JSON.stringify(topScores);
     setTimeout(() => {
       window.location = "index.html";
-    }, 3000);
+    }, 10000);
   }
 
   handleMouseDown(event) {
@@ -140,12 +148,13 @@ class NavigateTask {
     this.sim.reset();
     this.setStatus("Ready");
     this.render();
+    this.currentPosition = this.sim.getAgentState().position;
   }
 
   // PRIVATE methods.
 
-  updateScore() {
-    this.components.score.innerHTML = this.score;
+  updateScore(score) {
+    this.components.score.innerHTML = "" + score.toFixed(2) + " m";
   }
 
   setStatus(text) {
@@ -262,10 +271,16 @@ class NavigateTask {
 
   handleAction(action) {
     this.sim.step(action);
-    this.setStatus(action);
+    //this.setStatus(action);
     this.render();
     ++this.score;
-    this.updateScore();
+    //this.updateScore();
+  }
+
+  calculateDistanceTo(position) {
+    const a = this.currentPosition;
+    const delta = position.map((b, i) => b - a[i]);
+    return Math.sqrt(delta.reduce((t, a) => t + a * a, 0));
   }
 
   bindKeys() {
@@ -279,9 +294,9 @@ class NavigateTask {
             this.setSuccessStatus(
               "You found the " + window.config.category + "!"
             );
-            document.getElementById("topdown").style.display = "block";
             setTimeout(() => {
               this.updateScoreboard();
+              document.getElementById("topdown").style.display = "block";
             }, 1000);
           } else if (iou > 0) {
             this.setWarningStatus("IoU is too low. Please get a better view.");
@@ -296,6 +311,12 @@ class NavigateTask {
             event.preventDefault();
             break;
           }
+        }
+        if (event.key === "w") {
+          const newPosition = this.sim.getAgentState().position;
+          this.distance += this.calculateDistanceTo(newPosition);
+          this.currentPosition = newPosition;
+          this.updateScore(this.distance);
         }
       },
       true

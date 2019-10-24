@@ -25,13 +25,11 @@
   border-style: dashed;
   border-width: 5px;
   opacity: 0.4;
-  top: 50%;
-  left: 50%;
-  margin-left: -160px;
-  margin-top: -120px;
-  width: 320px;
-  height: 240px;
-  z-index: 9;
+  top: 25%;
+  left: 25%;
+  width: 50%;
+  height: 50%;
+  z-index: 11;
   pointer-events: none;
   display: none;
 }
@@ -40,9 +38,39 @@
   position: absolute;
   top: 5%;
   right: 5%;
-  z-index: 9;
+  z-index: 11;
+  width: 100;
+  height: 50;
   pointer-events: none;
-  color: yellow;
+  color: slategray;
+  font-size: x-large;
+  font-weight: bold;
+  display: none;
+}
+
+#category {
+  position: absolute;
+  top: 5%;
+  left: 5%;
+  z-index: 11;
+  width: 100;
+  height: 50;
+  pointer-events: none;
+  color: slategray;
+  font-size: x-large;
+  font-weight: bold;
+  display: none;
+}
+
+#category {
+  position: absolute;
+  top: 5%;
+  left: 5%;
+  z-index: 11;
+  width: 100;
+  height: 50;
+  pointer-events: none;
+  color: slategray;
   font-size: x-large;
   font-weight: bold;
   display: none;
@@ -50,15 +78,35 @@
 
 #scoreboard {
   position: absolute;
-  width: 100%;
-  height: 100%;
-  z-index: 10;
+  top: 20%;
+  left: calc((100% - 1280px)*2/3 + 640px);
+  width: 640px;
+  height: 480px;
+  z-index: 12;
   background-color: #444;
   visibility: hidden;
   pointer-events: none;
 }
 
+#status {
+  position: absolute;
+  text-align: center;
+  width: 100%;
+  z-index: 11;
+  top: 10%;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
 #topdown {
+  position: absolute;
+  top: 20%;
+  left: calc((100% - 1280px)/3);
+  width: 640px;
+  height: 480px;
+  z-index: 12;
+  background-color: #444;
+  pointer-events: none;
   display: none;
 }
 
@@ -76,6 +124,21 @@
   z-index: 100;
   background-color: #fff;
   color: #000;
+}
+
+.tooltip {
+  color: #fff;
+  background-color: #666;
+  line-height: 2;
+  border-radius: 2px;
+  left: 0;
+  top: 0;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  position: absolute;
+  z-index: 100;
+  text-align: center;
+  width: 100%;
 }
 
 .hidden {

@@ -16,6 +16,7 @@ import { buildConfigFromURLParameters } from "./utils";
 class WebDemo {
   currentResolution = defaultResolution;
   constructor(canvasId = "canvas") {
+    this.canvasElement = document.getElementById(canvasId);
     this.canvasId = canvasId;
   }
   initializeModules(
@@ -93,7 +94,18 @@ class WebDemo {
     return agentConfig;
   }
 
+  resetCanvasToCurrent() {
+    this.currentResolution = {
+      height: this.canvasElement.offsetHeight,
+      width: this.canvasElement.offsetWidth
+    };
+    // Make sure width for canvas is set properly
+    this.resetCanvas(this.currentResolution);
+  }
+
   display(agentConfig = defaultAgentConfig, episode = {}) {
+    this.resetCanvasToCurrent();
+
     const config = buildConfigFromURLParameters();
     if (config.useDefaultEpisode) {
       episode = defaultEpisode;
