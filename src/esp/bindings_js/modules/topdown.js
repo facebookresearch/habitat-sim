@@ -66,11 +66,11 @@ class TopDownMap {
     } else {
       /*
        * If we've gone up or down a floor, we need to create a new map.
-       * A change in Y of 0.25 should be sufficient as a test.
+       * A change in Y of 0.5 should be sufficient as a test.
        */
       if (
-        position[1] < this.currentY - 0.25 ||
-        position[1] > this.currentY + 0.25
+        position[1] < this.currentY - 0.5 ||
+        position[1] > this.currentY + 0.5
       ) {
         this.start(position);
       } else {
