@@ -143,10 +143,15 @@ def main():
     total_frames = 0
     for episode in range(2):
         # construct the scene
+        print("generating clutter")
         gen_clutter(sim, 12)
+        print("clutter generation successful")
 
         # rebuild the navmesh
+        print("recompute the navmesh")
         sim.recompute_navmesh(agent_radius=agent_cfg.radius)
+        print("recompute successful")
+        # import pdb; pdb.set_trace()
 
         # place the agent
         agent = sim.initialize_agent(settings["default_agent"])
@@ -173,23 +178,23 @@ def main():
 
         # really just using the utilities here
         milestone = 0
-        while episode_frames < settings["max_frames"]:
-            if episode_frames > milestone / 10 * settings["max_frames"]:
-                print(
-                    "computing frame "
-                    + str(episode_frames)
-                    + " of "
-                    + str(settings["max_frames"])
-                )
-                milestone += 1
+        while episode_frames < 100:
+            # if episode_frames > milestone / 10 * settings["max_frames"]:
+            print(
+                "computing frame "
+                + str(episode_frames)
+                + " of "
+                + str(settings["max_frames"])
+            )
+            milestone += 1
 
             action = random.choice(action_names)
             observations = sim.step(action)
-            if settings["save_png"]:
-                if settings["color_sensor"]:
-                    save_color_observation(observations, total_frames)
-                if settings["depth_sensor"]:
-                    save_depth_observation(observations, total_frames)
+            # if settings["save_png"]:
+            #     if settings["color_sensor"]:
+            #         save_color_observation(observations, total_frames)
+            #     if settings["depth_sensor"]:
+            #         save_depth_observation(observations, total_frames)
 
             state = sim.last_state()
             # print(state.position)
@@ -199,10 +204,12 @@ def main():
             episode_frames += 1
 
     # create a video with ffmpeg
-    os.system(
-        "ffmpeg -r 20 -f image2 -s 1920x1080 -i clutter_nav_output/test.rgba.%05d.png -crf 15 -pix_fmt yuv420p clutter_nav_output/test.mp4"
-    )
-    os.system("open clutter_nav_output/test.mp4")
+    # os.system(
+    #     "ffmpeg -r 20 -f image2 -s 1920x1080 -i clutter_nav_output/test.rgba.%05d.png -crf 15 -pix_fmt yuv420p clutter_nav_output/test.mp4"
+    # )
+    # os.system("open clutter_nav_output/test.mp4")
+
+    print("clutter_nav successful")
 
 
 if __name__ == "__main__":
