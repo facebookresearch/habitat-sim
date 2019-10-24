@@ -263,6 +263,8 @@ class Simulator {
    */
   double getWorldTime();
 
+  std::shared_ptr<nav::PathFinder> recomputeNavMesh(float agentRadius);
+
  protected:
   Simulator(){};
 

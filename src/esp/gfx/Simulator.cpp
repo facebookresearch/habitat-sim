@@ -341,5 +341,23 @@ double Simulator::getWorldTime() {
   return NO_TIME;
 }
 
+std::shared_ptr<nav::PathFinder> Simulator::recomputeNavMesh(
+    float agentRadius) {
+  std::shared_ptr<nav::PathFinder> pf = std::make_shared<nav::PathFinder>();
+
+  assets::MeshData joinedMesh = resourceManager_.joinMesh(config_.scene.id);
+
+  nav::NavMeshSettings bs;
+  bs.setDefaults();
+  bs.agentRadius = agentRadius;
+
+  if (!pf->build(bs, joinedMesh)) {
+    LOG(ERROR) << "Failed to build navmesh";
+  }
+
+  LOG(INFO) << "reconstruct navmesh successful";
+  return pf;
+}
+
 }  // namespace gfx
 }  // namespace esp

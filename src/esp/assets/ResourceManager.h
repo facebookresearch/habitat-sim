@@ -134,6 +134,13 @@ class ResourceManager {
     return meshes_[meshIndex]->meshTransform_;
   }
 
+  const MeshMetaData& getMeshMetaData(std::string filename) {
+    CHECK(resourceDict_.count(filename) > 0);
+    return resourceDict_.at(filename);
+  };
+
+  MeshData joinMesh(std::string filename);
+
   /**
    * @brief Create a new drawable primitive attached to the desired @ref
    * SceneNode. See @ref primitive_meshes_.
@@ -172,6 +179,12 @@ class ResourceManager {
   void loadMeshHierarchy(Importer& importer,
                          MeshTransformNode& parent,
                          int componentID);
+
+  void joinHeirarchy(MeshData& mesh,
+                     const MeshMetaData& metaData,
+                     MeshTransformNode& node,
+                     Magnum::Matrix4& T,
+                     int lastIndex);
 
   //! Load materials from importer into assets, and update metaData
   void loadMaterials(Importer& importer, MeshMetaData* metaData);

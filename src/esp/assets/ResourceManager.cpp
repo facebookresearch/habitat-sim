@@ -1249,5 +1249,48 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
   return true;
 }
 
+vec3f toEig(Magnum::Vector3 v) {
+  return vec3f(v[0], v[1], v[2]);
+}
+
+//! recursively join all sub-components of a mesh into a single unified
+//! MeshData.
+void ResourceManager::joinHeirarchy(MeshData& mesh,
+                                    const MeshMetaData& metaData,
+                                    MeshTransformNode& node,
+                                    Magnum::Matrix4& T,
+                                    int lastIndex) {
+  Magnum::Matrix4 cT = T * node.T_parent_local;
+
+  if (node.meshIDLocal != ID_UNDEFINED) {
+    CollisionMeshData& meshData =
+        meshes_[node.meshIDLocal + metaData.meshIndex.first]
+            ->getCollisionMeshData();
+    for (auto& pos : meshData.positions) {
+      mesh.vbo.push_back(toEig(cT.transformPoint(pos)));
+    }
+    for (auto& index : meshData.indices) {
+      mesh.ibo.push_back(index + lastIndex);
+    }
+  }
+
+  for (auto& child : node.children) {
+    joinHeirarchy(mesh, metaData, child, cT, mesh.vbo.size());
+  }
+}
+
+MeshData ResourceManager::joinMesh(std::string filename) {
+  MeshData mesh;
+
+  CHECK(resourceDict_.count(filename) > 0);
+
+  MeshMetaData& metaData = resourceDict_.at(filename);
+
+  Magnum::Matrix4 identity;
+  joinHeirarchy(mesh, metaData, metaData.root, identity, 0);
+
+  return mesh;
+}
+
 }  // namespace assets
 }  // namespace esp

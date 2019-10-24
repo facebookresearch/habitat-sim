@@ -314,6 +314,10 @@ class DemoRunner:
 
         self._sim = habitat_sim.Simulator(self._cfg)
 
+        # recompute navmesh be default
+        print("Recomputing navmesh")
+        self._sim.recompute_navmesh(1.0)
+
         random.seed(self._sim_settings["seed"])
         self._sim.seed(self._sim_settings["seed"])
 
