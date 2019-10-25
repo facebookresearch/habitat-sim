@@ -68,6 +68,8 @@ class Viewer : public Magnum::Platform::Application {
   void pokeLastObject();
   void pushLastObject();
 
+  void recomputeNavMesh(std::string sceneFilename, float agentRadius);
+
   void torqueLastObject();
   void removeLastObject();
   void invertGravity();
@@ -87,6 +89,7 @@ class Viewer : public Magnum::Platform::Application {
   bool debugBullet_ = false;
 
   std::vector<int> sceneID_;
+
   scene::SceneNode* agentBodyNode_ = nullptr;
   scene::SceneNode* rgbSensorNode_ = nullptr;
 
@@ -128,8 +131,11 @@ Viewer::Viewer(const Arguments& arguments)
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addBooleanOption("enable-physics")
       .addBooleanOption("debug-bullet")
+      .setHelp("debug-bullet", "render Bullet physics debug wireframes")
       .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG)
       .setHelp("physics-config", "physics scene config file")
+      .addBooleanOption("recompute-navmesh")
+      .setHelp("recompute-navmesh", "programmatically generate scene navmesh")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
@@ -185,13 +191,18 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Load navmesh if available
   const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
-  if (io::exists(navmeshFilename)) {
+  if (io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
     LOG(INFO) << "Loading navmesh from " << navmeshFilename;
     pathfinder_->loadNavMesh(navmeshFilename);
-
-    const vec3f position = pathfinder_->getRandomNavigablePoint();
-    agentBodyNode_->setTranslation(Vector3(position));
+  } else {
+    // TODO: agent radius is not configured here
+    recomputeNavMesh(file, 0.1);
   }
+
+  // TODO: some scenes could have pathable roof polygons. We are not filtering
+  // those starting points here.
+  vec3f position = pathfinder_->getRandomNavigablePoint();
+  agentBodyNode_->setTranslation(Vector3(position));
 
   // connect controls to navmesh if loaded
   if (pathfinder_->isLoaded()) {
@@ -282,6 +293,24 @@ void Viewer::pushLastObject() {
   Vector3 force = T.transformPoint({0.0f, 0.0f, -40.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
+}
+
+void Viewer::recomputeNavMesh(std::string sceneFilename, float agentRadius) {
+  std::shared_ptr<nav::PathFinder> pf = std::make_shared<nav::PathFinder>();
+
+  assets::MeshData joinedMesh = resourceManager_.joinMesh(sceneFilename);
+
+  nav::NavMeshSettings bs;
+  bs.setDefaults();
+  bs.agentRadius = agentRadius;
+
+  if (!pf->build(bs, joinedMesh)) {
+    LOG(ERROR) << "Failed to build navmesh";
+    return;
+  }
+
+  LOG(INFO) << "reconstruct navmesh successful";
+  pathfinder_ = pf;
 }
 
 void Viewer::torqueLastObject() {
