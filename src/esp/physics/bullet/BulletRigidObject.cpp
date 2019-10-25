@@ -107,11 +107,10 @@ bool BulletRigidObject::initializeScene(
 // flat manner by accumulating transformations down the tree
 void BulletRigidObject::constructBulletConvexCompoundFromMeshes(
     std::unique_ptr<btCompoundShape>& bCompound,
-    Magnum::Matrix4& T,
+    const Magnum::Matrix4& T_world_parent,
     const std::vector<assets::CollisionMeshData>& meshGroup,
     const assets::MeshTransformNode& node) {
-  Magnum::Matrix4 cT = T * node.T_parent_local;
-  btTransform t(cT);
+  Magnum::Matrix4 T_world_local = T_world_parent * node.T_parent_local;
   if (node.meshIDLocal != ID_UNDEFINED) {
     // This node has a mesh, so add it to the compound
 
@@ -125,11 +124,13 @@ void BulletRigidObject::constructBulletConvexCompoundFromMeshes(
     // bObjectConvexShapes_.back()->setMargin(margin);
 
     //! Add to compound shape stucture
-    bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
+    bObjectShape_->addChildShape(btTransform{T_world_local},
+                                 bObjectConvexShapes_.back().get());
   }
 
   for (auto& child : node.children) {
-    constructBulletConvexCompoundFromMeshes(bCompound, cT, meshGroup, child);
+    constructBulletConvexCompoundFromMeshes(bCompound, T_world_local, meshGroup,
+                                            child);
   }
 }
 
@@ -156,9 +157,9 @@ bool BulletRigidObject::initializeObject(
   //! Iterate through all mesh components for one object
   //! The components are combined into a convex compound shape
   bObjectShape_ = std::make_unique<btCompoundShape>();
-  Magnum::Matrix4 T;  // TODO: this should translate to the COM
-  constructBulletConvexCompoundFromMeshes(bObjectShape_, T, meshGroup,
-                                          metaData.root);
+  // TODO: this should translate to the COM
+  constructBulletConvexCompoundFromMeshes(bObjectShape_, Magnum::Matrix4{},
+                                          meshGroup, metaData.root);
 
   //! Set properties
   bObjectShape_->setMargin(margin);

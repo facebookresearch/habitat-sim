@@ -89,7 +89,7 @@ class BulletRigidObject : public RigidObject {
    */
   void constructBulletConvexCompoundFromMeshes(
       std::unique_ptr<btCompoundShape>& bCompound,
-      Magnum::Matrix4& T,
+      const Magnum::Matrix4& T_world_parent,
       const std::vector<assets::CollisionMeshData>& meshGroup,
       const assets::MeshTransformNode& node);
 
