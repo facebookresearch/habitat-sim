@@ -28,6 +28,7 @@ class NavigateTask {
     this.score = 0;
     this.distance = 0.0;
     this.currentPosition = null;
+    this.positions = [];
 
     if (this.components.semantic) {
       this.semanticsEnabled = true;
@@ -149,6 +150,7 @@ class NavigateTask {
     this.setStatus("Ready");
     this.render();
     this.currentPosition = this.sim.getAgentState().position;
+    this.positions = [this.currentPosition];
   }
 
   // PRIVATE methods.
@@ -263,10 +265,9 @@ class NavigateTask {
     ctx.fill();
   }
 
-  render(options = { renderTopDown: true }) {
+  render() {
     this.renderImage();
     this.renderSemanticImage();
-    this.renderTopDown(options);
   }
 
   handleAction(action) {
@@ -296,6 +297,7 @@ class NavigateTask {
             );
             setTimeout(() => {
               this.updateScoreboard();
+              this.topdown.drawPositions(this.positions);
               document.getElementById("topdown").style.display = "block";
             }, 1000);
           } else if (iou > 0) {
@@ -315,6 +317,7 @@ class NavigateTask {
         if (event.key === "w") {
           const newPosition = this.sim.getAgentState().position;
           this.distance += this.calculateDistanceTo(newPosition);
+          this.positions.push(newPosition);
           this.currentPosition = newPosition;
           this.updateScore(this.distance);
         }
