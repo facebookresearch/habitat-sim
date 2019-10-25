@@ -101,7 +101,7 @@ def make_cfg(settings):
     }
 
     # override action space to no-op to test physics
-    if sim_cfg.enable_physics and False:
+    if sim_cfg.enable_physics:
         agent_cfg.action_space = {
             "move_forward": habitat_sim.agent.ActionSpec(
                 "move_forward", habitat_sim.agent.ActuationSpec(amount=0.0)

@@ -89,7 +89,6 @@ class Viewer : public Magnum::Platform::Application {
   bool debugBullet_ = false;
 
   std::vector<int> sceneID_;
-
   scene::SceneNode* agentBodyNode_ = nullptr;
   scene::SceneNode* rgbSensorNode_ = nullptr;
 
