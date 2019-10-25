@@ -1263,8 +1263,8 @@ vec3f toEig(Magnum::Vector3 v) {
 //! MeshData.
 void ResourceManager::joinHeirarchy(MeshData& mesh,
                                     const MeshMetaData& metaData,
-                                    MeshTransformNode& node,
-                                    Magnum::Matrix4& T,
+                                    const MeshTransformNode& node,
+                                    const Magnum::Matrix4& T,
                                     int lastIndex) {
   Magnum::Matrix4 cT = T * node.T_parent_local;
 
@@ -1285,15 +1285,16 @@ void ResourceManager::joinHeirarchy(MeshData& mesh,
   }
 }
 
-MeshData ResourceManager::joinMesh(std::string filename) {
-  MeshData mesh;
+std::shared_ptr<MeshData> ResourceManager::joinMesh(
+    const std::string& filename) {
+  std::shared_ptr<MeshData> mesh = std::make_shared<MeshData>();
 
   CHECK(resourceDict_.count(filename) > 0);
 
   MeshMetaData& metaData = resourceDict_.at(filename);
 
   Magnum::Matrix4 identity;
-  joinHeirarchy(mesh, metaData, metaData.root, identity, 0);
+  joinHeirarchy(*mesh, metaData, metaData.root, identity, 0);
 
   return mesh;
 }

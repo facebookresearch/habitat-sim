@@ -345,13 +345,14 @@ std::shared_ptr<nav::PathFinder> Simulator::recomputeNavMesh(
     float agentRadius) {
   std::shared_ptr<nav::PathFinder> pf = std::make_shared<nav::PathFinder>();
 
-  assets::MeshData joinedMesh = resourceManager_.joinMesh(config_.scene.id);
+  std::shared_ptr<assets::MeshData> joinedMesh =
+      resourceManager_.joinMesh(config_.scene.id);
 
   nav::NavMeshSettings bs;
   bs.setDefaults();
   bs.agentRadius = agentRadius;
 
-  if (!pf->build(bs, joinedMesh)) {
+  if (!pf->build(bs, *joinedMesh)) {
     LOG(ERROR) << "Failed to build navmesh";
   }
 

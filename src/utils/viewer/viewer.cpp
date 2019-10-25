@@ -68,7 +68,7 @@ class Viewer : public Magnum::Platform::Application {
   void pokeLastObject();
   void pushLastObject();
 
-  void recomputeNavMesh(std::string sceneFilename, float agentRadius);
+  void recomputeNavMesh(const std::string& sceneFilename, float agentRadius);
 
   void torqueLastObject();
   void removeLastObject();
@@ -294,16 +294,18 @@ void Viewer::pushLastObject() {
   physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
 }
 
-void Viewer::recomputeNavMesh(std::string sceneFilename, float agentRadius) {
+void Viewer::recomputeNavMesh(const std::string& sceneFilename,
+                              float agentRadius) {
   std::shared_ptr<nav::PathFinder> pf = std::make_shared<nav::PathFinder>();
 
-  assets::MeshData joinedMesh = resourceManager_.joinMesh(sceneFilename);
+  std::shared_ptr<assets::MeshData> joinedMesh =
+      resourceManager_.joinMesh(sceneFilename);
 
   nav::NavMeshSettings bs;
   bs.setDefaults();
   bs.agentRadius = agentRadius;
 
-  if (!pf->build(bs, joinedMesh)) {
+  if (!pf->build(bs, *joinedMesh)) {
     LOG(ERROR) << "Failed to build navmesh";
     return;
   }

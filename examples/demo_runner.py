@@ -313,6 +313,7 @@ class DemoRunner:
             print("Downloaded and extracted test scenes data.")
 
         self._sim = habitat_sim.Simulator(self._cfg)
+
         random.seed(self._sim_settings["seed"])
         self._sim.seed(self._sim_settings["seed"])
 

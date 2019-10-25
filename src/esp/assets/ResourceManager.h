@@ -139,7 +139,7 @@ class ResourceManager {
     return resourceDict_.at(filename);
   };
 
-  MeshData joinMesh(std::string filename);
+  std::shared_ptr<MeshData> joinMesh(const std::string& filename);
 
   /**
    * @brief Create a new drawable primitive attached to the desired @ref
@@ -182,8 +182,8 @@ class ResourceManager {
 
   void joinHeirarchy(MeshData& mesh,
                      const MeshMetaData& metaData,
-                     MeshTransformNode& node,
-                     Magnum::Matrix4& T,
+                     const MeshTransformNode& node,
+                     const Magnum::Matrix4& T,
                      int lastIndex);
 
   //! Load materials from importer into assets, and update metaData
