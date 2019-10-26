@@ -54,12 +54,7 @@ class NavigateTask {
 
     if (this.components.semantic) {
       this.semanticsEnabled = true;
-      this.semanticCtx = components.semantic.getContext("2d");
       this.semanticShape = this.sim.getObservationSpace("semantic").shape;
-      this.semanticImageData = this.semanticCtx.createImageData(
-        this.semanticShape.get(1),
-        this.semanticShape.get(0)
-      );
       this.semanticObservation = new Module.Observation();
       this.semanticScene = this.sim.sim.getSemanticScene();
       this.semanticObjects = this.semanticScene.objects;
@@ -217,6 +212,23 @@ class NavigateTask {
       return;
     }
 
+    const element = document.getElementById("semantic");
+
+    if (
+      this.semWidth != element.offsetWidth ||
+      this.semHeight != element.offsetHeight
+    ) {
+      element.width = element.offsetWidth;
+      element.height = element.offsetHeight;
+      this.semWidth = element.offsetWidth;
+      this.semHeight = element.offsetHeight;
+      this.semanticCtx = element.getContext("2d");
+      this.semanticImageData = this.semanticCtx.createImageData(
+        this.semWidth,
+        this.semHeight
+      );
+    }
+
     this.sim.getObservation("semantic", this.semanticObservation);
     const rawSemanticBuffer = this.semanticObservation.getData();
     const objectIds = new Uint32Array(
@@ -226,26 +238,49 @@ class NavigateTask {
     );
     this.semanticData = objectIds;
 
-    // TOOD(msb) implement a better colorization scheme
-    for (let i = 0; i < objectIds.length; i++) {
-      const objectId = objectIds[i];
-      if (objectId & 1) {
-        this.semanticImageData.data[i * 4] = 255;
-      } else {
-        this.semanticImageData.data[i * 4] = 0;
-      }
-      if (objectId & 2) {
-        this.semanticImageData.data[i * 4 + 1] = 255;
-      } else {
-        this.semanticImageData.data[i * 4 + 1] = 0;
-      }
-      if (objectId & 4) {
-        this.semanticImageData.data[i * 4 + 2] = 255;
-      } else {
-        this.semanticImageData.data[i * 4 + 2] = 0;
-      }
-      this.semanticImageData.data[i * 4 + 3] = 255;
+    const objectId = objectIds[objectIds.length / 2];
+    const object = this.semanticObjects.get(objectId);
+    let validObj;
+    if (object && object.category) {
+      this.setSuccessStatus(object.category.getName(""));
+      validObj = true;
+    } else {
+      this.setStatus("");
+      validObj = false;
     }
+
+    for (let i = 0; i < objectIds.length; i++) {
+      const currId = objectIds[i];
+      if (validObj && currId === objectId) {
+        this.semanticImageData.data[i * 4] = 0;
+        this.semanticImageData.data[i * 4 + 1] = 255;
+        this.semanticImageData.data[i * 4 + 2] = 0;
+        this.semanticImageData.data[i * 4 + 3] = 64;
+      } else {
+        this.semanticImageData.data[i * 4 + 3] = 0;
+      }
+    }
+
+    // TOOD(msb) implement a better colorization scheme
+    // for (let i = 0; i < objectIds.length; i++) {
+    //   const objectId = objectIds[i];
+    //   if (objectId & 1) {
+    //     this.semanticImageData.data[i * 4] = 255;
+    //   } else {
+    //     this.semanticImageData.data[i * 4] = 0;
+    //   }
+    //   if (objectId & 2) {
+    //     this.semanticImageData.data[i * 4 + 1] = 255;
+    //   } else {
+    //     this.semanticImageData.data[i * 4 + 1] = 0;
+    //   }
+    //   if (objectId & 4) {
+    //     this.semanticImageData.data[i * 4 + 2] = 255;
+    //   } else {
+    //     this.semanticImageData.data[i * 4 + 2] = 0;
+    //   }
+    //   this.semanticImageData.data[i * 4 + 3] = 255;
+    // }
 
     this.semanticCtx.putImageData(this.semanticImageData, 0, 0);
   }
