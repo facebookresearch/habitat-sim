@@ -44,7 +44,8 @@ class NavigateTask {
 
       if (window.config.category) {
         document.getElementById("category").style.display = "block";
-        document.getElementById("category").innerHTML = window.config.category;
+        document.getElementById("category").innerHTML =
+          "find " + window.config.category;
         this.components.scope.style.display = "block";
         this.components.score.style.display = "block";
         const scopeWidth = this.components.scope.offsetWidth;
@@ -94,7 +95,6 @@ class NavigateTask {
     if (topScores.length && topScores[0].score) {
       topScores = [];
     }
-    const user = window.prompt("Enter 3 initials for recording high score");
     let index;
     for (index = 0; index < topScores.length; index++) {
       if (topScores[index].distance > this.distance) {
@@ -102,6 +102,7 @@ class NavigateTask {
       }
     }
     if (index <= 10) {
+      const user = window.prompt("Enter your name for recording high score");
       topScores.splice(index, 0, { name: user, distance: this.distance });
       if (topScores.length > 10) {
         topScores.pop();
@@ -132,7 +133,12 @@ class NavigateTask {
     const offsetY = height - 1 - event.offsetY; /* flip-Y */
     const offsetX = event.offsetX;
     const objectId = this.semanticData[width * offsetY + offsetX];
-    this.setStatus(this.semanticObjects.get(objectId).category.getName(""));
+    const object = this.semanticObjects.get(objectId);
+    if (object && object.category) {
+      this.setStatus(object.category.getName(""));
+    } else {
+      this.setWarningStatus("unknown");
+    }
   }
 
   /**

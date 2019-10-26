@@ -67,7 +67,7 @@ function preload(url, file = null) {
 Module.preRun.push(async () => {
   Module.addRunDependency("initFs");
   // https://developer.chrome.com/apps/offline_storage#query
-  const requestedBytes = 1024 * 1024 * 300; // 300MB
+  const requestedBytes = 1024 * 1024 * 400; // 300MB
   const grantedBytes = await new Promise((resolve, reject) => {
     navigator.webkitPersistentStorage.requestQuota(
       requestedBytes,
