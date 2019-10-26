@@ -46,6 +46,22 @@ class TopDownMap {
     this.ctx.stroke();
   }
 
+  drawPath(positions, color) {
+    this.ctx.strokeStyle = color;
+    this.ctx.beginPath();
+    positions.forEach((p, i) => {
+      if (p[1] < this.currentY + 0.5 && p[1] > this.currentY - 0.5) {
+        let [x, y] = this.convertPosition(p);
+        if (i === 0) {
+          this.ctx.moveTo(x, y);
+        } else {
+          this.ctx.lineTo(x, y);
+        }
+      }
+    });
+    this.ctx.stroke();
+  }
+
   /**
    * Draw the topdown map centered in the canvas.
    */

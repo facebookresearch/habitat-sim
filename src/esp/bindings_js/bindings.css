@@ -98,6 +98,10 @@
   font-weight: 600;
 }
 
+#topdown-container {
+  display: none;
+}
+
 #topdown {
   position: absolute;
   top: 20%;
@@ -107,7 +111,6 @@
   z-index: 12;
   background-color: #444;
   pointer-events: none;
-  display: none;
 }
 
 #fps {
@@ -124,6 +127,16 @@
   z-index: 100;
   background-color: #fff;
   color: #000;
+}
+
+#legend {
+  position: absolute;
+  padding: 2px;
+  top: calc(20% + 10px);
+  left: calc((100% - 1280px)/3 + 10px);
+  background-color: white;
+  color: blue;
+  z-index: 13;
 }
 
 .tooltip {
