@@ -81,6 +81,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
       }
       // add a scene attributes for this filename or modify the existing one
       if (meshSuccess) {
+        // TODO: need this anymore?
         physicsSceneLibrary_[info.filepath].setString("renderMeshHandle",
                                                       info.filepath);
       }
@@ -88,8 +89,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   } else {
     LOG(INFO) << "Loading empty scene";
     // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
-    // scene mesh): welcome
-    // to the void
+    // scene mesh): welcome to the void
   }
 
   // once a scene is loaded, we should have a GL::Context so load the primitives
@@ -208,16 +208,9 @@ bool ResourceManager::loadScene(
 
       // GLB Mesh
       else if (info.type == AssetType::MP3D_MESH) {
-        quatf quatFront =
-            quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
-        Magnum::Quaternion quat = Magnum::Quaternion(quatFront);
         GltfMeshData* gltfMeshData =
             dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
         CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
-        Magnum::Matrix4 transform =
-            Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
-        Magnum::MeshTools::transformPointsInPlace(transform,
-                                                  meshData.positions);
         meshGroup.push_back(meshData);
       }
     }

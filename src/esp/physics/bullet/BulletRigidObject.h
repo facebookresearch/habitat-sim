@@ -89,7 +89,6 @@ class BulletRigidObject : public RigidObject {
    * @param node The current @ref MeshTransformNode in the recursion.
    */
   void constructBulletCompoundFromMeshes(
-      std::unique_ptr<btCompoundShape>& bCompound,
       const Magnum::Matrix4& T_world_parent,
       const std::vector<assets::CollisionMeshData>& meshGroup,
       const assets::MeshTransformNode& node);
