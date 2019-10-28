@@ -181,6 +181,11 @@ bool ResourceManager::loadScene(
       "restitutionCoefficient",
       physicsManagerAttributes.getDouble("restitutionCoefficient"));
 
+  physicsSceneLibrary_[info.filepath].setString("renderMeshHandle",
+                                                info.filepath);
+  physicsSceneLibrary_[info.filepath].setString("collisionMeshHandle",
+                                                info.filepath);
+
   //! CONSTRUCT SCENE
   const std::string& filename = info.filepath;
   // if we have a scene mesh, add it as a collision object
@@ -727,6 +732,12 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
     resourceDict_.emplace(filename, MeshMetaData(index, index));
     resourceDict_[filename].root.meshIDLocal = 0;
     resourceDict_[filename].root.componentID = 0;
+    // store the rotation to world frame upon load
+    const quatf transform = info.frame.rotationFrameToWorld();
+    Magnum::Matrix4 R = Magnum::Matrix4::from(
+        Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
+    resourceDict_[filename].root.T_parent_local =
+        R * resourceDict_[filename].root.T_parent_local;
   }
 
   // create the scene graph by request
@@ -747,10 +758,6 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
         scene::SceneNode& node = parent->createChild();
         const quatf transform = info.frame.rotationFrameToWorld();
         node.setRotation(Magnum::Quaternion(transform));
-        Magnum::Matrix4 R = Magnum::Matrix4::from(
-            Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-        resourceDict_[filename].root.T_parent_local =
-            R * resourceDict_[filename].root.T_parent_local;
         new gfx::PTexMeshDrawable{node, *ptexShader, *pTexMeshData, jSubmesh,
                                   drawables};
       }
@@ -865,6 +872,11 @@ bool ResourceManager::loadGeneralMeshData(
       return false;
     }
     magnumMeshDict_.emplace(filename, magnumData);
+    const quatf transform = info.frame.rotationFrameToWorld();
+    Magnum::Matrix4 R = Magnum::Matrix4::from(
+        Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
+    resourceDict_[filename].root.T_parent_local =
+        R * resourceDict_[filename].root.T_parent_local;
   } else {
     metaData = resourceDict_[filename];
   }
@@ -893,10 +905,6 @@ bool ResourceManager::loadGeneralMeshData(
       }
     }  // forceReload
 
-    const quatf transform = info.frame.rotationFrameToWorld();
-    Magnum::Matrix4 R = Magnum::Matrix4::from(
-        Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-    metaData.root.T_parent_local = R * metaData.root.T_parent_local;
     // Recursively add all children
     for (auto sceneDataID : magnumMeshDict_[filename]) {
       addComponent(metaData, newNode, drawables, metaData.root);
