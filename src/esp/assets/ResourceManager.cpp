@@ -450,6 +450,9 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
         }
       }
       physicsObjectAttributes.setMagnumVec3("COM", COM);
+      // set a flag which we can find later so we don't override the desired COM
+      // with BB center.
+      physicsObjectAttributes.setBool("COM_provided", true);
     }
   }
 
@@ -524,26 +527,10 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
   AssetInfo renderMeshinfo;
   AssetInfo collisionMeshinfo;
 
-  Magnum::Vector3 COM = physicsObjectAttributes.getMagnumVec3("COM");
-  bool shiftMeshOrigin = !(COM[0] == 0 && COM[1] == 0 && COM[2] == 0);
-
   //! Load rendering mesh
-  // TODO: unify the COM move: don't want
-  // simplified meshes to result in different rendering and collision
-  // COMs/origins
   if (!renderMeshFilename.empty()) {
     renderMeshinfo = assets::AssetInfo::fromPath(renderMeshFilename);
-
-    if (shouldComputeMeshBBCenter) {  // compute the COM from BB center
-      renderMeshSuccess =
-          loadGeneralMeshData(renderMeshinfo, nullptr, nullptr, true);
-    } else if (shiftMeshOrigin) {  // use the provided COM
-      renderMeshSuccess =
-          loadGeneralMeshData(renderMeshinfo, nullptr, nullptr, true,
-                              -physicsObjectAttributes.getMagnumVec3("COM"));
-    } else {  // mesh origin already at COM
-      renderMeshSuccess = loadGeneralMeshData(renderMeshinfo);
-    }
+    renderMeshSuccess = loadGeneralMeshData(renderMeshinfo);
     if (!renderMeshSuccess) {
       LOG(ERROR) << "Failed to load a physical object's render mesh: "
                  << objPhysConfigFilename << ", " << renderMeshFilename;
@@ -552,26 +539,12 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
   //! Load collision mesh
   if (!collisionMeshFilename.empty()) {
     collisionMeshinfo = assets::AssetInfo::fromPath(collisionMeshFilename);
-    if (shouldComputeMeshBBCenter) {  // compute the COM from BB center
-      collisionMeshSuccess =
-          loadGeneralMeshData(collisionMeshinfo, nullptr, nullptr, true);
-    } else if (shiftMeshOrigin) {  // use the provided COM
-      collisionMeshSuccess =
-          loadGeneralMeshData(collisionMeshinfo, nullptr, nullptr, true,
-                              -physicsObjectAttributes.getMagnumVec3("COM"));
-    } else {  // mesh origin already at COM
-      collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo);
-    }
+    collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo);
     if (!collisionMeshSuccess) {
       LOG(ERROR) << "Failed to load a physical object's collision mesh: "
                  << objPhysConfigFilename << ", " << collisionMeshFilename;
     }
   }
-
-  // NOTE: if we want to save these after edit we need to save the moved
-  // mesh or save the original COM as a member of RigidBody...
-  physicsObjectAttributes.setMagnumVec3("COM", Magnum::Vector3(0));
-  // once we move the meshes, the COM is aligned with the origin...
 
   if (!renderMeshSuccess && !collisionMeshSuccess) {
     // we only allow objects with SOME mesh file. Failing
@@ -608,8 +581,6 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
     CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
     meshGroup.push_back(meshData);
   }
-  //! Properly align axis direction
-  // NOTE: this breaks the collision properties of some files
   collisionMeshGroups_.emplace(objPhysConfigFilename, meshGroup);
   physicsObjectConfigList_.push_back(objPhysConfigFilename);
 
@@ -811,9 +782,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
 bool ResourceManager::loadGeneralMeshData(
     const AssetInfo& info,
     scene::SceneNode* parent /* = nullptr */,
-    DrawableGroup* drawables /* = nullptr */,
-    bool shiftOrigin /* = false */,
-    Magnum::Vector3 translation /* [0,0,0] */) {
+    DrawableGroup* drawables /* = nullptr */) {
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
   const bool drawData = parent != nullptr && drawables != nullptr;
@@ -839,7 +808,7 @@ bool ResourceManager::loadGeneralMeshData(
     // if this is a new file, load it and add it to the dictionary
     loadTextures(*importer, &metaData);
     loadMaterials(*importer, &metaData);
-    loadMeshes(*importer, &metaData, shiftOrigin, translation);
+    loadMeshes(*importer, &metaData);
     resourceDict_.emplace(filename, metaData);
 
     // Register magnum mesh
@@ -936,11 +905,7 @@ void ResourceManager::loadMaterials(Importer& importer,
   }
 }
 
-void ResourceManager::loadMeshes(Importer& importer,
-                                 MeshMetaData* metaData,
-                                 bool shiftOrigin /*=false*/,
-                                 Magnum::Vector3 offset /* [0,0,0] */
-) {
+void ResourceManager::loadMeshes(Importer& importer, MeshMetaData* metaData) {
   int meshStart = meshes_.size();
   int meshEnd = meshStart + importer.mesh3DCount() - 1;
   metaData->setMeshIndices(meshStart, meshEnd);
@@ -953,24 +918,6 @@ void ResourceManager::loadMeshes(Importer& importer,
 
     // compute the mesh bounding box
     gltfMeshData->BB = computeMeshBB(gltfMeshData);
-
-    // see if the mesh needs to be shifted
-    // NOTE: Bullet physics requires that rigid object origins are aligned with
-    // their centers of mass. Shifting is done to accomidate this constraint for
-    // objects with a single mesh.
-    // TODO: Rework this to appropriately compute the shift for objects with a
-    // heirarchy of meshes.
-    if (shiftOrigin) {
-      // shift by BB center if no offset was provided (indicated by offset =
-      // [0,0,0])
-      if (offset == Magnum::Vector3{0, 0, 0}) {
-        offset = -gltfMeshData->BB.center();
-      }
-      // shift the mesh if necessary
-      if (offset != Magnum::Vector3{0, 0, 0}) {
-        translateMesh(gltfMeshData, offset);
-      }
-    }
 
     gltfMeshData->uploadBuffersToGPU(false);
   }

@@ -118,6 +118,13 @@ class BulletRigidObject : public RigidObject {
   virtual bool setMotionType(MotionType mt);
 
   /**
+   * @brief Shift the object's local origin by translating all children of this
+   * @ref BulletRigidObject and all components of its @ref bObjectShape_.
+   * @param shift The translation to apply.
+   */
+  void shiftOrigin(const Magnum::Vector3& shift) override;
+
+  /**
    * @brief Apply a force to an object.
    * Does nothing for @ref MotionType::STATIC and @ref
    * MotionType::KINEMATIC objects. Calls @ref setActive().
