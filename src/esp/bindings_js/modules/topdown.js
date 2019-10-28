@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+/*global Module */
 import { throttle } from "./utils";
 
 /**
@@ -60,6 +61,20 @@ class TopDownMap {
       }
     });
     this.ctx.stroke();
+  }
+
+  drawShortestPath(positions) {
+    let shortestPath = new Module.ShortestPath();
+    shortestPath.requestedStart = positions[0];
+    shortestPath.requestedEnd = positions[positions.length - 1];
+    this.pathFinder.findPath(shortestPath);
+    const points = shortestPath.points;
+    let path = [];
+    for (let i = 0; i < points.size(); i++) {
+      path.push(points.get(i));
+    }
+    this.drawPath(path, "green");
+    return path;
   }
 
   /**

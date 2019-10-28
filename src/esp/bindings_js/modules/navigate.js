@@ -95,6 +95,7 @@ class NavigateTask {
 
     this.actions = [
       { name: "moveForward", key: "w" },
+      { name: "moveBackward", key: "s" },
       { name: "turnLeft", key: "a" },
       { name: "turnRight", key: "d" },
       { name: "lookUp", key: "ArrowUp" },
@@ -102,7 +103,8 @@ class NavigateTask {
     ];
   }
 
-  updateScoreboard() {
+  updateScoreboard(shortestPath) {
+    const shortest = this.calculatePathDistance(shortestPath);
     let topScores = [];
     const topScoresKey = window.config.category + "TopScores";
     if (localStorage[topScoresKey]) {
@@ -118,7 +120,7 @@ class NavigateTask {
         break;
       }
     }
-    if (index <= 10) {
+    if (index < 10) {
       const user = window.prompt("Enter your name for recording high score");
       topScores.splice(index, 0, { name: user, distance: this.distance });
       if (topScores.length > 10) {
@@ -127,6 +129,10 @@ class NavigateTask {
     }
     let scoreHtml = "<H1>High Scores</H1><table>";
     scoreHtml += "<tr><th>Rank</th><th>Player</th><th>Distance (m)</th></tr>";
+    scoreHtml +=
+      '<tr style="color:green"><td>0</td><td>Shortest Path</td><td>' +
+      shortest.toFixed(2) +
+      "</td></tr>";
     for (let i = 0; i < topScores.length; i++) {
       const topScore = topScores[i];
       scoreHtml += "<tr>";
@@ -347,6 +353,17 @@ class NavigateTask {
     return Math.sqrt(delta.reduce((t, a) => t + a * a, 0));
   }
 
+  calculatePathDistance(path) {
+    const a = path[0];
+    let dist = 0.0;
+    for (let i = 1; i < path.length; i++) {
+      let position = path[i];
+      const delta = position.map((b, i) => b - a[i]);
+      dist += Math.sqrt(delta.reduce((t, a) => t + a * a, 0));
+    }
+    return dist;
+  }
+
   bindKeys() {
     document.addEventListener(
       "keydown",
@@ -359,16 +376,21 @@ class NavigateTask {
               "You found the " + window.config.category + "!"
             );
             setTimeout(() => {
-              this.updateScoreboard();
               this.topdown.drawPositions(this.positions);
               if (window.config.category === "bike") {
                 this.topdown.drawPath(BOT_BIKE_PATH, "red");
               }
+              const shortestPath = this.topdown.drawShortestPath(
+                this.positions
+              );
+              this.updateScoreboard(shortestPath);
               document.getElementById("topdown-container").style.display =
                 "block";
             }, 1000);
           } else if (iou > 0) {
-            this.setWarningStatus("IoU is too low. Please get a better view.");
+            this.setWarningStatus(
+              "Object too small in view. Try to move closer."
+            );
           } else {
             this.setErrorStatus(window.config.category + " not found!");
           }

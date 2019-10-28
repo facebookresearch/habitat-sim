@@ -54,6 +54,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::register_vector<std::shared_ptr<SemanticCategory>>(
       "VectorSemanticCategories");
   em::register_vector<std::shared_ptr<SemanticObject>>("VectorSemanticObjects");
+  em::register_vector<vec3f>("VectorVec3F");
 
   em::register_map<std::string, float>("MapStringFloat");
   em::register_map<std::string, std::string>("MapStringString");
@@ -118,10 +119,19 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("name", &ActionSpec::name)
       .property("actuation", &ActionSpec::actuation);
 
+  em::class_<ShortestPath>("ShortestPath")
+      .smart_ptr_constructor("ShortestPath", &ShortestPath::create<>)
+      .property("requestedStart", &ShortestPath::requestedStart)
+      .property("requestedEnd", &ShortestPath::requestedEnd)
+      .property("points", &ShortestPath::points)
+      .property("geodesicDistance", &ShortestPath::geodesicDistance);
+
   em::class_<PathFinder>("PathFinder")
       .smart_ptr<PathFinder::ptr>("PathFinder::ptr")
       .property("bounds", &PathFinder::bounds)
-      .function("isNavigable", &PathFinder::isNavigable);
+      .function("isNavigable", &PathFinder::isNavigable)
+      .function("findPath", em::select_overload<bool(ShortestPath&)>(
+                                &PathFinder::findPath));
 
   em::class_<SensorSuite>("SensorSuite")
       .smart_ptr_constructor("SensorSuite", &SensorSuite::create<>)
