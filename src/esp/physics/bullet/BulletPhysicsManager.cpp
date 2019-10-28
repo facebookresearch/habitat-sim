@@ -63,10 +63,13 @@ bool BulletPhysicsManager::addScene(
     }
   }
 
+  const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
+      physicsSceneAttributes.getString("collisionMeshHandle"));
+
   //! Initialize scene
-  bool sceneSuccess =
-      static_cast<BulletRigidObject*>(sceneNode_)
-          ->initializeScene(physicsSceneAttributes, meshGroup, bWorld_);
+  bool sceneSuccess = static_cast<BulletRigidObject*>(sceneNode_)
+                          ->initializeScene(physicsSceneAttributes, metaData,
+                                            meshGroup, bWorld_);
 
   return sceneSuccess;
 }

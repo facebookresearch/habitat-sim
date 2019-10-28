@@ -54,6 +54,7 @@ class BulletRigidObject : public RigidObject {
    */
   bool initializeScene(
       const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+      const assets::MeshMetaData& metaData,
       const std::vector<assets::CollisionMeshData>& meshGroup,
       std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
 
@@ -87,7 +88,7 @@ class BulletRigidObject : public RigidObject {
    * @param meshGroup Access structure for collision mesh data.
    * @param node The current @ref MeshTransformNode in the recursion.
    */
-  void constructBulletConvexCompoundFromMeshes(
+  void constructBulletCompoundFromMeshes(
       std::unique_ptr<btCompoundShape>& bCompound,
       const Magnum::Matrix4& T_world_parent,
       const std::vector<assets::CollisionMeshData>& meshGroup,
