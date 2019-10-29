@@ -284,8 +284,8 @@ class Simulator:
     def get_world_time(self, scene_id=0):
         return self._sim.get_world_time()
 
-    def recompute_navmesh(self, agent_radius=0.1):
-        self.pathfinder = self._sim.recompute_navmesh(agent_radius)
+    def recompute_navmesh(self, navmesh_settings):
+        self.pathfinder = self._sim.recompute_navmesh(navmesh_settings)
 
 
 class Sensor:

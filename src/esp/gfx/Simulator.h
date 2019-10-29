@@ -6,6 +6,7 @@
 
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
+#include "esp/nav/PathFinder.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
@@ -263,7 +264,8 @@ class Simulator {
    */
   double getWorldTime();
 
-  std::shared_ptr<nav::PathFinder> recomputeNavMesh(float agentRadius);
+  std::shared_ptr<nav::PathFinder> recomputeNavMesh(
+      nav::NavMeshSettings& navMeshSettings);
 
  protected:
   Simulator(){};

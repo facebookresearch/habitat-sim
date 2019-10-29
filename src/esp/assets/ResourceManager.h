@@ -139,11 +139,6 @@ class ResourceManager {
     return resourceDict_.at(filename);
   };
 
-  const MeshMetaData& getMeshMetaData(std::string filename) {
-    CHECK(resourceDict_.count(filename) > 0);
-    return resourceDict_.at(filename);
-  };
-
   std::shared_ptr<MeshData> joinMesh(const std::string& filename);
 
   /**

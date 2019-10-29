@@ -342,17 +342,13 @@ double Simulator::getWorldTime() {
 }
 
 std::shared_ptr<nav::PathFinder> Simulator::recomputeNavMesh(
-    float agentRadius) {
+    nav::NavMeshSettings& navMeshSettings) {
   std::shared_ptr<nav::PathFinder> pf = std::make_shared<nav::PathFinder>();
 
   std::shared_ptr<assets::MeshData> joinedMesh =
       resourceManager_.joinMesh(config_.scene.id);
 
-  nav::NavMeshSettings bs;
-  bs.setDefaults();
-  bs.agentRadius = agentRadius;
-
-  if (!pf->build(bs, *joinedMesh)) {
+  if (!pf->build(navMeshSettings, *joinedMesh)) {
     LOG(ERROR) << "Failed to build navmesh";
   }
 

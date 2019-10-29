@@ -68,7 +68,8 @@ class Viewer : public Magnum::Platform::Application {
   void pokeLastObject();
   void pushLastObject();
 
-  void recomputeNavMesh(const std::string& sceneFilename, float agentRadius);
+  void recomputeNavMesh(const std::string& sceneFilename,
+                        esp::nav::NavMeshSettings& navMeshSettings);
 
   void torqueLastObject();
   void removeLastObject();
@@ -189,19 +190,22 @@ Viewer::Viewer(const Arguments& arguments)
   renderCamera_->setProjectionMatrix(width, height, znear, zfar, hfov);
 
   // Load navmesh if available
-  const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
-  if (io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
-    LOG(INFO) << "Loading navmesh from " << navmeshFilename;
-    pathfinder_->loadNavMesh(navmeshFilename);
-  } else {
-    // TODO: agent radius is not configured here
-    recomputeNavMesh(file, 0.1);
+  if (file.compare(esp::assets::EMPTY_SCENE) != 0) {
+    const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
+    if (io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
+      LOG(INFO) << "Loading navmesh from " << navmeshFilename;
+      pathfinder_->loadNavMesh(navmeshFilename);
+    } else {
+      // TODO: agent radius is not configured here
+      esp::nav::NavMeshSettings navMeshSettings;
+      navMeshSettings.setDefaults();
+      recomputeNavMesh(file, navMeshSettings);
+    }
+    // TODO: some scenes could have pathable roof polygons. We are not filtering
+    // those starting points here.
+    vec3f position = pathfinder_->getRandomNavigablePoint();
+    agentBodyNode_->setTranslation(Vector3(position));
   }
-
-  // TODO: some scenes could have pathable roof polygons. We are not filtering
-  // those starting points here.
-  vec3f position = pathfinder_->getRandomNavigablePoint();
-  agentBodyNode_->setTranslation(Vector3(position));
 
   // connect controls to navmesh if loaded
   if (pathfinder_->isLoaded()) {
@@ -295,17 +299,13 @@ void Viewer::pushLastObject() {
 }
 
 void Viewer::recomputeNavMesh(const std::string& sceneFilename,
-                              float agentRadius) {
+                              nav::NavMeshSettings& navMeshSettings) {
   std::shared_ptr<nav::PathFinder> pf = std::make_shared<nav::PathFinder>();
 
   std::shared_ptr<assets::MeshData> joinedMesh =
       resourceManager_.joinMesh(sceneFilename);
 
-  nav::NavMeshSettings bs;
-  bs.setDefaults();
-  bs.agentRadius = agentRadius;
-
-  if (!pf->build(bs, *joinedMesh)) {
+  if (!pf->build(navMeshSettings, *joinedMesh)) {
     LOG(ERROR) << "Failed to build navmesh";
     return;
   }
