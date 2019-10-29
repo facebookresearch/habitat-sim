@@ -103,8 +103,8 @@ class NavigateTask {
     ];
   }
 
-  updateScoreboard(shortestPath) {
-    const shortest = this.calculatePathDistance(shortestPath);
+  updateScoreboard() {
+    //const shortest = this.calculatePathDistance(shortestPath);
     let topScores = [];
     const topScoresKey = window.config.category + "TopScores";
     if (localStorage[topScoresKey]) {
@@ -129,10 +129,8 @@ class NavigateTask {
     }
     let scoreHtml = "<H1>High Scores</H1><table>";
     scoreHtml += "<tr><th>Rank</th><th>Player</th><th>Distance (m)</th></tr>";
-    scoreHtml +=
-      '<tr style="color:green"><td>0</td><td>Shortest Path</td><td>' +
-      shortest.toFixed(2) +
-      "</td></tr>";
+    // scoreHtml +=
+    //   '<tr style="color:green"><td>0</td><td>Shortest Path</td><td>' + shortest.toFixed(2) + "</td></tr>";
     for (let i = 0; i < topScores.length; i++) {
       const topScore = topScores[i];
       scoreHtml += "<tr>";
@@ -380,10 +378,8 @@ class NavigateTask {
               if (window.config.category === "bike") {
                 this.topdown.drawPath(BOT_BIKE_PATH, "red");
               }
-              const shortestPath = this.topdown.drawShortestPath(
-                this.positions
-              );
-              this.updateScoreboard(shortestPath);
+              this.topdown.drawShortestPath(this.positions);
+              this.updateScoreboard();
               document.getElementById("topdown-container").style.display =
                 "block";
             }, 1000);
