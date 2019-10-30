@@ -9,7 +9,7 @@
 namespace esp {
 namespace assets {
 
-using namespace Corrade::Utility::String;
+using Corrade::Utility::String::endsWith;
 
 AssetInfo AssetInfo::fromPath(const std::string& path) {
   AssetInfo info{AssetType::UNKNOWN, path};

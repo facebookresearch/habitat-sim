@@ -32,7 +32,7 @@ class GenericInstanceMeshData : public BaseMesh {
   virtual bool loadPLY(const std::string& plyFile);
 
   // ==== rendering ====
-  virtual void uploadBuffersToGPU(bool forceReload = false) override;
+  virtual void uploadBuffersToGPU(bool forceReload) override;
   RenderingBuffer* getRenderingBuffer() { return renderingBuffer_.get(); }
 
   virtual Magnum::GL::Mesh* getMagnumGLMesh() override;

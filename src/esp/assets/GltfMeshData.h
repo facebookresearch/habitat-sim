@@ -22,7 +22,7 @@ class GltfMeshData : public BaseMesh {
 
   virtual ~GltfMeshData(){};
 
-  virtual void uploadBuffersToGPU(bool forceReload = false) override;
+  virtual void uploadBuffersToGPU(bool forceReload) override;
 
   void setMeshData(Magnum::Trade::AbstractImporter& importer, int meshID);
 

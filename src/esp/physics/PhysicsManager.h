@@ -182,7 +182,7 @@ class PhysicsManager {
    * increments of @ref fixedTimeStep_.
    * @param dt The desired amount of time to advance the physical world.
    */
-  virtual void stepPhysics(double dt = 0.0);
+  virtual void stepPhysics(double dt);
 
   // =========== Global Setter functions ===========
 

@@ -81,7 +81,7 @@ class IslandSystem {
         if (navMesh->isValidPolyRef(startRef) &&
             (polyToIsland_.find(startRef) == polyToIsland_.end())) {
           uint32_t newIslandId = islandRadius_.size();
-          expandFrom(navMesh, filter, newIslandId, startRef, islandVerts);
+          expandFrom(navMesh, filter, newIslandId, startRef, &islandVerts);
 
           // The radius is calculated as the max deviation from the mean for all
           // points in the island
@@ -132,9 +132,9 @@ class IslandSystem {
                   const dtQueryFilter* filter,
                   const uint32_t newIslandId,
                   const dtPolyRef& startRef,
-                  std::vector<vec3f>& islandVerts) {
+                  std::vector<vec3f>* islandVerts) {
     polyToIsland_.emplace(startRef, newIslandId);
-    islandVerts.clear();
+    islandVerts->clear();
 
     // Force std::stack to be implemented via an std::vector as linked
     // lists are gross
@@ -151,7 +151,7 @@ class IslandSystem {
       navMesh->getTileAndPolyByRefUnsafe(ref, &tile, &poly);
 
       for (int iVert = 0; iVert < poly->vertCount; ++iVert) {
-        islandVerts.emplace_back(
+        islandVerts->emplace_back(
             Eigen::Map<vec3f>(&tile->verts[poly->verts[iVert] * 3]));
       }
 
