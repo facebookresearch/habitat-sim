@@ -39,9 +39,11 @@ jobs:
           name: setup
           command: |
               sudo apt-get update -y
-              sudo apt-get install -y clang-format-8
+              sudo apt-get install -y clang-format-8 clang-tidy-8
               sudo ln -s /usr/bin/clang-format-8 /usr/bin/clang-format
+              sudo ln -s /usr/bin/clang-tidy-8 /usr/bin/clang-tidy
               clang-format --version
+              clang-tidy --version
       - run:
           name: run clang-format
           command: |
@@ -207,11 +209,6 @@ jobs:
       - run:
           name: setup clang-tidy
           command: |
-              sudo apt-get update -y
-              sudo apt-get install -y clang-tidy-8
-              sudo ln -s /usr/bin/clang-tidy-8 /usr/bin/clang-tidy
-              clang-tidy --version
-
       - run:
           name: run clang-tidy
           command: |
