@@ -364,7 +364,7 @@ void Viewer::viewportEvent(ViewportEvent& event) {
   int width = event.windowSize()[0];
   int height = event.windowSize()[1];
   renderCamera_->setProjectionMatrix(width, height, znear_, zfar_, hfov_);
-} 
+}
 
 void Viewer::mousePressEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Left)
