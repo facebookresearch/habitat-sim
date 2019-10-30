@@ -94,7 +94,6 @@ jobs:
               sudo apt-get install -y --no-install-recommends \
                   build-essential \
                   git \
-                  clang-tidy \
                   curl \
                   vim \
                   ca-certificates \
@@ -205,6 +204,14 @@ jobs:
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
               python setup.py install --headless
+      - run:
+          name: setup clang-tidy
+          command: |
+              sudo apt-get update -y
+              sudo apt-get install -y clang-tidy-8
+              sudo ln -s /usr/bin/clang-tidy-8 /usr/bin/clang-tidy
+              clang-tidy --version
+
       - run:
           name: run clang-tidy
           command: |
