@@ -67,6 +67,18 @@ bool RigidObject::setMotionType(MotionType mt) {
   return false;
 }
 
+void RigidObject::shiftOrigin(const Magnum::Vector3& shift) {
+  // shift each child node
+  for (auto& child : children()) {
+    child.translate(shift);
+  }
+  computeCumulativeBB();
+}
+
+void RigidObject::shiftOriginToBBCenter() {
+  shiftOrigin(-cumulativeBB_.center());
+}
+
 void RigidObject::applyForce(const Magnum::Vector3&, const Magnum::Vector3&) {
   // without a physics engine we can't apply any forces...
   return;

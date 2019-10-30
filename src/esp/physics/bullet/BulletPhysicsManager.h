@@ -188,8 +188,9 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param physicsObjectAttributes The physical object's template defining its
    * physical parameters.
    */
-  int makeRigidObject(const std::vector<assets::CollisionMeshData>& meshGroup,
-                      assets::PhysicsObjectAttributes physicsObjectAttributes);
+  int makeRigidObject(
+      const std::vector<assets::CollisionMeshData>& meshGroup,
+      assets::PhysicsObjectAttributes physicsObjectAttributes) override;
 
   ESP_SMART_POINTERS(BulletPhysicsManager)
 

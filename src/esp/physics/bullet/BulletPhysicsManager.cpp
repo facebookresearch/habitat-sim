@@ -63,10 +63,13 @@ bool BulletPhysicsManager::addScene(
     }
   }
 
+  const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
+      physicsSceneAttributes.getString("collisionMeshHandle"));
+
   //! Initialize scene
-  bool sceneSuccess =
-      static_cast<BulletRigidObject*>(sceneNode_)
-          ->initializeScene(physicsSceneAttributes, meshGroup, bWorld_);
+  bool sceneSuccess = static_cast<BulletRigidObject*>(sceneNode_)
+                          ->initializeScene(physicsSceneAttributes, metaData,
+                                            meshGroup, bWorld_);
 
   return sceneSuccess;
 }
@@ -78,10 +81,13 @@ int BulletPhysicsManager::makeRigidObject(
   int newObjectID = allocateObjectID();
   existingObjects_[newObjectID] = new BulletRigidObject(sceneNode_);
 
-  //! Instantiate with mesh pointer
+  const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
+      physicsObjectAttributes.getString("collisionMeshHandle"));
   bool objectSuccess =
       static_cast<BulletRigidObject*>(existingObjects_.at(newObjectID))
-          ->initializeObject(physicsObjectAttributes, meshGroup, bWorld_);
+          ->initializeObject(physicsObjectAttributes, bWorld_, metaData,
+                             meshGroup);
+
   if (!objectSuccess) {
     LOG(ERROR) << "Object load failed";
     deallocateObjectID(newObjectID);
