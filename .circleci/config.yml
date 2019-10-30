@@ -94,6 +94,7 @@ jobs:
               sudo apt-get install -y --no-install-recommends \
                   build-essential \
                   git \
+                  clang-tidy \
                   curl \
                   vim \
                   ca-certificates \
@@ -204,6 +205,10 @@ jobs:
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
               python setup.py install --headless
+      - run:
+          name: run clang-tidy
+          command: |
+              python run-clang-tidy.py -p ./build src/esp/sim/
       - run:
           name: Ccache stats
           when: always

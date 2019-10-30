@@ -1,0 +1,2 @@
+Checks: 'google-*,cppcoreguidelines-*,-*-objc-*, -*.cocoa.*'
+WarningsAsErrors: '*'
