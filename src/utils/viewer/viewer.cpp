@@ -176,12 +176,11 @@ Viewer::Viewer(const Arguments& arguments)
   rgbSensorNode_->translate({0.0f, rgbSensorHeight, 0.0f});
   agentBodyNode_->translate({0.0f, 0.0f, 5.0f});
 
-  int width = viewportSize[0];
-  int height = viewportSize[1];
-  float znear = 0.01f;
-  float zfar = 1000.0f;
-  float hfov = 90.0f;
-  renderCamera_->setProjectionMatrix(width, height, znear, zfar, hfov);
+  renderCamera_->setProjectionMatrix(viewportSize[0],  // width
+                                     viewportSize[1],  // height
+                                     0.01f,            // znear
+                                     1000.0f,          // zfar
+                                     90.0f);           // hfov
   renderCamera_->getMagnumCamera().setAspectRatioPolicy(
       Magnum::SceneGraph::AspectRatioPolicy::Extend);
 
