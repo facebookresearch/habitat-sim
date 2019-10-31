@@ -362,10 +362,6 @@ void Viewer::drawEvent() {
 void Viewer::viewportEvent(ViewportEvent& event) {
   GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
   renderCamera_->getMagnumCamera().setViewport(event.windowSize());
-
-  int width = event.windowSize()[0];
-  int height = event.windowSize()[1];
-  renderCamera_->setProjectionMatrix(width, height, znear_, zfar_, hfov_);
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
