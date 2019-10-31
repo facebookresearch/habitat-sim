@@ -104,10 +104,6 @@ class Viewer : public Magnum::Platform::Application {
 
   bool drawObjectBBs = false;
 
-  const float hfov_ = 90.0f;
-  const float znear_ = 0.01f;
-  const float zfar_ = 1000.0f;
-
   Magnum::Timeline timeline_;
 };
 
@@ -182,7 +178,10 @@ Viewer::Viewer(const Arguments& arguments)
 
   int width = viewportSize[0];
   int height = viewportSize[1];
-  renderCamera_->setProjectionMatrix(width, height, znear_, zfar_, hfov_);
+  float znear = 0.01f;
+  float zfar = 1000.0f;
+  float hfov = 90.0f;
+  renderCamera_->setProjectionMatrix(width, height, znear, zfar, hfov);
   renderCamera_->getMagnumCamera().setAspectRatioPolicy(
       Magnum::SceneGraph::AspectRatioPolicy::Extend);
 
