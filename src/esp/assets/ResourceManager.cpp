@@ -372,9 +372,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
 
     MeshMetaData& meshMetaData = resourceDict_[filename];
 
-    for (auto componentID : magnumMeshDict_[filename]) {
-      addComponent(meshMetaData, *parent, drawables, meshMetaData.root);
-    }
+    addComponent(meshMetaData, *parent, drawables, meshMetaData.root);
     // compute the full BB hierarchy for the new tree.
     parent->computeCumulativeBB();
   }
@@ -789,7 +787,6 @@ bool ResourceManager::loadGeneralMeshData(
 
   // Mesh & metaData container
   MeshMetaData metaData;
-  std::vector<Magnum::UnsignedInt> magnumData;
 
   Magnum::PluginManager::Manager<Importer> manager;
   std::unique_ptr<Importer> importer =
@@ -820,20 +817,18 @@ bool ResourceManager::loadGeneralMeshData(
         return false;
       }
       for (unsigned int sceneDataID : sceneData->children3D()) {
-        magnumData.emplace_back(sceneDataID);
         loadMeshHierarchy(*importer, resourceDict_[filename].root, sceneDataID);
       }
     } else if (importer->mesh3DCount() && meshes_[metaData.meshIndex.first]) {
       // no default scene --- standalone OBJ/PLY files, for example
       // take a wild guess and load the first mesh with the first material
       // addMeshToDrawables(metaData, *parent, drawables, ID_UNDEFINED, 0, 0);
-      magnumData.emplace_back(0);
       loadMeshHierarchy(*importer, resourceDict_[filename].root, 0);
     } else {
       LOG(ERROR) << "No default scene available and no meshes found, exiting";
       return false;
     }
-    magnumMeshDict_.emplace(filename, magnumData);
+
     const quatf transform = info.frame.rotationFrameToWorld();
     Magnum::Matrix4 R = Magnum::Matrix4::from(
         Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
@@ -867,10 +862,7 @@ bool ResourceManager::loadGeneralMeshData(
       }
     }  // forceReload
 
-    // Recursively add all children
-    for (auto sceneDataID : magnumMeshDict_[filename]) {
-      addComponent(metaData, newNode, drawables, metaData.root);
-    }
+    addComponent(metaData, newNode, drawables, metaData.root);
     return true;
   }
 }

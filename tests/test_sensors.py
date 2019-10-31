@@ -21,6 +21,12 @@ _test_scenes = [
     osp.abspath(
         osp.join(
             osp.dirname(__file__),
+            "../data/scene_datasets/mp3d/1LXtFkjw3qL/1LXtFkjw3qL.glb",
+        )
+    ),
+    osp.abspath(
+        osp.join(
+            osp.dirname(__file__),
             "../data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb",
         )
     ),
@@ -44,7 +50,7 @@ _test_scenes = [
     "scene,has_sem,sensor_type,gpu2gpu",
     list(
         itertools.product(
-            _test_scenes[0:1],
+            _test_scenes[0:2],
             [True],
             ["color_sensor", "depth_sensor", "semantic_sensor"],
             [True, False],
@@ -52,7 +58,7 @@ _test_scenes = [
     )
     + list(
         itertools.product(
-            _test_scenes[1:], [False], ["color_sensor", "depth_sensor"], [True, False]
+            _test_scenes[2:], [False], ["color_sensor", "depth_sensor"], [True, False]
         )
     ),
 )
@@ -72,16 +78,15 @@ def test_sensors(scene, has_sem, sensor_type, gpu2gpu, sim, make_cfg_settings):
         sensor_spec.gpu2gpu_transfer = gpu2gpu
 
     sim.reconfigure(cfg)
-    with open(
-        osp.abspath(
-            osp.join(
-                osp.dirname(__file__),
-                "gt_data",
-                "{}-state.json".format(osp.basename(osp.splitext(scene)[0])),
-            )
-        ),
-        "r",
-    ) as f:
+
+    gt_data_pose_file = osp.abspath(
+        osp.join(
+            osp.dirname(__file__),
+            "gt_data",
+            "{}-state.json".format(osp.basename(osp.splitext(scene)[0])),
+        )
+    )
+    with open(gt_data_pose_file, "r") as f:
         render_state = json.load(f)
         state = habitat_sim.AgentState()
         state.position = render_state["pos"]
@@ -92,15 +97,15 @@ def test_sensors(scene, has_sem, sensor_type, gpu2gpu, sim, make_cfg_settings):
 
     assert sensor_type in obs, f"{sensor_type} not in obs"
 
-    gt = np.load(
-        osp.abspath(
-            osp.join(
-                osp.dirname(__file__),
-                "gt_data",
-                "{}-{}.npy".format(osp.basename(osp.splitext(scene)[0]), sensor_type),
-            )
+    gt_obs_file = osp.abspath(
+        osp.join(
+            osp.dirname(__file__),
+            "gt_data",
+            "{}-{}.npy".format(osp.basename(osp.splitext(scene)[0]), sensor_type),
         )
     )
+    gt = np.load(gt_obs_file)
+
     if gpu2gpu:
         import torch
 
