@@ -1,2 +1,9 @@
-Checks: 'google-*,cppcoreguidelines-*,-*-objc-*, -*.cocoa.*'
+Checks: '
+google-*,
+-*-objc-*,
+-*.cocoa.*,
+-google-default-arguments,
+-google-runtime-references
+'
+
 WarningsAsErrors: '*'
