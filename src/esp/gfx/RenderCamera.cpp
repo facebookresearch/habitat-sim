@@ -33,6 +33,10 @@ void RenderCamera::setProjectionMatrix(int width,
                                        float zfar,
                                        float hfov) {
   const float aspectRatio = static_cast<float>(width) / height;
+  // TODO:
+  // Warning: By dedault, SceneGraph::Camera class can handle aspect ratio
+  // preservation in the setViewport() call automatically. But here it was
+  // disabled for some reason. Will revisit.
   camera_->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::NotPreserved)
       .setProjectionMatrix(
           Matrix4::perspectiveProjection(Deg{hfov}, aspectRatio, znear, zfar))
