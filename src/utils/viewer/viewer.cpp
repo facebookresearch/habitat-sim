@@ -183,6 +183,8 @@ Viewer::Viewer(const Arguments& arguments)
   int width = viewportSize[0];
   int height = viewportSize[1];
   renderCamera_->setProjectionMatrix(width, height, znear_, zfar_, hfov_);
+  renderCamera_->getMagnumCamera().setAspectRatioPolicy(
+      Magnum::SceneGraph::AspectRatioPolicy::Extend);
 
   // Load navmesh if available
   const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
