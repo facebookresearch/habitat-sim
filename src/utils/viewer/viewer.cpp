@@ -104,10 +104,6 @@ class Viewer : public Magnum::Platform::Application {
 
   bool drawObjectBBs = false;
 
-  const float hfov_ = 90.0f;
-  const float znear_ = 0.01f;
-  const float zfar_ = 1000.0f;
-
   Magnum::Timeline timeline_;
 };
 
@@ -180,9 +176,13 @@ Viewer::Viewer(const Arguments& arguments)
   rgbSensorNode_->translate({0.0f, rgbSensorHeight, 0.0f});
   agentBodyNode_->translate({0.0f, 0.0f, 5.0f});
 
-  int width = viewportSize[0];
-  int height = viewportSize[1];
-  renderCamera_->setProjectionMatrix(width, height, znear_, zfar_, hfov_);
+  renderCamera_->setProjectionMatrix(viewportSize.x(),  // width
+                                     viewportSize.y(),  // height
+                                     0.01f,             // znear
+                                     1000.0f,           // zfar
+                                     90.0f);            // hfov
+  renderCamera_->getMagnumCamera().setAspectRatioPolicy(
+      Magnum::SceneGraph::AspectRatioPolicy::Extend);
 
   // Load navmesh if available
   const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
@@ -360,10 +360,6 @@ void Viewer::drawEvent() {
 void Viewer::viewportEvent(ViewportEvent& event) {
   GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
   renderCamera_->getMagnumCamera().setViewport(event.windowSize());
-
-  int width = event.windowSize()[0];
-  int height = event.windowSize()[1];
-  renderCamera_->setProjectionMatrix(width, height, znear_, zfar_, hfov_);
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
