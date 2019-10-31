@@ -207,9 +207,6 @@ jobs:
               pip install -r requirements.txt --progress-bar off
               python setup.py install --headless
       - run:
-          name: setup clang-tidy
-          command: |
-      - run:
           name: run clang-tidy
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
