@@ -39,11 +39,9 @@ jobs:
           name: setup
           command: |
               sudo apt-get update -y
-              sudo apt-get install -y clang-format-8 clang-tidy-8
+              sudo apt-get install -y clang-format-8
               sudo ln -s /usr/bin/clang-format-8 /usr/bin/clang-format
-              sudo ln -s /usr/bin/clang-tidy-8 /usr/bin/clang-tidy
               clang-format --version
-              clang-tidy --version
       - run:
           name: run clang-format
           command: |
@@ -75,6 +73,13 @@ jobs:
           no_output_timeout: 1m
           command: |
               cat /proc/cpuinfo
+      - run:
+          name: Install clang-tidy
+          command: |
+              sudo apt-get update -y || true
+              sudo apt-get install -y clang-tidy-8
+              sudo ln -s /usr/bin/clang-tidy-8 /usr/local/bin/clang-tidy
+              clang-tidy --version
       - run:
           name: Install cmake
           no_output_timeout: 5m
