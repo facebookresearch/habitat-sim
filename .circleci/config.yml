@@ -76,9 +76,10 @@ jobs:
       - run:
           name: Install clang-tidy
           command: |
+              sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main"
               sudo apt-get update -y || true
-              sudo apt-get install -y clang-tidy-8
-              sudo ln -s /usr/bin/clang-tidy-8 /usr/local/bin/clang-tidy
+              sudo apt-get install -y clang-tidy-9
+              sudo ln -s /usr/bin/clang-tidy-9 /usr/local/bin/clang-tidy
               clang-tidy --version
       - run:
           name: Install cmake
