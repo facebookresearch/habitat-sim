@@ -97,6 +97,22 @@ int BulletPhysicsManager::makeRigidObject(
   return newObjectID;
 }
 
+int BulletPhysicsManager::addObject(const int objectLibIndex,
+                                    DrawableGroup* drawables) {
+  // Do default load first
+  int objID = PhysicsManager::addObject(objectLibIndex, drawables);
+
+  // Then set the collision shape to the bounding box if necessary
+  if (objID != ID_UNDEFINED) {
+    BulletRigidObject* bro =
+        static_cast<BulletRigidObject*>(existingObjects_.at(objID));
+    if (bro->collisionFromBB_) {
+      bro->setCollisionFromBB();
+    }
+  }
+  return objID;
+}
+
 //! Check if mesh primitive is compatible with physics
 bool BulletPhysicsManager::isMeshPrimitiveValid(
     const assets::CollisionMeshData& meshData) {

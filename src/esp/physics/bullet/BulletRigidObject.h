@@ -318,6 +318,15 @@ class BulletRigidObject : public RigidObject {
    */
   void setMargin(const double margin);
 
+  //! Sets the object's collision shape to its bounding box. Since the bounding
+  //! hierarchy is not constructed when the object is initialized, this needs to
+  //! be called after loading the SceneNode.
+  void setCollisionFromBB();
+
+  //! If true, the object's bounding box will be used for collision once
+  //! computed
+  bool collisionFromBB_ = false;
+
  protected:
   /** @brief Used to synchronize Bullet's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic
@@ -349,6 +358,10 @@ class BulletRigidObject : public RigidObject {
 
   //! Object data: All components of the collision shape
   std::unique_ptr<btCompoundShape> bObjectShape_;
+
+  //! list of @ref btCollisionShape for storing arbitrary collision shapes
+  //! referenced within the @ref bObjectShape_.
+  std::vector<std::unique_ptr<btCollisionShape>> bGenericShapes_;
 
   /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
    * wrapped into one @ref btRigidBody.

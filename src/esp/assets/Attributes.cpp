@@ -274,6 +274,7 @@ PhysicsObjectAttributes::PhysicsObjectAttributes() {
   setString("originHandle", "");
   setString("renderMeshHandle", "");
   setString("collisionMeshHandle", "");
+  setBool("useBoundingBoxForCollision", false);
 }
 
 PhysicsSceneAttributes::PhysicsSceneAttributes() {

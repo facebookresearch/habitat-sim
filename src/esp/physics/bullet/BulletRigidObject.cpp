@@ -145,12 +145,29 @@ bool BulletRigidObject::initializeObject(
   //! Physical parameters
   double margin = physicsObjectAttributes.getDouble("margin");
 
-  //! Iterate through all mesh components for one object
-  //! The components are combined into a convex compound shape
+  if (physicsObjectAttributes.existsAs(esp::assets::DataType::BOOL,
+                                       "useBoundingBoxForCollision")) {
+    collisionFromBB_ =
+        physicsObjectAttributes.getBool("useBoundingBoxForCollision");
+  }
+
+  // The root collision shape is a compound which can hold other shapes by use
+  // case
   bObjectShape_ = std::make_unique<btCompoundShape>();
-  // TODO: this should translate to the COM
-  constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup,
-                                    metaData.root);
+
+  if (collisionFromBB_) {
+    // set a dummy shape for now. We will use the added BB object to correct
+    // this later
+    btTransform t;
+    t.setIdentity();
+    bGenericShapes_.emplace_back(std::make_unique<btBoxShape>(btVector3()));
+    bObjectShape_->addChildShape(t, bGenericShapes_.back().get());
+  } else {
+    //! Iterate through all mesh components for one object
+    //! The components are combined into a compound shape
+    constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup,
+                                      metaData.root);
+  }
 
   //! Set properties
   bObjectShape_->setMargin(margin);
@@ -188,6 +205,25 @@ bool BulletRigidObject::initializeObject(
   bWorld_ = bWorld;
   syncPose();
   return true;
+}
+
+void BulletRigidObject::setCollisionFromBB() {
+  btVector3 dim(cumulativeBB_.size() / 2.0);
+  bObjectShape_->removeChildShape(bGenericShapes_.back().get());
+  bGenericShapes_.clear();
+  bGenericShapes_.emplace_back(std::make_unique<btBoxShape>(dim));
+  btTransform t;
+  t.setIdentity();
+  bObjectShape_->addChildShape(t, bGenericShapes_.back().get());
+  bObjectRigidBody_->setCollisionShape(bObjectShape_.get());
+
+  btVector3 bInertia(getInertiaVector());
+
+  // allow bullet to compute the inertia tensor if we don't have one
+  bObjectShape_->calculateLocalInertia(getMass(),
+                                       bInertia);  // overrides bInertia
+
+  setInertiaVector(Magnum::Vector3(bInertia));
 }
 
 bool BulletRigidObject::removeObject() {
