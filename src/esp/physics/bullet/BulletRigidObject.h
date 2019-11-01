@@ -323,15 +323,21 @@ class BulletRigidObject : public RigidObject {
   //! be called after loading the SceneNode.
   void setCollisionFromBB();
 
-  //! If true, the object's bounding box will be used for collision once
-  //! computed
-  bool collisionFromBB_ = false;
+  /** @brief Public getter for @ref collisionFromBB_ set from configuration.
+   * @return @ref collisionFromBB_ is true if "useBoundingBoxForCollision" was
+   * set in object's configuration.
+   */
+  const bool isUsingBBCollisionShape() const { return collisionFromBB_; };
 
  protected:
   /** @brief Used to synchronize Bullet's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic
    * updates. See @ref btRigidBody::setWorldTransform. */
   void syncPose();
+
+  //! If true, the object's bounding box will be used for collision once
+  //! computed
+  bool collisionFromBB_ = false;
 
  private:
   /** @brief A pointer to the Bullet world to which this object belongs. See
