@@ -235,13 +235,16 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   // simply mmap a file with the vertex buffer and index buffer.
   std::vector<Mn::UnsignedInt> objectIdIndices = removeDuplicates(objectIds_);
   Mn::GL::Buffer vertices, indices;
-  indices.setTargetHint(Mn::GL::Buffer::TargetHint::ElementArray);
-  indices.setData(
+
+  std::vector<Magnum::UnsignedInt> new_indices =
       Mn::MeshTools::combineIndexedArrays(
           std::make_pair(std::cref(objectIdIndices), std::ref(objectIds_)),
           std::make_pair(std::cref(cpu_ibo_), std::ref(cpu_vbo_)),
-          std::make_pair(std::cref(cpu_ibo_), std::ref(cpu_cbo_))),
-      Mn::GL::BufferUsage::StaticDraw);
+          std::make_pair(std::cref(cpu_ibo_), std::ref(cpu_cbo_)));
+
+  indices.setTargetHint(Mn::GL::Buffer::TargetHint::ElementArray);
+  indices.setData(new_indices, Mn::GL::BufferUsage::StaticDraw);
+
   vertices.setData(
       Mn::MeshTools::interleave(cpu_vbo_, cpu_cbo_, 1, objectIds_, 2),
       Mn::GL::BufferUsage::StaticDraw);
@@ -261,6 +264,15 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
           2)
       .setIndexBuffer(std::move(indices), 0,
                       Mn::GL::MeshIndexType::UnsignedInt);
+
+  cpu_ibo_ = new_indices;
+
+  collisionMeshData_.positions =
+      Corrade::Containers::arrayCast<Magnum::Vector3>(
+          Corrade::Containers::arrayView(cpu_vbo_.data(), cpu_vbo_.size()));
+  collisionMeshData_.indices =
+      Corrade::Containers::arrayCast<Magnum::UnsignedInt>(
+          Corrade::Containers::arrayView(cpu_ibo_.data(), cpu_ibo_.size()));
 
   buffersOnGPU_ = true;
 }
