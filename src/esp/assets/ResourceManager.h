@@ -197,7 +197,6 @@ class ResourceManager {
                           DrawableGroup* drawables);
 
   // ======== Geometry helper functions ========
-  // void shiftMeshDataToOrigin(GltfMeshData* meshDataGL);
 
   void translateMesh(BaseMesh* meshDataGL, Magnum::Vector3 translation);
 
@@ -221,9 +220,6 @@ class ResourceManager {
   // a dictionary to check if a mesh has been loaded
   // maps: absolutePath -> meshMetaData
   std::map<std::string, MeshMetaData> resourceDict_;  // meshes
-  std::map<std::string, std::vector<Magnum::UnsignedInt>>
-      magnumMeshDict_;  // IDs for object mesh hierarchies NOTE: needed? to
-                        // bypass "importer" reload
 
   // ======== Physical geometry data ========
   // library of physics object parameters mapped from config filename (used by

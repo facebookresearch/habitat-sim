@@ -54,6 +54,7 @@ class BulletRigidObject : public RigidObject {
    */
   bool initializeScene(
       const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+      const assets::MeshMetaData& metaData,
       const std::vector<assets::CollisionMeshData>& meshGroup,
       std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
 
@@ -64,9 +65,10 @@ class BulletRigidObject : public RigidObject {
    * @param physicsObjectAttributes The template structure defining relevant
    * phyiscal parameters for the object. See @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_.
-   * @param meshGroup The collision mesh data for the object.
    * @param bWorld The @ref btDiscreteDynamicsWorld to which the object should
    * belong.
+   * @param metaData Mesh transform hierarchy information for the object.
+   * @param meshGroup The collision mesh data for the object.
    * @return true if initialized successfully, false otherwise.
    */
   // TODO: update docs here
@@ -76,13 +78,21 @@ class BulletRigidObject : public RigidObject {
       const assets::MeshMetaData& metaData,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
-  // TODO: add docs here
-  void constructBulletConvexCompoundFromMeshes(
-      std::unique_ptr<btCompoundShape>& bCompound,
-      Magnum::Matrix4& T,
+  /**
+   * @brief Recursively construct a @ref btCompoundShape for collision from
+   * loaded mesh assets. A @ref btConvexHullShape is constructed for each
+   * sub-component, transformed to object-local space and added to the compound
+   * in a flat manner for efficiency.
+   * @param bCompound The @ref btCompoundShape being constructed.
+   * @param T The cumulative local-to-world transformation matrix constructed by
+   * composition down the @ref MeshTransformNode tree to the current node.
+   * @param meshGroup Access structure for collision mesh data.
+   * @param node The current @ref MeshTransformNode in the recursion.
+   */
+  void constructBulletCompoundFromMeshes(
+      const Magnum::Matrix4& T_world_parent,
       const std::vector<assets::CollisionMeshData>& meshGroup,
-      const assets::MeshTransformNode& node,
-      bool join = true);
+      const assets::MeshTransformNode& node);
 
   /**
    * @brief Check whether object is being actively simulated, or sleeping.
@@ -108,7 +118,11 @@ class BulletRigidObject : public RigidObject {
    */
   virtual bool setMotionType(MotionType mt);
 
-  //! TODO: doc
+  /**
+   * @brief Shift the object's local origin by translating all children of this
+   * @ref BulletRigidObject and all components of its @ref bObjectShape_.
+   * @param shift The translation to apply.
+   */
   void shiftOrigin(const Magnum::Vector3& shift) override;
 
   /**

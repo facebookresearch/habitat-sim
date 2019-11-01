@@ -81,6 +81,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
       }
       // add a scene attributes for this filename or modify the existing one
       if (meshSuccess) {
+        // TODO: need this anymore?
         physicsSceneLibrary_[info.filepath].setString("renderMeshHandle",
                                                       info.filepath);
       }
@@ -88,8 +89,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   } else {
     LOG(INFO) << "Loading empty scene";
     // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
-    // scene mesh): welcome
-    // to the void
+    // scene mesh): welcome to the void
   }
 
   // once a scene is loaded, we should have a GL::Context so load the primitives
@@ -181,6 +181,11 @@ bool ResourceManager::loadScene(
       "restitutionCoefficient",
       physicsManagerAttributes.getDouble("restitutionCoefficient"));
 
+  physicsSceneLibrary_[info.filepath].setString("renderMeshHandle",
+                                                info.filepath);
+  physicsSceneLibrary_[info.filepath].setString("collisionMeshHandle",
+                                                info.filepath);
+
   //! CONSTRUCT SCENE
   const std::string& filename = info.filepath;
   // if we have a scene mesh, add it as a collision object
@@ -203,16 +208,9 @@ bool ResourceManager::loadScene(
 
       // GLB Mesh
       else if (info.type == AssetType::MP3D_MESH) {
-        quatf quatFront =
-            quatf::FromTwoVectors(info.frame.front(), geo::ESP_FRONT);
-        Magnum::Quaternion quat = Magnum::Quaternion(quatFront);
         GltfMeshData* gltfMeshData =
             dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
         CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
-        Magnum::Matrix4 transform =
-            Magnum::Matrix4::rotation(quat.angle(), quat.axis().normalized());
-        Magnum::MeshTools::transformPointsInPlace(transform,
-                                                  meshData.positions);
         meshGroup.push_back(meshData);
       }
     }
@@ -374,9 +372,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
 
     MeshMetaData& meshMetaData = resourceDict_[filename];
 
-    for (auto componentID : magnumMeshDict_[filename]) {
-      addComponent(meshMetaData, *parent, drawables, meshMetaData.root);
-    }
+    addComponent(meshMetaData, *parent, drawables, meshMetaData.root);
     // compute the full BB hierarchy for the new tree.
     parent->computeCumulativeBB();
   }
@@ -708,6 +704,14 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 
     // update the dictionary
     resourceDict_.emplace(filename, MeshMetaData(index, index));
+    resourceDict_[filename].root.meshIDLocal = 0;
+    resourceDict_[filename].root.componentID = 0;
+    // store the rotation to world frame upon load
+    const quatf transform = info.frame.rotationFrameToWorld();
+    Magnum::Matrix4 R = Magnum::Matrix4::from(
+        Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
+    resourceDict_[filename].root.T_parent_local =
+        R * resourceDict_[filename].root.T_parent_local;
   }
 
   // create the scene graph by request
@@ -763,6 +767,8 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
     instance_mesh_ = &(instanceMeshData->getRenderingBuffer()->mesh);
     // update the dictionary
     resourceDict_.emplace(filename, MeshMetaData(index, index));
+    resourceDict_[filename].root.meshIDLocal = 0;
+    resourceDict_[filename].root.componentID = 0;
   }
 
   // create the scene graph by request
@@ -793,7 +799,6 @@ bool ResourceManager::loadGeneralMeshData(
 
   // Mesh & metaData container
   MeshMetaData metaData;
-  std::vector<Magnum::UnsignedInt> magnumData;
 
   Magnum::PluginManager::Manager<Importer> manager;
   std::unique_ptr<Importer> importer =
@@ -824,20 +829,23 @@ bool ResourceManager::loadGeneralMeshData(
         return false;
       }
       for (unsigned int sceneDataID : sceneData->children3D()) {
-        magnumData.emplace_back(sceneDataID);
         loadMeshHierarchy(*importer, resourceDict_[filename].root, sceneDataID);
       }
     } else if (importer->mesh3DCount() && meshes_[metaData.meshIndex.first]) {
       // no default scene --- standalone OBJ/PLY files, for example
       // take a wild guess and load the first mesh with the first material
       // addMeshToDrawables(metaData, *parent, drawables, ID_UNDEFINED, 0, 0);
-      magnumData.emplace_back(0);
       loadMeshHierarchy(*importer, resourceDict_[filename].root, 0);
     } else {
       LOG(ERROR) << "No default scene available and no meshes found, exiting";
       return false;
     }
-    magnumMeshDict_.emplace(filename, magnumData);
+
+    const quatf transform = info.frame.rotationFrameToWorld();
+    Magnum::Matrix4 R = Magnum::Matrix4::from(
+        Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
+    resourceDict_[filename].root.T_parent_local =
+        R * resourceDict_[filename].root.T_parent_local;
   } else {
     metaData = resourceDict_[filename];
   }
@@ -866,12 +874,7 @@ bool ResourceManager::loadGeneralMeshData(
       }
     }  // forceReload
 
-    const quatf transform = info.frame.rotationFrameToWorld();
-    newNode.setRotation(Magnum::Quaternion(transform));
-    // Recursively add all children
-    for (auto sceneDataID : magnumMeshDict_[filename]) {
-      addComponent(metaData, newNode, drawables, metaData.root);
-    }
+    addComponent(metaData, newNode, drawables, metaData.root);
     return true;
   }
 }
@@ -938,7 +941,7 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
 
   // Add the new node to the hierarchy and set its transformation
   parent.children.push_back(MeshTransformNode());
-  parent.children.back().T = objectData->transformation();
+  parent.children.back().T_parent_local = objectData->transformation();
   parent.children.back().componentID = componentID;
 
   const int meshIDLocal = objectData->instance();
@@ -1019,7 +1022,7 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
                                    MeshTransformNode& meshTransformNode) {
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
-  node.MagnumObject::setTransformation(meshTransformNode.T);
+  node.MagnumObject::setTransformation(meshTransformNode.T_parent_local);
 
   const int meshIDLocal = meshTransformNode.meshIDLocal;
 

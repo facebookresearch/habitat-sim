@@ -161,10 +161,17 @@ class RigidObject : public scene::SceneNode {
    */
   MotionType getMotionType() { return objectMotionType_; };
 
-  //! TODO: doc this
+  /**
+   * @brief Shift the object's local origin by translating all children of this
+   * @ref RigidObject.
+   * @param shift The translation to apply to object's children.
+   */
   virtual void shiftOrigin(const Magnum::Vector3& shift);
 
-  //! TODO: doc this
+  /**
+   * @brief Shift the object's local origin to be coincident with the center of
+   * it's bounding box, @ref cumulativeBB_. See @ref shiftOrigin.
+   */
   void shiftOriginToBBCenter();
 
   /**

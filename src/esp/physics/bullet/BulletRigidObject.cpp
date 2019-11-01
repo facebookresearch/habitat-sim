@@ -36,6 +36,7 @@ BulletRigidObject::~BulletRigidObject() {}
 
 bool BulletRigidObject::initializeScene(
     const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+    const assets::MeshMetaData& metaData,
     const std::vector<assets::CollisionMeshData>& meshGroup,
     std::shared_ptr<btDiscreteDynamicsWorld> bWorld) {
   if (rigidObjectType_ != RigidObjectType::NONE) {
@@ -47,56 +48,19 @@ bool BulletRigidObject::initializeScene(
   rigidObjectType_ = RigidObjectType::SCENE;
   objectMotionType_ = MotionType::STATIC;
 
-  //! Create Bullet Object
-  btIndexedMesh bulletMesh;
-
-  //! Iterate through all mesh components for one scene
-  //! All components are registered as static objects
   bSceneArray_ = std::make_unique<btTriangleIndexVertexArray>();
-  for (const assets::CollisionMeshData& meshData : meshGroup) {
-    //! Here we convert Magnum's unsigned int indices to
-    //! signed indices in bullet. Assuming that it's save to
-    //! cast uint to int
-    Corrade::Containers::ArrayView<Magnum::Vector3> v_data = meshData.positions;
-    Corrade::Containers::ArrayView<Magnum::UnsignedInt> ui_data =
-        meshData.indices;
+  bObjectShape_ = std::make_unique<btCompoundShape>();
+  // TODO: this should translate to the COM
+  constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup,
+                                    metaData.root);
 
-    //! Configure Bullet Mesh
-    //! This part is very likely to cause segfault, if done incorrectly
-    bulletMesh.m_numTriangles = ui_data.size() / 3;
-    bulletMesh.m_triangleIndexBase =
-        reinterpret_cast<const unsigned char*>(ui_data.data());
-    bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
-    bulletMesh.m_numVertices = v_data.size();
-    bulletMesh.m_vertexBase =
-        reinterpret_cast<const unsigned char*>(v_data.data());
-    bulletMesh.m_vertexStride = sizeof(Magnum::Vector3);
-    bulletMesh.m_indexType = PHY_INTEGER;
-    bulletMesh.m_vertexType = PHY_FLOAT;
-    bSceneArray_->addIndexedMesh(bulletMesh, PHY_INTEGER);  // exact shape
-
-    //! Embed 3D mesh into bullet shape
-    //! btBvhTriangleMeshShape is the most generic/slow choice
-    bSceneShapes_.emplace_back(
-        std::make_unique<btBvhTriangleMeshShape>(bSceneArray_.get(), true));
-    // double mass = 0.0;
-    // btVector3 bInertia(0.0, 0.0, 0.0);
-    // bSceneShapes_.back()->calculateLocalInertia(mass, bInertia);
-
-    //! Bullet rigid body setup
-    bSceneCollisionObjects_.emplace_back(std::make_unique<btCollisionObject>());
-    bSceneCollisionObjects_.back()->setCollisionShape(
-        bSceneShapes_.back().get());
-    /*bSceneCollisionObjects_.back()->setCollisionFlags(
-        bSceneCollisionObjects_.back()->getCollisionFlags() |
-        btCollisionObject::CF_STATIC_OBJECT);*/
-
-    bSceneCollisionObjects_.back()->setFriction(
-        physicsSceneAttributes.getDouble("frictionCoefficient"));
-    bSceneCollisionObjects_.back()->setRestitution(
-        physicsSceneAttributes.getDouble("restitutionCoefficient"));
-    bWorld->addCollisionObject(bSceneCollisionObjects_.back().get());
-  }
+  bSceneCollisionObjects_.emplace_back(std::make_unique<btCollisionObject>());
+  bSceneCollisionObjects_.back()->setCollisionShape(bObjectShape_.get());
+  bSceneCollisionObjects_.back()->setFriction(
+      physicsSceneAttributes.getDouble("frictionCoefficient"));
+  bSceneCollisionObjects_.back()->setRestitution(
+      physicsSceneAttributes.getDouble("restitutionCoefficient"));
+  bWorld->addCollisionObject(bSceneCollisionObjects_.back().get());
 
   bWorld_ = bWorld;
   syncPose();
@@ -105,53 +69,62 @@ bool BulletRigidObject::initializeScene(
 
 // recursively create the convex mesh shapes and add them to the compound in a
 // flat manner by accumulating transformations down the tree
-// TODO: btConvexHullShape stores a copy of the points, can we improve memory?
-void BulletRigidObject::constructBulletConvexCompoundFromMeshes(
-    std::unique_ptr<btCompoundShape>& bCompound,
-    Magnum::Matrix4& T,
+void BulletRigidObject::constructBulletCompoundFromMeshes(
+    const Magnum::Matrix4& T_world_parent,
     const std::vector<assets::CollisionMeshData>& meshGroup,
-    const assets::MeshTransformNode& node,
-    bool join) {
-  Magnum::Matrix4 cT = T * node.T;
-  btTransform t(cT);
-
+    const assets::MeshTransformNode& node) {
+  Magnum::Matrix4 T_world_local = T_world_parent * node.T_parent_local;
   if (node.meshIDLocal != ID_UNDEFINED) {
     // This node has a mesh, so add it to the compound
 
     const assets::CollisionMeshData& mesh = meshGroup[node.meshIDLocal];
 
-    if (join) {
-      // add all points to a single convex instead of compounding (more stable)
-      if (bObjectConvexShapes_.empty()) {
-        // create the convex if it does not exist
-        bObjectConvexShapes_.emplace_back(
-            std::make_unique<btConvexHullShape>());
-      }
+    if (rigidObjectType_ == RigidObjectType::OBJECT) {
+      // OBJECT: create a convex
 
-      // add points
-      for (auto& v : mesh.positions) {
-        bObjectConvexShapes_.back()->addPoint(btVector3(cT.transformPoint(v)),
-                                              false);
-      }
-      bObjectConvexShapes_.back()->recalcLocalAabb();
-
-    } else {
-      // create a new convex from the transformed mesh component and add it to
-      // the compound
       bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
           static_cast<const btScalar*>(mesh.positions.data()->data()),
           mesh.positions.size(), sizeof(Magnum::Vector3)));
 
-      bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
-    }
+      //! Add to compound shape stucture
+      bObjectShape_->addChildShape(btTransform{T_world_local},
+                                   bObjectConvexShapes_.back().get());
+    } else {
+      // SCENE: create a concave static mesh
+      btIndexedMesh bulletMesh;
 
-    // TODO: need this for child shapes?
-    // bObjectConvexShapes_.back()->setMargin(margin);
+      Corrade::Containers::ArrayView<Magnum::Vector3> v_data = mesh.positions;
+      Corrade::Containers::ArrayView<Magnum::UnsignedInt> ui_data =
+          mesh.indices;
+
+      //! Configure Bullet Mesh
+      //! This part is very likely to cause segfault, if done incorrectly
+      bulletMesh.m_numTriangles = ui_data.size() / 3;
+      bulletMesh.m_triangleIndexBase =
+          reinterpret_cast<const unsigned char*>(ui_data.data());
+      bulletMesh.m_triangleIndexStride = 3 * sizeof(Magnum::UnsignedInt);
+      bulletMesh.m_numVertices = v_data.size();
+      bulletMesh.m_vertexBase =
+          reinterpret_cast<const unsigned char*>(v_data.data());
+      bulletMesh.m_vertexStride = sizeof(Magnum::Vector3);
+      bulletMesh.m_indexType = PHY_INTEGER;
+      bulletMesh.m_vertexType = PHY_FLOAT;
+      bSceneArray_->addIndexedMesh(bulletMesh, PHY_INTEGER);  // exact shape
+
+      //! Embed 3D mesh into bullet shape
+      //! btBvhTriangleMeshShape is the most generic/slow choice
+      //! which allows concavity if the object is static
+      bSceneShapes_.emplace_back(
+          std::make_unique<btBvhTriangleMeshShape>(bSceneArray_.get(), true));
+
+      //! Add to compound shape stucture
+      bObjectShape_->addChildShape(btTransform{T_world_local},
+                                   bSceneShapes_.back().get());
+    }
   }
 
   for (auto& child : node.children) {
-    constructBulletConvexCompoundFromMeshes(bCompound, cT, meshGroup, child,
-                                            join);
+    constructBulletCompoundFromMeshes(T_world_local, meshGroup, child);
   }
 }
 
@@ -169,9 +142,6 @@ bool BulletRigidObject::initializeObject(
   rigidObjectType_ = RigidObjectType::OBJECT;
   objectMotionType_ = MotionType::DYNAMIC;
 
-  //! Create Bullet Object
-  btIndexedMesh bulletMesh;
-
   //! Physical parameters
   double margin = physicsObjectAttributes.getDouble("margin");
 
@@ -181,16 +151,9 @@ bool BulletRigidObject::initializeObject(
   //! Iterate through all mesh components for one object
   //! The components are combined into a convex compound shape
   bObjectShape_ = std::make_unique<btCompoundShape>();
-  Magnum::Matrix4 T;  // TODO: this should translate to the COM
-  constructBulletConvexCompoundFromMeshes(bObjectShape_, T, meshGroup,
-                                          metaData.root, joinCollisionMeshes);
-
-  // add the final object after joining meshes
-  if (joinCollisionMeshes) {
-    btTransform t;
-    t.setIdentity();
-    bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
-  }
+  // TODO: this should translate to the COM
+  constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup,
+                                    metaData.root);
 
   //! Set properties
   bObjectShape_->setMargin(margin);
