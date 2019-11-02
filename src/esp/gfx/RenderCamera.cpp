@@ -15,6 +15,7 @@ RenderCamera::RenderCamera(scene::SceneNode& node)
     : Magnum::SceneGraph::AbstractFeature3D{node} {
   node.setType(scene::SceneNodeType::CAMERA);
   camera_ = new MagnumCamera(node);
+  camera_->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::NotPreserved);
 }
 
 RenderCamera::RenderCamera(scene::SceneNode& node,
@@ -33,8 +34,8 @@ void RenderCamera::setProjectionMatrix(int width,
                                        float zfar,
                                        float hfov) {
   const float aspectRatio = static_cast<float>(width) / height;
-  camera_->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::NotPreserved)
-      .setProjectionMatrix(
+  camera_
+      ->setProjectionMatrix(
           Matrix4::perspectiveProjection(Deg{hfov}, aspectRatio, znear, zfar))
       .setViewport(Magnum::Vector2i(width, height));
 }

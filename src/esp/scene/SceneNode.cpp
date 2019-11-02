@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "SceneNode.h"
+#include "esp/geo/geo.h"
 
 using namespace Magnum;
 
@@ -23,6 +24,27 @@ SceneNode& SceneNode::createChild() {
   SceneNode* node = new SceneNode(*this);
   node->setId(this->getId());
   return *node;
+}
+
+//! @brief recursively compute the cumulative bounding box of this node's tree.
+const Magnum::Range3D& SceneNode::computeCumulativeBB() {
+  // first copy from your precomputed mesh bb
+  cumulativeBB_ = Magnum::Range3D(meshBB_);
+  auto* child = children().first();
+
+  while (child != nullptr) {
+    SceneNode* child_node = dynamic_cast<SceneNode*>(child);
+    if (child_node != nullptr) {
+      child_node->computeCumulativeBB();
+
+      Magnum::Range3D transformedBB = esp::geo::getTransformedBB(
+          child_node->cumulativeBB_, child_node->transformation());
+
+      cumulativeBB_ = Magnum::Math::join(cumulativeBB_, transformedBB);
+    }
+    child = child->nextSibling();
+  }
+  return cumulativeBB_;
 }
 
 }  // namespace scene

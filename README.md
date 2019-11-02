@@ -359,6 +359,11 @@ The Habitat project would not have been possible without the support and contrib
     Specifically, the noise model used for the noisy control functions named `pyrobot_*` and defined in `habitat_sim/agent/controls/pyrobot_noisy_controls.py`
 
 
+* If you use the Redwood Depth Noise Model, please cite their [paper](http://redwood-data.org/indoor/)
+
+    Specifically, the noise model defined in `habitat_sim/sensors/noise_models/redwood_depth_noise_model.py` and `src/esp/sensor/RedwoodNoiseModel.*`
+
+
 ## License
 
 Habitat-Sim is MIT licensed. See the LICENSE file for details.

@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <Corrade/Containers/Optional.h>
@@ -131,7 +132,25 @@ class ResourceManager {
 
   const Magnum::Matrix4& getMeshTransformation(const size_t meshIndex) {
     return meshes_[meshIndex]->meshTransform_;
-  }
+  };
+
+  const MeshMetaData& getMeshMetaData(std::string filename) {
+    CHECK(resourceDict_.count(filename) > 0);
+    return resourceDict_.at(filename);
+  };
+
+  /**
+   * @brief Create a new drawable primitive attached to the desired @ref
+   * SceneNode. See @ref primitive_meshes_.
+   * @param primitiveID The index of the primitive in @ref primitive_meshes_.
+   * @param node The @ref SceneNode to which the primitive drawable will be
+   * attached.
+   * @param drawables The @ref DrawableGroup with which the primitive will be
+   * rendered.
+   */
+  void addPrimitiveToDrawables(int primitiveID,
+                               scene::SceneNode& node,
+                               DrawableGroup* drawables);
 
  protected:
   //======== Scene Functions ========
@@ -139,20 +158,22 @@ class ResourceManager {
   //! (1) create scene node
   //! (2) upload mesh to gpu and drawables
   //! (optional reload of GPU-side assets)
-  void addComponent(Importer& importer,
-                    const MeshMetaData& metaData,
+  void addComponent(const MeshMetaData& metaData,
                     scene::SceneNode& parent,
                     DrawableGroup* drawables,
-                    int objectID);
+                    MeshTransformNode& meshTransformNode);
 
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);
 
-  //! Load meshes from importer into assets, and update metaData
-  void loadMeshes(Importer& importer,
-                  MeshMetaData* metaData,
-                  bool shiftOrigin = false,
-                  Magnum::Vector3 offset = Magnum::Vector3(0, 0, 0));
+  //! Load meshes from importer into assets, compute bounding boxes, and update
+  //! metaData
+  void loadMeshes(Importer& importer, MeshMetaData* metaData);
+
+  //! Load the mesh transformation hierarchy for the imported file
+  void loadMeshHierarchy(Importer& importer,
+                         MeshTransformNode& parent,
+                         int componentID);
 
   //! Load materials from importer into assets, and update metaData
   void loadMaterials(Importer& importer, MeshMetaData* metaData);
@@ -167,28 +188,24 @@ class ResourceManager {
 
   // load the mesh data
   // If parent, also do scene graph
-  // if shiftOrigin: translate the mesh by "translation"
-  //  (default) if translation == [0,0,0]: compute center of mesh bounding box
-  //  and then translate
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent = nullptr,
-                           DrawableGroup* drawables = nullptr,
-                           bool shiftOrigin = false,
-                           Magnum::Vector3 translation = Magnum::Vector3(0,
-                                                                         0,
-                                                                         0));
+                           DrawableGroup* drawables = nullptr);
 
   bool loadSUNCGHouseFile(const AssetInfo& info,
                           scene::SceneNode* parent,
                           DrawableGroup* drawables);
 
   // ======== Geometry helper functions ========
-  // void shiftMeshDataToOrigin(GltfMeshData* meshDataGL);
 
-  void translateMesh(GltfMeshData* meshDataGL, Magnum::Vector3 translation);
+  void translateMesh(BaseMesh* meshDataGL, Magnum::Vector3 translation);
 
-  // compute center of axis aligned mesh bounding box
-  Magnum::Vector3 computeMeshBBCenter(GltfMeshData* meshDataGL);
+  /**
+   * @brief Compute and return the axis aligned bounding box of a mesh.
+   * @param meshDataGL The mesh data.
+   * @return The mesh bounding box.
+   */
+  Magnum::Range3D computeMeshBB(BaseMesh* meshDataGL);
 
   // ======== General geometry data ========
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or
@@ -203,9 +220,6 @@ class ResourceManager {
   // a dictionary to check if a mesh has been loaded
   // maps: absolutePath -> meshMetaData
   std::map<std::string, MeshMetaData> resourceDict_;  // meshes
-  std::map<std::string, std::vector<Magnum::UnsignedInt>>
-      magnumMeshDict_;  // IDs for object mesh hierarchies NOTE: needed? to
-                        // bypass "importer" reload
 
   // ======== Physical geometry data ========
   // library of physics object parameters mapped from config filename (used by
@@ -218,6 +232,12 @@ class ResourceManager {
   // library of physics manager attributes for resetting/swapping simulators or
   // simulation parameters
   std::map<std::string, PhysicsManagerAttributes> physicsManagerLibrary_;
+
+  /**
+   * @brief Primitive meshes available for instancing via @ref
+   * addPrimitiveToDrawables for debugging or visualization purposes.
+   */
+  std::vector<Magnum::GL::Mesh> primitive_meshes_;
 
   // maps: "data/objects/cheezit.phys_properties.json" -> collesionMesh group
   std::map<std::string, std::vector<CollisionMeshData>>
