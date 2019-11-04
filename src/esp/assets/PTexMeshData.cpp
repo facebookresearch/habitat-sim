@@ -20,6 +20,8 @@
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
+#include <Magnum/Trade/AbstractImporter.h>
+#include <Magnum/Trade/ImageData.h>
 
 #include "esp/core/esp.h"
 #include "esp/gfx/PTexMeshShader.h"
@@ -30,6 +32,7 @@ static constexpr int ROTATION_SHIFT = 30;
 static constexpr int FACE_MASK = 0x3FFFFFFF;
 
 namespace Cr = Corrade;
+namespace Mn = Magnum;
 
 namespace esp {
 namespace assets {
@@ -771,7 +774,9 @@ void PTexMeshData::parsePLY(const std::string& filename,
   }
 }
 
-void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
+void PTexMeshData::uploadBuffersToGPU(
+    Cr::PluginManager::Manager<Mn::Trade::AbstractImporter>& importerManager,
+    bool forceReload) {
   if (forceReload) {
     buffersOnGPU_ = false;
   }
@@ -828,43 +833,89 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
 
   // load atlas data and upload them to GPU
   LOG(INFO) << "loading atlas textures: ";
+  Cr::Containers::Pointer<Mn::Trade::AbstractImporter> basisImporter;
   for (size_t iMesh = 0; iMesh < renderingBuffers_.size(); ++iMesh) {
-    const std::string hdrFile = Cr::Utility::Directory::join(
-        atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
-
-    CORRADE_ASSERT(io::exists(hdrFile),
-                   "PTexMeshData::uploadBuffersToGPU: Cannot find the .hdr file"
-                       << hdrFile, );
-
-    LOG(INFO) << "Loading atlas " << iMesh + 1 << "/"
-              << renderingBuffers_.size() << " from " << hdrFile << ". ";
-
-    Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter> data =
-        Cr::Utility::Directory::mapRead(hdrFile);
-    // divided by 6, since there are 3 channels, R, G, B, each of which takes
-    // 1 half_float (2 bytes)
-    const int dim = static_cast<int>(std::sqrt(data.size() / 6));  // square
-    CORRADE_ASSERT(dim * dim * 6 == data.size(),
-                   "PTexMeshData::uploadBuffersToGPU: the atlas texture is not "
-                   "a square", );
-
-    // atlas
-    // the size of each image is dim x dim x 3 (RGB) x 2 (half_float), which
-    // equals to numBytes
-    Magnum::ImageView2D image(Magnum::PixelFormat::RGB16F, {dim, dim}, data);
-
     renderingBuffers_[iMesh]
         ->atlasTexture.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
         .setMagnificationFilter(Magnum::GL::SamplerFilter::Linear)
-        .setMinificationFilter(Magnum::GL::SamplerFilter::Linear)
-        .setStorage(
-            Magnum::Math::log2(image.size().min()) + 1,  // mip level count
-            Magnum::GL::TextureFormat::RGB16F,
-            image.size())
-        .setSubImage(0,   // mipLevel
-                     {},  // offset
-                     image)
-        .generateMipmap();
+        .setMinificationFilter(Magnum::GL::SamplerFilter::Linear);
+
+    const std::string basisFile = Cr::Utility::Directory::join(
+        atlasFolder_, std::to_string(iMesh) + "-color-ptex.basis");
+    // Hooray, we can use a (smaller) Basis file
+    if (Cr::Utility::Directory::exists(basisFile)) {
+      if (!basisImporter)
+        basisImporter = importerManager.loadAndInstantiate("BasisImporter");
+
+      LOG(INFO) << "Loading atlas " << iMesh + 1 << "/"
+                << renderingBuffers_.size() << " from " << basisFile << ". ";
+
+      // Loading errors are already reported to stdout by these APIs, no need
+      // to print a message again
+      Cr::Containers::Optional<Mn::Trade::ImageData2D> image;
+      CORRADE_INTERNAL_ASSERT(basisImporter &&
+                              basisImporter->openFile(basisFile) &&
+                              (image = basisImporter->image2D(0)));
+      // TODO: load all mips once https://github.com/mosra/magnum/pull/369 is
+      // merged
+      if (image->isCompressed()) {
+        renderingBuffers_[iMesh]
+            ->atlasTexture
+            .setStorage(1, Mn::GL::textureFormat(image->compressedFormat()),
+                        image->size())
+            .setCompressedSubImage(0, {}, *image);
+      } else {
+        renderingBuffers_[iMesh]
+            ->atlasTexture
+            .setStorage(1, Mn::GL::textureFormat(image->format()),
+                        image->size())
+            .setSubImage(0, {}, *image);
+      }
+
+      // Basis files are not HDR and are pre-normalized to contain the most of
+      // visible range without clipping by applying the 0.0125 exposure during
+      // transcode. Thus don't apply it here again.
+      exposure_ = 1.0f;
+
+      // otherwise grab the uncompressed raw RGB16F pixels
+    } else {
+      const std::string hdrFile = Cr::Utility::Directory::join(
+          atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
+
+      CORRADE_ASSERT(
+          io::exists(hdrFile),
+          "PTexMeshData::uploadBuffersToGPU: Cannot find the .hdr file"
+              << hdrFile, );
+
+      LOG(INFO) << "Loading atlas " << iMesh + 1 << "/"
+                << renderingBuffers_.size() << " from " << hdrFile << ". ";
+
+      Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter>
+          data = Cr::Utility::Directory::mapRead(hdrFile);
+      // divided by 6, since there are 3 channels, R, G, B, each of which takes
+      // 1 half_float (2 bytes)
+      const int dim = static_cast<int>(std::sqrt(data.size() / 6));  // square
+      CORRADE_ASSERT(
+          dim * dim * 6 == data.size(),
+          "PTexMeshData::uploadBuffersToGPU: the atlas texture is not "
+          "a square", );
+
+      // atlas
+      // the size of each image is dim x dim x 3 (RGB) x 2 (half_float), which
+      // equals to numBytes
+      Mn::ImageView2D image(Mn::PixelFormat::RGB16F, {dim, dim}, data);
+
+      renderingBuffers_[iMesh]
+          ->atlasTexture
+          .setStorage(
+              Mn::Math::log2(image.size().min()) + 1,  // mip level count
+              Mn::GL::TextureFormat::RGB16F,
+              image.size())
+          .setSubImage(0,   // mipLevel
+                       {},  // offset
+                       image)
+          .generateMipmap();
+    }
   }
 
   buffersOnGPU_ = true;

@@ -59,7 +59,9 @@ class PTexMeshData : public BaseMesh {
 
   // ==== rendering ====
   RenderingBuffer* getRenderingBuffer(int submeshID);
-  virtual void uploadBuffersToGPU(bool forceReload = false) override;
+  virtual void uploadBuffersToGPU(
+      Corrade::PluginManager::Manager<Magnum::Trade::AbstractImporter>& manager,
+      bool forceReload = false) override;
   virtual Magnum::GL::Mesh* getMagnumGLMesh(int submeshID) override;
 
   float exposure() const;
