@@ -350,6 +350,7 @@ std::shared_ptr<nav::PathFinder> Simulator::recomputeNavMesh(
 
   if (!pf->build(navMeshSettings, *joinedMesh)) {
     LOG(ERROR) << "Failed to build navmesh";
+    return nullptr;
   }
 
   LOG(INFO) << "reconstruct navmesh successful";

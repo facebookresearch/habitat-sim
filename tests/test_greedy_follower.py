@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 import tqdm
 
+import examples.settings
 import habitat_sim
 
 base_dir = osp.abspath(osp.join(osp.dirname(__file__), ".."))
@@ -25,7 +26,7 @@ if test_all and osp.exists(gibson_base):
     test_navmeshes += glob.glob(f"{gibson_base}/*.navmesh")
 
 mp3d_base = osp.join(base_dir, "data/scene_datasets/mp3d")
-if test_all and osp.exists(gibson_base):
+if test_all and osp.exists(mp3d_base):
     test_navmeshes += glob.glob(f"{mp3d_base}/*/*.navmesh")
 
 
@@ -46,7 +47,8 @@ num_fails = 0
 
 
 @pytest.mark.parametrize("test_navmesh", test_navmeshes)
-def test_greedy_follower(test_navmesh, scene_graph, pbar):
+@pytest.mark.parametrize("recompute_navmesh", [True, False])
+def test_greedy_follower(test_navmesh, scene_graph, pbar, recompute_navmesh, sim):
     global num_fails
     if not osp.exists(test_navmesh):
         pytest.skip(f"{test_navmesh} not found")
@@ -54,6 +56,24 @@ def test_greedy_follower(test_navmesh, scene_graph, pbar):
     pathfinder = habitat_sim.PathFinder()
     pathfinder.load_nav_mesh(test_navmesh)
     assert pathfinder.is_loaded
+
+    # test recomputing the navmesh and using this version instead
+    if recompute_navmesh:
+        cfg_settings = examples.settings.default_sim_settings.copy()
+
+        # remove the ".navmesh" and look for a matching ".glb" instead, skip if not found
+        scene_file = test_navmesh[:-7] + "glb"
+        if not osp.exists(scene_file):
+            pytest.skip(f"{scene_file} not found")
+
+        cfg_settings["scene"] = scene_file
+        hab_cfg = examples.settings.make_cfg(cfg_settings)
+        sim.reconfigure(hab_cfg)
+        navmesh_settings = habitat_sim.NavMeshSettings()
+        navmesh_settings.set_defaults()
+        sim.recompute_navmesh(navmesh_settings)
+        assert sim.pathfinder.is_loaded
+        pathfinder = sim.pathfinder
 
     agent = habitat_sim.Agent(scene_graph.get_root_node().create_child())
     agent.controls.move_filter_fn = pathfinder.try_step
