@@ -223,7 +223,9 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   return true;
 }
 
-void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
+void GenericInstanceMeshData::uploadBuffersToGPU(
+    Cr::PluginManager::Manager<Mn::Trade::AbstractImporter>& manager,
+    bool forceReload) {
   if (forceReload) {
     buffersOnGPU_ = false;
   }

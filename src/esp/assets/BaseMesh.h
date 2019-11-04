@@ -5,12 +5,14 @@
 #pragma once
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Reference.h>
+#include <Corrade/PluginManager/PluginManager.h>
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/Mesh.h>
 #include <Magnum/Trade/MeshData3D.h>
+#include <Magnum/Trade/Trade.h>
 #include "CollisionMeshData.h"
 #include "MeshData.h"
 #include "esp/core/esp.h"
@@ -36,7 +38,9 @@ class BaseMesh {
   bool setMeshType(SupportedMeshType type);
   SupportedMeshType getMeshType() { return type_; }
 
-  virtual void uploadBuffersToGPU(bool){};
+  virtual void uploadBuffersToGPU(
+      Corrade::PluginManager::Manager<Magnum::Trade::AbstractImporter>&,
+      bool){};
 
   virtual Magnum::GL::Mesh* getMagnumGLMesh() { return nullptr; }
   virtual Magnum::GL::Mesh* getMagnumGLMesh(int) { return nullptr; }

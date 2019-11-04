@@ -65,6 +65,85 @@ namespace assets {
 bool ResourceManager::loadScene(const AssetInfo& info,
                                 scene::SceneNode* parent, /* = nullptr */
                                 DrawableGroup* drawables /* = nullptr */) {
+  // Set up preferred plugins, Basis target GPU format
+  importerManager_.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
+#ifdef ESP_BUILD_ASSIMP_SUPPORT
+  importerManager_.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+#endif
+  {
+    Cr::PluginManager::PluginMetadata* const metadata =
+        importerManager_.metadata("BasisImporter");
+    Mn::GL::Context& context = Mn::GL::Context::current();
+#ifdef MAGNUM_TARGET_WEBGL
+    if (context.isExtensionSupported<
+            Mn::GL::Extensions::WEBGL::compressed_texture_astc>())
+#else
+    if (context.isExtensionSupported<
+            Mn::GL::Extensions::KHR::texture_compression_astc_ldr>())
+#endif
+    {
+      LOG(INFO) << "Importing Basis files as ASTC 4x4";
+      metadata->configuration().setValue("format", "Astc4x4RGBA");
+    }
+#ifdef MAGNUM_TARGET_GLES
+    else if (context.isExtensionSupported<
+                 Mn::GL::Extensions::EXT::texture_compression_bptc>())
+#else
+    else if (context.isExtensionSupported<
+                 Mn::GL::Extensions::ARB::texture_compression_bptc>())
+#endif
+    {
+      LOG(INFO) << "Importing Basis files as BC7";
+      metadata->configuration().setValue("format", "Bc7RGBA");
+    }
+#ifdef MAGNUM_TARGET_WEBGL
+    else if (context.isExtensionSupported<
+                 Mn::GL::Extensions::WEBGL::compressed_texture_s3tc>())
+#elif defined(MAGNUM_TARGET_GLES)
+    else if (context.isExtensionSupported<
+                 Mn::GL::Extensions::EXT::texture_compression_s3tc>() ||
+             context.isExtensionSupported<
+                 Mn::GL::Extensions::ANGLE::texture_compression_dxt5>())
+#else
+    else if (context.isExtensionSupported<
+                 Mn::GL::Extensions::EXT::texture_compression_s3tc>())
+#endif
+    {
+      LOG(INFO) << "Importing Basis files as BC3";
+      metadata->configuration().setValue("format", "Bc3RGBA");
+    }
+#ifndef MAGNUM_TARGET_GLES2
+    else
+#ifndef MAGNUM_TARGET_GLES
+        if (context.isExtensionSupported<
+                Mn::GL::Extensions::ARB::ES3_compatibility>())
+#endif
+    {
+      LOG(INFO) << "Importing Basis files as ETC2";
+      metadata->configuration().setValue("format", "Etc2RGBA");
+    }
+#else /* For ES2, fall back to PVRTC as ETC2 is not available */
+    else
+#ifdef MAGNUM_TARGET_WEBGL
+        if (context.isExtensionSupported<Mn::WEBGL::compressed_texture_pvrtc>())
+#else
+        if (context.isExtensionSupported<Mn::IMG::texture_compression_pvrtc>())
+#endif
+    {
+      LOG(INFO) << "Importing Basis files as PVRTC 4bpp";
+      metadata->configuration().setValue("format", "PvrtcRGBA4bpp");
+    }
+#endif
+#if defined(MAGNUM_TARGET_GLES2) || !defined(MAGNUM_TARGET_GLES)
+    else /* ES3 has ETC2 always */
+    {
+      LOG(WARNING) << "No supported GPU compressed texture format detected, "
+                      "Basis images will get imported as RGBA8";
+      metadata->configuration().setValue("format", "RGBA8");
+    }
+#endif
+  }
+
   // scene mesh loading
   bool meshSuccess = true;
   if (info.filepath.compare(EMPTY_SCENE) != 0) {
@@ -719,7 +798,7 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
     for (int iMesh = start; iMesh <= end; ++iMesh) {
       auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_[iMesh].get());
 
-      pTexMeshData->uploadBuffersToGPU(false);
+      pTexMeshData->uploadBuffersToGPU(importerManager_, false);
 
       for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
         scene::SceneNode& node = parent->createChild();
@@ -755,7 +834,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
         dynamic_cast<GenericInstanceMeshData*>(meshes_[index].get());
 
     instanceMeshData->loadPLY(filename);
-    instanceMeshData->uploadBuffersToGPU(false);
+    instanceMeshData->uploadBuffersToGPU(importerManager_, false);
 
     instance_mesh_ = &(instanceMeshData->getRenderingBuffer()->mesh);
     // update the dictionary
@@ -793,88 +872,8 @@ bool ResourceManager::loadGeneralMeshData(
   // Mesh & metaData container
   MeshMetaData metaData;
 
-  Magnum::PluginManager::Manager<Importer> manager;
-  std::unique_ptr<Importer> importer =
-      manager.loadAndInstantiate("AnySceneImporter");
-
-  // Preferred plugins, Basis target GPU format
-  manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
-#ifdef ESP_BUILD_ASSIMP_SUPPORT
-  manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
-#endif
-  {
-    Cr::PluginManager::PluginMetadata* const metadata =
-        manager.metadata("BasisImporter");
-    Mn::GL::Context& context = Mn::GL::Context::current();
-#ifdef MAGNUM_TARGET_WEBGL
-    if (context.isExtensionSupported<
-            Mn::GL::Extensions::WEBGL::compressed_texture_astc>())
-#else
-    if (context.isExtensionSupported<
-            Mn::GL::Extensions::KHR::texture_compression_astc_ldr>())
-#endif
-    {
-      LOG(INFO) << "Importing Basis files as ASTC 4x4";
-      metadata->configuration().setValue("format", "Astc4x4RGBA");
-    }
-#ifdef MAGNUM_TARGET_GLES
-    else if (context.isExtensionSupported<
-                 Mn::GL::Extensions::EXT::texture_compression_bptc>())
-#else
-    else if (context.isExtensionSupported<
-                 Mn::GL::Extensions::ARB::texture_compression_bptc>())
-#endif
-    {
-      LOG(INFO) << "Importing Basis files as BC7";
-      metadata->configuration().setValue("format", "Bc7RGBA");
-    }
-#ifdef MAGNUM_TARGET_WEBGL
-    else if (context.isExtensionSupported<
-                 Mn::GL::Extensions::WEBGL::compressed_texture_s3tc>())
-#elif defined(MAGNUM_TARGET_GLES)
-    else if (context.isExtensionSupported<
-                 Mn::GL::Extensions::EXT::texture_compression_s3tc>() ||
-             context.isExtensionSupported<
-                 Mn::GL::Extensions::ANGLE::texture_compression_dxt5>())
-#else
-    else if (context.isExtensionSupported<
-                 Mn::GL::Extensions::EXT::texture_compression_s3tc>())
-#endif
-    {
-      LOG(INFO) << "Importing Basis files as BC3";
-      metadata->configuration().setValue("format", "Bc3RGBA");
-    }
-#ifndef MAGNUM_TARGET_GLES2
-    else
-#ifndef MAGNUM_TARGET_GLES
-        if (context.isExtensionSupported<
-                Mn::GL::Extensions::ARB::ES3_compatibility>())
-#endif
-    {
-      LOG(INFO) << "Importing Basis files as ETC2";
-      metadata->configuration().setValue("format", "Etc2RGBA");
-    }
-#else /* For ES2, fall back to PVRTC as ETC2 is not available */
-    else
-#ifdef MAGNUM_TARGET_WEBGL
-        if (context.isExtensionSupported<Mn::WEBGL::compressed_texture_pvrtc>())
-#else
-        if (context.isExtensionSupported<Mn::IMG::texture_compression_pvrtc>())
-#endif
-    {
-      LOG(INFO) << "Importing Basis files as PVRTC 4bpp";
-      metadata->configuration().setValue("format", "PvrtcRGBA4bpp");
-    }
-#endif
-#if defined(MAGNUM_TARGET_GLES2) || !defined(MAGNUM_TARGET_GLES)
-    else /* ES3 has ETC2 always */
-    {
-      LOG(WARNING) << "No supported GPU compressed texture format detected, "
-                      "Basis images will get imported as RGBA8";
-      metadata->configuration().setValue("format", "RGBA8");
-    }
-#endif
-  }
+  Cr::Containers::Pointer<Importer> importer =
+      importerManager_.loadAndInstantiate("AnySceneImporter");
 
   // Optional File loading
   if (!fileIsLoaded) {
@@ -937,7 +936,7 @@ bool ResourceManager::loadGeneralMeshData(
       int end = metaData.meshIndex.second;
       if (0 <= start && start <= end) {
         for (int iMesh = start; iMesh <= end; ++iMesh) {
-          meshes_[iMesh]->uploadBuffersToGPU(forceReload);
+          meshes_[iMesh]->uploadBuffersToGPU(importerManager_, forceReload);
         }
       }
     }  // forceReload
@@ -991,7 +990,7 @@ void ResourceManager::loadMeshes(Importer& importer, MeshMetaData* metaData) {
     // compute the mesh bounding box
     gltfMeshData->BB = computeMeshBB(gltfMeshData);
 
-    gltfMeshData->uploadBuffersToGPU(false);
+    gltfMeshData->uploadBuffersToGPU(importerManager_, false);
   }
 }
 

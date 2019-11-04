@@ -6,9 +6,14 @@
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Magnum/MeshTools/Compile.h>
 
+namespace Cr = Corrade;
+namespace Mn = Magnum;
+
 namespace esp {
 namespace assets {
-void GltfMeshData::uploadBuffersToGPU(bool forceReload) {
+void GltfMeshData::uploadBuffersToGPU(
+    Cr::PluginManager::Manager<Mn::Trade::AbstractImporter>&,
+    bool forceReload) {
   if (forceReload) {
     buffersOnGPU_ = false;
   }
