@@ -38,6 +38,20 @@ def test_kinematics(sim):
     object_id = sim.add_object(0)
     assert len(sim.get_existing_object_ids()) > 0
 
+    # test setting the motion type
+
+    assert sim.set_object_motion_type(habitat_sim.physics.MotionType.STATIC, object_id)
+    assert (
+        sim.get_object_motion_type(object_id) == habitat_sim.physics.MotionType.STATIC
+    )
+    assert sim.set_object_motion_type(
+        habitat_sim.physics.MotionType.KINEMATIC, object_id
+    )
+    assert (
+        sim.get_object_motion_type(object_id)
+        == habitat_sim.physics.MotionType.KINEMATIC
+    )
+
     # test kinematics
     I = np.identity(4)
 
@@ -145,7 +159,7 @@ def test_dynamics(sim):
             assert previous_object_states[0][0] == sim.get_translation(object_id)
             assert previous_object_states[0][1] != sim.get_rotation(object_id)
 
-            # 2nd object should rotation and translate
+            # 2nd object should rotate and translate
             assert previous_object_states[1][0] != sim.get_translation(object2_id)
             assert previous_object_states[1][1] != sim.get_rotation(object2_id)
 
@@ -153,3 +167,18 @@ def test_dynamics(sim):
                 [sim.get_translation(object_id), sim.get_rotation(object_id)],
                 [sim.get_translation(object2_id), sim.get_rotation(object2_id)],
             ]
+
+        # test setting DYNAMIC object to KINEMATIC
+        assert sim.set_object_motion_type(
+            habitat_sim.physics.MotionType.KINEMATIC, object2_id
+        )
+        assert (
+            sim.get_object_motion_type(object2_id)
+            == habitat_sim.physics.MotionType.KINEMATIC
+        )
+
+        obs = sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
+
+        # 2nd object should not longer rotate or translate
+        assert previous_object_states[1][0] == sim.get_translation(object2_id)
+        assert previous_object_states[1][1] == sim.get_rotation(object2_id)
