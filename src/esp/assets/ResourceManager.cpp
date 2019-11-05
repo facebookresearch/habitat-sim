@@ -552,6 +552,20 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
     return ID_UNDEFINED;
   }
 
+  // load semantic ID for the object now that we have a valid render mesh to
+  // edit
+  if (objPhysicsConfig.HasMember("semantic id")) {
+    if (objPhysicsConfig["semantic id"].IsInt()) {
+      physicsObjectAttributes.setInt("semanticId",
+                                     objPhysicsConfig["semantic id"].GetInt());
+      // set the objectID for use when creating the drawables
+      setAllObjectIDs(objPhysicsConfig["semantic id"].GetInt(),
+                      resourceDict_.at(renderMeshFilename).root);
+    } else {
+      LOG(ERROR) << " Invalid value in object physics config - semantic id";
+    }
+  }
+
   physicsObjectAttributes.setString("renderMeshHandle", renderMeshFilename);
   physicsObjectAttributes.setString("collisionMeshHandle",
                                     collisionMeshFilename);
@@ -925,6 +939,9 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
     LOG(ERROR) << "Cannot import object " << importer.object3DName(componentID)
                << ", skipping";
     return;
+  } else {
+    LOG(INFO) << "Importing Object: " << componentID << " "
+              << importer.object3DName(componentID);
   }
 
   // Add the new node to the hierarchy and set its transformation
@@ -946,6 +963,18 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
   // Recursively add children
   for (auto childObjectID : objectData->children()) {
     loadMeshHierarchy(importer, parent.children.back(), childObjectID);
+  }
+}
+
+void ResourceManager::setAllObjectIDs(int objectID, MeshTransformNode& root) {
+  // if there is a mesh, set the objectID for the component
+  if (root.meshIDLocal != ID_UNDEFINED) {
+    root.objectID = objectID;
+  }
+
+  // Recursively set children
+  for (auto& child : root.children) {
+    setAllObjectIDs(objectID, child);
   }
 }
 
@@ -1018,7 +1047,7 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
   if (meshIDLocal != ID_UNDEFINED) {
     const int meshID = metaData.meshIndex.first + meshIDLocal;
     const int materialIDLocal = meshTransformNode.materialIDLocal;
-    addMeshToDrawables(metaData, node, drawables, meshTransformNode.componentID,
+    addMeshToDrawables(metaData, node, drawables, meshTransformNode.objectID,
                        meshIDLocal, materialIDLocal);
 
     // compute the bounding box for the mesh we are adding
@@ -1035,7 +1064,7 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
 void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                                          scene::SceneNode& node,
                                          DrawableGroup* drawables,
-                                         int componentID,
+                                         int objectID,
                                          int meshIDLocal,
                                          int materialIDLocal) {
   const int meshStart = metaData.meshIndex.first;
@@ -1045,12 +1074,14 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
   const int materialStart = metaData.materialIndex.first;
   const int materialID = materialStart + materialIDLocal;
 
+  node.setId(objectID);
+
   Magnum::GL::Texture2D* texture = nullptr;
   // Material not set / not available / not loaded, use a default material
   if (materialIDLocal == ID_UNDEFINED ||
       metaData.materialIndex.second == ID_UNDEFINED ||
       !materials_[materialID]) {
-    createDrawable(COLORED_SHADER, mesh, node, drawables, texture, componentID);
+    createDrawable(COLORED_SHADER, mesh, node, drawables, texture);
   } else {
     if (materials_[materialID]->flags() &
         Magnum::Trade::PhongMaterialData::Flag::DiffuseTexture) {
@@ -1060,17 +1091,16 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
       const int textureIndex = materials_[materialID]->diffuseTexture();
       texture = textures_[textureStart + textureIndex].get();
       if (texture) {
-        createDrawable(TEXTURED_SHADER, mesh, node, drawables, texture,
-                       componentID);
+        createDrawable(TEXTURED_SHADER, mesh, node, drawables, texture);
       } else {
         // Color-only material
         createDrawable(COLORED_SHADER, mesh, node, drawables, texture,
-                       componentID, materials_[materialID]->diffuseColor());
+                       materials_[materialID]->diffuseColor());
       }
     } else {
       // Color-only material
       createDrawable(COLORED_SHADER, mesh, node, drawables, texture,
-                     componentID, materials_[materialID]->diffuseColor());
+                     materials_[materialID]->diffuseColor());
     }
   }  // else
 }
@@ -1089,7 +1119,6 @@ gfx::Drawable& ResourceManager::createDrawable(
     scene::SceneNode& node,
     Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */,
     Magnum::GL::Texture2D* texture /* = nullptr */,
-    int objectId /* = ID_UNDEFINED */,
     const Magnum::Color4& color /* = Magnum::Color4{1} */) {
   gfx::Drawable* drawable = nullptr;
   if (shaderType == PTEX_MESH_SHADER) {
@@ -1105,8 +1134,8 @@ gfx::Drawable& ResourceManager::createDrawable(
   } else {  // all other shaders use GenericShader
     auto* shader =
         static_cast<Magnum::Shaders::Flat3D*>(getShaderProgram(shaderType));
-    drawable = new gfx::GenericDrawable{node,    *shader,  mesh, group,
-                                        texture, objectId, color};
+    drawable =
+        new gfx::GenericDrawable{node, *shader, mesh, group, texture, color};
   }
   return *drawable;
 }

@@ -14,14 +14,13 @@ namespace gfx {
 class GenericDrawable : public Drawable {
  public:
   //! Create a GenericDrawable for the given object using shader and mesh.
-  //! Adds drawable to given group and uses provided texture, objectId, and
-  //! color for textured, object id buffer and color shader output respectively
+  //! Adds drawable to given group and uses provided texture, and
+  //! color for texture, object id buffer and color shader output respectively
   explicit GenericDrawable(scene::SceneNode& node,
                            Magnum::Shaders::Flat3D& shader,
                            Magnum::GL::Mesh& mesh,
                            Magnum::SceneGraph::DrawableGroup3D* group = nullptr,
                            Magnum::GL::Texture2D* texture = nullptr,
-                           int objectId = ID_UNDEFINED,
                            const Magnum::Color4& color = Magnum::Color4{1});
 
  protected:
@@ -29,7 +28,6 @@ class GenericDrawable : public Drawable {
                     Magnum::SceneGraph::Camera3D& camera) override;
 
   Magnum::GL::Texture2D* texture_;
-  int objectId_;
   Magnum::Color4 color_;
 };
 

@@ -15,49 +15,41 @@ namespace assets {
 //! can be reused to instances meshes later.
 struct MeshTransformNode {
   //! mesh ID within @ref MeshMetaData::meshIndex
-  int meshIDLocal;
+  int meshIDLocal = ID_UNDEFINED;
 
   //! material ID within @ref MeshMetaData::materialIndex
-  int materialIDLocal;
+  int materialIDLocal = ID_UNDEFINED;
 
-  //! Object ID in the original file
-  int componentID;
+  //! Component's identifier in the original file
+  int componentID = ID_UNDEFINED;
+
+  //! The object's semantic ID for rendering
+  int objectID = ID_UNDEFINED;
 
   std::vector<MeshTransformNode> children;
 
   //! Node local transform to the parent frame
   Magnum::Matrix4 T_parent_local;
 
-  MeshTransformNode() {
-    meshIDLocal = ID_UNDEFINED;
-    materialIDLocal = ID_UNDEFINED;
-    componentID = ID_UNDEFINED;
-  };
-
-  //! copy constructor which duplicates the @ref MeshTransformNode tree of which
-  //! val is the root.
-  MeshTransformNode(const MeshTransformNode& val) {
-    componentID = val.componentID;
-    meshIDLocal = val.meshIDLocal;
-    materialIDLocal = val.materialIDLocal;
-    T_parent_local = Magnum::Matrix4(val.T_parent_local);
-    for (auto& child : val.children) {
-      children.push_back(MeshTransformNode(child));
-    }
-  }
+  MeshTransformNode(){};
 };
 
-// for each scene (mesh file),
-// we store the data based on the resource type: 'mesh', 'texture', and
-// 'material'. each type may contain a few items;
-// thus, we save the start index, and the end index (of each type) as a pair
-
-// in current implementation:
-// ptex mesh: meshes_ (1 item), textures_ (0 item), materials_ (0 item);
-// instance mesh: meshes_ (1 item), textures_ (0 item), materials_ (0 item);
-// gltf_mesh, glb_mesh: meshes_ (i items), textures (j items), materials_ (k
-// items), i, j, k = 0, 1, 2 ...
-
+/**
+ * @brief For each mesh file (heirarchy of mesh components),
+ * we store the data based on the resource type: 'mesh', 'texture', and
+ * 'material'. each type may contain a few items;
+ * thus, we save the start index, and the end index (of each type) as a pair
+ * in current implementation:
+ * ptex mesh: meshes_ (1 item), textures_ (0 item), materials_ (0 item);
+ * instance mesh: meshes_ (1 item), textures_ (0 item), materials_ (0 item);
+ * gltf_mesh, glb_mesh: meshes_ (i items), textures (j items), materials_ (k
+ * items), i, j, k = 0, 1, 2 ...
+ * We also store a @ref MeshTransformNode @ref root which is the first node in a
+ * tree of transforms with references to local mesh indices (@ref
+ * MeshTransformNode::meshIDLocal), semantic class (@ref
+ * MeshTransformNode::componentID), and relative transformations between
+ * components (@ref MeshTransformNode::T_parent_local).
+ */
 struct MeshMetaData {
   typedef int start;
   typedef int end;
@@ -67,6 +59,10 @@ struct MeshMetaData {
   std::pair<start, end> materialIndex =
       std::make_pair(ID_UNDEFINED, ID_UNDEFINED);
 
+  /**
+   * @brief The root of the @ref MeshTransformNode tree which stores the
+   * relative transformations between mesh sub components.
+   */
   MeshTransformNode root;
 
   MeshMetaData(){};

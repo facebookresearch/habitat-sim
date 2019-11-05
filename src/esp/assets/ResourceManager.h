@@ -175,6 +175,16 @@ class ResourceManager {
                          MeshTransformNode& parent,
                          int componentID);
 
+  /**
+   * @brief Recurses through the @ref MeshTransformNode heirarchy starting at
+   * @ref root and sets all @ref MeshTransformNode:objectID for nodes
+   * referencing meshes.
+   * @param objectID The new semantic ID to set.
+   * @param root The root of the @ref MeshTransformNode tree for which all mesh
+   * semantic objectIDs should be set.
+   */
+  void setAllObjectIDs(int objectID, MeshTransformNode& root);
+
   //! Load materials from importer into assets, and update metaData
   void loadMaterials(Importer& importer, MeshMetaData* metaData);
 
@@ -287,7 +297,6 @@ class ResourceManager {
       scene::SceneNode& node,
       Magnum::SceneGraph::DrawableGroup3D* group = nullptr,
       Magnum::GL::Texture2D* texture = nullptr,
-      int objectId = ID_UNDEFINED,
       const Magnum::Color4& color = Magnum::Color4{1});
 
   bool compressTextures_ = false;

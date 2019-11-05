@@ -17,12 +17,8 @@ GenericDrawable::GenericDrawable(
     Magnum::GL::Mesh& mesh,
     Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */,
     Magnum::GL::Texture2D* texture /* = nullptr */,
-    int objectId /* = ID_UNDEFINED */,
     const Magnum::Color4& color /* = Magnum::Color4{1} */)
-    : Drawable{node, shader, mesh, group},
-      texture_(texture),
-      objectId_(objectId),
-      color_{color} {}
+    : Drawable{node, shader, mesh, group}, texture_(texture), color_{color} {}
 
 void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                            Magnum::SceneGraph::Camera3D& camera) {

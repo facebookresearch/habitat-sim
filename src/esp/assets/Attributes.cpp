@@ -4,6 +4,7 @@
 
 #include "Attributes.h"
 #include <algorithm>
+#include "esp/core/esp.h"
 
 namespace esp {
 namespace assets {
@@ -274,6 +275,7 @@ PhysicsObjectAttributes::PhysicsObjectAttributes() {
   setString("originHandle", "");
   setString("renderMeshHandle", "");
   setString("collisionMeshHandle", "");
+  setInt("semanticId", ID_UNDEFINED);
 }
 
 PhysicsSceneAttributes::PhysicsSceneAttributes() {
