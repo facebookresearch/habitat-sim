@@ -179,6 +179,6 @@ def test_dynamics(sim):
 
         obs = sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
 
-        # 2nd object should not longer rotate or translate
+        # 2nd object should no longer rotate or translate
         assert previous_object_states[1][0] == sim.get_translation(object2_id)
         assert previous_object_states[1][1] == sim.get_rotation(object2_id)
