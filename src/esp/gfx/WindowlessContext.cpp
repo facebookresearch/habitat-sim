@@ -137,8 +137,7 @@ struct ESPEGLContext : ESPContext {
     // 2. Select an appropriate configuration
     EGLint numConfigs;
     EGLConfig eglConfig;
-    retval =
-        eglChooseConfig(display_, configAttribs, &eglConfig, 1, &numConfigs);
+    eglChooseConfig(display_, configAttribs, &eglConfig, 1, &numConfigs);
     if (numConfigs != 1) {
       LOG(ERROR)
           << "[EGL] Cannot create EGL config. Your driver may not support EGL.";
