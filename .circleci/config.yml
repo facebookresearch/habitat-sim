@@ -74,6 +74,14 @@ jobs:
           command: |
               cat /proc/cpuinfo
       - run:
+          name: Install clang-tidy
+          command: |
+              sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main"
+              sudo apt-get update -y || true
+              sudo apt-get install -y clang-tidy-9
+              sudo ln -s /usr/bin/clang-tidy-9 /usr/local/bin/clang-tidy
+              clang-tidy --version
+      - run:
           name: Install cmake
           no_output_timeout: 5m
           # tinyply requires CMake 3.10, so stay at that version. Ubuntu 16.04
@@ -204,6 +212,13 @@ jobs:
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
               python setup.py install --headless
+      - run:
+          name: run clang-tidy
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              python tools/run-clang-tidy.py src/esp
       - run:
           name: Ccache stats
           when: always
