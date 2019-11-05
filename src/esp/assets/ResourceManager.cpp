@@ -432,7 +432,6 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
   }
 
   // load the center of mass (in the local frame of the object)
-  bool shouldComputeMeshBBCenter = true;
   // if COM is provided, use it for mesh shift
   if (objPhysicsConfig.HasMember("COM")) {
     if (objPhysicsConfig["COM"].IsArray()) {
@@ -444,7 +443,6 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
           break;
         } else {
           COM[i] = objPhysicsConfig["COM"][i].GetDouble();
-          shouldComputeMeshBBCenter = false;
         }
       }
       physicsObjectAttributes.setMagnumVec3("COM", COM);
