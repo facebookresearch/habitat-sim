@@ -2,6 +2,7 @@ Checks: '
 google-*,
 -*-objc-*,
 -*.cocoa.*,
+-clang-analyzer-core.NullDereference,
 -clang-analyzer-cplusplus.NewDeleteLeaks,
 -clang-analyzer-optin.cplusplus.UninitializedObject,
 -clang-analyzer-optin.cplusplus.VirtualCall,
