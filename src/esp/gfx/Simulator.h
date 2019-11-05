@@ -238,9 +238,6 @@ class Simulator {
    */
   Magnum::Quaternion getRotation(const int objectID, const int sceneID = 0);
 
-  // the physical world has a notion of time which passes during
-  // animation/simulation/action/etc... return the new world time after stepping
-
   /**
    * @brief the physical world has a notion of time which passes during
    * animation/simulation/action/etc... Step the physical world forward in time
@@ -254,7 +251,6 @@ class Simulator {
    */
   double stepWorld(const double dt = 1.0 / 60.0);
 
-  // get the simulated world time (0 if no physics enabled)
   /**
    * @brief Get the current time in the simulated world. This is always 0 if no
    * @ref esp::physics::PhysicsManager is initialized. See @ref stepWorld. See
@@ -264,6 +260,13 @@ class Simulator {
    */
   double getWorldTime();
 
+  /**
+   * @brief Compute the navmesh for the simulator's current active scene.
+   * @param navMeshSettings The @ref nav::NavMeshSettings instance to
+   * parameterize the navmesh construction.
+   * @return The resulting completed @ref Pathfinder object or nullptr if
+   * failed.
+   */
   std::shared_ptr<nav::PathFinder> recomputeNavMesh(
       nav::NavMeshSettings& navMeshSettings);
 

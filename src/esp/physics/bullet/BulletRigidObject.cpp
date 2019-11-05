@@ -70,10 +70,11 @@ bool BulletRigidObject::initializeScene(
 // recursively create the convex mesh shapes and add them to the compound in a
 // flat manner by accumulating transformations down the tree
 void BulletRigidObject::constructBulletCompoundFromMeshes(
-    const Magnum::Matrix4& T_world_parent,
+    const Magnum::Matrix4& transformFromParentToWorld,
     const std::vector<assets::CollisionMeshData>& meshGroup,
     const assets::MeshTransformNode& node) {
-  Magnum::Matrix4 T_world_local = T_world_parent * node.T_parent_local;
+  Magnum::Matrix4 transformFromLocalToWorld =
+      transformFromParentToWorld * node.transformFromLocalToParent;
   if (node.meshIDLocal != ID_UNDEFINED) {
     // This node has a mesh, so add it to the compound
 
@@ -87,7 +88,7 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
           mesh.positions.size(), sizeof(Magnum::Vector3)));
 
       //! Add to compound shape stucture
-      bObjectShape_->addChildShape(btTransform{T_world_local},
+      bObjectShape_->addChildShape(btTransform{transformFromLocalToWorld},
                                    bObjectConvexShapes_.back().get());
     } else {
       // SCENE: create a concave static mesh
@@ -118,13 +119,14 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
           std::make_unique<btBvhTriangleMeshShape>(bSceneArray_.get(), true));
 
       //! Add to compound shape stucture
-      bObjectShape_->addChildShape(btTransform{T_world_local},
+      bObjectShape_->addChildShape(btTransform{transformFromLocalToWorld},
                                    bSceneShapes_.back().get());
     }
   }
 
   for (auto& child : node.children) {
-    constructBulletCompoundFromMeshes(T_world_local, meshGroup, child);
+    constructBulletCompoundFromMeshes(transformFromLocalToWorld, meshGroup,
+                                      child);
   }
 }
 
