@@ -1209,10 +1209,6 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
   return true;
 }
 
-vec3f toEig(Magnum::Vector3 v) {
-  return vec3f(v[0], v[1], v[2]);
-}
-
 //! recursively join all sub-components of a mesh into a single unified
 //! MeshData.
 void ResourceManager::joinHeirarchy(
@@ -1229,7 +1225,8 @@ void ResourceManager::joinHeirarchy(
             ->getCollisionMeshData();
     int lastIndex = mesh.vbo.size();
     for (auto& pos : meshData.positions) {
-      mesh.vbo.push_back(toEig(transformFromLocalToWorld.transformPoint(pos)));
+      mesh.vbo.push_back(Magnum::EigenIntegration::cast<vec3f>(
+          transformFromLocalToWorld.transformPoint(pos)));
     }
     for (auto& index : meshData.indices) {
       mesh.ibo.push_back(index + lastIndex);
