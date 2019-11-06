@@ -39,6 +39,13 @@ class SceneNode : public MagnumObject {
   SceneNodeType getType() { return type_; }
   void setType(SceneNodeType type) { type_ = type; }
 
+  // Add a feature. Used to avoid naked new ond make intent clearer.
+  template <class U, class... Args>
+  void addFeature(Args&&... args) {
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
+    new U{*this, std::forward<Args>(args)...};
+  }
+
   //! Create a new child SceneNode and return it. NOTE: this SceneNode owns and
   //! is responsible for deallocating created child
   //! NOTE: child node inherits parent id by default
