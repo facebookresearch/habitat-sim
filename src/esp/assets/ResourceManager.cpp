@@ -1081,7 +1081,7 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                  node, drawables);
 }
 
-gfx::Drawable& ResourceManager::createDrawable(
+void ResourceManager::createDrawable(
     const ShaderType shaderType,
     Magnum::GL::Mesh& mesh,
     scene::SceneNode& node,
@@ -1089,24 +1089,19 @@ gfx::Drawable& ResourceManager::createDrawable(
     Magnum::GL::Texture2D* texture /* = nullptr */,
     int objectId /* = ID_UNDEFINED */,
     const Magnum::Color4& color /* = Magnum::Color4{1} */) {
-  gfx::Drawable* drawable = nullptr;
   if (shaderType == PTEX_MESH_SHADER) {
-    LOG(ERROR)
+    LOG(FATAL)
         << "ResourceManager::createDrawable does not support PTEX_MESH_SHADER";
-    ASSERT(shaderType != PTEX_MESH_SHADER);
-    // NOTE: this is a runtime error and will never return
-    return *drawable;
   } else if (shaderType == INSTANCE_MESH_SHADER) {
     auto* shader =
         static_cast<gfx::PrimitiveIDShader*>(getShaderProgram(shaderType));
-    drawable = new gfx::PrimitiveIDDrawable{node, *shader, mesh, group};
+    node.addFeature<gfx::PrimitiveIDDrawable>(*shader, mesh, group);
   } else {  // all other shaders use GenericShader
     auto* shader =
         static_cast<Magnum::Shaders::Flat3D*>(getShaderProgram(shaderType));
-    drawable = new gfx::GenericDrawable{node,    *shader,  mesh, group,
-                                        texture, objectId, color};
+    node.addFeature<gfx::GenericDrawable>(*shader, mesh, group, texture,
+                                          objectId, color);
   }
-  return *drawable;
 }
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
