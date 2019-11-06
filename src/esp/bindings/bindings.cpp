@@ -545,6 +545,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
            "sceneID"_a = 0)
       .def("get_object_motion_type", &Simulator::getObjectMotionType,
            "object_id"_a, "sceneID"_a = 0)
+      .def("set_object_motion_type", &Simulator::setObjectMotionType,
+           "motion_type"_a, "object_id"_a, "sceneID"_a = 0)
       .def("get_existing_object_ids", &Simulator::getExistingObjectIDs,
            "sceneID"_a = 0)
       .def("step_world", &Simulator::stepWorld, "dt"_a = 1.0 / 60.0)

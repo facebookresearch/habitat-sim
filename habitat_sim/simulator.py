@@ -257,6 +257,9 @@ class Simulator:
     def get_object_motion_type(self, object_id, scene_id=0):
         return self._sim.get_object_motion_type(object_id, scene_id)
 
+    def set_object_motion_type(self, motion_type, object_id, scene_id=0):
+        return self._sim.set_object_motion_type(motion_type, object_id, scene_id)
+
     def set_transformation(self, transform, object_id, scene_id=0):
         self._sim.set_transformation(transform, object_id, scene_id)
 
