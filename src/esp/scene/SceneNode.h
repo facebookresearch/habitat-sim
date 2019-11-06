@@ -39,7 +39,7 @@ class SceneNode : public MagnumObject {
   SceneNodeType getType() { return type_; }
   void setType(SceneNodeType type) { type_ = type; }
 
-  // Add a feature. Used to avoid naked new ond make intent clearer.
+  // Add a feature. Used to avoid naked `new` and makes intent clearer.
   template <class U, class... Args>
   void addFeature(Args&&... args) {
     // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
