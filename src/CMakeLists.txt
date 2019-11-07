@@ -4,7 +4,14 @@
 
 cmake_minimum_required(VERSION 3.10)
 
-project(esp)
+option(BUILD_WITH_CUDA "Build Habitat-Sim with CUDA features enabled -- Requires CUDA" OFF)
+
+if(BUILD_WITH_CUDA)
+  project(esp LANGUAGES C CXX CUDA)
+  find_library(CUDART_LIBRARY cudart ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+else()
+  project(esp LANGUAGES C CXX)
+endif()
 
 if(MSVC)
   add_definitions(/DNOMINMAX)
@@ -24,7 +31,6 @@ option(BUILD_PYTHON_BINDINGS "Whether to build python bindings" ON)
 option(BUILD_DATATOOL "Whether to build datatool utility binary" ON)
 option(BUILD_PTEX_SUPPORT "Whether to build ptex mesh support" ON)
 option(BUILD_GUI_VIEWERS "Whether to build GUI viewer utility binary" OFF)
-option(BUILD_WITH_CUDA "Build Habitat-Sim with CUDA features enabled -- Requires CUDA" OFF)
 option(BUILD_WITH_BULLET "Build Habitat-Sim with Bullet physics enabled -- Requires Bullet" OFF)
 option(BUILD_TEST "Build test binaries" OFF)
 option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
