@@ -22,12 +22,18 @@
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
 
+#include <Corrade/Containers/Containers.h>
 #include <Corrade/Utility/Arguments.h>
 #include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
+#include <Magnum/Shaders/Vector.h>
+#include <Magnum/Text/AbstractFont.h>
+#include <Magnum/Text/GlyphCache.h>
+#include <Magnum/Text/Renderer.h>
 #include <sophus/so3.hpp>
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
@@ -48,6 +54,9 @@ constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
 constexpr float rgbSensorHeight = 1.5f;
 
+namespace Cr = Corrade;
+namespace Mn = Magnum;
+
 namespace {
 
 class Viewer : public Magnum::Platform::Application {
@@ -62,6 +71,7 @@ class Viewer : public Magnum::Platform::Application {
   void mouseMoveEvent(MouseMoveEvent& event) override;
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
+  void updateText();
 
   // Interactive functions
   void addObject(std::string configFile);
@@ -105,6 +115,11 @@ class Viewer : public Magnum::Platform::Application {
   bool drawObjectBBs = false;
 
   Magnum::Timeline timeline_;
+
+  Cr::Containers::Pointer<Mn::Text::Renderer2D> performanceText_;
+  Mn::Matrix3 textProjection_;
+  Mn::Text::GlyphCache cache_;
+  Mn::Shaders::Vector2D textShader_;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -116,7 +131,8 @@ Viewer::Viewer(const Arguments& arguments)
                                 .setSampleCount(4)},
       pathfinder_(nav::PathFinder::create()),
       controls_(),
-      previousPosition_() {
+      previousPosition_(),
+      cache_(Mn::Vector2i{512}) {
   Utility::Arguments args;
 #ifdef CORRADE_TARGET_EMSCRIPTEN
   args.addNamedArgument("scene")
@@ -210,6 +226,20 @@ Viewer::Viewer(const Arguments& arguments)
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
 
+  // fonts
+  Cr::Containers::Pointer<Mn::Text::AbstractFont> font;
+  font->fillGlyphCache(cache_,
+                       "abcdefghijklmnopqrstuvwxyz"
+                       "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                       "0123456789?!:;,. ");
+  performanceText_.reset(new Mn::Text::Renderer2D(
+      *font, cache_, 0.035f, Mn::Text::Alignment::TopRight));
+  performanceText_->reserve(40, Mn::GL::BufferUsage::DynamicDraw,
+                            Mn::GL::BufferUsage::StaticDraw);
+
+  textProjection_ = Mn::Matrix3::scaling(Mn::Vector2::yScale(
+      Mn::Vector2(Mn::GL::defaultFramebuffer.viewport().size()).aspectRatio()));
+
   timeline_.start();
 
 }  // end Viewer::Viewer
@@ -242,6 +272,8 @@ void Viewer::addObject(std::string configFile) {
       physObjectID,
       Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
   objectIDs_.push_back(physObjectID);
+
+  updateText();
 
   // const Magnum::Vector3& trans =
   // physicsManager_->getTranslation(physObjectID); LOG(INFO) << "translation: "
@@ -352,6 +384,15 @@ void Viewer::drawEvent() {
     physicsManager_->debugDraw(projM * camM);
   }
 
+  textShader_
+      .setTransformationProjectionMatrix(
+          textProjection_ *
+          Mn::Matrix3::translation(
+              1.0f / textProjection_.rotationScaling().diagonal()))
+      .setColor(Color3{1.0f})
+      .bindVectorTexture(cache_.texture());
+  performanceText_->mesh().draw(textShader_);
+
   swapBuffers();
   timeline_.nextFrame();
   redraw();
@@ -360,6 +401,9 @@ void Viewer::drawEvent() {
 void Viewer::viewportEvent(ViewportEvent& event) {
   GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
   renderCamera_->getMagnumCamera().setViewport(event.windowSize());
+
+  textProjection_ = Mn::Matrix3::scaling(
+      Mn::Vector2::yScale(Vector2(event.windowSize()).aspectRatio()));
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
@@ -516,6 +560,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
   redraw();
+}
+
+void Viewer::updateText() {
+  // update the text occasionally
+  performanceText_->render(Cr::Utility::formatString("FPS: {:.1}", 60.08));
 }
 
 }  // namespace

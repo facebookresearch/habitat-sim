@@ -1,6 +1,7 @@
 find_package(Magnum
   REQUIRED
     DebugTools
+    Text
 )
 
 set(viewer_SOURCES viewer.cpp)
@@ -15,6 +16,7 @@ target_link_libraries(viewer
     nav
     scene
     Magnum::DebugTools
+    Magnum::Text
 )
 
 # copy JS/HTML/CSS scaffolding for WebGL build
