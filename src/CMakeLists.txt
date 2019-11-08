@@ -35,6 +35,7 @@ option(BUILD_WITH_BULLET "Build Habitat-Sim with Bullet physics enabled -- Requi
 option(BUILD_TEST "Build test binaries" OFF)
 option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
 option(USE_SYSTEM_EIGEN "Use system Eigen instead of a bundled submodule" OFF)
+option(USE_SYSTEM_GLFW "Use system GLFW instead of a bundled submodule" OFF)
 option(USE_SYSTEM_MAGNUM "Use system Magnum instead of a bundled submodule" OFF)
 option(USE_SYSTEM_PYBIND11 "Use system Pybind11 instead of a bundled submodule" OFF)
 option(USE_SYSTEM_RAPIDJSON "Use system RapidJSON instead of a bundled submodule" OFF)
