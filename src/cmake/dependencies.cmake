@@ -127,8 +127,9 @@ if(NOT USE_SYSTEM_MAGNUM)
 
   # These are enabled by default but we don't need them right now -- disabling
   # for slightly faster builds. If you need any of these, simply delete a line.
-  set(WITH_TEXT OFF CACHE BOOL "" FORCE)
-  set(WITH_TEXTURETOOLS OFF CACHE BOOL "" FORCE)
+  # XXX
+  set(WITH_TEXT ON CACHE BOOL "WITH_TEXT" FORCE)
+  set(WITH_TEXTURETOOLS ON CACHE BOOL "WITH_TEXTURETOOLS" FORCE)
 
   # These are not enabled by default but we need them
   set(WITH_ANYSCENEIMPORTER ON CACHE BOOL "WITH_ANYSCENEIMPORTER" FORCE)
@@ -160,6 +161,7 @@ if(NOT USE_SYSTEM_MAGNUM)
   endif()
 
   if(BUILD_GUI_VIEWERS)
+    set(WITH_STBTRUETYPEFONT ON CACHE BOOL "WITH_STBTRUETYPEFONT" FORCE)
     if(CORRADE_TARGET_EMSCRIPTEN)
       set(WITH_EMSCRIPTENAPPLICATION ON CACHE BOOL "WITH_EMSCRIPTENAPPLICATION" FORCE)
     else()

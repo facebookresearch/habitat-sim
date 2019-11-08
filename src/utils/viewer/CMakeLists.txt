@@ -6,6 +6,9 @@ find_package(Magnum
 
 set(viewer_SOURCES viewer.cpp)
 
+corrade_add_resource(viewer_RESOURCES resources.conf)
+list(APPEND viewer_SOURCES ${viewer_RESOURCES})
+
 #set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 add_executable(viewer ${viewer_SOURCES})
 
@@ -17,6 +20,7 @@ target_link_libraries(viewer
     scene
     Magnum::DebugTools
     Magnum::Text
+    MagnumPlugins::StbTrueTypeFont
 )
 
 # copy JS/HTML/CSS scaffolding for WebGL build

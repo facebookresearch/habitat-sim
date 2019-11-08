@@ -24,8 +24,12 @@
 
 #include <Corrade/Containers/Containers.h>
 #include <Corrade/Utility/Arguments.h>
+#include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/Debug.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Corrade/Utility/Resource.h>
 #include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
@@ -227,13 +231,24 @@ Viewer::Viewer(const Arguments& arguments)
       rgbSensorNode_->absoluteTransformation());
 
   // fonts
+  Mn::PluginManager::Manager<Mn::Text::AbstractFont> fontManager;
   Cr::Containers::Pointer<Mn::Text::AbstractFont> font;
+  font = fontManager.loadAndInstantiate("StbTrueTypeFont");
+  CORRADE_ASSERT(font,
+                 "Viewer::Viewer: cannot load and instantiate the font", );
+
+  Cr::Utility::Resource rs("fonts");
+  std::string fontName = "DejaVuSans.ttf";
+  if (!font->openData(rs.getRaw(fontName), 110.0f)) {
+    Cr::Utility::Fatal{-1} << "Viewer::viewer: The font"
+                                       << fontName << "does not exist.";
+  }
   font->fillGlyphCache(cache_,
                        "abcdefghijklmnopqrstuvwxyz"
                        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                        "0123456789?!:;,. ");
   performanceText_.reset(new Mn::Text::Renderer2D(
-      *font, cache_, 0.035f, Mn::Text::Alignment::TopRight));
+      *font, cache_, 10.0f, Mn::Text::Alignment::TopRight));
   performanceText_->reserve(40, Mn::GL::BufferUsage::DynamicDraw,
                             Mn::GL::BufferUsage::StaticDraw);
 
@@ -564,6 +579,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
 
 void Viewer::updateText() {
   // update the text occasionally
+  // TODO: computer the actual FPS instead
   performanceText_->render(Cr::Utility::formatString("FPS: {:.1}", 60.08));
 }
 
