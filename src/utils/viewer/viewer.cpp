@@ -249,7 +249,7 @@ Viewer::Viewer(const Arguments& arguments)
                        "0123456789?!:;,. ");
   performanceText_.reset(new Mn::Text::Renderer2D(
       *font, cache_, 10.0f, Mn::Text::Alignment::TopRight));
-  performanceText_->reserve(40, Mn::GL::BufferUsage::DynamicDraw,
+  performanceText_->reserve(400, Mn::GL::BufferUsage::DynamicDraw,
                             Mn::GL::BufferUsage::StaticDraw);
 
   textProjection_ = Mn::Matrix3::scaling(Mn::Vector2::yScale(
@@ -574,6 +574,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
   }
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
+
+  // XXX This will cause segfault
+  updateText();
+
   redraw();
 }
 
