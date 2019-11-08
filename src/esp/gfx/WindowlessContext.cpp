@@ -71,7 +71,8 @@ bool isNvidiaGpuReadable(int device) {
 }
 
 struct ESPEGLContext : ESPContext {
-  ESPEGLContext(int device) : magnumGlContext_{NoCreate}, gpuDevice_{device} {
+  explcit ESPEGLContext(int device)
+      : magnumGlContext_{NoCreate}, gpuDevice_{device} {
     CHECK(gladLoadEGL()) << "Failed to load EGL";
 
     static const EGLint configAttribs[] = {EGL_SURFACE_TYPE,
