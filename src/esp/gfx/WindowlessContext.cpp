@@ -253,7 +253,7 @@ struct WindowlessContext::Impl {
 #else  // not defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
 
 struct WindowlessContext::Impl {
-  Impl(int) : glContext_({}), magnumGlContext_(NoCreate) {
+  explicit Impl(int) : glContext_({}), magnumGlContext_(NoCreate) {
     glContext_.makeCurrent();
     if (!magnumGlContext_.tryCreate()) {
       LOG(ERROR) << "Failed to create GL context";
