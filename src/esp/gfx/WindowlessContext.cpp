@@ -71,7 +71,8 @@ bool isNvidiaGpuReadable(int device) {
 }
 
 struct ESPEGLContext : ESPContext {
-  ESPEGLContext(int device) : magnumGlContext_{NoCreate}, gpuDevice_{device} {
+  explicit ESPEGLContext(int device)
+      : magnumGlContext_{NoCreate}, gpuDevice_{device} {
     CHECK(gladLoadEGL()) << "Failed to load EGL";
 
     static const EGLint configAttribs[] = {EGL_SURFACE_TYPE,
@@ -224,7 +225,7 @@ struct ESPGLXContext : ESPContext {
 };  // namespace
 
 struct WindowlessContext::Impl {
-  Impl(int device) {
+  explicit Impl(int device) {
 #ifdef ESP_BUILD_EGL_SUPPORT
     glContext_ = ESPEGLContext::create_unique(device);
 #else
@@ -253,7 +254,7 @@ struct WindowlessContext::Impl {
 #else  // not defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
 
 struct WindowlessContext::Impl {
-  Impl(int) : glContext_({}), magnumGlContext_(NoCreate) {
+  explicit Impl(int) : glContext_({}), magnumGlContext_(NoCreate) {
     glContext_.makeCurrent();
     if (!magnumGlContext_.tryCreate()) {
       LOG(ERROR) << "Failed to create GL context";
