@@ -238,7 +238,7 @@ Viewer::Viewer(const Arguments& arguments)
                  "Viewer::Viewer: cannot load and instantiate the font", );
 
   Cr::Utility::Resource rs("fonts");
-  std::string fontName = "DejaVuSans.ttf";
+  std::string fontName = "SourceSansPro-SemiBold.ttf";
   if (!font->openData(rs.getRaw(fontName), 110.0f)) {
     Cr::Utility::Fatal{-1} << "Viewer::viewer: The font"
                                        << fontName << "does not exist.";
@@ -248,7 +248,7 @@ Viewer::Viewer(const Arguments& arguments)
                        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                        "0123456789?!:;,. ");
   performanceText_.reset(new Mn::Text::Renderer2D(
-      *font, cache_, 10.0f, Mn::Text::Alignment::TopRight));
+      *font, cache_, 1.0f, Mn::Text::Alignment::TopRight));
   performanceText_->reserve(400, Mn::GL::BufferUsage::DynamicDraw,
                             Mn::GL::BufferUsage::StaticDraw);
 
