@@ -225,7 +225,7 @@ struct ESPGLXContext : ESPContext {
 };  // namespace
 
 struct WindowlessContext::Impl {
-  Impl(int device) {
+  explicit Impl(int device) {
 #ifdef ESP_BUILD_EGL_SUPPORT
     glContext_ = ESPEGLContext::create_unique(device);
 #else
