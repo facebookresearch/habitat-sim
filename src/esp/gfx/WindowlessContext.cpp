@@ -71,7 +71,7 @@ bool isNvidiaGpuReadable(int device) {
 }
 
 struct ESPEGLContext : ESPContext {
-  explcit ESPEGLContext(int device)
+  explicit ESPEGLContext(int device)
       : magnumGlContext_{NoCreate}, gpuDevice_{device} {
     CHECK(gladLoadEGL()) << "Failed to load EGL";
 
