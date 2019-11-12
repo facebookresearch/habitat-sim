@@ -24,7 +24,7 @@ namespace gfx {
 class PTexMeshShader : public Magnum::GL::AbstractShaderProgram {
  public:
   //! @brief vertex positions
-  typedef Magnum::GL::Attribute<0, Magnum::Vector4> Position;
+  typedef Magnum::GL::Attribute<0, Magnum::Vector3> Position;
 
   /**
    * @brief Constructor

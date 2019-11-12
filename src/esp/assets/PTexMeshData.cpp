@@ -665,7 +665,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
                    "not greater than 0", );
   }
 
-  meshData.vbo.resize(numVertices, vec4f(0, 0, 0, 1));
+  meshData.vbo.resize(numVertices, vec3f(0, 0, 0));
 
   if (normalDimensions) {
     meshData.nbo.resize(numVertices, vec4f(0, 0, 0, 1));
