@@ -100,6 +100,46 @@ class DemoRunner:
         self._sim.pathfinder.find_path(self._shortest_path)
         print("shortest_path.geodesic_distance", self._shortest_path.geodesic_distance)
 
+    def init_semantic_physics_test_scene(self):
+        object_position = np.array([1.073, 2.42523, 8.06745])  # above the bed
+
+        agent_state = self._sim.get_agent(0).get_state()
+        agent_state.position = np.array([2.07841, 1.42523, 6.36422])
+
+        agent_to_obj = object_position - agent_state.position
+        agent_local_forward = np.array([0, 0, -1.0])
+        flat_to_obj = np.array([agent_to_obj[0], 0.0, agent_to_obj[2]])
+        flat_dist_to_obj = np.linalg.norm(flat_to_obj)
+        flat_to_obj /= flat_dist_to_obj
+
+        # unit y normal plane for rotation
+        det = (
+            flat_to_obj[0] * agent_local_forward[2]
+            - agent_local_forward[0] * flat_to_obj[2]
+        )
+        turn_angle = math.atan2(det, np.dot(agent_local_forward, flat_to_obj))
+        agent_state.rotation = quat_from_angle_axis(turn_angle, np.array([0, 1.0, 0]))
+        # need to move the sensors too
+        for sensor in agent_state.sensor_states:
+            agent_state.sensor_states[sensor].rotation = agent_state.rotation
+            agent_state.sensor_states[
+                sensor
+            ].position = agent_state.position + np.array([0, 1.5, 0])
+        self._sim.get_agent(0).set_state(agent_state)
+
+        object_lib_size = self._sim.get_physics_object_library_size()
+
+        # clear the objects if we are re-running this initializer
+        for old_obj_id in self._sim.get_existing_object_ids():
+            self._sim.remove_object(old_obj_id)
+
+        # add each object
+        for obj_id in range(object_lib_size):
+            object_offset = np.array([0.25 * obj_id, 0, 0])
+            object_id = self._sim.add_object(obj_id)
+            self._sim.set_object_motion_type(MotionType.KINEMATIC, object_id)
+            self._sim.set_translation(object_position + object_offset, object_id)
+
     def init_physics_test_scene(self, num_objects):
         object_position = np.array(
             [-0.569043, 2.04804, 13.6156]
@@ -195,9 +235,10 @@ class DemoRunner:
 
         # load an object and position the agent for physics testing
         if self._sim_settings["enable_physics"]:
-            self.init_physics_test_scene(
-                num_objects=self._sim_settings.get("num_objects")
-            )
+            # self.init_physics_test_scene(
+            #    num_objects=self._sim_settings.get("num_objects")
+            # )
+            self.init_semantic_physics_test_scene()
             print("active object ids: " + str(self._sim.get_existing_object_ids()))
 
         time_per_step = []
