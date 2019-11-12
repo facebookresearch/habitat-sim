@@ -57,6 +57,7 @@ using namespace esp;
 constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
 constexpr float rgbSensorHeight = 1.5f;
+constexpr uint64_t fpsUpdateFrequencyMask = 15;  // MUST be a power of 2 - 1
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -75,7 +76,7 @@ class Viewer : public Magnum::Platform::Application {
   void mouseMoveEvent(MouseMoveEvent& event) override;
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
-  void updateText();
+  void updateText(float fps);
 
   // Interactive functions
   void addObject(std::string configFile);
@@ -120,7 +121,12 @@ class Viewer : public Magnum::Platform::Application {
 
   Magnum::Timeline timeline_;
 
+  // performance counter
+  uint64_t totalFrames_ = 0;
+  float timeDuration_ = 0.0f;
   Cr::Containers::Pointer<Mn::Text::Renderer2D> performanceText_;
+  Mn::PluginManager::Manager<Mn::Text::AbstractFont> fontManager_;
+  Cr::Containers::Pointer<Mn::Text::AbstractFont> font_;
   Mn::Matrix3 textProjection_;
   Mn::Text::GlyphCache cache_;
   Mn::Shaders::Vector2D textShader_;
@@ -231,32 +237,33 @@ Viewer::Viewer(const Arguments& arguments)
       rgbSensorNode_->absoluteTransformation());
 
   // fonts
-  Mn::PluginManager::Manager<Mn::Text::AbstractFont> fontManager;
-  Cr::Containers::Pointer<Mn::Text::AbstractFont> font;
-  font = fontManager.loadAndInstantiate("StbTrueTypeFont");
-  CORRADE_ASSERT(font,
+  font_ = fontManager_.loadAndInstantiate("StbTrueTypeFont");
+  CORRADE_ASSERT(font_,
                  "Viewer::Viewer: cannot load and instantiate the font", );
 
   Cr::Utility::Resource rs("fonts");
   std::string fontName = "SourceSansPro-SemiBold.ttf";
-  if (!font->openData(rs.getRaw(fontName), 110.0f)) {
-    Cr::Utility::Fatal{-1} << "Viewer::viewer: The font"
-                                       << fontName << "does not exist.";
+  float fontSize = 20.0f;  // font size related to resolution
+  if (!font_->openData(rs.getRaw(fontName), fontSize)) {
+    Cr::Utility::Fatal{-1} << "Viewer::viewer: The font" << fontName
+                           << "does not exist.";
   }
-  font->fillGlyphCache(cache_,
-                       "abcdefghijklmnopqrstuvwxyz"
-                       "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                       "0123456789?!:;,. ");
-  performanceText_.reset(new Mn::Text::Renderer2D(
-      *font, cache_, 1.0f, Mn::Text::Alignment::TopRight));
-  performanceText_->reserve(400, Mn::GL::BufferUsage::DynamicDraw,
+  font_->fillGlyphCache(cache_,
+                        "abcdefghijklmnopqrstuvwxyz"
+                        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                        "0123456789?!:;,. ");
+
+  performanceText_.reset(
+      new Mn::Text::Renderer2D(*font_, cache_,
+                               0.08f,  // character size on the screen
+                               Mn::Text::Alignment::TopRight));
+  performanceText_->reserve(40, Mn::GL::BufferUsage::DynamicDraw,
                             Mn::GL::BufferUsage::StaticDraw);
 
   textProjection_ = Mn::Matrix3::scaling(Mn::Vector2::yScale(
       Mn::Vector2(Mn::GL::defaultFramebuffer.viewport().size()).aspectRatio()));
 
   timeline_.start();
-
 }  // end Viewer::Viewer
 
 void Viewer::addObject(std::string configFile) {
@@ -288,7 +295,7 @@ void Viewer::addObject(std::string configFile) {
       Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
   objectIDs_.push_back(physObjectID);
 
-  updateText();
+  updateText(0.0f);
 
   // const Magnum::Vector3& trans =
   // physicsManager_->getTranslation(physObjectID); LOG(INFO) << "translation: "
@@ -409,8 +416,14 @@ void Viewer::drawEvent() {
   performanceText_->mesh().draw(textShader_);
 
   swapBuffers();
-  timeline_.nextFrame();
   redraw();
+
+  totalFrames_++;
+  if ((totalFrames_ & fpsUpdateFrequencyMask) == 0) {
+    updateText(totalFrames_ / timeline_.previousFrameTime());
+  }
+
+  timeline_.nextFrame();
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
@@ -575,16 +588,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
 
-  // XXX This will cause segfault
-  updateText();
-
   redraw();
 }
 
-void Viewer::updateText() {
+void Viewer::updateText(float fps) {
   // update the text occasionally
-  // TODO: computer the actual FPS instead
-  performanceText_->render(Cr::Utility::formatString("FPS: {:.1}", 60.08));
+  performanceText_->render(Cr::Utility::formatString("FPS: {:.1f}", fps));
 }
 
 }  // namespace
