@@ -281,14 +281,13 @@ class ResourceManager {
   //! If DrawableGroup3D group is given add created Drawable to the group
   //! Optional Texture2D, objectId and color arguments set relevant shader
   //! parameters
-  gfx::Drawable& createDrawable(
-      const ShaderType shaderType,
-      Magnum::GL::Mesh& mesh,
-      scene::SceneNode& node,
-      Magnum::SceneGraph::DrawableGroup3D* group = nullptr,
-      Magnum::GL::Texture2D* texture = nullptr,
-      int objectId = ID_UNDEFINED,
-      const Magnum::Color4& color = Magnum::Color4{1});
+  void createDrawable(const ShaderType shaderType,
+                      Magnum::GL::Mesh& mesh,
+                      scene::SceneNode& node,
+                      Magnum::SceneGraph::DrawableGroup3D* group = nullptr,
+                      Magnum::GL::Texture2D* texture = nullptr,
+                      int objectId = ID_UNDEFINED,
+                      const Magnum::Color4& color = Magnum::Color4{1});
 
   bool compressTextures_ = false;
 };

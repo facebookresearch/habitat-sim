@@ -377,6 +377,7 @@ if __name__ == "__main__":
         # add custom build_ext command
         cmdclass=dict(build_ext=CMakeBuild),
         zip_safe=False,
+        include_package_data=True,
     )
 
     pymagnum_build_dir = osp.join(
