@@ -64,7 +64,7 @@ corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)
 list(APPEND gfx_SOURCES ${ShaderResources})
 
 if(BUILD_GUI_VIEWERS)
-  set(ESP_DEFAULT_PHYS_SCENE_CONFIG ${PROJECT_SOURCE_DIR}/../data/default.phys_scene_config.json)
+  set(ESP_DEFAULT_PHYS_SCENE_CONFIG data/default.phys_scene_config.json)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
                  ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 endif()
