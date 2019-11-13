@@ -873,10 +873,12 @@ T PathFinder::tryStep(const T& start, const T& end) {
     return start;
   }
 
-  // According to recast's docs, the endPoint is not guaranteed to be actually
-  // on the surface of the navmesh, it seems to be in 99.9% of cases for us, but
-  // there are some extreme edge cases where it won't be, so explicitly get the
-  // height of the surface at the endPoint and set its height to that.
+  // According to recast's code
+  // (https://github.com/recastnavigation/recastnavigation/blob/master/Detour/Source/DetourNavMeshQuery.cpp#L2006-L2007),
+  // the endPoint is not guaranteed to be actually on the surface of the
+  // navmesh, it seems to be in 99.9% of cases for us, but there are some
+  // extreme edge cases where it won't be, so explicitly get the height of the
+  // surface at the endPoint and set its height to that.
   {
     float endPointHeight;
     // Note, this will never fail as endPoint is always within in the poly
