@@ -16,6 +16,8 @@ set(gfx_SOURCES
   Renderer.h
   Simulator.cpp
   Simulator.h
+  TextRenderer.cpp
+  TextRenderer.h
   WindowlessContext.cpp
   WindowlessContext.h
   RenderTarget.cpp
@@ -62,6 +64,8 @@ find_package(Corrade REQUIRED Utility)
 # set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)
 list(APPEND gfx_SOURCES ${ShaderResources})
+corrade_add_resource(FontResources ../../fonts/Fonts.conf)
+list(APPEND gfx_SOURCES ${FontResources})
 
 if(BUILD_GUI_VIEWERS)
   set(ESP_DEFAULT_PHYS_SCENE_CONFIG ${PROJECT_SOURCE_DIR}/../data/default.phys_scene_config.json)
