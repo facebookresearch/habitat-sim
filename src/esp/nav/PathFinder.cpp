@@ -850,20 +850,41 @@ T PathFinder::tryStep(const T& start, const T& end) {
   static const int MAX_POLYS = 256;
   dtPolyRef polys[MAX_POLYS];
 
+  dtStatus startStatus, endStatus;
   dtPolyRef startRef, endRef;
   vec3f pathStart, pathEnd;
-  std::tie(std::ignore, startRef, pathStart) =
+  std::tie(startStatus, startRef, pathStart) =
       projectToPoly(start, navQuery_, filter_);
-  std::tie(std::ignore, endRef, pathEnd) =
-      projectToPoly(end, navQuery_, filter_);
+  std::tie(endStatus, endRef, pathEnd) = projectToPoly(end, navQuery_, filter_);
+
+  if (dtStatusFailed(startStatus) || dtStatusFailed(endStatus)) {
+    return start;
+  }
+
   vec3f endPoint;
   int numPolys;
   navQuery_->moveAlongSurface(startRef, pathStart.data(), pathEnd.data(),
                               filter_, endPoint.data(), polys, &numPolys,
                               MAX_POLYS);
 
-  if (numPolys == 0)
-    return {NAN, NAN, NAN};
+  // If there isn't any possible path between start and end, just return start,
+  // that is cleanest
+  if (numPolys == 0) {
+    return start;
+  }
+
+  // According to recast's docs, the endPoint is not guaranteed to be actually
+  // on the surface of the navmesh, it seems to be in 99.9% of cases for us, but
+  // there are some extreme edge cases where it won't be, so explicitly get the
+  // height of the surface at the endPoint and set its height to that.
+  {
+    float endPointHeight;
+    // Note, this will never fail as endPoint is always within in the poly
+    // polys[numPolys - 1]
+    navQuery_->getPolyHeight(polys[numPolys - 1], endPoint.data(),
+                             &endPointHeight);
+    endPoint[1] = endPointHeight;
+  }
 
   // Hack to deal with infinitely thin walls in recast allowing you to
   // transition between two different connected components
