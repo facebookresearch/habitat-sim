@@ -33,10 +33,10 @@ class TextRenderer {
    * @brief Constructor
    */
   // aspectRatio = width / height
-  explicit TextRenderer(float viewportAspectRatio,
+  explicit TextRenderer(float viewportAspectRatio = 1.33333f,
                         float fontSize = 20.0f,
-                        const std::string& characters = defaultCharacters,
-                        int cacheSize = 512);
+                        int cacheSize = 512,
+                        const std::string& characters = defaultCharacters);
 
   /**
    * @brief Create a renderer to render text on screen
@@ -44,63 +44,22 @@ class TextRenderer {
    */
   size_t createRenderer(
       float onScreenCharacterSize = 0.08f,
-      size_t glyphCount = 40,
-      Mn::Text::Alignment alignment = Mn::Text::Alignment::LineLeft);
+      size_t glyphCount = 60,
+      Mn::Text::Alignment alignment = Mn::Text::Alignment::TopRight);
 
   /**
-   *  @brief draw the text by a specified renderer (default 0) with specified
+   *  @brief Draw the text by the specified renderer (default 0) with specified
    * color
    *  @return Reference to self (for method chaining)
    */
   TextRenderer& draw(const Mn::Color3& color, size_t rendererId = 0);
 
   /**
-   *  @brief update the aspect ratio of the viewport 
+   *  @brief Update the aspect ratio of the viewport
    *  @return Reference to self (for method chaining)
    *  @notification DO NOT forget to call it in the viewportEvent()
    */
   TextRenderer& updateAspectRatio(float viewportAspectRatio);
-
-  // ======== texture binding ========
-  /**
-   * @brief Bind the atlas texture
-   * @return Reference to self (for method chaining)
-   */
-  // TextRenderer& bindAtlasTexture(Magnum::GL::Texture2D& texture);
-  /**
-   *  @brief Bind the buffer texture containing the adjacent faces
-   *  @return Reference to self (for method chaining)
-   */
-  // TextRenderer& bindAdjFacesBufferTexture(Magnum::GL::BufferTexture&
-  // texture);
-
-  // ======== set uniforms ===========
-  /**
-   *  @brief Set modelview and projection matrix to the uniform on GPU
-   *  @return Reference to self (for method chaining)
-   */
-  //  TextRenderer& setMVPMatrix(cinst Magnum::Matrix4& matrix);
-  /**
-   *  @brief Set expsure to the uniform on GPU
-   *  @return Reference to self (for method chaining)
-   */
-  // TextRenderer& setExposure(float exposure);
-  /**
-   *  @brief Set gamma to the uniform on GPU
-   *  @return Reference to self (for method chaining)
-   */
-  // TextRenderer& setGamma(float gamma);
-  /**
-   *  @brief Set saturation to the uniform on GPU
-   *  @return Reference to self (for method chaining)
-   */
-  // TextRenderer& setSaturation(float saturation);
-  /**
-   *  @brief Set the tile size of the atlas texture
-   *  @return Reference to self (for method chaining)
-   */
-  // TextRenderer& setAtlasTextureSize(Magnum::GL::Texture2D& texture,
-  // uint32_t tileSize);
 
   /**
    * @brief Update the text to be rendered
@@ -115,8 +74,7 @@ class TextRenderer {
 
  protected:
   Cr::PluginManager::Manager<Mn::Text::AbstractFont> fontManager_;
-  // TODO: we can build an array to support
-  // multiple fonts
+  // TODO: we can build an array to support multiple fonts
   Cr::Containers::Pointer<Mn::Text::AbstractFont> font_;
   Mn::Text::GlyphCache cache_;
   Mn::Shaders::Vector2D textShader_;

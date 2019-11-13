@@ -48,6 +48,7 @@ find_package(Magnum
     Shaders
     Trade
     AnyImageConverter
+    Text
 )
 
 find_package(MagnumPlugins
@@ -55,6 +56,7 @@ find_package(MagnumPlugins
     StbImageImporter
     StbImageConverter
     TinyGltfImporter
+    StbTrueTypeFont
 )
 
 find_package(MagnumIntegration REQUIRED Eigen)
@@ -115,6 +117,8 @@ target_link_libraries(gfx
     MagnumIntegration::Eigen
     Corrade::Utility
     Magnum::AnyImageConverter
+    Magnum::Text
+    MagnumPlugins::StbTrueTypeFont
 )
 
 # Link windowed application library if needed

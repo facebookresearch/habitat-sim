@@ -24,8 +24,8 @@ namespace esp {
 namespace gfx {
 TextRenderer::TextRenderer(float aspectRatio,
                            float fontSize,
-                           const std::string& characters,
-                           int cacheSize)
+                           int cacheSize,
+                           const std::string& characters)
     : cache_(Mn::Vector2i{cacheSize}) {
   if (!Cr::Utility::Resource::hasGroup("fonts")) {
     importFontResources();
@@ -51,7 +51,7 @@ TextRenderer::TextRenderer(float aspectRatio,
 
   font_->fillGlyphCache(cache_, characters);
 
-  textProjection_ = Mn::Matrix3::scaling(Mn::Vector2::yScale(aspectRatio));
+  updateAspectRatio(aspectRatio);
 }
 
 size_t TextRenderer::createRenderer(float onScreenCharacterSize,
@@ -87,7 +87,7 @@ void TextRenderer::updateText(const std::string& text, size_t rendererId) {
 
 TextRenderer& TextRenderer::draw(const Mn::Color3& color, size_t rendererId) {
   CORRADE_ASSERT(rendererId < text_.size(),
-                 "TextRenderer::updateText: the rendererId"
+                 "TextRenderer::draw: the rendererId"
                      << rendererId << "is out of range.",
                  *this);
   textShader_
@@ -102,57 +102,11 @@ TextRenderer& TextRenderer::draw(const Mn::Color3& color, size_t rendererId) {
 }
 
 TextRenderer& TextRenderer::updateAspectRatio(float viewportAspectRatio) {
-  textProjection_ = Mn::Matrix3::scaling(
-            Mn::Vector2::yScale(viewportAspectRatio));
+  textProjection_ =
+      Mn::Matrix3::scaling(Mn::Vector2::yScale(viewportAspectRatio));
 
   return *this;
 }
-
-/*
-PTexMeshShader::PTexMeshShader() {
-  MAGNUM_ASSERT_GL_VERSION_SUPPORTED(GL::Version::GL410);
-
-  if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
-    importShaderResources();
-  }
-
-  // this is not the file name, but the group name in the config file
-  const Corrade::Utility::Resource rs{"default-shaders"};
-
-  GL::Shader vert{GL::Version::GL410, GL::Shader::Type::Vertex};
-  GL::Shader geom{GL::Version::GL410, GL::Shader::Type::Geometry};
-  GL::Shader frag{GL::Version::GL410, GL::Shader::Type::Fragment};
-
-  vert.addSource(rs.get("ptex-default-gl410.vert"));
-  geom.addSource(rs.get("ptex-default-gl410.geom"));
-#ifdef CORRADE_TARGET_APPLE
-  frag.addSource("#define CORRADE_TARGET_APPLE\n");
-#endif
-  frag.addSource(rs.get("ptex-default-gl410.frag"));
-
-  CORRADE_INTERNAL_ASSERT_OUTPUT(GL::Shader::compile({vert, geom, frag}));
-
-  attachShaders({vert, geom, frag});
-
-  CORRADE_INTERNAL_ASSERT_OUTPUT(link());
-
-  // set texture binding points in the shader;
-  // see ptex fragment shader code for details
-  setUniform(uniformLocation("atlasTex"), TextureBindingPointIndex::atlas);
-#ifndef CORRADE_TARGET_APPLE
-  setUniform(uniformLocation("meshAdjFaces"),
-             TextureBindingPointIndex::adjFaces);
-#endif
-
-  // cache the uniform locations
-  MVPMatrixUniform_ = uniformLocation("MVP");
-  exposureUniform_ = uniformLocation("exposure");
-  gammaUniform_ = uniformLocation("gamma");
-  saturationUniform_ = uniformLocation("saturation");
-  tileSizeUniform_ = uniformLocation("tileSize");
-  widthInTilesUniform_ = uniformLocation("widthInTiles");
-}
-*/
 
 }  // namespace gfx
 }  // namespace esp

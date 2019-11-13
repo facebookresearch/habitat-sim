@@ -41,6 +41,7 @@
 #include <sophus/so3.hpp>
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
+#include "esp/gfx/TextRenderer.h"
 #include "esp/io/io.h"
 
 #include "esp/gfx/Simulator.h"
@@ -57,7 +58,7 @@ using namespace esp;
 constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
 constexpr float rgbSensorHeight = 1.5f;
-constexpr uint64_t fpsUpdateFrequencyMask = 15;  // MUST be a power of 2 - 1
+constexpr uint64_t fpsUpdateFrequency = 15;
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -124,12 +125,7 @@ class Viewer : public Magnum::Platform::Application {
   // performance counter
   uint64_t totalFrames_ = 0;
   float timeDuration_ = 0.0f;
-  Cr::Containers::Pointer<Mn::Text::Renderer2D> performanceText_;
-  Mn::PluginManager::Manager<Mn::Text::AbstractFont> fontManager_;
-  Cr::Containers::Pointer<Mn::Text::AbstractFont> font_;
-  Mn::Matrix3 textProjection_;
-  Mn::Text::GlyphCache cache_;
-  Mn::Shaders::Vector2D textShader_;
+  Cr::Containers::Pointer<gfx::TextRenderer> textRenderer_;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -141,8 +137,7 @@ Viewer::Viewer(const Arguments& arguments)
                                 .setSampleCount(4)},
       pathfinder_(nav::PathFinder::create()),
       controls_(),
-      previousPosition_(),
-      cache_(Mn::Vector2i{512}) {
+      previousPosition_() {
   Utility::Arguments args;
 #ifdef CORRADE_TARGET_EMSCRIPTEN
   args.addNamedArgument("scene")
@@ -237,31 +232,9 @@ Viewer::Viewer(const Arguments& arguments)
       rgbSensorNode_->absoluteTransformation());
 
   // fonts
-  font_ = fontManager_.loadAndInstantiate("StbTrueTypeFont");
-  CORRADE_ASSERT(font_,
-                 "Viewer::Viewer: cannot load and instantiate the font", );
-
-  Cr::Utility::Resource rs("fonts");
-  std::string fontName = "SourceSansPro-SemiBold.ttf";
-  float fontSize = 20.0f;  // font size related to resolution
-  if (!font_->openData(rs.getRaw(fontName), fontSize)) {
-    Cr::Utility::Fatal{-1} << "Viewer::viewer: The font" << fontName
-                           << "does not exist.";
-  }
-  font_->fillGlyphCache(cache_,
-                        "abcdefghijklmnopqrstuvwxyz"
-                        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                        "0123456789?!:;,. ");
-
-  performanceText_.reset(
-      new Mn::Text::Renderer2D(*font_, cache_,
-                               0.08f,  // character size on the screen
-                               Mn::Text::Alignment::TopRight));
-  performanceText_->reserve(40, Mn::GL::BufferUsage::DynamicDraw,
-                            Mn::GL::BufferUsage::StaticDraw);
-
-  textProjection_ = Mn::Matrix3::scaling(Mn::Vector2::yScale(
+  textRenderer_.reset(new gfx::TextRenderer(
       Mn::Vector2(Mn::GL::defaultFramebuffer.viewport().size()).aspectRatio()));
+  textRenderer_->createRenderer();
 
   timeline_.start();
 }  // end Viewer::Viewer
@@ -406,20 +379,14 @@ void Viewer::drawEvent() {
     physicsManager_->debugDraw(projM * camM);
   }
 
-  textShader_
-      .setTransformationProjectionMatrix(
-          textProjection_ *
-          Mn::Matrix3::translation(
-              1.0f / textProjection_.rotationScaling().diagonal()))
-      .setColor(Color3{1.0f})
-      .bindVectorTexture(cache_.texture());
-  performanceText_->mesh().draw(textShader_);
+  Mn::Color3 textColor{1.0f};
+  textRenderer_->draw(textColor);
 
   swapBuffers();
   redraw();
 
   totalFrames_++;
-  if ((totalFrames_ & fpsUpdateFrequencyMask) == 0) {
+  if ((totalFrames_ % fpsUpdateFrequency) == 0) {
     updateText(totalFrames_ / timeline_.previousFrameTime());
   }
 
@@ -430,8 +397,7 @@ void Viewer::viewportEvent(ViewportEvent& event) {
   GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
   renderCamera_->getMagnumCamera().setViewport(event.windowSize());
 
-  textProjection_ = Mn::Matrix3::scaling(
-      Mn::Vector2::yScale(Vector2(event.windowSize()).aspectRatio()));
+  textRenderer_->updateAspectRatio(Vector2(event.windowSize()).aspectRatio());
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
@@ -593,7 +559,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
 
 void Viewer::updateText(float fps) {
   // update the text occasionally
-  performanceText_->render(Cr::Utility::formatString("FPS: {:.1f}", fps));
+  textRenderer_->updateText(Cr::Utility::formatString("FPS: {:.1f}", fps));
 }
 
 }  // namespace
