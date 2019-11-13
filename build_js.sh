@@ -20,7 +20,7 @@ mkdir -p build_js
 cd build_js
 
 cmake ../src \
-    -DCORRADE_RC_EXECUTABLE=../build_corrade-rc/deps/corrade/src/Corrade/Utility/corrade-rc \
+    -DCORRADE_RC_EXECUTABLE=../build_corrade-rc/RelWithDebInfo/bin/corrade-rc \
     -DBUILD_GUI_VIEWERS=ON \
     -DBUILD_PYTHON_BINDINGS=OFF \
     -DBUILD_ASSIMP_SUPPORT=OFF \

@@ -58,5 +58,23 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
   return hull;
 }
 
+Magnum::Range3D getTransformedBB(const Magnum::Range3D& range,
+                                 const Magnum::Matrix4& T) {
+  std::vector<Magnum::Vector3> corners;
+  corners.push_back(T.transformPoint(range.frontBottomLeft()));
+  corners.push_back(T.transformPoint(range.frontBottomRight()));
+  corners.push_back(T.transformPoint(range.frontTopLeft()));
+  corners.push_back(T.transformPoint(range.frontTopRight()));
+
+  corners.push_back(T.transformPoint(range.backTopLeft()));
+  corners.push_back(T.transformPoint(range.backTopRight()));
+  corners.push_back(T.transformPoint(range.backBottomLeft()));
+  corners.push_back(T.transformPoint(range.backBottomRight()));
+
+  Magnum::Range3D transformedBB{Magnum::Math::minmax<Magnum::Vector3>(corners)};
+
+  return transformedBB;
+}
+
 }  // namespace geo
 }  // namespace esp

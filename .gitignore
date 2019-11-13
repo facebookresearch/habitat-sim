@@ -164,7 +164,7 @@ run_example
 *.swp
 
 tests/17DRP5sb8fy
-data/
+/data/
 *.zip
 habitat_sim/_ext
 build_js/

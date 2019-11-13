@@ -30,6 +30,7 @@ Module.preRun.push(() => {
   let config = {};
   config.scene = defaultScene;
   buildConfigFromURLParameters(config);
+  window.config = config;
   const scene = config.scene;
   Module.scene = preload(scene);
   const fileNoExtension = scene.substr(0, scene.lastIndexOf("."));
