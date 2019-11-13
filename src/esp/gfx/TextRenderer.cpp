@@ -86,10 +86,10 @@ void TextRenderer::updateText(const std::string& text, size_t rendererId) {
 }
 
 TextRenderer& TextRenderer::draw(const Mn::Color3& color, size_t rendererId) {
-  CORRADE_ASSERT(rendererId < text_.size(),
-                 "TextRenderer::draw: the rendererId"
-                     << rendererId << "is out of range.",
-                 *this);
+  CORRADE_ASSERT(
+      rendererId < text_.size(),
+      "TextRenderer::draw: the rendererId" << rendererId << "is out of range.",
+      *this);
   textShader_
       .setTransformationProjectionMatrix(
           textProjection_ *
