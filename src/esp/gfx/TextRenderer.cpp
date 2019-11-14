@@ -63,7 +63,7 @@ size_t TextRenderer::createRenderer(float onScreenCharacterSize,
                  0);
 
   CORRADE_ASSERT(glyphCount > 0,
-                 "TextRenderer::createRenderer: the copacity" << glyphCount
+                 "TextRenderer::createRenderer: the capacity" << glyphCount
                                                               << "is illegal.",
                  0);
 
