@@ -879,14 +879,9 @@ T PathFinder::tryStep(const T& start, const T& end) {
   // navmesh, it seems to be in 99.9% of cases for us, but there are some
   // extreme edge cases where it won't be, so explicitly get the height of the
   // surface at the endPoint and set its height to that.
-  {
-    float endPointHeight;
-    // Note, this will never fail as endPoint is always within in the poly
-    // polys[numPolys - 1]
-    navQuery_->getPolyHeight(polys[numPolys - 1], endPoint.data(),
-                             &endPointHeight);
-    endPoint[1] = endPointHeight;
-  }
+  // Note, this will never fail as endPoint is always within in the poly
+  // polys[numPolys - 1]
+  navQuery_->getPolyHeight(polys[numPolys - 1], endPoint.data(), &endPoint[1]);
 
   // Hack to deal with infinitely thin walls in recast allowing you to
   // transition between two different connected components
