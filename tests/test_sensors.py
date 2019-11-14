@@ -123,7 +123,7 @@ def test_sensors(scene, has_sem, sensor_type, gpu2gpu, sim, make_cfg_settings):
     # Different GPUs and different driver version will produce slightly different images
     assert np.linalg.norm(
         obs[sensor_type].astype(np.float) - gt.astype(np.float)
-    ) < 1.5e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
+    ) < 2.0e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
 
 
 # Tests to make sure that no sensors is supported and doesn't crash
