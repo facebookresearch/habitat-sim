@@ -1,20 +1,27 @@
+#!/usr/bin/env python3
+
+# Copyright (c) Facebook, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import os.path as osp
 
 import attr
 import numba
 import numpy as np
 
-from habitat_sim.bindings import SensorType, cuda_enabled
-from habitat_sim.sensors.noise_models.registration import (
-    SensorNoiseModel,
-    register_sensor_noise_model,
-)
+from habitat_sim.bindings import cuda_enabled
+from habitat_sim.registry import registry
+from habitat_sim.sensor import SensorType
+from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
 if cuda_enabled:
     from habitat_sim._ext.habitat_sim_bindings import RedwoodNoiseModelGPUImpl
     import torch
 
 
+# Read about the noise model here: http://www.alexteichman.com/octo/clams/
+# Original source code: http://redwood-data.org/indoor/data/simdepth.py
 @numba.jit(nopython=True)
 def _undistort(x, y, z, model):
     i2 = int((z + 1) / 2)
@@ -56,6 +63,8 @@ def _simulate(gt_depth, model, noise_multiplier):
                 noisy_depth[j, i] = 0.0
             else:
                 # Distort
+                # The noise model was originally made for a 640x480 sensor,
+                # so re-map our arbitrarily sized sensor to that size!
                 undistorted_d = _undistort(
                     int(x / xmax * 639.0 + 0.5), int(y / ymax * 479.0 + 0.5), d, model
                 )
@@ -90,24 +99,25 @@ class RedwoodNoiseModelCPUImpl:
         return _simulate(gt_depth, self.model, self.noise_multiplier)
 
 
-@register_sensor_noise_model
+@registry.register_noise_model
+@attr.s(auto_attribs=True, kw_only=True)
 class RedwoodDepthNoiseModel(SensorNoiseModel):
-    def __init__(self, gpu_device_id, noise_multiplier=1.0):
-        self._gpu_device_id = gpu_device_id
+    noise_multiplier: float = 1.0
 
+    def __attrs_post_init__(self):
         dist = np.load(
             osp.join(osp.dirname(__file__), "data", "redwood-depth-dist-model.npy")
         )
 
         if cuda_enabled:
             self._impl = RedwoodNoiseModelGPUImpl(
-                dist, self._gpu_device_id, noise_multiplier
+                dist, self.gpu_device_id, self.noise_multiplier
             )
         else:
-            self._impl = RedwoodNoiseModelCPUImpl(dist, noise_multiplier)
+            self._impl = RedwoodNoiseModelCPUImpl(dist, self.noise_multiplier)
 
     @staticmethod
-    def is_valid_sensor_type(sensor_type):
+    def is_valid_sensor_type(sensor_type: SensorType) -> bool:
         return sensor_type == SensorType.DEPTH
 
     def simulate(self, gt_depth):
@@ -125,4 +135,6 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
             return self._impl.simulate(gt_depth)
 
     def apply(self, gt_depth):
+        r"""Alias of `simulate()` to conform to base-class and expected API
+        """
         return self.simulate(gt_depth)
