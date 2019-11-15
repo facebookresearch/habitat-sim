@@ -226,7 +226,7 @@ Viewer::Viewer(const Arguments& arguments)
 
   // fonts
   textRenderer_.reset(new gfx::TextRenderer(
-      Mn::Vector2(Mn::GL::defaultFramebuffer.viewport().size()).aspectRatio()));
+      Mn::Vector2(framebufferSize()).aspectRatio()));
   textRenderer_->createRenderer();
 
   timeline_.start();
