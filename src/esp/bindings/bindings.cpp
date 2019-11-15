@@ -46,8 +46,6 @@ void initGeoBindings(py::module& m);
 namespace {
 template <class T>
 SceneNode* nodeGetter(T& self) {
-  if (!&self.node())
-    throw py::value_error{"feature not valid"};
   return &self.node();
 };
 }  // namespace
