@@ -85,6 +85,53 @@ def quat_from_angle_axis(theta: float, axis: np.ndarray) -> np.quaternion:
     return quaternion.from_rotation_vector(theta * axis)
 
 
+def np_normalized(v):
+    r"""Get a normalized a numpy array
+
+    :param v: The vector
+    :return: The normalized vector
+    """
+    norm = np.linalg.norm(v)
+    if norm == 0:
+        return v
+    return v / norm
+
+
+def quat_look_at(
+    target, position, up=np.array([0, 1.0, 0]), forward=np.array([0, 0, -1.0])
+):
+    r"""Creates a quaternion to look at a point from another given a desired up direction
+
+    :param target: The point to look at
+    :param position: The origin of the object/camera frame
+    :param up: The desired up direction of the object/camera frame
+    :param forward: The forward direction of the object/camera frame (to be aligned with target-position)
+    :return: The quaternion
+    """
+    forward_l = np_normalized(target - position)
+    forward_w = np_normalized(forward)
+    axis = np.cross(forward_l, forward_w)
+    angle = np.arccos(np.dot(forward_l, forward_w))
+
+    third = np.cross(axis, forward_w)
+    if np.dot(third, forward_l) < 0:
+        angle = -angle
+    q1 = quat_from_angle_axis(angle, axis)
+
+    up_l = quat_rotate_vector(q1, np_normalized(up))
+    right = np_normalized(np.cross(forward_l, up))
+    up_w = np_normalized(np.cross(right, forward_l))
+
+    axis2 = np.cross(up_l, up_w)
+    angle2 = np.arccos(np.dot(up_l, up_w))
+
+    q2 = quat_from_angle_axis(angle2, axis2)
+
+    orientation = q2 * q1
+
+    return orientation
+
+
 def quat_from_two_vectors(v0: np.ndarray, v1: np.ndarray) -> np.quaternion:
     r"""Creates a quaternion that rotates the first vector onto the second vector
 
