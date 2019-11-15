@@ -1,0 +1,11 @@
+{
+    "render mesh": "cheezit.glb",
+    "collision mesh_": "cheezit_bb.glb",
+    "use bounding box for collision": true,
+    "mass": 0.5,
+    "COM": [-0.0128545, 0.103493, -0.014142],
+    "inertia": [0.00606912, 0.00454785, 0.00344153],
+    "friction coefficient": 0.6,
+    "restitution coefficient": 0.9,
+    "semantic id": 10
+}
