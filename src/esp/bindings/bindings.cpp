@@ -596,5 +596,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       .def("apply_force", &Simulator::applyForce, "force"_a,
            "relative_position"_a, "object_id"_a, "sceneID"_a = 0)
       .def("apply_torque", &Simulator::applyTorque, "torque"_a, "object_id"_a,
+           "sceneID"_a = 0)
+      .def("contact_test", &Simulator::contactTest, "object_id"_a,
            "sceneID"_a = 0);
 }

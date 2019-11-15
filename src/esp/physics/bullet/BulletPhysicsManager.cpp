@@ -217,5 +217,23 @@ void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
   bWorld_->debugDrawWorld();
 }
 
+int BulletPhysicsManager::getNumOverlappingObjectPairs(bool computeCollisions) {
+  if (computeCollisions) {
+    LOG(INFO) << "computing collisions";
+    bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
+  }
+  return bWorld_->getCollisionWorld()->getPairCache()->getNumOverlappingPairs();
+}
+
+bool BulletPhysicsManager::contactTest(const int physObjectID) {
+  if (existingObjects_.count(physObjectID) > 0) {
+    bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
+    return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+        ->contactTest();
+  } else {
+    return false;
+  }
+}
+
 }  // namespace physics
 }  // namespace esp

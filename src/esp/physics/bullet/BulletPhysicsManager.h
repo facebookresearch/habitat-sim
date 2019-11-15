@@ -164,6 +164,20 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   virtual void debugDraw(const Magnum::Matrix4& projTrans) const override;
 
+  /**
+   * @brief Performs a discrete collision detection pass if requested and
+   * returns the number of overlapping collision pairs.
+   * @param computeCollisions Determines whether or not a fresh pass of
+   * collision detection is performed before returning cached data.
+   * @return The number of intersecting collision pairs.
+   */
+  int getNumOverlappingObjectPairs(bool computeCollisions = false);
+
+  /**
+   * @brief check whether the
+   */
+  bool contactTest(const int physObjectID);
+
  protected:
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;

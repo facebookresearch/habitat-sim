@@ -247,6 +247,13 @@ int Simulator::removeObject(const int objectID, const int sceneID) {
   return ID_UNDEFINED;
 }
 
+bool Simulator::contactTest(const int objectID, const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->contactTest(objectID);
+  }
+  return false;
+}
+
 esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
                                                         const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {

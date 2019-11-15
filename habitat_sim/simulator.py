@@ -288,6 +288,9 @@ class Simulator:
     def get_world_time(self, scene_id=0):
         return self._sim.get_world_time()
 
+    def contact_test(self, object_id, scene_id=0):
+        return self._sim.contact_test(object_id, scene_id)
+
 
 class Sensor:
     r"""Wrapper around habitat_sim.Sensor

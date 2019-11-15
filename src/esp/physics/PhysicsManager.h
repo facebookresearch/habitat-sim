@@ -656,6 +656,19 @@ class PhysicsManager {
   virtual void debugDraw(
       CORRADE_UNUSED const Magnum::Matrix4& projTrans) const {};
 
+  //! Not implemented for default @ref PhysicsManager. See @ref
+  //! BulletPhysicsManager.
+  virtual int getNumOverlappingObjectPairs(
+      CORRADE_UNUSED bool computeCollisions) {
+    return PHYSICS_ATTR_UNDEFINED;
+  };
+
+  //! Not implemented for default @ref PhysicsManager. See @ref
+  //! BulletPhysicsManager.
+  virtual bool contactTest(CORRADE_UNUSED const int physObjectID) {
+    return false;
+  };
+
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
    * existing object). Terminate the program and report an error if not. This

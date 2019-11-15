@@ -6,6 +6,7 @@
 #include <Magnum/BulletIntegration/Integration.h>
 #include <Magnum/BulletIntegration/MotionState.h>
 
+#include "BulletCollision/CollisionDispatch/btCollisionWorld.h"
 #include "BulletCollision/CollisionShapes/btCompoundShape.h"
 #include "BulletCollision/CollisionShapes/btConvexHullShape.h"
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
@@ -28,6 +29,26 @@
 
 namespace esp {
 namespace physics {
+
+//! Collision results stored/processed here
+struct SimulationContactResultCallback
+    : public btCollisionWorld::ContactResultCallback {
+  bool bCollision;
+
+  SimulationContactResultCallback() { bCollision = false; }
+
+  btScalar addSingleResult(btManifoldPoint& cp,
+                           const btCollisionObjectWrapper* colObj0Wrap,
+                           int partId0,
+                           int index0,
+                           const btCollisionObjectWrapper* colObj1Wrap,
+                           int partId1,
+                           int index1) {
+    // If cp distance less than threshold
+    bCollision = true;
+    return 0;
+  }
+};
 
 BulletRigidObject::BulletRigidObject(scene::SceneNode* parent)
     : RigidObject{parent} {};
@@ -550,6 +571,13 @@ double BulletRigidObject::getAngularDamping() {
   } else {
     return bObjectRigidBody_->getAngularDamping();
   }
+}
+
+bool BulletRigidObject::contactTest() {
+  SimulationContactResultCallback src;
+  bWorld_->getCollisionWorld()->contactTest(bObjectRigidBody_.get(), src);
+  // LOG(INFO) << "collision detected = " << src.bCollision;
+  return src.bCollision;
 }
 
 }  // namespace physics

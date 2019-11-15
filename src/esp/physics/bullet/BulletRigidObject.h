@@ -329,6 +329,9 @@ class BulletRigidObject : public RigidObject {
    */
   const bool isUsingBBCollisionShape() const { return collisionFromBB_; };
 
+  //! Return result of contact test between the object and collision world
+  bool contactTest();
+
  protected:
   /** @brief Used to synchronize Bullet's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic

@@ -52,6 +52,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     control_mode = args.control_mode
+    assert control_mode == "DYNAMIC" or control_mode == "KINEMATIC"
 
     settings = {"image_height": 512, "image_width": 512, "random_seed": 0}
 
@@ -153,7 +154,7 @@ if __name__ == "__main__":
             sim.apply_force(np.array([0, obj_mass * 9.8, 0]), np.zeros(3), quadrotor_id)
 
             # apply control force
-            sim.apply_force(heading * 0.5, np.zeros(3), quadrotor_id)
+            sim.apply_force(heading * 0.7, np.zeros(3), quadrotor_id)
             # TODO: you may want to apply local forces at 4 corners of bounding box in local space
 
             # apply some torques to turn the object (local axii)?
@@ -161,18 +162,22 @@ if __name__ == "__main__":
 
             # step the world for 1/30 second
             sim._sim.step_world(dt=1.0 / 30.0)
-        else:
+        if control_mode == "KINEMATIC":
             # move the agent along the heading
-            agent_speed = 0.1  # how far the agent will move along the heading
-            sim.set_translation(
-                sim.get_translation(quadrotor_id) + heading * agent_speed, quadrotor_id
+            current_state = (
+                sim.get_translation(quadrotor_id),
+                sim.get_rotation(quadrotor_id),
             )
+            agent_speed = 0.1  # how far the agent will move along the heading
+            sim.set_translation(current_state[0] + heading * agent_speed, quadrotor_id)
 
             # rotate the agent?
-            agent_orientation = sim.get_rotation(quadrotor_id)
-            # sim.set_rotation(agent_orientation, quadrotor_id)
+            # sim.set_rotation(current_state[1], quadrotor_id)
 
-            # TODO: discrete collision check and reset to previous state if new state is invalid
+            # discrete collision check and reset to previous state if new state is invalid
+            if sim.contact_test(quadrotor_id):
+                sim.set_translation(current_state[0], quadrotor_id)
+                sim.set_rotation(current_state[1], quadrotor_id)
 
         # sync the agent state to the physical object
         sim.get_agent(0).scene_node.translation = sim.get_translation(quadrotor_id)

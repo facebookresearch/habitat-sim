@@ -277,6 +277,14 @@ class Simulator {
    */
   double getWorldTime();
 
+  /**
+   * @brief Discrete collision check for contact between an object and the
+   * collision world.
+   * @param objectID The object to check
+   * @return whether or not he object is colliding with something in the world
+   */
+  bool contactTest(const int objectID, const int sceneID = 0);
+
  protected:
   Simulator(){};
 
