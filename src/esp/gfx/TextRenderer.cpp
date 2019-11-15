@@ -13,15 +13,26 @@
 #include "TextRenderer.h"
 #include "esp/core/esp.h"
 
-// This is to import the "resources" at runtime. When the resource is compiled
-// into static library, it must be explicitly initialized via this macro, and
-// should be called *outside* of any namespace.
+// This is to import the "resources" at runtime. When the resource is
+// compiled into static library, it must be explicitly initialized via this
+// macro, and should be called *outside* of any namespace.
 static void importFontResources() {
   CORRADE_RESOURCE_INITIALIZE(FontResources)
 }
 
 namespace esp {
 namespace gfx {
+
+const std::string defaultCharacters =
+    "abcdefghijklmnopqrstuvwxyz"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "0123456789?!:;,.# ";
+
+constexpr float TextRenderer::locationLookup_[NUM_LOCATION][2];
+
+TextRenderer::TextRenderer(float aspectRatio, float fontSize, int cacheSize)
+    : TextRenderer(aspectRatio, fontSize, cacheSize, defaultCharacters) {}
+
 TextRenderer::TextRenderer(float aspectRatio,
                            float fontSize,
                            int cacheSize,
@@ -56,7 +67,7 @@ TextRenderer::TextRenderer(float aspectRatio,
 
 size_t TextRenderer::createRenderer(float onScreenCharacterSize,
                                     size_t glyphCount,
-                                    Mn::Text::Alignment alignment) {
+                                    TextLocation location) {
   CORRADE_ASSERT(onScreenCharacterSize > 0,
                  "TextRenderer::createRenderer: the character size"
                      << onScreenCharacterSize << "is illegal.",
@@ -67,11 +78,26 @@ size_t TextRenderer::createRenderer(float onScreenCharacterSize,
                                                               << "is illegal.",
                  0);
 
+  Mn::Text::Alignment alignment = Mn::Text::Alignment::TopLeft;
+  ;
+  switch (location) {
+    case TOP_LEFT:
+      // has been initialized above
+      break;
+    case TOP_RIGHT:
+      alignment = Mn::Text::Alignment::TopRight;
+      break;
+    default:
+      Cr::Utility::Fatal{-1} << "TextRenderer::createRenderer: The location"
+                             << "is not supported.";
+      break;
+  }
   text_.emplace_back(
-      std::move(Cr::Containers::Pointer<Mn::Text::Renderer2D>()));
+      Cr::Containers::Pointer<Mn::Text::Renderer2D>(new Mn::Text::Renderer2D(
+          *font_, cache_, onScreenCharacterSize, alignment)));
+  locations_.emplace_back(location);
+
   size_t rendererId = text_.size() - 1;
-  text_[rendererId].reset(new Mn::Text::Renderer2D(
-      *font_, cache_, onScreenCharacterSize, alignment));
   text_[rendererId]->reserve(glyphCount, Mn::GL::BufferUsage::DynamicDraw,
                              Mn::GL::BufferUsage::StaticDraw);
 
@@ -90,11 +116,14 @@ TextRenderer& TextRenderer::draw(const Mn::Color3& color, size_t rendererId) {
       rendererId < text_.size(),
       "TextRenderer::draw: the rendererId" << rendererId << "is out of range.",
       *this);
+  auto entry = locations_[rendererId];
   textShader_
       .setTransformationProjectionMatrix(
           textProjection_ *
           Mn::Matrix3::translation(
-              1.0f / textProjection_.rotationScaling().diagonal()))
+              1.0f / textProjection_.rotationScaling().diagonal() *
+              Mn::Vector2{locationLookup_[entry][0],
+                          locationLookup_[entry][1]}))
       .setColor(color)
       .bindVectorTexture(cache_.texture());
   text_[rendererId]->mesh().draw(textShader_);

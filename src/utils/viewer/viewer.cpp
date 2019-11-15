@@ -50,7 +50,7 @@ using namespace esp;
 constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
 constexpr float rgbSensorHeight = 1.5f;
-constexpr uint64_t fpsUpdateFrequency = 15;
+constexpr uint64_t fpsUpdateFrequency = 60;
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -374,16 +374,19 @@ void Viewer::drawEvent() {
   }
 
   if (displayPerformanceInfo) {
-    Mn::Color3 textColor{1.0f};
-    textRenderer_->draw(textColor);
+    textRenderer_->draw(0xffffff_rgbf);
   }
 
   swapBuffers();
   redraw();
 
   totalFrames_++;
-  if (displayPerformanceInfo && (totalFrames_ % fpsUpdateFrequency) == 0) {
-    updateText(totalFrames_ / timeline_.previousFrameTime());
+  timeDuration_ += timeline_.previousFrameDuration();
+  if ((totalFrames_ % fpsUpdateFrequency) == 0) {
+    if (displayPerformanceInfo) {
+      updateText(fpsUpdateFrequency / timeDuration_);
+    }
+    timeDuration_ = 0.0;
   }
 
   timeline_.nextFrame();
@@ -545,7 +548,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       }
     } break;
     case KeyEvent::Key::One: {
-      displayPerformanceInfo = !displayPerformanceInfo;
+      displayPerformanceInfo ^= true;
     } break;
     default:
       break;

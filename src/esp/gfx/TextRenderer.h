@@ -22,11 +22,6 @@ namespace gfx {
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
-const std::string defaultCharacters =
-    "abcdefghijklmnopqrstuvwxyz"
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    "0123456789?!:;,.# ";
-
 class TextRenderer {
  public:
   /**
@@ -35,21 +30,34 @@ class TextRenderer {
   // aspectRatio = width / height
   explicit TextRenderer(float viewportAspectRatio = 1.33333f,
                         float fontSize = 20.0f,
-                        int cacheSize = 512,
-                        const std::string& characters = defaultCharacters);
+                        int cacheSize = 1024);
+  explicit TextRenderer(float viewportAspectRatio,
+                        float fontSize,
+                        int cacheSize,
+                        const std::string& characters);
 
+  // text location relative to the application window
+  enum TextLocation {
+    TOP_LEFT = 0,
+    TOP_RIGHT = 1,
+    NUM_LOCATION = 2,
+    // TODO: more locations, e.g., BOTTOM_LEFT ...
+    // Planning to support 9 locations in total
+  };
   /**
    * @brief Create a renderer to render text on screen
    * @return renderer ID
+   *
+   * Multiple text renderers are supported. Each can have different settings
+   * (text length, size, alignment, color etc.)
    */
-  size_t createRenderer(
-      float onScreenCharacterSize = 0.08f,
-      size_t glyphCount = 60,
-      Mn::Text::Alignment alignment = Mn::Text::Alignment::TopRight);
+  size_t createRenderer(float onScreenCharacterSize = 0.04f,
+                        size_t glyphCount = 60,
+                        TextLocation location = TOP_RIGHT);
 
   /**
-   *  @brief Draw the text by the specified renderer (default 0) with specified
-   * color
+   *  @brief Draw the text by the specified renderer (renderer ID by default: 0)
+   * with specified color
    *  @return Reference to self (for method chaining)
    */
   TextRenderer& draw(const Mn::Color3& color, size_t rendererId = 0);
@@ -57,12 +65,13 @@ class TextRenderer {
   /**
    *  @brief Update the aspect ratio of the viewport
    *  @return Reference to self (for method chaining)
-   *  @notification DO NOT forget to call it in the viewportEvent()
+   *  @note DO NOT forget to call it in the viewportEvent()
    */
   TextRenderer& updateAspectRatio(float viewportAspectRatio);
 
   /**
-   * @brief Update the text to be rendered
+   * @brief Update the text to be displayed by a specified renderer (renderer ID
+   * by default: 0)
    *
    * Initially no text is rendered.
    * @attention The capacity (glyphCount) must
@@ -79,7 +88,13 @@ class TextRenderer {
   Mn::Text::GlyphCache cache_;
   Mn::Shaders::Vector2D textShader_;
   Mn::Matrix3 textProjection_;
+  // multiple text renderers are supported
   std::vector<Cr::Containers::Pointer<Mn::Text::Renderer2D>> text_;
+  std::vector<TextLocation> locations_;
+  static constexpr float locationLookup_[NUM_LOCATION][2] = {
+      {-1.0f, 1.0f},  // TOP_LEFT
+      {1.0f, 1.0f},   // TOP_RIGHT
+  };
 };
 
 }  // namespace gfx
