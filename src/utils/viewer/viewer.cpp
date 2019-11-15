@@ -225,8 +225,8 @@ Viewer::Viewer(const Arguments& arguments)
       rgbSensorNode_->absoluteTransformation());
 
   // fonts
-  textRenderer_.reset(new gfx::TextRenderer(
-      Mn::Vector2(framebufferSize()).aspectRatio()));
+  textRenderer_.reset(
+      new gfx::TextRenderer(Mn::Vector2(framebufferSize()).aspectRatio()));
   textRenderer_->createRenderer();
 
   timeline_.start();
