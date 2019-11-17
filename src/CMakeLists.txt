@@ -87,8 +87,6 @@ if(BUILD_GUI_VIEWERS)
   add_subdirectory(utils/viewer)
 endif()
 
-add_subdirectory(utils/imgui)
-
 if(BUILD_TEST)
   add_subdirectory(tests)
 endif()
