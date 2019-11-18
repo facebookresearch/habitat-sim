@@ -31,6 +31,10 @@ else()
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${DEPS_DIR}/eigen-git-mirror/cmake")
 endif()
 
+if(NOT IMGUI_DIR)
+  set(IMGUI_DIR "${DEPS_DIR}/imgui")
+endif()
+
 # sophus
 include_directories(SYSTEM "${DEPS_DIR}/Sophus")
 
@@ -143,6 +147,7 @@ if(NOT USE_SYSTEM_MAGNUM)
   set(WITH_EMSCRIPTENAPPLICATION OFF CACHE BOOL "WITH_EMSCRIPTENAPPLICATION" FORCE)
   set(WITH_GLFWAPPLICATION OFF CACHE BOOL "WITH_GLFWAPPLICATION" FORCE)
   set(WITH_EIGEN ON CACHE BOOL "WITH_EIGEN" FORCE) # Eigen integration
+  set(WITH_IMGUI ON CACHE BOOL "WITH_IMGUI" FORCE) # ImGui integration
   if(BUILD_PYTHON_BINDINGS)
     set(WITH_PYTHON ON CACHE BOOL "" FORCE) # Python bindings
   endif()
