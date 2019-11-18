@@ -31,7 +31,9 @@ else()
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${DEPS_DIR}/eigen-git-mirror/cmake")
 endif()
 
-set(IMGUI_DIR "${DEPS_DIR}/imgui")
+if(NOT IMGUI_DIR)
+  set(IMGUI_DIR "${DEPS_DIR}/imgui")
+endif()
 
 # sophus
 include_directories(SYSTEM "${DEPS_DIR}/Sophus")

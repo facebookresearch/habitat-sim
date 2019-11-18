@@ -107,7 +107,8 @@ class Viewer : public Magnum::Platform::Application {
 
   Magnum::Timeline timeline_;
 
-  ImGuiIntegration::Context _imgui{NoCreate};
+  ImGuiIntegration::Context imgui_{NoCreate};
+  bool showFPS_ = false;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -137,7 +138,7 @@ Viewer::Viewer(const Arguments& arguments)
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
 
-  _imgui = ImGuiIntegration::Context(Vector2{windowSize()} / dpiScaling(),
+  imgui_ = ImGuiIntegration::Context(Vector2{windowSize()} / dpiScaling(),
                                      windowSize(), framebufferSize());
 
   /* Set up proper blending to be used by ImGui. There's a great chance
@@ -367,14 +368,17 @@ void Viewer::drawEvent() {
     physicsManager_->debugDraw(projM * camM);
   }
 
-  _imgui.newFrame();
+  imgui_.newFrame();
 
-  ImGui::Begin("main", NULL,
-               ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
-                   ImGuiWindowFlags_AlwaysAutoResize);
-  ImGui::SetWindowFontScale(2.0);
-  ImGui::Text("%.1f FPS", Double(ImGui::GetIO().Framerate));
-  ImGui::End();
+  if (showFPS_) {
+    ImGui::SetNextWindowPos(ImVec2(10, 10));
+    ImGui::Begin("main", NULL,
+                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
+                     ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::SetWindowFontScale(2.0);
+    ImGui::Text("%.1f FPS", Double(ImGui::GetIO().Framerate));
+    ImGui::End();
+  }
 
   /* Set appropriate states. If you only draw ImGui, it is sufficient to
      just enable blending and scissor test in the constructor. */
@@ -383,7 +387,7 @@ void Viewer::drawEvent() {
   GL::Renderer::disable(GL::Renderer::Feature::FaceCulling);
   GL::Renderer::disable(GL::Renderer::Feature::DepthTest);
 
-  _imgui.drawFrame();
+  imgui_.drawFrame();
 
   /* Reset state. Only needed if you want to draw something else with
      different state after. */
@@ -400,7 +404,7 @@ void Viewer::drawEvent() {
 void Viewer::viewportEvent(ViewportEvent& event) {
   GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
   renderCamera_->getMagnumCamera().setViewport(event.windowSize());
-  _imgui.relayout(Vector2{event.windowSize()} / event.dpiScaling(),
+  imgui_.relayout(Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
 }
 
@@ -488,6 +492,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       controls_(*agentBodyNode_, "moveRight", moveSensitivity);
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+      break;
+    case KeyEvent::Key::C:
+      showFPS_ = !showFPS_;
       break;
     case KeyEvent::Key::S:
       controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
