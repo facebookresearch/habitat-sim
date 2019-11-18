@@ -663,6 +663,9 @@ void PTexMeshData::parsePLY(const std::string& filename,
     CORRADE_ASSERT(positionDimensions > 0,
                    "PTexMeshData::parsePLY: the dimensions of the position is "
                    "not greater than 0", );
+    CORRADE_ASSERT(
+        positionDimensions == 3,
+        "PTexMeshData::parsePLY: the dimensions of the position must be 3.", );
   }
 
   meshData.vbo.resize(numVertices, vec3f(0, 0, 0));
