@@ -60,25 +60,22 @@ class ObjectControls(object):
         :return: Whether or not the action taken resulted in a collision
         """
         start_pos = obj.absolute_translation
+        start_orienation = obj.rotation
         move_fn = registry.get_move_fn(action_name)
         assert move_fn is not None, f"No move_fn for action '{action_name}'"
         move_fn(obj, actuation_spec)
         end_pos = obj.absolute_translation
+        end_orienation = obj.rotation
 
         collided = False
         if apply_filter:
-            filter_end = self.move_filter_fn(start_pos, end_pos)
+            filter_end_state = self.move_filter_fn(
+                start_pos, end_pos, start_orienation, end_orienation
+            )
             # Update the position to respect the filter
-            obj.translate(filter_end - end_pos)
-
-            dist_moved_before_filter = (end_pos - start_pos).dot()
-            dist_moved_after_filter = (filter_end - start_pos).dot()
-
-            # NB: There are some cases where ||filter_end - end_pos|| > 0 when a
-            # collision _didn't_ happen. One such case is going up stairs.  Instead,
-            # we check to see if the the amount moved after the application of the filter
-            # is _less_ the the amount moved before the application of the filter
-            collided = (dist_moved_after_filter + EPS) < dist_moved_before_filter
+            obj.translation = filter_end_state[0]
+            obj.rotation = filter_end_state[1]
+            collided = filter_end_state[2]
 
         return collided
 

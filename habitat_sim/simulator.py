@@ -57,6 +57,9 @@ class Simulator:
     _default_agent: Agent = attr.ib(init=False, default=None)
     _sensors: Dict = attr.ib(factory=dict, init=False)
     _previous_step_time = 0.0  # track the compute time of each step
+    _collision_proxy_id = (
+        0
+    )  # the object id in physics manager for the proxy collision object of the agent
 
     def __attrs_post_init__(self):
         config = self.config
@@ -233,11 +236,42 @@ class Simulator:
             self.pathfinder, self.get_agent(agent_id), goal_radius
         )
 
-    def _step_filter(self, start_pos, end_pos):
-        if self.pathfinder.is_loaded:
-            end_pos = self.pathfinder.try_step(start_pos, end_pos)
+    def _step_filter(
+        self, start_pos, end_pos, start_orientation=None, end_orientation=None
+    ):
+        # try a step on the navmesh and return the resulting state
 
-        return end_pos
+        # epislon used to deal with machine precision
+        EPS = 1e-5
+
+        collided = False
+        if self.pathfinder.is_loaded:
+            filter_end = self.pathfinder.try_step(start_pos, end_pos)
+
+            dist_moved_before_filter = (end_pos - start_pos).dot()
+            dist_moved_after_filter = (filter_end - start_pos).dot()
+
+            # NB: There are some cases where ||filter_end - end_pos|| > 0 when a
+            # collision _didn't_ happen. One such case is going up stairs.  Instead,
+            # we check to see if the the amount moved after the application of the filter
+            # is _less_ the the amount moved before the application of the filter
+            collided = (dist_moved_after_filter + EPS) < dist_moved_before_filter
+
+        end_state = (filter_end, end_orientation, collided)
+        return end_state
+
+    def _scene_collision_step_filter(
+        self, start_pos, end_pos, start_orientation, end_orientation
+    ):
+        # try a step in the kinematic world and return the resulting state, also setting the proxy object to this state, syncrhonizing with agent
+        self.set_translation(end_pos, self._collision_proxy_id)
+        self.set_rotation(end_orientation, self._collision_proxy_id)
+        if self.contact_test(self._collision_proxy_id):
+            self.set_translation(start_pos, self._collision_proxy_id)
+            self.set_rotation(start_orientation, self._collision_proxy_id)
+            return (start_pos, start_orientation, True)
+
+        return (end_pos, end_orientation, False)
 
     def __del__(self):
         self.close()

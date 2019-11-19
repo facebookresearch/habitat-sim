@@ -58,25 +58,25 @@ class MoveLeft(SceneNodeControl):
         _move_along(scene_node, -actuation_spec.amount, _X_AXIS)
 
 
-@registry.register_move_fn(body_action=False)
+@registry.register_move_fn(body_action=True)
 class MoveUp(SceneNodeControl):
     def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
         _move_along(scene_node, actuation_spec.amount, _Y_AXIS)
 
 
-@registry.register_move_fn(body_action=False)
+@registry.register_move_fn(body_action=True)
 class MoveDown(SceneNodeControl):
     def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
         _move_along(scene_node, -actuation_spec.amount, _Y_AXIS)
 
 
-@registry.register_move_fn(body_action=False)
+@registry.register_move_fn(body_action=True)
 class LookLeft(SceneNodeControl):
     def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
         _rotate_local(scene_node, actuation_spec.amount, _Y_AXIS)
 
 
-@registry.register_move_fn(body_action=False)
+@registry.register_move_fn(body_action=True)
 class LookRight(SceneNodeControl):
     def __call__(self, scene_node: hsim.SceneNode, actuation_spec: ActuationSpec):
         _rotate_local(scene_node, -actuation_spec.amount, _Y_AXIS)
