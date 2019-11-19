@@ -139,7 +139,7 @@ class ResourceManager {
    * @param filename The identifying string key for the asset.
    * @return The @ref MeshMetaData object for the asset.
    */
-  const MeshMetaData& getMeshMetaData(const std::string filename) {
+  const MeshMetaData& getMeshMetaData(const std::string& filename) {
     CHECK(resourceDict_.count(filename) > 0);
     return resourceDict_.at(filename);
   };

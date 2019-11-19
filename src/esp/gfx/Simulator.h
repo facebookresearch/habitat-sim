@@ -282,7 +282,7 @@ class Simulator {
    * failed.
    */
   std::shared_ptr<nav::PathFinder> recomputeNavMesh(
-      nav::NavMeshSettings& navMeshSettings);
+      const nav::NavMeshSettings& navMeshSettings);
 
  protected:
   Simulator(){};

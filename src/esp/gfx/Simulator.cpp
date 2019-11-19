@@ -351,7 +351,7 @@ double Simulator::getWorldTime() {
 }
 
 std::shared_ptr<nav::PathFinder> Simulator::recomputeNavMesh(
-    nav::NavMeshSettings& navMeshSettings) {
+    const nav::NavMeshSettings& navMeshSettings) {
   std::shared_ptr<nav::PathFinder> pf = std::make_shared<nav::PathFinder>();
 
   std::shared_ptr<assets::MeshData> joinedMesh =
