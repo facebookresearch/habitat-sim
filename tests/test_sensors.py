@@ -56,47 +56,6 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
     return obs, gt
 
 
-
-def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
-    with open(
-        osp.abspath(
-            osp.join(
-                osp.dirname(__file__),
-                "gt_data",
-                "{}-state.json".format(osp.basename(osp.splitext(scene)[0])),
-            )
-        ),
-        "r",
-    ) as f:
-        render_state = json.load(f)
-        state = habitat_sim.AgentState()
-        state.position = render_state["pos"]
-        state.rotation = habitat_sim.utils.quat_from_coeffs(render_state["rot"])
-
-    sim.initialize_agent(0, state)
-    obs = sim.step("move_forward")
-
-    assert sensor_type in obs, f"{sensor_type} not in obs"
-
-    gt = np.load(
-        osp.abspath(
-            osp.join(
-                osp.dirname(__file__),
-                "gt_data",
-                "{}-{}.npy".format(osp.basename(osp.splitext(scene)[0]), sensor_type),
-            )
-        )
-    )
-    if gpu2gpu:
-        import torch
-
-        for k, v in obs.items():
-            if torch.is_tensor(v):
-                obs[k] = v.cpu().numpy()
-
-    return obs, gt
-
-
 _test_scenes = [
     osp.abspath(
         osp.join(
