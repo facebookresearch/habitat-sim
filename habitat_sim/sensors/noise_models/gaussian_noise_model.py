@@ -41,14 +41,16 @@ class GaussianNoiseModel(SensorNoiseModel):
     sigma: int = 1
 
     def __attrs_post_init__(self):
-        self._impl = GaussianNoiseModelCPUImpl(self.intensity_constant, self.mean, self.sigma)
+        self._impl = GaussianNoiseModelCPUImpl(
+            self.intensity_constant, self.mean, self.sigma
+        )
 
     @staticmethod
     def is_valid_sensor_type(sensor_type: SensorType) -> bool:
         return sensor_type == SensorType.COLOR
 
     def simulate(self, image):
-            return self._impl.simulate(image)
+        return self._impl.simulate(image)
 
     def apply(self, image):
         r"""Alias of `simulate()` to conform to base-class and expected API
