@@ -1,4 +1,3 @@
-
 import cv2
 import numpy as np
 
@@ -9,6 +8,7 @@ FORWARD_KEY = "w"
 LEFT_KEY = "a"
 RIGHT_KEY = "d"
 DONE_KEY = "q"
+
 
 def transform_rgb_bgr(image):
     return image[:, :, [2, 1, 0]]

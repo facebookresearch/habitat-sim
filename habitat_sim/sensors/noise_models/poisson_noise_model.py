@@ -28,7 +28,6 @@ def _simulate(image):
 
 @attr.s(auto_attribs=True)
 class PoissonNoiseModelCPUImpl:
-
     @staticmethod
     def simulate(image):
         return _simulate(image)
@@ -37,7 +36,6 @@ class PoissonNoiseModelCPUImpl:
 @registry.register_noise_model
 @attr.s(auto_attribs=True, kw_only=True)
 class PoissonNoiseModel(SensorNoiseModel):
-
     def __attrs_post_init__(self):
         self._impl = PoissonNoiseModelCPUImpl()
 
@@ -46,7 +44,7 @@ class PoissonNoiseModel(SensorNoiseModel):
         return sensor_type == SensorType.COLOR
 
     def simulate(self, image):
-            return self._impl.simulate(image)
+        return self._impl.simulate(image)
 
     def apply(self, image):
         r"""Alias of `simulate()` to conform to base-class and expected API

@@ -21,7 +21,7 @@ def _simulate(image, s_vs_p, amount):
     noisy_rgb[tuple(coords)] = 1
 
     # Pepper
-    num_pepper = np.ceil(amount * image.size * (1. - s_vs_p))
+    num_pepper = np.ceil(amount * image.size * (1.0 - s_vs_p))
     coords = [np.random.randint(0, i - 1, int(num_pepper)) for i in image.shape]
     noisy_rgb[tuple(coords)] = 0
 
@@ -51,7 +51,7 @@ class SaltAndPepperNoiseModel(SensorNoiseModel):
         return sensor_type == SensorType.COLOR
 
     def simulate(self, image):
-            return self._impl.simulate(image)
+        return self._impl.simulate(image)
 
     def apply(self, image):
         r"""Alias of `simulate()` to conform to base-class and expected API
