@@ -38,4 +38,8 @@ __all__ = [
     "SensorNoiseModel",
     "RedwoodDepthNoiseModel",
     "NoSensorNoiseModel",
+    "GaussianNoiseModel",
+    "SaltAndPepperNoiseModel",
+    "PoissonNoiseModel",
+    "SpeckleNoiseModel",
 ]
