@@ -31,14 +31,40 @@ using namespace py::literals;
 #include <Magnum/Python.h>
 #include <Magnum/SceneGraph/Python.h>
 
-using namespace esp;
-using namespace esp::core;
-using namespace esp::geo;
-using namespace esp::gfx;
-using namespace esp::nav;
-using namespace esp::scene;
-using namespace esp::sensor;
-using namespace esp::physics;
+namespace scene = esp::scene;
+using esp::box3f;
+using esp::quatf;
+using esp::vec3f;
+using esp::vec4f;
+using esp::core::Configuration;
+using esp::geo::OBB;
+using esp::gfx::RenderCamera;
+using esp::gfx::Renderer;
+using esp::gfx::RenderTarget;
+using esp::gfx::Simulator;
+using esp::gfx::SimulatorConfiguration;
+using esp::physics::MotionType;
+using esp::scene::Mp3dObjectCategory;
+using esp::scene::Mp3dRegionCategory;
+using esp::scene::ObjectControls;
+using esp::scene::SceneConfiguration;
+using esp::scene::SceneNode;
+using esp::scene::SceneNodeType;
+using esp::scene::SemanticCategory;
+using esp::scene::SemanticLevel;
+using esp::scene::SemanticObject;
+using esp::scene::SemanticRegion;
+using esp::scene::SemanticScene;
+using esp::scene::SuncgObjectCategory;
+using esp::scene::SuncgRegionCategory;
+using esp::scene::SuncgSemanticObject;
+using esp::scene::SuncgSemanticRegion;
+using esp::sensor::Observation;
+using esp::sensor::PinholeCamera;
+using esp::sensor::Sensor;
+using esp::sensor::SensorSpec;
+using esp::sensor::SensorSuite;
+using esp::sensor::SensorType;
 
 void initShortestPathBindings(py::module& m);
 void initGeoBindings(py::module& m);
@@ -342,14 +368,13 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   py::class_<Renderer, Renderer::ptr>(m, "Renderer")
       .def(py::init(&Renderer::create<>))
       .def("draw",
-           py::overload_cast<sensor::Sensor&, scene::SceneGraph&>(
-               &Renderer::draw),
+           py::overload_cast<Sensor&, scene::SceneGraph&>(&Renderer::draw),
            R"(Draw given scene using the visual sensor)", "visualSensor"_a,
            "scene"_a)
-      .def("draw",
-           py::overload_cast<gfx::RenderCamera&, scene::SceneGraph&>(
-               &Renderer::draw),
-           R"(Draw given scene using the camera)", "camera"_a, "scene"_a)
+      .def(
+          "draw",
+          py::overload_cast<RenderCamera&, scene::SceneGraph&>(&Renderer::draw),
+          R"(Draw given scene using the camera)", "camera"_a, "scene"_a)
       .def("bind_render_target", &Renderer::bindRenderTarget);
 
   // TODO fill out other SensorTypes
@@ -476,21 +501,18 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 #endif
 
   // ==== PinholeCamera (subclass of Sensor) ====
-  py::class_<sensor::PinholeCamera,
-             Magnum::SceneGraph::PyFeature<sensor::PinholeCamera>,
-             sensor::Sensor,
-             Magnum::SceneGraph::PyFeatureHolder<PinholeCamera>>(
+  py::class_<PinholeCamera, Magnum::SceneGraph::PyFeature<PinholeCamera>,
+             Sensor, Magnum::SceneGraph::PyFeatureHolder<PinholeCamera>>(
       m, "PinholeCamera")
       // initialized, attached to pinholeCameraNode, status: "valid"
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
-                          const sensor::SensorSpec::ptr&>())
-      .def("set_transformation_matrix",
-           &sensor::PinholeCamera::setTransformationMatrix,
+                          const SensorSpec::ptr&>())
+      .def("set_transformation_matrix", &PinholeCamera::setTransformationMatrix,
            R"(Compute and set the transformation matrix to the render camera.)")
-      .def("set_projection_matrix", &sensor::PinholeCamera::setProjectionMatrix,
+      .def("set_projection_matrix", &PinholeCamera::setProjectionMatrix,
            R"(Set the width, height, near, far, and hfov,
           stored in pinhole camera to the render camera.)")
-      .def("set_viewport", &sensor::PinholeCamera::setViewport,
+      .def("set_viewport", &PinholeCamera::setViewport,
            R"(Set the viewport to the render camera)");
 
   // ==== SensorSuite ====
