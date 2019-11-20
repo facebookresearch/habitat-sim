@@ -43,6 +43,7 @@ struct DepthUnprojectionTest : Mn::GL::OpenGLTester {
   void benchmarkGpuUnprojectExisting();
 };
 
+// NOLINTNEXTLINE(google-build-using-namespace)
 using namespace Mn::Math::Literals;
 
 const struct {

@@ -6,16 +6,17 @@
 
 #include <Magnum/EigenIntegration/Integration.h>
 
-using namespace Magnum;
+namespace Mn = Magnum;
 
 namespace esp {
 namespace gfx {
 
 RenderCamera::RenderCamera(scene::SceneNode& node)
-    : Magnum::SceneGraph::AbstractFeature3D{node} {
+    : Mn::SceneGraph::AbstractFeature3D{node} {
   node.setType(scene::SceneNodeType::CAMERA);
   camera_ = new MagnumCamera(node);
-  camera_->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::NotPreserved);
+  camera_->setAspectRatioPolicy(
+      Mn::SceneGraph::AspectRatioPolicy::NotPreserved);
 }
 
 RenderCamera::RenderCamera(scene::SceneNode& node,
@@ -24,8 +25,8 @@ RenderCamera::RenderCamera(scene::SceneNode& node,
                            const vec3f& up)
     : RenderCamera(node) {
   // once it is attached, set the transformation
-  node.setTransformation(
-      Matrix4::lookAt(Vector3{eye}, Vector3{target}, Vector3{up}));
+  node.setTransformation(Mn::Matrix4::lookAt(
+      Mn::Vector3{eye}, Mn::Vector3{target}, Mn::Vector3{up}));
 }
 
 void RenderCamera::setProjectionMatrix(int width,
@@ -35,8 +36,8 @@ void RenderCamera::setProjectionMatrix(int width,
                                        float hfov) {
   const float aspectRatio = static_cast<float>(width) / height;
   camera_
-      ->setProjectionMatrix(
-          Matrix4::perspectiveProjection(Deg{hfov}, aspectRatio, znear, zfar))
+      ->setProjectionMatrix(Mn::Matrix4::perspectiveProjection(
+          Mn::Deg{hfov}, aspectRatio, znear, zfar))
       .setViewport(Magnum::Vector2i(width, height));
 }
 
