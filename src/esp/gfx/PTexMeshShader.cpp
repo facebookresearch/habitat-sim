@@ -23,7 +23,7 @@ static void importShaderResources() {
   CORRADE_RESOURCE_INITIALIZE(ShaderResources)
 }
 
-using namespace Magnum;
+namespace Mn = Magnum;
 
 namespace esp {
 namespace gfx {
@@ -38,7 +38,7 @@ enum TextureBindingPointIndex : uint8_t {
 }  // namespace
 
 PTexMeshShader::PTexMeshShader() {
-  MAGNUM_ASSERT_GL_VERSION_SUPPORTED(GL::Version::GL410);
+  MAGNUM_ASSERT_GL_VERSION_SUPPORTED(Mn::GL::Version::GL410);
 
   if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
@@ -47,9 +47,9 @@ PTexMeshShader::PTexMeshShader() {
   // this is not the file name, but the group name in the config file
   const Corrade::Utility::Resource rs{"default-shaders"};
 
-  GL::Shader vert{GL::Version::GL410, GL::Shader::Type::Vertex};
-  GL::Shader geom{GL::Version::GL410, GL::Shader::Type::Geometry};
-  GL::Shader frag{GL::Version::GL410, GL::Shader::Type::Fragment};
+  Mn::GL::Shader vert{Mn::GL::Version::GL410, Mn::GL::Shader::Type::Vertex};
+  Mn::GL::Shader geom{Mn::GL::Version::GL410, Mn::GL::Shader::Type::Geometry};
+  Mn::GL::Shader frag{Mn::GL::Version::GL410, Mn::GL::Shader::Type::Fragment};
 
   vert.addSource(rs.get("ptex-default-gl410.vert"));
   geom.addSource(rs.get("ptex-default-gl410.geom"));
@@ -58,7 +58,7 @@ PTexMeshShader::PTexMeshShader() {
 #endif
   frag.addSource(rs.get("ptex-default-gl410.frag"));
 
-  CORRADE_INTERNAL_ASSERT_OUTPUT(GL::Shader::compile({vert, geom, frag}));
+  CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, geom, frag}));
 
   attachShaders({vert, geom, frag});
 
@@ -84,21 +84,20 @@ PTexMeshShader::PTexMeshShader() {
 // Note: the texture binding points are explicitly specified above.
 // Cannot use "explicit uniform location" directly in shader since
 // it requires GL4.3 (We stick to GL4.1 for MacOS).
-PTexMeshShader& PTexMeshShader::bindAtlasTexture(
-    Magnum::GL::Texture2D& texture) {
+PTexMeshShader& PTexMeshShader::bindAtlasTexture(Mn::GL::Texture2D& texture) {
   texture.bind(TextureBindingPointIndex::atlas);
   return *this;
 }
 
 PTexMeshShader& PTexMeshShader::bindAdjFacesBufferTexture(
-    Magnum::GL::BufferTexture& texture) {
+    Mn::GL::BufferTexture& texture) {
 #ifndef CORRADE_TARGET_APPLE
   texture.bind(TextureBindingPointIndex::adjFaces);
 #endif
   return *this;
 }
 
-PTexMeshShader& PTexMeshShader::setMVPMatrix(const Magnum::Matrix4& matrix) {
+PTexMeshShader& PTexMeshShader::setMVPMatrix(const Mn::Matrix4& matrix) {
   setUniform(MVPMatrixUniform_, matrix);
   return *this;
 }
@@ -117,9 +116,8 @@ PTexMeshShader& PTexMeshShader::setSaturation(float saturation) {
   return *this;
 }
 
-PTexMeshShader& PTexMeshShader::setAtlasTextureSize(
-    Magnum::GL::Texture2D& texture,
-    uint32_t tileSize) {
+PTexMeshShader& PTexMeshShader::setAtlasTextureSize(Mn::GL::Texture2D& texture,
+                                                    uint32_t tileSize) {
   setUniform(tileSizeUniform_, (int)tileSize);
 
   // get image width in given mip level 0
