@@ -5,6 +5,7 @@
 #include "esp/bindings/OpaqueTypes.h"
 
 namespace py = pybind11;
+// NOLINTNEXTLINE(google-build-using-namespace)
 using namespace py::literals;
 
 #include "esp/core/Configuration.h"
