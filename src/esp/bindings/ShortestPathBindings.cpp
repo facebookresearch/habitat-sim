@@ -16,9 +16,15 @@
 #include "esp/scene/ObjectControls.h"
 
 namespace py = pybind11;
+// NOLINTNEXTLINE(google-build-using-namespace)
 using namespace py::literals;
-using namespace esp;
-using namespace esp::nav;
+using esp::vec3f;
+using esp::vec4f;
+using esp::nav::GreedyGeodesicFollowerImpl;
+using esp::nav::HitRecord;
+using esp::nav::MultiGoalShortestPath;
+using esp::nav::PathFinder;
+using esp::nav::ShortestPath;
 
 void initShortestPathBindings(py::module& m) {
   py::class_<HitRecord>(m, "HitRecord")

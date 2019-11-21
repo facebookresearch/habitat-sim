@@ -5,7 +5,6 @@
 #include "esp/bindings/OpaqueTypes.h"
 
 namespace py = pybind11;
-using namespace py::literals;
 
 #include "esp/geo/geo.h"
 
