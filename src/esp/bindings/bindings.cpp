@@ -62,6 +62,7 @@ using esp::scene::SuncgSemanticObject;
 using esp::scene::SuncgSemanticRegion;
 using esp::sensor::Observation;
 using esp::sensor::PinholeCamera;
+using esp::sensor::RedwoodNoiseModelGPUImpl;
 using esp::sensor::Sensor;
 using esp::sensor::SensorSpec;
 using esp::sensor::SensorSuite;
