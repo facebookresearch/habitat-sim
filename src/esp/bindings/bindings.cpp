@@ -60,6 +60,8 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       false;
 #endif
 
+  m.import("magnum.scenegraph");
+
   esp::initEspBindings(m);
   esp::core::initCoreBindings(m);
   esp::geo::initGeoBindings(m);
@@ -69,6 +71,4 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   esp::sensor::initSensorBindings(m);
 
   py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
-
-  m.import("magnum.scenegraph");
 }
