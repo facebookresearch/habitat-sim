@@ -38,7 +38,7 @@
 
     Implements the noise model provided by http://redwood-data.org/indoor/dataset.html
 
-    If you use this noise model, please cite::
+    If you use this noise model, please cite
 
     .. code:: bibtex
 
