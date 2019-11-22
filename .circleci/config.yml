@@ -6,6 +6,7 @@ gpu: &gpu
   environment:
     FPS_THRESHOLD: 900
 
+
 jobs:
   python_lint:
     docker:
@@ -83,7 +84,6 @@ jobs:
               clang-tidy --version
       - run:
           name: Install cmake
-          background: true
           no_output_timeout: 5m
           # tinyply requires CMake 3.10, so stay at that version. Ubuntu 16.04
           # has 3.5, so once tinyply is removed, we could go lower (well, if
@@ -278,17 +278,18 @@ jobs:
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
               pytest tests/test_physics.py
-              bash <(curl -s https://codecov.io/bash) -f coverage.xml
       - run:
           name: Upload test coverage
           background: true
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
+              #Uploading test coverage for Python code
               bash <(curl -s https://codecov.io/bash) -f coverage.xml
+              #Uploading test coverage for C++ code
               lcov --directory . --capture --output-file coverage.info
               lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
-              bash <(curl -s https://codecov.io/bash) -f coverage.xml
+              bash <(curl -s https://codecov.io/bash) -f coverage.info
       - run:
           name: Build Javascript bindings
           command: |
@@ -326,7 +327,6 @@ jobs:
               . activate habitat; cd habitat-api
               python setup.py develop --all
               python setup.py test
-              bash <(curl -s https://codecov.io/bash) -f coverage.xml
       - save_cache:
           key: habitat-api-{{ checksum "./hapi_sha" }}
           background: true
