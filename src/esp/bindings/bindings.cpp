@@ -68,6 +68,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   esp::gfx::initGfxBindings(m);
   esp::nav::initShortestPathBindings(m);
   esp::physics::initPhysicsBindings(m);
+  esp::scene::initSceneBindings(m);
   esp::sensor::initSensorBindings(m);
 
   py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
