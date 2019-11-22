@@ -42,7 +42,7 @@ If you use the Habitat platform in your research, please cite the following [pap
 ```
 @inproceedings{habitat19iccv,
   title     =     {Habitat: {A} {P}latform for {E}mbodied {AI} {R}esearch},
-  author    =     {{Manolis Savva*} and {Abhishek Kadian*} and {Oleksandr Maksymets*} and Yili Zhao and Erik Wijmans and Bhavana Jain and Julian Straub and Jia Liu and Vladlen Koltun and Jitendra Malik and Devi Parikh and Dhruv Batra},
+  author    =     {Manolis Savva and Abhishek Kadian and Oleksandr Maksymets and Yili Zhao and Erik Wijmans and Bhavana Jain and Julian Straub and Jia Liu and Vladlen Koltun and Jitendra Malik and Devi Parikh and Dhruv Batra},
   booktitle =     {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
   year      =     {2019}
 }
@@ -357,6 +357,11 @@ The Habitat project would not have been possible without the support and contrib
 
 
     Specifically, the noise model used for the noisy control functions named `pyrobot_*` and defined in `habitat_sim/agent/controls/pyrobot_noisy_controls.py`
+
+
+* If you use the Redwood Depth Noise Model, please cite their [paper](http://redwood-data.org/indoor/)
+
+    Specifically, the noise model defined in `habitat_sim/sensors/noise_models/redwood_depth_noise_model.py` and `src/esp/sensor/RedwoodNoiseModel.*`
 
 
 ## License

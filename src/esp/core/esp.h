@@ -31,6 +31,8 @@ typedef Matrix<uint8_t, 4, 1> Vector4uc;
 typedef Matrix<uint32_t, 4, 1> Vector4ui;
 typedef Matrix<uint64_t, 4, 1> Vector4ul;
 
+typedef Matrix<float, Dynamic, Dynamic, RowMajor> RowMatrixXf;
+
 //! Eigen JSON string format specification
 static const IOFormat kJsonFormat(StreamPrecision,
                                   DontAlignCols,

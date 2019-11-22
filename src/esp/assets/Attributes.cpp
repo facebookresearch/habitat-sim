@@ -11,16 +11,19 @@ namespace assets {
 Attributes::Attributes() {
   doubleMap_ = std::map<std::string, double>();
   intMap_ = std::map<std::string, int>();
+  boolMap_ = std::map<std::string, bool>();
   stringMap_ = std::map<std::string, std::string>();
   magnumVec3Map_ = std::map<std::string, Magnum::Vector3>();
   vecStringsMap_ = std::map<std::string, std::vector<std::string> >();
 }
 
 // return true if any container has the key
-bool Attributes::exists(const std::string& key) {
+bool Attributes::exists(const std::string& key) const {
   if (doubleMap_.count(key) > 0)
     return true;
   if (intMap_.count(key) > 0)
+    return true;
+  if (boolMap_.count(key) > 0)
     return true;
   if (stringMap_.count(key) > 0)
     return true;
@@ -33,12 +36,15 @@ bool Attributes::exists(const std::string& key) {
 }
 
 // check if an attribute of a specific type exists
-bool Attributes::existsAs(DataType t, const std::string& key) {
+bool Attributes::existsAs(DataType t, const std::string& key) const {
   if (t == DOUBLE)
     if (doubleMap_.count(key) > 0)
       return true;
   if (t == INT)
     if (intMap_.count(key) > 0)
+      return true;
+  if (t == BOOL)
+    if (boolMap_.count(key) > 0)
       return true;
   if (t == STRING)
     if (stringMap_.count(key) > 0)
@@ -53,11 +59,13 @@ bool Attributes::existsAs(DataType t, const std::string& key) {
 }
 
 // count the number of containers with the key
-int Attributes::count(const std::string& key) {
+int Attributes::count(const std::string& key) const {
   int numAttributes = 0;
   if (doubleMap_.count(key) > 0)
     numAttributes++;
   if (intMap_.count(key) > 0)
+    numAttributes++;
+  if (boolMap_.count(key) > 0)
     numAttributes++;
   if (stringMap_.count(key) > 0)
     numAttributes++;
@@ -74,6 +82,8 @@ void Attributes::eraseAll(const std::string& key) {
     doubleMap_.erase(key);
   if (intMap_.count(key) > 0)
     intMap_.erase(key);
+  if (boolMap_.count(key) > 0)
+    boolMap_.erase(key);
   if (stringMap_.count(key) > 0)
     stringMap_.erase(key);
   if (magnumVec3Map_.count(key) > 0)
@@ -90,6 +100,9 @@ void Attributes::eraseAs(const DataType t, const std::string& key) {
   } else if (t == INT) {
     if (intMap_.count(key) > 0)
       intMap_.erase(key);
+  } else if (t == BOOL) {
+    if (boolMap_.count(key) > 0)
+      boolMap_.erase(key);
   } else if (t == STRING) {
     if (stringMap_.count(key) > 0)
       stringMap_.erase(key);
@@ -106,6 +119,7 @@ void Attributes::eraseAs(const DataType t, const std::string& key) {
 void Attributes::clear() {
   doubleMap_.clear();
   intMap_.clear();
+  boolMap_.clear();
   stringMap_.clear();
   magnumVec3Map_.clear();
   vecStringsMap_.clear();
@@ -117,6 +131,8 @@ void Attributes::clearAs(const DataType t) {
     doubleMap_.clear();
   } else if (t == INT) {
     intMap_.clear();
+  } else if (t == BOOL) {
+    boolMap_.clear();
   } else if (t == STRING) {
     stringMap_.clear();
   } else if (t == MAGNUMVEC3) {
@@ -146,6 +162,14 @@ int Attributes::getInt(const std::string& key) const {
 
 void Attributes::setInt(const std::string& key, const int val) {
   intMap_[key] = val;
+}
+
+bool Attributes::getBool(const std::string& key) const {
+  return boolMap_.at(key);
+}
+
+void Attributes::setBool(const std::string& key, const bool val) {
+  boolMap_[key] = val;
 }
 
 const std::string& Attributes::getString(const std::string& key) const {
@@ -204,6 +228,11 @@ std::string Attributes::listAttributes() {
     attributes += it.first + " : " + std::to_string(it.second) + "\n";
   }
 
+  attributes += "\nBools: \n";
+  for (auto it : boolMap_) {
+    attributes += it.first + " : " + std::to_string(it.second) + "\n";
+  }
+
   attributes += "\nStrings: \n";
   for (auto it : stringMap_) {
     attributes += it.first + " : " + it.second + "\n";
@@ -239,7 +268,7 @@ PhysicsObjectAttributes::PhysicsObjectAttributes() {
   setMagnumVec3("COM", Magnum::Vector3(0));
   setMagnumVec3("inertia", Magnum::Vector3(0., 0., 0.));
   setDouble("frictionCoefficient", 0.5);
-  setDouble("restitutionCoefficient", 0.6);
+  setDouble("restitutionCoefficient", 0.1);
   setDouble("linDamping", 0.2);
   setDouble("angDamping", 0.2);
   setString("originHandle", "");
