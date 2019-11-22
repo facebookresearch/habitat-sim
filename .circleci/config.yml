@@ -5,7 +5,6 @@ gpu: &gpu
   resource_class: gpu.small
   environment:
     FPS_THRESHOLD: 900
-    CMAKE_CXX_FLAGS: --coverage
 
 jobs:
   python_lint:
@@ -84,6 +83,7 @@ jobs:
               clang-tidy --version
       - run:
           name: Install cmake
+          background: true
           no_output_timeout: 5m
           # tinyply requires CMake 3.10, so stay at that version. Ubuntu 16.04
           # has 3.5, so once tinyply is removed, we could go lower (well, if
@@ -268,7 +268,8 @@ jobs:
               . activate habitat; cd habitat-sim
 
               export PYTHONPATH=$PYTHONPATH:$(pwd)
-              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests
+              # run tests with code coverage
+              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               pytest
@@ -277,6 +278,16 @@ jobs:
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
               pytest tests/test_physics.py
+              bash <(curl -s https://codecov.io/bash) -f coverage.xml
+      - run:
+          name: Upload test coverage
+          background: true
+          command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat; cd habitat-sim
+              bash <(curl -s https://codecov.io/bash) -f coverage.xml
+              lcov --directory . --capture --output-file coverage.info
+              lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
               bash <(curl -s https://codecov.io/bash) -f coverage.xml
       - run:
           name: Build Javascript bindings
