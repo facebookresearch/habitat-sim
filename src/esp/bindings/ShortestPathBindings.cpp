@@ -2,29 +2,26 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include "esp/bindings/bindings.h"
+
 #include <pybind11/eigen.h>
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
-#include "esp/bindings/OpaqueTypes.h"
 
-#include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
 
+#include "esp/bindings/OpaqueTypes.h"
 #include "esp/core/esp.h"
 #include "esp/nav/GreedyFollower.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/ObjectControls.h"
 
 namespace py = pybind11;
-// NOLINTNEXTLINE(google-build-using-namespace)
-using namespace py::literals;
-using esp::vec3f;
-using esp::vec4f;
-using esp::nav::GreedyGeodesicFollowerImpl;
-using esp::nav::HitRecord;
-using esp::nav::MultiGoalShortestPath;
-using esp::nav::PathFinder;
-using esp::nav::ShortestPath;
+
+using py::literals::operator""_a;
+
+namespace esp {
+namespace nav {
 
 void initShortestPathBindings(py::module& m) {
   py::class_<HitRecord>(m, "HitRecord")
@@ -107,3 +104,6 @@ void initShortestPathBindings(py::module& m) {
                &GreedyGeodesicFollowerImpl::findPath),
            py::return_value_policy::move);
 }
+
+}  // namespace nav
+}  // namespace esp
