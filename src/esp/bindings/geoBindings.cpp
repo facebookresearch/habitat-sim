@@ -4,7 +4,6 @@
 
 #include "esp/bindings/bindings.h"
 
-#include "esp/bindings/OpaqueTypes.h"
 #include "esp/geo/OBB.h"
 #include "esp/geo/geo.h"
 

@@ -10,7 +10,6 @@
 
 #include <Magnum/Math/Vector3.h>
 
-#include "esp/bindings/OpaqueTypes.h"
 #include "esp/core/esp.h"
 #include "esp/nav/GreedyFollower.h"
 #include "esp/nav/PathFinder.h"

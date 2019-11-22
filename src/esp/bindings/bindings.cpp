@@ -4,7 +4,6 @@
 
 #include "esp/bindings/bindings.h"
 
-#include "esp/bindings/OpaqueTypes.h"
 #include "esp/core/Configuration.h"
 #include "esp/physics/PhysicsManager.h"
 
