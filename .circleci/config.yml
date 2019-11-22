@@ -5,7 +5,6 @@ gpu: &gpu
   resource_class: gpu.small
   environment:
     FPS_THRESHOLD: 900
-    CODECOV_TOKEN: c211f0c9-bc0c-46dc-8e2d-96d64a00a712
     CMAKE_CXX_FLAGS: --coverage
 
 jobs:
@@ -144,7 +143,7 @@ jobs:
                 export PATH=$HOME/miniconda/bin:$PATH
                 conda create -y -n habitat python=3.6
                 . activate habitat
-                conda install -q -y -c conda-forge ninja numpy pytest ccache hypothesis
+                conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
               fi
       - run:
           name: Install emscripten
@@ -277,10 +276,7 @@ jobs:
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
               pytest tests/test_physics.py
-      - run:
-          name: Codecoverage reports upload
-          command: |
-            bash <(curl -s https://codecov.io/bash) -f coverage.info
+              bash <(curl -s https://codecov.io/bash) -f coverage.xml
       - run:
           name: Build Javascript bindings
           command: |
@@ -318,6 +314,7 @@ jobs:
               . activate habitat; cd habitat-api
               python setup.py develop --all
               python setup.py test
+              bash <(curl -s https://codecov.io/bash) -f coverage.xml
       - save_cache:
           key: habitat-api-{{ checksum "./hapi_sha" }}
           background: true
