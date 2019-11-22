@@ -115,6 +115,7 @@ jobs:
                   wget \
                   zip \
                   libbullet-dev\
+                  lcov\
                   unzip || true
       - run:
           name: Install cuda
