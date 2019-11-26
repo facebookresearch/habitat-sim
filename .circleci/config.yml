@@ -274,10 +274,10 @@ jobs:
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               pytest --cov-report=xml --cov=./
 
-              #re-install without bullet and run physics tests again
+              #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
-              pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py
+              pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
       - run:
           name: Upload test coverage
           background: true
