@@ -46,6 +46,8 @@ void initGeoBindings(py::module& m);
 namespace {
 template <class T>
 SceneNode* nodeGetter(T& self) {
+  // TODO(mosra) PR#353
+  // NOLINTNEXTLINE(clang-diagnostic-undefined-bool-conversion)
   if (!&self.node())
     throw py::value_error{"feature not valid"};
   return &self.node();
