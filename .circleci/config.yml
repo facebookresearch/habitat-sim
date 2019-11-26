@@ -272,12 +272,12 @@ jobs:
               CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest
+              pytest --cov-report=xml --cov=./
 
               #re-install without bullet and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
-              pytest tests/test_physics.py
+              pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py
       - run:
           name: Upload test coverage
           background: true
