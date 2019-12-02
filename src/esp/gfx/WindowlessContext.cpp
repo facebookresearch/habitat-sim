@@ -28,7 +28,7 @@
 
 #include <Magnum/Platform/GLContext.h>
 
-using namespace Magnum;
+namespace Mn = Magnum;
 
 // Based on code from:
 // https://devblogs.nvidia.com/parallelforall/egl-eye-opengl-visualization-without-x-server/
@@ -72,7 +72,7 @@ bool isNvidiaGpuReadable(int device) {
 
 struct ESPEGLContext : ESPContext {
   explicit ESPEGLContext(int device)
-      : magnumGlContext_{NoCreate}, gpuDevice_{device} {
+      : magnumGlContext_{Mn::NoCreate}, gpuDevice_{device} {
     CHECK(gladLoadEGL()) << "Failed to load EGL";
 
     static const EGLint configAttribs[] = {EGL_SURFACE_TYPE,
@@ -185,7 +185,7 @@ struct ESPEGLContext : ESPContext {
  private:
   EGLDisplay display_;
   EGLContext context_;
-  Platform::GLContext magnumGlContext_;
+  Mn::Platform::GLContext magnumGlContext_;
   bool isValid_ = false;
   int gpuDevice_;
 
@@ -196,8 +196,8 @@ struct ESPEGLContext : ESPContext {
 
 struct ESPGLXContext : ESPContext {
   ESPGLXContext()
-      : glxCtx_{Platform::WindowlessGlxContext::Configuration()},
-        magnumGlContext_{NoCreate} {
+      : glxCtx_{Mn::Platform::WindowlessGlxContext::Configuration()},
+        magnumGlContext_{Mn::NoCreate} {
     CHECK(glxCtx_.isCreated())
         << "[GLX] Failed to created headless glX context";
 
@@ -213,8 +213,8 @@ struct ESPGLXContext : ESPContext {
   int gpuDevice() const { return 0; }
 
  private:
-  Platform::WindowlessGlxContext glxCtx_;
-  Platform::GLContext magnumGlContext_;
+  Mn::Platform::WindowlessGlxContext glxCtx_;
+  Mn::Platform::GLContext magnumGlContext_;
   bool isValid_ = false;
 
   ESP_SMART_POINTERS(ESPGLXContext);
@@ -254,7 +254,7 @@ struct WindowlessContext::Impl {
 #else  // not defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
 
 struct WindowlessContext::Impl {
-  explicit Impl(int) : glContext_({}), magnumGlContext_(NoCreate) {
+  explicit Impl(int) : glContext_({}), magnumGlContext_(Mn::NoCreate) {
     glContext_.makeCurrent();
     if (!magnumGlContext_.tryCreate()) {
       LOG(ERROR) << "Failed to create GL context";
@@ -267,8 +267,8 @@ struct WindowlessContext::Impl {
 
   int gpuDevice() const { return 0; }
 
-  Platform::WindowlessGLContext glContext_;
-  Platform::GLContext magnumGlContext_;
+  Mn::Platform::WindowlessGLContext glContext_;
+  Mn::Platform::GLContext magnumGlContext_;
 };
 
 #endif
