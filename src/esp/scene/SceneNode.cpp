@@ -5,7 +5,7 @@
 #include "SceneNode.h"
 #include "esp/geo/geo.h"
 
-using namespace Magnum;
+namespace Mn = Magnum;
 
 namespace esp {
 namespace scene {
@@ -27,9 +27,9 @@ SceneNode& SceneNode::createChild() {
 }
 
 //! @brief recursively compute the cumulative bounding box of this node's tree.
-const Magnum::Range3D& SceneNode::computeCumulativeBB() {
+const Mn::Range3D& SceneNode::computeCumulativeBB() {
   // first copy from your precomputed mesh bb
-  cumulativeBB_ = Magnum::Range3D(meshBB_);
+  cumulativeBB_ = Mn::Range3D(meshBB_);
   auto* child = children().first();
 
   while (child != nullptr) {
@@ -37,10 +37,10 @@ const Magnum::Range3D& SceneNode::computeCumulativeBB() {
     if (child_node != nullptr) {
       child_node->computeCumulativeBB();
 
-      Magnum::Range3D transformedBB = esp::geo::getTransformedBB(
+      Mn::Range3D transformedBB = esp::geo::getTransformedBB(
           child_node->cumulativeBB_, child_node->transformation());
 
-      cumulativeBB_ = Magnum::Math::join(cumulativeBB_, transformedBB);
+      cumulativeBB_ = Mn::Math::join(cumulativeBB_, transformedBB);
     }
     child = child->nextSibling();
   }

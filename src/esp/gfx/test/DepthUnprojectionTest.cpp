@@ -25,6 +25,9 @@
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
+using Mn::Math::Literals::operator""_degf;
+using Mn::Math::Literals::operator""_rgbf;
+
 namespace esp {
 namespace gfx {
 namespace test {
@@ -42,8 +45,6 @@ struct DepthUnprojectionTest : Mn::GL::OpenGLTester {
   void benchmarkGpuDirect();
   void benchmarkGpuUnprojectExisting();
 };
-
-using namespace Mn::Math::Literals;
 
 const struct {
   const char* name;
