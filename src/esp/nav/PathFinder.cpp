@@ -598,7 +598,7 @@ struct NavMeshTileHeader {
   int dataSize;
 };
 
-// Calculate the area of a polygon by iterating over the triangles in the detial
+// Calculate the area of a polygon by iterating over the triangles in the detail
 // mesh and computing their area
 float polyArea(const dtPoly* poly, const dtMeshTile* tile) {
   float area = 0;
