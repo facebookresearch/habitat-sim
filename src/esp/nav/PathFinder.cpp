@@ -597,6 +597,34 @@ struct NavMeshTileHeader {
   dtTileRef tileRef;
   int dataSize;
 };
+
+// Calculate the area of a polygon by iterating over the triangles in the detial
+// mesh and computing their area
+float polyArea(const dtPoly* poly, const dtMeshTile* tile) {
+  float area = 0;
+  // Code to iterate over triangles from here:
+  const unsigned int ip = (unsigned int)(poly - tile->polys);
+  const dtPolyDetail* pd = &tile->detailMeshes[ip];
+  for (int j = 0; j < pd->triCount; ++j) {
+    const unsigned char* t = &tile->detailTris[(pd->triBase + j) * 4];
+    const float* v[3];
+    for (int k = 0; k < 3; ++k) {
+      if (t[k] < poly->vertCount)
+        v[k] = &tile->verts[poly->verts[t[k]] * 3];
+      else
+        v[k] =
+            &tile->detailVerts[(pd->vertBase + (t[k] - poly->vertCount)) * 3];
+    }
+
+    const vec3f w1 =
+        Eigen::Map<const vec3f>(v[1]) - Eigen::Map<const vec3f>(v[0]);
+    const vec3f w2 =
+        Eigen::Map<const vec3f>(v[2]) - Eigen::Map<const vec3f>(v[0]);
+    area += 0.5 * w1.cross(w2).norm();
+  }
+
+  return area;
+}
 }  // namespace
 
 bool PathFinder::loadNavMesh(const std::string& path) {
@@ -673,6 +701,32 @@ bool PathFinder::loadNavMesh(const std::string& path) {
 
   navMesh_ = mesh;
   bounds_ = std::make_pair(bmin, bmax);
+
+  // Some polygons have zero area for some reason.  When we navigate into a zero
+  // area polygon, things crash.  So we find all zero area polygons and make
+  // them as disabled/not navigable.
+
+  // Iterate over all tiles
+  for (int iTile = 0; iTile < navMesh_->getMaxTiles(); ++iTile) {
+    const dtMeshTile* tile =
+        reinterpret_cast<const dtNavMesh*>(navMesh_)->getTile(iTile);
+    if (!tile)
+      continue;
+
+    // Iterate over all polygons in a tile
+    for (int jPoly = 0; jPoly < tile->header->polyCount; ++jPoly) {
+      // Get the polygon reference from the tile and polygon id
+      dtPolyRef polyRef = navMesh_->encodePolyId(iTile, tile->salt, jPoly);
+      const dtPoly* poly = 0;
+      const dtMeshTile* tmp;
+      navMesh_->getTileAndPolyByRefUnsafe(polyRef, &tmp, &poly);
+
+      if (polyArea(poly, tile) < 1e-5) {
+        navMesh_->setPolyFlags(polyRef, POLYFLAGS_DISABLED);
+      }
+    }
+  }
+
   return initNavQuery();
 }
 
