@@ -603,6 +603,7 @@ struct NavMeshTileHeader {
 float polyArea(const dtPoly* poly, const dtMeshTile* tile) {
   float area = 0;
   // Code to iterate over triangles from here:
+  // https://github.com/recastnavigation/recastnavigation/blob/master/Detour/Source/DetourNavMesh.cpp#L684
   const unsigned int ip = (unsigned int)(poly - tile->polys);
   const dtPolyDetail* pd = &tile->detailMeshes[ip];
   for (int j = 0; j < pd->triCount; ++j) {
