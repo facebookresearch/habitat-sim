@@ -704,7 +704,7 @@ bool PathFinder::loadNavMesh(const std::string& path) {
   bounds_ = std::make_pair(bmin, bmax);
 
   // Some polygons have zero area for some reason.  When we navigate into a zero
-  // area polygon, things crash.  So we find all zero area polygons and make
+  // area polygon, things crash.  So we find all zero area polygons and mark
   // them as disabled/not navigable.
 
   // Iterate over all tiles
