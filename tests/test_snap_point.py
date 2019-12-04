@@ -20,7 +20,7 @@ def test_data():
 
 
 @hypothesis.given(
-    nudge=st.tuples(st.floats(-20, 20), st.floats(-5, 5), st.floats(-20, 20))
+    nudge=st.tuples(st.floats(-10, 10), st.floats(-2.5, 2.5), st.floats(-10, 10))
 )
 @hypothesis.settings(max_examples=int(1e3))
 def test_snap_point(nudge, test_data):
