@@ -635,7 +635,7 @@ void PathFinder::removeZeroAreaPolys() {
   // Iterate over all tiles
   for (int iTile = 0; iTile < navMesh_->getMaxTiles(); ++iTile) {
     const dtMeshTile* tile =
-        reinterpret_cast<const dtNavMesh*>(navMesh_)->getTile(iTile);
+        const_cast<const dtNavMesh*>(navMesh_)->getTile(iTile);
     if (!tile)
       continue;
 
