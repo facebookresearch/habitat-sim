@@ -603,8 +603,8 @@ struct NavMeshTileHeader {
 float polyArea(const dtPoly* poly, const dtMeshTile* tile) {
   float area = 0;
   // Code to iterate over triangles from here:
-  // https://github.com/recastnavigation/recastnavigation/blob/master/Detour/Source/DetourNavMesh.cpp#L684
-  const unsigned int ip = (unsigned int)(poly - tile->polys);
+  // https://github.com/recastnavigation/recastnavigation/blob/57610fa6ef31b39020231906f8c5d40eaa8294ae/Detour/Source/DetourNavMesh.cpp#L684
+  const std::ptrdiff_t ip = poly - tile->polys;
   const dtPolyDetail* pd = &tile->detailMeshes[ip];
   for (int j = 0; j < pd->triCount; ++j) {
     const unsigned char* t = &tile->detailTris[(pd->triBase + j) * 4];
@@ -643,9 +643,12 @@ void PathFinder::removeZeroAreaPolys() {
     for (int jPoly = 0; jPoly < tile->header->polyCount; ++jPoly) {
       // Get the polygon reference from the tile and polygon id
       dtPolyRef polyRef = navMesh_->encodePolyId(iTile, tile->salt, jPoly);
-      const dtPoly* poly = 0;
-      const dtMeshTile* tmp;
+      const dtPoly* poly = nullptr;
+      const dtMeshTile* tmp = nullptr;
       navMesh_->getTileAndPolyByRefUnsafe(polyRef, &tmp, &poly);
+
+      CORRADE_INTERNAL_ASSERT(poly != nullptr);
+      CORRADE_INTERNAL_ASSERT(tmp != nullptr);
 
       if (polyArea(poly, tile) < 1e-5) {
         navMesh_->setPolyFlags(polyRef, POLYFLAGS_DISABLED);
