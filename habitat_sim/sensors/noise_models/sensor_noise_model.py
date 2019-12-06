@@ -15,9 +15,6 @@ from habitat_sim.sensor import SensorType
 @attr.s(auto_attribs=True, kw_only=True)
 class SensorNoiseModel(abc.ABC):
     r"""Base class for all sensor noise models
-
-    :param gpu_device_id: The ID of the CUDA device to use (only applicable to
-    noise models that proivde a CUDA implementation and, generally, if habitat-sim was build with ``--with-cuda``)
     """
     gpu_device_id: Optional[int] = None
 

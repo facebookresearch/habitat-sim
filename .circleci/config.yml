@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 gpu: &gpu
   machine:
     image: ubuntu-1604:201903-01
@@ -115,6 +115,7 @@ jobs:
                   wget \
                   zip \
                   libbullet-dev\
+                  lcov\
                   unzip || true
       - run:
           name: Install cuda
@@ -143,7 +144,7 @@ jobs:
                 export PATH=$HOME/miniconda/bin:$PATH
                 conda create -y -n habitat python=3.6
                 . activate habitat
-                conda install -q -y -c conda-forge ninja numpy pytest ccache hypothesis
+                conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
               fi
       - run:
           name: Install emscripten
@@ -267,15 +268,28 @@ jobs:
               . activate habitat; cd habitat-sim
 
               export PYTHONPATH=$PYTHONPATH:$(pwd)
-              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests
+              # run tests with code coverage
+              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest
+              pytest --cov-report=xml --cov=./
 
-              #re-install without bullet and run physics tests again
+              #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
-              pytest tests/test_physics.py
+              pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+      - run:
+          name: Upload test coverage
+          background: true
+          command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat; cd habitat-sim
+              #Uploading test coverage for Python code
+              bash <(curl -s https://codecov.io/bash) -f coverage.xml
+              #Uploading test coverage for C++ code
+              lcov --directory . --capture --output-file coverage.info
+              lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
+              bash <(curl -s https://codecov.io/bash) -f coverage.info
       - run:
           name: Build Javascript bindings
           command: |
