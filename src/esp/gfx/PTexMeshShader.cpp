@@ -118,7 +118,7 @@ PTexMeshShader& PTexMeshShader::setSaturation(float saturation) {
 
 PTexMeshShader& PTexMeshShader::setAtlasTextureSize(Mn::GL::Texture2D& texture,
                                                     uint32_t tileSize) {
-  setUniform(tileSizeUniform_, (int)tileSize);
+  setUniform(tileSizeUniform_, static_cast<Mn::Int>(tileSize));
 
   // get image width in given mip level 0
   int mipLevel = 0;
