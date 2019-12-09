@@ -39,6 +39,7 @@ find_package(Magnum
 
 find_package(MagnumPlugins
   REQUIRED
+    BasisImporter
     StbImageImporter
     StbImageConverter
     TinyGltfImporter
@@ -67,6 +68,7 @@ target_link_libraries(assets
     Magnum::Shaders
     Magnum::Trade
     Magnum::Primitives
+    MagnumPlugins::BasisImporter
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbImageConverter
     MagnumPlugins::TinyGltfImporter

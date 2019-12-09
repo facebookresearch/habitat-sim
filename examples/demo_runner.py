@@ -251,13 +251,10 @@ class DemoRunner:
                 )
 
             if self._sim_settings["compute_action_shortest_path"]:
-                self._action_shortest_path.requested_start.position = state.position
-                self._action_shortest_path.requested_start.rotation = state.rotation
-                self._action_pathfinder.find_path(self._action_shortest_path)
-                print(
-                    "len(action_shortest_path.actions)",
-                    len(self._action_shortest_path.actions),
+                self._action_path = self.greedy_follower.find_path(
+                    self._sim_settings["goal_position"]
                 )
+                print("len(action_path)", len(self._action_path))
 
             if (
                 self._sim_settings["semantic_sensor"]
@@ -389,41 +386,12 @@ class DemoRunner:
         # set the goal headings, and compute action shortest path
         if self._sim_settings["compute_action_shortest_path"]:
             agent_id = self._sim_settings["default_agent"]
-            goal_headings = self._sim_settings["goal_headings"]
-            self._action_pathfinder = self._sim.make_action_pathfinder(agent_id)
+            self.greedy_follower = self._sim.make_greedy_follower(agent_id=agent_id)
 
-            self._action_shortest_path = hsim.MultiGoalActionSpaceShortestPath()
-            self._action_shortest_path.requested_start.position = start_state.position
-            self._action_shortest_path.requested_start.rotation = start_state.rotation
-
-            # explicitly reset the start position
-            self._shortest_path.requested_start = start_state.position
-
-            # initialize the requested ends when computing the action shortest path
-            next_goal_idx = 0
-            while next_goal_idx < len(goal_headings):
-                sampled_pos = self._sim.pathfinder.get_random_navigable_point()
-                self._shortest_path.requested_end = sampled_pos
-                if (
-                    self._sim.pathfinder.find_path(self._shortest_path)
-                    and self._shortest_path.geodesic_distance < 5.0
-                    and self._shortest_path.geodesic_distance > 2.5
-                ):
-                    self._action_shortest_path.requested_ends.append(
-                        hsim.ActionSpacePathLocation(
-                            sampled_pos, goal_headings[next_goal_idx]
-                        )
-                    )
-                    next_goal_idx += 1
-
-            self._shortest_path.requested_end = self._sim_settings["goal_position"]
-            self._sim.pathfinder.find_path(self._shortest_path)
-
-            self._action_pathfinder.find_path(self._action_shortest_path)
-            print(
-                "len(action_shortest_path.actions)",
-                len(self._action_shortest_path.actions),
+            self._action_path = self.greedy_follower.find_path(
+                self._sim_settings["goal_position"]
             )
+            print("len(action_path)", len(self._action_path))
 
         # print semantic scene
         self.print_semantic_scene()

@@ -273,10 +273,13 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
     const PTexMeshData::MeshData& mesh,
     const std::string& filename) {
   // sanity checks
-  CORRADE_ASSERT(!filename.empty(), "Error: filename cannot be empty.", {});
+  CORRADE_ASSERT(!filename.empty(),
+                 "PTexMeshData::loadSubMeshes: filename cannot be empty.", {});
   std::ifstream file;
   file.open(filename, std::ios::in | std::ios::binary);
-  CORRADE_ASSERT(file.good(), "Error: cannot open the file " << filename, {});
+  CORRADE_ASSERT(
+      file.good(),
+      "PTexMeshData::loadSubMeshes: cannot open the file " << filename, {});
 
   uint64_t numSubMeshes = 0;
   file.read(reinterpret_cast<char*>(&numSubMeshes), sizeof(uint64_t));
@@ -323,10 +326,10 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
       for (size_t v = 0; v < 4; ++v) {
         uint32_t global = mesh.ibo[f * 4 + v];
         uint32_t local = globalToLocal[global];
-        CORRADE_ASSERT(
-            local >= 0,
-            "Error: vertex " << global << " is not in the sub-mesh " << iMesh,
-            {});
+        CORRADE_ASSERT(local >= 0,
+                       "PTexMeshData::loadSubMeshes: vertex "
+                           << global << " is not in the sub-mesh " << iMesh,
+                       {});
         ibo[idx++] = local;
       }
     }  // for jFace
@@ -348,7 +351,8 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
   }  // for iMesh
   file.close();
   CORRADE_ASSERT(totalFaces == mesh.ibo.size() / 4,
-                 "Error: the number of faces loaded from the file does not "
+                 "PTexMeshData::loadSubMeshes: the number of faces loaded from "
+                 "the file does not "
                  "match it from the ptex mesh.",
                  {});
 
@@ -663,9 +667,12 @@ void PTexMeshData::parsePLY(const std::string& filename,
     CORRADE_ASSERT(positionDimensions > 0,
                    "PTexMeshData::parsePLY: the dimensions of the position is "
                    "not greater than 0", );
+    CORRADE_ASSERT(
+        positionDimensions == 3,
+        "PTexMeshData::parsePLY: the dimensions of the position must be 3.", );
   }
 
-  meshData.vbo.resize(numVertices, vec4f(0, 0, 0, 1));
+  meshData.vbo.resize(numVertices, vec3f(0, 0, 0));
 
   if (normalDimensions) {
     meshData.nbo.resize(numVertices, vec4f(0, 0, 0, 1));
@@ -872,7 +879,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
 
 PTexMeshData::RenderingBuffer* PTexMeshData::getRenderingBuffer(int submeshID) {
   CORRADE_ASSERT(submeshID >= 0 && submeshID < renderingBuffers_.size(),
-                 "PTexMeshData::uploadBuffersToGPU: the submesh ID"
+                 "PTexMeshData::getRenderingBuffer: the submesh ID"
                      << submeshID << "is out of range.",
                  nullptr);
   return renderingBuffers_[submeshID].get();
@@ -880,7 +887,7 @@ PTexMeshData::RenderingBuffer* PTexMeshData::getRenderingBuffer(int submeshID) {
 
 Magnum::GL::Mesh* PTexMeshData::getMagnumGLMesh(int submeshID) {
   CORRADE_ASSERT(submeshID >= 0 && submeshID < renderingBuffers_.size(),
-                 "PTexMeshData::uploadBuffersToGPU: the submesh ID"
+                 "PTexMeshData::getMagnumGLMesh: the submesh ID"
                      << submeshID << "is out of range.",
                  nullptr);
   return &(renderingBuffers_[submeshID]->mesh);

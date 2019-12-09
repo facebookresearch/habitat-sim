@@ -6,10 +6,14 @@
 
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/PluginManager/Manager.h>
+#include <Corrade/PluginManager/PluginMetadata.h>
+#include <Corrade/Utility/ConfigurationGroup.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
+#include <Magnum/GL/Context.h>
+#include <Magnum/GL/Extensions.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Math/Range.h>
@@ -53,6 +57,7 @@
 #endif
 
 namespace Cr = Corrade;
+namespace Mn = Magnum;
 
 namespace esp {
 namespace assets {
@@ -432,7 +437,6 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
   }
 
   // load the center of mass (in the local frame of the object)
-  bool shouldComputeMeshBBCenter = true;
   // if COM is provided, use it for mesh shift
   if (objPhysicsConfig.HasMember("COM")) {
     if (objPhysicsConfig["COM"].IsArray()) {
@@ -444,7 +448,6 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
           break;
         } else {
           COM[i] = objPhysicsConfig["COM"][i].GetDouble();
-          shouldComputeMeshBBCenter = false;
         }
       }
       physicsObjectAttributes.setMagnumVec3("COM", COM);
@@ -800,13 +803,94 @@ bool ResourceManager::loadGeneralMeshData(
   // Mesh & metaData container
   MeshMetaData metaData;
 
+#ifndef MAGNUM_BUILD_STATIC
   Magnum::PluginManager::Manager<Importer> manager;
+#else
+  // avoid using plugins that might depend on different library versions
+  Magnum::PluginManager::Manager<Importer> manager{"nonexistent"};
+#endif
+
   std::unique_ptr<Importer> importer =
       manager.loadAndInstantiate("AnySceneImporter");
+
+  // Preferred plugins, Basis target GPU format
   manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
 #ifdef ESP_BUILD_ASSIMP_SUPPORT
   manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
 #endif
+  {
+    Cr::PluginManager::PluginMetadata* const metadata =
+        manager.metadata("BasisImporter");
+    Mn::GL::Context& context = Mn::GL::Context::current();
+#ifdef MAGNUM_TARGET_WEBGL
+    if (context.isExtensionSupported<
+            Mn::GL::Extensions::WEBGL::compressed_texture_astc>())
+#else
+    if (context.isExtensionSupported<
+            Mn::GL::Extensions::KHR::texture_compression_astc_ldr>())
+#endif
+    {
+      LOG(INFO) << "Importing Basis files as ASTC 4x4";
+      metadata->configuration().setValue("format", "Astc4x4RGBA");
+    }
+#ifdef MAGNUM_TARGET_GLES
+    else if (context.isExtensionSupported<
+                 Mn::GL::Extensions::EXT::texture_compression_bptc>())
+#else
+    else if (context.isExtensionSupported<
+                 Mn::GL::Extensions::ARB::texture_compression_bptc>())
+#endif
+    {
+      LOG(INFO) << "Importing Basis files as BC7";
+      metadata->configuration().setValue("format", "Bc7RGBA");
+    }
+#ifdef MAGNUM_TARGET_WEBGL
+    else if (context.isExtensionSupported<
+                 Mn::GL::Extensions::WEBGL::compressed_texture_s3tc>())
+#elif defined(MAGNUM_TARGET_GLES)
+    else if (context.isExtensionSupported<
+                 Mn::GL::Extensions::EXT::texture_compression_s3tc>() ||
+             context.isExtensionSupported<
+                 Mn::GL::Extensions::ANGLE::texture_compression_dxt5>())
+#else
+    else if (context.isExtensionSupported<
+                 Mn::GL::Extensions::EXT::texture_compression_s3tc>())
+#endif
+    {
+      LOG(INFO) << "Importing Basis files as BC3";
+      metadata->configuration().setValue("format", "Bc3RGBA");
+    }
+#ifndef MAGNUM_TARGET_GLES2
+    else
+#ifndef MAGNUM_TARGET_GLES
+        if (context.isExtensionSupported<
+                Mn::GL::Extensions::ARB::ES3_compatibility>())
+#endif
+    {
+      LOG(INFO) << "Importing Basis files as ETC2";
+      metadata->configuration().setValue("format", "Etc2RGBA");
+    }
+#else /* For ES2, fall back to PVRTC as ETC2 is not available */
+    else
+#ifdef MAGNUM_TARGET_WEBGL
+        if (context.isExtensionSupported<Mn::WEBGL::compressed_texture_pvrtc>())
+#else
+        if (context.isExtensionSupported<Mn::IMG::texture_compression_pvrtc>())
+#endif
+    {
+      LOG(INFO) << "Importing Basis files as PVRTC 4bpp";
+      metadata->configuration().setValue("format", "PvrtcRGBA4bpp");
+    }
+#endif
+#if defined(MAGNUM_TARGET_GLES2) || !defined(MAGNUM_TARGET_GLES)
+    else /* ES3 has ETC2 always */
+    {
+      LOG(WARNING) << "No supported GPU compressed texture format detected, "
+                      "Basis images will get imported as RGBA8";
+      metadata->configuration().setValue("format", "RGBA8");
+    }
+#endif
+  }
 
   // Optional File loading
   if (!fileIsLoaded) {
@@ -984,7 +1068,9 @@ void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
     Corrade::Containers::Optional<Magnum::Trade::ImageData2D> imageData =
         importer.image2D(textureData->image());
     Magnum::GL::TextureFormat format;
-    if (imageData && imageData->format() == Magnum::PixelFormat::RGB8Unorm)
+    if (imageData && imageData->isCompressed())
+      format = Mn::GL::textureFormat(imageData->compressedFormat());
+    else if (imageData && imageData->format() == Magnum::PixelFormat::RGB8Unorm)
       format = compressTextures_
                    ? Magnum::GL::TextureFormat::CompressedRGBS3tcDxt1
                    : Magnum::GL::TextureFormat::RGB8;
@@ -1005,11 +1091,19 @@ void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
     texture.setMagnificationFilter(textureData->magnificationFilter())
         .setMinificationFilter(textureData->minificationFilter(),
                                textureData->mipmapFilter())
-        .setWrapping(textureData->wrapping().xy())
-        .setStorage(Magnum::Math::log2(imageData->size().max()) + 1, format,
-                    imageData->size())
-        .setSubImage(0, {}, *imageData)
-        .generateMipmap();
+        .setWrapping(textureData->wrapping().xy());
+
+    if (!imageData->isCompressed()) {
+      texture
+          .setStorage(Magnum::Math::log2(imageData->size().max()) + 1, format,
+                      imageData->size())
+          .setSubImage(0, {}, *imageData)
+          .generateMipmap();
+    } else {
+      texture.setStorage(1, format, imageData->size())
+          .setCompressedSubImage(0, {}, *imageData);
+      // TODO: load mips from the Basis file once Magnum supports that
+    }
   }
 }
 
@@ -1095,7 +1189,7 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                  node, drawables);
 }
 
-gfx::Drawable& ResourceManager::createDrawable(
+void ResourceManager::createDrawable(
     const ShaderType shaderType,
     Magnum::GL::Mesh& mesh,
     scene::SceneNode& node,
@@ -1103,24 +1197,19 @@ gfx::Drawable& ResourceManager::createDrawable(
     Magnum::GL::Texture2D* texture /* = nullptr */,
     int objectId /* = ID_UNDEFINED */,
     const Magnum::Color4& color /* = Magnum::Color4{1} */) {
-  gfx::Drawable* drawable = nullptr;
   if (shaderType == PTEX_MESH_SHADER) {
-    LOG(ERROR)
+    LOG(FATAL)
         << "ResourceManager::createDrawable does not support PTEX_MESH_SHADER";
-    ASSERT(shaderType != PTEX_MESH_SHADER);
-    // NOTE: this is a runtime error and will never return
-    return *drawable;
   } else if (shaderType == INSTANCE_MESH_SHADER) {
     auto* shader =
         static_cast<gfx::PrimitiveIDShader*>(getShaderProgram(shaderType));
-    drawable = new gfx::PrimitiveIDDrawable{node, *shader, mesh, group};
+    node.addFeature<gfx::PrimitiveIDDrawable>(*shader, mesh, group);
   } else {  // all other shaders use GenericShader
     auto* shader =
         static_cast<Magnum::Shaders::Flat3D*>(getShaderProgram(shaderType));
-    drawable = new gfx::GenericDrawable{node,    *shader,  mesh, group,
-                                        texture, objectId, color};
+    node.addFeature<gfx::GenericDrawable>(*shader, mesh, group, texture,
+                                          objectId, color);
   }
-  return *drawable;
 }
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
