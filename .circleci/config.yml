@@ -332,7 +332,44 @@ jobs:
           background: true
           paths:
             - ./habitat-api
+      - add_ssh_keys:
+          fingerprints:
+            - "54:f0:03:1f:dd:77:7a:1d:cf:d2:2a:3a:8a:d7:6f:9b"
+      - run:
+          name: Update documentation
+          command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat; cd habitat-api
+              cd habitat-sim/docs
+              conda install -c conda-forge doxygen
+              sudo apt-get install texlive-full
+              sudo apt-get install texlive-xetex texlive-fonts-recommended texlive-generic-recommended
+              pip install jinja2 pygments docutils
+              doxygen
+              ./build-public.sh
+              cd ../..
+              git clone git@github.com:facebookmicrosites/habitat-website.git
+              cd habitat-website
+              pip install pelican
 
+              for dir in habitat-sim habitat-cpp
+              do
+                  rm -rf published/docs/${dir}
+                  cp -r ../habitat-sim/build/docs-public/${dir} published/docs/.
+              done
+
+              NOW=$(date +"%m-%d-%Y”)
+              git commit -m "Build ${NOW}”
+              git add .
+              git push origin master
+              rsync -a published/ ./.
+              rm -rf published
+              rm -rf m.css
+              rm -rf __pycache__
+              git add .
+              git commit -m "Build ${NOW}”
+              git log
+              # git push origin gh-pages
 workflows:
   version: 2
   install_and_test:
