@@ -190,7 +190,7 @@ class ResourceManager {
   void addComponent(const MeshMetaData& metaData,
                     scene::SceneNode& parent,
                     DrawableGroup* drawables,
-                    MeshTransformNode& meshTransformNode);
+                    const MeshTransformNode& meshTransformNode);
 
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);

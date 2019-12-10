@@ -1129,7 +1129,7 @@ void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
 void ResourceManager::addComponent(const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
                                    DrawableGroup* drawables,
-                                   MeshTransformNode& meshTransformNode) {
+                                   const MeshTransformNode& meshTransformNode) {
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
   node.MagnumObject::setTransformation(meshTransformNode.T_parent_local);
