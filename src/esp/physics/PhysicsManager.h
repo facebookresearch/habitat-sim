@@ -55,7 +55,7 @@ unique physical world can exist.
 class PhysicsManager {
  public:
   /**
-   * @brief Construct a #ref PhysicsManager with access to specific resourse
+   * @brief Construct a #ref PhysicsManager with access to specific resource
    * assets.
    *
    * @param _resourceManager The @ref esp::assets::ResourceManager which

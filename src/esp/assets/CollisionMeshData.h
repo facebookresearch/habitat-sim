@@ -4,6 +4,10 @@
 
 #pragma once
 
+/** @file
+ * @brief Struct @ref esp::assets::CollisionMeshData
+ */
+
 #include <vector>
 
 #include <Magnum/GL/Mesh.h>
@@ -14,11 +18,15 @@
 
 namespace esp {
 namespace assets {
-
-//! Reference to vertices and
-//! Usage: (1) for creating collision mesh in Bullet
+/**
+ * @brief Provides references to geometry and topology for an individual
+ * component of an asset for use in generating collision shapes for simulation.
+ * Usage: (1) for creating collision mesh/convex in @ref BulletPhysicsManager
+ * and @ref BulletRigidObject
+ */
 struct CollisionMeshData {
-  //! Primitive type (has to be triangle for Bullet to work)
+  //! Primitive type (has to be triangle for Bullet to work). See @ref
+  //! BulletRigidObject::constructBulletCompoundFromMeshes.
   Magnum::MeshPrimitive primitive;
   //! Reference to Vertex positions
   Corrade::Containers::ArrayView<Magnum::Vector3> positions;
