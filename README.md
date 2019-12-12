@@ -152,7 +152,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 1. Clone this github repository.
    ```bash
    # Checkout the latest stable release
-   git clone --branch stable git@github.com:facebookresearch/habitat-sim.git
+   git clone --branch stable https://github.com/facebookresearch/habitat-sim.git
    cd habitat-sim
    ```
 
