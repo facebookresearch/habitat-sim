@@ -97,10 +97,10 @@ class ResourceManager {
 
   /**
    * @brief Load and instantiate a scene including physics simulation. Loads a
-   * physics simulator for the world from the parameters defined in @ref
-   * physicsManagerAttributes and reseats the @ref _physicsManager based on the
-   * configured simulator implementation. Loads the scene mesh and adds it to
-   * the specified @ref DrawableGroup as a child of the specified @ref
+   * physics simulator for the world from the parameters defined in the @ref
+   * PhysicsManagerAttributes and reseats the @ref physics::PhysicsManager based
+   * on the configured simulator implementation. Loads the scene mesh and adds
+   * it to the specified @ref DrawableGroup as a child of the specified @ref
    * scene::SceneNode. If these are not specified, the assets are loaded, but no
    * new @ref gfx::Drawable is added for the scene (i.e. it will not be
    * rendered).
@@ -125,11 +125,11 @@ class ResourceManager {
   /**
    * @brief Load and instantiate a scene including physics simulation. Loads a
    * physics simulator for the world from the parameters defined in the
-   * referenced configuration file, @ref physicsFilename. Also attempts to parse
+   * referenced configuration file. Also attempts to parse
    * physical objects listed in this configuration file into the @ref
-   * physicsObjectLibrary_. Reseats the @ref _physicsManager based on the
-   * configured simulator implementation. Loads the scene mesh and adds it to
-   * the specified @ref DrawableGroup as a child of the specified @ref
+   * physicsObjectLibrary_. Reseats the @ref physics::PhysicsManager based on
+   * the configured simulator implementation. Loads the scene mesh and adds it
+   * to the specified @ref DrawableGroup as a child of the specified @ref
    * scene::SceneNode. If these are not specified, the assets are loaded, but no
    * new @ref gfx::Drawable is added for the scene (i.e. it will not be
    * rendered).
@@ -142,7 +142,8 @@ class ResourceManager {
    * @param drawables The @ref DrawableGroup with which the scene mesh will be
    * rendered.
    * @param physicsFilename The physics configuration file from which to
-   * re-instatiate the @ref _physicsManager and parse object templates for the
+   * re-instatiate the @ref physics::PhysicsManager and parse object templates
+   * for the
    * @ref physicsObjectLibrary_. Defaults to the file location @ref
    * ESP_DEFAULT_PHYS_SCENE_CONFIG set by cmake.
    * @return Whether or not the scene load succeeded.
@@ -169,15 +170,15 @@ class ResourceManager {
    * physicsObjectLibrary_ and add it to the specified @ref DrawableGroup as a
    * child of the specified @ref scene::SceneNode if provided. If the
    * configuration file is already a key for the @ref physicsObjectLibrary_, and
-   * both @ref parent and @ref drawables are specified, then the parse is
+   * both parent and drawables are specified, then the parse is
    * skipped and the object referenced by that key is added to the scene.
    * @param objPhysConfigFilename The configuration file to parse and load.
    * @param parent The @ref scene::SceneNode of which the object will be a
    * child.
    * @param drawables The @ref DrawableGroup with which the object @ref
    * gfx::Drawable will be rendered.
-   * @return The index in the @ref physicsObjectLibrary_ to which the key @ref
-   * objPhysConfigFilename referes. Can be used to reference the obejct
+   * @return The index in the @ref physicsObjectLibrary_ to which the key,
+   * objPhysConfigFilename, referes. Can be used to reference the obejct
    * template, but can change if the @ref physicsObjectLibrary_ is modified.
    */
   int loadObject(const std::string& objPhysConfigFilename,
@@ -189,8 +190,8 @@ class ResourceManager {
    * @ref PhysicsObjectAttributes object, adding it to the @ref
    * physicsObjectLibrary_.
    * @param objPhysConfigFilename The configuration file to parse and load.
-   * @return The index in the @ref physicsObjectLibrary_ to which the key @ref
-   * objPhysConfigFilename referes. Can be used to reference the obejct
+   * @return The index in the @ref physicsObjectLibrary_ to which the key,
+   * objPhysConfigFilename, referes. Can be used to reference the object
    * template, but can change if the @ref physicsObjectLibrary_ is modified.
    */
   int loadObject(const std::string& objPhysConfigFilename);
@@ -198,7 +199,7 @@ class ResourceManager {
   //======== Accessor functions ========
   /**
    * @brief Getter for all @ref assets::CollisionMeshData associated with the
-   * particular asset referenced by the key @ref configFile.
+   * particular asset referenced by the key, configFile.
    * @param configFile The key by which the asset is referenced in @ref
    * collisionMeshGroups_ and the @ref physicsObjectLibrary_.
    * @return A vector reference to @ref assets::CollisionMeshData instances for
@@ -209,10 +210,10 @@ class ResourceManager {
 
   /**
    * @brief Getter for all @ref assets::CollisionMeshData associated with the
-   * particular asset referenced by the index @ref objectID in @ref
+   * particular asset referenced by the index, objectID, in @ref
    * physicsObjectLibrary_.
-   * @param configFile The key by which the asset is referenced in @ref
-   * collisionMeshGroups_ and the @ref physicsObjectLibrary_.
+   * @param objectID The index of the object template in @ref
+   * physicsObjectLibrary_.
    * @return A vector reference to @ref assets::CollisionMeshData instances for
    * individual components of the asset.
    */
@@ -221,7 +222,7 @@ class ResourceManager {
 
   /**
    * @brief Get the index in @ref physicsObjectLibrary_ for the object template
-   * asset identified by the key @ref configFile.
+   * asset identified by the key, configFile.
    * @param configFile The key referencing the asset in @ref
    * physicsObjectLibrary_.
    * @return The index of the object template in @ref physicsObjectLibrary_.
@@ -230,7 +231,7 @@ class ResourceManager {
 
   /**
    * @brief Get the key in @ref physicsObjectLibrary_ for the object template
-   * asset index at @ref objectID.
+   * asset index.
    * @param objectID The index of the object template in @ref
    * physicsObjectLibrary_.
    * @return The key referencing the asset in @ref physicsObjectLibrary_.
@@ -239,7 +240,7 @@ class ResourceManager {
 
   /**
    * @brief Get a reference to the physics object template for the asset
-   * identified by the key @ref configFile. Can be used to manipulate an object
+   * identified by the key, configFile. Can be used to manipulate an object
    * template before instancing new objects.
    * @param configFile The key referencing the asset in @ref
    * physicsObjectLibrary_.
@@ -280,10 +281,10 @@ class ResourceManager {
 
   /**
    * @brief Create a new drawable primitive attached to the desired @ref
-   * SceneNode. See @ref primitive_meshes_.
+   * scene::SceneNode. See @ref primitive_meshes_.
    * @param primitiveID The index of the primitive in @ref primitive_meshes_.
-   * @param node The @ref SceneNode to which the primitive drawable will be
-   * attached.
+   * @param node The @ref scene::SceneNode to which the primitive drawable will
+   * be attached.
    * @param drawables The @ref DrawableGroup with which the primitive will be
    * rendered.
    */
@@ -296,8 +297,8 @@ class ResourceManager {
 
   /**
    * @brief Recursive contruction of scene nodes for an asset. Creates a
-   * drawable for the component of an asset referenced by @ref meshTransformNode
-   * and adds it to @ref drawables as child of @ref parent.
+   * drawable for the component of an asset referenced by the @ref
+   * MeshTransformNode and adds it to the @ref DrawableGroup as child of parent.
    * @param metaData The @ref MeshMetaData object containing information about
    * the meshes, textures, materials, and component heirarchy of the asset.
    * @param parent The @ref scene::SceneNode of which the component will be a
@@ -337,7 +338,7 @@ class ResourceManager {
    * sub-tree. The generated @ref MeshTransformNode will be added as a child.
    * Typically the @ref MeshMetaData::root to begin recursion.
    * @param componentID The next component to add to the heirarchy. Identifies
-   * the component in @ref importer.
+   * the component in the @ref Importer.
    */
   void loadMeshHierarchy(Importer& importer,
                          MeshTransformNode& parent,
@@ -378,8 +379,8 @@ class ResourceManager {
                             DrawableGroup* drawables);
 
   /**
-   * @brief Load a mesh (e.g. gltf) into assets from a file. If both @ref parent
-   * and @ref drawables are provided add the mesh to the scene graph for
+   * @brief Load a mesh (e.g. gltf) into assets from a file. If both parent
+   * and the @ref DrawableGroup are provided add the mesh to the scene graph for
    * rendering.
    * @param info The @ref AssetInfo for the mesh, already parsed from a file.
    * @param parent The @ref scene::SceneNode to which the mesh will be added as
@@ -503,9 +504,9 @@ class ResourceManager {
    * @param objectID The object type identifier or semantic group (e.g.
    * 1->chair, 2->table, etc..) for semantic rendering of the mesh.
    * @param meshIDLocal The index of the mesh within the mesh group linked to
-   * the asset via @ref metaData.
+   * the asset via the @ref MeshMetaData.
    * @param materialIDLocal The index of the material within the material group
-   * linked to the asset via @ref metaData.
+   * linked to the asset via the @ref MeshMetaData.
    */
   void addMeshToDrawables(const MeshMetaData& metaData,
                           scene::SceneNode& node,
@@ -568,12 +569,13 @@ class ResourceManager {
   Magnum::GL::AbstractShaderProgram* getShaderProgram(ShaderType type);
 
   /**
-   * @brief Create a @ref gfx::Drawable for the specified @ref mesh, @ref node,
-   * and @ref shaderType. Add this drawable to @ref DrawableGroup if provided.
+   * @brief Create a @ref gfx::Drawable for the specified mesh, node,
+   * and @ref ShaderType. Add this drawable to the @ref DrawableGroup if
+   * provided.
    * @param shaderType Indentifies the desired shader program for rendering the
    * @ref gfx::Drawable.
    * @param mesh The render mesh.
-   * @param node The @ref scene:SceneNode to which the drawable will be
+   * @param node The @ref scene::SceneNode to which the drawable will be
    * attached.
    * @param group Optional @ref DrawableGroup with which the render the @ref
    * gfx::Drawable.

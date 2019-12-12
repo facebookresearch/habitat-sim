@@ -21,8 +21,8 @@ namespace assets {
 /**
  * @brief Provides references to geometry and topology for an individual
  * component of an asset for use in generating collision shapes for simulation.
- * Usage: (1) for creating collision mesh/convex in @ref BulletPhysicsManager
- * and @ref BulletRigidObject
+ * Usage: (1) for creating collision mesh/convex in @ref
+ * physics::BulletPhysicsManager and @ref physics::BulletRigidObject
  */
 struct CollisionMeshData {
   //! Primitive type (has to be triangle for Bullet to work). See @ref

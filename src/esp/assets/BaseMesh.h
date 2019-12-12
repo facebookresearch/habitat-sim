@@ -33,34 +33,34 @@ namespace assets {
   */
 enum SupportedMeshType {
   /**
-   * Undefined mesh types are created programmatically without a specific format
-   * or loaded from an unkown format. Support for this type and behavior is
-   * likely limited. Object type is likely @ref BaseMesh.
+   * @brief Undefined mesh types are created programmatically without a specific
+   * format or loaded from an unkown format. Support for this type and behavior
+   * is likely limited. Object type is likely @ref BaseMesh.
    */
   NOT_DEFINED = -1,
 
   /**
-   * Instance meshes loaded from sources including segmented object identifier
-   * data (e.g. semantic data: chair, table, etc...). Sources include .ply files
-   * and reconstructions of Matterport scans. Object is likely of type @ref
-   * GenericInstanceMeshData or Mp3dInstanceMeshData.
+   * @brief Instance meshes loaded from sources including segmented object
+   * identifier data (e.g. semantic data: chair, table, etc...). Sources include
+   * .ply files and reconstructions of Matterport scans. Object is likely of
+   * type @ref GenericInstanceMeshData or Mp3dInstanceMeshData.
    */
   INSTANCE_MESH = 0,
 
   /**
-   * Meshes loaded from Replica dataset. Object is likely type @ref
+   * @brief Meshes loaded from Replica dataset. Object is likely type @ref
    * PTexMeshData.
    */
   PTEX_MESH = 1,
 
   /**
-   * Meshes loaded from gltf format (i.e. .glb file). Object is likely type @ref
-   * GltfMeshData.
+   * @brief Meshes loaded from gltf format (i.e. .glb file). Object is likely
+   * type @ref GltfMeshData.
    */
   GLTF_MESH = 2,
 
   /**
-   * Number of enumerated supported types.
+   * @brief Number of enumerated supported types.
    */
   NUM_SUPPORTED_MESH_TYPES = 3,
 };
@@ -77,7 +77,7 @@ class BaseMesh {
    * likely identifying the derived type of this object.*/
   explicit BaseMesh(SupportedMeshType type) : type_(type){};
 
-  /** @brief Destructor*/
+  /** @brief Destructor */
   virtual ~BaseMesh(){};
 
   /**
@@ -125,13 +125,13 @@ class BaseMesh {
 
   /**
    * @brief Any transformations applied to the original mesh after loading are
-   * stored here. See @ref ResourceMananger::translateMesh.
+   * stored here. See @ref ResourceManager::translateMesh.
    */
   Magnum::Matrix4 meshTransform_;
 
   /**
    * @brief Axis aligned bounding box of the mesh. Computed automatically on
-   * mesh load. See @ref ResourceMananger::computeMeshBB.
+   * mesh load. See @ref ResourceManager::computeMeshBB.
    */
   Magnum::Range3D BB;
 
