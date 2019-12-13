@@ -28,7 +28,11 @@
 #include "esp/scene/SceneNode.h"
 
 #include <Corrade/Utility/Arguments.h>
+#include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/Debug.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
+
 #include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
@@ -114,6 +118,7 @@ class Viewer : public Magnum::Platform::Application {
 
   ImGuiIntegration::Context imgui_{NoCreate};
   bool showFPS_ = false;
+  bool enableFrustumCulling_ = true;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -188,17 +193,6 @@ Viewer::Viewer(const Arguments& arguments)
       LOG(FATAL) << "cannot load " << file;
     }
   }
-
-  // XXX
-  /*
-for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
-  //(scene::SceneNode *)(&(drawables[iDrawable].object()))->getMeshBB();
-  auto& obj = drawables[iDrawable].object();
-  auto* ptr = (scene::SceneNode *)(&obj);
-  auto& aabb = ptr->getMeshBB();
-  LOG(INFO) << "drawable " << iDrawable << " sizeX =  " << aabb.sizeX();
-}
-  */
 
   // Set up camera
   renderCamera_ = &sceneGraph_->getDefaultRenderCamera();
@@ -383,35 +377,39 @@ void Viewer::drawEvent() {
   auto& drawables = sceneGraph.getDrawables();
   auto total = drawables.size();
   size_t visibles = 0;
-  Magnum::SceneGraph::DrawableGroup3D visibleDrawables;
+  if (enableFrustumCulling_) {
+    Magnum::SceneGraph::DrawableGroup3D visibleDrawables;
 
-  for (int iDrawable = total - 1; iDrawable >= 0; iDrawable--) {
-    // This, of course, will cause segfault.
-    // for (int iDrawable = 0; iDrawable < total; ++iDrawable) {
-    auto& obj = drawables[iDrawable].object();
+    for (int iDrawable = total - 1; iDrawable >= 0; iDrawable--) {
+      // This, of course, will cause segfault.
+      // for (int iDrawable = 0; iDrawable < total; ++iDrawable)
+      auto& obj = drawables[iDrawable].object();
 
-    auto* ptr = (scene::SceneNode*)(&obj);
-    auto& aabb = ptr->getMeshBB();
-    Magnum::Math::Vector4<float> bbMin{aabb.min(), 1.0};
-    Magnum::Math::Vector4<float> bbMax{aabb.max(), 1.0};
-    auto modelview = renderCamera_->getMagnumCamera().cameraMatrix() *
-                     ptr->absoluteTransformation();
-    if (Magnum::Math::Intersection::rangeFrustum(
-            Magnum::Math::Range3D<float>{(modelview * bbMin).xyz(),
-                                         (modelview * bbMax).xyz()},
-            frustum_)) {
-      visibleDrawables.add(drawables[iDrawable]);
-      visibles++;
+      auto* ptr = (scene::SceneNode*)(&obj);
+      auto& aabb = ptr->getMeshBB();
+      Magnum::Math::Vector4<float> bbMin{aabb.min(), 1.0};
+      Magnum::Math::Vector4<float> bbMax{aabb.max(), 1.0};
+      auto modelview = renderCamera_->getMagnumCamera().cameraMatrix() *
+                       ptr->absoluteTransformation();
+      if (Magnum::Math::Intersection::rangeFrustum(
+              Magnum::Math::Range3D<float>{(modelview * bbMin).xyz(),
+                                           (modelview * bbMax).xyz()},
+              frustum_)) {
+        visibleDrawables.add(drawables[iDrawable]);
+        visibles++;
+      }
     }
-  }
-  renderCamera_->getMagnumCamera().draw(visibleDrawables);
+    renderCamera_->getMagnumCamera().draw(visibleDrawables);
 
-  // Put all the drawables back.
-  for (int iDrawable = visibles - 1; iDrawable >= 0; --iDrawable) {
-    drawables.add(visibleDrawables[iDrawable]);
-  }
+    // Put all the drawables back.
+    for (int iDrawable = visibles - 1; iDrawable >= 0; --iDrawable) {
+      drawables.add(visibleDrawables[iDrawable]);
+    }
 
-  // renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
+    CORRADE_ASSERT(drawables.size() == total, "You lost some drawables.", );
+  } else {
+    renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
+  }
 
   if (debugBullet_) {
     Magnum::Matrix4 camM(renderCamera_->getCameraMatrix());
@@ -429,9 +427,9 @@ void Viewer::drawEvent() {
                      ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(2.0);
     ImGui::Text("%.1f FPS", Double(ImGui::GetIO().Framerate));
-
-    ImGui::Text("%.lu drawables", total);
-    ImGui::Text("%.lu culled", total - visibles);
+    ImGui::Text("%lu drawables", total);
+    size_t culled = enableFrustumCulling_ ? total - visibles : 0;
+    ImGui::Text("%lu culled", culled);
     ImGui::End();
   }
 
@@ -549,6 +547,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       controls_(*agentBodyNode_, "moveRight", moveSensitivity);
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+      break;
+    case KeyEvent::Key::E:
+      enableFrustumCulling_ ^= true;
       break;
     case KeyEvent::Key::C:
       showFPS_ = !showFPS_;
