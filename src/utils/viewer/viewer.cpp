@@ -11,7 +11,11 @@
 #else
 #include <Magnum/Platform/GlfwApplication.h>
 #endif
+#include <Magnum/Math/Frustum.h>
+#include <Magnum/Math/Intersection.h>
+#include <Magnum/Math/Range.h>
 #include <Magnum/SceneGraph/Camera.h>
+#include <Magnum/SceneGraph/Drawable.h>
 #include <Magnum/Timeline.h>
 
 #include "esp/assets/ResourceManager.h"
@@ -97,6 +101,7 @@ class Viewer : public Magnum::Platform::Application {
   scene::SceneNode* rootNode_;
 
   gfx::RenderCamera* renderCamera_ = nullptr;
+  Magnum::Math::Frustum<float> frustum_;
   nav::PathFinder::ptr pathfinder_;
   scene::ObjectControls controls_;
   Magnum::Vector3 previousPosition_;
@@ -184,6 +189,17 @@ Viewer::Viewer(const Arguments& arguments)
     }
   }
 
+  // XXX
+  /*
+for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
+  //(scene::SceneNode *)(&(drawables[iDrawable].object()))->getMeshBB();
+  auto& obj = drawables[iDrawable].object();
+  auto* ptr = (scene::SceneNode *)(&obj);
+  auto& aabb = ptr->getMeshBB();
+  LOG(INFO) << "drawable " << iDrawable << " sizeX =  " << aabb.sizeX();
+}
+  */
+
   // Set up camera
   renderCamera_ = &sceneGraph_->getDefaultRenderCamera();
   agentBodyNode_ = &rootNode_->createChild();
@@ -199,6 +215,9 @@ Viewer::Viewer(const Arguments& arguments)
                                      90.0f);            // hfov
   renderCamera_->getMagnumCamera().setAspectRatioPolicy(
       Magnum::SceneGraph::AspectRatioPolicy::Extend);
+
+  frustum_ = Magnum::Math::Frustum<float>::fromMatrix(
+      renderCamera_->getMagnumCamera().projectionMatrix());
 
   // Load navmesh if available
   const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
@@ -359,7 +378,40 @@ void Viewer::drawEvent() {
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
-  renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
+
+  // XXX
+  auto& drawables = sceneGraph.getDrawables();
+  auto total = drawables.size();
+  size_t visibles = 0;
+  Magnum::SceneGraph::DrawableGroup3D visibleDrawables;
+
+  for (int iDrawable = total - 1; iDrawable >= 0; iDrawable--) {
+    // This, of course, will cause segfault.
+    // for (int iDrawable = 0; iDrawable < total; ++iDrawable) {
+    auto& obj = drawables[iDrawable].object();
+
+    auto* ptr = (scene::SceneNode*)(&obj);
+    auto& aabb = ptr->getMeshBB();
+    Magnum::Math::Vector4<float> bbMin{aabb.min(), 1.0};
+    Magnum::Math::Vector4<float> bbMax{aabb.max(), 1.0};
+    auto modelview = renderCamera_->getMagnumCamera().cameraMatrix() *
+                     ptr->absoluteTransformation();
+    if (Magnum::Math::Intersection::rangeFrustum(
+            Magnum::Math::Range3D<float>{(modelview * bbMin).xyz(),
+                                         (modelview * bbMax).xyz()},
+            frustum_)) {
+      visibleDrawables.add(drawables[iDrawable]);
+      visibles++;
+    }
+  }
+  renderCamera_->getMagnumCamera().draw(visibleDrawables);
+
+  // Put all the drawables back.
+  for (int iDrawable = visibles - 1; iDrawable >= 0; --iDrawable) {
+    drawables.add(visibleDrawables[iDrawable]);
+  }
+
+  // renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
 
   if (debugBullet_) {
     Magnum::Matrix4 camM(renderCamera_->getCameraMatrix());
@@ -377,6 +429,9 @@ void Viewer::drawEvent() {
                      ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(2.0);
     ImGui::Text("%.1f FPS", Double(ImGui::GetIO().Framerate));
+
+    ImGui::Text("%.lu drawables", total);
+    ImGui::Text("%.lu culled", total - visibles);
     ImGui::End();
   }
 
@@ -404,6 +459,8 @@ void Viewer::drawEvent() {
 void Viewer::viewportEvent(ViewportEvent& event) {
   GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
   renderCamera_->getMagnumCamera().setViewport(event.windowSize());
+  frustum_ = Magnum::Math::Frustum<float>::fromMatrix(
+      renderCamera_->getMagnumCamera().projectionMatrix());
   imgui_.relayout(Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
 }
