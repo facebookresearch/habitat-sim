@@ -383,14 +383,13 @@ void Viewer::drawEvent() {
     for (int iDrawable = total - 1; iDrawable >= 0; iDrawable--) {
       // This, of course, will cause segfault.
       // for (int iDrawable = 0; iDrawable < total; ++iDrawable)
-      auto& obj = drawables[iDrawable].object();
-
-      auto* ptr = (scene::SceneNode*)(&obj);
-      auto& aabb = ptr->getMeshBB();
+      scene::SceneNode& node =
+          dynamic_cast<scene::SceneNode&>(drawables[iDrawable].object());
+      auto& aabb = node.getMeshBB();
       Magnum::Math::Vector4<float> bbMin{aabb.min(), 1.0};
       Magnum::Math::Vector4<float> bbMax{aabb.max(), 1.0};
       auto modelview = renderCamera_->getMagnumCamera().cameraMatrix() *
-                       ptr->absoluteTransformation();
+                       node.absoluteTransformation();
       if (Magnum::Math::Intersection::rangeFrustum(
               Magnum::Math::Range3D<float>{(modelview * bbMin).xyz(),
                                            (modelview * bbMax).xyz()},
