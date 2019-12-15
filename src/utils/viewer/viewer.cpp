@@ -105,7 +105,6 @@ class Viewer : public Magnum::Platform::Application {
   scene::SceneNode* rootNode_;
 
   gfx::RenderCamera* renderCamera_ = nullptr;
-  Magnum::Math::Frustum<float> frustum_;
   nav::PathFinder::ptr pathfinder_;
   scene::ObjectControls controls_;
   Magnum::Vector3 previousPosition_;
@@ -209,9 +208,6 @@ Viewer::Viewer(const Arguments& arguments)
                                      90.0f);            // hfov
   renderCamera_->getMagnumCamera().setAspectRatioPolicy(
       Magnum::SceneGraph::AspectRatioPolicy::Extend);
-
-  frustum_ = Magnum::Math::Frustum<float>::fromMatrix(
-      renderCamera_->getMagnumCamera().projectionMatrix());
 
   // Load navmesh if available
   const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
@@ -377,6 +373,7 @@ void Viewer::drawEvent() {
   auto& drawables = sceneGraph.getDrawables();
   auto total = drawables.size();
   size_t visibles = 0;
+  auto& cam = renderCamera_->getMagnumCamera();
   if (enableFrustumCulling_) {
     Magnum::SceneGraph::DrawableGroup3D visibleDrawables;
 
@@ -385,29 +382,31 @@ void Viewer::drawEvent() {
       // for (int iDrawable = 0; iDrawable < total; ++iDrawable)
       scene::SceneNode& node =
           dynamic_cast<scene::SceneNode&>(drawables[iDrawable].object());
-      auto& aabb = node.getMeshBB();
-      Magnum::Math::Vector4<float> bbMin{aabb.min(), 1.0};
-      Magnum::Math::Vector4<float> bbMax{aabb.max(), 1.0};
-      auto modelview = renderCamera_->getMagnumCamera().cameraMatrix() *
-                       node.absoluteTransformation();
-      if (Magnum::Math::Intersection::rangeFrustum(
-              Magnum::Math::Range3D<float>{(modelview * bbMin).xyz(),
-                                           (modelview * bbMax).xyz()},
-              frustum_)) {
+      // mvp = proj * modelview
+      auto mvp = cam.projectionMatrix() * cam.cameraMatrix() *
+                 node.absoluteTransformation();
+      Magnum::Math::Frustum<float> frustum;
+      frustum = Magnum::Math::Frustum<float>::fromMatrix(mvp);
+
+      if (Magnum::Math::Intersection::rangeFrustum(node.getMeshBB(), frustum)) {
         visibleDrawables.add(drawables[iDrawable]);
         visibles++;
       }
     }
-    renderCamera_->getMagnumCamera().draw(visibleDrawables);
+    CORRADE_ASSERT(
+        visibles == visibleDrawables.size(),
+        "Viewer::drawEvent: the number of visible drawables is wrong.", );
+    cam.draw(visibleDrawables);
 
     // Put all the drawables back.
     for (int iDrawable = visibles - 1; iDrawable >= 0; --iDrawable) {
       drawables.add(visibleDrawables[iDrawable]);
     }
 
-    CORRADE_ASSERT(drawables.size() == total, "You lost some drawables.", );
+    CORRADE_ASSERT(drawables.size() == total,
+                   "Viewer::drawEvent: You lost some drawables.", );
   } else {
-    renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
+    cam.draw(sceneGraph.getDrawables());
   }
 
   if (debugBullet_) {
@@ -456,8 +455,6 @@ void Viewer::drawEvent() {
 void Viewer::viewportEvent(ViewportEvent& event) {
   GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
   renderCamera_->getMagnumCamera().setViewport(event.windowSize());
-  frustum_ = Magnum::Math::Frustum<float>::fromMatrix(
-      renderCamera_->getMagnumCamera().projectionMatrix());
   imgui_.relayout(Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
 }
