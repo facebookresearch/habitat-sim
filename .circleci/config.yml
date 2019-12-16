@@ -10,12 +10,14 @@ gpu: &gpu
 jobs:
   python_lint:
     docker:
-      - image: circleci/python:3.7
+      - image: circleci/python:3.6
     steps:
       - checkout
       - run:
           name: setup
           command: |
+              sudo apt-get update || true
+              sudo apt-get install -y python3.6-dev
               sudo pip install -U black "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis regex
               sudo pip install -r requirements.txt --progress-bar off
       - run:
