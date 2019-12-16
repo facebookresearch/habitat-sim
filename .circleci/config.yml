@@ -16,11 +16,7 @@ jobs:
       - run:
           name: setup
           command: |
-              sudo apt-get install -y software-properties-common
-              sudo add-apt-repository -y ppa:deadsnakes/ppa
-              sudo apt-get update || true
-              sudo apt-get install -y python3.6-dev
-              sudo pip install -U black "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis regex
+              sudo pip install -U black "isort[pyproject]" numpy pytest sphinx pillow tqdm hypothesis
               sudo pip install -r requirements.txt --progress-bar off
       - run:
           name: run black
