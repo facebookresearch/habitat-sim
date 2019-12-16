@@ -196,6 +196,17 @@ class ResourceManager {
    */
   int loadObject(const std::string& objPhysConfigFilename);
 
+  /**
+   * @brief Add a @ref PhysicsObjectAttributes object to the @ref
+   * physicsObjectLibrary_. Can modify template values based on results of load.
+   * @param objectTemplateHandle The key for referencing the template in the
+   * @ref physicsObjectLibrary_.
+   * @param objectTemplate The object template.
+   * @return The index in the @ref physicsObjectLibrary_ of object template.
+   */
+  int loadObject(PhysicsObjectAttributes& objectTemplate,
+                 const std::string objectTemplateHandle);
+
   //======== Accessor functions ========
   /**
    * @brief Getter for all @ref assets::CollisionMeshData associated with the
@@ -311,7 +322,7 @@ class ResourceManager {
   void addComponent(const MeshMetaData& metaData,
                     scene::SceneNode& parent,
                     DrawableGroup* drawables,
-                    MeshTransformNode& meshTransformNode);
+                    const MeshTransformNode& meshTransformNode);
 
   /**
    * @brief Load textures from importer into assets, and update metaData for an
@@ -464,6 +475,13 @@ class ResourceManager {
    * "data/objects/cheezit.phys_properties.json" -> physicalMetaData
    */
   std::map<std::string, PhysicsObjectAttributes> physicsObjectLibrary_;
+
+  /**
+   * @brief Maps string keys (typically property filenames) to physical scene
+   * templates. Templates are used by @ref physics::PhysicsManager to
+   * initialize, reset scenes or switch contexts.
+   */
+  std::map<std::string, PhysicsSceneAttributes> physicsSceneLibrary_;
 
   /**
    * @brief Library of physics scene attributes for

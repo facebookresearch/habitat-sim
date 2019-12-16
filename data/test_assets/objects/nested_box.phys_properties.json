@@ -1,0 +1,4 @@
+{
+    "render mesh": "nested_box.glb",
+    "join collision meshes": false
+}

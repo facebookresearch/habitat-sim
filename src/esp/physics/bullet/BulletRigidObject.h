@@ -87,11 +87,14 @@ class BulletRigidObject : public RigidObject {
    * composition down the @ref MeshTransformNode tree to the current node.
    * @param meshGroup Access structure for collision mesh data.
    * @param node The current @ref MeshTransformNode in the recursion.
+   * @param join Whether or not to join sub-meshes into a single con convex
+   * shape, rather than creating individual convexes under the compound.
    */
   void constructBulletCompoundFromMeshes(
       const Magnum::Matrix4& T_world_parent,
       const std::vector<assets::CollisionMeshData>& meshGroup,
-      const assets::MeshTransformNode& node);
+      const assets::MeshTransformNode& node,
+      bool join);
 
   /**
    * @brief Check whether object is being actively simulated, or sleeping.

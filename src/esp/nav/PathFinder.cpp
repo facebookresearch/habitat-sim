@@ -253,15 +253,16 @@ bool PathFinder::build(const NavMeshSettings& bs,
   cfg.cs = bs.cellSize;
   cfg.ch = bs.cellHeight;
   cfg.walkableSlopeAngle = bs.agentMaxSlope;
-  cfg.walkableHeight = (int)ceilf(bs.agentHeight / cfg.ch);
-  cfg.walkableClimb = (int)floorf(bs.agentMaxClimb / cfg.ch);
-  cfg.walkableRadius = (int)ceilf(bs.agentRadius / cfg.cs);
-  cfg.maxEdgeLen = (int)(bs.edgeMaxLen / bs.cellSize);
+  cfg.walkableHeight = static_cast<int>(ceilf(bs.agentHeight / cfg.ch));
+  cfg.walkableClimb = static_cast<int>(floorf(bs.agentMaxClimb / cfg.ch));
+  cfg.walkableRadius = static_cast<int>(ceilf(bs.agentRadius / cfg.cs));
+  cfg.maxEdgeLen = static_cast<int>(bs.edgeMaxLen / bs.cellSize);
   cfg.maxSimplificationError = bs.edgeMaxError;
-  cfg.minRegionArea = (int)rcSqr(bs.regionMinSize);  // Note: area = size*size
+  cfg.minRegionArea =
+      static_cast<int>(rcSqr(bs.regionMinSize));  // Note: area = size*size
   cfg.mergeRegionArea =
-      (int)rcSqr(bs.regionMergeSize);  // Note: area = size*size
-  cfg.maxVertsPerPoly = (int)bs.vertsPerPoly;
+      static_cast<int>(rcSqr(bs.regionMergeSize));  // Note: area = size*size
+  cfg.maxVertsPerPoly = static_cast<int>(bs.vertsPerPoly);
   cfg.detailSampleDist =
       bs.detailSampleDist < 0.9f ? 0 : bs.cellSize * bs.detailSampleDist;
   cfg.detailSampleMaxError = bs.cellHeight * bs.detailSampleMaxError;
@@ -703,8 +704,8 @@ bool PathFinder::loadNavMesh(const std::string& path) {
     if (!tileHeader.tileRef || !tileHeader.dataSize)
       break;
 
-    unsigned char* data =
-        (unsigned char*)dtAlloc(tileHeader.dataSize, DT_ALLOC_PERM);
+    unsigned char* data = static_cast<unsigned char*>(
+        dtAlloc(tileHeader.dataSize, DT_ALLOC_PERM));
     if (!data)
       break;
     memset(data, 0, tileHeader.dataSize);
@@ -738,7 +739,8 @@ bool PathFinder::loadNavMesh(const std::string& path) {
 }
 
 bool PathFinder::saveNavMesh(const std::string& path) {
-  if (!navMesh_)
+  const dtNavMesh* navMesh = navMesh_;
+  if (!navMesh)
     return false;
 
   FILE* fp = fopen(path.c_str(), "wb");
@@ -750,23 +752,23 @@ bool PathFinder::saveNavMesh(const std::string& path) {
   header.magic = NAVMESHSET_MAGIC;
   header.version = NAVMESHSET_VERSION;
   header.numTiles = 0;
-  for (int i = 0; i < navMesh_->getMaxTiles(); ++i) {
-    const dtMeshTile* tile = ((const dtNavMesh*)navMesh_)->getTile(i);
+  for (int i = 0; i < navMesh->getMaxTiles(); ++i) {
+    const dtMeshTile* tile = navMesh->getTile(i);
     if (!tile || !tile->header || !tile->dataSize)
       continue;
     header.numTiles++;
   }
-  memcpy(&header.params, navMesh_->getParams(), sizeof(dtNavMeshParams));
+  memcpy(&header.params, navMesh->getParams(), sizeof(dtNavMeshParams));
   fwrite(&header, sizeof(NavMeshSetHeader), 1, fp);
 
   // Store tiles.
-  for (int i = 0; i < navMesh_->getMaxTiles(); ++i) {
-    const dtMeshTile* tile = ((const dtNavMesh*)navMesh_)->getTile(i);
+  for (int i = 0; i < navMesh->getMaxTiles(); ++i) {
+    const dtMeshTile* tile = navMesh->getTile(i);
     if (!tile || !tile->header || !tile->dataSize)
       continue;
 
     NavMeshTileHeader tileHeader;
-    tileHeader.tileRef = navMesh_->getTileRef(tile);
+    tileHeader.tileRef = navMesh->getTileRef(tile);
     tileHeader.dataSize = tile->dataSize;
     fwrite(&tileHeader, sizeof(tileHeader), 1, fp);
 
@@ -786,7 +788,7 @@ void PathFinder::seed(uint32_t newSeed) {
 
 // Returns a random number [0..1]
 static float frand() {
-  return (float)rand() / (float)RAND_MAX;
+  return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 }
 
 vec3f PathFinder::getRandomNavigablePoint() {
