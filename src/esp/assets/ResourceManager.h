@@ -100,20 +100,49 @@ class ResourceManager {
       DrawableGroup* drawables = nullptr,
       std::string physicsFilename = "data/default.phys_scene_config.json");
 
-  // load a PhysicsSceneMetaData object from a config file
+  /**
+   * @brief Load and parse a physics world config file and generates a @ref
+   * PhysicsManagerAttributes object.
+   * @param physicsFilename The config file.
+   * @return The resulting @ref PhysicsManagerAttributes object.
+   */
   PhysicsManagerAttributes loadPhysicsConfig(
       std::string physicsFilename = "data/default.phys_scene_config.json");
 
-  //! Load Object data and store internally
-  //! Does not instantiate (physics & drawable)
-  //! Return index in physicsObjectList_
+  /**
+   * @brief Load the drawable for an object from the @ref physicsObjectLibrary_
+   * into the scene graph. Attempts to load and parse the referenced object
+   * template file into the @ref physicsObjectLibrary_ if not already present.
+   * @param objPhysConfigFilename The string key for the object template in the
+   * @ref physicsObjectLibrary_.
+   * @param parent The parent @ref scene::SceneNode for the object.
+   * @param drawables The @ref DrawableGroup for the object drawable.
+   * @return the object's index in @ref physicsObjectList_
+   */
   int loadObject(const std::string& objPhysConfigFilename,
                  scene::SceneNode* parent,
                  DrawableGroup* drawables);
 
-  // load an object into the physicsObjectLibrary_ from a physics properties
-  // filename
+  /**
+   * @brief Load and parse a physics object template config file and generates a
+   * @ref PhysicsObjectAttributes object, adding it to the @ref
+   * physicsObjectLibrary_.
+   * @param objPhysConfigFilename The config file.
+   * @return The index in the @ref physicsObjectLibrary_ of the resulting @ref
+   * PhysicsObjectAttributes object.
+   */
   int loadObject(const std::string& objPhysConfigFilename);
+
+  /**
+   * @brief Add a @ref PhysicsObjectAttributes object to the @ref
+   * physicsObjectLibrary_. Can modify template values based on results of load.
+   * @param objectTemplateHandle The key for referencing the template in the
+   * @ref physicsObjectLibrary_.
+   * @param objectTemplate The object template.
+   * @return The index in the @ref physicsObjectLibrary_ of object template.
+   */
+  int loadObject(PhysicsObjectAttributes& objectTemplate,
+                 const std::string objectTemplateHandle);
 
   //======== Accessor functions ========
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
@@ -161,7 +190,7 @@ class ResourceManager {
   void addComponent(const MeshMetaData& metaData,
                     scene::SceneNode& parent,
                     DrawableGroup* drawables,
-                    MeshTransformNode& meshTransformNode);
+                    const MeshTransformNode& meshTransformNode);
 
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);
