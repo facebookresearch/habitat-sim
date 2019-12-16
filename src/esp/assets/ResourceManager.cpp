@@ -117,7 +117,6 @@ bool ResourceManager::loadScene(
   PhysicsManagerAttributes physicsManagerAttributes =
       loadPhysicsConfig(physicsFilename);
   physicsManagerLibrary_[physicsFilename] = physicsManagerAttributes;
-
   return loadScene(info, _physicsManager, physicsManagerAttributes, parent,
                    drawables);
 }
@@ -233,6 +232,8 @@ bool ResourceManager::loadScene(
 
 PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
     std::string physicsFilename) {
+  CHECK(Cr::Utility::Directory::exists(physicsFilename));
+
   // Load the global scene config JSON here
   io::JsonDocument scenePhysicsConfig = io::parseJsonFile(physicsFilename);
   // In-memory representation of scene meta data
@@ -390,6 +391,80 @@ PhysicsObjectAttributes& ResourceManager::getPhysicsObjectAttributes(
   return physicsObjectLibrary_[objectName];
 }
 
+int ResourceManager::loadObject(PhysicsObjectAttributes& objectTemplate,
+                                const std::string objectTemplateHandle) {
+  CHECK(physicsObjectLibrary_.count(objectTemplateHandle) == 0);
+  CHECK(objectTemplate.existsAs(STRING, "renderMeshHandle"));
+
+  // load/check_for render and collision mesh metadata
+  //! Get render mesh names
+  std::string renderMeshFilename = objectTemplate.getString("renderMeshHandle");
+  std::string collisionMeshFilename = "";
+
+  if (objectTemplate.existsAs(STRING, "collisionMeshHandle")) {
+    collisionMeshFilename = objectTemplate.getString("collisionMeshHandle");
+  }
+
+  bool renderMeshSuccess = false;
+  bool collisionMeshSuccess = false;
+  AssetInfo renderMeshinfo;
+  AssetInfo collisionMeshinfo;
+
+  //! Load rendering mesh
+  if (!renderMeshFilename.empty()) {
+    renderMeshinfo = assets::AssetInfo::fromPath(renderMeshFilename);
+    renderMeshSuccess = loadGeneralMeshData(renderMeshinfo);
+    if (!renderMeshSuccess) {
+      LOG(ERROR) << "Failed to load a physical object's render mesh: "
+                 << objectTemplateHandle << ", " << renderMeshFilename;
+    }
+  }
+  //! Load collision mesh
+  if (!collisionMeshFilename.empty()) {
+    collisionMeshinfo = assets::AssetInfo::fromPath(collisionMeshFilename);
+    collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo);
+    if (!collisionMeshSuccess) {
+      LOG(ERROR) << "Failed to load a physical object's collision mesh: "
+                 << objectTemplateHandle << ", " << collisionMeshFilename;
+    }
+  }
+
+  if (!renderMeshSuccess && !collisionMeshSuccess) {
+    // we only allow objects with SOME mesh file. Failing
+    // both loads or having no mesh will cancel the load.
+    LOG(ERROR) << "Failed to load a physical object: no meshes...: "
+               << objectTemplateHandle;
+    return ID_UNDEFINED;
+  }
+
+  // handle one missing mesh
+  if (!renderMeshSuccess)
+    objectTemplate.setString("renderMeshHandle", collisionMeshFilename);
+  if (!collisionMeshSuccess)
+    objectTemplate.setString("collisionMeshHandle", renderMeshFilename);
+
+  // cache metaData, collision mesh Group
+  physicsObjectLibrary_.emplace(objectTemplateHandle, objectTemplate);
+  MeshMetaData& meshMetaData =
+      resourceDict_.at(objectTemplate.getString("collisionMeshHandle"));
+
+  int start = meshMetaData.meshIndex.first;
+  int end = meshMetaData.meshIndex.second;
+  //! Gather mesh components for meshGroup data
+  std::vector<CollisionMeshData> meshGroup;
+  for (int mesh_i = start; mesh_i <= end; mesh_i++) {
+    GltfMeshData* gltfMeshData =
+        dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
+    CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
+    meshGroup.push_back(meshData);
+  }
+  collisionMeshGroups_.emplace(objectTemplateHandle, meshGroup);
+  physicsObjectConfigList_.push_back(objectTemplateHandle);
+
+  int objectID = physicsObjectConfigList_.size() - 1;
+  return objectID;
+}
+
 // load object from config filename
 int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
   // check for duplicate load
@@ -500,8 +575,19 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
     }
   }
 
-  // 3. load/check_for render and collision mesh metadata
-  //! Get render mesh names
+  //! Get collision configuration options if specified
+  if (objPhysicsConfig.HasMember("join collision meshes")) {
+    if (objPhysicsConfig["join collision meshes"].IsBool()) {
+      physicsObjectAttributes.setBool(
+          "joinCollisionMeshes",
+          objPhysicsConfig["join collision meshes"].GetBool());
+    } else {
+      LOG(ERROR)
+          << " Invalid value in object physics config - join collision meshes";
+    }
+  }
+
+  // 4. parse render and collision mesh filepaths
   std::string renderMeshFilename = "";
   std::string collisionMeshFilename = "";
 
@@ -523,70 +609,12 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
     }
   }
 
-  bool renderMeshSuccess = false;
-  bool collisionMeshSuccess = false;
-  AssetInfo renderMeshinfo;
-  AssetInfo collisionMeshinfo;
-
-  //! Load rendering mesh
-  if (!renderMeshFilename.empty()) {
-    renderMeshinfo = assets::AssetInfo::fromPath(renderMeshFilename);
-    renderMeshSuccess = loadGeneralMeshData(renderMeshinfo);
-    if (!renderMeshSuccess) {
-      LOG(ERROR) << "Failed to load a physical object's render mesh: "
-                 << objPhysConfigFilename << ", " << renderMeshFilename;
-    }
-  }
-  //! Load collision mesh
-  if (!collisionMeshFilename.empty()) {
-    collisionMeshinfo = assets::AssetInfo::fromPath(collisionMeshFilename);
-    collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo);
-    if (!collisionMeshSuccess) {
-      LOG(ERROR) << "Failed to load a physical object's collision mesh: "
-                 << objPhysConfigFilename << ", " << collisionMeshFilename;
-    }
-  }
-
-  if (!renderMeshSuccess && !collisionMeshSuccess) {
-    // we only allow objects with SOME mesh file. Failing
-    // both loads or having no mesh will cancel the load.
-    LOG(ERROR) << "Failed to load a physical object: no meshes...: "
-               << objPhysConfigFilename;
-    return ID_UNDEFINED;
-  }
-
   physicsObjectAttributes.setString("renderMeshHandle", renderMeshFilename);
   physicsObjectAttributes.setString("collisionMeshHandle",
                                     collisionMeshFilename);
 
-  // handle one missing mesh
-  if (!renderMeshSuccess)
-    physicsObjectAttributes.setString("renderMeshHandle",
-                                      collisionMeshFilename);
-  if (!collisionMeshSuccess)
-    physicsObjectAttributes.setString("collisionMeshHandle",
-                                      renderMeshFilename);
-
-  // 5. cache metaData, collision mesh Group
-  physicsObjectLibrary_.emplace(objPhysConfigFilename, physicsObjectAttributes);
-  MeshMetaData& meshMetaData = resourceDict_.at(
-      physicsObjectAttributes.getString("collisionMeshHandle"));
-
-  int start = meshMetaData.meshIndex.first;
-  int end = meshMetaData.meshIndex.second;
-  //! Gather mesh components for meshGroup data
-  std::vector<CollisionMeshData> meshGroup;
-  for (int mesh_i = start; mesh_i <= end; mesh_i++) {
-    GltfMeshData* gltfMeshData =
-        dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
-    CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
-    meshGroup.push_back(meshData);
-  }
-  collisionMeshGroups_.emplace(objPhysConfigFilename, meshGroup);
-  physicsObjectConfigList_.push_back(objPhysConfigFilename);
-
-  int objectID = physicsObjectConfigList_.size() - 1;
-  return objectID;
+  // 5. load the parsed file into the library
+  return loadObject(physicsObjectAttributes, objPhysConfigFilename);
 }
 
 const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(

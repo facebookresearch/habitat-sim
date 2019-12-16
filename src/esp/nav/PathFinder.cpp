@@ -253,15 +253,16 @@ bool PathFinder::build(const NavMeshSettings& bs,
   cfg.cs = bs.cellSize;
   cfg.ch = bs.cellHeight;
   cfg.walkableSlopeAngle = bs.agentMaxSlope;
-  cfg.walkableHeight = (int)ceilf(bs.agentHeight / cfg.ch);
-  cfg.walkableClimb = (int)floorf(bs.agentMaxClimb / cfg.ch);
-  cfg.walkableRadius = (int)ceilf(bs.agentRadius / cfg.cs);
-  cfg.maxEdgeLen = (int)(bs.edgeMaxLen / bs.cellSize);
+  cfg.walkableHeight = static_cast<int>(ceilf(bs.agentHeight / cfg.ch));
+  cfg.walkableClimb = static_cast<int>(floorf(bs.agentMaxClimb / cfg.ch));
+  cfg.walkableRadius = static_cast<int>(ceilf(bs.agentRadius / cfg.cs));
+  cfg.maxEdgeLen = static_cast<int>(bs.edgeMaxLen / bs.cellSize);
   cfg.maxSimplificationError = bs.edgeMaxError;
-  cfg.minRegionArea = (int)rcSqr(bs.regionMinSize);  // Note: area = size*size
+  cfg.minRegionArea =
+      static_cast<int>(rcSqr(bs.regionMinSize));  // Note: area = size*size
   cfg.mergeRegionArea =
-      (int)rcSqr(bs.regionMergeSize);  // Note: area = size*size
-  cfg.maxVertsPerPoly = (int)bs.vertsPerPoly;
+      static_cast<int>(rcSqr(bs.regionMergeSize));  // Note: area = size*size
+  cfg.maxVertsPerPoly = static_cast<int>(bs.vertsPerPoly);
   cfg.detailSampleDist =
       bs.detailSampleDist < 0.9f ? 0 : bs.cellSize * bs.detailSampleDist;
   cfg.detailSampleMaxError = bs.cellHeight * bs.detailSampleMaxError;
@@ -597,7 +598,65 @@ struct NavMeshTileHeader {
   dtTileRef tileRef;
   int dataSize;
 };
+
+// Calculate the area of a polygon by iterating over the triangles in the detail
+// mesh and computing their area
+float polyArea(const dtPoly* poly, const dtMeshTile* tile) {
+  float area = 0;
+  // Code to iterate over triangles from here:
+  // https://github.com/recastnavigation/recastnavigation/blob/57610fa6ef31b39020231906f8c5d40eaa8294ae/Detour/Source/DetourNavMesh.cpp#L684
+  const std::ptrdiff_t ip = poly - tile->polys;
+  const dtPolyDetail* pd = &tile->detailMeshes[ip];
+  for (int j = 0; j < pd->triCount; ++j) {
+    const unsigned char* t = &tile->detailTris[(pd->triBase + j) * 4];
+    const float* v[3];
+    for (int k = 0; k < 3; ++k) {
+      if (t[k] < poly->vertCount)
+        v[k] = &tile->verts[poly->verts[t[k]] * 3];
+      else
+        v[k] =
+            &tile->detailVerts[(pd->vertBase + (t[k] - poly->vertCount)) * 3];
+    }
+
+    const vec3f w1 =
+        Eigen::Map<const vec3f>(v[1]) - Eigen::Map<const vec3f>(v[0]);
+    const vec3f w2 =
+        Eigen::Map<const vec3f>(v[2]) - Eigen::Map<const vec3f>(v[0]);
+    area += 0.5 * w1.cross(w2).norm();
+  }
+
+  return area;
+}
 }  // namespace
+
+// Some polygons have zero area for some reason.  When we navigate into a zero
+// area polygon, things crash.  So we find all zero area polygons and mark
+// them as disabled/not navigable.
+void PathFinder::removeZeroAreaPolys() {
+  // Iterate over all tiles
+  for (int iTile = 0; iTile < navMesh_->getMaxTiles(); ++iTile) {
+    const dtMeshTile* tile =
+        const_cast<const dtNavMesh*>(navMesh_)->getTile(iTile);
+    if (!tile)
+      continue;
+
+    // Iterate over all polygons in a tile
+    for (int jPoly = 0; jPoly < tile->header->polyCount; ++jPoly) {
+      // Get the polygon reference from the tile and polygon id
+      dtPolyRef polyRef = navMesh_->encodePolyId(iTile, tile->salt, jPoly);
+      const dtPoly* poly = nullptr;
+      const dtMeshTile* tmp = nullptr;
+      navMesh_->getTileAndPolyByRefUnsafe(polyRef, &tmp, &poly);
+
+      CORRADE_INTERNAL_ASSERT(poly != nullptr);
+      CORRADE_INTERNAL_ASSERT(tmp != nullptr);
+
+      if (polyArea(poly, tile) < 1e-5) {
+        navMesh_->setPolyFlags(polyRef, POLYFLAGS_DISABLED);
+      }
+    }
+  }
+}
 
 bool PathFinder::loadNavMesh(const std::string& path) {
   FILE* fp = fopen(path.c_str(), "rb");
@@ -645,8 +704,8 @@ bool PathFinder::loadNavMesh(const std::string& path) {
     if (!tileHeader.tileRef || !tileHeader.dataSize)
       break;
 
-    unsigned char* data =
-        (unsigned char*)dtAlloc(tileHeader.dataSize, DT_ALLOC_PERM);
+    unsigned char* data = static_cast<unsigned char*>(
+        dtAlloc(tileHeader.dataSize, DT_ALLOC_PERM));
     if (!data)
       break;
     memset(data, 0, tileHeader.dataSize);
@@ -673,11 +732,15 @@ bool PathFinder::loadNavMesh(const std::string& path) {
 
   navMesh_ = mesh;
   bounds_ = std::make_pair(bmin, bmax);
+
+  removeZeroAreaPolys();
+
   return initNavQuery();
 }
 
 bool PathFinder::saveNavMesh(const std::string& path) {
-  if (!navMesh_)
+  const dtNavMesh* navMesh = navMesh_;
+  if (!navMesh)
     return false;
 
   FILE* fp = fopen(path.c_str(), "wb");
@@ -689,23 +752,23 @@ bool PathFinder::saveNavMesh(const std::string& path) {
   header.magic = NAVMESHSET_MAGIC;
   header.version = NAVMESHSET_VERSION;
   header.numTiles = 0;
-  for (int i = 0; i < navMesh_->getMaxTiles(); ++i) {
-    const dtMeshTile* tile = ((const dtNavMesh*)navMesh_)->getTile(i);
+  for (int i = 0; i < navMesh->getMaxTiles(); ++i) {
+    const dtMeshTile* tile = navMesh->getTile(i);
     if (!tile || !tile->header || !tile->dataSize)
       continue;
     header.numTiles++;
   }
-  memcpy(&header.params, navMesh_->getParams(), sizeof(dtNavMeshParams));
+  memcpy(&header.params, navMesh->getParams(), sizeof(dtNavMeshParams));
   fwrite(&header, sizeof(NavMeshSetHeader), 1, fp);
 
   // Store tiles.
-  for (int i = 0; i < navMesh_->getMaxTiles(); ++i) {
-    const dtMeshTile* tile = ((const dtNavMesh*)navMesh_)->getTile(i);
+  for (int i = 0; i < navMesh->getMaxTiles(); ++i) {
+    const dtMeshTile* tile = navMesh->getTile(i);
     if (!tile || !tile->header || !tile->dataSize)
       continue;
 
     NavMeshTileHeader tileHeader;
-    tileHeader.tileRef = navMesh_->getTileRef(tile);
+    tileHeader.tileRef = navMesh->getTileRef(tile);
     tileHeader.dataSize = tile->dataSize;
     fwrite(&tileHeader, sizeof(tileHeader), 1, fp);
 
@@ -725,7 +788,7 @@ void PathFinder::seed(uint32_t newSeed) {
 
 // Returns a random number [0..1]
 static float frand() {
-  return (float)rand() / (float)RAND_MAX;
+  return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 }
 
 vec3f PathFinder::getRandomNavigablePoint() {

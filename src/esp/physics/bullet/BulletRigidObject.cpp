@@ -50,9 +50,8 @@ bool BulletRigidObject::initializeScene(
 
   bSceneArray_ = std::make_unique<btTriangleIndexVertexArray>();
   bObjectShape_ = std::make_unique<btCompoundShape>();
-  // TODO: this should translate to the COM
-  constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup,
-                                    metaData.root);
+  constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup, metaData.root,
+                                    false);
 
   bSceneCollisionObjects_.emplace_back(std::make_unique<btCollisionObject>());
   bSceneCollisionObjects_.back()->setCollisionShape(bObjectShape_.get());
@@ -72,7 +71,8 @@ bool BulletRigidObject::initializeScene(
 void BulletRigidObject::constructBulletCompoundFromMeshes(
     const Magnum::Matrix4& transformFromParentToWorld,
     const std::vector<assets::CollisionMeshData>& meshGroup,
-    const assets::MeshTransformNode& node) {
+    const assets::MeshTransformNode& node,
+    bool join) {
   Magnum::Matrix4 transformFromLocalToWorld =
       transformFromParentToWorld * node.transformFromLocalToParent;
   if (node.meshIDLocal != ID_UNDEFINED) {
@@ -82,14 +82,30 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
 
     if (rigidObjectType_ == RigidObjectType::OBJECT) {
       // OBJECT: create a convex
+      if (join) {
+        // add all points to a single convex instead of compounding (more
+        // stable)
+        if (bObjectConvexShapes_.empty()) {
+          // create the convex if it does not exist
+          bObjectConvexShapes_.emplace_back(
+              std::make_unique<btConvexHullShape>());
+        }
 
-      bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
-          static_cast<const btScalar*>(mesh.positions.data()->data()),
-          mesh.positions.size(), sizeof(Magnum::Vector3)));
+        // add points
+        for (auto& v : mesh.positions) {
+          bObjectConvexShapes_.back()->addPoint(
+              btVector3(transformFromLocalToWorld.transformPoint(v)), false);
+        }
+        bObjectConvexShapes_.back()->recalcLocalAabb();
+      } else {
+        bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
+            static_cast<const btScalar*>(mesh.positions.data()->data()),
+            mesh.positions.size(), sizeof(Magnum::Vector3)));
 
-      //! Add to compound shape stucture
-      bObjectShape_->addChildShape(btTransform{transformFromLocalToWorld},
-                                   bObjectConvexShapes_.back().get());
+        //! Add to compound shape stucture
+        bObjectShape_->addChildShape(btTransform{transformFromLocalToWorld},
+                                     bObjectConvexShapes_.back().get());
+      }
     } else {
       // SCENE: create a concave static mesh
       btIndexedMesh bulletMesh;
@@ -126,7 +142,7 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
 
   for (auto& child : node.children) {
     constructBulletCompoundFromMeshes(transformFromLocalToWorld, meshGroup,
-                                      child);
+                                      child, join);
   }
 }
 
@@ -147,12 +163,22 @@ bool BulletRigidObject::initializeObject(
   //! Physical parameters
   double margin = physicsObjectAttributes.getDouble("margin");
 
+  bool joinCollisionMeshes =
+      physicsObjectAttributes.getBool("joinCollisionMeshes");
+
   //! Iterate through all mesh components for one object
   //! The components are combined into a convex compound shape
   bObjectShape_ = std::make_unique<btCompoundShape>();
   // TODO: this should translate to the COM
-  constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup,
-                                    metaData.root);
+  constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup, metaData.root,
+                                    joinCollisionMeshes);
+
+  // add the final object after joining meshes
+  if (joinCollisionMeshes) {
+    btTransform t;
+    t.setIdentity();
+    bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
+  }
 
   //! Set properties
   bObjectShape_->setMargin(margin);
