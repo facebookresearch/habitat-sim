@@ -25,6 +25,7 @@
   },
   "scripts": {
     "test": "jest ./src/esp/bindings_js/tests/",
+    "test_with_coverage": "jest ./src/esp/bindings_js/tests/ --collectCoverage",
     "format": "prettier --trailing-comma es5 --single-quote './src/esp/bindings_js/**/*.js'",
     "build": "webpack --config ./src/esp/bindings_js/webpack.config.js",
     "lint": "eslint --ext .html,.js ./src/esp/bindings_js",
@@ -33,6 +34,15 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/facebookresearch/habitat-sim.git"
+  },
+  "jest": {
+    "collectCoverage": false,
+    "collectCoverageFrom": [
+      "./src/esp/bindings_js/**/*.{js,jsx}",
+      "!**/node_modules/**",
+      "!**/webpack.config.js"
+    ],
+    "coverageDirectory": "./coverage_js"
   },
   "babel": {
     "presets": [
