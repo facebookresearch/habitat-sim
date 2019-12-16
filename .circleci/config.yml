@@ -16,6 +16,7 @@ jobs:
       - run:
           name: setup
           command: |
+              sudo apt-get install software-properties-common
               sudo add-apt-repository ppa:deadsnakes/ppa
               sudo apt-get update || true
               sudo apt-get install -y python3.6-dev
