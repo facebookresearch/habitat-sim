@@ -1,5 +1,6 @@
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebookresearch/habitat-sim/blob/master/LICENSE)
 [![CircleCI](https://circleci.com/gh/facebookresearch/habitat-sim.svg?style=shield)](https://circleci.com/gh/facebookresearch/habitat-sim)
+[![codecov](https://codecov.io/gh/facebookresearch/habitat-sim/branch/master/graph/badge.svg)](https://codecov.io/gh/facebookresearch/habitat-sim)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebookresearch/habitat-sim/blob/master/LICENSE)
 
 # Habitat-Sim
 
@@ -151,7 +152,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 1. Clone this github repository.
    ```bash
    # Checkout the latest stable release
-   git clone --branch stable git@github.com:facebookresearch/habitat-sim.git
+   git clone --branch stable https://github.com/facebookresearch/habitat-sim.git
    cd habitat-sim
    ```
 

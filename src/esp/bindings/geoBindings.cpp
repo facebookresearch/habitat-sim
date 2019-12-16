@@ -2,20 +2,34 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "esp/bindings/OpaqueTypes.h"
+#include "esp/bindings/bindings.h"
+
+#include "esp/geo/OBB.h"
+#include "esp/geo/geo.h"
 
 namespace py = pybind11;
-using namespace py::literals;
 
-#include "esp/geo/geo.h"
+namespace esp {
+namespace geo {
 
 void initGeoBindings(py::module& m) {
   auto geo = m.def_submodule("geo");
 
-  geo.attr("UP") = esp::geo::ESP_UP;
-  geo.attr("GRAVITY") = esp::geo::ESP_GRAVITY;
-  geo.attr("FRONT") = esp::geo::ESP_FRONT;
-  geo.attr("BACK") = esp::geo::ESP_BACK;
-  geo.attr("LEFT") = esp::geo::ESP_FRONT.cross(esp::geo::ESP_GRAVITY);
-  geo.attr("RIGHT") = esp::geo::ESP_FRONT.cross(esp::geo::ESP_UP);
+  geo.attr("UP") = ESP_UP;
+  geo.attr("GRAVITY") = ESP_GRAVITY;
+  geo.attr("FRONT") = ESP_FRONT;
+  geo.attr("BACK") = ESP_BACK;
+  geo.attr("LEFT") = ESP_FRONT.cross(ESP_GRAVITY);
+  geo.attr("RIGHT") = ESP_FRONT.cross(ESP_UP);
+
+  // ==== OBB ====
+  py::class_<OBB>(m, "OBB")
+      .def_property_readonly("center", &OBB::center)
+      .def_property_readonly("sizes", &OBB::sizes)
+      .def_property_readonly("half_extents", &OBB::halfExtents)
+      .def_property_readonly(
+          "rotation", [](const OBB& self) { return self.rotation().coeffs(); });
 }
+
+}  // namespace geo
+}  // namespace esp
