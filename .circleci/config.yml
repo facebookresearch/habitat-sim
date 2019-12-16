@@ -301,13 +301,14 @@ jobs:
               . activate habitat; cd habitat-sim
               #Uploading test coverage for Python code
               bash <(curl -s https://codecov.io/bash) -f coverage.xml -cF Python
+
+              # Uploading test coverage for JS code
+              bash <(curl -s https://codecov.io/bash) -f coverage_js/coverage-final.json -cF JavaScript
+
               #Uploading test coverage for C++ code
               lcov --directory . --capture --output-file coverage.info
               lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
               bash <(curl -s https://codecov.io/bash) -f coverage.info -cF C++
-
-              # Uploading test coverage for JS code
-              base <(curl -s https://codecov.io/bash) -f coverage_js/coverage-final.json -cF JavaScript
       - run:
           name: Install api
           command: |
