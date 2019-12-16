@@ -308,7 +308,7 @@ jobs:
               #Uploading test coverage for C++ code
               lcov --directory . --capture --output-file coverage.info
               lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
-              bash <(curl -s https://codecov.io/bash) -f coverage.info -cF C++
+              bash <(curl -s https://codecov.io/bash) -f coverage.info -cF CPP
       - run:
           name: Install api
           command: |
