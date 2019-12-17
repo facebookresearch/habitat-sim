@@ -9,7 +9,7 @@
 #include "SceneLoader.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader.h"
+#include <tiny_obj_loader.h>
 
 #include "esp/assets/Mp3dInstanceMeshData.h"
 #include "esp/core/esp.h"
