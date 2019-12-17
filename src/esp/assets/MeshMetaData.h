@@ -26,7 +26,7 @@ struct MeshTransformNode {
   std::vector<MeshTransformNode> children;
 
   //! Node local transform to the parent frame
-  Magnum::Matrix4 T_parent_local;
+  Magnum::Matrix4 transformFromLocalToParent;
 
   MeshTransformNode() {
     meshIDLocal = ID_UNDEFINED;
