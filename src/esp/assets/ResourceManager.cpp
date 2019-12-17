@@ -729,8 +729,8 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
     const quatf transform = info.frame.rotationFrameToWorld();
     Magnum::Matrix4 R = Magnum::Matrix4::from(
         Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-    resourceDict_[filename].root.T_parent_local =
-        R * resourceDict_[filename].root.T_parent_local;
+    resourceDict_[filename].root.transformFromLocalToParent =
+        R * resourceDict_[filename].root.transformFromLocalToParent;
   }
 
   // create the scene graph by request
@@ -944,8 +944,8 @@ bool ResourceManager::loadGeneralMeshData(
     const quatf transform = info.frame.rotationFrameToWorld();
     Magnum::Matrix4 R = Magnum::Matrix4::from(
         Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-    resourceDict_[filename].root.T_parent_local =
-        R * resourceDict_[filename].root.T_parent_local;
+    resourceDict_[filename].root.transformFromLocalToParent =
+        R * resourceDict_[filename].root.transformFromLocalToParent;
   } else {
     metaData = resourceDict_[filename];
   }
@@ -1041,7 +1041,8 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
 
   // Add the new node to the hierarchy and set its transformation
   parent.children.push_back(MeshTransformNode());
-  parent.children.back().T_parent_local = objectData->transformation();
+  parent.children.back().transformFromLocalToParent =
+      objectData->transformation();
   parent.children.back().componentID = componentID;
 
   const int meshIDLocal = objectData->instance();
@@ -1132,7 +1133,8 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
                                    const MeshTransformNode& meshTransformNode) {
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
-  node.MagnumObject::setTransformation(meshTransformNode.T_parent_local);
+  node.MagnumObject::setTransformation(
+      meshTransformNode.transformFromLocalToParent);
 
   const int meshIDLocal = meshTransformNode.meshIDLocal;
 
