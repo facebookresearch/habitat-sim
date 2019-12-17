@@ -381,8 +381,7 @@ void Viewer::drawEvent() {
     return;
 
   if (physicsManager_ != nullptr)
-    // physicsManager_->stepPhysics(timeline_.previousFrameDuration());
-    physicsManager_->stepPhysics(0.1);
+    physicsManager_->stepPhysics(timeline_.previousFrameDuration());
 
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];

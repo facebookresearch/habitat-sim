@@ -255,6 +255,18 @@ jobs:
                 cd ..
               fi
       - run:
+          name: Build Javascript bindings
+          command: |
+              # wait for npm and emscripten install
+              while [[ ! -f ~/emscripten_installed && ! -f ~/npm_deps_installed ]]; do sleep 2; done
+              cd habitat-sim
+              . ~/.bashrc
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat
+              export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
+              nvm use v11.9.0
+              ./build_js.sh
+      - run:
           name: Run sim benchmark
           command: |
               while [ ! -f ./cuda_installed ]; do sleep 2; done # wait for CUDA
@@ -278,6 +290,9 @@ jobs:
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
               pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+
+              # Generate JS CodeConv
+              npm run test_with_coverage
       - run:
           name: Upload test coverage
           background: true
@@ -285,23 +300,15 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
               #Uploading test coverage for Python code
-              bash <(curl -s https://codecov.io/bash) -f coverage.xml
+              bash <(curl -s https://codecov.io/bash) -f coverage.xml -cF Python
+
+              # Uploading test coverage for JS code
+              bash <(curl -s https://codecov.io/bash) -f coverage_js/coverage-final.json -cF JavaScript
+
               #Uploading test coverage for C++ code
               lcov --directory . --capture --output-file coverage.info
               lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
-              bash <(curl -s https://codecov.io/bash) -f coverage.info
-      - run:
-          name: Build Javascript bindings
-          command: |
-              # wait for npm and emscripten install
-              while [[ ! -f ~/emscripten_installed && ! -f ~/npm_deps_installed ]]; do sleep 2; done
-              cd habitat-sim
-              . ~/.bashrc
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat
-              export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
-              nvm use v11.9.0
-              ./build_js.sh
+              bash <(curl -s https://codecov.io/bash) -f coverage.info -cF CPP
       - run:
           name: Install api
           command: |
