@@ -90,14 +90,15 @@ int createGibsonSemanticMesh(const std::string& objFile,
   f << "property ushort object_id" << std::endl;
   f << "end_header" << std::endl;
 
-  // We need to swap Y and Z to match the .glb files
+  // We need to rotate to match .glb where -Z is gravity
+  const auto transform =
+      esp::quatf::FromTwoVectors(esp::vec3f::UnitY(), esp::vec3f::UnitZ());
   for (size_t i = 0; i < numVerts; i++) {
-    float xyz[3];
     unsigned char gray[] = {0x80, 0x80, 0x80};
-    xyz[0] = attrib.vertices[i * 3];
-    xyz[1] = -attrib.vertices[i * 3 + 2];
-    xyz[2] = attrib.vertices[i * 3 + 1];
-    f.write(reinterpret_cast<char*>(xyz), sizeof(float) * 3);
+    float* components = &attrib.vertices[i * 3];
+    esp::vec3f vertex(components[0], components[1], components[2]);
+    vertex = transform * vertex;
+    f.write(reinterpret_cast<char*>(vertex.data()), sizeof(float) * 3);
     f.write(reinterpret_cast<char*>(gray), sizeof(gray));
   }
 
