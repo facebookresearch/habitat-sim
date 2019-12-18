@@ -275,14 +275,16 @@ class Simulator {
   double getWorldTime();
 
   /**
-   * @brief Compute the navmesh for the simulator's current active scene.
+   * @brief Compute the navmesh for the simulator's current active scene and
+   * assign it to the referenced @ref nav::PathFinder.
+   * @param pathfinder The pathfinder object to which the recomputed navmesh
+   * will be assigned.
    * @param navMeshSettings The @ref nav::NavMeshSettings instance to
    * parameterize the navmesh construction.
-   * @return The resulting completed @ref Pathfinder object or nullptr if
-   * failed.
+   * @return Whether or not the navmesh recomputation succeeded.
    */
-  std::shared_ptr<nav::PathFinder> recomputeNavMesh(
-      const nav::NavMeshSettings& navMeshSettings);
+  bool recomputeNavMesh(nav::PathFinder& pathfinder,
+                        const nav::NavMeshSettings& navMeshSettings);
 
  protected:
   Simulator(){};

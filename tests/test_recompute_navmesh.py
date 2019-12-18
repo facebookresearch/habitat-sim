@@ -59,13 +59,13 @@ def test_recompute_navmesh(test_scene, sim):
 
     navmesh_settings = habitat_sim.NavMeshSettings()
     navmesh_settings.set_defaults()
-    sim.recompute_navmesh(navmesh_settings)
+    assert sim.recompute_navmesh(sim.pathfinder, navmesh_settings)
     assert sim.pathfinder.is_loaded
 
     recomputed_navmesh_results = get_shortest_path(sim, samples)
 
     navmesh_settings.agent_radius *= 2.0
-    sim.recompute_navmesh(navmesh_settings)
+    assert sim.recompute_navmesh(sim.pathfinder, navmesh_settings)
     assert sim.pathfinder.is_loaded  # this may not always be viable...
 
     recomputed_2rad_navmesh_results = get_shortest_path(sim, samples)

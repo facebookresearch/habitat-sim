@@ -194,7 +194,7 @@ void initGfxBindings(py::module& m) {
            "relative_position"_a, "object_id"_a, "sceneID"_a = 0)
       .def("apply_torque", &Simulator::applyTorque, "torque"_a, "object_id"_a,
            "sceneID"_a = 0)
-      .def("recompute_navmesh", &Simulator::recomputeNavMesh,
+      .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
            "navmesh_settings"_a);
 }
 

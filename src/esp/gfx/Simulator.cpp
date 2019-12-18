@@ -350,20 +350,18 @@ double Simulator::getWorldTime() {
   return NO_TIME;
 }
 
-std::shared_ptr<nav::PathFinder> Simulator::recomputeNavMesh(
-    const nav::NavMeshSettings& navMeshSettings) {
-  std::shared_ptr<nav::PathFinder> pf = std::make_shared<nav::PathFinder>();
-
+bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
+                                 const nav::NavMeshSettings& navMeshSettings) {
   std::shared_ptr<assets::MeshData> joinedMesh =
       resourceManager_.joinMesh(config_.scene.id);
 
-  if (!pf->build(navMeshSettings, *joinedMesh)) {
+  if (!pathfinder.build(navMeshSettings, *joinedMesh)) {
     LOG(ERROR) << "Failed to build navmesh";
-    return nullptr;
+    return false;
   }
 
   LOG(INFO) << "reconstruct navmesh successful";
-  return pf;
+  return true;
 }
 
 }  // namespace gfx
