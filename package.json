@@ -5,6 +5,7 @@
   "devDependencies": {
     "@babel/core": "^7.6.0",
     "@babel/plugin-proposal-class-properties": "^7.5.5",
+    "@babel/plugin-transform-runtime": "^7.7.6",
     "@babel/preset-env": "^7.6.0",
     "babel-eslint": "^10.0.3",
     "babel-loader": "^8.0.6",
@@ -15,10 +16,14 @@
     "eslint-loader": "^3.0.0",
     "eslint-plugin-html": "^6.0.0",
     "eslint-plugin-prettier": "^3.1.0",
+    "finalhandler": "^1.1.2",
     "html-webpack-plugin": "^3.2.0",
     "jest": "^24.9.0",
+    "jest-image-snapshot": "^2.11.1",
     "minimist": "^1.2.0",
     "prettier": "^1.18.2",
+    "puppeteer": "^2.0.0",
+    "serve-static": "^1.14.1",
     "style-loader": "^1.0.0",
     "webpack": "^4.40.2",
     "webpack-cli": "^3.3.9"
@@ -49,7 +54,8 @@
       "@babel/preset-env"
     ],
     "plugins": [
-      "@babel/plugin-proposal-class-properties"
+      "@babel/plugin-proposal-class-properties",
+      "@babel/plugin-transform-runtime"
     ],
     "env": {
       "test": {
@@ -70,5 +76,9 @@
   "bugs": {
     "url": "https://github.com/facebookresearch/habitat-sim/issues"
   },
-  "homepage": "https://github.com/facebookresearch/habitat-sim#readme"
+  "homepage": "https://github.com/facebookresearch/habitat-sim#readme",
+  "dependencies": {
+    "@babel/runtime": "^7.7.6",
+    "connect": "^3.7.0"
+  }
 }
