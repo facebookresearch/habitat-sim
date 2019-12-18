@@ -316,8 +316,8 @@ void Viewer::recomputeNavMesh(const std::string& sceneFilename,
                               nav::NavMeshSettings& navMeshSettings) {
   std::shared_ptr<nav::PathFinder> pf = std::make_shared<nav::PathFinder>();
 
-  std::shared_ptr<assets::MeshData> joinedMesh =
-      resourceManager_.joinMesh(sceneFilename);
+  std::unique_ptr<assets::MeshData> joinedMesh =
+      resourceManager_.createJoinedCollisionMesh(sceneFilename);
 
   if (!pf->build(navMeshSettings, *joinedMesh)) {
     LOG(ERROR) << "Failed to build navmesh";

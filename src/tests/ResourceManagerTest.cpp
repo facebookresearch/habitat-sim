@@ -21,7 +21,7 @@ using esp::scene::SceneManager;
 
 const std::string dataDir = Cr::Utility::Directory::join(SCENE_DATASETS, "../");
 
-TEST(ResourceManagerTest, JoinMesh) {
+TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
 
@@ -40,8 +40,8 @@ TEST(ResourceManagerTest, JoinMesh) {
   const esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(boxFile);
   resourceManager.loadScene(info, navSceneNode, nullptr);
 
-  std::shared_ptr<esp::assets::MeshData> joinedBox =
-      resourceManager.joinMesh(boxFile);
+  std::unique_ptr<esp::assets::MeshData> joinedBox =
+      resourceManager.createJoinedCollisionMesh(boxFile);
 
   // transform_box.glb is composed of 6 identical triangulated plane meshes
   // transformed into a cube via a transform heirarchy. Combined, the resulting

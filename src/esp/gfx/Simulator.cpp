@@ -352,8 +352,8 @@ double Simulator::getWorldTime() {
 
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
                                  const nav::NavMeshSettings& navMeshSettings) {
-  std::shared_ptr<assets::MeshData> joinedMesh =
-      resourceManager_.joinMesh(config_.scene.id);
+  std::unique_ptr<assets::MeshData> joinedMesh =
+      resourceManager_.createJoinedCollisionMesh(config_.scene.id);
 
   if (!pathfinder.build(navMeshSettings, *joinedMesh)) {
     LOG(ERROR) << "Failed to build navmesh";

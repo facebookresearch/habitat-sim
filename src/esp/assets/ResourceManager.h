@@ -174,13 +174,14 @@ class ResourceManager {
   };
 
   /**
-   * @brief Construct a unified @ref MeshData from a loaded asset. See @ref
-   * joinHeirarchy.
+   * @brief Construct a unified @ref MeshData from a loaded asset's collision
+   * meshes. See @ref joinHeirarchy.
    * @param filename The identifying string key for the asset. See @ref
    * resourceDict_ and @ref meshes_.
    * @return The unified @ref MeshData object for the asset.
    */
-  std::shared_ptr<MeshData> joinMesh(const std::string& filename);
+  std::unique_ptr<MeshData> createJoinedCollisionMesh(
+      const std::string& filename);
 
   /**
    * @brief Create a new drawable primitive attached to the desired @ref
