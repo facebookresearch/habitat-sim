@@ -163,10 +163,25 @@ class ResourceManager {
     return meshes_[meshIndex]->meshTransform_;
   };
 
-  const MeshMetaData& getMeshMetaData(std::string filename) {
+  /**
+   * @brief Public accessor for @ref MeshMetaData. See @ref resourceDict_.
+   * @param filename The identifying string key for the asset.
+   * @return The @ref MeshMetaData object for the asset.
+   */
+  const MeshMetaData& getMeshMetaData(const std::string& filename) {
     CHECK(resourceDict_.count(filename) > 0);
     return resourceDict_.at(filename);
   };
+
+  /**
+   * @brief Construct a unified @ref MeshData from a loaded asset's collision
+   * meshes. See @ref joinHeirarchy.
+   * @param filename The identifying string key for the asset. See @ref
+   * resourceDict_ and @ref meshes_.
+   * @return The unified @ref MeshData object for the asset.
+   */
+  std::unique_ptr<MeshData> createJoinedCollisionMesh(
+      const std::string& filename);
 
   /**
    * @brief Create a new drawable primitive attached to the desired @ref
@@ -203,6 +218,21 @@ class ResourceManager {
   void loadMeshHierarchy(Importer& importer,
                          MeshTransformNode& parent,
                          int componentID);
+
+  /**
+   * @brief Recursively build a unified @ref MeshData from loaded assets via a
+   * tree of @ref MeshTransformNode.
+   * @param mesh The @ref MeshData being constructed.
+   * @param metaData The @ref MeshMetaData for the object heirarchy being
+   * joined.
+   * @param node The current @ref MeshTransformNode in the recursion.
+   * @param transformFromParentToWorld The cumulative transformation up to but
+   * not including the current @ref MeshTransformNode.
+   */
+  void joinHeirarchy(MeshData& mesh,
+                     const MeshMetaData& metaData,
+                     const MeshTransformNode& node,
+                     const Magnum::Matrix4& transformFromParentToWorld);
 
   //! Load materials from importer into assets, and update metaData
   void loadMaterials(Importer& importer, MeshMetaData* metaData);

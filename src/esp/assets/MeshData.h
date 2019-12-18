@@ -23,6 +23,8 @@ struct MeshData {
   std::vector<vec3f> cbo;
   //! Index buffer
   std::vector<uint32_t> ibo;
+
+  ESP_SMART_POINTERS(MeshData)
 };
 
 }  // namespace assets
