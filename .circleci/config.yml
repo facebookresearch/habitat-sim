@@ -6,6 +6,8 @@ gpu: &gpu
   environment:
     FPS_THRESHOLD: 900
 
+orbs:
+  puppeteer: threetreeslight/puppeteer@0.1.2
 
 jobs:
   python_lint:
