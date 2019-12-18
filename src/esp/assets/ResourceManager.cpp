@@ -1318,5 +1318,48 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
   return true;
 }
 
+//! recursively join all sub-components of a mesh into a single unified
+//! MeshData.
+void ResourceManager::joinHeirarchy(
+    MeshData& mesh,
+    const MeshMetaData& metaData,
+    const MeshTransformNode& node,
+    const Magnum::Matrix4& transformFromParentToWorld) {
+  Magnum::Matrix4 transformFromLocalToWorld =
+      transformFromParentToWorld * node.transformFromLocalToParent;
+
+  if (node.meshIDLocal != ID_UNDEFINED) {
+    CollisionMeshData& meshData =
+        meshes_[node.meshIDLocal + metaData.meshIndex.first]
+            ->getCollisionMeshData();
+    int lastIndex = mesh.vbo.size();
+    for (auto& pos : meshData.positions) {
+      mesh.vbo.push_back(Magnum::EigenIntegration::cast<vec3f>(
+          transformFromLocalToWorld.transformPoint(pos)));
+    }
+    for (auto& index : meshData.indices) {
+      mesh.ibo.push_back(index + lastIndex);
+    }
+  }
+
+  for (auto& child : node.children) {
+    joinHeirarchy(mesh, metaData, child, transformFromLocalToWorld);
+  }
+}
+
+std::shared_ptr<MeshData> ResourceManager::joinMesh(
+    const std::string& filename) {
+  std::shared_ptr<MeshData> mesh = std::make_shared<MeshData>();
+
+  CHECK(resourceDict_.count(filename) > 0);
+
+  MeshMetaData& metaData = resourceDict_.at(filename);
+
+  Magnum::Matrix4 identity;
+  joinHeirarchy(*mesh, metaData, metaData.root, identity);
+
+  return mesh;
+}
+
 }  // namespace assets
 }  // namespace esp
