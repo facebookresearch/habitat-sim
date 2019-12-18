@@ -1347,9 +1347,9 @@ void ResourceManager::joinHeirarchy(
   }
 }
 
-std::shared_ptr<MeshData> ResourceManager::joinMesh(
+std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
     const std::string& filename) {
-  std::shared_ptr<MeshData> mesh = std::make_shared<MeshData>();
+  std::unique_ptr<MeshData> mesh = std::make_unique<MeshData>();
 
   CHECK(resourceDict_.count(filename) > 0);
 
