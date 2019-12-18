@@ -6,7 +6,6 @@
 
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
-#include "esp/nav/PathFinder.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
@@ -19,6 +18,7 @@
 namespace esp {
 namespace nav {
 class PathFinder;
+class NavMeshSettings;
 class ActionSpacePathFinder;
 }  // namespace nav
 namespace scene {
