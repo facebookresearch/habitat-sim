@@ -26,7 +26,7 @@ export async function createServer() {
 
 export async function getBrowserAndPage(url) {
   const browser = await puppeteer.launch({
-    args: ["--disable-lcd-text"],
+    args: ["--disable-lcd-text", "--no-sandbox", "--disable-setuid-sandbox"],
     defaultViewport: { width: 1920, height: 1080 }
   });
 
