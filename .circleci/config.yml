@@ -46,20 +46,11 @@ jobs:
           command: |
             find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.(cpp|h|cu|hpp|cuh)$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
 
-  js_lint_and_test:
+  js_lint:
     docker:
       - image: circleci/node:11.9
     steps:
       - checkout
-      - run:
-          name: Install Headless Chrome dependencies
-          command: |
-            sudo apt-get install -yq \
-            gconf-service libasound2 libatk1.0-0 libatk-bridge2.0-0 libc6 libcairo2 libcups2 libdbus-1-3 \
-            libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 \
-            libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 \
-            libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates \
-            fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget
       - run:
           name: setup
           command: |
@@ -68,10 +59,6 @@ jobs:
           name: run eslint
           command: |
             npm run lint
-      - run:
-          name: run tests
-          command: |
-            npm run test
   install_and_test_ubuntu:
     <<: *gpu
     steps:
@@ -125,6 +112,50 @@ jobs:
                   libbullet-dev\
                   lcov\
                   unzip || true
+      - run:
+          name: Install Headless Chrome dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -yq \
+                  gconf-service \
+                  libasound2 \
+                  libatk1.0-0 \
+                  libatk-bridge2.0-0 \
+                  libc6 \
+                  libcairo2 \
+                  libcups2 \
+                  libdbus-1-3  \
+                  libexpat1 \
+                  libfontconfig1 \
+                  libgcc1 \
+                  libgconf-2-4 \
+                  libgdk-pixbuf2.0-0 \
+                  libglib2.0-0 \
+                  libgtk-3-0 \
+                  libnspr4 \
+                  libpango-1.0-0 \
+                  libpangocairo-1.0-0 \
+                  libstdc++6 \
+                  libx11-6 \
+                  libx11-xcb1 \
+                  libxcb1 \
+                  libxcomposite1 \
+                  libxcursor1 \
+                  libxdamage1 \
+                  libxext6 \
+                  libxfixes3 \
+                  libxi6 \
+                  libxrandr2 \
+                  libxrender1 \
+                  libxss1 \
+                  libxtst6 \
+                  ca-certificates \
+                  fonts-liberation \
+                  libappindicator1 \
+                  libnss3 \
+                  lsb-release \
+                  xdg-utils \
+                  wget
       - run:
           name: Install cuda
           no_output_timeout: 20m
@@ -281,6 +312,10 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
               python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
+      - run:
+          name: Run JavaScript tests
+          command: |
+            npm run test
       - run:
           name: Run sim tests
           command: |
