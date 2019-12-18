@@ -96,9 +96,9 @@ int createGibsonSemanticMesh(const std::string& objFile,
   for (size_t i = 0; i < numVerts; i++) {
     unsigned char gray[] = {0x80, 0x80, 0x80};
     float* components = &attrib.vertices[i * 3];
-    esp::vec3f vertex(components[0], components[1], components[2]);
+    Eigen::Map<esp::vec3f> vertex{components};
     vertex = transform * vertex;
-    f.write(reinterpret_cast<char*>(vertex.data()), sizeof(float) * 3);
+    f.write(reinterpret_cast<char*>(components), sizeof(float) * 3);
     f.write(reinterpret_cast<char*>(gray), sizeof(gray));
   }
 
