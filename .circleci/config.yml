@@ -115,7 +115,7 @@ jobs:
       - run:
           name: Install Headless Chrome dependencies
           command: |
-            sudo apt-get update
+            sudo apt-get update || true
             sudo apt-get install -yq \
                   gconf-service \
                   libasound2 \
@@ -389,5 +389,5 @@ workflows:
     jobs:
       - python_lint
       - cpp_lint
-      - js_lint_and_test
+      - js_lint
       - install_and_test_ubuntu
