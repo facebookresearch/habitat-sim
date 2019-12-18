@@ -49,6 +49,8 @@ class GenericInstanceMeshData : public BaseMesh {
   }
 
  protected:
+  void updateCollisionMeshData();
+
   // ==== rendering ====
   std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
 

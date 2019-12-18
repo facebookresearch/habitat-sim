@@ -213,12 +213,7 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   // later they can be accessed.
   // Note that normal and texture data are not stored
   collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
-  collisionMeshData_.positions =
-      Corrade::Containers::arrayCast<Magnum::Vector3>(
-          Corrade::Containers::arrayView(cpu_vbo_.data(), cpu_vbo_.size()));
-  collisionMeshData_.indices =
-      Corrade::Containers::arrayCast<Magnum::UnsignedInt>(
-          Corrade::Containers::arrayView(cpu_ibo_.data(), cpu_ibo_.size()));
+  updateCollisionMeshData();
 
   return true;
 }
@@ -265,14 +260,9 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
       .setIndexBuffer(std::move(indices), 0,
                       Mn::GL::MeshIndexType::UnsignedInt);
 
-  cpu_ibo_ = new_indices;
+  cpu_ibo_ = std::move(new_indices);
 
-  collisionMeshData_.positions =
-      Corrade::Containers::arrayCast<Magnum::Vector3>(
-          Corrade::Containers::arrayView(cpu_vbo_.data(), cpu_vbo_.size()));
-  collisionMeshData_.indices =
-      Corrade::Containers::arrayCast<Magnum::UnsignedInt>(
-          Corrade::Containers::arrayView(cpu_ibo_.data(), cpu_ibo_.size()));
+  updateCollisionMeshData();
 
   buffersOnGPU_ = true;
 }
@@ -282,6 +272,13 @@ Magnum::GL::Mesh* GenericInstanceMeshData::getMagnumGLMesh() {
     return nullptr;
   }
   return &(renderingBuffer_->mesh);
+}
+
+void GenericInstanceMeshData::updateCollisionMeshData() {
+  collisionMeshData_.positions = Cr::Containers::arrayCast<Mn::Vector3>(
+      Cr::Containers::arrayView(cpu_vbo_));
+  collisionMeshData_.indices = Cr::Containers::arrayCast<Mn::UnsignedInt>(
+      Cr::Containers::arrayView(cpu_ibo_));
 }
 
 }  // namespace assets
