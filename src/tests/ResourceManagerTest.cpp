@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/Utility/Directory.h>
+#include <Magnum/EigenIntegration/Integration.h>
 #include <gtest/gtest.h>
 #include <string>
 
@@ -53,18 +54,11 @@ TEST(ResourceManagerTest, JoinMesh) {
   ASSERT_EQ(numIndices, 36);
 
   std::vector<Magnum::Vector3> vertGroundTruth{
-      Magnum::Vector3{-1, 1, 1},  Magnum::Vector3{-1, -1, -1},
-      Magnum::Vector3{-1, 1, -1}, Magnum::Vector3{-1, -1, 1},
-      Magnum::Vector3{1, 1, 1},   Magnum::Vector3{1, -1, -1},
-      Magnum::Vector3{1, 1, -1},  Magnum::Vector3{1, -1, 1},
-      Magnum::Vector3{1, 1, -1},  Magnum::Vector3{-1, -1, -1},
-      Magnum::Vector3{-1, 1, -1}, Magnum::Vector3{1, -1, -1},
-      Magnum::Vector3{1, 1, 1},   Magnum::Vector3{-1, 1, -1},
-      Magnum::Vector3{-1, 1, 1},  Magnum::Vector3{1, 1, -1},
-      Magnum::Vector3{1, -1, 1},  Magnum::Vector3{-1, -1, -1},
-      Magnum::Vector3{-1, -1, 1}, Magnum::Vector3{1, -1, -1},
-      Magnum::Vector3{1, 1, 1},   Magnum::Vector3{-1, -1, 1},
-      Magnum::Vector3{-1, 1, 1},  Magnum::Vector3{1, -1, 1}};
+      {-1, 1, 1},  {-1, -1, -1}, {-1, 1, -1},  {-1, -1, 1}, {1, 1, 1},
+      {1, -1, -1}, {1, 1, -1},   {1, -1, 1},   {1, 1, -1},  {-1, -1, -1},
+      {-1, 1, -1}, {1, -1, -1},  {1, 1, 1},    {-1, 1, -1}, {-1, 1, 1},
+      {1, 1, -1},  {1, -1, 1},   {-1, -1, -1}, {-1, -1, 1}, {1, -1, -1},
+      {1, 1, 1},   {-1, -1, 1},  {-1, 1, 1},   {1, -1, 1}};
 
   std::vector<uint32_t> indexGroundTruth{
       0,  1,  2,  0,  3,  1,  4,  5,  6,  4,  7,  5,  8,  9,  10, 8,  11, 9,
@@ -73,9 +67,7 @@ TEST(ResourceManagerTest, JoinMesh) {
   for (size_t vix = 0; vix < joinedBox->vbo.size(); vix++) {
     // Cr::Utility::Debug() << joinedBox->vbo[vix] << " vs " <<
     // vertGroundTruth[vix];
-    ASSERT_EQ(vertGroundTruth[vix],
-              Magnum::Vector3(joinedBox->vbo[vix][0], joinedBox->vbo[vix][1],
-                              joinedBox->vbo[vix][2]));
+    ASSERT_EQ(vertGroundTruth[vix], Magnum::Vector3(joinedBox->vbo[vix]));
   }
 
   for (size_t iix = 0; iix < joinedBox->ibo.size(); iix++) {
