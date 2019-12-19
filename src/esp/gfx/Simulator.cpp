@@ -350,5 +350,19 @@ double Simulator::getWorldTime() {
   return NO_TIME;
 }
 
+bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
+                                 const nav::NavMeshSettings& navMeshSettings) {
+  assets::MeshData::uptr joinedMesh =
+      resourceManager_.createJoinedCollisionMesh(config_.scene.id);
+
+  if (!pathfinder.build(navMeshSettings, *joinedMesh)) {
+    LOG(ERROR) << "Failed to build navmesh";
+    return false;
+  }
+
+  LOG(INFO) << "reconstruct navmesh successful";
+  return true;
+}
+
 }  // namespace gfx
 }  // namespace esp

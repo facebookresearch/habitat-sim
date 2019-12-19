@@ -69,6 +69,9 @@ class Viewer : public Magnum::Platform::Application {
   void pokeLastObject();
   void pushLastObject();
 
+  void recomputeNavMesh(const std::string& sceneFilename,
+                        esp::nav::NavMeshSettings& navMeshSettings);
+
   void torqueLastObject();
   void removeLastObject();
   void invertGravity();
@@ -132,8 +135,11 @@ Viewer::Viewer(const Arguments& arguments)
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addBooleanOption("enable-physics")
       .addBooleanOption("debug-bullet")
+      .setHelp("debug-bullet", "render Bullet physics debug wireframes")
       .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG)
       .setHelp("physics-config", "physics scene config file")
+      .addBooleanOption("recompute-navmesh")
+      .setHelp("recompute-navmesh", "programmatically generate scene navmesh")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
@@ -201,13 +207,16 @@ Viewer::Viewer(const Arguments& arguments)
       Magnum::SceneGraph::AspectRatioPolicy::Extend);
 
   // Load navmesh if available
-  const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
-  if (io::exists(navmeshFilename)) {
-    LOG(INFO) << "Loading navmesh from " << navmeshFilename;
-    pathfinder_->loadNavMesh(navmeshFilename);
-
-    const vec3f position = pathfinder_->getRandomNavigablePoint();
-    agentBodyNode_->setTranslation(Vector3(position));
+  if (file.compare(esp::assets::EMPTY_SCENE) != 0) {
+    const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
+    if (io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
+      LOG(INFO) << "Loading navmesh from " << navmeshFilename;
+      pathfinder_->loadNavMesh(navmeshFilename);
+    } else {
+      esp::nav::NavMeshSettings navMeshSettings;
+      navMeshSettings.setDefaults();
+      recomputeNavMesh(file, navMeshSettings);
+    }
   }
 
   // connect controls to navmesh if loaded
@@ -300,6 +309,22 @@ void Viewer::pushLastObject() {
   Vector3 force = T.transformPoint({0.0f, 0.0f, -40.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
+}
+
+void Viewer::recomputeNavMesh(const std::string& sceneFilename,
+                              nav::NavMeshSettings& navMeshSettings) {
+  nav::PathFinder::ptr pf = nav::PathFinder::create();
+
+  assets::MeshData::uptr joinedMesh =
+      resourceManager_.createJoinedCollisionMesh(sceneFilename);
+
+  if (!pf->build(navMeshSettings, *joinedMesh)) {
+    LOG(ERROR) << "Failed to build navmesh";
+    return;
+  }
+
+  LOG(INFO) << "reconstruct navmesh successful";
+  pathfinder_ = pf;
 }
 
 void Viewer::torqueLastObject() {
