@@ -4,6 +4,8 @@
 
 cmake_minimum_required(VERSION 3.10)
 
+include(cmake/Sanitizers.cmake)
+
 option(BUILD_WITH_CUDA "Build Habitat-Sim with CUDA features enabled -- Requires CUDA" OFF)
 
 if(BUILD_WITH_CUDA)

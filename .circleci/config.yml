@@ -327,6 +327,15 @@ jobs:
               . activate habitat; cd habitat-api
               python setup.py develop --all
               python setup.py test
+      - run:
+          name: Run sim tests ASAN
+          command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat; cd habitat-sim
+
+              export PYTHONPATH=$PYTHONPATH:$(pwd)
+              # run tests with code coverage
+              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests --cmake-args='-DCMAKE_BUILD_TYPE="ASAN"'
       - save_cache:
           key: habitat-api-{{ checksum "./hapi_sha" }}
           background: true
