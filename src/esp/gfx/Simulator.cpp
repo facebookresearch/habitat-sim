@@ -255,6 +255,15 @@ esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
   return esp::physics::MotionType::ERROR_MOTIONTYPE;
 }
 
+bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
+                                    const int objectID,
+                                    const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->setObjectMotionType(objectID, motionType);
+  }
+  return false;
+}
+
 // apply forces and torques to objects
 void Simulator::applyTorque(const Magnum::Vector3& tau,
                             const int objectID,
@@ -339,6 +348,20 @@ double Simulator::getWorldTime() {
     return physicsManager_->getWorldTime();
   }
   return NO_TIME;
+}
+
+bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
+                                 const nav::NavMeshSettings& navMeshSettings) {
+  assets::MeshData::uptr joinedMesh =
+      resourceManager_.createJoinedCollisionMesh(config_.scene.id);
+
+  if (!pathfinder.build(navMeshSettings, *joinedMesh)) {
+    LOG(ERROR) << "Failed to build navmesh";
+    return false;
+  }
+
+  LOG(INFO) << "reconstruct navmesh successful";
+  return true;
 }
 
 }  // namespace gfx

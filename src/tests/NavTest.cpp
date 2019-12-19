@@ -106,3 +106,16 @@ TEST(NavTest, PathFinderTestCases) {
                     (testPath.requestedStart - testPath.requestedEnd).norm()),
            0.001);
 }
+
+TEST(NavTest, PathFinderTestNonNavigable) {
+  PathFinder pf;
+  pf.loadNavMesh(Cr::Utility::Directory::join(
+      SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
+
+  const vec3f nonNavigablePoint{1e2, 1e2, 1e2};
+
+  const vec3f resultPoint = pf.tryStep<vec3f>(
+      nonNavigablePoint, nonNavigablePoint + vec3f{0.25, 0, 0});
+
+  CHECK(nonNavigablePoint.isApprox(resultPoint));
+}

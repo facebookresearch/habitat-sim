@@ -3,6 +3,8 @@ find_package(Magnum
     DebugTools
 )
 
+find_package(MagnumIntegration REQUIRED ImGui)
+
 set(viewer_SOURCES viewer.cpp)
 
 #set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
@@ -15,6 +17,7 @@ target_link_libraries(viewer
     nav
     scene
     Magnum::DebugTools
+    MagnumIntegration::ImGui
 )
 
 # copy JS/HTML/CSS scaffolding for WebGL build

@@ -167,7 +167,7 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   if (!initialized_) {
     return;
   }
-  if (dt < 0) {
+  if (dt <= 0) {
     dt = fixedTimeStep_;
   }
 

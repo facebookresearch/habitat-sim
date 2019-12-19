@@ -100,20 +100,49 @@ class ResourceManager {
       DrawableGroup* drawables = nullptr,
       std::string physicsFilename = "data/default.phys_scene_config.json");
 
-  // load a PhysicsSceneMetaData object from a config file
+  /**
+   * @brief Load and parse a physics world config file and generates a @ref
+   * PhysicsManagerAttributes object.
+   * @param physicsFilename The config file.
+   * @return The resulting @ref PhysicsManagerAttributes object.
+   */
   PhysicsManagerAttributes loadPhysicsConfig(
       std::string physicsFilename = "data/default.phys_scene_config.json");
 
-  //! Load Object data and store internally
-  //! Does not instantiate (physics & drawable)
-  //! Return index in physicsObjectList_
+  /**
+   * @brief Load the drawable for an object from the @ref physicsObjectLibrary_
+   * into the scene graph. Attempts to load and parse the referenced object
+   * template file into the @ref physicsObjectLibrary_ if not already present.
+   * @param objPhysConfigFilename The string key for the object template in the
+   * @ref physicsObjectLibrary_.
+   * @param parent The parent @ref scene::SceneNode for the object.
+   * @param drawables The @ref DrawableGroup for the object drawable.
+   * @return the object's index in @ref physicsObjectList_
+   */
   int loadObject(const std::string& objPhysConfigFilename,
                  scene::SceneNode* parent,
                  DrawableGroup* drawables);
 
-  // load an object into the physicsObjectLibrary_ from a physics properties
-  // filename
+  /**
+   * @brief Load and parse a physics object template config file and generates a
+   * @ref PhysicsObjectAttributes object, adding it to the @ref
+   * physicsObjectLibrary_.
+   * @param objPhysConfigFilename The config file.
+   * @return The index in the @ref physicsObjectLibrary_ of the resulting @ref
+   * PhysicsObjectAttributes object.
+   */
   int loadObject(const std::string& objPhysConfigFilename);
+
+  /**
+   * @brief Add a @ref PhysicsObjectAttributes object to the @ref
+   * physicsObjectLibrary_. Can modify template values based on results of load.
+   * @param objectTemplateHandle The key for referencing the template in the
+   * @ref physicsObjectLibrary_.
+   * @param objectTemplate The object template.
+   * @return The index in the @ref physicsObjectLibrary_ of object template.
+   */
+  int loadObject(PhysicsObjectAttributes& objectTemplate,
+                 const std::string objectTemplateHandle);
 
   //======== Accessor functions ========
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
@@ -134,10 +163,25 @@ class ResourceManager {
     return meshes_[meshIndex]->meshTransform_;
   };
 
-  const MeshMetaData& getMeshMetaData(std::string filename) {
+  /**
+   * @brief Public accessor for @ref MeshMetaData. See @ref resourceDict_.
+   * @param filename The identifying string key for the asset.
+   * @return The @ref MeshMetaData object for the asset.
+   */
+  const MeshMetaData& getMeshMetaData(const std::string& filename) {
     CHECK(resourceDict_.count(filename) > 0);
     return resourceDict_.at(filename);
   };
+
+  /**
+   * @brief Construct a unified @ref MeshData from a loaded asset's collision
+   * meshes. See @ref joinHeirarchy.
+   * @param filename The identifying string key for the asset. See @ref
+   * resourceDict_ and @ref meshes_.
+   * @return The unified @ref MeshData object for the asset.
+   */
+  std::unique_ptr<MeshData> createJoinedCollisionMesh(
+      const std::string& filename);
 
   /**
    * @brief Create a new drawable primitive attached to the desired @ref
@@ -161,7 +205,7 @@ class ResourceManager {
   void addComponent(const MeshMetaData& metaData,
                     scene::SceneNode& parent,
                     DrawableGroup* drawables,
-                    MeshTransformNode& meshTransformNode);
+                    const MeshTransformNode& meshTransformNode);
 
   //! Load textures from importer into assets, and update metaData
   void loadTextures(Importer& importer, MeshMetaData* metaData);
@@ -174,6 +218,21 @@ class ResourceManager {
   void loadMeshHierarchy(Importer& importer,
                          MeshTransformNode& parent,
                          int componentID);
+
+  /**
+   * @brief Recursively build a unified @ref MeshData from loaded assets via a
+   * tree of @ref MeshTransformNode.
+   * @param mesh The @ref MeshData being constructed.
+   * @param metaData The @ref MeshMetaData for the object heirarchy being
+   * joined.
+   * @param node The current @ref MeshTransformNode in the recursion.
+   * @param transformFromParentToWorld The cumulative transformation up to but
+   * not including the current @ref MeshTransformNode.
+   */
+  void joinHeirarchy(MeshData& mesh,
+                     const MeshMetaData& metaData,
+                     const MeshTransformNode& node,
+                     const Magnum::Matrix4& transformFromParentToWorld);
 
   //! Load materials from importer into assets, and update metaData
   void loadMaterials(Importer& importer, MeshMetaData* metaData);
@@ -281,14 +340,13 @@ class ResourceManager {
   //! If DrawableGroup3D group is given add created Drawable to the group
   //! Optional Texture2D, objectId and color arguments set relevant shader
   //! parameters
-  gfx::Drawable& createDrawable(
-      const ShaderType shaderType,
-      Magnum::GL::Mesh& mesh,
-      scene::SceneNode& node,
-      Magnum::SceneGraph::DrawableGroup3D* group = nullptr,
-      Magnum::GL::Texture2D* texture = nullptr,
-      int objectId = ID_UNDEFINED,
-      const Magnum::Color4& color = Magnum::Color4{1});
+  void createDrawable(const ShaderType shaderType,
+                      Magnum::GL::Mesh& mesh,
+                      scene::SceneNode& node,
+                      Magnum::SceneGraph::DrawableGroup3D* group = nullptr,
+                      Magnum::GL::Texture2D* texture = nullptr,
+                      int objectId = ID_UNDEFINED,
+                      const Magnum::Color4& color = Magnum::Color4{1});
 
   bool compressTextures_ = false;
 };

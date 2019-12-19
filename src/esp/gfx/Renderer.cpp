@@ -20,15 +20,15 @@
 #include "esp/gfx/DepthUnprojection.h"
 #include "esp/gfx/magnum.h"
 
-using namespace Magnum;
+namespace Mn = Magnum;
 
 namespace esp {
 namespace gfx {
 
 struct Renderer::Impl {
   Impl() {
-    GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
-    GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
+    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
+    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   }
   ~Impl() { LOG(INFO) << "Deconstructing Renderer"; }
 

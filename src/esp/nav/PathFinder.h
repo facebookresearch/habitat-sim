@@ -103,6 +103,8 @@ struct NavMeshSettings {
     filterLedgeSpans = true;
     filterWalkableLowHeightSpans = true;
   }
+
+  ESP_SMART_POINTERS(NavMeshSettings)
 };
 
 class PathFinder : public std::enable_shared_from_this<PathFinder> {
@@ -159,6 +161,7 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
 
  protected:
   bool initNavQuery();
+  void removeZeroAreaPolys();
   std::vector<vec3f> prevEnds;
 
   impl::IslandSystem* islandSystem_ = nullptr;

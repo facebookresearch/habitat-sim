@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 gpu: &gpu
   machine:
     image: ubuntu-1604:201903-01
@@ -45,7 +45,8 @@ jobs:
       - run:
           name: run clang-format
           command: |
-            find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.cpp$|.*\.h$|.*\.cu$|.*\.hpp$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
+            find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.(cpp|h|cu|hpp|cuh)$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
+
   js_lint_and_test:
     docker:
       - image: circleci/node:11.9
@@ -73,6 +74,14 @@ jobs:
           no_output_timeout: 1m
           command: |
               cat /proc/cpuinfo
+      - run:
+          name: Install clang-tidy
+          command: |
+              sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main"
+              sudo apt-get update -y || true
+              sudo apt-get install -y clang-tidy-9
+              sudo ln -s /usr/bin/clang-tidy-9 /usr/local/bin/clang-tidy
+              clang-tidy --version
       - run:
           name: Install cmake
           no_output_timeout: 5m
@@ -106,6 +115,7 @@ jobs:
                   wget \
                   zip \
                   libbullet-dev\
+                  lcov\
                   unzip || true
       - run:
           name: Install cuda
@@ -134,7 +144,7 @@ jobs:
                 export PATH=$HOME/miniconda/bin:$PATH
                 conda create -y -n habitat python=3.6
                 . activate habitat
-                conda install -q -y -c conda-forge ninja numpy pytest ccache hypothesis
+                conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
               fi
       - run:
           name: Install emscripten
@@ -205,6 +215,13 @@ jobs:
               pip install -r requirements.txt --progress-bar off
               python setup.py install --headless
       - run:
+          name: run clang-tidy
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              python tools/run-clang-tidy.py src/esp
+      - run:
           name: Ccache stats
           when: always
           command: |
@@ -238,29 +255,6 @@ jobs:
                 cd ..
               fi
       - run:
-          name: Run sim benchmark
-          command: |
-              while [ ! -f ./cuda_installed ]; do sleep 2; done # wait for CUDA
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat; cd habitat-sim
-              python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
-      - run:
-          name: Run sim tests
-          command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat; cd habitat-sim
-
-              export PYTHONPATH=$PYTHONPATH:$(pwd)
-              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests
-
-              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest
-
-              #re-install without bullet and run physics tests again
-              #TODO: instead of reinstall, do this with configuration
-              ./build.sh --headless
-              pytest tests/test_physics.py
-      - run:
           name: Build Javascript bindings
           command: |
               # wait for npm and emscripten install
@@ -272,6 +266,49 @@ jobs:
               export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
               nvm use v11.9.0
               ./build_js.sh
+      - run:
+          name: Run sim benchmark
+          command: |
+              while [ ! -f ./cuda_installed ]; do sleep 2; done # wait for CUDA
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat; cd habitat-sim
+              python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
+      - run:
+          name: Run sim tests
+          command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat; cd habitat-sim
+
+              export PYTHONPATH=$PYTHONPATH:$(pwd)
+              # run tests with code coverage
+              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
+
+              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
+              pytest --cov-report=xml --cov=./
+
+              #re-build without bullet and cuda and run physics tests again
+              #TODO: instead of reinstall, do this with configuration
+              ./build.sh --headless
+              pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+
+              # Generate JS CodeConv
+              npm run test_with_coverage
+      - run:
+          name: Upload test coverage
+          background: true
+          command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat; cd habitat-sim
+              #Uploading test coverage for Python code
+              bash <(curl -s https://codecov.io/bash) -f coverage.xml -cF Python
+
+              # Uploading test coverage for JS code
+              bash <(curl -s https://codecov.io/bash) -f coverage_js/coverage-final.json -cF JavaScript
+
+              #Uploading test coverage for C++ code
+              lcov --directory . --capture --output-file coverage.info
+              lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
+              bash <(curl -s https://codecov.io/bash) -f coverage.info -cF CPP
       - run:
           name: Install api
           command: |

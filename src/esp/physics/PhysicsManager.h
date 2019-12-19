@@ -54,6 +54,35 @@ unique physical world can exist.
 */
 class PhysicsManager {
  public:
+  //! ==== physics engines ====
+
+  /**
+  @brief The specific physics implementation used by the current @ref
+  PhysicsManager. Each entry suggests a derived class of @ref PhysicsManager and
+  @ref RigidObject implementing the specific interface to a simulation library.
+  */
+  enum PhysicsSimulationLibrary {
+
+    /**
+     * The default implemenation of kineamtics through the base @ref
+     * PhysicsManager class. Supports @ref MotionType::STATIC and @ref
+     * MotionType::KINEMATIC objects of base class @ref RigidObject. If the
+     * derived @ref PhysicsManager class for a desired @ref
+     * PhysicsSimulationLibrary fails to initialize, it will default to @ref
+     * PhysicsSimulationLibrary::NONE.
+     */
+    NONE,
+
+    /**
+     * An implemenation of dynamics through the Bullet Physics library.
+     * Supports @ref MotionType::STATIC, @ref MotionType::KINEMATIC, and @ref
+     * MotionType::DYNAMIC objects of @ref RigidObject derived class @ref
+     * BulletRigidObject. Suggests the use of @ref PhysicsManager derived class
+     * @ref BulletPhysicsManager
+     */
+    BULLET
+  };
+
   /**
    * @brief Construct a #ref PhysicsManager with access to specific resourse
    * assets.
@@ -84,10 +113,12 @@ class PhysicsManager {
 
   /**
    * @brief Reset the simulation and physical world.
-   * Incomplete...
+   * Sets the @ref worldTime_ to 0.0, does not change physical state.
    */
-  virtual void reset(){
-      /* TODO: reset object states or clear them? Reset worldTime? Other? */};
+  virtual void reset() {
+    /* TODO: reset object states or clear them? Other? */
+    worldTime_ = 0.0;
+  };
 
   /** @brief Stores references to a set of drawable elements. */
   using DrawableGroup = Magnum::SceneGraph::DrawableGroup3D;
@@ -594,6 +625,14 @@ class PhysicsManager {
    */
   int checkActiveObjects();
 
+  /** @brief True if the object is considered active by the simulator physics
+   * simulator currently in use. See @ref RigidObject::isActive.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return  Whether or not the object is active.
+   */
+  bool isActive(const int physObjectID) const;
+
   //============ Interact with objects =============
   // NOTE: engine specifics handled by objects themselves...
 
@@ -656,6 +695,14 @@ class PhysicsManager {
   virtual void debugDraw(
       CORRADE_UNUSED const Magnum::Matrix4& projTrans) const {};
 
+  /** @brief Return the library implementation type for the simulator currently
+   * in use. Use to check for a particular implementation.
+   * @return The implementation type of this simulator.
+   */
+  const PhysicsSimulationLibrary& getPhysicsSimulationLibrary() const {
+    return activePhysSimLib_;
+  };
+
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
    * existing object). Terminate the program and report an error if not. This
@@ -702,35 +749,6 @@ class PhysicsManager {
   /** @brief A pointer to a @ref esp::assets::ResourceManager which holds assets
    * that can be accessed by this @ref PhysicsManager*/
   assets::ResourceManager* resourceManager_;
-
-  //! ==== physics engines ====
-
-  /**
-  @brief The specific physics implementation used by the current @ref
-  PhysicsManager. Each entry suggests a derived class of @ref PhysicsManager and
-  @ref RigidObject implementing the specific interface to a simulation library.
-  */
-  enum PhysicsSimulationLibrary {
-
-    /**
-     * The default implemenation of kineamtics through the base @ref
-     * PhysicsManager class. Supports @ref MotionType::STATIC and @ref
-     * MotionType::KINEMATIC objects of base class @ref RigidObject. If the
-     * derived @ref PhysicsManager class for a desired @ref
-     * PhysicsSimulationLibrary fails to initialize, it will default to @ref
-     * PhysicsSimulationLibrary::NONE.
-     */
-    NONE,
-
-    /**
-     * An implemenation of dynamics through the Bullet Physics library.
-     * Supports @ref MotionType::STATIC, @ref MotionType::KINEMATIC, and @ref
-     * MotionType::DYNAMIC objects of @ref RigidObject derived class @ref
-     * BulletRigidObject. Suggests the use of @ref PhysicsManager derived class
-     * @ref BulletPhysicsManager
-     */
-    BULLET
-  };
 
   /** @brief The current physics library implementation used by this
    * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager

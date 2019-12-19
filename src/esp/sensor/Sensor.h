@@ -55,9 +55,11 @@ struct SensorSpec {
   std::string encoding = "rgba_uint8";
   // description of Sensor observation space as gym.spaces.Dict()
   std::string observationSpace = "";
+  std::string noiseModel = "None";
   bool gpu2gpuTransfer = false;
   ESP_SMART_POINTERS(SensorSpec)
 };
+
 bool operator==(const SensorSpec& a, const SensorSpec& b);
 bool operator!=(const SensorSpec& a, const SensorSpec& b);
 
