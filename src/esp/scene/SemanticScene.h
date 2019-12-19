@@ -80,7 +80,7 @@ class SemanticScene {
     }
   }
 
-  //! load SemanticScene from a SUNCG house format file
+  //! load SemanticScene from a Gibson house format file
   static bool loadGibsonHouse(const std::string& filename,
                               SemanticScene& scene,
                               const quatf& rotation = quatf::Identity());
