@@ -212,6 +212,11 @@ Viewer::Viewer(const Arguments& arguments)
 
   // connect controls to navmesh if loaded
   if (pathfinder_->isLoaded()) {
+    // some scenes could have pathable roof polygons. We are not filtering
+    // those starting points here.
+    vec3f position = pathfinder_->getRandomNavigablePoint();
+    agentBodyNode_->setTranslation(Vector3(position));
+
     controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
       vec3f currentPosition = pathfinder_->tryStep(start, end);
       LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
