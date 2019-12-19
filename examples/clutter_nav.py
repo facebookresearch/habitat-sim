@@ -2,6 +2,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import argparse
 import math
 import os
 import random
@@ -77,14 +78,25 @@ def add_and_place_object_from_navmesh(obj_template_id, sim):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--scene",
+        type=str,
+        default="data/scene_datasets/habitat-test-scenes/van-gogh-room.glb",
+    )
+    parser.add_argument("--save_png", action="store_true")
+    parser.add_argument("--render_video", action="store_true")
+    parser.add_argument("--max_frames", type=int, default=100)
+    args = parser.parse_args()
+
     os.system("rm -r clutter_nav_output")
     os.system("mkdir clutter_nav_output")
 
     # grab an esay format for storing sim settings
     settings = default_sim_settings.copy()
-    settings["save_png"] = True
+    settings["save_png"] = args.save_png
     settings["seed"] = 5
-    settings["max_frames"] = 300
+    settings["max_frames"] = args.max_frames
     settings["sensor_height"] = 0.6  # locobot camera height
 
     sim_cfg = hsim.SimulatorConfiguration()
@@ -92,7 +104,8 @@ def main():
 
     # sim_cfg.scene.id = "/Users/alexclegg/downloads/matterpak_Va2ovXYc6it/empty_room.glb"
     # sim_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
-    sim_cfg.scene.id = "/private/home/akadian/sim2real/sim2real/data/scene_datasets/coda/empty_room.glb"
+    # sim_cfg.scene.id = "/private/home/akadian/sim2real/sim2real/data/scene_datasets/coda/empty_room.glb"
+    sim_cfg.scene.id = args.scene
 
     sim_cfg.gpu_device_id = 0
 
@@ -137,6 +150,10 @@ def main():
     # construct the simulator
     _cfg = habitat_sim.Configuration(sim_cfg, [agent_cfg])
     sim = habitat_sim.Simulator(_cfg)
+
+    if not sim.pathfinder.is_loaded:
+        sim.recompute_navmesh(agent_radius=agent_cfg.radius)
+
     random.seed(settings["seed"])
     sim.seed(settings["seed"])
 
@@ -178,7 +195,7 @@ def main():
 
         # really just using the utilities here
         milestone = 0
-        while episode_frames < 100:
+        while episode_frames < settings["max_frames"]:
             # if episode_frames > milestone / 10 * settings["max_frames"]:
             print(
                 "computing frame "
@@ -190,11 +207,11 @@ def main():
 
             action = random.choice(action_names)
             observations = sim.step(action)
-            # if settings["save_png"]:
-            #     if settings["color_sensor"]:
-            #         save_color_observation(observations, total_frames)
-            #     if settings["depth_sensor"]:
-            #         save_depth_observation(observations, total_frames)
+            if settings["save_png"]:
+                if settings["color_sensor"]:
+                    save_color_observation(observations, total_frames)
+                if settings["depth_sensor"]:
+                    save_depth_observation(observations, total_frames)
 
             state = sim.last_state()
             # print(state.position)
@@ -204,10 +221,11 @@ def main():
             episode_frames += 1
 
     # create a video with ffmpeg
-    # os.system(
-    #     "ffmpeg -r 20 -f image2 -s 1920x1080 -i clutter_nav_output/test.rgba.%05d.png -crf 15 -pix_fmt yuv420p clutter_nav_output/test.mp4"
-    # )
-    # os.system("open clutter_nav_output/test.mp4")
+    if args.render_video:
+        os.system(
+            "ffmpeg -r 20 -f image2 -s 1920x1080 -i clutter_nav_output/test.rgba.%05d.png -crf 15 -pix_fmt yuv420p clutter_nav_output/test.mp4"
+        )
+        os.system("open clutter_nav_output/test.mp4")
 
     print("clutter_nav successful")
 
