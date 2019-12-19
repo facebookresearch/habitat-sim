@@ -255,16 +255,33 @@ class ResourceManager {
                           scene::SceneNode* parent,
                           DrawableGroup* drawables);
 
-  // ======== Geometry helper functions ========
+  // ======== Geometry helper functions, data structures ========
 
   void translateMesh(BaseMesh* meshDataGL, Magnum::Vector3 translation);
 
   /**
-   * @brief Compute and return the axis aligned bounding box of a mesh.
+   * @brief Compute and return the axis aligned bounding box of a mesh in mesh
+   * local space
    * @param meshDataGL The mesh data.
    * @return The mesh bounding box.
    */
   Magnum::Range3D computeMeshBB(BaseMesh* meshDataGL);
+
+  /**
+   * @brief Compute and return the axis aligned bounding box of a mesh in world
+   * space
+   * @param meshData The mesh data.
+   * @return The bounding box in world space
+   */
+
+  Magnum::Range3D computeAbsoluteAABB(BaseMesh* meshData);
+
+  // this helper vector contains all the drawables on which we will compute the
+  // absolute AABB
+  std::vector<std::pair<std::reference_wrapper<esp::gfx::Drawable>,
+                        std::reference_wrapper<BaseMesh>>>
+      staticDrawables_;
+  bool collectStaticDrawables_ = false;
 
   // ======== General geometry data ========
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or
@@ -343,6 +360,7 @@ class ResourceManager {
   void createDrawable(const ShaderType shaderType,
                       Magnum::GL::Mesh& mesh,
                       scene::SceneNode& node,
+                      BaseMesh* meshData = nullptr,
                       Magnum::SceneGraph::DrawableGroup3D* group = nullptr,
                       Magnum::GL::Texture2D* texture = nullptr,
                       int objectId = ID_UNDEFINED,
