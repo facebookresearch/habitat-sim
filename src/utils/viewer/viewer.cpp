@@ -213,7 +213,6 @@ Viewer::Viewer(const Arguments& arguments)
       LOG(INFO) << "Loading navmesh from " << navmeshFilename;
       pathfinder_->loadNavMesh(navmeshFilename);
     } else {
-      // TODO: agent radius is not configured here
       esp::nav::NavMeshSettings navMeshSettings;
       navMeshSettings.setDefaults();
       recomputeNavMesh(file, navMeshSettings);
@@ -314,9 +313,9 @@ void Viewer::pushLastObject() {
 
 void Viewer::recomputeNavMesh(const std::string& sceneFilename,
                               nav::NavMeshSettings& navMeshSettings) {
-  std::shared_ptr<nav::PathFinder> pf = std::make_shared<nav::PathFinder>();
+  nav::PathFinder::ptr pf = nav::PathFinder::create();
 
-  std::unique_ptr<assets::MeshData> joinedMesh =
+  assets::MeshData::uptr joinedMesh =
       resourceManager_.createJoinedCollisionMesh(sceneFilename);
 
   if (!pf->build(navMeshSettings, *joinedMesh)) {
