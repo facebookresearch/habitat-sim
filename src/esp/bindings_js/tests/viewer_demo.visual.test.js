@@ -8,7 +8,7 @@ import { toMatchImageSnapshot } from "jest-image-snapshot";
 expect.extend({ toMatchImageSnapshot });
 
 test("viewer rendering should match the snapshot", async () => {
-  jest.setTimeout(10000);
+  jest.setTimeout(15000);
   const { server, url } = await getServerAndURL(
     "build_js/esp/bindings_js/viewer.html?useDefaultEpisode=true"
   );
