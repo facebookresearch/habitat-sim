@@ -8,10 +8,11 @@
 #include <map>
 #include <string>
 
-#include <Corrade/Utility/String.h>
+#include <Corrade/Utility/Directory.h>
 
-#include "esp/io/io.h"
 #include "esp/io/json.h"
+
+namespace Cr = Corrade;
 
 namespace esp {
 namespace scene {
@@ -22,7 +23,7 @@ bool SemanticScene::loadGibsonHouse(
     const std::string& houseFilename,
     SemanticScene& scene,
     const quatf& worldRotation /* = quatf::Identity() */) {
-  if (!io::exists(houseFilename)) {
+  if (!Cr::Utility::Directory::exists(houseFilename)) {
     LOG(ERROR) << "Could not load file " << houseFilename;
     return false;
   }
