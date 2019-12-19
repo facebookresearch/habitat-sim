@@ -315,6 +315,12 @@ jobs:
       - run:
           name: Run JavaScript tests
           command: |
+            cd habitat-sim
+            . ~/.bashrc
+            export PATH=$HOME/miniconda/bin:$PATH
+            . activate habitat
+            export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
+            nvm use v11.9.0
             npm run test
       - run:
           name: Run sim tests
