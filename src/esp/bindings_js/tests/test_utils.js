@@ -5,7 +5,7 @@ import puppeteer from "puppeteer";
 
 export async function createServer() {
   const serve = serveStatic("./");
-  const server = http.createServer(function (req, res) {
+  const server = http.createServer(function(req, res) {
     var done = finalhandler(req, res);
     serve(req, res, done);
   });
