@@ -59,7 +59,9 @@ bool SemanticScene::loadGibsonHouse(
       object->category_ = scene.categories_[it->second];
     } else {
       int nextCategoryIndex = scene.categories_.size();
-      categories[categoryName] = nextCategoryIndex++;
+      categories[categoryName] = nextCategoryIndex;
+      // NOTE(msb) vector is 0-indexed but categories index starts at 1
+      nextCategoryIndex++;
       auto category = std::make_shared<GibsonObjectCategory>(nextCategoryIndex,
                                                              categoryName);
       scene.categories_.push_back(category);
