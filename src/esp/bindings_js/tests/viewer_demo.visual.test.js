@@ -10,7 +10,7 @@ expect.extend({ toMatchImageSnapshot });
 test("viewer rendering should match the snapshot", async () => {
   jest.setTimeout(120000);
   const { server, url } = await getServerAndURL(
-    "build_js/esp/bindings_js/viewer.html?useDefaultEpisode=true"
+    "build_js/esp/bindings_js/viewer.html?scene=skokloster-castle.glb&useDefaultEpisode=true"
     );
   const { browser, page } = await getBrowserAndPage(url);
 
