@@ -26,25 +26,28 @@ const std::string physicsConfigFile =
     Cr::Utility::Directory::join(SCENE_DATASETS,
                                  "../default.phys_scene_config.json");
 
-class PhysicsTestWorld {
- public:
-  PhysicsTestWorld(const std::string sceneFile) {
-    sceneFile_ = sceneFile;
-
+class PhysicsManagerTest : public testing::Test {
+ protected:
+  void SetUp() override {
     context_ = esp::gfx::WindowlessContext::create_unique(0);
     renderer_ = esp::gfx::Renderer::create();
 
     sceneID_ = sceneManager_.initSceneGraph();
+  };
+
+  void initScene(const std::string sceneFile) {
+    sceneFile_ = sceneFile;
+
+    const esp::assets::AssetInfo info =
+        esp::assets::AssetInfo::fromPath(sceneFile);
+
     auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
     esp::scene::SceneNode* navSceneNode =
         &sceneGraph.getRootNode().createChild();
     auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
-    const esp::assets::AssetInfo info =
-        esp::assets::AssetInfo::fromPath(sceneFile);
-
     resourceManager_.loadScene(info, physicsManager_, navSceneNode, &drawables,
                                physicsConfigFile);
-  };
+  }
 
   // must declare these in this order due to avoid deallocation errors
   esp::gfx::WindowlessContext::uptr context_;
@@ -59,7 +62,7 @@ class PhysicsTestWorld {
   int sceneID_;
 };
 
-TEST(PhysicsTest, JoinCompound) {
+TEST_F(PhysicsManagerTest, JoinCompound) {
   LOG(INFO) << "Starting physics test: JoinCompound";
 
   std::string sceneFile =
@@ -67,21 +70,19 @@ TEST(PhysicsTest, JoinCompound) {
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/nested_box.glb");
 
-  PhysicsTestWorld physicsTestWorld(sceneFile);
+  initScene(sceneFile);
 
-  if (physicsTestWorld.physicsManager_->getPhysicsSimulationLibrary() !=
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
     // if we have a simulation implementation then test a joined vs. unjoined
     // object
     esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
     physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-    physicsTestWorld.resourceManager_.loadObject(physicsObjectAttributes,
-                                                 objectFile);
+    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
     esp::assets::PhysicsObjectAttributes& objectTemplate =
-        physicsTestWorld.resourceManager_.getPhysicsObjectAttributes(
-            objectFile);
+        resourceManager_.getPhysicsObjectAttributes(objectFile);
 
     for (int i = 0; i < 2; i++) {
       // mark the object not joined
@@ -91,33 +92,30 @@ TEST(PhysicsTest, JoinCompound) {
         objectTemplate.setBool("joinCollisionMeshes", true);
       }
 
-      physicsTestWorld.physicsManager_->reset();
+      physicsManager_->reset();
 
       std::vector<int> objectIds;
 
       // add and simulate the object
       int num_objects = 7;
       for (int o = 0; o < num_objects; o++) {
-        int objectId =
-            physicsTestWorld.physicsManager_->addObject(objectFile, nullptr);
+        int objectId = physicsManager_->addObject(objectFile, nullptr);
         objectIds.push_back(o);
         Magnum::Matrix4 R{
             Magnum::Matrix4::rotationX(Magnum::Math::Rad<float>(-1.56)) *
             Magnum::Matrix4::rotationY(Magnum::Math::Rad<float>(-0.25))};
         float boxHeight = 2.0 + (o * 2);
         Magnum::Vector3 initialPosition{0.0, boxHeight, 0.0};
-        physicsTestWorld.physicsManager_->setRotation(
+        physicsManager_->setRotation(
             objectId, Magnum::Quaternion::fromMatrix(R.rotationNormalized()));
-        physicsTestWorld.physicsManager_->setTranslation(objectId,
-                                                         initialPosition);
+        physicsManager_->setTranslation(objectId, initialPosition);
       }
 
       float timeToSim = 10.0;
-      while (physicsTestWorld.physicsManager_->getWorldTime() < timeToSim) {
-        physicsTestWorld.physicsManager_->stepPhysics(0.1);
+      while (physicsManager_->getWorldTime() < timeToSim) {
+        physicsManager_->stepPhysics(0.1);
       }
-      int numActiveObjects =
-          physicsTestWorld.physicsManager_->checkActiveObjects();
+      int numActiveObjects = physicsManager_->checkActiveObjects();
       LOG(INFO) << " Number of active objects: " << numActiveObjects;
 
       if (i == 1) {
@@ -126,7 +124,7 @@ TEST(PhysicsTest, JoinCompound) {
       }
 
       for (int o : objectIds) {
-        physicsTestWorld.physicsManager_->removeObject(o);
+        physicsManager_->removeObject(o);
       }
     }
   }
