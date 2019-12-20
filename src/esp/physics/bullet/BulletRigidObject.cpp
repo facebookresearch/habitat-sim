@@ -202,13 +202,15 @@ bool BulletRigidObject::initializeObject(
   btVector3 bInertia =
       btVector3(physicsObjectAttributes.getMagnumVec3("inertia"));
 
-  if (bInertia[0] == 0. && bInertia[1] == 0. && bInertia[2] == 0.) {
-    // allow bullet to compute the inertia tensor if we don't have one
-    bObjectShape_->calculateLocalInertia(
-        physicsObjectAttributes.getDouble("mass"),
-        bInertia);  // overrides bInertia
-    LOG(INFO) << "Automatic object inertia computed: " << bInertia.x() << " "
-              << bInertia.y() << " " << bInertia.z();
+  if (!collisionFromBB_) {
+    if (bInertia[0] == 0. && bInertia[1] == 0. && bInertia[2] == 0.) {
+      // allow bullet to compute the inertia tensor if we don't have one
+      bObjectShape_->calculateLocalInertia(
+          physicsObjectAttributes.getDouble("mass"),
+          bInertia);  // overrides bInertia
+      LOG(INFO) << "Automatic object inertia computed: " << bInertia.x() << " "
+                << bInertia.y() << " " << bInertia.z();
+    }
   }
 
   //! Bullet rigid body setup
@@ -246,11 +248,15 @@ void BulletRigidObject::setCollisionFromBB() {
 
   btVector3 bInertia(getInertiaVector());
 
-  // allow bullet to compute the inertia tensor if we don't have one
-  bObjectShape_->calculateLocalInertia(getMass(),
-                                       bInertia);  // overrides bInertia
+  if (bInertia[0] == 0. && bInertia[1] == 0. && bInertia[2] == 0.) {
+    // allow bullet to compute the inertia tensor if we don't have one
+    bObjectShape_->calculateLocalInertia(getMass(),
+                                         bInertia);  // overrides bInertia
+    LOG(INFO) << "Automatic object inertia computed: " << bInertia.x() << " "
+              << bInertia.y() << " " << bInertia.z();
 
-  setInertiaVector(Magnum::Vector3(bInertia));
+    setInertiaVector(Magnum::Vector3(bInertia));
+  }
 }
 
 bool BulletRigidObject::removeObject() {
