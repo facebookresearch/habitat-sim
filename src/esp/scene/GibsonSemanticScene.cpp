@@ -65,7 +65,7 @@ bool SemanticScene::loadGibsonHouse(
       scene.categories_.push_back(category);
       object->category_ = std::move(category);
     }
-    // TODO(msb) object->obb = ;
+    // TODO(msb) add support for aabb
     scene.objects_[id] = std::move(object);
   }
 

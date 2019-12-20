@@ -11,8 +11,8 @@ import numpy as np
 
 
 # Convert ndarrays to python lists so that we can serialize.
-# Tranform coordinates by rotating Y-axis to Z-axis
-def fixCoords(entry):
+# Transform coordinates by rotating Y-axis to Z-axis
+def fix_coords(entry):
     size = entry["size"].tolist()
     size[1], size[2] = size[2], size[1]
     entry["size"] = size
@@ -22,7 +22,9 @@ def fixCoords(entry):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Extract object IDs from npz.")
+    parser = argparse.ArgumentParser(
+        description="Extracts object IDs from npz. Used for loading 3dscenegraph.stanford.edu semantic data."
+    )
     parser.add_argument("npz_path", metavar="foo.npz", help="path to .npz file to load")
     parser.add_argument(
         "scn_path", metavar="foo.scn", help="path to output file to write"
@@ -31,10 +33,10 @@ def main():
     data = np.load(args.npz_path, allow_pickle=True)["output"].item()
     objects = data["object"]
     for object in objects.values():
-        fixCoords(object)
+        fix_coords(object)
     rooms = data["room"]
     for room in rooms.values():
-        fixCoords(room)
+        fix_coords(room)
     output = dict()
     output["objects"] = list(objects.values())
     output["rooms"] = list(rooms.values())
