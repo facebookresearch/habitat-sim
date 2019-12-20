@@ -342,6 +342,7 @@ jobs:
               ./build.sh --headless
               pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
+              . ~/.bashrc
               export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
               nvm use v11.9.0
               # Generate JS CodeConv
