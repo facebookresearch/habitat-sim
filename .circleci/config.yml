@@ -222,18 +222,6 @@ jobs:
               cd habitat-sim
               python tools/run-clang-tidy.py src/esp
       - run:
-          name: Ccache stats
-          when: always
-          command: |
-            export PATH=$HOME/miniconda/bin:$PATH
-            . activate habitat;
-            ccache --show-stats
-      - save_cache:
-          key: ccache-{{ arch }}-{{ .Branch }}
-          background: true
-          paths:
-            - /home/circleci/.ccache
-      - run:
           name: Download test data
           command: |
 
@@ -278,6 +266,27 @@ jobs:
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
               pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+      - run:
+          name: Run sim tests ASAN
+          command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat; cd habitat-sim
+
+              export PYTHONPATH=$PYTHONPATH:$(pwd)
+              # run tests with code coverage
+              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests --cmake-cfg ASAN
+      - run:
+          name: Ccache stats
+          when: always
+          command: |
+            export PATH=$HOME/miniconda/bin:$PATH
+            . activate habitat;
+            ccache --show-stats
+      - save_cache:
+          key: ccache-{{ arch }}-{{ .Branch }}
+          background: true
+          paths:
+            - /home/circleci/.ccache
       - run:
           name: Upload test coverage
           background: true
@@ -327,15 +336,6 @@ jobs:
               . activate habitat; cd habitat-api
               python setup.py develop --all
               python setup.py test
-      - run:
-          name: Run sim tests ASAN
-          command: |
-              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-              . activate habitat; cd habitat-sim
-
-              export PYTHONPATH=$PYTHONPATH:$(pwd)
-              # run tests with code coverage
-              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests --cmake-cfg ASAN
       - save_cache:
           key: habitat-api-{{ checksum "./hapi_sha" }}
           background: true
