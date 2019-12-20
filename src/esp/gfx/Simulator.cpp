@@ -7,6 +7,7 @@
 #include <string>
 
 #include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/String.h>
 
 #include "Drawable.h"
 
@@ -147,8 +148,14 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       }
       break;
     case assets::AssetType::MP3D_MESH:
+      // TODO(msb) Fix AssetType determination logic.
       if (io::exists(houseFilename)) {
-        scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
+        using Corrade::Utility::String::endsWith;
+        if (endsWith(houseFilename, ".house")) {
+          scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
+        } else if (endsWith(houseFilename, ".scn")) {
+          scene::SemanticScene::loadGibsonHouse(houseFilename, *semanticScene_);
+        }
       }
       break;
     case assets::AssetType::SUNCG_SCENE:
