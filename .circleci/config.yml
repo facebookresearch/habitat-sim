@@ -335,7 +335,7 @@ jobs:
 
               export PYTHONPATH=$PYTHONPATH:$(pwd)
               # run tests with code coverage
-              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests --cmake-args='-DCMAKE_BUILD_TYPE="ASAN"'
+              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests --cmake-cfg ASAN
       - save_cache:
           key: habitat-api-{{ checksum "./hapi_sha" }}
           background: true
