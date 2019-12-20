@@ -26,44 +26,62 @@ const std::string physicsConfigFile =
     Cr::Utility::Directory::join(SCENE_DATASETS,
                                  "../default.phys_scene_config.json");
 
-TEST(PhysicsTest, JoinCompound) {
-  LOG(INFO) << "Starting physics test";
-  // must create a context and renderer first
-  esp::gfx::WindowlessContext::uptr context_ =
-      esp::gfx::WindowlessContext::create_unique(0);
-  std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
+class PhysicsTestWorld {
+ public:
+  PhysicsTestWorld(const std::string sceneFile) {
+    sceneFile_ = sceneFile;
+
+    context_ = esp::gfx::WindowlessContext::create_unique(0);
+    renderer_ = esp::gfx::Renderer::create();
+
+    sceneID_ = sceneManager_.initSceneGraph();
+    auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
+    esp::scene::SceneNode* navSceneNode =
+        &sceneGraph.getRootNode().createChild();
+    auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+    const esp::assets::AssetInfo info =
+        esp::assets::AssetInfo::fromPath(sceneFile);
+
+    resourceManager_.loadScene(info, physicsManager_, navSceneNode, &drawables,
+                               physicsConfigFile);
+  };
 
   // must declare these in this order due to avoid deallocation errors
-  ResourceManager resourceManager;
+  esp::gfx::WindowlessContext::uptr context_;
+  esp::gfx::Renderer::ptr renderer_;
+
+  ResourceManager resourceManager_;
   SceneManager sceneManager_;
-  std::shared_ptr<PhysicsManager> physicsManager_;
+  PhysicsManager::ptr physicsManager_;
+
+  std::string sceneFile_;
+
+  int sceneID_;
+};
+
+TEST(PhysicsTest, JoinCompound) {
+  LOG(INFO) << "Starting physics test: JoinCompound";
 
   std::string sceneFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/nested_box.glb");
 
-  int sceneID = sceneManager_.initSceneGraph();
-  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
-  esp::scene::SceneNode* navSceneNode = &sceneGraph.getRootNode().createChild();
-  auto& drawables = sceneManager_.getSceneGraph(sceneID).getDrawables();
-  const esp::assets::AssetInfo info =
-      esp::assets::AssetInfo::fromPath(sceneFile);
+  PhysicsTestWorld physicsTestWorld(sceneFile);
 
-  resourceManager.loadScene(info, physicsManager_, navSceneNode, nullptr,
-                            physicsConfigFile);
-
-  if (physicsManager_->getPhysicsSimulationLibrary() !=
+  if (physicsTestWorld.physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
     // if we have a simulation implementation then test a joined vs. unjoined
     // object
     esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
     physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-    resourceManager.loadObject(physicsObjectAttributes, objectFile);
+    physicsTestWorld.resourceManager_.loadObject(physicsObjectAttributes,
+                                                 objectFile);
 
     // get a reference to the stored template to edit
     esp::assets::PhysicsObjectAttributes& objectTemplate =
-        resourceManager.getPhysicsObjectAttributes(objectFile);
+        physicsTestWorld.resourceManager_.getPhysicsObjectAttributes(
+            objectFile);
 
     for (int i = 0; i < 2; i++) {
       // mark the object not joined
@@ -73,30 +91,33 @@ TEST(PhysicsTest, JoinCompound) {
         objectTemplate.setBool("joinCollisionMeshes", true);
       }
 
-      physicsManager_->reset();
+      physicsTestWorld.physicsManager_->reset();
 
       std::vector<int> objectIds;
 
       // add and simulate the object
       int num_objects = 7;
       for (int o = 0; o < num_objects; o++) {
-        int objectId = physicsManager_->addObject(objectFile, nullptr);
+        int objectId =
+            physicsTestWorld.physicsManager_->addObject(objectFile, nullptr);
         objectIds.push_back(o);
         Magnum::Matrix4 R{
             Magnum::Matrix4::rotationX(Magnum::Math::Rad<float>(-1.56)) *
             Magnum::Matrix4::rotationY(Magnum::Math::Rad<float>(-0.25))};
         float boxHeight = 2.0 + (o * 2);
         Magnum::Vector3 initialPosition{0.0, boxHeight, 0.0};
-        physicsManager_->setRotation(
+        physicsTestWorld.physicsManager_->setRotation(
             objectId, Magnum::Quaternion::fromMatrix(R.rotationNormalized()));
-        physicsManager_->setTranslation(objectId, initialPosition);
+        physicsTestWorld.physicsManager_->setTranslation(objectId,
+                                                         initialPosition);
       }
 
       float timeToSim = 10.0;
-      while (physicsManager_->getWorldTime() < timeToSim) {
-        physicsManager_->stepPhysics(0.1);
+      while (physicsTestWorld.physicsManager_->getWorldTime() < timeToSim) {
+        physicsTestWorld.physicsManager_->stepPhysics(0.1);
       }
-      int numActiveObjects = physicsManager_->checkActiveObjects();
+      int numActiveObjects =
+          physicsTestWorld.physicsManager_->checkActiveObjects();
       LOG(INFO) << " Number of active objects: " << numActiveObjects;
 
       if (i == 1) {
@@ -105,7 +126,7 @@ TEST(PhysicsTest, JoinCompound) {
       }
 
       for (int o : objectIds) {
-        physicsManager_->removeObject(o);
+        physicsTestWorld.physicsManager_->removeObject(o);
       }
     }
   }
