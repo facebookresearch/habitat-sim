@@ -31,7 +31,6 @@
     "webpack-cli": "^3.3.9"
   },
   "scripts": {
-    "start": "babel-node ./src/esp/bindings_js/tests/server.js",
     "test": "jest ./src/esp/bindings_js/tests/",
     "test_with_coverage": "jest ./src/esp/bindings_js/tests/ --collectCoverage",
     "format": "prettier --trailing-comma es5 --single-quote './src/esp/bindings_js/**/*.js'",
