@@ -24,8 +24,10 @@ TEST(GeoTest geo)
 TEST(Mp3dTest scene)
 target_include_directories(Mp3dTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+if(NOT CMAKE_BUILD_TYPE MATCHES "ASAN")
 TEST(SimTest sim)
 target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+endif()
 
 TEST(SuncgTest scene)
 target_include_directories(SuncgTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
