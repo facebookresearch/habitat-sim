@@ -276,10 +276,22 @@ class ResourceManager {
 
   Magnum::Range3D computeAbsoluteAABB(BaseMesh* meshData);
 
+  std::vector<Magnum::Matrix4> computeAbsoluteTransformations(
+      scene::SceneNode* parent);
+
   // this helper vector contains all the drawables on which we will compute the
   // absolute AABB
-  std::vector<std::pair<std::reference_wrapper<esp::gfx::Drawable>,
-                        std::reference_wrapper<BaseMesh>>>
+  //
+  // pair: <Drawable, meshID>
+  //
+  // -) non-ptex mesh:
+  // meshID is the global index into meshes_.
+  // meshes_[meshID] is the BasehMesh corresponding to the drawable;
+  //
+  // -) ptex mesh:
+  // meshID is the index into its internal submeshes.
+  // meshes_[meshID] is the submesh corresponding to the drawable;
+  std::vector<std::pair<std::reference_wrapper<esp::gfx::Drawable>, uint32_t>>
       staticDrawables_;
   bool collectStaticDrawables_ = false;
 
@@ -360,7 +372,8 @@ class ResourceManager {
   void createDrawable(const ShaderType shaderType,
                       Magnum::GL::Mesh& mesh,
                       scene::SceneNode& node,
-                      BaseMesh* meshData = nullptr,
+                      Corrade::Containers::Optional<uint32_t> meshID =
+                          Corrade::Containers::NullOpt,
                       Magnum::SceneGraph::DrawableGroup3D* group = nullptr,
                       Magnum::GL::Texture2D* texture = nullptr,
                       int objectId = ID_UNDEFINED,

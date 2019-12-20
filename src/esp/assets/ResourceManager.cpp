@@ -21,6 +21,7 @@
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Primitives/Cube.h>
+#include <Magnum/SceneGraph/Object.h>
 #include <Magnum/Shaders/Flat.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
@@ -103,8 +104,11 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   Magnum::Trade::MeshData3D cube = Magnum::Primitives::cubeWireframe();
   primitive_meshes_.push_back(Magnum::MeshTools::compile(cube));
 
-  // compute the absolute AABBs
-  // XXX
+  // compute the absolute transformation for each static drawables
+  if (parent) {
+    std::vector<Mn::Matrix4> absTransforms =
+        computeAbsoluteTransformations(parent);
+  }
 
   collectStaticDrawables_ = false;
   return meshSuccess;
@@ -656,11 +660,32 @@ Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
       Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)};
 }
 
-/*
-Magnum::Range3D ResourceManager::computeAbsoluteAABB(BaseMesh* meshData) {
+std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations(
+    scene::SceneNode* parent) {
+  if (!parent) {
+    return std::vector<Mn::Matrix4>{};
+  }
 
+  auto* scene = parent->scene();
+
+  // Compute absolute transformations of all objects
+  std::vector<std::reference_wrapper<Mn::SceneGraph::Object<
+      Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<float>>>>
+      objects;
+  objects.reserve(staticDrawables_.size());
+
+  for (std::size_t iDrawable = 0; iDrawable < staticDrawables_.size();
+       ++iDrawable) {
+    objects.emplace_back(
+        dynamic_cast<Mn::SceneGraph::Object<
+            Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<
+                float>>&>(staticDrawables_[iDrawable].first.get().object()));
+  }
+  std::vector<Mn::Matrix4> absTransforms =
+      scene->transformationMatrices(objects);
+
+  return absTransforms;
 }
-*/
 
 void ResourceManager::translateMesh(BaseMesh* meshDataGL,
                                     Magnum::Vector3 translation) {
@@ -763,11 +788,13 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
         scene::SceneNode& node = parent->createChild();
         const quatf transform = info.frame.rotationFrameToWorld();
         node.setRotation(Magnum::Quaternion(transform));
+
+        // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
         gfx::PTexMeshDrawable* d = new gfx::PTexMeshDrawable{
             node, *ptexShader, *pTexMeshData, jSubmesh, drawables};
 
         if (collectStaticDrawables_) {
-          staticDrawables_.emplace_back(*d, *pTexMeshData);
+          staticDrawables_.emplace_back(*d, jSubmesh);
         }
       }
     }
@@ -817,7 +844,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
           dynamic_cast<GenericInstanceMeshData*>(meshes_[iMesh].get());
       scene::SceneNode& node = parent->createChild();
       createDrawable(INSTANCE_MESH_SHADER, *instanceMeshData->getMagnumGLMesh(),
-                     node, meshes_[iMesh].get(), drawables);
+                     node, iMesh, drawables);
     }
   }
 
@@ -1190,8 +1217,8 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
   if (materialIDLocal == ID_UNDEFINED ||
       metaData.materialIndex.second == ID_UNDEFINED ||
       !materials_[materialID]) {
-    createDrawable(COLORED_SHADER, mesh, node, meshes_[meshID].get(), drawables,
-                   texture, componentID);
+    createDrawable(COLORED_SHADER, mesh, node, meshID, drawables, texture,
+                   componentID);
   } else {
     if (materials_[materialID]->flags() &
         Magnum::Trade::PhongMaterialData::Flag::DiffuseTexture) {
@@ -1201,19 +1228,17 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
       const int textureIndex = materials_[materialID]->diffuseTexture();
       texture = textures_[textureStart + textureIndex].get();
       if (texture) {
-        createDrawable(TEXTURED_SHADER, mesh, node, meshes_[meshID].get(),
-                       drawables, texture, componentID);
+        createDrawable(TEXTURED_SHADER, mesh, node, meshID, drawables, texture,
+                       componentID);
       } else {
         // Color-only material
-        createDrawable(COLORED_SHADER, mesh, node, meshes_[meshID].get(),
-                       drawables, texture, componentID,
-                       materials_[materialID]->diffuseColor());
+        createDrawable(COLORED_SHADER, mesh, node, meshID, drawables, texture,
+                       componentID, materials_[materialID]->diffuseColor());
       }
     } else {
       // Color-only material
-      createDrawable(COLORED_SHADER, mesh, node, meshes_[meshID].get(),
-                     drawables, texture, componentID,
-                     materials_[materialID]->diffuseColor());
+      createDrawable(COLORED_SHADER, mesh, node, meshID, drawables, texture,
+                     componentID, materials_[materialID]->diffuseColor());
     }
   }  // else
 }
@@ -1223,14 +1248,14 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               DrawableGroup* drawables) {
   CHECK(primitiveID >= 0 && primitiveID < primitive_meshes_.size());
   createDrawable(ShaderType::COLORED_SHADER, primitive_meshes_[primitiveID],
-                 node, nullptr, drawables);
+                 node, Corrade::Containers::NullOpt, drawables);
 }
 
 void ResourceManager::createDrawable(
     const ShaderType shaderType,
     Magnum::GL::Mesh& mesh,
     scene::SceneNode& node,
-    BaseMesh* meshData, /* = nullptr */
+    Corrade::Containers::Optional<uint32_t> meshID, /* = NullOpt */
     Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */,
     Magnum::GL::Texture2D* texture /* = nullptr */,
     int objectId /* = ID_UNDEFINED */,
@@ -1242,18 +1267,21 @@ void ResourceManager::createDrawable(
     auto* shader =
         static_cast<gfx::PrimitiveIDShader*>(getShaderProgram(shaderType));
 
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     gfx::PrimitiveIDDrawable* d =
         new gfx::PrimitiveIDDrawable{node, *shader, mesh, group};
-    if (collectStaticDrawables_ && meshData) {
-      staticDrawables_.emplace_back(*d, *meshData);
+    if (collectStaticDrawables_ && meshID) {
+      staticDrawables_.emplace_back(*d, *meshID);
     }
   } else {  // all other shaders use GenericShader
     auto* shader =
         static_cast<Magnum::Shaders::Flat3D*>(getShaderProgram(shaderType));
+
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     gfx::GenericDrawable* d = new gfx::GenericDrawable{
         node, *shader, mesh, group, texture, objectId, color};
-    if (collectStaticDrawables_) {
-      staticDrawables_.emplace_back(*d, *meshData);
+    if (collectStaticDrawables_ && meshID) {
+      staticDrawables_.emplace_back(*d, *meshID);
     }
   }
 }
