@@ -32,14 +32,14 @@ def main():
     )
     args = parser.parse_args()
     data = np.load(args.npz_path, allow_pickle=True)["output"].item()
-    objects = data["object"]
-    for object in objects.values():
-        fix_coords(object)
+    objs = data["object"]
+    for obj in objs.values():
+        fix_coords(obj)
     rooms = data["room"]
     for room in rooms.values():
         fix_coords(room)
     output = dict()
-    output["objects"] = list(objects.values())
+    output["objects"] = list(objs.values())
     output["rooms"] = list(rooms.values())
     with open(args.scn_path, "w") as f:
         x = f.write(json.dumps(output, indent=2))
