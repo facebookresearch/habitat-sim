@@ -138,7 +138,7 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
 
-  initScene("NONE");
+  initScene(objectFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() ==
       PhysicsManager::PhysicsSimulationLibrary::BULLET) {
@@ -163,17 +163,26 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     esp::physics::BulletPhysicsManager* bPhysManager =
         static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
 
+    std::pair<Magnum::Vector3, Magnum::Vector3> AabbScene =
+        bPhysManager->getSceneCollisionShapeAabb();
+
     std::pair<Magnum::Vector3, Magnum::Vector3> AabbOb0 =
         bPhysManager->getCollisionShapeAabb(objectId0);
     std::pair<Magnum::Vector3, Magnum::Vector3> AabbOb1 =
         bPhysManager->getCollisionShapeAabb(objectId1);
 
-    std::pair<Magnum::Vector3, Magnum::Vector3> groundTruth =
+    std::pair<Magnum::Vector3, Magnum::Vector3> objectGroundTruth =
         std::pair<Magnum::Vector3, Magnum::Vector3>({-1.1, -1.1, -1.1},
                                                     {1.1, 1.1, 1.1});
-    Cr::Utility::Debug() << "aabbs ob0: " << AabbOb0;
-    Cr::Utility::Debug() << "aabbs ob1: " << AabbOb1;
-    ASSERT_EQ(AabbOb0, groundTruth);
-    ASSERT_EQ(AabbOb1, groundTruth);
+    std::pair<Magnum::Vector3, Magnum::Vector3> sceneGroundTruth =
+        std::pair<Magnum::Vector3, Magnum::Vector3>({-1.0, -1.0, -1.0},
+                                                    {1.0, 1.0, 1.0});
+
+    // Cr::Utility::Debug() << "aabb scene: " << AabbScene;
+    // Cr::Utility::Debug() << "aabb ob0: " << AabbOb0;
+    // Cr::Utility::Debug() << "aabb ob1: " << AabbOb1;
+    ASSERT_EQ(AabbScene, sceneGroundTruth);
+    ASSERT_EQ(AabbOb0, objectGroundTruth);
+    ASSERT_EQ(AabbOb1, objectGroundTruth);
   }
 }

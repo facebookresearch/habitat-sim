@@ -202,6 +202,11 @@ BulletPhysicsManager::getCollisionShapeAabb(const int physObjectID) const {
       ->getCollisionShapeAabb();
 }
 
+const std::pair<Magnum::Vector3, Magnum::Vector3>
+BulletPhysicsManager::getSceneCollisionShapeAabb() const {
+  return static_cast<BulletRigidObject*>(sceneNode_)->getCollisionShapeAabb();
+}
+
 void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
   debugDrawer_.setTransformationProjectionMatrix(projTrans);
   bWorld_->debugDrawWorld();
