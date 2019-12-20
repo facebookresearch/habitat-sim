@@ -60,11 +60,3 @@ export async function closeBrowserAndServer(browser, server) {
   browser.close();
   await new Promise(resolve => server.close(resolve));
 }
-
-export async function generateImage(path) {
-  const { server, url } = await getServerAndURL(path);
-  const { browser, page } = await getBrowserAndPage(url);
-  const screenshot = await page.screenshot();
-  closeBrowserAndServer(browser, server);
-  return screenshot;
-}
