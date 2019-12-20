@@ -323,6 +323,7 @@ jobs:
       - run:
           name: Run JavaScript tests
           command: |
+            sleep 5
             cd habitat-sim
             . ~/.bashrc
             export PATH=$HOME/miniconda/bin:$PATH
