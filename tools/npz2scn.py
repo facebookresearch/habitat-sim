@@ -6,13 +6,14 @@
 import argparse
 import json
 import sys
+from typing import Any, Dict
 
 import numpy as np
 
 
 # Convert ndarrays to python lists so that we can serialize.
 # Transform coordinates by rotating Y-axis to Z-axis
-def fix_coords(entry):
+def fix_coords(entry: Dict[str, Any]) -> None:
     size = entry["size"].tolist()
     size[1], size[2] = size[2], size[1]
     entry["size"] = size
