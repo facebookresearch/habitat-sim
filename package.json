@@ -4,6 +4,7 @@
   "description": "A high performance simulator for training embodied agents",
   "devDependencies": {
     "@babel/core": "^7.6.0",
+    "@babel/node": "^7.7.7",
     "@babel/plugin-proposal-class-properties": "^7.5.5",
     "@babel/plugin-transform-runtime": "^7.7.6",
     "@babel/preset-env": "^7.6.0",
@@ -30,6 +31,7 @@
     "webpack-cli": "^3.3.9"
   },
   "scripts": {
+    "start": "babel-node ./src/esp/bindings_js/tests/server.js",
     "test": "jest ./src/esp/bindings_js/tests/",
     "test_with_coverage": "jest ./src/esp/bindings_js/tests/ --collectCoverage",
     "format": "prettier --trailing-comma es5 --single-quote './src/esp/bindings_js/**/*.js'",

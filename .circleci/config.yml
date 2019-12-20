@@ -313,6 +313,14 @@ jobs:
               . activate habitat; cd habitat-sim
               python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
       - run:
+          name: Run JavaScript server
+          background: true
+          command: |
+            cd habitat-sim
+            . ~/.bashrc
+            nvm use v11.9.0
+            npm start
+      - run:
           name: Run JavaScript tests
           command: |
             cd habitat-sim
