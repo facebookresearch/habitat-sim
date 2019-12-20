@@ -519,6 +519,10 @@ bool PathFinder::build(const NavMeshSettings& bs,
       return false;
     }
 
+    if (navMesh_) {
+      dtFree(navMesh_);
+    }
+
     navMesh_ = 0;
     navMesh_ = dtAllocNavMesh();
     if (!navMesh_) {
@@ -546,6 +550,9 @@ bool PathFinder::build(const NavMeshSettings& bs,
 }
 
 bool PathFinder::initNavQuery() {
+  if (navQuery_) {
+    dtFree(navQuery_);
+  }
   navQuery_ = dtAllocNavMeshQuery();
   dtStatus status = navQuery_->init(navMesh_, 2048);
   if (dtStatusFailed(status)) {
