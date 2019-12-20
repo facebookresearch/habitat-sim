@@ -544,5 +544,14 @@ double BulletRigidObject::getAngularDamping() {
   }
 }
 
+const std::pair<Magnum::Vector3, Magnum::Vector3>
+BulletRigidObject::getCollisionShapeAabb() const {
+  btVector3 localAabbMin, localAabbMax;
+  bObjectShape_->getAabb(btTransform::getIdentity(), localAabbMin,
+                         localAabbMax);
+  return std::pair<Magnum::Vector3, Magnum::Vector3>(
+      Magnum::Vector3(localAabbMin), Magnum::Vector3(localAabbMax));
+}
+
 }  // namespace physics
 }  // namespace esp

@@ -322,6 +322,14 @@ class BulletRigidObject : public RigidObject {
    */
   void setMargin(const double margin);
 
+  /**
+   * @brief Query the Aabb from bullet physics for the root compound shape of
+   * the rigid body in its local space. See @ref btCompoundShape::getAabb.
+   * @return A Magnum vector pair (AabbMin, AabbMax).
+   */
+  const std::pair<Magnum::Vector3, Magnum::Vector3> getCollisionShapeAabb()
+      const;
+
  protected:
   /** @brief Used to synchronize Bullet's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic

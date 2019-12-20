@@ -129,3 +129,51 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
     }
   }
 }
+
+TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
+  // test that all different construction methods for a simple shape result in
+  // the same Aabb for the given margin
+  LOG(INFO) << "Starting physics test: BulletCompoundShapeMargins";
+
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  initScene("NONE");
+
+  if (physicsManager_->getPhysicsSimulationLibrary() ==
+      PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+    // test joined vs. unjoined
+    esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+    physicsObjectAttributes.setDouble("margin", 0.1);
+    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+    // get a reference to the stored template to edit
+    esp::assets::PhysicsObjectAttributes& objectTemplate =
+        resourceManager_.getPhysicsObjectAttributes(objectFile);
+
+    // add the unjoined object
+    objectTemplate.setBool("joinCollisionMeshes", false);
+    int objectId0 = physicsManager_->addObject(objectFile, nullptr);
+
+    // add the joined object
+    objectTemplate.setBool("joinCollisionMeshes", true);
+    int objectId1 = physicsManager_->addObject(objectFile, nullptr);
+
+    esp::physics::BulletPhysicsManager* bPhysManager =
+        static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
+
+    std::pair<Magnum::Vector3, Magnum::Vector3> AabbOb0 =
+        bPhysManager->getCollisionShapeAabb(objectId0);
+    std::pair<Magnum::Vector3, Magnum::Vector3> AabbOb1 =
+        bPhysManager->getCollisionShapeAabb(objectId1);
+
+    std::pair<Magnum::Vector3, Magnum::Vector3> groundTruth =
+        std::pair<Magnum::Vector3, Magnum::Vector3>({-1.1, -1.1, -1.1},
+                                                    {1.1, 1.1, 1.1});
+    Cr::Utility::Debug() << "aabbs ob0: " << AabbOb0;
+    Cr::Utility::Debug() << "aabbs ob1: " << AabbOb1;
+    ASSERT_EQ(AabbOb0, groundTruth);
+    ASSERT_EQ(AabbOb1, groundTruth);
+  }
+}
