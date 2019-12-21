@@ -134,6 +134,8 @@ bool ResourceManager::loadScene(const AssetInfo& info,
 
   if (computeAbsoluteAABBs_) {
     computeAbsoluteAABBs_ = false;
+    // prevent it from being misused in the future
+    staticDrawableInfo_.clear();
   }
 
   return meshSuccess;
