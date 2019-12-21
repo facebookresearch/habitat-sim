@@ -42,10 +42,9 @@ class SceneNode : public MagnumObject {
 
   // Add a feature. Used to avoid naked `new` and makes intent clearer.
   template <class U, class... Args>
-  U& addFeature(Args&&... args) {
+  void addFeature(Args&&... args) {
     // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
-    //         new U{*this, std::forward<Args>(args)...};
-    return *(new U{*this, std::forward<Args>(args)...});
+    return new U{*this, std::forward<Args>(args)...};
   }
 
   //! Create a new child SceneNode and return it. NOTE: this SceneNode owns and

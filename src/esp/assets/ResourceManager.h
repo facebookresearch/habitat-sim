@@ -268,14 +268,22 @@ class ResourceManager {
   Magnum::Range3D computeMeshBB(BaseMesh* meshDataGL);
 
   /**
-   * @brief Compute the absolute AABBs for drawables in world space
+   * @brief Compute the absolute AABBs for drawables in PTex mesh in world space
    * @param baseMesh: ptex mesh
    */
 
   void computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh);
 
+  /**
+   * @brief Compute the absolute AABBs for drawables in general mesh (e.g.,
+   * MP3D)world space
+   */
   void computeGeneralMeshAbsoluteAABBs();
 
+  /*
+   * @brief Compute absolute transformations of all drwables stored in
+   * staticDrawableInfo_
+   */
   std::vector<Magnum::Matrix4> computeAbsoluteTransformations();
 
   // this helper vector contains all the drawables on which we will compute the

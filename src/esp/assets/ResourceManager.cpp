@@ -69,7 +69,7 @@ namespace assets {
 bool ResourceManager::loadScene(const AssetInfo& info,
                                 scene::SceneNode* parent, /* = nullptr */
                                 DrawableGroup* drawables /* = nullptr */) {
-  // we only compute absolute AABB for evey mesh components when loading ptex
+  // we only compute absolute AABB for evey mesh component when loading ptex
   // mesh, or general mesh (e.g., MP3D)
   if (info.type == AssetType::FRL_PTEX_MESH ||
       info.type == AssetType::MP3D_MESH) {
@@ -689,9 +689,9 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
 
   CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo_.size(),
                  "ResourceManager::computePTexMeshAbsoluteAABBs: number of "
-                 "transforms does not match number of drawables.", );
+                 "transformations does not match number of drawables.", );
 
-  // obtain the sub-meshes with the ptex mesh
+  // obtain the sub-meshes within the ptex mesh
   PTexMeshData& ptexMeshData = dynamic_cast<PTexMeshData&>(baseMesh);
   const std::vector<PTexMeshData::MeshData>& submeshes = ptexMeshData.meshes();
 
@@ -703,6 +703,7 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
       pos.emplace_back(p);
     }
 
+    // transform the vertex positions to the world space
     Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], pos);
 
     // locate the scene node which contains the current drawable
@@ -716,6 +717,7 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
 
 void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
   std::vector<Mn::Matrix4> absTransforms = computeAbsoluteTransformations();
+
   CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo_.size(),
                  "ResourceManager::computeGeneralMeshAbsoluteAABBs: number of "
                  "transforms does not match number of drawables.", );
