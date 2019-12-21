@@ -7,6 +7,7 @@
 #include <string>
 
 #include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/String.h>
 
 #include "Drawable.h"
 
@@ -147,8 +148,14 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       }
       break;
     case assets::AssetType::MP3D_MESH:
+      // TODO(msb) Fix AssetType determination logic.
       if (io::exists(houseFilename)) {
-        scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
+        using Corrade::Utility::String::endsWith;
+        if (endsWith(houseFilename, ".house")) {
+          scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
+        } else if (endsWith(houseFilename, ".scn")) {
+          scene::SemanticScene::loadGibsonHouse(houseFilename, *semanticScene_);
+        }
       }
       break;
     case assets::AssetType::SUNCG_SCENE:
@@ -348,6 +355,20 @@ double Simulator::getWorldTime() {
     return physicsManager_->getWorldTime();
   }
   return NO_TIME;
+}
+
+bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
+                                 const nav::NavMeshSettings& navMeshSettings) {
+  assets::MeshData::uptr joinedMesh =
+      resourceManager_.createJoinedCollisionMesh(config_.scene.id);
+
+  if (!pathfinder.build(navMeshSettings, *joinedMesh)) {
+    LOG(ERROR) << "Failed to build navmesh";
+    return false;
+  }
+
+  LOG(INFO) << "reconstruct navmesh successful";
+  return true;
 }
 
 }  // namespace gfx

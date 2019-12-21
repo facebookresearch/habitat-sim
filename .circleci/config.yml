@@ -6,7 +6,6 @@ gpu: &gpu
   environment:
     FPS_THRESHOLD: 900
 
-
 jobs:
   python_lint:
     docker:
@@ -47,7 +46,7 @@ jobs:
           command: |
             find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.(cpp|h|cu|hpp|cuh)$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
 
-  js_lint_and_test:
+  js_lint:
     docker:
       - image: circleci/node:11.9
     steps:
@@ -60,10 +59,6 @@ jobs:
           name: run eslint
           command: |
             npm run lint
-      - run:
-          name: run tests
-          command: |
-            npm run test
   install_and_test_ubuntu:
     <<: *gpu
     steps:
@@ -117,6 +112,50 @@ jobs:
                   libbullet-dev\
                   lcov\
                   unzip || true
+      - run:
+          name: Install Headless Chrome dependencies
+          command: |
+            sudo apt-get update || true
+            sudo apt-get install -yq \
+                  gconf-service \
+                  libasound2 \
+                  libatk1.0-0 \
+                  libatk-bridge2.0-0 \
+                  libc6 \
+                  libcairo2 \
+                  libcups2 \
+                  libdbus-1-3  \
+                  libexpat1 \
+                  libfontconfig1 \
+                  libgcc1 \
+                  libgconf-2-4 \
+                  libgdk-pixbuf2.0-0 \
+                  libglib2.0-0 \
+                  libgtk-3-0 \
+                  libnspr4 \
+                  libpango-1.0-0 \
+                  libpangocairo-1.0-0 \
+                  libstdc++6 \
+                  libx11-6 \
+                  libx11-xcb1 \
+                  libxcb1 \
+                  libxcomposite1 \
+                  libxcursor1 \
+                  libxdamage1 \
+                  libxext6 \
+                  libxfixes3 \
+                  libxi6 \
+                  libxrandr2 \
+                  libxrender1 \
+                  libxss1 \
+                  libxtst6 \
+                  ca-certificates \
+                  fonts-liberation \
+                  libappindicator1 \
+                  libnss3 \
+                  lsb-release \
+                  xdg-utils \
+                  wget
       - run:
           name: Install cuda
           no_output_timeout: 20m
@@ -266,6 +305,8 @@ jobs:
               export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
               nvm use v11.9.0
               ./build_js.sh
+              # TODO: Later fix this in the cmake build step
+              cp -v build_js/Release/bin/hsim_bindings.* build_js/esp/bindings_js/
       - run:
           name: Run sim benchmark
           command: |
@@ -273,6 +314,16 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
               python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
+      - run:
+          name: Run JavaScript tests
+          command: |
+            cd habitat-sim
+            . ~/.bashrc
+            export PATH=$HOME/miniconda/bin:$PATH
+            . activate habitat
+            export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
+            nvm use v11.9.0
+            npm run test
       - run:
           name: Run sim tests
           command: |
@@ -291,6 +342,9 @@ jobs:
               ./build.sh --headless
               pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
+              . ~/.bashrc
+              export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
+              nvm use v11.9.0
               # Generate JS CodeConv
               npm run test_with_coverage
       - run:
@@ -346,5 +400,5 @@ workflows:
     jobs:
       - python_lint
       - cpp_lint
-      - js_lint_and_test
+      - js_lint
       - install_and_test_ubuntu

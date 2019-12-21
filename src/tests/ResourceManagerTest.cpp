@@ -40,7 +40,7 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   const esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(boxFile);
   resourceManager.loadScene(info, navSceneNode, nullptr);
 
-  std::unique_ptr<esp::assets::MeshData> joinedBox =
+  esp::assets::MeshData::uptr joinedBox =
       resourceManager.createJoinedCollisionMesh(boxFile);
 
   // transform_box.glb is composed of 6 identical triangulated plane meshes
