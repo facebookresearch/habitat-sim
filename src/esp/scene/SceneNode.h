@@ -44,7 +44,7 @@ class SceneNode : public MagnumObject {
   template <class U, class... Args>
   void addFeature(Args&&... args) {
     // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
-    return new U{*this, std::forward<Args>(args)...};
+    new U{*this, std::forward<Args>(args)...};
   }
 
   //! Create a new child SceneNode and return it. NOTE: this SceneNode owns and
