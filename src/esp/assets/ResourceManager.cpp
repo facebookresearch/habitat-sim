@@ -125,7 +125,8 @@ bool ResourceManager::loadScene(const AssetInfo& info,
           metaData.meshIndex.first == metaData.meshIndex.second,
           "ResourceManager::loadScene: ptex mesh is not loaded correctly.",
           false);
-      computePtexMeshAbsoluteAABBs(*(meshes_[metaData.meshIndex.first].get()));
+
+      computePTexMeshAbsoluteAABBs(*(meshes_[metaData.meshIndex.first].get()));
     } else if (info.type == AssetType::MP3D_MESH) {
       computeGeneralMeshAbsoluteAABBs();
     }
@@ -134,6 +135,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   if (computeAbsoluteAABBs_) {
     computeAbsoluteAABBs_ = false;
   }
+
   return meshSuccess;
 }
 
@@ -682,8 +684,34 @@ Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   return Magnum::Range3D{
       Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)};
 }
-void ResourceManager::computePtexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
+void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
   std::vector<Mn::Matrix4> absTransforms = computeAbsoluteTransformations();
+
+  CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo_.size(),
+                 "ResourceManager::computePTexMeshAbsoluteAABBs: number of "
+                 "transforms does not match number of drawables.", );
+
+  // obtain the sub-meshes with the ptex mesh
+  PTexMeshData& ptexMeshData = dynamic_cast<PTexMeshData&>(baseMesh);
+  const std::vector<PTexMeshData::MeshData>& submeshes = ptexMeshData.meshes();
+
+  for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
+    // convert std::vector<vec3f> to std::vector<Mn::Vector3>
+    std::vector<Mn::Vector3> pos;
+    uint32_t meshID = staticDrawableInfo_[iEntry].second;
+    for (auto& p : submeshes[meshID].vbo) {
+      pos.emplace_back(p);
+    }
+
+    Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], pos);
+
+    // locate the scene node which contains the current drawable
+    esp::gfx::Drawable& drawable = staticDrawableInfo_[iEntry].first.get();
+    scene::SceneNode& node = dynamic_cast<scene::SceneNode&>(drawable.object());
+
+    // set the absolute axis aligned bounding box
+    node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(pos)});
+  }
 }
 
 void ResourceManager::computeGeneralMeshAbsoluteAABBs() {

@@ -272,7 +272,7 @@ class ResourceManager {
    * @param baseMesh: ptex mesh
    */
 
-  void computePtexMeshAbsoluteAABBs(BaseMesh& baseMesh);
+  void computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh);
 
   void computeGeneralMeshAbsoluteAABBs();
 
