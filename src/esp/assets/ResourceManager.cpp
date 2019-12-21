@@ -747,12 +747,22 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 
       pTexMeshData->uploadBuffersToGPU(false);
 
+      const std::vector<PTexMeshData::MeshData>& submeshes =
+          pTexMeshData->meshes();
+
       for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
         scene::SceneNode& node = parent->createChild();
         const quatf transform = info.frame.rotationFrameToWorld();
         node.setRotation(Magnum::Quaternion(transform));
         new gfx::PTexMeshDrawable{node, *ptexShader, *pTexMeshData, jSubmesh,
                                   drawables};
+
+        // compute local aabb
+        std::vector<Mn::Vector3> pos;
+        for (auto& p : submeshes[jSubmesh].vbo) {
+          pos.emplace_back(p);
+        }
+        node.setMeshBB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(pos)});
       }
     }
   }
