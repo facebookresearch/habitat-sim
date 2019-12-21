@@ -268,16 +268,15 @@ class ResourceManager {
   Magnum::Range3D computeMeshBB(BaseMesh* meshDataGL);
 
   /**
-   * @brief Compute and return the axis aligned bounding box of a mesh in world
-   * space
-   * @param meshData The mesh data.
-   * @return The bounding box in world space
+   * @brief Compute the absolute AABBs for drawables in world space
+   * @param baseMesh: ptex mesh
    */
 
-  Magnum::Range3D computeAbsoluteAABB(BaseMesh* meshData);
+  void computePtexMeshAbsoluteAABBs(BaseMesh& baseMesh);
 
-  std::vector<Magnum::Matrix4> computeAbsoluteTransformations(
-      scene::SceneNode* parent);
+  void computeGeneralMeshAbsoluteAABBs();
+
+  std::vector<Magnum::Matrix4> computeAbsoluteTransformations();
 
   // this helper vector contains all the drawables on which we will compute the
   // absolute AABB
@@ -286,14 +285,13 @@ class ResourceManager {
   //
   // -) non-ptex mesh:
   // meshID is the global index into meshes_.
-  // meshes_[meshID] is the BasehMesh corresponding to the drawable;
+  // meshes_[meshID] is the BaseMesh corresponding to the drawable;
   //
   // -) ptex mesh:
-  // meshID is the index into its internal submeshes.
-  // meshes_[meshID] is the submesh corresponding to the drawable;
+  // meshID is the index of the submesh corresponding to the drawable;
   std::vector<std::pair<std::reference_wrapper<esp::gfx::Drawable>, uint32_t>>
-      staticDrawables_;
-  bool collectStaticDrawables_ = false;
+      staticDrawableInfo_;
+  bool computeAbsoluteAABBs_ = false;
 
   // ======== General geometry data ========
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or

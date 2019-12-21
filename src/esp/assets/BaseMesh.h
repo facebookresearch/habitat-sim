@@ -40,6 +40,9 @@ class BaseMesh {
 
   virtual Magnum::GL::Mesh* getMagnumGLMesh() { return nullptr; }
   virtual Magnum::GL::Mesh* getMagnumGLMesh(int) { return nullptr; }
+  Corrade::Containers::Optional<Magnum::Trade::MeshData3D>& getMeshData() {
+    return meshData_;
+  }
 
   // Accessing non-render mesh data
   // Usage: (1) physics simulation
@@ -60,7 +63,8 @@ class BaseMesh {
   bool buffersOnGPU_ = false;
 
   // ==== rendering ===
-  Corrade::Containers::Optional<Magnum::Trade::MeshData3D> meshData_;
+  Corrade::Containers::Optional<Magnum::Trade::MeshData3D> meshData_ =
+      Corrade::Containers::NullOpt;
   // ==== non-rendering ===
   CollisionMeshData collisionMeshData_;
 };
