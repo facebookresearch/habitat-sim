@@ -8,7 +8,6 @@ google-*,
 -clang-analyzer-security.insecureAPI.rand,
 -google-default-arguments,
 -google-readability-braces-around-statements,
--google-readability-casting,
 -google-readability-todo,
 -google-runtime-references
 '

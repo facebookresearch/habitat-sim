@@ -18,6 +18,7 @@
 namespace esp {
 namespace nav {
 class PathFinder;
+class NavMeshSettings;
 class ActionSpacePathFinder;
 }  // namespace nav
 namespace scene {
@@ -251,9 +252,6 @@ class Simulator {
    */
   Magnum::Quaternion getRotation(const int objectID, const int sceneID = 0);
 
-  // the physical world has a notion of time which passes during
-  // animation/simulation/action/etc... return the new world time after stepping
-
   /**
    * @brief the physical world has a notion of time which passes during
    * animation/simulation/action/etc... Step the physical world forward in time
@@ -267,7 +265,6 @@ class Simulator {
    */
   double stepWorld(const double dt = 1.0 / 60.0);
 
-  // get the simulated world time (0 if no physics enabled)
   /**
    * @brief Get the current time in the simulated world. This is always 0 if no
    * @ref esp::physics::PhysicsManager is initialized. See @ref stepWorld. See
@@ -276,6 +273,18 @@ class Simulator {
    * by which the physical world has advanced.
    */
   double getWorldTime();
+
+  /**
+   * @brief Compute the navmesh for the simulator's current active scene and
+   * assign it to the referenced @ref nav::PathFinder.
+   * @param pathfinder The pathfinder object to which the recomputed navmesh
+   * will be assigned.
+   * @param navMeshSettings The @ref nav::NavMeshSettings instance to
+   * parameterize the navmesh construction.
+   * @return Whether or not the navmesh recomputation succeeded.
+   */
+  bool recomputeNavMesh(nav::PathFinder& pathfinder,
+                        const nav::NavMeshSettings& navMeshSettings);
 
  protected:
   Simulator(){};
