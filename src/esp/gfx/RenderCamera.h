@@ -49,10 +49,14 @@ class RenderCamera : public Magnum::SceneGraph::AbstractFeature3D {
 
   MagnumCamera& getMagnumCamera();
 
-  void draw(MagnumDrawableGroup& drawables);
+  // return number of drawables that are drawn
+  uint32_t draw(MagnumDrawableGroup& drawables);
+
+  void enableFrustumCulling(bool value) { frustumCulling = value; }
 
  protected:
   MagnumCamera* camera_ = nullptr;
+  bool frustumCulling = false;
 
   ESP_SMART_POINTERS(RenderCamera)
 };
