@@ -709,8 +709,7 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
     Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], pos);
 
     // locate the scene node which contains the current drawable
-    esp::gfx::Drawable& drawable = staticDrawableInfo_[iEntry].first.get();
-    scene::SceneNode& node = dynamic_cast<scene::SceneNode&>(drawable.object());
+    scene::SceneNode& node = staticDrawableInfo_[iEntry].first.get();
 
     // set the absolute axis aligned bounding box
     node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(pos)});
@@ -725,7 +724,6 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
                  "transforms does not match number of drawables.", );
 
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
-    esp::gfx::Drawable& drawable = staticDrawableInfo_[iEntry].first.get();
     uint32_t meshID = staticDrawableInfo_[iEntry].second;
 
     Corrade::Containers::Optional<Magnum::Trade::MeshData3D>& meshData =
@@ -752,7 +750,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
     }
 
     // locate the scene node which contains the current drawable
-    scene::SceneNode& node = dynamic_cast<scene::SceneNode&>(drawable.object());
+    scene::SceneNode& node = staticDrawableInfo_[iEntry].first.get();
 
     // set the absolute axis aligned bounding box
     node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(bbPos)});
@@ -770,7 +768,7 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations() {
   // so use the 1st element in the vector to obtain this scene
   auto* scene = dynamic_cast<Mn::SceneGraph::Scene<
       Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<float>>*>(
-      staticDrawableInfo_[0].first.get().object().scene());
+      staticDrawableInfo_[0].first.get().scene());
 
   // collect all drawable objects
   std::vector<std::reference_wrapper<Mn::SceneGraph::Object<
@@ -783,7 +781,7 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations() {
     objects.emplace_back(
         dynamic_cast<Mn::SceneGraph::Object<
             Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<
-                float>>&>(staticDrawableInfo_[iDrawable].first.get().object()));
+                float>>&>(staticDrawableInfo_[iDrawable].first.get()));
   }
 
   // compute transformations of all objects in the group relative to the root,
@@ -901,7 +899,7 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
             node, *ptexShader, *pTexMeshData, jSubmesh, drawables};
 
         if (computeAbsoluteAABBs_) {
-          staticDrawableInfo_.emplace_back(*d, jSubmesh);
+          staticDrawableInfo_.emplace_back(node, jSubmesh);
         }
       }
     }
@@ -1378,7 +1376,7 @@ void ResourceManager::createDrawable(
     gfx::PrimitiveIDDrawable* d =
         new gfx::PrimitiveIDDrawable{node, *shader, mesh, group};
     if (computeAbsoluteAABBs_ && meshID) {
-      staticDrawableInfo_.emplace_back(*d, *meshID);
+      staticDrawableInfo_.emplace_back(node, *meshID);
     }
   } else {  // all other shaders use GenericShader
     auto* shader =
@@ -1388,7 +1386,7 @@ void ResourceManager::createDrawable(
     gfx::GenericDrawable* d = new gfx::GenericDrawable{
         node, *shader, mesh, group, texture, objectId, color};
     if (computeAbsoluteAABBs_ && meshID) {
-      staticDrawableInfo_.emplace_back(*d, *meshID);
+      staticDrawableInfo_.emplace_back(node, *meshID);
     }
   }
 }
