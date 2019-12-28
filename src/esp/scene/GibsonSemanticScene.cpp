@@ -19,6 +19,18 @@ namespace scene {
 
 constexpr int kMaxIds = 10000; /* We shouldn't every need more than this. */
 
+namespace {
+vec3f jsonToVec3f(const esp::io::JsonGenericValue& jsonObject) {
+  vec3f vec;
+  size_t dim = 0;
+  ASSERT(jsonObject.GetArray().Size() == vec.size());
+  for (const auto& element : jsonObject.GetArray()) {
+    vec[dim++] = element.GetFloat();
+  }
+  return vec;
+}
+}  // namespace
+
 bool SemanticScene::loadGibsonHouse(
     const std::string& houseFilename,
     SemanticScene& scene,
@@ -67,7 +79,17 @@ bool SemanticScene::loadGibsonHouse(
       scene.categories_.push_back(category);
       object->category_ = std::move(category);
     }
-    // TODO(msb) add support for aabb
+
+    const auto& jsonCenter = jsonObject["location"];
+    if (!jsonCenter.IsNull()) {
+      vec3f center = jsonToVec3f(jsonCenter);
+      const auto& jsonSize = jsonObject["size"];
+      vec3f size = vec3f::Zero();
+      if (!jsonSize.IsNull()) {
+        size = jsonToVec3f(jsonSize);
+      }
+      object->obb_ = geo::OBB(center, size, quatf::Identity());
+    }
     scene.objects_[id] = std::move(object);
   }
 

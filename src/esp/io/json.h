@@ -16,6 +16,8 @@ namespace esp {
 namespace io {
 
 typedef rapidjson::Document JsonDocument;
+typedef rapidjson::GenericValue<rapidjson::UTF8<> > JsonGenericValue;
+// typedef rapidjson::GenericObject JsonGenericValue;
 
 //! Parse JSON file and return as JsonDocument object
 JsonDocument parseJsonFile(const std::string& file);
