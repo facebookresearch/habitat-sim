@@ -12,13 +12,14 @@
 namespace esp {
 namespace sensor {
 
-// Sensors need to extend this for their specification
+// Sensors need to extend this struct for their custom specification
 struct BaseSensorSpec {
   // Specifies a unique idenfitier for the sensor for e.g. "rgb"
   std::string UID = "base";
   // Specifies the type of sensor
   // TODO: Consider if this should be converted to an enum
   std::string sensorType = "none";
+  ESP_SMART_POINTERS(BaseSensorSpec);
 };
 
 // Base class for a sensor register to the simulator
@@ -31,7 +32,7 @@ class BaseSensor : public Magnum::SceneGraph::AbstractFeature3D {
    * @param[in] spec Instance of BaseSensorSpec or derived structs describing
    *                 specification of the sensor
    */
-  explicit BaseSensor(scene::SceneNode& node, const BaseSensorSpec spec);
+  explicit BaseSensor(scene::SceneNode& node, const BaseSensorSpec& spec);
 
   /**
    * @brief Provides the type of the sensor
@@ -39,7 +40,7 @@ class BaseSensor : public Magnum::SceneGraph::AbstractFeature3D {
    *
    * NOTE: Override in child sensor class
    */
-  virtual const std::string getType() const = 0;
+  virtual const std::string& getType() const = 0;
 
   /**
    * @brief Universally Unique Identifier for the current instance of the
@@ -47,7 +48,7 @@ class BaseSensor : public Magnum::SceneGraph::AbstractFeature3D {
    *        sensor specification.
    * @return string UUID for the current instance
    */
-  const std::string getUUID() const;
+  const std::string& getUUID() const;
 
   /**
    * @brief Get current observation for the sensor
@@ -61,7 +62,7 @@ class BaseSensor : public Magnum::SceneGraph::AbstractFeature3D {
    * @brief Assign current observation of the sensor to the
    *        passed argument
    * @param[in, out] obs Pointer to the variable to which current observation
-   *                will be assigned
+   *                     will be assigned
    *
    * NOTE: Override in child sensor class
    */
@@ -69,12 +70,12 @@ class BaseSensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   /**
    * @brief Get shape of the observation returned by the sensor
-   * @return vector<int> Array defining shape of the observation
-   *                     returned by the sensor for e.g. [2, 3]
+   * @return vector<size_t> Array defining shape of the observation
+   *                        returned by the sensor for e.g. [2, 3]
    *
    * NOTE: Override in child sensor class
    */
-  virtual const std::vector<int> getObservationShape() const = 0;
+  virtual const std::vector<size_t>& getObservationShape() const = 0;
 
   /**
    * @brief Get data type of the observation
@@ -83,7 +84,10 @@ class BaseSensor : public Magnum::SceneGraph::AbstractFeature3D {
    *
    * NOTE: Override in child class
    */
-  virtual const std::string getObservationDataType() const = 0;
+  virtual const std::string& getObservationDataType() const = 0;
+
+ protected:
+  ESP_SMART_POINTERS(BaseSensor);
 };
 
 // Factory for creating sensors
@@ -99,8 +103,11 @@ class SensorFactory {
    * object. Then, creates BaseSensor/derived class object using SensorSpec
    * object and SceneNode object.
    */
-  static BaseSensor* create(scene::SceneNode& node,
-                            const esp::io::JsonDocument spec);
+  static BaseSensor::uptr create(scene::SceneNode& node,
+                                 const esp::io::JsonDocument& spec);
+
+ protected:
+  ESP_SMART_POINTERS(SensorFactory);
 };
 }  // namespace sensor
 }  // namespace esp
