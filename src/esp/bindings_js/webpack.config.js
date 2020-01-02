@@ -20,7 +20,7 @@ console.log("Build Directory is", buildRootPath);
 
 const config = {
   target: "web",
-  entry: path.resolve(__dirname, "index.js"),
+  entry: path.resolve(__dirname, "index.ts"),
   output: {
     path: buildRootPath,
     filename: "bundle.js"
@@ -30,7 +30,7 @@ const config = {
       // Babel loader for > ES6 compilation
       // Will also run eslint
       {
-        test: /\.(js)$/,
+        test: /\.(js|ts)$/,
         exclude: /node_modules/,
         use: ["babel-loader", "eslint-loader"]
       },
@@ -43,7 +43,7 @@ const config = {
   },
   // No need to add .js at the end of the module names with this
   resolve: {
-    extensions: [".js"]
+    extensions: [".js", ".ts"]
   },
   plugins: [
     new HtmlWebpackPlugin({
