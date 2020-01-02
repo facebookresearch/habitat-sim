@@ -6,6 +6,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
                ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
 add_executable(GibsonSceneTest GibsonSceneTest.cpp)
-target_link_libraries(GibsonSceneTest gtest_main scene)
+target_link_libraries(GibsonSceneTest gtest_main scene sim)
 
 gtest_discover_tests(GibsonSceneTest)

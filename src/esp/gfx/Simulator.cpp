@@ -57,6 +57,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     houseFilename = cfg.scene.filepaths.at("house");
   }
 
+  if (!io::exists(houseFilename)) {
+    houseFilename = io::changeExtension(sceneFilename, ".scn");
+  }
+
   const assets::AssetInfo sceneInfo =
       assets::AssetInfo::fromPath(sceneFilename);
 
@@ -129,7 +133,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       if (!(sceneInfo.type == assets::AssetType::SUNCG_SCENE ||
             sceneInfo.type == assets::AssetType::INSTANCE_MESH ||
             sceneFilename.compare(assets::EMPTY_SCENE) == 0)) {
-        // TODO: programmatic generation of semantic meshes when no annotiations
+        // TODO: programmatic generation of semantic meshes when no annotations
         // are provided.
         LOG(WARNING) << ":\n---\n The active scene does not contain semantic "
                         "annotations. \n---";
