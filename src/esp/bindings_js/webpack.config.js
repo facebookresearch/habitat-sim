@@ -20,7 +20,7 @@ console.log("Build Directory is", buildRootPath);
 
 const config = {
   target: "web",
-  entry: path.resolve(__dirname, "index.ts"),
+  entry: path.resolve(__dirname, "index.js"),
   output: {
     path: buildRootPath,
     filename: "bundle.js"
