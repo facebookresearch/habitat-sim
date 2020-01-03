@@ -1228,6 +1228,8 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                        materials_[materialID]->diffuseColor());
       }
     } else {
+      // TODO: some types (such as .ply with vertex color) get binned here
+      // incorrectly.
       // Color-only material
       createDrawable(COLORED_SHADER, mesh, node, drawables, texture,
                      materials_[materialID]->diffuseColor());
