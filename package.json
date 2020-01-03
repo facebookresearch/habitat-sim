@@ -35,8 +35,9 @@
     "test_with_coverage": "jest ./src/esp/bindings_js/tests/ --collectCoverage",
     "format": "prettier --trailing-comma es5 --single-quote './src/esp/bindings_js/**/*.js'",
     "build": "webpack --config ./src/esp/bindings_js/webpack.config.js",
-    "lint": "eslint --ext .html,.js ./src/esp/bindings_js",
-    "lint-fix": "eslint --ext .html,.js --fix ./src/esp/bindings_js"
+    "lint": "eslint --ext .html,.js,.ts ./src/esp/bindings_js",
+    "lint-fix": "eslint --ext .html,.js,.ts --fix ./src/esp/bindings_js",
+    "check_types": "tsc"
   },
   "repository": {
     "type": "git",
