@@ -69,11 +69,12 @@ bool BulletRigidObject::initializeScene(
 // recursively create the convex mesh shapes and add them to the compound in a
 // flat manner by accumulating transformations down the tree
 void BulletRigidObject::constructBulletCompoundFromMeshes(
-    const Magnum::Matrix4& T_world_parent,
+    const Magnum::Matrix4& transformFromParentToWorld,
     const std::vector<assets::CollisionMeshData>& meshGroup,
     const assets::MeshTransformNode& node,
     bool join) {
-  Magnum::Matrix4 T_world_local = T_world_parent * node.T_parent_local;
+  Magnum::Matrix4 transformFromLocalToWorld =
+      transformFromParentToWorld * node.transformFromLocalToParent;
   if (node.meshIDLocal != ID_UNDEFINED) {
     // This node has a mesh, so add it to the compound
 
@@ -93,7 +94,7 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
         // add points
         for (auto& v : mesh.positions) {
           bObjectConvexShapes_.back()->addPoint(
-              btVector3(T_world_local.transformPoint(v)), false);
+              btVector3(transformFromLocalToWorld.transformPoint(v)), false);
         }
         bObjectConvexShapes_.back()->recalcLocalAabb();
       } else {
@@ -102,7 +103,7 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
             mesh.positions.size(), sizeof(Magnum::Vector3)));
 
         //! Add to compound shape stucture
-        bObjectShape_->addChildShape(btTransform{T_world_local},
+        bObjectShape_->addChildShape(btTransform{transformFromLocalToWorld},
                                      bObjectConvexShapes_.back().get());
       }
     } else {
@@ -134,13 +135,14 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
           std::make_unique<btBvhTriangleMeshShape>(bSceneArray_.get(), true));
 
       //! Add to compound shape stucture
-      bObjectShape_->addChildShape(btTransform{T_world_local},
+      bObjectShape_->addChildShape(btTransform{transformFromLocalToWorld},
                                    bSceneShapes_.back().get());
     }
   }
 
   for (auto& child : node.children) {
-    constructBulletCompoundFromMeshes(T_world_local, meshGroup, child, join);
+    constructBulletCompoundFromMeshes(transformFromLocalToWorld, meshGroup,
+                                      child, join);
   }
 }
 

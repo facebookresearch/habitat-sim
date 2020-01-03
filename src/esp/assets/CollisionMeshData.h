@@ -21,16 +21,24 @@ namespace assets {
 /**
  * @brief Provides references to geometry and topology for an individual
  * component of an asset for use in generating collision shapes for simulation.
+ *
  * Usage: (1) for creating collision mesh/convex in @ref
  * physics::BulletPhysicsManager and @ref physics::BulletRigidObject
  */
 struct CollisionMeshData {
-  //! Primitive type (has to be triangle for Bullet to work). See @ref
-  //! BulletRigidObject::constructBulletCompoundFromMeshes.
+  /**
+   * @brief Primitive type (has to be triangle for Bullet to work).
+   *
+   * See @ref BulletRigidObject::constructBulletCompoundFromMeshes.
+   */
   Magnum::MeshPrimitive primitive;
-  //! Reference to Vertex positions
+  /**
+   * @brief Reference to Vertex positions.
+   */
   Corrade::Containers::ArrayView<Magnum::Vector3> positions;
-  //! Reference to Vertex indices
+  /**
+   * @brief Reference to Vertex indices.
+   */
   Corrade::Containers::ArrayView<Magnum::UnsignedInt> indices;
 };
 

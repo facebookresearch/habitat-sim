@@ -1,0 +1,16 @@
+{
+  "objects": [
+    {
+      "class_": "microwave",
+      "id": 1
+    },
+    {
+      "class_": "oven",
+      "id": 2
+    },
+    {
+      "class_": "microwave",
+      "id": 3
+    }
+  ]
+}

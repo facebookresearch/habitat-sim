@@ -16,9 +16,12 @@ namespace esp {
 namespace assets {
 
 /**
- * @brief Some mesh files include a transformation hierarchy. A @ref
- * MeshTransformNode stores this hierarchy and indices for the meshes at each
- * level such that it can be reused to instance meshes later.
+ * @brief Stores meta data for objects with a multi-component transformation
+ * heirarchy.
+ *
+ * Some mesh files include a transformation hierarchy. A @ref
+ * MeshTransformNode stores this hierarchy and indices for the meshes and
+ * materials at each level such that it can be reused to instance meshes later.
  */
 struct MeshTransformNode {
   /** @brief Local mesh index within @ref MeshMetaData::meshIndex. */
@@ -35,7 +38,7 @@ struct MeshTransformNode {
   std::vector<MeshTransformNode> children;
 
   /** @brief Node local transform to the parent frame */
-  Magnum::Matrix4 T_parent_local;
+  Magnum::Matrix4 transformFromLocalToParent;
 
   /** @brief Default constructor. */
   MeshTransformNode() {
@@ -47,9 +50,10 @@ struct MeshTransformNode {
 
 /**
  * @brief Stores meta data for an asset possibly containing multiple meshes,
- * materials, textures, and a heirarchy of component transform relationships. As
- * each type of data may contain a few items, we save the start index, and the
- * end index (of each type) as a pair. In current implementation: ptex mesh:
+ * materials, textures, and a heirarchy of component transform relationships.
+ *
+ * As each type of data may contain a few items, we save the start index, and
+ * the end index (of each type) as a pair. In current implementation: ptex mesh:
  * meshes_ (1 item), textures_ (0 item), materials_ (0 item); instance mesh:
  * meshes_ (1 item), textures_ (0 item), materials_ (0 item); gltf_mesh,
  * glb_mesh: meshes_ (i items), textures (j items), materials_ (k items), i, j,

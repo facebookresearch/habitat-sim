@@ -171,3 +171,35 @@ def test_smoke_redwood_noise(scene, gpu2gpu, sim, make_cfg_settings):
     assert np.linalg.norm(
         obs["depth_sensor"].astype(np.float) - gt.astype(np.float)
     ) > 1.5e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
+
+
+@pytest.mark.gfxtest
+@pytest.mark.parametrize("scene", _test_scenes)
+@pytest.mark.parametrize(
+    "model_name",
+    [
+        "SpeckleNoiseModel",
+        "GaussianNoiseModel",
+        "SaltAndPepperNoiseModel",
+        "PoissonNoiseModel",
+    ],
+)
+def test_rgb_noise(scene, model_name, sim, make_cfg_settings):
+    if not osp.exists(scene):
+        pytest.skip("Skipping {}".format(scene))
+
+    make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
+    make_cfg_settings["depth_sensor"] = False
+    make_cfg_settings["color_sensor"] = True
+    make_cfg_settings["semantic_sensor"] = False
+    make_cfg_settings["scene"] = scene
+    hsim_cfg = make_cfg(make_cfg_settings)
+    hsim_cfg.agents[0].sensor_specifications[0].noise_model = model_name
+
+    sim.reconfigure(hsim_cfg)
+
+    obs, gt = _render_and_load_gt(sim, scene, "color_sensor", False)
+
+    assert np.linalg.norm(
+        obs["color_sensor"].astype(np.float) - gt.astype(np.float)
+    ) > 1.5e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"

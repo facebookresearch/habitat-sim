@@ -45,6 +45,29 @@ void initShortestPathBindings(py::module& m) {
       .def_readwrite("geodesic_distance",
                      &MultiGoalShortestPath::geodesicDistance);
 
+  py::class_<NavMeshSettings, NavMeshSettings::ptr>(m, "NavMeshSettings")
+      .def(py::init(&NavMeshSettings::create<>))
+      .def_readwrite("cell_size", &NavMeshSettings::cellSize)
+      .def_readwrite("cell_height", &NavMeshSettings::cellHeight)
+      .def_readwrite("agent_height", &NavMeshSettings::agentHeight)
+      .def_readwrite("agent_radius", &NavMeshSettings::agentRadius)
+      .def_readwrite("agent_max_climb", &NavMeshSettings::agentMaxClimb)
+      .def_readwrite("agent_max_slope", &NavMeshSettings::agentMaxSlope)
+      .def_readwrite("region_min_size", &NavMeshSettings::regionMinSize)
+      .def_readwrite("region_merge_size", &NavMeshSettings::regionMergeSize)
+      .def_readwrite("edge_max_len", &NavMeshSettings::edgeMaxLen)
+      .def_readwrite("edge_max_error", &NavMeshSettings::edgeMaxError)
+      .def_readwrite("verts_per_poly", &NavMeshSettings::vertsPerPoly)
+      .def_readwrite("detail_sample_dist", &NavMeshSettings::detailSampleDist)
+      .def_readwrite("detail_sample_max_error",
+                     &NavMeshSettings::detailSampleMaxError)
+      .def_readwrite("filter_low_hanging_obstacles",
+                     &NavMeshSettings::filterLowHangingObstacles)
+      .def_readwrite("filter_ledge_spans", &NavMeshSettings::filterLedgeSpans)
+      .def_readwrite("filter_walkable_low_height_spans",
+                     &NavMeshSettings::filterWalkableLowHeightSpans)
+      .def("set_defaults", &NavMeshSettings::setDefaults);
+
   py::class_<PathFinder, PathFinder::ptr>(m, "PathFinder")
       .def(py::init(&PathFinder::create<>))
       .def("get_bounds", &PathFinder::bounds)
