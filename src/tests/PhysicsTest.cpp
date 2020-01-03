@@ -81,6 +81,11 @@ TEST(PhysicsTest, JoinCompound) {
       int num_objects = 7;
       for (int o = 0; o < num_objects; o++) {
         int objectId = physicsManager_->addObject(objectFile, nullptr);
+
+        const esp::scene::SceneNode& node =
+            physicsManager_->getObjectSceneNode(objectId);
+        node.getId();
+
         objectIds.push_back(o);
         Magnum::Matrix4 R{
             Magnum::Matrix4::rotationX(Magnum::Math::Rad<float>(-1.56)) *
