@@ -100,7 +100,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
       int num_objects = 7;
       for (int o = 0; o < num_objects; o++) {
         int objectId = physicsManager_->addObject(objectFile, nullptr);
-        objectIds.push_back(o);
+        objectIds.push_back(objectId);
         Magnum::Matrix4 R{
             Magnum::Matrix4::rotationX(Magnum::Math::Rad<float>(-1.56)) *
             Magnum::Matrix4::rotationY(Magnum::Math::Rad<float>(-0.25))};
@@ -128,4 +128,28 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
       }
     }
   }
+}
+
+TEST_F(PhysicsManagerTest, AssignSemanticId) {
+  LOG(INFO) << "Starting physics test: AssignSemanticId";
+
+  std::string sceneFile = "NONE";
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+  // get a reference to the stored template to edit
+  esp::assets::PhysicsObjectAttributes& objectTemplate =
+      resourceManager_.getPhysicsObjectAttributes(objectFile);
+
+  initScene(sceneFile);
+
+  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+  int objectId = physicsManager_->addObject(objectFile, &drawables);
+
+  // TODO: query objectId from node
 }
