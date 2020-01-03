@@ -624,9 +624,6 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
     if (objPhysicsConfig["semantic id"].IsInt()) {
       physicsObjectAttributes.setInt("semanticId",
                                      objPhysicsConfig["semantic id"].GetInt());
-      // set the objectID for use when creating the drawables
-      setAllObjectIDs(objPhysicsConfig["semantic id"].GetInt(),
-                      resourceDict_.at(renderMeshFilename).root);
     } else {
       LOG(ERROR) << " Invalid value in object physics config - semantic id";
     }
