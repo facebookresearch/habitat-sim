@@ -25,17 +25,6 @@ struct MeshData;
 }
 namespace nav {
 
-struct NavMeshDeleter {
-  void operator()(dtNavMesh* mesh) const { dtFreeNavMesh(mesh); }
-};
-using NavMeshUniquePtr = std::unique_ptr<dtNavMesh, NavMeshDeleter>;
-
-struct NavMeshQueryDeleter {
-  void operator()(dtNavMeshQuery* query) const { dtFreeNavMeshQuery(query); }
-};
-using NavMeshQueryUniquePtr =
-    std::unique_ptr<dtNavMeshQuery, NavMeshQueryDeleter>;
-
 struct HitRecord {
   vec3f hitPos;
   vec3f hitNormal;
@@ -128,6 +117,17 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
     free();
     LOG(INFO) << "Deconstructing PathFinder";
   }
+
+  struct NavMeshDeleter {
+    void operator()(dtNavMesh* mesh) const { dtFreeNavMesh(mesh); }
+  };
+  using NavMeshUniquePtr = std::unique_ptr<dtNavMesh, NavMeshDeleter>;
+
+  struct NavMeshQueryDeleter {
+    void operator()(dtNavMeshQuery* query) const { dtFreeNavMeshQuery(query); }
+  };
+  using NavMeshQueryUniquePtr =
+      std::unique_ptr<dtNavMeshQuery, NavMeshQueryDeleter>;
 
   bool build(const NavMeshSettings& bs,
              const float* verts,
