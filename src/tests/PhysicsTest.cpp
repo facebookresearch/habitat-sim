@@ -85,7 +85,6 @@ TEST(PhysicsTest, JoinCompound) {
 
         const esp::scene::SceneNode& node =
             physicsManager_->getObjectSceneNode(objectId);
-        node.getId();
 
         Magnum::Matrix4 R{
             Magnum::Matrix4::rotationX(Magnum::Math::Rad<float>(-1.56)) *
@@ -95,6 +94,8 @@ TEST(PhysicsTest, JoinCompound) {
         physicsManager_->setRotation(
             objectId, Magnum::Quaternion::fromMatrix(R.rotationNormalized()));
         physicsManager_->setTranslation(objectId, initialPosition);
+
+        ASSERT_EQ(node.absoluteTranslation(), initialPosition);
       }
 
       float timeToSim = 10.0;
