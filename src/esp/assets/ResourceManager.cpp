@@ -378,6 +378,15 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
 
     MeshMetaData& meshMetaData = resourceDict_[filename];
 
+    // reset the semantic Id for an asset if config was changed
+    if (meshMetaData.root.objectID !=
+        physicsObjectAttributes.getInt("semanticId")) {
+      setAllObjectIDs(physicsObjectAttributes.getInt("semanticId"),
+                      meshMetaData.root);
+      // also set the object root node since addComponent won't
+      parent->setId(physicsObjectAttributes.getInt("semanticId"));
+    }
+
     addComponent(meshMetaData, *parent, drawables, meshMetaData.root);
     // compute the full BB hierarchy for the new tree.
     parent->computeCumulativeBB();
@@ -1086,10 +1095,8 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
 }
 
 void ResourceManager::setAllObjectIDs(int objectID, MeshTransformNode& root) {
-  // if there is a mesh, set the objectID for the component
-  if (root.meshIDLocal != ID_UNDEFINED) {
-    root.objectID = objectID;
-  }
+  // set the objectID for the component
+  root.objectID = objectID;
 
   // Recursively set children
   for (auto& child : root.children) {
@@ -1173,12 +1180,13 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
 
   const int meshIDLocal = meshTransformNode.meshIDLocal;
 
+  node.setId(meshTransformNode.objectID);
+
   // Add a drawable if the object has a mesh and the mesh is loaded
   if (meshIDLocal != ID_UNDEFINED) {
     const int meshID = metaData.meshIndex.first + meshIDLocal;
     const int materialIDLocal = meshTransformNode.materialIDLocal;
-    addMeshToDrawables(metaData, node, drawables, meshTransformNode.objectID,
-                       meshIDLocal, materialIDLocal);
+    addMeshToDrawables(metaData, node, drawables, meshIDLocal, materialIDLocal);
 
     // compute the bounding box for the mesh we are adding
     BaseMesh* mesh = meshes_[meshID].get();
@@ -1194,7 +1202,6 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
 void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                                          scene::SceneNode& node,
                                          DrawableGroup* drawables,
-                                         int objectID,
                                          int meshIDLocal,
                                          int materialIDLocal) {
   const int meshStart = metaData.meshIndex.first;
@@ -1203,8 +1210,6 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
 
   const int materialStart = metaData.materialIndex.first;
   const int materialID = materialStart + materialIDLocal;
-
-  node.setId(objectID);
 
   Magnum::GL::Texture2D* texture = nullptr;
   // Material not set / not available / not loaded, use a default material

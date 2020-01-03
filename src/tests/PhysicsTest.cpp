@@ -155,6 +155,19 @@ TEST_F(PhysicsManagerTest, AssignSemanticId) {
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
   int objectId = physicsManager_->addObject(objectFile, &drawables);
+  const esp::scene::SceneNode& node =
+      physicsManager_->getObjectSceneNode(objectId);
 
-  // TODO: query objectId from node
+  objectTemplate.setInt("semanticId", 99);
+
+  int objectId2 = physicsManager_->addObject(objectFile, &drawables);
+  const esp::scene::SceneNode& node2 =
+      physicsManager_->getObjectSceneNode(objectId2);
+
+  int semanticId = node.getId();
+  // default should be ID_UNDEFINED
+  ASSERT_EQ(semanticId, esp::ID_UNDEFINED);
+
+  int semanticId2 = node2.getId();
+  ASSERT_EQ(semanticId2, 99);
 }

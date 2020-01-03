@@ -597,8 +597,6 @@ class ResourceManager {
    * be attached to.
    * @param drawables The @ref DrawableGroup with which the new @ref
    * gfx::Drawable will be rendered.
-   * @param objectID The object type identifier or semantic group (e.g.
-   * 1->chair, 2->table, etc..) for semantic rendering of the mesh.
    * @param meshIDLocal The index of the mesh within the mesh group linked to
    * the asset via the @ref MeshMetaData.
    * @param materialIDLocal The index of the material within the material group
@@ -607,7 +605,6 @@ class ResourceManager {
   void addMeshToDrawables(const MeshMetaData& metaData,
                           scene::SceneNode& node,
                           DrawableGroup* drawables,
-                          int objectID,
                           int meshIDLocal,
                           int materialIDLocal);
 
