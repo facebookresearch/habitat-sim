@@ -27,6 +27,12 @@ target_include_directories(Mp3dTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 TEST(SimTest sim)
 target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+TEST(PhysicsTest physics)
+target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+TEST(ResourceManagerTest assets)
+target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 TEST(SuncgTest scene)
 target_include_directories(SuncgTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 

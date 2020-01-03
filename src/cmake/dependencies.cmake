@@ -31,6 +31,10 @@ else()
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${DEPS_DIR}/eigen-git-mirror/cmake")
 endif()
 
+if(NOT IMGUI_DIR)
+  set(IMGUI_DIR "${DEPS_DIR}/imgui")
+endif()
+
 # sophus
 include_directories(SYSTEM "${DEPS_DIR}/Sophus")
 
@@ -143,6 +147,7 @@ if(NOT USE_SYSTEM_MAGNUM)
   set(WITH_EMSCRIPTENAPPLICATION OFF CACHE BOOL "WITH_EMSCRIPTENAPPLICATION" FORCE)
   set(WITH_GLFWAPPLICATION OFF CACHE BOOL "WITH_GLFWAPPLICATION" FORCE)
   set(WITH_EIGEN ON CACHE BOOL "WITH_EIGEN" FORCE) # Eigen integration
+  set(WITH_IMGUI ON CACHE BOOL "WITH_IMGUI" FORCE) # ImGui integration
   if(BUILD_PYTHON_BINDINGS)
     set(WITH_PYTHON ON CACHE BOOL "" FORCE) # Python bindings
   endif()
@@ -153,6 +158,17 @@ if(NOT USE_SYSTEM_MAGNUM)
   if(BUILD_TEST)
     set(WITH_OPENGLTESTER ON CACHE BOOL "" FORCE)
   endif()
+
+  # Basis Universal. The repo is extremely huge and so instead of a Git
+  # submodule we bundle just the transcoder files, and only a subset of the
+  # formats (BC7 mode 6 has > 1 MB tables, ATC/FXT1/PVRTC2 are quite rare and
+  # not supported by Magnum).
+  set(BASIS_UNIVERSAL_DIR "${DEPS_DIR}/basis-universal")
+  # TODO: remove once the FindBasisUniversal can handle a case where encoder
+  # sources are not present
+  set(BasisUniversalEncoder_INCLUDE_DIR "${DEPS_DIR}/basis-universal")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBASISD_SUPPORT_BC7_MODE6_OPAQUE_ONLY=0 -DBASISD_SUPPORT_ATC=0 -DBASISD_SUPPORT_FXT1=0 -DBASISD_SUPPORT_PVRTC2=0")
+  set(WITH_BASISIMPORTER ON CACHE BOOL "" FORCE)
 
   if(BUILD_WITH_BULLET)
     # Build Magnum's BulletIntegration

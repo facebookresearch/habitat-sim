@@ -22,7 +22,7 @@ namespace assets {
 class PTexMeshData : public BaseMesh {
  public:
   struct MeshData {
-    std::vector<vec4f> vbo;
+    std::vector<vec3f> vbo;
     std::vector<vec4f> nbo;
     std::vector<vec4uc> cbo;
     std::vector<uint32_t> ibo;

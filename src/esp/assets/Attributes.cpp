@@ -276,6 +276,12 @@ PhysicsObjectAttributes::PhysicsObjectAttributes() {
   setString("renderMeshHandle", "");
   setString("collisionMeshHandle", "");
   setInt("semanticId", ID_UNDEFINED);
+  setBool("useBoundingBoxForCollision",
+          false);  // if true, override other options and TODO: use bounding box
+                   // as collision object
+  setBool("joinCollisionMeshes",
+          true);  // if true, join all meshes into one collision convex instead
+                  // of building a compound
 }
 
 PhysicsSceneAttributes::PhysicsSceneAttributes() {

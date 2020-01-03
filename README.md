@@ -1,5 +1,6 @@
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebookresearch/habitat-sim/blob/master/LICENSE)
 [![CircleCI](https://circleci.com/gh/facebookresearch/habitat-sim.svg?style=shield)](https://circleci.com/gh/facebookresearch/habitat-sim)
+[![codecov](https://codecov.io/gh/facebookresearch/habitat-sim/branch/master/graph/badge.svg)](https://codecov.io/gh/facebookresearch/habitat-sim)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebookresearch/habitat-sim/blob/master/LICENSE)
 
 # Habitat-Sim
 
@@ -151,7 +152,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 1. Clone this github repository.
    ```bash
    # Checkout the latest stable release
-   git clone --branch stable git@github.com:facebookresearch/habitat-sim.git
+   git clone --branch stable https://github.com/facebookresearch/habitat-sim.git
    cd habitat-sim
    ```
 
@@ -357,6 +358,11 @@ The Habitat project would not have been possible without the support and contrib
 
 
     Specifically, the noise model used for the noisy control functions named `pyrobot_*` and defined in `habitat_sim/agent/controls/pyrobot_noisy_controls.py`
+
+
+* If you use the Redwood Depth Noise Model, please cite their [paper](http://redwood-data.org/indoor/)
+
+    Specifically, the noise model defined in `habitat_sim/sensors/noise_models/redwood_depth_noise_model.py` and `src/esp/sensor/RedwoodNoiseModel.*`
 
 
 ## License

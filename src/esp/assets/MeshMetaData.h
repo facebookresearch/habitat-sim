@@ -15,23 +15,28 @@ namespace assets {
 //! can be reused to instances meshes later.
 struct MeshTransformNode {
   //! mesh ID within @ref MeshMetaData::meshIndex
-  int meshIDLocal = ID_UNDEFINED;
+  int meshIDLocal;
 
   //! material ID within @ref MeshMetaData::materialIndex
-  int materialIDLocal = ID_UNDEFINED;
+  int materialIDLocal;
 
   //! Component's identifier in the original file
-  int componentID = ID_UNDEFINED;
+  int componentID;
 
-  //! The object's semantic ID for rendering
-  int objectID = ID_UNDEFINED;
+  /** @brief The object's semantic ID for rendering. */
+  int objectID;
 
   std::vector<MeshTransformNode> children;
 
   //! Node local transform to the parent frame
-  Magnum::Matrix4 T_parent_local;
+  Magnum::Matrix4 transformFromLocalToParent;
 
-  MeshTransformNode(){};
+  MeshTransformNode() {
+    meshIDLocal = ID_UNDEFINED;
+    materialIDLocal = ID_UNDEFINED;
+    componentID = ID_UNDEFINED;
+    objectID = ID_UNDEFINED;
+  };
 };
 
 /**
