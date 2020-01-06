@@ -36,8 +36,6 @@ class PhysicsManagerTest : public testing::Test {
   };
 
   void initScene(const std::string sceneFile) {
-    sceneFile_ = sceneFile;
-
     const esp::assets::AssetInfo info =
         esp::assets::AssetInfo::fromPath(sceneFile);
 
@@ -56,8 +54,6 @@ class PhysicsManagerTest : public testing::Test {
   ResourceManager resourceManager_;
   SceneManager sceneManager_;
   PhysicsManager::ptr physicsManager_;
-
-  std::string sceneFile_;
 
   int sceneID_;
 };
