@@ -1307,7 +1307,7 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
 void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                                          scene::SceneNode& node,
                                          DrawableGroup* drawables,
-                                         int componentID,
+                                         int objectID,
                                          int meshIDLocal,
                                          int materialIDLocal) {
   const int meshStart = metaData.meshIndex.first;
@@ -1341,6 +1341,8 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                        componentID, materials_[materialID]->diffuseColor());
       }
     } else {
+      // TODO: some types (such as .ply with vertex color) get binned here
+      // incorrectly.
       // Color-only material
       createDrawable(COLORED_SHADER, mesh, node, meshID, drawables, texture,
                      componentID, materials_[materialID]->diffuseColor());
