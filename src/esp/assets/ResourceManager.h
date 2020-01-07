@@ -503,7 +503,7 @@ class ResourceManager {
 
   /**
    * @brief Compute the absolute AABBs for drawables in general mesh (e.g.,
-   * MP3D)world space
+   * MP3D) world space
    */
   void computeGeneralMeshAbsoluteAABBs();
 
@@ -513,17 +513,17 @@ class ResourceManager {
    */
   std::vector<Magnum::Matrix4> computeAbsoluteTransformations();
 
-  // this helper vector contains information of the drawables on which we will
-  // compute the absolute AABB
-  //
-  // pair: <Drawable's scene node, meshID>
-  //
-  // -) non-ptex mesh:
-  // meshID is the global index into meshes_.
-  // meshes_[meshID] is the BaseMesh corresponding to the drawable;
-  //
-  // -) ptex mesh:
-  // meshID is the index of the submesh corresponding to the drawable;
+  /*
+   * @brief this helper vector contains information of the drawables on which
+   * we will compute the absolute AABB pair: <Drawable's scene node, meshID>
+   *
+   * -) non-ptex mesh:
+   * meshID is the global index into meshes_.
+   * meshes_[meshID] is the BaseMesh corresponding to the drawable;
+   *
+   * -) ptex mesh:
+   * meshID is the index of the submesh corresponding to the drawable;
+   */
   std::vector<
       std::pair<std::reference_wrapper<esp::scene::SceneNode>, uint32_t>>
       staticDrawableInfo_;

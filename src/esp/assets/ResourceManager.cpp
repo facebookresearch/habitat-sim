@@ -71,6 +71,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
                                 DrawableGroup* drawables /* = nullptr */) {
   // we only compute absolute AABB for every mesh component when loading ptex
   // mesh, or general mesh (e.g., MP3D)
+  staticDrawableInfo_.clear();
   if (info.type == AssetType::FRL_PTEX_MESH ||
       info.type == AssetType::MP3D_MESH) {
     computeAbsoluteAABBs_ = true;
@@ -1323,7 +1324,7 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
       metaData.materialIndex.second == ID_UNDEFINED ||
       !materials_[materialID]) {
     createDrawable(COLORED_SHADER, mesh, node, meshID, drawables, texture,
-                   componentID);
+                   objectID);
   } else {
     if (materials_[materialID]->flags() &
         Magnum::Trade::PhongMaterialData::Flag::DiffuseTexture) {
@@ -1334,18 +1335,18 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
       texture = textures_[textureStart + textureIndex].get();
       if (texture) {
         createDrawable(TEXTURED_SHADER, mesh, node, meshID, drawables, texture,
-                       componentID);
+                       objectID);
       } else {
         // Color-only material
         createDrawable(COLORED_SHADER, mesh, node, meshID, drawables, texture,
-                       componentID, materials_[materialID]->diffuseColor());
+                       objectID, materials_[materialID]->diffuseColor());
       }
     } else {
       // TODO: some types (such as .ply with vertex color) get binned here
       // incorrectly.
       // Color-only material
       createDrawable(COLORED_SHADER, mesh, node, meshID, drawables, texture,
-                     componentID, materials_[materialID]->diffuseColor());
+                     objectID, materials_[materialID]->diffuseColor());
     }
   }  // else
 }
