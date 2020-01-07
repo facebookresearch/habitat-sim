@@ -59,6 +59,7 @@ jobs:
           name: run eslint
           command: |
             npm run lint
+            npm run check_types
   install_and_test_ubuntu:
     <<: *gpu
     steps:

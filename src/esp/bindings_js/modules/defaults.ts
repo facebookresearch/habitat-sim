@@ -34,4 +34,6 @@ export const defaultScene =
     ? "https://habitat-resources.s3.amazonaws.com/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
     : "skokloster-castle.glb";
 
-export const infoSemanticFileName = "info_semantic.json";
+export const defaultSemantic = "";
+
+export const infoSemanticFileName: string = "info_semantic.json";

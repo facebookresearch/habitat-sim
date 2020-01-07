@@ -2,12 +2,12 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-/* global FS, Module */
+/* global FS */
 
 import WebDemo from "./modules/web_demo";
 import VRDemo from "./modules/vr_demo";
 import ViewerDemo from "./modules/viewer_demo";
-import { defaultScene } from "./modules/defaults";
+import { defaultScene, defaultSemantic } from "./modules/defaults";
 import "./bindings.css";
 import {
   checkWebAssemblySupport,
@@ -15,6 +15,7 @@ import {
   getInfoSemanticUrl,
   buildConfigFromURLParameters
 } from "./modules/utils";
+import { ModuleType, WindowType } from "./typings/typings";
 
 function preload(url) {
   let file = url;
@@ -26,8 +27,14 @@ function preload(url) {
   return file;
 }
 
+declare const Module: ModuleType;
+declare const window: WindowType;
+
 Module.preRun.push(() => {
-  let config = {};
+  let config: WindowType["config"] = {
+    scene: defaultScene,
+    semantic: defaultSemantic
+  };
   config.scene = defaultScene;
   buildConfigFromURLParameters(config);
   window.config = config;
@@ -81,9 +88,11 @@ function checkSupport() {
 
   if (message.length > 0) {
     const warningElement = document.getElementById("warning");
-    warningElement.innerHTML = message;
-    // Remove the default hidden class
-    warningElement.className = "";
+    if (warningElement) {
+      warningElement.innerHTML = message;
+      // Remove the default hidden class
+      warningElement.className = "";
+    }
   }
 }
 
