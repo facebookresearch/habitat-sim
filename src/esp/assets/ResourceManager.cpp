@@ -896,8 +896,8 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
         node.setRotation(Magnum::Quaternion(transform));
 
         // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
-        gfx::PTexMeshDrawable* d = new gfx::PTexMeshDrawable{
-            node, *ptexShader, *pTexMeshData, jSubmesh, drawables};
+        new gfx::PTexMeshDrawable{node, *ptexShader, *pTexMeshData, jSubmesh,
+                                  drawables};
 
         if (computeAbsoluteAABBs_) {
           staticDrawableInfo_.emplace_back(node, jSubmesh);
@@ -1376,8 +1376,7 @@ void ResourceManager::createDrawable(
         static_cast<gfx::PrimitiveIDShader*>(getShaderProgram(shaderType));
 
     // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
-    gfx::PrimitiveIDDrawable* d =
-        new gfx::PrimitiveIDDrawable{node, *shader, mesh, group};
+    new gfx::PrimitiveIDDrawable{node, *shader, mesh, group};
     if (computeAbsoluteAABBs_ && meshID) {
       staticDrawableInfo_.emplace_back(node, *meshID);
     }
@@ -1386,8 +1385,8 @@ void ResourceManager::createDrawable(
         static_cast<Magnum::Shaders::Flat3D*>(getShaderProgram(shaderType));
 
     // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
-    gfx::GenericDrawable* d = new gfx::GenericDrawable{
-        node, *shader, mesh, group, texture, objectId, color};
+    new gfx::GenericDrawable{node,    *shader,  mesh, group,
+                             texture, objectId, color};
     if (computeAbsoluteAABBs_ && meshID) {
       staticDrawableInfo_.emplace_back(node, *meshID);
     }
