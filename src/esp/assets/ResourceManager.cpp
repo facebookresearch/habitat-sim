@@ -69,7 +69,7 @@ namespace assets {
 bool ResourceManager::loadScene(const AssetInfo& info,
                                 scene::SceneNode* parent, /* = nullptr */
                                 DrawableGroup* drawables /* = nullptr */) {
-  // we only compute absolute AABB for evey mesh component when loading ptex
+  // we only compute absolute AABB for every mesh component when loading ptex
   // mesh, or general mesh (e.g., MP3D)
   if (info.type == AssetType::FRL_PTEX_MESH ||
       info.type == AssetType::MP3D_MESH) {

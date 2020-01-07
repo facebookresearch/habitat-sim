@@ -701,6 +701,7 @@ class ResourceManager {
    * @param mesh The render mesh.
    * @param node The @ref scene::SceneNode to which the drawable will be
    * attached.
+   * @param meshID Optional, the index of this mesh component stored in meshes_
    * @param group Optional @ref DrawableGroup with which the render the @ref
    * gfx::Drawable.
    * @param texture Optional texture for the mesh.
