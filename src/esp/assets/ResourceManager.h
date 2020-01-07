@@ -507,7 +507,7 @@ class ResourceManager {
    */
   void computeGeneralMeshAbsoluteAABBs();
 
-  /*
+  /**
    * @brief Compute absolute transformations of all drwables stored in
    * staticDrawableInfo_
    */
