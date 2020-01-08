@@ -38,7 +38,7 @@ clear and has sufficient instructions to be able to reproduce the issue.
 
 - C++
   - In general, we follow [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) and [Google C++ guidelines](https://google.github.io/styleguide/cppguide.html)
-  - Use `clang-format` for style enforcement and linting. Install clang-format through `brew install clang-format` on MacOS, or by downloading [binaries or sources](http://releases.llvm.org/download.html) for Ubuntu etc.
+  - Use `clang-format`(clang-format-8) for style enforcement and linting. Install clang-format through `brew install clang-format` on MacOS, or using `apt-get install -y clang-format-8` as we do for [the testing environment setup](./.circleci/config.yml) or by downloading [binaries or sources](http://releases.llvm.org/download.html) for Ubuntu etc.
 - Python
   - We follow PEP8 and use [typing](https://docs.python.org/3/library/typing.html).
   - Use `black` for style enforcement and linting. Install black through `pip install black`.

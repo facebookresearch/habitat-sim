@@ -36,8 +36,6 @@ class PhysicsManagerTest : public testing::Test {
   };
 
   void initScene(const std::string sceneFile) {
-    sceneFile_ = sceneFile;
-
     const esp::assets::AssetInfo info =
         esp::assets::AssetInfo::fromPath(sceneFile);
 
@@ -56,8 +54,6 @@ class PhysicsManagerTest : public testing::Test {
   ResourceManager resourceManager_;
   SceneManager sceneManager_;
   PhysicsManager::ptr physicsManager_;
-
-  std::string sceneFile_;
 
   int sceneID_;
 };
@@ -101,6 +97,10 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
       for (int o = 0; o < num_objects; o++) {
         int objectId = physicsManager_->addObject(objectFile, nullptr);
         objectIds.push_back(o);
+
+        const esp::scene::SceneNode& node =
+            physicsManager_->getObjectSceneNode(objectId);
+
         Magnum::Matrix4 R{
             Magnum::Matrix4::rotationX(Magnum::Math::Rad<float>(-1.56)) *
             Magnum::Matrix4::rotationY(Magnum::Math::Rad<float>(-0.25))};
@@ -109,6 +109,8 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
         physicsManager_->setRotation(
             objectId, Magnum::Quaternion::fromMatrix(R.rotationNormalized()));
         physicsManager_->setTranslation(objectId, initialPosition);
+
+        ASSERT_EQ(node.absoluteTranslation(), initialPosition);
       }
 
       float timeToSim = 10.0;
