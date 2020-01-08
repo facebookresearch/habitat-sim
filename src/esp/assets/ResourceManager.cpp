@@ -688,6 +688,7 @@ Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
       Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)};
 }
 void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
+#ifdef ESP_BUILD_PTEX_SUPPORT
   std::vector<Mn::Matrix4> absTransforms = computeAbsoluteTransformations();
 
   CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo_.size(),
@@ -715,6 +716,7 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
     // set the absolute axis aligned bounding box
     node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(pos)});
   }
+#endif
 }
 
 void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
