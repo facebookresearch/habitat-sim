@@ -26,32 +26,47 @@ const std::string physicsConfigFile =
     Cr::Utility::Directory::join(SCENE_DATASETS,
                                  "../default.phys_scene_config.json");
 
-TEST(PhysicsTest, JoinCompound) {
-  LOG(INFO) << "Starting physics test";
-  // must create a context and renderer first
-  esp::gfx::WindowlessContext::uptr context_ =
-      esp::gfx::WindowlessContext::create_unique(0);
-  std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
+class PhysicsManagerTest : public testing::Test {
+ protected:
+  void SetUp() override {
+    context_ = esp::gfx::WindowlessContext::create_unique(0);
+    renderer_ = esp::gfx::Renderer::create();
+
+    sceneID_ = sceneManager_.initSceneGraph();
+  };
+
+  void initScene(const std::string sceneFile) {
+    const esp::assets::AssetInfo info =
+        esp::assets::AssetInfo::fromPath(sceneFile);
+
+    auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
+    esp::scene::SceneNode* navSceneNode =
+        &sceneGraph.getRootNode().createChild();
+    auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+    resourceManager_.loadScene(info, physicsManager_, navSceneNode, &drawables,
+                               physicsConfigFile);
+  }
 
   // must declare these in this order due to avoid deallocation errors
-  ResourceManager resourceManager;
+  esp::gfx::WindowlessContext::uptr context_;
+  esp::gfx::Renderer::ptr renderer_;
+
+  ResourceManager resourceManager_;
   SceneManager sceneManager_;
-  std::shared_ptr<PhysicsManager> physicsManager_;
+  PhysicsManager::ptr physicsManager_;
+
+  int sceneID_;
+};
+
+TEST_F(PhysicsManagerTest, JoinCompound) {
+  LOG(INFO) << "Starting physics test: JoinCompound";
 
   std::string sceneFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/nested_box.glb");
 
-  int sceneID = sceneManager_.initSceneGraph();
-  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
-  esp::scene::SceneNode* navSceneNode = &sceneGraph.getRootNode().createChild();
-  auto& drawables = sceneManager_.getSceneGraph(sceneID).getDrawables();
-  const esp::assets::AssetInfo info =
-      esp::assets::AssetInfo::fromPath(sceneFile);
-
-  resourceManager.loadScene(info, physicsManager_, navSceneNode, nullptr,
-                            physicsConfigFile);
+  initScene(sceneFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
@@ -59,11 +74,11 @@ TEST(PhysicsTest, JoinCompound) {
     // object
     esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
     physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-    resourceManager.loadObject(physicsObjectAttributes, objectFile);
+    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
     esp::assets::PhysicsObjectAttributes& objectTemplate =
-        resourceManager.getPhysicsObjectAttributes(objectFile);
+        resourceManager_.getPhysicsObjectAttributes(objectFile);
 
     for (int i = 0; i < 2; i++) {
       // mark the object not joined
