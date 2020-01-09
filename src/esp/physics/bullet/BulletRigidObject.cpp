@@ -196,16 +196,11 @@ bool BulletRigidObject::initializeObject(
       bObjectConvexShapes_.back()->recalcLocalAabb();
       bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
     }
-    LOG(INFO) << "margin = " << margin;
     bObjectShape_->setMargin(margin);
     bObjectShape_->recalculateLocalAabb();
     btVector3 localAabbMin, localAabbMax;
     bObjectShape_->getAabb(btTransform::getIdentity(), localAabbMin,
                            localAabbMax);
-    LOG(INFO) << "localAabbMin: " << localAabbMin.x() << " " << localAabbMin.y()
-              << " " << localAabbMin.z();
-    LOG(INFO) << "localAabbMax: " << localAabbMax.x() << " " << localAabbMax.y()
-              << " " << localAabbMax.z();
   }
 
   //! Set properties
@@ -224,8 +219,6 @@ bool BulletRigidObject::initializeObject(
                 << bInertia.y() << " " << bInertia.z();
     }
   }
-
-  LOG(INFO) << "mass = " << physicsObjectAttributes.getDouble("mass");
 
   //! Bullet rigid body setup
   bObjectMotionState_ = new Magnum::BulletIntegration::MotionState(*this);
@@ -261,23 +254,14 @@ void BulletRigidObject::setCollisionFromBB() {
   bObjectShape_->recalculateLocalAabb();
   bObjectRigidBody_->setCollisionShape(bObjectShape_.get());
 
-  btVector3 localAabbMin, localAabbMax;
-  bObjectShape_->getAabb(btTransform::getIdentity(), localAabbMin,
-                         localAabbMax);
-  LOG(INFO) << "localAabbMin: " << localAabbMin.x() << " " << localAabbMin.y()
-            << " " << localAabbMin.z();
-  LOG(INFO) << "localAabbMax: " << localAabbMax.x() << " " << localAabbMax.y()
-            << " " << localAabbMax.z();
-
   if (bObjectRigidBody_->getInvInertiaDiagLocal() == btVector3{0, 0, 0}) {
     btVector3 bInertia(getInertiaVector());
     // allow bullet to compute the inertia tensor if we don't have one
     bObjectShape_->calculateLocalInertia(getMass(),
                                          bInertia);  // overrides bInertia
-    LOG(INFO) << "Automatic object inertia computed: " << bInertia.x() << " "
-              << bInertia.y() << " " << bInertia.z();
 
-    LOG(INFO) << "mass2 = " << getMass();
+    LOG(INFO) << "Automatic BB object inertia computed: " << bInertia.x() << " "
+              << bInertia.y() << " " << bInertia.z();
 
     setInertiaVector(Magnum::Vector3(bInertia));
   }

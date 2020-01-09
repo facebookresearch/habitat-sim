@@ -158,7 +158,6 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
         resourceManager_.getPhysicsObjectAttributes(objectFile);
 
     for (int i = 0; i < 2; i++) {
-      LOG(INFO) << "Pass " << i;
       if (i == 0) {
         objectTemplate.setBool("useBoundingBoxForCollision", false);
       } else {
@@ -176,20 +175,24 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
       Magnum::Quaternion prevOrientation =
           physicsManager_->getRotation(objectId);
       Magnum::Vector3 prevPosition = physicsManager_->getTranslation(objectId);
-      float timeToSim = 5.0;
+      float timeToSim = 3.0;
       while (physicsManager_->getWorldTime() < timeToSim) {
-        Magnum::Vector3 force{1.5, 0.0, 0.0};
+        // careful here: push too hard and the box will jitter, not hard enough
+        // and it won't overcome friction.
+        Magnum::Vector3 force{2.0, 0.0, 0.0};
         physicsManager_->applyForce(objectId, force, Magnum::Vector3{});
         physicsManager_->stepPhysics(0.1);
 
         Magnum::Quaternion orientation = physicsManager_->getRotation(objectId);
         Magnum::Vector3 position = physicsManager_->getTranslation(objectId);
 
+        /*
         Cr::Utility::Debug() << "prev vs current position: " << prevPosition
                              << " | " << position;
         Cr::Utility::Debug()
             << "prev vs current orientation: " << prevOrientation << " | "
             << orientation;
+        */
 
         // object is being pushed, so should be moving
         ASSERT_NE(position, prevPosition);
