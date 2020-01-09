@@ -96,12 +96,14 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
           bObjectConvexShapes_.back()->addPoint(
               btVector3(transformFromLocalToWorld.transformPoint(v)), false);
         }
+        bObjectConvexShapes_.back()->setMargin(0.0);
         bObjectConvexShapes_.back()->recalcLocalAabb();
       } else {
         bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
             static_cast<const btScalar*>(mesh.positions.data()->data()),
             mesh.positions.size(), sizeof(Magnum::Vector3)));
-
+        bObjectConvexShapes_.back()->setMargin(0.0);
+        bObjectConvexShapes_.back()->recalcLocalAabb();
         //! Add to compound shape stucture
         bObjectShape_->addChildShape(btTransform{transformFromLocalToWorld},
                                      bObjectConvexShapes_.back().get());
@@ -194,6 +196,16 @@ bool BulletRigidObject::initializeObject(
       t.setIdentity();
       bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
     }
+    LOG(INFO) << "margin = " << margin;
+    bObjectShape_->setMargin(margin);
+    bObjectShape_->recalculateLocalAabb();
+    btVector3 localAabbMin, localAabbMax;
+    bObjectShape_->getAabb(btTransform::getIdentity(), localAabbMin,
+                           localAabbMax);
+    LOG(INFO) << "localAabbMin: " << localAabbMin.x() << " " << localAabbMin.y()
+              << " " << localAabbMin.z();
+    LOG(INFO) << "localAabbMax: " << localAabbMax.x() << " " << localAabbMax.y()
+              << " " << localAabbMax.z();
   }
 
   //! Set properties
@@ -203,7 +215,7 @@ bool BulletRigidObject::initializeObject(
       btVector3(physicsObjectAttributes.getMagnumVec3("inertia"));
 
   if (!collisionFromBB_) {
-    if (bInertia[0] == 0. && bInertia[1] == 0. && bInertia[2] == 0.) {
+    if (bInertia == btVector3{0, 0, 0}) {
       // allow bullet to compute the inertia tensor if we don't have one
       bObjectShape_->calculateLocalInertia(
           physicsObjectAttributes.getDouble("mass"),
@@ -212,6 +224,8 @@ bool BulletRigidObject::initializeObject(
                 << bInertia.y() << " " << bInertia.z();
     }
   }
+
+  LOG(INFO) << "mass = " << physicsObjectAttributes.getDouble("mass");
 
   //! Bullet rigid body setup
   bObjectMotionState_ = new Magnum::BulletIntegration::MotionState(*this);
@@ -246,14 +260,23 @@ void BulletRigidObject::setCollisionFromBB() {
   bObjectShape_->addChildShape(t, bGenericShapes_.back().get());
   bObjectRigidBody_->setCollisionShape(bObjectShape_.get());
 
-  btVector3 bInertia(getInertiaVector());
+  btVector3 localAabbMin, localAabbMax;
+  bObjectShape_->getAabb(btTransform::getIdentity(), localAabbMin,
+                         localAabbMax);
+  LOG(INFO) << "localAabbMin: " << localAabbMin.x() << " " << localAabbMin.y()
+            << " " << localAabbMin.z();
+  LOG(INFO) << "localAabbMax: " << localAabbMax.x() << " " << localAabbMax.y()
+            << " " << localAabbMax.z();
 
-  if (bInertia[0] == 0. && bInertia[1] == 0. && bInertia[2] == 0.) {
+  if (bObjectRigidBody_->getInvInertiaDiagLocal() == btVector3{0, 0, 0}) {
+    btVector3 bInertia(getInertiaVector());
     // allow bullet to compute the inertia tensor if we don't have one
     bObjectShape_->calculateLocalInertia(getMass(),
                                          bInertia);  // overrides bInertia
     LOG(INFO) << "Automatic object inertia computed: " << bInertia.x() << " "
               << bInertia.y() << " " << bInertia.z();
+
+    LOG(INFO) << "mass2 = " << getMass();
 
     setInertiaVector(Magnum::Vector3(bInertia));
   }
