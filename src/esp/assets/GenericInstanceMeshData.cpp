@@ -177,12 +177,17 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   // primitives, so we also need to double the size of the object IDs buffer
   int indicesPerFace = 3 * (vertexPerFace == 4 ? 2 : 1);
   objectIds_.reserve(object_ids->count * indicesPerFace);
-  if (object_ids->t == tinyply::Type::INT32) {
+  if (object_ids->t == tinyply::Type::INT32 ||
+      object_ids->t == tinyply::Type::UINT32) {
     std::vector<int> tmp;
+    // This copy will be fine currently as for 0 <= v <= 2^31 - 1, uint32 and
+    // int32 are the bit patterns.  We currently assume IDs are <= 2^16 - 1, so
+    // we are in range
     copyTo(object_ids, tmp);
 
     for (auto& id : tmp) {
-      ASSERT(id <= 65535);
+      // >= 0 to make sure we didn't overflow the int32 with the uint32
+      CORRADE_INTERNAL_ASSERT(id >= 0 && id <= 65535);
       for (int i = 0; i < indicesPerFace; ++i)
         objectIds_.push_back(id);
     }
