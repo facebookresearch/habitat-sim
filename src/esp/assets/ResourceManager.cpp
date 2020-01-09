@@ -1168,7 +1168,7 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
 void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                                          scene::SceneNode& node,
                                          DrawableGroup* drawables,
-                                         int componentID,
+                                         int objectID,
                                          int meshIDLocal,
                                          int materialIDLocal) {
   const int meshStart = metaData.meshIndex.first;
@@ -1183,7 +1183,7 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
   if (materialIDLocal == ID_UNDEFINED ||
       metaData.materialIndex.second == ID_UNDEFINED ||
       !materials_[materialID]) {
-    createDrawable(COLORED_SHADER, mesh, node, drawables, texture, componentID);
+    createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID);
   } else {
     if (materials_[materialID]->flags() &
         Magnum::Trade::PhongMaterialData::Flag::DiffuseTexture) {
@@ -1194,16 +1194,18 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
       texture = textures_[textureStart + textureIndex].get();
       if (texture) {
         createDrawable(TEXTURED_SHADER, mesh, node, drawables, texture,
-                       componentID);
+                       objectID);
       } else {
         // Color-only material
-        createDrawable(COLORED_SHADER, mesh, node, drawables, texture,
-                       componentID, materials_[materialID]->diffuseColor());
+        createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID,
+                       materials_[materialID]->diffuseColor());
       }
     } else {
+      // TODO: some types (such as .ply with vertex color) get binned here
+      // incorrectly.
       // Color-only material
-      createDrawable(COLORED_SHADER, mesh, node, drawables, texture,
-                     componentID, materials_[materialID]->diffuseColor());
+      createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID,
+                     materials_[materialID]->diffuseColor());
     }
   }  // else
 }
