@@ -209,3 +209,71 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
     }
   }
 }
+
+TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
+  // test that all different construction methods for a simple shape result in
+  // the same Aabb for the given margin
+  LOG(INFO) << "Starting physics test: BulletCompoundShapeMargins";
+
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  initScene(objectFile);
+
+  if (physicsManager_->getPhysicsSimulationLibrary() ==
+      PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+    // test joined vs. unjoined
+    esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+    physicsObjectAttributes.setDouble("margin", 0.1);
+
+    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+    // get a reference to the stored template to edit
+    esp::assets::PhysicsObjectAttributes& objectTemplate =
+        resourceManager_.getPhysicsObjectAttributes(objectFile);
+
+    auto* drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+    // add the unjoined object
+    objectTemplate.setBool("joinCollisionMeshes", false);
+    int objectId0 = physicsManager_->addObject(objectFile, drawables);
+
+    // add the joined object
+    objectTemplate.setBool("joinCollisionMeshes", true);
+    int objectId1 = physicsManager_->addObject(objectFile, drawables);
+
+    // add bounding box object
+    objectTemplate.setBool("useBoundingBoxForCollision", true);
+    int objectId2 = physicsManager_->addObject(objectFile, drawables);
+
+    esp::physics::BulletPhysicsManager* bPhysManager =
+        static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
+
+    std::pair<Magnum::Vector3, Magnum::Vector3> AabbScene =
+        bPhysManager->getSceneCollisionShapeAabb();
+
+    std::pair<Magnum::Vector3, Magnum::Vector3> AabbOb0 =
+        bPhysManager->getCollisionShapeAabb(objectId0);
+    std::pair<Magnum::Vector3, Magnum::Vector3> AabbOb1 =
+        bPhysManager->getCollisionShapeAabb(objectId1);
+    std::pair<Magnum::Vector3, Magnum::Vector3> AabbOb2 =
+        bPhysManager->getCollisionShapeAabb(objectId2);
+
+    std::pair<Magnum::Vector3, Magnum::Vector3> objectGroundTruth =
+        std::pair<Magnum::Vector3, Magnum::Vector3>({-1.1, -1.1, -1.1},
+                                                    {1.1, 1.1, 1.1});
+    std::pair<Magnum::Vector3, Magnum::Vector3> sceneGroundTruth =
+        std::pair<Magnum::Vector3, Magnum::Vector3>({-1.0, -1.0, -1.0},
+                                                    {1.0, 1.0, 1.0});
+
+    // Cr::Utility::Debug() << "aabb scene: " << AabbScene;
+    // Cr::Utility::Debug() << "aabb ob0: " << AabbOb0;
+    // Cr::Utility::Debug() << "aabb ob1: " << AabbOb1;
+    // Cr::Utility::Debug() << "aabb ob2: " << AabbOb2;
+    ASSERT_EQ(AabbScene, sceneGroundTruth);
+    ASSERT_EQ(AabbOb0, objectGroundTruth);
+    ASSERT_EQ(AabbOb1, objectGroundTruth);
+    ASSERT_EQ(AabbOb2, objectGroundTruth);
+  }
+}

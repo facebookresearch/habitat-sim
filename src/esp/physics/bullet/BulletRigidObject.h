@@ -322,9 +322,10 @@ class BulletRigidObject : public RigidObject {
    */
   void setMargin(const double margin);
 
-  //! Sets the object's collision shape to its bounding box. Since the bounding
-  //! hierarchy is not constructed when the object is initialized, this needs to
-  //! be called after loading the SceneNode.
+  /** @brief ets the object's collision shape to its bounding box.
+   * Since the bounding hierarchy is not constructed when the object is
+   * initialized, this needs to be called after loading the SceneNode.
+   */
   void setCollisionFromBB();
 
   /** @brief Public getter for @ref collisionFromBB_ set from configuration.
@@ -332,6 +333,13 @@ class BulletRigidObject : public RigidObject {
    * set in object's configuration.
    */
   const bool isUsingBBCollisionShape() const { return collisionFromBB_; };
+  /**
+   * @brief Query the Aabb from bullet physics for the root compound shape of
+   * the rigid body in its local space. See @ref btCompoundShape::getAabb.
+   * @return A Magnum vector pair (AabbMin, AabbMax).
+   */
+  const std::pair<Magnum::Vector3, Magnum::Vector3> getCollisionShapeAabb()
+      const;
 
  protected:
   /** @brief Used to synchronize Bullet's notion of the object state
