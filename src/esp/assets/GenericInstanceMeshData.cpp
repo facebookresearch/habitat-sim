@@ -187,7 +187,7 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
 
     for (auto& id : tmp) {
       // >= 0 to make sure we didn't overflow the int32 with the uint32
-      CORRADE_INTERNAL_ASSERT(id >= 0 && id <= (2 << 16 - 1));
+      CORRADE_INTERNAL_ASSERT(id >= 0 && id <= ((2 << 16) - 1));
       for (int i = 0; i < indicesPerFace; ++i)
         objectIds_.push_back(id);
     }
