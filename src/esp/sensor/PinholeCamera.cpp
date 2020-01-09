@@ -71,7 +71,7 @@ PinholeCamera& PinholeCamera::setTransformationMatrix(
 }
 
 PinholeCamera& PinholeCamera::setViewport(gfx::RenderCamera& targetCamera) {
-  targetCamera.getMagnumCamera().setViewport(this->framebufferSize());
+  targetCamera.setViewport(this->framebufferSize());
   return *this;
 }
 

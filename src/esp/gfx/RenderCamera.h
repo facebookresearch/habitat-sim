@@ -12,7 +12,7 @@
 namespace esp {
 namespace gfx {
 
-class RenderCamera : public Magnum::SceneGraph::AbstractFeature3D {
+class RenderCamera : public MagnumCamera {
  public:
   RenderCamera(scene::SceneNode& node);
   RenderCamera(scene::SceneNode& node,
@@ -29,31 +29,21 @@ class RenderCamera : public Magnum::SceneGraph::AbstractFeature3D {
 
   // Overloads to avoid confusion
   scene::SceneNode& object() {
-    return static_cast<scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
+    return static_cast<scene::SceneNode&>(MagnumCamera::object());
   }
   const scene::SceneNode& object() const {
-    return static_cast<const scene::SceneNode&>(
-        Magnum::SceneGraph::AbstractFeature3D::object());
+    return static_cast<const scene::SceneNode&>(MagnumCamera::object());
   }
 
-  void setProjectionMatrix(int width,
-                           int height,
-                           float znear,
-                           float zfar,
-                           float hfov);
+  RenderCamera& setProjectionMatrix(int width,
+                                    int height,
+                                    float znear,
+                                    float zfar,
+                                    float hfov);
 
-  mat4f getProjectionMatrix();
-
-  mat4f getCameraMatrix();
-
-  MagnumCamera& getMagnumCamera();
-
-  void draw(MagnumDrawableGroup& drawables);
+  RenderCamera& draw(MagnumDrawableGroup& drawables);
 
  protected:
-  MagnumCamera* camera_ = nullptr;
-
   ESP_SMART_POINTERS(RenderCamera)
 };
 
