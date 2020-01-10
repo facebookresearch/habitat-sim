@@ -180,9 +180,9 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   if (object_ids->t == tinyply::Type::INT32 ||
       object_ids->t == tinyply::Type::UINT32) {
     std::vector<int> tmp;
-    // This copy will be fine currently as for 0 <= v <= 2^31 - 1, uint32 and
-    // int32 are the bit patterns.  We currently assume IDs are <= 2^16 - 1, so
-    // we are in range
+    // This copy will be safe because for 0 <= v <= 2^31 - 1, uint32 and
+    // int32 have the same bit patterns.  We currently assume IDs are <= 2^16 -
+    // 1, so this assumption is safe.
     copyTo(object_ids, tmp);
 
     for (auto& id : tmp) {
