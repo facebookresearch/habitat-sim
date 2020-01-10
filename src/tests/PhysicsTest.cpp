@@ -177,9 +177,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
       Magnum::Vector3 prevPosition = physicsManager_->getTranslation(objectId);
       float timeToSim = 3.0;
       while (physicsManager_->getWorldTime() < timeToSim) {
-        // careful here: push too hard and the box will jitter, not hard enough
-        // and it won't overcome friction.
-        Magnum::Vector3 force{2.0, 0.0, 0.0};
+        Magnum::Vector3 force{3.0, 0.0, 0.0};
         physicsManager_->applyForce(objectId, force, Magnum::Vector3{});
         physicsManager_->stepPhysics(0.1);
 
@@ -196,9 +194,12 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
 
         // object is being pushed, so should be moving
         ASSERT_NE(position, prevPosition);
+        Magnum::Rad q_angle =
+            Magnum::Math::angle(orientation, Magnum::Quaternion({0, 0, 0}, 1));
+        // Cr::Utility::Debug() << "Q angle: " << q_angle;
         if (i == 1) {
           // bounding box for collision, so the sphere should not be rolling
-          ASSERT_EQ(orientation, Magnum::Quaternion({0, 0, 0}, 1));
+          ASSERT_LE(q_angle, Magnum::Rad{0.1});
         } else {
           // no bounding box, so the sphere should be rolling
           ASSERT_NE(orientation, prevOrientation);
