@@ -10,8 +10,11 @@
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/Renderer.h"
-#include "esp/physics/bullet/BulletPhysicsManager.h"
 #include "esp/scene/SceneManager.h"
+
+#ifdef ESP_BUILD_WITH_BULLET
+#include "esp/physics/bullet/BulletPhysicsManager.h"
+#endif
 
 #include "configure.h"
 
@@ -132,6 +135,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
   }
 }
 
+#ifdef ESP_BUILD_WITH_BULLET
 TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
   // test that all different construction methods for a simple shape result in
   // the same Aabb for the given margin
@@ -188,3 +192,4 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     ASSERT_EQ(AabbOb1, objectGroundTruth);
   }
 }
+#endif
