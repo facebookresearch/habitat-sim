@@ -295,7 +295,7 @@ void Viewer::pokeLastObject() {
   Magnum::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  Vector3 impulse = T.transformPoint({0.0f, 0.0f, -3.0f});
+  Vector3 impulse = T.transformVector({0.0f, 0.0f, -3.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyImpulse(objectIDs_.back(), impulse, rel_pos);
 }
@@ -306,7 +306,7 @@ void Viewer::pushLastObject() {
   Magnum::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  Vector3 force = T.transformPoint({0.0f, 0.0f, -40.0f});
+  Vector3 force = T.transformVector({0.0f, 0.0f, -40.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
 }
