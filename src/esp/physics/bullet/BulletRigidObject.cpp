@@ -544,5 +544,11 @@ double BulletRigidObject::getAngularDamping() {
   }
 }
 
+bool BulletRigidObject::contactTest() {
+  SimulationContactResultCallback src;
+  bWorld_->getCollisionWorld()->contactTest(bObjectRigidBody_.get(), src);
+  return src.bCollision;
+}
+
 }  // namespace physics
 }  // namespace esp

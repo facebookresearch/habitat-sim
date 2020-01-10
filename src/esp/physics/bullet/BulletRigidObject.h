@@ -5,7 +5,8 @@
 #pragma once
 
 /** @file
- * @brief Class @ref esp::physics::BulletRigidObject
+ * @brief Struct SimulationContactResultCallback, class @ref
+ * esp::physics::BulletRigidObject
  */
 
 #include <btBulletDynamicsCommon.h>
@@ -366,6 +367,16 @@ class BulletRigidObject : public RigidObject {
    * @param margin The new scalar collision margin of the object.
    */
   void setMargin(const double margin);
+
+  /**
+   * @brief Return result of a discrete contact test between the object and
+   * collision world.
+   *
+   * See @ref SimulationContactResultCallback
+   * @return Whether or not the object is in contact with any other collision
+   * enabled objects.
+   */
+  bool contactTest();
 
  protected:
   /** @brief Used to synchronize Bullet's notion of the object state
