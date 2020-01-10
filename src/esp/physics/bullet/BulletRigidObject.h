@@ -20,6 +20,51 @@ namespace esp {
 namespace physics {
 
 /**
+@brief Implements Bullet physics @ref btCollisionWorld::ContactResultCallback
+interface.
+
+Stores the results of a collision check within the world.
+*/
+struct SimulationContactResultCallback
+    : public btCollisionWorld::ContactResultCallback {
+  /**
+   * @brief Set when a contact is detected.
+   */
+  bool bCollision;
+
+  /**
+   * @brief Constructor.
+   */
+  SimulationContactResultCallback() { bCollision = false; }
+
+  /**
+   * @brief Called when a contact is detected.
+   *
+   * Current implementation sets a binary collision flag on every detected
+   * collision.
+   * @param cp
+   * @param colObj0Wrap
+   * @param partId0
+   * @param index0
+   * @param colObj1Wrap
+   * @param partId1
+   * @param index1
+   * @return
+   */
+  btScalar addSingleResult(btManifoldPoint& cp,
+                           const btCollisionObjectWrapper* colObj0Wrap,
+                           int partId0,
+                           int index0,
+                           const btCollisionObjectWrapper* colObj1Wrap,
+                           int partId1,
+                           int index1) {
+    // If cp distance less than threshold
+    bCollision = true;
+    return 0;
+  }
+};
+
+/**
 @brief An individual rigid object instance implementing an interface with Bullet
 physics to enable @ref MotionType::DYNAMIC objects.
 
