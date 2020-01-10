@@ -285,6 +285,9 @@ class Simulator:
     def apply_torque(self, torque, object_id, scene_id=0):
         self._sim.apply_torque(torque, object_id, scene_id)
 
+    def contact_test(self, object_id, scene_id=0):
+        return self._sim.contact_test(object_id, scene_id)
+
     def get_world_time(self, scene_id=0):
         return self._sim.get_world_time()
 

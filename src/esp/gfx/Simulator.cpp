@@ -346,6 +346,13 @@ Magnum::Quaternion Simulator::getRotation(const int objectID,
   return Magnum::Quaternion();
 }
 
+bool Simulator::contactTest(const int objectID, const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->contactTest(objectID);
+  }
+  return false;
+}
+
 double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
     physicsManager_->stepPhysics(dt);

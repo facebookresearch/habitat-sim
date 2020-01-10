@@ -253,6 +253,18 @@ class Simulator {
   Magnum::Quaternion getRotation(const int objectID, const int sceneID = 0);
 
   /**
+   * @brief Discrete collision check for contact between an object and the
+   * collision world.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   * @return Whether or not the object is in contact with any other collision
+   * enabled objects.
+   */
+  bool contactTest(const int objectID, const int sceneID = 0);
+
+  /**
    * @brief the physical world has a notion of time which passes during
    * animation/simulation/action/etc... Step the physical world forward in time
    * by a desired duration. Note that the actual duration of time passed by this
