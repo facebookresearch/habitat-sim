@@ -41,16 +41,10 @@ struct SimulationContactResultCallback
   /**
    * @brief Called when a contact is detected.
    *
-   * Current implementation sets a binary collision flag on every detected
-   * collision.
-   * @param cp
-   * @param colObj0Wrap
-   * @param partId0
-   * @param index0
-   * @param colObj1Wrap
-   * @param partId1
-   * @param index1
-   * @return
+   * Sets a collision flag on every detected collision. Can be updated to do
+   * more.
+   * @param cp Contains detailed information about the contact point being
+   * added.
    */
   btScalar addSingleResult(btManifoldPoint& cp,
                            const btCollisionObjectWrapper* colObj0Wrap,
@@ -59,9 +53,8 @@ struct SimulationContactResultCallback
                            const btCollisionObjectWrapper* colObj1Wrap,
                            int partId1,
                            int index1) {
-    // If cp distance less than threshold
     bCollision = true;
-    return 0;
+    return 0;  // not used
   }
 };
 
