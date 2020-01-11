@@ -1380,15 +1380,13 @@ void ResourceManager::createDrawable(
     auto* shader =
         static_cast<gfx::PrimitiveIDShader*>(getShaderProgram(shaderType));
 
-    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
-    new gfx::PrimitiveIDDrawable{node, *shader, mesh, group};
+    node.addFeature<gfx::PrimitiveIDDrawable>(*shader, mesh, group);
   } else {  // all other shaders use GenericShader
     auto* shader =
         static_cast<Magnum::Shaders::Flat3D*>(getShaderProgram(shaderType));
 
-    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
-    new gfx::GenericDrawable{node,    *shader,  mesh, group,
-                             texture, objectId, color};
+    node.addFeature<gfx::GenericDrawable>(*shader, mesh, group, texture,
+                                          objectId, color);
   }
 }
 
