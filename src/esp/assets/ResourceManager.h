@@ -513,20 +513,27 @@ class ResourceManager {
    */
   std::vector<Magnum::Matrix4> computeAbsoluteTransformations();
 
-  /*
-   * @brief this helper vector contains information of the drawables on which
-   * we will compute the absolute AABB pair: <Drawable's scene node, meshID>
+  /**
+   * node: drawable's scene node
    *
-   * -) non-ptex mesh:
+   * meshID:
+   * -) for non-ptex mesh:
    * meshID is the global index into meshes_.
    * meshes_[meshID] is the BaseMesh corresponding to the drawable;
    *
-   * -) ptex mesh:
+   * -) for ptex mesh:
    * meshID is the index of the submesh corresponding to the drawable;
    */
-  std::vector<
-      std::pair<std::reference_wrapper<esp::scene::SceneNode>, uint32_t>>
-      staticDrawableInfo_;
+  struct StaticDrawableInfo {
+    std::reference_wrapper<esp::scene::SceneNode> node;
+    uint32_t meshID;
+  };
+  /**
+   * @brief this helper vector contains information of the drawables on which
+   * we will compute the absolute AABB pair
+   *
+   */
+  std::vector<StaticDrawableInfo> staticDrawableInfo_;
   bool computeAbsoluteAABBs_ = false;
 
   // ======== General geometry data ========
@@ -713,8 +720,6 @@ class ResourceManager {
   void createDrawable(const ShaderType shaderType,
                       Magnum::GL::Mesh& mesh,
                       scene::SceneNode& node,
-                      Corrade::Containers::Optional<uint32_t> meshID =
-                          Corrade::Containers::NullOpt,
                       DrawableGroup* group = nullptr,
                       Magnum::GL::Texture2D* texture = nullptr,
                       int objectId = ID_UNDEFINED,
