@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 build_args=(--skip-install-magnum)
 if [ ${HEADLESS} == "1" ]; then
   build_args+=("--headless")
@@ -24,7 +23,6 @@ fi
 
 ${PYTHON} setup.py install "${build_args[@]}"
 ${PYTHON} -m pip install build/deps/magnum-bindings/src/python
-
 
 if [ -f "build/viewer" ]; then
   cp -v build/viewer ${PREFIX}/bin/habitat-viewer
@@ -53,21 +51,24 @@ if [ $(uname) == "Darwin" ]; then
 
 
   pushd $(find . -name "corrade" -type d)
-  find . -name "*so" | xargs -I {} install_name_tool -add_rpath @loader_path/../habitat_sim/_ext {}
+    find . -name "*so" | xargs -I {} install_name_tool -add_rpath @loader_path/../habitat_sim/_ext {}
   popd
 elif [ $(uname) == "Linux" ]; then
-  patchelf --set-rpath "\$ORIGIN/habitat_sim/_ext" ${corrade_bindings}
-  patchelf --set-rpath "\$ORIGIN/habitat_sim/_ext" ${magnum_bindings}
-  patchelf --set-rpath "\$ORIGIN" ${hsim_bindings}
+  # Adding rpath for everything to have both habitat_sim/_ext and the conda env's lib dir
+  # All this is done relatively to the *.so's folder to make it relocatable
+  patchelf --set-rpath "\$ORIGIN/habitat_sim/_ext:\$ORIGIN/../.." --force-rpath ${corrade_bindings}
+  patchelf --set-rpath "\$ORIGIN/habitat_sim/_ext:\$ORIGIN/../.." --force-rpath ${magnum_bindings}
+
+  patchelf --set-rpath "\$ORIGIN:\$ORIGIN/../../../.." --force-rpath ${hsim_bindings}
   
   if [ -f 'bin/habitat-viewer' ]; then
-    patchelf --set-rpath \$ORIGIN/../${ext_folder} bin/habitat-viewer
+    patchelf --set-rpath "\$ORIGIN/../${ext_folder}:\$ORIGIN/../lib" --force-rpath bin/habitat-viewer
   fi
 
-  find $(dirname ${hsim_bindings}) -name "*Corrade*so" | xargs -I {} patchelf --set-rpath \$ORIGIN {}
+  find $(dirname ${hsim_bindings}) -name "*Corrade*so" | xargs -I {} patchelf --set-rpath "\$ORIGIN:\$ORIGIN/../../../.." --force-rpath {}
 
-  pushd $(find . -name "corrade" -type d)
-  find . -name "*so" | xargs -I {} patchelf --set-rpath \$ORIGIN/../habitat_sim/_ext {}
+  pushd $(dirname ${corrade_bindings})/corrade
+    find . -name "*so" | xargs -I {} patchelf --set-rpath "\$ORIGIN/../habitat_sim/_ext:\$ORIGIN/../../.." --force-rpath {}
   popd
 fi
 
