@@ -12,7 +12,7 @@ import numpy as np
 
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
-from habitat_sim.sensors import SensorSuite
+from habitat_sim.sensors.sensor_suite import SensorSuite
 from habitat_sim.utils.common import (
     quat_from_coeffs,
     quat_from_magnum,
@@ -106,15 +106,19 @@ class Agent(object):
     """
 
     agent_config: AgentConfiguration
-    sensors: SensorSuite
+    _sensors: SensorSuite
     controls: ObjectControls
     body: mn.scenegraph.AbstractFeature3D
 
     def __init__(
-        self, scene_node: hsim.SceneNode, agent_config=None, sensors=None, controls=None
+        self,
+        scene_node: hsim.SceneNode,
+        agent_config=None,
+        _sensors=None,
+        controls=None,
     ):
         self.agent_config = agent_config if agent_config else AgentConfiguration()
-        self.sensors = sensors if sensors else SensorSuite()
+        self._sensors = _sensors if _sensors else SensorSuite()
         self.controls = controls if controls else ObjectControls()
         self.body = mn.scenegraph.AbstractFeature3D(scene_node)
         scene_node.type = hsim.SceneNodeType.AGENT
@@ -134,9 +138,9 @@ class Agent(object):
         self.agent_config = agent_config
 
         if reconfigure_sensors:
-            self.sensors.clear()
+            self._sensors.clear()
             for spec in self.agent_config.sensor_specifications:
-                self.sensors.add(
+                self._sensors.add(
                     hsim.PinholeCamera(self.scene_node.create_child(), spec)
                 )
 
@@ -160,7 +164,7 @@ class Agent(object):
                 self.scene_node, action.name, action.actuation, apply_filter=True
             )
         else:
-            for _, v in self.sensors.items():
+            for _, v in self._sensors.items():
                 habitat_sim.errors.assert_obj_valid(v)
                 self.controls.action(
                     v.object, action.name, action.actuation, apply_filter=False
@@ -174,7 +178,7 @@ class Agent(object):
             np.array(self.body.object.absolute_translation), self.body.object.rotation
         )
 
-        for k, v in self.sensors.items():
+        for k, v in self._sensors.items():
             habitat_sim.errors.assert_obj_valid(v)
             state.sensor_states[k] = SixDOFPose(
                 np.array(v.node.absolute_translation),
@@ -204,15 +208,15 @@ class Agent(object):
         self.body.object.rotation = quat_to_magnum(state.rotation)
 
         if reset_sensors:
-            for _, v in self.sensors.items():
+            for _, v in self._sensors.items():
                 v.set_transformation_from_spec()
 
         for k, v in state.sensor_states.items():
-            assert k in self.sensors
+            assert k in self._sensors
             if isinstance(v.rotation, list):
                 v.rotation = quat_from_coeffs(v.rotation)
 
-            s = self.sensors[k]
+            s = self._sensors[k]
 
             s.node.reset_transformation()
             s.node.translate(
@@ -234,3 +238,6 @@ class Agent(object):
     @state.setter
     def state(self, new_state):
         self.set_state(new_state, reset_sensors=True)
+
+    def close(self):
+        self._sensors = None

@@ -11,6 +11,7 @@
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/Image.h>
+#include <Magnum/Math/Color.h>
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/MeshTools/Compile.h>
@@ -23,6 +24,9 @@
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
+
+using Mn::Math::Literals::operator""_degf;
+using Mn::Math::Literals::operator""_rgbf;
 
 namespace esp {
 namespace gfx {
@@ -41,8 +45,6 @@ struct DepthUnprojectionTest : Mn::GL::OpenGLTester {
   void benchmarkGpuDirect();
   void benchmarkGpuUnprojectExisting();
 };
-
-using namespace Mn::Math::Literals;
 
 const struct {
   const char* name;

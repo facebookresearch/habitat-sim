@@ -29,7 +29,7 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
 
   // Build lower hull
   int k = 0;
-  for (int i = 0; i < (int)idx.size(); ++i) {
+  for (size_t i = 0; i < idx.size(); ++i) {
     while (k >= 2 && cross(points[hullIdx[k - 2]], points[hullIdx[k - 1]],
                            points[idx[i]]) <= 0) {
       k--;
@@ -39,7 +39,7 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
   }
 
   // Build upper hull
-  for (int i = (int)idx.size() - 2, t = k + 1; i >= 0; i--) {
+  for (size_t i = idx.size() - 2, t = k + 1; i >= 0; i--) {
     while (k >= t && cross(points[hullIdx[k - 2]], points[hullIdx[k - 1]],
                            points[idx[i]]) <= 0) {
       k--;
@@ -56,6 +56,24 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
   }
 
   return hull;
+}
+
+Magnum::Range3D getTransformedBB(const Magnum::Range3D& range,
+                                 const Magnum::Matrix4& T) {
+  std::vector<Magnum::Vector3> corners;
+  corners.push_back(T.transformPoint(range.frontBottomLeft()));
+  corners.push_back(T.transformPoint(range.frontBottomRight()));
+  corners.push_back(T.transformPoint(range.frontTopLeft()));
+  corners.push_back(T.transformPoint(range.frontTopRight()));
+
+  corners.push_back(T.transformPoint(range.backTopLeft()));
+  corners.push_back(T.transformPoint(range.backTopRight()));
+  corners.push_back(T.transformPoint(range.backBottomLeft()));
+  corners.push_back(T.transformPoint(range.backBottomRight()));
+
+  Magnum::Range3D transformedBB{Magnum::Math::minmax<Magnum::Vector3>(corners)};
+
+  return transformedBB;
 }
 
 }  // namespace geo

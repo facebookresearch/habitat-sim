@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os.path as osp
+import time
 from typing import Dict, List, Optional
 
 import attr
@@ -16,6 +17,8 @@ import habitat_sim.errors
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower
+from habitat_sim.physics import MotionType
+from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.utils.common import quat_from_angle_axis
 
 torch = None
@@ -53,6 +56,7 @@ class Simulator:
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent: Agent = attr.ib(init=False, default=None)
     _sensors: Dict = attr.ib(factory=dict, init=False)
+    _previous_step_time = 0.0  # track the compute time of each step
 
     def __attrs_post_init__(self):
         config = self.config
@@ -61,11 +65,13 @@ class Simulator:
 
     def close(self):
         for sensor in self._sensors.values():
+            sensor.close()
             del sensor
 
         self._sensors = {}
 
         for agent in self.agents:
+            agent.close()
             del agent
 
         self.agents = []
@@ -212,8 +218,9 @@ class Simulator:
         self._last_state = self._default_agent.get_state()
 
         # step physics by dt
+        step_start_Time = time.time()
         self._sim.step_world(dt)
-        # print("World time is now: " + str(self._sim.get_world_time()))
+        _previous_step_time = time.time() - step_start_Time
 
         observations = self.get_sensor_observations()
         # Whether or not the action taken resulted in a collision
@@ -248,6 +255,12 @@ class Simulator:
     def get_existing_object_ids(self, scene_id=0):
         return self._sim.get_existing_object_ids(scene_id)
 
+    def get_object_motion_type(self, object_id, scene_id=0):
+        return self._sim.get_object_motion_type(object_id, scene_id)
+
+    def set_object_motion_type(self, motion_type, object_id, scene_id=0):
+        return self._sim.set_object_motion_type(motion_type, object_id, scene_id)
+
     def set_transformation(self, transform, object_id, scene_id=0):
         self._sim.set_transformation(transform, object_id, scene_id)
 
@@ -275,6 +288,9 @@ class Simulator:
     def get_world_time(self, scene_id=0):
         return self._sim.get_world_time()
 
+    def recompute_navmesh(self, pathfinder, navmesh_settings):
+        return self._sim.recompute_navmesh(pathfinder, navmesh_settings)
+
 
 class Sensor:
     r"""Wrapper around habitat_sim.Sensor
@@ -289,7 +305,7 @@ class Sensor:
 
         # sensor is an attached object to the scene node
         # store such "attached object" in _sensor_object
-        self._sensor_object = self._agent.sensors.get(sensor_id)
+        self._sensor_object = self._agent._sensors.get(sensor_id)
         self._spec = self._sensor_object.specification()
 
         self._sim.renderer.bind_render_target(self._sensor_object)
@@ -339,12 +355,18 @@ class Sensor:
                     dtype=np.uint8,
                 )
 
+        noise_model_kwargs = self._spec.noise_model_kwargs
+        self._noise_model = make_sensor_noise_model(
+            self._spec.noise_model,
+            {"gpu_device_id": self._sim.gpu_device, **noise_model_kwargs},
+        )
+        assert self._noise_model.is_valid_sensor_type(
+            self._spec.sensor_type
+        ), "Noise model '{}' is not valid for sensor '{}'".format(
+            self._spec.noise_model, self._spec.uuid
+        )
+
     def draw_observation(self):
-        # draw the scene with the visual sensor:
-        # it asserts the sensor is a visual sensor;
-        # internally it will set the camera parameters (from the sensor) to the
-        # default render camera in the scene so that
-        # it has correct modelview matrix, projection matrix to render the scene
         # sanity check:
 
         # see if the sensor is attached to a scene graph, otherwise it is invalid,
@@ -391,7 +413,7 @@ class Sensor:
                 else:
                     tgt.read_frame_rgba_gpu(self._buffer.data_ptr())
 
-                return self._buffer.flip(0).clone()
+                obs = self._buffer.flip(0)
         else:
             size = self._sensor_object.framebuffer_size
 
@@ -412,4 +434,11 @@ class Sensor:
                     )
                 )
 
-            return np.flip(self._buffer, axis=0).copy()
+            obs = np.flip(self._buffer, axis=0)
+
+        return self._noise_model(obs)
+
+    def close(self):
+        self._sim = None
+        self._agent = None
+        self._sensor_object = None

@@ -30,7 +30,7 @@ const config = {
       // Babel loader for > ES6 compilation
       // Will also run eslint
       {
-        test: /\.(js)$/,
+        test: /\.(js|ts)$/,
         exclude: /node_modules/,
         use: ["babel-loader", "eslint-loader"]
       },
@@ -43,7 +43,7 @@ const config = {
   },
   // No need to add .js at the end of the module names with this
   resolve: {
-    extensions: [".js"]
+    extensions: [".js", ".ts"]
   },
   plugins: [
     new HtmlWebpackPlugin({
@@ -54,6 +54,11 @@ const config = {
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, "webvr.html"),
       filename: path.resolve(buildRootPath, "webvr.html"),
+      hash: true
+    }),
+    new HtmlWebpackPlugin({
+      template: path.resolve(__dirname, "viewer.html"),
+      filename: path.resolve(buildRootPath, "viewer.html"),
       hash: true
     })
   ],

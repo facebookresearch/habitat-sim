@@ -3,35 +3,53 @@
 // LICENSE file in the root directory of this source tree.
 
 /* global Module */
-import { defaultAgentConfig, defaultEpisode } from "./defaults";
+import {
+  defaultAgentConfig,
+  defaultEpisode,
+  defaultResolution
+} from "./defaults";
 import SimEnv from "./simenv_embind";
 import TopDownMap from "./topdown";
 import NavigateTask from "./navigate";
+import { buildConfigFromURLParameters } from "./utils";
 
 class WebDemo {
+  currentResolution = defaultResolution;
+  constructor(canvasId = "canvas") {
+    this.canvasId = canvasId;
+  }
   initializeModules(
     agentConfig = defaultAgentConfig,
-    episode = defaultEpisode
+    episode = defaultEpisode,
+    initializeTopDown = true
   ) {
     this.sceneConfig = new Module.SceneConfiguration();
     this.sceneConfig.id = Module.scene;
     this.config = new Module.SimulatorConfiguration();
     this.config.scene = this.sceneConfig;
-
     this.simenv = new SimEnv(this.config, episode, 0);
 
     agentConfig = this.updateAgentConfigWithSensors({ ...agentConfig });
 
     this.simenv.addAgent(agentConfig);
-    this.topdown = new TopDownMap(
-      this.simenv.getPathFinder(),
-      document.getElementById("topdown")
-    );
 
-    this.task = new NavigateTask(this.simenv, this.topdown, {
-      canvas: document.getElementById("canvas"),
+    if (initializeTopDown) {
+      this.topdown = new TopDownMap(
+        this.simenv.getPathFinder(),
+        document.getElementById("topdown")
+      );
+    } else {
+      this.topdown = null;
+    }
+
+    this.canvasElement = document.getElementById(this.canvasId);
+
+    this.task = new NavigateTask(this.simenv, {
+      topdown: this.topdown,
+      canvas: this.canvasElement,
       semantic: document.getElementById("semantic"),
       radar: document.getElementById("radar"),
+      scope: document.getElementById("scope"),
       status: document.getElementById("status")
     });
   }
@@ -52,11 +70,34 @@ class WebDemo {
     ];
 
     agentConfig.sensorSpecifications = sensorConfigs;
+    agentConfig = this.updateAgentConfigWithResolution(agentConfig);
+
     return agentConfig;
   }
 
-  display() {
-    this.initializeModules(defaultAgentConfig, defaultEpisode);
+  resetCanvas(resolution) {
+    this.canvasElement.width = resolution.width;
+    this.canvasElement.height = resolution.height;
+  }
+
+  updateAgentConfigWithResolution(agentConfig) {
+    agentConfig.sensorSpecifications.forEach(sensorConfig => {
+      sensorConfig.resolution = [
+        this.currentResolution.height,
+        this.currentResolution.width
+      ];
+    });
+
+    return agentConfig;
+  }
+
+  display(agentConfig = defaultAgentConfig, episode = {}) {
+    const config = buildConfigFromURLParameters();
+    if (config.useDefaultEpisode) {
+      episode = defaultEpisode;
+    }
+
+    this.initializeModules(agentConfig, episode);
 
     this.task.init();
     this.task.reset();

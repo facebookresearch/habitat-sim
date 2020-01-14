@@ -22,6 +22,14 @@ bool BulletPhysicsManager::initPhysics(
   // btGImpactCollisionAlgorithm::registerAlgorithm(&bDispatcher_);
   bWorld_ = std::make_shared<btDiscreteDynamicsWorld>(
       &bDispatcher_, &bBroadphase_, &bSolver_, &bCollisionConfig_);
+
+  debugDrawer_.setMode(
+      Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe |
+      Magnum::BulletIntegration::DebugDraw::Mode::DrawConstraints);
+  bWorld_->setDebugDrawer(&debugDrawer_);
+
+  // Copy over relevant configuration
+  fixedTimeStep_ = physicsManagerAttributes.getDouble("timestep");
   // currently GLB meshes are y-up
   bWorld_->setGravity(
       btVector3(physicsManagerAttributes.getMagnumVec3("gravity")));
@@ -55,10 +63,13 @@ bool BulletPhysicsManager::addScene(
     }
   }
 
+  const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
+      physicsSceneAttributes.getString("collisionMeshHandle"));
+
   //! Initialize scene
-  bool sceneSuccess =
-      static_cast<BulletRigidObject*>(sceneNode_)
-          ->initializeScene(physicsSceneAttributes, meshGroup, bWorld_);
+  bool sceneSuccess = static_cast<BulletRigidObject*>(sceneNode_)
+                          ->initializeScene(physicsSceneAttributes, metaData,
+                                            meshGroup, bWorld_);
 
   return sceneSuccess;
 }
@@ -70,10 +81,13 @@ int BulletPhysicsManager::makeRigidObject(
   int newObjectID = allocateObjectID();
   existingObjects_[newObjectID] = new BulletRigidObject(sceneNode_);
 
-  //! Instantiate with mesh pointer
+  const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
+      physicsObjectAttributes.getString("collisionMeshHandle"));
   bool objectSuccess =
       static_cast<BulletRigidObject*>(existingObjects_.at(newObjectID))
-          ->initializeObject(physicsObjectAttributes, meshGroup, bWorld_);
+          ->initializeObject(physicsObjectAttributes, bWorld_, metaData,
+                             meshGroup);
+
   if (!objectSuccess) {
     LOG(ERROR) << "Object load failed";
     deallocateObjectID(newObjectID);
@@ -127,7 +141,7 @@ void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   }
 }
 
-Magnum::Vector3 BulletPhysicsManager::getGravity() {
+Magnum::Vector3 BulletPhysicsManager::getGravity() const {
   return Magnum::Vector3(bWorld_->getGravity());
 }
 
@@ -136,12 +150,11 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   if (!initialized_) {
     return;
   }
-  if (dt < 0) {
+  if (dt <= 0) {
     dt = fixedTimeStep_;
   }
 
   // ==== Physics stepforward ======
-
   // NOTE: worldTime_ will always be a multiple of sceneMetaData_.timestep
   int numSubStepsTaken =
       bWorld_->stepSimulation(dt, maxSubSteps_, fixedTimeStep_);
@@ -150,10 +163,9 @@ void BulletPhysicsManager::stepPhysics(double dt) {
 
 void BulletPhysicsManager::setMargin(const int physObjectID,
                                      const double margin) {
-  if (existingObjects_.count(physObjectID) > 0) {
-    static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
-        ->setMargin(margin);
-  }
+  assertIDValidity(physObjectID);
+  static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+      ->setMargin(margin);
 }
 
 void BulletPhysicsManager::setSceneFrictionCoefficient(
@@ -168,22 +180,24 @@ void BulletPhysicsManager::setSceneRestitutionCoefficient(
       ->setRestitutionCoefficient(restitutionCoefficient);
 }
 
-double BulletPhysicsManager::getMargin(const int physObjectID) {
-  if (existingObjects_.count(physObjectID) > 0) {
-    return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
-        ->getMargin();
-  } else {
-    return PHYSICS_ATTR_UNDEFINED;
-  }
+double BulletPhysicsManager::getMargin(const int physObjectID) const {
+  assertIDValidity(physObjectID);
+  return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+      ->getMargin();
 }
 
-double BulletPhysicsManager::getSceneFrictionCoefficient() {
+double BulletPhysicsManager::getSceneFrictionCoefficient() const {
   return static_cast<BulletRigidObject*>(sceneNode_)->getFrictionCoefficient();
 }
 
-double BulletPhysicsManager::getSceneRestitutionCoefficient() {
+double BulletPhysicsManager::getSceneRestitutionCoefficient() const {
   return static_cast<BulletRigidObject*>(sceneNode_)
       ->getRestitutionCoefficient();
+}
+
+void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
+  debugDrawer_.setTransformationProjectionMatrix(projTrans);
+  bWorld_->debugDrawWorld();
 }
 
 }  // namespace physics

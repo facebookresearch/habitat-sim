@@ -68,7 +68,7 @@ bool operator==(const SensorSpec& a, const SensorSpec& b) {
          a.position == b.position && a.orientation == b.orientation &&
          a.resolution == b.resolution && a.channels == b.channels &&
          a.encoding == b.encoding && a.observationSpace == b.observationSpace &&
-         a.gpu2gpuTransfer == b.gpu2gpuTransfer;
+         a.noiseModel == b.noiseModel && a.gpu2gpuTransfer == b.gpu2gpuTransfer;
 }
 bool operator!=(const SensorSpec& a, const SensorSpec& b) {
   return !(a == b);

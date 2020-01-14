@@ -40,9 +40,15 @@ std::tuple<dtStatus, dtPolyRef, vec3f> projectToPoly(
   // and polyRef == 0
   constexpr float polyPickExt[3] = {2, 4, 2};  // [2 * dx, 2 * dy, 2 * dz]
   dtPolyRef polyRef;
-  vec3f polyXYZ;
+  // Initialize with all NANs at dtStatusSucceed(status) == true does NOT mean
+  // that it found a point to project to..........
+  vec3f polyXYZ{NAN, NAN, NAN};
   dtStatus status = navQuery->findNearestPoly(pt.data(), polyPickExt, filter,
                                               &polyRef, polyXYZ.data());
+
+  // So let's call it a failure if it didn't actually find a point....
+  if (std::isnan(polyXYZ[0]))
+    status = DT_FAILURE;
 
   return std::make_tuple(status, polyRef, polyXYZ);
 }
@@ -203,21 +209,13 @@ enum PolyFlags {
 };
 }  // namespace
 
-PathFinder::PathFinder() : navMesh_(0), navQuery_(0), filter_(0) {
+PathFinder::PathFinder() : filter_(0) {
   filter_ = new dtQueryFilter();
   filter_->setIncludeFlags(POLYFLAGS_WALK);
   filter_->setExcludeFlags(0);
 }
 
 void PathFinder::free() {
-  if (navMesh_) {
-    dtFreeNavMesh(navMesh_);
-    navMesh_ = 0;
-  }
-  if (navQuery_) {
-    dtFreeNavMeshQuery(navQuery_);
-    navQuery_ = 0;
-  }
   if (filter_) {
     delete filter_;
   }
@@ -247,15 +245,16 @@ bool PathFinder::build(const NavMeshSettings& bs,
   cfg.cs = bs.cellSize;
   cfg.ch = bs.cellHeight;
   cfg.walkableSlopeAngle = bs.agentMaxSlope;
-  cfg.walkableHeight = (int)ceilf(bs.agentHeight / cfg.ch);
-  cfg.walkableClimb = (int)floorf(bs.agentMaxClimb / cfg.ch);
-  cfg.walkableRadius = (int)ceilf(bs.agentRadius / cfg.cs);
-  cfg.maxEdgeLen = (int)(bs.edgeMaxLen / bs.cellSize);
+  cfg.walkableHeight = static_cast<int>(ceilf(bs.agentHeight / cfg.ch));
+  cfg.walkableClimb = static_cast<int>(floorf(bs.agentMaxClimb / cfg.ch));
+  cfg.walkableRadius = static_cast<int>(ceilf(bs.agentRadius / cfg.cs));
+  cfg.maxEdgeLen = static_cast<int>(bs.edgeMaxLen / bs.cellSize);
   cfg.maxSimplificationError = bs.edgeMaxError;
-  cfg.minRegionArea = (int)rcSqr(bs.regionMinSize);  // Note: area = size*size
+  cfg.minRegionArea =
+      static_cast<int>(rcSqr(bs.regionMinSize));  // Note: area = size*size
   cfg.mergeRegionArea =
-      (int)rcSqr(bs.regionMergeSize);  // Note: area = size*size
-  cfg.maxVertsPerPoly = (int)bs.vertsPerPoly;
+      static_cast<int>(rcSqr(bs.regionMergeSize));  // Note: area = size*size
+  cfg.maxVertsPerPoly = static_cast<int>(bs.vertsPerPoly);
   cfg.detailSampleDist =
       bs.detailSampleDist < 0.9f ? 0 : bs.cellSize * bs.detailSampleDist;
   cfg.detailSampleMaxError = bs.cellHeight * bs.detailSampleMaxError;
@@ -512,8 +511,7 @@ bool PathFinder::build(const NavMeshSettings& bs,
       return false;
     }
 
-    navMesh_ = 0;
-    navMesh_ = dtAllocNavMesh();
+    navMesh_.reset(dtAllocNavMesh());
     if (!navMesh_) {
       dtFree(navData);
       LOG(ERROR) << "Could not allocate Detour navmesh";
@@ -539,14 +537,14 @@ bool PathFinder::build(const NavMeshSettings& bs,
 }
 
 bool PathFinder::initNavQuery() {
-  navQuery_ = dtAllocNavMeshQuery();
-  dtStatus status = navQuery_->init(navMesh_, 2048);
+  navQuery_.reset(dtAllocNavMeshQuery());
+  dtStatus status = navQuery_->init(navMesh_.get(), 2048);
   if (dtStatusFailed(status)) {
     LOG(ERROR) << "Could not init Detour navmesh query";
     return false;
   }
 
-  islandSystem_ = new impl::IslandSystem(navMesh_, filter_);
+  islandSystem_ = new impl::IslandSystem(navMesh_.get(), filter_);
 
   return true;
 }
@@ -591,7 +589,65 @@ struct NavMeshTileHeader {
   dtTileRef tileRef;
   int dataSize;
 };
+
+// Calculate the area of a polygon by iterating over the triangles in the detail
+// mesh and computing their area
+float polyArea(const dtPoly* poly, const dtMeshTile* tile) {
+  float area = 0;
+  // Code to iterate over triangles from here:
+  // https://github.com/recastnavigation/recastnavigation/blob/57610fa6ef31b39020231906f8c5d40eaa8294ae/Detour/Source/DetourNavMesh.cpp#L684
+  const std::ptrdiff_t ip = poly - tile->polys;
+  const dtPolyDetail* pd = &tile->detailMeshes[ip];
+  for (int j = 0; j < pd->triCount; ++j) {
+    const unsigned char* t = &tile->detailTris[(pd->triBase + j) * 4];
+    const float* v[3];
+    for (int k = 0; k < 3; ++k) {
+      if (t[k] < poly->vertCount)
+        v[k] = &tile->verts[poly->verts[t[k]] * 3];
+      else
+        v[k] =
+            &tile->detailVerts[(pd->vertBase + (t[k] - poly->vertCount)) * 3];
+    }
+
+    const vec3f w1 =
+        Eigen::Map<const vec3f>(v[1]) - Eigen::Map<const vec3f>(v[0]);
+    const vec3f w2 =
+        Eigen::Map<const vec3f>(v[2]) - Eigen::Map<const vec3f>(v[0]);
+    area += 0.5 * w1.cross(w2).norm();
+  }
+
+  return area;
+}
 }  // namespace
+
+// Some polygons have zero area for some reason.  When we navigate into a zero
+// area polygon, things crash.  So we find all zero area polygons and mark
+// them as disabled/not navigable.
+void PathFinder::removeZeroAreaPolys() {
+  // Iterate over all tiles
+  for (int iTile = 0; iTile < navMesh_->getMaxTiles(); ++iTile) {
+    const dtMeshTile* tile =
+        const_cast<const dtNavMesh*>(navMesh_.get())->getTile(iTile);
+    if (!tile)
+      continue;
+
+    // Iterate over all polygons in a tile
+    for (int jPoly = 0; jPoly < tile->header->polyCount; ++jPoly) {
+      // Get the polygon reference from the tile and polygon id
+      dtPolyRef polyRef = navMesh_->encodePolyId(iTile, tile->salt, jPoly);
+      const dtPoly* poly = nullptr;
+      const dtMeshTile* tmp = nullptr;
+      navMesh_->getTileAndPolyByRefUnsafe(polyRef, &tmp, &poly);
+
+      CORRADE_INTERNAL_ASSERT(poly != nullptr);
+      CORRADE_INTERNAL_ASSERT(tmp != nullptr);
+
+      if (polyArea(poly, tile) < 1e-5) {
+        navMesh_->setPolyFlags(polyRef, POLYFLAGS_DISABLED);
+      }
+    }
+  }
+}
 
 bool PathFinder::loadNavMesh(const std::string& path) {
   FILE* fp = fopen(path.c_str(), "rb");
@@ -639,8 +695,8 @@ bool PathFinder::loadNavMesh(const std::string& path) {
     if (!tileHeader.tileRef || !tileHeader.dataSize)
       break;
 
-    unsigned char* data =
-        (unsigned char*)dtAlloc(tileHeader.dataSize, DT_ALLOC_PERM);
+    unsigned char* data = static_cast<unsigned char*>(
+        dtAlloc(tileHeader.dataSize, DT_ALLOC_PERM));
     if (!data)
       break;
     memset(data, 0, tileHeader.dataSize);
@@ -665,13 +721,17 @@ bool PathFinder::loadNavMesh(const std::string& path) {
 
   fclose(fp);
 
-  navMesh_ = mesh;
+  navMesh_.reset(mesh);
   bounds_ = std::make_pair(bmin, bmax);
+
+  removeZeroAreaPolys();
+
   return initNavQuery();
 }
 
 bool PathFinder::saveNavMesh(const std::string& path) {
-  if (!navMesh_)
+  const dtNavMesh* navMesh = navMesh_.get();
+  if (!navMesh)
     return false;
 
   FILE* fp = fopen(path.c_str(), "wb");
@@ -683,23 +743,23 @@ bool PathFinder::saveNavMesh(const std::string& path) {
   header.magic = NAVMESHSET_MAGIC;
   header.version = NAVMESHSET_VERSION;
   header.numTiles = 0;
-  for (int i = 0; i < navMesh_->getMaxTiles(); ++i) {
-    const dtMeshTile* tile = ((const dtNavMesh*)navMesh_)->getTile(i);
+  for (int i = 0; i < navMesh->getMaxTiles(); ++i) {
+    const dtMeshTile* tile = navMesh->getTile(i);
     if (!tile || !tile->header || !tile->dataSize)
       continue;
     header.numTiles++;
   }
-  memcpy(&header.params, navMesh_->getParams(), sizeof(dtNavMeshParams));
+  memcpy(&header.params, navMesh->getParams(), sizeof(dtNavMeshParams));
   fwrite(&header, sizeof(NavMeshSetHeader), 1, fp);
 
   // Store tiles.
-  for (int i = 0; i < navMesh_->getMaxTiles(); ++i) {
-    const dtMeshTile* tile = ((const dtNavMesh*)navMesh_)->getTile(i);
+  for (int i = 0; i < navMesh->getMaxTiles(); ++i) {
+    const dtMeshTile* tile = navMesh->getTile(i);
     if (!tile || !tile->header || !tile->dataSize)
       continue;
 
     NavMeshTileHeader tileHeader;
-    tileHeader.tileRef = navMesh_->getTileRef(tile);
+    tileHeader.tileRef = navMesh->getTileRef(tile);
     tileHeader.dataSize = tile->dataSize;
     fwrite(&tileHeader, sizeof(tileHeader), 1, fp);
 
@@ -719,7 +779,7 @@ void PathFinder::seed(uint32_t newSeed) {
 
 // Returns a random number [0..1]
 static float frand() {
-  return (float)rand() / (float)RAND_MAX;
+  return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 }
 
 vec3f PathFinder::getRandomNavigablePoint() {
@@ -758,7 +818,7 @@ bool PathFinder::findPath(MultiGoalShortestPath& path) {
   int numPolys = 0;
   dtStatus status;
   std::tie(status, startRef, pathStart) =
-      projectToPoly(path.requestedStart, navQuery_, filter_);
+      projectToPoly(path.requestedStart, navQuery_.get(), filter_);
 
   if (status != DT_SUCCESS || startRef == 0) {
     return false;
@@ -771,7 +831,7 @@ bool PathFinder::findPath(MultiGoalShortestPath& path) {
     pathEnds.emplace_back();
     endRefs.emplace_back();
     std::tie(status, endRefs.back(), pathEnds.back()) =
-        projectToPoly(rqEnd, navQuery_, filter_);
+        projectToPoly(rqEnd, navQuery_.get(), filter_);
 
     pathEndsCoords.emplace_back(pathEnds.back()[0]);
     pathEndsCoords.emplace_back(pathEnds.back()[1]);
@@ -844,17 +904,39 @@ T PathFinder::tryStep(const T& start, const T& end) {
   static const int MAX_POLYS = 256;
   dtPolyRef polys[MAX_POLYS];
 
+  dtStatus startStatus, endStatus;
   dtPolyRef startRef, endRef;
   vec3f pathStart, pathEnd;
-  std::tie(std::ignore, startRef, pathStart) =
-      projectToPoly(start, navQuery_, filter_);
-  std::tie(std::ignore, endRef, pathEnd) =
-      projectToPoly(end, navQuery_, filter_);
+  std::tie(startStatus, startRef, pathStart) =
+      projectToPoly(start, navQuery_.get(), filter_);
+  std::tie(endStatus, endRef, pathEnd) =
+      projectToPoly(end, navQuery_.get(), filter_);
+
+  if (dtStatusFailed(startStatus) || dtStatusFailed(endStatus)) {
+    return start;
+  }
+
   vec3f endPoint;
   int numPolys;
   navQuery_->moveAlongSurface(startRef, pathStart.data(), pathEnd.data(),
                               filter_, endPoint.data(), polys, &numPolys,
                               MAX_POLYS);
+
+  // If there isn't any possible path between start and end, just return start,
+  // that is cleanest
+  if (numPolys == 0) {
+    return start;
+  }
+
+  // According to recast's code
+  // (https://github.com/recastnavigation/recastnavigation/blob/master/Detour/Source/DetourNavMeshQuery.cpp#L2006-L2007),
+  // the endPoint is not guaranteed to be actually on the surface of the
+  // navmesh, it seems to be in 99.9% of cases for us, but there are some
+  // extreme edge cases where it won't be, so explicitly get the height of the
+  // surface at the endPoint and set its height to that.
+  // Note, this will never fail as endPoint is always within in the poly
+  // polys[numPolys - 1]
+  navQuery_->getPolyHeight(polys[numPolys - 1], endPoint.data(), &endPoint[1]);
 
   // Hack to deal with infinitely thin walls in recast allowing you to
   // transition between two different connected components
@@ -862,7 +944,7 @@ T PathFinder::tryStep(const T& start, const T& end) {
   // is in the same connected component as the startRef according to
   // findNearestPoly
   std::tie(std::ignore, endRef, std::ignore) =
-      projectToPoly(endPoint, navQuery_, filter_);
+      projectToPoly(endPoint, navQuery_.get(), filter_);
   if (!this->islandSystem_->hasConnection(startRef, endRef)) {
     // There isn't a connection!  This happens when endPoint is on an edge
     // shared between two different connected components (aka infinitely thin
@@ -894,10 +976,29 @@ template Magnum::Vector3 PathFinder::tryStep<Magnum::Vector3>(
     const Magnum::Vector3&,
     const Magnum::Vector3&);
 
+template <typename T>
+T PathFinder::snapPoint(const T& pt) {
+  dtStatus status;
+  vec3f projectedPt;
+  std::tie(status, std::ignore, projectedPt) =
+      projectToPoly(pt, navQuery_.get(), filter_);
+
+  if (dtStatusSucceed(status)) {
+    return T{projectedPt};
+  } else {
+    return {NAN, NAN, NAN};
+  }
+}
+
+template vec3f PathFinder::snapPoint<vec3f>(const vec3f& pt);
+template Magnum::Vector3 PathFinder::snapPoint<Magnum::Vector3>(
+    const Magnum::Vector3& pt);
+
 float PathFinder::islandRadius(const vec3f& pt) const {
   dtPolyRef ptRef;
   dtStatus status;
-  std::tie(status, ptRef, std::ignore) = projectToPoly(pt, navQuery_, filter_);
+  std::tie(status, ptRef, std::ignore) =
+      projectToPoly(pt, navQuery_.get(), filter_);
   if (status != DT_SUCCESS || ptRef == 0) {
     return 0.0;
   } else {
@@ -917,7 +1018,7 @@ HitRecord PathFinder::closestObstacleSurfacePoint(
   dtPolyRef ptRef;
   dtStatus status;
   vec3f polyPt;
-  std::tie(status, ptRef, polyPt) = projectToPoly(pt, navQuery_, filter_);
+  std::tie(status, ptRef, polyPt) = projectToPoly(pt, navQuery_.get(), filter_);
   if (status != DT_SUCCESS || ptRef == 0) {
     return {vec3f(0, 0, 0), vec3f(0, 0, 0),
             std::numeric_limits<float>::infinity()};
@@ -936,7 +1037,7 @@ bool PathFinder::isNavigable(const vec3f& pt,
   dtPolyRef ptRef;
   dtStatus status;
   vec3f polyPt;
-  std::tie(status, ptRef, polyPt) = projectToPoly(pt, navQuery_, filter_);
+  std::tie(status, ptRef, polyPt) = projectToPoly(pt, navQuery_.get(), filter_);
 
   if (status != DT_SUCCESS || ptRef == 0)
     return false;

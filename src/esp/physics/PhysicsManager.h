@@ -54,8 +54,37 @@ unique physical world can exist.
 */
 class PhysicsManager {
  public:
+  //! ==== physics engines ====
+
   /**
-   * @brief Construct a #ref PhysicsManager with access to specific resourse
+  @brief The specific physics implementation used by the current @ref
+  PhysicsManager. Each entry suggests a derived class of @ref PhysicsManager and
+  @ref RigidObject implementing the specific interface to a simulation library.
+  */
+  enum PhysicsSimulationLibrary {
+
+    /**
+     * The default implemenation of kineamtics through the base @ref
+     * PhysicsManager class. Supports @ref MotionType::STATIC and @ref
+     * MotionType::KINEMATIC objects of base class @ref RigidObject. If the
+     * derived @ref PhysicsManager class for a desired @ref
+     * PhysicsSimulationLibrary fails to initialize, it will default to @ref
+     * PhysicsSimulationLibrary::NONE.
+     */
+    NONE,
+
+    /**
+     * An implemenation of dynamics through the Bullet Physics library.
+     * Supports @ref MotionType::STATIC, @ref MotionType::KINEMATIC, and @ref
+     * MotionType::DYNAMIC objects of @ref RigidObject derived class @ref
+     * BulletRigidObject. Suggests the use of @ref PhysicsManager derived class
+     * @ref BulletPhysicsManager
+     */
+    BULLET
+  };
+
+  /**
+   * @brief Construct a #ref PhysicsManager with access to specific resource
    * assets.
    *
    * @param _resourceManager The @ref esp::assets::ResourceManager which
@@ -84,10 +113,12 @@ class PhysicsManager {
 
   /**
    * @brief Reset the simulation and physical world.
-   * Incomplete...
+   * Sets the @ref worldTime_ to 0.0, does not change physical state.
    */
-  virtual void reset(){
-      /* TODO: reset object states or clear them? Reset worldTime? Other? */};
+  virtual void reset() {
+    /* TODO: reset object states or clear them? Other? */
+    worldTime_ = 0.0;
+  };
 
   /** @brief Stores references to a set of drawable elements. */
   using DrawableGroup = Magnum::SceneGraph::DrawableGroup3D;
@@ -146,13 +177,13 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    *  @return The size of @ref PhysicsManager::existingObjects_.
    */
-  int getNumRigidObjects() { return existingObjects_.size(); };
+  int getNumRigidObjects() const { return existingObjects_.size(); };
 
   /** @brief Get a list of existing object IDs (i.e., existing keys in @ref
    * PhysicsManager::existingObjects_.)
    *  @return List of object ID keys from @ref PhysicsManager::existingObjects_.
    */
-  std::vector<int> getExistingObjectIDs() {
+  std::vector<int> getExistingObjectIDs() const {
     std::vector<int> v;
     for (auto& bro : existingObjects_) {
       v.push_back(bro.first);
@@ -172,10 +203,9 @@ class PhysicsManager {
   /** @brief Get the @ref MotionType of an object.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The object's @ref MotionType, or @ref MotionType::ERROR_MOTIONTYPE
-   * if the object is not found.
+   * @return The object's @ref MotionType
    */
-  MotionType getObjectMotionType(const int physObjectID);
+  MotionType getObjectMotionType(const int physObjectID) const;
 
   //============ Simulator functions =============
 
@@ -208,20 +238,20 @@ class PhysicsManager {
    * @return The increment of time, @ref fixedTimeStep_, by which the physical
    * world will advance.
    */
-  virtual double getTimestep() { return fixedTimeStep_; };
+  virtual double getTimestep() const { return fixedTimeStep_; };
 
   /** @brief Get the current @ref worldTime_ of the physical world. See @ref
    * stepPhysics.
    * @return The amount of time, @ref worldTime_, by which the physical world
    * has advanced.
    */
-  virtual double getWorldTime() { return worldTime_; };
+  virtual double getWorldTime() const { return worldTime_; };
 
   /** @brief Get the current gravity in the physical world. By default returns
    * [0,0,0] since their is no notion of force in a kinematic world.
    * @return The current gravity vector in the physical world.
    */
-  virtual Magnum::Vector3 getGravity();
+  virtual Magnum::Vector3 getGravity() const;
 
   // =========== Scene Getter/Setter functions ===========
 
@@ -229,7 +259,7 @@ class PhysicsManager {
    * geometry. See @ref sceneNode_.
    * @return The scalar friction coefficient of the scene geometry.
    */
-  virtual double getSceneFrictionCoefficient() { return 0.0; };
+  virtual double getSceneFrictionCoefficient() const { return 0.0; };
 
   /** @brief Set the friction coefficient of the scene collision geometry. See
    * @ref sceneNode_.
@@ -245,7 +275,7 @@ class PhysicsManager {
    * this will always return 0, since kinametic scenes have no dynamics.
    * @return The scalar coefficient of restitution for the scene geometry.
    */
-  virtual double getSceneRestitutionCoefficient() { return 0.0; };
+  virtual double getSceneRestitutionCoefficient() const { return 0.0; };
 
   /** @brief Set the coefficient of restitution for the scene collision
    * geometry. See @ref sceneNode_. By default does nothing since kinametic
@@ -395,21 +425,21 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @return The 4x4 transform of the object.
    */
-  Magnum::Matrix4 getTransformation(const int physObjectID);
+  Magnum::Matrix4 getTransformation(const int physObjectID) const;
 
   /** @brief Get the current 3D position of an object.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @return The 3D position of the object.
    */
-  Magnum::Vector3 getTranslation(const int physObjectID);
+  Magnum::Vector3 getTranslation(const int physObjectID) const;
 
   /** @brief Get the current orientation of an object.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @return A quaternion representation of the object's orientation.
    */
-  Magnum::Quaternion getRotation(const int physObjectID);
+  Magnum::Quaternion getRotation(const int physObjectID) const;
 
   // ============ Object Setter functions =============
   // Setters that interface with physics need to take
@@ -497,7 +527,7 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @return Object mass or @ref esp::PHYSICS_ATTR_UNDEFINED if failed.
    */
-  double getMass(const int physObjectID);
+  double getMass(const int physObjectID) const;
 
   /** @brief Get the center of mass (COM) of an object.
    * See @ref RigidObject::getCOM.
@@ -505,7 +535,7 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @return Object 3D center of mass in the local coordinate system.
    */
-  Magnum::Vector3 getCOM(const int physObjectID);
+  Magnum::Vector3 getCOM(const int physObjectID) const;
 
   /** @brief Get the diagnoal vector of the inertia matrix of an object.
    * See @ref RigidObject::getInertiaVector.
@@ -513,7 +543,7 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @return The diagnoal vector of the inertia matrix of the object.
    */
-  Magnum::Vector3 getInertiaVector(const int physObjectID);
+  Magnum::Vector3 getInertiaVector(const int physObjectID) const;
 
   /** @brief Get the 3x3 inertia matrix of an object.
    * See @ref RigidObject::getInertiaMatrix.
@@ -521,52 +551,48 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @return The 3x3 inertia matrix of the object.
    */
-  Magnum::Matrix3 getInertiaMatrix(const int physObjectID);
+  Magnum::Matrix3 getInertiaMatrix(const int physObjectID) const;
 
   /** @brief Get the scalar uniform scale of an object.
    * See @ref RigidObject::getScale.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @return The uniform scale of the object relative to its initialy loaded
-   * meshes or @ref esp::PHYSICS_ATTR_UNDEFINED if failed.
+   * meshes.
    */
-  double getScale(const int physObjectID);
+  double getScale(const int physObjectID) const;
 
   /** @brief Get the scalar coefficient of friction of an object.
    * See @ref RigidObject::getFrictionCoefficient.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The scalar coefficient of friction of the object or @ref
-   * esp::PHYSICS_ATTR_UNDEFINED if failed.
+   * @return The scalar coefficient of friction of the object.
    */
-  double getFrictionCoefficient(const int physObjectID);
+  double getFrictionCoefficient(const int physObjectID) const;
 
   /** @brief Get the scalar coefficient of restitution of an object.
    * See @ref RigidObject::getRestitutionCoefficient.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The scalar coefficient of restitution of the object or @ref
-   * esp::PHYSICS_ATTR_UNDEFINED if failed.
+   * @return The scalar coefficient of restitution of the object.
    */
-  double getRestitutionCoefficient(const int physObjectID);
+  double getRestitutionCoefficient(const int physObjectID) const;
 
   /** @brief Get the scalar linear damping coefficient of an object.
    * See @ref RigidObject::getLinearDamping.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The scalar linear damping coefficient of the object or @ref
-   * esp::PHYSICS_ATTR_UNDEFINED if failed.
+   * @return The scalar linear damping coefficient of the object.
    */
-  double getLinearDamping(const int physObjectID);
+  double getLinearDamping(const int physObjectID) const;
 
   /** @brief Get the scalar angular damping coefficient of an object.
    * See @ref RigidObject::getAngularDamping.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The scalar angular damping coefficient of the object or @ref
-   * esp::PHYSICS_ATTR_UNDEFINED if failed.
+   * @return The scalar angular damping coefficient of the object
    */
-  double getAngularDamping(const int physObjectID);
+  double getAngularDamping(const int physObjectID) const;
 
   // ============= Platform dependent function =============
 
@@ -576,7 +602,7 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @return The scalar collision margin of the object.
    */
-  virtual double getMargin(CORRADE_UNUSED const int physObjectID) {
+  virtual double getMargin(CORRADE_UNUSED const int physObjectID) const {
     return 0.0;
   };
 
@@ -598,6 +624,14 @@ class PhysicsManager {
    * @return  The number of active @ref RigidObject instances.
    */
   int checkActiveObjects();
+
+  /** @brief True if the object is considered active by the simulator physics
+   * simulator currently in use. See @ref RigidObject::isActive.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return  Whether or not the object is active.
+   */
+  bool isActive(const int physObjectID) const;
 
   //============ Interact with objects =============
   // NOTE: engine specifics handled by objects themselves...
@@ -644,7 +678,51 @@ class PhysicsManager {
   void applyImpulseTorque(const int physObjectID,
                           const Magnum::Vector3& impulse);
 
+  /** @brief Set bounding box rendering for the object true or false.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param drawables The drawables group with which to render the bounding box.
+   * @param drawBB Set rendering of the bounding box to true or false.
+   */
+  void setObjectBBDraw(int physObjectID, DrawableGroup* drawables, bool drawBB);
+
+  /**
+   * @brief Get a const reference to the specified object's SceneNode for info
+   * query purposes.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Const reference to the object scene node.
+   */
+  const scene::SceneNode& getObjectSceneNode(int physObjectID);
+
+  /** @brief Render any debugging visualizations provided by the underlying
+   * physics simulator implementation. By default does nothing. See @ref
+   * BulletPhysicsManager::debugDraw.
+   * @param projTrans The composed projection and transformation matrix for the
+   * render camera.
+   */
+  virtual void debugDraw(
+      CORRADE_UNUSED const Magnum::Matrix4& projTrans) const {};
+
+  /** @brief Return the library implementation type for the simulator currently
+   * in use. Use to check for a particular implementation.
+   * @return The implementation type of this simulator.
+   */
+  const PhysicsSimulationLibrary& getPhysicsSimulationLibrary() const {
+    return activePhysSimLib_;
+  };
+
  protected:
+  /** @brief Check that a given object ID is valid (i.e. it refers to an
+   * existing object). Terminate the program and report an error if not. This
+   * function is intended to unify object ID checking for @ref PhysicsManager
+   * functions.
+   * @param physObjectID The object ID to validate.
+   */
+  virtual void assertIDValidity(const int physObjectID) const {
+    CHECK(existingObjects_.count(physObjectID) > 0);
+  };
+
   /** @brief Check if a particular mesh can be used as a collision mesh for a
    * particular physics implemenation. Always True for base @ref PhysicsManager
    * class, since the mesh has already been successfully loaded by @ref
@@ -680,35 +758,6 @@ class PhysicsManager {
   /** @brief A pointer to a @ref esp::assets::ResourceManager which holds assets
    * that can be accessed by this @ref PhysicsManager*/
   assets::ResourceManager* resourceManager_;
-
-  //! ==== physics engines ====
-
-  /**
-  @brief The specific physics implementation used by the current @ref
-  PhysicsManager. Each entry suggests a derived class of @ref PhysicsManager and
-  @ref RigidObject implementing the specific interface to a simulation library.
-  */
-  enum PhysicsSimulationLibrary {
-
-    /**
-     * The default implemenation of kineamtics through the base @ref
-     * PhysicsManager class. Supports @ref MotionType::STATIC and @ref
-     * MotionType::KINEMATIC objects of base class @ref RigidObject. If the
-     * derived @ref PhysicsManager class for a desired @ref
-     * PhysicsSimulationLibrary fails to initialize, it will default to @ref
-     * PhysicsSimulationLibrary::NONE.
-     */
-    NONE,
-
-    /**
-     * An implemenation of dynamics through the Bullet Physics library.
-     * Supports @ref MotionType::STATIC, @ref MotionType::KINEMATIC, and @ref
-     * MotionType::DYNAMIC objects of @ref RigidObject derived class @ref
-     * BulletRigidObject. Suggests the use of @ref PhysicsManager derived class
-     * @ref BulletPhysicsManager
-     */
-    BULLET
-  };
 
   /** @brief The current physics library implementation used by this
    * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager

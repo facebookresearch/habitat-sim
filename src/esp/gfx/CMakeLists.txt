@@ -63,11 +63,9 @@ find_package(Corrade REQUIRED Utility)
 corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)
 list(APPEND gfx_SOURCES ${ShaderResources})
 
-if(BUILD_GUI_VIEWERS)
-  set(ESP_DEFAULT_PHYS_SCENE_CONFIG ${PROJECT_SOURCE_DIR}/../data/default.phys_scene_config.json)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
-                 ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
-endif()
+set(ESP_DEFAULT_PHYS_SCENE_CONFIG ${PROJECT_SOURCE_DIR}/../data/default.phys_scene_config.json)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
+                ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
 add_library(gfx STATIC ${gfx_SOURCES})
 
@@ -77,16 +75,15 @@ target_include_directories(gfx
 )
 
 if(BUILD_WITH_CUDA)
-  find_package(CUDA 8.0 REQUIRED)
   target_include_directories(gfx
     PRIVATE
-      ${CUDA_INCLUDE_DIRS}
+      ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
       ${CMAKE_CURRENT_LIST_DIR}/cuda_helpers
   )
 
   target_link_libraries(gfx
     PUBLIC
-      ${CUDA_LIBRARIES}
+      ${CUDART_LIBRARY}
   )
 endif()
 

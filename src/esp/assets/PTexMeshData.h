@@ -22,7 +22,7 @@ namespace assets {
 class PTexMeshData : public BaseMesh {
  public:
   struct MeshData {
-    std::vector<vec4f> vbo;
+    std::vector<vec3f> vbo;
     std::vector<vec4f> nbo;
     std::vector<vec4uc> cbo;
     std::vector<uint32_t> ibo;
@@ -79,7 +79,7 @@ class PTexMeshData : public BaseMesh {
 
   // initial values are based on ReplicaSDK
   //! @brief exposure, the amount of light per unit area reaching the image
-  float exposure_ = 0.025f;
+  float exposure_ = 0.0125f;
 
   //! @brief gamma, the exponent applied in the gamma correction
   float gamma_ = 1.0f / 1.6969f;

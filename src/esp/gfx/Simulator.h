@@ -18,6 +18,7 @@
 namespace esp {
 namespace nav {
 class PathFinder;
+class NavMeshSettings;
 class ActionSpacePathFinder;
 }  // namespace nav
 namespace scene {
@@ -124,6 +125,33 @@ class Simulator {
   std::vector<int> getExistingObjectIDs(const int sceneID = 0);
 
   /**
+   * @brief Get the @ref esp::physics::MotionType of an object.
+   * See @ref esp::physics::PhysicsManager::getExistingObjectIDs.
+   * @param objectID The ID of the object identifying it in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene to
+   * query.
+   * @return The @ref esp::physics::MotionType of the object or @ref
+   * esp::physics::MotionType::ERROR_MOTIONTYPE if query failed.
+   */
+  esp::physics::MotionType getObjectMotionType(const int objectID,
+                                               const int sceneID = 0);
+
+  /**
+   * @brief Set the @ref esp::physics::MotionType of an object.
+   * See @ref esp::physics::PhysicsManager::getExistingObjectIDs.
+   * @param motionType The desired motion type of the object
+   * @param objectID The ID of the object identifying it in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene to
+   * query.
+   * @return whether or not the set was successful.
+   */
+  bool setObjectMotionType(const esp::physics::MotionType& motionType,
+                           const int objectID,
+                           const int sceneID = 0);
+
+  /**
    * @brief Apply torque to an object. See @ref
    * esp::physics::PhysicsManager::applyTorque.
    * @param tau The desired torque to apply.
@@ -224,9 +252,6 @@ class Simulator {
    */
   Magnum::Quaternion getRotation(const int objectID, const int sceneID = 0);
 
-  // the physical world has a notion of time which passes during
-  // animation/simulation/action/etc... return the new world time after stepping
-
   /**
    * @brief the physical world has a notion of time which passes during
    * animation/simulation/action/etc... Step the physical world forward in time
@@ -240,7 +265,6 @@ class Simulator {
    */
   double stepWorld(const double dt = 1.0 / 60.0);
 
-  // get the simulated world time (0 if no physics enabled)
   /**
    * @brief Get the current time in the simulated world. This is always 0 if no
    * @ref esp::physics::PhysicsManager is initialized. See @ref stepWorld. See
@@ -249,6 +273,18 @@ class Simulator {
    * by which the physical world has advanced.
    */
   double getWorldTime();
+
+  /**
+   * @brief Compute the navmesh for the simulator's current active scene and
+   * assign it to the referenced @ref nav::PathFinder.
+   * @param pathfinder The pathfinder object to which the recomputed navmesh
+   * will be assigned.
+   * @param navMeshSettings The @ref nav::NavMeshSettings instance to
+   * parameterize the navmesh construction.
+   * @return Whether or not the navmesh recomputation succeeded.
+   */
+  bool recomputeNavMesh(nav::PathFinder& pathfinder,
+                        const nav::NavMeshSettings& navMeshSettings);
 
  protected:
   Simulator(){};

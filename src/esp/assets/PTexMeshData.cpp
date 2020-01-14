@@ -36,11 +36,6 @@ namespace assets {
 
 void PTexMeshData::load(const std::string& meshFile,
                         const std::string& atlasFolder) {
-#ifdef __APPLE__
-  Cr::Utility::Fatal{-1} << "PTexMeshData::load: PTex mesh is not supported on "
-                            "Mac in current version.";
-#endif
-
   if (!io::exists(meshFile)) {
     Cr::Utility::Fatal{-1} << "PTexMeshData::load: Mesh file" << meshFile
                            << "does not exist.";
@@ -278,10 +273,13 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
     const PTexMeshData::MeshData& mesh,
     const std::string& filename) {
   // sanity checks
-  CORRADE_ASSERT(!filename.empty(), "Error: filename cannot be empty.", {});
+  CORRADE_ASSERT(!filename.empty(),
+                 "PTexMeshData::loadSubMeshes: filename cannot be empty.", {});
   std::ifstream file;
   file.open(filename, std::ios::in | std::ios::binary);
-  CORRADE_ASSERT(file.good(), "Error: cannot open the file " << filename, {});
+  CORRADE_ASSERT(
+      file.good(),
+      "PTexMeshData::loadSubMeshes: cannot open the file " << filename, {});
 
   uint64_t numSubMeshes = 0;
   file.read(reinterpret_cast<char*>(&numSubMeshes), sizeof(uint64_t));
@@ -328,10 +326,10 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
       for (size_t v = 0; v < 4; ++v) {
         uint32_t global = mesh.ibo[f * 4 + v];
         uint32_t local = globalToLocal[global];
-        CORRADE_ASSERT(
-            local >= 0,
-            "Error: vertex " << global << " is not in the sub-mesh " << iMesh,
-            {});
+        CORRADE_ASSERT(local >= 0,
+                       "PTexMeshData::loadSubMeshes: vertex "
+                           << global << " is not in the sub-mesh " << iMesh,
+                       {});
         ibo[idx++] = local;
       }
     }  // for jFace
@@ -353,7 +351,8 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
   }  // for iMesh
   file.close();
   CORRADE_ASSERT(totalFaces == mesh.ibo.size() / 4,
-                 "Error: the number of faces loaded from the file does not "
+                 "PTexMeshData::loadSubMeshes: the number of faces loaded from "
+                 "the file does not "
                  "match it from the ptex mesh.",
                  {});
 
@@ -387,7 +386,7 @@ void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData& mesh,
       const uint32_t i0 = mesh.ibo[e_index];
       const uint32_t i1 = mesh.ibo[f * 4 + ((e + 1) % 4)];
       const uint64_t key =
-          (uint64_t)std::min(i0, i1) << 32 | (uint32_t)std::max(i0, i1);
+          static_cast<uint64_t>(std::min(i0, i1)) << 32 | std::max(i0, i1);
 
       const EdgeData edgeData{f, e};
 
@@ -416,7 +415,7 @@ void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData& mesh,
       // find adjacent face
       int adjFace = -1;
       for (size_t i = 0; i < adj.size(); i++) {
-        if (adj[i].face != (int)f)
+        if (adj[i].face != f)
           adjFace = adj[i].face;
       }
 
@@ -668,9 +667,12 @@ void PTexMeshData::parsePLY(const std::string& filename,
     CORRADE_ASSERT(positionDimensions > 0,
                    "PTexMeshData::parsePLY: the dimensions of the position is "
                    "not greater than 0", );
+    CORRADE_ASSERT(
+        positionDimensions == 3,
+        "PTexMeshData::parsePLY: the dimensions of the position must be 3.", );
   }
 
-  meshData.vbo.resize(numVertices, vec4f(0, 0, 0, 1));
+  meshData.vbo.resize(numVertices, vec3f(0, 0, 0));
 
   if (normalDimensions) {
     meshData.nbo.resize(numVertices, vec4f(0, 0, 0, 1));
@@ -797,6 +799,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     currentMesh->indexBuffer.setData(submeshes_[iMesh].ibo,
                                      Magnum::GL::BufferUsage::StaticDraw);
   }
+#ifndef CORRADE_TARGET_APPLE
   LOG(INFO) << "Calculating mesh adjacency... ";
 
   std::vector<std::vector<uint32_t>> adjFaces(submeshes_.size());
@@ -805,14 +808,17 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
     calculateAdjacency(submeshes_[iMesh], adjFaces[iMesh]);
   }
+#endif
 
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
     auto& currentMesh = renderingBuffers_[iMesh];
 
+#ifndef CORRADE_TARGET_APPLE
     currentMesh->adjFacesBufferTexture.setBuffer(
         Magnum::GL::BufferTextureFormat::R32UI, currentMesh->adjFacesBuffer);
     currentMesh->adjFacesBuffer.setData(adjFaces[iMesh],
                                         Magnum::GL::BufferUsage::StaticDraw);
+#endif
     GLintptr offset = 0;
     currentMesh->mesh
         .setPrimitive(Magnum::GL::MeshPrimitive::LinesAdjacency)
@@ -873,7 +879,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
 
 PTexMeshData::RenderingBuffer* PTexMeshData::getRenderingBuffer(int submeshID) {
   CORRADE_ASSERT(submeshID >= 0 && submeshID < renderingBuffers_.size(),
-                 "PTexMeshData::uploadBuffersToGPU: the submesh ID"
+                 "PTexMeshData::getRenderingBuffer: the submesh ID"
                      << submeshID << "is out of range.",
                  nullptr);
   return renderingBuffers_[submeshID].get();
@@ -881,7 +887,7 @@ PTexMeshData::RenderingBuffer* PTexMeshData::getRenderingBuffer(int submeshID) {
 
 Magnum::GL::Mesh* PTexMeshData::getMagnumGLMesh(int submeshID) {
   CORRADE_ASSERT(submeshID >= 0 && submeshID < renderingBuffers_.size(),
-                 "PTexMeshData::uploadBuffersToGPU: the submesh ID"
+                 "PTexMeshData::getMagnumGLMesh: the submesh ID"
                      << submeshID << "is out of range.",
                  nullptr);
   return &(renderingBuffers_[submeshID]->mesh);
