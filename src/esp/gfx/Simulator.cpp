@@ -169,7 +169,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       break;
   }
 
-  // now reset to sample agent state
   reset();
 }
 
