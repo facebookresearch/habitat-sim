@@ -8,6 +8,9 @@
 
 #include "SceneLoader.h"
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
 #include "esp/assets/Mp3dInstanceMeshData.h"
 #include "esp/core/esp.h"
 #include "esp/nav/PathFinder.h"
@@ -32,6 +35,89 @@ int createNavMesh(const std::string& meshFile, const std::string& navmeshFile) {
     LOG(ERROR) << "Failed to save navmesh";
     return 3;
   }
+  return 0;
+}
+
+int createGibsonSemanticMesh(const std::string& objFile,
+                             const std::string& idsFile,
+                             const std::string& semMeshFile) {
+  LOG(INFO) << "createGibsonSemanticMesh";
+  tinyobj::attrib_t attrib;
+  std::vector<tinyobj::shape_t> shapes;
+  std::vector<tinyobj::material_t> materials;
+
+  std::string warn;
+  std::string err;
+
+  bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
+                              objFile.c_str());
+  if (!warn.empty()) {
+    LOG(WARNING) << warn;
+  }
+  if (!err.empty()) {
+    LOG(ERROR) << err;
+  }
+  if (!ret) {
+    LOG(ERROR) << "Failed to load " << objFile;
+    return 1;
+  }
+
+  std::ifstream file(idsFile, std::ios::binary | std::ios::ate);
+  std::streamsize size = file.tellg();
+  file.seekg(0, std::ios::beg);
+
+  std::vector<unsigned short> objectId(size / sizeof(short));
+  file.read(reinterpret_cast<char*>(objectId.data()), size);
+  if (!file) {
+    LOG(ERROR) << "Failed to load " << idsFile;
+    return 2;
+  }
+
+  size_t numVerts = attrib.vertices.size() / 3;
+
+  std::ofstream f(semMeshFile, std::ios::out | std::ios::binary);
+  f << "ply" << std::endl;
+  f << "format binary_little_endian 1.0" << std::endl;
+  f << "element vertex " << numVerts << std::endl;
+  f << "property float x" << std::endl;
+  f << "property float y" << std::endl;
+  f << "property float z" << std::endl;
+  f << "property uchar red" << std::endl;
+  f << "property uchar green" << std::endl;
+  f << "property uchar blue" << std::endl;
+  f << "element face " << shapes[0].mesh.num_face_vertices.size() << std::endl;
+  f << "property list uchar int vertex_indices" << std::endl;
+  f << "property ushort object_id" << std::endl;
+  f << "end_header" << std::endl;
+
+  // We need to rotate to match .glb where -Z is gravity
+  const auto transform =
+      esp::quatf::FromTwoVectors(esp::vec3f::UnitY(), esp::vec3f::UnitZ());
+  for (size_t i = 0; i < numVerts; i++) {
+    unsigned char gray[] = {0x80, 0x80, 0x80};
+    float* components = &attrib.vertices[i * 3];
+    Eigen::Map<esp::vec3f> vertex{components};
+    vertex = transform * vertex;
+    f.write(reinterpret_cast<char*>(components), sizeof(float) * 3);
+    f.write(reinterpret_cast<char*>(gray), sizeof(gray));
+  }
+
+  size_t index_offset = 0;
+  for (size_t i = 0; i < shapes[0].mesh.num_face_vertices.size(); i++) {
+    unsigned char fv = shapes[0].mesh.num_face_vertices[i];
+    f.put(fv);
+
+    for (size_t j = 0; j < fv; j++) {
+      tinyobj::index_t idx = shapes[0].mesh.indices[index_offset + j];
+      f.write(reinterpret_cast<char*>(&idx.vertex_index),
+              sizeof(idx.vertex_index));
+    }
+    index_offset += fv;
+    f.write(reinterpret_cast<char*>(&objectId[i]), sizeof(objectId[i]));
+  }
+
+  f.close();
+
   return 0;
 }
 
@@ -80,6 +166,14 @@ int main(int argc, char** argv) {
       return 64;
     }
     createMp3dSemanticMesh(argv[2], argv[3], argv[4]);
+  } else if (task == "create_gibson_semantic_mesh") {
+    if (argc < 5) {
+      std::cout << "Usage: datatool create_gibson_semantic_mesh input_obj "
+                   "input_ids output_mesh"
+                << std::endl;
+      return 64;
+    }
+    createGibsonSemanticMesh(argv[2], argv[3], argv[4]);
   } else {
     LOG(ERROR) << "Unrecognized task " << task;
     return 1;

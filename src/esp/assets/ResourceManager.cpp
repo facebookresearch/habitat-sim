@@ -729,8 +729,8 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
     const quatf transform = info.frame.rotationFrameToWorld();
     Magnum::Matrix4 R = Magnum::Matrix4::from(
         Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-    resourceDict_[filename].root.T_parent_local =
-        R * resourceDict_[filename].root.T_parent_local;
+    resourceDict_[filename].root.transformFromLocalToParent =
+        R * resourceDict_[filename].root.transformFromLocalToParent;
   }
 
   // create the scene graph by request
@@ -944,8 +944,8 @@ bool ResourceManager::loadGeneralMeshData(
     const quatf transform = info.frame.rotationFrameToWorld();
     Magnum::Matrix4 R = Magnum::Matrix4::from(
         Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-    resourceDict_[filename].root.T_parent_local =
-        R * resourceDict_[filename].root.T_parent_local;
+    resourceDict_[filename].root.transformFromLocalToParent =
+        R * resourceDict_[filename].root.transformFromLocalToParent;
   } else {
     metaData = resourceDict_[filename];
   }
@@ -1041,7 +1041,8 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
 
   // Add the new node to the hierarchy and set its transformation
   parent.children.push_back(MeshTransformNode());
-  parent.children.back().T_parent_local = objectData->transformation();
+  parent.children.back().transformFromLocalToParent =
+      objectData->transformation();
   parent.children.back().componentID = componentID;
 
   const int meshIDLocal = objectData->instance();
@@ -1132,7 +1133,8 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
                                    const MeshTransformNode& meshTransformNode) {
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
-  node.MagnumObject::setTransformation(meshTransformNode.T_parent_local);
+  node.MagnumObject::setTransformation(
+      meshTransformNode.transformFromLocalToParent);
 
   const int meshIDLocal = meshTransformNode.meshIDLocal;
 
@@ -1157,7 +1159,7 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
 void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                                          scene::SceneNode& node,
                                          DrawableGroup* drawables,
-                                         int componentID,
+                                         int objectID,
                                          int meshIDLocal,
                                          int materialIDLocal) {
   const int meshStart = metaData.meshIndex.first;
@@ -1172,7 +1174,7 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
   if (materialIDLocal == ID_UNDEFINED ||
       metaData.materialIndex.second == ID_UNDEFINED ||
       !materials_[materialID]) {
-    createDrawable(COLORED_SHADER, mesh, node, drawables, texture, componentID);
+    createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID);
   } else {
     if (materials_[materialID]->flags() &
         Magnum::Trade::PhongMaterialData::Flag::DiffuseTexture) {
@@ -1183,16 +1185,18 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
       texture = textures_[textureStart + textureIndex].get();
       if (texture) {
         createDrawable(TEXTURED_SHADER, mesh, node, drawables, texture,
-                       componentID);
+                       objectID);
       } else {
         // Color-only material
-        createDrawable(COLORED_SHADER, mesh, node, drawables, texture,
-                       componentID, materials_[materialID]->diffuseColor());
+        createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID,
+                       materials_[materialID]->diffuseColor());
       }
     } else {
+      // TODO: some types (such as .ply with vertex color) get binned here
+      // incorrectly.
       // Color-only material
-      createDrawable(COLORED_SHADER, mesh, node, drawables, texture,
-                     componentID, materials_[materialID]->diffuseColor());
+      createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID,
+                     materials_[materialID]->diffuseColor());
     }
   }  // else
 }
@@ -1314,6 +1318,49 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
     }
   }
   return true;
+}
+
+//! recursively join all sub-components of a mesh into a single unified
+//! MeshData.
+void ResourceManager::joinHeirarchy(
+    MeshData& mesh,
+    const MeshMetaData& metaData,
+    const MeshTransformNode& node,
+    const Magnum::Matrix4& transformFromParentToWorld) {
+  Magnum::Matrix4 transformFromLocalToWorld =
+      transformFromParentToWorld * node.transformFromLocalToParent;
+
+  if (node.meshIDLocal != ID_UNDEFINED) {
+    CollisionMeshData& meshData =
+        meshes_[node.meshIDLocal + metaData.meshIndex.first]
+            ->getCollisionMeshData();
+    int lastIndex = mesh.vbo.size();
+    for (auto& pos : meshData.positions) {
+      mesh.vbo.push_back(Magnum::EigenIntegration::cast<vec3f>(
+          transformFromLocalToWorld.transformPoint(pos)));
+    }
+    for (auto& index : meshData.indices) {
+      mesh.ibo.push_back(index + lastIndex);
+    }
+  }
+
+  for (auto& child : node.children) {
+    joinHeirarchy(mesh, metaData, child, transformFromLocalToWorld);
+  }
+}
+
+std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
+    const std::string& filename) {
+  std::unique_ptr<MeshData> mesh = std::make_unique<MeshData>();
+
+  CHECK(resourceDict_.count(filename) > 0);
+
+  MeshMetaData& metaData = resourceDict_.at(filename);
+
+  Magnum::Matrix4 identity;
+  joinHeirarchy(*mesh, metaData, metaData.root, identity);
+
+  return mesh;
 }
 
 }  // namespace assets
