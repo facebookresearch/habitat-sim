@@ -9,6 +9,7 @@ fi
 if [ ${WITH_CUDA} = "1" ]; then
   build_args+=("--with-cuda")
   export CUDA_HOME=/public/apps/cuda/${CUDA_VER}
+  export PATH=/public/apps/cuda/${CUDA_VER}/bin:${PATH}
   build_args+=(--cmake-args="-DCUDA_TOOLKIT_ROOT_DIR=${CUDA_HOME}")
 fi
 
