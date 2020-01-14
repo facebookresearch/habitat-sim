@@ -119,6 +119,7 @@ class Agent(object):
         self.body = mn.scenegraph.AbstractFeature3D(scene_node)
         scene_node.type = hsim.SceneNodeType.AGENT
         self.reconfigure(self.agent_config)
+        self.initial_state = None
 
     def reconfigure(
         self, agent_config: AgentConfiguration, reconfigure_sensors: bool = True
@@ -185,13 +186,15 @@ class Agent(object):
 
         return state
 
-    def set_state(self, state: AgentState, reset_sensors: bool = True):
+    def set_state(self, state: AgentState, reset_sensors: bool = True, is_initial: bool = False):
         r"""Sets the agents state
 
         :param state: The state to set the agent to
         :param reset_sensors: Whether or not to reset the sensors to their
             default intrinsic/extrinsic parameters before setting their
             extrinsic state
+        :param is_initial: Whether this state is the initial state of the
+            agent in the scene. Used for resetting the agent at a later time
         """
         habitat_sim.errors.assert_obj_valid(self.body)
 
@@ -221,6 +224,9 @@ class Agent(object):
                 )
             )
             s.node.rotation = quat_to_magnum(state.rotation.inverse() * v.rotation)
+
+        if is_initial:
+            self.initial_state = state
 
     @property
     def scene_node(self):
