@@ -193,3 +193,71 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
   }
 }
 #endif
+
+TEST_F(PhysicsManagerTest, ConfigurableScaling) {
+  // test scaling of objects via template configuration (visual and collision)
+  LOG(INFO) << "Starting physics test: ConfigurableScaling";
+
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  initScene("NONE");
+
+  // test joined vs. unjoined
+  esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+  physicsObjectAttributes.setDouble("margin", 0.0);
+
+  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+  // get a reference to the stored template to edit
+  esp::assets::PhysicsObjectAttributes& objectTemplate =
+      resourceManager_.getPhysicsObjectAttributes(objectFile);
+
+  std::vector<Magnum::Vector3> testScales{{1.0, 1.0, 1.0},
+                                          {4.0, 3.0, 2.0},
+                                          {0.1, 0.2, 0.3},
+                                          {0.0, 0.0, 0.0},
+                                          {-1.0, -1.0, -1.0}};
+
+  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+  for (auto& testScale : testScales) {
+    objectTemplate.setMagnumVec3("scale", testScale);
+    // Cr::Utility::Debug() << "testScale: " << testScale;
+
+    std::pair<Magnum::Vector3, Magnum::Vector3> boundsGroundTruth =
+        std::pair<Magnum::Vector3, Magnum::Vector3>(-abs(testScale),
+                                                    abs(testScale));
+
+    // Cr::Utility::Debug() << "boundsGroundTruth: " << boundsGroundTruth;
+
+    int objectId = physicsManager_->addObject(objectFile, &drawables);
+
+    // TODO: test the node bounding box
+    const Magnum::Range3D& bb =
+        physicsManager_->getObjectSceneNode(objectId).getCumulativeBB();
+    std::pair<Magnum::Vector3, Magnum::Vector3> visualBounds =
+        std::pair<Magnum::Vector3, Magnum::Vector3>(bb.min(), bb.max());
+
+    // Cr::Utility::Debug() << "visualBounds: " << visualBounds;
+
+    ASSERT_EQ(visualBounds, boundsGroundTruth);
+
+// Test Bullet collision shape scaling
+#ifdef ESP_BUILD_WITH_BULLET
+    if (physicsManager_->getPhysicsSimulationLibrary() ==
+        PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+      esp::physics::BulletPhysicsManager* bPhysManager =
+          static_cast<esp::physics::BulletPhysicsManager*>(
+              physicsManager_.get());
+
+      std::pair<Magnum::Vector3, Magnum::Vector3> aabb =
+          bPhysManager->getCollisionShapeAabb(objectId);
+
+      // Cr::Utility::Debug() << "aabb: " << aabb;
+      ASSERT_EQ(aabb, boundsGroundTruth);
+    }
+#endif
+  }
+}
