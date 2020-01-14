@@ -1,8 +1,8 @@
 package:
-  name: headless
+  name: withbullet
   version: 1.0
 
 build:
   track_features:
-      - headless
+      - withbullet
   noarch: generic

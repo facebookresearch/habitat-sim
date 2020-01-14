@@ -6,7 +6,7 @@ import itertools
 import os
 
 build_cmd_template = """
-conda debug \
+conda build \
   --python {PY_VER} \
   --channel conda-forge \
   --no-test \
@@ -30,7 +30,7 @@ def build_parser():
 def main():
     args = build_parser().parse_args()
     py_vers = ["3.6"]
-    bullet_modes = [True, False][1:]
+    bullet_modes = [True, False]
 
     for py_ver, use_bullet in itertools.product(py_vers, bullet_modes):
         env = os.environ.copy()
@@ -39,15 +39,20 @@ def main():
         env["HEADLESS"] = "0"
         env["HSIM_SOURCE_PATH"] = osp.abspath(osp.join(osp.dirname(__file__), ".."))
 
-        output_folder = f"py{py_ver}_"
+        build_string = f"py{py_ver}_"
         if use_bullet:
-            output_folder += "bullet_"
+            build_string += "bullet_"
             env["CONDA_BULLET"] = "- bullet"
+            env["CONDA_BULLET_FEATURE"] = "- withbullet"
+        else:
+            env["CONDA_BULLET"] = ""
+            env["CONDA_BULLET_FEATURE"] = ""
 
-        output_folder += "osx"
+        build_string += "osx"
+        env["HSIM_BUILD_STRING"] = build_string
 
         call(
-            build_cmd_template.format(PY_VER=py_ver, OUTPUT_FOLDER=output_folder),
+            build_cmd_template.format(PY_VER=py_ver, OUTPUT_FOLDER="hsim-macos"),
             env=env,
         )
 
