@@ -30,9 +30,9 @@ def build_parser():
 def main():
     args = build_parser().parse_args()
     py_vers = ["3.6"]
-    bullet_modes = [True, False]
-    headless_modes = [True, False]
-    cuda_vers = [None, "9.2", "10.0"]
+    bullet_modes = [True, False][1:]
+    headless_modes = [True, False][0:1]
+    cuda_vers = [None, "9.2", "10.0"][0:1]
 
     for py_ver, use_bullet, headless, cuda_ver in itertools.product(
         py_vers, bullet_modes, headless_modes, cuda_vers
