@@ -1,4 +1,6 @@
 add_library(scene STATIC
+  GibsonSemanticScene.cpp
+  GibsonSemanticScene.h
   Mp3dSemanticScene.cpp
   Mp3dSemanticScene.h
   ObjectControls.cpp
@@ -27,3 +29,7 @@ target_link_libraries(scene
     gfx
     io
 )
+
+if(BUILD_TEST)
+  add_subdirectory(test)
+endif()

@@ -386,7 +386,7 @@ void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData& mesh,
       const uint32_t i0 = mesh.ibo[e_index];
       const uint32_t i1 = mesh.ibo[f * 4 + ((e + 1) % 4)];
       const uint64_t key =
-          (uint64_t)std::min(i0, i1) << 32 | (uint32_t)std::max(i0, i1);
+          static_cast<uint64_t>(std::min(i0, i1)) << 32 | std::max(i0, i1);
 
       const EdgeData edgeData{f, e};
 
@@ -415,7 +415,7 @@ void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData& mesh,
       // find adjacent face
       int adjFace = -1;
       for (size_t i = 0; i < adj.size(); i++) {
-        if (adj[i].face != (int)f)
+        if (adj[i].face != f)
           adjFace = adj[i].face;
       }
 

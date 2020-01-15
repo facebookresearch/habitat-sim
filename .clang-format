@@ -1,4 +1,5 @@
 ---
+# clang-format v8
 Language:        Cpp
 # BasedOnStyle:  Chromium
 AccessModifierOffset: -1

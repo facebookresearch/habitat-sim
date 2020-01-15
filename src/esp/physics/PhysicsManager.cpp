@@ -218,6 +218,11 @@ int PhysicsManager::checkActiveObjects() {
   return numActive;
 }
 
+bool PhysicsManager::isActive(const int physObjectID) const {
+  assertIDValidity(physObjectID);
+  return existingObjects_.at(physObjectID)->isActive();
+}
+
 void PhysicsManager::applyForce(const int physObjectID,
                                 const Magnum::Vector3& force,
                                 const Magnum::Vector3& relPos) {
@@ -443,5 +448,11 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
         0, *existingObjects_[physObjectID]->BBNode_, drawables);
   }
 }
+
+const scene::SceneNode& PhysicsManager::getObjectSceneNode(int physObjectID) {
+  assertIDValidity(physObjectID);
+  return *existingObjects_[physObjectID];
+}
+
 }  // namespace physics
 }  // namespace esp
