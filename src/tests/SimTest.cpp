@@ -112,13 +112,17 @@ TEST(SimTest, GetPinholeCameraRGBAObservation) {
   ASSERT_EQ(obsSpace.shape, expectedShape);
   ASSERT_EQ(observation.buffer->shape, expectedShape);
 
-  // test one pixel
+  // Compare one pixel (center of image) with previously rendered ground truth
+  // TODO: compare more than one pixel
   Mn::ImageView2D image{
       Mn::PixelFormat::RGBA8Unorm,
       {pinholeCameraSpec->resolution[0], pinholeCameraSpec->resolution[1]},
       observation.buffer->data};
 
   Mn::Color4ub pixel = image.pixels<Mn::Color4ub>()[50][50];
+
+  // Ground truth: hardcoded from previous render
+  // TODO: move various sensor configurations and expected ground truths
   Mn::Color4ub expectedPixel{0x40, 0x6C, 0x46, 0xB5};
 
   ASSERT_TRUE(pixelEqualWithChannelTolerance(pixel, expectedPixel, 5));
