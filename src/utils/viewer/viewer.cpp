@@ -203,7 +203,7 @@ Viewer::Viewer(const Arguments& arguments)
                                      0.01f,             // znear
                                      1000.0f,           // zfar
                                      90.0f);            // hfov
-  renderCamera_->getMagnumCamera().setAspectRatioPolicy(
+  renderCamera_->setAspectRatioPolicy(
       Magnum::SceneGraph::AspectRatioPolicy::Extend);
 
   // Load navmesh if available
@@ -385,11 +385,11 @@ void Viewer::drawEvent() {
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
-  renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
+  renderCamera_->draw(sceneGraph.getDrawables());
 
   if (debugBullet_) {
-    Magnum::Matrix4 camM(renderCamera_->getCameraMatrix());
-    Magnum::Matrix4 projM(renderCamera_->getProjectionMatrix());
+    Magnum::Matrix4 camM(renderCamera_->cameraMatrix());
+    Magnum::Matrix4 projM(renderCamera_->projectionMatrix());
 
     physicsManager_->debugDraw(projM * camM);
   }
@@ -429,15 +429,14 @@ void Viewer::drawEvent() {
 
 void Viewer::viewportEvent(ViewportEvent& event) {
   GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
-  renderCamera_->getMagnumCamera().setViewport(event.windowSize());
+  renderCamera_->setViewport(event.windowSize());
   imgui_.relayout(Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Left)
-    previousPosition_ =
-        positionOnSphere(renderCamera_->getMagnumCamera(), event.position());
+    previousPosition_ = positionOnSphere(*renderCamera_, event.position());
 
   event.setAccepted();
 }
@@ -472,7 +471,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   }
 
   const Vector3 currentPosition =
-      positionOnSphere(renderCamera_->getMagnumCamera(), event.position());
+      positionOnSphere(*renderCamera_, event.position());
   const Vector3 axis = Math::cross(previousPosition_, currentPosition);
 
   if (previousPosition_.length() < 0.001f || axis.length() < 0.001f) {
