@@ -122,7 +122,8 @@ TEST(SimTest, GetPinholeCameraRGBAObservation) {
   Mn::Color4ub pixel = image.pixels<Mn::Color4ub>()[50][50];
 
   // Ground truth: hardcoded from previous render
-  // TODO: move various sensor configurations and expected ground truths
+  // TODO: move various sensor configurations and expected ground truths to
+  // common test util
   Mn::Color4ub expectedPixel{0x40, 0x6C, 0x46, 0xB5};
 
   ASSERT_TRUE(pixelEqualWithChannelTolerance(pixel, expectedPixel, 5));
