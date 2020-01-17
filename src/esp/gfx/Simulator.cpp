@@ -60,6 +60,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     houseFilename = cfg.scene.filepaths.at("house");
   }
 
+  if (!io::exists(houseFilename)) {
+    houseFilename = io::changeExtension(sceneFilename, ".scn");
+  }
+
   const assets::AssetInfo sceneInfo =
       assets::AssetInfo::fromPath(sceneFilename);
 

@@ -8,12 +8,15 @@
     "@babel/plugin-proposal-class-properties": "^7.5.5",
     "@babel/plugin-transform-runtime": "^7.7.6",
     "@babel/preset-env": "^7.6.0",
+    "@babel/preset-typescript": "^7.7.7",
     "@babel/runtime": "^7.7.6",
+    "@typescript-eslint/eslint-plugin": "^2.14.0",
+    "@typescript-eslint/parser": "^2.14.0",
     "babel-eslint": "^10.0.3",
     "babel-loader": "^8.0.6",
     "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
     "css-loader": "^3.2.0",
-    "eslint": "^6.4.0",
+    "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.3.0",
     "eslint-loader": "^3.0.0",
     "eslint-plugin-html": "^6.0.0",
@@ -27,16 +30,17 @@
     "puppeteer": "^2.0.0",
     "serve-static": "^1.14.1",
     "style-loader": "^1.0.0",
+    "typescript": "^3.7.4",
     "webpack": "^4.40.2",
     "webpack-cli": "^3.3.9"
   },
   "scripts": {
     "test": "jest ./src/esp/bindings_js/tests/",
     "test_with_coverage": "jest ./src/esp/bindings_js/tests/ --collectCoverage",
-    "format": "prettier --trailing-comma es5 --single-quote './src/esp/bindings_js/**/*.js'",
+    "format": "prettier --trailing-comma es5 --single-quote './src/esp/bindings_js/**/*{.js,.ts}'",
     "build": "webpack --config ./src/esp/bindings_js/webpack.config.js",
-    "lint": "eslint --ext .html,.js ./src/esp/bindings_js",
-    "lint-fix": "eslint --ext .html,.js --fix ./src/esp/bindings_js"
+    "lint": "eslint --ext .html,.js,.ts ./src/esp/bindings_js",
+    "lint-fix": "eslint --ext .html,.js,.ts --fix ./src/esp/bindings_js"
   },
   "repository": {
     "type": "git",
@@ -45,7 +49,7 @@
   "jest": {
     "collectCoverage": false,
     "collectCoverageFrom": [
-      "./src/esp/bindings_js/**/*.{js,jsx}",
+      "./src/esp/bindings_js/**/*.{js,jsx,.ts}",
       "!**/node_modules/**",
       "!**/webpack.config.js"
     ],
@@ -53,7 +57,8 @@
   },
   "babel": {
     "presets": [
-      "@babel/preset-env"
+      "@babel/preset-env",
+      "@babel/preset-typescript"
     ],
     "plugins": [
       "@babel/plugin-proposal-class-properties",

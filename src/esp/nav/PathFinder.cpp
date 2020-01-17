@@ -209,21 +209,13 @@ enum PolyFlags {
 };
 }  // namespace
 
-PathFinder::PathFinder() : navMesh_(0), navQuery_(0), filter_(0) {
+PathFinder::PathFinder() : filter_(0) {
   filter_ = new dtQueryFilter();
   filter_->setIncludeFlags(POLYFLAGS_WALK);
   filter_->setExcludeFlags(0);
 }
 
 void PathFinder::free() {
-  if (navMesh_) {
-    dtFreeNavMesh(navMesh_);
-    navMesh_ = 0;
-  }
-  if (navQuery_) {
-    dtFreeNavMeshQuery(navQuery_);
-    navQuery_ = 0;
-  }
   if (filter_) {
     delete filter_;
   }
@@ -519,8 +511,7 @@ bool PathFinder::build(const NavMeshSettings& bs,
       return false;
     }
 
-    navMesh_ = 0;
-    navMesh_ = dtAllocNavMesh();
+    navMesh_.reset(dtAllocNavMesh());
     if (!navMesh_) {
       dtFree(navData);
       LOG(ERROR) << "Could not allocate Detour navmesh";
@@ -546,14 +537,14 @@ bool PathFinder::build(const NavMeshSettings& bs,
 }
 
 bool PathFinder::initNavQuery() {
-  navQuery_ = dtAllocNavMeshQuery();
-  dtStatus status = navQuery_->init(navMesh_, 2048);
+  navQuery_.reset(dtAllocNavMeshQuery());
+  dtStatus status = navQuery_->init(navMesh_.get(), 2048);
   if (dtStatusFailed(status)) {
     LOG(ERROR) << "Could not init Detour navmesh query";
     return false;
   }
 
-  islandSystem_ = new impl::IslandSystem(navMesh_, filter_);
+  islandSystem_ = new impl::IslandSystem(navMesh_.get(), filter_);
 
   return true;
 }
@@ -636,7 +627,7 @@ void PathFinder::removeZeroAreaPolys() {
   // Iterate over all tiles
   for (int iTile = 0; iTile < navMesh_->getMaxTiles(); ++iTile) {
     const dtMeshTile* tile =
-        const_cast<const dtNavMesh*>(navMesh_)->getTile(iTile);
+        const_cast<const dtNavMesh*>(navMesh_.get())->getTile(iTile);
     if (!tile)
       continue;
 
@@ -730,7 +721,7 @@ bool PathFinder::loadNavMesh(const std::string& path) {
 
   fclose(fp);
 
-  navMesh_ = mesh;
+  navMesh_.reset(mesh);
   bounds_ = std::make_pair(bmin, bmax);
 
   removeZeroAreaPolys();
@@ -739,7 +730,7 @@ bool PathFinder::loadNavMesh(const std::string& path) {
 }
 
 bool PathFinder::saveNavMesh(const std::string& path) {
-  const dtNavMesh* navMesh = navMesh_;
+  const dtNavMesh* navMesh = navMesh_.get();
   if (!navMesh)
     return false;
 
@@ -827,7 +818,7 @@ bool PathFinder::findPath(MultiGoalShortestPath& path) {
   int numPolys = 0;
   dtStatus status;
   std::tie(status, startRef, pathStart) =
-      projectToPoly(path.requestedStart, navQuery_, filter_);
+      projectToPoly(path.requestedStart, navQuery_.get(), filter_);
 
   if (status != DT_SUCCESS || startRef == 0) {
     return false;
@@ -840,7 +831,7 @@ bool PathFinder::findPath(MultiGoalShortestPath& path) {
     pathEnds.emplace_back();
     endRefs.emplace_back();
     std::tie(status, endRefs.back(), pathEnds.back()) =
-        projectToPoly(rqEnd, navQuery_, filter_);
+        projectToPoly(rqEnd, navQuery_.get(), filter_);
 
     pathEndsCoords.emplace_back(pathEnds.back()[0]);
     pathEndsCoords.emplace_back(pathEnds.back()[1]);
@@ -917,8 +908,9 @@ T PathFinder::tryStep(const T& start, const T& end) {
   dtPolyRef startRef, endRef;
   vec3f pathStart, pathEnd;
   std::tie(startStatus, startRef, pathStart) =
-      projectToPoly(start, navQuery_, filter_);
-  std::tie(endStatus, endRef, pathEnd) = projectToPoly(end, navQuery_, filter_);
+      projectToPoly(start, navQuery_.get(), filter_);
+  std::tie(endStatus, endRef, pathEnd) =
+      projectToPoly(end, navQuery_.get(), filter_);
 
   if (dtStatusFailed(startStatus) || dtStatusFailed(endStatus)) {
     return start;
@@ -952,7 +944,7 @@ T PathFinder::tryStep(const T& start, const T& end) {
   // is in the same connected component as the startRef according to
   // findNearestPoly
   std::tie(std::ignore, endRef, std::ignore) =
-      projectToPoly(endPoint, navQuery_, filter_);
+      projectToPoly(endPoint, navQuery_.get(), filter_);
   if (!this->islandSystem_->hasConnection(startRef, endRef)) {
     // There isn't a connection!  This happens when endPoint is on an edge
     // shared between two different connected components (aka infinitely thin
@@ -989,7 +981,7 @@ T PathFinder::snapPoint(const T& pt) {
   dtStatus status;
   vec3f projectedPt;
   std::tie(status, std::ignore, projectedPt) =
-      projectToPoly(pt, navQuery_, filter_);
+      projectToPoly(pt, navQuery_.get(), filter_);
 
   if (dtStatusSucceed(status)) {
     return T{projectedPt};
@@ -1005,7 +997,8 @@ template Magnum::Vector3 PathFinder::snapPoint<Magnum::Vector3>(
 float PathFinder::islandRadius(const vec3f& pt) const {
   dtPolyRef ptRef;
   dtStatus status;
-  std::tie(status, ptRef, std::ignore) = projectToPoly(pt, navQuery_, filter_);
+  std::tie(status, ptRef, std::ignore) =
+      projectToPoly(pt, navQuery_.get(), filter_);
   if (status != DT_SUCCESS || ptRef == 0) {
     return 0.0;
   } else {
@@ -1025,7 +1018,7 @@ HitRecord PathFinder::closestObstacleSurfacePoint(
   dtPolyRef ptRef;
   dtStatus status;
   vec3f polyPt;
-  std::tie(status, ptRef, polyPt) = projectToPoly(pt, navQuery_, filter_);
+  std::tie(status, ptRef, polyPt) = projectToPoly(pt, navQuery_.get(), filter_);
   if (status != DT_SUCCESS || ptRef == 0) {
     return {vec3f(0, 0, 0), vec3f(0, 0, 0),
             std::numeric_limits<float>::infinity()};
@@ -1044,7 +1037,7 @@ bool PathFinder::isNavigable(const vec3f& pt,
   dtPolyRef ptRef;
   dtStatus status;
   vec3f polyPt;
-  std::tie(status, ptRef, polyPt) = projectToPoly(pt, navQuery_, filter_);
+  std::tie(status, ptRef, polyPt) = projectToPoly(pt, navQuery_.get(), filter_);
 
   if (status != DT_SUCCESS || ptRef == 0)
     return false;
