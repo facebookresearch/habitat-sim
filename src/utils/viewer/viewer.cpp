@@ -25,6 +25,7 @@
 
 #include <Corrade/Utility/Arguments.h>
 #include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/String.h>
 #include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
@@ -210,7 +211,14 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Load navmesh if available
   if (file.compare(esp::assets::EMPTY_SCENE) != 0) {
-    const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
+    std::string navmeshFilename = io::changeExtension(file, ".navmesh");
+
+    if (Utility::String::endsWith(file, "mesh.ply")) {
+      navmeshFilename = Corrade::Utility::Directory::join(
+          Corrade::Utility::Directory::path(file) + "/habitat",
+          "mesh_semantic.navmesh");
+    }
+
     if (io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
       LOG(INFO) << "Loading navmesh from " << navmeshFilename;
       pathfinder_->loadNavMesh(navmeshFilename);
@@ -244,7 +252,7 @@ Viewer::Viewer(const Arguments& arguments)
 
   timeline_.start();
 
-}  // end Viewer::Viewer
+}  // namespace
 
 void Viewer::addObject(std::string configFile) {
   if (physicsManager_ == nullptr)
