@@ -207,11 +207,10 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   esp::assets::PhysicsObjectAttributes& objectTemplate =
       resourceManager_.getPhysicsObjectAttributes(objectFile);
 
-  std::vector<Magnum::Vector3> testScales{{1.0, 1.0, 1.0},
-                                          {4.0, 3.0, 2.0},
-                                          {0.1, 0.2, 0.3},
-                                          {0.0, 0.0, 0.0},
-                                          {-1.0, -1.0, -1.0}};
+  std::vector<Magnum::Vector3> testScales{
+      {1.0, 1.0, 1.0},  {4.0, 3.0, 2.0},    {0.1, 0.2, 0.3},
+      {0.0, 0.0, 0.0},  {-1.0, -1.0, -1.0}, {-1.0, 1.0, 1.0},
+      {4.0, -3.0, 2.0}, {0.1, -0.2, -0.3}};
 
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
