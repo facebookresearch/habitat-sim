@@ -153,6 +153,22 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   double getSceneRestitutionCoefficient() const;
 
+  /**
+   * @brief Query the Aabb from bullet physics for the root compound shape of a
+   * rigid body in its local space. See @ref btCompoundShape::getAabb.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return The Aabb.
+   */
+  const Magnum::Range3D getCollisionShapeAabb(const int physObjectID) const;
+
+  /**
+   * @brief Query the Aabb from bullet physics for the root compound shape of
+   * the static scene in its local space. See @ref btCompoundShape::getAabb.
+   * @return The scene collision Aabb.
+   */
+  const Magnum::Range3D getSceneCollisionShapeAabb() const;
+
   /** @brief Render the debugging visualizations provided by @ref
    * Magnum::BulletIntegration::DebugDraw. This draws wireframes for all
    * collision objects.

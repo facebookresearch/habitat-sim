@@ -52,7 +52,7 @@ bool BulletRigidObject::initializeScene(
   bObjectShape_ = std::make_unique<btCompoundShape>();
   constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup, metaData.root,
                                     false);
-
+  bObjectShape_->setMargin(0.0);
   bSceneCollisionObjects_.emplace_back(std::make_unique<btCollisionObject>());
   bSceneCollisionObjects_.back()->setCollisionShape(bObjectShape_.get());
   bSceneCollisionObjects_.back()->setFriction(
@@ -96,12 +96,12 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
           bObjectConvexShapes_.back()->addPoint(
               btVector3(transformFromLocalToWorld.transformPoint(v)), false);
         }
-        bObjectConvexShapes_.back()->recalcLocalAabb();
       } else {
         bObjectConvexShapes_.emplace_back(std::make_unique<btConvexHullShape>(
             static_cast<const btScalar*>(mesh.positions.data()->data()),
             mesh.positions.size(), sizeof(Magnum::Vector3)));
-
+        bObjectConvexShapes_.back()->setMargin(0.0);
+        bObjectConvexShapes_.back()->recalcLocalAabb();
         //! Add to compound shape stucture
         bObjectShape_->addChildShape(btTransform{transformFromLocalToWorld},
                                      bObjectConvexShapes_.back().get());
@@ -133,7 +133,7 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
       //! which allows concavity if the object is static
       bSceneShapes_.emplace_back(
           std::make_unique<btBvhTriangleMeshShape>(bSceneArray_.get(), true));
-
+      bSceneShapes_.back()->setMargin(0.0);
       //! Add to compound shape stucture
       bObjectShape_->addChildShape(btTransform{transformFromLocalToWorld},
                                    bSceneShapes_.back().get());
@@ -177,6 +177,8 @@ bool BulletRigidObject::initializeObject(
   if (joinCollisionMeshes) {
     btTransform t;
     t.setIdentity();
+    bObjectConvexShapes_.back()->setMargin(0.0);
+    bObjectConvexShapes_.back()->recalcLocalAabb();
     bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
   }
 
@@ -542,6 +544,18 @@ double BulletRigidObject::getAngularDamping() {
   } else {
     return bObjectRigidBody_->getAngularDamping();
   }
+}
+
+const Magnum::Range3D BulletRigidObject::getCollisionShapeAabb() const {
+  if (!bObjectShape_) {
+    // e.g. empty scene
+    return Magnum::Range3D();
+  }
+  btVector3 localAabbMin, localAabbMax;
+  bObjectShape_->getAabb(btTransform::getIdentity(), localAabbMin,
+                         localAabbMax);
+  return Magnum::Range3D{Magnum::Vector3{localAabbMin},
+                         Magnum::Vector3{localAabbMax}};
 }
 
 }  // namespace physics
