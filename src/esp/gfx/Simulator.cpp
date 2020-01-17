@@ -53,12 +53,11 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   std::string houseFilename = io::changeExtension(sceneFilename, ".house");
-  if (cfg.scene.filepaths.count("house")) {
-    houseFilename = cfg.scene.filepaths.at("house");
-  }
-
   if (!io::exists(houseFilename)) {
     houseFilename = io::changeExtension(sceneFilename, ".scn");
+  }
+  if (cfg.scene.filepaths.count("house")) {
+    houseFilename = cfg.scene.filepaths.at("house");
   }
 
   const assets::AssetInfo sceneInfo =
@@ -158,7 +157,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
         if (endsWith(houseFilename, ".house")) {
           scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
         } else if (endsWith(houseFilename, ".scn")) {
-          scene::SemanticScene::loadGibsonHouse(houseFilename, *semanticScene_);
+          scene::SemanticScene::loadGibsonHouse(
+              houseFilename, *semanticScene_,
+              quatf::FromTwoVectors(geo::ESP_GRAVITY, -vec3f::UnitZ()));
         }
       }
       break;
