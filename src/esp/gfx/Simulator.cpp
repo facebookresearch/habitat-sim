@@ -163,6 +163,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
         } else if (endsWith(houseFilename, ".scn")) {
           scene::SemanticScene::loadGibsonHouse(
               houseFilename, *semanticScene_,
+              // Default World rotation for Gibson semantic data
               quatf::FromTwoVectors(geo::ESP_GRAVITY, -vec3f::UnitZ()));
         }
       }

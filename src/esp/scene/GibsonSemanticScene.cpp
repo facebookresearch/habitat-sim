@@ -19,18 +19,6 @@ namespace scene {
 
 constexpr int kMaxIds = 10000; /* We shouldn't every need more than this. */
 
-namespace {
-vec3f jsonToVec3f(const esp::io::JsonGenericValue& jsonObject) {
-  vec3f vec;
-  size_t dim = 0;
-  ASSERT(jsonObject.GetArray().Size() == vec.size());
-  for (const auto& element : jsonObject.GetArray()) {
-    vec[dim++] = element.GetFloat();
-  }
-  return vec;
-}
-}  // namespace
-
 bool SemanticScene::loadGibsonHouse(
     const std::string& houseFilename,
     SemanticScene& scene,

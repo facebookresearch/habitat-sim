@@ -7,7 +7,6 @@
 #include <cstdint>
 #define RAPIDJSON_NO_INT64DEFINE
 #include <rapidjson/document.h>
-#include "esp/core/esp.h"
 
 #include <functional>
 #include <string>
