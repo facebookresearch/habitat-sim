@@ -36,7 +36,7 @@ namespace gfx {
 void initGfxBindings(py::module& m) {
   // ==== RenderCamera ====
   py::class_<RenderCamera, Magnum::SceneGraph::PyFeature<RenderCamera>,
-             Magnum::SceneGraph::AbstractFeature3D,
+             Magnum::SceneGraph::Camera3D,
              Magnum::SceneGraph::PyFeatureHolder<RenderCamera>>(
       m, "Camera",
       R"(RenderCamera: The object of this class is a camera attached
@@ -47,12 +47,6 @@ void initGfxBindings(py::module& m) {
         Set this `Camera`'s projection matrix.
       )",
            "width"_a, "height"_a, "znear"_a, "zfar"_a, "hfov"_a)
-      .def("getProjectionMatrix", &RenderCamera::getProjectionMatrix, R"(
-        Get this `Camera`'s projection matrix.
-      )")
-      .def("getCameraMatrix", &RenderCamera::getCameraMatrix, R"(
-        Get this `Camera`'s camera matrix.
-      )")
       .def_property_readonly("node", nodeGetter<RenderCamera>,
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<RenderCamera>,
