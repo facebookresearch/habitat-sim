@@ -186,7 +186,9 @@ class Agent(object):
 
         return state
 
-    def set_state(self, state: AgentState, reset_sensors: bool = True, is_initial: bool = False):
+    def set_state(
+        self, state: AgentState, reset_sensors: bool = True, is_initial: bool = False
+    ):
         r"""Sets the agents state
 
         :param state: The state to set the agent to
