@@ -343,8 +343,7 @@ jobs:
 
               export PYTHONPATH=$PYTHONPATH:$(pwd)
               # run tests with code coverage
-              # TODO(msb) enable --with-cuda
-              LSAN_OPTIONS="suppressions=$(pwd)/lsan_suppressions.txt" CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --run-tests --cmake-cfg ASAN
+              LSAN_OPTIONS="suppressions=$(pwd)/lsan_suppressions.txt" CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests --cmake-cfg ASAN
       - run:
           name: Ccache stats
           when: always
