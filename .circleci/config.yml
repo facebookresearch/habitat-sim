@@ -6,7 +6,6 @@ gpu: &gpu
   environment:
     FPS_THRESHOLD: 900
 
-
 jobs:
   python_lint:
     docker:
@@ -48,7 +47,7 @@ jobs:
           command: |
             find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.(cpp|h|cu|hpp|cuh)$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
 
-  js_lint_and_test:
+  js_lint:
     docker:
       - image: circleci/node:11.9
     steps:
@@ -61,10 +60,6 @@ jobs:
           name: run eslint
           command: |
             npm run lint
-      - run:
-          name: run tests
-          command: |
-            npm run test
 
   install_and_test_ubuntu:
     <<: *gpu
@@ -124,6 +119,50 @@ jobs:
                   texlive-latex-extra \
                   texlive-fonts-extra \
                   texlive-fonts-recommended
+      - run:
+          name: Install Headless Chrome dependencies
+          command: |
+            sudo apt-get update || true
+            sudo apt-get install -yq \
+                  gconf-service \
+                  libasound2 \
+                  libatk1.0-0 \
+                  libatk-bridge2.0-0 \
+                  libc6 \
+                  libcairo2 \
+                  libcups2 \
+                  libdbus-1-3  \
+                  libexpat1 \
+                  libfontconfig1 \
+                  libgcc1 \
+                  libgconf-2-4 \
+                  libgdk-pixbuf2.0-0 \
+                  libglib2.0-0 \
+                  libgtk-3-0 \
+                  libnspr4 \
+                  libpango-1.0-0 \
+                  libpangocairo-1.0-0 \
+                  libstdc++6 \
+                  libx11-6 \
+                  libx11-xcb1 \
+                  libxcb1 \
+                  libxcomposite1 \
+                  libxcursor1 \
+                  libxdamage1 \
+                  libxext6 \
+                  libxfixes3 \
+                  libxi6 \
+                  libxrandr2 \
+                  libxrender1 \
+                  libxss1 \
+                  libxtst6 \
+                  ca-certificates \
+                  fonts-liberation \
+                  libappindicator1 \
+                  libnss3 \
+                  lsb-release \
+                  xdg-utils \
+                  wget
       - run:
           name: Install cuda
           no_output_timeout: 20m
@@ -262,17 +301,28 @@ jobs:
                 cd ..
               fi
       - run:
+          name: Build Javascript bindings
+          command: |
+              # wait for npm and emscripten install
+              while [[ ! -f ~/emscripten_installed && ! -f ~/npm_deps_installed ]]; do sleep 2; done
+              cd habitat-sim
+              . ~/.bashrc
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat
+              export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
+              nvm use v11.9.0
+              ./build_js.sh
+              # TODO: Later fix this in the cmake build step
+              cp -v build_js/Release/bin/hsim_bindings.* build_js/esp/bindings_js/
+      - run:
           name: Run sim benchmark
           command: |
               while [ ! -f ./cuda_installed ]; do sleep 2; done # wait for CUDA
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
               python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
-      - add_ssh_keys:
-          fingerprints:
-            - "18:88:e0:37:b1:b3:7a:23:aa:1e:f7:43:a8:5b:8e:05"
       - run:
-          name: Update documentation
+          name: Build documentation
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat;
@@ -293,6 +343,16 @@ jobs:
           paths:
             - ./habitat-sim/build/docs-public
       - run:
+          name: Run JavaScript tests
+          command: |
+            cd habitat-sim
+            . ~/.bashrc
+            export PATH=$HOME/miniconda/bin:$PATH
+            . activate habitat
+            export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
+            nvm use v11.9.0
+            npm run test
+      - run:
           name: Run sim tests
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
@@ -309,6 +369,12 @@ jobs:
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
               pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+
+              . ~/.bashrc
+              export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
+              nvm use v11.9.0
+              # Generate JS CodeConv
+              npm run test_with_coverage
       - run:
           name: Upload test coverage
           background: true
@@ -316,23 +382,15 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
               #Uploading test coverage for Python code
-              bash <(curl -s https://codecov.io/bash) -f coverage.xml
+              bash <(curl -s https://codecov.io/bash) -f coverage.xml -cF Python
+
+              # Uploading test coverage for JS code
+              bash <(curl -s https://codecov.io/bash) -f coverage_js/coverage-final.json -cF JavaScript
+
               #Uploading test coverage for C++ code
               lcov --directory . --capture --output-file coverage.info
               lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
-              bash <(curl -s https://codecov.io/bash) -f coverage.info
-      - run:
-          name: Build Javascript bindings
-          command: |
-              # wait for npm and emscripten install
-              while [[ ! -f ~/emscripten_installed && ! -f ~/npm_deps_installed ]]; do sleep 2; done
-              cd habitat-sim
-              . ~/.bashrc
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat
-              export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
-              nvm use v11.9.0
-              ./build_js.sh
+              bash <(curl -s https://codecov.io/bash) -f coverage.info -cF CPP
       - run:
           name: Install api
           command: |
@@ -365,8 +423,14 @@ jobs:
             - ./habitat-api
 
   update_docs:
+    docker:
+      - image: circleci/buildpack-deps:disco
+    steps:
       - restore_cache:
           key: docs-{{ .Branch }}
+      - add_ssh_keys:
+          fingerprints:
+            - "18:88:e0:37:b1:b3:7a:23:aa:1e:f7:43:a8:5b:8e:05"
       - run:
           name: Update public documentation
           command: |
@@ -407,6 +471,11 @@ workflows:
     jobs:
       - python_lint
       - cpp_lint
-      - js_lint_and_test
+      - js_lint
       - install_and_test_ubuntu
-      - update_docs
+      - update_docs:
+          requires:
+            - install_and_test_ubuntu
+          filters:
+            branches:
+              only: autodoc

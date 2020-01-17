@@ -288,6 +288,9 @@ class Simulator:
     def get_world_time(self, scene_id=0):
         return self._sim.get_world_time()
 
+    def recompute_navmesh(self, pathfinder, navmesh_settings):
+        return self._sim.recompute_navmesh(pathfinder, navmesh_settings)
+
 
 class Sensor:
     r"""Wrapper around habitat_sim.Sensor

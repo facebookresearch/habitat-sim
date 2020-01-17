@@ -69,6 +69,9 @@ class Viewer : public Magnum::Platform::Application {
   void pokeLastObject();
   void pushLastObject();
 
+  void recomputeNavMesh(const std::string& sceneFilename,
+                        esp::nav::NavMeshSettings& navMeshSettings);
+
   void torqueLastObject();
   void removeLastObject();
   void invertGravity();
@@ -132,8 +135,11 @@ Viewer::Viewer(const Arguments& arguments)
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addBooleanOption("enable-physics")
       .addBooleanOption("debug-bullet")
+      .setHelp("debug-bullet", "render Bullet physics debug wireframes")
       .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG)
       .setHelp("physics-config", "physics scene config file")
+      .addBooleanOption("recompute-navmesh")
+      .setHelp("recompute-navmesh", "programmatically generate scene navmesh")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
@@ -201,17 +207,25 @@ Viewer::Viewer(const Arguments& arguments)
       Magnum::SceneGraph::AspectRatioPolicy::Extend);
 
   // Load navmesh if available
-  const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
-  if (io::exists(navmeshFilename)) {
-    LOG(INFO) << "Loading navmesh from " << navmeshFilename;
-    pathfinder_->loadNavMesh(navmeshFilename);
-
-    const vec3f position = pathfinder_->getRandomNavigablePoint();
-    agentBodyNode_->setTranslation(Vector3(position));
+  if (file.compare(esp::assets::EMPTY_SCENE) != 0) {
+    const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
+    if (io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
+      LOG(INFO) << "Loading navmesh from " << navmeshFilename;
+      pathfinder_->loadNavMesh(navmeshFilename);
+    } else {
+      esp::nav::NavMeshSettings navMeshSettings;
+      navMeshSettings.setDefaults();
+      recomputeNavMesh(file, navMeshSettings);
+    }
   }
 
   // connect controls to navmesh if loaded
   if (pathfinder_->isLoaded()) {
+    // some scenes could have pathable roof polygons. We are not filtering
+    // those starting points here.
+    vec3f position = pathfinder_->getRandomNavigablePoint();
+    agentBodyNode_->setTranslation(Vector3(position));
+
     controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
       vec3f currentPosition = pathfinder_->tryStep(start, end);
       LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
@@ -240,8 +254,7 @@ void Viewer::addObject(std::string configFile) {
   Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
 
   auto& drawables = sceneGraph_->getDrawables();
-  assets::PhysicsObjectAttributes poa =
-      resourceManager_.getPhysicsObjectAttributes(configFile);
+
   int physObjectID = physicsManager_->addObject(configFile, &drawables);
   physicsManager_->setTranslation(physObjectID, new_pos);
 
@@ -257,11 +270,8 @@ void Viewer::addObject(std::string configFile) {
   physicsManager_->setRotation(
       physObjectID,
       Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
-  objectIDs_.push_back(physObjectID);
 
-  // const Magnum::Vector3& trans =
-  // physicsManager_->getTranslation(physObjectID); LOG(INFO) << "translation: "
-  // << trans[0] << ", " << trans[1] << ", " << trans[2];
+  objectIDs_.push_back(physObjectID);
 }
 
 void Viewer::removeLastObject() {
@@ -299,6 +309,22 @@ void Viewer::pushLastObject() {
   Vector3 force = T.transformPoint({0.0f, 0.0f, -40.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
+}
+
+void Viewer::recomputeNavMesh(const std::string& sceneFilename,
+                              nav::NavMeshSettings& navMeshSettings) {
+  nav::PathFinder::ptr pf = nav::PathFinder::create();
+
+  assets::MeshData::uptr joinedMesh =
+      resourceManager_.createJoinedCollisionMesh(sceneFilename);
+
+  if (!pf->build(navMeshSettings, *joinedMesh)) {
+    LOG(ERROR) << "Failed to build navmesh";
+    return;
+  }
+
+  LOG(INFO) << "reconstruct navmesh successful";
+  pathfinder_ = pf;
 }
 
 void Viewer::torqueLastObject() {
@@ -522,6 +548,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         if (numObjects) {
           int randObjectID = rand() % numObjects;
           addObject(resourceManager_.getObjectConfig(randObjectID));
+
         } else
           LOG(WARNING) << "No objects loaded, can't add any";
       } else
