@@ -195,15 +195,14 @@ double BulletPhysicsManager::getSceneRestitutionCoefficient() const {
       ->getRestitutionCoefficient();
 }
 
-const std::pair<Magnum::Vector3, Magnum::Vector3>
-BulletPhysicsManager::getCollisionShapeAabb(const int physObjectID) const {
+const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
+    const int physObjectID) const {
   assertIDValidity(physObjectID);
   return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
       ->getCollisionShapeAabb();
 }
 
-const std::pair<Magnum::Vector3, Magnum::Vector3>
-BulletPhysicsManager::getSceneCollisionShapeAabb() const {
+const Magnum::Range3D BulletPhysicsManager::getSceneCollisionShapeAabb() const {
   return static_cast<BulletRigidObject*>(sceneNode_)->getCollisionShapeAabb();
 }
 

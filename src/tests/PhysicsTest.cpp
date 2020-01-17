@@ -169,24 +169,17 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     esp::physics::BulletPhysicsManager* bPhysManager =
         static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
 
-    std::pair<Magnum::Vector3, Magnum::Vector3> AabbScene =
+    const Magnum::Range3D AabbScene =
         bPhysManager->getSceneCollisionShapeAabb();
 
-    std::pair<Magnum::Vector3, Magnum::Vector3> AabbOb0 =
+    const Magnum::Range3D AabbOb0 =
         bPhysManager->getCollisionShapeAabb(objectId0);
-    std::pair<Magnum::Vector3, Magnum::Vector3> AabbOb1 =
+    const Magnum::Range3D AabbOb1 =
         bPhysManager->getCollisionShapeAabb(objectId1);
 
-    std::pair<Magnum::Vector3, Magnum::Vector3> objectGroundTruth =
-        std::pair<Magnum::Vector3, Magnum::Vector3>({-1.1, -1.1, -1.1},
-                                                    {1.1, 1.1, 1.1});
-    std::pair<Magnum::Vector3, Magnum::Vector3> sceneGroundTruth =
-        std::pair<Magnum::Vector3, Magnum::Vector3>({-1.0, -1.0, -1.0},
-                                                    {1.0, 1.0, 1.0});
+    Magnum::Range3D objectGroundTruth({-1.1, -1.1, -1.1}, {1.1, 1.1, 1.1});
+    Magnum::Range3D sceneGroundTruth({-1.0, -1.0, -1.0}, {1.0, 1.0, 1.0});
 
-    // Cr::Utility::Debug() << "aabb scene: " << AabbScene;
-    // Cr::Utility::Debug() << "aabb ob0: " << AabbOb0;
-    // Cr::Utility::Debug() << "aabb ob1: " << AabbOb1;
     ASSERT_EQ(AabbScene, sceneGroundTruth);
     ASSERT_EQ(AabbOb0, objectGroundTruth);
     ASSERT_EQ(AabbOb1, objectGroundTruth);
