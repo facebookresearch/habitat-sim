@@ -15,12 +15,9 @@ namespace Mn = Magnum;
 namespace esp {
 namespace gfx {
 
-RenderCamera::RenderCamera(scene::SceneNode& node)
-    : Mn::SceneGraph::AbstractFeature3D{node} {
+RenderCamera::RenderCamera(scene::SceneNode& node) : MagnumCamera{node} {
   node.setType(scene::SceneNodeType::CAMERA);
-  camera_ = new MagnumCamera(node);
-  camera_->setAspectRatioPolicy(
-      Mn::SceneGraph::AspectRatioPolicy::NotPreserved);
+  setAspectRatioPolicy(Mn::SceneGraph::AspectRatioPolicy::NotPreserved);
 }
 
 RenderCamera::RenderCamera(scene::SceneNode& node,
@@ -33,47 +30,36 @@ RenderCamera::RenderCamera(scene::SceneNode& node,
       Mn::Vector3{eye}, Mn::Vector3{target}, Mn::Vector3{up}));
 }
 
-void RenderCamera::setProjectionMatrix(int width,
-                                       int height,
-                                       float znear,
-                                       float zfar,
-                                       float hfov) {
+RenderCamera& RenderCamera::setProjectionMatrix(int width,
+                                                int height,
+                                                float znear,
+                                                float zfar,
+                                                float hfov) {
   const float aspectRatio = static_cast<float>(width) / height;
-  camera_
-      ->setProjectionMatrix(Mn::Matrix4::perspectiveProjection(
-          Mn::Deg{hfov}, aspectRatio, znear, zfar))
+  MagnumCamera::setProjectionMatrix(
+      Mn::Matrix4::perspectiveProjection(Mn::Deg{hfov}, aspectRatio, znear,
+                                         zfar))
       .setViewport(Magnum::Vector2i(width, height));
-}
-
-mat4f RenderCamera::getProjectionMatrix() {
-  return Eigen::Map<mat4f>(camera_->projectionMatrix().data());
-}
-
-mat4f RenderCamera::getCameraMatrix() {
-  return Eigen::Map<mat4f>(camera_->cameraMatrix().data());
-}
-
-MagnumCamera& RenderCamera::getMagnumCamera() {
-  return *camera_;
+  return *this;
 }
 
 uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables) {
   uint32_t numDrawnObjects = drawables.size();
   if (!frustumCulling) {
-    camera_->draw(drawables);
+    MagnumCamera::draw(drawables);
   } else {
     // camera frustum relative to world origin
     const Mn::Math::Frustum<float> frustum =
-        Mn::Math::Frustum<float>::fromMatrix(camera_->projectionMatrix() *
-                                             camera_->cameraMatrix());
+        Mn::Math::Frustum<float>::fromMatrix(projectionMatrix() *
+                                             cameraMatrix());
 
     // erase all items that have absolute aabb but don't pass the frustum check
     std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
                           Mn::Matrix4>>
-        drawableTransformations = camera_->drawableTransformations(drawables);
-    drawableTransformations.erase(
+        drawableTransforms = drawableTransformations(drawables);
+    drawableTransforms.erase(
         std::remove_if(
-            drawableTransformations.begin(), drawableTransformations.end(),
+            drawableTransforms.begin(), drawableTransforms.end(),
             [&](const std::pair<
                 std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
                 Mn::Matrix4>& a) {
@@ -89,11 +75,11 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables) {
                 return true;
               }
             }),
-        drawableTransformations.end());
+        drawableTransforms.end());
 
     // draw just the visible part
-    camera_->draw(drawableTransformations);
-    numDrawnObjects = drawableTransformations.size();
+    MagnumCamera::draw(drawableTransforms);
+    numDrawnObjects = drawableTransforms.size();
   }
 
   return numDrawnObjects;
