@@ -3,6 +3,7 @@ set(sensor_SOURCES
   PinholeCamera.h
   Sensor.cpp
   Sensor.h
+  VisualSensor.h
 )
 
 

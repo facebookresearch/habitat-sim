@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Sensor.h"
+#include "VisualSensor.h"
 #include "esp/core/esp.h"
 
 namespace esp {
@@ -18,7 +18,7 @@ namespace sensor {
 // then the projection parameters, such as width_, height_ etc. cant be stored
 // in the "VisualSensor" class
 
-class PinholeCamera : public Sensor {
+class PinholeCamera : public VisualSensor {
  public:
   // constructor: the status of the pinhole camera is "valid" after
   // construction;
@@ -29,8 +29,6 @@ class PinholeCamera : public Sensor {
   void setProjectionParameters(SensorSpec::ptr spec);
 
   virtual ~PinholeCamera() {}
-
-  bool isVisualSensor() override { return true; }
 
   // set the projection matrix to the given render camera
   virtual PinholeCamera& setProjectionMatrix(
