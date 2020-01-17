@@ -169,24 +169,17 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     esp::physics::BulletPhysicsManager* bPhysManager =
         static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
 
-    std::pair<Magnum::Vector3, Magnum::Vector3> AabbScene =
+    const Magnum::Range3D AabbScene =
         bPhysManager->getSceneCollisionShapeAabb();
 
-    std::pair<Magnum::Vector3, Magnum::Vector3> AabbOb0 =
+    const Magnum::Range3D AabbOb0 =
         bPhysManager->getCollisionShapeAabb(objectId0);
-    std::pair<Magnum::Vector3, Magnum::Vector3> AabbOb1 =
+    const Magnum::Range3D AabbOb1 =
         bPhysManager->getCollisionShapeAabb(objectId1);
 
-    std::pair<Magnum::Vector3, Magnum::Vector3> objectGroundTruth =
-        std::pair<Magnum::Vector3, Magnum::Vector3>({-1.1, -1.1, -1.1},
-                                                    {1.1, 1.1, 1.1});
-    std::pair<Magnum::Vector3, Magnum::Vector3> sceneGroundTruth =
-        std::pair<Magnum::Vector3, Magnum::Vector3>({-1.0, -1.0, -1.0},
-                                                    {1.0, 1.0, 1.0});
+    Magnum::Range3D objectGroundTruth({-1.1, -1.1, -1.1}, {1.1, 1.1, 1.1});
+    Magnum::Range3D sceneGroundTruth({-1.0, -1.0, -1.0}, {1.0, 1.0, 1.0});
 
-    // Cr::Utility::Debug() << "aabb scene: " << AabbScene;
-    // Cr::Utility::Debug() << "aabb ob0: " << AabbOb0;
-    // Cr::Utility::Debug() << "aabb ob1: " << AabbOb1;
     ASSERT_EQ(AabbScene, sceneGroundTruth);
     ASSERT_EQ(AabbOb0, objectGroundTruth);
     ASSERT_EQ(AabbOb1, objectGroundTruth);
@@ -224,23 +217,13 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
 
   for (auto& testScale : testScales) {
     objectTemplate.setMagnumVec3("scale", testScale);
-    // Cr::Utility::Debug() << "testScale: " << testScale;
 
-    std::pair<Magnum::Vector3, Magnum::Vector3> boundsGroundTruth =
-        std::pair<Magnum::Vector3, Magnum::Vector3>(-abs(testScale),
-                                                    abs(testScale));
-
-    // Cr::Utility::Debug() << "boundsGroundTruth: " << boundsGroundTruth;
+    Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
 
     int objectId = physicsManager_->addObject(objectFile, &drawables);
 
-    // TODO: test the node bounding box
-    const Magnum::Range3D& bb =
+    const Magnum::Range3D& visualBounds =
         physicsManager_->getObjectSceneNode(objectId).getCumulativeBB();
-    std::pair<Magnum::Vector3, Magnum::Vector3> visualBounds =
-        std::pair<Magnum::Vector3, Magnum::Vector3>(bb.min(), bb.max());
-
-    // Cr::Utility::Debug() << "visualBounds: " << visualBounds;
 
     ASSERT_EQ(visualBounds, boundsGroundTruth);
 
@@ -252,10 +235,8 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
           static_cast<esp::physics::BulletPhysicsManager*>(
               physicsManager_.get());
 
-      std::pair<Magnum::Vector3, Magnum::Vector3> aabb =
-          bPhysManager->getCollisionShapeAabb(objectId);
+      Magnum::Range3D aabb = bPhysManager->getCollisionShapeAabb(objectId);
 
-      // Cr::Utility::Debug() << "aabb: " << aabb;
       ASSERT_EQ(aabb, boundsGroundTruth);
     }
 #endif
