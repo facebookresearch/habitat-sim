@@ -83,7 +83,7 @@ class Simulator:
         self._sim = None
 
     def seed(self, new_seed):
-        self._sim.seed(new_seed)
+        self.pathfinder.seed(new_seed)
 
     def reset(self):
         self._sim.reset()
