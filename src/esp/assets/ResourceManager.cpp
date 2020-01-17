@@ -378,7 +378,14 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
 
     MeshMetaData& meshMetaData = resourceDict_[filename];
 
-    addComponent(meshMetaData, *parent, drawables, meshMetaData.root);
+    // need a new node for scaling because motion state will override scale set
+    // at the physical node
+    scene::SceneNode& scalingNode = parent->createChild();
+    Magnum::Vector3 objectScaling =
+        physicsObjectAttributes.getMagnumVec3("scale");
+    scalingNode.setScaling(objectScaling);
+
+    addComponent(meshMetaData, scalingNode, drawables, meshMetaData.root);
     // compute the full BB hierarchy for the new tree.
     parent->computeCumulativeBB();
   }
@@ -529,6 +536,24 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
       // set a flag which we can find later so we don't override the desired COM
       // with BB center.
       physicsObjectAttributes.setBool("COM_provided", true);
+    }
+  }
+
+  // scaling
+  if (objPhysicsConfig.HasMember("scale")) {
+    if (objPhysicsConfig["scale"].IsArray()) {
+      Magnum::Vector3 scale;
+      for (rapidjson::SizeType i = 0; i < objPhysicsConfig["scale"].Size();
+           i++) {
+        if (!objPhysicsConfig["scale"][i].IsNumber()) {
+          // invalid config
+          LOG(ERROR) << " Invalid value in object physics config - scale array";
+          break;
+        } else {
+          scale[i] = objPhysicsConfig["scale"][i].GetDouble();
+        }
+      }
+      physicsObjectAttributes.setMagnumVec3("scale", scale);
     }
   }
 

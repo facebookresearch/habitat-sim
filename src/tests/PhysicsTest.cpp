@@ -186,3 +186,58 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
   }
 }
 #endif
+
+TEST_F(PhysicsManagerTest, ConfigurableScaling) {
+  // test scaling of objects via template configuration (visual and collision)
+  LOG(INFO) << "Starting physics test: ConfigurableScaling";
+
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  initScene("NONE");
+
+  // test joined vs. unjoined
+  esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+  physicsObjectAttributes.setDouble("margin", 0.0);
+
+  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+  // get a reference to the stored template to edit
+  esp::assets::PhysicsObjectAttributes& objectTemplate =
+      resourceManager_.getPhysicsObjectAttributes(objectFile);
+
+  std::vector<Magnum::Vector3> testScales{
+      {1.0, 1.0, 1.0},  {4.0, 3.0, 2.0},    {0.1, 0.2, 0.3},
+      {0.0, 0.0, 0.0},  {-1.0, -1.0, -1.0}, {-1.0, 1.0, 1.0},
+      {4.0, -3.0, 2.0}, {0.1, -0.2, -0.3}};
+
+  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+  for (auto& testScale : testScales) {
+    objectTemplate.setMagnumVec3("scale", testScale);
+
+    Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
+
+    int objectId = physicsManager_->addObject(objectFile, &drawables);
+
+    const Magnum::Range3D& visualBounds =
+        physicsManager_->getObjectSceneNode(objectId).getCumulativeBB();
+
+    ASSERT_EQ(visualBounds, boundsGroundTruth);
+
+// Test Bullet collision shape scaling
+#ifdef ESP_BUILD_WITH_BULLET
+    if (physicsManager_->getPhysicsSimulationLibrary() ==
+        PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+      esp::physics::BulletPhysicsManager* bPhysManager =
+          static_cast<esp::physics::BulletPhysicsManager*>(
+              physicsManager_.get());
+
+      Magnum::Range3D aabb = bPhysManager->getCollisionShapeAabb(objectId);
+
+      ASSERT_EQ(aabb, boundsGroundTruth);
+    }
+#endif
+  }
+}
