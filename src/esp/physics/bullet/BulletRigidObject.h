@@ -333,13 +333,13 @@ class BulletRigidObject : public RigidObject {
    * set in object's configuration.
    */
   const bool isUsingBBCollisionShape() const { return collisionFromBB_; };
+
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of
    * the rigid body in its local space. See @ref btCompoundShape::getAabb.
-   * @return A Magnum vector pair (AabbMin, AabbMax).
+   * @return The Aabb.
    */
-  const std::pair<Magnum::Vector3, Magnum::Vector3> getCollisionShapeAabb()
-      const;
+  const Magnum::Range3D getCollisionShapeAabb() const;
 
  protected:
   /** @brief Used to synchronize Bullet's notion of the object state

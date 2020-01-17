@@ -10,8 +10,11 @@
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/Renderer.h"
-#include "esp/physics/bullet/BulletPhysicsManager.h"
 #include "esp/scene/SceneManager.h"
+
+#ifdef ESP_BUILD_WITH_BULLET
+#include "esp/physics/bullet/BulletPhysicsManager.h"
+#endif
 
 #include "configure.h"
 
@@ -132,6 +135,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
   }
 }
 
+#ifdef ESP_BUILD_WITH_BULLET
 TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
   LOG(INFO) << "Starting physics test: CollisionBoundingBox";
 
@@ -184,19 +188,10 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
         Magnum::Quaternion orientation = physicsManager_->getRotation(objectId);
         Magnum::Vector3 position = physicsManager_->getTranslation(objectId);
 
-        /*
-        Cr::Utility::Debug() << "prev vs current position: " << prevPosition
-                             << " | " << position;
-        Cr::Utility::Debug()
-            << "prev vs current orientation: " << prevOrientation << " | "
-            << orientation;
-        */
-
         // object is being pushed, so should be moving
         ASSERT_NE(position, prevPosition);
         Magnum::Rad q_angle =
             Magnum::Math::angle(orientation, Magnum::Quaternion({0, 0, 0}, 1));
-        // Cr::Utility::Debug() << "Q angle: " << q_angle;
         if (i == 1) {
           // bounding box for collision, so the sphere should not be rolling
           ASSERT_LE(q_angle, Magnum::Rad{0.1});
@@ -254,30 +249,23 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     esp::physics::BulletPhysicsManager* bPhysManager =
         static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
 
-    std::pair<Magnum::Vector3, Magnum::Vector3> AabbScene =
+    const Magnum::Range3D AabbScene =
         bPhysManager->getSceneCollisionShapeAabb();
 
-    std::pair<Magnum::Vector3, Magnum::Vector3> AabbOb0 =
+    const Magnum::Range3D AabbOb0 =
         bPhysManager->getCollisionShapeAabb(objectId0);
-    std::pair<Magnum::Vector3, Magnum::Vector3> AabbOb1 =
+    const Magnum::Range3D AabbOb1 =
         bPhysManager->getCollisionShapeAabb(objectId1);
-    std::pair<Magnum::Vector3, Magnum::Vector3> AabbOb2 =
-        bPhysManager->getCollisionShapeAabb(objectId2);
+    const Magnum::Range3D AabbOb2 =
+        bPhysManager->getCollisionShapeAabb(objectId1);
 
-    std::pair<Magnum::Vector3, Magnum::Vector3> objectGroundTruth =
-        std::pair<Magnum::Vector3, Magnum::Vector3>({-1.1, -1.1, -1.1},
-                                                    {1.1, 1.1, 1.1});
-    std::pair<Magnum::Vector3, Magnum::Vector3> sceneGroundTruth =
-        std::pair<Magnum::Vector3, Magnum::Vector3>({-1.0, -1.0, -1.0},
-                                                    {1.0, 1.0, 1.0});
+    Magnum::Range3D objectGroundTruth({-1.1, -1.1, -1.1}, {1.1, 1.1, 1.1});
+    Magnum::Range3D sceneGroundTruth({-1.0, -1.0, -1.0}, {1.0, 1.0, 1.0});
 
-    // Cr::Utility::Debug() << "aabb scene: " << AabbScene;
-    // Cr::Utility::Debug() << "aabb ob0: " << AabbOb0;
-    // Cr::Utility::Debug() << "aabb ob1: " << AabbOb1;
-    // Cr::Utility::Debug() << "aabb ob2: " << AabbOb2;
     ASSERT_EQ(AabbScene, sceneGroundTruth);
     ASSERT_EQ(AabbOb0, objectGroundTruth);
     ASSERT_EQ(AabbOb1, objectGroundTruth);
     ASSERT_EQ(AabbOb2, objectGroundTruth);
   }
 }
+#endif
