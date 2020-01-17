@@ -166,7 +166,7 @@ bool BulletRigidObject::initializeObject(
   bool joinCollisionMeshes =
       physicsObjectAttributes.getBool("joinCollisionMeshes");
 
-  collisionFromBB_ =
+  usingBBCollisionShape_ =
       physicsObjectAttributes.getBool("useBoundingBoxForCollision");
 
   // TODO(alexanderwclegg): should provide the option for joinCollisionMeshes
@@ -177,24 +177,22 @@ bool BulletRigidObject::initializeObject(
   //! The components are combined into a convex compound shape
   bObjectShape_ = std::make_unique<btCompoundShape>();
 
-  if (collisionFromBB_) {
+  if (usingBBCollisionShape_) {
     // set a dummy shape for now. We will use the scene node BB object to
     // correct this later
-    btTransform t;
-    t.setIdentity();
     bGenericShapes_.emplace_back(std::make_unique<btBoxShape>(btVector3()));
-    bObjectShape_->addChildShape(t, bGenericShapes_.back().get());
+    bObjectShape_->addChildShape(btTransform::getIdentity(),
+                                 bGenericShapes_.back().get());
   } else {
     constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup,
                                       metaData.root, joinCollisionMeshes);
 
     // add the final object after joining meshes
     if (joinCollisionMeshes) {
-      btTransform t;
-      t.setIdentity();
       bObjectConvexShapes_.back()->setMargin(0.0);
       bObjectConvexShapes_.back()->recalcLocalAabb();
-      bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
+      bObjectShape_->addChildShape(btTransform::getIdentity(),
+                                   bObjectConvexShapes_.back().get());
     }
     bObjectShape_->setMargin(margin);
     bObjectShape_->recalculateLocalAabb();
@@ -209,7 +207,7 @@ bool BulletRigidObject::initializeObject(
   btVector3 bInertia =
       btVector3(physicsObjectAttributes.getMagnumVec3("inertia"));
 
-  if (!collisionFromBB_) {
+  if (!usingBBCollisionShape_) {
     if (bInertia == btVector3{0, 0, 0}) {
       // allow bullet to compute the inertia tensor if we don't have one
       bObjectShape_->calculateLocalInertia(
@@ -248,9 +246,8 @@ void BulletRigidObject::setCollisionFromBB() {
   bObjectShape_->removeChildShape(bGenericShapes_.back().get());
   bGenericShapes_.clear();
   bGenericShapes_.emplace_back(std::make_unique<btBoxShape>(dim));
-  btTransform t;
-  t.setIdentity();
-  bObjectShape_->addChildShape(t, bGenericShapes_.back().get());
+  bObjectShape_->addChildShape(btTransform::getIdentity(),
+                               bGenericShapes_.back().get());
   bObjectShape_->recalculateLocalAabb();
   bObjectRigidBody_->setCollisionShape(bObjectShape_.get());
 

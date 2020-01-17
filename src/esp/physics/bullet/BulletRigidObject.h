@@ -328,11 +328,12 @@ class BulletRigidObject : public RigidObject {
    */
   void setCollisionFromBB();
 
-  /** @brief Public getter for @ref collisionFromBB_ set from configuration.
-   * @return @ref collisionFromBB_ is true if "useBoundingBoxForCollision" was
-   * set in object's configuration.
+  /** @brief Public getter for @ref usingBBCollisionShape_ set from
+   * configuration.
+   * @return @ref usingBBCollisionShape_ is true if "useBoundingBoxForCollision"
+   * was set in object's configuration.
    */
-  const bool isUsingBBCollisionShape() const { return collisionFromBB_; };
+  const bool isUsingBBCollisionShape() const { return usingBBCollisionShape_; };
 
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of
@@ -349,7 +350,7 @@ class BulletRigidObject : public RigidObject {
 
   //! If true, the object's bounding box will be used for collision once
   //! computed
-  bool collisionFromBB_ = false;
+  bool usingBBCollisionShape_ = false;
 
  private:
   /** @brief A pointer to the Bullet world to which this object belongs. See
