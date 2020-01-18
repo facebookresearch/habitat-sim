@@ -28,11 +28,10 @@ TEST(GibsonSceneTest, Basic) {
   ASSERT_NE(semanticScene.objects().size(), 2);
   auto object = semanticScene.objects()[1];
   ASSERT_EQ(object->category()->name(""), "microwave");
-  ASSERT_EQ(object->obb().center(), esp::vec3f(2.83999, -1.49223, 4.76085));
   ASSERT(
-      object->obb().center().isApprox(esp::vec3f(2.83999, -1.49223, 4.76085)));
+      object->obb().center().isApprox(esp::vec3f(2.83999, 4.76085, 1.49223)));
   ASSERT(
-      object->obb().sizes().isApprox(esp::vec3f(0.406775, 0.454744, 1.28023)));
+      object->obb().sizes().isApprox(esp::vec3f(0.406775, 1.28023, 0.454744)));
   object = semanticScene.objects()[2];
   ASSERT_EQ(object->category()->name(""), "oven");
   object = semanticScene.objects()[3];
@@ -56,7 +55,7 @@ TEST(GibsonSemanticSimTest, Basic) {
   const auto& microwave = semanticScene->objects()[1];
   ASSERT_EQ(microwave->category()->name(""), "microwave");
   ASSERT(microwave->obb().center().isApprox(
-      esp::vec3f(2.83999, -4.76085, -1.49223)));
+      esp::vec3f(2.83999, 4.76085, 1.49223)));
   ASSERT(microwave->obb().sizes().isApprox(
       esp::vec3f(0.406775, 1.28023, 0.454744)));
 }
