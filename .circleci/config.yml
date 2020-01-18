@@ -426,6 +426,7 @@ jobs:
     docker:
       - image: circleci/buildpack-deps:disco
     steps:
+      - checkout
       - restore_cache:
           key: docs-{{ .Branch }}
       - add_ssh_keys:
@@ -433,6 +434,7 @@ jobs:
             - "18:88:e0:37:b1:b3:7a:23:aa:1e:f7:43:a8:5b:8e:05"
       - run:
           name: Update public documentation
+          no_output_timeout: 30m
           command: |
               # Update website
               git clone git@github.com:facebookmicrosites/habitat-website.git
@@ -444,24 +446,25 @@ jobs:
                   rm -rf published/docs/${dir}
                   cp -r ../habitat-sim/build/docs-public/${dir} published/docs/.
               done
-              git diff
-              # git checkout published/docs/habitat-sim/index.html
 
               git config --global user.name "Habitat"
               git config --global user.email habitat@fb.com
               NOW=$(date +"%m-%d-%Y")
               git add .
+              git status # will be removed
               git commit -m "Build ${NOW}"
               # git push origin master
 
               # Deploy to public
               git checkout gh-pages
               git checkout master published
+              sudo apt-get update || true
+              sudo apt-get install -yq \
+                    rsync
               rsync -a published/ ./.
               rm -rf published
-              rm -rf m.css
-              rm -rf __pycache__
               git add .
+              git status # will be removed
               git commit -m "Build ${NOW}"
               # git push origin gh-pages
 
@@ -478,4 +481,4 @@ workflows:
             - install_and_test_ubuntu
           filters:
             branches:
-              only: autodoc
+              only: autodoc # will be changed to master
