@@ -177,13 +177,7 @@ bool BulletRigidObject::initializeObject(
   //! The components are combined into a convex compound shape
   bObjectShape_ = std::make_unique<btCompoundShape>();
 
-  if (usingBBCollisionShape_) {
-    // set a dummy shape for now. We will use the scene node BB object to
-    // correct this later
-    bGenericShapes_.emplace_back(std::make_unique<btBoxShape>(btVector3()));
-    bObjectShape_->addChildShape(btTransform::getIdentity(),
-                                 bGenericShapes_.back().get());
-  } else {
+  if (!usingBBCollisionShape_) {
     constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup,
                                       metaData.root, joinCollisionMeshes);
 
@@ -194,11 +188,6 @@ bool BulletRigidObject::initializeObject(
       bObjectShape_->addChildShape(btTransform::getIdentity(),
                                    bObjectConvexShapes_.back().get());
     }
-    bObjectShape_->setMargin(margin);
-    bObjectShape_->recalculateLocalAabb();
-    btVector3 localAabbMin, localAabbMax;
-    bObjectShape_->getAabb(btTransform::getIdentity(), localAabbMin,
-                           localAabbMax);
   }
 
   //! Set properties
@@ -247,7 +236,10 @@ bool BulletRigidObject::initializeObject(
 
 void BulletRigidObject::setCollisionFromBB() {
   btVector3 dim(cumulativeBB_.size() / 2.0);
-  bObjectShape_->removeChildShape(bGenericShapes_.back().get());
+
+  for (auto& shape : bGenericShapes_) {
+    bObjectShape_->removeChildShape(shape.get());
+  }
   bGenericShapes_.clear();
   bGenericShapes_.emplace_back(std::make_unique<btBoxShape>(dim));
   bObjectShape_->addChildShape(btTransform::getIdentity(),

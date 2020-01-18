@@ -343,7 +343,8 @@ class BulletRigidObject : public RigidObject {
   const Magnum::Range3D getCollisionShapeAabb() const;
 
  protected:
-  /** @brief Used to synchronize Bullet's notion of the object state
+  /**
+   * @brief Used to synchronize Bullet's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic
    * updates. See @ref btRigidBody::setWorldTransform. */
   void syncPose();
