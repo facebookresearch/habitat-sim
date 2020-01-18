@@ -53,6 +53,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   std::string houseFilename = io::changeExtension(sceneFilename, ".house");
+  if (!io::exists(houseFilename)) {
+    houseFilename = io::changeExtension(sceneFilename, ".scn");
+  }
   if (cfg.scene.filepaths.count("house")) {
     houseFilename = cfg.scene.filepaths.at("house");
   }
