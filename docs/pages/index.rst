@@ -14,9 +14,9 @@ over 10,000 FPS multi-process on a single GPU!
 
 .. TODO: this is waiting on m.css to propagate page titles to links
 
--   `New Actions <std:doc:new-actions>`
--   `Notebooks <std:doc:notebooks>`
--   `Creating a stereo agent <std:doc:stereo-agent>`
+-   :ref:`New Actions <std:doc:new-actions>`
+-   :ref:`Notebooks <std:doc:notebooks>`
+-   :ref:`Creating a stereo agent <std:doc:stereo-agent>`
 
 .. note-warning::
 
