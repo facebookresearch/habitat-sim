@@ -322,27 +322,6 @@ jobs:
               . activate habitat; cd habitat-sim
               python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
       - run:
-          name: Build documentation
-          command: |
-              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-              . activate habitat;
-              cd habitat-sim
-              # Rebuild with all options enabled
-              ./build.sh --with-cuda --with-bullet
-              cd docs
-              conda install -y -c conda-forge doxygen
-              conda install -y  jinja2 pygments docutils
-              conda install -y -c conda-forge pelican
-              mkdir -p ../build/docs
-              git submodule update --init
-              # doxygen
-              ./build-public.sh
-      - save_cache:
-          key: docs-{{ .Branch }}
-          background: true
-          paths:
-            - ./habitat-sim/build/docs-public
-      - run:
           name: Run JavaScript tests
           command: |
             cd habitat-sim
@@ -391,6 +370,26 @@ jobs:
               lcov --directory . --capture --output-file coverage.info
               lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
               bash <(curl -s https://codecov.io/bash) -f coverage.info -cF CPP
+      - run:
+          name: Build documentation
+          command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              # Rebuild with all options enabled
+              ./build.sh --with-cuda --with-bullet
+              cd docs
+              conda install -y -c conda-forge doxygen
+              conda install -y  jinja2 pygments docutils
+              conda install -y -c conda-forge pelican
+              mkdir -p ../build/docs
+              git submodule update --init
+              ./build-public.sh
+      - save_cache:
+          key: docs-{{ .Branch }}
+          background: true
+          paths:
+            - ./habitat-sim/build/docs-public
       - run:
           name: Install api
           command: |
@@ -451,9 +450,8 @@ jobs:
               git config --global user.email habitat@fb.com
               NOW=$(date +"%m-%d-%Y")
               git add .
-              git status # will be removed
-              git commit -m "Build ${NOW}"
-              # git push origin master
+              git commit -m "Build habitat-sim ${NOW}"
+              git push origin master
 
               # Deploy to public
               git checkout gh-pages
@@ -464,9 +462,8 @@ jobs:
               rsync -a published/ ./.
               rm -rf published
               git add .
-              git status # will be removed
-              git commit -m "Build ${NOW}"
-              # git push origin gh-pages
+              git commit -m "Build habitat-sim ${NOW}"
+              git push origin gh-pages
 
 workflows:
   version: 2
@@ -481,4 +478,4 @@ workflows:
             - install_and_test_ubuntu
           filters:
             branches:
-              only: autodoc # will be changed to master
+              only: master
