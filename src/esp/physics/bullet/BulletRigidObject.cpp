@@ -185,6 +185,10 @@ bool BulletRigidObject::initializeObject(
   //! Set properties
   bObjectShape_->setMargin(margin);
 
+  Magnum::Vector3 objectScaling =
+      physicsObjectAttributes.getMagnumVec3("scale");
+  bObjectShape_->setLocalScaling(btVector3{objectScaling});
+
   btVector3 bInertia =
       btVector3(physicsObjectAttributes.getMagnumVec3("inertia"));
 

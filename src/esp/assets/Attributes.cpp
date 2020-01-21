@@ -264,7 +264,7 @@ PhysicsObjectAttributes::PhysicsObjectAttributes() {
   // fill necessary attribute defaults
   setDouble("mass", 1.0);
   setDouble("margin", 0.01);
-  setDouble("scale", 1.0);
+  setMagnumVec3("scale", Magnum::Vector3(1.0, 1.0, 1.0));
   setMagnumVec3("COM", Magnum::Vector3(0));
   setMagnumVec3("inertia", Magnum::Vector3(0., 0., 0.));
   setDouble("frictionCoefficient", 0.5);

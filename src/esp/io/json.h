@@ -7,6 +7,7 @@
 #include <cstdint>
 #define RAPIDJSON_NO_INT64DEFINE
 #include <rapidjson/document.h>
+#include "esp/core/esp.h"
 
 #include <functional>
 #include <string>
@@ -16,6 +17,7 @@ namespace esp {
 namespace io {
 
 typedef rapidjson::Document JsonDocument;
+typedef rapidjson::GenericValue<rapidjson::UTF8<> > JsonGenericValue;
 
 //! Parse JSON file and return as JsonDocument object
 JsonDocument parseJsonFile(const std::string& file);
@@ -25,6 +27,9 @@ JsonDocument parseJsonString(const std::string& jsonString);
 
 //! Return string representation of given JsonDocument
 std::string jsonToString(const JsonDocument& d);
+
+//! Return Vec3f coordinates representation of given JsonObject of array type
+esp::vec3f jsonToVec3f(const JsonGenericValue& jsonArray);
 
 template <typename GV, typename T>
 void toVector(const GV& arr,

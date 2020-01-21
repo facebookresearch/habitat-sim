@@ -84,14 +84,14 @@ std::string Mp3dRegionCategory::name(const std::string& mapping) const {
 bool SemanticScene::loadMp3dHouse(
     const std::string& houseFilename,
     SemanticScene& scene,
-    const quatf& worldRotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(),
+    const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(),
                                                        geo::ESP_GRAVITY) */ ) {
   if (!io::exists(houseFilename)) {
     LOG(ERROR) << "Could not load file " << houseFilename;
     return false;
   }
 
-  const bool hasWorldRotation = !worldRotation.isApprox(quatf::Identity());
+  const bool hasWorldRotation = !rotation.isApprox(quatf::Identity());
 
   auto getVec3f = [&](const std::vector<std::string>& tokens, int offset) {
     const float x = std::stof(tokens[offset]);
@@ -99,7 +99,7 @@ bool SemanticScene::loadMp3dHouse(
     const float z = std::stof(tokens[offset + 2]);
     vec3f p = vec3f(x, y, z);
     if (hasWorldRotation) {
-      p = worldRotation * p;
+      p = rotation * p;
     }
     return p;
   };
