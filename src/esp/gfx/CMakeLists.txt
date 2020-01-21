@@ -14,8 +14,6 @@ set(gfx_SOURCES
   RenderCamera.h
   Renderer.cpp
   Renderer.h
-  Simulator.cpp
-  Simulator.h
   WindowlessContext.cpp
   WindowlessContext.h
   RenderTarget.cpp

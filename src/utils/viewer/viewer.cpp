@@ -34,8 +34,8 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
 
-#include "esp/gfx/Simulator.h"
 #include "esp/scene/SceneConfiguration.h"
+#include "esp/sim/Simulator.h"
 
 #include "esp/gfx/configure.h"
 

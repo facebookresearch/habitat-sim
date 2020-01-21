@@ -10,12 +10,12 @@
 #include <Magnum/Python.h>
 #include <Magnum/SceneGraph/Python.h>
 
-#include "esp/gfx/Simulator.h"
 #include "esp/sensor/PinholeCamera.h"
 #ifdef ESP_BUILD_WITH_CUDA
 #include "esp/sensor/RedwoodNoiseModel.h"
 #endif
 #include "esp/sensor/Sensor.h"
+#include "esp/sim/Simulator.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
