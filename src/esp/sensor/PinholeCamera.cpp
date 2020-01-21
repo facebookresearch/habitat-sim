@@ -16,7 +16,7 @@ namespace sensor {
 
 PinholeCamera::PinholeCamera(scene::SceneNode& pinholeCameraNode,
                              sensor::SensorSpec::ptr spec)
-    : sensor::Sensor(pinholeCameraNode, spec) {
+    : sensor::VisualSensor(pinholeCameraNode, spec) {
   setProjectionParameters(spec);
 }
 

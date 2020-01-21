@@ -36,7 +36,7 @@ struct Renderer::Impl {
     camera.draw(drawables);
   }
 
-  void draw(sensor::Sensor& visualSensor, scene::SceneGraph& sceneGraph) {
+  void draw(sensor::VisualSensor& visualSensor, scene::SceneGraph& sceneGraph) {
     ASSERT(visualSensor.isVisualSensor());
 
     // set the modelview matrix, projection matrix of the render camera;
@@ -45,8 +45,8 @@ struct Renderer::Impl {
     draw(sceneGraph.getDefaultRenderCamera(), sceneGraph.getDrawables());
   }
 
-  void bindRenderTarget(const sensor::Sensor::ptr& sensor) {
-    auto depthUnprojection = sensor->depthUnprojection();
+  void bindRenderTarget(sensor::VisualSensor& sensor) {
+    auto depthUnprojection = sensor.depthUnprojection();
     if (!depthUnprojection) {
       throw std::runtime_error(
           "Sensor does not have a depthUnprojection matrix");
@@ -57,8 +57,8 @@ struct Renderer::Impl {
           DepthShader::Flag::UnprojectExistingDepth);
     }
 
-    sensor->bindRenderTarget(RenderTarget::create_unique(
-        sensor->framebufferSize(), *depthUnprojection, depthShader_.get()));
+    sensor.bindRenderTarget(RenderTarget::create_unique(
+        sensor.framebufferSize(), *depthUnprojection, depthShader_.get()));
   }
 
  private:
@@ -71,12 +71,12 @@ void Renderer::draw(RenderCamera& camera, scene::SceneGraph& sceneGraph) {
   pimpl_->draw(camera, sceneGraph.getDrawables());
 }
 
-void Renderer::draw(sensor::Sensor& visualSensor,
+void Renderer::draw(sensor::VisualSensor& visualSensor,
                     scene::SceneGraph& sceneGraph) {
   pimpl_->draw(visualSensor, sceneGraph);
 }
 
-void Renderer::bindRenderTarget(const sensor::Sensor::ptr& sensor) {
+void Renderer::bindRenderTarget(sensor::VisualSensor& sensor) {
   pimpl_->bindRenderTarget(sensor);
 }
 
