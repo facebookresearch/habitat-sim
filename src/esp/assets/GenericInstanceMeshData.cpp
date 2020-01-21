@@ -177,12 +177,17 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   // primitives, so we also need to double the size of the object IDs buffer
   int indicesPerFace = 3 * (vertexPerFace == 4 ? 2 : 1);
   objectIds_.reserve(object_ids->count * indicesPerFace);
-  if (object_ids->t == tinyply::Type::INT32) {
+  if (object_ids->t == tinyply::Type::INT32 ||
+      object_ids->t == tinyply::Type::UINT32) {
     std::vector<int> tmp;
+    // This copy will be safe because for 0 <= v <= 2^31 - 1, uint32 and
+    // int32 have the same bit patterns.  We currently assume IDs are <= 2^16 -
+    // 1, so this assumption is safe.
     copyTo(object_ids, tmp);
 
     for (auto& id : tmp) {
-      ASSERT(id <= 65535);
+      // >= 0 to make sure we didn't overflow the int32 with the uint32
+      CORRADE_INTERNAL_ASSERT(id >= 0 && id <= ((2 << 16) - 1));
       for (int i = 0; i < indicesPerFace; ++i)
         objectIds_.push_back(id);
     }
@@ -213,12 +218,7 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   // later they can be accessed.
   // Note that normal and texture data are not stored
   collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
-  collisionMeshData_.positions =
-      Corrade::Containers::arrayCast<Magnum::Vector3>(
-          Corrade::Containers::arrayView(cpu_vbo_.data(), cpu_vbo_.size()));
-  collisionMeshData_.indices =
-      Corrade::Containers::arrayCast<Magnum::UnsignedInt>(
-          Corrade::Containers::arrayView(cpu_ibo_.data(), cpu_ibo_.size()));
+  updateCollisionMeshData();
 
   return true;
 }
@@ -235,13 +235,16 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   // simply mmap a file with the vertex buffer and index buffer.
   std::vector<Mn::UnsignedInt> objectIdIndices = removeDuplicates(objectIds_);
   Mn::GL::Buffer vertices, indices;
-  indices.setTargetHint(Mn::GL::Buffer::TargetHint::ElementArray);
-  indices.setData(
+
+  std::vector<Magnum::UnsignedInt> new_indices =
       Mn::MeshTools::combineIndexedArrays(
           std::make_pair(std::cref(objectIdIndices), std::ref(objectIds_)),
           std::make_pair(std::cref(cpu_ibo_), std::ref(cpu_vbo_)),
-          std::make_pair(std::cref(cpu_ibo_), std::ref(cpu_cbo_))),
-      Mn::GL::BufferUsage::StaticDraw);
+          std::make_pair(std::cref(cpu_ibo_), std::ref(cpu_cbo_)));
+
+  indices.setTargetHint(Mn::GL::Buffer::TargetHint::ElementArray);
+  indices.setData(new_indices, Mn::GL::BufferUsage::StaticDraw);
+
   vertices.setData(
       Mn::MeshTools::interleave(cpu_vbo_, cpu_cbo_, 1, objectIds_, 2),
       Mn::GL::BufferUsage::StaticDraw);
@@ -262,6 +265,10 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
       .setIndexBuffer(std::move(indices), 0,
                       Mn::GL::MeshIndexType::UnsignedInt);
 
+  cpu_ibo_ = std::move(new_indices);
+
+  updateCollisionMeshData();
+
   buffersOnGPU_ = true;
 }
 
@@ -270,6 +277,13 @@ Magnum::GL::Mesh* GenericInstanceMeshData::getMagnumGLMesh() {
     return nullptr;
   }
   return &(renderingBuffer_->mesh);
+}
+
+void GenericInstanceMeshData::updateCollisionMeshData() {
+  collisionMeshData_.positions = Cr::Containers::arrayCast<Mn::Vector3>(
+      Cr::Containers::arrayView(cpu_vbo_));
+  collisionMeshData_.indices = Cr::Containers::arrayCast<Mn::UnsignedInt>(
+      Cr::Containers::arrayView(cpu_ibo_));
 }
 
 }  // namespace assets

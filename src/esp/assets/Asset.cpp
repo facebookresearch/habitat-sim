@@ -9,9 +9,8 @@
 namespace esp {
 namespace assets {
 
-using namespace Corrade::Utility::String;
-
 AssetInfo AssetInfo::fromPath(const std::string& path) {
+  using Corrade::Utility::String::endsWith;
   AssetInfo info{AssetType::UNKNOWN, path};
 
   if (endsWith(path, "_semantic.ply")) {

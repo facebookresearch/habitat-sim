@@ -5,17 +5,58 @@
 #pragma once
 
 /** @file
- * @brief Class @ref esp::physics::BulletRigidObject
+ * @brief Struct SimulationContactResultCallback, class @ref
+ * esp::physics::BulletRigidObject
  */
 
 #include <btBulletDynamicsCommon.h>
 #include "esp/assets/Asset.h"
+#include "esp/assets/BaseMesh.h"
+#include "esp/assets/MeshMetaData.h"
 #include "esp/core/esp.h"
 
 #include "esp/physics/RigidObject.h"
 
 namespace esp {
 namespace physics {
+
+/**
+@brief Implements Bullet physics @ref btCollisionWorld::ContactResultCallback
+interface.
+
+Stores the results of a collision check within the world.
+*/
+struct SimulationContactResultCallback
+    : public btCollisionWorld::ContactResultCallback {
+  /**
+   * @brief Set when a contact is detected.
+   */
+  bool bCollision;
+
+  /**
+   * @brief Constructor.
+   */
+  SimulationContactResultCallback() { bCollision = false; }
+
+  /**
+   * @brief Called when a contact is detected.
+   *
+   * Sets a collision flag on every detected collision. Can be updated to do
+   * more.
+   * @param cp Contains detailed information about the contact point being
+   * added.
+   */
+  btScalar addSingleResult(btManifoldPoint& cp,
+                           const btCollisionObjectWrapper* colObj0Wrap,
+                           int partId0,
+                           int index0,
+                           const btCollisionObjectWrapper* colObj1Wrap,
+                           int partId1,
+                           int index1) {
+    bCollision = true;
+    return 0;  // not used
+  }
+};
 
 /**
 @brief An individual rigid object instance implementing an interface with Bullet
@@ -52,6 +93,7 @@ class BulletRigidObject : public RigidObject {
    */
   bool initializeScene(
       const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+      const assets::MeshMetaData& metaData,
       const std::vector<assets::CollisionMeshData>& meshGroup,
       std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
 
@@ -62,15 +104,37 @@ class BulletRigidObject : public RigidObject {
    * @param physicsObjectAttributes The template structure defining relevant
    * phyiscal parameters for the object. See @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_.
-   * @param meshGroup The collision mesh data for the object.
    * @param bWorld The @ref btDiscreteDynamicsWorld to which the object should
    * belong.
+   * @param metaData Mesh transform hierarchy information for the object.
+   * @param meshGroup The collision mesh data for the object.
    * @return true if initialized successfully, false otherwise.
    */
   bool initializeObject(
       const assets::PhysicsObjectAttributes& physicsObjectAttributes,
+      std::shared_ptr<btDiscreteDynamicsWorld> bWorld,
+      const assets::MeshMetaData& metaData,
+      const std::vector<assets::CollisionMeshData>& meshGroup);
+
+  /**
+   * @brief Recursively construct a @ref btCompoundShape for collision from
+   * loaded mesh assets. A @ref btConvexHullShape is constructed for each
+   * sub-component, transformed to object-local space and added to the compound
+   * in a flat manner for efficiency.
+   * @param bCompound The @ref btCompoundShape being constructed.
+   * @param transformFromParentToWorld The cumulative parent-to-world
+   * transformation matrix constructed by composition down the @ref
+   * MeshTransformNode tree to the current node.
+   * @param meshGroup Access structure for collision mesh data.
+   * @param node The current @ref MeshTransformNode in the recursion.
+   * @param join Whether or not to join sub-meshes into a single con convex
+   * shape, rather than creating individual convexes under the compound.
+   */
+  void constructBulletCompoundFromMeshes(
+      const Magnum::Matrix4& transformFromParentToWorld,
       const std::vector<assets::CollisionMeshData>& meshGroup,
-      std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
+      const assets::MeshTransformNode& node,
+      bool join);
 
   /**
    * @brief Check whether object is being actively simulated, or sleeping.
@@ -95,6 +159,13 @@ class BulletRigidObject : public RigidObject {
    * @return true if successfully set, false otherwise.
    */
   virtual bool setMotionType(MotionType mt);
+
+  /**
+   * @brief Shift the object's local origin by translating all children of this
+   * @ref BulletRigidObject and all components of its @ref bObjectShape_.
+   * @param shift The translation to apply.
+   */
+  void shiftOrigin(const Magnum::Vector3& shift) override;
 
   /**
    * @brief Apply a force to an object.
@@ -289,6 +360,23 @@ class BulletRigidObject : public RigidObject {
    * @param margin The new scalar collision margin of the object.
    */
   void setMargin(const double margin);
+
+  /**
+   * @brief Return result of a discrete contact test between the object and
+   * collision world.
+   *
+   * See @ref SimulationContactResultCallback
+   * @return Whether or not the object is in contact with any other collision
+   * enabled objects.
+   */
+  bool contactTest();
+
+  /**
+   * @brief Query the Aabb from bullet physics for the root compound shape of
+   * the rigid body in its local space. See @ref btCompoundShape::getAabb.
+   * @return The Aabb.
+   */
+  const Magnum::Range3D getCollisionShapeAabb() const;
 
  protected:
   /** @brief Used to synchronize Bullet's notion of the object state

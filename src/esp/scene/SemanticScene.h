@@ -80,6 +80,13 @@ class SemanticScene {
     }
   }
 
+  //! load SemanticScene from a Gibson house format file
+  static bool loadGibsonHouse(
+      const std::string& filename,
+      SemanticScene& scene,
+      const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
+                                                    geo::ESP_GRAVITY));
+
   //! load SemanticScene from a Matterport3D House format filename
   static bool loadMp3dHouse(
       const std::string& filename,

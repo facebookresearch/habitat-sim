@@ -18,6 +18,7 @@ from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower
 from habitat_sim.physics import MotionType
+from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.utils.common import quat_from_angle_axis
 
 torch = None
@@ -64,11 +65,13 @@ class Simulator:
 
     def close(self):
         for sensor in self._sensors.values():
+            sensor.close()
             del sensor
 
         self._sensors = {}
 
         for agent in self.agents:
+            agent.close()
             del agent
 
         self.agents = []
@@ -81,6 +84,7 @@ class Simulator:
 
     def seed(self, new_seed):
         self._sim.seed(new_seed)
+        self.pathfinder.seed(new_seed)
 
     def reset(self):
         self._sim.reset()
@@ -266,6 +270,9 @@ class Simulator:
     def get_object_motion_type(self, object_id, scene_id=0):
         return self._sim.get_object_motion_type(object_id, scene_id)
 
+    def set_object_motion_type(self, motion_type, object_id, scene_id=0):
+        return self._sim.set_object_motion_type(motion_type, object_id, scene_id)
+
     def set_transformation(self, transform, object_id, scene_id=0):
         self._sim.set_transformation(transform, object_id, scene_id)
 
@@ -290,8 +297,14 @@ class Simulator:
     def apply_torque(self, torque, object_id, scene_id=0):
         self._sim.apply_torque(torque, object_id, scene_id)
 
+    def contact_test(self, object_id, scene_id=0):
+        return self._sim.contact_test(object_id, scene_id)
+
     def get_world_time(self, scene_id=0):
         return self._sim.get_world_time()
+
+    def recompute_navmesh(self, pathfinder, navmesh_settings):
+        return self._sim.recompute_navmesh(pathfinder, navmesh_settings)
 
 
 class Sensor:
@@ -307,7 +320,7 @@ class Sensor:
 
         # sensor is an attached object to the scene node
         # store such "attached object" in _sensor_object
-        self._sensor_object = self._agent.sensors.get(sensor_id)
+        self._sensor_object = self._agent._sensors.get(sensor_id)
         self._spec = self._sensor_object.specification()
 
         self._sim.renderer.bind_render_target(self._sensor_object)
@@ -357,12 +370,18 @@ class Sensor:
                     dtype=np.uint8,
                 )
 
+        noise_model_kwargs = self._spec.noise_model_kwargs
+        self._noise_model = make_sensor_noise_model(
+            self._spec.noise_model,
+            {"gpu_device_id": self._sim.gpu_device, **noise_model_kwargs},
+        )
+        assert self._noise_model.is_valid_sensor_type(
+            self._spec.sensor_type
+        ), "Noise model '{}' is not valid for sensor '{}'".format(
+            self._spec.noise_model, self._spec.uuid
+        )
+
     def draw_observation(self):
-        # draw the scene with the visual sensor:
-        # it asserts the sensor is a visual sensor;
-        # internally it will set the camera parameters (from the sensor) to the
-        # default render camera in the scene so that
-        # it has correct modelview matrix, projection matrix to render the scene
         # sanity check:
 
         # see if the sensor is attached to a scene graph, otherwise it is invalid,
@@ -409,7 +428,7 @@ class Sensor:
                 else:
                     tgt.read_frame_rgba_gpu(self._buffer.data_ptr())
 
-                return self._buffer.flip(0).clone()
+                obs = self._buffer.flip(0)
         else:
             size = self._sensor_object.framebuffer_size
 
@@ -430,4 +449,11 @@ class Sensor:
                     )
                 )
 
-            return np.flip(self._buffer, axis=0).copy()
+            obs = np.flip(self._buffer, axis=0)
+
+        return self._noise_model(obs)
+
+    def close(self):
+        self._sim = None
+        self._agent = None
+        self._sensor_object = None

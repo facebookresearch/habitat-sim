@@ -7,6 +7,7 @@
 #include <string>
 
 #include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/String.h>
 
 #include "Drawable.h"
 
@@ -52,8 +53,15 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   std::string houseFilename = io::changeExtension(sceneFilename, ".house");
+  if (!io::exists(houseFilename)) {
+    houseFilename = io::changeExtension(sceneFilename, ".scn");
+  }
   if (cfg.scene.filepaths.count("house")) {
     houseFilename = cfg.scene.filepaths.at("house");
+  }
+
+  if (!io::exists(houseFilename)) {
+    houseFilename = io::changeExtension(sceneFilename, ".scn");
   }
 
   const assets::AssetInfo sceneInfo =
@@ -128,7 +136,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       if (!(sceneInfo.type == assets::AssetType::SUNCG_SCENE ||
             sceneInfo.type == assets::AssetType::INSTANCE_MESH ||
             sceneFilename.compare(assets::EMPTY_SCENE) == 0)) {
-        // TODO: programmatic generation of semantic meshes when no annotiations
+        // TODO: programmatic generation of semantic meshes when no annotations
         // are provided.
         LOG(WARNING) << ":\n---\n The active scene does not contain semantic "
                         "annotations. \n---";
@@ -147,8 +155,14 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       }
       break;
     case assets::AssetType::MP3D_MESH:
+      // TODO(msb) Fix AssetType determination logic.
       if (io::exists(houseFilename)) {
-        scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
+        using Corrade::Utility::String::endsWith;
+        if (endsWith(houseFilename, ".house")) {
+          scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
+        } else if (endsWith(houseFilename, ".scn")) {
+          scene::SemanticScene::loadGibsonHouse(houseFilename, *semanticScene_);
+        }
       }
       break;
     case assets::AssetType::SUNCG_SCENE:
@@ -254,6 +268,15 @@ esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
   return esp::physics::MotionType::ERROR_MOTIONTYPE;
 }
 
+bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
+                                    const int objectID,
+                                    const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->setObjectMotionType(objectID, motionType);
+  }
+  return false;
+}
+
 // apply forces and torques to objects
 void Simulator::applyTorque(const Magnum::Vector3& tau,
                             const int objectID,
@@ -325,6 +348,13 @@ Magnum::Quaternion Simulator::getRotation(const int objectID,
   return Magnum::Quaternion();
 }
 
+bool Simulator::contactTest(const int objectID, const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->contactTest(objectID);
+  }
+  return false;
+}
+
 double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
     physicsManager_->stepPhysics(dt);
@@ -338,6 +368,20 @@ double Simulator::getWorldTime() {
     return physicsManager_->getWorldTime();
   }
   return NO_TIME;
+}
+
+bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
+                                 const nav::NavMeshSettings& navMeshSettings) {
+  assets::MeshData::uptr joinedMesh =
+      resourceManager_.createJoinedCollisionMesh(config_.scene.id);
+
+  if (!pathfinder.build(navMeshSettings, *joinedMesh)) {
+    LOG(ERROR) << "Failed to build navmesh";
+    return false;
+  }
+
+  LOG(INFO) << "reconstruct navmesh successful";
+  return true;
 }
 
 }  // namespace gfx

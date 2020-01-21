@@ -1,5 +1,7 @@
 import multiprocessing
 import os.path as osp
+import shlex
+import subprocess
 
 import pytest
 
@@ -26,3 +28,19 @@ def test_example_modules(example_module, args):
     proc.join()
 
     assert proc.exitcode == 0
+
+
+@pytest.mark.gfxtest
+@pytest.mark.skipif(
+    not osp.exists("data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"),
+    reason="Requires the habitat-test-scenes",
+)
+@pytest.mark.parametrize(
+    "args",
+    [
+        "--compute_shortest_path",
+        "--compute_shortest_path --compute_action_shortest_path",
+    ],
+)
+def test_example_script(args):
+    subprocess.check_call(shlex.split(f"python examples/example.py {args}"))

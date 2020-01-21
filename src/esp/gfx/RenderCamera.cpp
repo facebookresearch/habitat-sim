@@ -6,15 +6,14 @@
 
 #include <Magnum/EigenIntegration/Integration.h>
 
-using namespace Magnum;
+namespace Mn = Magnum;
 
 namespace esp {
 namespace gfx {
 
-RenderCamera::RenderCamera(scene::SceneNode& node)
-    : Magnum::SceneGraph::AbstractFeature3D{node} {
+RenderCamera::RenderCamera(scene::SceneNode& node) : MagnumCamera{node} {
   node.setType(scene::SceneNodeType::CAMERA);
-  camera_ = new MagnumCamera(node);
+  setAspectRatioPolicy(Mn::SceneGraph::AspectRatioPolicy::NotPreserved);
 }
 
 RenderCamera::RenderCamera(scene::SceneNode& node,
@@ -23,36 +22,27 @@ RenderCamera::RenderCamera(scene::SceneNode& node,
                            const vec3f& up)
     : RenderCamera(node) {
   // once it is attached, set the transformation
-  node.setTransformation(
-      Matrix4::lookAt(Vector3{eye}, Vector3{target}, Vector3{up}));
+  node.setTransformation(Mn::Matrix4::lookAt(
+      Mn::Vector3{eye}, Mn::Vector3{target}, Mn::Vector3{up}));
 }
 
-void RenderCamera::setProjectionMatrix(int width,
-                                       int height,
-                                       float znear,
-                                       float zfar,
-                                       float hfov) {
+RenderCamera& RenderCamera::setProjectionMatrix(int width,
+                                                int height,
+                                                float znear,
+                                                float zfar,
+                                                float hfov) {
   const float aspectRatio = static_cast<float>(width) / height;
-  camera_->setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::NotPreserved)
-      .setProjectionMatrix(
-          Matrix4::perspectiveProjection(Deg{hfov}, aspectRatio, znear, zfar))
+  MagnumCamera::setProjectionMatrix(
+      Mn::Matrix4::perspectiveProjection(Mn::Deg{hfov}, aspectRatio, znear,
+                                         zfar))
       .setViewport(Magnum::Vector2i(width, height));
+  return *this;
 }
 
-mat4f RenderCamera::getProjectionMatrix() {
-  return Eigen::Map<mat4f>(camera_->projectionMatrix().data());
-}
-
-mat4f RenderCamera::getCameraMatrix() {
-  return Eigen::Map<mat4f>(camera_->cameraMatrix().data());
-}
-
-MagnumCamera& RenderCamera::getMagnumCamera() {
-  return *camera_;
-}
-
-void RenderCamera::draw(MagnumDrawableGroup& drawables) {
-  camera_->draw(drawables);
+RenderCamera& RenderCamera::draw(MagnumDrawableGroup& drawables) {
+  // TODO: visibility culling
+  MagnumCamera::draw(drawables);
+  return *this;
 }
 
 }  // namespace gfx

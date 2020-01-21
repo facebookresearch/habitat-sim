@@ -97,7 +97,7 @@ class BulletPhysicsManager : public PhysicsManager {
   /** @brief Get the current gravity in the physical world.
    * @return The current gravity vector in the physical world.
    */
-  Magnum::Vector3 getGravity();
+  Magnum::Vector3 getGravity() const;
 
   //============ Interacting with objects =============
   // NOTE: engine specifics for interaction are handled by the objects
@@ -136,14 +136,14 @@ class BulletPhysicsManager : public PhysicsManager {
    * @return The scalar collision margin of the object or @ref
    * esp::PHYSICS_ATTR_UNDEFINED if failed..
    */
-  double getMargin(const int physObjectID);
+  double getMargin(const int physObjectID) const;
 
   /** @brief Get the current friction coefficient of the scene collision
    * geometry. See @ref sceneNode_ and @ref
    * BulletRigidObject::getFrictionCoefficient.
    * @return The scalar friction coefficient of the scene geometry.
    */
-  double getSceneFrictionCoefficient();
+  double getSceneFrictionCoefficient() const;
 
   /** @brief Get the current coefficient of restitution for the scene collision
    * geometry. This determines the ratio of initial to final relative velocity
@@ -151,7 +151,42 @@ class BulletPhysicsManager : public PhysicsManager {
    * BulletRigidObject::getRestitutionCoefficient.
    * @return The scalar coefficient of restitution for the scene geometry.
    */
-  double getSceneRestitutionCoefficient();
+  double getSceneRestitutionCoefficient() const;
+
+  /**
+   * @brief Query the Aabb from bullet physics for the root compound shape of a
+   * rigid body in its local space. See @ref btCompoundShape::getAabb.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return The Aabb.
+   */
+  const Magnum::Range3D getCollisionShapeAabb(const int physObjectID) const;
+
+  /**
+   * @brief Query the Aabb from bullet physics for the root compound shape of
+   * the static scene in its local space. See @ref btCompoundShape::getAabb.
+   * @return The scene collision Aabb.
+   */
+  const Magnum::Range3D getSceneCollisionShapeAabb() const;
+
+  /** @brief Render the debugging visualizations provided by @ref
+   * Magnum::BulletIntegration::DebugDraw. This draws wireframes for all
+   * collision objects.
+   * @param projTrans The composed projection and transformation matrix for the
+   * render camera.
+   */
+  virtual void debugDraw(const Magnum::Matrix4& projTrans) const override;
+
+  /**
+   * @brief Check whether an object is in contact with any other objects or the
+   * scene.
+   *
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Whether or not the object is in contact with any other collision
+   * enabled objects.
+   */
+  bool contactTest(const int physObjectID);
 
  protected:
   btDbvtBroadphase bBroadphase_;
@@ -161,6 +196,8 @@ class BulletPhysicsManager : public PhysicsManager {
 
   /** @brief A pointer to the Bullet world. See @ref btDiscreteDynamicsWorld.*/
   std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
+
+  mutable Magnum::BulletIntegration::DebugDraw debugDrawer_;
 
  private:
   /** @brief Check if a particular mesh can be used as a collision mesh for
@@ -178,8 +215,9 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param physicsObjectAttributes The physical object's template defining its
    * physical parameters.
    */
-  int makeRigidObject(const std::vector<assets::CollisionMeshData>& meshGroup,
-                      assets::PhysicsObjectAttributes physicsObjectAttributes);
+  int makeRigidObject(
+      const std::vector<assets::CollisionMeshData>& meshGroup,
+      assets::PhysicsObjectAttributes physicsObjectAttributes) override;
 
   ESP_SMART_POINTERS(BulletPhysicsManager)
 

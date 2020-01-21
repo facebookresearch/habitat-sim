@@ -2,12 +2,12 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include "esp/bindings/bindings.h"
+
 #include <pybind11/eigen.h>
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
-#include "esp/bindings/OpaqueTypes.h"
 
-#include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
 
 #include "esp/core/esp.h"
@@ -16,9 +16,11 @@
 #include "esp/scene/ObjectControls.h"
 
 namespace py = pybind11;
-using namespace py::literals;
-using namespace esp;
-using namespace esp::nav;
+
+using py::literals::operator""_a;
+
+namespace esp {
+namespace nav {
 
 void initShortestPathBindings(py::module& m) {
   py::class_<HitRecord>(m, "HitRecord")
@@ -43,9 +45,33 @@ void initShortestPathBindings(py::module& m) {
       .def_readwrite("geodesic_distance",
                      &MultiGoalShortestPath::geodesicDistance);
 
+  py::class_<NavMeshSettings, NavMeshSettings::ptr>(m, "NavMeshSettings")
+      .def(py::init(&NavMeshSettings::create<>))
+      .def_readwrite("cell_size", &NavMeshSettings::cellSize)
+      .def_readwrite("cell_height", &NavMeshSettings::cellHeight)
+      .def_readwrite("agent_height", &NavMeshSettings::agentHeight)
+      .def_readwrite("agent_radius", &NavMeshSettings::agentRadius)
+      .def_readwrite("agent_max_climb", &NavMeshSettings::agentMaxClimb)
+      .def_readwrite("agent_max_slope", &NavMeshSettings::agentMaxSlope)
+      .def_readwrite("region_min_size", &NavMeshSettings::regionMinSize)
+      .def_readwrite("region_merge_size", &NavMeshSettings::regionMergeSize)
+      .def_readwrite("edge_max_len", &NavMeshSettings::edgeMaxLen)
+      .def_readwrite("edge_max_error", &NavMeshSettings::edgeMaxError)
+      .def_readwrite("verts_per_poly", &NavMeshSettings::vertsPerPoly)
+      .def_readwrite("detail_sample_dist", &NavMeshSettings::detailSampleDist)
+      .def_readwrite("detail_sample_max_error",
+                     &NavMeshSettings::detailSampleMaxError)
+      .def_readwrite("filter_low_hanging_obstacles",
+                     &NavMeshSettings::filterLowHangingObstacles)
+      .def_readwrite("filter_ledge_spans", &NavMeshSettings::filterLedgeSpans)
+      .def_readwrite("filter_walkable_low_height_spans",
+                     &NavMeshSettings::filterWalkableLowHeightSpans)
+      .def("set_defaults", &NavMeshSettings::setDefaults);
+
   py::class_<PathFinder, PathFinder::ptr>(m, "PathFinder")
       .def(py::init(&PathFinder::create<>))
       .def("get_bounds", &PathFinder::bounds)
+      .def("seed", &PathFinder::seed)
       .def("get_random_navigable_point", &PathFinder::getRandomNavigablePoint)
       .def("find_path", py::overload_cast<ShortestPath&>(&PathFinder::findPath),
            "path"_a)
@@ -101,3 +127,6 @@ void initShortestPathBindings(py::module& m) {
                &GreedyGeodesicFollowerImpl::findPath),
            py::return_value_policy::move);
 }
+
+}  // namespace nav
+}  // namespace esp

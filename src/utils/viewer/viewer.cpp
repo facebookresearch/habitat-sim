@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include <Magnum/configure.h>
+#include <Magnum/ImGuiIntegration/Context.hpp>
 #ifdef MAGNUM_TARGET_WEBGL
 #include <Magnum/Platform/EmscriptenApplication.h>
 #else
@@ -68,6 +69,9 @@ class Viewer : public Magnum::Platform::Application {
   void pokeLastObject();
   void pushLastObject();
 
+  void recomputeNavMesh(const std::string& sceneFilename,
+                        esp::nav::NavMeshSettings& navMeshSettings);
+
   void torqueLastObject();
   void removeLastObject();
   void invertGravity();
@@ -83,6 +87,9 @@ class Viewer : public Magnum::Platform::Application {
   scene::SceneManager sceneManager_;
 
   std::shared_ptr<physics::PhysicsManager> physicsManager_;
+
+  bool debugBullet_ = false;
+
   std::vector<int> sceneID_;
   scene::SceneNode* agentBodyNode_ = nullptr;
   scene::SceneNode* rgbSensorNode_ = nullptr;
@@ -99,7 +106,12 @@ class Viewer : public Magnum::Platform::Application {
 
   std::vector<int> objectIDs_;
 
+  bool drawObjectBBs = false;
+
   Magnum::Timeline timeline_;
+
+  ImGuiIntegration::Context imgui_{NoCreate};
+  bool showFPS_ = false;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -122,11 +134,27 @@ Viewer::Viewer(const Arguments& arguments)
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addBooleanOption("enable-physics")
+      .addBooleanOption("debug-bullet")
+      .setHelp("debug-bullet", "render Bullet physics debug wireframes")
       .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG)
       .setHelp("physics-config", "physics scene config file")
+      .addBooleanOption("recompute-navmesh")
+      .setHelp("recompute-navmesh", "programmatically generate scene navmesh")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = GL::defaultFramebuffer.viewport().size();
+
+  imgui_ = ImGuiIntegration::Context(Vector2{windowSize()} / dpiScaling(),
+                                     windowSize(), framebufferSize());
+
+  /* Set up proper blending to be used by ImGui. There's a great chance
+     you'll need this exact behavior for the rest of your scene. If not, set
+     this only for the drawFrame() call. */
+  GL::Renderer::setBlendEquation(GL::Renderer::BlendEquation::Add,
+                                 GL::Renderer::BlendEquation::Add);
+  GL::Renderer::setBlendFunction(
+      GL::Renderer::BlendFunction::SourceAlpha,
+      GL::Renderer::BlendFunction::OneMinusSourceAlpha);
 
   // Setup renderer and shader defaults
   GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
@@ -153,6 +181,9 @@ Viewer::Viewer(const Arguments& arguments)
                                     &drawables, physicsConfigFilename)) {
       LOG(FATAL) << "cannot load " << file;
     }
+    if (args.isSet("debug-bullet")) {
+      debugBullet_ = true;
+    }
   } else {
     if (!resourceManager_.loadScene(info, navSceneNode_, &drawables)) {
       LOG(FATAL) << "cannot load " << file;
@@ -167,25 +198,34 @@ Viewer::Viewer(const Arguments& arguments)
   rgbSensorNode_->translate({0.0f, rgbSensorHeight, 0.0f});
   agentBodyNode_->translate({0.0f, 0.0f, 5.0f});
 
-  float hfov = 90.0f;
-  int width = viewportSize[0];
-  int height = viewportSize[1];
-  float znear = 0.01f;
-  float zfar = 1000.0f;
-  renderCamera_->setProjectionMatrix(width, height, znear, zfar, hfov);
+  renderCamera_->setProjectionMatrix(viewportSize.x(),  // width
+                                     viewportSize.y(),  // height
+                                     0.01f,             // znear
+                                     1000.0f,           // zfar
+                                     90.0f);            // hfov
+  renderCamera_->setAspectRatioPolicy(
+      Magnum::SceneGraph::AspectRatioPolicy::Extend);
 
   // Load navmesh if available
-  const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
-  if (io::exists(navmeshFilename)) {
-    LOG(INFO) << "Loading navmesh from " << navmeshFilename;
-    pathfinder_->loadNavMesh(navmeshFilename);
-
-    const vec3f position = pathfinder_->getRandomNavigablePoint();
-    agentBodyNode_->setTranslation(Vector3(position));
+  if (file.compare(esp::assets::EMPTY_SCENE) != 0) {
+    const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
+    if (io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
+      LOG(INFO) << "Loading navmesh from " << navmeshFilename;
+      pathfinder_->loadNavMesh(navmeshFilename);
+    } else {
+      esp::nav::NavMeshSettings navMeshSettings;
+      navMeshSettings.setDefaults();
+      recomputeNavMesh(file, navMeshSettings);
+    }
   }
 
   // connect controls to navmesh if loaded
   if (pathfinder_->isLoaded()) {
+    // some scenes could have pathable roof polygons. We are not filtering
+    // those starting points here.
+    vec3f position = pathfinder_->getRandomNavigablePoint();
+    agentBodyNode_->setTranslation(Vector3(position));
+
     controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
       vec3f currentPosition = pathfinder_->tryStep(start, end);
       LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
@@ -214,8 +254,7 @@ void Viewer::addObject(std::string configFile) {
   Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
 
   auto& drawables = sceneGraph_->getDrawables();
-  assets::PhysicsObjectAttributes poa =
-      resourceManager_.getPhysicsObjectAttributes(configFile);
+
   int physObjectID = physicsManager_->addObject(configFile, &drawables);
   physicsManager_->setTranslation(physObjectID, new_pos);
 
@@ -231,11 +270,8 @@ void Viewer::addObject(std::string configFile) {
   physicsManager_->setRotation(
       physObjectID,
       Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
-  objectIDs_.push_back(physObjectID);
 
-  // const Magnum::Vector3& trans =
-  // physicsManager_->getTranslation(physObjectID); LOG(INFO) << "translation: "
-  // << trans[0] << ", " << trans[1] << ", " << trans[2];
+  objectIDs_.push_back(physObjectID);
 }
 
 void Viewer::removeLastObject() {
@@ -259,7 +295,7 @@ void Viewer::pokeLastObject() {
   Magnum::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  Vector3 impulse = T.transformPoint({0.0f, 0.0f, -3.0f});
+  Vector3 impulse = T.transformVector({0.0f, 0.0f, -3.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyImpulse(objectIDs_.back(), impulse, rel_pos);
 }
@@ -270,9 +306,25 @@ void Viewer::pushLastObject() {
   Magnum::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  Vector3 force = T.transformPoint({0.0f, 0.0f, -40.0f});
+  Vector3 force = T.transformVector({0.0f, 0.0f, -40.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
+}
+
+void Viewer::recomputeNavMesh(const std::string& sceneFilename,
+                              nav::NavMeshSettings& navMeshSettings) {
+  nav::PathFinder::ptr pf = nav::PathFinder::create();
+
+  assets::MeshData::uptr joinedMesh =
+      resourceManager_.createJoinedCollisionMesh(sceneFilename);
+
+  if (!pf->build(navMeshSettings, *joinedMesh)) {
+    LOG(ERROR) << "Failed to build navmesh";
+    return;
+  }
+
+  LOG(INFO) << "reconstruct navmesh successful";
+  pathfinder_ = pf;
 }
 
 void Viewer::torqueLastObject() {
@@ -333,7 +385,42 @@ void Viewer::drawEvent() {
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
-  renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
+  renderCamera_->draw(sceneGraph.getDrawables());
+
+  if (debugBullet_) {
+    Magnum::Matrix4 camM(renderCamera_->cameraMatrix());
+    Magnum::Matrix4 projM(renderCamera_->projectionMatrix());
+
+    physicsManager_->debugDraw(projM * camM);
+  }
+
+  imgui_.newFrame();
+
+  if (showFPS_) {
+    ImGui::SetNextWindowPos(ImVec2(10, 10));
+    ImGui::Begin("main", NULL,
+                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
+                     ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::SetWindowFontScale(2.0);
+    ImGui::Text("%.1f FPS", Double(ImGui::GetIO().Framerate));
+    ImGui::End();
+  }
+
+  /* Set appropriate states. If you only draw ImGui, it is sufficient to
+     just enable blending and scissor test in the constructor. */
+  GL::Renderer::enable(GL::Renderer::Feature::Blending);
+  GL::Renderer::enable(GL::Renderer::Feature::ScissorTest);
+  GL::Renderer::disable(GL::Renderer::Feature::FaceCulling);
+  GL::Renderer::disable(GL::Renderer::Feature::DepthTest);
+
+  imgui_.drawFrame();
+
+  /* Reset state. Only needed if you want to draw something else with
+     different state after. */
+  GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
+  GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
+  GL::Renderer::disable(GL::Renderer::Feature::ScissorTest);
+  GL::Renderer::disable(GL::Renderer::Feature::Blending);
 
   swapBuffers();
   timeline_.nextFrame();
@@ -342,13 +429,14 @@ void Viewer::drawEvent() {
 
 void Viewer::viewportEvent(ViewportEvent& event) {
   GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
-  renderCamera_->getMagnumCamera().setViewport(event.windowSize());
+  renderCamera_->setViewport(event.windowSize());
+  imgui_.relayout(Vector2{event.windowSize()} / event.dpiScaling(),
+                  event.windowSize(), event.framebufferSize());
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Left)
-    previousPosition_ =
-        positionOnSphere(renderCamera_->getMagnumCamera(), event.position());
+    previousPosition_ = positionOnSphere(*renderCamera_, event.position());
 
   event.setAccepted();
 }
@@ -383,7 +471,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   }
 
   const Vector3 currentPosition =
-      positionOnSphere(renderCamera_->getMagnumCamera(), event.position());
+      positionOnSphere(*renderCamera_, event.position());
   const Vector3 axis = Math::cross(previousPosition_, currentPosition);
 
   if (previousPosition_.length() < 0.001f || axis.length() < 0.001f) {
@@ -430,6 +518,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
+    case KeyEvent::Key::C:
+      showFPS_ = !showFPS_;
+      break;
     case KeyEvent::Key::S:
       controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
       LOG(INFO) << "Agent position "
@@ -456,6 +547,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         if (numObjects) {
           int randObjectID = rand() % numObjects;
           addObject(resourceManager_.getObjectConfig(randObjectID));
+
         } else
           LOG(WARNING) << "No objects loaded, can't add any";
       } else
@@ -485,6 +577,14 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       Magnum::DebugTools::screenshot(GL::defaultFramebuffer,
                                      "test_image_save.png");
       break;
+    case KeyEvent::Key::B: {
+      // toggle bounding box on objects
+      drawObjectBBs = !drawObjectBBs;
+      for (auto id : physicsManager_->getExistingObjectIDs()) {
+        physicsManager_->setObjectBBDraw(id, &sceneGraph_->getDrawables(),
+                                         drawObjectBBs);
+      }
+    } break;
     default:
       break;
   }

@@ -42,12 +42,20 @@
 find_path(ASSIMP_INCLUDE_DIR NAMES assimp/anim.h HINTS include)
 
 if(WIN32 AND MSVC)
-    if(MSVC12)
-        set(ASSIMP_MSVC_VERSION "vc120")
-    elseif(MSVC14)
-        set(ASSIMP_MSVC_VERSION "vc140")
+    # Adapted from https://github.com/assimp/assimp/blob/799fd74714f9ffac29004c6b5a674b3402524094/CMakeLists.txt#L645-L655
+    # with versions below MSVC 2015 (14.0 / 1900) removed, and the discouraged
+    # use of MSVCxy replaced with MSVC_VERSION. See also
+    # https://en.wikipedia.org/wiki/Microsoft_Visual_C%2B%2B#Internal_version_numbering
+    if(MSVC_TOOLSET_VERSION) # available only since CMake 3.12
+        set(ASSIMP_MSVC_VERSION vc${MSVC_TOOLSET_VERSION})
+    elseif(MSVC_VERSION VERSION_LESS 1910)
+        set(ASSIMP_MSVC_VERSION vc140)
+    elseif(MSVC_VERSION VERSION_LESS 1920)
+        set(ASSIMP_MSVC_VERSION vc141)
+    elseif(MSVC_VERSION VERSION_LESS 1930)
+        set(ASSIMP_MSVC_VERSION vc142)
     else()
-        message(SEND_ERROR "Unsupported MSVC version.")
+        message(FATAL_ERROR "Unsupported MSVC version")
     endif()
 
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -58,16 +66,18 @@ if(WIN32 AND MSVC)
 
     find_library(ASSIMP_LIBRARY_RELEASE assimp-${ASSIMP_MSVC_VERSION}-mt.lib PATHS ${ASSIMP_LIBRARY_DIR})
     find_library(ASSIMP_LIBRARY_DEBUG assimp-${ASSIMP_MSVC_VERSION}-mtd.lib PATHS ${ASSIMP_LIBRARY_DIR})
-
-    # Static build of Assimp (built with Vcpkg) depends on IrrXML, find that
-    # one as well. If not found, simply don't link to it --- it might be a
-    # dynamic build, or a static build using system IrrXML. Related issue:
-    # https://github.com/Microsoft/vcpkg/issues/5012
-    find_library(ASSIMP_IRRXML_LIBRARY_RELEASE IrrXML.lib)
-    find_library(ASSIMP_IRRXML_LIBRARY_DEBUG IrrXMLd.lib)
 else()
     find_library(ASSIMP_LIBRARY_RELEASE assimp)
     find_library(ASSIMP_LIBRARY_DEBUG assimpd)
+endif()
+
+# Static build of Assimp (built with Vcpkg, any system) depends on IrrXML, find
+# that one as well. If not found, simply don't link to it --- it might be a
+# dynamic build (on Windows it's a *.lib either way), or a static build using
+# system IrrXML. Related issue: https://github.com/Microsoft/vcpkg/issues/5012
+if(ASSIMP_LIBRARY_DEBUG MATCHES "${CMAKE_STATIC_LIBRARY_SUFFIX}$" OR ASSIMP_LIBRARY_RELEASE MATCHES "${CMAKE_STATIC_LIBRARY_SUFFIX}$")
+    find_library(ASSIMP_IRRXML_LIBRARY_RELEASE IrrXML)
+    find_library(ASSIMP_IRRXML_LIBRARY_DEBUG IrrXMLd)
 endif()
 
 include(SelectLibraryConfigurations)

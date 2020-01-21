@@ -162,6 +162,19 @@ class RigidObject : public scene::SceneNode {
   MotionType getMotionType() { return objectMotionType_; };
 
   /**
+   * @brief Shift the object's local origin by translating all children of this
+   * @ref RigidObject.
+   * @param shift The translation to apply to object's children.
+   */
+  virtual void shiftOrigin(const Magnum::Vector3& shift);
+
+  /**
+   * @brief Shift the object's local origin to be coincident with the center of
+   * it's bounding box, @ref cumulativeBB_. See @ref shiftOrigin.
+   */
+  void shiftOriginToBBCenter();
+
+  /**
    * @brief Apply a force to an object through a dervied dynamics
    * implementation. Does nothing for @ref MotionType::STATIC and @ref
    * MotionType::KINEMATIC objects.
@@ -438,6 +451,10 @@ class RigidObject : public scene::SceneNode {
   /** @brief public @ref esp::assets::Attributes object for user convenience.
    * Store whatever object attributes you want here! */
   assets::Attributes attributes_;
+
+  //! The @ref SceneNode of a bounding box debug drawable. If nullptr, BB
+  //! drawing is off. See @ref toggleBBDraw().
+  SceneNode* BBNode_ = nullptr;
 
  protected:
   /** @brief The @ref MotionType of the object. Determines what operations can

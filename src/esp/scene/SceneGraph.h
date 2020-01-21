@@ -10,7 +10,7 @@
 #include "SceneNode.h"
 #include "esp/gfx/RenderCamera.h"
 
-#include "esp/sensor/Sensor.h"
+#include "esp/sensor/VisualSensor.h"
 
 namespace esp {
 namespace scene {
@@ -30,7 +30,7 @@ class SceneGraph {
   // set the transformation, projection matrix to the default camera
   // TODO:
   // in the future, the parameter should be VisualSensor
-  void setDefaultRenderCamera(sensor::Sensor& sensor);
+  void setDefaultRenderCamera(sensor::VisualSensor& sensor);
 
   gfx::RenderCamera& getDefaultRenderCamera() { return defaultRenderCamera_; }
 

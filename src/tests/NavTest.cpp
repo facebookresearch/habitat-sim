@@ -106,3 +106,42 @@ TEST(NavTest, PathFinderTestCases) {
                     (testPath.requestedStart - testPath.requestedEnd).norm()),
            0.001);
 }
+
+TEST(NavTest, PathFinderTestNonNavigable) {
+  PathFinder pf;
+  pf.loadNavMesh(Cr::Utility::Directory::join(
+      SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
+
+  const vec3f nonNavigablePoint{1e2, 1e2, 1e2};
+
+  const vec3f resultPoint = pf.tryStep<vec3f>(
+      nonNavigablePoint, nonNavigablePoint + vec3f{0.25, 0, 0});
+
+  CHECK(nonNavigablePoint.isApprox(resultPoint));
+}
+
+TEST(NavTest, PathFinderTestSeed) {
+  PathFinder pf;
+  pf.loadNavMesh(Cr::Utility::Directory::join(
+      SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
+
+  // The same seed should produce the same point
+  pf.seed(1);
+  vec3f firstPoint = pf.getRandomNavigablePoint();
+  pf.seed(1);
+  vec3f secondPoint = pf.getRandomNavigablePoint();
+  ASSERT_TRUE(firstPoint == secondPoint);
+
+  // Different seeds should produce different points
+  pf.seed(2);
+  vec3f firstPoint2 = pf.getRandomNavigablePoint();
+  pf.seed(3);
+  vec3f secondPoint2 = pf.getRandomNavigablePoint();
+  ASSERT_TRUE(firstPoint2 != secondPoint2);
+
+  // One seed should produce different points when sampled twice
+  pf.seed(4);
+  vec3f firstPoint3 = pf.getRandomNavigablePoint();
+  vec3f secondPoint3 = pf.getRandomNavigablePoint();
+  ASSERT_TRUE(firstPoint3 != secondPoint3);
+}

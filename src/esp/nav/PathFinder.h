@@ -15,6 +15,9 @@ class dtNavMeshQuery;
 class dtQueryFilter;
 class dtQueryPathState;
 
+void dtFreeNavMesh(dtNavMesh* navmesh);
+void dtFreeNavMeshQuery(dtNavMeshQuery* navmeshQuery);
+
 namespace esp {
 // forward declaration
 namespace assets {
@@ -103,6 +106,8 @@ struct NavMeshSettings {
     filterLedgeSpans = true;
     filterWalkableLowHeightSpans = true;
   }
+
+  ESP_SMART_POINTERS(NavMeshSettings)
 };
 
 class PathFinder : public std::enable_shared_from_this<PathFinder> {
@@ -112,6 +117,17 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
     free();
     LOG(INFO) << "Deconstructing PathFinder";
   }
+
+  struct NavMeshDeleter {
+    void operator()(dtNavMesh* mesh) const { dtFreeNavMesh(mesh); }
+  };
+  using NavMeshUniquePtr = std::unique_ptr<dtNavMesh, NavMeshDeleter>;
+
+  struct NavMeshQueryDeleter {
+    void operator()(dtNavMeshQuery* query) const { dtFreeNavMeshQuery(query); }
+  };
+  using NavMeshQueryUniquePtr =
+      std::unique_ptr<dtNavMeshQuery, NavMeshQueryDeleter>;
 
   bool build(const NavMeshSettings& bs,
              const float* verts,
@@ -159,12 +175,13 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
 
  protected:
   bool initNavQuery();
+  void removeZeroAreaPolys();
   std::vector<vec3f> prevEnds;
 
   impl::IslandSystem* islandSystem_ = nullptr;
 
-  dtNavMesh* navMesh_;
-  dtNavMeshQuery* navQuery_;
+  NavMeshUniquePtr navMesh_;
+  NavMeshQueryUniquePtr navQuery_;
   dtQueryFilter* filter_;
   std::pair<vec3f, vec3f> bounds_;
   ESP_SMART_POINTERS(PathFinder)
