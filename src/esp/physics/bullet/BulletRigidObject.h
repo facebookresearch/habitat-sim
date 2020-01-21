@@ -361,6 +361,19 @@ class BulletRigidObject : public RigidObject {
    */
   void setMargin(const double margin);
 
+  /** @brief ets the object's collision shape to its bounding box.
+   * Since the bounding hierarchy is not constructed when the object is
+   * initialized, this needs to be called after loading the SceneNode.
+   */
+  void setCollisionFromBB();
+
+  /** @brief Public getter for @ref usingBBCollisionShape_ set from
+   * configuration.
+   * @return @ref usingBBCollisionShape_ is true if "useBoundingBoxForCollision"
+   * was set in object's configuration.
+   */
+  const bool isUsingBBCollisionShape() const { return usingBBCollisionShape_; };
+
   /**
    * @brief Return result of a discrete contact test between the object and
    * collision world.
@@ -379,10 +392,15 @@ class BulletRigidObject : public RigidObject {
   const Magnum::Range3D getCollisionShapeAabb() const;
 
  protected:
-  /** @brief Used to synchronize Bullet's notion of the object state
+  /**
+   * @brief Used to synchronize Bullet's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic
    * updates. See @ref btRigidBody::setWorldTransform. */
   void syncPose();
+
+  //! If true, the object's bounding box will be used for collision once
+  //! computed
+  bool usingBBCollisionShape_ = false;
 
  private:
   /** @brief A pointer to the Bullet world to which this object belongs. See
@@ -409,6 +427,10 @@ class BulletRigidObject : public RigidObject {
 
   //! Object data: All components of the collision shape
   std::unique_ptr<btCompoundShape> bObjectShape_;
+
+  //! list of @ref btCollisionShape for storing arbitrary collision shapes
+  //! referenced within the @ref bObjectShape_.
+  std::vector<std::unique_ptr<btCollisionShape>> bGenericShapes_;
 
   /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
    * wrapped into one @ref btRigidBody.

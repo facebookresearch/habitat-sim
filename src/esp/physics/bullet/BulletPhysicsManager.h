@@ -80,6 +80,9 @@ class BulletPhysicsManager : public PhysicsManager {
   bool addScene(const assets::PhysicsSceneAttributes& physicsSceneAttributes,
                 const std::vector<assets::CollisionMeshData>& meshGroup);
 
+  virtual int addObject(const int objectLibIndex,
+                        DrawableGroup* drawables) override;
+
   //============ Simulator functions =============
 
   /** @brief Step the physical world forward in time. Time may only advance in
