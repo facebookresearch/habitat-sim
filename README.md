@@ -207,7 +207,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 
     Linux
    ```bash
-   sudo apt-get install -y --no-install-recommends libbullet-dev
+   sudo apt-get install libbullet-dev
    ```
 
     Next, enable bullet physics build via:
