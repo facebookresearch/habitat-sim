@@ -177,6 +177,17 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   virtual void debugDraw(const Magnum::Matrix4& projTrans) const override;
 
+  /**
+   * @brief Check whether an object is in contact with any other objects or the
+   * scene.
+   *
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Whether or not the object is in contact with any other collision
+   * enabled objects.
+   */
+  bool contactTest(const int physObjectID);
+
  protected:
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;

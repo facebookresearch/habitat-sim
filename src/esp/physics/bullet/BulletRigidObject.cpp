@@ -550,6 +550,12 @@ double BulletRigidObject::getAngularDamping() {
   }
 }
 
+bool BulletRigidObject::contactTest() {
+  SimulationContactResultCallback src;
+  bWorld_->getCollisionWorld()->contactTest(bObjectRigidBody_.get(), src);
+  return src.bCollision;
+}
+
 const Magnum::Range3D BulletRigidObject::getCollisionShapeAabb() const {
   if (!bObjectShape_) {
     // e.g. empty scene
