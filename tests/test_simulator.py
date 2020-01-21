@@ -61,7 +61,7 @@ def test_sim_reset(sim):
         initial_state.rotation, new_state.rotation, rtol=1e-4
     )  # Numerical error can cause slight deviations
     assert same_position and same_rotation
-    
+
 
 def _test_keep_agent_tgt():
     sim_cfg = habitat_sim.SimulatorConfiguration()
@@ -90,4 +90,3 @@ def test_keep_agent():
     p.join()
 
     assert p.exitcode == 0
-
