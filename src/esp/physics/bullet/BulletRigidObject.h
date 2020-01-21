@@ -5,7 +5,8 @@
 #pragma once
 
 /** @file
- * @brief Class @ref esp::physics::BulletRigidObject
+ * @brief Struct SimulationContactResultCallback, class @ref
+ * esp::physics::BulletRigidObject
  */
 
 #include <btBulletDynamicsCommon.h>
@@ -18,6 +19,44 @@
 
 namespace esp {
 namespace physics {
+
+/**
+@brief Implements Bullet physics @ref btCollisionWorld::ContactResultCallback
+interface.
+
+Stores the results of a collision check within the world.
+*/
+struct SimulationContactResultCallback
+    : public btCollisionWorld::ContactResultCallback {
+  /**
+   * @brief Set when a contact is detected.
+   */
+  bool bCollision;
+
+  /**
+   * @brief Constructor.
+   */
+  SimulationContactResultCallback() { bCollision = false; }
+
+  /**
+   * @brief Called when a contact is detected.
+   *
+   * Sets a collision flag on every detected collision. Can be updated to do
+   * more.
+   * @param cp Contains detailed information about the contact point being
+   * added.
+   */
+  btScalar addSingleResult(btManifoldPoint& cp,
+                           const btCollisionObjectWrapper* colObj0Wrap,
+                           int partId0,
+                           int index0,
+                           const btCollisionObjectWrapper* colObj1Wrap,
+                           int partId1,
+                           int index1) {
+    bCollision = true;
+    return 0;  // not used
+  }
+};
 
 /**
 @brief An individual rigid object instance implementing an interface with Bullet
@@ -334,6 +373,16 @@ class BulletRigidObject : public RigidObject {
    * was set in object's configuration.
    */
   const bool isUsingBBCollisionShape() const { return usingBBCollisionShape_; };
+
+  /**
+   * @brief Return result of a discrete contact test between the object and
+   * collision world.
+   *
+   * See @ref SimulationContactResultCallback
+   * @return Whether or not the object is in contact with any other collision
+   * enabled objects.
+   */
+  bool contactTest();
 
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of

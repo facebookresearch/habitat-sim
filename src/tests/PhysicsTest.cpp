@@ -209,6 +209,46 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
   }
 }
 
+TEST_F(PhysicsManagerTest, DiscreteContactTest) {
+  LOG(INFO) << "Starting physics test: ContactTest";
+
+  std::string sceneFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  initScene(sceneFile);
+
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
+      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+    esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+    physicsObjectAttributes.setDouble("margin", 0.0);
+    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+    // generate two centered boxes with dimension 2x2x2
+    int objectId0 = physicsManager_->addObject(objectFile, nullptr);
+    int objectId1 = physicsManager_->addObject(objectFile, nullptr);
+
+    // place them in collision free location (0.1 about ground plane and 0.2
+    // apart)
+    physicsManager_->setTranslation(objectId0, Magnum::Vector3{0, 1.1, 0});
+    physicsManager_->setTranslation(objectId1, Magnum::Vector3{2.2, 1.1, 0});
+    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
+    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+
+    // move box 0 into floor
+    physicsManager_->setTranslation(objectId0, Magnum::Vector3{0, 0.9, 0});
+    ASSERT_TRUE(physicsManager_->contactTest(objectId0));
+    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+
+    // move box 0 into box 1
+    physicsManager_->setTranslation(objectId0, Magnum::Vector3{1.1, 1.1, 0});
+    ASSERT_TRUE(physicsManager_->contactTest(objectId0));
+    ASSERT_TRUE(physicsManager_->contactTest(objectId1));
+  }
+}
+
 TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
   // test that all different construction methods for a simple shape result in
   // the same Aabb for the given margin

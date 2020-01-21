@@ -228,5 +228,12 @@ void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
   bWorld_->debugDrawWorld();
 }
 
+bool BulletPhysicsManager::contactTest(const int physObjectID) {
+  assertIDValidity(physObjectID);
+  bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
+  return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+      ->contactTest();
+}
+
 }  // namespace physics
 }  // namespace esp
