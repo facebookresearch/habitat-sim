@@ -15,7 +15,8 @@
 namespace esp {
 namespace sensor {
 
-// Represents a sensor that provides data from the environment to an agent
+// Represents a sensor that provides visual data from the environment to an
+// agent
 class VisualSensor : public Sensor {
  public:
   using Sensor::Sensor;

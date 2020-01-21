@@ -109,7 +109,7 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
    *                to be displayed
    * @return Whether the display process was successful or not
    */
-  virtual bool displayObservation(gfx::Simulator& sim);
+  virtual bool displayObservation(gfx::Simulator& sim) = 0;
 
  protected:
   SensorSpec::ptr spec_ = nullptr;
