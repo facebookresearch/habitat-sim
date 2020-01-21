@@ -19,10 +19,8 @@ namespace scene {
 
 constexpr int kMaxIds = 10000; /* We shouldn't every need more than this. */
 
-bool SemanticScene::loadGibsonHouse(
-    const std::string& houseFilename,
-    SemanticScene& scene,
-    const quatf& worldRotation /* = quatf::Identity() */) {
+bool SemanticScene::
+    loadGibsonHouse(const std::string& houseFilename, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
   if (!Cr::Utility::Directory::exists(houseFilename)) {
     LOG(ERROR) << "Could not load file " << houseFilename;
     return false;
@@ -67,7 +65,24 @@ bool SemanticScene::loadGibsonHouse(
       scene.categories_.push_back(category);
       object->category_ = std::move(category);
     }
-    // TODO(msb) add support for aabb
+
+    const auto& jsonCenter = jsonObject["location"];
+    if (!jsonCenter.IsNull()) {
+      vec3f center = rotation * io::jsonToVec3f(jsonCenter);
+      const auto& jsonSize = jsonObject["size"];
+      vec3f size = vec3f::Zero();
+      if (!jsonSize.IsNull()) {
+        // Rotating sizes
+        size = (rotation * io::jsonToVec3f(jsonSize)).array().abs();
+      } else {
+        LOG(WARNING) << "Object size from " << categoryName
+                     << " isn't provided.";
+      }
+      object->obb_ = geo::OBB(center, size, quatf::Identity());
+    } else {
+      LOG(WARNING) << "Object center coordinates from " << categoryName
+                   << " aren't provided.";
+    }
     scene.objects_[id] = std::move(object);
   }
 
