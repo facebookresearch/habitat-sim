@@ -224,7 +224,7 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
    * @brief Finds the shortest path between two points on the navigation mesh
    *
    * @param[inout] path The @ref ShortestPath structure contain the starting and
-   * end point.  This method will populate the @ref ShortestPath.points and @ref
+   * end point. This method will populate the @ref ShortestPath.points and @ref
    * ShortestPath.geodesicDistance fields.
    *
    * @return Whether or not a path exists between @ref

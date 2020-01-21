@@ -235,7 +235,10 @@ class Simulator:
 
     def _step_filter(self, start_pos, end_pos):
         if self.pathfinder.is_loaded:
-            end_pos = self.pathfinder.try_step(start_pos, end_pos)
+            if self.config.sim_cfg.allow_sliding:
+                end_pos = self.pathfinder.try_step(start_pos, end_pos)
+            else:
+                end_pos = self.pathfinder.try_step_no_sliding(start_pos, end_pos)
 
         return end_pos
 
