@@ -5,7 +5,8 @@
 #pragma once
 
 /** @file
- * @brief Class @ref esp::physics::BulletRigidObject
+ * @brief Struct SimulationContactResultCallback, class @ref
+ * esp::physics::BulletRigidObject
  */
 
 #include <btBulletDynamicsCommon.h>
@@ -18,6 +19,44 @@
 
 namespace esp {
 namespace physics {
+
+/**
+@brief Implements Bullet physics @ref btCollisionWorld::ContactResultCallback
+interface.
+
+Stores the results of a collision check within the world.
+*/
+struct SimulationContactResultCallback
+    : public btCollisionWorld::ContactResultCallback {
+  /**
+   * @brief Set when a contact is detected.
+   */
+  bool bCollision;
+
+  /**
+   * @brief Constructor.
+   */
+  SimulationContactResultCallback() { bCollision = false; }
+
+  /**
+   * @brief Called when a contact is detected.
+   *
+   * Sets a collision flag on every detected collision. Can be updated to do
+   * more.
+   * @param cp Contains detailed information about the contact point being
+   * added.
+   */
+  btScalar addSingleResult(btManifoldPoint& cp,
+                           const btCollisionObjectWrapper* colObj0Wrap,
+                           int partId0,
+                           int index0,
+                           const btCollisionObjectWrapper* colObj1Wrap,
+                           int partId1,
+                           int index1) {
+    bCollision = true;
+    return 0;  // not used
+  }
+};
 
 /**
 @brief An individual rigid object instance implementing an interface with Bullet
@@ -322,11 +361,46 @@ class BulletRigidObject : public RigidObject {
    */
   void setMargin(const double margin);
 
+  /** @brief ets the object's collision shape to its bounding box.
+   * Since the bounding hierarchy is not constructed when the object is
+   * initialized, this needs to be called after loading the SceneNode.
+   */
+  void setCollisionFromBB();
+
+  /** @brief Public getter for @ref usingBBCollisionShape_ set from
+   * configuration.
+   * @return @ref usingBBCollisionShape_ is true if "useBoundingBoxForCollision"
+   * was set in object's configuration.
+   */
+  const bool isUsingBBCollisionShape() const { return usingBBCollisionShape_; };
+
+  /**
+   * @brief Return result of a discrete contact test between the object and
+   * collision world.
+   *
+   * See @ref SimulationContactResultCallback
+   * @return Whether or not the object is in contact with any other collision
+   * enabled objects.
+   */
+  bool contactTest();
+
+  /**
+   * @brief Query the Aabb from bullet physics for the root compound shape of
+   * the rigid body in its local space. See @ref btCompoundShape::getAabb.
+   * @return The Aabb.
+   */
+  const Magnum::Range3D getCollisionShapeAabb() const;
+
  protected:
-  /** @brief Used to synchronize Bullet's notion of the object state
+  /**
+   * @brief Used to synchronize Bullet's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic
    * updates. See @ref btRigidBody::setWorldTransform. */
   void syncPose();
+
+  //! If true, the object's bounding box will be used for collision once
+  //! computed
+  bool usingBBCollisionShape_ = false;
 
  private:
   /** @brief A pointer to the Bullet world to which this object belongs. See
@@ -353,6 +427,10 @@ class BulletRigidObject : public RigidObject {
 
   //! Object data: All components of the collision shape
   std::unique_ptr<btCompoundShape> bObjectShape_;
+
+  //! list of @ref btCollisionShape for storing arbitrary collision shapes
+  //! referenced within the @ref bObjectShape_.
+  std::vector<std::unique_ptr<btCollisionShape>> bGenericShapes_;
 
   /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
    * wrapped into one @ref btRigidBody.

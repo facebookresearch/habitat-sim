@@ -56,7 +56,7 @@ void initGfxBindings(py::module& m) {
   py::class_<Renderer, Renderer::ptr>(m, "Renderer")
       .def(py::init(&Renderer::create<>))
       .def("draw",
-           py::overload_cast<sensor::Sensor&, scene::SceneGraph&>(
+           py::overload_cast<sensor::VisualSensor&, scene::SceneGraph&>(
                &Renderer::draw),
            R"(Draw given scene using the visual sensor)", "visualSensor"_a,
            "scene"_a)
@@ -187,6 +187,8 @@ void initGfxBindings(py::module& m) {
       .def("apply_force", &Simulator::applyForce, "force"_a,
            "relative_position"_a, "object_id"_a, "sceneID"_a = 0)
       .def("apply_torque", &Simulator::applyTorque, "torque"_a, "object_id"_a,
+           "sceneID"_a = 0)
+      .def("contact_test", &Simulator::contactTest, "object_id"_a,
            "sceneID"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
            "navmesh_settings"_a);
