@@ -711,7 +711,7 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
     Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], pos);
 
     // locate the scene node which contains the current drawable
-    scene::SceneNode& node = staticDrawableInfo_[iEntry].node.get();
+    scene::SceneNode& node = staticDrawableInfo_[iEntry].node;
 
     // set the absolute axis aligned bounding box
     node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(pos)});
@@ -753,7 +753,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
     }
 
     // locate the scene node which contains the current drawable
-    scene::SceneNode& node = staticDrawableInfo_[iEntry].node.get();
+    scene::SceneNode& node = staticDrawableInfo_[iEntry].node;
 
     // set the absolute axis aligned bounding box
     node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(bbPos)});
@@ -771,7 +771,7 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations() {
   // so use the 1st element in the vector to obtain this scene
   auto* scene = dynamic_cast<Mn::SceneGraph::Scene<
       Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<float>>*>(
-      staticDrawableInfo_[0].node.get().scene());
+      staticDrawableInfo_[0].node.scene());
 
   // collect all drawable objects
   std::vector<std::reference_wrapper<Mn::SceneGraph::Object<
@@ -784,7 +784,7 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations() {
     objects.emplace_back(
         dynamic_cast<Mn::SceneGraph::Object<
             Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<
-                float>>&>(staticDrawableInfo_[iDrawable].node.get()));
+                float>>&>(staticDrawableInfo_[iDrawable].node));
   }
 
   // compute transformations of all objects in the group relative to the root,

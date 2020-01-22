@@ -525,7 +525,7 @@ class ResourceManager {
    * meshID is the index of the submesh corresponding to the drawable;
    */
   struct StaticDrawableInfo {
-    std::reference_wrapper<esp::scene::SceneNode> node;
+    esp::scene::SceneNode& node;
     uint32_t meshID;
   };
   /**
