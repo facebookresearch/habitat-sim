@@ -373,6 +373,8 @@ double Simulator::getWorldTime() {
 
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
                                  const nav::NavMeshSettings& navMeshSettings) {
+  CHECK(config_.createRenderer);
+
   assets::MeshData::uptr joinedMesh =
       resourceManager_.createJoinedCollisionMesh(config_.scene.id);
 
