@@ -1,4 +1,6 @@
 add_library(sim STATIC
+  Simulator.cpp
+  Simulator.h
   SimulatorWithAgents.cpp
   SimulatorWithAgents.h
 )

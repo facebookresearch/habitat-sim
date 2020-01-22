@@ -3,13 +3,5 @@
 # LICENSE file in the root directory of this source tree.
 
 from habitat_sim._ext.habitat_sim_bindings import Camera, Renderer, RenderTarget
-from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
-from habitat_sim._ext.habitat_sim_bindings import SimulatorConfiguration
 
-__all__ = [
-    "SimulatorBackend",
-    "SimulatorConfiguration",
-    "Camera",
-    "Renderer",
-    "RenderTarget",
-]
+__all__ = ["Camera", "Renderer", "RenderTarget"]
