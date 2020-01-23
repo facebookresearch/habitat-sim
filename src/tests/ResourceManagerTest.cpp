@@ -35,8 +35,6 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   std::string boxFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
 
-  printf("boxFile = %s\n", boxFile);
-
   int sceneID = sceneManager_.initSceneGraph();
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   esp::scene::SceneNode* navSceneNode = &sceneGraph.getRootNode().createChild();
@@ -91,7 +89,9 @@ TEST(ResourceManagerTest, computeAbsoluteAABB) {
   SceneManager sceneManager;
 
   std::string sceneFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/objects/5boxes.gltf");
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
+
+  // printf("sceneFile = %s\n", sceneFile.c_str());
 
   int sceneID = sceneManager.initSceneGraph();
   auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
@@ -114,4 +114,6 @@ TEST(ResourceManagerTest, computeAbsoluteAABB) {
              aabb->max().z());
     }
   }
+
+  ASSERT_TRUE(box != 0);
 }
