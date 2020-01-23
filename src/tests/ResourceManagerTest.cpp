@@ -2,8 +2,10 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/Containers/Optional.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/EigenIntegration/Integration.h>
+#include <Magnum/Math/Range.h>
 #include <gtest/gtest.h>
 #include <string>
 
@@ -15,6 +17,7 @@
 #include "configure.h"
 
 namespace Cr = Corrade;
+namespace Mn = Magnum;
 
 using esp::assets::ResourceManager;
 using esp::scene::SceneManager;
@@ -33,6 +36,8 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
 
   std::string boxFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
+
+  printf("boxFile = %s\n", boxFile);
 
   int sceneID = sceneManager_.initSceneGraph();
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
@@ -74,5 +79,41 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
     // Cr::Utility::Debug() << joinedBox->ibo[iix] << " vs " <<
     // indexGroundTruth[iix];
     ASSERT_EQ(indexGroundTruth[iix], joinedBox->ibo[iix]);
+  }
+}
+
+TEST(ResourceManagerTest, computeAbsoluteAABB) {
+  esp::gfx::WindowlessContext::uptr context_ =
+      esp::gfx::WindowlessContext::create_unique(0);
+
+  std::shared_ptr<esp::gfx::Renderer> renderer = esp::gfx::Renderer::create();
+
+  // must declare these in this order due to avoid deallocation errors
+  ResourceManager resourceManager;
+  SceneManager sceneManager;
+
+  std::string sceneFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/objects/5boxes.gltf");
+
+  int sceneID = sceneManager.initSceneGraph();
+  auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
+  esp::scene::SceneNode& sceneRootNode = sceneGraph.getRootNode();
+  auto& drawables = sceneGraph.getDrawables();
+  const esp::assets::AssetInfo info =
+      esp::assets::AssetInfo::fromPath(sceneFile);
+  bool loadSuccess =
+      resourceManager.loadScene(info, &sceneRootNode, &drawables);
+  ASSERT_EQ(loadSuccess, true);
+
+  int box = 0;
+  for (size_t iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
+    Cr::Containers::Optional<Mn::Range3D> aabb =
+        dynamic_cast<esp::scene::SceneNode&>(drawables[iDrawable].object())
+            .getAbsoluteAABB();
+    if (aabb) {
+      printf("Box %d = (%f, %f, %f), (%f, %f, %f)\n", box++, aabb->min().x(),
+             aabb->min().y(), aabb->min().z(), aabb->max().x(), aabb->max().y(),
+             aabb->max().z());
+    }
   }
 }
