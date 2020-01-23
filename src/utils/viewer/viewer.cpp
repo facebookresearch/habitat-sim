@@ -239,7 +239,7 @@ Viewer::Viewer(const Arguments& arguments)
     agentBodyNode_->setTranslation(Vector3(position));
 
     controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
-      vec3f currentPosition = pathfinder_->tryStepNoSliding(start, end);
+      vec3f currentPosition = pathfinder_->tryStep(start, end);
       LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
                 << quatf(agentBodyNode_->rotation()).coeffs().transpose();
       LOG(INFO) << "Distance to closest obstacle: "
