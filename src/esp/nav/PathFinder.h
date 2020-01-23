@@ -9,19 +9,10 @@
 
 #include "esp/core/esp.h"
 
-// forward declarations
-class dtNavMesh;
-class dtNavMeshQuery;
-class dtQueryFilter;
-class dtQueryPathState;
-
-void dtFreeNavMesh(dtNavMesh* navmesh);
-void dtFreeNavMeshQuery(dtNavMeshQuery* navmeshQuery);
-
 namespace esp {
 // forward declaration
 namespace assets {
-struct MeshData;
+class MeshData;
 }
 namespace nav {
 
@@ -30,11 +21,6 @@ struct HitRecord {
   vec3f hitNormal;
   float hitDist;
 };
-
-namespace impl {
-struct ActionSpaceGraph;
-class IslandSystem;
-}  // namespace impl
 
 struct ShortestPath {
   vec3f requestedStart;
@@ -110,24 +96,10 @@ struct NavMeshSettings {
   ESP_SMART_POINTERS(NavMeshSettings)
 };
 
-class PathFinder : public std::enable_shared_from_this<PathFinder> {
+class PathFinder {
  public:
   PathFinder();
-  ~PathFinder() {
-    free();
-    LOG(INFO) << "Deconstructing PathFinder";
-  }
-
-  struct NavMeshDeleter {
-    void operator()(dtNavMesh* mesh) const { dtFreeNavMesh(mesh); }
-  };
-  using NavMeshUniquePtr = std::unique_ptr<dtNavMesh, NavMeshDeleter>;
-
-  struct NavMeshQueryDeleter {
-    void operator()(dtNavMeshQuery* query) const { dtFreeNavMeshQuery(query); }
-  };
-  using NavMeshQueryUniquePtr =
-      std::unique_ptr<dtNavMeshQuery, NavMeshQueryDeleter>;
+  ~PathFinder() = default;
 
   bool build(const NavMeshSettings& bs,
              const float* verts,
@@ -153,9 +125,7 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
 
   bool saveNavMesh(const std::string& path);
 
-  void free();
-
-  bool isLoaded() { return navMesh_ != nullptr; }
+  bool isLoaded() const;
 
   void seed(uint32_t newSeed);
 
@@ -169,22 +139,9 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
 
   bool isNavigable(const vec3f& pt, const float maxYDelta = 0.5) const;
 
-  std::pair<vec3f, vec3f> bounds() const { return bounds_; }
+  std::pair<vec3f, vec3f> bounds() const;
 
-  friend impl::ActionSpaceGraph;
-
- protected:
-  bool initNavQuery();
-  void removeZeroAreaPolys();
-  std::vector<vec3f> prevEnds;
-
-  impl::IslandSystem* islandSystem_ = nullptr;
-
-  NavMeshUniquePtr navMesh_;
-  NavMeshQueryUniquePtr navQuery_;
-  dtQueryFilter* filter_;
-  std::pair<vec3f, vec3f> bounds_;
-  ESP_SMART_POINTERS(PathFinder)
+  ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(PathFinder);
 };
 
 }  // namespace nav
