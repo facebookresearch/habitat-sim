@@ -9,6 +9,7 @@
 
 #include "esp/core/esp.h"
 
+<<<<<<< HEAD
 // forward declarations
 class dtNavMesh;
 class dtNavMeshQuery;
@@ -17,10 +18,12 @@ class dtQueryFilter;
 void dtFreeNavMesh(dtNavMesh* navmesh);
 void dtFreeNavMeshQuery(dtNavMeshQuery* navmeshQuery);
 
+=======
+>>>>>>> 58c8f8632192967116e206db925b37cc7af6d312
 namespace esp {
 // forward declaration
 namespace assets {
-struct MeshData;
+class MeshData;
 }
 
 namespace nav {
@@ -34,10 +37,13 @@ struct HitRecord {
   float hitDist;
 };
 
+<<<<<<< HEAD
 /**
  * @brief Struct for shortest path finding. Used in conjunction with @ref
  * PathFinder.findPath
  */
+=======
+>>>>>>> 58c8f8632192967116e206db925b37cc7af6d312
 struct ShortestPath {
   /**
    * @brief The starting point for the path
@@ -162,18 +168,10 @@ struct NavMeshSettings {
  * finding and collision queries on that navmesh
  *
  */
-class PathFinder : public std::enable_shared_from_this<PathFinder> {
+class PathFinder {
  public:
-  struct NavMeshDeleter {
-    void operator()(dtNavMesh* mesh) const { dtFreeNavMesh(mesh); }
-  };
-  using NavMeshUniquePtr = std::unique_ptr<dtNavMesh, NavMeshDeleter>;
-
-  struct NavMeshQueryDeleter {
-    void operator()(dtNavMeshQuery* query) const { dtFreeNavMeshQuery(query); }
-  };
-  using NavMeshQueryUniquePtr =
-      std::unique_ptr<dtNavMeshQuery, NavMeshQueryDeleter>;
+  PathFinder();
+  ~PathFinder() = default;
 
   /**
    * @brief Constructor.
@@ -240,17 +238,13 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
    * @return The found end location
    */
   template <typename T>
-  T tryStep(const T& start, const T& end) {
-    return tryStepImpl(start, end, true);
-  }
+  T tryStep(const T& start, const T& end);
 
   /**
    * @brief Same as @ref tryStep but does not allow for sliding along walls
    */
   template <typename T>
-  T tryStepNoSliding(const T& start, const T& end) {
-    return tryStepImpl(start, end, false);
-  }
+  T tryStepNoSliding(const T& start, const T& end);
 
   /**
    * @brief Snaps a point to the navigation mesh
@@ -285,7 +279,7 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
   /**
    * @return If a navigation mesh is current loaded or not
    */
-  bool isLoaded() { return navMesh_ != nullptr; }
+  bool isLoaded() const;
 
   /**
    * @brief Seed the pathfinder.  Useful for @ref getRandomNavigablePoint
@@ -343,21 +337,9 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
   /**
    * @return The axis aligned bounding box containing the navigation mesh.
    */
-  std::pair<vec3f, vec3f> bounds() const { return bounds_; }
+  std::pair<vec3f, vec3f> bounds() const;
 
- protected:
-  bool initNavQuery();
-  void removeZeroAreaPolys();
-  template <typename T>
-  T tryStepImpl(const T& start, const T& end, bool allowSliding);
-
-  impl::IslandSystem* islandSystem_;
-
-  NavMeshUniquePtr navMesh_;
-  NavMeshQueryUniquePtr navQuery_;
-  dtQueryFilter* filter_;
-  std::pair<vec3f, vec3f> bounds_;
-  ESP_SMART_POINTERS(PathFinder)
+  ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(PathFinder);
 };
 
 }  // namespace nav
