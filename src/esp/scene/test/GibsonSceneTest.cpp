@@ -14,9 +14,9 @@
 
 namespace Cr = Corrade;
 
-using esp::gfx::SimulatorConfiguration;
 using esp::scene::SceneConfiguration;
 using esp::scene::SemanticScene;
+using esp::sim::SimulatorConfiguration;
 using esp::sim::SimulatorWithAgents;
 
 const std::string houseFilename = SCENE_DIR "/GibsonSceneTest/test.scn";

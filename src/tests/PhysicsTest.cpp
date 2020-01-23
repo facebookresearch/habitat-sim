@@ -6,7 +6,7 @@
 #include <gtest/gtest.h>
 #include <string>
 
-#include "esp/gfx/Simulator.h"
+#include "esp/sim/Simulator.h"
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/Renderer.h"

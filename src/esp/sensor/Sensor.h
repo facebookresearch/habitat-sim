@@ -10,7 +10,7 @@
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
-namespace gfx {
+namespace sim {
 class Simulator;
 }
 
@@ -100,7 +100,7 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
 
   virtual bool isVisualSensor() { return false; }
 
-  virtual bool getObservation(gfx::Simulator& sim, Observation& obs) = 0;
+  virtual bool getObservation(sim::Simulator& sim, Observation& obs) = 0;
   virtual bool getObservationSpace(ObservationSpace& space) = 0;
 
   /**
@@ -109,7 +109,7 @@ class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
    *                to be displayed
    * @return Whether the display process was successful or not
    */
-  virtual bool displayObservation(gfx::Simulator& sim) = 0;
+  virtual bool displayObservation(sim::Simulator& sim) = 0;
 
  protected:
   SensorSpec::ptr spec_ = nullptr;

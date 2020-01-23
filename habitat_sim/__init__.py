@@ -24,6 +24,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         nav,
         scene,
         sensor,
+        sim,
         simulator,
         utils,
     )

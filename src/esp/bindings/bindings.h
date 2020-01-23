@@ -29,4 +29,8 @@ namespace sensor {
 void initSensorBindings(pybind11::module& m);
 }
 
+namespace sim {
+void initSimBindings(pybind11::module& m);
+}
+
 }  // namespace esp
