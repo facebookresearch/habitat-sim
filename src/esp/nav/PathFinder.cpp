@@ -225,9 +225,17 @@ enum PolyFlags {
 
 PathFinder::PathFinder()
     : islandSystem_{nullptr}, navMesh_{nullptr}, navQuery_{nullptr} {
-  filter_.reset(new dtQueryFilter);
+  filter_ = new dtQueryFilter;
   filter_->setIncludeFlags(POLYFLAGS_WALK);
   filter_->setExcludeFlags(0);
+}
+
+PathFinder::~PathFinder() {
+  if (filter_)
+    delete filter_;
+
+  if (islandSystem_)
+    delete islandSystem_;
 }
 
 bool PathFinder::build(const NavMeshSettings& bs,
@@ -553,7 +561,10 @@ bool PathFinder::initNavQuery() {
     return false;
   }
 
-  islandSystem_.reset(new impl::IslandSystem{navMesh_.get(), filter_.get()});
+  if (islandSystem_)
+    delete islandSystem_;
+
+  islandSystem_ = new impl::IslandSystem{navMesh_.get(), filter_};
 
   return true;
 }
@@ -794,8 +805,7 @@ static float frand() {
 vec3f PathFinder::getRandomNavigablePoint() {
   dtPolyRef ref;
   vec3f pt;
-  dtStatus status =
-      navQuery_->findRandomPoint(filter_.get(), frand, &ref, pt.data());
+  dtStatus status = navQuery_->findRandomPoint(filter_, frand, &ref, pt.data());
   if (!dtStatusSucceed(status)) {
     LOG(ERROR) << "Failed to getRandomNavigablePoint";
   }
@@ -828,7 +838,7 @@ bool PathFinder::findPath(MultiGoalShortestPath& path) {
   int numPolys = 0;
   dtStatus status;
   std::tie(status, startRef, pathStart) =
-      projectToPoly(path.requestedStart, navQuery_.get(), filter_.get());
+      projectToPoly(path.requestedStart, navQuery_.get(), filter_);
 
   if (status != DT_SUCCESS || startRef == 0) {
     return false;
@@ -841,7 +851,7 @@ bool PathFinder::findPath(MultiGoalShortestPath& path) {
     pathEnds.emplace_back();
     endRefs.emplace_back();
     std::tie(status, endRefs.back(), pathEnds.back()) =
-        projectToPoly(rqEnd, navQuery_.get(), filter_.get());
+        projectToPoly(rqEnd, navQuery_.get(), filter_);
 
     pathEndsCoords.emplace_back(pathEnds.back()[0]);
     pathEndsCoords.emplace_back(pathEnds.back()[1]);
@@ -872,7 +882,7 @@ bool PathFinder::findPath(MultiGoalShortestPath& path) {
   int goalFoundIdx;
   status = navQuery_->findBidirPathToAny(
       endRefs.size(), startRef, endRefs.data(), path.requestedStart.data(),
-      pathEndsCoords.data(), filter_.get(), polys, &numPolys, MAX_POLYS,
+      pathEndsCoords.data(), filter_, polys, &numPolys, MAX_POLYS,
       &goalFoundIdx);
   if (status != DT_SUCCESS) {
     return false;
@@ -923,9 +933,9 @@ T PathFinder::tryStepImpl(const T& start, const T& end, bool allowSliding) {
   dtPolyRef startRef, endRef;
   vec3f pathStart;
   std::tie(startStatus, startRef, pathStart) =
-      projectToPoly(start, navQuery_.get(), filter_.get());
+      projectToPoly(start, navQuery_.get(), filter_);
   std::tie(endStatus, endRef, std::ignore) =
-      projectToPoly(end, navQuery_.get(), filter_.get());
+      projectToPoly(end, navQuery_.get(), filter_);
 
   if (dtStatusFailed(startStatus) || dtStatusFailed(endStatus)) {
     return start;
@@ -937,9 +947,9 @@ T PathFinder::tryStepImpl(const T& start, const T& end, bool allowSliding) {
 
   vec3f endPoint;
   int numPolys;
-  navQuery_->moveAlongSurface(startRef, pathStart.data(), end.data(),
-                              filter_.get(), endPoint.data(), polys, &numPolys,
-                              MAX_POLYS, allowSliding);
+  navQuery_->moveAlongSurface(startRef, pathStart.data(), end.data(), filter_,
+                              endPoint.data(), polys, &numPolys, MAX_POLYS,
+                              allowSliding);
   // If there isn't any possible path between start and end, just return
   // start, that is cleanest
   if (numPolys == 0) {
@@ -962,7 +972,7 @@ T PathFinder::tryStepImpl(const T& start, const T& end, bool allowSliding) {
   // is in the same connected component as the startRef according to
   // findNearestPoly
   std::tie(std::ignore, endRef, std::ignore) =
-      projectToPoly(endPoint, navQuery_.get(), filter_.get());
+      projectToPoly(endPoint, navQuery_.get(), filter_);
   if (!this->islandSystem_->hasConnection(startRef, endRef)) {
     // There isn't a connection!  This happens when endPoint is on an edge
     // shared between two different connected components (aka infinitely thin
@@ -994,7 +1004,7 @@ T PathFinder::snapPoint(const T& pt) {
   dtStatus status;
   vec3f projectedPt;
   std::tie(status, std::ignore, projectedPt) =
-      projectToPoly(pt, navQuery_.get(), filter_.get());
+      projectToPoly(pt, navQuery_.get(), filter_);
 
   if (dtStatusSucceed(status)) {
     return T{projectedPt};
@@ -1010,7 +1020,7 @@ float PathFinder::islandRadius(const vec3f& pt) const {
   dtPolyRef ptRef;
   dtStatus status;
   std::tie(status, ptRef, std::ignore) =
-      projectToPoly(pt, navQuery_.get(), filter_.get());
+      projectToPoly(pt, navQuery_.get(), filter_);
   if (status != DT_SUCCESS || ptRef == 0) {
     return 0.0;
   } else {
@@ -1030,8 +1040,7 @@ HitRecord PathFinder::closestObstacleSurfacePoint(
   dtPolyRef ptRef;
   dtStatus status;
   vec3f polyPt;
-  std::tie(status, ptRef, polyPt) =
-      projectToPoly(pt, navQuery_.get(), filter_.get());
+  std::tie(status, ptRef, polyPt) = projectToPoly(pt, navQuery_.get(), filter_);
   if (status != DT_SUCCESS || ptRef == 0) {
     return {vec3f(0, 0, 0), vec3f(0, 0, 0),
             std::numeric_limits<float>::infinity()};
@@ -1039,7 +1048,7 @@ HitRecord PathFinder::closestObstacleSurfacePoint(
     vec3f hitPos, hitNormal;
     float hitDist;
     navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
-                                  filter_.get(), &hitDist, hitPos.data(),
+                                  filter_, &hitDist, hitPos.data(),
                                   hitNormal.data());
     return {hitPos, hitNormal, hitDist};
   }
@@ -1050,8 +1059,7 @@ bool PathFinder::isNavigable(const vec3f& pt,
   dtPolyRef ptRef;
   dtStatus status;
   vec3f polyPt;
-  std::tie(status, ptRef, polyPt) =
-      projectToPoly(pt, navQuery_.get(), filter_.get());
+  std::tie(status, ptRef, polyPt) = projectToPoly(pt, navQuery_.get(), filter_);
 
   if (status != DT_SUCCESS || ptRef == 0)
     return false;

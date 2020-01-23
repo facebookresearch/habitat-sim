@@ -26,9 +26,6 @@ struct MeshData;
 namespace nav {
 namespace impl {
 class IslandSystem;
-void freeIslandSystem(IslandSystem* is);
-
-void freeDtQueryFilter(dtQueryFilter* filter);
 }  // namespace impl
 
 struct HitRecord {
@@ -178,26 +175,11 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
   using NavMeshQueryUniquePtr =
       std::unique_ptr<dtNavMeshQuery, NavMeshQueryDeleter>;
 
-  struct IslandSystemDeleter {
-    void operator()(impl::IslandSystem* is) const {
-      impl::freeIslandSystem(is);
-    }
-  };
-  using IslandSystemUniquePtr =
-      std::unique_ptr<impl::IslandSystem, IslandSystemDeleter>;
-
-  struct dtQueryFilterDeleter {
-    void operator()(dtQueryFilter* filter) const {
-      impl::freeDtQueryFilter(filter);
-    }
-  };
-  using dtQueryFilterUniquePtr =
-      std::unique_ptr<dtQueryFilter, dtQueryFilterDeleter>;
-
   /**
    * @brief Constructor.
    */
   PathFinder();
+  ~PathFinder();
 
   bool build(const NavMeshSettings& bs,
              const float* verts,
@@ -369,11 +351,11 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
   template <typename T>
   T tryStepImpl(const T& start, const T& end, bool allowSliding);
 
-  IslandSystemUniquePtr islandSystem_;
+  impl::IslandSystem* islandSystem_;
 
   NavMeshUniquePtr navMesh_;
   NavMeshQueryUniquePtr navQuery_;
-  dtQueryFilterUniquePtr filter_;
+  dtQueryFilter* filter_;
   std::pair<vec3f, vec3f> bounds_;
   ESP_SMART_POINTERS(PathFinder)
 };
