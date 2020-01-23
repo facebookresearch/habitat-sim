@@ -91,7 +91,10 @@ agent::Agent::ptr SimulatorWithAgents::addAgent(
 
   // Add a RenderTarget to each of the agent's sensors
   for (auto& it : ag->getSensorSuite().getSensors()) {
-    renderer_->bindRenderTarget(it.second);
+    if (it.second->isVisualSensor()) {
+      auto sensor = static_cast<sensor::VisualSensor*>(it.second.get());
+      renderer_->bindRenderTarget(*sensor);
+    }
   }
 
   agents_.push_back(ag);

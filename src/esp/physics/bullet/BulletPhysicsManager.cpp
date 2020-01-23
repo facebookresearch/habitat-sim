@@ -97,6 +97,23 @@ int BulletPhysicsManager::makeRigidObject(
   return newObjectID;
 }
 
+int BulletPhysicsManager::addObject(const int objectLibIndex,
+                                    DrawableGroup* drawables) {
+  // Do default load first (adds the SceneNode to the SceneGraph and computes
+  // the cumulativeBB_)
+  int objID = PhysicsManager::addObject(objectLibIndex, drawables);
+
+  // Then set the collision shape to the cumulativeBB_ if necessary
+  if (objID != ID_UNDEFINED) {
+    BulletRigidObject* bro =
+        static_cast<BulletRigidObject*>(existingObjects_.at(objID));
+    if (bro->isUsingBBCollisionShape()) {
+      bro->setCollisionFromBB();
+    }
+  }
+  return objID;
+}
+
 //! Check if mesh primitive is compatible with physics
 bool BulletPhysicsManager::isMeshPrimitiveValid(
     const assets::CollisionMeshData& meshData) {
@@ -195,9 +212,27 @@ double BulletPhysicsManager::getSceneRestitutionCoefficient() const {
       ->getRestitutionCoefficient();
 }
 
+const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
+    const int physObjectID) const {
+  assertIDValidity(physObjectID);
+  return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+      ->getCollisionShapeAabb();
+}
+
+const Magnum::Range3D BulletPhysicsManager::getSceneCollisionShapeAabb() const {
+  return static_cast<BulletRigidObject*>(sceneNode_)->getCollisionShapeAabb();
+}
+
 void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
   debugDrawer_.setTransformationProjectionMatrix(projTrans);
   bWorld_->debugDrawWorld();
+}
+
+bool BulletPhysicsManager::contactTest(const int physObjectID) {
+  assertIDValidity(physObjectID);
+  bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
+  return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+      ->contactTest();
 }
 
 }  // namespace physics

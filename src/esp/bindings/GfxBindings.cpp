@@ -36,7 +36,7 @@ namespace gfx {
 void initGfxBindings(py::module& m) {
   // ==== RenderCamera ====
   py::class_<RenderCamera, Magnum::SceneGraph::PyFeature<RenderCamera>,
-             Magnum::SceneGraph::AbstractFeature3D,
+             Magnum::SceneGraph::Camera3D,
              Magnum::SceneGraph::PyFeatureHolder<RenderCamera>>(
       m, "Camera",
       R"(RenderCamera: The object of this class is a camera attached
@@ -47,12 +47,6 @@ void initGfxBindings(py::module& m) {
         Set this `Camera`'s projection matrix.
       )",
            "width"_a, "height"_a, "znear"_a, "zfar"_a, "hfov"_a)
-      .def("getProjectionMatrix", &RenderCamera::getProjectionMatrix, R"(
-        Get this `Camera`'s projection matrix.
-      )")
-      .def("getCameraMatrix", &RenderCamera::getCameraMatrix, R"(
-        Get this `Camera`'s camera matrix.
-      )")
       .def_property_readonly("node", nodeGetter<RenderCamera>,
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<RenderCamera>,
@@ -62,7 +56,7 @@ void initGfxBindings(py::module& m) {
   py::class_<Renderer, Renderer::ptr>(m, "Renderer")
       .def(py::init(&Renderer::create<>))
       .def("draw",
-           py::overload_cast<sensor::Sensor&, scene::SceneGraph&>(
+           py::overload_cast<sensor::VisualSensor&, scene::SceneGraph&>(
                &Renderer::draw),
            R"(Draw given scene using the visual sensor)", "visualSensor"_a,
            "scene"_a)
@@ -193,6 +187,8 @@ void initGfxBindings(py::module& m) {
       .def("apply_force", &Simulator::applyForce, "force"_a,
            "relative_position"_a, "object_id"_a, "sceneID"_a = 0)
       .def("apply_torque", &Simulator::applyTorque, "torque"_a, "object_id"_a,
+           "sceneID"_a = 0)
+      .def("contact_test", &Simulator::contactTest, "object_id"_a,
            "sceneID"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
            "navmesh_settings"_a);

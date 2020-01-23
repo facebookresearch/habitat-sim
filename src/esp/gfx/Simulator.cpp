@@ -53,6 +53,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   std::string houseFilename = io::changeExtension(sceneFilename, ".house");
+  if (!io::exists(houseFilename)) {
+    houseFilename = io::changeExtension(sceneFilename, ".scn");
+  }
   if (cfg.scene.filepaths.count("house")) {
     houseFilename = cfg.scene.filepaths.at("house");
   }
@@ -344,6 +347,13 @@ Magnum::Quaternion Simulator::getRotation(const int objectID,
     return physicsManager_->getRotation(objectID);
   }
   return Magnum::Quaternion();
+}
+
+bool Simulator::contactTest(const int objectID, const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->contactTest(objectID);
+  }
+  return false;
 }
 
 double Simulator::stepWorld(const double dt) {
