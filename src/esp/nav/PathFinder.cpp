@@ -180,18 +180,6 @@ class IslandSystem {
     }
   }
 };
-
-void freeIslandSystem(IslandSystem* is) {
-  if (is != nullptr) {
-    delete is;
-  }
-}
-
-void freeDtQueryFilter(dtQueryFilter* filter) {
-  if (filter != nullptr) {
-    delete filter;
-  }
-}
 }  // namespace impl
 
 namespace {
