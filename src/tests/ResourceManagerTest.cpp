@@ -79,10 +79,9 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
 }
 
 TEST(ResourceManagerTest, computeAbsoluteAABB) {
+  // must create a GL context which will be used in the resource manager
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
-
-  std::shared_ptr<esp::gfx::Renderer> renderer = esp::gfx::Renderer::create();
 
   // must declare these in this order due to avoid deallocation errors
   ResourceManager resourceManager;
@@ -90,8 +89,6 @@ TEST(ResourceManagerTest, computeAbsoluteAABB) {
 
   std::string sceneFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
-
-  // printf("sceneFile = %s\n", sceneFile.c_str());
 
   int sceneID = sceneManager.initSceneGraph();
   auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
@@ -101,19 +98,50 @@ TEST(ResourceManagerTest, computeAbsoluteAABB) {
       esp::assets::AssetInfo::fromPath(sceneFile);
   bool loadSuccess =
       resourceManager.loadScene(info, &sceneRootNode, &drawables);
-  ASSERT_EQ(loadSuccess, true);
+  CHECK_EQ(loadSuccess, true);
 
-  int box = 0;
+  std::vector<Mn::Range3D> aabbs;
   for (size_t iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
     Cr::Containers::Optional<Mn::Range3D> aabb =
         dynamic_cast<esp::scene::SceneNode&>(drawables[iDrawable].object())
             .getAbsoluteAABB();
     if (aabb) {
-      printf("Box %d = (%f, %f, %f), (%f, %f, %f)\n", box++, aabb->min().x(),
-             aabb->min().y(), aabb->min().z(), aabb->max().x(), aabb->max().y(),
-             aabb->max().z());
+      aabbs.emplace_back(*aabb);
     }
   }
 
-  ASSERT_TRUE(box != 0);
+  /* ground truth
+   *
+   * Objects: (TODO: add more objects to the test, e.g., sphere, cylinder)
+   *  a) a cube, with edge length 2.0
+   *
+   */
+  std::vector<Mn::Range3D> aabbsGroundTruth;
+  // Box 0: root (parent: null), object "a", centered at origin
+  aabbsGroundTruth.emplace_back(Mn::Vector3{-1.0, -1.0, -1.0},
+                                Mn::Vector3{1.0, 1.0, 1.0});
+  // Box 1: (parent, Box 0), object "a", relative translation (0.0, -4.0, 0.0)
+  aabbsGroundTruth.emplace_back(Mn::Vector3{-1.0, -5.0, -1.0},
+                                Mn::Vector3{1.0, -3.0, 1.0});
+  // Box 2: (parent, Box 1), object "a", relative translation (0.0, 0.0, 4.0)
+  aabbsGroundTruth.emplace_back(Mn::Vector3{-1.0, -5.0, 3.0},
+                                Mn::Vector3{1.0, -3.0, 5.0});
+  // Box 3: (parent, Box 0), object "a", relative translation (-4.0, 0.0, 4.0),
+  // relative rotation pi/4 (ccw) around local z-axis of Box 3
+  aabbsGroundTruth.emplace_back(Mn::Vector3{-4.0 - sqrt(2.0), -sqrt(2.0), 3.0},
+                                Mn::Vector3{-4.0 + sqrt(2.0), sqrt(2.0), 5.0});
+  // Box 4: (parent, Box 3), object "a", relative translation (8.0, 0.0, 0.0),
+  // relative rotation pi/4 (ccw) around local z-axis of Box 4
+  aabbsGroundTruth.emplace_back(Mn::Vector3{3.0, -1.0, 3.0},
+                                Mn::Vector3{5.0, 1.0, 5.0});
+
+  // compare against the ground truth
+  CHECK_EQ(aabbs.size(), aabbsGroundTruth.size());
+  const float epsilon = 1e-6;
+  for (size_t iBox = 0; iBox < aabbsGroundTruth.size(); ++iBox) {
+    CHECK_LE(std::abs((aabbs[iBox].min() - aabbsGroundTruth[iBox].min()).dot()),
+             epsilon);
+    CHECK_LE(std::abs((aabbs[iBox].max() - aabbsGroundTruth[iBox].max()).dot()),
+             epsilon);
+  }
 }
