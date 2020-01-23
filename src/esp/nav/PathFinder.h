@@ -9,17 +9,6 @@
 
 #include "esp/core/esp.h"
 
-<<<<<<< HEAD
-// forward declarations
-class dtNavMesh;
-class dtNavMeshQuery;
-class dtQueryFilter;
-
-void dtFreeNavMesh(dtNavMesh* navmesh);
-void dtFreeNavMeshQuery(dtNavMeshQuery* navmeshQuery);
-
-=======
->>>>>>> 58c8f8632192967116e206db925b37cc7af6d312
 namespace esp {
 // forward declaration
 namespace assets {
@@ -27,9 +16,6 @@ class MeshData;
 }
 
 namespace nav {
-namespace impl {
-class IslandSystem;
-}  // namespace impl
 
 struct HitRecord {
   vec3f hitPos;
@@ -37,13 +23,10 @@ struct HitRecord {
   float hitDist;
 };
 
-<<<<<<< HEAD
 /**
  * @brief Struct for shortest path finding. Used in conjunction with @ref
  * PathFinder.findPath
  */
-=======
->>>>>>> 58c8f8632192967116e206db925b37cc7af6d312
 struct ShortestPath {
   /**
    * @brief The starting point for the path
@@ -170,14 +153,11 @@ struct NavMeshSettings {
  */
 class PathFinder {
  public:
-  PathFinder();
-  ~PathFinder() = default;
-
   /**
    * @brief Constructor.
    */
   PathFinder();
-  ~PathFinder();
+  ~PathFinder() = default;
 
   bool build(const NavMeshSettings& bs,
              const float* verts,

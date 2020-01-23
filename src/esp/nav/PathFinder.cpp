@@ -1140,7 +1140,7 @@ template Mn::Vector3 PathFinder::tryStep<Mn::Vector3>(const Mn::Vector3&,
 
 template <typename T>
 T PathFinder::tryStep(const T& start, const T& end) {
-  return pimpl_->tryStep(start, end, true);
+  return pimpl_->tryStep(start, end, /*allowSliding=*/true);
 }
 
 template vec3f PathFinder::tryStepNoSliding<vec3f>(const vec3f&, const vec3f&);
@@ -1150,7 +1150,7 @@ template Mn::Vector3 PathFinder::tryStepNoSliding<Mn::Vector3>(
 
 template <typename T>
 T PathFinder::tryStepNoSliding(const T& start, const T& end) {
-  return pimpl_->tryStep(start, end, false);
+  return pimpl_->tryStep(start, end, /*allowSliding=*/false);
 }
 
 template vec3f PathFinder::snapPoint<vec3f>(const vec3f& pt);
