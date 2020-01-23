@@ -25,9 +25,12 @@ namespace scene {
 class SemanticScene;
 }  // namespace scene
 namespace gfx {
-
-// forward declarations
 class Renderer;
+}  // namespace gfx
+}  // namespace esp
+
+namespace esp {
+namespace sim {
 
 struct SimulatorConfiguration {
   scene::SceneConfiguration scene;
@@ -61,7 +64,7 @@ class Simulator {
 
   virtual void seed(uint32_t newSeed);
 
-  std::shared_ptr<Renderer> getRenderer();
+  std::shared_ptr<gfx::Renderer> getRenderer();
   std::shared_ptr<physics::PhysicsManager> getPhysicsManager();
   std::shared_ptr<scene::SemanticScene> getSemanticScene();
 
@@ -301,8 +304,8 @@ class Simulator {
  protected:
   Simulator(){};
 
-  WindowlessContext::uptr context_ = nullptr;
-  std::shared_ptr<Renderer> renderer_ = nullptr;
+  gfx::WindowlessContext::uptr context_ = nullptr;
+  std::shared_ptr<gfx::Renderer> renderer_ = nullptr;
   // CANNOT make the specification of resourceManager_ above the context_!
   // Because when deconstructing the resourceManager_, it needs
   // the GL::Context
@@ -326,5 +329,5 @@ class Simulator {
   ESP_SMART_POINTERS(Simulator)
 };
 
-}  // namespace gfx
+}  // namespace sim
 }  // namespace esp
