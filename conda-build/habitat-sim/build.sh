@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 build_args=(--skip-install-magnum)
 if [ ${HEADLESS} == "1" ]; then
   build_args+=("--headless")
@@ -29,6 +30,8 @@ if [ -f "build/viewer" ]; then
   cp -v build/viewer ${PREFIX}/bin/habitat-viewer
 fi
 
+
+
 pushd ${PREFIX}
 
 corrade_bindings=$(find . -name "*_corrade*so")
@@ -44,9 +47,9 @@ if [ $(uname) == "Darwin" ]; then
   install_name_tool -add_rpath @loader_path/habitat_sim/_ext ${magnum_bindings}
   install_name_tool -add_rpath @loader_path ${hsim_bindings}
 
-  
+
   install_name_tool -add_rpath @loader_path/../${ext_folder} bin/habitat-viewer
-  
+
 
   find $(dirname ${hsim_bindings}) -name "*Corrade*dylib" | xargs -I {} install_name_tool -add_rpath @loader_path {}
 
@@ -61,7 +64,7 @@ elif [ $(uname) == "Linux" ]; then
   patchelf --set-rpath "\$ORIGIN/habitat_sim/_ext:\$ORIGIN/../.." --force-rpath ${magnum_bindings}
 
   patchelf --set-rpath "\$ORIGIN:\$ORIGIN/../../../.." --force-rpath ${hsim_bindings}
-  
+
   if [ -f 'bin/habitat-viewer' ]; then
     patchelf --set-rpath "\$ORIGIN/../${ext_folder}:\$ORIGIN/../lib" --force-rpath bin/habitat-viewer
   fi
