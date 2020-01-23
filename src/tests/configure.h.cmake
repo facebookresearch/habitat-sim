@@ -3,5 +3,6 @@
 // LICENSE file in the root directory of this source tree.
 
 #define SCENE_DATASETS "${SCENE_DATASETS}"
+#define TEST_ASSETS "${TEST_ASSETS}"
 
 #define FILE_THAT_EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/IOTest.cpp"
