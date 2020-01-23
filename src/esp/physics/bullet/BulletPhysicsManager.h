@@ -80,6 +80,9 @@ class BulletPhysicsManager : public PhysicsManager {
   bool addScene(const assets::PhysicsSceneAttributes& physicsSceneAttributes,
                 const std::vector<assets::CollisionMeshData>& meshGroup);
 
+  virtual int addObject(const int objectLibIndex,
+                        DrawableGroup* drawables) override;
+
   //============ Simulator functions =============
 
   /** @brief Step the physical world forward in time. Time may only advance in
@@ -176,6 +179,17 @@ class BulletPhysicsManager : public PhysicsManager {
    * render camera.
    */
   virtual void debugDraw(const Magnum::Matrix4& projTrans) const override;
+
+  /**
+   * @brief Check whether an object is in contact with any other objects or the
+   * scene.
+   *
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Whether or not the object is in contact with any other collision
+   * enabled objects.
+   */
+  bool contactTest(const int physObjectID);
 
  protected:
   btDbvtBroadphase bBroadphase_;

@@ -166,20 +166,28 @@ bool BulletRigidObject::initializeObject(
   bool joinCollisionMeshes =
       physicsObjectAttributes.getBool("joinCollisionMeshes");
 
+  usingBBCollisionShape_ =
+      physicsObjectAttributes.getBool("useBoundingBoxForCollision");
+
+  // TODO(alexanderwclegg): should provide the option for joinCollisionMeshes
+  // and collisionFromBB_ to specify complete vs. component level bounding box
+  // heirarchies.
+
   //! Iterate through all mesh components for one object
   //! The components are combined into a convex compound shape
   bObjectShape_ = std::make_unique<btCompoundShape>();
-  // TODO: this should translate to the COM
-  constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup, metaData.root,
-                                    joinCollisionMeshes);
 
-  // add the final object after joining meshes
-  if (joinCollisionMeshes) {
-    btTransform t;
-    t.setIdentity();
-    bObjectConvexShapes_.back()->setMargin(0.0);
-    bObjectConvexShapes_.back()->recalcLocalAabb();
-    bObjectShape_->addChildShape(t, bObjectConvexShapes_.back().get());
+  if (!usingBBCollisionShape_) {
+    constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup,
+                                      metaData.root, joinCollisionMeshes);
+
+    // add the final object after joining meshes
+    if (joinCollisionMeshes) {
+      bObjectConvexShapes_.back()->setMargin(0.0);
+      bObjectConvexShapes_.back()->recalcLocalAabb();
+      bObjectShape_->addChildShape(btTransform::getIdentity(),
+                                   bObjectConvexShapes_.back().get());
+    }
   }
 
   //! Set properties
@@ -192,13 +200,15 @@ bool BulletRigidObject::initializeObject(
   btVector3 bInertia =
       btVector3(physicsObjectAttributes.getMagnumVec3("inertia"));
 
-  if (bInertia[0] == 0. && bInertia[1] == 0. && bInertia[2] == 0.) {
-    // allow bullet to compute the inertia tensor if we don't have one
-    bObjectShape_->calculateLocalInertia(
-        physicsObjectAttributes.getDouble("mass"),
-        bInertia);  // overrides bInertia
-    LOG(INFO) << "Automatic object inertia computed: " << bInertia.x() << " "
-              << bInertia.y() << " " << bInertia.z();
+  if (!usingBBCollisionShape_) {
+    if (bInertia == btVector3{0, 0, 0}) {
+      // allow bullet to compute the inertia tensor if we don't have one
+      bObjectShape_->calculateLocalInertia(
+          physicsObjectAttributes.getDouble("mass"),
+          bInertia);  // overrides bInertia
+      LOG(INFO) << "Automatic object inertia computed: " << bInertia.x() << " "
+                << bInertia.y() << " " << bInertia.z();
+    }
   }
 
   //! Bullet rigid body setup
@@ -222,6 +232,32 @@ bool BulletRigidObject::initializeObject(
   bWorld_ = bWorld;
   syncPose();
   return true;
+}
+
+void BulletRigidObject::setCollisionFromBB() {
+  btVector3 dim(cumulativeBB_.size() / 2.0);
+
+  for (auto& shape : bGenericShapes_) {
+    bObjectShape_->removeChildShape(shape.get());
+  }
+  bGenericShapes_.clear();
+  bGenericShapes_.emplace_back(std::make_unique<btBoxShape>(dim));
+  bObjectShape_->addChildShape(btTransform::getIdentity(),
+                               bGenericShapes_.back().get());
+  bObjectShape_->recalculateLocalAabb();
+  bObjectRigidBody_->setCollisionShape(bObjectShape_.get());
+
+  if (bObjectRigidBody_->getInvInertiaDiagLocal() == btVector3{0, 0, 0}) {
+    btVector3 bInertia(getInertiaVector());
+    // allow bullet to compute the inertia tensor if we don't have one
+    bObjectShape_->calculateLocalInertia(getMass(),
+                                         bInertia);  // overrides bInertia
+
+    LOG(INFO) << "Automatic BB object inertia computed: " << bInertia.x() << " "
+              << bInertia.y() << " " << bInertia.z();
+
+    setInertiaVector(Magnum::Vector3(bInertia));
+  }
 }
 
 bool BulletRigidObject::removeObject() {
@@ -548,6 +584,12 @@ double BulletRigidObject::getAngularDamping() {
   } else {
     return bObjectRigidBody_->getAngularDamping();
   }
+}
+
+bool BulletRigidObject::contactTest() {
+  SimulationContactResultCallback src;
+  bWorld_->getCollisionWorld()->contactTest(bObjectRigidBody_.get(), src);
+  return src.bCollision;
 }
 
 const Magnum::Range3D BulletRigidObject::getCollisionShapeAabb() const {

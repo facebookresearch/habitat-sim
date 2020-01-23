@@ -25,6 +25,7 @@
 
 #include <Corrade/Utility/Arguments.h>
 #include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/String.h>
 #include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
@@ -34,8 +35,8 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
 
-#include "esp/gfx/Simulator.h"
 #include "esp/scene/SceneConfiguration.h"
+#include "esp/sim/Simulator.h"
 
 #include "esp/gfx/configure.h"
 
@@ -208,7 +209,18 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Load navmesh if available
   if (file.compare(esp::assets::EMPTY_SCENE) != 0) {
-    const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
+    std::string navmeshFilename = io::changeExtension(file, ".navmesh");
+
+    // TODO: short term solution to mitigate issue #430
+    // we load the pre-computed navmesh for the ptex mesh to avoid
+    // online computation.
+    // for long term solution, see issue #430
+    if (Utility::String::endsWith(file, "mesh.ply")) {
+      navmeshFilename = Corrade::Utility::Directory::join(
+          Corrade::Utility::Directory::path(file) + "/habitat",
+          "mesh_semantic.navmesh");
+    }
+
     if (io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
       LOG(INFO) << "Loading navmesh from " << navmeshFilename;
       pathfinder_->loadNavMesh(navmeshFilename);

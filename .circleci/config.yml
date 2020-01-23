@@ -29,6 +29,7 @@ jobs:
               isort --version
               isort -rc habitat_sim/. examples/. tests/. setup.py --diff
               isort -rc habitat_sim/. examples/. tests/. setup.py --check-only
+
   cpp_lint:
     docker:
       - image: circleci/buildpack-deps:disco
@@ -59,6 +60,7 @@ jobs:
           name: run eslint
           command: |
             npm run lint
+
   install_and_test_ubuntu:
     <<: *gpu
     steps:
@@ -112,6 +114,11 @@ jobs:
                   libbullet-dev\
                   lcov\
                   unzip || true
+              sudo apt install --allow-change-held-packages \
+                  texlive-base \
+                  texlive-latex-extra \
+                  texlive-fonts-extra \
+                  texlive-fonts-recommended
       - run:
           name: Install Headless Chrome dependencies
           command: |
@@ -364,6 +371,26 @@ jobs:
               lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
               bash <(curl -s https://codecov.io/bash) -f coverage.info -cF CPP
       - run:
+          name: Build documentation
+          command: |
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              # Rebuild with all options enabled
+              ./build.sh --with-cuda --with-bullet
+              cd docs
+              conda install -y -c conda-forge doxygen
+              conda install -y  jinja2 pygments docutils
+              conda install -y -c conda-forge pelican
+              mkdir -p ../build/docs
+              git submodule update --init
+              ./build-public.sh
+      - save_cache:
+          key: docs-{{ .Branch }}
+          background: true
+          paths:
+            - ./habitat-sim/build/docs-public
+      - run:
           name: Install api
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
@@ -394,6 +421,50 @@ jobs:
           paths:
             - ./habitat-api
 
+  update_docs:
+    docker:
+      - image: circleci/buildpack-deps:disco
+    steps:
+      - checkout
+      - restore_cache:
+          key: docs-{{ .Branch }}
+      - add_ssh_keys:
+          fingerprints:
+            - "18:88:e0:37:b1:b3:7a:23:aa:1e:f7:43:a8:5b:8e:05"
+      - run:
+          name: Update public documentation
+          no_output_timeout: 30m
+          command: |
+              # Update website
+              git clone git@github.com:facebookmicrosites/habitat-website.git
+              cd habitat-website
+              git submodule update --init
+
+              for dir in habitat-sim habitat-cpp
+              do
+                  rm -rf published/docs/${dir}
+                  cp -r ../habitat-sim/build/docs-public/${dir} published/docs/.
+              done
+
+              git config --global user.name "Habitat"
+              git config --global user.email habitat@fb.com
+              NOW=$(date +"%m-%d-%Y")
+              git add .
+              git commit -m "Build habitat-sim ${NOW}"
+              git push origin master
+
+              # Deploy to public
+              git checkout gh-pages
+              git checkout master published
+              sudo apt-get update || true
+              sudo apt-get install -yq \
+                    rsync
+              rsync -a published/ ./.
+              rm -rf published
+              git add .
+              git commit -m "Build habitat-sim ${NOW}"
+              git push origin gh-pages
+
 workflows:
   version: 2
   install_and_test:
@@ -402,3 +473,9 @@ workflows:
       - cpp_lint
       - js_lint
       - install_and_test_ubuntu
+      - update_docs:
+          requires:
+            - install_and_test_ubuntu
+          filters:
+            branches:
+              only: master

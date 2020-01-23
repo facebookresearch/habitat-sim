@@ -9,9 +9,8 @@
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 
-#include "Drawable.h"
-
 #include "esp/core/esp.h"
+#include "esp/gfx/Drawable.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/io/io.h"
@@ -23,7 +22,7 @@
 namespace Cr = Corrade;
 
 namespace esp {
-namespace gfx {
+namespace sim {
 
 Simulator::Simulator(const SimulatorConfiguration& cfg) {
   // initalize members according to cfg
@@ -85,7 +84,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     // reinitalize members
     if (!renderer_) {
-      renderer_ = Renderer::create();
+      renderer_ = gfx::Renderer::create();
     }
 
     auto& sceneGraph = sceneManager_.getSceneGraph(activeSceneID_);
@@ -186,7 +185,7 @@ void Simulator::seed(uint32_t newSeed) {
   random_.seed(newSeed);
 }
 
-std::shared_ptr<Renderer> Simulator::getRenderer() {
+std::shared_ptr<gfx::Renderer> Simulator::getRenderer() {
   return renderer_;
 }
 
@@ -349,6 +348,13 @@ Magnum::Quaternion Simulator::getRotation(const int objectID,
   return Magnum::Quaternion();
 }
 
+bool Simulator::contactTest(const int objectID, const int sceneID) {
+  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+    return physicsManager_->contactTest(objectID);
+  }
+  return false;
+}
+
 double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
     physicsManager_->stepPhysics(dt);
@@ -378,5 +384,5 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
   return true;
 }
 
-}  // namespace gfx
+}  // namespace sim
 }  // namespace esp

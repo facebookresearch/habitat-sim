@@ -7,7 +7,7 @@
 #include "esp/core/esp.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/scene/SceneGraph.h"
-#include "esp/sensor/Sensor.h"
+#include "esp/sensor/VisualSensor.h"
 
 namespace esp {
 namespace gfx {
@@ -20,12 +20,12 @@ class Renderer {
   void draw(RenderCamera& camera, scene::SceneGraph& sceneGraph);
 
   // draw the scene graph with the visual sensor provided by user
-  void draw(sensor::Sensor& visualSensor, scene::SceneGraph& sceneGraph);
+  void draw(sensor::VisualSensor& visualSensor, scene::SceneGraph& sceneGraph);
 
   /**
    * @brief Binds a @ref RenderTarget to the sensor
    */
-  void bindRenderTarget(const sensor::Sensor::ptr& sensor);
+  void bindRenderTarget(sensor::VisualSensor& sensor);
 
   // draw the scene graph with the default camera in scene graph
   // user needs to set the default camera so that it has correct

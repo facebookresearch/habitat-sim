@@ -535,6 +535,8 @@ bool PathFinder::build(const NavMeshSettings& bs,
     }
   }
 
+  // Added as we need to also remove the zero area polygons on a navmesh
+  // recomputation, so just removing on load is not sufficient!
   removeZeroAreaPolys();
 
   LOG(INFO) << "Created navmesh with " << ws.pmesh->nverts << " vertices "
