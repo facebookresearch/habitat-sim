@@ -721,8 +721,9 @@ Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   return Magnum::Range3D{
       Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)};
 }
-void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
+
 #ifdef ESP_BUILD_PTEX_SUPPORT
+void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
   std::vector<Mn::Matrix4> absTransforms = computeAbsoluteTransformations();
 
   CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo_.size(),
@@ -750,8 +751,8 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
     // set the absolute axis aligned bounding box
     node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(pos)});
   }
-#endif
 }
+#endif
 
 void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
   std::vector<Mn::Matrix4> absTransforms = computeAbsoluteTransformations();
@@ -806,6 +807,11 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations() {
   auto* scene = dynamic_cast<Mn::SceneGraph::Scene<
       Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<float>>*>(
       staticDrawableInfo_[0].node.scene());
+
+  CORRADE_ASSERT(scene != nullptr,
+                 "ResourceManager::computeAbsoluteTransformations: the node is "
+                 "not attached to any scene graph.",
+                 std::vector<Mn::Matrix4>{});
 
   // collect all drawable objects
   std::vector<std::reference_wrapper<Mn::SceneGraph::Object<
@@ -1413,12 +1419,10 @@ void ResourceManager::createDrawable(
   } else if (shaderType == INSTANCE_MESH_SHADER) {
     auto* shader =
         static_cast<gfx::PrimitiveIDShader*>(getShaderProgram(shaderType));
-
     node.addFeature<gfx::PrimitiveIDDrawable>(*shader, mesh, group);
   } else {  // all other shaders use GenericShader
     auto* shader =
         static_cast<Magnum::Shaders::Flat3D*>(getShaderProgram(shaderType));
-
     node.addFeature<gfx::GenericDrawable>(*shader, mesh, group, texture,
                                           objectId, color);
   }
