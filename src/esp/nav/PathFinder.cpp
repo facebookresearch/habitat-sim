@@ -26,6 +26,8 @@
 #include "DetourNode.h"
 #include "Recast.h"
 
+namespace Mn = Magnum;
+
 namespace esp {
 namespace nav {
 
@@ -199,7 +201,7 @@ struct PathFinder::Impl {
   bool findPath(MultiGoalShortestPath& path);
 
   template <typename T>
-  T tryStep(const T& start, const T& end);
+  T tryStep(const T& start, const T& end, bool allowSliding);
 
   template <typename T>
   T snapPoint(const T& pt);
@@ -958,30 +960,33 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
 }
 
 template <typename T>
-T PathFinder::Impl::tryStep(const T& start, const T& end) {
+T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
   static const int MAX_POLYS = 256;
   dtPolyRef polys[MAX_POLYS];
 
   dtStatus startStatus, endStatus;
   dtPolyRef startRef, endRef;
-  vec3f pathStart, pathEnd;
+  vec3f pathStart;
   std::tie(startStatus, startRef, pathStart) =
       projectToPoly(start, navQuery_.get(), filter_.get());
-  std::tie(endStatus, endRef, pathEnd) =
+  std::tie(endStatus, endRef, std::ignore) =
       projectToPoly(end, navQuery_.get(), filter_.get());
 
   if (dtStatusFailed(startStatus) || dtStatusFailed(endStatus)) {
     return start;
   }
 
+  if (not islandSystem_->hasConnection(startRef, endRef)) {
+    return start;
+  }
+
   vec3f endPoint;
   int numPolys;
-  navQuery_->moveAlongSurface(startRef, pathStart.data(), pathEnd.data(),
+  navQuery_->moveAlongSurface(startRef, pathStart.data(), end.data(),
                               filter_.get(), endPoint.data(), polys, &numPolys,
-                              MAX_POLYS);
-
-  // If there isn't any possible path between start and end, just return start,
-  // that is cleanest
+                              MAX_POLYS, allowSliding);
+  // If there isn't any possible path between start and end, just return
+  // start, that is cleanest
   if (numPolys == 0) {
     return start;
   }
@@ -1130,18 +1135,26 @@ bool PathFinder::findPath(MultiGoalShortestPath& path) {
 }
 
 template vec3f PathFinder::tryStep<vec3f>(const vec3f&, const vec3f&);
-template Magnum::Vector3 PathFinder::tryStep<Magnum::Vector3>(
-    const Magnum::Vector3&,
-    const Magnum::Vector3&);
+template Mn::Vector3 PathFinder::tryStep<Mn::Vector3>(const Mn::Vector3&,
+                                                      const Mn::Vector3&);
 
 template <typename T>
 T PathFinder::tryStep(const T& start, const T& end) {
-  return pimpl_->tryStep(start, end);
+  return pimpl_->tryStep(start, end, /*allowSliding=*/true);
+}
+
+template vec3f PathFinder::tryStepNoSliding<vec3f>(const vec3f&, const vec3f&);
+template Mn::Vector3 PathFinder::tryStepNoSliding<Mn::Vector3>(
+    const Mn::Vector3&,
+    const Mn::Vector3&);
+
+template <typename T>
+T PathFinder::tryStepNoSliding(const T& start, const T& end) {
+  return pimpl_->tryStep(start, end, /*allowSliding=*/false);
 }
 
 template vec3f PathFinder::snapPoint<vec3f>(const vec3f& pt);
-template Magnum::Vector3 PathFinder::snapPoint<Magnum::Vector3>(
-    const Magnum::Vector3& pt);
+template Mn::Vector3 PathFinder::snapPoint<Mn::Vector3>(const Mn::Vector3& pt);
 
 template <typename T>
 T PathFinder::snapPoint(const T& pt) {
