@@ -272,8 +272,6 @@ class CMakeBuild(build_ext):
         if not is_pip():
             self.create_compile_commands()
 
-        print('hellooo')
-
         subprocess.check_call(
             shlex.split("cmake --build {}".format(self.build_temp)) + build_args
         )
