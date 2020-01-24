@@ -116,6 +116,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
   // compute the absolute transformation for each static drawables
   if (meshSuccess && parent && computeAbsoluteAABBs_) {
     if (info.type == AssetType::FRL_PTEX_MESH) {
+#ifdef ESP_BUILD_PTEX_SUPPORT
       // retrieve the ptex mesh data
       const std::string& filename = info.filepath;
       CORRADE_ASSERT(resourceDict_.count(filename) != 0,
@@ -128,6 +129,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
           false);
 
       computePTexMeshAbsoluteAABBs(*(meshes_[metaData.meshIndex.first].get()));
+#endif
     } else if (info.type == AssetType::MP3D_MESH) {
       computeGeneralMeshAbsoluteAABBs();
     }
@@ -722,8 +724,8 @@ Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
       Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)};
 }
 
-void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
 #ifdef ESP_BUILD_PTEX_SUPPORT
+void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
   std::vector<Mn::Matrix4> absTransforms = computeAbsoluteTransformations();
 
   CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo_.size(),
@@ -751,8 +753,8 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
     // set the absolute axis aligned bounding box
     node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(pos)});
   }
-#endif
 }
+#endif
 
 void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
   std::vector<Mn::Matrix4> absTransforms = computeAbsoluteTransformations();
@@ -961,8 +963,8 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
                                            scene::SceneNode* parent,
                                            DrawableGroup* drawables) {
-  // if this is a new file, load it and add it to the dictionary, create shaders
-  // and add it to the shaderPrograms_
+  // if this is a new file, load it and add it to the dictionary, create
+  // shaders and add it to the shaderPrograms_
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
     if (info.type == AssetType::INSTANCE_MESH) {
@@ -1414,8 +1416,8 @@ void ResourceManager::createDrawable(
     int objectId /* = ID_UNDEFINED */,
     const Magnum::Color4& color /* = Magnum::Color4{1} */) {
   if (shaderType == PTEX_MESH_SHADER) {
-    LOG(FATAL)
-        << "ResourceManager::createDrawable does not support PTEX_MESH_SHADER";
+    LOG(FATAL) << "ResourceManager::createDrawable does not support "
+                  "PTEX_MESH_SHADER";
   } else if (shaderType == INSTANCE_MESH_SHADER) {
     auto* shader =
         static_cast<gfx::PrimitiveIDShader*>(getShaderProgram(shaderType));

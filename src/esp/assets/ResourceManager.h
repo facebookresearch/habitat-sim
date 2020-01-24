@@ -498,8 +498,9 @@ class ResourceManager {
    * @brief Compute the absolute AABBs for drawables in PTex mesh in world space
    * @param baseMesh: ptex mesh
    */
-
+#ifdef ESP_BUILD_PTEX_SUPPORT
   void computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh);
+#endif
 
   /**
    * @brief Compute the absolute AABBs for drawables in general mesh (e.g.,
