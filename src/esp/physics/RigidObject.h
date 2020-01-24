@@ -89,14 +89,28 @@ mesh. By default, a RigidObject is @ref MotionType::KINEMATIC without an
 underlying simulator implementation. Derived classes can be used to introduce
 specific implementations of dynamics.
 */
-class RigidObject : public scene::SceneNode {
+class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
  public:
   /**
    * @brief Constructor for a @ref RigidObject.
    * @param parent The parent @ref scene::SceneNode to this object, likely the
    * @ref PhysicsManager::physicsNode_.
    */
-  RigidObject(scene::SceneNode* parent);
+  RigidObject(scene::SceneNode* rigidBodyNode);
+
+  // Get the scene node being attached to.
+  scene::SceneNode& node() { return object(); }
+  const scene::SceneNode& node() const { return object(); }
+
+  // Overloads to avoid confusion
+  scene::SceneNode& object() {
+    return static_cast<scene::SceneNode&>(
+        Magnum::SceneGraph::AbstractFeature3D::object());
+  }
+  const scene::SceneNode& object() const {
+    return static_cast<const scene::SceneNode&>(
+        Magnum::SceneGraph::AbstractFeature3D::object());
+  }
 
   /**
    * @brief Initializes this @ref RigidObject as static scene geometry. See @ref
@@ -125,9 +139,9 @@ class RigidObject : public scene::SceneNode {
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /**
-   * @brief Destructor for a @ref RigidObject.
+   * @brief Virtual destructor for a @ref RigidObject.
    */
-  ~RigidObject(){};
+  virtual ~RigidObject(){};
 
   /**
    * @brief Check whether object is being actively simulated, or sleeping.
@@ -454,7 +468,7 @@ class RigidObject : public scene::SceneNode {
 
   //! The @ref SceneNode of a bounding box debug drawable. If nullptr, BB
   //! drawing is off. See @ref toggleBBDraw().
-  SceneNode* BBNode_ = nullptr;
+  scene::SceneNode* BBNode_ = nullptr;
 
  protected:
   /** @brief The @ref MotionType of the object. Determines what operations can

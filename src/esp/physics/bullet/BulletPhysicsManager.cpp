@@ -36,7 +36,8 @@ bool BulletPhysicsManager::initPhysics(
 
   physicsNode_ = node;
   //! Create new scene node
-  sceneNode_ = static_cast<RigidObject*>(new BulletRigidObject(physicsNode_));
+  sceneNode_ = static_cast<RigidObject*>(
+      new BulletRigidObject(&physicsNode_->createChild()));
 
   initialized_ = true;
   return true;
@@ -79,7 +80,8 @@ int BulletPhysicsManager::makeRigidObject(
     assets::PhysicsObjectAttributes physicsObjectAttributes) {
   //! Create new physics object (child node of sceneNode_)
   int newObjectID = allocateObjectID();
-  existingObjects_[newObjectID] = new BulletRigidObject(sceneNode_);
+  existingObjects_[newObjectID] =
+      new BulletRigidObject(&sceneNode_->node().createChild());
 
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
       physicsObjectAttributes.getString("collisionMeshHandle"));

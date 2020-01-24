@@ -73,12 +73,7 @@ class BulletRigidObject : public RigidObject {
    * @param parent The parent @ref scene::SceneNode to this object, likely the
    * @ref PhysicsManager::physicsNode_.
    */
-  BulletRigidObject(scene::SceneNode* parent);
-
-  /**
-   * @brief Destructor for a @ref BulletRigidObject.
-   */
-  ~BulletRigidObject();
+  BulletRigidObject(scene::SceneNode* rigidBodyNode);
 
   /**
    * @brief Initializes this @ref BulletRigidObject as static scene geometry.

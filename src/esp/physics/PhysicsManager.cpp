@@ -20,7 +20,7 @@ bool PhysicsManager::initPhysics(
   fixedTimeStep_ = physicsManagerAttributes.getDouble("timestep");
 
   //! Create new scene node
-  sceneNode_ = new physics::RigidObject(physicsNode_);
+  sceneNode_ = new physics::RigidObject(&physicsNode_->createChild());
   initialized_ = true;
 
   return true;
@@ -66,8 +66,8 @@ int PhysicsManager::addObject(const int objectLibIndex,
 
   //! Draw object via resource manager
   //! Render node as child of physics node
-  resourceManager_->loadObject(configFile, existingObjects_.at(nextObjectID_),
-                               drawables);
+  resourceManager_->loadObject(
+      configFile, &existingObjects_.at(nextObjectID_)->node(), drawables);
 
   if (physicsObjectAttributes.existsAs(assets::DataType::BOOL,
                                        "COM_provided")) {
@@ -95,7 +95,6 @@ int PhysicsManager::addObject(const std::string& configFile,
 int PhysicsManager::removeObject(const int physObjectID) {
   assertIDValidity(physObjectID);
   existingObjects_.at(physObjectID)->removeObject();
-  delete existingObjects_.at(physObjectID);
   existingObjects_.erase(physObjectID);
   deallocateObjectID(physObjectID);
   return physObjectID;
@@ -134,7 +133,8 @@ int PhysicsManager::makeRigidObject(
   //! Create new physics object (child node of sceneNode_)
 
   int newObjectID = allocateObjectID();
-  existingObjects_[newObjectID] = new physics::RigidObject(sceneNode_);
+  existingObjects_[newObjectID] =
+      new physics::RigidObject(&sceneNode_->node().createChild());
 
   //! Instantiate with mesh pointer
   bool objectSuccess =
@@ -206,15 +206,9 @@ int PhysicsManager::checkActiveObjects() {
   }
 
   int numActive = 0;
-  int numTotal = 0;
-  for (auto& child : sceneNode_->children()) {
-    physics::RigidObject* childNode =
-        static_cast<physics::RigidObject*>(&child);
-    if (childNode != nullptr) {
-      numTotal += 1;
-      if (childNode->isActive()) {
-        numActive += 1;
-      }
+  for (auto& itr : existingObjects_) {
+    if (itr.second->isActive()) {
+      numActive += 1;
     }
   }
   return numActive;
@@ -328,17 +322,17 @@ void PhysicsManager::rotateZLocal(const int physObjectID,
 Magnum::Matrix4 PhysicsManager::getTransformation(
     const int physObjectID) const {
   assertIDValidity(physObjectID);
-  return existingObjects_.at(physObjectID)->transformation();
+  return existingObjects_.at(physObjectID)->node().transformation();
 }
 
 Magnum::Vector3 PhysicsManager::getTranslation(const int physObjectID) const {
   assertIDValidity(physObjectID);
-  return existingObjects_.at(physObjectID)->translation();
+  return existingObjects_.at(physObjectID)->node().translation();
 }
 
 Magnum::Quaternion PhysicsManager::getRotation(const int physObjectID) const {
   assertIDValidity(physObjectID);
-  return existingObjects_.at(physObjectID)->rotation();
+  return existingObjects_.at(physObjectID)->node().rotation();
 }
 
 //============ Object Setter functions =============
@@ -440,12 +434,12 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
   } else if (drawBB) {
     // add a new BBNode
     Magnum::Vector3 scale =
-        existingObjects_[physObjectID]->getCumulativeBB().size() / 2.0;
+        existingObjects_[physObjectID]->node().getCumulativeBB().size() / 2.0;
     existingObjects_[physObjectID]->BBNode_ =
-        &existingObjects_[physObjectID]->createChild();
+        &existingObjects_[physObjectID]->node().createChild();
     existingObjects_[physObjectID]->BBNode_->MagnumObject::setScaling(scale);
     existingObjects_[physObjectID]->BBNode_->MagnumObject::setTranslation(
-        existingObjects_[physObjectID]->getCumulativeBB().center());
+        existingObjects_[physObjectID]->node().getCumulativeBB().center());
     resourceManager_->addPrimitiveToDrawables(
         0, *existingObjects_[physObjectID]->BBNode_, drawables);
   }
@@ -453,7 +447,7 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
 
 const scene::SceneNode& PhysicsManager::getObjectSceneNode(int physObjectID) {
   assertIDValidity(physObjectID);
-  return *existingObjects_[physObjectID];
+  return existingObjects_[physObjectID]->node();
 }
 
 }  // namespace physics
