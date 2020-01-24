@@ -478,4 +478,4 @@ workflows:
             - install_and_test_ubuntu
           filters:
             branches:
-              only: master
+              only: fix_autodoc # change to master
