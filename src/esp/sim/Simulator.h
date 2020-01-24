@@ -39,6 +39,8 @@ struct SimulatorConfiguration {
   std::string defaultCameraUuid = "rgba_camera";
   bool compressTextures = false;
   bool createRenderer = true;
+  // Whether or not the agent can slide on collisions
+  bool allowSliding = true;
 
   bool enablePhysics = false;
   std::string physicsConfigFile =

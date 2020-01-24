@@ -19,8 +19,6 @@ namespace Cr = Corrade;
 using esp::assets::ResourceManager;
 using esp::scene::SceneManager;
 
-const std::string dataDir = Cr::Utility::Directory::join(SCENE_DATASETS, "../");
-
 TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
@@ -31,8 +29,8 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   ResourceManager resourceManager;
   SceneManager sceneManager_;
 
-  std::string boxFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
+  std::string boxFile =
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
 
   int sceneID = sceneManager_.initSceneGraph();
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
