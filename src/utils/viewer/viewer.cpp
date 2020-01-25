@@ -256,7 +256,7 @@ Viewer::Viewer(const Arguments& arguments)
 
   timeline_.start();
 
-}  // namespace
+}  // end Viewer::Viewer
 
 void Viewer::addObject(std::string configFile) {
   if (physicsManager_ == nullptr)
