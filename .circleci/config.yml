@@ -450,7 +450,7 @@ jobs:
               git config --global user.email habitat@fb.com
               NOW=$(date +"%m-%d-%Y")
               git add .
-              git commit -m "Build habitat-sim ${NOW}"
+              git diff-index --quiet HEAD || git commit -m "Build habitat-sim ${NOW}"
               git push origin master
 
               # Deploy to public
@@ -462,7 +462,7 @@ jobs:
               rsync -a published/ ./.
               rm -rf published
               git add .
-              git commit -m "Build habitat-sim ${NOW}"
+              git diff-index --quiet HEAD || git commit -m "Build habitat-sim ${NOW}"
               git push origin gh-pages
 
 workflows:
