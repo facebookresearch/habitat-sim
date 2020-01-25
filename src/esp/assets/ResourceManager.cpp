@@ -746,7 +746,7 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
     Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], pos);
 
     // locate the scene node which contains the current drawable
-    scene::SceneNode& node = staticDrawableInfo_[iEntry].first.get();
+    scene::SceneNode& node = staticDrawableInfo_[iEntry].get();
 
     // set the absolute axis aligned bounding box
     node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(pos)});

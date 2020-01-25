@@ -84,11 +84,6 @@ class SceneNode : public MagnumObject {
   //! set the global bounding box for mesh stored in this node
   void setAbsoluteAABB(Magnum::Range3D aabb) { aabb_ = aabb; };
 
-  //! get the global bounding box for mesh stored in this node
-  Corrade::Containers::Optional<Magnum::Range3D> getAbsoluteAABB() {
-    return aabb_;
-  }
-
  protected:
   // DO not make the following constructor public!
   // it can ONLY be called from SceneGraph class to initialize the scene graph
