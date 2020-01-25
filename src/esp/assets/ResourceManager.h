@@ -721,8 +721,6 @@ class ResourceManager {
   void createDrawable(const ShaderType shaderType,
                       Magnum::GL::Mesh& mesh,
                       scene::SceneNode& node,
-                      Corrade::Containers::Optional<uint32_t> meshID =
-                          Corrade::Containers::NullOpt,
                       DrawableGroup* group = nullptr,
                       Magnum::GL::Texture2D* texture = nullptr,
                       int objectId = ID_UNDEFINED,

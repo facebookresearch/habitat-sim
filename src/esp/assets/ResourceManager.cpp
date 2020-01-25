@@ -723,111 +723,6 @@ Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   return Magnum::Range3D{
       Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)};
 }
-void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
-  std::vector<Mn::Matrix4> absTransforms = computeAbsoluteTransformations();
-
-  CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo_.size(),
-                 "ResourceManager::computePTexMeshAbsoluteAABBs: number of "
-                 "transformations does not match number of drawables.", );
-
-  // obtain the sub-meshes within the ptex mesh
-  PTexMeshData& ptexMeshData = dynamic_cast<PTexMeshData&>(baseMesh);
-  const std::vector<PTexMeshData::MeshData>& submeshes = ptexMeshData.meshes();
-
-  for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
-    // convert std::vector<vec3f> to std::vector<Mn::Vector3>
-    std::vector<Mn::Vector3> pos;
-    uint32_t meshID = staticDrawableInfo_[iEntry].second;
-    for (auto& p : submeshes[meshID].vbo) {
-      pos.emplace_back(p);
-    }
-
-    // transform the vertex positions to the world space
-    Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], pos);
-
-    // locate the scene node which contains the current drawable
-    scene::SceneNode& node = staticDrawableInfo_[iEntry].get();
-
-    // set the absolute axis aligned bounding box
-    node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(pos)});
-  }
-}
-
-void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
-  std::vector<Mn::Matrix4> absTransforms = computeAbsoluteTransformations();
-
-  CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo_.size(),
-                 "ResourceManager::computeGeneralMeshAbsoluteAABBs: number of "
-                 "transforms does not match number of drawables.", );
-
-  for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
-    uint32_t meshID = staticDrawableInfo_[iEntry].second;
-
-    Corrade::Containers::Optional<Magnum::Trade::MeshData3D>& meshData =
-        meshes_[meshID]->getMeshData();
-    CORRADE_ASSERT(meshData,
-                   "ResourceManager::computeGeneralMeshAbsoluteAABBs: the "
-                   "empty mesh data", );
-
-    // a vector to store the min, max pos for the aabb of every position array
-    std::vector<Mn::Vector3> bbPos;
-
-    // transform the vertex positions to the world space, compute the aabb for
-    // each position array
-    for (uint32_t jArray = 0; jArray < (*meshData).positionArrayCount();
-         ++jArray) {
-      std::vector<Mn::Vector3>& pos = (*meshData).positions(jArray);
-      std::vector<Mn::Vector3> absPos =
-          Mn::MeshTools::transformPoints(absTransforms[iEntry], pos);
-
-      std::pair<Mn::Vector3, Mn::Vector3> bb =
-          Mn::Math::minmax<Mn::Vector3>(absPos);
-      bbPos.push_back(bb.first);
-      bbPos.push_back(bb.second);
-    }
-
-    // locate the scene node which contains the current drawable
-    scene::SceneNode& node = staticDrawableInfo_[iEntry].first.get();
-
-    // set the absolute axis aligned bounding box
-    node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(bbPos)});
-
-  }  // iEntry
-}
-
-std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations() {
-  // sanity check
-  if (staticDrawableInfo_.size() == 0) {
-    return std::vector<Mn::Matrix4>{};
-  }
-
-  // basic assumption is that all the drawables are in the same scene;
-  // so use the 1st element in the vector to obtain this scene
-  auto* scene = dynamic_cast<Mn::SceneGraph::Scene<
-      Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<float>>*>(
-      staticDrawableInfo_[0].first.get().scene());
-
-  // collect all drawable objects
-  std::vector<std::reference_wrapper<Mn::SceneGraph::Object<
-      Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<float>>>>
-      objects;
-  objects.reserve(staticDrawableInfo_.size());
-
-  for (std::size_t iDrawable = 0; iDrawable < staticDrawableInfo_.size();
-       ++iDrawable) {
-    objects.emplace_back(
-        dynamic_cast<Mn::SceneGraph::Object<
-            Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<
-                float>>&>(staticDrawableInfo_[iDrawable].first.get()));
-  }
-
-  // compute transformations of all objects in the group relative to the root,
-  // which are the absolute transformations
-  std::vector<Mn::Matrix4> absTransforms =
-      scene->transformationMatrices(objects);
-
-  return absTransforms;
-}
 
 #ifdef ESP_BUILD_PTEX_SUPPORT
 void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
@@ -1100,7 +995,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
           dynamic_cast<GenericInstanceMeshData*>(meshes_[iMesh].get());
       scene::SceneNode& node = parent->createChild();
       createDrawable(INSTANCE_MESH_SHADER, *instanceMeshData->getMagnumGLMesh(),
-                     node, iMesh, drawables);
+                     node, drawables);
     }
   }
 
@@ -1473,8 +1368,7 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
   if (materialIDLocal == ID_UNDEFINED ||
       metaData.materialIndex.second == ID_UNDEFINED ||
       !materials_[materialID]) {
-    createDrawable(COLORED_SHADER, mesh, node, meshID, drawables, texture,
-                   objectID);
+    createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID);
   } else {
     if (materials_[materialID]->flags() &
         Magnum::Trade::PhongMaterialData::Flag::DiffuseTexture) {
@@ -1484,19 +1378,19 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
       const int textureIndex = materials_[materialID]->diffuseTexture();
       texture = textures_[textureStart + textureIndex].get();
       if (texture) {
-        createDrawable(TEXTURED_SHADER, mesh, node, meshID, drawables, texture,
+        createDrawable(TEXTURED_SHADER, mesh, node, drawables, texture,
                        objectID);
       } else {
         // Color-only material
-        createDrawable(COLORED_SHADER, mesh, node, meshID, drawables, texture,
-                       objectID, materials_[materialID]->diffuseColor());
+        createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID,
+                       materials_[materialID]->diffuseColor());
       }
     } else {
       // TODO: some types (such as .ply with vertex color) get binned here
       // incorrectly.
       // Color-only material
-      createDrawable(COLORED_SHADER, mesh, node, meshID, drawables, texture,
-                     objectID, materials_[materialID]->diffuseColor());
+      createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID,
+                     materials_[materialID]->diffuseColor());
     }
   }  // else
 
@@ -1510,14 +1404,13 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               DrawableGroup* drawables) {
   CHECK(primitiveID >= 0 && primitiveID < primitive_meshes_.size());
   createDrawable(ShaderType::COLORED_SHADER, primitive_meshes_[primitiveID],
-                 node, Corrade::Containers::NullOpt, drawables);
+                 node, drawables);
 }
 
 void ResourceManager::createDrawable(
     const ShaderType shaderType,
     Magnum::GL::Mesh& mesh,
     scene::SceneNode& node,
-    Corrade::Containers::Optional<uint32_t> meshID, /* = NullOpt */
     Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */,
     Magnum::GL::Texture2D* texture /* = nullptr */,
     int objectId /* = ID_UNDEFINED */,
@@ -1528,22 +1421,12 @@ void ResourceManager::createDrawable(
   } else if (shaderType == INSTANCE_MESH_SHADER) {
     auto* shader =
         static_cast<gfx::PrimitiveIDShader*>(getShaderProgram(shaderType));
-
-    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
-    new gfx::PrimitiveIDDrawable{node, *shader, mesh, group};
-    if (computeAbsoluteAABBs_ && meshID) {
-      staticDrawableInfo_.emplace_back(node, *meshID);
-    }
+    node.addFeature<gfx::PrimitiveIDDrawable>(*shader, mesh, group);
   } else {  // all other shaders use GenericShader
     auto* shader =
         static_cast<Magnum::Shaders::Flat3D*>(getShaderProgram(shaderType));
-
-    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
-    new gfx::GenericDrawable{node,    *shader,  mesh, group,
-                             texture, objectId, color};
-    if (computeAbsoluteAABBs_ && meshID) {
-      staticDrawableInfo_.emplace_back(node, *meshID);
-    }
+    node.addFeature<gfx::GenericDrawable>(*shader, mesh, group, texture,
+                                          objectId, color);
   }
 }
 
