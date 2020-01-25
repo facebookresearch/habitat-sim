@@ -161,7 +161,7 @@ class PhysicsManager {
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  int addObject(const int objectLibIndex, DrawableGroup* drawables);
+  virtual int addObject(const int objectLibIndex, DrawableGroup* drawables);
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref
@@ -703,6 +703,21 @@ class PhysicsManager {
    */
   virtual void debugDraw(
       CORRADE_UNUSED const Magnum::Matrix4& projTrans) const {};
+
+  /**
+   * @brief Check whether an object is in contact with any other objects or the
+   * scene.
+   *
+   * Not implemented for default @ref PhysicsManager. See @ref
+   * BulletPhysicsManager.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Whether or not the object is in contact with any other collision
+   * enabled objects.
+   */
+  virtual bool contactTest(CORRADE_UNUSED const int physObjectID) {
+    return false;
+  };
 
   /** @brief Return the library implementation type for the simulator currently
    * in use. Use to check for a particular implementation.

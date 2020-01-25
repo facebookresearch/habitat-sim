@@ -498,8 +498,9 @@ class ResourceManager {
    * @brief Compute the absolute AABBs for drawables in PTex mesh in world space
    * @param baseMesh: ptex mesh
    */
-
+#ifdef ESP_BUILD_PTEX_SUPPORT
   void computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh);
+#endif
 
   /**
    * @brief Compute the absolute AABBs for drawables in general mesh (e.g.,
@@ -513,6 +514,7 @@ class ResourceManager {
    */
   std::vector<Magnum::Matrix4> computeAbsoluteTransformations();
 
+<<<<<<< HEAD
   /*
    * @brief this helper vector contains information of the drawables on which
    * we will compute the absolute AABB pair: <Drawable's scene node, meshID>
@@ -527,6 +529,29 @@ class ResourceManager {
   std::vector<
       std::pair<std::reference_wrapper<esp::scene::SceneNode>, uint32_t>>
       staticDrawableInfo_;
+=======
+  /**
+   * node: drawable's scene node
+   *
+   * meshID:
+   * -) for non-ptex mesh:
+   * meshID is the global index into meshes_.
+   * meshes_[meshID] is the BaseMesh corresponding to the drawable;
+   *
+   * -) for ptex mesh:
+   * meshID is the index of the submesh corresponding to the drawable;
+   */
+  struct StaticDrawableInfo {
+    esp::scene::SceneNode& node;
+    uint32_t meshID;
+  };
+  /**
+   * @brief this helper vector contains information of the drawables on which
+   * we will compute the absolute AABB pair
+   *
+   */
+  std::vector<StaticDrawableInfo> staticDrawableInfo_;
+>>>>>>> master
   bool computeAbsoluteAABBs_ = false;
 
   // ======== General geometry data ========

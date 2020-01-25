@@ -8,6 +8,7 @@ pybind11_add_module(habitat_sim_bindings
   SceneBindings.cpp
   SensorBindings.cpp
   ShortestPathBindings.cpp
+  SimBindings.cpp
 )
 target_link_libraries(habitat_sim_bindings
   PRIVATE

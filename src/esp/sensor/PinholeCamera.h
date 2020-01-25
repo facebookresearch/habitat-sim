@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Sensor.h"
+#include "VisualSensor.h"
 #include "esp/core/esp.h"
 
 namespace esp {
@@ -18,7 +18,7 @@ namespace sensor {
 // then the projection parameters, such as width_, height_ etc. cant be stored
 // in the "VisualSensor" class
 
-class PinholeCamera : public Sensor {
+class PinholeCamera : public VisualSensor {
  public:
   // constructor: the status of the pinhole camera is "valid" after
   // construction;
@@ -30,8 +30,6 @@ class PinholeCamera : public Sensor {
 
   virtual ~PinholeCamera() {}
 
-  bool isVisualSensor() override { return true; }
-
   // set the projection matrix to the given render camera
   virtual PinholeCamera& setProjectionMatrix(
       gfx::RenderCamera& targetCamera) override;
@@ -41,11 +39,11 @@ class PinholeCamera : public Sensor {
   // set the view port to the given render camera
   virtual PinholeCamera& setViewport(gfx::RenderCamera& targetCamera) override;
 
-  virtual bool getObservation(gfx::Simulator& sim, Observation& obs) override;
+  virtual bool getObservation(sim::Simulator& sim, Observation& obs) override;
 
   virtual bool getObservationSpace(ObservationSpace& space) override;
 
-  virtual bool displayObservation(gfx::Simulator& sim) override;
+  virtual bool displayObservation(sim::Simulator& sim) override;
 
   /**
    * @brief Returns the parameters needed to unproject depth for this sensor's
@@ -70,7 +68,7 @@ class PinholeCamera : public Sensor {
    * @param[in] sim Instance of Simulator class for which the observation needs
    *                to be drawn
    */
-  void drawObservation(gfx::Simulator& sim);
+  void drawObservation(sim::Simulator& sim);
 
   /**
    * @brief Read the observation that was rendered by the simulator

@@ -25,9 +25,12 @@ namespace scene {
 class SemanticScene;
 }  // namespace scene
 namespace gfx {
-
-// forward declarations
 class Renderer;
+}  // namespace gfx
+}  // namespace esp
+
+namespace esp {
+namespace sim {
 
 struct SimulatorConfiguration {
   scene::SceneConfiguration scene;
@@ -36,6 +39,8 @@ struct SimulatorConfiguration {
   std::string defaultCameraUuid = "rgba_camera";
   bool compressTextures = false;
   bool createRenderer = true;
+  // Whether or not the agent can slide on collisions
+  bool allowSliding = true;
 
   bool enablePhysics = false;
   std::string physicsConfigFile =
@@ -61,7 +66,7 @@ class Simulator {
 
   virtual void seed(uint32_t newSeed);
 
-  std::shared_ptr<Renderer> getRenderer();
+  std::shared_ptr<gfx::Renderer> getRenderer();
   std::shared_ptr<physics::PhysicsManager> getPhysicsManager();
   std::shared_ptr<scene::SemanticScene> getSemanticScene();
 
@@ -253,6 +258,18 @@ class Simulator {
   Magnum::Quaternion getRotation(const int objectID, const int sceneID = 0);
 
   /**
+   * @brief Discrete collision check for contact between an object and the
+   * collision world.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   * @return Whether or not the object is in contact with any other collision
+   * enabled objects.
+   */
+  bool contactTest(const int objectID, const int sceneID = 0);
+
+  /**
    * @brief the physical world has a notion of time which passes during
    * animation/simulation/action/etc... Step the physical world forward in time
    * by a desired duration. Note that the actual duration of time passed by this
@@ -289,8 +306,8 @@ class Simulator {
  protected:
   Simulator(){};
 
-  WindowlessContext::uptr context_ = nullptr;
-  std::shared_ptr<Renderer> renderer_ = nullptr;
+  gfx::WindowlessContext::uptr context_ = nullptr;
+  std::shared_ptr<gfx::Renderer> renderer_ = nullptr;
   // CANNOT make the specification of resourceManager_ above the context_!
   // Because when deconstructing the resourceManager_, it needs
   // the GL::Context
@@ -314,5 +331,5 @@ class Simulator {
   ESP_SMART_POINTERS(Simulator)
 };
 
-}  // namespace gfx
+}  // namespace sim
 }  // namespace esp

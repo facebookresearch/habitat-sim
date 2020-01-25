@@ -35,8 +35,8 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
 
-#include "esp/gfx/Simulator.h"
 #include "esp/scene/SceneConfiguration.h"
+#include "esp/sim/Simulator.h"
 
 #include "esp/gfx/configure.h"
 
@@ -213,6 +213,10 @@ Viewer::Viewer(const Arguments& arguments)
   if (file.compare(esp::assets::EMPTY_SCENE) != 0) {
     std::string navmeshFilename = io::changeExtension(file, ".navmesh");
 
+    // TODO: short term solution to mitigate issue #430
+    // we load the pre-computed navmesh for the ptex mesh to avoid
+    // online computation.
+    // for long term solution, see issue #430
     if (Utility::String::endsWith(file, "mesh.ply")) {
       navmeshFilename = Corrade::Utility::Directory::join(
           Corrade::Utility::Directory::path(file) + "/habitat",

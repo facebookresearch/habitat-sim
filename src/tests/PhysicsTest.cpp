@@ -6,12 +6,15 @@
 #include <gtest/gtest.h>
 #include <string>
 
-#include "esp/gfx/Simulator.h"
+#include "esp/sim/Simulator.h"
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/Renderer.h"
-#include "esp/physics/bullet/BulletPhysicsManager.h"
 #include "esp/scene/SceneManager.h"
+
+#ifdef ESP_BUILD_WITH_BULLET
+#include "esp/physics/bullet/BulletPhysicsManager.h"
+#endif
 
 #include "configure.h"
 
@@ -129,5 +132,235 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
         physicsManager_->removeObject(o);
       }
     }
+  }
+}
+
+#ifdef ESP_BUILD_WITH_BULLET
+TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
+  LOG(INFO) << "Starting physics test: CollisionBoundingBox";
+
+  std::string sceneFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+  std::string objectFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/objects/sphere.glb");
+
+  initScene(sceneFile);
+
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
+      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+    // if we have a simulation implementation then test bounding box vs mesh for
+    // sphere object
+
+    esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+    physicsObjectAttributes.setDouble("margin", 0.0);
+    physicsObjectAttributes.setBool("joinCollisionMeshes", false);
+    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+    // get a reference to the stored template to edit
+    esp::assets::PhysicsObjectAttributes& objectTemplate =
+        resourceManager_.getPhysicsObjectAttributes(objectFile);
+
+    for (int i = 0; i < 2; i++) {
+      if (i == 0) {
+        objectTemplate.setBool("useBoundingBoxForCollision", false);
+      } else {
+        objectTemplate.setBool("useBoundingBoxForCollision", true);
+      }
+
+      physicsManager_->reset();
+
+      int objectId = physicsManager_->addObject(
+          objectFile, &sceneManager_.getSceneGraph(sceneID_).getDrawables());
+
+      Magnum::Vector3 initialPosition{0.0, 0.25, 0.0};
+      physicsManager_->setTranslation(objectId, initialPosition);
+
+      Magnum::Quaternion prevOrientation =
+          physicsManager_->getRotation(objectId);
+      Magnum::Vector3 prevPosition = physicsManager_->getTranslation(objectId);
+      float timeToSim = 3.0;
+      while (physicsManager_->getWorldTime() < timeToSim) {
+        Magnum::Vector3 force{3.0, 0.0, 0.0};
+        physicsManager_->applyForce(objectId, force, Magnum::Vector3{});
+        physicsManager_->stepPhysics(0.1);
+
+        Magnum::Quaternion orientation = physicsManager_->getRotation(objectId);
+        Magnum::Vector3 position = physicsManager_->getTranslation(objectId);
+
+        // object is being pushed, so should be moving
+        ASSERT_NE(position, prevPosition);
+        Magnum::Rad q_angle =
+            Magnum::Math::angle(orientation, Magnum::Quaternion({0, 0, 0}, 1));
+        if (i == 1) {
+          // bounding box for collision, so the sphere should not be rolling
+          ASSERT_LE(q_angle, Magnum::Rad{0.1});
+        } else {
+          // no bounding box, so the sphere should be rolling
+          ASSERT_NE(orientation, prevOrientation);
+        }
+
+        prevOrientation = orientation;
+        prevPosition = position;
+      }
+
+      physicsManager_->removeObject(objectId);
+    }
+  }
+}
+
+TEST_F(PhysicsManagerTest, DiscreteContactTest) {
+  LOG(INFO) << "Starting physics test: ContactTest";
+
+  std::string sceneFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  initScene(sceneFile);
+
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
+      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+    esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+    physicsObjectAttributes.setDouble("margin", 0.0);
+    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+    // generate two centered boxes with dimension 2x2x2
+    int objectId0 = physicsManager_->addObject(objectFile, nullptr);
+    int objectId1 = physicsManager_->addObject(objectFile, nullptr);
+
+    // place them in collision free location (0.1 about ground plane and 0.2
+    // apart)
+    physicsManager_->setTranslation(objectId0, Magnum::Vector3{0, 1.1, 0});
+    physicsManager_->setTranslation(objectId1, Magnum::Vector3{2.2, 1.1, 0});
+    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
+    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+
+    // move box 0 into floor
+    physicsManager_->setTranslation(objectId0, Magnum::Vector3{0, 0.9, 0});
+    ASSERT_TRUE(physicsManager_->contactTest(objectId0));
+    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+
+    // move box 0 into box 1
+    physicsManager_->setTranslation(objectId0, Magnum::Vector3{1.1, 1.1, 0});
+    ASSERT_TRUE(physicsManager_->contactTest(objectId0));
+    ASSERT_TRUE(physicsManager_->contactTest(objectId1));
+  }
+}
+
+TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
+  // test that all different construction methods for a simple shape result in
+  // the same Aabb for the given margin
+  LOG(INFO) << "Starting physics test: BulletCompoundShapeMargins";
+
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  initScene(objectFile);
+
+  if (physicsManager_->getPhysicsSimulationLibrary() ==
+      PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+    // test joined vs. unjoined
+    esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+    physicsObjectAttributes.setDouble("margin", 0.1);
+
+    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+    // get a reference to the stored template to edit
+    esp::assets::PhysicsObjectAttributes& objectTemplate =
+        resourceManager_.getPhysicsObjectAttributes(objectFile);
+
+    auto* drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+    // add the unjoined object
+    objectTemplate.setBool("joinCollisionMeshes", false);
+    int objectId0 = physicsManager_->addObject(objectFile, drawables);
+
+    // add the joined object
+    objectTemplate.setBool("joinCollisionMeshes", true);
+    int objectId1 = physicsManager_->addObject(objectFile, drawables);
+
+    // add bounding box object
+    objectTemplate.setBool("useBoundingBoxForCollision", true);
+    int objectId2 = physicsManager_->addObject(objectFile, drawables);
+
+    esp::physics::BulletPhysicsManager* bPhysManager =
+        static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
+
+    const Magnum::Range3D AabbScene =
+        bPhysManager->getSceneCollisionShapeAabb();
+
+    const Magnum::Range3D AabbOb0 =
+        bPhysManager->getCollisionShapeAabb(objectId0);
+    const Magnum::Range3D AabbOb1 =
+        bPhysManager->getCollisionShapeAabb(objectId1);
+    const Magnum::Range3D AabbOb2 =
+        bPhysManager->getCollisionShapeAabb(objectId1);
+
+    Magnum::Range3D objectGroundTruth({-1.1, -1.1, -1.1}, {1.1, 1.1, 1.1});
+    Magnum::Range3D sceneGroundTruth({-1.0, -1.0, -1.0}, {1.0, 1.0, 1.0});
+
+    ASSERT_EQ(AabbScene, sceneGroundTruth);
+    ASSERT_EQ(AabbOb0, objectGroundTruth);
+    ASSERT_EQ(AabbOb1, objectGroundTruth);
+    ASSERT_EQ(AabbOb2, objectGroundTruth);
+  }
+}
+#endif
+
+TEST_F(PhysicsManagerTest, ConfigurableScaling) {
+  // test scaling of objects via template configuration (visual and collision)
+  LOG(INFO) << "Starting physics test: ConfigurableScaling";
+
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  initScene("NONE");
+
+  // test joined vs. unjoined
+  esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+  physicsObjectAttributes.setDouble("margin", 0.0);
+
+  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+  // get a reference to the stored template to edit
+  esp::assets::PhysicsObjectAttributes& objectTemplate =
+      resourceManager_.getPhysicsObjectAttributes(objectFile);
+
+  std::vector<Magnum::Vector3> testScales{
+      {1.0, 1.0, 1.0},  {4.0, 3.0, 2.0},    {0.1, 0.2, 0.3},
+      {0.0, 0.0, 0.0},  {-1.0, -1.0, -1.0}, {-1.0, 1.0, 1.0},
+      {4.0, -3.0, 2.0}, {0.1, -0.2, -0.3}};
+
+  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+  for (auto& testScale : testScales) {
+    objectTemplate.setMagnumVec3("scale", testScale);
+
+    Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
+
+    int objectId = physicsManager_->addObject(objectFile, &drawables);
+
+    const Magnum::Range3D& visualBounds =
+        physicsManager_->getObjectSceneNode(objectId).getCumulativeBB();
+
+    ASSERT_EQ(visualBounds, boundsGroundTruth);
+
+// Test Bullet collision shape scaling
+#ifdef ESP_BUILD_WITH_BULLET
+    if (physicsManager_->getPhysicsSimulationLibrary() ==
+        PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+      esp::physics::BulletPhysicsManager* bPhysManager =
+          static_cast<esp::physics::BulletPhysicsManager*>(
+              physicsManager_.get());
+
+      Magnum::Range3D aabb = bPhysManager->getCollisionShapeAabb(objectId);
+
+      ASSERT_EQ(aabb, boundsGroundTruth);
+    }
+#endif
   }
 }

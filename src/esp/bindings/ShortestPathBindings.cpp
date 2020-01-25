@@ -71,6 +71,7 @@ void initShortestPathBindings(py::module& m) {
   py::class_<PathFinder, PathFinder::ptr>(m, "PathFinder")
       .def(py::init(&PathFinder::create<>))
       .def("get_bounds", &PathFinder::bounds)
+      .def("seed", &PathFinder::seed)
       .def("get_random_navigable_point", &PathFinder::getRandomNavigablePoint)
       .def("find_path", py::overload_cast<ShortestPath&>(&PathFinder::findPath),
            "path"_a)
@@ -80,6 +81,10 @@ void initShortestPathBindings(py::module& m) {
       .def("try_step", &PathFinder::tryStep<Magnum::Vector3>, "start"_a,
            "end"_a)
       .def("try_step", &PathFinder::tryStep<vec3f>, "start"_a, "end"_a)
+      .def("try_step_no_sliding",
+           &PathFinder::tryStepNoSliding<Magnum::Vector3>, "start"_a, "end"_a)
+      .def("try_step_no_sliding", &PathFinder::tryStepNoSliding<vec3f>,
+           "start"_a, "end"_a)
       .def("snap_point", &PathFinder::snapPoint<Magnum::Vector3>)
       .def("snap_point", &PathFinder::snapPoint<vec3f>)
       .def("island_radius", &PathFinder::islandRadius, "pt"_a)

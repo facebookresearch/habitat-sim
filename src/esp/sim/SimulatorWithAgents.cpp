@@ -9,8 +9,8 @@
 namespace esp {
 namespace sim {
 
-SimulatorWithAgents::SimulatorWithAgents(const gfx::SimulatorConfiguration& cfg)
-    : gfx::Simulator() {
+SimulatorWithAgents::SimulatorWithAgents(const SimulatorConfiguration& cfg)
+    : Simulator() {
   // NOTE: NOT SO GREAT NOW THAT WE HAVE virtual functions
   //       Maybe better not to do this reconfigure
   reconfigure(cfg);
@@ -19,13 +19,13 @@ SimulatorWithAgents::SimulatorWithAgents(const gfx::SimulatorConfiguration& cfg)
 SimulatorWithAgents::~SimulatorWithAgents() {}
 
 void SimulatorWithAgents::seed(uint32_t newSeed) {
-  gfx::Simulator::seed(newSeed);
+  Simulator::seed(newSeed);
   pathfinder_->seed(newSeed);
 }
 
 void SimulatorWithAgents::reset() {
   // connect controls to navmesh if loaded
-  gfx::Simulator::reset();
+  Simulator::reset();
 
   for (int iAgent = 0; iAgent < agents_.size(); ++iAgent) {
     auto& agent = agents_[iAgent];
@@ -38,7 +38,7 @@ void SimulatorWithAgents::reset() {
   }
 }
 
-void SimulatorWithAgents::reconfigure(const gfx::SimulatorConfiguration& cfg) {
+void SimulatorWithAgents::reconfigure(const SimulatorConfiguration& cfg) {
   LOG(INFO) << "SimulatorWithAgents::reconfigure";
   if (cfg == config_) {
     reset();
@@ -64,7 +64,7 @@ void SimulatorWithAgents::reconfigure(const gfx::SimulatorConfiguration& cfg) {
     LOG(WARNING) << "Navmesh file not found, checked at " << navmeshFilename;
   }
 
-  gfx::Simulator::reconfigure(cfg);
+  Simulator::reconfigure(cfg);
 }
 
 // Agents
@@ -91,7 +91,10 @@ agent::Agent::ptr SimulatorWithAgents::addAgent(
 
   // Add a RenderTarget to each of the agent's sensors
   for (auto& it : ag->getSensorSuite().getSensors()) {
-    renderer_->bindRenderTarget(it.second);
+    if (it.second->isVisualSensor()) {
+      auto sensor = static_cast<sensor::VisualSensor*>(it.second.get());
+      renderer_->bindRenderTarget(*sensor);
+    }
   }
 
   agents_.push_back(ag);

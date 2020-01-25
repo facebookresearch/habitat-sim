@@ -72,8 +72,10 @@ int PhysicsManager::addObject(const int objectLibIndex,
   if (physicsObjectAttributes.existsAs(assets::DataType::BOOL,
                                        "COM_provided")) {
     // if the COM is provided, shift by that
-    existingObjects_.at(nextObjectID_)
-        ->shiftOrigin(-physicsObjectAttributes.getMagnumVec3("COM"));
+    Magnum::Vector3 comShift = -physicsObjectAttributes.getMagnumVec3("COM");
+    // first apply scale
+    comShift = physicsObjectAttributes.getMagnumVec3("scale") * comShift;
+    existingObjects_.at(nextObjectID_)->shiftOrigin(comShift);
   } else {
     // otherwise use the bounding box center
     existingObjects_.at(nextObjectID_)->shiftOriginToBBCenter();
