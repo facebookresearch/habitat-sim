@@ -196,6 +196,10 @@ std::shared_ptr<scene::SemanticScene> Simulator::getSemanticScene() {
   return semanticScene_;
 }
 
+gfx::ShaderManager& Simulator::getShaderManager() {
+  return shaderManager_;
+}
+
 scene::SceneGraph& Simulator::getActiveSceneGraph() {
   CHECK_GE(activeSceneID_, 0);
   CHECK_LT(activeSceneID_, sceneID_.size());

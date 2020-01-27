@@ -13,6 +13,7 @@
 #include "esp/assets/ResourceManager.h"
 
 #include "esp/gfx/RenderTarget.h"
+#include "esp/gfx/ShaderManager.h"
 #include "esp/gfx/WindowlessContext.h"
 
 namespace esp {
@@ -69,6 +70,8 @@ class Simulator {
   std::shared_ptr<gfx::Renderer> getRenderer();
   std::shared_ptr<physics::PhysicsManager> getPhysicsManager();
   std::shared_ptr<scene::SemanticScene> getSemanticScene();
+
+  gfx::ShaderManager& getShaderManager();
 
   scene::SceneGraph& getActiveSceneGraph();
   scene::SceneGraph& getActiveSemanticSceneGraph();
@@ -308,6 +311,8 @@ class Simulator {
 
   gfx::WindowlessContext::uptr context_ = nullptr;
   std::shared_ptr<gfx::Renderer> renderer_ = nullptr;
+  gfx::ShaderManager shaderManager_;
+
   // CANNOT make the specification of resourceManager_ above the context_!
   // Because when deconstructing the resourceManager_, it needs
   // the GL::Context

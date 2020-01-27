@@ -51,5 +51,3 @@ class ShaderManager {
 
 }  // namespace gfx
 }  // namespace esp
-
-/

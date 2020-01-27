@@ -82,6 +82,8 @@ class Viewer : public Magnum::Platform::Application {
   Magnum::Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
                                    const Magnum::Vector2i& position);
 
+  gfx::ShaderManager shaderManager_;
+
   assets::ResourceManager resourceManager_;
   // SceneManager must be before physicsManager_ as the physicsManager_
   // assumes that it "owns" things owned by the scene manager

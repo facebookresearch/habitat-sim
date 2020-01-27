@@ -18,6 +18,10 @@ set(gfx_SOURCES
   WindowlessContext.h
   RenderTarget.cpp
   RenderTarget.h
+  Shader.h
+  Shader.cpp
+  ShaderManager.h
+  ShaderManager.cpp
 )
 
 # If ptex support is enabled add relevant source files
