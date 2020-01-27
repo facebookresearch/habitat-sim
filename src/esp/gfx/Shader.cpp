@@ -78,6 +78,7 @@ std::unique_ptr<Magnum::GL::AbstractShaderProgram> shaderProgramFactory(
   if (cfg.type == ShaderType::COLORED_SHADER_PHONG ||
       cfg.type == ShaderType::VERTEX_COLORED_SHADER_PHONG ||
       cfg.type == ShaderType::TEXTURED_SHADER_PHONG) {
+    // NOLINTNEXTLINE(google-build-using-namespace)
     using namespace Magnum::Math::Literals;
 
     static_cast<Magnum::Shaders::Phong&>(*shaderProgram)
