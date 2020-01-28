@@ -4,16 +4,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Union
+from typing import Optional, Union
 
 import magnum as mn
 import numpy as np
 
-from habitat_sim.agent.controls.controls import (
-    ActuationSpec,
-    ConstrainedActuationSpec,
-    SceneNodeControl,
-)
+from habitat_sim.agent.controls.controls import ActuationSpec, SceneNodeControl
 from habitat_sim.registry import registry
 from habitat_sim.scene import SceneNode
 
@@ -36,21 +32,33 @@ def _move_along(scene_node: SceneNode, distance: float, axis: int):
     scene_node.translate_local(ax * distance)
 
 
-def _rotate_local(scene_node: SceneNode, theta: float, axis: int):
+def _rotate_local(
+    scene_node: SceneNode, theta: float, axis: int, constraint: Optional[float] = None
+):
+    theta = mn.Deg(theta)
+    if constraint is not None:
+        rotation = scene_node.rotation
+        current_angle = rotation.angle()
+        if abs(float(current_angle)) > 0:
+            ref_vector = mn.Vector3()
+            ref_vector[axis] = 1
+
+            if mn.math.angle(ref_vector, rotation.axis().normalized()) > mn.Rad(1e-3):
+                raise RuntimeError(
+                    "Constrained look only works for a singular look action type"
+                )
+
+        new_angle = current_angle + theta
+
+        constraint = mn.Deg(constraint)
+
+        if new_angle > constraint:
+            theta = constraint - current_angle
+        elif new_angle < -constraint:
+            theta = -constraint - current_angle
+
     _rotate_local_fns[axis](scene_node, mn.Deg(theta))
     scene_node.rotation = scene_node.rotation.normalized()
-
-
-def _apply_look_constraint(scene_node: SceneNode, constraint: float):
-    constraint = mn.Deg(constraint)
-    rotation = scene_node.rotation
-    look_axis = rotation.transform_vector(mn.Vector3(0, 0, -1))
-    look_angle = mn.Rad(np.arctan2(look_axis[1], -look_axis[2]))
-
-    if look_angle > constraint:
-        _rotate_local(scene_node, constraint - look_angle, _X_AXIS)
-    elif look_angle < -constraint:
-        _rotate_local(scene_node, -look_angle - constraint, _X_AXIS)
 
 
 @registry.register_move_fn(body_action=True)
@@ -107,25 +115,15 @@ registry.register_move_fn(LookRight, name="turn_right", body_action=True)
 
 @registry.register_move_fn(body_action=False)
 class LookUp(SceneNodeControl):
-    def __call__(
-        self,
-        scene_node: SceneNode,
-        actuation_spec: Union[ActuationSpec, ConstrainedActuationSpec],
-    ):
-        _rotate_local(scene_node, actuation_spec.amount, _X_AXIS)
-
-        if isinstance(actuation_spec, ConstrainedActuationSpec):
-            _apply_look_constraint(scene_node, actuation_spec.constraint)
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+        _rotate_local(
+            scene_node, actuation_spec.amount, _X_AXIS, actuation_spec.constraint
+        )
 
 
 @registry.register_move_fn(body_action=False)
 class LookDown(SceneNodeControl):
-    def __call__(
-        self,
-        scene_node: SceneNode,
-        actuation_spec: Union[ActuationSpec, ConstrainedActuationSpec],
-    ):
-        _rotate_local(scene_node, -actuation_spec.amount, _X_AXIS)
-
-        if isinstance(actuation_spec, ConstrainedActuationSpec):
-            _apply_look_constraint(scene_node, actuation_spec.constraint)
+    def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
+        _rotate_local(
+            scene_node, -actuation_spec.amount, _X_AXIS, actuation_spec.constraint
+        )

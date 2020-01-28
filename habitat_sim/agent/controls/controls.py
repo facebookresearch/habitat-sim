@@ -19,6 +19,8 @@ class ActuationSpec:
     r"""Struct to hold parameters for the default actions
 
     :property amount: The amount the control moves the scene node by
+    :property constraint: A constraint on the actuation.  Currently only applies to the
+        maximum amount the agent can lookup or loopdown
 
     The default actions only have one parameters, the amount
     they move the scene node by, however other actions may have any number of
@@ -26,19 +28,7 @@ class ActuationSpec:
     """
 
     amount: float
-
-
-@attr.s(auto_attribs=True)
-class ConstrainedActuationSpec(ActuationSpec):
-    r"""Struct to hold parameters for default actions with constraints
-
-    :property constraint: The constraint amount
-
-    This struct is currently for LookUp and LookDown where we want to contrain
-    the amount you can lookup/loopdown to something reasonable
-    """
-
-    constraint: float
+    constraint: Optional[float] = None
 
 
 @attr.s(auto_attribs=True)

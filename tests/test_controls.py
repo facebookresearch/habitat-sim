@@ -208,7 +208,7 @@ def test_constrainted(
     node = scene_graph.get_root_node().create_child()
     node.rotation = initial_rotation
 
-    spec = habitat_sim.agent.controls.ConstrainedActuationSpec(
+    spec = habitat_sim.agent.controls.ActuationSpec(
         actuation_amount, actuation_constraint
     )
     habitat_sim.registry.get_move_fn(control_name)(node, spec)
@@ -227,4 +227,4 @@ def test_constrainted(
     look_axis = final_rotation.transform_vector(mn.Vector3(0, 0, -1))
     look_angle = mn.Deg(mn.Rad(np.arctan2(look_axis[1], -look_axis[2])))
 
-    assert np.abs(float(expected_angle - look_angle)) < 1e-3
+    assert np.abs(float(expected_angle - look_angle)) < 1e-1
