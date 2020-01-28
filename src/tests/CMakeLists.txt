@@ -33,6 +33,9 @@ target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 TEST(ResourceManagerTest assets)
 target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+TEST(CullingTest gfx)
+target_include_directories(CullingTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 TEST(SuncgTest scene)
 target_include_directories(SuncgTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
