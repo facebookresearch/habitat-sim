@@ -118,24 +118,18 @@ TEST(CullingTest, frustumCulling) {
 
   // set the camera
   esp::gfx::RenderCamera& renderCamera = sceneGraph.getDefaultRenderCamera();
-  {
-    Mn::Matrix4 p = renderCamera.projectionMatrix();
-    const float* projData = p.data();
-    printf("projData (TEST 1) = ");
-    for (int i = 0; i < 16; ++i) {
-      printf("%f, ", projData[i]);
-    }
-    printf("\n\n");
-  }
-  // inside the 5boxes.glb, there is a default camera created in the scene
+
+  // The camera to be set:
   // pos: {7.3589f, -6.9258f,4.9583f}
   // rotation: 77.4 deg, around {0.773, 0.334, 0.539}
   // fov = 39.6 deg
-  // resolution: 1920 x 1080
+  // resolution: 800 x 600
   // clip planes (near: 0.1m, far: 100m)
   // with such a camera, the box 3 should be invisible, box 0, 1, 2, 4 should be
   // visible.
-  // VERFIED IN VIEWER with the same settings
+
+  // NOTE: the following test reults have been visually verified in utility
+  // viewer
   renderCamera.setProjectionMatrix(800,     // width
                                    600,     // height
                                    0.01f,   // znear
@@ -145,11 +139,13 @@ TEST(CullingTest, frustumCulling) {
   esp::scene::SceneNode agentNode = sceneGraph.getRootNode().createChild();
   esp::scene::SceneNode cameraNode = agentNode.createChild();
   cameraNode.translate({7.3589f, -6.9258f, 4.9583f});
-  // auto pos = cameraNode.absoluteTranslation();
-  // printf("pos = %lf, %lf, %lf\n", pos.x(), pos.y(), pos.z());
   const Mn::Vector3 axis{0.773, 0.334, 0.539};
   cameraNode.rotate(Mn::Math::Deg<float>(77.4f), axis.normalized());
   renderCamera.node().setTransformation(cameraNode.absoluteTransformation());
+
+  // ground truth
+  const unsigned int visibleGroundTruth = 4;
+  const unsigned int invisibleBoxGroundTruth = 3;
 
   // frustum culling test
   unsigned int visible = 0;
@@ -158,48 +154,17 @@ TEST(CullingTest, frustumCulling) {
   const Mn::Math::Frustum<float> frustum =
       Mn::Math::Frustum<float>::fromMatrix(vp);
 
-  const float* frustumData = frustum.data();
-  printf("frustumData (TEST) = ");
-  for (int i = 0; i < 24; ++i) {
-    printf("%f, ", frustumData[i]);
-  }
-  printf("\n\n");
-
-  {
-    Mn::Matrix4 p = renderCamera.projectionMatrix();
-    const float* projData = p.data();
-    printf("projData (TEST ######) = ");
-    for (int i = 0; i < 16; ++i) {
-      printf("%f, ", projData[i]);
-    }
-    printf("\n\n");
-  }
-
-  {
-    Mn::Matrix4 c = renderCamera.cameraMatrix();
-    const float* camData = c.data();
-    printf("camData (TEST) = ");
-    for (int i = 0; i < 16; ++i) {
-      printf("%f, ", camData[i]);
-    }
-    printf("\n\n");
-  }
-
   for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
     Cr::Containers::Optional<Mn::Range3D> aabb =
         dynamic_cast<esp::scene::SceneNode&>(drawables[iDrawable].object())
             .getAbsoluteAABB();
     if (aabb) {
       if (Mn::Math::Intersection::rangeFrustum(*aabb, frustum)) {
-        printf("Box %u is in.\n", iDrawable);
         visible++;
       } else {
-        printf("Box %u is NOT in.\n", iDrawable);
-        printf("box: (%f, %f, %f), (%f, %f, %f)\n", aabb->min().x(),
-               aabb->min().y(), aabb->min().z(), aabb->max().x(),
-               aabb->max().y(), aabb->max().z());
+        CHECK_EQ(iDrawable, invisibleBoxGroundTruth);
       }
     }
   }
-  printf("visible = %u\n", visible);
+  CHECK_EQ(visibleGroundTruth, visible);
 }
