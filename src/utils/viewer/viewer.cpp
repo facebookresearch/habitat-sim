@@ -11,6 +11,7 @@
 #else
 #include <Magnum/Platform/GlfwApplication.h>
 #endif
+#include <Magnum/Math/Frustum.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Timeline.h>
 
@@ -194,20 +195,78 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Set up camera
   renderCamera_ = &sceneGraph_->getDefaultRenderCamera();
+  {
+    Magnum::Matrix4 p = renderCamera_->projectionMatrix();
+    const float* projData = p.data();
+    printf("projData (Viewer 1) = ");
+    for (int i = 0; i < 16; ++i) {
+      printf("%f, ", projData[i]);
+    }
+    printf("\n\n");
+  }
+
   agentBodyNode_ = &rootNode_->createChild();
   rgbSensorNode_ = &agentBodyNode_->createChild();
 
+  /*
   rgbSensorNode_->translate({0.0f, rgbSensorHeight, 0.0f});
   agentBodyNode_->translate({0.0f, 0.0f, 5.0f});
+  */
+  rgbSensorNode_->translate({7.3589f, -6.9258f, 4.9583f});
+  const Magnum::Vector3 axis{0.773, 0.334, 0.539};
+  rgbSensorNode_->rotate(Magnum::Math::Deg<float>(77.4f), axis.normalized());
 
+  printf("viewportSize = %d, %d\n", viewportSize.x(), viewportSize.y());
+  /*
   renderCamera_->setProjectionMatrix(viewportSize.x(),  // width
                                      viewportSize.y(),  // height
                                      0.01f,             // znear
                                      1000.0f,           // zfar
                                      90.0f);            // hfov
+                                     */
+  renderCamera_->setProjectionMatrix(viewportSize.x(),  // width
+                                     viewportSize.y(),  // height
+                                     0.01f,             // znear
+                                     100.0f,            // zfar
+                                     39.6f);            // hfov
   renderCamera_->setAspectRatioPolicy(
       Magnum::SceneGraph::AspectRatioPolicy::Extend);
   renderCamera_->enableFrustumCulling(enableFrustumCulling_);
+
+  renderCamera_->node().setTransformation(
+      rgbSensorNode_->absoluteTransformation());
+
+  Magnum::Matrix4 vp =
+      renderCamera_->projectionMatrix() * renderCamera_->cameraMatrix();
+  const Magnum::Math::Frustum<float> frustum =
+      Magnum::Math::Frustum<float>::fromMatrix(vp);
+
+  const float* frustumData = frustum.data();
+  printf("frustumData (Viewer) = ");
+  for (int i = 0; i < 24; ++i) {
+    printf("%f, ", frustumData[i]);
+  }
+  printf("\n");
+
+  {
+    Magnum::Matrix4 p = renderCamera_->projectionMatrix();
+    const float* projData = p.data();
+    printf("projData (Viewer ######) = ");
+    for (int i = 0; i < 16; ++i) {
+      printf("%f, ", projData[i]);
+    }
+    printf("\n\n");
+  }
+
+  {
+    Magnum::Matrix4 c = renderCamera_->cameraMatrix();
+    const float* camData = c.data();
+    printf("camData (Viewer) = ");
+    for (int i = 0; i < 16; ++i) {
+      printf("%f, ", camData[i]);
+    }
+    printf("\n\n");
+  }
 
   // Load navmesh if available
   if (file.compare(esp::assets::EMPTY_SCENE) != 0) {
@@ -234,6 +293,7 @@ Viewer::Viewer(const Arguments& arguments)
   }
 
   // connect controls to navmesh if loaded
+  /*
   if (pathfinder_->isLoaded()) {
     // some scenes could have pathable roof polygons. We are not filtering
     // those starting points here.
@@ -250,13 +310,14 @@ Viewer::Viewer(const Arguments& arguments)
       return currentPosition;
     });
   }
+  */
 
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
 
   timeline_.start();
 
-}  // end Viewer::Viewer
+}  // namespace
 
 void Viewer::addObject(std::string configFile) {
   if (physicsManager_ == nullptr)

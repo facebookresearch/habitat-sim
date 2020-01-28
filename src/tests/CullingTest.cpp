@@ -118,32 +118,73 @@ TEST(CullingTest, frustumCulling) {
 
   // set the camera
   esp::gfx::RenderCamera& renderCamera = sceneGraph.getDefaultRenderCamera();
+  {
+    Mn::Matrix4 p = renderCamera.projectionMatrix();
+    const float* projData = p.data();
+    printf("projData (TEST 1) = ");
+    for (int i = 0; i < 16; ++i) {
+      printf("%f, ", projData[i]);
+    }
+    printf("\n\n");
+  }
   // inside the 5boxes.glb, there is a default camera created in the scene
   // pos: {7.3589f, -6.9258f,4.9583f}
   // rotation: 77.4 deg, around {0.773, 0.334, 0.539}
   // fov = 39.6 deg
   // resolution: 1920 x 1080
   // clip planes (near: 0.1m, far: 100m)
-  // with such a camera, the box 4 should be invisible, box 0 to 3 should be
+  // with such a camera, the box 3 should be invisible, box 0, 1, 2, 4 should be
   // visible.
-  renderCamera.setProjectionMatrix(1980,    // width
-                                   1080,    // height
+  // VERFIED IN VIEWER with the same settings
+  renderCamera.setProjectionMatrix(800,     // width
+                                   600,     // height
                                    0.01f,   // znear
                                    100.0f,  // zfar
-                                   39.6);   // hfov
+                                   39.6f);  // hfov
 
-  esp::scene::SceneNode cameraNode = sceneGraph.getRootNode();
-  cameraNode.translateLocal({7.3589f, -6.9258f, 4.9583f});
-  auto pos = cameraNode.absoluteTranslation();
-  printf("pos = %lf, %lf, %lf\n", pos.x(), pos.y(), pos.z());
+  esp::scene::SceneNode agentNode = sceneGraph.getRootNode().createChild();
+  esp::scene::SceneNode cameraNode = agentNode.createChild();
+  cameraNode.translate({7.3589f, -6.9258f, 4.9583f});
+  // auto pos = cameraNode.absoluteTranslation();
+  // printf("pos = %lf, %lf, %lf\n", pos.x(), pos.y(), pos.z());
   const Mn::Vector3 axis{0.773, 0.334, 0.539};
   cameraNode.rotate(Mn::Math::Deg<float>(77.4f), axis.normalized());
   renderCamera.node().setTransformation(cameraNode.absoluteTransformation());
 
   // frustum culling test
   unsigned int visible = 0;
-  const Mn::Math::Frustum<float> frustum = Mn::Math::Frustum<float>::fromMatrix(
-      renderCamera.projectionMatrix() * renderCamera.cameraMatrix());
+  Mn::Matrix4 vp =
+      renderCamera.projectionMatrix() * renderCamera.cameraMatrix();
+  const Mn::Math::Frustum<float> frustum =
+      Mn::Math::Frustum<float>::fromMatrix(vp);
+
+  const float* frustumData = frustum.data();
+  printf("frustumData (TEST) = ");
+  for (int i = 0; i < 24; ++i) {
+    printf("%f, ", frustumData[i]);
+  }
+  printf("\n\n");
+
+  {
+    Mn::Matrix4 p = renderCamera.projectionMatrix();
+    const float* projData = p.data();
+    printf("projData (TEST ######) = ");
+    for (int i = 0; i < 16; ++i) {
+      printf("%f, ", projData[i]);
+    }
+    printf("\n\n");
+  }
+
+  {
+    Mn::Matrix4 c = renderCamera.cameraMatrix();
+    const float* camData = c.data();
+    printf("camData (TEST) = ");
+    for (int i = 0; i < 16; ++i) {
+      printf("%f, ", camData[i]);
+    }
+    printf("\n\n");
+  }
+
   for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
     Cr::Containers::Optional<Mn::Range3D> aabb =
         dynamic_cast<esp::scene::SceneNode&>(drawables[iDrawable].object())
