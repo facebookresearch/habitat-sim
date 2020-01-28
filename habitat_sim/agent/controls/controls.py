@@ -15,7 +15,7 @@ import habitat_sim.bindings as hsim
 
 
 @attr.s(auto_attribs=True)
-class ActuationSpec(object):
+class ActuationSpec:
     r"""Struct to hold parameters for the default actions
 
     :property amount: The amount the control moves the scene node by
@@ -26,6 +26,19 @@ class ActuationSpec(object):
     """
 
     amount: float
+
+
+@attr.s(auto_attribs=True)
+class ConstrainedActuationSpec(ActuationSpec):
+    r"""Struct to hold parameters for default actions with constraints
+
+    :property constraint: The constraint amount
+
+    This struct is currently for LookUp and LookDown where we want to contrain
+    the amount you can lookup/loopdown to something reasonable
+    """
+
+    constraint: float
 
 
 @attr.s(auto_attribs=True)
