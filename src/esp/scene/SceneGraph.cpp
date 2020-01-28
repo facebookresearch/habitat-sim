@@ -50,12 +50,8 @@ template <typename... DrawableGroupArgs>
 gfx::DrawableGroup* SceneGraph::createDrawableGroup(
     std::string id,
     DrawableGroupArgs&&... args) {
-  // auto inserted = drawableGroups_.emplace(
-  //     std::piecewise_construct, std::make_tuple(std::move(id)),
-  //     std::tuple<DrawableGroupArgs&&...>(
-  //         std::forward<DrawableGroupArgs>(args)...));
   auto inserted = drawableGroups_.emplace(
-      std::piecewise_construct, std::make_tuple(std::move(id)),
+      std::piecewise_construct, std::forward_as_tuple(std::move(id)),
       std::forward_as_tuple(std::forward<DrawableGroupArgs>(args)...));
   if (inserted.second) {
     LOG(INFO) << "Created DrawableGroup: " << inserted.first->first;

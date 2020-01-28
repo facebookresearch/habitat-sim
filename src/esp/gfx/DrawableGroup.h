@@ -66,6 +66,7 @@ class DrawableGroup : public Magnum::SceneGraph::DrawableGroup3D {
 
   /**
    * @brief Set the shader this group uses.
+   *
    * @return Reference to self (for method chaining)
    */
   DrawableGroup& setShader(Shader::ptr shader) {

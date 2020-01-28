@@ -57,8 +57,9 @@ class SceneGraph {
 
   /** @overload */
   const DrawableGroups& getDrawableGroups() const { return drawableGroups_; }
+
   /**
-   * @brief Gets a @ref DrawableGroup by ID
+   * @brief Get a @ref DrawableGroup by ID
    *
    * @return Pointer to @ref DrawableGroup, or nullptr if shader does not exist.
    *
@@ -82,9 +83,9 @@ class SceneGraph {
                                           DrawableGroupArgs&&... args);
 
   /**
-   * @brief Deletes a @ref DrawableGroup
+   * @brief Deletes a @ref DrawableGroup by ID
    *
-   * @return If the @ref Shader existed.
+   * @return If the @ref DrawableGroup with specified ID existed.
    */
   bool deleteDrawableGroup(const std::string& id);
 
