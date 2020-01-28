@@ -1411,7 +1411,7 @@ void ResourceManager::createDrawable(
     const ShaderType shaderType,
     Magnum::GL::Mesh& mesh,
     scene::SceneNode& node,
-    Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */,
+    DrawableGroup* group /* = nullptr */,
     Magnum::GL::Texture2D* texture /* = nullptr */,
     int objectId /* = ID_UNDEFINED */,
     const Magnum::Color4& color /* = Magnum::Color4{1} */) {

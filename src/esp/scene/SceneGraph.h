@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <unordered_map>
+
 #include "esp/core/esp.h"
 #include "esp/gfx/magnum.h"
 
@@ -17,7 +19,7 @@ namespace esp {
 namespace scene {
 class SceneGraph {
  public:
-  using DrawableGroups = std::map<std::string, gfx::DrawableGroup>;
+  using DrawableGroups = std::unordered_map<std::string, gfx::DrawableGroup>;
 
   SceneGraph();
   virtual ~SceneGraph() { LOG(INFO) << "Deconstructing SceneGraph"; };

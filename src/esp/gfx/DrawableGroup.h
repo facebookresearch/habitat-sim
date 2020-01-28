@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <Magnum/SceneGraph/FeatureGroup.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
 
 #include "esp/core/esp.h"
@@ -17,6 +18,7 @@ class Drawable;
 class RenderCamera;
 
 // STUB (todo: remove)
+class DrawableGroup;
 class Shader {
  public:
   bool prepareForDraw(const DrawableGroup& drawables,

@@ -9,12 +9,11 @@
 namespace esp {
 namespace gfx {
 
-PTexMeshDrawable::PTexMeshDrawable(
-    scene::SceneNode& node,
-    PTexMeshShader& shader,
-    assets::PTexMeshData& ptexMeshData,
-    int submeshID,
-    Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */)
+PTexMeshDrawable::PTexMeshDrawable(scene::SceneNode& node,
+                                   PTexMeshShader& shader,
+                                   assets::PTexMeshData& ptexMeshData,
+                                   int submeshID,
+                                   DrawableGroup* group /* = nullptr */)
     : Drawable{node, shader, ptexMeshData.getRenderingBuffer(submeshID)->mesh,
                group},
       atlasTexture_(ptexMeshData.getRenderingBuffer(submeshID)->atlasTexture),

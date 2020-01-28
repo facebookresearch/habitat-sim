@@ -12,11 +12,18 @@ namespace gfx {
 Drawable::Drawable(scene::SceneNode& node,
                    Magnum::GL::AbstractShaderProgram& shader,
                    Magnum::GL::Mesh& mesh,
-                   Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */)
-    : Magnum::SceneGraph::Drawable3D{node, group},
+                   DrawableGroup* group /* = nullptr */)
+    // Note: it is important to NOT pass through group to the Drawable3D
+    // constructor, since this will add the drawable to the
+    // underlying group twice. This is because we customize group membership
+    // semantics using gfx::DrawableGroup
+    : Magnum::SceneGraph::Drawable3D{node},
       node_(node),
       shader_(shader),
-      mesh_(mesh) {}
+      mesh_(mesh) {
+  if (group)
+    group->add(*this);
+}
 
 }  // namespace gfx
 }  // namespace esp
