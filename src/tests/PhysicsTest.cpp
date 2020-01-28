@@ -210,7 +210,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
 }
 
 TEST_F(PhysicsManagerTest, DiscreteContactTest) {
-  LOG(INFO) << "Starting physics test: ContactTest";
+  LOG(INFO) << "Starting physics test: DiscreteContactTest";
 
   std::string sceneFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");

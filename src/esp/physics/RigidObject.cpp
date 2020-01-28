@@ -43,11 +43,6 @@ bool RigidObject::initializeObject(
   return true;
 }
 
-bool RigidObject::removeObject() {
-  delete &node();
-  return true;
-}
-
 bool RigidObject::isActive() {
   // NOTE: no active objects without a physics engine... (kinematics don't
   // count)

@@ -30,7 +30,7 @@ namespace esp {
 namespace physics {
 
 BulletRigidObject::BulletRigidObject(scene::SceneNode* rigidBodyNode)
-    : RigidObject{rigidBodyNode} {};
+    : RigidObject{rigidBodyNode}, MotionState(*rigidBodyNode){};
 
 bool BulletRigidObject::initializeScene(
     const assets::PhysicsSceneAttributes& physicsSceneAttributes,
@@ -210,12 +210,10 @@ bool BulletRigidObject::initializeObject(
   }
 
   //! Bullet rigid body setup
-  bObjectMotionState_ = new Magnum::BulletIntegration::MotionState(node());
   btRigidBody::btRigidBodyConstructionInfo info =
       btRigidBody::btRigidBodyConstructionInfo(
-          physicsObjectAttributes.getDouble("mass"),
-          &(bObjectMotionState_->btMotionState()), bObjectShape_.get(),
-          bInertia);
+          physicsObjectAttributes.getDouble("mass"), &(btMotionState()),
+          bObjectShape_.get(), bInertia);
   info.m_friction = physicsObjectAttributes.getDouble("frictionCoefficient");
   info.m_restitution =
       physicsObjectAttributes.getDouble("restitutionCoefficient");
@@ -258,7 +256,7 @@ void BulletRigidObject::setCollisionFromBB() {
   }
 }
 
-bool BulletRigidObject::removeObject() {
+BulletRigidObject::~BulletRigidObject() {
   if (rigidObjectType_ == RigidObjectType::OBJECT) {
     // remove rigid body from the world
     bWorld_->removeRigidBody(bObjectRigidBody_.get());
@@ -268,10 +266,7 @@ bool BulletRigidObject::removeObject() {
       bWorld_->removeCollisionObject(co.get());
     }
   }
-  bWorld_.reset();  // release shared ownership of the world
-  rigidObjectType_ = RigidObjectType::NONE;
-  delete &node();
-  return true;
+  bWorld_.reset();
 }
 
 bool BulletRigidObject::isActive() {

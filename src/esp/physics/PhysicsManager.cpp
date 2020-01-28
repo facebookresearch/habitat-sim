@@ -20,7 +20,8 @@ bool PhysicsManager::initPhysics(
   fixedTimeStep_ = physicsManagerAttributes.getDouble("timestep");
 
   //! Create new scene node
-  sceneNode_ = new physics::RigidObject(&physicsNode_->createChild());
+  sceneNode_ =
+      std::make_unique<physics::RigidObject>(&physicsNode_->createChild());
   initialized_ = true;
 
   return true;
@@ -92,11 +93,14 @@ int PhysicsManager::addObject(const std::string& configFile,
   return physObjectID;
 }
 
-int PhysicsManager::removeObject(const int physObjectID) {
+int PhysicsManager::removeObject(const int physObjectID, bool deleteSceneNode) {
   assertIDValidity(physObjectID);
-  existingObjects_.at(physObjectID)->removeObject();
+  scene::SceneNode* objectNode = &existingObjects_.at(physObjectID)->node();
   existingObjects_.erase(physObjectID);
   deallocateObjectID(physObjectID);
+  if (deleteSceneNode) {
+    delete objectNode;
+  }
   return physObjectID;
 }
 
@@ -130,11 +134,10 @@ int PhysicsManager::deallocateObjectID(int physObjectID) {
 int PhysicsManager::makeRigidObject(
     const std::vector<assets::CollisionMeshData>& meshGroup,
     assets::PhysicsObjectAttributes physicsObjectAttributes) {
-  //! Create new physics object (child node of sceneNode_)
-
   int newObjectID = allocateObjectID();
+  scene::SceneNode& newNode = sceneNode_->node().createChild();
   existingObjects_[newObjectID] =
-      new physics::RigidObject(&sceneNode_->node().createChild());
+      std::make_unique<physics::RigidObject>(&newNode);
 
   //! Instantiate with mesh pointer
   bool objectSuccess =
@@ -142,9 +145,8 @@ int PhysicsManager::makeRigidObject(
           ->initializeObject(physicsObjectAttributes, meshGroup);
   if (!objectSuccess) {
     deallocateObjectID(newObjectID);
-    delete existingObjects_.at(newObjectID);  // TODO: check this. Could be
-                                              // null?
     existingObjects_.erase(newObjectID);
+    delete &newNode;
     return ID_UNDEFINED;
   }
   return newObjectID;

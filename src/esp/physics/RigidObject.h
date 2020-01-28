@@ -232,14 +232,6 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual void applyImpulseTorque(const Magnum::Vector3& impulse);
 
-  /**
-   * @brief Remove the object from any connected physics simulator implemented
-   * by a derived @ref PhysicsManager. Does nothing for default @ref
-   * PhysicsManager.
-   * @return true if successful, false otherwise.
-   */
-  virtual bool removeObject();
-
   // ==== Transformations ===
 
   /** @brief Set the 4x4 transformation matrix of the object kinematically.

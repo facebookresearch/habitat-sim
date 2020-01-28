@@ -168,10 +168,12 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    *  @param physObjectID The ID (key) of the object instance in @ref
    * PhysicsManager::existingObjects_.
+   * @param deleteSceneNode If true, deletes the object's scene node. Otherwise
+   * detaches the object from simulation.
    *  @return the removed object's ID previously mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  virtual int removeObject(const int physObjectID);
+  virtual int removeObject(const int physObjectID, bool deleteSceneNode = true);
 
   /** @brief Get the number of objects mapped in @ref
    * PhysicsManager::existingObjects_.
@@ -793,7 +795,7 @@ class PhysicsManager {
    * as it is loaded as static geometry with simulation efficiency in mind. See
    * @ref addScene.
    * */
-  physics::RigidObject* sceneNode_ = nullptr;
+  physics::RigidObject::uptr sceneNode_ = nullptr;
 
   //! ==== Rigid object memory management ====
 
@@ -805,7 +807,7 @@ class PhysicsManager {
    * As such, this structure should be cleared before the @ref scene::SceneGraph
    * owning the objects or this structure will likely contain null object
    * pointers. */
-  std::map<int, physics::RigidObject*> existingObjects_;
+  std::map<int, physics::RigidObject::uptr> existingObjects_;
 
   /** @brief A counter of unique object ID's allocated thus far. Used to
    * allocate new IDs when  @ref recycledObjectIDs_ is empty without needing to
