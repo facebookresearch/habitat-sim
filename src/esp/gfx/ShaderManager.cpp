@@ -19,8 +19,9 @@ Shader::cptr ShaderManager::getShader(const std::string& id) const {
 
 template <typename... ShaderArgs>
 Shader::ptr ShaderManager::createShader(std::string id, ShaderArgs&&... args) {
-  auto inserted =
-      shaders_.emplace(std::move(id), std::forward<ShaderArgs>(args)...);
+  auto inserted = shaders_.emplace(
+      std::piecewise_construct, std::forward_as_tuple(std::move(id)),
+      std::forward_as_tuple(std::forward<ShaderArgs>(args)...));
   if (inserted.second) {
     LOG(INFO) << "Created Shader: " << inserted.first->first;
     return inserted.first->second;
