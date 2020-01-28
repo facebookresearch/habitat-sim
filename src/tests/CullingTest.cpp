@@ -47,7 +47,7 @@ TEST(CullingTest, computeAbsoluteAABB) {
   CHECK_EQ(loadSuccess, true);
 
   std::vector<Mn::Range3D> aabbs;
-  for (size_t iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
+  for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
     Cr::Containers::Optional<Mn::Range3D> aabb =
         dynamic_cast<esp::scene::SceneNode&>(drawables[iDrawable].object())
             .getAbsoluteAABB();
@@ -74,8 +74,9 @@ TEST(CullingTest, computeAbsoluteAABB) {
                                 Mn::Vector3{1.0, -3.0, 5.0});
   // Box 3: (parent, Box 0), object "a", relative translation (-4.0, 0.0, 4.0),
   // relative rotation pi/4 (ccw) around local z-axis of Box 3
-  aabbsGroundTruth.emplace_back(Mn::Vector3{-4.0 - sqrt(2.0), -sqrt(2.0), 3.0},
-                                Mn::Vector3{-4.0 + sqrt(2.0), sqrt(2.0), 5.0});
+  aabbsGroundTruth.emplace_back(
+      Mn::Vector3{-4.0f - sqrt(2.0f), -sqrt(2.0f), 3.0},
+      Mn::Vector3{-4.0f + sqrt(2.0f), sqrt(2.0f), 5.0});
   // Box 4: (parent, Box 3), object "a", relative translation (8.0, 0.0, 0.0),
   // relative rotation pi/4 (ccw) around local z-axis of Box 4
   aabbsGroundTruth.emplace_back(Mn::Vector3{3.0, -1.0, 3.0},
@@ -84,7 +85,7 @@ TEST(CullingTest, computeAbsoluteAABB) {
   // compare against the ground truth
   CHECK_EQ(aabbs.size(), aabbsGroundTruth.size());
   const float epsilon = 1e-6;
-  for (size_t iBox = 0; iBox < aabbsGroundTruth.size(); ++iBox) {
+  for (unsigned int iBox = 0; iBox < aabbsGroundTruth.size(); ++iBox) {
     CHECK_LE(std::abs((aabbs[iBox].min() - aabbsGroundTruth[iBox].min()).dot()),
              epsilon);
     CHECK_LE(std::abs((aabbs[iBox].max() - aabbsGroundTruth[iBox].max()).dot()),
@@ -120,7 +121,7 @@ TEST(CullingTest, frustumCulling) {
   // inside the 5boxes.glb, there is a default camera created in the scene
   // pos: {7.3589f, -6.9258f,4.9583f}
   // rotation: 77.4 deg, around {0.773, 0.334, 0.539}
-  // focal length = 50mm (it means the hfov = 26.3 deg, vfov = 17.7 deg
+  // fov = 39.6 deg
   // resolution: 1920 x 1080
   // clip planes (near: 0.1m, far: 100m)
   // with such a camera, the box 4 should be invisible, box 0 to 3 should be
@@ -129,23 +130,21 @@ TEST(CullingTest, frustumCulling) {
                                    1080,    // height
                                    0.01f,   // znear
                                    100.0f,  // zfar
-                                   90.3);   // hfov
+                                   39.6);   // hfov
 
   esp::scene::SceneNode cameraNode = sceneGraph.getRootNode();
   cameraNode.translateLocal({7.3589f, -6.9258f, 4.9583f});
-  // cameraNode.translateLocal({0.0f, -8.0f, 0.0f});
   auto pos = cameraNode.absoluteTranslation();
   printf("pos = %lf, %lf, %lf\n", pos.x(), pos.y(), pos.z());
   const Mn::Vector3 axis{0.773, 0.334, 0.539};
-  const float pi = 3.1415926535;
   cameraNode.rotate(Mn::Math::Deg<float>(77.4f), axis.normalized());
   renderCamera.node().setTransformation(cameraNode.absoluteTransformation());
 
   // frustum culling test
-  size_t visible = 0;
+  unsigned int visible = 0;
   const Mn::Math::Frustum<float> frustum = Mn::Math::Frustum<float>::fromMatrix(
       renderCamera.projectionMatrix() * renderCamera.cameraMatrix());
-  for (size_t iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
+  for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
     Cr::Containers::Optional<Mn::Range3D> aabb =
         dynamic_cast<esp::scene::SceneNode&>(drawables[iDrawable].object())
             .getAbsoluteAABB();
@@ -155,6 +154,9 @@ TEST(CullingTest, frustumCulling) {
         visible++;
       } else {
         printf("Box %u is NOT in.\n", iDrawable);
+        printf("box: (%f, %f, %f), (%f, %f, %f)\n", aabb->min().x(),
+               aabb->min().y(), aabb->min().z(), aabb->max().x(),
+               aabb->max().y(), aabb->max().z());
       }
     }
   }

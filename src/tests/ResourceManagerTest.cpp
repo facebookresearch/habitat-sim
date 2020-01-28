@@ -128,8 +128,9 @@ TEST(ResourceManagerTest, computeAbsoluteAABB) {
                                 Mn::Vector3{1.0, -3.0, 5.0});
   // Box 3: (parent, Box 0), object "a", relative translation (-4.0, 0.0, 4.0),
   // relative rotation pi/4 (ccw) around local z-axis of Box 3
-  aabbsGroundTruth.emplace_back(Mn::Vector3{-4.0 - sqrt(2.0), -sqrt(2.0), 3.0},
-                                Mn::Vector3{-4.0 + sqrt(2.0), sqrt(2.0), 5.0});
+  aabbsGroundTruth.emplace_back(
+      Mn::Vector3{-4.0f - sqrt(2.0f), -sqrt(2.0f), 3.0},
+      Mn::Vector3{-4.0f + sqrt(2.0f), sqrt(2.0f), 5.0});
   // Box 4: (parent, Box 3), object "a", relative translation (8.0, 0.0, 0.0),
   // relative rotation pi/4 (ccw) around local z-axis of Box 4
   aabbsGroundTruth.emplace_back(Mn::Vector3{3.0, -1.0, 3.0},
