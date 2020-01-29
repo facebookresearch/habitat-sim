@@ -83,8 +83,8 @@ class BulletRigidObject : public RigidObject,
 
   /**
    * @brief Initializes this @ref BulletRigidObject as static scene geometry.
-   * See @ref PhysicsManager::sceneNode_. Sets @ref rigidObjectType_ to @ref
-   * RigidObjectType::SCENE. See @ref btCollisionObject.
+   * See @ref PhysicsManager::staticSceneObject_. Sets @ref rigidObjectType_ to
+   * @ref RigidObjectType::SCENE. See @ref btCollisionObject.
    * @param physicsSceneAttributes The template structure defining relevant
    * phyiscal parameters for the physical scene.
    * @param meshGroup The collision mesh data for the scene.

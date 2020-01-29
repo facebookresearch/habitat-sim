@@ -258,13 +258,13 @@ class PhysicsManager {
   // =========== Scene Getter/Setter functions ===========
 
   /** @brief Get the current friction coefficient of the scene collision
-   * geometry. See @ref sceneNode_.
+   * geometry. See @ref staticSceneObject_.
    * @return The scalar friction coefficient of the scene geometry.
    */
   virtual double getSceneFrictionCoefficient() const { return 0.0; };
 
   /** @brief Set the friction coefficient of the scene collision geometry. See
-   * @ref sceneNode_.
+   * @ref staticSceneObject_.
    * @param frictionCoefficient The scalar friction coefficient of the scene
    * geometry.
    */
@@ -273,15 +273,15 @@ class PhysicsManager {
 
   /** @brief Get the current coefficient of restitution for the scene collision
    * geometry. This determines the ratio of initial to final relative velocity
-   * between the scene and collidiing object. See @ref sceneNode_. By default
-   * this will always return 0, since kinametic scenes have no dynamics.
+   * between the scene and collidiing object. See @ref staticSceneObject_. By
+   * default this will always return 0, since kinametic scenes have no dynamics.
    * @return The scalar coefficient of restitution for the scene geometry.
    */
   virtual double getSceneRestitutionCoefficient() const { return 0.0; };
 
   /** @brief Set the coefficient of restitution for the scene collision
-   * geometry. See @ref sceneNode_. By default does nothing since kinametic
-   * scenes have no dynamics.
+   * geometry. See @ref staticSceneObject_. By default does nothing since
+   * kinametic scenes have no dynamics.
    * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
   virtual void setSceneRestitutionCoefficient(
@@ -790,12 +790,13 @@ class PhysicsManager {
 
   /**
    * @brief The @ref scene::SceneNode which represents the static collision
-   * geometry of the physical world. Only one @ref sceneNode_ may exist in a
-   * physical world. This @ref RigidObject can only have @ref MotionType::STATIC
-   * as it is loaded as static geometry with simulation efficiency in mind. See
+   * geometry of the physical world. Only one @ref staticSceneObject_ may exist
+   * in a physical world. This @ref RigidObject can only have @ref
+   * MotionType::STATIC as it is loaded as static geometry with simulation
+   * efficiency in mind. See
    * @ref addScene.
    * */
-  physics::RigidObject::uptr sceneNode_ = nullptr;
+  physics::RigidObject::uptr staticSceneObject_ = nullptr;
 
   //! ==== Rigid object memory management ====
 

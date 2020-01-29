@@ -16,7 +16,7 @@ BulletPhysicsManager::~BulletPhysicsManager() {
   LOG(INFO) << "Deconstructing BulletPhysicsManager";
 
   existingObjects_.clear();
-  sceneNode_.reset(nullptr);
+  staticSceneObject_.reset(nullptr);
 }
 
 bool BulletPhysicsManager::initPhysics(
@@ -43,7 +43,7 @@ bool BulletPhysicsManager::initPhysics(
 
   physicsNode_ = node;
   //! Create new scene node
-  sceneNode_ =
+  staticSceneObject_ =
       std::make_unique<BulletRigidObject>(&physicsNode_->createChild());
 
   initialized_ = true;
@@ -66,7 +66,7 @@ bool BulletPhysicsManager::addScene(
       physicsSceneAttributes.getString("collisionMeshHandle"));
 
   //! Initialize scene
-  bool sceneSuccess = dynamic_cast<BulletRigidObject*>(sceneNode_.get())
+  bool sceneSuccess = dynamic_cast<BulletRigidObject*>(staticSceneObject_.get())
                           ->initializeScene(physicsSceneAttributes, metaData,
                                             meshGroup, bWorld_);
 
@@ -76,9 +76,9 @@ bool BulletPhysicsManager::addScene(
 int BulletPhysicsManager::makeRigidObject(
     const std::vector<assets::CollisionMeshData>& meshGroup,
     assets::PhysicsObjectAttributes physicsObjectAttributes) {
-  //! Create new physics object (child node of sceneNode_)
+  //! Create new physics object (child node of staticSceneObject_)
   int newObjectID = allocateObjectID();
-  scene::SceneNode& newNode = sceneNode_->node().createChild();
+  scene::SceneNode& newNode = staticSceneObject_->node().createChild();
   existingObjects_[newObjectID] = std::make_unique<BulletRigidObject>(&newNode);
 
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
@@ -188,12 +188,12 @@ void BulletPhysicsManager::setMargin(const int physObjectID,
 
 void BulletPhysicsManager::setSceneFrictionCoefficient(
     const double frictionCoefficient) {
-  sceneNode_->setFrictionCoefficient(frictionCoefficient);
+  staticSceneObject_->setFrictionCoefficient(frictionCoefficient);
 }
 
 void BulletPhysicsManager::setSceneRestitutionCoefficient(
     const double restitutionCoefficient) {
-  sceneNode_->setRestitutionCoefficient(restitutionCoefficient);
+  staticSceneObject_->setRestitutionCoefficient(restitutionCoefficient);
 }
 
 double BulletPhysicsManager::getMargin(const int physObjectID) const {
@@ -204,11 +204,11 @@ double BulletPhysicsManager::getMargin(const int physObjectID) const {
 }
 
 double BulletPhysicsManager::getSceneFrictionCoefficient() const {
-  return sceneNode_->getFrictionCoefficient();
+  return staticSceneObject_->getFrictionCoefficient();
 }
 
 double BulletPhysicsManager::getSceneRestitutionCoefficient() const {
-  return sceneNode_->getRestitutionCoefficient();
+  return staticSceneObject_->getRestitutionCoefficient();
 }
 
 const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
@@ -220,7 +220,7 @@ const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
 }
 
 const Magnum::Range3D BulletPhysicsManager::getSceneCollisionShapeAabb() const {
-  return dynamic_cast<BulletRigidObject*>(sceneNode_.get())
+  return dynamic_cast<BulletRigidObject*>(staticSceneObject_.get())
       ->getCollisionShapeAabb();
 }
 

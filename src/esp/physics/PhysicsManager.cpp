@@ -20,7 +20,7 @@ bool PhysicsManager::initPhysics(
   fixedTimeStep_ = physicsManagerAttributes.getDouble("timestep");
 
   //! Create new scene node
-  sceneNode_ =
+  staticSceneObject_ =
       std::make_unique<physics::RigidObject>(&physicsNode_->createChild());
   initialized_ = true;
 
@@ -43,7 +43,7 @@ bool PhysicsManager::addScene(
 
   //! Initialize scene
   bool sceneSuccess =
-      sceneNode_->initializeScene(physicsSceneAttributes, meshGroup);
+      staticSceneObject_->initializeScene(physicsSceneAttributes, meshGroup);
   return sceneSuccess;
 }
 
@@ -135,7 +135,7 @@ int PhysicsManager::makeRigidObject(
     const std::vector<assets::CollisionMeshData>& meshGroup,
     assets::PhysicsObjectAttributes physicsObjectAttributes) {
   int newObjectID = allocateObjectID();
-  scene::SceneNode& newNode = sceneNode_->node().createChild();
+  scene::SceneNode& newNode = staticSceneObject_->node().createChild();
   existingObjects_[newObjectID] =
       std::make_unique<physics::RigidObject>(&newNode);
 
@@ -198,7 +198,7 @@ void PhysicsManager::stepPhysics(double dt) {
 //! helps checking how many objects are active/inactive at any
 //! time step
 int PhysicsManager::checkActiveObjects() {
-  if (sceneNode_ == nullptr) {
+  if (staticSceneObject_ == nullptr) {
     return 0;
   }
 

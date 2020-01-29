@@ -114,7 +114,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
 
   /**
    * @brief Initializes this @ref RigidObject as static scene geometry. See @ref
-   * PhysicsManager::sceneNode_. Sets @ref rigidObjectType_ to @ref
+   * PhysicsManager::staticSceneObject_. Sets @ref rigidObjectType_ to @ref
    * RigidObjectType::SCENE.
    * @param physicsSceneAttributes The template structure defining relevant
    * phyiscal parameters for the physical scene.
