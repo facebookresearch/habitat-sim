@@ -50,11 +50,11 @@ class RenderCamera : public MagnumCamera {
    * @brief Enable or disable the frustum culling test
    * @param true, enable; false, disable;
    */
-  void setFrustumCullingEnabled(bool value) { frustumCullingEnabled = value; }
+  void setFrustumCullingEnabled(bool value) { frustumCullingEnabled_ = value; }
   /**
    * @brief Get the status, if the frustum culling is enabled
    */
-  bool getFrustumCullingEnabled() { return frustumCullingEnabled; }
+  bool getFrustumCullingEnabled() { return frustumCullingEnabled_; }
 
   /**
    * @brief performs the frustum culling
@@ -74,7 +74,7 @@ class RenderCamera : public MagnumCamera {
                  Magnum::Matrix4>>& drawableTransforms);
 
  protected:
-  bool frustumCullingEnabled = false;
+  bool frustumCullingEnabled_ = false;
 
   ESP_SMART_POINTERS(RenderCamera)
 };

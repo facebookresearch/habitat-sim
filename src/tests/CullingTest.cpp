@@ -14,6 +14,7 @@
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/RenderCamera.h"
+#include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/scene/SceneManager.h"
 
@@ -131,11 +132,12 @@ TEST(CullingTest, frustumCulling) {
 
   // NOTE: the following test results have been visually verified in utility
   // viewer
-  renderCamera.setProjectionMatrix(800,     // width
-                                   600,     // height
-                                   0.01f,   // znear
-                                   100.0f,  // zfar
-                                   39.6f);  // hfov
+  Mn::Vector2i frameBufferSize{800, 600};
+  renderCamera.setProjectionMatrix(frameBufferSize.x(),  // width
+                                   frameBufferSize.y(),  // height
+                                   0.01f,                // znear
+                                   100.0f,               // zfar
+                                   39.6f);               // hfov
 
   esp::scene::SceneNode agentNode = sceneGraph.getRootNode().createChild();
   esp::scene::SceneNode cameraNode = agentNode.createChild();
@@ -153,6 +155,11 @@ TEST(CullingTest, frustumCulling) {
   std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
                         Mn::Matrix4>>::iterator newEndIter =
       renderCamera.cull(drawableTransforms);
+
+  // create a render target
+  Mn::Matrix4 projMtx = renderCamera.projectionMatrix();
+  esp::gfx::RenderTarget::uptr target = esp::gfx::RenderTarget::create_unique(
+      frameBufferSize, esp::gfx::calculateDepthUnprojection(projMtx));
 
   // ============== Test 1 ==================
   // draw all the invisibles reported by cull()
@@ -188,10 +195,12 @@ TEST(CullingTest, frustumCulling) {
             }),
         objects.end());
 
+    target->renderEnter();
     Mn::GL::SampleQuery q{Mn::GL::SampleQuery::Target::AnySamplesPassed};
     q.begin();
     renderCamera.MagnumCamera::draw(objects);
     q.end();
+    target->renderExit();
 
     EXPECT_EQ(q.result<bool>(), false);
   }
@@ -208,10 +217,12 @@ TEST(CullingTest, frustumCulling) {
             objects;
         objects.emplace_back(a);
 
+        target->renderEnter();
         Mn::GL::SampleQuery q{Mn::GL::SampleQuery::Target::AnySamplesPassed};
         q.begin();
         renderCamera.MagnumCamera::draw(objects);
         q.end();
+        target->renderExit();
 
         // check if it a genuine visible drawable
         EXPECT_EQ(q.result<bool>(), true);
@@ -225,8 +236,8 @@ TEST(CullingTest, frustumCulling) {
   // ============== Test 3 ==================
   // draw using the RenderCamera overload draw()
   renderCamera.setFrustumCullingEnabled(true);
+  target->renderEnter();
   size_t numVisibles = renderCamera.draw(drawables);
+  target->renderExit();
   EXPECT_EQ(numVisibles, numVisiblesGroundTruth);
-
-  printf("Number of visibles = %lu\n", numVisibles);
 }
