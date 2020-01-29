@@ -66,7 +66,7 @@ bool BulletPhysicsManager::addScene(
       physicsSceneAttributes.getString("collisionMeshHandle"));
 
   //! Initialize scene
-  bool sceneSuccess = dynamic_cast<BulletRigidObject*>(staticSceneObject_.get())
+  bool sceneSuccess = static_cast<BulletRigidObject*>(staticSceneObject_.get())
                           ->initializeScene(physicsSceneAttributes, metaData,
                                             meshGroup, bWorld_);
 
@@ -84,7 +84,7 @@ int BulletPhysicsManager::makeRigidObject(
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
       physicsObjectAttributes.getString("collisionMeshHandle"));
   bool objectSuccess =
-      dynamic_cast<BulletRigidObject*>(existingObjects_.at(newObjectID).get())
+      static_cast<BulletRigidObject*>(existingObjects_.at(newObjectID).get())
           ->initializeObject(physicsObjectAttributes, bWorld_, metaData,
                              meshGroup);
 
@@ -107,7 +107,7 @@ int BulletPhysicsManager::addObject(const int objectLibIndex,
   // Then set the collision shape to the cumulativeBB_ if necessary
   if (objID != ID_UNDEFINED) {
     BulletRigidObject* bro =
-        dynamic_cast<BulletRigidObject*>(existingObjects_.at(objID).get());
+        static_cast<BulletRigidObject*>(existingObjects_.at(objID).get());
     if (bro->isUsingBBCollisionShape()) {
       bro->setCollisionFromBB();
     }
@@ -182,7 +182,7 @@ void BulletPhysicsManager::stepPhysics(double dt) {
 void BulletPhysicsManager::setMargin(const int physObjectID,
                                      const double margin) {
   assertIDValidity(physObjectID);
-  dynamic_cast<BulletRigidObject*>(existingObjects_.at(physObjectID).get())
+  static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID).get())
       ->setMargin(margin);
 }
 
@@ -198,7 +198,7 @@ void BulletPhysicsManager::setSceneRestitutionCoefficient(
 
 double BulletPhysicsManager::getMargin(const int physObjectID) const {
   assertIDValidity(physObjectID);
-  return dynamic_cast<BulletRigidObject*>(
+  return static_cast<BulletRigidObject*>(
              existingObjects_.at(physObjectID).get())
       ->getMargin();
 }
@@ -214,13 +214,13 @@ double BulletPhysicsManager::getSceneRestitutionCoefficient() const {
 const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
     const int physObjectID) const {
   assertIDValidity(physObjectID);
-  return dynamic_cast<BulletRigidObject*>(
+  return static_cast<BulletRigidObject*>(
              existingObjects_.at(physObjectID).get())
       ->getCollisionShapeAabb();
 }
 
 const Magnum::Range3D BulletPhysicsManager::getSceneCollisionShapeAabb() const {
-  return dynamic_cast<BulletRigidObject*>(staticSceneObject_.get())
+  return static_cast<BulletRigidObject*>(staticSceneObject_.get())
       ->getCollisionShapeAabb();
 }
 
@@ -232,7 +232,7 @@ void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
 bool BulletPhysicsManager::contactTest(const int physObjectID) {
   assertIDValidity(physObjectID);
   bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
-  return dynamic_cast<BulletRigidObject*>(
+  return static_cast<BulletRigidObject*>(
              existingObjects_.at(physObjectID).get())
       ->contactTest();
 }
