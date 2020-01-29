@@ -5,6 +5,7 @@
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/EigenIntegration/Integration.h>
+#include <Magnum/GL/SampleQuery.h>
 #include <Magnum/Math/Frustum.h>
 #include <Magnum/Math/Intersection.h>
 #include <Magnum/Math/Range.h>
@@ -44,7 +45,7 @@ TEST(CullingTest, computeAbsoluteAABB) {
       esp::assets::AssetInfo::fromPath(sceneFile);
   bool loadSuccess =
       resourceManager.loadScene(info, &sceneRootNode, &drawables);
-  CHECK_EQ(loadSuccess, true);
+  EXPECT_EQ(loadSuccess, true);
 
   std::vector<Mn::Range3D> aabbs;
   for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
@@ -83,7 +84,7 @@ TEST(CullingTest, computeAbsoluteAABB) {
                                 Mn::Vector3{5.0, 1.0, 5.0});
 
   // compare against the ground truth
-  CHECK_EQ(aabbs.size(), aabbsGroundTruth.size());
+  EXPECT_EQ(aabbs.size(), aabbsGroundTruth.size());
   const float epsilon = 1e-6;
   for (unsigned int iBox = 0; iBox < aabbsGroundTruth.size(); ++iBox) {
     CHECK_LE(std::abs((aabbs[iBox].min() - aabbsGroundTruth[iBox].min()).dot()),
@@ -114,7 +115,7 @@ TEST(CullingTest, frustumCulling) {
       esp::assets::AssetInfo::fromPath(sceneFile);
   bool loadSuccess =
       resourceManager.loadScene(info, &sceneRootNode, &drawables);
-  CHECK_EQ(loadSuccess, true);
+  EXPECT_EQ(loadSuccess, true);
 
   // set the camera
   esp::gfx::RenderCamera& renderCamera = sceneGraph.getDefaultRenderCamera();
@@ -143,28 +144,67 @@ TEST(CullingTest, frustumCulling) {
   cameraNode.rotate(Mn::Math::Deg<float>(77.4f), axis.normalized());
   renderCamera.node().setTransformation(cameraNode.absoluteTransformation());
 
-  // ground truth
-  const unsigned int visibleGroundTruth = 4;
-  const unsigned int invisibleBoxGroundTruth = 3;
+  // collect all the drawables and their transformations
+  std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                        Mn::Matrix4>>
+      drawableTransforms = renderCamera.drawableTransformations(drawables);
 
-  // frustum culling test
-  unsigned int visible = 0;
-  Mn::Matrix4 vp =
-      renderCamera.projectionMatrix() * renderCamera.cameraMatrix();
-  const Mn::Math::Frustum<float> frustum =
-      Mn::Math::Frustum<float>::fromMatrix(vp);
+  // do the culling (to create the testing group)
+  std::vector<std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
+                        Magnum::Matrix4>>::iterator newEndIter =
+      renderCamera.cull(drawableTransforms);
 
-  for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
-    Cr::Containers::Optional<Mn::Range3D> aabb =
-        dynamic_cast<esp::scene::SceneNode&>(drawables[iDrawable].object())
-            .getAbsoluteAABB();
-    if (aabb) {
-      if (Mn::Math::Intersection::rangeFrustum(*aabb, frustum)) {
-        visible++;
-      } else {
-        CHECK_EQ(iDrawable, invisibleBoxGroundTruth);
-      }
-    }
+  // ============== Test 1 ==================
+  // draw all the invisibles reported by cull()
+  // check passed if 0 sample is returned (that means they are indeed
+  // invisibles.)
+  {
+    std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                          Mn::Matrix4>>
+        objects;
+    for_each(
+        newEndIter, drawableTransforms.end(),
+        [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                            Mn::Matrix4>& a) { objects.emplace_back(a); });
+    Mn::GL::SampleQuery q{Mn::GL::SampleQuery::Target::AnySamplesPassed};
+    q.begin();
+    renderCamera.MagnumCamera::draw(objects);
+    q.end();
+
+    EXPECT_EQ(q.result<bool>(), false);
   }
-  CHECK_EQ(visibleGroundTruth, visible);
+
+  // ============== Test 2 ==================
+  // draw the visibles one by one.
+  // check if each one is a genuine visible drawable
+  unsigned int numVisiblesGroundTruth = 0;
+  auto renderOneDrawable =
+      [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                          Mn::Matrix4>& a) {
+        std::vector<std::pair<
+            std::reference_wrapper<Mn::SceneGraph::Drawable3D>, Mn::Matrix4>>
+            objects;
+        objects.emplace_back(a);
+
+        Mn::GL::SampleQuery q{Mn::GL::SampleQuery::Target::AnySamplesPassed};
+        q.begin();
+        renderCamera.MagnumCamera::draw(objects);
+        q.end();
+
+        // check if it a genuine visible drawable
+        EXPECT_EQ(q.result<bool>(), true);
+
+        if (q.result<bool>()) {
+          numVisiblesGroundTruth++;
+        }
+      };
+  for_each(drawableTransforms.begin(), newEndIter, renderOneDrawable);
+
+  // ============== Test 3 ==================
+  // draw using the RenderCamera overload draw()
+  renderCamera.setFrustumCullingEnabled(true);
+  size_t numVisibles = renderCamera.draw(drawables);
+  EXPECT_EQ(numVisibles, numVisiblesGroundTruth);
+
+  printf("Number of visibles = %d\n", numVisibles);
 }

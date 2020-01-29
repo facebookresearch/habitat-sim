@@ -41,12 +41,41 @@ class RenderCamera : public MagnumCamera {
                                     float zfar,
                                     float hfov);
 
-  // return number of drawables that are drawn
+  /**
+   * @brief Overload function to render the drawables
+   * @return the number of drawables that are drawn
+   */
   uint32_t draw(MagnumDrawableGroup& drawables);
-  void enableFrustumCulling(bool value) { frustumCulling = value; }
+  /**
+   * @brief Enable or disable the frustum culling test
+   * @param true, enable; false, disable;
+   */
+  void setFrustumCullingEnabled(bool value) { frustumCullingEnabled = value; }
+  /**
+   * @brief Get the status, if the frustum culling is enabled
+   */
+  bool getFrustumCullingEnabled() { return frustumCullingEnabled; }
+
+  /**
+   * @brief performs the frustum culling
+   * @param drawableTransforms, a vector of pairs of Drawable3D object and its
+   * absolute transformation
+   * @return an iterator to the new end of the range, which contains visible
+   * pairs
+   *
+   * NOTE: user are not encouraged to call this function directly.
+   * The preferred way is to enable the frustum culling by calling @ref
+   * setFrustumCullingEnabled and then call @ref draw
+   */
+  std::vector<std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
+                        Magnum::Matrix4>>::iterator
+  cull(std::vector<
+       std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
+                 Magnum::Matrix4>>& drawableTransforms);
 
  protected:
-  bool frustumCulling = false;
+  bool frustumCullingEnabled = false;
+
   ESP_SMART_POINTERS(RenderCamera)
 };
 

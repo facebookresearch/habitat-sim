@@ -43,46 +43,52 @@ RenderCamera& RenderCamera::setProjectionMatrix(int width,
   return *this;
 }
 
-uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables) {
-  uint32_t numDrawnObjects = drawables.size();
-  if (!frustumCulling) {
-    MagnumCamera::draw(drawables);
-  } else {
-    // camera frustum relative to world origin
-    const Mn::Math::Frustum<float> frustum =
-        Mn::Math::Frustum<float>::fromMatrix(projectionMatrix() *
-                                             cameraMatrix());
-
-    // erase all items that have absolute aabb but don't pass the frustum check
+std::vector<std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
+                      Magnum::Matrix4>>::iterator
+RenderCamera::cull(
     std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
-                          Mn::Matrix4>>
-        drawableTransforms = drawableTransformations(drawables);
-    drawableTransforms.erase(
-        std::remove_if(
-            drawableTransforms.begin(), drawableTransforms.end(),
-            [&](const std::pair<
-                std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
-                Mn::Matrix4>& a) {
-              // obtain the absolute aabb
-              Corrade::Containers::Optional<Mn::Range3D> aabb =
-                  dynamic_cast<scene::SceneNode&>(a.first.get().object())
-                      .getAbsoluteAABB();
-              if (aabb) {
-                // if it has an absolute aabb, it is a static mesh
-                return !Mn::Math::Intersection::rangeFrustum(*aabb, frustum);
-              } else {
-                // keep the drawable if its node does not have an absolute AABB
-                return true;
-              }
-            }),
-        drawableTransforms.end());
+                          Mn::Matrix4>>& drawableTransforms) {
+  // camera frustum relative to world origin
+  const Mn::Frustum frustum =
+      Mn::Frustum::fromMatrix(projectionMatrix() * cameraMatrix());
 
-    // draw just the visible part
-    MagnumCamera::draw(drawableTransforms);
-    numDrawnObjects = drawableTransforms.size();
+  return std::remove_if(
+      drawableTransforms.begin(), drawableTransforms.end(),
+      [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                          Mn::Matrix4>& a) {
+        // obtain the absolute aabb
+        Corrade::Containers::Optional<Mn::Range3D> aabb =
+            dynamic_cast<scene::SceneNode&>(a.first.get().object())
+                .getAbsoluteAABB();
+        if (aabb) {
+          // if it has an absolute aabb, it is a static mesh
+          return !Mn::Math::Intersection::rangeFrustum(*aabb, frustum);
+        } else {
+          // keep the drawable if its node does not have an absolute AABB
+          return false;
+        }
+      });
+}
+
+uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables) {
+  if (!frustumCullingEnabled) {
+    MagnumCamera::draw(drawables);
+    return drawables.size();
   }
 
-  return numDrawnObjects;
+  std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                        Mn::Matrix4>>
+      drawableTransforms = drawableTransformations(drawables);
+
+  // draw just the visible part
+  std::vector<std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
+                        Magnum::Matrix4>>::iterator newEndIter =
+      cull(drawableTransforms);
+  // erase all items that did not pass the frustum visibility test
+  drawableTransforms.erase(newEndIter, drawableTransforms.end());
+
+  MagnumCamera::draw(drawableTransforms);
+  return drawableTransforms.size();
 }
 
 }  // namespace gfx
