@@ -129,7 +129,7 @@ TEST(CullingTest, frustumCulling) {
   // with such a camera, the box 3 should be invisible, box 0, 1, 2, 4 should be
   // visible.
 
-  // NOTE: the following test reults have been visually verified in utility
+  // NOTE: the following test results have been visually verified in utility
   // viewer
   renderCamera.setProjectionMatrix(800,     // width
                                    600,     // height
@@ -164,8 +164,9 @@ TEST(CullingTest, frustumCulling) {
                           Mn::Matrix4>>
         objects = renderCamera.drawableTransformations(drawables);
 
-    // CAREFUL: all the invisible ones are NOT stored at [newEndIter,
-    // drawableTransforms.end()] This is because std::remove_if will only move
+    // CAREFUL:
+    // all the invisible ones are NOT stored at [newEndIter,
+    // drawableTransforms.end()]. This is because std::remove_if will only move
     // elements, not swap elements
     objects.erase(
         std::remove_if(
