@@ -132,7 +132,7 @@ vec4 texelFetchAtlasAdj(sampler2D tex, int faceID, ivec2 p, int level) {
   int tsize = tileSize >> level;
 
   // if the target is Mac OSX, the following function is disabled.
-#ifndef CORRADE_TARGET_APPLE 
+#ifndef CORRADE_TARGET_APPLE
   // fetch from adjacent face if necessary
   faceID = indexAdjacentFaces(faceID, p, tsize);
 #endif

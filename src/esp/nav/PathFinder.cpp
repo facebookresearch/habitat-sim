@@ -3,10 +3,10 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "PathFinder.h"
+#include <fstream>
+#include <iostream>
 #include <stack>
 #include <unordered_map>
-#include <iostream>
-#include <fstream>
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
@@ -1105,7 +1105,8 @@ bool PathFinder::Impl::isNavigable(const vec3f& pt,
   return true;
 }
 
-std::vector<std::vector<bool>> PathFinder::Impl::getTopDownView(const float res) {
+std::vector<std::vector<bool>> PathFinder::Impl::getTopDownView(
+    const float res) {
   std::pair<vec3f, vec3f> mapBounds = bounds();
   vec3f bound1 = mapBounds.first;
   vec3f bound2 = mapBounds.second;

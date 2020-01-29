@@ -73,8 +73,7 @@ void initShortestPathBindings(py::module& m) {
       .def("get_bounds", &PathFinder::bounds)
       .def("seed", &PathFinder::seed)
       .def("get_topdown_view", &PathFinder::getTopDownView,
-            R"(Returns the topdown view of the PathFinder's navmesh.)",
-            "res"_a)
+           R"(Returns the topdown view of the PathFinder's navmesh.)", "res"_a)
       .def("get_random_navigable_point", &PathFinder::getRandomNavigablePoint)
       .def("find_path", py::overload_cast<ShortestPath&>(&PathFinder::findPath),
            "path"_a)
