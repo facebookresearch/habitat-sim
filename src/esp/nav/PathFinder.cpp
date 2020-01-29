@@ -5,6 +5,8 @@
 #include "PathFinder.h"
 #include <stack>
 #include <unordered_map>
+#include <iostream>
+#include <fstream>
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
@@ -223,6 +225,8 @@ struct PathFinder::Impl {
   bool isNavigable(const vec3f& pt, const float maxYDelta = 0.5) const;
 
   std::pair<vec3f, vec3f> bounds() const { return bounds_; };
+
+  std::vector<std::vector<bool>> getTopDownView(const float res);
 
  private:
   struct NavMeshDeleter {
@@ -1101,6 +1105,50 @@ bool PathFinder::Impl::isNavigable(const vec3f& pt,
   return true;
 }
 
+std::vector<std::vector<bool>> PathFinder::Impl::getTopDownView(const float res) {
+  std::pair<vec3f, vec3f> mapBounds = bounds();
+  vec3f bound1 = mapBounds.first;
+  vec3f bound2 = mapBounds.second;
+
+  // Point is [x, z, y]
+  float width = abs(bound1[0] - bound2[0]);
+  float height = abs(bound1[2] - bound2[2]);
+  int widthResolution = width / res;
+  int heightResolution = height / res;
+  float startx = fmin(bound1[0], bound2[0]);
+  float starty = fmin(bound1[2], bound2[2]);
+  float navigableHeight = getRandomNavigablePoint()[1];
+  std::vector<std::vector<bool>> topdownMap;
+
+  float curHeight = starty;
+  float curWidth = startx;
+  for (int h = 0; h < heightResolution; h++) {
+    std::vector<bool> curRow;
+    for (int w = 0; w < widthResolution; w++) {
+      vec3f point = vec3f(curWidth, navigableHeight, curHeight);
+      if (isNavigable(point, 0.5)) {
+        curRow.push_back(true);
+      } else {
+        curRow.push_back(false);
+      }
+      curWidth = curWidth + res;
+    }
+    topdownMap.push_back(curRow);
+    curHeight = curHeight + res;
+    curWidth = startx;
+  }
+
+  // std::ofstream outputFile("castle_topdown_map.txt");
+  // for (int h = 0; h < heightResolution; h++) {
+  //   for (int w = 0; w < widthResolution; w++) {
+  //     outputFile << topdownMap[h][w];
+  //   }
+  // }
+  // outputFile.close();
+
+  return topdownMap;
+}
+
 PathFinder::PathFinder() : pimpl_{spimpl::make_unique_impl<Impl>()} {};
 
 bool PathFinder::build(const NavMeshSettings& bs,
@@ -1185,6 +1233,10 @@ bool PathFinder::isNavigable(const vec3f& pt, const float maxYDelta) const {
 
 std::pair<vec3f, vec3f> PathFinder::bounds() const {
   return pimpl_->bounds();
+}
+
+std::vector<std::vector<bool>> PathFinder::getTopDownView(const float res) {
+  return pimpl_->getTopDownView(res);
 }
 
 }  // namespace nav

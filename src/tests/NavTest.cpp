@@ -4,6 +4,8 @@
 
 #include <Corrade/Utility/Directory.h>
 #include <gtest/gtest.h>
+#include<iostream>
+#include<fstream>
 
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
@@ -145,3 +147,35 @@ TEST(NavTest, PathFinderTestSeed) {
   vec3f secondPoint3 = pf.getRandomNavigablePoint();
   ASSERT_TRUE(firstPoint3 != secondPoint3);
 }
+
+// TEST(NavTest, PathFinderTestTopDown) {
+//   PathFinder pf;
+//   pf.loadNavMesh(Cr::Utility::Directory::join(
+//       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
+
+//   std::vector<std::vector<bool>> tdview = pf.getTopDownView();
+
+//   std::ifstream myReadFile;
+//   char c;
+//   int i = 0;
+//   int height = tdview.size();
+//   int width = tdview[0].size();
+//   int num_elements = height * width;
+//   myReadFile.open("castle_topdown_map.txt");
+//   bool is_equal = true;
+//   while (!myReadFile.eof() && i < num_elements) {
+//     myReadFile.get(c);
+//     int row = i / height;
+//     int col = i % height;
+//     bool pixel = tdview[row][col];
+//     is_equal = is_equal && pixel == std::atoi(&c);
+//     if (!is_equal) {
+//       LOG(INFO) << i << " " << row << " " << col;
+//       LOG(INFO) << pixel << " " << c;
+//       break;
+//     }
+//     i++;
+//   }
+
+//   ASSERT_TRUE(is_equal);
+// }
