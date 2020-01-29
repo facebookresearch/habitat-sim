@@ -150,8 +150,8 @@ TEST(CullingTest, frustumCulling) {
       drawableTransforms = renderCamera.drawableTransformations(drawables);
 
   // do the culling (to create the testing group)
-  std::vector<std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
-                        Magnum::Matrix4>>::iterator newEndIter =
+  std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                        Mn::Matrix4>>::iterator newEndIter =
       renderCamera.cull(drawableTransforms);
 
   // ============== Test 1 ==================
@@ -164,6 +164,9 @@ TEST(CullingTest, frustumCulling) {
                           Mn::Matrix4>>
         objects = renderCamera.drawableTransformations(drawables);
 
+    // CAREFUL: all the invisible ones are NOT stored at [newEndIter,
+    // drawableTransforms.end()] This is because std::remove_if will only move
+    // elements, not swap elements
     objects.erase(
         std::remove_if(
             objects.begin(), objects.end(),
