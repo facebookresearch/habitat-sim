@@ -10,6 +10,7 @@ import magnum as mn
 import numpy as np
 
 from habitat_sim.agent.controls.controls import ActuationSpec, SceneNodeControl
+from habitat_sim.geo import FRONT
 from habitat_sim.registry import registry
 from habitat_sim.scene import SceneNode
 
@@ -35,11 +36,10 @@ def _move_along(scene_node: SceneNode, distance: float, axis: int):
 def _rotate_local(
     scene_node: SceneNode, theta: float, axis: int, constraint: Optional[float] = None
 ):
-    theta = mn.Deg(theta)
     if constraint is not None:
         rotation = scene_node.rotation
-        current_angle = rotation.angle()
-        if abs(float(current_angle)) > 0:
+
+        if abs(float(rotation.angle())) > 0:
             ref_vector = mn.Vector3()
             ref_vector[axis] = 1
 
@@ -48,7 +48,13 @@ def _rotate_local(
                     "Constrained look only works for a singular look action type"
                 )
 
-        new_angle = current_angle + theta
+        look_vector = rotation.transform_vector(FRONT)
+        if axis == 0:
+            look_angle = mn.Rad(np.arctan2(look_vector[1], -look_vector[2]))
+        elif axis == 1:
+            look_angle = -mn.Rad(np.arctan2(look_vector[0], -look_vector[2]))
+
+        new_angle = look_angle + mn.Deg(theta)
 
         constraint = mn.Deg(constraint)
 
@@ -100,13 +106,17 @@ class MoveDown(SceneNodeControl):
 @registry.register_move_fn(body_action=False)
 class LookLeft(SceneNodeControl):
     def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
-        _rotate_local(scene_node, actuation_spec.amount, _Y_AXIS)
+        _rotate_local(
+            scene_node, actuation_spec.amount, _Y_AXIS, actuation_spec.constraint
+        )
 
 
 @registry.register_move_fn(body_action=False)
 class LookRight(SceneNodeControl):
     def __call__(self, scene_node: SceneNode, actuation_spec: ActuationSpec):
-        _rotate_local(scene_node, -actuation_spec.amount, _Y_AXIS)
+        _rotate_local(
+            scene_node, -actuation_spec.amount, _Y_AXIS, actuation_spec.constraint
+        )
 
 
 registry.register_move_fn(LookLeft, name="turn_left", body_action=True)

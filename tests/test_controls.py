@@ -191,18 +191,23 @@ def scene_graph():
     return habitat_sim.SceneGraph()
 
 
-@pytest.mark.parametrize("control_name", ["look_up", "look_down"])
+@pytest.mark.parametrize(
+    "control_name,control_axis",
+    [("look_up", 0), ("look_down", 0), ("look_left", 1), ("look_right", 1)],
+)
 @hypothesis.given(
     actuation_amount=st.floats(0, 60), actuation_constraint=st.floats(0, 60)
 )
 def test_constrainted(
-    scene_graph, control_name, actuation_amount, actuation_constraint
+    scene_graph, control_name, control_axis, actuation_amount, actuation_constraint
 ):
     initial_look_angle = mn.Deg(
         np.random.uniform(-actuation_constraint, actuation_constraint)
     )
+    rotation_vector = mn.Vector3()
+    rotation_vector[control_axis] = 1
     initial_rotation = mn.Quaternion.rotation(
-        mn.Rad(initial_look_angle), mn.Vector3(1, 0, 0)
+        mn.Rad(initial_look_angle), rotation_vector
     )
 
     node = scene_graph.get_root_node().create_child()
@@ -214,7 +219,9 @@ def test_constrainted(
     habitat_sim.registry.get_move_fn(control_name)(node, spec)
 
     expected_angle = initial_look_angle + mn.Deg(
-        -actuation_amount if control_name == "look_down" else actuation_amount
+        -actuation_amount
+        if control_name in {"look_down", "look_right"}
+        else actuation_amount
     )
 
     if expected_angle > mn.Deg(actuation_constraint):
@@ -224,7 +231,10 @@ def test_constrainted(
 
     final_rotation = node.rotation
 
-    look_axis = final_rotation.transform_vector(mn.Vector3(0, 0, -1))
-    look_angle = mn.Deg(mn.Rad(np.arctan2(look_axis[1], -look_axis[2])))
+    look_vector = final_rotation.transform_vector(habitat_sim.geo.FRONT)
+    if control_axis == 0:
+        look_angle = mn.Deg(mn.Rad(np.arctan2(look_vector[1], -look_vector[2])))
+    elif control_axis == 1:
+        look_angle = -mn.Deg(mn.Rad(np.arctan2(look_vector[0], -look_vector[2])))
 
     assert np.abs(float(expected_angle - look_angle)) < 1e-1
