@@ -159,13 +159,31 @@ TEST(CullingTest, frustumCulling) {
   // check passed if 0 sample is returned (that means they are indeed
   // invisibles.)
   {
+    // objects will contain all the invisible ones
     std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
                           Mn::Matrix4>>
-        objects;
-    for_each(
-        newEndIter, drawableTransforms.end(),
-        [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
-                            Mn::Matrix4>& a) { objects.emplace_back(a); });
+        objects = renderCamera.drawableTransformations(drawables);
+
+    objects.erase(
+        std::remove_if(
+            objects.begin(), objects.end(),
+            [&](const std::pair<
+                std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                Mn::Matrix4>& a) {
+              for (std::vector<std::pair<
+                       std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                       Mn::Matrix4>>::iterator iter =
+                       drawableTransforms.begin();
+                   iter != newEndIter; ++iter) {
+                if (std::addressof(a.first.get()) ==
+                    std::addressof(iter->first.get())) {
+                  return true;  // remove it
+                }
+              }
+              return false;
+            }),
+        objects.end());
+
     Mn::GL::SampleQuery q{Mn::GL::SampleQuery::Target::AnySamplesPassed};
     q.begin();
     renderCamera.MagnumCamera::draw(objects);
@@ -206,5 +224,5 @@ TEST(CullingTest, frustumCulling) {
   size_t numVisibles = renderCamera.draw(drawables);
   EXPECT_EQ(numVisibles, numVisiblesGroundTruth);
 
-  printf("Number of visibles = %d\n", numVisibles);
+  printf("Number of visibles = %lu\n", numVisibles);
 }
