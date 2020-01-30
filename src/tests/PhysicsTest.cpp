@@ -385,12 +385,25 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
   int objectId = physicsManager_->addObject(objectFile, &drawables);
+  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 1.0, 0});
 
-  // TODO:set KINEMATIC
-  // TODO: command velocity and step time
+  Magnum::Vector3 commandLinVel(1.0, 1.0, 1.0);
+  Magnum::Vector3 commandAngVel(1.0, 1.0, 1.0);
 
-// Test Bullet collision shape scaling
-#ifdef ESP_BUILD_WITH_BULLET
-  // TODO: expect motion
-#endif
+  if (physicsManager_->getPhysicsSimulationLibrary() ==
+      PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+    physicsManager_->setLinearVelocity(objectId, commandLinVel);
+    physicsManager_->setAngularVelocity(objectId, commandAngVel);
+
+    ASSERT_EQ(physicsManager_->getLinearVelocity(objectId), commandLinVel);
+    ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), commandAngVel);
+  } else if (physicsManager_->getPhysicsSimulationLibrary() ==
+             PhysicsManager::PhysicsSimulationLibrary::NONE) {
+    physicsManager_->setLinearVelocity(objectId, commandLinVel);
+    physicsManager_->setAngularVelocity(objectId, commandAngVel);
+
+    // default kinematics always 0 velocity when queried
+    ASSERT_EQ(physicsManager_->getLinearVelocity(objectId), Magnum::Vector3{});
+    ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), Magnum::Vector3{});
+  }
 }
