@@ -152,9 +152,8 @@ TEST(CullingTest, frustumCulling) {
       drawableTransforms = renderCamera.drawableTransformations(drawables);
 
   // do the culling (to create the testing group)
-  std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
-                        Mn::Matrix4>>::iterator newEndIter =
-      renderCamera.cull(drawableTransforms);
+  size_t numVisibles = renderCamera.cull(drawableTransforms);
+  auto newEndIter = drawableTransforms.begin() + numVisibles;
 
   // create a render target
   Mn::Matrix4 projMtx = renderCamera.projectionMatrix();
@@ -188,7 +187,7 @@ TEST(CullingTest, frustumCulling) {
                    iter != newEndIter; ++iter) {
                 if (std::addressof(a.first.get()) ==
                     std::addressof(iter->first.get())) {
-                  return true;  // remove it
+                  return true;  // it is visible, remove it
                 }
               }
               return false;
@@ -208,7 +207,7 @@ TEST(CullingTest, frustumCulling) {
   // ============== Test 2 ==================
   // draw the visibles one by one.
   // check if each one is a genuine visible drawable
-  unsigned int numVisiblesGroundTruth = 0;
+  unsigned int numVisibleObjectsGroundTruth = 0;
   auto renderOneDrawable =
       [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
                           Mn::Matrix4>& a) {
@@ -228,7 +227,7 @@ TEST(CullingTest, frustumCulling) {
         EXPECT_EQ(q.result<bool>(), true);
 
         if (q.result<bool>()) {
-          numVisiblesGroundTruth++;
+          numVisibleObjectsGroundTruth++;
         }
       };
   for_each(drawableTransforms.begin(), newEndIter, renderOneDrawable);
@@ -237,7 +236,7 @@ TEST(CullingTest, frustumCulling) {
   // draw using the RenderCamera overload draw()
   renderCamera.setFrustumCullingEnabled(true);
   target->renderEnter();
-  size_t numVisibles = renderCamera.draw(drawables);
+  size_t numVisibleObjects = renderCamera.draw(drawables);
   target->renderExit();
-  EXPECT_EQ(numVisibles, numVisiblesGroundTruth);
+  EXPECT_EQ(numVisibleObjects, numVisibleObjectsGroundTruth);
 }

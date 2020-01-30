@@ -60,18 +60,15 @@ class RenderCamera : public MagnumCamera {
    * @brief performs the frustum culling
    * @param drawableTransforms, a vector of pairs of Drawable3D object and its
    * absolute transformation
-   * @return an iterator to the new end of the range, which contains visible
-   * pairs
+   * the number of drawables that are not culled
    *
    * NOTE: user are not encouraged to call this function directly.
    * The preferred way is to enable the frustum culling by calling @ref
    * setFrustumCullingEnabled and then call @ref draw
    */
-  std::vector<std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
-                        Magnum::Matrix4>>::iterator
-  cull(std::vector<
-       std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
-                 Magnum::Matrix4>>& drawableTransforms);
+  size_t cull(std::vector<
+              std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
+                        Magnum::Matrix4>>& drawableTransforms);
 
  protected:
   bool frustumCullingEnabled_ = false;

@@ -43,16 +43,14 @@ RenderCamera& RenderCamera::setProjectionMatrix(int width,
   return *this;
 }
 
-std::vector<std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
-                      Magnum::Matrix4>>::iterator
-RenderCamera::cull(
+size_t RenderCamera::cull(
     std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
                           Mn::Matrix4>>& drawableTransforms) {
   // camera frustum relative to world origin
   const Mn::Frustum frustum =
       Mn::Frustum::fromMatrix(projectionMatrix() * cameraMatrix());
 
-  return std::remove_if(
+  auto newEndIter = std::remove_if(
       drawableTransforms.begin(), drawableTransforms.end(),
       [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
                           Mn::Matrix4>& a) {
@@ -68,6 +66,8 @@ RenderCamera::cull(
           return false;
         }
       });
+
+  return (newEndIter - drawableTransforms.begin());
 }
 
 uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables) {
@@ -81,11 +81,10 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables) {
       drawableTransforms = drawableTransformations(drawables);
 
   // draw just the visible part
-  std::vector<std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
-                        Magnum::Matrix4>>::iterator newEndIter =
-      cull(drawableTransforms);
+  size_t numVisibles = cull(drawableTransforms);
   // erase all items that did not pass the frustum visibility test
-  drawableTransforms.erase(newEndIter, drawableTransforms.end());
+  drawableTransforms.erase(drawableTransforms.begin() + numVisibles,
+                           drawableTransforms.end());
 
   MagnumCamera::draw(drawableTransforms);
   return drawableTransforms.size();
