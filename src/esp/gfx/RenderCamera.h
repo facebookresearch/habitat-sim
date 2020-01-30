@@ -60,7 +60,7 @@ class RenderCamera : public MagnumCamera {
    * @brief performs the frustum culling
    * @param drawableTransforms, a vector of pairs of Drawable3D object and its
    * absolute transformation
-   * the number of drawables that are not culled
+   * @return the number of drawables that are not culled
    *
    * NOTE: user are not encouraged to call this function directly.
    * The preferred way is to enable the frustum culling by calling @ref
