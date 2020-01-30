@@ -23,8 +23,6 @@ class DrawableGroupClient;
  * itself with the program.
  */
 class Drawable : public Magnum::SceneGraph::Drawable3D {
-  friend DrawableGroupClient;
-
  public:
   /**
    * @brief Constructor
@@ -40,6 +38,14 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   virtual ~Drawable() {}
 
   virtual scene::SceneNode& getSceneNode() { return node_; }
+
+  /**
+   * @brief Get the @ref DrawableGroup this drawable is in.
+   *
+   * This overrides Magnum::SceneGraph::Drawable so that the derived @ref
+   * DrawableGroup can be used
+   */
+  DrawableGroup* drawables();
 
  protected:
   /**
@@ -57,18 +63,6 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   scene::SceneNode& node_;
   Magnum::GL::AbstractShaderProgram& shader_;
   Magnum::GL::Mesh& mesh_;
-
-  DrawableGroup* group_ = nullptr;
-};
-
-/**
- * @brief Expose @Drawable group membership to @ref DrawableGroup
- */
-class DrawableGroupClient {
-  DrawableGroupClient() = delete;
-  static DrawableGroup* getGroup(Drawable& d) { return d.group_; }
-  static void setGroup(Drawable& d, DrawableGroup* g) { d.group_ = g; }
-  friend class DrawableGroup;
 };
 
 }  // namespace gfx

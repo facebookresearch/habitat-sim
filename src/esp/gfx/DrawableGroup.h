@@ -21,10 +21,7 @@ class RenderCamera;
 class DrawableGroup;
 class Shader {
  public:
-  bool prepareForDraw(const DrawableGroup& drawables,
-                      const RenderCamera& camera) {
-    return false;
-  }
+  void prepareForDraw(const RenderCamera& camera) {}
   ESP_SMART_POINTERS(Shader);
 };
 
@@ -39,25 +36,7 @@ class DrawableGroup : public Magnum::SceneGraph::DrawableGroup3D {
    * @param shader Shader all @ref Drawables in this group will use.
    */
   explicit DrawableGroup(Shader::ptr shader = nullptr)
-      : Magnum::SceneGraph::DrawableGroup3D{}, shader_{std::move(shader)} {}
-
-  /**
-   * @brief Add a drawable to this group.
-   *
-   * @return Reference to self (for method chaining)
-   *
-   * If the drawable is part of another group, it is removed from it.
-   */
-  DrawableGroup& add(Drawable& drawable);
-
-  /**
-   * @brief Removes the drawable from this group.
-   *
-   * @return Reference to self (for method chaining)
-   *
-   * The drawable must be part of this group.
-   */
-  DrawableGroup& remove(Drawable& drawable);
+      : shader_{std::move(shader)} {}
 
   /**
    * @brief Get the shader this group is using.
