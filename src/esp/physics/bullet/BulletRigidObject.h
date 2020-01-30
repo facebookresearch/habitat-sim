@@ -214,6 +214,14 @@ class BulletRigidObject : public RigidObject {
    */
   void applyImpulseTorque(const Magnum::Vector3& impulse);
 
+  void setLinearVelocity(const Magnum::Vector3& lin_vel) override;
+
+  void setAngularVelocity(const Magnum::Vector3& ang_vel) override;
+
+  Magnum::Vector3 getLinearVelocity() override;
+
+  Magnum::Vector3 getAngularVelocity() override;
+
   /**
    * @brief Remove the object from the world.
    * See @ref btDiscreteDynamicsWorld::removeRigidBody for @ref

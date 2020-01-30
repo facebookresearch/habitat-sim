@@ -218,6 +218,16 @@ class RigidObject : public scene::SceneNode {
    */
   virtual void applyImpulseTorque(const Magnum::Vector3& impulse);
 
+  virtual void setLinearVelocity(
+      CORRADE_UNUSED const Magnum::Vector3& lin_vel){};
+
+  virtual void setAngularVelocity(
+      CORRADE_UNUSED const Magnum::Vector3& ang_vel){};
+
+  virtual Magnum::Vector3 getLinearVelocity() { return Magnum::Vector3(); };
+
+  virtual Magnum::Vector3 getAngularVelocity() { return Magnum::Vector3(); };
+
   /**
    * @brief Remove the object from any connected physics simulator implemented
    * by a derived @ref PhysicsManager. Does nothing for default @ref

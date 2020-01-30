@@ -678,6 +678,16 @@ class PhysicsManager {
   void applyImpulseTorque(const int physObjectID,
                           const Magnum::Vector3& impulse);
 
+  void setLinearVelocity(const int physObjectID,
+                         CORRADE_UNUSED const Magnum::Vector3& lin_vel);
+
+  void setAngularVelocity(const int physObjectID,
+                          CORRADE_UNUSED const Magnum::Vector3& ang_vel);
+
+  Magnum::Vector3 getLinearVelocity(const int physObjectID);
+
+  Magnum::Vector3 getAngularVelocity(const int physObjectID);
+
   /** @brief Set bounding box rendering for the object true or false.
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.

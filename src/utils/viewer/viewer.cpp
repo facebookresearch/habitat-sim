@@ -70,6 +70,13 @@ class Viewer : public Magnum::Platform::Application {
   void pokeLastObject();
   void pushLastObject();
 
+  void setVelocity(int objID,
+                   const Magnum::Vector3& lin_vel,
+                   const Magnum::Vector3& ang_vel);
+
+  void setCommandVelocity(const Magnum::Vector3& lin_vel,
+                          const Magnum::Vector3& ang_vel);
+
   void recomputeNavMesh(const std::string& sceneFilename,
                         esp::nav::NavMeshSettings& navMeshSettings);
 
@@ -104,6 +111,9 @@ class Viewer : public Magnum::Platform::Application {
   nav::PathFinder::ptr pathfinder_;
   scene::ObjectControls controls_;
   Magnum::Vector3 previousPosition_;
+
+  std::pair<Magnum::Vector3, Magnum::Vector3> commandVelocity;
+  bool commandingVelocity = false;
 
   std::vector<int> objectIDs_;
 
@@ -323,6 +333,22 @@ void Viewer::pushLastObject() {
   physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
 }
 
+void Viewer::setVelocity(int objID,
+                         const Magnum::Vector3& lin_vel,
+                         const Magnum::Vector3& ang_vel) {
+  if (physicsManager_ == nullptr)
+    return;
+
+  physicsManager_->setLinearVelocity(objID, lin_vel);
+  physicsManager_->setAngularVelocity(objID, ang_vel);
+}
+
+void Viewer::setCommandVelocity(const Magnum::Vector3& lin_vel,
+                                const Magnum::Vector3& ang_vel) {
+  commandVelocity.first = lin_vel;
+  commandVelocity.second = ang_vel;
+}
+
 void Viewer::recomputeNavMesh(const std::string& sceneFilename,
                               nav::NavMeshSettings& navMeshSettings) {
   nav::PathFinder::ptr pf = nav::PathFinder::create();
@@ -391,8 +417,18 @@ void Viewer::drawEvent() {
   if (sceneID_.size() <= 0)
     return;
 
-  if (physicsManager_ != nullptr)
+  if (physicsManager_ != nullptr) {
+    if (objectIDs_.size() > 0) {
+      if (commandingVelocity)
+        setVelocity(objectIDs_.back(), commandVelocity.first,
+                    commandVelocity.second);
+      Corrade::Utility::Debug()
+          << "Last object velocities: L="
+          << physicsManager_->getLinearVelocity(objectIDs_.back())
+          << ", A=" << physicsManager_->getAngularVelocity(objectIDs_.back());
+    }
     physicsManager_->stepPhysics(timeline_.previousFrameDuration());
+  }
 
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
@@ -581,10 +617,15 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::V:
       invertGravity();
       break;
-    case KeyEvent::Key::T:
+    case KeyEvent::Key::T: {
       // Test key. Put what you want here...
-      torqueLastObject();
-      break;
+      // torqueLastObject();
+      if (objectIDs_.size() > 0) {
+        // setVelocity(objectIDs_.back(), randomDirection(), randomDirection());
+        setCommandVelocity(randomDirection(), randomDirection());
+        commandingVelocity = true;
+      }
+    } break;
     case KeyEvent::Key::I:
       Magnum::DebugTools::screenshot(GL::defaultFramebuffer,
                                      "test_image_save.png");

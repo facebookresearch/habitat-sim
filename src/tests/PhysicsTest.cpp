@@ -364,3 +364,33 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
 #endif
   }
 }
+
+TEST_F(PhysicsManagerTest, TestVelocityControl) {
+  // test scaling of objects via template configuration (visual and collision)
+  LOG(INFO) << "Starting physics test: TestVelocityControl";
+
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  std::string sceneFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+
+  initScene(sceneFile);
+
+  esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+  physicsObjectAttributes.setDouble("margin", 0.0);
+  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+  int objectId = physicsManager_->addObject(objectFile, &drawables);
+
+  // TODO:set KINEMATIC
+  // TODO: command velocity and step time
+
+// Test Bullet collision shape scaling
+#ifdef ESP_BUILD_WITH_BULLET
+  // TODO: expect motion
+#endif
+}
