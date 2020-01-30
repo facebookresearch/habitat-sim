@@ -122,7 +122,7 @@
     Core
     ====
 
-    See `Simulator`, `Configuration` and `gfx.SimulatorConfiguration`.
+    See `Simulator`, `Configuration` and `sim.SimulatorConfiguration`.
 
     Semantic Scene
     ==============

@@ -38,18 +38,6 @@ void initSensorBindings(py::module& m) {
   // ==== Observation ====
   py::class_<Observation, Observation::ptr>(m, "Observation");
 
-  // ==== Sensor ====
-  py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
-             Magnum::SceneGraph::AbstractFeature3D,
-             Magnum::SceneGraph::PyFeatureHolder<Sensor>>(m, "Sensor")
-      .def("specification", &Sensor::specification)
-      .def("set_transformation_from_spec", &Sensor::setTransformationFromSpec)
-      .def("is_visual_sensor", &Sensor::isVisualSensor)
-      .def("get_observation", &Sensor::getObservation)
-      .def_property_readonly("node", nodeGetter<Sensor>,
-                             "Node this object is attached to")
-      .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
-
   // TODO fill out other SensorTypes
   // ==== enum SensorType ====
   py::enum_<SensorType>(m, "SensorType")
@@ -58,6 +46,7 @@ void initSensorBindings(py::module& m) {
       .value("DEPTH", SensorType::DEPTH)
       .value("SEMANTIC", SensorType::SEMANTIC);
 
+  // ==== SensorSpec ====
   py::class_<SensorSpec, SensorSpec::ptr>(m, "SensorSpec", py::dynamic_attr())
       .def(py::init(&SensorSpec::create<>))
       .def_readwrite("uuid", &SensorSpec::uuid)
@@ -92,6 +81,18 @@ void initSensorBindings(py::module& m) {
            [](const SensorSpec& self, const SensorSpec& other) -> bool {
              return self != other;
            });
+
+  // ==== Sensor ====
+  py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
+             Magnum::SceneGraph::AbstractFeature3D,
+             Magnum::SceneGraph::PyFeatureHolder<Sensor>>(m, "Sensor")
+      .def("specification", &Sensor::specification)
+      .def("set_transformation_from_spec", &Sensor::setTransformationFromSpec)
+      .def("is_visual_sensor", &Sensor::isVisualSensor)
+      .def("get_observation", &Sensor::getObservation)
+      .def_property_readonly("node", nodeGetter<Sensor>,
+                             "Node this object is attached to")
+      .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
 
   // ==== VisualSensor ====
   py::class_<VisualSensor, Magnum::SceneGraph::PyFeature<VisualSensor>, Sensor,
