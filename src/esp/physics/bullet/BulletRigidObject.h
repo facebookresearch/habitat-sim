@@ -214,12 +214,39 @@ class BulletRigidObject : public RigidObject {
    */
   void applyImpulseTorque(const Magnum::Vector3& impulse);
 
+  /**
+   * @brief Linear velocity setter for an object.
+   *
+   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects. Sets internal @ref btRigidObject state. Treated as initial
+   * velocity during simulation simulation step.
+   * @param lin_vel Linear velocity to set.
+   */
   void setLinearVelocity(const Magnum::Vector3& lin_vel) override;
 
+  /**
+   * @brief Angular velocity setter for an object.
+   *
+   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects. Sets internal @ref btRigidObject state. Treated as initial
+   * velocity during simulation simulation step.
+   * @param ang_vel Angular velocity vector corresponding to world unit axis
+   * angles.
+   */
   void setAngularVelocity(const Magnum::Vector3& ang_vel) override;
 
+  /**
+   * @brief Virtual linear velocity getter for an object.
+   *
+   * @return Linear velocity of the object.
+   */
   Magnum::Vector3 getLinearVelocity() const override;
 
+  /**
+   * @brief Angular velocity getter for an object.
+   *
+   * @return Angular velocity vector corresponding to world unit axis angles.
+   */
   Magnum::Vector3 getAngularVelocity() const override;
 
   /**

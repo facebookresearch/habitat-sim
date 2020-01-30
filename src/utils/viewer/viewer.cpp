@@ -638,6 +638,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::E:
       setCommandVelocity(randomDirection(), randomDirection());
+      // setCommandVelocity(Magnum::Vector3{0, 0, 0}, Magnum::Vector3{0,
+      // 0, 1.0}); //rotation about z axis
       // setCommandVelocity(Magnum::Vector3{0,1.0,0}, Magnum::Vector3{}); //up
       commandingVelocity = !commandingVelocity;
       LOG(INFO) << "commandingVelocity = " << commandingVelocity;
