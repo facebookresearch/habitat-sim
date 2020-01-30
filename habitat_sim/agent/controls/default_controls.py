@@ -59,9 +59,9 @@ def _rotate_local(
         constraint = mn.Deg(constraint)
 
         if new_angle > constraint:
-            theta = constraint - current_angle
+            theta = constraint - look_angle
         elif new_angle < -constraint:
-            theta = -constraint - current_angle
+            theta = -constraint - look_angle
 
     _rotate_local_fns[axis](scene_node, mn.Deg(theta))
     scene_node.rotation = scene_node.rotation.normalized()
