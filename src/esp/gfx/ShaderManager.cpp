@@ -19,14 +19,19 @@ Shader::cptr ShaderManager::getShader(const std::string& id) const {
 
 template <typename... ShaderArgs>
 Shader::ptr ShaderManager::createShader(std::string id, ShaderArgs&&... args) {
-  auto inserted = shaders_.emplace(
-      std::piecewise_construct, std::forward_as_tuple(std::move(id)),
-      std::forward_as_tuple(std::forward<ShaderArgs>(args)...));
-  if (inserted.second) {
-    LOG(INFO) << "Created Shader: " << inserted.first->first;
-    return inserted.first->second;
+  // insert a nullptr first to avoid useless construction when shader with id
+  // already exists
+  auto inserted = shaders_.emplace(std::move(id), nullptr);
+  if (!inserted.second) {
+    LOG(ERROR) << "Shader with id " << inserted.first->first
+               << " already exists";
+    return nullptr;
   }
-  return nullptr;
+
+  // now actually "insert" the shader
+  inserted.first->second.reset(new Shader{std::forward<ShaderArgs>(args)...});
+  LOG(INFO) << "Created Shader: " << inserted.first->first;
+  return inserted.first->second;
 }
 
 bool ShaderManager::deleteShader(const std::string& id) {

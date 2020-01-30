@@ -5,6 +5,7 @@
 #pragma once
 
 #include <Magnum/GL/AbstractShaderProgram.h>
+#include <Magnum/SceneGraph/SceneGraph.h>
 
 #include "esp/core/esp.h"
 
@@ -36,27 +37,20 @@ enum class ShaderType {
    * default shader for assets with unidentified rendering parameters. See
    * @ref Magnum::Shaders::Flat3D.
    */
-  COLORED_SHADER = 2,
+  FLAT_SHADER = 2,
 
   /**
    * Shader program for vertex color shading. Used to render meshes with
    * per-vertex colors defined.
    */
-  VERTEX_COLORED_SHADER = 3,
-
-  /**
-   * Shader program for meshes with textured defined.
-   */
-  TEXTURED_SHADER = 4,
-
-  COLORED_SHADER_PHONG = 5,
-  VERTEX_COLORED_SHADER_PHONG = 6,
-  TEXTURED_SHADER_PHONG = 7
+  PHONG_SHADER = 3,
 };
 
 struct ShaderConfiguration {
-  ShaderType type = ShaderType::TEXTURED_SHADER;
+  ShaderType type = ShaderType::FLAT_SHADER;
   // JSON options;
+  bool textured = true;
+  bool vertexColored = false;
 };
 
 /**
@@ -76,28 +70,30 @@ class Shader {
 
   /**
    * @brief Update the configuration for this shader
-   * TODO: use return type to signify errors
+   * @throw std::invalid_argument if the configuration is not valid
    */
   void setConfiguration(const ShaderConfiguration& config);
 
   /**
-   * @brief Prepare to draw a @ref DrawableGroup with given @ref RenderCamera
-   *
-   * @return Whether the @ref DrawableGroup can be drawn by the current shader
-   * configuration
+   * @brief Prepare to draw with given @ref RenderCamera
    */
-  bool prepareForDraw(const DrawableGroup& drawables,
-                      const RenderCamera& camera);
+  void prepareForDraw(const RenderCamera& camera);
 
   /**
    * @brief Draw the @ref Drawable with current shader configuration.
    *
    * The @ref DrawableGroup and @ref RenderCamera parameters from the last call
-   * to @ref prepareForDraw will be used to draw the given @ref Drawable
+   * to @ref prepareForDraw will be used to draw the given @ref Drawable.
+   *
+   * This function is templated to allow for derived drawable types not to have
+   * their types erased before being passed to Shader Programs for rendering
    *
    * @return Whether the specified @ref Drawable was drawn
    */
-  bool draw(const Drawable& drawable);
+  template <class Drawable>
+  bool draw(const Drawable& drawable,
+            const Magnum::Matrix4& transformationMatrix,
+            Magnum::SceneGraph::Camera3D& camera);
 
  private:
   ShaderConfiguration config_;

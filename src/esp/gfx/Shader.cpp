@@ -21,9 +21,9 @@ namespace gfx {
 namespace {
 // TODO: don't hardcode this
 std::unique_ptr<Magnum::GL::AbstractShaderProgram> shaderProgramFactory(
+    ShaderType type,
     const ShaderConfiguration& cfg) {
-  std::unique_ptr<Magnum::GL::AbstractShaderProgram> shaderProgram;
-  switch (cfg.type) {
+  switch (type) {
     case ShaderType::INSTANCE_MESH_SHADER: {
       return std::make_unique<gfx::PrimitiveIDShader>();
     } break;
@@ -33,86 +33,75 @@ std::unique_ptr<Magnum::GL::AbstractShaderProgram> shaderProgramFactory(
     } break;
 #endif
 
-    case ShaderType::COLORED_SHADER: {
-      return std::make_unique<Magnum::Shaders::Flat3D>(
-          Magnum::Shaders::Flat3D::Flag::ObjectId);
+    case ShaderType::FLAT_SHADER: {
+      Magnum::Shaders::Flat3D::Flags flags =
+          Magnum::Shaders::Flat3D::Flag::ObjectId;
+      if (cfg.vertexColored)
+        flags |= Magnum::Shaders::Flat3D::Flag::VertexColor;
+      if (cfg.textured)
+        flags |= Magnum::Shaders::Flat3D::Flag::Textured;
+
+      return std::make_unique<Magnum::Shaders::Flat3D>(flags);
     } break;
 
-    case ShaderType::VERTEX_COLORED_SHADER: {
-      return std::make_unique<Magnum::Shaders::Flat3D>(
-          Magnum::Shaders::Flat3D::Flag::ObjectId |
-          Magnum::Shaders::Flat3D::Flag::VertexColor);
-    } break;
+    case ShaderType::PHONG_SHADER: {
+      Magnum::Shaders::Phong::Flags flags =
+          Magnum::Shaders::Phong::Flag::ObjectId;
+      if (cfg.vertexColored)
+        flags |= Magnum::Shaders::Phong::Flag::VertexColor;
+      if (cfg.textured)
+        flags |= Magnum::Shaders::Phong::Flag::DiffuseTexture;
+      std::unique_ptr<Magnum::Shaders::Phong> shaderProgram =
+          std::make_unique<Magnum::Shaders::Phong>(flags, 3 /*lights*/);
 
-    case ShaderType::TEXTURED_SHADER: {
-      return std::make_unique<Magnum::Shaders::Flat3D>(
-          Magnum::Shaders::Flat3D::Flag::ObjectId |
-          Magnum::Shaders::Flat3D::Flag::Textured);
-    } break;
+      // TODO: don't hardcode this
+      // NOLINTNEXTLINE(google-build-using-namespace)
+      using namespace Magnum::Math::Literals;
+      shaderProgram
+          ->setLightPositions({Magnum::Vector3{10.0f, 10.0f, 10.0f} * 100.0f,
+                               Magnum::Vector3{-5.0f, -5.0f, 10.0f} * 100.0f,
+                               Magnum::Vector3{0.0f, 10.0f, -10.0f} * 100.0f})
+          .setLightColors({0xffffff_rgbf * 0.8f, 0xffcccc_rgbf * 0.8f,
+                           0xccccff_rgbf * 0.8f})
+          .setSpecularColor(0x11111100_rgbaf)
+          .setShininess(80.0f);
 
-    case ShaderType::COLORED_SHADER_PHONG: {
-      shaderProgram = std::make_unique<Magnum::Shaders::Phong>(
-          Magnum::Shaders::Phong::Flag::ObjectId, 3 /*lights*/);
-    } break;
-
-    case ShaderType::VERTEX_COLORED_SHADER_PHONG: {
-      shaderProgram = std::make_unique<Magnum::Shaders::Phong>(
-          Magnum::Shaders::Phong::Flag::ObjectId |
-              Magnum::Shaders::Phong::Flag::VertexColor,
-          3 /*lights*/);
-    } break;
-
-    case ShaderType::TEXTURED_SHADER_PHONG: {
-      shaderProgram = std::make_unique<Magnum::Shaders::Phong>(
-          Magnum::Shaders::Phong::Flag::ObjectId |
-              Magnum::Shaders::Phong::Flag::DiffuseTexture,
-          3 /*lights*/);
+      return shaderProgram;
     } break;
 
     default:
       return nullptr;
       break;
   }
-
-  /* Default setup for Phong, shared by all models */
-  if (cfg.type == ShaderType::COLORED_SHADER_PHONG ||
-      cfg.type == ShaderType::VERTEX_COLORED_SHADER_PHONG ||
-      cfg.type == ShaderType::TEXTURED_SHADER_PHONG) {
-    // NOLINTNEXTLINE(google-build-using-namespace)
-    using namespace Magnum::Math::Literals;
-
-    static_cast<Magnum::Shaders::Phong&>(*shaderProgram)
-        .setLightPositions({Magnum::Vector3{10.0f, 10.0f, 10.0f} * 100.0f,
-                            Magnum::Vector3{-5.0f, -5.0f, 10.0f} * 100.0f,
-                            Magnum::Vector3{0.0f, 10.0f, -10.0f} * 100.0f})
-        .setLightColors(
-            {0xffffff_rgbf * 0.8f, 0xffcccc_rgbf * 0.8f, 0xccccff_rgbf * 0.8f})
-        .setSpecularColor(0x11111100_rgbaf)
-        .setShininess(80.0f);
-  }
-  return shaderProgram;
 }
 }  // namespace
 
-Shader::Shader(const ShaderConfiguration& config)
-    : config_{config}, shaderProgram_{shaderProgramFactory(config_)} {}
+Shader::Shader(const ShaderConfiguration& config) : config_{config} {
+  setConfiguration(config);
+}
 
 void Shader::setConfiguration(const ShaderConfiguration& config) {
   config_ = config;
   // update program now that we have a new config
-  // TODO: error check if config is invalid
-  shaderProgram_ = shaderProgramFactory(config);
+  // this may throw if config is invalid for specific ShaderType
+  std::unique_ptr<Magnum::GL::AbstractShaderProgram> newProgram =
+      shaderProgramFactory(config.type, config);
+  if (!newProgram) {
+    throw std::invalid_argument(
+        "Invalid shader type! No factory registered for type (TODO)");
+  }
+  shaderProgram_ = std::move(newProgram);
 }
 
-bool Shader::prepareForDraw(const DrawableGroup& drawables,
-                            const RenderCamera& camera) {
-  // TODO
-  return false;
+void Shader::prepareForDraw(const RenderCamera& camera) {
+  // shaderProgram_->prepareforDraw(camera);
 }
 
-bool draw(const Drawable& drawable) {
-  // TODO
-  return false;
+template <class Drawable>
+bool draw(const Drawable& drawable,
+          const Magnum::Matrix4& transformationMatrix,
+          Magnum::SceneGraph::Camera3D& camera) {
+  // shaderProgram_->draw(drawable, transformationMatrix, camera);
 }
 
 }  // namespace gfx
