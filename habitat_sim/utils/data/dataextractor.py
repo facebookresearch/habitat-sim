@@ -1,10 +1,10 @@
 import collections
 import math
-import os.path as osp
-import pdb
 
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
+from torch.utils.data import Dataset
 
 import habitat_sim
 import habitat_sim.bindings as hsim
@@ -13,51 +13,63 @@ from habitat_sim.agent import AgentState
 from habitat_sim.utils.common import quat_from_angle_axis
 
 
-class DataExtractor(object):
+class HabitatDataset(Dataset):
     r"""Main class that extracts data by creating a simulator and generating a topdown map from which to
     iteratively generate image data
     """
 
-    def __init__(self, scene_filepath, label):
+    def __init__(self, scene_filepath, labels, img_size=(512, 512)):
         self.scene_filepath = scene_filepath
+        self.labels = set(labels)
+        self.img_size = img_size
         self.cfg = self._config_sim(self.scene_filepath)
         self.sim = habitat_sim.Simulator(self.cfg)
-
         self.res = 0.1
-        self.label = label
-        self.topdown_view = self.get_topdown_view(self.sim.pathfinder, res=self.res)
+        self.tdv = TopdownView(self.sim, self.res)
+        self.topdown_view = self.tdv.topdown_view
+
         self.pose_extractor = PoseExtractor(
             self.topdown_view, self.sim.pathfinder, self.res
         )
         self.poses = self.pose_extractor.extract_poses(
-            dist=20, label=self.label
+            dist=20, labels=self.labels
         )  # list of poses
 
-    def get_topdown_view(self, pathfinder, res=0.1):
-        topdown_view = np.array(pathfinder.get_topdown_view(res)).astype(np.float64)
-        return topdown_view
+        self.label_map = {0.0: "unnavigable", 1.0: "navigable"}
 
-    def has_next(self):
-        return len(self.poses) > 0
+    def __len__(self):
+        return len(self.poses)
 
-    def next(self):
-        if not self.poses:
-            return None
+    def __getitem__(self, idx):
+        if isinstance(idx, slice):
+            start, stop, step = idx.start, idx.stop, idx.step
+            if start is None:
+                start = 0
+            if stop is None:
+                stop = len(self.poses)
+            if step is None:
+                step = 1
 
-        pos, rot = self.poses.pop()
+            return [
+                self.__getitem__(i)
+                for i in range(start, stop, step)
+                if i < len(self.poses)
+            ]
 
-        # Set agent state to the specified pose and return the observed rgb image
+        pos, rot, label = self.poses[idx]
         new_state = AgentState()
         new_state.position = pos
         new_state.rotation = rot
         self.sim.agents[0].set_state(new_state)
         obs = self.sim.get_sensor_observations()
-        return obs["color_sensor"]
+        sample = {"img": obs["color_sensor"], "label": self.label_map[label]}
+
+        return sample
 
     def _config_sim(self, scene_filepath):
         sim_settings = {
-            "width": 512,  # Spatial resolution of the observations
-            "height": 512,
+            "width": self.img_size[1],  # Spatial resolution of the observations
+            "height": self.img_size[0],
             "scene": scene_filepath,  # Scene path
             "default_agent": 0,
             "sensor_height": 1.5,  # Height of sensors in meters
@@ -70,6 +82,13 @@ class DataExtractor(object):
         return make_cfg(sim_settings)
 
 
+class TopdownView(object):
+    def __init__(self, sim, res=0.1):
+        self.topdown_view = np.array(sim.pathfinder.get_topdown_view(res)).astype(
+            np.float64
+        )
+
+
 class PoseExtractor(object):
     def __init__(self, topdown_view, pathfinder, res=0.1):
         self.topdown_view = topdown_view
@@ -77,7 +96,7 @@ class PoseExtractor(object):
         self.res = res
         self.reference_point = self._get_pathfinder_reference_point()
 
-    def extract_poses(self, dist, label):
+    def extract_poses(self, dist, labels):
         height, width = self.topdown_view.shape
         n_gridpoints_width, n_gridpoints_height = width // dist - 1, height // dist - 1
         gridpoints = []
@@ -89,32 +108,35 @@ class PoseExtractor(object):
 
         # Find the closest point of the target class to each gridpoint
         poses = []
-        for point in [gridpoints[4], gridpoints[5], gridpoints[51]]:
-            closest_point_of_interest = self._bfs(point, label)
+        for point in [gridpoints[4], gridpoints[5], gridpoints[8], gridpoints[51]]:
+            closest_point_of_interest, label = self._bfs(point, labels)
             r, c = closest_point_of_interest
-            poses.append((point, closest_point_of_interest))
+            poses.append((point, closest_point_of_interest, label))
 
         # Convert the coordinates in our reference frame to that of the pathfinder
         startw, startz, starth = self.reference_point
         for i, pose in enumerate(poses):
-            pos, cpi = pose
+            pos, cpi, label = pose
             r1, c1 = pos
             r2, c2 = cpi
-            print(f"Pos: {pos}, cpi: {cpi}")
             new_pos = np.array([startw + c1 * self.res, startz, starth + r1 * self.res])
             new_cpi = np.array([startw + c2 * self.res, startz, starth + r2 * self.res])
             cam_normal = new_cpi - new_pos
             new_rot = self._compute_quat(new_pos, cam_normal)
-            print(f"Rot: {new_rot}")
-            poses[i] = (new_pos, new_rot)
+            poses[i] = (new_pos, new_rot, label)
 
         return poses
 
     def valid_point(self, row, col):
         return self.topdown_view[row][col]
 
-    def is_point_of_interest(self, point, label):
-        return self.topdown_view[point[0], point[1]] == label
+    def is_point_of_interest(self, point, labels):
+        r, c = point
+        is_interesting = False
+        if self.topdown_view[r][c] in labels:
+            is_interesting = True
+
+        return is_interesting, self.topdown_view[r][c]
 
     def _get_pathfinder_reference_point(self):
         bound1, bound2 = self.pathfinder.get_bounds()
@@ -137,13 +159,10 @@ class PoseExtractor(object):
             / np.pi
         )
 
-        print(position)
-        print(cam_normal)
-        print(f"angle: {theta}")
         axis = np.array([0, 1, 0])
         return quat_from_angle_axis(theta, axis)
 
-    def _bfs(self, point, label):
+    def _bfs(self, point, labels):
         def get_neighbors(p):
             r, c = p
             step = 2
@@ -168,10 +187,9 @@ class PoseExtractor(object):
         while q:
             cur = q.popleft()
             visited.add(cur)
-            if self.is_point_of_interest(
-                cur, label
-            ):  # Looking for False labels right now. Change this param later
-                return cur
+            is_point_of_interest, label = self.is_point_of_interest(cur, labels)
+            if is_point_of_interest:
+                return cur, label
 
             for n in get_neighbors(cur):
                 if n not in visited and is_valid(*n):
