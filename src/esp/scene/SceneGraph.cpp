@@ -53,11 +53,13 @@ gfx::DrawableGroup* SceneGraph::createDrawableGroup(
   auto inserted = drawableGroups_.emplace(
       std::piecewise_construct, std::forward_as_tuple(std::move(id)),
       std::forward_as_tuple(std::forward<DrawableGroupArgs>(args)...));
-  if (inserted.second) {
-    LOG(INFO) << "Created DrawableGroup: " << inserted.first->first;
-    return &inserted.first->second;
+  if (!inserted.second) {
+    LOG(ERROR) << "DrawableGroup with ID: " << inserted.first->first
+               << " already exists!";
+    return nullptr;
   }
-  return nullptr;
+  LOG(INFO) << "Created DrawableGroup: " << inserted.first->first;
+  return &inserted.first->second;
 }
 
 bool SceneGraph::deleteDrawableGroup(const std::string& id) {
