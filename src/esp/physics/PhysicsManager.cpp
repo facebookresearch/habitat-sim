@@ -355,12 +355,14 @@ void PhysicsManager::setAngularVelocity(
   existingObjects_.at(physObjectID)->setAngularVelocity(ang_vel);
 }
 
-Magnum::Vector3 PhysicsManager::getLinearVelocity(const int physObjectID) {
+Magnum::Vector3 PhysicsManager::getLinearVelocity(
+    const int physObjectID) const {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getLinearVelocity();
 }
 
-Magnum::Vector3 PhysicsManager::getAngularVelocity(const int physObjectID) {
+Magnum::Vector3 PhysicsManager::getAngularVelocity(
+    const int physObjectID) const {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getAngularVelocity();
 }

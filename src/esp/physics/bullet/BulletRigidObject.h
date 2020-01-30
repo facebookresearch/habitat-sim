@@ -218,9 +218,9 @@ class BulletRigidObject : public RigidObject {
 
   void setAngularVelocity(const Magnum::Vector3& ang_vel) override;
 
-  Magnum::Vector3 getLinearVelocity() override;
+  Magnum::Vector3 getLinearVelocity() const override;
 
-  Magnum::Vector3 getAngularVelocity() override;
+  Magnum::Vector3 getAngularVelocity() const override;
 
   /**
    * @brief Remove the object from the world.

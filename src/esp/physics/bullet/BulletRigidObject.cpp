@@ -380,11 +380,11 @@ void BulletRigidObject::setAngularVelocity(const Magnum::Vector3& ang_vel) {
   }
 }
 
-Magnum::Vector3 BulletRigidObject::getLinearVelocity() {
+Magnum::Vector3 BulletRigidObject::getLinearVelocity() const {
   return Magnum::Vector3{bObjectRigidBody_->getLinearVelocity()};
 }
 
-Magnum::Vector3 BulletRigidObject::getAngularVelocity() {
+Magnum::Vector3 BulletRigidObject::getAngularVelocity() const {
   return Magnum::Vector3{bObjectRigidBody_->getAngularVelocity()};
 }
 
