@@ -882,7 +882,7 @@ float pathLength(const std::vector<vec3f>& points) {
 bool PathFinder::Impl::findPath(ShortestPath& path) {
   MultiGoalShortestPath tmp;
   tmp.requestedStart = path.requestedStart;
-  tmp.requestedEnds = {path.requestedStart};
+  tmp.requestedEnds = {path.requestedEnd};
 
   bool status = findPath(tmp);
 
