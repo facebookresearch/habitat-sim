@@ -380,12 +380,13 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
   physicsObjectAttributes.setString("renderMeshHandle", objectFile);
   physicsObjectAttributes.setDouble("margin", 0.0);
+  physicsObjectAttributes.setDouble("angDamping", 0.0);
   resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
   int objectId = physicsManager_->addObject(objectFile, &drawables);
-  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 1.0, 0});
+  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
 
   Magnum::Vector3 commandLinVel(1.0, 1.0, 1.0);
   Magnum::Vector3 commandAngVel(1.0, 1.0, 1.0);
@@ -397,6 +398,84 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
 
     ASSERT_EQ(physicsManager_->getLinearVelocity(objectId), commandLinVel);
     ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), commandAngVel);
+
+    // run some tests with dynamics
+    float timeToSim = 5.0;
+    float steptime = 0.05;
+    commandAngVel = Magnum::Vector3{
+        1.0, 1.0, -1.0};  // axis rotation chosen for easy checking
+    esp::physics::VelocityControl& velControl =
+        physicsManager_->getVelocityControl(objectId);
+    velControl.controllingAngVel = true;
+    velControl.controllingLinVel = true;
+    velControl.linVel = commandLinVel;
+    velControl.angVel = commandAngVel;
+
+    Magnum::Quaternion kinematicOrientation =
+        physicsManager_->getRotation(objectId);
+
+    while (physicsManager_->getWorldTime() < timeToSim) {
+      Magnum::Vector3 prevPos = physicsManager_->getTranslation(objectId);
+      Magnum::Quaternion prevOrientation =
+          physicsManager_->getRotation(objectId);
+
+      physicsManager_->applyForce(
+          objectId,
+          Magnum::Vector3{0, float(9.8 * physicsManager_->getMass(objectId)),
+                          0},
+          Magnum::Vector3{});
+
+      physicsManager_->stepPhysics(steptime);
+
+      // LOG(INFO) << "time: " << physicsManager_->getWorldTime();
+
+      // check that linear velocity has been approximately applied (could be
+      // some error due to dynamics)
+      for (int i = 0; i < 3; i++) {
+        ASSERT_EQ((prevPos[i] + commandLinVel[i] > prevPos[i]),
+                  (physicsManager_->getTranslation(objectId)[i] > prevPos[i]));
+      }
+
+      // check that angular velocity has been approximately applied via
+      // exponential map
+      Magnum::Quaternion q;
+      Magnum::Vector3 ha =
+          commandAngVel * steptime * 0.5;  // vector of half angle
+      float l = ha.length();               // magnitude
+      if (l > 0) {
+        float ss = sin(l) / l;
+        q = Magnum::Quaternion(
+            Magnum::Vector3{ha.x() * ss, ha.y() * ss, ha.z() * ss}, cos(l));
+      } else {
+        q = Magnum::Quaternion(Magnum::Vector3{ha.x(), ha.y(), ha.z()}, 1.0);
+      }
+      Magnum::Quaternion finiteDifference =
+          physicsManager_->getRotation(objectId) *
+          prevOrientation
+              .inverted();  // quat diff: diff*q1 = q2 -> diff = q2*inv(q1)
+      Cr::Utility::Debug() << "kin delta: " << q
+                           << ", dyn delta: " << finiteDifference;
+      Magnum::Quaternion expectedOrientation = q * prevOrientation;
+      Magnum::Rad q_angle = Magnum::Math::angle(
+          physicsManager_->getRotation(objectId), expectedOrientation);
+      Cr::Utility::Debug() << "orientation: "
+                           << physicsManager_->getRotation(objectId)
+                           << ", expected: " << expectedOrientation
+                           << ", angle b/t: " << q_angle;
+
+      for (int i = 0; i < 3; i++) {
+        ASSERT_EQ(
+            (expectedOrientation.vector()[i] > prevOrientation.vector()[i]),
+            (physicsManager_->getRotation(objectId).vector()[i] >
+             prevOrientation.vector()[i]));
+      }
+      ASSERT_EQ((expectedOrientation.scalar() > prevOrientation.scalar()),
+                (physicsManager_->getRotation(objectId).scalar() >
+                 prevOrientation.scalar()));
+
+      // ASSERT_LE(q_angle, Magnum::Rad{0.1});
+    }
+
   } else if (physicsManager_->getPhysicsSimulationLibrary() ==
              PhysicsManager::PhysicsSimulationLibrary::NONE) {
     physicsManager_->setLinearVelocity(objectId, commandLinVel);

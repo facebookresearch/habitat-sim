@@ -365,6 +365,11 @@ Magnum::Vector3 PhysicsManager::getAngularVelocity(
   return existingObjects_.at(physObjectID)->getAngularVelocity();
 }
 
+VelocityControl& PhysicsManager::getVelocityControl(const int physObjectID) {
+  assertIDValidity(physObjectID);
+  return existingObjects_.at(physObjectID)->getVelocityControl();
+}
+
 //============ Object Setter functions =============
 void PhysicsManager::setMass(const int physObjectID, const double mass) {
   assertIDValidity(physObjectID);

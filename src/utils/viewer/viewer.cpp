@@ -114,6 +114,7 @@ class Viewer : public Magnum::Platform::Application {
 
   std::pair<Magnum::Vector3, Magnum::Vector3> commandVelocity;
   bool commandingVelocity = false;
+  bool commandingForward = false;
   bool commandingAntiGravityForce = false;
 
   std::vector<int> objectIDs_;
@@ -429,9 +430,41 @@ void Viewer::drawEvent() {
                        ImGuiWindowFlags_AlwaysAutoResize);
       ImGui::SetWindowFontScale(2.0);
       if (commandingVelocity) {
+        if (commandingForward) {
+          Magnum::Matrix4 objectT =
+              physicsManager_->getObjectSceneNode(objectIDs_.back())
+                  .transformationMatrix();
+          commandVelocity.first =
+              objectT.transformVector(Magnum::Vector3{0, 0, -0.1});
+        }
         ImGui::Text("Commanding velocity");
-        setVelocity(objectIDs_.back(), commandVelocity.first,
-                    commandVelocity.second);
+        if (physicsManager_->getObjectMotionType(objectIDs_.back()) ==
+            physics::MotionType::KINEMATIC) {
+          Magnum::Quaternion q;
+          Magnum::Vector3 ha = commandVelocity.second *
+                               timeline_.previousFrameDuration() *
+                               0.5;  // vector of half angle
+          float l = ha.length();     // magnitude
+          if (l > 0) {
+            float ss = sin(l) / l;
+            q = Magnum::Quaternion(
+                Magnum::Vector3{ha.x() * ss, ha.y() * ss, ha.z() * ss}, cos(l));
+          } else {
+            q = Magnum::Quaternion(Magnum::Vector3{ha.x(), ha.y(), ha.z()},
+                                   1.0);
+          }
+          Magnum::Quaternion newOrientation =
+              q * physicsManager_->getRotation(objectIDs_.back());
+          physicsManager_->setRotation(objectIDs_.back(), newOrientation);
+          Magnum::Vector3 pos =
+              physicsManager_->getTranslation(objectIDs_.back());
+          physicsManager_->setTranslation(
+              objectIDs_.back(),
+              pos * commandVelocity.first * timeline_.previousFrameDuration());
+        } else {
+          setVelocity(objectIDs_.back(), commandVelocity.first,
+                      commandVelocity.second);
+        }
       }
       // apply anti-gravity force
       if (commandingAntiGravityForce) {
@@ -637,17 +670,36 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       torqueLastObject();
       break;
     case KeyEvent::Key::E:
-      setCommandVelocity(randomDirection(), randomDirection());
+      setCommandVelocity(Magnum::Vector3{}, randomDirection());
+      // setCommandVelocity(randomDirection(), randomDirection());
       // setCommandVelocity(Magnum::Vector3{0, 0, 0}, Magnum::Vector3{0,
       // 0, 1.0}); //rotation about z axis
       // setCommandVelocity(Magnum::Vector3{0,1.0,0}, Magnum::Vector3{}); //up
       commandingVelocity = !commandingVelocity;
       LOG(INFO) << "commandingVelocity = " << commandingVelocity;
       break;
+    case KeyEvent::Key::R:
+      commandingForward = !commandingForward;
+      LOG(INFO) << "commandingForward = " << commandingForward;
+      break;
     case KeyEvent::Key::G:
       commandingAntiGravityForce = !commandingAntiGravityForce;
       LOG(INFO) << "commandingAntiGravityForce = "
                 << commandingAntiGravityForce;
+      break;
+    case KeyEvent::Key::M:
+      if (objectIDs_.size() > 0) {
+        if (physicsManager_->getObjectMotionType(objectIDs_.back()) ==
+            physics::MotionType::DYNAMIC) {
+          physicsManager_->setObjectMotionType(objectIDs_.back(),
+                                               physics::MotionType::KINEMATIC);
+          Corrade::Utility::Debug() << "Motion type: KINEMATIC";
+        } else {
+          physicsManager_->setObjectMotionType(objectIDs_.back(),
+                                               physics::MotionType::DYNAMIC);
+          Corrade::Utility::Debug() << "Motion type: DYNAMIC";
+        }
+      }
       break;
     case KeyEvent::Key::I:
       Magnum::DebugTools::screenshot(GL::defaultFramebuffer,

@@ -171,6 +171,15 @@ void BulletPhysicsManager::stepPhysics(double dt) {
     dt = fixedTimeStep_;
   }
 
+  // set specified control velocities
+  for (auto& objectItr : existingObjects_) {
+    VelocityControl& velControl = objectItr.second->getVelocityControl();
+    if (velControl.controllingLinVel)
+      setLinearVelocity(objectItr.first, velControl.linVel);
+    if (velControl.controllingAngVel)
+      setAngularVelocity(objectItr.first, velControl.angVel);
+  }
+
   // ==== Physics stepforward ======
   // NOTE: worldTime_ will always be a multiple of sceneMetaData_.timestep
   int numSubStepsTaken =

@@ -80,6 +80,18 @@ enum class RigidObjectType {
 
 };
 
+/**@brief Convenience struct for applying constant velocity control. */
+struct VelocityControl {
+  /**@brief Constant linear velocity. */
+  Magnum::Vector3 linVel;
+  /**@brief Constant angular velocity. */
+  Magnum::Vector3 angVel;
+  /**@brief Whether or not to set linear control velocity before stepping. */
+  bool controllingLinVel = false;
+  /**@brief Whether or not to set angular control velocity before stepping. */
+  bool controllingAngVel = false;
+};
+
 /**
 @brief A @ref scene::SceneNode representing an individual rigid object instance.
 Note that the @ref scene::SceneGraph owns all scene nodes. This may be a @ref
@@ -260,6 +272,10 @@ class RigidObject : public scene::SceneNode {
   virtual Magnum::Vector3 getAngularVelocity() const {
     return Magnum::Vector3();
   };
+
+  /**@brief Retrieves a reference to the VelocityControl struct for this object.
+   */
+  VelocityControl& getVelocityControl() { return velControl_; };
 
   /**
    * @brief Remove the object from any connected physics simulator implemented
@@ -500,6 +516,12 @@ class RigidObject : public scene::SceneNode {
   SceneNode* BBNode_ = nullptr;
 
  protected:
+  /**
+   * @brief Convenience variable: specifies a constant control velocity (linear
+   * | angular) applied to the rigid body before each step.
+   */
+  VelocityControl velControl_;
+
   /** @brief The @ref MotionType of the object. Determines what operations can
    * be performed on this object. */
   MotionType objectMotionType_;
