@@ -113,7 +113,7 @@ class Viewer : public Magnum::Platform::Application {
 
   ImGuiIntegration::Context imgui_{NoCreate};
   bool showFPS_ = true;
-  bool enableFrustumCulling_ = true;
+  bool frustumCullingEnabled_ = true;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -207,7 +207,6 @@ Viewer::Viewer(const Arguments& arguments)
                                      90.0f);            // hfov
   renderCamera_->setAspectRatioPolicy(
       Magnum::SceneGraph::AspectRatioPolicy::Extend);
-  renderCamera_->setFrustumCullingEnabled(enableFrustumCulling_);
 
   // Load navmesh if available
   if (file.compare(esp::assets::EMPTY_SCENE) != 0) {
@@ -399,7 +398,8 @@ void Viewer::drawEvent() {
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
-  uint32_t visibles = renderCamera_->draw(sceneGraph.getDrawables());
+  uint32_t visibles =
+      renderCamera_->draw(sceneGraph.getDrawables(), frustumCullingEnabled_);
 
   if (debugBullet_) {
     Magnum::Matrix4 camM(renderCamera_->cameraMatrix());
@@ -536,8 +536,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::E:
-      enableFrustumCulling_ ^= true;
-      renderCamera_->setFrustumCullingEnabled(enableFrustumCulling_);
+      frustumCullingEnabled_ ^= true;
       break;
     case KeyEvent::Key::C:
       showFPS_ = !showFPS_;

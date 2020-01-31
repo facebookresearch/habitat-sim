@@ -46,9 +46,6 @@ void initGfxBindings(py::module& m) {
         Set this `Camera`'s projection matrix.
       )",
            "width"_a, "height"_a, "znear"_a, "zfar"_a, "hfov"_a)
-      .def_property("frustum_culling", &RenderCamera::getFrustumCullingEnabled,
-                    &RenderCamera::setFrustumCullingEnabled,
-                    "Enable or disable the frustum culling.")
       .def_property_readonly("node", nodeGetter<RenderCamera>,
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<RenderCamera>,
