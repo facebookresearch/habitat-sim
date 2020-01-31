@@ -14,13 +14,11 @@ class SceneNode;
 }
 namespace gfx {
 
-class DrawableGroupClient;
-
 /**
  * @brief Drawable for use with @ref DrawableGroup.
  *
- * Drawable will retrieve its shader program from its group, and draw
- * itself with the program.
+ * Drawable will retrieve its shader from its group, and draw
+ * itself with the shader.
  */
 class Drawable : public Magnum::SceneGraph::Drawable3D {
  public:
@@ -55,7 +53,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * @param camera                Camera to draw from.
    *
    * Each derived drawable class needs to implement this draw() function. It's
-   * nothing more than setting up shader parameters and drawing the mesh.
+   * nothing more than drawing itself with its group's shader.
    */
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
                     Magnum::SceneGraph::Camera3D& camera) = 0;
