@@ -31,6 +31,7 @@ default_sim_settings = {
     "physics_config_file": "./data/default.phys_scene_config.json",
     "num_objects": 10,
     "test_object_index": 0,
+    "enable_culling": True,
 }
 
 # build SimulatorConfiguration
