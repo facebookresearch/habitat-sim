@@ -93,7 +93,8 @@ int PhysicsManager::addObject(const std::string& configFile,
   return physObjectID;
 }
 
-int PhysicsManager::removeObject(const int physObjectID, bool deleteSceneNode) {
+void PhysicsManager::removeObject(const int physObjectID,
+                                  bool deleteSceneNode) {
   assertIDValidity(physObjectID);
   scene::SceneNode* objectNode = &existingObjects_.at(physObjectID)->node();
   existingObjects_.erase(physObjectID);
@@ -101,7 +102,6 @@ int PhysicsManager::removeObject(const int physObjectID, bool deleteSceneNode) {
   if (deleteSceneNode) {
     delete objectNode;
   }
-  return physObjectID;
 }
 
 bool PhysicsManager::setObjectMotionType(const int physObjectID,

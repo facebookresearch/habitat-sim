@@ -170,10 +170,9 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @param deleteSceneNode If true, deletes the object's scene node. Otherwise
    * detaches the object from simulation.
-   *  @return the removed object's ID previously mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  virtual int removeObject(const int physObjectID, bool deleteSceneNode = true);
+  virtual void removeObject(const int physObjectID,
+                            bool deleteSceneNode = true);
 
   /** @brief Get the number of objects mapped in @ref
    * PhysicsManager::existingObjects_.
