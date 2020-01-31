@@ -865,8 +865,7 @@ vec3f PathFinder::Impl::getRandomNavigablePoint() {
 
 namespace {
 float pathLength(const std::vector<vec3f>& points) {
-  if (points.size() == 0)
-    return std::numeric_limits<float>::infinity();
+  CORRADE_INTERNAL_ASSERT(points.size() > 0);
 
   float length = 0;
   const vec3f* previousPoint = &points[0];
@@ -898,7 +897,6 @@ PathFinder::Impl::findPathInternal(const vec3f& start,
                                    const vec3f& end,
                                    dtPolyRef endRef,
                                    const vec3f& pathEnd) {
-  dtStatus status;
   // check if trivial path (start is same as end) and early return
   if (pathStart.isApprox(pathEnd)) {
     return std::make_tuple(0.0f, std::vector<vec3f>{});
@@ -913,27 +911,23 @@ PathFinder::Impl::findPathInternal(const vec3f& start,
   dtPolyRef polys[MAX_POLYS];
 
   int numPolys = 0;
-  status =
+  dtStatus status =
       navQuery_->findPath(startRef, endRef, pathStart.data(), pathEnd.data(),
                           filter_.get(), polys, &numPolys, MAX_POLYS);
-  if (status != DT_SUCCESS) {
+  if (status != DT_SUCCESS || numPolys == 0) {
     return Corrade::Containers::NullOpt;
   }
 
-  std::vector<vec3f> points;
-  if (numPolys) {
-    int numPoints = 0;
-    points.resize(MAX_POLYS);
-    status = navQuery_->findStraightPath(start.data(), end.data(), polys,
-                                         numPolys, points[0].data(), 0, 0,
-                                         &numPoints, MAX_POLYS);
-
-    if (status != DT_SUCCESS) {
-      return Corrade::Containers::NullOpt;
-    }
-
-    points.resize(numPoints);
+  int numPoints = 0;
+  std::vector<vec3f> points(MAX_POLYS);
+  status = navQuery_->findStraightPath(start.data(), end.data(), polys,
+                                       numPolys, points[0].data(), 0, 0,
+                                       &numPoints, MAX_POLYS);
+  if (status != DT_SUCCESS || numPoints == 0) {
+    return Corrade::Containers::NullOpt;
   }
+
+  points.resize(numPoints);
 
   const float length = pathLength(points);
 
