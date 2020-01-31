@@ -10,7 +10,7 @@ import habitat_sim
 import habitat_sim.bindings as hsim
 from examples.settings import make_cfg
 from habitat_sim.agent import AgentState
-from habitat_sim.utils.common import quat_from_angle_axis
+from habitat_sim.utils.common import quat_from_two_vectors
 
 
 class HabitatDataset(Dataset):
@@ -108,9 +108,8 @@ class PoseExtractor(object):
 
         # Find the closest point of the target class to each gridpoint
         poses = []
-        for point in [gridpoints[4], gridpoints[5], gridpoints[8], gridpoints[51]]:
+        for point in gridpoints[3:8]:
             closest_point_of_interest, label = self._bfs(point, labels)
-            r, c = closest_point_of_interest
             poses.append((point, closest_point_of_interest, label))
 
         # Convert the coordinates in our reference frame to that of the pathfinder
@@ -122,7 +121,7 @@ class PoseExtractor(object):
             new_pos = np.array([startw + c1 * self.res, startz, starth + r1 * self.res])
             new_cpi = np.array([startw + c2 * self.res, startz, starth + r2 * self.res])
             cam_normal = new_cpi - new_pos
-            new_rot = self._compute_quat(new_pos, cam_normal)
+            new_rot = self._compute_quat(cam_normal)
             poses[i] = (new_pos, new_rot, label)
 
         return poses
@@ -147,25 +146,14 @@ class PoseExtractor(object):
         ]  # Can't think of a better way to get a valid z-axis value
         return (startw, startz, starth)  # width, z, height
 
-    def _compute_quat(self, position, cam_normal):
-        def norm(v):
-            return math.sqrt(sum([abs(a) ** 2 for a in v]))
-
-        theta = (
-            -180
-            * np.arccos(
-                np.dot(position, cam_normal) / (norm(position) * norm(cam_normal))
-            )
-            / np.pi
-        )
-
-        axis = np.array([0, 1, 0])
-        return quat_from_angle_axis(theta, axis)
+    def _compute_quat(self, cam_normal):
+        """Rotations start from -z axis"""
+        return quat_from_two_vectors(np.array([0, 0, -1]), cam_normal)
 
     def _bfs(self, point, labels):
         def get_neighbors(p):
             r, c = p
-            step = 2
+            step = 3
             return [
                 (r - step, c - step),
                 (r - step, c),
