@@ -40,21 +40,23 @@ enum class ShaderType {
   FLAT_SHADER = 2,
 
   /**
-   * Shader program for vertex color shading. Used to render meshes with
-   * per-vertex colors defined.
+   * Phong shader program.
    */
   PHONG_SHADER = 3,
 };
 
 struct ShaderConfiguration {
   ShaderType type = ShaderType::FLAT_SHADER;
-  // JSON options;
+  // TODO: have derived shader configurations, delete the following
   bool textured = true;
   bool vertexColored = false;
 };
 
 /**
  * @brief Shader class
+ *
+ * This class encapsulates a ShaderConfiguration and the corresponding
+ * underlying ShaderProgram.
  */
 class Shader {
  public:
@@ -75,15 +77,17 @@ class Shader {
   void setConfiguration(const ShaderConfiguration& config);
 
   /**
-   * @brief Prepare to draw with given @ref RenderCamera
+   * @brief Prepare to draw with given @ref RenderCamera, and current @ref
+   * ShaderConfiguration. A single call to this can be made, followed by
+   * multiple calls to @ref draw to minimize OpenGL state changes
    */
   void prepareForDraw(const RenderCamera& camera);
 
   /**
    * @brief Draw the @ref Drawable with current shader configuration.
    *
-   * The @ref DrawableGroup and @ref RenderCamera parameters from the last call
-   * to @ref prepareForDraw will be used to draw the given @ref Drawable.
+   * @ref prepareForDraw must be called prior to this to correctly draw with the
+   * current ShaderConfiguration and camera.
    *
    * This function is templated to allow for derived drawable types not to have
    * their types erased before being passed to Shader Programs for rendering
@@ -98,7 +102,10 @@ class Shader {
  private:
   ShaderConfiguration config_;
 
-  std::unique_ptr<Magnum::GL::AbstractShaderProgram> shaderProgram_;
+  // This program may be shared by multiple Shader instances, to avoid
+  // needlessly creating new ShaderPrograms on each configuration change.
+  // Hence, prepareForDraw must be called before using the program to draw
+  std::shared_ptr<Magnum::GL::AbstractShaderProgram> shaderProgram_;
 
   ESP_SMART_POINTERS(Shader);
 };
