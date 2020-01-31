@@ -25,13 +25,14 @@ std::shared_ptr<Magnum::GL::AbstractShaderProgram> shaderProgramFactory(
     const ShaderConfiguration& cfg) {
   switch (type) {
     case ShaderType::INSTANCE_MESH_SHADER: {
-      static auto primitiveShader = std::make_shared<gfx::PrimitiveIDShader>();
-      return primitiveShader;
+      // TODO: reuse shaders
+      return std::make_shared<gfx::PrimitiveIDShader>();
+      ;
     } break;
 #ifdef ESP_BUILD_PTEX_SUPPORT
     case ShaderType::PTEX_MESH_SHADER: {
-      static auto ptexMeshShader = std::make_shared<gfx::PTexMeshShader>();
-      return ptexMeshShader;
+      // TODO: reuse shaders
+      return std::make_shared<gfx::PTexMeshShader>();
     } break;
 #endif
 
