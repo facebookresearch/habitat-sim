@@ -1111,9 +1111,8 @@ std::vector<std::vector<bool>> PathFinder::Impl::getTopDownView(
   vec3f bound1 = mapBounds.first;
   vec3f bound2 = mapBounds.second;
 
-  // Point is [x, z, y]
-  float width = abs(bound1[0] - bound2[0]);
-  float height = abs(bound1[2] - bound2[2]);
+  float width = std::abs(bound1[0] - bound2[0]);
+  float height = std::abs(bound1[2] - bound2[2]);
   int widthResolution = width / res;
   int heightResolution = height / res;
   float startx = fmin(bound1[0], bound2[0]);
@@ -1138,14 +1137,6 @@ std::vector<std::vector<bool>> PathFinder::Impl::getTopDownView(
     curHeight = curHeight + res;
     curWidth = startx;
   }
-
-  // std::ofstream outputFile("castle_topdown_map.txt");
-  // for (int h = 0; h < heightResolution; h++) {
-  //   for (int w = 0; w < widthResolution; w++) {
-  //     outputFile << topdownMap[h][w];
-  //   }
-  // }
-  // outputFile.close();
 
   return topdownMap;
 }
