@@ -7,18 +7,29 @@
  *  See the header file progmesh.h for a description of this module
  */
 
+#include <fstream>
+#include <iostream>
+
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #define NOMINMAX
 #include <assert.h>
-#include <windows.h>
 
-#include "../include/linalg.h"  // typical 3D math routines following hlsl style for the most part
+#include <tinyply.h>
+
+#include "linalg.h"  // typical 3D math routines following hlsl style for the most part
 using namespace linalg::aliases;
-#include "../include/geometric.h"
+#include "geometric.h"
 #include "progmesh.h"
+
+template <typename T>
+void copyTo(std::shared_ptr<tinyply::PlyData> data, std::vector<T>& dst) {
+  dst.resize(data->count);
+  assert(data->buffer.size_bytes() == sizeof(T) * dst.size());
+  std::memcpy(dst.data(), data->buffer.get(), data->buffer.size_bytes());
+}
 
 template <class T>
 int Contains(const std::vector<T>& c, const T& t) {
@@ -66,7 +77,8 @@ class Triangle {
  public:
   Vertex* vertex[3];  // the 3 points that make this tri
   float3 normal;      // unit vector othogonal to this face
-  Triangle(Vertex* v0, Vertex* v1, Vertex* v2);
+  int objid;
+  Triangle(Vertex* v0, Vertex* v1, Vertex* v2, int id = 0);
   ~Triangle();
   void ComputeNormal();
   void ReplaceVertex(Vertex* vold, Vertex* vnew);
@@ -79,7 +91,8 @@ class Vertex {
   std::vector<Vertex*> neighbor;  // adjacent vertices
   std::vector<Triangle*> face;    // adjacent triangles
   float objdist;                  // cached cost of collapsing edge
-  Vertex* collapse;               // candidate vertex for collapse
+  bool dirty = false;
+  Vertex* collapse;  // candidate vertex for collapse
   Vertex(float3 v, int _id);
   ~Vertex();
   void RemoveIfNonNeighbor(Vertex* n);
@@ -87,11 +100,18 @@ class Vertex {
 std::vector<Vertex*> vertices;
 std::vector<Triangle*> triangles;
 
-Triangle::Triangle(Vertex* v0, Vertex* v1, Vertex* v2) {
+struct CmpVertices {
+  bool operator()(const Vertex* lhs, const Vertex* rhs) {
+    return lhs->objdist > rhs->objdist;
+  }
+};
+
+Triangle::Triangle(Vertex* v0, Vertex* v1, Vertex* v2, int id) {
   assert(v0 != v1 && v1 != v2 && v2 != v0);
   vertex[0] = v0;
   vertex[1] = v1;
   vertex[2] = v2;
+  objid = id;
   ComputeNormal();
   triangles.push_back(this);
   for (int i = 0; i < 3; i++) {
@@ -103,7 +123,7 @@ Triangle::Triangle(Vertex* v0, Vertex* v1, Vertex* v2) {
   }
 }
 Triangle::~Triangle() {
-  Remove(triangles, this);
+  // Remove(triangles, this);
   for (int i = 0; i < 3; i++) {
     if (vertex[i])
       Remove(vertex[i]->face, this);
@@ -170,7 +190,7 @@ Vertex::~Vertex() {
     Remove(neighbor[0]->neighbor, this);
     Remove(neighbor, neighbor[0]);
   }
-  Remove(vertices, this);
+  // Remove(vertices, this);
 }
 void Vertex::RemoveIfNonNeighbor(Vertex* n) {
   // removes n from neighbor Array if n isn't a neighbor.
@@ -217,8 +237,25 @@ float ComputeEdgeCollapseCost(Vertex* u, Vertex* v) {
     }
     curvature = std::max(curvature, mincurv);
   }
+  int semcostfactor = 1;
+  if (u->face.size() > 1) {
+    int objid = u->face[0]->objid;
+    for (unsigned int i = 1; i < u->face.size(); i++) {
+      if (objid != u->face[i]->objid) {
+        semcostfactor++;
+      }
+    }
+  } else {
+    assert(u->face.size() == 1);
+    semcostfactor++;
+  }
+  float cost =
+      edgelength * curvature * semcostfactor + edgelength * (semcostfactor - 1);
+#if 0
+  std::cout << "cost of " << v->position << " is " << cost  << std::endl;
+#endif
   // the more coplanar the lower the curvature term
-  return edgelength * curvature;
+  return cost;
 }
 
 void ComputeEdgeCostAtVertex(Vertex* v) {
@@ -261,9 +298,16 @@ void Collapse(Vertex* u, Vertex* v) {
   // have u to have v, and then remove u.
   if (!v) {
     // u is a vertex all by itself so just delete it
+#ifdef DEBUG
+    std::cout << "Collapsing " << u->position << std::endl;
+#endif
     delete u;
     return;
   }
+#ifdef DEBUG
+  std::cout << "Collapsing " << u->position << " to " << v->position
+            << std::endl;
+#endif
   std::vector<Vertex*> tmp;
   // make tmp a Array of all the neighbors of u
   for (unsigned int i = 0; i < u->neighbor.size(); i++) {
@@ -289,6 +333,7 @@ void Collapse(Vertex* u, Vertex* v) {
   // recompute the edge collapse costs for neighboring vertices
   for (unsigned int i = 0; i < tmp.size(); i++) {
     ComputeEdgeCostAtVertex(tmp[i]);
+    tmp[i]->dirty = true;
   }
 }
 
@@ -297,10 +342,10 @@ void AddVertex(std::vector<float3>& vert) {
     Vertex* v = new Vertex(vert[i], i);
   }
 }
-void AddFaces(std::vector<tridata>& tri) {
+void AddFaces(std::vector<tridata>& tri, std::vector<int>& objid) {
   for (unsigned int i = 0; i < tri.size(); i++) {
     Triangle* t = new Triangle(vertices[tri[i].v[0]], vertices[tri[i].v[1]],
-                               vertices[tri[i].v[2]]);
+                               vertices[tri[i].v[2]], objid[i]);
   }
 }
 
@@ -322,28 +367,293 @@ Vertex* MinimumCostEdge() {
 
 void ProgressiveMesh(std::vector<float3>& vert,
                      std::vector<tridata>& tri,
+                     std::vector<int>& objid,
                      std::vector<int>& map,
                      std::vector<int>& permutation) {
   AddVertex(vert);  // put input data into our data structures
-  AddFaces(tri);
-  ComputeAllEdgeCollapseCosts();        // cache all edge collapse costs
+  AddFaces(tri, objid);
+  std::cout << "Start computing costs" << std::endl;
+  ComputeAllEdgeCollapseCosts();  // cache all edge collapse costs
+  std::cout << "Done computing costs" << std::endl;
   permutation.resize(vertices.size());  // allocate space
   map.resize(vertices.size());          // allocate space
+  std::make_heap(vertices.begin(), vertices.end(), CmpVertices{});
+  int i = 0;
   // reduce the object down to nothing:
   while (vertices.size() > 0) {
     // get the next vertex to collapse
-    Vertex* mn = MinimumCostEdge();
+    // Vertex* mn = MinimumCostEdge();
+    Vertex* mn = nullptr;
+  popagain:
+    std::pop_heap(vertices.begin(), vertices.end(), CmpVertices{});
+    mn = vertices.back();
+    if (mn->dirty) {
+      mn->dirty = false;
+      std::push_heap(vertices.begin(), vertices.end(), CmpVertices{});
+      goto popagain;
+    }
+    vertices.pop_back();
     // keep track of this vertex, i.e. the collapse ordering
-    permutation[mn->id] = vertices.size() - 1;
+    permutation[mn->id] = vertices.size();
     // keep track of vertex to which we collapse to
-    map[vertices.size() - 1] = (mn->collapse) ? mn->collapse->id : -1;
+    map[vertices.size()] = (mn->collapse) ? mn->collapse->id : -1;
     // Collapse this edge
     Collapse(mn, mn->collapse);
+    if (++i % 10000 == 0)
+      std::cout << "." << std::flush;
   }
+  std::cout << std::endl;
   // reorder the map Array based on the collapse ordering
+#ifdef DEBUG
+  std::cout << "map:";
+#endif
   for (unsigned int i = 0; i < map.size(); i++) {
     map[i] = (map[i] == -1) ? 0 : permutation[map[i]];
+#ifdef DEBUG
+    std::cout << " " << map[i];
+#endif
   }
+#ifdef DEBUG
+  std::cout << std::endl;
+#endif
   // The caller of this function should reorder their vertices
   // according to the returned "permutation".
+}
+
+void PermuteVertices(std::vector<float3>& vert,
+                     std::vector<tridata>& tri,
+                     std::vector<int>& permutation) {
+  // rearrange the vertex Array
+  std::vector<float3> temp_Array;
+  unsigned int i;
+  assert(permutation.size() == vert.size());
+  for (i = 0; i < vert.size(); i++) {
+    temp_Array.push_back(vert[i]);
+  }
+  for (i = 0; i < vert.size(); i++) {
+    vert[permutation[i]] = temp_Array[i];
+  }
+#ifdef DEBUG
+  std::cout << "vert:" << std::endl;
+  for (i = 0; i < vert.size(); i++) {
+    std::cout << vert[i] << std::endl;
+  }
+  std::cout << std::endl;
+#endif
+  // update the changes in the entries in the triangle Array
+  for (i = 0; i < tri.size(); i++) {
+    for (int j = 0; j < 3; j++) {
+      tri[i].v[j] = permutation[tri[i].v[j]];
+    }
+  }
+}
+
+void LoadData(std::vector<float3>& vert,
+              std::vector<tridata>& tri,
+              std::vector<int>& objid) {
+  float verts[6][3] = {{0, 0, 0}, {1, 0, 0}, {2, 0, 0},
+                       {0, 1, 0}, {1, 1, 0}, {0, 2, 0}};
+  float tris[4][3] = {{0, 1, 4}, {0, 4, 3}, {1, 2, 4}, {3, 4, 5}};
+  float objids[4] = {0, 1, 0, 1};
+  int i;
+  for (i = 0; i < 6; i++) {
+    float* vp = verts[i];
+    vert.push_back(float3(vp[0], vp[1], vp[2]));
+  }
+  for (i = 0; i < 4; i++) {
+    tridata td;
+    td.v[0] = tris[i][0];
+    td.v[1] = tris[i][1];
+    td.v[2] = tris[i][2];
+    tri.push_back(td);
+  }
+  objid = std::vector<int>(objids, objids + sizeof(objids) / sizeof(int));
+}
+
+int Map(std::vector<int>& collapse_map, int a, int mx) {
+  if (mx <= 0)
+    return 0;
+  while (a >= mx) {
+    a = collapse_map[a];
+  }
+  return a;
+}
+
+#if 0
+void DrawModelTriangles(std::vector<float3>& vert,
+                        std::vector<tridata>& tri,
+                        std::vector<int>& objid,
+                        std::vector<int>& collapse_map,
+                        int render_num) {
+  assert(collapse_map.size());
+  int renderpolycount = 0;
+  for (unsigned int i = 0; i < tri.size(); i++) {
+    int p0 = Map(collapse_map, tri[i].v[0], render_num);
+    int p1 = Map(collapse_map, tri[i].v[1], render_num);
+    int p2 = Map(collapse_map, tri[i].v[2], render_num);
+    // note:  serious optimization opportunity here,
+    //  by sorting the triangles the following "continue"
+    //  could have been made into a "break" statement.
+    if (p0 == p1 || p1 == p2 || p2 == p0)
+      continue;
+    renderpolycount++;
+    float3 v0, v1, v2;
+    v0 = vert[p0];
+    v1 = vert[p1];
+    v2 = vert[p2];
+    std::cout << v0 << "," << v1 << "," << v2 << " " << objid[i] << std::endl;
+  }
+  std::cout << renderpolycount++ << std::endl;
+}
+#endif
+
+void LoadDataFromFile(const std::string plyFile,
+                      std::vector<float3>& vert,
+                      std::vector<tridata>& tri,
+                      std::vector<int>& objid) {
+  std::ifstream ifs(plyFile, std::ios::binary);
+  if (!ifs.good()) {
+    std::cerr << "Cannot open file at " << plyFile;
+    return;
+  }
+
+  tinyply::PlyFile file;
+  if (!file.parse_header(ifs)) {
+    std::cerr << "Could not read header";
+    return;
+  }
+
+  std::shared_ptr<tinyply::PlyData> vertices, colors, face_inds, object_ids;
+
+  vertices = file.request_properties_from_element("vertex", {"x", "y", "z"});
+
+  face_inds =
+      file.request_properties_from_element("face", {"vertex_indices"}, 0);
+
+  object_ids = file.request_properties_from_element("face", {"object_id"});
+
+  file.read(ifs);
+
+  assert(vertices->t == tinyply::Type::FLOAT32);
+  copyTo(vertices, vert);
+
+  // We can load int32 index buffers as uint32 index buffers as they are simply
+  // indices into an array and thus can't be negative. int32 is really uint31
+  // and can be safely reinterpret_casted to uint32
+  assert(face_inds->t == tinyply::Type::INT32 ||
+         face_inds->t == tinyply::Type::UINT32);
+  // We can figure out the number of vertices per face by dividing the number
+  // of bytes needed to store the faces by the number of faces and the size of
+  // each vertex
+  int vertexPerFace =
+      face_inds->buffer.size_bytes() / (face_inds->count * sizeof(uint32_t));
+  assert(vertexPerFace == 3);
+  copyTo(face_inds, tri);
+
+  // If the input mesh is a quad mesh, then we had to double the number of
+  // primitives, so we also need to double the size of the object IDs buffer
+  int indicesPerFace = 3 * (vertexPerFace == 4 ? 2 : 1);
+  if (object_ids->t == tinyply::Type::INT32 ||
+      object_ids->t == tinyply::Type::UINT32) {
+    copyTo(object_ids, objid);
+  } else {
+    std::cerr << "Cannot load object_id of type "
+              << tinyply::PropertyTable[object_ids->t].str;
+    return;
+  }
+
+  std::cout << vert.size() << std::endl;
+  std::cout << tri.size() << std::endl;
+  std::cout << objid.size() << std::endl;
+}
+
+int CalcNumFaces(std::vector<float3>& vert,
+                 std::vector<tridata>& tri,
+                 std::vector<int>& collapse_map,
+                 int numVerts) {
+  int renderpolycount = 0;
+  for (unsigned int i = 0; i < tri.size(); i++) {
+    int p0 = Map(collapse_map, tri[i].v[0], numVerts);
+    int p1 = Map(collapse_map, tri[i].v[1], numVerts);
+    int p2 = Map(collapse_map, tri[i].v[2], numVerts);
+    // note:  serious optimization opportunity here,
+    //  by sorting the triangles the following "continue"
+    //  could have been made into a "break" statement.
+    if (p0 == p1 || p1 == p2 || p2 == p0)
+      continue;
+    renderpolycount++;
+  }
+  return renderpolycount;
+}
+
+void WriteDataToFile(const std::string plyFile,
+                     std::vector<float3>& vert,
+                     std::vector<tridata>& tri,
+                     std::vector<int>& objid,
+                     std::vector<int>& collapse_map,
+                     int numVerts) {
+  int numFaces = CalcNumFaces(vert, tri, collapse_map, numVerts);
+  std::ofstream f(plyFile, std::ios::out | std::ios::binary);
+  f << "ply" << std::endl;
+  f << "format binary_little_endian 1.0" << std::endl;
+  f << "element vertex " << numVerts << std::endl;
+  f << "property float x" << std::endl;
+  f << "property float y" << std::endl;
+  f << "property float z" << std::endl;
+  f << "property uchar red" << std::endl;
+  f << "property uchar green" << std::endl;
+  f << "property uchar blue" << std::endl;
+  f << "element face " << numFaces << std::endl;
+  f << "property list uchar int vertex_indices" << std::endl;
+  f << "property ushort object_id" << std::endl;
+  f << "end_header" << std::endl;
+
+  // We need to rotate to match .glb where -Z is gravity
+  for (size_t i = 0; i < numVerts; i++) {
+    unsigned char gray[] = {0x80, 0x80, 0x80};
+    float3 vertex = vert[i];
+    f.write(reinterpret_cast<char*>(&vertex), sizeof(vertex));
+    f.write(reinterpret_cast<char*>(gray), sizeof(gray));
+  }
+
+  for (unsigned int i = 0; i < tri.size(); i++) {
+    int p0 = Map(collapse_map, tri[i].v[0], numVerts);
+    int p1 = Map(collapse_map, tri[i].v[1], numVerts);
+    int p2 = Map(collapse_map, tri[i].v[2], numVerts);
+    // note:  serious optimization opportunity here,
+    //  by sorting the triangles the following "continue"
+    //  could have been made into a "break" statement.
+    if (p0 == p1 || p1 == p2 || p2 == p0)
+      continue;
+    f.put(3);
+    f.write(reinterpret_cast<char*>(&p0), sizeof(p0));
+    f.write(reinterpret_cast<char*>(&p1), sizeof(p1));
+    f.write(reinterpret_cast<char*>(&p2), sizeof(p2));
+    unsigned short id = objid[i];
+    f.write(reinterpret_cast<char*>(&id), sizeof(id));
+  }
+
+  f.close();
+}
+
+int main(int argc, char* argv[]) {
+  std::vector<float3> vert;  // global Array of vertices
+  std::vector<tridata> tri;  // global Array of triangles
+  std::vector<int> objid;
+  std::vector<int> collapse_map;  // to which neighbor each vertex collapses
+  std::vector<int> permutation;
+  if (argc != 4) {
+    std::cerr << "Usage: " << argv[0] << " in.ply out.ply numvertices"
+              << std::endl;
+    exit(1);
+  }
+
+  LoadDataFromFile(argv[1], vert, tri, objid);
+  std::cout << "loaded" << std::endl;
+  // LoadData(vert, tri, objid);
+  ProgressiveMesh(vert, tri, objid, collapse_map, permutation);
+  PermuteVertices(vert, tri, permutation);
+  WriteDataToFile(argv[2], vert, tri, objid, collapse_map, atoi(argv[3]));
+  // DrawModelTriangles(vert, tri, objid, collapse_map, 4);
+  return 0;
 }

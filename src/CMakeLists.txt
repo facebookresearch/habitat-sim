@@ -102,3 +102,5 @@ if(CORRADE_TARGET_EMSCRIPTEN)
   message("Building Emscripten JS bindings")
   add_subdirectory(esp/bindings_js)
 endif()
+
+add_subdirectory(utils/progmesh)

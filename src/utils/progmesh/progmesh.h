@@ -18,7 +18,7 @@
 #ifndef PROGRESSIVE_MESH_H
 #define PROGRESSIVE_MESH_H
 
-#include "../include/linalg.h"  // typical 3D math routines following hlsl style for the most part
+#include "linalg.h"  // typical 3D math routines following hlsl style for the most part
 using namespace linalg::aliases;
 #include <vector>
 
