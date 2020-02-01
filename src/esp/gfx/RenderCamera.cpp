@@ -5,6 +5,10 @@
 #include "RenderCamera.h"
 
 #include <Magnum/EigenIntegration/Integration.h>
+#include <Magnum/Math/Frustum.h>
+#include <Magnum/Math/Intersection.h>
+#include <Magnum/Math/Range.h>
+#include <Magnum/SceneGraph/Drawable.h>
 
 namespace Mn = Magnum;
 
@@ -39,10 +43,52 @@ RenderCamera& RenderCamera::setProjectionMatrix(int width,
   return *this;
 }
 
-RenderCamera& RenderCamera::draw(MagnumDrawableGroup& drawables) {
-  // TODO: visibility culling
-  MagnumCamera::draw(drawables);
-  return *this;
+size_t RenderCamera::cull(
+    std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                          Mn::Matrix4>>& drawableTransforms) {
+  // camera frustum relative to world origin
+  const Mn::Frustum frustum =
+      Mn::Frustum::fromMatrix(projectionMatrix() * cameraMatrix());
+
+  auto newEndIter = std::remove_if(
+      drawableTransforms.begin(), drawableTransforms.end(),
+      [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                          Mn::Matrix4>& a) {
+        // obtain the absolute aabb
+        Corrade::Containers::Optional<Mn::Range3D> aabb =
+            dynamic_cast<scene::SceneNode&>(a.first.get().object())
+                .getAbsoluteAABB();
+        if (aabb) {
+          // if it has an absolute aabb, it is a static mesh
+          return !Mn::Math::Intersection::rangeFrustum(*aabb, frustum);
+        } else {
+          // keep the drawable if its node does not have an absolute AABB
+          return false;
+        }
+      });
+
+  return (newEndIter - drawableTransforms.begin());
+}
+
+uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables,
+                            bool frustumCulling) {
+  if (!frustumCulling) {
+    MagnumCamera::draw(drawables);
+    return drawables.size();
+  }
+
+  std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                        Mn::Matrix4>>
+      drawableTransforms = drawableTransformations(drawables);
+
+  // draw just the visible part
+  size_t numVisibles = cull(drawableTransforms);
+  // erase all items that did not pass the frustum visibility test
+  drawableTransforms.erase(drawableTransforms.begin() + numVisibles,
+                           drawableTransforms.end());
+
+  MagnumCamera::draw(drawableTransforms);
+  return drawableTransforms.size();
 }
 
 }  // namespace gfx
