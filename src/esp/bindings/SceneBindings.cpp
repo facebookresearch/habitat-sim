@@ -45,6 +45,39 @@ void initSceneBindings(py::module& m) {
                -> bool { return self != other; });
 
   // ==== SceneGraph ====
+
+  // !!Warning!!
+  // CANNOT apply smart pointers to "SceneNode" or ANY its descendant classes,
+  // namely, any class whose instance can be a node in the scene graph. Reason:
+  // Memory will be automatically handled in simulator (C++ backend). Using
+  // smart pointers on scene graph node from Python code, will claim the
+  // ownership and eventually free its resources, which leads to "duplicated
+  // deallocation", and thus memory corruption.
+
+  // ==== enum SceneNodeType ====
+  py::enum_<SceneNodeType>(m, "SceneNodeType")
+      .value("EMPTY", SceneNodeType::EMPTY)
+      .value("SENSOR", SceneNodeType::SENSOR)
+      .value("AGENT", SceneNodeType::AGENT)
+      .value("CAMERA", SceneNodeType::CAMERA);
+
+  // ==== SceneNode ====
+  py::class_<SceneNode, Magnum::SceneGraph::PyObject<SceneNode>, MagnumObject,
+             Magnum::SceneGraph::PyObjectHolder<SceneNode>>(m, "SceneNode", R"(
+      SceneNode: a node in the scene graph.
+
+      Cannot apply a smart pointer to a SceneNode object.
+      You can "create it and forget it".
+      Simulator backend will handle the memory.)")
+      .def(py::init_alias<std::reference_wrapper<SceneNode>>(),
+           R"(Constructor: creates a scene node, and sets its parent.)")
+      .def_property("type", &SceneNode::getType, &SceneNode::setType)
+      .def(
+          "create_child", [](SceneNode& self) { return &self.createChild(); },
+          R"(Creates a child node, and sets its parent to the current node.)")
+      .def_property_readonly("absolute_translation",
+                             &SceneNode::absoluteTranslation);
+
   py::class_<SceneGraph>(m, "SceneGraph")
       .def(py::init())
       .def("get_root_node",
@@ -96,38 +129,6 @@ void initSceneBindings(py::module& m) {
 
              PYTHON DOES NOT GET OWNERSHIP)",
            "sceneGraphID"_a, pybind11::return_value_policy::reference);
-
-  // !!Warning!!
-  // CANNOT apply smart pointers to "SceneNode" or ANY its descendant classes,
-  // namely, any class whose instance can be a node in the scene graph. Reason:
-  // Memory will be automatically handled in simulator (C++ backend). Using
-  // smart pointers on scene graph node from Python code, will claim the
-  // ownership and eventually free its resources, which leads to "duplicated
-  // deallocation", and thus memory corruption.
-
-  // ==== enum SceneNodeType ====
-  py::enum_<SceneNodeType>(m, "SceneNodeType")
-      .value("EMPTY", SceneNodeType::EMPTY)
-      .value("SENSOR", SceneNodeType::SENSOR)
-      .value("AGENT", SceneNodeType::AGENT)
-      .value("CAMERA", SceneNodeType::CAMERA);
-
-  // ==== SceneNode ====
-  py::class_<SceneNode, Magnum::SceneGraph::PyObject<SceneNode>, MagnumObject,
-             Magnum::SceneGraph::PyObjectHolder<SceneNode>>(m, "SceneNode", R"(
-      SceneNode: a node in the scene graph.
-
-      Cannot apply a smart pointer to a SceneNode object.
-      You can "create it and forget it".
-      Simulator backend will handle the memory.)")
-      .def(py::init_alias<std::reference_wrapper<SceneNode>>(),
-           R"(Constructor: creates a scene node, and sets its parent.)")
-      .def_property("type", &SceneNode::getType, &SceneNode::setType)
-      .def(
-          "create_child", [](SceneNode& self) { return &self.createChild(); },
-          R"(Creates a child node, and sets its parent to the current node.)")
-      .def_property_readonly("absolute_translation",
-                             &SceneNode::absoluteTranslation);
 
   // ==== SemanticCategory ====
   py::class_<SemanticCategory, SemanticCategory::ptr>(m, "SemanticCategory")

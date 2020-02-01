@@ -88,7 +88,18 @@ class Simulator:
 
     def reset(self):
         self._sim.reset()
+        for i in range(len(self.agents)):
+            self.reset_agent(i)
+
         return self.get_sensor_observations()
+
+    def reset_agent(self, agent_id):
+        agent = self.get_agent(agent_id)
+        initial_agent_state = agent.initial_state
+        if initial_agent_state is None:
+            raise RuntimeError("reset called before agent was given an initial state")
+
+        self.initialize_agent(agent_id, initial_agent_state)
 
     def _config_backend(self, config: Configuration):
         if self._sim is None:
@@ -182,7 +193,7 @@ class Simulator:
                     np.random.uniform(0, 2.0 * np.pi), np.array([0, 1, 0])
                 )
 
-        agent.set_state(initial_state)
+        agent.set_state(initial_state, is_initial=True)
         self._last_state = agent.state
         return agent
 
