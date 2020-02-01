@@ -5,4 +5,5 @@ numpy-quaternion
 pillow
 scipy>=1.3.0
 tqdm
-pytorch
+torch
+matplotlib
