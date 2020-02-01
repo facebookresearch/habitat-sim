@@ -303,6 +303,18 @@ class Simulator {
   bool recomputeNavMesh(nav::PathFinder& pathfinder,
                         const nav::NavMeshSettings& navMeshSettings);
 
+  /**
+   * @brief Enable or disable frustum culling (enabled by default)
+   * @param val, true = enable, false = disable
+   */
+  void setFrustumCulling(bool val) { frustumCulling_ = val; }
+
+  /**
+   * @brief Get status, whether frustum culling is enabled or not
+   * @return true if enabled, otherwise false
+   */
+  bool getFrustumCulling() { return frustumCulling_; }
+
  protected:
   Simulator(){};
 
@@ -327,6 +339,8 @@ class Simulator {
 
   core::Random random_;
   SimulatorConfiguration config_;
+
+  bool frustumCulling_ = true;
 
   ESP_SMART_POINTERS(Simulator)
 };

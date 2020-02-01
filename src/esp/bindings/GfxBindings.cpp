@@ -46,9 +46,6 @@ void initGfxBindings(py::module& m) {
         Set this `Camera`'s projection matrix.
       )",
            "width"_a, "height"_a, "znear"_a, "zfar"_a, "hfov"_a)
-      .def_property("frustum_culling", &RenderCamera::getFrustumCullingEnabled,
-                    &RenderCamera::setFrustumCullingEnabled,
-                    "Enable or disable the frustum culling.")
       .def_property_readonly("node", nodeGetter<RenderCamera>,
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<RenderCamera>,
@@ -58,14 +55,15 @@ void initGfxBindings(py::module& m) {
   py::class_<Renderer, Renderer::ptr>(m, "Renderer")
       .def(py::init(&Renderer::create<>))
       .def("draw",
-           py::overload_cast<sensor::VisualSensor&, scene::SceneGraph&>(
+           py::overload_cast<sensor::VisualSensor&, scene::SceneGraph&, bool>(
                &Renderer::draw),
            R"(Draw given scene using the visual sensor)", "visualSensor"_a,
-           "scene"_a)
-      .def(
-          "draw",
-          py::overload_cast<RenderCamera&, scene::SceneGraph&>(&Renderer::draw),
-          R"(Draw given scene using the camera)", "camera"_a, "scene"_a)
+           "scene"_a, "frustumCulling"_a)
+      .def("draw",
+           py::overload_cast<RenderCamera&, scene::SceneGraph&, bool>(
+               &Renderer::draw),
+           R"(Draw given scene using the camera)", "camera"_a, "scene"_a,
+           "frustumCulling"_a)
       .def("bind_render_target", &Renderer::bindRenderTarget);
 
   py::class_<RenderTarget>(m, "RenderTarget")

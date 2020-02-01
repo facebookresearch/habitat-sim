@@ -57,9 +57,9 @@ parser.add_argument(
     help="Index the objects to spawn if enable_physics is true. -1 indicates random.",
 )
 parser.add_argument(
-    "--disable_culling",
+    "--disable_frustum_culling",
     action="store_true",
-    help="Whther to disable frustum culling or not (default: enabled)",
+    help="Whther to disable frustum culling or not (default culling is enabled)",
 )
 args = parser.parse_args()
 
@@ -75,7 +75,7 @@ default_settings["compute_shortest_path"] = False
 default_settings["compute_action_shortest_path"] = False
 
 default_settings["max_frames"] = args.max_frames
-default_settings["enable_culling"] = not arg.disable_culling
+default_settings["frustum_culling"] = not arg.disable_frustum_culling
 
 
 benchmark_items = {

@@ -309,6 +309,7 @@ class DemoRunner:
             download_and_unzip(default_sim_settings["test_scene_data_url"], ".")
             print("Downloaded and extracted test scenes data.")
 
+        # create a simulator
         self._sim = habitat_sim.Simulator(self._cfg)
 
         random.seed(self._sim_settings["seed"])
@@ -316,6 +317,9 @@ class DemoRunner:
 
         # initialize the agent at a random start state
         start_state = self.init_agent_state(self._sim_settings["default_agent"])
+
+        # set frustum culling
+        self._sim.frustum_culling = self._sim_settings["frustum_culling"]
 
         return start_state
 

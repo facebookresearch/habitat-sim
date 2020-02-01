@@ -207,7 +207,6 @@ Viewer::Viewer(const Arguments& arguments)
                                      90.0f);            // hfov
   renderCamera_->setAspectRatioPolicy(
       Magnum::SceneGraph::AspectRatioPolicy::Extend);
-  renderCamera_->setFrustumCullingEnabled(enableFrustumCulling_);
 
   // Load navmesh if available
   if (file.compare(esp::assets::EMPTY_SCENE) != 0) {
