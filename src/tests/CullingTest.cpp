@@ -234,9 +234,9 @@ TEST(CullingTest, frustumCulling) {
 
   // ============== Test 3 ==================
   // draw using the RenderCamera overload draw()
-  renderCamera.setFrustumCullingEnabled(true);
   target->renderEnter();
-  size_t numVisibleObjects = renderCamera.draw(drawables);
+  size_t numVisibleObjects =
+      renderCamera.draw(drawables, true /* enable frustum culling */);
   target->renderExit();
   EXPECT_EQ(numVisibleObjects, numVisibleObjectsGroundTruth);
 }

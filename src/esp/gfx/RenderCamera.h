@@ -43,19 +43,11 @@ class RenderCamera : public MagnumCamera {
 
   /**
    * @brief Overload function to render the drawables
+   * @param drawables, a drawable group containing all the drawables
+   * @param frustumCulling, whether do frustum culling or not, default: false
    * @return the number of drawables that are drawn
    */
-  uint32_t draw(MagnumDrawableGroup& drawables);
-  /**
-   * @brief Enable or disable the frustum culling test
-   * @param true, enable; false, disable;
-   */
-  void setFrustumCullingEnabled(bool value) { frustumCullingEnabled_ = value; }
-  /**
-   * @brief Get the status, if the frustum culling is enabled
-   */
-  bool getFrustumCullingEnabled() { return frustumCullingEnabled_; }
-
+  uint32_t draw(MagnumDrawableGroup& drawables, bool frustumCulling = false);
   /**
    * @brief performs the frustum culling
    * @param drawableTransforms, a vector of pairs of Drawable3D object and its

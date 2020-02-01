@@ -42,7 +42,7 @@ void initGfxBindings(py::module& m) {
       to the scene node for rendering.)")
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
                           const vec3f&, const vec3f&, const vec3f&>())
-      .def("setProjectionMatrix", &RenderCamera::setProjectionMatrix, R"(
+      .def("set_projection_matrix", &RenderCamera::setProjectionMatrix, R"(
         Set this `Camera`'s projection matrix.
       )",
            "width"_a, "height"_a, "znear"_a, "zfar"_a, "hfov"_a)

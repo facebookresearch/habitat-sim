@@ -70,8 +70,9 @@ size_t RenderCamera::cull(
   return (newEndIter - drawableTransforms.begin());
 }
 
-uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables) {
-  if (!frustumCullingEnabled_) {
+uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables,
+                            bool frustumCulling) {
+  if (!frustumCulling) {
     MagnumCamera::draw(drawables);
     return drawables.size();
   }
