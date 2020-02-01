@@ -63,8 +63,6 @@ class RenderCamera : public MagnumCamera {
                         Magnum::Matrix4>>& drawableTransforms);
 
  protected:
-  bool frustumCullingEnabled_ = false;
-
   ESP_SMART_POINTERS(RenderCamera)
 };
 
