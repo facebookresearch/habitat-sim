@@ -97,7 +97,9 @@ class Shader {
   template <class Drawable>
   bool draw(const Drawable& drawable,
             const Magnum::Matrix4& transformationMatrix,
-            Magnum::SceneGraph::Camera3D& camera);
+            Magnum::SceneGraph::Camera3D& camera) {
+    // shaderProgram_->draw(drawable, transformationMatrix, camera);
+  }
 
  private:
   ShaderConfiguration config_;
