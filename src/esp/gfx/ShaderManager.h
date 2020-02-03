@@ -35,7 +35,21 @@ class ShaderManager {
    * same ID already exists.
    */
   template <typename... ShaderArgs>
-  Shader::ptr createShader(std::string id, ShaderArgs&&... args);
+  Shader::ptr createShader(std::string id, ShaderArgs&&... args) {
+    // insert a nullptr first to avoid useless construction when shader with id
+    // already exists
+    auto inserted = shaders_.emplace(std::move(id), nullptr);
+    if (!inserted.second) {
+      LOG(ERROR) << "Shader with id " << inserted.first->first
+                 << " already exists";
+      return nullptr;
+    }
+
+    // now actually "insert" the shader
+    inserted.first->second.reset(new Shader{std::forward<ShaderArgs>(args)...});
+    LOG(INFO) << "Created Shader: " << inserted.first->first;
+    return inserted.first->second;
+  }
 
   /**
    * @brief Deletes a @ref Shader by ID
