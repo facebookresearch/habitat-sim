@@ -5,6 +5,7 @@
 #pragma once
 
 #include <Corrade/Containers/Containers.h>
+#include <Corrade/Containers/Optional.h>
 #include <Magnum/Math/Range.h>
 #include "esp/core/esp.h"
 #include "esp/gfx/magnum.h"
@@ -68,12 +69,20 @@ class SceneNode : public MagnumObject {
   //! return the local bounding box for meshes stored at this node
   const Magnum::Range3D& getMeshBB() const { return meshBB_; };
 
+  //! return the global bounding box for the mesh stored at this node
+  Corrade::Containers::Optional<Magnum::Range3D> getAbsoluteAABB() {
+    return aabb_;
+  };
+
   //! return the cumulative bounding box of the full scene graph tree for which
   //! this node is the root
   const Magnum::Range3D& getCumulativeBB() const { return cumulativeBB_; };
 
   //! set local bounding box for meshes stored at this node
   void setMeshBB(Magnum::Range3D meshBB) { meshBB_ = meshBB; };
+
+  //! set the global bounding box for mesh stored in this node
+  void setAbsoluteAABB(Magnum::Range3D aabb) { aabb_ = aabb; };
 
  protected:
   // DO not make the following constructor public!
@@ -91,6 +100,14 @@ class SceneNode : public MagnumObject {
   //! the cumulative bounding box of the full scene graph tree for which this
   //! node is the root
   Magnum::Range3D cumulativeBB_;
+
+  //! the global bounding box for *static* meshes stored at this node
+  //  NOTE: this is different from the local bounding box meshBB_ defined above:
+  //  -) it only applies to *static* meshes, NOT dynamic meshes in the scene (so
+  //  it is an optional object);
+  //  -) it was computed using mesh vertex positions in world space;
+  Corrade::Containers::Optional<Magnum::Range3D> aabb_ =
+      Corrade::Containers::NullOpt;
 };
 
 }  // namespace scene

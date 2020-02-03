@@ -2,8 +2,10 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/Containers/Optional.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/EigenIntegration/Integration.h>
+#include <Magnum/Math/Range.h>
 #include <gtest/gtest.h>
 #include <string>
 
@@ -15,6 +17,7 @@
 #include "configure.h"
 
 namespace Cr = Corrade;
+namespace Mn = Magnum;
 
 using esp::assets::ResourceManager;
 using esp::scene::SceneManager;
