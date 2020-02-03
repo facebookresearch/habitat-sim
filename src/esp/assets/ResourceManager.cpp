@@ -68,7 +68,7 @@ namespace assets {
 
 bool ResourceManager::loadScene(const AssetInfo& info,
                                 scene::SceneNode* parent, /* = nullptr */
-                                DrawableGroup* drawables /* = nullptr */) {
+                                scene::SceneGraph* sceneGraph /* = nullptr */) {
   // we only compute absolute AABB for every mesh component when loading ptex
   // mesh, or general mesh (e.g., MP3D)
   staticDrawableInfo_.clear();
@@ -85,16 +85,16 @@ bool ResourceManager::loadScene(const AssetInfo& info,
       meshSuccess = false;
     } else {
       if (info.type == AssetType::INSTANCE_MESH) {
-        meshSuccess = loadInstanceMeshData(info, parent, drawables);
+        meshSuccess = loadInstanceMeshData(info, parent, sceneGraph);
       } else if (info.type == AssetType::FRL_PTEX_MESH) {
-        meshSuccess = loadPTexMeshData(info, parent, drawables);
+        meshSuccess = loadPTexMeshData(info, parent, sceneGraph);
       } else if (info.type == AssetType::SUNCG_SCENE) {
-        meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
+        meshSuccess = loadSUNCGHouseFile(info, parent, sceneGraph);
       } else if (info.type == AssetType::MP3D_MESH) {
-        meshSuccess = loadGeneralMeshData(info, parent, drawables);
+        meshSuccess = loadGeneralMeshData(info, parent, sceneGraph);
       } else {
         // Unknown type, just load general mesh data
-        meshSuccess = loadGeneralMeshData(info, parent, drawables);
+        meshSuccess = loadGeneralMeshData(info, parent, sceneGraph);
       }
       // add a scene attributes for this filename or modify the existing one
       if (meshSuccess) {
@@ -151,20 +151,20 @@ bool ResourceManager::loadScene(
     const AssetInfo& info,
     std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     scene::SceneNode* parent, /* = nullptr */
-    DrawableGroup* drawables, /* = nullptr */
+    scene::SceneGraph* sceneGraph, /* = nullptr */
     std::string physicsFilename /* data/default.phys_scene_config.json */) {
   // In-memory representation of scene meta data
   PhysicsManagerAttributes physicsManagerAttributes =
       loadPhysicsConfig(physicsFilename);
   physicsManagerLibrary_[physicsFilename] = physicsManagerAttributes;
   return loadScene(info, _physicsManager, physicsManagerAttributes, parent,
-                   drawables);
+                   sceneGraph);
 }
 
 // TODO: kill existing scene mesh drawables, nodes, etc... (all but meshes in
 // memory?)
 //! (1) load scene mesh
-//! (2) add drawable (if parent and drawables != nullptr)
+//! (2) add drawable (if parent and sceneGraph != nullptr)
 //! (3) consume PhysicsSceneMetaData to initialize physics simulator
 //! (4) create scene collision mesh if possible
 bool ResourceManager::loadScene(
@@ -172,9 +172,9 @@ bool ResourceManager::loadScene(
     std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     PhysicsManagerAttributes physicsManagerAttributes,
     scene::SceneNode* parent, /* = nullptr */
-    DrawableGroup* drawables /* = nullptr */) {
+    scene::SceneGraph* sceneGraph /* = nullptr */) {
   // default scene mesh loading
-  bool meshSuccess = loadScene(info, parent, drawables);
+  bool meshSuccess = loadScene(info, parent, sceneGraph);
 
   //! PHYSICS INIT: Use the above config to initialize physics engine
   bool defaultToNoneSimulator = true;
@@ -383,10 +383,10 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
 }
 
 //! Only load and does not instantiate object
-//! For load-only: set parent = nullptr, drawables = nullptr
+//! For load-only: set parent = nullptr, sceneGraph = nullptr
 int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
                                 scene::SceneNode* parent,
-                                DrawableGroup* drawables) {
+                                scene::SceneGraph* sceneGraph) {
   // Load Object from config
   const bool objectIsLoaded =
       physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
@@ -404,7 +404,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
     objectID = std::distance(physicsObjectConfigList_.begin(), itr);
   }
 
-  if (parent != nullptr and drawables != nullptr) {
+  if (parent != nullptr and sceneGraph != nullptr) {
     //! Add mesh to rendering stack
 
     // Meta data and collision mesh
@@ -425,7 +425,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
         physicsObjectAttributes.getMagnumVec3("scale");
     scalingNode.setScaling(objectScaling);
 
-    addComponent(meshMetaData, scalingNode, drawables, meshMetaData.root);
+    addComponent(meshMetaData, scalingNode, sceneGraph, meshMetaData.root);
     // compute the full BB hierarchy for the new tree.
     parent->computeCumulativeBB();
   }
@@ -895,7 +895,7 @@ Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
 
 bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
                                        scene::SceneNode* parent,
-                                       DrawableGroup* drawables) {
+                                       scene::SceneGraph* sceneGraph) {
 #ifdef ESP_BUILD_PTEX_SUPPORT
   // if this is a new file, load it and add it to the dictionary
   const std::string& filename = info.filepath;
@@ -962,7 +962,7 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 // semantic instance mesh import
 bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
                                            scene::SceneNode* parent,
-                                           DrawableGroup* drawables) {
+                                           scene::SceneGraph* sceneGraph) {
   // if this is a new file, load it and add it to the dictionary, create
   // shaders and add it to the shaderPrograms_
   const std::string& filename = info.filepath;
@@ -995,7 +995,7 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
           dynamic_cast<GenericInstanceMeshData*>(meshes_[iMesh].get());
       scene::SceneNode& node = parent->createChild();
       createDrawable(INSTANCE_MESH_SHADER, *instanceMeshData->getMagnumGLMesh(),
-                     node, drawables);
+                     node, sceneGraph);
     }
   }
 
@@ -1005,10 +1005,10 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
 bool ResourceManager::loadGeneralMeshData(
     const AssetInfo& info,
     scene::SceneNode* parent /* = nullptr */,
-    DrawableGroup* drawables /* = nullptr */) {
+    scene::SceneGraph* sceneGraph /* = nullptr */) {
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
-  const bool drawData = parent != nullptr && drawables != nullptr;
+  const bool drawData = parent != nullptr && sceneGraph != nullptr;
 
   // Mesh & metaData container
   MeshMetaData metaData;
@@ -1128,7 +1128,7 @@ bool ResourceManager::loadGeneralMeshData(
     } else if (importer->mesh3DCount() && meshes_[metaData.meshIndex.first]) {
       // no default scene --- standalone OBJ/PLY files, for example
       // take a wild guess and load the first mesh with the first material
-      // addMeshToDrawables(metaData, *parent, drawables, ID_UNDEFINED, 0, 0);
+      // addMeshToDrawables(metaData, *parent, sceneGraph, ID_UNDEFINED, 0, 0);
       loadMeshHierarchy(*importer, resourceDict_[filename].root, 0);
     } else {
       LOG(ERROR) << "No default scene available and no meshes found, exiting";
@@ -1168,7 +1168,7 @@ bool ResourceManager::loadGeneralMeshData(
       }
     }  // forceReload
 
-    addComponent(metaData, newNode, drawables, metaData.root);
+    addComponent(metaData, newNode, sceneGraph, metaData.root);
     return true;
   }
 }
@@ -1323,7 +1323,7 @@ void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
 //! instantiated any time after initial loading
 void ResourceManager::addComponent(const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
-                                   DrawableGroup* drawables,
+                                   scene::SceneGraph* sceneGraph,
                                    const MeshTransformNode& meshTransformNode) {
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
@@ -1335,7 +1335,7 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
   // Add a drawable if the object has a mesh and the mesh is loaded
   if (meshIDLocal != ID_UNDEFINED) {
     const int materialIDLocal = meshTransformNode.materialIDLocal;
-    addMeshToDrawables(metaData, node, drawables, meshTransformNode.componentID,
+    addMeshToDrawables(metaData, node, sceneGraph, meshTransformNode.componentID,
                        meshIDLocal, materialIDLocal);
 
     // compute the bounding box for the mesh we are adding
@@ -1346,13 +1346,13 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
 
   // Recursively add children
   for (auto& child : meshTransformNode.children) {
-    addComponent(metaData, node, drawables, child);
+    addComponent(metaData, node, sceneGraph, child);
   }
 }
 
 void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                                          scene::SceneNode& node,
-                                         DrawableGroup* drawables,
+                                         scene::SceneGraph* sceneGraph,
                                          int objectID,
                                          int meshIDLocal,
                                          int materialIDLocal) {
@@ -1368,7 +1368,7 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
   if (materialIDLocal == ID_UNDEFINED ||
       metaData.materialIndex.second == ID_UNDEFINED ||
       !materials_[materialID]) {
-    createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID);
+    createDrawable(COLORED_SHADER, mesh, node, sceneGraph, texture, objectID);
   } else {
     if (materials_[materialID]->flags() &
         Magnum::Trade::PhongMaterialData::Flag::DiffuseTexture) {
@@ -1378,18 +1378,18 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
       const int textureIndex = materials_[materialID]->diffuseTexture();
       texture = textures_[textureStart + textureIndex].get();
       if (texture) {
-        createDrawable(TEXTURED_SHADER, mesh, node, drawables, texture,
+        createDrawable(TEXTURED_SHADER, mesh, node, sceneGraph, texture,
                        objectID);
       } else {
         // Color-only material
-        createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID,
+        createDrawable(COLORED_SHADER, mesh, node, sceneGraph, texture, objectID,
                        materials_[materialID]->diffuseColor());
       }
     } else {
       // TODO: some types (such as .ply with vertex color) get binned here
       // incorrectly.
       // Color-only material
-      createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID,
+      createDrawable(COLORED_SHADER, mesh, node, sceneGraph, texture, objectID,
                      materials_[materialID]->diffuseColor());
     }
   }  // else
@@ -1401,17 +1401,17 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
 
 void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
-                                              DrawableGroup* drawables) {
+                                              scene::SceneGraph* sceneGraph) {
   CHECK(primitiveID >= 0 && primitiveID < primitive_meshes_.size());
   createDrawable(ShaderType::COLORED_SHADER, primitive_meshes_[primitiveID],
-                 node, drawables);
+                 node, sceneGraph);
 }
 
 void ResourceManager::createDrawable(
     const ShaderType shaderType,
     Magnum::GL::Mesh& mesh,
     scene::SceneNode& node,
-    DrawableGroup* group /* = nullptr */,
+    scene::SceneGraph* sceneGraph /* = nullptr */,
     Magnum::GL::Texture2D* texture /* = nullptr */,
     int objectId /* = ID_UNDEFINED */,
     const Magnum::Color4& color /* = Magnum::Color4{1} */) {
@@ -1432,7 +1432,7 @@ void ResourceManager::createDrawable(
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
                                          scene::SceneNode* parent,
-                                         DrawableGroup* drawables) {
+                                         scene::SceneGraph* sceneGraph) {
   ASSERT(parent != nullptr);
   std::string houseFile = Cr::Utility::Directory::join(
       Cr::Utility::Directory::current(), houseInfo.filepath);
@@ -1467,7 +1467,7 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
         nodeIds.push_back(id);
         objectNode.setId(nodeIndex);
         if (info.type == AssetType::SUNCG_OBJECT) {
-          loadGeneralMeshData(info, &objectNode, drawables);
+          loadGeneralMeshData(info, &objectNode, sceneGraph);
         }
         return objectNode;
       };

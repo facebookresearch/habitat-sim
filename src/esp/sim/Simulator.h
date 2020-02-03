@@ -319,7 +319,7 @@ class Simulator {
   // If you switch the order, you will have the error:
   // GL::Context::current(): no current context from Magnum
   // during the deconstruction
-  assets::ResourceManager resourceManager_;
+  assets::ResourceManager resourceManager_{shaderManager_};
 
   scene::SceneManager sceneManager_;
   int activeSceneID_ = ID_UNDEFINED;

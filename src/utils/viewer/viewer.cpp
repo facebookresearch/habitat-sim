@@ -84,7 +84,7 @@ class Viewer : public Magnum::Platform::Application {
 
   gfx::ShaderManager shaderManager_;
 
-  assets::ResourceManager resourceManager_;
+  assets::ResourceManager resourceManager_{shaderManager_};
   // SceneManager must be before physicsManager_ as the physicsManager_
   // assumes that it "owns" things owned by the scene manager
   scene::SceneManager sceneManager_;

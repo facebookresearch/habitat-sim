@@ -29,6 +29,7 @@
 #include "MeshData.h"
 #include "MeshMetaData.h"
 #include "esp/gfx/DrawableGroup.h"
+#include "esp/gfx/ShaderManager.h"
 #include "esp/gfx/configure.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneNode.h"
@@ -63,7 +64,7 @@ namespace assets {
 class ResourceManager {
  public:
   /** @brief Constructor */
-  explicit ResourceManager(){};
+  explicit ResourceManager(gfx::ShaderManager& s) : shaderManager_{s} {};
 
   /** @brief Destructor */
   ~ResourceManager() {}
@@ -80,7 +81,7 @@ class ResourceManager {
   inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
 
   /**
-   * @brief Load a scene mesh and add it to the specified @ref DrawableGroup as
+   * @brief Load a scene mesh and add it to the specified @ref SceneGraph as
    * a child of the specified @ref scene::SceneNode.
    *
    * If parent and drawables are not specified, the assets are loaded, but no
@@ -90,13 +91,13 @@ class ResourceManager {
    * @param parent The @ref scene::SceneNode of which the scene mesh will be
    * added as a child. Typically near the root of the scene. Expected to be
    * static.
-   * @param drawables The @ref DrawableGroup with which the scene mesh will be
+   * @param sceneGraph The @ref SceneGraph with which the scene mesh will be
    * rendered.
    * @return Whether or not the scene load succeeded.
    */
   bool loadScene(const AssetInfo& info,
                  scene::SceneNode* parent = nullptr,
-                 DrawableGroup* drawables = nullptr);
+                 scene::SceneGraph* sceneGraph = nullptr);
 
   /**
    * @brief Load and instantiate a scene including physics simulation.
@@ -104,7 +105,7 @@ class ResourceManager {
    * Loads a physics simulator for the world from the parameters defined in the
    * @ref PhysicsManagerAttributes and reseats the @ref physics::PhysicsManager
    * based on the configured simulator implementation. Loads the scene mesh and
-   * adds it to the specified @ref DrawableGroup as a child of the specified
+   * adds it to the specified @ref SceneGraph as a child of the specified
    * @ref scene::SceneNode. If these are not specified, the assets are loaded,
    * but no new @ref gfx::Drawable is added for the scene (i.e. it will not be
    * rendered).
@@ -116,7 +117,7 @@ class ResourceManager {
    * @param parent The @ref scene::SceneNode of which the scene mesh will be
    * added as a child. Typically near the root of the scene. Expected to be
    * static.
-   * @param drawables The @ref DrawableGroup with which the scene mesh will be
+   * @param sceneGraph The @ref SceneGraph with which the scene mesh will be
    * rendered.
    * @return Whether or not the scene load succeeded.
    */
@@ -124,7 +125,7 @@ class ResourceManager {
                  std::shared_ptr<physics::PhysicsManager>& _physicsManager,
                  PhysicsManagerAttributes physicsManagerAttributes,
                  scene::SceneNode* parent = nullptr,
-                 DrawableGroup* drawables = nullptr);
+                 scene::SceneGraph* sceneGraph = nullptr);
 
   /**
    * @brief Load and instantiate a scene including physics simulation.
@@ -134,7 +135,7 @@ class ResourceManager {
    * listed in this configuration file into the @ref physicsObjectLibrary_.
    * Reseats the @ref physics::PhysicsManager based on the configured simulator
    * implementation. Loads the scene mesh and adds it to the specified @ref
-   * DrawableGroup as a child of the specified @ref scene::SceneNode. If these
+   * SceneGraph as a child of the specified @ref scene::SceneNode. If these
    * are not specified, the assets are loaded, but no new @ref gfx::Drawable is
    * added for the scene (i.e. it will not be rendered).
    * @param info The loaded @ref AssetInfo for the scene mesh.
@@ -143,7 +144,7 @@ class ResourceManager {
    * @param parent The @ref scene::SceneNode of which the scene mesh will be
    * added as a child. Typically near the root of the scene. Expected to be
    * static.
-   * @param drawables The @ref DrawableGroup with which the scene mesh will be
+   * @param sceneGraph The @ref SceneGraph with which the scene mesh will be
    * rendered.
    * @param physicsFilename The physics configuration file from which to
    * re-instatiate the @ref physics::PhysicsManager and parse object templates
@@ -155,7 +156,7 @@ class ResourceManager {
   bool loadScene(const AssetInfo& info,
                  std::shared_ptr<physics::PhysicsManager>& _physicsManager,
                  scene::SceneNode* parent = nullptr,
-                 DrawableGroup* drawables = nullptr,
+                 scene::SceneGraph* sceneGraph = nullptr,
                  std::string physicsFilename = ESP_DEFAULT_PHYS_SCENE_CONFIG);
 
   /**
@@ -172,7 +173,7 @@ class ResourceManager {
 
   /**
    * @brief Load an object from a spcified configuration file into the @ref
-   * physicsObjectLibrary_ and add it to the specified @ref DrawableGroup as a
+   * physicsObjectLibrary_ and add it to the specified @ref SceneGraph as a
    * child of the specified @ref scene::SceneNode if provided.
    *
    * If the configuration file is already a key for the @ref
@@ -182,7 +183,7 @@ class ResourceManager {
    * @param objPhysConfigFilename The configuration file to parse and load.
    * @param parent The @ref scene::SceneNode of which the object will be a
    * child.
-   * @param drawables The @ref DrawableGroup with which the object @ref
+   * @param sceneGraph The @ref SceneGraph with which the object @ref
    * gfx::Drawable will be rendered.
    * @return The index in the @ref physicsObjectLibrary_ to which the key,
    * objPhysConfigFilename, referes. Can be used to reference the obejct
@@ -190,7 +191,7 @@ class ResourceManager {
    */
   int loadObject(const std::string& objPhysConfigFilename,
                  scene::SceneNode* parent,
-                 DrawableGroup* drawables);
+                 scene::SceneGraph* sceneGraph);
 
   /**
    * @brief Load and parse a physics object template config file and generates a
@@ -331,12 +332,12 @@ class ResourceManager {
    * @param primitiveID The index of the primitive in @ref primitive_meshes_.
    * @param node The @ref scene::SceneNode to which the primitive drawable will
    * be attached.
-   * @param drawables The @ref DrawableGroup with which the primitive will be
+   * @param sceneGraph The @ref SceneGraph with which the primitive will be
    * rendered.
    */
   void addPrimitiveToDrawables(int primitiveID,
                                scene::SceneNode& node,
-                               DrawableGroup* drawables);
+                               scene::SceneGraph* sceneGraph);
 
  protected:
   //======== Scene Functions ========
@@ -345,19 +346,19 @@ class ResourceManager {
    * @brief Recursive contruction of scene nodes for an asset.
    *
    * Creates a drawable for the component of an asset referenced by the @ref
-   * MeshTransformNode and adds it to the @ref DrawableGroup as child of parent.
+   * MeshTransformNode and adds it to the @ref SceneGraph as child of parent.
    * @param metaData The @ref MeshMetaData object containing information about
    * the meshes, textures, materials, and component heirarchy of the asset.
    * @param parent The @ref scene::SceneNode of which the component will be a
    * child.
-   * @param drawables The @ref DrawableGroup with which the component will be
+   * @param sceneGraph The @ref SceneGraph with which the component will be
    * rendered.
    * @param meshTransformNode The @ref MeshTransformNode for component
    * identifying its mesh, material, transformation, and children.
    */
   void addComponent(const MeshMetaData& metaData,
                     scene::SceneNode& parent,
-                    DrawableGroup* drawables,
+                    scene::SceneGraph* sceneGraph,
                     const MeshTransformNode& meshTransformNode);
 
   /**
@@ -426,12 +427,12 @@ class ResourceManager {
    * @param info The @ref AssetInfo for the mesh, already parsed from a file.
    * @param parent The @ref scene::SceneNode to which the mesh will be added as
    * a child.
-   * @param drawables The @ref DrawableGroup with which the mesh will be
+   * @param sceneGraph The @ref SceneGraph with which the mesh will be
    * rendered.
    */
   bool loadPTexMeshData(const AssetInfo& info,
                         scene::SceneNode* parent,
-                        DrawableGroup* drawables);
+                        scene::SceneGraph* sceneGraph);
 
   /**
    * @brief Load an instance mesh (e.g. Matterport reconstruction) into assets
@@ -440,12 +441,12 @@ class ResourceManager {
    * @param info The @ref AssetInfo for the mesh, already parsed from a file.
    * @param parent The @ref scene::SceneNode to which the mesh will be added as
    * a child.
-   * @param drawables The @ref DrawableGroup with which the mesh will be
+   * @param sceneGraph The @ref SceneGraph with which the mesh will be
    * rendered.
    */
   bool loadInstanceMeshData(const AssetInfo& info,
                             scene::SceneNode* parent,
-                            DrawableGroup* drawables);
+                            scene::SceneGraph* sceneGraph);
 
   /**
    * @brief Load a mesh (e.g. gltf) into assets from a file.
@@ -455,12 +456,12 @@ class ResourceManager {
    * @param info The @ref AssetInfo for the mesh, already parsed from a file.
    * @param parent The @ref scene::SceneNode to which the mesh will be added as
    * a child.
-   * @param drawables The @ref DrawableGroup with which the mesh will be
+   * @param sceneGraph The @ref SceneGraph with which the mesh will be
    * rendered.
    */
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent = nullptr,
-                           DrawableGroup* drawables = nullptr);
+                           scene::SceneGraph* sceneGraph = nullptr);
 
   /**
    * @brief Load a SUNCG mesh into assets from a file. !Deprecated! TODO:
@@ -469,12 +470,12 @@ class ResourceManager {
    * @param info The @ref AssetInfo for the mesh, already parsed from a file.
    * @param parent The @ref scene::SceneNode to which the mesh will be added as
    * a child.
-   * @param drawables The @ref DrawableGroup with which the mesh will be
+   * @param sceneGraph The @ref SceneGraph with which the mesh will be
    * rendered.
    */
   bool loadSUNCGHouseFile(const AssetInfo& info,
                           scene::SceneNode* parent,
-                          DrawableGroup* drawables);
+                          scene::SceneGraph* sceneGraph);
 
   // ======== Geometry helper functions, data structures ========
 
@@ -620,6 +621,9 @@ class ResourceManager {
    */
   std::vector<std::string> physicsObjectConfigList_;
 
+  // TODO: move shader selection out of ResourceManager
+  gfx::ShaderManager& shaderManager_;
+
   // ======== Rendering Utility Functions ========
 
   /**
@@ -629,7 +633,7 @@ class ResourceManager {
    * @param metaData Object meta data for the asset this mesh is linked to.
    * @param node The @ref scene::SceneNode which the new @ref gfx::Drawable will
    * be attached to.
-   * @param drawables The @ref DrawableGroup with which the new @ref
+   * @param sceneGraph The @ref SceneGraph with which the new @ref
    * gfx::Drawable will be rendered.
    * @param objectID The object type identifier or semantic group (e.g.
    * 1->chair, 2->table, etc..) for semantic rendering of the mesh.
@@ -640,7 +644,7 @@ class ResourceManager {
    */
   void addMeshToDrawables(const MeshMetaData& metaData,
                           scene::SceneNode& node,
-                          DrawableGroup* drawables,
+                          scene::SceneGraph* sceneGraph,
                           int objectID,
                           int meshIDLocal,
                           int materialIDLocal);
@@ -704,14 +708,14 @@ class ResourceManager {
    * @brief Create a @ref gfx::Drawable for the specified mesh, node,
    * and @ref ShaderType.
    *
-   * Add this drawable to the @ref DrawableGroup if provided.
+   * Add this drawable to the @ref SceneGraph if provided.
    * @param shaderType Indentifies the desired shader program for rendering the
    * @ref gfx::Drawable.
    * @param mesh The render mesh.
    * @param node The @ref scene::SceneNode to which the drawable will be
    * attached.
    * @param meshID Optional, the index of this mesh component stored in meshes_
-   * @param group Optional @ref DrawableGroup with which the render the @ref
+   * @param group Optional @ref SceneGraph with which the render the @ref
    * gfx::Drawable.
    * @param texture Optional texture for the mesh.
    * @param objectId Optional object type indentifier or semantic type for the
