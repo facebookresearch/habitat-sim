@@ -150,7 +150,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
 bool ResourceManager::loadScene(
     const AssetInfo& info,
     std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-    scene::SceneNode* parent, /* = nullptr */
+    scene::SceneNode* parent,      /* = nullptr */
     scene::SceneGraph* sceneGraph, /* = nullptr */
     std::string physicsFilename /* data/default.phys_scene_config.json */) {
   // In-memory representation of scene meta data
@@ -425,7 +425,10 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
         physicsObjectAttributes.getMagnumVec3("scale");
     scalingNode.setScaling(objectScaling);
 
-    addComponent(meshMetaData, scalingNode, sceneGraph, meshMetaData.root);
+    // By default, use Phong shading for physics meshes
+    gfx::ShaderConfiguration phongShaderCfg{gfx::ShaderType::PHONG_SHADER};
+    addComponent(meshMetaData, scalingNode, sceneGraph, meshMetaData.root,
+                 phongShaderCfg);
     // compute the full BB hierarchy for the new tree.
     parent->computeCumulativeBB();
   }
@@ -849,48 +852,51 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
   meshDataGL->BB = meshDataGL->BB.translated(translation);
 }
 
-Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
-    ShaderType type) {
-  if (shaderPrograms_.count(type) == 0) {
-    switch (type) {
-      case INSTANCE_MESH_SHADER: {
-        shaderPrograms_[INSTANCE_MESH_SHADER] =
-            std::make_shared<gfx::PrimitiveIDShader>();
-      } break;
+gfx::DrawableGroup* ResourceManager::getDrawableGroupFromShaderConfig(
+    const gfx::ShaderConfiguration& cfg,
+    scene::SceneGraph& sceneGraph) {
+  // name prefix
+  static const std::string INSTANCE_MESH = "INSTANCE_MESH";
+  static const std::string PTEX_MESH = "PTEX_MESH";
+  static const std::string FLAT = "FLAT";
+  static const std::string PHONG = "PHONG";
+
+  // name modifiers
+  static const std::string VERTEX_COLORED = "_VERTEX_COLORED";
+  static const std::string TEXTURED = "_TEXTURED";
+
+  // for now, each DrawableGroup just has its own shader
+  std::string shaderIdentifier;
+  switch (cfg.type) {
+    case gfx::ShaderType::INSTANCE_MESH_SHADER: {
+      shaderIdentifier = INSTANCE_MESH;
+    } break;
 
 #ifdef ESP_BUILD_PTEX_SUPPORT
-      case PTEX_MESH_SHADER: {
-        shaderPrograms_[PTEX_MESH_SHADER] =
-            std::make_shared<gfx::PTexMeshShader>();
-      } break;
+    case gfx::ShaderType::PTEX_MESH_SHADER: {
+      shaderIdentifier = PTEX_MESH;
+    } break;
 #endif
 
-      case COLORED_SHADER: {
-        shaderPrograms_[COLORED_SHADER] =
-            std::make_shared<Magnum::Shaders::Flat3D>(
-                Magnum::Shaders::Flat3D::Flag::ObjectId);
-      } break;
+    case gfx::ShaderType::FLAT_SHADER: {
+      shaderIdentifier = FLAT;
+    } break;
 
-      case VERTEX_COLORED_SHADER: {
-        shaderPrograms_[VERTEX_COLORED_SHADER] =
-            std::make_shared<Magnum::Shaders::Flat3D>(
-                Magnum::Shaders::Flat3D::Flag::ObjectId |
-                Magnum::Shaders::Flat3D::Flag::VertexColor);
-      } break;
+    case gfx::ShaderType::PHONG_SHADER: {
+      shaderIdentifier = PHONG;
+    } break;
 
-      case TEXTURED_SHADER: {
-        shaderPrograms_[TEXTURED_SHADER] =
-            std::make_shared<Magnum::Shaders::Flat3D>(
-                Magnum::Shaders::Flat3D::Flag::ObjectId |
-                Magnum::Shaders::Flat3D::Flag::Textured);
-      } break;
-
-      default:
-        return nullptr;
-        break;
-    }
+    default:
+      return nullptr;
+      break;
   }
-  return shaderPrograms_[type].get();
+  if (cfg.vertexColored) {
+    shaderIdentifier += VERTEX_COLORED;
+  } else if (cfg.textured) {
+    shaderIdentifier += TEXTURED;
+  }
+  Shader::ptr shader = shaderManager_.getOrCreateShader(shaderIdentifier, cfg);
+  return sceneGraph.getOrCreateDrawableGroup(shaderIdentifier, shader);
 }
 
 bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
@@ -922,8 +928,11 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 
   // create the scene graph by request
   if (parent) {
-    auto* ptexShader =
-        dynamic_cast<gfx::PTexMeshShader*>(getShaderProgram(PTEX_MESH_SHADER));
+    gfx::DrawableGroup* drawables = nullptr;
+    if (sceneGraph) {
+      gfx::ShaderConfiguration ptexShaderCfg{gfx::ShaderType::PTEX_MESH_SHADER};
+      drawables = getDrawableGroupFromShaderConfig(ptexShaderCfg);
+    }
 
     auto indexPair = resourceDict_.at(filename).meshIndex;
     int start = indexPair.first;
@@ -940,8 +949,7 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
         node.setRotation(Magnum::Quaternion(transform));
 
         // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
-        new gfx::PTexMeshDrawable{node, *ptexShader, *pTexMeshData, jSubmesh,
-                                  drawables};
+        new gfx::PTexMeshDrawable{node, *pTexMeshData, jSubmesh, drawables};
 
         if (computeAbsoluteAABBs_) {
           staticDrawableInfo_.emplace_back(
@@ -994,7 +1002,9 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
       auto* instanceMeshData =
           dynamic_cast<GenericInstanceMeshData*>(meshes_[iMesh].get());
       scene::SceneNode& node = parent->createChild();
-      createDrawable(INSTANCE_MESH_SHADER, *instanceMeshData->getMagnumGLMesh(),
+      gfx::ShaderConfiguration instanceShaderCfg{
+          gfx::ShaderType::INSTANCE_MESH_SHADER};
+      createDrawable(instanceShaderCfg, *instanceMeshData->getMagnumGLMesh(),
                      node, sceneGraph);
     }
   }
@@ -1148,29 +1158,30 @@ bool ResourceManager::loadGeneralMeshData(
   if (!drawData) {
     //! Do not instantiate object
     return true;
-  } else {
-    // intercept nullptr scene graph nodes (default) to add mesh to
-    // metadata list without adding it to scene graph
-    scene::SceneNode& newNode = parent->createChild();
-
-    //! Do instantiate object
-    MeshMetaData& metaData = resourceDict_[filename];
-    const bool forceReload = false;
-    // re-bind position, normals, uv, colors etc. to the corresponding buffers
-    // under *current* gl context
-    if (forceReload) {
-      int start = metaData.meshIndex.first;
-      int end = metaData.meshIndex.second;
-      if (0 <= start && start <= end) {
-        for (int iMesh = start; iMesh <= end; ++iMesh) {
-          meshes_[iMesh]->uploadBuffersToGPU(forceReload);
-        }
-      }
-    }  // forceReload
-
-    addComponent(metaData, newNode, sceneGraph, metaData.root);
-    return true;
   }
+  // intercept nullptr scene graph nodes (default) to add mesh to
+  // metadata list without adding it to scene graph
+  scene::SceneNode& newNode = parent->createChild();
+
+  //! Do instantiate object
+  MeshMetaData& metaData = resourceDict_[filename];
+  const bool forceReload = false;
+  // re-bind position, normals, uv, colors etc. to the corresponding buffers
+  // under *current* gl context
+  if (forceReload) {
+    int start = metaData.meshIndex.first;
+    int end = metaData.meshIndex.second;
+    if (0 <= start && start <= end) {
+      for (int iMesh = start; iMesh <= end; ++iMesh) {
+        meshes_[iMesh]->uploadBuffersToGPU(forceReload);
+      }
+    }
+  }  // forceReload
+
+  // by default, use a flat shader for general meshes
+  gfx::ShaderConfiguration flatShaderCfg{gfx::ShaderType::FLAT_SHADER};
+  addComponent(metaData, newNode, sceneGraph, metaData.root, flatShaderCfg);
+  return true;
 }
 
 void ResourceManager::loadMaterials(Importer& importer,
@@ -1324,7 +1335,8 @@ void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
 void ResourceManager::addComponent(const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
                                    scene::SceneGraph* sceneGraph,
-                                   const MeshTransformNode& meshTransformNode) {
+                                   const MeshTransformNode& meshTransformNode,
+                                   gfx::ShaderConfiguration& shaderCfg) {
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
   node.MagnumObject::setTransformation(
@@ -1335,8 +1347,9 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
   // Add a drawable if the object has a mesh and the mesh is loaded
   if (meshIDLocal != ID_UNDEFINED) {
     const int materialIDLocal = meshTransformNode.materialIDLocal;
-    addMeshToDrawables(metaData, node, sceneGraph, meshTransformNode.componentID,
-                       meshIDLocal, materialIDLocal);
+    addMeshToDrawables(metaData, node, sceneGraph,
+                       meshTransformNode.componentID, meshIDLocal,
+                       materialIDLocal, shaderCfg);
 
     // compute the bounding box for the mesh we are adding
     const int meshID = metaData.meshIndex.first + meshIDLocal;
@@ -1346,7 +1359,7 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
 
   // Recursively add children
   for (auto& child : meshTransformNode.children) {
-    addComponent(metaData, node, sceneGraph, child);
+    addComponent(metaData, node, sceneGraph, child, shaderCfg);
   }
 }
 
@@ -1355,7 +1368,8 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                                          scene::SceneGraph* sceneGraph,
                                          int objectID,
                                          int meshIDLocal,
-                                         int materialIDLocal) {
+                                         int materialIDLocal,
+                                         gfx::ShaderConfiguration& shaderCfg) {
   const int meshStart = metaData.meshIndex.first;
   const uint32_t meshID = meshStart + meshIDLocal;
   Magnum::GL::Mesh& mesh = *meshes_[meshID]->getMagnumGLMesh();
@@ -1368,7 +1382,7 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
   if (materialIDLocal == ID_UNDEFINED ||
       metaData.materialIndex.second == ID_UNDEFINED ||
       !materials_[materialID]) {
-    createDrawable(COLORED_SHADER, mesh, node, sceneGraph, texture, objectID);
+    createDrawable(shaderCfg, mesh, node, sceneGraph, texture, objectID);
   } else {
     if (materials_[materialID]->flags() &
         Magnum::Trade::PhongMaterialData::Flag::DiffuseTexture) {
@@ -1378,18 +1392,20 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
       const int textureIndex = materials_[materialID]->diffuseTexture();
       texture = textures_[textureStart + textureIndex].get();
       if (texture) {
-        createDrawable(TEXTURED_SHADER, mesh, node, sceneGraph, texture,
+        // update config to include texture
+        shaderCfg.textured = true;
+        createDrawable(texturedShaderCfg, mesh, node, sceneGraph, texture,
                        objectID);
       } else {
         // Color-only material
-        createDrawable(COLORED_SHADER, mesh, node, sceneGraph, texture, objectID,
+        createDrawable(shaderCfg, mesh, node, sceneGraph, texture, objectID,
                        materials_[materialID]->diffuseColor());
       }
     } else {
       // TODO: some types (such as .ply with vertex color) get binned here
       // incorrectly.
       // Color-only material
-      createDrawable(COLORED_SHADER, mesh, node, sceneGraph, texture, objectID,
+      createDrawable(shaderCfg, mesh, node, sceneGraph, texture, objectID,
                      materials_[materialID]->diffuseColor());
     }
   }  // else
@@ -1408,25 +1424,29 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
 }
 
 void ResourceManager::createDrawable(
-    const ShaderType shaderType,
+    const gfx::ShaderConfiguration& shaderCfg,
     Magnum::GL::Mesh& mesh,
     scene::SceneNode& node,
     scene::SceneGraph* sceneGraph /* = nullptr */,
     Magnum::GL::Texture2D* texture /* = nullptr */,
     int objectId /* = ID_UNDEFINED */,
     const Magnum::Color4& color /* = Magnum::Color4{1} */) {
-  if (shaderType == PTEX_MESH_SHADER) {
+  if (shaderCfg.type == gfx::ShaderType::PTEX_MESH_SHADER) {
     LOG(FATAL) << "ResourceManager::createDrawable does not support "
                   "PTEX_MESH_SHADER";
-  } else if (shaderType == INSTANCE_MESH_SHADER) {
-    auto* shader =
-        static_cast<gfx::PrimitiveIDShader*>(getShaderProgram(shaderType));
-    node.addFeature<gfx::PrimitiveIDDrawable>(*shader, mesh, group);
-  } else {  // all other shaders use GenericShader
-    auto* shader =
-        static_cast<Magnum::Shaders::Flat3D*>(getShaderProgram(shaderType));
-    node.addFeature<gfx::GenericDrawable>(*shader, mesh, group, texture,
-                                          objectId, color);
+    return;
+  }
+
+  gfx::DrawableGroup* group =
+      sceneGraph ? getDrawableGroupFromShaderConfig(shaderCfg, *sceneGraph)
+                 : nullptr;
+
+  // TODO: remove coupling of ShaderType <-> Drawable type
+  if (shaderCfg.type == gfx::ShaderType::INSTANCE_MESH_SHADER) {
+    node.addFeature<gfx::PrimitiveIDDrawable>(mesh, group);
+  } else {  // all other shaders use GenericDrawable
+    node.addFeature<gfx::GenericDrawable>(mesh, group, texture, objectId,
+                                          color);
   }
 }
 

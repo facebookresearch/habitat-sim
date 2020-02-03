@@ -355,11 +355,15 @@ class ResourceManager {
    * rendered.
    * @param meshTransformNode The @ref MeshTransformNode for component
    * identifying its mesh, material, transformation, and children.
+   * @param shaderCfg The @ref ShaderConfiguration that will be used
+   * for this component. The existence of texture or vertex color will update
+   * settings in this configuration.
    */
   void addComponent(const MeshMetaData& metaData,
                     scene::SceneNode& parent,
                     scene::SceneGraph* sceneGraph,
-                    const MeshTransformNode& meshTransformNode);
+                    const MeshTransformNode& meshTransformNode,
+                    gfx::ShaderConfiguration& shaderCfg);
 
   /**
    * @brief Load textures from importer into assets, and update metaData for an
@@ -641,50 +645,17 @@ class ResourceManager {
    * the asset via the @ref MeshMetaData.
    * @param materialIDLocal The index of the material within the material group
    * linked to the asset via the @ref MeshMetaData.
+   * @param shaderCfg The @ref ShaderConfiguration that will be used
+   * for this component. The existence of texture or vertex color will update
+   * settings in this configuration.
    */
   void addMeshToDrawables(const MeshMetaData& metaData,
                           scene::SceneNode& node,
                           scene::SceneGraph* sceneGraph,
                           int objectID,
                           int meshIDLocal,
-                          int materialIDLocal);
-
-  /**
-   * @brief Enumeration of supported shader program options.
-   */
-  enum ShaderType {
-    /**
-     * Shader program for instance mesh data. See @ref gfx::PrimitiveIDShader,
-     * @ref GenericInstanceMeshData, @ref Mp3dInstanceMeshData, @ref
-     * AssetType::INSTANCE_MESH, @ref loadInstanceMeshData.
-     */
-    INSTANCE_MESH_SHADER = 0,
-
-    /**
-     * Shader program for PTex mesh data. See @ref gfx::PTexMeshShader, @ref
-     * gfx::PTexMeshDrawable, @ref loadPTexMeshData, @ref PTexMeshData.
-     */
-    PTEX_MESH_SHADER = 1,
-
-    /**
-     * Shader program for flat shading with uniform color. Used to render object
-     * identifier or semantic types (e.g. chair, table, etc...). Also the
-     * default shader for assets with unidentified rendering parameters. See
-     * @ref Magnum::Shaders::Flat3D.
-     */
-    COLORED_SHADER = 2,
-
-    /**
-     * Shader program for vertex color shading. Used to render meshes with
-     * per-vertex colors defined.
-     */
-    VERTEX_COLORED_SHADER = 3,
-
-    /**
-     * Shader program for meshes with textured defined.
-     */
-    TEXTURED_SHADER = 4,
-  };
+                          int materialIDLocal,
+                          gfx::ShaderConfiguration& shaderCfg);
 
   /**
    * @brief Maps @ref ShaderType to specific instances of @ref
@@ -696,20 +667,27 @@ class ResourceManager {
       shaderPrograms_;
 
   /**
-   * @brief Returns a pointer to the specified shader program.
+   * @brief Returns a pointer to the @ref DrawableGroup associated with a @ref
+   * ShaderConfiguration
    *
-   * Creates a new shader program for @ref ShaderType if it does not exist.
-   * @param type The @ref ShaderType of the desired shader program.
-   * @return A pointer to the specified shader program.
+   * May create a new @ref DrawableGroup if one for the specified configuration
+   * does not exist
+   * @param cfg The @ref ShaderConfiguration of the desired @ref DrawableGroup.
+   * @param sceneGraph The @ref SceneGraph to get or create the @ref
+   * DrawableGroup from
+   * @return A pointer to a @ref DrawableGroup in the specified @ref SceneGraph
+   * which uses the specified @ref ShaderConfiguration.
    */
-  Magnum::GL::AbstractShaderProgram* getShaderProgram(ShaderType type);
+  gfx::DrawableGroup* getDrawableGroupFromShaderConfig(
+      const gfx::ShaderConfiguration& cfg,
+      scene::SceneGraph& sceneGraph);
 
   /**
    * @brief Create a @ref gfx::Drawable for the specified mesh, node,
    * and @ref ShaderType.
    *
    * Add this drawable to the @ref SceneGraph if provided.
-   * @param shaderType Indentifies the desired shader program for rendering the
+   * @param shaderCfg Indentifies the desired shader program for rendering the
    * @ref gfx::Drawable.
    * @param mesh The render mesh.
    * @param node The @ref scene::SceneNode to which the drawable will be
@@ -723,7 +701,7 @@ class ResourceManager {
    * @param color Optional color parameter for the shader program. Defaults to
    * white.
    */
-  void createDrawable(const ShaderType shaderType,
+  void createDrawable(const gfx::ShaderConfiguration& shaderCfg,
                       Magnum::GL::Mesh& mesh,
                       scene::SceneNode& node,
                       DrawableGroup* group = nullptr,

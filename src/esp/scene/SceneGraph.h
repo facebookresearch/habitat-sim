@@ -94,6 +94,15 @@ class SceneGraph {
   }
 
   /**
+   * @brief Get or create a @ref DrawableGroup
+   *
+   * See @ref getDrawableGroup and @ref createDrawableGroup
+   */
+  template <typename... DrawableGroupArgs>
+  gfx::DrawableGroup* getOrCreateDrawableGroup(std::string id,
+                                               DrawableGroupArgs&&... args);
+
+  /**
    * @brief Deletes a @ref DrawableGroup by ID
    *
    * @return If the @ref DrawableGroup with specified ID existed.
