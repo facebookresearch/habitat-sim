@@ -24,7 +24,7 @@
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
-#include "esp/gfx/DrawableGroup.h"
+#include "esp/scene/SceneGraph.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -121,9 +121,6 @@ class PhysicsManager {
     worldTime_ = 0.0;
   };
 
-  /** @brief Stores references to a set of drawable elements. */
-  using DrawableGroup = gfx::DrawableGroup;
-
   /**
    * @brief Initialize static scene collision geometry from loaded mesh data.
    * Only one 'scene' may be initialized per simulated world, but this scene may
@@ -149,12 +146,12 @@ class PhysicsManager {
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  int addObject(const std::string& configFile, DrawableGroup* drawables);
+  int addObject(const std::string& configFile, scene::SceneGraph* sceneGraph);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::assets::ResourceManager::physicsObjectLibrary_ by object
    * library index. Queries the properties filename and calls @ref
-   * addObject(const std::string& configFile, DrawableGroup* drawables).
+   * addObject(const std::string& configFile, scene::SceneGraph* sceneGraph).
    *  @param objectLibIndex The index of the object's template in @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_
    *  @param drawables Reference to the scene graph drawables group to enable
@@ -162,7 +159,8 @@ class PhysicsManager {
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  virtual int addObject(const int objectLibIndex, DrawableGroup* drawables);
+  virtual int addObject(const int objectLibIndex,
+                        scene::SceneGraph* sceneGraph);
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref
@@ -685,7 +683,9 @@ class PhysicsManager {
    * @param drawables The drawables group with which to render the bounding box.
    * @param drawBB Set rendering of the bounding box to true or false.
    */
-  void setObjectBBDraw(int physObjectID, DrawableGroup* drawables, bool drawBB);
+  void setObjectBBDraw(int physObjectID,
+                       scene::SceneGraph* sceneGraph,
+                       bool drawBB);
 
   /**
    * @brief Get a const reference to the specified object's SceneNode for info

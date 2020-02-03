@@ -895,7 +895,8 @@ gfx::DrawableGroup* ResourceManager::getDrawableGroupFromShaderConfig(
   } else if (cfg.textured) {
     shaderIdentifier += TEXTURED;
   }
-  Shader::ptr shader = shaderManager_.getOrCreateShader(shaderIdentifier, cfg);
+  gfx::Shader::ptr shader =
+      shaderManager_.getOrCreateShader(shaderIdentifier, cfg);
   return sceneGraph.getOrCreateDrawableGroup(shaderIdentifier, shader);
 }
 
@@ -931,7 +932,7 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
     gfx::DrawableGroup* drawables = nullptr;
     if (sceneGraph) {
       gfx::ShaderConfiguration ptexShaderCfg{gfx::ShaderType::PTEX_MESH_SHADER};
-      drawables = getDrawableGroupFromShaderConfig(ptexShaderCfg);
+      drawables = getDrawableGroupFromShaderConfig(ptexShaderCfg, *sceneGraph);
     }
 
     auto indexPair = resourceDict_.at(filename).meshIndex;
@@ -1158,30 +1159,31 @@ bool ResourceManager::loadGeneralMeshData(
   if (!drawData) {
     //! Do not instantiate object
     return true;
-  }
-  // intercept nullptr scene graph nodes (default) to add mesh to
-  // metadata list without adding it to scene graph
-  scene::SceneNode& newNode = parent->createChild();
+  } else {
+    // intercept nullptr scene graph nodes (default) to add mesh to
+    // metadata list without adding it to scene graph
+    scene::SceneNode& newNode = parent->createChild();
 
-  //! Do instantiate object
-  MeshMetaData& metaData = resourceDict_[filename];
-  const bool forceReload = false;
-  // re-bind position, normals, uv, colors etc. to the corresponding buffers
-  // under *current* gl context
-  if (forceReload) {
-    int start = metaData.meshIndex.first;
-    int end = metaData.meshIndex.second;
-    if (0 <= start && start <= end) {
-      for (int iMesh = start; iMesh <= end; ++iMesh) {
-        meshes_[iMesh]->uploadBuffersToGPU(forceReload);
+    //! Do instantiate object
+    MeshMetaData& metaData = resourceDict_[filename];
+    const bool forceReload = false;
+    // re-bind position, normals, uv, colors etc. to the corresponding buffers
+    // under *current* gl context
+    if (forceReload) {
+      int start = metaData.meshIndex.first;
+      int end = metaData.meshIndex.second;
+      if (0 <= start && start <= end) {
+        for (int iMesh = start; iMesh <= end; ++iMesh) {
+          meshes_[iMesh]->uploadBuffersToGPU(forceReload);
+        }
       }
-    }
-  }  // forceReload
+    }  // forceReload
 
-  // by default, use a flat shader for general meshes
-  gfx::ShaderConfiguration flatShaderCfg{gfx::ShaderType::FLAT_SHADER};
-  addComponent(metaData, newNode, sceneGraph, metaData.root, flatShaderCfg);
-  return true;
+    // by default, use a flat shader for general meshes
+    gfx::ShaderConfiguration flatShaderCfg{gfx::ShaderType::FLAT_SHADER};
+    addComponent(metaData, newNode, sceneGraph, metaData.root, flatShaderCfg);
+    return true;
+  }
 }
 
 void ResourceManager::loadMaterials(Importer& importer,
@@ -1394,7 +1396,7 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
       if (texture) {
         // update config to include texture
         shaderCfg.textured = true;
-        createDrawable(texturedShaderCfg, mesh, node, sceneGraph, texture,
+        createDrawable(shaderCfg, mesh, node, sceneGraph, texture,
                        objectID);
       } else {
         // Color-only material
@@ -1419,8 +1421,10 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
                                               scene::SceneGraph* sceneGraph) {
   CHECK(primitiveID >= 0 && primitiveID < primitive_meshes_.size());
-  createDrawable(ShaderType::COLORED_SHADER, primitive_meshes_[primitiveID],
-                 node, sceneGraph);
+  // By default, use Phong shading for physics meshes
+  gfx::ShaderConfiguration phongShaderCfg{gfx::ShaderType::PHONG_SHADER};
+  createDrawable(phongShaderCfg, primitive_meshes_[primitiveID], node,
+                 sceneGraph);
 }
 
 void ResourceManager::createDrawable(

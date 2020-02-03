@@ -100,7 +100,11 @@ class SceneGraph {
    */
   template <typename... DrawableGroupArgs>
   gfx::DrawableGroup* getOrCreateDrawableGroup(std::string id,
-                                               DrawableGroupArgs&&... args);
+                                               DrawableGroupArgs&&... args) {
+    return getDrawableGroup(id) ||
+           createDrawableGroup(std::move(id),
+                               std::forward<DrawableGroupArgs>(args)...);
+  }
 
   /**
    * @brief Deletes a @ref DrawableGroup by ID

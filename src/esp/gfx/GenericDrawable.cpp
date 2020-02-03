@@ -5,6 +5,7 @@
 #include "GenericDrawable.h"
 
 #include <Magnum/Shaders/Flat.h>
+#include <Magnum/Shaders/Phong.h>
 
 #include "esp/scene/SceneNode.h"
 
@@ -30,7 +31,7 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
   Magnum::GL::AbstractShaderProgram& shaderProgram = shader->getShaderProgram();
 
   // TODO: use polymorphism to do double dispatch here
-  if (type == PHONG_SHADER) {
+  if (shaderType == ShaderType::PHONG_SHADER) {
     Magnum::Shaders::Phong& phongShader =
         static_cast<Magnum::Shaders::Phong&>(shaderProgram);
     phongShader.setTransformationMatrix(transformationMatrix)

@@ -170,7 +170,6 @@ Viewer::Viewer(const Arguments& arguments)
   rootNode_ = &sceneGraph_->getRootNode();
   navSceneNode_ = &rootNode_->createChild();
 
-  auto& drawables = sceneGraph_->getDrawables();
   const std::string& file = args.value("scene");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
 
@@ -182,14 +181,14 @@ Viewer::Viewer(const Arguments& arguments)
           << " was not found, specify an existing file in --physics-config";
     }
     if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
-                                    &drawables, physicsConfigFilename)) {
+                                    sceneGraph_, physicsConfigFilename)) {
       LOG(FATAL) << "cannot load " << file;
     }
     if (args.isSet("debug-bullet")) {
       debugBullet_ = true;
     }
   } else {
-    if (!resourceManager_.loadScene(info, navSceneNode_, &drawables)) {
+    if (!resourceManager_.loadScene(info, navSceneNode_, sceneGraph_)) {
       LOG(FATAL) << "cannot load " << file;
     }
   }
@@ -268,9 +267,7 @@ void Viewer::addObject(std::string configFile) {
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
   Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
 
-  auto& drawables = sceneGraph_->getDrawables();
-
-  int physObjectID = physicsManager_->addObject(configFile, &drawables);
+  int physObjectID = physicsManager_->addObject(configFile, sceneGraph_);
   physicsManager_->setTranslation(physObjectID, new_pos);
 
   // draw random quaternion via the method:
@@ -609,8 +606,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // toggle bounding box on objects
       drawObjectBBs = !drawObjectBBs;
       for (auto id : physicsManager_->getExistingObjectIDs()) {
-        physicsManager_->setObjectBBDraw(id, &sceneGraph_->getDrawables(),
-                                         drawObjectBBs);
+        physicsManager_->setObjectBBDraw(id, sceneGraph_, drawObjectBBs);
       }
     } break;
     default:

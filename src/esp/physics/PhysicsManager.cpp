@@ -47,7 +47,7 @@ bool PhysicsManager::addScene(
 }
 
 int PhysicsManager::addObject(const int objectLibIndex,
-                              DrawableGroup* drawables) {
+                              scene::SceneGraph* sceneGraph) {
   const std::string configFile =
       resourceManager_->getObjectConfig(objectLibIndex);
 
@@ -67,7 +67,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
   //! Draw object via resource manager
   //! Render node as child of physics node
   resourceManager_->loadObject(configFile, existingObjects_.at(nextObjectID_),
-                               drawables);
+                               sceneGraph);
 
   if (physicsObjectAttributes.existsAs(assets::DataType::BOOL,
                                        "COM_provided")) {
@@ -85,10 +85,10 @@ int PhysicsManager::addObject(const int objectLibIndex,
 }
 
 int PhysicsManager::addObject(const std::string& configFile,
-                              DrawableGroup* drawables) {
+                              scene::SceneGraph* sceneGraph) {
   int resObjectID = resourceManager_->getObjectID(configFile);
   //! Invoke resourceManager to draw object
-  int physObjectID = addObject(resObjectID, drawables);
+  int physObjectID = addObject(resObjectID, sceneGraph);
   return physObjectID;
 }
 
@@ -430,7 +430,7 @@ double PhysicsManager::getAngularDamping(const int physObjectID) const {
 }
 
 void PhysicsManager::setObjectBBDraw(int physObjectID,
-                                     DrawableGroup* drawables,
+                                     scene::SceneGraph* sceneGraph,
                                      bool drawBB) {
   assertIDValidity(physObjectID);
   if (existingObjects_[physObjectID]->BBNode_ && !drawBB) {
@@ -447,7 +447,7 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
     existingObjects_[physObjectID]->BBNode_->MagnumObject::setTranslation(
         existingObjects_[physObjectID]->getCumulativeBB().center());
     resourceManager_->addPrimitiveToDrawables(
-        0, *existingObjects_[physObjectID]->BBNode_, drawables);
+        0, *existingObjects_[physObjectID]->BBNode_, sceneGraph);
   }
 }
 

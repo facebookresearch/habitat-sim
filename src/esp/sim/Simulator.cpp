@@ -90,17 +90,16 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     auto& sceneGraph = sceneManager_.getSceneGraph(activeSceneID_);
 
     auto& rootNode = sceneGraph.getRootNode();
-    auto& drawables = sceneGraph.getDrawables();
     resourceManager_.compressTextures(cfg.compressTextures);
 
     bool loadSuccess = false;
     if (config_.enablePhysics) {
       loadSuccess =
           resourceManager_.loadScene(sceneInfo, physicsManager_, &rootNode,
-                                     &drawables, cfg.physicsConfigFile);
+                                     &sceneGraph, cfg.physicsConfigFile);
     } else {
       loadSuccess =
-          resourceManager_.loadScene(sceneInfo, &rootNode, &drawables);
+          resourceManager_.loadScene(sceneInfo, &rootNode, &sceneGraph);
     }
     if (!loadSuccess) {
       LOG(ERROR) << "cannot load " << sceneFilename;
@@ -121,11 +120,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
         auto& semanticSceneGraph =
             sceneManager_.getSceneGraph(activeSemanticSceneID_);
         auto& semanticRootNode = semanticSceneGraph.getRootNode();
-        auto& semanticDrawables = semanticSceneGraph.getDrawables();
         const assets::AssetInfo semanticSceneInfo =
             assets::AssetInfo::fromPath(semanticMeshFilename);
         resourceManager_.loadScene(semanticSceneInfo, &semanticRootNode,
-                                   &semanticDrawables);
+                                   &semanticSceneGraph);
       }
       LOG(INFO) << "Loaded.";
     } else {
@@ -235,8 +233,7 @@ int Simulator::addObject(const int objectLibIndex, const int sceneID) {
     // TODO: change implementation to support multi-world and physics worlds to
     // own reference to a sceneGraph to avoid this.
     auto& sceneGraph_ = sceneManager_.getSceneGraph(activeSceneID_);
-    auto& drawables = sceneGraph_.getDrawables();
-    return physicsManager_->addObject(objectLibIndex, &drawables);
+    return physicsManager_->addObject(objectLibIndex, &sceneGraph_);
   }
   return ID_UNDEFINED;
 }

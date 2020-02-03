@@ -658,15 +658,6 @@ class ResourceManager {
                           gfx::ShaderConfiguration& shaderCfg);
 
   /**
-   * @brief Maps @ref ShaderType to specific instances of @ref
-   * Magnum::GL::AbstractShaderProgram.
-   *
-   * See @ref getShaderProgram.
-   */
-  std::map<ShaderType, std::shared_ptr<Magnum::GL::AbstractShaderProgram>>
-      shaderPrograms_;
-
-  /**
    * @brief Returns a pointer to the @ref DrawableGroup associated with a @ref
    * ShaderConfiguration
    *
@@ -693,7 +684,7 @@ class ResourceManager {
    * @param node The @ref scene::SceneNode to which the drawable will be
    * attached.
    * @param meshID Optional, the index of this mesh component stored in meshes_
-   * @param group Optional @ref SceneGraph with which the render the @ref
+   * @param sceneGraph Optional @ref SceneGraph with which the render the @ref
    * gfx::Drawable.
    * @param texture Optional texture for the mesh.
    * @param objectId Optional object type indentifier or semantic type for the
@@ -704,7 +695,7 @@ class ResourceManager {
   void createDrawable(const gfx::ShaderConfiguration& shaderCfg,
                       Magnum::GL::Mesh& mesh,
                       scene::SceneNode& node,
-                      DrawableGroup* group = nullptr,
+                      scene::SceneGraph* sceneGraph = nullptr,
                       Magnum::GL::Texture2D* texture = nullptr,
                       int objectId = ID_UNDEFINED,
                       const Magnum::Color4& color = Magnum::Color4{1});
