@@ -21,7 +21,6 @@ class HabitatDataset(Dataset):
 
     :property scene_filepath: The location of the .glb file given to the simulator
     :property labels: class labels of things to tather images of
-    :property img_size: output image dimensions (Height, Width)
     :property cfg: configuration for simulator of type SimulatorConfiguration
     :property sim: Simulator object
     :property res: Resolution of topdown map. 0.1 means each pixel in the topdown map
@@ -45,11 +44,12 @@ class HabitatDataset(Dataset):
     ):
         self.scene_filepath = scene_filepath
         self.labels = set(labels)
-        self.img_size = img_size
-        self.cfg = self._config_sim(self.scene_filepath)
+        self.cfg = self._config_sim(self.scene_filepath, img_size)
 
         if sim is None:
             sim = habitat_sim.Simulator(self.cfg)
+        else:
+            sim.reconfigure(self.cfg)
 
         self.sim = sim
         self.res = 0.1
@@ -105,10 +105,10 @@ class HabitatDataset(Dataset):
 
         return sample
 
-    def _config_sim(self, scene_filepath):
+    def _config_sim(self, scene_filepath, img_size):
         sim_settings = {
-            "width": self.img_size[1],  # Spatial resolution of the observations
-            "height": self.img_size[0],
+            "width": img_size[1],  # Spatial resolution of the observations
+            "height": img_size[0],
             "scene": scene_filepath,  # Scene path
             "default_agent": 0,
             "sensor_height": 1.5,  # Height of sensors in meters

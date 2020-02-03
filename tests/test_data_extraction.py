@@ -12,13 +12,9 @@ from habitat_sim.utils.data.dataextractor import HabitatDataset, TopdownView
 class TrivialNet(nn.Module):
     def __init__(self):
         super(TrivialNet, self).__init__()
-        self.conv1 = nn.Conv2d(
-            4, 4, kernel_size=10, stride=10
-        )  # Conv to reduce memory for params
-        self.out = nn.Linear(10404, 10)
+        self.out = nn.Linear(4096, 10)
 
     def forward(self, x):
-        x = self.conv1(x)
         flat_dim_size = self.get_flat_dim(x)
         x = x.view(-1, flat_dim_size)
         x = self.out(x)
@@ -42,7 +38,7 @@ def test_data_extractor_end_to_end(sim):
     scene_filepath = (
         "../../data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
     )
-    dataset = HabitatDataset(scene_filepath, labels=[0.0], img_size=(512, 512), sim=sim)
+    dataset = HabitatDataset(scene_filepath, labels=[0.0], img_size=(32, 32), sim=sim)
     dataloader = DataLoader(dataset, batch_size=3)
 
     net = TrivialNet()
