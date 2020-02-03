@@ -80,7 +80,18 @@ class SceneGraph {
    */
   template <typename... DrawableGroupArgs>
   gfx::DrawableGroup* createDrawableGroup(std::string id,
-                                          DrawableGroupArgs&&... args);
+                                          DrawableGroupArgs&&... args) {
+    auto inserted = drawableGroups_.emplace(
+        std::piecewise_construct, std::forward_as_tuple(std::move(id)),
+        std::forward_as_tuple(std::forward<DrawableGroupArgs>(args)...));
+    if (!inserted.second) {
+      LOG(ERROR) << "DrawableGroup with ID: " << inserted.first->first
+                 << " already exists!";
+      return nullptr;
+    }
+    LOG(INFO) << "Created DrawableGroup: " << inserted.first->first;
+    return &inserted.first->second;
+  }
 
   /**
    * @brief Deletes a @ref DrawableGroup by ID
