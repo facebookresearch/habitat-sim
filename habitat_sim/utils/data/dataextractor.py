@@ -49,6 +49,8 @@ class HabitatDataset(Dataset):
         if sim is None:
             sim = habitat_sim.Simulator(self.cfg)
         else:
+            # If a sim is provided we have to make a new cfg
+            self.cfg = self._config_sim(sim.config.sim_cfg.scene.id, img_size)
             sim.reconfigure(self.cfg)
 
         self.sim = sim

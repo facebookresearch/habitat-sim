@@ -35,9 +35,7 @@ def test_topdown_view(sim):
 
 def test_data_extractor_end_to_end(sim):
     # Path is relative to simulator.py
-    scene_filepath = (
-        "../../data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
-    )
+    scene_filepath = ""
     dataset = HabitatDataset(scene_filepath, labels=[0.0], img_size=(32, 32), sim=sim)
     dataloader = DataLoader(dataset, batch_size=3)
 
@@ -46,5 +44,5 @@ def test_data_extractor_end_to_end(sim):
     # Run data through network
     for i, sample_batch in enumerate(dataloader):
         img, label = sample_batch["rgb"], sample_batch["label"]
-        img = img.permute(0, 3, 2, 1).float()  # Conv2d requires NCHW format
+        img = img.permute(0, 3, 2, 1).float()
         out = net(img)
