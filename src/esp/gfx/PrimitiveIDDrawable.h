@@ -18,7 +18,6 @@ class PrimitiveIDDrawable : public Drawable {
   //! objectId, and color for textured, object id buffer and color shader
   //! output respectively
   explicit PrimitiveIDDrawable(scene::SceneNode& node,
-                               PrimitiveIDShader& shader,
                                Magnum::GL::Mesh& mesh,
                                DrawableGroup* group = nullptr);
 

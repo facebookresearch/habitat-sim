@@ -18,7 +18,6 @@ class PTexMeshShader;
 class PTexMeshDrawable : public Drawable {
  public:
   explicit PTexMeshDrawable(scene::SceneNode& node,
-                            PTexMeshShader& shader,
                             assets::PTexMeshData& ptexMeshData,
                             int submeshID,
                             DrawableGroup* group = nullptr);

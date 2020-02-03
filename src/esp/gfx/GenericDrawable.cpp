@@ -13,34 +13,57 @@ namespace gfx {
 
 GenericDrawable::GenericDrawable(
     scene::SceneNode& node,
-    Magnum::Shaders::Flat3D& shader,
     Magnum::GL::Mesh& mesh,
     DrawableGroup* group /* = nullptr */,
     Magnum::GL::Texture2D* texture /* = nullptr */,
     int objectId /* = ID_UNDEFINED */,
     const Magnum::Color4& color /* = Magnum::Color4{1} */)
-    : Drawable{node, shader, mesh, group},
+    : Drawable{node, mesh, group},
       texture_(texture),
       objectId_(objectId),
       color_{color} {}
 
 void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                            Magnum::SceneGraph::Camera3D& camera) {
-  Magnum::Shaders::Flat3D& shader =
-      static_cast<Magnum::Shaders::Flat3D&>(shader_);
-  shader.setTransformationProjectionMatrix(camera.projectionMatrix() *
-                                           transformationMatrix);
+  Shader::ptr shader = drawables()->getShader();
+  ShaderType shaderType = shader->getConfiguration().type;
+  Magnum::GL::AbstractShaderProgram& shaderProgram = shader->getShaderProgram();
 
-  if ((shader.flags() & Magnum::Shaders::Flat3D::Flag::Textured) && texture_) {
-    shader.bindTexture(*texture_);
+  // TODO: use polymorphism to do double dispatch here
+  if (type == PHONG_SHADER) {
+    Magnum::Shaders::Phong& phongShader =
+        static_cast<Magnum::Shaders::Phong&>(shaderProgram);
+    phongShader.setTransformationMatrix(transformationMatrix)
+        .setProjectionMatrix(camera.projectionMatrix())
+        .setNormalMatrix(transformationMatrix.rotationScaling())
+        .setObjectId(node_.getId());
+
+    if ((phongShader.flags() & Magnum::Shaders::Phong::Flag::DiffuseTexture) &&
+        texture_) {
+      phongShader.bindDiffuseTexture(*texture_);
+    }
+
+    if (!(phongShader.flags() & Magnum::Shaders::Phong::Flag::VertexColor)) {
+      phongShader.setDiffuseColor(color_);
+    }
+
+  } else {
+    Magnum::Shaders::Flat3D& flatShader =
+        static_cast<Magnum::Shaders::Flat3D&>(shaderProgram);
+    flatShader.setTransformationProjectionMatrix(camera.projectionMatrix() *
+                                                 transformationMatrix);
+
+    if ((flatShader.flags() & Magnum::Shaders::Flat3D::Flag::Textured) &&
+        texture_) {
+      flatShader.bindTexture(*texture_);
+    }
+    if (!(flatShader.flags() & Magnum::Shaders::Flat3D::Flag::VertexColor)) {
+      flatShader.setColor(color_);
+    }
+
+    flatShader.setObjectId(node_.getId());
   }
-
-  if (!(shader.flags() & Magnum::Shaders::Flat3D::Flag::VertexColor)) {
-    shader.setColor(color_);
-  }
-
-  shader.setObjectId(node_.getId());
-  mesh_.draw(shader_);
+  mesh_.draw(shaderProgram);
 }
 
 }  // namespace gfx

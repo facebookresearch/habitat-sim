@@ -101,6 +101,11 @@ class Shader {
     return false;
   }
 
+  // TODO: remove this once Drawables pass themselves to Shader to render
+  Magnum::GL::AbstractShaderProgram& getShaderProgram() {
+    return *shaderProgram_;
+  }
+
  private:
   ShaderConfiguration config_;
 

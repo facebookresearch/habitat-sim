@@ -30,7 +30,6 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * @param group Drawable group this drawable will be added to.
    */
   Drawable(scene::SceneNode& node,
-           Magnum::GL::AbstractShaderProgram& shader,  // TODO: remove this
            Magnum::GL::Mesh& mesh,
            DrawableGroup* group = nullptr);
   virtual ~Drawable() {}
@@ -59,7 +58,6 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
                     Magnum::SceneGraph::Camera3D& camera) = 0;
 
   scene::SceneNode& node_;
-  Magnum::GL::AbstractShaderProgram& shader_;
   Magnum::GL::Mesh& mesh_;
 };
 
