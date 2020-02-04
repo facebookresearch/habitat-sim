@@ -8,22 +8,13 @@
 #include <Magnum/SceneGraph/SceneGraph.h>
 
 #include "esp/core/esp.h"
-
-// #include "esp/gfx/Shader.h"
+#include "esp/gfx/Shader.h"
 
 namespace esp {
 namespace gfx {
 
 class Drawable;
 class RenderCamera;
-
-// STUB (todo: remove)
-class DrawableGroup;
-class Shader {
- public:
-  void prepareForDraw(const RenderCamera& camera) {}
-  ESP_SMART_POINTERS(Shader);
-};
 
 /**
  * @brief Group of drawables, and shared group parameters.

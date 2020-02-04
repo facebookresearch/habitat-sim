@@ -13,7 +13,6 @@ namespace esp {
 namespace gfx {
 
 class Drawable;
-class DrawableGroup;
 class RenderCamera;
 
 // TODO: string type to allow for dynamically added shader types
