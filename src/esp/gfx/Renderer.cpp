@@ -32,8 +32,13 @@ struct Renderer::Impl {
   }
   ~Impl() { LOG(INFO) << "Deconstructing Renderer"; }
 
-  void draw(RenderCamera& camera, MagnumDrawableGroup& drawables) {
-    camera.draw(drawables);
+  void draw(RenderCamera& camera, scene::SceneGraph& sceneGraph) {
+    for (auto& it : sceneGraph.getDrawableGroups()) {
+      // TODO: remove || true
+      if (it.second.prepareForDraw(camera) || true) {
+        camera.draw(it.second);
+      }
+    }
   }
 
   void draw(sensor::VisualSensor& visualSensor, scene::SceneGraph& sceneGraph) {
@@ -42,7 +47,7 @@ struct Renderer::Impl {
     // set the modelview matrix, projection matrix of the render camera;
     sceneGraph.setDefaultRenderCamera(visualSensor);
 
-    draw(sceneGraph.getDefaultRenderCamera(), sceneGraph.getDrawables());
+    draw(sceneGraph.getDefaultRenderCamera(), sceneGraph);
   }
 
   void bindRenderTarget(sensor::VisualSensor& sensor) {
@@ -68,7 +73,7 @@ struct Renderer::Impl {
 Renderer::Renderer() : pimpl_(spimpl::make_unique_impl<Impl>()) {}
 
 void Renderer::draw(RenderCamera& camera, scene::SceneGraph& sceneGraph) {
-  pimpl_->draw(camera, sceneGraph.getDrawables());
+  pimpl_->draw(camera, sceneGraph);
 }
 
 void Renderer::draw(sensor::VisualSensor& visualSensor,
