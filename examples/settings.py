@@ -37,6 +37,7 @@ default_sim_settings = {
 # build SimulatorConfiguration
 def make_cfg(settings):
     sim_cfg = hsim.SimulatorConfiguration()
+    sim_cfg.frustum_culling = settings["frustum_culling"]
     if "enable_physics" in settings.keys():
         sim_cfg.enable_physics = settings["enable_physics"]
     else:

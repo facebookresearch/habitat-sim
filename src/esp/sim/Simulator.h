@@ -41,7 +41,8 @@ struct SimulatorConfiguration {
   bool createRenderer = true;
   // Whether or not the agent can slide on collisions
   bool allowSliding = true;
-
+  // enable or disable the frustum culling
+  bool frustumCulling = true;
   bool enablePhysics = false;
   std::string physicsConfigFile =
       "./data/default.phys_scene_config.json";  // should we instead link a
@@ -347,6 +348,8 @@ class Simulator {
   // See: examples/settings.py, habitat_sim/simulator.py for more information
   // ideally, to avoid inconsistency at any time, and reduce maintenance cost
   // this state should be defined in just one place.e.g., only in the frontend
+  // Currently, we need it defined here, because sensor., e.g., PinholeCamera
+  // rquires it when drawing the observation
   bool frustumCulling_ = true;
 
   ESP_SMART_POINTERS(Simulator)
