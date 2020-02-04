@@ -51,8 +51,7 @@ struct Renderer::Impl {
     // set the modelview matrix, projection matrix of the render camera;
     sceneGraph.setDefaultRenderCamera(visualSensor);
 
-    draw(sceneGraph.getDefaultRenderCamera(), sceneGraph.getDrawables(),
-         frustumCulling);
+    draw(sceneGraph.getDefaultRenderCamera(), sceneGraph, frustumCulling);
   }
 
   void bindRenderTarget(sensor::VisualSensor& sensor) {
