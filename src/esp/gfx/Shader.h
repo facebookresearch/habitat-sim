@@ -97,7 +97,8 @@ class Shader {
   bool draw(const Drawable& drawable,
             const Magnum::Matrix4& transformationMatrix,
             Magnum::SceneGraph::Camera3D& camera) {
-    // shaderProgram_->draw(drawable, transformationMatrix, camera);
+    // return shaderProgram_->draw(drawable, transformationMatrix, camera);
+    return false;
   }
 
  private:
@@ -108,7 +109,7 @@ class Shader {
   // Hence, prepareForDraw must be called before using the program to draw
   std::shared_ptr<Magnum::GL::AbstractShaderProgram> shaderProgram_;
 
-  ESP_SMART_POINTERS(Shader);
+  ESP_SMART_POINTERS(Shader)
 };
 
 }  // namespace gfx
