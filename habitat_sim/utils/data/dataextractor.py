@@ -5,8 +5,6 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
-from torch.utils.data import Dataset
 
 import habitat_sim
 import habitat_sim.bindings as hsim
@@ -15,7 +13,7 @@ from habitat_sim.agent import AgentState
 from habitat_sim.utils.common import quat_from_two_vectors
 
 
-class HabitatDataset(Dataset):
+class ImageExtractor:
     r"""Main class that extracts data by creating a simulator and generating a topdown map from which to
     iteratively generate image data.
 

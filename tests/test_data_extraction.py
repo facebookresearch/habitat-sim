@@ -4,9 +4,9 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 
-from habitat_sim.utils.data.dataextractor import HabitatDataset, TopdownView
+from habitat_sim.utils.data.dataextractor import ImageExtractor, TopdownView
 
 
 class TrivialNet(nn.Module):
@@ -28,6 +28,17 @@ class TrivialNet(nn.Module):
         return size
 
 
+class MyDataset(Dataset):
+    def __init__(self, extractor):
+        self.extractor = extractor
+
+    def __len__(self):
+        return len(self.extractor)
+
+    def __getitem__(self, idx):
+        return self.extractor[idx]
+
+
 def test_topdown_view(sim):
     tdv = TopdownView(sim, res=0.1)
     topdown_view = tdv.topdown_view
@@ -36,9 +47,9 @@ def test_topdown_view(sim):
 def test_data_extractor_end_to_end(sim):
     # Path is relative to simulator.py
     scene_filepath = ""
-    dataset = HabitatDataset(scene_filepath, labels=[0.0], img_size=(32, 32), sim=sim)
+    extractor = ImageExtractor(scene_filepath, labels=[0.0], img_size=(32, 32), sim=sim)
+    dataset = MyDataset(extractor)
     dataloader = DataLoader(dataset, batch_size=3)
-
     net = TrivialNet()
 
     # Run data through network
