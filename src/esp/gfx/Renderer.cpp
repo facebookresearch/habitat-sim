@@ -32,7 +32,9 @@ struct Renderer::Impl {
   }
   ~Impl() { LOG(INFO) << "Deconstructing Renderer"; }
 
-  void draw(RenderCamera& camera, scene::SceneGraph& sceneGraph) {
+  void draw(RenderCamera& camera,
+            scene::SceneGraph& sceneGraph,
+            bool frustumCulling) {
     for (auto& it : sceneGraph.getDrawableGroups()) {
       // TODO: remove || true
       if (it.second.prepareForDraw(camera) || true) {
