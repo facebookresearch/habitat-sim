@@ -45,8 +45,7 @@ class PhysicsManagerTest : public testing::Test {
     auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
     esp::scene::SceneNode* navSceneNode =
         &sceneGraph.getRootNode().createChild();
-    auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
-    resourceManager_.loadScene(info, physicsManager_, navSceneNode, &drawables,
+    resourceManager_.loadScene(info, physicsManager_, navSceneNode, &sceneGraph,
                                physicsConfigFile);
   }
 
@@ -171,7 +170,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
       physicsManager_->reset();
 
       int objectId = physicsManager_->addObject(
-          objectFile, &sceneManager_.getSceneGraph(sceneID_).getDrawables());
+          objectFile, &sceneManager_.getSceneGraph(sceneID_));
 
       Magnum::Vector3 initialPosition{0.0, 0.25, 0.0};
       physicsManager_->setTranslation(objectId, initialPosition);
@@ -272,19 +271,19 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     esp::assets::PhysicsObjectAttributes& objectTemplate =
         resourceManager_.getPhysicsObjectAttributes(objectFile);
 
-    auto* drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
+    auto* sceneGraph = &sceneManager_.getSceneGraph(sceneID_);
 
     // add the unjoined object
     objectTemplate.setBool("joinCollisionMeshes", false);
-    int objectId0 = physicsManager_->addObject(objectFile, drawables);
+    int objectId0 = physicsManager_->addObject(objectFile, sceneGraph);
 
     // add the joined object
     objectTemplate.setBool("joinCollisionMeshes", true);
-    int objectId1 = physicsManager_->addObject(objectFile, drawables);
+    int objectId1 = physicsManager_->addObject(objectFile, sceneGraph);
 
     // add bounding box object
     objectTemplate.setBool("useBoundingBoxForCollision", true);
-    int objectId2 = physicsManager_->addObject(objectFile, drawables);
+    int objectId2 = physicsManager_->addObject(objectFile, sceneGraph);
 
     esp::physics::BulletPhysicsManager* bPhysManager =
         static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
@@ -335,14 +334,14 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
       {0.0, 0.0, 0.0},  {-1.0, -1.0, -1.0}, {-1.0, 1.0, 1.0},
       {4.0, -3.0, 2.0}, {0.1, -0.2, -0.3}};
 
-  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
 
   for (auto& testScale : testScales) {
     objectTemplate.setMagnumVec3("scale", testScale);
 
     Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
 
-    int objectId = physicsManager_->addObject(objectFile, &drawables);
+    int objectId = physicsManager_->addObject(objectFile, &sceneGraph);
 
     const Magnum::Range3D& visualBounds =
         physicsManager_->getObjectSceneNode(objectId).getCumulativeBB();

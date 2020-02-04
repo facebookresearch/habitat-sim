@@ -64,13 +64,15 @@ namespace assets {
 class ResourceManager {
  public:
   /** @brief Constructor */
+  explicit ResourceManager()
+      : tempShaderManager_{}, shaderManager_{tempShaderManager_} {};
+
+  /** @brief Constructor */
   explicit ResourceManager(gfx::ShaderManager& s) : shaderManager_{s} {};
 
   /** @brief Destructor */
   ~ResourceManager() {}
 
-  /** @brief Stores references to a set of drawable elements */
-  using DrawableGroup = gfx::DrawableGroup;
   /** @brief Convenience typedef for Importer class */
   using Importer = Magnum::Trade::AbstractImporter;
 
@@ -626,6 +628,10 @@ class ResourceManager {
   std::vector<std::string> physicsObjectConfigList_;
 
   // TODO: move shader selection out of ResourceManager
+  // HACK: to avoid changing all usages of ResourceManager, use another member
+  // if shaderManager isn't provided in constructor. This will be removed once
+  // shader selection is extracted out of ResourceManager
+  gfx::ShaderManager tempShaderManager_;
   gfx::ShaderManager& shaderManager_;
 
   // ======== Rendering Utility Functions ========
