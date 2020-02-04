@@ -32,10 +32,13 @@ struct Renderer::Impl {
   }
   ~Impl() { LOG(INFO) << "Deconstructing Renderer"; }
 
-  void draw(RenderCamera& camera,
-            MagnumDrawableGroup& drawables,
-            bool frustumCulling) {
-    camera.draw(drawables, frustumCulling);
+  void draw(RenderCamera& camera, scene::SceneGraph& sceneGraph) {
+    for (auto& it : sceneGraph.getDrawableGroups()) {
+      // TODO: remove || true
+      if (it.second.prepareForDraw(camera) || true) {
+        camera.draw(it.second, frustumCulling);
+      }
+    }
   }
 
   void draw(sensor::VisualSensor& visualSensor,
@@ -75,7 +78,7 @@ Renderer::Renderer() : pimpl_(spimpl::make_unique_impl<Impl>()) {}
 void Renderer::draw(RenderCamera& camera,
                     scene::SceneGraph& sceneGraph,
                     bool frustumCulling) {
-  pimpl_->draw(camera, sceneGraph.getDrawables(), frustumCulling);
+  pimpl_->draw(camera, sceneGraph, frustumCulling);
 }
 
 void Renderer::draw(sensor::VisualSensor& visualSensor,

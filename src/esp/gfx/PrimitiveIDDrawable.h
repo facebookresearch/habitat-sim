@@ -17,11 +17,10 @@ class PrimitiveIDDrawable : public Drawable {
   //! and mesh. Adds drawable to given group and uses provided texture,
   //! objectId, and color for textured, object id buffer and color shader
   //! output respectively
-  explicit PrimitiveIDDrawable(
-      scene::SceneNode& node,
-      PrimitiveIDShader& shader,
-      Magnum::GL::Mesh& mesh,
-      Magnum::SceneGraph::DrawableGroup3D* group = nullptr);
+  explicit PrimitiveIDDrawable(scene::SceneNode& node,
+                               PrimitiveIDShader& shader,
+                               Magnum::GL::Mesh& mesh,
+                               DrawableGroup* group = nullptr);
 
  protected:
   virtual void draw(const Magnum::Matrix4& transformationMatrix,

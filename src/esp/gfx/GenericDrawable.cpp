@@ -15,7 +15,7 @@ GenericDrawable::GenericDrawable(
     scene::SceneNode& node,
     Magnum::Shaders::Flat3D& shader,
     Magnum::GL::Mesh& mesh,
-    Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */,
+    DrawableGroup* group /* = nullptr */,
     Magnum::GL::Texture2D* texture /* = nullptr */,
     int objectId /* = ID_UNDEFINED */,
     const Magnum::Color4& color /* = Magnum::Color4{1} */)

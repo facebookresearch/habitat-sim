@@ -398,8 +398,14 @@ void Viewer::drawEvent() {
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
-  uint32_t visibles =
-      renderCamera_->draw(sceneGraph.getDrawables(), frustumCullingEnabled_);
+  uint32_t visibles = 0;
+
+  for (auto& it : sceneGraph.getDrawableGroups()) {
+    // TODO: remove || true
+    if (it.second.prepareForDraw(*renderCamera_) || true) {
+      visibles += renderCamera_->draw(it.second, frustumCullingEnabled_);
+    }
+  }
 
   if (debugBullet_) {
     Magnum::Matrix4 camM(renderCamera_->cameraMatrix());
