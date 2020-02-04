@@ -52,17 +52,6 @@ class ShaderManager {
   }
 
   /**
-   * @brief Get or create a @ref Shader
-   *
-   * See @ref getShader and @ref createShader
-   */
-  template <typename... ShaderArgs>
-  Shader::ptr getOrCreateShader(std::string id, ShaderArgs&&... args) {
-    return getShader(id) ||
-           createShader(std::move(id), std::forward<ShaderArgs>(args)...);
-  }
-
-  /**
    * @brief Deletes a @ref Shader by ID
    *
    * @return If a @ref Shader with specified ID existed.

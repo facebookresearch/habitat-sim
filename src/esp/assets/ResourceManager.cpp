@@ -895,9 +895,16 @@ gfx::DrawableGroup* ResourceManager::getDrawableGroupFromShaderConfig(
   } else if (cfg.textured) {
     shaderIdentifier += TEXTURED;
   }
-  gfx::Shader::ptr shader =
-      shaderManager_.getOrCreateShader(shaderIdentifier, cfg);
-  return sceneGraph.getOrCreateDrawableGroup(shaderIdentifier, shader);
+
+  gfx::DrawableGroup* group = sceneGraph.getDrawableGroup(shaderIdentifier);
+  if (!group) {
+    gfx::Shader::ptr shader = shaderManager_.getShader(shaderIdentifier);
+    if (!shader)
+      shader = shaderManager_.createShader(shaderIdentifier, cfg);
+    group = sceneGraph.createDrawableGroup(shaderIdentifier, shader);
+  }
+
+  return group;
 }
 
 bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
@@ -1396,8 +1403,7 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
       if (texture) {
         // update config to include texture
         shaderCfg.textured = true;
-        createDrawable(shaderCfg, mesh, node, sceneGraph, texture,
-                       objectID);
+        createDrawable(shaderCfg, mesh, node, sceneGraph, texture, objectID);
       } else {
         // Color-only material
         createDrawable(shaderCfg, mesh, node, sceneGraph, texture, objectID,
