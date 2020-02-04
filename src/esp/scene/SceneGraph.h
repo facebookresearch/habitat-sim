@@ -27,14 +27,6 @@ class SceneGraph {
   SceneNode& getRootNode() { return rootNode_; }
   const SceneNode& getRootNode() const { return rootNode_; }
 
-  // TODO: remove this
-  gfx::DrawableGroup& getDrawables() {
-    return drawableGroups_.at(std::string{});
-  }
-  const gfx::DrawableGroup& getDrawables() const {
-    return drawableGroups_.at(std::string{});
-  }
-
   // set the transformation, projection matrix to the default camera
   // TODO:
   // in the future, the parameter should be VisualSensor

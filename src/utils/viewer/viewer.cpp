@@ -397,11 +397,13 @@ void Viewer::drawEvent() {
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
+  uint32_t totalDrawables = 0;
   uint32_t visibles = 0;
 
   for (auto& it : sceneGraph.getDrawableGroups()) {
     // TODO: remove || true
     if (it.second.prepareForDraw(*renderCamera_) || true) {
+      totalDrawables += it.second.size();
       visibles += renderCamera_->draw(it.second, frustumCullingEnabled_);
     }
   }
@@ -422,9 +424,8 @@ void Viewer::drawEvent() {
                      ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(2.0);
     ImGui::Text("%.1f FPS", Double(ImGui::GetIO().Framerate));
-    uint32_t total = sceneGraph.getDrawables().size();
-    ImGui::Text("%u drawables", total);
-    ImGui::Text("%u culled", total - visibles);
+    ImGui::Text("%u drawables", totalDrawables);
+    ImGui::Text("%u culled", totalDrawables - visibles);
     ImGui::End();
   }
 

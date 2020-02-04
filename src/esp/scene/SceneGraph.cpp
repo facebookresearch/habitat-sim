@@ -13,10 +13,7 @@ namespace scene {
 SceneGraph::SceneGraph()
     : rootNode_{world_},
       defaultRenderCameraNode_{rootNode_},
-      defaultRenderCamera_{defaultRenderCameraNode_} {
-  // For now, just create one drawable group with empty string uuid
-  createDrawableGroup(std::string{});
-}
+      defaultRenderCamera_{defaultRenderCameraNode_} {}
 
 // set transformation, projection matrix, viewport to the default camera
 void SceneGraph::setDefaultRenderCamera(sensor::VisualSensor& sensor) {
