@@ -235,5 +235,11 @@ bool BulletPhysicsManager::contactTest(const int physObjectID) {
       ->contactTest();
 }
 
+void BulletPhysicsManager::setActive(const int physObjectID, bool active) {
+  assertIDValidity(physObjectID);
+  static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+      ->setActive(active);
+}
+
 }  // namespace physics
 }  // namespace esp

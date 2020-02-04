@@ -67,6 +67,15 @@ class Viewer : public Magnum::Platform::Application {
 
   // Interactive functions
   void addObject(std::string configFile);
+
+  int agentObjectId = -1;
+
+  void syncAgentObject();
+
+  void attachAgentObject();
+  void grabReleaseObject();
+
+  void syncGrippedObject();
   void pokeLastObject();
   void pushLastObject();
 
@@ -112,7 +121,7 @@ class Viewer : public Magnum::Platform::Application {
   Magnum::Timeline timeline_;
 
   ImGuiIntegration::Context imgui_{NoCreate};
-  bool showFPS_ = true;
+  bool showFPS_ = false;
   bool frustumCullingEnabled_ = true;
 };
 
@@ -268,6 +277,11 @@ void Viewer::addObject(std::string configFile) {
 
   auto& drawables = sceneGraph_->getDrawables();
 
+  assets::PhysicsObjectAttributes& objTemplate =
+      resourceManager_.getPhysicsObjectAttributes(configFile);
+  objTemplate.setDouble("mass", 10.0);
+  objTemplate.setDouble("frictionCoefficient", 0.8);
+
   int physObjectID = physicsManager_->addObject(configFile, &drawables);
   physicsManager_->setTranslation(physObjectID, new_pos);
 
@@ -277,12 +291,14 @@ void Viewer::addObject(std::string configFile) {
   double u2 = (rand() % 1000) / 1000.0;
   double u3 = (rand() % 1000) / 1000.0;
 
+  /*
   Magnum::Vector3 qAxis(sqrt(1 - u1) * cos(2 * M_PI * u2),
                         sqrt(u1) * sin(2 * M_PI * u3),
                         sqrt(u1) * cos(2 * M_PI * u3));
   physicsManager_->setRotation(
       physObjectID,
       Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
+   */
 
   objectIDs_.push_back(physObjectID);
 }
@@ -372,6 +388,78 @@ void Viewer::wiggleLastObject() {
   physicsManager_->translate(objectIDs_.back(), randDir * 0.1);
 }
 
+void Viewer::syncAgentObject() {
+  if (agentObjectId >= 0) {
+    Magnum::Matrix4 agentT =
+        agentBodyNode_->MagnumObject::transformationMatrix();
+    physicsManager_->setTransformation(agentObjectId, agentT);
+    physicsManager_->setTranslation(
+        agentObjectId, agentT.transformPoint(Magnum::Vector3{0, 0.5, 0}));
+    physicsManager_->setActive(agentObjectId, true);
+  } else {
+    attachAgentObject();
+  }
+}
+
+void Viewer::attachAgentObject() {
+  // load the new object
+  assets::PhysicsObjectAttributes agentObjectTemplate;
+  std::string physConfigFile = ESP_DEFAULT_PHYS_SCENE_CONFIG;
+  std::string dataDir =
+      physConfigFile.substr(0, physConfigFile.find("default"));
+  std::string objectFile = Corrade::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+  LOG(INFO) << "render mesh path: " << objectFile;
+  agentObjectTemplate.setString("renderMeshHandle", objectFile);
+  agentObjectTemplate.setBool("useBoundingBoxForCollision", true);
+  agentObjectTemplate.setMagnumVec3("scale", Magnum::Vector3{0.2, 0.5, 0.2});
+  int agentBodyObjectID =
+      resourceManager_.loadObject(agentObjectTemplate, "agentObject");
+
+  // addObject without a DrawableGroup to
+  auto& drawables = sceneGraph_->getDrawables();
+  agentObjectId = physicsManager_->addObject(agentBodyObjectID, &drawables);
+  // agentObjectId = physicsManager_->addObject(agentBodyObjectID, nullptr);
+  physicsManager_->setObjectMotionType(agentObjectId,
+                                       physics::MotionType::KINEMATIC);
+}
+
+Magnum::Matrix4 gripOffset;
+void Viewer::grabReleaseObject() {
+  if (objectIDs_.size() > 0) {
+    if (physicsManager_->getObjectMotionType(objectIDs_.back()) ==
+        physics::MotionType::KINEMATIC) {
+      // already gripped, so let it go
+      physicsManager_->setObjectMotionType(objectIDs_.back(),
+                                           physics::MotionType::DYNAMIC);
+    } else {
+      // not gripped, so grip it
+      Magnum::Matrix4 agentT =
+          agentBodyNode_->MagnumObject::transformationMatrix();
+      // gripOffset =
+      // agentT.inverted().transformPoint(physicsManager_->getTranslation(objectIDs_.back()));
+      gripOffset = agentT.inverted() *
+                   physicsManager_->getObjectSceneNode(objectIDs_.back())
+                       .transformation();
+      physicsManager_->setObjectMotionType(objectIDs_.back(),
+                                           physics::MotionType::KINEMATIC);
+    }
+  }
+}
+
+void Viewer::syncGrippedObject() {
+  if (objectIDs_.size() > 0) {
+    if (physicsManager_->getObjectMotionType(objectIDs_.back()) ==
+        physics::MotionType::KINEMATIC) {
+      Magnum::Matrix4 agentT =
+          agentBodyNode_->MagnumObject::transformationMatrix();
+      physicsManager_->setTransformation(objectIDs_.back(),
+                                         agentT * gripOffset);
+      // physicsManager_->setActive(agentObjectId, true);
+    }
+  }
+}
+
 Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
                                  const Vector2i& position) {
   // Convert from window to frame coordinates.
@@ -391,6 +479,9 @@ void Viewer::drawEvent() {
                                GL::FramebufferClear::Depth);
   if (sceneID_.size() <= 0)
     return;
+
+  syncAgentObject();
+  syncGrippedObject();
 
   if (physicsManager_ != nullptr)
     physicsManager_->stepPhysics(timeline_.previousFrameDuration());
@@ -565,7 +656,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       if (physicsManager_ != nullptr) {
         int numObjects = resourceManager_.getNumLibraryObjects();
         if (numObjects) {
-          int randObjectID = rand() % numObjects;
+          int randObjectID = rand() % (numObjects - 1);
           addObject(resourceManager_.getObjectConfig(randObjectID));
 
         } else
@@ -592,6 +683,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::T:
       // Test key. Put what you want here...
       torqueLastObject();
+      break;
+    case KeyEvent::Key::G:
+      grabReleaseObject();
       break;
     case KeyEvent::Key::I:
       Magnum::DebugTools::screenshot(GL::defaultFramebuffer,

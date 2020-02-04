@@ -285,9 +285,9 @@ bool BulletRigidObject::isActive() {
   }
 }
 
-void BulletRigidObject::setActive() {
+void BulletRigidObject::setActive(bool active) {
   if (rigidObjectType_ == RigidObjectType::OBJECT) {
-    bObjectRigidBody_->activate(true);
+    bObjectRigidBody_->activate(active);
   }
 }
 

@@ -191,6 +191,8 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   bool contactTest(const int physObjectID);
 
+  virtual void setActive(const int physObjectID, bool active) override;
+
  protected:
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;

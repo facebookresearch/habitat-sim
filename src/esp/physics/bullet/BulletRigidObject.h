@@ -147,7 +147,7 @@ class BulletRigidObject : public RigidObject {
    * @brief Set an object as being actively simulated rather than sleeping.
    * See @ref btCollisionObject::activate.
    */
-  void setActive();
+  void setActive(bool active = true);
 
   /**
    * @brief Set the @ref MotionType of the object. If the object is @ref
