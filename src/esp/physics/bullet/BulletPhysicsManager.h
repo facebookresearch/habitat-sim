@@ -81,7 +81,7 @@ class BulletPhysicsManager : public PhysicsManager {
                 const std::vector<assets::CollisionMeshData>& meshGroup);
 
   virtual int addObject(const int objectLibIndex,
-                        DrawableGroup* drawables) override;
+                        scene::SceneGraph* sceneGraph) override;
 
   //============ Simulator functions =============
 
