@@ -855,7 +855,8 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
 gfx::DrawableGroup* ResourceManager::getDrawableGroupFromShaderConfig(
     const gfx::ShaderConfiguration& cfg,
     scene::SceneGraph& sceneGraph) {
-  // name prefix
+  // TODO: nicer management of built in drawable groups and shaders, don't
+  // hardcode the strings here name prefix
   static const std::string INSTANCE_MESH = "INSTANCE_MESH";
   static const std::string PTEX_MESH = "PTEX_MESH";
   static const std::string FLAT = "FLAT";
