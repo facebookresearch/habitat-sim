@@ -77,18 +77,22 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables,
     return drawables.size();
   }
 
-  std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
-                        Mn::Matrix4>>
-      drawableTransforms = drawableTransformations(drawables);
+  // dt is short for drawable transformations
+  using dt =
+      std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                            Mn::Matrix4>>;
+  dt drawableTransforms = drawableTransformations(drawables);
 
   // draw just the visible part
   size_t numVisibles = cull(drawableTransforms);
-  // erase all items that did not pass the frustum visibility test
-  drawableTransforms.erase(drawableTransforms.begin() + numVisibles,
-                           drawableTransforms.end());
 
-  MagnumCamera::draw(drawableTransforms);
-  return drawableTransforms.size();
+  dt::iterator iter = drawableTransforms.begin();
+  for (size_t iDrawable = 0; iDrawable < numVisibles; ++iDrawable) {
+    iter->first.get().draw(iter->second, *this);
+    iter++;
+  }
+
+  return numVisibles;
 }
 
 }  // namespace gfx
