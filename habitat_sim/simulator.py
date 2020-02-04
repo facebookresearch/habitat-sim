@@ -416,7 +416,9 @@ class Sensor:
         agent_node.parent = scene.get_root_node()
 
         with self._sensor_object.render_target as tgt:
-            self._sim.renderer.draw(self._sensor_object, scene)
+            self._sim.renderer.draw(
+                self._sensor_object, scene, self._sim.frustum_culling
+            )
 
     def get_observation(self):
 

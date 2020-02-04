@@ -340,6 +340,13 @@ class Simulator {
   core::Random random_;
   SimulatorConfiguration config_;
 
+  // state indicating frustum culling is enabled or not
+  //
+  // TODO:
+  // Such state, frustumCulling_ has also been defined in frontend (py)
+  // See: examples/settings.py, habitat_sim/simulator.py for more information
+  // ideally, to avoid inconsistency at any time, and reduce maintenance cost
+  // this state should be defined in just one place.e.g., only in the frontend
   bool frustumCulling_ = true;
 
   ESP_SMART_POINTERS(Simulator)
