@@ -13,7 +13,10 @@ namespace scene {
 SceneGraph::SceneGraph()
     : rootNode_{world_},
       defaultRenderCameraNode_{rootNode_},
-      defaultRenderCamera_{defaultRenderCameraNode_} {}
+      defaultRenderCamera_{defaultRenderCameraNode_} {
+  // For now, just create one drawable group with empty string uuid
+  createDrawableGroup(std::string{});
+}
 
 // set transformation, projection matrix, viewport to the default camera
 void SceneGraph::setDefaultRenderCamera(sensor::VisualSensor& sensor) {
@@ -30,6 +33,21 @@ bool SceneGraph::isRootNode(SceneNode& node) {
   CORRADE_ASSERT(parent != nullptr,
                  "SceneGraph::isRootNode: the node is illegal.", false);
   return (parent->parent() == nullptr ? true : false);
+}
+
+gfx::DrawableGroup* SceneGraph::getDrawableGroup(const std::string& id) {
+  auto it = drawableGroups_.find(id);
+  return it == drawableGroups_.end() ? nullptr : &it->second;
+}
+
+const gfx::DrawableGroup* SceneGraph::getDrawableGroup(
+    const std::string& id) const {
+  auto it = drawableGroups_.find(id);
+  return it == drawableGroups_.end() ? nullptr : &it->second;
+}
+
+bool SceneGraph::deleteDrawableGroup(const std::string& id) {
+  return drawableGroups_.erase(id);
 }
 
 }  // namespace scene
