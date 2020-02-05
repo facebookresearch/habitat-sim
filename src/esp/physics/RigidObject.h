@@ -223,21 +223,21 @@ class RigidObject : public scene::SceneNode {
    *
    * Does nothing for default @ref MotionType::KINEMATIC or @ref
    * MotionType::STATIC objects.
-   * @param lin_vel Linear velocity to set.
+   * @param linVel Linear velocity to set.
    */
   virtual void setLinearVelocity(
-      CORRADE_UNUSED const Magnum::Vector3& lin_vel){};
+      CORRADE_UNUSED const Magnum::Vector3& linVel){};
 
   /**
    * @brief Virtual angular velocity setter for an object.
    *
    * Does nothing for default @ref MotionType::KINEMATIC or @ref
    * MotionType::STATIC objects.
-   * @param ang_vel Angular velocity vector corresponding to world unit axis
+   * @param angVel Angular velocity vector corresponding to world unit axis
    * angles.
    */
   virtual void setAngularVelocity(
-      CORRADE_UNUSED const Magnum::Vector3& ang_vel){};
+      CORRADE_UNUSED const Magnum::Vector3& angVel){};
 
   /**
    * @brief Virtual linear velocity getter for an object.

@@ -342,15 +342,15 @@ Magnum::Quaternion PhysicsManager::getRotation(const int physObjectID) const {
 }
 
 void PhysicsManager::setLinearVelocity(const int physObjectID,
-                                       const Magnum::Vector3& lin_vel) {
+                                       const Magnum::Vector3& linVel) {
   assertIDValidity(physObjectID);
-  existingObjects_.at(physObjectID)->setLinearVelocity(lin_vel);
+  existingObjects_.at(physObjectID)->setLinearVelocity(linVel);
 }
 
 void PhysicsManager::setAngularVelocity(const int physObjectID,
-                                        const Magnum::Vector3& ang_vel) {
+                                        const Magnum::Vector3& angVel) {
   assertIDValidity(physObjectID);
-  existingObjects_.at(physObjectID)->setAngularVelocity(ang_vel);
+  existingObjects_.at(physObjectID)->setAngularVelocity(angVel);
 }
 
 Magnum::Vector3 PhysicsManager::getLinearVelocity(

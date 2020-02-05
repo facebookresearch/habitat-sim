@@ -364,19 +364,19 @@ void BulletRigidObject::applyForce(const Magnum::Vector3& force,
   }
 }
 
-void BulletRigidObject::setLinearVelocity(const Magnum::Vector3& lin_vel) {
+void BulletRigidObject::setLinearVelocity(const Magnum::Vector3& linVel) {
   if (rigidObjectType_ == RigidObjectType::OBJECT &&
       objectMotionType_ == MotionType::DYNAMIC) {
     setActive();
-    bObjectRigidBody_->setLinearVelocity(btVector3(lin_vel));
+    bObjectRigidBody_->setLinearVelocity(btVector3(linVel));
   }
 }
 
-void BulletRigidObject::setAngularVelocity(const Magnum::Vector3& ang_vel) {
+void BulletRigidObject::setAngularVelocity(const Magnum::Vector3& angVel) {
   if (rigidObjectType_ == RigidObjectType::OBJECT &&
       objectMotionType_ == MotionType::DYNAMIC) {
     setActive();
-    bObjectRigidBody_->setAngularVelocity(btVector3(ang_vel));
+    bObjectRigidBody_->setAngularVelocity(btVector3(angVel));
   }
 }
 

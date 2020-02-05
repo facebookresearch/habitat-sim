@@ -220,9 +220,9 @@ class BulletRigidObject : public RigidObject {
    * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
    * objects. Sets internal @ref btRigidObject state. Treated as initial
    * velocity during simulation simulation step.
-   * @param lin_vel Linear velocity to set.
+   * @param linVel Linear velocity to set.
    */
-  void setLinearVelocity(const Magnum::Vector3& lin_vel) override;
+  void setLinearVelocity(const Magnum::Vector3& linVel) override;
 
   /**
    * @brief Angular velocity setter for an object.
@@ -230,10 +230,10 @@ class BulletRigidObject : public RigidObject {
    * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
    * objects. Sets internal @ref btRigidObject state. Treated as initial
    * velocity during simulation simulation step.
-   * @param ang_vel Angular velocity vector corresponding to world unit axis
+   * @param angVel Angular velocity vector corresponding to world unit axis
    * angles.
    */
-  void setAngularVelocity(const Magnum::Vector3& ang_vel) override;
+  void setAngularVelocity(const Magnum::Vector3& angVel) override;
 
   /**
    * @brief Virtual linear velocity getter for an object.

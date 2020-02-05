@@ -685,10 +685,9 @@ class PhysicsManager {
    * objects.
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @param lin_vel Linear velocity to set.
+   * @param linVel Linear velocity to set.
    */
-  void setLinearVelocity(const int physObjectID,
-                         const Magnum::Vector3& lin_vel);
+  void setLinearVelocity(const int physObjectID, const Magnum::Vector3& linVel);
 
   /**
    * @brief Set angular velocity for an object with @ref MotionType::DYNAMIC.
@@ -697,11 +696,11 @@ class PhysicsManager {
    * objects.
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @param ang_vel Angular velocity vector corresponding to world unit axis
+   * @param angVel Angular velocity vector corresponding to world unit axis
    * angles.
    */
   void setAngularVelocity(const int physObjectID,
-                          const Magnum::Vector3& ang_vel);
+                          const Magnum::Vector3& angVel);
 
   /**
    * @brief Get linear velocity of an object with @ref MotionType::DYNAMIC.
