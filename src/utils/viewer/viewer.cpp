@@ -70,13 +70,6 @@ class Viewer : public Magnum::Platform::Application {
   void pokeLastObject();
   void pushLastObject();
 
-  void setVelocity(int objID,
-                   const Magnum::Vector3& lin_vel,
-                   const Magnum::Vector3& ang_vel);
-
-  void setCommandVelocity(const Magnum::Vector3& lin_vel,
-                          const Magnum::Vector3& ang_vel);
-
   void recomputeNavMesh(const std::string& sceneFilename,
                         esp::nav::NavMeshSettings& navMeshSettings);
 
@@ -111,10 +104,6 @@ class Viewer : public Magnum::Platform::Application {
   nav::PathFinder::ptr pathfinder_;
   scene::ObjectControls controls_;
   Magnum::Vector3 previousPosition_;
-
-  std::pair<Magnum::Vector3, Magnum::Vector3> commandVelocity;
-  bool commandingVelocity = false;
-  bool commandingAntiGravityForce = false;
 
   std::vector<int> objectIDs_;
 
@@ -335,22 +324,6 @@ void Viewer::pushLastObject() {
   physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
 }
 
-void Viewer::setVelocity(int objID,
-                         const Magnum::Vector3& lin_vel,
-                         const Magnum::Vector3& ang_vel) {
-  if (physicsManager_ == nullptr)
-    return;
-
-  physicsManager_->setLinearVelocity(objID, lin_vel);
-  physicsManager_->setAngularVelocity(objID, ang_vel);
-}
-
-void Viewer::setCommandVelocity(const Magnum::Vector3& lin_vel,
-                                const Magnum::Vector3& ang_vel) {
-  commandVelocity.first = lin_vel;
-  commandVelocity.second = ang_vel;
-}
-
 void Viewer::recomputeNavMesh(const std::string& sceneFilename,
                               nav::NavMeshSettings& navMeshSettings) {
   nav::PathFinder::ptr pf = nav::PathFinder::create();
@@ -419,34 +392,8 @@ void Viewer::drawEvent() {
   if (sceneID_.size() <= 0)
     return;
 
-  imgui_.newFrame();
-
-  if (physicsManager_ != nullptr) {
-    if (objectIDs_.size() > 0) {
-      ImGui::SetNextWindowPos(ImVec2(10, 30));
-      ImGui::Begin("main", NULL,
-                   ImGuiWindowFlags_NoDecoration |
-                       ImGuiWindowFlags_NoBackground |
-                       ImGuiWindowFlags_AlwaysAutoResize);
-      ImGui::SetWindowFontScale(2.0);
-      if (commandingVelocity) {
-        ImGui::Text("Commanding velocity");
-        setVelocity(objectIDs_.back(), commandVelocity.first,
-                    commandVelocity.second);
-      }
-      // apply anti-gravity force
-      if (commandingAntiGravityForce) {
-        ImGui::Text("Commanding anti-gravity");
-        physicsManager_->applyForce(
-            objectIDs_.back(),
-            Magnum::Vector3{
-                0, float(9.8 * physicsManager_->getMass(objectIDs_.back())), 0},
-            Magnum::Vector3{});
-      }
-      ImGui::End();
-    }
+  if (physicsManager_ != nullptr)
     physicsManager_->stepPhysics(timeline_.previousFrameDuration());
-  }
 
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
@@ -466,6 +413,8 @@ void Viewer::drawEvent() {
 
     physicsManager_->debugDraw(projM * camM);
   }
+
+  imgui_.newFrame();
 
   if (showFPS_) {
     ImGui::SetNextWindowPos(ImVec2(10, 10));
@@ -649,19 +598,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::T:
       // Test key. Put what you want here...
       torqueLastObject();
-      break;
-    case KeyEvent::Key::E:
-      setCommandVelocity(randomDirection(), randomDirection());
-      // setCommandVelocity(Magnum::Vector3{0, 0, 0}, Magnum::Vector3{0,
-      // 0, 1.0}); //rotation about z axis
-      // setCommandVelocity(Magnum::Vector3{0,1.0,0}, Magnum::Vector3{}); //up
-      commandingVelocity = !commandingVelocity;
-      LOG(INFO) << "commandingVelocity = " << commandingVelocity;
-      break;
-    case KeyEvent::Key::G:
-      commandingAntiGravityForce = !commandingAntiGravityForce;
-      LOG(INFO) << "commandingAntiGravityForce = "
-                << commandingAntiGravityForce;
       break;
     case KeyEvent::Key::I:
       Magnum::DebugTools::screenshot(GL::defaultFramebuffer,
