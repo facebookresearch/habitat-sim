@@ -81,24 +81,26 @@ enum class RigidObjectType {
 };
 
 /**
-@brief A @ref scene::SceneNode representing an individual rigid object instance.
-Note that the @ref scene::SceneGraph owns all scene nodes. This may be a @ref
-MotionType::STATIC scene collision geometry or an object of any @ref MotionType
-which can interact with other members of a physical world. Must have a collision
-mesh. By default, a RigidObject is @ref MotionType::KINEMATIC without an
-underlying simulator implementation. Derived classes can be used to introduce
-specific implementations of dynamics.
+@brief An AbstractFeature3D representing an individual rigid object instance
+attached to a SceneNode, updating its state through simulation. This may be a
+@ref MotionType::STATIC scene collision geometry or an object of any @ref
+MotionType which can interact with other members of a physical world. Must have
+a collision mesh. By default, a RigidObject is @ref MotionType::KINEMATIC
+without an underlying simulator implementation. Derived classes can be used to
+introduce specific implementations of dynamics.
 */
 class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
  public:
   /**
    * @brief Constructor for a @ref RigidObject.
-   * @param parent The parent @ref scene::SceneNode to this object, likely the
-   * @ref PhysicsManager::physicsNode_.
+   * @param rigidBodyNode The @ref scene::SceneNode this feature will be
+   * attached to.
    */
   RigidObject(scene::SceneNode* rigidBodyNode);
 
-  // Get the scene node being attached to.
+  /**
+   * @brief Get the scene node being attached to.
+   */
   scene::SceneNode& node() { return object(); }
   const scene::SceneNode& node() const { return object(); }
 
@@ -177,7 +179,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
 
   /**
    * @brief Shift the object's local origin by translating all children of this
-   * @ref RigidObject.
+   * object's SceneNode.
    * @param shift The translation to apply to object's children.
    */
   virtual void shiftOrigin(const Magnum::Vector3& shift);

@@ -802,12 +802,7 @@ class PhysicsManager {
 
   /** @brief Maps object IDs to all existing physical object instances in the
    * world.
-   * @ref PhysicsManager does not own a @ref RigidObject.
-   * The @ref scene::SceneGraph has complete ownership over all @ref
-   * scene::SceneNode objects.
-   * As such, this structure should be cleared before the @ref scene::SceneGraph
-   * owning the objects or this structure will likely contain null object
-   * pointers. */
+   */
   std::map<int, physics::RigidObject::uptr> existingObjects_;
 
   /** @brief A counter of unique object ID's allocated thus far. Used to

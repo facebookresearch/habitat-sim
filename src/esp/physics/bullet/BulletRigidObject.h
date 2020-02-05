@@ -65,14 +65,17 @@ physics to enable @ref MotionType::DYNAMIC objects.
 See @ref btCollisionObject for @ref RigidObjectType::SCENE and
 @ref btRigidBody for @ref RigidObjectType::OBJECT.
 
+Utilizes Magnum::BulletIntegration::MotionState to syncronize SceneNode state
+with internal btRigidBody state.
+
 */
 class BulletRigidObject : public RigidObject,
                           public Magnum::BulletIntegration::MotionState {
  public:
   /**
    * @brief Constructor for a @ref BulletRigidObject.
-   * @param parent The parent @ref scene::SceneNode to this object, likely the
-   * @ref PhysicsManager::physicsNode_.
+   * @param rigidBodyNode The @ref scene::SceneNode this feature will be
+   * attached to.
    */
   BulletRigidObject(scene::SceneNode* rigidBodyNode);
 
