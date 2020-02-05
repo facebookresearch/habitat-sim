@@ -68,7 +68,7 @@ class ImageExtractor:
         self.out_name_to_sensor_name = {
             "rgb": "color_sensor",
             "depth": "depth_sensor",
-            "semantic": "semamtic_sensor",
+            "semantic": "semantic_sensor",
         }
         self.output = output
 
@@ -104,6 +104,10 @@ class ImageExtractor:
         sample["label"] = self.label_map[label]
 
         return sample
+
+    def close(self):
+        self.sim.close()
+        del self.sim
 
     def _config_sim(self, scene_filepath, img_size):
         sim_settings = {
@@ -166,7 +170,7 @@ class PoseExtractor(object):
         # Find the closest point of the target class to each gridpoint
         poses = []
         self.cpis = []
-        for point in self.gridpoints:
+        for point in self.gridpoints[10:15]:
             closest_point_of_interest, label = self._bfs(point, labels)
             if closest_point_of_interest is None:
                 continue
