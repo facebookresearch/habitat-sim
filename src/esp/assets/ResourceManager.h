@@ -28,6 +28,7 @@
 #include "GltfMeshData.h"
 #include "MeshData.h"
 #include "MeshMetaData.h"
+#include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/configure.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneNode.h"
@@ -68,7 +69,7 @@ class ResourceManager {
   ~ResourceManager() {}
 
   /** @brief Stores references to a set of drawable elements */
-  using DrawableGroup = Magnum::SceneGraph::DrawableGroup3D;
+  using DrawableGroup = gfx::DrawableGroup;
   /** @brief Convenience typedef for Importer class */
   using Importer = Magnum::Trade::AbstractImporter;
 

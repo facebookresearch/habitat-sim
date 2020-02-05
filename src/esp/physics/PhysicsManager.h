@@ -24,6 +24,7 @@
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
+#include "esp/gfx/DrawableGroup.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -121,7 +122,7 @@ class PhysicsManager {
   };
 
   /** @brief Stores references to a set of drawable elements. */
-  using DrawableGroup = Magnum::SceneGraph::DrawableGroup3D;
+  using DrawableGroup = gfx::DrawableGroup;
 
   /**
    * @brief Initialize static scene collision geometry from loaded mesh data.
