@@ -75,7 +75,7 @@ default_settings["compute_shortest_path"] = False
 default_settings["compute_action_shortest_path"] = False
 
 default_settings["max_frames"] = args.max_frames
-default_settings["frustum_culling"] = not arg.disable_frustum_culling
+default_settings["frustum_culling"] = not args.disable_frustum_culling
 
 
 benchmark_items = {
