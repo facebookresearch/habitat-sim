@@ -39,11 +39,16 @@ class ImageExtractor:
         img_size=(512, 512),
         output=["rgb"],
         sim=None,
+        shuffle=True,
+        split=(70, 30)
     ):
+        if sum(split) != 100:
+            raise Exception('Train/test split must sum to 100.')
+
         self.scene_filepath = scene_filepath
         self.labels = set(labels)
         self.cfg = self._config_sim(self.scene_filepath, img_size)
-
+ 
         if sim is None:
             sim = habitat_sim.Simulator(self.cfg)
         else:
@@ -62,9 +67,19 @@ class ImageExtractor:
         self.poses = self.pose_extractor.extract_poses(
             labels=self.labels
         )  # list of poses
-        self.label_map = {0.0: "unnavigable", 1.0: "navigable"}
+        if shuffle:
+            np.random.shuffle(self.poses)
 
-        # Configure the output each data sample
+        self.train, self.test = self._handle_split(split, self.poses)
+        self.mode = 'full'
+        self.mode_to_data = {
+            'full': self.poses,
+            'train': self.train,
+            'test': self.test,
+            None: self.poses
+        }
+
+        self.label_map = {0.0: "unnavigable", 1.0: "navigable"}
         self.out_name_to_sensor_name = {
             "rgb": "color_sensor",
             "depth": "depth_sensor",
@@ -73,7 +88,7 @@ class ImageExtractor:
         self.output = output
 
     def __len__(self):
-        return len(self.poses)
+        return len(self.mode_to_data[self.mode])
 
     def __getitem__(self, idx):
         if isinstance(idx, slice):
@@ -81,17 +96,20 @@ class ImageExtractor:
             if start is None:
                 start = 0
             if stop is None:
-                stop = len(self.poses)
+                stop = len(self.mode_to_data[self.mode])
             if step is None:
                 step = 1
 
             return [
                 self.__getitem__(i)
                 for i in range(start, stop, step)
-                if i < len(self.poses)
+                if i < len(self.mode_to_data[self.mode])
             ]
 
-        pos, rot, label = self.poses[idx]
+        mymode = self.mode.lower()
+        poses = self.mode_to_data[mymode]
+
+        pos, rot, label = poses[idx]
         new_state = AgentState()
         new_state.position = pos
         new_state.rotation = rot
@@ -108,6 +126,21 @@ class ImageExtractor:
     def close(self):
         self.sim.close()
         del self.sim
+
+    def set_mode(self, mode):
+        mymode = mode.lower()
+        if mymode not in ['full', 'train', 'test']:
+            raise Exception(f'Mode {mode} is not a valid mode for ImageExtractor. Please enter "full, train, or test"')
+        
+        self.mode = mymode
+
+    def _handle_split(self, split, poses):
+        train, test = split
+        num_poses = len(self.poses)
+        last_train_idx = int((train / 100) * num_poses)
+        train_poses = poses[:last_train_idx]
+        test_poses = poses[last_train_idx:]
+        return train_poses, test_poses
 
     def _config_sim(self, scene_filepath, img_size):
         sim_settings = {
@@ -170,7 +203,7 @@ class PoseExtractor(object):
         # Find the closest point of the target class to each gridpoint
         poses = []
         self.cpis = []
-        for point in self.gridpoints[10:15]:
+        for point in self.gridpoints:
             closest_point_of_interest, label = self._bfs(point, labels)
             if closest_point_of_interest is None:
                 continue
@@ -190,7 +223,7 @@ class PoseExtractor(object):
             new_rot = self._compute_quat(cam_normal)
             poses[i] = (new_pos, new_rot, label)
 
-        return poses
+        return np.array(poses)
 
     def valid_point(self, row, col):
         return self.topdown_view[row][col] == 1.0
