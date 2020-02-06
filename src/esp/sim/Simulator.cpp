@@ -252,11 +252,10 @@ std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
 }
 
 // remove object objectID instance in sceneID
-int Simulator::removeObject(const int objectID, const int sceneID) {
+void Simulator::removeObject(const int objectID, const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
-    return physicsManager_->removeObject(objectID);
+    physicsManager_->removeObject(objectID);
   }
-  return ID_UNDEFINED;
 }
 
 esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,

@@ -210,7 +210,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
 }
 
 TEST_F(PhysicsManagerTest, DiscreteContactTest) {
-  LOG(INFO) << "Starting physics test: ContactTest";
+  LOG(INFO) << "Starting physics test: DiscreteContactTest";
 
   std::string sceneFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
@@ -362,5 +362,48 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
       ASSERT_EQ(aabb, boundsGroundTruth);
     }
 #endif
+  }
+}
+
+TEST_F(PhysicsManagerTest, TestVelocityControl) {
+  // test scaling of objects via template configuration (visual and collision)
+  LOG(INFO) << "Starting physics test: TestVelocityControl";
+
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  std::string sceneFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+
+  initScene(sceneFile);
+
+  esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+  physicsObjectAttributes.setDouble("margin", 0.0);
+  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+  int objectId = physicsManager_->addObject(objectFile, &drawables);
+  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 1.0, 0});
+
+  Magnum::Vector3 commandLinVel(1.0, 1.0, 1.0);
+  Magnum::Vector3 commandAngVel(1.0, 1.0, 1.0);
+
+  if (physicsManager_->getPhysicsSimulationLibrary() ==
+      PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+    physicsManager_->setLinearVelocity(objectId, commandLinVel);
+    physicsManager_->setAngularVelocity(objectId, commandAngVel);
+
+    ASSERT_EQ(physicsManager_->getLinearVelocity(objectId), commandLinVel);
+    ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), commandAngVel);
+  } else if (physicsManager_->getPhysicsSimulationLibrary() ==
+             PhysicsManager::PhysicsSimulationLibrary::NONE) {
+    physicsManager_->setLinearVelocity(objectId, commandLinVel);
+    physicsManager_->setAngularVelocity(objectId, commandAngVel);
+
+    // default kinematics always 0 velocity when queried
+    ASSERT_EQ(physicsManager_->getLinearVelocity(objectId), Magnum::Vector3{});
+    ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), Magnum::Vector3{});
   }
 }

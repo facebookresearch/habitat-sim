@@ -29,10 +29,8 @@
 namespace esp {
 namespace physics {
 
-BulletRigidObject::BulletRigidObject(scene::SceneNode* parent)
-    : RigidObject{parent} {};
-
-BulletRigidObject::~BulletRigidObject() {}
+BulletRigidObject::BulletRigidObject(scene::SceneNode* rigidBodyNode)
+    : RigidObject{rigidBodyNode}, MotionState(*rigidBodyNode){};
 
 bool BulletRigidObject::initializeScene(
     const assets::PhysicsSceneAttributes& physicsSceneAttributes,
@@ -212,12 +210,10 @@ bool BulletRigidObject::initializeObject(
   }
 
   //! Bullet rigid body setup
-  bObjectMotionState_ = new Magnum::BulletIntegration::MotionState(*this);
   btRigidBody::btRigidBodyConstructionInfo info =
       btRigidBody::btRigidBodyConstructionInfo(
-          physicsObjectAttributes.getDouble("mass"),
-          &(bObjectMotionState_->btMotionState()), bObjectShape_.get(),
-          bInertia);
+          physicsObjectAttributes.getDouble("mass"), &(btMotionState()),
+          bObjectShape_.get(), bInertia);
   info.m_friction = physicsObjectAttributes.getDouble("frictionCoefficient");
   info.m_restitution =
       physicsObjectAttributes.getDouble("restitutionCoefficient");
@@ -235,7 +231,7 @@ bool BulletRigidObject::initializeObject(
 }
 
 void BulletRigidObject::setCollisionFromBB() {
-  btVector3 dim(cumulativeBB_.size() / 2.0);
+  btVector3 dim(node().getCumulativeBB().size() / 2.0);
 
   for (auto& shape : bGenericShapes_) {
     bObjectShape_->removeChildShape(shape.get());
@@ -260,7 +256,7 @@ void BulletRigidObject::setCollisionFromBB() {
   }
 }
 
-bool BulletRigidObject::removeObject() {
+BulletRigidObject::~BulletRigidObject() {
   if (rigidObjectType_ == RigidObjectType::OBJECT) {
     // remove rigid body from the world
     bWorld_->removeRigidBody(bObjectRigidBody_.get());
@@ -270,9 +266,7 @@ bool BulletRigidObject::removeObject() {
       bWorld_->removeCollisionObject(co.get());
     }
   }
-  bWorld_.reset();  // release shared ownership of the world
-  rigidObjectType_ = RigidObjectType::NONE;
-  return true;
+  bWorld_.reset();
 }
 
 bool BulletRigidObject::isActive() {
@@ -340,7 +334,7 @@ void BulletRigidObject::shiftOrigin(const Magnum::Vector3& shift) {
   Corrade::Utility::Debug() << "shiftOrigin: " << shift;
 
   // shift each child node
-  for (auto& child : children()) {
+  for (auto& child : node().children()) {
     child.translate(shift);
   }
 
@@ -352,7 +346,7 @@ void BulletRigidObject::shiftOrigin(const Magnum::Vector3& shift) {
   }
   // recompute the Aabb once when done
   bObjectShape_->recalculateLocalAabb();
-  computeCumulativeBB();
+  node().computeCumulativeBB();
 }
 
 void BulletRigidObject::applyForce(const Magnum::Vector3& force,
@@ -362,6 +356,30 @@ void BulletRigidObject::applyForce(const Magnum::Vector3& force,
     setActive();
     bObjectRigidBody_->applyForce(btVector3(force), btVector3(relPos));
   }
+}
+
+void BulletRigidObject::setLinearVelocity(const Magnum::Vector3& linVel) {
+  if (rigidObjectType_ == RigidObjectType::OBJECT &&
+      objectMotionType_ == MotionType::DYNAMIC) {
+    setActive();
+    bObjectRigidBody_->setLinearVelocity(btVector3(linVel));
+  }
+}
+
+void BulletRigidObject::setAngularVelocity(const Magnum::Vector3& angVel) {
+  if (rigidObjectType_ == RigidObjectType::OBJECT &&
+      objectMotionType_ == MotionType::DYNAMIC) {
+    setActive();
+    bObjectRigidBody_->setAngularVelocity(btVector3(angVel));
+  }
+}
+
+Magnum::Vector3 BulletRigidObject::getLinearVelocity() const {
+  return Magnum::Vector3{bObjectRigidBody_->getLinearVelocity()};
+}
+
+Magnum::Vector3 BulletRigidObject::getAngularVelocity() const {
+  return Magnum::Vector3{bObjectRigidBody_->getAngularVelocity()};
 }
 
 void BulletRigidObject::applyImpulse(const Magnum::Vector3& impulse,
@@ -400,7 +418,8 @@ void BulletRigidObject::syncPose() {
     return;
   } else if (rigidObjectType_ == RigidObjectType::OBJECT) {
     //! For syncing objects
-    bObjectRigidBody_->setWorldTransform(btTransform(transformationMatrix()));
+    bObjectRigidBody_->setWorldTransform(
+        btTransform(node().transformationMatrix()));
   }
 }
 

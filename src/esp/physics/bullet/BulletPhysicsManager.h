@@ -117,14 +117,15 @@ class BulletPhysicsManager : public PhysicsManager {
   void setMargin(const int physObjectID, const double margin);
 
   /** @brief Set the friction coefficient of the scene collision geometry. See
-   * @ref sceneNode_. See @ref BulletRigidObject::setFrictionCoefficient.
+   * @ref staticSceneObject_. See @ref
+   * BulletRigidObject::setFrictionCoefficient.
    * @param frictionCoefficient The scalar friction coefficient of the scene
    * geometry.
    */
   void setSceneFrictionCoefficient(const double frictionCoefficient);
 
   /** @brief Set the coefficient of restitution for the scene collision
-   * geometry. See @ref sceneNode_. See @ref
+   * geometry. See @ref staticSceneObject_. See @ref
    * BulletRigidObject::setRestitutionCoefficient.
    * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
@@ -142,7 +143,7 @@ class BulletPhysicsManager : public PhysicsManager {
   double getMargin(const int physObjectID) const;
 
   /** @brief Get the current friction coefficient of the scene collision
-   * geometry. See @ref sceneNode_ and @ref
+   * geometry. See @ref staticSceneObject_ and @ref
    * BulletRigidObject::getFrictionCoefficient.
    * @return The scalar friction coefficient of the scene geometry.
    */
@@ -150,7 +151,7 @@ class BulletPhysicsManager : public PhysicsManager {
 
   /** @brief Get the current coefficient of restitution for the scene collision
    * geometry. This determines the ratio of initial to final relative velocity
-   * between the scene and collidiing object. See @ref sceneNode_ and
+   * between the scene and collidiing object. See @ref staticSceneObject_ and
    * BulletRigidObject::getRestitutionCoefficient.
    * @return The scalar coefficient of restitution for the scene geometry.
    */

@@ -169,10 +169,11 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    *  @param physObjectID The ID (key) of the object instance in @ref
    * PhysicsManager::existingObjects_.
-   *  @return the removed object's ID previously mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   * @param deleteSceneNode If true, deletes the object's scene node. Otherwise
+   * detaches the object from simulation.
    */
-  virtual int removeObject(const int physObjectID);
+  virtual void removeObject(const int physObjectID,
+                            bool deleteSceneNode = true);
 
   /** @brief Get the number of objects mapped in @ref
    * PhysicsManager::existingObjects_.
@@ -257,13 +258,13 @@ class PhysicsManager {
   // =========== Scene Getter/Setter functions ===========
 
   /** @brief Get the current friction coefficient of the scene collision
-   * geometry. See @ref sceneNode_.
+   * geometry. See @ref staticSceneObject_.
    * @return The scalar friction coefficient of the scene geometry.
    */
   virtual double getSceneFrictionCoefficient() const { return 0.0; };
 
   /** @brief Set the friction coefficient of the scene collision geometry. See
-   * @ref sceneNode_.
+   * @ref staticSceneObject_.
    * @param frictionCoefficient The scalar friction coefficient of the scene
    * geometry.
    */
@@ -272,15 +273,15 @@ class PhysicsManager {
 
   /** @brief Get the current coefficient of restitution for the scene collision
    * geometry. This determines the ratio of initial to final relative velocity
-   * between the scene and collidiing object. See @ref sceneNode_. By default
-   * this will always return 0, since kinametic scenes have no dynamics.
+   * between the scene and collidiing object. See @ref staticSceneObject_. By
+   * default this will always return 0, since kinametic scenes have no dynamics.
    * @return The scalar coefficient of restitution for the scene geometry.
    */
   virtual double getSceneRestitutionCoefficient() const { return 0.0; };
 
   /** @brief Set the coefficient of restitution for the scene collision
-   * geometry. See @ref sceneNode_. By default does nothing since kinametic
-   * scenes have no dynamics.
+   * geometry. See @ref staticSceneObject_. By default does nothing since
+   * kinametic scenes have no dynamics.
    * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
   virtual void setSceneRestitutionCoefficient(
@@ -679,6 +680,52 @@ class PhysicsManager {
   void applyImpulseTorque(const int physObjectID,
                           const Magnum::Vector3& impulse);
 
+  /**
+   * @brief Set linear velocity for an object with @ref MotionType::DYNAMIC.
+   *
+   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param linVel Linear velocity to set.
+   */
+  void setLinearVelocity(const int physObjectID, const Magnum::Vector3& linVel);
+
+  /**
+   * @brief Set angular velocity for an object with @ref MotionType::DYNAMIC.
+   *
+   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param angVel Angular velocity vector corresponding to world unit axis
+   * angles.
+   */
+  void setAngularVelocity(const int physObjectID,
+                          const Magnum::Vector3& angVel);
+
+  /**
+   * @brief Get linear velocity of an object with @ref MotionType::DYNAMIC.
+   *
+   * Always zero for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Linear velocity of the object.
+   */
+  Magnum::Vector3 getLinearVelocity(const int physObjectID) const;
+
+  /**
+   * @brief Get angular velocity of an object with @ref MotionType::DYNAMIC.
+   *
+   * Always zero for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Angular velocity vector corresponding to world unit axis angles.
+   */
+  Magnum::Vector3 getAngularVelocity(const int physObjectID) const;
+
   /** @brief Set bounding box rendering for the object true or false.
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
@@ -789,24 +836,20 @@ class PhysicsManager {
 
   /**
    * @brief The @ref scene::SceneNode which represents the static collision
-   * geometry of the physical world. Only one @ref sceneNode_ may exist in a
-   * physical world. This @ref RigidObject can only have @ref MotionType::STATIC
-   * as it is loaded as static geometry with simulation efficiency in mind. See
+   * geometry of the physical world. Only one @ref staticSceneObject_ may exist
+   * in a physical world. This @ref RigidObject can only have @ref
+   * MotionType::STATIC as it is loaded as static geometry with simulation
+   * efficiency in mind. See
    * @ref addScene.
    * */
-  physics::RigidObject* sceneNode_ = nullptr;
+  physics::RigidObject::uptr staticSceneObject_ = nullptr;
 
   //! ==== Rigid object memory management ====
 
   /** @brief Maps object IDs to all existing physical object instances in the
    * world.
-   * @ref PhysicsManager does not own a @ref RigidObject.
-   * The @ref scene::SceneGraph has complete ownership over all @ref
-   * scene::SceneNode objects.
-   * As such, this structure should be cleared before the @ref scene::SceneGraph
-   * owning the objects or this structure will likely contain null object
-   * pointers. */
-  std::map<int, physics::RigidObject*> existingObjects_;
+   */
+  std::map<int, physics::RigidObject::uptr> existingObjects_;
 
   /** @brief A counter of unique object ID's allocated thus far. Used to
    * allocate new IDs when  @ref recycledObjectIDs_ is empty without needing to

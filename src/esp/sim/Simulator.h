@@ -115,10 +115,8 @@ class Simulator {
    * esp::physics::PhysicsManager::existingObjects_.
    * @param sceneID !! Not used currently !! Specifies which physical scene to
    * remove the object from.
-   * @return The deallocated object ID previously idnetifying the removed object
-   * or @ref esp::ID_UNDEFINED if failed.
    */
-  int removeObject(const int objectID, const int sceneID = 0);
+  void removeObject(const int objectID, const int sceneID = 0);
 
   /**
    * @brief Get the IDs of the physics objects instanced in a physical scene.
