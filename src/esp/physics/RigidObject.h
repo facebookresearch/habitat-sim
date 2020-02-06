@@ -219,6 +219,49 @@ class RigidObject : public scene::SceneNode {
   virtual void applyImpulseTorque(const Magnum::Vector3& impulse);
 
   /**
+   * @brief Virtual linear velocity setter for an object.
+   *
+   * Does nothing for default @ref MotionType::KINEMATIC or @ref
+   * MotionType::STATIC objects.
+   * @param linVel Linear velocity to set.
+   */
+  virtual void setLinearVelocity(
+      CORRADE_UNUSED const Magnum::Vector3& linVel){};
+
+  /**
+   * @brief Virtual angular velocity setter for an object.
+   *
+   * Does nothing for default @ref MotionType::KINEMATIC or @ref
+   * MotionType::STATIC objects.
+   * @param angVel Angular velocity vector corresponding to world unit axis
+   * angles.
+   */
+  virtual void setAngularVelocity(
+      CORRADE_UNUSED const Magnum::Vector3& angVel){};
+
+  /**
+   * @brief Virtual linear velocity getter for an object.
+   *
+   * Returns zero for default @ref MotionType::KINEMATIC or @ref
+   * MotionType::STATIC objects.
+   * @return Linear velocity of the object.
+   */
+  virtual Magnum::Vector3 getLinearVelocity() const {
+    return Magnum::Vector3();
+  };
+
+  /**
+   * @brief Virtual angular velocity getter for an object.
+   *
+   * Returns zero for default @ref MotionType::KINEMATIC or @ref
+   * MotionType::STATIC objects.
+   * @return Angular velocity vector corresponding to world unit axis angles.
+   */
+  virtual Magnum::Vector3 getAngularVelocity() const {
+    return Magnum::Vector3();
+  };
+
+  /**
    * @brief Remove the object from any connected physics simulator implemented
    * by a derived @ref PhysicsManager. Does nothing for default @ref
    * PhysicsManager.
