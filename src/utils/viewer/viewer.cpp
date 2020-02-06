@@ -192,6 +192,9 @@ Viewer::Viewer(const Arguments& arguments)
     }
   }
 
+  resourceManager_.setLightSetup(assets::ResourceManager::DEFAULT_LIGHTING_KEY,
+                                 gfx::getLightsAtSceneCorners(*sceneGraph_));
+
   // Set up camera
   renderCamera_ = &sceneGraph_->getDefaultRenderCamera();
   agentBodyNode_ = &rootNode_->createChild();

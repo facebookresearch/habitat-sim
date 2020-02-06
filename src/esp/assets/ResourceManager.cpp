@@ -66,6 +66,16 @@ namespace Mn = Magnum;
 namespace esp {
 namespace assets {
 
+// static constexpr arrays require redundant definitions until C++17
+constexpr char ResourceManager::NO_LIGHT_KEY[];
+constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
+constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
+
+ResourceManager::ResourceManager() {
+  initDefaultLightSetups();
+  initDefaultMaterials();
+}
+
 bool ResourceManager::loadScene(const AssetInfo& info,
                                 scene::SceneNode* parent, /* = nullptr */
                                 DrawableGroup* drawables /* = nullptr */) {
@@ -91,10 +101,11 @@ bool ResourceManager::loadScene(const AssetInfo& info,
       } else if (info.type == AssetType::SUNCG_SCENE) {
         meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
       } else if (info.type == AssetType::MP3D_MESH) {
-        meshSuccess = loadGeneralMeshData(info, parent, drawables);
+        // for now, force scenes to be flat shaded
+        meshSuccess = loadGeneralMeshData(info, parent, drawables, true);
       } else {
         // Unknown type, just load general mesh data
-        meshSuccess = loadGeneralMeshData(info, parent, drawables);
+        meshSuccess = loadGeneralMeshData(info, parent, drawables, true);
       }
       // add a scene attributes for this filename or modify the existing one
       if (meshSuccess) {
@@ -427,7 +438,9 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
         physicsObjectAttributes.getMagnumVec3("scale");
     scalingNode.setScaling(objectScaling);
 
-    addComponent(meshMetaData, scalingNode, drawables, meshMetaData.root);
+    // TODO: make lighting selection configurable
+    addComponent(meshMetaData, scalingNode, DEFAULT_LIGHTING_KEY, drawables,
+                 meshMetaData.root);
     // compute the full BB hierarchy for the new tree.
     parent->computeCumulativeBB();
   }
@@ -851,50 +864,6 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
   meshDataGL->BB = meshDataGL->BB.translated(translation);
 }
 
-Magnum::GL::AbstractShaderProgram* ResourceManager::getShaderProgram(
-    ShaderType type) {
-  if (shaderPrograms_.count(type) == 0) {
-    switch (type) {
-      case INSTANCE_MESH_SHADER: {
-        shaderPrograms_[INSTANCE_MESH_SHADER] =
-            std::make_shared<gfx::PrimitiveIDShader>();
-      } break;
-
-#ifdef ESP_BUILD_PTEX_SUPPORT
-      case PTEX_MESH_SHADER: {
-        shaderPrograms_[PTEX_MESH_SHADER] =
-            std::make_shared<gfx::PTexMeshShader>();
-      } break;
-#endif
-
-      case COLORED_SHADER: {
-        shaderPrograms_[COLORED_SHADER] =
-            std::make_shared<Magnum::Shaders::Flat3D>(
-                Magnum::Shaders::Flat3D::Flag::ObjectId);
-      } break;
-
-      case VERTEX_COLORED_SHADER: {
-        shaderPrograms_[VERTEX_COLORED_SHADER] =
-            std::make_shared<Magnum::Shaders::Flat3D>(
-                Magnum::Shaders::Flat3D::Flag::ObjectId |
-                Magnum::Shaders::Flat3D::Flag::VertexColor);
-      } break;
-
-      case TEXTURED_SHADER: {
-        shaderPrograms_[TEXTURED_SHADER] =
-            std::make_shared<Magnum::Shaders::Flat3D>(
-                Magnum::Shaders::Flat3D::Flag::ObjectId |
-                Magnum::Shaders::Flat3D::Flag::Textured);
-      } break;
-
-      default:
-        return nullptr;
-        break;
-    }
-  }
-  return shaderPrograms_[type].get();
-}
-
 bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
                                        scene::SceneNode* parent,
                                        DrawableGroup* drawables) {
@@ -924,9 +893,6 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 
   // create the scene graph by request
   if (parent) {
-    auto* ptexShader =
-        dynamic_cast<gfx::PTexMeshShader*>(getShaderProgram(PTEX_MESH_SHADER));
-
     auto indexPair = resourceDict_.at(filename).meshIndex;
     int start = indexPair.first;
     int end = indexPair.second;
@@ -941,9 +907,8 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
         const quatf transform = info.frame.rotationFrameToWorld();
         node.setRotation(Magnum::Quaternion(transform));
 
-        // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
-        new gfx::PTexMeshDrawable{node, *ptexShader, *pTexMeshData, jSubmesh,
-                                  drawables};
+        node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
+                                               shaderManager_, drawables);
 
         if (computeAbsoluteAABBs_) {
           staticDrawableInfo_.emplace_back(
@@ -996,8 +961,8 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
       auto* instanceMeshData =
           dynamic_cast<GenericInstanceMeshData*>(meshes_[iMesh].get());
       scene::SceneNode& node = parent->createChild();
-      createDrawable(INSTANCE_MESH_SHADER, *instanceMeshData->getMagnumGLMesh(),
-                     node, drawables);
+      node.addFeature<gfx::PrimitiveIDDrawable>(
+          *instanceMeshData->getMagnumGLMesh(), shaderManager_, drawables);
     }
   }
 
@@ -1007,7 +972,8 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
 bool ResourceManager::loadGeneralMeshData(
     const AssetInfo& info,
     scene::SceneNode* parent /* = nullptr */,
-    DrawableGroup* drawables /* = nullptr */) {
+    DrawableGroup* drawables /* = nullptr */,
+    bool forceFlatShading /* = false */) {
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
   const bool drawData = parent != nullptr && drawables != nullptr;
@@ -1112,7 +1078,7 @@ bool ResourceManager::loadGeneralMeshData(
     }
     // if this is a new file, load it and add it to the dictionary
     loadTextures(*importer, &metaData);
-    loadMaterials(*importer, &metaData);
+    loadMaterials(*importer, &metaData, forceFlatShading);
     loadMeshes(*importer, &metaData);
     resourceDict_.emplace(filename, metaData);
 
@@ -1170,21 +1136,23 @@ bool ResourceManager::loadGeneralMeshData(
       }
     }  // forceReload
 
-    addComponent(metaData, newNode, drawables, metaData.root);
+    // TODO: make this configurable
+    Mn::ResourceKey lightSetup{forceFlatShading ? NO_LIGHT_KEY
+                                                : DEFAULT_LIGHTING_KEY};
+    addComponent(metaData, newNode, lightSetup, drawables, metaData.root);
     return true;
   }
 }
 
 void ResourceManager::loadMaterials(Importer& importer,
-                                    MeshMetaData* metaData) {
-  int materialStart = materials_.size();
+                                    MeshMetaData* metaData,
+                                    bool forceFlatShading) {
+  int materialStart = nextMaterialID_;
   int materialEnd = materialStart + importer.materialCount() - 1;
   metaData->setMaterialIndices(materialStart, materialEnd);
 
   for (int iMaterial = 0; iMaterial < importer.materialCount(); ++iMaterial) {
-    // default null material
-    materials_.emplace_back(nullptr);
-    auto& currentMaterial = materials_.back();
+    int currentMaterialID = nextMaterialID_++;
 
     // TODO:
     // it seems we have a way to just load the material once in this case,
@@ -1197,12 +1165,86 @@ void ResourceManager::loadMaterials(Importer& importer,
       continue;
     }
 
-    // using make_unique will not work here
-    std::unique_ptr<Magnum::Trade::PhongMaterialData> phongMaterialData(
-        static_cast<Magnum::Trade::PhongMaterialData*>(materialData.release()));
-
-    currentMaterial = std::move(phongMaterialData);
+    const auto& phongMaterialData =
+        static_cast<Mn::Trade::PhongMaterialData&>(*materialData);
+    std::unique_ptr<gfx::MaterialData> finalMaterial;
+    if (forceFlatShading) {
+      finalMaterial = getFlatShadedMaterialData(phongMaterialData,
+                                                metaData->textureIndex.first);
+    } else {
+      finalMaterial = getPhongShadedMaterialData(phongMaterialData,
+                                                 metaData->textureIndex.first);
+    }
+    // for now, just use unique ID for material key. This may change if we
+    // expose materials to user for post-load modification
+    shaderManager_.set(std::to_string(currentMaterialID),
+                       finalMaterial.release());
   }
+}
+
+gfx::PhongMaterialData::uptr ResourceManager::getFlatShadedMaterialData(
+    const Mn::Trade::PhongMaterialData& material,
+    int textureBaseIndex) {
+  // NOLINTNEXTLINE(google-build-using-namespace)
+  using namespace Mn::Math::Literals;
+
+  auto finalMaterial = gfx::PhongMaterialData::create_unique();
+  finalMaterial->ambientColor = 0xffffffff_rgbaf;
+  finalMaterial->diffuseColor = 0x00000000_rgbaf;
+  finalMaterial->specularColor = 0x00000000_rgbaf;
+
+  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::AmbientTexture) {
+    finalMaterial->ambientTexture =
+        textures_[textureBaseIndex + material.ambientTexture()].get();
+  } else if (material.flags() &
+             Mn::Trade::PhongMaterialData::Flag::DiffuseTexture) {
+    // if we want to force flat shading, but we don't have ambient texture,
+    // check for diffuse texture and use that instead
+    finalMaterial->ambientTexture =
+        textures_[textureBaseIndex + material.diffuseTexture()].get();
+  } else {
+    finalMaterial->ambientColor = material.ambientColor();
+  }
+  return finalMaterial;
+}
+
+gfx::PhongMaterialData::uptr ResourceManager::getPhongShadedMaterialData(
+    const Mn::Trade::PhongMaterialData& material,
+    int textureBaseIndex) {
+  // NOLINTNEXTLINE(google-build-using-namespace)
+  using namespace Mn::Math::Literals;
+
+  auto finalMaterial = gfx::PhongMaterialData::create_unique();
+  // TODO: figure out why materials are being loaded with shininess == 1
+  finalMaterial->shininess = std::max(material.shininess(), 80.f);
+
+  // ambient material properties
+  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::AmbientTexture) {
+    finalMaterial->ambientTexture =
+        textures_[textureBaseIndex + material.ambientTexture()].get();
+    finalMaterial->ambientColor = 0xffffffff_rgbaf;
+  } else {
+    finalMaterial->ambientColor = material.ambientColor();
+  }
+
+  // diffuse material properties
+  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::DiffuseTexture) {
+    finalMaterial->diffuseTexture =
+        textures_[textureBaseIndex + material.diffuseTexture()].get();
+    finalMaterial->diffuseColor = 0xffffffff_rgbaf;
+  } else {
+    finalMaterial->diffuseColor = material.diffuseColor();
+  }
+
+  // specular material properties
+  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::SpecularTexture) {
+    finalMaterial->specularTexture =
+        textures_[textureBaseIndex + material.specularTexture()].get();
+    finalMaterial->specularColor = 0xffffffff_rgbaf;
+  } else {
+    finalMaterial->specularColor = material.specularColor();
+  }
+  return finalMaterial;
 }
 
 void ResourceManager::loadMeshes(Importer& importer, MeshMetaData* metaData) {
@@ -1325,6 +1367,7 @@ void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
 //! instantiated any time after initial loading
 void ResourceManager::addComponent(const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
+                                   const Mn::ResourceKey& lightSetup,
                                    DrawableGroup* drawables,
                                    const MeshTransformNode& meshTransformNode) {
   // Add the object to the scene and set its transformation
@@ -1337,8 +1380,9 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
   // Add a drawable if the object has a mesh and the mesh is loaded
   if (meshIDLocal != ID_UNDEFINED) {
     const int materialIDLocal = meshTransformNode.materialIDLocal;
-    addMeshToDrawables(metaData, node, drawables, meshTransformNode.componentID,
-                       meshIDLocal, materialIDLocal);
+    addMeshToDrawables(metaData, node, lightSetup, drawables,
+                       meshTransformNode.componentID, meshIDLocal,
+                       materialIDLocal);
 
     // compute the bounding box for the mesh we are adding
     const int meshID = metaData.meshIndex.first + meshIDLocal;
@@ -1348,12 +1392,13 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
 
   // Recursively add children
   for (auto& child : meshTransformNode.children) {
-    addComponent(metaData, node, drawables, child);
+    addComponent(metaData, node, lightSetup, drawables, child);
   }
 }
 
 void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                                          scene::SceneNode& node,
+                                         const Mn::ResourceKey& lightSetup,
                                          DrawableGroup* drawables,
                                          int objectID,
                                          int meshIDLocal,
@@ -1362,39 +1407,17 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
   const uint32_t meshID = meshStart + meshIDLocal;
   Magnum::GL::Mesh& mesh = *meshes_[meshID]->getMagnumGLMesh();
 
-  const int materialStart = metaData.materialIndex.first;
-  const int materialID = materialStart + materialIDLocal;
-
-  Magnum::GL::Texture2D* texture = nullptr;
-  // Material not set / not available / not loaded, use a default material
+  Mn::ResourceKey materialKey;
   if (materialIDLocal == ID_UNDEFINED ||
-      metaData.materialIndex.second == ID_UNDEFINED ||
-      !materials_[materialID]) {
-    createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID);
+      metaData.materialIndex.second == ID_UNDEFINED) {
+    materialKey = DEFAULT_MATERIAL_KEY;
   } else {
-    if (materials_[materialID]->flags() &
-        Magnum::Trade::PhongMaterialData::Flag::DiffuseTexture) {
-      // Textured material. If the texture failed to load, again just use
-      // a default colored material.
-      const int textureStart = metaData.textureIndex.first;
-      const int textureIndex = materials_[materialID]->diffuseTexture();
-      texture = textures_[textureStart + textureIndex].get();
-      if (texture) {
-        createDrawable(TEXTURED_SHADER, mesh, node, drawables, texture,
-                       objectID);
-      } else {
-        // Color-only material
-        createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID,
-                       materials_[materialID]->diffuseColor());
-      }
-    } else {
-      // TODO: some types (such as .ply with vertex color) get binned here
-      // incorrectly.
-      // Color-only material
-      createDrawable(COLORED_SHADER, mesh, node, drawables, texture, objectID,
-                     materials_[materialID]->diffuseColor());
-    }
-  }  // else
+    materialKey =
+        std::to_string(metaData.materialIndex.first + materialIDLocal);
+  }
+
+  createGenericDrawable(mesh, node, lightSetup, materialKey, drawables,
+                        objectID);
 
   if (computeAbsoluteAABBs_) {
     staticDrawableInfo_.emplace_back(StaticDrawableInfo{node, meshID});
@@ -1405,31 +1428,30 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
                                               DrawableGroup* drawables) {
   CHECK(primitiveID >= 0 && primitiveID < primitive_meshes_.size());
-  createDrawable(ShaderType::COLORED_SHADER, primitive_meshes_[primitiveID],
-                 node, drawables);
+  createGenericDrawable(primitive_meshes_[primitiveID], node,
+                        DEFAULT_LIGHTING_KEY, DEFAULT_MATERIAL_KEY, drawables);
 }
 
-void ResourceManager::createDrawable(
-    const ShaderType shaderType,
-    Magnum::GL::Mesh& mesh,
+void ResourceManager::setLightSetup(const Mn::ResourceKey& key,
+                                    gfx::LightSetup setup) {
+  shaderManager_.set(key, std::move(setup), Mn::ResourceDataState::Mutable,
+                     Mn::ResourcePolicy::Manual);
+}
+
+Mn::Resource<gfx::LightSetup> ResourceManager::getLightSetup(
+    const Mn::ResourceKey& key) {
+  return shaderManager_.get<gfx::LightSetup>(key);
+}
+
+void ResourceManager::createGenericDrawable(
+    Mn::GL::Mesh& mesh,
     scene::SceneNode& node,
+    const Mn::ResourceKey& lightSetup,
+    const Mn::ResourceKey& material,
     DrawableGroup* group /* = nullptr */,
-    Magnum::GL::Texture2D* texture /* = nullptr */,
-    int objectId /* = ID_UNDEFINED */,
-    const Magnum::Color4& color /* = Magnum::Color4{1} */) {
-  if (shaderType == PTEX_MESH_SHADER) {
-    LOG(FATAL) << "ResourceManager::createDrawable does not support "
-                  "PTEX_MESH_SHADER";
-  } else if (shaderType == INSTANCE_MESH_SHADER) {
-    auto* shader =
-        static_cast<gfx::PrimitiveIDShader*>(getShaderProgram(shaderType));
-    node.addFeature<gfx::PrimitiveIDDrawable>(*shader, mesh, group);
-  } else {  // all other shaders use GenericShader
-    auto* shader =
-        static_cast<Magnum::Shaders::Flat3D*>(getShaderProgram(shaderType));
-    node.addFeature<gfx::GenericDrawable>(*shader, mesh, group, texture,
-                                          objectId, color);
-  }
+    int objectId /* = ID_UNDEFINED */) {
+  node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetup,
+                                        material, group, objectId);
 }
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
@@ -1469,7 +1491,7 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
         nodeIds.push_back(id);
         objectNode.setId(nodeIndex);
         if (info.type == AssetType::SUNCG_OBJECT) {
-          loadGeneralMeshData(info, &objectNode, drawables);
+          loadGeneralMeshData(info, &objectNode, drawables, true);
         }
         return objectNode;
       };
@@ -1518,6 +1540,17 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
     }
   }
   return true;
+}
+
+void ResourceManager::initDefaultLightSetups() {
+  shaderManager_.set(NO_LIGHT_KEY, gfx::LightSetup{});
+  shaderManager_.setFallback(gfx::LightSetup{});
+}
+
+void ResourceManager::initDefaultMaterials() {
+  shaderManager_.set<gfx::MaterialData>(DEFAULT_MATERIAL_KEY,
+                                        new gfx::PhongMaterialData{});
+  shaderManager_.setFallback<gfx::MaterialData>(new gfx::PhongMaterialData{});
 }
 
 //! recursively join all sub-components of a mesh into a single unified

@@ -108,6 +108,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       throw std::invalid_argument("Cannot load: " + sceneFilename);
     }
 
+    gfx::LightSetup sceneCorners = gfx::getLightsAtSceneCorners(sceneGraph);
+    resourceManager_.setLightSetup(
+        assets::ResourceManager::DEFAULT_LIGHTING_KEY, std::move(sceneCorners));
+
     if (io::exists(houseFilename)) {
       LOG(INFO) << "Loading house from " << houseFilename;
       // if semantic mesh exists, load it as well
