@@ -40,15 +40,15 @@ class ImageExtractor:
         output=["rgb"],
         sim=None,
         shuffle=True,
-        split=(70, 30)
+        split=(70, 30),
     ):
         if sum(split) != 100:
-            raise Exception('Train/test split must sum to 100.')
+            raise Exception("Train/test split must sum to 100.")
 
         self.scene_filepath = scene_filepath
         self.labels = set(labels)
         self.cfg = self._config_sim(self.scene_filepath, img_size)
- 
+
         if sim is None:
             sim = habitat_sim.Simulator(self.cfg)
         else:
@@ -71,12 +71,12 @@ class ImageExtractor:
             np.random.shuffle(self.poses)
 
         self.train, self.test = self._handle_split(split, self.poses)
-        self.mode = 'full'
+        self.mode = "full"
         self.mode_to_data = {
-            'full': self.poses,
-            'train': self.train,
-            'test': self.test,
-            None: self.poses
+            "full": self.poses,
+            "train": self.train,
+            "test": self.test,
+            None: self.poses,
         }
 
         self.label_map = {0.0: "unnavigable", 1.0: "navigable"}
@@ -129,9 +129,11 @@ class ImageExtractor:
 
     def set_mode(self, mode):
         mymode = mode.lower()
-        if mymode not in ['full', 'train', 'test']:
-            raise Exception(f'Mode {mode} is not a valid mode for ImageExtractor. Please enter "full, train, or test"')
-        
+        if mymode not in ["full", "train", "test"]:
+            raise Exception(
+                f'Mode {mode} is not a valid mode for ImageExtractor. Please enter "full, train, or test"'
+            )
+
         self.mode = mymode
 
     def _handle_split(self, split, poses):
