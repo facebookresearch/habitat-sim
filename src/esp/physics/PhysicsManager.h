@@ -680,6 +680,52 @@ class PhysicsManager {
   void applyImpulseTorque(const int physObjectID,
                           const Magnum::Vector3& impulse);
 
+  /**
+   * @brief Set linear velocity for an object with @ref MotionType::DYNAMIC.
+   *
+   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param linVel Linear velocity to set.
+   */
+  void setLinearVelocity(const int physObjectID, const Magnum::Vector3& linVel);
+
+  /**
+   * @brief Set angular velocity for an object with @ref MotionType::DYNAMIC.
+   *
+   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param angVel Angular velocity vector corresponding to world unit axis
+   * angles.
+   */
+  void setAngularVelocity(const int physObjectID,
+                          const Magnum::Vector3& angVel);
+
+  /**
+   * @brief Get linear velocity of an object with @ref MotionType::DYNAMIC.
+   *
+   * Always zero for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Linear velocity of the object.
+   */
+  Magnum::Vector3 getLinearVelocity(const int physObjectID) const;
+
+  /**
+   * @brief Get angular velocity of an object with @ref MotionType::DYNAMIC.
+   *
+   * Always zero for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Angular velocity vector corresponding to world unit axis angles.
+   */
+  Magnum::Vector3 getAngularVelocity(const int physObjectID) const;
+
   /** @brief Set bounding box rendering for the object true or false.
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
