@@ -10,7 +10,7 @@
 #include <gtest/gtest.h>
 #include <string>
 
-#include "esp/sim/SimulatorWithAgents.h"
+#include "esp/sim/Simulator.h"
 
 #include "configure.h"
 
@@ -25,8 +25,8 @@ using esp::sensor::ObservationSpace;
 using esp::sensor::ObservationSpaceType;
 using esp::sensor::SensorSpec;
 using esp::sensor::SensorType;
+using esp::sim::Simulator;
 using esp::sim::SimulatorConfiguration;
-using esp::sim::SimulatorWithAgents;
 
 const std::string vangogh =
     Cr::Utility::Directory::join(SCENE_DATASETS,
@@ -53,7 +53,7 @@ bool pixelEqualWithChannelTolerance(const Mn::Color4ub& lhs,
 TEST(SimTest, Basic) {
   SimulatorConfiguration cfg;
   cfg.scene.id = vangogh;
-  SimulatorWithAgents simulator(cfg);
+  Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
   ASSERT_NE(pathfinder, nullptr);
 }
@@ -61,7 +61,7 @@ TEST(SimTest, Basic) {
 TEST(SimTest, Reconfigure) {
   SimulatorConfiguration cfg;
   cfg.scene.id = vangogh;
-  SimulatorWithAgents simulator(cfg);
+  Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
   simulator.reconfigure(cfg);
   ASSERT_EQ(pathfinder, simulator.getPathFinder());
@@ -74,7 +74,7 @@ TEST(SimTest, Reconfigure) {
 TEST(SimTest, Reset) {
   SimulatorConfiguration cfg;
   cfg.scene.id = vangogh;
-  SimulatorWithAgents simulator(cfg);
+  Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
   simulator.reset();
   ASSERT_EQ(pathfinder, simulator.getPathFinder());
@@ -91,7 +91,7 @@ TEST(SimTest, GetPinholeCameraRGBAObservation) {
   pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
   pinholeCameraSpec->resolution = {100, 100};
 
-  SimulatorWithAgents simulator(simConfig);
+  Simulator simulator(simConfig);
   AgentConfiguration agentConfig{};
   agentConfig.sensorSpecifications = {pinholeCameraSpec};
   simulator.addAgent(agentConfig);
