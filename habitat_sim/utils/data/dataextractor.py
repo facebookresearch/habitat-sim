@@ -11,6 +11,23 @@ import habitat_sim.bindings as hsim
 from examples.settings import make_cfg
 from habitat_sim.agent import AgentState
 from habitat_sim.utils.common import quat_from_two_vectors
+from habitat_sim.utils.filesystem import search_dir_tree_for_ext
+
+
+def make_config_default_settings(scene_filepath, img_size):
+    sim_settings = {
+        "width": img_size[1],  # Spatial resolution of the observations
+        "height": img_size[0],
+        "scene": scene_filepath,  # Scene path
+        "default_agent": 0,
+        "sensor_height": 1.5,  # Height of sensors in meters
+        "color_sensor": True,  # RGB sensor
+        "semantic_sensor": True,  # Semantic sensor
+        "depth_sensor": True,  # Depth sensor
+        "silent": True,
+    }
+
+    return make_cfg(sim_settings)
 
 
 class ImageExtractor:
@@ -34,7 +51,7 @@ class ImageExtractor:
 
     def __init__(
         self,
-        scene_filepath,
+        filepath,
         labels=[0.0],
         img_size=(512, 512),
         output=["rgb"],
@@ -45,28 +62,40 @@ class ImageExtractor:
         if sum(split) != 100:
             raise Exception("Train/test split must sum to 100.")
 
-        self.scene_filepath = scene_filepath
+        self.scene_filepaths = None
+        self.cur_fp = None
+        if os.path.isdir(filepath):
+            self.scene_filepaths = search_dir_tree_for_ext(filepath, ".glb")
+        else:
+            self.scene_filepaths = [filepath]
+            self.cur_fp = filepath
+
         self.labels = set(labels)
-        self.cfg = self._config_sim(self.scene_filepath, img_size)
+        self.img_size = img_size
+        self.cfg = make_config_default_settings(self.scene_filepaths[0], self.img_size)
 
         if sim is None:
             sim = habitat_sim.Simulator(self.cfg)
         else:
             # If a sim is provided we have to make a new cfg
-            self.cfg = self._config_sim(sim.config.sim_cfg.scene.id, img_size)
+            self.cfg = config_sim(sim.config.sim_cfg.scene.id, img_size)
             sim.reconfigure(self.cfg)
 
         self.sim = sim
         self.res = 0.1
-        self.tdv = TopdownView(self.sim, self.res)
-        self.topdown_view = self.tdv.topdown_view
+        self.tdv_fp_ref_triples = self.precomute_tdv_and_refs(
+            self.sim, self.scene_filepaths, self.res
+        )
 
+        # self.tdv = TopdownView(self.sim, self.res)
+        # self.topdown_view = self.tdv.topdown_view
         self.pose_extractor = PoseExtractor(
-            self.topdown_view, self.sim.pathfinder, self.res
+            self.tdv_fp_ref_triples, self.sim, self.res
         )
         self.poses = self.pose_extractor.extract_poses(
             labels=self.labels
         )  # list of poses
+
         if shuffle:
             np.random.shuffle(self.poses)
 
@@ -108,8 +137,13 @@ class ImageExtractor:
 
         mymode = self.mode.lower()
         poses = self.mode_to_data[mymode]
+        pos, rot, label, fp = poses[idx]
 
-        pos, rot, label = poses[idx]
+        # Only switch scene if it is different from the last one accessed
+        if fp != self.cur_fp:
+            self.sim.reconfigure(make_config_default_settings(fp, self.img_size))
+            self.cur_fp = fp
+
         new_state = AgentState()
         new_state.position = pos
         new_state.rotation = rot
@@ -122,6 +156,17 @@ class ImageExtractor:
         sample["label"] = self.label_map[label]
 
         return sample
+
+    def precomute_tdv_and_refs(self, sim, scene_filepaths, res):
+        tdv_fp_ref = []
+        for filepath in scene_filepaths:
+            cfg = make_config_default_settings(filepath, self.img_size)
+            sim.reconfigure(cfg)
+            ref_point = self._get_pathfinder_reference_point(sim.pathfinder)
+            tdv = TopdownView(sim, ref_point[1], res=res)
+            tdv_fp_ref.append((tdv, filepath, ref_point))
+        
+        return tdv_fp_ref
 
     def close(self):
         self.sim.close()
@@ -144,25 +189,19 @@ class ImageExtractor:
         test_poses = poses[last_train_idx:]
         return train_poses, test_poses
 
-    def _config_sim(self, scene_filepath, img_size):
-        sim_settings = {
-            "width": img_size[1],  # Spatial resolution of the observations
-            "height": img_size[0],
-            "scene": scene_filepath,  # Scene path
-            "default_agent": 0,
-            "sensor_height": 1.5,  # Height of sensors in meters
-            "color_sensor": True,  # RGB sensor
-            "semantic_sensor": True,  # Semantic sensor
-            "depth_sensor": True,  # Depth sensor
-            "silent": True,
-        }
-
-        return make_cfg(sim_settings)
+    def _get_pathfinder_reference_point(self, pf):
+        bound1, bound2 = pf.get_bounds()
+        startw = min(bound1[0], bound2[0])
+        starth = min(bound1[2], bound2[2])
+        starty = pf.get_random_navigable_point()[
+            1
+        ]  # Can't think of a better way to get a valid y-axis value
+        return (startw, starty, starth)  # width, y, height
 
 
 class TopdownView(object):
-    def __init__(self, sim, res=0.1):
-        self.topdown_view = np.array(sim.pathfinder.get_topdown_view(res)).astype(
+    def __init__(self, sim, y_axis_val, res=0.1):
+        self.topdown_view = np.array(sim.pathfinder.get_topdown_view(res, y_axis_val)).astype(
             np.float64
         )
 
@@ -177,66 +216,70 @@ class PoseExtractor(object):
     :property dist: distance between each camera position
     """
 
-    def __init__(self, topdown_view, pathfinder, res=0.1):
-        self.topdown_view = topdown_view
-        self.pathfinder = pathfinder
+    def __init__(self, topdown_views, sim, res=0.1):
+        self.tdv_fp_ref_triples = topdown_views
+        self.sim = sim
         self.res = res
-        self.gridpoints = None
-
-        # Determine the physical spacing between each camera position
-        x, z = self.topdown_view.shape
-        self.dist = (
-            min(x, z) // 10
-        )  # This produces lots of simular images for small scenes. Perhaps a smarter solution exists
 
     def extract_poses(self, labels):
-        height, width = self.topdown_view.shape
+        poses = []
+        for tdv, fp, ref_point in self.tdv_fp_ref_triples:
+            view = tdv.topdown_view
+            # Determine the physical spacing between each camera position
+            x, z = view.shape
+            dist = min(x, z) // 10
+            poses.extend(self.extract_poses_single_scene(labels, view, fp, dist, ref_point))
+
+        return np.array(poses)
+
+    def extract_poses_single_scene(self, labels, view, fp, dist, ref_point):
+        height, width = view.shape
         n_gridpoints_width, n_gridpoints_height = (
-            width // self.dist - 1,
-            height // self.dist - 1,
+            width // dist - 1,
+            height // dist - 1,
         )
-        self.gridpoints = []
+        gridpoints = []
         for h in range(n_gridpoints_height):
             for w in range(n_gridpoints_width):
-                point = (self.dist + h * self.dist, self.dist + w * self.dist)
-                if self.valid_point(*point):
-                    self.gridpoints.append(point)
+                point = (dist + h * dist, dist + w * dist)
+                if self.valid_point(*point, view):
+                    gridpoints.append(point)
 
         # Find the closest point of the target class to each gridpoint
         poses = []
-        self.cpis = []
-        for point in self.gridpoints:
-            closest_point_of_interest, label = self._bfs(point, labels)
+        cpis = []
+        for point in gridpoints:
+            closest_point_of_interest, label = self._bfs(point, labels, view, dist)
             if closest_point_of_interest is None:
                 continue
 
-            poses.append((point, closest_point_of_interest, label))
-            self.cpis.append(closest_point_of_interest)
+            poses.append((point, closest_point_of_interest, label, fp))
+            cpis.append(closest_point_of_interest)
 
         # Convert from topdown map coordinate system to that of the pathfinder
-        startw, starty, starth = self._get_pathfinder_reference_point()
+        startw, starty, starth = ref_point
         for i, pose in enumerate(poses):
-            pos, cpi, label = pose
+            pos, cpi, label, filepath = pose
             r1, c1 = pos
             r2, c2 = cpi
             new_pos = np.array([startw + c1 * self.res, starty, starth + r1 * self.res])
             new_cpi = np.array([startw + c2 * self.res, starty, starth + r2 * self.res])
             cam_normal = new_cpi - new_pos
             new_rot = self._compute_quat(cam_normal)
-            poses[i] = (new_pos, new_rot, label)
+            poses[i] = (new_pos, new_rot, label, filepath)
 
-        return np.array(poses)
+        return poses
 
-    def valid_point(self, row, col):
-        return self.topdown_view[row][col] == 1.0
+    def valid_point(self, row, col, view):
+        return view[row][col] == 1.0
 
-    def is_point_of_interest(self, point, labels):
+    def is_point_of_interest(self, point, labels, view):
         r, c = point
         is_interesting = False
-        if self.topdown_view[r][c] in labels:
+        if view[r][c] in labels:
             is_interesting = True
 
-        return is_interesting, self.topdown_view[r][c]
+        return is_interesting, view[r][c]
 
     def _show_topdown_view(self, cmap="seismic_r", show_valid_points=False):
         if show_valid_points:
@@ -251,24 +294,26 @@ class PoseExtractor(object):
 
             plt.imshow(topdown_view_copy, cmap=cmap)
         else:
-            plt.imshow(self.topdown_view, cmap=cmap)
+            fig=plt.figure(figsize=(12.0, 12.0))
+            columns = 4
+            rows = math.ceil(len(self.tdv_fp_ref_triples) / columns)
+            for i in range(1, columns * rows + 1):
+                if i > len(self.tdv_fp_ref_triples):
+                    break
+
+                img = self.tdv_fp_ref_triples[i - 1][0].topdown_view
+                fig.add_subplot(rows, columns, i)
+                plt.xticks([])
+                plt.yticks([])
+                plt.imshow(img, cmap=cmap)
 
         plt.show()
-
-    def _get_pathfinder_reference_point(self):
-        bound1, bound2 = self.pathfinder.get_bounds()
-        startw = min(bound1[0], bound2[0])
-        starth = min(bound1[2], bound2[2])
-        starty = self.pathfinder.get_random_navigable_point()[
-            1
-        ]  # Can't think of a better way to get a valid y-axis value
-        return (startw, starty, starth)  # width, y, height
 
     def _compute_quat(self, cam_normal):
         """Rotations start from -z axis"""
         return quat_from_two_vectors(np.array([0, 0, -1]), cam_normal)
 
-    def _bfs(self, point, labels):
+    def _bfs(self, point, labels, view, dist):
         step = 3  # making this larger really speeds up BFS
 
         def get_neighbors(p):
@@ -286,18 +331,16 @@ class PoseExtractor(object):
 
         point_row, point_col = point
         bounding_box = [
-            point_row - 2 * self.dist,
-            point_row + 2 * self.dist,
-            point_col - 2 * self.dist,
-            point_col + 2 * self.dist,
+            point_row - 2 * dist,
+            point_row + 2 * dist,
+            point_col - 2 * dist,
+            point_col + 2 * dist,
         ]
         in_bounds = (
             lambda row, col: bounding_box[0] <= row <= bounding_box[1]
             and bounding_box[2] <= col <= bounding_box[3]
         )
-        is_valid = lambda row, col: 0 <= row < len(
-            self.topdown_view
-        ) and 0 <= col < len(self.topdown_view[0])
+        is_valid = lambda row, col: 0 <= row < len(view) and 0 <= col < len(view[0])
         visited = (
             set()
         )  # Can use the topdown view as visited set to save space at cost of time to reset it for each bfs
@@ -308,9 +351,9 @@ class PoseExtractor(object):
                 return None, None
 
             visited.add(cur)
-            is_point_of_interest, label = self.is_point_of_interest(cur, labels)
+            is_point_of_interest, label = self.is_point_of_interest(cur, labels, view)
             if is_point_of_interest:
-                if layer > self.dist / 2:
+                if layer > dist / 2:
                     return cur, label
                 else:
                     return None, None

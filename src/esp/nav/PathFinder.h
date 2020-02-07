@@ -97,54 +97,48 @@ struct NavMeshSettings {
 };
 
 class PathFinder {
- public:
+public:
   PathFinder();
   ~PathFinder() = default;
 
-  bool build(const NavMeshSettings& bs,
-             const float* verts,
-             const int nverts,
-             const int* tris,
-             const int ntris,
-             const float* bmin,
-             const float* bmax);
-  bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
+  bool build(const NavMeshSettings &bs, const float *verts, const int nverts,
+             const int *tris, const int ntris, const float *bmin,
+             const float *bmax);
+  bool build(const NavMeshSettings &bs, const esp::assets::MeshData &mesh);
 
   vec3f getRandomNavigablePoint();
 
-  bool findPath(ShortestPath& path);
-  bool findPath(MultiGoalShortestPath& path);
+  bool findPath(ShortestPath &path);
+  bool findPath(MultiGoalShortestPath &path);
 
-  template <typename T>
-  T tryStep(const T& start, const T& end);
+  template <typename T> T tryStep(const T &start, const T &end);
 
-  template <typename T>
-  T snapPoint(const T& pt);
+  template <typename T> T snapPoint(const T &pt);
 
-  bool loadNavMesh(const std::string& path);
+  bool loadNavMesh(const std::string &path);
 
-  bool saveNavMesh(const std::string& path);
+  bool saveNavMesh(const std::string &path);
 
   bool isLoaded() const;
 
   void seed(uint32_t newSeed);
 
-  float islandRadius(const vec3f& pt) const;
+  float islandRadius(const vec3f &pt) const;
 
-  float distanceToClosestObstacle(const vec3f& pt,
+  float distanceToClosestObstacle(const vec3f &pt,
                                   const float maxSearchRadius = 2.0) const;
-  HitRecord closestObstacleSurfacePoint(
-      const vec3f& pt,
-      const float maxSearchRadius = 2.0) const;
+  HitRecord
+  closestObstacleSurfacePoint(const vec3f &pt,
+                              const float maxSearchRadius = 2.0) const;
 
-  bool isNavigable(const vec3f& pt, const float maxYDelta = 0.5) const;
+  bool isNavigable(const vec3f &pt, const float maxYDelta = 0.5) const;
 
   std::pair<vec3f, vec3f> bounds() const;
 
-  std::vector<std::vector<bool>> getTopDownView(const float res);
+  std::vector<std::vector<bool>> getTopDownView(const float res, const float y_axis_val);
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(PathFinder);
 };
 
-}  // namespace nav
-}  // namespace esp
+} // namespace nav
+} // namespace esp
