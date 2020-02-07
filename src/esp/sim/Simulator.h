@@ -301,8 +301,6 @@ class Simulator {
   bool recomputeNavMesh(nav::PathFinder& pathfinder,
                         const nav::NavMeshSettings& navMeshSettings);
 
-  //! sample a random valid AgentState in passed agentState
-  void sampleRandomAgentState(agent::AgentState::ptr agentState);
   agent::Agent::ptr getAgent(int agentId);
 
   agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig,
@@ -336,6 +334,9 @@ class Simulator {
 
  protected:
   Simulator(){};
+
+  //! sample a random valid AgentState in passed agentState
+  void sampleRandomAgentState(agent::AgentState& agentState);
 
   gfx::WindowlessContext::uptr context_ = nullptr;
   std::shared_ptr<gfx::Renderer> renderer_ = nullptr;

@@ -193,14 +193,8 @@ void Simulator::reset() {
     physicsManager_
         ->reset();  // TODO: this does nothing yet... desired reset behavior?
 
-  for (int iAgent = 0; iAgent < agents_.size(); ++iAgent) {
-    auto& agent = agents_[iAgent];
-    agent::AgentState::ptr state = agent::AgentState::create();
-    sampleRandomAgentState(state);
-    agent->setState(*state);
-    LOG(INFO) << "Reset agent i=" << iAgent
-              << " position=" << state->position.transpose()
-              << " rotation=" << state->rotation.transpose();
+  for (auto& agent : agents_) {
+    agent->reset();
   }
 }
 
@@ -415,11 +409,11 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 }
 
 // Agents
-void Simulator::sampleRandomAgentState(agent::AgentState::ptr agentState) {
-  agentState->position = pathfinder_->getRandomNavigablePoint();
+void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
+  agentState.position = pathfinder_->getRandomNavigablePoint();
   const float randomAngleRad = random_.uniform_float_01() * M_PI;
   quatf rotation(Eigen::AngleAxisf(randomAngleRad, vec3f::UnitY()));
-  agentState->rotation = rotation.coeffs();
+  agentState.rotation = rotation.coeffs();
   // TODO: any other AgentState members should be randomized?
 }
 
@@ -434,6 +428,10 @@ agent::Agent::ptr Simulator::addAgent(
 
   auto& agentNode = agentParentNode.createChild();
   agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
+
+  agent::AgentState state;
+  sampleRandomAgentState(state);
+  ag->setInitialState(state);
 
   // Add a RenderTarget to each of the agent's sensors
   for (auto& it : ag->getSensorSuite().getSensors()) {

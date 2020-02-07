@@ -17,7 +17,9 @@
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
+using esp::agent::Agent;
 using esp::agent::AgentConfiguration;
+using esp::agent::AgentState;
 using esp::nav::PathFinder;
 using esp::scene::SceneConfiguration;
 using esp::sensor::Observation;
@@ -76,7 +78,26 @@ TEST(SimTest, Reset) {
   cfg.scene.id = vangogh;
   Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
+
+  auto pinholeCameraSpec = SensorSpec::create();
+  pinholeCameraSpec->sensorSubtype = "pinhole";
+  pinholeCameraSpec->sensorType = SensorType::COLOR;
+  pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
+  pinholeCameraSpec->resolution = {100, 100};
+  AgentConfiguration agentConfig{};
+  agentConfig.sensorSpecifications = {pinholeCameraSpec};
+  auto agent = simulator.addAgent(agentConfig);
+
+  auto stateOrig = AgentState::create();
+  agent->getState(stateOrig);
+
   simulator.reset();
+
+  auto stateFinal = AgentState::create();
+  agent->getState(stateFinal);
+  ASSERT_EQ(stateOrig->position, stateFinal->position);
+  ASSERT_EQ(stateOrig->rotation, stateFinal->rotation);
+
   ASSERT_EQ(pathfinder, simulator.getPathFinder());
 }
 
@@ -94,7 +115,8 @@ TEST(SimTest, GetPinholeCameraRGBAObservation) {
   Simulator simulator(simConfig);
   AgentConfiguration agentConfig{};
   agentConfig.sensorSpecifications = {pinholeCameraSpec};
-  simulator.addAgent(agentConfig);
+  Agent::ptr agent = simulator.addAgent(agentConfig);
+  agent->setInitialState(AgentState{});
 
   Observation observation;
   ObservationSpace obsSpace;
