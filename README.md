@@ -328,6 +328,8 @@ This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor
 - Semantic information for Gibson is available from the [3DSceneGraph](https://3dscenegraph.stanford.edu/) dataset. The semantic data will need to be converted before it can be used within Habitat:
    ```bash
    tools/gen_gibson_semantics.sh /path/to/3DSceneGraph_medium/automated_graph /path/to/GibsonDataset /path/to/output
+   ```
+   To use semantics, you will need to enable the semantic sensor.
 
 ## Examples
 
