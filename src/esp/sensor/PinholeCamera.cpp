@@ -116,7 +116,8 @@ void PinholeCamera::drawObservation(sim::Simulator& sim) {
     renderer->draw(*this, sim.getActiveSemanticSceneGraph(), frustumCulling);
   } else {
     // SensorType is DEPTH or any other type
-    renderer->draw(*this, sim.getActiveSceneGraph(), sim.getFrustumCulling());
+    renderer->draw(*this, sim.getActiveSceneGraph(),
+                   sim.isFrustumCullingEnabled());
   }
 
   renderTarget().renderExit();

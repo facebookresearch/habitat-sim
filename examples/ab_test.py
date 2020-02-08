@@ -27,9 +27,7 @@ parser.add_argument(
     "--resolution",
     type=int,
     nargs="+",
-    # default=[128, 256, 512],
-    # default=[128, 256],
-    default=[256],
+    default=[128, 256, 512],
     help="Resolution r for frame (r x r).",
 )
 parser.add_argument(

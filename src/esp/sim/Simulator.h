@@ -306,13 +306,13 @@ class Simulator {
    * @brief Enable or disable frustum culling (enabled by default)
    * @param val, true = enable, false = disable
    */
-  void setFrustumCulling(bool val) { frustumCulling_ = val; }
+  void setFrustumCullingEnabled(bool val) { frustumCulling_ = val; }
 
   /**
    * @brief Get status, whether frustum culling is enabled or not
    * @return true if enabled, otherwise false
    */
-  bool getFrustumCulling() { return frustumCulling_; }
+  bool isFrustumCullingEnabled() { return frustumCulling_; }
 
  protected:
   Simulator(){};

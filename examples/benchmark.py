@@ -59,7 +59,7 @@ parser.add_argument(
 parser.add_argument(
     "--disable_frustum_culling",
     action="store_true",
-    help="Whther to disable frustum culling or not (default: False)",
+    help="Disable frustum culling (default is enabled)",
 )
 args = parser.parse_args()
 
