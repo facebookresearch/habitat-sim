@@ -70,7 +70,7 @@ struct MultiGoalShortestPath {
   /**
    * @brief The list of desired potential end points
    */
-  std::vector<vec3f> requestedEnds;
+  Eigen::Matrix<float, Eigen::Dynamic, 3> requestedEnds;
 
   /**
    * @brief A list of points that specify the shortest path on the navigation

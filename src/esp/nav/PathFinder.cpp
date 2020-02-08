@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "PathFinder.h"
+#include <numeric>
 #include <stack>
 #include <unordered_map>
 
@@ -876,12 +877,13 @@ float pathLength(const std::vector<vec3f>& points) {
 
   return length;
 }
+
 }  // namespace
 
 bool PathFinder::Impl::findPath(ShortestPath& path) {
   MultiGoalShortestPath tmp;
   tmp.requestedStart = path.requestedStart;
-  tmp.requestedEnds = {path.requestedEnd};
+  tmp.requestedEnds = path.requestedEnd.transpose();
 
   bool status = findPath(tmp);
 
@@ -951,26 +953,39 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
 
   std::vector<vec3f> pathEnds;
   std::vector<dtPolyRef> endRefs;
-  for (const auto& rqEnd : path.requestedEnds) {
-    pathEnds.emplace_back();
-    endRefs.emplace_back();
-    std::tie(status, endRefs.back(), pathEnds.back()) =
-        projectToPoly(rqEnd, navQuery_.get(), filter_.get());
+  std::vector<int> reachablePts;
 
-    if (status != DT_SUCCESS || endRefs.back() == 0) {
-      return false;
+  for (int i = 0; i < path.requestedEnds.rows(); ++i) {
+    dtPolyRef polyRef;
+    vec3f pathEnd;
+
+    std::tie(status, polyRef, pathEnd) = projectToPoly(
+        vec3f{path.requestedEnds.row(i)}, navQuery_.get(), filter_.get());
+
+    if (status != DT_SUCCESS || polyRef == 0) {
+      continue;
     }
+
+    if (!islandSystem_->hasConnection(startRef, polyRef))
+      continue;
+
+    pathEnds.emplace_back(pathEnd);
+    endRefs.emplace_back(polyRef);
+    reachablePts.emplace_back(i);
   }
 
-  for (int i = 0; i < path.requestedEnds.size(); ++i) {
-    if ((path.requestedStart - path.requestedEnds[i]).norm() >
+  if (reachablePts.size() == 0)
+    return false;
+
+  for (const int i : reachablePts) {
+    if ((path.requestedStart - path.requestedEnds.row(i).transpose()).norm() >
         path.geodesicDistance)
       continue;
 
     const Cr::Containers::Optional<std::tuple<float, std::vector<vec3f>>>
-        findResult =
-            findPathInternal(path.requestedStart, startRef, pathStart,
-                             path.requestedEnds[i], endRefs[i], pathEnds[i]);
+        findResult = findPathInternal(path.requestedStart, startRef, pathStart,
+                                      vec3f{path.requestedEnds.row(i)},
+                                      endRefs[i], pathEnds[i]);
 
     if (findResult && std::get<0>(*findResult) < path.geodesicDistance) {
       path.geodesicDistance = std::get<0>(*findResult);

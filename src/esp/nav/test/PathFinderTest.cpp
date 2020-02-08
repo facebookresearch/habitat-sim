@@ -85,22 +85,20 @@ void PathFinderTest::multiGoalPath() {
   pathFinder.seed(0);
 
   for (int __j = 0; __j < 1000; ++__j) {
-    std::vector<esp::vec3f> points;
-    for (int i = 0; i < 10; ++i) {
-      points.emplace_back(pathFinder.getRandomNavigablePoint());
-    }
-
     esp::nav::MultiGoalShortestPath multiPath;
-    multiPath.requestedStart = points[0];
-    multiPath.requestedEnds = {points.begin() + 1, points.end()};
+    multiPath.requestedStart = pathFinder.getRandomNavigablePoint();
+    multiPath.requestedEnds.resize(10, 3);
+    for (int i = 0; i < multiPath.requestedEnds.rows(); ++i) {
+      multiPath.requestedEnds.row(i) = pathFinder.getRandomNavigablePoint();
+    }
 
     CORRADE_VERIFY(pathFinder.findPath(multiPath));
 
-    esp::nav::MultiGoalShortestPath path;
-    path.requestedStart = points[0];
+    esp::nav::ShortestPath path;
+    path.requestedStart = multiPath.requestedStart;
     float trueMinDist = 1e5;
-    for (int i = 1; i < points.size(); ++i) {
-      path.requestedEnds = {points[i]};
+    for (int i = 0; i < multiPath.requestedEnds.rows(); ++i) {
+      path.requestedEnd = multiPath.requestedEnds.row(i);
 
       CORRADE_VERIFY(pathFinder.findPath(path));
 
@@ -129,8 +127,9 @@ void PathFinderTest::pathFindBenchmark() {
     setTestCaseDescription("Path to closest of 100");
     esp::nav::MultiGoalShortestPath path;
     path.requestedStart = pathFinder.getRandomNavigablePoint();
-    for (int i = 0; i < 100; ++i) {
-      path.requestedEnds.emplace_back(pathFinder.getRandomNavigablePoint());
+    path.requestedEnds.resize(100, 3);
+    for (int i = 0; i < path.requestedEnds.rows(); ++i) {
+      path.requestedEnds.row(i) = pathFinder.getRandomNavigablePoint();
     }
 
     bool status;
