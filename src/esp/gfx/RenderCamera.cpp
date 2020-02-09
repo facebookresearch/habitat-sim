@@ -15,6 +15,41 @@ namespace Mn = Magnum;
 namespace esp {
 namespace gfx {
 
+struct CullingResult {
+  // the culling result
+  bool intersected = true;
+  // the frustum plane that culled the object
+  int frustumPlaneIndex = 0;
+};
+
+/**
+ * @brief do frustum culling with temporal coherency
+ * @param range, the axis-aligned bounding box
+ * @param frustum, the frustum
+ * @param frustumPlaneIndex, the frustum plane in last frame that culled the
+ * aabb (default: 0)
+ */
+CullingResult rangeFrustum(const Mn::Range3D& range,
+                           const Mn::Frustum& frustum,
+                           int frustumPlaneIndex = 0) {
+  const Mn::Vector3 center = range.min() + range.max();
+  const Mn::Vector3 extent = range.max() - range.min();
+
+  for (int iPlane = 0; iPlane < 6; ++iPlane) {
+    int index = (iPlane + frustumPlaneIndex) % 6;
+    const Mn::Vector4& plane = frustum[index];
+
+    const Mn::Vector3 absPlaneNormal = Mn::Math::abs(plane.xyz());
+
+    const float d = Mn::Math::dot(center, plane.xyz());
+    const float r = Mn::Math::dot(extent, absPlaneNormal);
+    if (d + r < -2.0 * plane.w())
+      return CullingResult{false, index};
+  }
+
+  return CullingResult{true, 0};
+}
+
 RenderCamera::RenderCamera(scene::SceneNode& node) : MagnumCamera{node} {
   node.setType(scene::SceneNodeType::CAMERA);
   setAspectRatioPolicy(Mn::SceneGraph::AspectRatioPolicy::NotPreserved);
@@ -55,12 +90,17 @@ size_t RenderCamera::cull(
       [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
                           Mn::Matrix4>& a) {
         // obtain the absolute aabb
+        auto& node = static_cast<scene::SceneNode&>(a.first.get().object());
         Corrade::Containers::Optional<Mn::Range3D> aabb =
-            dynamic_cast<scene::SceneNode&>(a.first.get().object())
-                .getAbsoluteAABB();
+            node.getAbsoluteAABB();
         if (aabb) {
           // if it has an absolute aabb, it is a static mesh
-          return !Mn::Math::Intersection::rangeFrustum(*aabb, frustum);
+          CullingResult result =
+              rangeFrustum(*aabb, frustum, node.getFrustumPlaneIndex());
+          if (result.intersected == false) {
+            node.setFrustumPlaneIndex(result.frustumPlaneIndex);
+          }
+          return !result.intersected;
         } else {
           // keep the drawable if its node does not have an absolute AABB
           return false;
