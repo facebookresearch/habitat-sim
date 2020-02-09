@@ -23,7 +23,7 @@ struct CullingResult {
 };
 
 /**
- * @brief do frustum culling with temporal coherency
+ * @brief do frustum culling with temporal coherence
  * @param range, the axis-aligned bounding box
  * @param frustum, the frustum
  * @param frustumPlaneIndex, the frustum plane in last frame that culled the
