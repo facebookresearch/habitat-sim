@@ -350,7 +350,9 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
           if (Cr::Utility::Directory::isDirectory(absolutePath)) {
             LOG(INFO) << "Parsing object library directory: " + absolutePath;
             if (Cr::Utility::Directory::exists(absolutePath)) {
-              for (auto& file : Cr::Utility::Directory::list(absolutePath)) {
+              for (auto& file : Cr::Utility::Directory::list(
+                       absolutePath,
+                       Corrade::Utility::Directory::Flag::SortAscending)) {
                 std::string absoluteSubfilePath =
                     Cr::Utility::Directory::join(absolutePath, file);
                 if (Cr::Utility::String::endsWith(absoluteSubfilePath,
