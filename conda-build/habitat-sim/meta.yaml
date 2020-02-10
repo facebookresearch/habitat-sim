@@ -13,7 +13,7 @@ requirements:
     - pkg-config # [unix]
     - {{ cdt('libpng-devel') }} # [linux]
     - {{ cdt('xorg-x11-proto-devel') }}  # [linux]
-    - {{ cdt('libxxf86vm-devel') }}      # [linux] #
+    - {{ cdt('libxxf86vm-devel') }}      # [linux]
     {{ environ.get('CONDA_BULLET', '') }}
 
   host:
