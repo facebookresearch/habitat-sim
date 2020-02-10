@@ -388,6 +388,7 @@ jobs:
               . activate habitat; cd habitat-api
               python setup.py develop --all
               python setup.py test
+          no_output_timeout: 20m
       - save_cache:
           key: habitat-api-{{ checksum "./hapi_sha" }}
           background: true
