@@ -80,16 +80,39 @@ enum class RigidObjectType {
 
 };
 
-/**@brief Convenience struct for applying constant velocity control. */
-struct VelocityControl {
+/**@brief Convenience class for applying constant velocity control to a rigid
+ * body. */
+class VelocityControl {
+ public:
   /**@brief Constant linear velocity. */
   Magnum::Vector3 linVel;
   /**@brief Constant angular velocity. */
   Magnum::Vector3 angVel;
   /**@brief Whether or not to set linear control velocity before stepping. */
   bool controllingLinVel = false;
+  /**@brief Whether or not to set linear control velocity in local space.
+   *
+   * Useful for commanding actions such as "forward", or "strafe".
+   */
+  bool linVelIsLocal = false;
+
   /**@brief Whether or not to set angular control velocity before stepping. */
   bool controllingAngVel = false;
+
+  /**
+   * @brief Compute the result of applying constant control velocities to the
+   * provided object transform.
+   *
+   * Default implementation uses explicit Euler integration.
+   * @param dt The discrete timestep over which to integrate.
+   * @param objectTransformation The initial state of the object before applying
+   * velocity control.
+   * @return The new state of the object after applying velocity control over
+   * dt.
+   */
+  virtual Magnum::Matrix4 integrateTransform(
+      const float dt,
+      const Magnum::Matrix4& objectTransform);
 };
 
 /**

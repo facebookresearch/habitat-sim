@@ -108,7 +108,6 @@ class Viewer : public Magnum::Platform::Application {
   nav::PathFinder::ptr pathfinder_;
   scene::ObjectControls controls_;
   Magnum::Vector3 previousPosition_;
-  bool commandingForward = false;
   bool commandingAntiGravityForce = false;
 
   bool pilotingLocobot = false;
@@ -438,9 +437,10 @@ void Viewer::drawEvent() {
                        ImGuiWindowFlags_NoBackground |
                        ImGuiWindowFlags_AlwaysAutoResize);
       ImGui::SetWindowFontScale(2.0);
+      /*
       physics::VelocityControl& velControl =
           physicsManager_->getVelocityControl(objectIDs_.back());
-      if (commandingForward) {
+      if (velControl.linVelIsLocal) {
         Magnum::Matrix4 objectT =
             physicsManager_->getObjectSceneNode(objectIDs_.back())
                 .transformationMatrix();
@@ -459,36 +459,39 @@ void Viewer::drawEvent() {
         // velControl.linVel = forward*0.1;
         velControl.linVel = projectedForward * 0.2;
       }
+       */
       // ImGui::Text("Commanding velocity");
 
-      if (physicsManager_->getObjectMotionType(objectIDs_.back()) ==
-          physics::MotionType::KINEMATIC) {
-        if (velControl.controllingAngVel) {
-          Magnum::Quaternion q;
-          Magnum::Vector3 ha = velControl.angVel *
-                               timeline_.previousFrameDuration() *
-                               0.5;  // vector of half angle
-          float l = ha.length();     // magnitude
-          if (l > 0) {
-            float ss = sin(l) / l;
-            q = Magnum::Quaternion(
-                Magnum::Vector3{ha.x() * ss, ha.y() * ss, ha.z() * ss}, cos(l));
-          } else {
-            q = Magnum::Quaternion(Magnum::Vector3{ha.x(), ha.y(), ha.z()},
-                                   1.0);
-          }
-          Magnum::Quaternion newOrientation =
-              q * physicsManager_->getRotation(objectIDs_.back());
-          physicsManager_->setRotation(objectIDs_.back(), newOrientation);
+      /*
+    if (physicsManager_->getObjectMotionType(objectIDs_.back()) ==
+        physics::MotionType::KINEMATIC) {
+      if (velControl.controllingAngVel) {
+        Magnum::Quaternion q;
+        Magnum::Vector3 ha = velControl.angVel *
+                             timeline_.previousFrameDuration() *
+                             0.5;  // vector of half angle
+        float l = ha.length();     // magnitude
+        if (l > 0) {
+          float ss = sin(l) / l;
+          q = Magnum::Quaternion(
+              Magnum::Vector3{ha.x() * ss, ha.y() * ss, ha.z() * ss}, cos(l));
+        } else {
+          q = Magnum::Quaternion(Magnum::Vector3{ha.x(), ha.y(), ha.z()},
+                                 1.0);
         }
-        if (velControl.controllingLinVel) {
-          Magnum::Vector3 pos =
-              physicsManager_->getTranslation(objectIDs_.back());
-          physicsManager_->setTranslation(
-              objectIDs_.back(),
-              pos + velControl.linVel * timeline_.previousFrameDuration());
-        }
+        Magnum::Quaternion newOrientation =
+            q * physicsManager_->getRotation(objectIDs_.back());
+        physicsManager_->setRotation(objectIDs_.back(), newOrientation);
       }
+      if (velControl.controllingLinVel) {
+        Magnum::Vector3 pos =
+            physicsManager_->getTranslation(objectIDs_.back());
+        physicsManager_->setTranslation(
+            objectIDs_.back(),
+            pos + velControl.linVel * timeline_.previousFrameDuration());
+      }
+    }
+       */
 
       //}
       // apply anti-gravity force
@@ -737,15 +740,17 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       if (objectIDs_.size()) {
         physics::VelocityControl& velControl =
             physicsManager_->getVelocityControl(objectIDs_.back());
-        commandingForward = !commandingForward;
-        if (!commandingForward) {
+        if (velControl.linVelIsLocal) {
           // also reset the commandVelocity
           velControl.linVel = Magnum::Vector3{};
           velControl.controllingLinVel = false;
+          velControl.linVelIsLocal = false;
         } else {
           velControl.controllingLinVel = true;
+          velControl.linVelIsLocal = true;
+          velControl.linVel = Magnum::Vector3{0, 0, -1.0};
         }
-        LOG(INFO) << "commandingForward = " << commandingForward;
+        LOG(INFO) << "commandingForward = " << velControl.linVelIsLocal;
       }
       break;
     case KeyEvent::Key::G:

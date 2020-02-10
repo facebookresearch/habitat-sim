@@ -189,6 +189,16 @@ void PhysicsManager::stepPhysics(double dt) {
   double targetTime = worldTime_ + dt;
   while (worldTime_ < targetTime) {
     // per fixed-step operations can be added here
+
+    // kinematic velocity control intergration
+    for (auto& object : existingObjects_) {
+      VelocityControl& velControl = object.second->getVelocityControl();
+      if (velControl.controllingAngVel || velControl.controllingLinVel) {
+        scene::SceneNode& objectSceneNode = object.second->node();
+        objectSceneNode.setTransformation(velControl.integrateTransform(
+            fixedTimeStep_, objectSceneNode.transformation()));
+      }
+    }
     worldTime_ += fixedTimeStep_;
   }
 }
