@@ -6,7 +6,8 @@
 
 /** @file
  * @brief Class @ref esp::physics::RigidObject, enum @ref
- * esp::physics::MotionType, enum @ref esp::physics::RigidObjectType
+ * esp::physics::MotionType, enum @ref esp::physics::RigidObjectType, class @ref
+ * VelocityControl
  */
 
 #include <Corrade/Containers/Optional.h>

@@ -390,6 +390,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   Magnum::Vector3 commandLinVel(1.0, 1.0, 1.0);
   Magnum::Vector3 commandAngVel(1.0, 1.0, 1.0);
 
+  // test results of getting/setting
   if (physicsManager_->getPhysicsSimulationLibrary() ==
       PhysicsManager::PhysicsSimulationLibrary::BULLET) {
     physicsManager_->setLinearVelocity(objectId, commandLinVel);
@@ -397,83 +398,6 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
 
     ASSERT_EQ(physicsManager_->getLinearVelocity(objectId), commandLinVel);
     ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), commandAngVel);
-
-    // run some tests with dynamics
-    float timeToSim = 5.0;
-    float steptime = 0.05;
-    commandAngVel = Magnum::Vector3{
-        1.0, 1.0, -1.0};  // axis rotation chosen for easy checking
-    esp::physics::VelocityControl& velControl =
-        physicsManager_->getVelocityControl(objectId);
-    velControl.controllingAngVel = true;
-    velControl.controllingLinVel = true;
-    velControl.linVel = commandLinVel;
-    velControl.angVel = commandAngVel;
-
-    Magnum::Quaternion kinematicOrientation =
-        physicsManager_->getRotation(objectId);
-
-    while (physicsManager_->getWorldTime() < timeToSim) {
-      Magnum::Vector3 prevPos = physicsManager_->getTranslation(objectId);
-      Magnum::Quaternion prevOrientation =
-          physicsManager_->getRotation(objectId);
-
-      physicsManager_->applyForce(
-          objectId,
-          Magnum::Vector3{0, float(9.8 * physicsManager_->getMass(objectId)),
-                          0},
-          Magnum::Vector3{});
-
-      physicsManager_->stepPhysics(steptime);
-
-      // LOG(INFO) << "time: " << physicsManager_->getWorldTime();
-
-      // check that linear velocity has been approximately applied (could be
-      // some error due to dynamics)
-      for (int i = 0; i < 3; i++) {
-        ASSERT_EQ((prevPos[i] + commandLinVel[i] > prevPos[i]),
-                  (physicsManager_->getTranslation(objectId)[i] > prevPos[i]));
-      }
-
-      // check that angular velocity has been approximately applied via
-      // exponential map
-      Magnum::Quaternion q;
-      Magnum::Vector3 ha =
-          commandAngVel * steptime * 0.5;  // vector of half angle
-      float l = ha.length();               // magnitude
-      if (l > 0) {
-        float ss = sin(l) / l;
-        q = Magnum::Quaternion(
-            Magnum::Vector3{ha.x() * ss, ha.y() * ss, ha.z() * ss}, cos(l));
-      } else {
-        q = Magnum::Quaternion(Magnum::Vector3{ha.x(), ha.y(), ha.z()}, 1.0);
-      }
-      Magnum::Quaternion finiteDifference =
-          physicsManager_->getRotation(objectId) *
-          prevOrientation
-              .inverted();  // quat diff: diff*q1 = q2 -> diff = q2*inv(q1)
-      Cr::Utility::Debug() << "kin delta: " << q
-                           << ", dyn delta: " << finiteDifference;
-      Magnum::Quaternion expectedOrientation = q * prevOrientation;
-      Magnum::Rad q_angle = Magnum::Math::angle(
-          physicsManager_->getRotation(objectId), expectedOrientation);
-      Cr::Utility::Debug() << "orientation: "
-                           << physicsManager_->getRotation(objectId)
-                           << ", expected: " << expectedOrientation
-                           << ", angle b/t: " << q_angle;
-
-      for (int i = 0; i < 3; i++) {
-        ASSERT_EQ(
-            (expectedOrientation.vector()[i] > prevOrientation.vector()[i]),
-            (physicsManager_->getRotation(objectId).vector()[i] >
-             prevOrientation.vector()[i]));
-      }
-      ASSERT_EQ((expectedOrientation.scalar() > prevOrientation.scalar()),
-                (physicsManager_->getRotation(objectId).scalar() >
-                 prevOrientation.scalar()));
-
-      // ASSERT_LE(q_angle, Magnum::Rad{0.1});
-    }
 
   } else if (physicsManager_->getPhysicsSimulationLibrary() ==
              PhysicsManager::PhysicsSimulationLibrary::NONE) {
@@ -483,5 +407,68 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
     // default kinematics always 0 velocity when queried
     ASSERT_EQ(physicsManager_->getLinearVelocity(objectId), Magnum::Vector3{});
     ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), Magnum::Vector3{});
+  }
+
+  // test constant velocity control mechanism
+  esp::physics::VelocityControl& velControl =
+      physicsManager_->getVelocityControl(objectId);
+  velControl.controllingAngVel = true;
+  velControl.controllingLinVel = true;
+  velControl.linVel = Magnum::Vector3{1.0, -1.0, 1.0};
+  velControl.angVel = Magnum::Vector3{1.0, 0, 0};
+
+  // first kinematic
+  physicsManager_->setObjectMotionType(objectId,
+                                       esp::physics::MotionType::KINEMATIC);
+  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
+
+  float targetTime = 2.0;
+  while (physicsManager_->getWorldTime() < targetTime) {
+    physicsManager_->stepPhysics(targetTime - physicsManager_->getWorldTime());
+  }
+  Magnum::Vector3 posGroundTruth{2.0, 0.0, 2.0};
+  Magnum::Quaternion qGroundTruth{{0.842602, 0, 0}, 0.538537};
+
+  float errorEps = 0.01;  // fairly loose due to discrete timestep
+  ASSERT_LE(
+      (physicsManager_->getTranslation(objectId) - posGroundTruth).length(),
+      errorEps);
+  Magnum::Rad angleError =
+      Magnum::Math::angle(physicsManager_->getRotation(objectId), qGroundTruth);
+  if (!isnan(float(angleError))) {  // nan results close to equality
+    ASSERT_LE(float(angleError), errorEps);
+  }
+
+  if (physicsManager_->getPhysicsSimulationLibrary() ==
+      PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+    physicsManager_->setObjectMotionType(objectId,
+                                         esp::physics::MotionType::DYNAMIC);
+    physicsManager_->resetTransformation(objectId);
+    physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
+    physicsManager_->setGravity({});  // 0 gravity interference
+    physicsManager_->reset();         // reset time to 0
+
+    // should closely follow kinematic result while uninhibited in 0 gravity
+    float targetTime = 0.5;
+    Magnum::Matrix4 kinematicResult = velControl.integrateTransform(
+        targetTime, physicsManager_->getTransformation(objectId));
+    while (physicsManager_->getWorldTime() < targetTime) {
+      physicsManager_->stepPhysics(physicsManager_->getTimestep());
+    }
+    ASSERT_LE((physicsManager_->getTranslation(objectId) -
+               kinematicResult.translation())
+                  .length(),
+              errorEps);
+    angleError = Magnum::Math::angle(
+        physicsManager_->getRotation(objectId),
+        Magnum::Quaternion::fromMatrix(kinematicResult.rotation()));
+    ASSERT_LE(float(angleError), errorEps);
+
+    // should then get blocked by ground plane collision
+    targetTime = 2.0;
+    while (physicsManager_->getWorldTime() < targetTime) {
+      physicsManager_->stepPhysics(physicsManager_->getTimestep());
+    }
+    ASSERT_GE(physicsManager_->getTranslation(objectId)[1], 1.0 - errorEps);
   }
 }
