@@ -93,26 +93,42 @@ struct VelocityControl {
 };
 
 /**
-@brief A @ref scene::SceneNode representing an individual rigid object instance.
-Note that the @ref scene::SceneGraph owns all scene nodes. This may be a @ref
-MotionType::STATIC scene collision geometry or an object of any @ref MotionType
-which can interact with other members of a physical world. Must have a collision
-mesh. By default, a RigidObject is @ref MotionType::KINEMATIC without an
-underlying simulator implementation. Derived classes can be used to introduce
-specific implementations of dynamics.
+@brief An AbstractFeature3D representing an individual rigid object instance
+attached to a SceneNode, updating its state through simulation. This may be a
+@ref MotionType::STATIC scene collision geometry or an object of any @ref
+MotionType which can interact with other members of a physical world. Must have
+a collision mesh. By default, a RigidObject is @ref MotionType::KINEMATIC
+without an underlying simulator implementation. Derived classes can be used to
+introduce specific implementations of dynamics.
 */
-class RigidObject : public scene::SceneNode {
+class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
  public:
   /**
    * @brief Constructor for a @ref RigidObject.
-   * @param parent The parent @ref scene::SceneNode to this object, likely the
-   * @ref PhysicsManager::physicsNode_.
+   * @param rigidBodyNode The @ref scene::SceneNode this feature will be
+   * attached to.
    */
-  RigidObject(scene::SceneNode* parent);
+  RigidObject(scene::SceneNode* rigidBodyNode);
+
+  /**
+   * @brief Get the scene node being attached to.
+   */
+  scene::SceneNode& node() { return object(); }
+  const scene::SceneNode& node() const { return object(); }
+
+  // Overloads to avoid confusion
+  scene::SceneNode& object() {
+    return static_cast<scene::SceneNode&>(
+        Magnum::SceneGraph::AbstractFeature3D::object());
+  }
+  const scene::SceneNode& object() const {
+    return static_cast<const scene::SceneNode&>(
+        Magnum::SceneGraph::AbstractFeature3D::object());
+  }
 
   /**
    * @brief Initializes this @ref RigidObject as static scene geometry. See @ref
-   * PhysicsManager::sceneNode_. Sets @ref rigidObjectType_ to @ref
+   * PhysicsManager::staticSceneObject_. Sets @ref rigidObjectType_ to @ref
    * RigidObjectType::SCENE.
    * @param physicsSceneAttributes The template structure defining relevant
    * phyiscal parameters for the physical scene.
@@ -137,9 +153,9 @@ class RigidObject : public scene::SceneNode {
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /**
-   * @brief Destructor for a @ref RigidObject.
+   * @brief Virtual destructor for a @ref RigidObject.
    */
-  ~RigidObject(){};
+  virtual ~RigidObject(){};
 
   /**
    * @brief Check whether object is being actively simulated, or sleeping.
@@ -175,7 +191,7 @@ class RigidObject : public scene::SceneNode {
 
   /**
    * @brief Shift the object's local origin by translating all children of this
-   * @ref RigidObject.
+   * object's SceneNode.
    * @param shift The translation to apply to object's children.
    */
   virtual void shiftOrigin(const Magnum::Vector3& shift);
@@ -235,21 +251,21 @@ class RigidObject : public scene::SceneNode {
    *
    * Does nothing for default @ref MotionType::KINEMATIC or @ref
    * MotionType::STATIC objects.
-   * @param lin_vel Linear velocity to set.
+   * @param linVel Linear velocity to set.
    */
   virtual void setLinearVelocity(
-      CORRADE_UNUSED const Magnum::Vector3& lin_vel){};
+      CORRADE_UNUSED const Magnum::Vector3& linVel){};
 
   /**
    * @brief Virtual angular velocity setter for an object.
    *
    * Does nothing for default @ref MotionType::KINEMATIC or @ref
    * MotionType::STATIC objects.
-   * @param ang_vel Angular velocity vector corresponding to world unit axis
+   * @param angVel Angular velocity vector corresponding to world unit axis
    * angles.
    */
   virtual void setAngularVelocity(
-      CORRADE_UNUSED const Magnum::Vector3& ang_vel){};
+      CORRADE_UNUSED const Magnum::Vector3& angVel){};
 
   /**
    * @brief Virtual linear velocity getter for an object.
@@ -276,14 +292,6 @@ class RigidObject : public scene::SceneNode {
   /**@brief Retrieves a reference to the VelocityControl struct for this object.
    */
   VelocityControl& getVelocityControl() { return velControl_; };
-
-  /**
-   * @brief Remove the object from any connected physics simulator implemented
-   * by a derived @ref PhysicsManager. Does nothing for default @ref
-   * PhysicsManager.
-   * @return true if successful, false otherwise.
-   */
-  virtual bool removeObject();
 
   // ==== Transformations ===
 
@@ -513,7 +521,7 @@ class RigidObject : public scene::SceneNode {
 
   //! The @ref SceneNode of a bounding box debug drawable. If nullptr, BB
   //! drawing is off. See @ref toggleBBDraw().
-  SceneNode* BBNode_ = nullptr;
+  scene::SceneNode* BBNode_ = nullptr;
 
  protected:
   /**

@@ -5,6 +5,7 @@
 #pragma once
 
 #include "esp/core/esp.h"
+#include "esp/gfx/DrawableGroup.h"
 #include "magnum.h"
 
 namespace esp {
@@ -13,19 +14,47 @@ class SceneNode;
 }
 namespace gfx {
 
+/**
+ * @brief Drawable for use with @ref DrawableGroup.
+ *
+ * Drawable will retrieve its shader from its group, and draw
+ * itself with the shader.
+ */
 class Drawable : public Magnum::SceneGraph::Drawable3D {
  public:
+  /**
+   * @brief Constructor
+   *
+   * @param node Node which will be made drawable.
+   * @param mesh Mesh to draw when on render.
+   * @param group Drawable group this drawable will be added to.
+   */
   Drawable(scene::SceneNode& node,
-           Magnum::GL::AbstractShaderProgram& shader,
+           Magnum::GL::AbstractShaderProgram& shader,  // TODO: remove this
            Magnum::GL::Mesh& mesh,
-           Magnum::SceneGraph::DrawableGroup3D* group = nullptr);
+           DrawableGroup* group = nullptr);
   virtual ~Drawable() {}
 
   virtual scene::SceneNode& getSceneNode() { return node_; }
 
+  /**
+   * @brief Get the @ref DrawableGroup this drawable is in.
+   *
+   * This overrides Magnum::SceneGraph::Drawable so that the derived @ref
+   * DrawableGroup can be used
+   */
+  DrawableGroup* drawables();
+
  protected:
-  // Each derived drawable class needs to implement this draw() function. It's
-  // nothing more than setting up shader parameters and drawing the mesh.
+  /**
+   * @brief Draw the object using given camera
+   *
+   * @param transformationMatrix  Transformation relative to camera.
+   * @param camera                Camera to draw from.
+   *
+   * Each derived drawable class needs to implement this draw() function. It's
+   * nothing more than drawing itself with its group's shader.
+   */
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
                     Magnum::SceneGraph::Camera3D& camera) = 0;
 

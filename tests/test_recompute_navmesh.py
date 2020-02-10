@@ -57,6 +57,13 @@ def test_recompute_navmesh(test_scene, sim):
     # compute shortest paths between these points on the loaded navmesh
     loaded_navmesh_path_results = get_shortest_path(sim, samples)
 
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    agent_config = hab_cfg.agents[hab_cfg.sim_cfg.default_agent_id]
+    agent_config.radius *= 2.0
+    sim.reconfigure(hab_cfg)
+    # compute shortest paths between these points on the loaded navmesh with twice radius
+    loaded_navmesh_2rad_path_results = get_shortest_path(sim, samples)
+
     navmesh_settings = habitat_sim.NavMeshSettings()
     navmesh_settings.set_defaults()
     assert sim.recompute_navmesh(sim.pathfinder, navmesh_settings)
@@ -73,9 +80,20 @@ def test_recompute_navmesh(test_scene, sim):
     some_diff = False
     for i in range(num_samples):
         assert loaded_navmesh_path_results[i][0] == recomputed_navmesh_results[i][0]
+        assert (
+            recomputed_2rad_navmesh_results[i][0]
+            == recomputed_2rad_navmesh_results[i][0]
+        )
         if loaded_navmesh_path_results[i][0]:
             assert (
                 loaded_navmesh_path_results[i][1] - recomputed_navmesh_results[i][1]
+                < EPS
+            )
+
+        if recomputed_2rad_navmesh_results[i][0]:
+            assert (
+                recomputed_2rad_navmesh_results[i][1]
+                - recomputed_2rad_navmesh_results[i][1]
                 < EPS
             )
 

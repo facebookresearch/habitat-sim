@@ -12,14 +12,10 @@ import numpy as np
 
 
 # Convert ndarrays to python lists so that we can serialize.
-# Transform coordinates by rotating Y-axis to Z-axis
-def fix_coords(entry: Dict[str, Any]) -> None:
-    size = entry["size"].tolist()
-    size[1], size[2] = size[2], size[1]
-    entry["size"] = size
-    loc = entry["location"].tolist()
-    loc[1], loc[2] = -loc[2], loc[1]
-    entry["location"] = loc
+def listify(entry: Dict[str, Any]) -> None:
+    for key in entry.keys():
+        if type(entry[key]) is np.ndarray:
+            entry[key] = entry[key].tolist()
 
 
 def main():
@@ -34,10 +30,10 @@ def main():
     data = np.load(args.npz_path, allow_pickle=True)["output"].item()
     objs = data["object"]
     for obj in objs.values():
-        fix_coords(obj)
+        listify(obj)
     rooms = data["room"]
     for room in rooms.values():
-        fix_coords(room)
+        listify(room)
     output = dict()
     output["objects"] = list(objs.values())
     output["rooms"] = list(rooms.values())

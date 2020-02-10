@@ -210,7 +210,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
 }
 
 TEST_F(PhysicsManagerTest, DiscreteContactTest) {
-  LOG(INFO) << "Starting physics test: ContactTest";
+  LOG(INFO) << "Starting physics test: DiscreteContactTest";
 
   std::string sceneFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
@@ -380,13 +380,12 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
   physicsObjectAttributes.setString("renderMeshHandle", objectFile);
   physicsObjectAttributes.setDouble("margin", 0.0);
-  physicsObjectAttributes.setDouble("angDamping", 0.0);
   resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
   int objectId = physicsManager_->addObject(objectFile, &drawables);
-  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
+  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 1.0, 0});
 
   Magnum::Vector3 commandLinVel(1.0, 1.0, 1.0);
   Magnum::Vector3 commandAngVel(1.0, 1.0, 1.0);
