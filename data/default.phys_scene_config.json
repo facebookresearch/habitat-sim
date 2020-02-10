@@ -5,9 +5,8 @@
     "friction coefficient": 0.4,
     "restitution coefficient": 0.1,
     "rigid object paths":[
-        "objects/cheezit_",
-        "objects/chefcan_",
-        "objects/banana_",
-        "/Users/alexclegg/Documents/dev/habitat-sim/data/objects/locobot_merged"
+        "objects/cheezit",
+        "objects/chefcan",
+        "objects/banana"
     ]
 }

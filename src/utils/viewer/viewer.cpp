@@ -70,10 +70,6 @@ class Viewer : public Magnum::Platform::Application {
   void pokeLastObject();
   void pushLastObject();
 
-  void setVelocity(int objID,
-                   const Magnum::Vector3& lin_vel,
-                   const Magnum::Vector3& ang_vel);
-
   void recomputeNavMesh(const std::string& sceneFilename,
                         esp::nav::NavMeshSettings& navMeshSettings);
 
@@ -108,9 +104,6 @@ class Viewer : public Magnum::Platform::Application {
   nav::PathFinder::ptr pathfinder_;
   scene::ObjectControls controls_;
   Magnum::Vector3 previousPosition_;
-  bool commandingAntiGravityForce = false;
-
-  bool pilotingLocobot = false;
 
   std::vector<int> objectIDs_;
 
@@ -271,15 +264,9 @@ void Viewer::addObject(std::string configFile) {
   Magnum::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  Vector3 new_pos = T.transformPoint({0.1f, 1.0f, -2.0f});
+  Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
 
   auto& drawables = sceneGraph_->getDrawables();
-
-  assets::PhysicsObjectAttributes& objTemplate =
-      resourceManager_.getPhysicsObjectAttributes(configFile);
-  objTemplate.setBool("useBoundingBoxForCollision", true);
-  objTemplate.setDouble("margin", 0.03);
-  objTemplate.setDouble("mass", 5.0);
 
   int physObjectID = physicsManager_->addObject(configFile, &drawables);
   physicsManager_->setTranslation(physObjectID, new_pos);
@@ -293,11 +280,9 @@ void Viewer::addObject(std::string configFile) {
   Magnum::Vector3 qAxis(sqrt(1 - u1) * cos(2 * M_PI * u2),
                         sqrt(u1) * sin(2 * M_PI * u3),
                         sqrt(u1) * cos(2 * M_PI * u3));
-  /*
- physicsManager_->setRotation(
+  physicsManager_->setRotation(
       physObjectID,
       Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
-  */
 
   objectIDs_.push_back(physObjectID);
 }
@@ -337,16 +322,6 @@ void Viewer::pushLastObject() {
   Vector3 force = T.transformVector({0.0f, 0.0f, -40.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
-}
-
-void Viewer::setVelocity(int objID,
-                         const Magnum::Vector3& lin_vel,
-                         const Magnum::Vector3& ang_vel) {
-  if (physicsManager_ == nullptr)
-    return;
-
-  physicsManager_->setLinearVelocity(objID, lin_vel);
-  physicsManager_->setAngularVelocity(objID, ang_vel);
 }
 
 void Viewer::recomputeNavMesh(const std::string& sceneFilename,
@@ -417,96 +392,8 @@ void Viewer::drawEvent() {
   if (sceneID_.size() <= 0)
     return;
 
-  imgui_.newFrame();
-
-  if (physicsManager_ != nullptr) {
-    if (objectIDs_.size() > 0) {
-      if (pilotingLocobot) {
-        Magnum::Matrix4 locobotT =
-            physicsManager_->getObjectSceneNode(objectIDs_.back())
-                .absoluteTransformationMatrix();
-        locobotT.translation() =
-            locobotT.transformPoint(Magnum::Vector3{0.0, 0.75, 0.01});
-
-        renderCamera_->node().setTransformation(locobotT);
-      }
-
-      ImGui::SetNextWindowPos(ImVec2(10, 30));
-      ImGui::Begin("main", NULL,
-                   ImGuiWindowFlags_NoDecoration |
-                       ImGuiWindowFlags_NoBackground |
-                       ImGuiWindowFlags_AlwaysAutoResize);
-      ImGui::SetWindowFontScale(2.0);
-      /*
-      physics::VelocityControl& velControl =
-          physicsManager_->getVelocityControl(objectIDs_.back());
-      if (velControl.linVelIsLocal) {
-        Magnum::Matrix4 objectT =
-            physicsManager_->getObjectSceneNode(objectIDs_.back())
-                .transformationMatrix();
-        // project velControl in x/z
-        Magnum::Vector3 forward =
-            objectT.transformVector(Magnum::Vector3{0, 0, -1.0}).normalized();
-        Magnum::Vector3 projectedForward =
-            Magnum::Vector3{forward[0], 0, forward[2]}.normalized();
-        float pitch_angle = acos(dot(forward, projectedForward));
-        if (pitch_angle > 0.2) {
-          velControl.controllingLinVel = false;
-        } else {
-          velControl.controllingLinVel = true;
-        }
-        // Corrade::Utility::Debug() << "pitch_angle: " << pitch_angle;
-        // velControl.linVel = forward*0.1;
-        velControl.linVel = projectedForward * 0.2;
-      }
-       */
-      // ImGui::Text("Commanding velocity");
-
-      /*
-    if (physicsManager_->getObjectMotionType(objectIDs_.back()) ==
-        physics::MotionType::KINEMATIC) {
-      if (velControl.controllingAngVel) {
-        Magnum::Quaternion q;
-        Magnum::Vector3 ha = velControl.angVel *
-                             timeline_.previousFrameDuration() *
-                             0.5;  // vector of half angle
-        float l = ha.length();     // magnitude
-        if (l > 0) {
-          float ss = sin(l) / l;
-          q = Magnum::Quaternion(
-              Magnum::Vector3{ha.x() * ss, ha.y() * ss, ha.z() * ss}, cos(l));
-        } else {
-          q = Magnum::Quaternion(Magnum::Vector3{ha.x(), ha.y(), ha.z()},
-                                 1.0);
-        }
-        Magnum::Quaternion newOrientation =
-            q * physicsManager_->getRotation(objectIDs_.back());
-        physicsManager_->setRotation(objectIDs_.back(), newOrientation);
-      }
-      if (velControl.controllingLinVel) {
-        Magnum::Vector3 pos =
-            physicsManager_->getTranslation(objectIDs_.back());
-        physicsManager_->setTranslation(
-            objectIDs_.back(),
-            pos + velControl.linVel * timeline_.previousFrameDuration());
-      }
-    }
-       */
-
-      //}
-      // apply anti-gravity force
-      if (commandingAntiGravityForce) {
-        ImGui::Text("Commanding anti-gravity");
-        physicsManager_->applyForce(
-            objectIDs_.back(),
-            Magnum::Vector3{
-                0, float(9.8 * physicsManager_->getMass(objectIDs_.back())), 0},
-            Magnum::Vector3{});
-      }
-      ImGui::End();
-    }
+  if (physicsManager_ != nullptr)
     physicsManager_->stepPhysics(timeline_.previousFrameDuration());
-  }
 
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
@@ -526,6 +413,8 @@ void Viewer::drawEvent() {
 
     physicsManager_->debugDraw(projM * camM);
   }
+
+  imgui_.newFrame();
 
   if (showFPS_) {
     ImGui::SetNextWindowPos(ImVec2(10, 10));
@@ -692,9 +581,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
             << "Run the app with --enable-physics in order to add objects";
     } break;
     case KeyEvent::Key::P:
-      // pokeLastObject();
-      pilotingLocobot = !pilotingLocobot;
-      LOG(INFO) << " pilotingLocobot = " << pilotingLocobot;
+      pokeLastObject();
       break;
     case KeyEvent::Key::F:
       pushLastObject();
@@ -710,67 +597,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::T:
       // Test key. Put what you want here...
-      // torqueLastObject();
-      if (objectIDs_.size()) {
-        physics::VelocityControl& velControl =
-            physicsManager_->getVelocityControl(objectIDs_.back());
-        if (velControl.angVel == Magnum::Vector3{0, 1.0, 0} &&
-            velControl.controllingAngVel) {
-          velControl.controllingAngVel = false;
-        } else {
-          velControl.controllingAngVel = true;
-          velControl.angVel = Magnum::Vector3{0, 1.0, 0};
-        }
-      }
-      break;
-    case KeyEvent::Key::Y:
-      if (objectIDs_.size()) {
-        physics::VelocityControl& velControl =
-            physicsManager_->getVelocityControl(objectIDs_.back());
-        if (velControl.angVel == Magnum::Vector3{0, -1.0, 0} &&
-            velControl.controllingAngVel) {
-          velControl.controllingAngVel = false;
-        } else {
-          velControl.controllingAngVel = true;
-          velControl.angVel = Magnum::Vector3{0, -1.0, 0};
-        }
-      }
-      break;
-    case KeyEvent::Key::R:
-      if (objectIDs_.size()) {
-        physics::VelocityControl& velControl =
-            physicsManager_->getVelocityControl(objectIDs_.back());
-        if (velControl.linVelIsLocal) {
-          // also reset the commandVelocity
-          velControl.linVel = Magnum::Vector3{};
-          velControl.controllingLinVel = false;
-          velControl.linVelIsLocal = false;
-        } else {
-          velControl.controllingLinVel = true;
-          velControl.linVelIsLocal = true;
-          velControl.linVel = Magnum::Vector3{0, 0, -1.0};
-        }
-        LOG(INFO) << "commandingForward = " << velControl.linVelIsLocal;
-      }
-      break;
-    case KeyEvent::Key::G:
-      commandingAntiGravityForce = !commandingAntiGravityForce;
-      LOG(INFO) << "commandingAntiGravityForce = "
-                << commandingAntiGravityForce;
-      break;
-    case KeyEvent::Key::M:
-      if (objectIDs_.size() > 0) {
-        if (physicsManager_->getObjectMotionType(objectIDs_.back()) ==
-            physics::MotionType::DYNAMIC) {
-          physicsManager_->setObjectMotionType(objectIDs_.back(),
-                                               physics::MotionType::KINEMATIC);
-          Corrade::Utility::Debug() << "Motion type: KINEMATIC";
-        } else {
-          physicsManager_->setObjectMotionType(objectIDs_.back(),
-                                               physics::MotionType::DYNAMIC);
-          Corrade::Utility::Debug() << "Motion type: DYNAMIC";
-        }
-      }
+      torqueLastObject();
       break;
     case KeyEvent::Key::I:
       Magnum::DebugTools::screenshot(GL::defaultFramebuffer,
