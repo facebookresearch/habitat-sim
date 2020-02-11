@@ -70,7 +70,8 @@ int PhysicsManager::addObject(const int objectLibIndex,
   //! Draw object via resource manager
   //! Render node as child of physics node
   resourceManager_->loadObject(
-      configFile, &existingObjects_.at(nextObjectID_)->node(), drawables);
+      configFile, existingObjects_.at(nextObjectID_)->visualNode_, drawables);
+  existingObjects_.at(nextObjectID_)->node().computeCumulativeBB();
 
   if (physicsObjectAttributes.existsAs(assets::DataType::BOOL,
                                        "COM_provided")) {
@@ -97,13 +98,17 @@ int PhysicsManager::addObject(const std::string& configFile,
 }
 
 void PhysicsManager::removeObject(const int physObjectID,
-                                  bool deleteSceneNode) {
+                                  bool deleteObjectNode,
+                                  bool deleteVisualNode) {
   assertIDValidity(physObjectID);
   scene::SceneNode* objectNode = &existingObjects_.at(physObjectID)->node();
+  scene::SceneNode* visualNode = existingObjects_.at(physObjectID)->visualNode_;
   existingObjects_.erase(physObjectID);
   deallocateObjectID(physObjectID);
-  if (deleteSceneNode) {
+  if (deleteObjectNode) {
     delete objectNode;
+  } else if (deleteVisualNode) {
+    delete visualNode;
   }
 }
 
@@ -468,12 +473,15 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
   } else if (drawBB) {
     // add a new BBNode
     Magnum::Vector3 scale =
-        existingObjects_[physObjectID]->node().getCumulativeBB().size() / 2.0;
+        existingObjects_[physObjectID]->visualNode_->getCumulativeBB().size() /
+        2.0;
     existingObjects_[physObjectID]->BBNode_ =
-        &existingObjects_[physObjectID]->node().createChild();
+        &existingObjects_[physObjectID]->visualNode_->createChild();
     existingObjects_[physObjectID]->BBNode_->MagnumObject::setScaling(scale);
     existingObjects_[physObjectID]->BBNode_->MagnumObject::setTranslation(
-        existingObjects_[physObjectID]->node().getCumulativeBB().center());
+        existingObjects_[physObjectID]
+            ->visualNode_->getCumulativeBB()
+            .center());
     resourceManager_->addPrimitiveToDrawables(
         0, *existingObjects_[physObjectID]->BBNode_, drawables);
   }

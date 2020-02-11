@@ -507,6 +507,11 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
   //! drawing is off. See @ref toggleBBDraw().
   scene::SceneNode* BBNode_ = nullptr;
 
+  /**
+   * @brief All Drawable components are children of this node.
+   */
+  scene::SceneNode* visualNode_ = nullptr;
+
  protected:
   /** @brief The @ref MotionType of the object. Determines what operations can
    * be performed on this object. */

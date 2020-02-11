@@ -173,11 +173,15 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    *  @param physObjectID The ID (key) of the object instance in @ref
    * PhysicsManager::existingObjects_.
-   * @param deleteSceneNode If true, deletes the object's scene node. Otherwise
+   * @param deleteObjectNode If true, deletes the object's scene node. Otherwise
    * detaches the object from simulation.
+   * @param deleteVisualNode If true, deletes the object's visual node.
+   * Otherwise detaches the object from simulation. Is not considered if
+   * deleteObjectNode==true.
    */
   virtual void removeObject(const int physObjectID,
-                            bool deleteSceneNode = true);
+                            bool deleteObjectNode = true,
+                            bool deleteVisualNode = true);
 
   /** @brief Get the number of objects mapped in @ref
    * PhysicsManager::existingObjects_.
