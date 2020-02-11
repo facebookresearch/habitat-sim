@@ -286,7 +286,7 @@ class DemoRunner:
 
             total_frames += 1
 
-        self._culled_coherency_ratio = self._sim.culled_coherency_ratio()
+        self._culling_info = self._sim.culling_info()
 
         end_time = time.time()
         perf = {}
@@ -400,8 +400,8 @@ class DemoRunner:
             avg_sim_step_time=sum(res["avg_sim_step_time"]) / nprocs,
         )
 
-    def culled_coherency_ratio(self):
-        return self._culled_coherency_ratio
+    def culling_info(self):
+        return self._culling_info
 
     def example(self):
         start_state = self.init_common()
