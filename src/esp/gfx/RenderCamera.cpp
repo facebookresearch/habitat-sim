@@ -11,16 +11,10 @@
 #include <Magnum/SceneGraph/Drawable.h>
 
 namespace Mn = Magnum;
+namespace Cr = Corrade;
 
 namespace esp {
 namespace gfx {
-
-struct CullingResult {
-  // the culling result
-  bool intersected = true;
-  // the frustum plane that culled the object
-  int frustumPlaneIndex = 0;
-};
 
 /**
  * @brief do frustum culling with temporal coherence
@@ -29,9 +23,9 @@ struct CullingResult {
  * @param frustumPlaneIndex, the frustum plane in last frame that culled the
  * aabb (default: 0)
  */
-CullingResult rangeFrustum(const Mn::Range3D& range,
-                           const Mn::Frustum& frustum,
-                           int frustumPlaneIndex = 0) {
+Cr::Containers::Optional<int> rangeFrustum(const Mn::Range3D& range,
+                                           const Mn::Frustum& frustum,
+                                           int frustumPlaneIndex = 0) {
   const Mn::Vector3 center = range.min() + range.max();
   const Mn::Vector3 extent = range.max() - range.min();
 
@@ -44,10 +38,10 @@ CullingResult rangeFrustum(const Mn::Range3D& range,
     const float d = Mn::Math::dot(center, plane.xyz());
     const float r = Mn::Math::dot(extent, absPlaneNormal);
     if (d + r < -2.0 * plane.w())
-      return CullingResult{false, index};
+      return Cr::Containers::Optional<int>{index};
   }
 
-  return CullingResult{true, 0};
+  return Cr::Containers::NullOpt;
 }
 
 RenderCamera::RenderCamera(scene::SceneNode& node) : MagnumCamera{node} {
@@ -95,17 +89,18 @@ size_t RenderCamera::cull(
             node.getAbsoluteAABB();
         if (aabb) {
           // if it has an absolute aabb, it is a static mesh
-          CullingResult result =
+          Cr::Containers::Optional<int> culledPlane =
               rangeFrustum(*aabb, frustum, node.getFrustumPlaneIndex());
-          if (result.intersected == false) {
+
+          if (culledPlane) {
             culledTotal++;
-            if (node.getFrustumPlaneIndex() == result.frustumPlaneIndex) {
+            if (node.getFrustumPlaneIndex() == *culledPlane) {
               culledCoherency++;
             }
-            node.setFrustumPlaneIndex(result.frustumPlaneIndex);
+            node.setFrustumPlaneIndex(*culledPlane);
           }
-
-          return !result.intersected;
+          // if it has value, it means the aabb is culled
+          return (culledPlane != Cr::Containers::NullOpt);
         } else {
           // keep the drawable if its node does not have an absolute AABB
           return false;
