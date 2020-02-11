@@ -30,12 +30,19 @@ _barrier = None
 class DemoRunnerType(Enum):
     BENCHMARK = 1
     EXAMPLE = 2
+    AB_TEST = 3
+
+
+class ABTestGroup(Enum):
+    CONTROL = 1
+    TEST = 2
 
 
 class DemoRunner:
     def __init__(self, sim_settings, simulator_demo_type):
         if simulator_demo_type == DemoRunnerType.EXAMPLE:
             self.set_sim_settings(sim_settings)
+        self._demo_type = simulator_demo_type
 
     def set_sim_settings(self, sim_settings):
         self._sim_settings = sim_settings.copy()
@@ -43,21 +50,36 @@ class DemoRunner:
     def save_color_observation(self, obs, total_frames):
         color_obs = obs["color_sensor"]
         color_img = Image.fromarray(color_obs, mode="RGBA")
-        color_img.save("test.rgba.%05d.png" % total_frames)
+        if self._demo_type == DemoRunnerType.AB_TEST:
+            if self._group_id == ABTestGroup.CONTROL:
+                color_img.save("test.rgba.control.%05d.png" % total_frames)
+            else:
+                color_img.save("test.rgba.test.%05d.png" % total_frames)
+        else:
+            color_img.save("test.rgba.%05d.png" % total_frames)
 
     def save_semantic_observation(self, obs, total_frames):
         semantic_obs = obs["semantic_sensor"]
         semantic_img = Image.new("P", (semantic_obs.shape[1], semantic_obs.shape[0]))
         semantic_img.putpalette(d3_40_colors_rgb.flatten())
         semantic_img.putdata((semantic_obs.flatten() % 40).astype(np.uint8))
-        semantic_img.save("test.sem.%05d.png" % total_frames)
+        if self._demo_type == DemoRunnerType.AB_TEST:
+            if self._group_id == ABTestGroup.CONTROL:
+                semantic_img.save("test.sem.control.%05d.png" % total_frames)
+            else:
+                semantic_img.save("test.sem.test.%05d.png" % total_frames)
+        else:
+            semantic_img.save("test.sem.%05d.png" % total_frames)
 
     def save_depth_observation(self, obs, total_frames):
-        if self._sim_settings["depth_sensor"]:
-            depth_obs = obs["depth_sensor"]
-            depth_img = Image.fromarray(
-                (depth_obs / 10 * 255).astype(np.uint8), mode="L"
-            )
+        depth_obs = obs["depth_sensor"]
+        depth_img = Image.fromarray((depth_obs / 10 * 255).astype(np.uint8), mode="L")
+        if self._demo_type == DemoRunnerType.AB_TEST:
+            if self._group_id == ABTestGroup.CONTROL:
+                depth_img.save("test.depth.control.%05d.png" % total_frames)
+            else:
+                depth_img.save("test.depth.test.%05d.png" % total_frames)
+        else:
             depth_img.save("test.depth.%05d.png" % total_frames)
 
     def output_semantic_mask_stats(self, obs, total_frames):
@@ -311,6 +333,7 @@ class DemoRunner:
             download_and_unzip(default_sim_settings["test_scene_data_url"], ".")
             print("Downloaded and extracted test scenes data.")
 
+        # create a simulator (Simulator python class object, not the backend simulator)
         self._sim = habitat_sim.Simulator(self._cfg)
 
         random.seed(self._sim_settings["seed"])
@@ -353,9 +376,11 @@ class DemoRunner:
         global _barrier
         _barrier = b
 
-    def benchmark(self, settings):
+    def benchmark(self, settings, group_id=ABTestGroup.CONTROL):
         self.set_sim_settings(settings)
         nprocs = settings["num_processes"]
+        # set it anyway, but only be used in AB_TEST mode
+        self._group_id = group_id
 
         barrier = multiprocessing.Barrier(nprocs)
         with multiprocessing.Pool(

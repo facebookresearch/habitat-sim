@@ -177,7 +177,7 @@ class Simulator:
         self._config_backend(config)
         self._config_agents(config)
         self._config_pathfinder(config)
-
+        self._sim.frustum_culling = config.sim_cfg.frustum_culling
         for i in range(len(self.agents)):
             self.agents[i].controls.move_filter_fn = self._step_filter
 
@@ -434,7 +434,9 @@ class Sensor:
         agent_node.parent = scene.get_root_node()
 
         with self._sensor_object.render_target as tgt:
-            self._sim.renderer.draw(self._sensor_object, scene)
+            self._sim.renderer.draw(
+                self._sensor_object, scene, self._sim.frustum_culling
+            )
 
         cam = scene.get_default_render_camera()
         self._culled_coherency += cam.culled_coherency
