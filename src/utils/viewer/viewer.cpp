@@ -66,7 +66,10 @@ class Viewer : public Magnum::Platform::Application {
   void keyPressEvent(KeyEvent& event) override;
 
   // Interactive functions
-  void addObject(std::string configFile);
+  void addObject(std::string configFile, bool attachAgent = false);
+
+  int agentObjectID = ID_UNDEFINED;
+
   void pokeLastObject();
   void pushLastObject();
 
@@ -257,7 +260,7 @@ Viewer::Viewer(const Arguments& arguments)
 
 }  // end Viewer::Viewer
 
-void Viewer::addObject(std::string configFile) {
+void Viewer::addObject(std::string configFile, bool attachAgent) {
   if (physicsManager_ == nullptr)
     return;
 
@@ -268,23 +271,29 @@ void Viewer::addObject(std::string configFile) {
 
   auto& drawables = sceneGraph_->getDrawables();
 
-  int physObjectID = physicsManager_->addObject(configFile, &drawables);
-  physicsManager_->setTranslation(physObjectID, new_pos);
+  if (attachAgent) {
+    agentObjectID =
+        physicsManager_->addObject(configFile, &drawables, agentBodyNode_);
 
-  // draw random quaternion via the method:
-  // http://planning.cs.uiuc.edu/node198.html
-  double u1 = (rand() % 1000) / 1000.0;
-  double u2 = (rand() % 1000) / 1000.0;
-  double u3 = (rand() % 1000) / 1000.0;
+  } else {
+    int physObjectID = physicsManager_->addObject(configFile, &drawables);
+    physicsManager_->setTranslation(physObjectID, new_pos);
 
-  Magnum::Vector3 qAxis(sqrt(1 - u1) * cos(2 * M_PI * u2),
-                        sqrt(u1) * sin(2 * M_PI * u3),
-                        sqrt(u1) * cos(2 * M_PI * u3));
-  physicsManager_->setRotation(
-      physObjectID,
-      Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
+    // draw random quaternion via the method:
+    // http://planning.cs.uiuc.edu/node198.html
+    double u1 = (rand() % 1000) / 1000.0;
+    double u2 = (rand() % 1000) / 1000.0;
+    double u3 = (rand() % 1000) / 1000.0;
 
-  objectIDs_.push_back(physObjectID);
+    Magnum::Vector3 qAxis(sqrt(1 - u1) * cos(2 * M_PI * u2),
+                          sqrt(u1) * sin(2 * M_PI * u3),
+                          sqrt(u1) * cos(2 * M_PI * u3));
+    physicsManager_->setRotation(
+        physObjectID,
+        Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
+
+    objectIDs_.push_back(physObjectID);
+  }
 }
 
 void Viewer::removeLastObject() {
@@ -387,6 +396,11 @@ Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
 }
 
 void Viewer::drawEvent() {
+  if (agentObjectID != ID_UNDEFINED) {
+    renderCamera_->node().setTransformation(
+        rgbSensorNode_->absoluteTransformation());
+  }
+
   GL::defaultFramebuffer.clear(GL::FramebufferClear::Color |
                                GL::FramebufferClear::Depth);
   if (sceneID_.size() <= 0)
@@ -581,7 +595,19 @@ void Viewer::keyPressEvent(KeyEvent& event) {
             << "Run the app with --enable-physics in order to add objects";
     } break;
     case KeyEvent::Key::P:
-      pokeLastObject();
+      // pokeLastObject();
+      if (physicsManager_ != nullptr) {
+        if (agentObjectID == ID_UNDEFINED) {
+          int numObjects = resourceManager_.getNumLibraryObjects();
+          int randObjectID = rand() % numObjects;
+          addObject(resourceManager_.getObjectConfig(randObjectID), true);
+          LOG(INFO) << "attached agent to physics";
+        } else {
+          physicsManager_->removeObject(agentObjectID, false);
+          agentObjectID = ID_UNDEFINED;
+          LOG(INFO) << "removed agent from physics";
+        }
+      }
       break;
     case KeyEvent::Key::F:
       pushLastObject();

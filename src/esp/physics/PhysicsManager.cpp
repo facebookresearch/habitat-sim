@@ -48,7 +48,8 @@ bool PhysicsManager::addScene(
 }
 
 int PhysicsManager::addObject(const int objectLibIndex,
-                              DrawableGroup* drawables) {
+                              DrawableGroup* drawables,
+                              scene::SceneNode* attachmentNode) {
   const std::string configFile =
       resourceManager_->getObjectConfig(objectLibIndex);
 
@@ -59,7 +60,8 @@ int PhysicsManager::addObject(const int objectLibIndex,
       resourceManager_->getPhysicsObjectAttributes(configFile);
 
   //! Instantiate with mesh pointer
-  int nextObjectID_ = makeRigidObject(meshGroup, physicsObjectAttributes);
+  int nextObjectID_ =
+      makeRigidObject(meshGroup, physicsObjectAttributes, attachmentNode);
   if (nextObjectID_ < 0) {
     LOG(ERROR) << "makeRigidObject unsuccessful";
     return ID_UNDEFINED;
@@ -86,10 +88,11 @@ int PhysicsManager::addObject(const int objectLibIndex,
 }
 
 int PhysicsManager::addObject(const std::string& configFile,
-                              DrawableGroup* drawables) {
+                              DrawableGroup* drawables,
+                              scene::SceneNode* attachmentNode) {
   int resObjectID = resourceManager_->getObjectID(configFile);
   //! Invoke resourceManager to draw object
-  int physObjectID = addObject(resObjectID, drawables);
+  int physObjectID = addObject(resObjectID, drawables, attachmentNode);
   return physObjectID;
 }
 
@@ -133,11 +136,15 @@ int PhysicsManager::deallocateObjectID(int physObjectID) {
 //! Create and initialize rigid object
 int PhysicsManager::makeRigidObject(
     const std::vector<assets::CollisionMeshData>& meshGroup,
-    assets::PhysicsObjectAttributes physicsObjectAttributes) {
+    assets::PhysicsObjectAttributes physicsObjectAttributes,
+    scene::SceneNode* attachmentNode /* = nullptr */) {
   int newObjectID = allocateObjectID();
-  scene::SceneNode& newNode = staticSceneObject_->node().createChild();
+  scene::SceneNode* newNode = attachmentNode;
+  if (attachmentNode == nullptr) {
+    newNode = &staticSceneObject_->node().createChild();
+  }
   existingObjects_[newObjectID] =
-      std::make_unique<physics::RigidObject>(&newNode);
+      std::make_unique<physics::RigidObject>(newNode);
 
   //! Instantiate with mesh pointer
   bool objectSuccess =
@@ -146,7 +153,8 @@ int PhysicsManager::makeRigidObject(
   if (!objectSuccess) {
     deallocateObjectID(newObjectID);
     existingObjects_.erase(newObjectID);
-    delete &newNode;
+    if (attachmentNode == nullptr)
+      delete newNode;
     return ID_UNDEFINED;
   }
   return newObjectID;

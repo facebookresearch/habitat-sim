@@ -149,7 +149,9 @@ class PhysicsManager {
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  int addObject(const std::string& configFile, DrawableGroup* drawables);
+  int addObject(const std::string& configFile,
+                DrawableGroup* drawables,
+                scene::SceneNode* attachmentNode = nullptr);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::assets::ResourceManager::physicsObjectLibrary_ by object
@@ -162,7 +164,9 @@ class PhysicsManager {
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  virtual int addObject(const int objectLibIndex, DrawableGroup* drawables);
+  virtual int addObject(const int objectLibIndex,
+                        DrawableGroup* drawables,
+                        scene::SceneNode* attachmentNode = nullptr);
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref
@@ -816,7 +820,8 @@ class PhysicsManager {
    */
   virtual int makeRigidObject(
       const std::vector<assets::CollisionMeshData>& meshGroup,
-      assets::PhysicsObjectAttributes physicsObjectAttributes);
+      assets::PhysicsObjectAttributes physicsObjectAttributes,
+      scene::SceneNode* attachmentNode = nullptr);
 
   /** @brief A pointer to a @ref esp::assets::ResourceManager which holds assets
    * that can be accessed by this @ref PhysicsManager*/

@@ -75,11 +75,17 @@ bool BulletPhysicsManager::addScene(
 
 int BulletPhysicsManager::makeRigidObject(
     const std::vector<assets::CollisionMeshData>& meshGroup,
-    assets::PhysicsObjectAttributes physicsObjectAttributes) {
+    assets::PhysicsObjectAttributes physicsObjectAttributes,
+    scene::SceneNode* attachmentNode) {
   //! Create new physics object (child node of staticSceneObject_)
   int newObjectID = allocateObjectID();
-  scene::SceneNode& newNode = staticSceneObject_->node().createChild();
-  existingObjects_[newObjectID] = std::make_unique<BulletRigidObject>(&newNode);
+
+  scene::SceneNode* newNode = attachmentNode;
+  if (attachmentNode == nullptr) {
+    newNode = &staticSceneObject_->node().createChild();
+  }
+
+  existingObjects_[newObjectID] = std::make_unique<BulletRigidObject>(newNode);
 
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
       physicsObjectAttributes.getString("collisionMeshHandle"));
@@ -92,17 +98,20 @@ int BulletPhysicsManager::makeRigidObject(
     LOG(ERROR) << "Object load failed";
     deallocateObjectID(newObjectID);
     existingObjects_.erase(newObjectID);
-    delete &newNode;
+    if (attachmentNode == nullptr)
+      delete newNode;
     return ID_UNDEFINED;
   }
   return newObjectID;
 }
 
 int BulletPhysicsManager::addObject(const int objectLibIndex,
-                                    DrawableGroup* drawables) {
+                                    DrawableGroup* drawables,
+                                    scene::SceneNode* attachmentNode) {
   // Do default load first (adds the SceneNode to the SceneGraph and computes
   // the cumulativeBB_)
-  int objID = PhysicsManager::addObject(objectLibIndex, drawables);
+  int objID =
+      PhysicsManager::addObject(objectLibIndex, drawables, attachmentNode);
 
   // Then set the collision shape to the cumulativeBB_ if necessary
   if (objID != ID_UNDEFINED) {

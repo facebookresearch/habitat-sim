@@ -81,7 +81,8 @@ class BulletPhysicsManager : public PhysicsManager {
                 const std::vector<assets::CollisionMeshData>& meshGroup);
 
   virtual int addObject(const int objectLibIndex,
-                        DrawableGroup* drawables) override;
+                        DrawableGroup* drawables,
+                        scene::SceneNode* attachmentNode = nullptr) override;
 
   //============ Simulator functions =============
 
@@ -219,9 +220,9 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param physicsObjectAttributes The physical object's template defining its
    * physical parameters.
    */
-  int makeRigidObject(
-      const std::vector<assets::CollisionMeshData>& meshGroup,
-      assets::PhysicsObjectAttributes physicsObjectAttributes) override;
+  int makeRigidObject(const std::vector<assets::CollisionMeshData>& meshGroup,
+                      assets::PhysicsObjectAttributes physicsObjectAttributes,
+                      scene::SceneNode* attachmentNode = nullptr) override;
 
   ESP_SMART_POINTERS(BulletPhysicsManager)
 
