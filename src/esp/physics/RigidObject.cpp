@@ -236,9 +236,9 @@ Magnum::Matrix4 VelocityControl::integrateTransform(
     Magnum::Vector3 ha = angVel * dt * 0.5;  // vector of half angle
     float l = ha.length();                   // magnitude
     if (l > 0) {
-      float ss = sin(l) / l;
+      float ss = std::sin(l) / l;
       q = Magnum::Quaternion(
-          Magnum::Vector3{ha.x() * ss, ha.y() * ss, ha.z() * ss}, cos(l));
+          Magnum::Vector3{ha.x() * ss, ha.y() * ss, ha.z() * ss}, std::cos(l));
     } else {
       q = Magnum::Quaternion(Magnum::Vector3{ha.x(), ha.y(), ha.z()}, 1.0);
     }
