@@ -435,7 +435,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
       errorEps);
   Magnum::Rad angleError =
       Magnum::Math::angle(physicsManager_->getRotation(objectId), qGroundTruth);
-  if (!isnan(float(angleError))) {  // nan results close to equality
+  if (!std::isnan(float(angleError))) {  // nan results close to equality
     ASSERT_LE(float(angleError), errorEps);
   }
 
