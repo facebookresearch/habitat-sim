@@ -229,7 +229,8 @@ struct PathFinder::Impl {
 
   std::pair<vec3f, vec3f> bounds() const { return bounds_; };
 
-  std::vector<std::vector<bool>> getTopDownView(const float res);
+  std::vector<std::vector<bool>> getTopDownView(const float pixelsPerMeter,
+                                                const float height);
 
  private:
   struct NavMeshDeleter {
@@ -1131,36 +1132,36 @@ bool PathFinder::Impl::isNavigable(const vec3f& pt,
 }
 
 std::vector<std::vector<bool>> PathFinder::Impl::getTopDownView(
-    const float res) {
+    const float pixelsPerMeter,
+    const float height) {
   std::pair<vec3f, vec3f> mapBounds = bounds();
   vec3f bound1 = mapBounds.first;
   vec3f bound2 = mapBounds.second;
 
-  float width = std::abs(bound1[0] - bound2[0]);
-  float height = std::abs(bound1[2] - bound2[2]);
-  int widthResolution = width / res;
-  int heightResolution = height / res;
+  float xspan = std::abs(bound1[0] - bound2[0]);
+  float zspan = std::abs(bound1[2] - bound2[2]);
+  int xResolution = xspan / pixelsPerMeter;
+  int zResolution = zspan / pixelsPerMeter;
   float startx = fmin(bound1[0], bound2[0]);
-  float starty = fmin(bound1[2], bound2[2]);
-  float navigableHeight = getRandomNavigablePoint()[1];
+  float startz = fmin(bound1[2], bound2[2]);
   std::vector<std::vector<bool>> topdownMap;
 
-  float curHeight = starty;
-  float curWidth = startx;
-  for (int h = 0; h < heightResolution; h++) {
+  float curz = startz;
+  float curx = startx;
+  for (int h = 0; h < xResolution; h++) {
     std::vector<bool> curRow;
-    for (int w = 0; w < widthResolution; w++) {
-      vec3f point = vec3f(curWidth, navigableHeight, curHeight);
+    for (int w = 0; w < zResolution; w++) {
+      vec3f point = vec3f(curx, height, curz);
       if (isNavigable(point, 0.5)) {
         curRow.push_back(true);
       } else {
         curRow.push_back(false);
       }
-      curWidth = curWidth + res;
+      curx = curx + pixelsPerMeter;
     }
     topdownMap.push_back(curRow);
-    curHeight = curHeight + res;
-    curWidth = startx;
+    curz = curz + pixelsPerMeter;
+    curx = startx;
   }
 
   return topdownMap;
@@ -1260,8 +1261,10 @@ std::pair<vec3f, vec3f> PathFinder::bounds() const {
   return pimpl_->bounds();
 }
 
-std::vector<std::vector<bool>> PathFinder::getTopDownView(const float res) {
-  return pimpl_->getTopDownView(res);
+std::vector<std::vector<bool>> PathFinder::getTopDownView(
+    const float pixelsPerMeter,
+    const float height) {
+  return pimpl_->getTopDownView(pixelsPerMeter, height);
 }
 
 }  // namespace nav

@@ -8,9 +8,52 @@ import numpy as np
 
 import habitat_sim
 import habitat_sim.bindings as hsim
-from examples.settings import make_cfg
 from habitat_sim.agent import AgentState
 from habitat_sim.utils.common import quat_from_two_vectors
+
+
+def make_cfg(settings):
+    sim_cfg = hsim.SimulatorConfiguration()
+    sim_cfg.enable_physics = False
+    sim_cfg.gpu_device_id = 0
+    sim_cfg.scene.id = settings["scene"]
+
+    # define default sensor parameters (see src/esp/Sensor/Sensor.h)
+    sensors = {
+        "color_sensor": {  # active if sim_settings["color_sensor"]
+            "sensor_type": hsim.SensorType.COLOR,
+            "resolution": [settings["height"], settings["width"]],
+            "position": [0.0, settings["sensor_height"], 0.0],
+        },
+        "depth_sensor": {  # active if sim_settings["depth_sensor"]
+            "sensor_type": hsim.SensorType.DEPTH,
+            "resolution": [settings["height"], settings["width"]],
+            "position": [0.0, settings["sensor_height"], 0.0],
+        },
+        "semantic_sensor": {  # active if sim_settings["semantic_sensor"]
+            "sensor_type": hsim.SensorType.SEMANTIC,
+            "resolution": [settings["height"], settings["width"]],
+            "position": [0.0, settings["sensor_height"], 0.0],
+        },
+    }
+
+    # create sensor specifications
+    sensor_specs = []
+    for sensor_uuid, sensor_params in sensors.items():
+        if settings[sensor_uuid]:
+            sensor_spec = hsim.SensorSpec()
+            sensor_spec.uuid = sensor_uuid
+            sensor_spec.sensor_type = sensor_params["sensor_type"]
+            sensor_spec.resolution = sensor_params["resolution"]
+            sensor_spec.position = sensor_params["position"]
+            sensor_spec.gpu2gpu_transfer = False
+            sensor_specs.append(sensor_spec)
+
+    # create agent specifications
+    agent_cfg = habitat_sim.agent.AgentConfiguration()
+    agent_cfg.sensor_specifications = sensor_specs
+
+    return habitat_sim.Configuration(sim_cfg, [agent_cfg])
 
 
 class ImageExtractor:
@@ -21,7 +64,7 @@ class ImageExtractor:
     :property labels: class labels of things to tather images of
     :property cfg: configuration for simulator of type SimulatorConfiguration
     :property sim: Simulator object
-    :property res: Resolution of topdown map. 0.1 means each pixel in the topdown map
+    :property pixels_per_meter: Resolution of topdown map. 0.1 means each pixel in the topdown map
         represents 0.1 x 0.1 meters in the coordinate system of the pathfinder
     :property tdv: TopdownView object
     :property topdown_view: The actual 2D array representing the topdown view
@@ -29,7 +72,7 @@ class ImageExtractor:
     :property poses: list of camera poses gathered from pose_extractor
     :property label_map: maps lable numbers on the topdown map to their name
     :property out_name_to_sensor_name: maps name of output to the sensor same corresponding to that output
-    :property output: list of output names that the user wants e.g. ['rgb', 'depth']
+    :property output: list of output names that the user wants e.g. ['rgba', 'depth']
     """
 
     def __init__(
@@ -37,7 +80,7 @@ class ImageExtractor:
         scene_filepath,
         labels=[0.0],
         img_size=(512, 512),
-        output=["rgb"],
+        output=["rgba"],
         sim=None,
     ):
         self.scene_filepath = scene_filepath
@@ -52,12 +95,13 @@ class ImageExtractor:
             sim.reconfigure(self.cfg)
 
         self.sim = sim
-        self.res = 0.1
-        self.tdv = TopdownView(self.sim, self.res)
+        self.pixels_per_meter = 0.1
+        ref_point = self._get_pathfinder_reference_point(self.sim.pathfinder)
+        self.tdv = TopdownView(self.sim, ref_point[1], self.pixels_per_meter)
         self.topdown_view = self.tdv.topdown_view
 
         self.pose_extractor = PoseExtractor(
-            self.topdown_view, self.sim.pathfinder, self.res
+            self.topdown_view, self.sim.pathfinder, self.pixels_per_meter
         )
         self.poses = self.pose_extractor.extract_poses(
             labels=self.labels
@@ -66,7 +110,7 @@ class ImageExtractor:
 
         # Configure the output each data sample
         self.out_name_to_sensor_name = {
-            "rgb": "color_sensor",
+            "rgba": "color_sensor",
             "depth": "depth_sensor",
             "semantic": "semamtic_sensor",
         }
@@ -112,7 +156,7 @@ class ImageExtractor:
             "scene": scene_filepath,  # Scene path
             "default_agent": 0,
             "sensor_height": 1.5,  # Height of sensors in meters
-            "color_sensor": True,  # RGB sensor
+            "color_sensor": True,  # RGBA sensor
             "semantic_sensor": True,  # Semantic sensor
             "depth_sensor": True,  # Depth sensor
             "silent": True,
@@ -120,12 +164,21 @@ class ImageExtractor:
 
         return make_cfg(sim_settings)
 
+    def _get_pathfinder_reference_point(self, pf):
+        bound1, bound2 = pf.get_bounds()
+        startw = min(bound1[0], bound2[0])
+        starth = min(bound1[2], bound2[2])
+        starty = pf.get_random_navigable_point()[
+            1
+        ]  # Can't think of a better way to get a valid y-axis value
+        return (startw, starty, starth)  # width, y, height
+
 
 class TopdownView(object):
-    def __init__(self, sim, res=0.1):
-        self.topdown_view = np.array(sim.pathfinder.get_topdown_view(res)).astype(
-            np.float64
-        )
+    def __init__(self, sim, height, pixels_per_meter=0.1):
+        self.topdown_view = np.array(
+            sim.pathfinder.get_topdown_view(pixels_per_meter, height)
+        ).astype(np.float64)
 
 
 class PoseExtractor(object):
@@ -133,15 +186,15 @@ class PoseExtractor(object):
 
     :property topdown_view: 2D array representing topdown view of scene
     :property pathfinder: the pathfinder from the Simulator object
-    :property res: resolution of the topdown view (explained in HabitatDataset)
+    :property pixels_per_meter: resolution of the topdown view (explained in ImageExtractor)
     :property gridpoints: list of positions for the camera
     :property dist: distance between each camera position
     """
 
-    def __init__(self, topdown_view, pathfinder, res=0.1):
+    def __init__(self, topdown_view, pathfinder, pixels_per_meter=0.1):
         self.topdown_view = topdown_view
         self.pathfinder = pathfinder
-        self.res = res
+        self.pixels_per_meter = pixels_per_meter
         self.gridpoints = None
 
         # Determine the physical spacing between each camera position
@@ -151,6 +204,13 @@ class PoseExtractor(object):
         )  # This produces lots of simular images for small scenes. Perhaps a smarter solution exists
 
     def extract_poses(self, labels):
+        r"""Uses the topdown map to define positions in the scene from which to generate images. Returns
+        a list of poses, where each pose is (position, rotation, class label) for the camera. Currently
+        class label only supports 'unnavigable points', meaning the user cannot yet specify something
+        like 'chair' to obtain images of.
+
+        :property labels: The labels to take images of (currently only supports unnavigable points)
+        """
         height, width = self.topdown_view.shape
         n_gridpoints_width, n_gridpoints_height = (
             width // self.dist - 1,
@@ -180,8 +240,20 @@ class PoseExtractor(object):
             pos, cpi, label = pose
             r1, c1 = pos
             r2, c2 = cpi
-            new_pos = np.array([startw + c1 * self.res, starty, starth + r1 * self.res])
-            new_cpi = np.array([startw + c2 * self.res, starty, starth + r2 * self.res])
+            new_pos = np.array(
+                [
+                    startw + c1 * self.pixels_per_meter,
+                    starty,
+                    starth + r1 * self.pixels_per_meter,
+                ]
+            )
+            new_cpi = np.array(
+                [
+                    startw + c2 * self.pixels_per_meter,
+                    starty,
+                    starth + r2 * self.pixels_per_meter,
+                ]
+            )
             cam_normal = new_cpi - new_pos
             new_rot = self._compute_quat(cam_normal)
             poses[i] = (new_pos, new_rot, label)
@@ -189,9 +261,19 @@ class PoseExtractor(object):
         return poses
 
     def valid_point(self, row, col):
+        r"""Whether a point is navigable
+
+        :property row: row in the topdown view
+        :property col: col in the topdown view
+        """
         return self.topdown_view[row][col] == 1.0
 
     def is_point_of_interest(self, point, labels):
+        r"""Whether one of the class labels exists at the specified point.
+
+        :property point: the point to consider
+        :property labels: The labels to take images of (currently only supports unnavigable points)
+        """
         r, c = point
         is_interesting = False
         if self.topdown_view[r][c] in labels:

@@ -31,7 +31,7 @@ class MyDataset(Dataset):
 
 
 def test_topdown_view(sim):
-    tdv = TopdownView(sim, res=0.1)
+    tdv = TopdownView(sim, height=0.0, pixels_per_meter=0.1)
     topdown_view = tdv.topdown_view
 
 
@@ -45,6 +45,6 @@ def test_data_extractor_end_to_end(sim):
 
     # Run data through network
     for i, sample_batch in enumerate(dataloader):
-        img, label = sample_batch["rgb"], sample_batch["label"]
+        img, label = sample_batch["rgba"], sample_batch["label"]
         img = img.permute(0, 3, 2, 1).float()
         out = net(img)
