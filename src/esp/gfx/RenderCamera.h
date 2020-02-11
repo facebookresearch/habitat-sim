@@ -62,7 +62,12 @@ class RenderCamera : public MagnumCamera {
               std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
                         Magnum::Matrix4>>& drawableTransforms);
 
+  unsigned int getCulledCoherency() { return culledCoherency; }
+  unsigned int getCulledTotal() { return culledTotal; }
+
  protected:
+  unsigned int culledCoherency = 0;
+  unsigned int culledTotal = 0;
   ESP_SMART_POINTERS(RenderCamera)
 };
 

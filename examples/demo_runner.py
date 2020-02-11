@@ -264,6 +264,8 @@ class DemoRunner:
 
             total_frames += 1
 
+        self._culled_coherency_ratio = self._sim.culled_coherency_ratio()
+
         end_time = time.time()
         perf = {}
         perf["total_time"] = end_time - start_time
@@ -373,6 +375,9 @@ class DemoRunner:
             avg_sim_step_time=sum(res["avg_sim_step_time"]) / nprocs,
         )
 
+    def culled_coherency_ratio(self):
+        return slef._culled_coherency_ratio
+
     def example(self):
         start_state = self.init_common()
 
@@ -395,7 +400,6 @@ class DemoRunner:
 
         # print semantic scene
         self.print_semantic_scene()
-
         perf = self.do_time_steps()
         self._sim.close()
         del self._sim

@@ -46,6 +46,12 @@ void initGfxBindings(py::module& m) {
         Set this `Camera`'s projection matrix.
       )",
            "width"_a, "height"_a, "znear"_a, "zfar"_a, "hfov"_a)
+      .def_property_readonly(
+          "culled_coherency", &RenderCamera::getCulledCoherency,
+          "Get the number of culled objects that were culled by the same "
+          "frustum plane from the last frame")
+      .def_property_readonly("culled_total", &RenderCamera::getCulledTotal,
+                             "Get the total number of culled objects")
       .def_property_readonly("node", nodeGetter<RenderCamera>,
                              "Node this object is attached to")
       .def_property_readonly("object", nodeGetter<RenderCamera>,

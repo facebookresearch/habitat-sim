@@ -98,8 +98,13 @@ size_t RenderCamera::cull(
           CullingResult result =
               rangeFrustum(*aabb, frustum, node.getFrustumPlaneIndex());
           if (result.intersected == false) {
+            culledTotal++;
+            if (node.getFrustumPlaneIndex() == result.frustumPlaneIndex) {
+              culledCoherency++;
+            }
             node.setFrustumPlaneIndex(result.frustumPlaneIndex);
           }
+
           return !result.intersected;
         } else {
           // keep the drawable if its node does not have an absolute AABB
@@ -112,6 +117,9 @@ size_t RenderCamera::cull(
 
 uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables,
                             bool frustumCulling) {
+  culledCoherency = 0;
+  culledTotal = 0;
+
   if (!frustumCulling) {
     MagnumCamera::draw(drawables);
     return drawables.size();

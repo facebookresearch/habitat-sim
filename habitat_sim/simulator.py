@@ -399,6 +399,9 @@ class Sensor:
             self._spec.noise_model, self._spec.uuid
         )
 
+        self._culled_coherency = 0
+        self._culled_total = 0
+
     def draw_observation(self):
         # sanity check:
 
@@ -432,6 +435,15 @@ class Sensor:
 
         with self._sensor_object.render_target as tgt:
             self._sim.renderer.draw(self._sensor_object, scene)
+
+        cam = scene.get_default_render_camera()
+        self._culled_coherency += cam.culled_coherency
+        self._culled_total += cam.culled_total
+
+    def culled_coherency_ratio(self):
+        if self._culled_total == 0:
+            return 0
+        return float(self._culled_coherency) / float(self._culled_total)
 
     def get_observation(self):
 
