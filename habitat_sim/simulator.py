@@ -64,6 +64,8 @@ class Simulator:
         config = self.config
         self.config = None
         self.reconfigure(config)
+        _culled_coherency = 0
+        _culled_total = 0
 
     def culled_coherency_ratio(self):
         if self._culled_total == 0:
