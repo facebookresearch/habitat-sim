@@ -92,12 +92,23 @@ size_t RenderCamera::cull(
           Cr::Containers::Optional<int> culledPlane =
               rangeFrustum(*aabb, frustum, node.getFrustumPlaneIndex());
 
+          // object is culled
           if (culledPlane) {
             culledTotal++;
             if (node.getFrustumPlaneIndex() == *culledPlane) {
               culledCoherency++;
             }
+            testsWithCoherency +=
+                (*culledPlane + 6 - node.getFrustumPlaneIndex()) % 6 + 1;
+
             node.setFrustumPlaneIndex(*culledPlane);
+            // if there is no temporal coherence heuristic, it tests from plane
+            // 0
+            testsNoCoherency += *culledPlane - 0 + 1;
+          } else {
+            // object is inside the frustum, which implies 6 tests are done
+            testsWithCoherency += 6;
+            testsNoCoherency += 6;
           }
           // if it has value, it means the aabb is culled
           return (culledPlane != Cr::Containers::NullOpt);

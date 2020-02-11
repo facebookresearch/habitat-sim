@@ -59,16 +59,21 @@ class Simulator:
     _previous_step_time = 0.0  # track the compute time of each step
     _culled_coherency = 0
     _culled_total = 0
+    _tests_with_coherency = 0
+    _tests_no_coherency = 0
 
     def __attrs_post_init__(self):
         config = self.config
         self.config = None
         self.reconfigure(config)
 
-    def culled_coherency_ratio(self):
-        if self._culled_total == 0:
-            return 0.0
-        return float(self._culled_coherency) / float(self._culled_total)
+    def culling_info(self):
+        return [
+            self._culled_coherency,
+            self._culled_total,
+            self._tests_with_coherency,
+            self._tests_no_coherency,
+        ]
 
     def close(self):
         for sensor in self._sensors.values():
@@ -172,6 +177,8 @@ class Simulator:
 
         self._culled_coherency = 0
         self._culled_total = 0
+        self._tests_with_coherency = 0
+        self._tests_no_coherency = 0
 
         config.sim_cfg.create_renderer = any(
             map(lambda cfg: len(cfg.sensor_specifications) > 0, config.agents)
@@ -241,6 +248,8 @@ class Simulator:
             cull = sensor.draw_observation()
             self._culled_coherency += cull[0]
             self._culled_total += cull[1]
+            self._tests_with_coherency += cull[2]
+            self._tests_no_coherency += cull[3]
 
         observations = {}
         for sensor_uuid, sensor in self._sensors.items():
@@ -448,7 +457,12 @@ class Sensor:
             )
 
         cam = scene.get_default_render_camera()
-        return [cam.culled_coherency, cam.culled_total]
+        return [
+            cam.culled_coherency,
+            cam.culled_total,
+            cam.tests_with_coherency,
+            cam.tests_no_coherency,
+        ]
 
     def get_observation(self):
 

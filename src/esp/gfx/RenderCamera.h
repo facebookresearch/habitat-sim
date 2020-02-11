@@ -62,12 +62,20 @@ class RenderCamera : public MagnumCamera {
               std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
                         Magnum::Matrix4>>& drawableTransforms);
 
+  // returns the number of culled objects which benefit from temporal coherency
   unsigned int getCulledCoherency() { return culledCoherency; }
+  // returns the total number of culled objects
   unsigned int getCulledTotal() { return culledTotal; }
+  // returns the number of plane tests when temporal coherency is considered
+  unsigned int getTestsWithCoherency() { return testsWithCoherency; }
+  // returns the number of plane tests when temporal coherency is NOT considered
+  unsigned int getTestsNoCoherency() { return testsNoCoherency; }
 
  protected:
   unsigned int culledCoherency = 0;
   unsigned int culledTotal = 0;
+  unsigned int testsWithCoherency = 0;
+  unsigned int testsNoCoherency = 0;
   ESP_SMART_POINTERS(RenderCamera)
 };
 

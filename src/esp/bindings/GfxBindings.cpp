@@ -47,9 +47,16 @@ void initGfxBindings(py::module& m) {
       )",
            "width"_a, "height"_a, "znear"_a, "zfar"_a, "hfov"_a)
       .def_property_readonly(
-          "culled_coherency", &RenderCamera::getCulledCoherency,
-          "Get the number of culled objects that were culled by the same "
-          "frustum plane from the last frame")
+          "tests_with_coherency", &RenderCamera::getTestsWithCoherency,
+          "Get the number of plane tests when temporal coherency is enabled.")
+      .def_property_readonly("tests_no_coherency",
+                             &RenderCamera::getTestsNoCoherency,
+                             "Get the number of plane tests when temporal "
+                             "coherency is NOT enabled.")
+      .def_property_readonly("culled_coherency",
+                             &RenderCamera::getCulledCoherency,
+                             "Get the number of culled objects that benefit "
+                             "from temporal coherency")
       .def_property_readonly("culled_total", &RenderCamera::getCulledTotal,
                              "Get the total number of culled objects")
       .def_property_readonly("node", nodeGetter<RenderCamera>,
