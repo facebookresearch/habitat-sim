@@ -22,6 +22,8 @@ namespace gfx {
  * @param frustum, the frustum
  * @param frustumPlaneIndex, the frustum plane in last frame that culled the
  * aabb (default: 0)
+ * @return NullOpt if aabb intersects the frustum, otherwise the fustum plane
+ * index that culls the aabb,
  */
 Cr::Containers::Optional<int> rangeFrustum(const Mn::Range3D& range,
                                            const Mn::Frustum& frustum,
