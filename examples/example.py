@@ -77,23 +77,24 @@ for i in range(1):
     )
     print(" ============================================================== ")
 
-cull = demo_runner.culling_info()
-print("###### The efficiency of temporal coherence ######")
-ratio = float(cull[0]) / float(cull[1]) * 100.0
-print(
-    "culled objects that benefit from temporal coherency / total culled objects: %d / %d, ratio: %.2f%%"
-    % (cull[0], cull[1], ratio)
-)
-ratio = float(cull[3] - cull[2]) / float(cull[3]) * 100.0
-print(
-    "plane tests with and without temporal coherence enabled: %d / %d, SAVE: %.2f%%"
-    % (cull[2], cull[3], ratio)
-)
+    # assert perf["fps"] > args.test_fps_regression, (
+    #    "FPS is below regression threshold: %0.1f < %0.1f"
+    #    % (perf["fps"], args.test_fps_regression)
+    # )
 
-# assert perf["fps"] > args.test_fps_regression, (
-#    "FPS is below regression threshold: %0.1f < %0.1f"
-#    % (perf["fps"], args.test_fps_regression)
-# )
+    cull = demo_runner.culling_info()
+    print("###### The efficiency of temporal coherence ######")
+    ratio = float(cull[0]) / float(cull[1]) * 100.0
+    print(
+        "culled objects that benefit from temporal coherency / total culled objects: %d / %d, ratio: %.2f%%"
+        % (cull[0], cull[1], ratio)
+    )
+    ratio = float(cull[3] - cull[2]) / float(cull[3]) * 100.0
+    print(
+        "plane tests with and without temporal coherence enabled: %d / %d, SAVE: %.2f%%"
+        % (cull[2], cull[3], ratio)
+    )
+
 if len(perfs) > 1:
     avg_fps = 0
     avg_frame_time = 0
