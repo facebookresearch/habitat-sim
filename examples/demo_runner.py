@@ -401,7 +401,7 @@ class DemoRunner:
         )
 
     def culled_coherency_ratio(self):
-        return slef._culled_coherency_ratio
+        return self._culled_coherency_ratio
 
     def example(self):
         start_state = self.init_common()

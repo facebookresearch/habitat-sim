@@ -77,10 +77,9 @@ for i in range(1):
     )
     print(" ============================================================== ")
 
-    printf(
-        "###### The efficiency of temporal coherence: %f %% ######"
-        % demo_runner.culled_coherency_ratio()
-        * 100.0
+    ratio = demo_runner.culled_coherency_ratio()
+    print(
+        "###### The efficiency of temporal coherence: %.2f %% ######" % (ratio * 100.0)
     )
 
     # assert perf["fps"] > args.test_fps_regression, (

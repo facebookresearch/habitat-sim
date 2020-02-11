@@ -57,11 +57,18 @@ class Simulator:
     _default_agent: Agent = attr.ib(init=False, default=None)
     _sensors: Dict = attr.ib(factory=dict, init=False)
     _previous_step_time = 0.0  # track the compute time of each step
+    _culled_coherency = 0
+    _culled_total = 0
 
     def __attrs_post_init__(self):
         config = self.config
         self.config = None
         self.reconfigure(config)
+
+    def culled_coherency_ratio(self):
+        if self._culled_total == 0:
+            return 0.0
+        return float(self._culled_coherency) / float(self._culled_total)
 
     def close(self):
         for sensor in self._sensors.values():
@@ -163,6 +170,9 @@ class Simulator:
     def reconfigure(self, config: Configuration):
         assert len(config.agents) > 0
 
+        self._culled_coherency = 0
+        self._culled_total = 0
+
         config.sim_cfg.create_renderer = any(
             map(lambda cfg: len(cfg.sensor_specifications) > 0, config.agents)
         )
@@ -228,7 +238,9 @@ class Simulator:
 
     def get_sensor_observations(self):
         for _, sensor in self._sensors.items():
-            sensor.draw_observation()
+            cull = sensor.draw_observation()
+            self._culled_coherency += cull[0]
+            self._culled_total += cull[1]
 
         observations = {}
         for sensor_uuid, sensor in self._sensors.items():
@@ -399,9 +411,6 @@ class Sensor:
             self._spec.noise_model, self._spec.uuid
         )
 
-        self._culled_coherency = 0
-        self._culled_total = 0
-
     def draw_observation(self):
         # sanity check:
 
@@ -439,13 +448,7 @@ class Sensor:
             )
 
         cam = scene.get_default_render_camera()
-        self._culled_coherency += cam.culled_coherency
-        self._culled_total += cam.culled_total
-
-    def culled_coherency_ratio(self):
-        if self._culled_total == 0:
-            return 0
-        return float(self._culled_coherency) / float(self._culled_total)
+        return [cam.culled_coherency, cam.culled_total]
 
     def get_observation(self):
 
