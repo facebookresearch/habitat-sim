@@ -15,10 +15,12 @@ import habitat_sim.bindings as hsim
 
 
 @attr.s(auto_attribs=True)
-class ActuationSpec(object):
+class ActuationSpec:
     r"""Struct to hold parameters for the default actions
 
     :property amount: The amount the control moves the scene node by
+    :property constraint: A constraint on the actuation.  Currently only applies to the
+        maximum amount the agent can lookup or loopdown
 
     The default actions only have one parameters, the amount
     they move the scene node by, however other actions may have any number of
@@ -26,6 +28,7 @@ class ActuationSpec(object):
     """
 
     amount: float
+    constraint: Optional[float] = None
 
 
 @attr.s(auto_attribs=True)

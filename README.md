@@ -198,7 +198,19 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    ```
 
    (Under development) With physics simulation via [Bullet Physics SDK](https://github.com/bulletphysics/bullet3/):
-   First, install [Bullet Physics](https://github.com/bulletphysics/bullet3/). Next use
+   First, install Bullet Physics using your system's package manager.
+
+    Mac
+   ```bash
+   brew install bullet
+   ```
+
+    Linux
+   ```bash
+   sudo apt-get install libbullet-dev
+   ```
+
+    Next, enable bullet physics build via:
    ```bash
    python setup.py install --bullet    # build habitat with bullet physics
    ```
@@ -312,7 +324,12 @@ This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor
 ## Datasets
 
 - The full Matterport3D (MP3D) dataset for use with Habitat can be downloaded using the official [Matterport3D](https://niessner.github.io/Matterport/) download script as follows: `python download_mp.py --task habitat -o path/to/download/`. You only need the habitat zip archive and not the entire Matterport3D dataset. Note that this download script requires python 2.7 to run.
-- The Gibson dataset for use with Habitat can be downloaded by agreeing to the terms of use in the [Gibson](https://github.com/StanfordVL/GibsonEnv#database) repository
+- The Gibson dataset for use with Habitat can be downloaded by agreeing to the terms of use in the [Gibson](https://github.com/StanfordVL/GibsonEnv#database) repository.
+- Semantic information for Gibson is available from the [3DSceneGraph](https://3dscenegraph.stanford.edu/) dataset. The semantic data will need to be converted before it can be used within Habitat:
+   ```bash
+   tools/gen_gibson_semantics.sh /path/to/3DSceneGraph_medium/automated_graph /path/to/GibsonDataset /path/to/output
+   ```
+   To use semantics, you will need to enable the semantic sensor.
 
 ## Examples
 

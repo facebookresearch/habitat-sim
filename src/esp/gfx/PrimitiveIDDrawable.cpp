@@ -9,11 +9,10 @@
 namespace esp {
 namespace gfx {
 
-PrimitiveIDDrawable::PrimitiveIDDrawable(
-    scene::SceneNode& node,
-    PrimitiveIDShader& shader,
-    Magnum::GL::Mesh& mesh,
-    Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */)
+PrimitiveIDDrawable::PrimitiveIDDrawable(scene::SceneNode& node,
+                                         PrimitiveIDShader& shader,
+                                         Magnum::GL::Mesh& mesh,
+                                         DrawableGroup* group /* = nullptr */)
     : Drawable{node, shader, mesh, group} {}
 
 void PrimitiveIDDrawable::draw(const Magnum::Matrix4& transformationMatrix,

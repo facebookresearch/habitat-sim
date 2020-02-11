@@ -16,7 +16,7 @@ import habitat_sim.bindings as hsim
 import habitat_sim.errors
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.logging import logger
-from habitat_sim.nav import GreedyGeodesicFollower
+from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings
 from habitat_sim.physics import MotionType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.utils.common import quat_from_angle_axis
@@ -84,10 +84,22 @@ class Simulator:
 
     def seed(self, new_seed):
         self._sim.seed(new_seed)
+        self.pathfinder.seed(new_seed)
 
     def reset(self):
         self._sim.reset()
+        for i in range(len(self.agents)):
+            self.reset_agent(i)
+
         return self.get_sensor_observations()
+
+    def reset_agent(self, agent_id):
+        agent = self.get_agent(agent_id)
+        initial_agent_state = agent.initial_state
+        if initial_agent_state is None:
+            raise RuntimeError("reset called before agent was given an initial state")
+
+        self.initialize_agent(agent_id, initial_agent_state)
 
     def _config_backend(self, config: Configuration):
         if self._sim is None:
@@ -132,6 +144,21 @@ class Simulator:
             logger.warning(
                 f"Could not find navmesh {navmesh_filenname}, no collision checking will be done"
             )
+
+        agent_legacy_config = AgentConfiguration()
+        default_agent_config = config.agents[config.sim_cfg.default_agent_id]
+        if not np.isclose(
+            agent_legacy_config.radius, default_agent_config.radius
+        ) or not np.isclose(agent_legacy_config.height, default_agent_config.height):
+            logger.info(
+                f"Recomputing navmesh for agent's height {default_agent_config.height} and radius"
+                f" {default_agent_config.radius}."
+            )
+            navmesh_settings = NavMeshSettings()
+            navmesh_settings.set_defaults()
+            navmesh_settings.agent_radius = default_agent_config.radius
+            navmesh_settings.agent_height = default_agent_config.height
+            self.recompute_navmesh(self.pathfinder, navmesh_settings)
 
     def reconfigure(self, config: Configuration):
         assert len(config.agents) > 0
@@ -181,7 +208,7 @@ class Simulator:
                     np.random.uniform(0, 2.0 * np.pi), np.array([0, 1, 0])
                 )
 
-        agent.set_state(initial_state)
+        agent.set_state(initial_state, is_initial=True)
         self._last_state = agent.state
         return agent
 
@@ -235,7 +262,10 @@ class Simulator:
 
     def _step_filter(self, start_pos, end_pos):
         if self.pathfinder.is_loaded:
-            end_pos = self.pathfinder.try_step(start_pos, end_pos)
+            if self.config.sim_cfg.allow_sliding:
+                end_pos = self.pathfinder.try_step(start_pos, end_pos)
+            else:
+                end_pos = self.pathfinder.try_step_no_sliding(start_pos, end_pos)
 
         return end_pos
 
@@ -250,7 +280,7 @@ class Simulator:
         return self._sim.get_physics_object_library_size()
 
     def remove_object(self, object_id):
-        return self._sim.remove_object(object_id)
+        self._sim.remove_object(object_id)
 
     def get_existing_object_ids(self, scene_id=0):
         return self._sim.get_existing_object_ids(scene_id)
@@ -284,6 +314,9 @@ class Simulator:
 
     def apply_torque(self, torque, object_id, scene_id=0):
         self._sim.apply_torque(torque, object_id, scene_id)
+
+    def contact_test(self, object_id, scene_id=0):
+        return self._sim.contact_test(object_id, scene_id)
 
     def get_world_time(self, scene_id=0):
         return self._sim.get_world_time()

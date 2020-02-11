@@ -25,6 +25,7 @@
 
 #include <Corrade/Utility/Arguments.h>
 #include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/String.h>
 #include <Magnum/DebugTools/Screenshot.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
@@ -34,8 +35,8 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
 
-#include "esp/gfx/Simulator.h"
 #include "esp/scene/SceneConfiguration.h"
+#include "esp/sim/Simulator.h"
 
 #include "esp/gfx/configure.h"
 
@@ -111,7 +112,8 @@ class Viewer : public Magnum::Platform::Application {
   Magnum::Timeline timeline_;
 
   ImGuiIntegration::Context imgui_{NoCreate};
-  bool showFPS_ = false;
+  bool showFPS_ = true;
+  bool frustumCullingEnabled_ = true;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -203,12 +205,23 @@ Viewer::Viewer(const Arguments& arguments)
                                      0.01f,             // znear
                                      1000.0f,           // zfar
                                      90.0f);            // hfov
-  renderCamera_->getMagnumCamera().setAspectRatioPolicy(
+  renderCamera_->setAspectRatioPolicy(
       Magnum::SceneGraph::AspectRatioPolicy::Extend);
 
   // Load navmesh if available
   if (file.compare(esp::assets::EMPTY_SCENE) != 0) {
-    const std::string navmeshFilename = io::changeExtension(file, ".navmesh");
+    std::string navmeshFilename = io::changeExtension(file, ".navmesh");
+
+    // TODO: short term solution to mitigate issue #430
+    // we load the pre-computed navmesh for the ptex mesh to avoid
+    // online computation.
+    // for long term solution, see issue #430
+    if (Utility::String::endsWith(file, "mesh.ply")) {
+      navmeshFilename = Corrade::Utility::Directory::join(
+          Corrade::Utility::Directory::path(file) + "/habitat",
+          "mesh_semantic.navmesh");
+    }
+
     if (io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
       LOG(INFO) << "Loading navmesh from " << navmeshFilename;
       pathfinder_->loadNavMesh(navmeshFilename);
@@ -295,7 +308,7 @@ void Viewer::pokeLastObject() {
   Magnum::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  Vector3 impulse = T.transformPoint({0.0f, 0.0f, -3.0f});
+  Vector3 impulse = T.transformVector({0.0f, 0.0f, -3.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyImpulse(objectIDs_.back(), impulse, rel_pos);
 }
@@ -306,7 +319,7 @@ void Viewer::pushLastObject() {
   Magnum::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  Vector3 force = T.transformPoint({0.0f, 0.0f, -40.0f});
+  Vector3 force = T.transformVector({0.0f, 0.0f, -40.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
 }
@@ -385,11 +398,18 @@ void Viewer::drawEvent() {
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
-  renderCamera_->getMagnumCamera().draw(sceneGraph.getDrawables());
+  uint32_t visibles = 0;
+
+  for (auto& it : sceneGraph.getDrawableGroups()) {
+    // TODO: remove || true
+    if (it.second.prepareForDraw(*renderCamera_) || true) {
+      visibles += renderCamera_->draw(it.second, frustumCullingEnabled_);
+    }
+  }
 
   if (debugBullet_) {
-    Magnum::Matrix4 camM(renderCamera_->getCameraMatrix());
-    Magnum::Matrix4 projM(renderCamera_->getProjectionMatrix());
+    Magnum::Matrix4 camM(renderCamera_->cameraMatrix());
+    Magnum::Matrix4 projM(renderCamera_->projectionMatrix());
 
     physicsManager_->debugDraw(projM * camM);
   }
@@ -403,6 +423,9 @@ void Viewer::drawEvent() {
                      ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(2.0);
     ImGui::Text("%.1f FPS", Double(ImGui::GetIO().Framerate));
+    uint32_t total = sceneGraph.getDrawables().size();
+    ImGui::Text("%u drawables", total);
+    ImGui::Text("%u culled", total - visibles);
     ImGui::End();
   }
 
@@ -429,15 +452,14 @@ void Viewer::drawEvent() {
 
 void Viewer::viewportEvent(ViewportEvent& event) {
   GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
-  renderCamera_->getMagnumCamera().setViewport(event.windowSize());
+  renderCamera_->setViewport(event.windowSize());
   imgui_.relayout(Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Left)
-    previousPosition_ =
-        positionOnSphere(renderCamera_->getMagnumCamera(), event.position());
+    previousPosition_ = positionOnSphere(*renderCamera_, event.position());
 
   event.setAccepted();
 }
@@ -472,7 +494,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   }
 
   const Vector3 currentPosition =
-      positionOnSphere(renderCamera_->getMagnumCamera(), event.position());
+      positionOnSphere(*renderCamera_, event.position());
   const Vector3 axis = Math::cross(previousPosition_, currentPosition);
 
   if (previousPosition_.length() < 0.001f || axis.length() < 0.001f) {
@@ -518,6 +540,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       controls_(*agentBodyNode_, "moveRight", moveSensitivity);
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+      break;
+    case KeyEvent::Key::E:
+      frustumCullingEnabled_ ^= true;
       break;
     case KeyEvent::Key::C:
       showFPS_ = !showFPS_;

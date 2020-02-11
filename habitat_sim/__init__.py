@@ -6,7 +6,7 @@
 
 import builtins
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 if not getattr(builtins, "__HSIM_SETUP__", False):
     # TODO: all those import * should get removed, kept only for compatibility
@@ -22,8 +22,10 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         gfx,
         logging,
         nav,
+        physics,
         scene,
         sensor,
+        sim,
         simulator,
         utils,
     )
@@ -39,8 +41,10 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         "gfx",
         "logging",
         "nav",
+        "physics",
         "scene",
         "sensor",
+        "sim",
         "simulator",
         "utils",
         "MapStringString",

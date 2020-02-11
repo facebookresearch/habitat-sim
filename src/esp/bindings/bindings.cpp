@@ -61,14 +61,18 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 
   m.import("magnum.scenegraph");
 
+  py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
+
+  // NOTE(msb) These need to be run in dependency order.
+  // TODO(msb) gfx, scene, and sensor should not cross-depend
+  // TODO(msb) sim and sensor should not cross-depend
   esp::initEspBindings(m);
   esp::core::initCoreBindings(m);
   esp::geo::initGeoBindings(m);
-  esp::gfx::initGfxBindings(m);
-  esp::nav::initShortestPathBindings(m);
   esp::physics::initPhysicsBindings(m);
   esp::scene::initSceneBindings(m);
+  esp::gfx::initGfxBindings(m);
   esp::sensor::initSensorBindings(m);
-
-  py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
+  esp::nav::initShortestPathBindings(m);
+  esp::sim::initSimBindings(m);
 }

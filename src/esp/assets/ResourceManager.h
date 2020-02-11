@@ -28,6 +28,7 @@
 #include "GltfMeshData.h"
 #include "MeshData.h"
 #include "MeshMetaData.h"
+#include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/configure.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneNode.h"
@@ -68,7 +69,7 @@ class ResourceManager {
   ~ResourceManager() {}
 
   /** @brief Stores references to a set of drawable elements */
-  using DrawableGroup = Magnum::SceneGraph::DrawableGroup3D;
+  using DrawableGroup = gfx::DrawableGroup;
   /** @brief Convenience typedef for Importer class */
   using Importer = Magnum::Trade::AbstractImporter;
 
@@ -475,7 +476,7 @@ class ResourceManager {
                           scene::SceneNode* parent,
                           DrawableGroup* drawables);
 
-  // ======== Geometry helper functions ========
+  // ======== Geometry helper functions, data structures ========
 
   /**
    * @brief Apply a translation to the vertices of a mesh asset and store that
@@ -487,12 +488,55 @@ class ResourceManager {
   void translateMesh(BaseMesh* meshDataGL, Magnum::Vector3 translation);
 
   /**
-   * @brief Compute and return the axis aligned bounding box of a mesh.
-   *
+   * @brief Compute and return the axis aligned bounding box of a mesh in mesh
+   * local space
    * @param meshDataGL The mesh data.
    * @return The mesh bounding box.
    */
   Magnum::Range3D computeMeshBB(BaseMesh* meshDataGL);
+
+  /**
+   * @brief Compute the absolute AABBs for drawables in PTex mesh in world space
+   * @param baseMesh: ptex mesh
+   */
+#ifdef ESP_BUILD_PTEX_SUPPORT
+  void computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh);
+#endif
+
+  /**
+   * @brief Compute the absolute AABBs for drawables in general mesh (e.g.,
+   * MP3D) world space
+   */
+  void computeGeneralMeshAbsoluteAABBs();
+
+  /**
+   * @brief Compute absolute transformations of all drwables stored in
+   * staticDrawableInfo_
+   */
+  std::vector<Magnum::Matrix4> computeAbsoluteTransformations();
+
+  /**
+   * node: drawable's scene node
+   *
+   * meshID:
+   * -) for non-ptex mesh:
+   * meshID is the global index into meshes_.
+   * meshes_[meshID] is the BaseMesh corresponding to the drawable;
+   *
+   * -) for ptex mesh:
+   * meshID is the index of the submesh corresponding to the drawable;
+   */
+  struct StaticDrawableInfo {
+    esp::scene::SceneNode& node;
+    uint32_t meshID;
+  };
+  /**
+   * @brief this helper vector contains information of the drawables on which
+   * we will compute the absolute AABB pair
+   *
+   */
+  std::vector<StaticDrawableInfo> staticDrawableInfo_;
+  bool computeAbsoluteAABBs_ = false;
 
   // ======== General geometry data ========
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or
@@ -666,6 +710,7 @@ class ResourceManager {
    * @param mesh The render mesh.
    * @param node The @ref scene::SceneNode to which the drawable will be
    * attached.
+   * @param meshID Optional, the index of this mesh component stored in meshes_
    * @param group Optional @ref DrawableGroup with which the render the @ref
    * gfx::Drawable.
    * @param texture Optional texture for the mesh.

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "esp/gfx/Simulator.h"
+#include "esp/sim/Simulator.h"
 
 #include "esp/agent/Agent.h"
 #include "esp/nav/PathFinder.h"
@@ -12,12 +12,12 @@
 namespace esp {
 namespace sim {
 
-class SimulatorWithAgents : public gfx::Simulator {
+class SimulatorWithAgents : public Simulator {
  public:
-  SimulatorWithAgents(const gfx::SimulatorConfiguration& cfg);
+  SimulatorWithAgents(const SimulatorConfiguration& cfg);
   virtual ~SimulatorWithAgents();
 
-  virtual void reconfigure(const gfx::SimulatorConfiguration& cfg) override;
+  virtual void reconfigure(const SimulatorConfiguration& cfg) override;
   virtual void reset() override;
   virtual void seed(uint32_t newSeed) override;
 

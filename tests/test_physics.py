@@ -74,7 +74,6 @@ def test_kinematics(sim):
     # test object removal
     old_object_id = sim.remove_object(object_id)
     assert len(sim.get_existing_object_ids()) == 0
-    assert old_object_id == object_id
 
     object_id = sim.add_object(0)
 

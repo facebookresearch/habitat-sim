@@ -3,6 +3,8 @@ set(gfx_SOURCES
   DepthUnprojection.h
   Drawable.cpp
   Drawable.h
+  DrawableGroup.cpp
+  DrawableGroup.h
   GenericDrawable.cpp
   GenericDrawable.h
   magnum.h
@@ -14,8 +16,6 @@ set(gfx_SOURCES
   RenderCamera.h
   Renderer.cpp
   Renderer.h
-  Simulator.cpp
-  Simulator.h
   WindowlessContext.cpp
   WindowlessContext.h
   RenderTarget.cpp

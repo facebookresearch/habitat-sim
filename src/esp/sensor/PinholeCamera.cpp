@@ -9,14 +9,14 @@
 #include "PinholeCamera.h"
 #include "esp/gfx/DepthUnprojection.h"
 #include "esp/gfx/Renderer.h"
-#include "esp/gfx/Simulator.h"
+#include "esp/sim/Simulator.h"
 
 namespace esp {
 namespace sensor {
 
 PinholeCamera::PinholeCamera(scene::SceneNode& pinholeCameraNode,
                              sensor::SensorSpec::ptr spec)
-    : sensor::Sensor(pinholeCameraNode, spec) {
+    : sensor::VisualSensor(pinholeCameraNode, spec) {
   setProjectionParameters(spec);
 }
 
@@ -71,7 +71,7 @@ PinholeCamera& PinholeCamera::setTransformationMatrix(
 }
 
 PinholeCamera& PinholeCamera::setViewport(gfx::RenderCamera& targetCamera) {
-  targetCamera.getMagnumCamera().setViewport(this->framebufferSize());
+  targetCamera.setViewport(this->framebufferSize());
   return *this;
 }
 
@@ -89,7 +89,7 @@ bool PinholeCamera::getObservationSpace(ObservationSpace& space) {
   return true;
 }
 
-bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
+bool PinholeCamera::getObservation(sim::Simulator& sim, Observation& obs) {
   // TODO: check if sensor is valid?
   // TODO: have different classes for the different types of sensors
   //
@@ -102,7 +102,7 @@ bool PinholeCamera::getObservation(gfx::Simulator& sim, Observation& obs) {
   return true;
 }
 
-void PinholeCamera::drawObservation(gfx::Simulator& sim) {
+void PinholeCamera::drawObservation(sim::Simulator& sim) {
   renderTarget().renderEnter();
 
   gfx::Renderer::ptr renderer = sim.getRenderer();
@@ -144,7 +144,7 @@ void PinholeCamera::readObservation(Observation& obs) {
   }
 }
 
-bool PinholeCamera::displayObservation(gfx::Simulator& sim) {
+bool PinholeCamera::displayObservation(sim::Simulator& sim) {
   if (!hasRenderTarget()) {
     return false;
   }

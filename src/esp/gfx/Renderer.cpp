@@ -32,21 +32,26 @@ struct Renderer::Impl {
   }
   ~Impl() { LOG(INFO) << "Deconstructing Renderer"; }
 
-  void draw(RenderCamera& camera, MagnumDrawableGroup& drawables) {
-    camera.draw(drawables);
+  void draw(RenderCamera& camera, scene::SceneGraph& sceneGraph) {
+    for (auto& it : sceneGraph.getDrawableGroups()) {
+      // TODO: remove || true
+      if (it.second.prepareForDraw(camera) || true) {
+        camera.draw(it.second);
+      }
+    }
   }
 
-  void draw(sensor::Sensor& visualSensor, scene::SceneGraph& sceneGraph) {
+  void draw(sensor::VisualSensor& visualSensor, scene::SceneGraph& sceneGraph) {
     ASSERT(visualSensor.isVisualSensor());
 
     // set the modelview matrix, projection matrix of the render camera;
     sceneGraph.setDefaultRenderCamera(visualSensor);
 
-    draw(sceneGraph.getDefaultRenderCamera(), sceneGraph.getDrawables());
+    draw(sceneGraph.getDefaultRenderCamera(), sceneGraph);
   }
 
-  void bindRenderTarget(const sensor::Sensor::ptr& sensor) {
-    auto depthUnprojection = sensor->depthUnprojection();
+  void bindRenderTarget(sensor::VisualSensor& sensor) {
+    auto depthUnprojection = sensor.depthUnprojection();
     if (!depthUnprojection) {
       throw std::runtime_error(
           "Sensor does not have a depthUnprojection matrix");
@@ -57,8 +62,8 @@ struct Renderer::Impl {
           DepthShader::Flag::UnprojectExistingDepth);
     }
 
-    sensor->bindRenderTarget(RenderTarget::create_unique(
-        sensor->framebufferSize(), *depthUnprojection, depthShader_.get()));
+    sensor.bindRenderTarget(RenderTarget::create_unique(
+        sensor.framebufferSize(), *depthUnprojection, depthShader_.get()));
   }
 
  private:
@@ -68,15 +73,15 @@ struct Renderer::Impl {
 Renderer::Renderer() : pimpl_(spimpl::make_unique_impl<Impl>()) {}
 
 void Renderer::draw(RenderCamera& camera, scene::SceneGraph& sceneGraph) {
-  pimpl_->draw(camera, sceneGraph.getDrawables());
+  pimpl_->draw(camera, sceneGraph);
 }
 
-void Renderer::draw(sensor::Sensor& visualSensor,
+void Renderer::draw(sensor::VisualSensor& visualSensor,
                     scene::SceneGraph& sceneGraph) {
   pimpl_->draw(visualSensor, sceneGraph);
 }
 
-void Renderer::bindRenderTarget(const sensor::Sensor::ptr& sensor) {
+void Renderer::bindRenderTarget(sensor::VisualSensor& sensor) {
   pimpl_->bindRenderTarget(sensor);
 }
 

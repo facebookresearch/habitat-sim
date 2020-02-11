@@ -9,20 +9,12 @@
 
 #include "esp/core/esp.h"
 
-// forward declarations
-class dtNavMesh;
-class dtNavMeshQuery;
-class dtQueryFilter;
-class dtQueryPathState;
-
-void dtFreeNavMesh(dtNavMesh* navmesh);
-void dtFreeNavMeshQuery(dtNavMeshQuery* navmeshQuery);
-
 namespace esp {
 // forward declaration
 namespace assets {
-struct MeshData;
+class MeshData;
 }
+
 namespace nav {
 
 struct HitRecord {
@@ -31,24 +23,69 @@ struct HitRecord {
   float hitDist;
 };
 
-namespace impl {
-struct ActionSpaceGraph;
-class IslandSystem;
-}  // namespace impl
-
+/**
+ * @brief Struct for shortest path finding. Used in conjunction with @ref
+ * PathFinder.findPath
+ */
 struct ShortestPath {
+  /**
+   * @brief The starting point for the path
+   */
   vec3f requestedStart;
+
+  /**
+   * @brief The ending point for the path
+   */
   vec3f requestedEnd;
+
+  /**
+   * @brief A list of points that specify the shortest path on the navigation
+   * mesh between @ref requestedStart and @ref requestedEnd
+   *
+   * @note Will be empty if no path exists
+   */
   std::vector<vec3f> points;
+
+  /**
+   * @brief The geodesic distance between @ref requestedStart and @ref
+   * requestedEnd
+   *
+   * @note Will be inf if no path exists
+   */
   float geodesicDistance;
+
   ESP_SMART_POINTERS(ShortestPath)
 };
 
+/**
+ * @brief Struct for multi-goal shortest path finding. Used in conjunction with
+ * @ref PathFinder.findPath
+ */
 struct MultiGoalShortestPath {
+  /**
+   * @brief The starting point for the path
+   */
   vec3f requestedStart;
+
+  /**
+   * @brief The list of desired potential end points
+   */
   std::vector<vec3f> requestedEnds;
 
+  /**
+   * @brief A list of points that specify the shortest path on the navigation
+   * mesh between @ref requestedStart and the closest (by geodesic distance)
+   * point in @ref requestedEnds
+   *
+   * Will be empty if no path exists
+   */
   std::vector<vec3f> points;
+
+  /**
+   * @brief The geodesic distance
+   *
+   * Will be inf if no path exists
+   */
   float geodesicDistance;
 
   ESP_SMART_POINTERS(MultiGoalShortestPath)
@@ -110,24 +147,17 @@ struct NavMeshSettings {
   ESP_SMART_POINTERS(NavMeshSettings)
 };
 
-class PathFinder : public std::enable_shared_from_this<PathFinder> {
+/** Loads and/or builds a navigation mesh and then performs path
+ * finding and collision queries on that navmesh
+ *
+ */
+class PathFinder {
  public:
+  /**
+   * @brief Constructor.
+   */
   PathFinder();
-  ~PathFinder() {
-    free();
-    LOG(INFO) << "Deconstructing PathFinder";
-  }
-
-  struct NavMeshDeleter {
-    void operator()(dtNavMesh* mesh) const { dtFreeNavMesh(mesh); }
-  };
-  using NavMeshUniquePtr = std::unique_ptr<dtNavMesh, NavMeshDeleter>;
-
-  struct NavMeshQueryDeleter {
-    void operator()(dtNavMeshQuery* query) const { dtFreeNavMeshQuery(query); }
-  };
-  using NavMeshQueryUniquePtr =
-      std::unique_ptr<dtNavMeshQuery, NavMeshQueryDeleter>;
+  ~PathFinder() = default;
 
   bool build(const NavMeshSettings& bs,
              const float* verts,
@@ -136,55 +166,160 @@ class PathFinder : public std::enable_shared_from_this<PathFinder> {
              const int ntris,
              const float* bmin,
              const float* bmax);
+
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
 
+  /**
+   * @brief Returns a random navigable point
+   *
+   * @return A random navigable point.
+   *
+   * @note This method can fail.  If it does,
+   * the returned point will be arbitrary and may not be navigable. Use @ref
+   * isNavigable to check if the point is navigable.
+   */
   vec3f getRandomNavigablePoint();
 
+  /**
+   * @brief Finds the shortest path between two points on the navigation mesh
+   *
+   * @param[inout] path The @ref ShortestPath structure contain the starting and
+   * end point. This method will populate the @ref ShortestPath.points and @ref
+   * ShortestPath.geodesicDistance fields.
+   *
+   * @return Whether or not a path exists between @ref
+   * ShortestPath.requestedStart and @ref ShortestPath.requestedEnd
+   */
   bool findPath(ShortestPath& path);
+
+  /**
+   * @brief Finds the shortest path from a start point to the closest (by
+   * geoddesic distance) end point.
+   *
+   * @param[inout] path The @ref MultiGoalShortestPath structure contain the
+   * start point and list of possible end points. This method will populate the
+   * @ref  MultiGoalShortestPath.points and @ref
+   * MultiGoalShortestPath.geodesicDistance fields.
+   *
+   * @return Whether or not a path exists between @ref
+   * MultiGoalShortestPath.requestedStart and any @ref
+   * MultiGoalShortestPath.requestedEnds
+   */
   bool findPath(MultiGoalShortestPath& path);
 
+  /**
+   * @brief Attempts to move from @ref start to @ref end and returns the
+   * navigable point closest to @ref end that is feasibly reachable from @ref
+   * start
+   *
+   * @param[in] start The starting location
+   * @param[out] end The desired end location
+   *
+   * @return The found end location
+   */
   template <typename T>
   T tryStep(const T& start, const T& end);
 
+  /**
+   * @brief Same as @ref tryStep but does not allow for sliding along walls
+   */
+  template <typename T>
+  T tryStepNoSliding(const T& start, const T& end);
+
+  /**
+   * @brief Snaps a point to the navigation mesh
+   *
+   * @param[in] pt The point to snap to the navigation mesh
+   *
+   * @return The closest navigation point to @ref pt.  Will be {inf, inf, inf}
+   * if no navigable point was within a reasonable distance
+   */
   template <typename T>
   T snapPoint(const T& pt);
 
+  /**
+   * @brief Loads a navigation meshed saved by @ref saveNavMesh
+   *
+   * @param[in] path The saved navigation mesh file, generally has extension
+   * ``.navmesh``
+   *
+   * @return Whether or not the navmesh was successfully loaded
+   */
   bool loadNavMesh(const std::string& path);
 
+  /**
+   * @brief Saves a navigation mesh to later be loaded by @ref loadNavMesh
+   *
+   * @param[in] path The name of the file, generally has extension ``.navmesh``
+   *
+   * @return Whether or not the navmesh was successfully saved
+   */
   bool saveNavMesh(const std::string& path);
 
-  void free();
+  /**
+   * @return If a navigation mesh is current loaded or not
+   */
+  bool isLoaded() const;
 
-  bool isLoaded() { return navMesh_ != nullptr; }
-
+  /**
+   * @brief Seed the pathfinder.  Useful for @ref getRandomNavigablePoint
+   *
+   * @param[in] newSeed The random seed
+   *
+   * @note This just seeds the global c @ref rand function.
+   */
   void seed(uint32_t newSeed);
 
+  /**
+   * @brief returns the size of the connected component @ ref pt belongs to.
+   *
+   * @param[in] pt The point to specify the connected component
+   *
+   * @return Size of the connected component
+   */
   float islandRadius(const vec3f& pt) const;
 
+  /**
+   * @brief Finds the distance to the closest non-navigable location
+   *
+   * @param[in] pt The point to begin searching from
+   * @param[in] pt The radius to search in
+   *
+   * @return The distance to the closest non-navigable location or @ref
+   * maxSearchRadius if all locations within @ref maxSearchRadius are navigable
+   */
   float distanceToClosestObstacle(const vec3f& pt,
                                   const float maxSearchRadius = 2.0) const;
+
+  /**
+   * @brief Same as @ref distanceToClosestObstacle but returns additional
+   * information.
+   */
   HitRecord closestObstacleSurfacePoint(
       const vec3f& pt,
       const float maxSearchRadius = 2.0) const;
 
+  /**
+   * @brief Query whether or not a given location is navigable
+   *
+   * This method works by snapping @ref pt to the navigation mesh with @ref
+   * snapPoint and then checking to see if there was no displacement in the x-z
+   * plane and at most @ref maxYDelta displacement in the y direction.
+   *
+   * @param[in] pt The location to check whether or not it is navigable
+   * @param[in] maxYDelta The maximum y displacement.  This tolerance is useful
+   * for computing a top-down occupancy grid as the floor is not perfectly level
+   *
+   * @return Whether or not @ref pt is navigable
+   */
   bool isNavigable(const vec3f& pt, const float maxYDelta = 0.5) const;
 
-  std::pair<vec3f, vec3f> bounds() const { return bounds_; }
+  /**
+   * @return The axis aligned bounding box containing the navigation mesh.
+   */
+  std::pair<vec3f, vec3f> bounds() const;
 
-  friend impl::ActionSpaceGraph;
-
- protected:
-  bool initNavQuery();
-  void removeZeroAreaPolys();
-  std::vector<vec3f> prevEnds;
-
-  impl::IslandSystem* islandSystem_ = nullptr;
-
-  NavMeshUniquePtr navMesh_;
-  NavMeshQueryUniquePtr navQuery_;
-  dtQueryFilter* filter_;
-  std::pair<vec3f, vec3f> bounds_;
-  ESP_SMART_POINTERS(PathFinder)
+  ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(PathFinder);
 };
 
 }  // namespace nav

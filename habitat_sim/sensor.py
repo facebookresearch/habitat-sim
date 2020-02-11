@@ -8,6 +8,14 @@ from habitat_sim._ext.habitat_sim_bindings import (
     Sensor,
     SensorSpec,
     SensorType,
+    VisualSensor,
 )
 
-__all__ = ["PinholeCamera", "Sensor", "SensorType", "SensorSpec", "Observation"]
+__all__ = [
+    "Observation",
+    "PinholeCamera",
+    "Sensor",
+    "SensorType",
+    "SensorSpec",
+    "VisualSensor",
+]
