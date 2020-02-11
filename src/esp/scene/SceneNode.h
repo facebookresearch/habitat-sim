@@ -84,6 +84,12 @@ class SceneNode : public MagnumObject {
   //! set the global bounding box for mesh stored in this node
   void setAbsoluteAABB(Magnum::Range3D aabb) { aabb_ = aabb; };
 
+  //! return the frustum plane in last frame that culls this node
+  int getFrustumPlaneIndex() { return frustumPlaneIndex; };
+
+  //! set frustum plane in last frame that culls this node
+  void setFrustumPlaneIndex(int index) { frustumPlaneIndex = index; };
+
  protected:
   // DO not make the following constructor public!
   // it can ONLY be called from SceneGraph class to initialize the scene graph
@@ -108,6 +114,9 @@ class SceneNode : public MagnumObject {
   //  -) it was computed using mesh vertex positions in world space;
   Corrade::Containers::Optional<Magnum::Range3D> aabb_ =
       Corrade::Containers::NullOpt;
+
+  //! the frustum plane in last frame that culls this node
+  int frustumPlaneIndex = 0;
 };
 
 }  // namespace scene
