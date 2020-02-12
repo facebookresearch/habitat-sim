@@ -69,6 +69,7 @@ class Viewer : public Magnum::Platform::Application {
   void addObject(std::string configFile, bool attachAgent = false);
 
   int agentObjectID = ID_UNDEFINED;
+  Magnum::Matrix4 worldAgentTransform;
 
   void pokeLastObject();
   void pushLastObject();
@@ -274,6 +275,9 @@ void Viewer::addObject(std::string configFile, bool attachAgent) {
   if (attachAgent) {
     agentObjectID =
         physicsManager_->addObject(configFile, &drawables, agentBodyNode_);
+    physicsManager_->setTranslation(
+        agentObjectID,
+        worldAgentTransform.translation() + Magnum::Vector3{0, 1.0, 0});
 
   } else {
     int physObjectID = physicsManager_->addObject(configFile, &drawables);
@@ -396,11 +400,6 @@ Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
 }
 
 void Viewer::drawEvent() {
-  if (agentObjectID != ID_UNDEFINED) {
-    renderCamera_->node().setTransformation(
-        rgbSensorNode_->absoluteTransformation());
-  }
-
   GL::defaultFramebuffer.clear(GL::FramebufferClear::Color |
                                GL::FramebufferClear::Depth);
   if (sceneID_.size() <= 0)
@@ -408,6 +407,11 @@ void Viewer::drawEvent() {
 
   if (physicsManager_ != nullptr)
     physicsManager_->stepPhysics(timeline_.previousFrameDuration());
+
+  if (agentObjectID != ID_UNDEFINED) {
+    renderCamera_->node().setTransformation(
+        rgbSensorNode_->absoluteTransformation());
+  }
 
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
@@ -598,6 +602,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // pokeLastObject();
       if (physicsManager_ != nullptr) {
         if (agentObjectID == ID_UNDEFINED) {
+          worldAgentTransform = agentBodyNode_->transformation();
           int numObjects = resourceManager_.getNumLibraryObjects();
           int randObjectID = rand() % numObjects;
           addObject(resourceManager_.getObjectConfig(randObjectID), true);
@@ -606,6 +611,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
           physicsManager_->removeObject(agentObjectID, false);
           agentObjectID = ID_UNDEFINED;
           LOG(INFO) << "removed agent from physics";
+          agentBodyNode_->setTransformation(worldAgentTransform);
         }
       }
       break;
