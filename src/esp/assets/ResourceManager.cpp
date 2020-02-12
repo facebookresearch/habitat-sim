@@ -5,13 +5,13 @@
 #include <functional>
 
 #include <Corrade/Containers/ArrayViewStl.h>
+#include <Corrade/Containers/PointerStl.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/PluginManager/PluginMetadata.h>
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/ConfigurationGroup.h>
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Containers/PointerStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
