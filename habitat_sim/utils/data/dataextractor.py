@@ -112,7 +112,7 @@ class ImageExtractor:
         self.out_name_to_sensor_name = {
             "rgba": "color_sensor",
             "depth": "depth_sensor",
-            "semantic": "semamtic_sensor",
+            "semantic": "semantic_sensor",
         }
         self.output = output
 
@@ -148,6 +148,12 @@ class ImageExtractor:
         sample["label"] = self.label_map[label]
 
         return sample
+
+    def close(self):
+        r"""Deletes the instance of the simulator. Necessary for instatiating a different ImageExtractor.
+        """
+        self.sim.close()
+        del self.sim
 
     def _config_sim(self, scene_filepath, img_size):
         sim_settings = {

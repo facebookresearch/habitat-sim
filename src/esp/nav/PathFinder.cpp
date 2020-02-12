@@ -229,7 +229,7 @@ struct PathFinder::Impl {
 
   std::pair<vec3f, vec3f> bounds() const { return bounds_; };
 
-  std::vector<std::vector<bool>> getTopDownView(const float pixelsPerMeter,
+  Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>  getTopDownView(const float pixelsPerMeter,
                                                 const float height);
 
  private:
@@ -1131,41 +1131,38 @@ bool PathFinder::Impl::isNavigable(const vec3f& pt,
   return true;
 }
 
-std::vector<std::vector<bool>> PathFinder::Impl::getTopDownView(
+typedef Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> MatrixXb;
+
+Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::Impl::getTopDownView(
     const float pixelsPerMeter,
     const float height) {
-  std::pair<vec3f, vec3f> mapBounds = bounds();
-  vec3f bound1 = mapBounds.first;
-  vec3f bound2 = mapBounds.second;
+    std::pair<vec3f, vec3f> mapBounds = bounds();
+    vec3f bound1 = mapBounds.first;
+    vec3f bound2 = mapBounds.second;
 
-  float xspan = std::abs(bound1[0] - bound2[0]);
-  float zspan = std::abs(bound1[2] - bound2[2]);
-  int xResolution = xspan / pixelsPerMeter;
-  int zResolution = zspan / pixelsPerMeter;
-  float startx = fmin(bound1[0], bound2[0]);
-  float startz = fmin(bound1[2], bound2[2]);
-  std::vector<std::vector<bool>> topdownMap;
+    float xspan = std::abs(bound1[0] - bound2[0]);
+    float zspan = std::abs(bound1[2] - bound2[2]);
+    int xResolution = xspan / pixelsPerMeter;
+    int zResolution = zspan / pixelsPerMeter;
+    float startx = fmin(bound1[0], bound2[0]);
+    float startz = fmin(bound1[2], bound2[2]);
+    MatrixXb topdownMap(zResolution, xResolution);
 
-  float curz = startz;
-  float curx = startx;
-  for (int h = 0; h < xResolution; h++) {
-    std::vector<bool> curRow;
-    for (int w = 0; w < zResolution; w++) {
-      vec3f point = vec3f(curx, height, curz);
-      if (isNavigable(point, 0.5)) {
-        curRow.push_back(true);
-      } else {
-        curRow.push_back(false);
+    float curz = startz;
+    float curx = startx;
+    for (int h = 0; h < zResolution; h++) {
+      for (int w = 0; w < xResolution; w++) {
+        vec3f point = vec3f(curx, height, curz);
+        topdownMap(h, w) = isNavigable(point, 0.5);
+        curx = curx + pixelsPerMeter;
       }
-      curx = curx + pixelsPerMeter;
+      curz = curz + pixelsPerMeter;
+      curx = startx;
     }
-    topdownMap.push_back(curRow);
-    curz = curz + pixelsPerMeter;
-    curx = startx;
+
+    return topdownMap;
   }
 
-  return topdownMap;
-}
 
 PathFinder::PathFinder() : pimpl_{spimpl::make_unique_impl<Impl>()} {};
 
@@ -1261,11 +1258,18 @@ std::pair<vec3f, vec3f> PathFinder::bounds() const {
   return pimpl_->bounds();
 }
 
-std::vector<std::vector<bool>> PathFinder::getTopDownView(
+// std::vector<std::vector<bool>> PathFinder::getTopDownView(
+//     const float pixelsPerMeter,
+//     const float height) {
+//   return pimpl_->getTopDownView(pixelsPerMeter, height);
+// }
+
+Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>  PathFinder::getTopDownView(
     const float pixelsPerMeter,
     const float height) {
   return pimpl_->getTopDownView(pixelsPerMeter, height);
 }
+
 
 }  // namespace nav
 }  // namespace esp
