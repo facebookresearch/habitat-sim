@@ -232,16 +232,8 @@ Magnum::Matrix4 VelocityControl::integrateTransform(
   Magnum::Matrix3 newRotationScaling = objectTransform.rotationScaling();
   // then angular
   if (controllingAngVel) {
-    Magnum::Quaternion q;
-    Magnum::Vector3 ha = angVel * dt * 0.5;  // vector of half angle
-    float l = ha.length();                   // magnitude
-    if (l > 0) {
-      float ss = std::sin(l) / l;
-      q = Magnum::Quaternion(
-          Magnum::Vector3{ha.x() * ss, ha.y() * ss, ha.z() * ss}, std::cos(l));
-    } else {
-      q = Magnum::Quaternion(Magnum::Vector3{ha.x(), ha.y(), ha.z()}, 1.0);
-    }
+    Magnum::Quaternion q = Magnum::Quaternion::rotation(
+        Magnum::Rad{(angVel * dt).length()}, angVel.normalized());
     newRotationScaling = q.toMatrix() * newRotationScaling;
   }
   return Magnum::Matrix4::from(newRotationScaling, newTranslation);
