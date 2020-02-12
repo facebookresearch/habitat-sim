@@ -74,6 +74,8 @@ class Viewer : public Magnum::Platform::Application {
   void pokeLastObject();
   void pushLastObject();
 
+  void setAgentObjectLocalVelocity(Magnum::Vector3 dir, bool angular = false);
+
   void recomputeNavMesh(const std::string& sceneFilename,
                         esp::nav::NavMeshSettings& navMeshSettings);
 
@@ -525,6 +527,16 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   event.setAccepted();
 }
 
+void Viewer::setAgentObjectLocalVelocity(Magnum::Vector3 vel, bool angular) {
+  if (angular) {
+    physicsManager_->setAngularVelocity(
+        agentObjectID, agentBodyNode_->transformation().transformVector(vel));
+  } else {
+    physicsManager_->setLinearVelocity(
+        agentObjectID, agentBodyNode_->transformation().transformVector(vel));
+  }
+}
+
 void Viewer::keyPressEvent(KeyEvent& event) {
   const auto key = event.key();
   switch (key) {
@@ -532,10 +544,18 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       std::exit(0);
       break;
     case KeyEvent::Key::Left:
-      controls_(*agentBodyNode_, "turnLeft", lookSensitivity);
+      if (agentObjectID != ID_UNDEFINED) {
+        setAgentObjectLocalVelocity({0, 3.0, 0}, true);
+      } else {
+        controls_(*agentBodyNode_, "turnLeft", lookSensitivity);
+      }
       break;
     case KeyEvent::Key::Right:
-      controls_(*agentBodyNode_, "turnRight", lookSensitivity);
+      if (agentObjectID != ID_UNDEFINED) {
+        setAgentObjectLocalVelocity({0, -3.0, 0}, true);
+      } else {
+        controls_(*agentBodyNode_, "turnRight", lookSensitivity);
+      }
       break;
     case KeyEvent::Key::Up:
       controls_(*rgbSensorNode_, "lookUp", lookSensitivity, false);
@@ -550,12 +570,20 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       }
       break;
     case KeyEvent::Key::A:
-      controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
+      if (agentObjectID != ID_UNDEFINED) {
+        setAgentObjectLocalVelocity({-1.0, 0, 0});
+      } else {
+        controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
+      }
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::D:
-      controls_(*agentBodyNode_, "moveRight", moveSensitivity);
+      if (agentObjectID != ID_UNDEFINED) {
+        setAgentObjectLocalVelocity({1.0, 0, 0});
+      } else {
+        controls_(*agentBodyNode_, "moveRight", moveSensitivity);
+      }
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
@@ -566,12 +594,20 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       showFPS_ = !showFPS_;
       break;
     case KeyEvent::Key::S:
-      controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
+      if (agentObjectID != ID_UNDEFINED) {
+        setAgentObjectLocalVelocity({0, 0, 1.0});
+      } else {
+        controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
+      }
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::W:
-      controls_(*agentBodyNode_, "moveForward", moveSensitivity);
+      if (agentObjectID != ID_UNDEFINED) {
+        setAgentObjectLocalVelocity({0, 0, -1.0});
+      } else {
+        controls_(*agentBodyNode_, "moveForward", moveSensitivity);
+      }
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
