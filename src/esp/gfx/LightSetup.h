@@ -48,7 +48,7 @@ Magnum::Vector3 getLightPositionRelativeToCamera(
 /**
  * @brief Get a @ref LightSetup with lights at the corners of a scene
  */
-LightSetup getLightsAtSceneCorners(scene::SceneGraph& sceneGraph);
+LightSetup getLightsAtSceneCorners(scene::SceneGraph& sceneGraph, Magnum::Float lightIntensity = 0.4f);
 
 }  // namespace gfx
 }  // namespace esp

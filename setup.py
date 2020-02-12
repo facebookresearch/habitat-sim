@@ -217,6 +217,7 @@ class CMakeBuild(build_ext):
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
             "-DPYTHON_EXECUTABLE=" + sys.executable,
             "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),
+            "-DBUILD_DEPRECATED=OFF"
         ]
         cmake_args += shlex.split(args.cmake_args)
 
