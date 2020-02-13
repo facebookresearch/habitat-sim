@@ -46,10 +46,11 @@ Magnum::Vector3 getLightPositionRelativeToCamera(
     const Magnum::Matrix4& cameraMatrix);
 
 /**
- * @brief Get a @ref LightSetup with lights at the corners of a scene
+ * @brief Get a @ref LightSetup with lights at the corners of a box
  */
-LightSetup getLightsAtSceneCorners(scene::SceneGraph& sceneGraph,
-                                   Magnum::Float lightIntensity = 0.4f);
+LightSetup getLightsAtBoxCorners(
+    const Magnum::Range3D& box,
+    const Magnum::Color4& lightColor = Magnum::Color4{0.4f});
 
 }  // namespace gfx
 }  // namespace esp

@@ -447,11 +447,8 @@ class ResourceManager {
    *
    * @param importer The importer already loaded with information for the asset.
    * @param metaData The asset's @ref MeshMetaData object.
-   * @param forceFlatShading Only bind ambient textures and colors.
    */
-  void loadMaterials(Importer& importer,
-                     MeshMetaData* metaData,
-                     bool forceFlatShading = false);
+  void loadMaterials(Importer& importer, MeshMetaData* metaData);
 
   /**
    * @brief Get a @ref PhongMaterialData for use with flat shading
@@ -516,11 +513,13 @@ class ResourceManager {
    * a child.
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered.
+   * @param isScene Whether this asset is being loaded as a scene. If it is then
+   * it will be flat shaded for performance reasons
    */
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent = nullptr,
                            DrawableGroup* drawables = nullptr,
-                           bool forceFlatShading = false);
+                           bool isScene = false);
 
   /**
    * @brief Load a SUNCG mesh into assets from a file. !Deprecated! TODO:

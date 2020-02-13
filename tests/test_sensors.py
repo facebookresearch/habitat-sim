@@ -129,6 +129,9 @@ def test_sensors(scene, has_sem, sensor_type, gpu2gpu, sim, make_cfg_settings):
 # Tests to make sure that no sensors is supported and doesn't crash
 # Also tests to make sure we can have multiple instances
 # of the simulator with no sensors
+@pytest.mark.skip(
+    reason="Multiple simulators not supported until ResourceManager singleton deprecation"
+)
 def test_smoke_no_sensors(make_cfg_settings):
     sims = []
     for scene in _test_scenes:

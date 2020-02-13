@@ -102,7 +102,6 @@ bool ResourceManager::loadScene(const AssetInfo& info,
       } else if (info.type == AssetType::SUNCG_SCENE) {
         meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
       } else if (info.type == AssetType::MP3D_MESH) {
-        // for now, force scenes to be flat shaded
         meshSuccess = loadGeneralMeshData(info, parent, drawables, true);
       } else {
         // Unknown type, just load general mesh data
@@ -974,13 +973,14 @@ bool ResourceManager::loadGeneralMeshData(
     const AssetInfo& info,
     scene::SceneNode* parent /* = nullptr */,
     DrawableGroup* drawables /* = nullptr */,
-    bool forceFlatShading /* = false */) {
+    bool isScene /* = false */) {
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
   const bool drawData = parent != nullptr && drawables != nullptr;
 
   // Mesh & metaData container
   MeshMetaData metaData;
+  metaData.isSceneAsset = isScene;
 
 #ifndef MAGNUM_BUILD_STATIC
   Magnum::PluginManager::Manager<Importer> manager;
@@ -1079,7 +1079,7 @@ bool ResourceManager::loadGeneralMeshData(
     }
     // if this is a new file, load it and add it to the dictionary
     loadTextures(*importer, &metaData);
-    loadMaterials(*importer, &metaData, forceFlatShading);
+    loadMaterials(*importer, &metaData);
     loadMeshes(*importer, &metaData);
     resourceDict_.emplace(filename, metaData);
 
@@ -1110,7 +1110,16 @@ bool ResourceManager::loadGeneralMeshData(
     resourceDict_[filename].root.transformFromLocalToParent =
         R * resourceDict_[filename].root.transformFromLocalToParent;
   } else {
-    metaData = resourceDict_[filename];
+    const MeshMetaData& savedMetaData = resourceDict_[filename];
+    if (savedMetaData.isSceneAsset != metaData.isSceneAsset) {
+      // TODO: Right now, we use flat shading for scenes, and phong shading
+      // for other objects. We need to add this information to our
+      // resourceDict key so that we can load the same asset with different
+      // shading
+      LOG(WARNING) << "Loading asset " << filename
+                   << " as both an object and scene is not "
+                      "yet supported, may be shaded wrong!";
+    }
   }
 
   // Optional Instantiation
@@ -1138,16 +1147,15 @@ bool ResourceManager::loadGeneralMeshData(
     }  // forceReload
 
     // TODO: make this configurable
-    Mn::ResourceKey lightSetup{forceFlatShading ? NO_LIGHT_KEY
-                                                : DEFAULT_LIGHTING_KEY};
+    Mn::ResourceKey lightSetup{metaData.isSceneAsset ? NO_LIGHT_KEY
+                                                     : DEFAULT_LIGHTING_KEY};
     addComponent(metaData, newNode, lightSetup, drawables, metaData.root);
     return true;
   }
 }
 
 void ResourceManager::loadMaterials(Importer& importer,
-                                    MeshMetaData* metaData,
-                                    bool forceFlatShading) {
+                                    MeshMetaData* metaData) {
   int materialStart = nextMaterialID_;
   int materialEnd = materialStart + importer.materialCount() - 1;
   metaData->setMaterialIndices(materialStart, materialEnd);
@@ -1169,7 +1177,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     const auto& phongMaterialData =
         static_cast<Mn::Trade::PhongMaterialData&>(*materialData);
     std::unique_ptr<gfx::MaterialData> finalMaterial;
-    if (forceFlatShading) {
+    if (metaData->isSceneAsset) {
       finalMaterial = getFlatShadedMaterialData(phongMaterialData,
                                                 metaData->textureIndex.first);
     } else {
@@ -1254,15 +1262,15 @@ void ResourceManager::loadMeshes(Importer& importer, MeshMetaData* metaData) {
   metaData->setMeshIndices(meshStart, meshEnd);
 
   for (int iMesh = 0; iMesh < importer.mesh3DCount(); ++iMesh) {
-    meshes_.emplace_back(std::make_unique<GltfMeshData>());
-    auto& currentMesh = meshes_.back();
-    auto* gltfMeshData = static_cast<GltfMeshData*>(currentMesh.get());
+    // don't need normals if we just flat shade the scene
+    auto gltfMeshData = std::make_unique<GltfMeshData>(!metaData->isSceneAsset);
     gltfMeshData->setMeshData(importer, iMesh);
 
     // compute the mesh bounding box
-    gltfMeshData->BB = computeMeshBB(gltfMeshData);
+    gltfMeshData->BB = computeMeshBB(gltfMeshData.get());
 
     gltfMeshData->uploadBuffersToGPU(false);
+    meshes_.emplace_back(std::move(gltfMeshData));
   }
 }
 

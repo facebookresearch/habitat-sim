@@ -11,33 +11,29 @@ Magnum::Vector3 getLightPositionRelativeToCamera(
     const LightInfo& light,
     const Magnum::Matrix4& transformationMatrix,
     const Magnum::Matrix4& cameraMatrix) {
-  if (light.model == LightPositionModel::OBJECT)
-    return transformationMatrix.transformPoint(light.position);
+  switch (light.model) {
+    case LightPositionModel::OBJECT:
+      return transformationMatrix.transformPoint(light.position);
+    case LightPositionModel::GLOBAL:
+      return cameraMatrix.transformPoint(light.position);
+    case LightPositionModel::CAMERA:
+      return light.position;
+  }
 
-  if (light.model == LightPositionModel::GLOBAL)
-    return cameraMatrix.transformPoint(light.position);
-
-  // LightPositionModel::CAMERA
-  return light.position;
+  CORRADE_ASSERT_UNREACHABLE();
+  return {};
 }
 
-LightSetup getLightsAtSceneCorners(scene::SceneGraph& sceneGraph,
-                                   Magnum::Float lightIntensity) {
-  const Magnum::Range3D& sceneBB =
-      sceneGraph.getRootNode().computeCumulativeBB();
-
+LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,
+                                 const Magnum::Color4& lightColor) {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Magnum::Math::Literals;
 
   return LightSetup{
-      {sceneBB.frontTopLeft(), 0xffffff_rgbf * lightIntensity},
-      {sceneBB.frontTopRight(), 0xffffff_rgbf * lightIntensity},
-      {sceneBB.frontBottomLeft(), 0xffffff_rgbf * lightIntensity},
-      {sceneBB.frontBottomRight(), 0xffffff_rgbf * lightIntensity},
-      {sceneBB.backTopLeft(), 0xffffff_rgbf * lightIntensity},
-      {sceneBB.backTopRight(), 0xffffff_rgbf * lightIntensity},
-      {sceneBB.backBottomLeft(), 0xffffff_rgbf * lightIntensity},
-      {sceneBB.backBottomRight(), 0xffffff_rgbf * lightIntensity}};
+      {box.frontTopLeft(), lightColor},    {box.frontTopRight(), lightColor},
+      {box.frontBottomLeft(), lightColor}, {box.frontBottomRight(), lightColor},
+      {box.backTopLeft(), lightColor},     {box.backTopRight(), lightColor},
+      {box.backBottomLeft(), lightColor},  {box.backBottomRight(), lightColor}};
 }
 
 }  // namespace gfx

@@ -39,12 +39,28 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                            Magnum::SceneGraph::Camera3D& camera) {
   updateShader();
 
+  const Magnum::Matrix4 cameraMatrix = camera.cameraMatrix();
+
+  std::vector<Magnum::Vector3> lightPositions;
+  lightPositions.reserve(lightSetup_->size());
+  std::vector<Magnum::Color4> lightColors;
+  lightColors.reserve(lightSetup_->size());
+
+  for (Magnum::UnsignedInt i = 0; i < lightSetup_->size(); ++i) {
+    lightPositions.emplace_back(getLightPositionRelativeToCamera(
+        (*lightSetup_)[i], transformationMatrix, cameraMatrix));
+
+    lightColors.emplace_back((*lightSetup_)[i].color);
+  }
+
   (*shader_)
       .setAmbientColor(materialData_->ambientColor)
       .setDiffuseColor(materialData_->diffuseColor)
       .setSpecularColor(materialData_->specularColor)
       .setShininess(materialData_->shininess)
       .setObjectId(node_.getId())
+      .setLightPositions(lightPositions)
+      .setLightColors(lightColors)
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(transformationMatrix.rotationScaling());
@@ -55,15 +71,6 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
     shader_->bindDiffuseTexture(*(materialData_->diffuseTexture));
   if (materialData_->specularTexture)
     shader_->bindSpecularTexture(*(materialData_->specularTexture));
-
-  const Magnum::Matrix4 cameraMatrix = camera.cameraMatrix();
-  for (Magnum::UnsignedInt i = 0; i < lightSetup_->size(); ++i) {
-    shader_->setLightPosition(
-        i, getLightPositionRelativeToCamera(
-               (*lightSetup_)[i], transformationMatrix, cameraMatrix));
-
-    shader_->setLightColor(i, (*lightSetup_)[i].color);
-  }
 
   mesh_.draw(*shader_);
 }

@@ -192,8 +192,9 @@ Viewer::Viewer(const Arguments& arguments)
     }
   }
 
+  const Magnum::Range3D& sceneBB = rootNode_->computeCumulativeBB();
   resourceManager_.setLightSetup(assets::ResourceManager::DEFAULT_LIGHTING_KEY,
-                                 gfx::getLightsAtSceneCorners(*sceneGraph_));
+                                 gfx::getLightsAtBoxCorners(sceneBB));
 
   // Set up camera
   renderCamera_ = &sceneGraph_->getDefaultRenderCamera();

@@ -84,6 +84,9 @@ struct MeshMetaData {
    * stores the relationship between components of the asset.*/
   MeshTransformNode root;
 
+  /** @brief If this asset was loaded as a scene */
+  bool isSceneAsset = false;
+
   /** @brief Default constructor. */
   MeshMetaData(){};
 
@@ -93,18 +96,12 @@ struct MeshMetaData {
                int textureStart = ID_UNDEFINED,
                int textureEnd = ID_UNDEFINED,
                int materialStart = ID_UNDEFINED,
-               int materialEnd = ID_UNDEFINED) {
+               int materialEnd = ID_UNDEFINED,
+               bool isScene = false)
+      : isSceneAsset{isScene} {
     meshIndex = std::make_pair(meshStart, meshEnd);
     textureIndex = std::make_pair(textureStart, textureEnd);
     materialIndex = std::make_pair(materialStart, materialEnd);
-  }
-
-  /** @brief Copy constructor. */
-  MeshMetaData(const MeshMetaData& val) {
-    meshIndex = val.meshIndex;
-    textureIndex = val.textureIndex;
-    materialIndex = val.materialIndex;
-    root = MeshTransformNode(val.root);
   }
 
   /**
