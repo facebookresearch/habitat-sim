@@ -1110,15 +1110,14 @@ bool ResourceManager::loadGeneralMeshData(
     resourceDict_[filename].root.transformFromLocalToParent =
         R * resourceDict_[filename].root.transformFromLocalToParent;
   } else {
-    const MeshMetaData& savedMetaData = resourceDict_[filename];
-    if (savedMetaData.isSceneAsset != metaData.isSceneAsset) {
+    if (resourceDict_[filename].isSceneAsset != isScene) {
       // TODO: Right now, we use flat shading for scenes, and phong shading
       // for other objects. We need to add this information to our
       // resourceDict key so that we can load the same asset with different
       // shading
-      LOG(WARNING) << "Loading asset " << filename
-                   << " as both an object and scene is not "
-                      "yet supported, may be shaded wrong!";
+      LOG(ERROR) << "Loading asset " << filename
+                 << " as both an object and scene is not "
+                    "yet supported, will be shaded wrong!";
     }
   }
 

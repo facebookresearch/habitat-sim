@@ -29,6 +29,8 @@ def test_no_navmesh_smoke():
         # Can't collide with no navmesh
         assert not obs["collided"]
 
+    sim.close()
+
 
 def test_empty_scene(sim):
     cfg_settings = examples.settings.default_sim_settings.copy()
