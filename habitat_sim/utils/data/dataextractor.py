@@ -108,7 +108,7 @@ class ImageExtractor:
             None: self.poses,
         }
 
-        self.label_map = {0.0: "unnavigable", 1.0: "navigable"}
+        self.label_map = self._generate_label_map(self.sim.semantic_scene)
         self.out_name_to_sensor_name = {
             "rgb": "color_sensor",
             "depth": "depth_sensor",
@@ -153,7 +153,7 @@ class ImageExtractor:
             out_name: obs[self.out_name_to_sensor_name[out_name]]
             for out_name in self.output
         }
-        sample["label"] = self.label_map[label]
+        #sample["label"] = self.label_map[label]
 
         return sample
 
@@ -197,6 +197,20 @@ class ImageExtractor:
             1
         ]  # Can't think of a better way to get a valid y-axis value
         return (startw, starty, starth)  # width, y, height
+
+    def _generate_label_map(self, scene, verbose=False):
+        if verbose:
+            print(f"House has {len(scene.levels)} levels, {len(scene.regions)} regions and {len(scene.objects)} objects")
+            print(f"House center:{scene.aabb.center} dims:{scene.aabb.sizes}")
+
+        label_map = {}
+        for level in scene.levels:
+            for region in level.regions:
+                for obj in region.objects:
+                    obj_id = int(obj.id.split('_')[-1])
+                    label_map[obj_id] = obj.category.name()
+
+        return label_map
 
 
 class TopdownView(object):
