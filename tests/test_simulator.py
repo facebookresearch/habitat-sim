@@ -8,7 +8,7 @@ import examples.settings
 import habitat_sim
 
 
-def test_no_navmesh_smoke():
+def test_no_navmesh_smoke(sim):
     sim_cfg = habitat_sim.SimulatorConfiguration()
     agent_config = habitat_sim.AgentConfiguration()
     # No sensors as we are only testing to see if things work
@@ -19,7 +19,7 @@ def test_no_navmesh_smoke():
     # Make it try to load a navmesh that doesn't exists
     sim_cfg.scene.filepaths["navmesh"] = "/tmp/dne.navmesh"
 
-    sim = habitat_sim.Simulator(habitat_sim.Configuration(sim_cfg, [agent_config]))
+    sim.reconfigure(habitat_sim.Configuration(sim_cfg, [agent_config]))
 
     sim.initialize_agent(0)
 
@@ -28,8 +28,6 @@ def test_no_navmesh_smoke():
         obs = sim.step(random.choice(list(agent_config.action_space.keys())))
         # Can't collide with no navmesh
         assert not obs["collided"]
-
-    sim.close()
 
 
 def test_empty_scene(sim):
