@@ -2,6 +2,7 @@ import multiprocessing
 import random
 
 import numpy as np
+import pytest
 
 import examples.settings
 import habitat_sim
@@ -63,6 +64,7 @@ def test_sim_reset(sim):
     assert same_position and same_rotation
 
 
+# Make sure you can keep a reference to an agent alive without crashing
 def _test_keep_agent_tgt():
     sim_cfg = habitat_sim.SimulatorConfiguration()
     agent_config = habitat_sim.AgentConfiguration()
@@ -78,13 +80,28 @@ def _test_keep_agent_tgt():
         sim.close()
 
 
-# Make sure you can keep a reference to an agent alive without crashing
-def test_keep_agent():
+# Make sure you can construct and destruct the simulator multiple times
+def _test_multiple_construct_destroy_tgt():
+    sim_cfg = habitat_sim.SimulatorConfiguration()
+    agent_config = habitat_sim.AgentConfiguration()
+
+    sim_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
+
+    for _ in range(3):
+        sim = habitat_sim.Simulator(habitat_sim.Configuration(sim_cfg, [agent_config]))
+
+        sim.close()
+
+
+@pytest.mark.parametrize(
+    "test_fn", [_test_keep_agent_tgt, _test_multiple_construct_destroy_tgt]
+)
+def test_subproc_fns(test_fn):
     mp_ctx = multiprocessing.get_context("spawn")
 
     # Run this test in a subprocess as things with OpenGL
     # contexts get messy
-    p = mp_ctx.Process(target=_test_keep_agent_tgt)
+    p = mp_ctx.Process(target=test_fn)
 
     p.start()
     p.join()
