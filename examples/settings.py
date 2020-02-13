@@ -31,11 +31,16 @@ default_sim_settings = {
     "physics_config_file": "./data/default.phys_scene_config.json",
     "num_objects": 10,
     "test_object_index": 0,
+    "frustum_culling": True,
 }
 
 # build SimulatorConfiguration
 def make_cfg(settings):
     sim_cfg = hsim.SimulatorConfiguration()
+    if "frustum_culling" in settings.keys():
+        sim_cfg.frustum_culling = settings["frustum_culling"]
+    else:
+        sim_cfg.frustum_culling = False
     if "enable_physics" in settings.keys():
         sim_cfg.enable_physics = settings["enable_physics"]
     else:
