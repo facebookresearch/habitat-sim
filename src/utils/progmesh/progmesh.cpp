@@ -656,6 +656,11 @@ int main(int argc, char* argv[]) {
 
   LoadDataFromFile(argv[1], vert, tri, objid);
   std::cout << "loaded" << std::endl;
+  if (vert.size() < atoi(argv[3])) {
+    std::cerr << "Nothing to do. Mesh has less than " << argv[3] << " vertices" << std::endl;
+    exit(1);
+  }
+
   // LoadData(vert, tri, objid);
   ProgressiveMesh(vert, tri, objid, collapse_map, permutation);
   PermuteVertices(vert, tri, permutation);
