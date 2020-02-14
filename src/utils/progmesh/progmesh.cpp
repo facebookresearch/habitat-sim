@@ -7,6 +7,7 @@
  *  See the header file progmesh.h for a description of this module
  */
 
+#include <cstring>
 #include <fstream>
 #include <iostream>
 
@@ -344,8 +345,13 @@ void AddVertex(std::vector<float3>& vert) {
 }
 void AddFaces(std::vector<tridata>& tri, std::vector<int>& objid) {
   for (unsigned int i = 0; i < tri.size(); i++) {
-    Triangle* t = new Triangle(vertices[tri[i].v[0]], vertices[tri[i].v[1]],
-                               vertices[tri[i].v[2]], objid[i]);
+    Vertex *v0 = vertices[tri[i].v[0]];
+    Vertex *v1 = vertices[tri[i].v[1]];
+    Vertex *v2 = vertices[tri[i].v[2]];
+    // Skip zero-size triangles
+    if (v0 == v1 || v1 == v2 || v2 == v0)
+      continue;
+    Triangle* t = new Triangle(v0, v1, v2, objid[i]);
   }
 }
 
