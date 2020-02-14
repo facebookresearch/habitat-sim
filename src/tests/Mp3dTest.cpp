@@ -40,7 +40,8 @@ TEST(Mp3dTest, Load) {
     LOG(INFO) << "Level{id:" << level->id() << ",aabb:" << level->aabb() << "}";
     for (auto& region : level->regions()) {
       LOG(INFO) << "Region{id:" << region->id() << ",aabb:" << region->aabb()
-                << ",category:" << region->category()->name() << "}";
+                << ",category:" << region->category()->name()
+                << ",index:" << region->category()->index() << "}";
       for (auto& object : region->objects()) {
         LOG(INFO) << "Object{id:" << object->id() << ",obb:" << object->obb()
                   << ",category:" << object->category()->name() << "}";
