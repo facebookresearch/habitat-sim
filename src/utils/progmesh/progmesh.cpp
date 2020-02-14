@@ -553,15 +553,48 @@ void LoadDataFromFile(const std::string plyFile,
   // each vertex
   int vertexPerFace =
       face_inds->buffer.size_bytes() / (face_inds->count * sizeof(uint32_t));
-  assert(vertexPerFace == 3);
-  copyTo(face_inds, tri);
+  if (vertexPerFace == 3) {
+    copyTo(face_inds, tri);
+  } else {
+    std::vector<std::array<int,4>> tmp;
+    copyTo(face_inds, tmp);
+    tri.reserve(tmp.size() * 2);
+    // converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0, 2, 3]
+    for (auto& quad: tmp) {
+      tri.push_back(tridata{.v = { quad[0], quad[1], quad[2] }});
+      tri.push_back(tridata{.v = { quad[0], quad[2], quad[3] }});
+    }
+  }
 
   // If the input mesh is a quad mesh, then we had to double the number of
   // primitives, so we also need to double the size of the object IDs buffer
   int indicesPerFace = 3 * (vertexPerFace == 4 ? 2 : 1);
   if (object_ids->t == tinyply::Type::INT32 ||
       object_ids->t == tinyply::Type::UINT32) {
-    copyTo(object_ids, objid);
+    if (vertexPerFace == 4) {
+      std::vector<int> tmp;
+      copyTo(object_ids, tmp);
+      for (int o: tmp) {
+	objid.push_back(o);
+	objid.push_back(o);
+      }
+    } else {
+      copyTo(object_ids, objid);
+    }
+  } else if (object_ids->t == tinyply::Type::UINT16) {
+    std::vector<uint16_t> tmp;
+    copyTo(object_ids, tmp);
+
+    if (vertexPerFace == 4) {
+      for (int o: tmp) {
+	objid.push_back(o);
+	objid.push_back(o);
+      }
+    } else {
+      for (int o: tmp) {
+	objid.push_back(o);
+      }
+    }
   } else {
     std::cerr << "Cannot load object_id of type "
               << tinyply::PropertyTable[object_ids->t].str;
