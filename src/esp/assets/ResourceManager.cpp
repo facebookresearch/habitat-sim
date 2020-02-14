@@ -1223,8 +1223,7 @@ gfx::PhongMaterialData::uptr ResourceManager::getPhongShadedMaterialData(
   using namespace Mn::Math::Literals;
 
   auto finalMaterial = gfx::PhongMaterialData::create_unique();
-  // TODO: figure out why materials are being loaded with shininess == 1
-  finalMaterial->shininess = std::max(material.shininess(), 80.f);
+  finalMaterial->shininess = material.shininess();
 
   // ambient material properties
   if (material.flags() & Mn::Trade::PhongMaterialData::Flag::AmbientTexture) {
@@ -1250,7 +1249,11 @@ gfx::PhongMaterialData::uptr ResourceManager::getPhongShadedMaterialData(
         textures_[textureBaseIndex + material.specularTexture()].get();
     finalMaterial->specularColor = 0xffffffff_rgbaf;
   } else {
-    finalMaterial->specularColor = material.specularColor();
+    // remove specular highlights if shininess value doesn't make sense
+    // TODO: figure out why materials are being loaded with shininess == 1
+    finalMaterial->specularColor = finalMaterial->shininess == 1
+                                       ? 0x000000_rgbf
+                                       : material.specularColor();
   }
   return finalMaterial;
 }
