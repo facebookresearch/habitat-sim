@@ -471,9 +471,16 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
   }
 }
 
-const scene::SceneNode& PhysicsManager::getObjectSceneNode(int physObjectID) {
+const scene::SceneNode& PhysicsManager::getObjectSceneNode(
+    int physObjectID) const {
   assertIDValidity(physObjectID);
-  return existingObjects_[physObjectID]->node();
+  return existingObjects_.at(physObjectID)->node();
+}
+
+scene::SceneNode& PhysicsManager::getObjectSceneNode(int physObjectID) {
+  return const_cast<scene::SceneNode&>(
+      const_cast<const PhysicsManager&>(*this).getObjectSceneNode(
+          physObjectID));
 }
 
 }  // namespace physics

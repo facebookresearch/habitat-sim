@@ -741,7 +741,10 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @return Const reference to the object scene node.
    */
-  const scene::SceneNode& getObjectSceneNode(int physObjectID);
+  const scene::SceneNode& getObjectSceneNode(int physObjectID) const;
+
+  /** @overload */
+  scene::SceneNode& getObjectSceneNode(int physObjectID);
 
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref

@@ -231,7 +231,7 @@ bool operator!=(const SimulatorConfiguration& a,
 // === Physics Simulator Functions ===
 
 int Simulator::addObject(const int objectLibIndex, const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     // TODO: change implementation to support multi-world and physics worlds to
     // own reference to a sceneGraph to avoid this.
     auto& sceneGraph_ = sceneManager_.getSceneGraph(activeSceneID_);
@@ -249,7 +249,7 @@ int Simulator::getPhysicsObjectLibrarySize() {
 
 // return a list of existing objected IDs in a physical scene
 std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getExistingObjectIDs();
   }
   return std::vector<int>();  // empty if no simulator exists
@@ -257,14 +257,14 @@ std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
 
 // remove object objectID instance in sceneID
 void Simulator::removeObject(const int objectID, const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     physicsManager_->removeObject(objectID);
   }
 }
 
 esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
                                                         const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getObjectMotionType(objectID);
   }
   return esp::physics::MotionType::ERROR_MOTIONTYPE;
@@ -273,7 +273,7 @@ esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
 bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
                                     const int objectID,
                                     const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     return physicsManager_->setObjectMotionType(objectID, motionType);
   }
   return false;
@@ -283,7 +283,7 @@ bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
 void Simulator::applyTorque(const Magnum::Vector3& tau,
                             const int objectID,
                             const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     physicsManager_->applyTorque(objectID, tau);
   }
 }
@@ -292,7 +292,7 @@ void Simulator::applyForce(const Magnum::Vector3& force,
                            const Magnum::Vector3& relPos,
                            const int objectID,
                            const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     physicsManager_->applyForce(objectID, force, relPos);
   }
 }
@@ -301,14 +301,14 @@ void Simulator::applyForce(const Magnum::Vector3& force,
 void Simulator::setTransformation(const Magnum::Matrix4& transform,
                                   const int objectID,
                                   const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     physicsManager_->setTransformation(objectID, transform);
   }
 }
 
 Magnum::Matrix4 Simulator::getTransformation(const int objectID,
                                              const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getTransformation(objectID);
   }
   return Magnum::Matrix4::fromDiagonal(Magnum::Vector4(1));
@@ -318,7 +318,7 @@ Magnum::Matrix4 Simulator::getTransformation(const int objectID,
 void Simulator::setTranslation(const Magnum::Vector3& translation,
                                const int objectID,
                                const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     physicsManager_->setTranslation(objectID, translation);
   }
 }
@@ -327,7 +327,7 @@ Magnum::Vector3 Simulator::getTranslation(const int objectID,
                                           const int sceneID) {
   // can throw if physicsManager is not initialized or either objectID/sceneID
   // is invalid
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getTranslation(objectID);
   }
   return Magnum::Vector3();
@@ -337,21 +337,21 @@ Magnum::Vector3 Simulator::getTranslation(const int objectID,
 void Simulator::setRotation(const Magnum::Quaternion& rotation,
                             const int objectID,
                             const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     physicsManager_->setRotation(objectID, rotation);
   }
 }
 
 Magnum::Quaternion Simulator::getRotation(const int objectID,
                                           const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getRotation(objectID);
   }
   return Magnum::Quaternion();
 }
 
 bool Simulator::contactTest(const int objectID, const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     return physicsManager_->contactTest(objectID);
   }
   return false;
@@ -391,6 +391,15 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 
   LOG(INFO) << "reconstruct navmesh successful";
   return true;
+}
+
+void Simulator::setObjectLightSetup(int objectID,
+                                    const std::string& lightSetup,
+                                    int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    gfx::setLightSetupForSubTree(physicsManager_->getObjectSceneNode(objectID),
+                                 lightSetup);
+  }
 }
 
 }  // namespace sim

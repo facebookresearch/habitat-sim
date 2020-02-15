@@ -314,8 +314,29 @@ class Simulator {
    */
   bool isFrustumCullingEnabled() { return frustumCulling_; }
 
+  /**
+   * @brief Set the light setup of an object
+   *
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   * @param lightSetup @ref LightSetup key
+   */
+  void setObjectLightSetup(int objectID,
+                           const std::string& lightSetup,
+                           int sceneID = 0);
+
  protected:
   Simulator(){};
+
+  bool isValidScene(int sceneID) const {
+    return sceneID >= 0 && sceneID < sceneID_.size();
+  }
+
+  bool sceneHasPhysics(int sceneID) const {
+    return isValidScene(sceneID) && physicsManager_ != nullptr;
+  }
 
   gfx::WindowlessContext::uptr context_ = nullptr;
   std::shared_ptr<gfx::Renderer> renderer_ = nullptr;
