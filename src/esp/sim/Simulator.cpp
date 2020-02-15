@@ -15,6 +15,7 @@
 #include "esp/gfx/Renderer.h"
 #include "esp/io/io.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/PhysicsManager.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/PinholeCamera.h"
@@ -230,7 +231,14 @@ bool operator!=(const SimulatorConfiguration& a,
 
 // === Physics Simulator Functions ===
 
-int Simulator::addObject(const int objectLibIndex, const int sceneID) {
+int Simulator::addObject(int objectLibIndex, int sceneID) {
+  return addObject(objectLibIndex,
+                   assets::ResourceManager::DEFAULT_LIGHTING_KEY, sceneID);
+}
+
+int Simulator::addObject(int objectLibIndex,
+                         const std::string& lightSetup,
+                         int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     // TODO: change implementation to support multi-world and physics worlds to
     // own reference to a sceneGraph to avoid this.

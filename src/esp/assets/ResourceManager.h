@@ -32,7 +32,6 @@
 #include "esp/gfx/MaterialData.h"
 #include "esp/gfx/ShaderManager.h"
 #include "esp/gfx/configure.h"
-#include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneNode.h"
 
 // forward declarations
@@ -74,6 +73,15 @@ class ResourceManager {
   using DrawableGroup = gfx::DrawableGroup;
   /** @brief Convenience typedef for Importer class */
   using Importer = Magnum::Trade::AbstractImporter;
+
+  //! @brief The @ref ShaderManager key for @ref LightInfo which has no lights
+  static constexpr char NO_LIGHT_KEY[] = "no_lights";
+
+  //! @brief The @ref ShaderManager key for the default @ref LightInfo
+  static constexpr char DEFAULT_LIGHTING_KEY[] = "default_lighting";
+
+  //! @brief The @ref ShaderManager key for the default @ref MaterialInfo
+  static constexpr char DEFAULT_MATERIAL_KEY[] = "default_material";
 
   /**
    * @brief Set whether textures should be compressed.
@@ -192,7 +200,8 @@ class ResourceManager {
    */
   int loadObject(const std::string& objPhysConfigFilename,
                  scene::SceneNode* parent,
-                 DrawableGroup* drawables);
+                 DrawableGroup* drawables,
+                 const Magnum::ResourceKey& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /**
    * @brief Load and parse a physics object template config file and generates a
@@ -356,15 +365,6 @@ class ResourceManager {
    */
   Magnum::Resource<gfx::LightSetup> getLightSetup(
       const Magnum::ResourceKey& key);
-
-  //! @brief The @ref ShaderManager key for @ref LightInfo which has no lights
-  static constexpr char NO_LIGHT_KEY[] = "no_lights";
-
-  //! @brief The @ref ShaderManager key for the default @ref LightInfo
-  static constexpr char DEFAULT_LIGHTING_KEY[] = "default_lighting";
-
-  //! @brief The @ref ShaderManager key for the default @ref MaterialInfo
-  static constexpr char DEFAULT_MATERIAL_KEY[] = "default_material";
 
  protected:
   //======== Scene Functions ========

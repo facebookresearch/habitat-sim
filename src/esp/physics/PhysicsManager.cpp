@@ -4,7 +4,6 @@
 
 #include "PhysicsManager.h"
 #include "esp/assets/CollisionMeshData.h"
-#include "esp/assets/ResourceManager.h"
 
 #include <Magnum/Math/Range.h>
 
@@ -48,7 +47,8 @@ bool PhysicsManager::addScene(
 }
 
 int PhysicsManager::addObject(const int objectLibIndex,
-                              DrawableGroup* drawables) {
+                              DrawableGroup* drawables,
+                              const Magnum::ResourceKey& lightSetup) {
   const std::string configFile =
       resourceManager_->getObjectConfig(objectLibIndex);
 
@@ -67,8 +67,9 @@ int PhysicsManager::addObject(const int objectLibIndex,
 
   //! Draw object via resource manager
   //! Render node as child of physics node
-  resourceManager_->loadObject(
-      configFile, &existingObjects_.at(nextObjectID_)->node(), drawables);
+  resourceManager_->loadObject(configFile,
+                               &existingObjects_.at(nextObjectID_)->node(),
+                               drawables, lightSetup);
 
   if (physicsObjectAttributes.existsAs(assets::DataType::BOOL,
                                        "COM_provided")) {
@@ -86,10 +87,11 @@ int PhysicsManager::addObject(const int objectLibIndex,
 }
 
 int PhysicsManager::addObject(const std::string& configFile,
-                              DrawableGroup* drawables) {
+                              DrawableGroup* drawables,
+                              const Magnum::ResourceKey& lightSetup) {
   int resObjectID = resourceManager_->getObjectID(configFile);
   //! Invoke resourceManager to draw object
-  int physObjectID = addObject(resObjectID, drawables);
+  int physObjectID = addObject(resObjectID, drawables, lightSetup);
   return physObjectID;
 }
 

@@ -27,6 +27,9 @@ class SemanticScene;
 namespace gfx {
 class Renderer;
 }  // namespace gfx
+namespace physics {
+enum class MotionType;
+}  // namespace physics
 }  // namespace esp
 
 namespace esp {
@@ -98,7 +101,12 @@ class Simulator {
    * esp::physics::PhysicsManager::existingObjects_ or @ref esp::ID_UNDEFINED if
    * instancing fails.
    */
-  int addObject(const int objectLibIndex, const int sceneID = 0);
+  int addObject(int objectLibIndex, int sceneID = 0);
+
+  /** @overload */
+  int addObject(int objectLibIndex,
+                const std::string& lightSetup,
+                int sceneID = 0);
 
   /**
    * @brief Get the current size of the physics object library. Objects [0,size)

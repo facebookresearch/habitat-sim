@@ -399,7 +399,8 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
 //! For load-only: set parent = nullptr, drawables = nullptr
 int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
                                 scene::SceneNode* parent,
-                                DrawableGroup* drawables) {
+                                DrawableGroup* drawables,
+                                const Magnum::ResourceKey& lightSetup) {
   // Load Object from config
   const bool objectIsLoaded =
       physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
@@ -439,7 +440,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
     scalingNode.setScaling(objectScaling);
 
     // TODO: make lighting selection configurable
-    addComponent(meshMetaData, scalingNode, DEFAULT_LIGHTING_KEY, drawables,
+    addComponent(meshMetaData, scalingNode, lightSetup, drawables,
                  meshMetaData.root);
     // compute the full BB hierarchy for the new tree.
     parent->computeCumulativeBB();
