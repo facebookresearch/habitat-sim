@@ -3,11 +3,12 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/Containers/StridedArrayView.h>
+#include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Directory.h>
+#include <Magnum/DebugTools/CompareImage.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/PixelFormat.h>
-#include <gtest/gtest.h>
 #include <string>
 
 #include "esp/sim/SimulatorWithAgents.h"
@@ -35,52 +36,57 @@ const std::string skokloster =
     Cr::Utility::Directory::join(SCENE_DATASETS,
                                  "habitat-test-scenes/skokloster-castle.glb");
 
-// TODO(MM): move following to common test utils module
-template <typename T, typename U>
-bool equalWithTolerance(const T& lhs, const T& rhs, U tolerance) {
-  return std::abs(rhs - lhs) <= std::abs(tolerance);
+namespace {
+
+struct SimTest : Cr::TestSuite::Tester {
+  explicit SimTest();
+
+  void basic();
+  void reconfigure();
+  void reset();
+  void getPinholeCameraRGBAObservation();
+};
+
+SimTest::SimTest() {
+  // clang-format off
+  addTests({&SimTest::basic,
+            &SimTest::reconfigure,
+            &SimTest::reset,
+            &SimTest::getPinholeCameraRGBAObservation});
+  // clang-format on
 }
 
-bool pixelEqualWithChannelTolerance(const Mn::Color4ub& lhs,
-                                    const Mn::Color4ub& rhs,
-                                    int tolerance) {
-  return equalWithTolerance(lhs.r(), rhs.r(), tolerance) &&
-         equalWithTolerance(lhs.g(), rhs.g(), tolerance) &&
-         equalWithTolerance(lhs.b(), rhs.b(), tolerance) &&
-         equalWithTolerance(lhs.a(), rhs.a(), tolerance);
-}
-
-TEST(SimTest, Basic) {
+void SimTest::basic() {
   SimulatorConfiguration cfg;
   cfg.scene.id = vangogh;
   SimulatorWithAgents simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
-  ASSERT_NE(pathfinder, nullptr);
+  CORRADE_VERIFY(pathfinder);
 }
 
-TEST(SimTest, Reconfigure) {
+void SimTest::reconfigure() {
   SimulatorConfiguration cfg;
   cfg.scene.id = vangogh;
   SimulatorWithAgents simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
   simulator.reconfigure(cfg);
-  ASSERT_EQ(pathfinder, simulator.getPathFinder());
+  CORRADE_VERIFY(pathfinder == simulator.getPathFinder());
   SimulatorConfiguration cfg2;
   cfg2.scene.id = skokloster;
   simulator.reconfigure(cfg2);
-  ASSERT_NE(pathfinder, simulator.getPathFinder());
+  CORRADE_VERIFY(pathfinder != simulator.getPathFinder());
 }
 
-TEST(SimTest, Reset) {
+void SimTest::reset() {
   SimulatorConfiguration cfg;
   cfg.scene.id = vangogh;
   SimulatorWithAgents simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
   simulator.reset();
-  ASSERT_EQ(pathfinder, simulator.getPathFinder());
+  CORRADE_VERIFY(pathfinder == simulator.getPathFinder());
 }
 
-TEST(SimTest, GetPinholeCameraRGBAObservation) {
+void SimTest::getPinholeCameraRGBAObservation() {
   SimulatorConfiguration simConfig{};
   simConfig.scene.id = vangogh;
 
@@ -98,33 +104,30 @@ TEST(SimTest, GetPinholeCameraRGBAObservation) {
 
   Observation observation;
   ObservationSpace obsSpace;
-  ASSERT_TRUE(simulator.getAgentObservation(
+  CORRADE_VERIFY(simulator.getAgentObservation(
       simConfig.defaultAgentId, pinholeCameraSpec->uuid, observation));
-  ASSERT_TRUE(simulator.getAgentObservationSpace(
+  CORRADE_VERIFY(simulator.getAgentObservationSpace(
       simConfig.defaultAgentId, pinholeCameraSpec->uuid, obsSpace));
 
   std::vector<size_t> expectedShape{
       {static_cast<size_t>(pinholeCameraSpec->resolution[0]),
        static_cast<size_t>(pinholeCameraSpec->resolution[1]), 4}};
 
-  ASSERT_EQ(obsSpace.spaceType, ObservationSpaceType::TENSOR);
-  ASSERT_EQ(obsSpace.dataType, esp::core::DataType::DT_UINT8);
-  ASSERT_EQ(obsSpace.shape, expectedShape);
-  ASSERT_EQ(observation.buffer->shape, expectedShape);
+  CORRADE_VERIFY(obsSpace.spaceType == ObservationSpaceType::TENSOR);
+  CORRADE_VERIFY(obsSpace.dataType == esp::core::DataType::DT_UINT8);
+  CORRADE_COMPARE(obsSpace.shape, expectedShape);
+  CORRADE_COMPARE(observation.buffer->shape, expectedShape);
 
-  // Compare one pixel (center of image) with previously rendered ground truth
-  // TODO: compare more than one pixel
-  Mn::ImageView2D image{
-      Mn::PixelFormat::RGBA8Unorm,
-      {pinholeCameraSpec->resolution[0], pinholeCameraSpec->resolution[1]},
-      observation.buffer->data};
-
-  Mn::Color4ub pixel = image.pixels<Mn::Color4ub>()[50][50];
-
-  // Ground truth: hardcoded from previous render
-  // TODO: move various sensor configurations and expected ground truths to
-  // common test util
-  Mn::Color4ub expectedPixel{0x40, 0x6C, 0x46, 0xB5};
-
-  ASSERT_TRUE(pixelEqualWithChannelTolerance(pixel, expectedPixel, 5));
+  // Compare with previously rendered ground truth
+  CORRADE_COMPARE_WITH(
+      (Mn::ImageView2D{
+          Mn::PixelFormat::RGBA8Unorm,
+          {pinholeCameraSpec->resolution[0], pinholeCameraSpec->resolution[1]},
+          observation.buffer->data}),
+      Cr::Utility::Directory::join(TEST_DIR, "SimTestExpected.png"),
+      (Mn::DebugTools::CompareImageToFile{15.0f, 0.17f}));
 }
+
+}  // namespace
+
+CORRADE_TEST_MAIN(SimTest)

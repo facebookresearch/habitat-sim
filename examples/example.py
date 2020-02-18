@@ -33,6 +33,7 @@ parser.add_argument(
     type=str,
     default=dr.default_sim_settings["physics_config_file"],
 )
+parser.add_argument("--disable_frustum_culling", action="store_true")
 args = parser.parse_args()
 
 
@@ -55,6 +56,7 @@ def make_settings():
     settings["silent"] = args.silent
     settings["enable_physics"] = args.enable_physics
     settings["physics_config_file"] = args.physics_config_file
+    settings["frustum_culling"] = not args.disable_frustum_culling
 
     return settings
 

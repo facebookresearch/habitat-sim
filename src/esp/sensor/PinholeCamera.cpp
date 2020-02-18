@@ -108,10 +108,16 @@ void PinholeCamera::drawObservation(sim::Simulator& sim) {
   gfx::Renderer::ptr renderer = sim.getRenderer();
   if (spec_->sensorType == SensorType::SEMANTIC) {
     // TODO: check sim has semantic scene graph
-    renderer->draw(*this, sim.getActiveSemanticSceneGraph());
+
+    // TODO:
+    // We do not support frustum culling when rendering semantic mesh.
+    // We should enable it in near future
+    bool frustumCulling = false;
+    renderer->draw(*this, sim.getActiveSemanticSceneGraph(), frustumCulling);
   } else {
     // SensorType is DEPTH or any other type
-    renderer->draw(*this, sim.getActiveSceneGraph());
+    renderer->draw(*this, sim.getActiveSceneGraph(),
+                   sim.isFrustumCullingEnabled());
   }
 
   renderTarget().renderExit();

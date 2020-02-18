@@ -4,6 +4,7 @@
 
 #include "esp/geo/geo.h"
 
+#include <Magnum/Math/FunctionsBatch.h>
 #include <numeric>
 
 namespace esp {
