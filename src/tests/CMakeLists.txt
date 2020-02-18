@@ -24,7 +24,11 @@ TEST(GeoTest geo)
 TEST(Mp3dTest scene)
 target_include_directories(Mp3dTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-TEST(SimTest sim)
+corrade_add_test(SimTest SimTest.cpp LIBRARIES
+  sim
+  Magnum::DebugTools
+  Magnum::AnyImageConverter
+  MagnumPlugins::StbImageImporter)
 target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 TEST(PhysicsTest physics)
