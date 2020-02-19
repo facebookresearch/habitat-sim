@@ -360,7 +360,8 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
     const bool fileExists = Directory::exists(objPhysPropertiesFilename);
 
     if (!dirExists && !fileExists) {
-      LOG(WARNING) << "The specified file/dir does not exist. Aborting parse.";
+      LOG(WARNING) << "Cannot find " << absolutePath << " or "
+                   << objPhysPropertiesFilename << ". Aborting parse.";
       continue;
     }
 
