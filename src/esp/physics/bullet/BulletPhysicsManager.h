@@ -83,7 +83,7 @@ class BulletPhysicsManager : public PhysicsManager {
   virtual int addObject(
       const int objectLibIndex,
       DrawableGroup* drawables,
-      const Magnum::ResourceKey& lightSetup =
+      const std::string& lightSetup =
           assets::ResourceManager::DEFAULT_LIGHTING_KEY) override;
 
   //============ Simulator functions =============

@@ -244,7 +244,8 @@ int Simulator::addObject(int objectLibIndex,
     // own reference to a sceneGraph to avoid this.
     auto& sceneGraph_ = sceneManager_.getSceneGraph(activeSceneID_);
     auto& drawables = sceneGraph_.getDrawables();
-    return physicsManager_->addObject(objectLibIndex, &drawables);
+    return physicsManager_->addObject(objectLibIndex, &drawables,
+                                      lightSetupKey);
   }
   return ID_UNDEFINED;
 }

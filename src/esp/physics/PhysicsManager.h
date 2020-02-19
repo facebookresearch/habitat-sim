@@ -148,7 +148,7 @@ class PhysicsManager {
    */
   int addObject(const std::string& configFile,
                 DrawableGroup* drawables,
-                const Magnum::ResourceKey& lightSetup =
+                const std::string& lightSetup =
                     assets::ResourceManager::DEFAULT_LIGHTING_KEY);
 
   /** @brief Instance a physical object from an object properties template in
@@ -164,7 +164,7 @@ class PhysicsManager {
    */
   virtual int addObject(const int objectLibIndex,
                         DrawableGroup* drawables,
-                        const Magnum::ResourceKey& lightSetup =
+                        const std::string& lightSetup =
                             assets::ResourceManager::DEFAULT_LIGHTING_KEY);
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying

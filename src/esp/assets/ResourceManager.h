@@ -78,10 +78,10 @@ class ResourceManager {
   static constexpr char NO_LIGHT_KEY[] = "no_lights";
 
   //! @brief The @ref ShaderManager key for the default @ref LightInfo
-  static constexpr char DEFAULT_LIGHTING_KEY[] = "default_lighting";
+  static constexpr char DEFAULT_LIGHTING_KEY[] = "";
 
   //! @brief The @ref ShaderManager key for the default @ref MaterialInfo
-  static constexpr char DEFAULT_MATERIAL_KEY[] = "default_material";
+  static constexpr char DEFAULT_MATERIAL_KEY[] = "";
 
   /**
    * @brief Set whether textures should be compressed.
@@ -201,7 +201,7 @@ class ResourceManager {
   int loadObject(const std::string& objPhysConfigFilename,
                  scene::SceneNode* parent,
                  DrawableGroup* drawables,
-                 const Magnum::ResourceKey& lightSetup = DEFAULT_LIGHTING_KEY);
+                 const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /**
    * @brief Load and parse a physics object template config file and generates a
@@ -359,14 +359,13 @@ class ResourceManager {
    * @param key Key to identify this @ref LightSetup
    */
   void setLightSetup(gfx::LightSetup setup,
-                     const Magnum::ResourceKey& key = DEFAULT_LIGHTING_KEY);
+                     const std::string& key = DEFAULT_LIGHTING_KEY);
 
   /**
    * @brief Get a named @ref LightSetup
    */
   Magnum::Resource<gfx::LightSetup> getLightSetup(
-      const Magnum::ResourceKey& key =
-          assets::ResourceManager::DEFAULT_LIGHTING_KEY);
+      const std::string& key = DEFAULT_LIGHTING_KEY);
 
  protected:
   //======== Scene Functions ========
