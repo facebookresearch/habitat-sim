@@ -854,7 +854,7 @@ static float frand() {
 
 vec3f PathFinder::Impl::getRandomNavigablePoint() {
   dtPolyRef ref;
-  float inf = std::numeric_limits<float>::infinity();
+  constexpr float inf = std::numeric_limits<float>::infinity();
   vec3f pt(inf, inf, inf);
   dtStatus status =
       navQuery_->findRandomPoint(filter_.get(), frand, &ref, pt.data());
