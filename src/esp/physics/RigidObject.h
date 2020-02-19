@@ -100,6 +100,12 @@ class VelocityControl {
   /**@brief Whether or not to set angular control velocity before stepping. */
   bool controllingAngVel = false;
 
+  /**@brief Whether or not to set angular control velocity in local space.
+   *
+   * Useful for commanding actions such as "roll" and "yaw".
+   */
+  bool angVelIsLocal = false;
+
   /**
    * @brief Compute the result of applying constant control velocities to the
    * provided object transform.

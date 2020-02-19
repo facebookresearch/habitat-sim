@@ -232,8 +232,12 @@ Magnum::Matrix4 VelocityControl::integrateTransform(
   Magnum::Matrix3 newRotationScaling = objectTransform.rotationScaling();
   // then angular
   if (controllingAngVel) {
+    Magnum::Vector3 globalAngVel = angVel;
+    if (angVelIsLocal) {
+      globalAngVel = objectTransform.rotation() * angVel;
+    }
     Magnum::Quaternion q = Magnum::Quaternion::rotation(
-        Magnum::Rad{(angVel * dt).length()}, angVel.normalized());
+        Magnum::Rad{(globalAngVel * dt).length()}, globalAngVel.normalized());
     newRotationScaling = q.toMatrix() * newRotationScaling;
   }
   return Magnum::Matrix4::from(newRotationScaling, newTranslation);

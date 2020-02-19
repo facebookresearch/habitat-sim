@@ -194,7 +194,14 @@ void BulletPhysicsManager::stepPhysics(double dt) {
         }
       }
       if (velControl.controllingAngVel) {
-        setAngularVelocity(objectItr.first, velControl.angVel);
+        if (velControl.angVelIsLocal) {
+          setAngularVelocity(
+              objectItr.first,
+              objectItr.second->node().rotation().transformVector(
+                  velControl.angVel));
+        } else {
+          setAngularVelocity(objectItr.first, velControl.angVel);
+        }
       }
     }
   }
