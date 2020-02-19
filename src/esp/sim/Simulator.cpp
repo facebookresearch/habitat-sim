@@ -108,6 +108,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       // Pass the error to the python through pybind11 allowing graceful exit
       throw std::invalid_argument("Cannot load: " + sceneFilename);
     }
+    const Magnum::Range3D& sceneBB = rootNode.computeCumulativeBB();
+    resourceManager_.setLightSetup(
+        assets::ResourceManager::DEFAULT_LIGHTING_KEY,
+        gfx::getLightsAtBoxCorners(sceneBB));
 
     if (io::exists(houseFilename)) {
       LOG(INFO) << "Loading house from " << houseFilename;

@@ -27,7 +27,7 @@ bool BulletPhysicsManager::initPhysics(
   //! We can potentially use other collision checking algorithms, by
   //! uncommenting the line below
   // btGImpactCollisionAlgorithm::registerAlgorithm(&bDispatcher_);
-  bWorld_ = std::make_shared<btDiscreteDynamicsWorld>(
+  bWorld_ = std::make_shared<btMultiBodyDynamicsWorld>(
       &bDispatcher_, &bBroadphase_, &bSolver_, &bCollisionConfig_);
 
   debugDrawer_.setMode(
