@@ -343,52 +343,55 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
     }
   }
 
-  //! Load object paths
+  // load the rigid object library metadata (no physics init yet...)
+  if (!scenePhysicsConfig.HasMember("rigid object paths") ||
+      !scenePhysicsConfig["rigid object paths"].IsArray()) {
+    return physicsManagerAttributes;
+  }
+
   std::string configDirectory =
       physicsFilename.substr(0, physicsFilename.find_last_of("/"));
-  // load the rigid object library metadata (no physics init yet...)
-  if (scenePhysicsConfig.HasMember("rigid object paths")) {
-    if (scenePhysicsConfig["rigid object paths"].IsArray()) {
-      physicsManagerAttributes.setVecStrings("objectLibraryPaths",
-                                             std::vector<std::string>());
-      for (rapidjson::SizeType i = 0;
-           i < scenePhysicsConfig["rigid object paths"].Size(); i++) {
-        if (scenePhysicsConfig["rigid object paths"][i].IsString()) {
-          std::string filename =
-              scenePhysicsConfig["rigid object paths"][i].GetString();
-          std::string absolutePath =
-              Cr::Utility::Directory::join(configDirectory, filename);
-          if (Cr::Utility::Directory::isDirectory(absolutePath)) {
-            LOG(INFO) << "Parsing object library directory: " + absolutePath;
-            if (Cr::Utility::Directory::exists(absolutePath)) {
-              for (auto& file : Cr::Utility::Directory::list(
-                       absolutePath,
-                       Corrade::Utility::Directory::Flag::SortAscending)) {
-                std::string absoluteSubfilePath =
-                    Cr::Utility::Directory::join(absolutePath, file);
-                if (Cr::Utility::String::endsWith(absoluteSubfilePath,
-                                                  ".phys_properties.json")) {
-                  physicsManagerAttributes.appendVecStrings(
-                      "objectLibraryPaths", absoluteSubfilePath);
-                }
-              }
-            } else {
-              LOG(WARNING)
-                  << "The specified directory does not exist. Aborting parse.";
-            }
-          } else {
-            // 1: parse the filename (relative or global path)
-            std::string objPhysPropertiesFilename =
-                absolutePath + ".phys_properties.json";
-            physicsManagerAttributes.appendVecStrings(
-                "objectLibraryPaths", objPhysPropertiesFilename);
-          }
-        } else {
-          LOG(ERROR) << "Invalid value in physics scene config -rigid object "
-                        "library- array "
-                     << i;
+  physicsManagerAttributes.setVecStrings("objectLibraryPaths", {});
+
+  const auto& paths = scenePhysicsConfig["rigid object paths"];
+  for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
+    if (!paths[i].IsString()) {
+      LOG(ERROR) << "Invalid value in physics scene config -rigid object "
+                    "library- array "
+                 << i;
+      continue;
+    }
+
+    namespace Directory = Cr::Utility::Directory;
+    std::string absolutePath =
+        Directory::join(configDirectory, paths[i].GetString());
+    std::string objPhysPropertiesFilename =
+        absolutePath + ".phys_properties.json";
+    const bool dirExists = Directory::isDirectory(absolutePath);
+    const bool fileExists = Directory::exists(objPhysPropertiesFilename);
+
+    if (!dirExists && !fileExists) {
+      LOG(WARNING) << "Cannot find " << absolutePath << " or "
+                   << objPhysPropertiesFilename << ". Aborting parse.";
+      continue;
+    }
+
+    if (dirExists) {
+      LOG(INFO) << "Parsing object library directory: " + absolutePath;
+      for (auto& file :
+           Directory::list(absolutePath, Directory::Flag::SortAscending)) {
+        std::string absoluteSubfilePath = Directory::join(absolutePath, file);
+        if (Cr::Utility::String::endsWith(absoluteSubfilePath,
+                                          ".phys_properties.json")) {
+          physicsManagerAttributes.appendVecStrings("objectLibraryPaths",
+                                                    absoluteSubfilePath);
         }
       }
+    }
+
+    if (fileExists) {
+      physicsManagerAttributes.appendVecStrings("objectLibraryPaths",
+                                                objPhysPropertiesFilename);
     }
   }
 
