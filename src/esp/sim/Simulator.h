@@ -28,7 +28,7 @@ namespace gfx {
 class Renderer;
 }  // namespace gfx
 namespace physics {
-enum class MotionType;
+enum class MotionType : int;
 }  // namespace physics
 }  // namespace esp
 

@@ -201,7 +201,7 @@ class ResourceManager {
   int loadObject(const std::string& objPhysConfigFilename,
                  scene::SceneNode* parent,
                  DrawableGroup* drawables,
-                 const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+                 const Magnum::ResourceKey& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /**
    * @brief Load and parse a physics object template config file and generates a
@@ -359,13 +359,13 @@ class ResourceManager {
    * @param key Key to identify this @ref LightSetup
    */
   void setLightSetup(gfx::LightSetup setup,
-                     const std::string& key = DEFAULT_LIGHTING_KEY);
+                     const Magnum::ResourceKey& key = DEFAULT_LIGHTING_KEY);
 
   /**
    * @brief Get a named @ref LightSetup
    */
   Magnum::Resource<gfx::LightSetup> getLightSetup(
-      const std::string& key = DEFAULT_LIGHTING_KEY);
+      const Magnum::ResourceKey& key = DEFAULT_LIGHTING_KEY);
 
  protected:
   //======== Scene Functions ========

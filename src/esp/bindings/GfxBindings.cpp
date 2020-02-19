@@ -127,14 +127,8 @@ void initGfxBindings(py::module& m) {
       .def_readwrite("position", &LightInfo::position)
       .def_readwrite("color", &LightInfo::color)
       .def_readwrite("model", &LightInfo::model)
-      .def("__eq__",
-           [](const LightInfo& self, const LightInfo& other) -> bool {
-             return self == other;
-           })
-      .def("__neq__",
-           [](const LightInfo& self, const LightInfo& other) -> bool {
-             return self != other;
-           });
+      .def(py::self == py::self)
+      .def(py::self != py::self);
 
   m.attr("DEFAULT_LIGHTING_KEY") =
       assets::ResourceManager::DEFAULT_LIGHTING_KEY;

@@ -48,7 +48,7 @@ bool PhysicsManager::addScene(
 
 int PhysicsManager::addObject(const int objectLibIndex,
                               DrawableGroup* drawables,
-                              const std::string& lightSetup) {
+                              const Magnum::ResourceKey& lightSetup) {
   const std::string configFile =
       resourceManager_->getObjectConfig(objectLibIndex);
 
@@ -88,7 +88,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
 
 int PhysicsManager::addObject(const std::string& configFile,
                               DrawableGroup* drawables,
-                              const std::string& lightSetup) {
+                              const Magnum::ResourceKey& lightSetup) {
   int resObjectID = resourceManager_->getObjectID(configFile);
   //! Invoke resourceManager to draw object
   int physObjectID = addObject(resObjectID, drawables, lightSetup);

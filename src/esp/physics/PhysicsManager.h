@@ -148,8 +148,8 @@ class PhysicsManager {
    */
   int addObject(const std::string& configFile,
                 DrawableGroup* drawables,
-                const std::string& lightSetup =
-                    assets::ResourceManager::DEFAULT_LIGHTING_KEY);
+                const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+                    assets::ResourceManager::DEFAULT_LIGHTING_KEY});
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::assets::ResourceManager::physicsObjectLibrary_ by object
@@ -162,10 +162,11 @@ class PhysicsManager {
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  virtual int addObject(const int objectLibIndex,
-                        DrawableGroup* drawables,
-                        const std::string& lightSetup =
-                            assets::ResourceManager::DEFAULT_LIGHTING_KEY);
+  virtual int addObject(
+      const int objectLibIndex,
+      DrawableGroup* drawables,
+      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+          assets::ResourceManager::DEFAULT_LIGHTING_KEY});
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref

@@ -100,7 +100,7 @@ int BulletPhysicsManager::makeRigidObject(
 
 int BulletPhysicsManager::addObject(const int objectLibIndex,
                                     DrawableGroup* drawables,
-                                    const std::string& lightSetup) {
+                                    const Magnum::ResourceKey& lightSetup) {
   // Do default load first (adds the SceneNode to the SceneGraph and computes
   // the cumulativeBB_)
   int objID = PhysicsManager::addObject(objectLibIndex, drawables, lightSetup);

@@ -400,7 +400,7 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
 int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
                                 scene::SceneNode* parent,
                                 DrawableGroup* drawables,
-                                const std::string& lightSetup) {
+                                const Magnum::ResourceKey& lightSetup) {
   // Load Object from config
   const bool objectIsLoaded =
       physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
@@ -1444,13 +1444,13 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
 }
 
 void ResourceManager::setLightSetup(gfx::LightSetup setup,
-                                    const std::string& key) {
+                                    const Magnum::ResourceKey& key) {
   shaderManager_.set(key, std::move(setup), Mn::ResourceDataState::Mutable,
                      Mn::ResourcePolicy::Manual);
 }
 
 Mn::Resource<gfx::LightSetup> ResourceManager::getLightSetup(
-    const std::string& key) {
+    const Magnum::ResourceKey& key) {
   return shaderManager_.get<gfx::LightSetup>(key);
 }
 
