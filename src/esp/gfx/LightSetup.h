@@ -30,12 +30,9 @@ struct LightInfo {
   LightPositionModel model = LightPositionModel::GLOBAL;
 };
 
-<<<<<<< HEAD
 bool operator==(const LightInfo& a, const LightInfo& b);
 bool operator!=(const LightInfo& a, const LightInfo& b);
 
-=======
->>>>>>> master
 using LightSetup = std::vector<LightInfo>;
 
 /**

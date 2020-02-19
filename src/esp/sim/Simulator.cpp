@@ -109,9 +109,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       throw std::invalid_argument("Cannot load: " + sceneFilename);
     }
     const Magnum::Range3D& sceneBB = rootNode.computeCumulativeBB();
-    resourceManager_.setLightSetup(
-        assets::ResourceManager::DEFAULT_LIGHTING_KEY,
-        gfx::getLightsAtBoxCorners(sceneBB));
+    resourceManager_.setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
 
     if (io::exists(houseFilename)) {
       LOG(INFO) << "Loading house from " << houseFilename;
