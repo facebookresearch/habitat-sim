@@ -4,9 +4,10 @@
 
 #pragma once
 
-#include <Magnum/Shaders/Shaders.h>
+#include <Magnum/Shaders/Phong.h>
 
-#include "Drawable.h"
+#include "esp/gfx/Drawable.h"
+#include "esp/gfx/ShaderManager.h"
 
 namespace esp {
 namespace gfx {
@@ -17,20 +18,36 @@ class GenericDrawable : public Drawable {
   //! Adds drawable to given group and uses provided texture, objectId, and
   //! color for textured, object id buffer and color shader output respectively
   explicit GenericDrawable(scene::SceneNode& node,
-                           Magnum::Shaders::Flat3D& shader,
                            Magnum::GL::Mesh& mesh,
+                           ShaderManager& shaderManager,
+                           const Magnum::ResourceKey& lightSetup,
+                           const Magnum::ResourceKey& materialData,
                            DrawableGroup* group = nullptr,
-                           Magnum::GL::Texture2D* texture = nullptr,
-                           int objectId = ID_UNDEFINED,
-                           const Magnum::Color4& color = Magnum::Color4{1});
+                           int objectId = ID_UNDEFINED);
+
+  void setLightSetup(const Magnum::ResourceKey& lightSetup) override;
+
+  static constexpr const char* SHADER_KEY_TEMPLATE = "Phong-lights={}-flags={}";
 
  protected:
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
                     Magnum::SceneGraph::Camera3D& camera) override;
 
+  void updateShader();
+
+  Magnum::ResourceKey getShaderKey(Magnum::UnsignedInt lightCount,
+                                   Magnum::Shaders::Phong::Flags flags) const;
+
   Magnum::GL::Texture2D* texture_;
   int objectId_;
   Magnum::Color4 color_;
+
+  // shader parameters
+  ShaderManager& shaderManager_;
+  Magnum::Resource<Magnum::GL::AbstractShaderProgram, Magnum::Shaders::Phong>
+      shader_;
+  Magnum::Resource<MaterialData, PhongMaterialData> materialData_;
+  Magnum::Resource<LightSetup> lightSetup_;
 };
 
 }  // namespace gfx
