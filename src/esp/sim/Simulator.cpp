@@ -108,10 +108,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       // Pass the error to the python through pybind11 allowing graceful exit
       throw std::invalid_argument("Cannot load: " + sceneFilename);
     }
-    const Magnum::Range3D& sceneBB = rootNode.computeCumulativeBB();
-    resourceManager_.setLightSetup(
-        assets::ResourceManager::DEFAULT_LIGHTING_KEY,
-        gfx::getLightsAtBoxCorners(sceneBB));
 
     if (io::exists(houseFilename)) {
       LOG(INFO) << "Loading house from " << houseFilename;
@@ -183,6 +179,11 @@ void Simulator::reset() {
   if (physicsManager_ != nullptr)
     physicsManager_
         ->reset();  // TODO: this does nothing yet... desired reset behavior?
+
+  resourceManager_.clearLightSetups();
+  const Magnum::Range3D& sceneBB =
+      getActiveSceneGraph().getRootNode().computeCumulativeBB();
+  resourceManager_.setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
 }
 
 void Simulator::seed(uint32_t newSeed) {
@@ -401,12 +402,20 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
   return true;
 }
 
+void Simulator::setLightSetup(gfx::LightSetup setup, const std::string& key) {
+  resourceManager_.setLightSetup(std::move(setup), key);
+}
+
+gfx::LightSetup Simulator::getLightSetup(const std::string& key) {
+  return *resourceManager_.getLightSetup(key);
+}
+
 void Simulator::setObjectLightSetup(int objectID,
-                                    const std::string& lightSetup,
+                                    const std::string& lightSetupKey,
                                     int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     gfx::setLightSetupForSubTree(physicsManager_->getObjectSceneNode(objectID),
-                                 lightSetup);
+                                 lightSetupKey);
   }
 }
 

@@ -324,6 +324,16 @@ class Simulator:
     def recompute_navmesh(self, pathfinder, navmesh_settings):
         return self._sim.recompute_navmesh(pathfinder, navmesh_settings)
 
+    # --- lighting functions ---
+    def get_light_setup(self, key=hsim.DEFAULT_LIGHTING_KEY):
+        return self._sim.get_light_setup(key)
+
+    def set_light_setup(self, light_setup, key=hsim.DEFAULT_LIGHTING_KEY):
+        self._sim.set_light_setup(light_setup, key)
+
+    def set_object_light_setup(self, object_id, light_setup_key, scene_id):
+        self._sim.set_object_light_setup(object_id, light_setup_key, scene_id)
+
 
 class Sensor:
     r"""Wrapper around habitat_sim.Sensor

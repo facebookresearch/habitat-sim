@@ -355,16 +355,20 @@ class ResourceManager {
    * If this name already exists, the @ref LightSetup is updated and all @ref
    * Drawables using this setup are updated.
    *
+   * @param setup Light setup this key will now reference
    * @param key Key to identify this @ref LightSetup
-   * @param setup Light setup this key will now references
    */
-  void setLightSetup(const Magnum::ResourceKey& key, gfx::LightSetup setup);
+  void setLightSetup(gfx::LightSetup setup,
+                     const Magnum::ResourceKey& key = DEFAULT_LIGHTING_KEY);
 
   /**
    * @brief Get a named @ref LightSetup
    */
   Magnum::Resource<gfx::LightSetup> getLightSetup(
-      const Magnum::ResourceKey& key);
+      const Magnum::ResourceKey& key =
+          assets::ResourceManager::DEFAULT_LIGHTING_KEY);
+
+  void clearLightSetups() { shaderManager_.clear<gfx::LightSetup>(); }
 
  protected:
   //======== Scene Functions ========

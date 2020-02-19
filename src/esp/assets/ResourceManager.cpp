@@ -1444,8 +1444,8 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                         DEFAULT_LIGHTING_KEY, DEFAULT_MATERIAL_KEY, drawables);
 }
 
-void ResourceManager::setLightSetup(const Mn::ResourceKey& key,
-                                    gfx::LightSetup setup) {
+void ResourceManager::setLightSetup(gfx::LightSetup setup,
+                                    const Mn::ResourceKey& key) {
   shaderManager_.set(key, std::move(setup), Mn::ResourceDataState::Mutable,
                      Mn::ResourcePolicy::Manual);
 }

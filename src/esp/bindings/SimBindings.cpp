@@ -110,8 +110,12 @@ void initSimBindings(py::module& m) {
            "sceneID"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
            "navmesh_settings"_a)
+      .def("get_light_setup", &Simulator::getLightSetup,
+           "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY)
+      .def("set_light_setup", &Simulator::setLightSetup, "light_setup"_a,
+           "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY)
       .def("set_object_light_setup", &Simulator::setObjectLightSetup,
-           "object_id"_a, "light_setup"_a, "sceneID"_a = 0);
+           "object_id"_a, "light_setup_key"_a, "sceneID"_a = 0);
 }
 
 }  // namespace sim

@@ -323,16 +323,35 @@ class Simulator {
   bool isFrustumCullingEnabled() { return frustumCulling_; }
 
   /**
+   * @brief Get a named @ref LightSetup
+   */
+  gfx::LightSetup getLightSetup(
+      const std::string& key = assets::ResourceManager::DEFAULT_LIGHTING_KEY);
+
+  /**
+   * @brief Set a named @ref LightSetup
+   *
+   * If this name already exists, the @ref LightSetup is updated and all @ref
+   * Drawables using this setup are updated.
+   *
+   * @param lightSetup Light setup this key will now reference
+   * @param key Key to identify this @ref LightSetup
+   */
+  void setLightSetup(
+      gfx::LightSetup lightSetup,
+      const std::string& key = assets::ResourceManager::DEFAULT_LIGHTING_KEY);
+
+  /**
    * @brief Set the light setup of an object
    *
    * @param objectID The object ID and key identifying the object in @ref
    * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   * @param lightSetup @ref LightSetup key
+   * @param lightSetupKey @ref LightSetup key
+   * @param sceneID !! Not used currently !! Specifies which physical scene
+   * of the object.
    */
   void setObjectLightSetup(int objectID,
-                           const std::string& lightSetup,
+                           const std::string& lightSetupKey,
                            int sceneID = 0);
 
  protected:
