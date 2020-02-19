@@ -180,7 +180,6 @@ void Simulator::reset() {
     physicsManager_
         ->reset();  // TODO: this does nothing yet... desired reset behavior?
 
-  resourceManager_.clearLightSetups();
   const Magnum::Range3D& sceneBB =
       getActiveSceneGraph().getRootNode().computeCumulativeBB();
   resourceManager_.setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
@@ -238,7 +237,7 @@ int Simulator::addObject(int objectLibIndex, int sceneID) {
 }
 
 int Simulator::addObject(int objectLibIndex,
-                         const std::string& lightSetup,
+                         const std::string& lightSetupKey,
                          int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     // TODO: change implementation to support multi-world and physics worlds to

@@ -18,6 +18,6 @@ __all__ = [
     "RenderTarget",
     "LightPositionModel",
     "LightInfo",
-    DEFAULT_LIGHTING_KEY,
-    NO_LIGHT_KEY,
+    "DEFAULT_LIGHTING_KEY",
+    "NO_LIGHT_KEY",
 ]

@@ -126,11 +126,19 @@ void initGfxBindings(py::module& m) {
            "model"_a = LightPositionModel::GLOBAL)
       .def_readwrite("position", &LightInfo::position)
       .def_readwrite("color", &LightInfo::color)
-      .def_readwrite("model", &LightInfo::model);
+      .def_readwrite("model", &LightInfo::model)
+      .def("__eq__",
+           [](const LightInfo& self, const LightInfo& other) -> bool {
+             return self == other;
+           })
+      .def("__neq__",
+           [](const LightInfo& self, const LightInfo& other) -> bool {
+             return self != other;
+           });
 
   m.attr("DEFAULT_LIGHTING_KEY") =
-      py::cast(assets::ResourceManager::DEFAULT_LIGHTING_KEY);
-  m.attr("NO_LIGHT_KEY") = py::cast(assets::ResourceManager::NO_LIGHT_KEY);
+      assets::ResourceManager::DEFAULT_LIGHTING_KEY;
+  m.attr("NO_LIGHT_KEY") = assets::ResourceManager::NO_LIGHT_KEY;
 }
 
 }  // namespace gfx

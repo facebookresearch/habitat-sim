@@ -439,7 +439,6 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
         physicsObjectAttributes.getMagnumVec3("scale");
     scalingNode.setScaling(objectScaling);
 
-    // TODO: make lighting selection configurable
     addComponent(meshMetaData, scalingNode, lightSetup, drawables,
                  meshMetaData.root);
     // compute the full BB hierarchy for the new tree.

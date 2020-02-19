@@ -368,8 +368,6 @@ class ResourceManager {
       const Magnum::ResourceKey& key =
           assets::ResourceManager::DEFAULT_LIGHTING_KEY);
 
-  void clearLightSetups() { shaderManager_.clear<gfx::LightSetup>(); }
-
  protected:
   //======== Scene Functions ========
 

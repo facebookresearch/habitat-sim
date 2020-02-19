@@ -77,7 +77,7 @@ void initSimBindings(py::module& m) {
       .def("add_object",
            py::overload_cast<int, const std::string&, int>(
                &Simulator::addObject),
-           "object_lib_index"_a, "light_setup"_a, "scene_id"_a = 0)
+           "object_lib_index"_a, "light_setup_key"_a, "scene_id"_a = 0)
       .def("get_physics_object_library_size",
            &Simulator::getPhysicsObjectLibrarySize)
       .def("remove_object", &Simulator::removeObject, "object_id"_a,
@@ -115,7 +115,7 @@ void initSimBindings(py::module& m) {
       .def("set_light_setup", &Simulator::setLightSetup, "light_setup"_a,
            "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY)
       .def("set_object_light_setup", &Simulator::setObjectLightSetup,
-           "object_id"_a, "light_setup_key"_a, "sceneID"_a = 0);
+           "object_id"_a, "light_setup_key"_a, "scene_id"_a = 0);
 }
 
 }  // namespace sim

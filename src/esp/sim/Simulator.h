@@ -105,7 +105,7 @@ class Simulator {
 
   /** @overload */
   int addObject(int objectLibIndex,
-                const std::string& lightSetup,
+                const std::string& lightSetupKey,
                 int sceneID = 0);
 
   /**
