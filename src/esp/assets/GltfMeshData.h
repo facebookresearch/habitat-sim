@@ -38,7 +38,8 @@ class GltfMeshData : public BaseMesh {
 
   /** @brief Constructor. Sets @ref SupportedMeshType::GLTF_MESH to identify the
    * asset type.*/
-  GltfMeshData() : BaseMesh(SupportedMeshType::GLTF_MESH){};
+  GltfMeshData(bool needsNormals = true)
+      : BaseMesh(SupportedMeshType::GLTF_MESH), needsNormals_{needsNormals} {};
 
   /** @brief Destructor */
   virtual ~GltfMeshData(){};
@@ -82,6 +83,8 @@ class GltfMeshData : public BaseMesh {
    * does NOT have copy constructor. See @ref uploadBuffersToGPU.
    */
   std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
+
+  bool needsNormals_ = true;
 };
 }  // namespace assets
 }  // namespace esp
