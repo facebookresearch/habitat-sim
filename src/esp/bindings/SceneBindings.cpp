@@ -79,13 +79,12 @@ void initSceneBindings(py::module& m) {
           "compute_cumulative_bb",
           [](SceneNode& self) { self.computeCumulativeBB(); },
           R"(Recursively compute the approximate axis aligned bounding boxes of the SceneGraph sub-tree rooted at this node.)")
-      .def(
-          "get_cumulative_bb",
-          [](SceneNode& self) { return self.getCumulativeBB(); },
-          R"(Get the approximate axis aligned bounding box of the SceneGraph sub-tree rooted at this node.)")
-      .def(
-          "get_mesh_bb", [](SceneNode& self) { return self.getMeshBB(); },
-          R"(Get the axis aligned bounding box of the mesh drawables attached to this node.)")
+      .def_property_readonly(
+          "cumulative_bb", &SceneNode::getCumulativeBB,
+          R"(The approximate axis aligned bounding box of the SceneGraph sub-tree rooted at this node.)")
+      .def_property_readonly(
+          "mesh_bb", &SceneNode::getMeshBB,
+          R"(The axis aligned bounding box of the mesh drawables attached to this node.)")
       .def_property_readonly("absolute_translation",
                              &SceneNode::absoluteTranslation);
 

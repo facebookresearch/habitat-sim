@@ -118,7 +118,7 @@ def test_scene_bounding_boxes(sim):
     scene_graph = sim._sim.get_active_scene_graph()
     root_node = scene_graph.get_root_node()
     root_node.compute_cumulative_bb()
-    scene_bb = root_node.get_cumulative_bb()
+    scene_bb = root_node.cumulative_bb
     ground_truth = mn.Range3D.from_size(
         mn.Vector3(-0.775869, -0.0233012, -1.6706), mn.Vector3(6.76937, 3.86304, 3.5359)
     )
