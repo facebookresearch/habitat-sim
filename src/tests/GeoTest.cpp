@@ -156,8 +156,7 @@ TEST(GeoTest, Aabb) {
     Magnum::Range3D aabbTest = esp::geo::getTransformedBB(box, xform);
 
     auto diff = [](Magnum::Vector3& control, Magnum::Vector3& test) -> float {
-      Magnum::Vector3 a = control - test;
-      return dot(a, a);
+      return (control - test).dot();
     };
 
     float eps = 1e-8;
