@@ -7,6 +7,8 @@
 #include <Magnum/Math/FunctionsBatch.h>
 #include <numeric>
 
+namespace Mn = Magnum;
+
 namespace esp {
 namespace geo {
 
@@ -58,23 +60,63 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
 
   return hull;
 }
+/**
+ * Assume the aabb is expressed as the center 'c' and the extent 'e'.
+ * each corner X is nothing but a combination from
+ * (c_x +/- e_x, c_y +/- e_y, c_z +/- e_z)
+ *
+ * Denote y = (+/- e_x, +/- e_y, +/- e_z)
+ *
+ * The corner is transformed by:
+ * x = R * x0 + t,
+ * where x_0, x are the coordinates before and after transformation, t is the
+ * translation x = R * (c0 + y0) + t  = (Rc0 + t) + Ry0    eq(1)
+ *
+ * Our Goal is to find the x_max and x_min after the transformation.
+ *
+ * First, determing the x_max:
+ *
+ * In eq(1), Rc0 + t is a constant, which means max{x} iff max{Ry0}
+ *
+ * R looks like:
+ * [R0, R1, R2]
+ * [R3, R4, R5]
+ * [R6, R7, R8]
+ *
+ * We focus on the 1st entry (the 'x' entry) of Ry0:
+ * y_x =<(R0, R1, R2), (+/- e_x, +/- e_y, +/- e_z)>
+ *     =<(+/- R0, +/- R1, +/- R2), (e_x, e_y, e_z)>
+ *
+ * Now, note that e_x, e_y, e_z are all positive values for any non-degenerate
+ * aabb.
+ *
+ * So y_x reaches MAX when +/- R0, +/- R1, +/- R2 are all >=0
+ * that means max{y_x} = <(|R0|, |R1|, |R2|), (e_x, e_y, e_z)>
+ * (|R0| means the absolute value of R0)
+ *
+ * and likewise for y_y, y_z
+ *
+ * The derivation for x_min is similar since same logic applies.
+ */
+Mn::Range3D getTransformedBB(const Mn::Range3D& range,
+                             const Mn::Matrix4& xform) {
+  Mn::Matrix3x3 absRotationScaling = xform.rotationScaling();
+  // compute the absolute value of the rotationScaling part of the original
+  // transformation matrix
+  for (int iRow = 0; iRow < 3; ++iRow) {
+    for (int jCol = 0; jCol < 3; ++jCol) {
+      absRotationScaling[iRow][jCol] = abs(absRotationScaling[iRow][jCol]);
+    }
+  }
+  const Mn::Vector3 center = (range.min() + range.max()) / 2.0;
+  const Mn::Vector3 extent = (range.max() - range.min()) / 2.0;
 
-Magnum::Range3D getTransformedBB(const Magnum::Range3D& range,
-                                 const Magnum::Matrix4& T) {
-  std::vector<Magnum::Vector3> corners;
-  corners.push_back(T.transformPoint(range.frontBottomLeft()));
-  corners.push_back(T.transformPoint(range.frontBottomRight()));
-  corners.push_back(T.transformPoint(range.frontTopLeft()));
-  corners.push_back(T.transformPoint(range.frontTopRight()));
+  // compute Rc0 + t
+  Mn::Vector3 newCenter = xform.transformPoint(center);
+  // compute max{Ry0}
+  Mn::Vector3 newExtent = absRotationScaling * extent;
 
-  corners.push_back(T.transformPoint(range.backTopLeft()));
-  corners.push_back(T.transformPoint(range.backTopRight()));
-  corners.push_back(T.transformPoint(range.backBottomLeft()));
-  corners.push_back(T.transformPoint(range.backBottomRight()));
-
-  Magnum::Range3D transformedBB{Magnum::Math::minmax<Magnum::Vector3>(corners)};
-
-  return transformedBB;
+  return Mn::Range3D::fromCenter(newCenter, newExtent);
 }
 
 }  // namespace geo

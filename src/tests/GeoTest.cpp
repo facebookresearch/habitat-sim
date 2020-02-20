@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Magnum/Math/FunctionsBatch.h>
 #include <gtest/gtest.h>
 #include "esp/geo/CoordinateFrame.h"
 #include "esp/geo/OBB.h"
@@ -97,4 +98,69 @@ TEST(GeoTest, CoordinateFrame) {
   CoordinateFrame c4;
   c4.fromJson(j);
   EXPECT_EQ(c3, c4);
+}
+
+// standard method
+// transform the 8 corners, and extract the min and max
+Magnum::Range3D getTransformedBB_standard(const Magnum::Range3D& range,
+                                          const Magnum::Matrix4& xform) {
+  std::vector<Magnum::Vector3> corners;
+  corners.push_back(xform.transformPoint(range.frontBottomLeft()));
+  corners.push_back(xform.transformPoint(range.frontBottomRight()));
+  corners.push_back(xform.transformPoint(range.frontTopLeft()));
+  corners.push_back(xform.transformPoint(range.frontTopRight()));
+
+  corners.push_back(xform.transformPoint(range.backTopLeft()));
+  corners.push_back(xform.transformPoint(range.backTopRight()));
+  corners.push_back(xform.transformPoint(range.backBottomLeft()));
+  corners.push_back(xform.transformPoint(range.backBottomRight()));
+
+  Magnum::Range3D transformedBB{Magnum::Math::minmax<Magnum::Vector3>(corners)};
+
+  return transformedBB;
+}
+
+TEST(GeoTest, Aabb) {
+  // TODO: Generate N boxes in random position and orientation
+  // compute aabb for each box using standard method and library method
+  // respectively compare the results, which should be identical
+
+  Magnum::Range3D box = Magnum::Range3D{Magnum::Vector3{-10.0, -10.0, -10.0},
+                                        Magnum::Vector3{10.0, 10.0, 10.0}};
+
+  int numBoxes = 100;
+  for (int iBox = 0; iBox < numBoxes; ++iBox) {
+    // generate random translation
+    const Magnum::Vector3 translation{
+        static_cast<float>(rand() % 1000) + (rand() % 1000) / 1000.0f,
+        static_cast<float>(rand() % 1000) + (rand() % 1000) / 1000.0f,
+        static_cast<float>(rand() % 1000) + (rand() % 1000) / 1000.0f};
+
+    // generate random rotation using:
+    // http://planning.cs.uiuc.edu/node198.html
+    double u1 = (rand() % 1000) / 1000.0;
+    double u2 = (rand() % 1000) / 1000.0;
+    double u3 = (rand() % 1000) / 1000.0;
+
+    Magnum::Vector3 qAxis(sqrt(1 - u1) * cos(2 * M_PI * u2),
+                          sqrt(u1) * sin(2 * M_PI * u3),
+                          sqrt(u1) * cos(2 * M_PI * u3));
+
+    // assemble the transformation matrix
+    Magnum::Matrix4 xform = Magnum::Matrix4::from(
+        Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)).toMatrix(),
+        translation);
+
+    Magnum::Range3D aabbControl = getTransformedBB_standard(box, xform);
+    Magnum::Range3D aabbTest = esp::geo::getTransformedBB(box, xform);
+
+    auto diff = [](Magnum::Vector3& control, Magnum::Vector3& test) -> float {
+      Magnum::Vector3 a = control - test;
+      return dot(a, a);
+    };
+
+    float eps = 1e-8;
+    EXPECT_LE(diff(aabbControl.min(), aabbTest.min()), eps);
+    EXPECT_LE(diff(aabbControl.max(), aabbTest.max()), eps);
+  }  // for iBox
 }
