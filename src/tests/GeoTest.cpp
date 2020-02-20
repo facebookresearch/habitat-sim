@@ -155,12 +155,8 @@ TEST(GeoTest, Aabb) {
     Magnum::Range3D aabbControl = getTransformedBB_standard(box, xform);
     Magnum::Range3D aabbTest = esp::geo::getTransformedBB(box, xform);
 
-    auto diff = [](Magnum::Vector3& control, Magnum::Vector3& test) -> float {
-      return (control - test).dot();
-    };
-
-    float eps = 1e-8;
-    EXPECT_LE(diff(aabbControl.min(), aabbTest.min()), eps);
-    EXPECT_LE(diff(aabbControl.max(), aabbTest.max()), eps);
+    float eps = 1e-12;
+    EXPECT_LE((aabbControl.min() - aabbTest.min()).dot(), eps);
+    EXPECT_LE((aabbControl.max() - aabbTest.max()).dot(), eps);
   }  // for iBox
 }
