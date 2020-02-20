@@ -121,9 +121,10 @@ Magnum::Range3D getTransformedBB_standard(const Magnum::Range3D& range,
 }
 
 TEST(GeoTest, Aabb) {
-  // TODO: Generate N boxes in random position and orientation
+  // Generate N boxes in random position and orientation.
   // compute aabb for each box using standard method and library method
-  // respectively compare the results, which should be identical
+  // respectively.
+  // compare the results, which should be identical
 
   Magnum::Range3D box = Magnum::Range3D{Magnum::Vector3{-10.0, -10.0, -10.0},
                                         Magnum::Vector3{10.0, 10.0, 10.0}};
