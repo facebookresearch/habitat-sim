@@ -5,6 +5,7 @@
 #include "esp/geo/geo.h"
 
 #include <Magnum/Math/FunctionsBatch.h>
+#include <cmath>
 #include <numeric>
 
 namespace Mn = Magnum;
@@ -107,7 +108,8 @@ Mn::Range3D getTransformedBB(const Mn::Range3D& range,
   // transformation matrix
   for (int iRow = 0; iRow < 3; ++iRow) {
     for (int jCol = 0; jCol < 3; ++jCol) {
-      absRotationScaling[iRow][jCol] = abs(absRotationScaling[iRow][jCol]);
+      absRotationScaling[iRow][jCol] =
+          std::fabs(absRotationScaling[iRow][jCol]);
     }
   }
   const Mn::Vector3 center = (range.min() + range.max()) / 2.0;
