@@ -52,9 +52,6 @@ namespace {
 
 struct SimTest : Cr::TestSuite::Tester {
   explicit SimTest();
-  void checkPinholeCameraRGBAObservation(
-      SimulatorWithAgents& sim,
-      const std::string& groundTruthImageFile);
 
   SimulatorWithAgents::uptr getSimulator(const std::string& scene) {
     SimulatorConfiguration simConfig{};
@@ -67,6 +64,12 @@ struct SimTest : Cr::TestSuite::Tester {
     sim->setLightSetup(lightSetup2, "custom_lighting_2");
     return sim;
   }
+
+  void checkPinholeCameraRGBAObservation(
+      SimulatorWithAgents& sim,
+      const std::string& groundTruthImageFile,
+      Magnum::Float maxThreshold,
+      Magnum::Float meanThreshold);
 
   void basic();
   void reconfigure();
@@ -130,13 +133,15 @@ void SimTest::reset() {
 
 void SimTest::checkPinholeCameraRGBAObservation(
     SimulatorWithAgents& simulator,
-    const std::string& groundTruthImageFile) {
+    const std::string& groundTruthImageFile,
+    Magnum::Float maxThreshold,
+    Magnum::Float meanThreshold) {
   // do not rely on default SensorSpec default constructor to remain constant
   auto pinholeCameraSpec = SensorSpec::create();
   pinholeCameraSpec->sensorSubtype = "pinhole";
   pinholeCameraSpec->sensorType = SensorType::COLOR;
   pinholeCameraSpec->position = {1.0f, 1.5f, 1.0f};
-  pinholeCameraSpec->resolution = {256, 256};
+  pinholeCameraSpec->resolution = {128, 128};
 
   AgentConfiguration agentConfig{};
   agentConfig.sensorSpecifications = {pinholeCameraSpec};
@@ -165,41 +170,39 @@ void SimTest::checkPinholeCameraRGBAObservation(
           {pinholeCameraSpec->resolution[0], pinholeCameraSpec->resolution[1]},
           observation.buffer->data}),
       Cr::Utility::Directory::join(screenshotDir, groundTruthImageFile),
-      (Mn::DebugTools::CompareImageToFile{30.f, 0.5f}));
+      (Mn::DebugTools::CompareImageToFile{maxThreshold, meanThreshold}));
 }
 
 void SimTest::getSceneRGBAObservation() {
   setTestCaseName(CORRADE_FUNCTION);
   auto simulator = getSimulator(vangogh);
-  checkPinholeCameraRGBAObservation(*simulator, "SimTestExpectedScene.png");
+  checkPinholeCameraRGBAObservation(*simulator, "SimTestExpectedScene.png",
+                                    15.f, 0.17f);
 }
 
 void SimTest::getDefaultLightingRGBAObservation() {
-  setTestCaseName(CORRADE_FUNCTION);
   auto simulator = getSimulator(vangogh);
 
   int objectID = simulator->addObject(0);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  checkPinholeCameraRGBAObservation(*simulator,
-                                    "SimTestExpectedDefaultLighting.png");
+  checkPinholeCameraRGBAObservation(
+      *simulator, "SimTestExpectedDefaultLighting.png", 15.f, 0.17f);
 }
 
 void SimTest::getCustomLightingRGBAObservation() {
-  setTestCaseName(CORRADE_FUNCTION);
   auto simulator = getSimulator(vangogh);
 
   int objectID = simulator->addObject(0, "custom_lighting_1");
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  checkPinholeCameraRGBAObservation(*simulator,
-                                    "SimTestExpectedCustomLighting.png");
+  checkPinholeCameraRGBAObservation(
+      *simulator, "SimTestExpectedCustomLighting.png", 15.f, 0.17f);
 }
 
 void SimTest::updateLightSetupRGBAObservation() {
-  setTestCaseName(CORRADE_FUNCTION);
   auto simulator = getSimulator(vangogh);
 
   // update default lighting
@@ -207,12 +210,12 @@ void SimTest::updateLightSetupRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  checkPinholeCameraRGBAObservation(*simulator,
-                                    "SimTestExpectedDefaultLighting.png");
+  checkPinholeCameraRGBAObservation(
+      *simulator, "SimTestExpectedDefaultLighting.png", 15.f, 0.17f);
 
   simulator->setLightSetup(lightSetup1);
-  checkPinholeCameraRGBAObservation(*simulator,
-                                    "SimTestExpectedCustomLighting.png");
+  checkPinholeCameraRGBAObservation(
+      *simulator, "SimTestExpectedCustomLighting.png", 15.f, 0.17f);
   simulator->removeObject(objectID);
 
   // update custom lighting
@@ -220,37 +223,35 @@ void SimTest::updateLightSetupRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
-  checkPinholeCameraRGBAObservation(*simulator,
-                                    "SimTestExpectedCustomLighting.png");
+  checkPinholeCameraRGBAObservation(
+      *simulator, "SimTestExpectedCustomLighting.png", 15.f, 0.17f);
 
   simulator->setLightSetup(lightSetup2, "custom_lighting_1");
-  checkPinholeCameraRGBAObservation(*simulator,
-                                    "SimTestExpectedCustomLighting2.png");
+  checkPinholeCameraRGBAObservation(
+      *simulator, "SimTestExpectedCustomLighting2.png", 15.f, 0.17f);
 }
 
 void SimTest::updateObjectLightSetupRGBAObservation() {
-  setTestCaseName(CORRADE_FUNCTION);
   auto simulator = getSimulator(vangogh);
 
   int objectID = simulator->addObject(0);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
-  checkPinholeCameraRGBAObservation(*simulator,
-                                    "SimTestExpectedDefaultLighting.png");
+  checkPinholeCameraRGBAObservation(
+      *simulator, "SimTestExpectedDefaultLighting.png", 15.f, 0.17f);
 
   // change from default lighting to custom
   simulator->setObjectLightSetup(objectID, "custom_lighting_1");
-  checkPinholeCameraRGBAObservation(*simulator,
-                                    "SimTestExpectedCustomLighting.png");
+  checkPinholeCameraRGBAObservation(
+      *simulator, "SimTestExpectedCustomLighting.png", 15.f, 0.17f);
 
   // change from one custom lighting to another
   simulator->setObjectLightSetup(objectID, "custom_lighting_2");
-  checkPinholeCameraRGBAObservation(*simulator,
-                                    "SimTestExpectedCustomLighting2.png");
+  checkPinholeCameraRGBAObservation(
+      *simulator, "SimTestExpectedCustomLighting2.png", 15.f, 0.17f);
 }
 
 void SimTest::multipleLightingSetupsRGBAObservation() {
-  setTestCaseName(CORRADE_FUNCTION);
   auto simulator = getSimulator(planeScene);
 
   // make sure updates apply to all objects using the light setup
@@ -262,18 +263,18 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
   CORRADE_VERIFY(otherObjectID != esp::ID_UNDEFINED);
   simulator->setTranslation({2.0f, 0.5f, -0.5f}, otherObjectID);
 
-  checkPinholeCameraRGBAObservation(*simulator,
-                                    "SimTestExpectedSameLighting.png");
+  checkPinholeCameraRGBAObservation(
+      *simulator, "SimTestExpectedSameLighting.png", 15.f, 0.17f);
 
   simulator->setLightSetup(lightSetup2, "custom_lighting_1");
-  checkPinholeCameraRGBAObservation(*simulator,
-                                    "SimTestExpectedSameLighting2.png");
+  checkPinholeCameraRGBAObservation(
+      *simulator, "SimTestExpectedSameLighting2.png", 15.f, 0.17f);
   simulator->setLightSetup(lightSetup1, "custom_lighting_1");
 
   // make sure we can move a single object to another group
   simulator->setObjectLightSetup(objectID, "custom_lighting_2");
-  checkPinholeCameraRGBAObservation(*simulator,
-                                    "SimTestExpectedDifferentLighting.png");
+  checkPinholeCameraRGBAObservation(
+      *simulator, "SimTestExpectedDifferentLighting.png", 15.f, 0.17f);
 }
 
 }  // namespace
