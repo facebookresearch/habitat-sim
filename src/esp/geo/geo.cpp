@@ -70,7 +70,9 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
  * The corner is transformed by:
  * x = R * x0 + t,
  * where x_0, x are the coordinates before and after transformation, t is the
- * translation x = R * (c0 + y0) + t  = (Rc0 + t) + Ry0    eq(1)
+ * translation.
+ *
+ * x = R * (c0 + y0) + t  = (Rc0 + t) + Ry0    eq(1)
  *
  * Our Goal is to find the x_max and x_min after the transformation.
  *
