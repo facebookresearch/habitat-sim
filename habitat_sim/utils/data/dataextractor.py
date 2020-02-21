@@ -108,7 +108,7 @@ class ImageExtractor:
             None: self.poses,
         }
 
-        self.label_map = self._generate_label_map(self.sim.semantic_scene)
+        self.instance_id_to_name = self._generate_label_map(self.sim.semantic_scene)
         self.out_name_to_sensor_name = {
             "rgb": "color_sensor",
             "depth": "depth_sensor",
@@ -181,6 +181,13 @@ class ImageExtractor:
 
         self.mode = mymode
 
+    def get_semantic_class_names(self):
+        class_names = list(set(
+            name for name in self.instance_id_to_name.values() if name != 'background'
+        ))
+        class_names = ['background'] + class_names # Make sure background is index 0
+        return class_names
+
     def _handle_split(self, split, poses):
         train, test = split
         num_poses = len(self.poses)
@@ -203,14 +210,13 @@ class ImageExtractor:
             print(f"House has {len(scene.levels)} levels, {len(scene.regions)} regions and {len(scene.objects)} objects")
             print(f"House center:{scene.aabb.center} dims:{scene.aabb.sizes}")
 
-        label_map = {}
-        for level in scene.levels:
-            for region in level.regions:
-                for obj in region.objects:
-                    obj_id = int(obj.id.split('_')[-1])
-                    label_map[obj_id] = obj.category.name()
-
-        return label_map
+        instance_id_to_name = {}
+        for obj in scene.objects:
+            if obj and obj.category:
+                obj_id = int(obj.id.split('_')[-1])
+                instance_id_to_name[obj_id] = obj.category.name()
+    
+        return instance_id_to_name
 
 
 class TopdownView(object):
@@ -295,31 +301,19 @@ class PoseExtractor(object):
 
         return is_interesting, view[r][c]
 
-    def _show_topdown_view(self, cmap="seismic_r", show_valid_points=False):
-        if show_valid_points:
-            topdown_view_copy = copy.copy(self.topdown_view)
-            for p in self.gridpoints:
-                r, c = p
-                topdown_view_copy[r][c] = 0.5
+    def _show_topdown_view(self, cmap="seismic_r"):
+        fig=plt.figure(figsize=(12.0, 12.0))
+        columns = 4
+        rows = math.ceil(len(self.tdv_fp_ref_triples) / columns)
+        for i in range(1, columns * rows + 1):
+            if i > len(self.tdv_fp_ref_triples):
+                break
 
-            for cpi in self.cpis:
-                r, c = cpi
-                topdown_view_copy[r][c] = 0.65
-
-            plt.imshow(topdown_view_copy, cmap=cmap)
-        else:
-            fig=plt.figure(figsize=(12.0, 12.0))
-            columns = 4
-            rows = math.ceil(len(self.tdv_fp_ref_triples) / columns)
-            for i in range(1, columns * rows + 1):
-                if i > len(self.tdv_fp_ref_triples):
-                    break
-
-                img = self.tdv_fp_ref_triples[i - 1][0].topdown_view
-                fig.add_subplot(rows, columns, i)
-                plt.xticks([])
-                plt.yticks([])
-                plt.imshow(img, cmap=cmap)
+            img = self.tdv_fp_ref_triples[i - 1][0].topdown_view
+            fig.add_subplot(rows, columns, i)
+            plt.xticks([])
+            plt.yticks([])
+            plt.imshow(img, cmap=cmap)
 
         plt.show()
 

@@ -2,40 +2,59 @@ import math
 import sys
 import time
 import torch
+import collections
 
 import torchvision.models.detection.mask_rcnn
+from torch.utils.tensorboard import SummaryWriter
 
 from examples.instance_segmentation.coco_utils import get_coco_api_from_dataset
 from examples.instance_segmentation.coco_eval import CocoEvaluator
 from examples.instance_segmentation import utils
 
 
-def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
+def load_model_state(model, optimizer, model_state_path, params=None):
+    checkpoint = torch.load(model_state_path)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optim_state_dict = checkpoint['optimizer_state_dict']
+    if params:
+        for param, val in params.items():
+            optim_state_dict['param_groups'][0][param] = val
+
+    optimizer.load_state_dict(optim_state_dict)
+    epoch = checkpoint['epoch']
+
+    model.train()
+    return epoch
+
+def save_model_state(model, optimizer, epoch, model_state_path):
+    checkpoint = {
+        'epoch': epoch,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+    }
+    torch.save(checkpoint, model_state_path)
+
+def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, writer=None, grad_clip=0, lr_scheduler=None):
     model.train()
     metric_logger = utils.MetricLogger(delimiter="  ")
     metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     header = 'Epoch: [{}]'.format(epoch)
-
-    lr_scheduler = None
-    if epoch == 0:
-        warmup_factor = 1. / 1000
-        warmup_iters = min(1000, len(data_loader) - 1)
-
-        lr_scheduler = utils.warmup_lr_scheduler(optimizer, warmup_iters, warmup_factor)
-
+    epoch_losses = collections.defaultdict(int)
+    total_loss = 0
+    num_examples = len(data_loader)
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
         images = list(image.to(device) for image in images)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
-
         loss_dict = model(images, targets)
-
         losses = sum(loss for loss in loss_dict.values())
 
         # reduce losses over all GPUs for logging purposes
         loss_dict_reduced = utils.reduce_dict(loss_dict)
         losses_reduced = sum(loss for loss in loss_dict_reduced.values())
-
         loss_value = losses_reduced.item()
+        total_loss += loss_value
+        for loss_name, loss_val in loss_dict_reduced.items():
+            epoch_losses[loss_name] += loss_val
 
         if not math.isfinite(loss_value):
             print("Loss is {}, stopping training".format(loss_value))
@@ -44,13 +63,21 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
 
         optimizer.zero_grad()
         losses.backward()
+        if grad_clip > 0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+
         optimizer.step()
-
-        if lr_scheduler is not None:
-            lr_scheduler.step()
-
         metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
+
+    epoch_losses['total_loss'] = total_loss    
+    for loss_name, loss_val in epoch_losses.items():
+        epoch_losses[loss_name] = epoch_losses[loss_name] / num_examples
+        if writer is not None:
+            writer.add_scalar('Losses/' + loss_name, epoch_losses[loss_name], epoch)
+
+    if lr_scheduler is not None:
+        lr_scheduler.step(epoch_losses['total_loss'])
 
 
 def _get_iou_types(model):

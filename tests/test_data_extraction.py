@@ -39,9 +39,9 @@ class MyDataset(Dataset):
         return self.extractor[idx]
 
 
-def test_topdown_view(sim):
-    tdv = TopdownView(sim, res=0.1)
-    topdown_view = tdv.topdown_view
+# def test_topdown_view(sim):
+#     tdv = TopdownView(sim, res=0.1)
+#     topdown_view = tdv.topdown_view
 
 
 def test_data_extractor_end_to_end(sim):
