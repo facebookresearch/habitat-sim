@@ -106,9 +106,8 @@ class ImageExtractor:
     def close(self):
         r"""Deletes the instance of the simulator. Necessary for instatiating a different ImageExtractor.
         """
-        if self.sim is not None:
-            self.sim.close()
-            self.sim = None
+        self.sim.close()
+        del self.sim
 
     def _config_sim(self, scene_filepath, img_size):
         settings = {
