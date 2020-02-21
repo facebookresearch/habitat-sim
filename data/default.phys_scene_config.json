@@ -5,6 +5,10 @@
     "friction coefficient": 0.4,
     "restitution coefficient": 0.1,
     "rigid object paths":[
+        "test_assets/objects/nested_box",
+        "test_assets/objects/sphere",
+        "objects/1072184",
+        "objects/locobot_merged",
         "objects/cheezit",
         "objects/chefcan",
         "objects/banana"
