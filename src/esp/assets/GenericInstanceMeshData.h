@@ -48,6 +48,10 @@ class GenericInstanceMeshData : public BaseMesh {
     return cpu_ibo_;
   }
 
+  const std::vector<uint16_t> getObjectIdsBufferObjectCPU() const {
+    return objectIds_;
+  }
+
  protected:
   void updateCollisionMeshData();
 
