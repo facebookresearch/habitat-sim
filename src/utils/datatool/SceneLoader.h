@@ -14,9 +14,9 @@ namespace esp {
 namespace assets {
 
 class SceneLoader {
- public:
-  MeshData load(const AssetInfo& info);
+public:
+  MeshData load(const AssetInfo &info);
 };
 
-}  // namespace assets
-}  // namespace esp
+} // namespace assets
+} // namespace esp

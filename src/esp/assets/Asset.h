@@ -31,33 +31,32 @@ static const std::string EMPTY_SCENE = "NONE";
 //! AssetInfo stores information necessary to identify and load an Asset
 struct AssetInfo {
   AssetType type = AssetType::UNKNOWN;
-  std::string filepath = EMPTY_SCENE;  // empty scene
+  std::string filepath = EMPTY_SCENE; // empty scene
   geo::CoordinateFrame frame;
   float virtualUnitToMeters = 1.0f;
 
   //! Populates a preset AssetInfo by matching against known filepaths
-  static AssetInfo fromPath(const std::string& filepath);
+  static AssetInfo fromPath(const std::string &filepath);
 
   ESP_SMART_POINTERS(AssetInfo)
 };
 
 //! Wrapper for all valid asset types
-template <typename T>
-struct Asset {
+template <typename T> struct Asset {
   //! Create Asset wrapper given AssetInfo and created asset
-  Asset(AssetInfo& info, T& asset) : info_(info), asset_(asset) {}
+  Asset(AssetInfo &info, T &asset) : info_(info), asset_(asset) {}
 
   //! Return AssetInfo for this Asset
-  const AssetInfo& info() { return info_; }
+  const AssetInfo &info() { return info_; }
 
   //! Return reference to contained Asset
-  T& get() { return asset_; }
+  T &get() { return asset_; }
 
- protected:
+protected:
   AssetInfo info_;
-  T& asset_;
+  T &asset_;
   ESP_SMART_POINTERS(Asset)
 };
 
-}  // namespace assets
-}  // namespace esp
+} // namespace assets
+} // namespace esp

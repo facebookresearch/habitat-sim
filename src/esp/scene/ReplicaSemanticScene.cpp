@@ -19,9 +19,8 @@ namespace scene {
 constexpr int kMaxIds = 10000; /* We shouldn't every need more than this. */
 
 bool SemanticScene::loadReplicaHouse(
-    const std::string& houseFilename,
-    SemanticScene& scene,
-    const quatf& worldRotation /* = quatf::Identity() */) {
+    const std::string &houseFilename, SemanticScene &scene,
+    const quatf &worldRotation /* = quatf::Identity() */) {
   if (!io::exists(houseFilename)) {
     LOG(ERROR) << "Could not load file " << houseFilename;
     return false;
@@ -32,13 +31,13 @@ bool SemanticScene::loadReplicaHouse(
 
   // top-level scene
   VLOG(1) << "Parsing " << houseFilename;
-  const auto& json = io::parseJsonFile(houseFilename);
+  const auto &json = io::parseJsonFile(houseFilename);
   VLOG(1) << "Parsed.";
 
   // categories
-  const auto& categories = json["classes"].GetArray();
+  const auto &categories = json["classes"].GetArray();
   scene.elementCounts_["categories"] = categories.Size();
-  for (const auto& category : categories) {
+  for (const auto &category : categories) {
     int id = category["id"].GetInt();
     /*
      * We store the category object at categories_[id] in order to making
@@ -56,9 +55,9 @@ bool SemanticScene::loadReplicaHouse(
   }
 
   // objects
-  const auto& objects = json["objects"].GetArray();
+  const auto &objects = json["objects"].GetArray();
   scene.elementCounts_["objects"] = objects.Size();
-  for (const auto& jsonObject : objects) {
+  for (const auto &jsonObject : objects) {
     SemanticObject::ptr object = SemanticObject::create();
     int id = jsonObject["id"].GetInt();
     int categoryIndex = jsonObject["class_id"].GetInt();
@@ -84,5 +83,5 @@ bool SemanticScene::loadReplicaHouse(
   return true;
 }
 
-}  // namespace scene
-}  // namespace esp
+} // namespace scene
+} // namespace esp

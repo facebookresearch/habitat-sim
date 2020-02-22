@@ -10,7 +10,7 @@
 namespace esp {
 namespace gfx {
 
-bool DrawableGroup::prepareForDraw(const RenderCamera& camera) {
+bool DrawableGroup::prepareForDraw(const RenderCamera &camera) {
   if (!shader_) {
     return false;
   }
@@ -18,5 +18,5 @@ bool DrawableGroup::prepareForDraw(const RenderCamera& camera) {
   return true;
 }
 
-}  // namespace gfx
-}  // namespace esp
+} // namespace gfx
+} // namespace esp

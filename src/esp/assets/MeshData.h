@@ -27,5 +27,5 @@ struct MeshData {
   ESP_SMART_POINTERS(MeshData)
 };
 
-}  // namespace assets
-}  // namespace esp
+} // namespace assets
+} // namespace esp

@@ -25,7 +25,7 @@ using py::literals::operator""_a;
 namespace esp {
 namespace scene {
 
-void initSceneBindings(py::module& m) {
+void initSceneBindings(py::module &m) {
   // ==== SceneConfiguration ====
   py::class_<SceneConfiguration, SceneConfiguration::ptr>(m,
                                                           "SceneConfiguration")
@@ -36,13 +36,13 @@ void initSceneBindings(py::module& m) {
       .def_readwrite("scene_up_dir", &SceneConfiguration::sceneUpDir)
       .def_readwrite("scene_front_dir", &SceneConfiguration::sceneFrontDir)
       .def_readwrite("scene_scale_unit", &SceneConfiguration::sceneScaleUnit)
-      .def(
-          "__eq__",
-          [](const SceneConfiguration& self,
-             const SceneConfiguration& other) -> bool { return self == other; })
-      .def("__neq__",
-           [](const SceneConfiguration& self, const SceneConfiguration& other)
-               -> bool { return self != other; });
+      .def("__eq__",
+           [](const SceneConfiguration &self, const SceneConfiguration &other)
+               -> bool { return self == other; })
+      .def("__neq__", [](const SceneConfiguration &self,
+                         const SceneConfiguration &other) -> bool {
+        return self != other;
+      });
 
   // ==== SceneGraph ====
 
@@ -72,9 +72,8 @@ void initSceneBindings(py::module& m) {
       .def(py::init_alias<std::reference_wrapper<SceneNode>>(),
            R"(Constructor: creates a scene node, and sets its parent.)")
       .def_property("type", &SceneNode::getType, &SceneNode::setType)
-      .def(
-          "create_child", [](SceneNode& self) { return &self.createChild(); },
-          R"(Creates a child node, and sets its parent to the current node.)")
+      .def("create_child", [](SceneNode &self) { return &self.createChild(); },
+           R"(Creates a child node, and sets its parent to the current node.)")
       .def_property_readonly("absolute_translation",
                              &SceneNode::absoluteTranslation);
 
@@ -218,20 +217,20 @@ void initSceneBindings(py::module& m) {
   // ==== SemanticScene ====
   py::class_<SemanticScene, SemanticScene::ptr>(m, "SemanticScene")
       .def(py::init(&SemanticScene::create<>))
-      .def_static(
-          "load_mp3d_house",
-          [](const std::string& filename, SemanticScene& scene,
-             const vec4f& rotation) {
-            // numpy doesn't have a quaternion equivalent, use vec4
-            // instead
-            return SemanticScene::loadMp3dHouse(
-                filename, scene, Eigen::Map<const quatf>(rotation.data()));
-          },
-          R"(
+      .def_static("load_mp3d_house",
+                  [](const std::string &filename, SemanticScene &scene,
+                     const vec4f &rotation) {
+                    // numpy doesn't have a quaternion equivalent, use vec4
+                    // instead
+                    return SemanticScene::loadMp3dHouse(
+                        filename, scene,
+                        Eigen::Map<const quatf>(rotation.data()));
+                  },
+                  R"(
         Loads a SemanticScene from a Matterport3D House format file into passed
         `SemanticScene`.
       )",
-          "file"_a, "scene"_a, "rotation"_a)
+                  "file"_a, "scene"_a, "rotation"_a)
       .def_property_readonly("aabb", &SemanticScene::aabb)
       .def_property_readonly("categories", &SemanticScene::categories,
                              "All semantic categories in the house")
@@ -255,5 +254,5 @@ void initSceneBindings(py::module& m) {
            "object"_a, "name"_a, "amount"_a, "apply_filter"_a = true);
 }
 
-}  // namespace scene
-}  // namespace esp
+} // namespace scene
+} // namespace esp

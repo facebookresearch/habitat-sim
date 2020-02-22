@@ -17,12 +17,12 @@
 #include <Magnum/Trade/Trade.h>
 
 #include <fcntl.h>
-#include <sys/mman.h>
-#include <tinyply.h>
-#include <unistd.h>
 #include <fstream>
 #include <sophus/so3.hpp>
 #include <sstream>
+#include <sys/mman.h>
+#include <tinyply.h>
+#include <unistd.h>
 #include <unordered_map>
 #include <vector>
 
@@ -40,14 +40,14 @@ namespace assets {
 
 namespace {
 template <typename T>
-void copyTo(std::shared_ptr<tinyply::PlyData> data, std::vector<T>& dst) {
+void copyTo(std::shared_ptr<tinyply::PlyData> data, std::vector<T> &dst) {
   dst.resize(data->count);
   CHECK_EQ(data->buffer.size_bytes(), sizeof(T) * dst.size());
   std::memcpy(dst.data(), data->buffer.get(), data->buffer.size_bytes());
 }
 
 template <typename T>
-void copyVec3To(std::shared_ptr<tinyply::PlyData> data, std::vector<T>& dst) {
+void copyVec3To(std::shared_ptr<tinyply::PlyData> data, std::vector<T> &dst) {
   dst.resize(data->count * 3);
   CHECK_EQ(data->buffer.size_bytes(), sizeof(T) * dst.size());
   std::memcpy(dst.data(), data->buffer.get(), data->buffer.size_bytes());
@@ -55,8 +55,8 @@ void copyVec3To(std::shared_ptr<tinyply::PlyData> data, std::vector<T>& dst) {
 
 // TODO(msb) move this specialization to Magnum/MeshTools/CombineIndexedArrays.h
 template <class T,
-          typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
-std::vector<Mn::UnsignedInt> removeDuplicates(std::vector<T>& data) {
+          typename std::enable_if<std::is_integral<T>::value>::type * = nullptr>
+std::vector<Mn::UnsignedInt> removeDuplicates(std::vector<T> &data) {
   std::vector<Mn::UnsignedInt> resultIndices;
   resultIndices.reserve(data.size());
 
@@ -74,9 +74,9 @@ std::vector<Mn::UnsignedInt> removeDuplicates(std::vector<T>& data) {
 
   return resultIndices;
 }
-}  // namespace
+} // namespace
 
-bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
+bool GenericInstanceMeshData::loadPLY(const std::string &plyFile) {
   cpu_vbo_.clear();
   cpu_cbo_.clear();
   cpu_ibo_.clear();
@@ -94,7 +94,7 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
       LOG(ERROR) << "Could not read header";
       return false;
     }
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     LOG(ERROR) << "Tinply error " << e.what();
     return false;
   }
@@ -103,7 +103,7 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
 
   try {
     vertices = file.request_properties_from_element("vertex", {"x", "y", "z"});
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     LOG(ERROR) << "tinyply exception: " << e.what();
     return false;
   }
@@ -111,7 +111,7 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   try {
     colors = file.request_properties_from_element("vertex",
                                                   {"red", "green", "blue"});
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     LOG(ERROR) << "tinyply exception: " << e.what();
     return false;
   }
@@ -119,14 +119,14 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   try {
     face_inds =
         file.request_properties_from_element("face", {"vertex_indices"}, 0);
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     LOG(ERROR) << "tinyply exception: " << e.what();
     return false;
   }
 
   try {
     object_ids = file.request_properties_from_element("face", {"object_id"});
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     LOG(ERROR) << "tinyply exception: " << e.what();
     return false;
   }
@@ -158,7 +158,7 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
       copyTo(face_inds, tmp);
       cpu_ibo_.reserve(tmp.size() * 2 * 3);
       // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0, 2, 3]
-      for (auto& quad : tmp) {
+      for (auto &quad : tmp) {
         constexpr int indices[] = {0, 1, 2, 0, 2, 3};
         for (int i : indices) {
           cpu_ibo_.push_back(quad[i]);
@@ -185,7 +185,7 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
     // 1, so this assumption is safe.
     copyTo(object_ids, tmp);
 
-    for (auto& id : tmp) {
+    for (auto &id : tmp) {
       // >= 0 to make sure we didn't overflow the int32 with the uint32
       CORRADE_INTERNAL_ASSERT(id >= 0 && id <= ((2 << 16) - 1));
       for (int i = 0; i < indicesPerFace; ++i)
@@ -195,7 +195,7 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
     std::vector<uint16_t> tmp;
     copyTo(object_ids, tmp);
 
-    for (auto& id : tmp) {
+    for (auto &id : tmp) {
       for (int i = 0; i < indicesPerFace; ++i)
         objectIds_.push_back(id);
     }
@@ -209,7 +209,7 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   const quatf T_esp_scene =
       quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY);
 
-  for (auto& xyz : cpu_vbo_) {
+  for (auto &xyz : cpu_vbo_) {
     xyz = T_esp_scene * xyz;
   }
 
@@ -272,7 +272,7 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   buffersOnGPU_ = true;
 }
 
-Magnum::GL::Mesh* GenericInstanceMeshData::getMagnumGLMesh() {
+Magnum::GL::Mesh *GenericInstanceMeshData::getMagnumGLMesh() {
   if (renderingBuffer_ == nullptr) {
     return nullptr;
   }
@@ -286,5 +286,5 @@ void GenericInstanceMeshData::updateCollisionMeshData() {
       Cr::Containers::arrayView(cpu_ibo_));
 }
 
-}  // namespace assets
-}  // namespace esp
+} // namespace assets
+} // namespace esp

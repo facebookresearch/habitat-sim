@@ -15,25 +15,21 @@ namespace Mn = Magnum;
 namespace esp {
 namespace gfx {
 
-RenderCamera::RenderCamera(scene::SceneNode& node) : MagnumCamera{node} {
+RenderCamera::RenderCamera(scene::SceneNode &node) : MagnumCamera{node} {
   node.setType(scene::SceneNodeType::CAMERA);
   setAspectRatioPolicy(Mn::SceneGraph::AspectRatioPolicy::NotPreserved);
 }
 
-RenderCamera::RenderCamera(scene::SceneNode& node,
-                           const vec3f& eye,
-                           const vec3f& target,
-                           const vec3f& up)
+RenderCamera::RenderCamera(scene::SceneNode &node, const vec3f &eye,
+                           const vec3f &target, const vec3f &up)
     : RenderCamera(node) {
   // once it is attached, set the transformation
   node.setTransformation(Mn::Matrix4::lookAt(
       Mn::Vector3{eye}, Mn::Vector3{target}, Mn::Vector3{up}));
 }
 
-RenderCamera& RenderCamera::setProjectionMatrix(int width,
-                                                int height,
-                                                float znear,
-                                                float zfar,
+RenderCamera &RenderCamera::setProjectionMatrix(int width, int height,
+                                                float znear, float zfar,
                                                 float hfov) {
   const float aspectRatio = static_cast<float>(width) / height;
   MagnumCamera::setProjectionMatrix(
@@ -45,7 +41,7 @@ RenderCamera& RenderCamera::setProjectionMatrix(int width,
 
 size_t RenderCamera::cull(
     std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
-                          Mn::Matrix4>>& drawableTransforms) {
+                          Mn::Matrix4>> &drawableTransforms) {
   // camera frustum relative to world origin
   const Mn::Frustum frustum =
       Mn::Frustum::fromMatrix(projectionMatrix() * cameraMatrix());
@@ -53,10 +49,10 @@ size_t RenderCamera::cull(
   auto newEndIter = std::remove_if(
       drawableTransforms.begin(), drawableTransforms.end(),
       [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
-                          Mn::Matrix4>& a) {
+                          Mn::Matrix4> &a) {
         // obtain the absolute aabb
         Corrade::Containers::Optional<Mn::Range3D> aabb =
-            dynamic_cast<scene::SceneNode&>(a.first.get().object())
+            dynamic_cast<scene::SceneNode &>(a.first.get().object())
                 .getAbsoluteAABB();
         if (aabb) {
           // if it has an absolute aabb, it is a static mesh
@@ -70,7 +66,7 @@ size_t RenderCamera::cull(
   return (newEndIter - drawableTransforms.begin());
 }
 
-uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables,
+uint32_t RenderCamera::draw(MagnumDrawableGroup &drawables,
                             bool frustumCulling) {
   if (!frustumCulling) {
     MagnumCamera::draw(drawables);
@@ -91,5 +87,5 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables,
   return drawableTransforms.size();
 }
 
-}  // namespace gfx
-}  // namespace esp
+} // namespace gfx
+} // namespace esp

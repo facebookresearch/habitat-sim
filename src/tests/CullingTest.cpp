@@ -39,9 +39,9 @@ TEST(CullingTest, computeAbsoluteAABB) {
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
 
   int sceneID = sceneManager.initSceneGraph();
-  auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
-  esp::scene::SceneNode& sceneRootNode = sceneGraph.getRootNode();
-  auto& drawables = sceneGraph.getDrawables();
+  auto &sceneGraph = sceneManager.getSceneGraph(sceneID);
+  esp::scene::SceneNode &sceneRootNode = sceneGraph.getRootNode();
+  auto &drawables = sceneGraph.getDrawables();
   const esp::assets::AssetInfo info =
       esp::assets::AssetInfo::fromPath(sceneFile);
   bool loadSuccess =
@@ -51,7 +51,7 @@ TEST(CullingTest, computeAbsoluteAABB) {
   std::vector<Mn::Range3D> aabbs;
   for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
     Cr::Containers::Optional<Mn::Range3D> aabb =
-        dynamic_cast<esp::scene::SceneNode&>(drawables[iDrawable].object())
+        dynamic_cast<esp::scene::SceneNode &>(drawables[iDrawable].object())
             .getAbsoluteAABB();
     if (aabb) {
       aabbs.emplace_back(*aabb);
@@ -109,9 +109,9 @@ TEST(CullingTest, frustumCulling) {
 
   // load the scene
   int sceneID = sceneManager.initSceneGraph();
-  auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
-  esp::scene::SceneNode& sceneRootNode = sceneGraph.getRootNode();
-  auto& drawables = sceneGraph.getDrawables();
+  auto &sceneGraph = sceneManager.getSceneGraph(sceneID);
+  esp::scene::SceneNode &sceneRootNode = sceneGraph.getRootNode();
+  auto &drawables = sceneGraph.getDrawables();
   const esp::assets::AssetInfo info =
       esp::assets::AssetInfo::fromPath(sceneFile);
   bool loadSuccess =
@@ -119,7 +119,7 @@ TEST(CullingTest, frustumCulling) {
   EXPECT_EQ(loadSuccess, true);
 
   // set the camera
-  esp::gfx::RenderCamera& renderCamera = sceneGraph.getDefaultRenderCamera();
+  esp::gfx::RenderCamera &renderCamera = sceneGraph.getDefaultRenderCamera();
 
   // The camera to be set:
   // pos: {7.3589f, -6.9258f,4.9583f}
@@ -133,11 +133,11 @@ TEST(CullingTest, frustumCulling) {
   // NOTE: the following test results have been visually verified in utility
   // viewer
   Mn::Vector2i frameBufferSize{800, 600};
-  renderCamera.setProjectionMatrix(frameBufferSize.x(),  // width
-                                   frameBufferSize.y(),  // height
-                                   0.01f,                // znear
-                                   100.0f,               // zfar
-                                   39.6f);               // hfov
+  renderCamera.setProjectionMatrix(frameBufferSize.x(), // width
+                                   frameBufferSize.y(), // height
+                                   0.01f,               // znear
+                                   100.0f,              // zfar
+                                   39.6f);              // hfov
 
   esp::scene::SceneNode agentNode = sceneGraph.getRootNode().createChild();
   esp::scene::SceneNode cameraNode = agentNode.createChild();
@@ -178,8 +178,8 @@ TEST(CullingTest, frustumCulling) {
         std::remove_if(
             objects.begin(), objects.end(),
             [&](const std::pair<
-                std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
-                Mn::Matrix4>& a) {
+                std::reference_wrapper<Mn::SceneGraph::Drawable3D>, Mn::Matrix4>
+                    &a) {
               for (std::vector<std::pair<
                        std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
                        Mn::Matrix4>>::iterator iter =
@@ -187,7 +187,7 @@ TEST(CullingTest, frustumCulling) {
                    iter != newEndIter; ++iter) {
                 if (std::addressof(a.first.get()) ==
                     std::addressof(iter->first.get())) {
-                  return true;  // it is visible, remove it
+                  return true; // it is visible, remove it
                 }
               }
               return false;
@@ -208,28 +208,28 @@ TEST(CullingTest, frustumCulling) {
   // draw the visibles one by one.
   // check if each one is a genuine visible drawable
   unsigned int numVisibleObjectsGroundTruth = 0;
-  auto renderOneDrawable =
-      [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
-                          Mn::Matrix4>& a) {
-        std::vector<std::pair<
-            std::reference_wrapper<Mn::SceneGraph::Drawable3D>, Mn::Matrix4>>
-            objects;
-        objects.emplace_back(a);
+  auto renderOneDrawable = [&](
+      const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                      Mn::Matrix4> &a) {
+    std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                          Mn::Matrix4>>
+        objects;
+    objects.emplace_back(a);
 
-        target->renderEnter();
-        Mn::GL::SampleQuery q{Mn::GL::SampleQuery::Target::AnySamplesPassed};
-        q.begin();
-        renderCamera.MagnumCamera::draw(objects);
-        q.end();
-        target->renderExit();
+    target->renderEnter();
+    Mn::GL::SampleQuery q{Mn::GL::SampleQuery::Target::AnySamplesPassed};
+    q.begin();
+    renderCamera.MagnumCamera::draw(objects);
+    q.end();
+    target->renderExit();
 
-        // check if it a genuine visible drawable
-        EXPECT_EQ(q.result<bool>(), true);
+    // check if it a genuine visible drawable
+    EXPECT_EQ(q.result<bool>(), true);
 
-        if (q.result<bool>()) {
-          numVisibleObjectsGroundTruth++;
-        }
-      };
+    if (q.result<bool>()) {
+      numVisibleObjectsGroundTruth++;
+    }
+  };
   for_each(drawableTransforms.begin(), newEndIter, renderOneDrawable);
 
   // ============== Test 3 ==================

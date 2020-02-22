@@ -21,7 +21,7 @@ namespace gfx {
  * memory
  */
 class RenderTarget {
- public:
+public:
   /**
    * @brief Constructor
    * @param size               The size of the underlying framebuffers in WxH
@@ -32,9 +32,9 @@ class RenderTarget {
    *                           Must be not nullptr to use @ref
    *                           readFrameDepthGPU()
    */
-  RenderTarget(const Magnum::Vector2i& size,
-               const Magnum::Vector2& depthUnprojection,
-               DepthShader* depthShader);
+  RenderTarget(const Magnum::Vector2i &size,
+               const Magnum::Vector2 &depthUnprojection,
+               DepthShader *depthShader);
 
   /**
    * @brief Constructor
@@ -44,8 +44,8 @@ class RenderTarget {
    *
    * Equivalent to calling @ref RenderTarget(size, depthUnprojection, nullptr)
    */
-  RenderTarget(const Magnum::Vector2i& size,
-               const Magnum::Vector2& depthUnprojection)
+  RenderTarget(const Magnum::Vector2i &size,
+               const Magnum::Vector2 &depthUnprojection)
       : RenderTarget{size, depthUnprojection, nullptr} {};
 
   ~RenderTarget() { LOG(INFO) << "Deconstructing RenderTarget"; }
@@ -72,7 +72,7 @@ class RenderTarget {
    * @param[in, out] view Preallocated memory that will be populated with the
    * result.  The result will be read as the pixel format of this view.
    */
-  void readFrameRgba(const Magnum::MutableImageView2D& view);
+  void readFrameRgba(const Magnum::MutableImageView2D &view);
 
   /**
    * @brief Retrieve the depth rendering results.
@@ -81,7 +81,7 @@ class RenderTarget {
    * result.  The PixelFormat of the image must only specify the R channel,
    * generally @ref Magnum::PixelFormat::R32F
    */
-  void readFrameDepth(const Magnum::MutableImageView2D& view);
+  void readFrameDepth(const Magnum::MutableImageView2D &view);
 
   /**
    * @brief Reads the ObjectID rendering results into the memory specified by
@@ -93,7 +93,7 @@ class RenderTarget {
    * Magnum::PixelFormat::R32UI, @ref Magnum::PixelFormat::R32I, or @ref
    * Magnum::PixelFormat::R16UI
    */
-  void readFrameObjectId(const Magnum::MutableImageView2D& view);
+  void readFrameObjectId(const Magnum::MutableImageView2D &view);
 
   /**
    * @brief Blits the rgba buffer from internal FBO to default frame buffer
@@ -102,9 +102,9 @@ class RenderTarget {
   void blitRgbaToDefault();
 
   // @brief Delete copy Constructor
-  RenderTarget(const RenderTarget&) = delete;
+  RenderTarget(const RenderTarget &) = delete;
   // @brief Delete copy operator
-  RenderTarget& operator=(const RenderTarget&) = delete;
+  RenderTarget &operator=(const RenderTarget &) = delete;
 
 #ifdef ESP_BUILD_WITH_CUDA
   /**
@@ -115,7 +115,7 @@ class RenderTarget {
    * @param[in, out] devPtr CUDA memory pointer that points to a contiguous
    * memory region of at least W*H*sizeof(uint8_t) bytes.
    */
-  void readFrameRgbaGPU(uint8_t* devPtr);
+  void readFrameRgbaGPU(uint8_t *devPtr);
 
   /**
    * @brief Reads the depth rendering result directly into CUDA memory.  See
@@ -126,7 +126,7 @@ class RenderTarget {
    * @param[in, out] devPtr CUDA memory pointer that points to a contiguous
    * memory region of at least W*H*sizeof(float) bytes.
    */
-  void readFrameDepthGPU(float* devPtr);
+  void readFrameDepthGPU(float *devPtr);
 
   /**
    * @brief Reads the ObjectID rendering result directly into CUDA memory.  See
@@ -135,11 +135,11 @@ class RenderTarget {
    * @param[in, out] devPtr CUDA memory pointer that points to a contiguous
    * memory region of at least W*H*sizeof(int32_t) bytes.
    */
-  void readFrameObjectIdGPU(int32_t* devPtr);
+  void readFrameObjectIdGPU(int32_t *devPtr);
 #endif
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(RenderTarget)
 };
 
-}  // namespace gfx
-}  // namespace esp
+} // namespace gfx
+} // namespace esp

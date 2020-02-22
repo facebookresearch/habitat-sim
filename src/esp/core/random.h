@@ -10,12 +10,9 @@ namespace esp {
 namespace core {
 
 class Random {
- public:
+public:
   explicit Random(unsigned int seed = std::random_device()())
-      : gen_(seed),
-        uniform_float_01_(0, 1),
-        uniform_int_(),
-        uniform_uint32_(),
+      : gen_(seed), uniform_float_01_(0, 1), uniform_int_(), uniform_uint32_(),
         normal_float_01_(0, 1) {}
 
   //! Seed the random generator state with the given number
@@ -46,7 +43,7 @@ class Random {
         uniform_float(static_cast<float>(a), static_cast<float>(b)));
   }
 
- protected:
+protected:
   std::default_random_engine gen_;
   std::uniform_real_distribution<float> uniform_float_01_;
   std::uniform_int_distribution<int> uniform_int_;
@@ -54,5 +51,5 @@ class Random {
   std::normal_distribution<float> normal_float_01_;
 };
 
-}  // namespace core
-}  // namespace esp
+} // namespace core
+} // namespace esp

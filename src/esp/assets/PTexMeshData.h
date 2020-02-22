@@ -20,7 +20,7 @@ namespace esp {
 namespace assets {
 
 class PTexMeshData : public BaseMesh {
- public:
+public:
   struct MeshData {
     std::vector<vec3f> vbo;
     std::vector<vec4f> nbo;
@@ -44,23 +44,23 @@ class PTexMeshData : public BaseMesh {
   virtual ~PTexMeshData(){};
 
   // ==== geometry ====
-  void load(const std::string& meshFile, const std::string& atlasFolder);
+  void load(const std::string &meshFile, const std::string &atlasFolder);
   uint32_t tileSize() const { return tileSize_; }
 
-  const std::vector<MeshData>& meshes() const;
+  const std::vector<MeshData> &meshes() const;
   std::string atlasFolder() const;
   void resize(size_t n) { submeshes_.resize(n); }
 
   int getSize() { return submeshes_.size(); }
 
-  static void parsePLY(const std::string& filename, MeshData& meshData);
-  static void calculateAdjacency(const MeshData& mesh,
-                                 std::vector<uint32_t>& adjFaces);
+  static void parsePLY(const std::string &filename, MeshData &meshData);
+  static void calculateAdjacency(const MeshData &mesh,
+                                 std::vector<uint32_t> &adjFaces);
 
   // ==== rendering ====
-  RenderingBuffer* getRenderingBuffer(int submeshID);
+  RenderingBuffer *getRenderingBuffer(int submeshID);
   virtual void uploadBuffersToGPU(bool forceReload = false) override;
-  virtual Magnum::GL::Mesh* getMagnumGLMesh(int submeshID) override;
+  virtual Magnum::GL::Mesh *getMagnumGLMesh(int submeshID) override;
 
   float exposure() const;
   void setExposure(float val);
@@ -71,8 +71,8 @@ class PTexMeshData : public BaseMesh {
   float saturation() const;
   void setSaturation(float val);
 
- protected:
-  void loadMeshData(const std::string& meshFile);
+protected:
+  void loadMeshData(const std::string &meshFile);
 
   float splitSize_ = 0.0f;
   uint32_t tileSize_ = 0;
@@ -96,5 +96,5 @@ class PTexMeshData : public BaseMesh {
   std::vector<std::unique_ptr<RenderingBuffer>> renderingBuffers_;
 };
 
-}  // namespace assets
-}  // namespace esp
+} // namespace assets
+} // namespace esp

@@ -10,12 +10,12 @@ namespace esp {
 namespace scene {
 
 struct GibsonObjectCategory : public SemanticCategory {
-  GibsonObjectCategory(const int id, const std::string& name)
+  GibsonObjectCategory(const int id, const std::string &name)
       : id_(id), name_(name) {}
 
-  int index(const std::string& mapping) const override { return id_; }
+  int index(const std::string &mapping) const override { return id_; }
 
-  std::string name(const std::string& mapping) const override {
+  std::string name(const std::string &mapping) const override {
     if (mapping == "category" || mapping == "") {
       return name_;
     } else {
@@ -24,7 +24,7 @@ struct GibsonObjectCategory : public SemanticCategory {
     }
   }
 
- protected:
+protected:
   int id_;
   std::string name_;
   friend SemanticScene;
@@ -32,5 +32,5 @@ struct GibsonObjectCategory : public SemanticCategory {
   ESP_SMART_POINTERS(GibsonObjectCategory)
 };
 
-}  // namespace scene
-}  // namespace esp
+} // namespace scene
+} // namespace esp

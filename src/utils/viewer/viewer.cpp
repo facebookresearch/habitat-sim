@@ -4,8 +4,8 @@
 
 #include <stdlib.h>
 
-#include <Magnum/configure.h>
 #include <Magnum/ImGuiIntegration/Context.hpp>
+#include <Magnum/configure.h>
 #ifdef MAGNUM_TARGET_WEBGL
 #include <Magnum/Platform/EmscriptenApplication.h>
 #else
@@ -23,6 +23,9 @@
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
 
+#include "esp/core/esp.h"
+#include "esp/gfx/Drawable.h"
+#include "esp/io/io.h"
 #include <Corrade/Utility/Arguments.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
@@ -31,9 +34,6 @@
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <sophus/so3.hpp>
-#include "esp/core/esp.h"
-#include "esp/gfx/Drawable.h"
-#include "esp/io/io.h"
 
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/sim/Simulator.h"
@@ -53,25 +53,25 @@ constexpr float rgbSensorHeight = 1.5f;
 namespace {
 
 class Viewer : public Magnum::Platform::Application {
- public:
-  explicit Viewer(const Arguments& arguments);
+public:
+  explicit Viewer(const Arguments &arguments);
 
- private:
+private:
   void drawEvent() override;
-  void viewportEvent(ViewportEvent& event) override;
-  void mousePressEvent(MouseEvent& event) override;
-  void mouseReleaseEvent(MouseEvent& event) override;
-  void mouseMoveEvent(MouseMoveEvent& event) override;
-  void mouseScrollEvent(MouseScrollEvent& event) override;
-  void keyPressEvent(KeyEvent& event) override;
+  void viewportEvent(ViewportEvent &event) override;
+  void mousePressEvent(MouseEvent &event) override;
+  void mouseReleaseEvent(MouseEvent &event) override;
+  void mouseMoveEvent(MouseMoveEvent &event) override;
+  void mouseScrollEvent(MouseScrollEvent &event) override;
+  void keyPressEvent(KeyEvent &event) override;
 
   // Interactive functions
   void addObject(std::string configFile);
   void pokeLastObject();
   void pushLastObject();
 
-  void recomputeNavMesh(const std::string& sceneFilename,
-                        esp::nav::NavMeshSettings& navMeshSettings);
+  void recomputeNavMesh(const std::string &sceneFilename,
+                        esp::nav::NavMeshSettings &navMeshSettings);
 
   void torqueLastObject();
   void removeLastObject();
@@ -79,8 +79,8 @@ class Viewer : public Magnum::Platform::Application {
   Magnum::Vector3 randomDirection();
   void wiggleLastObject();
 
-  Magnum::Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
-                                   const Magnum::Vector2i& position);
+  Magnum::Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D &camera,
+                                   const Magnum::Vector2i &position);
 
   assets::ResourceManager resourceManager_;
   // SceneManager must be before physicsManager_ as the physicsManager_
@@ -92,15 +92,15 @@ class Viewer : public Magnum::Platform::Application {
   bool debugBullet_ = false;
 
   std::vector<int> sceneID_;
-  scene::SceneNode* agentBodyNode_ = nullptr;
-  scene::SceneNode* rgbSensorNode_ = nullptr;
+  scene::SceneNode *agentBodyNode_ = nullptr;
+  scene::SceneNode *rgbSensorNode_ = nullptr;
 
-  scene::SceneNode* navSceneNode_ = nullptr;
+  scene::SceneNode *navSceneNode_ = nullptr;
 
-  scene::SceneGraph* sceneGraph_;
-  scene::SceneNode* rootNode_;
+  scene::SceneGraph *sceneGraph_;
+  scene::SceneNode *rootNode_;
 
-  gfx::RenderCamera* renderCamera_ = nullptr;
+  gfx::RenderCamera *renderCamera_ = nullptr;
   nav::PathFinder::ptr pathfinder_;
   scene::ObjectControls controls_;
   Magnum::Vector3 previousPosition_;
@@ -116,16 +116,14 @@ class Viewer : public Magnum::Platform::Application {
   bool frustumCullingEnabled_ = true;
 };
 
-Viewer::Viewer(const Arguments& arguments)
+Viewer::Viewer(const Arguments &arguments)
     : Platform::Application{arguments,
                             Configuration{}.setTitle("Viewer").setWindowFlags(
                                 Configuration::WindowFlag::Resizable),
                             GLConfiguration{}
                                 .setColorBufferSize(Vector4i(8, 8, 8, 8))
                                 .setSampleCount(4)},
-      pathfinder_(nav::PathFinder::create()),
-      controls_(),
-      previousPosition_() {
+      pathfinder_(nav::PathFinder::create()), controls_(), previousPosition_() {
   Utility::Arguments args;
 #ifdef CORRADE_TARGET_EMSCRIPTEN
   args.addNamedArgument("scene")
@@ -168,8 +166,8 @@ Viewer::Viewer(const Arguments& arguments)
   rootNode_ = &sceneGraph_->getRootNode();
   navSceneNode_ = &rootNode_->createChild();
 
-  auto& drawables = sceneGraph_->getDrawables();
-  const std::string& file = args.value("scene");
+  auto &drawables = sceneGraph_->getDrawables();
+  const std::string &file = args.value("scene");
   const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
 
   if (args.isSet("enable-physics")) {
@@ -200,11 +198,11 @@ Viewer::Viewer(const Arguments& arguments)
   rgbSensorNode_->translate({0.0f, rgbSensorHeight, 0.0f});
   agentBodyNode_->translate({0.0f, 0.0f, 5.0f});
 
-  renderCamera_->setProjectionMatrix(viewportSize.x(),  // width
-                                     viewportSize.y(),  // height
-                                     0.01f,             // znear
-                                     1000.0f,           // zfar
-                                     90.0f);            // hfov
+  renderCamera_->setProjectionMatrix(viewportSize.x(), // width
+                                     viewportSize.y(), // height
+                                     0.01f,            // znear
+                                     1000.0f,          // zfar
+                                     90.0f);           // hfov
   renderCamera_->setAspectRatioPolicy(
       Magnum::SceneGraph::AspectRatioPolicy::Extend);
 
@@ -239,7 +237,7 @@ Viewer::Viewer(const Arguments& arguments)
     vec3f position = pathfinder_->getRandomNavigablePoint();
     agentBodyNode_->setTranslation(Vector3(position));
 
-    controls_.setMoveFilterFunction([&](const vec3f& start, const vec3f& end) {
+    controls_.setMoveFilterFunction([&](const vec3f &start, const vec3f &end) {
       vec3f currentPosition = pathfinder_->tryStep(start, end);
       LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
                 << quatf(agentBodyNode_->rotation()).coeffs().transpose();
@@ -255,7 +253,7 @@ Viewer::Viewer(const Arguments& arguments)
 
   timeline_.start();
 
-}  // end Viewer::Viewer
+} // end Viewer::Viewer
 
 void Viewer::addObject(std::string configFile) {
   if (physicsManager_ == nullptr)
@@ -263,10 +261,10 @@ void Viewer::addObject(std::string configFile) {
 
   Magnum::Matrix4 T =
       agentBodyNode_
-          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+          ->MagnumObject::transformationMatrix(); // Relative to agent bodynode
   Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
 
-  auto& drawables = sceneGraph_->getDrawables();
+  auto &drawables = sceneGraph_->getDrawables();
 
   int physObjectID = physicsManager_->addObject(configFile, &drawables);
   physicsManager_->setTranslation(physObjectID, new_pos);
@@ -297,7 +295,7 @@ void Viewer::removeLastObject() {
 void Viewer::invertGravity() {
   if (physicsManager_ == nullptr)
     return;
-  const Magnum::Vector3& gravity = physicsManager_->getGravity();
+  const Magnum::Vector3 &gravity = physicsManager_->getGravity();
   const Magnum::Vector3 invGravity = -1 * gravity;
   physicsManager_->setGravity(invGravity);
 }
@@ -307,7 +305,7 @@ void Viewer::pokeLastObject() {
     return;
   Magnum::Matrix4 T =
       agentBodyNode_
-          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+          ->MagnumObject::transformationMatrix(); // Relative to agent bodynode
   Vector3 impulse = T.transformVector({0.0f, 0.0f, -3.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyImpulse(objectIDs_.back(), impulse, rel_pos);
@@ -318,14 +316,14 @@ void Viewer::pushLastObject() {
     return;
   Magnum::Matrix4 T =
       agentBodyNode_
-          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+          ->MagnumObject::transformationMatrix(); // Relative to agent bodynode
   Vector3 force = T.transformVector({0.0f, 0.0f, -40.0f});
   Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
 }
 
-void Viewer::recomputeNavMesh(const std::string& sceneFilename,
-                              nav::NavMeshSettings& navMeshSettings) {
+void Viewer::recomputeNavMesh(const std::string &sceneFilename,
+                              nav::NavMeshSettings &navMeshSettings) {
   nav::PathFinder::ptr pf = nav::PathFinder::create();
 
   assets::MeshData::uptr joinedMesh =
@@ -372,8 +370,8 @@ void Viewer::wiggleLastObject() {
   physicsManager_->translate(objectIDs_.back(), randDir * 0.1);
 }
 
-Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
-                                 const Vector2i& position) {
+Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D &camera,
+                                 const Vector2i &position) {
   // Convert from window to frame coordinates.
   Vector2 framePosition =
       (Vector2{position} * Vector2{framebufferSize()}) / Vector2{windowSize()};
@@ -397,10 +395,10 @@ void Viewer::drawEvent() {
 
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
-  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
+  auto &sceneGraph = sceneManager_.getSceneGraph(sceneID);
   uint32_t visibles = 0;
 
-  for (auto& it : sceneGraph.getDrawableGroups()) {
+  for (auto &it : sceneGraph.getDrawableGroups()) {
     // TODO: remove || true
     if (it.second.prepareForDraw(*renderCamera_) || true) {
       visibles += renderCamera_->draw(it.second, frustumCullingEnabled_);
@@ -418,9 +416,9 @@ void Viewer::drawEvent() {
 
   if (showFPS_) {
     ImGui::SetNextWindowPos(ImVec2(10, 10));
-    ImGui::Begin("main", NULL,
-                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
-                     ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("main", NULL, ImGuiWindowFlags_NoDecoration |
+                                   ImGuiWindowFlags_NoBackground |
+                                   ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(2.0);
     ImGui::Text("%.1f FPS", Double(ImGui::GetIO().Framerate));
     uint32_t total = sceneGraph.getDrawables().size();
@@ -450,28 +448,28 @@ void Viewer::drawEvent() {
   redraw();
 }
 
-void Viewer::viewportEvent(ViewportEvent& event) {
+void Viewer::viewportEvent(ViewportEvent &event) {
   GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
   renderCamera_->setViewport(event.windowSize());
   imgui_.relayout(Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
 }
 
-void Viewer::mousePressEvent(MouseEvent& event) {
+void Viewer::mousePressEvent(MouseEvent &event) {
   if (event.button() == MouseEvent::Button::Left)
     previousPosition_ = positionOnSphere(*renderCamera_, event.position());
 
   event.setAccepted();
 }
 
-void Viewer::mouseReleaseEvent(MouseEvent& event) {
+void Viewer::mouseReleaseEvent(MouseEvent &event) {
   if (event.button() == MouseEvent::Button::Left)
     previousPosition_ = Vector3();
 
   event.setAccepted();
 }
 
-void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
+void Viewer::mouseScrollEvent(MouseScrollEvent &event) {
   if (!event.offset().y()) {
     return;
   }
@@ -488,7 +486,7 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   event.setAccepted();
 }
 
-void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
+void Viewer::mouseMoveEvent(MouseMoveEvent &event) {
   if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
     return;
   }
@@ -507,118 +505,118 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   event.setAccepted();
 }
 
-void Viewer::keyPressEvent(KeyEvent& event) {
+void Viewer::keyPressEvent(KeyEvent &event) {
   const auto key = event.key();
   switch (key) {
-    case KeyEvent::Key::Esc:
-      std::exit(0);
-      break;
-    case KeyEvent::Key::Left:
-      controls_(*agentBodyNode_, "turnLeft", lookSensitivity);
-      break;
-    case KeyEvent::Key::Right:
-      controls_(*agentBodyNode_, "turnRight", lookSensitivity);
-      break;
-    case KeyEvent::Key::Up:
-      controls_(*rgbSensorNode_, "lookUp", lookSensitivity, false);
-      break;
-    case KeyEvent::Key::Down:
-      controls_(*rgbSensorNode_, "lookDown", lookSensitivity, false);
-      break;
-    case KeyEvent::Key::Nine:
-      if (pathfinder_->isLoaded()) {
-        const vec3f position = pathfinder_->getRandomNavigablePoint();
-        agentBodyNode_->setTranslation(Vector3(position));
-      }
-      break;
-    case KeyEvent::Key::A:
-      controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
-      LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
-      break;
-    case KeyEvent::Key::D:
-      controls_(*agentBodyNode_, "moveRight", moveSensitivity);
-      LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
-      break;
-    case KeyEvent::Key::E:
-      frustumCullingEnabled_ ^= true;
-      break;
-    case KeyEvent::Key::C:
-      showFPS_ = !showFPS_;
-      break;
-    case KeyEvent::Key::S:
-      controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
-      LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
-      break;
-    case KeyEvent::Key::W:
-      controls_(*agentBodyNode_, "moveForward", moveSensitivity);
-      LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
-      break;
-    case KeyEvent::Key::X:
-      controls_(*agentBodyNode_, "moveDown", moveSensitivity, false);
-      LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
-      break;
-    case KeyEvent::Key::Z:
-      controls_(*agentBodyNode_, "moveUp", moveSensitivity, false);
-      LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
-      break;
-    case KeyEvent::Key::O: {
-      if (physicsManager_ != nullptr) {
-        int numObjects = resourceManager_.getNumLibraryObjects();
-        if (numObjects) {
-          int randObjectID = rand() % numObjects;
-          addObject(resourceManager_.getObjectConfig(randObjectID));
+  case KeyEvent::Key::Esc:
+    std::exit(0);
+    break;
+  case KeyEvent::Key::Left:
+    controls_(*agentBodyNode_, "turnLeft", lookSensitivity);
+    break;
+  case KeyEvent::Key::Right:
+    controls_(*agentBodyNode_, "turnRight", lookSensitivity);
+    break;
+  case KeyEvent::Key::Up:
+    controls_(*rgbSensorNode_, "lookUp", lookSensitivity, false);
+    break;
+  case KeyEvent::Key::Down:
+    controls_(*rgbSensorNode_, "lookDown", lookSensitivity, false);
+    break;
+  case KeyEvent::Key::Nine:
+    if (pathfinder_->isLoaded()) {
+      const vec3f position = pathfinder_->getRandomNavigablePoint();
+      agentBodyNode_->setTranslation(Vector3(position));
+    }
+    break;
+  case KeyEvent::Key::A:
+    controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
+    LOG(INFO) << "Agent position "
+              << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+    break;
+  case KeyEvent::Key::D:
+    controls_(*agentBodyNode_, "moveRight", moveSensitivity);
+    LOG(INFO) << "Agent position "
+              << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+    break;
+  case KeyEvent::Key::E:
+    frustumCullingEnabled_ ^= true;
+    break;
+  case KeyEvent::Key::C:
+    showFPS_ = !showFPS_;
+    break;
+  case KeyEvent::Key::S:
+    controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
+    LOG(INFO) << "Agent position "
+              << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+    break;
+  case KeyEvent::Key::W:
+    controls_(*agentBodyNode_, "moveForward", moveSensitivity);
+    LOG(INFO) << "Agent position "
+              << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+    break;
+  case KeyEvent::Key::X:
+    controls_(*agentBodyNode_, "moveDown", moveSensitivity, false);
+    LOG(INFO) << "Agent position "
+              << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+    break;
+  case KeyEvent::Key::Z:
+    controls_(*agentBodyNode_, "moveUp", moveSensitivity, false);
+    LOG(INFO) << "Agent position "
+              << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+    break;
+  case KeyEvent::Key::O: {
+    if (physicsManager_ != nullptr) {
+      int numObjects = resourceManager_.getNumLibraryObjects();
+      if (numObjects) {
+        int randObjectID = rand() % numObjects;
+        addObject(resourceManager_.getObjectConfig(randObjectID));
 
-        } else
-          LOG(WARNING) << "No objects loaded, can't add any";
       } else
-        LOG(WARNING)
-            << "Run the app with --enable-physics in order to add objects";
-    } break;
-    case KeyEvent::Key::P:
-      pokeLastObject();
-      break;
-    case KeyEvent::Key::F:
-      pushLastObject();
-      break;
-    case KeyEvent::Key::K:
-      wiggleLastObject();
-      break;
-    case KeyEvent::Key::U:
-      removeLastObject();
-      break;
-    case KeyEvent::Key::V:
-      invertGravity();
-      break;
-    case KeyEvent::Key::T:
-      // Test key. Put what you want here...
-      torqueLastObject();
-      break;
-    case KeyEvent::Key::I:
-      Magnum::DebugTools::screenshot(GL::defaultFramebuffer,
-                                     "test_image_save.png");
-      break;
-    case KeyEvent::Key::B: {
-      // toggle bounding box on objects
-      drawObjectBBs = !drawObjectBBs;
-      for (auto id : physicsManager_->getExistingObjectIDs()) {
-        physicsManager_->setObjectBBDraw(id, &sceneGraph_->getDrawables(),
-                                         drawObjectBBs);
-      }
-    } break;
-    default:
-      break;
+        LOG(WARNING) << "No objects loaded, can't add any";
+    } else
+      LOG(WARNING)
+          << "Run the app with --enable-physics in order to add objects";
+  } break;
+  case KeyEvent::Key::P:
+    pokeLastObject();
+    break;
+  case KeyEvent::Key::F:
+    pushLastObject();
+    break;
+  case KeyEvent::Key::K:
+    wiggleLastObject();
+    break;
+  case KeyEvent::Key::U:
+    removeLastObject();
+    break;
+  case KeyEvent::Key::V:
+    invertGravity();
+    break;
+  case KeyEvent::Key::T:
+    // Test key. Put what you want here...
+    torqueLastObject();
+    break;
+  case KeyEvent::Key::I:
+    Magnum::DebugTools::screenshot(GL::defaultFramebuffer,
+                                   "test_image_save.png");
+    break;
+  case KeyEvent::Key::B: {
+    // toggle bounding box on objects
+    drawObjectBBs = !drawObjectBBs;
+    for (auto id : physicsManager_->getExistingObjectIDs()) {
+      physicsManager_->setObjectBBDraw(id, &sceneGraph_->getDrawables(),
+                                       drawObjectBBs);
+    }
+  } break;
+  default:
+    break;
   }
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
   redraw();
 }
 
-}  // namespace
+} // namespace
 
 MAGNUM_APPLICATION_MAIN(Viewer)

@@ -11,15 +11,14 @@ namespace esp {
 namespace scene {
 
 SceneGraph::SceneGraph()
-    : rootNode_{world_},
-      defaultRenderCameraNode_{rootNode_},
+    : rootNode_{world_}, defaultRenderCameraNode_{rootNode_},
       defaultRenderCamera_{defaultRenderCameraNode_} {
   // For now, just create one drawable group with empty string uuid
   createDrawableGroup(std::string{});
 }
 
 // set transformation, projection matrix, viewport to the default camera
-void SceneGraph::setDefaultRenderCamera(sensor::VisualSensor& sensor) {
+void SceneGraph::setDefaultRenderCamera(sensor::VisualSensor &sensor) {
   ASSERT(sensor.isVisualSensor());
 
   sensor.setTransformationMatrix(defaultRenderCamera_)
@@ -27,7 +26,7 @@ void SceneGraph::setDefaultRenderCamera(sensor::VisualSensor& sensor) {
       .setViewport(defaultRenderCamera_);
 }
 
-bool SceneGraph::isRootNode(SceneNode& node) {
+bool SceneGraph::isRootNode(SceneNode &node) {
   auto parent = node.parent();
   // if the parent is null, it means the node is the world_ node.
   CORRADE_ASSERT(parent != nullptr,
@@ -35,20 +34,20 @@ bool SceneGraph::isRootNode(SceneNode& node) {
   return (parent->parent() == nullptr ? true : false);
 }
 
-gfx::DrawableGroup* SceneGraph::getDrawableGroup(const std::string& id) {
+gfx::DrawableGroup *SceneGraph::getDrawableGroup(const std::string &id) {
   auto it = drawableGroups_.find(id);
   return it == drawableGroups_.end() ? nullptr : &it->second;
 }
 
-const gfx::DrawableGroup* SceneGraph::getDrawableGroup(
-    const std::string& id) const {
+const gfx::DrawableGroup *
+SceneGraph::getDrawableGroup(const std::string &id) const {
   auto it = drawableGroups_.find(id);
   return it == drawableGroups_.end() ? nullptr : &it->second;
 }
 
-bool SceneGraph::deleteDrawableGroup(const std::string& id) {
+bool SceneGraph::deleteDrawableGroup(const std::string &id) {
   return drawableGroups_.erase(id);
 }
 
-}  // namespace scene
-}  // namespace esp
+} // namespace scene
+} // namespace esp

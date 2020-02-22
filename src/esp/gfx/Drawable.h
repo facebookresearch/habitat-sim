@@ -21,7 +21,7 @@ namespace gfx {
  * itself with the shader.
  */
 class Drawable : public Magnum::SceneGraph::Drawable3D {
- public:
+public:
   /**
    * @brief Constructor
    *
@@ -29,13 +29,12 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * @param mesh Mesh to draw when on render.
    * @param group Drawable group this drawable will be added to.
    */
-  Drawable(scene::SceneNode& node,
-           Magnum::GL::AbstractShaderProgram& shader,  // TODO: remove this
-           Magnum::GL::Mesh& mesh,
-           DrawableGroup* group = nullptr);
+  Drawable(scene::SceneNode &node,
+           Magnum::GL::AbstractShaderProgram &shader, // TODO: remove this
+           Magnum::GL::Mesh &mesh, DrawableGroup *group = nullptr);
   virtual ~Drawable() {}
 
-  virtual scene::SceneNode& getSceneNode() { return node_; }
+  virtual scene::SceneNode &getSceneNode() { return node_; }
 
   /**
    * @brief Get the @ref DrawableGroup this drawable is in.
@@ -43,9 +42,9 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * This overrides Magnum::SceneGraph::Drawable so that the derived @ref
    * DrawableGroup can be used
    */
-  DrawableGroup* drawables();
+  DrawableGroup *drawables();
 
- protected:
+protected:
   /**
    * @brief Draw the object using given camera
    *
@@ -55,13 +54,13 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * Each derived drawable class needs to implement this draw() function. It's
    * nothing more than drawing itself with its group's shader.
    */
-  virtual void draw(const Magnum::Matrix4& transformationMatrix,
-                    Magnum::SceneGraph::Camera3D& camera) = 0;
+  virtual void draw(const Magnum::Matrix4 &transformationMatrix,
+                    Magnum::SceneGraph::Camera3D &camera) = 0;
 
-  scene::SceneNode& node_;
-  Magnum::GL::AbstractShaderProgram& shader_;
-  Magnum::GL::Mesh& mesh_;
+  scene::SceneNode &node_;
+  Magnum::GL::AbstractShaderProgram &shader_;
+  Magnum::GL::Mesh &mesh_;
 };
 
-}  // namespace gfx
-}  // namespace esp
+} // namespace gfx
+} // namespace esp

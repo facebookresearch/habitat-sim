@@ -18,7 +18,7 @@ namespace sensor {
 // Represents a sensor that provides visual data from the environment to an
 // agent
 class VisualSensor : public Sensor {
- public:
+public:
   using Sensor::Sensor;
   virtual ~VisualSensor() {}
 
@@ -41,7 +41,7 @@ class VisualSensor : public Sensor {
    * @brief set the projection matrix from sensor to the render camera
    * @return Reference to self (for method chaining)
    */
-  virtual VisualSensor& setProjectionMatrix(gfx::RenderCamera& targetCamera) {
+  virtual VisualSensor &setProjectionMatrix(gfx::RenderCamera &targetCamera) {
     return *this;
   }
   /**
@@ -49,15 +49,15 @@ class VisualSensor : public Sensor {
    * camera
    * @return Reference to self (for method chaining)
    */
-  virtual VisualSensor& setTransformationMatrix(
-      gfx::RenderCamera& targetCamera) {
+  virtual VisualSensor &
+  setTransformationMatrix(gfx::RenderCamera &targetCamera) {
     return *this;
   }
   /**
    * @brief set the viewport from sensor to the render camera
    * @return Reference to self (for method chaining)
    */
-  virtual VisualSensor& setViewport(gfx::RenderCamera& targetCamera) {
+  virtual VisualSensor &setViewport(gfx::RenderCamera &targetCamera) {
     return *this;
   }
 
@@ -67,8 +67,8 @@ class VisualSensor : public Sensor {
    * Will always be @ref Corrade::Containers::NullOpt for the base sensor class
    * as it has no projection parameters
    */
-  virtual Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
-      const {
+  virtual Corrade::Containers::Optional<Magnum::Vector2>
+  depthUnprojection() const {
     return Corrade::Containers::NullOpt;
   };
 
@@ -81,7 +81,7 @@ class VisualSensor : public Sensor {
    * @brief Binds the given given RenderTarget to the sensor.  The sensor takes
    * ownership of the RenderTarget
    */
-  void bindRenderTarget(gfx::RenderTarget::uptr&& tgt) {
+  void bindRenderTarget(gfx::RenderTarget::uptr &&tgt) {
     if (tgt->framebufferSize() != framebufferSize())
       throw std::runtime_error("RenderTarget is not the correct size");
     tgt_ = std::move(tgt);
@@ -90,17 +90,17 @@ class VisualSensor : public Sensor {
   /**
    * @brief Returns a reference to the sensors render target
    */
-  gfx::RenderTarget& renderTarget() {
+  gfx::RenderTarget &renderTarget() {
     if (!hasRenderTarget())
       throw std::runtime_error("Sensor has no rendering target");
     return *tgt_;
   }
 
- protected:
+protected:
   gfx::RenderTarget::uptr tgt_ = nullptr;
 
   ESP_SMART_POINTERS(VisualSensor)
 };
 
-}  // namespace sensor
-}  // namespace esp
+} // namespace sensor
+} // namespace esp

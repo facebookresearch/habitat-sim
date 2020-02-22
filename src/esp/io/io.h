@@ -10,13 +10,13 @@
 namespace esp {
 namespace io {
 
-bool exists(const std::string& file);
+bool exists(const std::string &file);
 
-size_t fileSize(const std::string& file);
+size_t fileSize(const std::string &file);
 
-std::string removeExtension(const std::string& file);
+std::string removeExtension(const std::string &file);
 
-std::string changeExtension(const std::string& file, const std::string& ext);
+std::string changeExtension(const std::string &file, const std::string &ext);
 
 /** @brief Tokenize input string by any delimiter char in delimiterCharList.
  *
@@ -25,10 +25,10 @@ std::string changeExtension(const std::string& file, const std::string& ext);
  * @param mergeAdjacentDelimiters whether to merge adjacent delimiters
  * @return std::vector<std::string>> of tokens
  */
-std::vector<std::string> tokenize(const std::string& string,
-                                  const std::string& delimiterCharList,
+std::vector<std::string> tokenize(const std::string &string,
+                                  const std::string &delimiterCharList,
                                   int limit = 0,
                                   bool mergeAdjacentDelimiters = false);
 
-}  // namespace io
-}  // namespace esp
+} // namespace io
+} // namespace esp

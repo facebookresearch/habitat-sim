@@ -17,30 +17,26 @@ namespace scene {
 class SceneNode;
 
 class ObjectControls {
- public:
+public:
   ObjectControls();
 
-  typedef std::function<SceneNode&(SceneNode&, float)> MoveFunc;
-  typedef std::function<vec3f(const vec3f&, const vec3f&)> MoveFilterFunc;
-  ObjectControls& setMoveFilterFunction(MoveFilterFunc filterFunc);
+  typedef std::function<SceneNode &(SceneNode &, float)> MoveFunc;
+  typedef std::function<vec3f(const vec3f &, const vec3f &)> MoveFilterFunc;
+  ObjectControls &setMoveFilterFunction(MoveFilterFunc filterFunc);
 
-  ObjectControls& action(SceneNode& object,
-                         const std::string& actName,
-                         float distance,
-                         bool applyFilter = true);
-  ObjectControls& operator()(SceneNode& object,
-                             const std::string& actName,
-                             float distance,
-                             bool applyFilter = true) {
+  ObjectControls &action(SceneNode &object, const std::string &actName,
+                         float distance, bool applyFilter = true);
+  ObjectControls &operator()(SceneNode &object, const std::string &actName,
+                             float distance, bool applyFilter = true) {
     return action(object, actName, distance, applyFilter);
   }
 
-  inline const std::map<std::string, MoveFunc>& getMoveFuncMap() const {
+  inline const std::map<std::string, MoveFunc> &getMoveFuncMap() const {
     return moveFuncMap_;
   }
 
- protected:
-  MoveFilterFunc moveFilterFunc_ = [](const vec3f& start, const vec3f& end) {
+protected:
+  MoveFilterFunc moveFilterFunc_ = [](const vec3f &start, const vec3f &end) {
     return end;
   };
   std::map<std::string, MoveFunc> moveFuncMap_;
@@ -48,5 +44,5 @@ class ObjectControls {
   ESP_SMART_POINTERS(ObjectControls)
 };
 
-}  // namespace scene
-}  // namespace esp
+} // namespace scene
+} // namespace esp

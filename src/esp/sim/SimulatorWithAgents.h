@@ -13,11 +13,11 @@ namespace esp {
 namespace sim {
 
 class SimulatorWithAgents : public Simulator {
- public:
-  SimulatorWithAgents(const SimulatorConfiguration& cfg);
+public:
+  SimulatorWithAgents(const SimulatorConfiguration &cfg);
   virtual ~SimulatorWithAgents();
 
-  virtual void reconfigure(const SimulatorConfiguration& cfg) override;
+  virtual void reconfigure(const SimulatorConfiguration &cfg) override;
   virtual void reset() override;
   virtual void seed(uint32_t newSeed) override;
 
@@ -25,9 +25,9 @@ class SimulatorWithAgents : public Simulator {
   void sampleRandomAgentState(agent::AgentState::ptr agentState);
   agent::Agent::ptr getAgent(int agentId);
 
-  agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig,
-                             scene::SceneNode& agentParentNode);
-  agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig);
+  agent::Agent::ptr addAgent(const agent::AgentConfiguration &agentConfig,
+                             scene::SceneNode &agentParentNode);
+  agent::Agent::ptr addAgent(const agent::AgentConfiguration &agentConfig);
 
   /**
    * @brief Displays observations on default frame buffer for a
@@ -37,28 +37,24 @@ class SimulatorWithAgents : public Simulator {
    * @param sensorId   Id of the sensor for which the observation is to
    *                   be returned
    */
-  bool displayObservation(int agentId, const std::string& sensorId);
-  bool getAgentObservation(int agentId,
-                           const std::string& sensorId,
-                           sensor::Observation& observation);
+  bool displayObservation(int agentId, const std::string &sensorId);
+  bool getAgentObservation(int agentId, const std::string &sensorId,
+                           sensor::Observation &observation);
   int getAgentObservations(
-      int agentId,
-      std::map<std::string, sensor::Observation>& observations);
+      int agentId, std::map<std::string, sensor::Observation> &observations);
 
-  bool getAgentObservationSpace(int agentId,
-                                const std::string& sensorId,
-                                sensor::ObservationSpace& space);
+  bool getAgentObservationSpace(int agentId, const std::string &sensorId,
+                                sensor::ObservationSpace &space);
   int getAgentObservationSpaces(
-      int agentId,
-      std::map<std::string, sensor::ObservationSpace>& spaces);
+      int agentId, std::map<std::string, sensor::ObservationSpace> &spaces);
 
   nav::PathFinder::ptr getPathFinder();
 
- protected:
+protected:
   std::vector<agent::Agent::ptr> agents_;
   nav::PathFinder::ptr pathfinder_;
   ESP_SMART_POINTERS(SimulatorWithAgents)
 };
 
-}  // namespace sim
-}  // namespace esp
+} // namespace sim
+} // namespace esp

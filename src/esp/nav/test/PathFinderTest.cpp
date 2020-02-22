@@ -16,8 +16,7 @@ namespace Mn = Magnum;
 namespace {
 
 const std::string skokloster = Cr::Utility::Directory::join(
-    SCENE_DATASETS,
-    "habitat-test-scenes/skokloster-castle.navmesh");
+    SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh");
 
 struct PathFinderTest : Cr::TestSuite::Tester {
   explicit PathFinderTest();
@@ -139,6 +138,6 @@ void PathFinderTest::pathFindBenchmark() {
   }
 }
 
-}  // namespace
+} // namespace
 
 CORRADE_TEST_MAIN(PathFinderTest)

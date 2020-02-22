@@ -20,19 +20,17 @@ const std::set<std::string> Agent::BodyActions = {"moveRight",   "moveLeft",
                                                   "moveForward", "moveBackward",
                                                   "turnLeft",    "turnRight"};
 
-Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
-    : Magnum::SceneGraph::AbstractFeature3D(agentNode),
-      configuration_(cfg),
-      sensors_(),
-      controls_(scene::ObjectControls::create()) {
+Agent::Agent(scene::SceneNode &agentNode, const AgentConfiguration &cfg)
+    : Magnum::SceneGraph::AbstractFeature3D(agentNode), configuration_(cfg),
+      sensors_(), controls_(scene::ObjectControls::create()) {
   agentNode.setType(scene::SceneNodeType::AGENT);
   for (sensor::SensorSpec::ptr spec : cfg.sensorSpecifications) {
     // TODO: this should take type into account to create appropriate
     // sensor
 
-    auto& sensorNode = agentNode.createChild();
+    auto &sensorNode = agentNode.createChild();
     sensors_.add(
-        sensor::PinholeCamera::create(sensorNode, spec));  // transformed within
+        sensor::PinholeCamera::create(sensorNode, spec)); // transformed within
   }
 }
 
@@ -41,9 +39,9 @@ Agent::~Agent() {
   sensors_.clear();
 }
 
-bool Agent::act(const std::string& actionName) {
+bool Agent::act(const std::string &actionName) {
   if (hasAction(actionName)) {
-    const ActionSpec& actionSpec = *configuration_.actionSpace.at(actionName);
+    const ActionSpec &actionSpec = *configuration_.actionSpace.at(actionName);
     if (BodyActions.find(actionSpec.name) != BodyActions.end()) {
       controls_->action(object(), actionSpec.name,
                         actionSpec.actuation.at("amount"),
@@ -61,7 +59,7 @@ bool Agent::act(const std::string& actionName) {
   }
 }
 
-bool Agent::hasAction(const std::string& actionName) {
+bool Agent::hasAction(const std::string &actionName) {
   auto actionSpace = configuration_.actionSpace;
   return !(actionSpace.find(actionName) == actionSpace.end());
 }
@@ -73,7 +71,7 @@ void Agent::getState(AgentState::ptr state) const {
   // TODO other state members when implemented
 }
 
-void Agent::setState(const AgentState& state,
+void Agent::setState(const AgentState &state,
                      const bool resetSensors /*= true*/) {
   node().setTranslation(Magnum::Vector3(state.position));
 
@@ -91,14 +89,12 @@ void Agent::setState(const AgentState& state,
   // TODO other state members when implemented
 }
 
-bool operator==(const ActionSpec& a, const ActionSpec& b) {
+bool operator==(const ActionSpec &a, const ActionSpec &b) {
   return a.name == b.name && a.actuation == b.actuation;
 }
-bool operator!=(const ActionSpec& a, const ActionSpec& b) {
-  return !(a == b);
-}
+bool operator!=(const ActionSpec &a, const ActionSpec &b) { return !(a == b); }
 
-bool operator==(const AgentConfiguration& a, const AgentConfiguration& b) {
+bool operator==(const AgentConfiguration &a, const AgentConfiguration &b) {
   return a.height == b.height && a.radius == b.radius && a.mass == b.mass &&
          a.linearAcceleration == b.linearAcceleration &&
          a.angularAcceleration == b.angularAcceleration &&
@@ -108,9 +104,9 @@ bool operator==(const AgentConfiguration& a, const AgentConfiguration& b) {
          esp::equal(a.sensorSpecifications, b.sensorSpecifications) &&
          esp::equal(a.actionSpace, b.actionSpace) && a.bodyType == b.bodyType;
 }
-bool operator!=(const AgentConfiguration& a, const AgentConfiguration& b) {
+bool operator!=(const AgentConfiguration &a, const AgentConfiguration &b) {
   return !(a == b);
 }
 
-}  // namespace agent
-}  // namespace esp
+} // namespace agent
+} // namespace esp

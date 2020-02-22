@@ -18,12 +18,12 @@ namespace scene {
 
 //! Represents a semantic category
 class SemanticCategory {
- public:
+public:
   virtual ~SemanticCategory() = default;
   //! Return index of SemanticCategory under given mapping
-  virtual int index(const std::string& mapping = "") const = 0;
+  virtual int index(const std::string &mapping = "") const = 0;
   //! Return name of SemanticCategory under given mapping
-  virtual std::string name(const std::string& mapping = "") const = 0;
+  virtual std::string name(const std::string &mapping = "") const = 0;
 
   ESP_SMART_POINTERS(SemanticCategory);
 };
@@ -36,37 +36,37 @@ class SemanticLevel;
 //! Represents a scene with containing semantically annotated
 //! levels, regions and objects
 class SemanticScene {
- public:
+public:
   ~SemanticScene() { LOG(INFO) << "Deconstructing SemanticScene"; }
   //! return axis aligned bounding box of this House
   box3f aabb() const { return bbox_; }
 
   //! return total number of given element type
-  int count(const std::string& element) const {
+  int count(const std::string &element) const {
     return elementCounts_.at(element);
   }
 
   //! return all SemanticCategories of objects in this House
-  const std::vector<std::shared_ptr<SemanticCategory>>& categories() const {
+  const std::vector<std::shared_ptr<SemanticCategory>> &categories() const {
     return categories_;
   }
 
   //! return all Levels in this House
-  const std::vector<std::shared_ptr<SemanticLevel>>& levels() const {
+  const std::vector<std::shared_ptr<SemanticLevel>> &levels() const {
     return levels_;
   }
 
   //! return all Regions in this House
-  const std::vector<std::shared_ptr<SemanticRegion>>& regions() const {
+  const std::vector<std::shared_ptr<SemanticRegion>> &regions() const {
     return regions_;
   }
 
   //! return all Objects in this House
-  const std::vector<std::shared_ptr<SemanticObject>>& objects() const {
+  const std::vector<std::shared_ptr<SemanticObject>> &objects() const {
     return objects_;
   }
 
-  const std::unordered_map<int, int>& getSemanticIndexMap() const {
+  const std::unordered_map<int, int> &getSemanticIndexMap() const {
     return segmentToObjectIndex_;
   }
 
@@ -81,30 +81,25 @@ class SemanticScene {
   }
 
   //! load SemanticScene from a Gibson house format file
-  static bool loadGibsonHouse(
-      const std::string& filename,
-      SemanticScene& scene,
-      const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
-                                                    geo::ESP_GRAVITY));
+  static bool loadGibsonHouse(const std::string &filename, SemanticScene &scene,
+                              const quatf &rotation = quatf::FromTwoVectors(
+                                  -vec3f::UnitZ(), geo::ESP_GRAVITY));
 
   //! load SemanticScene from a Matterport3D House format filename
-  static bool loadMp3dHouse(
-      const std::string& filename,
-      SemanticScene& scene,
-      const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
-                                                    geo::ESP_GRAVITY));
+  static bool loadMp3dHouse(const std::string &filename, SemanticScene &scene,
+                            const quatf &rotation = quatf::FromTwoVectors(
+                                -vec3f::UnitZ(), geo::ESP_GRAVITY));
 
   //! load SemanticScene from a SUNCG house format file
-  static bool loadReplicaHouse(const std::string& filename,
-                               SemanticScene& scene,
-                               const quatf& rotation = quatf::Identity());
+  static bool loadReplicaHouse(const std::string &filename,
+                               SemanticScene &scene,
+                               const quatf &rotation = quatf::Identity());
 
   //! load SemanticScene from a SUNCG house format file
-  static bool loadSuncgHouse(const std::string& filename,
-                             SemanticScene& scene,
-                             const quatf& rotation = quatf::Identity());
+  static bool loadSuncgHouse(const std::string &filename, SemanticScene &scene,
+                             const quatf &rotation = quatf::Identity());
 
- protected:
+protected:
   std::string name_;
   std::string label_;
   box3f bbox_;
@@ -121,21 +116,21 @@ class SemanticScene {
 
 //! Represents a level of a SemanticScene
 class SemanticLevel {
- public:
+public:
   virtual ~SemanticLevel() = default;
   virtual std::string id() const { return std::to_string(index_); }
 
-  const std::vector<std::shared_ptr<SemanticRegion>>& regions() const {
+  const std::vector<std::shared_ptr<SemanticRegion>> &regions() const {
     return regions_;
   }
 
-  const std::vector<std::shared_ptr<SemanticObject>>& objects() const {
+  const std::vector<std::shared_ptr<SemanticObject>> &objects() const {
     return objects_;
   }
 
   box3f aabb() const { return bbox_; }
 
- protected:
+protected:
   int index_;
   std::string labelCode_;
   vec3f position_;
@@ -148,7 +143,7 @@ class SemanticLevel {
 
 //! Represents a region (typically room) in a level of a house
 class SemanticRegion {
- public:
+public:
   virtual ~SemanticRegion() = default;
   virtual std::string id() const {
     if (level_ != nullptr) {
@@ -160,7 +155,7 @@ class SemanticRegion {
 
   const SemanticLevel::ptr level() const { return level_; }
 
-  const std::vector<std::shared_ptr<SemanticObject>>& objects() const {
+  const std::vector<std::shared_ptr<SemanticObject>> &objects() const {
     return objects_;
   }
 
@@ -168,7 +163,7 @@ class SemanticRegion {
 
   const SemanticCategory::ptr category() const { return category_; }
 
- protected:
+protected:
   int index_;
   int parentIndex_;
   std::shared_ptr<SemanticCategory> category_;
@@ -184,7 +179,7 @@ class SemanticRegion {
 
 //! Represents a distinct semantically annotated object
 class SemanticObject {
- public:
+public:
   virtual ~SemanticObject() = default;
   virtual std::string id() const {
     if (region_ != nullptr) {
@@ -202,7 +197,7 @@ class SemanticObject {
 
   const SemanticCategory::ptr category() const { return category_; }
 
- protected:
+protected:
   int index_;
   int parentIndex_;
   std::shared_ptr<SemanticCategory> category_;
@@ -212,5 +207,5 @@ class SemanticObject {
   ESP_SMART_POINTERS(SemanticObject)
 };
 
-}  // namespace scene
-}  // namespace esp
+} // namespace scene
+} // namespace esp

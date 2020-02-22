@@ -19,5 +19,5 @@ bool BaseMesh::setMeshType(SupportedMeshType type) {
   return true;
 }
 
-}  // namespace assets
-}  // namespace esp
+} // namespace assets
+} // namespace esp

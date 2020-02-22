@@ -12,20 +12,20 @@ namespace gfx {
 class PrimitiveIDShader;
 
 class PrimitiveIDDrawable : public Drawable {
- public:
+public:
   //! Create a PrimitiveIDDrawable for the given object using shader
   //! and mesh. Adds drawable to given group and uses provided texture,
   //! objectId, and color for textured, object id buffer and color shader
   //! output respectively
-  explicit PrimitiveIDDrawable(scene::SceneNode& node,
-                               PrimitiveIDShader& shader,
-                               Magnum::GL::Mesh& mesh,
-                               DrawableGroup* group = nullptr);
+  explicit PrimitiveIDDrawable(scene::SceneNode &node,
+                               PrimitiveIDShader &shader,
+                               Magnum::GL::Mesh &mesh,
+                               DrawableGroup *group = nullptr);
 
- protected:
-  virtual void draw(const Magnum::Matrix4& transformationMatrix,
-                    Magnum::SceneGraph::Camera3D& camera) override;
+protected:
+  virtual void draw(const Magnum::Matrix4 &transformationMatrix,
+                    Magnum::SceneGraph::Camera3D &camera) override;
 };
 
-}  // namespace gfx
-}  // namespace esp
+} // namespace gfx
+} // namespace esp

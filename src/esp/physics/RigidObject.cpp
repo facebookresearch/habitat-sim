@@ -8,12 +8,12 @@
 namespace esp {
 namespace physics {
 
-RigidObject::RigidObject(scene::SceneNode* rigidBodyNode)
+RigidObject::RigidObject(scene::SceneNode *rigidBodyNode)
     : Magnum::SceneGraph::AbstractFeature3D(*rigidBodyNode) {}
 
 bool RigidObject::initializeScene(
-    const assets::PhysicsSceneAttributes&,
-    const std::vector<assets::CollisionMeshData>&) {
+    const assets::PhysicsSceneAttributes &,
+    const std::vector<assets::CollisionMeshData> &) {
   if (rigidObjectType_ != RigidObjectType::NONE) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
     return false;
@@ -27,8 +27,8 @@ bool RigidObject::initializeScene(
 }
 
 bool RigidObject::initializeObject(
-    const assets::PhysicsObjectAttributes&,
-    const std::vector<assets::CollisionMeshData>&) {
+    const assets::PhysicsObjectAttributes &,
+    const std::vector<assets::CollisionMeshData> &) {
   // TODO (JH): Handling static/kinematic object type
   if (rigidObjectType_ != RigidObjectType::NONE) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
@@ -55,17 +55,17 @@ bool RigidObject::setMotionType(MotionType mt) {
       objectMotionType_ = mt;
       return true;
     } else {
-      return false;  // can't set DYNAMIC without a dynamics engine.
+      return false; // can't set DYNAMIC without a dynamics engine.
     }
   } else if (rigidObjectType_ == RigidObjectType::SCENE) {
-    return mt == MotionType::STATIC;  // only option and default option
+    return mt == MotionType::STATIC; // only option and default option
   }
   return false;
 }
 
-void RigidObject::shiftOrigin(const Magnum::Vector3& shift) {
+void RigidObject::shiftOrigin(const Magnum::Vector3 &shift) {
   // shift each child node
-  for (auto& child : node().children()) {
+  for (auto &child : node().children()) {
     child.translate(shift);
   }
   node().computeCumulativeBB();
@@ -75,44 +75,39 @@ void RigidObject::shiftOriginToBBCenter() {
   shiftOrigin(-node().getCumulativeBB().center());
 }
 
-void RigidObject::applyForce(const Magnum::Vector3&, const Magnum::Vector3&) {
+void RigidObject::applyForce(const Magnum::Vector3 &, const Magnum::Vector3 &) {
   // without a physics engine we can't apply any forces...
   return;
 }
 
-void RigidObject::applyImpulse(const Magnum::Vector3&, const Magnum::Vector3&) {
+void RigidObject::applyImpulse(const Magnum::Vector3 &,
+                               const Magnum::Vector3 &) {
   // without a physics engine we can't apply any forces...
   return;
 }
 
 //! Torque interaction
-void RigidObject::applyTorque(const Magnum::Vector3&) {
-  return;
-}
+void RigidObject::applyTorque(const Magnum::Vector3 &) { return; }
 // Impulse Torque interaction
-void RigidObject::applyImpulseTorque(const Magnum::Vector3&) {
-  return;
-}
+void RigidObject::applyImpulseTorque(const Magnum::Vector3 &) { return; }
 
-void RigidObject::syncPose() {
-  return;
-}
+void RigidObject::syncPose() { return; }
 
-void RigidObject::setTransformation(const Magnum::Matrix4& transformation) {
+void RigidObject::setTransformation(const Magnum::Matrix4 &transformation) {
   if (objectMotionType_ != MotionType::STATIC) {
     node().setTransformation(transformation);
     syncPose();
   }
 }
 
-void RigidObject::setTranslation(const Magnum::Vector3& vector) {
+void RigidObject::setTranslation(const Magnum::Vector3 &vector) {
   if (objectMotionType_ != MotionType::STATIC) {
     node().setTranslation(vector);
     syncPose();
   }
 }
 
-void RigidObject::setRotation(const Magnum::Quaternion& quaternion) {
+void RigidObject::setRotation(const Magnum::Quaternion &quaternion) {
   if (objectMotionType_ != MotionType::STATIC) {
     node().setRotation(quaternion);
     syncPose();
@@ -126,14 +121,14 @@ void RigidObject::resetTransformation() {
   }
 }
 
-void RigidObject::translate(const Magnum::Vector3& vector) {
+void RigidObject::translate(const Magnum::Vector3 &vector) {
   if (objectMotionType_ != MotionType::STATIC) {
     node().translate(vector);
     syncPose();
   }
 }
 
-void RigidObject::translateLocal(const Magnum::Vector3& vector) {
+void RigidObject::translateLocal(const Magnum::Vector3 &vector) {
   if (objectMotionType_ != MotionType::STATIC) {
     node().translateLocal(vector);
     syncPose();
@@ -141,7 +136,7 @@ void RigidObject::translateLocal(const Magnum::Vector3& vector) {
 }
 
 void RigidObject::rotate(const Magnum::Rad angleInRad,
-                         const Magnum::Vector3& normalizedAxis) {
+                         const Magnum::Vector3 &normalizedAxis) {
   if (objectMotionType_ != MotionType::STATIC) {
     node().rotate(angleInRad, normalizedAxis);
     syncPose();
@@ -149,7 +144,7 @@ void RigidObject::rotate(const Magnum::Rad angleInRad,
 }
 
 void RigidObject::rotateLocal(const Magnum::Rad angleInRad,
-                              const Magnum::Vector3& normalizedAxis) {
+                              const Magnum::Vector3 &normalizedAxis) {
   if (objectMotionType_ != MotionType::STATIC) {
     node().rotateLocal(angleInRad, normalizedAxis);
     syncPose();
@@ -213,5 +208,5 @@ Magnum::Matrix3 RigidObject::getInertiaMatrix() {
   return inertia;
 }
 
-}  // namespace physics
-}  // namespace esp
+} // namespace physics
+} // namespace esp

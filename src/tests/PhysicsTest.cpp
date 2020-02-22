@@ -25,12 +25,11 @@ using esp::physics::PhysicsManager;
 using esp::scene::SceneManager;
 
 const std::string dataDir = Cr::Utility::Directory::join(SCENE_DATASETS, "../");
-const std::string physicsConfigFile =
-    Cr::Utility::Directory::join(SCENE_DATASETS,
-                                 "../default.phys_scene_config.json");
+const std::string physicsConfigFile = Cr::Utility::Directory::join(
+    SCENE_DATASETS, "../default.phys_scene_config.json");
 
 class PhysicsManagerTest : public testing::Test {
- protected:
+protected:
   void SetUp() override {
     context_ = esp::gfx::WindowlessContext::create_unique(0);
     renderer_ = esp::gfx::Renderer::create();
@@ -42,10 +41,10 @@ class PhysicsManagerTest : public testing::Test {
     const esp::assets::AssetInfo info =
         esp::assets::AssetInfo::fromPath(sceneFile);
 
-    auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
-    esp::scene::SceneNode* navSceneNode =
+    auto &sceneGraph = sceneManager_.getSceneGraph(sceneID_);
+    esp::scene::SceneNode *navSceneNode =
         &sceneGraph.getRootNode().createChild();
-    auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+    auto &drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
     resourceManager_.loadScene(info, physicsManager_, navSceneNode, &drawables,
                                physicsConfigFile);
   }
@@ -80,7 +79,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
     resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
-    esp::assets::PhysicsObjectAttributes& objectTemplate =
+    esp::assets::PhysicsObjectAttributes &objectTemplate =
         resourceManager_.getPhysicsObjectAttributes(objectFile);
 
     for (int i = 0; i < 2; i++) {
@@ -101,7 +100,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
         int objectId = physicsManager_->addObject(objectFile, nullptr);
         objectIds.push_back(o);
 
-        const esp::scene::SceneNode& node =
+        const esp::scene::SceneNode &node =
             physicsManager_->getObjectSceneNode(objectId);
 
         Magnum::Matrix4 R{
@@ -158,7 +157,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
     resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
-    esp::assets::PhysicsObjectAttributes& objectTemplate =
+    esp::assets::PhysicsObjectAttributes &objectTemplate =
         resourceManager_.getPhysicsObjectAttributes(objectFile);
 
     for (int i = 0; i < 2; i++) {
@@ -269,10 +268,10 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
-    esp::assets::PhysicsObjectAttributes& objectTemplate =
+    esp::assets::PhysicsObjectAttributes &objectTemplate =
         resourceManager_.getPhysicsObjectAttributes(objectFile);
 
-    auto* drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
+    auto *drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
     // add the unjoined object
     objectTemplate.setBool("joinCollisionMeshes", false);
@@ -286,8 +285,9 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     objectTemplate.setBool("useBoundingBoxForCollision", true);
     int objectId2 = physicsManager_->addObject(objectFile, drawables);
 
-    esp::physics::BulletPhysicsManager* bPhysManager =
-        static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
+    esp::physics::BulletPhysicsManager *bPhysManager =
+        static_cast<esp::physics::BulletPhysicsManager *>(
+            physicsManager_.get());
 
     const Magnum::Range3D AabbScene =
         bPhysManager->getSceneCollisionShapeAabb();
@@ -327,7 +327,7 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
   // get a reference to the stored template to edit
-  esp::assets::PhysicsObjectAttributes& objectTemplate =
+  esp::assets::PhysicsObjectAttributes &objectTemplate =
       resourceManager_.getPhysicsObjectAttributes(objectFile);
 
   std::vector<Magnum::Vector3> testScales{
@@ -335,16 +335,16 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
       {0.0, 0.0, 0.0},  {-1.0, -1.0, -1.0}, {-1.0, 1.0, 1.0},
       {4.0, -3.0, 2.0}, {0.1, -0.2, -0.3}};
 
-  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+  auto &drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
-  for (auto& testScale : testScales) {
+  for (auto &testScale : testScales) {
     objectTemplate.setMagnumVec3("scale", testScale);
 
     Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
 
     int objectId = physicsManager_->addObject(objectFile, &drawables);
 
-    const Magnum::Range3D& visualBounds =
+    const Magnum::Range3D &visualBounds =
         physicsManager_->getObjectSceneNode(objectId).getCumulativeBB();
 
     ASSERT_EQ(visualBounds, boundsGroundTruth);
@@ -353,8 +353,8 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
 #ifdef ESP_BUILD_WITH_BULLET
     if (physicsManager_->getPhysicsSimulationLibrary() ==
         PhysicsManager::PhysicsSimulationLibrary::BULLET) {
-      esp::physics::BulletPhysicsManager* bPhysManager =
-          static_cast<esp::physics::BulletPhysicsManager*>(
+      esp::physics::BulletPhysicsManager *bPhysManager =
+          static_cast<esp::physics::BulletPhysicsManager *>(
               physicsManager_.get());
 
       Magnum::Range3D aabb = bPhysManager->getCollisionShapeAabb(objectId);
@@ -382,7 +382,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   physicsObjectAttributes.setDouble("margin", 0.0);
   resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
-  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+  auto &drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
   int objectId = physicsManager_->addObject(objectFile, &drawables);
   physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 1.0, 0});

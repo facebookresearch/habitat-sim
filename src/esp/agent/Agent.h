@@ -34,7 +34,7 @@ typedef std::map<std::string, float> ActuationMap;
 
 // Specifies an action (i.e. name -> agent actuation).
 struct ActionSpec {
-  explicit ActionSpec(const std::string& _name, const ActuationMap& _actuation)
+  explicit ActionSpec(const std::string &_name, const ActuationMap &_actuation)
       : name(_name), actuation(_actuation) {}
   // action name
   std::string name;
@@ -42,8 +42,8 @@ struct ActionSpec {
   ActuationMap actuation;
   ESP_SMART_POINTERS(ActionSpec);
 };
-bool operator==(const ActionSpec& a, const ActionSpec& b);
-bool operator!=(const ActionSpec& a, const ActionSpec& b);
+bool operator==(const ActionSpec &a, const ActionSpec &b);
+bool operator!=(const ActionSpec &a, const ActionSpec &b);
 
 // Represents a set of possible agent actions.
 typedef std::map<std::string, ActionSpec::ptr> ActionSpace;
@@ -60,9 +60,9 @@ struct AgentConfiguration {
   float coefficientOfRestitution = 0.0;
 
   std::vector<sensor::SensorSpec::ptr> sensorSpecifications = {
-      sensor::SensorSpec::create()  // default SensorSpec
+      sensor::SensorSpec::create() // default SensorSpec
   };
-  ActionSpace actionSpace = {  // default ActionSpace
+  ActionSpace actionSpace = { // default ActionSpace
       {"moveForward",
        ActionSpec::create("moveForward", ActuationMap{{"amount", 0.25f}})},
       {"lookUp", ActionSpec::create("lookUp", ActuationMap{{"amount", 10.0f}})},
@@ -76,47 +76,47 @@ struct AgentConfiguration {
 
   ESP_SMART_POINTERS(AgentConfiguration)
 };
-bool operator==(const AgentConfiguration& a, const AgentConfiguration& b);
-bool operator!=(const AgentConfiguration& a, const AgentConfiguration& b);
+bool operator==(const AgentConfiguration &a, const AgentConfiguration &b);
+bool operator!=(const AgentConfiguration &a, const AgentConfiguration &b);
 
 // Represents an agent that can act within an environment
 class Agent : public Magnum::SceneGraph::AbstractFeature3D {
- public:
+public:
   // constructor: the status of the agent, sensors is "valid" after
   // construction; user can use them immediately
-  explicit Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg);
+  explicit Agent(scene::SceneNode &agentNode, const AgentConfiguration &cfg);
 
   virtual ~Agent();
 
   // Get the scene node being attached to.
-  scene::SceneNode& node() { return object(); }
-  const scene::SceneNode& node() const { return object(); }
+  scene::SceneNode &node() { return object(); }
+  const scene::SceneNode &node() const { return object(); }
 
   // Overloads to avoid confusion
-  scene::SceneNode& object() {
-    return static_cast<scene::SceneNode&>(
+  scene::SceneNode &object() {
+    return static_cast<scene::SceneNode &>(
         Magnum::SceneGraph::AbstractFeature3D::object());
   }
-  const scene::SceneNode& object() const {
-    return static_cast<const scene::SceneNode&>(
+  const scene::SceneNode &object() const {
+    return static_cast<const scene::SceneNode &>(
         Magnum::SceneGraph::AbstractFeature3D::object());
   }
 
-  bool act(const std::string& actionName);
+  bool act(const std::string &actionName);
 
-  bool hasAction(const std::string& actionName);
+  bool hasAction(const std::string &actionName);
 
   void getState(AgentState::ptr state) const;
 
-  void setState(const AgentState& state, const bool resetSensors = true);
+  void setState(const AgentState &state, const bool resetSensors = true);
 
   scene::ObjectControls::ptr getControls() { return controls_; }
 
-  const sensor::SensorSuite& getSensorSuite() const { return sensors_; }
-  sensor::SensorSuite& getSensorSuite() { return sensors_; }
+  const sensor::SensorSuite &getSensorSuite() const { return sensors_; }
+  sensor::SensorSuite &getSensorSuite() { return sensors_; }
 
-  const AgentConfiguration& getConfig() const { return configuration_; }
-  AgentConfiguration& getConfig() { return configuration_; }
+  const AgentConfiguration &getConfig() const { return configuration_; }
+  AgentConfiguration &getConfig() { return configuration_; }
 
   // Set of actions that are applied to the body of the agent.  These actions
   // update both the absolute position/rotation of the agent and the sensor
@@ -124,7 +124,7 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
   // sensors (only effects their position/rotation relative to the agent's body)
   static const std::set<std::string> BodyActions;
 
- private:
+private:
   AgentConfiguration configuration_;
   sensor::SensorSuite sensors_;
   scene::ObjectControls::ptr controls_;
@@ -132,5 +132,5 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
   ESP_SMART_POINTERS(Agent)
 };
 
-}  // namespace agent
-}  // namespace esp
+} // namespace agent
+} // namespace esp

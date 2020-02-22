@@ -15,7 +15,7 @@ using Magnum::EigenIntegration::cast;
 // move us forward, if it doesn't, we will check to see if either of the turn
 // directions + forward will make progress, if neither do, return an error
 nav::GreedyGeodesicFollowerImpl::CODES
-nav::GreedyGeodesicFollowerImpl::checkForward(const State& state) {
+nav::GreedyGeodesicFollowerImpl::checkForward(const State &state) {
   dummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
   dummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
 
@@ -59,8 +59,7 @@ nav::GreedyGeodesicFollowerImpl::checkForward(const State& state) {
 
 nav::GreedyGeodesicFollowerImpl::CODES
 nav::GreedyGeodesicFollowerImpl::calcStepAlong(
-    const std::tuple<vec3f, quatf>& state,
-    const nav::ShortestPath& path) {
+    const std::tuple<vec3f, quatf> &state, const nav::ShortestPath &path) {
   VLOG(1) << path.geodesicDistance;
   if (path.geodesicDistance == std::numeric_limits<float>::infinity())
     return CODES::ERROR;
@@ -115,8 +114,7 @@ nav::GreedyGeodesicFollowerImpl::calcStepAlong(
 
 nav::GreedyGeodesicFollowerImpl::CODES
 nav::GreedyGeodesicFollowerImpl::nextActionAlong(
-    const std::tuple<vec3f, quatf>& start,
-    const vec3f& end) {
+    const std::tuple<vec3f, quatf> &start, const vec3f &end) {
   nav::ShortestPath path;
   path.requestedStart = std::get<0>(start);
   path.requestedEnd = end;
@@ -131,8 +129,7 @@ nav::GreedyGeodesicFollowerImpl::nextActionAlong(
 
 std::vector<nav::GreedyGeodesicFollowerImpl::CODES>
 nav::GreedyGeodesicFollowerImpl::findPath(
-    const std::tuple<vec3f, quatf>& startState,
-    const vec3f& end) {
+    const std::tuple<vec3f, quatf> &startState, const vec3f &end) {
   constexpr int maxActions = 1e4;
   std::vector<CODES> actions;
 
@@ -153,24 +150,24 @@ nav::GreedyGeodesicFollowerImpl::findPath(
     dummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
 
     switch (nextAction) {
-      case CODES::FORWARD:
-        moveForward_(&dummyNode_);
+    case CODES::FORWARD:
+      moveForward_(&dummyNode_);
 
-        path.requestedStart =
-            cast<vec3f>(dummyNode_.absoluteTransformation().translation());
-        pathfinder_->findPath(path);
-        break;
+      path.requestedStart =
+          cast<vec3f>(dummyNode_.absoluteTransformation().translation());
+      pathfinder_->findPath(path);
+      break;
 
-      case CODES::LEFT:
-        turnLeft_(&dummyNode_);
-        break;
+    case CODES::LEFT:
+      turnLeft_(&dummyNode_);
+      break;
 
-      case CODES::RIGHT:
-        turnRight_(&dummyNode_);
-        break;
+    case CODES::RIGHT:
+      turnRight_(&dummyNode_);
+      break;
 
-      default:
-        break;
+    default:
+      break;
     }
 
     state = std::make_tuple(
@@ -188,4 +185,4 @@ nav::GreedyGeodesicFollowerImpl::findPath(
 
   return actions;
 }
-}  // namespace esp
+} // namespace esp

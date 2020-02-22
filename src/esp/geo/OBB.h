@@ -12,12 +12,11 @@ namespace geo {
 
 // oriented bounding box
 class OBB {
- public:
+public:
   explicit OBB();
-  explicit OBB(const vec3f& center,
-               const vec3f& dimensions,
-               const quatf& rotation);
-  explicit OBB(const box3f& aabb);
+  explicit OBB(const vec3f &center, const vec3f &dimensions,
+               const quatf &rotation);
+  explicit OBB(const box3f &aabb);
 
   //! Returns centroid of this OBB
   vec3f center() const { return center_; }
@@ -32,29 +31,29 @@ class OBB {
   quatf rotation() const { return rotation_; }
 
   //! Return Transform from world coordinates to local [0,1]^3 coordinates
-  const Transform& worldToLocal() const { return worldToLocal_; }
+  const Transform &worldToLocal() const { return worldToLocal_; }
 
   //! Return Transform from local [0,1]^3 coordinates to world coordinates
-  const Transform& localToWorld() const { return localToWorld_; }
+  const Transform &localToWorld() const { return localToWorld_; }
 
   //! Returns an axis aligned bounding box bounding this OBB
   box3f toAABB() const;
 
   //! Returns distance to p from closest point on OBB surface
   //! (0 if point p is inside box)
-  float distance(const vec3f& p) const;
+  float distance(const vec3f &p) const;
 
   //! Return closest point to p within OBB.  If p is inside return p.
-  vec3f closestPoint(const vec3f& p) const;
+  vec3f closestPoint(const vec3f &p) const;
 
   //! Returns whether world coordinate point p is contained in this OBB within
   //! threshold distance epsilon
-  bool contains(const vec3f& p, float epsilon = 1e-6f) const;
+  bool contains(const vec3f &p, float epsilon = 1e-6f) const;
 
   //! Rotate this OBB by the given rotation and return reference to self
-  OBB& rotate(const quatf& rotation);
+  OBB &rotate(const quatf &rotation);
 
- protected:
+protected:
   void recomputeTransforms();
 
   vec3f center_;
@@ -64,15 +63,15 @@ class OBB {
   ESP_SMART_POINTERS(OBB)
 };
 
-inline std::ostream& operator<<(std::ostream& os, const OBB& obb) {
+inline std::ostream &operator<<(std::ostream &os, const OBB &obb) {
   return os << "{c:" << obb.center() << ",h:" << obb.halfExtents()
             << ",r:" << obb.rotation().coeffs() << "}";
 }
 
 // compute a minimum area OBB containing given points, and constrained to
 // have -Z axis along given gravity orientation
-OBB computeGravityAlignedMOBB(const vec3f& gravity,
-                              const std::vector<vec3f>& points);
+OBB computeGravityAlignedMOBB(const vec3f &gravity,
+                              const std::vector<vec3f> &points);
 
-}  // namespace geo
-}  // namespace esp
+} // namespace geo
+} // namespace esp

@@ -24,25 +24,25 @@ namespace assets {
  * Holds a vbo where each vertex is (x, y, z, objectId)
  */
 class Mp3dInstanceMeshData : public GenericInstanceMeshData {
- public:
+public:
   Mp3dInstanceMeshData()
       : GenericInstanceMeshData(SupportedMeshType::INSTANCE_MESH) {}
   virtual ~Mp3dInstanceMeshData() {}
 
   //! Loads an MP3D house segmentations PLY file
-  bool loadMp3dPLY(const std::string& plyFile);
+  bool loadMp3dPLY(const std::string &plyFile);
 
   //! Saves semantic mesh PLY with object ids per-vertex
-  bool saveSemMeshPLY(
-      const std::string& plyFile,
-      const std::unordered_map<int, int>& segmentIdToObjectIdMap);
+  bool
+  saveSemMeshPLY(const std::string &plyFile,
+                 const std::unordered_map<int, int> &segmentIdToObjectIdMap);
 
- protected:
+protected:
   std::vector<vec3ui> cpu_ibo_;
   std::vector<int> materialIds_;
   std::vector<int> segmentIds_;
   std::vector<int> categoryIds_;
 };
 
-}  // namespace assets
-}  // namespace esp
+} // namespace assets
+} // namespace esp
