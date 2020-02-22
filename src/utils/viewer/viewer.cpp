@@ -112,7 +112,8 @@ class Viewer : public Magnum::Platform::Application {
   Magnum::Timeline timeline_;
 
   ImGuiIntegration::Context imgui_{NoCreate};
-  bool showFPS_ = false;
+  bool showFPS_ = true;
+  bool frustumCullingEnabled_ = true;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -397,7 +398,14 @@ void Viewer::drawEvent() {
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
-  renderCamera_->draw(sceneGraph.getDrawables());
+  uint32_t visibles = 0;
+
+  for (auto& it : sceneGraph.getDrawableGroups()) {
+    // TODO: remove || true
+    if (it.second.prepareForDraw(*renderCamera_) || true) {
+      visibles += renderCamera_->draw(it.second, frustumCullingEnabled_);
+    }
+  }
 
   if (debugBullet_) {
     Magnum::Matrix4 camM(renderCamera_->cameraMatrix());
@@ -415,6 +423,9 @@ void Viewer::drawEvent() {
                      ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(2.0);
     ImGui::Text("%.1f FPS", Double(ImGui::GetIO().Framerate));
+    uint32_t total = sceneGraph.getDrawables().size();
+    ImGui::Text("%u drawables", total);
+    ImGui::Text("%u culled", total - visibles);
     ImGui::End();
   }
 
@@ -529,6 +540,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       controls_(*agentBodyNode_, "moveRight", moveSensitivity);
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+      break;
+    case KeyEvent::Key::E:
+      frustumCullingEnabled_ ^= true;
       break;
     case KeyEvent::Key::C:
       showFPS_ = !showFPS_;

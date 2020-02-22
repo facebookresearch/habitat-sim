@@ -120,6 +120,9 @@ class BaseMesh {
    * sub-component of the asset.
    */
   virtual Magnum::GL::Mesh* getMagnumGLMesh(int) { return nullptr; }
+  Corrade::Containers::Optional<Magnum::Trade::MeshData3D>& getMeshData() {
+    return meshData_;
+  }
 
   /**
    * @brief Get a reference to the @ref collisionMeshData_ (non-render geometry
@@ -166,8 +169,8 @@ class BaseMesh {
    *
    * See @ref GltfMeshData::setMeshData.
    */
-  Corrade::Containers::Optional<Magnum::Trade::MeshData3D> meshData_;
-
+  Corrade::Containers::Optional<Magnum::Trade::MeshData3D> meshData_ =
+      Corrade::Containers::NullOpt;
   // ==== non-rendering ===
   /**
    * @brief Stores references to mesh geometry and topology for use in CPU side

@@ -4,6 +4,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
 from habitat_sim.utils.data.dataextractor import ImageExtractor, TopdownView
@@ -12,20 +13,10 @@ from habitat_sim.utils.data.dataextractor import ImageExtractor, TopdownView
 class TrivialNet(nn.Module):
     def __init__(self):
         super(TrivialNet, self).__init__()
-        self.out = nn.Linear(4096, 10)
 
     def forward(self, x):
-        flat_dim_size = self.get_flat_dim(x)
-        x = x.view(-1, flat_dim_size)
-        x = self.out(x)
+        x = F.relu(x)
         return x
-
-    def get_flat_dim(self, x):
-        size = 1
-        for dim in x.size()[1:]:
-            size *= dim
-
-        return size
 
 
 class MyDataset(Dataset):
@@ -40,7 +31,7 @@ class MyDataset(Dataset):
 
 
 def test_topdown_view(sim):
-    tdv = TopdownView(sim, res=0.1)
+    tdv = TopdownView(sim, height=0.0, pixels_per_meter=0.1)
     topdown_view = tdv.topdown_view
 
 
@@ -54,6 +45,6 @@ def test_data_extractor_end_to_end(sim):
 
     # Run data through network
     for i, sample_batch in enumerate(dataloader):
-        img, label = sample_batch["rgb"], sample_batch["label"]
+        img, label = sample_batch["rgba"], sample_batch["label"]
         img = img.permute(0, 3, 2, 1).float()
         out = net(img)

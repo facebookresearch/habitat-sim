@@ -171,7 +171,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       break;
   }
 
-  // now reset to sample agent state
   reset();
 }
 
@@ -253,11 +252,10 @@ std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
 }
 
 // remove object objectID instance in sceneID
-int Simulator::removeObject(const int objectID, const int sceneID) {
+void Simulator::removeObject(const int objectID, const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
-    return physicsManager_->removeObject(objectID);
+    physicsManager_->removeObject(objectID);
   }
-  return ID_UNDEFINED;
 }
 
 esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
@@ -372,6 +370,13 @@ double Simulator::getWorldTime() {
 
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
                                  const nav::NavMeshSettings& navMeshSettings) {
+  CORRADE_ASSERT(
+      config_.createRenderer,
+      "Simulator::recomputeNavMesh: SimulatorConfiguration::createRenderer is "
+      "false. Scene geometry is required to recompute navmesh. No geometry is "
+      "loaded without renderer initialization.",
+      false);
+
   assets::MeshData::uptr joinedMesh =
       resourceManager_.createJoinedCollisionMesh(config_.scene.id);
 

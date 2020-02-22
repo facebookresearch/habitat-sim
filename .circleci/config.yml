@@ -386,7 +386,7 @@ jobs:
               git submodule update --init
               ./build-public.sh
       - save_cache:
-          key: docs-{{ .Branch }}
+          key: docs-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
           background: true
           paths:
             - ./habitat-sim/build/docs-public
@@ -427,7 +427,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: docs-{{ .Branch }}
+          key: docs-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
       - add_ssh_keys:
           fingerprints:
             - "18:88:e0:37:b1:b3:7a:23:aa:1e:f7:43:a8:5b:8e:05"
@@ -450,7 +450,7 @@ jobs:
               git config --global user.email habitat@fb.com
               NOW=$(date +"%m-%d-%Y")
               git add .
-              git commit -m "Build habitat-sim ${NOW}"
+              git diff-index --quiet HEAD || git commit -m "Build habitat-sim ${NOW}"
               git push origin master
 
               # Deploy to public
@@ -462,7 +462,7 @@ jobs:
               rsync -a published/ ./.
               rm -rf published
               git add .
-              git commit -m "Build habitat-sim ${NOW}"
+              git diff-index --quiet HEAD || git commit -m "Build habitat-sim ${NOW}"
               git push origin gh-pages
 
 workflows:

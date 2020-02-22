@@ -264,7 +264,9 @@ class CMakeBuild(build_ext):
 
         if self.run_cmake(cmake_args):
             subprocess.check_call(
-                shlex.split("cmake -H{} -B{}".format(ext.sourcedir, self.build_temp))
+                shlex.split(
+                    'cmake -H"{}" -B"{}"'.format(ext.sourcedir, self.build_temp)
+                )
                 + cmake_args,
                 env=env,
             )
@@ -273,7 +275,7 @@ class CMakeBuild(build_ext):
             self.create_compile_commands()
 
         subprocess.check_call(
-            shlex.split("cmake --build {}".format(self.build_temp)) + build_args
+            shlex.split('cmake --build "{}"'.format(self.build_temp)) + build_args
         )
         print()  # Add an empty line for cleaner output
 

@@ -12,6 +12,8 @@
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
 
+#include <Corrade/Containers/Optional.h>
+
 #include <cstdio>
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -25,6 +27,9 @@
 #include "DetourNavMeshQuery.h"
 #include "DetourNode.h"
 #include "Recast.h"
+
+namespace Mn = Magnum;
+namespace Cr = Corrade;
 
 namespace esp {
 namespace nav {
@@ -199,7 +204,7 @@ struct PathFinder::Impl {
   bool findPath(MultiGoalShortestPath& path);
 
   template <typename T>
-  T tryStep(const T& start, const T& end);
+  T tryStep(const T& start, const T& end, bool allowSliding);
 
   template <typename T>
   T snapPoint(const T& pt);
@@ -224,7 +229,9 @@ struct PathFinder::Impl {
 
   std::pair<vec3f, vec3f> bounds() const { return bounds_; };
 
-  std::vector<std::vector<bool>> getTopDownView(const float res);
+  Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
+      const float pixelsPerMeter,
+      const float height);
 
  private:
   struct NavMeshDeleter {
@@ -243,6 +250,14 @@ struct PathFinder::Impl {
 
   void removeZeroAreaPolys();
   bool initNavQuery();
+
+  Cr::Containers::Optional<std::tuple<float, std::vector<vec3f>>>
+  findPathInternal(const vec3f& start,
+                   dtPolyRef startRef,
+                   const vec3f& pathStart,
+                   const vec3f& end,
+                   dtPolyRef endRef,
+                   const vec3f& pathEnd);
 };
 
 namespace {
@@ -852,30 +867,84 @@ vec3f PathFinder::Impl::getRandomNavigablePoint() {
   return pt;
 }
 
+namespace {
+float pathLength(const std::vector<vec3f>& points) {
+  CORRADE_INTERNAL_ASSERT(points.size() > 0);
+
+  float length = 0;
+  const vec3f* previousPoint = &points[0];
+  for (const auto& pt : points) {
+    length += (*previousPoint - pt).norm();
+    previousPoint = &pt;
+  }
+
+  return length;
+}
+}  // namespace
+
 bool PathFinder::Impl::findPath(ShortestPath& path) {
   MultiGoalShortestPath tmp;
   tmp.requestedStart = path.requestedStart;
-  tmp.requestedEnds.assign({path.requestedEnd});
+  tmp.requestedEnds = {path.requestedEnd};
 
   bool status = findPath(tmp);
 
-  path.points.assign(tmp.points.begin(), tmp.points.end());
   path.geodesicDistance = tmp.geodesicDistance;
-
+  path.points = std::move(tmp.points);
   return status;
 }
 
-bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
-  // initialize
+Cr::Containers::Optional<std::tuple<float, std::vector<vec3f>>>
+PathFinder::Impl::findPathInternal(const vec3f& start,
+                                   dtPolyRef startRef,
+                                   const vec3f& pathStart,
+                                   const vec3f& end,
+                                   dtPolyRef endRef,
+                                   const vec3f& pathEnd) {
+  // check if trivial path (start is same as end) and early return
+  if (pathStart.isApprox(pathEnd)) {
+    return std::make_tuple(0.0f, std::vector<vec3f>{});
+  }
+
+  // Check if there is a path between the start and any of the ends
+  if (!islandSystem_->hasConnection(startRef, endRef)) {
+    return Corrade::Containers::NullOpt;
+  }
+
   static const int MAX_POLYS = 256;
   dtPolyRef polys[MAX_POLYS];
+
+  int numPolys = 0;
+  dtStatus status =
+      navQuery_->findPath(startRef, endRef, pathStart.data(), pathEnd.data(),
+                          filter_.get(), polys, &numPolys, MAX_POLYS);
+  if (status != DT_SUCCESS || numPolys == 0) {
+    return Corrade::Containers::NullOpt;
+  }
+
+  int numPoints = 0;
+  std::vector<vec3f> points(MAX_POLYS);
+  status = navQuery_->findStraightPath(start.data(), end.data(), polys,
+                                       numPolys, points[0].data(), 0, 0,
+                                       &numPoints, MAX_POLYS);
+  if (status != DT_SUCCESS || numPoints == 0) {
+    return Corrade::Containers::NullOpt;
+  }
+
+  points.resize(numPoints);
+
+  const float length = pathLength(points);
+
+  return std::make_tuple(length, std::move(points));
+}
+
+bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
   path.geodesicDistance = std::numeric_limits<float>::infinity();
-  dtPolyRef startRef;
+  path.points.clear();
 
   // find nearest polys and path
+  dtPolyRef startRef;
   vec3f pathStart;
-  int numPoints = 0;
-  int numPolys = 0;
   dtStatus status;
   std::tie(status, startRef, pathStart) =
       projectToPoly(path.requestedStart, navQuery_.get(), filter_.get());
@@ -885,7 +954,6 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
   }
 
   std::vector<vec3f> pathEnds;
-  std::vector<float> pathEndsCoords;
   std::vector<dtPolyRef> endRefs;
   for (const auto& rqEnd : path.requestedEnds) {
     pathEnds.emplace_back();
@@ -893,97 +961,58 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
     std::tie(status, endRefs.back(), pathEnds.back()) =
         projectToPoly(rqEnd, navQuery_.get(), filter_.get());
 
-    pathEndsCoords.emplace_back(pathEnds.back()[0]);
-    pathEndsCoords.emplace_back(pathEnds.back()[1]);
-    pathEndsCoords.emplace_back(pathEnds.back()[2]);
-
     if (status != DT_SUCCESS || endRefs.back() == 0) {
       return false;
     }
   }
 
-  // check if trivial path (start is same as end) and early return
-  if (std::find_if(path.requestedEnds.begin(), path.requestedEnds.end(),
-                   [&path](const vec3f& rqEnd) -> bool {
-                     return rqEnd.isApprox(path.requestedStart);
-                   }) != path.requestedEnds.end()) {
-    path.geodesicDistance = 0;
-    return true;
-  }
+  for (int i = 0; i < path.requestedEnds.size(); ++i) {
+    if ((path.requestedStart - path.requestedEnds[i]).norm() >
+        path.geodesicDistance)
+      continue;
 
-  // Check if there is a path between the start and any of the ends
-  if (std::find_if(endRefs.begin(), endRefs.end(),
-                   [this, &startRef](const dtPolyRef& end) -> bool {
-                     return this->islandSystem_->hasConnection(startRef, end);
-                   }) == endRefs.end()) {
-    return false;
-  }
+    const Cr::Containers::Optional<std::tuple<float, std::vector<vec3f>>>
+        findResult =
+            findPathInternal(path.requestedStart, startRef, pathStart,
+                             path.requestedEnds[i], endRefs[i], pathEnds[i]);
 
-  int goalFoundIdx;
-  status = navQuery_->findBidirPathToAny(
-      endRefs.size(), startRef, endRefs.data(), path.requestedStart.data(),
-      pathEndsCoords.data(), filter_.get(), polys, &numPolys, MAX_POLYS,
-      &goalFoundIdx);
-  if (status != DT_SUCCESS) {
-    return false;
-  }
-
-  if (numPolys) {
-    const vec3f& closestRequestedEnd = path.requestedEnds[goalFoundIdx];
-
-    path.points.resize(MAX_POLYS);
-    status = navQuery_->findStraightPath(
-        path.requestedStart.data(), closestRequestedEnd.data(), polys, numPolys,
-        path.points[0].data(), 0, 0, &numPoints, MAX_POLYS);
-
-    if (status != DT_SUCCESS) {
-      return false;
+    if (findResult && std::get<0>(*findResult) < path.geodesicDistance) {
+      path.geodesicDistance = std::get<0>(*findResult);
+      path.points = std::move(std::get<1>(*findResult));
     }
   }
 
-  // resize down to number of waypoints and compute distance
-  if (numPoints > 0) {
-    path.points.resize(numPoints);
-    path.geodesicDistance = 0;
-    if (numPoints > 1) {
-      vec3f previousPoint = path.points[0];
-      for (int i = 1; i < path.points.size(); i++) {
-        const vec3f& currentPoint = path.points[i];
-        path.geodesicDistance += (currentPoint - previousPoint).norm();
-        previousPoint = currentPoint;
-      }
-    }
-    return true;
-  }
-
-  return false;
+  return path.geodesicDistance < std::numeric_limits<float>::infinity();
 }
 
 template <typename T>
-T PathFinder::Impl::tryStep(const T& start, const T& end) {
+T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
   static const int MAX_POLYS = 256;
   dtPolyRef polys[MAX_POLYS];
 
   dtStatus startStatus, endStatus;
   dtPolyRef startRef, endRef;
-  vec3f pathStart, pathEnd;
+  vec3f pathStart;
   std::tie(startStatus, startRef, pathStart) =
       projectToPoly(start, navQuery_.get(), filter_.get());
-  std::tie(endStatus, endRef, pathEnd) =
+  std::tie(endStatus, endRef, std::ignore) =
       projectToPoly(end, navQuery_.get(), filter_.get());
 
   if (dtStatusFailed(startStatus) || dtStatusFailed(endStatus)) {
     return start;
   }
 
+  if (not islandSystem_->hasConnection(startRef, endRef)) {
+    return start;
+  }
+
   vec3f endPoint;
   int numPolys;
-  navQuery_->moveAlongSurface(startRef, pathStart.data(), pathEnd.data(),
+  navQuery_->moveAlongSurface(startRef, pathStart.data(), end.data(),
                               filter_.get(), endPoint.data(), polys, &numPolys,
-                              MAX_POLYS);
-
-  // If there isn't any possible path between start and end, just return start,
-  // that is cleanest
+                              MAX_POLYS, allowSliding);
+  // If there isn't any possible path between start and end, just return
+  // start, that is cleanest
   if (numPolys == 0) {
     return start;
   }
@@ -1103,37 +1132,33 @@ bool PathFinder::Impl::isNavigable(const vec3f& pt,
   return true;
 }
 
-std::vector<std::vector<bool>> PathFinder::Impl::getTopDownView(
-    const float res) {
+typedef Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> MatrixXb;
+
+Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>
+PathFinder::Impl::getTopDownView(const float pixelsPerMeter,
+                                 const float height) {
   std::pair<vec3f, vec3f> mapBounds = bounds();
   vec3f bound1 = mapBounds.first;
   vec3f bound2 = mapBounds.second;
 
-  float width = std::abs(bound1[0] - bound2[0]);
-  float height = std::abs(bound1[2] - bound2[2]);
-  int widthResolution = width / res;
-  int heightResolution = height / res;
+  float xspan = std::abs(bound1[0] - bound2[0]);
+  float zspan = std::abs(bound1[2] - bound2[2]);
+  int xResolution = xspan / pixelsPerMeter;
+  int zResolution = zspan / pixelsPerMeter;
   float startx = fmin(bound1[0], bound2[0]);
-  float starty = fmin(bound1[2], bound2[2]);
-  float navigableHeight = getRandomNavigablePoint()[1];
-  std::vector<std::vector<bool>> topdownMap;
+  float startz = fmin(bound1[2], bound2[2]);
+  MatrixXb topdownMap(zResolution, xResolution);
 
-  float curHeight = starty;
-  float curWidth = startx;
-  for (int h = 0; h < heightResolution; h++) {
-    std::vector<bool> curRow;
-    for (int w = 0; w < widthResolution; w++) {
-      vec3f point = vec3f(curWidth, navigableHeight, curHeight);
-      if (isNavigable(point, 0.5)) {
-        curRow.push_back(true);
-      } else {
-        curRow.push_back(false);
-      }
-      curWidth = curWidth + res;
+  float curz = startz;
+  float curx = startx;
+  for (int h = 0; h < zResolution; h++) {
+    for (int w = 0; w < xResolution; w++) {
+      vec3f point = vec3f(curx, height, curz);
+      topdownMap(h, w) = isNavigable(point, 0.5);
+      curx = curx + pixelsPerMeter;
     }
-    topdownMap.push_back(curRow);
-    curHeight = curHeight + res;
-    curWidth = startx;
+    curz = curz + pixelsPerMeter;
+    curx = startx;
   }
 
   return topdownMap;
@@ -1168,18 +1193,26 @@ bool PathFinder::findPath(MultiGoalShortestPath& path) {
 }
 
 template vec3f PathFinder::tryStep<vec3f>(const vec3f&, const vec3f&);
-template Magnum::Vector3 PathFinder::tryStep<Magnum::Vector3>(
-    const Magnum::Vector3&,
-    const Magnum::Vector3&);
+template Mn::Vector3 PathFinder::tryStep<Mn::Vector3>(const Mn::Vector3&,
+                                                      const Mn::Vector3&);
 
 template <typename T>
 T PathFinder::tryStep(const T& start, const T& end) {
-  return pimpl_->tryStep(start, end);
+  return pimpl_->tryStep(start, end, /*allowSliding=*/true);
+}
+
+template vec3f PathFinder::tryStepNoSliding<vec3f>(const vec3f&, const vec3f&);
+template Mn::Vector3 PathFinder::tryStepNoSliding<Mn::Vector3>(
+    const Mn::Vector3&,
+    const Mn::Vector3&);
+
+template <typename T>
+T PathFinder::tryStepNoSliding(const T& start, const T& end) {
+  return pimpl_->tryStep(start, end, /*allowSliding=*/false);
 }
 
 template vec3f PathFinder::snapPoint<vec3f>(const vec3f& pt);
-template Magnum::Vector3 PathFinder::snapPoint<Magnum::Vector3>(
-    const Magnum::Vector3& pt);
+template Mn::Vector3 PathFinder::snapPoint<Mn::Vector3>(const Mn::Vector3& pt);
 
 template <typename T>
 T PathFinder::snapPoint(const T& pt) {
@@ -1225,8 +1258,10 @@ std::pair<vec3f, vec3f> PathFinder::bounds() const {
   return pimpl_->bounds();
 }
 
-std::vector<std::vector<bool>> PathFinder::getTopDownView(const float res) {
-  return pimpl_->getTopDownView(res);
+Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::getTopDownView(
+    const float pixelsPerMeter,
+    const float height) {
+  return pimpl_->getTopDownView(pixelsPerMeter, height);
 }
 
 }  // namespace nav
