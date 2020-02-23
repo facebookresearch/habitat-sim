@@ -44,6 +44,7 @@ bool SemanticScene::loadReplicaHouse(
   scene.elementCounts_["categories"] = categories.Size();
   for (const auto& category : categories) {
     int id = category["id"].GetInt();
+
     /*
      * We store the category object at categories_[id] in order to making
      * indexing easy.
