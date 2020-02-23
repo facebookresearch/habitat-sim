@@ -5,8 +5,8 @@
 #include "ReplicaSemanticScene.h"
 #include "SemanticScene.h"
 
-#include <Sophus/se3.hpp>
 #include <map>
+#include <sophus/se3.hpp>
 #include <string>
 
 #include <Corrade/Utility/String.h>
