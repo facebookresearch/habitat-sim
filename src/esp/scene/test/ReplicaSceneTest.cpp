@@ -10,6 +10,7 @@
 #include "configure.h"
 #include "esp/scene/ReplicaSemanticScene.h"
 #include "esp/scene/SemanticScene.h"
+#include "esp/sim/Simulator.h"
 
 #include "esp/assets/GenericInstanceMeshData.h"
 
@@ -26,10 +27,13 @@ struct ReplicaSceneTest : Cr::TestSuite::Tester {
   explicit ReplicaSceneTest();
 
   void testSemanticSceneOBB();
+
+  void testSemanticSceneLoading();
 };
 
 ReplicaSceneTest::ReplicaSceneTest() {
-  addTests({&ReplicaSceneTest::testSemanticSceneOBB});
+  addTests({&ReplicaSceneTest::testSemanticSceneOBB,
+            &ReplicaSceneTest::testSemanticSceneLoading});
 }
 
 void ReplicaSceneTest::testSemanticSceneOBB() {
@@ -70,6 +74,31 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
       }
     }
   }
+}
+
+void ReplicaSceneTest::testSemanticSceneLoading() {
+  if (!Cr::Utility::Directory::exists(replicaRoom0)) {
+    CORRADE_SKIP("Replica dataset not found at '" + replicaRoom0 +
+                 "'\nSkipping test");
+  }
+
+  esp::sim::SimulatorConfiguration cfg;
+  cfg.scene.id =
+      Cr::Utility::Directory::join(replicaRoom0, "mesh_semantic.ply");
+
+  esp::sim::Simulator sim{cfg};
+
+  const auto& scene = sim.getSemanticScene();
+  CORRADE_VERIFY(scene != nullptr);
+  CORRADE_COMPARE(scene->objects().size(), 94);
+
+  CORRADE_VERIFY(scene->objects()[12] != nullptr);
+  CORRADE_COMPARE(scene->objects()[12]->id(), "_12");
+
+  CORRADE_VERIFY(scene->objects()[12]->category() != nullptr);
+
+  CORRADE_COMPARE(scene->objects()[12]->category()->index(), 13);
+  CORRADE_COMPARE(scene->objects()[12]->category()->name(), "book");
 }
 
 }  // namespace
