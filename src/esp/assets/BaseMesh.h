@@ -9,6 +9,10 @@
  * esp::assets::BaseMesh
  */
 
+#include "CollisionMeshData.h"
+#include "MeshData.h"
+#include "esp/core/esp.h"
+#include "esp/gfx/magnum.h"
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Reference.h>
 #include <Magnum/GL/Mesh.h>
@@ -17,10 +21,6 @@
 #include <Magnum/Math/Range.h>
 #include <Magnum/Mesh.h>
 #include <Magnum/Trade/MeshData3D.h>
-#include "CollisionMeshData.h"
-#include "MeshData.h"
-#include "esp/core/esp.h"
-#include "esp/gfx/magnum.h"
 
 namespace esp {
 namespace assets {
@@ -75,7 +75,7 @@ enum SupportedMeshType {
  * @ref SupportedMeshType.
  */
 class BaseMesh {
- public:
+public:
   /** @brief Constructor defining the @ref SupportedMeshType of this asset and
    * likely identifying the derived type of this object.*/
   explicit BaseMesh(SupportedMeshType type) : type_(type){};
@@ -109,7 +109,7 @@ class BaseMesh {
    * Always nullptr for @ref BaseMesh.
    * @return A pointer to the compiled rendering buffer for the asset.
    */
-  virtual Magnum::GL::Mesh* getMagnumGLMesh() { return nullptr; }
+  virtual Magnum::GL::Mesh *getMagnumGLMesh() { return nullptr; }
 
   /**
    * @brief Get a pointer to the compiled rendering buffer for a particular
@@ -119,7 +119,10 @@ class BaseMesh {
    * @return A pointer to the compiled rendering buffer for a particular
    * sub-component of the asset.
    */
-  virtual Magnum::GL::Mesh* getMagnumGLMesh(int) { return nullptr; }
+  virtual Magnum::GL::Mesh *getMagnumGLMesh(int) { return nullptr; }
+  Corrade::Containers::Optional<Magnum::Trade::MeshData3D> &getMeshData() {
+    return meshData_;
+  }
 
   /**
    * @brief Get a reference to the @ref collisionMeshData_ (non-render geometry
@@ -128,7 +131,7 @@ class BaseMesh {
    * Usage: (1) physics simulation.
    * @return The @ref CollisionMeshData, @ref collisionMeshData_.
    */
-  virtual CollisionMeshData& getCollisionMeshData() {
+  virtual CollisionMeshData &getCollisionMeshData() {
     return collisionMeshData_;
   }
 
@@ -148,7 +151,7 @@ class BaseMesh {
    */
   Magnum::Range3D BB;
 
- protected:
+protected:
   /**
    * @brief Identifies the derived type of this object and the format of the
    * asset.
@@ -166,8 +169,8 @@ class BaseMesh {
    *
    * See @ref GltfMeshData::setMeshData.
    */
-  Corrade::Containers::Optional<Magnum::Trade::MeshData3D> meshData_;
-
+  Corrade::Containers::Optional<Magnum::Trade::MeshData3D> meshData_ =
+      Corrade::Containers::NullOpt;
   // ==== non-rendering ===
   /**
    * @brief Stores references to mesh geometry and topology for use in CPU side
@@ -177,5 +180,5 @@ class BaseMesh {
    */
   CollisionMeshData collisionMeshData_;
 };
-}  // namespace assets
-}  // namespace esp
+} // namespace assets
+} // namespace esp

@@ -4,33 +4,33 @@
 
 #pragma once
 
-#include <pybind11/pybind11.h>
 #include "esp/bindings/OpaqueTypes.h"
+#include <pybind11/pybind11.h>
 
 namespace esp {
 
 namespace geo {
-void initGeoBindings(pybind11::module& m);
+void initGeoBindings(pybind11::module &m);
 }
 
 namespace gfx {
-void initGfxBindings(pybind11::module& m);
+void initGfxBindings(pybind11::module &m);
 }
 
 namespace nav {
-void initShortestPathBindings(pybind11::module& m);
+void initShortestPathBindings(pybind11::module &m);
 }
 
 namespace scene {
-void initSceneBindings(pybind11::module& m);
+void initSceneBindings(pybind11::module &m);
 }
 
 namespace sensor {
-void initSensorBindings(pybind11::module& m);
+void initSensorBindings(pybind11::module &m);
 }
 
 namespace sim {
-void initSimBindings(pybind11::module& m);
+void initSimBindings(pybind11::module &m);
 }
 
-}  // namespace esp
+} // namespace esp

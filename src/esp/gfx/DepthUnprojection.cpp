@@ -71,20 +71,20 @@ DepthShader::DepthShader(Flags flags) : flags_{flags} {
   }
 }
 
-DepthShader& DepthShader::setDepthUnprojection(
-    const Mn::Vector2& depthUnprojection) {
+DepthShader &
+DepthShader::setDepthUnprojection(const Mn::Vector2 &depthUnprojection) {
   CORRADE_INTERNAL_ASSERT(flags_ & Flag::UnprojectExistingDepth);
   setUniform(projectionMatrixOrDepthUnprojectionUniform_, depthUnprojection);
   return *this;
 }
 
-DepthShader& DepthShader::setTransformationMatrix(const Mn::Matrix4& matrix) {
+DepthShader &DepthShader::setTransformationMatrix(const Mn::Matrix4 &matrix) {
   CORRADE_INTERNAL_ASSERT(!(flags_ & Flag::UnprojectExistingDepth));
   setUniform(transformationMatrixUniform_, matrix);
   return *this;
 }
 
-DepthShader& DepthShader::setProjectionMatrix(const Mn::Matrix4& matrix) {
+DepthShader &DepthShader::setProjectionMatrix(const Mn::Matrix4 &matrix) {
   if (flags_ & Flag::UnprojectExistingDepth) {
     setUniform(projectionMatrixOrDepthUnprojectionUniform_,
                calculateDepthUnprojection(matrix));
@@ -94,12 +94,12 @@ DepthShader& DepthShader::setProjectionMatrix(const Mn::Matrix4& matrix) {
   return *this;
 }
 
-DepthShader& DepthShader::bindDepthTexture(Mn::GL::Texture2D& texture) {
+DepthShader &DepthShader::bindDepthTexture(Mn::GL::Texture2D &texture) {
   texture.bind(DepthTextureUnit);
   return *this;
 }
 
-Mn::Vector2 calculateDepthUnprojection(const Mn::Matrix4& projectionMatrix) {
+Mn::Vector2 calculateDepthUnprojection(const Mn::Matrix4 &projectionMatrix) {
   return Mn::Vector2{(projectionMatrix[2][2] - 1.0f), projectionMatrix[3][2]} *
          0.5f;
 }
@@ -110,14 +110,14 @@ __attribute__((target_clones("default", "sse4.2", "avx2")))
 #endif
 void unprojectDepth(const Mn::Vector2& unprojection,
                     Cr::Containers::ArrayView<Mn::Float> depth) {
-  for (Mn::Float& d : depth) {
+  for (Mn::Float &d : depth) {
     d = unprojection[1] / (d + unprojection[0]);
   }
 
   /* Change pixels on the far plane to be 0. Done in a separate loop to allow
      the optimizer to vectorize the above better.  */
   const Mn::Float farDepth = unprojection[1] / (1.0f + unprojection[0]);
-  for (Mn::Float& d : depth) {
+  for (Mn::Float &d : depth) {
     /* We can afford using == for comparison as 1.0f has an exact
        representation, the depth was cleared to exactly this value and the
        calculation is done exactly the same way in both cases -- thus the
@@ -127,5 +127,5 @@ void unprojectDepth(const Mn::Vector2& unprojection,
   }
 }
 
-}  // namespace gfx
-}  // namespace esp
+} // namespace gfx
+} // namespace esp

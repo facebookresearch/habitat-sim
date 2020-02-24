@@ -3,8 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/Utility/Directory.h>
-#include <gtest/gtest.h>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <iostream>
 
 #include "esp/core/esp.h"
@@ -20,12 +20,12 @@ namespace Cr = Corrade;
 using namespace esp;
 using namespace esp::nav;
 
-void printPathPoint(int run, int step, const vec3f& p, float distance) {
+void printPathPoint(int run, int step, const vec3f &p, float distance) {
   LOG(INFO) << run << "," << step << "," << p[0] << "," << p[1] << "," << p[2]
             << "," << distance;
 }
 
-void testPathFinder(PathFinder& pf) {
+void testPathFinder(PathFinder &pf) {
   for (int i = 0; i < 100000; i++) {
     ShortestPath path;
     path.requestedStart = pf.getRandomNavigablePoint();
@@ -39,8 +39,8 @@ void testPathFinder(PathFinder& pf) {
         CHECK(pf.islandRadius(path.points[j]) == islandSize);
       }
       CHECK(pf.islandRadius(path.requestedEnd) == islandSize);
-      const vec3f& pathStart = path.points.front();
-      const vec3f& pathEnd = path.points.back();
+      const vec3f &pathStart = path.points.front();
+      const vec3f &pathEnd = path.points.back();
       const vec3f end = pf.tryStep(pathStart, pathEnd);
       LOG(INFO) << "tryStep initial end=" << pathEnd.transpose()
                 << ", final end=" << end.transpose();
@@ -56,7 +56,7 @@ TEST(NavTest, PathFinderLoadTest) {
   testPathFinder(pf);
 }
 
-void printRandomizedPathSet(PathFinder& pf) {
+void printRandomizedPathSet(PathFinder &pf) {
   core::Random random;
   ShortestPath path;
   path.requestedStart = pf.getRandomNavigablePoint();

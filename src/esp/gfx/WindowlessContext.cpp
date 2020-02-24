@@ -54,10 +54,10 @@ struct ESPContext {
 #ifdef ESP_BUILD_EGL_SUPPORT
 const int MAX_DEVICES = 128;
 
-#define CHECK_EGL_ERROR()                             \
-  do {                                                \
-    EGLint err = eglGetError();                       \
-    CHECK(err == EGL_SUCCESS) << "EGL error:" << err; \
+#define CHECK_EGL_ERROR()                                                      \
+  do {                                                                         \
+    EGLint err = eglGetError();                                                \
+    CHECK(err == EGL_SUCCESS) << "EGL error:" << err;                          \
   } while (0)
 
 bool isNvidiaGpuReadable(int device) {
@@ -114,9 +114,9 @@ struct ESPEGLContext : ESPContext {
       CHECK(eglDevId < numDevices)
           << "[EGL] Could not find an EGL device for CUDA device " << device;
 
-      CHECK(isNvidiaGpuReadable(eglDevId))
-          << "[EGL] EGL device " << eglDevId << ", CUDA device " << device
-          << " is not readable";
+      CHECK(isNvidiaGpuReadable(eglDevId)) << "[EGL] EGL device " << eglDevId
+                                           << ", CUDA device " << device
+                                           << " is not readable";
 
       LOG(INFO) << "[EGL] Selected EGL device " << eglDevId
                 << " for CUDA device " << device;
@@ -182,7 +182,7 @@ struct ESPEGLContext : ESPContext {
     eglTerminate(display_);
   }
 
- private:
+private:
   EGLDisplay display_;
   EGLContext context_;
   Mn::Platform::GLContext magnumGlContext_;
@@ -192,7 +192,7 @@ struct ESPEGLContext : ESPContext {
   ESP_SMART_POINTERS(ESPEGLContext);
 };
 
-#else  // ESP_BUILD_EGL_SUPPORT not defined
+#else // ESP_BUILD_EGL_SUPPORT not defined
 
 struct ESPGLXContext : ESPContext {
   ESPGLXContext()
@@ -212,7 +212,7 @@ struct ESPGLXContext : ESPContext {
   bool isValid() { return isValid_; };
   int gpuDevice() const { return 0; }
 
- private:
+private:
   Mn::Platform::WindowlessGlxContext glxCtx_;
   Mn::Platform::GLContext magnumGlContext_;
   bool isValid_ = false;
@@ -222,7 +222,7 @@ struct ESPGLXContext : ESPContext {
 
 #endif
 
-};  // namespace
+}; // namespace
 
 struct WindowlessContext::Impl {
   explicit Impl(int device) {
@@ -251,7 +251,7 @@ struct WindowlessContext::Impl {
   ESPContext::uptr glContext_ = nullptr;
 };
 
-#else  // not defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
+#else // not defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
 
 struct WindowlessContext::Impl {
   explicit Impl(int) : glContext_({}), magnumGlContext_(Mn::NoCreate) {
@@ -276,13 +276,9 @@ struct WindowlessContext::Impl {
 WindowlessContext::WindowlessContext(int device /* = 0 */)
     : pimpl_(spimpl::make_unique_impl<Impl>(device)) {}
 
-void WindowlessContext::makeCurrent() {
-  pimpl_->makeCurrent();
-}
+void WindowlessContext::makeCurrent() { pimpl_->makeCurrent(); }
 
-int WindowlessContext::gpuDevice() const {
-  return pimpl_->gpuDevice();
-}
+int WindowlessContext::gpuDevice() const { return pimpl_->gpuDevice(); }
 
-}  // namespace gfx
-}  // namespace esp
+} // namespace gfx
+} // namespace esp

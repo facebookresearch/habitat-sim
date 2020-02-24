@@ -10,25 +10,19 @@ namespace impl {
 
 struct CurandStates;
 
-CurandStates* getCurandStates();
+CurandStates *getCurandStates();
 
-void freeCurandStates(CurandStates* curandStates);
+void freeCurandStates(CurandStates *curandStates);
 
-void simulateFromCPU(const float* __restrict__ depth,
-                     const int H,
-                     const int W,
-                     const float* __restrict__ devModel,
-                     CurandStates* curandStates,
-                     const float noiseMultiplier,
-                     float* __restrict__ noisyDepth);
+void simulateFromCPU(const float *__restrict__ depth, const int H, const int W,
+                     const float *__restrict__ devModel,
+                     CurandStates *curandStates, const float noiseMultiplier,
+                     float *__restrict__ noisyDepth);
 
-void simulateFromGPU(const float* __restrict__ devDepth,
-                     const int H,
-                     const int W,
-                     const float* __restrict__ devModel,
-                     CurandStates* curandStates,
-                     const float noiseMultiplier,
-                     float* __restrict__ devNoisyDepth);
-}  // namespace impl
-}  // namespace sensor
-}  // namespace esp
+void simulateFromGPU(const float *__restrict__ devDepth, const int H,
+                     const int W, const float *__restrict__ devModel,
+                     CurandStates *curandStates, const float noiseMultiplier,
+                     float *__restrict__ devNoisyDepth);
+} // namespace impl
+} // namespace sensor
+} // namespace esp

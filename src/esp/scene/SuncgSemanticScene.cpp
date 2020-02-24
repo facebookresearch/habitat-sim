@@ -17,19 +17,15 @@
 namespace esp {
 namespace scene {
 
-std::string SuncgSemanticObject::id() const {
-  return nodeId_;
-}
+std::string SuncgSemanticObject::id() const { return nodeId_; }
 
-std::string SuncgSemanticRegion::id() const {
-  return nodeId_;
-}
+std::string SuncgSemanticRegion::id() const { return nodeId_; }
 
-int SuncgObjectCategory::index(const std::string& mapping) const {
+int SuncgObjectCategory::index(const std::string &mapping) const {
   return ID_UNDEFINED;
 }
 
-std::string SuncgObjectCategory::name(const std::string& mapping) const {
+std::string SuncgObjectCategory::name(const std::string &mapping) const {
   if (mapping == "model_id") {
     return modelId_;
   } else if (mapping == "node_id") {
@@ -47,11 +43,11 @@ std::string SuncgObjectCategory::name(const std::string& mapping) const {
   }
 }
 
-int SuncgRegionCategory::index(const std::string& mapping) const {
+int SuncgRegionCategory::index(const std::string &mapping) const {
   // NOTE: SUNCG regions are not linearized
   return ID_UNDEFINED;
 }
-std::string SuncgRegionCategory::name(const std::string& mapping) const {
+std::string SuncgRegionCategory::name(const std::string &mapping) const {
   if (mapping == "node_id") {
     return nodeId_;
   } else if (mapping == "" || mapping == "category") {
@@ -63,9 +59,8 @@ std::string SuncgRegionCategory::name(const std::string& mapping) const {
 }
 
 bool SemanticScene::loadSuncgHouse(
-    const std::string& houseFilename,
-    SemanticScene& scene,
-    const quatf& worldRotation /* = quatf::Identity() */) {
+    const std::string &houseFilename, SemanticScene &scene,
+    const quatf &worldRotation /* = quatf::Identity() */) {
   if (!io::exists(houseFilename)) {
     LOG(ERROR) << "Could not load file " << houseFilename;
     return false;
@@ -73,7 +68,7 @@ bool SemanticScene::loadSuncgHouse(
 
   const bool hasWorldRotation = !worldRotation.isApprox(quatf::Identity());
 
-  auto getVec3f = [&](const io::JsonDocument::ValueType& v) {
+  auto getVec3f = [&](const io::JsonDocument::ValueType &v) {
     const float x = v[0].GetFloat();
     const float y = v[1].GetFloat();
     const float z = v[2].GetFloat();
@@ -84,7 +79,7 @@ bool SemanticScene::loadSuncgHouse(
     return p;
   };
 
-  auto getBBox = [&](const io::JsonDocument::ValueType& v) {
+  auto getBBox = [&](const io::JsonDocument::ValueType &v) {
     return box3f(getVec3f(v["min"]), getVec3f(v["max"]));
   };
 
@@ -95,10 +90,10 @@ bool SemanticScene::loadSuncgHouse(
 
   // top-level scene
   VLOG(1) << "Parsing " << houseFilename;
-  const auto& json = io::parseJsonFile(houseFilename);
+  const auto &json = io::parseJsonFile(houseFilename);
   VLOG(1) << "Parsed.";
   scene.name_ = json["id"].GetString();
-  const auto& levels = json["levels"].GetArray();
+  const auto &levels = json["levels"].GetArray();
   scene.elementCounts_["levels"] = static_cast<int>(levels.Size());
   scene.bbox_ = getBBox(json["bbox"]);
 
@@ -106,13 +101,13 @@ bool SemanticScene::loadSuncgHouse(
   std::vector<std::string> nodeIds;
 
   int iLevel = 0;
-  for (const auto& jsonLevel : levels) {
+  for (const auto &jsonLevel : levels) {
     VLOG(1) << "Parsing level iLevel=" << iLevel;
     const std::string levelId = jsonLevel["id"].GetString();
-    const auto& nodes = jsonLevel["nodes"].GetArray();
+    const auto &nodes = jsonLevel["nodes"].GetArray();
 
     scene.levels_.emplace_back(SemanticLevel::create());
-    auto& level = scene.levels_.back();
+    auto &level = scene.levels_.back();
     level->index_ = iLevel;
     if (jsonLevel.HasMember("bbox")) {
       level->bbox_ = getBBox(jsonLevel["bbox"]);
@@ -126,7 +121,7 @@ bool SemanticScene::loadSuncgHouse(
 
     // level nodes
     for (int jNode = 0; jNode < nodes.Size(); ++jNode) {
-      const auto& node = nodes[jNode];
+      const auto &node = nodes[jNode];
       const std::string nodeId = node["id"].GetString();
       const std::string nodeType = node["type"].GetString();
       const int valid = node["valid"].GetInt();
@@ -138,8 +133,8 @@ bool SemanticScene::loadSuncgHouse(
               << " nodeType=" << nodeType;
 
       // helper for creating objects
-      auto createObjectFunc = [&](const std::string& nodeId,
-                                  const std::string& modelId) {
+      auto createObjectFunc = [&](const std::string &nodeId,
+                                  const std::string &modelId) {
         const int nodeIndex = nodeIds.size();
         nodeIds.push_back(nodeId);
         auto object = SuncgSemanticObject::create();
@@ -199,7 +194,7 @@ bool SemanticScene::loadSuncgHouse(
       } else {
         LOG(ERROR) << "Unrecognized SUNCG house node type " << nodeType;
       }
-    }  // for node
+    } // for node
 
     // now hook up nodes in this level to their room regions
     VLOG(1) << "Connecting child nodes to parent regions";
@@ -217,7 +212,7 @@ bool SemanticScene::loadSuncgHouse(
         }
         ASSERT(objectIndexInLevel >= 0 &&
                objectIndexInLevel < level->objects().size());
-        auto& object = level->objects()[objectIndexInLevel];
+        auto &object = level->objects()[objectIndexInLevel];
         object->parentIndex_ = jRoom;
         object->region_ = room;
         room->objects_.push_back(object);
@@ -225,9 +220,9 @@ bool SemanticScene::loadSuncgHouse(
     }
 
     iLevel++;
-  }  // for level
+  } // for level
   return true;
 }
 
-}  // namespace scene
-}  // namespace esp
+} // namespace scene
+} // namespace esp

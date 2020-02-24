@@ -24,6 +24,7 @@
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
+#include "esp/gfx/DrawableGroup.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -53,7 +54,7 @@ Will later manager multiple physical scenes, but currently assumes only one
 unique physical world can exist.
 */
 class PhysicsManager {
- public:
+public:
   //! ==== physics engines ====
 
   /**
@@ -91,7 +92,7 @@ class PhysicsManager {
    * tracks the assets this
    * @ref PhysicsManager will have access to.
    */
-  explicit PhysicsManager(assets::ResourceManager* _resourceManager) {
+  explicit PhysicsManager(assets::ResourceManager *_resourceManager) {
     resourceManager_ = _resourceManager;
   };
 
@@ -107,9 +108,9 @@ class PhysicsManager {
    * @param physicsManagerAttributes A structure containing values for physical
    * parameters necessary to initialize the physical scene and simulator.
    */
-  virtual bool initPhysics(
-      scene::SceneNode* node,
-      const assets::PhysicsManagerAttributes& physicsManagerAttributes);
+  virtual bool
+  initPhysics(scene::SceneNode *node,
+              const assets::PhysicsManagerAttributes &physicsManagerAttributes);
 
   /**
    * @brief Reset the simulation and physical world.
@@ -121,7 +122,7 @@ class PhysicsManager {
   };
 
   /** @brief Stores references to a set of drawable elements. */
-  using DrawableGroup = Magnum::SceneGraph::DrawableGroup3D;
+  using DrawableGroup = gfx::DrawableGroup;
 
   /**
    * @brief Initialize static scene collision geometry from loaded mesh data.
@@ -133,9 +134,9 @@ class PhysicsManager {
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
-  virtual bool addScene(
-      const assets::PhysicsSceneAttributes& physicsSceneAttributes,
-      const std::vector<assets::CollisionMeshData>& meshGroup);
+  virtual bool
+  addScene(const assets::PhysicsSceneAttributes &physicsSceneAttributes,
+           const std::vector<assets::CollisionMeshData> &meshGroup);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::assets::ResourceManager::physicsObjectLibrary_.
@@ -148,7 +149,7 @@ class PhysicsManager {
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  int addObject(const std::string& configFile, DrawableGroup* drawables);
+  int addObject(const std::string &configFile, DrawableGroup *drawables);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::assets::ResourceManager::physicsObjectLibrary_ by object
@@ -161,17 +162,18 @@ class PhysicsManager {
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  virtual int addObject(const int objectLibIndex, DrawableGroup* drawables);
+  virtual int addObject(const int objectLibIndex, DrawableGroup *drawables);
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref
    * PhysicsManager::existingObjects_.
    *  @param physObjectID The ID (key) of the object instance in @ref
    * PhysicsManager::existingObjects_.
-   *  @return the removed object's ID previously mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   * @param deleteSceneNode If true, deletes the object's scene node. Otherwise
+   * detaches the object from simulation.
    */
-  virtual int removeObject(const int physObjectID);
+  virtual void removeObject(const int physObjectID,
+                            bool deleteSceneNode = true);
 
   /** @brief Get the number of objects mapped in @ref
    * PhysicsManager::existingObjects_.
@@ -185,7 +187,7 @@ class PhysicsManager {
    */
   std::vector<int> getExistingObjectIDs() const {
     std::vector<int> v;
-    for (auto& bro : existingObjects_) {
+    for (auto &bro : existingObjects_) {
       v.push_back(bro.first);
     }
     return v;
@@ -229,7 +231,7 @@ class PhysicsManager {
    * dynamics of the derived physical simulator class.
    * @param gravity The desired gravity force of the physical world.
    */
-  virtual void setGravity(const Magnum::Vector3& gravity);
+  virtual void setGravity(const Magnum::Vector3 &gravity);
 
   // =========== Global Getter functions ===========
 
@@ -256,13 +258,13 @@ class PhysicsManager {
   // =========== Scene Getter/Setter functions ===========
 
   /** @brief Get the current friction coefficient of the scene collision
-   * geometry. See @ref sceneNode_.
+   * geometry. See @ref staticSceneObject_.
    * @return The scalar friction coefficient of the scene geometry.
    */
   virtual double getSceneFrictionCoefficient() const { return 0.0; };
 
   /** @brief Set the friction coefficient of the scene collision geometry. See
-   * @ref sceneNode_.
+   * @ref staticSceneObject_.
    * @param frictionCoefficient The scalar friction coefficient of the scene
    * geometry.
    */
@@ -271,15 +273,15 @@ class PhysicsManager {
 
   /** @brief Get the current coefficient of restitution for the scene collision
    * geometry. This determines the ratio of initial to final relative velocity
-   * between the scene and collidiing object. See @ref sceneNode_. By default
-   * this will always return 0, since kinametic scenes have no dynamics.
+   * between the scene and collidiing object. See @ref staticSceneObject_. By
+   * default this will always return 0, since kinametic scenes have no dynamics.
    * @return The scalar coefficient of restitution for the scene geometry.
    */
   virtual double getSceneRestitutionCoefficient() const { return 0.0; };
 
   /** @brief Set the coefficient of restitution for the scene collision
-   * geometry. See @ref sceneNode_. By default does nothing since kinametic
-   * scenes have no dynamics.
+   * geometry. See @ref staticSceneObject_. By default does nothing since
+   * kinametic scenes have no dynamics.
    * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
   virtual void setSceneRestitutionCoefficient(
@@ -294,7 +296,7 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @param trans The desired 4x4 transform of the object.
    */
-  void setTransformation(const int physObjectID, const Magnum::Matrix4& trans);
+  void setTransformation(const int physObjectID, const Magnum::Matrix4 &trans);
 
   /** @brief Set the 3D position of an object kinematically.
    * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
@@ -303,7 +305,7 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @param vector The desired 3D position of the object.
    */
-  void setTranslation(const int physObjectID, const Magnum::Vector3& vector);
+  void setTranslation(const int physObjectID, const Magnum::Vector3 &vector);
 
   /** @brief Set the orientation of an object kinematically.
    * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
@@ -313,7 +315,7 @@ class PhysicsManager {
    * @param quaternion The desired orientation of the object.
    */
   void setRotation(const int physObjectID,
-                   const Magnum::Quaternion& quaternion);
+                   const Magnum::Quaternion &quaternion);
 
   /** @brief Reset the transformation of the object.
    * !!NOT IMPLEMENTED!!
@@ -329,7 +331,7 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @param vector The desired 3D vector by which to translate the object.
    */
-  void translate(const int physObjectID, const Magnum::Vector3& vector);
+  void translate(const int physObjectID, const Magnum::Vector3 &vector);
 
   /** @brief Modify the 3D position of an object kinematically by translation
    * with a vector defined in the object's local coordinate system. Calling this
@@ -339,7 +341,7 @@ class PhysicsManager {
    * @param vector The desired 3D vector in the object's ocal coordiante system
    * by which to translate the object.
    */
-  void translateLocal(const int physObjectID, const Magnum::Vector3& vector);
+  void translateLocal(const int physObjectID, const Magnum::Vector3 &vector);
 
   /** @brief Modify the orientation of an object kinematically by applying an
    * axis-angle rotation to it. Calling this during simulation of a @ref
@@ -349,9 +351,8 @@ class PhysicsManager {
    * @param angleInRad The angle of rotation in radians.
    * @param normalizedAxis The desired unit vector axis of rotation.
    */
-  void rotate(const int physObjectID,
-              const Magnum::Rad angleInRad,
-              const Magnum::Vector3& normalizedAxis);
+  void rotate(const int physObjectID, const Magnum::Rad angleInRad,
+              const Magnum::Vector3 &normalizedAxis);
 
   /** @brief Modify the orientation of an object kinematically by applying an
    * axis-angle rotation to it in the local coordinate system. Calling this
@@ -362,9 +363,8 @@ class PhysicsManager {
    * @param normalizedAxis The desired unit vector axis of rotation in the local
    * coordinate system.
    */
-  void rotateLocal(const int physObjectID,
-                   const Magnum::Rad angleInRad,
-                   const Magnum::Vector3& normalizedAxis);
+  void rotateLocal(const int physObjectID, const Magnum::Rad angleInRad,
+                   const Magnum::Vector3 &normalizedAxis);
 
   /** @brief Modify the orientation of an object kinematically by applying a
    * rotation to it about the global X axis. Calling this during simulation of a
@@ -461,7 +461,7 @@ class PhysicsManager {
    * @param COM The new 3D center of mass for the object in the local coordinate
    * system.
    */
-  void setCOM(const int physObjectID, const Magnum::Vector3& COM);
+  void setCOM(const int physObjectID, const Magnum::Vector3 &COM);
 
   /** @brief Set the diagonal of the inertia matrix for an object.
    * If an object is aligned with its principle axii of inertia, the 3x3 inertia
@@ -471,7 +471,7 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @param inertia The new diagonal for the object's inertia matrix.
    */
-  void setInertiaVector(const int physObjectID, const Magnum::Vector3& inertia);
+  void setInertiaVector(const int physObjectID, const Magnum::Vector3 &inertia);
 
   /** @brief Set the uniform scale for an object.
    * See @ref RigidObject::setScale.
@@ -644,9 +644,8 @@ class PhysicsManager {
    * @param relPos The global 3D location relative to the object COM at which to
    * apply the force.
    */
-  void applyForce(const int physObjectID,
-                  const Magnum::Vector3& force,
-                  const Magnum::Vector3& relPos);
+  void applyForce(const int physObjectID, const Magnum::Vector3 &force,
+                  const Magnum::Vector3 &relPos);
 
   /** @brief Apply a linear 3D impulse defined in global coordinates to an
    * object. See @ref RigidObject::applyImpulse. Impulse is applied instantly to
@@ -657,9 +656,8 @@ class PhysicsManager {
    * @param relPos The global 3D location relative to the object COM at which to
    * apply the impulse.
    */
-  void applyImpulse(const int physObjectID,
-                    const Magnum::Vector3& impulse,
-                    const Magnum::Vector3& relPos);
+  void applyImpulse(const int physObjectID, const Magnum::Vector3 &impulse,
+                    const Magnum::Vector3 &relPos);
 
   /** @brief Apply an internal angular 3D torque to an object.
    * See @ref RigidObject::applyTorque.
@@ -667,7 +665,7 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @param torque The angular torque to apply to the object.
    */
-  void applyTorque(const int physObjectID, const Magnum::Vector3& torque);
+  void applyTorque(const int physObjectID, const Magnum::Vector3 &torque);
 
   /** @brief Apply an internal angular 3D impulse torque to an object.
    * See @ref RigidObject::applyImpulseTorque.
@@ -676,7 +674,53 @@ class PhysicsManager {
    * @param impulse The angular impulse torque to apply to the object.
    */
   void applyImpulseTorque(const int physObjectID,
-                          const Magnum::Vector3& impulse);
+                          const Magnum::Vector3 &impulse);
+
+  /**
+   * @brief Set linear velocity for an object with @ref MotionType::DYNAMIC.
+   *
+   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param linVel Linear velocity to set.
+   */
+  void setLinearVelocity(const int physObjectID, const Magnum::Vector3 &linVel);
+
+  /**
+   * @brief Set angular velocity for an object with @ref MotionType::DYNAMIC.
+   *
+   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param angVel Angular velocity vector corresponding to world unit axis
+   * angles.
+   */
+  void setAngularVelocity(const int physObjectID,
+                          const Magnum::Vector3 &angVel);
+
+  /**
+   * @brief Get linear velocity of an object with @ref MotionType::DYNAMIC.
+   *
+   * Always zero for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Linear velocity of the object.
+   */
+  Magnum::Vector3 getLinearVelocity(const int physObjectID) const;
+
+  /**
+   * @brief Get angular velocity of an object with @ref MotionType::DYNAMIC.
+   *
+   * Always zero for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Angular velocity vector corresponding to world unit axis angles.
+   */
+  Magnum::Vector3 getAngularVelocity(const int physObjectID) const;
 
   /** @brief Set bounding box rendering for the object true or false.
    * @param physObjectID The object ID and key identifying the object in @ref
@@ -684,7 +728,7 @@ class PhysicsManager {
    * @param drawables The drawables group with which to render the bounding box.
    * @param drawBB Set rendering of the bounding box to true or false.
    */
-  void setObjectBBDraw(int physObjectID, DrawableGroup* drawables, bool drawBB);
+  void setObjectBBDraw(int physObjectID, DrawableGroup *drawables, bool drawBB);
 
   /**
    * @brief Get a const reference to the specified object's SceneNode for info
@@ -693,7 +737,7 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @return Const reference to the object scene node.
    */
-  const scene::SceneNode& getObjectSceneNode(int physObjectID);
+  const scene::SceneNode &getObjectSceneNode(int physObjectID);
 
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref
@@ -701,8 +745,8 @@ class PhysicsManager {
    * @param projTrans The composed projection and transformation matrix for the
    * render camera.
    */
-  virtual void debugDraw(
-      CORRADE_UNUSED const Magnum::Matrix4& projTrans) const {};
+  virtual void
+  debugDraw(CORRADE_UNUSED const Magnum::Matrix4 &projTrans) const {};
 
   /**
    * @brief Check whether an object is in contact with any other objects or the
@@ -723,11 +767,11 @@ class PhysicsManager {
    * in use. Use to check for a particular implementation.
    * @return The implementation type of this simulator.
    */
-  const PhysicsSimulationLibrary& getPhysicsSimulationLibrary() const {
+  const PhysicsSimulationLibrary &getPhysicsSimulationLibrary() const {
     return activePhysSimLib_;
   };
 
- protected:
+protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
    * existing object). Terminate the program and report an error if not. This
    * function is intended to unify object ID checking for @ref PhysicsManager
@@ -745,7 +789,7 @@ class PhysicsManager {
    * @param meshData The mesh to validate.
    * @return true if valid, false otherwise.
    */
-  virtual bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData);
+  virtual bool isMeshPrimitiveValid(const assets::CollisionMeshData &meshData);
 
   /** @brief Acquire a new ObjectID by recycling the ID of an object removed
    * with @ref removeObject or by incrementing @ref nextObjectID_. See @ref
@@ -766,46 +810,42 @@ class PhysicsManager {
    * @param physicsObjectAttributes The physical object's template defining its
    * physical parameters.
    */
-  virtual int makeRigidObject(
-      const std::vector<assets::CollisionMeshData>& meshGroup,
-      assets::PhysicsObjectAttributes physicsObjectAttributes);
+  virtual int
+  makeRigidObject(const std::vector<assets::CollisionMeshData> &meshGroup,
+                  assets::PhysicsObjectAttributes physicsObjectAttributes);
 
   /** @brief A pointer to a @ref esp::assets::ResourceManager which holds assets
    * that can be accessed by this @ref PhysicsManager*/
-  assets::ResourceManager* resourceManager_;
+  assets::ResourceManager *resourceManager_;
 
   /** @brief The current physics library implementation used by this
    * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager
    * to its derived type if necessary.*/
-  PhysicsSimulationLibrary activePhysSimLib_ = NONE;  // default
+  PhysicsSimulationLibrary activePhysSimLib_ = NONE; // default
 
   /**
    * @brief The @ref scene::SceneNode which is the parent of all members of the
    * scene graph which exist in the physical world. Used to keep track of all
    * SceneNode's that have physical properties.
    * */
-  scene::SceneNode* physicsNode_ = nullptr;
+  scene::SceneNode *physicsNode_ = nullptr;
 
   /**
    * @brief The @ref scene::SceneNode which represents the static collision
-   * geometry of the physical world. Only one @ref sceneNode_ may exist in a
-   * physical world. This @ref RigidObject can only have @ref MotionType::STATIC
-   * as it is loaded as static geometry with simulation efficiency in mind. See
+   * geometry of the physical world. Only one @ref staticSceneObject_ may exist
+   * in a physical world. This @ref RigidObject can only have @ref
+   * MotionType::STATIC as it is loaded as static geometry with simulation
+   * efficiency in mind. See
    * @ref addScene.
    * */
-  physics::RigidObject* sceneNode_ = nullptr;
+  physics::RigidObject::uptr staticSceneObject_ = nullptr;
 
   //! ==== Rigid object memory management ====
 
   /** @brief Maps object IDs to all existing physical object instances in the
    * world.
-   * @ref PhysicsManager does not own a @ref RigidObject.
-   * The @ref scene::SceneGraph has complete ownership over all @ref
-   * scene::SceneNode objects.
-   * As such, this structure should be cleared before the @ref scene::SceneGraph
-   * owning the objects or this structure will likely contain null object
-   * pointers. */
-  std::map<int, physics::RigidObject*> existingObjects_;
+   */
+  std::map<int, physics::RigidObject::uptr> existingObjects_;
 
   /** @brief A counter of unique object ID's allocated thus far. Used to
    * allocate new IDs when  @ref recycledObjectIDs_ is empty without needing to
@@ -841,6 +881,6 @@ class PhysicsManager {
   ESP_SMART_POINTERS(PhysicsManager)
 };
 
-}  // namespace physics
+} // namespace physics
 
-}  // namespace esp
+} // namespace esp

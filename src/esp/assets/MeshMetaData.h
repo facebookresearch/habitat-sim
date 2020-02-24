@@ -88,11 +88,8 @@ struct MeshMetaData {
   MeshMetaData(){};
 
   /** @brief  Constructor. */
-  MeshMetaData(int meshStart,
-               int meshEnd,
-               int textureStart = ID_UNDEFINED,
-               int textureEnd = ID_UNDEFINED,
-               int materialStart = ID_UNDEFINED,
+  MeshMetaData(int meshStart, int meshEnd, int textureStart = ID_UNDEFINED,
+               int textureEnd = ID_UNDEFINED, int materialStart = ID_UNDEFINED,
                int materialEnd = ID_UNDEFINED) {
     meshIndex = std::make_pair(meshStart, meshEnd);
     textureIndex = std::make_pair(textureStart, textureEnd);
@@ -100,7 +97,7 @@ struct MeshMetaData {
   }
 
   /** @brief Copy constructor. */
-  MeshMetaData(const MeshMetaData& val) {
+  MeshMetaData(const MeshMetaData &val) {
     meshIndex = val.meshIndex;
     textureIndex = val.textureIndex;
     materialIndex = val.materialIndex;
@@ -147,5 +144,5 @@ struct MeshMetaData {
   }
 };
 
-}  // namespace assets
-}  // namespace esp
+} // namespace assets
+} // namespace esp

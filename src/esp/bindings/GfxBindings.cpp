@@ -19,20 +19,19 @@ namespace py = pybind11;
 using py::literals::operator""_a;
 
 namespace {
-template <class T>
-esp::scene::SceneNode* nodeGetter(T& self) {
+template <class T> esp::scene::SceneNode *nodeGetter(T &self) {
   // TODO(mosra) PR#353
   // NOLINTNEXTLINE(clang-diagnostic-undefined-bool-conversion)
   if (!&self.node())
     throw py::value_error{"feature not valid"};
   return &self.node();
 };
-}  // namespace
+} // namespace
 
 namespace esp {
 namespace gfx {
 
-void initGfxBindings(py::module& m) {
+void initGfxBindings(py::module &m) {
   // ==== RenderCamera ====
   py::class_<RenderCamera, Magnum::SceneGraph::PyFeature<RenderCamera>,
              Magnum::SceneGraph::Camera3D,
@@ -41,8 +40,8 @@ void initGfxBindings(py::module& m) {
       R"(RenderCamera: The object of this class is a camera attached
       to the scene node for rendering.)")
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
-                          const vec3f&, const vec3f&, const vec3f&>())
-      .def("setProjectionMatrix", &RenderCamera::setProjectionMatrix, R"(
+                          const vec3f &, const vec3f &, const vec3f &>())
+      .def("set_projection_matrix", &RenderCamera::setProjectionMatrix, R"(
         Set this `Camera`'s projection matrix.
       )",
            "width"_a, "height"_a, "znear"_a, "zfar"_a, "hfov"_a)
@@ -55,24 +54,23 @@ void initGfxBindings(py::module& m) {
   py::class_<Renderer, Renderer::ptr>(m, "Renderer")
       .def(py::init(&Renderer::create<>))
       .def("draw",
-           py::overload_cast<sensor::VisualSensor&, scene::SceneGraph&>(
+           py::overload_cast<sensor::VisualSensor &, scene::SceneGraph &>(
                &Renderer::draw),
            R"(Draw given scene using the visual sensor)", "visualSensor"_a,
            "scene"_a)
-      .def(
-          "draw",
-          py::overload_cast<RenderCamera&, scene::SceneGraph&>(&Renderer::draw),
-          R"(Draw given scene using the camera)", "camera"_a, "scene"_a)
+      .def("draw", py::overload_cast<RenderCamera &, scene::SceneGraph &>(
+                       &Renderer::draw),
+           R"(Draw given scene using the camera)", "camera"_a, "scene"_a)
       .def("bind_render_target", &Renderer::bindRenderTarget);
 
   py::class_<RenderTarget>(m, "RenderTarget")
       .def("__enter__",
-           [](RenderTarget& self) {
+           [](RenderTarget &self) {
              self.renderEnter();
              return &self;
            })
       .def("__exit__",
-           [](RenderTarget& self, py::object exc_type, py::object exc_value,
+           [](RenderTarget &self, py::object exc_type, py::object exc_value,
               py::object traceback) { self.renderExit(); })
       .def("read_frame_rgba", &RenderTarget::readFrameRgba,
            "Reads RGBA frame into passed img in uint8 byte format.")
@@ -81,7 +79,7 @@ void initGfxBindings(py::module& m) {
       .def("blit_rgba_to_default", &RenderTarget::blitRgbaToDefault)
 #ifdef ESP_BUILD_WITH_CUDA
       .def("read_frame_rgba_gpu",
-           [](RenderTarget& self, size_t devPtr) {
+           [](RenderTarget &self, size_t devPtr) {
              /*
               * Python has no concept of a pointer, so PyTorch thus exposes the
               pointer to CUDA memory as a simple size_t
@@ -97,20 +95,20 @@ void initGfxBindings(py::module& m) {
               reinterpret_cast<size_t>
               */
 
-             self.readFrameRgbaGPU(reinterpret_cast<uint8_t*>(devPtr));
+             self.readFrameRgbaGPU(reinterpret_cast<uint8_t *>(devPtr));
            })
       .def("read_frame_depth_gpu",
-           [](RenderTarget& self, size_t devPtr) {
-             self.readFrameDepthGPU(reinterpret_cast<float*>(devPtr));
+           [](RenderTarget &self, size_t devPtr) {
+             self.readFrameDepthGPU(reinterpret_cast<float *>(devPtr));
            })
       .def("read_frame_object_id_gpu",
-           [](RenderTarget& self, size_t devPtr) {
-             self.readFrameObjectIdGPU(reinterpret_cast<int32_t*>(devPtr));
+           [](RenderTarget &self, size_t devPtr) {
+             self.readFrameObjectIdGPU(reinterpret_cast<int32_t *>(devPtr));
            })
 #endif
       .def("render_enter", &RenderTarget::renderEnter)
       .def("render_exit", &RenderTarget::renderExit);
 }
 
-}  // namespace gfx
-}  // namespace esp
+} // namespace gfx
+} // namespace esp

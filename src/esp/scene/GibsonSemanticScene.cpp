@@ -19,8 +19,10 @@ namespace scene {
 
 constexpr int kMaxIds = 10000; /* We shouldn't every need more than this. */
 
-bool SemanticScene::
-    loadGibsonHouse(const std::string& houseFilename, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
+bool SemanticScene::loadGibsonHouse(
+    const std::string &houseFilename, SemanticScene &scene,
+    const quatf &
+        rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
   if (!Cr::Utility::Directory::exists(houseFilename)) {
     LOG(ERROR) << "Could not load file " << houseFilename;
     return false;
@@ -31,15 +33,15 @@ bool SemanticScene::
 
   // top-level scene
   VLOG(1) << "Parsing " << houseFilename;
-  const auto& json = io::parseJsonFile(houseFilename);
+  const auto &json = io::parseJsonFile(houseFilename);
   VLOG(1) << "Parsed.";
 
   std::unordered_map<std::string, int> categories;
 
   // objects
-  const auto& objects = json["objects"].GetArray();
+  const auto &objects = json["objects"].GetArray();
   scene.elementCounts_["objects"] = objects.Size();
-  for (const auto& jsonObject : objects) {
+  for (const auto &jsonObject : objects) {
     SemanticObject::ptr object = SemanticObject::create();
     int id = jsonObject["id"].GetInt();
     if (id > kMaxIds) {
@@ -66,10 +68,10 @@ bool SemanticScene::
       object->category_ = std::move(category);
     }
 
-    const auto& jsonCenter = jsonObject["location"];
+    const auto &jsonCenter = jsonObject["location"];
     if (!jsonCenter.IsNull()) {
       vec3f center = rotation * io::jsonToVec3f(jsonCenter);
-      const auto& jsonSize = jsonObject["size"];
+      const auto &jsonSize = jsonObject["size"];
       vec3f size = vec3f::Zero();
       if (!jsonSize.IsNull()) {
         // Rotating sizes
@@ -89,5 +91,5 @@ bool SemanticScene::
   return true;
 }
 
-}  // namespace scene
-}  // namespace esp
+} // namespace scene
+} // namespace esp

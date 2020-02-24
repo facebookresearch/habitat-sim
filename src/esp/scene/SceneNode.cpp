@@ -10,30 +10,28 @@ namespace Mn = Magnum;
 namespace esp {
 namespace scene {
 
-SceneNode::SceneNode(SceneNode& parent) {
+SceneNode::SceneNode(SceneNode &parent) {
   setParent(&parent);
   setId(parent.getId());
 }
 
-SceneNode::SceneNode(MagnumScene& parentNode) {
-  setParent(&parentNode);
-}
+SceneNode::SceneNode(MagnumScene &parentNode) { setParent(&parentNode); }
 
-SceneNode& SceneNode::createChild() {
+SceneNode &SceneNode::createChild() {
   // will set the parent to *this
-  SceneNode* node = new SceneNode(*this);
+  SceneNode *node = new SceneNode(*this);
   node->setId(this->getId());
   return *node;
 }
 
 //! @brief recursively compute the cumulative bounding box of this node's tree.
-const Mn::Range3D& SceneNode::computeCumulativeBB() {
+const Mn::Range3D &SceneNode::computeCumulativeBB() {
   // first copy from your precomputed mesh bb
   cumulativeBB_ = Mn::Range3D(meshBB_);
-  auto* child = children().first();
+  auto *child = children().first();
 
   while (child != nullptr) {
-    SceneNode* child_node = dynamic_cast<SceneNode*>(child);
+    SceneNode *child_node = dynamic_cast<SceneNode *>(child);
     if (child_node != nullptr) {
       child_node->computeCumulativeBB();
 
@@ -47,5 +45,5 @@ const Mn::Range3D& SceneNode::computeCumulativeBB() {
   return cumulativeBB_;
 }
 
-}  // namespace scene
-}  // namespace esp
+} // namespace scene
+} // namespace esp

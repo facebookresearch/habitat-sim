@@ -19,11 +19,11 @@ namespace sensor {
 // in the "VisualSensor" class
 
 class PinholeCamera : public VisualSensor {
- public:
+public:
   // constructor: the status of the pinhole camera is "valid" after
   // construction;
   // user can use them immediately
-  explicit PinholeCamera(scene::SceneNode& pinholeCameraNode,
+  explicit PinholeCamera(scene::SceneNode &pinholeCameraNode,
                          SensorSpec::ptr spec);
 
   void setProjectionParameters(SensorSpec::ptr spec);
@@ -31,35 +31,35 @@ class PinholeCamera : public VisualSensor {
   virtual ~PinholeCamera() {}
 
   // set the projection matrix to the given render camera
-  virtual PinholeCamera& setProjectionMatrix(
-      gfx::RenderCamera& targetCamera) override;
+  virtual PinholeCamera &
+  setProjectionMatrix(gfx::RenderCamera &targetCamera) override;
   // set the transformation matrix to the given render camera
-  virtual PinholeCamera& setTransformationMatrix(
-      gfx::RenderCamera& targetCamera) override;
+  virtual PinholeCamera &
+  setTransformationMatrix(gfx::RenderCamera &targetCamera) override;
   // set the view port to the given render camera
-  virtual PinholeCamera& setViewport(gfx::RenderCamera& targetCamera) override;
+  virtual PinholeCamera &setViewport(gfx::RenderCamera &targetCamera) override;
 
-  virtual bool getObservation(sim::Simulator& sim, Observation& obs) override;
+  virtual bool getObservation(sim::Simulator &sim, Observation &obs) override;
 
-  virtual bool getObservationSpace(ObservationSpace& space) override;
+  virtual bool getObservationSpace(ObservationSpace &space) override;
 
-  virtual bool displayObservation(sim::Simulator& sim) override;
+  virtual bool displayObservation(sim::Simulator &sim) override;
 
   /**
    * @brief Returns the parameters needed to unproject depth for this sensor's
    * perspective projection model.
    * See @ref gfx::calculateDepthUnprojection
    */
-  virtual Corrade::Containers::Optional<Magnum::Vector2> depthUnprojection()
-      const override;
+  virtual Corrade::Containers::Optional<Magnum::Vector2>
+  depthUnprojection() const override;
 
- protected:
+protected:
   // projection parameters
-  int width_ = 640;      // canvas width
-  int height_ = 480;     // canvas height
-  float near_ = 0.001f;  // near clipping plane
-  float far_ = 1000.0f;  // far clipping plane
-  float hfov_ = 35.0f;   // field of vision (in degrees)
+  int width_ = 640;     // canvas width
+  int height_ = 480;    // canvas height
+  float near_ = 0.001f; // near clipping plane
+  float far_ = 1000.0f; // far clipping plane
+  float hfov_ = 35.0f;  // field of vision (in degrees)
 
   ESP_SMART_POINTERS(PinholeCamera)
 
@@ -68,15 +68,15 @@ class PinholeCamera : public VisualSensor {
    * @param[in] sim Instance of Simulator class for which the observation needs
    *                to be drawn
    */
-  void drawObservation(sim::Simulator& sim);
+  void drawObservation(sim::Simulator &sim);
 
   /**
    * @brief Read the observation that was rendered by the simulator
    * @param[in,out] obs Instance of Observation class in which the observation
    *                    will be stored
    */
-  void readObservation(Observation& obs);
+  void readObservation(Observation &obs);
 };
 
-}  // namespace sensor
-}  // namespace esp
+} // namespace sensor
+} // namespace esp

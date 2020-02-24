@@ -4,6 +4,7 @@ import time
 import torch
 import collections
 
+import torch
 import torchvision.models.detection.mask_rcnn
 from torch.utils.tensorboard import SummaryWriter
 

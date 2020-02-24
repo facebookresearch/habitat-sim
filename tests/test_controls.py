@@ -5,6 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 
 import attr
+import hypothesis
+import hypothesis.strategies as st
+import magnum as mn
 import numpy as np
 import pytest
 import quaternion
@@ -181,3 +184,57 @@ def test_default_sensor_contorls(action, expected):
     for k, v in state.sensor_states.items():
         assert k in new_state.sensor_states
         _check_state_expected(v, new_state.sensor_states[k], expected)
+
+
+@pytest.fixture()
+def scene_graph():
+    return habitat_sim.SceneGraph()
+
+
+@pytest.mark.parametrize(
+    "control_name,control_axis",
+    [("look_up", 0), ("look_down", 0), ("look_left", 1), ("look_right", 1)],
+)
+@hypothesis.given(
+    actuation_amount=st.floats(0, 60), actuation_constraint=st.floats(0, 60)
+)
+def test_constrainted(
+    scene_graph, control_name, control_axis, actuation_amount, actuation_constraint
+):
+    initial_look_angle = mn.Deg(
+        np.random.uniform(-actuation_constraint, actuation_constraint)
+    )
+    rotation_vector = mn.Vector3()
+    rotation_vector[control_axis] = 1
+    initial_rotation = mn.Quaternion.rotation(
+        mn.Rad(initial_look_angle), rotation_vector
+    )
+
+    node = scene_graph.get_root_node().create_child()
+    node.rotation = initial_rotation
+
+    spec = habitat_sim.agent.controls.ActuationSpec(
+        actuation_amount, actuation_constraint
+    )
+    habitat_sim.registry.get_move_fn(control_name)(node, spec)
+
+    expected_angle = initial_look_angle + mn.Deg(
+        -actuation_amount
+        if control_name in {"look_down", "look_right"}
+        else actuation_amount
+    )
+
+    if expected_angle > mn.Deg(actuation_constraint):
+        expected_angle = mn.Deg(actuation_constraint)
+    elif expected_angle < mn.Deg(-actuation_constraint):
+        expected_angle = mn.Deg(-actuation_constraint)
+
+    final_rotation = node.rotation
+
+    look_vector = final_rotation.transform_vector(habitat_sim.geo.FRONT)
+    if control_axis == 0:
+        look_angle = mn.Deg(mn.Rad(np.arctan2(look_vector[1], -look_vector[2])))
+    elif control_axis == 1:
+        look_angle = -mn.Deg(mn.Rad(np.arctan2(look_vector[0], -look_vector[2])))
+
+    assert np.abs(float(expected_angle - look_angle)) < 1e-1

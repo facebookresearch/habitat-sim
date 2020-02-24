@@ -25,16 +25,15 @@ struct CudaDeviceContext {
       cudaSetDevice(currentDevice);
   }
 
- private:
+private:
   bool setDevice = false;
   int currentDevice = -1;
 };
 
-}  // namespace
+} // namespace
 
 RedwoodNoiseModelGPUImpl::RedwoodNoiseModelGPUImpl(
-    const Eigen::Ref<const Eigen::RowMatrixXf> model,
-    const int gpuDeviceId,
+    const Eigen::Ref<const Eigen::RowMatrixXf> model, const int gpuDeviceId,
     const float noiseMultiplier)
     : gpuDeviceId_{gpuDeviceId}, noiseMultiplier_{noiseMultiplier} {
   CudaDeviceContext ctx{gpuDeviceId_};
@@ -65,14 +64,13 @@ Eigen::RowMatrixXf RedwoodNoiseModelGPUImpl::simulateFromCPU(
   return noisyDepth;
 }
 
-void RedwoodNoiseModelGPUImpl::simulateFromGPU(const float* devDepth,
-                                               const int rows,
-                                               const int cols,
-                                               float* devNoisyDepth) {
+void RedwoodNoiseModelGPUImpl::simulateFromGPU(const float *devDepth,
+                                               const int rows, const int cols,
+                                               float *devNoisyDepth) {
   CudaDeviceContext ctx{gpuDeviceId_};
   impl::simulateFromGPU(devDepth, rows, cols, devModel_, curandStates_,
                         noiseMultiplier_, devNoisyDepth);
 }
 
-}  // namespace sensor
-}  // namespace esp
+} // namespace sensor
+} // namespace esp

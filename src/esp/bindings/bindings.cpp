@@ -12,7 +12,7 @@ using py::literals::operator""_a;
 
 namespace esp {
 
-void initEspBindings(py::module& m) {
+void initEspBindings(py::module &m) {
   // ==== box3f ====
   py::class_<box3f>(m, "BBox")
       .def_property_readonly("sizes", &box3f::sizes)
@@ -21,7 +21,7 @@ void initEspBindings(py::module& m) {
 
 namespace core {
 
-void initCoreBindings(py::module& m) {
+void initCoreBindings(py::module &m) {
   py::class_<Configuration, Configuration::ptr>(m, "Configuration")
       .def(py::init(&Configuration::create<>))
       .def("getBool", &Configuration::getBool)
@@ -35,11 +35,11 @@ void initCoreBindings(py::module& m) {
       .def("set", &Configuration::set<bool>);
 }
 
-}  // namespace core
+} // namespace core
 
 namespace physics {
 
-void initPhysicsBindings(py::module& m) {
+void initPhysicsBindings(py::module &m) {
   // ==== enum object MotionType ====
   py::enum_<MotionType>(m, "MotionType")
       .value("ERROR_MOTIONTYPE", MotionType::ERROR_MOTIONTYPE)
@@ -48,8 +48,8 @@ void initPhysicsBindings(py::module& m) {
       .value("DYNAMIC", MotionType::DYNAMIC);
 }
 
-}  // namespace physics
-}  // namespace esp
+} // namespace physics
+} // namespace esp
 
 PYBIND11_MODULE(habitat_sim_bindings, m) {
   m.attr("cuda_enabled") =
@@ -61,15 +61,18 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
 
   m.import("magnum.scenegraph");
 
+  py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
+
+  // NOTE(msb) These need to be run in dependency order.
+  // TODO(msb) gfx, scene, and sensor should not cross-depend
+  // TODO(msb) sim and sensor should not cross-depend
   esp::initEspBindings(m);
   esp::core::initCoreBindings(m);
   esp::geo::initGeoBindings(m);
-  esp::gfx::initGfxBindings(m);
-  esp::nav::initShortestPathBindings(m);
   esp::physics::initPhysicsBindings(m);
   esp::scene::initSceneBindings(m);
+  esp::gfx::initGfxBindings(m);
   esp::sensor::initSensorBindings(m);
+  esp::nav::initShortestPathBindings(m);
   esp::sim::initSimBindings(m);
-
-  py::bind_map<std::map<std::string, std::string>>(m, "MapStringString");
 }

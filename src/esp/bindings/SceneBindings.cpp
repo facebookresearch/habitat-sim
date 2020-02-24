@@ -25,7 +25,7 @@ using py::literals::operator""_a;
 namespace esp {
 namespace scene {
 
-void initSceneBindings(py::module& m) {
+void initSceneBindings(py::module &m) {
   // ==== SceneConfiguration ====
   py::class_<SceneConfiguration, SceneConfiguration::ptr>(m,
                                                           "SceneConfiguration")
@@ -36,15 +36,47 @@ void initSceneBindings(py::module& m) {
       .def_readwrite("scene_up_dir", &SceneConfiguration::sceneUpDir)
       .def_readwrite("scene_front_dir", &SceneConfiguration::sceneFrontDir)
       .def_readwrite("scene_scale_unit", &SceneConfiguration::sceneScaleUnit)
-      .def(
-          "__eq__",
-          [](const SceneConfiguration& self,
-             const SceneConfiguration& other) -> bool { return self == other; })
-      .def("__neq__",
-           [](const SceneConfiguration& self, const SceneConfiguration& other)
-               -> bool { return self != other; });
+      .def("__eq__",
+           [](const SceneConfiguration &self, const SceneConfiguration &other)
+               -> bool { return self == other; })
+      .def("__neq__", [](const SceneConfiguration &self,
+                         const SceneConfiguration &other) -> bool {
+        return self != other;
+      });
 
   // ==== SceneGraph ====
+
+  // !!Warning!!
+  // CANNOT apply smart pointers to "SceneNode" or ANY its descendant classes,
+  // namely, any class whose instance can be a node in the scene graph. Reason:
+  // Memory will be automatically handled in simulator (C++ backend). Using
+  // smart pointers on scene graph node from Python code, will claim the
+  // ownership and eventually free its resources, which leads to "duplicated
+  // deallocation", and thus memory corruption.
+
+  // ==== enum SceneNodeType ====
+  py::enum_<SceneNodeType>(m, "SceneNodeType")
+      .value("EMPTY", SceneNodeType::EMPTY)
+      .value("SENSOR", SceneNodeType::SENSOR)
+      .value("AGENT", SceneNodeType::AGENT)
+      .value("CAMERA", SceneNodeType::CAMERA);
+
+  // ==== SceneNode ====
+  py::class_<SceneNode, Magnum::SceneGraph::PyObject<SceneNode>, MagnumObject,
+             Magnum::SceneGraph::PyObjectHolder<SceneNode>>(m, "SceneNode", R"(
+      SceneNode: a node in the scene graph.
+
+      Cannot apply a smart pointer to a SceneNode object.
+      You can "create it and forget it".
+      Simulator backend will handle the memory.)")
+      .def(py::init_alias<std::reference_wrapper<SceneNode>>(),
+           R"(Constructor: creates a scene node, and sets its parent.)")
+      .def_property("type", &SceneNode::getType, &SceneNode::setType)
+      .def("create_child", [](SceneNode &self) { return &self.createChild(); },
+           R"(Creates a child node, and sets its parent to the current node.)")
+      .def_property_readonly("absolute_translation",
+                             &SceneNode::absoluteTranslation);
+
   py::class_<SceneGraph>(m, "SceneGraph")
       .def(py::init())
       .def("get_root_node",
@@ -96,38 +128,6 @@ void initSceneBindings(py::module& m) {
 
              PYTHON DOES NOT GET OWNERSHIP)",
            "sceneGraphID"_a, pybind11::return_value_policy::reference);
-
-  // !!Warning!!
-  // CANNOT apply smart pointers to "SceneNode" or ANY its descendant classes,
-  // namely, any class whose instance can be a node in the scene graph. Reason:
-  // Memory will be automatically handled in simulator (C++ backend). Using
-  // smart pointers on scene graph node from Python code, will claim the
-  // ownership and eventually free its resources, which leads to "duplicated
-  // deallocation", and thus memory corruption.
-
-  // ==== enum SceneNodeType ====
-  py::enum_<SceneNodeType>(m, "SceneNodeType")
-      .value("EMPTY", SceneNodeType::EMPTY)
-      .value("SENSOR", SceneNodeType::SENSOR)
-      .value("AGENT", SceneNodeType::AGENT)
-      .value("CAMERA", SceneNodeType::CAMERA);
-
-  // ==== SceneNode ====
-  py::class_<SceneNode, Magnum::SceneGraph::PyObject<SceneNode>, MagnumObject,
-             Magnum::SceneGraph::PyObjectHolder<SceneNode>>(m, "SceneNode", R"(
-      SceneNode: a node in the scene graph.
-
-      Cannot apply a smart pointer to a SceneNode object.
-      You can "create it and forget it".
-      Simulator backend will handle the memory.)")
-      .def(py::init_alias<std::reference_wrapper<SceneNode>>(),
-           R"(Constructor: creates a scene node, and sets its parent.)")
-      .def_property("type", &SceneNode::getType, &SceneNode::setType)
-      .def(
-          "create_child", [](SceneNode& self) { return &self.createChild(); },
-          R"(Creates a child node, and sets its parent to the current node.)")
-      .def_property_readonly("absolute_translation",
-                             &SceneNode::absoluteTranslation);
 
   // ==== SemanticCategory ====
   py::class_<SemanticCategory, SemanticCategory::ptr>(m, "SemanticCategory")
@@ -217,20 +217,20 @@ void initSceneBindings(py::module& m) {
   // ==== SemanticScene ====
   py::class_<SemanticScene, SemanticScene::ptr>(m, "SemanticScene")
       .def(py::init(&SemanticScene::create<>))
-      .def_static(
-          "load_mp3d_house",
-          [](const std::string& filename, SemanticScene& scene,
-             const vec4f& rotation) {
-            // numpy doesn't have a quaternion equivalent, use vec4
-            // instead
-            return SemanticScene::loadMp3dHouse(
-                filename, scene, Eigen::Map<const quatf>(rotation.data()));
-          },
-          R"(
+      .def_static("load_mp3d_house",
+                  [](const std::string &filename, SemanticScene &scene,
+                     const vec4f &rotation) {
+                    // numpy doesn't have a quaternion equivalent, use vec4
+                    // instead
+                    return SemanticScene::loadMp3dHouse(
+                        filename, scene,
+                        Eigen::Map<const quatf>(rotation.data()));
+                  },
+                  R"(
         Loads a SemanticScene from a Matterport3D House format file into passed
         `SemanticScene`.
       )",
-          "file"_a, "scene"_a, "rotation"_a)
+                  "file"_a, "scene"_a, "rotation"_a)
       .def_property_readonly("aabb", &SemanticScene::aabb)
       .def_property_readonly("categories", &SemanticScene::categories,
                              "All semantic categories in the house")
@@ -254,5 +254,5 @@ void initSceneBindings(py::module& m) {
            "object"_a, "name"_a, "amount"_a, "apply_filter"_a = true);
 }
 
-}  // namespace scene
-}  // namespace esp
+} // namespace scene
+} // namespace esp

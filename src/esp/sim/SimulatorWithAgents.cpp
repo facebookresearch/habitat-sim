@@ -9,7 +9,7 @@
 namespace esp {
 namespace sim {
 
-SimulatorWithAgents::SimulatorWithAgents(const SimulatorConfiguration& cfg)
+SimulatorWithAgents::SimulatorWithAgents(const SimulatorConfiguration &cfg)
     : Simulator() {
   // NOTE: NOT SO GREAT NOW THAT WE HAVE virtual functions
   //       Maybe better not to do this reconfigure
@@ -28,7 +28,7 @@ void SimulatorWithAgents::reset() {
   Simulator::reset();
 
   for (int iAgent = 0; iAgent < agents_.size(); ++iAgent) {
-    auto& agent = agents_[iAgent];
+    auto &agent = agents_[iAgent];
     agent::AgentState::ptr state = agent::AgentState::create();
     sampleRandomAgentState(state);
     agent->setState(*state);
@@ -38,7 +38,7 @@ void SimulatorWithAgents::reset() {
   }
 }
 
-void SimulatorWithAgents::reconfigure(const SimulatorConfiguration& cfg) {
+void SimulatorWithAgents::reconfigure(const SimulatorConfiguration &cfg) {
   LOG(INFO) << "SimulatorWithAgents::reconfigure";
   if (cfg == config_) {
     reset();
@@ -77,22 +77,22 @@ void SimulatorWithAgents::sampleRandomAgentState(
   // TODO: any other AgentState members should be randomized?
 }
 
-agent::Agent::ptr SimulatorWithAgents::addAgent(
-    const agent::AgentConfiguration& agentConfig,
-    scene::SceneNode& agentParentNode) {
+agent::Agent::ptr
+SimulatorWithAgents::addAgent(const agent::AgentConfiguration &agentConfig,
+                              scene::SceneNode &agentParentNode) {
   // initialize the agent, as well as all the sensors on it.
 
   // attach each agent, each sensor to a scene node, set the local
   // transformation of the sensor w.r.t. the agent (done internally in the
   // constructor of Agent)
 
-  auto& agentNode = agentParentNode.createChild();
+  auto &agentNode = agentParentNode.createChild();
   agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
 
   // Add a RenderTarget to each of the agent's sensors
-  for (auto& it : ag->getSensorSuite().getSensors()) {
+  for (auto &it : ag->getSensorSuite().getSensors()) {
     if (it.second->isVisualSensor()) {
-      auto sensor = static_cast<sensor::VisualSensor*>(it.second.get());
+      auto sensor = static_cast<sensor::VisualSensor *>(it.second.get());
       renderer_->bindRenderTarget(*sensor);
     }
   }
@@ -101,7 +101,7 @@ agent::Agent::ptr SimulatorWithAgents::addAgent(
   // TODO: just do this once
   if (pathfinder_->isLoaded()) {
     ag->getControls()->setMoveFilterFunction(
-        [&](const vec3f& start, const vec3f& end) {
+        [&](const vec3f &start, const vec3f &end) {
           return pathfinder_->tryStep(start, end);
         });
   }
@@ -109,8 +109,8 @@ agent::Agent::ptr SimulatorWithAgents::addAgent(
   return ag;
 }
 
-agent::Agent::ptr SimulatorWithAgents::addAgent(
-    const agent::AgentConfiguration& agentConfig) {
+agent::Agent::ptr
+SimulatorWithAgents::addAgent(const agent::AgentConfiguration &agentConfig) {
   return addAgent(agentConfig, getActiveSceneGraph().getRootNode());
 }
 
@@ -124,7 +124,7 @@ nav::PathFinder::ptr SimulatorWithAgents::getPathFinder() {
 }
 
 bool SimulatorWithAgents::displayObservation(int agentId,
-                                             const std::string& sensorId) {
+                                             const std::string &sensorId) {
   agent::Agent::ptr ag = getAgent(agentId);
 
   if (ag != nullptr) {
@@ -137,9 +137,8 @@ bool SimulatorWithAgents::displayObservation(int agentId,
 }
 
 bool SimulatorWithAgents::getAgentObservation(
-    int agentId,
-    const std::string& sensorId,
-    sensor::Observation& observation) {
+    int agentId, const std::string &sensorId,
+    sensor::Observation &observation) {
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
     sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
@@ -151,12 +150,11 @@ bool SimulatorWithAgents::getAgentObservation(
 }
 
 int SimulatorWithAgents::getAgentObservations(
-    int agentId,
-    std::map<std::string, sensor::Observation>& observations) {
+    int agentId, std::map<std::string, sensor::Observation> &observations) {
   observations.clear();
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
-    const std::map<std::string, sensor::Sensor::ptr>& sensors =
+    const std::map<std::string, sensor::Sensor::ptr> &sensors =
         ag->getSensorSuite().getSensors();
     for (std::pair<std::string, sensor::Sensor::ptr> s : sensors) {
       sensor::Observation obs;
@@ -169,9 +167,7 @@ int SimulatorWithAgents::getAgentObservations(
 }
 
 bool SimulatorWithAgents::getAgentObservationSpace(
-    int agentId,
-    const std::string& sensorId,
-    sensor::ObservationSpace& space) {
+    int agentId, const std::string &sensorId, sensor::ObservationSpace &space) {
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
     sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
@@ -183,12 +179,11 @@ bool SimulatorWithAgents::getAgentObservationSpace(
 }
 
 int SimulatorWithAgents::getAgentObservationSpaces(
-    int agentId,
-    std::map<std::string, sensor::ObservationSpace>& spaces) {
+    int agentId, std::map<std::string, sensor::ObservationSpace> &spaces) {
   spaces.clear();
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
-    const std::map<std::string, sensor::Sensor::ptr>& sensors =
+    const std::map<std::string, sensor::Sensor::ptr> &sensors =
         ag->getSensorSuite().getSensors();
     for (std::pair<std::string, sensor::Sensor::ptr> s : sensors) {
       sensor::ObservationSpace space;
@@ -200,5 +195,5 @@ int SimulatorWithAgents::getAgentObservationSpaces(
   return spaces.size();
 }
 
-}  // namespace sim
-}  // namespace esp
+} // namespace sim
+} // namespace esp

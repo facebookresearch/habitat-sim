@@ -9,7 +9,7 @@ namespace esp {
 namespace nav {
 
 class GreedyGeodesicFollowerImpl {
- public:
+public:
   /**
    * Ouputs from the greedy follower.  Used to specify which action to take next
    *or that an error occured
@@ -21,7 +21,7 @@ class GreedyGeodesicFollowerImpl {
    *node These functions are used to get access to the python functions which
    *implement the control functions
    **/
-  typedef std::function<void(scene::SceneNode*)> MoveFn;
+  typedef std::function<void(scene::SceneNode *)> MoveFn;
 
   /**
    * Helper typedef for a sixdof pos
@@ -45,22 +45,15 @@ class GreedyGeodesicFollowerImpl {
    * @param[in] turnAmount The amount "turn_left"/"turn_right" turns the agent
    *in radians
    **/
-  GreedyGeodesicFollowerImpl(PathFinder::ptr& pathfinder,
-                             MoveFn& moveForward,
-                             MoveFn& turnLeft,
-                             MoveFn& turnRight,
-                             double goalDist,
-                             double forwardAmount,
+  GreedyGeodesicFollowerImpl(PathFinder::ptr &pathfinder, MoveFn &moveForward,
+                             MoveFn &turnLeft, MoveFn &turnRight,
+                             double goalDist, double forwardAmount,
                              double turnAmount)
-      : pathfinder_{pathfinder},
-        moveForward_{moveForward},
-        turnLeft_{turnLeft},
-        turnRight_{turnRight},
-        forwardAmount_{forwardAmount},
-        goalDist_{goalDist},
-        turnAmount_{turnAmount} {};
+      : pathfinder_{pathfinder}, moveForward_{moveForward}, turnLeft_{turnLeft},
+        turnRight_{turnRight}, forwardAmount_{forwardAmount},
+        goalDist_{goalDist}, turnAmount_{turnAmount} {};
 
-  CODES nextActionAlong(const State& start, const vec3f& end);
+  CODES nextActionAlong(const State &start, const vec3f &end);
 
   /**
    * Calculates the next action to follow the path
@@ -70,14 +63,13 @@ class GreedyGeodesicFollowerImpl {
    * @param[in] currentRot The current rotation
    * @param[in] end The end location of the path
    **/
-  inline CODES nextActionAlong(const vec3f& currentPos,
-                               const vec4f& currentRot,
-                               const vec3f& end) {
+  inline CODES nextActionAlong(const vec3f &currentPos, const vec4f &currentRot,
+                               const vec3f &end) {
     quatf rot = Eigen::Map<const quatf>(currentRot.data());
     return nextActionAlong(std::make_tuple(currentPos, rot), end);
   }
 
-  std::vector<CODES> findPath(const State& start, const vec3f& end);
+  std::vector<CODES> findPath(const State &start, const vec3f &end);
 
   /**
    * Finds the full path from the current agent state to the end location
@@ -87,14 +79,13 @@ class GreedyGeodesicFollowerImpl {
    * @param[in] startRot The starting rotation
    * @param[in] end The end location of the path
    **/
-  inline std::vector<CODES> findPath(const vec3f& startPos,
-                                     const vec4f& startRot,
-                                     const vec3f& end) {
+  inline std::vector<CODES> findPath(const vec3f &startPos,
+                                     const vec4f &startRot, const vec3f &end) {
     quatf rot = Eigen::Map<const quatf>(startRot.data());
     return findPath(std::make_tuple(startPos, rot), end);
   }
 
- private:
+private:
   PathFinder::ptr pathfinder_;
   MoveFn moveForward_, turnLeft_, turnRight_;
   const double forwardAmount_, goalDist_, turnAmount_;
@@ -102,9 +93,9 @@ class GreedyGeodesicFollowerImpl {
   scene::SceneGraph dummyScene_;
   scene::SceneNode dummyNode_{dummyScene_.getRootNode()};
 
-  CODES calcStepAlong(const State& start, const ShortestPath& path);
+  CODES calcStepAlong(const State &start, const ShortestPath &path);
 
-  inline float geoDist(const vec3f& start, const vec3f& end) {
+  inline float geoDist(const vec3f &start, const vec3f &end) {
     ShortestPath path;
     path.requestedStart = start;
     path.requestedEnd = end;
@@ -112,10 +103,10 @@ class GreedyGeodesicFollowerImpl {
     return path.geodesicDistance;
   }
 
-  CODES checkForward(const State& state);
+  CODES checkForward(const State &state);
 
   ESP_SMART_POINTERS(GreedyGeodesicFollowerImpl)
 };
 
-}  // namespace nav
-}  // namespace esp
+} // namespace nav
+} // namespace esp

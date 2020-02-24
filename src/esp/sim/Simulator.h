@@ -20,14 +20,14 @@ namespace nav {
 class PathFinder;
 class NavMeshSettings;
 class ActionSpacePathFinder;
-}  // namespace nav
+} // namespace nav
 namespace scene {
 class SemanticScene;
-}  // namespace scene
+} // namespace scene
 namespace gfx {
 class Renderer;
-}  // namespace gfx
-}  // namespace esp
+} // namespace gfx
+} // namespace esp
 
 namespace esp {
 namespace sim {
@@ -39,26 +39,28 @@ struct SimulatorConfiguration {
   std::string defaultCameraUuid = "rgba_camera";
   bool compressTextures = false;
   bool createRenderer = true;
+  // Whether or not the agent can slide on collisions
+  bool allowSliding = true;
 
   bool enablePhysics = false;
   std::string physicsConfigFile =
-      "./data/default.phys_scene_config.json";  // should we instead link a
-                                                // PhysicsManagerConfiguration
-                                                // object here?
+      "./data/default.phys_scene_config.json"; // should we instead link a
+                                               // PhysicsManagerConfiguration
+                                               // object here?
 
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };
-bool operator==(const SimulatorConfiguration& a,
-                const SimulatorConfiguration& b);
-bool operator!=(const SimulatorConfiguration& a,
-                const SimulatorConfiguration& b);
+bool operator==(const SimulatorConfiguration &a,
+                const SimulatorConfiguration &b);
+bool operator!=(const SimulatorConfiguration &a,
+                const SimulatorConfiguration &b);
 
 class Simulator {
- public:
-  explicit Simulator(const SimulatorConfiguration& cfg);
+public:
+  explicit Simulator(const SimulatorConfiguration &cfg);
   virtual ~Simulator();
 
-  virtual void reconfigure(const SimulatorConfiguration& cfg);
+  virtual void reconfigure(const SimulatorConfiguration &cfg);
 
   virtual void reset();
 
@@ -68,10 +70,10 @@ class Simulator {
   std::shared_ptr<physics::PhysicsManager> getPhysicsManager();
   std::shared_ptr<scene::SemanticScene> getSemanticScene();
 
-  scene::SceneGraph& getActiveSceneGraph();
-  scene::SceneGraph& getActiveSemanticSceneGraph();
+  scene::SceneGraph &getActiveSceneGraph();
+  scene::SceneGraph &getActiveSemanticSceneGraph();
 
-  void saveFrame(const std::string& filename);
+  void saveFrame(const std::string &filename);
 
   /**
    * @brief The ID of the CUDA device of the OpenGL context owned by the
@@ -112,10 +114,8 @@ class Simulator {
    * esp::physics::PhysicsManager::existingObjects_.
    * @param sceneID !! Not used currently !! Specifies which physical scene to
    * remove the object from.
-   * @return The deallocated object ID previously idnetifying the removed object
-   * or @ref esp::ID_UNDEFINED if failed.
    */
-  int removeObject(const int objectID, const int sceneID = 0);
+  void removeObject(const int objectID, const int sceneID = 0);
 
   /**
    * @brief Get the IDs of the physics objects instanced in a physical scene.
@@ -150,9 +150,8 @@ class Simulator {
    * query.
    * @return whether or not the set was successful.
    */
-  bool setObjectMotionType(const esp::physics::MotionType& motionType,
-                           const int objectID,
-                           const int sceneID = 0);
+  bool setObjectMotionType(const esp::physics::MotionType &motionType,
+                           const int objectID, const int sceneID = 0);
 
   /**
    * @brief Apply torque to an object. See @ref
@@ -163,8 +162,7 @@ class Simulator {
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    */
-  void applyTorque(const Magnum::Vector3& tau,
-                   const int objectID,
+  void applyTorque(const Magnum::Vector3 &tau, const int objectID,
                    const int sceneID = 0);
 
   /**
@@ -178,10 +176,8 @@ class Simulator {
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    */
-  void applyForce(const Magnum::Vector3& force,
-                  const Magnum::Vector3& relPos,
-                  const int objectID,
-                  const int sceneID = 0);
+  void applyForce(const Magnum::Vector3 &force, const Magnum::Vector3 &relPos,
+                  const int objectID, const int sceneID = 0);
 
   /**
    * @brief Get the current 4x4 transformation matrix of an object.
@@ -203,8 +199,7 @@ class Simulator {
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    */
-  void setTransformation(const Magnum::Matrix4& transform,
-                         const int objectID,
+  void setTransformation(const Magnum::Matrix4 &transform, const int objectID,
                          const int sceneID = 0);
 
   /**
@@ -216,8 +211,7 @@ class Simulator {
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    */
-  void setTranslation(const Magnum::Vector3& translation,
-                      const int objectID,
+  void setTranslation(const Magnum::Vector3 &translation, const int objectID,
                       const int sceneID = 0);
 
   /**
@@ -240,8 +234,7 @@ class Simulator {
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    */
-  void setRotation(const Magnum::Quaternion& rotation,
-                   const int objectID,
+  void setRotation(const Magnum::Quaternion &rotation, const int objectID,
                    const int sceneID = 0);
 
   /**
@@ -298,10 +291,10 @@ class Simulator {
    * parameterize the navmesh construction.
    * @return Whether or not the navmesh recomputation succeeded.
    */
-  bool recomputeNavMesh(nav::PathFinder& pathfinder,
-                        const nav::NavMeshSettings& navMeshSettings);
+  bool recomputeNavMesh(nav::PathFinder &pathfinder,
+                        const nav::NavMeshSettings &navMeshSettings);
 
- protected:
+protected:
   Simulator(){};
 
   gfx::WindowlessContext::uptr context_ = nullptr;
@@ -329,5 +322,5 @@ class Simulator {
   ESP_SMART_POINTERS(Simulator)
 };
 
-}  // namespace sim
-}  // namespace esp
+} // namespace sim
+} // namespace esp

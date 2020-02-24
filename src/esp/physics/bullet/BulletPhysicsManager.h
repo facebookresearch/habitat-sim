@@ -35,7 +35,7 @@ handles most of the specific implementations for object interactions with
 Bullet.
 */
 class BulletPhysicsManager : public PhysicsManager {
- public:
+public:
   /**
    * @brief Construct a @ref BulletPhysicsManager with access to specific
    * resourse assets.
@@ -44,7 +44,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * tracks the assets this
    * @ref BulletPhysicsManager will have access to.
    */
-  explicit BulletPhysicsManager(assets::ResourceManager* _resourceManager)
+  explicit BulletPhysicsManager(assets::ResourceManager *_resourceManager)
       : PhysicsManager(_resourceManager){};
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/
@@ -59,9 +59,9 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param physicsManagerAttributes A structure containing values for physical
    * parameters necessary to initialize the physical scene and simulator.
    */
-  bool initPhysics(
-      scene::SceneNode* node,
-      const assets::PhysicsManagerAttributes& physicsManagerAttributes);
+  bool
+  initPhysics(scene::SceneNode *node,
+              const assets::PhysicsManagerAttributes &physicsManagerAttributes);
 
   //============ Object/Scene Instantiation =============
 
@@ -77,11 +77,11 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
-  bool addScene(const assets::PhysicsSceneAttributes& physicsSceneAttributes,
-                const std::vector<assets::CollisionMeshData>& meshGroup);
+  bool addScene(const assets::PhysicsSceneAttributes &physicsSceneAttributes,
+                const std::vector<assets::CollisionMeshData> &meshGroup);
 
   virtual int addObject(const int objectLibIndex,
-                        DrawableGroup* drawables) override;
+                        DrawableGroup *drawables) override;
 
   //============ Simulator functions =============
 
@@ -95,7 +95,7 @@ class BulletPhysicsManager : public PhysicsManager {
   /** @brief Set the gravity of the physical world.
    * @param gravity The desired gravity force of the physical world.
    */
-  void setGravity(const Magnum::Vector3& gravity);
+  void setGravity(const Magnum::Vector3 &gravity);
 
   /** @brief Get the current gravity in the physical world.
    * @return The current gravity vector in the physical world.
@@ -117,14 +117,15 @@ class BulletPhysicsManager : public PhysicsManager {
   void setMargin(const int physObjectID, const double margin);
 
   /** @brief Set the friction coefficient of the scene collision geometry. See
-   * @ref sceneNode_. See @ref BulletRigidObject::setFrictionCoefficient.
+   * @ref staticSceneObject_. See @ref
+   * BulletRigidObject::setFrictionCoefficient.
    * @param frictionCoefficient The scalar friction coefficient of the scene
    * geometry.
    */
   void setSceneFrictionCoefficient(const double frictionCoefficient);
 
   /** @brief Set the coefficient of restitution for the scene collision
-   * geometry. See @ref sceneNode_. See @ref
+   * geometry. See @ref staticSceneObject_. See @ref
    * BulletRigidObject::setRestitutionCoefficient.
    * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
@@ -142,7 +143,7 @@ class BulletPhysicsManager : public PhysicsManager {
   double getMargin(const int physObjectID) const;
 
   /** @brief Get the current friction coefficient of the scene collision
-   * geometry. See @ref sceneNode_ and @ref
+   * geometry. See @ref staticSceneObject_ and @ref
    * BulletRigidObject::getFrictionCoefficient.
    * @return The scalar friction coefficient of the scene geometry.
    */
@@ -150,7 +151,7 @@ class BulletPhysicsManager : public PhysicsManager {
 
   /** @brief Get the current coefficient of restitution for the scene collision
    * geometry. This determines the ratio of initial to final relative velocity
-   * between the scene and collidiing object. See @ref sceneNode_ and
+   * between the scene and collidiing object. See @ref staticSceneObject_ and
    * BulletRigidObject::getRestitutionCoefficient.
    * @return The scalar coefficient of restitution for the scene geometry.
    */
@@ -178,7 +179,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param projTrans The composed projection and transformation matrix for the
    * render camera.
    */
-  virtual void debugDraw(const Magnum::Matrix4& projTrans) const override;
+  virtual void debugDraw(const Magnum::Matrix4 &projTrans) const override;
 
   /**
    * @brief Check whether an object is in contact with any other objects or the
@@ -191,7 +192,7 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   bool contactTest(const int physObjectID);
 
- protected:
+protected:
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;
   btSequentialImpulseConstraintSolver bSolver_;
@@ -202,7 +203,7 @@ class BulletPhysicsManager : public PhysicsManager {
 
   mutable Magnum::BulletIntegration::DebugDraw debugDrawer_;
 
- private:
+private:
   /** @brief Check if a particular mesh can be used as a collision mesh for
    * Bullet.
    * @param meshData The mesh to validate. Only a triangle mesh is valid. Checks
@@ -210,7 +211,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * Magnum::MeshPrimitive::Triangles.
    * @return true if valid, false otherwise.
    */
-  bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData);
+  bool isMeshPrimitiveValid(const assets::CollisionMeshData &meshData);
 
   /** @brief Create and initialize an @ref RigidObject and assign it an ID. See
    * @ref allocateObjectID and @ref BulletRigidObject::initializeObject.
@@ -219,11 +220,11 @@ class BulletPhysicsManager : public PhysicsManager {
    * physical parameters.
    */
   int makeRigidObject(
-      const std::vector<assets::CollisionMeshData>& meshGroup,
+      const std::vector<assets::CollisionMeshData> &meshGroup,
       assets::PhysicsObjectAttributes physicsObjectAttributes) override;
 
   ESP_SMART_POINTERS(BulletPhysicsManager)
 
-};  // end class BulletPhysicsManager
-}  // end namespace physics
-}  // end namespace esp
+}; // end class BulletPhysicsManager
+} // end namespace physics
+} // end namespace esp
