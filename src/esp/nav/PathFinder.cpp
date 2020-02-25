@@ -1258,12 +1258,6 @@ std::pair<vec3f, vec3f> PathFinder::bounds() const {
   return pimpl_->bounds();
 }
 
-// std::vector<std::vector<bool>> PathFinder::getTopDownView(
-//     const float pixelsPerMeter,
-//     const float height) {
-//   return pimpl_->getTopDownView(pixelsPerMeter, height);
-// }
-
 Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::getTopDownView(
     const float pixelsPerMeter,
     const float height) {
