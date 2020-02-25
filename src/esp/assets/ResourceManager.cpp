@@ -1331,48 +1331,67 @@ void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
       continue;
     }
 
-    // TODO:
-    // it seems we have a way to just load the image once in this case,
-    // as long as the image2DName include the full path to the image
-    Corrade::Containers::Optional<Magnum::Trade::ImageData2D> imageData =
-        importer.image2D(textureData->image());
-    Magnum::GL::TextureFormat format;
-    if (imageData && imageData->isCompressed())
-      format = Mn::GL::textureFormat(imageData->compressedFormat());
-    else if (imageData && imageData->format() == Magnum::PixelFormat::RGB8Unorm)
-      format = compressTextures_
-                   ? Magnum::GL::TextureFormat::CompressedRGBS3tcDxt1
-                   : Magnum::GL::TextureFormat::RGB8;
-    else if (imageData &&
-             imageData->format() == Magnum::PixelFormat::RGBA8Unorm)
-      format = compressTextures_
-                   ? Magnum::GL::TextureFormat::CompressedRGBAS3tcDxt1
-                   : Magnum::GL::TextureFormat::RGBA8;
-    else {
-      LOG(ERROR) << "Cannot load texture image, skipping";
-      currentTexture = nullptr;
-      continue;
-    }
-
     // Configure the texture
-    Magnum::GL::Texture2D& texture =
-        *(textures_[textureStart + iTexture].get());
+    Mn::GL::Texture2D& texture = *(textures_[textureStart + iTexture].get());
     texture.setMagnificationFilter(textureData->magnificationFilter())
         .setMinificationFilter(textureData->minificationFilter(),
                                textureData->mipmapFilter())
         .setWrapping(textureData->wrapping().xy());
 
-    if (!imageData->isCompressed()) {
-      texture
-          .setStorage(Magnum::Math::log2(imageData->size().max()) + 1, format,
-                      imageData->size())
-          .setSubImage(0, {}, *imageData)
-          .generateMipmap();
-    } else {
-      texture.setStorage(1, format, imageData->size())
-          .setCompressedSubImage(0, {}, *imageData);
-      // TODO: load mips from the Basis file once Magnum supports that
+    // Load all mip levels
+    const std::uint32_t levelCount =
+        importer.image2DLevelCount(textureData->image());
+    bool generateMipmap = false;
+    for (std::uint32_t level = 0; level != levelCount; ++level) {
+      // TODO:
+      // it seems we have a way to just load the image once in this case,
+      // as long as the image2DName include the full path to the image
+      Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
+          importer.image2D(textureData->image(), level);
+      if (!image) {
+        LOG(ERROR) << "Cannot load texture image, skipping";
+        currentTexture = nullptr;
+        break;
+      }
+
+      Mn::GL::TextureFormat format;
+      if (image->isCompressed()) {
+        format = Mn::GL::textureFormat(image->compressedFormat());
+      } else if (compressTextures_ &&
+                 image->format() == Mn::PixelFormat::RGBA8Unorm) {
+        format = Mn::GL::TextureFormat::CompressedRGBAS3tcDxt1;
+      } else if (compressTextures_ &&
+                 image->format() == Mn::PixelFormat::RGB8Unorm) {
+        format = Mn::GL::TextureFormat::CompressedRGBS3tcDxt1;
+      } else {
+        format = Mn::GL::textureFormat(image->format());
+      }
+
+      // For the very first level, allocate the texture
+      if (level == 0) {
+        // If there is just one level and the image is not compressed, we'll
+        // generate mips ourselves
+        if (levelCount == 1 && !image->isCompressed()) {
+          texture.setStorage(Mn::Math::log2(image->size().max()) + 1, format,
+                             image->size());
+          generateMipmap = true;
+        } else
+          texture.setStorage(levelCount, format, image->size());
+      }
+
+      if (image->isCompressed())
+        texture.setCompressedSubImage(level, {}, *image);
+      else
+        texture.setSubImage(level, {}, *image);
     }
+
+    // Mip level loading failed, fail the whole texture
+    if (currentTexture == nullptr)
+      continue;
+
+    // Generate a mipmap if requested
+    if (generateMipmap)
+      texture.generateMipmap();
   }
 }
 
