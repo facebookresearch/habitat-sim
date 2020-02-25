@@ -12,6 +12,7 @@ from habitat_sim.agent import AgentState
 from habitat_sim.utils.common import quat_from_two_vectors
 from habitat_sim.utils.filesystem import search_dir_tree_for_ext
 from habitat_sim.utils.data.poseextractor import PoseExtractor
+from habitat_sim.utils.data.datastructures import ExtractorLRUCache
 
 
 class ImageExtractor:
@@ -56,23 +57,21 @@ class ImageExtractor:
 
         self.labels = set(labels)
         self.img_size = img_size
-        self.cfg = make_config_default_settings(self.scene_filepaths[0], self.img_size)
+        self.cfg = self._config_sim(self.scene_filepaths[0], self.img_size)
 
         if sim is None:
             sim = habitat_sim.Simulator(self.cfg)
         else:
             # If a sim is provided we have to make a new cfg
-            self.cfg = config_sim(sim.config.sim_cfg.scene.id, img_size)
+            self.cfg = self._config_sim(sim.config.sim_cfg.scene.id, img_size)
             sim.reconfigure(self.cfg)
 
         self.sim = sim
         self.pixels_per_meter = 0.1
         self.tdv_fp_ref_triples = self.precomute_tdv_and_refs(
-            self.sim, self.scene_filepaths, self.res
+            self.sim, self.scene_filepaths, self.pixels_per_meter
         )
 
-        # self.tdv = TopdownView(self.sim, self.res)
-        # self.topdown_view = self.tdv.topdown_view
         self.pose_extractor = PoseExtractor(
             self.tdv_fp_ref_triples, self.sim, self.pixels_per_meter
         )
@@ -93,6 +92,7 @@ class ImageExtractor:
         }
 
         self.instance_id_to_name = self._generate_label_map(self.sim.semantic_scene)
+        self.cache = ExtractorLRUCache()
         self.out_name_to_sensor_name = {
             "rgba": "color_sensor",
             "depth": "depth_sensor",
@@ -120,12 +120,16 @@ class ImageExtractor:
             ]
 
         mymode = self.mode.lower()
+        cache_entry = (idx, mymode)
+        if cache_entry in self.cache:
+            return self.cache[cache_entry]
+
         poses = self.mode_to_data[mymode]
         pos, rot, label, fp = poses[idx]
 
         # Only switch scene if it is different from the last one accessed
         if fp != self.cur_fp:
-            self.sim.reconfigure(make_config_default_settings(fp, self.img_size))
+            self.sim.reconfigure(self._config_sim(fp, self.img_size))
             self.cur_fp = fp
 
         new_state = AgentState()
@@ -137,17 +141,18 @@ class ImageExtractor:
             out_name: obs[self.out_name_to_sensor_name[out_name]]
             for out_name in self.output
         }
-        #sample["label"] = self.label_map[label]
+        sample["label"] = label
+        self.cache.add(cache_entry, sample)
 
         return sample
 
-    def precomute_tdv_and_refs(self, sim, scene_filepaths, res):
+    def precomute_tdv_and_refs(self, sim, scene_filepaths, pixels_per_meter):
         tdv_fp_ref = []
         for filepath in scene_filepaths:
-            cfg = make_config_default_settings(filepath, self.img_size)
+            cfg = self._config_sim(filepath, self.img_size)
             sim.reconfigure(cfg)
             ref_point = self._get_pathfinder_reference_point(sim.pathfinder)
-            tdv = TopdownView(sim, ref_point[1], res=res)
+            tdv = TopdownView(sim, ref_point[1], pixels_per_meter=pixels_per_meter)
             tdv_fp_ref.append((tdv, filepath, ref_point))
         
         return tdv_fp_ref
@@ -155,8 +160,10 @@ class ImageExtractor:
     def close(self):
         r"""Deletes the instance of the simulator. Necessary for instatiating a different ImageExtractor.
         """
-        self.sim.close()
-        del self.sim
+        if self.sim is not None:
+            self.sim.close()
+            del self.sim
+            self.sim = None
 
     def set_mode(self, mode):
         mymode = mode.lower()
@@ -169,9 +176,8 @@ class ImageExtractor:
 
     def get_semantic_class_names(self):
         class_names = list(set(
-            name for name in self.instance_id_to_name.values() if name != 'background'
+            name for name in self.instance_id_to_name.values()
         ))
-        class_names = ['background'] + class_names # Make sure background is index 0
         return class_names
 
     def _handle_split(self, split, poses):
@@ -273,4 +279,4 @@ class TopdownView(object):
     def __init__(self, sim, height, pixels_per_meter=0.1):
         self.topdown_view = np.array(
             sim.pathfinder.get_topdown_view(pixels_per_meter, height)
-        ).astype(np.float64)
+            ).astype(np.float64)
