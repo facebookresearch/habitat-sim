@@ -40,6 +40,7 @@
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/PrimitiveIDDrawable.h"
 #include "esp/gfx/PrimitiveIDShader.h"
+#include "esp/gfx/shadows/ShadowCasterDrawable.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/physics/PhysicsManager.h"
@@ -458,7 +459,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
     scalingNode.setScaling(objectScaling);
 
     addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
-                 drawables, loadedAssetData.meshMetaData.root);
+                 drawables, loadedAssetData.meshMetaData.root, true);
   }
 
   return objectID;
@@ -1476,7 +1477,8 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
                                    const Mn::ResourceKey& lightSetup,
                                    DrawableGroup* drawables,
-                                   const MeshTransformNode& meshTransformNode) {
+                                   const MeshTransformNode& meshTransformNode,
+                                   bool castsShadow) {
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
   node.MagnumObject::setTransformation(
@@ -1489,7 +1491,7 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
     const int materialIDLocal = meshTransformNode.materialIDLocal;
     addMeshToDrawables(metaData, node, lightSetup, drawables,
                        meshTransformNode.componentID, meshIDLocal,
-                       materialIDLocal);
+                       materialIDLocal, castsShadow);
 
     // compute the bounding box for the mesh we are adding
     const int meshID = metaData.meshIndex.first + meshIDLocal;
@@ -1499,7 +1501,7 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
 
   // Recursively add children
   for (auto& child : meshTransformNode.children) {
-    addComponent(metaData, node, lightSetup, drawables, child);
+    addComponent(metaData, node, lightSetup, drawables, child, castsShadow);
   }
 }
 
@@ -1509,7 +1511,8 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                                          DrawableGroup* drawables,
                                          int objectID,
                                          int meshIDLocal,
-                                         int materialIDLocal) {
+                                         int materialIDLocal,
+                                         bool castsShadow) {
   const int meshStart = metaData.meshIndex.first;
   const uint32_t meshID = meshStart + meshIDLocal;
   Magnum::GL::Mesh& mesh = *meshes_[meshID]->getMagnumGLMesh();
@@ -1524,7 +1527,7 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
   }
 
   createGenericDrawable(mesh, node, lightSetup, materialKey, drawables,
-                        objectID);
+                        objectID, castsShadow);
 
   if (computeAbsoluteAABBs_) {
     staticDrawableInfo_.emplace_back(StaticDrawableInfo{node, meshID});
@@ -1556,9 +1559,30 @@ void ResourceManager::createGenericDrawable(
     const Mn::ResourceKey& lightSetup,
     const Mn::ResourceKey& material,
     DrawableGroup* group /* = nullptr */,
-    int objectId /* = ID_UNDEFINED */) {
-  node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetup,
-                                        material, group, objectId);
+    int objectId /* = ID_UNDEFINED */,
+    bool castsShadow) {
+  // TODO: make this configurable
+  bool receivesShadow = true;
+  scene::SceneGraph* scene = dynamic_cast<scene::SceneGraph*>(node.scene());
+  if (!scene)
+    return;
+
+  if (!receivesShadow) {
+    node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetup,
+                                          material, group, objectId);
+  } else {
+    // if is Scene, dont shade faces facing away from light
+    node.addFeature<gfx::GenericDrawable>(
+        mesh, shaderManager_, lightSetup, material, group, objectId,
+        &scene->lightSetupToShadowMaps_, castsShadow);
+  }
+
+  // TODO: per object configurable shadow casting
+  if (castsShadow) {
+    auto& shadowCasterDrawables = scene->getShadowCasterDrawables();
+    node.addFeature<gfx::ShadowCasterDrawable>(mesh, shaderManager_,
+                                               &shadowCasterDrawables);
+  }
 }
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,

@@ -1,4 +1,5 @@
 {
     "render mesh": "nested_box.glb",
-    "join collision meshes": true
+    "join collision meshes": true,
+    "use bounding box for collision": true
 }

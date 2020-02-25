@@ -26,8 +26,13 @@ enum class LightPositionModel {
 /** @brief Contains a single light's information */
 struct LightInfo {
   Magnum::Vector3 position;
-  Magnum::Color4 color;
+  Magnum::Color4 color = Magnum::Color4{1};
   LightPositionModel model = LightPositionModel::GLOBAL;
+  // TODO: actually use these
+  /* @brief If this light casts shadows */
+  bool castsShadow = false;
+  /* @brief If the shadows casted by this light are constant */
+  bool staticShadows = false;
 };
 
 bool operator==(const LightInfo& a, const LightInfo& b);

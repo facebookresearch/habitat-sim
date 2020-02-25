@@ -11,7 +11,7 @@ namespace esp {
 namespace scene {
 
 SceneGraph::SceneGraph()
-    : rootNode_{world_},
+    : rootNode_{*this},
       defaultRenderCameraNode_{rootNode_},
       defaultRenderCamera_{defaultRenderCameraNode_} {
   // For now, just create one drawable group with empty string uuid

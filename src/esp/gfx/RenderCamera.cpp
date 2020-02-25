@@ -10,6 +10,8 @@
 #include <Magnum/Math/Range.h>
 #include <Magnum/SceneGraph/Drawable.h>
 
+#include "esp/gfx/DrawableGroup.h"
+
 namespace Mn = Magnum;
 namespace Cr = Corrade;
 
@@ -107,16 +109,20 @@ size_t RenderCamera::cull(
   return (newEndIter - drawableTransforms.begin());
 }
 
-uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables,
-                            bool frustumCulling) {
-  if (!frustumCulling) {
-    MagnumCamera::draw(drawables);
-    return drawables.size();
-  }
+uint32_t RenderCamera::draw(DrawableGroup& drawables, bool frustumCulling) {
+  auto transforms = drawables.getDrawableTransforms(*this);
+  return draw(transforms, frustumCulling);
+}
 
-  std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
-                        Mn::Matrix4>>
-      drawableTransforms = drawableTransformations(drawables);
+uint32_t RenderCamera::draw(
+    std::vector<
+        std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
+                  Magnum::Matrix4>>& drawableTransforms,
+    bool frustumCulling) {
+  if (!frustumCulling) {
+    MagnumCamera::draw(drawableTransforms);
+    return drawableTransforms.size();
+  }
 
   // draw just the visible part
   size_t numVisibles = cull(drawableTransforms);

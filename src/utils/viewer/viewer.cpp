@@ -41,6 +41,9 @@
 
 #include "esp/gfx/configure.h"
 
+#include "esp/gfx/shadows/ShadowCasterDrawable.h"
+#include "esp/gfx/shadows/ShadowLight.h"
+
 using namespace Magnum;
 using namespace Math::Literals;
 using namespace Corrade;
@@ -83,6 +86,8 @@ class Viewer : public Magnum::Platform::Application {
   Magnum::Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
                                    const Magnum::Vector2i& position);
 
+  void generateShadowMaps(scene::SceneGraph& scene);
+
   assets::ResourceManager resourceManager_;
   // SceneManager must be before physicsManager_ as the physicsManager_
   // assumes that it "owns" things owned by the scene manager
@@ -115,6 +120,10 @@ class Viewer : public Magnum::Platform::Application {
   ImGuiIntegration::Context imgui_{NoCreate};
   bool showFPS_ = true;
   bool frustumCullingEnabled_ = true;
+
+  gfx::ShadowLight* shadowLight_ = nullptr;
+  Vector2i shadowMapSize_{1024, 1024};
+  Float sceneCornerToCorner_;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -180,6 +189,13 @@ Viewer::Viewer(const Arguments& arguments)
     sceneLightSetup = assets::ResourceManager::DEFAULT_LIGHTING_KEY;
   }
 
+  // init shadows
+  shadowLight_ = sceneGraph_->createShadowLight();
+
+  sceneGraph_->lightSetupToShadowMaps_.set(
+      assets::ResourceManager::DEFAULT_LIGHTING_KEY,
+      std::vector<gfx::ShadowLight*>{{shadowLight_}});
+
   if (args.isSet("enable-physics")) {
     std::string physicsConfigFilename = args.value("physics-config");
     if (!Utility::Directory::exists(physicsConfigFilename)) {
@@ -204,6 +220,12 @@ Viewer::Viewer(const Arguments& arguments)
 
   const Magnum::Range3D& sceneBB = rootNode_->computeCumulativeBB();
   resourceManager_.setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
+
+  shadowLight_->setupShadowmaps(5, shadowMapSize_);
+
+  // TODO: better way to get zfar of shadowlight
+  sceneCornerToCorner_ = (sceneBB.max() - sceneBB.min()).length() / 5.0;
+  shadowLight_->setupSplitDistances(0.001f, sceneCornerToCorner_, 1.8f);
 
   // Set up camera
   renderCamera_ = &sceneGraph_->getDefaultRenderCamera();
@@ -265,6 +287,10 @@ Viewer::Viewer(const Arguments& arguments)
 
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
+
+  shadowLight_->node().setTransformation(
+      agentBodyNode_->MagnumObject::transformationMatrix() *
+      Matrix4::translation({0.1f, 10.0f, -2.0f}));
 
   timeline_.start();
 
@@ -342,6 +368,13 @@ void Viewer::recomputeNavMesh(const std::string& sceneFilename,
   pathfinder_ = pf;
 }
 
+void Viewer::generateShadowMaps(scene::SceneGraph& scene) {
+  shadowLight_->setTarget({3, 2, 3}, rgbSensorNode_->transformation()[2].xyz(),
+                          *renderCamera_);
+
+  shadowLight_->generateShadowMaps(scene.getShadowCasterDrawables());
+}
+
 void Viewer::torqueLastObject() {
   if (physicsManager_ == nullptr || objectIDs_.size() == 0)
     return;
@@ -400,6 +433,8 @@ void Viewer::drawEvent() {
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
+  generateShadowMaps(sceneGraph);
+
   uint32_t visibles = 0;
 
   for (auto& it : sceneGraph.getDrawableGroups()) {
@@ -601,6 +636,20 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // Test key. Put what you want here...
       torqueLastObject();
       break;
+    case KeyEvent::Key::L: {
+      std::size_t numLayers = shadowLight_->layerCount() + 1;
+      if (numLayers <= 32) {
+        shadowLight_->setupShadowmaps(numLayers, shadowMapSize_);
+        shadowLight_->setupSplitDistances(0.001f, sceneCornerToCorner_, 1.8f);
+      }
+    } break;
+    case KeyEvent::Key::M: {
+      std::size_t numLayers = shadowLight_->layerCount() - 1;
+      if (numLayers >= 1) {
+        shadowLight_->setupShadowmaps(numLayers, shadowMapSize_);
+        shadowLight_->setupSplitDistances(0.001f, sceneCornerToCorner_, 1.8f);
+      }
+    } break;
     case KeyEvent::Key::I:
       Magnum::DebugTools::screenshot(GL::defaultFramebuffer,
                                      "test_image_save.png");

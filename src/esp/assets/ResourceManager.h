@@ -413,7 +413,8 @@ class ResourceManager {
                     scene::SceneNode& parent,
                     const Magnum::ResourceKey& lightSetup,
                     DrawableGroup* drawables,
-                    const MeshTransformNode& meshTransformNode);
+                    const MeshTransformNode& meshTransformNode,
+                    bool castsShadow = false);
 
   /**
    * @brief Load textures from importer into assets, and update metaData for an
@@ -759,7 +760,8 @@ class ResourceManager {
                           DrawableGroup* drawables,
                           int objectID,
                           int meshIDLocal,
-                          int materialIDLocal);
+                          int materialIDLocal,
+                          bool castsShadow);
 
   /**
    * @brief Create a @ref gfx::Drawable for the specified mesh, node,
@@ -789,7 +791,8 @@ class ResourceManager {
                              const Magnum::ResourceKey& lightSetup,
                              const Magnum::ResourceKey& material,
                              DrawableGroup* group = nullptr,
-                             int objectId = ID_UNDEFINED);
+                             int objectId = ID_UNDEFINED,
+                             bool castsShadow = false);
 
   /**
    * @brief Flag to denote the desire to compress textures. TODO: unused?
