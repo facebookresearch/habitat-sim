@@ -1,6 +1,7 @@
 import multiprocessing
 import random
 
+import magnum as mn
 import numpy as np
 import pytest
 
@@ -107,3 +108,18 @@ def test_subproc_fns(test_fn):
     p.join()
 
     assert p.exitcode == 0
+
+
+def test_scene_bounding_boxes(sim):
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    sim.reconfigure(hab_cfg)
+    scene_graph = sim._sim.get_active_scene_graph()
+    root_node = scene_graph.get_root_node()
+    root_node.compute_cumulative_bb()
+    scene_bb = root_node.cumulative_bb
+    ground_truth = mn.Range3D.from_size(
+        mn.Vector3(-0.775869, -0.0233012, -1.6706), mn.Vector3(6.76937, 3.86304, 3.5359)
+    )
+    assert ground_truth == scene_bb
