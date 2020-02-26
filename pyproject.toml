@@ -1,6 +1,6 @@
 [tool.isort]
 skip_glob = ["*/deps/*", "*/build/*", "*/obselete/*"]
-known_third_party = ["PIL", "attr", "conf", "demo_runner", "hypothesis", "magnum", "numba", "numpy", "pytest", "quaternion", "scipy", "settings", "setuptools", "tqdm"]
+known_third_party = ["PIL", "attr", "conf", "demo_runner", "hypothesis", "magnum", "matplotlib", "numba", "numpy", "pytest", "quaternion", "scipy", "settings", "setuptools", "torch", "tqdm"]
 multi_line_output = 3
 force_grid_wrap = false
 line_length = 88
