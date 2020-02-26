@@ -13,28 +13,33 @@ namespace esp {
 namespace gfx {
 
 class RenderCamera : public MagnumCamera {
-public:
-  RenderCamera(scene::SceneNode &node);
-  RenderCamera(scene::SceneNode &node, const vec3f &eye, const vec3f &target,
-               const vec3f &up);
+ public:
+  RenderCamera(scene::SceneNode& node);
+  RenderCamera(scene::SceneNode& node,
+               const vec3f& eye,
+               const vec3f& target,
+               const vec3f& up);
   virtual ~RenderCamera() {
     // do nothing, let magnum handle the camera
   }
 
   // Get the scene node being attached to.
-  scene::SceneNode &node() { return object(); }
-  const scene::SceneNode &node() const { return object(); }
+  scene::SceneNode& node() { return object(); }
+  const scene::SceneNode& node() const { return object(); }
 
   // Overloads to avoid confusion
-  scene::SceneNode &object() {
-    return static_cast<scene::SceneNode &>(MagnumCamera::object());
+  scene::SceneNode& object() {
+    return static_cast<scene::SceneNode&>(MagnumCamera::object());
   }
-  const scene::SceneNode &object() const {
-    return static_cast<const scene::SceneNode &>(MagnumCamera::object());
+  const scene::SceneNode& object() const {
+    return static_cast<const scene::SceneNode&>(MagnumCamera::object());
   }
 
-  RenderCamera &setProjectionMatrix(int width, int height, float znear,
-                                    float zfar, float hfov);
+  RenderCamera& setProjectionMatrix(int width,
+                                    int height,
+                                    float znear,
+                                    float zfar,
+                                    float hfov);
 
   /**
    * @brief Overload function to render the drawables
@@ -42,7 +47,7 @@ public:
    * @param frustumCulling, whether do frustum culling or not, default: false
    * @return the number of drawables that are drawn
    */
-  uint32_t draw(MagnumDrawableGroup &drawables, bool frustumCulling = false);
+  uint32_t draw(MagnumDrawableGroup& drawables, bool frustumCulling = false);
   /**
    * @brief performs the frustum culling
    * @param drawableTransforms, a vector of pairs of Drawable3D object and its
@@ -55,11 +60,11 @@ public:
    */
   size_t cull(std::vector<
               std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
-                        Magnum::Matrix4>> &drawableTransforms);
+                        Magnum::Matrix4>>& drawableTransforms);
 
-protected:
+ protected:
   ESP_SMART_POINTERS(RenderCamera)
 };
 
-} // namespace gfx
-} // namespace esp
+}  // namespace gfx
+}  // namespace esp

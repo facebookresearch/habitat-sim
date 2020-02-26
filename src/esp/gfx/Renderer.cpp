@@ -32,8 +32,8 @@ struct Renderer::Impl {
   }
   ~Impl() { LOG(INFO) << "Deconstructing Renderer"; }
 
-  void draw(RenderCamera &camera, scene::SceneGraph &sceneGraph) {
-    for (auto &it : sceneGraph.getDrawableGroups()) {
+  void draw(RenderCamera& camera, scene::SceneGraph& sceneGraph) {
+    for (auto& it : sceneGraph.getDrawableGroups()) {
       // TODO: remove || true
       if (it.second.prepareForDraw(camera) || true) {
         camera.draw(it.second);
@@ -41,7 +41,7 @@ struct Renderer::Impl {
     }
   }
 
-  void draw(sensor::VisualSensor &visualSensor, scene::SceneGraph &sceneGraph) {
+  void draw(sensor::VisualSensor& visualSensor, scene::SceneGraph& sceneGraph) {
     ASSERT(visualSensor.isVisualSensor());
 
     // set the modelview matrix, projection matrix of the render camera;
@@ -50,7 +50,7 @@ struct Renderer::Impl {
     draw(sceneGraph.getDefaultRenderCamera(), sceneGraph);
   }
 
-  void bindRenderTarget(sensor::VisualSensor &sensor) {
+  void bindRenderTarget(sensor::VisualSensor& sensor) {
     auto depthUnprojection = sensor.depthUnprojection();
     if (!depthUnprojection) {
       throw std::runtime_error(
@@ -66,24 +66,24 @@ struct Renderer::Impl {
         sensor.framebufferSize(), *depthUnprojection, depthShader_.get()));
   }
 
-private:
+ private:
   std::unique_ptr<DepthShader> depthShader_ = nullptr;
 };
 
 Renderer::Renderer() : pimpl_(spimpl::make_unique_impl<Impl>()) {}
 
-void Renderer::draw(RenderCamera &camera, scene::SceneGraph &sceneGraph) {
+void Renderer::draw(RenderCamera& camera, scene::SceneGraph& sceneGraph) {
   pimpl_->draw(camera, sceneGraph);
 }
 
-void Renderer::draw(sensor::VisualSensor &visualSensor,
-                    scene::SceneGraph &sceneGraph) {
+void Renderer::draw(sensor::VisualSensor& visualSensor,
+                    scene::SceneGraph& sceneGraph) {
   pimpl_->draw(visualSensor, sceneGraph);
 }
 
-void Renderer::bindRenderTarget(sensor::VisualSensor &sensor) {
+void Renderer::bindRenderTarget(sensor::VisualSensor& sensor) {
   pimpl_->bindRenderTarget(sensor);
 }
 
-} // namespace gfx
-} // namespace esp
+}  // namespace gfx
+}  // namespace esp

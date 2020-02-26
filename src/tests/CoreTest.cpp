@@ -22,7 +22,7 @@ TEST(CoreTest, ConfigurationTest) {
 
 TEST(CoreTest, JsonTest) {
   std::string s = "{\"test\":[1, 2, 3, 4]}";
-  const auto &json = esp::io::parseJsonString(s);
+  const auto& json = esp::io::parseJsonString(s);
   std::vector<int> t;
   esp::io::toIntVector(json["test"], &t);
   EXPECT_EQ(t[1], 2);

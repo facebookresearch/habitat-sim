@@ -8,8 +8,8 @@
 
 #include "esp/core/esp.h"
 
-#include "esp/gfx/magnum.h"
 #include <Magnum/Math/Range.h>
+#include "esp/gfx/magnum.h"
 
 namespace esp {
 namespace geo {
@@ -26,14 +26,15 @@ static const vec3f ESP_BACK = -ESP_FRONT;
 typedef Eigen::Transform<float, 3, Eigen::Affine, Eigen::DontAlign> Transform;
 
 // compute convex hull of 2D points and return as vector of vertices
-std::vector<vec2f> convexHull2D(const std::vector<vec2f> &points);
+std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points);
 
-Magnum::Range3D getTransformedBB(const Magnum::Range3D &range,
-                                 const Magnum::Matrix4 &T);
+Magnum::Range3D getTransformedBB(const Magnum::Range3D& range,
+                                 const Magnum::Matrix4& T);
 
-template <typename T> T clamp(const T &n, const T &low, const T &high) {
+template <typename T>
+T clamp(const T& n, const T& low, const T& high) {
   return std::max(low, std::min(n, high));
 }
 
-} // namespace geo
-} // namespace esp
+}  // namespace geo
+}  // namespace esp

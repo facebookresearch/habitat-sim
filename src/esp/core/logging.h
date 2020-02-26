@@ -15,37 +15,37 @@
 // TODO shims are hack to get things compiling, implement expected behaviors
 
 class LogMessageVoidify {
-public:
+ public:
   LogMessageVoidify() {}
   // This has to be an operator with a precedence lower than << but
   // higher than ?:
-  void operator&(Corrade::Utility::Debug &) {}
+  void operator&(Corrade::Utility::Debug&) {}
 };
 
-#define GLOG_INFO                                                              \
+#define GLOG_INFO \
   Corrade::Utility::Debug {}
-#define GLOG_WARNING                                                           \
+#define GLOG_WARNING \
   Corrade::Utility::Warning {}
-#define GLOG_ERROR                                                             \
+#define GLOG_ERROR \
   Corrade::Utility::Error {}
-#define GLOG_FATAL                                                             \
+#define GLOG_FATAL \
   Corrade::Utility::Fatal {}
 #define LOG(severity) GLOG_##severity
-#define LOG_IF(severity, condition)                                            \
+#define LOG_IF(severity, condition) \
   !(condition) ? (void)0 : LogMessageVoidify() & LOG(severity)
 
 #define VLOG_LEVEL 0
 
 #define VLOG_IS_ON(verboselevel) (VLOG_LEVEL >= (verboselevel))
 #define VLOG(verboselevel) LOG_IF(INFO, VLOG_IS_ON(verboselevel))
-#define VLOG_IF(verboselevel, condition)                                       \
+#define VLOG_IF(verboselevel, condition) \
   LOG_IF(INFO, (condition) && VLOG_IS_ON(verboselevel))
-#define VLOG_EVERY_N(verboselevel, n)                                          \
+#define VLOG_EVERY_N(verboselevel, n) \
   LOG_IF_EVERY_N(INFO, VLOG_IS_ON(verboselevel), n)
-#define VLOG_IF_EVERY_N(verboselevel, condition, n)                            \
+#define VLOG_IF_EVERY_N(verboselevel, condition, n) \
   LOG_IF_EVERY_N(INFO, (condition) && VLOG_IS_ON(verboselevel), n)
 
-#define CHECK(condition)                                                       \
+#define CHECK(condition) \
   LOG_IF(ERROR, !(condition)) << "Check failed: " #condition " "
 #define CHECK_EQ(a, b) CHECK(a == b)
 #define CHECK_GE(a, b) CHECK(a >= b)
@@ -58,11 +58,11 @@ public:
 #include <glog/stl_logging.h>
 #endif
 
-#define ASSERT(x, ...)                                                         \
-  do {                                                                         \
-    if (!(x)) {                                                                \
-      LOG(ERROR) << "Assert failed: " #x << ", " << __FILE__ << ":"            \
-                 << __LINE__;                                                  \
-      exit(-1);                                                                \
-    }                                                                          \
+#define ASSERT(x, ...)                                              \
+  do {                                                              \
+    if (!(x)) {                                                     \
+      LOG(ERROR) << "Assert failed: " #x << ", " << __FILE__ << ":" \
+                 << __LINE__;                                       \
+      exit(-1);                                                     \
+    }                                                               \
   } while (false)

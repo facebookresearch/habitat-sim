@@ -9,7 +9,7 @@
 namespace esp {
 namespace sensor {
 
-Sensor::Sensor(scene::SceneNode &node, SensorSpec::ptr spec)
+Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
     : Magnum::SceneGraph::AbstractFeature3D{node}, spec_(spec) {
   node.setType(scene::SceneNodeType::SENSOR);
   if (spec_ == nullptr) {
@@ -25,11 +25,13 @@ void SensorSuite::add(Sensor::ptr sensor) {
   sensors_[uuid] = sensor;
 }
 
-Sensor::ptr SensorSuite::get(const std::string &uuid) const {
+Sensor::ptr SensorSuite::get(const std::string& uuid) const {
   return (sensors_.at(uuid));
 }
 
-void SensorSuite::clear() { sensors_.clear(); }
+void SensorSuite::clear() {
+  sensors_.clear();
+}
 
 void Sensor::setTransformationFromSpec() {
   if (spec_ == nullptr) {
@@ -45,7 +47,7 @@ void Sensor::setTransformationFromSpec() {
   node().rotateZ(Magnum::Rad(spec_->orientation[2]));
 }
 
-bool operator==(const SensorSpec &a, const SensorSpec &b) {
+bool operator==(const SensorSpec& a, const SensorSpec& b) {
   return a.uuid == b.uuid && a.sensorType == b.sensorType &&
          a.sensorSubtype == b.sensorSubtype && a.parameters == b.parameters &&
          a.position == b.position && a.orientation == b.orientation &&
@@ -53,7 +55,9 @@ bool operator==(const SensorSpec &a, const SensorSpec &b) {
          a.encoding == b.encoding && a.observationSpace == b.observationSpace &&
          a.noiseModel == b.noiseModel && a.gpu2gpuTransfer == b.gpu2gpuTransfer;
 }
-bool operator!=(const SensorSpec &a, const SensorSpec &b) { return !(a == b); }
+bool operator!=(const SensorSpec& a, const SensorSpec& b) {
+  return !(a == b);
+}
 
-} // namespace sensor
-} // namespace esp
+}  // namespace sensor
+}  // namespace esp

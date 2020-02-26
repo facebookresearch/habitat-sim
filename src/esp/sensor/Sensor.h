@@ -41,8 +41,9 @@ struct SensorSpec {
   std::string uuid = "rgba_camera";
   SensorType sensorType = SensorType::COLOR;
   std::string sensorSubtype = "pinhole";
-  std::map<std::string, std::string> parameters = {
-      {"near", "0.01"}, {"far", "1000"}, {"hfov", "90"}};
+  std::map<std::string, std::string> parameters = {{"near", "0.01"},
+                                                   {"far", "1000"},
+                                                   {"hfov", "90"}};
   vec3f position = {0, 1.5, 0};
   vec3f orientation = {0, 0, 0};
   vec2i resolution = {84, 84};
@@ -55,8 +56,8 @@ struct SensorSpec {
   ESP_SMART_POINTERS(SensorSpec)
 };
 
-bool operator==(const SensorSpec &a, const SensorSpec &b);
-bool operator!=(const SensorSpec &a, const SensorSpec &b);
+bool operator==(const SensorSpec& a, const SensorSpec& b);
+bool operator!=(const SensorSpec& a, const SensorSpec& b);
 
 // Represents a particular sensor Observation
 struct Observation {
@@ -74,21 +75,21 @@ struct ObservationSpace {
 
 // Represents a sensor that provides data from the environment to an agent
 class Sensor : public Magnum::SceneGraph::AbstractFeature3D {
-public:
-  explicit Sensor(scene::SceneNode &node, SensorSpec::ptr spec);
+ public:
+  explicit Sensor(scene::SceneNode& node, SensorSpec::ptr spec);
   virtual ~Sensor() { LOG(INFO) << "Deconstructing Sensor"; }
 
   // Get the scene node being attached to.
-  scene::SceneNode &node() { return object(); }
-  const scene::SceneNode &node() const { return object(); }
+  scene::SceneNode& node() { return object(); }
+  const scene::SceneNode& node() const { return object(); }
 
   // Overloads to avoid confusion
-  scene::SceneNode &object() {
-    return static_cast<scene::SceneNode &>(
+  scene::SceneNode& object() {
+    return static_cast<scene::SceneNode&>(
         Magnum::SceneGraph::AbstractFeature3D::object());
   }
-  const scene::SceneNode &object() const {
-    return static_cast<const scene::SceneNode &>(
+  const scene::SceneNode& object() const {
+    return static_cast<const scene::SceneNode&>(
         Magnum::SceneGraph::AbstractFeature3D::object());
   }
 
@@ -99,8 +100,8 @@ public:
 
   virtual bool isVisualSensor() { return false; }
 
-  virtual bool getObservation(sim::Simulator &sim, Observation &obs) = 0;
-  virtual bool getObservationSpace(ObservationSpace &space) = 0;
+  virtual bool getObservation(sim::Simulator& sim, Observation& obs) = 0;
+  virtual bool getObservationSpace(ObservationSpace& space) = 0;
 
   /**
    * @brief Display next observation from Simulator on default frame buffer
@@ -108,9 +109,9 @@ public:
    *                to be displayed
    * @return Whether the display process was successful or not
    */
-  virtual bool displayObservation(sim::Simulator &sim) = 0;
+  virtual bool displayObservation(sim::Simulator& sim) = 0;
 
-protected:
+ protected:
   SensorSpec::ptr spec_ = nullptr;
   core::Buffer::ptr buffer_ = nullptr;
 
@@ -121,19 +122,19 @@ protected:
 // unique id
 
 class SensorSuite {
-public:
+ public:
   void add(Sensor::ptr sensor);
   void clear();
   ~SensorSuite() { LOG(INFO) << "Deconstructing SensorSuite"; }
 
-  Sensor::ptr get(const std::string &uuid) const;
-  std::map<std::string, Sensor::ptr> &getSensors() { return sensors_; }
+  Sensor::ptr get(const std::string& uuid) const;
+  std::map<std::string, Sensor::ptr>& getSensors() { return sensors_; }
 
-protected:
+ protected:
   std::map<std::string, Sensor::ptr> sensors_;
 
   ESP_SMART_POINTERS(SensorSuite)
 };
 
-} // namespace sensor
-} // namespace esp
+}  // namespace sensor
+}  // namespace esp

@@ -54,7 +54,7 @@ Will later manager multiple physical scenes, but currently assumes only one
 unique physical world can exist.
 */
 class PhysicsManager {
-public:
+ public:
   //! ==== physics engines ====
 
   /**
@@ -92,7 +92,7 @@ public:
    * tracks the assets this
    * @ref PhysicsManager will have access to.
    */
-  explicit PhysicsManager(assets::ResourceManager *_resourceManager) {
+  explicit PhysicsManager(assets::ResourceManager* _resourceManager) {
     resourceManager_ = _resourceManager;
   };
 
@@ -108,9 +108,9 @@ public:
    * @param physicsManagerAttributes A structure containing values for physical
    * parameters necessary to initialize the physical scene and simulator.
    */
-  virtual bool
-  initPhysics(scene::SceneNode *node,
-              const assets::PhysicsManagerAttributes &physicsManagerAttributes);
+  virtual bool initPhysics(
+      scene::SceneNode* node,
+      const assets::PhysicsManagerAttributes& physicsManagerAttributes);
 
   /**
    * @brief Reset the simulation and physical world.
@@ -134,9 +134,9 @@ public:
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
-  virtual bool
-  addScene(const assets::PhysicsSceneAttributes &physicsSceneAttributes,
-           const std::vector<assets::CollisionMeshData> &meshGroup);
+  virtual bool addScene(
+      const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+      const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::assets::ResourceManager::physicsObjectLibrary_.
@@ -149,7 +149,7 @@ public:
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  int addObject(const std::string &configFile, DrawableGroup *drawables);
+  int addObject(const std::string& configFile, DrawableGroup* drawables);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::assets::ResourceManager::physicsObjectLibrary_ by object
@@ -162,7 +162,7 @@ public:
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  virtual int addObject(const int objectLibIndex, DrawableGroup *drawables);
+  virtual int addObject(const int objectLibIndex, DrawableGroup* drawables);
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref
@@ -187,7 +187,7 @@ public:
    */
   std::vector<int> getExistingObjectIDs() const {
     std::vector<int> v;
-    for (auto &bro : existingObjects_) {
+    for (auto& bro : existingObjects_) {
       v.push_back(bro.first);
     }
     return v;
@@ -231,7 +231,7 @@ public:
    * dynamics of the derived physical simulator class.
    * @param gravity The desired gravity force of the physical world.
    */
-  virtual void setGravity(const Magnum::Vector3 &gravity);
+  virtual void setGravity(const Magnum::Vector3& gravity);
 
   // =========== Global Getter functions ===========
 
@@ -296,7 +296,7 @@ public:
    * PhysicsManager::existingObjects_.
    * @param trans The desired 4x4 transform of the object.
    */
-  void setTransformation(const int physObjectID, const Magnum::Matrix4 &trans);
+  void setTransformation(const int physObjectID, const Magnum::Matrix4& trans);
 
   /** @brief Set the 3D position of an object kinematically.
    * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
@@ -305,7 +305,7 @@ public:
    * PhysicsManager::existingObjects_.
    * @param vector The desired 3D position of the object.
    */
-  void setTranslation(const int physObjectID, const Magnum::Vector3 &vector);
+  void setTranslation(const int physObjectID, const Magnum::Vector3& vector);
 
   /** @brief Set the orientation of an object kinematically.
    * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
@@ -315,7 +315,7 @@ public:
    * @param quaternion The desired orientation of the object.
    */
   void setRotation(const int physObjectID,
-                   const Magnum::Quaternion &quaternion);
+                   const Magnum::Quaternion& quaternion);
 
   /** @brief Reset the transformation of the object.
    * !!NOT IMPLEMENTED!!
@@ -331,7 +331,7 @@ public:
    * PhysicsManager::existingObjects_.
    * @param vector The desired 3D vector by which to translate the object.
    */
-  void translate(const int physObjectID, const Magnum::Vector3 &vector);
+  void translate(const int physObjectID, const Magnum::Vector3& vector);
 
   /** @brief Modify the 3D position of an object kinematically by translation
    * with a vector defined in the object's local coordinate system. Calling this
@@ -341,7 +341,7 @@ public:
    * @param vector The desired 3D vector in the object's ocal coordiante system
    * by which to translate the object.
    */
-  void translateLocal(const int physObjectID, const Magnum::Vector3 &vector);
+  void translateLocal(const int physObjectID, const Magnum::Vector3& vector);
 
   /** @brief Modify the orientation of an object kinematically by applying an
    * axis-angle rotation to it. Calling this during simulation of a @ref
@@ -351,8 +351,9 @@ public:
    * @param angleInRad The angle of rotation in radians.
    * @param normalizedAxis The desired unit vector axis of rotation.
    */
-  void rotate(const int physObjectID, const Magnum::Rad angleInRad,
-              const Magnum::Vector3 &normalizedAxis);
+  void rotate(const int physObjectID,
+              const Magnum::Rad angleInRad,
+              const Magnum::Vector3& normalizedAxis);
 
   /** @brief Modify the orientation of an object kinematically by applying an
    * axis-angle rotation to it in the local coordinate system. Calling this
@@ -363,8 +364,9 @@ public:
    * @param normalizedAxis The desired unit vector axis of rotation in the local
    * coordinate system.
    */
-  void rotateLocal(const int physObjectID, const Magnum::Rad angleInRad,
-                   const Magnum::Vector3 &normalizedAxis);
+  void rotateLocal(const int physObjectID,
+                   const Magnum::Rad angleInRad,
+                   const Magnum::Vector3& normalizedAxis);
 
   /** @brief Modify the orientation of an object kinematically by applying a
    * rotation to it about the global X axis. Calling this during simulation of a
@@ -461,7 +463,7 @@ public:
    * @param COM The new 3D center of mass for the object in the local coordinate
    * system.
    */
-  void setCOM(const int physObjectID, const Magnum::Vector3 &COM);
+  void setCOM(const int physObjectID, const Magnum::Vector3& COM);
 
   /** @brief Set the diagonal of the inertia matrix for an object.
    * If an object is aligned with its principle axii of inertia, the 3x3 inertia
@@ -471,7 +473,7 @@ public:
    * PhysicsManager::existingObjects_.
    * @param inertia The new diagonal for the object's inertia matrix.
    */
-  void setInertiaVector(const int physObjectID, const Magnum::Vector3 &inertia);
+  void setInertiaVector(const int physObjectID, const Magnum::Vector3& inertia);
 
   /** @brief Set the uniform scale for an object.
    * See @ref RigidObject::setScale.
@@ -644,8 +646,9 @@ public:
    * @param relPos The global 3D location relative to the object COM at which to
    * apply the force.
    */
-  void applyForce(const int physObjectID, const Magnum::Vector3 &force,
-                  const Magnum::Vector3 &relPos);
+  void applyForce(const int physObjectID,
+                  const Magnum::Vector3& force,
+                  const Magnum::Vector3& relPos);
 
   /** @brief Apply a linear 3D impulse defined in global coordinates to an
    * object. See @ref RigidObject::applyImpulse. Impulse is applied instantly to
@@ -656,8 +659,9 @@ public:
    * @param relPos The global 3D location relative to the object COM at which to
    * apply the impulse.
    */
-  void applyImpulse(const int physObjectID, const Magnum::Vector3 &impulse,
-                    const Magnum::Vector3 &relPos);
+  void applyImpulse(const int physObjectID,
+                    const Magnum::Vector3& impulse,
+                    const Magnum::Vector3& relPos);
 
   /** @brief Apply an internal angular 3D torque to an object.
    * See @ref RigidObject::applyTorque.
@@ -665,7 +669,7 @@ public:
    * PhysicsManager::existingObjects_.
    * @param torque The angular torque to apply to the object.
    */
-  void applyTorque(const int physObjectID, const Magnum::Vector3 &torque);
+  void applyTorque(const int physObjectID, const Magnum::Vector3& torque);
 
   /** @brief Apply an internal angular 3D impulse torque to an object.
    * See @ref RigidObject::applyImpulseTorque.
@@ -674,7 +678,7 @@ public:
    * @param impulse The angular impulse torque to apply to the object.
    */
   void applyImpulseTorque(const int physObjectID,
-                          const Magnum::Vector3 &impulse);
+                          const Magnum::Vector3& impulse);
 
   /**
    * @brief Set linear velocity for an object with @ref MotionType::DYNAMIC.
@@ -685,7 +689,7 @@ public:
    * PhysicsManager::existingObjects_.
    * @param linVel Linear velocity to set.
    */
-  void setLinearVelocity(const int physObjectID, const Magnum::Vector3 &linVel);
+  void setLinearVelocity(const int physObjectID, const Magnum::Vector3& linVel);
 
   /**
    * @brief Set angular velocity for an object with @ref MotionType::DYNAMIC.
@@ -698,7 +702,7 @@ public:
    * angles.
    */
   void setAngularVelocity(const int physObjectID,
-                          const Magnum::Vector3 &angVel);
+                          const Magnum::Vector3& angVel);
 
   /**
    * @brief Get linear velocity of an object with @ref MotionType::DYNAMIC.
@@ -728,7 +732,7 @@ public:
    * @param drawables The drawables group with which to render the bounding box.
    * @param drawBB Set rendering of the bounding box to true or false.
    */
-  void setObjectBBDraw(int physObjectID, DrawableGroup *drawables, bool drawBB);
+  void setObjectBBDraw(int physObjectID, DrawableGroup* drawables, bool drawBB);
 
   /**
    * @brief Get a const reference to the specified object's SceneNode for info
@@ -737,7 +741,7 @@ public:
    * PhysicsManager::existingObjects_.
    * @return Const reference to the object scene node.
    */
-  const scene::SceneNode &getObjectSceneNode(int physObjectID);
+  const scene::SceneNode& getObjectSceneNode(int physObjectID);
 
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref
@@ -745,8 +749,8 @@ public:
    * @param projTrans The composed projection and transformation matrix for the
    * render camera.
    */
-  virtual void
-  debugDraw(CORRADE_UNUSED const Magnum::Matrix4 &projTrans) const {};
+  virtual void debugDraw(
+      CORRADE_UNUSED const Magnum::Matrix4& projTrans) const {};
 
   /**
    * @brief Check whether an object is in contact with any other objects or the
@@ -767,11 +771,11 @@ public:
    * in use. Use to check for a particular implementation.
    * @return The implementation type of this simulator.
    */
-  const PhysicsSimulationLibrary &getPhysicsSimulationLibrary() const {
+  const PhysicsSimulationLibrary& getPhysicsSimulationLibrary() const {
     return activePhysSimLib_;
   };
 
-protected:
+ protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
    * existing object). Terminate the program and report an error if not. This
    * function is intended to unify object ID checking for @ref PhysicsManager
@@ -789,7 +793,7 @@ protected:
    * @param meshData The mesh to validate.
    * @return true if valid, false otherwise.
    */
-  virtual bool isMeshPrimitiveValid(const assets::CollisionMeshData &meshData);
+  virtual bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData);
 
   /** @brief Acquire a new ObjectID by recycling the ID of an object removed
    * with @ref removeObject or by incrementing @ref nextObjectID_. See @ref
@@ -810,25 +814,25 @@ protected:
    * @param physicsObjectAttributes The physical object's template defining its
    * physical parameters.
    */
-  virtual int
-  makeRigidObject(const std::vector<assets::CollisionMeshData> &meshGroup,
-                  assets::PhysicsObjectAttributes physicsObjectAttributes);
+  virtual int makeRigidObject(
+      const std::vector<assets::CollisionMeshData>& meshGroup,
+      assets::PhysicsObjectAttributes physicsObjectAttributes);
 
   /** @brief A pointer to a @ref esp::assets::ResourceManager which holds assets
    * that can be accessed by this @ref PhysicsManager*/
-  assets::ResourceManager *resourceManager_;
+  assets::ResourceManager* resourceManager_;
 
   /** @brief The current physics library implementation used by this
    * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager
    * to its derived type if necessary.*/
-  PhysicsSimulationLibrary activePhysSimLib_ = NONE; // default
+  PhysicsSimulationLibrary activePhysSimLib_ = NONE;  // default
 
   /**
    * @brief The @ref scene::SceneNode which is the parent of all members of the
    * scene graph which exist in the physical world. Used to keep track of all
    * SceneNode's that have physical properties.
    * */
-  scene::SceneNode *physicsNode_ = nullptr;
+  scene::SceneNode* physicsNode_ = nullptr;
 
   /**
    * @brief The @ref scene::SceneNode which represents the static collision
@@ -881,6 +885,6 @@ protected:
   ESP_SMART_POINTERS(PhysicsManager)
 };
 
-} // namespace physics
+}  // namespace physics
 
-} // namespace esp
+}  // namespace esp

@@ -22,7 +22,7 @@ using py::literals::operator""_a;
 namespace esp {
 namespace nav {
 
-void initShortestPathBindings(py::module &m) {
+void initShortestPathBindings(py::module& m) {
   py::class_<HitRecord>(m, "HitRecord")
       .def(py::init())
       .def_readwrite("hit_pos", &HitRecord::hitPos)
@@ -76,10 +76,10 @@ void initShortestPathBindings(py::module &m) {
            R"(Returns the topdown view of the PathFinder's navmesh.)",
            "pixelsPerMeter"_a, "height"_a)
       .def("get_random_navigable_point", &PathFinder::getRandomNavigablePoint)
+      .def("find_path", py::overload_cast<ShortestPath&>(&PathFinder::findPath),
+           "path"_a)
       .def("find_path",
-           py::overload_cast<ShortestPath &>(&PathFinder::findPath), "path"_a)
-      .def("find_path",
-           py::overload_cast<MultiGoalShortestPath &>(&PathFinder::findPath),
+           py::overload_cast<MultiGoalShortestPath&>(&PathFinder::findPath),
            "path"_a)
       .def("try_step", &PathFinder::tryStep<Magnum::Vector3>, "start"_a,
            "end"_a)
@@ -122,18 +122,18 @@ void initShortestPathBindings(py::module &m) {
       m, "GreedyGeodesicFollowerImpl")
       .def(py::init(
           &GreedyGeodesicFollowerImpl::create<
-              PathFinder::ptr &, GreedyGeodesicFollowerImpl::MoveFn &,
-              GreedyGeodesicFollowerImpl::MoveFn &,
-              GreedyGeodesicFollowerImpl::MoveFn &, double, double, double>))
+              PathFinder::ptr&, GreedyGeodesicFollowerImpl::MoveFn&,
+              GreedyGeodesicFollowerImpl::MoveFn&,
+              GreedyGeodesicFollowerImpl::MoveFn&, double, double, double>))
       .def("next_action_along",
-           py::overload_cast<const vec3f &, const vec4f &, const vec3f &>(
+           py::overload_cast<const vec3f&, const vec4f&, const vec3f&>(
                &GreedyGeodesicFollowerImpl::nextActionAlong),
            py::return_value_policy::move)
       .def("find_path",
-           py::overload_cast<const vec3f &, const vec4f &, const vec3f &>(
+           py::overload_cast<const vec3f&, const vec4f&, const vec3f&>(
                &GreedyGeodesicFollowerImpl::findPath),
            py::return_value_policy::move);
 }
 
-} // namespace nav
-} // namespace esp
+}  // namespace nav
+}  // namespace esp

@@ -12,7 +12,7 @@ using py::literals::operator""_a;
 
 namespace esp {
 
-void initEspBindings(py::module &m) {
+void initEspBindings(py::module& m) {
   // ==== box3f ====
   py::class_<box3f>(m, "BBox")
       .def_property_readonly("sizes", &box3f::sizes)
@@ -21,7 +21,7 @@ void initEspBindings(py::module &m) {
 
 namespace core {
 
-void initCoreBindings(py::module &m) {
+void initCoreBindings(py::module& m) {
   py::class_<Configuration, Configuration::ptr>(m, "Configuration")
       .def(py::init(&Configuration::create<>))
       .def("getBool", &Configuration::getBool)
@@ -35,11 +35,11 @@ void initCoreBindings(py::module &m) {
       .def("set", &Configuration::set<bool>);
 }
 
-} // namespace core
+}  // namespace core
 
 namespace physics {
 
-void initPhysicsBindings(py::module &m) {
+void initPhysicsBindings(py::module& m) {
   // ==== enum object MotionType ====
   py::enum_<MotionType>(m, "MotionType")
       .value("ERROR_MOTIONTYPE", MotionType::ERROR_MOTIONTYPE)
@@ -48,8 +48,8 @@ void initPhysicsBindings(py::module &m) {
       .value("DYNAMIC", MotionType::DYNAMIC);
 }
 
-} // namespace physics
-} // namespace esp
+}  // namespace physics
+}  // namespace esp
 
 PYBIND11_MODULE(habitat_sim_bindings, m) {
   m.attr("cuda_enabled") =

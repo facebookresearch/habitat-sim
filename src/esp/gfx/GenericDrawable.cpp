@@ -12,18 +12,22 @@ namespace esp {
 namespace gfx {
 
 GenericDrawable::GenericDrawable(
-    scene::SceneNode &node, Magnum::Shaders::Flat3D &shader,
-    Magnum::GL::Mesh &mesh, DrawableGroup *group /* = nullptr */,
-    Magnum::GL::Texture2D *texture /* = nullptr */,
+    scene::SceneNode& node,
+    Magnum::Shaders::Flat3D& shader,
+    Magnum::GL::Mesh& mesh,
+    DrawableGroup* group /* = nullptr */,
+    Magnum::GL::Texture2D* texture /* = nullptr */,
     int objectId /* = ID_UNDEFINED */,
-    const Magnum::Color4 &color /* = Magnum::Color4{1} */)
-    : Drawable{node, shader, mesh, group}, texture_(texture),
-      objectId_(objectId), color_{color} {}
+    const Magnum::Color4& color /* = Magnum::Color4{1} */)
+    : Drawable{node, shader, mesh, group},
+      texture_(texture),
+      objectId_(objectId),
+      color_{color} {}
 
-void GenericDrawable::draw(const Magnum::Matrix4 &transformationMatrix,
-                           Magnum::SceneGraph::Camera3D &camera) {
-  Magnum::Shaders::Flat3D &shader =
-      static_cast<Magnum::Shaders::Flat3D &>(shader_);
+void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
+                           Magnum::SceneGraph::Camera3D& camera) {
+  Magnum::Shaders::Flat3D& shader =
+      static_cast<Magnum::Shaders::Flat3D&>(shader_);
   shader.setTransformationProjectionMatrix(camera.projectionMatrix() *
                                            transformationMatrix);
 
@@ -39,5 +43,5 @@ void GenericDrawable::draw(const Magnum::Matrix4 &transformationMatrix,
   mesh_.draw(shader_);
 }
 
-} // namespace gfx
-} // namespace esp
+}  // namespace gfx
+}  // namespace esp

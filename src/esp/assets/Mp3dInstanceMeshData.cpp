@@ -27,7 +27,7 @@
 namespace esp {
 namespace assets {
 
-bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string &plyFile) {
+bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   std::ifstream ifs(plyFile);
   if (!ifs.good()) {
     LOG(ERROR) << "Cannot open file at " << plyFile;
@@ -90,10 +90,10 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string &plyFile) {
     vec2f texCoords;
     vec3uc rgb;
 
-    ifs.read(reinterpret_cast<char *>(position.data()), 3 * sizeof(float));
-    ifs.read(reinterpret_cast<char *>(normal.data()), 3 * sizeof(float));
-    ifs.read(reinterpret_cast<char *>(texCoords.data()), 2 * sizeof(float));
-    ifs.read(reinterpret_cast<char *>(rgb.data()), 3 * sizeof(uint8_t));
+    ifs.read(reinterpret_cast<char*>(position.data()), 3 * sizeof(float));
+    ifs.read(reinterpret_cast<char*>(normal.data()), 3 * sizeof(float));
+    ifs.read(reinterpret_cast<char*>(texCoords.data()), 2 * sizeof(float));
+    ifs.read(reinterpret_cast<char*>(rgb.data()), 3 * sizeof(uint8_t));
     cpu_vbo_.emplace_back(position);
     cpu_cbo_.emplace_back(rgb);
   }
@@ -105,12 +105,12 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string &plyFile) {
     int32_t segmentId;
     int32_t categoryId;
 
-    ifs.read(reinterpret_cast<char *>(&nIndices), sizeof(nIndices));
+    ifs.read(reinterpret_cast<char*>(&nIndices), sizeof(nIndices));
     ASSERT(nIndices == 3);
-    ifs.read(reinterpret_cast<char *>(indices.data()), 3 * sizeof(int));
-    ifs.read(reinterpret_cast<char *>(&materialId), sizeof(materialId));
-    ifs.read(reinterpret_cast<char *>(&segmentId), sizeof(segmentId));
-    ifs.read(reinterpret_cast<char *>(&categoryId), sizeof(categoryId));
+    ifs.read(reinterpret_cast<char*>(indices.data()), 3 * sizeof(int));
+    ifs.read(reinterpret_cast<char*>(&materialId), sizeof(materialId));
+    ifs.read(reinterpret_cast<char*>(&segmentId), sizeof(segmentId));
+    ifs.read(reinterpret_cast<char*>(&categoryId), sizeof(categoryId));
     cpu_ibo_.emplace_back(indices);
     materialIds_.emplace_back(materialId);
     segmentIds_.emplace_back(segmentId);
@@ -133,8 +133,8 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string &plyFile) {
 }
 
 bool Mp3dInstanceMeshData::saveSemMeshPLY(
-    const std::string &plyFile,
-    const std::unordered_map<int, int> &segmentIdToObjectIdMap) {
+    const std::string& plyFile,
+    const std::unordered_map<int, int>& segmentIdToObjectIdMap) {
   const int nVertex = cpu_vbo_.size();
   const int nFace = cpu_ibo_.size();
 
@@ -154,30 +154,30 @@ bool Mp3dInstanceMeshData::saveSemMeshPLY(
   f << "end_header" << std::endl;
 
   for (int iVertex = 0; iVertex < nVertex; ++iVertex) {
-    const vec3f &xyz = cpu_vbo_[iVertex].head<3>();
-    const vec3uc &rgb = cpu_cbo_[iVertex];
-    f.write(reinterpret_cast<const char *>(xyz.data()), 3 * sizeof(float));
-    f.write(reinterpret_cast<const char *>(rgb.data()), 3 * sizeof(uint8_t));
+    const vec3f& xyz = cpu_vbo_[iVertex].head<3>();
+    const vec3uc& rgb = cpu_cbo_[iVertex];
+    f.write(reinterpret_cast<const char*>(xyz.data()), 3 * sizeof(float));
+    f.write(reinterpret_cast<const char*>(rgb.data()), 3 * sizeof(uint8_t));
   }
 
   for (int iFace = 0; iFace < cpu_ibo_.size(); ++iFace) {
     const uint8_t nIndices = 3;
-    const vec3ui &indices = cpu_ibo_[iFace];
+    const vec3ui& indices = cpu_ibo_[iFace];
     // The materialId corresponds to the segmentId from the .house file
     const int32_t segmentId = materialIds_[iFace];
     int32_t objectId = ID_UNDEFINED;
     if (segmentId >= 0) {
       objectId = segmentIdToObjectIdMap.at(segmentId);
     }
-    f.write(reinterpret_cast<const char *>(&nIndices), sizeof(nIndices));
-    f.write(reinterpret_cast<const char *>(indices.data()),
+    f.write(reinterpret_cast<const char*>(&nIndices), sizeof(nIndices));
+    f.write(reinterpret_cast<const char*>(indices.data()),
             3 * sizeof(uint32_t));
-    f.write(reinterpret_cast<const char *>(&objectId), sizeof(objectId));
+    f.write(reinterpret_cast<const char*>(&objectId), sizeof(objectId));
   }
   f.close();
 
   return true;
 }
 
-} // namespace assets
-} // namespace esp
+}  // namespace assets
+}  // namespace esp

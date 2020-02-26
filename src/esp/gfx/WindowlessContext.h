@@ -10,7 +10,7 @@ namespace esp {
 namespace gfx {
 
 class WindowlessContext {
-public:
+ public:
   explicit WindowlessContext(int gpuDevice = 0);
 
   ~WindowlessContext() { LOG(INFO) << "Deconstructing WindowlessContext"; }
@@ -22,5 +22,5 @@ public:
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(WindowlessContext)
 };
 
-} // namespace gfx
-} // namespace esp
+}  // namespace gfx
+}  // namespace esp

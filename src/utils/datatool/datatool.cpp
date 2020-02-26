@@ -20,7 +20,7 @@ using namespace esp::assets;
 using namespace esp::scene;
 using namespace esp::nav;
 
-int createNavMesh(const std::string &meshFile, const std::string &navmeshFile) {
+int createNavMesh(const std::string& meshFile, const std::string& navmeshFile) {
   SceneLoader loader;
   const AssetInfo info = AssetInfo::fromPath(meshFile);
   const MeshData mesh = loader.load(info);
@@ -38,9 +38,9 @@ int createNavMesh(const std::string &meshFile, const std::string &navmeshFile) {
   return 0;
 }
 
-int createGibsonSemanticMesh(const std::string &objFile,
-                             const std::string &idsFile,
-                             const std::string &semMeshFile) {
+int createGibsonSemanticMesh(const std::string& objFile,
+                             const std::string& idsFile,
+                             const std::string& semMeshFile) {
   LOG(INFO) << "createGibsonSemanticMesh";
   tinyobj::attrib_t attrib;
   std::vector<tinyobj::shape_t> shapes;
@@ -67,7 +67,7 @@ int createGibsonSemanticMesh(const std::string &objFile,
   file.seekg(0, std::ios::beg);
 
   std::vector<unsigned short> objectId(size / sizeof(short));
-  file.read(reinterpret_cast<char *>(objectId.data()), size);
+  file.read(reinterpret_cast<char*>(objectId.data()), size);
   if (!file) {
     LOG(ERROR) << "Failed to load " << idsFile;
     return 2;
@@ -95,11 +95,11 @@ int createGibsonSemanticMesh(const std::string &objFile,
       esp::quatf::FromTwoVectors(esp::vec3f::UnitY(), esp::vec3f::UnitZ());
   for (size_t i = 0; i < numVerts; i++) {
     unsigned char gray[] = {0x80, 0x80, 0x80};
-    float *components = &attrib.vertices[i * 3];
+    float* components = &attrib.vertices[i * 3];
     Eigen::Map<esp::vec3f> vertex{components};
     vertex = transform * vertex;
-    f.write(reinterpret_cast<char *>(components), sizeof(float) * 3);
-    f.write(reinterpret_cast<char *>(gray), sizeof(gray));
+    f.write(reinterpret_cast<char*>(components), sizeof(float) * 3);
+    f.write(reinterpret_cast<char*>(gray), sizeof(gray));
   }
 
   size_t index_offset = 0;
@@ -109,11 +109,11 @@ int createGibsonSemanticMesh(const std::string &objFile,
 
     for (size_t j = 0; j < fv; j++) {
       tinyobj::index_t idx = shapes[0].mesh.indices[index_offset + j];
-      f.write(reinterpret_cast<char *>(&idx.vertex_index),
+      f.write(reinterpret_cast<char*>(&idx.vertex_index),
               sizeof(idx.vertex_index));
     }
     index_offset += fv;
-    f.write(reinterpret_cast<char *>(&objectId[i]), sizeof(objectId[i]));
+    f.write(reinterpret_cast<char*>(&objectId[i]), sizeof(objectId[i]));
   }
 
   f.close();
@@ -121,16 +121,16 @@ int createGibsonSemanticMesh(const std::string &objFile,
   return 0;
 }
 
-int createMp3dSemanticMesh(const std::string &plyFile,
-                           const std::string &houseFile,
-                           const std::string &semMeshFile) {
+int createMp3dSemanticMesh(const std::string& plyFile,
+                           const std::string& houseFile,
+                           const std::string& semMeshFile) {
   SemanticScene semanticScene;
   bool success = SemanticScene::loadMp3dHouse(houseFile, semanticScene);
   if (!success) {
     LOG(ERROR) << "Failed loading MP3D house file " << houseFile;
     return 1;
   }
-  const std::unordered_map<int, int> &objectIdMap =
+  const std::unordered_map<int, int>& objectIdMap =
       semanticScene.getSemanticIndexMap();
 
   Mp3dInstanceMeshData mp3dMesh;
@@ -150,7 +150,7 @@ int createMp3dSemanticMesh(const std::string &plyFile,
   return 0;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   if (argc < 4) {
     std::cout << "Usage: datatool task input_file output_file" << std::endl;
     return 64;

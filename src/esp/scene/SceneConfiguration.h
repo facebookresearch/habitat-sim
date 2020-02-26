@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "esp/core/esp.h"
 #include <map>
 #include <string>
+#include "esp/core/esp.h"
 
 namespace esp {
 namespace scene {
@@ -27,8 +27,8 @@ struct SceneConfiguration {
   ESP_SMART_POINTERS(SceneConfiguration)
 };
 
-bool operator==(const SceneConfiguration &a, const SceneConfiguration &b);
-bool operator!=(const SceneConfiguration &a, const SceneConfiguration &b);
+bool operator==(const SceneConfiguration& a, const SceneConfiguration& b);
+bool operator!=(const SceneConfiguration& a, const SceneConfiguration& b);
 
-} // namespace scene
-} // namespace esp
+}  // namespace scene
+}  // namespace esp

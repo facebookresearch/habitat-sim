@@ -26,7 +26,7 @@ enum class DataType {
 };
 
 class Buffer {
-public:
+ public:
   explicit Buffer() {}
   explicit Buffer(const std::vector<size_t> shape, const DataType dataType) {
     this->shape = shape;
@@ -36,11 +36,11 @@ public:
   void clear();
   virtual ~Buffer() { dealloc(); }
 
-protected:
+ protected:
   void alloc();
   void dealloc();
 
-public:
+ public:
   Corrade::Containers::Array<uint8_t> data;
   size_t totalSize = 0;
   DataType dataType = DataType::DT_UINT8;
@@ -49,5 +49,5 @@ public:
   ESP_SMART_POINTERS(Buffer)
 };
 
-} // namespace core
-} // namespace esp
+}  // namespace core
+}  // namespace esp

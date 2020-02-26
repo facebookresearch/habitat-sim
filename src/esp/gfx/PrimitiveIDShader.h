@@ -20,7 +20,7 @@ namespace esp {
 namespace gfx {
 
 class PrimitiveIDShader : public Magnum::GL::AbstractShaderProgram {
-public:
+ public:
   /**
    * @brief Constructor
    */
@@ -45,15 +45,15 @@ public:
    * @brief Set transformation and projection matrix
    * @return Reference to self (for method chaining)
    */
-  PrimitiveIDShader &
-  setTransformationProjectionMatrix(const Magnum::Matrix4 &matrix) {
+  PrimitiveIDShader& setTransformationProjectionMatrix(
+      const Magnum::Matrix4& matrix) {
     setUniform(transformationProjectionMatrixUniform_, matrix);
     return *this;
   }
 
-private:
+ private:
   int transformationProjectionMatrixUniform_;
 };
 
-} // namespace gfx
-} // namespace esp
+}  // namespace gfx
+}  // namespace esp

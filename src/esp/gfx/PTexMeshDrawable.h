@@ -16,18 +16,20 @@ namespace gfx {
 class PTexMeshShader;
 
 class PTexMeshDrawable : public Drawable {
-public:
-  explicit PTexMeshDrawable(scene::SceneNode &node, PTexMeshShader &shader,
-                            assets::PTexMeshData &ptexMeshData, int submeshID,
-                            DrawableGroup *group = nullptr);
+ public:
+  explicit PTexMeshDrawable(scene::SceneNode& node,
+                            PTexMeshShader& shader,
+                            assets::PTexMeshData& ptexMeshData,
+                            int submeshID,
+                            DrawableGroup* group = nullptr);
 
-protected:
-  virtual void draw(const Magnum::Matrix4 &transformationMatrix,
-                    Magnum::SceneGraph::Camera3D &camera) override;
+ protected:
+  virtual void draw(const Magnum::Matrix4& transformationMatrix,
+                    Magnum::SceneGraph::Camera3D& camera) override;
 
-  Magnum::GL::Texture2D &atlasTexture_;
+  Magnum::GL::Texture2D& atlasTexture_;
 #ifndef CORRADE_TARGET_APPLE
-  Magnum::GL::BufferTexture &adjFacesBufferTexture_;
+  Magnum::GL::BufferTexture& adjFacesBufferTexture_;
 #endif
   uint32_t tileSize_;
   float exposure_;
@@ -35,5 +37,5 @@ protected:
   float saturation_;
 };
 
-} // namespace gfx
-} // namespace esp
+}  // namespace gfx
+}  // namespace esp

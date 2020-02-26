@@ -6,11 +6,11 @@
 
 #include <gtest/gtest.h>
 
+#include <Corrade/Utility/Directory.h>
+#include <string>
 #include "esp/io/io.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sim/SimulatorWithAgents.h"
-#include <Corrade/Utility/Directory.h>
-#include <string>
 
 namespace Cr = Corrade;
 
@@ -50,9 +50,9 @@ TEST(GibsonSemanticSimTest, Basic) {
   SimulatorConfiguration cfg;
   cfg.scene.id = esp::io::changeExtension(gibsonSemanticFilename, ".glb");
   SimulatorWithAgents simulator(cfg);
-  const auto &semanticScene = simulator.getSemanticScene();
+  const auto& semanticScene = simulator.getSemanticScene();
   ASSERT_EQ(semanticScene->objects().size(), 34);
-  const auto &microwave = semanticScene->objects()[1];
+  const auto& microwave = semanticScene->objects()[1];
   ASSERT_EQ(microwave->category()->name(""), "microwave");
   ASSERT(microwave->obb().center().isApprox(
       esp::vec3f(2.83999, 4.76085, 1.49223)));

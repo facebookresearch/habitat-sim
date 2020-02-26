@@ -39,8 +39,8 @@ namespace Trade {
 class AbstractImporter;
 class AbstractShaderProgram;
 class PhongMaterialData;
-} // namespace Trade
-} // namespace Magnum
+}  // namespace Trade
+}  // namespace Magnum
 
 namespace esp {
 namespace gfx {
@@ -52,7 +52,7 @@ struct SceneConfiguration;
 namespace physics {
 class PhysicsManager;
 class RigidObject;
-} // namespace physics
+}  // namespace physics
 namespace assets {
 
 /**
@@ -61,7 +61,7 @@ namespace assets {
  * materials.
  */
 class ResourceManager {
-public:
+ public:
   /** @brief Constructor */
   explicit ResourceManager(){};
 
@@ -94,8 +94,9 @@ public:
    * rendered.
    * @return Whether or not the scene load succeeded.
    */
-  bool loadScene(const AssetInfo &info, scene::SceneNode *parent = nullptr,
-                 DrawableGroup *drawables = nullptr);
+  bool loadScene(const AssetInfo& info,
+                 scene::SceneNode* parent = nullptr,
+                 DrawableGroup* drawables = nullptr);
 
   /**
    * @brief Load and instantiate a scene including physics simulation.
@@ -119,11 +120,11 @@ public:
    * rendered.
    * @return Whether or not the scene load succeeded.
    */
-  bool loadScene(const AssetInfo &info,
-                 std::shared_ptr<physics::PhysicsManager> &_physicsManager,
+  bool loadScene(const AssetInfo& info,
+                 std::shared_ptr<physics::PhysicsManager>& _physicsManager,
                  PhysicsManagerAttributes physicsManagerAttributes,
-                 scene::SceneNode *parent = nullptr,
-                 DrawableGroup *drawables = nullptr);
+                 scene::SceneNode* parent = nullptr,
+                 DrawableGroup* drawables = nullptr);
 
   /**
    * @brief Load and instantiate a scene including physics simulation.
@@ -151,10 +152,10 @@ public:
    * ESP_DEFAULT_PHYS_SCENE_CONFIG set by cmake.
    * @return Whether or not the scene load succeeded.
    */
-  bool loadScene(const AssetInfo &info,
-                 std::shared_ptr<physics::PhysicsManager> &_physicsManager,
-                 scene::SceneNode *parent = nullptr,
-                 DrawableGroup *drawables = nullptr,
+  bool loadScene(const AssetInfo& info,
+                 std::shared_ptr<physics::PhysicsManager>& _physicsManager,
+                 scene::SceneNode* parent = nullptr,
+                 DrawableGroup* drawables = nullptr,
                  std::string physicsFilename = ESP_DEFAULT_PHYS_SCENE_CONFIG);
 
   /**
@@ -187,8 +188,9 @@ public:
    * objPhysConfigFilename, referes. Can be used to reference the obejct
    * template, but can change if the @ref physicsObjectLibrary_ is modified.
    */
-  int loadObject(const std::string &objPhysConfigFilename,
-                 scene::SceneNode *parent, DrawableGroup *drawables);
+  int loadObject(const std::string& objPhysConfigFilename,
+                 scene::SceneNode* parent,
+                 DrawableGroup* drawables);
 
   /**
    * @brief Load and parse a physics object template config file and generates a
@@ -200,7 +202,7 @@ public:
    * objPhysConfigFilename, referes. Can be used to reference the object
    * template, but can change if the @ref physicsObjectLibrary_ is modified.
    */
-  int loadObject(const std::string &objPhysConfigFilename);
+  int loadObject(const std::string& objPhysConfigFilename);
 
   /**
    * @brief Add a @ref PhysicsObjectAttributes object to the @ref
@@ -212,7 +214,7 @@ public:
    * @param objectTemplate The object template.
    * @return The index in the @ref physicsObjectLibrary_ of object template.
    */
-  int loadObject(PhysicsObjectAttributes &objectTemplate,
+  int loadObject(PhysicsObjectAttributes& objectTemplate,
                  const std::string objectTemplateHandle);
 
   //======== Accessor functions ========
@@ -225,8 +227,8 @@ public:
    * @return A vector reference to @ref assets::CollisionMeshData instances for
    * individual components of the asset.
    */
-  const std::vector<assets::CollisionMeshData> &
-  getCollisionMesh(const std::string configFile);
+  const std::vector<assets::CollisionMeshData>& getCollisionMesh(
+      const std::string configFile);
 
   /**
    * @brief Getter for all @ref assets::CollisionMeshData associated with the
@@ -238,8 +240,8 @@ public:
    * @return A vector reference to @ref assets::CollisionMeshData instances for
    * individual components of the asset.
    */
-  const std::vector<assets::CollisionMeshData> &
-  getCollisionMesh(const int objectID);
+  const std::vector<assets::CollisionMeshData>& getCollisionMesh(
+      const int objectID);
 
   /**
    * @brief Get the index in @ref physicsObjectLibrary_ for the object template
@@ -249,7 +251,7 @@ public:
    * physicsObjectLibrary_.
    * @return The index of the object template in @ref physicsObjectLibrary_.
    */
-  int getObjectID(const std::string &configFile);
+  int getObjectID(const std::string& configFile);
 
   /**
    * @brief Get the key in @ref physicsObjectLibrary_ for the object template
@@ -271,8 +273,8 @@ public:
    * physicsObjectLibrary_.
    * @return A mutable reference to the object template for the asset.
    */
-  PhysicsObjectAttributes &
-  getPhysicsObjectAttributes(const std::string &configFile);
+  PhysicsObjectAttributes& getPhysicsObjectAttributes(
+      const std::string& configFile);
 
   /**
    * @brief Gets the number of object templates stored in the @ref
@@ -291,7 +293,7 @@ public:
    * @return The transformation matrix mapping from the original state to its
    * current state.
    */
-  const Magnum::Matrix4 &getMeshTransformation(const size_t meshIndex) {
+  const Magnum::Matrix4& getMeshTransformation(const size_t meshIndex) {
     return meshes_[meshIndex]->meshTransform_;
   };
 
@@ -304,7 +306,7 @@ public:
    * Typically the filepath of the asset.
    * @return The asset's @ref MeshMetaData object.
    */
-  const MeshMetaData &getMeshMetaData(const std::string &filename) {
+  const MeshMetaData& getMeshMetaData(const std::string& filename) {
     CHECK(resourceDict_.count(filename) > 0);
     return resourceDict_.at(filename);
   };
@@ -318,8 +320,8 @@ public:
    * resourceDict_ and @ref meshes_.
    * @return The unified @ref MeshData object for the asset.
    */
-  std::unique_ptr<MeshData>
-  createJoinedCollisionMesh(const std::string &filename);
+  std::unique_ptr<MeshData> createJoinedCollisionMesh(
+      const std::string& filename);
 
   /**
    * @brief Create a new drawable primitive attached to the desired @ref
@@ -332,10 +334,11 @@ public:
    * @param drawables The @ref DrawableGroup with which the primitive will be
    * rendered.
    */
-  void addPrimitiveToDrawables(int primitiveID, scene::SceneNode &node,
-                               DrawableGroup *drawables);
+  void addPrimitiveToDrawables(int primitiveID,
+                               scene::SceneNode& node,
+                               DrawableGroup* drawables);
 
-protected:
+ protected:
   //======== Scene Functions ========
 
   /**
@@ -352,9 +355,10 @@ protected:
    * @param meshTransformNode The @ref MeshTransformNode for component
    * identifying its mesh, material, transformation, and children.
    */
-  void addComponent(const MeshMetaData &metaData, scene::SceneNode &parent,
-                    DrawableGroup *drawables,
-                    const MeshTransformNode &meshTransformNode);
+  void addComponent(const MeshMetaData& metaData,
+                    scene::SceneNode& parent,
+                    DrawableGroup* drawables,
+                    const MeshTransformNode& meshTransformNode);
 
   /**
    * @brief Load textures from importer into assets, and update metaData for an
@@ -363,7 +367,7 @@ protected:
    * @param importer The importer already loaded with information for the asset.
    * @param metaData The asset's @ref MeshMetaData object.
    */
-  void loadTextures(Importer &importer, MeshMetaData *metaData);
+  void loadTextures(Importer& importer, MeshMetaData* metaData);
 
   /**
    * @brief Load meshes from importer into assets.
@@ -373,7 +377,7 @@ protected:
    * @param importer The importer already loaded with information for the asset.
    * @param metaData The asset's @ref MeshMetaData object.
    */
-  void loadMeshes(Importer &importer, MeshMetaData *metaData);
+  void loadMeshes(Importer& importer, MeshMetaData* metaData);
 
   /**
    * @brief Recursively parse the mesh component transformation heirarchy for
@@ -386,7 +390,8 @@ protected:
    * @param componentID The next component to add to the heirarchy. Identifies
    * the component in the @ref Importer.
    */
-  void loadMeshHierarchy(Importer &importer, MeshTransformNode &parent,
+  void loadMeshHierarchy(Importer& importer,
+                         MeshTransformNode& parent,
                          int componentID);
 
   /**
@@ -400,9 +405,10 @@ protected:
    * @param transformFromParentToWorld The cumulative transformation up to but
    * not including the current @ref MeshTransformNode.
    */
-  void joinHeirarchy(MeshData &mesh, const MeshMetaData &metaData,
-                     const MeshTransformNode &node,
-                     const Magnum::Matrix4 &transformFromParentToWorld);
+  void joinHeirarchy(MeshData& mesh,
+                     const MeshMetaData& metaData,
+                     const MeshTransformNode& node,
+                     const Magnum::Matrix4& transformFromParentToWorld);
 
   /**
    * @brief Load materials from importer into assets, and update metaData for an
@@ -411,7 +417,7 @@ protected:
    * @param importer The importer already loaded with information for the asset.
    * @param metaData The asset's @ref MeshMetaData object.
    */
-  void loadMaterials(Importer &importer, MeshMetaData *metaData);
+  void loadMaterials(Importer& importer, MeshMetaData* metaData);
 
   /**
    * @brief Load a PTex mesh into assets from a file and add it to the scene
@@ -423,8 +429,9 @@ protected:
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered.
    */
-  bool loadPTexMeshData(const AssetInfo &info, scene::SceneNode *parent,
-                        DrawableGroup *drawables);
+  bool loadPTexMeshData(const AssetInfo& info,
+                        scene::SceneNode* parent,
+                        DrawableGroup* drawables);
 
   /**
    * @brief Load an instance mesh (e.g. Matterport reconstruction) into assets
@@ -436,8 +443,9 @@ protected:
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered.
    */
-  bool loadInstanceMeshData(const AssetInfo &info, scene::SceneNode *parent,
-                            DrawableGroup *drawables);
+  bool loadInstanceMeshData(const AssetInfo& info,
+                            scene::SceneNode* parent,
+                            DrawableGroup* drawables);
 
   /**
    * @brief Load a mesh (e.g. gltf) into assets from a file.
@@ -450,9 +458,9 @@ protected:
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered.
    */
-  bool loadGeneralMeshData(const AssetInfo &info,
-                           scene::SceneNode *parent = nullptr,
-                           DrawableGroup *drawables = nullptr);
+  bool loadGeneralMeshData(const AssetInfo& info,
+                           scene::SceneNode* parent = nullptr,
+                           DrawableGroup* drawables = nullptr);
 
   /**
    * @brief Load a SUNCG mesh into assets from a file. !Deprecated! TODO:
@@ -464,8 +472,9 @@ protected:
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered.
    */
-  bool loadSUNCGHouseFile(const AssetInfo &info, scene::SceneNode *parent,
-                          DrawableGroup *drawables);
+  bool loadSUNCGHouseFile(const AssetInfo& info,
+                          scene::SceneNode* parent,
+                          DrawableGroup* drawables);
 
   // ======== Geometry helper functions, data structures ========
 
@@ -476,7 +485,7 @@ protected:
    * @param meshDataGL The mesh data.
    * @param translation The translation transform to apply.
    */
-  void translateMesh(BaseMesh *meshDataGL, Magnum::Vector3 translation);
+  void translateMesh(BaseMesh* meshDataGL, Magnum::Vector3 translation);
 
   /**
    * @brief Compute and return the axis aligned bounding box of a mesh in mesh
@@ -484,14 +493,14 @@ protected:
    * @param meshDataGL The mesh data.
    * @return The mesh bounding box.
    */
-  Magnum::Range3D computeMeshBB(BaseMesh *meshDataGL);
+  Magnum::Range3D computeMeshBB(BaseMesh* meshDataGL);
 
 /**
  * @brief Compute the absolute AABBs for drawables in PTex mesh in world space
  * @param baseMesh: ptex mesh
  */
 #ifdef ESP_BUILD_PTEX_SUPPORT
-  void computePTexMeshAbsoluteAABBs(BaseMesh &baseMesh);
+  void computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh);
 #endif
 
   /**
@@ -518,7 +527,7 @@ protected:
    * meshID is the index of the submesh corresponding to the drawable;
    */
   struct StaticDrawableInfo {
-    esp::scene::SceneNode &node;
+    esp::scene::SceneNode& node;
     uint32_t meshID;
   };
   /**
@@ -553,7 +562,7 @@ protected:
    * @brief A pointer to render mesh data for the most recently loaded instance
    * mesh. //TODO: remove? doesn't seem to be used anywhere.
    */
-  Magnum::GL::Mesh *instance_mesh_;
+  Magnum::GL::Mesh* instance_mesh_;
 
   /**
    * @brief Asset metadata linking meshes, textures, materials, and the
@@ -561,7 +570,7 @@ protected:
    *
    * Maps absolute path keys to metadata.
    */
-  std::map<std::string, MeshMetaData> resourceDict_; // meshes
+  std::map<std::string, MeshMetaData> resourceDict_;  // meshes
 
   // ======== Physical parameter data ========
 
@@ -629,9 +638,12 @@ protected:
    * @param materialIDLocal The index of the material within the material group
    * linked to the asset via the @ref MeshMetaData.
    */
-  void addMeshToDrawables(const MeshMetaData &metaData, scene::SceneNode &node,
-                          DrawableGroup *drawables, int objectID,
-                          int meshIDLocal, int materialIDLocal);
+  void addMeshToDrawables(const MeshMetaData& metaData,
+                          scene::SceneNode& node,
+                          DrawableGroup* drawables,
+                          int objectID,
+                          int meshIDLocal,
+                          int materialIDLocal);
 
   /**
    * @brief Enumeration of supported shader program options.
@@ -686,7 +698,7 @@ protected:
    * @param type The @ref ShaderType of the desired shader program.
    * @return A pointer to the specified shader program.
    */
-  Magnum::GL::AbstractShaderProgram *getShaderProgram(ShaderType type);
+  Magnum::GL::AbstractShaderProgram* getShaderProgram(ShaderType type);
 
   /**
    * @brief Create a @ref gfx::Drawable for the specified mesh, node,
@@ -707,11 +719,13 @@ protected:
    * @param color Optional color parameter for the shader program. Defaults to
    * white.
    */
-  void createDrawable(const ShaderType shaderType, Magnum::GL::Mesh &mesh,
-                      scene::SceneNode &node, DrawableGroup *group = nullptr,
-                      Magnum::GL::Texture2D *texture = nullptr,
+  void createDrawable(const ShaderType shaderType,
+                      Magnum::GL::Mesh& mesh,
+                      scene::SceneNode& node,
+                      DrawableGroup* group = nullptr,
+                      Magnum::GL::Texture2D* texture = nullptr,
                       int objectId = ID_UNDEFINED,
-                      const Magnum::Color4 &color = Magnum::Color4{1});
+                      const Magnum::Color4& color = Magnum::Color4{1});
 
   /**
    * @brief Flag to denote the desire to compress textures. TODO: unused?
@@ -719,5 +733,5 @@ protected:
   bool compressTextures_ = false;
 };
 
-} // namespace assets
-} // namespace esp
+}  // namespace assets
+}  // namespace esp

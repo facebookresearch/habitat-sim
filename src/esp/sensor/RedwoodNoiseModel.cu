@@ -15,8 +15,10 @@ const int MODEL_N_COLS = 80;
 
 // Read about the noise model here: http://www.alexteichman.com/octo/clams/
 // Original source code: http://redwood-data.org/indoor/data/simdepth.py
-__device__ float undistort(const int _x, const int _y, const float z,
-                           const float *__restrict__ model) {
+__device__ float undistort(const int _x,
+                           const int _y,
+                           const float z,
+                           const float* __restrict__ model) {
   const int i2 = (z + 1) / 2;
   const int i1 = i2 - 1;
   const float a = (z - (i1 * 2 + 1)) / 2.0f;
@@ -34,12 +36,13 @@ __device__ float undistort(const int _x, const int _y, const float z,
     return z / f;
 }
 
-__global__ void redwoodNoiseModelKernel(const float *__restrict__ depth,
-                                        const int H, const int W,
-                                        curandState_t *states,
-                                        const float *__restrict__ model,
+__global__ void redwoodNoiseModelKernel(const float* __restrict__ depth,
+                                        const int H,
+                                        const int W,
+                                        curandState_t* states,
+                                        const float* __restrict__ model,
                                         const float noiseMultiplier,
-                                        float *__restrict__ noisyDepth) {
+                                        float* __restrict__ noisyDepth) {
   const int TID = threadIdx.x;
   const int BID = blockIdx.x;
 
@@ -91,14 +94,14 @@ __global__ void redwoodNoiseModelKernel(const float *__restrict__ depth,
   }
 }
 
-__global__ void curandStatesSetupKernel(curandState_t *state, int seed, int n) {
+__global__ void curandStatesSetupKernel(curandState_t* state, int seed, int n) {
   int id = threadIdx.x + blockIdx.x * 64;
   if (id < n) {
     curand_init(seed, id + 1, 0, &state[id]);
   }
 }
 
-} // namespace
+}  // namespace
 
 namespace esp {
 namespace sensor {
@@ -125,22 +128,27 @@ struct CurandStates {
 
   ~CurandStates() { release(); }
 
-  curandState_t *devStates;
+  curandState_t* devStates;
 
-private:
+ private:
   int n_blocks_;
 };
 
-CurandStates *getCurandStates() { return new CurandStates(); }
-void freeCurandStates(CurandStates *curandStates) {
+CurandStates* getCurandStates() {
+  return new CurandStates();
+}
+void freeCurandStates(CurandStates* curandStates) {
   if (curandStates != 0)
     delete curandStates;
 }
 
-void simulateFromGPU(const float *__restrict__ devDepth, const int H,
-                     const int W, const float *__restrict__ devModel,
-                     CurandStates *curandStates, const float noiseMultiplier,
-                     float *__restrict__ devNoisyDepth) {
+void simulateFromGPU(const float* __restrict__ devDepth,
+                     const int H,
+                     const int W,
+                     const float* __restrict__ devModel,
+                     CurandStates* curandStates,
+                     const float noiseMultiplier,
+                     float* __restrict__ devNoisyDepth) {
   const int n_threads = std::min(std::max(W / 4, 1), 256);
   const int n_blocks = std::max(H / 8, 1);
 
@@ -150,10 +158,13 @@ void simulateFromGPU(const float *__restrict__ devDepth, const int H,
       devNoisyDepth);
 }
 
-void simulateFromCPU(const float *__restrict__ depth, const int H, const int W,
-                     const float *__restrict__ devModel,
-                     CurandStates *curandStates, const float noiseMultiplier,
-                     float *__restrict__ noisyDepth) {
+void simulateFromCPU(const float* __restrict__ depth,
+                     const int H,
+                     const int W,
+                     const float* __restrict__ devModel,
+                     CurandStates* curandStates,
+                     const float noiseMultiplier,
+                     float* __restrict__ noisyDepth) {
   float *devDepth, *devNoisyDepth;
   cudaMalloc(&devDepth, H * W * sizeof(float));
   cudaMalloc(&devNoisyDepth, H * W * sizeof(float));
@@ -169,6 +180,6 @@ void simulateFromCPU(const float *__restrict__ depth, const int H, const int W,
   cudaFree(devNoisyDepth);
   cudaFree(devDepth);
 }
-} // namespace impl
-} // namespace sensor
-} // namespace esp
+}  // namespace impl
+}  // namespace sensor
+}  // namespace esp

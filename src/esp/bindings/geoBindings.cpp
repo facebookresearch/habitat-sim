@@ -12,7 +12,7 @@ namespace py = pybind11;
 namespace esp {
 namespace geo {
 
-void initGeoBindings(py::module &m) {
+void initGeoBindings(py::module& m) {
   auto geo = m.def_submodule("geo");
 
   geo.attr("UP") = ESP_UP;
@@ -28,8 +28,8 @@ void initGeoBindings(py::module &m) {
       .def_property_readonly("sizes", &OBB::sizes)
       .def_property_readonly("half_extents", &OBB::halfExtents)
       .def_property_readonly(
-          "rotation", [](const OBB &self) { return self.rotation().coeffs(); });
+          "rotation", [](const OBB& self) { return self.rotation().coeffs(); });
 }
 
-} // namespace geo
-} // namespace esp
+}  // namespace geo
+}  // namespace esp

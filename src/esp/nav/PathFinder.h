@@ -152,18 +152,22 @@ struct NavMeshSettings {
  *
  */
 class PathFinder {
-public:
+ public:
   /**
    * @brief Constructor.
    */
   PathFinder();
   ~PathFinder() = default;
 
-  bool build(const NavMeshSettings &bs, const float *verts, const int nverts,
-             const int *tris, const int ntris, const float *bmin,
-             const float *bmax);
+  bool build(const NavMeshSettings& bs,
+             const float* verts,
+             const int nverts,
+             const int* tris,
+             const int ntris,
+             const float* bmin,
+             const float* bmax);
 
-  bool build(const NavMeshSettings &bs, const esp::assets::MeshData &mesh);
+  bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
 
   /**
    * @brief Returns a random navigable point
@@ -186,7 +190,7 @@ public:
    * @return Whether or not a path exists between @ref
    * ShortestPath.requestedStart and @ref ShortestPath.requestedEnd
    */
-  bool findPath(ShortestPath &path);
+  bool findPath(ShortestPath& path);
 
   /**
    * @brief Finds the shortest path from a start point to the closest (by
@@ -201,7 +205,7 @@ public:
    * MultiGoalShortestPath.requestedStart and any @ref
    * MultiGoalShortestPath.requestedEnds
    */
-  bool findPath(MultiGoalShortestPath &path);
+  bool findPath(MultiGoalShortestPath& path);
 
   /**
    * @brief Attempts to move from @ref start to @ref end and returns the
@@ -213,12 +217,14 @@ public:
    *
    * @return The found end location
    */
-  template <typename T> T tryStep(const T &start, const T &end);
+  template <typename T>
+  T tryStep(const T& start, const T& end);
 
   /**
    * @brief Same as @ref tryStep but does not allow for sliding along walls
    */
-  template <typename T> T tryStepNoSliding(const T &start, const T &end);
+  template <typename T>
+  T tryStepNoSliding(const T& start, const T& end);
 
   /**
    * @brief Snaps a point to the navigation mesh
@@ -228,7 +234,8 @@ public:
    * @return The closest navigation point to @ref pt.  Will be {inf, inf, inf}
    * if no navigable point was within a reasonable distance
    */
-  template <typename T> T snapPoint(const T &pt);
+  template <typename T>
+  T snapPoint(const T& pt);
 
   /**
    * @brief Loads a navigation meshed saved by @ref saveNavMesh
@@ -238,7 +245,7 @@ public:
    *
    * @return Whether or not the navmesh was successfully loaded
    */
-  bool loadNavMesh(const std::string &path);
+  bool loadNavMesh(const std::string& path);
 
   /**
    * @brief Saves a navigation mesh to later be loaded by @ref loadNavMesh
@@ -247,7 +254,7 @@ public:
    *
    * @return Whether or not the navmesh was successfully saved
    */
-  bool saveNavMesh(const std::string &path);
+  bool saveNavMesh(const std::string& path);
 
   /**
    * @return If a navigation mesh is current loaded or not
@@ -270,7 +277,7 @@ public:
    *
    * @return Size of the connected component
    */
-  float islandRadius(const vec3f &pt) const;
+  float islandRadius(const vec3f& pt) const;
 
   /**
    * @brief Finds the distance to the closest non-navigable location
@@ -281,16 +288,16 @@ public:
    * @return The distance to the closest non-navigable location or @ref
    * maxSearchRadius if all locations within @ref maxSearchRadius are navigable
    */
-  float distanceToClosestObstacle(const vec3f &pt,
+  float distanceToClosestObstacle(const vec3f& pt,
                                   const float maxSearchRadius = 2.0) const;
 
   /**
    * @brief Same as @ref distanceToClosestObstacle but returns additional
    * information.
    */
-  HitRecord
-  closestObstacleSurfacePoint(const vec3f &pt,
-                              const float maxSearchRadius = 2.0) const;
+  HitRecord closestObstacleSurfacePoint(
+      const vec3f& pt,
+      const float maxSearchRadius = 2.0) const;
 
   /**
    * @brief Query whether or not a given location is navigable
@@ -305,18 +312,19 @@ public:
    *
    * @return Whether or not @ref pt is navigable
    */
-  bool isNavigable(const vec3f &pt, const float maxYDelta = 0.5) const;
+  bool isNavigable(const vec3f& pt, const float maxYDelta = 0.5) const;
 
   /**
    * @return The axis aligned bounding box containing the navigation mesh.
    */
   std::pair<vec3f, vec3f> bounds() const;
 
-  Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>
-  getTopDownView(const float pixelsPerMeter, const float height);
+  Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
+      const float pixelsPerMeter,
+      const float height);
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(PathFinder);
 };
 
-} // namespace nav
-} // namespace esp
+}  // namespace nav
+}  // namespace esp

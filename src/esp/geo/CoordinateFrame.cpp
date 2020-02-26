@@ -10,18 +10,20 @@
 namespace esp {
 namespace geo {
 
-CoordinateFrame::CoordinateFrame(const vec3f &up /* = ESP_UP */,
-                                 const vec3f &front /* = ESP_FRONT */,
-                                 const vec3f &origin /* = vec3f(0, 0, 0) */)
+CoordinateFrame::CoordinateFrame(const vec3f& up /* = ESP_UP */,
+                                 const vec3f& front /* = ESP_FRONT */,
+                                 const vec3f& origin /* = vec3f(0, 0, 0) */)
     : up_(up), front_(front), origin_(origin) {
   ASSERT(up_.isOrthogonal(front_));
 }
 
-CoordinateFrame::CoordinateFrame(const quatf &rotation,
-                                 const vec3f &origin /* = vec3f(0, 0, 0) */)
+CoordinateFrame::CoordinateFrame(const quatf& rotation,
+                                 const vec3f& origin /* = vec3f(0, 0, 0) */)
     : CoordinateFrame(rotation * ESP_UP, rotation * ESP_FRONT, origin) {}
 
-CoordinateFrame::CoordinateFrame(const std::string &json) { fromJson(json); }
+CoordinateFrame::CoordinateFrame(const std::string& json) {
+  fromJson(json);
+}
 
 quatf CoordinateFrame::rotationWorldToFrame() const {
   const quatf R_frameUp_worldUp = quatf::FromTwoVectors(ESP_UP, up_);
@@ -40,7 +42,7 @@ std::string CoordinateFrame::toJson() const {
   return ss.str();
 }
 
-void CoordinateFrame::fromJson(const std::string &jsonString) {
+void CoordinateFrame::fromJson(const std::string& jsonString) {
   const auto json = io::parseJsonString(jsonString);
   const auto up = json["up"].GetArray();
   const auto front = json["front"].GetArray();
@@ -53,13 +55,13 @@ void CoordinateFrame::fromJson(const std::string &jsonString) {
   ASSERT(up_.isOrthogonal(front_));
 }
 
-bool operator==(const CoordinateFrame &a, const CoordinateFrame &b) {
+bool operator==(const CoordinateFrame& a, const CoordinateFrame& b) {
   return a.up().isApprox(b.up()) && a.front().isApprox(b.front()) &&
          a.origin().isApprox(b.origin());
 }
-bool operator!=(const CoordinateFrame &a, const CoordinateFrame &b) {
+bool operator!=(const CoordinateFrame& a, const CoordinateFrame& b) {
   return !(a == b);
 }
 
-} // namespace geo
-} // namespace esp
+}  // namespace geo
+}  // namespace esp
