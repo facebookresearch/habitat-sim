@@ -74,7 +74,8 @@ std::string Mp3dObjectCategory::name(const std::string& mapping) const {
 }
 
 int Mp3dRegionCategory::index(const std::string& mapping) const {
-  return labelCode_ - 'a';
+  return std::distance(kRegionCategoryMap.begin(),
+                       kRegionCategoryMap.find(labelCode_));
 }
 
 std::string Mp3dRegionCategory::name(const std::string& mapping) const {

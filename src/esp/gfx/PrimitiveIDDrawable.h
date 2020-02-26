@@ -5,6 +5,7 @@
 #pragma once
 
 #include "Drawable.h"
+#include "esp/gfx/ShaderManager.h"
 
 namespace esp {
 namespace gfx {
@@ -18,13 +19,17 @@ class PrimitiveIDDrawable : public Drawable {
   //! objectId, and color for textured, object id buffer and color shader
   //! output respectively
   explicit PrimitiveIDDrawable(scene::SceneNode& node,
-                               PrimitiveIDShader& shader,
                                Magnum::GL::Mesh& mesh,
+                               ShaderManager& shaderManager,
                                DrawableGroup* group = nullptr);
+
+  static constexpr char SHADER_KEY[] = "PrimitiveIDShader";
 
  protected:
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
                     Magnum::SceneGraph::Camera3D& camera) override;
+
+  PrimitiveIDShader* shader_ = nullptr;
 };
 
 }  // namespace gfx
