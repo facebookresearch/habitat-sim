@@ -4,9 +4,12 @@
 
 #pragma once
 
+#include <stack>
+
 #include <Corrade/Containers/Containers.h>
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Math/Range.h>
+
 #include "esp/core/esp.h"
 #include "esp/gfx/magnum.h"
 
@@ -118,6 +121,70 @@ class SceneNode : public MagnumObject {
   //! the frustum plane in last frame that culls this node
   int frustumPlaneIndex = 0;
 };
+
+// Traversal Helpers
+
+/**
+ * @brief Perform a pre-order traversal and invoke a callback at each node
+ *
+ * @param node Root node for this traversal
+ * @param cb Callback which will be called with each SceneNode
+ */
+template <typename Callable>
+void preOrderTraversalWithCallback(const SceneNode& node, Callable&& cb) {
+  std::stack<std::reference_wrapper<const SceneNode>> stack;
+  stack.emplace(node);
+
+  do {
+    const SceneNode& currNode = stack.top();
+    stack.pop();
+    std::forward<Callable>(cb)(currNode);
+
+    for (const MagnumObject& child : currNode.children()) {
+      stack.emplace(static_cast<const SceneNode&>(child));
+    }
+  } while (!stack.empty());
+}
+
+/** @overload */
+template <typename Callable>
+void preOrderTraversalWithCallback(SceneNode& node, Callable&& cb) {
+  auto constCb = [&cb](const SceneNode& node) {
+    std::forward<Callable>(cb)(const_cast<SceneNode&>(node));
+  };
+  preOrderTraversalWithCallback(const_cast<const SceneNode&>(node), constCb);
+}
+
+/**
+ * @brief Perform a pre-order traversal and invoke a callback on features of
+ * the desired type
+ *
+ * @tparam Feature Feature type to invoke callback on
+ * @param node Root node for this traversal
+ * @param cb Callback which will be called with each feature
+ */
+template <typename Feature, typename Callable>
+void preOrderFeatureTraversalWithCallback(const SceneNode& node,
+                                          Callable&& cb) {
+  auto featureCb = [&cb](const SceneNode& node) {
+    for (const auto& abstractFeature : node.features()) {
+      auto feature = dynamic_cast<const Feature*>(&abstractFeature);
+      if (feature)
+        std::forward<Callable>(cb)(*feature);
+    }
+  };
+  preOrderTraversalWithCallback(node, featureCb);
+}
+
+/** @overload */
+template <typename Feature, typename Callable>
+void preOrderFeatureTraversalWithCallback(SceneNode& node, Callable&& cb) {
+  auto constFeatureCb = [&cb](const Feature& feature) {
+    std::forward<Callable>(cb)(const_cast<Feature&>(feature));
+  };
+  preOrderFeatureTraversalWithCallback<Feature>(
+      const_cast<const SceneNode&>(node), constFeatureCb);
+}
 
 }  // namespace scene
 }  // namespace esp

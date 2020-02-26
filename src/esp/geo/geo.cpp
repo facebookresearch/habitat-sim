@@ -43,13 +43,12 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
   }
 
   // Build upper hull
-  for (size_t i = idx.size() - 2, t = k + 1; i >= 0; i--) {
+  for (size_t i = idx.size() - 1, t = k + 1; i > 0; i--) {
     while (k >= t && cross(points[hullIdx[k - 2]], points[hullIdx[k - 1]],
-                           points[idx[i]]) <= 0) {
+                           points[idx[i - 1]]) <= 0) {
       k--;
     }
-
-    hullIdx[k++] = idx[i];
+    hullIdx[k++] = idx[i - 1];
   }
 
   hullIdx.resize(k - 1);
