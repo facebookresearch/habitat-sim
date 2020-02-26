@@ -2649,5 +2649,5 @@ static const std::map<std::string, std::string> kSuncgObjectCategoryMap = {
     {"s__998", "stand,nightstand"},
     {"s__999", "stand,nightstand"}};
 
-} // namespace scene
-} // namespace esp
+}  // namespace scene
+}  // namespace esp

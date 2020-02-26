@@ -36,8 +36,8 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
 
   int sceneID = sceneManager_.initSceneGraph();
-  auto &sceneGraph = sceneManager_.getSceneGraph(sceneID);
-  esp::scene::SceneNode *navSceneNode = &sceneGraph.getRootNode().createChild();
+  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
+  esp::scene::SceneNode* navSceneNode = &sceneGraph.getRootNode().createChild();
   const esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(boxFile);
   resourceManager.loadScene(info, navSceneNode, nullptr);
 

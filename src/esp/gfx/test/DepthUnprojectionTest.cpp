@@ -47,7 +47,7 @@ struct DepthUnprojectionTest : Mn::GL::OpenGLTester {
 };
 
 const struct {
-  const char *name;
+  const char* name;
   float depth, expected;
   Mn::Matrix4 projection;
 } TestData[]{
@@ -75,22 +75,26 @@ const struct {
 #endif
 
 #ifdef FMV_SUPPORTED
-__attribute__((target("default"))) const char *targetName() {
+__attribute__((target("default"))) const char* targetName() {
   return "default";
 }
 
-__attribute__((target("sse4.2"))) const char *targetName() { return "sse4.2"; }
+__attribute__((target("sse4.2"))) const char* targetName() {
+  return "sse4.2";
+}
 
-__attribute__((target("avx2"))) const char *targetName() { return "avx2"; }
+__attribute__((target("avx2"))) const char* targetName() {
+  return "avx2";
+}
 #endif
 
 #ifdef FMV_SUPPORTED
 __attribute__((target_clones("default", "sse4.2", "avx2")))
 #endif
 CORRADE_NEVER_INLINE void
-unprojectBaseline(const Mn::Matrix4 &unprojection,
+unprojectBaseline(const Mn::Matrix4& unprojection,
                   Cr::Containers::ArrayView<float> depth) {
-  for (float &d : depth) {
+  for (float& d : depth) {
     if (d == 1.0f) {
       d = 0.0f;
       continue;
@@ -103,9 +107,9 @@ unprojectBaseline(const Mn::Matrix4 &unprojection,
 __attribute__((target_clones("default", "sse4.2", "avx2")))
 #endif
 CORRADE_NEVER_INLINE void
-unprojectBaselineNoBranch(const Mn::Matrix4 &unprojection,
+unprojectBaselineNoBranch(const Mn::Matrix4& unprojection,
                           Cr::Containers::ArrayView<float> depth) {
-  for (float &d : depth) {
+  for (float& d : depth) {
     d = -unprojection.transformPoint(Mn::Vector3::zAxis(-d)).z();
   }
 }
@@ -114,18 +118,17 @@ unprojectBaselineNoBranch(const Mn::Matrix4 &unprojection,
 __attribute__((target_clones("default", "sse4.2", "avx2")))
 #endif
 CORRADE_NEVER_INLINE void
-unprojectDepthNoBranch(const Mn::Vector2 &unprojection,
+unprojectDepthNoBranch(const Mn::Vector2& unprojection,
                        Cr::Containers::ArrayView<Mn::Float> depth) {
-  for (float &d : depth) {
+  for (float& d : depth) {
     d = unprojection[1] / (d + unprojection[0]);
   }
 }
 
 const struct {
-  const char *name;
-  void (*unprojectorFull)(const Mn::Matrix4 &,
-                          Cr::Containers::ArrayView<float>);
-  void (*unprojectorOptimized)(const Mn::Vector2 &,
+  const char* name;
+  void (*unprojectorFull)(const Mn::Matrix4&, Cr::Containers::ArrayView<float>);
+  void (*unprojectorOptimized)(const Mn::Vector2&,
                                Cr::Containers::ArrayView<float>);
   DepthShader::Flags flags;
 } UnprojectBenchmarkData[]{
@@ -135,10 +138,10 @@ const struct {
 };
 
 DepthUnprojectionTest::DepthUnprojectionTest() {
-  addInstancedTests({&DepthUnprojectionTest::testCpu,
-                     &DepthUnprojectionTest::testGpuDirect,
-                     &DepthUnprojectionTest::testGpuUnprojectExisting},
-                    Cr::Containers::arraySize(TestData));
+  addInstancedTests(
+      {&DepthUnprojectionTest::testCpu, &DepthUnprojectionTest::testGpuDirect,
+       &DepthUnprojectionTest::testGpuUnprojectExisting},
+      Cr::Containers::arraySize(TestData));
 
   addInstancedBenchmarks({&DepthUnprojectionTest::benchmarkBaseline}, 50,
                          Cr::Containers::arraySize(UnprojectBenchmarkData));
@@ -156,7 +159,7 @@ DepthUnprojectionTest::DepthUnprojectionTest() {
 }
 
 void DepthUnprojectionTest::testCpu() {
-  auto &&data = TestData[testCaseInstanceId()];
+  auto&& data = TestData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
 
   Mn::Vector3 projected =
@@ -172,7 +175,7 @@ void DepthUnprojectionTest::testCpu() {
 }
 
 void DepthUnprojectionTest::testGpuDirect() {
-  auto &&data = TestData[testCaseInstanceId()];
+  auto&& data = TestData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
 
   /* This makes points that are too far set to 0, which is consistent with
@@ -212,7 +215,7 @@ void DepthUnprojectionTest::testGpuDirect() {
 }
 
 void DepthUnprojectionTest::testGpuUnprojectExisting() {
-  auto &&data = TestData[testCaseInstanceId()];
+  auto&& data = TestData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
 
   Mn::Vector3 projected =
@@ -257,7 +260,7 @@ void DepthUnprojectionTest::testGpuUnprojectExisting() {
 constexpr Mn::Vector2i BenchmarkSize{1536};
 
 void DepthUnprojectionTest::benchmarkBaseline() {
-  auto &&data = UnprojectBenchmarkData[testCaseInstanceId()];
+  auto&& data = UnprojectBenchmarkData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
 
   if (testCaseInstanceId() == 0 && testCaseRepeatId() == 0) {
@@ -285,7 +288,7 @@ void DepthUnprojectionTest::benchmarkBaseline() {
 }
 
 void DepthUnprojectionTest::benchmarkCpu() {
-  auto &&data = UnprojectBenchmarkData[testCaseInstanceId()];
+  auto&& data = UnprojectBenchmarkData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
 
   Mn::Vector2 unprojection = calculateDepthUnprojection(
@@ -326,7 +329,7 @@ void DepthUnprojectionTest::benchmarkGpuDirect() {
 }
 
 void DepthUnprojectionTest::benchmarkGpuUnprojectExisting() {
-  auto &&data = UnprojectBenchmarkData[testCaseInstanceId()];
+  auto&& data = UnprojectBenchmarkData[testCaseInstanceId()];
   setTestCaseDescription(data.name);
 
   Mn::Matrix4 projection =
@@ -365,9 +368,9 @@ void DepthUnprojectionTest::benchmarkGpuUnprojectExisting() {
   CORRADE_BENCHMARK(10) { mesh.draw(shader); }
 }
 
-} // namespace
-} // namespace test
-} // namespace gfx
-} // namespace esp
+}  // namespace
+}  // namespace test
+}  // namespace gfx
+}  // namespace esp
 
 CORRADE_TEST_MAIN(esp::gfx::test::DepthUnprojectionTest)

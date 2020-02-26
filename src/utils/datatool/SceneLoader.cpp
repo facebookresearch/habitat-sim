@@ -15,14 +15,14 @@
 
 #include <sophus/so3.hpp>
 
-#include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <assimp/Importer.hpp>
 
 namespace esp {
 namespace assets {
 
-MeshData SceneLoader::load(const AssetInfo &info) {
+MeshData SceneLoader::load(const AssetInfo& info) {
   MeshData mesh;
   if (!esp::io::exists(info.filepath)) {
     LOG(ERROR) << "Could not find file " << info.filepath;
@@ -33,16 +33,16 @@ MeshData SceneLoader::load(const AssetInfo &info) {
     GenericInstanceMeshData instanceMeshData;
     instanceMeshData.loadPLY(info.filepath);
 
-    const auto &vbo = instanceMeshData.getVertexBufferObjectCPU();
-    const auto &cbo = instanceMeshData.getColorBufferObjectCPU();
-    const auto &ibo = instanceMeshData.getIndexBufferObjectCPU();
+    const auto& vbo = instanceMeshData.getVertexBufferObjectCPU();
+    const auto& cbo = instanceMeshData.getColorBufferObjectCPU();
+    const auto& ibo = instanceMeshData.getIndexBufferObjectCPU();
     mesh.vbo = vbo;
     mesh.ibo = ibo;
-    for (const auto &c : cbo) {
+    for (const auto& c : cbo) {
       mesh.cbo.emplace_back(c.cast<float>() / 255.0f);
     }
   } else {
-    const aiScene *scene;
+    const aiScene* scene;
     Assimp::Importer Importer;
 
     // Flags for loading the mesh
@@ -56,7 +56,7 @@ MeshData SceneLoader::load(const AssetInfo &info) {
 
     // Iterate through all meshes in the file and extract the vertex components
     for (uint32_t m = 0, indexBase = 0; m < scene->mNumMeshes; ++m) {
-      const aiMesh &assimpMesh = *scene->mMeshes[m];
+      const aiMesh& assimpMesh = *scene->mMeshes[m];
       for (uint32_t v = 0; v < assimpMesh.mNumVertices; ++v) {
         // Use Eigen::Map to convert ASSIMP vectors to eigen vectors
         const Eigen::Map<const vec3f> xyz_scene(&assimpMesh.mVertices[v].x);
@@ -79,17 +79,17 @@ MeshData SceneLoader::load(const AssetInfo &info) {
           const Eigen::Map<const vec3f> color(&assimpMesh.mColors[0][v].r);
           mesh.cbo.push_back(color);
         }
-      } // vertices
+      }  // vertices
 
       // Generate and append index buffer for mesh
       for (uint32_t f = 0; f < assimpMesh.mNumFaces; ++f) {
-        const aiFace &face = assimpMesh.mFaces[f];
+        const aiFace& face = assimpMesh.mFaces[f];
         for (uint32_t i = 0; i < face.mNumIndices; ++i) {
           mesh.ibo.push_back(face.mIndices[i] + indexBase);
         }
-      } // faces
+      }  // faces
       indexBase += assimpMesh.mNumVertices;
-    } // meshes
+    }  // meshes
   }
 
   LOG(INFO) << "Loaded " << mesh.vbo.size() << " vertices, " << mesh.ibo.size()
@@ -98,5 +98,5 @@ MeshData SceneLoader::load(const AssetInfo &info) {
   return mesh;
 };
 
-} // namespace assets
-} // namespace esp
+}  // namespace assets
+}  // namespace esp

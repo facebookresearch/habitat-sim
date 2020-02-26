@@ -13,8 +13,8 @@
 namespace esp {
 namespace io {
 
-JsonDocument parseJsonFile(const std::string &file) {
-  FILE *pFile = fopen(file.c_str(), "rb");
+JsonDocument parseJsonFile(const std::string& file) {
+  FILE* pFile = fopen(file.c_str(), "rb");
   char buffer[65536];
   rapidjson::FileReadStream is(pFile, buffer, sizeof(buffer));
   JsonDocument d;
@@ -29,7 +29,7 @@ JsonDocument parseJsonFile(const std::string &file) {
   return d;
 }
 
-JsonDocument parseJsonString(const std::string &jsonString) {
+JsonDocument parseJsonString(const std::string& jsonString) {
   JsonDocument d;
   d.Parse(jsonString.c_str());
 
@@ -41,22 +41,22 @@ JsonDocument parseJsonString(const std::string &jsonString) {
   return d;
 }
 
-std::string jsonToString(const JsonDocument &d) {
+std::string jsonToString(const JsonDocument& d) {
   rapidjson::StringBuffer buffer{};
   rapidjson::Writer<rapidjson::StringBuffer> writer{buffer};
   d.Accept(writer);
   return buffer.GetString();
 }
 
-vec3f jsonToVec3f(const JsonGenericValue &jsonArray) {
+vec3f jsonToVec3f(const JsonGenericValue& jsonArray) {
   vec3f vec;
   size_t dim = 0;
   ASSERT(jsonArray.GetArray().Size() == vec.size());
-  for (const auto &element : jsonArray.GetArray()) {
+  for (const auto& element : jsonArray.GetArray()) {
     vec[dim++] = element.GetFloat();
   }
   return vec;
 }
 
-} // namespace io
-} // namespace esp
+}  // namespace io
+}  // namespace esp

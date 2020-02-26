@@ -22,7 +22,7 @@ using py::literals::operator""_a;
 namespace esp {
 namespace sim {
 
-void initSimBindings(py::module &m) {
+void initSimBindings(py::module& m) {
   // ==== SimulatorConfiguration ====
   py::class_<SimulatorConfiguration, SimulatorConfiguration::ptr>(
       m, "SimulatorConfiguration")
@@ -41,18 +41,19 @@ void initSimBindings(py::module &m) {
       .def_readwrite("physics_config_file",
                      &SimulatorConfiguration::physicsConfigFile)
       .def("__eq__",
-           [](const SimulatorConfiguration &self,
-              const SimulatorConfiguration &other) -> bool {
+           [](const SimulatorConfiguration& self,
+              const SimulatorConfiguration& other) -> bool {
              return self == other;
            })
-      .def("__neq__", [](const SimulatorConfiguration &self,
-                         const SimulatorConfiguration &other) -> bool {
-        return self != other;
-      });
+      .def("__neq__",
+           [](const SimulatorConfiguration& self,
+              const SimulatorConfiguration& other) -> bool {
+             return self != other;
+           });
 
   // ==== Simulator ====
   py::class_<Simulator, Simulator::ptr>(m, "Simulator")
-      .def(py::init(&Simulator::create<const SimulatorConfiguration &>))
+      .def(py::init(&Simulator::create<const SimulatorConfiguration&>))
       .def("get_active_scene_graph", &Simulator::getActiveSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            pybind11::return_value_policy::reference)
@@ -103,5 +104,5 @@ void initSimBindings(py::module &m) {
            "navmesh_settings"_a);
 }
 
-} // namespace sim
-} // namespace esp
+}  // namespace sim
+}  // namespace esp

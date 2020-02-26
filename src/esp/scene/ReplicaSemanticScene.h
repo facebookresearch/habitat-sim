@@ -10,12 +10,12 @@ namespace esp {
 namespace scene {
 
 struct ReplicaObjectCategory : public SemanticCategory {
-  ReplicaObjectCategory(const int id, const std::string &name)
+  ReplicaObjectCategory(const int id, const std::string& name)
       : id_(id), name_(name) {}
 
-  int index(const std::string &mapping) const override { return id_; }
+  int index(const std::string& mapping) const override { return id_; }
 
-  std::string name(const std::string &mapping) const override {
+  std::string name(const std::string& mapping) const override {
     if (mapping == "category" || mapping == "") {
       return name_;
     } else {
@@ -24,7 +24,7 @@ struct ReplicaObjectCategory : public SemanticCategory {
     }
   }
 
-protected:
+ protected:
   int id_;
   std::string name_;
   friend SemanticScene;
@@ -32,5 +32,5 @@ protected:
   ESP_SMART_POINTERS(ReplicaObjectCategory)
 };
 
-} // namespace scene
-} // namespace esp
+}  // namespace scene
+}  // namespace esp

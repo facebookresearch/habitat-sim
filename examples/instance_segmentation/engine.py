@@ -1,45 +1,56 @@
+import collections
 import math
 import sys
 import time
-import torch
-import collections
 
 import torch
 import torchvision.models.detection.mask_rcnn
 from torch.utils.tensorboard import SummaryWriter
 
-from examples.instance_segmentation.coco_utils import get_coco_api_from_dataset
-from examples.instance_segmentation.coco_eval import CocoEvaluator
 from examples.instance_segmentation import utils
+from examples.instance_segmentation.coco_eval import CocoEvaluator
+from examples.instance_segmentation.coco_utils import get_coco_api_from_dataset
 
 
 def load_model_state(model, optimizer, model_state_path, params=None):
     checkpoint = torch.load(model_state_path)
-    model.load_state_dict(checkpoint['model_state_dict'])
-    optim_state_dict = checkpoint['optimizer_state_dict']
+    model.load_state_dict(checkpoint["model_state_dict"])
+    optim_state_dict = checkpoint["optimizer_state_dict"]
     if params:
         for param, val in params.items():
-            optim_state_dict['param_groups'][0][param] = val
+            optim_state_dict["param_groups"][0][param] = val
 
     optimizer.load_state_dict(optim_state_dict)
-    epoch = checkpoint['epoch']
+    epoch = checkpoint["epoch"]
 
     model.train()
     return epoch
 
+
 def save_model_state(model, optimizer, epoch, model_state_path):
     checkpoint = {
-        'epoch': epoch,
-        'model_state_dict': model.state_dict(),
-        'optimizer_state_dict': optimizer.state_dict(),
+        "epoch": epoch,
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
     }
     torch.save(checkpoint, model_state_path)
 
-def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, writer=None, grad_clip=0, lr_scheduler=None):
+
+def train_one_epoch(
+    model,
+    optimizer,
+    data_loader,
+    device,
+    epoch,
+    print_freq,
+    writer=None,
+    grad_clip=0,
+    lr_scheduler=None,
+):
     model.train()
     metric_logger = utils.MetricLogger(delimiter="  ")
-    metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
-    header = 'Epoch: [{}]'.format(epoch)
+    metric_logger.add_meter("lr", utils.SmoothedValue(window_size=1, fmt="{value:.6f}"))
+    header = "Epoch: [{}]".format(epoch)
     epoch_losses = collections.defaultdict(int)
     total_loss = 0
     num_examples = len(data_loader)
@@ -71,14 +82,14 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, wr
         metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
 
-    epoch_losses['total_loss'] = total_loss    
+    epoch_losses["total_loss"] = total_loss
     for loss_name, loss_val in epoch_losses.items():
         epoch_losses[loss_name] = epoch_losses[loss_name] / num_examples
         if writer is not None:
-            writer.add_scalar('Losses/' + loss_name, epoch_losses[loss_name], epoch)
+            writer.add_scalar("Losses/" + loss_name, epoch_losses[loss_name], epoch)
 
     if lr_scheduler is not None:
-        lr_scheduler.step(epoch_losses['total_loss'])
+        lr_scheduler.step(epoch_losses["total_loss"])
 
 
 def _get_iou_types(model):
@@ -101,7 +112,7 @@ def evaluate(model, data_loader, device):
     cpu_device = torch.device("cpu")
     model.eval()
     metric_logger = utils.MetricLogger(delimiter="  ")
-    header = 'Test:'
+    header = "Test:"
 
     coco = get_coco_api_from_dataset(data_loader.dataset)
     iou_types = _get_iou_types(model)
@@ -118,7 +129,10 @@ def evaluate(model, data_loader, device):
         outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
         model_time = time.time() - model_time
 
-        res = {target["image_id"].item(): output for target, output in zip(targets, outputs)}
+        res = {
+            target["image_id"].item(): output
+            for target, output in zip(targets, outputs)
+        }
         evaluator_time = time.time()
         coco_evaluator.update(res)
         evaluator_time = time.time() - evaluator_time

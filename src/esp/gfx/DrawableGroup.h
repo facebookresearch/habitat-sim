@@ -20,8 +20,8 @@ class RenderCamera;
 // STUB (todo: remove)
 class DrawableGroup;
 class Shader {
-public:
-  void prepareForDraw(const RenderCamera &camera) {}
+ public:
+  void prepareForDraw(const RenderCamera& camera) {}
   ESP_SMART_POINTERS(Shader);
 };
 
@@ -29,7 +29,7 @@ public:
  * @brief Group of drawables, and shared group parameters.
  */
 class DrawableGroup : public Magnum::SceneGraph::DrawableGroup3D {
-public:
+ public:
   /**
    * @brief Constructor
    *
@@ -48,7 +48,7 @@ public:
    *
    * @return Reference to self (for method chaining)
    */
-  DrawableGroup &setShader(Shader::ptr shader) {
+  DrawableGroup& setShader(Shader::ptr shader) {
     shader_ = std::move(shader);
     return *this;
   }
@@ -58,13 +58,13 @@ public:
    *
    * @return Whether the @ref DrawableGroup is in a valid state to be drawn
    */
-  bool prepareForDraw(const RenderCamera &camera);
+  bool prepareForDraw(const RenderCamera& camera);
 
-private:
+ private:
   Shader::ptr shader_ = nullptr;
 
   ESP_SMART_POINTERS(DrawableGroup);
 };
 
-} // namespace gfx
-} // namespace esp
+}  // namespace gfx
+}  // namespace esp

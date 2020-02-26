@@ -24,16 +24,18 @@ namespace Cr = Corrade;
 namespace esp {
 namespace sim {
 
-Simulator::Simulator(const SimulatorConfiguration &cfg) {
+Simulator::Simulator(const SimulatorConfiguration& cfg) {
   // initalize members according to cfg
   // NOTE: NOT SO GREAT NOW THAT WE HAVE virtual functions
   //       Maybe better not to do this reconfigure
   reconfigure(cfg);
 }
 
-Simulator::~Simulator() { LOG(INFO) << "Deconstructing Simulator"; }
+Simulator::~Simulator() {
+  LOG(INFO) << "Deconstructing Simulator";
+}
 
-void Simulator::reconfigure(const SimulatorConfiguration &cfg) {
+void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // if configuration is unchanged, just reset and return
   if (cfg == config_) {
     reset();
@@ -85,10 +87,10 @@ void Simulator::reconfigure(const SimulatorConfiguration &cfg) {
       renderer_ = gfx::Renderer::create();
     }
 
-    auto &sceneGraph = sceneManager_.getSceneGraph(activeSceneID_);
+    auto& sceneGraph = sceneManager_.getSceneGraph(activeSceneID_);
 
-    auto &rootNode = sceneGraph.getRootNode();
-    auto &drawables = sceneGraph.getDrawables();
+    auto& rootNode = sceneGraph.getRootNode();
+    auto& drawables = sceneGraph.getDrawables();
     resourceManager_.compressTextures(cfg.compressTextures);
 
     bool loadSuccess = false;
@@ -116,10 +118,10 @@ void Simulator::reconfigure(const SimulatorConfiguration &cfg) {
         LOG(INFO) << "Loading semantic mesh " << semanticMeshFilename;
         activeSemanticSceneID_ = sceneManager_.initSceneGraph();
         sceneID_.push_back(activeSemanticSceneID_);
-        auto &semanticSceneGraph =
+        auto& semanticSceneGraph =
             sceneManager_.getSceneGraph(activeSemanticSceneID_);
-        auto &semanticRootNode = semanticSceneGraph.getRootNode();
-        auto &semanticDrawables = semanticSceneGraph.getDrawables();
+        auto& semanticRootNode = semanticSceneGraph.getRootNode();
+        auto& semanticDrawables = semanticSceneGraph.getDrawables();
         const assets::AssetInfo semanticSceneInfo =
             assets::AssetInfo::fromPath(semanticMeshFilename);
         resourceManager_.loadScene(semanticSceneInfo, &semanticRootNode,
@@ -144,29 +146,29 @@ void Simulator::reconfigure(const SimulatorConfiguration &cfg) {
   semanticScene_ = nullptr;
   semanticScene_ = scene::SemanticScene::create();
   switch (sceneInfo.type) {
-  case assets::AssetType::INSTANCE_MESH:
-    houseFilename = Cr::Utility::Directory::join(
-        Cr::Utility::Directory::path(houseFilename), "info_semantic.json");
-    if (io::exists(houseFilename)) {
-      scene::SemanticScene::loadReplicaHouse(houseFilename, *semanticScene_);
-    }
-    break;
-  case assets::AssetType::MP3D_MESH:
-    // TODO(msb) Fix AssetType determination logic.
-    if (io::exists(houseFilename)) {
-      using Corrade::Utility::String::endsWith;
-      if (endsWith(houseFilename, ".house")) {
-        scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
-      } else if (endsWith(houseFilename, ".scn")) {
-        scene::SemanticScene::loadGibsonHouse(houseFilename, *semanticScene_);
+    case assets::AssetType::INSTANCE_MESH:
+      houseFilename = Cr::Utility::Directory::join(
+          Cr::Utility::Directory::path(houseFilename), "info_semantic.json");
+      if (io::exists(houseFilename)) {
+        scene::SemanticScene::loadReplicaHouse(houseFilename, *semanticScene_);
       }
-    }
-    break;
-  case assets::AssetType::SUNCG_SCENE:
-    scene::SemanticScene::loadSuncgHouse(sceneFilename, *semanticScene_);
-    break;
-  default:
-    break;
+      break;
+    case assets::AssetType::MP3D_MESH:
+      // TODO(msb) Fix AssetType determination logic.
+      if (io::exists(houseFilename)) {
+        using Corrade::Utility::String::endsWith;
+        if (endsWith(houseFilename, ".house")) {
+          scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
+        } else if (endsWith(houseFilename, ".scn")) {
+          scene::SemanticScene::loadGibsonHouse(houseFilename, *semanticScene_);
+        }
+      }
+      break;
+    case assets::AssetType::SUNCG_SCENE:
+      scene::SemanticScene::loadSuncgHouse(sceneFilename, *semanticScene_);
+      break;
+    default:
+      break;
   }
 
   reset();
@@ -175,12 +177,16 @@ void Simulator::reconfigure(const SimulatorConfiguration &cfg) {
 void Simulator::reset() {
   if (physicsManager_ != nullptr)
     physicsManager_
-        ->reset(); // TODO: this does nothing yet... desired reset behavior?
+        ->reset();  // TODO: this does nothing yet... desired reset behavior?
 }
 
-void Simulator::seed(uint32_t newSeed) { random_.seed(newSeed); }
+void Simulator::seed(uint32_t newSeed) {
+  random_.seed(newSeed);
+}
 
-std::shared_ptr<gfx::Renderer> Simulator::getRenderer() { return renderer_; }
+std::shared_ptr<gfx::Renderer> Simulator::getRenderer() {
+  return renderer_;
+}
 
 std::shared_ptr<physics::PhysicsManager> Simulator::getPhysicsManager() {
   return physicsManager_;
@@ -190,21 +196,21 @@ std::shared_ptr<scene::SemanticScene> Simulator::getSemanticScene() {
   return semanticScene_;
 }
 
-scene::SceneGraph &Simulator::getActiveSceneGraph() {
+scene::SceneGraph& Simulator::getActiveSceneGraph() {
   CHECK_GE(activeSceneID_, 0);
   CHECK_LT(activeSceneID_, sceneID_.size());
   return sceneManager_.getSceneGraph(activeSceneID_);
 }
 
 //! return the semantic scene's SceneGraph for rendering
-scene::SceneGraph &Simulator::getActiveSemanticSceneGraph() {
+scene::SceneGraph& Simulator::getActiveSemanticSceneGraph() {
   CHECK_GE(activeSemanticSceneID_, 0);
   CHECK_LT(activeSemanticSceneID_, sceneID_.size());
   return sceneManager_.getSceneGraph(activeSemanticSceneID_);
 }
 
-bool operator==(const SimulatorConfiguration &a,
-                const SimulatorConfiguration &b) {
+bool operator==(const SimulatorConfiguration& a,
+                const SimulatorConfiguration& b) {
   return a.scene == b.scene && a.defaultAgentId == b.defaultAgentId &&
          a.defaultCameraUuid == b.defaultCameraUuid &&
          a.compressTextures == b.compressTextures &&
@@ -213,8 +219,8 @@ bool operator==(const SimulatorConfiguration &a,
          a.physicsConfigFile.compare(b.physicsConfigFile) == 0;
 }
 
-bool operator!=(const SimulatorConfiguration &a,
-                const SimulatorConfiguration &b) {
+bool operator!=(const SimulatorConfiguration& a,
+                const SimulatorConfiguration& b) {
   return !(a == b);
 }
 
@@ -224,8 +230,8 @@ int Simulator::addObject(const int objectLibIndex, const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
     // TODO: change implementation to support multi-world and physics worlds to
     // own reference to a sceneGraph to avoid this.
-    auto &sceneGraph_ = sceneManager_.getSceneGraph(activeSceneID_);
-    auto &drawables = sceneGraph_.getDrawables();
+    auto& sceneGraph_ = sceneManager_.getSceneGraph(activeSceneID_);
+    auto& drawables = sceneGraph_.getDrawables();
     return physicsManager_->addObject(objectLibIndex, &drawables);
   }
   return ID_UNDEFINED;
@@ -242,7 +248,7 @@ std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
     return physicsManager_->getExistingObjectIDs();
   }
-  return std::vector<int>(); // empty if no simulator exists
+  return std::vector<int>();  // empty if no simulator exists
 }
 
 // remove object objectID instance in sceneID
@@ -260,8 +266,9 @@ esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
   return esp::physics::MotionType::ERROR_MOTIONTYPE;
 }
 
-bool Simulator::setObjectMotionType(const esp::physics::MotionType &motionType,
-                                    const int objectID, const int sceneID) {
+bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
+                                    const int objectID,
+                                    const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
     return physicsManager_->setObjectMotionType(objectID, motionType);
   }
@@ -269,15 +276,17 @@ bool Simulator::setObjectMotionType(const esp::physics::MotionType &motionType,
 }
 
 // apply forces and torques to objects
-void Simulator::applyTorque(const Magnum::Vector3 &tau, const int objectID,
+void Simulator::applyTorque(const Magnum::Vector3& tau,
+                            const int objectID,
                             const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
     physicsManager_->applyTorque(objectID, tau);
   }
 }
 
-void Simulator::applyForce(const Magnum::Vector3 &force,
-                           const Magnum::Vector3 &relPos, const int objectID,
+void Simulator::applyForce(const Magnum::Vector3& force,
+                           const Magnum::Vector3& relPos,
+                           const int objectID,
                            const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
     physicsManager_->applyForce(objectID, force, relPos);
@@ -285,8 +294,9 @@ void Simulator::applyForce(const Magnum::Vector3 &force,
 }
 
 // set object transform (kinemmatic control)
-void Simulator::setTransformation(const Magnum::Matrix4 &transform,
-                                  const int objectID, const int sceneID) {
+void Simulator::setTransformation(const Magnum::Matrix4& transform,
+                                  const int objectID,
+                                  const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
     physicsManager_->setTransformation(objectID, transform);
   }
@@ -301,8 +311,9 @@ Magnum::Matrix4 Simulator::getTransformation(const int objectID,
 }
 
 // set object translation directly
-void Simulator::setTranslation(const Magnum::Vector3 &translation,
-                               const int objectID, const int sceneID) {
+void Simulator::setTranslation(const Magnum::Vector3& translation,
+                               const int objectID,
+                               const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
     physicsManager_->setTranslation(objectID, translation);
   }
@@ -319,8 +330,9 @@ Magnum::Vector3 Simulator::getTranslation(const int objectID,
 }
 
 // set object orientation directly
-void Simulator::setRotation(const Magnum::Quaternion &rotation,
-                            const int objectID, const int sceneID) {
+void Simulator::setRotation(const Magnum::Quaternion& rotation,
+                            const int objectID,
+                            const int sceneID) {
   if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
     physicsManager_->setRotation(objectID, rotation);
   }
@@ -356,8 +368,8 @@ double Simulator::getWorldTime() {
   return NO_TIME;
 }
 
-bool Simulator::recomputeNavMesh(nav::PathFinder &pathfinder,
-                                 const nav::NavMeshSettings &navMeshSettings) {
+bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
+                                 const nav::NavMeshSettings& navMeshSettings) {
   CORRADE_ASSERT(
       config_.createRenderer,
       "Simulator::recomputeNavMesh: SimulatorConfiguration::createRenderer is "
@@ -377,5 +389,5 @@ bool Simulator::recomputeNavMesh(nav::PathFinder &pathfinder,
   return true;
 }
 
-} // namespace sim
-} // namespace esp
+}  // namespace sim
+}  // namespace esp

@@ -21,7 +21,7 @@ using namespace esp::sim;
 
 // Consider
 // https://becominghuman.ai/passing-and-returning-webassembly-array-parameters-a0f572c65d97
-em::val Observation_getData(Observation &obs) {
+em::val Observation_getData(Observation& obs) {
   auto buffer = obs.buffer;
   if (buffer != nullptr) {
     return em::val(
@@ -31,7 +31,7 @@ em::val Observation_getData(Observation &obs) {
   }
 }
 
-ObservationSpace Simulator_getAgentObservationSpace(SimulatorWithAgents &sim,
+ObservationSpace Simulator_getAgentObservationSpace(SimulatorWithAgents& sim,
                                                     int agentId,
                                                     std::string sensorId) {
   ObservationSpace space;
@@ -39,8 +39,9 @@ ObservationSpace Simulator_getAgentObservationSpace(SimulatorWithAgents &sim,
   return space;
 }
 
-std::map<std::string, ObservationSpace>
-Simulator_getAgentObservationSpaces(SimulatorWithAgents &sim, int agentId) {
+std::map<std::string, ObservationSpace> Simulator_getAgentObservationSpaces(
+    SimulatorWithAgents& sim,
+    int agentId) {
   std::map<std::string, ObservationSpace> spaces;
   sim.getAgentObservationSpaces(agentId, spaces);
   return spaces;
@@ -113,7 +114,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::class_<ActionSpec>("ActionSpec")
       .smart_ptr_constructor(
           "ActionSpec",
-          &ActionSpec::create<const std::string &, const ActuationMap &>)
+          &ActionSpec::create<const std::string&, const ActuationMap&>)
       .property("name", &ActionSpec::name)
       .property("actuation", &ActionSpec::actuation);
 
@@ -183,9 +184,9 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::class_<Agent>("Agent")
       .smart_ptr<Agent::ptr>("Agent::ptr")
       .property("config",
-                em::select_overload<const AgentConfiguration &() const>(
+                em::select_overload<const AgentConfiguration&() const>(
                     &Agent::getConfig))
-      .property("sensorSuite", em::select_overload<const SensorSuite &() const>(
+      .property("sensorSuite", em::select_overload<const SensorSuite&() const>(
                                    &Agent::getSensorSuite))
       .function("getState", &Agent::getState)
       .function("setState", &Agent::setState)
@@ -221,7 +222,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::class_<SimulatorWithAgents, em::base<Simulator>>("Simulator")
       .smart_ptr_constructor(
           "Simulator",
-          &SimulatorWithAgents::create<const SimulatorConfiguration &>)
+          &SimulatorWithAgents::create<const SimulatorConfiguration&>)
       .function("seed", &SimulatorWithAgents::seed)
       .function("reconfigure", &SimulatorWithAgents::reconfigure)
       .function("reset", &SimulatorWithAgents::reset)
@@ -236,10 +237,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("getAgent", &SimulatorWithAgents::getAgent)
       .function("getPathFinder", &SimulatorWithAgents::getPathFinder)
       .function("addAgent",
-                em::select_overload<Agent::ptr(const AgentConfiguration &)>(
+                em::select_overload<Agent::ptr(const AgentConfiguration&)>(
                     &SimulatorWithAgents::addAgent))
       .function("addAgentToNode",
-                em::select_overload<Agent::ptr(const AgentConfiguration &,
-                                               scene::SceneNode &)>(
+                em::select_overload<Agent::ptr(const AgentConfiguration&,
+                                               scene::SceneNode&)>(
                     &SimulatorWithAgents::addAgent));
 }

@@ -35,7 +35,7 @@ enum TextureBindingPointIndex : uint8_t {
   adjFaces = 1,
 #endif
 };
-} // namespace
+}  // namespace
 
 PTexMeshShader::PTexMeshShader() {
   MAGNUM_ASSERT_GL_VERSION_SUPPORTED(Mn::GL::Version::GL410);
@@ -84,39 +84,39 @@ PTexMeshShader::PTexMeshShader() {
 // Note: the texture binding points are explicitly specified above.
 // Cannot use "explicit uniform location" directly in shader since
 // it requires GL4.3 (We stick to GL4.1 for MacOS).
-PTexMeshShader &PTexMeshShader::bindAtlasTexture(Mn::GL::Texture2D &texture) {
+PTexMeshShader& PTexMeshShader::bindAtlasTexture(Mn::GL::Texture2D& texture) {
   texture.bind(TextureBindingPointIndex::atlas);
   return *this;
 }
 
-PTexMeshShader &
-PTexMeshShader::bindAdjFacesBufferTexture(Mn::GL::BufferTexture &texture) {
+PTexMeshShader& PTexMeshShader::bindAdjFacesBufferTexture(
+    Mn::GL::BufferTexture& texture) {
 #ifndef CORRADE_TARGET_APPLE
   texture.bind(TextureBindingPointIndex::adjFaces);
 #endif
   return *this;
 }
 
-PTexMeshShader &PTexMeshShader::setMVPMatrix(const Mn::Matrix4 &matrix) {
+PTexMeshShader& PTexMeshShader::setMVPMatrix(const Mn::Matrix4& matrix) {
   setUniform(MVPMatrixUniform_, matrix);
   return *this;
 }
 
-PTexMeshShader &PTexMeshShader::setExposure(float exposure) {
+PTexMeshShader& PTexMeshShader::setExposure(float exposure) {
   setUniform(exposureUniform_, exposure);
   return *this;
 }
-PTexMeshShader &PTexMeshShader::setGamma(float gamma) {
+PTexMeshShader& PTexMeshShader::setGamma(float gamma) {
   setUniform(gammaUniform_, gamma);
   return *this;
 }
 
-PTexMeshShader &PTexMeshShader::setSaturation(float saturation) {
+PTexMeshShader& PTexMeshShader::setSaturation(float saturation) {
   setUniform(saturationUniform_, saturation);
   return *this;
 }
 
-PTexMeshShader &PTexMeshShader::setAtlasTextureSize(Mn::GL::Texture2D &texture,
+PTexMeshShader& PTexMeshShader::setAtlasTextureSize(Mn::GL::Texture2D& texture,
                                                     uint32_t tileSize) {
   setUniform(tileSizeUniform_, static_cast<Mn::Int>(tileSize));
 
@@ -127,5 +127,5 @@ PTexMeshShader &PTexMeshShader::setAtlasTextureSize(Mn::GL::Texture2D &texture,
   return *this;
 }
 
-} // namespace gfx
-} // namespace esp
+}  // namespace gfx
+}  // namespace esp

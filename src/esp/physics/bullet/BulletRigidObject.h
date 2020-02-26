@@ -9,11 +9,11 @@
  * esp::physics::BulletRigidObject
  */
 
+#include <btBulletDynamicsCommon.h>
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/MeshMetaData.h"
 #include "esp/core/esp.h"
-#include <btBulletDynamicsCommon.h>
 
 #include "esp/physics/RigidObject.h"
 
@@ -46,13 +46,15 @@ struct SimulationContactResultCallback
    * @param cp Contains detailed information about the contact point being
    * added.
    */
-  btScalar addSingleResult(btManifoldPoint &cp,
-                           const btCollisionObjectWrapper *colObj0Wrap,
-                           int partId0, int index0,
-                           const btCollisionObjectWrapper *colObj1Wrap,
-                           int partId1, int index1) {
+  btScalar addSingleResult(btManifoldPoint& cp,
+                           const btCollisionObjectWrapper* colObj0Wrap,
+                           int partId0,
+                           int index0,
+                           const btCollisionObjectWrapper* colObj1Wrap,
+                           int partId1,
+                           int index1) {
     bCollision = true;
-    return 0; // not used
+    return 0;  // not used
   }
 };
 
@@ -69,13 +71,13 @@ with internal btRigidBody state.
 */
 class BulletRigidObject : public RigidObject,
                           public Magnum::BulletIntegration::MotionState {
-public:
+ public:
   /**
    * @brief Constructor for a @ref BulletRigidObject.
    * @param rigidBodyNode The @ref scene::SceneNode this feature will be
    * attached to.
    */
-  BulletRigidObject(scene::SceneNode *rigidBodyNode);
+  BulletRigidObject(scene::SceneNode* rigidBodyNode);
 
   /**
    * @brief Destructor cleans up simulation structures for the object.
@@ -93,11 +95,11 @@ public:
    * belong.
    * @return true if initialized successfully, false otherwise.
    */
-  bool
-  initializeScene(const assets::PhysicsSceneAttributes &physicsSceneAttributes,
-                  const assets::MeshMetaData &metaData,
-                  const std::vector<assets::CollisionMeshData> &meshGroup,
-                  std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
+  bool initializeScene(
+      const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+      const assets::MeshMetaData& metaData,
+      const std::vector<assets::CollisionMeshData>& meshGroup,
+      std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
 
   /**
    * @brief Initializes this @ref BulletRigidObject as a @ref
@@ -113,10 +115,10 @@ public:
    * @return true if initialized successfully, false otherwise.
    */
   bool initializeObject(
-      const assets::PhysicsObjectAttributes &physicsObjectAttributes,
+      const assets::PhysicsObjectAttributes& physicsObjectAttributes,
       std::shared_ptr<btDiscreteDynamicsWorld> bWorld,
-      const assets::MeshMetaData &metaData,
-      const std::vector<assets::CollisionMeshData> &meshGroup);
+      const assets::MeshMetaData& metaData,
+      const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /**
    * @brief Recursively construct a @ref btCompoundShape for collision from
@@ -133,9 +135,10 @@ public:
    * shape, rather than creating individual convexes under the compound.
    */
   void constructBulletCompoundFromMeshes(
-      const Magnum::Matrix4 &transformFromParentToWorld,
-      const std::vector<assets::CollisionMeshData> &meshGroup,
-      const assets::MeshTransformNode &node, bool join);
+      const Magnum::Matrix4& transformFromParentToWorld,
+      const std::vector<assets::CollisionMeshData>& meshGroup,
+      const assets::MeshTransformNode& node,
+      bool join);
 
   /**
    * @brief Check whether object is being actively simulated, or sleeping.
@@ -166,7 +169,7 @@ public:
    * @ref BulletRigidObject and all components of its @ref bObjectShape_.
    * @param shift The translation to apply.
    */
-  void shiftOrigin(const Magnum::Vector3 &shift) override;
+  void shiftOrigin(const Magnum::Vector3& shift) override;
 
   /**
    * @brief Apply a force to an object.
@@ -178,8 +181,8 @@ public:
    * @param relPos The desired location of force application in the global
    * coordinate system relative to the object's center of mass.
    */
-  void applyForce(const Magnum::Vector3 &force,
-                  const Magnum::Vector3 &relPos) override;
+  void applyForce(const Magnum::Vector3& force,
+                  const Magnum::Vector3& relPos) override;
 
   /**
    * @brief Apply an impulse to an object.
@@ -192,8 +195,8 @@ public:
    * @param relPos The desired location of impulse application in the global
    * coordinate system relative to the object's center of mass.
    */
-  void applyImpulse(const Magnum::Vector3 &impulse,
-                    const Magnum::Vector3 &relPos) override;
+  void applyImpulse(const Magnum::Vector3& impulse,
+                    const Magnum::Vector3& relPos) override;
 
   /**
    * @brief Apply an internal torque to an object.
@@ -203,7 +206,7 @@ public:
    * @param torque The desired torque on the object in the local coordinate
    * system.
    */
-  void applyTorque(const Magnum::Vector3 &torque) override;
+  void applyTorque(const Magnum::Vector3& torque) override;
 
   /**
    * @brief Apply an internal impulse torque to an object.
@@ -214,7 +217,7 @@ public:
    * coordinate system. Directly modifies the object's angular velocity without
    * requiring integration through simulation.
    */
-  void applyImpulseTorque(const Magnum::Vector3 &impulse) override;
+  void applyImpulseTorque(const Magnum::Vector3& impulse) override;
 
   /**
    * @brief Linear velocity setter for an object.
@@ -224,7 +227,7 @@ public:
    * velocity during simulation simulation step.
    * @param linVel Linear velocity to set.
    */
-  void setLinearVelocity(const Magnum::Vector3 &linVel) override;
+  void setLinearVelocity(const Magnum::Vector3& linVel) override;
 
   /**
    * @brief Angular velocity setter for an object.
@@ -235,7 +238,7 @@ public:
    * @param angVel Angular velocity vector corresponding to world unit axis
    * angles.
    */
-  void setAngularVelocity(const Magnum::Vector3 &angVel) override;
+  void setAngularVelocity(const Magnum::Vector3& angVel) override;
 
   /**
    * @brief Virtual linear velocity getter for an object.
@@ -334,7 +337,7 @@ public:
    * All Bullet @ref btRigidBody objects must have a COM located at thier local
    * origins.
    */
-  void setCOM(const Magnum::Vector3 &COM) override;
+  void setCOM(const Magnum::Vector3& COM) override;
 
   /** @brief Set the diagonal of the inertia matrix for the object.
    * If an object is aligned with its principle axii of inertia, the 3x3 inertia
@@ -343,7 +346,7 @@ public:
    * affect @ref RigidObjectType::SCENE.
    * @param inertia The new diagonal for the object's inertia matrix.
    */
-  void setInertiaVector(const Magnum::Vector3 &inertia) override;
+  void setInertiaVector(const Magnum::Vector3& inertia) override;
 
   /** @brief Set the uniform scale of the object.
    * @param scale The new scalar uniform scale for the object relative to its
@@ -418,7 +421,7 @@ public:
    */
   const Magnum::Range3D getCollisionShapeAabb() const;
 
-protected:
+ protected:
   /**
    * @brief Used to synchronize Bullet's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic
@@ -429,7 +432,7 @@ protected:
   //! computed
   bool usingBBCollisionShape_ = false;
 
-private:
+ private:
   /** @brief A pointer to the Bullet world to which this object belongs. See
    * @ref btDiscreteDynamicsWorld.*/
   std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
@@ -467,5 +470,5 @@ private:
   ESP_SMART_POINTERS(BulletRigidObject)
 };
 
-} // namespace physics
-} // namespace esp
+}  // namespace physics
+}  // namespace esp

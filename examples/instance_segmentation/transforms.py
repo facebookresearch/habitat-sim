@@ -1,6 +1,6 @@
 import random
-import torch
 
+import torch
 from torchvision.transforms import functional as F
 
 
