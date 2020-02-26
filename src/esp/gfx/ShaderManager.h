@@ -17,5 +17,16 @@ using ShaderManager = Magnum::ResourceManager<Magnum::GL::AbstractShaderProgram,
                                               gfx::LightSetup,
                                               gfx::MaterialData>;
 
+/**
+ * @brief Set the light setup for a subtree
+ *
+ * All drawables in the subtree starting at root will have the new lightSetup
+ *
+ * @param root Subtree root
+ * @param lightSetup @ref LightSetup key in the ShaderManager
+ */
+void setLightSetupForSubTree(scene::SceneNode& root,
+                             const Magnum::ResourceKey& lightSetup);
+
 }  // namespace gfx
 }  // namespace esp
