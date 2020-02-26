@@ -64,25 +64,28 @@ TEST(CullingTest, computeAbsoluteAABB) {
    *  a) a cube, with edge length 2.0
    *
    */
-  std::vector<Mn::Range3D> aabbsGroundTruth;
-  // Box 0: root (parent: null), object "a", centered at origin
-  aabbsGroundTruth.emplace_back(Mn::Vector3{-1.0, -1.0, -1.0},
-                                Mn::Vector3{1.0, 1.0, 1.0});
-  // Box 1: (parent, Box 0), object "a", relative translation (0.0, -4.0, 0.0)
-  aabbsGroundTruth.emplace_back(Mn::Vector3{-1.0, -5.0, -1.0},
-                                Mn::Vector3{1.0, -3.0, 1.0});
-  // Box 2: (parent, Box 1), object "a", relative translation (0.0, 0.0, 4.0)
-  aabbsGroundTruth.emplace_back(Mn::Vector3{-1.0, -5.0, 3.0},
-                                Mn::Vector3{1.0, -3.0, 5.0});
-  // Box 3: (parent, Box 0), object "a", relative translation (-4.0, 0.0, 4.0),
-  // relative rotation pi/4 (ccw) around local z-axis of Box 3
-  aabbsGroundTruth.emplace_back(
-      Mn::Vector3{-4.0f - sqrt(2.0f), -sqrt(2.0f), 3.0},
-      Mn::Vector3{-4.0f + sqrt(2.0f), sqrt(2.0f), 5.0});
-  // Box 4: (parent, Box 3), object "a", relative translation (8.0, 0.0, 0.0),
-  // relative rotation pi/4 (ccw) around local z-axis of Box 4
-  aabbsGroundTruth.emplace_back(Mn::Vector3{3.0, -1.0, 3.0},
-                                Mn::Vector3{5.0, 1.0, 5.0});
+  std::vector<Mn::Range3D> aabbsGroundTruth{
+      // Box 0: root (parent: null), object "a", centered at origin
+      {{-1.0f, -1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}},
+
+      // Box 1: (parent, Box 0), object "a", relative translation (0.0, -4.0,
+      // 0.0)
+      {{-1.0f, -5.0f, -1.0f}, {1.0f, -3.0f, 1.0f}},
+
+      // Box 2: (parent, Box 1), object "a", relative translation (0.0,
+      // 0.0, 4.0)
+      {{-1.0f, -5.0f, 3.0f}, {1.0f, -3.0f, 5.0f}},
+
+      // Box 3: (parent, Box 0), object "a", relative translation (-4.0,
+      // 0.0, 4.0),
+      // relative rotation pi/4 (ccw) around local z-axis of Box 3
+      {{-4.0f - Mn::Constants::sqrt2(), -Mn::Constants::sqrt2(), 3.0f},
+       {-4.0f + Mn::Constants::sqrt2(), Mn::Constants::sqrt2(), 5.0f}},
+
+      // Box 4: (parent, Box 3), object "a", relative translation (8.0, 0.0,
+      // 0.0),
+      // relative rotation pi/4 (ccw) around local z-axis of Box 4
+      {{3.0f, -1.0f, 3.0f}, {5.0f, 1.0f, 5.0f}}};
 
   // compare against the ground truth
   EXPECT_EQ(aabbs.size(), aabbsGroundTruth.size());
