@@ -58,7 +58,7 @@ void GeoTest::aabb() {
   Magnum::Range3D box = Magnum::Range3D{Magnum::Vector3{-10.0, -10.0, -10.0},
                                         Magnum::Vector3{10.0, 10.0, 10.0}};
 
-  int numBoxes = 1000;
+  int numBoxes = 10000;
   for (int iBox = 0; iBox < numBoxes; ++iBox) {
     // generate random translation
     const Magnum::Vector3 translation{
@@ -73,7 +73,11 @@ void GeoTest::aabb() {
     Magnum::Range3D aabbControl = getTransformedBB_standard(box, xform);
     Magnum::Range3D aabbTest = esp::geo::getTransformedBB(box, xform);
 
-    CORRADE_COMPARE(aabbTest, aabbControl);
+    float eps = 1e-8f;
+    CORRADE_COMPARE_WITH((aabbTest.min() - aabbControl.min()).dot(), 0.0,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH((aabbTest.max() - aabbControl.max()).dot(), 0.0,
+                         Cr::TestSuite::Compare::around(eps));
   }  // for iBox
 }
 
