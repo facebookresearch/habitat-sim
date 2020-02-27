@@ -30,7 +30,9 @@ class PoseExtractor(object):
             # Determine the physical spacing between each camera position
             x, z = view.shape
             dist = min(x, z) // 10
-            poses.extend(self.extract_poses_single_scene(labels, view, fp, dist, ref_point))
+            poses.extend(
+                self.extract_poses_single_scene(labels, view, fp, dist, ref_point)
+            )
 
         return np.array(poses)
 
@@ -84,7 +86,7 @@ class PoseExtractor(object):
         return is_interesting, view[r][c]
 
     def _show_topdown_view(self, cmap="seismic_r"):
-        fig=plt.figure(figsize=(12.0, 12.0))
+        fig = plt.figure(figsize=(12.0, 12.0))
         columns = 4
         rows = math.ceil(len(self.tdv_fp_ref_triples) / columns)
         for i in range(1, columns * rows + 1):

@@ -10,9 +10,9 @@ import habitat_sim
 import habitat_sim.bindings as hsim
 from habitat_sim.agent import AgentState
 from habitat_sim.utils.common import quat_from_two_vectors
-from habitat_sim.utils.filesystem import search_dir_tree_for_ext
-from habitat_sim.utils.data.pose_extractor import PoseExtractor
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
+from habitat_sim.utils.data.pose_extractor import PoseExtractor
+from habitat_sim.utils.filesystem import search_dir_tree_for_ext
 
 
 class ImageExtractor:
@@ -154,7 +154,7 @@ class ImageExtractor:
             ref_point = self._get_pathfinder_reference_point(sim.pathfinder)
             tdv = TopdownView(sim, ref_point[1], pixels_per_meter=pixels_per_meter)
             tdv_fp_ref.append((tdv, filepath, ref_point))
-        
+
         return tdv_fp_ref
 
     def close(self):
@@ -175,9 +175,7 @@ class ImageExtractor:
         self.mode = mymode
 
     def get_semantic_class_names(self):
-        class_names = list(set(
-            name for name in self.instance_id_to_name.values()
-        ))
+        class_names = list(set(name for name in self.instance_id_to_name.values()))
         return class_names
 
     def _handle_split(self, split, poses):
@@ -199,17 +197,19 @@ class ImageExtractor:
 
     def _generate_label_map(self, scene, verbose=False):
         if verbose:
-            print(f"House has {len(scene.levels)} levels, {len(scene.regions)} regions and {len(scene.objects)} objects")
+            print(
+                f"House has {len(scene.levels)} levels, {len(scene.regions)} regions and {len(scene.objects)} objects"
+            )
             print(f"House center:{scene.aabb.center} dims:{scene.aabb.sizes}")
 
         instance_id_to_name = {}
         for obj in scene.objects:
             if obj and obj.category:
-                obj_id = int(obj.id.split('_')[-1])
+                obj_id = int(obj.id.split("_")[-1])
                 instance_id_to_name[obj_id] = obj.category.name()
-    
+
         return instance_id_to_name
-    
+
     def _config_sim(self, scene_filepath, img_size):
         settings = {
             "width": img_size[1],  # Spatial resolution of the observations
@@ -279,4 +279,4 @@ class TopdownView(object):
     def __init__(self, sim, height, pixels_per_meter=0.1):
         self.topdown_view = np.array(
             sim.pathfinder.get_topdown_view(pixels_per_meter, height)
-            ).astype(np.float64)
+        ).astype(np.float64)
