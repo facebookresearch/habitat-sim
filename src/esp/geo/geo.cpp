@@ -102,17 +102,13 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
  */
 Mn::Range3D getTransformedBB(const Mn::Range3D& range,
                              const Mn::Matrix4& xform) {
-  Mn::Matrix3x3 absRotationScaling = xform.rotationScaling();
   // compute the absolute value of the rotationScaling part of the original
   // transformation matrix
-  for (int iRow = 0; iRow < 3; ++iRow) {
-    for (int jCol = 0; jCol < 3; ++jCol) {
-      absRotationScaling[iRow][jCol] =
-          std::fabs(absRotationScaling[iRow][jCol]);
-    }
-  }
-  const Mn::Vector3 center = (range.min() + range.max()) / 2.0;
-  const Mn::Vector3 extent = (range.max() - range.min()) / 2.0;
+  auto absRotationScaling = Mn::Matrix3x3::fromVector(
+      Mn::Math::abs(xform.rotationScaling().toVector()));
+
+  const Mn::Vector3 center = range.center();
+  const Mn::Vector3 extent = range.size() / 2.0;
 
   // compute Rc0 + t
   Mn::Vector3 newCenter = xform.transformPoint(center);
