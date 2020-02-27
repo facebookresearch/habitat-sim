@@ -18,7 +18,7 @@ depth buffer if @ref Flag::UnprojectExistingDepth is enabled.
 @see @ref calculateDepthUnprojection(), @ref unprojectDepth()
 */
 class DepthShader : public Magnum::GL::AbstractShaderProgram {
-public:
+ public:
   /** @brief Flag */
   enum class Flag {
     /**
@@ -51,19 +51,19 @@ public:
    *
    * Expects that @ref Flag::UnprojectExistingDepth is not set.
    */
-  DepthShader &setTransformationMatrix(const Magnum::Matrix4 &matrix);
+  DepthShader& setTransformationMatrix(const Magnum::Matrix4& matrix);
 
   /**
    * @brief Set the depth unprojection parameters directly
    * @return Reference to self (for method chaining)
    */
-  DepthShader &setDepthUnprojection(const Magnum::Vector2 &depthUnprojection);
+  DepthShader& setDepthUnprojection(const Magnum::Vector2& depthUnprojection);
 
   /**
    * @brief Set projection matrix for unprojection
    * @return Reference to self (for method chaining)
    */
-  DepthShader &setProjectionMatrix(const Magnum::Matrix4 &matrix);
+  DepthShader& setProjectionMatrix(const Magnum::Matrix4& matrix);
 
   /**
    * @brief Bind depth texture
@@ -71,14 +71,14 @@ public:
    *
    * Expects that @ref Flag::UnprojectExistingDepth is set.
    */
-  DepthShader &bindDepthTexture(Magnum::GL::Texture2D &texture);
+  DepthShader& bindDepthTexture(Magnum::GL::Texture2D& texture);
 
   /**
    * @brief The flags passed to the Constructor
    */
   Flags flags() const { return flags_; }
 
-private:
+ private:
   const Flags flags_;
   int transformationMatrixUniform_, projectionMatrixOrDepthUnprojectionUniform_;
 };
@@ -133,8 +133,8 @@ integrate the constants into @f$ a @f$ and @f$ b @f$, returning @f$ a' @f$ and
                                   ~~~~ b' = \frac{1}{2}b \end{array}
 @f]
 */
-Magnum::Vector2
-calculateDepthUnprojection(const Magnum::Matrix4 &projectionMatrix);
+Magnum::Vector2 calculateDepthUnprojection(
+    const Magnum::Matrix4& projectionMatrix);
 
 /**
 @brief Unproject depth values
@@ -147,8 +147,8 @@ Additionally to applying that calculation, if the input depth is at the far
 plane (of value @cpp 1.0f @ce), it's set to @cpp 0.0f @ce on output as
 consumers expect zeros for things that are too far.
 */
-void unprojectDepth(const Magnum::Vector2 &unprojection,
+void unprojectDepth(const Magnum::Vector2& unprojection,
                     Corrade::Containers::ArrayView<Magnum::Float> depth);
 
-} // namespace gfx
-} // namespace esp
+}  // namespace gfx
+}  // namespace esp

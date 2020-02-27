@@ -9,11 +9,11 @@
 namespace esp {
 namespace gfx {
 
-PTexMeshDrawable::PTexMeshDrawable(scene::SceneNode &node,
-                                   PTexMeshShader &shader,
-                                   assets::PTexMeshData &ptexMeshData,
+PTexMeshDrawable::PTexMeshDrawable(scene::SceneNode& node,
+                                   PTexMeshShader& shader,
+                                   assets::PTexMeshData& ptexMeshData,
                                    int submeshID,
-                                   DrawableGroup *group /* = nullptr */)
+                                   DrawableGroup* group /* = nullptr */)
     : Drawable{node, shader, ptexMeshData.getRenderingBuffer(submeshID)->mesh,
                group},
       atlasTexture_(ptexMeshData.getRenderingBuffer(submeshID)->atlasTexture),
@@ -21,13 +21,15 @@ PTexMeshDrawable::PTexMeshDrawable(scene::SceneNode &node,
       adjFacesBufferTexture_(
           ptexMeshData.getRenderingBuffer(submeshID)->adjFacesBufferTexture),
 #endif
-      tileSize_(ptexMeshData.tileSize()), exposure_(ptexMeshData.exposure()),
-      gamma_(ptexMeshData.gamma()), saturation_(ptexMeshData.saturation()) {
+      tileSize_(ptexMeshData.tileSize()),
+      exposure_(ptexMeshData.exposure()),
+      gamma_(ptexMeshData.gamma()),
+      saturation_(ptexMeshData.saturation()) {
 }
 
-void PTexMeshDrawable::draw(const Magnum::Matrix4 &transformationMatrix,
-                            Magnum::SceneGraph::Camera3D &camera) {
-  PTexMeshShader &ptexMeshShader = static_cast<PTexMeshShader &>(shader_);
+void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
+                            Magnum::SceneGraph::Camera3D& camera) {
+  PTexMeshShader& ptexMeshShader = static_cast<PTexMeshShader&>(shader_);
   ptexMeshShader.setExposure(exposure_)
       .setGamma(gamma_)
       .setSaturation(saturation_)
@@ -40,5 +42,5 @@ void PTexMeshDrawable::draw(const Magnum::Matrix4 &transformationMatrix,
   mesh_.draw(ptexMeshShader);
 }
 
-} // namespace gfx
-} // namespace esp
+}  // namespace gfx
+}  // namespace esp

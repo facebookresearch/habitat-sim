@@ -2,9 +2,9 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <gtest/gtest.h>
 #include "esp/core/esp.h"
 #include "esp/io/io.h"
-#include <gtest/gtest.h>
 
 #include "configure.h"
 
@@ -68,7 +68,7 @@ TEST(IOTest, fileReplaceExtTest) {
   result = changeExtension(cornerCase, ext);
   EXPECT_EQ(result, "...png");
 
-  std::string cornerCaseExt = "png"; // no dot
+  std::string cornerCaseExt = "png";  // no dot
   result = changeExtension(filename, cornerCaseExt);
   EXPECT_EQ(result, "/foo/bar.png");
 
@@ -87,10 +87,10 @@ TEST(IOTest, fileReplaceExtTest) {
 
 TEST(IOTest, tokenizeTest) {
   std::string file = ",a,|,bb|c";
-  const auto &t1 = tokenize(file, ",");
+  const auto& t1 = tokenize(file, ",");
   EXPECT_EQ((std::vector<std::string>{"", "a", "|", "bb|c"}), t1);
-  const auto &t2 = tokenize(file, "|");
+  const auto& t2 = tokenize(file, "|");
   EXPECT_EQ((std::vector<std::string>{",a,", ",bb", "c"}), t2);
-  const auto &t3 = tokenize(file, ",|", 0, true);
+  const auto& t3 = tokenize(file, ",|", 0, true);
   EXPECT_EQ((std::vector<std::string>{"", "a", "bb", "c"}), t3);
 }

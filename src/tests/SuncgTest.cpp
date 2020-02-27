@@ -25,12 +25,12 @@ TEST(SuncgTest, Load) {
   SemanticScene::loadSuncgHouse(filename, house);
   LOG(INFO) << "House, bbox:" << house.aabb();
 
-  for (auto &level : house.levels()) {
+  for (auto& level : house.levels()) {
     LOG(INFO) << "Level{id:" << level->id() << ",aabb:" << level->aabb() << "}";
-    for (auto &region : level->regions()) {
+    for (auto& region : level->regions()) {
       LOG(INFO) << "Region{id:" << region->id() << ",aabb:" << region->aabb()
                 << ",category:" << region->category()->name() << "}";
-      for (auto &object : region->objects()) {
+      for (auto& object : region->objects()) {
         LOG(INFO) << "Object{id:" << object->id() << ",obb:" << object->obb()
                   << ",category:" << object->category()->name() << "}";
       }

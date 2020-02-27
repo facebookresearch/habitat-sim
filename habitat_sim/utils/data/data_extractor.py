@@ -11,8 +11,8 @@ import habitat_sim.bindings as hsim
 from habitat_sim.agent import AgentState
 from habitat_sim.utils.common import quat_from_two_vectors
 from habitat_sim.utils.filesystem import search_dir_tree_for_ext
-from habitat_sim.utils.data.poseextractor import PoseExtractor
-from habitat_sim.utils.data.datastructures import ExtractorLRUCache
+from habitat_sim.utils.data.pose_extractor import PoseExtractor
+from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 
 
 class ImageExtractor:

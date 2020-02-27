@@ -13,19 +13,19 @@ namespace esp {
 namespace gfx {
 
 class Renderer {
-public:
+ public:
   Renderer();
 
   // draw the scene graph with the camera specified by user
-  void draw(RenderCamera &camera, scene::SceneGraph &sceneGraph);
+  void draw(RenderCamera& camera, scene::SceneGraph& sceneGraph);
 
   // draw the scene graph with the visual sensor provided by user
-  void draw(sensor::VisualSensor &visualSensor, scene::SceneGraph &sceneGraph);
+  void draw(sensor::VisualSensor& visualSensor, scene::SceneGraph& sceneGraph);
 
   /**
    * @brief Binds a @ref RenderTarget to the sensor
    */
-  void bindRenderTarget(sensor::VisualSensor &sensor);
+  void bindRenderTarget(sensor::VisualSensor& sensor);
 
   // draw the scene graph with the default camera in scene graph
   // user needs to set the default camera so that it has correct
@@ -36,5 +36,5 @@ public:
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(Renderer)
 };
 
-} // namespace gfx
-} // namespace esp
+}  // namespace gfx
+}  // namespace esp

@@ -13,30 +13,32 @@ namespace esp {
 namespace core {
 
 class Configuration {
-public:
-  template <typename T> bool set(const std::string &key, const T &value) {
+ public:
+  template <typename T>
+  bool set(const std::string& key, const T& value) {
     return cfg.setValue(key, value);
   }
-  bool setBool(const std::string &key, bool value) { return set(key, value); }
-  bool setFloat(const std::string &key, float value) { return set(key, value); }
-  bool setInt(const std::string &key, int value) { return set(key, value); }
-  bool setString(const std::string &key, std::string value) {
+  bool setBool(const std::string& key, bool value) { return set(key, value); }
+  bool setFloat(const std::string& key, float value) { return set(key, value); }
+  bool setInt(const std::string& key, int value) { return set(key, value); }
+  bool setString(const std::string& key, std::string value) {
     return set(key, value);
   }
 
-  template <typename T> T get(const std::string &key) const {
+  template <typename T>
+  T get(const std::string& key) const {
     return cfg.value<T>(key);
   }
-  bool getBool(const std::string &key) const { return get<bool>(key); }
-  float getFloat(const std::string &key) const { return get<float>(key); }
-  int getInt(const std::string &key) const { return get<int>(key); }
-  std::string getString(const std::string &key) const {
+  bool getBool(const std::string& key) const { return get<bool>(key); }
+  float getFloat(const std::string& key) const { return get<float>(key); }
+  int getInt(const std::string& key) const { return get<int>(key); }
+  std::string getString(const std::string& key) const {
     return get<std::string>(key);
   }
 
-  bool hasValue(const std::string &key) const { return cfg.hasValue(key); }
+  bool hasValue(const std::string& key) const { return cfg.hasValue(key); }
 
-protected:
+ protected:
   Corrade::Utility::Configuration cfg;
 
   ESP_SMART_POINTERS(Configuration)
@@ -74,5 +76,5 @@ class Configuration {
 };
 */
 
-} // namespace core
-} // namespace esp
+}  // namespace core
+}  // namespace esp

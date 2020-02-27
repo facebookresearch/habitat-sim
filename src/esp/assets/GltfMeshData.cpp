@@ -23,7 +23,7 @@ void GltfMeshData::uploadBuffersToGPU(bool forceReload) {
   buffersOnGPU_ = true;
 }
 
-Magnum::GL::Mesh *GltfMeshData::getMagnumGLMesh() {
+Magnum::GL::Mesh* GltfMeshData::getMagnumGLMesh() {
   if (renderingBuffer_ == nullptr) {
     return nullptr;
   }
@@ -31,7 +31,7 @@ Magnum::GL::Mesh *GltfMeshData::getMagnumGLMesh() {
   return &(renderingBuffer_->mesh);
 }
 
-void GltfMeshData::setMeshData(Magnum::Trade::AbstractImporter &importer,
+void GltfMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
                                int meshID) {
   ASSERT(0 <= meshID && meshID < importer.mesh3DCount());
   meshData_ = importer.mesh3D(meshID);
@@ -41,5 +41,5 @@ void GltfMeshData::setMeshData(Magnum::Trade::AbstractImporter &importer,
   collisionMeshData_.indices = meshData_->indices();
 }
 
-} // namespace assets
-} // namespace esp
+}  // namespace assets
+}  // namespace esp

@@ -14,15 +14,15 @@ int SceneManager::initSceneGraph() {
   return index;
 }
 
-SceneGraph &SceneManager::getSceneGraph(int sceneID) {
+SceneGraph& SceneManager::getSceneGraph(int sceneID) {
   ASSERT(sceneID >= 0 && sceneID < sceneGraphs_.size());
   return (*(sceneGraphs_[sceneID].get()));
 }
 
-const SceneGraph &SceneManager::getSceneGraph(int sceneID) const {
+const SceneGraph& SceneManager::getSceneGraph(int sceneID) const {
   ASSERT(sceneID >= 0 && sceneID < sceneGraphs_.size());
   return (*(sceneGraphs_[sceneID].get()));
 }
 
-} // namespace scene
-} // namespace esp
+}  // namespace scene
+}  // namespace esp

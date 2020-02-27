@@ -18,12 +18,12 @@ OBB::OBB() {
   box3f box;
 }
 
-OBB::OBB(const vec3f &center, const vec3f &dimensions, const quatf &rotation)
+OBB::OBB(const vec3f& center, const vec3f& dimensions, const quatf& rotation)
     : center_(center), halfExtents_(dimensions * 0.5), rotation_(rotation) {
   recomputeTransforms();
 }
 
-OBB::OBB(const box3f &aabb)
+OBB::OBB(const box3f& aabb)
     : OBB(aabb.center(), aabb.sizes(), quatf::Identity()) {}
 
 static const vec3f kCorners[8] = {
@@ -60,7 +60,7 @@ void OBB::recomputeTransforms() {
   worldToLocal_.translation() = -worldToLocal_.linear() * center_;
 }
 
-bool OBB::contains(const vec3f &p, float eps /* = 1e-6f */) const {
+bool OBB::contains(const vec3f& p, float eps /* = 1e-6f */) const {
   const vec3f pLocal = worldToLocal() * p;
   const float bound = 1.0f + eps;
   for (int i = 0; i < 3; i++) {
@@ -68,10 +68,10 @@ bool OBB::contains(const vec3f &p, float eps /* = 1e-6f */) const {
       return false;
     }
   }
-  return true; // Here only if all three coords within bounds
+  return true;  // Here only if all three coords within bounds
 }
 
-float OBB::distance(const vec3f &p) const {
+float OBB::distance(const vec3f& p) const {
   if (contains(p)) {
     return 0;
   }
@@ -79,7 +79,7 @@ float OBB::distance(const vec3f &p) const {
   return (p - closest).norm();
 }
 
-vec3f OBB::closestPoint(const vec3f &p) const {
+vec3f OBB::closestPoint(const vec3f& p) const {
   const vec3f d = p - center_;
   vec3f closest = center_;
   const mat3f R = rotation_.matrix();
@@ -90,20 +90,20 @@ vec3f OBB::closestPoint(const vec3f &p) const {
   return closest;
 }
 
-OBB &OBB::rotate(const quatf &q) {
+OBB& OBB::rotate(const quatf& q) {
   rotation_ = q * rotation_;
   recomputeTransforms();
   return *this;
 }
 
 // https://geidav.wordpress.com/tag/minimum-obb/
-OBB computeGravityAlignedMOBB(const vec3f &gravity,
-                              const std::vector<vec3f> &points) {
+OBB computeGravityAlignedMOBB(const vec3f& gravity,
+                              const std::vector<vec3f>& points) {
   const auto align_gravity = quatf::FromTwoVectors(gravity, -vec3f::UnitZ());
 
-  static auto ortho = [](const vec2f &v) { return vec2f(v[1], -v[0]); };
-  static auto intersect_lines = [](const vec2f &s0, const vec2f &d0,
-                                   const vec2f &s1, const vec2f &d1) {
+  static auto ortho = [](const vec2f& v) { return vec2f(v[1], -v[0]); };
+  static auto intersect_lines = [](const vec2f& s0, const vec2f& d0,
+                                   const vec2f& s1, const vec2f& d1) {
     const float dd = d0[0] * d1[1] - d0[1] * d1[0];
 
     const float dx = s1[0] - s0[0];
@@ -112,10 +112,11 @@ OBB computeGravityAlignedMOBB(const vec3f &gravity,
 
     return s0 + t * d0;
   };
-  static auto mobb_area = [](
-      const vec2f &left_start, const vec2f &left_dir, const vec2f &right_start,
-      const vec2f &right_dir, const vec2f &top_start, const vec2f &top_dir,
-      const vec2f &bottom_start, const vec2f &bottom_dir) {
+  static auto mobb_area = [](const vec2f& left_start, const vec2f& left_dir,
+                             const vec2f& right_start, const vec2f& right_dir,
+                             const vec2f& top_start, const vec2f& top_dir,
+                             const vec2f& bottom_start,
+                             const vec2f& bottom_dir) {
     const vec2f upper_left =
         intersect_lines(left_start, left_dir, top_start, top_dir);
     const vec2f upper_right =
@@ -128,7 +129,7 @@ OBB computeGravityAlignedMOBB(const vec3f &gravity,
   };
 
   std::vector<vec2f> in_plane_points;
-  for (const auto &pt : points) {
+  for (const auto& pt : points) {
     vec3f aligned_pt = align_gravity * pt;
     in_plane_points.emplace_back(aligned_pt[0], aligned_pt[1]);
   }
@@ -144,7 +145,7 @@ OBB computeGravityAlignedMOBB(const vec3f &gravity,
   vec2f min_pt = hull[0], max_pt = hull[0];
   int left_idx = 0, right_idx = 0, top_idx = 0, bottom_idx = 0;
   for (size_t i = 0; i < hull.size(); ++i) {
-    const auto &pt = hull[i];
+    const auto& pt = hull[i];
     if (pt[0] < min_pt[0]) {
       min_pt[0] = pt[0];
       left_idx = i;
@@ -187,36 +188,36 @@ OBB computeGravityAlignedMOBB(const vec3f &gravity,
     }
 
     switch (best_line) {
-    case 0:
-      left_dir = edge_dirs[left_idx];
-      right_dir = -left_dir;
-      top_dir = ortho(left_dir);
-      bottom_dir = -top_dir;
-      left_idx = (left_idx + 1) % hull.size();
-      break;
-    case 1:
-      right_dir = edge_dirs[right_idx];
-      left_dir = -right_dir;
-      top_dir = ortho(left_dir);
-      bottom_dir = -top_dir;
-      right_idx = (right_idx + 1) % hull.size();
-      break;
-    case 2:
-      top_dir = edge_dirs[top_idx];
-      bottom_dir = -top_dir;
-      left_dir = ortho(bottom_dir);
-      right_dir = -left_dir;
-      top_idx = (top_idx + 1) % hull.size();
-      break;
-    case 3:
-      bottom_dir = edge_dirs[bottom_idx];
-      top_dir = -bottom_dir;
-      left_dir = ortho(bottom_dir);
-      right_dir = -left_dir;
-      bottom_idx = (bottom_idx + 1) % hull.size();
-      break;
-    default:
-      ASSERT(false);
+      case 0:
+        left_dir = edge_dirs[left_idx];
+        right_dir = -left_dir;
+        top_dir = ortho(left_dir);
+        bottom_dir = -top_dir;
+        left_idx = (left_idx + 1) % hull.size();
+        break;
+      case 1:
+        right_dir = edge_dirs[right_idx];
+        left_dir = -right_dir;
+        top_dir = ortho(left_dir);
+        bottom_dir = -top_dir;
+        right_idx = (right_idx + 1) % hull.size();
+        break;
+      case 2:
+        top_dir = edge_dirs[top_idx];
+        bottom_dir = -top_dir;
+        left_dir = ortho(bottom_dir);
+        right_dir = -left_dir;
+        top_idx = (top_idx + 1) % hull.size();
+        break;
+      case 3:
+        bottom_dir = edge_dirs[bottom_idx];
+        top_dir = -bottom_dir;
+        left_dir = ortho(bottom_dir);
+        right_dir = -left_dir;
+        bottom_idx = (bottom_idx + 1) % hull.size();
+        break;
+      default:
+        ASSERT(false);
     }
 
     const float area =
@@ -235,12 +236,12 @@ OBB computeGravityAlignedMOBB(const vec3f &gravity,
 
   box3f aabb;
   aabb.setEmpty();
-  for (auto &pt : points) {
+  for (auto& pt : points) {
     aabb.extend(T_w2b * pt);
   }
 
   return OBB{aabb.center(), aabb.sizes(), T_w2b.inverse()};
 }
 
-} // namespace geo
-} // namespace esp
+}  // namespace geo
+}  // namespace esp

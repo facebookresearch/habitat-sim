@@ -25,7 +25,7 @@ namespace assets {
  * ResourceManager::loadGeneralMeshData.
  */
 class GltfMeshData : public BaseMesh {
-public:
+ public:
   /**
    * @brief Stores render data for the mesh necessary for gltf format.
    */
@@ -58,13 +58,13 @@ public:
    * @param meshID The local identifier of a specific mesh component of the
    * asset.
    */
-  void setMeshData(Magnum::Trade::AbstractImporter &importer, int meshID);
+  void setMeshData(Magnum::Trade::AbstractImporter& importer, int meshID);
 
   /**
    * @brief Returns a pointer to the compiled render data storage structure.
    * @return Pointer to the @ref renderingBuffer_.
    */
-  virtual RenderingBuffer *getRenderingBuffer() {
+  virtual RenderingBuffer* getRenderingBuffer() {
     return renderingBuffer_.get();
   }
 
@@ -73,9 +73,9 @@ public:
    * @ref renderingBuffer_.
    * @return Pointer to the compiled render mesh data.
    */
-  virtual Magnum::GL::Mesh *getMagnumGLMesh() override;
+  virtual Magnum::GL::Mesh* getMagnumGLMesh() override;
 
-protected:
+ protected:
   /**
    * @brief Storage structure for compiled render data. We will use a smart
    * pointer here since each item within the structure (e.g., Magnum::GL::Mesh)
@@ -83,5 +83,5 @@ protected:
    */
   std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
 };
-} // namespace assets
-} // namespace esp
+}  // namespace assets
+}  // namespace esp

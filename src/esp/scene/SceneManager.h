@@ -19,7 +19,7 @@ namespace scene {
 // TODO:
 // make SceneManager a singleton class
 class SceneManager {
-public:
+ public:
   SceneManager(){};
   ~SceneManager() { LOG(INFO) << "Deconstructing SceneManager"; }
 
@@ -27,15 +27,15 @@ public:
   int initSceneGraph();
 
   // returns the scene graph
-  SceneGraph &getSceneGraph(int sceneID);
-  const SceneGraph &getSceneGraph(int sceneID) const;
+  SceneGraph& getSceneGraph(int sceneID);
+  const SceneGraph& getSceneGraph(int sceneID) const;
 
-protected:
+ protected:
   // Each item within is a base node, parent of all in that scene, for easy
   // manipulation (e.g., rotate the entire scene)
   std::vector<std::unique_ptr<SceneGraph>> sceneGraphs_;
 
   ESP_SMART_POINTERS(SceneManager)
 };
-} // namespace scene
-} // namespace esp
+}  // namespace scene
+}  // namespace esp

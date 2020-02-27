@@ -34,8 +34,8 @@ namespace Cr = Corrade;
 namespace esp {
 namespace assets {
 
-void PTexMeshData::load(const std::string &meshFile,
-                        const std::string &atlasFolder) {
+void PTexMeshData::load(const std::string& meshFile,
+                        const std::string& atlasFolder) {
   if (!io::exists(meshFile)) {
     Cr::Utility::Fatal{-1} << "PTexMeshData::load: Mesh file" << meshFile
                            << "does not exist.";
@@ -46,7 +46,7 @@ void PTexMeshData::load(const std::string &meshFile,
   }
 
   // Parse parameters
-  const auto &paramsFile = atlasFolder + "/parameters.json";
+  const auto& paramsFile = atlasFolder + "/parameters.json";
   if (!io::exists(paramsFile)) {
     Cr::Utility::Fatal{-1} << "PTexMeshData::load: The parameter file"
                            << paramsFile << "does not exist.";
@@ -60,23 +60,37 @@ void PTexMeshData::load(const std::string &meshFile,
   loadMeshData(meshFile);
 }
 
-float PTexMeshData::exposure() const { return exposure_; }
+float PTexMeshData::exposure() const {
+  return exposure_;
+}
 
-void PTexMeshData::setExposure(float val) { exposure_ = val; }
+void PTexMeshData::setExposure(float val) {
+  exposure_ = val;
+}
 
-float PTexMeshData::gamma() const { return gamma_; }
+float PTexMeshData::gamma() const {
+  return gamma_;
+}
 
-void PTexMeshData::setGamma(float val) { gamma_ = val; }
+void PTexMeshData::setGamma(float val) {
+  gamma_ = val;
+}
 
-float PTexMeshData::saturation() const { return saturation_; }
+float PTexMeshData::saturation() const {
+  return saturation_;
+}
 
-void PTexMeshData::setSaturation(float val) { saturation_ = val; }
+void PTexMeshData::setSaturation(float val) {
+  saturation_ = val;
+}
 
-const std::vector<PTexMeshData::MeshData> &PTexMeshData::meshes() const {
+const std::vector<PTexMeshData::MeshData>& PTexMeshData::meshes() const {
   return submeshes_;
 }
 
-std::string PTexMeshData::atlasFolder() const { return atlasFolder_; }
+std::string PTexMeshData::atlasFolder() const {
+  return atlasFolder_;
+}
 
 // split the original ptex mesh into sub-meshes.
 //
@@ -98,13 +112,14 @@ std::string PTexMeshData::atlasFolder() const { return atlasFolder_; }
 // directly dumped from ReplicaSDK, and loaded to our simulator. See
 // loadSubMeshes(...) for more details;
 
-std::vector<PTexMeshData::MeshData>
-splitMesh(const PTexMeshData::MeshData &mesh, const float splitSize) {
+std::vector<PTexMeshData::MeshData> splitMesh(
+    const PTexMeshData::MeshData& mesh,
+    const float splitSize) {
   std::vector<uint32_t> verts;
   verts.resize(mesh.vbo.size());
 
   auto Part1By2 = [](uint64_t x) {
-    x &= 0x1fffff; // mask off lower 21 bits
+    x &= 0x1fffff;  // mask off lower 21 bits
     x = (x | (x << 32)) & 0x1f00000000ffff;
     x = (x | (x << 16)) & 0x1f0000ff0000ff;
     x = (x | (x << 8)) & 0x100f00f00f00f00f;
@@ -113,7 +128,7 @@ splitMesh(const PTexMeshData::MeshData &mesh, const float splitSize) {
     return x;
   };
 
-  auto EncodeMorton3 = [&Part1By2](const vec3i &v) {
+  auto EncodeMorton3 = [&Part1By2](const vec3i& v) {
     return (Part1By2(v(2)) << 2) + (Part1By2(v(1)) << 1) + Part1By2(v(0));
   };
 
@@ -160,7 +175,7 @@ splitMesh(const PTexMeshData::MeshData &mesh, const float splitSize) {
 
   // sort faces by code
   std::sort(faces.begin(), faces.end(),
-            [](const SortFace &f1, const SortFace &f2) -> bool {
+            [](const SortFace& f1, const SortFace& f2) -> bool {
               return (f1.code < f2.code);
             });
 
@@ -254,8 +269,9 @@ splitMesh(const PTexMeshData::MeshData &mesh, const float splitSize) {
 
 // Put it in the sub-folder, "habitat".
 
-std::vector<PTexMeshData::MeshData>
-loadSubMeshes(const PTexMeshData::MeshData &mesh, const std::string &filename) {
+std::vector<PTexMeshData::MeshData> loadSubMeshes(
+    const PTexMeshData::MeshData& mesh,
+    const std::string& filename) {
   // sanity checks
   CORRADE_ASSERT(!filename.empty(),
                  "PTexMeshData::loadSubMeshes: filename cannot be empty.", {});
@@ -266,18 +282,18 @@ loadSubMeshes(const PTexMeshData::MeshData &mesh, const std::string &filename) {
       "PTexMeshData::loadSubMeshes: cannot open the file " << filename, {});
 
   uint64_t numSubMeshes = 0;
-  file.read(reinterpret_cast<char *>(&numSubMeshes), sizeof(uint64_t));
+  file.read(reinterpret_cast<char*>(&numSubMeshes), sizeof(uint64_t));
 
   std::vector<PTexMeshData::MeshData> subMeshes(numSubMeshes);
 
-  size_t totalFaces = 0; // used in sanity check
+  size_t totalFaces = 0;  // used in sanity check
   for (uint64_t iMesh = 0; iMesh < numSubMeshes; ++iMesh) {
     uint64_t numFaces = 0;
-    file.read(reinterpret_cast<char *>(&numFaces), sizeof(uint64_t));
+    file.read(reinterpret_cast<char*>(&numFaces), sizeof(uint64_t));
 
     std::vector<uint32_t> originalFaces(numFaces);
     // load the face indices in the *original* mesh
-    file.read(reinterpret_cast<char *>(originalFaces.data()),
+    file.read(reinterpret_cast<char*>(originalFaces.data()),
               sizeof(uint32_t) * numFaces);
     // a *vertex* lookup table:
     // global index of the original mesh --> local index in sub-meshes
@@ -291,7 +307,7 @@ loadSubMeshes(const PTexMeshData::MeshData &mesh, const std::string &filename) {
 
     // compute the two lookup tables
     for (size_t jFace = 0; jFace < numFaces; ++jFace) {
-      uint32_t f = originalFaces[jFace]; // face index in original mesh
+      uint32_t f = originalFaces[jFace];  // face index in original mesh
       for (size_t v = 0; v < 4; ++v) {
         uint32_t global = mesh.ibo[f * 4 + v];
         if (globalToLocal.find(global) == globalToLocal.end()) {
@@ -302,7 +318,7 @@ loadSubMeshes(const PTexMeshData::MeshData &mesh, const std::string &filename) {
     }
 
     // compute the ibo for the current sub-mesh
-    auto &ibo = subMeshes[iMesh].ibo;
+    auto& ibo = subMeshes[iMesh].ibo;
     ibo.resize(numFaces * 4);
     uint64_t idx = 0;
     for (size_t jFace = 0; jFace < numFaces; ++jFace) {
@@ -310,13 +326,13 @@ loadSubMeshes(const PTexMeshData::MeshData &mesh, const std::string &filename) {
       for (size_t v = 0; v < 4; ++v) {
         uint32_t global = mesh.ibo[f * 4 + v];
         uint32_t local = globalToLocal[global];
-        CORRADE_ASSERT(local >= 0, "PTexMeshData::loadSubMeshes: vertex "
-                                       << global << " is not in the sub-mesh "
-                                       << iMesh,
+        CORRADE_ASSERT(local >= 0,
+                       "PTexMeshData::loadSubMeshes: vertex "
+                           << global << " is not in the sub-mesh " << iMesh,
                        {});
         ibo[idx++] = local;
       }
-    } // for jFace
+    }  // for jFace
 
     // compute the vbo, nbo for the current sub-mesh
     uint64_t numVertices = localToGlobal.size();
@@ -332,7 +348,7 @@ loadSubMeshes(const PTexMeshData::MeshData &mesh, const std::string &filename) {
     // for Ptex mesh we never ever set the "cbo"
 
     totalFaces += numFaces;
-  } // for iMesh
+  }  // for iMesh
   file.close();
   CORRADE_ASSERT(totalFaces == mesh.ibo.size() / 4,
                  "PTexMeshData::loadSubMeshes: the number of faces loaded from "
@@ -346,8 +362,8 @@ loadSubMeshes(const PTexMeshData::MeshData &mesh, const std::string &filename) {
   return subMeshes;
 }
 
-void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData &mesh,
-                                      std::vector<uint32_t> &adjFaces) {
+void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData& mesh,
+                                      std::vector<uint32_t>& adjFaces) {
   struct EdgeData {
     int face;
     int edge;
@@ -394,7 +410,7 @@ void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData &mesh,
     for (int e = 0; e < 4; e++) {
       const int e_index = f * 4 + e;
       auto it = edgeIterators[e_index];
-      const std::vector<EdgeData> &adj = it->second;
+      const std::vector<EdgeData>& adj = it->second;
 
       // find adjacent face
       int adjFace = -1;
@@ -424,7 +440,7 @@ void PTexMeshData::calculateAdjacency(const PTexMeshData::MeshData &mesh,
   }
 }
 
-void PTexMeshData::loadMeshData(const std::string &meshFile) {
+void PTexMeshData::loadMeshData(const std::string& meshFile) {
   PTexMeshData::MeshData originalMesh;
   parsePLY(meshFile, originalMesh);
 
@@ -450,8 +466,8 @@ void PTexMeshData::loadMeshData(const std::string &meshFile) {
   }
 }
 
-void PTexMeshData::parsePLY(const std::string &filename,
-                            PTexMeshData::MeshData &meshData) {
+void PTexMeshData::parsePLY(const std::string& filename,
+                            PTexMeshData::MeshData& meshData) {
   std::vector<std::string> comments;
   std::vector<std::string> objInfo;
 
@@ -509,8 +525,8 @@ void PTexMeshData::parsePLY(const std::string &filename,
                          "PTexMeshData::parsePLY: number of faces is not "
                          "greater than 0.", );
         } else {
-          CORRADE_ASSERT(false, "PTexMeshData::parsePLY: Cannot parse element"
-                                    << name, );
+          CORRADE_ASSERT(
+              false, "PTexMeshData::parsePLY: Cannot parse element" << name, );
         }
 
         // Keep track of what element we parsed last to associate the
@@ -533,9 +549,9 @@ void PTexMeshData::parsePLY(const std::string &filename,
                          "PTexMeshData::parsePLY: Don't understand count type"
                              << countType, );
 
-          CORRADE_ASSERT(type == "int",
-                         "PTexMeshData::parsePLY: Don't understand index type"
-                             << type, );
+          CORRADE_ASSERT(
+              type == "int",
+              "PTexMeshData::parsePLY: Don't understand index type" << type, );
 
           CORRADE_ASSERT(lastElement == "face",
                          "PTexMeshData::parsePLY: Only expecting list after "
@@ -543,10 +559,10 @@ void PTexMeshData::parsePLY(const std::string &filename,
                              << lastElement, );
         }
 
-        CORRADE_ASSERT(type == "float" || type == "int" || type == "uchar" ||
-                           type == "uint8",
-                       "PTexMeshData::parsePLY: Don't understand type"
-                           << type, );
+        CORRADE_ASSERT(
+            type == "float" || type == "int" || type == "uchar" ||
+                type == "uint8",
+            "PTexMeshData::parsePLY: Don't understand type" << type, );
 
         ls >> name;
 
@@ -667,9 +683,9 @@ void PTexMeshData::parsePLY(const std::string &filename,
   }
 
   // Can only be FLOAT32 or UINT8
-  const size_t positionBytes = positionDimensions * sizeof(float); // floats
-  const size_t normalBytes = normalDimensions * sizeof(float);     // floats
-  const size_t colorBytes = colorDimensions * sizeof(uint8_t);     // bytes
+  const size_t positionBytes = positionDimensions * sizeof(float);  // floats
+  const size_t normalBytes = normalDimensions * sizeof(float);      // floats
+  const size_t colorBytes = colorDimensions * sizeof(uint8_t);      // bytes
 
   const size_t vertexPacketSizeBytes = positionBytes + normalBytes + colorBytes;
 
@@ -705,10 +721,10 @@ void PTexMeshData::parsePLY(const std::string &filename,
   const size_t fileSize = io::fileSize(filename);
 
   // Parse each vertex packet and unpack
-  const char *bytes = mmappedData + postHeader;
+  const char* bytes = mmappedData + postHeader;
 
   for (size_t i = 0; i < numVertices; i++) {
-    const char *nextBytes = bytes + vertexPacketSizeBytes * i;
+    const char* nextBytes = bytes + vertexPacketSizeBytes * i;
 
     memcpy(meshData.vbo[i].data(), &nextBytes[positionOffsetBytes],
            positionBytes);
@@ -733,7 +749,7 @@ void PTexMeshData::parsePLY(const std::string &filename,
                  "3 nor 4.", );
 
   const size_t countBytes = 1;
-  const size_t faceBytes = faceDimensions * sizeof(uint32_t); // uint32_t
+  const size_t faceBytes = faceDimensions * sizeof(uint32_t);  // uint32_t
   const size_t facePacketSizeBytes = countBytes + faceBytes;
 
   const size_t predictedFaces = (fileSize - bytesSoFar) / facePacketSizeBytes;
@@ -755,7 +771,7 @@ void PTexMeshData::parsePLY(const std::string &filename,
   meshData.ibo.resize(numFaces * faceDimensions);
 
   for (size_t i = 0; i < numFaces; i++) {
-    const char *nextBytes = bytes + facePacketSizeBytes * i;
+    const char* nextBytes = bytes + facePacketSizeBytes * i;
 
     memcpy(&meshData.ibo[i * faceDimensions], &nextBytes[countBytes],
            faceBytes);
@@ -777,7 +793,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     renderingBuffers_.emplace_back(
         std::make_unique<PTexMeshData::RenderingBuffer>());
 
-    auto &currentMesh = renderingBuffers_.back();
+    auto& currentMesh = renderingBuffers_.back();
     currentMesh->vertexBuffer.setData(submeshes_[iMesh].vbo,
                                       Magnum::GL::BufferUsage::StaticDraw);
     currentMesh->indexBuffer.setData(submeshes_[iMesh].ibo,
@@ -795,7 +811,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
 #endif
 
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
-    auto &currentMesh = renderingBuffers_[iMesh];
+    auto& currentMesh = renderingBuffers_[iMesh];
 
 #ifndef CORRADE_TARGET_APPLE
     currentMesh->adjFacesBufferTexture.setBuffer(
@@ -834,7 +850,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
         Cr::Utility::Directory::mapRead(hdrFile);
     // divided by 6, since there are 3 channels, R, G, B, each of which takes
     // 1 half_float (2 bytes)
-    const int dim = static_cast<int>(std::sqrt(data.size() / 6)); // square
+    const int dim = static_cast<int>(std::sqrt(data.size() / 6));  // square
     CORRADE_ASSERT(dim * dim * 6 == data.size(),
                    "PTexMeshData::uploadBuffersToGPU: the atlas texture is not "
                    "a square", );
@@ -848,12 +864,12 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
         ->atlasTexture.setWrapping(Magnum::GL::SamplerWrapping::ClampToEdge)
         .setMagnificationFilter(Magnum::GL::SamplerFilter::Linear)
         .setMinificationFilter(Magnum::GL::SamplerFilter::Linear)
-        .setStorage(Magnum::Math::log2(image.size().min()) +
-                        1, // mip level count
-                    Magnum::GL::TextureFormat::RGB16F,
-                    image.size())
-        .setSubImage(0,  // mipLevel
-                     {}, // offset
+        .setStorage(
+            Magnum::Math::log2(image.size().min()) + 1,  // mip level count
+            Magnum::GL::TextureFormat::RGB16F,
+            image.size())
+        .setSubImage(0,   // mipLevel
+                     {},  // offset
                      image)
         .generateMipmap();
   }
@@ -861,7 +877,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   buffersOnGPU_ = true;
 }
 
-PTexMeshData::RenderingBuffer *PTexMeshData::getRenderingBuffer(int submeshID) {
+PTexMeshData::RenderingBuffer* PTexMeshData::getRenderingBuffer(int submeshID) {
   CORRADE_ASSERT(submeshID >= 0 && submeshID < renderingBuffers_.size(),
                  "PTexMeshData::getRenderingBuffer: the submesh ID"
                      << submeshID << "is out of range.",
@@ -869,7 +885,7 @@ PTexMeshData::RenderingBuffer *PTexMeshData::getRenderingBuffer(int submeshID) {
   return renderingBuffers_[submeshID].get();
 }
 
-Magnum::GL::Mesh *PTexMeshData::getMagnumGLMesh(int submeshID) {
+Magnum::GL::Mesh* PTexMeshData::getMagnumGLMesh(int submeshID) {
   CORRADE_ASSERT(submeshID >= 0 && submeshID < renderingBuffers_.size(),
                  "PTexMeshData::getMagnumGLMesh: the submesh ID"
                      << submeshID << "is out of range.",
@@ -877,5 +893,5 @@ Magnum::GL::Mesh *PTexMeshData::getMagnumGLMesh(int submeshID) {
   return &(renderingBuffers_[submeshID]->mesh);
 }
 
-} // namespace assets
-} // namespace esp
+}  // namespace assets
+}  // namespace esp

@@ -28,19 +28,22 @@ using esp::sensor::SensorType;
 using esp::sim::SimulatorConfiguration;
 using esp::sim::SimulatorWithAgents;
 
-const std::string vangogh = Cr::Utility::Directory::join(
-    SCENE_DATASETS, "habitat-test-scenes/van-gogh-room.glb");
-const std::string skokloster = Cr::Utility::Directory::join(
-    SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.glb");
+const std::string vangogh =
+    Cr::Utility::Directory::join(SCENE_DATASETS,
+                                 "habitat-test-scenes/van-gogh-room.glb");
+const std::string skokloster =
+    Cr::Utility::Directory::join(SCENE_DATASETS,
+                                 "habitat-test-scenes/skokloster-castle.glb");
 
 // TODO(MM): move following to common test utils module
 template <typename T, typename U>
-bool equalWithTolerance(const T &lhs, const T &rhs, U tolerance) {
+bool equalWithTolerance(const T& lhs, const T& rhs, U tolerance) {
   return std::abs(rhs - lhs) <= std::abs(tolerance);
 }
 
-bool pixelEqualWithChannelTolerance(const Mn::Color4ub &lhs,
-                                    const Mn::Color4ub &rhs, int tolerance) {
+bool pixelEqualWithChannelTolerance(const Mn::Color4ub& lhs,
+                                    const Mn::Color4ub& rhs,
+                                    int tolerance) {
   return equalWithTolerance(lhs.r(), rhs.r(), tolerance) &&
          equalWithTolerance(lhs.g(), rhs.g(), tolerance) &&
          equalWithTolerance(lhs.b(), rhs.b(), tolerance) &&

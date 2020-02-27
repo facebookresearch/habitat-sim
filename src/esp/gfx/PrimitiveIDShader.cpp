@@ -58,5 +58,5 @@ PrimitiveIDShader::PrimitiveIDShader() {
       uniformLocation("transformationProjectionMatrix");
 }
 
-} // namespace gfx
-} // namespace esp
+}  // namespace gfx
+}  // namespace esp

@@ -18,7 +18,7 @@ Attributes::Attributes() {
 }
 
 // return true if any container has the key
-bool Attributes::exists(const std::string &key) const {
+bool Attributes::exists(const std::string& key) const {
   if (doubleMap_.count(key) > 0)
     return true;
   if (intMap_.count(key) > 0)
@@ -36,7 +36,7 @@ bool Attributes::exists(const std::string &key) const {
 }
 
 // check if an attribute of a specific type exists
-bool Attributes::existsAs(DataType t, const std::string &key) const {
+bool Attributes::existsAs(DataType t, const std::string& key) const {
   if (t == DOUBLE)
     if (doubleMap_.count(key) > 0)
       return true;
@@ -59,7 +59,7 @@ bool Attributes::existsAs(DataType t, const std::string &key) const {
 }
 
 // count the number of containers with the key
-int Attributes::count(const std::string &key) const {
+int Attributes::count(const std::string& key) const {
   int numAttributes = 0;
   if (doubleMap_.count(key) > 0)
     numAttributes++;
@@ -77,7 +77,7 @@ int Attributes::count(const std::string &key) const {
 }
 
 // erase the key from all maps
-void Attributes::eraseAll(const std::string &key) {
+void Attributes::eraseAll(const std::string& key) {
   if (doubleMap_.count(key) > 0)
     doubleMap_.erase(key);
   if (intMap_.count(key) > 0)
@@ -93,7 +93,7 @@ void Attributes::eraseAll(const std::string &key) {
 }
 
 // erase the key from a particular map
-void Attributes::eraseAs(const DataType t, const std::string &key) {
+void Attributes::eraseAs(const DataType t, const std::string& key) {
   if (t == DOUBLE) {
     if (doubleMap_.count(key) > 0)
       doubleMap_.erase(key);
@@ -147,67 +147,69 @@ void Attributes::clearAs(const DataType t) {
 //----------------------------------------//
 // return the queried entry in the double map
 // will throw an exception if the key does not exist in the double map
-double Attributes::getDouble(const std::string &key) const {
+double Attributes::getDouble(const std::string& key) const {
   return doubleMap_.at(key);
 }
 
 // set a double attribute key->val
-void Attributes::setDouble(const std::string &key, const double val) {
+void Attributes::setDouble(const std::string& key, const double val) {
   doubleMap_[key] = val;
 }
 
-int Attributes::getInt(const std::string &key) const { return intMap_.at(key); }
+int Attributes::getInt(const std::string& key) const {
+  return intMap_.at(key);
+}
 
-void Attributes::setInt(const std::string &key, const int val) {
+void Attributes::setInt(const std::string& key, const int val) {
   intMap_[key] = val;
 }
 
-bool Attributes::getBool(const std::string &key) const {
+bool Attributes::getBool(const std::string& key) const {
   return boolMap_.at(key);
 }
 
-void Attributes::setBool(const std::string &key, const bool val) {
+void Attributes::setBool(const std::string& key, const bool val) {
   boolMap_[key] = val;
 }
 
-const std::string &Attributes::getString(const std::string &key) const {
+const std::string& Attributes::getString(const std::string& key) const {
   return stringMap_.at(key);
 }
 
-void Attributes::setString(const std::string &key, const std::string &val) {
+void Attributes::setString(const std::string& key, const std::string& val) {
   stringMap_[key] = val;
 }
 
-const Magnum::Vector3 &Attributes::getMagnumVec3(const std::string &key) const {
+const Magnum::Vector3& Attributes::getMagnumVec3(const std::string& key) const {
   return magnumVec3Map_.at(key);
 }
 
-void Attributes::setMagnumVec3(const std::string &key,
-                               const Magnum::Vector3 &val) {
+void Attributes::setMagnumVec3(const std::string& key,
+                               const Magnum::Vector3& val) {
   magnumVec3Map_[key] = val;
 }
-const std::vector<std::string> &
-Attributes::getVecStrings(const std::string &key) const {
+const std::vector<std::string>& Attributes::getVecStrings(
+    const std::string& key) const {
   return vecStringsMap_.at(key);
 }
 
-void Attributes::setVecStrings(const std::string &key,
-                               const std::vector<std::string> &val) {
+void Attributes::setVecStrings(const std::string& key,
+                               const std::vector<std::string>& val) {
   vecStringsMap_[key] = val;
 }
 
 // add a string to a string vector (to avoid get/set copying)
-void Attributes::appendVecStrings(const std::string &key,
-                                  const std::string &val) {
+void Attributes::appendVecStrings(const std::string& key,
+                                  const std::string& val) {
   vecStringsMap_[key].push_back(val);
 }
 
-void Attributes::removeFromVecString(const std::string &key,
-                                     const std::string &val) {
-  std::vector<std::string> &stringVec = vecStringsMap_[key];
+void Attributes::removeFromVecString(const std::string& key,
+                                     const std::string& val) {
+  std::vector<std::string>& stringVec = vecStringsMap_[key];
   std::vector<std::string>::iterator position =
       std::find(stringVec.begin(), stringVec.end(), val);
-  if (position != stringVec.end()) // == .end() means the element was not found
+  if (position != stringVec.end())  // == .end() means the element was not found
     stringVec.erase(position);
 }
 
@@ -273,11 +275,11 @@ PhysicsObjectAttributes::PhysicsObjectAttributes() {
   setString("renderMeshHandle", "");
   setString("collisionMeshHandle", "");
   setBool("useBoundingBoxForCollision",
-          false); // if true, override other options and TODO: use bounding box
-                  // as collision object
+          false);  // if true, override other options and TODO: use bounding box
+                   // as collision object
   setBool("joinCollisionMeshes",
-          true); // if true, join all meshes into one collision convex instead
-                 // of building a compound
+          true);  // if true, join all meshes into one collision convex instead
+                  // of building a compound
 }
 
 PhysicsSceneAttributes::PhysicsSceneAttributes() {
@@ -293,5 +295,5 @@ PhysicsManagerAttributes::PhysicsManagerAttributes() {
   setDouble("timestep", 0.01);
   setInt("maxSubsteps", 10);
 }
-} // namespace assets
-} // namespace esp
+}  // namespace assets
+}  // namespace esp

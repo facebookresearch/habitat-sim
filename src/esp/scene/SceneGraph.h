@@ -18,33 +18,33 @@
 namespace esp {
 namespace scene {
 class SceneGraph {
-public:
+ public:
   using DrawableGroups = std::unordered_map<std::string, gfx::DrawableGroup>;
 
   SceneGraph();
   virtual ~SceneGraph() { LOG(INFO) << "Deconstructing SceneGraph"; };
 
-  SceneNode &getRootNode() { return rootNode_; }
-  const SceneNode &getRootNode() const { return rootNode_; }
+  SceneNode& getRootNode() { return rootNode_; }
+  const SceneNode& getRootNode() const { return rootNode_; }
 
   // TODO: remove this
-  gfx::DrawableGroup &getDrawables() {
+  gfx::DrawableGroup& getDrawables() {
     return drawableGroups_.at(std::string{});
   }
-  const gfx::DrawableGroup &getDrawables() const {
+  const gfx::DrawableGroup& getDrawables() const {
     return drawableGroups_.at(std::string{});
   }
 
   // set the transformation, projection matrix to the default camera
   // TODO:
   // in the future, the parameter should be VisualSensor
-  void setDefaultRenderCamera(sensor::VisualSensor &sensor);
+  void setDefaultRenderCamera(sensor::VisualSensor& sensor);
 
-  gfx::RenderCamera &getDefaultRenderCamera() { return defaultRenderCamera_; }
+  gfx::RenderCamera& getDefaultRenderCamera() { return defaultRenderCamera_; }
 
   /* @brief check if the scene node is the root node of the scene graph.
    */
-  static bool isRootNode(SceneNode &node);
+  static bool isRootNode(SceneNode& node);
 
   // Drawable group management
   // TODO: move this to separate class
@@ -53,10 +53,10 @@ public:
    * @brief Get all drawable groups in this SceneGraph
    */
   // TODO?: return nicely iterable collection instead of map?
-  DrawableGroups &getDrawableGroups() { return drawableGroups_; }
+  DrawableGroups& getDrawableGroups() { return drawableGroups_; }
 
   /** @overload */
-  const DrawableGroups &getDrawableGroups() const { return drawableGroups_; }
+  const DrawableGroups& getDrawableGroups() const { return drawableGroups_; }
 
   /**
    * @brief Get a @ref DrawableGroup by ID
@@ -65,10 +65,10 @@ public:
    *
    * @ref DrawableGroup pointer is only valid until group is deleted!
    */
-  gfx::DrawableGroup *getDrawableGroup(const std::string &id);
+  gfx::DrawableGroup* getDrawableGroup(const std::string& id);
 
   /** @overload */
-  const gfx::DrawableGroup *getDrawableGroup(const std::string &id) const;
+  const gfx::DrawableGroup* getDrawableGroup(const std::string& id) const;
 
   /**
    * @brief Creates a @ref DrawableGroup
@@ -79,8 +79,8 @@ public:
    *  @ref DrawableGroup with the same ID already exists.
    */
   template <typename... DrawableGroupArgs>
-  gfx::DrawableGroup *createDrawableGroup(std::string id,
-                                          DrawableGroupArgs &&... args) {
+  gfx::DrawableGroup* createDrawableGroup(std::string id,
+                                          DrawableGroupArgs&&... args) {
     auto inserted = drawableGroups_.emplace(
         std::piecewise_construct, std::forward_as_tuple(std::move(id)),
         std::forward_as_tuple(std::forward<DrawableGroupArgs>(args)...));
@@ -98,9 +98,9 @@ public:
    *
    * @return If the @ref DrawableGroup with specified ID existed.
    */
-  bool deleteDrawableGroup(const std::string &id);
+  bool deleteDrawableGroup(const std::string& id);
 
-protected:
+ protected:
   MagnumScene world_;
 
   // Each item within is a base node, parent of all in that scene, for easy
@@ -135,5 +135,5 @@ protected:
   // This is a mapping from (groupID -> group of drawables).
   DrawableGroups drawableGroups_;
 };
-} // namespace scene
-} // namespace esp
+}  // namespace scene
+}  // namespace esp

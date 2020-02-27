@@ -10,7 +10,7 @@ using esp::gfx::DrawableGroup;
 using esp::scene::SceneGraph;
 
 class SceneGraphTest : public ::testing::Test {
-protected:
+ protected:
   void SetUp() override { numInitialGroups = g.getDrawableGroups().size(); }
 
   size_t numInitialGroups;
@@ -21,7 +21,7 @@ protected:
 TEST_F(SceneGraphTest, GetDrawableGroup) {
   EXPECT_EQ(g.getDrawableGroup("not created"), nullptr);
 
-  DrawableGroup *group = g.createDrawableGroup(groupName);
+  DrawableGroup* group = g.createDrawableGroup(groupName);
   ASSERT_NE(group, nullptr);
   EXPECT_EQ(g.getDrawableGroups().size(), numInitialGroups + 1);
   ASSERT_EQ(g.getDrawableGroup(groupName), group);
@@ -30,7 +30,7 @@ TEST_F(SceneGraphTest, GetDrawableGroup) {
 TEST_F(SceneGraphTest, DeleteDrawableGroup) {
   EXPECT_FALSE(g.deleteDrawableGroup("not created"));
 
-  DrawableGroup *group = g.createDrawableGroup(groupName);
+  DrawableGroup* group = g.createDrawableGroup(groupName);
   ASSERT_NE(group, nullptr);
   ASSERT_EQ(g.getDrawableGroup(groupName), group);
 

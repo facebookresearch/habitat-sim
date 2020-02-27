@@ -10,11 +10,11 @@
 
 #include <vector>
 
-#include "esp/core/esp.h"
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Mesh.h>
 #include <Magnum/Trade/MeshData3D.h>
+#include "esp/core/esp.h"
 
 namespace esp {
 namespace assets {
@@ -42,5 +42,5 @@ struct CollisionMeshData {
   Corrade::Containers::ArrayView<Magnum::UnsignedInt> indices;
 };
 
-} // namespace assets
-} // namespace esp
+}  // namespace assets
+}  // namespace esp

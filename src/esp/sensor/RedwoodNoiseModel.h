@@ -40,7 +40,8 @@ struct RedwoodNoiseModelGPUImpl {
    *                          level
    */
   RedwoodNoiseModelGPUImpl(const Eigen::Ref<const Eigen::RowMatrixXf> model,
-                           const int gpuDeviceId, const float noiseMultiplier);
+                           const int gpuDeviceId,
+                           const float noiseMultiplier);
 
   /**
    * @brief Simulates noisy depth from clean depth.  The input is assumed to be
@@ -50,8 +51,8 @@ struct RedwoodNoiseModelGPUImpl {
    * @param[in] depth  Clean depth, i.e. depth from habitat's depth shader
    * @return Simulated noisy depth
    */
-  Eigen::RowMatrixXf
-  simulateFromCPU(const Eigen::Ref<const Eigen::RowMatrixXf> depth);
+  Eigen::RowMatrixXf simulateFromCPU(
+      const Eigen::Ref<const Eigen::RowMatrixXf> depth);
 
   /**
    * @brief Similar to @ref simulateFromCPU() but the input and output are
@@ -66,19 +67,21 @@ struct RedwoodNoiseModelGPUImpl {
    * @param[out] devNoisyDepth  Device pointer to the memory to write the noisy
    *                            depth
    */
-  void simulateFromGPU(const float *devDepth, const int rows, const int cols,
-                       float *devNoisyDepth);
+  void simulateFromGPU(const float* devDepth,
+                       const int rows,
+                       const int cols,
+                       float* devNoisyDepth);
 
   ~RedwoodNoiseModelGPUImpl();
 
-private:
+ private:
   const int gpuDeviceId_;
   const float noiseMultiplier_;
-  float *devModel_ = nullptr;
-  impl::CurandStates *curandStates_ = nullptr;
+  float* devModel_ = nullptr;
+  impl::CurandStates* curandStates_ = nullptr;
 
   ESP_SMART_POINTERS(RedwoodNoiseModelGPUImpl)
 };
 
-} // namespace sensor
-} // namespace esp
+}  // namespace sensor
+}  // namespace esp
