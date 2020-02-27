@@ -10,7 +10,7 @@ import habitat_sim
 import habitat_sim.bindings as hsim
 from habitat_sim.agent import AgentState
 from habitat_sim.utils.common import quat_from_two_vectors
-from habitat_sim.utils.data.poseextractor import PoseExtractor
+from habitat_sim.utils.data.pose_extractor import PoseExtractor
 
 
 class ImageExtractor:
