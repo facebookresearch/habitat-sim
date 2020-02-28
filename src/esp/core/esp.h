@@ -107,7 +107,6 @@ inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
 
 // smart pointers macro
 #define ESP_SMART_POINTERS(T)                                 \
-                                                              \
  public:                                                      \
   typedef std::shared_ptr<T> ptr;                             \
   typedef std::unique_ptr<T> uptr;                            \
@@ -124,14 +123,12 @@ inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
 
 // pimpl macro backed by unique_ptr pointer
 #define ESP_UNIQUE_PTR_PIMPL() \
-                               \
  protected:                    \
   struct Impl;                 \
   spimpl::unique_impl_ptr<Impl> pimpl_;
 
 // pimpl macro backed by shared_ptr pointer
 #define ESP_SHARED_PTR_PIMPL() \
-                               \
  protected:                    \
   struct Impl;                 \
   spimpl::impl_ptr<Impl> pimpl_;

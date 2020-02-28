@@ -23,6 +23,7 @@ set(gfx_SOURCES
   WindowlessContext.h
   RenderTarget.cpp
   RenderTarget.h
+  ShaderManager.cpp
   ShaderManager.h
 )
 

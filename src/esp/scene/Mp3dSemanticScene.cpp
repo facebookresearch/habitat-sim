@@ -83,9 +83,10 @@ std::string Mp3dRegionCategory::name(const std::string& mapping) const {
 }
 
 bool SemanticScene::loadMp3dHouse(
-    const std::string &houseFilename, SemanticScene &scene,
-    const quatf &rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(),
-                                                       geo::ESP_GRAVITY) */) {
+    const std::string& houseFilename,
+    SemanticScene& scene,
+    const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(),
+                                                       geo::ESP_GRAVITY) */ ) {
   if (!io::exists(houseFilename)) {
     LOG(ERROR) << "Could not load file " << houseFilename;
     return false;
