@@ -10,6 +10,17 @@ from habitat_sim._ext.habitat_sim_bindings.geo import (
     LEFT,
     RIGHT,
     UP,
+    compute_gravity_aligned_MOBB,
 )
 
-__all__ = ["BBox", "OBB", "UP", "GRAVITY", "FRONT", "BACK", "LEFT", "RIGHT"]
+__all__ = [
+    "BBox",
+    "OBB",
+    "UP",
+    "GRAVITY",
+    "FRONT",
+    "BACK",
+    "LEFT",
+    "RIGHT",
+    "compute_gravity_aligned_MOBB",
+]

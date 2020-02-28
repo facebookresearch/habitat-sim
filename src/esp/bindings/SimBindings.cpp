@@ -37,6 +37,7 @@ void initSimBindings(py::module& m) {
                      &SimulatorConfiguration::compressTextures)
       .def_readwrite("allow_sliding", &SimulatorConfiguration::allowSliding)
       .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
+      .def_readwrite("frustum_culling", &SimulatorConfiguration::frustumCulling)
       .def_readwrite("enable_physics", &SimulatorConfiguration::enablePhysics)
       .def_readwrite("physics_config_file",
                      &SimulatorConfiguration::physicsConfigFile)
@@ -67,6 +68,9 @@ void initSimBindings(py::module& m) {
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
       .def("reset", &Simulator::reset)
       .def_property_readonly("gpu_device", &Simulator::gpuDevice)
+      .def_property("frustum_culling", &Simulator::isFrustumCullingEnabled,
+                    &Simulator::setFrustumCullingEnabled,
+                    R"(Enable or disable the frustum culling)")
       /* --- Physics functions --- */
       .def("add_object", &Simulator::addObject, "object_lib_index"_a,
            "scene_id"_a = 0)

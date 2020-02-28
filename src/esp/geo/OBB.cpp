@@ -107,7 +107,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
     const float dd = d0[0] * d1[1] - d0[1] * d1[0];
 
     const float dx = s1[0] - s0[0];
-    const float dy = s1[1] - s0[0];
+    const float dy = s1[1] - s0[1];
     const float t = (dx * d1[1] - dy * d1[0]) / dd;
 
     return s0 + t * d0;
@@ -240,7 +240,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
     aabb.extend(T_w2b * pt);
   }
 
-  return OBB{aabb.center(), aabb.sizes(), T_w2b.inverse()};
+  return OBB{T_w2b.inverse() * aabb.center(), aabb.sizes(), T_w2b.inverse()};
 }
 
 }  // namespace geo
