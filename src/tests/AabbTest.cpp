@@ -96,11 +96,9 @@ void GeoTest::aabb() {
   // compute aabb for each box using standard method and library method
   // respectively.
   // compare the results, which should be identical
-  for (unsigned int iTransform = 0; iTransform < numCases_; ++iTransform) {
-    Mn::Range3D aabbControl =
-        Test::getTransformedBB_standard(box_, xforms_[iTransform]);
-    Mn::Range3D aabbTest =
-        esp::geo::getTransformedBB(box_, xforms_[iTransform]);
+  for (auto& xform : xforms_) {
+    Mn::Range3D aabbControl = Test::getTransformedBB_standard(box_, xform);
+    Mn::Range3D aabbTest = esp::geo::getTransformedBB(box_, xform);
 
     float eps = 1e-8f;
     CORRADE_COMPARE_WITH((aabbTest.min() - aabbControl.min()).dot(), 0.0,
