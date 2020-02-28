@@ -2,7 +2,6 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <Magnum/Math/FunctionsBatch.h>
 #include <gtest/gtest.h>
 #include "esp/geo/CoordinateFrame.h"
 #include "esp/geo/OBB.h"
@@ -98,24 +97,4 @@ TEST(GeoTest, CoordinateFrame) {
   CoordinateFrame c4;
   c4.fromJson(j);
   EXPECT_EQ(c3, c4);
-}
-
-// standard method
-// transform the 8 corners, and extract the min and max
-Magnum::Range3D getTransformedBB_standard(const Magnum::Range3D& range,
-                                          const Magnum::Matrix4& xform) {
-  std::vector<Magnum::Vector3> corners;
-  corners.push_back(xform.transformPoint(range.frontBottomLeft()));
-  corners.push_back(xform.transformPoint(range.frontBottomRight()));
-  corners.push_back(xform.transformPoint(range.frontTopLeft()));
-  corners.push_back(xform.transformPoint(range.frontTopRight()));
-
-  corners.push_back(xform.transformPoint(range.backTopLeft()));
-  corners.push_back(xform.transformPoint(range.backTopRight()));
-  corners.push_back(xform.transformPoint(range.backBottomLeft()));
-  corners.push_back(xform.transformPoint(range.backBottomRight()));
-
-  Magnum::Range3D transformedBB{Magnum::Math::minmax<Magnum::Vector3>(corners)};
-
-  return transformedBB;
 }
