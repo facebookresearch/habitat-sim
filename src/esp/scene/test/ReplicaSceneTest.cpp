@@ -61,8 +61,10 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
 
     const auto& stringId = obj->id();
     const int id = std::stoi(stringId.substr(stringId.find_last_of("_") + 1));
+    CORRADE_ITERATION(stringId);
 
     for (uint64_t fid = 0; fid < ibo.size(); fid += 6) {
+      CORRADE_ITERATION(fid);
       if (objectIds[fid] == id) {
         esp::vec3f quadCenter = esp::vec3f::Zero();
         // Mesh was converted from quads to tris
