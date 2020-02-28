@@ -12,15 +12,18 @@
 
 // TODO: refactor the GeoTest to use Cr::TestSuite
 namespace Cr = Corrade;
+namespace Mn = Magnum;
 
 using namespace esp;
 using namespace esp::geo;
 
+// reference: https://github.com/facebookresearch/habitat-sim/pull/496/files
+namespace Test {
 // standard method
 // transform the 8 corners, and extract the min and max
-Magnum::Range3D getTransformedBB_standard(const Magnum::Range3D& range,
-                                          const Magnum::Matrix4& xform) {
-  std::vector<Magnum::Vector3> corners;
+Mn::Range3D getTransformedBB_standard(const Mn::Range3D& range,
+                                      const Mn::Matrix4& xform) {
+  std::vector<Mn::Vector3> corners;
   corners.push_back(xform.transformPoint(range.frontBottomLeft()));
   corners.push_back(xform.transformPoint(range.frontBottomRight()));
   corners.push_back(xform.transformPoint(range.frontTopLeft()));
@@ -31,56 +34,81 @@ Magnum::Range3D getTransformedBB_standard(const Magnum::Range3D& range,
   corners.push_back(xform.transformPoint(range.backBottomLeft()));
   corners.push_back(xform.transformPoint(range.backBottomRight()));
 
-  Magnum::Range3D transformedBB{Magnum::Math::minmax<Magnum::Vector3>(corners)};
+  Mn::Range3D transformedBB{Mn::Math::minmax<Mn::Vector3>(corners)};
 
   return transformedBB;
 }
 
-// reference: https://github.com/facebookresearch/habitat-sim/pull/496/files
-namespace {
 struct GeoTest : Cr::TestSuite::Tester {
   explicit GeoTest();
+  // tests
   void aabb();
+  // benchmarks
+  void getTransformedBB_standard();
+  void getTransformedBB();
+
+  std::vector<Mn::Matrix4> xforms_;
+  // number of transformations
+  const unsigned int numCases_ = 50000;
+  // the batch size when running benchmarks
+  const unsigned int iterations_ = 10;
+  Mn::Range3D box_ = Mn::Range3D{Mn::Vector3{-10.0, -10.0, -10.0},
+                                 Mn::Vector3{10.0, 10.0, 10.0}};
 };
 
 GeoTest::GeoTest() {
   // clang-format off
   addTests({&GeoTest::aabb});
+  addBenchmarks({&GeoTest::getTransformedBB_standard,
+                 &GeoTest::getTransformedBB}, 10);
   // clang-format on
-}
 
-void GeoTest::aabb() {
-  // Generate N boxes in random position and orientation.
-  // compute aabb for each box using standard method and library method
-  // respectively.
-  // compare the results, which should be identical
-
-  Magnum::Range3D box = Magnum::Range3D{Magnum::Vector3{-10.0, -10.0, -10.0},
-                                        Magnum::Vector3{10.0, 10.0, 10.0}};
-
-  int numBoxes = 10000;
-  for (int iBox = 0; iBox < numBoxes; ++iBox) {
+  // Generate N transformations (random positions and orientations)
+  xforms_.reserve(numCases_);
+  for (unsigned int iTransform = 0; iTransform < numCases_; ++iTransform) {
     // generate random translation
-    const Magnum::Vector3 translation{
+    const Mn::Vector3 translation{
         static_cast<float>(rand() % 1000) + (rand() % 1000) / 1000.0f,
         static_cast<float>(rand() % 1000) + (rand() % 1000) / 1000.0f,
         static_cast<float>(rand() % 1000) + (rand() % 1000) / 1000.0f};
 
-    // assemble the transformation matrix
-    Magnum::Matrix4 xform = Magnum::Matrix4::from(
-        esp::core::randomRotation().toMatrix(), translation);
+    // assemble the transformation matrix, and push it back
+    xforms_.emplace_back(
+        Mn::Matrix4::from(esp::core::randomRotation().toMatrix(), translation));
+  }
+}
 
-    Magnum::Range3D aabbControl = getTransformedBB_standard(box, xform);
-    Magnum::Range3D aabbTest = esp::geo::getTransformedBB(box, xform);
+void GeoTest::getTransformedBB_standard() {
+  Mn::Range3D aabb;
+  CORRADE_BENCHMARK(iterations_) for (auto& xform : xforms_) {
+    aabb = Test::getTransformedBB_standard(box_, xform);
+  }
+}
+
+void GeoTest::getTransformedBB() {
+  Mn::Range3D aabb;
+  CORRADE_BENCHMARK(iterations_) for (auto& xform : xforms_) {
+    aabb = esp::geo::getTransformedBB(box_, xform);
+  }
+}
+
+void GeoTest::aabb() {
+  // compute aabb for each box using standard method and library method
+  // respectively.
+  // compare the results, which should be identical
+  for (unsigned int iTransform = 0; iTransform < numCases_; ++iTransform) {
+    Mn::Range3D aabbControl =
+        Test::getTransformedBB_standard(box_, xforms_[iTransform]);
+    Mn::Range3D aabbTest =
+        esp::geo::getTransformedBB(box_, xforms_[iTransform]);
 
     float eps = 1e-8f;
     CORRADE_COMPARE_WITH((aabbTest.min() - aabbControl.min()).dot(), 0.0,
                          Cr::TestSuite::Compare::around(eps));
     CORRADE_COMPARE_WITH((aabbTest.max() - aabbControl.max()).dot(), 0.0,
                          Cr::TestSuite::Compare::around(eps));
-  }  // for iBox
+  }
 }
+}  // namespace Test
 
-}  // namespace
-
-CORRADE_TEST_MAIN(GeoTest)
+CORRADE_TEST_MAIN(Test::GeoTest)
