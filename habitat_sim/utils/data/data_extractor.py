@@ -109,8 +109,10 @@ class ImageExtractor:
     def close(self):
         r"""Deletes the instance of the simulator. Necessary for instatiating a different ImageExtractor.
         """
-        self.sim.close()
-        del self.sim
+        if self.sim is not None:
+            self.sim.close()
+            del self.sim
+            self.sim = None
 
     def _config_sim(self, scene_filepath, img_size):
         settings = {
@@ -179,6 +181,6 @@ class ImageExtractor:
 
 class TopdownView(object):
     def __init__(self, sim, height, pixels_per_meter=0.1):
-        self.topdown_view = np.array(
-            sim.pathfinder.get_topdown_view(pixels_per_meter, height)
+        self.topdown_view = sim.pathfinder.get_topdown_view(
+            pixels_per_meter, height
         ).astype(np.float64)

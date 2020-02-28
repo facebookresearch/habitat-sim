@@ -99,10 +99,11 @@ int BulletPhysicsManager::makeRigidObject(
 }
 
 int BulletPhysicsManager::addObject(const int objectLibIndex,
-                                    DrawableGroup* drawables) {
+                                    DrawableGroup* drawables,
+                                    const Magnum::ResourceKey& lightSetup) {
   // Do default load first (adds the SceneNode to the SceneGraph and computes
   // the cumulativeBB_)
-  int objID = PhysicsManager::addObject(objectLibIndex, drawables);
+  int objID = PhysicsManager::addObject(objectLibIndex, drawables, lightSetup);
 
   // Then set the collision shape to the cumulativeBB_ if necessary
   if (objID != ID_UNDEFINED) {
