@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/Containers/Optional.h>
+#include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/GL/SampleQuery.h>
@@ -25,6 +26,20 @@ namespace Mn = Magnum;
 
 using esp::assets::ResourceManager;
 using esp::scene::SceneManager;
+
+namespace Test {
+struct CullingTest : Cr::TestSuite::Tester {
+  explicit CullingTest();
+  // tests
+  void computeAbsoluteAABB();
+  void frustumCulling();
+};
+
+CullingTest::CullingTest() {
+  // clang-format off
+  addTests({&CullingTest::computeAbsoluteAABB});
+  // clang-format on
+}
 
 TEST(CullingTest, computeAbsoluteAABB) {
   // must create a GL context which will be used in the resource manager
@@ -243,3 +258,4 @@ TEST(CullingTest, frustumCulling) {
   target->renderExit();
   EXPECT_EQ(numVisibleObjects, numVisibleObjectsGroundTruth);
 }
+}  // namespace Test
