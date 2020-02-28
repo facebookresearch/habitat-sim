@@ -5,14 +5,12 @@
 #pragma once
 
 #include <Magnum/SceneGraph/FeatureGroup.h>
-#include <Magnum/SceneGraph/SceneGraph.h>
 
 #include "esp/core/esp.h"
 
 namespace esp {
 namespace gfx {
 
-class Drawable;
 class RenderCamera;
 
 /**
