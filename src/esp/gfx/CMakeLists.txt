@@ -3,7 +3,6 @@ set(gfx_SOURCES
   DepthUnprojection.h
   Drawable.cpp
   Drawable.h
-  DrawableGroup.cpp
   DrawableGroup.h
   GenericDrawable.cpp
   GenericDrawable.h

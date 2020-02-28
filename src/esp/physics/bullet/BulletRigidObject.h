@@ -46,13 +46,13 @@ struct SimulationContactResultCallback
    * @param cp Contains detailed information about the contact point being
    * added.
    */
-  btScalar addSingleResult(btManifoldPoint& cp,
-                           const btCollisionObjectWrapper* colObj0Wrap,
-                           int partId0,
-                           int index0,
-                           const btCollisionObjectWrapper* colObj1Wrap,
-                           int partId1,
-                           int index1) {
+  btScalar addSingleResult(btManifoldPoint&,
+                           const btCollisionObjectWrapper*,
+                           int,
+                           int,
+                           const btCollisionObjectWrapper*,
+                           int,
+                           int) {
     bCollision = true;
     return 0;  // not used
   }
@@ -402,7 +402,7 @@ class BulletRigidObject : public RigidObject,
    * @return @ref usingBBCollisionShape_ is true if "useBoundingBoxForCollision"
    * was set in object's configuration.
    */
-  const bool isUsingBBCollisionShape() const { return usingBBCollisionShape_; };
+  bool isUsingBBCollisionShape() const { return usingBBCollisionShape_; };
 
   /**
    * @brief Return result of a discrete contact test between the object and
