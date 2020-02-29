@@ -83,8 +83,11 @@ class BulletPhysicsManager : public PhysicsManager {
   bool addScene(const assets::PhysicsSceneAttributes& physicsSceneAttributes,
                 const std::vector<assets::CollisionMeshData>& meshGroup);
 
-  virtual int addObject(const int objectLibIndex,
-                        DrawableGroup* drawables) override;
+  virtual int addObject(
+      const int objectLibIndex,
+      DrawableGroup* drawables,
+      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+          assets::ResourceManager::DEFAULT_LIGHTING_KEY}) override;
 
   //============ Simulator functions =============
 

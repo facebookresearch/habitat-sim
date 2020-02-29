@@ -277,6 +277,6 @@ class ImageExtractor:
 
 class TopdownView(object):
     def __init__(self, sim, height, pixels_per_meter=0.1):
-        self.topdown_view = np.array(
-            sim.pathfinder.get_topdown_view(pixels_per_meter, height)
+        self.topdown_view = sim.pathfinder.get_topdown_view(
+            pixels_per_meter, height
         ).astype(np.float64)

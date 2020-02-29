@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
-from habitat_sim.utils.data.dataextractor import ImageExtractor, TopdownView
+from habitat_sim.utils.data.data_extractor import ImageExtractor, TopdownView
 
 
 class TrivialNet(nn.Module):

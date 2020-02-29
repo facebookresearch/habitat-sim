@@ -7,6 +7,14 @@
 namespace esp {
 namespace gfx {
 
+bool operator==(const LightInfo& a, const LightInfo& b) {
+  return a.position == b.position && a.color == b.color && a.model == b.model;
+}
+
+bool operator!=(const LightInfo& a, const LightInfo& b) {
+  return !(a == b);
+}
+
 Magnum::Vector3 getLightPositionRelativeToCamera(
     const LightInfo& light,
     const Magnum::Matrix4& transformationMatrix,

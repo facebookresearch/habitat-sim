@@ -15,6 +15,7 @@ import numpy as np
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
+from habitat_sim.gfx import DEFAULT_LIGHTING_KEY
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings
 from habitat_sim.physics import MotionType
@@ -273,8 +274,8 @@ class Simulator:
         self.close()
 
     # --- physics functions ---
-    def add_object(self, object_lib_index):
-        return self._sim.add_object(object_lib_index)
+    def add_object(self, object_lib_index, light_setup_key=DEFAULT_LIGHTING_KEY):
+        return self._sim.add_object(object_lib_index, light_setup_key=light_setup_key)
 
     def get_physics_object_library_size(self):
         return self._sim.get_physics_object_library_size()
@@ -323,6 +324,16 @@ class Simulator:
 
     def recompute_navmesh(self, pathfinder, navmesh_settings):
         return self._sim.recompute_navmesh(pathfinder, navmesh_settings)
+
+    # --- lighting functions ---
+    def get_light_setup(self, key=DEFAULT_LIGHTING_KEY):
+        return self._sim.get_light_setup(key)
+
+    def set_light_setup(self, light_setup, key=DEFAULT_LIGHTING_KEY):
+        self._sim.set_light_setup(light_setup, key)
+
+    def set_object_light_setup(self, object_id, light_setup_key, scene_id=0):
+        self._sim.set_object_light_setup(object_id, light_setup_key, scene_id)
 
 
 class Sensor:

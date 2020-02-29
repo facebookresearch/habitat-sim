@@ -13,7 +13,7 @@ class PoseExtractor(object):
 
     :property topdown_view: 2D array representing topdown view of scene
     :property pathfinder: the pathfinder from the Simulator object
-    :property res: resolution of the topdown view (explained in HabitatDataset)
+    :property pixels_per_meter: resolution of the topdown view (explained in ImageExtractor)
     :property gridpoints: list of positions for the camera
     :property dist: distance between each camera position
     """
