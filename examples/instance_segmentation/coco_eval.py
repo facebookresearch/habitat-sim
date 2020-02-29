@@ -64,8 +64,6 @@ class CocoEvaluator(object):
             return self.prepare_for_coco_detection(predictions)
         elif iou_type == "segm":
             return self.prepare_for_coco_segmentation(predictions)
-        elif iou_type == "keypoints":
-            return self.prepare_for_coco_keypoint(predictions)
         else:
             raise ValueError("Unknown iou type {}".format(iou_type))
 
@@ -130,32 +128,6 @@ class CocoEvaluator(object):
             )
         return coco_results
 
-    def prepare_for_coco_keypoint(self, predictions):
-        coco_results = []
-        for original_id, prediction in predictions.items():
-            if len(prediction) == 0:
-                continue
-
-            boxes = prediction["boxes"]
-            boxes = convert_to_xywh(boxes).tolist()
-            scores = prediction["scores"].tolist()
-            labels = prediction["labels"].tolist()
-            keypoints = prediction["keypoints"]
-            keypoints = keypoints.flatten(start_dim=1).tolist()
-
-            coco_results.extend(
-                [
-                    {
-                        "image_id": original_id,
-                        "category_id": labels[k],
-                        "keypoints": keypoint,
-                        "score": scores[k],
-                    }
-                    for k, keypoint in enumerate(keypoints)
-                ]
-            )
-        return coco_results
-
 
 def convert_to_xywh(boxes):
     xmin, ymin, xmax, ymax = boxes.unbind(1)
@@ -204,8 +176,6 @@ def create_common_coco_eval(coco_eval, img_ids, eval_imgs):
 
 
 def createIndex(self):
-    # create index
-    # print('creating index...')
     anns, cats, imgs = {}, {}, {}
     imgToAnns, catToImgs = defaultdict(list), defaultdict(list)
     if "annotations" in self.dataset:
@@ -224,8 +194,6 @@ def createIndex(self):
     if "annotations" in self.dataset and "categories" in self.dataset:
         for ann in self.dataset["annotations"]:
             catToImgs[ann["category_id"]].append(ann["image_id"])
-
-    # print('index created!')
 
     # create class members
     self.anns = anns
@@ -247,8 +215,6 @@ def loadRes(self, resFile):
     res = COCO()
     res.dataset["images"] = [img for img in self.dataset["images"]]
 
-    # print('Loading and preparing results...')
-    # tic = time.time()
     if isinstance(resFile, torch._six.string_classes):
         anns = json.load(open(resFile))
     elif type(resFile) == np.ndarray:
@@ -288,17 +254,6 @@ def loadRes(self, resFile):
                 ann["bbox"] = maskUtils.toBbox(ann["segmentation"])
             ann["id"] = id + 1
             ann["iscrowd"] = 0
-    elif "keypoints" in anns[0]:
-        res.dataset["categories"] = copy.deepcopy(self.dataset["categories"])
-        for id, ann in enumerate(anns):
-            s = ann["keypoints"]
-            x = s[0::3]
-            y = s[1::3]
-            x1, x2, y1, y2 = np.min(x), np.max(x), np.min(y), np.max(y)
-            ann["area"] = (x2 - x1) * (y2 - y1)
-            ann["id"] = id + 1
-            ann["bbox"] = [x1, y1, x2 - x1, y2 - y1]
-    # print('DONE (t={:0.2f}s)'.format(time.time()- tic))
 
     res.dataset["annotations"] = anns
     createIndex(res)
@@ -310,8 +265,6 @@ def evaluate(self):
     Run per image evaluation on given images and store results (a list of dict) in self.evalImgs
     :return: None
     """
-    # tic = time.time()
-    # print('Running per image evaluation...')
     p = self.params
     # add backward compatibility if useSegm is specified in params
     if p.useSegm is not None:
@@ -332,8 +285,6 @@ def evaluate(self):
 
     if p.iouType == "segm" or p.iouType == "bbox":
         computeIoU = self.computeIoU
-    elif p.iouType == "keypoints":
-        computeIoU = self.computeOks
     self.ious = {
         (imgId, catId): computeIoU(imgId, catId)
         for imgId in p.imgIds
@@ -351,8 +302,6 @@ def evaluate(self):
     # this is NOT in the pycocotools code, but could be done outside
     evalImgs = np.asarray(evalImgs).reshape(len(catIds), len(p.areaRng), len(p.imgIds))
     self._paramsEval = copy.deepcopy(self.params)
-    # toc = time.time()
-    # print('DONE (t={:0.2f}s).'.format(toc-tic))
     return p.imgIds, evalImgs
 
 
