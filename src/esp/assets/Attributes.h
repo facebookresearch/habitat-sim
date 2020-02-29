@@ -100,7 +100,7 @@ class Attributes {
   std::map<std::string, bool> boolMap_;
   std::map<std::string, std::string> stringMap_;
   std::map<std::string, Magnum::Vector3> magnumVec3Map_;
-  std::map<std::string, std::vector<std::string>> vecStringsMap_;
+  std::map<std::string, std::vector<std::string> > vecStringsMap_;
 
 };  // end Attributes class
 

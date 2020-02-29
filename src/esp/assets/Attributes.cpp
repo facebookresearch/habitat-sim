@@ -14,7 +14,7 @@ Attributes::Attributes() {
   boolMap_ = std::map<std::string, bool>();
   stringMap_ = std::map<std::string, std::string>();
   magnumVec3Map_ = std::map<std::string, Magnum::Vector3>();
-  vecStringsMap_ = std::map<std::string, std::vector<std::string>>();
+  vecStringsMap_ = std::map<std::string, std::vector<std::string> >();
 }
 
 // return true if any container has the key
