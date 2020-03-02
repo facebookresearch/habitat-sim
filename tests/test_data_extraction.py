@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
 from habitat_sim.utils.data.data_extractor import ImageExtractor, TopdownView
+from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 
 
 class TrivialNet(nn.Module):
@@ -49,3 +50,15 @@ def test_data_extractor_end_to_end(sim):
         img, label = sample_batch["rgba"], sample_batch["label"]
         img = img.permute(0, 3, 2, 1).float()
         out = net(img)
+
+
+def test_extractor_cache(sim):
+    cache = ExtractorLRUCache()
+    cache.add(1, "one")
+    cache.add(2, "two")
+    cache.add(3, "three")
+    assert cache.head.data == "three"
+    accessed_data = cache[2]
+    assert cache.head.data == "two"
+    cache.remove_from_back()
+    assert 1 not in cache

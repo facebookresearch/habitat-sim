@@ -10,7 +10,7 @@ class ExtractorLRUCache:
     def __init__(self, capacity=1000):
         self.node_map = {}
         self.head = LinkedListNode()
-        self.tail = LinkedListNode(self.head)
+        self.tail = LinkedListNode(prev_node=self.head)
         self.head.next_node = self.tail
         self.capacity = capacity
         self.size = 0

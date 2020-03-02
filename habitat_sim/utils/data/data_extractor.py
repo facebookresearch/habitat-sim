@@ -57,6 +57,7 @@ class ImageExtractor:
         shuffle=True,
         split=(70, 30),
         use_caching=True,
+        pixels_per_meter=0.1,
     ):
         if sum(split) != 100:
             raise Exception("Train/test split must sum to 100.")
@@ -75,13 +76,9 @@ class ImageExtractor:
 
         if sim is None:
             sim = habitat_sim.Simulator(self.cfg)
-        else:
-            # If a sim is provided we have to make a new cfg
-            self.cfg = self._config_sim(sim.config.sim_cfg.scene.id, img_size)
-            sim.reconfigure(self.cfg)
 
         self.sim = sim
-        self.pixels_per_meter = 0.1
+        self.pixels_per_meter = pixels_per_meter
         self.tdv_fp_ref_triples = self._preprocessing(
             self.sim, self.scene_filepaths, self.pixels_per_meter
         )
