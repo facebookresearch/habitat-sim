@@ -110,7 +110,7 @@ void PhysicsManager::removeObject(const int physObjectID,
   deallocateObjectID(physObjectID);
   if (deleteObjectNode) {
     delete objectNode;
-  } else if (deleteVisualNode) {
+  } else if (deleteVisualNode && visualNode) {
     delete visualNode;
   }
 }
@@ -147,12 +147,12 @@ int PhysicsManager::makeRigidObject(
     assets::PhysicsObjectAttributes physicsObjectAttributes,
     scene::SceneNode* attachmentNode /* = nullptr */) {
   int newObjectID = allocateObjectID();
-  scene::SceneNode* newNode = attachmentNode;
+  scene::SceneNode* objectNode = attachmentNode;
   if (attachmentNode == nullptr) {
-    newNode = &staticSceneObject_->node().createChild();
+    objectNode = &staticSceneObject_->node().createChild();
   }
   existingObjects_[newObjectID] =
-      std::make_unique<physics::RigidObject>(newNode);
+      std::make_unique<physics::RigidObject>(objectNode);
 
   //! Instantiate with mesh pointer
   bool objectSuccess =
@@ -162,7 +162,7 @@ int PhysicsManager::makeRigidObject(
     deallocateObjectID(newObjectID);
     existingObjects_.erase(newObjectID);
     if (attachmentNode == nullptr)
-      delete newNode;
+      delete objectNode;
     return ID_UNDEFINED;
   }
   return newObjectID;
@@ -473,7 +473,7 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
     // destroy the node
     delete existingObjects_[physObjectID]->BBNode_;
     existingObjects_[physObjectID]->BBNode_ = nullptr;
-  } else if (drawBB) {
+  } else if (drawBB && existingObjects_[physObjectID]->visualNode_) {
     // add a new BBNode
     Magnum::Vector3 scale =
         existingObjects_[physObjectID]->visualNode_->getCumulativeBB().size() /

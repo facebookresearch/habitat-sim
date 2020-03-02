@@ -333,7 +333,8 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
 void BulletRigidObject::shiftOrigin(const Magnum::Vector3& shift) {
   Corrade::Utility::Debug() << "shiftOrigin: " << shift;
 
-  visualNode_->translate(shift);
+  if (visualNode_)
+    visualNode_->translate(shift);
 
   // shift all children of the parent collision shape
   for (int i = 0; i < bObjectShape_->getNumChildShapes(); i++) {

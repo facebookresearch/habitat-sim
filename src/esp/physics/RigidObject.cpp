@@ -9,9 +9,8 @@ namespace esp {
 namespace physics {
 
 RigidObject::RigidObject(scene::SceneNode* rigidBodyNode)
-    : Magnum::SceneGraph::AbstractFeature3D(*rigidBodyNode) {
-  visualNode_ = &rigidBodyNode->createChild();
-}
+    : Magnum::SceneGraph::AbstractFeature3D(*rigidBodyNode),
+      visualNode_(&rigidBodyNode->createChild()) {}
 
 bool RigidObject::initializeScene(
     const assets::PhysicsSceneAttributes&,
@@ -67,7 +66,8 @@ bool RigidObject::setMotionType(MotionType mt) {
 
 void RigidObject::shiftOrigin(const Magnum::Vector3& shift) {
   // shift visual components
-  visualNode_->translate(shift);
+  if (visualNode_)
+    visualNode_->translate(shift);
   node().computeCumulativeBB();
 }
 

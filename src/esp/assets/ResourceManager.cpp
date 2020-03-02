@@ -444,8 +444,6 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
 
     addComponent(meshMetaData, scalingNode, lightSetup, drawables,
                  meshMetaData.root);
-    // compute the full BB hierarchy for the new tree.
-    parent->computeCumulativeBB();
   }
 
   return objectID;

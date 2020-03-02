@@ -80,12 +80,13 @@ int BulletPhysicsManager::makeRigidObject(
   //! Create new physics object (child node of staticSceneObject_)
   int newObjectID = allocateObjectID();
 
-  scene::SceneNode* newNode = attachmentNode;
+  scene::SceneNode* objectNode = attachmentNode;
   if (attachmentNode == nullptr) {
-    newNode = &staticSceneObject_->node().createChild();
+    objectNode = &staticSceneObject_->node().createChild();
   }
 
-  existingObjects_[newObjectID] = std::make_unique<BulletRigidObject>(newNode);
+  existingObjects_[newObjectID] =
+      std::make_unique<BulletRigidObject>(objectNode);
 
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
       physicsObjectAttributes.getString("collisionMeshHandle"));
@@ -99,7 +100,7 @@ int BulletPhysicsManager::makeRigidObject(
     deallocateObjectID(newObjectID);
     existingObjects_.erase(newObjectID);
     if (attachmentNode == nullptr)
-      delete newNode;
+      delete objectNode;
     return ID_UNDEFINED;
   }
   return newObjectID;
