@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
-from habitat_sim.utils.data.dataextractor import ImageExtractor, TopdownView
+from habitat_sim.utils.data.data_extractor import ImageExtractor, TopdownView
 
 
 class TrivialNet(nn.Module):
@@ -33,6 +33,7 @@ class MyDataset(Dataset):
 def test_topdown_view(sim):
     tdv = TopdownView(sim, height=0.0, pixels_per_meter=0.1)
     topdown_view = tdv.topdown_view
+    assert type(topdown_view) == np.ndarray
 
 
 def test_data_extractor_end_to_end(sim):

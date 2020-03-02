@@ -8,33 +8,42 @@ import habitat_sim
 from habitat_sim.utils.common import quat_from_two_vectors
 
 
-class PoseExtractor(object):
+class PoseExtractor:
     r"""Class that takes in a topdown view and pathfinder and determines a list of reasonable camera poses
 
-    :property topdown_view: 2D array representing topdown view of scene
-    :property pathfinder: the pathfinder from the Simulator object
-    :property res: resolution of the topdown view (explained in HabitatDataset)
-    :property gridpoints: list of positions for the camera
-    :property dist: distance between each camera position
+    :property tdv_fp_ref_triples: List of tuples containing (TopdownView Object, scene_filepath, reference point)
+        information for each scene. Each scene requires:
+            TopdownView: To extract poses
+            scene_filepath: The file path to the mesh file. Necessary for scene switches.
+            reference point: A reference point from the coordinate system of the scene. Necessary for specifying poses
+                in the scene's coordinate system.
+
+    :property sim: Simulator object used for pose extraction
+    :property pixels_per_meter: Resolution of topdown map. 0.1 means each pixel in the topdown map
+        represents 0.1 x 0.1 meters in the coordinate system of the pathfinder
     """
 
-    def __init__(self, topdown_views, sim, res=0.1):
+    def __init__(self, topdown_views, sim, pixels_per_meter=0.1):
         self.tdv_fp_ref_triples = topdown_views
         self.sim = sim
-        self.res = res
+        self.pixels_per_meter = pixels_per_meter
 
     def extract_poses(self, labels):
+        r"""Returns a numpy array of camera poses.
+        """
         poses = []
         for tdv, fp, ref_point in self.tdv_fp_ref_triples:
             view = tdv.topdown_view
             # Determine the physical spacing between each camera position
             x, z = view.shape
             dist = min(x, z) // 10
-            poses.extend(self.extract_poses_single_scene(labels, view, fp, dist, ref_point))
+            poses.extend(
+                self._extract_poses_single_scene(labels, view, fp, dist, ref_point)
+            )
 
         return np.array(poses)
 
-    def extract_poses_single_scene(self, labels, view, fp, dist, ref_point):
+    def _extract_poses_single_scene(self, labels, view, fp, dist, ref_point):
         height, width = view.shape
         n_gridpoints_width, n_gridpoints_height = (
             width // dist - 1,
@@ -44,7 +53,7 @@ class PoseExtractor(object):
         for h in range(n_gridpoints_height):
             for w in range(n_gridpoints_width):
                 point = (dist + h * dist, dist + w * dist)
-                if self.valid_point(*point, view):
+                if self._valid_point(*point, view):
                     gridpoints.append(point)
 
         # Find the closest point of the target class to each gridpoint
@@ -75,7 +84,7 @@ class PoseExtractor(object):
     def valid_point(self, row, col, view):
         return view[row][col] == 1.0
 
-    def is_point_of_interest(self, point, labels, view):
+    def _is_point_of_interest(self, point, labels, view):
         r, c = point
         is_interesting = False
         if view[r][c] in labels:
@@ -84,7 +93,7 @@ class PoseExtractor(object):
         return is_interesting, view[r][c]
 
     def _show_topdown_view(self, cmap="seismic_r"):
-        fig=plt.figure(figsize=(12.0, 12.0))
+        fig = plt.figure(figsize=(12.0, 12.0))
         columns = 4
         rows = math.ceil(len(self.tdv_fp_ref_triples) / columns)
         for i in range(1, columns * rows + 1):
@@ -141,7 +150,7 @@ class PoseExtractor(object):
                 return None, None
 
             visited.add(cur)
-            is_point_of_interest, label = self.is_point_of_interest(cur, labels, view)
+            is_point_of_interest, label = self._is_point_of_interest(cur, labels, view)
             if is_point_of_interest:
                 if layer > dist / 2:
                     return cur, label
