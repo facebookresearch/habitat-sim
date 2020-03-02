@@ -28,7 +28,7 @@ namespace physics {
 @brief Dynamic scene and object manager interfacing with Bullet physics engine:
 https://github.com/bulletphysics/bullet3.
 
-See @ref btDiscreteDynamicsWorld.
+See @ref btMultiBodyDynamicsWorld.
 
 Enables @ref RigidObject simulation with @ref MotionType::DYNAMIC.
 
@@ -93,7 +93,7 @@ class BulletPhysicsManager : public PhysicsManager {
 
   /** @brief Step the physical world forward in time. Time may only advance in
    * increments of @ref fixedTimeStep_. See @ref
-   * btDiscreteDynamicsWorld::stepSimulation.
+   * btMultiBodyDynamicsWorld::stepSimulation.
    * @param dt The desired amount of time to advance the physical world.
    */
   void stepPhysics(double dt);
