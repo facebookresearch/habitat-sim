@@ -1,0 +1,32 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+#pragma once
+
+#include <Magnum/GL/AbstractShaderProgram.h>
+#include <Magnum/ResourceManager.h>
+
+#include "esp/gfx/LightSetup.h"
+#include "esp/gfx/MaterialData.h"
+
+namespace esp {
+namespace gfx {
+
+using ShaderManager = Magnum::ResourceManager<Magnum::GL::AbstractShaderProgram,
+                                              gfx::LightSetup,
+                                              gfx::MaterialData>;
+
+/**
+ * @brief Set the light setup for a subtree
+ *
+ * All drawables in the subtree starting at root will have the new lightSetup
+ *
+ * @param root Subtree root
+ * @param lightSetup @ref LightSetup key in the ShaderManager
+ */
+void setLightSetupForSubTree(scene::SceneNode& root,
+                             const Magnum::ResourceKey& lightSetup);
+
+}  // namespace gfx
+}  // namespace esp
