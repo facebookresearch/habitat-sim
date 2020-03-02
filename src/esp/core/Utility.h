@@ -1,3 +1,11 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+#pragma once
+
+/** @file */
+
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Quaternion.h>
 #include <Magnum/Math/Vector3.h>
@@ -6,6 +14,11 @@
 
 namespace esp {
 namespace core {
+/**
+ * @brief generate a random rotation
+ *
+ * @return a unit quternion
+ */
 Magnum::Quaternion randomRotation() {
   // generate random rotation using:
   // http://planning.cs.uiuc.edu/node198.html

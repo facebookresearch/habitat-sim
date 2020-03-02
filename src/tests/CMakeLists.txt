@@ -32,9 +32,7 @@ corrade_add_test(SimTest SimTest.cpp LIBRARIES
 target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(AabbTest AabbTest.cpp LIBRARIES
-  geo
-  Magnum::DebugTools)
-target_include_directories(AabbTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+  geo)
 
 TEST(PhysicsTest physics)
 target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
