@@ -67,7 +67,6 @@ void BulletRigidObject::constructBulletSceneFromMeshes(
       transformFromParentToWorld * node.transformFromLocalToParent;
   if (node.meshIDLocal != ID_UNDEFINED) {
     const assets::CollisionMeshData& mesh = meshGroup[node.meshIDLocal];
-    Corrade::Utility::Debug() << "meshIDLocal: " << node.meshIDLocal;
 
     // SCENE: create a concave static mesh
     btIndexedMesh bulletMesh;
@@ -628,6 +627,25 @@ bool BulletRigidObject::contactTest() {
 }
 
 const Magnum::Range3D BulletRigidObject::getCollisionShapeAabb() const {
+  if (rigidObjectType_ == RigidObjectType::SCENE) {
+    Magnum::Range3D combinedAABB;
+    // concatenate all component AABBs
+    for (auto& object : bSceneCollisionObjects_) {
+      btVector3 localAabbMin, localAabbMax;
+      object->getCollisionShape()->getAabb(object->getWorldTransform(),
+                                           localAabbMin, localAabbMax);
+      if (combinedAABB == Magnum::Range3D{}) {
+        // override an empty range instead of combining it
+        combinedAABB = Magnum::Range3D{Magnum::Vector3{localAabbMin},
+                                       Magnum::Vector3{localAabbMax}};
+      } else {
+        combinedAABB = Magnum::Math::join(
+            combinedAABB, Magnum::Range3D{Magnum::Vector3{localAabbMin},
+                                          Magnum::Vector3{localAabbMax}});
+      }
+    }
+    return combinedAABB;
+  }
   if (!bObjectShape_) {
     // e.g. empty scene
     return Magnum::Range3D();

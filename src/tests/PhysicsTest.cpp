@@ -65,8 +65,8 @@ class PhysicsManagerTest : public testing::Test {
 TEST_F(PhysicsManagerTest, JoinCompound) {
   LOG(INFO) << "Starting physics test: JoinCompound";
 
-  std::string sceneFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+  std::string sceneFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/scenes/simple_room.glb");
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/nested_box.glb");
 
@@ -109,7 +109,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
             Magnum::Matrix4::rotationX(Magnum::Math::Rad<float>(-1.56)) *
             Magnum::Matrix4::rotationY(Magnum::Math::Rad<float>(-0.25))};
         float boxHeight = 2.0 + (o * 2);
-        Magnum::Vector3 initialPosition{0.0, boxHeight, 0.0};
+        Magnum::Vector3 initialPosition{0.0, float(boxHeight + 1.25), 0.0};
         physicsManager_->setRotation(
             objectId, Magnum::Quaternion::fromMatrix(R.rotationNormalized()));
         physicsManager_->setTranslation(objectId, initialPosition);
