@@ -74,14 +74,28 @@ class ImageExtractor:
         self.img_size = img_size
         self.cfg = self._config_sim(self.scene_filepaths[0], self.img_size)
 
-        if sim is None:
+        sim_provided == sim is not None
+        if not sim_provided:
             sim = habitat_sim.Simulator(self.cfg)
+        else:
+            # If a sim is provided we have to make a new cfg
+            self.cfg = self._config_sim(sim.config.sim_cfg.scene.id, img_size)
+            sim.reconfigure(self.cfg)
 
         self.sim = sim
         self.pixels_per_meter = pixels_per_meter
-        self.tdv_fp_ref_triples = self._preprocessing(
-            self.sim, self.scene_filepaths, self.pixels_per_meter
-        )
+        if not sim_provided:
+            self.tdv_fp_ref_triples = self._preprocessing(
+                self.sim, self.scene_filepaths, self.pixels_per_meter
+            )
+        else:
+            self.tdv_fp_ref_triples = [
+                (
+                    self._get_pathfinder_reference_point(self.im.pathfinder),
+                    TopdownView(self.sim, ref_point[1], pixels_per_meter),
+                    self.sim.config.sim_cfg.scene.id,
+                )
+            ]
 
         self.pose_extractor = PoseExtractor(
             self.tdv_fp_ref_triples, self.sim, self.pixels_per_meter
