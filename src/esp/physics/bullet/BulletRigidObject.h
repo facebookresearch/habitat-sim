@@ -126,7 +126,6 @@ class BulletRigidObject : public RigidObject,
    * loaded mesh assets. A @ref btConvexHullShape is constructed for each
    * sub-component, transformed to object-local space and added to the compound
    * in a flat manner for efficiency.
-   * @param bCompound The @ref btCompoundShape being constructed.
    * @param transformFromParentToWorld The cumulative parent-to-world
    * transformation matrix constructed by composition down the @ref
    * MeshTransformNode tree to the current node.
@@ -141,6 +140,15 @@ class BulletRigidObject : public RigidObject,
       const assets::MeshTransformNode& node,
       bool join);
 
+  /**
+   * @brief Recursively construct the static collision mesh objects from
+   * imported assets.
+   * @param transformFromParentToWorld The cumulative parent-to-world
+   * transformation matrix constructed by composition down the @ref
+   * MeshTransformNode tree to the current node.
+   * @param meshGroup Access structure for collision mesh data.
+   * @param node The current @ref MeshTransformNode in the recursion.
+   */
   void constructBulletSceneFromMeshes(
       const Magnum::Matrix4& transformFromParentToWorld,
       const std::vector<assets::CollisionMeshData>& meshGroup,
