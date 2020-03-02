@@ -101,10 +101,16 @@ void GeoTest::aabb() {
     Mn::Range3D aabbTest = esp::geo::getTransformedBB(box_, xform);
 
     float eps = 1e-8f;
+    /*
     CORRADE_COMPARE_WITH((aabbTest.min() - aabbControl.min()).dot(), 0.0,
                          Cr::TestSuite::Compare::around(eps));
     CORRADE_COMPARE_WITH((aabbTest.max() - aabbControl.max()).dot(), 0.0,
                          Cr::TestSuite::Compare::around(eps));
+    */
+    CORRADE_COMPARE_WITH(aabbTest.min(), aabbControl.min(),
+                         Cr::TestSuite::Compare::around(Mn::Vector3{eps}));
+    CORRADE_COMPARE_WITH(aabbTest.max(), aabbControl.max(),
+                         Cr::TestSuite::Compare::around(Mn::Vector3{eps}));
   }
 }
 }  // namespace Test
