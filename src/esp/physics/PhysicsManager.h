@@ -24,14 +24,11 @@
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
+#include "esp/assets/ResourceManager.h"
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
-
-namespace assets {
-class ResourceManager;
-}
 
 //! core physics simulation namespace
 namespace physics {
@@ -153,7 +150,9 @@ class PhysicsManager {
    */
   int addObject(const std::string& configFile,
                 DrawableGroup* drawables,
-                scene::SceneNode* attachmentNode = nullptr);
+                scene::SceneNode* attachmentNode = nullptr,
+                const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+                    assets::ResourceManager::DEFAULT_LIGHTING_KEY});
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::assets::ResourceManager::physicsObjectLibrary_ by object
@@ -167,9 +166,12 @@ class PhysicsManager {
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  virtual int addObject(const int objectLibIndex,
-                        DrawableGroup* drawables,
-                        scene::SceneNode* attachmentNode = nullptr);
+  virtual int addObject(
+      const int objectLibIndex,
+      DrawableGroup* drawables,
+      scene::SceneNode* attachmentNode = nullptr,
+      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+          assets::ResourceManager::DEFAULT_LIGHTING_KEY});
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref
@@ -752,7 +754,10 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @return Const reference to the object scene node.
    */
-  const scene::SceneNode& getObjectSceneNode(int physObjectID);
+  const scene::SceneNode& getObjectSceneNode(int physObjectID) const;
+
+  /** @overload */
+  scene::SceneNode& getObjectSceneNode(int physObjectID);
 
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref

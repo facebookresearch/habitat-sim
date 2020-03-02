@@ -4,7 +4,6 @@
 
 #include "PhysicsManager.h"
 #include "esp/assets/CollisionMeshData.h"
-#include "esp/assets/ResourceManager.h"
 
 #include <Magnum/Math/Range.h>
 
@@ -49,7 +48,8 @@ bool PhysicsManager::addScene(
 
 int PhysicsManager::addObject(const int objectLibIndex,
                               DrawableGroup* drawables,
-                              scene::SceneNode* attachmentNode) {
+                              scene::SceneNode* attachmentNode,
+                              const Magnum::ResourceKey& lightSetup) {
   const std::string configFile =
       resourceManager_->getObjectConfig(objectLibIndex);
 
@@ -69,8 +69,9 @@ int PhysicsManager::addObject(const int objectLibIndex,
 
   //! Draw object via resource manager
   //! Render node as child of physics node
-  resourceManager_->loadObject(
-      configFile, existingObjects_.at(nextObjectID_)->visualNode_, drawables);
+  resourceManager_->loadObject(configFile,
+                               existingObjects_.at(nextObjectID_)->visualNode_,
+                               drawables, lightSetup);
   existingObjects_.at(nextObjectID_)->node().computeCumulativeBB();
 
   if (physicsObjectAttributes.existsAs(assets::DataType::BOOL,
@@ -90,10 +91,12 @@ int PhysicsManager::addObject(const int objectLibIndex,
 
 int PhysicsManager::addObject(const std::string& configFile,
                               DrawableGroup* drawables,
-                              scene::SceneNode* attachmentNode) {
+                              scene::SceneNode* attachmentNode,
+                              const Magnum::ResourceKey& lightSetup) {
   int resObjectID = resourceManager_->getObjectID(configFile);
   //! Invoke resourceManager to draw object
-  int physObjectID = addObject(resObjectID, drawables, attachmentNode);
+  int physObjectID =
+      addObject(resObjectID, drawables, attachmentNode, lightSetup);
   return physObjectID;
 }
 
@@ -487,9 +490,16 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
   }
 }
 
-const scene::SceneNode& PhysicsManager::getObjectSceneNode(int physObjectID) {
+const scene::SceneNode& PhysicsManager::getObjectSceneNode(
+    int physObjectID) const {
   assertIDValidity(physObjectID);
-  return existingObjects_[physObjectID]->node();
+  return existingObjects_.at(physObjectID)->node();
+}
+
+scene::SceneNode& PhysicsManager::getObjectSceneNode(int physObjectID) {
+  return const_cast<scene::SceneNode&>(
+      const_cast<const PhysicsManager&>(*this).getObjectSceneNode(
+          physObjectID));
 }
 
 }  // namespace physics

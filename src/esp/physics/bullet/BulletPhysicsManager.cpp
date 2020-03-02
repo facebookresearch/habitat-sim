@@ -27,7 +27,7 @@ bool BulletPhysicsManager::initPhysics(
   //! We can potentially use other collision checking algorithms, by
   //! uncommenting the line below
   // btGImpactCollisionAlgorithm::registerAlgorithm(&bDispatcher_);
-  bWorld_ = std::make_shared<btDiscreteDynamicsWorld>(
+  bWorld_ = std::make_shared<btMultiBodyDynamicsWorld>(
       &bDispatcher_, &bBroadphase_, &bSolver_, &bCollisionConfig_);
 
   debugDrawer_.setMode(
@@ -107,11 +107,12 @@ int BulletPhysicsManager::makeRigidObject(
 
 int BulletPhysicsManager::addObject(const int objectLibIndex,
                                     DrawableGroup* drawables,
-                                    scene::SceneNode* attachmentNode) {
+                                    scene::SceneNode* attachmentNode,
+                                    const Magnum::ResourceKey& lightSetup) {
   // Do default load first (adds the SceneNode to the SceneGraph and computes
   // the cumulativeBB_)
-  int objID =
-      PhysicsManager::addObject(objectLibIndex, drawables, attachmentNode);
+  int objID = PhysicsManager::addObject(objectLibIndex, drawables,
+                                        attachmentNode, lightSetup);
 
   // Then set the collision shape to the cumulativeBB_ if necessary
   if (objID != ID_UNDEFINED) {

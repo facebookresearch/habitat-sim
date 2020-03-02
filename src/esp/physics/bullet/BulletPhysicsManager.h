@@ -14,6 +14,9 @@
 #include <Magnum/BulletIntegration/MotionState.h>
 #include <btBulletDynamicsCommon.h>
 
+#include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
+#include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
+
 #include "BulletRigidObject.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletRigidObject.h"
@@ -91,12 +94,17 @@ class BulletPhysicsManager : public PhysicsManager {
    * rendering of the newly initialized object.
    *  @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
+   *  @param lightSetup The identifier of the lighting configuration to use when
+   * rendering the new object.
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  virtual int addObject(const int objectLibIndex,
-                        DrawableGroup* drawables,
-                        scene::SceneNode* attachmentNode = nullptr) override;
+  virtual int addObject(
+      const int objectLibIndex,
+      DrawableGroup* drawables,
+      scene::SceneNode* attachmentNode = nullptr,
+      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+          assets::ResourceManager::DEFAULT_LIGHTING_KEY}) override;
 
   //============ Simulator functions =============
 
@@ -210,11 +218,12 @@ class BulletPhysicsManager : public PhysicsManager {
  protected:
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;
-  btSequentialImpulseConstraintSolver bSolver_;
+
+  btMultiBodyConstraintSolver bSolver_;
   btCollisionDispatcher bDispatcher_{&bCollisionConfig_};
 
-  /** @brief A pointer to the Bullet world. See @ref btDiscreteDynamicsWorld.*/
-  std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
+  /** @brief A pointer to the Bullet world. See @ref btMultiBodyDynamicsWorld.*/
+  std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;
 
   mutable Magnum::BulletIntegration::DebugDraw debugDrawer_;
 
