@@ -37,6 +37,7 @@ void initSimBindings(py::module& m) {
                      &SimulatorConfiguration::compressTextures)
       .def_readwrite("allow_sliding", &SimulatorConfiguration::allowSliding)
       .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
+      .def_readwrite("frustum_culling", &SimulatorConfiguration::frustumCulling)
       .def_readwrite("enable_physics", &SimulatorConfiguration::enablePhysics)
       .def_readwrite("physics_config_file",
                      &SimulatorConfiguration::physicsConfigFile)
@@ -67,9 +68,16 @@ void initSimBindings(py::module& m) {
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
       .def("reset", &Simulator::reset)
       .def_property_readonly("gpu_device", &Simulator::gpuDevice)
+      .def_property("frustum_culling", &Simulator::isFrustumCullingEnabled,
+                    &Simulator::setFrustumCullingEnabled,
+                    R"(Enable or disable the frustum culling)")
       /* --- Physics functions --- */
-      .def("add_object", &Simulator::addObject, "object_lib_index"_a,
-           "scene_id"_a = 0)
+      .def("add_object", py::overload_cast<int, int>(&Simulator::addObject),
+           "object_lib_index"_a, "scene_id"_a = 0)
+      .def("add_object",
+           py::overload_cast<int, const std::string&, int>(
+               &Simulator::addObject),
+           "object_lib_index"_a, "light_setup_key"_a, "scene_id"_a = 0)
       .def("get_physics_object_library_size",
            &Simulator::getPhysicsObjectLibrarySize)
       .def("remove_object", &Simulator::removeObject, "object_id"_a,
@@ -101,7 +109,13 @@ void initSimBindings(py::module& m) {
       .def("contact_test", &Simulator::contactTest, "object_id"_a,
            "sceneID"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
-           "navmesh_settings"_a);
+           "navmesh_settings"_a)
+      .def("get_light_setup", &Simulator::getLightSetup,
+           "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY)
+      .def("set_light_setup", &Simulator::setLightSetup, "light_setup"_a,
+           "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY)
+      .def("set_object_light_setup", &Simulator::setObjectLightSetup,
+           "object_id"_a, "light_setup_key"_a, "scene_id"_a = 0);
 }
 
 }  // namespace sim

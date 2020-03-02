@@ -730,7 +730,7 @@ static const char* _cudaGetErrorEnum(NppStatus error) {
       return "NPP_ODD_ROI_WARNING";
 #else
 
-    // These are for CUDA 5.5 or higher
+      // These are for CUDA 5.5 or higher
     case NPP_BAD_ARGUMENT_ERROR:
       return "NPP_BAD_ARGUMENT_ERROR";
 

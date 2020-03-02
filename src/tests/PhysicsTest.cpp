@@ -12,6 +12,7 @@
 #include "esp/gfx/Renderer.h"
 #include "esp/scene/SceneManager.h"
 
+#include "esp/physics/PhysicsManager.h"
 #ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/BulletPhysicsManager.h"
 #endif
@@ -116,7 +117,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
         ASSERT_EQ(node.absoluteTranslation(), initialPosition);
       }
 
-      float timeToSim = 10.0;
+      float timeToSim = 20.0;
       while (physicsManager_->getWorldTime() < timeToSim) {
         physicsManager_->stepPhysics(0.1);
       }

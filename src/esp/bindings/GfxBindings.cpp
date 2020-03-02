@@ -11,6 +11,8 @@
 #include <Magnum/Python.h>
 #include <Magnum/SceneGraph/Python.h>
 
+#include "esp/assets/ResourceManager.h"
+#include "esp/gfx/LightSetup.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/scene/SemanticScene.h"
@@ -55,14 +57,15 @@ void initGfxBindings(py::module& m) {
   py::class_<Renderer, Renderer::ptr>(m, "Renderer")
       .def(py::init(&Renderer::create<>))
       .def("draw",
-           py::overload_cast<sensor::VisualSensor&, scene::SceneGraph&>(
+           py::overload_cast<sensor::VisualSensor&, scene::SceneGraph&, bool>(
                &Renderer::draw),
            R"(Draw given scene using the visual sensor)", "visualSensor"_a,
-           "scene"_a)
-      .def(
-          "draw",
-          py::overload_cast<RenderCamera&, scene::SceneGraph&>(&Renderer::draw),
-          R"(Draw given scene using the camera)", "camera"_a, "scene"_a)
+           "scene"_a, "frustumCulling"_a = true)
+      .def("draw",
+           py::overload_cast<RenderCamera&, scene::SceneGraph&, bool>(
+               &Renderer::draw),
+           R"(Draw given scene using the camera)", "camera"_a, "scene"_a,
+           "frustumCulling"_a = true)
       .def("bind_render_target", &Renderer::bindRenderTarget);
 
   py::class_<RenderTarget>(m, "RenderTarget")
@@ -110,6 +113,26 @@ void initGfxBindings(py::module& m) {
 #endif
       .def("render_enter", &RenderTarget::renderEnter)
       .def("render_exit", &RenderTarget::renderExit);
+
+  py::enum_<LightPositionModel>(m, "LightPositionModel")
+      .value("CAMERA", LightPositionModel::CAMERA)
+      .value("GLOBAL", LightPositionModel::GLOBAL)
+      .value("OBJECT", LightPositionModel::OBJECT);
+
+  py::class_<LightInfo>(m, "LightInfo")
+      .def(py::init())
+      .def(py::init<Magnum::Vector3, Magnum::Color4, LightPositionModel>(),
+           "position"_a, "color"_a = Magnum::Color4{1},
+           "model"_a = LightPositionModel::GLOBAL)
+      .def_readwrite("position", &LightInfo::position)
+      .def_readwrite("color", &LightInfo::color)
+      .def_readwrite("model", &LightInfo::model)
+      .def(py::self == py::self)
+      .def(py::self != py::self);
+
+  m.attr("DEFAULT_LIGHTING_KEY") =
+      assets::ResourceManager::DEFAULT_LIGHTING_KEY;
+  m.attr("NO_LIGHT_KEY") = assets::ResourceManager::NO_LIGHT_KEY;
 }
 
 }  // namespace gfx

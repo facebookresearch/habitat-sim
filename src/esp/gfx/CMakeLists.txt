@@ -7,6 +7,9 @@ set(gfx_SOURCES
   DrawableGroup.h
   GenericDrawable.cpp
   GenericDrawable.h
+  LightSetup.cpp
+  LightSetup.h
+  MaterialData.h
   magnum.h
   PrimitiveIDDrawable.cpp
   PrimitiveIDDrawable.h
@@ -20,6 +23,8 @@ set(gfx_SOURCES
   WindowlessContext.h
   RenderTarget.cpp
   RenderTarget.h
+  ShaderManager.cpp
+  ShaderManager.h
 )
 
 # If ptex support is enabled add relevant source files
