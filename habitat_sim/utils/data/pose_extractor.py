@@ -73,15 +73,27 @@ class PoseExtractor:
             pos, cpi, label, filepath = pose
             r1, c1 = pos
             r2, c2 = cpi
-            new_pos = np.array([startw + c1 * self.res, starty, starth + r1 * self.res])
-            new_cpi = np.array([startw + c2 * self.res, starty, starth + r2 * self.res])
+            new_pos = np.array(
+                [
+                    startw + c1 * self.pixels_per_meter,
+                    starty,
+                    starth + r1 * self.pixels_per_meter,
+                ]
+            )
+            new_cpi = np.array(
+                [
+                    startw + c2 * self.pixels_per_meter,
+                    starty,
+                    starth + r2 * self.pixels_per_meter,
+                ]
+            )
             cam_normal = new_cpi - new_pos
             new_rot = self._compute_quat(cam_normal)
             poses[i] = (new_pos, new_rot, label, filepath)
 
         return poses
 
-    def valid_point(self, row, col, view):
+    def _valid_point(self, row, col, view):
         return view[row][col] == 1.0
 
     def _is_point_of_interest(self, point, labels, view):

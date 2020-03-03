@@ -89,11 +89,12 @@ class ImageExtractor:
                 self.sim, self.scene_filepaths, self.pixels_per_meter
             )
         else:
+            ref_point = self._get_pathfinder_reference_point(self.sim.pathfinder)
             self.tdv_fp_ref_triples = [
                 (
-                    self._get_pathfinder_reference_point(self.im.pathfinder),
                     TopdownView(self.sim, ref_point[1], pixels_per_meter),
                     self.sim.config.sim_cfg.scene.id,
+                    ref_point,
                 )
             ]
 
