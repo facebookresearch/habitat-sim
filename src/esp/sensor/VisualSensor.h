@@ -41,7 +41,8 @@ class VisualSensor : public Sensor {
    * @brief set the projection matrix from sensor to the render camera
    * @return Reference to self (for method chaining)
    */
-  virtual VisualSensor& setProjectionMatrix(gfx::RenderCamera&) {
+  virtual VisualSensor& setProjectionMatrix(
+      CORRADE_UNUSED gfx::RenderCamera& targetCamera) {
     return *this;
   }
   /**
@@ -49,14 +50,18 @@ class VisualSensor : public Sensor {
    * camera
    * @return Reference to self (for method chaining)
    */
-  virtual VisualSensor& setTransformationMatrix(gfx::RenderCamera&) {
+  virtual VisualSensor& setTransformationMatrix(
+      CORRADE_UNUSED gfx::RenderCamera& targetCamera) {
     return *this;
   }
   /**
    * @brief set the viewport from sensor to the render camera
    * @return Reference to self (for method chaining)
    */
-  virtual VisualSensor& setViewport(gfx::RenderCamera&) { return *this; }
+  virtual VisualSensor& setViewport(
+      CORRADE_UNUSED gfx::RenderCamera& targetCamera) {
+    return *this;
+  }
 
   /**
    * @brief Returns the parameters needed to unproject depth for the sensor.

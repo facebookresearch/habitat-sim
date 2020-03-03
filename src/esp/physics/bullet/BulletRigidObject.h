@@ -46,13 +46,14 @@ struct SimulationContactResultCallback
    * @param cp Contains detailed information about the contact point being
    * added.
    */
-  btScalar addSingleResult(btManifoldPoint&,
-                           const btCollisionObjectWrapper*,
-                           int,
-                           int,
-                           const btCollisionObjectWrapper*,
-                           int,
-                           int) {
+  btScalar addSingleResult(
+      CORRADE_UNUSED btManifoldPoint& cp,
+      CORRADE_UNUSED const btCollisionObjectWrapper* colObj0Wrap,
+      CORRADE_UNUSED int partId0,
+      CORRADE_UNUSED int index0,
+      CORRADE_UNUSED const btCollisionObjectWrapper* colObj1Wrap,
+      CORRADE_UNUSED int partId1,
+      CORRADE_UNUSED int index1) override {
     bCollision = true;
     return 0;  // not used
   }
