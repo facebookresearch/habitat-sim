@@ -41,16 +41,10 @@ void initSimBindings(py::module& m) {
       .def_readwrite("enable_physics", &SimulatorConfiguration::enablePhysics)
       .def_readwrite("physics_config_file",
                      &SimulatorConfiguration::physicsConfigFile)
-      .def("__eq__",
-           [](const SimulatorConfiguration& self,
-              const SimulatorConfiguration& other) -> bool {
-             return self == other;
-           })
-      .def("__neq__",
-           [](const SimulatorConfiguration& self,
-              const SimulatorConfiguration& other) -> bool {
-             return self != other;
-           });
+      .def_readwrite("scene_light_setup",
+                     &SimulatorConfiguration::sceneLightSetup)
+      .def(py::self == py::self)
+      .def(py::self != py::self);
 
   // ==== Simulator ====
   py::class_<Simulator, Simulator::ptr>(m, "Simulator")

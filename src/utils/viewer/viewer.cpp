@@ -136,6 +136,8 @@ Viewer::Viewer(const Arguments& arguments)
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addBooleanOption("enable-physics")
+      .addBooleanOption("scene-requires-lighting")
+      .setHelp("scene-requires-lighting", "scene requires lighting")
       .addBooleanOption("debug-bullet")
       .setHelp("debug-bullet", "render Bullet physics debug wireframes")
       .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG)
@@ -170,7 +172,12 @@ Viewer::Viewer(const Arguments& arguments)
 
   auto& drawables = sceneGraph_->getDrawables();
   const std::string& file = args.value("scene");
-  const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
+  assets::AssetInfo info = assets::AssetInfo::fromPath(file);
+  std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
+  if (args.isSet("scene-requires-lighting")) {
+    info.requiresLighting = true;
+    sceneLightSetup = assets::ResourceManager::DEFAULT_LIGHTING_KEY;
+  }
 
   if (args.isSet("enable-physics")) {
     std::string physicsConfigFilename = args.value("physics-config");
@@ -180,14 +187,16 @@ Viewer::Viewer(const Arguments& arguments)
           << " was not found, specify an existing file in --physics-config";
     }
     if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
-                                    &drawables, physicsConfigFilename)) {
+                                    &drawables, sceneLightSetup,
+                                    physicsConfigFilename)) {
       LOG(FATAL) << "cannot load " << file;
     }
     if (args.isSet("debug-bullet")) {
       debugBullet_ = true;
     }
   } else {
-    if (!resourceManager_.loadScene(info, navSceneNode_, &drawables)) {
+    if (!resourceManager_.loadScene(info, navSceneNode_, &drawables,
+                                    sceneLightSetup)) {
       LOG(FATAL) << "cannot load " << file;
     }
   }

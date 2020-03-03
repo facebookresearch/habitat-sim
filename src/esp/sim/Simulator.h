@@ -51,6 +51,8 @@ struct SimulatorConfiguration {
       "./data/default.phys_scene_config.json";  // should we instead link a
                                                 // PhysicsManagerConfiguration
                                                 // object here?
+  /** @brief Light setup key for scene */
+  std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
 
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };
