@@ -62,3 +62,23 @@ def test_extractor_cache(sim):
     assert cache.head.next_node.data == "two"
     cache.remove_from_back()
     assert 1 not in cache
+
+
+def test_data_extractor_all_modes(sim):
+    scene_filepath = ""
+    extractor = ImageExtractor(
+        scene_filepath,
+        labels=[0.0],
+        img_size=(32, 32),
+        sim=sim,
+        extraction_method="closest",
+    )
+    assert len(extractor) > 0  # Did it extract some poses?
+    extractor = ImageExtractor(
+        scene_filepath,
+        labels=[0.0],
+        img_size=(32, 32),
+        sim=sim,
+        extraction_method="panorama",
+    )
+    assert len(extractor) > 0

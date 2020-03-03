@@ -53,6 +53,7 @@ class ImageExtractor:
         labels=[0.0],
         img_size=(512, 512),
         output=["rgba"],
+        extraction_method="closest",
         sim=None,
         shuffle=True,
         split=(70, 30),
@@ -62,6 +63,7 @@ class ImageExtractor:
         if sum(split) != 100:
             raise Exception("Train/test split must sum to 100.")
 
+        assert extraction_method in ["closest", "panorama"]
         self.scene_filepaths = None
         self.cur_fp = None
         if os.path.isdir(scene_filepath):
@@ -102,7 +104,7 @@ class ImageExtractor:
             self.tdv_fp_ref_triples, self.sim, self.pixels_per_meter
         )
         self.poses = self.pose_extractor.extract_poses(
-            labels=self.labels
+            labels=self.labels, extraction_method=extraction_method
         )  # list of poses
 
         if shuffle:
