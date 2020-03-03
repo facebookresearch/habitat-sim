@@ -74,7 +74,7 @@ class ImageExtractor:
         self.img_size = img_size
         self.cfg = self._config_sim(self.scene_filepaths[0], self.img_size)
 
-        sim_provided == sim is not None
+        sim_provided = sim is not None
         if not sim_provided:
             sim = habitat_sim.Simulator(self.cfg)
         else:
