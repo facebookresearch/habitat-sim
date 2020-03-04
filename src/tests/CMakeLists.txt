@@ -31,6 +31,9 @@ corrade_add_test(SimTest SimTest.cpp LIBRARIES
   MagnumPlugins::StbImageImporter)
 target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+corrade_add_test(AabbTest AabbTest.cpp LIBRARIES
+  geo)
+
 TEST(PhysicsTest physics)
 target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
