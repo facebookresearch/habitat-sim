@@ -6,7 +6,7 @@
 
 /** @file
  * @brief Class @ref esp::physics::RigidObject, enum @ref
- * esp::physics::MotionType, enum @ref esp::physics::RigidObjectType, class @ref
+ * esp::physics::MotionType, enum @ref esp::physics::RigidObjectType, struct @ref
  * VelocityControl
  */
 
@@ -83,7 +83,7 @@ enum class RigidObjectType {
 
 /**@brief Convenience class for applying constant velocity control to a rigid
  * body. */
-class VelocityControl {
+struct VelocityControl {
  public:
   /**@brief Constant linear velocity. */
   Magnum::Vector3 linVel;
