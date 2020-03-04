@@ -66,15 +66,9 @@ class Viewer : public Magnum::Platform::Application {
   void keyPressEvent(KeyEvent& event) override;
 
   // Interactive functions
-  void addObject(std::string configFile, bool attachAgent = false);
-
-  int agentObjectID = ID_UNDEFINED;
-  Magnum::Matrix4 worldAgentTransform;
-
+  void addObject(std::string configFile);
   void pokeLastObject();
   void pushLastObject();
-
-  void setAgentObjectLocalVelocity(Magnum::Vector3 dir, bool angular = false);
 
   void recomputeNavMesh(const std::string& sceneFilename,
                         esp::nav::NavMeshSettings& navMeshSettings);
@@ -266,7 +260,7 @@ Viewer::Viewer(const Arguments& arguments)
 
 }  // end Viewer::Viewer
 
-void Viewer::addObject(std::string configFile, bool attachAgent) {
+void Viewer::addObject(std::string configFile) {
   if (physicsManager_ == nullptr)
     return;
 
@@ -277,32 +271,23 @@ void Viewer::addObject(std::string configFile, bool attachAgent) {
 
   auto& drawables = sceneGraph_->getDrawables();
 
-  if (attachAgent) {
-    agentObjectID =
-        physicsManager_->addObject(configFile, &drawables, agentBodyNode_);
-    physicsManager_->setTranslation(
-        agentObjectID,
-        worldAgentTransform.translation() + Magnum::Vector3{0, 1.0, 0});
+  int physObjectID = physicsManager_->addObject(configFile, &drawables);
+  physicsManager_->setTranslation(physObjectID, new_pos);
 
-  } else {
-    int physObjectID = physicsManager_->addObject(configFile, &drawables);
-    physicsManager_->setTranslation(physObjectID, new_pos);
+  // draw random quaternion via the method:
+  // http://planning.cs.uiuc.edu/node198.html
+  double u1 = (rand() % 1000) / 1000.0;
+  double u2 = (rand() % 1000) / 1000.0;
+  double u3 = (rand() % 1000) / 1000.0;
 
-    // draw random quaternion via the method:
-    // http://planning.cs.uiuc.edu/node198.html
-    double u1 = (rand() % 1000) / 1000.0;
-    double u2 = (rand() % 1000) / 1000.0;
-    double u3 = (rand() % 1000) / 1000.0;
+  Magnum::Vector3 qAxis(sqrt(1 - u1) * cos(2 * M_PI * u2),
+                        sqrt(u1) * sin(2 * M_PI * u3),
+                        sqrt(u1) * cos(2 * M_PI * u3));
+  physicsManager_->setRotation(
+      physObjectID,
+      Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
 
-    Magnum::Vector3 qAxis(sqrt(1 - u1) * cos(2 * M_PI * u2),
-                          sqrt(u1) * sin(2 * M_PI * u3),
-                          sqrt(u1) * cos(2 * M_PI * u3));
-    physicsManager_->setRotation(
-        physObjectID,
-        Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
-
-    objectIDs_.push_back(physObjectID);
-  }
+  objectIDs_.push_back(physObjectID);
 }
 
 void Viewer::removeLastObject() {
@@ -412,11 +397,6 @@ void Viewer::drawEvent() {
 
   if (physicsManager_ != nullptr)
     physicsManager_->stepPhysics(timeline_.previousFrameDuration());
-
-  if (agentObjectID != ID_UNDEFINED) {
-    renderCamera_->node().setTransformation(
-        rgbSensorNode_->absoluteTransformation());
-  }
 
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
@@ -530,16 +510,6 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   event.setAccepted();
 }
 
-void Viewer::setAgentObjectLocalVelocity(Magnum::Vector3 vel, bool angular) {
-  if (angular) {
-    physicsManager_->setAngularVelocity(
-        agentObjectID, agentBodyNode_->transformation().transformVector(vel));
-  } else {
-    physicsManager_->setLinearVelocity(
-        agentObjectID, agentBodyNode_->transformation().transformVector(vel));
-  }
-}
-
 void Viewer::keyPressEvent(KeyEvent& event) {
   const auto key = event.key();
   switch (key) {
@@ -547,18 +517,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       std::exit(0);
       break;
     case KeyEvent::Key::Left:
-      if (agentObjectID != ID_UNDEFINED) {
-        setAgentObjectLocalVelocity({0, 3.0, 0}, true);
-      } else {
-        controls_(*agentBodyNode_, "turnLeft", lookSensitivity);
-      }
+      controls_(*agentBodyNode_, "turnLeft", lookSensitivity);
       break;
     case KeyEvent::Key::Right:
-      if (agentObjectID != ID_UNDEFINED) {
-        setAgentObjectLocalVelocity({0, -3.0, 0}, true);
-      } else {
-        controls_(*agentBodyNode_, "turnRight", lookSensitivity);
-      }
+      controls_(*agentBodyNode_, "turnRight", lookSensitivity);
       break;
     case KeyEvent::Key::Up:
       controls_(*rgbSensorNode_, "lookUp", lookSensitivity, false);
@@ -573,20 +535,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       }
       break;
     case KeyEvent::Key::A:
-      if (agentObjectID != ID_UNDEFINED) {
-        setAgentObjectLocalVelocity({-1.0, 0, 0});
-      } else {
-        controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
-      }
+      controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::D:
-      if (agentObjectID != ID_UNDEFINED) {
-        setAgentObjectLocalVelocity({1.0, 0, 0});
-      } else {
-        controls_(*agentBodyNode_, "moveRight", moveSensitivity);
-      }
+      controls_(*agentBodyNode_, "moveRight", moveSensitivity);
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
@@ -597,20 +551,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       showFPS_ = !showFPS_;
       break;
     case KeyEvent::Key::S:
-      if (agentObjectID != ID_UNDEFINED) {
-        setAgentObjectLocalVelocity({0, 0, 1.0});
-      } else {
-        controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
-      }
+      controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
     case KeyEvent::Key::W:
-      if (agentObjectID != ID_UNDEFINED) {
-        setAgentObjectLocalVelocity({0, 0, -1.0});
-      } else {
-        controls_(*agentBodyNode_, "moveForward", moveSensitivity);
-      }
+      controls_(*agentBodyNode_, "moveForward", moveSensitivity);
       LOG(INFO) << "Agent position "
                 << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
       break;
@@ -638,21 +584,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
             << "Run the app with --enable-physics in order to add objects";
     } break;
     case KeyEvent::Key::P:
-      // pokeLastObject();
-      if (physicsManager_ != nullptr) {
-        if (agentObjectID == ID_UNDEFINED) {
-          worldAgentTransform = agentBodyNode_->transformation();
-          int numObjects = resourceManager_.getNumLibraryObjects();
-          int randObjectID = rand() % numObjects;
-          addObject(resourceManager_.getObjectConfig(randObjectID), true);
-          LOG(INFO) << "attached agent to physics";
-        } else {
-          physicsManager_->removeObject(agentObjectID, false);
-          agentObjectID = ID_UNDEFINED;
-          LOG(INFO) << "removed agent from physics";
-          agentBodyNode_->setTransformation(worldAgentTransform);
-        }
-      }
+      pokeLastObject();
       break;
     case KeyEvent::Key::F:
       pushLastObject();
