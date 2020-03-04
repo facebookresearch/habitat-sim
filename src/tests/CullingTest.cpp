@@ -29,6 +29,9 @@ using esp::assets::ResourceManager;
 using esp::scene::SceneManager;
 
 namespace Test {
+// on GCC and Clang, the following namespace causes useful warnings to be
+// printed when you have accidentally unused variables or functions in the test
+namespace {
 struct CullingTest : Cr::TestSuite::Tester {
   explicit CullingTest();
   // tests
@@ -61,9 +64,7 @@ void CullingTest::computeAbsoluteAABB() {
   auto& drawables = sceneGraph.getDrawables();
   const esp::assets::AssetInfo info =
       esp::assets::AssetInfo::fromPath(sceneFile);
-  bool loadSuccess =
-      resourceManager.loadScene(info, &sceneRootNode, &drawables);
-  CORRADE_COMPARE(loadSuccess, true);
+  CORRADE_VERIFY(resourceManager.loadScene(info, &sceneRootNode, &drawables));
 
   std::vector<Mn::Range3D> aabbs;
   for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
@@ -108,6 +109,7 @@ void CullingTest::computeAbsoluteAABB() {
   CORRADE_COMPARE(aabbs.size(), aabbsGroundTruth.size());
   const float eps = 1e-6;
   for (unsigned int iBox = 0; iBox < aabbsGroundTruth.size(); ++iBox) {
+    CORRADE_ITERATION(iBox);
     CORRADE_COMPARE_WITH(aabbs[iBox].min(), aabbsGroundTruth[iBox].min(),
                          Cr::TestSuite::Compare::around(Mn::Vector3{eps}));
     CORRADE_COMPARE_WITH(aabbs[iBox].max(), aabbsGroundTruth[iBox].max(),
@@ -134,9 +136,7 @@ void CullingTest::frustumCulling() {
   auto& drawables = sceneGraph.getDrawables();
   const esp::assets::AssetInfo info =
       esp::assets::AssetInfo::fromPath(sceneFile);
-  bool loadSuccess =
-      resourceManager.loadScene(info, &sceneRootNode, &drawables);
-  CORRADE_COMPARE(loadSuccess, true);
+  CORRADE_VERIFY(resourceManager.loadScene(info, &sceneRootNode, &drawables));
 
   // set the camera
   esp::gfx::RenderCamera& renderCamera = sceneGraph.getDefaultRenderCamera();
@@ -221,7 +221,7 @@ void CullingTest::frustumCulling() {
     q.end();
     target->renderExit();
 
-    CORRADE_COMPARE(q.result<bool>(), false);
+    CORRADE_VERIFY(!q.result<bool>());
   }
 
   // ============== Test 2 ==================
@@ -244,7 +244,7 @@ void CullingTest::frustumCulling() {
         target->renderExit();
 
         // check if it a genuine visible drawable
-        CORRADE_COMPARE(q.result<bool>(), true);
+        CORRADE_VERIFY(q.result<bool>());
 
         if (q.result<bool>()) {
           numVisibleObjectsGroundTruth++;
@@ -260,6 +260,7 @@ void CullingTest::frustumCulling() {
   target->renderExit();
   CORRADE_COMPARE(numVisibleObjects, numVisibleObjectsGroundTruth);
 }
+}  // namespace
 }  // namespace Test
 
 CORRADE_TEST_MAIN(Test::CullingTest)
