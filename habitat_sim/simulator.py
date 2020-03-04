@@ -274,14 +274,21 @@ class Simulator:
         self.close()
 
     # --- physics functions ---
-    def add_object(self, object_lib_index, light_setup_key=DEFAULT_LIGHTING_KEY):
-        return self._sim.add_object(object_lib_index, light_setup_key=light_setup_key)
+    def add_object(
+        self,
+        object_lib_index,
+        attachment_node=None,
+        light_setup_key=DEFAULT_LIGHTING_KEY,
+    ):
+        return self._sim.add_object(object_lib_index, attachment_node, light_setup_key)
 
     def get_physics_object_library_size(self):
         return self._sim.get_physics_object_library_size()
 
-    def remove_object(self, object_id):
-        self._sim.remove_object(object_id)
+    def remove_object(
+        self, object_id, delete_object_node=True, delete_visual_node=True
+    ):
+        self._sim.remove_object(object_id, delete_object_node, delete_visual_node)
 
     def get_existing_object_ids(self, scene_id=0):
         return self._sim.get_existing_object_ids(scene_id)

@@ -84,9 +84,26 @@ class BulletPhysicsManager : public PhysicsManager {
       const assets::PhysicsSceneAttributes& physicsSceneAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup) override;
 
+  /**
+   * @brief Override of @ref PhysicsManager::addObject() to handle primitive
+   * collision shapes requiring a SceneNode with bounding box to be
+   * pre-computed.
+   *
+   *  @param objectLibIndex The index of the object's template in @ref
+   * esp::assets::ResourceManager::physicsObjectLibrary_
+   *  @param drawables Reference to the scene graph drawables group to enable
+   * rendering of the newly initialized object.
+   *  @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   *  @param lightSetup The identifier of the lighting configuration to use when
+   * rendering the new object.
+   *  @return the instanced object's ID, mapping to it in @ref
+   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   */
   virtual int addObject(
       const int objectLibIndex,
       DrawableGroup* drawables,
+      scene::SceneNode* attachmentNode = nullptr,
       const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
           assets::ResourceManager::DEFAULT_LIGHTING_KEY}) override;
 
@@ -227,10 +244,13 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param meshGroup The object's mesh.
    * @param physicsObjectAttributes The physical object's template defining its
    * physical parameters.
+   * @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   * @return The id of the newly allocated object in @ref existingObjects_
    */
-  int makeRigidObject(
-      const std::vector<assets::CollisionMeshData>& meshGroup,
-      assets::PhysicsObjectAttributes physicsObjectAttributes) override;
+  int makeRigidObject(const std::vector<assets::CollisionMeshData>& meshGroup,
+                      assets::PhysicsObjectAttributes physicsObjectAttributes,
+                      scene::SceneNode* attachmentNode = nullptr) override;
 
   ESP_SMART_POINTERS(BulletPhysicsManager)
 
