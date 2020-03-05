@@ -11,6 +11,7 @@
 #include <Magnum/PixelFormat.h>
 #include <string>
 
+#include "esp/assets/ResourceManager.h"
 #include "esp/sim/SimulatorWithAgents.h"
 
 #include "configure.h"
@@ -19,6 +20,7 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 using esp::agent::AgentConfiguration;
+using esp::assets::ResourceManager;
 using esp::gfx::LightInfo;
 using esp::gfx::LightPositionModel;
 using esp::gfx::LightSetup;
@@ -53,11 +55,14 @@ const std::string screenshotDir =
 struct SimTest : Cr::TestSuite::Tester {
   explicit SimTest();
 
-  SimulatorWithAgents::uptr getSimulator(const std::string& scene) {
+  SimulatorWithAgents::uptr getSimulator(
+      const std::string& scene,
+      const std::string& sceneLightingKey = ResourceManager::NO_LIGHT_KEY) {
     SimulatorConfiguration simConfig{};
     simConfig.scene.id = scene;
     simConfig.enablePhysics = true;
     simConfig.physicsConfigFile = physicsConfigFile;
+    simConfig.sceneLightSetup = sceneLightingKey;
 
     auto sim = SimulatorWithAgents::create_unique(simConfig);
     sim->setLightSetup(lightSetup1, "custom_lighting_1");
@@ -75,6 +80,7 @@ struct SimTest : Cr::TestSuite::Tester {
   void reconfigure();
   void reset();
   void getSceneRGBAObservation();
+  void getSceneWithLightingRGBAObservation();
   void getDefaultLightingRGBAObservation();
   void getCustomLightingRGBAObservation();
   void updateLightSetupRGBAObservation();
@@ -96,6 +102,7 @@ SimTest::SimTest() {
             &SimTest::reconfigure,
             &SimTest::reset,
             &SimTest::getSceneRGBAObservation,
+            &SimTest::getSceneWithLightingRGBAObservation,
             &SimTest::getDefaultLightingRGBAObservation,
             &SimTest::getCustomLightingRGBAObservation,
             &SimTest::updateLightSetupRGBAObservation,
@@ -181,6 +188,13 @@ void SimTest::getSceneRGBAObservation() {
   auto simulator = getSimulator(vangogh);
   checkPinholeCameraRGBAObservation(*simulator, "SimTestExpectedScene.png",
                                     maxThreshold, 0.75f);
+}
+
+void SimTest::getSceneWithLightingRGBAObservation() {
+  setTestCaseName(CORRADE_FUNCTION);
+  auto simulator = getSimulator(vangogh, "custom_lighting_1");
+  checkPinholeCameraRGBAObservation(
+      *simulator, "SimTestExpectedSceneWithLighting.png", maxThreshold, 0.75f);
 }
 
 void SimTest::getDefaultLightingRGBAObservation() {

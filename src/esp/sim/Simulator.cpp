@@ -64,8 +64,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     houseFilename = io::changeExtension(sceneFilename, ".scn");
   }
 
-  const assets::AssetInfo sceneInfo =
-      assets::AssetInfo::fromPath(sceneFilename);
+  assets::AssetInfo sceneInfo = assets::AssetInfo::fromPath(sceneFilename);
+  sceneInfo.requiresLighting =
+      cfg.sceneLightSetup != assets::ResourceManager::NO_LIGHT_KEY;
 
   // initalize scene graph
   // CAREFUL!
@@ -96,12 +97,12 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     bool loadSuccess = false;
     if (config_.enablePhysics) {
-      loadSuccess =
-          resourceManager_.loadScene(sceneInfo, physicsManager_, &rootNode,
-                                     &drawables, cfg.physicsConfigFile);
+      loadSuccess = resourceManager_.loadScene(
+          sceneInfo, physicsManager_, &rootNode, &drawables,
+          cfg.sceneLightSetup, cfg.physicsConfigFile);
     } else {
-      loadSuccess =
-          resourceManager_.loadScene(sceneInfo, &rootNode, &drawables);
+      loadSuccess = resourceManager_.loadScene(sceneInfo, &rootNode, &drawables,
+                                               cfg.sceneLightSetup);
     }
     if (!loadSuccess) {
       LOG(ERROR) << "cannot load " << sceneFilename;
