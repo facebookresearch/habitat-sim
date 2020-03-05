@@ -74,8 +74,14 @@ std::vector<Mn::UnsignedInt> removeDuplicates(std::vector<T>& data) {
   return resultIndices;
 }
 
-Cr::Containers::Optional<ParsedPlyData> parsePly(const std::string& plyFile) {
-  ParsedPlyData data{};
+struct InstancePlyData {
+  std::vector<vec3f> cpu_vbo;
+  std::vector<vec3uc> cpu_cbo;
+  std::vector<uint32_t> cpu_ibo;
+  std::vector<uint16_t> objectIds;
+};
+
+Cr::Containers::Optional<InstancePlyData> parsePly(const std::string& plyFile) {
   std::ifstream ifs(plyFile, std::ios::binary);
   if (!ifs.good()) {
     LOG(ERROR) << "Cannot open file at " << plyFile;
@@ -104,6 +110,7 @@ Cr::Containers::Optional<ParsedPlyData> parsePly(const std::string& plyFile) {
   }
 
   file.read(ifs);
+  InstancePlyData data{};
 
   CHECK(vertices->t == tinyply::Type::FLOAT32) << "x,y,z must be floats";
   // copyTo is a helper function to get stuff out of tinyply's format into our
@@ -193,71 +200,52 @@ Cr::Containers::Optional<ParsedPlyData> parsePly(const std::string& plyFile) {
 
 }  // namespace
 
-Cr::Containers::Optional<std::vector<GenericInstanceMeshData>>
-GenericInstanceMeshData::loadPlySplitByObjectId(const std::string& plyFile) {
-  Cr::Containers::Optional<ParsedPlyData> parsedData = parsePly(plyFile);
-  if (!parsedData) {
-    return Cr::Containers::NullOpt;
+std::vector<std::unique_ptr<GenericInstanceMeshData>>
+GenericInstanceMeshData::fromPlySplitByObjectId(const std::string& plyFile) {
+  Cr::Containers::Optional<InstancePlyData> parseResult = parsePly(plyFile);
+  if (!parseResult) {
+    return {};
   }
-  const ParsedPlyData& data = *parsedData;
+  const InstancePlyData& data = *parseResult;
 
-  std::vector<GenericInstanceMeshData> meshesData;
-  std::unordered_map<uint16_t, PerObjectIDData> objectIdToObjectData;
+  std::vector<GenericInstanceMeshData::uptr> splitMeshData;
+  std::unordered_map<uint16_t, PerObjectIdMeshBuilder> objectIdToObjectData;
+
   for (size_t i = 0; i < data.objectIds.size(); ++i) {
     const uint16_t objectId = data.objectIds[i];
     const uint32_t globalIndex = data.cpu_ibo[i];
-
     if (objectIdToObjectData.find(objectId) == objectIdToObjectData.end()) {
+      auto instanceMesh = GenericInstanceMeshData::create_unique();
       objectIdToObjectData.emplace(
-          objectId, PerObjectIDData{meshesData.size(), objectId});
-      meshesData.emplace_back(GenericInstanceMeshData{});
+          objectId, PerObjectIdMeshBuilder{*instanceMesh, objectId});
+      splitMeshData.emplace_back(std::move(instanceMesh));
     }
-
-    PerObjectIDData& perObjectData = objectIdToObjectData[objectId];
-    GenericInstanceMeshData& meshData = meshesData[perObjectData.meshDataIndex];
-
-    meshData.addIndexToMeshData(globalIndex, data, perObjectData);
+    objectIdToObjectData.at(objectId).addVertex(
+        globalIndex, data.cpu_vbo[globalIndex], data.cpu_cbo[globalIndex]);
   }
-  return meshesData;
+  return splitMeshData;
 }
 
-void GenericInstanceMeshData::addIndexToMeshData(
-    uint32_t globalIndex,
-    const ParsedPlyData& globalData,
-    PerObjectIDData& localData) {
-  // if local object hasn't seen this global index before, update local vertex,
-  // color, and objectId buffers
-  auto result = localData.globalIndexToPerObjectIndex.emplace(globalIndex,
-                                                              cpu_vbo_.size());
-  if (result.second) {
-    cpu_vbo_.emplace_back(globalData.cpu_vbo[globalIndex]);
-    cpu_cbo_.emplace_back(globalData.cpu_cbo[globalIndex]);
+std::unique_ptr<GenericInstanceMeshData> GenericInstanceMeshData::fromPLY(
+    const std::string& plyFile) {
+  Cr::Containers::Optional<InstancePlyData> parseResult = parsePly(plyFile);
+  if (!parseResult) {
+    return nullptr;
   }
 
-  // update index buffers with local index of vertex/color
-  cpu_ibo_.emplace_back(result.first->second);
-  objectIds_.emplace_back(localData.objectId);
-}
-
-bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
-  Cr::Containers::Optional<ParsedPlyData> data = parsePly(plyFile);
-  if (!data) {
-    return false;
-  }
-
-  cpu_vbo_ = std::move(data->cpu_vbo);
-  cpu_cbo_ = std::move(data->cpu_cbo);
-  cpu_ibo_ = std::move(data->cpu_ibo);
-  objectIds_ = std::move(data->objectIds);
+  auto data = GenericInstanceMeshData::create_unique();
+  data->cpu_vbo_ = std::move(parseResult->cpu_vbo);
+  data->cpu_cbo_ = std::move(parseResult->cpu_cbo);
+  data->cpu_ibo_ = std::move(parseResult->cpu_ibo);
+  data->objectIds_ = std::move(parseResult->objectIds);
 
   // Construct vertices for collsion meshData
   // Store indices, facd_ids in Magnum MeshData3D format such that
   // later they can be accessed.
   // Note that normal and texture data are not stored
-  collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
-  updateCollisionMeshData();
-
-  return true;
+  data->collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
+  data->updateCollisionMeshData();
+  return data;
 }
 
 void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
@@ -321,6 +309,22 @@ void GenericInstanceMeshData::updateCollisionMeshData() {
       Cr::Containers::arrayView(cpu_vbo_));
   collisionMeshData_.indices = Cr::Containers::arrayCast<Mn::UnsignedInt>(
       Cr::Containers::arrayView(cpu_ibo_));
+}
+
+void GenericInstanceMeshData::PerObjectIdMeshBuilder::addVertex(
+    uint32_t vertexId,
+    const vec3f& position,
+    const vec3uc& color) {
+  // if we haven't seen this vertex, add it to the local vertex/color buffer
+  auto result = vertexIdToVertexIndex_.emplace(vertexId, data_.cpu_vbo_.size());
+  if (result.second) {
+    data_.cpu_vbo_.emplace_back(position);
+    data_.cpu_cbo_.emplace_back(color);
+  }
+
+  // update index buffers with local index of vertex/color
+  data_.cpu_ibo_.emplace_back(result.first->second);
+  data_.objectIds_.emplace_back(objectId_);
 }
 
 }  // namespace assets

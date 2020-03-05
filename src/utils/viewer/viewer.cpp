@@ -11,7 +11,6 @@
 #else
 #include <Magnum/Platform/GlfwApplication.h>
 #endif
-#include <Magnum/GL/Framebuffer.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Timeline.h>
 
@@ -74,8 +73,6 @@ class Viewer : public Magnum::Platform::Application {
 
   void recomputeNavMesh(const std::string& sceneFilename,
                         esp::nav::NavMeshSettings& navMeshSettings);
-  void loadSemanticScene(const assets::AssetInfo& sceneInfo,
-                         const std::string& semanticFilename);
 
   void torqueLastObject();
   void removeLastObject();
@@ -96,8 +93,6 @@ class Viewer : public Magnum::Platform::Application {
   bool debugBullet_ = false;
 
   std::vector<int> sceneID_;
-  int activeSemanticSceneID_ = -1;
-  int activeSceneID_ = 0;
   scene::SceneNode* agentBodyNode_ = nullptr;
   scene::SceneNode* rgbSensorNode_ = nullptr;
 
@@ -274,43 +269,6 @@ Viewer::Viewer(const Arguments& arguments)
   timeline_.start();
 
 }  // end Viewer::Viewer
-
-void Viewer::loadSemanticScene(const assets::AssetInfo& sceneInfo,
-                               const std::string& semanticFilename) {
-  if (io::exists(semanticFilename)) {
-    LOG(INFO) << "Loading house from " << semanticFilename;
-    // if semantic mesh exists, load it as well
-    // TODO: remove hardcoded filename change and use SceneConfiguration
-    const std::string semanticMeshFilename =
-        io::removeExtension(semanticFilename) + "_semantic.ply";
-    if (io::exists(semanticMeshFilename)) {
-      LOG(INFO) << "Loading semantic mesh " << semanticMeshFilename;
-      activeSemanticSceneID_ = sceneManager_.initSceneGraph();
-      sceneID_.push_back(activeSemanticSceneID_);
-      auto& semanticSceneGraph =
-          sceneManager_.getSceneGraph(activeSemanticSceneID_);
-      auto& semanticRootNode = semanticSceneGraph.getRootNode();
-      auto& semanticDrawables = semanticSceneGraph.getDrawables();
-      const assets::AssetInfo semanticSceneInfo =
-          assets::AssetInfo::fromPath(semanticMeshFilename);
-      resourceManager_.loadScene(semanticSceneInfo, &semanticRootNode,
-                                 &semanticDrawables);
-    }
-    LOG(INFO) << "Loaded.";
-  } else {
-    activeSemanticSceneID_ = activeSceneID_;
-    // instance meshes and suncg houses contain their semantic annotations
-    // empty scene has none to worry about
-    if (!(sceneInfo.type == assets::AssetType::SUNCG_SCENE ||
-          sceneInfo.type == assets::AssetType::INSTANCE_MESH ||
-          semanticFilename.compare(assets::EMPTY_SCENE) == 0)) {
-      // TODO: programmatic generation of semantic meshes when no annotations
-      // are provided.
-      LOG(WARNING) << ":\n---\n The active scene does not contain semantic "
-                      "annotations. \n---";
-    }
-  }
-}
 
 void Viewer::addObject(std::string configFile) {
   if (physicsManager_ == nullptr)

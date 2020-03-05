@@ -19,13 +19,6 @@
 namespace esp {
 namespace assets {
 
-struct ParsedPlyData {
-  std::vector<vec3f> cpu_vbo;
-  std::vector<vec3uc> cpu_cbo;
-  std::vector<uint32_t> cpu_ibo;
-  std::vector<uint16_t> objectIds;
-};
-
 class GenericInstanceMeshData : public BaseMesh {
  public:
   struct RenderingBuffer {
@@ -41,16 +34,21 @@ class GenericInstanceMeshData : public BaseMesh {
   virtual ~GenericInstanceMeshData(){};
 
   /**
-   * @brief loads a PLY file and splits it by objectIDs into multiple different
-   * mesh's
+   * @brief Split a .ply file by objectIDs into different meshes
    *
-   * @param plyFile
-   * @return std::vector<GenericInstanceMeshData>
+   * @param plyFile .ply file to load and split
+   * @return Mesh data split by objectID
    */
-  static Corrade::Containers::Optional<std::vector<GenericInstanceMeshData>>
-  loadPlySplitByObjectId(const std::string& plyFile);
+  static std::vector<std::unique_ptr<GenericInstanceMeshData>>
+  fromPlySplitByObjectId(const std::string& plyFile);
 
-  virtual bool loadPLY(const std::string& plyFile);
+  /**
+   * @brief Load from a .ply file
+   *
+   * @param plyFile .ply file to load
+   */
+  static std::unique_ptr<GenericInstanceMeshData> fromPLY(
+      const std::string& plyFile);
 
   // ==== rendering ====
   virtual void uploadBuffersToGPU(bool forceReload = false) override;
@@ -74,17 +72,20 @@ class GenericInstanceMeshData : public BaseMesh {
   }
 
  protected:
-  struct PerObjectIDData {
-    size_t meshDataIndex;
-    uint16_t objectId;
-    std::unordered_map<uint32_t, uint32_t> globalIndexToPerObjectIndex;
+  class PerObjectIdMeshBuilder {
+   public:
+    PerObjectIdMeshBuilder(GenericInstanceMeshData& data, uint16_t objectId)
+        : data_{data}, objectId_{objectId} {}
+
+    void addVertex(uint32_t vertexId, const vec3f& vertex, const vec3uc& color);
+
+   private:
+    GenericInstanceMeshData& data_;
+    uint16_t objectId_;
+    std::unordered_map<uint32_t, size_t> vertexIdToVertexIndex_;
   };
 
   void updateCollisionMeshData();
-
-  void addIndexToMeshData(uint32_t globalIndex,
-                          const ParsedPlyData& globalData,
-                          PerObjectIDData& localData);
 
   // ==== rendering ====
   std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
@@ -93,6 +94,9 @@ class GenericInstanceMeshData : public BaseMesh {
   std::vector<vec3uc> cpu_cbo_;
   std::vector<uint32_t> cpu_ibo_;
   std::vector<uint16_t> objectIds_;
+
+  ESP_SMART_POINTERS(GenericInstanceMeshData)
 };
+
 }  // namespace assets
 }  // namespace esp

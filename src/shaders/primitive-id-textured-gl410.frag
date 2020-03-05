@@ -5,6 +5,7 @@ layout(location = 0) out mediump vec4 color;
 layout(location = 1) out uint objectId;
 
 void main() {
+#ifdef DEBUG_OBJECT_ID
   vec3 colors[] =
       vec3[](vec3(0.12156862745098039, 0.4666666666666667, 0.7058823529411765),
              vec3(0.6823529411764706, 0.7803921568627451, 0.9098039215686274),
@@ -48,7 +49,9 @@ void main() {
              vec3(0.8705882352941177, 0.6196078431372549, 0.8392156862745098));
   uint l = colors.length();
   uint index = v_objectId - (l * uint(floor(v_objectId / l)));
-
   color = vec4(colors[index], 1.0);
+#else
+  color = vec4(v_color, 1.0);
+#endif
   objectId = v_objectId;
 }
