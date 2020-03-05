@@ -6,8 +6,8 @@
 
 /** @file
  * @brief Class @ref esp::physics::RigidObject, enum @ref
- * esp::physics::MotionType, enum @ref esp::physics::RigidObjectType, struct @ref
- * VelocityControl
+ * esp::physics::MotionType, enum @ref esp::physics::RigidObjectType, struct
+ * @ref VelocityControl
  */
 
 #include <Corrade/Containers/Optional.h>
@@ -81,7 +81,7 @@ enum class RigidObjectType {
 
 };
 
-/**@brief Convenience class for applying constant velocity control to a rigid
+/**@brief Convenience struct for applying constant velocity control to a rigid
  * body. */
 struct VelocityControl {
  public:
