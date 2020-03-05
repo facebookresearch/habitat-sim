@@ -75,11 +75,18 @@ bool BulletPhysicsManager::addScene(
 
 int BulletPhysicsManager::makeRigidObject(
     const std::vector<assets::CollisionMeshData>& meshGroup,
-    assets::PhysicsObjectAttributes physicsObjectAttributes) {
+    assets::PhysicsObjectAttributes physicsObjectAttributes,
+    scene::SceneNode* attachmentNode) {
   //! Create new physics object (child node of staticSceneObject_)
   int newObjectID = allocateObjectID();
-  scene::SceneNode& newNode = staticSceneObject_->node().createChild();
-  existingObjects_[newObjectID] = std::make_unique<BulletRigidObject>(&newNode);
+
+  scene::SceneNode* objectNode = attachmentNode;
+  if (attachmentNode == nullptr) {
+    objectNode = &staticSceneObject_->node().createChild();
+  }
+
+  existingObjects_[newObjectID] =
+      std::make_unique<BulletRigidObject>(objectNode);
 
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
       physicsObjectAttributes.getString("collisionMeshHandle"));
@@ -92,7 +99,8 @@ int BulletPhysicsManager::makeRigidObject(
     LOG(ERROR) << "Object load failed";
     deallocateObjectID(newObjectID);
     existingObjects_.erase(newObjectID);
-    delete &newNode;
+    if (attachmentNode == nullptr)
+      delete objectNode;
     return ID_UNDEFINED;
   }
   return newObjectID;
@@ -100,10 +108,12 @@ int BulletPhysicsManager::makeRigidObject(
 
 int BulletPhysicsManager::addObject(const int objectLibIndex,
                                     DrawableGroup* drawables,
+                                    scene::SceneNode* attachmentNode,
                                     const Magnum::ResourceKey& lightSetup) {
   // Do default load first (adds the SceneNode to the SceneGraph and computes
   // the cumulativeBB_)
-  int objID = PhysicsManager::addObject(objectLibIndex, drawables, lightSetup);
+  int objID = PhysicsManager::addObject(objectLibIndex, drawables,
+                                        attachmentNode, lightSetup);
 
   // Then set the collision shape to the cumulativeBB_ if necessary
   if (objID != ID_UNDEFINED) {

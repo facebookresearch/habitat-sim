@@ -408,3 +408,52 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
     ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), Magnum::Vector3{});
   }
 }
+
+TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
+  // test attaching/detaching existing SceneNode to/from physical simulation
+  LOG(INFO) << "Starting physics test: TestSceneNodeAttachment";
+
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  std::string sceneFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+
+  initScene(sceneFile);
+
+  esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+  esp::scene::SceneNode& root =
+      sceneManager_.getSceneGraph(sceneID_).getRootNode();
+  esp::scene::SceneNode* newNode = &root.createChild();
+  ASSERT_EQ(root.children().last(), newNode);
+
+  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+  // Test attaching newNode to a RigidBody
+  int objectId = physicsManager_->addObject(objectFile, &drawables, newNode);
+  ASSERT_EQ(&physicsManager_->getObjectSceneNode(objectId), newNode);
+
+  // Test updating newNode position with PhysicsManager
+  Magnum::Vector3 newPos{1.0, 3.0, 0.0};
+  physicsManager_->setTranslation(objectId, newPos);
+  ASSERT_EQ(physicsManager_->getTranslation(objectId), newPos);
+  ASSERT_EQ(newNode->translation(), newPos);
+
+  // Test leaving newNode without visualNode_ after destroying the RigidBody
+  physicsManager_->removeObject(objectId, false, true);
+  ASSERT(newNode->children().isEmpty());
+
+  // Test leaving the visualNode attached to newNode after destroying the
+  // RigidBody
+  objectId = physicsManager_->addObject(objectFile, &drawables, newNode);
+  physicsManager_->removeObject(objectId, false, false);
+  ASSERT(!newNode->children().isEmpty());
+
+  // Test destroying newNode with the RigidBody
+  objectId = physicsManager_->addObject(objectFile, &drawables, newNode);
+  physicsManager_->removeObject(objectId, true, true);
+  ASSERT_NE(root.children().last(), newNode);
+}

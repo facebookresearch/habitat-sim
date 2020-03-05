@@ -234,12 +234,8 @@ bool operator!=(const SimulatorConfiguration& a,
 
 // === Physics Simulator Functions ===
 
-int Simulator::addObject(int objectLibIndex, int sceneID) {
-  return addObject(objectLibIndex,
-                   assets::ResourceManager::DEFAULT_LIGHTING_KEY, sceneID);
-}
-
 int Simulator::addObject(int objectLibIndex,
+                         scene::SceneNode* attachmentNode,
                          const std::string& lightSetupKey,
                          int sceneID) {
   if (sceneHasPhysics(sceneID)) {
@@ -248,7 +244,7 @@ int Simulator::addObject(int objectLibIndex,
     auto& sceneGraph_ = sceneManager_.getSceneGraph(activeSceneID_);
     auto& drawables = sceneGraph_.getDrawables();
     return physicsManager_->addObject(objectLibIndex, &drawables,
-                                      lightSetupKey);
+                                      attachmentNode, lightSetupKey);
   }
   return ID_UNDEFINED;
 }
@@ -268,9 +264,12 @@ std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
 }
 
 // remove object objectID instance in sceneID
-void Simulator::removeObject(const int objectID, const int sceneID) {
+void Simulator::removeObject(const int objectID,
+                             bool deleteObjectNode,
+                             bool deleteVisualNode,
+                             const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
-    physicsManager_->removeObject(objectID);
+    physicsManager_->removeObject(objectID, deleteObjectNode, deleteVisualNode);
   }
 }
 

@@ -211,7 +211,7 @@ void SimTest::getDefaultLightingRGBAObservation() {
 void SimTest::getCustomLightingRGBAObservation() {
   auto simulator = getSimulator(vangogh);
 
-  int objectID = simulator->addObject(0, "custom_lighting_1");
+  int objectID = simulator->addObject(0, nullptr, "custom_lighting_1");
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
@@ -236,7 +236,7 @@ void SimTest::updateLightSetupRGBAObservation() {
   simulator->removeObject(objectID);
 
   // update custom lighting
-  objectID = simulator->addObject(0, "custom_lighting_1");
+  objectID = simulator->addObject(0, nullptr, "custom_lighting_1");
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
@@ -272,11 +272,11 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
   auto simulator = getSimulator(planeScene);
 
   // make sure updates apply to all objects using the light setup
-  int objectID = simulator->addObject(0, "custom_lighting_1");
+  int objectID = simulator->addObject(0, nullptr, "custom_lighting_1");
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({0.0f, 0.5f, -0.5f}, objectID);
 
-  int otherObjectID = simulator->addObject(0, "custom_lighting_1");
+  int otherObjectID = simulator->addObject(0, nullptr, "custom_lighting_1");
   CORRADE_VERIFY(otherObjectID != esp::ID_UNDEFINED);
   simulator->setTranslation({2.0f, 0.5f, -0.5f}, otherObjectID);
 

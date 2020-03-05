@@ -103,11 +103,13 @@ class Simulator {
    * esp::physics::PhysicsManager::existingObjects_ or @ref esp::ID_UNDEFINED if
    * instancing fails.
    */
-  int addObject(int objectLibIndex, int sceneID = 0);
+  // int addObject(int objectLibIndex, int sceneID = 0);
 
   /** @overload */
   int addObject(int objectLibIndex,
-                const std::string& lightSetupKey,
+                scene::SceneNode* attachmentNode = nullptr,
+                const std::string& lightSetupKey =
+                    assets::ResourceManager::DEFAULT_LIGHTING_KEY,
                 int sceneID = 0);
 
   /**
@@ -126,7 +128,10 @@ class Simulator {
    * @param sceneID !! Not used currently !! Specifies which physical scene to
    * remove the object from.
    */
-  void removeObject(const int objectID, const int sceneID = 0);
+  void removeObject(const int objectID,
+                    bool deleteObjectNode = true,
+                    bool deleteVisualNode = true,
+                    const int sceneID = 0);
 
   /**
    * @brief Get the IDs of the physics objects instanced in a physical scene.
