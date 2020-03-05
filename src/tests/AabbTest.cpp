@@ -4,6 +4,8 @@
 
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
+#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Math/FunctionsBatch.h>
 #include "esp/core/Utility.h"
 #include "esp/geo/CoordinateFrame.h"
@@ -144,12 +146,9 @@ void GeoTest::obbFunctions() {
   CORRADE_VERIFY(!obb2.contains(vec3f(-10, 0.5, -2)));
 
   const box3f aabb = obb2.toAABB();
-  CORRADE_COMPARE_AS(aabb.min().x(), -10, float);
-  CORRADE_COMPARE_AS(aabb.min().y(), -5, float);
-  CORRADE_COMPARE_AS(aabb.min().z(), -1, float);
-  CORRADE_COMPARE_AS(aabb.max().x(), 10, float);
-  CORRADE_COMPARE_AS(aabb.max().y(), 5, float);
-  CORRADE_COMPARE_AS(aabb.max().z(), 1, float);
+
+  CORRADE_COMPARE(Mn::Vector3{aabb.min()}, (Mn::Vector3{-10.0f, -5.0f, -1.0f}));
+  CORRADE_COMPARE(Mn::Vector3{aabb.max()}, (Mn::Vector3{10.0f, 5.0f, 1.0f}));
 
   const Transform identity = obb2.worldToLocal() * obb2.localToWorld();
   CORRADE_VERIFY(identity.isApprox(Transform::Identity()));
@@ -162,46 +161,43 @@ void GeoTest::obbFunctions() {
 }
 
 void GeoTest::coordinateFrame() {
-  /*
-    const vec3f origin(1, -2, 3);
-    const vec3f up(0, 0, 1);
-    const vec3f front(-1, 0, 0);
-    quatf rotation = quatf::FromTwoVectors(ESP_UP, up) *
-                     quatf::FromTwoVectors(ESP_FRONT, front);
-    Transform xform;
-    xform.rotate(rotation);
-    xform.translate(origin);
+  const vec3f origin(1, -2, 3);
+  const vec3f up(0, 0, 1);
+  const vec3f front(-1, 0, 0);
+  quatf rotation = quatf::FromTwoVectors(ESP_UP, up) *
+                   quatf::FromTwoVectors(ESP_FRONT, front);
+  Transform xform;
+  xform.rotate(rotation);
+  xform.translate(origin);
 
-    CoordinateFrame c1(up, front, origin);
-    CORRADE_VERIFY(c1.up().isApprox(up));
-    CORRADE_VERIFY(c1.gravity().isApprox(-up));
-    CORRADE_VERIFY(c1.front().isApprox(front));
-    CORRADE_VERIFY(c1.back().isApprox(-front));
-    CORRADE_VERIFY(c1.up().isApprox(rotation * ESP_UP));
-    CORRADE_VERIFY(c1.front().isApprox(rotation * ESP_FRONT));
-    CORRADE_VERIFY(c1.origin().isApprox(origin));
-    CORRADE_VERIFY(c1.rotationWorldToFrame().isApprox(rotation));
+  CoordinateFrame c1(up, front, origin);
+  CORRADE_VERIFY(c1.up().isApprox(up));
+  CORRADE_VERIFY(c1.gravity().isApprox(-up));
+  CORRADE_VERIFY(c1.front().isApprox(front));
+  CORRADE_VERIFY(c1.back().isApprox(-front));
+  CORRADE_VERIFY(c1.up().isApprox(rotation * ESP_UP));
+  CORRADE_VERIFY(c1.front().isApprox(rotation * ESP_FRONT));
+  CORRADE_VERIFY(c1.origin().isApprox(origin));
+  CORRADE_VERIFY(c1.rotationWorldToFrame().isApprox(rotation));
 
-    CoordinateFrame c2(rotation, origin);
-    CORRADE_COMPARE(c1, c2);
-    CORRADE_VERIFY(c2.up().isApprox(up));
-    CORRADE_VERIFY(c2.gravity().isApprox(-up));
-    CORRADE_VERIFY(c2.front().isApprox(front));
-    CORRADE_VERIFY(c2.back().isApprox(-front));
-    CORRADE_VERIFY(c2.up().isApprox(rotation * ESP_UP));
-    CORRADE_VERIFY(c2.front().isApprox(rotation * ESP_FRONT));
-    CORRADE_VERIFY(c2.origin().isApprox(origin));
-    CORRADE_VERIFY(c2.rotationWorldToFrame().isApprox(rotation));
+  CoordinateFrame c2(rotation, origin);
+  CORRADE_VERIFY(c1 == c2);
+  CORRADE_VERIFY(c2.up().isApprox(up));
+  CORRADE_VERIFY(c2.gravity().isApprox(-up));
+  CORRADE_VERIFY(c2.front().isApprox(front));
+  CORRADE_VERIFY(c2.back().isApprox(-front));
+  CORRADE_VERIFY(c2.up().isApprox(rotation * ESP_UP));
+  CORRADE_VERIFY(c2.front().isApprox(rotation * ESP_FRONT));
+  CORRADE_VERIFY(c2.origin().isApprox(origin));
+  CORRADE_VERIFY(c2.rotationWorldToFrame().isApprox(rotation));
 
-    const std::string j =
-    R"({"up":[0,0,1],"front":[-1,0,0],"origin":[1,-2,3]})";
-    CORRADE_COMPARE(c1.toJson(), j);
-    CoordinateFrame c3(j);
-    CORRADE_COMPARE(c1, c3);
-    CoordinateFrame c4;
-    c4.fromJson(j);
-    CORRADE_COMPARE(c3, c4);
-  */
+  const std::string j = R"({"up":[0,0,1],"front":[-1,0,0],"origin":[1,-2,3]})";
+  CORRADE_COMPARE(c1.toJson(), j);
+  CoordinateFrame c3(j);
+  CORRADE_VERIFY(c1 == c3);
+  CoordinateFrame c4;
+  c4.fromJson(j);
+  CORRADE_VERIFY(c3 == c4);
 }
 
 }  // namespace Test
