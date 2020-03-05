@@ -10,12 +10,21 @@
 #include <Magnum/Trade/MeshData3D.h>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
+
 #include "BaseMesh.h"
 #include "esp/core/esp.h"
 
 namespace esp {
 namespace assets {
+
+struct ParsedPlyData {
+  std::vector<vec3f> cpu_vbo;
+  std::vector<vec3uc> cpu_cbo;
+  std::vector<uint32_t> cpu_ibo;
+  std::vector<uint16_t> objectIds;
+};
 
 class GenericInstanceMeshData : public BaseMesh {
  public:
@@ -27,7 +36,19 @@ class GenericInstanceMeshData : public BaseMesh {
   explicit GenericInstanceMeshData()
       : GenericInstanceMeshData{SupportedMeshType::INSTANCE_MESH} {};
 
+  GenericInstanceMeshData(GenericInstanceMeshData&&) = default;
+
   virtual ~GenericInstanceMeshData(){};
+
+  /**
+   * @brief loads a PLY file and splits it by objectIDs into multiple different
+   * mesh's
+   *
+   * @param plyFile
+   * @return std::vector<GenericInstanceMeshData>
+   */
+  static Corrade::Containers::Optional<std::vector<GenericInstanceMeshData>>
+  loadPlySplitByObjectId(const std::string& plyFile);
 
   virtual bool loadPLY(const std::string& plyFile);
 
@@ -53,7 +74,17 @@ class GenericInstanceMeshData : public BaseMesh {
   }
 
  protected:
+  struct PerObjectIDData {
+    size_t meshDataIndex;
+    uint16_t objectId;
+    std::unordered_map<uint32_t, uint32_t> globalIndexToPerObjectIndex;
+  };
+
   void updateCollisionMeshData();
+
+  void addIndexToMeshData(uint32_t globalIndex,
+                          const ParsedPlyData& globalData,
+                          PerObjectIDData& localData);
 
   // ==== rendering ====
   std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;

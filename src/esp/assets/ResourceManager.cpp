@@ -961,24 +961,46 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
                                            scene::SceneNode* parent,
                                            DrawableGroup* drawables) {
+  if (info.type != AssetType::INSTANCE_MESH) {
+    LOG(ERROR) << "loadInstanceMeshData only works with INSTANCE_MESH type!";
+    return false;
+  }
   // if this is a new file, load it and add it to the dictionary, create
   // shaders and add it to the shaderPrograms_
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
-    if (info.type == AssetType::INSTANCE_MESH) {
-      meshes_.emplace_back(std::make_unique<GenericInstanceMeshData>());
+    bool semanticCullingEnabled = true;
+    std::vector<GenericInstanceMeshData> instanceMeshes;
+
+    if (semanticCullingEnabled) {
+      Cr::Containers::Optional<std::vector<GenericInstanceMeshData>>
+          loadedMeshes =
+              GenericInstanceMeshData::loadPlySplitByObjectId(filename);
+      if (loadedMeshes)
+        instanceMeshes = std::move(*loadedMeshes);
+    } else {
+      // just create a single mesh and load ply file into it
+      GenericInstanceMeshData meshData{};
+      if (!meshData.loadPLY(filename))
+        instanceMeshes.emplace_back(std::move(meshData));
     }
-    int index = meshes_.size() - 1;
-    auto* instanceMeshData =
-        dynamic_cast<GenericInstanceMeshData*>(meshes_[index].get());
 
-    instanceMeshData->loadPLY(filename);
-    instanceMeshData->uploadBuffersToGPU(false);
+    if (instanceMeshes.empty()) {
+      LOG(ERROR) << "Error loading instance mesh data";
+      return false;
+    }
 
-    instance_mesh_ = &(instanceMeshData->getRenderingBuffer()->mesh);
+    int meshStart = meshes_.size();
+    for (auto& instanceMeshData : instanceMeshes) {
+      instanceMeshData.uploadBuffersToGPU(false);
+      meshes_.emplace_back(
+          new GenericInstanceMeshData{std::move(instanceMeshData)});
+    }
+    int meshEnd = meshes_.size() - 1;
+
     // update the dictionary
-    auto inserted =
-        resourceDict_.emplace(filename, LoadedAssetData{info, {index, index}});
+    auto inserted = resourceDict_.emplace(
+        filename, LoadedAssetData{info, {meshStart, meshEnd}});
     MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
     meshMetaData.root.meshIDLocal = 0;
     meshMetaData.root.componentID = 0;
@@ -991,11 +1013,9 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
     int end = indexPair.second;
 
     for (int iMesh = start; iMesh <= end; ++iMesh) {
-      auto* instanceMeshData =
-          dynamic_cast<GenericInstanceMeshData*>(meshes_[iMesh].get());
       scene::SceneNode& node = parent->createChild();
       node.addFeature<gfx::PrimitiveIDDrawable>(
-          *instanceMeshData->getMagnumGLMesh(), shaderManager_, drawables);
+          *meshes_[iMesh]->getMagnumGLMesh(), shaderManager_, drawables);
     }
   }
 

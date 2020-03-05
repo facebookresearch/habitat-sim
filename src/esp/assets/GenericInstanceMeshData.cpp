@@ -23,7 +23,6 @@
 #include <fstream>
 #include <sophus/so3.hpp>
 #include <sstream>
-#include <unordered_map>
 #include <vector>
 
 #include "esp/core/esp.h"
@@ -74,61 +73,34 @@ std::vector<Mn::UnsignedInt> removeDuplicates(std::vector<T>& data) {
 
   return resultIndices;
 }
-}  // namespace
 
-bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
-  cpu_vbo_.clear();
-  cpu_cbo_.clear();
-  cpu_ibo_.clear();
-  objectIds_.clear();
-
+Cr::Containers::Optional<ParsedPlyData> parsePly(const std::string& plyFile) {
+  ParsedPlyData data{};
   std::ifstream ifs(plyFile, std::ios::binary);
   if (!ifs.good()) {
     LOG(ERROR) << "Cannot open file at " << plyFile;
-    return false;
+    return Cr::Containers::NullOpt;
   }
 
   tinyply::PlyFile file;
+  std::shared_ptr<tinyply::PlyData> vertices, colors, faceVertexIndices,
+      objectIds;
+
   try {
     if (!file.parse_header(ifs)) {
       LOG(ERROR) << "Could not read header";
-      return false;
+      return Cr::Containers::NullOpt;
     }
-  } catch (const std::exception& e) {
-    LOG(ERROR) << "Tinply error " << e.what();
-    return false;
-  }
 
-  std::shared_ptr<tinyply::PlyData> vertices, colors, face_inds, object_ids;
-
-  try {
     vertices = file.request_properties_from_element("vertex", {"x", "y", "z"});
-  } catch (const std::exception& e) {
-    LOG(ERROR) << "tinyply exception: " << e.what();
-    return false;
-  }
-
-  try {
     colors = file.request_properties_from_element("vertex",
                                                   {"red", "green", "blue"});
-  } catch (const std::exception& e) {
-    LOG(ERROR) << "tinyply exception: " << e.what();
-    return false;
-  }
-
-  try {
-    face_inds =
+    faceVertexIndices =
         file.request_properties_from_element("face", {"vertex_indices"}, 0);
+    objectIds = file.request_properties_from_element("face", {"object_id"});
   } catch (const std::exception& e) {
     LOG(ERROR) << "tinyply exception: " << e.what();
-    return false;
-  }
-
-  try {
-    object_ids = file.request_properties_from_element("face", {"object_id"});
-  } catch (const std::exception& e) {
-    LOG(ERROR) << "tinyply exception: " << e.what();
-    return false;
+    return Cr::Containers::NullOpt;
   }
 
   file.read(ifs);
@@ -136,39 +108,43 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   CHECK(vertices->t == tinyply::Type::FLOAT32) << "x,y,z must be floats";
   // copyTo is a helper function to get stuff out of tinyply's format into our
   // format it does the resize and checks to make sure everything will fit
-  copyTo(vertices, cpu_vbo_);
+  copyTo(vertices, data.cpu_vbo);
   CHECK(colors->t == tinyply::Type::UINT8) << "r,g,b must be uint8_t's";
-  copyTo(colors, cpu_cbo_);
+  copyTo(colors, data.cpu_cbo);
 
   int vertexPerFace;
   // We can load int32 index buffers as uint32 index buffers as they are simply
   // indices into an array and thus can't be negative. int32 is really uint31
   // and can be safely reinterpret_casted to uint32
-  if (face_inds->t == tinyply::Type::INT32 ||
-      face_inds->t == tinyply::Type::UINT32) {
+  if (faceVertexIndices->t == tinyply::Type::INT32 ||
+      faceVertexIndices->t == tinyply::Type::UINT32) {
     // We can figure out the number of vertices per face by dividing the number
     // of bytes needed to store the faces by the number of faces and the size of
     // each vertex
-    vertexPerFace =
-        face_inds->buffer.size_bytes() / (face_inds->count * sizeof(uint32_t));
+    vertexPerFace = faceVertexIndices->buffer.size_bytes() /
+                    (faceVertexIndices->count * sizeof(uint32_t));
     if (vertexPerFace == 3) {
-      copyVec3To(face_inds, cpu_ibo_);
-    } else {
+      copyVec3To(faceVertexIndices, data.cpu_ibo);
+    } else if (vertexPerFace == 4) {
       std::vector<vec4ui> tmp;
-      copyTo(face_inds, tmp);
-      cpu_ibo_.reserve(tmp.size() * 2 * 3);
+      copyTo(faceVertexIndices, tmp);
+      data.cpu_ibo.reserve(tmp.size() * 2 * 3);
       // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0, 2, 3]
       for (auto& quad : tmp) {
         constexpr int indices[] = {0, 1, 2, 0, 2, 3};
         for (int i : indices) {
-          cpu_ibo_.push_back(quad[i]);
+          data.cpu_ibo.push_back(quad[i]);
         }
       }
+    } else {
+      LOG(ERROR) << "GenericInstanceMeshData: Only triangle or quadmeshs "
+                    "supported!";
+      return Cr::Containers::NullOpt;
     }
   } else {
     LOG(ERROR) << "Cannot load vertex indices of type "
-               << tinyply::PropertyTable[face_inds->t].str;
-    return false;
+               << tinyply::PropertyTable[faceVertexIndices->t].str;
+    return Cr::Containers::NullOpt;
   }
 
   VLOG(1) << "vertexPerFace=" << vertexPerFace;
@@ -176,42 +152,103 @@ bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
   // If the input mesh is a quad mesh, then we had to double the number of
   // primitives, so we also need to double the size of the object IDs buffer
   int indicesPerFace = 3 * (vertexPerFace == 4 ? 2 : 1);
-  objectIds_.reserve(object_ids->count * indicesPerFace);
-  if (object_ids->t == tinyply::Type::INT32 ||
-      object_ids->t == tinyply::Type::UINT32) {
+  data.objectIds.reserve(objectIds->count * indicesPerFace);
+  if (objectIds->t == tinyply::Type::INT32 ||
+      objectIds->t == tinyply::Type::UINT32) {
     std::vector<int> tmp;
     // This copy will be safe because for 0 <= v <= 2^31 - 1, uint32 and
     // int32 have the same bit patterns.  We currently assume IDs are <= 2^16 -
     // 1, so this assumption is safe.
-    copyTo(object_ids, tmp);
+    copyTo(objectIds, tmp);
 
     for (auto& id : tmp) {
       // >= 0 to make sure we didn't overflow the int32 with the uint32
       CORRADE_INTERNAL_ASSERT(id >= 0 && id <= ((2 << 16) - 1));
       for (int i = 0; i < indicesPerFace; ++i)
-        objectIds_.push_back(id);
+        data.objectIds.push_back(id);
     }
-  } else if (object_ids->t == tinyply::Type::UINT16) {
+  } else if (objectIds->t == tinyply::Type::UINT16) {
     std::vector<uint16_t> tmp;
-    copyTo(object_ids, tmp);
+    copyTo(objectIds, tmp);
 
     for (auto& id : tmp) {
       for (int i = 0; i < indicesPerFace; ++i)
-        objectIds_.push_back(id);
+        data.objectIds.push_back(id);
     }
   } else {
     LOG(ERROR) << "Cannot load object_id of type "
-               << tinyply::PropertyTable[object_ids->t].str;
-    return false;
+               << tinyply::PropertyTable[objectIds->t].str;
+    return Cr::Containers::NullOpt;
   }
 
   // Generic Semantic PLY meshes have -Z gravity
   const quatf T_esp_scene =
       quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY);
 
-  for (auto& xyz : cpu_vbo_) {
+  for (auto& xyz : data.cpu_vbo) {
     xyz = T_esp_scene * xyz;
   }
+  return data;
+}
+
+}  // namespace
+
+Cr::Containers::Optional<std::vector<GenericInstanceMeshData>>
+GenericInstanceMeshData::loadPlySplitByObjectId(const std::string& plyFile) {
+  Cr::Containers::Optional<ParsedPlyData> parsedData = parsePly(plyFile);
+  if (!parsedData) {
+    return Cr::Containers::NullOpt;
+  }
+  const ParsedPlyData& data = *parsedData;
+
+  std::vector<GenericInstanceMeshData> meshesData;
+  std::unordered_map<uint16_t, PerObjectIDData> objectIdToObjectData;
+  for (size_t i = 0; i < data.objectIds.size(); ++i) {
+    const uint16_t objectId = data.objectIds[i];
+    const uint32_t globalIndex = data.cpu_ibo[i];
+
+    if (objectIdToObjectData.find(objectId) == objectIdToObjectData.end()) {
+      objectIdToObjectData.emplace(
+          objectId, PerObjectIDData{meshesData.size(), objectId});
+      meshesData.emplace_back(GenericInstanceMeshData{});
+    }
+
+    PerObjectIDData& perObjectData = objectIdToObjectData[objectId];
+    GenericInstanceMeshData& meshData = meshesData[perObjectData.meshDataIndex];
+
+    meshData.addIndexToMeshData(globalIndex, data, perObjectData);
+  }
+  return meshesData;
+}
+
+void GenericInstanceMeshData::addIndexToMeshData(
+    uint32_t globalIndex,
+    const ParsedPlyData& globalData,
+    PerObjectIDData& localData) {
+  // if local object hasn't seen this global index before, update local vertex,
+  // color, and objectId buffers
+  auto result = localData.globalIndexToPerObjectIndex.emplace(globalIndex,
+                                                              cpu_vbo_.size());
+  if (result.second) {
+    cpu_vbo_.emplace_back(globalData.cpu_vbo[globalIndex]);
+    cpu_cbo_.emplace_back(globalData.cpu_cbo[globalIndex]);
+  }
+
+  // update index buffers with local index of vertex/color
+  cpu_ibo_.emplace_back(result.first->second);
+  objectIds_.emplace_back(localData.objectId);
+}
+
+bool GenericInstanceMeshData::loadPLY(const std::string& plyFile) {
+  Cr::Containers::Optional<ParsedPlyData> data = parsePly(plyFile);
+  if (!data) {
+    return false;
+  }
+
+  cpu_vbo_ = std::move(data->cpu_vbo);
+  cpu_cbo_ = std::move(data->cpu_cbo);
+  cpu_ibo_ = std::move(data->cpu_ibo);
+  objectIds_ = std::move(data->objectIds);
 
   // Construct vertices for collsion meshData
   // Store indices, facd_ids in Magnum MeshData3D format such that
