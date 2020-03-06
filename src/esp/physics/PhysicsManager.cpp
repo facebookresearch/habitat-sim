@@ -205,6 +205,16 @@ void PhysicsManager::stepPhysics(double dt) {
   double targetTime = worldTime_ + dt;
   while (worldTime_ < targetTime) {
     // per fixed-step operations can be added here
+
+    // kinematic velocity control intergration
+    for (auto& object : existingObjects_) {
+      VelocityControl& velControl = object.second->getVelocityControl();
+      if (velControl.controllingAngVel || velControl.controllingLinVel) {
+        scene::SceneNode& objectSceneNode = object.second->node();
+        objectSceneNode.setTransformation(velControl.integrateTransform(
+            fixedTimeStep_, objectSceneNode.transformation()));
+      }
+    }
     worldTime_ += fixedTimeStep_;
   }
 }
@@ -375,6 +385,11 @@ Magnum::Vector3 PhysicsManager::getAngularVelocity(
     const int physObjectID) const {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getAngularVelocity();
+}
+
+VelocityControl& PhysicsManager::getVelocityControl(const int physObjectID) {
+  assertIDValidity(physObjectID);
+  return existingObjects_.at(physObjectID)->getVelocityControl();
 }
 
 //============ Object Setter functions =============
