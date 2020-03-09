@@ -19,8 +19,6 @@ target_include_directories(NavTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 TEST(IOTest io)
 target_include_directories(IOTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-TEST(GeoTest geo)
-
 TEST(Mp3dTest scene)
 target_include_directories(Mp3dTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -31,7 +29,7 @@ corrade_add_test(SimTest SimTest.cpp LIBRARIES
   MagnumPlugins::StbImageImporter)
 target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(AabbTest AabbTest.cpp LIBRARIES
+corrade_add_test(GeoTest GeoTest.cpp LIBRARIES
   geo)
 
 TEST(PhysicsTest physics)
