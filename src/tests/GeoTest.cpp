@@ -12,7 +12,6 @@
 #include "esp/geo/OBB.h"
 #include "esp/geo/geo.h"
 
-// TODO: refactor the GeoTest to use Cr::TestSuite
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
