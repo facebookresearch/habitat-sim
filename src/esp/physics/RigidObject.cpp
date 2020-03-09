@@ -213,5 +213,35 @@ Magnum::Matrix3 RigidObject::getInertiaMatrix() {
   return inertia;
 }
 
+//////////////////
+// VelocityControl
+Magnum::Matrix4 VelocityControl::integrateTransform(
+    const float dt,
+    const Magnum::Matrix4& objectTransform) {
+  // linear first
+  Magnum::Vector3 newTranslation = objectTransform.translation();
+  if (controllingLinVel) {
+    if (linVelIsLocal) {
+      newTranslation += objectTransform.rotation() *
+                        (linVel * dt);  // avoid local scaling of the velocity
+    } else {
+      newTranslation += linVel * dt;
+    }
+  }
+
+  Magnum::Matrix3 newRotationScaling = objectTransform.rotationScaling();
+  // then angular
+  if (controllingAngVel) {
+    Magnum::Vector3 globalAngVel = angVel;
+    if (angVelIsLocal) {
+      globalAngVel = objectTransform.rotation() * angVel;
+    }
+    Magnum::Quaternion q = Magnum::Quaternion::rotation(
+        Magnum::Rad{(globalAngVel * dt).length()}, globalAngVel.normalized());
+    newRotationScaling = q.toMatrix() * newRotationScaling;
+  }
+  return Magnum::Matrix4::from(newRotationScaling, newTranslation);
+}
+
 }  // namespace physics
 }  // namespace esp

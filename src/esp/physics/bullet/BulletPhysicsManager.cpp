@@ -183,6 +183,40 @@ void BulletPhysicsManager::stepPhysics(double dt) {
     dt = fixedTimeStep_;
   }
 
+  // set specified control velocities
+  for (auto& objectItr : existingObjects_) {
+    VelocityControl& velControl = objectItr.second->getVelocityControl();
+    if (objectItr.second->getMotionType() == MotionType::KINEMATIC) {
+      // kinematic velocity control intergration
+      if (velControl.controllingAngVel || velControl.controllingLinVel) {
+        scene::SceneNode& objectSceneNode = objectItr.second->node();
+        objectSceneNode.setTransformation(velControl.integrateTransform(
+            dt, objectSceneNode.transformation()));
+        objectItr.second->setActive();
+      }
+    } else if (objectItr.second->getMotionType() == MotionType::DYNAMIC) {
+      if (velControl.controllingLinVel) {
+        if (velControl.linVelIsLocal) {
+          setLinearVelocity(objectItr.first,
+                            objectItr.second->node().rotation().transformVector(
+                                velControl.linVel));
+        } else {
+          setLinearVelocity(objectItr.first, velControl.linVel);
+        }
+      }
+      if (velControl.controllingAngVel) {
+        if (velControl.angVelIsLocal) {
+          setAngularVelocity(
+              objectItr.first,
+              objectItr.second->node().rotation().transformVector(
+                  velControl.angVel));
+        } else {
+          setAngularVelocity(objectItr.first, velControl.angVel);
+        }
+      }
+    }
+  }
+
   // ==== Physics stepforward ======
   // NOTE: worldTime_ will always be a multiple of sceneMetaData_.timestep
   int numSubStepsTaken =
