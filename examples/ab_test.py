@@ -6,6 +6,7 @@
 
 
 import argparse
+import csv
 import distutils
 from distutils import util
 
@@ -92,6 +93,70 @@ parser.add_argument(
 parser.add_argument(
     "--test_value", type=str, required=True, help="the feature value in test group."
 )
+
+parser.add_argument("--csv", type=str, help="csv output file")
+
+
+def output_results(performance_all, title_list, csv_writer=None):
+    for nproc, performance in performance_all.items():
+        print(
+            " ================ Performance (FPS) NPROC={} ===================================".format(
+                nproc
+            )
+        )
+        title = "Resolution "
+        for t in title_list:
+            title += "\t%-24s" % t
+        print(title)
+        # break down by resolutions
+        for idx in range(len(performance)):
+            row = "%d x %d" % (resolutions[idx], resolutions[idx])
+            # break down by benchmark items
+            for t in title_list:
+                control_fps = performance[idx][t + "_" + str(dr.ABTestGroup.CONTROL)][
+                    "fps"
+                ]
+                test_fps = performance[idx][t + "_" + str(dr.ABTestGroup.TEST)]["fps"]
+                ratio = (
+                    (float(test_fps) - float(control_fps)) / float(control_fps) * 100.0
+                )
+                row += "\t%-6.1f/%-6.1f (%6.1f%%)" % (control_fps, test_fps, ratio)
+                if csv_writer:
+                    csv_writer.writerow(
+                        dict(
+                            num_procs=nproc,
+                            resolution=resolutions[idx],
+                            sensor_types=t,
+                            control_fps=f"{control_fps:.2f}",
+                            test_fps=f"{test_fps:.2f}",
+                            percent_diff=f"{ratio:.2f}",
+                        )
+                    )
+            print(row)
+        print(
+            " =============================================================================="
+        )
+
+        # also print the average time per simulation step (including object perturbations)
+        if args.enable_physics:
+            print(
+                " ================ Performance (step time: milliseconds) NPROC={} ===================================".format(
+                    nproc
+                )
+            )
+            title = "Resolution "
+            for key, value in perf.items():
+                title += "\t%-10s" % key
+            print(title)
+            for idx in range(len(performance)):
+                row = "%d x %d" % (resolutions[idx], resolutions[idx])
+                for key, value in performance[idx].items():
+                    row += "\t%-8.2f" % (value.get("avg_sim_step_time") * 1000)
+                print(row)
+            print(
+                " =============================================================================="
+            )
+
 
 args = parser.parse_args()
 
@@ -193,46 +258,21 @@ for nprocs in nprocs_tests:
 
     performance_all[nprocs] = performance
 
-for nproc, performance in performance_all.items():
-    print(
-        " ================ Performance (FPS) NPROC={} ===================================".format(
-            nproc
+if args.csv:
+    with open(args.csv, "w", newline="") as csv_file:
+        writer = csv.DictWriter(
+            csv_file,
+            fieldnames=[
+                "num_procs",
+                "resolution",
+                "sensor_types",
+                "control_fps",
+                "test_fps",
+                "percent_diff",
+            ],
         )
-    )
-    title = "Resolution "
-    for t in title_list:
-        title += "\t%-24s" % t
-    print(title)
-    # break down by resolutions
-    for idx in range(len(performance)):
-        row = "%d x %d" % (resolutions[idx], resolutions[idx])
-        # break down by benchmark items
-        for t in title_list:
-            control_fps = performance[idx][t + "_" + str(dr.ABTestGroup.CONTROL)]["fps"]
-            test_fps = performance[idx][t + "_" + str(dr.ABTestGroup.TEST)]["fps"]
-            ratio = (float(test_fps) - float(control_fps)) / float(control_fps) * 100.0
-            row += "\t%-6.1f/%-6.1f (%6.1f%%)" % (control_fps, test_fps, ratio)
-        print(row)
-    print(
-        " =============================================================================="
-    )
-
-    # also print the average time per simulation step (including object perturbations)
-    if args.enable_physics:
-        print(
-            " ================ Performance (step time: milliseconds) NPROC={} ===================================".format(
-                nproc
-            )
-        )
-        title = "Resolution "
-        for key, value in perf.items():
-            title += "\t%-10s" % key
-        print(title)
-        for idx in range(len(performance)):
-            row = "%d x %d" % (resolutions[idx], resolutions[idx])
-            for key, value in performance[idx].items():
-                row += "\t%-8.2f" % (value.get("avg_sim_step_time") * 1000)
-            print(row)
-        print(
-            " =============================================================================="
-        )
+        writer.writeheader()
+        print(f"Writing csv results to {args.csv}")
+        output_results(performance_all, title_list, writer)
+else:
+    output_results(performance_all, title_list)
