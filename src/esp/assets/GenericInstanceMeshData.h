@@ -29,8 +29,6 @@ class GenericInstanceMeshData : public BaseMesh {
   explicit GenericInstanceMeshData()
       : GenericInstanceMeshData{SupportedMeshType::INSTANCE_MESH} {};
 
-  GenericInstanceMeshData(GenericInstanceMeshData&&) = default;
-
   virtual ~GenericInstanceMeshData(){};
 
   /**

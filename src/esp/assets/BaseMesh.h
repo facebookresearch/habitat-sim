@@ -80,8 +80,6 @@ class BaseMesh {
    * likely identifying the derived type of this object.*/
   explicit BaseMesh(SupportedMeshType type) : type_(type){};
 
-  BaseMesh(BaseMesh&&) = default;
-
   /** @brief Destructor */
   virtual ~BaseMesh(){};
 
