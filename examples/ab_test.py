@@ -97,65 +97,68 @@ parser.add_argument(
 parser.add_argument("--csv", type=str, help="csv output file")
 
 
-def output_results(performance_all, title_list, csv_writer=None):
+def get_percent_diff(test_val, control_val):
+    return ((test_val - control_val) / control_val) * 100.0
+
+
+def seconds_to_ms(seconds):
+    return seconds * 1000.0
+
+
+def print_metric(
+    performance_data, resolutions, title_list, metric="fps", metric_transformer=None
+):
     for nproc, performance in performance_all.items():
-        print(
-            " ================ Performance (FPS) NPROC={} ===================================".format(
-                nproc
-            )
-        )
-        title = "Resolution "
-        for t in title_list:
-            title += "\t%-24s" % t
+        header = f" Performance ({metric}) NPROC={nproc} "
+        print(f"{header:=^100}")
+        title = "Resolution".ljust(16)
+        title += "".join(t.ljust(24) for t in title_list)
         print(title)
         # break down by resolutions
-        for idx in range(len(performance)):
-            row = "%d x %d" % (resolutions[idx], resolutions[idx])
+        for resolution, perf in zip(resolutions, performance):
+            row = f"{resolution} x {resolution}".ljust(16)
             # break down by benchmark items
             for t in title_list:
-                control_fps = performance[idx][t + "_" + str(dr.ABTestGroup.CONTROL)][
-                    "fps"
-                ]
-                test_fps = performance[idx][t + "_" + str(dr.ABTestGroup.TEST)]["fps"]
-                ratio = (
-                    (float(test_fps) - float(control_fps)) / float(control_fps) * 100.0
-                )
-                row += "\t%-6.1f/%-6.1f (%6.1f%%)" % (control_fps, test_fps, ratio)
-                if csv_writer:
-                    csv_writer.writerow(
-                        dict(
-                            num_procs=nproc,
-                            resolution=resolutions[idx],
-                            sensor_types=t,
-                            control_fps=f"{control_fps:.2f}",
-                            test_fps=f"{test_fps:.2f}",
-                            percent_diff=f"{ratio:.2f}",
-                        )
-                    )
-            print(row)
-        print(
-            " =============================================================================="
-        )
+                control_metric = perf[t][dr.ABTestGroup.CONTROL][metric]
+                test_metric = perf[t][dr.ABTestGroup.TEST][metric]
+                percent_diff = get_percent_diff(test_metric, control_metric)
+                if metric_transformer:
+                    control_metric = metric_transformer(control_metric)
+                    test_metric = metric_transformer(test_metric)
 
-        # also print the average time per simulation step (including object perturbations)
-        if args.enable_physics:
-            print(
-                " ================ Performance (step time: milliseconds) NPROC={} ===================================".format(
-                    nproc
+                row += (
+                    f"{control_metric:6.1f}/{test_metric:6.1f} ({percent_diff:>6.1f}%)"
                 )
-            )
-            title = "Resolution "
-            for key, value in perf.items():
-                title += "\t%-10s" % key
-            print(title)
-            for idx in range(len(performance)):
-                row = "%d x %d" % (resolutions[idx], resolutions[idx])
-                for key, value in performance[idx].items():
-                    row += "\t%-8.2f" % (value.get("avg_sim_step_time") * 1000)
-                print(row)
-            print(
-                " =============================================================================="
-            )
+            print(row)
+        print(f"{' END ':=^100}")
+
+
+def get_csv_data(
+    performance_all, resolutions, title_list, metrics=["fps"], metric_transformer={}
+):
+    fields = ["num_procs", "resolution", "sensor_types"]
+    for metric in metrics:
+        fields.append(f"{metric}_test")
+        fields.append(f"{metric}_control")
+    rows = []
+
+    for nproc, performance in performance_all.items():
+        for resolution, perf in zip(resolutions, performance):
+            for t in title_list:
+                control_perf = perf[t][dr.ABTestGroup.CONTROL]
+                test_perf = perf[t][dr.ABTestGroup.TEST]
+                row = dict(num_procs=nproc, resolution=resolution, sensor_types=t)
+                for metric in metrics:
+                    control_metric = control_perf[metric]
+                    test_metric = test_perf[metric]
+                    if metric_transformer and metric in metric_transformer:
+                        control_metric = metric_transformer[metric](control_metric)
+                        test_metric = metric_transformer[metric](test_metric)
+                    row[f"{metric}_test"] = test_metric
+                    row[f"{metric}_control"] = control_metric
+                rows.append(row)
+
+    return rows, fields
 
 
 args = parser.parse_args()
@@ -203,8 +206,7 @@ if control_val != None:
 else:
     control_val = default_settings[args.feature]
 print(
-    "==== feature %s, control value: %s, test value: %s ===="
-    % (args.feature, control_val, test_val)
+    f"==== feature {args.feature}, control value: {control_val}, test value: {test_val} ===="
 )
 
 benchmark_items = {
@@ -235,44 +237,54 @@ for nprocs in nprocs_tests:
     performance = []
     for resolution in resolutions:
         default_settings["width"] = default_settings["height"] = resolution
-        perf = {}
+        resolution_label = f"{resolution} x {resolution}"
+        per_resolution_perf = {}
         for key, value in benchmark_items.items():
+            per_group_perf = {}
             for g in dr.ABTestGroup:
                 demo_runner = dr.DemoRunner(default_settings, dr.DemoRunnerType.AB_TEST)
-                print(" ---------------------- %s ------------------------ " % key)
+                run_label = f"(nprocs={nprocs}, resolution={resolution_label}, sensors={key}, group={g.name})"
+                print(f"{f' Starting run {run_label} ':-^100}")
                 settings = default_settings.copy()
                 settings.update(value)
                 # set new value before the test group run
                 if g == dr.ABTestGroup.TEST:
                     settings[args.feature] = test_val
-                k = key + "_" + str(g)
-                perf[k] = demo_runner.benchmark(settings, g)
-                print(
-                    " ====== FPS (%d x %d, %s): %0.1f ======"
-                    % (settings["width"], settings["height"], k, perf[k].get("fps"))
-                )
-                if g == dr.ABTestGroup.CONTROL and collect_title_list:
-                    title_list.append(key)
+                per_group_perf[g] = demo_runner.benchmark(settings, g)
+                result = f" FPS {run_label}: {per_group_perf[g]['fps']:.1f} "
+                print(f"{result:-^100}")
+            if collect_title_list:
+                title_list.append(key)
+            per_resolution_perf[key] = per_group_perf
         collect_title_list = False
-        performance.append(perf)
+        performance.append(per_resolution_perf)
 
     performance_all[nprocs] = performance
 
+print_metric(performance_all, resolutions, title_list, metric="fps")
+print_metric(
+    performance_all,
+    resolutions,
+    title_list,
+    metric="frame_time",
+    metric_transformer=seconds_to_ms,
+)
+if args.enable_physics:
+    print_metric(performance_all, resolutions, title_list, metric="avg_sim_step_time")
+
 if args.csv:
     with open(args.csv, "w", newline="") as csv_file:
-        writer = csv.DictWriter(
-            csv_file,
-            fieldnames=[
-                "num_procs",
-                "resolution",
-                "sensor_types",
-                "control_fps",
-                "test_fps",
-                "percent_diff",
-            ],
-        )
-        writer.writeheader()
         print(f"Writing csv results to {args.csv}")
-        output_results(performance_all, title_list, writer)
-else:
-    output_results(performance_all, title_list)
+        metrics = ["fps"]
+        if args.enable_physics:
+            metrics.append("avg_sim_step_time")
+        rows, fields = get_csv_data(
+            performance_all,
+            resolutions,
+            title_list,
+            metrics=metrics,
+            metric_transformer={"avg_sim_step_time": seconds_to_ms},
+        )
+        writer = csv.DictWriter(csv_file, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
