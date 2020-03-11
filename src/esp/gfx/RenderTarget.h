@@ -105,7 +105,7 @@ class RenderTarget {
    * Magnum::PixelFormat::R32UI, @ref Magnum::PixelFormat::R32I, or @ref
    * Magnum::PixelFormat::R16UI
    */
-  void readFrameTriangletId(const Magnum::MutableImageView2D& view);
+  void readFrameTriangleId(const Magnum::MutableImageView2D& view);
 
   /**
    * @brief Blits the rgba buffer from internal FBO to default frame buffer

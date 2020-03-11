@@ -20,6 +20,7 @@
 #include "magnum.h"
 
 #include "esp/gfx/DepthUnprojection.h"
+#include "esp/io/io.h"
 
 #ifdef ESP_BUILD_WITH_CUDA
 #include <cuda_gl_interop.h>
@@ -63,7 +64,7 @@ struct RenderTarget::Impl {
 
     colorBuffer_.setStorage(Mn::GL::RenderbufferFormat::SRGB8Alpha8, size);
     objectIdBuffer_.setStorage(Mn::GL::RenderbufferFormat::R32UI, size);
-    triangleIdBuffer_.setStorage(Mn::GL::RenderbufferFormat::R32Ui, size);
+    triangleIdBuffer_.setStorage(Mn::GL::RenderbufferFormat::R32I, size);
     depthRenderTexture_.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
         .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
         .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
@@ -75,7 +76,8 @@ struct RenderTarget::Impl {
         .attachRenderbuffer(TriangleIdBuffer, triangleIdBuffer_)
         .attachTexture(Mn::GL::Framebuffer::BufferAttachment::Depth,
                        depthRenderTexture_, 0)
-        .mapForDraw({{0, RgbaBuffer}, {1, ObjectIdBuffer}});
+        .mapForDraw(
+            {{0, RgbaBuffer}, {1, ObjectIdBuffer}, {2, TriangleIdBuffer}});
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
         Mn::GL::Framebuffer::Status::Complete);
@@ -116,6 +118,7 @@ struct RenderTarget::Impl {
     framebuffer_.clearDepth(1.0);
     framebuffer_.clearColor(0, Mn::Color4{0, 0, 0, 1});
     framebuffer_.clearColor(1, Mn::Vector4ui{});
+    framebuffer_.clearColor(2, Mn::Vector4ui{});
     framebuffer_.bind();
   }
 
@@ -154,7 +157,7 @@ struct RenderTarget::Impl {
     framebuffer_.mapForRead(ObjectIdBuffer).read(framebuffer_.viewport(), view);
   }
 
-  void readFrameTriangleID(const Mn::MutableImageView2D& view) {
+  void readFrameTriangleId(const Mn::MutableImageView2D& view) {
     framebuffer_.mapForRead(TriangleIdBuffer)
         .read(framebuffer_.viewport(), view);
   }
@@ -263,7 +266,7 @@ struct RenderTarget::Impl {
  private:
   Mn::GL::Renderbuffer colorBuffer_;
   Mn::GL::Renderbuffer objectIdBuffer_;
-  Mn::Gl::RenderBuffer triangleIdBuffer_;
+  Mn::GL::Renderbuffer triangleIdBuffer_;
   Mn::GL::Texture2D depthRenderTexture_;
   Mn::GL::Framebuffer framebuffer_;
 
@@ -308,7 +311,7 @@ void RenderTarget::readFrameObjectId(const Mn::MutableImageView2D& view) {
   pimpl_->readFrameObjectId(view);
 }
 
-void RenderTarget::readFrametriangleId(const Mn::MutableImageView2D& view) {
+void RenderTarget::readFrameTriangleId(const Mn::MutableImageView2D& view) {
   pimpl_->readFrameTriangleId(view);
 }
 

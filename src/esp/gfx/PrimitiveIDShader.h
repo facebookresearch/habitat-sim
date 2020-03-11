@@ -32,13 +32,17 @@ class PrimitiveIDShader : public Magnum::GL::AbstractShaderProgram {
   typedef Magnum::Shaders::Generic3D::Color3 Color3;
   //! @brief object ids
   typedef Magnum::GL::Attribute<5, Magnum::UnsignedInt> ObjectId;
+  //! @brief triangle ids
+  typedef Magnum::GL::Attribute<6, Magnum::Int> TriangleId;
 
   //! Color attachment location per output type
   enum : uint8_t {
     //! color output
     ColorOutput = 0,
     //! object id output
-    ObjectIdOutput = 1
+    ObjectIdOutput = 1,
+    //! triangle ID output
+    TriangleIdOutput = 2,
   };
 
   /**

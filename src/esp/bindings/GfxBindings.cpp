@@ -78,7 +78,7 @@ void initGfxBindings(py::module& m) {
            "Reads RGBA frame into passed img in uint8 byte format.")
       .def("read_frame_depth", &RenderTarget::readFrameDepth)
       .def("read_frame_object_id", &RenderTarget::readFrameObjectId)
-      .def("read_frame_triangle_id", &Rendertarget::readFrameTriangleID)
+      .def("read_frame_triangle_id", &RenderTarget::readFrameTriangleId)
       .def("blit_rgba_to_default", &RenderTarget::blitRgbaToDefault)
 #ifdef ESP_BUILD_WITH_CUDA
       .def("read_frame_rgba_gpu",

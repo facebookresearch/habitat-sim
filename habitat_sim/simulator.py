@@ -383,9 +383,12 @@ class Sensor:
                     dtype=np.float32,
                 )
             elif self._spec.sensor_type == hsim.SensorType.TRIANGLE:
-                self._buffer = np.empty(
-                    (self._spec.resolution[0], self._spec.resolution[1]),
-                    dtype=np.unint32,
+                # self._buffer = np.empty(
+                #     (self._spec.resolution[0], self._spec.resolution[1]),
+                #     dtype=np.uint32,
+                # )
+                self._buffer = np.ones(
+                    (self._spec.resolution[0], self._spec.resolution[1]), dtype=np.int32
                 )
             else:
                 self._buffer = np.empty(
@@ -470,8 +473,9 @@ class Sensor:
                     mn.MutableImageView2D(mn.PixelFormat.R32F, size, self._buffer)
                 )
             elif self._spec.sensor_type == hsim.SensorType.TRIANGLE:
-                tgt.read_frame_triangle(
-                    mn.MutableImageView2D(mnPixelFormet.R32UI, size, self._buffer)
+                print("in get observation")
+                tgt.read_frame_triangle_id(
+                    mn.MutableImageView2D(mn.PixelFormat.R32UI, size, self._buffer)
                 )
             else:
                 tgt.read_frame_rgba(

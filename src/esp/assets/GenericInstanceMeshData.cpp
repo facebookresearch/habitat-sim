@@ -261,7 +261,9 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
           1,
           gfx::PrimitiveIDShader::ObjectId{
               gfx::PrimitiveIDShader::ObjectId::DataType::UnsignedShort},
-          2)
+          2,
+          gfx::PrimitiveIDShader::TriangleId{
+              gfx::PrimitiveIDShader::TriangleId::DataType::Int})
       .setIndexBuffer(std::move(indices), 0,
                       Mn::GL::MeshIndexType::UnsignedInt);
 
