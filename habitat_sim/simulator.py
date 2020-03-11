@@ -477,7 +477,7 @@ class Sensor:
                 )
             elif self._spec.sensor_type == hsim.SensorType.TRIANGLE:
                 tgt.read_frame_triangle_id(
-                    mn.MutableImageView2D(mn.PixelFormat.R32UI, size, self._buffer)
+                    mn.MutableImageView2D(mn.PixelFormat.R32I, size, self._buffer)
                 )
             else:
                 tgt.read_frame_rgba(
