@@ -75,6 +75,15 @@ void initSceneBindings(py::module& m) {
       .def(
           "create_child", [](SceneNode& self) { return &self.createChild(); },
           R"(Creates a child node, and sets its parent to the current node.)")
+      .def(
+          "compute_cumulative_bb", &SceneNode::computeCumulativeBB,
+          R"(Recursively compute the approximate axis aligned bounding boxes of the SceneGraph sub-tree rooted at this node.)")
+      .def_property_readonly(
+          "cumulative_bb", &SceneNode::getCumulativeBB,
+          R"(The approximate axis aligned bounding box of the SceneGraph sub-tree rooted at this node.)")
+      .def_property_readonly(
+          "mesh_bb", &SceneNode::getMeshBB,
+          R"(The axis aligned bounding box of the mesh drawables attached to this node.)")
       .def_property_readonly("absolute_translation",
                              &SceneNode::absoluteTranslation);
 

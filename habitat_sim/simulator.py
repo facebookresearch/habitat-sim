@@ -15,8 +15,9 @@ import numpy as np
 import habitat_sim.bindings as hsim
 import habitat_sim.errors
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
+from habitat_sim.gfx import DEFAULT_LIGHTING_KEY
 from habitat_sim.logging import logger
-from habitat_sim.nav import GreedyGeodesicFollower
+from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings
 from habitat_sim.physics import MotionType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.utils.common import quat_from_angle_axis
@@ -145,6 +146,21 @@ class Simulator:
                 f"Could not find navmesh {navmesh_filenname}, no collision checking will be done"
             )
 
+        agent_legacy_config = AgentConfiguration()
+        default_agent_config = config.agents[config.sim_cfg.default_agent_id]
+        if not np.isclose(
+            agent_legacy_config.radius, default_agent_config.radius
+        ) or not np.isclose(agent_legacy_config.height, default_agent_config.height):
+            logger.info(
+                f"Recomputing navmesh for agent's height {default_agent_config.height} and radius"
+                f" {default_agent_config.radius}."
+            )
+            navmesh_settings = NavMeshSettings()
+            navmesh_settings.set_defaults()
+            navmesh_settings.agent_radius = default_agent_config.radius
+            navmesh_settings.agent_height = default_agent_config.height
+            self.recompute_navmesh(self.pathfinder, navmesh_settings)
+
     def reconfigure(self, config: Configuration):
         assert len(config.agents) > 0
 
@@ -162,7 +178,7 @@ class Simulator:
         self._config_backend(config)
         self._config_agents(config)
         self._config_pathfinder(config)
-
+        self._sim.frustum_culling = config.sim_cfg.frustum_culling
         for i in range(len(self.agents)):
             self.agents[i].controls.move_filter_fn = self._step_filter
 
@@ -258,14 +274,21 @@ class Simulator:
         self.close()
 
     # --- physics functions ---
-    def add_object(self, object_lib_index):
-        return self._sim.add_object(object_lib_index)
+    def add_object(
+        self,
+        object_lib_index,
+        attachment_node=None,
+        light_setup_key=DEFAULT_LIGHTING_KEY,
+    ):
+        return self._sim.add_object(object_lib_index, attachment_node, light_setup_key)
 
     def get_physics_object_library_size(self):
         return self._sim.get_physics_object_library_size()
 
-    def remove_object(self, object_id):
-        return self._sim.remove_object(object_id)
+    def remove_object(
+        self, object_id, delete_object_node=True, delete_visual_node=True
+    ):
+        self._sim.remove_object(object_id, delete_object_node, delete_visual_node)
 
     def get_existing_object_ids(self, scene_id=0):
         return self._sim.get_existing_object_ids(scene_id)
@@ -308,6 +331,16 @@ class Simulator:
 
     def recompute_navmesh(self, pathfinder, navmesh_settings):
         return self._sim.recompute_navmesh(pathfinder, navmesh_settings)
+
+    # --- lighting functions ---
+    def get_light_setup(self, key=DEFAULT_LIGHTING_KEY):
+        return self._sim.get_light_setup(key)
+
+    def set_light_setup(self, light_setup, key=DEFAULT_LIGHTING_KEY):
+        self._sim.set_light_setup(light_setup, key)
+
+    def set_object_light_setup(self, object_id, light_setup_key, scene_id=0):
+        self._sim.set_object_light_setup(object_id, light_setup_key, scene_id)
 
 
 class Sensor:
@@ -416,7 +449,9 @@ class Sensor:
         agent_node.parent = scene.get_root_node()
 
         with self._sensor_object.render_target as tgt:
-            self._sim.renderer.draw(self._sensor_object, scene)
+            self._sim.renderer.draw(
+                self._sensor_object, scene, self._sim.frustum_culling
+            )
 
     def get_observation(self):
 

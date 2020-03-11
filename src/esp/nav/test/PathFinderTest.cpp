@@ -24,10 +24,16 @@ struct PathFinderTest : Cr::TestSuite::Tester {
 
   void bounds();
   void tryStepNoSliding();
+  void multiGoalPath();
+
+  void pathFindBenchmark();
 };
 
 PathFinderTest::PathFinderTest() {
-  addTests({&PathFinderTest::bounds, &PathFinderTest::tryStepNoSliding});
+  addTests({&PathFinderTest::bounds, &PathFinderTest::tryStepNoSliding,
+            &PathFinderTest::multiGoalPath});
+
+  addInstancedBenchmarks({&PathFinderTest::pathFindBenchmark}, 1000, 2);
 }
 
 void PathFinderTest::bounds() {
@@ -69,6 +75,67 @@ void PathFinderTest::tryStepNoSliding() {
 
       pos = actualEnd;
     }
+  }
+}
+
+void PathFinderTest::multiGoalPath() {
+  esp::nav::PathFinder pathFinder;
+  pathFinder.loadNavMesh(skokloster);
+  CORRADE_VERIFY(pathFinder.isLoaded());
+  pathFinder.seed(0);
+
+  for (int __j = 0; __j < 1000; ++__j) {
+    std::vector<esp::vec3f> points;
+    for (int i = 0; i < 10; ++i) {
+      points.emplace_back(pathFinder.getRandomNavigablePoint());
+    }
+
+    esp::nav::MultiGoalShortestPath multiPath;
+    multiPath.requestedStart = points[0];
+    multiPath.requestedEnds = {points.begin() + 1, points.end()};
+
+    CORRADE_VERIFY(pathFinder.findPath(multiPath));
+
+    esp::nav::MultiGoalShortestPath path;
+    path.requestedStart = points[0];
+    float trueMinDist = 1e5;
+    for (int i = 1; i < points.size(); ++i) {
+      path.requestedEnds = {points[i]};
+
+      CORRADE_VERIFY(pathFinder.findPath(path));
+
+      trueMinDist = std::min(trueMinDist, path.geodesicDistance);
+    }
+
+    CORRADE_COMPARE(multiPath.geodesicDistance, trueMinDist);
+  }
+}
+
+void PathFinderTest::pathFindBenchmark() {
+  esp::nav::PathFinder pathFinder;
+  pathFinder.loadNavMesh(skokloster);
+  CORRADE_VERIFY(pathFinder.isLoaded());
+
+  if (testCaseInstanceId() == 0) {
+    setTestCaseDescription("Path to single point");
+    esp::nav::ShortestPath path;
+    path.requestedStart = pathFinder.getRandomNavigablePoint();
+    path.requestedEnd = pathFinder.getRandomNavigablePoint();
+
+    bool status;
+    CORRADE_BENCHMARK(5) { status = pathFinder.findPath(path); };
+    CORRADE_VERIFY(status);
+  } else {
+    setTestCaseDescription("Path to closest of 100");
+    esp::nav::MultiGoalShortestPath path;
+    path.requestedStart = pathFinder.getRandomNavigablePoint();
+    for (int i = 0; i < 100; ++i) {
+      path.requestedEnds.emplace_back(pathFinder.getRandomNavigablePoint());
+    }
+
+    bool status;
+    CORRADE_BENCHMARK(5) { status = pathFinder.findPath(path); };
+    CORRADE_VERIFY(status);
   }
 }
 

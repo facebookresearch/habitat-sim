@@ -27,7 +27,10 @@ test("viewer rendering should match the snapshot", async () => {
 
   closeBrowserAndServer(browser, server);
   expect(screenshot).toMatchImageSnapshot({
-    failureThreshold: 0.1,
+    // Different GPUs and different driver version will produce slightly
+    // different images; differences on aliased edges may also stem from how
+    // a particular importer parses transforms
+    failureThreshold: 0.15,
     failureThresholdType: "percent"
   });
 });

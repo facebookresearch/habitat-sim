@@ -24,13 +24,11 @@
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
+#include "esp/assets/ResourceManager.h"
+#include "esp/gfx/DrawableGroup.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
-
-namespace assets {
-class ResourceManager;
-}
 
 //! core physics simulation namespace
 namespace physics {
@@ -121,7 +119,7 @@ class PhysicsManager {
   };
 
   /** @brief Stores references to a set of drawable elements. */
-  using DrawableGroup = Magnum::SceneGraph::DrawableGroup3D;
+  using DrawableGroup = gfx::DrawableGroup;
 
   /**
    * @brief Initialize static scene collision geometry from loaded mesh data.
@@ -145,33 +143,50 @@ class PhysicsManager {
    * esp::assets::ResourceManager::physicsObjectLibrary_
    *  @param drawables Reference to the scene graph drawables group to enable
    * rendering of the newly initialized object.
+   *  @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  int addObject(const std::string& configFile, DrawableGroup* drawables);
+  int addObject(const std::string& configFile,
+                DrawableGroup* drawables,
+                scene::SceneNode* attachmentNode = nullptr,
+                const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+                    assets::ResourceManager::DEFAULT_LIGHTING_KEY});
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::assets::ResourceManager::physicsObjectLibrary_ by object
-   * library index. Queries the properties filename and calls @ref
-   * addObject(const std::string& configFile, DrawableGroup* drawables).
+   * library index.
    *  @param objectLibIndex The index of the object's template in @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_
    *  @param drawables Reference to the scene graph drawables group to enable
    * rendering of the newly initialized object.
+   *  @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  virtual int addObject(const int objectLibIndex, DrawableGroup* drawables);
+  virtual int addObject(
+      const int objectLibIndex,
+      DrawableGroup* drawables,
+      scene::SceneNode* attachmentNode = nullptr,
+      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+          assets::ResourceManager::DEFAULT_LIGHTING_KEY});
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref
    * PhysicsManager::existingObjects_.
    *  @param physObjectID The ID (key) of the object instance in @ref
    * PhysicsManager::existingObjects_.
-   *  @return the removed object's ID previously mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   * @param deleteObjectNode If true, deletes the object's scene node. Otherwise
+   * detaches the object from simulation.
+   * @param deleteVisualNode If true, deletes the object's visual node.
+   * Otherwise detaches the object from simulation. Is not considered if
+   * deleteObjectNode==true.
    */
-  virtual int removeObject(const int physObjectID);
+  virtual void removeObject(const int physObjectID,
+                            bool deleteObjectNode = true,
+                            bool deleteVisualNode = true);
 
   /** @brief Get the number of objects mapped in @ref
    * PhysicsManager::existingObjects_.
@@ -256,13 +271,13 @@ class PhysicsManager {
   // =========== Scene Getter/Setter functions ===========
 
   /** @brief Get the current friction coefficient of the scene collision
-   * geometry. See @ref sceneNode_.
+   * geometry. See @ref staticSceneObject_.
    * @return The scalar friction coefficient of the scene geometry.
    */
   virtual double getSceneFrictionCoefficient() const { return 0.0; };
 
   /** @brief Set the friction coefficient of the scene collision geometry. See
-   * @ref sceneNode_.
+   * @ref staticSceneObject_.
    * @param frictionCoefficient The scalar friction coefficient of the scene
    * geometry.
    */
@@ -271,15 +286,15 @@ class PhysicsManager {
 
   /** @brief Get the current coefficient of restitution for the scene collision
    * geometry. This determines the ratio of initial to final relative velocity
-   * between the scene and collidiing object. See @ref sceneNode_. By default
-   * this will always return 0, since kinametic scenes have no dynamics.
+   * between the scene and collidiing object. See @ref staticSceneObject_. By
+   * default this will always return 0, since kinametic scenes have no dynamics.
    * @return The scalar coefficient of restitution for the scene geometry.
    */
   virtual double getSceneRestitutionCoefficient() const { return 0.0; };
 
   /** @brief Set the coefficient of restitution for the scene collision
-   * geometry. See @ref sceneNode_. By default does nothing since kinametic
-   * scenes have no dynamics.
+   * geometry. See @ref staticSceneObject_. By default does nothing since
+   * kinametic scenes have no dynamics.
    * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
   virtual void setSceneRestitutionCoefficient(
@@ -678,6 +693,56 @@ class PhysicsManager {
   void applyImpulseTorque(const int physObjectID,
                           const Magnum::Vector3& impulse);
 
+  /**
+   * @brief Set linear velocity for an object with @ref MotionType::DYNAMIC.
+   *
+   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param linVel Linear velocity to set.
+   */
+  void setLinearVelocity(const int physObjectID, const Magnum::Vector3& linVel);
+
+  /**
+   * @brief Set angular velocity for an object with @ref MotionType::DYNAMIC.
+   *
+   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param angVel Angular velocity vector corresponding to world unit axis
+   * angles.
+   */
+  void setAngularVelocity(const int physObjectID,
+                          const Magnum::Vector3& angVel);
+
+  /**
+   * @brief Get linear velocity of an object with @ref MotionType::DYNAMIC.
+   *
+   * Always zero for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Linear velocity of the object.
+   */
+  Magnum::Vector3 getLinearVelocity(const int physObjectID) const;
+
+  /**
+   * @brief Get angular velocity of an object with @ref MotionType::DYNAMIC.
+   *
+   * Always zero for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Angular velocity vector corresponding to world unit axis angles.
+   */
+  Magnum::Vector3 getAngularVelocity(const int physObjectID) const;
+
+  /**@brief Retrieves a reference to the VelocityControl struct for this object.
+   */
+  VelocityControl& getVelocityControl(const int physObjectID);
+
   /** @brief Set bounding box rendering for the object true or false.
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
@@ -693,7 +758,10 @@ class PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @return Const reference to the object scene node.
    */
-  const scene::SceneNode& getObjectSceneNode(int physObjectID);
+  const scene::SceneNode& getObjectSceneNode(int physObjectID) const;
+
+  /** @overload */
+  scene::SceneNode& getObjectSceneNode(int physObjectID);
 
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref
@@ -765,10 +833,14 @@ class PhysicsManager {
    * @param meshGroup The object's mesh.
    * @param physicsObjectAttributes The physical object's template defining its
    * physical parameters.
+   * @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   * @return The id of the newly allocated object in @ref existingObjects_
    */
   virtual int makeRigidObject(
       const std::vector<assets::CollisionMeshData>& meshGroup,
-      assets::PhysicsObjectAttributes physicsObjectAttributes);
+      assets::PhysicsObjectAttributes physicsObjectAttributes,
+      scene::SceneNode* attachmentNode = nullptr);
 
   /** @brief A pointer to a @ref esp::assets::ResourceManager which holds assets
    * that can be accessed by this @ref PhysicsManager*/
@@ -788,24 +860,20 @@ class PhysicsManager {
 
   /**
    * @brief The @ref scene::SceneNode which represents the static collision
-   * geometry of the physical world. Only one @ref sceneNode_ may exist in a
-   * physical world. This @ref RigidObject can only have @ref MotionType::STATIC
-   * as it is loaded as static geometry with simulation efficiency in mind. See
+   * geometry of the physical world. Only one @ref staticSceneObject_ may exist
+   * in a physical world. This @ref RigidObject can only have @ref
+   * MotionType::STATIC as it is loaded as static geometry with simulation
+   * efficiency in mind. See
    * @ref addScene.
    * */
-  physics::RigidObject* sceneNode_ = nullptr;
+  physics::RigidObject::uptr staticSceneObject_ = nullptr;
 
   //! ==== Rigid object memory management ====
 
   /** @brief Maps object IDs to all existing physical object instances in the
    * world.
-   * @ref PhysicsManager does not own a @ref RigidObject.
-   * The @ref scene::SceneGraph has complete ownership over all @ref
-   * scene::SceneNode objects.
-   * As such, this structure should be cleared before the @ref scene::SceneGraph
-   * owning the objects or this structure will likely contain null object
-   * pointers. */
-  std::map<int, physics::RigidObject*> existingObjects_;
+   */
+  std::map<int, physics::RigidObject::uptr> existingObjects_;
 
   /** @brief A counter of unique object ID's allocated thus far. Used to
    * allocate new IDs when  @ref recycledObjectIDs_ is empty without needing to

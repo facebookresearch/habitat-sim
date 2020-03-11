@@ -12,6 +12,13 @@
 namespace esp {
 namespace physics {
 
+BulletPhysicsManager::~BulletPhysicsManager() {
+  LOG(INFO) << "Deconstructing BulletPhysicsManager";
+
+  existingObjects_.clear();
+  staticSceneObject_.reset(nullptr);
+}
+
 bool BulletPhysicsManager::initPhysics(
     scene::SceneNode* node,
     const assets::PhysicsManagerAttributes& physicsManagerAttributes) {
@@ -20,7 +27,7 @@ bool BulletPhysicsManager::initPhysics(
   //! We can potentially use other collision checking algorithms, by
   //! uncommenting the line below
   // btGImpactCollisionAlgorithm::registerAlgorithm(&bDispatcher_);
-  bWorld_ = std::make_shared<btDiscreteDynamicsWorld>(
+  bWorld_ = std::make_shared<btMultiBodyDynamicsWorld>(
       &bDispatcher_, &bBroadphase_, &bSolver_, &bCollisionConfig_);
 
   debugDrawer_.setMode(
@@ -36,19 +43,11 @@ bool BulletPhysicsManager::initPhysics(
 
   physicsNode_ = node;
   //! Create new scene node
-  sceneNode_ = static_cast<RigidObject*>(new BulletRigidObject(physicsNode_));
+  staticSceneObject_ =
+      std::make_unique<BulletRigidObject>(&physicsNode_->createChild());
 
   initialized_ = true;
   return true;
-}
-
-BulletPhysicsManager::~BulletPhysicsManager() {
-  // remove all leftover physical objects
-  for (auto& bro : existingObjects_) {
-    bro.second->removeObject();
-  }
-  // remove the physical scene from the world
-  sceneNode_->removeObject();
 }
 
 // Bullet Mesh conversion adapted from:
@@ -67,7 +66,7 @@ bool BulletPhysicsManager::addScene(
       physicsSceneAttributes.getString("collisionMeshHandle"));
 
   //! Initialize scene
-  bool sceneSuccess = static_cast<BulletRigidObject*>(sceneNode_)
+  bool sceneSuccess = static_cast<BulletRigidObject*>(staticSceneObject_.get())
                           ->initializeScene(physicsSceneAttributes, metaData,
                                             meshGroup, bWorld_);
 
@@ -76,15 +75,23 @@ bool BulletPhysicsManager::addScene(
 
 int BulletPhysicsManager::makeRigidObject(
     const std::vector<assets::CollisionMeshData>& meshGroup,
-    assets::PhysicsObjectAttributes physicsObjectAttributes) {
-  //! Create new physics object (child node of sceneNode_)
+    assets::PhysicsObjectAttributes physicsObjectAttributes,
+    scene::SceneNode* attachmentNode) {
+  //! Create new physics object (child node of staticSceneObject_)
   int newObjectID = allocateObjectID();
-  existingObjects_[newObjectID] = new BulletRigidObject(sceneNode_);
+
+  scene::SceneNode* objectNode = attachmentNode;
+  if (attachmentNode == nullptr) {
+    objectNode = &staticSceneObject_->node().createChild();
+  }
+
+  existingObjects_[newObjectID] =
+      std::make_unique<BulletRigidObject>(objectNode);
 
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
       physicsObjectAttributes.getString("collisionMeshHandle"));
   bool objectSuccess =
-      static_cast<BulletRigidObject*>(existingObjects_.at(newObjectID))
+      static_cast<BulletRigidObject*>(existingObjects_.at(newObjectID).get())
           ->initializeObject(physicsObjectAttributes, bWorld_, metaData,
                              meshGroup);
 
@@ -92,21 +99,26 @@ int BulletPhysicsManager::makeRigidObject(
     LOG(ERROR) << "Object load failed";
     deallocateObjectID(newObjectID);
     existingObjects_.erase(newObjectID);
-    return -1;
+    if (attachmentNode == nullptr)
+      delete objectNode;
+    return ID_UNDEFINED;
   }
   return newObjectID;
 }
 
 int BulletPhysicsManager::addObject(const int objectLibIndex,
-                                    DrawableGroup* drawables) {
+                                    DrawableGroup* drawables,
+                                    scene::SceneNode* attachmentNode,
+                                    const Magnum::ResourceKey& lightSetup) {
   // Do default load first (adds the SceneNode to the SceneGraph and computes
   // the cumulativeBB_)
-  int objID = PhysicsManager::addObject(objectLibIndex, drawables);
+  int objID = PhysicsManager::addObject(objectLibIndex, drawables,
+                                        attachmentNode, lightSetup);
 
   // Then set the collision shape to the cumulativeBB_ if necessary
   if (objID != ID_UNDEFINED) {
     BulletRigidObject* bro =
-        static_cast<BulletRigidObject*>(existingObjects_.at(objID));
+        static_cast<BulletRigidObject*>(existingObjects_.at(objID).get());
     if (bro->isUsingBBCollisionShape()) {
       bro->setCollisionFromBB();
     }
@@ -151,7 +163,7 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
 void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   bWorld_->setGravity(btVector3(gravity));
   // After gravity change, need to reactive all bullet objects
-  for (std::map<int, physics::RigidObject*>::iterator it =
+  for (std::map<int, physics::RigidObject::uptr>::iterator it =
            existingObjects_.begin();
        it != existingObjects_.end(); ++it) {
     it->second->setActive();
@@ -171,6 +183,40 @@ void BulletPhysicsManager::stepPhysics(double dt) {
     dt = fixedTimeStep_;
   }
 
+  // set specified control velocities
+  for (auto& objectItr : existingObjects_) {
+    VelocityControl& velControl = objectItr.second->getVelocityControl();
+    if (objectItr.second->getMotionType() == MotionType::KINEMATIC) {
+      // kinematic velocity control intergration
+      if (velControl.controllingAngVel || velControl.controllingLinVel) {
+        scene::SceneNode& objectSceneNode = objectItr.second->node();
+        objectSceneNode.setTransformation(velControl.integrateTransform(
+            dt, objectSceneNode.transformation()));
+        objectItr.second->setActive();
+      }
+    } else if (objectItr.second->getMotionType() == MotionType::DYNAMIC) {
+      if (velControl.controllingLinVel) {
+        if (velControl.linVelIsLocal) {
+          setLinearVelocity(objectItr.first,
+                            objectItr.second->node().rotation().transformVector(
+                                velControl.linVel));
+        } else {
+          setLinearVelocity(objectItr.first, velControl.linVel);
+        }
+      }
+      if (velControl.controllingAngVel) {
+        if (velControl.angVelIsLocal) {
+          setAngularVelocity(
+              objectItr.first,
+              objectItr.second->node().rotation().transformVector(
+                  velControl.angVel));
+        } else {
+          setAngularVelocity(objectItr.first, velControl.angVel);
+        }
+      }
+    }
+  }
+
   // ==== Physics stepforward ======
   // NOTE: worldTime_ will always be a multiple of sceneMetaData_.timestep
   int numSubStepsTaken =
@@ -181,46 +227,46 @@ void BulletPhysicsManager::stepPhysics(double dt) {
 void BulletPhysicsManager::setMargin(const int physObjectID,
                                      const double margin) {
   assertIDValidity(physObjectID);
-  static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+  static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID).get())
       ->setMargin(margin);
 }
 
 void BulletPhysicsManager::setSceneFrictionCoefficient(
     const double frictionCoefficient) {
-  static_cast<BulletRigidObject*>(sceneNode_)
-      ->setFrictionCoefficient(frictionCoefficient);
+  staticSceneObject_->setFrictionCoefficient(frictionCoefficient);
 }
 
 void BulletPhysicsManager::setSceneRestitutionCoefficient(
     const double restitutionCoefficient) {
-  static_cast<BulletRigidObject*>(sceneNode_)
-      ->setRestitutionCoefficient(restitutionCoefficient);
+  staticSceneObject_->setRestitutionCoefficient(restitutionCoefficient);
 }
 
 double BulletPhysicsManager::getMargin(const int physObjectID) const {
   assertIDValidity(physObjectID);
-  return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+  return static_cast<BulletRigidObject*>(
+             existingObjects_.at(physObjectID).get())
       ->getMargin();
 }
 
 double BulletPhysicsManager::getSceneFrictionCoefficient() const {
-  return static_cast<BulletRigidObject*>(sceneNode_)->getFrictionCoefficient();
+  return staticSceneObject_->getFrictionCoefficient();
 }
 
 double BulletPhysicsManager::getSceneRestitutionCoefficient() const {
-  return static_cast<BulletRigidObject*>(sceneNode_)
-      ->getRestitutionCoefficient();
+  return staticSceneObject_->getRestitutionCoefficient();
 }
 
 const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
     const int physObjectID) const {
   assertIDValidity(physObjectID);
-  return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+  return static_cast<BulletRigidObject*>(
+             existingObjects_.at(physObjectID).get())
       ->getCollisionShapeAabb();
 }
 
 const Magnum::Range3D BulletPhysicsManager::getSceneCollisionShapeAabb() const {
-  return static_cast<BulletRigidObject*>(sceneNode_)->getCollisionShapeAabb();
+  return static_cast<BulletRigidObject*>(staticSceneObject_.get())
+      ->getCollisionShapeAabb();
 }
 
 void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
@@ -231,7 +277,8 @@ void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
 bool BulletPhysicsManager::contactTest(const int physObjectID) {
   assertIDValidity(physObjectID);
   bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
-  return static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID))
+  return static_cast<BulletRigidObject*>(
+             existingObjects_.at(physObjectID).get())
       ->contactTest();
 }
 

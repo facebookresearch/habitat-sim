@@ -5,7 +5,7 @@
 #pragma once
 
 #include "Drawable.h"
-#include "PTexMeshShader.h"
+#include "esp/gfx/ShaderManager.h"
 
 namespace esp {
 namespace assets {
@@ -17,12 +17,13 @@ class PTexMeshShader;
 
 class PTexMeshDrawable : public Drawable {
  public:
-  explicit PTexMeshDrawable(
-      scene::SceneNode& node,
-      PTexMeshShader& shader,
-      assets::PTexMeshData& ptexMeshData,
-      int submeshID,
-      Magnum::SceneGraph::DrawableGroup3D* group = nullptr);
+  explicit PTexMeshDrawable(scene::SceneNode& node,
+                            assets::PTexMeshData& ptexMeshData,
+                            int submeshID,
+                            ShaderManager& shaderManager,
+                            DrawableGroup* group = nullptr);
+
+  static constexpr char SHADER_KEY[] = "PTexMeshShader";
 
  protected:
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
@@ -36,6 +37,7 @@ class PTexMeshDrawable : public Drawable {
   float exposure_;
   float gamma_;
   float saturation_;
+  PTexMeshShader* shader_ = nullptr;
 };
 
 }  // namespace gfx

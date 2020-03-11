@@ -5,18 +5,20 @@
 #include "PTexMeshDrawable.h"
 
 #include "esp/assets/PTexMeshData.h"
+#include "esp/gfx/PTexMeshShader.h"
 
 namespace esp {
 namespace gfx {
 
-PTexMeshDrawable::PTexMeshDrawable(
-    scene::SceneNode& node,
-    PTexMeshShader& shader,
-    assets::PTexMeshData& ptexMeshData,
-    int submeshID,
-    Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */)
-    : Drawable{node, shader, ptexMeshData.getRenderingBuffer(submeshID)->mesh,
-               group},
+// static constexpr arrays require redundant definitions until C++17
+constexpr char PTexMeshDrawable::SHADER_KEY[];
+
+PTexMeshDrawable::PTexMeshDrawable(scene::SceneNode& node,
+                                   assets::PTexMeshData& ptexMeshData,
+                                   int submeshID,
+                                   ShaderManager& shaderManager,
+                                   DrawableGroup* group /* = nullptr */)
+    : Drawable{node, ptexMeshData.getRenderingBuffer(submeshID)->mesh, group},
       atlasTexture_(ptexMeshData.getRenderingBuffer(submeshID)->atlasTexture),
 #ifndef CORRADE_TARGET_APPLE
       adjFacesBufferTexture_(
@@ -26,12 +28,21 @@ PTexMeshDrawable::PTexMeshDrawable(
       exposure_(ptexMeshData.exposure()),
       gamma_(ptexMeshData.gamma()),
       saturation_(ptexMeshData.saturation()) {
+  auto shaderResource =
+      shaderManager.get<Magnum::GL::AbstractShaderProgram, PTexMeshShader>(
+          SHADER_KEY);
+
+  if (!shaderResource) {
+    shaderManager.set<Magnum::GL::AbstractShaderProgram>(shaderResource.key(),
+                                                         new PTexMeshShader{});
+  }
+  shader_ = &(*shaderResource);
 }
 
 void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                             Magnum::SceneGraph::Camera3D& camera) {
-  PTexMeshShader& ptexMeshShader = static_cast<PTexMeshShader&>(shader_);
-  ptexMeshShader.setExposure(exposure_)
+  (*shader_)
+      .setExposure(exposure_)
       .setGamma(gamma_)
       .setSaturation(saturation_)
       .setAtlasTextureSize(atlasTexture_, tileSize_)
@@ -40,7 +51,7 @@ void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
       .bindAdjFacesBufferTexture(adjFacesBufferTexture_)
 #endif
       .setMVPMatrix(camera.projectionMatrix() * transformationMatrix);
-  mesh_.draw(ptexMeshShader);
+  mesh_.draw(*shader_);
 }
 
 }  // namespace gfx
