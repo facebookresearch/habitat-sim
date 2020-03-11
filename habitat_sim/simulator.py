@@ -473,7 +473,6 @@ class Sensor:
                     mn.MutableImageView2D(mn.PixelFormat.R32F, size, self._buffer)
                 )
             elif self._spec.sensor_type == hsim.SensorType.TRIANGLE:
-                print("in get observation")
                 tgt.read_frame_triangle_id(
                     mn.MutableImageView2D(mn.PixelFormat.R32UI, size, self._buffer)
                 )

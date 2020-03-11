@@ -118,7 +118,7 @@ struct RenderTarget::Impl {
     framebuffer_.clearDepth(1.0);
     framebuffer_.clearColor(0, Mn::Color4{0, 0, 0, 1});
     framebuffer_.clearColor(1, Mn::Vector4ui{});
-    framebuffer_.clearColor(2, Mn::Vector4ui{});
+    framebuffer_.clearColor(2, Mn::Vector4i{});
     framebuffer_.bind();
   }
 

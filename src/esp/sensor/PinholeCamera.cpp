@@ -108,7 +108,7 @@ void PinholeCamera::drawObservation(sim::Simulator& sim) {
   renderTarget().renderEnter();
 
   gfx::Renderer::ptr renderer = sim.getRenderer();
-  if (spec_->sensorType == SensorType::SEMANTIC) {
+  if (spec_->sensorType == SensorType::SEMANTIC || spec_->sensorType == SensorType::TRIANGLE) {
     // TODO: check sim has semantic scene graph
     renderer->draw(*this, sim.getActiveSemanticSceneGraph());
   } else {
