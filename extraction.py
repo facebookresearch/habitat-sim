@@ -30,7 +30,8 @@ import habitat_sim
 # for sample in extractor[21:28]:
 #     display_sample(sample)
 
-test_scene = "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
+#test_scene = "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
+test_scene = "/datasets01/mp3d/073118/v1/habitat/17DRP5sb8fy/17DRP5sb8fy.glb"
 
 sim_settings = {
     "width": 256,  # Spatial resolution of the observations
