@@ -79,7 +79,6 @@ class InstanceVisualizer:
             H, W = masks.shape[2:]
 
             # Instead of T/F for each mask, use Class_label/0
-            visual = np.zeros((H, W))
             for i, mask in enumerate(masks):
                 np.putmask(masks[i], mask, labels[i])
 
@@ -92,24 +91,28 @@ class InstanceVisualizer:
             cpu_device = torch.device("cpu")
             visuals = {}
             num_out_so_far = 1
-            for image, targets in self.dataloader:
-                image = list(img.to(self.device) for img in image)
+            for images, targets in self.dataloader:
+                images = list(img.to(self.device) for img in images)
                 targets = [
                     {k: v.to(self.device) for k, v in t.items()} for t in targets
                 ]
 
                 torch.cuda.synchronize()
-                outputs = self.model(image)
+                outputs = self.model(images)
                 outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
                 res = {
                     target["image_id"].item(): output
                     for target, output in zip(targets, outputs)
                 }
+                rgbs = {
+                    target["image_id"].item(): images[i] for i, target in enumerate(targets) 
+                }
                 for image_id in res.keys():
                     masks = res[image_id]["masks"].numpy() >= 0.5
                     labels = res[image_id]["labels"].numpy()
                     visual = visual_filter(masks, labels, segment_type)
-                    visuals[image_id] = visual
+                    rgb = rgbs[image_id].cpu().permute(1, 2, 0).numpy()
+                    visuals[image_id] = (rgb, visual)
 
                 if num_out_so_far == max_num_outputs:
                     break

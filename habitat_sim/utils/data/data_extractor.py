@@ -66,8 +66,8 @@ class ImageExtractor:
         assert extraction_method in ["closest", "panorama"]
         self.scene_filepaths = None
         self.cur_fp = None
-        if os.path.isdir(scene_filepath):
-            self.scene_filepaths = search_dir_tree_for_ext(scene_filepath, ".glb")
+        if type(scene_filepath) == list:
+            self.scene_filepaths = scene_filepath
         else:
             self.scene_filepaths = [scene_filepath]
             self.cur_fp = scene_filepath
