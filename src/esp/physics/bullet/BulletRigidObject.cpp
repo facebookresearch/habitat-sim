@@ -86,26 +86,31 @@ void BulletRigidObject::constructBulletSceneFromMeshes(
     bulletMesh.m_vertexStride = sizeof(Magnum::Vector3);
     bulletMesh.m_indexType = PHY_INTEGER;
     bulletMesh.m_vertexType = PHY_FLOAT;
-    bSceneArrays_.push_back(std::make_unique<btTriangleIndexVertexArray>());
-    bSceneArrays_.back()->addIndexedMesh(bulletMesh,
-                                         PHY_INTEGER);  // exact shape
+    std::unique_ptr<btTriangleIndexVertexArray> indexedVertexArray =
+        std::make_unique<btTriangleIndexVertexArray>();
+    indexedVertexArray->addIndexedMesh(bulletMesh, PHY_INTEGER);  // exact shape
 
     //! Embed 3D mesh into bullet shape
     //! btBvhTriangleMeshShape is the most generic/slow choice
     //! which allows concavity if the object is static
-    bSceneShapes_.emplace_back(std::make_unique<btBvhTriangleMeshShape>(
-        bSceneArrays_.back().get(), true));
-    bSceneShapes_.back()->setMargin(0.0);
-    bSceneShapes_.back()->setLocalScaling(
+    std::unique_ptr<btBvhTriangleMeshShape> meshShape =
+        std::make_unique<btBvhTriangleMeshShape>(indexedVertexArray.get(),
+                                                 true);
+    meshShape->setMargin(0.0);
+    meshShape->setLocalScaling(
         btVector3{transformFromLocalToWorld
                       .scaling()});  // scale is a property of the shape
-    bSceneCollisionObjects_.emplace_back(std::make_unique<btCollisionObject>());
-    bSceneCollisionObjects_.back()->setCollisionShape(
-        bSceneShapes_.back().get());
+    std::unique_ptr<btCollisionObject> sceneCollisionObject =
+        std::make_unique<btCollisionObject>();
+    sceneCollisionObject->setCollisionShape(meshShape.get());
     // rotation|translation are properties of the object
-    bSceneCollisionObjects_.back()->setWorldTransform(
+    sceneCollisionObject->setWorldTransform(
         btTransform{btMatrix3x3{transformFromLocalToWorld.rotation()},
                     btVector3{transformFromLocalToWorld.translation()}});
+
+    bSceneArrays_.emplace_back(std::move(indexedVertexArray));
+    bSceneShapes_.emplace_back(std::move(meshShape));
+    bSceneCollisionObjects_.emplace_back(std::move(sceneCollisionObject));
   }
 
   for (auto& child : node.children) {
