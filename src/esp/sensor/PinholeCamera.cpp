@@ -14,7 +14,7 @@
 namespace esp {
 namespace sensor {
 
-PinholeCamera::PinholeCamera(scene::SceneNode &pinholeCameraNode,
+PinholeCamera::PinholeCamera(scene::SceneNode& pinholeCameraNode,
                              sensor::SensorSpec::ptr spec)
     : sensor::VisualSensor(pinholeCameraNode, spec) {
   setProjectionParameters(spec);
@@ -29,14 +29,14 @@ void PinholeCamera::setProjectionParameters(SensorSpec::ptr spec) {
   hfov_ = std::atof(spec_->parameters.at("hfov").c_str());
 }
 
-PinholeCamera &
-PinholeCamera::setProjectionMatrix(gfx::RenderCamera &targetCamera) {
+PinholeCamera& PinholeCamera::setProjectionMatrix(
+    gfx::RenderCamera& targetCamera) {
   targetCamera.setProjectionMatrix(width_, height_, near_, far_, hfov_);
   return *this;
 }
 
-PinholeCamera &
-PinholeCamera::setTransformationMatrix(gfx::RenderCamera &targetCamera) {
+PinholeCamera& PinholeCamera::setTransformationMatrix(
+    gfx::RenderCamera& targetCamera) {
   CORRADE_ASSERT(!scene::SceneGraph::isRootNode(targetCamera.node()),
                  "PinholeCamera::setTransformationMatrix: target camera cannot "
                  "be on the root node of the scene graph",
@@ -62,7 +62,7 @@ PinholeCamera::setTransformationMatrix(gfx::RenderCamera &targetCamera) {
   auto camParent = targetCamera.node().parent();
   // if camera's parent is the root node, skip it!
   if (!scene::SceneGraph::isRootNode(
-          *static_cast<scene::SceneNode *>(camParent))) {
+          *static_cast<scene::SceneNode*>(camParent))) {
     relativeTransform =
         camParent->absoluteTransformation().inverted() * relativeTransform;
   }
@@ -70,12 +70,12 @@ PinholeCamera::setTransformationMatrix(gfx::RenderCamera &targetCamera) {
   return *this;
 }
 
-PinholeCamera &PinholeCamera::setViewport(gfx::RenderCamera &targetCamera) {
+PinholeCamera& PinholeCamera::setViewport(gfx::RenderCamera& targetCamera) {
   targetCamera.setViewport(this->framebufferSize());
   return *this;
 }
 
-bool PinholeCamera::getObservationSpace(ObservationSpace &space) {
+bool PinholeCamera::getObservationSpace(ObservationSpace& space) {
   space.spaceType = ObservationSpaceType::TENSOR;
   space.shape = {static_cast<size_t>(spec_->resolution[0]),
                  static_cast<size_t>(spec_->resolution[1]),
@@ -91,7 +91,7 @@ bool PinholeCamera::getObservationSpace(ObservationSpace &space) {
   return true;
 }
 
-bool PinholeCamera::getObservation(sim::Simulator &sim, Observation &obs) {
+bool PinholeCamera::getObservation(sim::Simulator& sim, Observation& obs) {
   // TODO: check if sensor is valid?
   // TODO: have different classes for the different types of sensors
   //
@@ -104,7 +104,7 @@ bool PinholeCamera::getObservation(sim::Simulator &sim, Observation &obs) {
   return true;
 }
 
-void PinholeCamera::drawObservation(sim::Simulator &sim) {
+void PinholeCamera::drawObservation(sim::Simulator& sim) {
   renderTarget().renderEnter();
 
   gfx::Renderer::ptr renderer = sim.getRenderer();
@@ -126,7 +126,7 @@ void PinholeCamera::drawObservation(sim::Simulator &sim) {
   renderTarget().renderExit();
 }
 
-void PinholeCamera::readObservation(Observation &obs) {
+void PinholeCamera::readObservation(Observation& obs) {
   // Make sure we have memory
   if (buffer_ == nullptr) {
     // TODO: check if our sensor was resized and resize our buffer if needed
@@ -157,7 +157,7 @@ void PinholeCamera::readObservation(Observation &obs) {
   }
 }
 
-bool PinholeCamera::displayObservation(sim::Simulator &sim) {
+bool PinholeCamera::displayObservation(sim::Simulator& sim) {
   if (!hasRenderTarget()) {
     return false;
   }
@@ -176,5 +176,5 @@ PinholeCamera::depthUnprojection() const {
   return {gfx::calculateDepthUnprojection(projection)};
 }
 
-} // namespace sensor
-} // namespace esp
+}  // namespace sensor
+}  // namespace esp
