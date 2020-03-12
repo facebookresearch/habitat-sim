@@ -280,6 +280,7 @@ PhysicsObjectAttributes::PhysicsObjectAttributes() {
   setBool("joinCollisionMeshes",
           true);  // if true, join all meshes into one collision convex instead
                   // of building a compound
+  setBool("requiresLighting", true);
 }
 
 PhysicsSceneAttributes::PhysicsSceneAttributes() {

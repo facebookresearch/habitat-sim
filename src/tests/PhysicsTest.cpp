@@ -391,6 +391,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   Magnum::Vector3 commandLinVel(1.0, 1.0, 1.0);
   Magnum::Vector3 commandAngVel(1.0, 1.0, 1.0);
 
+  // test results of getting/setting
   if (physicsManager_->getPhysicsSimulationLibrary() ==
       PhysicsManager::PhysicsSimulationLibrary::BULLET) {
     physicsManager_->setLinearVelocity(objectId, commandLinVel);
@@ -398,6 +399,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
 
     ASSERT_EQ(physicsManager_->getLinearVelocity(objectId), commandLinVel);
     ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), commandAngVel);
+
   } else if (physicsManager_->getPhysicsSimulationLibrary() ==
              PhysicsManager::PhysicsSimulationLibrary::NONE) {
     physicsManager_->setLinearVelocity(objectId, commandLinVel);
@@ -407,4 +409,116 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
     ASSERT_EQ(physicsManager_->getLinearVelocity(objectId), Magnum::Vector3{});
     ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), Magnum::Vector3{});
   }
+
+  // test constant velocity control mechanism
+  esp::physics::VelocityControl& velControl =
+      physicsManager_->getVelocityControl(objectId);
+  velControl.controllingAngVel = true;
+  velControl.controllingLinVel = true;
+  velControl.linVel = Magnum::Vector3{1.0, -1.0, 1.0};
+  velControl.angVel = Magnum::Vector3{1.0, 0, 0};
+
+  // first kinematic
+  physicsManager_->setObjectMotionType(objectId,
+                                       esp::physics::MotionType::KINEMATIC);
+  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
+
+  float targetTime = 2.0;
+  while (physicsManager_->getWorldTime() < targetTime) {
+    physicsManager_->stepPhysics(targetTime - physicsManager_->getWorldTime());
+  }
+  Magnum::Vector3 posGroundTruth{2.0, 0.0, 2.0};
+  Magnum::Quaternion qGroundTruth{{0.842602, 0, 0}, 0.538537};
+
+  float errorEps = 0.01;  // fairly loose due to discrete timestep
+  ASSERT_LE(
+      (physicsManager_->getTranslation(objectId) - posGroundTruth).length(),
+      errorEps);
+  Magnum::Rad angleError =
+      Magnum::Math::angle(physicsManager_->getRotation(objectId), qGroundTruth);
+  if (!std::isnan(float(angleError))) {  // nan results close to equality
+    ASSERT_LE(float(angleError), errorEps);
+  }
+
+  if (physicsManager_->getPhysicsSimulationLibrary() ==
+      PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+    physicsManager_->setObjectMotionType(objectId,
+                                         esp::physics::MotionType::DYNAMIC);
+    physicsManager_->resetTransformation(objectId);
+    physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
+    physicsManager_->setGravity({});  // 0 gravity interference
+    physicsManager_->reset();         // reset time to 0
+
+    // should closely follow kinematic result while uninhibited in 0 gravity
+    float targetTime = 0.5;
+    Magnum::Matrix4 kinematicResult = velControl.integrateTransform(
+        targetTime, physicsManager_->getTransformation(objectId));
+    while (physicsManager_->getWorldTime() < targetTime) {
+      physicsManager_->stepPhysics(physicsManager_->getTimestep());
+    }
+    ASSERT_LE((physicsManager_->getTranslation(objectId) -
+               kinematicResult.translation())
+                  .length(),
+              errorEps);
+    angleError = Magnum::Math::angle(
+        physicsManager_->getRotation(objectId),
+        Magnum::Quaternion::fromMatrix(kinematicResult.rotation()));
+    ASSERT_LE(float(angleError), errorEps);
+
+    // should then get blocked by ground plane collision
+    targetTime = 2.0;
+    while (physicsManager_->getWorldTime() < targetTime) {
+      physicsManager_->stepPhysics(physicsManager_->getTimestep());
+    }
+    ASSERT_GE(physicsManager_->getTranslation(objectId)[1], 1.0 - errorEps);
+  }
+}
+
+TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
+  // test attaching/detaching existing SceneNode to/from physical simulation
+  LOG(INFO) << "Starting physics test: TestSceneNodeAttachment";
+
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  std::string sceneFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+
+  initScene(sceneFile);
+
+  esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+  esp::scene::SceneNode& root =
+      sceneManager_.getSceneGraph(sceneID_).getRootNode();
+  esp::scene::SceneNode* newNode = &root.createChild();
+  ASSERT_EQ(root.children().last(), newNode);
+
+  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+  // Test attaching newNode to a RigidBody
+  int objectId = physicsManager_->addObject(objectFile, &drawables, newNode);
+  ASSERT_EQ(&physicsManager_->getObjectSceneNode(objectId), newNode);
+
+  // Test updating newNode position with PhysicsManager
+  Magnum::Vector3 newPos{1.0, 3.0, 0.0};
+  physicsManager_->setTranslation(objectId, newPos);
+  ASSERT_EQ(physicsManager_->getTranslation(objectId), newPos);
+  ASSERT_EQ(newNode->translation(), newPos);
+
+  // Test leaving newNode without visualNode_ after destroying the RigidBody
+  physicsManager_->removeObject(objectId, false, true);
+  ASSERT(newNode->children().isEmpty());
+
+  // Test leaving the visualNode attached to newNode after destroying the
+  // RigidBody
+  objectId = physicsManager_->addObject(objectFile, &drawables, newNode);
+  physicsManager_->removeObject(objectId, false, false);
+  ASSERT(!newNode->children().isEmpty());
+
+  // Test destroying newNode with the RigidBody
+  objectId = physicsManager_->addObject(objectFile, &drawables, newNode);
+  physicsManager_->removeObject(objectId, true, true);
+  ASSERT_NE(root.children().last(), newNode);
 }

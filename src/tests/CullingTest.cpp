@@ -1,8 +1,10 @@
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
-
+//
 #include <Corrade/Containers/Optional.h>
+#include <Corrade/TestSuite/Compare/Numeric.h>
+#include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/GL/SampleQuery.h>
@@ -26,7 +28,25 @@ namespace Mn = Magnum;
 using esp::assets::ResourceManager;
 using esp::scene::SceneManager;
 
-TEST(CullingTest, computeAbsoluteAABB) {
+namespace Test {
+// on GCC and Clang, the following namespace causes useful warnings to be
+// printed when you have accidentally unused variables or functions in the test
+namespace {
+struct CullingTest : Cr::TestSuite::Tester {
+  explicit CullingTest();
+  // tests
+  void computeAbsoluteAABB();
+  void frustumCulling();
+};
+
+CullingTest::CullingTest() {
+  // clang-format off
+  addTests({&CullingTest::computeAbsoluteAABB,
+            &CullingTest::frustumCulling});
+  // clang-format on
+}
+
+void CullingTest::computeAbsoluteAABB() {
   // must create a GL context which will be used in the resource manager
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
@@ -44,9 +64,7 @@ TEST(CullingTest, computeAbsoluteAABB) {
   auto& drawables = sceneGraph.getDrawables();
   const esp::assets::AssetInfo info =
       esp::assets::AssetInfo::fromPath(sceneFile);
-  bool loadSuccess =
-      resourceManager.loadScene(info, &sceneRootNode, &drawables);
-  EXPECT_EQ(loadSuccess, true);
+  CORRADE_VERIFY(resourceManager.loadScene(info, &sceneRootNode, &drawables));
 
   std::vector<Mn::Range3D> aabbs;
   for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
@@ -88,17 +106,18 @@ TEST(CullingTest, computeAbsoluteAABB) {
       {{3.0f, -1.0f, 3.0f}, {5.0f, 1.0f, 5.0f}}};
 
   // compare against the ground truth
-  EXPECT_EQ(aabbs.size(), aabbsGroundTruth.size());
-  const float epsilon = 1e-6;
+  CORRADE_COMPARE(aabbs.size(), aabbsGroundTruth.size());
+  const float eps = 1e-6;
   for (unsigned int iBox = 0; iBox < aabbsGroundTruth.size(); ++iBox) {
-    CHECK_LE(std::abs((aabbs[iBox].min() - aabbsGroundTruth[iBox].min()).dot()),
-             epsilon);
-    CHECK_LE(std::abs((aabbs[iBox].max() - aabbsGroundTruth[iBox].max()).dot()),
-             epsilon);
+    CORRADE_ITERATION(iBox);
+    CORRADE_COMPARE_WITH(aabbs[iBox].min(), aabbsGroundTruth[iBox].min(),
+                         Cr::TestSuite::Compare::around(Mn::Vector3{eps}));
+    CORRADE_COMPARE_WITH(aabbs[iBox].max(), aabbsGroundTruth[iBox].max(),
+                         Cr::TestSuite::Compare::around(Mn::Vector3{eps}));
   }
 }
 
-TEST(CullingTest, frustumCulling) {
+void CullingTest::frustumCulling() {
   // must create a GL context which will be used in the resource manager
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
@@ -117,9 +136,7 @@ TEST(CullingTest, frustumCulling) {
   auto& drawables = sceneGraph.getDrawables();
   const esp::assets::AssetInfo info =
       esp::assets::AssetInfo::fromPath(sceneFile);
-  bool loadSuccess =
-      resourceManager.loadScene(info, &sceneRootNode, &drawables);
-  EXPECT_EQ(loadSuccess, true);
+  CORRADE_VERIFY(resourceManager.loadScene(info, &sceneRootNode, &drawables));
 
   // set the camera
   esp::gfx::RenderCamera& renderCamera = sceneGraph.getDefaultRenderCamera();
@@ -204,7 +221,7 @@ TEST(CullingTest, frustumCulling) {
     q.end();
     target->renderExit();
 
-    EXPECT_EQ(q.result<bool>(), false);
+    CORRADE_VERIFY(!q.result<bool>());
   }
 
   // ============== Test 2 ==================
@@ -227,7 +244,7 @@ TEST(CullingTest, frustumCulling) {
         target->renderExit();
 
         // check if it a genuine visible drawable
-        EXPECT_EQ(q.result<bool>(), true);
+        CORRADE_VERIFY(q.result<bool>());
 
         if (q.result<bool>()) {
           numVisibleObjectsGroundTruth++;
@@ -241,5 +258,9 @@ TEST(CullingTest, frustumCulling) {
   size_t numVisibleObjects =
       renderCamera.draw(drawables, true /* enable frustum culling */);
   target->renderExit();
-  EXPECT_EQ(numVisibleObjects, numVisibleObjectsGroundTruth);
+  CORRADE_COMPARE(numVisibleObjects, numVisibleObjectsGroundTruth);
 }
+}  // namespace
+}  // namespace Test
+
+CORRADE_TEST_MAIN(Test::CullingTest)

@@ -48,6 +48,7 @@ bool PhysicsManager::addScene(
 
 int PhysicsManager::addObject(const int objectLibIndex,
                               DrawableGroup* drawables,
+                              scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
   const std::string configFile =
       resourceManager_->getObjectConfig(objectLibIndex);
@@ -59,7 +60,8 @@ int PhysicsManager::addObject(const int objectLibIndex,
       resourceManager_->getPhysicsObjectAttributes(configFile);
 
   //! Instantiate with mesh pointer
-  int nextObjectID_ = makeRigidObject(meshGroup, physicsObjectAttributes);
+  int nextObjectID_ =
+      makeRigidObject(meshGroup, physicsObjectAttributes, attachmentNode);
   if (nextObjectID_ < 0) {
     LOG(ERROR) << "makeRigidObject unsuccessful";
     return ID_UNDEFINED;
@@ -68,8 +70,9 @@ int PhysicsManager::addObject(const int objectLibIndex,
   //! Draw object via resource manager
   //! Render node as child of physics node
   resourceManager_->loadObject(configFile,
-                               &existingObjects_.at(nextObjectID_)->node(),
+                               existingObjects_.at(nextObjectID_)->visualNode_,
                                drawables, lightSetup);
+  existingObjects_.at(nextObjectID_)->node().computeCumulativeBB();
 
   if (physicsObjectAttributes.existsAs(assets::DataType::BOOL,
                                        "COM_provided")) {
@@ -88,21 +91,27 @@ int PhysicsManager::addObject(const int objectLibIndex,
 
 int PhysicsManager::addObject(const std::string& configFile,
                               DrawableGroup* drawables,
+                              scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
   int resObjectID = resourceManager_->getObjectID(configFile);
   //! Invoke resourceManager to draw object
-  int physObjectID = addObject(resObjectID, drawables, lightSetup);
+  int physObjectID =
+      addObject(resObjectID, drawables, attachmentNode, lightSetup);
   return physObjectID;
 }
 
 void PhysicsManager::removeObject(const int physObjectID,
-                                  bool deleteSceneNode) {
+                                  bool deleteObjectNode,
+                                  bool deleteVisualNode) {
   assertIDValidity(physObjectID);
   scene::SceneNode* objectNode = &existingObjects_.at(physObjectID)->node();
+  scene::SceneNode* visualNode = existingObjects_.at(physObjectID)->visualNode_;
   existingObjects_.erase(physObjectID);
   deallocateObjectID(physObjectID);
-  if (deleteSceneNode) {
+  if (deleteObjectNode) {
     delete objectNode;
+  } else if (deleteVisualNode && visualNode) {
+    delete visualNode;
   }
 }
 
@@ -135,11 +144,15 @@ int PhysicsManager::deallocateObjectID(int physObjectID) {
 //! Create and initialize rigid object
 int PhysicsManager::makeRigidObject(
     const std::vector<assets::CollisionMeshData>& meshGroup,
-    assets::PhysicsObjectAttributes physicsObjectAttributes) {
+    assets::PhysicsObjectAttributes physicsObjectAttributes,
+    scene::SceneNode* attachmentNode /* = nullptr */) {
   int newObjectID = allocateObjectID();
-  scene::SceneNode& newNode = staticSceneObject_->node().createChild();
+  scene::SceneNode* objectNode = attachmentNode;
+  if (attachmentNode == nullptr) {
+    objectNode = &staticSceneObject_->node().createChild();
+  }
   existingObjects_[newObjectID] =
-      std::make_unique<physics::RigidObject>(&newNode);
+      std::make_unique<physics::RigidObject>(objectNode);
 
   //! Instantiate with mesh pointer
   bool objectSuccess =
@@ -148,7 +161,8 @@ int PhysicsManager::makeRigidObject(
   if (!objectSuccess) {
     deallocateObjectID(newObjectID);
     existingObjects_.erase(newObjectID);
-    delete &newNode;
+    if (attachmentNode == nullptr)
+      delete objectNode;
     return ID_UNDEFINED;
   }
   return newObjectID;
@@ -191,6 +205,16 @@ void PhysicsManager::stepPhysics(double dt) {
   double targetTime = worldTime_ + dt;
   while (worldTime_ < targetTime) {
     // per fixed-step operations can be added here
+
+    // kinematic velocity control intergration
+    for (auto& object : existingObjects_) {
+      VelocityControl& velControl = object.second->getVelocityControl();
+      if (velControl.controllingAngVel || velControl.controllingLinVel) {
+        scene::SceneNode& objectSceneNode = object.second->node();
+        objectSceneNode.setTransformation(velControl.integrateTransform(
+            fixedTimeStep_, objectSceneNode.transformation()));
+      }
+    }
     worldTime_ += fixedTimeStep_;
   }
 }
@@ -363,6 +387,11 @@ Magnum::Vector3 PhysicsManager::getAngularVelocity(
   return existingObjects_.at(physObjectID)->getAngularVelocity();
 }
 
+VelocityControl& PhysicsManager::getVelocityControl(const int physObjectID) {
+  assertIDValidity(physObjectID);
+  return existingObjects_.at(physObjectID)->getVelocityControl();
+}
+
 //============ Object Setter functions =============
 void PhysicsManager::setMass(const int physObjectID, const double mass) {
   assertIDValidity(physObjectID);
@@ -459,15 +488,18 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
     // destroy the node
     delete existingObjects_[physObjectID]->BBNode_;
     existingObjects_[physObjectID]->BBNode_ = nullptr;
-  } else if (drawBB) {
+  } else if (drawBB && existingObjects_[physObjectID]->visualNode_) {
     // add a new BBNode
     Magnum::Vector3 scale =
-        existingObjects_[physObjectID]->node().getCumulativeBB().size() / 2.0;
+        existingObjects_[physObjectID]->visualNode_->getCumulativeBB().size() /
+        2.0;
     existingObjects_[physObjectID]->BBNode_ =
-        &existingObjects_[physObjectID]->node().createChild();
+        &existingObjects_[physObjectID]->visualNode_->createChild();
     existingObjects_[physObjectID]->BBNode_->MagnumObject::setScaling(scale);
     existingObjects_[physObjectID]->BBNode_->MagnumObject::setTranslation(
-        existingObjects_[physObjectID]->node().getCumulativeBB().center());
+        existingObjects_[physObjectID]
+            ->visualNode_->getCumulativeBB()
+            .center());
     resourceManager_->addPrimitiveToDrawables(
         0, *existingObjects_[physObjectID]->BBNode_, drawables);
   }
