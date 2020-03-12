@@ -105,7 +105,8 @@ class InstanceVisualizer:
                     for target, output in zip(targets, outputs)
                 }
                 rgbs = {
-                    target["image_id"].item(): images[i] for i, target in enumerate(targets) 
+                    target["image_id"].item(): images[i]
+                    for i, target in enumerate(targets)
                 }
                 for image_id in res.keys():
                     masks = res[image_id]["masks"].numpy() >= 0.5
