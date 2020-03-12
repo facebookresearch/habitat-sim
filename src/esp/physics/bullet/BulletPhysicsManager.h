@@ -14,6 +14,9 @@
 #include <Magnum/BulletIntegration/MotionState.h>
 #include <btBulletDynamicsCommon.h>
 
+#include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
+#include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
+
 #include "BulletRigidObject.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletRigidObject.h"
@@ -80,8 +83,11 @@ class BulletPhysicsManager : public PhysicsManager {
   bool addScene(const assets::PhysicsSceneAttributes& physicsSceneAttributes,
                 const std::vector<assets::CollisionMeshData>& meshGroup);
 
-  virtual int addObject(const int objectLibIndex,
-                        DrawableGroup* drawables) override;
+  virtual int addObject(
+      const int objectLibIndex,
+      DrawableGroup* drawables,
+      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+          assets::ResourceManager::DEFAULT_LIGHTING_KEY}) override;
 
   //============ Simulator functions =============
 
@@ -195,11 +201,12 @@ class BulletPhysicsManager : public PhysicsManager {
  protected:
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;
-  btSequentialImpulseConstraintSolver bSolver_;
+
+  btMultiBodyConstraintSolver bSolver_;
   btCollisionDispatcher bDispatcher_{&bCollisionConfig_};
 
-  /** @brief A pointer to the Bullet world. See @ref btDiscreteDynamicsWorld.*/
-  std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
+  /** @brief A pointer to the Bullet world. See @ref btMultiBodyDynamicsWorld.*/
+  std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;
 
   mutable Magnum::BulletIntegration::DebugDraw debugDrawer_;
 

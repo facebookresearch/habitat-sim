@@ -4,8 +4,6 @@
 
 #include <Corrade/Utility/Directory.h>
 #include <gtest/gtest.h>
-#include <fstream>
-#include <iostream>
 
 #include "esp/core/esp.h"
 #include "esp/core/random.h"

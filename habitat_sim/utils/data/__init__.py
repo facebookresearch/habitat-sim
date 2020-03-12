@@ -10,7 +10,14 @@
 # fixed
 
 
-from habitat_sim.utils.data import data_extractor, pose_extractor
+from habitat_sim.utils.data import data_extractor, data_structures, pose_extractor
 from habitat_sim.utils.data.data_extractor import ImageExtractor
+from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 
-__all__ = ["data_extractor", "ImageExtractor"]
+__all__ = [
+    "data_extractor",
+    "pose_extractor",
+    "data_structures",
+    "ImageExtractor",
+    "ExtractorLRUCache",
+]

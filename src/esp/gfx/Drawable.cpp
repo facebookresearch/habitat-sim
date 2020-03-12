@@ -12,13 +12,9 @@ namespace esp {
 namespace gfx {
 
 Drawable::Drawable(scene::SceneNode& node,
-                   Magnum::GL::AbstractShaderProgram& shader,
                    Magnum::GL::Mesh& mesh,
                    DrawableGroup* group /* = nullptr */)
-    : Magnum::SceneGraph::Drawable3D{node, group},
-      node_(node),
-      shader_(shader),
-      mesh_(mesh) {}
+    : Magnum::SceneGraph::Drawable3D{node, group}, node_(node), mesh_(mesh) {}
 
 DrawableGroup* Drawable::drawables() {
   CORRADE_ASSERT(

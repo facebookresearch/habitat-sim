@@ -1,5 +1,3 @@
-
-
 class LinkedListNode:
     def __init__(self, key=None, prev_node=None, next_node=None, data=None):
         self.key = key
@@ -12,11 +10,11 @@ class ExtractorLRUCache:
     def __init__(self, capacity=1000):
         self.node_map = {}
         self.head = LinkedListNode()
-        self.tail = LinkedListNode(self.head)
+        self.tail = LinkedListNode(prev_node=self.head)
         self.head.next_node = self.tail
         self.capacity = capacity
         self.size = 0
-    
+
     def __getitem__(self, key):
         if self.__contains__(key):
             node = self.node_map[key]
@@ -26,7 +24,7 @@ class ExtractorLRUCache:
             self.add(key, node.data)
             return node.data
         else:
-            raise KeyError('Key {} not in extractor cache'.format(key))
+            raise KeyError("Key {} not in extractor cache".format(key))
 
     def __contains__(self, key):
         return key in self.node_map
@@ -49,7 +47,7 @@ class ExtractorLRUCache:
     def add(self, key, sample):
         if key in self.node_map:
             return
-        
+
         if self.size >= self.capacity:
             self.remove_from_back()
 
@@ -58,11 +56,11 @@ class ExtractorLRUCache:
         self.head.next_node = new_node
         self.node_map[key] = new_node
         self.size += 1
-        
+
     def remove_from_back(self):
         if self.size == 0:
             return
-        
+
         key_to_remove = self.tail.prev_node.key
         self.remove(key_to_remove)
 
