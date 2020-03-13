@@ -64,6 +64,7 @@ void initSimBindings(py::module& m) {
            pybind11::return_value_policy::reference)
       .def_property_readonly("semantic_scene", &Simulator::getSemanticScene)
       .def_property_readonly("renderer", &Simulator::getRenderer)
+      .def("get_num_triangles", &Simulator::getNumTriangles)
       .def("seed", &Simulator::seed, "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
       .def("reset", &Simulator::reset)

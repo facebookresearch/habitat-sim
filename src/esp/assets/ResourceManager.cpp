@@ -107,6 +107,7 @@ bool ResourceManager::loadScene(const AssetInfo& info,
         // Unknown type, just load general mesh data
         meshSuccess = loadGeneralMeshData(info, parent, drawables, true);
       }
+      // ResourceManager::NUM_TRIANGLES = this->getNumTriangles();
       // add a scene attributes for this filename or modify the existing one
       if (meshSuccess) {
         // TODO: need this anymore?
@@ -927,6 +928,10 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
                 "option when building.";
   return false;
 #endif
+}
+
+int ResourceManager::getNumTriangles() {
+  return 77;  // Dummy number until we figure out how to get the desired number
 }
 
 // semantic instance mesh import

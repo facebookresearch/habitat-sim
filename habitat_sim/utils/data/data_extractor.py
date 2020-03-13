@@ -52,7 +52,7 @@ class ImageExtractor:
         scene_filepath,
         labels=[0.0],
         img_size=(512, 512),
-        output=["rgba"],
+        output=["rgba", "triangle"],
         extraction_method="closest",
         sim=None,
         shuffle=True,
@@ -123,6 +123,7 @@ class ImageExtractor:
             "rgba": "color_sensor",
             "depth": "depth_sensor",
             "semantic": "semantic_sensor",
+            "triangle": "triangle_sensor",
         }
         self.output = output
         self.use_caching = use_caching
@@ -202,6 +203,33 @@ class ImageExtractor:
         class_names = list(set(name for name in self.instance_id_to_name.values()))
         return class_names
 
+    def mesh_coverage_ratio(self):
+        r"""Returns the ratio of mesh triangles seen by the extracted images to the total number of triangle in the entire mesh
+        """
+        if len(self.scene_filepaths) > 1:
+            raise Exception(
+                "Percent mesh coverage metric is only \
+                valid on a single scene"
+            )
+
+        triangles_seen = set()
+        add_to_set = np.vectorize(lambda x: triangles_seen.add(x))
+        mymode = self.mode.lower()
+        poses = self.mode_to_data[mymode]
+        for pose in poses:
+            pos, rot, label, fp = pose
+            new_state = AgentState()
+            new_state.position = pos
+            new_state.rotation = rot
+            self.sim.agents[0].set_state(new_state)
+            obs = self.sim.get_sensor_observations()
+            triangle = obs["triangle_sensor"]
+            add_to_set(triangle)
+
+        total_num_triangles = self.sim._sim.get_num_triangles()
+        mesh_coverage_ratio = len(triangles_seen) / total_num_triangles
+        return mesh_coverage_ratio
+
     def _preprocessing(self, sim, scene_filepaths, pixels_per_meter):
         tdv_fp_ref = []
         for filepath in scene_filepaths:
@@ -255,6 +283,7 @@ class ImageExtractor:
             "color_sensor": True,  # RGBA sensor
             "semantic_sensor": True,  # Semantic sensor
             "depth_sensor": True,  # Depth sensor
+            "triangle_sensor": True,  # Triangle sensor
             "silent": True,
         }
 
@@ -277,6 +306,11 @@ class ImageExtractor:
             },
             "semantic_sensor": {  # active if sim_settings["semantic_sensor"]
                 "sensor_type": hsim.SensorType.SEMANTIC,
+                "resolution": [settings["height"], settings["width"]],
+                "position": [0.0, settings["sensor_height"], 0.0],
+            },
+            "triangle_sensor": {  # active if sim_settings["semantic_sensor"]
+                "sensor_type": hsim.SensorType.TRIANGLE,
                 "resolution": [settings["height"], settings["width"]],
                 "position": [0.0, settings["sensor_height"], 0.0],
             },

@@ -177,6 +177,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   reset();
 }
 
+int Simulator::getNumTriangles() {
+  return resourceManager_.getNumTriangles();
+}
+
 void Simulator::reset() {
   if (physicsManager_ != nullptr)
     physicsManager_

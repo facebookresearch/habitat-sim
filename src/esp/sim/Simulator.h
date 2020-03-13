@@ -70,6 +70,8 @@ class Simulator {
 
   virtual void seed(uint32_t newSeed);
 
+  int getNumTriangles();
+
   std::shared_ptr<gfx::Renderer> getRenderer();
   std::shared_ptr<physics::PhysicsManager> getPhysicsManager();
   std::shared_ptr<scene::SemanticScene> getSemanticScene();

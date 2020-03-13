@@ -84,6 +84,11 @@ class ResourceManager {
   static constexpr char DEFAULT_MATERIAL_KEY[] = "";
 
   /**
+   * @brief Get the number of triangles in the mesh.
+   */
+  int getNumTriangles();
+
+  /**
    * @brief Set whether textures should be compressed.
    * @param newVal New texture compression setting.
    */

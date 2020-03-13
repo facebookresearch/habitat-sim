@@ -28,6 +28,7 @@ class PoseExtractor:
         self.tdv_fp_ref_triples = topdown_views
         self.sim = sim
         self.pixels_per_meter = pixels_per_meter
+        self.poses = None
 
     def extract_poses(self, labels, extraction_method):
         r"""Returns a numpy array of camera poses. If extraction method is "closest", this method will
@@ -46,7 +47,8 @@ class PoseExtractor:
                 )
             )
 
-        return np.array(poses)
+        self.poses = poses
+        return np.array(self.poses)
 
     def _extract_poses_single_scene(
         self, labels, view, fp, dist, ref_point, extraction_method
