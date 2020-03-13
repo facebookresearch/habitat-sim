@@ -85,7 +85,7 @@ def test_data_extractor_all_modes(sim):
 
 
 def test_triangle_id(sim):
-    # test that empty frames can be rendered without a scene mesh
+    ## test that empty frames can be rendered without a scene mesh
     obs = sim.step("move_forward")
     triangle = obs["triangle_sensor"]
     assert True
