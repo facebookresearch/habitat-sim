@@ -260,10 +260,7 @@ for nprocs in nprocs_tests:
                 # set new value before the test group run
                 if g == dr.ABTestGroup.TEST:
                     settings[args.feature] = test_val
-                per_group_perf[g] = {
-                    "fps": 60,
-                    "frame_time": 0.001,
-                }  #  demo_runner.benchmark(settings, g)
+                per_group_perf[g] = demo_runner.benchmark(settings, g)
                 result = f" FPS {run_label}: {per_group_perf[g]['fps']:.1f} "
                 print(f"{result:-^100}")
             if collect_title_list:
