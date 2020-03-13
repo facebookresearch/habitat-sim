@@ -36,6 +36,10 @@ Magnum::GL::Mesh* GltfMeshData::getMagnumGLMesh() {
   return &(renderingBuffer_->mesh);
 }
 
+int GltfMeshData::indexBufferSize() {
+  return collisionMeshData_.indices.size();
+}
+
 void GltfMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
                                int meshID) {
   ASSERT(0 <= meshID && meshID < importer.mesh3DCount());

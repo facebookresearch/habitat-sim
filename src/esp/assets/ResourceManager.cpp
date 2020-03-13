@@ -107,7 +107,6 @@ bool ResourceManager::loadScene(const AssetInfo& info,
         // Unknown type, just load general mesh data
         meshSuccess = loadGeneralMeshData(info, parent, drawables, true);
       }
-      // ResourceManager::NUM_TRIANGLES = this->getNumTriangles();
       // add a scene attributes for this filename or modify the existing one
       if (meshSuccess) {
         // TODO: need this anymore?
@@ -931,7 +930,7 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 }
 
 int ResourceManager::getNumTriangles() {
-  return 77;  // Dummy number until we figure out how to get the desired number
+  return NUM_TRIANGLES;
 }
 
 // semantic instance mesh import
@@ -1271,10 +1270,12 @@ void ResourceManager::loadMeshes(Importer& importer, MeshMetaData* metaData) {
   int meshEnd = meshStart + importer.mesh3DCount() - 1;
   metaData->setMeshIndices(meshStart, meshEnd);
 
+  int totalNumTriangles = 0;
   for (int iMesh = 0; iMesh < importer.mesh3DCount(); ++iMesh) {
     // don't need normals if we just flat shade the scene
     auto gltfMeshData = std::make_unique<GltfMeshData>(!metaData->isSceneAsset);
     gltfMeshData->setMeshData(importer, iMesh);
+    totalNumTriangles += gltfMeshData->indexBufferSize() / 3;
 
     // compute the mesh bounding box
     gltfMeshData->BB = computeMeshBB(gltfMeshData.get());
@@ -1282,6 +1283,8 @@ void ResourceManager::loadMeshes(Importer& importer, MeshMetaData* metaData) {
     gltfMeshData->uploadBuffersToGPU(false);
     meshes_.emplace_back(std::move(gltfMeshData));
   }
+
+  NUM_TRIANGLES = totalNumTriangles;
 }
 
 //! Recursively load the transformation chain specified by the mesh file

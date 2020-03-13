@@ -83,6 +83,8 @@ class ResourceManager {
   //! @brief The @ref ShaderManager key for the default @ref MaterialInfo
   static constexpr char DEFAULT_MATERIAL_KEY[] = "";
 
+  int NUM_TRIANGLES;
+
   /**
    * @brief Get the number of triangles in the mesh.
    */
