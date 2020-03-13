@@ -67,6 +67,12 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
         help="Build data tool",
     )
     parser.add_argument(
+        "--build-progmesh",
+        dest="build_progmesh",
+        action="store_true",
+        help="Build progmesh utility",
+    )
+    parser.add_argument(
         "--cmake-args",
         type=str,
         default="",
@@ -254,6 +260,9 @@ class CMakeBuild(build_ext):
         ]
         cmake_args += [
             "-DBUILD_DATATOOL={}".format("ON" if args.build_datatool else "OFF")
+        ]
+        cmake_args += [
+            "-DBUILD_PROGMESH={}".format("ON" if args.build_progmesh else "OFF")
         ]
         cmake_args += ["-DBUILD_WITH_CUDA={}".format("ON" if args.with_cuda else "OFF")]
 

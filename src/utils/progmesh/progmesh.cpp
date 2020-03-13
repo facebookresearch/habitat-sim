@@ -345,9 +345,9 @@ void AddVertex(std::vector<float3>& vert) {
 }
 void AddFaces(std::vector<tridata>& tri, std::vector<int>& objid) {
   for (unsigned int i = 0; i < tri.size(); i++) {
-    Vertex *v0 = vertices[tri[i].v[0]];
-    Vertex *v1 = vertices[tri[i].v[1]];
-    Vertex *v2 = vertices[tri[i].v[2]];
+    Vertex* v0 = vertices[tri[i].v[0]];
+    Vertex* v1 = vertices[tri[i].v[1]];
+    Vertex* v2 = vertices[tri[i].v[2]];
     // Skip zero-size triangles
     if (v0 == v1 || v1 == v2 || v2 == v0)
       continue;
@@ -556,13 +556,13 @@ void LoadDataFromFile(const std::string plyFile,
   if (vertexPerFace == 3) {
     copyTo(face_inds, tri);
   } else {
-    std::vector<std::array<int,4>> tmp;
+    std::vector<std::array<int, 4>> tmp;
     copyTo(face_inds, tmp);
     tri.reserve(tmp.size() * 2);
     // converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0, 2, 3]
-    for (auto& quad: tmp) {
-      tri.push_back(tridata{.v = { quad[0], quad[1], quad[2] }});
-      tri.push_back(tridata{.v = { quad[0], quad[2], quad[3] }});
+    for (auto& quad : tmp) {
+      tri.push_back(tridata{.v = {quad[0], quad[1], quad[2]}});
+      tri.push_back(tridata{.v = {quad[0], quad[2], quad[3]}});
     }
   }
 
@@ -574,9 +574,9 @@ void LoadDataFromFile(const std::string plyFile,
     if (vertexPerFace == 4) {
       std::vector<int> tmp;
       copyTo(object_ids, tmp);
-      for (int o: tmp) {
-	objid.push_back(o);
-	objid.push_back(o);
+      for (int o : tmp) {
+        objid.push_back(o);
+        objid.push_back(o);
       }
     } else {
       copyTo(object_ids, objid);
@@ -586,13 +586,13 @@ void LoadDataFromFile(const std::string plyFile,
     copyTo(object_ids, tmp);
 
     if (vertexPerFace == 4) {
-      for (int o: tmp) {
-	objid.push_back(o);
-	objid.push_back(o);
+      for (int o : tmp) {
+        objid.push_back(o);
+        objid.push_back(o);
       }
     } else {
-      for (int o: tmp) {
-	objid.push_back(o);
+      for (int o : tmp) {
+        objid.push_back(o);
       }
     }
   } else {
@@ -690,7 +690,8 @@ int main(int argc, char* argv[]) {
   LoadDataFromFile(argv[1], vert, tri, objid);
   std::cout << "loaded" << std::endl;
   if (vert.size() < atoi(argv[3])) {
-    std::cerr << "Nothing to do. Mesh has less than " << argv[3] << " vertices" << std::endl;
+    std::cerr << "Nothing to do. Mesh has less than " << argv[3] << " vertices"
+              << std::endl;
     exit(1);
   }
 
