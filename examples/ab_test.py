@@ -95,10 +95,17 @@ parser.add_argument(
 )
 
 parser.add_argument("--csv", type=str, help="csv output file")
+parser.add_argument(
+    "--speedup", action="store_true", help="display speedup instead of percent change"
+)
 
 
-def get_percent_diff(test_val, control_val):
-    return ((test_val - control_val) / control_val) * 100.0
+def get_percent_diff_str(test_val, control_val):
+    return f"{((test_val - control_val) / control_val) * 100.0:.1f}%"
+
+
+def get_speedup_str(test_val, control_val):
+    return f"{test_val / control_val:.1f}x"
 
 
 def seconds_to_ms(seconds):
@@ -106,7 +113,12 @@ def seconds_to_ms(seconds):
 
 
 def print_metric(
-    performance_data, resolutions, title_list, metric="fps", metric_transformer=None
+    performance_data,
+    resolutions,
+    title_list,
+    metric="fps",
+    comparison_label_generator=None,
+    metric_transformer=None,
 ):
     for nproc, performance in performance_all.items():
         header = f" Performance ({metric}) NPROC={nproc} "
@@ -121,14 +133,12 @@ def print_metric(
             for t in title_list:
                 control_metric = perf[t][dr.ABTestGroup.CONTROL][metric]
                 test_metric = perf[t][dr.ABTestGroup.TEST][metric]
-                percent_diff = get_percent_diff(test_metric, control_metric)
+                comparison_str = comparison_label_generator(test_metric, control_metric)
                 if metric_transformer:
                     control_metric = metric_transformer(control_metric)
                     test_metric = metric_transformer(test_metric)
 
-                row += (
-                    f"{control_metric:6.1f}/{test_metric:6.1f} ({percent_diff:>6.1f}%)"
-                )
+                row += f"{control_metric:6.1f}/{test_metric:6.1f} ({comparison_str:>6})"
             print(row)
         print(f"{' END ':=^100}")
 
@@ -261,13 +271,21 @@ for nprocs in nprocs_tests:
 
     performance_all[nprocs] = performance
 
-print_metric(performance_all, resolutions, title_list, metric="fps")
+comparison_label_generator = get_speedup_str if args.speedup else get_percent_diff_str
+print_metric(
+    performance_all,
+    resolutions,
+    title_list,
+    metric="fps",
+    comparison_label_generator=comparison_label_generator,
+)
 print_metric(
     performance_all,
     resolutions,
     title_list,
     metric="frame_time",
     metric_transformer=seconds_to_ms,
+    comparison_label_generator=comparison_label_generator,
 )
 if args.enable_physics:
     print_metric(performance_all, resolutions, title_list, metric="avg_sim_step_time")
