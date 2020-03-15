@@ -52,7 +52,7 @@ def test_data_extractor_end_to_end(sim):
         out = net(img)
 
 
-def test_extractor_cache(sim):
+def test_extractor_cache():
     cache = ExtractorLRUCache()
     cache.add(1, "one")
     cache.add(2, "two")
