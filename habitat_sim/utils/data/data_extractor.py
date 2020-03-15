@@ -12,7 +12,6 @@ from habitat_sim.agent import AgentState
 from habitat_sim.utils.common import quat_from_two_vectors
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 from habitat_sim.utils.data.pose_extractor import PoseExtractor
-from habitat_sim.utils.filesystem import search_dir_tree_for_ext
 
 
 class ImageExtractor:
@@ -64,8 +63,8 @@ class ImageExtractor:
 
         self.scene_filepaths = None
         self.cur_fp = None
-        if os.path.isdir(scene_filepath):
-            self.scene_filepaths = search_dir_tree_for_ext(scene_filepath, ".glb")
+        if type(scene_filepath) == list:
+            self.scene_filepaths = scene_filepath
         else:
             self.scene_filepaths = [scene_filepath]
             self.cur_fp = scene_filepath
