@@ -40,7 +40,7 @@ class SceneNode : public MagnumObject {
   SceneNode(SceneNode& parent);
 
   // get the type of the attached object
-  SceneNodeType getType() { return type_; }
+  SceneNodeType getType() const { return type_; }
   void setType(SceneNodeType type) { type_ = type; }
 
   // Add a feature. Used to avoid naked `new` and makes intent clearer.
@@ -73,7 +73,7 @@ class SceneNode : public MagnumObject {
   const Magnum::Range3D& getMeshBB() const { return meshBB_; };
 
   //! return the global bounding box for the mesh stored at this node
-  Corrade::Containers::Optional<Magnum::Range3D> getAbsoluteAABB() {
+  Corrade::Containers::Optional<Magnum::Range3D> getAbsoluteAABB() const {
     return aabb_;
   };
 
@@ -82,13 +82,13 @@ class SceneNode : public MagnumObject {
   const Magnum::Range3D& getCumulativeBB() const { return cumulativeBB_; };
 
   //! set local bounding box for meshes stored at this node
-  void setMeshBB(Magnum::Range3D meshBB) { meshBB_ = meshBB; };
+  void setMeshBB(Magnum::Range3D meshBB) { meshBB_ = std::move(meshBB); };
 
   //! set the global bounding box for mesh stored in this node
-  void setAbsoluteAABB(Magnum::Range3D aabb) { aabb_ = aabb; };
+  void setAbsoluteAABB(Magnum::Range3D aabb) { aabb_ = std::move(aabb); };
 
   //! return the frustum plane in last frame that culls this node
-  int getFrustumPlaneIndex() { return frustumPlaneIndex; };
+  int getFrustumPlaneIndex() const { return frustumPlaneIndex; };
 
   //! set frustum plane in last frame that culls this node
   void setFrustumPlaneIndex(int index) { frustumPlaneIndex = index; };
