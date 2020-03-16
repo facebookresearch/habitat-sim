@@ -90,6 +90,16 @@ def test_kinematics(sim):
         assert sim.get_world_time() > prev_time
         prev_time = sim.get_world_time()
 
+    sim.remove_object(object_id)
+
+    # test attaching/dettaching an Agent to/from physics simulation
+    agent_node = sim.agents[0].scene_node
+    sim.add_object(0, agent_node)
+    sim.set_translation(np.random.rand(3), object_id)
+    assert np.allclose(agent_node.translation, sim.get_translation(object_id))
+    sim.remove_object(object_id, False)  # don't delete the agent's node
+    assert agent_node.translation
+
 
 @pytest.mark.skipif(
     not osp.exists("data/scene_datasets/habitat-test-scenes/skokloster-castle.glb")

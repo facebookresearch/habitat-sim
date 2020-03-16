@@ -6,12 +6,16 @@
 #include "SemanticScene.h"
 
 #include <map>
+#include <sophus/se3.hpp>
 #include <string>
 
 #include <Corrade/Utility/String.h>
 
 #include "esp/io/io.h"
 #include "esp/io/json.h"
+
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/EigenIntegration/Integration.h>
 
 namespace esp {
 namespace scene {
@@ -40,6 +44,7 @@ bool SemanticScene::loadReplicaHouse(
   scene.elementCounts_["categories"] = categories.Size();
   for (const auto& category : categories) {
     int id = category["id"].GetInt();
+
     /*
      * We store the category object at categories_[id] in order to making
      * indexing easy.
@@ -77,7 +82,25 @@ bool SemanticScene::loadReplicaHouse(
     if (categoryIndex < scene.categories_.size()) {
       object->category_ = scene.categories_[categoryIndex];
     }
-    // TODO(msb) object->obb = ;
+
+    auto& obb = jsonObject["oriented_bbox"];
+    const vec3f aabbCenter = io::jsonToVec3f(obb["abb"]["center"]);
+    const vec3f aabbSizes = io::jsonToVec3f(obb["abb"]["sizes"]);
+
+    const vec3f translationBoxToWorld =
+        io::jsonToVec3f(obb["orientation"]["translation"]);
+
+    std::vector<float> rotationBoxToWorldCoeffs;
+    io::toFloatVector(obb["orientation"]["rotation"],
+                      &rotationBoxToWorldCoeffs);
+    const Eigen::Map<quatf> rotationBoxToWorld(rotationBoxToWorldCoeffs.data());
+
+    const auto transformBoxToWorld =
+        Sophus::SE3f{worldRotation, vec3f::Zero()} *
+        Sophus::SE3f{rotationBoxToWorld, translationBoxToWorld};
+
+    object->obb_ = geo::OBB{transformBoxToWorld * aabbCenter, aabbSizes,
+                            transformBoxToWorld.so3().unit_quaternion()};
     scene.objects_[id] = std::move(object);
   }
 
