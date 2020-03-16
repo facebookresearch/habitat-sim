@@ -11,6 +11,7 @@ Configuring Light Setups
 
 First, we import libraries and lighting structures for later use
 .. code:: py
+
     import math
 
     import magnum as mn
@@ -27,6 +28,7 @@ First, we import libraries and lighting structures for later use
 Next we define some simple helper functions and constants for later use.
 
 .. code:: py
+
     def show_img(data):
         plt.figure(figsize=(12, 12))
         plt.imshow(data, interpolation='nearest')
@@ -49,6 +51,7 @@ Next we define some simple helper functions and constants for later use.
 Next we create a simulator and place our agent in the scene.
 
 .. code:: py
+
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
     backend_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
@@ -77,6 +80,7 @@ Next we create a simulator and place our agent in the scene.
 By default, the scene will be shaded with no lights.
 
 .. code:: py
+
     show_obs(sim)
 
 .. image:: scene_default_lighting.png
@@ -89,6 +93,7 @@ To use a non-default light setup for the scene, simply use the `sceneLightSetup`
 
 By default, added objects will be phong shaded with lights at the corners of the scene
 .. code:: py
+
     id_1 = sim.add_object(1)
     sim.set_translation(agent_transform.transform_point([0.3, 0.9, -1.8]), id_1)
 
@@ -97,6 +102,7 @@ By default, added objects will be phong shaded with lights at the corners of the
 
 We can update the default lighting
 .. code:: py
+
     my_default_lighting = [LightInfo(position=[2.0, 2.0, 1.0], model=LightPositionModel.CAMERA)]
 
     sim.set_light_setup(my_default_lighting)
@@ -106,6 +112,7 @@ We can update the default lighting
 
 Newly added objects will use the current default lighting
 .. code:: py
+
     id_2 = sim.add_object(3)
     sim.set_rotation(mn.Quaternion.rotation(mn.Rad(mn.Deg(80)), mn.Vector3.y_axis()), id_2)
     sim.set_translation(agent_transform.transform_point([-0.6, 0.9, -1.5]), id_2)
@@ -119,11 +126,13 @@ Newly added objects will use the current default lighting
 
 To use multiple custom lighting setups at the same time, simply give them a name on creation.
 .. code:: py
+
     light_setup_2 = [LightInfo(position=[8.0, 1.5, 0.0], model=LightPositionModel.GLOBAL)]
     sim.set_light_setup(light_setup_2, "my_custom_lighting")
 
 To use this a light setup, pass in the name as a parameter to `Simulator.add_object`.
 .. code:: py
+
     remove_all_objects(sim)
 
     id_1 = sim.add_object(2, light_setup_key="my_custom_lighting")
@@ -141,10 +150,12 @@ To use this a light setup, pass in the name as a parameter to `Simulator.add_obj
 
 You can get a copy of an existing configuration with `Simulator.get_light_setup`.
 .. code:: py
+
     existing_light_setup = sim.get_light_setup("my_custom_lighting")
 
 Updates to existing light setups will update all objects using that setup
 .. code:: py
+
     new_light_setup = existing_light_setup + [LightInfo(position=[0.0, 0.0, 0.0], color=[0.8, 0.8, 0.7], model=LightPositionModel.CAMERA)]
     sim.set_light_setup(new_light_setup, "my_custom_lighting")
 
@@ -153,6 +164,7 @@ Updates to existing light setups will update all objects using that setup
 
 You can change the light setup an individual object uses.
 .. code:: py
+
     sim.set_object_light_setup(id_1, habitat_sim.gfx.DEFAULT_LIGHTING_KEY)
 
     show_obs(sim)
