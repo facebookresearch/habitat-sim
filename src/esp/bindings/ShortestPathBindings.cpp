@@ -120,11 +120,11 @@ void initShortestPathBindings(py::module& m) {
 
   py::class_<GreedyGeodesicFollowerImpl, GreedyGeodesicFollowerImpl::ptr>(
       m, "GreedyGeodesicFollowerImpl")
-      .def(py::init(
-          &GreedyGeodesicFollowerImpl::create<
-              PathFinder::ptr&, GreedyGeodesicFollowerImpl::MoveFn&,
-              GreedyGeodesicFollowerImpl::MoveFn&,
-              GreedyGeodesicFollowerImpl::MoveFn&, double, double, double>))
+      .def(py::init(&GreedyGeodesicFollowerImpl::create<
+                    PathFinder::ptr&, GreedyGeodesicFollowerImpl::MoveFn&,
+                    GreedyGeodesicFollowerImpl::MoveFn&,
+                    GreedyGeodesicFollowerImpl::MoveFn&, double, double, double,
+                    bool, int>))
       .def("next_action_along",
            py::overload_cast<const vec3f&, const vec4f&, const vec3f&>(
                &GreedyGeodesicFollowerImpl::nextActionAlong),
@@ -132,7 +132,8 @@ void initShortestPathBindings(py::module& m) {
       .def("find_path",
            py::overload_cast<const vec3f&, const vec4f&, const vec3f&>(
                &GreedyGeodesicFollowerImpl::findPath),
-           py::return_value_policy::move);
+           py::return_value_policy::move)
+      .def("reset", &GreedyGeodesicFollowerImpl::reset);
 }
 
 }  // namespace nav

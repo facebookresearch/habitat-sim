@@ -12,53 +12,57 @@ class GreedyGeodesicFollowerImpl {
  public:
   /**
    * Ouputs from the greedy follower.  Used to specify which action to take next
-   *or that an error occured
-   **/
-  enum class CODES { ERROR = -2, STOP = -1, FORWARD = 0, LEFT = 1, RIGHT = 2 };
+   * or that an error occured
+   */
+  enum class CODES : int {
+    ERROR = -2,
+    STOP = -1,
+    FORWARD = 0,
+    LEFT = 1,
+    RIGHT = 2
+  };
 
   /**
    * Helper typedef for function pointer to a function that manipulates a scene
-   *node These functions are used to get access to the python functions which
-   *implement the control functions
-   **/
-  typedef std::function<void(scene::SceneNode*)> MoveFn;
+   * node These functions are used to get access to the python functions which
+   * implement the control functions
+   */
+  typedef std::function<bool(scene::SceneNode*)> MoveFn;
 
   /**
    * Helper typedef for a sixdof pos
-   **/
+   */
   typedef std::tuple<vec3f, quatf> State;
 
   /**
    * Implements a follower that greedily fits actions to follow the geodesic
-   *shortest path
+   * shortest path
    *
    * Params
    * @param[in] pathfinder Instance of the pathfinder used for calculating the
-   *geodesic shortest path
+   *                       geodesic shortest path
    * @param[in] moveForward Function that implements "move_forward" on a
-   *SceneNode
+   *                        SceneNode
    * @param[in] turnLeft Function that implements "turn_left" on a SceneNode
    * @param[in] turnRight Function that implements "turn_right" on a SceneNode
    * @param[in] goalDist How close the agent needs to get to the goal before
-   *calling stop
+   *                     calling stop
    * @param[in] forwardAmount The amount "move_forward" moves the agent
    * @param[in] turnAmount The amount "turn_left"/"turn_right" turns the agent
-   *in radians
-   **/
+   *                       in radians
+   * @param[in] fixThrashing Whether or not to fix thrashing
+   * @param[in] thrashingThreshold The length of left, right, left, right
+   *                                actions needed to be considered thrashing
+   */
   GreedyGeodesicFollowerImpl(PathFinder::ptr& pathfinder,
                              MoveFn& moveForward,
                              MoveFn& turnLeft,
                              MoveFn& turnRight,
                              double goalDist,
                              double forwardAmount,
-                             double turnAmount)
-      : pathfinder_{pathfinder},
-        moveForward_{moveForward},
-        turnLeft_{turnLeft},
-        turnRight_{turnRight},
-        forwardAmount_{forwardAmount},
-        goalDist_{goalDist},
-        turnAmount_{turnAmount} {};
+                             double turnAmount,
+                             bool fixThrashing = true,
+                             int thrashingThreshold = 16);
 
   CODES nextActionAlong(const State& start, const vec3f& end);
 
@@ -69,15 +73,10 @@ class GreedyGeodesicFollowerImpl {
    * @param[in] currentPos The current position
    * @param[in] currentRot The current rotation
    * @param[in] end The end location of the path
-   **/
-  inline CODES nextActionAlong(const vec3f& currentPos,
-                               const vec4f& currentRot,
-                               const vec3f& end) {
-    quatf rot = Eigen::Map<const quatf>(currentRot.data());
-    return nextActionAlong(std::make_tuple(currentPos, rot), end);
-  }
-
-  std::vector<CODES> findPath(const State& start, const vec3f& end);
+   */
+  CODES nextActionAlong(const vec3f& currentPos,
+                        const vec4f& currentRot,
+                        const vec3f& end);
 
   /**
    * Finds the full path from the current agent state to the end location
@@ -86,31 +85,53 @@ class GreedyGeodesicFollowerImpl {
    * @param[in] startPos The starting position
    * @param[in] startRot The starting rotation
    * @param[in] end The end location of the path
-   **/
-  inline std::vector<CODES> findPath(const vec3f& startPos,
-                                     const vec4f& startRot,
-                                     const vec3f& end) {
-    quatf rot = Eigen::Map<const quatf>(startRot.data());
-    return findPath(std::make_tuple(startPos, rot), end);
-  }
+   */
+  std::vector<CODES> findPath(const vec3f& startPos,
+                              const vec4f& startRot,
+                              const vec3f& end);
+
+  std::vector<CODES> findPath(const State& start, const vec3f& end);
+
+  /**
+   * @breif Reset the planner.
+   *
+   * Should be called whenever a different goal is choosen or start state
+   * differs by more than action from the last start state
+   */
+  void reset();
 
  private:
   PathFinder::ptr pathfinder_;
   MoveFn moveForward_, turnLeft_, turnRight_;
   const double forwardAmount_, goalDist_, turnAmount_;
+  const bool fixThrashing_;
+  const int thrashingThreshold_;
+  const float closeToObsThreshold_ = 0.2f;
+
+  std::vector<CODES> actions_;
+  std::vector<CODES> thrashingActions_;
 
   scene::SceneGraph dummyScene_;
-  scene::SceneNode dummyNode_{dummyScene_.getRootNode()};
+  scene::SceneNode dummyNode_{dummyScene_.getRootNode()},
+      leftDummyNode_{dummyScene_.getRootNode()},
+      rightDummyNode_{dummyScene_.getRootNode()},
+      tryStepDummyNode_{dummyScene_.getRootNode()};
 
   CODES calcStepAlong(const State& start, const ShortestPath& path);
 
-  inline float geoDist(const vec3f& start, const vec3f& end) {
-    ShortestPath path;
-    path.requestedStart = start;
-    path.requestedEnd = end;
-    pathfinder_->findPath(path);
-    return path.geodesicDistance;
-  }
+  float geoDist(const vec3f& start, const vec3f& end);
+
+  std::tuple<float, float, float> tryStep(const scene::SceneNode& node,
+                                          const vec3f& end);
+  float computeReward(const scene::SceneNode& node,
+                      const nav::ShortestPath& path,
+                      const int primLen);
+
+  bool isThrashing();
+
+  std::vector<nav::GreedyGeodesicFollowerImpl::CODES> nextBestPrimAlong(
+      const State& state,
+      const nav::ShortestPath& path);
 
   CODES checkForward(const State& state);
 
