@@ -323,6 +323,11 @@ class PathFinder {
       const float pixelsPerMeter,
       const float height);
 
+  /**
+   * TODO: doc this
+   */
+  const std::shared_ptr<assets::MeshData> getNavMeshData();
+
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(PathFinder);
 };
 

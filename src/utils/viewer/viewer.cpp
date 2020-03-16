@@ -261,6 +261,12 @@ Viewer::Viewer(const Arguments& arguments)
 
       return currentPosition;
     });
+
+    // test navmesh visualization
+    scene::SceneNode& navmeshVisNode = rootNode_->createChild();
+    int nevMeshVisPrimID = resourceManager_.loadNavmeshVisualization(
+        *pathfinder_, &navmeshVisNode, &drawables);
+    navmeshVisNode.translate({0, 0.1, 0});
   }
 
   renderCamera_->node().setTransformation(

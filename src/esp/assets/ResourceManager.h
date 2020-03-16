@@ -379,6 +379,21 @@ class ResourceManager {
       const Magnum::ResourceKey& key = Magnum::ResourceKey{
           DEFAULT_LIGHTING_KEY});
 
+  /**
+   * @brief generate a new primitive mesh asset for the navmesh loaded in the
+   * provided PathFinder object.
+   *
+   * If parent and drawables are provided, create the Drawable and render the
+   * navmesh
+   * TODO: docs
+   *
+   * @return The primitive ID of the new object or @ref ID_UNDEFINED if
+   * construction failed.
+   */
+  int loadNavmeshVisualization(esp::nav::PathFinder& pathFinder,
+                               scene::SceneNode* parent,
+                               DrawableGroup* drawables);
+
  protected:
   /**
    * @brief Data for a loaded asset
@@ -560,21 +575,6 @@ class ResourceManager {
                           DrawableGroup* drawables);
 
   /**
-   * @brief generate a new primitive mesh asset for the navmesh loaded in the
-   * provided PathFinder object.
-   *
-   * If parent and drawables are provided, create the Drawable and render the
-   * navmesh
-   * TODO: docs
-   *
-   * @return The primitive ID of the new object or @ref ID_UNDEFINED if
-   * construction failed.
-   */
-  int loadNavmeshVisualization(esp::nav::PathFinder& pathFinder,
-                               scene::SceneNode* parent,
-                               DrawableGroup* drawables);
-
-  /**
    * @brief initialize default lighting setups in the current ShaderManager
    */
   void initDefaultLightSetups();
@@ -723,7 +723,7 @@ class ResourceManager {
    * @brief Primitive meshes available for instancing via @ref
    * addPrimitiveToDrawables for debugging or visualization purposes.
    */
-  std::vector<Magnum::GL::Mesh> primitive_meshes_;
+  std::vector<std::shared_ptr<Magnum::GL::Mesh>> primitive_meshes_;
 
   /**
    * @brief Maps string keys (typically property filenames) to @ref

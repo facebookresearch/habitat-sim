@@ -233,6 +233,8 @@ struct PathFinder::Impl {
       const float pixelsPerMeter,
       const float height);
 
+  const assets::MeshData::ptr getNavMeshData();
+
  private:
   struct NavMeshDeleter {
     void operator()(dtNavMesh* mesh) { dtFreeNavMesh(mesh); }
@@ -245,6 +247,7 @@ struct PathFinder::Impl {
   std::unique_ptr<dtNavMeshQuery, NavQueryDeleter> navQuery_ = nullptr;
   std::unique_ptr<dtQueryFilter> filter_ = nullptr;
   std::unique_ptr<impl::IslandSystem> islandSystem_ = nullptr;
+  assets::MeshData::ptr meshData_ = nullptr;
 
   std::pair<vec3f, vec3f> bounds_;
 
@@ -1165,6 +1168,66 @@ PathFinder::Impl::getTopDownView(const float pixelsPerMeter,
   return topdownMap;
 }
 
+const assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
+  if (meshData_ == nullptr) {
+    // TODO: scrape the data
+    meshData_ = assets::MeshData::create();
+    std::vector<esp::vec3f>& vbo = meshData_->vbo;
+    std::vector<uint32_t>& ibo = meshData_->ibo;
+
+    // Iterate over all tiles
+    for (int iTile = 0; iTile < navMesh_->getMaxTiles(); ++iTile) {
+      const dtMeshTile* tile =
+          const_cast<const dtNavMesh*>(navMesh_.get())->getTile(iTile);
+      if (!tile)
+        continue;
+
+      // Iterate over all polygons in a tile
+      for (int jPoly = 0; jPoly < tile->header->polyCount; ++jPoly) {
+        // Get the polygon reference from the tile and polygon id
+        dtPolyRef polyRef = navMesh_->encodePolyId(iTile, tile->salt, jPoly);
+        const dtPoly* poly = nullptr;
+        const dtMeshTile* tmp = nullptr;
+        navMesh_->getTileAndPolyByRefUnsafe(polyRef, &tmp, &poly);
+
+        CORRADE_INTERNAL_ASSERT(poly != nullptr);
+        CORRADE_INTERNAL_ASSERT(tmp != nullptr);
+
+        // Code to iterate over triangles from here:
+        // https://github.com/recastnavigation/recastnavigation/blob/57610fa6ef31b39020231906f8c5d40eaa8294ae/Detour/Source/DetourNavMesh.cpp#L684
+        const std::ptrdiff_t ip = poly - tile->polys;
+        const dtPolyDetail* pd = &tile->detailMeshes[ip];
+        for (int j = 0; j < pd->triCount; ++j) {
+          const unsigned char* t = &tile->detailTris[(pd->triBase + j) * 4];
+          const float* v[3];
+          // esp::vec3f v;
+          for (int k = 0; k < 3; ++k) {
+            if (t[k] < poly->vertCount)
+              vbo.push_back(
+                  Eigen::Map<const vec3f>(&tile->verts[poly->verts[t[k]] * 3]));
+            else
+              vbo.push_back(Eigen::Map<const vec3f>(
+                  &tile->detailVerts[(pd->vertBase + (t[k] - poly->vertCount)) *
+                                     3]));
+          }
+
+          // TODO: don't duplicate geometry
+          /*
+          auto itr = std::find(vbo.begin(), vbo.end(), v);
+          if(itr != vbo.last)
+
+          }
+           */
+          ibo.push_back(vbo.size() - 3);
+          ibo.push_back(vbo.size() - 2);
+          ibo.push_back(vbo.size() - 1);
+        }
+      }
+    }
+  }
+  return meshData_;
+}
+
 PathFinder::PathFinder() : pimpl_{spimpl::make_unique_impl<Impl>()} {};
 
 bool PathFinder::build(const NavMeshSettings& bs,
@@ -1263,6 +1326,10 @@ Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::getTopDownView(
     const float pixelsPerMeter,
     const float height) {
   return pimpl_->getTopDownView(pixelsPerMeter, height);
+}
+
+const assets::MeshData::ptr PathFinder::getNavMeshData() {
+  return pimpl_->getNavMeshData();
 }
 
 }  // namespace nav
