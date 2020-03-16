@@ -54,6 +54,9 @@ namespace physics {
 class PhysicsManager;
 class RigidObject;
 }  // namespace physics
+namespace nav {
+class PathFinder;
+}
 namespace assets {
 
 /**
@@ -555,6 +558,21 @@ class ResourceManager {
   bool loadSUNCGHouseFile(const AssetInfo& info,
                           scene::SceneNode* parent,
                           DrawableGroup* drawables);
+
+  /**
+   * @brief generate a new primitive mesh asset for the navmesh loaded in the
+   * provided PathFinder object.
+   *
+   * If parent and drawables are provided, create the Drawable and render the
+   * navmesh
+   * TODO: docs
+   *
+   * @return The primitive ID of the new object or @ref ID_UNDEFINED if
+   * construction failed.
+   */
+  int loadNavmeshVisualization(esp::nav::PathFinder& pathFinder,
+                               scene::SceneNode* parent,
+                               DrawableGroup* drawables);
 
   /**
    * @brief initialize default lighting setups in the current ShaderManager

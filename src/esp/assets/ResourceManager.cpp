@@ -1183,6 +1183,20 @@ bool ResourceManager::loadGeneralMeshData(
   return true;
 }
 
+int ResourceManager::loadNavmeshVisualization(esp::nav::PathFinder& pathFinder,
+                                              scene::SceneNode* parent,
+                                              DrawableGroup* drawables) {
+  int navMeshPrimitiveID = ID_UNDEFINED;
+
+  // TODO: create the mesh here
+
+  if (parent != nullptr && drawables != nullptr) {
+    // TODO: create the drawable here
+  }
+
+  return navMeshPrimitiveID;
+}
+
 void ResourceManager::loadMaterials(Importer& importer,
                                     LoadedAssetData& loadedAssetData) {
   int materialStart = nextMaterialID_;
