@@ -1,15 +1,16 @@
-Configuring Light Setups
-########################
+Working with Lights
+###################
 
 .. contents::
     :class: m-block m-default
 
-:summary: This example shows how to create and manipulate light setups in habitat-sim
+This tutorial shows how to create and manipulate light setups.
 
 `Imports`_
 ==========
 
-First, we import libraries and lighting structures for later use
+First, we import modules we will need.
+
 .. code:: py
 
     import math
@@ -25,7 +26,7 @@ First, we import libraries and lighting structures for later use
 `Helper Functions and Constants`_
 =================================
 
-Next we define some simple helper functions and constants for later use.
+Next, we define some simple helper functions and constants.
 
 .. code:: py
 
@@ -48,7 +49,7 @@ Next we define some simple helper functions and constants for later use.
 `Simulator and Agent Configuration`_
 ====================================
 
-Next we create a simulator and place our agent in the scene.
+Next, we create a simulator and place our agent in the scene.
 
 .. code:: py
 
@@ -91,7 +92,8 @@ To use a non-default light setup for the scene, simply use the `sceneLightSetup`
 `Default Object Lighting`_
 ==========================
 
-By default, added objects will be phong shaded with lights at the corners of the scene
+By default, added objects will be phong shaded with lights at the corners of the scene.
+
 .. code:: py
 
     id_1 = sim.add_object(1)
@@ -100,7 +102,8 @@ By default, added objects will be phong shaded with lights at the corners of the
     show_obs(sim)
 .. image:: default_object_lighting.png
 
-We can update the default lighting
+We can update the default lighting.
+
 .. code:: py
 
     my_default_lighting = [LightInfo(position=[2.0, 2.0, 1.0], model=LightPositionModel.CAMERA)]
@@ -110,7 +113,8 @@ We can update the default lighting
     show_obs(sim)
 .. image:: change_default_lighting.png
 
-Newly added objects will use the current default lighting
+Newly added objects will use the current default lighting.
+
 .. code:: py
 
     id_2 = sim.add_object(3)
@@ -125,12 +129,14 @@ Newly added objects will use the current default lighting
 ========================
 
 To use multiple custom lighting setups at the same time, simply give them a name on creation.
+
 .. code:: py
 
     light_setup_2 = [LightInfo(position=[8.0, 1.5, 0.0], model=LightPositionModel.GLOBAL)]
     sim.set_light_setup(light_setup_2, "my_custom_lighting")
 
 To use this a light setup, pass in the name as a parameter to `Simulator.add_object`.
+
 .. code:: py
 
     remove_all_objects(sim)
@@ -149,11 +155,13 @@ To use this a light setup, pass in the name as a parameter to `Simulator.add_obj
 .. image:: custom_lighting.png
 
 You can get a copy of an existing configuration with `Simulator.get_light_setup`.
+
 .. code:: py
 
     existing_light_setup = sim.get_light_setup("my_custom_lighting")
 
 Updates to existing light setups will update all objects using that setup
+
 .. code:: py
 
     new_light_setup = existing_light_setup + [LightInfo(position=[0.0, 0.0, 0.0], color=[0.8, 0.8, 0.7], model=LightPositionModel.CAMERA)]
@@ -163,6 +171,7 @@ Updates to existing light setups will update all objects using that setup
 .. image:: change_custom_lighting.png
 
 You can change the light setup an individual object uses.
+
 .. code:: py
 
     sim.set_object_light_setup(id_1, habitat_sim.gfx.DEFAULT_LIGHTING_KEY)
