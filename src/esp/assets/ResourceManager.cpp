@@ -1189,9 +1189,39 @@ int ResourceManager::loadNavmeshVisualization(esp::nav::PathFinder& pathFinder,
   int navMeshPrimitiveID = ID_UNDEFINED;
 
   // TODO: create the mesh here
+  std::vector<Magnum::UnsignedInt> indices;
+  std::vector<std::vector<Magnum::Vector3>> positions{
+      std::vector<Magnum::Vector3>()};  // only one component
+  std::vector<std::vector<Magnum::Vector3>> normals{
+      std::vector<Magnum::Vector3>()};  // only one component
 
-  if (parent != nullptr && drawables != nullptr) {
-    // TODO: create the drawable here
+  // TODO: add the vertices
+  // positions.back().push_back(
+
+  // TODO: add indices
+  // indices.push_back(ix);
+  // indices.push_back(ixNext);
+  // indices.push_back(ixNextPlus);
+
+  // TODO: create the mesh object
+  Magnum::Trade::MeshData3D visualNavMesh{Magnum::MeshPrimitive::Triangles,
+                                          indices,
+                                          positions,
+                                          normals,
+                                          {},
+                                          {},
+                                          nullptr};
+
+  // TODO: add the new mesh to the structure
+  // primitive_meshes_.push_back(std::make_shared<Magnum::GL::Mesh>(
+  //    Magnum::MeshTools::compile(visualNavMesh)));
+
+  navMeshPrimitiveID = primitive_meshes_.size() - 1;
+
+  if (parent != nullptr && drawables != nullptr &&
+      navMeshPrimitiveID != ID_UNDEFINED) {
+    // create the drawable
+    addPrimitiveToDrawables(navMeshPrimitiveID, *parent, drawables);
   }
 
   return navMeshPrimitiveID;
