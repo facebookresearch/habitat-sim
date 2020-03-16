@@ -315,7 +315,8 @@ class Simulator {
    * @return Whether or not the navmesh recomputation succeeded.
    */
   bool recomputeNavMesh(nav::PathFinder& pathfinder,
-                        const nav::NavMeshSettings& navMeshSettings);
+                        const nav::NavMeshSettings& navMeshSettings,
+                        bool includeStaticObjects = false);
 
   /**
    * @brief Enable or disable frustum culling (enabled by default)

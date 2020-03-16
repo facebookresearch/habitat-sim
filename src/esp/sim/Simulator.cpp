@@ -384,7 +384,8 @@ double Simulator::getWorldTime() {
 }
 
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
-                                 const nav::NavMeshSettings& navMeshSettings) {
+                                 const nav::NavMeshSettings& navMeshSettings,
+                                 bool includeStaticObjects) {
   CORRADE_ASSERT(
       config_.createRenderer,
       "Simulator::recomputeNavMesh: SimulatorConfiguration::createRenderer is "
@@ -394,6 +395,20 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 
   assets::MeshData::uptr joinedMesh =
       resourceManager_.createJoinedCollisionMesh(config_.scene.id);
+
+  // add STATIC collision objects
+  if (includeStaticObjects) {
+    for (auto objectID : physicsManager_->getExistingObjectIDs()) {
+      if (physicsManager_->getObjectMotionType(objectID) ==
+          physics::MotionType::STATIC) {
+        // TODO: add the object via rendering mesh and node transformation
+
+        // TODO: add object via collision mesh?
+
+        // TODO: add object via bounding box?
+      }
+    }
+  }
 
   if (!pathfinder.build(navMeshSettings, *joinedMesh)) {
     LOG(ERROR) << "Failed to build navmesh";
