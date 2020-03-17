@@ -38,8 +38,14 @@ ShadowCasterShader::ShadowCasterShader() {
 
   const Mn::Utility::Resource rs{"default-shaders"};
 
-  Mn::GL::Shader vert{Mn::GL::Version::GL330, Mn::GL::Shader::Type::Vertex};
-  Mn::GL::Shader frag{Mn::GL::Version::GL330, Mn::GL::Shader::Type::Fragment};
+#ifdef MAGNUM_TARGET_WEBGL
+  Magnum::GL::Version version = Magnum::GL::Version::GLES300;
+#else
+  Magnum::GL::Version version = Magnum::GL::Version::GL410;
+#endif
+
+  Mn::GL::Shader vert{version, Mn::GL::Shader::Type::Vertex};
+  Mn::GL::Shader frag{version, Mn::GL::Shader::Type::Fragment};
 
   vert.addSource(rs.get("ShadowCaster.vert"));
   frag.addSource(rs.get("ShadowCaster.frag"));
