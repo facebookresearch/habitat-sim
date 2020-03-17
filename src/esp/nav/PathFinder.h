@@ -324,7 +324,12 @@ class PathFinder {
       const float height);
 
   /**
-   * TODO: doc this
+   * @brief Returns a MeshData object containing triangulated NavMesh polys. The
+   * object is generated and stored if this is the first query.
+   *
+   * Does nothing if the PathFinder is not loaded.
+   *
+   * @return The object containing triangulated NavMesh polys.
    */
   const std::shared_ptr<assets::MeshData> getNavMeshData();
 

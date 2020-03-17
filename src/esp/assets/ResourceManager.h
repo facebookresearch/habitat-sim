@@ -380,17 +380,18 @@ class ResourceManager {
           DEFAULT_LIGHTING_KEY});
 
   /**
-   * @brief generate a new primitive mesh asset for the navmesh loaded in the
+   * @brief generate a new primitive mesh asset for the NavMesh loaded in the
    * provided PathFinder object.
    *
    * If parent and drawables are provided, create the Drawable and render the
-   * navmesh
-   * TODO: docs
-   *
+   * NavMesh.
+   * @param pathFinder Holds the NavMesh information.
+   * @param parent The new Drawable is attached to this node.
+   * @param drawables The group with which the new Drawable will be rendered.
    * @return The primitive ID of the new object or @ref ID_UNDEFINED if
    * construction failed.
    */
-  int loadNavmeshVisualization(esp::nav::PathFinder& pathFinder,
+  int loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
                                scene::SceneNode* parent,
                                DrawableGroup* drawables);
 

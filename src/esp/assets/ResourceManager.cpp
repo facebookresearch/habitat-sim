@@ -1186,7 +1186,7 @@ bool ResourceManager::loadGeneralMeshData(
   return true;
 }
 
-int ResourceManager::loadNavmeshVisualization(esp::nav::PathFinder& pathFinder,
+int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
                                               scene::SceneNode* parent,
                                               DrawableGroup* drawables) {
   int navMeshPrimitiveID = ID_UNDEFINED;
@@ -1197,8 +1197,6 @@ int ResourceManager::loadNavmeshVisualization(esp::nav::PathFinder& pathFinder,
   // create the mesh
   std::vector<Magnum::UnsignedInt> indices;
   std::vector<std::vector<Magnum::Vector3>> positions{
-      std::vector<Magnum::Vector3>()};  // only one component
-  std::vector<std::vector<Magnum::Vector3>> normals{
       std::vector<Magnum::Vector3>()};  // only one component
 
   const MeshData::ptr navMeshData = pathFinder.getNavMeshData();

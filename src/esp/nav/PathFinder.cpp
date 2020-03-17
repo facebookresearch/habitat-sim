@@ -247,6 +247,9 @@ struct PathFinder::Impl {
   std::unique_ptr<dtNavMeshQuery, NavQueryDeleter> navQuery_ = nullptr;
   std::unique_ptr<dtQueryFilter> filter_ = nullptr;
   std::unique_ptr<impl::IslandSystem> islandSystem_ = nullptr;
+
+  //! Holds triangulated geom/topo. Generated when queried. Reset with
+  //! navQuery_.
   assets::MeshData::ptr meshData_ = nullptr;
 
   std::pair<vec3f, vec3f> bounds_;
@@ -613,6 +616,9 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
 }
 
 bool PathFinder::Impl::initNavQuery() {
+  // if we are reinitializing the NavQuery, then also reset the MeshData
+  meshData_.reset();
+
   navQuery_.reset(dtAllocNavMeshQuery());
   dtStatus status = navQuery_->init(navMesh_.get(), 2048);
   if (dtStatusFailed(status)) {
@@ -1169,8 +1175,7 @@ PathFinder::Impl::getTopDownView(const float pixelsPerMeter,
 }
 
 const assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
-  if (meshData_ == nullptr) {
-    // TODO: scrape the data
+  if (meshData_ == nullptr && isLoaded()) {
     meshData_ = assets::MeshData::create();
     std::vector<esp::vec3f>& vbo = meshData_->vbo;
     std::vector<uint32_t>& ibo = meshData_->ibo;
@@ -1199,8 +1204,6 @@ const assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
         const dtPolyDetail* pd = &tile->detailMeshes[ip];
         for (int j = 0; j < pd->triCount; ++j) {
           const unsigned char* t = &tile->detailTris[(pd->triBase + j) * 4];
-          const float* v[3];
-          // esp::vec3f v;
           for (int k = 0; k < 3; ++k) {
             if (t[k] < poly->vertCount)
               vbo.push_back(
@@ -1211,13 +1214,6 @@ const assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
                                      3]));
           }
 
-          // TODO: don't duplicate geometry
-          /*
-          auto itr = std::find(vbo.begin(), vbo.end(), v);
-          if(itr != vbo.last)
-
-          }
-           */
           ibo.push_back(vbo.size() - 3);
           ibo.push_back(vbo.size() - 2);
           ibo.push_back(vbo.size() - 1);

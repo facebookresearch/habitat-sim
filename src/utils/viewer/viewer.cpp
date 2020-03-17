@@ -143,6 +143,8 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("debug-bullet", "render Bullet physics debug wireframes")
       .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG)
       .setHelp("physics-config", "physics scene config file")
+      .addOption("navmesh-file")
+      .setHelp("navmesh-file", "manual override path to scene navmesh file")
       .addBooleanOption("recompute-navmesh")
       .setHelp("recompute-navmesh", "programmatically generate scene navmesh")
       .parse(arguments.argc, arguments.argv);
@@ -243,6 +245,13 @@ Viewer::Viewer(const Arguments& arguments)
       navMeshSettings.setDefaults();
       recomputeNavMesh(file, navMeshSettings);
     }
+  } else {
+    std::string navmeshFilename = Corrade::Utility::Directory::join(
+        Corrade::Utility::Directory::current(), args.value("navmesh-file"));
+    if (Utility::Directory::exists(navmeshFilename)) {
+      LOG(INFO) << "Loading navmesh from " << navmeshFilename;
+      pathfinder_->loadNavMesh(navmeshFilename);
+    }
   }
 
   // connect controls to navmesh if loaded
@@ -264,7 +273,7 @@ Viewer::Viewer(const Arguments& arguments)
 
     // test navmesh visualization
     scene::SceneNode& navmeshVisNode = rootNode_->createChild();
-    int nevMeshVisPrimID = resourceManager_.loadNavmeshVisualization(
+    int nevMeshVisPrimID = resourceManager_.loadNavMeshVisualization(
         *pathfinder_, &navmeshVisNode, &drawables);
     navmeshVisNode.translate({0, 0.1, 0});
   }
