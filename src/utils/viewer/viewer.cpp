@@ -94,6 +94,9 @@ class Viewer : public Magnum::Platform::Application {
   bool debugBullet_ = false;
 
   std::vector<int> sceneID_;
+
+  // store this to later check for empty scene and use recomputeNavmesh
+  std::string sceneFilename_;
   scene::SceneNode* agentBodyNode_ = nullptr;
   scene::SceneNode* rgbSensorNode_ = nullptr;
 
@@ -175,6 +178,8 @@ Viewer::Viewer(const Arguments& arguments)
   auto& drawables = sceneGraph_->getDrawables();
   const std::string& file = args.value("scene");
   assets::AssetInfo info = assets::AssetInfo::fromPath(file);
+  sceneFilename_ = info.filepath;
+  Corrade::Utility::Debug() << "sceneFilename_ = " << sceneFilename_;
   std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
   if (args.isSet("scene-requires-lighting")) {
     info.requiresLighting = true;
@@ -617,6 +622,26 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         LOG(WARNING)
             << "Run the app with --enable-physics in order to add objects";
     } break;
+    case KeyEvent::Key::M: {
+      if (physicsManager_ != nullptr) {
+        if (objectIDs_.size() > 0) {
+          if (physicsManager_->getObjectMotionType(objectIDs_.back()) ==
+              physics::MotionType::STATIC) {
+            physicsManager_->setObjectMotionType(objectIDs_.back(),
+                                                 physics::MotionType::DYNAMIC);
+            Corrade::Utility::Debug()
+                << "Made object " << objectIDs_.back() << " DYNAMIC.";
+          } else {
+            physicsManager_->setObjectMotionType(objectIDs_.back(),
+                                                 physics::MotionType::STATIC);
+            Corrade::Utility::Debug()
+                << "Made object " << objectIDs_.back() << " STATIC.";
+          }
+        }
+      } else
+        LOG(WARNING)
+            << "Run the app with --enable-physics in order to add objects";
+    } break;
     case KeyEvent::Key::P:
       pokeLastObject();
       break;
@@ -635,6 +660,14 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::T:
       // Test key. Put what you want here...
       torqueLastObject();
+      break;
+    case KeyEvent::Key::R:
+      // Recompute navmesh with added objects (if scene is not "NONE")
+      if (sceneFilename_ != "NONE") {
+        esp::nav::NavMeshSettings navMeshSettings;
+        navMeshSettings.setDefaults();
+        recomputeNavMesh(sceneFilename_, navMeshSettings, true);
+      }
       break;
     case KeyEvent::Key::I:
       Magnum::DebugTools::screenshot(GL::defaultFramebuffer,
