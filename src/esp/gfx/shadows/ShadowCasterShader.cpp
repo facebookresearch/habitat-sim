@@ -30,8 +30,9 @@ namespace gfx {
 namespace Mn = Magnum;
 
 ShadowCasterShader::ShadowCasterShader() {
-  MAGNUM_ASSERT_GL_VERSION_SUPPORTED(Mn::GL::Version::GL330);
-
+#ifndef MAGNUM_TARGET_WEBGL
+  MAGNUM_ASSERT_GL_VERSION_SUPPORTED(Magnum::GL::Version::GL410);
+#endif
   if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
   }
