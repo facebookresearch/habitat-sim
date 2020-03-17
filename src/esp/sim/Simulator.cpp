@@ -128,8 +128,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
         auto& semanticDrawables = semanticSceneGraph.getDrawables();
         const assets::AssetInfo semanticSceneInfo =
             assets::AssetInfo::fromPath(semanticMeshFilename);
-        resourceManager_.loadScene(semanticSceneInfo, &semanticRootNode,
-                                   &semanticDrawables);
+        resourceManager_.loadScene(
+            semanticSceneInfo, &semanticRootNode, &semanticDrawables,
+            assets::ResourceManager::NO_LIGHT_KEY, cfg.frustumCulling);
       }
       LOG(INFO) << "Loaded.";
     } else {

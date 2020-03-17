@@ -166,7 +166,6 @@ class PathFinder {
              const int ntris,
              const float* bmin,
              const float* bmax);
-
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
 
   /**

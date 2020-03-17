@@ -2,6 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include "ResourceManager.h"
+
 #include <functional>
 
 #include <Corrade/Containers/ArrayViewStl.h>
@@ -40,22 +42,22 @@
 #include "esp/gfx/PrimitiveIDShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
+#include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneGraph.h"
 
+<<<<<<< HEAD
 #include "esp/nav/PathFinder.h"
-
-#include "CollisionMeshData.h"
-#include "GenericInstanceMeshData.h"
-#include "GltfMeshData.h"
-#include "MeshData.h"
-#include "Mp3dInstanceMeshData.h"
-#include "ResourceManager.h"
-#include "esp/physics/PhysicsManager.h"
-
+=======
 #ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/BulletPhysicsManager.h"
 #endif
+>>>>>>> origin/master
+
+    #include "CollisionMeshData.h"
+#include "GenericInstanceMeshData.h"
+#include "GltfMeshData.h"
+#include "MeshData.h"
 
 #ifdef ESP_BUILD_PTEX_SUPPORT
 #include "PTexMeshData.h"
@@ -63,7 +65,7 @@
 #include "esp/gfx/PTexMeshShader.h"
 #endif
 
-namespace Cr = Corrade;
+    namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 namespace esp {
@@ -83,13 +85,14 @@ bool ResourceManager::loadScene(
     const AssetInfo& info,
     scene::SceneNode* parent, /* = nullptr */
     DrawableGroup* drawables, /* = nullptr */
-    const Magnum::ResourceKey&
-        lightSetup /* = Mn::ResourceKey{NO_LIGHT_KEY} */) {
+    const Magnum::ResourceKey& lightSetup /* = Mn::ResourceKey{NO_LIGHT_KEY} */,
+    bool splitSemanticMesh /* = true */) {
   // we only compute absolute AABB for every mesh component when loading ptex
   // mesh, or general mesh (e.g., MP3D)
   staticDrawableInfo_.clear();
   if (info.type == AssetType::FRL_PTEX_MESH ||
-      info.type == AssetType::MP3D_MESH) {
+      info.type == AssetType::MP3D_MESH ||
+      (info.type == AssetType::INSTANCE_MESH && splitSemanticMesh)) {
     computeAbsoluteAABBs_ = true;
   }
 
@@ -101,7 +104,8 @@ bool ResourceManager::loadScene(
       meshSuccess = false;
     } else {
       if (info.type == AssetType::INSTANCE_MESH) {
-        meshSuccess = loadInstanceMeshData(info, parent, drawables);
+        meshSuccess =
+            loadInstanceMeshData(info, parent, drawables, splitSemanticMesh);
       } else if (info.type == AssetType::FRL_PTEX_MESH) {
         meshSuccess = loadPTexMeshData(info, parent, drawables);
       } else if (info.type == AssetType::SUNCG_SCENE) {
@@ -145,10 +149,12 @@ bool ResourceManager::loadScene(
           "ResourceManager::loadScene: ptex mesh is not loaded correctly.",
           false);
 
-      computePTexMeshAbsoluteAABBs(*(meshes_[metaData.meshIndex.first].get()));
+      computePTexMeshAbsoluteAABBs(*meshes_[metaData.meshIndex.first]);
 #endif
     } else if (info.type == AssetType::MP3D_MESH) {
       computeGeneralMeshAbsoluteAABBs();
+    } else if (info.type == AssetType::INSTANCE_MESH) {
+      computeInstanceMeshAbsoluteAABBs();
     }
   }
 
@@ -785,19 +791,14 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
 
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
     // convert std::vector<vec3f> to std::vector<Mn::Vector3>
-    std::vector<Mn::Vector3> pos;
-    uint32_t meshID = staticDrawableInfo_[iEntry].meshID;
-    for (auto& p : submeshes[meshID].vbo) {
-      pos.emplace_back(p);
-    }
+    const PTexMeshData::MeshData& submesh =
+        submeshes[staticDrawableInfo_[iEntry].meshID];
+    std::vector<Mn::Vector3> pos{submesh.vbo.begin(), submesh.vbo.end()};
 
     // transform the vertex positions to the world space
     Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], pos);
 
-    // locate the scene node which contains the current drawable
     scene::SceneNode& node = staticDrawableInfo_[iEntry].node;
-
-    // set the absolute axis aligned bounding box
     node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(pos)});
   }
 }
@@ -824,16 +825,16 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
 
     // transform the vertex positions to the world space, compute the aabb for
     // each position array
-    for (uint32_t jArray = 0; jArray < (*meshData).positionArrayCount();
+    for (uint32_t jArray = 0; jArray < meshData->positionArrayCount();
          ++jArray) {
-      std::vector<Mn::Vector3>& pos = (*meshData).positions(jArray);
+      const std::vector<Mn::Vector3>& pos = meshData->positions(jArray);
       std::vector<Mn::Vector3> absPos =
           Mn::MeshTools::transformPoints(absTransforms[iEntry], pos);
 
       std::pair<Mn::Vector3, Mn::Vector3> bb =
           Mn::Math::minmax<Mn::Vector3>(absPos);
-      bbPos.push_back(bb.first);
-      bbPos.push_back(bb.second);
+      bbPos.push_back(std::move(bb.first));
+      bbPos.push_back(std::move(bb.second));
     }
 
     // locate the scene node which contains the current drawable
@@ -845,36 +846,56 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
   }  // iEntry
 }
 
+void ResourceManager::computeInstanceMeshAbsoluteAABBs() {
+  std::vector<Mn::Matrix4> absTransforms = computeAbsoluteTransformations();
+
+  CORRADE_ASSERT(
+      absTransforms.size() == staticDrawableInfo_.size(),
+      "ResourceManager::computeInstancelMeshAbsoluteAABBs: number of "
+      "transforms does not match number of drawables.", );
+
+  for (size_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
+    const uint32_t meshID = staticDrawableInfo_[iEntry].meshID;
+
+    // convert std::vector<vec3f> to std::vector<Mn::Vector3>
+    const std::vector<vec3f>& vertexPositions =
+        dynamic_cast<GenericInstanceMeshData&>(*meshes_[meshID])
+            .getVertexBufferObjectCPU();
+    std::vector<Mn::Vector3> transformedPositions{vertexPositions.begin(),
+                                                  vertexPositions.end()};
+
+    Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry],
+                                          transformedPositions);
+
+    scene::SceneNode& node = staticDrawableInfo_[iEntry].node;
+    node.setAbsoluteAABB(
+        Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(transformedPositions)});
+  }  // iEntry
+}
+
 std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations() {
   // sanity check
   if (staticDrawableInfo_.size() == 0) {
-    return std::vector<Mn::Matrix4>{};
+    return {};
   }
 
   // basic assumption is that all the drawables are in the same scene;
   // so use the 1st element in the vector to obtain this scene
-  auto* scene = dynamic_cast<Mn::SceneGraph::Scene<
-      Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<float>>*>(
-      staticDrawableInfo_[0].node.scene());
+  auto* scene = dynamic_cast<MagnumScene*>(staticDrawableInfo_[0].node.scene());
 
   CORRADE_ASSERT(scene != nullptr,
                  "ResourceManager::computeAbsoluteTransformations: the node is "
                  "not attached to any scene graph.",
-                 std::vector<Mn::Matrix4>{});
+                 {});
 
   // collect all drawable objects
-  std::vector<std::reference_wrapper<Mn::SceneGraph::Object<
-      Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<float>>>>
-      objects;
+  std::vector<std::reference_wrapper<MagnumObject>> objects;
   objects.reserve(staticDrawableInfo_.size());
-
-  for (std::size_t iDrawable = 0; iDrawable < staticDrawableInfo_.size();
-       ++iDrawable) {
-    objects.emplace_back(
-        dynamic_cast<Mn::SceneGraph::Object<
-            Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<
-                float>>&>(staticDrawableInfo_[iDrawable].node));
-  }
+  std::transform(staticDrawableInfo_.begin(), staticDrawableInfo_.end(),
+                 std::back_inserter(objects),
+                 [](const StaticDrawableInfo& info) -> MagnumObject& {
+                   return info.node;
+                 });
 
   // compute transformations of all objects in the group relative to the root,
   // which are the absolute transformations
@@ -961,30 +982,51 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 }
 
 // semantic instance mesh import
-bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
-                                           scene::SceneNode* parent,
-                                           DrawableGroup* drawables) {
+bool ResourceManager::loadInstanceMeshData(
+    const AssetInfo& info,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables,
+    bool splitSemanticMesh /* = true */) {
+  if (info.type != AssetType::INSTANCE_MESH) {
+    LOG(ERROR) << "loadInstanceMeshData only works with INSTANCE_MESH type!";
+    return false;
+  }
   // if this is a new file, load it and add it to the dictionary, create
   // shaders and add it to the shaderPrograms_
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
-    if (info.type == AssetType::INSTANCE_MESH) {
-      meshes_.emplace_back(std::make_unique<GenericInstanceMeshData>());
+    std::vector<GenericInstanceMeshData::uptr> instanceMeshes;
+    if (splitSemanticMesh) {
+      instanceMeshes =
+          GenericInstanceMeshData::fromPlySplitByObjectId(filename);
+    } else {
+      GenericInstanceMeshData::uptr meshData =
+          GenericInstanceMeshData::fromPLY(filename);
+      if (meshData)
+        instanceMeshes.emplace_back(std::move(meshData));
     }
-    int index = meshes_.size() - 1;
-    auto* instanceMeshData =
-        dynamic_cast<GenericInstanceMeshData*>(meshes_[index].get());
 
-    instanceMeshData->loadPLY(filename);
-    instanceMeshData->uploadBuffersToGPU(false);
+    if (instanceMeshes.empty()) {
+      LOG(ERROR) << "Error loading instance mesh data";
+      return false;
+    }
 
-    instance_mesh_ = &(instanceMeshData->getRenderingBuffer()->mesh);
+    int meshStart = meshes_.size();
+    int meshEnd = meshStart + instanceMeshes.size() - 1;
+    MeshMetaData meshMetaData{meshStart, meshEnd};
+    meshMetaData.root.children.resize(instanceMeshes.size());
+
+    for (int meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
+         ++meshIDLocal) {
+      instanceMeshes[meshIDLocal]->uploadBuffersToGPU(false);
+      meshes_.emplace_back(std::move(instanceMeshes[meshIDLocal]));
+
+      meshMetaData.root.children[meshIDLocal].meshIDLocal = meshIDLocal;
+    }
+
     // update the dictionary
-    auto inserted =
-        resourceDict_.emplace(filename, LoadedAssetData{info, {index, index}});
-    MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
-    meshMetaData.root.meshIDLocal = 0;
-    meshMetaData.root.componentID = 0;
+    resourceDict_.emplace(filename,
+                          LoadedAssetData{info, std::move(meshMetaData)});
   }
 
   // create the scene graph by request
@@ -993,12 +1035,14 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
     int start = indexPair.first;
     int end = indexPair.second;
 
-    for (int iMesh = start; iMesh <= end; ++iMesh) {
-      auto* instanceMeshData =
-          dynamic_cast<GenericInstanceMeshData*>(meshes_[iMesh].get());
+    for (uint32_t iMesh = start; iMesh <= end; ++iMesh) {
       scene::SceneNode& node = parent->createChild();
       node.addFeature<gfx::PrimitiveIDDrawable>(
-          *instanceMeshData->getMagnumGLMesh(), shaderManager_, drawables);
+          *meshes_[iMesh]->getMagnumGLMesh(), shaderManager_, drawables);
+
+      if (computeAbsoluteAABBs_) {
+        staticDrawableInfo_.emplace_back(StaticDrawableInfo{node, iMesh});
+      }
     }
   }
 

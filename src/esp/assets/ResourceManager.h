@@ -105,13 +105,17 @@ class ResourceManager {
    * static.
    * @param drawables The @ref DrawableGroup with which the scene mesh will be
    * rendered.
+   * @param lightSetup The @ref LightSetup used for scene lighting
+   * @param splitSemanticMesh Split the semantic mesh by objectID, used for A/B
+   * testing
    * @return Whether or not the scene load succeeded.
    */
-  bool loadScene(const AssetInfo& info,
-                 scene::SceneNode* parent = nullptr,
-                 DrawableGroup* drawables = nullptr,
-                 const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
-                     NO_LIGHT_KEY});
+  bool loadScene(
+      const AssetInfo& info,
+      scene::SceneNode* parent = nullptr,
+      DrawableGroup* drawables = nullptr,
+      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{NO_LIGHT_KEY},
+      bool splitSemanticMesh = true);
 
   /**
    * @brief Load and instantiate a scene including physics simulation.
@@ -540,7 +544,8 @@ class ResourceManager {
    */
   bool loadInstanceMeshData(const AssetInfo& info,
                             scene::SceneNode* parent,
-                            DrawableGroup* drawables);
+                            DrawableGroup* drawables,
+                            bool splitSemanticMesh = true);
 
   /**
    * @brief Load a mesh (e.g. gltf) into assets from a file.
@@ -623,6 +628,12 @@ class ResourceManager {
    * MP3D) world space
    */
   void computeGeneralMeshAbsoluteAABBs();
+
+  /**
+   * @brief Compute the absolute AABBs for drawables in semantic mesh in world
+   * space
+   */
+  void computeInstanceMeshAbsoluteAABBs();
 
   /**
    * @brief Compute absolute transformations of all drwables stored in
