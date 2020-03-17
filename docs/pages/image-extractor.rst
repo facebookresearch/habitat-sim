@@ -108,7 +108,7 @@ and DataLoader, refer to this guide: https://pytorch.org/tutorials/beginner/data
         def __getitem__(self, idx):
             sample = self.extractor[idx]
             output = {
-                'rgba': sample['rgba'].astype(np.float32), # dataloader requires certain types
+                'rgb': sample['rgba'].astype(np.float32)[..., :-1], # dataloader requires certain types
                 'label': sample['label']
             }
             return output
