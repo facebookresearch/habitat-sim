@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include "BaseMesh.h"
-#include "esp/core/esp.h"
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Mesh.h>
@@ -13,12 +11,14 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "BaseMesh.h"
+#include "esp/core/esp.h"
 
 namespace esp {
 namespace assets {
 
 class GenericInstanceMeshData : public BaseMesh {
-public:
+ public:
   struct RenderingBuffer {
     Magnum::GL::Mesh mesh;
   };
@@ -29,32 +29,32 @@ public:
 
   virtual ~GenericInstanceMeshData(){};
 
-  virtual bool loadPLY(const std::string &plyFile);
+  virtual bool loadPLY(const std::string& plyFile);
 
   // ==== rendering ====
   virtual void uploadBuffersToGPU(bool forceReload = false) override;
-  RenderingBuffer *getRenderingBuffer() { return renderingBuffer_.get(); }
+  RenderingBuffer* getRenderingBuffer() { return renderingBuffer_.get(); }
 
-  virtual Magnum::GL::Mesh *getMagnumGLMesh() override;
+  virtual Magnum::GL::Mesh* getMagnumGLMesh() override;
 
-  const std::vector<vec3f> &getVertexBufferObjectCPU() const {
+  const std::vector<vec3f>& getVertexBufferObjectCPU() const {
     return cpu_vbo_;
   }
-  const std::vector<vec3uc> &getColorBufferObjectCPU() const {
+  const std::vector<vec3uc>& getColorBufferObjectCPU() const {
     return cpu_cbo_;
   }
 
-  const std::vector<uint32_t> &getIndexBufferObjectCPU() const {
+  const std::vector<uint32_t>& getIndexBufferObjectCPU() const {
     return cpu_ibo_;
   }
 
-  const std::vector<uint16_t> &getObjectIdsBufferObjectCPU() const {
+  const std::vector<uint16_t>& getObjectIdsBufferObjectCPU() const {
     return objectIds_;
   }
 
   int indexBufferSize();
 
-protected:
+ protected:
   void updateCollisionMeshData();
 
   // ==== rendering ====
@@ -65,5 +65,5 @@ protected:
   std::vector<uint32_t> cpu_ibo_;
   std::vector<uint16_t> objectIds_;
 };
-} // namespace assets
-} // namespace esp
+}  // namespace assets
+}  // namespace esp

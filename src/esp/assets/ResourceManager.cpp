@@ -77,9 +77,9 @@ ResourceManager::ResourceManager() {
   initDefaultMaterials();
 }
 
-bool ResourceManager::loadScene(const AssetInfo &info,
-                                scene::SceneNode *parent, /* = nullptr */
-                                DrawableGroup *drawables /* = nullptr */) {
+bool ResourceManager::loadScene(const AssetInfo& info,
+                                scene::SceneNode* parent, /* = nullptr */
+                                DrawableGroup* drawables /* = nullptr */) {
   // we only compute absolute AABB for every mesh component when loading ptex
   // mesh, or general mesh (e.g., MP3D)
   staticDrawableInfo_.clear();
@@ -129,11 +129,11 @@ bool ResourceManager::loadScene(const AssetInfo &info,
     if (info.type == AssetType::FRL_PTEX_MESH) {
 #ifdef ESP_BUILD_PTEX_SUPPORT
       // retrieve the ptex mesh data
-      const std::string &filename = info.filepath;
+      const std::string& filename = info.filepath;
       CORRADE_ASSERT(resourceDict_.count(filename) != 0,
                      "ResourceManager::loadScene: ptex mesh is not loaded.",
                      false);
-      MeshMetaData &metaData = resourceDict_.at(filename);
+      MeshMetaData& metaData = resourceDict_.at(filename);
       CORRADE_ASSERT(
           metaData.meshIndex.first == metaData.meshIndex.second,
           "ResourceManager::loadScene: ptex mesh is not loaded correctly.",
@@ -159,10 +159,10 @@ bool ResourceManager::loadScene(const AssetInfo &info,
 //! (2) loadScene() with PhysicsSceneMetaData
 // TODO (JH): this function seems to entangle certain physicsManager functions
 bool ResourceManager::loadScene(
-    const AssetInfo &info,
-    std::shared_ptr<physics::PhysicsManager> &_physicsManager,
-    scene::SceneNode *parent, /* = nullptr */
-    DrawableGroup *drawables, /* = nullptr */
+    const AssetInfo& info,
+    std::shared_ptr<physics::PhysicsManager>& _physicsManager,
+    scene::SceneNode* parent, /* = nullptr */
+    DrawableGroup* drawables, /* = nullptr */
     std::string physicsFilename /* data/default.phys_scene_config.json */) {
   // In-memory representation of scene meta data
   PhysicsManagerAttributes physicsManagerAttributes =
@@ -179,11 +179,11 @@ bool ResourceManager::loadScene(
 //! (3) consume PhysicsSceneMetaData to initialize physics simulator
 //! (4) create scene collision mesh if possible
 bool ResourceManager::loadScene(
-    const AssetInfo &info,
-    std::shared_ptr<physics::PhysicsManager> &_physicsManager,
+    const AssetInfo& info,
+    std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     PhysicsManagerAttributes physicsManagerAttributes,
-    scene::SceneNode *parent, /* = nullptr */
-    DrawableGroup *drawables /* = nullptr */) {
+    scene::SceneNode* parent, /* = nullptr */
+    DrawableGroup* drawables /* = nullptr */) {
   // default scene mesh loading
   bool meshSuccess = loadScene(info, parent, drawables);
 
@@ -242,10 +242,10 @@ bool ResourceManager::loadScene(
                                                 info.filepath);
 
   //! CONSTRUCT SCENE
-  const std::string &filename = info.filepath;
+  const std::string& filename = info.filepath;
   // if we have a scene mesh, add it as a collision object
   if (filename.compare(EMPTY_SCENE) != 0) {
-    MeshMetaData &metaData = resourceDict_.at(filename);
+    MeshMetaData& metaData = resourceDict_.at(filename);
     auto indexPair = metaData.meshIndex;
     int start = indexPair.first;
     int end = indexPair.second;
@@ -255,17 +255,17 @@ bool ResourceManager::loadScene(
     for (int mesh_i = start; mesh_i <= end; mesh_i++) {
       // PLY Instance mesh
       if (info.type == AssetType::INSTANCE_MESH) {
-        GenericInstanceMeshData *insMeshData =
-            dynamic_cast<GenericInstanceMeshData *>(meshes_[mesh_i].get());
-        CollisionMeshData &meshData = insMeshData->getCollisionMeshData();
+        GenericInstanceMeshData* insMeshData =
+            dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
+        CollisionMeshData& meshData = insMeshData->getCollisionMeshData();
         meshGroup.push_back(meshData);
       }
 
       // GLB Mesh
       else if (info.type == AssetType::MP3D_MESH) {
-        GltfMeshData *gltfMeshData =
-            dynamic_cast<GltfMeshData *>(meshes_[mesh_i].get());
-        CollisionMeshData &meshData = gltfMeshData->getCollisionMeshData();
+        GltfMeshData* gltfMeshData =
+            dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
+        CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
         meshGroup.push_back(meshData);
       }
     }
@@ -281,8 +281,8 @@ bool ResourceManager::loadScene(
   return meshSuccess;
 }
 
-PhysicsManagerAttributes
-ResourceManager::loadPhysicsConfig(std::string physicsFilename) {
+PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
+    std::string physicsFilename) {
   CHECK(Cr::Utility::Directory::exists(physicsFilename));
 
   // Load the global scene config JSON here
@@ -353,7 +353,7 @@ ResourceManager::loadPhysicsConfig(std::string physicsFilename) {
       physicsFilename.substr(0, physicsFilename.find_last_of("/"));
   physicsManagerAttributes.setVecStrings("objectLibraryPaths", {});
 
-  const auto &paths = scenePhysicsConfig["rigid object paths"];
+  const auto& paths = scenePhysicsConfig["rigid object paths"];
   for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
     if (!paths[i].IsString()) {
       LOG(ERROR) << "Invalid value in physics scene config -rigid object "
@@ -378,7 +378,7 @@ ResourceManager::loadPhysicsConfig(std::string physicsFilename) {
 
     if (dirExists) {
       LOG(INFO) << "Parsing object library directory: " + absolutePath;
-      for (auto &file :
+      for (auto& file :
            Directory::list(absolutePath, Directory::Flag::SortAscending)) {
         std::string absoluteSubfilePath = Directory::join(absolutePath, file);
         if (Cr::Utility::String::endsWith(absoluteSubfilePath,
@@ -400,10 +400,10 @@ ResourceManager::loadPhysicsConfig(std::string physicsFilename) {
 
 //! Only load and does not instantiate object
 //! For load-only: set parent = nullptr, drawables = nullptr
-int ResourceManager::loadObject(const std::string &objPhysConfigFilename,
-                                scene::SceneNode *parent,
-                                DrawableGroup *drawables,
-                                const Mn::ResourceKey &lightSetup) {
+int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
+                                scene::SceneNode* parent,
+                                DrawableGroup* drawables,
+                                const Mn::ResourceKey& lightSetup) {
   // Load Object from config
   const bool objectIsLoaded =
       physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
@@ -430,14 +430,14 @@ int ResourceManager::loadObject(const std::string &objPhysConfigFilename,
     std::vector<CollisionMeshData> meshGroup =
         collisionMeshGroups_[objPhysConfigFilename];
 
-    const std::string &filename =
+    const std::string& filename =
         physicsObjectAttributes.getString("renderMeshHandle");
 
-    MeshMetaData &meshMetaData = resourceDict_[filename];
+    MeshMetaData& meshMetaData = resourceDict_[filename];
 
     // need a new node for scaling because motion state will override scale set
     // at the physical node
-    scene::SceneNode &scalingNode = parent->createChild();
+    scene::SceneNode& scalingNode = parent->createChild();
     Magnum::Vector3 objectScaling =
         physicsObjectAttributes.getMagnumVec3("scale");
     scalingNode.setScaling(objectScaling);
@@ -451,12 +451,12 @@ int ResourceManager::loadObject(const std::string &objPhysConfigFilename,
   return objectID;
 }
 
-PhysicsObjectAttributes &
-ResourceManager::getPhysicsObjectAttributes(const std::string &objectName) {
+PhysicsObjectAttributes& ResourceManager::getPhysicsObjectAttributes(
+    const std::string& objectName) {
   return physicsObjectLibrary_[objectName];
 }
 
-int ResourceManager::loadObject(PhysicsObjectAttributes &objectTemplate,
+int ResourceManager::loadObject(PhysicsObjectAttributes& objectTemplate,
                                 const std::string objectTemplateHandle) {
   CHECK(physicsObjectLibrary_.count(objectTemplateHandle) == 0);
   CHECK(objectTemplate.existsAs(STRING, "renderMeshHandle"));
@@ -510,7 +510,7 @@ int ResourceManager::loadObject(PhysicsObjectAttributes &objectTemplate,
 
   // cache metaData, collision mesh Group
   physicsObjectLibrary_.emplace(objectTemplateHandle, objectTemplate);
-  MeshMetaData &meshMetaData =
+  MeshMetaData& meshMetaData =
       resourceDict_.at(objectTemplate.getString("collisionMeshHandle"));
 
   int start = meshMetaData.meshIndex.first;
@@ -518,9 +518,9 @@ int ResourceManager::loadObject(PhysicsObjectAttributes &objectTemplate,
   //! Gather mesh components for meshGroup data
   std::vector<CollisionMeshData> meshGroup;
   for (int mesh_i = start; mesh_i <= end; mesh_i++) {
-    GltfMeshData *gltfMeshData =
-        dynamic_cast<GltfMeshData *>(meshes_[mesh_i].get());
-    CollisionMeshData &meshData = gltfMeshData->getCollisionMeshData();
+    GltfMeshData* gltfMeshData =
+        dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
+    CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
     meshGroup.push_back(meshData);
   }
   collisionMeshGroups_.emplace(objectTemplateHandle, meshGroup);
@@ -531,7 +531,7 @@ int ResourceManager::loadObject(PhysicsObjectAttributes &objectTemplate,
 }
 
 // load object from config filename
-int ResourceManager::loadObject(const std::string &objPhysConfigFilename) {
+int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
   // check for duplicate load
   const bool objExists = physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
   if (objExists) {
@@ -709,18 +709,18 @@ int ResourceManager::loadObject(const std::string &objPhysConfigFilename) {
   return loadObject(physicsObjectAttributes, objPhysConfigFilename);
 }
 
-const std::vector<assets::CollisionMeshData> &
-ResourceManager::getCollisionMesh(const int objectID) {
+const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
+    const int objectID) {
   std::string configFile = getObjectConfig(objectID);
   return collisionMeshGroups_[configFile];
 }
 
-const std::vector<assets::CollisionMeshData> &
-ResourceManager::getCollisionMesh(const std::string configFile) {
+const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
+    const std::string configFile) {
   return collisionMeshGroups_[configFile];
 }
 
-int ResourceManager::getObjectID(const std::string &configFile) {
+int ResourceManager::getObjectID(const std::string& configFile) {
   std::vector<std::string>::iterator itr =
       std::find(physicsObjectConfigList_.begin(),
                 physicsObjectConfigList_.end(), configFile);
@@ -736,14 +736,14 @@ std::string ResourceManager::getObjectConfig(const int objectID) {
   return physicsObjectConfigList_[objectID];
 }
 
-Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh *meshDataGL) {
-  CollisionMeshData &meshData = meshDataGL->getCollisionMeshData();
+Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
+  CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
   return Magnum::Range3D{
       Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)};
 }
 
 #ifdef ESP_BUILD_PTEX_SUPPORT
-void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh &baseMesh) {
+void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
   std::vector<Mn::Matrix4> absTransforms = computeAbsoluteTransformations();
 
   CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo_.size(),
@@ -751,14 +751,14 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh &baseMesh) {
                  "transformations does not match number of drawables.", );
 
   // obtain the sub-meshes within the ptex mesh
-  PTexMeshData &ptexMeshData = dynamic_cast<PTexMeshData &>(baseMesh);
-  const std::vector<PTexMeshData::MeshData> &submeshes = ptexMeshData.meshes();
+  PTexMeshData& ptexMeshData = dynamic_cast<PTexMeshData&>(baseMesh);
+  const std::vector<PTexMeshData::MeshData>& submeshes = ptexMeshData.meshes();
 
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
     // convert std::vector<vec3f> to std::vector<Mn::Vector3>
     std::vector<Mn::Vector3> pos;
     uint32_t meshID = staticDrawableInfo_[iEntry].meshID;
-    for (auto &p : submeshes[meshID].vbo) {
+    for (auto& p : submeshes[meshID].vbo) {
       pos.emplace_back(p);
     }
 
@@ -766,7 +766,7 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh &baseMesh) {
     Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], pos);
 
     // locate the scene node which contains the current drawable
-    scene::SceneNode &node = staticDrawableInfo_[iEntry].node;
+    scene::SceneNode& node = staticDrawableInfo_[iEntry].node;
 
     // set the absolute axis aligned bounding box
     node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(pos)});
@@ -784,7 +784,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
     uint32_t meshID = staticDrawableInfo_[iEntry].meshID;
 
-    Corrade::Containers::Optional<Magnum::Trade::MeshData3D> &meshData =
+    Corrade::Containers::Optional<Magnum::Trade::MeshData3D>& meshData =
         meshes_[meshID]->getMeshData();
     CORRADE_ASSERT(meshData,
                    "ResourceManager::computeGeneralMeshAbsoluteAABBs: the "
@@ -797,7 +797,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
     // each position array
     for (uint32_t jArray = 0; jArray < (*meshData).positionArrayCount();
          ++jArray) {
-      std::vector<Mn::Vector3> &pos = (*meshData).positions(jArray);
+      std::vector<Mn::Vector3>& pos = (*meshData).positions(jArray);
       std::vector<Mn::Vector3> absPos =
           Mn::MeshTools::transformPoints(absTransforms[iEntry], pos);
 
@@ -808,12 +808,12 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
     }
 
     // locate the scene node which contains the current drawable
-    scene::SceneNode &node = staticDrawableInfo_[iEntry].node;
+    scene::SceneNode& node = staticDrawableInfo_[iEntry].node;
 
     // set the absolute axis aligned bounding box
     node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(bbPos)});
 
-  } // iEntry
+  }  // iEntry
 }
 
 std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations() {
@@ -824,9 +824,9 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations() {
 
   // basic assumption is that all the drawables are in the same scene;
   // so use the 1st element in the vector to obtain this scene
-  auto *scene = dynamic_cast<Mn::SceneGraph::Scene<
-      Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<float>>
-                                 *>(staticDrawableInfo_[0].node.scene());
+  auto* scene = dynamic_cast<Mn::SceneGraph::Scene<
+      Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<float>>*>(
+      staticDrawableInfo_[0].node.scene());
 
   CORRADE_ASSERT(scene != nullptr,
                  "ResourceManager::computeAbsoluteTransformations: the node is "
@@ -844,7 +844,7 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations() {
     objects.emplace_back(
         dynamic_cast<Mn::SceneGraph::Object<
             Mn::SceneGraph::BasicTranslationRotationScalingTransformation3D<
-                float>> &>(staticDrawableInfo_[iDrawable].node));
+                float>>&>(staticDrawableInfo_[iDrawable].node));
   }
 
   // compute transformations of all objects in the group relative to the root,
@@ -855,9 +855,9 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations() {
   return absTransforms;
 }
 
-void ResourceManager::translateMesh(BaseMesh *meshDataGL,
+void ResourceManager::translateMesh(BaseMesh* meshDataGL,
                                     Magnum::Vector3 translation) {
-  CollisionMeshData &meshData = meshDataGL->getCollisionMeshData();
+  CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
 
   Magnum::Matrix4 transform = Magnum::Matrix4::translation(translation);
   Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions);
@@ -867,19 +867,19 @@ void ResourceManager::translateMesh(BaseMesh *meshDataGL,
   meshDataGL->BB = meshDataGL->BB.translated(translation);
 }
 
-bool ResourceManager::loadPTexMeshData(const AssetInfo &info,
-                                       scene::SceneNode *parent,
-                                       DrawableGroup *drawables) {
+bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
+                                       scene::SceneNode* parent,
+                                       DrawableGroup* drawables) {
 #ifdef ESP_BUILD_PTEX_SUPPORT
   // if this is a new file, load it and add it to the dictionary
-  const std::string &filename = info.filepath;
+  const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
     const auto atlasDir = Corrade::Utility::Directory::join(
         Corrade::Utility::Directory::path(filename), "textures");
 
     meshes_.emplace_back(std::make_unique<PTexMeshData>());
     int index = meshes_.size() - 1;
-    auto *pTexMeshData = dynamic_cast<PTexMeshData *>(meshes_[index].get());
+    auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_[index].get());
     pTexMeshData->load(filename, atlasDir);
 
     // update the dictionary
@@ -901,12 +901,12 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo &info,
     int end = indexPair.second;
 
     for (int iMesh = start; iMesh <= end; ++iMesh) {
-      auto *pTexMeshData = dynamic_cast<PTexMeshData *>(meshes_[iMesh].get());
+      auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_[iMesh].get());
 
       pTexMeshData->uploadBuffersToGPU(false);
 
       for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
-        scene::SceneNode &node = parent->createChild();
+        scene::SceneNode& node = parent->createChild();
         const quatf transform = info.frame.rotationFrameToWorld();
         node.setRotation(Magnum::Quaternion(transform));
 
@@ -929,23 +929,25 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo &info,
 #endif
 }
 
-int ResourceManager::getNumTriangles() { return NUM_TRIANGLES; }
+int ResourceManager::getNumTriangles() {
+  return NUM_TRIANGLES;
+}
 
 // semantic instance mesh import
-bool ResourceManager::loadInstanceMeshData(const AssetInfo &info,
-                                           scene::SceneNode *parent,
-                                           DrawableGroup *drawables) {
+bool ResourceManager::loadInstanceMeshData(const AssetInfo& info,
+                                           scene::SceneNode* parent,
+                                           DrawableGroup* drawables) {
   // if this is a new file, load it and add it to the dictionary, create
   // shaders and add it to the shaderPrograms_
-  const std::string &filename = info.filepath;
+  const std::string& filename = info.filepath;
   int totalNumTriangles;
   if (resourceDict_.count(filename) == 0) {
     if (info.type == AssetType::INSTANCE_MESH) {
       meshes_.emplace_back(std::make_unique<GenericInstanceMeshData>());
     }
     int index = meshes_.size() - 1;
-    auto *instanceMeshData =
-        dynamic_cast<GenericInstanceMeshData *>(meshes_[index].get());
+    auto* instanceMeshData =
+        dynamic_cast<GenericInstanceMeshData*>(meshes_[index].get());
 
     instanceMeshData->loadPLY(filename);
     instanceMeshData->uploadBuffersToGPU(false);
@@ -966,9 +968,9 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo &info,
     int end = indexPair.second;
 
     for (int iMesh = start; iMesh <= end; ++iMesh) {
-      auto *instanceMeshData =
-          dynamic_cast<GenericInstanceMeshData *>(meshes_[iMesh].get());
-      scene::SceneNode &node = parent->createChild();
+      auto* instanceMeshData =
+          dynamic_cast<GenericInstanceMeshData*>(meshes_[iMesh].get());
+      scene::SceneNode& node = parent->createChild();
       node.addFeature<gfx::PrimitiveIDDrawable>(
           *instanceMeshData->getMagnumGLMesh(), shaderManager_, drawables);
     }
@@ -978,9 +980,11 @@ bool ResourceManager::loadInstanceMeshData(const AssetInfo &info,
 }
 
 bool ResourceManager::loadGeneralMeshData(
-    const AssetInfo &info, scene::SceneNode *parent /* = nullptr */,
-    DrawableGroup *drawables /* = nullptr */, bool isScene /* = false */) {
-  const std::string &filename = info.filepath;
+    const AssetInfo& info,
+    scene::SceneNode* parent /* = nullptr */,
+    DrawableGroup* drawables /* = nullptr */,
+    bool isScene /* = false */) {
+  const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
   const bool drawData = parent != nullptr && drawables != nullptr;
 
@@ -1004,9 +1008,9 @@ bool ResourceManager::loadGeneralMeshData(
   manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
 #endif
   {
-    Cr::PluginManager::PluginMetadata *const metadata =
+    Cr::PluginManager::PluginMetadata* const metadata =
         manager.metadata("BasisImporter");
-    Mn::GL::Context &context = Mn::GL::Context::current();
+    Mn::GL::Context& context = Mn::GL::Context::current();
 #ifdef MAGNUM_TARGET_WEBGL
     if (context.isExtensionSupported<
             Mn::GL::Extensions::WEBGL::compressed_texture_astc>())
@@ -1134,10 +1138,10 @@ bool ResourceManager::loadGeneralMeshData(
   } else {
     // intercept nullptr scene graph nodes (default) to add mesh to
     // metadata list without adding it to scene graph
-    scene::SceneNode &newNode = parent->createChild();
+    scene::SceneNode& newNode = parent->createChild();
 
     //! Do instantiate object
-    MeshMetaData &metaData = resourceDict_[filename];
+    MeshMetaData& metaData = resourceDict_[filename];
     const bool forceReload = false;
     // re-bind position, normals, uv, colors etc. to the corresponding buffers
     // under *current* gl context
@@ -1149,7 +1153,7 @@ bool ResourceManager::loadGeneralMeshData(
           meshes_[iMesh]->uploadBuffersToGPU(forceReload);
         }
       }
-    } // forceReload
+    }  // forceReload
 
     // TODO: make this configurable
     Mn::ResourceKey lightSetup{metaData.isSceneAsset ? NO_LIGHT_KEY
@@ -1159,8 +1163,8 @@ bool ResourceManager::loadGeneralMeshData(
   }
 }
 
-void ResourceManager::loadMaterials(Importer &importer,
-                                    MeshMetaData *metaData) {
+void ResourceManager::loadMaterials(Importer& importer,
+                                    MeshMetaData* metaData) {
   int materialStart = nextMaterialID_;
   int materialEnd = materialStart + importer.materialCount() - 1;
   metaData->setMaterialIndices(materialStart, materialEnd);
@@ -1179,8 +1183,8 @@ void ResourceManager::loadMaterials(Importer &importer,
       continue;
     }
 
-    const auto &phongMaterialData =
-        static_cast<Mn::Trade::PhongMaterialData &>(*materialData);
+    const auto& phongMaterialData =
+        static_cast<Mn::Trade::PhongMaterialData&>(*materialData);
     std::unique_ptr<gfx::MaterialData> finalMaterial;
     if (metaData->isSceneAsset) {
       finalMaterial = getFlatShadedMaterialData(phongMaterialData,
@@ -1197,7 +1201,8 @@ void ResourceManager::loadMaterials(Importer &importer,
 }
 
 gfx::PhongMaterialData::uptr ResourceManager::getFlatShadedMaterialData(
-    const Mn::Trade::PhongMaterialData &material, int textureBaseIndex) {
+    const Mn::Trade::PhongMaterialData& material,
+    int textureBaseIndex) {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
 
@@ -1222,7 +1227,8 @@ gfx::PhongMaterialData::uptr ResourceManager::getFlatShadedMaterialData(
 }
 
 gfx::PhongMaterialData::uptr ResourceManager::getPhongShadedMaterialData(
-    const Mn::Trade::PhongMaterialData &material, int textureBaseIndex) {
+    const Mn::Trade::PhongMaterialData& material,
+    int textureBaseIndex) {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
 
@@ -1262,7 +1268,7 @@ gfx::PhongMaterialData::uptr ResourceManager::getPhongShadedMaterialData(
   return finalMaterial;
 }
 
-void ResourceManager::loadMeshes(Importer &importer, MeshMetaData *metaData) {
+void ResourceManager::loadMeshes(Importer& importer, MeshMetaData* metaData) {
   int meshStart = meshes_.size();
   int meshEnd = meshStart + importer.mesh3DCount() - 1;
   metaData->setMeshIndices(meshStart, meshEnd);
@@ -1285,8 +1291,8 @@ void ResourceManager::loadMeshes(Importer &importer, MeshMetaData *metaData) {
 }
 
 //! Recursively load the transformation chain specified by the mesh file
-void ResourceManager::loadMeshHierarchy(Importer &importer,
-                                        MeshTransformNode &parent,
+void ResourceManager::loadMeshHierarchy(Importer& importer,
+                                        MeshTransformNode& parent,
                                         int componentID) {
   std::unique_ptr<Magnum::Trade::ObjectData3D> objectData =
       importer.object3D(componentID);
@@ -1309,7 +1315,7 @@ void ResourceManager::loadMeshHierarchy(Importer &importer,
       meshIDLocal != ID_UNDEFINED) {
     parent.children.back().meshIDLocal = meshIDLocal;
     parent.children.back().materialIDLocal =
-        static_cast<Magnum::Trade::MeshObjectData3D *>(objectData.get())
+        static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
             ->material();
   }
 
@@ -1319,14 +1325,14 @@ void ResourceManager::loadMeshHierarchy(Importer &importer,
   }
 }
 
-void ResourceManager::loadTextures(Importer &importer, MeshMetaData *metaData) {
+void ResourceManager::loadTextures(Importer& importer, MeshMetaData* metaData) {
   int textureStart = textures_.size();
   int textureEnd = textureStart + importer.textureCount() - 1;
   metaData->setTextureIndices(textureStart, textureEnd);
 
   for (int iTexture = 0; iTexture < importer.textureCount(); ++iTexture) {
     textures_.emplace_back(std::make_shared<Magnum::GL::Texture2D>());
-    auto &currentTexture = textures_.back();
+    auto& currentTexture = textures_.back();
 
     auto textureData = importer.texture(iTexture);
     if (!textureData ||
@@ -1337,7 +1343,7 @@ void ResourceManager::loadTextures(Importer &importer, MeshMetaData *metaData) {
     }
 
     // Configure the texture
-    Mn::GL::Texture2D &texture = *(textures_[textureStart + iTexture].get());
+    Mn::GL::Texture2D& texture = *(textures_[textureStart + iTexture].get());
     texture.setMagnificationFilter(textureData->magnificationFilter())
         .setMinificationFilter(textureData->minificationFilter(),
                                textureData->mipmapFilter())
@@ -1403,13 +1409,13 @@ void ResourceManager::loadTextures(Importer &importer, MeshMetaData *metaData) {
 //! Add component to rendering stack, based on importer loading
 //! TODO (JH): decouple importer part, so that objects can be
 //! instantiated any time after initial loading
-void ResourceManager::addComponent(const MeshMetaData &metaData,
-                                   scene::SceneNode &parent,
-                                   const Mn::ResourceKey &lightSetup,
-                                   DrawableGroup *drawables,
-                                   const MeshTransformNode &meshTransformNode) {
+void ResourceManager::addComponent(const MeshMetaData& metaData,
+                                   scene::SceneNode& parent,
+                                   const Mn::ResourceKey& lightSetup,
+                                   DrawableGroup* drawables,
+                                   const MeshTransformNode& meshTransformNode) {
   // Add the object to the scene and set its transformation
-  scene::SceneNode &node = parent.createChild();
+  scene::SceneNode& node = parent.createChild();
   node.MagnumObject::setTransformation(
       meshTransformNode.transformFromLocalToParent);
 
@@ -1424,24 +1430,26 @@ void ResourceManager::addComponent(const MeshMetaData &metaData,
 
     // compute the bounding box for the mesh we are adding
     const int meshID = metaData.meshIndex.first + meshIDLocal;
-    BaseMesh *mesh = meshes_[meshID].get();
+    BaseMesh* mesh = meshes_[meshID].get();
     node.setMeshBB(computeMeshBB(mesh));
   }
 
   // Recursively add children
-  for (auto &child : meshTransformNode.children) {
+  for (auto& child : meshTransformNode.children) {
     addComponent(metaData, node, lightSetup, drawables, child);
   }
 }
 
-void ResourceManager::addMeshToDrawables(const MeshMetaData &metaData,
-                                         scene::SceneNode &node,
-                                         const Mn::ResourceKey &lightSetup,
-                                         DrawableGroup *drawables, int objectID,
-                                         int meshIDLocal, int materialIDLocal) {
+void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
+                                         scene::SceneNode& node,
+                                         const Mn::ResourceKey& lightSetup,
+                                         DrawableGroup* drawables,
+                                         int objectID,
+                                         int meshIDLocal,
+                                         int materialIDLocal) {
   const int meshStart = metaData.meshIndex.first;
   const uint32_t meshID = meshStart + meshIDLocal;
-  Magnum::GL::Mesh &mesh = *meshes_[meshID]->getMagnumGLMesh();
+  Magnum::GL::Mesh& mesh = *meshes_[meshID]->getMagnumGLMesh();
 
   Mn::ResourceKey materialKey;
   if (materialIDLocal == ID_UNDEFINED ||
@@ -1461,54 +1469,57 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData &metaData,
 }
 
 void ResourceManager::addPrimitiveToDrawables(int primitiveID,
-                                              scene::SceneNode &node,
-                                              DrawableGroup *drawables) {
+                                              scene::SceneNode& node,
+                                              DrawableGroup* drawables) {
   CHECK(primitiveID >= 0 && primitiveID < primitive_meshes_.size());
   createGenericDrawable(primitive_meshes_[primitiveID], node,
                         DEFAULT_LIGHTING_KEY, DEFAULT_MATERIAL_KEY, drawables);
 }
 
 void ResourceManager::setLightSetup(gfx::LightSetup setup,
-                                    const Mn::ResourceKey &key) {
+                                    const Mn::ResourceKey& key) {
   shaderManager_.set(key, std::move(setup), Mn::ResourceDataState::Mutable,
                      Mn::ResourcePolicy::Manual);
 }
 
-Mn::Resource<gfx::LightSetup>
-ResourceManager::getLightSetup(const Mn::ResourceKey &key) {
+Mn::Resource<gfx::LightSetup> ResourceManager::getLightSetup(
+    const Mn::ResourceKey& key) {
   return shaderManager_.get<gfx::LightSetup>(key);
 }
 
 void ResourceManager::createGenericDrawable(
-    Mn::GL::Mesh &mesh, scene::SceneNode &node,
-    const Mn::ResourceKey &lightSetup, const Mn::ResourceKey &material,
-    DrawableGroup *group /* = nullptr */, int objectId /* = ID_UNDEFINED */) {
+    Mn::GL::Mesh& mesh,
+    scene::SceneNode& node,
+    const Mn::ResourceKey& lightSetup,
+    const Mn::ResourceKey& material,
+    DrawableGroup* group /* = nullptr */,
+    int objectId /* = ID_UNDEFINED */) {
   node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetup,
                                         material, group, objectId);
 }
 
-bool ResourceManager::loadSUNCGHouseFile(const AssetInfo &houseInfo,
-                                         scene::SceneNode *parent,
-                                         DrawableGroup *drawables) {
+bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
+                                         scene::SceneNode* parent,
+                                         DrawableGroup* drawables) {
   ASSERT(parent != nullptr);
   std::string houseFile = Cr::Utility::Directory::join(
       Cr::Utility::Directory::current(), houseInfo.filepath);
-  const auto &json = io::parseJsonFile(houseFile);
-  const auto &levels = json["levels"].GetArray();
+  const auto& json = io::parseJsonFile(houseFile);
+  const auto& levels = json["levels"].GetArray();
   std::vector<std::string> pathTokens = io::tokenize(houseFile, "/", 0, true);
   ASSERT(pathTokens.size() >= 3);
-  pathTokens.pop_back(); // house.json
+  pathTokens.pop_back();  // house.json
   const std::string houseId = pathTokens.back();
-  pathTokens.pop_back(); // <houseId>
-  pathTokens.pop_back(); // house
+  pathTokens.pop_back();  // <houseId>
+  pathTokens.pop_back();  // house
   const std::string basePath = Corrade::Utility::String::join(pathTokens, '/');
 
   // store nodeIds to obtain linearized index for semantic masks
   std::vector<std::string> nodeIds;
 
-  for (const auto &level : levels) {
-    const auto &nodes = level["nodes"].GetArray();
-    for (const auto &node : nodes) {
+  for (const auto& level : levels) {
+    const auto& nodes = level["nodes"].GetArray();
+    for (const auto& node : nodes) {
       const std::string nodeId = node["id"].GetString();
       const std::string nodeType = node["type"].GetString();
       const int valid = node["valid"].GetInt();
@@ -1517,9 +1528,9 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo &houseInfo,
       }
 
       // helper for creating object nodes
-      auto createObjectFunc = [&](const AssetInfo &info,
-                                  const std::string &id) -> scene::SceneNode & {
-        scene::SceneNode &objectNode = parent->createChild();
+      auto createObjectFunc = [&](const AssetInfo& info,
+                                  const std::string& id) -> scene::SceneNode& {
+        scene::SceneNode& objectNode = parent->createChild();
         const int nodeIndex = nodeIds.size();
         nodeIds.push_back(id);
         objectNode.setId(nodeIndex);
@@ -1555,9 +1566,9 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo &houseInfo,
         std::vector<float> transformVec;
         io::toFloatVector(node["transform"], &transformVec);
         mat4f transform(transformVec.data());
-        const AssetInfo info{AssetType::SUNCG_OBJECT, basePath + "/object/" +
-                                                          modelId + "/" +
-                                                          modelId + ".glb"};
+        const AssetInfo info{
+            AssetType::SUNCG_OBJECT,
+            basePath + "/object/" + modelId + "/" + modelId + ".glb"};
         createObjectFunc(info, nodeId)
             .setTransformation(Magnum::Matrix4{transform});
       } else if (nodeType == "Box") {
@@ -1589,37 +1600,39 @@ void ResourceManager::initDefaultMaterials() {
 //! recursively join all sub-components of a mesh into a single unified
 //! MeshData.
 void ResourceManager::joinHeirarchy(
-    MeshData &mesh, const MeshMetaData &metaData, const MeshTransformNode &node,
-    const Magnum::Matrix4 &transformFromParentToWorld) {
+    MeshData& mesh,
+    const MeshMetaData& metaData,
+    const MeshTransformNode& node,
+    const Magnum::Matrix4& transformFromParentToWorld) {
   Magnum::Matrix4 transformFromLocalToWorld =
       transformFromParentToWorld * node.transformFromLocalToParent;
 
   if (node.meshIDLocal != ID_UNDEFINED) {
-    CollisionMeshData &meshData =
+    CollisionMeshData& meshData =
         meshes_[node.meshIDLocal + metaData.meshIndex.first]
             ->getCollisionMeshData();
     int lastIndex = mesh.vbo.size();
-    for (auto &pos : meshData.positions) {
+    for (auto& pos : meshData.positions) {
       mesh.vbo.push_back(Magnum::EigenIntegration::cast<vec3f>(
           transformFromLocalToWorld.transformPoint(pos)));
     }
-    for (auto &index : meshData.indices) {
+    for (auto& index : meshData.indices) {
       mesh.ibo.push_back(index + lastIndex);
     }
   }
 
-  for (auto &child : node.children) {
+  for (auto& child : node.children) {
     joinHeirarchy(mesh, metaData, child, transformFromLocalToWorld);
   }
 }
 
-std::unique_ptr<MeshData>
-ResourceManager::createJoinedCollisionMesh(const std::string &filename) {
+std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
+    const std::string& filename) {
   std::unique_ptr<MeshData> mesh = std::make_unique<MeshData>();
 
   CHECK(resourceDict_.count(filename) > 0);
 
-  MeshMetaData &metaData = resourceDict_.at(filename);
+  MeshMetaData& metaData = resourceDict_.at(filename);
 
   Magnum::Matrix4 identity;
   joinHeirarchy(*mesh, metaData, metaData.root, identity);
@@ -1627,5 +1640,5 @@ ResourceManager::createJoinedCollisionMesh(const std::string &filename) {
   return mesh;
 }
 
-} // namespace assets
-} // namespace esp
+}  // namespace assets
+}  // namespace esp
