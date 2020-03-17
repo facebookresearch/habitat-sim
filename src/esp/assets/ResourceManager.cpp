@@ -46,15 +46,13 @@
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneGraph.h"
 
-<<<<<<< HEAD
 #include "esp/nav/PathFinder.h"
-=======
+
 #ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/BulletPhysicsManager.h"
 #endif
->>>>>>> origin/master
 
-    #include "CollisionMeshData.h"
+#include "CollisionMeshData.h"
 #include "GenericInstanceMeshData.h"
 #include "GltfMeshData.h"
 #include "MeshData.h"
@@ -65,7 +63,7 @@
 #include "esp/gfx/PTexMeshShader.h"
 #endif
 
-    namespace Cr = Corrade;
+namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 namespace esp {
