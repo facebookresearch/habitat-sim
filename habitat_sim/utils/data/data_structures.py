@@ -9,12 +9,10 @@ class ExtractorLRUCache:
 
     def __getitem__(self, key):
         if self.__contains__(key):
-            k, data = self._order[key]
-
             # Accessing the data should move it to front of cache
-            self.remove(key)
-            self.add(key, data)
-            return data
+            k, data = self._order.pop(key)
+            self._order[key] = (k, data)
+            return value
         else:
             raise KeyError("Key {} not in extractor cache".format(key))
 
@@ -26,12 +24,12 @@ class ExtractorLRUCache:
 
     def remove(self, key):
         if self.__contains__(key):
-            del self._order[key]
+            self._order.pop(key)
             self.size = max(0, self.size - 1)
 
     def add(self, key, sample):
         if key in self._order:
-            return
+            self._order.pop(key)
 
         if self.size >= self.capacity:
             self.remove_from_back()
@@ -44,7 +42,5 @@ class ExtractorLRUCache:
         if self.size == 0:
             return
 
-        self._order.popitem()
-
-    def print_cache(self):
-        print(self._order)
+        self._order.popitem(last=False)
+        self.size = max(0, self.size - 1)
