@@ -12,7 +12,7 @@ class ExtractorLRUCache:
             # Accessing the data should move it to front of cache
             k, data = self._order.pop(key)
             self._order[key] = (k, data)
-            return value
+            return data
         else:
             raise KeyError("Key {} not in extractor cache".format(key))
 

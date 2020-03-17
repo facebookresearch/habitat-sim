@@ -59,7 +59,6 @@ def test_extractor_cache():
     cache.add(3, "three")
     assert cache[next(reversed(list(cache._order)))] == "three"
     accessed_data = cache[2]
-    print(cache)
     assert cache[next(reversed(list(cache._order)))] == "two"
     cache.remove_from_back()
     assert 1 not in cache
