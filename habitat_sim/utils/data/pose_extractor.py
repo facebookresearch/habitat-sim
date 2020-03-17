@@ -8,63 +8,69 @@ import habitat_sim
 from habitat_sim.utils.common import quat_from_two_vectors
 
 
-class PoseExtractor(object):
+class PoseExtractor:
     r"""Class that takes in a topdown view and pathfinder and determines a list of reasonable camera poses
 
-    :property topdown_view: 2D array representing topdown view of scene
-    :property pathfinder: the pathfinder from the Simulator object
-    :property pixels_per_meter: resolution of the topdown view (explained in ImageExtractor)
-    :property gridpoints: list of positions for the camera
-    :property dist: distance between each camera position
+    :property tdv_fp_ref_triples: List of tuples containing (TopdownView Object, scene_filepath, reference point)
+        information for each scene. Each scene requires:
+            TopdownView: To extract poses
+            scene_filepath: The file path to the mesh file. Necessary for scene switches.
+            reference point: A reference point from the coordinate system of the scene. Necessary for specifying poses
+                in the scene's coordinate system.
+
+    :property sim: Simulator object used for pose extraction
+    :property pixels_per_meter: Resolution of topdown map. 0.1 means each pixel in the topdown map
+        represents 0.1 x 0.1 meters in the coordinate system of the pathfinder
     """
 
-    def __init__(self, topdown_view, pathfinder, pixels_per_meter=0.1):
-        self.topdown_view = topdown_view
-        self.pathfinder = pathfinder
+    def __init__(self, topdown_views, sim, pixels_per_meter=0.1):
+        self.tdv_fp_ref_triples = topdown_views
+        self.sim = sim
         self.pixels_per_meter = pixels_per_meter
-        self.gridpoints = None
-
-        # Determine the physical spacing between each camera position
-        x, z = self.topdown_view.shape
-        self.dist = (
-            min(x, z) // 10
-        )  # This produces lots of simular images for small scenes. Perhaps a smarter solution exists
 
     def extract_poses(self, labels):
-        r"""Uses the topdown map to define positions in the scene from which to generate images. Returns
-        a list of poses, where each pose is (position, rotation, class label) for the camera. Currently
-        class label only supports 'unnavigable points', meaning the user cannot yet specify something
-        like 'chair' to obtain images of.
-
-        :property labels: The labels to take images of (currently only supports unnavigable points)
+        r"""Returns a numpy array of camera poses.
         """
-        height, width = self.topdown_view.shape
+        poses = []
+        for tdv, fp, ref_point in self.tdv_fp_ref_triples:
+            view = tdv.topdown_view
+            # Determine the physical spacing between each camera position
+            x, z = view.shape
+            dist = min(x, z) // 10
+            poses.extend(
+                self._extract_poses_single_scene(labels, view, fp, dist, ref_point)
+            )
+
+        return np.array(poses)
+
+    def _extract_poses_single_scene(self, labels, view, fp, dist, ref_point):
+        height, width = view.shape
         n_gridpoints_width, n_gridpoints_height = (
-            width // self.dist - 1,
-            height // self.dist - 1,
+            width // dist - 1,
+            height // dist - 1,
         )
-        self.gridpoints = []
+        gridpoints = []
         for h in range(n_gridpoints_height):
             for w in range(n_gridpoints_width):
-                point = (self.dist + h * self.dist, self.dist + w * self.dist)
-                if self.valid_point(*point):
-                    self.gridpoints.append(point)
+                point = (dist + h * dist, dist + w * dist)
+                if self._valid_point(*point, view):
+                    gridpoints.append(point)
 
         # Find the closest point of the target class to each gridpoint
         poses = []
-        self.cpis = []
-        for point in self.gridpoints:
-            closest_point_of_interest, label = self._bfs(point, labels)
+        cpis = []
+        for point in gridpoints:
+            closest_point_of_interest, label = self._bfs(point, labels, view, dist)
             if closest_point_of_interest is None:
                 continue
 
-            poses.append((point, closest_point_of_interest, label))
-            self.cpis.append(closest_point_of_interest)
+            poses.append((point, closest_point_of_interest, label, fp))
+            cpis.append(closest_point_of_interest)
 
         # Convert from topdown map coordinate system to that of the pathfinder
-        startw, starty, starth = self._get_pathfinder_reference_point()
+        startw, starty, starth = ref_point
         for i, pose in enumerate(poses):
-            pos, cpi, label = pose
+            pos, cpi, label, filepath = pose
             r1, c1 = pos
             r2, c2 = cpi
             new_pos = np.array(
@@ -83,62 +89,42 @@ class PoseExtractor(object):
             )
             cam_normal = new_cpi - new_pos
             new_rot = self._compute_quat(cam_normal)
-            poses[i] = (new_pos, new_rot, label)
+            poses[i] = (new_pos, new_rot, label, filepath)
 
         return poses
 
-    def valid_point(self, row, col):
-        r"""Whether a point is navigable
+    def _valid_point(self, row, col, view):
+        return view[row][col] == 1.0
 
-        :property row: row in the topdown view
-        :property col: col in the topdown view
-        """
-        return self.topdown_view[row][col] == 1.0
-
-    def is_point_of_interest(self, point, labels):
-        r"""Whether one of the class labels exists at the specified point.
-
-        :property point: the point to consider
-        :property labels: The labels to take images of (currently only supports unnavigable points)
-        """
+    def _is_point_of_interest(self, point, labels, view):
         r, c = point
         is_interesting = False
-        if self.topdown_view[r][c] in labels:
+        if view[r][c] in labels:
             is_interesting = True
 
-        return is_interesting, self.topdown_view[r][c]
+        return is_interesting, view[r][c]
 
-    def _show_topdown_view(self, cmap="seismic_r", show_valid_points=False):
-        if show_valid_points:
-            topdown_view_copy = copy.copy(self.topdown_view)
-            for p in self.gridpoints:
-                r, c = p
-                topdown_view_copy[r][c] = 0.5
+    def _show_topdown_view(self, cmap="seismic_r"):
+        fig = plt.figure(figsize=(12.0, 12.0))
+        columns = 4
+        rows = math.ceil(len(self.tdv_fp_ref_triples) / columns)
+        for i in range(1, columns * rows + 1):
+            if i > len(self.tdv_fp_ref_triples):
+                break
 
-            for cpi in self.cpis:
-                r, c = cpi
-                topdown_view_copy[r][c] = 0.65
-
-            plt.imshow(topdown_view_copy, cmap=cmap)
-        else:
-            plt.imshow(self.topdown_view, cmap=cmap)
+            img = self.tdv_fp_ref_triples[i - 1][0].topdown_view
+            fig.add_subplot(rows, columns, i)
+            plt.xticks([])
+            plt.yticks([])
+            plt.imshow(img, cmap=cmap)
 
         plt.show()
 
-    def _get_pathfinder_reference_point(self):
-        bound1, bound2 = self.pathfinder.get_bounds()
-        startw = min(bound1[0], bound2[0])
-        starth = min(bound1[2], bound2[2])
-        starty = self.pathfinder.get_random_navigable_point()[
-            1
-        ]  # Can't think of a better way to get a valid y-axis value
-        return (startw, starty, starth)  # width, y, height
-
     def _compute_quat(self, cam_normal):
         """Rotations start from -z axis"""
-        return quat_from_two_vectors(habitat_sim.geo.FRONT, cam_normal)
+        return quat_from_two_vectors(np.array([0, 0, -1]), cam_normal)
 
-    def _bfs(self, point, labels):
+    def _bfs(self, point, labels, view, dist):
         step = 3  # making this larger really speeds up BFS
 
         def get_neighbors(p):
@@ -156,18 +142,16 @@ class PoseExtractor(object):
 
         point_row, point_col = point
         bounding_box = [
-            point_row - 2 * self.dist,
-            point_row + 2 * self.dist,
-            point_col - 2 * self.dist,
-            point_col + 2 * self.dist,
+            point_row - 2 * dist,
+            point_row + 2 * dist,
+            point_col - 2 * dist,
+            point_col + 2 * dist,
         ]
         in_bounds = (
             lambda row, col: bounding_box[0] <= row <= bounding_box[1]
             and bounding_box[2] <= col <= bounding_box[3]
         )
-        is_valid = lambda row, col: 0 <= row < len(
-            self.topdown_view
-        ) and 0 <= col < len(self.topdown_view[0])
+        is_valid = lambda row, col: 0 <= row < len(view) and 0 <= col < len(view[0])
         visited = (
             set()
         )  # Can use the topdown view as visited set to save space at cost of time to reset it for each bfs
@@ -178,9 +162,9 @@ class PoseExtractor(object):
                 return None, None
 
             visited.add(cur)
-            is_point_of_interest, label = self.is_point_of_interest(cur, labels)
+            is_point_of_interest, label = self._is_point_of_interest(cur, labels, view)
             if is_point_of_interest:
-                if layer > self.dist / 2:
+                if layer > dist / 2:
                     return cur, label
                 else:
                     return None, None
