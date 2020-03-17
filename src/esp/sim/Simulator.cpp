@@ -8,7 +8,9 @@
 
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
 
+#include "esp/assets/Attributes.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/RenderCamera.h"
@@ -401,11 +403,30 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
     for (auto objectID : physicsManager_->getExistingObjectIDs()) {
       if (physicsManager_->getObjectMotionType(objectID) ==
           physics::MotionType::STATIC) {
-        // TODO: add the object via rendering mesh and node transformation
-
-        // TODO: add object via collision mesh?
-
-        // TODO: add object via bounding box?
+        auto objectTransform = Magnum::EigenIntegration::cast<
+            Eigen::Transform<float, 3, Eigen::Affine> >(
+            physicsManager_->getObjectSceneNode(objectID)
+                .absoluteTransformationMatrix());
+        const assets::PhysicsObjectAttributes& initializationTemplate =
+            physicsManager_->getInitializationAttributes(objectID);
+        std::string meshHandle =
+            initializationTemplate.getString("collisionMeshHandle");
+        if (meshHandle.empty()) {
+          meshHandle = initializationTemplate.getString("renderMeshHandle");
+        }
+        assets::MeshData::uptr joinedObjectMesh =
+            resourceManager_.createJoinedCollisionMesh(meshHandle);
+        int prevNumIndices = joinedMesh->ibo.size();
+        int prevNumVerts = joinedMesh->vbo.size();
+        joinedMesh->ibo.resize(prevNumIndices + joinedObjectMesh->ibo.size());
+        for (size_t ix = 0; ix < joinedObjectMesh->ibo.size(); ix++) {
+          joinedMesh->ibo[ix + prevNumIndices] =
+              joinedObjectMesh->ibo[ix] + prevNumVerts;
+        }
+        joinedMesh->vbo.reserve(joinedObjectMesh->vbo.size() + prevNumVerts);
+        for (auto& vert : joinedObjectMesh->vbo) {
+          joinedMesh->vbo.push_back(objectTransform * vert);
+        }
       }
     }
   }

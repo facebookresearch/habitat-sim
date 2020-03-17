@@ -517,5 +517,11 @@ scene::SceneNode& PhysicsManager::getObjectSceneNode(int physObjectID) {
           physObjectID));
 }
 
+const assets::PhysicsObjectAttributes&
+PhysicsManager::getInitializationAttributes(const int physObjectID) const {
+  assertIDValidity(physObjectID);
+  return existingObjects_.at(physObjectID)->getInitializationAttributes();
+}
+
 }  // namespace physics
 }  // namespace esp

@@ -795,6 +795,16 @@ class PhysicsManager {
     return activePhysSimLib_;
   };
 
+  /**
+   * @brief Get the template used to initialize an object.
+   *
+   * PhysicsObjectAttributes templates are expected to be changed between
+   * instances of objects.
+   * @return The initialization settings of the specified object instance.
+   */
+  const assets::PhysicsObjectAttributes& getInitializationAttributes(
+      const int physObjectID) const;
+
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
    * existing object). Terminate the program and report an error if not. This

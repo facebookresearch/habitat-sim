@@ -72,7 +72,8 @@ class Viewer : public Magnum::Platform::Application {
   void pushLastObject();
 
   void recomputeNavMesh(const std::string& sceneFilename,
-                        esp::nav::NavMeshSettings& navMeshSettings);
+                        esp::nav::NavMeshSettings& navMeshSettings,
+                        bool includeStaticObjects = false);
 
   void torqueLastObject();
   void removeLastObject();
@@ -327,11 +328,45 @@ void Viewer::pushLastObject() {
 }
 
 void Viewer::recomputeNavMesh(const std::string& sceneFilename,
-                              nav::NavMeshSettings& navMeshSettings) {
+                              nav::NavMeshSettings& navMeshSettings,
+                              bool includeStaticObjects) {
   nav::PathFinder::ptr pf = nav::PathFinder::create();
 
   assets::MeshData::uptr joinedMesh =
       resourceManager_.createJoinedCollisionMesh(sceneFilename);
+
+  // add STATIC collision objects
+  if (includeStaticObjects) {
+    for (auto objectID : physicsManager_->getExistingObjectIDs()) {
+      if (physicsManager_->getObjectMotionType(objectID) ==
+          physics::MotionType::STATIC) {
+        auto objectTransform = Magnum::EigenIntegration::cast<
+            Eigen::Transform<float, 3, Eigen::Affine> >(
+            physicsManager_->getObjectSceneNode(objectID)
+                .absoluteTransformationMatrix());
+        const assets::PhysicsObjectAttributes& initializationTemplate =
+            physicsManager_->getInitializationAttributes(objectID);
+        std::string meshHandle =
+            initializationTemplate.getString("collisionMeshHandle");
+        if (meshHandle.empty()) {
+          meshHandle = initializationTemplate.getString("renderMeshHandle");
+        }
+        assets::MeshData::uptr joinedObjectMesh =
+            resourceManager_.createJoinedCollisionMesh(meshHandle);
+        int prevNumIndices = joinedMesh->ibo.size();
+        int prevNumVerts = joinedMesh->vbo.size();
+        joinedMesh->ibo.resize(prevNumIndices + joinedObjectMesh->ibo.size());
+        for (size_t ix = 0; ix < joinedObjectMesh->ibo.size(); ix++) {
+          joinedMesh->ibo[ix + prevNumIndices] =
+              joinedObjectMesh->ibo[ix] + prevNumVerts;
+        }
+        joinedMesh->vbo.reserve(joinedObjectMesh->vbo.size() + prevNumVerts);
+        for (auto& vert : joinedObjectMesh->vbo) {
+          joinedMesh->vbo.push_back(objectTransform * vert);
+        }
+      }
+    }
+  }
 
   if (!pf->build(navMeshSettings, *joinedMesh)) {
     LOG(ERROR) << "Failed to build navmesh";
