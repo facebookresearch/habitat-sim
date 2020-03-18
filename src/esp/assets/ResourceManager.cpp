@@ -130,7 +130,7 @@ bool ResourceManager::loadScene(
   // once a scene is loaded, we should have a GL::Context so load the primitives
   Magnum::Trade::MeshData3D cube = Magnum::Primitives::cubeWireframe();
   primitive_meshes_.push_back(
-      std::make_shared<Magnum::GL::Mesh>(Magnum::MeshTools::compile(cube)));
+      std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(cube)));
 
   // compute the absolute transformation for each static drawables
   if (meshSuccess && parent && computeAbsoluteAABBs_) {
@@ -1266,7 +1266,7 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
       Magnum::MeshPrimitive::Lines, indices, positions, {}, {}, {}, nullptr};
 
   // compile and add the new mesh to the structure
-  primitive_meshes_.push_back(std::make_shared<Magnum::GL::Mesh>(
+  primitive_meshes_.push_back(std::make_unique<Magnum::GL::Mesh>(
       Magnum::MeshTools::compile(visualNavMesh)));
 
   navMeshPrimitiveID = primitive_meshes_.size() - 1;

@@ -673,29 +673,44 @@ struct NavMeshTileHeader {
   int dataSize;
 };
 
-// Calculate the area of a polygon by iterating over the triangles in the detail
-// mesh and computing their area
-float polyArea(const dtPoly* poly, const dtMeshTile* tile) {
-  float area = 0;
+struct Triangle {
+  std::vector<vec3f> v;
+  Triangle() { v.resize(3); }
+};
+
+std::vector<Triangle> getPolygonTriangles(const dtPoly* poly,
+                                          const dtMeshTile* tile) {
   // Code to iterate over triangles from here:
   // https://github.com/recastnavigation/recastnavigation/blob/57610fa6ef31b39020231906f8c5d40eaa8294ae/Detour/Source/DetourNavMesh.cpp#L684
   const std::ptrdiff_t ip = poly - tile->polys;
   const dtPolyDetail* pd = &tile->detailMeshes[ip];
+  std::vector<Triangle> triangles(pd->triCount);
+
   for (int j = 0; j < pd->triCount; ++j) {
     const unsigned char* t = &tile->detailTris[(pd->triBase + j) * 4];
     const float* v[3];
     for (int k = 0; k < 3; ++k) {
       if (t[k] < poly->vertCount)
-        v[k] = &tile->verts[poly->verts[t[k]] * 3];
+        triangles[j].v[k] =
+            Eigen::Map<const vec3f>(&tile->verts[poly->verts[t[k]] * 3]);
       else
-        v[k] =
-            &tile->detailVerts[(pd->vertBase + (t[k] - poly->vertCount)) * 3];
+        triangles[j].v[k] = Eigen::Map<const vec3f>(
+            &tile->detailVerts[(pd->vertBase + (t[k] - poly->vertCount)) * 3]);
     }
+  }
 
-    const vec3f w1 =
-        Eigen::Map<const vec3f>(v[1]) - Eigen::Map<const vec3f>(v[0]);
-    const vec3f w2 =
-        Eigen::Map<const vec3f>(v[2]) - Eigen::Map<const vec3f>(v[0]);
+  return triangles;
+}
+
+// Calculate the area of a polygon by iterating over the triangles in the detail
+// mesh and computing their area
+float polyArea(const dtPoly* poly, const dtMeshTile* tile) {
+  std::vector<Triangle> triangles = getPolygonTriangles(poly, tile);
+
+  float area = 0;
+  for (auto& tri : triangles) {
+    const vec3f w1 = tri.v[1] - tri.v[0];
+    const vec3f w2 = tri.v[2] - tri.v[1];
     area += 0.5 * w1.cross(w2).norm();
   }
 
@@ -1198,25 +1213,13 @@ const assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
         CORRADE_INTERNAL_ASSERT(poly != nullptr);
         CORRADE_INTERNAL_ASSERT(tmp != nullptr);
 
-        // Code to iterate over triangles from here:
-        // https://github.com/recastnavigation/recastnavigation/blob/57610fa6ef31b39020231906f8c5d40eaa8294ae/Detour/Source/DetourNavMesh.cpp#L684
-        const std::ptrdiff_t ip = poly - tile->polys;
-        const dtPolyDetail* pd = &tile->detailMeshes[ip];
-        for (int j = 0; j < pd->triCount; ++j) {
-          const unsigned char* t = &tile->detailTris[(pd->triBase + j) * 4];
-          for (int k = 0; k < 3; ++k) {
-            if (t[k] < poly->vertCount)
-              vbo.push_back(
-                  Eigen::Map<const vec3f>(&tile->verts[poly->verts[t[k]] * 3]));
-            else
-              vbo.push_back(Eigen::Map<const vec3f>(
-                  &tile->detailVerts[(pd->vertBase + (t[k] - poly->vertCount)) *
-                                     3]));
-          }
+        std::vector<Triangle> triangles = getPolygonTriangles(poly, tile);
 
-          ibo.push_back(vbo.size() - 3);
-          ibo.push_back(vbo.size() - 2);
-          ibo.push_back(vbo.size() - 1);
+        for (auto& tri : triangles) {
+          for (int k = 0; k < 3; ++k) {
+            vbo.push_back(tri.v[k]);
+            ibo.push_back(vbo.size() - 1);
+          }
         }
       }
     }

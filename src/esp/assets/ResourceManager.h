@@ -735,7 +735,7 @@ class ResourceManager {
    * @brief Primitive meshes available for instancing via @ref
    * addPrimitiveToDrawables for debugging or visualization purposes.
    */
-  std::vector<std::shared_ptr<Magnum::GL::Mesh>> primitive_meshes_;
+  std::vector<std::unique_ptr<Magnum::GL::Mesh>> primitive_meshes_;
 
   /**
    * @brief Maps string keys (typically property filenames) to @ref
