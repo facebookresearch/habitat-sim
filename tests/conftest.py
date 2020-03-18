@@ -22,7 +22,6 @@ def make_cfg_settings():
         color_sensor=True,
         semantic_sensor=True,
         depth_sensor=True,
-        triangle_sensor=True,
         silent=True,
         scene=_test_scene,
     )
