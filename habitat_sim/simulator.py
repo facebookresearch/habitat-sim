@@ -394,12 +394,9 @@ class Sensor:
                     dtype=np.float32,
                 )
             elif self._spec.sensor_type == hsim.SensorType.TRIANGLE:
-                # self._buffer = np.empty(
-                #     (self._spec.resolution[0], self._spec.resolution[1]),
-                #     dtype=np.uint32,
-                # )
-                self._buffer = np.ones(
-                    (self._spec.resolution[0], self._spec.resolution[1]), dtype=np.int32
+                self._buffer = np.empty(
+                    (self._spec.resolution[0], self._spec.resolution[1]),
+                    dtype=np.uint32,
                 )
             else:
                 self._buffer = np.empty(

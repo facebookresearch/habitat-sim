@@ -95,6 +95,7 @@ class RenderTarget {
    */
   void readFrameObjectId(const Magnum::MutableImageView2D& view);
 
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
   /**
    * @brief Reads the TriangleID rendering results into the memory specified by
    * view
@@ -106,6 +107,7 @@ class RenderTarget {
    * Magnum::PixelFormat::R16UI
    */
   void readFrameTriangleId(const Magnum::MutableImageView2D& view);
+#endif
 
   /**
    * @brief Blits the rgba buffer from internal FBO to default frame buffer
@@ -149,6 +151,7 @@ class RenderTarget {
    */
   void readFrameObjectIdGPU(int32_t* devPtr);
 
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
   /**
    * @brief Reads the TriangleID rendering result directly into CUDA memory. See
    * @ref readFrameRgbaGPU()
@@ -157,6 +160,7 @@ class RenderTarget {
    * memory region of at least W*H*sizeof(int32_t) bytes.
    */
   void readFrameTriangleIdGPU(int32_t* devPtr);
+#endif
 #endif
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(RenderTarget)

@@ -142,11 +142,15 @@ void PinholeCamera::readObservation(Observation& obs) {
     renderTarget().readFrameObjectId(Magnum::MutableImageView2D{
         Magnum::PixelFormat::R32UI, renderTarget().framebufferSize(),
         obs.buffer->data});
-  } else if (spec_->sensorType == SensorType::TRIANGLE) {
+  }
+#ifdef ESP_WITH_TRIANGLE_SENSOR
+  else if (spec_->sensorType == SensorType::TRIANGLE) {
     renderTarget().readFrameTriangleId(Magnum::MutableImageView2D{
         Magnum::PixelFormat::R32I, renderTarget().framebufferSize(),
         obs.buffer->data});
-  } else if (spec_->sensorType == SensorType::DEPTH) {
+  }
+#endif
+  else if (spec_->sensorType == SensorType::DEPTH) {
     renderTarget().readFrameDepth(Magnum::MutableImageView2D{
         Magnum::PixelFormat::R32F, renderTarget().framebufferSize(),
         obs.buffer->data});

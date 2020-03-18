@@ -22,6 +22,10 @@ if(BUILD_WITH_BULLET)
   set(ESP_BUILD_WITH_BULLET ON)
 endif()
 
+if(BUILD_WITH_TRIANGLE_SENSOR)
+  set(ESP_BUILD_WITH_TRIANGLE_SENSOR ON)
+endif()
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
                ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
