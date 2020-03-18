@@ -75,11 +75,18 @@ bool BulletPhysicsManager::addScene(
 
 int BulletPhysicsManager::makeRigidObject(
     const std::vector<assets::CollisionMeshData>& meshGroup,
-    assets::PhysicsObjectAttributes physicsObjectAttributes) {
+    assets::PhysicsObjectAttributes physicsObjectAttributes,
+    scene::SceneNode* attachmentNode) {
   //! Create new physics object (child node of staticSceneObject_)
   int newObjectID = allocateObjectID();
-  scene::SceneNode& newNode = staticSceneObject_->node().createChild();
-  existingObjects_[newObjectID] = std::make_unique<BulletRigidObject>(&newNode);
+
+  scene::SceneNode* objectNode = attachmentNode;
+  if (attachmentNode == nullptr) {
+    objectNode = &staticSceneObject_->node().createChild();
+  }
+
+  existingObjects_[newObjectID] =
+      std::make_unique<BulletRigidObject>(objectNode);
 
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
       physicsObjectAttributes.getString("collisionMeshHandle"));
@@ -92,7 +99,8 @@ int BulletPhysicsManager::makeRigidObject(
     LOG(ERROR) << "Object load failed";
     deallocateObjectID(newObjectID);
     existingObjects_.erase(newObjectID);
-    delete &newNode;
+    if (attachmentNode == nullptr)
+      delete objectNode;
     return ID_UNDEFINED;
   }
   return newObjectID;
@@ -100,10 +108,12 @@ int BulletPhysicsManager::makeRigidObject(
 
 int BulletPhysicsManager::addObject(const int objectLibIndex,
                                     DrawableGroup* drawables,
+                                    scene::SceneNode* attachmentNode,
                                     const Magnum::ResourceKey& lightSetup) {
   // Do default load first (adds the SceneNode to the SceneGraph and computes
   // the cumulativeBB_)
-  int objID = PhysicsManager::addObject(objectLibIndex, drawables, lightSetup);
+  int objID = PhysicsManager::addObject(objectLibIndex, drawables,
+                                        attachmentNode, lightSetup);
 
   // Then set the collision shape to the cumulativeBB_ if necessary
   if (objID != ID_UNDEFINED) {
@@ -171,6 +181,40 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   }
   if (dt <= 0) {
     dt = fixedTimeStep_;
+  }
+
+  // set specified control velocities
+  for (auto& objectItr : existingObjects_) {
+    VelocityControl& velControl = objectItr.second->getVelocityControl();
+    if (objectItr.second->getMotionType() == MotionType::KINEMATIC) {
+      // kinematic velocity control intergration
+      if (velControl.controllingAngVel || velControl.controllingLinVel) {
+        scene::SceneNode& objectSceneNode = objectItr.second->node();
+        objectSceneNode.setTransformation(velControl.integrateTransform(
+            dt, objectSceneNode.transformation()));
+        objectItr.second->setActive();
+      }
+    } else if (objectItr.second->getMotionType() == MotionType::DYNAMIC) {
+      if (velControl.controllingLinVel) {
+        if (velControl.linVelIsLocal) {
+          setLinearVelocity(objectItr.first,
+                            objectItr.second->node().rotation().transformVector(
+                                velControl.linVel));
+        } else {
+          setLinearVelocity(objectItr.first, velControl.linVel);
+        }
+      }
+      if (velControl.controllingAngVel) {
+        if (velControl.angVelIsLocal) {
+          setAngularVelocity(
+              objectItr.first,
+              objectItr.second->node().rotation().transformVector(
+                  velControl.angVel));
+        } else {
+          setAngularVelocity(objectItr.first, velControl.angVel);
+        }
+      }
+    }
   }
 
   // ==== Physics stepforward ======

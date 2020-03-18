@@ -9,7 +9,8 @@ namespace esp {
 namespace physics {
 
 RigidObject::RigidObject(scene::SceneNode* rigidBodyNode)
-    : Magnum::SceneGraph::AbstractFeature3D(*rigidBodyNode) {}
+    : Magnum::SceneGraph::AbstractFeature3D(*rigidBodyNode),
+      visualNode_(&rigidBodyNode->createChild()) {}
 
 bool RigidObject::initializeScene(
     const assets::PhysicsSceneAttributes&,
@@ -64,10 +65,9 @@ bool RigidObject::setMotionType(MotionType mt) {
 }
 
 void RigidObject::shiftOrigin(const Magnum::Vector3& shift) {
-  // shift each child node
-  for (auto& child : node().children()) {
-    child.translate(shift);
-  }
+  // shift visual components
+  if (visualNode_)
+    visualNode_->translate(shift);
   node().computeCumulativeBB();
 }
 
@@ -211,6 +211,36 @@ Magnum::Vector3 RigidObject::getInertiaVector() {
 Magnum::Matrix3 RigidObject::getInertiaMatrix() {
   const Magnum::Matrix3 inertia = Magnum::Matrix3();
   return inertia;
+}
+
+//////////////////
+// VelocityControl
+Magnum::Matrix4 VelocityControl::integrateTransform(
+    const float dt,
+    const Magnum::Matrix4& objectTransform) {
+  // linear first
+  Magnum::Vector3 newTranslation = objectTransform.translation();
+  if (controllingLinVel) {
+    if (linVelIsLocal) {
+      newTranslation += objectTransform.rotation() *
+                        (linVel * dt);  // avoid local scaling of the velocity
+    } else {
+      newTranslation += linVel * dt;
+    }
+  }
+
+  Magnum::Matrix3 newRotationScaling = objectTransform.rotationScaling();
+  // then angular
+  if (controllingAngVel) {
+    Magnum::Vector3 globalAngVel = angVel;
+    if (angVelIsLocal) {
+      globalAngVel = objectTransform.rotation() * angVel;
+    }
+    Magnum::Quaternion q = Magnum::Quaternion::rotation(
+        Magnum::Rad{(globalAngVel * dt).length()}, globalAngVel.normalized());
+    newRotationScaling = q.toMatrix() * newRotationScaling;
+  }
+  return Magnum::Matrix4::from(newRotationScaling, newTranslation);
 }
 
 }  // namespace physics

@@ -11,6 +11,7 @@
 #include <Magnum/PixelFormat.h>
 #include <string>
 
+#include "esp/assets/ResourceManager.h"
 #include "esp/sim/SimulatorWithAgents.h"
 
 #include "configure.h"
@@ -19,6 +20,7 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 using esp::agent::AgentConfiguration;
+using esp::assets::ResourceManager;
 using esp::gfx::LightInfo;
 using esp::gfx::LightPositionModel;
 using esp::gfx::LightSetup;
@@ -53,11 +55,14 @@ const std::string screenshotDir =
 struct SimTest : Cr::TestSuite::Tester {
   explicit SimTest();
 
-  SimulatorWithAgents::uptr getSimulator(const std::string& scene) {
+  SimulatorWithAgents::uptr getSimulator(
+      const std::string& scene,
+      const std::string& sceneLightingKey = ResourceManager::NO_LIGHT_KEY) {
     SimulatorConfiguration simConfig{};
     simConfig.scene.id = scene;
     simConfig.enablePhysics = true;
     simConfig.physicsConfigFile = physicsConfigFile;
+    simConfig.sceneLightSetup = sceneLightingKey;
 
     auto sim = SimulatorWithAgents::create_unique(simConfig);
     sim->setLightSetup(lightSetup1, "custom_lighting_1");
@@ -75,6 +80,7 @@ struct SimTest : Cr::TestSuite::Tester {
   void reconfigure();
   void reset();
   void getSceneRGBAObservation();
+  void getSceneWithLightingRGBAObservation();
   void getDefaultLightingRGBAObservation();
   void getCustomLightingRGBAObservation();
   void updateLightSetupRGBAObservation();
@@ -96,6 +102,7 @@ SimTest::SimTest() {
             &SimTest::reconfigure,
             &SimTest::reset,
             &SimTest::getSceneRGBAObservation,
+            &SimTest::getSceneWithLightingRGBAObservation,
             &SimTest::getDefaultLightingRGBAObservation,
             &SimTest::getCustomLightingRGBAObservation,
             &SimTest::updateLightSetupRGBAObservation,
@@ -183,6 +190,13 @@ void SimTest::getSceneRGBAObservation() {
                                     maxThreshold, 0.75f);
 }
 
+void SimTest::getSceneWithLightingRGBAObservation() {
+  setTestCaseName(CORRADE_FUNCTION);
+  auto simulator = getSimulator(vangogh, "custom_lighting_1");
+  checkPinholeCameraRGBAObservation(
+      *simulator, "SimTestExpectedSceneWithLighting.png", maxThreshold, 0.75f);
+}
+
 void SimTest::getDefaultLightingRGBAObservation() {
   auto simulator = getSimulator(vangogh);
 
@@ -197,7 +211,7 @@ void SimTest::getDefaultLightingRGBAObservation() {
 void SimTest::getCustomLightingRGBAObservation() {
   auto simulator = getSimulator(vangogh);
 
-  int objectID = simulator->addObject(0, "custom_lighting_1");
+  int objectID = simulator->addObject(0, nullptr, "custom_lighting_1");
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
@@ -222,7 +236,7 @@ void SimTest::updateLightSetupRGBAObservation() {
   simulator->removeObject(objectID);
 
   // update custom lighting
-  objectID = simulator->addObject(0, "custom_lighting_1");
+  objectID = simulator->addObject(0, nullptr, "custom_lighting_1");
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
@@ -258,11 +272,11 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
   auto simulator = getSimulator(planeScene);
 
   // make sure updates apply to all objects using the light setup
-  int objectID = simulator->addObject(0, "custom_lighting_1");
+  int objectID = simulator->addObject(0, nullptr, "custom_lighting_1");
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({0.0f, 0.5f, -0.5f}, objectID);
 
-  int otherObjectID = simulator->addObject(0, "custom_lighting_1");
+  int otherObjectID = simulator->addObject(0, nullptr, "custom_lighting_1");
   CORRADE_VERIFY(otherObjectID != esp::ID_UNDEFINED);
   simulator->setTranslation({2.0f, 0.5f, -0.5f}, otherObjectID);
 

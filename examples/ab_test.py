@@ -6,6 +6,7 @@
 
 
 import argparse
+import csv
 import distutils
 from distutils import util
 
@@ -93,6 +94,83 @@ parser.add_argument(
     "--test_value", type=str, required=True, help="the feature value in test group."
 )
 
+parser.add_argument("--csv", type=str, help="csv output file")
+parser.add_argument(
+    "--speedup", action="store_true", help="display speedup instead of percent change"
+)
+
+
+def get_percent_diff_str(test_val, control_val):
+    return f"{((test_val - control_val) / control_val) * 100.0:.1f}%"
+
+
+def get_speedup_str(test_val, control_val):
+    return f"{test_val / control_val:.1f}x"
+
+
+def seconds_to_ms(seconds):
+    return seconds * 1000.0
+
+
+def print_metric(
+    performance_data,
+    resolutions,
+    title_list,
+    metric="fps",
+    comparison_label_generator=None,
+    metric_transformer=None,
+):
+    for nproc, performance in performance_all.items():
+        header = f" Performance ({metric}) NPROC={nproc} "
+        print(f"{header:=^100}")
+        title = "Resolution".ljust(16)
+        title += "".join(t.ljust(24) for t in title_list)
+        print(title)
+        # break down by resolutions
+        for resolution, perf in zip(resolutions, performance):
+            row = f"{resolution} x {resolution}".ljust(16)
+            # break down by benchmark items
+            for t in title_list:
+                control_metric = perf[t][dr.ABTestGroup.CONTROL][metric]
+                test_metric = perf[t][dr.ABTestGroup.TEST][metric]
+                comparison_str = comparison_label_generator(test_metric, control_metric)
+                if metric_transformer:
+                    control_metric = metric_transformer(control_metric)
+                    test_metric = metric_transformer(test_metric)
+
+                row += f"{control_metric:6.1f}/{test_metric:6.1f} ({comparison_str:>6})"
+            print(row)
+        print(f"{' END ':=^100}")
+
+
+def get_csv_data(
+    performance_all, resolutions, title_list, metrics=["fps"], metric_transformer={}
+):
+    fields = ["num_procs", "resolution", "sensor_types"]
+    for metric in metrics:
+        fields.append(f"{metric}_control")
+        fields.append(f"{metric}_test")
+    rows = []
+
+    for nproc, performance in performance_all.items():
+        for resolution, perf in zip(resolutions, performance):
+            for t in title_list:
+                control_perf = perf[t][dr.ABTestGroup.CONTROL]
+                test_perf = perf[t][dr.ABTestGroup.TEST]
+                row = dict(num_procs=nproc, resolution=resolution, sensor_types=t)
+                for metric in metrics:
+                    control_metric = control_perf[metric]
+                    test_metric = test_perf[metric]
+                    if metric_transformer and metric in metric_transformer:
+                        control_metric = metric_transformer[metric](control_metric)
+                        test_metric = metric_transformer[metric](test_metric)
+                    row[f"{metric}_test"] = test_metric
+                    row[f"{metric}_control"] = control_metric
+                rows.append(row)
+
+    return rows, fields
+
+
 args = parser.parse_args()
 
 control_val = None
@@ -138,8 +216,7 @@ if control_val != None:
 else:
     control_val = default_settings[args.feature]
 print(
-    "==== feature %s, control value: %s, test value: %s ===="
-    % (args.feature, control_val, test_val)
+    f"==== feature {args.feature}, control value: {control_val}, test value: {test_val} ===="
 )
 
 benchmark_items = {
@@ -170,69 +247,62 @@ for nprocs in nprocs_tests:
     performance = []
     for resolution in resolutions:
         default_settings["width"] = default_settings["height"] = resolution
-        perf = {}
+        resolution_label = f"{resolution} x {resolution}"
+        per_resolution_perf = {}
         for key, value in benchmark_items.items():
+            per_group_perf = {}
             for g in dr.ABTestGroup:
                 demo_runner = dr.DemoRunner(default_settings, dr.DemoRunnerType.AB_TEST)
-                print(" ---------------------- %s ------------------------ " % key)
+                run_label = f"(nprocs={nprocs}, resolution={resolution_label}, sensors={key}, group={g.name})"
+                print(f"{f' Starting run {run_label} ':-^100}")
                 settings = default_settings.copy()
                 settings.update(value)
                 # set new value before the test group run
                 if g == dr.ABTestGroup.TEST:
                     settings[args.feature] = test_val
-                k = key + "_" + str(g)
-                perf[k] = demo_runner.benchmark(settings, g)
-                print(
-                    " ====== FPS (%d x %d, %s): %0.1f ======"
-                    % (settings["width"], settings["height"], k, perf[k].get("fps"))
-                )
-                if g == dr.ABTestGroup.CONTROL and collect_title_list:
-                    title_list.append(key)
+                per_group_perf[g] = demo_runner.benchmark(settings, g)
+                result = f" FPS {run_label}: {per_group_perf[g]['fps']:.1f} "
+                print(f"{result:-^100}")
+            if collect_title_list:
+                title_list.append(key)
+            per_resolution_perf[key] = per_group_perf
         collect_title_list = False
-        performance.append(perf)
+        performance.append(per_resolution_perf)
 
     performance_all[nprocs] = performance
 
-for nproc, performance in performance_all.items():
-    print(
-        " ================ Performance (FPS) NPROC={} ===================================".format(
-            nproc
-        )
-    )
-    title = "Resolution "
-    for t in title_list:
-        title += "\t%-24s" % t
-    print(title)
-    # break down by resolutions
-    for idx in range(len(performance)):
-        row = "%d x %d" % (resolutions[idx], resolutions[idx])
-        # break down by benchmark items
-        for t in title_list:
-            control_fps = performance[idx][t + "_" + str(dr.ABTestGroup.CONTROL)]["fps"]
-            test_fps = performance[idx][t + "_" + str(dr.ABTestGroup.TEST)]["fps"]
-            ratio = (float(test_fps) - float(control_fps)) / float(control_fps) * 100.0
-            row += "\t%-6.1f/%-6.1f (%6.1f%%)" % (control_fps, test_fps, ratio)
-        print(row)
-    print(
-        " =============================================================================="
-    )
+comparison_label_generator = get_speedup_str if args.speedup else get_percent_diff_str
+print_metric(
+    performance_all,
+    resolutions,
+    title_list,
+    metric="fps",
+    comparison_label_generator=comparison_label_generator,
+)
+print_metric(
+    performance_all,
+    resolutions,
+    title_list,
+    metric="frame_time",
+    metric_transformer=seconds_to_ms,
+    comparison_label_generator=comparison_label_generator,
+)
+if args.enable_physics:
+    print_metric(performance_all, resolutions, title_list, metric="avg_sim_step_time")
 
-    # also print the average time per simulation step (including object perturbations)
-    if args.enable_physics:
-        print(
-            " ================ Performance (step time: milliseconds) NPROC={} ===================================".format(
-                nproc
-            )
+if args.csv:
+    with open(args.csv, "w", newline="") as csv_file:
+        print(f"Writing csv results to {args.csv}")
+        metrics = ["fps"]
+        if args.enable_physics:
+            metrics.append("avg_sim_step_time")
+        rows, fields = get_csv_data(
+            performance_all,
+            resolutions,
+            title_list,
+            metrics=metrics,
+            metric_transformer={"avg_sim_step_time": seconds_to_ms},
         )
-        title = "Resolution "
-        for key, value in perf.items():
-            title += "\t%-10s" % key
-        print(title)
-        for idx in range(len(performance)):
-            row = "%d x %d" % (resolutions[idx], resolutions[idx])
-            for key, value in performance[idx].items():
-                row += "\t%-8.2f" % (value.get("avg_sim_step_time") * 1000)
-            print(row)
-        print(
-            " =============================================================================="
-        )
+        writer = csv.DictWriter(csv_file, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
