@@ -16,7 +16,6 @@ default_sim_settings = {
     "color_sensor": True,  # RGB sensor (default: ON)
     "semantic_sensor": False,  # semantic sensor (default: OFF)
     "depth_sensor": False,  # depth sensor (default: OFF)
-    "triangle_sensor": False,
     "seed": 1,
     "silent": False,  # do not print log info (default: OFF)
     # settings exclusive to example.py
@@ -66,11 +65,6 @@ def make_cfg(settings):
         },
         "semantic_sensor": {  # active if sim_settings["semantic_sensor"]
             "sensor_type": hsim.SensorType.SEMANTIC,
-            "resolution": [settings["height"], settings["width"]],
-            "position": [0.0, settings["sensor_height"], 0.0],
-        },
-        "triangle_sensor": {  # active if sim_settings["triangle_sensor"]
-            "sensor_type": hsim.SensorType.TRIANGLE,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
         },
