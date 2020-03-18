@@ -297,7 +297,7 @@ struct RenderTarget::Impl {
 #ifdef ESP_BUILD_WITH_CUDA
   cudaGraphicsResource_t colorBufferCugl_ = nullptr;
   cudaGraphicsResource_t objecIdBufferCugl_ = nullptr;
-  cudaGraphicsResource_t triangleIdBuffer_ = nullptr;
+  cudaGraphicsResource_t triangleIdBufferCugl_ = nullptr;
   cudaGraphicsResource_t depthBufferCugl_ = nullptr;
 #endif
 };  // namespace gfx
