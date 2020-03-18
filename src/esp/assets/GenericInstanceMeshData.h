@@ -10,7 +10,9 @@
 #include <Magnum/Trade/MeshData3D.h>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
+
 #include "BaseMesh.h"
 #include "esp/core/esp.h"
 
@@ -29,7 +31,22 @@ class GenericInstanceMeshData : public BaseMesh {
 
   virtual ~GenericInstanceMeshData(){};
 
-  virtual bool loadPLY(const std::string& plyFile);
+  /**
+   * @brief Split a .ply file by objectIDs into different meshes
+   *
+   * @param plyFile .ply file to load and split
+   * @return Mesh data split by objectID
+   */
+  static std::vector<std::unique_ptr<GenericInstanceMeshData>>
+  fromPlySplitByObjectId(const std::string& plyFile);
+
+  /**
+   * @brief Load from a .ply file
+   *
+   * @param plyFile .ply file to load
+   */
+  static std::unique_ptr<GenericInstanceMeshData> fromPLY(
+      const std::string& plyFile);
 
   // ==== rendering ====
   virtual void uploadBuffersToGPU(bool forceReload = false) override;
@@ -55,6 +72,19 @@ class GenericInstanceMeshData : public BaseMesh {
   int indexBufferSize();
 
  protected:
+  class PerObjectIdMeshBuilder {
+   public:
+    PerObjectIdMeshBuilder(GenericInstanceMeshData& data, uint16_t objectId)
+        : data_{data}, objectId_{objectId} {}
+
+    void addVertex(uint32_t vertexId, const vec3f& vertex, const vec3uc& color);
+
+   private:
+    GenericInstanceMeshData& data_;
+    uint16_t objectId_;
+    std::unordered_map<uint32_t, size_t> vertexIdToVertexIndex_;
+  };
+
   void updateCollisionMeshData();
 
   // ==== rendering ====
@@ -64,6 +94,9 @@ class GenericInstanceMeshData : public BaseMesh {
   std::vector<vec3uc> cpu_cbo_;
   std::vector<uint32_t> cpu_ibo_;
   std::vector<uint16_t> objectIds_;
+
+  ESP_SMART_POINTERS(GenericInstanceMeshData)
 };
+
 }  // namespace assets
 }  // namespace esp

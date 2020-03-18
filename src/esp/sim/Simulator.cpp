@@ -64,8 +64,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     houseFilename = io::changeExtension(sceneFilename, ".scn");
   }
 
-  const assets::AssetInfo sceneInfo =
-      assets::AssetInfo::fromPath(sceneFilename);
+  assets::AssetInfo sceneInfo = assets::AssetInfo::fromPath(sceneFilename);
+  sceneInfo.requiresLighting =
+      cfg.sceneLightSetup != assets::ResourceManager::NO_LIGHT_KEY;
 
   // initalize scene graph
   // CAREFUL!
@@ -96,12 +97,12 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     bool loadSuccess = false;
     if (config_.enablePhysics) {
-      loadSuccess =
-          resourceManager_.loadScene(sceneInfo, physicsManager_, &rootNode,
-                                     &drawables, cfg.physicsConfigFile);
+      loadSuccess = resourceManager_.loadScene(
+          sceneInfo, physicsManager_, &rootNode, &drawables,
+          cfg.sceneLightSetup, cfg.physicsConfigFile);
     } else {
-      loadSuccess =
-          resourceManager_.loadScene(sceneInfo, &rootNode, &drawables);
+      loadSuccess = resourceManager_.loadScene(sceneInfo, &rootNode, &drawables,
+                                               cfg.sceneLightSetup);
     }
     if (!loadSuccess) {
       LOG(ERROR) << "cannot load " << sceneFilename;
@@ -127,8 +128,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
         auto& semanticDrawables = semanticSceneGraph.getDrawables();
         const assets::AssetInfo semanticSceneInfo =
             assets::AssetInfo::fromPath(semanticMeshFilename);
-        resourceManager_.loadScene(semanticSceneInfo, &semanticRootNode,
-                                   &semanticDrawables);
+        resourceManager_.loadScene(
+            semanticSceneInfo, &semanticRootNode, &semanticDrawables,
+            assets::ResourceManager::NO_LIGHT_KEY, cfg.frustumCulling);
       }
       LOG(INFO) << "Loaded.";
     } else {
@@ -237,12 +239,8 @@ bool operator!=(const SimulatorConfiguration& a,
 
 // === Physics Simulator Functions ===
 
-int Simulator::addObject(int objectLibIndex, int sceneID) {
-  return addObject(objectLibIndex,
-                   assets::ResourceManager::DEFAULT_LIGHTING_KEY, sceneID);
-}
-
 int Simulator::addObject(int objectLibIndex,
+                         scene::SceneNode* attachmentNode,
                          const std::string& lightSetupKey,
                          int sceneID) {
   if (sceneHasPhysics(sceneID)) {
@@ -251,7 +249,7 @@ int Simulator::addObject(int objectLibIndex,
     auto& sceneGraph_ = sceneManager_.getSceneGraph(activeSceneID_);
     auto& drawables = sceneGraph_.getDrawables();
     return physicsManager_->addObject(objectLibIndex, &drawables,
-                                      lightSetupKey);
+                                      attachmentNode, lightSetupKey);
   }
   return ID_UNDEFINED;
 }
@@ -271,9 +269,12 @@ std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
 }
 
 // remove object objectID instance in sceneID
-void Simulator::removeObject(const int objectID, const int sceneID) {
+void Simulator::removeObject(const int objectID,
+                             bool deleteObjectNode,
+                             bool deleteVisualNode,
+                             const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
-    physicsManager_->removeObject(objectID);
+    physicsManager_->removeObject(objectID, deleteObjectNode, deleteVisualNode);
   }
 }
 

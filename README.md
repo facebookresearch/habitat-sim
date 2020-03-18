@@ -120,15 +120,15 @@ The table below reports performance statistics for a test scene from the Matterp
  </tr>
  <tr>
    <td>RGB + depth + semantics*</td>
-   <td>439</td>
-   <td>346</td>
-   <td>185</td>
-   <td>502</td>
-   <td>385</td>
-   <td>336</td>
-   <td>500</td>
-   <td>390</td>
-   <td>367</td>
+   <td>709</td>
+   <td>596</td>
+   <td>394</td>
+   <td>1312</td>
+   <td>1219</td>
+   <td>979</td>
+   <td>1521</td>
+   <td>1429</td>
+   <td>1291</td>
  </tr>
 </table>
 

@@ -31,5 +31,15 @@ AssetInfo AssetInfo::fromPath(const std::string& path) {
   return info;
 }
 
+bool operator==(const AssetInfo& a, const AssetInfo& b) {
+  return a.type == b.type && a.filepath == b.filepath && a.frame == b.frame &&
+         a.virtualUnitToMeters == b.virtualUnitToMeters &&
+         a.requiresLighting == b.requiresLighting;
+}
+
+bool operator!=(const AssetInfo& a, const AssetInfo& b) {
+  return !(a == b);
+}
+
 }  // namespace assets
 }  // namespace esp

@@ -109,11 +109,17 @@ class ResourceManager {
    * static.
    * @param drawables The @ref DrawableGroup with which the scene mesh will be
    * rendered.
+   * @param lightSetup The @ref LightSetup used for scene lighting
+   * @param splitSemanticMesh Split the semantic mesh by objectID, used for A/B
+   * testing
    * @return Whether or not the scene load succeeded.
    */
-  bool loadScene(const AssetInfo& info,
-                 scene::SceneNode* parent = nullptr,
-                 DrawableGroup* drawables = nullptr);
+  bool loadScene(
+      const AssetInfo& info,
+      scene::SceneNode* parent = nullptr,
+      DrawableGroup* drawables = nullptr,
+      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{NO_LIGHT_KEY},
+      bool splitSemanticMesh = true);
 
   /**
    * @brief Load and instantiate a scene including physics simulation.
@@ -141,7 +147,9 @@ class ResourceManager {
                  std::shared_ptr<physics::PhysicsManager>& _physicsManager,
                  PhysicsManagerAttributes physicsManagerAttributes,
                  scene::SceneNode* parent = nullptr,
-                 DrawableGroup* drawables = nullptr);
+                 DrawableGroup* drawables = nullptr,
+                 const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+                     NO_LIGHT_KEY});
 
   /**
    * @brief Load and instantiate a scene including physics simulation.
@@ -169,11 +177,13 @@ class ResourceManager {
    * ESP_DEFAULT_PHYS_SCENE_CONFIG set by cmake.
    * @return Whether or not the scene load succeeded.
    */
-  bool loadScene(const AssetInfo& info,
-                 std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-                 scene::SceneNode* parent = nullptr,
-                 DrawableGroup* drawables = nullptr,
-                 std::string physicsFilename = ESP_DEFAULT_PHYS_SCENE_CONFIG);
+  bool loadScene(
+      const AssetInfo& info,
+      std::shared_ptr<physics::PhysicsManager>& _physicsManager,
+      scene::SceneNode* parent = nullptr,
+      DrawableGroup* drawables = nullptr,
+      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{NO_LIGHT_KEY},
+      std::string physicsFilename = ESP_DEFAULT_PHYS_SCENE_CONFIG);
 
   /**
    * @brief Parses global physics simulation parameters (such as timestep,
@@ -314,7 +324,7 @@ class ResourceManager {
    */
   const Magnum::Matrix4& getMeshTransformation(const size_t meshIndex) {
     return meshes_[meshIndex]->meshTransform_;
-  };
+  }
 
   /**
    * @brief Retrieve the meta data for a particular asset.
@@ -325,10 +335,10 @@ class ResourceManager {
    * Typically the filepath of the asset.
    * @return The asset's @ref MeshMetaData object.
    */
-  const MeshMetaData& getMeshMetaData(const std::string& filename) {
+  const MeshMetaData& getMeshMetaData(const std::string& filename) const {
     CHECK(resourceDict_.count(filename) > 0);
-    return resourceDict_.at(filename);
-  };
+    return resourceDict_.at(filename).meshMetaData;
+  }
 
   /**
    * @brief Construct a unified @ref MeshData from a loaded asset's collision
@@ -378,6 +388,16 @@ class ResourceManager {
           DEFAULT_LIGHTING_KEY});
 
  protected:
+  /**
+   * @brief Data for a loaded asset
+   *
+   * Contains mesh, texture, material, and asset info
+   */
+  struct LoadedAssetData {
+    AssetInfo assetInfo;
+    MeshMetaData meshMetaData;
+  };
+
   //======== Scene Functions ========
 
   /**
@@ -407,9 +427,9 @@ class ResourceManager {
    * asset to link textures to that asset.
    *
    * @param importer The importer already loaded with information for the asset.
-   * @param metaData The asset's @ref MeshMetaData object.
+   * @param loadedAssetData The asset's @ref LoadedAssetData object.
    */
-  void loadTextures(Importer& importer, MeshMetaData* metaData);
+  void loadTextures(Importer& importer, LoadedAssetData& loadedAssetData);
 
   /**
    * @brief Load meshes from importer into assets.
@@ -417,9 +437,9 @@ class ResourceManager {
    * Compute bounding boxes, upload mesh data to GPU, and update metaData for an
    * asset to link meshes to that asset.
    * @param importer The importer already loaded with information for the asset.
-   * @param metaData The asset's @ref MeshMetaData object.
+   * @param loadedAssetData The asset's @ref LoadedAssetData object.
    */
-  void loadMeshes(Importer& importer, MeshMetaData* metaData);
+  void loadMeshes(Importer& importer, LoadedAssetData& loadedAssetData);
 
   /**
    * @brief Recursively parse the mesh component transformation heirarchy for
@@ -457,9 +477,9 @@ class ResourceManager {
    * asset to link materials to that asset.
    *
    * @param importer The importer already loaded with information for the asset.
-   * @param metaData The asset's @ref MeshMetaData object.
+   * @param loadedAssetData The asset's @ref LoadedAssetData object.
    */
-  void loadMaterials(Importer& importer, MeshMetaData* metaData);
+  void loadMaterials(Importer& importer, LoadedAssetData& loadedAssetData);
 
   /**
    * @brief Get a @ref PhongMaterialData for use with flat shading
@@ -512,7 +532,8 @@ class ResourceManager {
    */
   bool loadInstanceMeshData(const AssetInfo& info,
                             scene::SceneNode* parent,
-                            DrawableGroup* drawables);
+                            DrawableGroup* drawables,
+                            bool splitSemanticMesh = true);
 
   /**
    * @brief Load a mesh (e.g. gltf) into assets from a file.
@@ -530,7 +551,8 @@ class ResourceManager {
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent = nullptr,
                            DrawableGroup* drawables = nullptr,
-                           bool isScene = false);
+                           const Magnum::ResourceKey& lightSetup =
+                               Magnum::ResourceKey{NO_LIGHT_KEY});
 
   /**
    * @brief Load a SUNCG mesh into assets from a file. !Deprecated! TODO:
@@ -555,6 +577,12 @@ class ResourceManager {
    * @brief initialize default material setups in the current ShaderManager
    */
   void initDefaultMaterials();
+
+  /**
+   * @brief Checks if light setup is compatible with loaded asset
+   */
+  bool isLightSetupCompatible(const LoadedAssetData& loadedAssetData,
+                              const Magnum::ResourceKey& lightSetup) const;
 
   // ======== Geometry helper functions, data structures ========
 
@@ -588,6 +616,12 @@ class ResourceManager {
    * MP3D) world space
    */
   void computeGeneralMeshAbsoluteAABBs();
+
+  /**
+   * @brief Compute the absolute AABBs for drawables in semantic mesh in world
+   * space
+   */
+  void computeInstanceMeshAbsoluteAABBs();
 
   /**
    * @brief Compute absolute transformations of all drwables stored in
@@ -650,7 +684,7 @@ class ResourceManager {
    *
    * Maps absolute path keys to metadata.
    */
-  std::map<std::string, MeshMetaData> resourceDict_;  // meshes
+  std::map<std::string, LoadedAssetData> resourceDict_;
 
   /**
    * @brief The @ref ShaderManager used to store shader information for

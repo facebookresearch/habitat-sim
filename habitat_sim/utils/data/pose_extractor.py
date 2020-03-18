@@ -138,7 +138,7 @@ class PoseExtractor:
 
     def _compute_quat(self, cam_normal):
         """Rotations start from -z axis"""
-        return quat_from_two_vectors(habitat_sim.geo.FRONT, cam_normal)
+        return quat_from_two_vectors(np.array([0, 0, -1]), cam_normal)
 
     def _bfs(self, point, labels, view, dist):
         step = 3  # making this larger really speeds up BFS

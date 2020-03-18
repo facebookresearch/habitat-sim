@@ -58,6 +58,12 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
         help="Forces cmake to be rerun.  This argument is not cached",
     )
     parser.add_argument(
+        "--triangle-sensor",
+        dest="triangle_sensor",
+        action="store_true",
+        help="Allows use of the triangle sensor.",
+    )
+    parser.add_argument(
         "--build-tests", dest="build_tests", action="store_true", help="Build tests"
     )
     parser.add_argument(
@@ -256,6 +262,11 @@ class CMakeBuild(build_ext):
             "-DBUILD_DATATOOL={}".format("ON" if args.build_datatool else "OFF")
         ]
         cmake_args += ["-DBUILD_WITH_CUDA={}".format("ON" if args.with_cuda else "OFF")]
+        cmake_args += [
+            "-DBUILD_WITH_TRIANGLE_SENSOR={}".format(
+                "ON" if args.triangle_sensor else "OFF"
+            )
+        ]
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(

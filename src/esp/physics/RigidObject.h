@@ -6,7 +6,8 @@
 
 /** @file
  * @brief Class @ref esp::physics::RigidObject, enum @ref
- * esp::physics::MotionType, enum @ref esp::physics::RigidObjectType
+ * esp::physics::MotionType, enum @ref esp::physics::RigidObjectType, struct
+ * @ref VelocityControl
  */
 
 #include <Corrade/Containers/Optional.h>
@@ -78,6 +79,47 @@ enum class RigidObjectType {
    */
   OBJECT
 
+};
+
+/**@brief Convenience struct for applying constant velocity control to a rigid
+ * body. */
+struct VelocityControl {
+ public:
+  /**@brief Constant linear velocity. */
+  Magnum::Vector3 linVel;
+  /**@brief Constant angular velocity. */
+  Magnum::Vector3 angVel;
+  /**@brief Whether or not to set linear control velocity before stepping. */
+  bool controllingLinVel = false;
+  /**@brief Whether or not to set linear control velocity in local space.
+   *
+   * Useful for commanding actions such as "forward", or "strafe".
+   */
+  bool linVelIsLocal = false;
+
+  /**@brief Whether or not to set angular control velocity before stepping. */
+  bool controllingAngVel = false;
+
+  /**@brief Whether or not to set angular control velocity in local space.
+   *
+   * Useful for commanding actions such as "roll" and "yaw".
+   */
+  bool angVelIsLocal = false;
+
+  /**
+   * @brief Compute the result of applying constant control velocities to the
+   * provided object transform.
+   *
+   * Default implementation uses explicit Euler integration.
+   * @param dt The discrete timestep over which to integrate.
+   * @param objectTransformation The initial state of the object before applying
+   * velocity control.
+   * @return The new state of the object after applying velocity control over
+   * dt.
+   */
+  virtual Magnum::Matrix4 integrateTransform(
+      const float dt,
+      const Magnum::Matrix4& objectTransform);
 };
 
 /**
@@ -276,6 +318,10 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
   virtual Magnum::Vector3 getAngularVelocity() const {
     return Magnum::Vector3();
   };
+
+  /**@brief Retrieves a reference to the VelocityControl struct for this object.
+   */
+  VelocityControl& getVelocityControl() { return velControl_; };
 
   // ==== Transformations ===
 
@@ -507,7 +553,18 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
   //! drawing is off. See @ref toggleBBDraw().
   scene::SceneNode* BBNode_ = nullptr;
 
+  /**
+   * @brief All Drawable components are children of this node.
+   */
+  scene::SceneNode* visualNode_ = nullptr;
+
  protected:
+  /**
+   * @brief Convenience variable: specifies a constant control velocity (linear
+   * | angular) applied to the rigid body before each step.
+   */
+  VelocityControl velControl_;
+
   /** @brief The @ref MotionType of the object. Determines what operations can
    * be performed on this object. */
   MotionType objectMotionType_;

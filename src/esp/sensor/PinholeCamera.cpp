@@ -111,12 +111,8 @@ void PinholeCamera::drawObservation(sim::Simulator& sim) {
   if (spec_->sensorType == SensorType::SEMANTIC ||
       spec_->sensorType == SensorType::TRIANGLE) {
     // TODO: check sim has semantic scene graph
-
-    // TODO:
-    // We do not support frustum culling when rendering semantic mesh.
-    // We should enable it in near future
-    bool frustumCulling = false;
-    renderer->draw(*this, sim.getActiveSemanticSceneGraph(), frustumCulling);
+    renderer->draw(*this, sim.getActiveSemanticSceneGraph(),
+                   sim.isFrustumCullingEnabled());
   } else {
     // SensorType is DEPTH or any other type
     renderer->draw(*this, sim.getActiveSceneGraph(),
@@ -142,11 +138,15 @@ void PinholeCamera::readObservation(Observation& obs) {
     renderTarget().readFrameObjectId(Magnum::MutableImageView2D{
         Magnum::PixelFormat::R32UI, renderTarget().framebufferSize(),
         obs.buffer->data});
-  } else if (spec_->sensorType == SensorType::TRIANGLE) {
+  }
+#ifdef ESP_WITH_TRIANGLE_SENSOR
+  else if (spec_->sensorType == SensorType::TRIANGLE) {
     renderTarget().readFrameTriangleId(Magnum::MutableImageView2D{
         Magnum::PixelFormat::R32I, renderTarget().framebufferSize(),
         obs.buffer->data});
-  } else if (spec_->sensorType == SensorType::DEPTH) {
+  }
+#endif
+  else if (spec_->sensorType == SensorType::DEPTH) {
     renderTarget().readFrameDepth(Magnum::MutableImageView2D{
         Magnum::PixelFormat::R32F, renderTarget().framebufferSize(),
         obs.buffer->data});

@@ -16,7 +16,6 @@ default_sim_settings = {
     "color_sensor": True,  # RGB sensor (default: ON)
     "semantic_sensor": False,  # semantic sensor (default: OFF)
     "depth_sensor": False,  # depth sensor (default: OFF)
-    "triangle_sensor": False,
     "seed": 1,
     "silent": False,  # do not print log info (default: OFF)
     # settings exclusive to example.py
@@ -38,17 +37,17 @@ default_sim_settings = {
 # build SimulatorConfiguration
 def make_cfg(settings):
     sim_cfg = hsim.SimulatorConfiguration()
-    if "frustum_culling" in settings.keys():
+    if "frustum_culling" in settings:
         sim_cfg.frustum_culling = settings["frustum_culling"]
     else:
         sim_cfg.frustum_culling = False
-    if "enable_physics" in settings.keys():
+    if "enable_physics" in settings:
         sim_cfg.enable_physics = settings["enable_physics"]
-    else:
-        sim_cfg.enable_physics = False
-    if "physics_config_file" in settings.keys():
+    if "physics_config_file" in settings:
         sim_cfg.physics_config_file = settings["physics_config_file"]
     print("sim_cfg.physics_config_file = " + sim_cfg.physics_config_file)
+    if "scene_light_setup" in settings:
+        sim_cfg.scene_light_setup = settings["scene_light_setup"]
     sim_cfg.gpu_device_id = 0
     sim_cfg.scene.id = settings["scene"]
 
@@ -66,11 +65,6 @@ def make_cfg(settings):
         },
         "semantic_sensor": {  # active if sim_settings["semantic_sensor"]
             "sensor_type": hsim.SensorType.SEMANTIC,
-            "resolution": [settings["height"], settings["width"]],
-            "position": [0.0, settings["sensor_height"], 0.0],
-        },
-        "triangle_sensor": {  # active if sim_settings["triangle_sensor"]
-            "sensor_type": hsim.SensorType.TRIANGLE,
             "resolution": [settings["height"], settings["width"]],
             "position": [0.0, settings["sensor_height"], 0.0],
         },

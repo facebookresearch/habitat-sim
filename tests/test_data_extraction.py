@@ -52,40 +52,20 @@ def test_data_extractor_end_to_end(sim):
         out = net(img)
 
 
-def test_extractor_cache(sim):
+def test_extractor_cache():
     cache = ExtractorLRUCache()
     cache.add(1, "one")
     cache.add(2, "two")
     cache.add(3, "three")
-    assert cache.head.next_node.data == "three"
+    assert cache[next(reversed(list(cache._order)))] == "three"
     accessed_data = cache[2]
-    assert cache.head.next_node.data == "two"
+    assert cache[next(reversed(list(cache._order)))] == "two"
     cache.remove_from_back()
     assert 1 not in cache
 
 
-def test_data_extractor_all_modes(sim):
-    scene_filepath = ""
-    extractor = ImageExtractor(
-        scene_filepath,
-        labels=[0.0],
-        img_size=(32, 32),
-        sim=sim,
-        extraction_method="closest",
-    )
-    assert len(extractor) > 0  # Did it extract some poses?
-    extractor = ImageExtractor(
-        scene_filepath,
-        labels=[0.0],
-        img_size=(32, 32),
-        sim=sim,
-        extraction_method="panorama",
-    )
-    assert len(extractor) > 0
-
-
-def test_triangle_id(sim):
-    ## test that empty frames can be rendered without a scene mesh
-    obs = sim.step("move_forward")
-    triangle = obs["triangle_sensor"]
-    assert True
+# def test_triangle_id(sim):
+#     ## test that empty frames can be rendered without a scene mesh
+#     obs = sim.step("move_forward")
+#     triangle = obs["triangle_sensor"]
+#     assert True
