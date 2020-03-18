@@ -69,6 +69,8 @@ class GenericInstanceMeshData : public BaseMesh {
     return objectIds_;
   }
 
+  int indexBufferSize();
+
  protected:
   class PerObjectIdMeshBuilder {
    public:

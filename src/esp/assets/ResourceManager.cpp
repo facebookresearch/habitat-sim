@@ -976,6 +976,10 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
 #endif
 }
 
+int ResourceManager::getNumTriangles() {
+  return NUM_TRIANGLES;
+}
+
 // semantic instance mesh import
 bool ResourceManager::loadInstanceMeshData(
     const AssetInfo& info,
@@ -989,6 +993,7 @@ bool ResourceManager::loadInstanceMeshData(
   // if this is a new file, load it and add it to the dictionary, create
   // shaders and add it to the shaderPrograms_
   const std::string& filename = info.filepath;
+  int totalNumTriangles;
   if (resourceDict_.count(filename) == 0) {
     std::vector<GenericInstanceMeshData::uptr> instanceMeshes;
     if (splitSemanticMesh) {
@@ -1010,6 +1015,7 @@ bool ResourceManager::loadInstanceMeshData(
     int meshEnd = meshStart + instanceMeshes.size() - 1;
     MeshMetaData meshMetaData{meshStart, meshEnd};
     meshMetaData.root.children.resize(instanceMeshes.size());
+    totalNumTriangles += instanceMeshes[meshEnd]->indexBufferSize() / 3;
 
     for (int meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
          ++meshIDLocal) {
@@ -1024,6 +1030,7 @@ bool ResourceManager::loadInstanceMeshData(
                           LoadedAssetData{info, std::move(meshMetaData)});
   }
 
+  NUM_TRIANGLES = totalNumTriangles;
   // create the scene graph by request
   if (parent) {
     auto indexPair = getMeshMetaData(filename).meshIndex;
@@ -1338,11 +1345,13 @@ void ResourceManager::loadMeshes(Importer& importer,
   int meshEnd = meshStart + importer.mesh3DCount() - 1;
   loadedAssetData.meshMetaData.setMeshIndices(meshStart, meshEnd);
 
+  // int totalNumTriangles = 0;
   for (int iMesh = 0; iMesh < importer.mesh3DCount(); ++iMesh) {
     // don't need normals if we aren't using lighting
     auto gltfMeshData = std::make_unique<GltfMeshData>(
         loadedAssetData.assetInfo.requiresLighting);
     gltfMeshData->setMeshData(importer, iMesh);
+    // totalNumTriangles += gltfMeshData->indexBufferSize() / 3;
 
     // compute the mesh bounding box
     gltfMeshData->BB = computeMeshBB(gltfMeshData.get());
@@ -1350,6 +1359,8 @@ void ResourceManager::loadMeshes(Importer& importer,
     gltfMeshData->uploadBuffersToGPU(false);
     meshes_.emplace_back(std::move(gltfMeshData));
   }
+
+  // NUM_TRIANGLES = totalNumTriangles;
 }
 
 //! Recursively load the transformation chain specified by the mesh file

@@ -311,6 +311,10 @@ void GenericInstanceMeshData::updateCollisionMeshData() {
       Cr::Containers::arrayView(cpu_ibo_));
 }
 
+int GenericInstanceMeshData::indexBufferSize() {
+  return cpu_ibo_.size();
+}
+
 void GenericInstanceMeshData::PerObjectIdMeshBuilder::addVertex(
     uint32_t vertexId,
     const vec3f& position,

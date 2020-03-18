@@ -52,7 +52,7 @@ class ImageExtractor:
         scene_filepath,
         labels=[0.0],
         img_size=(512, 512),
-        output=["rgba"],
+        output=["rgba", "triangle"],
         extraction_method="closest",
         sim=None,
         shuffle=True,
@@ -74,14 +74,23 @@ class ImageExtractor:
 
         self.labels = set(labels)
         self.img_size = img_size
-        self.cfg = self._config_sim(self.scene_filepaths[0], self.img_size)
+        self.out_name_to_sensor_name = {
+            "rgba": "color_sensor",
+            "depth": "depth_sensor",
+            "semantic": "semantic_sensor",
+            "triangle": "triangle_sensor",
+        }
+        self.output = output
+        self.cfg = self._config_sim(self.scene_filepaths[0], self.img_size, self.output)
 
         sim_provided = sim is not None
         if not sim_provided:
             sim = habitat_sim.Simulator(self.cfg)
         else:
             # If a sim is provided we have to make a new cfg
-            self.cfg = self._config_sim(sim.config.sim_cfg.scene.id, img_size)
+            self.cfg = self._config_sim(
+                sim.config.sim_cfg.scene.id, img_size, self.output
+            )
             sim.reconfigure(self.cfg)
 
         self.sim = sim
@@ -119,12 +128,6 @@ class ImageExtractor:
             None: self.poses,
         }
         self.instance_id_to_name = self._generate_label_map(self.sim.semantic_scene)
-        self.out_name_to_sensor_name = {
-            "rgba": "color_sensor",
-            "depth": "depth_sensor",
-            "semantic": "semantic_sensor",
-        }
-        self.output = output
         self.use_caching = use_caching
         if self.use_caching:
             self.cache = ExtractorLRUCache()
@@ -159,7 +162,7 @@ class ImageExtractor:
 
         # Only switch scene if it is different from the last one accessed
         if fp != self.cur_fp:
-            self.sim.reconfigure(self._config_sim(fp, self.img_size))
+            self.sim.reconfigure(self._config_sim(fp, self.img_size, self.outputs))
             self.cur_fp = fp
 
         new_state = AgentState()
@@ -202,10 +205,37 @@ class ImageExtractor:
         class_names = list(set(name for name in self.instance_id_to_name.values()))
         return class_names
 
+    def mesh_coverage_ratio(self):
+        r"""Returns the ratio of mesh triangles seen by the extracted images to the total number of triangle in the entire mesh
+        """
+        if len(self.scene_filepaths) > 1:
+            raise Exception(
+                "Percent mesh coverage metric is only \
+                valid on a single scene"
+            )
+
+        triangles_seen = set()
+        add_to_set = np.vectorize(lambda x: triangles_seen.add(x))
+        mymode = self.mode.lower()
+        poses = self.mode_to_data[mymode]
+        for pose in poses:
+            pos, rot, label, fp = pose
+            new_state = AgentState()
+            new_state.position = pos
+            new_state.rotation = rot
+            self.sim.agents[0].set_state(new_state)
+            obs = self.sim.get_sensor_observations()
+            triangle = obs["triangle_sensor"]
+            add_to_set(triangle)
+
+        total_num_triangles = self.sim._sim.get_num_triangles()
+        mesh_coverage_ratio = len(triangles_seen) / total_num_triangles
+        return mesh_coverage_ratio
+
     def _preprocessing(self, sim, scene_filepaths, pixels_per_meter):
         tdv_fp_ref = []
         for filepath in scene_filepaths:
-            cfg = self._config_sim(filepath, self.img_size)
+            cfg = self._config_sim(filepath, self.img_size, self.output)
             sim.reconfigure(cfg)
             ref_point = self._get_pathfinder_reference_point(sim.pathfinder)
             tdv = TopdownView(sim, ref_point[1], pixels_per_meter=pixels_per_meter)
@@ -245,18 +275,23 @@ class ImageExtractor:
 
         return instance_id_to_name
 
-    def _config_sim(self, scene_filepath, img_size):
+    def _config_sim(self, scene_filepath, img_size, outputs):
         settings = {
             "width": img_size[1],  # Spatial resolution of the observations
             "height": img_size[0],
             "scene": scene_filepath,  # Scene path
             "default_agent": 0,
             "sensor_height": 1.5,  # Height of sensors in meters
-            "color_sensor": True,  # RGBA sensor
-            "semantic_sensor": True,  # Semantic sensor
-            "depth_sensor": True,  # Depth sensor
+            "color_sensor": False,  # RGBA sensor
+            "semantic_sensor": False,  # Semantic sensor
+            "depth_sensor": False,  # Depth sensor
+            "triangle_sensor": False,  # Triangle sensor
             "silent": True,
         }
+
+        # Sensors are all originally False, only use sensors defined by users' "output" parameter
+        for output in outputs:
+            settings[self.out_name_to_sensor_name[output]] = True
 
         sim_cfg = hsim.SimulatorConfiguration()
         sim_cfg.enable_physics = False
@@ -277,6 +312,11 @@ class ImageExtractor:
             },
             "semantic_sensor": {  # active if sim_settings["semantic_sensor"]
                 "sensor_type": hsim.SensorType.SEMANTIC,
+                "resolution": [settings["height"], settings["width"]],
+                "position": [0.0, settings["sensor_height"], 0.0],
+            },
+            "triangle_sensor": {  # active if sim_settings["semantic_sensor"]
+                "sensor_type": hsim.SensorType.TRIANGLE,
                 "resolution": [settings["height"], settings["width"]],
                 "position": [0.0, settings["sensor_height"], 0.0],
             },

@@ -61,6 +61,8 @@ class GltfMeshData : public BaseMesh {
    */
   void setMeshData(Magnum::Trade::AbstractImporter& importer, int meshID);
 
+  int indexBufferSize();
+
   /**
    * @brief Returns a pointer to the compiled render data storage structure.
    * @return Pointer to the @ref renderingBuffer_.
