@@ -12,12 +12,13 @@
 #include "SceneNode.h"
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/RenderCamera.h"
+#include "esp/gfx/shadows/ShadowLight.h"
 
 #include "esp/sensor/VisualSensor.h"
 
 namespace esp {
 namespace scene {
-class SceneGraph {
+class SceneGraph : public MagnumScene {
  public:
   using DrawableGroups = std::unordered_map<std::string, gfx::DrawableGroup>;
 
@@ -100,8 +101,26 @@ class SceneGraph {
    */
   bool deleteDrawableGroup(const std::string& id);
 
+  gfx::DrawableGroup& getShadowCasterDrawables() { return shadowCasterGroup_; }
+
+  const gfx::DrawableGroup& getShadowCasterDrawables() const {
+    return shadowCasterGroup_;
+  }
+
+  gfx::ShadowLight* createShadowLight() {
+    return new gfx::ShadowLight{shadowCameraNode_.createChild()};
+  }
+
+  // we have a special separate DrawableGroup for shadow casters, since they are
+  // not rendered as part of the scene but instead from ShadowLights
+  gfx::DrawableGroup shadowCasterGroup_;
+
+  using LightSetupShadowMaps = std::vector<gfx::ShadowLight*>;
+  using ShadowMapRegistry = Magnum::ResourceManager<LightSetupShadowMaps>;
+  ShadowMapRegistry lightSetupToShadowMaps_;
+
  protected:
-  MagnumScene world_;
+  // MagnumScene world_;
 
   // Each item within is a base node, parent of all in that scene, for easy
   // manipulation (e.g., rotate the entire scene)
@@ -115,11 +134,12 @@ class SceneGraph {
   // The transformation matrix between rootNode_ and world_
   // is ALWAYS an IDENTITY matrix.
   // DO NOT add any other transformation in between!!
-  SceneNode rootNode_{world_};
+  SceneNode rootNode_{*this};
 
   // Again, order matters! do not change the sequence!!
   // CANNOT make defaultRenderCameraNode_ specified BEFORE rootNode_.
   SceneNode defaultRenderCameraNode_{rootNode_};
+  SceneNode shadowCameraNode_{rootNode_};
 
   // a default camera to render the scene
   // user can of course define her own RenderCamera for rendering

@@ -12,6 +12,8 @@
 namespace esp {
 namespace gfx {
 
+class DrawableGroup;
+
 class RenderCamera : public MagnumCamera {
  public:
   RenderCamera(scene::SceneNode& node);
@@ -47,7 +49,15 @@ class RenderCamera : public MagnumCamera {
    * @param frustumCulling, whether do frustum culling or not, default: false
    * @return the number of drawables that are drawn
    */
-  uint32_t draw(MagnumDrawableGroup& drawables, bool frustumCulling = false);
+  uint32_t draw(DrawableGroup& drawables, bool frustumCulling = false);
+
+  /** @brief Overload */
+  uint32_t draw(
+      std::vector<
+          std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
+                    Magnum::Matrix4>>& drawableTransforms,
+      bool frustumCulling = false);
+
   /**
    * @brief performs the frustum culling
    * @param drawableTransforms, a vector of pairs of Drawable3D object and its
