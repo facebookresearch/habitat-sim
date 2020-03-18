@@ -17,6 +17,8 @@
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
+using esp::assets::GenericInstanceMeshData;
+
 namespace {
 
 const std::string replicaRoom0 =
@@ -46,13 +48,13 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
   CORRADE_VERIFY(esp::scene::SemanticScene::loadReplicaHouse(
       Cr::Utility::Directory::join(replicaRoom0, "info_semantic.json"), scene));
 
-  esp::assets::GenericInstanceMeshData mesh;
-  CORRADE_VERIFY(mesh.loadPLY(
-      Cr::Utility::Directory::join(replicaRoom0, "mesh_semantic.ply")));
+  GenericInstanceMeshData::uptr mesh = GenericInstanceMeshData::fromPLY(
+      Cr::Utility::Directory::join(replicaRoom0, "mesh_semantic.ply"));
+  CORRADE_VERIFY(mesh);
 
-  const auto& vbo = mesh.getVertexBufferObjectCPU();
-  const auto& objectIds = mesh.getObjectIdsBufferObjectCPU();
-  const auto& ibo = mesh.getIndexBufferObjectCPU();
+  const auto& vbo = mesh->getVertexBufferObjectCPU();
+  const auto& objectIds = mesh->getObjectIdsBufferObjectCPU();
+  const auto& ibo = mesh->getIndexBufferObjectCPU();
 
   CORRADE_VERIFY(objectIds.size() == ibo.size());
   for (const auto& obj : scene.objects()) {

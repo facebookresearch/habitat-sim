@@ -40,6 +40,7 @@ add_library(core STATIC
   logging.h
   random.h
   spimpl.h
+  Utility.h
 )
 
 target_link_libraries(core
