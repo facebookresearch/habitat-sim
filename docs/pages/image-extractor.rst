@@ -11,22 +11,29 @@ This notebook will go over how to use the Image Extraction API in Habitat Sim an
 
     import os
 
-    import numpy as np
     import matplotlib.pyplot as plt
+    import numpy as np
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    from torch.utils.data import DataLoader, Dataset
+
+    from habitat_sim.utils.data.data_extractor import ImageExtractor
+
 
     # Helper functions
     def display_sample(sample):
-        img = sample['rgba']
-        depth = sample['depth']
-        semantic = sample['semantic']
-        label = sample['label']
+        img = sample["rgba"]
+        depth = sample["depth"]
+        semantic = sample["semantic"]
+        label = sample["label"]
 
         arr = [img, depth, semantic]
-        titles = ['rgba', 'depth', 'semantic']
-        plt.figure(figsize=(12 ,8))
+        titles = ["rgba", "depth", "semantic"]
+        plt.figure(figsize=(12, 8))
         for i, data in enumerate(arr):
-            ax = plt.subplot(1, 3, i+1)
-            ax.axis('off')
+            ax = plt.subplot(1, 3, i + 1)
+            ax.axis("off")
             ax.set_title(titles[i])
             plt.imshow(data)
 
@@ -63,14 +70,16 @@ below is not represented.
 
 .. code:: py
 
-    from habitat_sim.utils.data.data_extractor import ImageExtractor
-
     # Give the extractor a path to the scene
-    scene_filepath = "../data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
+    scene_filepath = "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
 
     # Instantiate an extractor. The only required argument is the scene filepath
-    extractor = ImageExtractor(scene_filepath, labels=[0.0], img_size=(512, 512),
-                            output=['rgba', 'depth', 'semantic'])
+    extractor = ImageExtractor(
+        scene_filepath,
+        labels=[0.0],
+        img_size=(512, 512),
+        output=["rgba", "depth", "semantic"],
+    )
 
     # Index in to the extractor like a normal python list
     sample = extractor[0]
@@ -93,25 +102,21 @@ and DataLoader, refer to this guide: https://pytorch.org/tutorials/beginner/data
 
 .. code:: py
 
-    import torch
-    import torch.nn as nn
-    import torch.nn.functional as F
-    from torch.utils.data import Dataset, DataLoader
-
     class HabitatDataset(Dataset):
-        def __init__(self, extractor):
-            self.extractor = extractor
+    def __init__(self, extractor):
+        self.extractor = extractor
 
-        def __len__(self):
-            return len(self.extractor)
+    def __len__(self):
+        return len(self.extractor)
 
-        def __getitem__(self, idx):
-            sample = self.extractor[idx]
-            output = {
-                'rgba': sample['rgba'].astype(np.float32), # dataloader requires certain types
-                'label': sample['label']
-            }
-            return output
+    def __getitem__(self, idx):
+        sample = self.extractor[idx]
+        output = {
+            "rgba": sample["rgba"].astype(np.float32)
+            / 255.0,  # dataloader requires certain types
+            "label": sample["label"],
+        }
+        return output
 
 
     class TrivialNet(nn.Module):
@@ -124,12 +129,14 @@ and DataLoader, refer to this guide: https://pytorch.org/tutorials/beginner/data
 
 
     dataset = HabitatDataset(extractor)
-    dataloader = DataLoader(dataset, batch_size=2)
+    dataloader = DataLoader(
+        dataset, batch_size=2, num_workers=0
+    )  # Sim can only run in 1 process
     net = TrivialNet()
 
     for i, sample_batch in enumerate(dataloader):
-        img, label = sample_batch['rgba'], sample_batch['label']
-        img = img.permute(0, 3, 1, 2) # Reshape to PyTorch format for convolutions
+        img, label = sample_batch["rgba"], sample_batch["label"]
+        img = img.permute(0, 3, 1, 2)  # Reshape to PyTorch format for convolutions
         out = net(img)
 
 
