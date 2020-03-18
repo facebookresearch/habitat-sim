@@ -1,8 +1,10 @@
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
-
+//
 #include <Corrade/Containers/Optional.h>
+#include <Corrade/TestSuite/Compare/Numeric.h>
+#include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/GL/SampleQuery.h>
@@ -26,7 +28,25 @@ namespace Mn = Magnum;
 using esp::assets::ResourceManager;
 using esp::scene::SceneManager;
 
-TEST(CullingTest, computeAbsoluteAABB) {
+namespace Test {
+// on GCC and Clang, the following namespace causes useful warnings to be
+// printed when you have accidentally unused variables or functions in the test
+namespace {
+struct CullingTest : Cr::TestSuite::Tester {
+  explicit CullingTest();
+  // tests
+  void computeAbsoluteAABB();
+  void frustumCulling();
+};
+
+CullingTest::CullingTest() {
+  // clang-format off
+  addTests({&CullingTest::computeAbsoluteAABB,
+            &CullingTest::frustumCulling});
+  // clang-format on
+}
+
+void CullingTest::computeAbsoluteAABB() {
   // must create a GL context which will be used in the resource manager
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
@@ -44,9 +64,7 @@ TEST(CullingTest, computeAbsoluteAABB) {
   auto& drawables = sceneGraph.getDrawables();
   const esp::assets::AssetInfo info =
       esp::assets::AssetInfo::fromPath(sceneFile);
-  bool loadSuccess =
-      resourceManager.loadScene(info, &sceneRootNode, &drawables);
-  EXPECT_EQ(loadSuccess, true);
+  CORRADE_VERIFY(resourceManager.loadScene(info, &sceneRootNode, &drawables));
 
   std::vector<Mn::Range3D> aabbs;
   for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
@@ -64,38 +82,42 @@ TEST(CullingTest, computeAbsoluteAABB) {
    *  a) a cube, with edge length 2.0
    *
    */
-  std::vector<Mn::Range3D> aabbsGroundTruth;
-  // Box 0: root (parent: null), object "a", centered at origin
-  aabbsGroundTruth.emplace_back(Mn::Vector3{-1.0, -1.0, -1.0},
-                                Mn::Vector3{1.0, 1.0, 1.0});
-  // Box 1: (parent, Box 0), object "a", relative translation (0.0, -4.0, 0.0)
-  aabbsGroundTruth.emplace_back(Mn::Vector3{-1.0, -5.0, -1.0},
-                                Mn::Vector3{1.0, -3.0, 1.0});
-  // Box 2: (parent, Box 1), object "a", relative translation (0.0, 0.0, 4.0)
-  aabbsGroundTruth.emplace_back(Mn::Vector3{-1.0, -5.0, 3.0},
-                                Mn::Vector3{1.0, -3.0, 5.0});
-  // Box 3: (parent, Box 0), object "a", relative translation (-4.0, 0.0, 4.0),
-  // relative rotation pi/4 (ccw) around local z-axis of Box 3
-  aabbsGroundTruth.emplace_back(
-      Mn::Vector3{-4.0f - sqrt(2.0f), -sqrt(2.0f), 3.0},
-      Mn::Vector3{-4.0f + sqrt(2.0f), sqrt(2.0f), 5.0});
-  // Box 4: (parent, Box 3), object "a", relative translation (8.0, 0.0, 0.0),
-  // relative rotation pi/4 (ccw) around local z-axis of Box 4
-  aabbsGroundTruth.emplace_back(Mn::Vector3{3.0, -1.0, 3.0},
-                                Mn::Vector3{5.0, 1.0, 5.0});
+  std::vector<Mn::Range3D> aabbsGroundTruth{
+      // Box 0: root (parent: null), object "a", centered at origin
+      {{-1.0f, -1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}},
+
+      // Box 1: (parent, Box 0), object "a", relative translation (0.0, -4.0,
+      // 0.0)
+      {{-1.0f, -5.0f, -1.0f}, {1.0f, -3.0f, 1.0f}},
+
+      // Box 2: (parent, Box 1), object "a", relative translation (0.0,
+      // 0.0, 4.0)
+      {{-1.0f, -5.0f, 3.0f}, {1.0f, -3.0f, 5.0f}},
+
+      // Box 3: (parent, Box 0), object "a", relative translation (-4.0,
+      // 0.0, 4.0),
+      // relative rotation pi/4 (ccw) around local z-axis of Box 3
+      {{-4.0f - Mn::Constants::sqrt2(), -Mn::Constants::sqrt2(), 3.0f},
+       {-4.0f + Mn::Constants::sqrt2(), Mn::Constants::sqrt2(), 5.0f}},
+
+      // Box 4: (parent, Box 3), object "a", relative translation (8.0, 0.0,
+      // 0.0),
+      // relative rotation pi/4 (ccw) around local z-axis of Box 4
+      {{3.0f, -1.0f, 3.0f}, {5.0f, 1.0f, 5.0f}}};
 
   // compare against the ground truth
-  EXPECT_EQ(aabbs.size(), aabbsGroundTruth.size());
-  const float epsilon = 1e-6;
+  CORRADE_COMPARE(aabbs.size(), aabbsGroundTruth.size());
+  const float eps = 1e-6;
   for (unsigned int iBox = 0; iBox < aabbsGroundTruth.size(); ++iBox) {
-    CHECK_LE(std::abs((aabbs[iBox].min() - aabbsGroundTruth[iBox].min()).dot()),
-             epsilon);
-    CHECK_LE(std::abs((aabbs[iBox].max() - aabbsGroundTruth[iBox].max()).dot()),
-             epsilon);
+    CORRADE_ITERATION(iBox);
+    CORRADE_COMPARE_WITH(aabbs[iBox].min(), aabbsGroundTruth[iBox].min(),
+                         Cr::TestSuite::Compare::around(Mn::Vector3{eps}));
+    CORRADE_COMPARE_WITH(aabbs[iBox].max(), aabbsGroundTruth[iBox].max(),
+                         Cr::TestSuite::Compare::around(Mn::Vector3{eps}));
   }
 }
 
-TEST(CullingTest, frustumCulling) {
+void CullingTest::frustumCulling() {
   // must create a GL context which will be used in the resource manager
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
@@ -114,9 +136,7 @@ TEST(CullingTest, frustumCulling) {
   auto& drawables = sceneGraph.getDrawables();
   const esp::assets::AssetInfo info =
       esp::assets::AssetInfo::fromPath(sceneFile);
-  bool loadSuccess =
-      resourceManager.loadScene(info, &sceneRootNode, &drawables);
-  EXPECT_EQ(loadSuccess, true);
+  CORRADE_VERIFY(resourceManager.loadScene(info, &sceneRootNode, &drawables));
 
   // set the camera
   esp::gfx::RenderCamera& renderCamera = sceneGraph.getDefaultRenderCamera();
@@ -201,7 +221,7 @@ TEST(CullingTest, frustumCulling) {
     q.end();
     target->renderExit();
 
-    EXPECT_EQ(q.result<bool>(), false);
+    CORRADE_VERIFY(!q.result<bool>());
   }
 
   // ============== Test 2 ==================
@@ -224,7 +244,7 @@ TEST(CullingTest, frustumCulling) {
         target->renderExit();
 
         // check if it a genuine visible drawable
-        EXPECT_EQ(q.result<bool>(), true);
+        CORRADE_VERIFY(q.result<bool>());
 
         if (q.result<bool>()) {
           numVisibleObjectsGroundTruth++;
@@ -238,5 +258,9 @@ TEST(CullingTest, frustumCulling) {
   size_t numVisibleObjects =
       renderCamera.draw(drawables, true /* enable frustum culling */);
   target->renderExit();
-  EXPECT_EQ(numVisibleObjects, numVisibleObjectsGroundTruth);
+  CORRADE_COMPARE(numVisibleObjects, numVisibleObjectsGroundTruth);
 }
+}  // namespace
+}  // namespace Test
+
+CORRADE_TEST_MAIN(Test::CullingTest)

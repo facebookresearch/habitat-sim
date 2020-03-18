@@ -31,6 +31,7 @@
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <sophus/so3.hpp>
+#include "esp/core/Utility.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
@@ -136,6 +137,8 @@ Viewer::Viewer(const Arguments& arguments)
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addBooleanOption("enable-physics")
+      .addBooleanOption("scene-requires-lighting")
+      .setHelp("scene-requires-lighting", "scene requires lighting")
       .addBooleanOption("debug-bullet")
       .setHelp("debug-bullet", "render Bullet physics debug wireframes")
       .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG)
@@ -170,7 +173,12 @@ Viewer::Viewer(const Arguments& arguments)
 
   auto& drawables = sceneGraph_->getDrawables();
   const std::string& file = args.value("scene");
-  const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
+  assets::AssetInfo info = assets::AssetInfo::fromPath(file);
+  std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
+  if (args.isSet("scene-requires-lighting")) {
+    info.requiresLighting = true;
+    sceneLightSetup = assets::ResourceManager::DEFAULT_LIGHTING_KEY;
+  }
 
   if (args.isSet("enable-physics")) {
     std::string physicsConfigFilename = args.value("physics-config");
@@ -180,17 +188,22 @@ Viewer::Viewer(const Arguments& arguments)
           << " was not found, specify an existing file in --physics-config";
     }
     if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
-                                    &drawables, physicsConfigFilename)) {
+                                    &drawables, sceneLightSetup,
+                                    physicsConfigFilename)) {
       LOG(FATAL) << "cannot load " << file;
     }
     if (args.isSet("debug-bullet")) {
       debugBullet_ = true;
     }
   } else {
-    if (!resourceManager_.loadScene(info, navSceneNode_, &drawables)) {
+    if (!resourceManager_.loadScene(info, navSceneNode_, &drawables,
+                                    sceneLightSetup)) {
       LOG(FATAL) << "cannot load " << file;
     }
   }
+
+  const Magnum::Range3D& sceneBB = rootNode_->computeCumulativeBB();
+  resourceManager_.setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
 
   // Set up camera
   renderCamera_ = &sceneGraph_->getDefaultRenderCamera();
@@ -271,18 +284,7 @@ void Viewer::addObject(std::string configFile) {
   int physObjectID = physicsManager_->addObject(configFile, &drawables);
   physicsManager_->setTranslation(physObjectID, new_pos);
 
-  // draw random quaternion via the method:
-  // http://planning.cs.uiuc.edu/node198.html
-  double u1 = (rand() % 1000) / 1000.0;
-  double u2 = (rand() % 1000) / 1000.0;
-  double u3 = (rand() % 1000) / 1000.0;
-
-  Magnum::Vector3 qAxis(sqrt(1 - u1) * cos(2 * M_PI * u2),
-                        sqrt(u1) * sin(2 * M_PI * u3),
-                        sqrt(u1) * cos(2 * M_PI * u3));
-  physicsManager_->setRotation(
-      physObjectID,
-      Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
+  physicsManager_->setRotation(physObjectID, esp::core::randomRotation());
 
   objectIDs_.push_back(physObjectID);
 }

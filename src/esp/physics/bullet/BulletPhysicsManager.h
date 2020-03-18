@@ -14,6 +14,9 @@
 #include <Magnum/BulletIntegration/MotionState.h>
 #include <btBulletDynamicsCommon.h>
 
+#include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
+#include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
+
 #include "BulletRigidObject.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletRigidObject.h"
@@ -25,7 +28,7 @@ namespace physics {
 @brief Dynamic scene and object manager interfacing with Bullet physics engine:
 https://github.com/bulletphysics/bullet3.
 
-See @ref btDiscreteDynamicsWorld.
+See @ref btMultiBodyDynamicsWorld.
 
 Enables @ref RigidObject simulation with @ref MotionType::DYNAMIC.
 
@@ -59,9 +62,9 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param physicsManagerAttributes A structure containing values for physical
    * parameters necessary to initialize the physical scene and simulator.
    */
-  bool initPhysics(
-      scene::SceneNode* node,
-      const assets::PhysicsManagerAttributes& physicsManagerAttributes);
+  bool initPhysics(scene::SceneNode* node,
+                   const assets::PhysicsManagerAttributes&
+                       physicsManagerAttributes) override;
 
   //============ Object/Scene Instantiation =============
 
@@ -77,30 +80,51 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
-  bool addScene(const assets::PhysicsSceneAttributes& physicsSceneAttributes,
-                const std::vector<assets::CollisionMeshData>& meshGroup);
+  bool addScene(
+      const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+      const std::vector<assets::CollisionMeshData>& meshGroup) override;
 
-  virtual int addObject(const int objectLibIndex,
-                        DrawableGroup* drawables) override;
+  /**
+   * @brief Override of @ref PhysicsManager::addObject() to handle primitive
+   * collision shapes requiring a SceneNode with bounding box to be
+   * pre-computed.
+   *
+   *  @param objectLibIndex The index of the object's template in @ref
+   * esp::assets::ResourceManager::physicsObjectLibrary_
+   *  @param drawables Reference to the scene graph drawables group to enable
+   * rendering of the newly initialized object.
+   *  @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   *  @param lightSetup The identifier of the lighting configuration to use when
+   * rendering the new object.
+   *  @return the instanced object's ID, mapping to it in @ref
+   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   */
+  virtual int addObject(
+      const int objectLibIndex,
+      DrawableGroup* drawables,
+      scene::SceneNode* attachmentNode = nullptr,
+      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+          assets::ResourceManager::DEFAULT_LIGHTING_KEY}) override;
 
   //============ Simulator functions =============
 
   /** @brief Step the physical world forward in time. Time may only advance in
    * increments of @ref fixedTimeStep_. See @ref
-   * btDiscreteDynamicsWorld::stepSimulation.
+   * btMultiBodyDynamicsWorld::stepSimulation.
    * @param dt The desired amount of time to advance the physical world.
    */
-  void stepPhysics(double dt);
+  void stepPhysics(double dt) override;
 
   /** @brief Set the gravity of the physical world.
    * @param gravity The desired gravity force of the physical world.
    */
-  void setGravity(const Magnum::Vector3& gravity);
+  void setGravity(const Magnum::Vector3& gravity) override;
 
   /** @brief Get the current gravity in the physical world.
    * @return The current gravity vector in the physical world.
    */
-  Magnum::Vector3 getGravity() const;
+  Magnum::Vector3 getGravity() const override;
 
   //============ Interacting with objects =============
   // NOTE: engine specifics for interaction are handled by the objects
@@ -114,7 +138,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @param  margin The desired collision margin for the object.
    */
-  void setMargin(const int physObjectID, const double margin);
+  void setMargin(const int physObjectID, const double margin) override;
 
   /** @brief Set the friction coefficient of the scene collision geometry. See
    * @ref staticSceneObject_. See @ref
@@ -122,14 +146,15 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param frictionCoefficient The scalar friction coefficient of the scene
    * geometry.
    */
-  void setSceneFrictionCoefficient(const double frictionCoefficient);
+  void setSceneFrictionCoefficient(const double frictionCoefficient) override;
 
   /** @brief Set the coefficient of restitution for the scene collision
    * geometry. See @ref staticSceneObject_. See @ref
    * BulletRigidObject::setRestitutionCoefficient.
    * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
-  void setSceneRestitutionCoefficient(const double restitutionCoefficient);
+  void setSceneRestitutionCoefficient(
+      const double restitutionCoefficient) override;
 
   //============ Bullet-specific Object Getter functions =============
 
@@ -140,14 +165,14 @@ class BulletPhysicsManager : public PhysicsManager {
    * @return The scalar collision margin of the object or @ref
    * esp::PHYSICS_ATTR_UNDEFINED if failed..
    */
-  double getMargin(const int physObjectID) const;
+  double getMargin(const int physObjectID) const override;
 
   /** @brief Get the current friction coefficient of the scene collision
    * geometry. See @ref staticSceneObject_ and @ref
    * BulletRigidObject::getFrictionCoefficient.
    * @return The scalar friction coefficient of the scene geometry.
    */
-  double getSceneFrictionCoefficient() const;
+  double getSceneFrictionCoefficient() const override;
 
   /** @brief Get the current coefficient of restitution for the scene collision
    * geometry. This determines the ratio of initial to final relative velocity
@@ -155,7 +180,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * BulletRigidObject::getRestitutionCoefficient.
    * @return The scalar coefficient of restitution for the scene geometry.
    */
-  double getSceneRestitutionCoefficient() const;
+  double getSceneRestitutionCoefficient() const override;
 
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of a
@@ -190,16 +215,17 @@ class BulletPhysicsManager : public PhysicsManager {
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  bool contactTest(const int physObjectID);
+  bool contactTest(const int physObjectID) override;
 
  protected:
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;
-  btSequentialImpulseConstraintSolver bSolver_;
+
+  btMultiBodyConstraintSolver bSolver_;
   btCollisionDispatcher bDispatcher_{&bCollisionConfig_};
 
-  /** @brief A pointer to the Bullet world. See @ref btDiscreteDynamicsWorld.*/
-  std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
+  /** @brief A pointer to the Bullet world. See @ref btMultiBodyDynamicsWorld.*/
+  std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;
 
   mutable Magnum::BulletIntegration::DebugDraw debugDrawer_;
 
@@ -211,17 +237,20 @@ class BulletPhysicsManager : public PhysicsManager {
    * Magnum::MeshPrimitive::Triangles.
    * @return true if valid, false otherwise.
    */
-  bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData);
+  bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData) override;
 
   /** @brief Create and initialize an @ref RigidObject and assign it an ID. See
    * @ref allocateObjectID and @ref BulletRigidObject::initializeObject.
    * @param meshGroup The object's mesh.
    * @param physicsObjectAttributes The physical object's template defining its
    * physical parameters.
+   * @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   * @return The id of the newly allocated object in @ref existingObjects_
    */
-  int makeRigidObject(
-      const std::vector<assets::CollisionMeshData>& meshGroup,
-      assets::PhysicsObjectAttributes physicsObjectAttributes) override;
+  int makeRigidObject(const std::vector<assets::CollisionMeshData>& meshGroup,
+                      assets::PhysicsObjectAttributes physicsObjectAttributes,
+                      scene::SceneNode* attachmentNode = nullptr) override;
 
   ESP_SMART_POINTERS(BulletPhysicsManager)
 

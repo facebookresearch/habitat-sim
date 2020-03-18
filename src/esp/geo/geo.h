@@ -29,7 +29,7 @@ typedef Eigen::Transform<float, 3, Eigen::Affine, Eigen::DontAlign> Transform;
 std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points);
 
 Magnum::Range3D getTransformedBB(const Magnum::Range3D& range,
-                                 const Magnum::Matrix4& T);
+                                 const Magnum::Matrix4& xform);
 
 template <typename T>
 T clamp(const T& n, const T& low, const T& high) {

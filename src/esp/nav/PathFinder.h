@@ -166,7 +166,6 @@ class PathFinder {
              const int ntris,
              const float* bmin,
              const float* bmax);
-
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
 
   /**
@@ -318,6 +317,10 @@ class PathFinder {
    * @return The axis aligned bounding box containing the navigation mesh.
    */
   std::pair<vec3f, vec3f> bounds() const;
+
+  Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
+      const float pixelsPerMeter,
+      const float height);
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(PathFinder);
 };
