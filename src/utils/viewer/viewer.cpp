@@ -347,7 +347,7 @@ void Viewer::recomputeNavMesh(const std::string& sceneFilename,
           physics::MotionType::STATIC) {
         auto objectTransform = Magnum::EigenIntegration::cast<
             Eigen::Transform<float, 3, Eigen::Affine> >(
-            physicsManager_->getObjectSceneNode(objectID)
+            physicsManager_->getObjectVisualSceneNode(objectID)
                 .absoluteTransformationMatrix());
         const assets::PhysicsObjectAttributes& initializationTemplate =
             physicsManager_->getInitializationAttributes(objectID);
@@ -624,6 +624,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::M: {
       if (physicsManager_ != nullptr) {
+        /*
         if (objectIDs_.size() > 0) {
           if (physicsManager_->getObjectMotionType(objectIDs_.back()) ==
               physics::MotionType::STATIC) {
@@ -637,6 +638,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
             Corrade::Utility::Debug()
                 << "Made object " << objectIDs_.back() << " STATIC.";
           }
+        }
+        */
+        for (auto id : objectIDs_) {
+          physicsManager_->setObjectMotionType(id, physics::MotionType::STATIC);
         }
       } else
         LOG(WARNING)

@@ -763,6 +763,15 @@ class PhysicsManager {
   /** @overload */
   scene::SceneNode& getObjectSceneNode(int physObjectID);
 
+  /**
+   * @brief Get a const reference to the specified object's visual SceneNode for
+   * info query purposes.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Const reference to the object's visual scene node.
+   */
+  const scene::SceneNode& getObjectVisualSceneNode(int physObjectID) const;
+
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref
    * BulletPhysicsManager::debugDraw.

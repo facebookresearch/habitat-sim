@@ -406,7 +406,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
           physics::MotionType::STATIC) {
         auto objectTransform = Magnum::EigenIntegration::cast<
             Eigen::Transform<float, 3, Eigen::Affine> >(
-            physicsManager_->getObjectSceneNode(objectID)
+            physicsManager_->getObjectVisualSceneNode(objectID)
                 .absoluteTransformationMatrix());
         const assets::PhysicsObjectAttributes& initializationTemplate =
             physicsManager_->getInitializationAttributes(objectID);
