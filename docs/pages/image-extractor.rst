@@ -90,7 +90,7 @@ below is not represented.
         display_sample(sample)
 
 
-.. image:: images/extractor-example-output.png
+.. image:: ../images/extractor-example-output.png
 
 
 `Integrating with Pytorch Datasets`_
