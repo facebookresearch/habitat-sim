@@ -1,13 +1,12 @@
 import collections
 import math
-import sys
 import time
 
 import torch
 import torchvision.models.detection.mask_rcnn
 from torch.utils.tensorboard import SummaryWriter
 
-from examples.instance_segmentation import utils
+import examples.instance_segmentation.utils as utils
 from examples.instance_segmentation.coco_eval import CocoEvaluator
 from examples.instance_segmentation.coco_utils import get_coco_api_from_dataset
 

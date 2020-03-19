@@ -3,13 +3,16 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torchvision.transforms as T
+from models import build_maskrcnn_model
 from torch.utils.data import Dataset
 
 import habitat_sim
+from examples.instance_segmentation.engine import (
+    load_model_state,
+    save_model_state,
+    train_one_epoch,
+)
 from habitat_sim.utils.data import ImageExtractor
-
-from .engine import load_model_state, save_model_state, train_one_epoch
-from .models import build_maskrcnn_model
 
 
 class TrainingEnvironment:
@@ -24,31 +27,34 @@ class TrainingEnvironment:
 
 
 class InstanceSegmentationEnvironment(TrainingEnvironment):
-    def __init__(self, scene, learning_rate=0.00005, momentum=0.9, weight_decay=0.0005):
+    def __init__(self, scene, lr=0.00005, momentum=0.9, weight_decay=0.0005):
         self.scene = scene
-        self.extractor = ImageExtractor(scene=scene)
+        self.extractor = ImageExtractor(
+            scene_filepath=scene, output=["rgba", "semantic"]
+        )
         self.classes = self.extractor.get_semantic_class_names()
-        self.num_classes = len(self.classes)
+        self.num_classes = 10
         self.model = build_maskrcnn_model(self.num_classes)
 
         # Specify which transforms to apply to the data in preprocessing
         self.transforms = T.Compose([T.ToTensor()])
-        self.train_dataset = HabitatDataset(self.extractor, transform=self.transforms)
+        self.train_dataset = InstanceSegmentationDataset(
+            self.extractor, transform=self.transforms
+        )
         self.train_dataloader = torch.utils.data.DataLoader(
-            dataset, batch_size=2, shuffle=True, collate_fn=collate_fn
+            self.train_dataset, batch_size=2, shuffle=True, collate_fn=collate_fn
         )
 
-        self.model_weight_path = ""
         self.device = (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         )
         self.model.to(self.device)
-        params = [p for p in model.parameters() if p.requires_grad]
+        params = [p for p in self.model.parameters() if p.requires_grad]
         self.optimizer = torch.optim.SGD(
-            params, lr=learning_rate, momentum=momentum, weight_decay=weight_decay
+            params, lr=lr, momentum=momentum, weight_decay=weight_decay
         )
         self.lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=3, gamma=0.1
+            self.optimizer, step_size=3, gamma=0.1
         )
 
     def train(
@@ -125,7 +131,7 @@ class InstanceSegmentationDataset(Dataset):
             box = (xmin, ymin, xmax, ymax)
             boxes.append(list(box))
             masks.append(cur_mask)
-            name = "hi"
+            name = "testing"
             labels.append(1)
             areas.append((ymax - ymin) * (xmax - xmin))
 
