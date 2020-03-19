@@ -12,14 +12,16 @@
 #include <string>
 
 #include "esp/assets/ResourceManager.h"
-#include "esp/sim/SimulatorWithAgents.h"
+#include "esp/sim/Simulator.h"
 
 #include "configure.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
+using esp::agent::Agent;
 using esp::agent::AgentConfiguration;
+using esp::agent::AgentState;
 using esp::assets::ResourceManager;
 using esp::gfx::LightInfo;
 using esp::gfx::LightPositionModel;
@@ -31,8 +33,8 @@ using esp::sensor::ObservationSpace;
 using esp::sensor::ObservationSpaceType;
 using esp::sensor::SensorSpec;
 using esp::sensor::SensorType;
+using esp::sim::Simulator;
 using esp::sim::SimulatorConfiguration;
-using esp::sim::SimulatorWithAgents;
 
 namespace {
 
@@ -55,7 +57,7 @@ const std::string screenshotDir =
 struct SimTest : Cr::TestSuite::Tester {
   explicit SimTest();
 
-  SimulatorWithAgents::uptr getSimulator(
+  Simulator::uptr getSimulator(
       const std::string& scene,
       const std::string& sceneLightingKey = ResourceManager::NO_LIGHT_KEY) {
     SimulatorConfiguration simConfig{};
@@ -64,14 +66,14 @@ struct SimTest : Cr::TestSuite::Tester {
     simConfig.physicsConfigFile = physicsConfigFile;
     simConfig.sceneLightSetup = sceneLightingKey;
 
-    auto sim = SimulatorWithAgents::create_unique(simConfig);
+    auto sim = Simulator::create_unique(simConfig);
     sim->setLightSetup(lightSetup1, "custom_lighting_1");
     sim->setLightSetup(lightSetup2, "custom_lighting_2");
     return sim;
   }
 
   void checkPinholeCameraRGBAObservation(
-      SimulatorWithAgents& sim,
+      Simulator& sim,
       const std::string& groundTruthImageFile,
       Magnum::Float maxThreshold,
       Magnum::Float meanThreshold);
@@ -114,7 +116,7 @@ SimTest::SimTest() {
 void SimTest::basic() {
   SimulatorConfiguration cfg;
   cfg.scene.id = vangogh;
-  SimulatorWithAgents simulator(cfg);
+  Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
   CORRADE_VERIFY(pathfinder);
 }
@@ -122,7 +124,7 @@ void SimTest::basic() {
 void SimTest::reconfigure() {
   SimulatorConfiguration cfg;
   cfg.scene.id = vangogh;
-  SimulatorWithAgents simulator(cfg);
+  Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
   simulator.reconfigure(cfg);
   CORRADE_VERIFY(pathfinder == simulator.getPathFinder());
@@ -135,14 +137,32 @@ void SimTest::reconfigure() {
 void SimTest::reset() {
   SimulatorConfiguration cfg;
   cfg.scene.id = vangogh;
-  SimulatorWithAgents simulator(cfg);
+  Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
+
+  auto pinholeCameraSpec = SensorSpec::create();
+  pinholeCameraSpec->sensorSubtype = "pinhole";
+  pinholeCameraSpec->sensorType = SensorType::COLOR;
+  pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
+  pinholeCameraSpec->resolution = {100, 100};
+  AgentConfiguration agentConfig{};
+  agentConfig.sensorSpecifications = {pinholeCameraSpec};
+  auto agent = simulator.addAgent(agentConfig);
+
+  auto stateOrig = AgentState::create();
+  agent->getState(stateOrig);
+
   simulator.reset();
+
+  auto stateFinal = AgentState::create();
+  agent->getState(stateFinal);
+  CORRADE_VERIFY(stateOrig->position == stateFinal->position);
+  CORRADE_VERIFY(stateOrig->rotation == stateFinal->rotation);
   CORRADE_VERIFY(pathfinder == simulator.getPathFinder());
 }
 
 void SimTest::checkPinholeCameraRGBAObservation(
-    SimulatorWithAgents& simulator,
+    Simulator& simulator,
     const std::string& groundTruthImageFile,
     Magnum::Float maxThreshold,
     Magnum::Float meanThreshold) {
@@ -155,7 +175,8 @@ void SimTest::checkPinholeCameraRGBAObservation(
 
   AgentConfiguration agentConfig{};
   agentConfig.sensorSpecifications = {pinholeCameraSpec};
-  simulator.addAgent(agentConfig);
+  Agent::ptr agent = simulator.addAgent(agentConfig);
+  agent->setInitialState(AgentState{});
 
   Observation observation;
   ObservationSpace obsSpace;

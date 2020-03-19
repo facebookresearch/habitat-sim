@@ -10,14 +10,14 @@
 #include <string>
 #include "esp/io/io.h"
 #include "esp/scene/SemanticScene.h"
-#include "esp/sim/SimulatorWithAgents.h"
+#include "esp/sim/Simulator.h"
 
 namespace Cr = Corrade;
 
 using esp::scene::SceneConfiguration;
 using esp::scene::SemanticScene;
+using esp::sim::Simulator;
 using esp::sim::SimulatorConfiguration;
-using esp::sim::SimulatorWithAgents;
 
 const std::string houseFilename = SCENE_DIR "/GibsonSceneTest/test.scn";
 
@@ -49,7 +49,7 @@ TEST(GibsonSemanticSimTest, Basic) {
   }
   SimulatorConfiguration cfg;
   cfg.scene.id = esp::io::changeExtension(gibsonSemanticFilename, ".glb");
-  SimulatorWithAgents simulator(cfg);
+  Simulator simulator(cfg);
   const auto& semanticScene = simulator.getSemanticScene();
   ASSERT_EQ(semanticScene->objects().size(), 34);
   const auto& microwave = semanticScene->objects()[1];

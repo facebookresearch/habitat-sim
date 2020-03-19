@@ -4,16 +4,16 @@
 
 #pragma once
 
+#include "esp/agent/Agent.h"
+#include "esp/assets/ResourceManager.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
+#include "esp/gfx/RenderTarget.h"
+#include "esp/gfx/WindowlessContext.h"
+#include "esp/nav/PathFinder.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
-
-#include "esp/assets/ResourceManager.h"
-
-#include "esp/gfx/RenderTarget.h"
-#include "esp/gfx/WindowlessContext.h"
 
 namespace esp {
 namespace nav {
@@ -317,6 +317,36 @@ class Simulator {
   bool recomputeNavMesh(nav::PathFinder& pathfinder,
                         const nav::NavMeshSettings& navMeshSettings);
 
+  agent::Agent::ptr getAgent(int agentId);
+
+  agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig,
+                             scene::SceneNode& agentParentNode);
+  agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig);
+
+  /**
+   * @brief Displays observations on default frame buffer for a
+   * particular sensor of an agent
+   * @param agentId    Id of the agent for which the observation is to
+   *                   be returned
+   * @param sensorId   Id of the sensor for which the observation is to
+   *                   be returned
+   */
+  bool displayObservation(int agentId, const std::string& sensorId);
+  bool getAgentObservation(int agentId,
+                           const std::string& sensorId,
+                           sensor::Observation& observation);
+  int getAgentObservations(
+      int agentId,
+      std::map<std::string, sensor::Observation>& observations);
+
+  bool getAgentObservationSpace(int agentId,
+                                const std::string& sensorId,
+                                sensor::ObservationSpace& space);
+  int getAgentObservationSpaces(
+      int agentId,
+      std::map<std::string, sensor::ObservationSpace>& spaces);
+
+  nav::PathFinder::ptr getPathFinder();
   /**
    * @brief Enable or disable frustum culling (enabled by default)
    * @param val, true = enable, false = disable
@@ -364,6 +394,9 @@ class Simulator {
  protected:
   Simulator(){};
 
+  //! sample a random valid AgentState in passed agentState
+  void sampleRandomAgentState(agent::AgentState& agentState);
+
   bool isValidScene(int sceneID) const {
     return sceneID >= 0 && sceneID < sceneID_.size();
   }
@@ -394,6 +427,8 @@ class Simulator {
   core::Random random_;
   SimulatorConfiguration config_;
 
+  std::vector<agent::Agent::ptr> agents_;
+  nav::PathFinder::ptr pathfinder_;
   // state indicating frustum culling is enabled or not
   //
   // TODO:
