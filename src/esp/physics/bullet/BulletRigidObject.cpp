@@ -277,10 +277,12 @@ void BulletRigidObject::setCollisionFromBB() {
 }
 
 BulletRigidObject::~BulletRigidObject() {
-  if (rigidObjectType_ == RigidObjectType::OBJECT) {
+  if (rigidObjectType_ == RigidObjectType::OBJECT &&
+      objectMotionType_ != MotionType::STATIC) {
     // remove rigid body from the world
     bWorld_->removeRigidBody(bObjectRigidBody_.get());
-  } else if (rigidObjectType_ == RigidObjectType::SCENE) {
+  } else if (rigidObjectType_ == RigidObjectType::SCENE ||
+             objectMotionType_ == MotionType::STATIC) {
     // remove collision objects from the world
     for (auto& co : bSceneCollisionObjects_) {
       bWorld_->removeCollisionObject(co.get());

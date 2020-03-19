@@ -68,6 +68,8 @@ class Viewer : public Magnum::Platform::Application {
 
   // Interactive functions
   void addObject(std::string configFile);
+  void runTest(int testId);
+  void resetPhysics();
   void pokeLastObject();
   void pushLastObject();
 
@@ -287,6 +289,89 @@ void Viewer::addObject(std::string configFile) {
   physicsManager_->setRotation(physObjectID, esp::core::randomRotation());
 
   objectIDs_.push_back(physObjectID);
+}
+
+void Viewer::resetPhysics() {
+  for (auto id : objectIDs_) {
+    physicsManager_->removeObject(id);
+  }
+  objectIDs_.clear();
+  physicsManager_->reset();
+}
+
+void Viewer::runTest(int testId) {
+  resetPhysics();
+  float boxHalfExtent = 0.2;
+  if (resourceManager_.getNumLibraryObjects() == 0) {
+    // run the first time
+    // load the example object
+    assets::PhysicsObjectAttributes objectTemplate;
+    objectTemplate.setString("renderMeshHandle",
+                             "data/test_assets/objects/transform_box.glb");
+    objectTemplate.setBool("useBoundingBoxForCollision", true);
+    objectTemplate.setMagnumVec3("scale",
+                                 {boxHalfExtent, boxHalfExtent, boxHalfExtent});
+    resourceManager_.loadObject(objectTemplate,
+                                objectTemplate.getString("renderMeshHandle"));
+
+    // setup unit lights
+    gfx::LightSetup lightSetup(6);
+    lightSetup[0].position = {100.0, 0, 0};
+    lightSetup[1].position = {-100.0, 0, 0};
+    lightSetup[2].position = {0, 100.0, 0};
+    lightSetup[3].position = {0, -100.0, 0};
+    lightSetup[4].position = {0, 0, 100.0};
+    lightSetup[5].position = {0, 0, -100.0};
+    resourceManager_.setLightSetup(lightSetup);
+  }
+
+  auto& drawables = sceneGraph_->getDrawables();
+
+  switch (testId) {
+    case 0: {
+      // DYNAMIC stacking
+      int oid1 = physicsManager_->addObject(0, &drawables);
+      physicsManager_->setTranslation(oid1, {0, boxHalfExtent, 0});
+      int oid2 = physicsManager_->addObject(0, &drawables);
+      physicsManager_->setTranslation(oid2, {0, boxHalfExtent * 3, 0});
+      objectIDs_.push_back(oid1);
+      objectIDs_.push_back(oid2);
+    } break;
+    case 1: {
+      // STATIC stacking
+      int oid1 = physicsManager_->addObject(0, &drawables);
+      physicsManager_->setTranslation(oid1, {0, boxHalfExtent * 2, 0});
+      physicsManager_->setObjectMotionType(oid1, physics::MotionType::STATIC);
+      int oid2 = physicsManager_->addObject(0, &drawables);
+      physicsManager_->setTranslation(oid2, {0, boxHalfExtent * 5, 0});
+      objectIDs_.push_back(oid1);
+      objectIDs_.push_back(oid2);
+    } break;
+    case 2: {
+      // KINEMATIC transit stack
+      int oid1 = physicsManager_->addObject(0, &drawables);
+      physicsManager_->setTranslation(oid1, {0, boxHalfExtent * 2, 0});
+      physicsManager_->setObjectMotionType(oid1,
+                                           physics::MotionType::KINEMATIC);
+      physics::VelocityControl& velCon =
+          physicsManager_->getVelocityControl(oid1);
+      velCon.controllingLinVel = true;
+      velCon.linVel = {0.2, 0, 0};
+
+      int oid2 = physicsManager_->addObject(0, &drawables);
+      physicsManager_->setTranslation(oid2, {0, boxHalfExtent * 5, 0});
+      objectIDs_.push_back(oid1);
+      objectIDs_.push_back(oid2);
+    } break;
+  }
+  // both dynamic, simulate stead state stack
+
+  // set agent for rendering
+  agentBodyNode_->setTransformation({});
+  agentBodyNode_->setTranslation({0.0, 0.0, 3.0});
+  renderCamera_->node().setTransformation(
+      rgbSensorNode_->absoluteTransformation());
+  redraw();
 }
 
 void Viewer::removeLastObject() {
@@ -527,6 +612,18 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Down:
       controls_(*rgbSensorNode_, "lookDown", lookSensitivity, false);
       break;
+    case KeyEvent::Key::Zero:
+      runTest(0);
+      break;
+    case KeyEvent::Key::One:
+      runTest(1);
+      break;
+    case KeyEvent::Key::Two:
+      runTest(2);
+      break;
+    case KeyEvent::Key::Three:
+      runTest(3);
+      break;
     case KeyEvent::Key::Nine:
       if (pathfinder_->isLoaded()) {
         const vec3f position = pathfinder_->getRandomNavigablePoint();
@@ -601,6 +698,23 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // Test key. Put what you want here...
       torqueLastObject();
       break;
+    case KeyEvent::Key::M: {
+      /*
+      for(auto id : objectIDs_){
+        physicsManager_->setObjectMotionType(id, physics::MotionType::STATIC);
+      }
+       */
+      if (objectIDs_.size() > 0) {
+        if (physicsManager_->getObjectMotionType(objectIDs_[0]) ==
+            physics::MotionType::DYNAMIC) {
+          physicsManager_->setObjectMotionType(objectIDs_[0],
+                                               physics::MotionType::STATIC);
+        } else {
+          physicsManager_->setObjectMotionType(objectIDs_[0],
+                                               physics::MotionType::DYNAMIC);
+        }
+      }
+    } break;
     case KeyEvent::Key::I:
       Magnum::DebugTools::screenshot(GL::defaultFramebuffer,
                                      "test_image_save.png");

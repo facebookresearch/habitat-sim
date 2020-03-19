@@ -26,7 +26,7 @@ enum class LightPositionModel {
 /** @brief Contains a single light's information */
 struct LightInfo {
   Magnum::Vector3 position;
-  Magnum::Color4 color;
+  Magnum::Color4 color{1};
   LightPositionModel model = LightPositionModel::GLOBAL;
 };
 

@@ -522,3 +522,21 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
   physicsManager_->removeObject(objectId, true, true);
   ASSERT_NE(root.children().last(), newNode);
 }
+
+TEST_F(PhysicsManagerTest, TestMotionTypes) {
+  // test setting motion types and expected simulation behaviors
+  LOG(INFO) << "Starting physics test: TestMotionTypes";
+
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  std::string sceneFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+
+  initScene(sceneFile);
+
+  esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+  physicsObjectAttributes.setBool("useBoundingBoxForCollision", true);
+  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+}
