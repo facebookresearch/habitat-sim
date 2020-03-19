@@ -310,9 +310,16 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
     return true;  // no work
   }
 
+  // remove the existing object from the world to change its type
+  if (objectMotionType_ == MotionType::STATIC) {
+    bWorld_->removeCollisionObject(bSceneCollisionObjects_.back().get());
+    bSceneCollisionObjects_.clear();
+  } else {
+    bWorld_->removeRigidBody(bObjectRigidBody_.get());
+  }
+
   if (rigidObjectType_ == RigidObjectType::OBJECT) {
     if (mt == MotionType::KINEMATIC) {
-      bWorld_->removeRigidBody(bObjectRigidBody_.get());
       bObjectRigidBody_->setCollisionFlags(
           bObjectRigidBody_->getCollisionFlags() |
           btCollisionObject::CF_KINEMATIC_OBJECT);
@@ -323,7 +330,6 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
       bWorld_->addRigidBody(bObjectRigidBody_.get());
       return true;
     } else if (mt == MotionType::STATIC) {
-      bWorld_->removeRigidBody(bObjectRigidBody_.get());
       bObjectRigidBody_->setCollisionFlags(
           bObjectRigidBody_->getCollisionFlags() |
           btCollisionObject::CF_STATIC_OBJECT);
@@ -331,10 +337,17 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
           bObjectRigidBody_->getCollisionFlags() &
           ~btCollisionObject::CF_KINEMATIC_OBJECT);
       objectMotionType_ = MotionType::STATIC;
-      bWorld_->addRigidBody(bObjectRigidBody_.get());
+
+      // create a static scene collision object at the current transform
+      std::unique_ptr<btCollisionObject> sceneCollisionObject =
+          std::make_unique<btCollisionObject>();
+      sceneCollisionObject->setCollisionShape(bObjectShape_.get());
+      sceneCollisionObject->setWorldTransform(
+          bObjectRigidBody_->getWorldTransform());
+      bWorld_->addCollisionObject(sceneCollisionObject.get(), 2, 1 + 2);
+      bSceneCollisionObjects_.emplace_back(std::move(sceneCollisionObject));
       return true;
     } else if (mt == MotionType::DYNAMIC) {
-      bWorld_->removeRigidBody(bObjectRigidBody_.get());
       bObjectRigidBody_->setCollisionFlags(
           bObjectRigidBody_->getCollisionFlags() &
           ~btCollisionObject::CF_STATIC_OBJECT);
@@ -343,9 +356,9 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
           ~btCollisionObject::CF_KINEMATIC_OBJECT);
       objectMotionType_ = MotionType::DYNAMIC;
       bWorld_->addRigidBody(bObjectRigidBody_.get());
+      setActive();
       return true;
     }
-    return false;
   }
   return false;
 }
