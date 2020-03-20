@@ -417,7 +417,6 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
     std::vector<std::string> validConfigPaths =
         getObjectConfigPaths(absolutePath);
     for (auto& path : validConfigPaths) {
-      Cr::Utility::Debug() << "path : " << path;
       physicsManagerAttributes.appendVecStrings("objectLibraryPaths", path);
     }
   }
@@ -772,7 +771,7 @@ int ResourceManager::getObjectID(const std::string& configFile) {
       std::find(physicsObjectConfigList_.begin(),
                 physicsObjectConfigList_.end(), configFile);
   if (itr == physicsObjectConfigList_.cend()) {
-    return -1;
+    return ID_UNDEFINED;
   } else {
     int objectID = std::distance(physicsObjectConfigList_.begin(), itr);
     return objectID;

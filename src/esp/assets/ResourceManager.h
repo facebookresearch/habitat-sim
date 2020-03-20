@@ -198,7 +198,6 @@ class ResourceManager {
    * directory path.
    *
    * @param path A global path to a physics property file or directory
-   *
    * @return A list of valid global paths to "*.phys_properties.json" files.
    */
   std::vector<std::string> getObjectConfigPaths(std::string path);
