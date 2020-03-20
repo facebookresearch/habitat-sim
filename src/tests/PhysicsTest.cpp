@@ -575,7 +575,7 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
           ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
                      Magnum::Vector3{0.0, boxHalfExtent * 3, 0.0})
                         .length(),
-                    1.0e-4);
+                    1.0e-3);
         } break;
         case 1: {
           // test 1: stacking a DYNAMIC object on a STATIC object
