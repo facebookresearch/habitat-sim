@@ -18,11 +18,11 @@ namespace agent {
 
 // Represents the physical state of an agent
 struct AgentState {
-  vec3f position;
+  vec3f position = {0, 0, 0};
   // TODO: rotation below exposes quaternion x,y,z,w as vec4f for pybind11
   // interop, replace with quatf when we have custom pybind11 type conversion
   // for quaternions
-  vec4f rotation;
+  vec4f rotation = {0, 0, 0, 1};
   vec3f velocity;
   vec3f angularVelocity;
   vec3f force;
@@ -106,9 +106,17 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
   bool hasAction(const std::string& actionName);
 
+  void reset();
+
   void getState(AgentState::ptr state) const;
 
   void setState(const AgentState& state, const bool resetSensors = true);
+
+  void setInitialState(const AgentState& state,
+                       const bool resetSensors = true) {
+    initialState_ = state;
+    setState(state, resetSensors);
+  }
 
   scene::ObjectControls::ptr getControls() { return controls_; }
 
@@ -128,6 +136,7 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
   AgentConfiguration configuration_;
   sensor::SensorSuite sensors_;
   scene::ObjectControls::ptr controls_;
+  AgentState initialState_;
 
   ESP_SMART_POINTERS(Agent)
 };
