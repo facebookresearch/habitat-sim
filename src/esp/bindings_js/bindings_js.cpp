@@ -7,7 +7,7 @@
 namespace em = emscripten;
 
 #include "esp/scene/SemanticScene.h"
-#include "esp/sim/SimulatorWithAgents.h"
+#include "esp/sim/Simulator.h"
 
 using namespace esp;
 using namespace esp::agent;
@@ -31,7 +31,7 @@ em::val Observation_getData(Observation& obs) {
   }
 }
 
-ObservationSpace Simulator_getAgentObservationSpace(SimulatorWithAgents& sim,
+ObservationSpace Simulator_getAgentObservationSpace(Simulator& sim,
                                                     int agentId,
                                                     std::string sensorId) {
   ObservationSpace space;
@@ -40,7 +40,7 @@ ObservationSpace Simulator_getAgentObservationSpace(SimulatorWithAgents& sim,
 }
 
 std::map<std::string, ObservationSpace> Simulator_getAgentObservationSpaces(
-    SimulatorWithAgents& sim,
+    Simulator& sim,
     int agentId) {
   std::map<std::string, ObservationSpace> spaces;
   sim.getAgentObservationSpaces(agentId, spaces);
@@ -216,31 +216,26 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("categories", &SemanticScene::categories)
       .property("objects", &SemanticScene::objects);
 
-  em::class_<Simulator>("SimulatorBase")
-      .function("getSemanticScene", &Simulator::getSemanticScene);
-
-  em::class_<SimulatorWithAgents, em::base<Simulator>>("Simulator")
-      .smart_ptr_constructor(
-          "Simulator",
-          &SimulatorWithAgents::create<const SimulatorConfiguration&>)
-      .function("seed", &SimulatorWithAgents::seed)
-      .function("reconfigure", &SimulatorWithAgents::reconfigure)
-      .function("reset", &SimulatorWithAgents::reset)
-      .function("getAgentObservations",
-                &SimulatorWithAgents::getAgentObservations)
-      .function("getAgentObservation",
-                &SimulatorWithAgents::getAgentObservation)
-      .function("displayObservation", &SimulatorWithAgents::displayObservation)
+  em::class_<Simulator>("Simulator")
+      .smart_ptr_constructor("Simulator",
+                             &Simulator::create<const SimulatorConfiguration&>)
+      .function("getSemanticScene", &Simulator::getSemanticScene)
+      .function("seed", &Simulator::seed)
+      .function("reconfigure", &Simulator::reconfigure)
+      .function("reset", &Simulator::reset)
+      .function("getAgentObservations", &Simulator::getAgentObservations)
+      .function("getAgentObservation", &Simulator::getAgentObservation)
+      .function("displayObservation", &Simulator::displayObservation)
       .function("getAgentObservationSpaces",
                 &Simulator_getAgentObservationSpaces)
       .function("getAgentObservationSpace", &Simulator_getAgentObservationSpace)
-      .function("getAgent", &SimulatorWithAgents::getAgent)
-      .function("getPathFinder", &SimulatorWithAgents::getPathFinder)
+      .function("getAgent", &Simulator::getAgent)
+      .function("getPathFinder", &Simulator::getPathFinder)
       .function("addAgent",
                 em::select_overload<Agent::ptr(const AgentConfiguration&)>(
-                    &SimulatorWithAgents::addAgent))
+                    &Simulator::addAgent))
       .function("addAgentToNode",
                 em::select_overload<Agent::ptr(const AgentConfiguration&,
                                                scene::SceneNode&)>(
-                    &SimulatorWithAgents::addAgent));
+                    &Simulator::addAgent));
 }
