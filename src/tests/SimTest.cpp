@@ -6,12 +6,14 @@
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/DebugTools/CompareImage.h>
+#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/PixelFormat.h>
 #include <string>
 
 #include "esp/assets/ResourceManager.h"
+#include "esp/physics/RigidObject.h"
 #include "esp/sim/Simulator.h"
 
 #include "configure.h"
@@ -88,7 +90,6 @@ struct SimTest : Cr::TestSuite::Tester {
   void updateLightSetupRGBAObservation();
   void updateObjectLightSetupRGBAObservation();
   void multipleLightingSetupsRGBAObservation();
-
   void recomputeNavmeshWithStaticObjects();
 
   // TODO: remove outlier pixels from image and lower maxThreshold
@@ -111,7 +112,8 @@ SimTest::SimTest() {
             &SimTest::getCustomLightingRGBAObservation,
             &SimTest::updateLightSetupRGBAObservation,
             &SimTest::updateObjectLightSetupRGBAObservation,
-            &SimTest::multipleLightingSetupsRGBAObservation});
+            &SimTest::multipleLightingSetupsRGBAObservation,
+            &SimTest::recomputeNavmeshWithStaticObjects});
   // clang-format on
 }
 
@@ -318,7 +320,33 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
 }
 
 void SimTest::recomputeNavmeshWithStaticObjects() {
-  auto simulator = getSimulator(planeScene);
+  auto simulator = getSimulator(skokloster);
+
+  // compute the initial navmesh
+  esp::nav::NavMeshSettings navMeshSettings;
+  navMeshSettings.setDefaults();
+  simulator->recomputeNavMesh(*simulator->getPathFinder().get(),
+                              navMeshSettings);
+
+  esp::vec3f randomNavPoint =
+      simulator->getPathFinder()->getRandomNavigablePoint();
+
+  // add static object at a known navigable point
+  int objectID = simulator->addObject(0);
+  simulator->setTranslation(Magnum::Vector3{randomNavPoint}, objectID);
+  simulator->setObjectMotionType(esp::physics::MotionType::STATIC, objectID);
+  CORRADE_VERIFY(
+      simulator->getPathFinder()->isNavigable({randomNavPoint}, 0.1));
+
+  // recompute with object
+  simulator->recomputeNavMesh(*simulator->getPathFinder().get(),
+                              navMeshSettings, true);
+  CORRADE_VERIFY(!simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
+
+  // recompute without again
+  simulator->recomputeNavMesh(*simulator->getPathFinder().get(),
+                              navMeshSettings, false);
+  CORRADE_VERIFY(simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
 }
 
 }  // namespace
