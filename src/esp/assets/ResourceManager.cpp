@@ -46,6 +46,8 @@
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneGraph.h"
 
+#include "esp/nav/PathFinder.h"
+
 #ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/BulletPhysicsManager.h"
 #endif
@@ -127,7 +129,8 @@ bool ResourceManager::loadScene(
 
   // once a scene is loaded, we should have a GL::Context so load the primitives
   Magnum::Trade::MeshData3D cube = Magnum::Primitives::cubeWireframe();
-  primitive_meshes_.push_back(Magnum::MeshTools::compile(cube));
+  primitive_meshes_.push_back(
+      std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(cube)));
 
   // compute the absolute transformation for each static drawables
   if (meshSuccess && parent && computeAbsoluteAABBs_) {
@@ -1225,6 +1228,58 @@ bool ResourceManager::loadGeneralMeshData(
   return true;
 }
 
+int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
+                                              scene::SceneNode* parent,
+                                              DrawableGroup* drawables) {
+  int navMeshPrimitiveID = ID_UNDEFINED;
+
+  if (!pathFinder.isLoaded())
+    return navMeshPrimitiveID;
+
+  // create the mesh
+  std::vector<Magnum::UnsignedInt> indices;
+  std::vector<std::vector<Magnum::Vector3>> positions{
+      std::vector<Magnum::Vector3>()};  // only one component
+
+  const MeshData::ptr navMeshData = pathFinder.getNavMeshData();
+
+  // add the vertices
+  positions.back().resize(navMeshData->vbo.size());
+  for (size_t vix = 0; vix < navMeshData->vbo.size(); vix++) {
+    positions.back()[vix] = Magnum::Vector3{navMeshData->vbo[vix]};
+  }
+
+  indices.resize(navMeshData->ibo.size() * 2);
+  for (size_t ix = 0; ix < navMeshData->ibo.size();
+       ix += 3) {  // for each triangle, create lines
+    size_t nix = ix * 2;
+    indices[nix] = navMeshData->ibo[ix];
+    indices[nix + 1] = navMeshData->ibo[ix + 1];
+    indices[nix + 2] = navMeshData->ibo[ix + 1];
+    indices[nix + 3] = navMeshData->ibo[ix + 2];
+    indices[nix + 4] = navMeshData->ibo[ix + 2];
+    indices[nix + 5] = navMeshData->ibo[ix];
+  }
+
+  // create the mesh object
+  Magnum::Trade::MeshData3D visualNavMesh{
+      Magnum::MeshPrimitive::Lines, indices, positions, {}, {}, {}, nullptr};
+
+  // compile and add the new mesh to the structure
+  primitive_meshes_.push_back(std::make_unique<Magnum::GL::Mesh>(
+      Magnum::MeshTools::compile(visualNavMesh)));
+
+  navMeshPrimitiveID = primitive_meshes_.size() - 1;
+
+  if (parent != nullptr && drawables != nullptr &&
+      navMeshPrimitiveID != ID_UNDEFINED) {
+    // create the drawable
+    addPrimitiveToDrawables(navMeshPrimitiveID, *parent, drawables);
+  }
+
+  return navMeshPrimitiveID;
+}
+
 void ResourceManager::loadMaterials(Importer& importer,
                                     LoadedAssetData& loadedAssetData) {
   int materialStart = nextMaterialID_;
@@ -1535,7 +1590,7 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
                                               DrawableGroup* drawables) {
   CHECK(primitiveID >= 0 && primitiveID < primitive_meshes_.size());
-  createGenericDrawable(primitive_meshes_[primitiveID], node,
+  createGenericDrawable(*primitive_meshes_[primitiveID], node,
                         DEFAULT_LIGHTING_KEY, DEFAULT_MATERIAL_KEY, drawables);
 }
 
