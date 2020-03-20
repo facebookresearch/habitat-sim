@@ -698,6 +698,14 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // Test key. Put what you want here...
       torqueLastObject();
       break;
+    case KeyEvent::Key::R:
+      if (pathfinder_->isLoaded()) {
+        vec3f position = pathfinder_->getRandomNavigablePoint();
+        agentBodyNode_->setTranslation(Vector3(position));
+        renderCamera_->node().setTransformation(
+            rgbSensorNode_->absoluteTransformation());
+      }
+      break;
     case KeyEvent::Key::M: {
       /*
       for(auto id : objectIDs_){

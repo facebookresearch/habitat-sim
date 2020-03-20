@@ -535,8 +535,105 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
 
   initScene(sceneFile);
 
-  esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-  physicsObjectAttributes.setBool("useBoundingBoxForCollision", true);
-  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+  // We need dynamics to test this.
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
+      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+    float boxHalfExtent = 0.2;
+    esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+    physicsObjectAttributes.setBool("useBoundingBoxForCollision", true);
+    physicsObjectAttributes.setMagnumVec3(
+        "scale", {boxHalfExtent, boxHalfExtent, boxHalfExtent});
+    int boxId =
+        resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+    auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+    std::vector<int> instancedObjects;
+
+    for (int testId = 0; testId < 3; testId++) {
+      instancedObjects.push_back(physicsManager_->addObject(boxId, &drawables));
+      instancedObjects.push_back(physicsManager_->addObject(boxId, &drawables));
+
+      switch (testId) {
+        case 0: {
+          // test 0: stacking two DYNAMIC objects
+          physicsManager_->setTranslation(instancedObjects[0],
+                                          {0, boxHalfExtent, 0});
+          physicsManager_->setTranslation(instancedObjects[1],
+                                          {0, boxHalfExtent * 3, 0});
+
+          while (physicsManager_->getWorldTime() < 6.0) {
+            physicsManager_->stepPhysics(0.1);
+          }
+          ASSERT_FALSE(physicsManager_->isActive(instancedObjects[0]));
+          ASSERT_FALSE(physicsManager_->isActive(instancedObjects[1]));
+          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[0]) -
+                     Magnum::Vector3{0.0, boxHalfExtent, 0.0})
+                        .length(),
+                    1.0e-4);
+          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
+                     Magnum::Vector3{0.0, boxHalfExtent * 3, 0.0})
+                        .length(),
+                    1.0e-4);
+        } break;
+        case 1: {
+          // test 1: stacking a DYNAMIC object on a STATIC object
+          physicsManager_->setTranslation(instancedObjects[0],
+                                          {0, boxHalfExtent * 2, 0});
+          physicsManager_->setObjectMotionType(
+              instancedObjects[0], esp::physics::MotionType::STATIC);
+          physicsManager_->setTranslation(instancedObjects[1],
+                                          {0, boxHalfExtent * 5, 0});
+
+          while (physicsManager_->getWorldTime() < 6.0) {
+            physicsManager_->stepPhysics(0.1);
+          }
+          ASSERT_FALSE(physicsManager_->isActive(instancedObjects[1]));
+          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[0]) -
+                     Magnum::Vector3{0.0, boxHalfExtent * 2, 0.0})
+                        .length(),
+                    1.0e-4);
+          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
+                     Magnum::Vector3{0.0, boxHalfExtent * 4, 0.0})
+                        .length(),
+                    2.0e-4);
+        } break;
+        case 2: {
+          // test 2: stacking a DYNAMIC object on a moving KINEMATIC object
+          physicsManager_->setTranslation(instancedObjects[0],
+                                          {0, boxHalfExtent * 2, 0});
+          physicsManager_->setObjectMotionType(
+              instancedObjects[0], esp::physics::MotionType::KINEMATIC);
+
+          esp::physics::VelocityControl& velCon =
+              physicsManager_->getVelocityControl(instancedObjects[0]);
+          velCon.controllingLinVel = true;
+          velCon.linVel = {0.2, 0, 0};
+
+          physicsManager_->setTranslation(instancedObjects[1],
+                                          {0, boxHalfExtent * 5, 0});
+
+          while (physicsManager_->getWorldTime() < 3.0) {
+            physicsManager_->stepPhysics(0.1);
+          }
+          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[0]) -
+                     Magnum::Vector3{0.62, boxHalfExtent * 2, 0.0})
+                        .length(),
+                    1.0e-4);
+          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
+                     Magnum::Vector3{0.506, boxHalfExtent * 4, 0.0})
+                        .length(),
+                    1.0e-2);
+        } break;
+      }
+
+      // reset the scene
+      for (auto id : instancedObjects) {
+        physicsManager_->removeObject(id);
+      }
+      instancedObjects.clear();
+      physicsManager_->reset();  // time=0
+    }
+  }
 }
