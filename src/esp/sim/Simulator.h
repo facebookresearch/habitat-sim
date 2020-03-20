@@ -97,15 +97,16 @@ class Simulator {
    * esp::physics::PhysicsManager::addObject().
    * @param objectLibIndex The index of the object's template in @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_.
+   * @param attachmentNode If provided, attach the RigidObject Feature to this
+   * node instead of creating a new one.
+   * @param lightSetupKey The string key for the LightSetup to be used by this
+   * object.
    * @param sceneID !! Not used currently !! Specifies which physical scene to
    * add an object to.
    * @return The ID assigned to new object which identifies it in @ref
    * esp::physics::PhysicsManager::existingObjects_ or @ref esp::ID_UNDEFINED if
    * instancing fails.
    */
-  // int addObject(int objectLibIndex, int sceneID = 0);
-
-  /** @overload */
   int addObject(int objectLibIndex,
                 scene::SceneNode* attachmentNode = nullptr,
                 const std::string& lightSetupKey =

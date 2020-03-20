@@ -89,6 +89,8 @@ struct SimTest : Cr::TestSuite::Tester {
   void updateObjectLightSetupRGBAObservation();
   void multipleLightingSetupsRGBAObservation();
 
+  void recomputeNavmeshWithStaticObjects();
+
   // TODO: remove outlier pixels from image and lower maxThreshold
   const Magnum::Float maxThreshold = 255.f;
 
@@ -313,6 +315,10 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
   simulator->setObjectLightSetup(objectID, "custom_lighting_2");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDifferentLighting.png", maxThreshold, 0.01f);
+}
+
+void SimTest::recomputeNavmeshWithStaticObjects() {
+  auto simulator = getSimulator(planeScene);
 }
 
 }  // namespace
