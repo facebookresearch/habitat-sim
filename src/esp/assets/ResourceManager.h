@@ -194,6 +194,16 @@ class ResourceManager {
       std::string physicsFilename = ESP_DEFAULT_PHYS_SCENE_CONFIG);
 
   /**
+   * @brief Get all "*.phys_properties.json" files from the provided file or
+   * directory path.
+   *
+   * @param path A global path to a physics property file or directory
+   *
+   * @return A list of valid global paths to "*.phys_properties.json" files.
+   */
+  std::vector<std::string> getObjectConfigPaths(std::string path);
+
+  /**
    * @brief Load an object from a spcified configuration file into the @ref
    * physicsObjectLibrary_ and add it to the specified @ref DrawableGroup as a
    * child of the specified @ref scene::SceneNode if provided.

@@ -249,7 +249,7 @@ Viewer::Viewer(const Arguments& arguments)
   if (io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
     LOG(INFO) << "Loading navmesh from " << navmeshFilename;
     pathfinder_->loadNavMesh(navmeshFilename);
-  } else {
+  } else if (file.compare(esp::assets::EMPTY_SCENE)) {
     esp::nav::NavMeshSettings navMeshSettings;
     navMeshSettings.setDefaults();
     recomputeNavMesh(file, navMeshSettings);

@@ -121,6 +121,11 @@ class Simulator {
   int getPhysicsObjectLibrarySize();
 
   /**
+   * TODO:
+   */
+  int loadObjectConfigs(std::string filepath) {}
+
+  /**
    * @brief Remove an instanced object by ID. See @ref
    * esp::physics::PhysicsManager::removeObject().
    * @param objectID The ID of the object identifying it in @ref
