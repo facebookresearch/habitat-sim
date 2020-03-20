@@ -346,7 +346,10 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
       sceneCollisionObject->setCollisionShape(bObjectShape_.get());
       sceneCollisionObject->setWorldTransform(
           bObjectRigidBody_->getWorldTransform());
-      bWorld_->addCollisionObject(sceneCollisionObject.get(), 2, 1 + 2);
+      bWorld_->addCollisionObject(
+          sceneCollisionObject.get(),
+          2,       // collisionFilterGroup (2 == StaticFilter)
+          1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
       bSceneCollisionObjects_.emplace_back(std::move(sceneCollisionObject));
       return true;
     } else if (mt == MotionType::DYNAMIC) {
