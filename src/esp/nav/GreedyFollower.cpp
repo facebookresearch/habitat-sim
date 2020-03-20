@@ -33,55 +33,54 @@ nav::GreedyGeodesicFollowerImpl::GreedyGeodesicFollowerImpl(
 
 float nav::GreedyGeodesicFollowerImpl::geoDist(const vec3f& start,
                                                const vec3f& end) {
-  ShortestPath path;
-  path.requestedStart = start;
-  path.requestedEnd = end;
-  pathfinder_->findPath(path);
-  return path.geodesicDistance;
+  geoDistPath_.requestedStart = start;
+  geoDistPath_.requestedEnd = end;
+  pathfinder_->findPath(geoDistPath_);
+  return geoDistPath_.geodesicDistance;
 }
 
-std::tuple<float, float, float> nav::GreedyGeodesicFollowerImpl::tryStep(
-    const scene::SceneNode& node,
-    const vec3f& end) {
+nav::GreedyGeodesicFollowerImpl::TryStepResult
+nav::GreedyGeodesicFollowerImpl::tryStep(const scene::SceneNode& node,
+                                         const vec3f& end) {
   tryStepDummyNode_.MagnumObject::setTransformation(
       node.MagnumObject::transformation());
 
-  const float didCollide = moveForward_(&tryStepDummyNode_) ? 1.0f : 0.0f;
+  const bool didCollide = moveForward_(&tryStepDummyNode_);
   const vec3f newPose =
       cast<vec3f>(tryStepDummyNode_.MagnumObject::translation());
 
-  return std::make_tuple(geoDist(newPose, end), didCollide,
-                         pathfinder_->distanceToClosestObstacle(
-                             newPose, 1.1 * closeToObsThreshold_));
+  const float geoDistAfter = geoDist(newPose, end);
+  const float distToObsAfter = pathfinder_->distanceToClosestObstacle(
+      newPose, 1.1 * closeToObsThreshold_);
+
+  return {geoDistAfter, distToObsAfter, didCollide};
 }
 
 float nav::GreedyGeodesicFollowerImpl::computeReward(
     const scene::SceneNode& node,
     const nav::ShortestPath& path,
-    const int primLen) {
-  float newGoeDist, didCollide, distToObstacle;
-  std::tie(newGoeDist, didCollide, distToObstacle) =
-      tryStep(node, path.requestedEnd);
+    const size_t primLen) {
+  const auto tryStepRes = tryStep(node, path.requestedEnd);
 
   // Try to minimize geodesic distance to target
-  return (path.geodesicDistance - newGoeDist) +
-         // Weight these costs by the forwardAmount as (path.geodesicDistance -
-         // newGoeDist) is a function of that also
-         forwardAmount_ *
-             (
-                 // Prefer shortest primitives
-                 -0.025f * primLen
-                 // Avoid collisions
-                 - 0.25f * didCollide
-                 // Avoid being close to an obstacle
-                 - 0.05f * static_cast<float>(distToObstacle <
-                                              closeToObsThreshold_));
-  ;
+  // Divide by forwardAmount_ to make the reward structure independent of step
+  // size
+  return (path.geodesicDistance - tryStepRes.postGeodesicDistance) /
+             forwardAmount_ +
+         (
+             // Prefer shortest primitives
+             -0.025f * primLen
+             // Avoid collisions
+             - (tryStepRes.didCollide ? 0.25f : 0.0f)
+             // Avoid being close to an obstacle
+             - (tryStepRes.postDistanceToClosestObstacle < closeToObsThreshold_
+                    ? 0.05f
+                    : 0.0f));
 }
 
 std::vector<nav::GreedyGeodesicFollowerImpl::CODES>
 nav::GreedyGeodesicFollowerImpl::nextBestPrimAlong(
-    const nav::GreedyGeodesicFollowerImpl::State& state,
+    const nav::GreedyGeodesicFollowerImpl::SixDofPose& state,
     const nav::ShortestPath& path) {
   if (path.geodesicDistance == std::numeric_limits<float>::infinity()) {
     return {CODES::ERROR};
@@ -91,15 +90,16 @@ nav::GreedyGeodesicFollowerImpl::nextBestPrimAlong(
     return {CODES::STOP};
   }
 
+  constexpr float minumumReward = -0.1f;
   // Intialize bestReward to the minumum acceptable reward
-  float bestReward = -0.1f * forwardAmount_;
+  float bestReward = minumumReward;
   std::vector<CODES> bestPrim, leftPrim, rightPrim;
 
-  leftDummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
-  leftDummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
+  leftDummyNode_.setTranslation(Mn::Vector3{state.translation});
+  leftDummyNode_.setRotation(Mn::Quaternion{state.rotation});
 
-  rightDummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
-  rightDummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
+  rightDummyNode_.setTranslation(Mn::Vector3{state.translation});
+  rightDummyNode_.setRotation(Mn::Quaternion{state.rotation});
 
   // Plan over all primitives of the form [LEFT] * n + [FORWARD]
   // or [RIGHT] * n + [FORWARD]
@@ -123,7 +123,9 @@ nav::GreedyGeodesicFollowerImpl::nextBestPrimAlong(
       }
     }
 
-    if (bestReward > 0.95 * forwardAmount_)
+    // If reward is within 95% of max (1.0), call it good enough and exit
+    constexpr float goodEnoughRewardThresh = 0.95f;
+    if (bestReward > goodEnoughRewardThresh)
       break;
 
     leftPrim.emplace_back(CODES::LEFT);
@@ -140,25 +142,25 @@ bool nav::GreedyGeodesicFollowerImpl::isThrashing() {
   if (actions_.size() < thrashingThreshold_)
     return false;
 
-  bool thrashing =
-      actions_.back() == CODES::LEFT || actions_.back() == CODES::RIGHT;
   CODES lastAct = actions_.back();
+
+  bool thrashing = lastAct == CODES::LEFT || lastAct == CODES::RIGHT;
   for (int i = 2; (i < (thrashingThreshold_ + 1)) && thrashing; ++i) {
     thrashing = (actions_[actions_.size() - i] == CODES::RIGHT &&
                  lastAct == CODES::LEFT) ||
                 (actions_[actions_.size() - i] == CODES::LEFT &&
                  lastAct == CODES::RIGHT);
-    lastAct = actions_.back();
+    lastAct = actions_[actions_.size() - 1];
   }
 
   return thrashing;
 }
 
 nav::GreedyGeodesicFollowerImpl::CODES
-nav::GreedyGeodesicFollowerImpl::nextActionAlong(const State& start,
+nav::GreedyGeodesicFollowerImpl::nextActionAlong(const SixDofPose& start,
                                                  const vec3f& end) {
   nav::ShortestPath path;
-  path.requestedStart = std::get<0>(start);
+  path.requestedStart = start.translation;
   path.requestedEnd = end;
   pathfinder_->findPath(path);
 
@@ -187,16 +189,15 @@ nav::GreedyGeodesicFollowerImpl::nextActionAlong(const State& start,
 }
 
 std::vector<nav::GreedyGeodesicFollowerImpl::CODES>
-nav::GreedyGeodesicFollowerImpl::findPath(const State& start,
+nav::GreedyGeodesicFollowerImpl::findPath(const SixDofPose& start,
                                           const vec3f& end) {
   constexpr int maxActions = 5e3;
-  dummyNode_.setTranslation(Mn::Vector3{std::get<0>(start)});
-  dummyNode_.setRotation(Mn::Quaternion{std::get<1>(start)});
+  dummyNode_.setTranslation(Mn::Vector3{start.translation});
+  dummyNode_.setRotation(Mn::Quaternion{start.rotation});
 
   do {
-    State state =
-        std::make_tuple(cast<vec3f>(dummyNode_.MagnumObject::translation()),
-                        quatf{dummyNode_.rotation()});
+    SixDofPose state{quatf{dummyNode_.rotation()},
+                     cast<vec3f>(dummyNode_.MagnumObject::translation())};
     CODES nextAction = nextActionAlong(state, end);
 
     switch (nextAction) {
@@ -233,7 +234,7 @@ nav::GreedyGeodesicFollowerImpl::nextActionAlong(const vec3f& currentPos,
                                                  const vec4f& currentRot,
                                                  const vec3f& end) {
   quatf rot = Eigen::Map<const quatf>(currentRot.data());
-  return nextActionAlong(std::make_tuple(currentPos, rot), end);
+  return nextActionAlong({rot, currentPos}, end);
 }
 
 std::vector<nav::GreedyGeodesicFollowerImpl::CODES>
@@ -241,7 +242,7 @@ nav::GreedyGeodesicFollowerImpl::findPath(const vec3f& currentPos,
                                           const vec4f& currentRot,
                                           const vec3f& end) {
   quatf rot = Eigen::Map<const quatf>(currentRot.data());
-  return findPath(std::make_tuple(currentPos, rot), end);
+  return findPath({rot, currentPos}, end);
 }
 
 void nav::GreedyGeodesicFollowerImpl::reset() {

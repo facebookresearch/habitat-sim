@@ -30,9 +30,12 @@ class GreedyGeodesicFollowerImpl {
   typedef std::function<bool(scene::SceneNode*)> MoveFn;
 
   /**
-   * Helper typedef for a sixdof pos
+   * Helper for a sixdof pose
    */
-  typedef std::tuple<vec3f, quatf> State;
+  struct SixDofPose {
+    quatf rotation;
+    vec3f translation;
+  };
 
   /**
    * Implements a follower that greedily fits actions to follow the geodesic
@@ -64,7 +67,7 @@ class GreedyGeodesicFollowerImpl {
                              bool fixThrashing = true,
                              int thrashingThreshold = 16);
 
-  CODES nextActionAlong(const State& start, const vec3f& end);
+  CODES nextActionAlong(const SixDofPose& start, const vec3f& end);
 
   /**
    * Calculates the next action to follow the path
@@ -90,7 +93,7 @@ class GreedyGeodesicFollowerImpl {
                               const vec4f& startRot,
                               const vec3f& end);
 
-  std::vector<CODES> findPath(const State& start, const vec3f& end);
+  std::vector<CODES> findPath(const SixDofPose& start, const vec3f& end);
 
   /**
    * @breif Reset the planner.
@@ -117,12 +120,16 @@ class GreedyGeodesicFollowerImpl {
       rightDummyNode_{dummyScene_.getRootNode()},
       tryStepDummyNode_{dummyScene_.getRootNode()};
 
-  CODES calcStepAlong(const State& start, const ShortestPath& path);
-
+  ShortestPath geoDistPath_;
   float geoDist(const vec3f& start, const vec3f& end);
 
-  std::tuple<float, float, float> tryStep(const scene::SceneNode& node,
-                                          const vec3f& end);
+  struct TryStepResult {
+    float postGeodesicDistance, postDistanceToClosestObstacle;
+    bool didCollide;
+  };
+
+  TryStepResult tryStep(const scene::SceneNode& node, const vec3f& end);
+
   float computeReward(const scene::SceneNode& node,
                       const nav::ShortestPath& path,
                       const int primLen);
@@ -130,10 +137,8 @@ class GreedyGeodesicFollowerImpl {
   bool isThrashing();
 
   std::vector<nav::GreedyGeodesicFollowerImpl::CODES> nextBestPrimAlong(
-      const State& state,
+      const SixDofPose& state,
       const nav::ShortestPath& path);
-
-  CODES checkForward(const State& state);
 
   ESP_SMART_POINTERS(GreedyGeodesicFollowerImpl)
 };
