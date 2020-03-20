@@ -54,6 +54,9 @@ namespace physics {
 class PhysicsManager;
 class RigidObject;
 }  // namespace physics
+namespace nav {
+class PathFinder;
+}
 namespace assets {
 
 /**
@@ -379,6 +382,22 @@ class ResourceManager {
   Magnum::Resource<gfx::LightSetup> getLightSetup(
       const Magnum::ResourceKey& key = Magnum::ResourceKey{
           DEFAULT_LIGHTING_KEY});
+
+  /**
+   * @brief generate a new primitive mesh asset for the NavMesh loaded in the
+   * provided PathFinder object.
+   *
+   * If parent and drawables are provided, create the Drawable and render the
+   * NavMesh.
+   * @param pathFinder Holds the NavMesh information.
+   * @param parent The new Drawable is attached to this node.
+   * @param drawables The group with which the new Drawable will be rendered.
+   * @return The primitive ID of the new object or @ref ID_UNDEFINED if
+   * construction failed.
+   */
+  int loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
+                               scene::SceneNode* parent,
+                               DrawableGroup* drawables);
 
  protected:
   /**
@@ -716,7 +735,7 @@ class ResourceManager {
    * @brief Primitive meshes available for instancing via @ref
    * addPrimitiveToDrawables for debugging or visualization purposes.
    */
-  std::vector<Magnum::GL::Mesh> primitive_meshes_;
+  std::vector<std::unique_ptr<Magnum::GL::Mesh>> primitive_meshes_;
 
   /**
    * @brief Maps string keys (typically property filenames) to @ref
