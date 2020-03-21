@@ -280,7 +280,7 @@ std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
   std::vector<std::string> validConfigPaths =
       resourceManager_.getObjectConfigPaths(path);
   for (auto& validPath : validConfigPaths) {
-    templateIndices.push_back(resourceManager_.loadObject(path));
+    templateIndices.push_back(resourceManager_.loadObject(validPath));
   }
   return templateIndices;
 }

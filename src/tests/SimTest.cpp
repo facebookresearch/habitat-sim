@@ -110,7 +110,8 @@ SimTest::SimTest() {
             &SimTest::getCustomLightingRGBAObservation,
             &SimTest::updateLightSetupRGBAObservation,
             &SimTest::updateObjectLightSetupRGBAObservation,
-            &SimTest::multipleLightingSetupsRGBAObservation});
+            &SimTest::multipleLightingSetupsRGBAObservation,
+            &SimTest::loadingObjectTemplates});
   // clang-format on
 }
 
@@ -323,6 +324,14 @@ void SimTest::loadingObjectTemplates() {
   std::vector<int> templateIndices = simulator->loadObjectConfigs(
       Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(!templateIndices.empty());
+  for (auto index : templateIndices) {
+    CORRADE_VERIFY(index != esp::ID_UNDEFINED);
+  }
+
+  // reload again and ensure that old loaded indices are returned
+  std::vector<int> templateIndices2 = simulator->loadObjectConfigs(
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
+  CORRADE_VERIFY(templateIndices2 == templateIndices);
 
   // test fresh template
   esp::assets::PhysicsObjectAttributes newTemplate;
