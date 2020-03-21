@@ -72,8 +72,7 @@ class Viewer : public Magnum::Platform::Application {
   void pushLastObject();
 
   void recomputeNavMesh(const std::string& sceneFilename,
-                        esp::nav::NavMeshSettings& navMeshSettings,
-                        bool includeStaticObjects = false);
+                        esp::nav::NavMeshSettings& navMeshSettings);
 
   void torqueLastObject();
   void removeLastObject();
@@ -96,9 +95,6 @@ class Viewer : public Magnum::Platform::Application {
   bool debugBullet_ = false;
 
   std::vector<int> sceneID_;
-
-  // store this to later check for empty scene and use recomputeNavmesh
-  std::string sceneFilename_;
   scene::SceneNode* agentBodyNode_ = nullptr;
   scene::SceneNode* rgbSensorNode_ = nullptr;
 
@@ -184,8 +180,6 @@ Viewer::Viewer(const Arguments& arguments)
   auto& drawables = sceneGraph_->getDrawables();
   const std::string& file = args.value("scene");
   assets::AssetInfo info = assets::AssetInfo::fromPath(file);
-  sceneFilename_ = info.filepath;
-  Corrade::Utility::Debug() << "sceneFilename_ = " << sceneFilename_;
   std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
   if (args.isSet("scene-requires-lighting")) {
     info.requiresLighting = true;
@@ -343,45 +337,11 @@ void Viewer::pushLastObject() {
 }
 
 void Viewer::recomputeNavMesh(const std::string& sceneFilename,
-                              nav::NavMeshSettings& navMeshSettings,
-                              bool includeStaticObjects) {
+                              nav::NavMeshSettings& navMeshSettings) {
   nav::PathFinder::ptr pf = nav::PathFinder::create();
 
   assets::MeshData::uptr joinedMesh =
       resourceManager_.createJoinedCollisionMesh(sceneFilename);
-
-  // add STATIC collision objects
-  if (includeStaticObjects) {
-    for (auto objectID : physicsManager_->getExistingObjectIDs()) {
-      if (physicsManager_->getObjectMotionType(objectID) ==
-          physics::MotionType::STATIC) {
-        auto objectTransform = Magnum::EigenIntegration::cast<
-            Eigen::Transform<float, 3, Eigen::Affine> >(
-            physicsManager_->getObjectVisualSceneNode(objectID)
-                .absoluteTransformationMatrix());
-        const assets::PhysicsObjectAttributes& initializationTemplate =
-            physicsManager_->getInitializationAttributes(objectID);
-        std::string meshHandle =
-            initializationTemplate.getString("collisionMeshHandle");
-        if (meshHandle.empty()) {
-          meshHandle = initializationTemplate.getString("renderMeshHandle");
-        }
-        assets::MeshData::uptr joinedObjectMesh =
-            resourceManager_.createJoinedCollisionMesh(meshHandle);
-        int prevNumIndices = joinedMesh->ibo.size();
-        int prevNumVerts = joinedMesh->vbo.size();
-        joinedMesh->ibo.resize(prevNumIndices + joinedObjectMesh->ibo.size());
-        for (size_t ix = 0; ix < joinedObjectMesh->ibo.size(); ix++) {
-          joinedMesh->ibo[ix + prevNumIndices] =
-              joinedObjectMesh->ibo[ix] + prevNumVerts;
-        }
-        joinedMesh->vbo.reserve(joinedObjectMesh->vbo.size() + prevNumVerts);
-        for (auto& vert : joinedObjectMesh->vbo) {
-          joinedMesh->vbo.push_back(objectTransform * vert);
-        }
-      }
-    }
-  }
 
   if (!pf->build(navMeshSettings, *joinedMesh)) {
     LOG(ERROR) << "Failed to build navmesh";
@@ -645,31 +605,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         LOG(WARNING)
             << "Run the app with --enable-physics in order to add objects";
     } break;
-    case KeyEvent::Key::M: {
-      if (physicsManager_ != nullptr) {
-        /*
-        if (objectIDs_.size() > 0) {
-          if (physicsManager_->getObjectMotionType(objectIDs_.back()) ==
-              physics::MotionType::STATIC) {
-            physicsManager_->setObjectMotionType(objectIDs_.back(),
-                                                 physics::MotionType::DYNAMIC);
-            Corrade::Utility::Debug()
-                << "Made object " << objectIDs_.back() << " DYNAMIC.";
-          } else {
-            physicsManager_->setObjectMotionType(objectIDs_.back(),
-                                                 physics::MotionType::STATIC);
-            Corrade::Utility::Debug()
-                << "Made object " << objectIDs_.back() << " STATIC.";
-          }
-        }
-        */
-        for (auto id : objectIDs_) {
-          physicsManager_->setObjectMotionType(id, physics::MotionType::STATIC);
-        }
-      } else
-        LOG(WARNING)
-            << "Run the app with --enable-physics in order to add objects";
-    } break;
     case KeyEvent::Key::P:
       pokeLastObject();
       break;
@@ -688,14 +623,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::T:
       // Test key. Put what you want here...
       torqueLastObject();
-      break;
-    case KeyEvent::Key::R:
-      // Recompute navmesh with added objects (if scene is not "NONE")
-      if (sceneFilename_ != "NONE") {
-        esp::nav::NavMeshSettings navMeshSettings;
-        navMeshSettings.setDefaults();
-        recomputeNavMesh(sceneFilename_, navMeshSettings, true);
-      }
       break;
     case KeyEvent::Key::N:
       toggleNavMeshVisualization();
