@@ -57,12 +57,10 @@ class InstanceSegmentationEnvironment(TrainingEnvironment):
             self.optimizer, step_size=3, gamma=0.1
         )
 
-    def train(
-        self, num_epochs=100, load_state=False, model_weight_path=None, save_freq=20
-    ):
+    def train(self, num_epochs=100, load_path=None, save_path=None, save_freq=20):
         epoch = 0
-        if load_state and model_weight_path is not None:
-            epoch = load_model_state(self.model, self.optimizer, model_weight_path)
+        if load_path is not None:
+            epoch = load_model_state(self.model, self.optimizer, load_path)
 
         self.extractor.set_mode("train")
         for _ in range(num_epochs):
@@ -109,9 +107,6 @@ class InstanceSegmentationDataset(Dataset):
         boxes = []
         areas = []
         num_instances = len(instance_ids)
-
-        # There are much more efficient ways to create the data involving caching and
-        # preprocessing but efficiency is not the focus of this example
         for i in range(num_instances):
             cur_mask = mask == instance_ids[i]
             pos = np.where(cur_mask)
