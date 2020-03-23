@@ -2,7 +2,7 @@ import collections
 import copy
 import math
 import os
-from typing import List
+from typing import List, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -49,16 +49,16 @@ class ImageExtractor:
 
     def __init__(
         self,
-        scene_filepath,
-        labels=[0.0],
-        img_size=(512, 512),
-        output=["rgba"],
-        extraction_method="closest",
+        scene_filepath: Union[str, List[str]],
+        labels: List[float] = [0.0],
+        img_size: tuple = (512, 512),
+        output: List[str] = ["rgba"],
+        extraction_method: str = "closest",
         sim=None,
-        shuffle=True,
-        split=(70, 30),
-        use_caching=True,
-        pixels_per_meter=0.1,
+        shuffle: bool = True,
+        split: tuple = (70, 30),
+        use_caching: bool = True,
+        pixels_per_meter: float = 0.1,
     ):
         if sum(split) != 100:
             raise Exception("Train/test split must sum to 100.")
