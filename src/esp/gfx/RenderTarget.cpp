@@ -20,6 +20,7 @@
 #include "magnum.h"
 
 #include "esp/gfx/DepthUnprojection.h"
+#include "esp/io/io.h"
 
 #ifdef ESP_BUILD_WITH_CUDA
 #include <cuda_gl_interop.h>
@@ -40,12 +41,20 @@ const Mn::GL::Framebuffer::ColorAttachment ObjectIdBuffer =
 const Mn::GL::Framebuffer::ColorAttachment UnprojectedDepthBuffer =
     Mn::GL::Framebuffer::ColorAttachment{0};
 
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
+const Mn::GL::Framebuffer::ColorAttachment TriangleIdBuffer =
+    Mn::GL::Framebuffer::ColorAttachment{2};
+#endif
+
 struct RenderTarget::Impl {
   Impl(const Mn::Vector2i& size,
        const Mn::Vector2& depthUnprojection,
        DepthShader* depthShader)
       : colorBuffer_{},
         objectIdBuffer_{},
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
+        triangleIdBuffer_{},
+#endif
         depthRenderTexture_{},
         framebuffer_{Mn::NoCreate},
         depthUnprojection_{depthUnprojection},
@@ -65,12 +74,24 @@ struct RenderTarget::Impl {
         .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
         .setStorage(1, Mn::GL::TextureFormat::DepthComponent32F, size);
 
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
+    triangleIdBuffer_.setStorage(Mn::GL::RenderbufferFormat::R32I, size);
+#endif
+
     framebuffer_ = Mn::GL::Framebuffer{{{}, size}};
     framebuffer_.attachRenderbuffer(RgbaBuffer, colorBuffer_)
         .attachRenderbuffer(ObjectIdBuffer, objectIdBuffer_)
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
+        .attachRenderbuffer(TriangleIdBuffer, triangleIdBuffer_)
+#endif
         .attachTexture(Mn::GL::Framebuffer::BufferAttachment::Depth,
                        depthRenderTexture_, 0)
-        .mapForDraw({{0, RgbaBuffer}, {1, ObjectIdBuffer}});
+        .mapForDraw({{0, RgbaBuffer},
+                     {1, ObjectIdBuffer},
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
+                     {2, TriangleIdBuffer}
+#endif
+        });
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
         Mn::GL::Framebuffer::Status::Complete);
@@ -111,6 +132,9 @@ struct RenderTarget::Impl {
     framebuffer_.clearDepth(1.0);
     framebuffer_.clearColor(0, Mn::Color4{0, 0, 0, 1});
     framebuffer_.clearColor(1, Mn::Vector4ui{});
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
+    framebuffer_.clearColor(2, Mn::Vector4i{});
+#endif
     framebuffer_.bind();
   }
 
@@ -148,6 +172,13 @@ struct RenderTarget::Impl {
   void readFrameObjectId(const Mn::MutableImageView2D& view) {
     framebuffer_.mapForRead(ObjectIdBuffer).read(framebuffer_.viewport(), view);
   }
+
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
+  void readFrameTriangleId(const Mn::MutableImageView2D& view) {
+    framebuffer_.mapForRead(TriangleIdBuffer)
+        .read(framebuffer_.viewport(), view);
+  }
+#endif
 
   Mn::Vector2i framebufferSize() const {
     return framebuffer_.viewport().size();
@@ -216,6 +247,27 @@ struct RenderTarget::Impl {
 
     checkCudaErrors(cudaGraphicsUnmapResources(1, &objecIdBufferCugl_, 0));
   }
+
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
+  void readFrameTriangleIdGPU(int32_t* devPtr) {
+    if (triangleIdBufferCugl_ == nullptr)
+      checkCudaErrors(cudaGraphicsGLRegisterImage(
+          &triangleIdBufferCugl_, triangleIdBuffer_.id(), GL_RENDERBUFFER,
+          cudaGraphicsRegisterFlagsReadOnly));
+
+    checkCudaErrors(cudaGraphicsMapResources(1, &triangleIdBufferCugl_, 0));
+
+    cudaArray* array = nullptr;
+    checkCudaErrors(cudaGraphicsSubResourceGetMappedArray(
+        &array, triangleIdBufferCugl_, 0, 0));
+    const int widthInBytes = framebufferSize().x() * 1 * sizeof(int32_t);
+    checkCudaErrors(cudaMemcpy2DFromArray(devPtr, widthInBytes, array, 0, 0,
+                                          widthInBytes, framebufferSize().y(),
+                                          cudaMemcpyDeviceToDevice));
+
+    checkCudaErrors(cudaGraphicsUnmapResources(1, &triangleIdBufferCugl_, 0));
+  }
+#endif
 #endif
 
   ~Impl() {
@@ -226,6 +278,10 @@ struct RenderTarget::Impl {
       checkCudaErrors(cudaGraphicsUnregisterResource(depthBufferCugl_));
     if (objecIdBufferCugl_ != nullptr)
       checkCudaErrors(cudaGraphicsUnregisterResource(objecIdBufferCugl_));
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
+    if (triangleIdBufferCugl_ != nullptr)
+      checkCudaErrors(cudaGraphicsUnregisterResource(triangleIdBufferCugl_));
+#endif
 #endif
   }
 
@@ -234,6 +290,9 @@ struct RenderTarget::Impl {
   Mn::GL::Renderbuffer objectIdBuffer_;
   Mn::GL::Texture2D depthRenderTexture_;
   Mn::GL::Framebuffer framebuffer_;
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
+  Mn::GL::Renderbuffer triangleIdBuffer_;
+#endif
 
   Mn::Vector2 depthUnprojection_;
   DepthShader* depthShader_;
@@ -244,6 +303,9 @@ struct RenderTarget::Impl {
 #ifdef ESP_BUILD_WITH_CUDA
   cudaGraphicsResource_t colorBufferCugl_ = nullptr;
   cudaGraphicsResource_t objecIdBufferCugl_ = nullptr;
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
+  cudaGraphicsResource_t triangleIdBufferCugl_ = nullptr;
+#endif
   cudaGraphicsResource_t depthBufferCugl_ = nullptr;
 #endif
 };  // namespace gfx
@@ -275,6 +337,12 @@ void RenderTarget::readFrameObjectId(const Mn::MutableImageView2D& view) {
   pimpl_->readFrameObjectId(view);
 }
 
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
+void RenderTarget::readFrameTriangleId(const Mn::MutableImageView2D& view) {
+  pimpl_->readFrameTriangleId(view);
+}
+#endif
+
 void RenderTarget::blitRgbaToDefault() {
   pimpl_->blitRgbaToDefault();
 }
@@ -295,6 +363,12 @@ void RenderTarget::readFrameDepthGPU(float* devPtr) {
 void RenderTarget::readFrameObjectIdGPU(int32_t* devPtr) {
   pimpl_->readFrameObjectIdGPU(devPtr);
 }
+
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
+void RenderTarget::readFrameTriangleIdGPU(int32_t* devPtr) {
+  pimpl_->readFrameTriangleIdGPU(devPtr);
+}
+#endif
 #endif
 
 }  // namespace gfx

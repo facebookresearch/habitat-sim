@@ -38,7 +38,9 @@ class PrimitiveIDShader : public Magnum::GL::AbstractShaderProgram {
     //! color output
     ColorOutput = 0,
     //! object id output
-    ObjectIdOutput = 1
+    ObjectIdOutput = 1,
+    //! triangle ID output
+    TriangleIdOutput = 2,
   };
 
   /**

@@ -44,7 +44,8 @@ void initSensorBindings(py::module& m) {
       .value("NONE", SensorType::NONE)
       .value("COLOR", SensorType::COLOR)
       .value("DEPTH", SensorType::DEPTH)
-      .value("SEMANTIC", SensorType::SEMANTIC);
+      .value("SEMANTIC", SensorType::SEMANTIC)
+      .value("TRIANGLE", SensorType::TRIANGLE);
 
   // ==== SensorSpec ====
   py::class_<SensorSpec, SensorSpec::ptr>(m, "SensorSpec", py::dynamic_attr())

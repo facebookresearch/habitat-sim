@@ -85,6 +85,8 @@ bool PinholeCamera::getObservationSpace(ObservationSpace& space) {
     space.dataType = core::DataType::DT_UINT32;
   } else if (spec_->sensorType == SensorType::DEPTH) {
     space.dataType = core::DataType::DT_FLOAT;
+  } else if (spec_->sensorType == SensorType::TRIANGLE) {
+    space.dataType = core::DataType::DT_INT32;
   }
   return true;
 }
@@ -106,7 +108,8 @@ void PinholeCamera::drawObservation(sim::Simulator& sim) {
   renderTarget().renderEnter();
 
   gfx::Renderer::ptr renderer = sim.getRenderer();
-  if (spec_->sensorType == SensorType::SEMANTIC) {
+  if (spec_->sensorType == SensorType::SEMANTIC ||
+      spec_->sensorType == SensorType::TRIANGLE) {
     // TODO: check sim has semantic scene graph
     renderer->draw(*this, sim.getActiveSemanticSceneGraph(),
                    sim.isFrustumCullingEnabled());
@@ -135,7 +138,15 @@ void PinholeCamera::readObservation(Observation& obs) {
     renderTarget().readFrameObjectId(Magnum::MutableImageView2D{
         Magnum::PixelFormat::R32UI, renderTarget().framebufferSize(),
         obs.buffer->data});
-  } else if (spec_->sensorType == SensorType::DEPTH) {
+  }
+#ifdef ESP_WITH_TRIANGLE_SENSOR
+  else if (spec_->sensorType == SensorType::TRIANGLE) {
+    renderTarget().readFrameTriangleId(Magnum::MutableImageView2D{
+        Magnum::PixelFormat::R32I, renderTarget().framebufferSize(),
+        obs.buffer->data});
+  }
+#endif
+  else if (spec_->sensorType == SensorType::DEPTH) {
     renderTarget().readFrameDepth(Magnum::MutableImageView2D{
         Magnum::PixelFormat::R32F, renderTarget().framebufferSize(),
         obs.buffer->data});
