@@ -31,6 +31,7 @@
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <sophus/so3.hpp>
+#include "esp/core/Utility.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
@@ -88,6 +89,8 @@ class Viewer : public Magnum::Platform::Application {
   Magnum::Vector3 randomDirection();
   void wiggleLastObject();
 
+  void toggleNavMeshVisualization();
+
   Magnum::Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
                                    const Magnum::Vector2i& position);
 
@@ -108,6 +111,8 @@ class Viewer : public Magnum::Platform::Application {
 
   scene::SceneGraph* sceneGraph_;
   scene::SceneNode* rootNode_;
+
+  scene::SceneNode* navmeshVisNode_;
 
   gfx::RenderCamera* renderCamera_ = nullptr;
   nav::PathFinder::ptr pathfinder_;
@@ -145,10 +150,14 @@ Viewer::Viewer(const Arguments& arguments)
       .addSkippedPrefix("magnum", "engine-specific options")
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addBooleanOption("enable-physics")
+      .addBooleanOption("scene-requires-lighting")
+      .setHelp("scene-requires-lighting", "scene requires lighting")
       .addBooleanOption("debug-bullet")
       .setHelp("debug-bullet", "render Bullet physics debug wireframes")
       .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG)
       .setHelp("physics-config", "physics scene config file")
+      .addOption("navmesh-file")
+      .setHelp("navmesh-file", "manual override path to scene navmesh file")
       .addBooleanOption("recompute-navmesh")
       .setHelp("recompute-navmesh", "programmatically generate scene navmesh")
       .parse(arguments.argc, arguments.argv);
@@ -179,7 +188,12 @@ Viewer::Viewer(const Arguments& arguments)
 
   auto& drawables = sceneGraph_->getDrawables();
   const std::string& file = args.value("scene");
-  const assets::AssetInfo info = assets::AssetInfo::fromPath(file);
+  assets::AssetInfo info = assets::AssetInfo::fromPath(file);
+  std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
+  if (args.isSet("scene-requires-lighting")) {
+    info.requiresLighting = true;
+    sceneLightSetup = assets::ResourceManager::DEFAULT_LIGHTING_KEY;
+  }
 
   if (args.isSet("enable-physics")) {
     std::string physicsConfigFilename = args.value("physics-config");
@@ -189,17 +203,22 @@ Viewer::Viewer(const Arguments& arguments)
           << " was not found, specify an existing file in --physics-config";
     }
     if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
-                                    &drawables, physicsConfigFilename)) {
+                                    &drawables, sceneLightSetup,
+                                    physicsConfigFilename)) {
       LOG(FATAL) << "cannot load " << file;
     }
     if (args.isSet("debug-bullet")) {
       debugBullet_ = true;
     }
   } else {
-    if (!resourceManager_.loadScene(info, navSceneNode_, &drawables)) {
+    if (!resourceManager_.loadScene(info, navSceneNode_, &drawables,
+                                    sceneLightSetup)) {
       LOG(FATAL) << "cannot load " << file;
     }
   }
+
+  const Magnum::Range3D& sceneBB = rootNode_->computeCumulativeBB();
+  resourceManager_.setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
 
   // Set up camera
   renderCamera_ = &sceneGraph_->getDefaultRenderCamera();
@@ -218,8 +237,12 @@ Viewer::Viewer(const Arguments& arguments)
       Magnum::SceneGraph::AspectRatioPolicy::Extend);
 
   // Load navmesh if available
-  if (file.compare(esp::assets::EMPTY_SCENE) != 0) {
-    std::string navmeshFilename = io::changeExtension(file, ".navmesh");
+  std::string navmeshFilename;
+  if (!args.value("navmesh-file").empty()) {
+    navmeshFilename = Corrade::Utility::Directory::join(
+        Corrade::Utility::Directory::current(), args.value("navmesh-file"));
+  } else if (file.compare(esp::assets::EMPTY_SCENE)) {
+    navmeshFilename = io::changeExtension(file, ".navmesh");
 
     // TODO: short term solution to mitigate issue #430
     // we load the pre-computed navmesh for the ptex mesh to avoid
@@ -230,15 +253,15 @@ Viewer::Viewer(const Arguments& arguments)
           Corrade::Utility::Directory::path(file) + "/habitat",
           "mesh_semantic.navmesh");
     }
+  }
 
-    if (io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
-      LOG(INFO) << "Loading navmesh from " << navmeshFilename;
-      pathfinder_->loadNavMesh(navmeshFilename);
-    } else {
-      esp::nav::NavMeshSettings navMeshSettings;
-      navMeshSettings.setDefaults();
-      recomputeNavMesh(file, navMeshSettings);
-    }
+  if (io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
+    LOG(INFO) << "Loading navmesh from " << navmeshFilename;
+    pathfinder_->loadNavMesh(navmeshFilename);
+  } else {
+    esp::nav::NavMeshSettings navMeshSettings;
+    navMeshSettings.setDefaults();
+    recomputeNavMesh(file, navMeshSettings);
   }
 
   // connect controls to navmesh if loaded
@@ -285,20 +308,7 @@ void Viewer::addObject(std::string configFile) {
   int physObjectID = physicsManager_->addObject(configFile, &drawables);
   physicsManager_->setTranslation(physObjectID, new_pos);
 
-  // draw random quaternion via the method:
-  // http://planning.cs.uiuc.edu/node198.html
-  double u1 = (rand() % 1000) / 1000.0;
-  double u2 = (rand() % 1000) / 1000.0;
-  double u3 = (rand() % 1000) / 1000.0;
-
-  /*
-  Magnum::Vector3 qAxis(sqrt(1 - u1) * cos(2 * M_PI * u2),
-                        sqrt(u1) * sin(2 * M_PI * u3),
-                        sqrt(u1) * cos(2 * M_PI * u3));
-  physicsManager_->setRotation(
-      physObjectID,
-      Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2)));
-   */
+  // physicsManager_->setRotation(physObjectID, esp::core::randomRotation());
 
   objectIDs_.push_back(physObjectID);
 }
@@ -460,6 +470,19 @@ void Viewer::syncGrippedObject() {
   }
 }
 
+void Viewer::toggleNavMeshVisualization() {
+  if (navmeshVisNode_ == nullptr && pathfinder_->isLoaded()) {
+    // test navmesh visualization
+    navmeshVisNode_ = &rootNode_->createChild();
+    int nevMeshVisPrimID = resourceManager_.loadNavMeshVisualization(
+        *pathfinder_, navmeshVisNode_, &sceneGraph_->getDrawables());
+    navmeshVisNode_->translate({0, 0.1, 0});
+  } else {
+    delete navmeshVisNode_;
+    navmeshVisNode_ = nullptr;
+  }
+}
+
 Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
                                  const Vector2i& position) {
   // Convert from window to frame coordinates.
@@ -489,8 +512,14 @@ void Viewer::drawEvent() {
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
-  uint32_t visibles =
-      renderCamera_->draw(sceneGraph.getDrawables(), frustumCullingEnabled_);
+  uint32_t visibles = 0;
+
+  for (auto& it : sceneGraph.getDrawableGroups()) {
+    // TODO: remove || true
+    if (it.second.prepareForDraw(*renderCamera_) || true) {
+      visibles += renderCamera_->draw(it.second, frustumCullingEnabled_);
+    }
+  }
 
   if (debugBullet_) {
     Magnum::Matrix4 camM(renderCamera_->cameraMatrix());
@@ -686,6 +715,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::G:
       grabReleaseObject();
+      break;
+    case KeyEvent::Key::N:
+      toggleNavMeshVisualization();
       break;
     case KeyEvent::Key::I:
       Magnum::DebugTools::screenshot(GL::defaultFramebuffer,

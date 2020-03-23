@@ -120,15 +120,15 @@ The table below reports performance statistics for a test scene from the Matterp
  </tr>
  <tr>
    <td>RGB + depth + semantics*</td>
-   <td>439</td>
-   <td>346</td>
-   <td>185</td>
-   <td>502</td>
-   <td>385</td>
-   <td>336</td>
-   <td>500</td>
-   <td>390</td>
-   <td>367</td>
+   <td>709</td>
+   <td>596</td>
+   <td>394</td>
+   <td>1312</td>
+   <td>1219</td>
+   <td>979</td>
+   <td>1521</td>
+   <td>1429</td>
+   <td>1291</td>
  </tr>
 </table>
 
@@ -255,7 +255,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 
    To run an interactive C++ example GUI application with physics enabled run
    ```bash
-   build/viewer --enable-physics /path/to/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb
+   ./build/viewer --enable-physics /path/to/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb
    ```
    Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right).
    Press 'o' key to add a random object, press 'p/f/t' to apply impulse/force/torque to the last added object or press 'u' to remove it.
@@ -324,7 +324,12 @@ This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor
 ## Datasets
 
 - The full Matterport3D (MP3D) dataset for use with Habitat can be downloaded using the official [Matterport3D](https://niessner.github.io/Matterport/) download script as follows: `python download_mp.py --task habitat -o path/to/download/`. You only need the habitat zip archive and not the entire Matterport3D dataset. Note that this download script requires python 2.7 to run.
-- The Gibson dataset for use with Habitat can be downloaded by agreeing to the terms of use in the [Gibson](https://github.com/StanfordVL/GibsonEnv#database) repository
+- The Gibson dataset for use with Habitat can be downloaded by agreeing to the terms of use in the [Gibson](https://github.com/StanfordVL/GibsonEnv#database) repository.
+- Semantic information for Gibson is available from the [3DSceneGraph](https://3dscenegraph.stanford.edu/) dataset. The semantic data will need to be converted before it can be used within Habitat:
+   ```bash
+   tools/gen_gibson_semantics.sh /path/to/3DSceneGraph_medium/automated_graph /path/to/GibsonDataset /path/to/output
+   ```
+   To use semantics, you will need to enable the semantic sensor.
 
 ## Examples
 

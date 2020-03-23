@@ -74,7 +74,6 @@ def test_kinematics(sim):
     # test object removal
     old_object_id = sim.remove_object(object_id)
     assert len(sim.get_existing_object_ids()) == 0
-    assert old_object_id == object_id
 
     object_id = sim.add_object(0)
 
@@ -90,6 +89,16 @@ def test_kinematics(sim):
         # check that time is increasing in the world
         assert sim.get_world_time() > prev_time
         prev_time = sim.get_world_time()
+
+    sim.remove_object(object_id)
+
+    # test attaching/dettaching an Agent to/from physics simulation
+    agent_node = sim.agents[0].scene_node
+    sim.add_object(0, agent_node)
+    sim.set_translation(np.random.rand(3), object_id)
+    assert np.allclose(agent_node.translation, sim.get_translation(object_id))
+    sim.remove_object(object_id, False)  # don't delete the agent's node
+    assert agent_node.translation
 
 
 @pytest.mark.skipif(

@@ -4,16 +4,16 @@
 
 #pragma once
 
+#include "esp/agent/Agent.h"
+#include "esp/assets/ResourceManager.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
+#include "esp/gfx/RenderTarget.h"
+#include "esp/gfx/WindowlessContext.h"
+#include "esp/nav/PathFinder.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
-
-#include "esp/assets/ResourceManager.h"
-
-#include "esp/gfx/RenderTarget.h"
-#include "esp/gfx/WindowlessContext.h"
 
 namespace esp {
 namespace nav {
@@ -27,6 +27,9 @@ class SemanticScene;
 namespace gfx {
 class Renderer;
 }  // namespace gfx
+namespace physics {
+enum class MotionType : int;
+}  // namespace physics
 }  // namespace esp
 
 namespace esp {
@@ -41,12 +44,15 @@ struct SimulatorConfiguration {
   bool createRenderer = true;
   // Whether or not the agent can slide on collisions
   bool allowSliding = true;
-
+  // enable or disable the frustum culling
+  bool frustumCulling = true;
   bool enablePhysics = false;
   std::string physicsConfigFile =
       "./data/default.phys_scene_config.json";  // should we instead link a
                                                 // PhysicsManagerConfiguration
                                                 // object here?
+  /** @brief Light setup key for scene */
+  std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
 
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };
@@ -97,7 +103,14 @@ class Simulator {
    * esp::physics::PhysicsManager::existingObjects_ or @ref esp::ID_UNDEFINED if
    * instancing fails.
    */
-  int addObject(const int objectLibIndex, const int sceneID = 0);
+  // int addObject(int objectLibIndex, int sceneID = 0);
+
+  /** @overload */
+  int addObject(int objectLibIndex,
+                scene::SceneNode* attachmentNode = nullptr,
+                const std::string& lightSetupKey =
+                    assets::ResourceManager::DEFAULT_LIGHTING_KEY,
+                int sceneID = 0);
 
   /**
    * @brief Get the current size of the physics object library. Objects [0,size)
@@ -114,10 +127,11 @@ class Simulator {
    * esp::physics::PhysicsManager::existingObjects_.
    * @param sceneID !! Not used currently !! Specifies which physical scene to
    * remove the object from.
-   * @return The deallocated object ID previously idnetifying the removed object
-   * or @ref esp::ID_UNDEFINED if failed.
    */
-  int removeObject(const int objectID, const int sceneID = 0);
+  void removeObject(const int objectID,
+                    bool deleteObjectNode = true,
+                    bool deleteVisualNode = true,
+                    const int sceneID = 0);
 
   /**
    * @brief Get the IDs of the physics objects instanced in a physical scene.
@@ -303,8 +317,93 @@ class Simulator {
   bool recomputeNavMesh(nav::PathFinder& pathfinder,
                         const nav::NavMeshSettings& navMeshSettings);
 
+  agent::Agent::ptr getAgent(int agentId);
+
+  agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig,
+                             scene::SceneNode& agentParentNode);
+  agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig);
+
+  /**
+   * @brief Displays observations on default frame buffer for a
+   * particular sensor of an agent
+   * @param agentId    Id of the agent for which the observation is to
+   *                   be returned
+   * @param sensorId   Id of the sensor for which the observation is to
+   *                   be returned
+   */
+  bool displayObservation(int agentId, const std::string& sensorId);
+  bool getAgentObservation(int agentId,
+                           const std::string& sensorId,
+                           sensor::Observation& observation);
+  int getAgentObservations(
+      int agentId,
+      std::map<std::string, sensor::Observation>& observations);
+
+  bool getAgentObservationSpace(int agentId,
+                                const std::string& sensorId,
+                                sensor::ObservationSpace& space);
+  int getAgentObservationSpaces(
+      int agentId,
+      std::map<std::string, sensor::ObservationSpace>& spaces);
+
+  nav::PathFinder::ptr getPathFinder();
+  /**
+   * @brief Enable or disable frustum culling (enabled by default)
+   * @param val, true = enable, false = disable
+   */
+  void setFrustumCullingEnabled(bool val) { frustumCulling_ = val; }
+
+  /**
+   * @brief Get status, whether frustum culling is enabled or not
+   * @return true if enabled, otherwise false
+   */
+  bool isFrustumCullingEnabled() { return frustumCulling_; }
+
+  /**
+   * @brief Get a named @ref LightSetup
+   */
+  gfx::LightSetup getLightSetup(
+      const std::string& key = assets::ResourceManager::DEFAULT_LIGHTING_KEY);
+
+  /**
+   * @brief Set a named @ref LightSetup
+   *
+   * If this name already exists, the @ref LightSetup is updated and all @ref
+   * Drawables using this setup are updated.
+   *
+   * @param lightSetup Light setup this key will now reference
+   * @param key Key to identify this @ref LightSetup
+   */
+  void setLightSetup(
+      gfx::LightSetup lightSetup,
+      const std::string& key = assets::ResourceManager::DEFAULT_LIGHTING_KEY);
+
+  /**
+   * @brief Set the light setup of an object
+   *
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param lightSetupKey @ref LightSetup key
+   * @param sceneID !! Not used currently !! Specifies which physical scene
+   * of the object.
+   */
+  void setObjectLightSetup(int objectID,
+                           const std::string& lightSetupKey,
+                           int sceneID = 0);
+
  protected:
   Simulator(){};
+
+  //! sample a random valid AgentState in passed agentState
+  void sampleRandomAgentState(agent::AgentState& agentState);
+
+  bool isValidScene(int sceneID) const {
+    return sceneID >= 0 && sceneID < sceneID_.size();
+  }
+
+  bool sceneHasPhysics(int sceneID) const {
+    return isValidScene(sceneID) && physicsManager_ != nullptr;
+  }
 
   gfx::WindowlessContext::uptr context_ = nullptr;
   std::shared_ptr<gfx::Renderer> renderer_ = nullptr;
@@ -327,6 +426,19 @@ class Simulator {
 
   core::Random random_;
   SimulatorConfiguration config_;
+
+  std::vector<agent::Agent::ptr> agents_;
+  nav::PathFinder::ptr pathfinder_;
+  // state indicating frustum culling is enabled or not
+  //
+  // TODO:
+  // Such state, frustumCulling_ has also been defined in frontend (py)
+  // See: examples/settings.py, habitat_sim/simulator.py for more information
+  // ideally, to avoid inconsistency at any time, and reduce maintenance cost
+  // this state should be defined in just one place.e.g., only in the frontend
+  // Currently, we need it defined here, because sensor., e.g., PinholeCamera
+  // rquires it when drawing the observation
+  bool frustumCulling_ = true;
 
   ESP_SMART_POINTERS(Simulator)
 };

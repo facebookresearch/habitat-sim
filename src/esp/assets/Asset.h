@@ -34,12 +34,15 @@ struct AssetInfo {
   std::string filepath = EMPTY_SCENE;  // empty scene
   geo::CoordinateFrame frame;
   float virtualUnitToMeters = 1.0f;
+  bool requiresLighting = false;
 
   //! Populates a preset AssetInfo by matching against known filepaths
   static AssetInfo fromPath(const std::string& filepath);
 
   ESP_SMART_POINTERS(AssetInfo)
 };
+bool operator==(const AssetInfo& a, const AssetInfo& b);
+bool operator!=(const AssetInfo& a, const AssetInfo& b);
 
 //! Wrapper for all valid asset types
 template <typename T>

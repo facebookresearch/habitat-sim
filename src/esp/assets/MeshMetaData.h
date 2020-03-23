@@ -99,14 +99,6 @@ struct MeshMetaData {
     materialIndex = std::make_pair(materialStart, materialEnd);
   }
 
-  /** @brief Copy constructor. */
-  MeshMetaData(const MeshMetaData& val) {
-    meshIndex = val.meshIndex;
-    textureIndex = val.textureIndex;
-    materialIndex = val.materialIndex;
-    root = MeshTransformNode(val.root);
-  }
-
   /**
    * @brief Sets the mesh indices for the asset See @ref
    * ResourceManager::meshes_.

@@ -8,8 +8,9 @@
 namespace esp {
 namespace physics {
 
-RigidObject::RigidObject(scene::SceneNode* parent)
-    : scene::SceneNode{*parent} {}
+RigidObject::RigidObject(scene::SceneNode* rigidBodyNode)
+    : Magnum::SceneGraph::AbstractFeature3D(*rigidBodyNode),
+      visualNode_(&rigidBodyNode->createChild()) {}
 
 bool RigidObject::initializeScene(
     const assets::PhysicsSceneAttributes&,
@@ -43,10 +44,6 @@ bool RigidObject::initializeObject(
   return true;
 }
 
-bool RigidObject::removeObject() {
-  return true;
-}
-
 bool RigidObject::isActive() {
   // NOTE: no active objects without a physics engine... (kinematics don't
   // count)
@@ -68,15 +65,14 @@ bool RigidObject::setMotionType(MotionType mt) {
 }
 
 void RigidObject::shiftOrigin(const Magnum::Vector3& shift) {
-  // shift each child node
-  for (auto& child : children()) {
-    child.translate(shift);
-  }
-  computeCumulativeBB();
+  // shift visual components
+  if (visualNode_)
+    visualNode_->translate(shift);
+  node().computeCumulativeBB();
 }
 
 void RigidObject::shiftOriginToBBCenter() {
-  shiftOrigin(-cumulativeBB_.center());
+  shiftOrigin(-node().getCumulativeBB().center());
 }
 
 void RigidObject::applyForce(const Magnum::Vector3&, const Magnum::Vector3&) {
@@ -104,42 +100,42 @@ void RigidObject::syncPose() {
 
 void RigidObject::setTransformation(const Magnum::Matrix4& transformation) {
   if (objectMotionType_ != MotionType::STATIC) {
-    scene::SceneNode::setTransformation(transformation);
+    node().setTransformation(transformation);
     syncPose();
   }
 }
 
 void RigidObject::setTranslation(const Magnum::Vector3& vector) {
   if (objectMotionType_ != MotionType::STATIC) {
-    scene::SceneNode::setTranslation(vector);
+    node().setTranslation(vector);
     syncPose();
   }
 }
 
 void RigidObject::setRotation(const Magnum::Quaternion& quaternion) {
   if (objectMotionType_ != MotionType::STATIC) {
-    scene::SceneNode::setRotation(quaternion);
+    node().setRotation(quaternion);
     syncPose();
   }
 }
 
 void RigidObject::resetTransformation() {
   if (objectMotionType_ != MotionType::STATIC) {
-    scene::SceneNode::resetTransformation();
+    node().resetTransformation();
     syncPose();
   }
 }
 
 void RigidObject::translate(const Magnum::Vector3& vector) {
   if (objectMotionType_ != MotionType::STATIC) {
-    scene::SceneNode::translate(vector);
+    node().translate(vector);
     syncPose();
   }
 }
 
 void RigidObject::translateLocal(const Magnum::Vector3& vector) {
   if (objectMotionType_ != MotionType::STATIC) {
-    scene::SceneNode::translateLocal(vector);
+    node().translateLocal(vector);
     syncPose();
   }
 }
@@ -147,7 +143,7 @@ void RigidObject::translateLocal(const Magnum::Vector3& vector) {
 void RigidObject::rotate(const Magnum::Rad angleInRad,
                          const Magnum::Vector3& normalizedAxis) {
   if (objectMotionType_ != MotionType::STATIC) {
-    scene::SceneNode::rotate(angleInRad, normalizedAxis);
+    node().rotate(angleInRad, normalizedAxis);
     syncPose();
   }
 }
@@ -155,49 +151,49 @@ void RigidObject::rotate(const Magnum::Rad angleInRad,
 void RigidObject::rotateLocal(const Magnum::Rad angleInRad,
                               const Magnum::Vector3& normalizedAxis) {
   if (objectMotionType_ != MotionType::STATIC) {
-    scene::SceneNode::rotateLocal(angleInRad, normalizedAxis);
+    node().rotateLocal(angleInRad, normalizedAxis);
     syncPose();
   }
 }
 
 void RigidObject::rotateX(const Magnum::Rad angleInRad) {
   if (objectMotionType_ != MotionType::STATIC) {
-    scene::SceneNode::rotateX(angleInRad);
+    node().rotateX(angleInRad);
     syncPose();
   }
 }
 
 void RigidObject::rotateXLocal(const Magnum::Rad angleInRad) {
   if (objectMotionType_ != MotionType::STATIC) {
-    scene::SceneNode::rotateXLocal(angleInRad);
+    node().rotateXLocal(angleInRad);
     syncPose();
   }
 }
 
 void RigidObject::rotateY(const Magnum::Rad angleInRad) {
   if (objectMotionType_ != MotionType::STATIC) {
-    scene::SceneNode::rotateY(angleInRad);
+    node().rotateY(angleInRad);
     syncPose();
   }
 }
 
 void RigidObject::rotateYLocal(const Magnum::Rad angleInRad) {
   if (objectMotionType_ != MotionType::STATIC) {
-    scene::SceneNode::rotateYLocal(angleInRad);
+    node().rotateYLocal(angleInRad);
     syncPose();
   }
 }
 
 void RigidObject::rotateZ(const Magnum::Rad angleInRad) {
   if (objectMotionType_ != MotionType::STATIC) {
-    scene::SceneNode::rotateZ(angleInRad);
+    node().rotateZ(angleInRad);
     syncPose();
   }
 }
 
 void RigidObject::rotateZLocal(const Magnum::Rad angleInRad) {
   if (objectMotionType_ != MotionType::STATIC) {
-    scene::SceneNode::rotateZLocal(angleInRad);
+    node().rotateZLocal(angleInRad);
     syncPose();
   }
 }
@@ -215,6 +211,36 @@ Magnum::Vector3 RigidObject::getInertiaVector() {
 Magnum::Matrix3 RigidObject::getInertiaMatrix() {
   const Magnum::Matrix3 inertia = Magnum::Matrix3();
   return inertia;
+}
+
+//////////////////
+// VelocityControl
+Magnum::Matrix4 VelocityControl::integrateTransform(
+    const float dt,
+    const Magnum::Matrix4& objectTransform) {
+  // linear first
+  Magnum::Vector3 newTranslation = objectTransform.translation();
+  if (controllingLinVel) {
+    if (linVelIsLocal) {
+      newTranslation += objectTransform.rotation() *
+                        (linVel * dt);  // avoid local scaling of the velocity
+    } else {
+      newTranslation += linVel * dt;
+    }
+  }
+
+  Magnum::Matrix3 newRotationScaling = objectTransform.rotationScaling();
+  // then angular
+  if (controllingAngVel) {
+    Magnum::Vector3 globalAngVel = angVel;
+    if (angVelIsLocal) {
+      globalAngVel = objectTransform.rotation() * angVel;
+    }
+    Magnum::Quaternion q = Magnum::Quaternion::rotation(
+        Magnum::Rad{(globalAngVel * dt).length()}, globalAngVel.normalized());
+    newRotationScaling = q.toMatrix() * newRotationScaling;
+  }
+  return Magnum::Matrix4::from(newRotationScaling, newTranslation);
 }
 
 }  // namespace physics

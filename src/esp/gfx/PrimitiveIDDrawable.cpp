@@ -9,20 +9,31 @@
 namespace esp {
 namespace gfx {
 
-PrimitiveIDDrawable::PrimitiveIDDrawable(
-    scene::SceneNode& node,
-    PrimitiveIDShader& shader,
-    Magnum::GL::Mesh& mesh,
-    Magnum::SceneGraph::DrawableGroup3D* group /* = nullptr */)
-    : Drawable{node, shader, mesh, group} {}
+// static constexpr arrays require redundant definitions until C++17
+constexpr char PrimitiveIDDrawable::SHADER_KEY[];
+
+PrimitiveIDDrawable::PrimitiveIDDrawable(scene::SceneNode& node,
+                                         Magnum::GL::Mesh& mesh,
+                                         ShaderManager& shaderManager,
+                                         DrawableGroup* group /* = nullptr */)
+    : Drawable{node, mesh, group} {
+  auto shaderResource =
+      shaderManager.get<Magnum::GL::AbstractShaderProgram, PrimitiveIDShader>(
+          SHADER_KEY);
+
+  if (!shaderResource) {
+    shaderManager.set<Magnum::GL::AbstractShaderProgram>(
+        shaderResource.key(), new PrimitiveIDShader{});
+  }
+  shader_ = &(*shaderResource);
+}
 
 void PrimitiveIDDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                                Magnum::SceneGraph::Camera3D& camera) {
-  PrimitiveIDShader& shader = static_cast<PrimitiveIDShader&>(shader_);
-  shader.setTransformationProjectionMatrix(camera.projectionMatrix() *
-                                           transformationMatrix);
+  shader_->setTransformationProjectionMatrix(camera.projectionMatrix() *
+                                             transformationMatrix);
 
-  mesh_.draw(shader_);
+  mesh_.draw(*shader_);
 }
 
 }  // namespace gfx

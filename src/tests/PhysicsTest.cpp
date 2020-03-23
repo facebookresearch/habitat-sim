@@ -12,6 +12,7 @@
 #include "esp/gfx/Renderer.h"
 #include "esp/scene/SceneManager.h"
 
+#include "esp/physics/PhysicsManager.h"
 #ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/BulletPhysicsManager.h"
 #endif
@@ -64,8 +65,8 @@ class PhysicsManagerTest : public testing::Test {
 TEST_F(PhysicsManagerTest, JoinCompound) {
   LOG(INFO) << "Starting physics test: JoinCompound";
 
-  std::string sceneFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+  std::string sceneFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/scenes/simple_room.glb");
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/nested_box.glb");
 
@@ -108,7 +109,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
             Magnum::Matrix4::rotationX(Magnum::Math::Rad<float>(-1.56)) *
             Magnum::Matrix4::rotationY(Magnum::Math::Rad<float>(-0.25))};
         float boxHeight = 2.0 + (o * 2);
-        Magnum::Vector3 initialPosition{0.0, boxHeight, 0.0};
+        Magnum::Vector3 initialPosition{0.0, boxHeight + 1.25f, 0.0};
         physicsManager_->setRotation(
             objectId, Magnum::Quaternion::fromMatrix(R.rotationNormalized()));
         physicsManager_->setTranslation(objectId, initialPosition);
@@ -116,7 +117,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
         ASSERT_EQ(node.absoluteTranslation(), initialPosition);
       }
 
-      float timeToSim = 10.0;
+      float timeToSim = 20.0;
       while (physicsManager_->getWorldTime() < timeToSim) {
         physicsManager_->stepPhysics(0.1);
       }
@@ -210,7 +211,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
 }
 
 TEST_F(PhysicsManagerTest, DiscreteContactTest) {
-  LOG(INFO) << "Starting physics test: ContactTest";
+  LOG(INFO) << "Starting physics test: DiscreteContactTest";
 
   std::string sceneFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
@@ -362,5 +363,277 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
       ASSERT_EQ(aabb, boundsGroundTruth);
     }
 #endif
+  }
+}
+
+TEST_F(PhysicsManagerTest, TestVelocityControl) {
+  // test scaling of objects via template configuration (visual and collision)
+  LOG(INFO) << "Starting physics test: TestVelocityControl";
+
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  std::string sceneFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+
+  initScene(sceneFile);
+
+  esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+  physicsObjectAttributes.setDouble("margin", 0.0);
+  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+  int objectId = physicsManager_->addObject(objectFile, &drawables);
+  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 1.0, 0});
+
+  Magnum::Vector3 commandLinVel(1.0, 1.0, 1.0);
+  Magnum::Vector3 commandAngVel(1.0, 1.0, 1.0);
+
+  // test results of getting/setting
+  if (physicsManager_->getPhysicsSimulationLibrary() ==
+      PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+    physicsManager_->setLinearVelocity(objectId, commandLinVel);
+    physicsManager_->setAngularVelocity(objectId, commandAngVel);
+
+    ASSERT_EQ(physicsManager_->getLinearVelocity(objectId), commandLinVel);
+    ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), commandAngVel);
+
+  } else if (physicsManager_->getPhysicsSimulationLibrary() ==
+             PhysicsManager::PhysicsSimulationLibrary::NONE) {
+    physicsManager_->setLinearVelocity(objectId, commandLinVel);
+    physicsManager_->setAngularVelocity(objectId, commandAngVel);
+
+    // default kinematics always 0 velocity when queried
+    ASSERT_EQ(physicsManager_->getLinearVelocity(objectId), Magnum::Vector3{});
+    ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), Magnum::Vector3{});
+  }
+
+  // test constant velocity control mechanism
+  esp::physics::VelocityControl& velControl =
+      physicsManager_->getVelocityControl(objectId);
+  velControl.controllingAngVel = true;
+  velControl.controllingLinVel = true;
+  velControl.linVel = Magnum::Vector3{1.0, -1.0, 1.0};
+  velControl.angVel = Magnum::Vector3{1.0, 0, 0};
+
+  // first kinematic
+  physicsManager_->setObjectMotionType(objectId,
+                                       esp::physics::MotionType::KINEMATIC);
+  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
+
+  float targetTime = 2.0;
+  while (physicsManager_->getWorldTime() < targetTime) {
+    physicsManager_->stepPhysics(targetTime - physicsManager_->getWorldTime());
+  }
+  Magnum::Vector3 posGroundTruth{2.0, 0.0, 2.0};
+  Magnum::Quaternion qGroundTruth{{0.842602, 0, 0}, 0.538537};
+
+  float errorEps = 0.01;  // fairly loose due to discrete timestep
+  ASSERT_LE(
+      (physicsManager_->getTranslation(objectId) - posGroundTruth).length(),
+      errorEps);
+  Magnum::Rad angleError =
+      Magnum::Math::angle(physicsManager_->getRotation(objectId), qGroundTruth);
+  if (!std::isnan(float(angleError))) {  // nan results close to equality
+    ASSERT_LE(float(angleError), errorEps);
+  }
+
+  if (physicsManager_->getPhysicsSimulationLibrary() ==
+      PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+    physicsManager_->setObjectMotionType(objectId,
+                                         esp::physics::MotionType::DYNAMIC);
+    physicsManager_->resetTransformation(objectId);
+    physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
+    physicsManager_->setGravity({});  // 0 gravity interference
+    physicsManager_->reset();         // reset time to 0
+
+    // should closely follow kinematic result while uninhibited in 0 gravity
+    float targetTime = 0.5;
+    Magnum::Matrix4 kinematicResult = velControl.integrateTransform(
+        targetTime, physicsManager_->getTransformation(objectId));
+    while (physicsManager_->getWorldTime() < targetTime) {
+      physicsManager_->stepPhysics(physicsManager_->getTimestep());
+    }
+    ASSERT_LE((physicsManager_->getTranslation(objectId) -
+               kinematicResult.translation())
+                  .length(),
+              errorEps);
+    angleError = Magnum::Math::angle(
+        physicsManager_->getRotation(objectId),
+        Magnum::Quaternion::fromMatrix(kinematicResult.rotation()));
+    ASSERT_LE(float(angleError), errorEps);
+
+    // should then get blocked by ground plane collision
+    targetTime = 2.0;
+    while (physicsManager_->getWorldTime() < targetTime) {
+      physicsManager_->stepPhysics(physicsManager_->getTimestep());
+    }
+    ASSERT_GE(physicsManager_->getTranslation(objectId)[1], 1.0 - errorEps);
+  }
+}
+
+TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
+  // test attaching/detaching existing SceneNode to/from physical simulation
+  LOG(INFO) << "Starting physics test: TestSceneNodeAttachment";
+
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  std::string sceneFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+
+  initScene(sceneFile);
+
+  esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+  esp::scene::SceneNode& root =
+      sceneManager_.getSceneGraph(sceneID_).getRootNode();
+  esp::scene::SceneNode* newNode = &root.createChild();
+  ASSERT_EQ(root.children().last(), newNode);
+
+  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+  // Test attaching newNode to a RigidBody
+  int objectId = physicsManager_->addObject(objectFile, &drawables, newNode);
+  ASSERT_EQ(&physicsManager_->getObjectSceneNode(objectId), newNode);
+
+  // Test updating newNode position with PhysicsManager
+  Magnum::Vector3 newPos{1.0, 3.0, 0.0};
+  physicsManager_->setTranslation(objectId, newPos);
+  ASSERT_EQ(physicsManager_->getTranslation(objectId), newPos);
+  ASSERT_EQ(newNode->translation(), newPos);
+
+  // Test leaving newNode without visualNode_ after destroying the RigidBody
+  physicsManager_->removeObject(objectId, false, true);
+  ASSERT(newNode->children().isEmpty());
+
+  // Test leaving the visualNode attached to newNode after destroying the
+  // RigidBody
+  objectId = physicsManager_->addObject(objectFile, &drawables, newNode);
+  physicsManager_->removeObject(objectId, false, false);
+  ASSERT(!newNode->children().isEmpty());
+
+  // Test destroying newNode with the RigidBody
+  objectId = physicsManager_->addObject(objectFile, &drawables, newNode);
+  physicsManager_->removeObject(objectId, true, true);
+  ASSERT_NE(root.children().last(), newNode);
+}
+
+TEST_F(PhysicsManagerTest, TestMotionTypes) {
+  // test setting motion types and expected simulation behaviors
+  LOG(INFO) << "Starting physics test: TestMotionTypes";
+
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  std::string sceneFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+
+  initScene(sceneFile);
+
+  // We need dynamics to test this.
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
+      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+    float boxHalfExtent = 0.2;
+    esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+    physicsObjectAttributes.setBool("useBoundingBoxForCollision", true);
+    physicsObjectAttributes.setMagnumVec3(
+        "scale", {boxHalfExtent, boxHalfExtent, boxHalfExtent});
+    int boxId =
+        resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+
+    auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+
+    std::vector<int> instancedObjects;
+
+    for (int testId = 0; testId < 3; testId++) {
+      instancedObjects.push_back(physicsManager_->addObject(boxId, &drawables));
+      instancedObjects.push_back(physicsManager_->addObject(boxId, &drawables));
+
+      switch (testId) {
+        case 0: {
+          // test 0: stacking two DYNAMIC objects
+          physicsManager_->setTranslation(instancedObjects[0],
+                                          {0, boxHalfExtent, 0});
+          physicsManager_->setTranslation(instancedObjects[1],
+                                          {0, boxHalfExtent * 3, 0});
+
+          while (physicsManager_->getWorldTime() < 6.0) {
+            physicsManager_->stepPhysics(0.1);
+          }
+          ASSERT_FALSE(physicsManager_->isActive(instancedObjects[0]));
+          ASSERT_FALSE(physicsManager_->isActive(instancedObjects[1]));
+          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[0]) -
+                     Magnum::Vector3{0.0, boxHalfExtent, 0.0})
+                        .length(),
+                    1.0e-4);
+          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
+                     Magnum::Vector3{0.0, boxHalfExtent * 3, 0.0})
+                        .length(),
+                    1.0e-3);
+        } break;
+        case 1: {
+          // test 1: stacking a DYNAMIC object on a STATIC object
+          physicsManager_->setTranslation(instancedObjects[0],
+                                          {0, boxHalfExtent * 2, 0});
+          physicsManager_->setObjectMotionType(
+              instancedObjects[0], esp::physics::MotionType::STATIC);
+          physicsManager_->setTranslation(instancedObjects[1],
+                                          {0, boxHalfExtent * 5, 0});
+
+          while (physicsManager_->getWorldTime() < 6.0) {
+            physicsManager_->stepPhysics(0.1);
+          }
+          ASSERT_FALSE(physicsManager_->isActive(instancedObjects[1]));
+          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[0]) -
+                     Magnum::Vector3{0.0, boxHalfExtent * 2, 0.0})
+                        .length(),
+                    1.0e-4);
+          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
+                     Magnum::Vector3{0.0, boxHalfExtent * 4, 0.0})
+                        .length(),
+                    2.0e-4);
+        } break;
+        case 2: {
+          // test 2: stacking a DYNAMIC object on a moving KINEMATIC object
+          physicsManager_->setTranslation(instancedObjects[0],
+                                          {0, boxHalfExtent * 2, 0});
+          physicsManager_->setObjectMotionType(
+              instancedObjects[0], esp::physics::MotionType::KINEMATIC);
+
+          esp::physics::VelocityControl& velCon =
+              physicsManager_->getVelocityControl(instancedObjects[0]);
+          velCon.controllingLinVel = true;
+          velCon.linVel = {0.2, 0, 0};
+
+          physicsManager_->setTranslation(instancedObjects[1],
+                                          {0, boxHalfExtent * 5, 0});
+
+          while (physicsManager_->getWorldTime() < 3.0) {
+            physicsManager_->stepPhysics(0.1);
+          }
+          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[0]) -
+                     Magnum::Vector3{0.62, boxHalfExtent * 2, 0.0})
+                        .length(),
+                    1.0e-4);
+          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
+                     Magnum::Vector3{0.506, boxHalfExtent * 4, 0.0})
+                        .length(),
+                    1.0e-2);
+        } break;
+      }
+
+      // reset the scene
+      for (auto id : instancedObjects) {
+        physicsManager_->removeObject(id);
+      }
+      instancedObjects.clear();
+      physicsManager_->reset();  // time=0
+    }
   }
 }

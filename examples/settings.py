@@ -31,18 +31,23 @@ default_sim_settings = {
     "physics_config_file": "./data/default.phys_scene_config.json",
     "num_objects": 10,
     "test_object_index": 0,
+    "frustum_culling": True,
 }
 
 # build SimulatorConfiguration
 def make_cfg(settings):
     sim_cfg = hsim.SimulatorConfiguration()
-    if "enable_physics" in settings.keys():
-        sim_cfg.enable_physics = settings["enable_physics"]
+    if "frustum_culling" in settings:
+        sim_cfg.frustum_culling = settings["frustum_culling"]
     else:
-        sim_cfg.enable_physics = False
-    if "physics_config_file" in settings.keys():
+        sim_cfg.frustum_culling = False
+    if "enable_physics" in settings:
+        sim_cfg.enable_physics = settings["enable_physics"]
+    if "physics_config_file" in settings:
         sim_cfg.physics_config_file = settings["physics_config_file"]
     print("sim_cfg.physics_config_file = " + sim_cfg.physics_config_file)
+    if "scene_light_setup" in settings:
+        sim_cfg.scene_light_setup = settings["scene_light_setup"]
     sim_cfg.gpu_device_id = 0
     sim_cfg.scene.id = settings["scene"]
 

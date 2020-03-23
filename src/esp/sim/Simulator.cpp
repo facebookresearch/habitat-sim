@@ -15,6 +15,7 @@
 #include "esp/gfx/Renderer.h"
 #include "esp/io/io.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/PhysicsManager.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/PinholeCamera.h"
@@ -51,6 +52,20 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     sceneFilename = cfg.scene.filepaths.at("mesh");
   }
 
+  // create pathfinder and load navmesh if available
+  pathfinder_ = nav::PathFinder::create();
+  std::string navmeshFilename = io::changeExtension(sceneFilename, ".navmesh");
+  if (cfg.scene.filepaths.count("navmesh")) {
+    navmeshFilename = cfg.scene.filepaths.at("navmesh");
+  }
+  if (io::exists(navmeshFilename)) {
+    LOG(INFO) << "Loading navmesh from " << navmeshFilename;
+    pathfinder_->loadNavMesh(navmeshFilename);
+    LOG(INFO) << "Loaded.";
+  } else {
+    LOG(WARNING) << "Navmesh file not found, checked at " << navmeshFilename;
+  }
+
   std::string houseFilename = io::changeExtension(sceneFilename, ".house");
   if (!io::exists(houseFilename)) {
     houseFilename = io::changeExtension(sceneFilename, ".scn");
@@ -63,8 +78,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     houseFilename = io::changeExtension(sceneFilename, ".scn");
   }
 
-  const assets::AssetInfo sceneInfo =
-      assets::AssetInfo::fromPath(sceneFilename);
+  assets::AssetInfo sceneInfo = assets::AssetInfo::fromPath(sceneFilename);
+  sceneInfo.requiresLighting =
+      cfg.sceneLightSetup != assets::ResourceManager::NO_LIGHT_KEY;
 
   // initalize scene graph
   // CAREFUL!
@@ -95,18 +111,20 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     bool loadSuccess = false;
     if (config_.enablePhysics) {
-      loadSuccess =
-          resourceManager_.loadScene(sceneInfo, physicsManager_, &rootNode,
-                                     &drawables, cfg.physicsConfigFile);
+      loadSuccess = resourceManager_.loadScene(
+          sceneInfo, physicsManager_, &rootNode, &drawables,
+          cfg.sceneLightSetup, cfg.physicsConfigFile);
     } else {
-      loadSuccess =
-          resourceManager_.loadScene(sceneInfo, &rootNode, &drawables);
+      loadSuccess = resourceManager_.loadScene(sceneInfo, &rootNode, &drawables,
+                                               cfg.sceneLightSetup);
     }
     if (!loadSuccess) {
       LOG(ERROR) << "cannot load " << sceneFilename;
       // Pass the error to the python through pybind11 allowing graceful exit
       throw std::invalid_argument("Cannot load: " + sceneFilename);
     }
+    const Magnum::Range3D& sceneBB = rootNode.computeCumulativeBB();
+    resourceManager_.setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
 
     if (io::exists(houseFilename)) {
       LOG(INFO) << "Loading house from " << houseFilename;
@@ -124,8 +142,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
         auto& semanticDrawables = semanticSceneGraph.getDrawables();
         const assets::AssetInfo semanticSceneInfo =
             assets::AssetInfo::fromPath(semanticMeshFilename);
-        resourceManager_.loadScene(semanticSceneInfo, &semanticRootNode,
-                                   &semanticDrawables);
+        resourceManager_.loadScene(
+            semanticSceneInfo, &semanticRootNode, &semanticDrawables,
+            assets::ResourceManager::NO_LIGHT_KEY, cfg.frustumCulling);
       }
       LOG(INFO) << "Loaded.";
     } else {
@@ -175,13 +194,22 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 }
 
 void Simulator::reset() {
-  if (physicsManager_ != nullptr)
-    physicsManager_
-        ->reset();  // TODO: this does nothing yet... desired reset behavior?
+  if (physicsManager_ != nullptr) {
+    // TODO: this does nothing yet... desired reset behavior?
+    physicsManager_->reset();
+  }
+
+  for (auto& agent : agents_) {
+    agent->reset();
+  }
+  const Magnum::Range3D& sceneBB =
+      getActiveSceneGraph().getRootNode().computeCumulativeBB();
+  resourceManager_.setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
 }
 
 void Simulator::seed(uint32_t newSeed) {
   random_.seed(newSeed);
+  pathfinder_->seed(newSeed);
 }
 
 std::shared_ptr<gfx::Renderer> Simulator::getRenderer() {
@@ -226,13 +254,17 @@ bool operator!=(const SimulatorConfiguration& a,
 
 // === Physics Simulator Functions ===
 
-int Simulator::addObject(const int objectLibIndex, const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+int Simulator::addObject(int objectLibIndex,
+                         scene::SceneNode* attachmentNode,
+                         const std::string& lightSetupKey,
+                         int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
     // TODO: change implementation to support multi-world and physics worlds to
     // own reference to a sceneGraph to avoid this.
     auto& sceneGraph_ = sceneManager_.getSceneGraph(activeSceneID_);
     auto& drawables = sceneGraph_.getDrawables();
-    return physicsManager_->addObject(objectLibIndex, &drawables);
+    return physicsManager_->addObject(objectLibIndex, &drawables,
+                                      attachmentNode, lightSetupKey);
   }
   return ID_UNDEFINED;
 }
@@ -245,23 +277,25 @@ int Simulator::getPhysicsObjectLibrarySize() {
 
 // return a list of existing objected IDs in a physical scene
 std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getExistingObjectIDs();
   }
   return std::vector<int>();  // empty if no simulator exists
 }
 
 // remove object objectID instance in sceneID
-int Simulator::removeObject(const int objectID, const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
-    return physicsManager_->removeObject(objectID);
+void Simulator::removeObject(const int objectID,
+                             bool deleteObjectNode,
+                             bool deleteVisualNode,
+                             const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    physicsManager_->removeObject(objectID, deleteObjectNode, deleteVisualNode);
   }
-  return ID_UNDEFINED;
 }
 
 esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
                                                         const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getObjectMotionType(objectID);
   }
   return esp::physics::MotionType::ERROR_MOTIONTYPE;
@@ -270,7 +304,7 @@ esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
 bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
                                     const int objectID,
                                     const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     return physicsManager_->setObjectMotionType(objectID, motionType);
   }
   return false;
@@ -280,7 +314,7 @@ bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
 void Simulator::applyTorque(const Magnum::Vector3& tau,
                             const int objectID,
                             const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     physicsManager_->applyTorque(objectID, tau);
   }
 }
@@ -289,7 +323,7 @@ void Simulator::applyForce(const Magnum::Vector3& force,
                            const Magnum::Vector3& relPos,
                            const int objectID,
                            const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     physicsManager_->applyForce(objectID, force, relPos);
   }
 }
@@ -298,14 +332,14 @@ void Simulator::applyForce(const Magnum::Vector3& force,
 void Simulator::setTransformation(const Magnum::Matrix4& transform,
                                   const int objectID,
                                   const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     physicsManager_->setTransformation(objectID, transform);
   }
 }
 
 Magnum::Matrix4 Simulator::getTransformation(const int objectID,
                                              const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getTransformation(objectID);
   }
   return Magnum::Matrix4::fromDiagonal(Magnum::Vector4(1));
@@ -315,7 +349,7 @@ Magnum::Matrix4 Simulator::getTransformation(const int objectID,
 void Simulator::setTranslation(const Magnum::Vector3& translation,
                                const int objectID,
                                const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     physicsManager_->setTranslation(objectID, translation);
   }
 }
@@ -324,7 +358,7 @@ Magnum::Vector3 Simulator::getTranslation(const int objectID,
                                           const int sceneID) {
   // can throw if physicsManager is not initialized or either objectID/sceneID
   // is invalid
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getTranslation(objectID);
   }
   return Magnum::Vector3();
@@ -334,21 +368,21 @@ Magnum::Vector3 Simulator::getTranslation(const int objectID,
 void Simulator::setRotation(const Magnum::Quaternion& rotation,
                             const int objectID,
                             const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     physicsManager_->setRotation(objectID, rotation);
   }
 }
 
 Magnum::Quaternion Simulator::getRotation(const int objectID,
                                           const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getRotation(objectID);
   }
   return Magnum::Quaternion();
 }
 
 bool Simulator::contactTest(const int objectID, const int sceneID) {
-  if (physicsManager_ != nullptr && sceneID >= 0 && sceneID < sceneID_.size()) {
+  if (sceneHasPhysics(sceneID)) {
     return physicsManager_->contactTest(objectID);
   }
   return false;
@@ -388,6 +422,160 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 
   LOG(INFO) << "reconstruct navmesh successful";
   return true;
+}
+
+// Agents
+void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
+  if (pathfinder_->isLoaded()) {
+    agentState.position = pathfinder_->getRandomNavigablePoint();
+    const float randomAngleRad = random_.uniform_float_01() * M_PI;
+    quatf rotation(Eigen::AngleAxisf(randomAngleRad, vec3f::UnitY()));
+    agentState.rotation = rotation.coeffs();
+    // TODO: any other AgentState members should be randomized?
+  } else {
+    LOG(ERROR) << "No loaded PathFinder, aborting sampleRandomAgentState.";
+  }
+}
+
+agent::Agent::ptr Simulator::addAgent(
+    const agent::AgentConfiguration& agentConfig,
+    scene::SceneNode& agentParentNode) {
+  // initialize the agent, as well as all the sensors on it.
+
+  // attach each agent, each sensor to a scene node, set the local
+  // transformation of the sensor w.r.t. the agent (done internally in the
+  // constructor of Agent)
+
+  auto& agentNode = agentParentNode.createChild();
+  agent::Agent::ptr ag = agent::Agent::create(agentNode, agentConfig);
+
+  agent::AgentState state;
+  sampleRandomAgentState(state);
+  ag->setInitialState(state);
+
+  // Add a RenderTarget to each of the agent's sensors
+  for (auto& it : ag->getSensorSuite().getSensors()) {
+    if (it.second->isVisualSensor()) {
+      auto sensor = static_cast<sensor::VisualSensor*>(it.second.get());
+      renderer_->bindRenderTarget(*sensor);
+    }
+  }
+
+  agents_.push_back(ag);
+  // TODO: just do this once
+  if (pathfinder_->isLoaded()) {
+    ag->getControls()->setMoveFilterFunction(
+        [&](const vec3f& start, const vec3f& end) {
+          return pathfinder_->tryStep(start, end);
+        });
+  }
+
+  return ag;
+}
+
+agent::Agent::ptr Simulator::addAgent(
+    const agent::AgentConfiguration& agentConfig) {
+  return addAgent(agentConfig, getActiveSceneGraph().getRootNode());
+}
+
+agent::Agent::ptr Simulator::getAgent(int agentId) {
+  ASSERT(0 <= agentId && agentId < agents_.size());
+  return agents_[agentId];
+}
+
+nav::PathFinder::ptr Simulator::getPathFinder() {
+  return pathfinder_;
+}
+
+bool Simulator::displayObservation(int agentId, const std::string& sensorId) {
+  agent::Agent::ptr ag = getAgent(agentId);
+
+  if (ag != nullptr) {
+    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
+    if (sensor != nullptr) {
+      return sensor->displayObservation(*this);
+    }
+  }
+  return false;
+}
+
+bool Simulator::getAgentObservation(int agentId,
+                                    const std::string& sensorId,
+                                    sensor::Observation& observation) {
+  agent::Agent::ptr ag = getAgent(agentId);
+  if (ag != nullptr) {
+    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
+    if (sensor != nullptr) {
+      return sensor->getObservation(*this, observation);
+    }
+  }
+  return false;
+}
+
+int Simulator::getAgentObservations(
+    int agentId,
+    std::map<std::string, sensor::Observation>& observations) {
+  observations.clear();
+  agent::Agent::ptr ag = getAgent(agentId);
+  if (ag != nullptr) {
+    const std::map<std::string, sensor::Sensor::ptr>& sensors =
+        ag->getSensorSuite().getSensors();
+    for (std::pair<std::string, sensor::Sensor::ptr> s : sensors) {
+      sensor::Observation obs;
+      if (s.second->getObservation(*this, obs)) {
+        observations[s.first] = obs;
+      }
+    }
+  }
+  return observations.size();
+}
+
+bool Simulator::getAgentObservationSpace(int agentId,
+                                         const std::string& sensorId,
+                                         sensor::ObservationSpace& space) {
+  agent::Agent::ptr ag = getAgent(agentId);
+  if (ag != nullptr) {
+    sensor::Sensor::ptr sensor = ag->getSensorSuite().get(sensorId);
+    if (sensor != nullptr) {
+      return sensor->getObservationSpace(space);
+    }
+  }
+  return false;
+}
+
+int Simulator::getAgentObservationSpaces(
+    int agentId,
+    std::map<std::string, sensor::ObservationSpace>& spaces) {
+  spaces.clear();
+  agent::Agent::ptr ag = getAgent(agentId);
+  if (ag != nullptr) {
+    const std::map<std::string, sensor::Sensor::ptr>& sensors =
+        ag->getSensorSuite().getSensors();
+    for (std::pair<std::string, sensor::Sensor::ptr> s : sensors) {
+      sensor::ObservationSpace space;
+      if (s.second->getObservationSpace(space)) {
+        spaces[s.first] = space;
+      }
+    }
+  }
+  return spaces.size();
+}
+
+void Simulator::setLightSetup(gfx::LightSetup setup, const std::string& key) {
+  resourceManager_.setLightSetup(std::move(setup), key);
+}
+
+gfx::LightSetup Simulator::getLightSetup(const std::string& key) {
+  return *resourceManager_.getLightSetup(key);
+}
+
+void Simulator::setObjectLightSetup(int objectID,
+                                    const std::string& lightSetupKey,
+                                    int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    gfx::setLightSetupForSubTree(physicsManager_->getObjectSceneNode(objectID),
+                                 lightSetupKey);
+  }
 }
 
 }  // namespace sim

@@ -17,7 +17,8 @@ from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
 if cuda_enabled:
     from habitat_sim._ext.habitat_sim_bindings import RedwoodNoiseModelGPUImpl
-    import torch
+
+torch = None
 
 
 # Read about the noise model here: http://www.alexteichman.com/octo/clams/
@@ -121,16 +122,19 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
         return sensor_type == SensorType.DEPTH
 
     def simulate(self, gt_depth):
+        global torch
         if cuda_enabled:
-            if torch.is_tensor(gt_depth):
+            if isinstance(gt_depth, np.ndarray):
+                return self._impl.simulate_from_cpu(gt_depth)
+            else:
+                if torch is None:
+                    import torch
                 noisy_depth = torch.empty_like(gt_depth)
                 rows, cols = gt_depth.size()
                 self._impl.simulate_from_gpu(
                     gt_depth.data_ptr(), rows, cols, noisy_depth.data_ptr()
                 )
                 return noisy_depth
-            else:
-                return self._impl.simulate_from_cpu(gt_depth)
         else:
             return self._impl.simulate(gt_depth)
 
