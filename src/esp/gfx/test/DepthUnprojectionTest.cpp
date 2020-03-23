@@ -202,8 +202,8 @@ void DepthUnprojectionTest::testGpuDirect() {
     Mn::GL::Mesh mesh = Mn::MeshTools::compile(Mn::Primitives::planeSolid());
     DepthShader shader;
     shader.setTransformationMatrix(transformation)
-        .setProjectionMatrix(data.projection);
-    mesh.draw(shader);
+        .setProjectionMatrix(data.projection)
+        .draw(mesh);
   }
 
   MAGNUM_VERIFY_NO_GL_ERROR();
@@ -246,8 +246,9 @@ void DepthUnprojectionTest::testGpuUnprojectExisting() {
       .clear(Mn::GL::FramebufferClear::Color);
 
   DepthShader shader{DepthShader::Flag::UnprojectExistingDepth};
-  shader.setProjectionMatrix(data.projection).bindDepthTexture(depth);
-  Mn::GL::Mesh{}.setCount(3).draw(shader);
+  shader.setProjectionMatrix(data.projection)
+      .bindDepthTexture(depth)
+      .draw(Mn::GL::Mesh{}.setCount(3));
 
   MAGNUM_VERIFY_NO_GL_ERROR();
 
@@ -325,7 +326,7 @@ void DepthUnprojectionTest::benchmarkGpuDirect() {
       .setProjectionMatrix(
           Mn::Matrix4::perspectiveProjection(60.0_degf, 1.0f, 0.001f, 100.0f));
 
-  CORRADE_BENCHMARK(10) { mesh.draw(shader); }
+  CORRADE_BENCHMARK(10) { shader.draw(mesh); }
 }
 
 void DepthUnprojectionTest::benchmarkGpuUnprojectExisting() {
@@ -365,7 +366,7 @@ void DepthUnprojectionTest::benchmarkGpuUnprojectExisting() {
   Mn::GL::Mesh mesh;
   mesh.setCount(3);
 
-  CORRADE_BENCHMARK(10) { mesh.draw(shader); }
+  CORRADE_BENCHMARK(10) { shader.draw(mesh); }
 }
 
 }  // namespace

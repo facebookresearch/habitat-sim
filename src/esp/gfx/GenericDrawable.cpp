@@ -72,7 +72,7 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
   if (materialData_->specularTexture)
     shader_->bindSpecularTexture(*(materialData_->specularTexture));
 
-  mesh_.draw(*shader_);
+  shader_->draw(mesh_);
 }
 
 void GenericDrawable::updateShader() {

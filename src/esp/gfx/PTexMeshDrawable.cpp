@@ -50,8 +50,8 @@ void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
 #ifndef CORRADE_TARGET_APPLE
       .bindAdjFacesBufferTexture(adjFacesBufferTexture_)
 #endif
-      .setMVPMatrix(camera.projectionMatrix() * transformationMatrix);
-  mesh_.draw(*shader_);
+      .setMVPMatrix(camera.projectionMatrix() * transformationMatrix)
+      .draw(mesh_);
 }
 
 }  // namespace gfx
