@@ -118,6 +118,8 @@ class InstanceVisualizer:
 
         return visuals
 
+    # There's probably a way faster way to do this. This functions just computed the
+    # mode across one dimension of the masks without conidering zeros.
     def _compute_mode_ignore_zeros(self, masks):
         H, W = masks.shape[2:]
         modes = np.zeros((H, W))

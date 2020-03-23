@@ -1,10 +1,10 @@
 import argparse
 
-from examples.instance_segmentation.train import InstanceSegmentationEnvironment
+from train import InstanceSegmentationEnvironment
 
 defaults = {
     "scene": "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb",
-    "epochs": 100,
+    "num_epochs": 100,
     "lr": 0.0005,
     "momentum": 0.9,
 }
@@ -18,11 +18,13 @@ def get_args():
     parser.add_argument(
         "--scene",
         default=defaults["scene"],
-        help="The mesh file for the scene passed to the extractor, usually a .glb or .ply file.",
+        help="The mesh file for the scene passed to the extractor, usually a .glb or .ply file. (Required)",
     )
     parser.add_argument(
-        "--epochs",
-        default=defaults["epochs"],
+        "--num-epochs",
+        default=defaults["num_epochs"],
+        type=int,
+        dest="num_epochs",
         help="The number of epochs to train the model. (Optional)",
     )
     parser.add_argument(
@@ -41,7 +43,7 @@ def get_args():
     )
     parser.add_argument(
         "--save-path",
-        default=None,
+        default="./saved-weights.pt",
         dest="save_path",
         help="Path to save weights model weights to. (Optional)",
     )
@@ -54,4 +56,12 @@ if __name__ == "__main__":
     env = InstanceSegmentationEnvironment(
         scene=args.scene, lr=args.lr, momentum=args.momentum
     )
-    env.train(epochs=args.epochs, load_path=args.load_path, save_path=args.save_path)
+    print(
+        f"\n=== Created Training Environment ===\n \
+        extracted images: {len(env.extractor)}\n \
+        "
+    )
+    env.train(
+        num_epochs=args.num_epochs, load_path=args.load_path, save_path=args.save_path
+    )
+    env.visualize()

@@ -4,11 +4,10 @@ import time
 
 import torch
 import torchvision.models.detection.mask_rcnn
+import utils
+from coco_eval import CocoEvaluator
+from coco_utils import get_coco_api_from_dataset
 from torch.utils.tensorboard import SummaryWriter
-
-import examples.instance_segmentation.utils as utils
-from examples.instance_segmentation.coco_eval import CocoEvaluator
-from examples.instance_segmentation.coco_utils import get_coco_api_from_dataset
 
 
 def load_model_state(model, optimizer, model_state_path, params=None):
@@ -32,6 +31,7 @@ def save_model_state(model, optimizer, epoch, model_state_path):
         "model_state_dict": model.state_dict(),
         "optimizer_state_dict": optimizer.state_dict(),
     }
+    print(model_state_path)
     torch.save(checkpoint, model_state_path)
 
 

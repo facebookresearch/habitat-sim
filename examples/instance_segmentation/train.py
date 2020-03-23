@@ -3,16 +3,17 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torchvision.transforms as T
+from common import InstanceVisualizer
+from datasets import InstanceSegmentationDataset
+from engine import evaluate, load_model_state, save_model_state, train_one_epoch
 from models import build_maskrcnn_model
-from torch.utils.data import Dataset
 
 import habitat_sim
-from examples.instance_segmentation.engine import (
-    load_model_state,
-    save_model_state,
-    train_one_epoch,
-)
 from habitat_sim.utils.data import ImageExtractor
+
+
+def collate_fn(batch):
+    return tuple(zip(*batch))
 
 
 class TrainingEnvironment:
@@ -27,22 +28,25 @@ class TrainingEnvironment:
 
 
 class InstanceSegmentationEnvironment(TrainingEnvironment):
-    def __init__(self, scene, lr=0.00005, momentum=0.9, weight_decay=0.0005):
+    def __init__(
+        self, scene, lr=0.00005, momentum=0.9, weight_decay=0.0005, batch_size=8
+    ):
         self.scene = scene
         self.extractor = ImageExtractor(
             scene_filepath=scene, output=["rgba", "semantic"]
         )
         self.classes = self.extractor.get_semantic_class_names()
-        self.num_classes = 10
+        # labels = ['background'] + [name for name in labels if name not in ['background', 'void', '', 'objects']]
+        self.num_classes = len(self.classes)
         self.model = build_maskrcnn_model(self.num_classes)
 
         # Specify which transforms to apply to the data in preprocessing
         self.transforms = T.Compose([T.ToTensor()])
-        self.train_dataset = InstanceSegmentationDataset(
-            self.extractor, transform=self.transforms
+        self.dataset = InstanceSegmentationDataset(
+            self.extractor, self.classes, transform=self.transforms
         )
-        self.train_dataloader = torch.utils.data.DataLoader(
-            self.train_dataset, batch_size=2, shuffle=True, collate_fn=collate_fn
+        self.dataloader = torch.utils.data.DataLoader(
+            self.dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn
         )
 
         self.device = (
@@ -53,101 +57,51 @@ class InstanceSegmentationEnvironment(TrainingEnvironment):
         self.optimizer = torch.optim.SGD(
             params, lr=lr, momentum=momentum, weight_decay=weight_decay
         )
-        self.lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            self.optimizer, step_size=3, gamma=0.1
+        self.lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer, verbose=True, patience=4
         )
+        # self.writer = SummaryWriter("examples/instance_segmentation/runs/")
 
-    def train(self, num_epochs=100, load_path=None, save_path=None, save_freq=20):
-        epoch = 0
+    def train(
+        self, num_epochs=100, load_path=None, save_path="saved-weights.pt", save_freq=20
+    ):
+        epoch = 1
         if load_path is not None:
             epoch = load_model_state(self.model, self.optimizer, load_path)
 
-        self.extractor.set_mode("train")
         for _ in range(num_epochs):
+            self.extractor.set_mode("train")
             train_one_epoch(
-                self.model,
-                self.optimizer,
-                self.train_dataloader,
-                self.device,
-                epoch,
+                model=self.model,
+                optimizer=self.optimizer,
+                data_loader=self.dataloader,
+                device=self.device,
+                epoch=epoch,
                 print_freq=10,
+                lr_scheduler=self.lr_scheduler,
             )
 
-            self.lr_scheduler.step()
             epoch += 1
-
-            if epoch % save_freq == 0:
-                print("\nSaving model weights!\n")
+            if epoch % 5 == 0:
+                save_model_state(self.model, self.optimizer, epoch, save_path)
+                self.extractor.set_mode("test")
+                evaluate(self.model, self.dataloader, device=self.device)
 
     def test(self):
-        pass
+        # Put the extractor into test mode so that it will use the test data
+        self.extractor.set_mode("test")
+        evaluator = evaluate(self.model, self.dataloader, device=self.device)
 
-
-def collate_fn(batch):
-    return tuple(zip(*batch))
-
-
-class InstanceSegmentationDataset(Dataset):
-    def __init__(self, extractor, transform=None):
-        self.extractor = extractor
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.extractor)
-
-    def __getitem__(self, idx):
-        sample = self.extractor[idx]
-        img, mask = sample["rgba"][:, :, :3], sample["semantic"]
-        H, W = mask.shape
-        instance_ids = np.unique(mask)
-
-        # get bounding box coordinates, mask, and label for each instance_id
-        masks = []
-        labels = []
-        boxes = []
-        areas = []
-        num_instances = len(instance_ids)
-        for i in range(num_instances):
-            cur_mask = mask == instance_ids[i]
-            pos = np.where(cur_mask)
-            xmin = np.min(pos[1])
-            xmax = np.max(pos[1])
-            ymin = np.min(pos[0])
-            ymax = np.max(pos[0])
-
-            # Avoid zero area boxes
-            if xmin == xmax:
-                xmin = max(0, xmin - 1)
-                xmax = min(W, xmax + 1)
-            if ymin == ymax:
-                ymin = max(0, ymin - 1)
-                ymax = min(H, ymax + 1)
-
-            box = (xmin, ymin, xmax, ymax)
-            boxes.append(list(box))
-            masks.append(cur_mask)
-            name = "testing"
-            labels.append(1)
-            areas.append((ymax - ymin) * (xmax - xmin))
-
-        # convert everything into a torch.Tensor
-        boxes = torch.as_tensor(boxes, dtype=torch.float32)
-        # there is only one class
-        labels = torch.ones((num_instances,), dtype=torch.int64)
-        masks = torch.as_tensor(masks, dtype=torch.uint8)
-        image_id = torch.tensor([idx])
-        area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
-        # suppose all instances are not crowd
-        iscrowd = torch.zeros((num_instances,), dtype=torch.int64)
-        target = {}
-        target["boxes"] = boxes
-        target["labels"] = labels
-        target["masks"] = masks
-        target["image_id"] = image_id
-        target["area"] = area
-        target["iscrowd"] = iscrowd
-
-        if self.transform:
-            img = self.transform(img)
-
-        return img, target
+    def visualize(self, mode="train", num_batches=1):
+        self.extractor.set_mode(mode)
+        visualizer = InstanceVisualizer(
+            self.model,
+            self.dataloader,
+            device=self.device,
+            num_classes=self.num_classes,
+        )
+        visuals = visualizer.visualize_instance_segmentation_output(
+            max_num_outputs=num_batches
+        )
+        for idx, visual in visuals.items():
+            plt.imsave(f"img_{idx}.png", visual)
