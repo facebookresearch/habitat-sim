@@ -89,7 +89,7 @@ bool ResourceManager::loadScene(
   // mesh, or general mesh (e.g., MP3D)
   staticDrawableInfo_.clear();
   if (info.type == AssetType::FRL_PTEX_MESH ||
-      info.type == AssetType::MP3D_MESH ||
+      info.type == AssetType::MP3D_MESH || info.type == AssetType::UNKNOWN ||
       (info.type == AssetType::INSTANCE_MESH && splitSemanticMesh)) {
     computeAbsoluteAABBs_ = true;
   }
@@ -149,7 +149,8 @@ bool ResourceManager::loadScene(
 
       computePTexMeshAbsoluteAABBs(*meshes_[metaData.meshIndex.first]);
 #endif
-    } else if (info.type == AssetType::MP3D_MESH) {
+    } else if (info.type == AssetType::MP3D_MESH ||
+               info.type == AssetType::UNKNOWN) {
       computeGeneralMeshAbsoluteAABBs();
     } else if (info.type == AssetType::INSTANCE_MESH) {
       computeInstanceMeshAbsoluteAABBs();
