@@ -8,12 +8,8 @@
  * @brief Struct @ref esp::assets::CollisionMeshData
  */
 
-#include <vector>
-
-#include <Magnum/GL/Mesh.h>
+#include <Corrade/Containers/ArrayView.h>
 #include <Magnum/Magnum.h>
-#include <Magnum/Mesh.h>
-#include <Magnum/Trade/MeshData3D.h>
 #include "esp/core/esp.h"
 
 namespace esp {
@@ -32,12 +28,24 @@ struct CollisionMeshData {
    * See @ref BulletRigidObject::constructBulletCompoundFromMeshes.
    */
   Magnum::MeshPrimitive primitive;
+
   /**
-   * @brief Reference to Vertex positions.
+   * @brief Reference to vertex positions.
+   *
+   * Bullet requires positions to be stored in a contiguous array, but MeshData
+   * usually doesn't store them like that (and moreover the data might be
+   * packed to smaller type). Thus the data are unpacked into a contiguous
+   * array which is then referenced here.
    */
   Corrade::Containers::ArrayView<Magnum::Vector3> positions;
+
   /**
-   * @brief Reference to Vertex indices.
+   * @brief Reference to vertex indices.
+   *
+   * If a MeshData already stores indices in desired type, this view references
+   * them. If not (for example because indices are packed to a smaller type),
+   * the data are unpacked to an internal data store and this view references
+   * that instead.
    */
   Corrade::Containers::ArrayView<Magnum::UnsignedInt> indices;
 };

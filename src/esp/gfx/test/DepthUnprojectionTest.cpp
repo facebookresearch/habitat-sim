@@ -18,7 +18,7 @@
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Primitives/Plane.h>
 #include <Magnum/Shaders/Flat.h>
-#include <Magnum/Trade/MeshData3D.h>
+#include <Magnum/Trade/MeshData.h>
 
 #include "esp/gfx/DepthUnprojection.h"
 
