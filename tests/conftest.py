@@ -1,9 +1,12 @@
 import os.path as osp
+import sys
 
 import pytest
 
 import habitat_sim
 from examples.settings import make_cfg
+
+sys.path.append("./")
 
 _test_scene = osp.abspath(
     osp.join(
@@ -22,6 +25,7 @@ def make_cfg_settings():
         color_sensor=True,
         semantic_sensor=True,
         depth_sensor=True,
+        triangle_sensor=False,
         silent=True,
         scene=_test_scene,
     )

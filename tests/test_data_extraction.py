@@ -64,8 +64,11 @@ def test_extractor_cache():
     assert 1 not in cache
 
 
-# def test_triangle_id(sim):
-#     ## test that empty frames can be rendered without a scene mesh
-#     obs = sim.step("move_forward")
-#     triangle = obs["triangle_sensor"]
-#     assert True
+def test_extractor_all_modes(sim):
+    scene_filepath = ""
+    methods = ["closest", "panorama"]
+    for method in methods:
+        extractor = ImageExtractor(
+            scene_filepath, img_size=(32, 32), sim=sim, extraction_method=method
+        )
+        assert len(extractor) > 1

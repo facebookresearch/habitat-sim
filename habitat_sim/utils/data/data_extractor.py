@@ -2,6 +2,7 @@ import collections
 import copy
 import math
 import os
+from typing import List, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,7 +13,6 @@ from habitat_sim.agent import AgentState
 from habitat_sim.utils.common import quat_from_two_vectors
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 from habitat_sim.utils.data.pose_extractor import PoseExtractor
-from habitat_sim.utils.filesystem import search_dir_tree_for_ext
 
 
 class ImageExtractor:
@@ -49,16 +49,16 @@ class ImageExtractor:
 
     def __init__(
         self,
-        scene_filepath,
-        labels=[0.0],
-        img_size=(512, 512),
-        output=["rgba"],
-        extraction_method="closest",
+        scene_filepath: Union[str, List[str]],
+        labels: List[float] = [0.0],
+        img_size: tuple = (512, 512),
+        output: List[str] = ["rgba"],
+        extraction_method: str = "closest",
         sim=None,
-        shuffle=True,
-        split=(70, 30),
-        use_caching=True,
-        pixels_per_meter=0.1,
+        shuffle: bool = True,
+        split: tuple = (70, 30),
+        use_caching: bool = True,
+        pixels_per_meter: float = 0.1,
     ):
         if sum(split) != 100:
             raise Exception("Train/test split must sum to 100.")
@@ -177,7 +177,7 @@ class ImageExtractor:
 
         return sample
 
-    def close(self):
+    def close(self) -> None:
         r"""Deletes the instance of the simulator. Necessary for instatiating a different ImageExtractor.
         """
         if self.sim is not None:
@@ -185,7 +185,7 @@ class ImageExtractor:
             del self.sim
             self.sim = None
 
-    def set_mode(self, mode):
+    def set_mode(self, mode: str) -> None:
         r"""Sets the mode of the simulator. This controls which poses to use; train, test, or all (full)
         """
         mymode = mode.lower()
@@ -196,7 +196,7 @@ class ImageExtractor:
 
         self.mode = mymode
 
-    def get_semantic_class_names(self):
+    def get_semantic_class_names(self) -> List[str]:
         r"""Returns a list of english class names in the scene(s). E.g. ['wall', 'ceiling', 'chair']
         """
         class_names = list(set(name for name in self.instance_id_to_name.values()))

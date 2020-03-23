@@ -52,7 +52,9 @@ struct RenderTarget::Impl {
        DepthShader* depthShader)
       : colorBuffer_{},
         objectIdBuffer_{},
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
         triangleIdBuffer_{},
+#endif
         depthRenderTexture_{},
         framebuffer_{Mn::NoCreate},
         depthUnprojection_{depthUnprojection},
@@ -130,7 +132,9 @@ struct RenderTarget::Impl {
     framebuffer_.clearDepth(1.0);
     framebuffer_.clearColor(0, Mn::Color4{0, 0, 0, 1});
     framebuffer_.clearColor(1, Mn::Vector4ui{});
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
     framebuffer_.clearColor(2, Mn::Vector4i{});
+#endif
     framebuffer_.bind();
   }
 
@@ -286,7 +290,9 @@ struct RenderTarget::Impl {
   Mn::GL::Renderbuffer objectIdBuffer_;
   Mn::GL::Texture2D depthRenderTexture_;
   Mn::GL::Framebuffer framebuffer_;
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
   Mn::GL::Renderbuffer triangleIdBuffer_;
+#endif
 
   Mn::Vector2 depthUnprojection_;
   DepthShader* depthShader_;
@@ -297,7 +303,9 @@ struct RenderTarget::Impl {
 #ifdef ESP_BUILD_WITH_CUDA
   cudaGraphicsResource_t colorBufferCugl_ = nullptr;
   cudaGraphicsResource_t objecIdBufferCugl_ = nullptr;
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
   cudaGraphicsResource_t triangleIdBufferCugl_ = nullptr;
+#endif
   cudaGraphicsResource_t depthBufferCugl_ = nullptr;
 #endif
 };  // namespace gfx

@@ -29,10 +29,11 @@ class PoseExtractor:
         self.sim = sim
         self.pixels_per_meter = pixels_per_meter
 
-    def extract_poses(self, labels, extraction_method):
+    def extract_poses(self, labels: list, extraction_method: str) -> np.ndarray:
         r"""Returns a numpy array of camera poses. If extraction method is "closest", this method will
         use bfs to find the closest point of interest to each camera position. If the extraction method
-        is "panorama", it will extract a full panorama of camera poses for each camera position
+        is "panorama", it will extract a full panorama of camera poses for each camera position, meaning
+        several distinct images from each camera position.
         """
         poses = []
         for tdv, fp, ref_point in self.tdv_fp_ref_triples:
@@ -65,7 +66,7 @@ class PoseExtractor:
 
         # Find the closest point of the target class to each gridpoint
         poses = []
-        cpis = []
+        points_of_interest = []
         for point in gridpoints:
             if extraction_method == "closest":
                 closest_point_of_interest, label = self._bfs(point, labels, view, dist)
@@ -73,13 +74,13 @@ class PoseExtractor:
                     continue
 
                 poses.append((point, closest_point_of_interest, label, fp))
-                cpis.append(closest_point_of_interest)
+                points_of_interest.append(closest_point_of_interest)
             elif extraction_method == "panorama":
-                cpi_label_pairs = self._panorama_extraction(point, view, dist)
+                point_label_pairs = self._panorama_extraction(point, view, dist)
                 poses.extend(
-                    [(point, cpi, label, fp) for cpi, label in cpi_label_pairs]
+                    [(point, point_, label, fp) for point_, label in point_label_pairs]
                 )
-                cpis.extend([cpi for cpi, _ in cpi_label_pairs])
+                points_of_interest.extend([point_ for point_, _ in point_label_pairs])
 
         # Convert from topdown map coordinate system to that of the pathfinder
         startw, starty, starth = ref_point
@@ -190,10 +191,10 @@ class PoseExtractor:
         return None, None
 
     def _panorama_extraction(self, point, view, dist):
-        in_bounds_of_tdv = lambda row, col: 0 <= row < len(view) and 0 <= col < len(
-            view[0]
-        )
-        cpi_label_pairs = []
+        in_bounds_of_topdown_view = lambda row, col: 0 <= row < len(
+            view
+        ) and 0 <= col < len(view[0])
+        point_label_pairs = []
         r, c = point
         neighbor_dist = dist // 2
         neighbors = [
@@ -210,7 +211,7 @@ class PoseExtractor:
         for n in neighbors:
             # Only add the neighbor point if it is navigable. This prevents camera poses that
             # are just really close-up photos of some object
-            if in_bounds_of_tdv(*n) and self._valid_point(*n, view):
-                cpi_label_pairs.append((n, 0.0))
+            if in_bounds_of_topdown_view(*n) and self._valid_point(*n, view):
+                point_label_pairs.append((n, 0.0))
 
-        return cpi_label_pairs
+        return point_label_pairs
