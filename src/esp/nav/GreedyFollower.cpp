@@ -69,7 +69,7 @@ float nav::GreedyGeodesicFollowerImpl::computeReward(
              forwardAmount_ +
          (
              // Prefer shortest primitives
-             -0.025f * primLen
+             -0.0125f * primLen
              // Avoid collisions
              - (tryStepRes.didCollide ? 0.25f : 0.0f)
              // Avoid being close to an obstacle
@@ -123,8 +123,8 @@ nav::GreedyGeodesicFollowerImpl::nextBestPrimAlong(
       }
     }
 
-    // If reward is within 95% of max (1.0), call it good enough and exit
-    constexpr float goodEnoughRewardThresh = 0.95f;
+    // If reward is within 99% of max (1.0), call it good enough and exit
+    constexpr float goodEnoughRewardThresh = 0.99f;
     if (bestReward > goodEnoughRewardThresh)
       break;
 
