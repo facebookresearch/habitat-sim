@@ -59,6 +59,7 @@ target_link_libraries(assets
     core
     physics
     scene
+    nav
     Magnum::AnyImageImporter
     Magnum::AnySceneImporter
     Magnum::GL

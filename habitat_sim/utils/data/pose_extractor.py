@@ -1,5 +1,6 @@
 import collections
 import copy
+import math
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,8 +29,11 @@ class PoseExtractor:
         self.sim = sim
         self.pixels_per_meter = pixels_per_meter
 
-    def extract_poses(self, labels):
-        r"""Returns a numpy array of camera poses.
+    def extract_poses(self, labels: list, extraction_method: str) -> np.ndarray:
+        r"""Returns a numpy array of camera poses. If extraction method is "closest", this method will
+        use bfs to find the closest point of interest to each camera position. If the extraction method
+        is "panorama", it will extract a full panorama of camera poses for each camera position, meaning
+        several distinct images from each camera position.
         """
         poses = []
         for tdv, fp, ref_point in self.tdv_fp_ref_triples:
@@ -38,12 +42,16 @@ class PoseExtractor:
             x, z = view.shape
             dist = min(x, z) // 10
             poses.extend(
-                self._extract_poses_single_scene(labels, view, fp, dist, ref_point)
+                self._extract_poses_single_scene(
+                    labels, view, fp, dist, ref_point, extraction_method
+                )
             )
 
         return np.array(poses)
 
-    def _extract_poses_single_scene(self, labels, view, fp, dist, ref_point):
+    def _extract_poses_single_scene(
+        self, labels, view, fp, dist, ref_point, extraction_method
+    ):
         height, width = view.shape
         n_gridpoints_width, n_gridpoints_height = (
             width // dist - 1,
@@ -58,14 +66,21 @@ class PoseExtractor:
 
         # Find the closest point of the target class to each gridpoint
         poses = []
-        cpis = []
+        points_of_interest = []
         for point in gridpoints:
-            closest_point_of_interest, label = self._bfs(point, labels, view, dist)
-            if closest_point_of_interest is None:
-                continue
+            if extraction_method == "closest":
+                closest_point_of_interest, label = self._bfs(point, labels, view, dist)
+                if closest_point_of_interest is None:
+                    continue
 
-            poses.append((point, closest_point_of_interest, label, fp))
-            cpis.append(closest_point_of_interest)
+                poses.append((point, closest_point_of_interest, label, fp))
+                points_of_interest.append(closest_point_of_interest)
+            elif extraction_method == "panorama":
+                point_label_pairs = self._panorama_extraction(point, view, dist)
+                poses.extend(
+                    [(point, point_, label, fp) for point_, label in point_label_pairs]
+                )
+                points_of_interest.extend([point_ for point_, _ in point_label_pairs])
 
         # Convert from topdown map coordinate system to that of the pathfinder
         startw, starty, starth = ref_point
@@ -174,3 +189,29 @@ class PoseExtractor:
                     q.append((n, layer + step))
 
         return None, None
+
+    def _panorama_extraction(self, point, view, dist):
+        in_bounds_of_topdown_view = lambda row, col: 0 <= row < len(
+            view
+        ) and 0 <= col < len(view[0])
+        point_label_pairs = []
+        r, c = point
+        neighbor_dist = dist // 2
+        neighbors = [
+            (r - neighbor_dist, c - neighbor_dist),
+            (r - neighbor_dist, c),
+            (r - neighbor_dist, c + neighbor_dist),
+            (r, c - neighbor_dist),
+            (r, c + neighbor_dist),
+            (r + neighbor_dist, c - neighbor_dist),
+            # (r + step, c), # Exclude the pose that is in the opposite direction of habitat_sim.geo.FRONT, causes the quaternion computation to mess up
+            (r + neighbor_dist, c + neighbor_dist),
+        ]
+
+        for n in neighbors:
+            # Only add the neighbor point if it is navigable. This prevents camera poses that
+            # are just really close-up photos of some object
+            if in_bounds_of_topdown_view(*n) and self._valid_point(*n, view):
+                point_label_pairs.append((n, 0.0))
+
+        return point_label_pairs
