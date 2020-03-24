@@ -150,7 +150,7 @@ bool nav::GreedyGeodesicFollowerImpl::isThrashing() {
                  lastAct == CODES::LEFT) ||
                 (actions_[actions_.size() - i] == CODES::LEFT &&
                  lastAct == CODES::RIGHT);
-    lastAct = actions_[actions_.size() - 1];
+    lastAct = actions_[actions_.size() - i];
   }
 
   return thrashing;
@@ -163,8 +163,6 @@ nav::GreedyGeodesicFollowerImpl::nextActionAlong(const SixDofPose& start,
   path.requestedStart = start.translation;
   path.requestedEnd = end;
   pathfinder_->findPath(path);
-
-  const auto actions = nextBestPrimAlong(start, path);
 
   CODES nextAction;
   if (fixThrashing_ && thrashingActions_.size() > 0) {
