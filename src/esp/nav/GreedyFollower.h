@@ -132,7 +132,7 @@ class GreedyGeodesicFollowerImpl {
 
   float computeReward(const scene::SceneNode& node,
                       const nav::ShortestPath& path,
-                      const int primLen);
+                      const size_t primLen);
 
   bool isThrashing();
 
