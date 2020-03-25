@@ -89,7 +89,7 @@ bool ResourceManager::loadScene(
   // mesh, or general mesh (e.g., MP3D)
   staticDrawableInfo_.clear();
   if (info.type == AssetType::FRL_PTEX_MESH ||
-      info.type == AssetType::MP3D_MESH ||
+      info.type == AssetType::MP3D_MESH || info.type == AssetType::UNKNOWN ||
       (info.type == AssetType::INSTANCE_MESH && splitSemanticMesh)) {
     computeAbsoluteAABBs_ = true;
   }
@@ -149,7 +149,8 @@ bool ResourceManager::loadScene(
 
       computePTexMeshAbsoluteAABBs(*meshes_[metaData.meshIndex.first]);
 #endif
-    } else if (info.type == AssetType::MP3D_MESH) {
+    } else if (info.type == AssetType::MP3D_MESH ||
+               info.type == AssetType::UNKNOWN) {
       computeGeneralMeshAbsoluteAABBs();
     } else if (info.type == AssetType::INSTANCE_MESH) {
       computeInstanceMeshAbsoluteAABBs();
@@ -275,9 +276,17 @@ bool ResourceManager::loadScene(
       }
 
       // GLB Mesh
-      else if (info.type == AssetType::MP3D_MESH) {
+      else if (info.type == AssetType::MP3D_MESH ||
+               info.type == AssetType::UNKNOWN) {
         GltfMeshData* gltfMeshData =
             dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
+        if (gltfMeshData == nullptr) {
+          Corrade::Utility::Debug()
+              << "AssetInfo::AssetType type error: unsupported physical type, "
+                 "aborting. Try running without \"--enable-phyisics\" and "
+                 "consider logging an issue.";
+          return false;
+        }
         CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
         meshGroup.push_back(meshData);
       }
