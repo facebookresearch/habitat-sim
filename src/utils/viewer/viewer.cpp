@@ -11,6 +11,11 @@
 #else
 #include <Magnum/Platform/GlfwApplication.h>
 #endif
+#include <Magnum/GL/Buffer.h>
+#include <Magnum/GL/DefaultFramebuffer.h>
+#include <Magnum/GL/PixelFormat.h>
+#include <Magnum/Image.h>
+#include <Magnum/Math/Math.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Timeline.h>
 
@@ -41,6 +46,8 @@
 
 #include "esp/gfx/configure.h"
 
+#include "esp/physics/bullet/BulletPhysicsManager.h"
+
 using namespace Magnum;
 using namespace Math::Literals;
 using namespace Corrade;
@@ -53,6 +60,33 @@ constexpr float rgbSensorHeight = 1.5f;
 
 namespace {
 
+enum MouseInteractionMode {
+  PUSH,
+  PULL,
+  GRAB,
+  THROW,
+
+  NUM_MODES
+};
+
+std::string getEnumName(MouseInteractionMode mode) {
+  switch (mode) {
+    case (PUSH):
+      return "PUSH";
+      break;
+    case (PULL):
+      return "PULL";
+      break;
+    case (GRAB):
+      return "GRAB";
+      break;
+    case (THROW):
+      return "THROW";
+      break;
+  }
+  return "NONE";
+}
+
 class Viewer : public Magnum::Platform::Application {
  public:
   explicit Viewer(const Arguments& arguments);
@@ -61,7 +95,14 @@ class Viewer : public Magnum::Platform::Application {
   void drawEvent() override;
   void viewportEvent(ViewportEvent& event) override;
   void mousePressEvent(MouseEvent& event) override;
+  void keyReleaseEvent(MouseEvent& event) override;
   void mouseReleaseEvent(MouseEvent& event) override;
+  Magnum::Vector3 unproject(const Magnum::Vector2i& windowPosition,
+                            float depth) const;
+  float depthAt(const Magnum::Vector2i& windowPosition);
+
+  scene::SceneNode* clickNode_ = nullptr;
+  MouseInteractionMode mouseInteractionMode = PUSH;
   void mouseMoveEvent(MouseMoveEvent& event) override;
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
@@ -69,14 +110,16 @@ class Viewer : public Magnum::Platform::Application {
   // Interactive functions
   void addObject(std::string configFile);
 
+  void throwSphere(Magnum::Vector3 direction);
+
   int agentObjectId = -1;
 
   void syncAgentObject();
 
   void attachAgentObject();
-  void grabReleaseObject();
+  void grabReleaseObject(int id);
 
-  void syncGrippedObject();
+  void syncGrippedObjects();
   void pokeLastObject();
   void pushLastObject();
 
@@ -313,6 +356,47 @@ void Viewer::addObject(std::string configFile) {
   objectIDs_.push_back(physObjectID);
 }
 
+void Viewer::throwSphere(Magnum::Vector3 direction) {
+  if (physicsManager_ == nullptr)
+    return;
+
+  Magnum::Matrix4 T =
+      agentBodyNode_
+          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+  Vector3 new_pos = T.transformPoint({0.0f, 1.5f, -0.0f});
+
+  auto& drawables = sceneGraph_->getDrawables();
+
+  std::string physConfig(ESP_DEFAULT_PHYS_SCENE_CONFIG);
+  std::string dataFolder =
+      physConfig.substr(0, physConfig.find("default.phys_scene_config.json"));
+  std::string sphereAsset = Corrade::Utility::Directory::join(
+      dataFolder, "test_assets/objects/sphere.glb");
+
+  int objID = resourceManager_.getObjectID(sphereAsset);
+  LOG(INFO) << "object ID: " << objID;
+  if (objID < 0) {
+    LOG(INFO) << "adding object template ";
+    esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+    physicsObjectAttributes.setString("renderMeshHandle", sphereAsset);
+    physicsObjectAttributes.setDouble("margin", 0.0);
+    physicsObjectAttributes.setMagnumVec3("scale",
+                                          Magnum::Vector3{0.25, 0.25, 0.25});
+    resourceManager_.loadObject(physicsObjectAttributes, sphereAsset);
+  }
+
+  int physObjectID = physicsManager_->addObject(sphereAsset, &drawables);
+  physicsManager_->setTranslation(physObjectID, new_pos);
+
+  objectIDs_.push_back(physObjectID);
+
+  // throw the object
+  // Vector3 impulse = T.transformVector({0.0f, 1.0f, -4.0f});
+  Vector3 impulse = direction;
+  Vector3 rel_pos = Vector3(0.0f, 0.0f, 0.0f);
+  physicsManager_->applyImpulse(objectIDs_.back(), impulse, rel_pos);
+}
+
 void Viewer::removeLastObject() {
   if (physicsManager_ == nullptr || objectIDs_.size() == 0)
     return;
@@ -434,39 +518,32 @@ void Viewer::attachAgentObject() {
                                        physics::MotionType::KINEMATIC);
 }
 
-Magnum::Matrix4 gripOffset;
-void Viewer::grabReleaseObject() {
+std::map<int, Magnum::Matrix4> gripOffsets;
+void Viewer::grabReleaseObject(int id) {
   if (objectIDs_.size() > 0) {
-    if (physicsManager_->getObjectMotionType(objectIDs_.back()) ==
+    if (physicsManager_->getObjectMotionType(id) ==
         physics::MotionType::KINEMATIC) {
       // already gripped, so let it go
-      physicsManager_->setObjectMotionType(objectIDs_.back(),
-                                           physics::MotionType::DYNAMIC);
+      physicsManager_->setObjectMotionType(id, physics::MotionType::DYNAMIC);
+      gripOffsets.erase(id);
     } else {
       // not gripped, so grip it
       Magnum::Matrix4 agentT =
           agentBodyNode_->MagnumObject::transformationMatrix();
       // gripOffset =
       // agentT.inverted().transformPoint(physicsManager_->getTranslation(objectIDs_.back()));
-      gripOffset = agentT.inverted() *
-                   physicsManager_->getObjectSceneNode(objectIDs_.back())
-                       .transformation();
-      physicsManager_->setObjectMotionType(objectIDs_.back(),
-                                           physics::MotionType::KINEMATIC);
+      gripOffsets[id] =
+          agentT.inverted() *
+          physicsManager_->getObjectSceneNode(id).transformation();
+      physicsManager_->setObjectMotionType(id, physics::MotionType::KINEMATIC);
     }
   }
 }
 
-void Viewer::syncGrippedObject() {
-  if (objectIDs_.size() > 0) {
-    if (physicsManager_->getObjectMotionType(objectIDs_.back()) ==
-        physics::MotionType::KINEMATIC) {
-      Magnum::Matrix4 agentT =
-          agentBodyNode_->MagnumObject::transformationMatrix();
-      physicsManager_->setTransformation(objectIDs_.back(),
-                                         agentT * gripOffset);
-      // physicsManager_->setActive(agentObjectId, true);
-    }
+void Viewer::syncGrippedObjects() {
+  Magnum::Matrix4 agentT = agentBodyNode_->MagnumObject::transformationMatrix();
+  for (auto& grip : gripOffsets) {
+    physicsManager_->setTransformation(grip.first, agentT * grip.second);
   }
 }
 
@@ -504,7 +581,7 @@ void Viewer::drawEvent() {
     return;
 
   syncAgentObject();
-  syncGrippedObject();
+  syncGrippedObjects();
 
   if (physicsManager_ != nullptr)
     physicsManager_->stepPhysics(timeline_.previousFrameDuration());
@@ -543,6 +620,16 @@ void Viewer::drawEvent() {
     ImGui::End();
   }
 
+  ImGui::SetNextWindowPos(ImVec2(10, 10));
+  ImGui::Begin("main", NULL,
+               ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
+                   ImGuiWindowFlags_AlwaysAutoResize);
+  ImGui::SetWindowFontScale(2.0);
+  std::string modeText =
+      "Mouse Ineraction Mode: " + getEnumName(mouseInteractionMode);
+  ImGui::Text(modeText.c_str());
+  ImGui::End();
+
   /* Set appropriate states. If you only draw ImGui, it is sufficient to
      just enable blending and scissor test in the constructor. */
   GL::Renderer::enable(GL::Renderer::Feature::Blending);
@@ -572,17 +659,138 @@ void Viewer::viewportEvent(ViewportEvent& event) {
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
-  if (event.button() == MouseEvent::Button::Left)
-    previousPosition_ = positionOnSphere(*renderCamera_, event.position());
+  Corrade::Utility::Debug() << "pressed";
+  if (event.button() == MouseEvent::Button::Left) {
+    Corrade::Utility::Debug() << "RAYCAST::";
+    float depth = depthAt(event.position());
+    Corrade::Utility::Debug() << "depth: " << depth;
+    Magnum::Vector3 point = unproject(event.position(), depth);
+    Corrade::Utility::Debug() << "point: " << point;
+    if (clickNode_ == nullptr) {
+      clickNode_ = &rootNode_->createChild();
+      resourceManager_.addPrimitiveToDrawables(0, *clickNode_,
+                                               &sceneGraph_->getDrawables());
+      clickNode_->setScaling({0.1, 0.1, 0.1});
+    }
+    Magnum::Vector3 cast =
+        (point - renderCamera_->node().absoluteTranslation()).normalized();
+    clickNode_->setTranslation(renderCamera_->node().absoluteTranslation() +
+                               cast * 1.0);
+
+    // try a ray test
+    physics::BulletPhysicsManager* bpm =
+        static_cast<physics::BulletPhysicsManager*>(physicsManager_.get());
+
+    btCollisionWorld::AllHitsRayResultCallback hit =
+        bpm->castRay(renderCamera_->node().absoluteTranslation(), cast);
+    float best_fraction = 99999.0;
+    int hitID = ID_UNDEFINED;
+    Magnum::Vector3 hitPoint;
+
+    for (int hitIx = 0; hitIx < hit.m_hitPointWorld.size(); hitIx++) {
+      Corrade::Utility::Debug()
+          << " hit fraction: " << hit.m_hitFractions.at(hitIx);
+      if (hit.m_hitFractions.at(hitIx) < best_fraction) {
+        best_fraction = hit.m_hitFractions.at(hitIx);
+        clickNode_->setTranslation(
+            Magnum::Vector3{hit.m_hitPointWorld.at(hitIx)});
+        hitID = bpm->getObjectIDFromCollisionObject(
+            hit.m_collisionObjects.at(hitIx));
+        hitPoint = Magnum::Vector3{hit.m_hitPointWorld.at(hitIx)};
+      }
+    }
+    Corrade::Utility::Debug() << " hitID = " << hitID;
+
+    if (hitID != ID_UNDEFINED) {
+      if (mouseInteractionMode == PUSH) {
+        physicsManager_->applyForce(hitID, cast * 500,
+                                    physicsManager_->getObjectSceneNode(hitID)
+                                        .absoluteTransformationMatrix()
+                                        .inverted()
+                                        .transformPoint(hitPoint));
+      } else if (mouseInteractionMode == PULL) {
+        physicsManager_->applyForce(hitID, -cast * 500,
+                                    physicsManager_->getObjectSceneNode(hitID)
+                                        .absoluteTransformationMatrix()
+                                        .inverted()
+                                        .transformPoint(hitPoint));
+      } else if (mouseInteractionMode == GRAB) {
+        Corrade::Utility::Debug()
+            << "object select distance = "
+            << (hitPoint - agentBodyNode_->absoluteTranslation()).length();
+        if ((hitPoint - agentBodyNode_->absoluteTranslation()).length() < 1.0) {
+          grabReleaseObject(hitID);
+        }
+      }
+    }
+    if (mouseInteractionMode == THROW) {
+      throwSphere(cast * 10);
+    }
+  }
+  // previousPosition_ = positionOnSphere(*renderCamera_, event.position());
 
   event.setAccepted();
 }
 
 void Viewer::mouseReleaseEvent(MouseEvent& event) {
-  if (event.button() == MouseEvent::Button::Left)
-    previousPosition_ = Vector3();
+  Corrade::Utility::Debug() << "released";
+  // if (event.button() == MouseEvent::Button::Left)
+  // previousPosition_ = Vector3();
+  // unproject(event.position(), -1.0);
 
   event.setAccepted();
+}
+
+float Viewer::depthAt(const Magnum::Vector2i& windowPosition) {
+  /* First scale the position from being relative to window size to being
+     relative to framebuffer size as those two can be different on HiDPI
+     systems */
+  const Vector2i position =
+      windowPosition * Vector2{framebufferSize()} / Vector2{windowSize()};
+  const Vector2i fbPosition{
+      position.x(),
+      GL::defaultFramebuffer.viewport().sizeY() - position.y() - 1};
+
+  GL::defaultFramebuffer.mapForRead(
+      GL::DefaultFramebuffer::ReadAttachment::Front);
+  Magnum::Image2D data = GL::defaultFramebuffer.read(
+      Range2Di::fromSize(fbPosition, Vector2i{1}).padded(Vector2i{2}),
+      {Magnum::GL::PixelFormat::DepthComponent, Magnum::GL::PixelType::Float});
+
+  Corrade::Utility::Debug() << "data: " << data.data();
+
+  // fix efficiency here:
+  float min = data.data()[0];
+  for (auto d : data.data()) {
+    if (d < min) {
+      min = d;
+    }
+  }
+
+  return min;
+
+  // return Magnum::Math::min<Float>(Containers::arrayCast<const
+  // Float>(data.data()));
+}
+
+Magnum::Vector3 Viewer::unproject(const Magnum::Vector2i& windowPosition,
+                                  float depth) const {
+  /* We have to take window size, not framebuffer size, since the position is
+     in window coordinates and the two can be different on HiDPI systems */
+  const Magnum::Vector2i viewSize = windowSize();
+  const Magnum::Vector2i viewPosition{windowPosition.x(),
+                                      viewSize.y() - windowPosition.y() - 1};
+  const Magnum::Vector3 in{
+      2 * Vector2{viewPosition} / Magnum::Vector2{viewSize} -
+          Magnum::Vector2{1.0f},
+      depth * 2.0f - 1.0f};
+
+  // global
+  return (renderCamera_->node().absoluteTransformationMatrix() *
+          renderCamera_->projectionMatrix().inverted())
+      .transformPoint(in);
+  // camera local
+  // return renderCamera_->projectionMatrix().inverted().transformPoint(in);
 }
 
 void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
@@ -591,18 +799,24 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   }
 
   /* Distance to origin */
+  /*
   const float distance =
       renderCamera_->node().transformation().translation().z();
 
-  /* Move 15% of the distance back or forward */
+  // Move 15% of the distance back or forward
   renderCamera_->node().translateLocal(
       {0.0f, 0.0f,
        distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f))});
+  */
+
+  mouseInteractionMode =
+      MouseInteractionMode((int(mouseInteractionMode) + 1) % int(NUM_MODES));
 
   event.setAccepted();
 }
 
 void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
+  /*
   if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
     return;
   }
@@ -619,6 +833,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   previousPosition_ = currentPosition;
 
   event.setAccepted();
+   */
 }
 
 void Viewer::keyPressEvent(KeyEvent& event) {
@@ -714,7 +929,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       torqueLastObject();
       break;
     case KeyEvent::Key::G:
-      grabReleaseObject();
+      if (objectIDs_.size())
+        grabReleaseObject(objectIDs_.back());
       break;
     case KeyEvent::Key::N:
       toggleNavMeshVisualization();
@@ -738,6 +954,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       rgbSensorNode_->absoluteTransformation());
   redraw();
 }
+
+void Viewer::keyReleaseEvent(MouseEvent& event) {}
 
 }  // namespace
 

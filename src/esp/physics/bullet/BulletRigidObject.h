@@ -436,6 +436,8 @@ class BulletRigidObject : public RigidObject,
    */
   const Magnum::Range3D getCollisionShapeAabb() const;
 
+  bool isMe(const btCollisionObject* collisionObject);
+
  protected:
   /**
    * @brief Used to synchronize Bullet's notion of the object state

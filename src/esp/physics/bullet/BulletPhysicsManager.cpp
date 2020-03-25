@@ -9,6 +9,8 @@
 #include "BulletRigidObject.h"
 #include "esp/assets/ResourceManager.h"
 
+#include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
+
 namespace esp {
 namespace physics {
 
@@ -280,6 +282,29 @@ bool BulletPhysicsManager::contactTest(const int physObjectID) {
   return static_cast<BulletRigidObject*>(
              existingObjects_.at(physObjectID).get())
       ->contactTest();
+}
+
+btCollisionWorld::AllHitsRayResultCallback BulletPhysicsManager::castRay(
+    Magnum::Vector3 origin,
+    Magnum::Vector3 direction) {
+  btVector3 from(origin);
+  btVector3 to(origin + direction * 100.0);
+  // m_dynamicsWorld->getDebugDrawer()->drawLine(from, to, btVector4(0, 0, 0,
+  // 1));
+  btCollisionWorld::AllHitsRayResultCallback allResults(from, to);
+  bWorld_->rayTest(from, to, allResults);
+  return allResults;
+}
+
+int BulletPhysicsManager::getObjectIDFromCollisionObject(
+    const btCollisionObject* collisionObject) {
+  for (auto& obj : existingObjects_) {
+    BulletRigidObject* bro = static_cast<BulletRigidObject*>(obj.second.get());
+    if (bro->isMe(collisionObject)) {
+      return obj.first;
+    }
+  }
+  return ID_UNDEFINED;
 }
 
 void BulletPhysicsManager::setActive(const int physObjectID, bool active) {

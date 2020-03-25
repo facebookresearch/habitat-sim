@@ -219,6 +219,11 @@ class BulletPhysicsManager : public PhysicsManager {
 
   virtual void setActive(const int physObjectID, bool active) override;
 
+  btCollisionWorld::AllHitsRayResultCallback castRay(Magnum::Vector3 origin,
+                                                     Magnum::Vector3 direction);
+
+  int getObjectIDFromCollisionObject(const btCollisionObject* collisionObject);
+
  protected:
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;

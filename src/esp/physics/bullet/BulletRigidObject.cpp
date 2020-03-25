@@ -678,5 +678,18 @@ const Magnum::Range3D BulletRigidObject::getCollisionShapeAabb() const {
                          Magnum::Vector3{localAabbMax}};
 }
 
+bool BulletRigidObject::isMe(const btCollisionObject* collisionObject) {
+  for (auto& sceneObj : bSceneCollisionObjects_) {
+    if (sceneObj.get() == collisionObject) {
+      return true;
+    }
+  }
+  if (bObjectRigidBody_.get() == collisionObject) {
+    return true;
+  }
+
+  return false;
+}
+
 }  // namespace physics
 }  // namespace esp
