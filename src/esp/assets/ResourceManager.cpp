@@ -303,6 +303,43 @@ bool ResourceManager::loadScene(
   return meshSuccess;
 }
 
+std::vector<std::string> ResourceManager::getObjectConfigPaths(
+    std::string path) {
+  std::vector<std::string> paths;
+
+  namespace Directory = Cr::Utility::Directory;
+  std::string objPhysPropertiesFilename = path;
+  if (!Corrade::Utility::String::endsWith(objPhysPropertiesFilename,
+                                          ".phys_properties.json")) {
+    objPhysPropertiesFilename = path + ".phys_properties.json";
+  }
+  const bool dirExists = Directory::isDirectory(path);
+  const bool fileExists = Directory::exists(objPhysPropertiesFilename);
+
+  if (!dirExists && !fileExists) {
+    LOG(WARNING) << "Cannot find " << path << " or "
+                 << objPhysPropertiesFilename << ". Aborting parse.";
+    return paths;
+  }
+
+  if (fileExists) {
+    paths.push_back(objPhysPropertiesFilename);
+  }
+
+  if (dirExists) {
+    LOG(INFO) << "Parsing object library directory: " + path;
+    for (auto& file : Directory::list(path, Directory::Flag::SortAscending)) {
+      std::string absoluteSubfilePath = Directory::join(path, file);
+      if (Cr::Utility::String::endsWith(absoluteSubfilePath,
+                                        ".phys_properties.json")) {
+        paths.push_back(absoluteSubfilePath);
+      }
+    }
+  }
+
+  return paths;
+}
+
 PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
     std::string physicsFilename) {
   CHECK(Cr::Utility::Directory::exists(physicsFilename));
@@ -384,36 +421,12 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
       continue;
     }
 
-    namespace Directory = Cr::Utility::Directory;
     std::string absolutePath =
-        Directory::join(configDirectory, paths[i].GetString());
-    std::string objPhysPropertiesFilename =
-        absolutePath + ".phys_properties.json";
-    const bool dirExists = Directory::isDirectory(absolutePath);
-    const bool fileExists = Directory::exists(objPhysPropertiesFilename);
-
-    if (!dirExists && !fileExists) {
-      LOG(WARNING) << "Cannot find " << absolutePath << " or "
-                   << objPhysPropertiesFilename << ". Aborting parse.";
-      continue;
-    }
-
-    if (dirExists) {
-      LOG(INFO) << "Parsing object library directory: " + absolutePath;
-      for (auto& file :
-           Directory::list(absolutePath, Directory::Flag::SortAscending)) {
-        std::string absoluteSubfilePath = Directory::join(absolutePath, file);
-        if (Cr::Utility::String::endsWith(absoluteSubfilePath,
-                                          ".phys_properties.json")) {
-          physicsManagerAttributes.appendVecStrings("objectLibraryPaths",
-                                                    absoluteSubfilePath);
-        }
-      }
-    }
-
-    if (fileExists) {
-      physicsManagerAttributes.appendVecStrings("objectLibraryPaths",
-                                                objPhysPropertiesFilename);
+        Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
+    std::vector<std::string> validConfigPaths =
+        getObjectConfigPaths(absolutePath);
+    for (auto& path : validConfigPaths) {
+      physicsManagerAttributes.appendVecStrings("objectLibraryPaths", path);
     }
   }
 
@@ -767,7 +780,7 @@ int ResourceManager::getObjectID(const std::string& configFile) {
       std::find(physicsObjectConfigList_.begin(),
                 physicsObjectConfigList_.end(), configFile);
   if (itr == physicsObjectConfigList_.cend()) {
-    return -1;
+    return ID_UNDEFINED;
   } else {
     int objectID = std::distance(physicsObjectConfigList_.begin(), itr);
     return objectID;
