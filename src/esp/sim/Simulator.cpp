@@ -452,7 +452,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
         int prevNumIndices = joinedMesh->ibo.size();
         int prevNumVerts = joinedMesh->vbo.size();
         joinedMesh->ibo.resize(prevNumIndices + joinedObjectMesh->ibo.size());
-        for (size_t ix = 0; ix < joinedObjectMesh->ibo.size(); ix++) {
+        for (size_t ix = 0; ix < joinedObjectMesh->ibo.size(); ++ix) {
           joinedMesh->ibo[ix + prevNumIndices] =
               joinedObjectMesh->ibo[ix] + prevNumVerts;
         }
