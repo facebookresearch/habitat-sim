@@ -139,7 +139,8 @@ class Simulator {
    *
    * @param objectTemplate A new PhysicsObjectAttributes to load.
    * @param objectTemplateHandle The desired key for referencing the new
-   * template. To register this successfully, it must not be a duplicate of an existing key.
+   * template. To register this successfully, it must not be a duplicate of an
+   * existing key.
    * @return A template index for instancing the loaded template or ID_UNDEFINED
    * if failed.
    */
