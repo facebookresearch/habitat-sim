@@ -330,6 +330,11 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
 
   esp::vec3f randomNavPoint =
       simulator->getPathFinder()->getRandomNavigablePoint();
+  while (simulator->getPathFinder()->distanceToClosestObstacle(randomNavPoint) <
+             1.0 ||
+         randomNavPoint[1] > 1.0) {
+    randomNavPoint = simulator->getPathFinder()->getRandomNavigablePoint();
+  }
 
   // add static object at a known navigable point
   int objectID = simulator->addObject(0);
@@ -347,6 +352,29 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   simulator->recomputeNavMesh(*simulator->getPathFinder().get(),
                               navMeshSettings, false);
   CORRADE_VERIFY(simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
+
+  simulator->removeObject(objectID);
+
+  // test scaling
+  esp::assets::PhysicsObjectAttributes& objectTemplate =
+      simulator->getPhysicsObjectAttributes(0);
+  objectTemplate.setMagnumVec3("scale", {0.5, 0.5, 0.5});
+  objectID = simulator->addObject(0);
+  simulator->setTranslation(Magnum::Vector3{randomNavPoint}, objectID);
+  simulator->setTranslation(
+      simulator->getTranslation(objectID) + Magnum::Vector3{0, 0.5, 0},
+      objectID);
+  simulator->setObjectMotionType(esp::physics::MotionType::STATIC, objectID);
+  esp::vec3f offset(0.75, 0, 0);
+  CORRADE_VERIFY(simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
+  CORRADE_VERIFY(
+      simulator->getPathFinder()->isNavigable(randomNavPoint + offset, 0.2));
+  // recompute with object
+  simulator->recomputeNavMesh(*simulator->getPathFinder().get(),
+                              navMeshSettings, true);
+  CORRADE_VERIFY(!simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
+  CORRADE_VERIFY(
+      simulator->getPathFinder()->isNavigable(randomNavPoint + offset, 0.2));
 }
 
 }  // namespace

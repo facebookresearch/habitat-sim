@@ -277,6 +277,17 @@ int Simulator::getPhysicsObjectLibrarySize() {
   return resourceManager_.getNumLibraryObjects();
 }
 
+assets::PhysicsObjectAttributes& Simulator::getPhysicsObjectAttributes(
+    int templateIndex) {
+  return resourceManager_.getPhysicsObjectAttributes(
+      resourceManager_.getObjectConfig(templateIndex));
+}
+
+assets::PhysicsObjectAttributes& Simulator::getPhysicsObjectAttributes(
+    const std::string& templateHandle) {
+  return resourceManager_.getPhysicsObjectAttributes(templateHandle);
+}
+
 // return a list of existing objected IDs in a physical scene
 std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
@@ -429,6 +440,8 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
                 .absoluteTransformationMatrix());
         const assets::PhysicsObjectAttributes& initializationTemplate =
             physicsManager_->getInitializationAttributes(objectID);
+        objectTransform.scale(Magnum::EigenIntegration::cast<vec3f>(
+            initializationTemplate.getMagnumVec3("scale")));
         std::string meshHandle =
             initializationTemplate.getString("collisionMeshHandle");
         if (meshHandle.empty()) {

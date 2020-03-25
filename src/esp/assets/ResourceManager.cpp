@@ -758,7 +758,7 @@ int ResourceManager::getObjectID(const std::string& configFile) {
       std::find(physicsObjectConfigList_.begin(),
                 physicsObjectConfigList_.end(), configFile);
   if (itr == physicsObjectConfigList_.cend()) {
-    return -1;
+    return ID_UNDEFINED;
   } else {
     int objectID = std::distance(physicsObjectConfigList_.begin(), itr);
     return objectID;
@@ -766,6 +766,12 @@ int ResourceManager::getObjectID(const std::string& configFile) {
 }
 
 std::string ResourceManager::getObjectConfig(const int objectID) {
+  if (physicsObjectConfigList_.size() <= objectID) {
+    Corrade::Utility::Debug() << "ResourceManager::getObjectConfig - Aborting. "
+                                 "No template with index "
+                              << objectID;
+    return "";
+  }
   return physicsObjectConfigList_[objectID];
 }
 

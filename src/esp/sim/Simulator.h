@@ -122,6 +122,19 @@ class Simulator {
   int getPhysicsObjectLibrarySize();
 
   /**
+   * @brief Get an editable reference to a physics object template by index.
+   */
+  assets::PhysicsObjectAttributes& getPhysicsObjectAttributes(
+      int templateIndex);
+
+  /**
+   * @brief Get an editable reference to a physics object template by string
+   * key.
+   */
+  assets::PhysicsObjectAttributes& getPhysicsObjectAttributes(
+      const std::string& templateHandle);
+
+  /**
    * @brief Remove an instanced object by ID. See @ref
    * esp::physics::PhysicsManager::removeObject().
    * @param objectID The ID of the object identifying it in @ref
