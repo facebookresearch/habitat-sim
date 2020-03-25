@@ -95,7 +95,6 @@ class Viewer : public Magnum::Platform::Application {
   void drawEvent() override;
   void viewportEvent(ViewportEvent& event) override;
   void mousePressEvent(MouseEvent& event) override;
-  void keyReleaseEvent(MouseEvent& event) override;
   void mouseReleaseEvent(MouseEvent& event) override;
   Magnum::Vector3 unproject(const Magnum::Vector2i& windowPosition,
                             float depth) const;
@@ -105,7 +104,9 @@ class Viewer : public Magnum::Platform::Application {
   MouseInteractionMode mouseInteractionMode = PUSH;
   void mouseMoveEvent(MouseMoveEvent& event) override;
   void mouseScrollEvent(MouseScrollEvent& event) override;
+
   void keyPressEvent(KeyEvent& event) override;
+  void keyReleaseEvent(KeyEvent& event) override;
 
   // Interactive functions
   void addObject(std::string configFile);
@@ -627,7 +628,7 @@ void Viewer::drawEvent() {
   ImGui::SetWindowFontScale(2.0);
   std::string modeText =
       "Mouse Ineraction Mode: " + getEnumName(mouseInteractionMode);
-  ImGui::Text(modeText.c_str());
+  ImGui::Text("%s", modeText.c_str());
   ImGui::End();
 
   /* Set appropriate states. If you only draw ImGui, it is sufficient to
@@ -955,7 +956,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
   redraw();
 }
 
-void Viewer::keyReleaseEvent(MouseEvent& event) {}
+void Viewer::keyReleaseEvent(KeyEvent& event) {}
 
 }  // namespace
 
