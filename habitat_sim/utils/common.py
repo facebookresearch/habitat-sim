@@ -52,25 +52,23 @@ def quat_from_magnum(quat: mn.Quaternion) -> np.quaternion:
 
 
 def quat_to_angle_axis(quat: np.quaternion) -> Tuple[float, np.ndarray]:
-    r"""Converts a quaternion to angle axis format.
+    r"""Converts a quaternion to angle axis format
 
     :param quat: The quaternion
     :return:
-        -   `float` --- The angle to rotate about the axis by.  Will always be in :math:`[0, \theta]`.
+        -   `float` --- The angle to rotate about the axis by
         -   `numpy.ndarray` --- The axis to rotate about. If :math:`\theta = 0`,
             then this is harded coded to be the +x axis
     """
 
-    imag_norm = np.linalg.norm(quat.imag)
-    theta = 2.0 * np.arctan2(imag_norm, quat.real)
+    rot_vec = quaternion.as_rotation_vector(quat)
 
-    if imag_norm < 1e-5:
-        w = np.array([1.0, 0.0, 0.0])
+    theta = np.linalg.norm(rot_vec)
+    if np.abs(theta) < 1e-5:
+        w = np.array([1, 0, 0])
+        theta = 0.0
     else:
-        w = quat.imag / imag_norm
-
-    w = np.sign(theta) * w
-    theta = np.sign(theta) * theta
+        w = rot_vec / theta
 
     return (theta, w)
 

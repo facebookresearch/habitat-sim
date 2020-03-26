@@ -8,7 +8,7 @@ import tqdm
 
 import habitat_sim
 
-NUM_TESTS = 50
+NUM_TESTS = 100
 TURN_DEGREE = 30.0
 ACCEPTABLE_SPLS = {
     ("try_step", False): 0.97,
@@ -66,6 +66,7 @@ def test_greedy_follower(test_navmesh, move_filter_fn, action_noise, pbar):
     pathfinder = habitat_sim.PathFinder()
     pathfinder.load_nav_mesh(test_navmesh)
     assert pathfinder.is_loaded
+    pathfinder.seed(0)
 
     scene_graph = habitat_sim.SceneGraph()
     agent = habitat_sim.Agent(scene_graph.get_root_node().create_child())

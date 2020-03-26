@@ -127,6 +127,7 @@ class GreedyGeodesicFollowerImpl {
   const bool fixThrashing_;
   const int thrashingThreshold_;
   const float closeToObsThreshold_ = 0.2f;
+  const float collisionCost_ = 0.25f;
 
   std::vector<CODES> actions_;
   std::vector<CODES> thrashingActions_;

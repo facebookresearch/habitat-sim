@@ -71,7 +71,7 @@ float GreedyGeodesicFollowerImpl::computeReward(const scene::SceneNode& node,
              // Prefer shortest primitives
              -0.0125f * primLen
              // Avoid collisions
-             - (tryStepRes.didCollide ? 0.25f : 0.0f)
+             - (tryStepRes.didCollide ? collisionCost_ : 0.0f)
              // Avoid being close to an obstacle
              - (tryStepRes.postDistanceToClosestObstacle < closeToObsThreshold_
                     ? 0.05f
@@ -90,9 +90,9 @@ GreedyGeodesicFollowerImpl::nextBestPrimAlong(
     return {CODES::STOP};
   }
 
-  constexpr float minumumReward = -0.1f;
-  // Intialize bestReward to the minumum acceptable reward
-  float bestReward = minumumReward;
+  // Intialize bestReward to the minumum acceptable reward -- we are just
+  // constantly colliding
+  float bestReward = -collisionCost_;
   std::vector<CODES> bestPrim, leftPrim, rightPrim;
 
   leftDummyNode_.setTranslation(Mn::Vector3{state.translation});
