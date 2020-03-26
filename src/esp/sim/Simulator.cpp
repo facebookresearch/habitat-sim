@@ -288,6 +288,27 @@ assets::PhysicsObjectAttributes& Simulator::getPhysicsObjectAttributes(
   return resourceManager_.getPhysicsObjectAttributes(templateHandle);
 }
 
+std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
+  std::vector<int> templateIndices;
+  std::vector<std::string> validConfigPaths =
+      resourceManager_.getObjectConfigPaths(path);
+  for (auto& validPath : validConfigPaths) {
+    templateIndices.push_back(resourceManager_.loadObject(validPath));
+  }
+  return templateIndices;
+}
+
+int Simulator::loadObjectTemplate(
+    assets::PhysicsObjectAttributes& objectTemplate,
+    const std::string& objectTemplateHandle) {
+  // check for duplicate keys
+  if (resourceManager_.getObjectID(objectTemplateHandle) != ID_UNDEFINED) {
+    return ID_UNDEFINED;
+  }
+
+  return resourceManager_.loadObject(objectTemplate, objectTemplateHandle);
+}
+
 // return a list of existing objected IDs in a physical scene
 std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
   if (sceneHasPhysics(sceneID)) {

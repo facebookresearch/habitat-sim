@@ -135,6 +135,33 @@ class Simulator {
       const std::string& templateHandle);
 
   /**
+   * @brief Load all "*.phys_properties.json" files from the provided file or
+   * directory path.
+   *
+   * Note that duplicate loads will return the index of the existing template
+   * rather than reloading.
+   *
+   * @param path A global path to a physics property file or directory
+   * @return A list of template indices for loaded valid configs for object
+   * instancing.
+   */
+  std::vector<int> loadObjectConfigs(const std::string& path);
+
+  /**
+   * @brief Load the provided PhysicsObjectAttributes template into the
+   * Simulator.
+   *
+   * @param objectTemplate A new PhysicsObjectAttributes to load.
+   * @param objectTemplateHandle The desired key for referencing the new
+   * template. To register this successfully, it must not be a duplicate of an
+   * existing key.
+   * @return A template index for instancing the loaded template or ID_UNDEFINED
+   * if failed.
+   */
+  int loadObjectTemplate(assets::PhysicsObjectAttributes& objectTemplate,
+                         const std::string& objectTemplateHandle);
+
+  /**
    * @brief Remove an instanced object by ID. See @ref
    * esp::physics::PhysicsManager::removeObject().
    * @param objectID The ID of the object identifying it in @ref

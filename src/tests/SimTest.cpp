@@ -91,6 +91,7 @@ struct SimTest : Cr::TestSuite::Tester {
   void updateObjectLightSetupRGBAObservation();
   void multipleLightingSetupsRGBAObservation();
   void recomputeNavmeshWithStaticObjects();
+  void loadingObjectTemplates();
 
   // TODO: remove outlier pixels from image and lower maxThreshold
   const Magnum::Float maxThreshold = 255.f;
@@ -113,7 +114,8 @@ SimTest::SimTest() {
             &SimTest::updateLightSetupRGBAObservation,
             &SimTest::updateObjectLightSetupRGBAObservation,
             &SimTest::multipleLightingSetupsRGBAObservation,
-            &SimTest::recomputeNavmeshWithStaticObjects});
+            &SimTest::recomputeNavmeshWithStaticObjects,
+            &SimTest::loadingObjectTemplates});
   // clang-format on
 }
 
@@ -375,6 +377,35 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   CORRADE_VERIFY(!simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
   CORRADE_VERIFY(
       simulator->getPathFinder()->isNavigable(randomNavPoint + offset, 0.2));
+}
+
+void SimTest::loadingObjectTemplates() {
+  auto simulator = getSimulator(planeScene);
+
+  // test directory of templates
+  std::vector<int> templateIndices = simulator->loadObjectConfigs(
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
+  CORRADE_VERIFY(!templateIndices.empty());
+  for (auto index : templateIndices) {
+    CORRADE_VERIFY(index != esp::ID_UNDEFINED);
+  }
+
+  // reload again and ensure that old loaded indices are returned
+  std::vector<int> templateIndices2 = simulator->loadObjectConfigs(
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
+  CORRADE_VERIFY(templateIndices2 == templateIndices);
+
+  // test fresh template
+  esp::assets::PhysicsObjectAttributes newTemplate;
+  std::string boxPath =
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
+  newTemplate.setString("renderMeshHandle", boxPath);
+  int templateIndex = simulator->loadObjectTemplate(newTemplate, boxPath);
+  CORRADE_VERIFY(templateIndex != esp::ID_UNDEFINED);
+
+  // test double load
+  templateIndex = simulator->loadObjectTemplate(newTemplate, boxPath);
+  CORRADE_VERIFY(templateIndex == esp::ID_UNDEFINED);
 }
 
 }  // namespace

@@ -89,7 +89,7 @@ bool ResourceManager::loadScene(
   // mesh, or general mesh (e.g., MP3D)
   staticDrawableInfo_.clear();
   if (info.type == AssetType::FRL_PTEX_MESH ||
-      info.type == AssetType::MP3D_MESH ||
+      info.type == AssetType::MP3D_MESH || info.type == AssetType::UNKNOWN ||
       (info.type == AssetType::INSTANCE_MESH && splitSemanticMesh)) {
     computeAbsoluteAABBs_ = true;
   }
@@ -149,7 +149,8 @@ bool ResourceManager::loadScene(
 
       computePTexMeshAbsoluteAABBs(*meshes_[metaData.meshIndex.first]);
 #endif
-    } else if (info.type == AssetType::MP3D_MESH) {
+    } else if (info.type == AssetType::MP3D_MESH ||
+               info.type == AssetType::UNKNOWN) {
       computeGeneralMeshAbsoluteAABBs();
     } else if (info.type == AssetType::INSTANCE_MESH) {
       computeInstanceMeshAbsoluteAABBs();
@@ -275,9 +276,17 @@ bool ResourceManager::loadScene(
       }
 
       // GLB Mesh
-      else if (info.type == AssetType::MP3D_MESH) {
+      else if (info.type == AssetType::MP3D_MESH ||
+               info.type == AssetType::UNKNOWN) {
         GltfMeshData* gltfMeshData =
             dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
+        if (gltfMeshData == nullptr) {
+          Corrade::Utility::Debug()
+              << "AssetInfo::AssetType type error: unsupported physical type, "
+                 "aborting. Try running without \"--enable-phyisics\" and "
+                 "consider logging an issue.";
+          return false;
+        }
         CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
         meshGroup.push_back(meshData);
       }
@@ -292,6 +301,43 @@ bool ResourceManager::loadScene(
   }
 
   return meshSuccess;
+}
+
+std::vector<std::string> ResourceManager::getObjectConfigPaths(
+    std::string path) {
+  std::vector<std::string> paths;
+
+  namespace Directory = Cr::Utility::Directory;
+  std::string objPhysPropertiesFilename = path;
+  if (!Corrade::Utility::String::endsWith(objPhysPropertiesFilename,
+                                          ".phys_properties.json")) {
+    objPhysPropertiesFilename = path + ".phys_properties.json";
+  }
+  const bool dirExists = Directory::isDirectory(path);
+  const bool fileExists = Directory::exists(objPhysPropertiesFilename);
+
+  if (!dirExists && !fileExists) {
+    LOG(WARNING) << "Cannot find " << path << " or "
+                 << objPhysPropertiesFilename << ". Aborting parse.";
+    return paths;
+  }
+
+  if (fileExists) {
+    paths.push_back(objPhysPropertiesFilename);
+  }
+
+  if (dirExists) {
+    LOG(INFO) << "Parsing object library directory: " + path;
+    for (auto& file : Directory::list(path, Directory::Flag::SortAscending)) {
+      std::string absoluteSubfilePath = Directory::join(path, file);
+      if (Cr::Utility::String::endsWith(absoluteSubfilePath,
+                                        ".phys_properties.json")) {
+        paths.push_back(absoluteSubfilePath);
+      }
+    }
+  }
+
+  return paths;
 }
 
 PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
@@ -375,36 +421,12 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
       continue;
     }
 
-    namespace Directory = Cr::Utility::Directory;
     std::string absolutePath =
-        Directory::join(configDirectory, paths[i].GetString());
-    std::string objPhysPropertiesFilename =
-        absolutePath + ".phys_properties.json";
-    const bool dirExists = Directory::isDirectory(absolutePath);
-    const bool fileExists = Directory::exists(objPhysPropertiesFilename);
-
-    if (!dirExists && !fileExists) {
-      LOG(WARNING) << "Cannot find " << absolutePath << " or "
-                   << objPhysPropertiesFilename << ". Aborting parse.";
-      continue;
-    }
-
-    if (dirExists) {
-      LOG(INFO) << "Parsing object library directory: " + absolutePath;
-      for (auto& file :
-           Directory::list(absolutePath, Directory::Flag::SortAscending)) {
-        std::string absoluteSubfilePath = Directory::join(absolutePath, file);
-        if (Cr::Utility::String::endsWith(absoluteSubfilePath,
-                                          ".phys_properties.json")) {
-          physicsManagerAttributes.appendVecStrings("objectLibraryPaths",
-                                                    absoluteSubfilePath);
-        }
-      }
-    }
-
-    if (fileExists) {
-      physicsManagerAttributes.appendVecStrings("objectLibraryPaths",
-                                                objPhysPropertiesFilename);
+        Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
+    std::vector<std::string> validConfigPaths =
+        getObjectConfigPaths(absolutePath);
+    for (auto& path : validConfigPaths) {
+      physicsManagerAttributes.appendVecStrings("objectLibraryPaths", path);
     }
   }
 
