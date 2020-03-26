@@ -15,7 +15,6 @@
 #include <vector>
 
 /* Bullet Physics Integration */
-#include <Magnum/Trade/MeshData3D.h>
 
 #include "RigidObject.h"
 #include "esp/assets/Asset.h"
