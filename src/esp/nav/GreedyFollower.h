@@ -8,10 +8,26 @@
 namespace esp {
 namespace nav {
 
+/**
+ * @brief Generates actions to take to reach a goal
+ *
+ * Choose actions by running local planning over a set of motion primitives.
+ * The primitives are all sequences of action in the form `[left]*n + [forward]`
+ * or `[right]*n + [forward]` for `0 <= n < turning 180 degrees`
+ *
+ * Primitives are selected by choosing the one that best maximizes a reward
+ * function that selects the primitive that most quickly makes progress towards
+ * the goal while preferring shorter primtives and avoid obstacles.
+ *
+ * Once a primitive is selected, the first action in that primitives is selected
+ * as the next action to take and this process is repeated
+ */
 class GreedyGeodesicFollowerImpl {
  public:
   /**
-   * Ouputs from the greedy follower.  Used to specify which action to take next
+   * @brief Ouputs from the greedy follower.
+   *
+   * Used to specify which action to take next
    * or that an error occured
    */
   enum class CODES : int {
@@ -23,14 +39,16 @@ class GreedyGeodesicFollowerImpl {
   };
 
   /**
-   * Helper typedef for function pointer to a function that manipulates a scene
-   * node These functions are used to get access to the python functions which
+   * @brief Helper typedef for function pointer to a function that manipulates a
+   * scene node.
+   *
+   * These functions are used to get access to the python functions which
    * implement the control functions
    */
   typedef std::function<bool(scene::SceneNode*)> MoveFn;
 
   /**
-   * Helper for a sixdof pose
+   * @brief Helper for a sixdof pose
    */
   struct SixDofPose {
     quatf rotation;
@@ -38,10 +56,8 @@ class GreedyGeodesicFollowerImpl {
   };
 
   /**
-   * Implements a follower that greedily fits actions to follow the geodesic
-   * shortest path
+   * @brief Constructor
    *
-   * Params
    * @param[in] pathfinder Instance of the pathfinder used for calculating the
    *                       geodesic shortest path
    * @param[in] moveForward Function that implements "move_forward" on a
@@ -67,12 +83,9 @@ class GreedyGeodesicFollowerImpl {
                              bool fixThrashing = true,
                              int thrashingThreshold = 16);
 
-  CODES nextActionAlong(const SixDofPose& start, const vec3f& end);
-
   /**
-   * Calculates the next action to follow the path
+   * @brief Calculates the next action to follow the path
    *
-   * Params
    * @param[in] currentPos The current position
    * @param[in] currentRot The current rotation
    * @param[in] end The end location of the path
@@ -82,9 +95,12 @@ class GreedyGeodesicFollowerImpl {
                         const vec3f& end);
 
   /**
-   * Finds the full path from the current agent state to the end location
+   * @brief Finds the full path from the current agent state to the end location
    *
-   * Params
+   * @warning Do not use this method if there is actuation noise.  Instead, use
+   * @ref nextActionAlong to calculate the next action to take, actually take
+   * it, then call that method again.
+   *
    * @param[in] startPos The starting position
    * @param[in] startRot The starting rotation
    * @param[in] end The end location of the path
@@ -93,10 +109,11 @@ class GreedyGeodesicFollowerImpl {
                               const vec4f& startRot,
                               const vec3f& end);
 
+  CODES nextActionAlong(const SixDofPose& start, const vec3f& end);
   std::vector<CODES> findPath(const SixDofPose& start, const vec3f& end);
 
   /**
-   * @breif Reset the planner.
+   * @brief Reset the planner.
    *
    * Should be called whenever a different goal is choosen or start state
    * differs by more than action from the last start state
@@ -115,7 +132,7 @@ class GreedyGeodesicFollowerImpl {
   std::vector<CODES> thrashingActions_;
 
   scene::SceneGraph dummyScene_;
-  scene::SceneNode dummyNode_{dummyScene_.getRootNode()},
+  scene::SceneNode findPathDummyNode_{dummyScene_.getRootNode()},
       leftDummyNode_{dummyScene_.getRootNode()},
       rightDummyNode_{dummyScene_.getRootNode()},
       tryStepDummyNode_{dummyScene_.getRootNode()};

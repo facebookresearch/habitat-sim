@@ -17,35 +17,9 @@ class GreedyGeodesicFollower(object):
     present in the agents action space.  If you would like to use different actions
     (i.e noisy actions), you can override the action key ommited for a given action.
 
-    Planner code heavily borrowed from:
+    Planner code heavily inspired by
     https://github.com/s-gupta/map-plan-baseline
 
-    :property pathfinder: Instance of the pathfinder that has the correct
-        navmesh already loaded
-    :property agent: Agent to fit actions for. This agent's current
-        configuration is used to specify the actions. The fitted actions will
-        also correspond to keys in the agents action_space. :py:`None` is used
-        to signify that the goal location has been reached
-    :property goal_radius: Specifies how close the agent must get to the goal
-        in order for it to be considered reached.  If :py:`None`, :py:`0.75`
-        times the agents step size is used.
-    :property stop_key: The action key to emit when the agent should stop.
-                        Default :py:`None`
-    :property forward_key: The action key to emit when the agent should
-                           take the move_forward action
-                           Default: The key of the action that calls
-                           the move_forward actuation spec
-    :property left_key: The action key to emit when the agent should
-                           take the turn_left action
-                           Default: The key of the action that calls
-                           the turn_left actuation spec
-    :property right_key: The action key to emit when the agent should
-                           take the turn_right action
-                           Default: The key of the action that calls
-                           the turn_right actuation spec
-    :property fix_thrashing: Whether or not to attempt to fix trashing
-    :property thrashing_threshold: The number of actions in a left -> right -> left -> ..
-                                   sequence needed to be considered trashing
     """
 
     pathfinder: PathFinder
@@ -71,6 +45,35 @@ class GreedyGeodesicFollower(object):
         fix_thrashing: bool = True,
         thrashing_threshold: int = 16,
     ):
+        r"""Constructor
+
+        :param pathfinder: Instance of the pathfinder that has the correct
+            navmesh already loaded
+        :param agent: Agent to fit actions for. This agent's current
+            configuration is used to specify the actions. The fitted actions will
+            also correspond to keys in the agents action_space. :py:`None` is used
+            to signify that the goal location has been reached
+        :param goal_radius: Specifies how close the agent must get to the goal
+            in order for it to be considered reached.  If :py:`None`, :py:`0.75`
+            times the agents step size is used.
+        :param stop_key: The action key to emit when the agent should stop.
+                            Default :py:`None`
+        :param forward_key: The action key to emit when the agent should
+                               take the move_forward action
+                               Default: The key of the action that calls
+                               the move_forward actuation spec
+        :param left_key: The action key to emit when the agent should
+                               take the turn_left action
+                               Default: The key of the action that calls
+                               the turn_left actuation spec
+        :param right_key: The action key to emit when the agent should
+                               take the turn_right action
+                               Default: The key of the action that calls
+                               the turn_right actuation spec
+        :param fix_thrashing: Whether or not to attempt to fix trashing
+        :param thrashing_threshold: The number of actions in a left -> right -> left -> ..
+                                       sequence needed to be considered trashing
+        """
 
         self.pathfinder = pathfinder
         self.agent = agent
@@ -170,12 +173,10 @@ class GreedyGeodesicFollower(object):
         .. note-warning::
 
             Do not use this method if the agent has actuation noise.
-            Instead, use :py:meth:`next_action_along` to find the action
+            Instead, use :ref:`next_action_along` to find the action
             to take in a given state, then take that action, and repeat!
         """
-        if self.last_goal is None or not np.allclose(goal_pos, self.last_goal):
-            self.reset()
-            self.last_goal = goal_pos
+        self.reset()
 
         state = self.agent.state
         path = self.impl.find_path(

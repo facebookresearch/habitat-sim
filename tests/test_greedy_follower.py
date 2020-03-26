@@ -126,11 +126,24 @@ def test_greedy_follower(test_navmesh, move_filter_fn, action_noise, pbar):
         agent_distance = 0.0
         last_xyz = state.position
         num_acts = 0
-        while True:
+
+        # If there is not action noise, then we can use find_path to get all the actions
+        if not action_noise:
             try:
-                next_action = follower.next_action_along(goal_pos)
+                action_list = follower.find_path(goal_pos)
             except habitat_sim.errors.GreedyFollowerError:
-                break
+                action_list = [None]
+
+        while True:
+            # If there is action noise, we need to plan a single action, actually take it, and repeat
+            if action_noise:
+                try:
+                    next_action = follower.next_action_along(goal_pos)
+                except habitat_sim.errors.GreedyFollowerError:
+                    break
+            else:
+                next_action = action_list[0]
+                action_list = action_list[1:]
 
             if next_action is None:
                 break
