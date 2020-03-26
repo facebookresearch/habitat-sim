@@ -24,7 +24,7 @@ namespace esp {
 namespace gfx {
 
 namespace {
-enum { DepthTextureUnit = 1 };
+enum { TriangleTextureUnit = 1 };
 }
 
 TriangleShader::TriangleShader(Flags flags) : flags_{flags} {
@@ -40,20 +40,28 @@ TriangleShader::TriangleShader(Flags flags) : flags_{flags} {
   Mn::GL::Version glVersion = Mn::GL::Version::GL410;
 #endif
 
+  Mn::GL::Shader vert{glVersion, Mn::GL::Shader::Type::Vertex};
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
+
+  vert.addSource(rs.get("depth.vert"));
   frag.addSource(rs.get("triangle.frag"));
 
-  CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({frag}));
+  CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
 
-  attachShaders({frag});
+  attachShaders({vert, frag});
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(link());
 }
 
-/* Clang doesn't have target_clones yet: https://reviews.llvm.org/D51650 */
-#if defined(CORRADE_TARGET_X86) && defined(__GNUC__) && __GNUC__ >= 6
-__attribute__((target_clones("default", "sse4.2", "avx2")))
-#endif
+TriangleShader &
+TriangleShader::bindTriangleTexture(Mn::GL::Texture2D &texture) {
+  texture.bind(TriangleTextureUnit);
+  return *this;
+}
 
-}  // namespace gfx
-}  // namespace esp
+// /* Clang doesn't have target_clones yet: https://reviews.llvm.org/D51650 */
+// #if defined(CORRADE_TARGET_X86) && defined(__GNUC__) && __GNUC__ >= 6
+// __attribute__((target_clones("default", "sse4.2", "avx2")))
+// #endif
+}
+}

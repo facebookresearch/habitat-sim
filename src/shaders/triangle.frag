@@ -1,13 +1,8 @@
-#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
 in int gl_PrimitiveID;
-#endif
+in int dummyvar;
 
-#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
-layout(location = 0) out int triangleId;
-#endif
+layout(location = 1) out int triangleId;
 
 void main() {
-    #ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
-    triangleId = 7;
-    #endif
+    triangleId = 23;
 }

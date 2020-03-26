@@ -16,7 +16,7 @@ namespace gfx {
 Outputs unique ID values for each triangle in the mesh.
 */
 class TriangleShader : public Magnum::GL::AbstractShaderProgram {
- public:
+public:
   /** @brief Flag */
   enum class Flag {};
 
@@ -31,11 +31,13 @@ class TriangleShader : public Magnum::GL::AbstractShaderProgram {
    */
   Flags flags() const { return flags_; }
 
- private:
+  TriangleShader &bindTriangleTexture(Magnum::GL::Texture2D &texture);
+
+private:
   const Flags flags_;
 };
 
 CORRADE_ENUMSET_OPERATORS(TriangleShader::Flags)
 
-}  // namespace gfx
-}  // namespace esp
+} // namespace gfx
+} // namespace esp
