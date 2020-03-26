@@ -788,7 +788,7 @@ int ResourceManager::getObjectID(const std::string& configFile) {
 }
 
 std::string ResourceManager::getObjectConfig(const int objectID) {
-  if (physicsObjectConfigList_.size() <= objectID) {
+  if (physicsObjectConfigList_.size() <= std::size_t(objectID)) {
     Corrade::Utility::Debug() << "ResourceManager::getObjectConfig - Aborting. "
                                  "No template with index "
                               << objectID;
