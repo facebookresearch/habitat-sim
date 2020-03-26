@@ -283,7 +283,7 @@ bool ResourceManager::loadScene(
         if (gltfMeshData == nullptr) {
           Corrade::Utility::Debug()
               << "AssetInfo::AssetType type error: unsupported physical type, "
-                 "aborting. Try running without \"--enable-phyisics\" and "
+                 "aborting. Try running without \"--enable-physics\" and "
                  "consider logging an issue.";
           return false;
         }
