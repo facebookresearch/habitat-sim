@@ -76,10 +76,13 @@ struct SimTest : Cr::TestSuite::Tester {
       Magnum::Float maxThreshold,
       Magnum::Float meanThreshold);
 
+  void checkPinholeCameraTriangleObservation(SimulatorWithAgents& sim);
+
   void basic();
   void reconfigure();
   void reset();
   void getSceneRGBAObservation();
+  void getSceneTriangleObservation();
   void getSceneWithLightingRGBAObservation();
   void getDefaultLightingRGBAObservation();
   void getCustomLightingRGBAObservation();
@@ -102,6 +105,7 @@ SimTest::SimTest() {
             &SimTest::reconfigure,
             &SimTest::reset,
             &SimTest::getSceneRGBAObservation,
+            &SimTest::getSceneTriangleObservation,
             &SimTest::getSceneWithLightingRGBAObservation,
             &SimTest::getDefaultLightingRGBAObservation,
             &SimTest::getCustomLightingRGBAObservation,
@@ -183,11 +187,46 @@ void SimTest::checkPinholeCameraRGBAObservation(
       (Mn::DebugTools::CompareImageToFile{maxThreshold, meanThreshold}));
 }
 
+void SimTest::checkPinholeCameraTriangleObservation(
+    SimulatorWithAgents& simulator) {
+  auto pinholeCameraSpec = SensorSpec::create();
+  pinholeCameraSpec->sensorSubtype = "pinhole";
+  pinholeCameraSpec->sensorType = SensorType::TRIANGLE;
+  pinholeCameraSpec->position = {1.0f, 1.5f, 1.0f};
+  pinholeCameraSpec->resolution = {128, 128};
+
+  AgentConfiguration agentConfig{};
+  agentConfig.sensorSpecifications = {pinholeCameraSpec};
+  simulator.addAgent(agentConfig);
+
+  Observation observation;
+  ObservationSpace obsSpace;
+  CORRADE_VERIFY(
+      simulator.getAgentObservation(0, pinholeCameraSpec->uuid, observation));
+  CORRADE_VERIFY(
+      simulator.getAgentObservationSpace(0, pinholeCameraSpec->uuid, obsSpace));
+
+  std::vector<size_t> expectedShape{
+      {static_cast<size_t>(pinholeCameraSpec->resolution[0]),
+       static_cast<size_t>(pinholeCameraSpec->resolution[1]), 4}};
+
+  CORRADE_VERIFY(obsSpace.spaceType == ObservationSpaceType::TENSOR);
+  CORRADE_VERIFY(obsSpace.dataType == esp::core::DataType::DT_UINT8);
+  CORRADE_COMPARE(obsSpace.shape, expectedShape);
+  CORRADE_COMPARE(observation.buffer->shape, expectedShape);
+}
+
 void SimTest::getSceneRGBAObservation() {
   setTestCaseName(CORRADE_FUNCTION);
   auto simulator = getSimulator(vangogh);
   checkPinholeCameraRGBAObservation(*simulator, "SimTestExpectedScene.png",
                                     maxThreshold, 0.75f);
+}
+
+void SimTest::getSceneTriangleObservation() {
+  setTestCaseName(CORRADE_FUNCTION);
+  auto simulator = getSimulator(vangogh);
+  checkPinholeCameraTriangleObservation(*simulator);
 }
 
 void SimTest::getSceneWithLightingRGBAObservation() {

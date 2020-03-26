@@ -24,6 +24,8 @@ set(gfx_SOURCES
   RenderTarget.h
   ShaderManager.cpp
   ShaderManager.h
+  TriangleShader.cpp
+  TriangleShader.h
 )
 
 # If ptex support is enabled add relevant source files

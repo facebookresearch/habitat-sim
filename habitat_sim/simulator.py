@@ -438,10 +438,7 @@ class Sensor:
             )
 
         # get the correct scene graph based on application
-        if self._spec.sensor_type in (
-            hsim.SensorType.SEMANTIC,
-            hsim.SensorType.TRIANGLE,
-        ):
+        if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
             if self._sim.semantic_scene is None:
                 raise RuntimeError(
                     "SemanticSensor observation requested but no SemanticScene is loaded"

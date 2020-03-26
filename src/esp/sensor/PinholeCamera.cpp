@@ -108,8 +108,7 @@ void PinholeCamera::drawObservation(sim::Simulator& sim) {
   renderTarget().renderEnter();
 
   gfx::Renderer::ptr renderer = sim.getRenderer();
-  if (spec_->sensorType == SensorType::SEMANTIC ||
-      spec_->sensorType == SensorType::TRIANGLE) {
+  if (spec_->sensorType == SensorType::SEMANTIC) {
     // TODO: check sim has semantic scene graph
     renderer->draw(*this, sim.getActiveSemanticSceneGraph(),
                    sim.isFrustumCullingEnabled());
@@ -139,7 +138,7 @@ void PinholeCamera::readObservation(Observation& obs) {
         Magnum::PixelFormat::R32UI, renderTarget().framebufferSize(),
         obs.buffer->data});
   }
-#ifdef ESP_WITH_TRIANGLE_SENSOR
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
   else if (spec_->sensorType == SensorType::TRIANGLE) {
     renderTarget().readFrameTriangleId(Magnum::MutableImageView2D{
         Magnum::PixelFormat::R32I, renderTarget().framebufferSize(),
