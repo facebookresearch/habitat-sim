@@ -53,8 +53,8 @@ TriangleShader::TriangleShader(Flags flags) : flags_{flags} {
   CORRADE_INTERNAL_ASSERT_OUTPUT(link());
 }
 
-TriangleShader &
-TriangleShader::bindTriangleTexture(Mn::GL::Texture2D &texture) {
+TriangleShader& TriangleShader::bindTriangleTexture(
+    Mn::GL::Texture2D& texture) {
   texture.bind(TriangleTextureUnit);
   return *this;
 }
@@ -63,5 +63,5 @@ TriangleShader::bindTriangleTexture(Mn::GL::Texture2D &texture) {
 // #if defined(CORRADE_TARGET_X86) && defined(__GNUC__) && __GNUC__ >= 6
 // __attribute__((target_clones("default", "sse4.2", "avx2")))
 // #endif
-}
-}
+}  // namespace gfx
+}  // namespace esp
