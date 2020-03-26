@@ -12,7 +12,7 @@ NUM_TESTS = 100
 TURN_DEGREE = 30.0
 ACCEPTABLE_SPLS = {
     ("try_step", False): 0.97,
-    ("try_step_no_sliding", False): 0.90,
+    ("try_step_no_sliding", False): 0.925,
     ("try_step", True): 0.825,
     ("try_step_no_sliding", True): 0.60,
 }
