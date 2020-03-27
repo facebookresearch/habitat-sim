@@ -69,7 +69,9 @@ struct RenderTarget::Impl {
 
     colorBuffer_.setStorage(Mn::GL::RenderbufferFormat::SRGB8Alpha8, size);
     objectIdBuffer_.setStorage(Mn::GL::RenderbufferFormat::R32UI, size);
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
     triangleIdBuffer_.setStorage(Mn::GL::RenderbufferFormat::R32I, size);
+#endif
     depthRenderTexture_.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
         .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
         .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
@@ -77,11 +79,18 @@ struct RenderTarget::Impl {
     framebuffer_ = Mn::GL::Framebuffer{{{}, size}};
     framebuffer_.attachRenderbuffer(RgbaBuffer, colorBuffer_)
         .attachRenderbuffer(ObjectIdBuffer, objectIdBuffer_)
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
         .attachRenderbuffer(TriangleIdBuffer, triangleIdBuffer_)
+#endif
         .attachTexture(Mn::GL::Framebuffer::BufferAttachment::Depth,
                        depthRenderTexture_, 0)
-        .mapForDraw(
-            {{0, RgbaBuffer}, {1, ObjectIdBuffer}, {1, TriangleIdBuffer}});
+        .mapForDraw({
+            {0, RgbaBuffer},
+            {1, ObjectIdBuffer},
+#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
+            {1, TriangleIdBuffer},
+#endif
+        });
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
         Mn::GL::Framebuffer::Status::Complete);
