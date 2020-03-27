@@ -97,15 +97,16 @@ class Simulator {
    * esp::physics::PhysicsManager::addObject().
    * @param objectLibIndex The index of the object's template in @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_.
+   * @param attachmentNode If provided, attach the RigidObject Feature to this
+   * node instead of creating a new one.
+   * @param lightSetupKey The string key for the LightSetup to be used by this
+   * object.
    * @param sceneID !! Not used currently !! Specifies which physical scene to
    * add an object to.
    * @return The ID assigned to new object which identifies it in @ref
    * esp::physics::PhysicsManager::existingObjects_ or @ref esp::ID_UNDEFINED if
    * instancing fails.
    */
-  // int addObject(int objectLibIndex, int sceneID = 0);
-
-  /** @overload */
   int addObject(int objectLibIndex,
                 scene::SceneNode* attachmentNode = nullptr,
                 const std::string& lightSetupKey =
@@ -119,6 +120,19 @@ class Simulator {
    * esp::assets::ResourceManager::physicsObjectLibrary_.
    */
   int getPhysicsObjectLibrarySize();
+
+  /**
+   * @brief Get an editable reference to a physics object template by index.
+   */
+  assets::PhysicsObjectAttributes& getPhysicsObjectAttributes(
+      int templateIndex);
+
+  /**
+   * @brief Get an editable reference to a physics object template by string
+   * key.
+   */
+  assets::PhysicsObjectAttributes& getPhysicsObjectAttributes(
+      const std::string& templateHandle);
 
   /**
    * @brief Load all "*.phys_properties.json" files from the provided file or
@@ -342,7 +356,8 @@ class Simulator {
    * @return Whether or not the navmesh recomputation succeeded.
    */
   bool recomputeNavMesh(nav::PathFinder& pathfinder,
-                        const nav::NavMeshSettings& navMeshSettings);
+                        const nav::NavMeshSettings& navMeshSettings,
+                        bool includeStaticObjects = false);
 
   agent::Agent::ptr getAgent(int agentId);
 

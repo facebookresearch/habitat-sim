@@ -174,6 +174,8 @@ bool BulletRigidObject::initializeObject(
     return false;
   }
 
+  initializationAttributes_ = physicsObjectAttributes;
+
   //! Turn on scene flag
   rigidObjectType_ = RigidObjectType::OBJECT;
   objectMotionType_ = MotionType::DYNAMIC;

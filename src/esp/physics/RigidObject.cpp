@@ -28,7 +28,7 @@ bool RigidObject::initializeScene(
 }
 
 bool RigidObject::initializeObject(
-    const assets::PhysicsObjectAttributes&,
+    const assets::PhysicsObjectAttributes& physicsObjectAttributes,
     const std::vector<assets::CollisionMeshData>&) {
   // TODO (JH): Handling static/kinematic object type
   if (rigidObjectType_ != RigidObjectType::NONE) {
@@ -40,6 +40,8 @@ bool RigidObject::initializeObject(
   rigidObjectType_ = RigidObjectType::OBJECT;
   // default kineamtic unless a simulator is initialized...
   objectMotionType_ = MotionType::KINEMATIC;
+
+  initializationAttributes_ = physicsObjectAttributes;
 
   return true;
 }

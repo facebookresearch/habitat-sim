@@ -8,7 +8,9 @@
 
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
 
+#include "esp/assets/Attributes.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/RenderCamera.h"
@@ -275,6 +277,17 @@ int Simulator::getPhysicsObjectLibrarySize() {
   return resourceManager_.getNumLibraryObjects();
 }
 
+assets::PhysicsObjectAttributes& Simulator::getPhysicsObjectAttributes(
+    int templateIndex) {
+  return resourceManager_.getPhysicsObjectAttributes(
+      resourceManager_.getObjectConfig(templateIndex));
+}
+
+assets::PhysicsObjectAttributes& Simulator::getPhysicsObjectAttributes(
+    const std::string& templateHandle) {
+  return resourceManager_.getPhysicsObjectAttributes(templateHandle);
+}
+
 std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
   std::vector<int> templateIndices;
   std::vector<std::string> validConfigPaths =
@@ -425,7 +438,8 @@ double Simulator::getWorldTime() {
 }
 
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
-                                 const nav::NavMeshSettings& navMeshSettings) {
+                                 const nav::NavMeshSettings& navMeshSettings,
+                                 bool includeStaticObjects) {
   CORRADE_ASSERT(
       config_.createRenderer,
       "Simulator::recomputeNavMesh: SimulatorConfiguration::createRenderer is "
@@ -435,6 +449,41 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 
   assets::MeshData::uptr joinedMesh =
       resourceManager_.createJoinedCollisionMesh(config_.scene.id);
+
+  // add STATIC collision objects
+  if (includeStaticObjects) {
+    for (auto objectID : physicsManager_->getExistingObjectIDs()) {
+      if (physicsManager_->getObjectMotionType(objectID) ==
+          physics::MotionType::STATIC) {
+        auto objectTransform = Magnum::EigenIntegration::cast<
+            Eigen::Transform<float, 3, Eigen::Affine> >(
+            physicsManager_->getObjectVisualSceneNode(objectID)
+                .absoluteTransformationMatrix());
+        const assets::PhysicsObjectAttributes& initializationTemplate =
+            physicsManager_->getInitializationAttributes(objectID);
+        objectTransform.scale(Magnum::EigenIntegration::cast<vec3f>(
+            initializationTemplate.getMagnumVec3("scale")));
+        std::string meshHandle =
+            initializationTemplate.getString("collisionMeshHandle");
+        if (meshHandle.empty()) {
+          meshHandle = initializationTemplate.getString("renderMeshHandle");
+        }
+        assets::MeshData::uptr joinedObjectMesh =
+            resourceManager_.createJoinedCollisionMesh(meshHandle);
+        int prevNumIndices = joinedMesh->ibo.size();
+        int prevNumVerts = joinedMesh->vbo.size();
+        joinedMesh->ibo.resize(prevNumIndices + joinedObjectMesh->ibo.size());
+        for (size_t ix = 0; ix < joinedObjectMesh->ibo.size(); ++ix) {
+          joinedMesh->ibo[ix + prevNumIndices] =
+              joinedObjectMesh->ibo[ix] + prevNumVerts;
+        }
+        joinedMesh->vbo.reserve(joinedObjectMesh->vbo.size() + prevNumVerts);
+        for (auto& vert : joinedObjectMesh->vbo) {
+          joinedMesh->vbo.push_back(objectTransform * vert);
+        }
+      }
+    }
+  }
 
   if (!pathfinder.build(navMeshSettings, *joinedMesh)) {
     LOG(ERROR) << "Failed to build navmesh";
