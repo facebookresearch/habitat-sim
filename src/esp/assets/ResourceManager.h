@@ -569,11 +569,12 @@ class ResourceManager {
    * @param isScene Whether this asset is being loaded as a scene. If it is then
    * it will be flat shaded for performance reasons
    */
-  bool loadGeneralMeshData(const AssetInfo& info,
-                           scene::SceneNode* parent = nullptr,
-                           DrawableGroup* drawables = nullptr,
-                           const Magnum::ResourceKey& lightSetup =
-                               Magnum::ResourceKey{NO_LIGHT_KEY});
+  bool loadGeneralMeshData(
+      const AssetInfo& info,
+      scene::SceneNode* parent = nullptr,
+      DrawableGroup* drawables = nullptr,
+      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{NO_LIGHT_KEY},
+      bool isScene = true);
 
   /**
    * @brief Load a SUNCG mesh into assets from a file. !Deprecated! TODO:

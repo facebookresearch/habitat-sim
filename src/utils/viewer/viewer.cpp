@@ -823,7 +823,7 @@ bool Viewer::placeObject(int objectId, int maxAttempts) {
     // TODO: rotate the object
 
     // test contact
-    validPlacement = physicsManager_->contactTest(objectId);
+    validPlacement = !physicsManager_->contactTest(objectId);
     attempt++;
   }
   if (!validPlacement) {

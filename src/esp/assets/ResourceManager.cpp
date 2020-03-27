@@ -519,7 +519,8 @@ int ResourceManager::loadObject(PhysicsObjectAttributes& objectTemplate,
   if (!renderMeshFilename.empty()) {
     renderMeshinfo = assets::AssetInfo::fromPath(renderMeshFilename);
     renderMeshinfo.requiresLighting = requiresLighting;
-    renderMeshSuccess = loadGeneralMeshData(renderMeshinfo);
+    renderMeshSuccess = loadGeneralMeshData(renderMeshinfo, nullptr, nullptr,
+                                            DEFAULT_LIGHTING_KEY, false);
     if (!renderMeshSuccess) {
       LOG(ERROR) << "Failed to load a physical object's render mesh: "
                  << objectTemplateHandle << ", " << renderMeshFilename;
@@ -531,7 +532,8 @@ int ResourceManager::loadObject(PhysicsObjectAttributes& objectTemplate,
     // if render mesh failed, might have to generate lighting data for collision
     // mesh since we will use it to render
     collisionMeshinfo.requiresLighting = !renderMeshSuccess && requiresLighting;
-    collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo);
+    collisionMeshSuccess = loadGeneralMeshData(
+        collisionMeshinfo, nullptr, nullptr, DEFAULT_LIGHTING_KEY, false);
     if (!collisionMeshSuccess) {
       LOG(ERROR) << "Failed to load a physical object's collision mesh: "
                  << objectTemplateHandle << ", " << collisionMeshFilename;
@@ -1079,7 +1081,8 @@ bool ResourceManager::loadGeneralMeshData(
     const AssetInfo& info,
     scene::SceneNode* parent /* = nullptr */,
     DrawableGroup* drawables /* = nullptr */,
-    const Mn::ResourceKey& lightSetup) {
+    const Mn::ResourceKey& lightSetup,
+    bool isScene) {
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
   const bool drawData = parent != nullptr && drawables != nullptr;
@@ -1211,8 +1214,10 @@ bool ResourceManager::loadGeneralMeshData(
     const quatf transform = info.frame.rotationFrameToWorld();
     Magnum::Matrix4 R = Magnum::Matrix4::from(
         Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-    meshMetaData.root.transformFromLocalToParent =
-        R * meshMetaData.root.transformFromLocalToParent;
+    if (isScene) {
+      meshMetaData.root.transformFromLocalToParent =
+          R * meshMetaData.root.transformFromLocalToParent;
+    }
   } else if (resourceDict_[filename].assetInfo != info) {
     // Right now, we only allow for an asset to be loaded with one
     // configuration, since generated mesh data may be invalid for a new
