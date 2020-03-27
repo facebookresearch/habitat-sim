@@ -4,10 +4,12 @@ import time
 
 import torch
 import torchvision.models.detection.mask_rcnn
-import utils
-from coco_eval import CocoEvaluator
-from coco_utils import get_coco_api_from_dataset
 from torch.utils.tensorboard import SummaryWriter
+
+import utils
+
+from .coco_eval import CocoEvaluator
+from .coco_utils import get_coco_api_from_dataset
 
 
 def load_model_state(model, optimizer, model_state_path, params=None):

@@ -1,7 +1,8 @@
 import numpy as np
 import torch
-from common import area_filter, create_mask_filter
 from torch.utils.data import Dataset
+
+from .common import area_filter, create_mask_filter
 
 
 class InstanceSegmentationDataset(Dataset):

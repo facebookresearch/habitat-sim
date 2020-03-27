@@ -3,13 +3,14 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torchvision.transforms as T
-from common import InstanceVisualizer
-from datasets import InstanceSegmentationDataset
-from engine import evaluate, load_model_state, save_model_state, train_one_epoch
-from models import build_maskrcnn_model
 
 import habitat_sim
 from habitat_sim.utils.data import ImageExtractor
+
+from .common import InstanceVisualizer
+from .datasets import InstanceSegmentationDataset
+from .engine import evaluate, load_model_state, save_model_state, train_one_epoch
+from .models import build_maskrcnn_model
 
 
 def collate_fn(batch):
@@ -29,15 +30,26 @@ class TrainingEnvironment:
 
 class InstanceSegmentationEnvironment(TrainingEnvironment):
     def __init__(
-        self, scene, lr=0.00005, momentum=0.9, weight_decay=0.0005, batch_size=8
+        self,
+        scene,
+        lr=0.00005,
+        momentum=0.9,
+        weight_decay=0.0005,
+        batch_size=8,
+        sim=None,
     ):
         self.scene = scene
         self.extractor = ImageExtractor(
-            scene_filepath=scene, output=["rgba", "semantic"]
+            scene_filepath=scene, output=["rgba", "semantic"], sim=sim
         )
         self.classes = self.extractor.get_semantic_class_names()
-        # labels = ['background'] + [name for name in labels if name not in ['background', 'void', '', 'objects']]
+
+        # The extractor determines the number of classes by counting the unique semantic labels
+        # so if there is no semantic mesh, we will just set this to be 1 class (i.e. background)
         self.num_classes = len(self.classes)
+        if self.num_classes == 0:
+            self.num_classes = 1
+
         self.model = build_maskrcnn_model(self.num_classes)
 
         # Specify which transforms to apply to the data in preprocessing
