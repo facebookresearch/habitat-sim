@@ -40,6 +40,8 @@
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/PrimitiveIDDrawable.h"
 #include "esp/gfx/PrimitiveIDShader.h"
+#include "esp/gfx/TriangleIDDrawable.h"
+#include "esp/gfx/TriangleIDShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/physics/PhysicsManager.h"
@@ -1238,6 +1240,15 @@ bool ResourceManager::loadGeneralMeshData(
   const MeshMetaData& meshMetaData = loadedAssetData.meshMetaData;
 
   scene::SceneNode& newNode = parent->createChild();
+  int start = meshMetaData.meshIndex.first;
+  int end = meshMetaData.meshIndex.second;
+  if (0 <= start && start <= end) {
+    for (int iMesh = start; iMesh <= end; ++iMesh) {
+      // meshes_[iMesh]->uploadBuffersToGPU(forceReload);
+      newNode.addFeature<gfx::TriangleIDDrawable>(
+          *meshes_[iMesh]->getMagnumGLMesh(), shaderManager_, drawables);
+    }
+  }
   const bool forceReload = false;
   // re-bind position, normals, uv, colors etc. to the corresponding buffers
   // under *current* gl context

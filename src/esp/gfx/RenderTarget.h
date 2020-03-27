@@ -9,7 +9,7 @@
 #include "esp/core/esp.h"
 
 #include "esp/gfx/DepthUnprojection.h"
-#include "esp/gfx/TriangleShader.h"
+#include "esp/gfx/TriangleIDShader.h"
 
 namespace esp {
 namespace gfx {
@@ -47,7 +47,7 @@ class RenderTarget {
    */
   RenderTarget(const Magnum::Vector2i& size,
                const Magnum::Vector2& depthUnprojection)
-      : RenderTarget{size, depthUnprojection, nullptr, nullptr} {};
+      : RenderTarget{size, depthUnprojection, nullptr} {};
 
   ~RenderTarget() { LOG(INFO) << "Deconstructing RenderTarget"; }
 

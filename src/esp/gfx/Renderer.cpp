@@ -18,7 +18,7 @@
 #include <Magnum/PixelFormat.h>
 
 #include "esp/gfx/DepthUnprojection.h"
-#include "esp/gfx/TriangleShader.h"
+#include "esp/gfx/TriangleIDShader.h"
 #include "esp/gfx/magnum.h"
 
 namespace Mn = Magnum;

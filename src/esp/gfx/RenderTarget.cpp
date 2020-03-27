@@ -53,7 +53,7 @@ struct RenderTarget::Impl {
       : colorBuffer_{},
         objectIdBuffer_{},
 #ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
-        triangleIdBuffer_{Mn::NoCreate},
+        triangleIdBuffer_{},
 #endif
         depthRenderTexture_{},
         framebuffer_{Mn::NoCreate},
@@ -69,6 +69,7 @@ struct RenderTarget::Impl {
 
     colorBuffer_.setStorage(Mn::GL::RenderbufferFormat::SRGB8Alpha8, size);
     objectIdBuffer_.setStorage(Mn::GL::RenderbufferFormat::R32UI, size);
+    triangleIdBuffer_.setStorage(Mn::GL::RenderbufferFormat::R32I, size);
     depthRenderTexture_.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
         .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
         .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
@@ -76,9 +77,11 @@ struct RenderTarget::Impl {
     framebuffer_ = Mn::GL::Framebuffer{{{}, size}};
     framebuffer_.attachRenderbuffer(RgbaBuffer, colorBuffer_)
         .attachRenderbuffer(ObjectIdBuffer, objectIdBuffer_)
+        .attachRenderbuffer(TriangleIdBuffer, triangleIdBuffer_)
         .attachTexture(Mn::GL::Framebuffer::BufferAttachment::Depth,
                        depthRenderTexture_, 0)
-        .mapForDraw({{0, RgbaBuffer}, {1, ObjectIdBuffer}});
+        .mapForDraw(
+            {{0, RgbaBuffer}, {1, ObjectIdBuffer}, {1, TriangleIdBuffer}});
     CORRADE_INTERNAL_ASSERT(
         framebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
         Mn::GL::Framebuffer::Status::Complete);
@@ -297,12 +300,10 @@ struct RenderTarget::Impl {
 
 RenderTarget::RenderTarget(const Mn::Vector2i& size,
                            const Mn::Vector2& depthUnprojection,
-                           DepthShader* depthShader,
-                           TriangleShader* triangleShader)
+                           DepthShader* depthShader)
     : pimpl_(spimpl::make_unique_impl<Impl>(size,
                                             depthUnprojection,
-                                            depthShader,
-                                            triangleShader)) {}
+                                            depthShader)) {}
 
 void RenderTarget::renderEnter() {
   pimpl_->renderEnter();

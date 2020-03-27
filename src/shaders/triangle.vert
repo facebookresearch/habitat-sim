@@ -1,6 +1,13 @@
+uniform highp mat4 transformationProjectionMatrix;
+
+// IDs corresponding to Magnum's generic attribute definitions and
+// TriangleIDShader::{Position,Color3}
 layout(location = 0) in highp vec4 position;
+layout(location = 3) in mediump vec3 color;
+
+out mediump vec3 v_color;
 
 void main() {
-    gl_Position = vec4((gl_VertexID == 2) ?  3.0 : -1.0,
-                     (gl_VertexID == 1) ? -3.0 :  1.0, 0.0, 1.0);
+  gl_Position = transformationProjectionMatrix * vec4(position.xyz, 1.0);
+  v_color = color;
 }
