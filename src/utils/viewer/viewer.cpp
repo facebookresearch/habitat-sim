@@ -799,37 +799,51 @@ Magnum::Vector3 Viewer::unproject(const Magnum::Vector2i& windowPosition,
 // place an object from a navigable point with random Y rotation and no contact
 // with scene or other objects
 bool Viewer::placeObject(int objectId, int maxAttempts) {
-  Magnum::Vector3 originalTranslation =
-      physicsManager_->getTranslation(objectId);
-  physicsManager_->setObjectMotionType(objectId,
-                                       physics::MotionType::KINEMATIC);
+  Magnum::Matrix4 originalTransformation =
+      physicsManager_->getTransformation(objectId);
   Magnum::Vector3 potentialPoint;
+  // displace by half-extent plus collision margin
   Magnum::Vector3 objectVerticalDisplacement(
       0,
       physicsManager_->getObjectSceneNode(objectId).getCumulativeBB().sizeY() /
-          2.0,
+              2.0 +
+          physicsManager_->getInitializationAttributes(objectId).getDouble(
+              "margin"),
       0);
   bool validPlacement = false;
 
+  // rejection sample for a placement
   int attempt = 1;
   while (!validPlacement || attempt > maxAttempts) {
+    // draw a navigable point from the NavMesh
     potentialPoint = Magnum::Vector3(pathfinder_->getRandomNavigablePoint());
-    if (potentialPoint[0] > 1.0)
+    // filter points that may be on the roof (TODO: this is a hack and islands
+    // may be better).
+    if (potentialPoint[1] > 1.0)
       continue;
+
     // try placing the object
     physicsManager_->setTranslation(
         objectId, potentialPoint + objectVerticalDisplacement);
-
-    // TODO: rotate the object
+    float randAngle = ((rand() % 1000) / 1000.0) * M_PI * 2.0;
+    Magnum::Matrix4 randRotation =
+        Magnum::Matrix4::rotationY(Magnum::Math::Rad<float>(randAngle));
+    physicsManager_->setRotation(
+        objectId, Magnum::Quaternion::fromMatrix(randRotation.rotation()));
 
     // test contact
     validPlacement = !physicsManager_->contactTest(objectId);
     attempt++;
   }
   if (!validPlacement) {
-    physicsManager_->setObjectMotionType(objectId,
-                                         physics::MotionType::DYNAMIC);
-    physicsManager_->setTranslation(objectId, originalTranslation);
+    physicsManager_->setTransformation(objectId, originalTransformation);
+    Corrade::Utility::Debug()
+        << "Viewer::placeObject found NO VALID PLACEMENT in " << attempt
+        << "attempts. Resetting the object.";
+  } else {
+    Corrade::Utility::Debug()
+        << "Viewer::placeObject found a valid placement in " << attempt
+        << "attempts.";
   }
   return validPlacement;
 }
