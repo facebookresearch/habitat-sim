@@ -15,7 +15,6 @@
 #include <vector>
 
 /* Bullet Physics Integration */
-#include <Magnum/Trade/MeshData3D.h>
 
 #include "RigidObject.h"
 #include "esp/assets/Asset.h"
@@ -765,6 +764,15 @@ class PhysicsManager {
   /** @overload */
   scene::SceneNode& getObjectSceneNode(int physObjectID);
 
+  /**
+   * @brief Get a const reference to the specified object's visual SceneNode for
+   * info query purposes.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Const reference to the object's visual scene node.
+   */
+  const scene::SceneNode& getObjectVisualSceneNode(int physObjectID) const;
+
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref
    * BulletPhysicsManager::debugDraw.
@@ -796,6 +804,16 @@ class PhysicsManager {
   const PhysicsSimulationLibrary& getPhysicsSimulationLibrary() const {
     return activePhysSimLib_;
   };
+
+  /**
+   * @brief Get the template used to initialize an object.
+   *
+   * PhysicsObjectAttributes templates are expected to be changed between
+   * instances of objects.
+   * @return The initialization settings of the specified object instance.
+   */
+  const assets::PhysicsObjectAttributes& getInitializationAttributes(
+      const int physObjectID) const;
 
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an

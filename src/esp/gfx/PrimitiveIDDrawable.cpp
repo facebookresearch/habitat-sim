@@ -30,10 +30,10 @@ PrimitiveIDDrawable::PrimitiveIDDrawable(scene::SceneNode& node,
 
 void PrimitiveIDDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                                Magnum::SceneGraph::Camera3D& camera) {
-  shader_->setTransformationProjectionMatrix(camera.projectionMatrix() *
-                                             transformationMatrix);
-
-  mesh_.draw(*shader_);
+  (*shader_)
+      .setTransformationProjectionMatrix(camera.projectionMatrix() *
+                                         transformationMatrix)
+      .draw(mesh_);
 }
 
 }  // namespace gfx

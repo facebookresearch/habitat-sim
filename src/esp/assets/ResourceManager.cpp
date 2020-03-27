@@ -89,7 +89,7 @@ bool ResourceManager::loadScene(
   // mesh, or general mesh (e.g., MP3D)
   staticDrawableInfo_.clear();
   if (info.type == AssetType::FRL_PTEX_MESH ||
-      info.type == AssetType::MP3D_MESH ||
+      info.type == AssetType::MP3D_MESH || info.type == AssetType::UNKNOWN ||
       (info.type == AssetType::INSTANCE_MESH && splitSemanticMesh)) {
     computeAbsoluteAABBs_ = true;
   }
@@ -128,7 +128,7 @@ bool ResourceManager::loadScene(
   }
 
   // once a scene is loaded, we should have a GL::Context so load the primitives
-  Magnum::Trade::MeshData3D cube = Magnum::Primitives::cubeWireframe();
+  Magnum::Trade::MeshData cube = Magnum::Primitives::cubeWireframe();
   primitive_meshes_.push_back(
       std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(cube)));
 
@@ -149,7 +149,8 @@ bool ResourceManager::loadScene(
 
       computePTexMeshAbsoluteAABBs(*meshes_[metaData.meshIndex.first]);
 #endif
-    } else if (info.type == AssetType::MP3D_MESH) {
+    } else if (info.type == AssetType::MP3D_MESH ||
+               info.type == AssetType::UNKNOWN) {
       computeGeneralMeshAbsoluteAABBs();
     } else if (info.type == AssetType::INSTANCE_MESH) {
       computeInstanceMeshAbsoluteAABBs();
@@ -275,9 +276,17 @@ bool ResourceManager::loadScene(
       }
 
       // GLB Mesh
-      else if (info.type == AssetType::MP3D_MESH) {
+      else if (info.type == AssetType::MP3D_MESH ||
+               info.type == AssetType::UNKNOWN) {
         GltfMeshData* gltfMeshData =
             dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
+        if (gltfMeshData == nullptr) {
+          Corrade::Utility::Debug()
+              << "AssetInfo::AssetType type error: unsupported physical type, "
+                 "aborting. Try running without \"--enable-physics\" and "
+                 "consider logging an issue.";
+          return false;
+        }
         CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
         meshGroup.push_back(meshData);
       }
@@ -292,6 +301,43 @@ bool ResourceManager::loadScene(
   }
 
   return meshSuccess;
+}
+
+std::vector<std::string> ResourceManager::getObjectConfigPaths(
+    std::string path) {
+  std::vector<std::string> paths;
+
+  namespace Directory = Cr::Utility::Directory;
+  std::string objPhysPropertiesFilename = path;
+  if (!Corrade::Utility::String::endsWith(objPhysPropertiesFilename,
+                                          ".phys_properties.json")) {
+    objPhysPropertiesFilename = path + ".phys_properties.json";
+  }
+  const bool dirExists = Directory::isDirectory(path);
+  const bool fileExists = Directory::exists(objPhysPropertiesFilename);
+
+  if (!dirExists && !fileExists) {
+    LOG(WARNING) << "Cannot find " << path << " or "
+                 << objPhysPropertiesFilename << ". Aborting parse.";
+    return paths;
+  }
+
+  if (fileExists) {
+    paths.push_back(objPhysPropertiesFilename);
+  }
+
+  if (dirExists) {
+    LOG(INFO) << "Parsing object library directory: " + path;
+    for (auto& file : Directory::list(path, Directory::Flag::SortAscending)) {
+      std::string absoluteSubfilePath = Directory::join(path, file);
+      if (Cr::Utility::String::endsWith(absoluteSubfilePath,
+                                        ".phys_properties.json")) {
+        paths.push_back(absoluteSubfilePath);
+      }
+    }
+  }
+
+  return paths;
 }
 
 PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
@@ -375,36 +421,12 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
       continue;
     }
 
-    namespace Directory = Cr::Utility::Directory;
     std::string absolutePath =
-        Directory::join(configDirectory, paths[i].GetString());
-    std::string objPhysPropertiesFilename =
-        absolutePath + ".phys_properties.json";
-    const bool dirExists = Directory::isDirectory(absolutePath);
-    const bool fileExists = Directory::exists(objPhysPropertiesFilename);
-
-    if (!dirExists && !fileExists) {
-      LOG(WARNING) << "Cannot find " << absolutePath << " or "
-                   << objPhysPropertiesFilename << ". Aborting parse.";
-      continue;
-    }
-
-    if (dirExists) {
-      LOG(INFO) << "Parsing object library directory: " + absolutePath;
-      for (auto& file :
-           Directory::list(absolutePath, Directory::Flag::SortAscending)) {
-        std::string absoluteSubfilePath = Directory::join(absolutePath, file);
-        if (Cr::Utility::String::endsWith(absoluteSubfilePath,
-                                          ".phys_properties.json")) {
-          physicsManagerAttributes.appendVecStrings("objectLibraryPaths",
-                                                    absoluteSubfilePath);
-        }
-      }
-    }
-
-    if (fileExists) {
-      physicsManagerAttributes.appendVecStrings("objectLibraryPaths",
-                                                objPhysPropertiesFilename);
+        Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
+    std::vector<std::string> validConfigPaths =
+        getObjectConfigPaths(absolutePath);
+    for (auto& path : validConfigPaths) {
+      physicsManagerAttributes.appendVecStrings("objectLibraryPaths", path);
     }
   }
 
@@ -758,7 +780,7 @@ int ResourceManager::getObjectID(const std::string& configFile) {
       std::find(physicsObjectConfigList_.begin(),
                 physicsObjectConfigList_.end(), configFile);
   if (itr == physicsObjectConfigList_.cend()) {
-    return -1;
+    return ID_UNDEFINED;
   } else {
     int objectID = std::distance(physicsObjectConfigList_.begin(), itr);
     return objectID;
@@ -766,6 +788,12 @@ int ResourceManager::getObjectID(const std::string& configFile) {
 }
 
 std::string ResourceManager::getObjectConfig(const int objectID) {
+  if (physicsObjectConfigList_.size() <= std::size_t(objectID)) {
+    Corrade::Utility::Debug() << "ResourceManager::getObjectConfig - Aborting. "
+                                 "No template with index "
+                              << objectID;
+    return "";
+  }
   return physicsObjectConfigList_[objectID];
 }
 
@@ -812,7 +840,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
     uint32_t meshID = staticDrawableInfo_[iEntry].meshID;
 
-    Corrade::Containers::Optional<Magnum::Trade::MeshData3D>& meshData =
+    Corrade::Containers::Optional<Magnum::Trade::MeshData>& meshData =
         meshes_[meshID]->getMeshData();
     CORRADE_ASSERT(meshData,
                    "ResourceManager::computeGeneralMeshAbsoluteAABBs: the "
@@ -823,14 +851,14 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
 
     // transform the vertex positions to the world space, compute the aabb for
     // each position array
-    for (uint32_t jArray = 0; jArray < meshData->positionArrayCount();
+    for (uint32_t jArray = 0;
+         jArray < meshData->attributeCount(Mn::Trade::MeshAttribute::Position);
          ++jArray) {
-      const std::vector<Mn::Vector3>& pos = meshData->positions(jArray);
-      std::vector<Mn::Vector3> absPos =
-          Mn::MeshTools::transformPoints(absTransforms[iEntry], pos);
+      Cr::Containers::Array<Mn::Vector3> pos =
+          meshData->positions3DAsArray(jArray);
+      Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], pos);
 
-      std::pair<Mn::Vector3, Mn::Vector3> bb =
-          Mn::Math::minmax<Mn::Vector3>(absPos);
+      std::pair<Mn::Vector3, Mn::Vector3> bb = Mn::Math::minmax(pos);
       bbPos.push_back(std::move(bb.first));
       bbPos.push_back(std::move(bb.second));
     }
@@ -1170,8 +1198,7 @@ bool ResourceManager::loadGeneralMeshData(
       for (unsigned int sceneDataID : sceneData->children3D()) {
         loadMeshHierarchy(*importer, meshMetaData.root, sceneDataID);
       }
-    } else if (importer->mesh3DCount() &&
-               meshes_[meshMetaData.meshIndex.first]) {
+    } else if (importer->meshCount() && meshes_[meshMetaData.meshIndex.first]) {
       // no default scene --- standalone OBJ/PLY files, for example
       // take a wild guess and load the first mesh with the first material
       // addMeshToDrawables(metaData, *parent, drawables, ID_UNDEFINED, 0, 0);
@@ -1238,15 +1265,14 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
 
   // create the mesh
   std::vector<Magnum::UnsignedInt> indices;
-  std::vector<std::vector<Magnum::Vector3>> positions{
-      std::vector<Magnum::Vector3>()};  // only one component
+  std::vector<Magnum::Vector3> positions;
 
   const MeshData::ptr navMeshData = pathFinder.getNavMeshData();
 
   // add the vertices
-  positions.back().resize(navMeshData->vbo.size());
+  positions.resize(navMeshData->vbo.size());
   for (size_t vix = 0; vix < navMeshData->vbo.size(); vix++) {
-    positions.back()[vix] = Magnum::Vector3{navMeshData->vbo[vix]};
+    positions[vix] = Magnum::Vector3{navMeshData->vbo[vix]};
   }
 
   indices.resize(navMeshData->ibo.size() * 2);
@@ -1261,9 +1287,16 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
     indices[nix + 5] = navMeshData->ibo[ix];
   }
 
-  // create the mesh object
-  Magnum::Trade::MeshData3D visualNavMesh{
-      Magnum::MeshPrimitive::Lines, indices, positions, {}, {}, {}, nullptr};
+  // create a temporary mesh object referencing the above data
+  Mn::Trade::MeshData visualNavMesh{
+      Mn::MeshPrimitive::Lines,
+      {},
+      indices,
+      Mn::Trade::MeshIndexData{indices},
+      {},
+      positions,
+      {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position,
+                                    Cr::Containers::arrayView(positions)}}};
 
   // compile and add the new mesh to the structure
   primitive_meshes_.push_back(std::make_unique<Magnum::GL::Mesh>(
@@ -1390,10 +1423,10 @@ gfx::PhongMaterialData::uptr ResourceManager::getPhongShadedMaterialData(
 void ResourceManager::loadMeshes(Importer& importer,
                                  LoadedAssetData& loadedAssetData) {
   int meshStart = meshes_.size();
-  int meshEnd = meshStart + importer.mesh3DCount() - 1;
+  int meshEnd = meshStart + importer.meshCount() - 1;
   loadedAssetData.meshMetaData.setMeshIndices(meshStart, meshEnd);
 
-  for (int iMesh = 0; iMesh < importer.mesh3DCount(); ++iMesh) {
+  for (int iMesh = 0; iMesh < importer.meshCount(); ++iMesh) {
     // don't need normals if we aren't using lighting
     auto gltfMeshData = std::make_unique<GltfMeshData>(
         loadedAssetData.assetInfo.requiresLighting);

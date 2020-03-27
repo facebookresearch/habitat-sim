@@ -16,7 +16,7 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/Mesh.h>
-#include <Magnum/Trade/MeshData3D.h>
+#include <Magnum/Trade/MeshData.h>
 #include "CollisionMeshData.h"
 #include "MeshData.h"
 #include "esp/core/esp.h"
@@ -120,7 +120,7 @@ class BaseMesh {
    * sub-component of the asset.
    */
   virtual Magnum::GL::Mesh* getMagnumGLMesh(int) { return nullptr; }
-  Corrade::Containers::Optional<Magnum::Trade::MeshData3D>& getMeshData() {
+  Corrade::Containers::Optional<Magnum::Trade::MeshData>& getMeshData() {
     return meshData_;
   }
 
@@ -169,7 +169,7 @@ class BaseMesh {
    *
    * See @ref GltfMeshData::setMeshData.
    */
-  Corrade::Containers::Optional<Magnum::Trade::MeshData3D> meshData_ =
+  Corrade::Containers::Optional<Magnum::Trade::MeshData> meshData_ =
       Corrade::Containers::NullOpt;
   // ==== non-rendering ===
   /**
