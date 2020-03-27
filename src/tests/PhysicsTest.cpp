@@ -77,7 +77,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
     // if we have a simulation implementation then test a joined vs. unjoined
     // object
     esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+    physicsObjectAttributes.setRenderMeshHandle(objectFile);
     resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
@@ -87,9 +87,9 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
     for (int i = 0; i < 2; i++) {
       // mark the object not joined
       if (i == 0) {
-        objectTemplate.setBool("joinCollisionMeshes", false);
+        objectTemplate.setJoinCollisionMeshes(false);
       } else {
-        objectTemplate.setBool("joinCollisionMeshes", true);
+        objectTemplate.setJoinCollisionMeshes(true);
       }
 
       physicsManager_->reset();
@@ -153,9 +153,9 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
     // sphere object
 
     esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-    physicsObjectAttributes.setDouble("margin", 0.0);
-    physicsObjectAttributes.setBool("joinCollisionMeshes", false);
+    physicsObjectAttributes.setRenderMeshHandle(objectFile);
+    physicsObjectAttributes.setMargin(0.0);
+    physicsObjectAttributes.setJoinCollisionMeshes(false);
     resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
@@ -164,9 +164,9 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
 
     for (int i = 0; i < 2; i++) {
       if (i == 0) {
-        objectTemplate.setBool("useBoundingBoxForCollision", false);
+        objectTemplate.setBoundingBoxCollisions(false);
       } else {
-        objectTemplate.setBool("useBoundingBoxForCollision", true);
+        objectTemplate.setBoundingBoxCollisions(true);
       }
 
       physicsManager_->reset();
@@ -223,8 +223,8 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
     esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-    physicsObjectAttributes.setDouble("margin", 0.0);
+    physicsObjectAttributes.setRenderMeshHandle(objectFile);
+    physicsObjectAttributes.setMargin(0.0);
     resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
     // generate two centered boxes with dimension 2x2x2
@@ -264,8 +264,8 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
       PhysicsManager::PhysicsSimulationLibrary::BULLET) {
     // test joined vs. unjoined
     esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-    physicsObjectAttributes.setDouble("margin", 0.1);
+    physicsObjectAttributes.setRenderMeshHandle(objectFile);
+    physicsObjectAttributes.setMargin(0.1);
 
     resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
@@ -276,15 +276,15 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     auto* drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
     // add the unjoined object
-    objectTemplate.setBool("joinCollisionMeshes", false);
+    objectTemplate.setJoinCollisionMeshes(false);
     int objectId0 = physicsManager_->addObject(objectFile, drawables);
 
     // add the joined object
-    objectTemplate.setBool("joinCollisionMeshes", true);
+    objectTemplate.setJoinCollisionMeshes(true);
     int objectId1 = physicsManager_->addObject(objectFile, drawables);
 
     // add bounding box object
-    objectTemplate.setBool("useBoundingBoxForCollision", true);
+    objectTemplate.setBoundingBoxCollisions(true);
     int objectId2 = physicsManager_->addObject(objectFile, drawables);
 
     esp::physics::BulletPhysicsManager* bPhysManager =
@@ -322,8 +322,8 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
 
   // test joined vs. unjoined
   esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-  physicsObjectAttributes.setDouble("margin", 0.0);
+  physicsObjectAttributes.setRenderMeshHandle(objectFile);
+  physicsObjectAttributes.setMargin(0.0);
 
   resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
@@ -339,7 +339,7 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
   for (auto& testScale : testScales) {
-    objectTemplate.setMagnumVec3("scale", testScale);
+    objectTemplate.setScale(testScale);
 
     Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
 
@@ -379,8 +379,8 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   initScene(sceneFile);
 
   esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-  physicsObjectAttributes.setDouble("margin", 0.0);
+  physicsObjectAttributes.setRenderMeshHandle(objectFile);
+  physicsObjectAttributes.setMargin(0.0);
   resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
@@ -487,7 +487,7 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
   initScene(sceneFile);
 
   esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
+  physicsObjectAttributes.setRenderMeshHandle(objectFile);
   resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 
   esp::scene::SceneNode& root =
@@ -540,10 +540,10 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
     float boxHalfExtent = 0.2;
     esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-    physicsObjectAttributes.setBool("useBoundingBoxForCollision", true);
-    physicsObjectAttributes.setMagnumVec3(
-        "scale", {boxHalfExtent, boxHalfExtent, boxHalfExtent});
+    physicsObjectAttributes.setRenderMeshHandle(objectFile);
+    physicsObjectAttributes.setBoundingBoxCollisions(true);
+    physicsObjectAttributes.setScale(
+        {boxHalfExtent, boxHalfExtent, boxHalfExtent});
     int boxId =
         resourceManager_.loadObject(physicsObjectAttributes, objectFile);
 

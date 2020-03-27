@@ -36,7 +36,7 @@ bool BulletPhysicsManager::initPhysics(
   bWorld_->setDebugDrawer(&debugDrawer_);
 
   // Copy over relevant configuration
-  fixedTimeStep_ = physicsManagerAttributes.getDouble("timestep");
+  fixedTimeStep_ = physicsManagerAttributes.getTimestep();
   // currently GLB meshes are y-up
   bWorld_->setGravity(
       btVector3(physicsManagerAttributes.getMagnumVec3("gravity")));
@@ -63,7 +63,7 @@ bool BulletPhysicsManager::addScene(
   }
 
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
-      physicsSceneAttributes.getString("collisionMeshHandle"));
+      physicsSceneAttributes.getCollisionMeshHandle());
 
   //! Initialize scene
   bool sceneSuccess = static_cast<BulletRigidObject*>(staticSceneObject_.get())
@@ -89,7 +89,7 @@ int BulletPhysicsManager::makeRigidObject(
       std::make_unique<BulletRigidObject>(objectNode);
 
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
-      physicsObjectAttributes.getString("collisionMeshHandle"));
+      physicsObjectAttributes.getCollisionMeshHandle());
   bool objectSuccess =
       static_cast<BulletRigidObject*>(existingObjects_.at(newObjectID).get())
           ->initializeObject(physicsObjectAttributes, bWorld_, metaData,

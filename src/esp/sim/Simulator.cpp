@@ -462,11 +462,11 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
         const assets::PhysicsObjectAttributes& initializationTemplate =
             physicsManager_->getInitializationAttributes(objectID);
         objectTransform.scale(Magnum::EigenIntegration::cast<vec3f>(
-            initializationTemplate.getMagnumVec3("scale")));
+            initializationTemplate.getScale()));
         std::string meshHandle =
-            initializationTemplate.getString("collisionMeshHandle");
+            initializationTemplate.getCollisionMeshHandle();
         if (meshHandle.empty()) {
-          meshHandle = initializationTemplate.getString("renderMeshHandle");
+          meshHandle = initializationTemplate.getRenderMeshHandle();
         }
         assets::MeshData::uptr joinedObjectMesh =
             resourceManager_.createJoinedCollisionMesh(meshHandle);

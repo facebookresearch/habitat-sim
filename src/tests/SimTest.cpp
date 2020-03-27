@@ -360,7 +360,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   // test scaling
   esp::assets::PhysicsObjectAttributes& objectTemplate =
       simulator->getPhysicsObjectAttributes(0);
-  objectTemplate.setMagnumVec3("scale", {0.5, 0.5, 0.5});
+  objectTemplate.setScale({0.5, 0.5, 0.5});
   objectID = simulator->addObject(0);
   simulator->setTranslation(Magnum::Vector3{randomNavPoint}, objectID);
   simulator->setTranslation(
@@ -399,7 +399,7 @@ void SimTest::loadingObjectTemplates() {
   esp::assets::PhysicsObjectAttributes newTemplate;
   std::string boxPath =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
-  newTemplate.setString("renderMeshHandle", boxPath);
+  newTemplate.setRenderMeshHandle(boxPath);
   int templateIndex = simulator->loadObjectTemplate(newTemplate, boxPath);
   CORRADE_VERIFY(templateIndex != esp::ID_UNDEFINED);
 

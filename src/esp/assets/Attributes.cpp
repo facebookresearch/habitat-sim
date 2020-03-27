@@ -260,41 +260,218 @@ std::string Attributes::listAttributes() {
   return attributes;
 }
 
+//----------------------------------------//
+//  Derived attribute implementations
+//----------------------------------------//
+
 PhysicsObjectAttributes::PhysicsObjectAttributes() {
   // fill necessary attribute defaults
-  setDouble("mass", 1.0);
-  setDouble("margin", 0.01);
-  setMagnumVec3("scale", Magnum::Vector3(1.0, 1.0, 1.0));
-  setMagnumVec3("COM", Magnum::Vector3(0));
-  setMagnumVec3("inertia", Magnum::Vector3(0., 0., 0.));
-  setDouble("frictionCoefficient", 0.5);
-  setDouble("restitutionCoefficient", 0.1);
-  setDouble("linDamping", 0.2);
-  setDouble("angDamping", 0.2);
-  setString("originHandle", "");
-  setString("renderMeshHandle", "");
-  setString("collisionMeshHandle", "");
-  setBool("useBoundingBoxForCollision",
-          false);  // if true, override other options and TODO: use bounding box
-                   // as collision object
-  setBool("joinCollisionMeshes",
-          true);  // if true, join all meshes into one collision convex instead
-                  // of building a compound
-  setBool("requiresLighting", true);
+  setMass(1.0);
+  setMargin(0.01);
+  setScale({1.0, 1.0, 1.0});
+  setCOM({0, 0, 0});
+  setInertia({0, 0, 0});
+  setFrictionCoefficient(0.5);
+  setRestitutionCoefficient(0.1);
+  setLinearDamping(0.2);
+  setAngularDamping(0.2);
+  setOriginHandle("");
+  setRenderMeshHandle("");
+  setCollisionMeshHandle("");
+  setBoundingBoxCollisions(false);
+  setJoinCollisionMeshes(true);
+  setRequiresLighting(true);
+}
+
+// center of mass (COM)
+void PhysicsObjectAttributes::setCOM(const Magnum::Vector3& com) {
+  setMagnumVec3("COM", com);
+}
+Magnum::Vector3 PhysicsObjectAttributes::getCOM() const {
+  return getMagnumVec3("COM");
+}
+
+// collision shape inflation margin
+void PhysicsObjectAttributes::setMargin(double margin) {
+  setDouble("margin", margin);
+}
+double PhysicsObjectAttributes::getMargin() const {
+  return getDouble("margin");
+}
+
+void PhysicsObjectAttributes::setMass(double mass) {
+  setDouble("mass", mass);
+}
+double PhysicsObjectAttributes::getMass() const {
+  return getDouble("mass");
+}
+
+// inertia diagonal
+void PhysicsObjectAttributes::setInertia(const Magnum::Vector3& inertia) {
+  setMagnumVec3("inertia", inertia);
+}
+Magnum::Vector3 PhysicsObjectAttributes::getInertia() const {
+  return getMagnumVec3("inertia");
+}
+
+void PhysicsObjectAttributes::setScale(const Magnum::Vector3& scale) {
+  setMagnumVec3("scale", scale);
+}
+Magnum::Vector3 PhysicsObjectAttributes::getScale() const {
+  return getMagnumVec3("scale");
+}
+
+void PhysicsObjectAttributes::setFrictionCoefficient(
+    double frictionCoefficient) {
+  setDouble("frictionCoefficient", frictionCoefficient);
+}
+double PhysicsObjectAttributes::getFrictionCoefficient() const {
+  return getDouble("frictionCoefficient");
+}
+
+void PhysicsObjectAttributes::setRestitutionCoefficient(
+    double restitutionCoefficient) {
+  setDouble("restitutionCoefficient", restitutionCoefficient);
+}
+double PhysicsObjectAttributes::getRestitutionCoefficient() const {
+  return getDouble("restitutionCoefficient");
+}
+
+void PhysicsObjectAttributes::setLinearDamping(double linearDamping) {
+  setDouble("linDamping", linearDamping);  // TODO: change to "linearDamping"
+}
+double PhysicsObjectAttributes::getLinearDamping() const {
+  return getDouble("linDamping");
+}
+
+void PhysicsObjectAttributes::setAngularDamping(double angularDamping) {
+  setDouble("angDamping", angularDamping);  // TODO: change to "angularDamping"
+}
+double PhysicsObjectAttributes::getAngularDamping() const {
+  return getDouble("angDamping");
+}
+
+void PhysicsObjectAttributes::setOriginHandle(const std::string& originHandle) {
+  setString("originHandle", originHandle);
+}
+std::string PhysicsObjectAttributes::getOriginHandle() const {
+  return getString("originHandle");
+}
+
+void PhysicsObjectAttributes::setRenderMeshHandle(
+    const std::string& renderMeshHandle) {
+  setString("renderMeshHandle", renderMeshHandle);
+}
+std::string PhysicsObjectAttributes::getRenderMeshHandle() const {
+  return getString("renderMeshHandle");
+}
+
+void PhysicsObjectAttributes::setCollisionMeshHandle(
+    const std::string& collisionMeshHandle) {
+  setString("collisionMeshHandle", collisionMeshHandle);
+}
+std::string PhysicsObjectAttributes::getCollisionMeshHandle() const {
+  return getString("collisionMeshHandle");
+}
+
+// if true override other settings and use render mesh bounding box as collision
+// object
+void PhysicsObjectAttributes::setBoundingBoxCollisions(
+    bool useBoundingBoxForCollision) {
+  setBool("useBoundingBoxForCollision", useBoundingBoxForCollision);
+}
+bool PhysicsObjectAttributes::getBoundingBoxCollisions() const {
+  return getBool("useBoundingBoxForCollision");
+}
+
+// if true join all mesh components of an asset into a unified collision object
+void PhysicsObjectAttributes::setJoinCollisionMeshes(bool joinCollisionMeshes) {
+  setBool("joinCollisionMeshes", joinCollisionMeshes);
+}
+bool PhysicsObjectAttributes::getJoinCollisionMeshes() const {
+  return getBool("joinCollisionMeshes");
+}
+
+// if true use phong illumination model instead of flat shading
+void PhysicsObjectAttributes::setRequiresLighting(bool requiresLighting) {
+  setBool("requiresLighting", requiresLighting);
+}
+bool PhysicsObjectAttributes::getRequiresLighting() const {
+  return getBool("requiresLighting");
 }
 
 PhysicsSceneAttributes::PhysicsSceneAttributes() {
-  setMagnumVec3("gravity", Magnum::Vector3(0, -9.8, 0));
-  setDouble("frictionCoefficient", 0.4);
-  setDouble("restitutionCoefficient", 0.05);
-  setString("renderMeshHandle", "");
-  setString("collisionMeshHandle", "");
+  setGravity({0, -9.8, 0});
+  setFrictionCoefficient(0.4);
+  setRestitutionCoefficient(0.05);
+  setRenderMeshHandle("");
+  setCollisionMeshHandle("");
+}
+
+void PhysicsSceneAttributes::setGravity(const Magnum::Vector3& gravity) {
+  setMagnumVec3("gravity", gravity);
+}
+Magnum::Vector3 PhysicsSceneAttributes::getGravity() const {
+  return getMagnumVec3("gravity");
+}
+
+void PhysicsSceneAttributes::setFrictionCoefficient(
+    double frictionCoefficient) {
+  setDouble("frictionCoefficient", frictionCoefficient);
+}
+double PhysicsSceneAttributes::getFrictionCoefficient() const {
+  return getDouble("frictionCoefficient");
+}
+
+void PhysicsSceneAttributes::setRestitutionCoefficient(
+    double restitutionCoefficient) {
+  setDouble("restitutionCoefficient", restitutionCoefficient);
+}
+double PhysicsSceneAttributes::getRestitutionCoefficient() const {
+  return getDouble("restitutionCoefficient");
+}
+
+void PhysicsSceneAttributes::setRenderMeshHandle(
+    const std::string& renderMeshHandle) {
+  setString("renderMeshHandle", renderMeshHandle);
+}
+std::string PhysicsSceneAttributes::getRenderMeshHandle() const {
+  return getString("renderMeshHandle");
+}
+
+void PhysicsSceneAttributes::setCollisionMeshHandle(
+    const std::string& collisionMeshHandle) {
+  setString("collisionMeshHandle", collisionMeshHandle);
+}
+std::string PhysicsSceneAttributes::getCollisionMeshHandle() const {
+  return getString("collisionMeshHandle");
 }
 
 PhysicsManagerAttributes::PhysicsManagerAttributes() {
-  setString("simulator", "none");
-  setDouble("timestep", 0.01);
-  setInt("maxSubsteps", 10);
+  setSimulator("none");
+  setTimestep(0.01);
+  setMaxSubsteps(10);
+}
+
+void PhysicsManagerAttributes::setSimulator(const std::string& simulator) {
+  setString("simulator", simulator);
+}
+std::string PhysicsManagerAttributes::getSimulator() const {
+  return getString("simulator");
+}
+
+void PhysicsManagerAttributes::setTimestep(double timestep) {
+  setDouble("timestep", timestep);
+}
+double PhysicsManagerAttributes::getTimestep() const {
+  return getDouble("timestep");
+}
+
+void PhysicsManagerAttributes::setMaxSubsteps(int maxSubsteps) {
+  setInt("maxSubsteps", maxSubsteps);
+}
+int PhysicsManagerAttributes::getMaxSubsteps() const {
+  return getInt("maxSubsteps");
 }
 }  // namespace assets
 }  // namespace esp
