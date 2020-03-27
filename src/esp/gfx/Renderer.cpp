@@ -67,18 +67,12 @@ struct Renderer::Impl {
           DepthShader::Flag::UnprojectExistingDepth);
     }
 
-    if (!triangleShader_) {
-      triangleShader_ = std::make_unique<TriangleShader>();
-    }
-
     sensor.bindRenderTarget(RenderTarget::create_unique(
-        sensor.framebufferSize(), *depthUnprojection, depthShader_.get(),
-        triangleShader_.get()));
+        sensor.framebufferSize(), *depthUnprojection, depthShader_.get()));
   }
 
  private:
   std::unique_ptr<DepthShader> depthShader_ = nullptr;
-  std::unique_ptr<TriangleShader> triangleShader_ = nullptr;
 };
 
 Renderer::Renderer() : pimpl_(spimpl::make_unique_impl<Impl>()) {}

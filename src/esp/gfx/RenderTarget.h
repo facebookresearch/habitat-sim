@@ -35,8 +35,7 @@ class RenderTarget {
    */
   RenderTarget(const Magnum::Vector2i& size,
                const Magnum::Vector2& depthUnprojection,
-               DepthShader* depthShader,
-               TriangleShader* triangleShader);
+               DepthShader* depthShader);
 
   /**
    * @brief Constructor
