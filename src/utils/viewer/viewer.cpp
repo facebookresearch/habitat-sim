@@ -111,6 +111,8 @@ class Viewer : public Magnum::Platform::Application {
   // Interactive functions
   void addObject(std::string configFile);
 
+  bool placeObject(int objectId, int maxAttempts = 1000);
+
   void throwSphere(Magnum::Vector3 direction);
 
   int agentObjectId = -1;
@@ -794,6 +796,44 @@ Magnum::Vector3 Viewer::unproject(const Magnum::Vector2i& windowPosition,
   // return renderCamera_->projectionMatrix().inverted().transformPoint(in);
 }
 
+// place an object from a navigable point with random Y rotation and no contact
+// with scene or other objects
+bool Viewer::placeObject(int objectId, int maxAttempts) {
+  Magnum::Vector3 originalTranslation =
+      physicsManager_->getTranslation(objectId);
+  physicsManager_->setObjectMotionType(objectId,
+                                       physics::MotionType::KINEMATIC);
+  Magnum::Vector3 potentialPoint;
+  Magnum::Vector3 objectVerticalDisplacement(
+      0,
+      physicsManager_->getObjectSceneNode(objectId).getCumulativeBB().sizeY() /
+          2.0,
+      0);
+  bool validPlacement = false;
+
+  int attempt = 1;
+  while (!validPlacement || attempt > maxAttempts) {
+    potentialPoint = Magnum::Vector3(pathfinder_->getRandomNavigablePoint());
+    if (potentialPoint[0] > 1.0)
+      continue;
+    // try placing the object
+    physicsManager_->setTranslation(
+        objectId, potentialPoint + objectVerticalDisplacement);
+
+    // TODO: rotate the object
+
+    // test contact
+    validPlacement = physicsManager_->contactTest(objectId);
+    attempt++;
+  }
+  if (!validPlacement) {
+    physicsManager_->setObjectMotionType(objectId,
+                                         physics::MotionType::DYNAMIC);
+    physicsManager_->setTranslation(objectId, originalTranslation);
+  }
+  return validPlacement;
+}
+
 void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   if (!event.offset().y()) {
     return;
@@ -903,7 +943,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         if (numObjects) {
           int randObjectID = rand() % (numObjects - 1);
           addObject(resourceManager_.getObjectConfig(randObjectID));
-
+          placeObject(objectIDs_.back());
         } else
           LOG(WARNING) << "No objects loaded, can't add any";
       } else
