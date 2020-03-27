@@ -1,13 +1,9 @@
 import os.path as osp
-import sys
 
 import pytest
 
 import habitat_sim
 from examples.settings import make_cfg
-
-sys.path.append("./")
-
 
 _test_scene = osp.abspath(
     osp.join(

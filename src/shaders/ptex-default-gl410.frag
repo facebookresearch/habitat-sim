@@ -170,9 +170,7 @@ void applySaturation(inout vec4 c, float saturation) {
 	c.b = P + (c.b - P) * saturation;
 }
 
-
 layout(location = 0) out vec4 FragColor;
-
 uniform sampler2D atlasTex;
 
 uniform float exposure;

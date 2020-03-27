@@ -1,14 +1,8 @@
 in mediump vec3 v_color;
 flat in mediump uint v_objectId;
-#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
-in int gl_PrimitiveID;
-#endif
 
 layout(location = 0) out mediump vec4 color;
 layout(location = 1) out uint objectId;
-#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
-layout(location = 2) out int triangleId;
-#endif
 
 void main() {
 #ifdef DEBUG_OBJECT_ID
@@ -60,7 +54,4 @@ void main() {
   color = vec4(v_color, 1.0);
 #endif
   objectId = v_objectId;
-#ifdef ESP_BUILD_WITH_TRIANGLE_SENSOR
-  triangleId = gl_PrimitiveID;
-#endif
 }
