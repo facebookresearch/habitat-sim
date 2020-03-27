@@ -233,6 +233,8 @@ struct PathFinder::Impl {
       const float pixelsPerMeter,
       const float height);
 
+  const assets::MeshData::ptr getNavMeshData();
+
  private:
   struct NavMeshDeleter {
     void operator()(dtNavMesh* mesh) { dtFreeNavMesh(mesh); }
@@ -245,6 +247,10 @@ struct PathFinder::Impl {
   std::unique_ptr<dtNavMeshQuery, NavQueryDeleter> navQuery_ = nullptr;
   std::unique_ptr<dtQueryFilter> filter_ = nullptr;
   std::unique_ptr<impl::IslandSystem> islandSystem_ = nullptr;
+
+  //! Holds triangulated geom/topo. Generated when queried. Reset with
+  //! navQuery_.
+  assets::MeshData::ptr meshData_ = nullptr;
 
   std::pair<vec3f, vec3f> bounds_;
 
@@ -610,6 +616,9 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
 }
 
 bool PathFinder::Impl::initNavQuery() {
+  // if we are reinitializing the NavQuery, then also reset the MeshData
+  meshData_.reset();
+
   navQuery_.reset(dtAllocNavMeshQuery());
   dtStatus status = navQuery_->init(navMesh_.get(), 2048);
   if (dtStatusFailed(status)) {
@@ -664,29 +673,44 @@ struct NavMeshTileHeader {
   int dataSize;
 };
 
-// Calculate the area of a polygon by iterating over the triangles in the detail
-// mesh and computing their area
-float polyArea(const dtPoly* poly, const dtMeshTile* tile) {
-  float area = 0;
+struct Triangle {
+  std::vector<vec3f> v;
+  Triangle() { v.resize(3); }
+};
+
+std::vector<Triangle> getPolygonTriangles(const dtPoly* poly,
+                                          const dtMeshTile* tile) {
   // Code to iterate over triangles from here:
   // https://github.com/recastnavigation/recastnavigation/blob/57610fa6ef31b39020231906f8c5d40eaa8294ae/Detour/Source/DetourNavMesh.cpp#L684
   const std::ptrdiff_t ip = poly - tile->polys;
   const dtPolyDetail* pd = &tile->detailMeshes[ip];
+  std::vector<Triangle> triangles(pd->triCount);
+
   for (int j = 0; j < pd->triCount; ++j) {
     const unsigned char* t = &tile->detailTris[(pd->triBase + j) * 4];
     const float* v[3];
     for (int k = 0; k < 3; ++k) {
       if (t[k] < poly->vertCount)
-        v[k] = &tile->verts[poly->verts[t[k]] * 3];
+        triangles[j].v[k] =
+            Eigen::Map<const vec3f>(&tile->verts[poly->verts[t[k]] * 3]);
       else
-        v[k] =
-            &tile->detailVerts[(pd->vertBase + (t[k] - poly->vertCount)) * 3];
+        triangles[j].v[k] = Eigen::Map<const vec3f>(
+            &tile->detailVerts[(pd->vertBase + (t[k] - poly->vertCount)) * 3]);
     }
+  }
 
-    const vec3f w1 =
-        Eigen::Map<const vec3f>(v[1]) - Eigen::Map<const vec3f>(v[0]);
-    const vec3f w2 =
-        Eigen::Map<const vec3f>(v[2]) - Eigen::Map<const vec3f>(v[0]);
+  return triangles;
+}
+
+// Calculate the area of a polygon by iterating over the triangles in the detail
+// mesh and computing their area
+float polyArea(const dtPoly* poly, const dtMeshTile* tile) {
+  std::vector<Triangle> triangles = getPolygonTriangles(poly, tile);
+
+  float area = 0;
+  for (auto& tri : triangles) {
+    const vec3f w1 = tri.v[1] - tri.v[0];
+    const vec3f w2 = tri.v[2] - tri.v[1];
     area += 0.5 * w1.cross(w2).norm();
   }
 
@@ -1165,6 +1189,44 @@ PathFinder::Impl::getTopDownView(const float pixelsPerMeter,
   return topdownMap;
 }
 
+const assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
+  if (meshData_ == nullptr && isLoaded()) {
+    meshData_ = assets::MeshData::create();
+    std::vector<esp::vec3f>& vbo = meshData_->vbo;
+    std::vector<uint32_t>& ibo = meshData_->ibo;
+
+    // Iterate over all tiles
+    for (int iTile = 0; iTile < navMesh_->getMaxTiles(); ++iTile) {
+      const dtMeshTile* tile =
+          const_cast<const dtNavMesh*>(navMesh_.get())->getTile(iTile);
+      if (!tile)
+        continue;
+
+      // Iterate over all polygons in a tile
+      for (int jPoly = 0; jPoly < tile->header->polyCount; ++jPoly) {
+        // Get the polygon reference from the tile and polygon id
+        dtPolyRef polyRef = navMesh_->encodePolyId(iTile, tile->salt, jPoly);
+        const dtPoly* poly = nullptr;
+        const dtMeshTile* tmp = nullptr;
+        navMesh_->getTileAndPolyByRefUnsafe(polyRef, &tmp, &poly);
+
+        CORRADE_INTERNAL_ASSERT(poly != nullptr);
+        CORRADE_INTERNAL_ASSERT(tmp != nullptr);
+
+        std::vector<Triangle> triangles = getPolygonTriangles(poly, tile);
+
+        for (auto& tri : triangles) {
+          for (int k = 0; k < 3; ++k) {
+            vbo.push_back(tri.v[k]);
+            ibo.push_back(vbo.size() - 1);
+          }
+        }
+      }
+    }
+  }
+  return meshData_;
+}
+
 PathFinder::PathFinder() : pimpl_{spimpl::make_unique_impl<Impl>()} {};
 
 bool PathFinder::build(const NavMeshSettings& bs,
@@ -1263,6 +1325,10 @@ Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::getTopDownView(
     const float pixelsPerMeter,
     const float height) {
   return pimpl_->getTopDownView(pixelsPerMeter, height);
+}
+
+const assets::MeshData::ptr PathFinder::getNavMeshData() {
+  return pimpl_->getNavMeshData();
 }
 
 }  // namespace nav

@@ -174,6 +174,8 @@ bool BulletRigidObject::initializeObject(
     return false;
   }
 
+  initializationAttributes_ = physicsObjectAttributes;
+
   //! Turn on scene flag
   rigidObjectType_ = RigidObjectType::OBJECT;
   objectMotionType_ = MotionType::DYNAMIC;
@@ -277,10 +279,12 @@ void BulletRigidObject::setCollisionFromBB() {
 }
 
 BulletRigidObject::~BulletRigidObject() {
-  if (rigidObjectType_ == RigidObjectType::OBJECT) {
+  if (rigidObjectType_ == RigidObjectType::OBJECT &&
+      objectMotionType_ != MotionType::STATIC) {
     // remove rigid body from the world
     bWorld_->removeRigidBody(bObjectRigidBody_.get());
-  } else if (rigidObjectType_ == RigidObjectType::SCENE) {
+  } else if (rigidObjectType_ == RigidObjectType::SCENE ||
+             objectMotionType_ == MotionType::STATIC) {
     // remove collision objects from the world
     for (auto& co : bSceneCollisionObjects_) {
       bWorld_->removeCollisionObject(co.get());
@@ -310,9 +314,16 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
     return true;  // no work
   }
 
+  // remove the existing object from the world to change its type
+  if (objectMotionType_ == MotionType::STATIC) {
+    bWorld_->removeCollisionObject(bSceneCollisionObjects_.back().get());
+    bSceneCollisionObjects_.clear();
+  } else {
+    bWorld_->removeRigidBody(bObjectRigidBody_.get());
+  }
+
   if (rigidObjectType_ == RigidObjectType::OBJECT) {
     if (mt == MotionType::KINEMATIC) {
-      bWorld_->removeRigidBody(bObjectRigidBody_.get());
       bObjectRigidBody_->setCollisionFlags(
           bObjectRigidBody_->getCollisionFlags() |
           btCollisionObject::CF_KINEMATIC_OBJECT);
@@ -323,7 +334,6 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
       bWorld_->addRigidBody(bObjectRigidBody_.get());
       return true;
     } else if (mt == MotionType::STATIC) {
-      bWorld_->removeRigidBody(bObjectRigidBody_.get());
       bObjectRigidBody_->setCollisionFlags(
           bObjectRigidBody_->getCollisionFlags() |
           btCollisionObject::CF_STATIC_OBJECT);
@@ -331,10 +341,20 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
           bObjectRigidBody_->getCollisionFlags() &
           ~btCollisionObject::CF_KINEMATIC_OBJECT);
       objectMotionType_ = MotionType::STATIC;
-      bWorld_->addRigidBody(bObjectRigidBody_.get());
+
+      // create a static scene collision object at the current transform
+      std::unique_ptr<btCollisionObject> sceneCollisionObject =
+          std::make_unique<btCollisionObject>();
+      sceneCollisionObject->setCollisionShape(bObjectShape_.get());
+      sceneCollisionObject->setWorldTransform(
+          bObjectRigidBody_->getWorldTransform());
+      bWorld_->addCollisionObject(
+          sceneCollisionObject.get(),
+          2,       // collisionFilterGroup (2 == StaticFilter)
+          1 + 2);  // collisionFilterMask (1 == DefaultFilter, 2==StaticFilter)
+      bSceneCollisionObjects_.emplace_back(std::move(sceneCollisionObject));
       return true;
     } else if (mt == MotionType::DYNAMIC) {
-      bWorld_->removeRigidBody(bObjectRigidBody_.get());
       bObjectRigidBody_->setCollisionFlags(
           bObjectRigidBody_->getCollisionFlags() &
           ~btCollisionObject::CF_STATIC_OBJECT);
@@ -343,9 +363,9 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
           ~btCollisionObject::CF_KINEMATIC_OBJECT);
       objectMotionType_ = MotionType::DYNAMIC;
       bWorld_->addRigidBody(bObjectRigidBody_.get());
+      setActive();
       return true;
     }
-    return false;
   }
   return false;
 }

@@ -66,6 +66,10 @@ bool Agent::hasAction(const std::string& actionName) {
   return !(actionSpace.find(actionName) == actionSpace.end());
 }
 
+void Agent::reset() {
+  setState(initialState_);
+}
+
 void Agent::getState(AgentState::ptr state) const {
   // TODO this should be done less hackishly
   state->position = cast<vec3f>(node().absoluteTransformation().translation());

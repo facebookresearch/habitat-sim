@@ -261,6 +261,8 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   std::vector<Mn::UnsignedInt> objectIdIndices = removeDuplicates(objectIds_);
   Mn::GL::Buffer vertices, indices;
 
+  // TODO(mosra): this is deprecated, but left as-is, as this whole thing (and
+  // the tinyply library) is about to get replaced with StanfordImporter
   std::vector<Magnum::UnsignedInt> new_indices =
       Mn::MeshTools::combineIndexedArrays(
           std::make_pair(std::cref(objectIdIndices), std::ref(objectIds_)),

@@ -329,8 +329,12 @@ class Simulator:
     def get_world_time(self, scene_id=0):
         return self._sim.get_world_time()
 
-    def recompute_navmesh(self, pathfinder, navmesh_settings):
-        return self._sim.recompute_navmesh(pathfinder, navmesh_settings)
+    def recompute_navmesh(
+        self, pathfinder, navmesh_settings, include_static_objects=False
+    ):
+        return self._sim.recompute_navmesh(
+            pathfinder, navmesh_settings, include_static_objects
+        )
 
     # --- lighting functions ---
     def get_light_setup(self, key=DEFAULT_LIGHTING_KEY):

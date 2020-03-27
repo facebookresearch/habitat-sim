@@ -1,5 +1,5 @@
-Habitat Sim Image Extractor Demo
-################################
+Habitat Sim Image Extractor Tutorial
+####################################
 
 .. contents::
     :class: m-block m-default
@@ -46,11 +46,20 @@ The main class that handles image data extraction in Habitat Sim is called Image
 The user needs to provide a scene filepath (either a .glb or .ply file) to the constructor.
 This is the only required constructor argument.
 
-* scene_filepath: The filepath to the scene file as explained above
-* labels: Class labels of the type of images the user wants to extract. Currently we only
+Required Constructor Args:
+
+* scene_filepath (Str, List[Str]): The filepath to the scene file as explained above, or a list of filepaths.
+
+Optional Args:
+
+* labels (List): Class labels of the type of images the user wants to extract. Currently we only.
     support extracting images of 'unnavigable points' like walls. In the future we hope to extend this functionality to allow the user to specify more unique class labels, but for now this argument is not that useful.
-* img_size: The size of images to be output in the format (height, width)
-* output: A list of the different output image types the user can obtain. Default is rgba.
+* img_size (Tuple): The size of images to be output in the format (height, width).
+* output (List): A list of the different output image types the user can obtain. The options are any of 'rgba', 'depth', and 'semantic'. Default is rgba.
+* shuffle (Boolean): Whether or not to shuffle the extracted images.
+* use_caching (Boolean): Whether or not to cache (up to capacity) images in memory rather than generating them from the simulator on the fly.
+* pixels_per_meter (Float): Granularity of the topdown view used for setting the camera positions in the pose extractor.
+
 
 Habitat Sim does not currently support multiple instances of extractors, so if you're done using
 an extractor you need to call the close method before instantiating a new one. Below we will go
@@ -90,7 +99,7 @@ below is not represented.
         display_sample(sample)
 
 
-.. image:: /static/extractor-example-output.png
+.. image:: ../images/extractor-example-output.png
 
 
 `Integrating with Pytorch Datasets`_
@@ -103,20 +112,20 @@ and DataLoader, refer to this guide: https://pytorch.org/tutorials/beginner/data
 .. code:: py
 
     class HabitatDataset(Dataset):
-    def __init__(self, extractor):
-        self.extractor = extractor
+        def __init__(self, extractor):
+            self.extractor = extractor
 
-    def __len__(self):
-        return len(self.extractor)
+        def __len__(self):
+            return len(self.extractor)
 
-    def __getitem__(self, idx):
-        sample = self.extractor[idx]
-        output = {
-            "rgba": sample["rgba"].astype(np.float32)
-            / 255.0,  # dataloader requires certain types
-            "label": sample["label"],
-        }
-        return output
+        def __getitem__(self, idx):
+            sample = self.extractor[idx]
+            output = {
+                "rgba": sample["rgba"].astype(np.float32)
+                / 255.0,  # dataloader requires certain types
+                "label": sample["label"],
+            }
+            return output
 
 
     class TrivialNet(nn.Module):

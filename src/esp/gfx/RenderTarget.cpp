@@ -109,10 +109,10 @@ struct RenderTarget::Impl {
     initDepthUnprojector();
 
     depthUnprojectionFrameBuffer_.bind();
-    depthShader_->bindDepthTexture(depthRenderTexture_)
-        .setDepthUnprojection(depthUnprojection_);
-
-    depthUnprojectionMesh_.draw(*depthShader_);
+    (*depthShader_)
+        .bindDepthTexture(depthRenderTexture_)
+        .setDepthUnprojection(depthUnprojection_)
+        .draw(depthUnprojectionMesh_);
   }
 
   void renderEnter() {

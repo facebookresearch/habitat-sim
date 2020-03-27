@@ -99,7 +99,7 @@ void initSimBindings(py::module& m) {
       .def("contact_test", &Simulator::contactTest, "object_id"_a,
            "sceneID"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
-           "navmesh_settings"_a)
+           "navmesh_settings"_a, "include_static_objects"_a)
       .def("get_light_setup", &Simulator::getLightSetup,
            "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY)
       .def("set_light_setup", &Simulator::setLightSetup, "light_setup"_a,
