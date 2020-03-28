@@ -43,10 +43,13 @@ def _simulate(gt_depth, model, noise_multiplier):
     noisy_depth = np.empty_like(gt_depth)
 
     H, W = gt_depth.shape
-    ymax, xmax = H - 1, W - 1
+    ymax, xmax = H - 1.0, W - 1.0
 
     rand_nums = np.random.randn(H, W, 3).astype(np.float32)
-    for j in range(H):
+
+    # Parallelize just the outer loop.  This doesn't change the speed
+    # noticably but reduces CPU usage compared to two parallel loops
+    for j in numba.prange(H):
         for i in range(W):
             y = int(
                 min(max(j + rand_nums[j, i, 0] * 0.25 * noise_multiplier, 0.0), ymax)
