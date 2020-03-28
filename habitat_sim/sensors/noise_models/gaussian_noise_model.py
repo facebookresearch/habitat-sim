@@ -19,19 +19,9 @@ def _simulate(image, intensity_constant, mean, sigma):
         np.random.randn(image.shape[0], image.shape[1], image.shape[2]) * sigma + mean
     ) * intensity_constant
 
-    noisy_rgb = np.empty_like(image)
-
-    # Parallelize just the outer loop.  This doesn't change the speed
-    # noticably but reduces CPU usage compared to all parallel loops
-    for i in numba.prange(image.shape[0]):
-        for j in range(image.shape[1]):
-            for k in range(image.shape[2]):
-                noisy_val = image[i, j, k] / 255.0 + noise[i, j, k]
-                noisy_val = max(min(noisy_val, 1.0), 0.0)
-                noisy_val = noisy_val * 255.0
-                noisy_rgb[j, i, k] = noisy_val
-
-    return noisy_rgb
+    return (np.maximum(np.minimum(image / 255.0 + noise, 1.0), 0.0) * 255.0).astype(
+        np.uint8
+    )
 
 
 @attr.s(auto_attribs=True)
