@@ -23,7 +23,7 @@ torch = None
 
 # Read about the noise model here: http://www.alexteichman.com/octo/clams/
 # Original source code: http://redwood-data.org/indoor/data/simdepth.py
-@numba.jit(nopython=True)
+@numba.jit(nopython=True, fastmath=True)
 def _undistort(x, y, z, model):
     i2 = int((z + 1) / 2)
     i1 = int(i2 - 1)
@@ -38,7 +38,7 @@ def _undistort(x, y, z, model):
         return z / f
 
 
-@numba.jit(nopython=True, parallel=True)
+@numba.jit(nopython=True, parallel=True, fastmath=True)
 def _simulate(gt_depth, model, noise_multiplier):
     noisy_depth = np.empty_like(gt_depth)
 

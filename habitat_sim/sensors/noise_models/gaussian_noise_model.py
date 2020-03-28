@@ -13,7 +13,7 @@ from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
 
-@numba.jit(nopython=True, parallel=True)
+@numba.jit(nopython=True, parallel=True, fastmath=True)
 def _simulate(image, intensity_constant, mean, sigma):
     noise = (
         np.random.randn(image.shape[0], image.shape[1], image.shape[2]) * sigma + mean
