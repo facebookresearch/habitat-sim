@@ -65,7 +65,7 @@ class GreedyGeodesicFollower(object):
     def _find_action(self, name):
         candidates = list(
             filter(
-                lambda v: v[1].name == name,
+                lambda v: name in v[1].name,
                 self.agent.agent_config.action_space.items(),
             )
         )
