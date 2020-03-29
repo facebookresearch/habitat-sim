@@ -5,6 +5,7 @@
 #include "GenericDrawable.h"
 
 #include <Corrade/Utility/FormatStl.h>
+#include <Magnum/Math/Matrix3.h>
 
 #include "esp/scene/SceneNode.h"
 
@@ -65,6 +66,9 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(transformationMatrix.rotationScaling());
 
+  if (materialData_->textureMatrix != Magnum::Matrix3{})
+    shader_->setTextureMatrix(materialData_->textureMatrix);
+
   if (materialData_->ambientTexture)
     shader_->bindAmbientTexture(*(materialData_->ambientTexture));
   if (materialData_->diffuseTexture)
@@ -81,6 +85,8 @@ void GenericDrawable::updateShader() {
   Magnum::UnsignedInt lightCount = lightSetup_->size();
   Magnum::Shaders::Phong::Flags flags = Magnum::Shaders::Phong::Flag::ObjectId;
 
+  if (materialData_->textureMatrix != Magnum::Matrix3{})
+    flags |= Magnum::Shaders::Phong::Flag::TextureTransformation;
   if (materialData_->ambientTexture)
     flags |= Magnum::Shaders::Phong::Flag::AmbientTexture;
   if (materialData_->diffuseTexture)
