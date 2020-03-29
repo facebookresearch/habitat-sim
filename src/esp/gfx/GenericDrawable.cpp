@@ -71,6 +71,8 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
     shader_->bindDiffuseTexture(*(materialData_->diffuseTexture));
   if (materialData_->specularTexture)
     shader_->bindSpecularTexture(*(materialData_->specularTexture));
+  if (materialData_->normalTexture)
+    shader_->bindNormalTexture(*(materialData_->normalTexture));
 
   shader_->draw(mesh_);
 }
@@ -85,6 +87,8 @@ void GenericDrawable::updateShader() {
     flags |= Magnum::Shaders::Phong::Flag::DiffuseTexture;
   if (materialData_->specularTexture)
     flags |= Magnum::Shaders::Phong::Flag::SpecularTexture;
+  if (materialData_->normalTexture)
+    flags |= Magnum::Shaders::Phong::Flag::NormalTexture;
 
   if (!shader_ || shader_->lightCount() != lightCount ||
       shader_->flags() != flags) {

@@ -21,7 +21,7 @@ struct PhongMaterialData : public MaterialData {
                  diffuseColor = Magnum::Color4{1},
                  specularColor = Magnum::Color4{1};
   Magnum::GL::Texture2D *ambientTexture = nullptr, *diffuseTexture = nullptr,
-                        *specularTexture = nullptr;
+                        *specularTexture = nullptr, *normalTexture = nullptr;
 
   ESP_SMART_POINTERS(PhongMaterialData)
 };

@@ -1387,6 +1387,12 @@ gfx::PhongMaterialData::uptr ResourceManager::getPhongShadedMaterialData(
     finalMaterial->specularTexture =
         textures_[textureBaseIndex + material.specularTexture()].get();
   }
+
+  // normal mapping
+  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::NormalTexture) {
+    finalMaterial->normalTexture =
+        textures_[textureBaseIndex + material.normalTexture()].get();
+  }
   return finalMaterial;
 }
 
