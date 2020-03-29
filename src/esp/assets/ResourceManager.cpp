@@ -1388,34 +1388,24 @@ gfx::PhongMaterialData::uptr ResourceManager::getPhongShadedMaterialData(
   finalMaterial->shininess = material.shininess();
 
   // ambient material properties
+  finalMaterial->ambientColor = material.ambientColor();
   if (material.flags() & Mn::Trade::PhongMaterialData::Flag::AmbientTexture) {
     finalMaterial->ambientTexture =
         textures_[textureBaseIndex + material.ambientTexture()].get();
-    finalMaterial->ambientColor = 0xffffffff_rgbaf;
-  } else {
-    finalMaterial->ambientColor = material.ambientColor();
   }
 
   // diffuse material properties
+  finalMaterial->diffuseColor = material.diffuseColor();
   if (material.flags() & Mn::Trade::PhongMaterialData::Flag::DiffuseTexture) {
     finalMaterial->diffuseTexture =
         textures_[textureBaseIndex + material.diffuseTexture()].get();
-    finalMaterial->diffuseColor = 0xffffffff_rgbaf;
-  } else {
-    finalMaterial->diffuseColor = material.diffuseColor();
   }
 
   // specular material properties
+  finalMaterial->specularColor = material.specularColor();
   if (material.flags() & Mn::Trade::PhongMaterialData::Flag::SpecularTexture) {
     finalMaterial->specularTexture =
         textures_[textureBaseIndex + material.specularTexture()].get();
-    finalMaterial->specularColor = 0xffffffff_rgbaf;
-  } else {
-    // remove specular highlights if shininess value doesn't make sense
-    // TODO: figure out why materials are being loaded with shininess == 1
-    finalMaterial->specularColor = finalMaterial->shininess == 1
-                                       ? 0x000000_rgbf
-                                       : material.specularColor();
   }
   return finalMaterial;
 }
