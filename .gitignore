@@ -181,4 +181,3 @@ yarn-error.log*
 .npm/
 coverage_js/
 
-*.png
