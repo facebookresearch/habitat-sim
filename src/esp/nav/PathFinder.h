@@ -332,6 +332,17 @@ class PathFinder {
    */
   const std::shared_ptr<assets::MeshData> getNavMeshData();
 
+  /**
+   * @brief Finds the closest navigable point directly bellow a given point
+   *
+   * @param[in] pt The point to search from
+   * @param[in] maxYDelta The maximum y distance to searc
+   *
+   * @return The closest navigable point directly under @ref pt.
+   * will be {NAN, NAN, NAN} if no point could be found
+   */
+  vec3f snapPointVertical(const vec3f& pt, const float maxYDelta = 2.0);
+
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(PathFinder);
 };
 

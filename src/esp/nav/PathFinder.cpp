@@ -235,6 +235,8 @@ struct PathFinder::Impl {
 
   const assets::MeshData::ptr getNavMeshData();
 
+  vec3f snapPointVertical(const vec3f& pt, const float maxYDelta = 2.0);
+
  private:
   struct NavMeshDeleter {
     void operator()(dtNavMesh* mesh) { dtFreeNavMesh(mesh); }
@@ -1099,6 +1101,25 @@ T PathFinder::Impl::snapPoint(const T& pt) {
   }
 }
 
+vec3f PathFinder::Impl::snapPointVertical(const vec3f& pt,
+                                          const float maxYDelta) {
+  constexpr float deltaY = 0.025;
+  vec3f candPoint = pt;
+  const int maxSteps = std::ceil(maxYDelta / deltaY);
+
+  bool foundPt = isNavigable(candPoint, deltaY * 2);
+  for (int i = 0; !foundPt && i < maxSteps; ++i) {
+    candPoint[1] -= deltaY;
+    foundPt = isNavigable(candPoint, deltaY * 2);
+  }
+
+  if (foundPt) {
+    return snapPoint(candPoint);
+  } else {
+    return {NAN, NAN, NAN};
+  }
+}
+
 float PathFinder::Impl::islandRadius(const vec3f& pt) const {
   dtPolyRef ptRef;
   dtStatus status;
@@ -1280,6 +1301,10 @@ template Mn::Vector3 PathFinder::snapPoint<Mn::Vector3>(const Mn::Vector3& pt);
 template <typename T>
 T PathFinder::snapPoint(const T& pt) {
   return pimpl_->snapPoint(pt);
+}
+
+vec3f PathFinder::snapPointVertical(const vec3f& pt, const float maxYDelta) {
+  return pimpl_->snapPointVertical(pt, maxYDelta);
 }
 
 bool PathFinder::loadNavMesh(const std::string& path) {

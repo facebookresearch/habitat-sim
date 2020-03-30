@@ -32,3 +32,19 @@ def test_snap_point(nudge, test_data):
     hypothesis.assume(not math.isnan(proj_pt[0]))
 
     assert pf.is_navigable(proj_pt), "{} -> {} not navigable!".format(pt, proj_pt)
+
+
+@hypothesis.given(nudge=st.floats(-1.0, 1.0))
+@hypothesis.settings(max_examples=int(1e3))
+def test_snap_point_vertical(nudge, test_data):
+    pf, start_pt = test_data
+
+    pt = start_pt.copy()
+    pt[1] += nudge
+
+    proj_pt = pf.snap_point_vertical(pt)
+
+    if nudge < -0.05:
+        assert math.isnan(proj_pt[0]), "Big nudge down, still navigable!"
+    else:
+        assert np.allclose(proj_pt, start_pt), "Did not find the same point"

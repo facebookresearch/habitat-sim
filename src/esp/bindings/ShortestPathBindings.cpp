@@ -90,6 +90,8 @@ void initShortestPathBindings(py::module& m) {
            "start"_a, "end"_a)
       .def("snap_point", &PathFinder::snapPoint<Magnum::Vector3>)
       .def("snap_point", &PathFinder::snapPoint<vec3f>)
+      .def("snap_point_vertical", &PathFinder::snapPointVertical, "pt"_a,
+           "max_y_delta"_a = 2.0)
       .def("island_radius", &PathFinder::islandRadius, "pt"_a)
       .def_property_readonly("is_loaded", &PathFinder::isLoaded)
       .def("load_nav_mesh", &PathFinder::loadNavMesh)
