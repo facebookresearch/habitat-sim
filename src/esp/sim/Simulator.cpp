@@ -302,7 +302,8 @@ int Simulator::loadObjectTemplate(
     assets::PhysicsObjectAttributes& objectTemplate,
     const std::string& objectTemplateHandle) {
   // check for duplicate keys
-  if (resourceManager_.getObjectID(objectTemplateHandle) != ID_UNDEFINED) {
+  if (resourceManager_.getObjectTemplateID(objectTemplateHandle) !=
+      ID_UNDEFINED) {
     return ID_UNDEFINED;
   }
 

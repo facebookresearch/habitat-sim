@@ -93,7 +93,7 @@ int PhysicsManager::addObject(const std::string& configFile,
                               DrawableGroup* drawables,
                               scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
-  int resObjectID = resourceManager_->getObjectID(configFile);
+  int resObjectID = resourceManager_->getObjectTemplateID(configFile);
   //! Invoke resourceManager to draw object
   int physObjectID =
       addObject(resObjectID, drawables, attachmentNode, lightSetup);
