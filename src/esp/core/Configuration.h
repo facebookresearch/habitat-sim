@@ -29,7 +29,7 @@ class Configuration {
   bool setString(const std::string& key, std::string value) {
     return set(key, value);
   }
-  bool setVec3(const std::string& key, Magnum::Vector3 value) {
+  bool setVec3(const std::string& key, const Magnum::Vector3& value) {
     return set(key, value);
   }
 
