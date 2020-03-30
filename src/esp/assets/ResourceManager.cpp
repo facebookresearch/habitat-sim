@@ -579,7 +579,8 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
   // check for duplicate load
   const bool objExists = physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
   if (objExists) {
-    physicsObjectLibrary_[objPhysConfigFilename].getInt("objectTemplateID");
+    return physicsObjectLibrary_[objPhysConfigFilename].getInt(
+        "objectTemplateID");
   }
 
   // 1. parse the config file
