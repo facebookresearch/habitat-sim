@@ -215,7 +215,7 @@ bool ResourceManager::loadScene(
 #endif
   }
 
-  // reseat to base PhysicsManager to override previous as default behavior
+  // reset to base PhysicsManager to override previous as default behavior
   // if the desired simulator is not supported reset to "none" in metaData
   if (defaultToNoneSimulator) {
     _physicsManager.reset(new physics::PhysicsManager(this));
@@ -438,17 +438,14 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
   const bool objectIsLoaded =
       physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
 
-  // Find objectID in resourceManager
-  int objectID = -1;
+  // Find objectTemplateID in resourceManager
+  int objectTemplateID = ID_UNDEFINED;
   if (!objectIsLoaded) {
     // Main loading function
-    objectID = loadObject(objPhysConfigFilename);
-
+    objectTemplateID = loadObject(objPhysConfigFilename);
   } else {
-    std::vector<std::string>::iterator itr =
-        std::find(physicsObjectConfigList_.begin(),
-                  physicsObjectConfigList_.end(), objPhysConfigFilename);
-    objectID = std::distance(physicsObjectConfigList_.begin(), itr);
+    objectTemplateID =
+        physicsObjectLibrary_[objPhysConfigFilename].getInt("objectTemplateID");
   }
 
   if (parent != nullptr and drawables != nullptr) {
@@ -479,7 +476,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
                  drawables, loadedAssetData.meshMetaData.root);
   }
 
-  return objectID;
+  return objectTemplateID;
 }
 
 PhysicsObjectAttributes& ResourceManager::getPhysicsObjectAttributes(
@@ -541,6 +538,9 @@ int ResourceManager::loadObject(PhysicsObjectAttributes& objectTemplate,
   if (!collisionMeshSuccess)
     objectTemplate.setCollisionMeshHandle(renderMeshFilename);
 
+  // add object template ID to physicObjectAttribute
+  objectTemplate.setInt("objectTemplateID", physicsObjectLibrary_.size());
+
   // cache metaData, collision mesh Group
   physicsObjectLibrary_.emplace(objectTemplateHandle, objectTemplate);
   const MeshMetaData& meshMetaData =
@@ -559,8 +559,8 @@ int ResourceManager::loadObject(PhysicsObjectAttributes& objectTemplate,
   collisionMeshGroups_.emplace(objectTemplateHandle, meshGroup);
   physicsObjectConfigList_.push_back(objectTemplateHandle);
 
-  int objectID = physicsObjectConfigList_.size() - 1;
-  return objectID;
+  int objectTemplateID = objectTemplate.getInt("objectTemplateID");
+  return objectTemplateID;
 }
 
 // load object from config filename
@@ -568,13 +568,8 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
   // check for duplicate load
   const bool objExists = physicsObjectLibrary_.count(objPhysConfigFilename) > 0;
   if (objExists) {
-    // TODO: this will skip the duplicate. Is there a good reason to allow
-    // duplicates?
-    std::vector<std::string>::iterator itr =
-        std::find(physicsObjectConfigList_.begin(),
-                  physicsObjectConfigList_.end(), objPhysConfigFilename);
-    int objectID = std::distance(physicsObjectConfigList_.begin(), itr);
-    return objectID;
+    return physicsObjectLibrary_[objPhysConfigFilename].getInt(
+        "objectTemplateID");
   }
 
   // 1. parse the config file
@@ -748,8 +743,8 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
 }
 
 const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
-    const int objectID) {
-  std::string configFile = getObjectConfig(objectID);
+    const int objectTemplateID) {
+  std::string configFile = getObjectConfig(objectTemplateID);
   return collisionMeshGroups_[configFile];
 }
 
@@ -758,26 +753,22 @@ const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
   return collisionMeshGroups_[configFile];
 }
 
-int ResourceManager::getObjectID(const std::string& configFile) {
-  std::vector<std::string>::iterator itr =
-      std::find(physicsObjectConfigList_.begin(),
-                physicsObjectConfigList_.end(), configFile);
-  if (itr == physicsObjectConfigList_.cend()) {
-    return ID_UNDEFINED;
-  } else {
-    int objectID = std::distance(physicsObjectConfigList_.begin(), itr);
-    return objectID;
+int ResourceManager::getObjectTemplateID(const std::string& configFile) {
+  const bool objExists = physicsObjectLibrary_.count(configFile) > 0;
+  if (objExists) {
+    return physicsObjectLibrary_[configFile].getInt("objectTemplateID");
   }
+  return ID_UNDEFINED;
 }
 
-std::string ResourceManager::getObjectConfig(const int objectID) {
-  if (physicsObjectConfigList_.size() <= std::size_t(objectID)) {
+std::string ResourceManager::getObjectConfig(const int objectTemplateID) {
+  if (physicsObjectConfigList_.size() <= std::size_t(objectTemplateID)) {
     Corrade::Utility::Debug() << "ResourceManager::getObjectConfig - Aborting. "
                                  "No template with index "
-                              << objectID;
+                              << objectTemplateID;
     return "";
   }
-  return physicsObjectConfigList_[objectID];
+  return physicsObjectConfigList_[objectTemplateID];
 }
 
 Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {

@@ -8,8 +8,9 @@
  * @brief Struct SimulationContactResultCallback, class @ref
  * esp::physics::BulletRigidObject
  */
-
+#include <Magnum/BulletIntegration/MotionState.h>
 #include <btBulletDynamicsCommon.h>
+
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"

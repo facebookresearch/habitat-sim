@@ -266,16 +266,16 @@ class ResourceManager {
 
   /**
    * @brief Getter for all @ref assets::CollisionMeshData associated with the
-   * particular asset referenced by the index, objectID, in @ref
+   * particular asset referenced by the index, objectTemplateID, in @ref
    * physicsObjectLibrary_.
    *
-   * @param objectID The index of the object template in @ref
+   * @param objectTemplateID The index of the object template in @ref
    * physicsObjectLibrary_.
    * @return A vector reference to @ref assets::CollisionMeshData instances for
    * individual components of the asset.
    */
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
-      const int objectID);
+      const int objectTemplateID);
 
   /**
    * @brief Get the index in @ref physicsObjectLibrary_ for the object template
@@ -285,17 +285,17 @@ class ResourceManager {
    * physicsObjectLibrary_.
    * @return The index of the object template in @ref physicsObjectLibrary_.
    */
-  int getObjectID(const std::string& configFile);
+  int getObjectTemplateID(const std::string& configFile);
 
   /**
    * @brief Get the key in @ref physicsObjectLibrary_ for the object template
    * asset index.
    *
-   * @param objectID The index of the object template in @ref
+   * @param objectTemplateID The index of the object template in @ref
    * physicsObjectLibrary_.
    * @return The key referencing the asset in @ref physicsObjectLibrary_.
    */
-  std::string getObjectConfig(const int objectID);
+  std::string getObjectConfig(const int objectTemplateID);
 
   /**
    * @brief Get a reference to the physics object template for the asset
@@ -316,7 +316,7 @@ class ResourceManager {
    *
    * @return The size of the @ref physicsObjectLibrary_.
    */
-  int getNumLibraryObjects() { return physicsObjectConfigList_.size(); };
+  int getNumLibraryObjects() { return physicsObjectLibrary_.size(); };
 
   /**
    * @brief Retrieve the composition of all transforms applied to a mesh since
