@@ -224,7 +224,7 @@ bool ResourceManager::loadScene(
 
   // load objects from sceneMetaData list...
   for (auto objPhysPropertiesFilename :
-       physicsManagerAttributes.getVecStrings("objectLibraryPaths")) {
+       physicsManagerAttributes.getStringGroup("objectLibraryPaths")) {
     LOG(INFO) << "loading object: " << objPhysPropertiesFilename;
     loadObject(objPhysPropertiesFilename);
   }
@@ -393,7 +393,7 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
           grav[i] = scenePhysicsConfig["gravity"][i].GetDouble();
         }
       }
-      physicsManagerAttributes.setMagnumVec3("gravity", grav);
+      physicsManagerAttributes.setVec3("gravity", grav);
     }
   }
 
@@ -405,7 +405,6 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
 
   std::string configDirectory =
       physicsFilename.substr(0, physicsFilename.find_last_of("/"));
-  physicsManagerAttributes.setVecStrings("objectLibraryPaths", {});
 
   const auto& paths = scenePhysicsConfig["rigid object paths"];
   for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
@@ -421,7 +420,7 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
     std::vector<std::string> validConfigPaths =
         getObjectConfigPaths(absolutePath);
     for (auto& path : validConfigPaths) {
-      physicsManagerAttributes.appendVecStrings("objectLibraryPaths", path);
+      physicsManagerAttributes.addStringToGroup("objectLibraryPaths", path);
     }
   }
 
@@ -490,7 +489,7 @@ PhysicsObjectAttributes& ResourceManager::getPhysicsObjectAttributes(
 int ResourceManager::loadObject(PhysicsObjectAttributes& objectTemplate,
                                 const std::string objectTemplateHandle) {
   CHECK(physicsObjectLibrary_.count(objectTemplateHandle) == 0);
-  CHECK(objectTemplate.existsAs(STRING, "renderMeshHandle"));
+  CHECK(objectTemplate.hasValue("renderMeshHandle"));
 
   // load/check_for render and collision mesh metadata
   //! Get render mesh names
