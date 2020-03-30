@@ -111,18 +111,100 @@ class Attributes {
 class PhysicsObjectAttributes : public Attributes {
  public:
   PhysicsObjectAttributes();
+
+  // default value getter/setter methods
+
+  // center of mass (COM)
+  void setCOM(const Magnum::Vector3& com);
+  Magnum::Vector3 getCOM() const;
+
+  // collision shape inflation margin
+  void setMargin(double margin);
+  double getMargin() const;
+
+  void setMass(double mass);
+  double getMass() const;
+
+  // inertia diagonal
+  void setInertia(const Magnum::Vector3& inertia);
+  Magnum::Vector3 getInertia() const;
+
+  void setScale(const Magnum::Vector3& scale);
+  Magnum::Vector3 getScale() const;
+
+  void setFrictionCoefficient(double frictionCoefficient);
+  double getFrictionCoefficient() const;
+
+  void setRestitutionCoefficient(double restitutionCoefficient);
+  double getRestitutionCoefficient() const;
+
+  void setLinearDamping(double linearDamping);
+  double getLinearDamping() const;
+
+  void setAngularDamping(double angularDamping);
+  double getAngularDamping() const;
+
+  void setOriginHandle(const std::string& originHandle);
+  std::string getOriginHandle() const;
+
+  void setRenderMeshHandle(const std::string& renderMeshHandle);
+  std::string getRenderMeshHandle() const;
+
+  void setCollisionMeshHandle(const std::string& collisionMeshHandle);
+  std::string getCollisionMeshHandle() const;
+
+  // if true override other settings and use render mesh bounding box as
+  // collision object
+  void setBoundingBoxCollisions(bool useBoundingBoxForCollision);
+  bool getBoundingBoxCollisions() const;
+
+  // if true join all mesh components of an asset into a unified collision
+  // object
+  void setJoinCollisionMeshes(bool joinCollisionMeshes);
+  bool getJoinCollisionMeshes() const;
+
+  // if true use phong illumination model instead of flat shading
+  void setRequiresLighting(bool requiresLighting);
+  bool getRequiresLighting() const;
+
 };  // end PhysicsObjectAttributes class
 
 //! attributes for a single physical scene
 class PhysicsSceneAttributes : public Attributes {
  public:
   PhysicsSceneAttributes();
+
+  void setGravity(const Magnum::Vector3& gravity);
+  Magnum::Vector3 getGravity() const;
+
+  void setFrictionCoefficient(double frictionCoefficient);
+  double getFrictionCoefficient() const;
+
+  void setRestitutionCoefficient(double restitutionCoefficient);
+  double getRestitutionCoefficient() const;
+
+  void setRenderMeshHandle(const std::string& renderMeshHandle);
+  std::string getRenderMeshHandle() const;
+
+  void setCollisionMeshHandle(const std::string& collisionMeshHandle);
+  std::string getCollisionMeshHandle() const;
+
 };  // end PhysicsSceneAttributes
 
 //! attributes for a single physics manager
 class PhysicsManagerAttributes : public Attributes {
  public:
   PhysicsManagerAttributes();
+
+  void setSimulator(const std::string& simulator);
+  std::string getSimulator() const;
+
+  void setTimestep(double timestep);
+  double getTimestep() const;
+
+  void setMaxSubsteps(int maxSubsteps);
+  int getMaxSubsteps() const;
+
 };  // end PhysicsManagerAttributes
 
 }  // namespace assets

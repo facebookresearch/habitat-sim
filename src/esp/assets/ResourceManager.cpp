@@ -117,8 +117,7 @@ bool ResourceManager::loadScene(
       // add a scene attributes for this filename or modify the existing one
       if (meshSuccess) {
         // TODO: need this anymore?
-        physicsSceneLibrary_[info.filepath].setString("renderMeshHandle",
-                                                      info.filepath);
+        physicsSceneLibrary_[info.filepath].setRenderMeshHandle(info.filepath);
       }
     }
   } else {
@@ -203,7 +202,7 @@ bool ResourceManager::loadScene(
 
   //! PHYSICS INIT: Use the above config to initialize physics engine
   bool defaultToNoneSimulator = true;
-  if (physicsManagerAttributes.getString("simulator").compare("bullet") == 0) {
+  if (physicsManagerAttributes.getSimulator().compare("bullet") == 0) {
 #ifdef ESP_BUILD_WITH_BULLET
     _physicsManager.reset(new physics::BulletPhysicsManager(this));
     defaultToNoneSimulator = false;
@@ -220,7 +219,7 @@ bool ResourceManager::loadScene(
   // if the desired simulator is not supported reset to "none" in metaData
   if (defaultToNoneSimulator) {
     _physicsManager.reset(new physics::PhysicsManager(this));
-    physicsManagerAttributes.setString("simulator", "none");
+    physicsManagerAttributes.setSimulator("none");
   }
 
   // load objects from sceneMetaData list...
@@ -243,17 +242,13 @@ bool ResourceManager::loadScene(
 
   // TODO: enable loading of multiple scenes from file and storing individual
   // parameters instead of scene properties in manager global config
-  physicsSceneLibrary_[info.filepath].setDouble(
-      "frictionCoefficient",
+  physicsSceneLibrary_[info.filepath].setFrictionCoefficient(
       physicsManagerAttributes.getDouble("frictionCoefficient"));
-  physicsSceneLibrary_[info.filepath].setDouble(
-      "restitutionCoefficient",
+  physicsSceneLibrary_[info.filepath].setRestitutionCoefficient(
       physicsManagerAttributes.getDouble("restitutionCoefficient"));
 
-  physicsSceneLibrary_[info.filepath].setString("renderMeshHandle",
-                                                info.filepath);
-  physicsSceneLibrary_[info.filepath].setString("collisionMeshHandle",
-                                                info.filepath);
+  physicsSceneLibrary_[info.filepath].setRenderMeshHandle(info.filepath);
+  physicsSceneLibrary_[info.filepath].setCollisionMeshHandle(info.filepath);
 
   //! CONSTRUCT SCENE
   const std::string& filename = info.filepath;
@@ -353,16 +348,16 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
   // default is "none" simulator
   if (scenePhysicsConfig.HasMember("physics simulator")) {
     if (scenePhysicsConfig["physics simulator"].IsString()) {
-      physicsManagerAttributes.setString(
-          "simulator", scenePhysicsConfig["physics simulator"].GetString());
+      physicsManagerAttributes.setSimulator(
+          scenePhysicsConfig["physics simulator"].GetString());
     }
   }
 
   // load the physics timestep
   if (scenePhysicsConfig.HasMember("timestep")) {
     if (scenePhysicsConfig["timestep"].IsNumber()) {
-      physicsManagerAttributes.setDouble(
-          "timestep", scenePhysicsConfig["timestep"].GetDouble());
+      physicsManagerAttributes.setTimestep(
+          scenePhysicsConfig["timestep"].GetDouble());
     }
   }
 
@@ -465,8 +460,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
     std::vector<CollisionMeshData> meshGroup =
         collisionMeshGroups_[objPhysConfigFilename];
 
-    const std::string& filename =
-        physicsObjectAttributes.getString("renderMeshHandle");
+    const std::string& filename = physicsObjectAttributes.getRenderMeshHandle();
     const LoadedAssetData& loadedAssetData = resourceDict_[filename];
     if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
       LOG(WARNING) << "Instantiating object with incompatible light setup, "
@@ -478,8 +472,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename,
     // need a new node for scaling because motion state will override scale set
     // at the physical node
     scene::SceneNode& scalingNode = parent->createChild();
-    Magnum::Vector3 objectScaling =
-        physicsObjectAttributes.getMagnumVec3("scale");
+    Magnum::Vector3 objectScaling = physicsObjectAttributes.getScale();
     scalingNode.setScaling(objectScaling);
 
     addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
@@ -501,19 +494,15 @@ int ResourceManager::loadObject(PhysicsObjectAttributes& objectTemplate,
 
   // load/check_for render and collision mesh metadata
   //! Get render mesh names
-  std::string renderMeshFilename = objectTemplate.getString("renderMeshHandle");
-  std::string collisionMeshFilename = "";
-
-  if (objectTemplate.existsAs(STRING, "collisionMeshHandle")) {
-    collisionMeshFilename = objectTemplate.getString("collisionMeshHandle");
-  }
+  std::string renderMeshFilename = objectTemplate.getRenderMeshHandle();
+  std::string collisionMeshFilename = objectTemplate.getCollisionMeshHandle();
 
   bool renderMeshSuccess = false;
   bool collisionMeshSuccess = false;
   AssetInfo renderMeshinfo;
   AssetInfo collisionMeshinfo;
 
-  bool requiresLighting = objectTemplate.getBool("requiresLighting");
+  bool requiresLighting = objectTemplate.getRequiresLighting();
 
   //! Load rendering mesh
   if (!renderMeshFilename.empty()) {
@@ -548,14 +537,14 @@ int ResourceManager::loadObject(PhysicsObjectAttributes& objectTemplate,
 
   // handle one missing mesh
   if (!renderMeshSuccess)
-    objectTemplate.setString("renderMeshHandle", collisionMeshFilename);
+    objectTemplate.setRenderMeshHandle(collisionMeshFilename);
   if (!collisionMeshSuccess)
-    objectTemplate.setString("collisionMeshHandle", renderMeshFilename);
+    objectTemplate.setCollisionMeshHandle(renderMeshFilename);
 
   // cache metaData, collision mesh Group
   physicsObjectLibrary_.emplace(objectTemplateHandle, objectTemplate);
   const MeshMetaData& meshMetaData =
-      getMeshMetaData(objectTemplate.getString("collisionMeshHandle"));
+      getMeshMetaData(objectTemplate.getCollisionMeshHandle());
 
   int start = meshMetaData.meshIndex.first;
   int end = meshMetaData.meshIndex.second;
@@ -615,16 +604,14 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
   // PhysicsObjectMetaData.h) load the mass
   if (objPhysicsConfig.HasMember("mass")) {
     if (objPhysicsConfig["mass"].IsNumber()) {
-      physicsObjectAttributes.setDouble("mass",
-                                        objPhysicsConfig["mass"].GetDouble());
+      physicsObjectAttributes.setMass(objPhysicsConfig["mass"].GetDouble());
     }
   }
 
   // optional set bounding box as collision object
   if (objPhysicsConfig.HasMember("use bounding box for collision")) {
     if (objPhysicsConfig["use bounding box for collision"].IsBool()) {
-      physicsObjectAttributes.setBool(
-          "useBoundingBoxForCollision",
+      physicsObjectAttributes.setBoundingBoxCollisions(
           objPhysicsConfig["use bounding box for collision"].GetBool());
     }
   }
@@ -643,7 +630,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
           COM[i] = objPhysicsConfig["COM"][i].GetDouble();
         }
       }
-      physicsObjectAttributes.setMagnumVec3("COM", COM);
+      physicsObjectAttributes.setCOM(COM);
       // set a flag which we can find later so we don't override the desired COM
       // with BB center.
       physicsObjectAttributes.setBool("COM_provided", true);
@@ -664,7 +651,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
           scale[i] = objPhysicsConfig["scale"][i].GetDouble();
         }
       }
-      physicsObjectAttributes.setMagnumVec3("scale", scale);
+      physicsObjectAttributes.setScale(scale);
     }
   }
 
@@ -683,15 +670,14 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
           inertia[i] = objPhysicsConfig["inertia"][i].GetDouble();
         }
       }
-      physicsObjectAttributes.setMagnumVec3("inertia", inertia);
+      physicsObjectAttributes.setInertia(inertia);
     }
   }
 
   // load the friction coefficient
   if (objPhysicsConfig.HasMember("friction coefficient")) {
     if (objPhysicsConfig["friction coefficient"].IsNumber()) {
-      physicsObjectAttributes.setDouble(
-          "frictionCoefficient",
+      physicsObjectAttributes.setFrictionCoefficient(
           objPhysicsConfig["friction coefficient"].GetDouble());
     } else {
       LOG(ERROR)
@@ -702,8 +688,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
   // load the restitution coefficient
   if (objPhysicsConfig.HasMember("restitution coefficient")) {
     if (objPhysicsConfig["restitution coefficient"].IsNumber()) {
-      physicsObjectAttributes.setDouble(
-          "restitutionCoefficient",
+      physicsObjectAttributes.setRestitutionCoefficient(
           objPhysicsConfig["restitution coefficient"].GetDouble());
     } else {
       LOG(ERROR) << " Invalid value in object physics config - restitution "
@@ -714,8 +699,7 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
   //! Get collision configuration options if specified
   if (objPhysicsConfig.HasMember("join collision meshes")) {
     if (objPhysicsConfig["join collision meshes"].IsBool()) {
-      physicsObjectAttributes.setBool(
-          "joinCollisionMeshes",
+      physicsObjectAttributes.setJoinCollisionMeshes(
           objPhysicsConfig["join collision meshes"].GetBool());
     } else {
       LOG(ERROR)
@@ -726,8 +710,8 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
   // if object will be flat or phong shaded
   if (objPhysicsConfig.HasMember("requires lighting")) {
     if (objPhysicsConfig["requires lighting"].IsBool()) {
-      physicsObjectAttributes.setBool(
-          "requiresLighting", objPhysicsConfig["requires lighting"].GetBool());
+      physicsObjectAttributes.setRequiresLighting(
+          objPhysicsConfig["requires lighting"].GetBool());
     } else {
       LOG(ERROR)
           << " Invalid value in object physics config - requires lighting";
@@ -756,9 +740,8 @@ int ResourceManager::loadObject(const std::string& objPhysConfigFilename) {
     }
   }
 
-  physicsObjectAttributes.setString("renderMeshHandle", renderMeshFilename);
-  physicsObjectAttributes.setString("collisionMeshHandle",
-                                    collisionMeshFilename);
+  physicsObjectAttributes.setRenderMeshHandle(renderMeshFilename);
+  physicsObjectAttributes.setCollisionMeshHandle(collisionMeshFilename);
 
   // 5. load the parsed file into the library
   return loadObject(physicsObjectAttributes, objPhysConfigFilename);

@@ -48,10 +48,8 @@ bool BulletRigidObject::initializeScene(
 
   constructBulletSceneFromMeshes(Magnum::Matrix4{}, meshGroup, metaData.root);
   for (auto& object : bSceneCollisionObjects_) {
-    object->setFriction(
-        physicsSceneAttributes.getDouble("frictionCoefficient"));
-    object->setRestitution(
-        physicsSceneAttributes.getDouble("restitutionCoefficient"));
+    object->setFriction(physicsSceneAttributes.getFrictionCoefficient());
+    object->setRestitution(physicsSceneAttributes.getRestitutionCoefficient());
     bWorld->addCollisionObject(object.get());
   }
 
@@ -181,13 +179,11 @@ bool BulletRigidObject::initializeObject(
   objectMotionType_ = MotionType::DYNAMIC;
 
   //! Physical parameters
-  double margin = physicsObjectAttributes.getDouble("margin");
+  double margin = physicsObjectAttributes.getMargin();
 
-  bool joinCollisionMeshes =
-      physicsObjectAttributes.getBool("joinCollisionMeshes");
+  bool joinCollisionMeshes = physicsObjectAttributes.getJoinCollisionMeshes();
 
-  usingBBCollisionShape_ =
-      physicsObjectAttributes.getBool("useBoundingBoxForCollision");
+  usingBBCollisionShape_ = physicsObjectAttributes.getBoundingBoxCollisions();
 
   // TODO(alexanderwclegg): should provide the option for joinCollisionMeshes
   // and collisionFromBB_ to specify complete vs. component level bounding box
@@ -213,19 +209,16 @@ bool BulletRigidObject::initializeObject(
   //! Set properties
   bObjectShape_->setMargin(margin);
 
-  Magnum::Vector3 objectScaling =
-      physicsObjectAttributes.getMagnumVec3("scale");
+  Magnum::Vector3 objectScaling = physicsObjectAttributes.getScale();
   bObjectShape_->setLocalScaling(btVector3{objectScaling});
 
-  btVector3 bInertia =
-      btVector3(physicsObjectAttributes.getMagnumVec3("inertia"));
+  btVector3 bInertia = btVector3(physicsObjectAttributes.getInertia());
 
   if (!usingBBCollisionShape_) {
     if (bInertia == btVector3{0, 0, 0}) {
       // allow bullet to compute the inertia tensor if we don't have one
-      bObjectShape_->calculateLocalInertia(
-          physicsObjectAttributes.getDouble("mass"),
-          bInertia);  // overrides bInertia
+      bObjectShape_->calculateLocalInertia(physicsObjectAttributes.getMass(),
+                                           bInertia);  // overrides bInertia
       LOG(INFO) << "Automatic object inertia computed: " << bInertia.x() << " "
                 << bInertia.y() << " " << bInertia.z();
     }
@@ -234,13 +227,12 @@ bool BulletRigidObject::initializeObject(
   //! Bullet rigid body setup
   btRigidBody::btRigidBodyConstructionInfo info =
       btRigidBody::btRigidBodyConstructionInfo(
-          physicsObjectAttributes.getDouble("mass"), &(btMotionState()),
+          physicsObjectAttributes.getMass(), &(btMotionState()),
           bObjectShape_.get(), bInertia);
-  info.m_friction = physicsObjectAttributes.getDouble("frictionCoefficient");
-  info.m_restitution =
-      physicsObjectAttributes.getDouble("restitutionCoefficient");
-  info.m_linearDamping = physicsObjectAttributes.getDouble("linDamping");
-  info.m_angularDamping = physicsObjectAttributes.getDouble("angDamping");
+  info.m_friction = physicsObjectAttributes.getFrictionCoefficient();
+  info.m_restitution = physicsObjectAttributes.getRestitutionCoefficient();
+  info.m_linearDamping = physicsObjectAttributes.getLinearDamping();
+  info.m_angularDamping = physicsObjectAttributes.getAngularDamping();
 
   //! Create rigid body
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
