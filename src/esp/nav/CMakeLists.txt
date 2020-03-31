@@ -16,8 +16,8 @@ target_link_libraries(nav
     core
     agent
     scene
-  PRIVATE
     Detour
+  PRIVATE
     Recast
 )
 

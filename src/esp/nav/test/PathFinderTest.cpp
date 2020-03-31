@@ -33,7 +33,7 @@ PathFinderTest::PathFinderTest() {
   addTests({&PathFinderTest::bounds, &PathFinderTest::tryStepNoSliding,
             &PathFinderTest::multiGoalPath});
 
-  addInstancedBenchmarks({&PathFinderTest::pathFindBenchmark}, 1000, 2);
+  addInstancedBenchmarks({&PathFinderTest::pathFindBenchmark}, 100, 3);
 }
 
 void PathFinderTest::bounds() {
@@ -92,7 +92,7 @@ void PathFinderTest::multiGoalPath() {
 
     esp::nav::MultiGoalShortestPath multiPath;
     multiPath.requestedStart = points[0];
-    multiPath.requestedEnds = {points.begin() + 1, points.end()};
+    multiPath.setRequestedEnds({points.begin() + 1, points.end()});
 
     CORRADE_VERIFY(pathFinder.findPath(multiPath));
 
@@ -100,7 +100,7 @@ void PathFinderTest::multiGoalPath() {
     path.requestedStart = points[0];
     float trueMinDist = 1e5;
     for (int i = 1; i < points.size(); ++i) {
-      path.requestedEnds = {points[i]};
+      path.setRequestedEnds({points[i]});
 
       CORRADE_VERIFY(pathFinder.findPath(path));
 
@@ -120,18 +120,44 @@ void PathFinderTest::pathFindBenchmark() {
     setTestCaseDescription("Path to single point");
     esp::nav::ShortestPath path;
     path.requestedStart = pathFinder.getRandomNavigablePoint();
+    do {
+      path.requestedStart = pathFinder.getRandomNavigablePoint();
+    } while (pathFinder.islandRadius(path.requestedStart) < 10.0);
     path.requestedEnd = pathFinder.getRandomNavigablePoint();
 
     bool status;
     CORRADE_BENCHMARK(5) { status = pathFinder.findPath(path); };
     CORRADE_VERIFY(status);
-  } else {
-    setTestCaseDescription("Path to closest of 100");
+  } else if (testCaseInstanceId() == 1) {
+    setTestCaseDescription("Path to closest of 1000");
     esp::nav::MultiGoalShortestPath path;
-    path.requestedStart = pathFinder.getRandomNavigablePoint();
-    for (int i = 0; i < 100; ++i) {
-      path.requestedEnds.emplace_back(pathFinder.getRandomNavigablePoint());
+    do {
+      path.requestedStart = pathFinder.getRandomNavigablePoint();
+    } while (pathFinder.islandRadius(path.requestedStart) < 10.0);
+
+    std::vector<esp::vec3f> rqEnds;
+    for (int i = 0; i < 1000; ++i) {
+      rqEnds.emplace_back(pathFinder.getRandomNavigablePoint());
     }
+    path.setRequestedEnds(rqEnds);
+
+    bool status;
+    CORRADE_BENCHMARK(5) { status = pathFinder.findPath(path); };
+    CORRADE_VERIFY(status);
+  } else if (testCaseInstanceId() == 2) {
+    setTestCaseDescription("Cached path to closest of 1000");
+    esp::nav::MultiGoalShortestPath path;
+    do {
+      path.requestedStart = pathFinder.getRandomNavigablePoint();
+    } while (pathFinder.islandRadius(path.requestedStart) < 10.0);
+
+    std::vector<esp::vec3f> rqEnds;
+    for (int i = 0; i < 1000; ++i) {
+      rqEnds.emplace_back(pathFinder.getRandomNavigablePoint());
+    }
+    path.setRequestedEnds(rqEnds);
+
+    pathFinder.findPath(path);
 
     bool status;
     CORRADE_BENCHMARK(5) { status = pathFinder.findPath(path); };

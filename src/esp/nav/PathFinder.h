@@ -9,6 +9,8 @@
 
 #include "esp/core/esp.h"
 
+#include "DetourNavMesh.h"
+
 namespace esp {
 // forward declaration
 namespace assets {
@@ -16,6 +18,8 @@ class MeshData;
 }
 
 namespace nav {
+
+class PathFinder;
 
 struct HitRecord {
   vec3f hitPos;
@@ -68,9 +72,15 @@ struct MultiGoalShortestPath {
   vec3f requestedStart;
 
   /**
-   * @brief The list of desired potential end points
+   * @brief Set the list of desired potential end points
    */
-  std::vector<vec3f> requestedEnds;
+  void setRequestedEnds(const std::vector<vec3f>& newEnds) {
+    endRefs.clear();
+    pathEnds.clear();
+    requestedEnds = newEnds;
+  }
+
+  const std::vector<vec3f>& getRequestedEnds() const { return requestedEnds; }
 
   /**
    * @brief A list of points that specify the shortest path on the navigation
@@ -87,6 +97,14 @@ struct MultiGoalShortestPath {
    * Will be inf if no path exists
    */
   float geodesicDistance;
+
+  friend class PathFinder;
+
+ private:
+  std::vector<vec3f> requestedEnds;
+
+  std::vector<dtPolyRef> endRefs;
+  std::vector<vec3f> pathEnds;
 
   ESP_SMART_POINTERS(MultiGoalShortestPath)
 };

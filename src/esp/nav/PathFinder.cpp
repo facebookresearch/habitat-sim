@@ -264,6 +264,10 @@ struct PathFinder::Impl {
                    const vec3f& end,
                    dtPolyRef endRef,
                    const vec3f& pathEnd);
+
+  bool findPathSetup(MultiGoalShortestPath& path,
+                     dtPolyRef& startRef,
+                     vec3f& pathStart);
 };
 
 namespace {
@@ -928,12 +932,12 @@ PathFinder::Impl::findPathInternal(const vec3f& start,
                                    const vec3f& pathEnd) {
   // check if trivial path (start is same as end) and early return
   if (pathStart.isApprox(pathEnd)) {
-    return std::make_tuple(0.0f, std::vector<vec3f>{});
+    return std::make_tuple(0.0f, std::vector<vec3f>{pathStart, pathEnd});
   }
 
   // Check if there is a path between the start and any of the ends
   if (!islandSystem_->hasConnection(startRef, endRef)) {
-    return Corrade::Containers::NullOpt;
+    return Cr::Containers::NullOpt;
   }
 
   static const int MAX_POLYS = 256;
@@ -944,7 +948,7 @@ PathFinder::Impl::findPathInternal(const vec3f& start,
       navQuery_->findPath(startRef, endRef, pathStart.data(), pathEnd.data(),
                           filter_.get(), polys, &numPolys, MAX_POLYS);
   if (status != DT_SUCCESS || numPolys == 0) {
-    return Corrade::Containers::NullOpt;
+    return Cr::Containers::NullOpt;
   }
 
   int numPoints = 0;
@@ -963,13 +967,13 @@ PathFinder::Impl::findPathInternal(const vec3f& start,
   return std::make_tuple(length, std::move(points));
 }
 
-bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
+bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
+                                     dtPolyRef& startRef,
+                                     vec3f& pathStart) {
   path.geodesicDistance = std::numeric_limits<float>::infinity();
   path.points.clear();
 
   // find nearest polys and path
-  dtPolyRef startRef;
-  vec3f pathStart;
   dtStatus status;
   std::tie(status, startRef, pathStart) =
       projectToPoly(path.requestedStart, navQuery_.get(), filter_.get());
@@ -978,18 +982,32 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
     return false;
   }
 
-  std::vector<vec3f> pathEnds;
-  std::vector<dtPolyRef> endRefs;
+  if (path.endRefs.size() != 0)
+    return true;
+
+  bool anyHasPath = false;
   for (const auto& rqEnd : path.requestedEnds) {
-    pathEnds.emplace_back();
-    endRefs.emplace_back();
-    std::tie(status, endRefs.back(), pathEnds.back()) =
+    dtPolyRef endRef;
+    vec3f pathEnd;
+    std::tie(status, endRef, pathEnd) =
         projectToPoly(rqEnd, navQuery_.get(), filter_.get());
 
-    if (status != DT_SUCCESS || endRefs.back() == 0) {
+    if (status != DT_SUCCESS || endRef == 0) {
       return false;
     }
+
+    path.endRefs.emplace_back(endRef);
+    path.pathEnds.emplace_back(pathEnd);
   }
+
+  return true;
+}
+
+bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
+  dtPolyRef startRef;
+  vec3f pathStart;
+  if (!findPathSetup(path, startRef, pathStart))
+    return false;
 
   for (int i = 0; i < path.requestedEnds.size(); ++i) {
     if ((path.requestedStart - path.requestedEnds[i]).norm() >
@@ -997,9 +1015,9 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
       continue;
 
     const Cr::Containers::Optional<std::tuple<float, std::vector<vec3f>>>
-        findResult =
-            findPathInternal(path.requestedStart, startRef, pathStart,
-                             path.requestedEnds[i], endRefs[i], pathEnds[i]);
+        findResult = findPathInternal(path.requestedStart, startRef, pathStart,
+                                      path.requestedEnds[i], path.endRefs[i],
+                                      path.pathEnds[i]);
 
     if (findResult && std::get<0>(*findResult) < path.geodesicDistance) {
       path.geodesicDistance = std::get<0>(*findResult);
