@@ -985,7 +985,6 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
   if (path.endRefs.size() != 0)
     return true;
 
-  bool anyHasPath = false;
   for (const auto& rqEnd : path.requestedEnds) {
     dtPolyRef endRef;
     vec3f pathEnd;
