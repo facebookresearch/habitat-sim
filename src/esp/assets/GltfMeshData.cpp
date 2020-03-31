@@ -7,7 +7,9 @@
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Magnum/MeshTools/Compile.h>
+#include <Magnum/MeshTools/Interleave.h>
 
+namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 namespace esp {
@@ -45,7 +47,15 @@ Magnum::GL::Mesh* GltfMeshData::getMagnumGLMesh() {
 void GltfMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
                                int meshID) {
   ASSERT(0 <= meshID && meshID < importer.meshCount());
-  meshData_ = importer.mesh(meshID);
+  /* Interleave the mesh, if not already. This makes the GPU happier (better
+     cache locality for vertex fetching) and is a no-op if the source data is
+     already interleaved, so doesn't hurt to have it there always. */
+  Cr::Containers::Optional<Mn::Trade::MeshData> meshData =
+      importer.mesh(meshID);
+  if (meshData)
+    meshData_ = Mn::MeshTools::interleave(*std::move(meshData));
+  else
+    meshData_ = Cr::Containers::NullOpt;
 
   collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
 
