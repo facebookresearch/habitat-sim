@@ -74,8 +74,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
                                drawables, lightSetup);
   existingObjects_.at(nextObjectID_)->node().computeCumulativeBB();
 
-  if (physicsObjectAttributes.existsAs(assets::DataType::BOOL,
-                                       "COM_provided")) {
+  if (physicsObjectAttributes.hasValue("COM_provided")) {
     // if the COM is provided, shift by that
     Magnum::Vector3 comShift = -physicsObjectAttributes.getCOM();
     // first apply scale
