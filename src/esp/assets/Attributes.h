@@ -79,6 +79,8 @@ class PhysicsObjectAttributes : public esp::core::Configuration {
   void setRequiresLighting(bool requiresLighting);
   bool getRequiresLighting() const;
 
+  ESP_SMART_POINTERS(PhysicsObjectAttributes)
+
 };  // end PhysicsObjectAttributes class
 
 //! attributes for a single physical scene
@@ -101,6 +103,8 @@ class PhysicsSceneAttributes : public esp::core::Configuration {
   void setCollisionMeshHandle(const std::string& collisionMeshHandle);
   std::string getCollisionMeshHandle() const;
 
+  ESP_SMART_POINTERS(PhysicsSceneAttributes)
+
 };  // end PhysicsSceneAttributes
 
 //! attributes for a single physics manager
@@ -117,6 +121,7 @@ class PhysicsManagerAttributes : public esp::core::Configuration {
   void setMaxSubsteps(int maxSubsteps);
   int getMaxSubsteps() const;
 
+  ESP_SMART_POINTERS(PhysicsManagerAttributes)
 };  // end PhysicsManagerAttributes
 
 }  // namespace assets
