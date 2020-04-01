@@ -69,9 +69,9 @@ int PhysicsManager::addObject(const int objectLibIndex,
 
   //! Draw object via resource manager
   //! Render node as child of physics node
-  resourceManager_->loadObject(configFile,
-                               existingObjects_.at(nextObjectID_)->visualNode_,
-                               drawables, lightSetup);
+  resourceManager_->addObjectToDrawables(
+      objectLibIndex, existingObjects_.at(nextObjectID_)->visualNode_,
+      drawables, lightSetup);
   existingObjects_.at(nextObjectID_)->node().computeCumulativeBB();
 
   if (physicsObjectAttributes.hasValue("COM_provided")) {

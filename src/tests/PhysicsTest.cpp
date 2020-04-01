@@ -78,7 +78,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
     // object
     esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
     physicsObjectAttributes.setRenderMeshHandle(objectFile);
-    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+    resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
     esp::assets::PhysicsObjectAttributes& objectTemplate =
@@ -156,7 +156,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
     physicsObjectAttributes.setRenderMeshHandle(objectFile);
     physicsObjectAttributes.setMargin(0.0);
     physicsObjectAttributes.setJoinCollisionMeshes(false);
-    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+    resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
     esp::assets::PhysicsObjectAttributes& objectTemplate =
@@ -225,7 +225,7 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
     esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
     physicsObjectAttributes.setRenderMeshHandle(objectFile);
     physicsObjectAttributes.setMargin(0.0);
-    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+    resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
     // generate two centered boxes with dimension 2x2x2
     int objectId0 = physicsManager_->addObject(objectFile, nullptr);
@@ -267,7 +267,7 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     physicsObjectAttributes.setRenderMeshHandle(objectFile);
     physicsObjectAttributes.setMargin(0.1);
 
-    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+    resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
     esp::assets::PhysicsObjectAttributes& objectTemplate =
@@ -325,7 +325,7 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   physicsObjectAttributes.setRenderMeshHandle(objectFile);
   physicsObjectAttributes.setMargin(0.0);
 
-  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+  resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
   // get a reference to the stored template to edit
   esp::assets::PhysicsObjectAttributes& objectTemplate =
@@ -381,7 +381,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
   physicsObjectAttributes.setRenderMeshHandle(objectFile);
   physicsObjectAttributes.setMargin(0.0);
-  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+  resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
@@ -488,7 +488,7 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
 
   esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
   physicsObjectAttributes.setRenderMeshHandle(objectFile);
-  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+  resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
   esp::scene::SceneNode& root =
       sceneManager_.getSceneGraph(sceneID_).getRootNode();
@@ -544,8 +544,8 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
     physicsObjectAttributes.setBoundingBoxCollisions(true);
     physicsObjectAttributes.setScale(
         {boxHalfExtent, boxHalfExtent, boxHalfExtent});
-    int boxId =
-        resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+    int boxId = resourceManager_.loadObjectTemplate(physicsObjectAttributes,
+                                                    objectFile);
 
     auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
