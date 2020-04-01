@@ -203,28 +203,25 @@ class ResourceManager {
   std::vector<std::string> getObjectConfigPaths(std::string path);
 
   /**
-   * @brief Load an object from a spcified configuration file into the @ref
-   * physicsObjectLibrary_ and add it to the specified @ref DrawableGroup as a
-   * child of the specified @ref scene::SceneNode if provided.
+   * @brief Add an object from a spcified configuration file to the specified
+   * @ref DrawableGroup as a child of the specified @ref scene::SceneNode if
+   * provided.
    *
-   * If the configuration file is already a key for the @ref
-   * physicsObjectLibrary_, and both parent and drawables are specified, then
-   * the parse is skipped and the object referenced by that key is added to the
-   * scene.
-   * @param objPhysConfigFilename The configuration file to parse and load.
+   * If the attributes specified by objTemplateID exists in @ref
+   * physicsObjTemplateLibrary_, and both parent and drawables are
+   * specified, than an object referenced by that key is added to the scene.
+   * @param objTemplateLibID The ID of the configuration file to parse and
+   * load.  This is expected to exist.
    * @param parent The @ref scene::SceneNode of which the object will be a
    * child.
    * @param drawables The @ref DrawableGroup with which the object @ref
    * gfx::Drawable will be rendered.
-   * @return The index in the @ref physicsObjectLibrary_ to which the key,
-   * objPhysConfigFilename, referes. Can be used to reference the obejct
-   * template, but can change if the @ref physicsObjectLibrary_ is modified.
    */
-  int loadObject(const std::string& objPhysConfigFilename,
-                 scene::SceneNode* parent,
-                 DrawableGroup* drawables,
-                 const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
-                     DEFAULT_LIGHTING_KEY});
+  void addObjectToDrawables(int objTemplateLibID,
+                            scene::SceneNode* parent,
+                            DrawableGroup* drawables,
+                            const Magnum::ResourceKey& lightSetup =
+                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY});
 
   /**
    * @brief Load and parse a physics object template config file and generates a
@@ -236,7 +233,7 @@ class ResourceManager {
    * objPhysConfigFilename, referes. Can be used to reference the object
    * template, but can change if the @ref physicsObjectLibrary_ is modified.
    */
-  int loadObject(const std::string& objPhysConfigFilename);
+  int parseAndLoadPhysObjTemplate(const std::string& objPhysConfigFilename);
 
   /**
    * @brief Add a @ref PhysicsObjectAttributes object to the @ref
@@ -248,8 +245,8 @@ class ResourceManager {
    * @param objectTemplate The object template.
    * @return The index in the @ref physicsObjectLibrary_ of object template.
    */
-  int loadObject(PhysicsObjectAttributes& objectTemplate,
-                 const std::string objectTemplateHandle);
+  int loadObjectTemplate(PhysicsObjectAttributes& objectTemplate,
+                         const std::string objectTemplateHandle);
 
   //======== Accessor functions ========
   /**
@@ -316,7 +313,7 @@ class ResourceManager {
    *
    * @return The size of the @ref physicsObjectLibrary_.
    */
-  int getNumLibraryObjects() { return physicsObjectLibrary_.size(); };
+  int getNumLibraryObjects() { return physicsObjTemplateLibrary_.size(); };
 
   /**
    * @brief Retrieve the composition of all transforms applied to a mesh since
@@ -723,7 +720,7 @@ class ResourceManager {
    * new objects with common parameters. For example:
    * "data/objects/cheezit.phys_properties.json" -> physicalMetaData
    */
-  std::map<std::string, PhysicsObjectAttributes> physicsObjectLibrary_;
+  std::map<std::string, PhysicsObjectAttributes> physicsObjTemplateLibrary_;
 
   /**
    * @brief Maps string keys (typically property filenames) to physical scene
@@ -753,13 +750,13 @@ class ResourceManager {
   std::map<std::string, std::vector<CollisionMeshData>> collisionMeshGroups_;
 
   /**
-   * @brief List of object library keys.
+   * @brief Maps object template ID to object template file names
    *
    * See @ref physicsObjectLibrary_, @ref collisionMeshGroups_. NOTE: can't get
    * keys from the map (easily), so store them for iteration.
    * TODO: remove this. Unnecessary: use an iterator to get the keys.
    */
-  std::vector<std::string> physicsObjectConfigList_;
+  std::map<int, std::string> physicsObjTmpltLibByID_;
 
   // ======== Rendering Utility Functions ========
 

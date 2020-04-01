@@ -620,11 +620,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::O: {
       if (physicsManager_ != nullptr) {
-        int numObjects = resourceManager_.getNumLibraryObjects();
-        if (numObjects) {
-          int randObjectID = rand() % numObjects;
+        int numObjTemplates = resourceManager_.getNumLibraryObjects();
+        if (numObjTemplates > 0) {
+          int randObjectID = rand() % numObjTemplates;
           addObject(resourceManager_.getObjectConfig(randObjectID));
-
         } else
           LOG(WARNING) << "No objects loaded, can't add any";
       } else
