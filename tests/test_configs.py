@@ -88,3 +88,7 @@ def test_physics_object_attributes():
     assert physics_object_template.get_join_collision_meshes() == False
     physics_object_template.set_requires_lighting(False)
     assert physics_object_template.get_requires_lighting() == False
+
+    # test that inheritance is correctly configured
+    physics_object_template.set("test_key", "test_string")
+    assert physics_object_template.get_string("test_key") == "test_string"

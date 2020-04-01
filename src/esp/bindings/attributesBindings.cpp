@@ -17,8 +17,8 @@ namespace assets {
 
 void initAttributesBindings(py::module& m) {
   // ==== PhysicsObjectAttributes ====
-  py::class_<PhysicsObjectAttributes, PhysicsObjectAttributes::ptr>(
-      m, "PhysicsObjectAttributes")
+  py::class_<PhysicsObjectAttributes, esp::core::Configuration,
+             PhysicsObjectAttributes::ptr>(m, "PhysicsObjectAttributes")
       .def(py::init(&PhysicsObjectAttributes::create<>))
       .def("set_com", &PhysicsObjectAttributes::setCOM, "com"_a)
       .def("get_com", &PhysicsObjectAttributes::getCOM)
