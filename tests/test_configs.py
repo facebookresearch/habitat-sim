@@ -16,7 +16,7 @@ def test_config_eq():
 
 def test_core_configuration():
     # test bindings for esp::core::Configuration class
-    config = habitat_sim.bindings.Attributes()
+    config = habitat_sim.bindings.ConfigurationGroup()
     config.set("test", "test statement")
     assert config.has_value("test")
     assert config.get_string("test") == "test statement"
@@ -39,8 +39,6 @@ def test_core_configuration():
     # Magnum::Vector3 (float)
     my_vec3 = np.array([1.12345, 2.0, -3.0])
     config.set("vec3", my_vec3)
-    print(my_vec3)
-    print(config.get_vec3("vec3"))
     assert config.get_vec3("vec3") == my_vec3
     assert config.get_int("vec3") == int(my_vec3[0])
 

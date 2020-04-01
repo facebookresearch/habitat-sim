@@ -22,7 +22,7 @@ void initEspBindings(py::module& m) {
 namespace core {
 
 void initCoreBindings(py::module& m) {
-  py::class_<Configuration, Configuration::ptr>(m, "Attributes")
+  py::class_<Configuration, Configuration::ptr>(m, "ConfigurationGroup")
       .def(py::init(&Configuration::create<>))
       .def("get_bool", &Configuration::getBool)
       .def("get_string", &Configuration::getString)
