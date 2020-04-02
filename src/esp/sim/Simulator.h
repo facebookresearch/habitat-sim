@@ -54,6 +54,8 @@ struct SimulatorConfiguration {
   /** @brief Light setup key for scene */
   std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
 
+  geo::CoordinateFrame::ptr worldFrame = nullptr;
+
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };
 bool operator==(const SimulatorConfiguration& a,

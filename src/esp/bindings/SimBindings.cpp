@@ -43,6 +43,7 @@ void initSimBindings(py::module& m) {
                      &SimulatorConfiguration::physicsConfigFile)
       .def_readwrite("scene_light_setup",
                      &SimulatorConfiguration::sceneLightSetup)
+      .def_readwrite("world_frame", &SimulatorConfiguration::worldFrame)
       .def(py::self == py::self)
       .def(py::self != py::self);
 

@@ -81,6 +81,12 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   assets::AssetInfo sceneInfo = assets::AssetInfo::fromPath(sceneFilename);
+
+  // override the default frame
+  if (cfg.worldFrame != nullptr) {
+    sceneInfo.frame = *cfg.worldFrame.get();
+  }
+
   sceneInfo.requiresLighting =
       cfg.sceneLightSetup != assets::ResourceManager::NO_LIGHT_KEY;
 

@@ -4,10 +4,12 @@
 
 #include "esp/bindings/bindings.h"
 
+#include "esp/geo/CoordinateFrame.h"
 #include "esp/geo/OBB.h"
 #include "esp/geo/geo.h"
 
 namespace py = pybind11;
+using py::literals::operator""_a;
 
 namespace esp {
 namespace geo {
@@ -42,6 +44,26 @@ void initGeoBindings(py::module& m) {
       });
 
   geo.def("compute_gravity_aligned_MOBB", &geo::computeGravityAlignedMOBB);
+
+  // ==== CoordinateFrame ===
+  py::class_<CoordinateFrame, CoordinateFrame::ptr>(m, "CoordinateFrame")
+      .def(py::init(&CoordinateFrame::create<>))
+      .def(py::init(
+          &CoordinateFrame::create<const vec3f&, const vec3f&, const vec3f&>))
+      .def(py::init(&CoordinateFrame::create<const quatf&, const vec3f&>))
+      .def(py::init(
+          &CoordinateFrame::create<const Magnum::Quaternion&, const vec3f&>))
+      .def("origin", &CoordinateFrame::origin)
+      .def("up", &CoordinateFrame::up)
+      .def("gravity", &CoordinateFrame::gravity)
+      .def("front", &CoordinateFrame::front)
+      .def("back", &CoordinateFrame::back)
+      .def("rotation_world_to_frame", &CoordinateFrame::rotationWorldToFrame)
+      .def("rotation_frame_to_world", &CoordinateFrame::rotationFrameToWorld)
+      //.def("transformation_world_to_frame",
+      //&CoordinateFrame::transformationWorldToFrame)
+      .def("to_json", &CoordinateFrame::toJson)
+      .def("from_json", &CoordinateFrame::fromJson, "json"_a);
 }
 
 }  // namespace geo

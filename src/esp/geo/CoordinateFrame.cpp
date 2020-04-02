@@ -7,6 +7,9 @@
 #include "esp/geo/geo.h"
 #include "esp/io/json.h"
 
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/EigenIntegration/Integration.h>
+
 namespace esp {
 namespace geo {
 
@@ -20,6 +23,12 @@ CoordinateFrame::CoordinateFrame(const vec3f& up /* = ESP_UP */,
 CoordinateFrame::CoordinateFrame(const quatf& rotation,
                                  const vec3f& origin /* = vec3f(0, 0, 0) */)
     : CoordinateFrame(rotation * ESP_UP, rotation * ESP_FRONT, origin) {}
+
+CoordinateFrame::CoordinateFrame(const Magnum::Quaternion& rotation,
+                                 const vec3f& origin /* = vec3f(0, 0, 0) */)
+    : CoordinateFrame(quatf(rotation) * ESP_UP,
+                      quatf(rotation) * ESP_FRONT,
+                      origin) {}
 
 CoordinateFrame::CoordinateFrame(const std::string& json) {
   fromJson(json);

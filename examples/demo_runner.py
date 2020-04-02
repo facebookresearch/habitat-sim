@@ -331,6 +331,34 @@ class DemoRunner:
             download_and_unzip(default_sim_settings["test_scene_data_url"], ".")
             print("Downloaded and extracted test scenes data.")
 
+        # default:
+        # world_frame_quat = habitat_sim.utils.common.quat_to_magnum(habitat_sim.utils.common.quat_from_two_vectors(habitat_sim.geo.GRAVITY, habitat_sim.geo.FRONT))
+        # rotated:
+        # world_frame_quat = habitat_sim.utils.common.quat_to_magnum(habitat_sim.utils.common.quat_from_two_vectors(habitat_sim.geo.GRAVITY, habitat_sim.geo.FRONT))
+        world_frame_quat = habitat_sim.utils.common.quat_from_two_vectors(
+            habitat_sim.geo.GRAVITY, habitat_sim.geo.FRONT
+        )
+        new_up = habitat_sim.utils.common.quat_rotate_vector(
+            world_frame_quat, habitat_sim.geo.UP
+        )
+        new_front = habitat_sim.utils.common.quat_rotate_vector(
+            world_frame_quat, habitat_sim.geo.FRONT
+        )
+        print(new_front)
+        grav_rotation = habitat_sim.utils.common.quat_from_angle_axis(
+            1.56, habitat_sim.geo.FRONT
+        )
+        new_front = habitat_sim.utils.common.quat_rotate_vector(
+            grav_rotation, new_front
+        )
+        print(new_front)
+
+        # world_frame_quat = grav_rotation * world_frame_quat
+        # self._cfg.sim_cfg.world_frame = habitat_sim.geo.CoordinateFrame(world_frame_quat, np.array([0,0,0.0]))
+        self._cfg.sim_cfg.world_frame = habitat_sim.geo.CoordinateFrame(
+            new_up, new_front, np.array([0, 0, 0.0])
+        )
+
         # create a simulator (Simulator python class object, not the backend simulator)
         self._sim = habitat_sim.Simulator(self._cfg)
 
