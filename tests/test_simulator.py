@@ -123,3 +123,8 @@ def test_scene_bounding_boxes(sim):
         mn.Vector3(-0.775869, -0.0233012, -1.6706), mn.Vector3(6.76937, 3.86304, 3.5359)
     )
     assert ground_truth == scene_bb
+
+
+def test_object_template_editing(sim):
+    todo = True
+    # TODO:
