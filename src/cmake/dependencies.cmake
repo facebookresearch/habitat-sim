@@ -206,12 +206,6 @@ if(NOT USE_SYSTEM_MAGNUM)
   endif()
 endif()
 
-
-
-# tinyply
-include_directories(SYSTEM "${DEPS_DIR}/tinyply/source")
-add_subdirectory("${DEPS_DIR}/tinyply")
-
 # gtest build
 if(BUILD_TEST)
   # store build shared libs option
