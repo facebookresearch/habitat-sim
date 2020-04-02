@@ -855,9 +855,11 @@ class PhysicsManager {
    * existing SceneNode.
    * @return The id of the newly allocated object in @ref existingObjects_
    */
-  int makeRigidObject(const std::vector<assets::CollisionMeshData>& meshGroup,
-                      assets::PhysicsObjectAttributes physicsObjectAttributes,
-                      scene::SceneNode* attachmentNode = nullptr);
+  // int makeRigidObject(const std::vector<assets::CollisionMeshData>&
+  // meshGroup,
+  //                     assets::PhysicsObjectAttributes
+  //                     physicsObjectAttributes, scene::SceneNode*
+  //                     attachmentNode = nullptr);
 
   /** @brief Create and initialize an @ref RigidObject, assign it an ID and add
    * it to existingObjects_ map keyed with newObjectID

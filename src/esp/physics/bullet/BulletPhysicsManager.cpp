@@ -88,26 +88,6 @@ bool BulletPhysicsManager::makeAndAddRigidObject(
   return objSuccess;
 }
 
-int BulletPhysicsManager::addObject(const int objectLibIndex,
-                                    DrawableGroup* drawables,
-                                    scene::SceneNode* attachmentNode,
-                                    const Magnum::ResourceKey& lightSetup) {
-  // Do default load first (adds the SceneNode to the SceneGraph and computes
-  // the cumulativeBB_)
-  int objID = PhysicsManager::addObject(objectLibIndex, drawables,
-                                        attachmentNode, lightSetup);
-
-  // Then set the collision shape to the cumulativeBB_ if necessary
-  if (objID != ID_UNDEFINED) {
-    BulletRigidObject* bro =
-        static_cast<BulletRigidObject*>(existingObjects_.at(objID).get());
-    if (bro->isUsingBBCollisionShape()) {
-      bro->setCollisionFromBB();
-    }
-  }
-  return objID;
-}
-
 //! Check if mesh primitive is compatible with physics
 bool BulletPhysicsManager::isMeshPrimitiveValid(
     const assets::CollisionMeshData& meshData) {

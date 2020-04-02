@@ -57,9 +57,25 @@ int PhysicsManager::addObject(const int objectLibIndex,
       resourceManager_->getCollisionMesh(objectLibIndex);
 
   //! Instantiate with mesh pointer
-  int nextObjectID_ =
-      makeRigidObject(meshGroup, physicsObjectAttributes, attachmentNode);
-  if (nextObjectID_ < 0) {
+  // int nextObjectID_ = makeRigidObject(meshGroup, physicsObjectAttributes,
+  // attachmentNode);
+
+  //! Make rigid object and add it to existingObjects
+  int nextObjectID_ = allocateObjectID();
+  scene::SceneNode* objectNode = attachmentNode;
+  if (attachmentNode == nullptr) {
+    objectNode = &staticSceneObject_->node().createChild();
+  }
+
+  bool objectSuccess = makeAndAddRigidObject(
+      nextObjectID_, meshGroup, physicsObjectAttributes, objectNode);
+
+  if (!objectSuccess) {
+    deallocateObjectID(nextObjectID_);
+    // existingObjects_.erase(newObjectID);
+    if (attachmentNode == nullptr) {
+      delete objectNode;
+    }
     LOG(ERROR) << "makeRigidObject unsuccessful";
     return ID_UNDEFINED;
   }
@@ -81,6 +97,9 @@ int PhysicsManager::addObject(const int objectLibIndex,
     // otherwise use the bounding box center
     existingObjects_.at(nextObjectID_)->shiftOriginToBBCenter();
   }
+
+  // finalize rigid object creation
+  existingObjects_.at(nextObjectID_)->finalizeObject();
 
   return nextObjectID_;
 }
@@ -150,29 +169,29 @@ bool PhysicsManager::makeAndAddRigidObject(
   return objSuccess;
 }
 
-//! Create and initialize rigid object
-int PhysicsManager::makeRigidObject(
-    const std::vector<assets::CollisionMeshData>& meshGroup,
-    assets::PhysicsObjectAttributes physicsObjectAttributes,
-    scene::SceneNode* attachmentNode /* = nullptr */) {
-  int newObjectID = allocateObjectID();
-  scene::SceneNode* objectNode = attachmentNode;
-  if (attachmentNode == nullptr) {
-    objectNode = &staticSceneObject_->node().createChild();
-  }
+// //! Create and initialize rigid object
+// int PhysicsManager::makeRigidObject(
+//     const std::vector<assets::CollisionMeshData>& meshGroup,
+//     assets::PhysicsObjectAttributes physicsObjectAttributes,
+//     scene::SceneNode* attachmentNode /* = nullptr */) {
+//   int newObjectID = allocateObjectID();
+//   scene::SceneNode* objectNode = attachmentNode;
+//   if (attachmentNode == nullptr) {
+//     objectNode = &staticSceneObject_->node().createChild();
+//   }
 
-  bool objectSuccess = makeAndAddRigidObject(
-      newObjectID, meshGroup, physicsObjectAttributes, objectNode);
+//   bool objectSuccess = makeAndAddRigidObject(
+//       newObjectID, meshGroup, physicsObjectAttributes, objectNode);
 
-  if (!objectSuccess) {
-    deallocateObjectID(newObjectID);
-    // existingObjects_.erase(newObjectID);
-    if (attachmentNode == nullptr)
-      delete objectNode;
-    return ID_UNDEFINED;
-  }
-  return newObjectID;
-}
+//   if (!objectSuccess) {
+//     deallocateObjectID(newObjectID);
+//     // existingObjects_.erase(newObjectID);
+//     if (attachmentNode == nullptr)
+//       delete objectNode;
+//     return ID_UNDEFINED;
+//   }
+//   return newObjectID;
+// }
 
 //! Base physics manager has no requirement for mesh primitive
 bool PhysicsManager::isMeshPrimitiveValid(const assets::CollisionMeshData&) {
