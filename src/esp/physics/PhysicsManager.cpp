@@ -56,10 +56,6 @@ int PhysicsManager::addObject(const int objectLibIndex,
   const std::vector<assets::CollisionMeshData>& meshGroup =
       resourceManager_->getCollisionMesh(objectLibIndex);
 
-  //! Instantiate with mesh pointer
-  // int nextObjectID_ = makeRigidObject(meshGroup, physicsObjectAttributes,
-  // attachmentNode);
-
   //! Make rigid object and add it to existingObjects
   int nextObjectID_ = allocateObjectID();
   scene::SceneNode* objectNode = attachmentNode;
@@ -168,30 +164,6 @@ bool PhysicsManager::makeAndAddRigidObject(
   }
   return objSuccess;
 }
-
-// //! Create and initialize rigid object
-// int PhysicsManager::makeRigidObject(
-//     const std::vector<assets::CollisionMeshData>& meshGroup,
-//     assets::PhysicsObjectAttributes physicsObjectAttributes,
-//     scene::SceneNode* attachmentNode /* = nullptr */) {
-//   int newObjectID = allocateObjectID();
-//   scene::SceneNode* objectNode = attachmentNode;
-//   if (attachmentNode == nullptr) {
-//     objectNode = &staticSceneObject_->node().createChild();
-//   }
-
-//   bool objectSuccess = makeAndAddRigidObject(
-//       newObjectID, meshGroup, physicsObjectAttributes, objectNode);
-
-//   if (!objectSuccess) {
-//     deallocateObjectID(newObjectID);
-//     // existingObjects_.erase(newObjectID);
-//     if (attachmentNode == nullptr)
-//       delete objectNode;
-//     return ID_UNDEFINED;
-//   }
-//   return newObjectID;
-// }
 
 //! Base physics manager has no requirement for mesh primitive
 bool PhysicsManager::isMeshPrimitiveValid(const assets::CollisionMeshData&) {

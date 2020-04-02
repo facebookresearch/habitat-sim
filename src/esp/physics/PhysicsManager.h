@@ -847,21 +847,7 @@ class PhysicsManager {
    */
   int deallocateObjectID(int physObjectID);
 
-  /** @brief Create and initialize an @ref RigidObject and assign it an ID.
-   * @param meshGroup The object's mesh.
-   * @param physicsObjectAttributes The physical object's template defining its
-   * physical parameters.
-   * @param attachmentNode If supplied, attach the new physical object to an
-   * existing SceneNode.
-   * @return The id of the newly allocated object in @ref existingObjects_
-   */
-  // int makeRigidObject(const std::vector<assets::CollisionMeshData>&
-  // meshGroup,
-  //                     assets::PhysicsObjectAttributes
-  //                     physicsObjectAttributes, scene::SceneNode*
-  //                     attachmentNode = nullptr);
-
-  /** @brief Create and initialize an @ref RigidObject, assign it an ID and add
+  /** @brief Create and initialize a @ref RigidObject, assign it an ID and add
    * it to existingObjects_ map keyed with newObjectID
    * @param newObjectID valid object ID for the new object
    * @param meshGroup The object's mesh.

@@ -473,8 +473,7 @@ void ResourceManager::addObjectToDrawables(int objTemplateLibID,
 
 PhysicsObjectAttributes& ResourceManager::getPhysicsObjectAttributes(
     const std::string& objectName) {
-  // check existance here?
-  return physicsObjTemplateLibrary_[objectName];
+  return physicsObjTemplateLibrary_.at(objectName);
 }
 PhysicsObjectAttributes& ResourceManager::getPhysicsObjectAttributes(
     const int objectTemplateID) {

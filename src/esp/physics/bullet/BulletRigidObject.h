@@ -123,8 +123,7 @@ class BulletRigidObject : public RigidObject,
       const assets::MeshMetaData& metaData,
       const std::vector<assets::CollisionMeshData>& meshGroup);
   /**
-   * @brief Finalize the creation of this @ref RigidObject as a potentially
-   * moveable object.
+   * @brief Finalize this object with any necessary post-creation processes.
    */
   virtual void finalizeObject() override;
 

@@ -279,8 +279,7 @@ int Simulator::getPhysicsObjectLibrarySize() {
 
 assets::PhysicsObjectAttributes& Simulator::getPhysicsObjectAttributes(
     int templateIndex) {
-  return resourceManager_.getPhysicsObjectAttributes(
-      resourceManager_.getObjectConfig(templateIndex));
+  return resourceManager_.getPhysicsObjectAttributes(templateIndex);
 }
 
 assets::PhysicsObjectAttributes& Simulator::getPhysicsObjectAttributes(

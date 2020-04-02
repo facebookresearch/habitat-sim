@@ -206,7 +206,7 @@ class BulletPhysicsManager : public PhysicsManager {
 
   mutable Magnum::BulletIntegration::DebugDraw debugDrawer_;
 
-  /** @brief Create and initialize an @ref RigidObject, assign it an ID and add
+  /** @brief Create and initialize an @ref RigidObject and add
    * it to existingObjects_ map keyed with newObjectID
    * @param newObjectID valid object ID for the new object
    * @param meshGroup The object's mesh.

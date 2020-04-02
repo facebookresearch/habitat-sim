@@ -312,7 +312,7 @@ class ResourceManager {
 
   /**
    * @brief Get a reference to the physics object template for the asset
-   * identified by the key, configFile.
+   * identified by the objectTemplateID.
    *
    * Can be used to manipulate an object
    * template before instancing new objects.
