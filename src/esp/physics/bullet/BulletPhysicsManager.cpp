@@ -38,8 +38,7 @@ bool BulletPhysicsManager::initPhysics(
   // Copy over relevant configuration
   fixedTimeStep_ = physicsManagerAttributes.getTimestep();
   // currently GLB meshes are y-up
-  bWorld_->setGravity(
-      btVector3(physicsManagerAttributes.getMagnumVec3("gravity")));
+  bWorld_->setGravity(btVector3(physicsManagerAttributes.getVec3("gravity")));
 
   physicsNode_ = node;
   //! Create new scene node

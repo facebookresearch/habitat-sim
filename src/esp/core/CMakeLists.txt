@@ -42,6 +42,7 @@ add_library(core STATIC
 target_link_libraries(core
   PUBLIC
     Corrade::Utility
+    Magnum::Magnum
     glog
 )
 

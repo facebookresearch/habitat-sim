@@ -293,7 +293,8 @@ std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
   std::vector<std::string> validConfigPaths =
       resourceManager_.getObjectConfigPaths(path);
   for (auto& validPath : validConfigPaths) {
-    templateIndices.push_back(resourceManager_.loadObject(validPath));
+    templateIndices.push_back(
+        resourceManager_.parseAndLoadPhysObjTemplate(validPath));
   }
   return templateIndices;
 }
@@ -307,7 +308,8 @@ int Simulator::loadObjectTemplate(
     return ID_UNDEFINED;
   }
 
-  return resourceManager_.loadObject(objectTemplate, objectTemplateHandle);
+  return resourceManager_.loadObjectTemplate(objectTemplate,
+                                             objectTemplateHandle);
 }
 
 // return a list of existing objected IDs in a physical scene

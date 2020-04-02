@@ -560,9 +560,8 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
     return initializationAttributes_;
   };
 
-  /** @brief public @ref esp::assets::Attributes object for user convenience.
-   * Store whatever object attributes you want here! */
-  assets::Attributes attributes_;
+  /** @brief Store whatever object attributes you want here! */
+  esp::core::Configuration attributes_;
 
   //! The @ref SceneNode of a bounding box debug drawable. If nullptr, BB
   //! drawing is off. See @ref toggleBBDraw().
