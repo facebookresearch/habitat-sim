@@ -445,8 +445,8 @@ void ResourceManager::addObjectToDrawables(int objTemplateLibID,
       // Meta data and collision mesh
       PhysicsObjectAttributes physicsObjectAttributes =
           physicsObjTemplateLibrary_.at(objPhysConfigFilename);
-      std::vector<CollisionMeshData> meshGroup =
-          collisionMeshGroups_.at(objPhysConfigFilename);
+      std::vector<CollisionMeshData> meshGroup = collisionMeshGroups_.at(
+          physicsObjectAttributes.getCollisionMeshHandle());
 
       const std::string& filename =
           physicsObjectAttributes.getRenderMeshHandle();
@@ -473,7 +473,12 @@ void ResourceManager::addObjectToDrawables(int objTemplateLibID,
 
 PhysicsObjectAttributes& ResourceManager::getPhysicsObjectAttributes(
     const std::string& objectName) {
+  // check existance here?
   return physicsObjTemplateLibrary_[objectName];
+}
+PhysicsObjectAttributes& ResourceManager::getPhysicsObjectAttributes(
+    const int objectTemplateID) {
+  return physicsObjTemplateLibrary_.at(getObjectConfig(objectTemplateID));
 }
 
 int ResourceManager::loadObjectTemplate(
@@ -553,7 +558,8 @@ int ResourceManager::loadObjectTemplate(
     CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
     meshGroup.push_back(meshData);
   }
-  collisionMeshGroups_.emplace(objectTemplateHandle, meshGroup);
+  collisionMeshGroups_.emplace(objectTemplate.getCollisionMeshHandle(),
+                               meshGroup);
 
   return objectTemplateID;
 }
@@ -742,12 +748,13 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
 const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
     const int objectTemplateID) {
   std::string configFile = getObjectConfig(objectTemplateID);
-  return collisionMeshGroups_[configFile];
+  return getCollisionMesh(configFile);
 }
 
 const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
     const std::string configFile) {
-  return collisionMeshGroups_[configFile];
+  return collisionMeshGroups_.at(
+      physicsObjTemplateLibrary_.at(configFile).getCollisionMeshHandle());
 }
 
 int ResourceManager::getObjectTemplateID(const std::string& configFile) {

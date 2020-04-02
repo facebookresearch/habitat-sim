@@ -50,14 +50,11 @@ int PhysicsManager::addObject(const int objectLibIndex,
                               DrawableGroup* drawables,
                               scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
-  const std::string configFile =
-      resourceManager_->getObjectConfig(objectLibIndex);
-
   //! Test Mesh primitive is valid
-  const std::vector<assets::CollisionMeshData>& meshGroup =
-      resourceManager_->getCollisionMesh(configFile);
   assets::PhysicsObjectAttributes physicsObjectAttributes =
-      resourceManager_->getPhysicsObjectAttributes(configFile);
+      resourceManager_->getPhysicsObjectAttributes(objectLibIndex);
+  const std::vector<assets::CollisionMeshData>& meshGroup =
+      resourceManager_->getCollisionMesh(objectLibIndex);
 
   //! Instantiate with mesh pointer
   int nextObjectID_ =
