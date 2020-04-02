@@ -187,6 +187,11 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /**
+   * @brief Finalize this object with any necessary post-creation processes.
+   */
+  virtual void finalizeObject() {}
+
+  /**
    * @brief Virtual destructor for a @ref RigidObject.
    */
   virtual ~RigidObject(){};

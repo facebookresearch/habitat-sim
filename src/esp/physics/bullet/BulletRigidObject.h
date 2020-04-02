@@ -122,6 +122,10 @@ class BulletRigidObject : public RigidObject,
       std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
       const assets::MeshMetaData& metaData,
       const std::vector<assets::CollisionMeshData>& meshGroup);
+  /**
+   * @brief Finalize this object with any necessary post-creation processes.
+   */
+  virtual void finalizeObject() override;
 
   /**
    * @brief Recursively construct a @ref btCompoundShape for collision from

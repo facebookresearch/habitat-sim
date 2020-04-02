@@ -152,7 +152,7 @@ class ResourceManager {
    *
    * Loads a physics simulator for the world from the parameters defined in the
    * referenced configuration file. Also attempts to parse physical objects
-   * listed in this configuration file into the @ref physicsObjectLibrary_.
+   * listed in this configuration file into the @ref physicsObjTemplateLibrary_.
    * Reseats the @ref physics::PhysicsManager based on the configured simulator
    * implementation. Loads the scene mesh and adds it to the specified @ref
    * DrawableGroup as a child of the specified @ref scene::SceneNode. If these
@@ -169,7 +169,7 @@ class ResourceManager {
    * @param physicsFilename The physics configuration file from which to
    * re-instatiate the @ref physics::PhysicsManager and parse object templates
    * for the
-   * @ref physicsObjectLibrary_. Defaults to the file location @ref
+   * @ref physicsObjTemplateLibrary_. Defaults to the file location @ref
    * ESP_DEFAULT_PHYS_SCENE_CONFIG set by cmake.
    * @return Whether or not the scene load succeeded.
    */
@@ -226,24 +226,26 @@ class ResourceManager {
   /**
    * @brief Load and parse a physics object template config file and generates a
    * @ref PhysicsObjectAttributes object, adding it to the @ref
-   * physicsObjectLibrary_.
+   * physicsObjTemplateLibrary_.
    *
    * @param objPhysConfigFilename The configuration file to parse and load.
-   * @return The index in the @ref physicsObjectLibrary_ to which the key,
+   * @return The index in the @ref physicsObjTemplateLibrary_ to which the key,
    * objPhysConfigFilename, referes. Can be used to reference the object
-   * template, but can change if the @ref physicsObjectLibrary_ is modified.
+   * template, but can change if the @ref physicsObjTemplateLibrary_ is
+   * modified.
    */
   int parseAndLoadPhysObjTemplate(const std::string& objPhysConfigFilename);
 
   /**
    * @brief Add a @ref PhysicsObjectAttributes object to the @ref
-   * physicsObjectLibrary_.
+   * physicsObjTemplateLibrary_.
    *
    * Can modify template values based on results of load.
    * @param objectTemplateHandle The key for referencing the template in the
-   * @ref physicsObjectLibrary_.
+   * @ref physicsObjTemplateLibrary_.
    * @param objectTemplate The object template.
-   * @return The index in the @ref physicsObjectLibrary_ of object template.
+   * @return The index in the @ref physicsObjTemplateLibrary_ of object
+   * template.
    */
   int loadObjectTemplate(PhysicsObjectAttributes& objectTemplate,
                          const std::string objectTemplateHandle);
@@ -254,7 +256,7 @@ class ResourceManager {
    * particular asset referenced by the key, configFile.
    *
    * @param configFile The key by which the asset is referenced in @ref
-   * collisionMeshGroups_ and the @ref physicsObjectLibrary_.
+   * collisionMeshGroups_ and the @ref physicsObjTemplateLibrary_.
    * @return A vector reference to @ref assets::CollisionMeshData instances for
    * individual components of the asset.
    */
@@ -264,10 +266,10 @@ class ResourceManager {
   /**
    * @brief Getter for all @ref assets::CollisionMeshData associated with the
    * particular asset referenced by the index, objectTemplateID, in @ref
-   * physicsObjectLibrary_.
+   * physicsObjTemplateLibrary_.
    *
    * @param objectTemplateID The index of the object template in @ref
-   * physicsObjectLibrary_.
+   * physicsObjTemplateLibrary_.
    * @return A vector reference to @ref assets::CollisionMeshData instances for
    * individual components of the asset.
    */
@@ -275,43 +277,57 @@ class ResourceManager {
       const int objectTemplateID);
 
   /**
-   * @brief Get the index in @ref physicsObjectLibrary_ for the object template
-   * asset identified by the key, configFile.
+   * @brief Get the index in @ref physicsObjTemplateLibrary_ for the object
+   * template asset identified by the key, configFile.
    *
    * @param configFile The key referencing the asset in @ref
-   * physicsObjectLibrary_.
-   * @return The index of the object template in @ref physicsObjectLibrary_.
+   * physicsObjTemplateLibrary_.
+   * @return The index of the object template in @ref
+   * physicsObjTemplateLibrary_.
    */
   int getObjectTemplateID(const std::string& configFile);
 
   /**
-   * @brief Get the key in @ref physicsObjectLibrary_ for the object template
-   * asset index.
+   * @brief Get the key in @ref physicsObjTemplateLibrary_ for the object
+   * template asset index.
    *
    * @param objectTemplateID The index of the object template in @ref
-   * physicsObjectLibrary_.
-   * @return The key referencing the asset in @ref physicsObjectLibrary_.
+   * physicsObjTemplateLibrary_.
+   * @return The key referencing the asset in @ref physicsObjTemplateLibrary_.
    */
   std::string getObjectConfig(const int objectTemplateID);
 
   /**
    * @brief Get a reference to the physics object template for the asset
-   * identified by the key, configFile.
+   * identified by the key, configFile.  physicsObjTemplateLibrary_
    *
    * Can be used to manipulate an object
    * template before instancing new objects.
    * @param configFile The key referencing the asset in @ref
-   * physicsObjectLibrary_.
+   * physicsObjTemplateLibrary_.
    * @return A mutable reference to the object template for the asset.
    */
   PhysicsObjectAttributes& getPhysicsObjectAttributes(
       const std::string& configFile);
 
   /**
-   * @brief Gets the number of object templates stored in the @ref
-   * physicsObjectLibrary_.
+   * @brief Get a reference to the physics object template for the asset
+   * identified by the objectTemplateID.
    *
-   * @return The size of the @ref physicsObjectLibrary_.
+   * Can be used to manipulate an object
+   * template before instancing new objects.
+   * @param ObjTmplID The key referencing the asset in @ref
+   * physicsObjTemplateLibrary_.
+   * @return A mutable reference to the object template for the asset.
+   */
+  PhysicsObjectAttributes& getPhysicsObjectAttributes(
+      const int objectTemplateID);
+
+  /**
+   * @brief Gets the number of object templates stored in the @ref
+   * physicsObjTemplateLibrary_.
+   *
+   * @return The size of the @ref physicsObjTemplateLibrary_.
    */
   int getNumLibraryObjects() { return physicsObjTemplateLibrary_.size(); };
 
@@ -752,8 +768,8 @@ class ResourceManager {
   /**
    * @brief Maps object template ID to object template file names
    *
-   * See @ref physicsObjectLibrary_, @ref collisionMeshGroups_. NOTE: can't get
-   * keys from the map (easily), so store them for iteration.
+   * See @ref physicsObjTemplateLibrary_, @ref collisionMeshGroups_. NOTE: can't
+   * get keys from the map (easily), so store them for iteration.
    * TODO: remove this. Unnecessary: use an iterator to get the keys.
    */
   std::map<int, std::string> physicsObjTmpltLibByID_;

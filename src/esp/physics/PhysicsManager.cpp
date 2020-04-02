@@ -50,19 +50,28 @@ int PhysicsManager::addObject(const int objectLibIndex,
                               DrawableGroup* drawables,
                               scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
-  const std::string configFile =
-      resourceManager_->getObjectConfig(objectLibIndex);
-
   //! Test Mesh primitive is valid
-  const std::vector<assets::CollisionMeshData>& meshGroup =
-      resourceManager_->getCollisionMesh(configFile);
   assets::PhysicsObjectAttributes physicsObjectAttributes =
-      resourceManager_->getPhysicsObjectAttributes(configFile);
+      resourceManager_->getPhysicsObjectAttributes(objectLibIndex);
+  const std::vector<assets::CollisionMeshData>& meshGroup =
+      resourceManager_->getCollisionMesh(objectLibIndex);
 
-  //! Instantiate with mesh pointer
-  int nextObjectID_ =
-      makeRigidObject(meshGroup, physicsObjectAttributes, attachmentNode);
-  if (nextObjectID_ < 0) {
+  //! Make rigid object and add it to existingObjects
+  int nextObjectID_ = allocateObjectID();
+  scene::SceneNode* objectNode = attachmentNode;
+  if (attachmentNode == nullptr) {
+    objectNode = &staticSceneObject_->node().createChild();
+  }
+
+  bool objectSuccess = makeAndAddRigidObject(
+      nextObjectID_, meshGroup, physicsObjectAttributes, objectNode);
+
+  if (!objectSuccess) {
+    deallocateObjectID(nextObjectID_);
+    // existingObjects_.erase(newObjectID);
+    if (attachmentNode == nullptr) {
+      delete objectNode;
+    }
     LOG(ERROR) << "makeRigidObject unsuccessful";
     return ID_UNDEFINED;
   }
@@ -84,6 +93,9 @@ int PhysicsManager::addObject(const int objectLibIndex,
     // otherwise use the bounding box center
     existingObjects_.at(nextObjectID_)->shiftOriginToBBCenter();
   }
+
+  // finalize rigid object creation
+  existingObjects_.at(nextObjectID_)->finalizeObject();
 
   return nextObjectID_;
 }
@@ -140,31 +152,17 @@ int PhysicsManager::deallocateObjectID(int physObjectID) {
   return physObjectID;
 }
 
-//! Create and initialize rigid object
-int PhysicsManager::makeRigidObject(
+bool PhysicsManager::makeAndAddRigidObject(
+    int newObjectID,
     const std::vector<assets::CollisionMeshData>& meshGroup,
     assets::PhysicsObjectAttributes physicsObjectAttributes,
-    scene::SceneNode* attachmentNode /* = nullptr */) {
-  int newObjectID = allocateObjectID();
-  scene::SceneNode* objectNode = attachmentNode;
-  if (attachmentNode == nullptr) {
-    objectNode = &staticSceneObject_->node().createChild();
+    scene::SceneNode* objectNode) {
+  auto ptr = std::make_unique<physics::RigidObject>(objectNode);
+  bool objSuccess = ptr->initializeObject(physicsObjectAttributes, meshGroup);
+  if (objSuccess) {
+    existingObjects_.emplace(newObjectID, std::move(ptr));
   }
-  existingObjects_[newObjectID] =
-      std::make_unique<physics::RigidObject>(objectNode);
-
-  //! Instantiate with mesh pointer
-  bool objectSuccess =
-      existingObjects_.at(newObjectID)
-          ->initializeObject(physicsObjectAttributes, meshGroup);
-  if (!objectSuccess) {
-    deallocateObjectID(newObjectID);
-    existingObjects_.erase(newObjectID);
-    if (attachmentNode == nullptr)
-      delete objectNode;
-    return ID_UNDEFINED;
-  }
-  return newObjectID;
+  return objSuccess;
 }
 
 //! Base physics manager has no requirement for mesh primitive

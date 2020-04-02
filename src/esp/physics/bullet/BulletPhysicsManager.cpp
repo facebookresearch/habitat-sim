@@ -72,57 +72,20 @@ bool BulletPhysicsManager::addScene(
   return sceneSuccess;
 }
 
-int BulletPhysicsManager::makeRigidObject(
+bool BulletPhysicsManager::makeAndAddRigidObject(
+    int newObjectID,
     const std::vector<assets::CollisionMeshData>& meshGroup,
     assets::PhysicsObjectAttributes physicsObjectAttributes,
-    scene::SceneNode* attachmentNode) {
-  //! Create new physics object (child node of staticSceneObject_)
-  int newObjectID = allocateObjectID();
-
-  scene::SceneNode* objectNode = attachmentNode;
-  if (attachmentNode == nullptr) {
-    objectNode = &staticSceneObject_->node().createChild();
-  }
-
-  existingObjects_[newObjectID] =
-      std::make_unique<BulletRigidObject>(objectNode);
-
+    scene::SceneNode* objectNode) {
+  auto ptr = std::make_unique<physics::BulletRigidObject>(objectNode);
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
       physicsObjectAttributes.getCollisionMeshHandle());
-  bool objectSuccess =
-      static_cast<BulletRigidObject*>(existingObjects_.at(newObjectID).get())
-          ->initializeObject(physicsObjectAttributes, bWorld_, metaData,
-                             meshGroup);
-
-  if (!objectSuccess) {
-    LOG(ERROR) << "Object load failed";
-    deallocateObjectID(newObjectID);
-    existingObjects_.erase(newObjectID);
-    if (attachmentNode == nullptr)
-      delete objectNode;
-    return ID_UNDEFINED;
+  bool objSuccess = ptr->initializeObject(physicsObjectAttributes, bWorld_,
+                                          metaData, meshGroup);
+  if (objSuccess) {
+    existingObjects_.emplace(newObjectID, std::move(ptr));
   }
-  return newObjectID;
-}
-
-int BulletPhysicsManager::addObject(const int objectLibIndex,
-                                    DrawableGroup* drawables,
-                                    scene::SceneNode* attachmentNode,
-                                    const Magnum::ResourceKey& lightSetup) {
-  // Do default load first (adds the SceneNode to the SceneGraph and computes
-  // the cumulativeBB_)
-  int objID = PhysicsManager::addObject(objectLibIndex, drawables,
-                                        attachmentNode, lightSetup);
-
-  // Then set the collision shape to the cumulativeBB_ if necessary
-  if (objID != ID_UNDEFINED) {
-    BulletRigidObject* bro =
-        static_cast<BulletRigidObject*>(existingObjects_.at(objID).get());
-    if (bro->isUsingBBCollisionShape()) {
-      bro->setCollisionFromBB();
-    }
-  }
-  return objID;
+  return objSuccess;
 }
 
 //! Check if mesh primitive is compatible with physics

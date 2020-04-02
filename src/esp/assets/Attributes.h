@@ -65,6 +65,9 @@ class PhysicsObjectAttributes : public esp::core::Configuration {
   void setCollisionMeshHandle(const std::string& collisionMeshHandle);
   std::string getCollisionMeshHandle() const;
 
+  void setObjectTemplateID(int objectTemplateID);
+  int getObjectTemplateID() const;
+
   // if true override other settings and use render mesh bounding box as
   // collision object
   void setBoundingBoxCollisions(bool useBoundingBoxForCollision);
