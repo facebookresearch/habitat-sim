@@ -855,10 +855,25 @@ class PhysicsManager {
    * existing SceneNode.
    * @return The id of the newly allocated object in @ref existingObjects_
    */
-  virtual int makeRigidObject(
+  int makeRigidObject(const std::vector<assets::CollisionMeshData>& meshGroup,
+                      assets::PhysicsObjectAttributes physicsObjectAttributes,
+                      scene::SceneNode* attachmentNode = nullptr);
+
+  /** @brief Create and initialize an @ref RigidObject, assign it an ID and add
+   * it to existingObjects_ map keyed with newObjectID
+   * @param newObjectID valid object ID for the new object
+   * @param meshGroup The object's mesh.
+   * @param physicsObjectAttributes The physical object's template defining its
+   * physical parameters.
+   * @param objectNode Valid, existing scene node
+   * @return whether the object has been successfully initialized and added to
+   * existingObjects_ map
+   */
+  virtual bool makeAndAddRigidObject(
+      int newObjectID,
       const std::vector<assets::CollisionMeshData>& meshGroup,
       assets::PhysicsObjectAttributes physicsObjectAttributes,
-      scene::SceneNode* attachmentNode = nullptr);
+      scene::SceneNode* objectNode);
 
   /** @brief A pointer to a @ref esp::assets::ResourceManager which holds assets
    * that can be accessed by this @ref PhysicsManager*/

@@ -140,6 +140,19 @@ int PhysicsManager::deallocateObjectID(int physObjectID) {
   return physObjectID;
 }
 
+bool PhysicsManager::makeAndAddRigidObject(
+    int newObjectID,
+    const std::vector<assets::CollisionMeshData>& meshGroup,
+    assets::PhysicsObjectAttributes physicsObjectAttributes,
+    scene::SceneNode* objectNode) {
+  auto ptr = std::make_unique<physics::RigidObject>(objectNode);
+  bool objSuccess = ptr->initializeObject(physicsObjectAttributes, meshGroup);
+  if (objSuccess) {
+    existingObjects_.emplace(newObjectID, std::move(ptr));
+  }
+  return objSuccess;
+}
+
 //! Create and initialize rigid object
 int PhysicsManager::makeRigidObject(
     const std::vector<assets::CollisionMeshData>& meshGroup,
@@ -150,16 +163,13 @@ int PhysicsManager::makeRigidObject(
   if (attachmentNode == nullptr) {
     objectNode = &staticSceneObject_->node().createChild();
   }
-  existingObjects_[newObjectID] =
-      std::make_unique<physics::RigidObject>(objectNode);
 
-  //! Instantiate with mesh pointer
-  bool objectSuccess =
-      existingObjects_.at(newObjectID)
-          ->initializeObject(physicsObjectAttributes, meshGroup);
+  bool objectSuccess = makeAndAddRigidObject(
+      newObjectID, meshGroup, physicsObjectAttributes, objectNode);
+
   if (!objectSuccess) {
     deallocateObjectID(newObjectID);
-    existingObjects_.erase(newObjectID);
+    // existingObjects_.erase(newObjectID);
     if (attachmentNode == nullptr)
       delete objectNode;
     return ID_UNDEFINED;
