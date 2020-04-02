@@ -46,8 +46,6 @@ bool RigidObject::initializeObject(
   return true;
 }
 
-void RigidObject::finalizeObject() {}
-
 bool RigidObject::isActive() {
   // NOTE: no active objects without a physics engine... (kinematics don't
   // count)

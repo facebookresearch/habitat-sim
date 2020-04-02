@@ -189,7 +189,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Finalize this object with any necessary post-creation processes.
    */
-  virtual void finalizeObject();
+  virtual void finalizeObject() {}
 
   /**
    * @brief Virtual destructor for a @ref RigidObject.
