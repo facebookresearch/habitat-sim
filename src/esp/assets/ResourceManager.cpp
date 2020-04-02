@@ -533,7 +533,7 @@ int ResourceManager::loadObjectTemplate(
 
   // add object template ID to physicObjectAttribute
   int objectTemplateID = physicsObjTemplateLibrary_.size();
-  objectTemplate.setInt("objectTemplateID", objectTemplateID);
+  objectTemplate.setObjectTemplateID(objectTemplateID);
 
   // cache metaData, collision mesh Group
   physicsObjTemplateLibrary_.emplace(objectTemplateHandle, objectTemplate);
@@ -565,8 +565,8 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
   const bool objTemplateExists =
       physicsObjTemplateLibrary_.count(objPhysConfigFilename) > 0;
   if (objTemplateExists) {
-    return physicsObjTemplateLibrary_[objPhysConfigFilename].getInt(
-        "objectTemplateID");
+    return physicsObjTemplateLibrary_[objPhysConfigFilename]
+        .getObjectTemplateID();
   }
 
   // 1. parse the config file
@@ -754,7 +754,7 @@ int ResourceManager::getObjectTemplateID(const std::string& configFile) {
   const bool objTemplateExists =
       physicsObjTemplateLibrary_.count(configFile) > 0;
   if (objTemplateExists) {
-    return physicsObjTemplateLibrary_[configFile].getInt("objectTemplateID");
+    return physicsObjTemplateLibrary_[configFile].getObjectTemplateID();
   }
   return ID_UNDEFINED;
 }

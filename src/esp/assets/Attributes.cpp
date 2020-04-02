@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "Attributes.h"
-#include <algorithm>
+//#include <algorithm>
 
 namespace esp {
 namespace assets {
@@ -120,6 +120,14 @@ void PhysicsObjectAttributes::setCollisionMeshHandle(
 }
 std::string PhysicsObjectAttributes::getCollisionMeshHandle() const {
   return getString("collisionMeshHandle");
+}
+
+void PhysicsObjectAttributes::setObjectTemplateID(int objectTemplateID) {
+  setInt("objectTemplateID", objectTemplateID);
+}
+
+int PhysicsObjectAttributes::getObjectTemplateID() const {
+  return getInt("objectTemplateID");
 }
 
 // if true override other settings and use render mesh bounding box as collision
