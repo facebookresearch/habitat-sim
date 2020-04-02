@@ -9,8 +9,6 @@
 
 #include "esp/core/esp.h"
 
-#include "DetourNavMesh.h"
-
 namespace esp {
 // forward declaration
 namespace assets {
@@ -66,6 +64,8 @@ struct ShortestPath {
  * @ref PathFinder.findPath
  */
 struct MultiGoalShortestPath {
+  MultiGoalShortestPath();
+
   /**
    * @brief The starting point for the path
    */
@@ -74,13 +74,9 @@ struct MultiGoalShortestPath {
   /**
    * @brief Set the list of desired potential end points
    */
-  void setRequestedEnds(const std::vector<vec3f>& newEnds) {
-    endRefs.clear();
-    pathEnds.clear();
-    requestedEnds = newEnds;
-  }
+  void setRequestedEnds(const std::vector<vec3f>& newEnds);
 
-  const std::vector<vec3f>& getRequestedEnds() const { return requestedEnds; }
+  const std::vector<vec3f>& getRequestedEnds() const;
 
   /**
    * @brief A list of points that specify the shortest path on the navigation
@@ -100,13 +96,7 @@ struct MultiGoalShortestPath {
 
   friend class PathFinder;
 
- private:
-  std::vector<vec3f> requestedEnds;
-
-  std::vector<dtPolyRef> endRefs;
-  std::vector<vec3f> pathEnds;
-
-  ESP_SMART_POINTERS(MultiGoalShortestPath)
+  ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(MultiGoalShortestPath);
 };
 
 struct NavMeshSettings {

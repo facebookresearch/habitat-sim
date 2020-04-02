@@ -34,6 +34,36 @@ namespace Cr = Corrade;
 namespace esp {
 namespace nav {
 
+struct MultiGoalShortestPath::Impl {
+  Impl() = default;
+  ~Impl() = default;
+
+  void setRequestedEnds(const std::vector<vec3f>& newEnds) {
+    endRefs.clear();
+    pathEnds.clear();
+    requestedEnds = newEnds;
+  }
+
+  const std::vector<vec3f>& getRequestedEnds() const { return requestedEnds; }
+
+  std::vector<vec3f> requestedEnds;
+
+  std::vector<dtPolyRef> endRefs;
+  std::vector<vec3f> pathEnds;
+};
+
+MultiGoalShortestPath::MultiGoalShortestPath()
+    : pimpl_{spimpl::make_unique_impl<Impl>()} {};
+
+void MultiGoalShortestPath::setRequestedEnds(
+    const std::vector<vec3f>& newEnds) {
+  pimpl_->setRequestedEnds(newEnds);
+}
+
+const std::vector<vec3f>& MultiGoalShortestPath::getRequestedEnds() const {
+  return pimpl_->getRequestedEnds();
+}
+
 namespace {
 template <typename T>
 std::tuple<dtStatus, dtPolyRef, vec3f> projectToPoly(
@@ -914,7 +944,7 @@ float pathLength(const std::vector<vec3f>& points) {
 bool PathFinder::Impl::findPath(ShortestPath& path) {
   MultiGoalShortestPath tmp;
   tmp.requestedStart = path.requestedStart;
-  tmp.requestedEnds = {path.requestedEnd};
+  tmp.pimpl_->requestedEnds = {path.requestedEnd};
 
   bool status = findPath(tmp);
 
@@ -982,10 +1012,10 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
     return false;
   }
 
-  if (path.endRefs.size() != 0)
+  if (path.pimpl_->endRefs.size() != 0)
     return true;
 
-  for (const auto& rqEnd : path.requestedEnds) {
+  for (const auto& rqEnd : path.getRequestedEnds()) {
     dtPolyRef endRef;
     vec3f pathEnd;
     std::tie(status, endRef, pathEnd) =
@@ -995,8 +1025,8 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
       return false;
     }
 
-    path.endRefs.emplace_back(endRef);
-    path.pathEnds.emplace_back(pathEnd);
+    path.pimpl_->endRefs.emplace_back(endRef);
+    path.pimpl_->pathEnds.emplace_back(pathEnd);
   }
 
   return true;
@@ -1008,15 +1038,16 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
   if (!findPathSetup(path, startRef, pathStart))
     return false;
 
-  for (int i = 0; i < path.requestedEnds.size(); ++i) {
-    if ((path.requestedStart - path.requestedEnds[i]).norm() >
+  for (int i = 0; i < path.pimpl_->requestedEnds.size(); ++i) {
+    if ((path.requestedStart - path.pimpl_->requestedEnds[i]).norm() >
         path.geodesicDistance)
       continue;
 
     const Cr::Containers::Optional<std::tuple<float, std::vector<vec3f>>>
-        findResult = findPathInternal(path.requestedStart, startRef, pathStart,
-                                      path.requestedEnds[i], path.endRefs[i],
-                                      path.pathEnds[i]);
+        findResult =
+            findPathInternal(path.requestedStart, startRef, pathStart,
+                             path.pimpl_->requestedEnds[i],
+                             path.pimpl_->endRefs[i], path.pimpl_->pathEnds[i]);
 
     if (findResult && std::get<0>(*findResult) < path.geodesicDistance) {
       path.geodesicDistance = std::get<0>(*findResult);
