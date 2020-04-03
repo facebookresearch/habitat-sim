@@ -359,7 +359,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
 
   // test scaling
   esp::assets::PhysicsObjectAttributes& objectTemplate =
-      simulator->getPhysicsObjectAttributes(0);
+      simulator->getObjectTemplate(0);
   objectTemplate.setScale({0.5, 0.5, 0.5});
   objectID = simulator->addObject(0);
   simulator->setTranslation(Magnum::Vector3{randomNavPoint}, objectID);
