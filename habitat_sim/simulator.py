@@ -283,8 +283,8 @@ class Simulator:
     def load_object_configs(self, path):
         return self._sim.load_object_configs(path)
 
-    def load_object_template(self, object_template_handle):
-        return self._sim.load_object_template(object_template_handle)
+    def load_object_template(self, object_template, object_template_handle):
+        return self._sim.load_object_template(object_template, object_template_handle)
 
     # --- physics functions ---
     def add_object(
