@@ -445,8 +445,8 @@ void ResourceManager::addObjectToDrawables(int objTemplateLibID,
       // Meta data and collision mesh
       PhysicsObjectAttributes physicsObjectAttributes =
           physicsObjTemplateLibrary_.at(objPhysConfigFilename);
-      std::vector<CollisionMeshData> meshGroup =
-          collisionMeshGroups_.at(objPhysConfigFilename);
+      std::vector<CollisionMeshData> meshGroup = collisionMeshGroups_.at(
+          physicsObjectAttributes.getCollisionMeshHandle());
 
       const std::string& filename =
           physicsObjectAttributes.getRenderMeshHandle();
@@ -473,7 +473,11 @@ void ResourceManager::addObjectToDrawables(int objTemplateLibID,
 
 PhysicsObjectAttributes& ResourceManager::getPhysicsObjectAttributes(
     const std::string& objectName) {
-  return physicsObjTemplateLibrary_[objectName];
+  return physicsObjTemplateLibrary_.at(objectName);
+}
+PhysicsObjectAttributes& ResourceManager::getPhysicsObjectAttributes(
+    const int objectTemplateID) {
+  return physicsObjTemplateLibrary_.at(getObjectConfig(objectTemplateID));
 }
 
 int ResourceManager::loadObjectTemplate(
@@ -533,7 +537,7 @@ int ResourceManager::loadObjectTemplate(
 
   // add object template ID to physicObjectAttribute
   int objectTemplateID = physicsObjTemplateLibrary_.size();
-  objectTemplate.setInt("objectTemplateID", objectTemplateID);
+  objectTemplate.setObjectTemplateID(objectTemplateID);
 
   // cache metaData, collision mesh Group
   physicsObjTemplateLibrary_.emplace(objectTemplateHandle, objectTemplate);
@@ -553,7 +557,8 @@ int ResourceManager::loadObjectTemplate(
     CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
     meshGroup.push_back(meshData);
   }
-  collisionMeshGroups_.emplace(objectTemplateHandle, meshGroup);
+  collisionMeshGroups_.emplace(objectTemplate.getCollisionMeshHandle(),
+                               meshGroup);
 
   return objectTemplateID;
 }
@@ -565,8 +570,8 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
   const bool objTemplateExists =
       physicsObjTemplateLibrary_.count(objPhysConfigFilename) > 0;
   if (objTemplateExists) {
-    return physicsObjTemplateLibrary_[objPhysConfigFilename].getInt(
-        "objectTemplateID");
+    return physicsObjTemplateLibrary_[objPhysConfigFilename]
+        .getObjectTemplateID();
   }
 
   // 1. parse the config file
@@ -742,19 +747,20 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
 const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
     const int objectTemplateID) {
   std::string configFile = getObjectConfig(objectTemplateID);
-  return collisionMeshGroups_[configFile];
+  return getCollisionMesh(configFile);
 }
 
 const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
     const std::string configFile) {
-  return collisionMeshGroups_[configFile];
+  return collisionMeshGroups_.at(
+      physicsObjTemplateLibrary_.at(configFile).getCollisionMeshHandle());
 }
 
 int ResourceManager::getObjectTemplateID(const std::string& configFile) {
   const bool objTemplateExists =
       physicsObjTemplateLibrary_.count(configFile) > 0;
   if (objTemplateExists) {
-    return physicsObjTemplateLibrary_[configFile].getInt("objectTemplateID");
+    return physicsObjTemplateLibrary_[configFile].getObjectTemplateID();
   }
   return ID_UNDEFINED;
 }
@@ -1362,34 +1368,24 @@ gfx::PhongMaterialData::uptr ResourceManager::getPhongShadedMaterialData(
   finalMaterial->shininess = material.shininess();
 
   // ambient material properties
+  finalMaterial->ambientColor = material.ambientColor();
   if (material.flags() & Mn::Trade::PhongMaterialData::Flag::AmbientTexture) {
     finalMaterial->ambientTexture =
         textures_[textureBaseIndex + material.ambientTexture()].get();
-    finalMaterial->ambientColor = 0xffffffff_rgbaf;
-  } else {
-    finalMaterial->ambientColor = material.ambientColor();
   }
 
   // diffuse material properties
+  finalMaterial->diffuseColor = material.diffuseColor();
   if (material.flags() & Mn::Trade::PhongMaterialData::Flag::DiffuseTexture) {
     finalMaterial->diffuseTexture =
         textures_[textureBaseIndex + material.diffuseTexture()].get();
-    finalMaterial->diffuseColor = 0xffffffff_rgbaf;
-  } else {
-    finalMaterial->diffuseColor = material.diffuseColor();
   }
 
   // specular material properties
+  finalMaterial->specularColor = material.specularColor();
   if (material.flags() & Mn::Trade::PhongMaterialData::Flag::SpecularTexture) {
     finalMaterial->specularTexture =
         textures_[textureBaseIndex + material.specularTexture()].get();
-    finalMaterial->specularColor = 0xffffffff_rgbaf;
-  } else {
-    // remove specular highlights if shininess value doesn't make sense
-    // TODO: figure out why materials are being loaded with shininess == 1
-    finalMaterial->specularColor = finalMaterial->shininess == 1
-                                       ? 0x000000_rgbf
-                                       : material.specularColor();
   }
   return finalMaterial;
 }

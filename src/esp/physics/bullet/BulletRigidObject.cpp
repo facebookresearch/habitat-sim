@@ -243,6 +243,12 @@ bool BulletRigidObject::initializeObject(
   return true;
 }
 
+void BulletRigidObject::finalizeObject() {
+  if (isUsingBBCollisionShape()) {
+    setCollisionFromBB();
+  }
+}
+
 void BulletRigidObject::setCollisionFromBB() {
   btVector3 dim(node().getCumulativeBB().size() / 2.0);
 
