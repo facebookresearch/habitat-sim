@@ -18,14 +18,6 @@
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Trade/AbstractImporter.h>
 
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <unistd.h>
-#include <fstream>
-#include <sophus/so3.hpp>
-#include <sstream>
-#include <vector>
-
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
 #include "esp/io/io.h"
