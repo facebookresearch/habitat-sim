@@ -59,7 +59,7 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
       .setDiffuseColor(materialData_->diffuseColor)
       .setSpecularColor(materialData_->specularColor)
       .setShininess(materialData_->shininess)
-      .setObjectId(node_.getId())
+      .setObjectId(materialData_->perVertexObjectId ? 0 : node_.getId())
       .setLightPositions(lightPositions)
       .setLightColors(lightColors)
       .setTransformationMatrix(transformationMatrix)
@@ -95,6 +95,8 @@ void GenericDrawable::updateShader() {
     flags |= Magnum::Shaders::Phong::Flag::SpecularTexture;
   if (materialData_->normalTexture)
     flags |= Magnum::Shaders::Phong::Flag::NormalTexture;
+  if (materialData_->perVertexObjectId)
+    flags |= Magnum::Shaders::Phong::Flag::InstancedObjectId;
 
   if (!shader_ || shader_->lightCount() != lightCount ||
       shader_->flags() != flags) {

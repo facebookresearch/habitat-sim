@@ -38,8 +38,6 @@
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
-#include "esp/gfx/PrimitiveIDDrawable.h"
-#include "esp/gfx/PrimitiveIDShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/physics/PhysicsManager.h"
@@ -73,6 +71,7 @@ namespace assets {
 constexpr char ResourceManager::NO_LIGHT_KEY[];
 constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
+constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
 
 ResourceManager::ResourceManager() {
   initDefaultLightSetups();
@@ -1055,8 +1054,9 @@ bool ResourceManager::loadInstanceMeshData(
 
     for (uint32_t iMesh = start; iMesh <= end; ++iMesh) {
       scene::SceneNode& node = parent->createChild();
-      node.addFeature<gfx::PrimitiveIDDrawable>(
-          *meshes_[iMesh]->getMagnumGLMesh(), shaderManager_, drawables);
+      node.addFeature<gfx::GenericDrawable>(
+          *meshes_[iMesh]->getMagnumGLMesh(), shaderManager_, NO_LIGHT_KEY,
+          PER_VERTEX_OBJECT_ID_MATERIAL_KEY, drawables);
 
       if (computeAbsoluteAABBs_) {
         staticDrawableInfo_.emplace_back(StaticDrawableInfo{node, iMesh});
@@ -1736,6 +1736,10 @@ void ResourceManager::initDefaultLightSetups() {
 void ResourceManager::initDefaultMaterials() {
   shaderManager_.set<gfx::MaterialData>(DEFAULT_MATERIAL_KEY,
                                         new gfx::PhongMaterialData{});
+  auto perVertexObjectId = new gfx::PhongMaterialData{};
+  perVertexObjectId->perVertexObjectId = true;
+  shaderManager_.set<gfx::MaterialData>(PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
+                                        perVertexObjectId);
   shaderManager_.setFallback<gfx::MaterialData>(new gfx::PhongMaterialData{});
 }
 

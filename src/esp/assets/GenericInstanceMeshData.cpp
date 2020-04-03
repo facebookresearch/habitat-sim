@@ -15,6 +15,7 @@
 #include <Magnum/Math/PackingBatch.h>
 #include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/PixelFormat.h>
+#include <Magnum/Shaders/Generic.h>
 #include <Magnum/Trade/AbstractImporter.h>
 
 #include <fcntl.h>
@@ -27,7 +28,6 @@
 
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
-#include "esp/gfx/PrimitiveIDShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
@@ -192,13 +192,13 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
       .setCount(cpu_ibo_.size())
       .addVertexBuffer(
-          std::move(vertices), 0, gfx::PrimitiveIDShader::Position{},
-          gfx::PrimitiveIDShader::Color3{
-              gfx::PrimitiveIDShader::Color3::DataType::UnsignedByte,
-              gfx::PrimitiveIDShader::Color3::DataOption::Normalized},
+          std::move(vertices), 0, Mn::Shaders::Generic3D::Position{},
+          Mn::Shaders::Generic3D::Color3{
+              Mn::Shaders::Generic3D::Color3::DataType::UnsignedByte,
+              Mn::Shaders::Generic3D::Color3::DataOption::Normalized},
           1,
-          gfx::PrimitiveIDShader::ObjectId{
-              gfx::PrimitiveIDShader::ObjectId::DataType::UnsignedShort},
+          Mn::Shaders::Generic3D::ObjectId{
+              Mn::Shaders::Generic3D::ObjectId::DataType::UnsignedShort},
           2)
       .setIndexBuffer(std::move(indices), 0,
                       Mn::GL::MeshIndexType::UnsignedInt);
