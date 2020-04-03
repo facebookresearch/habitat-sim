@@ -36,9 +36,6 @@ namespace esp {
 namespace nav {
 
 struct MultiGoalShortestPath::Impl {
-  Impl() = default;
-  ~Impl() = default;
-
   std::vector<vec3f> requestedEnds;
 
   std::vector<dtPolyRef> endRefs;
