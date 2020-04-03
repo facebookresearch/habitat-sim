@@ -15,10 +15,9 @@ namespace Mn = Magnum;
 
 namespace {
 
-const std::string skokloster =
-    Cr::Utility::Directory::join(SCENE_DATASETS,
-                                 "mp3d/1LXtFkjw3qL/1LXtFkjw3qL.navmesh");
-// "habitat-test-scenes/skokloster-castle.navmesh");
+const std::string skokloster = Cr::Utility::Directory::join(
+    SCENE_DATASETS,
+    "habitat-test-scenes/skokloster-castle.navmesh");
 
 struct PathFinderTest : Cr::TestSuite::Tester {
   explicit PathFinderTest();
@@ -125,9 +124,12 @@ void PathFinderTest::testCaching() {
 
   const auto endPt = pathFinder.getRandomNavigablePoint();
   noCachePath.requestedEnd = endPt;
-  cachePath.setRequestedEnds({endPt, {-1e5, -1e5, -1e5}});
+  // The caching only happens when there is more than one end point, so just
+  // duplicate!
+  cachePath.setRequestedEnds({endPt, endPt});
 
   for (int i = 0; i < 1000; ++i) {
+    CORRADE_ITERATION(i);
     const auto startPt = pathFinder.getRandomNavigablePoint();
 
     noCachePath.requestedStart = startPt;
