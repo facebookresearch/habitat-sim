@@ -39,16 +39,6 @@ struct MultiGoalShortestPath::Impl {
   Impl() = default;
   ~Impl() = default;
 
-  void setRequestedEnds(const std::vector<vec3f>& newEnds) {
-    endRefs.clear();
-    pathEnds.clear();
-    requestedEnds = newEnds;
-
-    minTheoreticalDist.assign(newEnds.size(), 0);
-  }
-
-  const std::vector<vec3f>& getRequestedEnds() const { return requestedEnds; }
-
   std::vector<vec3f> requestedEnds;
 
   std::vector<dtPolyRef> endRefs;
@@ -63,11 +53,15 @@ MultiGoalShortestPath::MultiGoalShortestPath()
 
 void MultiGoalShortestPath::setRequestedEnds(
     const std::vector<vec3f>& newEnds) {
-  pimpl_->setRequestedEnds(newEnds);
+  pimpl_->endRefs.clear();
+  pimpl_->pathEnds.clear();
+  pimpl_->requestedEnds = newEnds;
+
+  pimpl_->minTheoreticalDist.assign(newEnds.size(), 0);
 }
 
 const std::vector<vec3f>& MultiGoalShortestPath::getRequestedEnds() const {
-  return pimpl_->getRequestedEnds();
+  return pimpl_->requestedEnds;
 }
 
 namespace {
