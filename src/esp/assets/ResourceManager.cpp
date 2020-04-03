@@ -1367,6 +1367,9 @@ gfx::PhongMaterialData::uptr ResourceManager::getPhongShadedMaterialData(
   auto finalMaterial = gfx::PhongMaterialData::create_unique();
   finalMaterial->shininess = material.shininess();
 
+  // texture transform, if there's none the matrix is an identity
+  finalMaterial->textureMatrix = material.textureMatrix();
+
   // ambient material properties
   finalMaterial->ambientColor = material.ambientColor();
   if (material.flags() & Mn::Trade::PhongMaterialData::Flag::AmbientTexture) {
@@ -1386,6 +1389,12 @@ gfx::PhongMaterialData::uptr ResourceManager::getPhongShadedMaterialData(
   if (material.flags() & Mn::Trade::PhongMaterialData::Flag::SpecularTexture) {
     finalMaterial->specularTexture =
         textures_[textureBaseIndex + material.specularTexture()].get();
+  }
+
+  // normal mapping
+  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::NormalTexture) {
+    finalMaterial->normalTexture =
+        textures_[textureBaseIndex + material.normalTexture()].get();
   }
   return finalMaterial;
 }
