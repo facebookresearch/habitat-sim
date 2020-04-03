@@ -44,7 +44,7 @@ struct MultiGoalShortestPath::Impl {
     pathEnds.clear();
     requestedEnds = newEnds;
 
-    minTheoreticalDist = std::vector<float>(newEnds.size(), 0);
+    minTheoreticalDist.assign(newEnds.size(), 0);
   }
 
   const std::vector<vec3f>& getRequestedEnds() const { return requestedEnds; }

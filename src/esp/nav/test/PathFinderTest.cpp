@@ -119,24 +119,25 @@ void PathFinderTest::testCaching() {
   pathFinder.loadNavMesh(skokloster);
   CORRADE_VERIFY(pathFinder.isLoaded());
 
-  esp::nav::ShortestPath noCachePath;
   esp::nav::MultiGoalShortestPath cachePath;
-
-  const auto endPt = pathFinder.getRandomNavigablePoint();
-  noCachePath.requestedEnd = endPt;
-  // The caching only happens when there is more than one end point, so just
-  // duplicate!
-  cachePath.setRequestedEnds({endPt, endPt});
+  {
+    std::vector<esp::vec3f> rqEnds;
+    for (int i = 0; i < 25; ++i) {
+      rqEnds.emplace_back(pathFinder.getRandomNavigablePoint());
+    }
+    cachePath.setRequestedEnds(rqEnds);
+  }
 
   for (int i = 0; i < 1000; ++i) {
     CORRADE_ITERATION(i);
-    const auto startPt = pathFinder.getRandomNavigablePoint();
 
-    noCachePath.requestedStart = startPt;
-    pathFinder.findPath(noCachePath);
-
-    cachePath.requestedStart = startPt;
+    cachePath.requestedStart = pathFinder.getRandomNavigablePoint();
     pathFinder.findPath(cachePath);
+
+    esp::nav::MultiGoalShortestPath noCachePath;
+    noCachePath.setRequestedEnds(cachePath.getRequestedEnds());
+    noCachePath.requestedStart = cachePath.requestedStart;
+    pathFinder.findPath(noCachePath);
 
     CORRADE_COMPARE(cachePath.geodesicDistance, noCachePath.geodesicDistance);
   }
