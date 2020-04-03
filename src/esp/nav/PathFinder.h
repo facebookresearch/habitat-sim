@@ -166,7 +166,6 @@ class PathFinder {
              const int ntris,
              const float* bmin,
              const float* bmax);
-
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
 
   /**
@@ -322,6 +321,16 @@ class PathFinder {
   Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
       const float pixelsPerMeter,
       const float height);
+
+  /**
+   * @brief Returns a MeshData object containing triangulated NavMesh polys. The
+   * object is generated and stored if this is the first query.
+   *
+   * Does nothing if the PathFinder is not loaded.
+   *
+   * @return The object containing triangulated NavMesh polys.
+   */
+  const std::shared_ptr<assets::MeshData> getNavMeshData();
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(PathFinder);
 };

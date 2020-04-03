@@ -21,6 +21,10 @@
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
+
+namespace assets {
+class PhysicsObjectAttributes;
+}
 namespace physics {
 
 /**
@@ -181,6 +185,11 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
   virtual bool initializeObject(
       const assets::PhysicsObjectAttributes& physicsObjectAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
+
+  /**
+   * @brief Finalize this object with any necessary post-creation processes.
+   */
+  virtual void finalizeObject() {}
 
   /**
    * @brief Virtual destructor for a @ref RigidObject.
@@ -545,9 +554,19 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual void setAngularDamping(CORRADE_UNUSED const double angDamping){};
 
-  /** @brief public @ref esp::assets::Attributes object for user convenience.
-   * Store whatever object attributes you want here! */
-  assets::Attributes attributes_;
+  /**
+   * @brief Get the template used to initialize this object.
+   *
+   * PhysicsObjectAttributes templates are expected to be changed between
+   * instances of objects.
+   * @return The initialization settings of this object instance.
+   */
+  const assets::PhysicsObjectAttributes& getInitializationAttributes() const {
+    return initializationAttributes_;
+  };
+
+  /** @brief Store whatever object attributes you want here! */
+  esp::core::Configuration attributes_;
 
   //! The @ref SceneNode of a bounding box debug drawable. If nullptr, BB
   //! drawing is off. See @ref toggleBBDraw().
@@ -573,6 +592,11 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * object plays in the phyiscal world. A value of @ref RigidObjectType::NONE
    * identifies the object as uninitialized.*/
   RigidObjectType rigidObjectType_ = RigidObjectType::NONE;
+
+  /**
+   * @brief Saved attributes when the object was initialized.
+   */
+  assets::PhysicsObjectAttributes initializationAttributes_;
 
   /** @brief Used to synchronize other simulator's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic

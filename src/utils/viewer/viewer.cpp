@@ -80,8 +80,28 @@ class Viewer : public Magnum::Platform::Application {
   Magnum::Vector3 randomDirection();
   void wiggleLastObject();
 
+  void toggleNavMeshVisualization();
+
   Magnum::Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
                                    const Magnum::Vector2i& position);
+
+  // single inline for logging agent state msgs, so can be easily modified
+  inline void logAgentStateMsg(bool showPos, bool showOrient) {
+    std::stringstream strDat("");
+    if (showPos) {
+      strDat << "Agent position "
+             << Eigen::Map<vec3f>(agentBodyNode_->translation().data()) << " ";
+    }
+    if (showOrient) {
+      strDat << "Agent orientation "
+             << quatf(agentBodyNode_->rotation()).coeffs().transpose();
+    }
+
+    auto str = strDat.str();
+    if (str.size() > 0) {
+      LOG(INFO) << str;
+    }
+  }
 
   assets::ResourceManager resourceManager_;
   // SceneManager must be before physicsManager_ as the physicsManager_
@@ -100,6 +120,8 @@ class Viewer : public Magnum::Platform::Application {
 
   scene::SceneGraph* sceneGraph_;
   scene::SceneNode* rootNode_;
+
+  scene::SceneNode* navmeshVisNode_;
 
   gfx::RenderCamera* renderCamera_ = nullptr;
   nav::PathFinder::ptr pathfinder_;
@@ -143,6 +165,8 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("debug-bullet", "render Bullet physics debug wireframes")
       .addOption("physics-config", ESP_DEFAULT_PHYS_SCENE_CONFIG)
       .setHelp("physics-config", "physics scene config file")
+      .addOption("navmesh-file")
+      .setHelp("navmesh-file", "manual override path to scene navmesh file")
       .addBooleanOption("recompute-navmesh")
       .setHelp("recompute-navmesh", "programmatically generate scene navmesh")
       .parse(arguments.argc, arguments.argv);
@@ -222,8 +246,12 @@ Viewer::Viewer(const Arguments& arguments)
       Magnum::SceneGraph::AspectRatioPolicy::Extend);
 
   // Load navmesh if available
-  if (file.compare(esp::assets::EMPTY_SCENE) != 0) {
-    std::string navmeshFilename = io::changeExtension(file, ".navmesh");
+  std::string navmeshFilename;
+  if (!args.value("navmesh-file").empty()) {
+    navmeshFilename = Corrade::Utility::Directory::join(
+        Corrade::Utility::Directory::current(), args.value("navmesh-file"));
+  } else if (file.compare(esp::assets::EMPTY_SCENE)) {
+    navmeshFilename = io::changeExtension(file, ".navmesh");
 
     // TODO: short term solution to mitigate issue #430
     // we load the pre-computed navmesh for the ptex mesh to avoid
@@ -234,15 +262,15 @@ Viewer::Viewer(const Arguments& arguments)
           Corrade::Utility::Directory::path(file) + "/habitat",
           "mesh_semantic.navmesh");
     }
+  }
 
-    if (io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
-      LOG(INFO) << "Loading navmesh from " << navmeshFilename;
-      pathfinder_->loadNavMesh(navmeshFilename);
-    } else {
-      esp::nav::NavMeshSettings navMeshSettings;
-      navMeshSettings.setDefaults();
-      recomputeNavMesh(file, navMeshSettings);
-    }
+  if (io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
+    LOG(INFO) << "Loading navmesh from " << navmeshFilename;
+    pathfinder_->loadNavMesh(navmeshFilename);
+  } else if (file.compare(esp::assets::EMPTY_SCENE)) {
+    esp::nav::NavMeshSettings navMeshSettings;
+    navMeshSettings.setDefaults();
+    recomputeNavMesh(file, navMeshSettings);
   }
 
   // connect controls to navmesh if loaded
@@ -372,6 +400,19 @@ void Viewer::wiggleLastObject() {
   randDir[1] = abs(randDir[1]);
 
   physicsManager_->translate(objectIDs_.back(), randDir * 0.1);
+}
+
+void Viewer::toggleNavMeshVisualization() {
+  if (navmeshVisNode_ == nullptr && pathfinder_->isLoaded()) {
+    // test navmesh visualization
+    navmeshVisNode_ = &rootNode_->createChild();
+    int nevMeshVisPrimID = resourceManager_.loadNavMeshVisualization(
+        *pathfinder_, navmeshVisNode_, &sceneGraph_->getDrawables());
+    navmeshVisNode_->translate({0, 0.1, 0});
+  } else {
+    delete navmeshVisNode_;
+    navmeshVisNode_ = nullptr;
+  }
 }
 
 Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
@@ -511,22 +552,36 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
 
 void Viewer::keyPressEvent(KeyEvent& event) {
   const auto key = event.key();
+  bool agentMoved = false;
   switch (key) {
     case KeyEvent::Key::Esc:
       std::exit(0);
       break;
     case KeyEvent::Key::Left:
       controls_(*agentBodyNode_, "turnLeft", lookSensitivity);
+      agentMoved = true;
       break;
     case KeyEvent::Key::Right:
       controls_(*agentBodyNode_, "turnRight", lookSensitivity);
+      agentMoved = true;
       break;
     case KeyEvent::Key::Up:
       controls_(*rgbSensorNode_, "lookUp", lookSensitivity, false);
+      agentMoved = true;
       break;
     case KeyEvent::Key::Down:
       controls_(*rgbSensorNode_, "lookDown", lookSensitivity, false);
+      agentMoved = true;
       break;
+    case KeyEvent::Key::Eight: {
+      // TODO : use this to implement synthesizing rendered physical objects
+      if (physicsManager_ != nullptr) {
+        LOG(WARNING)
+            << "Physically modelled primitives are not yet implemented.";
+      } else
+        LOG(WARNING) << "Run the app with --enable-physics in order to add "
+                        "physically modelled primitives";
+    } break;
     case KeyEvent::Key::Nine:
       if (pathfinder_->isLoaded()) {
         const vec3f position = pathfinder_->getRandomNavigablePoint();
@@ -535,13 +590,27 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::A:
       controls_(*agentBodyNode_, "moveLeft", moveSensitivity);
-      LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+      agentMoved = true;
       break;
     case KeyEvent::Key::D:
       controls_(*agentBodyNode_, "moveRight", moveSensitivity);
-      LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
+      agentMoved = true;
+      break;
+    case KeyEvent::Key::S:
+      controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
+      agentMoved = true;
+      break;
+    case KeyEvent::Key::W:
+      controls_(*agentBodyNode_, "moveForward", moveSensitivity);
+      agentMoved = true;
+      break;
+    case KeyEvent::Key::X:
+      controls_(*agentBodyNode_, "moveDown", moveSensitivity, false);
+      agentMoved = true;
+      break;
+    case KeyEvent::Key::Z:
+      controls_(*agentBodyNode_, "moveUp", moveSensitivity, false);
+      agentMoved = true;
       break;
     case KeyEvent::Key::E:
       frustumCullingEnabled_ ^= true;
@@ -549,33 +618,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::C:
       showFPS_ = !showFPS_;
       break;
-    case KeyEvent::Key::S:
-      controls_(*agentBodyNode_, "moveBackward", moveSensitivity);
-      LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
-      break;
-    case KeyEvent::Key::W:
-      controls_(*agentBodyNode_, "moveForward", moveSensitivity);
-      LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
-      break;
-    case KeyEvent::Key::X:
-      controls_(*agentBodyNode_, "moveDown", moveSensitivity, false);
-      LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
-      break;
-    case KeyEvent::Key::Z:
-      controls_(*agentBodyNode_, "moveUp", moveSensitivity, false);
-      LOG(INFO) << "Agent position "
-                << Eigen::Map<vec3f>(agentBodyNode_->translation().data());
-      break;
     case KeyEvent::Key::O: {
       if (physicsManager_ != nullptr) {
-        int numObjects = resourceManager_.getNumLibraryObjects();
-        if (numObjects) {
-          int randObjectID = rand() % numObjects;
+        int numObjTemplates = resourceManager_.getNumLibraryObjects();
+        if (numObjTemplates > 0) {
+          int randObjectID = rand() % numObjTemplates;
           addObject(resourceManager_.getObjectConfig(randObjectID));
-
         } else
           LOG(WARNING) << "No objects loaded, can't add any";
       } else
@@ -601,6 +649,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // Test key. Put what you want here...
       torqueLastObject();
       break;
+    case KeyEvent::Key::N:
+      toggleNavMeshVisualization();
+      break;
     case KeyEvent::Key::I:
       Magnum::DebugTools::screenshot(GL::defaultFramebuffer,
                                      "test_image_save.png");
@@ -615,6 +666,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     default:
       break;
+  }
+  if (agentMoved) {
+    logAgentStateMsg(true, true);
   }
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());

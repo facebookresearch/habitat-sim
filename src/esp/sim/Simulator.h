@@ -4,16 +4,16 @@
 
 #pragma once
 
+#include "esp/agent/Agent.h"
+#include "esp/assets/ResourceManager.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
+#include "esp/gfx/RenderTarget.h"
+#include "esp/gfx/WindowlessContext.h"
+#include "esp/nav/PathFinder.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
-
-#include "esp/assets/ResourceManager.h"
-
-#include "esp/gfx/RenderTarget.h"
-#include "esp/gfx/WindowlessContext.h"
 
 namespace esp {
 namespace nav {
@@ -97,15 +97,16 @@ class Simulator {
    * esp::physics::PhysicsManager::addObject().
    * @param objectLibIndex The index of the object's template in @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_.
+   * @param attachmentNode If provided, attach the RigidObject Feature to this
+   * node instead of creating a new one.
+   * @param lightSetupKey The string key for the LightSetup to be used by this
+   * object.
    * @param sceneID !! Not used currently !! Specifies which physical scene to
    * add an object to.
    * @return The ID assigned to new object which identifies it in @ref
    * esp::physics::PhysicsManager::existingObjects_ or @ref esp::ID_UNDEFINED if
    * instancing fails.
    */
-  // int addObject(int objectLibIndex, int sceneID = 0);
-
-  /** @overload */
   int addObject(int objectLibIndex,
                 scene::SceneNode* attachmentNode = nullptr,
                 const std::string& lightSetupKey =
@@ -119,6 +120,38 @@ class Simulator {
    * esp::assets::ResourceManager::physicsObjectLibrary_.
    */
   int getPhysicsObjectLibrarySize();
+
+  /**
+   * @brief Get an editable reference to a physics object template by index.
+   */
+  assets::PhysicsObjectAttributes& getObjectTemplate(int templateId);
+
+  /**
+   * @brief Load all "*.phys_properties.json" files from the provided file or
+   * directory path.
+   *
+   * Note that duplicate loads will return the index of the existing template
+   * rather than reloading.
+   *
+   * @param path A global path to a physics property file or directory
+   * @return A list of template indices for loaded valid configs for object
+   * instancing.
+   */
+  std::vector<int> loadObjectConfigs(const std::string& path);
+
+  /**
+   * @brief Load the provided PhysicsObjectAttributes template into the
+   * Simulator.
+   *
+   * @param objectTemplate A new PhysicsObjectAttributes to load.
+   * @param objectTemplateHandle The desired key for referencing the new
+   * template. To register this successfully, it must not be a duplicate of an
+   * existing key.
+   * @return A template index for instancing the loaded template or ID_UNDEFINED
+   * if failed.
+   */
+  int loadObjectTemplate(assets::PhysicsObjectAttributes& objectTemplate,
+                         const std::string& objectTemplateHandle);
 
   /**
    * @brief Remove an instanced object by ID. See @ref
@@ -315,8 +348,39 @@ class Simulator {
    * @return Whether or not the navmesh recomputation succeeded.
    */
   bool recomputeNavMesh(nav::PathFinder& pathfinder,
-                        const nav::NavMeshSettings& navMeshSettings);
+                        const nav::NavMeshSettings& navMeshSettings,
+                        bool includeStaticObjects = false);
 
+  agent::Agent::ptr getAgent(int agentId);
+
+  agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig,
+                             scene::SceneNode& agentParentNode);
+  agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig);
+
+  /**
+   * @brief Displays observations on default frame buffer for a
+   * particular sensor of an agent
+   * @param agentId    Id of the agent for which the observation is to
+   *                   be returned
+   * @param sensorId   Id of the sensor for which the observation is to
+   *                   be returned
+   */
+  bool displayObservation(int agentId, const std::string& sensorId);
+  bool getAgentObservation(int agentId,
+                           const std::string& sensorId,
+                           sensor::Observation& observation);
+  int getAgentObservations(
+      int agentId,
+      std::map<std::string, sensor::Observation>& observations);
+
+  bool getAgentObservationSpace(int agentId,
+                                const std::string& sensorId,
+                                sensor::ObservationSpace& space);
+  int getAgentObservationSpaces(
+      int agentId,
+      std::map<std::string, sensor::ObservationSpace>& spaces);
+
+  nav::PathFinder::ptr getPathFinder();
   /**
    * @brief Enable or disable frustum culling (enabled by default)
    * @param val, true = enable, false = disable
@@ -364,6 +428,9 @@ class Simulator {
  protected:
   Simulator(){};
 
+  //! sample a random valid AgentState in passed agentState
+  void sampleRandomAgentState(agent::AgentState& agentState);
+
   bool isValidScene(int sceneID) const {
     return sceneID >= 0 && sceneID < sceneID_.size();
   }
@@ -394,6 +461,8 @@ class Simulator {
   core::Random random_;
   SimulatorConfiguration config_;
 
+  std::vector<agent::Agent::ptr> agents_;
+  nav::PathFinder::ptr pathfinder_;
   // state indicating frustum culling is enabled or not
   //
   // TODO:

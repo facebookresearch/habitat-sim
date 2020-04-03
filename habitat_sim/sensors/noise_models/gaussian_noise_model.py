@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import attr
+import numba
 import numpy as np
 
 from habitat_sim.registry import registry
@@ -12,15 +13,15 @@ from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
 
+@numba.jit(nopython=True, parallel=True, fastmath=True)
 def _simulate(image, intensity_constant, mean, sigma):
-    image = image / 255.0
+    noise = (
+        np.random.randn(image.shape[0], image.shape[1], image.shape[2]) * sigma + mean
+    ) * intensity_constant
 
-    noise = np.random.normal(mean, sigma, image.shape)
-    noisy_rgb = np.clip((image + (noise * intensity_constant)), 0, 1)
-
-    noisy_rgb = (noisy_rgb * 255).astype(np.uint8)
-
-    return noisy_rgb
+    return (np.maximum(np.minimum(image / 255.0 + noise, 1.0), 0.0) * 255.0).astype(
+        np.uint8
+    )
 
 
 @attr.s(auto_attribs=True)

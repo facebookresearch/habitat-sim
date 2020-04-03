@@ -6,7 +6,6 @@
 
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Mesh.h>
-#include <Magnum/Trade/MeshData3D.h>
 #include <memory>
 #include <string>
 #include <unordered_map>

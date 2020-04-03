@@ -15,7 +15,6 @@
 #include <vector>
 
 /* Bullet Physics Integration */
-#include <Magnum/Trade/MeshData3D.h>
 
 #include "RigidObject.h"
 #include "esp/assets/Asset.h"
@@ -763,6 +762,15 @@ class PhysicsManager {
   /** @overload */
   scene::SceneNode& getObjectSceneNode(int physObjectID);
 
+  /**
+   * @brief Get a const reference to the specified object's visual SceneNode for
+   * info query purposes.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Const reference to the object's visual scene node.
+   */
+  const scene::SceneNode& getObjectVisualSceneNode(int physObjectID) const;
+
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref
    * BulletPhysicsManager::debugDraw.
@@ -794,6 +802,16 @@ class PhysicsManager {
   const PhysicsSimulationLibrary& getPhysicsSimulationLibrary() const {
     return activePhysSimLib_;
   };
+
+  /**
+   * @brief Get the template used to initialize an object.
+   *
+   * PhysicsObjectAttributes templates are expected to be changed between
+   * instances of objects.
+   * @return The initialization settings of the specified object instance.
+   */
+  const assets::PhysicsObjectAttributes& getInitializationAttributes(
+      const int physObjectID) const;
 
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
@@ -829,18 +847,21 @@ class PhysicsManager {
    */
   int deallocateObjectID(int physObjectID);
 
-  /** @brief Create and initialize an @ref RigidObject and assign it an ID.
+  /** @brief Create and initialize a @ref RigidObject, assign it an ID and add
+   * it to existingObjects_ map keyed with newObjectID
+   * @param newObjectID valid object ID for the new object
    * @param meshGroup The object's mesh.
    * @param physicsObjectAttributes The physical object's template defining its
    * physical parameters.
-   * @param attachmentNode If supplied, attach the new physical object to an
-   * existing SceneNode.
-   * @return The id of the newly allocated object in @ref existingObjects_
+   * @param objectNode Valid, existing scene node
+   * @return whether the object has been successfully initialized and added to
+   * existingObjects_ map
    */
-  virtual int makeRigidObject(
+  virtual bool makeAndAddRigidObject(
+      int newObjectID,
       const std::vector<assets::CollisionMeshData>& meshGroup,
       assets::PhysicsObjectAttributes physicsObjectAttributes,
-      scene::SceneNode* attachmentNode = nullptr);
+      scene::SceneNode* objectNode);
 
   /** @brief A pointer to a @ref esp::assets::ResourceManager which holds assets
    * that can be accessed by this @ref PhysicsManager*/

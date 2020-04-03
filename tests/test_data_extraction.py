@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
 from habitat_sim.utils.data.data_extractor import ImageExtractor, TopdownView
+from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 
 
 class TrivialNet(nn.Module):
@@ -33,6 +34,7 @@ class MyDataset(Dataset):
 def test_topdown_view(sim):
     tdv = TopdownView(sim, height=0.0, pixels_per_meter=0.1)
     topdown_view = tdv.topdown_view
+    assert type(topdown_view) == np.ndarray
 
 
 def test_data_extractor_end_to_end(sim):
@@ -48,3 +50,25 @@ def test_data_extractor_end_to_end(sim):
         img, label = sample_batch["rgba"], sample_batch["label"]
         img = img.permute(0, 3, 2, 1).float()
         out = net(img)
+
+
+def test_extractor_cache():
+    cache = ExtractorLRUCache()
+    cache.add(1, "one")
+    cache.add(2, "two")
+    cache.add(3, "three")
+    assert cache[next(reversed(list(cache._order)))] == "three"
+    accessed_data = cache[2]
+    assert cache[next(reversed(list(cache._order)))] == "two"
+    cache.remove_from_back()
+    assert 1 not in cache
+
+
+def test_extractor_all_modes(sim):
+    scene_filepath = ""
+    methods = ["closest", "panorama"]
+    for method in methods:
+        extractor = ImageExtractor(
+            scene_filepath, img_size=(32, 32), sim=sim, extraction_method=method
+        )
+        assert len(extractor) > 1

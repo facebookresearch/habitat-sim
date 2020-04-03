@@ -5,6 +5,7 @@
 #include <Corrade/Utility/Directory.h>
 #include <gtest/gtest.h>
 
+#include "esp/assets/MeshData.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
 #include "esp/nav/PathFinder.h"
@@ -144,4 +145,25 @@ TEST(NavTest, PathFinderTestSeed) {
   vec3f firstPoint3 = pf.getRandomNavigablePoint();
   vec3f secondPoint3 = pf.getRandomNavigablePoint();
   ASSERT_TRUE(firstPoint3 != secondPoint3);
+}
+
+TEST(NavTest, PathFinderTestMeshData) {
+  PathFinder pf;
+  pf.loadNavMesh(Cr::Utility::Directory::join(
+      SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
+
+  esp::assets::MeshData::ptr meshData = pf.getNavMeshData();
+
+  // Will change if asset changes
+  ASSERT_EQ(meshData->vbo.size(), 1155);
+  ASSERT_EQ(meshData->ibo.size(), 1155);
+
+  pf.loadNavMesh(Cr::Utility::Directory::join(
+      SCENE_DATASETS, "habitat-test-scenes/van-gogh-room.navmesh"));
+
+  meshData = pf.getNavMeshData();
+
+  // Will change if asset changes
+  ASSERT_EQ(meshData->vbo.size(), 63);
+  ASSERT_EQ(meshData->ibo.size(), 63);
 }

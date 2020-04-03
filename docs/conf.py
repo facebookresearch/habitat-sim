@@ -36,6 +36,7 @@ INPUT_PAGES = [
     "pages/new-actions.rst",
     "pages/stereo-agent.rst",
     "pages/notebooks.rst",
+    "pages/image-extractor.rst",
 ]
 
 PLUGINS = [
@@ -73,6 +74,7 @@ LINKS_NAVBAR1 = [
             ("Add new actions", "new-actions"),
             ("Stereo agent", "stereo-agent"),
             ("Notebooks", "notebooks"),
+            ("Image extraction", "image-extractor"),
         ],
     ),
     ("Classes", "classes", []),

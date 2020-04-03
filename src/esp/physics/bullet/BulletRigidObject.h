@@ -8,8 +8,10 @@
  * @brief Struct SimulationContactResultCallback, class @ref
  * esp::physics::BulletRigidObject
  */
-
+#include <Magnum/BulletIntegration/MotionState.h>
 #include <btBulletDynamicsCommon.h>
+
+#include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/MeshMetaData.h"
@@ -92,7 +94,7 @@ class BulletRigidObject : public RigidObject,
    * @param physicsSceneAttributes The template structure defining relevant
    * phyiscal parameters for the physical scene.
    * @param meshGroup The collision mesh data for the scene.
-   * @param bWorld The @ref btDiscreteDynamicsWorld to which the scene should
+   * @param bWorld The @ref btMultiBodyDynamicsWorld to which the scene should
    * belong.
    * @return true if initialized successfully, false otherwise.
    */
@@ -100,7 +102,7 @@ class BulletRigidObject : public RigidObject,
       const assets::PhysicsSceneAttributes& physicsSceneAttributes,
       const assets::MeshMetaData& metaData,
       const std::vector<assets::CollisionMeshData>& meshGroup,
-      std::shared_ptr<btDiscreteDynamicsWorld> bWorld);
+      std::shared_ptr<btMultiBodyDynamicsWorld> bWorld);
 
   /**
    * @brief Initializes this @ref BulletRigidObject as a @ref
@@ -109,7 +111,7 @@ class BulletRigidObject : public RigidObject,
    * @param physicsObjectAttributes The template structure defining relevant
    * phyiscal parameters for the object. See @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_.
-   * @param bWorld The @ref btDiscreteDynamicsWorld to which the object should
+   * @param bWorld The @ref btMultiBodyDynamicsWorld to which the object should
    * belong.
    * @param metaData Mesh transform hierarchy information for the object.
    * @param meshGroup The collision mesh data for the object.
@@ -117,16 +119,19 @@ class BulletRigidObject : public RigidObject,
    */
   bool initializeObject(
       const assets::PhysicsObjectAttributes& physicsObjectAttributes,
-      std::shared_ptr<btDiscreteDynamicsWorld> bWorld,
+      std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
       const assets::MeshMetaData& metaData,
       const std::vector<assets::CollisionMeshData>& meshGroup);
+  /**
+   * @brief Finalize this object with any necessary post-creation processes.
+   */
+  virtual void finalizeObject() override;
 
   /**
    * @brief Recursively construct a @ref btCompoundShape for collision from
    * loaded mesh assets. A @ref btConvexHullShape is constructed for each
    * sub-component, transformed to object-local space and added to the compound
    * in a flat manner for efficiency.
-   * @param bCompound The @ref btCompoundShape being constructed.
    * @param transformFromParentToWorld The cumulative parent-to-world
    * transformation matrix constructed by composition down the @ref
    * MeshTransformNode tree to the current node.
@@ -140,6 +145,20 @@ class BulletRigidObject : public RigidObject,
       const std::vector<assets::CollisionMeshData>& meshGroup,
       const assets::MeshTransformNode& node,
       bool join);
+
+  /**
+   * @brief Recursively construct the static collision mesh objects from
+   * imported assets.
+   * @param transformFromParentToWorld The cumulative parent-to-world
+   * transformation matrix constructed by composition down the @ref
+   * MeshTransformNode tree to the current node.
+   * @param meshGroup Access structure for collision mesh data.
+   * @param node The current @ref MeshTransformNode in the recursion.
+   */
+  void constructBulletSceneFromMeshes(
+      const Magnum::Matrix4& transformFromParentToWorld,
+      const std::vector<assets::CollisionMeshData>& meshGroup,
+      const assets::MeshTransformNode& node);
 
   /**
    * @brief Check whether object is being actively simulated, or sleeping.
@@ -435,13 +454,13 @@ class BulletRigidObject : public RigidObject,
 
  private:
   /** @brief A pointer to the Bullet world to which this object belongs. See
-   * @ref btDiscreteDynamicsWorld.*/
-  std::shared_ptr<btDiscreteDynamicsWorld> bWorld_;
+   * @ref btMultiBodyDynamicsWorld.*/
+  std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;
 
   // === Physical scene ===
 
   //! Scene data: Bullet triangular mesh vertices
-  std::unique_ptr<btTriangleIndexVertexArray> bSceneArray_;
+  std::vector<std::unique_ptr<btTriangleIndexVertexArray>> bSceneArrays_;
 
   //! Scene data: Bullet triangular mesh shape
   std::vector<std::unique_ptr<btBvhTriangleMeshShape>> bSceneShapes_;
