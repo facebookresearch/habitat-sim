@@ -44,7 +44,7 @@ struct MultiGoalShortestPath::Impl {
     pathEnds.clear();
     requestedEnds = newEnds;
 
-    minTheorticalDist = std::vector<float>(newEnds.size(), 0);
+    minTheoreticalDist = std::vector<float>(newEnds.size(), 0);
   }
 
   const std::vector<vec3f>& getRequestedEnds() const { return requestedEnds; }
@@ -54,7 +54,7 @@ struct MultiGoalShortestPath::Impl {
   std::vector<dtPolyRef> endRefs;
   std::vector<vec3f> pathEnds;
 
-  std::vector<float> minTheorticalDist;
+  std::vector<float> minTheoreticalDist;
   vec3f prevRequestedStart = vec3f::Zero();
 };
 
@@ -1047,7 +1047,7 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
   if (path.pimpl_->requestedEnds.size() > 1) {
     // Bound the minimum distance any point could be from the start by either
     // how close it use to be minus how much we moved from the last search point
-    // or just the L2 distance
+    // or just the L2 distance.
 
     ShortestPath prevPath;
     prevPath.requestedStart = path.requestedStart;
@@ -1056,22 +1056,23 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
     const float movedAmount = prevPath.geodesicDistance;
 
     for (int i = 0; i < path.pimpl_->requestedEnds.size(); ++i) {
-      path.pimpl_->minTheorticalDist[i] = std::max(
-          path.pimpl_->minTheorticalDist[i] - movedAmount,
+      path.pimpl_->minTheoreticalDist[i] = std::max(
+          path.pimpl_->minTheoreticalDist[i] - movedAmount,
           (path.pimpl_->requestedEnds[i] - path.requestedStart).norm());
     }
   }
 
+  // Explore possible goal points by their minimum theoretical distance.
   std::vector<size_t> ordering(path.pimpl_->requestedEnds.size());
   std::iota(ordering.begin(), ordering.end(), 0);
   std::sort(ordering.begin(), ordering.end(),
             [&path](const size_t a, const size_t b) -> bool {
-              return path.pimpl_->minTheorticalDist[a] <
-                     path.pimpl_->minTheorticalDist[b];
+              return path.pimpl_->minTheoreticalDist[a] <
+                     path.pimpl_->minTheoreticalDist[b];
             });
 
   for (size_t i : ordering) {
-    if (path.pimpl_->minTheorticalDist[i] > path.geodesicDistance)
+    if (path.pimpl_->minTheoreticalDist[i] > path.geodesicDistance)
       continue;
 
     const Cr::Containers::Optional<std::tuple<float, std::vector<vec3f>>>
@@ -1081,7 +1082,7 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
                              path.pimpl_->endRefs[i], path.pimpl_->pathEnds[i]);
 
     if (findResult && std::get<0>(*findResult) < path.geodesicDistance) {
-      path.pimpl_->minTheorticalDist[i] = std::get<0>(*findResult);
+      path.pimpl_->minTheoreticalDist[i] = std::get<0>(*findResult);
       path.geodesicDistance = std::get<0>(*findResult);
       path.points = std::move(std::get<1>(*findResult));
     }
