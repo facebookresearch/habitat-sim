@@ -6,6 +6,12 @@ Working with Lights
 
 This tutorial shows how to create and manipulate light setups.
 
+`Test Refs`_
+============
+
+.. literalinclude:: ../../examples/tutorials/lighting_tutorial.py
+   :lines: 10-15
+
 `Imports`_
 ==========
 

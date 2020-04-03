@@ -341,6 +341,10 @@ jobs:
               # run tests with code coverage
               CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
+              #with bullet installed, run tutorial validation
+              #TODO: loop for all tutorials in the directory?
+              python examples/tutorials/lighting_tutorial.py
+
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               pytest --cov-report=xml --cov=./
 
