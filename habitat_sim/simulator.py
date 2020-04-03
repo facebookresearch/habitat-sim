@@ -395,6 +395,10 @@ class Sensor:
                 self._buffer = torch.empty(
                     resolution[0], resolution[1], dtype=torch.float32, device=device
                 )
+            elif self._spec.sensor_type == hsim.SensorType.TRIANGLE:
+                self._buffer = torch.empty(
+                    resolution[0], resolution[1], dtype=torch.int32, device=device
+                )
             else:
                 self._buffer = torch.empty(
                     resolution[0], resolution[1], 4, dtype=torch.uint8, device=device
@@ -409,6 +413,11 @@ class Sensor:
                 self._buffer = np.empty(
                     (self._spec.resolution[0], self._spec.resolution[1]),
                     dtype=np.float32,
+                )
+            elif self._spec.sensor_type == hsim.SensorType.TRIANGLE:
+                self._buffer = np.empty(
+                    (self._spec.resolution[0], self._spec.resolution[1]),
+                    dtype=np.uint32,
                 )
             else:
                 self._buffer = np.empty(
@@ -477,6 +486,8 @@ class Sensor:
                     tgt.read_frame_object_id_gpu(self._buffer.data_ptr())
                 elif self._spec.sensor_type == hsim.SensorType.DEPTH:
                     tgt.read_frame_depth_gpu(self._buffer.data_ptr())
+                elif self._spec.sensor_type == hsim.SensorType.TRIANGLE:
+                    tgt.read_frame_triangle_gpu(self._buffer.data_ptr())
                 else:
                     tgt.read_frame_rgba_gpu(self._buffer.data_ptr())
 
@@ -491,6 +502,10 @@ class Sensor:
             elif self._spec.sensor_type == hsim.SensorType.DEPTH:
                 tgt.read_frame_depth(
                     mn.MutableImageView2D(mn.PixelFormat.R32F, size, self._buffer)
+                )
+            elif self._spec.sensor_type == hsim.SensorType.TRIANGLE:
+                tgt.read_frame_triangle_id(
+                    mn.MutableImageView2D(mn.PixelFormat.R32I, size, self._buffer)
                 )
             else:
                 tgt.read_frame_rgba(

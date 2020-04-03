@@ -28,6 +28,7 @@ enum class SensorType {
   FORCE = 7,
   TENSOR = 8,
   TEXT = 9,
+  TRIANGLE = 10,
 };
 
 enum class ObservationSpaceType {

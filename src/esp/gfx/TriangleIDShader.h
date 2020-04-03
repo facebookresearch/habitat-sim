@@ -19,33 +19,33 @@
 namespace esp {
 namespace gfx {
 
-class PrimitiveIDShader : public Magnum::GL::AbstractShaderProgram {
+class TriangleIDShader : public Magnum::GL::AbstractShaderProgram {
  public:
   /**
    * @brief Constructor
    */
-  explicit PrimitiveIDShader();
+  explicit TriangleIDShader();
 
   //! @brief vertex positions
   typedef Magnum::Shaders::Generic3D::Position Position;
   //! @brief vertex colors
   typedef Magnum::Shaders::Generic3D::Color3 Color3;
   //! @brief object ids
-  typedef Magnum::GL::Attribute<5, Magnum::UnsignedInt> ObjectId;
+  typedef Magnum::GL::Attribute<1, Magnum::Int> TriangleId;
 
   //! Color attachment location per output type
   enum : uint8_t {
     //! color output
     ColorOutput = 0,
-    //! object id output
-    ObjectIdOutput = 1,
+    //! triangle id output
+    TriangleIdOutput = 1
   };
 
   /**
    * @brief Set transformation and projection matrix
    * @return Reference to self (for method chaining)
    */
-  PrimitiveIDShader& setTransformationProjectionMatrix(
+  TriangleIDShader& setTransformationProjectionMatrix(
       const Magnum::Matrix4& matrix) {
     setUniform(transformationProjectionMatrixUniform_, matrix);
     return *this;
