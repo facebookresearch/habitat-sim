@@ -124,15 +124,7 @@ class Simulator {
   /**
    * @brief Get an editable reference to a physics object template by index.
    */
-  assets::PhysicsObjectAttributes& getPhysicsObjectAttributes(
-      int templateIndex);
-
-  /**
-   * @brief Get an editable reference to a physics object template by string
-   * key.
-   */
-  assets::PhysicsObjectAttributes& getPhysicsObjectAttributes(
-      const std::string& templateHandle);
+  assets::PhysicsObjectAttributes& getObjectTemplate(int templateId);
 
   /**
    * @brief Load all "*.phys_properties.json" files from the provided file or

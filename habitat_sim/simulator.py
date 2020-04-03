@@ -273,6 +273,19 @@ class Simulator:
     def __del__(self):
         self.close()
 
+    # --- object template functions ---
+    def get_physics_object_library_size(self):
+        return self._sim.get_physics_object_library_size()
+
+    def get_object_template(self, template_id):
+        return self._sim.get_object_template(template_id)
+
+    def load_object_configs(self, path):
+        return self._sim.load_object_configs(path)
+
+    def load_object_template(self, object_template, object_template_handle):
+        return self._sim.load_object_template(object_template, object_template_handle)
+
     # --- physics functions ---
     def add_object(
         self,
@@ -281,9 +294,6 @@ class Simulator:
         light_setup_key=DEFAULT_LIGHTING_KEY,
     ):
         return self._sim.add_object(object_lib_index, attachment_node, light_setup_key)
-
-    def get_physics_object_library_size(self):
-        return self._sim.get_physics_object_library_size()
 
     def remove_object(
         self, object_id, delete_object_node=True, delete_visual_node=True

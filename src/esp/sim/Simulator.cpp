@@ -277,14 +277,8 @@ int Simulator::getPhysicsObjectLibrarySize() {
   return resourceManager_.getNumLibraryObjects();
 }
 
-assets::PhysicsObjectAttributes& Simulator::getPhysicsObjectAttributes(
-    int templateIndex) {
-  return resourceManager_.getPhysicsObjectAttributes(templateIndex);
-}
-
-assets::PhysicsObjectAttributes& Simulator::getPhysicsObjectAttributes(
-    const std::string& templateHandle) {
-  return resourceManager_.getPhysicsObjectAttributes(templateHandle);
+assets::PhysicsObjectAttributes& Simulator::getObjectTemplate(int templateId) {
+  return resourceManager_.getPhysicsObjectAttributes(templateId);
 }
 
 std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
