@@ -1060,6 +1060,8 @@ bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
           path.pimpl_->minTheoreticalDist[i] - movedAmount,
           (path.pimpl_->requestedEnds[i] - path.requestedStart).norm());
     }
+
+    path.pimpl_->prevRequestedStart = path.requestedStart;
   }
 
   // Explore possible goal points by their minimum theoretical distance.
