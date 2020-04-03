@@ -48,7 +48,20 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
   CORRADE_VERIFY(esp::scene::SemanticScene::loadReplicaHouse(
       Cr::Utility::Directory::join(replicaRoom0, "info_semantic.json"), scene));
 
+#ifndef MAGNUM_BUILD_STATIC
+  Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
+#else
+  // avoid using plugins that might depend on different library versions
+  Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager{
+      "nonexistent"};
+#endif
+
+  Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer;
+  CORRADE_INTERNAL_ASSERT(importer =
+                              manager.loadAndInstantiate("StanfordImporter"));
+
   GenericInstanceMeshData::uptr mesh = GenericInstanceMeshData::fromPLY(
+      *importer,
       Cr::Utility::Directory::join(replicaRoom0, "mesh_semantic.ply"));
   CORRADE_VERIFY(mesh);
 
@@ -56,7 +69,6 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
   const auto& objectIds = mesh->getObjectIdsBufferObjectCPU();
   const auto& ibo = mesh->getIndexBufferObjectCPU();
 
-  CORRADE_VERIFY(objectIds.size() == ibo.size());
   for (const auto& obj : scene.objects()) {
     if (obj == nullptr)
       continue;
@@ -67,7 +79,7 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
 
     for (uint64_t fid = 0; fid < ibo.size(); fid += 6) {
       CORRADE_ITERATION(fid);
-      if (objectIds[fid] == id) {
+      if (objectIds[ibo[fid]] == id) {
         esp::vec3f quadCenter = esp::vec3f::Zero();
         // Mesh was converted from quads to tris
         for (int i = 0; i < 6; ++i) {

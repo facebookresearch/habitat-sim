@@ -997,6 +997,18 @@ bool ResourceManager::loadInstanceMeshData(
     LOG(ERROR) << "loadInstanceMeshData only works with INSTANCE_MESH type!";
     return false;
   }
+
+#ifndef MAGNUM_BUILD_STATIC
+  Mn::PluginManager::Manager<Importer> manager;
+#else
+  // avoid using plugins that might depend on different library versions
+  Mn::PluginManager::Manager<Importer> manager{"nonexistent"};
+#endif
+
+  Cr::Containers::Pointer<Importer> importer;
+  CORRADE_INTERNAL_ASSERT(importer =
+                              manager.loadAndInstantiate("StanfordImporter"));
+
   // if this is a new file, load it and add it to the dictionary, create
   // shaders and add it to the shaderPrograms_
   const std::string& filename = info.filepath;
@@ -1004,10 +1016,10 @@ bool ResourceManager::loadInstanceMeshData(
     std::vector<GenericInstanceMeshData::uptr> instanceMeshes;
     if (splitSemanticMesh) {
       instanceMeshes =
-          GenericInstanceMeshData::fromPlySplitByObjectId(filename);
+          GenericInstanceMeshData::fromPlySplitByObjectId(*importer, filename);
     } else {
       GenericInstanceMeshData::uptr meshData =
-          GenericInstanceMeshData::fromPLY(filename);
+          GenericInstanceMeshData::fromPLY(*importer, filename);
       if (meshData)
         instanceMeshes.emplace_back(std::move(meshData));
     }
