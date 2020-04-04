@@ -130,7 +130,6 @@ def test_sensors(
     # thus we need to force a reload when frustum culling gets swapped
     if cfg.sim_cfg.frustum_culling != sim.config.sim_cfg.frustum_culling:
         sim.close()
-        print("Swapping")
 
     sim.reconfigure(cfg)
 
