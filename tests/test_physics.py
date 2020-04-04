@@ -36,6 +36,7 @@ def test_kinematics(sim):
 
     # test adding an object to the world
     object_id = sim.add_object(0)
+    object2_id = sim.add_object(0)
     assert len(sim.get_existing_object_ids()) > 0
 
     # test setting the motion type
@@ -70,6 +71,35 @@ def test_kinematics(sim):
     sim.set_rotation(quat_to_magnum(Q), object_id)
     assert np.allclose(sim.get_transformation(object_id), expected)
     assert np.allclose(quat_from_magnum(sim.get_rotation(object_id)), Q)
+
+    previous_object_states = [
+        [sim.get_translation(object_id), sim.get_rotation(object_id)],
+        [sim.get_translation(object2_id), sim.get_rotation(object2_id)],
+    ]
+
+    # test get and set linear velocity
+    for _ in range(50):
+        # Set Linear velocity to object1
+        sim.set_linear_velocity(np.array([0, 0, 1.0]), object_id)
+
+        # Set Angular Velocity to object2
+        sim.set_angular_velocity(np.array([0, 0, 1.0]), object2_id)
+
+        # test getting observation
+        obs = sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
+
+        # check that time is increasing in the world
+        assert sim.get_world_time() > prev_time
+        prev_time = sim.get_world_time()
+
+        # check object states
+        # 1st object should translate, but not rotate
+        assert previous_object_state[0][0] != sim.get_translation(object_id)
+        assert previous_object_state[0][1] == sim.get_rotation(object_id)
+
+        # 2nd object should rotate, but not translate
+        assert previous_object_states[1][0] == sim.get_translation(object2_id)
+        assert previous_object_states[1][1] != sim.get_rotation(object2_id)
 
     # test object removal
     old_object_id = sim.remove_object(object_id)

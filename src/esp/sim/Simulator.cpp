@@ -411,6 +411,38 @@ Magnum::Quaternion Simulator::getRotation(const int objectID,
   return Magnum::Quaternion();
 }
 
+void Simulator::setLinearVelocity(const Magnum::Vector3& linVel,
+                                  const int objectID,
+                                  const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->setLinearVelocity(objectID, linVel);
+  }
+}
+
+Magnum::Vector3 Simulator::getLinearVelocity(const int objectID,
+                                             const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getLinearVelocity(objectID);
+  }
+  return Magnum::Vector3();
+}
+
+void Simulator::setAngularVelocity(const Magnum::Vector3& angVel,
+                                   const int objectID,
+                                   const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->setAngularVelocity(objectID, angVel);
+  }
+}
+
+Magnum::Vector3 Simulator::getAngularVelocity(const int objectID,
+                                              const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getAngularVelocity(objectID);
+  }
+  return Magnum::Vector3();
+}
+
 bool Simulator::contactTest(const int objectID, const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->contactTest(objectID);
