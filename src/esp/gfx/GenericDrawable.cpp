@@ -114,6 +114,9 @@ void GenericDrawable::updateShader() {
           Magnum::ResourceDataState::Final,
           Magnum::ResourcePolicy::ReferenceCounted);
     }
+
+    CORRADE_INTERNAL_ASSERT(shader_ && shader_->lightCount() == lightCount &&
+                            shader_->flags() == flags);
   }
 }
 
