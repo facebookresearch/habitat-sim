@@ -316,7 +316,6 @@ class Simulator {
   void setLinearVelocity(const Magnum::Vector3& linVel,
                          const int objectID,
                          const int sceneID = 0);
-  
   /**
    * @brief Get the Linear Velocity of object.
    * See @ref esp::physics::PhysicsManager::getLinearVelocity.
@@ -338,9 +337,8 @@ class Simulator {
    * the object.
    */
   void setAngularVelocity(const Magnum::Vector3& angVel,
-                         const int objectID,
-                         const int sceneID = 0);
-  
+                          const int objectID,
+                          const int sceneID = 0);
   /**
    * @brief Get the Angular Velocity of object.
    * See @ref esp::physics::PhysicsManager::getAngularVelocity.

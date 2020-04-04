@@ -34,7 +34,9 @@ Simulator::Simulator(const SimulatorConfiguration& cfg) {
   reconfigure(cfg);
 }
 
-Simulator::~Simulator() { LOG(INFO) << "Deconstructing Simulator"; }
+Simulator::~Simulator() {
+  LOG(INFO) << "Deconstructing Simulator";
+}
 
 void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // if configuration is unchanged, just reset and return
@@ -212,7 +214,9 @@ void Simulator::seed(uint32_t newSeed) {
   pathfinder_->seed(newSeed);
 }
 
-std::shared_ptr<gfx::Renderer> Simulator::getRenderer() { return renderer_; }
+std::shared_ptr<gfx::Renderer> Simulator::getRenderer() {
+  return renderer_;
+}
 
 std::shared_ptr<physics::PhysicsManager> Simulator::getPhysicsManager() {
   return physicsManager_;
@@ -252,8 +256,10 @@ bool operator!=(const SimulatorConfiguration& a,
 
 // === Physics Simulator Functions ===
 
-int Simulator::addObject(int objectLibIndex, scene::SceneNode* attachmentNode,
-                         const std::string& lightSetupKey, int sceneID) {
+int Simulator::addObject(int objectLibIndex,
+                         scene::SceneNode* attachmentNode,
+                         const std::string& lightSetupKey,
+                         int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     // TODO: change implementation to support multi-world and physics worlds to
     // own reference to a sceneGraph to avoid this.
@@ -308,8 +314,10 @@ std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
 }
 
 // remove object objectID instance in sceneID
-void Simulator::removeObject(const int objectID, bool deleteObjectNode,
-                             bool deleteVisualNode, const int sceneID) {
+void Simulator::removeObject(const int objectID,
+                             bool deleteObjectNode,
+                             bool deleteVisualNode,
+                             const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->removeObject(objectID, deleteObjectNode, deleteVisualNode);
   }
@@ -324,7 +332,8 @@ esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
 }
 
 bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
-                                    const int objectID, const int sceneID) {
+                                    const int objectID,
+                                    const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->setObjectMotionType(objectID, motionType);
   }
@@ -332,7 +341,8 @@ bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
 }
 
 // apply forces and torques to objects
-void Simulator::applyTorque(const Magnum::Vector3& tau, const int objectID,
+void Simulator::applyTorque(const Magnum::Vector3& tau,
+                            const int objectID,
                             const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->applyTorque(objectID, tau);
@@ -340,7 +350,8 @@ void Simulator::applyTorque(const Magnum::Vector3& tau, const int objectID,
 }
 
 void Simulator::applyForce(const Magnum::Vector3& force,
-                           const Magnum::Vector3& relPos, const int objectID,
+                           const Magnum::Vector3& relPos,
+                           const int objectID,
                            const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->applyForce(objectID, force, relPos);
@@ -349,7 +360,8 @@ void Simulator::applyForce(const Magnum::Vector3& force,
 
 // set object transform (kinemmatic control)
 void Simulator::setTransformation(const Magnum::Matrix4& transform,
-                                  const int objectID, const int sceneID) {
+                                  const int objectID,
+                                  const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->setTransformation(objectID, transform);
   }
@@ -365,7 +377,8 @@ Magnum::Matrix4 Simulator::getTransformation(const int objectID,
 
 // set object translation directly
 void Simulator::setTranslation(const Magnum::Vector3& translation,
-                               const int objectID, const int sceneID) {
+                               const int objectID,
+                               const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->setTranslation(objectID, translation);
   }
@@ -383,7 +396,8 @@ Magnum::Vector3 Simulator::getTranslation(const int objectID,
 
 // set object orientation directly
 void Simulator::setRotation(const Magnum::Quaternion& rotation,
-                            const int objectID, const int sceneID) {
+                            const int objectID,
+                            const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     physicsManager_->setRotation(objectID, rotation);
   }
@@ -398,7 +412,8 @@ Magnum::Quaternion Simulator::getRotation(const int objectID,
 }
 
 void Simulator::setLinearVelocity(const Magnum::Vector3& linVel,
-                                  const int objectID, const int sceneID) {
+                                  const int objectID,
+                                  const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->setLinearVelocity(objectID, linVel);
   }
@@ -413,7 +428,8 @@ Magnum::Vector3 Simulator::getLinearVelocity(const int objectID,
 }
 
 void Simulator::setAngularVelocity(const Magnum::Vector3& angVel,
-                                   const int objectID, const int sceneID) {
+                                   const int objectID,
+                                   const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->setAngularVelocity(objectID, angVel);
   }
@@ -565,7 +581,9 @@ agent::Agent::ptr Simulator::getAgent(int agentId) {
   return agents_[agentId];
 }
 
-nav::PathFinder::ptr Simulator::getPathFinder() { return pathfinder_; }
+nav::PathFinder::ptr Simulator::getPathFinder() {
+  return pathfinder_;
+}
 
 bool Simulator::displayObservation(int agentId, const std::string& sensorId) {
   agent::Agent::ptr ag = getAgent(agentId);
@@ -579,7 +597,8 @@ bool Simulator::displayObservation(int agentId, const std::string& sensorId) {
   return false;
 }
 
-bool Simulator::getAgentObservation(int agentId, const std::string& sensorId,
+bool Simulator::getAgentObservation(int agentId,
+                                    const std::string& sensorId,
                                     sensor::Observation& observation) {
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
@@ -592,7 +611,8 @@ bool Simulator::getAgentObservation(int agentId, const std::string& sensorId,
 }
 
 int Simulator::getAgentObservations(
-    int agentId, std::map<std::string, sensor::Observation>& observations) {
+    int agentId,
+    std::map<std::string, sensor::Observation>& observations) {
   observations.clear();
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
@@ -622,7 +642,8 @@ bool Simulator::getAgentObservationSpace(int agentId,
 }
 
 int Simulator::getAgentObservationSpaces(
-    int agentId, std::map<std::string, sensor::ObservationSpace>& spaces) {
+    int agentId,
+    std::map<std::string, sensor::ObservationSpace>& spaces) {
   spaces.clear();
   agent::Agent::ptr ag = getAgent(agentId);
   if (ag != nullptr) {
