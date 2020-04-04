@@ -124,9 +124,9 @@ GenericInstanceMeshData::fromPlySplitByObjectId(
   std::vector<GenericInstanceMeshData::uptr> splitMeshData;
   std::unordered_map<uint16_t, PerObjectIdMeshBuilder> objectIdToObjectData;
 
-  for (size_t i = 0; i < data.objectIds.size(); ++i) {
-    const uint16_t objectId = data.objectIds[i];
+  for (size_t i = 0; i < data.cpu_ibo.size(); ++i) {
     const uint32_t globalIndex = data.cpu_ibo[i];
+    const uint16_t objectId = data.objectIds[globalIndex];
     if (objectIdToObjectData.find(objectId) == objectIdToObjectData.end()) {
       auto instanceMesh = GenericInstanceMeshData::create_unique();
       objectIdToObjectData.emplace(
