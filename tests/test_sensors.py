@@ -86,22 +86,31 @@ _test_scenes = [
 
 @pytest.mark.gfxtest
 @pytest.mark.parametrize(
-    "scene,has_sem,sensor_type,gpu2gpu",
+    "scene,has_sem,sensor_type",
     list(
         itertools.product(
             _test_scenes[0:2],
             [True],
             ["color_sensor", "depth_sensor", "semantic_sensor"],
-            [True, False],
         )
     )
     + list(
-        itertools.product(
-            _test_scenes[2:], [False], ["color_sensor", "depth_sensor"], [True, False]
-        )
+        itertools.product(_test_scenes[2:], [False], ["color_sensor", "depth_sensor"])
     ),
 )
-def test_sensors(scene, has_sem, sensor_type, gpu2gpu, sim, make_cfg_settings):
+@pytest.mark.parametrize("gpu2gpu", [True, False])
+# NB: This should go last, we have to force a close on the simulator when
+# this value changes, thus we should change it as little as possible
+@pytest.mark.parametrize("frustum_culling", [True, False])
+def test_sensors(
+    scene,
+    has_sem,
+    sensor_type,
+    gpu2gpu,
+    frustum_culling,
+    sim: habitat_sim.Simulator,
+    make_cfg_settings,
+):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
 
@@ -111,10 +120,17 @@ def test_sensors(scene, has_sem, sensor_type, gpu2gpu, sim, make_cfg_settings):
     make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["semantic_sensor"] = has_sem
     make_cfg_settings["scene"] = scene
+    make_cfg_settings["frustum_culling"] = frustum_culling
 
     cfg = make_cfg(make_cfg_settings)
     for sensor_spec in cfg.agents[0].sensor_specifications:
         sensor_spec.gpu2gpu_transfer = gpu2gpu
+
+    # The scene loading may be done differently with/without frustum culling,
+    # thus we need to force a reload when frustum culling gets swapped
+    if cfg.sim_cfg.frustum_culling != sim.config.sim_cfg.frustum_culling:
+        sim.close()
+        print("Swapping")
 
     sim.reconfigure(cfg)
 
