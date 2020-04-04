@@ -1,3 +1,4 @@
+#include <Corrade/Containers/ArrayView.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
 
@@ -19,6 +20,12 @@ const std::string skokloster = Cr::Utility::Directory::join(
     SCENE_DATASETS,
     "habitat-test-scenes/skokloster-castle.navmesh");
 
+constexpr struct {
+  const char* name;
+  bool cache;
+} MultiGoalBenchMarkData[]{{"path to closest of 1000", false},
+                           {"cached path to closest of 1000", true}};
+
 struct PathFinderTest : Cr::TestSuite::Tester {
   explicit PathFinderTest();
 
@@ -26,23 +33,29 @@ struct PathFinderTest : Cr::TestSuite::Tester {
   void tryStepNoSliding();
   void multiGoalPath();
 
-  void pathFindBenchmark();
+  void benchmarkSingleGoal();
+  void benchmarkMultiGoal();
+
+  void testCaching();
 };
 
 PathFinderTest::PathFinderTest() {
   addTests({&PathFinderTest::bounds, &PathFinderTest::tryStepNoSliding,
-            &PathFinderTest::multiGoalPath});
+            &PathFinderTest::multiGoalPath, &PathFinderTest::testCaching});
 
-  addInstancedBenchmarks({&PathFinderTest::pathFindBenchmark}, 1000, 2);
+  addBenchmarks({&PathFinderTest::benchmarkSingleGoal}, 1000);
+  addInstancedBenchmarks({&PathFinderTest::benchmarkMultiGoal}, 100,
+                         Cr::Containers::arraySize(MultiGoalBenchMarkData));
 }
 
 void PathFinderTest::bounds() {
   esp::nav::PathFinder pathFinder;
+  pathFinder.loadNavMesh(skokloster);
+  CORRADE_VERIFY(pathFinder.isLoaded());
+
   Mn::Vector3 minExpected{-9.75916f, -0.390081f, 0.973853f};
   Mn::Vector3 maxExpected{8.56903f, 6.43441f, 25.5983f};
 
-  pathFinder.loadNavMesh(skokloster);
-  CORRADE_VERIFY(pathFinder.isLoaded());
   std::pair<esp::vec3f, esp::vec3f> bounds = pathFinder.bounds();
 
   CORRADE_COMPARE(Mn::Vector3{bounds.first}, minExpected);
@@ -92,7 +105,7 @@ void PathFinderTest::multiGoalPath() {
 
     esp::nav::MultiGoalShortestPath multiPath;
     multiPath.requestedStart = points[0];
-    multiPath.requestedEnds = {points.begin() + 1, points.end()};
+    multiPath.setRequestedEnds({points.begin() + 1, points.end()});
 
     CORRADE_VERIFY(pathFinder.findPath(multiPath));
 
@@ -100,7 +113,7 @@ void PathFinderTest::multiGoalPath() {
     path.requestedStart = points[0];
     float trueMinDist = 1e5;
     for (int i = 1; i < points.size(); ++i) {
-      path.requestedEnds = {points[i]};
+      path.setRequestedEnds({points[i]});
 
       CORRADE_VERIFY(pathFinder.findPath(path));
 
@@ -111,32 +124,78 @@ void PathFinderTest::multiGoalPath() {
   }
 }
 
-void PathFinderTest::pathFindBenchmark() {
+void PathFinderTest::testCaching() {
   esp::nav::PathFinder pathFinder;
   pathFinder.loadNavMesh(skokloster);
   CORRADE_VERIFY(pathFinder.isLoaded());
 
-  if (testCaseInstanceId() == 0) {
-    setTestCaseDescription("Path to single point");
-    esp::nav::ShortestPath path;
-    path.requestedStart = pathFinder.getRandomNavigablePoint();
-    path.requestedEnd = pathFinder.getRandomNavigablePoint();
-
-    bool status;
-    CORRADE_BENCHMARK(5) { status = pathFinder.findPath(path); };
-    CORRADE_VERIFY(status);
-  } else {
-    setTestCaseDescription("Path to closest of 100");
-    esp::nav::MultiGoalShortestPath path;
-    path.requestedStart = pathFinder.getRandomNavigablePoint();
-    for (int i = 0; i < 100; ++i) {
-      path.requestedEnds.emplace_back(pathFinder.getRandomNavigablePoint());
+  esp::nav::MultiGoalShortestPath cachePath;
+  {
+    std::vector<esp::vec3f> rqEnds;
+    for (int i = 0; i < 25; ++i) {
+      rqEnds.emplace_back(pathFinder.getRandomNavigablePoint());
     }
-
-    bool status;
-    CORRADE_BENCHMARK(5) { status = pathFinder.findPath(path); };
-    CORRADE_VERIFY(status);
+    cachePath.setRequestedEnds(rqEnds);
   }
+
+  for (int i = 0; i < 1000; ++i) {
+    CORRADE_ITERATION(i);
+
+    cachePath.requestedStart = pathFinder.getRandomNavigablePoint();
+    pathFinder.findPath(cachePath);
+
+    esp::nav::MultiGoalShortestPath noCachePath;
+    noCachePath.setRequestedEnds(cachePath.getRequestedEnds());
+    noCachePath.requestedStart = cachePath.requestedStart;
+    pathFinder.findPath(noCachePath);
+
+    CORRADE_COMPARE(cachePath.geodesicDistance, noCachePath.geodesicDistance);
+  }
+}
+
+void PathFinderTest::benchmarkSingleGoal() {
+  esp::nav::PathFinder pathFinder;
+  pathFinder.loadNavMesh(skokloster);
+  CORRADE_VERIFY(pathFinder.isLoaded());
+
+  esp::nav::ShortestPath path;
+  path.requestedStart = pathFinder.getRandomNavigablePoint();
+  do {
+    path.requestedStart = pathFinder.getRandomNavigablePoint();
+  } while (pathFinder.islandRadius(path.requestedStart) < 10.0);
+  path.requestedEnd = pathFinder.getRandomNavigablePoint();
+
+  bool status;
+  CORRADE_BENCHMARK(5) { status = pathFinder.findPath(path); };
+  CORRADE_VERIFY(status);
+}
+
+void PathFinderTest::benchmarkMultiGoal() {
+  esp::nav::PathFinder pathFinder;
+  pathFinder.loadNavMesh(skokloster);
+  CORRADE_VERIFY(pathFinder.isLoaded());
+
+  auto&& data = MultiGoalBenchMarkData[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+
+  esp::nav::MultiGoalShortestPath path;
+  do {
+    path.requestedStart = pathFinder.getRandomNavigablePoint();
+  } while (pathFinder.islandRadius(path.requestedStart) < 10.0);
+
+  std::vector<esp::vec3f> rqEnds;
+  for (int i = 0; i < 1000; ++i) {
+    rqEnds.emplace_back(pathFinder.getRandomNavigablePoint());
+  }
+  path.setRequestedEnds(rqEnds);
+
+  if (data.cache) {
+    pathFinder.findPath(path);
+  }
+
+  bool status;
+  CORRADE_BENCHMARK(1) { status = pathFinder.findPath(path); };
+  CORRADE_VERIFY(status);
 }
 
 }  // namespace

@@ -40,7 +40,8 @@ void initShortestPathBindings(py::module& m) {
       m, "MultiGoalShortestPath")
       .def(py::init(&MultiGoalShortestPath::create<>))
       .def_readwrite("requested_start", &MultiGoalShortestPath::requestedStart)
-      .def_readwrite("requested_ends", &MultiGoalShortestPath::requestedEnds)
+      .def_property("requested_ends", &MultiGoalShortestPath::getRequestedEnds,
+                    &MultiGoalShortestPath::setRequestedEnds)
       .def_readwrite("points", &MultiGoalShortestPath::points)
       .def_readwrite("geodesic_distance",
                      &MultiGoalShortestPath::geodesicDistance);
