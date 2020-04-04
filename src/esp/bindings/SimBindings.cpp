@@ -97,11 +97,11 @@ void initSimBindings(py::module& m) {
            "sceneID"_a = 0)
       .def("get_rotation", &Simulator::getRotation, "object_id"_a,
            "sceneID"_a = 0)
-      .def("set_linear_velocity", &Simulator::setLinearVelocity, "linVel"_a, 
+      .def("set_linear_velocity", &Simulator::setLinearVelocity, "linVel"_a,
            "object_id"_a, "sceneID"_a = 0)
       .def("get_linear_velocity", &Simulator::getLinearVelocity, "object_id"_a,
            "sceneID"_a = 0)
-      .def("set_angular_velocity", &Simulator::setLinearVelocity, "linVel"_a, 
+      .def("set_angular_velocity", &Simulator::setLinearVelocity, "linVel"_a,
            "object_id"_a, "sceneID"_a = 0)
       .def("get_angular_velocity", &Simulator::getLinearVelocity, "object_id"_a,
            "sceneID"_a = 0)
