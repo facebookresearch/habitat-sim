@@ -215,9 +215,11 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    python setup.py install --bullet    # build habitat with bullet physics
    ```
 
-   Note1: some Linux distributions might require an additional `--user` flag to deal with permission issues.
+   Note1: Build flags stack, *e.g.* to build in headless mode, with CUDA, and bullet, one would use `--headless --with-cuda --bullet`.
 
-   Note2: for active development in Habitat, you might find `./build.sh` instead of `python setup.py install` more useful.
+   Note2: some Linux distributions might require an additional `--user` flag to deal with permission issues.
+
+   Note3: for active development in Habitat, you might find `./build.sh` instead of `python setup.py install` more useful.
 
 
 1. [Only if using `build.sh`] For use with [Habitat-API](https://github.com/facebookresearch/habitat-api) and your own python code, add habitat-sim to your `PYTHONPATH`. For example modify your `.bashrc` (or `.bash_profile` in Mac OS X) file by adding the line:
