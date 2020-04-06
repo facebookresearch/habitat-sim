@@ -591,8 +591,6 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
   }
 
   // 2. construct a physicsObjectMetaData
-  // PhysicsObjectAttributes physicsObjectAttributes;
-
   auto physicsObjectAttributes = PhysicsObjectAttributes::create();
 
   // NOTE: these paths should be relative to the properties file

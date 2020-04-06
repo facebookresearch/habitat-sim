@@ -52,7 +52,7 @@ namespace {
 
 using namespace Mn::Math::Literals;
 
-class Viewer : public Magnum::Platform::Application {
+class Viewer : public Mn::Platform::Application {
  public:
   explicit Viewer(const Arguments& arguments);
 
@@ -83,13 +83,13 @@ class Viewer : public Magnum::Platform::Application {
   void torqueLastObject();
   void removeLastObject();
   void invertGravity();
-  Magnum::Vector3 randomDirection();
+  Mn::Vector3 randomDirection();
   void wiggleLastObject();
 
   void toggleNavMeshVisualization();
 
-  Magnum::Vector3 positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
-                                   const Magnum::Vector2i& position);
+  Mn::Vector3 positionOnSphere(Mn::SceneGraph::Camera3D& camera,
+                               const Mn::Vector2i& position);
 
   // single inline for logging agent state msgs, so can be easily modified
   inline void logAgentStateMsg(bool showPos, bool showOrient) {
@@ -133,27 +133,29 @@ class Viewer : public Magnum::Platform::Application {
   esp::gfx::RenderCamera* renderCamera_ = nullptr;
   esp::nav::PathFinder::ptr pathfinder_;
   esp::scene::ObjectControls controls_;
-  Magnum::Vector3 previousPosition_;
+  Mn::Vector3 previousPosition_;
 
   std::vector<int> objectIDs_;
 
   bool drawObjectBBs = false;
 
-  Magnum::Timeline timeline_;
+  Mn::Timeline timeline_;
 
-  Magnum::ImGuiIntegration::Context imgui_{Magnum::NoCreate};
+  Mn::ImGuiIntegration::Context imgui_{Mn::NoCreate};
   bool showFPS_ = true;
   bool frustumCullingEnabled_ = true;
 };
 
 Viewer::Viewer(const Arguments& arguments)
-    : Magnum::Platform::
-          Application{arguments,
-                      Configuration{}.setTitle("Viewer").setWindowFlags(
-                          Configuration::WindowFlag::Resizable),
-                      GLConfiguration{}
-                          .setColorBufferSize(Magnum::Vector4i(8, 8, 8, 8))
-                          .setSampleCount(4)},
+    : Mn::Platform::Application{arguments,
+                                Configuration{}
+                                    .setTitle("Viewer")
+                                    .setWindowFlags(
+                                        Configuration::WindowFlag::Resizable),
+                                GLConfiguration{}
+                                    .setColorBufferSize(
+                                        Mn::Vector4i(8, 8, 8, 8))
+                                    .setSampleCount(4)},
       pathfinder_(esp::nav::PathFinder::create()),
       controls_(),
       previousPosition_() {
@@ -181,9 +183,9 @@ Viewer::Viewer(const Arguments& arguments)
 
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
 
-  imgui_ = Magnum::ImGuiIntegration::Context(
-      Magnum::Vector2{windowSize()} / dpiScaling(), windowSize(),
-      framebufferSize());
+  imgui_ =
+      Mn::ImGuiIntegration::Context(Mn::Vector2{windowSize()} / dpiScaling(),
+                                    windowSize(), framebufferSize());
 
   /* Set up proper blending to be used by ImGui. There's a great chance
      you'll need this exact behavior for the rest of your scene. If not, set
@@ -235,7 +237,7 @@ Viewer::Viewer(const Arguments& arguments)
     }
   }
 
-  const Magnum::Range3D& sceneBB = rootNode_->computeCumulativeBB();
+  const Mn::Range3D& sceneBB = rootNode_->computeCumulativeBB();
   resourceManager_.setLightSetup(esp::gfx::getLightsAtBoxCorners(sceneBB));
 
   // Set up camera
@@ -252,7 +254,7 @@ Viewer::Viewer(const Arguments& arguments)
                                      1000.0f,           // zfar
                                      90.0f);            // hfov
   renderCamera_->setAspectRatioPolicy(
-      Magnum::SceneGraph::AspectRatioPolicy::Extend);
+      Mn::SceneGraph::AspectRatioPolicy::Extend);
 
   // Load navmesh if available
   std::string navmeshFilename;
@@ -287,7 +289,7 @@ Viewer::Viewer(const Arguments& arguments)
     // some scenes could have pathable roof polygons. We are not filtering
     // those starting points here.
     esp::vec3f position = pathfinder_->getRandomNavigablePoint();
-    agentBodyNode_->setTranslation(Magnum::Vector3(position));
+    agentBodyNode_->setTranslation(Mn::Vector3(position));
 
     controls_.setMoveFilterFunction([&](const esp::vec3f& start,
                                         const esp::vec3f& end) {
@@ -312,10 +314,10 @@ void Viewer::addObject(std::string configFile) {
   if (physicsManager_ == nullptr)
     return;
 
-  Magnum::Matrix4 T =
+  Mn::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  Magnum::Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
+  Mn::Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
 
   auto& drawables = sceneGraph_->getDrawables();
 
@@ -361,30 +363,30 @@ void Viewer::removeLastObject() {
 void Viewer::invertGravity() {
   if (physicsManager_ == nullptr)
     return;
-  const Magnum::Vector3& gravity = physicsManager_->getGravity();
-  const Magnum::Vector3 invGravity = -1 * gravity;
+  const Mn::Vector3& gravity = physicsManager_->getGravity();
+  const Mn::Vector3 invGravity = -1 * gravity;
   physicsManager_->setGravity(invGravity);
 }
 
 void Viewer::pokeLastObject() {
   if (physicsManager_ == nullptr || objectIDs_.size() == 0)
     return;
-  Magnum::Matrix4 T =
+  Mn::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  Magnum::Vector3 impulse = T.transformVector({0.0f, 0.0f, -3.0f});
-  Magnum::Vector3 rel_pos = Magnum::Vector3(0.0f, 0.0f, 0.0f);
+  Mn::Vector3 impulse = T.transformVector({0.0f, 0.0f, -3.0f});
+  Mn::Vector3 rel_pos = Mn::Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyImpulse(objectIDs_.back(), impulse, rel_pos);
 }
 
 void Viewer::pushLastObject() {
   if (physicsManager_ == nullptr || objectIDs_.size() == 0)
     return;
-  Magnum::Matrix4 T =
+  Mn::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  Magnum::Vector3 force = T.transformVector({0.0f, 0.0f, -40.0f});
-  Magnum::Vector3 rel_pos = Magnum::Vector3(0.0f, 0.0f, 0.0f);
+  Mn::Vector3 force = T.transformVector({0.0f, 0.0f, -40.0f});
+  Mn::Vector3 rel_pos = Mn::Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);
 }
 
@@ -407,17 +409,17 @@ void Viewer::recomputeNavMesh(const std::string& sceneFilename,
 void Viewer::torqueLastObject() {
   if (physicsManager_ == nullptr || objectIDs_.size() == 0)
     return;
-  Magnum::Vector3 torque = randomDirection() * 30;
+  Mn::Vector3 torque = randomDirection() * 30;
   physicsManager_->applyTorque(objectIDs_.back(), torque);
 }
 
 // generate random direction vectors:
-Magnum::Vector3 Viewer::randomDirection() {
-  Magnum::Vector3 dir(1.0f, 1.0f, 1.0f);
+Mn::Vector3 Viewer::randomDirection() {
+  Mn::Vector3 dir(1.0f, 1.0f, 1.0f);
   while (sqrt(dir.dot()) > 1.0) {
-    dir = Magnum::Vector3((float)((rand() % 2000 - 1000) / 1000.0),
-                          (float)((rand() % 2000 - 1000) / 1000.0),
-                          (float)((rand() % 2000 - 1000) / 1000.0));
+    dir = Mn::Vector3((float)((rand() % 2000 - 1000) / 1000.0),
+                      (float)((rand() % 2000 - 1000) / 1000.0),
+                      (float)((rand() % 2000 - 1000) / 1000.0));
   }
   dir = dir / sqrt(dir.dot());
   return dir;
@@ -429,7 +431,7 @@ void Viewer::wiggleLastObject() {
   if (physicsManager_ == nullptr || objectIDs_.size() == 0)
     return;
 
-  Magnum::Vector3 randDir = randomDirection();
+  Mn::Vector3 randDir = randomDirection();
   // Only allow +Y so dynamic objects don't push through the floor.
   randDir[1] = abs(randDir[1]);
 
@@ -449,20 +451,19 @@ void Viewer::toggleNavMeshVisualization() {
   }
 }
 
-Magnum::Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
-                                         const Magnum::Vector2i& position) {
+Mn::Vector3 Viewer::positionOnSphere(Mn::SceneGraph::Camera3D& camera,
+                                     const Mn::Vector2i& position) {
   // Convert from window to frame coordinates.
-  Magnum::Vector2 framePosition =
-      (Magnum::Vector2{position} * Magnum::Vector2{framebufferSize()}) /
-      Magnum::Vector2{windowSize()};
-  const Magnum::Vector2 positionNormalized =
-      framePosition / Magnum::Vector2{camera.viewport()} -
-      Magnum::Vector2{0.5f};
-  const Magnum::Float length = positionNormalized.length();
-  const Magnum::Vector3 result(
-      length > 1.0f ? Magnum::Vector3(positionNormalized, 0.0f)
-                    : Magnum::Vector3(positionNormalized, 1.0f - length));
-  return (result * Magnum::Vector3::yScale(-1.0f)).normalized();
+  Mn::Vector2 framePosition =
+      (Mn::Vector2{position} * Mn::Vector2{framebufferSize()}) /
+      Mn::Vector2{windowSize()};
+  const Mn::Vector2 positionNormalized =
+      framePosition / Mn::Vector2{camera.viewport()} - Mn::Vector2{0.5f};
+  const Mn::Float length = positionNormalized.length();
+  const Mn::Vector3 result(
+      length > 1.0f ? Mn::Vector3(positionNormalized, 0.0f)
+                    : Mn::Vector3(positionNormalized, 1.0f - length));
+  return (result * Mn::Vector3::yScale(-1.0f)).normalized();
 }
 
 void Viewer::drawEvent() {
@@ -487,8 +488,8 @@ void Viewer::drawEvent() {
   }
 
   if (debugBullet_) {
-    Magnum::Matrix4 camM(renderCamera_->cameraMatrix());
-    Magnum::Matrix4 projM(renderCamera_->projectionMatrix());
+    Mn::Matrix4 camM(renderCamera_->cameraMatrix());
+    Mn::Matrix4 projM(renderCamera_->projectionMatrix());
 
     physicsManager_->debugDraw(projM * camM);
   }
@@ -501,7 +502,7 @@ void Viewer::drawEvent() {
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
                      ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(2.0);
-    ImGui::Text("%.1f FPS", Magnum::Double(ImGui::GetIO().Framerate));
+    ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = sceneGraph.getDrawables().size();
     ImGui::Text("%u drawables", total);
     ImGui::Text("%u culled", total - visibles);
@@ -532,7 +533,7 @@ void Viewer::drawEvent() {
 void Viewer::viewportEvent(ViewportEvent& event) {
   Mn::GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
   renderCamera_->setViewport(event.windowSize());
-  imgui_.relayout(Magnum::Vector2{event.windowSize()} / event.dpiScaling(),
+  imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
 }
 
@@ -545,7 +546,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
 
 void Viewer::mouseReleaseEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Left)
-    previousPosition_ = Magnum::Vector3();
+    previousPosition_ = Mn::Vector3();
 
   event.setAccepted();
 }
@@ -572,15 +573,14 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
     return;
   }
 
-  const Magnum::Vector3 currentPosition =
+  const Mn::Vector3 currentPosition =
       positionOnSphere(*renderCamera_, event.position());
-  const Magnum::Vector3 axis =
-      Magnum::Math::cross(previousPosition_, currentPosition);
+  const Mn::Vector3 axis = Mn::Math::cross(previousPosition_, currentPosition);
 
   if (previousPosition_.length() < 0.001f || axis.length() < 0.001f) {
     return;
   }
-  const auto angle = Magnum::Math::angle(previousPosition_, currentPosition);
+  const auto angle = Mn::Math::angle(previousPosition_, currentPosition);
   renderCamera_->node().rotate(-angle, axis.normalized());
   previousPosition_ = currentPosition;
 
@@ -616,7 +616,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Nine:
       if (pathfinder_->isLoaded()) {
         const esp::vec3f position = pathfinder_->getRandomNavigablePoint();
-        agentBodyNode_->setTranslation(Magnum::Vector3(position));
+        agentBodyNode_->setTranslation(Mn::Vector3(position));
       }
       break;
     case KeyEvent::Key::A:
@@ -675,8 +675,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       toggleNavMeshVisualization();
       break;
     case KeyEvent::Key::I:
-      Magnum::DebugTools::screenshot(Mn::GL::defaultFramebuffer,
-                                     "test_image_save.png");
+      Mn::DebugTools::screenshot(Mn::GL::defaultFramebuffer,
+                                 "test_image_save.png");
       break;
     case KeyEvent::Key::B: {
       // toggle bounding box on objects
