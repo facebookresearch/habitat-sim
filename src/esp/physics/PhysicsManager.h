@@ -810,7 +810,7 @@ class PhysicsManager {
    * instances of objects.
    * @return The initialization settings of the specified object instance.
    */
-  const assets::PhysicsObjectAttributes& getInitializationAttributes(
+  const assets::PhysicsObjectAttributes::ptr getInitializationAttributes(
       const int physObjectID) const;
 
  protected:
@@ -860,7 +860,7 @@ class PhysicsManager {
   virtual bool makeAndAddRigidObject(
       int newObjectID,
       const std::vector<assets::CollisionMeshData>& meshGroup,
-      assets::PhysicsObjectAttributes physicsObjectAttributes,
+      assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
       scene::SceneNode* objectNode);
 
   /** @brief A pointer to a @ref esp::assets::ResourceManager which holds assets
