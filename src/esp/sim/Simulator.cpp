@@ -340,6 +340,15 @@ bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
   return false;
 }
 
+physics::VelocityControl::ptr Simulator::getObjectVelocityControl(
+    const int objectID,
+    const int sceneID) const {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getVelocityControl(objectID);
+  }
+  return nullptr;
+}
+
 // apply forces and torques to objects
 void Simulator::applyTorque(const Magnum::Vector3& tau,
                             const int objectID,

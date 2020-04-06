@@ -10,7 +10,8 @@ namespace physics {
 
 RigidObject::RigidObject(scene::SceneNode* rigidBodyNode)
     : Magnum::SceneGraph::AbstractFeature3D(*rigidBodyNode),
-      visualNode_(&rigidBodyNode->createChild()) {}
+      visualNode_(&rigidBodyNode->createChild()),
+      velControl_(VelocityControl::create()) {}
 
 bool RigidObject::initializeScene(
     const assets::PhysicsSceneAttributes&,

@@ -147,33 +147,33 @@ void BulletPhysicsManager::stepPhysics(double dt) {
 
   // set specified control velocities
   for (auto& objectItr : existingObjects_) {
-    VelocityControl& velControl = objectItr.second->getVelocityControl();
+    VelocityControl::ptr velControl = objectItr.second->getVelocityControl();
     if (objectItr.second->getMotionType() == MotionType::KINEMATIC) {
       // kinematic velocity control intergration
-      if (velControl.controllingAngVel || velControl.controllingLinVel) {
+      if (velControl->controllingAngVel || velControl->controllingLinVel) {
         scene::SceneNode& objectSceneNode = objectItr.second->node();
-        objectSceneNode.setTransformation(velControl.integrateTransform(
+        objectSceneNode.setTransformation(velControl->integrateTransform(
             dt, objectSceneNode.transformation()));
         objectItr.second->setActive();
       }
     } else if (objectItr.second->getMotionType() == MotionType::DYNAMIC) {
-      if (velControl.controllingLinVel) {
-        if (velControl.linVelIsLocal) {
+      if (velControl->controllingLinVel) {
+        if (velControl->linVelIsLocal) {
           setLinearVelocity(objectItr.first,
                             objectItr.second->node().rotation().transformVector(
-                                velControl.linVel));
+                                velControl->linVel));
         } else {
-          setLinearVelocity(objectItr.first, velControl.linVel);
+          setLinearVelocity(objectItr.first, velControl->linVel);
         }
       }
-      if (velControl.controllingAngVel) {
-        if (velControl.angVelIsLocal) {
+      if (velControl->controllingAngVel) {
+        if (velControl->angVelIsLocal) {
           setAngularVelocity(
               objectItr.first,
               objectItr.second->node().rotation().transformVector(
-                  velControl.angVel));
+                  velControl->angVel));
         } else {
-          setAngularVelocity(objectItr.first, velControl.angVel);
+          setAngularVelocity(objectItr.first, velControl->angVel);
         }
       }
     }

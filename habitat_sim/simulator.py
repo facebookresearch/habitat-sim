@@ -327,6 +327,9 @@ class Simulator:
     def get_rotation(self, object_id, scene_id=0):
         return self._sim.get_rotation(object_id, scene_id)
 
+    def get_object_velocity_control(self, object_id, scene_id=0):
+        return self._sim.get_velocity_control(object_id, scene_id)
+
     def apply_force(self, force, relative_position, object_id, scene_id=0):
         self._sim.apply_force(force, relative_position, object_id, scene_id)
 

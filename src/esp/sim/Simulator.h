@@ -11,6 +11,7 @@
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/RigidObject.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
@@ -27,9 +28,6 @@ class SemanticScene;
 namespace gfx {
 class Renderer;
 }  // namespace gfx
-namespace physics {
-enum class MotionType : int;
-}  // namespace physics
 }  // namespace esp
 
 namespace esp {
@@ -202,6 +200,13 @@ class Simulator {
   bool setObjectMotionType(const esp::physics::MotionType& motionType,
                            const int objectID,
                            const int sceneID = 0);
+
+  /**@brief Retrieves a shared pointer to the VelocityControl struct for this
+   * object.
+   */
+  physics::VelocityControl::ptr getObjectVelocityControl(
+      const int objectID,
+      const int sceneID = 0) const;
 
   /**
    * @brief Apply torque to an object. See @ref
