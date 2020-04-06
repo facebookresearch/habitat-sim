@@ -67,6 +67,13 @@ class Viewer : public Magnum::Platform::Application {
 
   // Interactive functions
   void addObject(std::string configFile);
+
+  // add template-derived object
+  void addTemplateObject();
+
+  // add primiitive object
+  void addPrimitiveObject();
+
   void pokeLastObject();
   void pushLastObject();
 
@@ -318,7 +325,31 @@ void Viewer::addObject(std::string configFile) {
   physicsManager_->setRotation(physObjectID, esp::core::randomRotation());
 
   objectIDs_.push_back(physObjectID);
-}
+}  // addObject
+
+// add template derived object from keypress
+void Viewer::addTemplateObject() {
+  if (physicsManager_ != nullptr) {
+    int numObjTemplates = resourceManager_.getNumLibraryObjects();
+    if (numObjTemplates > 0) {
+      int randObjectID = rand() % numObjTemplates;
+      addObject(resourceManager_.getObjectConfig(randObjectID));
+    } else
+      LOG(WARNING) << "No objects loaded, can't add any";
+  } else
+    LOG(WARNING) << "Run the app with --enable-physics in order to add "
+                    "templated-based physically modeled objects";
+}  // addTemplateObject
+
+// add synthesized primiitive object from keypress
+void Viewer::addPrimitiveObject() {
+  // TODO : use this to implement synthesizing rendered physical objects
+  if (physicsManager_ != nullptr) {
+    LOG(WARNING) << "Physically modelled primitives are not yet implemented.";
+  } else
+    LOG(WARNING) << "Run the app with --enable-physics in order to add "
+                    "physically modelled primitives";
+}  // addPrimitiveObject
 
 void Viewer::removeLastObject() {
   if (physicsManager_ == nullptr || objectIDs_.size() == 0)
@@ -579,15 +610,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       controls_(*rgbSensorNode_, "lookDown", lookSensitivity, false);
       agentMoved = true;
       break;
-    case KeyEvent::Key::Eight: {
-      // TODO : use this to implement synthesizing rendered physical objects
-      if (physicsManager_ != nullptr) {
-        LOG(WARNING)
-            << "Physically modelled primitives are not yet implemented.";
-      } else
-        LOG(WARNING) << "Run the app with --enable-physics in order to add "
-                        "physically modelled primitives";
-    } break;
+    case KeyEvent::Key::Eight:
+      addPrimitiveObject();
+      break;
     case KeyEvent::Key::Nine:
       if (pathfinder_->isLoaded()) {
         const esp::vec3f position = pathfinder_->getRandomNavigablePoint();
@@ -624,18 +649,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::C:
       showFPS_ = !showFPS_;
       break;
-    case KeyEvent::Key::O: {
-      if (physicsManager_ != nullptr) {
-        int numObjTemplates = resourceManager_.getNumLibraryObjects();
-        if (numObjTemplates > 0) {
-          int randObjectID = rand() % numObjTemplates;
-          addObject(resourceManager_.getObjectConfig(randObjectID));
-        } else
-          LOG(WARNING) << "No objects loaded, can't add any";
-      } else
-        LOG(WARNING)
-            << "Run the app with --enable-physics in order to add objects";
-    } break;
+    case KeyEvent::Key::O:
+      addTemplateObject();
+      break;
     case KeyEvent::Key::P:
       pokeLastObject();
       break;
