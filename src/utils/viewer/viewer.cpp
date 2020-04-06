@@ -44,13 +44,13 @@
 constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;
 constexpr float rgbSensorHeight = 1.5f;
+// for ease of access
+namespace Cr = Corrade;
+namespace Mn = Magnum;
 
 namespace {
 
-// for ease of access
-namespace MnGL = ::Magnum::GL;
-namespace CorrUtil = ::Corrade::Utility;
-namespace MathLits = ::Magnum::Math::Literals;
+using namespace Mn::Math::Literals;
 
 class Viewer : public Magnum::Platform::Application {
  public:
@@ -157,7 +157,7 @@ Viewer::Viewer(const Arguments& arguments)
       pathfinder_(esp::nav::PathFinder::create()),
       controls_(),
       previousPosition_() {
-  CorrUtil::Arguments args;
+  Cr::Utility::Arguments args;
 #ifdef CORRADE_TARGET_EMSCRIPTEN
   args.addNamedArgument("scene")
 #else
@@ -179,7 +179,7 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("recompute-navmesh", "programmatically generate scene navmesh")
       .parse(arguments.argc, arguments.argv);
 
-  const auto viewportSize = MnGL::defaultFramebuffer.viewport().size();
+  const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
 
   imgui_ = Magnum::ImGuiIntegration::Context(
       Magnum::Vector2{windowSize()} / dpiScaling(), windowSize(),
@@ -188,15 +188,15 @@ Viewer::Viewer(const Arguments& arguments)
   /* Set up proper blending to be used by ImGui. There's a great chance
      you'll need this exact behavior for the rest of your scene. If not, set
      this only for the drawFrame() call. */
-  MnGL::Renderer::setBlendEquation(MnGL::Renderer::BlendEquation::Add,
-                                   MnGL::Renderer::BlendEquation::Add);
-  MnGL::Renderer::setBlendFunction(
-      MnGL::Renderer::BlendFunction::SourceAlpha,
-      MnGL::Renderer::BlendFunction::OneMinusSourceAlpha);
+  Mn::GL::Renderer::setBlendEquation(Mn::GL::Renderer::BlendEquation::Add,
+                                     Mn::GL::Renderer::BlendEquation::Add);
+  Mn::GL::Renderer::setBlendFunction(
+      Mn::GL::Renderer::BlendFunction::SourceAlpha,
+      Mn::GL::Renderer::BlendFunction::OneMinusSourceAlpha);
 
   // Setup renderer and shader defaults
-  MnGL::Renderer::enable(MnGL::Renderer::Feature::DepthTest);
-  MnGL::Renderer::enable(MnGL::Renderer::Feature::FaceCulling);
+  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
+  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
 
   int sceneID = sceneManager_.initSceneGraph();
   sceneID_.push_back(sceneID);
@@ -215,7 +215,7 @@ Viewer::Viewer(const Arguments& arguments)
 
   if (args.isSet("enable-physics")) {
     std::string physicsConfigFilename = args.value("physics-config");
-    if (!CorrUtil::Directory::exists(physicsConfigFilename)) {
+    if (!Cr::Utility::Directory::exists(physicsConfigFilename)) {
       LOG(FATAL)
           << physicsConfigFilename
           << " was not found, specify an existing file in --physics-config";
@@ -266,7 +266,7 @@ Viewer::Viewer(const Arguments& arguments)
     // we load the pre-computed navmesh for the ptex mesh to avoid
     // online computation.
     // for long term solution, see issue #430
-    if (CorrUtil::String::endsWith(file, "mesh.ply")) {
+    if (Cr::Utility::String::endsWith(file, "mesh.ply")) {
       navmeshFilename = Corrade::Utility::Directory::join(
           Corrade::Utility::Directory::path(file) + "/habitat",
           "mesh_semantic.navmesh");
@@ -466,8 +466,8 @@ Magnum::Vector3 Viewer::positionOnSphere(Magnum::SceneGraph::Camera3D& camera,
 }
 
 void Viewer::drawEvent() {
-  MnGL::defaultFramebuffer.clear(MnGL::FramebufferClear::Color |
-                                 MnGL::FramebufferClear::Depth);
+  Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
+                                   Mn::GL::FramebufferClear::Depth);
   if (sceneID_.size() <= 0)
     return;
 
@@ -510,19 +510,19 @@ void Viewer::drawEvent() {
 
   /* Set appropriate states. If you only draw ImGui, it is sufficient to
      just enable blending and scissor test in the constructor. */
-  MnGL::Renderer::enable(MnGL::Renderer::Feature::Blending);
-  MnGL::Renderer::enable(MnGL::Renderer::Feature::ScissorTest);
-  MnGL::Renderer::disable(MnGL::Renderer::Feature::FaceCulling);
-  MnGL::Renderer::disable(MnGL::Renderer::Feature::DepthTest);
+  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
+  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::ScissorTest);
+  Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
+  Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::DepthTest);
 
   imgui_.drawFrame();
 
   /* Reset state. Only needed if you want to draw something else with
      different state after. */
-  MnGL::Renderer::enable(MnGL::Renderer::Feature::DepthTest);
-  MnGL::Renderer::enable(MnGL::Renderer::Feature::FaceCulling);
-  MnGL::Renderer::disable(MnGL::Renderer::Feature::ScissorTest);
-  MnGL::Renderer::disable(MnGL::Renderer::Feature::Blending);
+  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
+  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
+  Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::ScissorTest);
+  Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
 
   swapBuffers();
   timeline_.nextFrame();
@@ -530,7 +530,7 @@ void Viewer::drawEvent() {
 }
 
 void Viewer::viewportEvent(ViewportEvent& event) {
-  MnGL::defaultFramebuffer.setViewport({{}, framebufferSize()});
+  Mn::GL::defaultFramebuffer.setViewport({{}, framebufferSize()});
   renderCamera_->setViewport(event.windowSize());
   imgui_.relayout(Magnum::Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
@@ -675,7 +675,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       toggleNavMeshVisualization();
       break;
     case KeyEvent::Key::I:
-      Magnum::DebugTools::screenshot(MnGL::defaultFramebuffer,
+      Magnum::DebugTools::screenshot(Mn::GL::defaultFramebuffer,
                                      "test_image_save.png");
       break;
     case KeyEvent::Key::B: {
