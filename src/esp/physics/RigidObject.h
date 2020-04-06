@@ -183,7 +183,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @return true if initialized successfully, false otherwise.
    */
   virtual bool initializeObject(
-      const assets::PhysicsObjectAttributes& physicsObjectAttributes,
+      const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /**
@@ -561,7 +561,8 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * instances of objects.
    * @return The initialization settings of this object instance.
    */
-  const assets::PhysicsObjectAttributes& getInitializationAttributes() const {
+  const assets::PhysicsObjectAttributes::ptr getInitializationAttributes()
+      const {
     return initializationAttributes_;
   };
 
@@ -596,7 +597,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Saved attributes when the object was initialized.
    */
-  assets::PhysicsObjectAttributes initializationAttributes_;
+  assets::PhysicsObjectAttributes::ptr initializationAttributes_;
 
   /** @brief Used to synchronize other simulator's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic

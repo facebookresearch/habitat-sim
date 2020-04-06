@@ -25,7 +25,24 @@ namespace assets {
  */
 class PhysicsObjectAttributes : public esp::core::Configuration {
  public:
-  PhysicsObjectAttributes();
+  PhysicsObjectAttributes() : Configuration() {
+    // fill necessary attribute defaults
+    setMass(1.0);
+    setMargin(0.01);
+    setScale({1.0, 1.0, 1.0});
+    setCOM({0, 0, 0});
+    setInertia({0, 0, 0});
+    setFrictionCoefficient(0.5);
+    setRestitutionCoefficient(0.1);
+    setLinearDamping(0.2);
+    setAngularDamping(0.2);
+    setOriginHandle("");
+    setRenderMeshHandle("");
+    setCollisionMeshHandle("");
+    setBoundingBoxCollisions(false);
+    setJoinCollisionMeshes(true);
+    setRequiresLighting(true);
+  }
 
   // default value getter/setter methods
 
@@ -137,7 +154,13 @@ class PhysicsObjectAttributes : public esp::core::Configuration {
 //! attributes for a single physical scene
 class PhysicsSceneAttributes : public esp::core::Configuration {
  public:
-  PhysicsSceneAttributes();
+  PhysicsSceneAttributes() : Configuration() {
+    setGravity({0, -9.8, 0});
+    setFrictionCoefficient(0.4);
+    setRestitutionCoefficient(0.05);
+    setRenderMeshHandle("");
+    setCollisionMeshHandle("");
+  }
 
   inline void setGravity(const Magnum::Vector3& gravity) {
     setVec3("gravity", gravity);
@@ -179,7 +202,11 @@ class PhysicsSceneAttributes : public esp::core::Configuration {
 //! attributes for a single physics manager
 class PhysicsManagerAttributes : public esp::core::Configuration {
  public:
-  PhysicsManagerAttributes();
+  PhysicsManagerAttributes() : Configuration() {
+    setSimulator("none");
+    setTimestep(0.01);
+    setMaxSubsteps(10);
+  }
 
   inline void setSimulator(const std::string& simulator) {
     setString("simulator", simulator);

@@ -247,7 +247,7 @@ class ResourceManager {
    * @return The index in the @ref physicsObjTemplateLibrary_ of object
    * template.
    */
-  int loadObjectTemplate(PhysicsObjectAttributes& objectTemplate,
+  int loadObjectTemplate(PhysicsObjectAttributes::ptr objectTemplate,
                          const std::string objectTemplateHandle);
 
   //======== Accessor functions ========
@@ -307,7 +307,7 @@ class ResourceManager {
    * physicsObjTemplateLibrary_.
    * @return A mutable reference to the object template for the asset.
    */
-  PhysicsObjectAttributes& getPhysicsObjectAttributes(
+  PhysicsObjectAttributes::ptr getPhysicsObjectAttributes(
       const std::string& configFile);
 
   /**
@@ -320,7 +320,7 @@ class ResourceManager {
    * physicsObjTemplateLibrary_.
    * @return A mutable reference to the object template for the asset.
    */
-  PhysicsObjectAttributes& getPhysicsObjectAttributes(
+  PhysicsObjectAttributes::ptr getPhysicsObjectAttributes(
       const int objectTemplateID);
 
   /**
@@ -736,7 +736,8 @@ class ResourceManager {
    * new objects with common parameters. For example:
    * "data/objects/cheezit.phys_properties.json" -> physicalMetaData
    */
-  std::map<std::string, PhysicsObjectAttributes> physicsObjTemplateLibrary_;
+  std::map<std::string, PhysicsObjectAttributes::ptr>
+      physicsObjTemplateLibrary_;
 
   /**
    * @brief Maps string keys (typically property filenames) to physical scene
