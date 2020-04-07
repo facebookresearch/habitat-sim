@@ -1,3 +1,4 @@
+# [import]
 import math
 
 import magnum as mn
@@ -8,7 +9,9 @@ import habitat_sim
 from habitat_sim.gfx import LightInfo, LightPositionModel
 from habitat_sim.utils.common import quat_from_angle_axis, quat_to_magnum
 
+# [/import]
 
+# [helpers]
 def show_img(data):
     plt.figure(figsize=(12, 12))
     plt.imshow(data, interpolation="nearest")
@@ -29,6 +32,9 @@ x_axis = np.array([1, 0, 0])
 z_axis = np.array([0, 0, 1])
 y_axis = np.array([0, 1, 0])
 
+# [/helpers]
+
+# [initialization]
 # simulator configuration
 backend_cfg = habitat_sim.SimulatorConfiguration()
 backend_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
@@ -53,16 +59,23 @@ agent_state.rotation = quat_from_angle_axis(
 agent = sim.initialize_agent(0, agent_state)
 agent_transform = agent.scene_node.transformation_matrix()
 
-# e.g. 1
+# [/initialization]
+
+# [example 1]
 show_obs(sim)
 
-# e.g. 2
+# [/example 1]
+
+
+# [example 2]
 id_1 = sim.add_object(1)
 sim.set_translation(agent_transform.transform_point([0.3, 0.9, -1.8]), id_1)
 
 show_obs(sim)
 
-# e.g. 3
+# [/example 2]
+
+# [example 3]
 my_default_lighting = [
     LightInfo(position=[2.0, 2.0, 1.0], model=LightPositionModel.CAMERA)
 ]
@@ -71,18 +84,24 @@ sim.set_light_setup(my_default_lighting)
 
 show_obs(sim)
 
-# e.g. 4
+# [/example 3]
+
+# [example 4]
 id_2 = sim.add_object(2)
 sim.set_rotation(mn.Quaternion.rotation(mn.Deg(80), mn.Vector3.y_axis()), id_2)
 sim.set_translation(agent_transform.transform_point([-0.6, 0.9, -1.5]), id_2)
 
 show_obs(sim)
 
-# e.g. 5
+# [/example 4]
+
+# [example 5]
 light_setup_2 = [LightInfo(position=[8.0, 1.5, 0.0], model=LightPositionModel.GLOBAL)]
 sim.set_light_setup(light_setup_2, "my_custom_lighting")
 
-# e.g. 6
+# [/example 5]
+
+# [example 6]
 remove_all_objects(sim)
 
 id_1 = sim.add_object(2, light_setup_key="my_custom_lighting")
@@ -103,10 +122,14 @@ sim.set_translation(agent_transform.transform_point([1.0, 1.05, -1.75]), id_2)
 
 show_obs(sim)
 
-# e.g. 7
+# [/example 6]
+
+# [example 7]
 existing_light_setup = sim.get_light_setup("my_custom_lighting")
 
-# e.g. 8
+# [/example 7]
+
+# [example 8]
 new_light_setup = existing_light_setup + [
     LightInfo(
         position=[0.0, 0.0, 0.0], color=[0.8, 0.8, 0.7], model=LightPositionModel.CAMERA
@@ -116,7 +139,11 @@ sim.set_light_setup(new_light_setup, "my_custom_lighting")
 
 show_obs(sim)
 
-# e.g. 9
+# [/example 8]
+
+# [example 9]
 sim.set_object_light_setup(id_1, habitat_sim.gfx.DEFAULT_LIGHTING_KEY)
 
 show_obs(sim)
+
+# [/example 9]
