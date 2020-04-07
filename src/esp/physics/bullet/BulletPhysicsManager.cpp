@@ -19,7 +19,7 @@ BulletPhysicsManager::~BulletPhysicsManager() {
   staticSceneObject_.reset(nullptr);
 }
 
-bool BulletPhysicsManager::initPhysics_Finalize(
+bool BulletPhysicsManager::initPhysicsFinalize(
     const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes) {
   activePhysSimLib_ = BULLET;
 
@@ -46,7 +46,7 @@ bool BulletPhysicsManager::initPhysics_Finalize(
 
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
-bool BulletPhysicsManager::addScene_Finalize(
+bool BulletPhysicsManager::addSceneFinalize(
     const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(

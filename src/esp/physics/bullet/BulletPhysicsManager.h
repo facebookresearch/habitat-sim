@@ -166,13 +166,13 @@ class BulletPhysicsManager : public PhysicsManager {
  protected:
   //============ Initialization =============
   /**
-   * @brief Finalize physics nitialization: Setup staticSceneObject_ and
+   * @brief Finalize physics initialization: Setup staticSceneObject_ and
    * initialize any other physics-related values.
    * @param physicsManagerAttributes A structure containing values for physical
    * parameters necessary to initialize the physical scene and simulator.
    */
-  bool initPhysics_Finalize(const assets::PhysicsManagerAttributes::ptr
-                                physicsManagerAttributes) override;
+  bool initPhysicsFinalize(const assets::PhysicsManagerAttributes::ptr
+                               physicsManagerAttributes) override;
 
   //============ Object/Scene Instantiation =============
   /**
@@ -185,7 +185,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
-  bool addScene_Finalize(
+  bool addSceneFinalize(
       const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup) override;
 

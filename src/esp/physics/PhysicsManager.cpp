@@ -19,11 +19,11 @@ bool PhysicsManager::initPhysics(
   fixedTimeStep_ = physicsManagerAttributes->getTimestep();
 
   //! Create new scene node and set up any physics-related variables
-  initialized_ = initPhysics_Finalize(physicsManagerAttributes);
+  initialized_ = initPhysicsFinalize(physicsManagerAttributes);
   return initialized_;
 }
 
-bool PhysicsManager::initPhysics_Finalize(
+bool PhysicsManager::initPhysicsFinalize(
     const assets::PhysicsManagerAttributes::ptr) {
   //! Create new scene node
   staticSceneObject_ =
@@ -46,11 +46,11 @@ bool PhysicsManager::addScene(
   }
 
   //! Initialize scene
-  bool sceneSuccess = addScene_Finalize(physicsSceneAttributes, meshGroup);
+  bool sceneSuccess = addSceneFinalize(physicsSceneAttributes, meshGroup);
   return sceneSuccess;
 }
 
-bool PhysicsManager::addScene_Finalize(
+bool PhysicsManager::addSceneFinalize(
     const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   //! Initialize scene
