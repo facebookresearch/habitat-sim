@@ -32,7 +32,7 @@ BulletRigidObject::BulletRigidObject(scene::SceneNode* rigidBodyNode)
     : RigidObject{rigidBodyNode}, MotionState(*rigidBodyNode){};
 
 bool BulletRigidObject::initializeScene(
-    const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
     const assets::MeshMetaData& metaData,
     const std::vector<assets::CollisionMeshData>& meshGroup,
     std::shared_ptr<btMultiBodyDynamicsWorld> bWorld) {
@@ -47,8 +47,8 @@ bool BulletRigidObject::initializeScene(
 
   constructBulletSceneFromMeshes(Magnum::Matrix4{}, meshGroup, metaData.root);
   for (auto& object : bSceneCollisionObjects_) {
-    object->setFriction(physicsSceneAttributes.getFrictionCoefficient());
-    object->setRestitution(physicsSceneAttributes.getRestitutionCoefficient());
+    object->setFriction(physicsSceneAttributes->getFrictionCoefficient());
+    object->setRestitution(physicsSceneAttributes->getRestitutionCoefficient());
     bWorld->addCollisionObject(object.get());
   }
 

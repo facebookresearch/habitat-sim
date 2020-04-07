@@ -10,10 +10,6 @@ set(gfx_SOURCES
   LightSetup.h
   MaterialData.h
   magnum.h
-  PrimitiveIDDrawable.cpp
-  PrimitiveIDDrawable.h
-  PrimitiveIDShader.cpp
-  PrimitiveIDShader.h
   RenderCamera.cpp
   RenderCamera.h
   Renderer.cpp

@@ -12,17 +12,22 @@ namespace physics {
 
 bool PhysicsManager::initPhysics(
     scene::SceneNode* node,
-    const assets::PhysicsManagerAttributes& physicsManagerAttributes) {
+    const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes) {
   physicsNode_ = node;
 
   // Copy over relevant configuration
-  fixedTimeStep_ = physicsManagerAttributes.getTimestep();
+  fixedTimeStep_ = physicsManagerAttributes->getTimestep();
 
+  //! Create new scene node and set up any physics-related variables
+  initialized_ = initPhysicsFinalize(physicsManagerAttributes);
+  return initialized_;
+}
+
+bool PhysicsManager::initPhysicsFinalize(
+    const assets::PhysicsManagerAttributes::ptr) {
   //! Create new scene node
   staticSceneObject_ =
       physics::RigidObject::create_unique(&physicsNode_->createChild());
-  initialized_ = true;
-
   return true;
 }
 
@@ -31,7 +36,7 @@ PhysicsManager::~PhysicsManager() {
 }
 
 bool PhysicsManager::addScene(
-    const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
   for (const assets::CollisionMeshData& meshData : meshGroup) {
@@ -40,6 +45,14 @@ bool PhysicsManager::addScene(
     }
   }
 
+  //! Initialize scene
+  bool sceneSuccess = addSceneFinalize(physicsSceneAttributes, meshGroup);
+  return sceneSuccess;
+}
+
+bool PhysicsManager::addSceneFinalize(
+    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
+    const std::vector<assets::CollisionMeshData>& meshGroup) {
   //! Initialize scene
   bool sceneSuccess =
       staticSceneObject_->initializeScene(physicsSceneAttributes, meshGroup);

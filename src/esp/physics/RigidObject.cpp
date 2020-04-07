@@ -14,7 +14,7 @@ RigidObject::RigidObject(scene::SceneNode* rigidBodyNode)
       velControl_(VelocityControl::create()) {}
 
 bool RigidObject::initializeScene(
-    const assets::PhysicsSceneAttributes&,
+    const assets::PhysicsSceneAttributes::ptr,
     const std::vector<assets::CollisionMeshData>&) {
   if (rigidObjectType_ != RigidObjectType::NONE) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";

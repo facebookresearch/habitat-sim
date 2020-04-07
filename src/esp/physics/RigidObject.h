@@ -174,7 +174,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @return true if initialized successfully, false otherwise.
    */
   virtual bool initializeScene(
-      const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /**
