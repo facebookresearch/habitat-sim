@@ -38,8 +38,8 @@ bool BulletPhysicsManager::initPhysicsFinalize(
   bWorld_->setGravity(btVector3(physicsManagerAttributes->getVec3("gravity")));
 
   //! Create new scene node
-  staticSceneObject_ =
-      physics::BulletRigidObject::create_unique(&physicsNode_->createChild());
+  staticSceneObject_ = physics::BulletRigidObject::create_unique(
+      &physicsNode_->createChild(), bWorld_);
 
   return true;
 }
@@ -49,13 +49,9 @@ bool BulletPhysicsManager::initPhysicsFinalize(
 bool BulletPhysicsManager::addSceneFinalize(
     const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
-  const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
-      physicsSceneAttributes->getCollisionMeshHandle());
-
   //! Initialize scene
-  bool sceneSuccess = static_cast<BulletRigidObject*>(staticSceneObject_.get())
-                          ->initializeScene(physicsSceneAttributes, metaData,
-                                            meshGroup, bWorld_);
+  bool sceneSuccess = staticSceneObject_->initializeScene(
+      resourceManager_, physicsSceneAttributes, meshGroup);
 
   return sceneSuccess;
 }
@@ -65,11 +61,9 @@ bool BulletPhysicsManager::makeAndAddRigidObject(
     const std::vector<assets::CollisionMeshData>& meshGroup,
     assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
     scene::SceneNode* objectNode) {
-  auto ptr = physics::BulletRigidObject::create_unique(objectNode);
-  const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
-      physicsObjectAttributes->getCollisionMeshHandle());
-  bool objSuccess = ptr->initializeObject(physicsObjectAttributes, bWorld_,
-                                          metaData, meshGroup);
+  auto ptr = physics::BulletRigidObject::create_unique(objectNode, bWorld_);
+  bool objSuccess = ptr->initializeObject(resourceManager_,
+                                          physicsObjectAttributes, meshGroup);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }

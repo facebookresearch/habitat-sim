@@ -13,8 +13,9 @@ RigidObject::RigidObject(scene::SceneNode* rigidBodyNode)
       visualNode_(&rigidBodyNode->createChild()) {}
 
 bool RigidObject::initializeScene(
-    const assets::PhysicsSceneAttributes::ptr,
-    const std::vector<assets::CollisionMeshData>&) {
+    const assets::ResourceManager* resMgr,
+    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
+    const std::vector<assets::CollisionMeshData>& meshGroup) {
   if (rigidObjectType_ != RigidObjectType::NONE) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
     return false;
@@ -24,12 +25,20 @@ bool RigidObject::initializeScene(
   rigidObjectType_ = RigidObjectType::SCENE;
   objectMotionType_ = MotionType::STATIC;
 
+  return initializeSceneFinalize(resMgr, physicsSceneAttributes, meshGroup);
+}
+
+bool RigidObject::initializeSceneFinalize(
+    const assets::ResourceManager*,
+    const assets::PhysicsSceneAttributes::ptr,
+    const std::vector<assets::CollisionMeshData>&) {
   return true;
 }
 
 bool RigidObject::initializeObject(
+    const assets::ResourceManager* resMgr,
     const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-    const std::vector<assets::CollisionMeshData>&) {
+    const std::vector<assets::CollisionMeshData>& meshGroup) {
   // TODO (JH): Handling static/kinematic object type
   if (rigidObjectType_ != RigidObjectType::NONE) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
@@ -38,11 +47,18 @@ bool RigidObject::initializeObject(
 
   //! Turn on scene flag
   rigidObjectType_ = RigidObjectType::OBJECT;
-  // default kineamtic unless a simulator is initialized...
-  objectMotionType_ = MotionType::KINEMATIC;
 
   initializationAttributes_ = physicsObjectAttributes;
 
+  return initializeObjectFinalize(resMgr, physicsObjectAttributes, meshGroup);
+}
+
+bool RigidObject::initializeObjectFinalize(
+    const assets::ResourceManager*,
+    const assets::PhysicsObjectAttributes::ptr,
+    const std::vector<assets::CollisionMeshData>&) {
+  // default kineamtic unless a simulator is initialized...
+  objectMotionType_ = MotionType::KINEMATIC;
   return true;
 }
 

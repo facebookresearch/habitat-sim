@@ -54,8 +54,8 @@ bool PhysicsManager::addSceneFinalize(
     const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   //! Initialize scene
-  bool sceneSuccess =
-      staticSceneObject_->initializeScene(physicsSceneAttributes, meshGroup);
+  bool sceneSuccess = staticSceneObject_->initializeScene(
+      resourceManager_, physicsSceneAttributes, meshGroup);
   return sceneSuccess;
 }
 
@@ -171,7 +171,8 @@ bool PhysicsManager::makeAndAddRigidObject(
     assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
     scene::SceneNode* objectNode) {
   auto ptr = physics::RigidObject::create_unique(objectNode);
-  bool objSuccess = ptr->initializeObject(physicsObjectAttributes, meshGroup);
+  bool objSuccess = ptr->initializeObject(resourceManager_,
+                                          physicsObjectAttributes, meshGroup);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }
