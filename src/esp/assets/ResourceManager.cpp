@@ -38,8 +38,6 @@
 
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
-#include "esp/gfx/PrimitiveIDDrawable.h"
-#include "esp/gfx/PrimitiveIDShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/physics/PhysicsManager.h"
@@ -73,6 +71,7 @@ namespace assets {
 constexpr char ResourceManager::NO_LIGHT_KEY[];
 constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
+constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
 
 ResourceManager::ResourceManager() {
   initDefaultLightSetups();
@@ -1012,6 +1011,18 @@ bool ResourceManager::loadInstanceMeshData(
     LOG(ERROR) << "loadInstanceMeshData only works with INSTANCE_MESH type!";
     return false;
   }
+
+#ifndef MAGNUM_BUILD_STATIC
+  Mn::PluginManager::Manager<Importer> manager;
+#else
+  // avoid using plugins that might depend on different library versions
+  Mn::PluginManager::Manager<Importer> manager{"nonexistent"};
+#endif
+
+  Cr::Containers::Pointer<Importer> importer;
+  CORRADE_INTERNAL_ASSERT(importer =
+                              manager.loadAndInstantiate("StanfordImporter"));
+
   // if this is a new file, load it and add it to the dictionary, create
   // shaders and add it to the shaderPrograms_
   const std::string& filename = info.filepath;
@@ -1019,10 +1030,10 @@ bool ResourceManager::loadInstanceMeshData(
     std::vector<GenericInstanceMeshData::uptr> instanceMeshes;
     if (splitSemanticMesh) {
       instanceMeshes =
-          GenericInstanceMeshData::fromPlySplitByObjectId(filename);
+          GenericInstanceMeshData::fromPlySplitByObjectId(*importer, filename);
     } else {
       GenericInstanceMeshData::uptr meshData =
-          GenericInstanceMeshData::fromPLY(filename);
+          GenericInstanceMeshData::fromPLY(*importer, filename);
       if (meshData)
         instanceMeshes.emplace_back(std::move(meshData));
     }
@@ -1058,8 +1069,9 @@ bool ResourceManager::loadInstanceMeshData(
 
     for (uint32_t iMesh = start; iMesh <= end; ++iMesh) {
       scene::SceneNode& node = parent->createChild();
-      node.addFeature<gfx::PrimitiveIDDrawable>(
-          *meshes_[iMesh]->getMagnumGLMesh(), shaderManager_, drawables);
+      node.addFeature<gfx::GenericDrawable>(
+          *meshes_[iMesh]->getMagnumGLMesh(), shaderManager_, NO_LIGHT_KEY,
+          PER_VERTEX_OBJECT_ID_MATERIAL_KEY, drawables);
 
       if (computeAbsoluteAABBs_) {
         staticDrawableInfo_.emplace_back(StaticDrawableInfo{node, iMesh});
@@ -1739,6 +1751,10 @@ void ResourceManager::initDefaultLightSetups() {
 void ResourceManager::initDefaultMaterials() {
   shaderManager_.set<gfx::MaterialData>(DEFAULT_MATERIAL_KEY,
                                         new gfx::PhongMaterialData{});
+  auto perVertexObjectId = new gfx::PhongMaterialData{};
+  perVertexObjectId->perVertexObjectId = true;
+  shaderManager_.set<gfx::MaterialData>(PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
+                                        perVertexObjectId);
   shaderManager_.setFallback<gfx::MaterialData>(new gfx::PhongMaterialData{});
 }
 

@@ -24,6 +24,7 @@ struct PhongMaterialData : public MaterialData {
   Magnum::Matrix3 textureMatrix;
   Magnum::GL::Texture2D *ambientTexture = nullptr, *diffuseTexture = nullptr,
                         *specularTexture = nullptr, *normalTexture = nullptr;
+  bool perVertexObjectId = false;
 
   ESP_SMART_POINTERS(PhongMaterialData)
 };

@@ -86,6 +86,11 @@ class ResourceManager {
   //! @brief The @ref ShaderManager key for the default @ref MaterialInfo
   static constexpr char DEFAULT_MATERIAL_KEY[] = "";
 
+  //! @brief The @ref ShaderManager key for @ref MaterialInfo with per-vertex
+  //! object ID
+  static constexpr char PER_VERTEX_OBJECT_ID_MATERIAL_KEY[] =
+      "per_vertex_object_id";
+
   /**
    * @brief Set whether textures should be compressed.
    * @param newVal New texture compression setting.
