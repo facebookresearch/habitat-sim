@@ -116,8 +116,14 @@ bool ResourceManager::loadScene(
       }
       // add a scene attributes for this filename or modify the existing one
       if (meshSuccess) {
-        // TODO: need this anymore?
-        physicsSceneLibrary_[info.filepath].setRenderMeshHandle(info.filepath);
+        const bool physSceneExists =
+            physicsSceneLibrary_.count(info.filepath) > 0;
+        if (!physSceneExists) {
+          auto physScenLib = PhysicsSceneAttributes::create();
+          physicsSceneLibrary_.emplace(info.filepath, physScenLib);
+        }
+        physicsSceneLibrary_.at(info.filepath)
+            ->setRenderMeshHandle(info.filepath);
       }
     }
   } else {
@@ -176,9 +182,9 @@ bool ResourceManager::loadScene(
     const Magnum::ResourceKey& lightSetup, /* = Mn::ResourceKey{NO_LIGHT_KEY} */
     std::string physicsFilename /* data/default.phys_scene_config.json */) {
   // In-memory representation of scene meta data
-  PhysicsManagerAttributes physicsManagerAttributes =
+  PhysicsManagerAttributes::ptr physicsManagerAttributes =
       loadPhysicsConfig(physicsFilename);
-  physicsManagerLibrary_[physicsFilename] = physicsManagerAttributes;
+  physicsManagerLibrary_.emplace(physicsFilename, physicsManagerAttributes);
   return loadScene(info, _physicsManager, physicsManagerAttributes, parent,
                    drawables, lightSetup);
 }
@@ -192,7 +198,7 @@ bool ResourceManager::loadScene(
 bool ResourceManager::loadScene(
     const AssetInfo& info,
     std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-    PhysicsManagerAttributes physicsManagerAttributes,
+    PhysicsManagerAttributes::ptr physicsManagerAttributes,
     scene::SceneNode* parent, /* = nullptr */
     DrawableGroup* drawables, /* = nullptr */
     const Magnum::ResourceKey&
@@ -202,7 +208,7 @@ bool ResourceManager::loadScene(
 
   //! PHYSICS INIT: Use the above config to initialize physics engine
   bool defaultToNoneSimulator = true;
-  if (physicsManagerAttributes.getSimulator().compare("bullet") == 0) {
+  if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
 #ifdef ESP_BUILD_WITH_BULLET
     _physicsManager.reset(new physics::BulletPhysicsManager(this));
     defaultToNoneSimulator = false;
@@ -219,12 +225,12 @@ bool ResourceManager::loadScene(
   // if the desired simulator is not supported reset to "none" in metaData
   if (defaultToNoneSimulator) {
     _physicsManager.reset(new physics::PhysicsManager(this));
-    physicsManagerAttributes.setSimulator("none");
+    physicsManagerAttributes->setSimulator("none");
   }
 
   // load objects from sceneMetaData list...
   for (auto objPhysPropertiesFilename :
-       physicsManagerAttributes.getStringGroup("objectLibraryPaths")) {
+       physicsManagerAttributes->getStringGroup("objectLibraryPaths")) {
     LOG(INFO) << "loading object: " << objPhysPropertiesFilename;
     parseAndLoadPhysObjTemplate(objPhysPropertiesFilename);
   }
@@ -240,15 +246,23 @@ bool ResourceManager::loadScene(
     return meshSuccess;
   }
 
+  const bool physSceneExists = physicsSceneLibrary_.count(info.filepath) > 0;
+  if (!physSceneExists) {
+    auto physScenLib = PhysicsSceneAttributes::create();
+    physicsSceneLibrary_.emplace(info.filepath, physScenLib);
+  }
   // TODO: enable loading of multiple scenes from file and storing individual
   // parameters instead of scene properties in manager global config
-  physicsSceneLibrary_[info.filepath].setFrictionCoefficient(
-      physicsManagerAttributes.getDouble("frictionCoefficient"));
-  physicsSceneLibrary_[info.filepath].setRestitutionCoefficient(
-      physicsManagerAttributes.getDouble("restitutionCoefficient"));
 
-  physicsSceneLibrary_[info.filepath].setRenderMeshHandle(info.filepath);
-  physicsSceneLibrary_[info.filepath].setCollisionMeshHandle(info.filepath);
+  physicsSceneLibrary_.at(info.filepath)
+      ->setFrictionCoefficient(
+          physicsManagerAttributes->getDouble("frictionCoefficient"));
+  physicsSceneLibrary_.at(info.filepath)
+      ->setRestitutionCoefficient(
+          physicsManagerAttributes->getDouble("restitutionCoefficient"));
+
+  physicsSceneLibrary_.at(info.filepath)->setRenderMeshHandle(info.filepath);
+  physicsSceneLibrary_.at(info.filepath)->setCollisionMeshHandle(info.filepath);
 
   //! CONSTRUCT SCENE
   const std::string& filename = info.filepath;
@@ -335,20 +349,21 @@ std::vector<std::string> ResourceManager::getObjectConfigPaths(
   return paths;
 }
 
-PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
+PhysicsManagerAttributes::ptr ResourceManager::loadPhysicsConfig(
     std::string physicsFilename) {
   CHECK(Cr::Utility::Directory::exists(physicsFilename));
 
   // Load the global scene config JSON here
   io::JsonDocument scenePhysicsConfig = io::parseJsonFile(physicsFilename);
   // In-memory representation of scene meta data
-  PhysicsManagerAttributes physicsManagerAttributes;
+  PhysicsManagerAttributes::ptr physicsManagerAttributes =
+      PhysicsManagerAttributes::create();
 
   // load the simulator preference
   // default is "none" simulator
   if (scenePhysicsConfig.HasMember("physics simulator")) {
     if (scenePhysicsConfig["physics simulator"].IsString()) {
-      physicsManagerAttributes.setSimulator(
+      physicsManagerAttributes->setSimulator(
           scenePhysicsConfig["physics simulator"].GetString());
     }
   }
@@ -356,14 +371,14 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
   // load the physics timestep
   if (scenePhysicsConfig.HasMember("timestep")) {
     if (scenePhysicsConfig["timestep"].IsNumber()) {
-      physicsManagerAttributes.setTimestep(
+      physicsManagerAttributes->setTimestep(
           scenePhysicsConfig["timestep"].GetDouble());
     }
   }
 
   if (scenePhysicsConfig.HasMember("friction coefficient") &&
       scenePhysicsConfig["friction coefficient"].IsNumber()) {
-    physicsManagerAttributes.setDouble(
+    physicsManagerAttributes->setDouble(
         "frictionCoefficient",
         scenePhysicsConfig["friction coefficient"].GetDouble());
   } else {
@@ -372,7 +387,7 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
 
   if (scenePhysicsConfig.HasMember("restitution coefficient") &&
       scenePhysicsConfig["restitution coefficient"].IsNumber()) {
-    physicsManagerAttributes.setDouble(
+    physicsManagerAttributes->setDouble(
         "restitutionCoefficient",
         scenePhysicsConfig["restitution coefficient"].GetDouble());
   } else {
@@ -393,7 +408,7 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
           grav[i] = scenePhysicsConfig["gravity"][i].GetDouble();
         }
       }
-      physicsManagerAttributes.setVec3("gravity", grav);
+      physicsManagerAttributes->setVec3("gravity", grav);
     }
   }
 
@@ -420,7 +435,7 @@ PhysicsManagerAttributes ResourceManager::loadPhysicsConfig(
     std::vector<std::string> validConfigPaths =
         getObjectConfigPaths(absolutePath);
     for (auto& path : validConfigPaths) {
-      physicsManagerAttributes.addStringToGroup("objectLibraryPaths", path);
+      physicsManagerAttributes->addStringToGroup("objectLibraryPaths", path);
     }
   }
 
@@ -760,7 +775,7 @@ int ResourceManager::getObjectTemplateID(const std::string& configFile) {
   const bool objTemplateExists =
       physicsObjTemplateLibrary_.count(configFile) > 0;
   if (objTemplateExists) {
-    return physicsObjTemplateLibrary_[configFile]->getObjectTemplateID();
+    return physicsObjTemplateLibrary_.at(configFile)->getObjectTemplateID();
   }
   return ID_UNDEFINED;
 }
