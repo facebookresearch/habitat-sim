@@ -258,9 +258,7 @@ def test_velocity_control(sim):
         assert np.allclose(sim.get_translation(object_id), ground_truth_pos, atol=0.01)
         ground_truth_q = mn.Quaternion([[0, 0.480551, 0], 0.876967])
         angle_error = mn.math.angle(ground_truth_q, sim.get_rotation(object_id))
-        if not math.isnan(angle_error):
-            # nan indicates very low angle error
-            assert angle_error < mn.Rad(0.005)
+        assert angle_error < mn.Rad(0.005)
 
         sim.reset()
 
@@ -283,8 +281,6 @@ def test_velocity_control(sim):
             sim.get_translation(object_id), np.array([0, 1.0, 0.0]), atol=0.03
         )
         angle_error = mn.math.angle(ground_truth_q, sim.get_rotation(object_id))
-        if not math.isnan(angle_error):
-            # nan indicates very low angle error
-            assert angle_error < mn.Rad(0.05)
+        assert angle_error < mn.Rad(0.05)
 
         sim.remove_object(object_id)
