@@ -24,7 +24,7 @@ bool PhysicsManager::initPhysics(
 }
 
 bool PhysicsManager::initPhysics_Finalize(
-    const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes) {
+    const assets::PhysicsManagerAttributes::ptr) {
   //! Create new scene node
   staticSceneObject_ =
       physics::RigidObject::create_unique(&physicsNode_->createChild());
