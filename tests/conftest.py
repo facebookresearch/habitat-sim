@@ -24,6 +24,7 @@ def make_cfg_settings():
         depth_sensor=True,
         silent=True,
         scene=_test_scene,
+        frustum_culling=True,
     )
 
 

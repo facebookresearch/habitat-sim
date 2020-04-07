@@ -17,6 +17,8 @@ class MeshData;
 
 namespace nav {
 
+class PathFinder;
+
 struct HitRecord {
   vec3f hitPos;
   vec3f hitNormal;
@@ -62,15 +64,19 @@ struct ShortestPath {
  * @ref PathFinder.findPath
  */
 struct MultiGoalShortestPath {
+  MultiGoalShortestPath();
+
   /**
    * @brief The starting point for the path
    */
   vec3f requestedStart;
 
   /**
-   * @brief The list of desired potential end points
+   * @brief Set the list of desired potential end points
    */
-  std::vector<vec3f> requestedEnds;
+  void setRequestedEnds(const std::vector<vec3f>& newEnds);
+
+  const std::vector<vec3f>& getRequestedEnds() const;
 
   /**
    * @brief A list of points that specify the shortest path on the navigation
@@ -88,7 +94,9 @@ struct MultiGoalShortestPath {
    */
   float geodesicDistance;
 
-  ESP_SMART_POINTERS(MultiGoalShortestPath)
+  friend class PathFinder;
+
+  ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(MultiGoalShortestPath);
 };
 
 struct NavMeshSettings {

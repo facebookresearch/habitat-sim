@@ -19,9 +19,8 @@ BulletPhysicsManager::~BulletPhysicsManager() {
   staticSceneObject_.reset(nullptr);
 }
 
-bool BulletPhysicsManager::initPhysics(
-    scene::SceneNode* node,
-    const assets::PhysicsManagerAttributes& physicsManagerAttributes) {
+bool BulletPhysicsManager::initPhysicsFinalize(
+    const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes) {
   activePhysSimLib_ = BULLET;
 
   //! We can potentially use other collision checking algorithms, by
@@ -35,34 +34,23 @@ bool BulletPhysicsManager::initPhysics(
       Magnum::BulletIntegration::DebugDraw::Mode::DrawConstraints);
   bWorld_->setDebugDrawer(&debugDrawer_);
 
-  // Copy over relevant configuration
-  fixedTimeStep_ = physicsManagerAttributes.getTimestep();
   // currently GLB meshes are y-up
-  bWorld_->setGravity(btVector3(physicsManagerAttributes.getVec3("gravity")));
+  bWorld_->setGravity(btVector3(physicsManagerAttributes->getVec3("gravity")));
 
-  physicsNode_ = node;
   //! Create new scene node
   staticSceneObject_ =
-      std::make_unique<BulletRigidObject>(&physicsNode_->createChild());
+      physics::BulletRigidObject::create_unique(&physicsNode_->createChild());
 
-  initialized_ = true;
   return true;
 }
 
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
-bool BulletPhysicsManager::addScene(
-    const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+bool BulletPhysicsManager::addSceneFinalize(
+    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
-  // Test Mesh primitive is valid
-  for (const assets::CollisionMeshData& meshData : meshGroup) {
-    if (!isMeshPrimitiveValid(meshData)) {
-      return false;
-    }
-  }
-
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
-      physicsSceneAttributes.getCollisionMeshHandle());
+      physicsSceneAttributes->getCollisionMeshHandle());
 
   //! Initialize scene
   bool sceneSuccess = static_cast<BulletRigidObject*>(staticSceneObject_.get())
@@ -75,11 +63,11 @@ bool BulletPhysicsManager::addScene(
 bool BulletPhysicsManager::makeAndAddRigidObject(
     int newObjectID,
     const std::vector<assets::CollisionMeshData>& meshGroup,
-    assets::PhysicsObjectAttributes physicsObjectAttributes,
+    assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
     scene::SceneNode* objectNode) {
-  auto ptr = std::make_unique<physics::BulletRigidObject>(objectNode);
+  auto ptr = physics::BulletRigidObject::create_unique(objectNode);
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
-      physicsObjectAttributes.getCollisionMeshHandle());
+      physicsObjectAttributes->getCollisionMeshHandle());
   bool objSuccess = ptr->initializeObject(physicsObjectAttributes, bWorld_,
                                           metaData, meshGroup);
   if (objSuccess) {

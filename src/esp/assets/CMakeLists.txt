@@ -40,6 +40,7 @@ find_package(Magnum
 find_package(MagnumPlugins
   REQUIRED
     BasisImporter
+    StanfordImporter
     StbImageImporter
     StbImageConverter
     TinyGltfImporter
@@ -70,10 +71,10 @@ target_link_libraries(assets
     Magnum::Trade
     Magnum::Primitives
     MagnumPlugins::BasisImporter
+    MagnumPlugins::StanfordImporter
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbImageConverter
     MagnumPlugins::TinyGltfImporter
-    tinyply
   PRIVATE
     geo
     io
