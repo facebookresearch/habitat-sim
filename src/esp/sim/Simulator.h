@@ -344,6 +344,16 @@ class Simulator {
   double getWorldTime();
 
   /**
+   * @brief Set the gravity in a physical scene.
+   */
+  void setGravity(const Magnum::Vector3& gravity, const int sceneID = 0);
+
+  /**
+   * @brief Get the gravity in a physical scene.
+   */
+  Magnum::Vector3 getGravity(const int sceneID = 0) const;
+
+  /**
    * @brief Compute the navmesh for the simulator's current active scene and
    * assign it to the referenced @ref nav::PathFinder.
    * @param pathfinder The pathfinder object to which the recomputed navmesh

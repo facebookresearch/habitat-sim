@@ -6,6 +6,7 @@ pybind11_add_module(habitat_sim_bindings
   geoBindings.cpp
   GfxBindings.cpp
   OpaqueTypes.h
+  PhysicsBindings.cpp
   SceneBindings.cpp
   SensorBindings.cpp
   ShortestPathBindings.cpp

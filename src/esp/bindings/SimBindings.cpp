@@ -85,6 +85,8 @@ void initSimBindings(py::module& m) {
            "sceneID"_a = 0)
       .def("step_world", &Simulator::stepWorld, "dt"_a = 1.0 / 60.0)
       .def("get_world_time", &Simulator::getWorldTime)
+      .def("get_gravity", &Simulator::getGravity, "sceneID"_a = 0)
+      .def("set_gravity", &Simulator::setGravity, "gravity"_a, "sceneID"_a = 0)
       .def("set_transformation", &Simulator::setTransformation, "transform"_a,
            "object_id"_a, "sceneID"_a = 0)
       .def("get_transformation", &Simulator::getTransformation, "object_id"_a,
