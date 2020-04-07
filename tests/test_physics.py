@@ -219,8 +219,8 @@ def test_velocity_control(sim):
     sim.reconfigure(hab_cfg)
     sim.set_gravity(np.array([0, 0, 0.0]))
 
-    sphere_path = osp.abspath("data/test_assets/objects/sphere")
-    template_ids = sim.load_object_configs(sphere_path)
+    template_path = osp.abspath("data/test_assets/objects/nested_box")
+    template_ids = sim.load_object_configs(template_path)
     object_template = sim.get_object_template(template_ids[0])
     object_template.set_linear_damping(0.0)
     object_template.set_angular_damping(0.0)

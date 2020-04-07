@@ -16,7 +16,7 @@ import numpy as np
 parser = argparse.ArgumentParser(
     description="Running AB test on simulator", add_help=True
 )
-parser.add_argument("--scene", type=str, default=dr.default_sim_settings["test_scene"])
+parser.add_argument("--scene", type=str, default=dr.default_sim_settings["scene"])
 parser.add_argument(
     "--max_frames",
     type=int,
