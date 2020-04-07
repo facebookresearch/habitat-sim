@@ -89,6 +89,8 @@ enum class RigidObjectType {
  * body. */
 struct VelocityControl {
  public:
+  virtual ~VelocityControl(){};
+
   /**@brief Constant linear velocity. */
   Magnum::Vector3 linVel;
   /**@brief Constant angular velocity. */
