@@ -120,9 +120,9 @@ class Simulator {
   int getPhysicsObjectLibrarySize();
 
   /**
-   * @brief Get an editable reference to a physics object template by index.
+   * @brief Get a smart pointer to a physics object template by index.
    */
-  assets::PhysicsObjectAttributes& getObjectTemplate(int templateId);
+  assets::PhysicsObjectAttributes::ptr getObjectTemplate(int templateId);
 
   /**
    * @brief Load all "*.phys_properties.json" files from the provided file or
@@ -148,7 +148,7 @@ class Simulator {
    * @return A template index for instancing the loaded template or ID_UNDEFINED
    * if failed.
    */
-  int loadObjectTemplate(assets::PhysicsObjectAttributes& objectTemplate,
+  int loadObjectTemplate(assets::PhysicsObjectAttributes::ptr objTmplPtr,
                          const std::string& objectTemplateHandle);
 
   /**

@@ -43,7 +43,7 @@ bool BulletPhysicsManager::initPhysics(
   physicsNode_ = node;
   //! Create new scene node
   staticSceneObject_ =
-      std::make_unique<BulletRigidObject>(&physicsNode_->createChild());
+      physics::BulletRigidObject::create_unique(&physicsNode_->createChild());
 
   initialized_ = true;
   return true;
@@ -75,11 +75,11 @@ bool BulletPhysicsManager::addScene(
 bool BulletPhysicsManager::makeAndAddRigidObject(
     int newObjectID,
     const std::vector<assets::CollisionMeshData>& meshGroup,
-    assets::PhysicsObjectAttributes physicsObjectAttributes,
+    assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
     scene::SceneNode* objectNode) {
-  auto ptr = std::make_unique<physics::BulletRigidObject>(objectNode);
+  auto ptr = physics::BulletRigidObject::create_unique(objectNode);
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
-      physicsObjectAttributes.getCollisionMeshHandle());
+      physicsObjectAttributes->getCollisionMeshHandle());
   bool objSuccess = ptr->initializeObject(physicsObjectAttributes, bWorld_,
                                           metaData, meshGroup);
   if (objSuccess) {

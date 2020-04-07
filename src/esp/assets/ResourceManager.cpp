@@ -443,13 +443,13 @@ void ResourceManager::addObjectToDrawables(int objTemplateLibID,
       //! Add mesh to rendering stack
 
       // Meta data and collision mesh
-      PhysicsObjectAttributes physicsObjectAttributes =
+      PhysicsObjectAttributes::ptr physicsObjectAttributes =
           physicsObjTemplateLibrary_.at(objPhysConfigFilename);
       std::vector<CollisionMeshData> meshGroup = collisionMeshGroups_.at(
-          physicsObjectAttributes.getCollisionMeshHandle());
+          physicsObjectAttributes->getCollisionMeshHandle());
 
       const std::string& filename =
-          physicsObjectAttributes.getRenderMeshHandle();
+          physicsObjectAttributes->getRenderMeshHandle();
       const LoadedAssetData& loadedAssetData = resourceDict_.at(filename);
       if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
         LOG(WARNING)
@@ -462,7 +462,7 @@ void ResourceManager::addObjectToDrawables(int objTemplateLibID,
       // need a new node for scaling because motion state will override scale
       // set at the physical node
       scene::SceneNode& scalingNode = parent->createChild();
-      Magnum::Vector3 objectScaling = physicsObjectAttributes.getScale();
+      Magnum::Vector3 objectScaling = physicsObjectAttributes->getScale();
       scalingNode.setScaling(objectScaling);
 
       addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
@@ -471,32 +471,32 @@ void ResourceManager::addObjectToDrawables(int objTemplateLibID,
   }    // else objTemplateID does not exist - shouldn't happen
 }  // addObjectToDrawables
 
-PhysicsObjectAttributes& ResourceManager::getPhysicsObjectAttributes(
+PhysicsObjectAttributes::ptr ResourceManager::getPhysicsObjectAttributes(
     const std::string& objectName) {
   return physicsObjTemplateLibrary_.at(objectName);
 }
-PhysicsObjectAttributes& ResourceManager::getPhysicsObjectAttributes(
+PhysicsObjectAttributes::ptr ResourceManager::getPhysicsObjectAttributes(
     const int objectTemplateID) {
   return physicsObjTemplateLibrary_.at(getObjectConfig(objectTemplateID));
 }
 
 int ResourceManager::loadObjectTemplate(
-    PhysicsObjectAttributes& objectTemplate,
+    PhysicsObjectAttributes::ptr objectTemplate,
     const std::string objectTemplateHandle) {
   CHECK(physicsObjTemplateLibrary_.count(objectTemplateHandle) == 0);
-  CHECK(objectTemplate.hasValue("renderMeshHandle"));
+  CHECK(objectTemplate->hasValue("renderMeshHandle"));
 
   // load/check_for render and collision mesh metadata
   //! Get render mesh names
-  std::string renderMeshFilename = objectTemplate.getRenderMeshHandle();
-  std::string collisionMeshFilename = objectTemplate.getCollisionMeshHandle();
+  std::string renderMeshFilename = objectTemplate->getRenderMeshHandle();
+  std::string collisionMeshFilename = objectTemplate->getCollisionMeshHandle();
 
   bool renderMeshSuccess = false;
   bool collisionMeshSuccess = false;
   AssetInfo renderMeshinfo;
   AssetInfo collisionMeshinfo;
 
-  bool requiresLighting = objectTemplate.getRequiresLighting();
+  bool requiresLighting = objectTemplate->getRequiresLighting();
 
   //! Load rendering mesh
   if (!renderMeshFilename.empty()) {
@@ -531,13 +531,13 @@ int ResourceManager::loadObjectTemplate(
 
   // handle one missing mesh
   if (!renderMeshSuccess)
-    objectTemplate.setRenderMeshHandle(collisionMeshFilename);
+    objectTemplate->setRenderMeshHandle(collisionMeshFilename);
   if (!collisionMeshSuccess)
-    objectTemplate.setCollisionMeshHandle(renderMeshFilename);
+    objectTemplate->setCollisionMeshHandle(renderMeshFilename);
 
   // add object template ID to physicObjectAttribute
   int objectTemplateID = physicsObjTemplateLibrary_.size();
-  objectTemplate.setObjectTemplateID(objectTemplateID);
+  objectTemplate->setObjectTemplateID(objectTemplateID);
 
   // cache metaData, collision mesh Group
   physicsObjTemplateLibrary_.emplace(objectTemplateHandle, objectTemplate);
@@ -545,7 +545,7 @@ int ResourceManager::loadObjectTemplate(
   physicsObjTmpltLibByID_.emplace(objectTemplateID, objectTemplateHandle);
 
   const MeshMetaData& meshMetaData =
-      getMeshMetaData(objectTemplate.getCollisionMeshHandle());
+      getMeshMetaData(objectTemplate->getCollisionMeshHandle());
 
   int start = meshMetaData.meshIndex.first;
   int end = meshMetaData.meshIndex.second;
@@ -557,7 +557,7 @@ int ResourceManager::loadObjectTemplate(
     CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
     meshGroup.push_back(meshData);
   }
-  collisionMeshGroups_.emplace(objectTemplate.getCollisionMeshHandle(),
+  collisionMeshGroups_.emplace(objectTemplate->getCollisionMeshHandle(),
                                meshGroup);
 
   return objectTemplateID;
@@ -571,7 +571,7 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
       physicsObjTemplateLibrary_.count(objPhysConfigFilename) > 0;
   if (objTemplateExists) {
     return physicsObjTemplateLibrary_[objPhysConfigFilename]
-        .getObjectTemplateID();
+        ->getObjectTemplateID();
   }
 
   // 1. parse the config file
@@ -591,7 +591,7 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
   }
 
   // 2. construct a physicsObjectMetaData
-  PhysicsObjectAttributes physicsObjectAttributes;
+  auto physicsObjectAttributes = PhysicsObjectAttributes::create();
 
   // NOTE: these paths should be relative to the properties file
   std::string propertiesFileDirectory =
@@ -601,14 +601,14 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
   // PhysicsObjectMetaData.h) load the mass
   if (objPhysicsConfig.HasMember("mass")) {
     if (objPhysicsConfig["mass"].IsNumber()) {
-      physicsObjectAttributes.setMass(objPhysicsConfig["mass"].GetDouble());
+      physicsObjectAttributes->setMass(objPhysicsConfig["mass"].GetDouble());
     }
   }
 
   // optional set bounding box as collision object
   if (objPhysicsConfig.HasMember("use bounding box for collision")) {
     if (objPhysicsConfig["use bounding box for collision"].IsBool()) {
-      physicsObjectAttributes.setBoundingBoxCollisions(
+      physicsObjectAttributes->setBoundingBoxCollisions(
           objPhysicsConfig["use bounding box for collision"].GetBool());
     }
   }
@@ -627,10 +627,10 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
           COM[i] = objPhysicsConfig["COM"][i].GetDouble();
         }
       }
-      physicsObjectAttributes.setCOM(COM);
+      physicsObjectAttributes->setCOM(COM);
       // set a flag which we can find later so we don't override the desired COM
       // with BB center.
-      physicsObjectAttributes.setBool("COM_provided", true);
+      physicsObjectAttributes->setBool("COM_provided", true);
     }
   }
 
@@ -648,7 +648,7 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
           scale[i] = objPhysicsConfig["scale"][i].GetDouble();
         }
       }
-      physicsObjectAttributes.setScale(scale);
+      physicsObjectAttributes->setScale(scale);
     }
   }
 
@@ -667,14 +667,14 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
           inertia[i] = objPhysicsConfig["inertia"][i].GetDouble();
         }
       }
-      physicsObjectAttributes.setInertia(inertia);
+      physicsObjectAttributes->setInertia(inertia);
     }
   }
 
   // load the friction coefficient
   if (objPhysicsConfig.HasMember("friction coefficient")) {
     if (objPhysicsConfig["friction coefficient"].IsNumber()) {
-      physicsObjectAttributes.setFrictionCoefficient(
+      physicsObjectAttributes->setFrictionCoefficient(
           objPhysicsConfig["friction coefficient"].GetDouble());
     } else {
       LOG(ERROR)
@@ -685,7 +685,7 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
   // load the restitution coefficient
   if (objPhysicsConfig.HasMember("restitution coefficient")) {
     if (objPhysicsConfig["restitution coefficient"].IsNumber()) {
-      physicsObjectAttributes.setRestitutionCoefficient(
+      physicsObjectAttributes->setRestitutionCoefficient(
           objPhysicsConfig["restitution coefficient"].GetDouble());
     } else {
       LOG(ERROR) << " Invalid value in object physics config - restitution "
@@ -696,7 +696,7 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
   //! Get collision configuration options if specified
   if (objPhysicsConfig.HasMember("join collision meshes")) {
     if (objPhysicsConfig["join collision meshes"].IsBool()) {
-      physicsObjectAttributes.setJoinCollisionMeshes(
+      physicsObjectAttributes->setJoinCollisionMeshes(
           objPhysicsConfig["join collision meshes"].GetBool());
     } else {
       LOG(ERROR)
@@ -707,7 +707,7 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
   // if object will be flat or phong shaded
   if (objPhysicsConfig.HasMember("requires lighting")) {
     if (objPhysicsConfig["requires lighting"].IsBool()) {
-      physicsObjectAttributes.setRequiresLighting(
+      physicsObjectAttributes->setRequiresLighting(
           objPhysicsConfig["requires lighting"].GetBool());
     } else {
       LOG(ERROR)
@@ -737,8 +737,8 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
     }
   }
 
-  physicsObjectAttributes.setRenderMeshHandle(renderMeshFilename);
-  physicsObjectAttributes.setCollisionMeshHandle(collisionMeshFilename);
+  physicsObjectAttributes->setRenderMeshHandle(renderMeshFilename);
+  physicsObjectAttributes->setCollisionMeshHandle(collisionMeshFilename);
 
   // 5. load the parsed file into the library
   return loadObjectTemplate(physicsObjectAttributes, objPhysConfigFilename);
@@ -753,14 +753,14 @@ const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
 const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
     const std::string configFile) {
   return collisionMeshGroups_.at(
-      physicsObjTemplateLibrary_.at(configFile).getCollisionMeshHandle());
+      physicsObjTemplateLibrary_.at(configFile)->getCollisionMeshHandle());
 }
 
 int ResourceManager::getObjectTemplateID(const std::string& configFile) {
   const bool objTemplateExists =
       physicsObjTemplateLibrary_.count(configFile) > 0;
   if (objTemplateExists) {
-    return physicsObjTemplateLibrary_[configFile].getObjectTemplateID();
+    return physicsObjTemplateLibrary_[configFile]->getObjectTemplateID();
   }
   return ID_UNDEFINED;
 }

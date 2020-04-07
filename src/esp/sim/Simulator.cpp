@@ -277,7 +277,8 @@ int Simulator::getPhysicsObjectLibrarySize() {
   return resourceManager_.getNumLibraryObjects();
 }
 
-assets::PhysicsObjectAttributes& Simulator::getObjectTemplate(int templateId) {
+assets::PhysicsObjectAttributes::ptr Simulator::getObjectTemplate(
+    int templateId) {
   return resourceManager_.getPhysicsObjectAttributes(templateId);
 }
 
@@ -293,16 +294,14 @@ std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
 }
 
 int Simulator::loadObjectTemplate(
-    assets::PhysicsObjectAttributes& objectTemplate,
+    assets::PhysicsObjectAttributes::ptr objTmplPtr,
     const std::string& objectTemplateHandle) {
   // check for duplicate keys
   if (resourceManager_.getObjectTemplateID(objectTemplateHandle) !=
       ID_UNDEFINED) {
     return ID_UNDEFINED;
   }
-
-  return resourceManager_.loadObjectTemplate(objectTemplate,
-                                             objectTemplateHandle);
+  return resourceManager_.loadObjectTemplate(objTmplPtr, objectTemplateHandle);
 }
 
 // return a list of existing objected IDs in a physical scene
@@ -477,14 +476,14 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
             Eigen::Transform<float, 3, Eigen::Affine> >(
             physicsManager_->getObjectVisualSceneNode(objectID)
                 .absoluteTransformationMatrix());
-        const assets::PhysicsObjectAttributes& initializationTemplate =
+        const assets::PhysicsObjectAttributes::ptr initializationTemplate =
             physicsManager_->getInitializationAttributes(objectID);
         objectTransform.scale(Magnum::EigenIntegration::cast<vec3f>(
-            initializationTemplate.getScale()));
+            initializationTemplate->getScale()));
         std::string meshHandle =
-            initializationTemplate.getCollisionMeshHandle();
+            initializationTemplate->getCollisionMeshHandle();
         if (meshHandle.empty()) {
-          meshHandle = initializationTemplate.getRenderMeshHandle();
+          meshHandle = initializationTemplate->getRenderMeshHandle();
         }
         assets::MeshData::uptr joinedObjectMesh =
             resourceManager_.createJoinedCollisionMesh(meshHandle);

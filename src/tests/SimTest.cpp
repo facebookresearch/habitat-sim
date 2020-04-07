@@ -358,9 +358,9 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   simulator->removeObject(objectID);
 
   // test scaling
-  esp::assets::PhysicsObjectAttributes& objectTemplate =
+  esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
       simulator->getObjectTemplate(0);
-  objectTemplate.setScale({0.5, 0.5, 0.5});
+  objectTemplate->setScale({0.5, 0.5, 0.5});
   objectID = simulator->addObject(0);
   simulator->setTranslation(Magnum::Vector3{randomNavPoint}, objectID);
   simulator->setTranslation(
@@ -395,11 +395,12 @@ void SimTest::loadingObjectTemplates() {
       Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(templateIndices2 == templateIndices);
 
-  // test fresh template
-  esp::assets::PhysicsObjectAttributes newTemplate;
+  // test fresh template as smart pointer
+  esp::assets::PhysicsObjectAttributes::ptr newTemplate =
+      esp::assets::PhysicsObjectAttributes::create();
   std::string boxPath =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
-  newTemplate.setRenderMeshHandle(boxPath);
+  newTemplate->setRenderMeshHandle(boxPath);
   int templateIndex = simulator->loadObjectTemplate(newTemplate, boxPath);
   CORRADE_VERIFY(templateIndex != esp::ID_UNDEFINED);
 

@@ -29,7 +29,7 @@ bool RigidObject::initializeScene(
 }
 
 bool RigidObject::initializeObject(
-    const assets::PhysicsObjectAttributes& physicsObjectAttributes,
+    const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
     const std::vector<assets::CollisionMeshData>&) {
   // TODO (JH): Handling static/kinematic object type
   if (rigidObjectType_ != RigidObjectType::NONE) {
