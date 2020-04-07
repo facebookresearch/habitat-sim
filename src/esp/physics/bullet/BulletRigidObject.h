@@ -99,7 +99,7 @@ class BulletRigidObject : public RigidObject,
    * @return true if initialized successfully, false otherwise.
    */
   bool initializeScene(
-      const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
       const assets::MeshMetaData& metaData,
       const std::vector<assets::CollisionMeshData>& meshGroup,
       std::shared_ptr<btMultiBodyDynamicsWorld> bWorld);

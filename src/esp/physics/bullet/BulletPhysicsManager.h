@@ -53,37 +53,6 @@ class BulletPhysicsManager : public PhysicsManager {
   /** @brief Destructor which destructs necessary Bullet physics structures.*/
   virtual ~BulletPhysicsManager();
 
-  //============ Initialization =============
-
-  /**
-   * @brief Initialization: load physical properties and setup the world.
-   * @param node The scene graph node which will act as the parent of all
-   * physical scene and object nodes.
-   * @param physicsManagerAttributes A structure containing values for physical
-   * parameters necessary to initialize the physical scene and simulator.
-   */
-  bool initPhysics(scene::SceneNode* node,
-                   const assets::PhysicsManagerAttributes&
-                       physicsManagerAttributes) override;
-
-  //============ Object/Scene Instantiation =============
-
-  /**
-   * @brief Initialize static scene collision geometry from loaded mesh data.
-   * Only one 'scene' may be initialized per simulated world, but this scene may
-   * contain several components (e.g. GLB heirarchy). Checks that the collision
-   * mesh can be used by Bullet. See @ref BulletRigidObject::initializeScene.
-   * Bullet mesh conversion adapted from:
-   * https://github.com/mosra/magnum-integration/issues/20
-   * @param physicsSceneAttributes a structure defining physical properties of
-   * the scene.
-   * @param meshGroup collision meshs for the scene.
-   * @return true if successful and false otherwise
-   */
-  bool addScene(
-      const assets::PhysicsSceneAttributes& physicsSceneAttributes,
-      const std::vector<assets::CollisionMeshData>& meshGroup) override;
-
   //============ Simulator functions =============
 
   /** @brief Step the physical world forward in time. Time may only advance in
@@ -195,16 +164,30 @@ class BulletPhysicsManager : public PhysicsManager {
   bool contactTest(const int physObjectID) override;
 
  protected:
-  btDbvtBroadphase bBroadphase_;
-  btDefaultCollisionConfiguration bCollisionConfig_;
+  //============ Initialization =============
+  /**
+   * @brief Finalize physics nitialization: Setup staticSceneObject_ and
+   * initialize any other physics-related values.
+   * @param physicsManagerAttributes A structure containing values for physical
+   * parameters necessary to initialize the physical scene and simulator.
+   */
+  bool initPhysics_Finalize(const assets::PhysicsManagerAttributes::ptr
+                                physicsManagerAttributes) override;
 
-  btMultiBodyConstraintSolver bSolver_;
-  btCollisionDispatcher bDispatcher_{&bCollisionConfig_};
-
-  /** @brief A pointer to the Bullet world. See @ref btMultiBodyDynamicsWorld.*/
-  std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;
-
-  mutable Magnum::BulletIntegration::DebugDraw debugDrawer_;
+  //============ Object/Scene Instantiation =============
+  /**
+   * @brief Finalize scene initialization. Checks that the collision
+   * mesh can be used by Bullet. See @ref BulletRigidObject::initializeScene.
+   * Bullet mesh conversion adapted from:
+   * https://github.com/mosra/magnum-integration/issues/20
+   * @param physicsSceneAttributes a pointer to the structure defining physical
+   * properties of the scene.
+   * @param meshGroup collision meshs for the scene.
+   * @return true if successful and false otherwise
+   */
+  bool addScene_Finalize(
+      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
+      const std::vector<assets::CollisionMeshData>& meshGroup) override;
 
   /** @brief Create and initialize an @ref RigidObject and add
    * it to existingObjects_ map keyed with newObjectID
@@ -221,6 +204,17 @@ class BulletPhysicsManager : public PhysicsManager {
       const std::vector<assets::CollisionMeshData>& meshGroup,
       assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
       scene::SceneNode* objectNode) override;
+
+  btDbvtBroadphase bBroadphase_;
+  btDefaultCollisionConfiguration bCollisionConfig_;
+
+  btMultiBodyConstraintSolver bSolver_;
+  btCollisionDispatcher bDispatcher_{&bCollisionConfig_};
+
+  /** @brief A pointer to the Bullet world. See @ref btMultiBodyDynamicsWorld.*/
+  std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;
+
+  mutable Magnum::BulletIntegration::DebugDraw debugDrawer_;
 
  private:
   /** @brief Check if a particular mesh can be used as a collision mesh for

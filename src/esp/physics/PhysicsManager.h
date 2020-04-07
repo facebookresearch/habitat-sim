@@ -104,9 +104,9 @@ class PhysicsManager {
    * @param physicsManagerAttributes A structure containing values for physical
    * parameters necessary to initialize the physical scene and simulator.
    */
-  virtual bool initPhysics(
+  bool initPhysics(
       scene::SceneNode* node,
-      const assets::PhysicsManagerAttributes& physicsManagerAttributes);
+      const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes);
 
   /**
    * @brief Reset the simulation and physical world.
@@ -125,28 +125,15 @@ class PhysicsManager {
    * Only one 'scene' may be initialized per simulated world, but this scene may
    * contain several components (e.g. GLB heirarchy).
    *
-   * @param physicsSceneAttributes a structure defining physical properties of
-   * the scene.
+   * @param physicsSceneAttributes a pointer to the structure defining physical
+   * properties of the scene.
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
-  virtual bool addScene(
-      const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+  bool addScene(
+      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
-  /** @brief Instance a physical object from an object properties template in
-   * the @ref esp::assets::ResourceManager::physicsObjectLibrary_.
-   *  @anchor addObject_string
-   *  @param configFile The filename of the object's physical properties file
-   * used as the key to query @ref
-   * esp::assets::ResourceManager::physicsObjectLibrary_
-   *  @param drawables Reference to the scene graph drawables group to enable
-   * rendering of the newly initialized object.
-   *  @param attachmentNode If supplied, attach the new physical object to an
-   * existing SceneNode.
-   *  @return the instanced object's ID, mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
-   */
   int addObject(const std::string& configFile,
                 DrawableGroup* drawables,
                 scene::SceneNode* attachmentNode = nullptr,
@@ -165,12 +152,11 @@ class PhysicsManager {
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  virtual int addObject(
-      const int objectLibIndex,
-      DrawableGroup* drawables,
-      scene::SceneNode* attachmentNode = nullptr,
-      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
-          assets::ResourceManager::DEFAULT_LIGHTING_KEY});
+  int addObject(const int objectLibIndex,
+                DrawableGroup* drawables,
+                scene::SceneNode* attachmentNode = nullptr,
+                const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+                    assets::ResourceManager::DEFAULT_LIGHTING_KEY});
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref
@@ -847,6 +833,43 @@ class PhysicsManager {
    */
   int deallocateObjectID(int physObjectID);
 
+  /**
+   * @brief Finalize physics nitialization. Setup staticSceneObject_ and
+   * initialize any other physics-related values for physics-based scenes.
+   * Overidden by instancing class if physics is supported.
+   * @param physicsManagerAttributes A structure containing values for physical
+   * parameters necessary to initialize the physical scene and simulator.
+   */
+  virtual bool initPhysics_Finalize(
+      const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes);
+
+  /**
+   * @brief Finalize scene initialization for kinematic scenes.  Overidden by
+   * instancing class if physics is supported.
+   *
+   * @param physicsSceneAttributes a pointer to the structure defining physical
+   * properties of the scene.
+   * @param meshGroup collision meshs for the scene.
+   * @return true if successful and false otherwise
+   */
+
+  virtual bool addScene_Finalize(
+      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
+      const std::vector<assets::CollisionMeshData>& meshGroup);
+
+  /** @brief Instance a physical object from an object properties template in
+   * the @ref esp::assets::ResourceManager::physicsObjectLibrary_.
+   *  @anchor addObject_string
+   *  @param configFile The filename of the object's physical properties file
+   * used as the key to query @ref
+   * esp::assets::ResourceManager::physicsObjectLibrary_
+   *  @param drawables Reference to the scene graph drawables group to enable
+   * rendering of the newly initialized object.
+   *  @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   *  @return the instanced object's ID, mapping to it in @ref
+   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   */
   /** @brief Create and initialize a @ref RigidObject, assign it an ID and add
    * it to existingObjects_ map keyed with newObjectID
    * @param newObjectID valid object ID for the new object

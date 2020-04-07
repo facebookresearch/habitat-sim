@@ -19,9 +19,8 @@ BulletPhysicsManager::~BulletPhysicsManager() {
   staticSceneObject_.reset(nullptr);
 }
 
-bool BulletPhysicsManager::initPhysics(
-    scene::SceneNode* node,
-    const assets::PhysicsManagerAttributes& physicsManagerAttributes) {
+bool BulletPhysicsManager::initPhysics_Finalize(
+    const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes) {
   activePhysSimLib_ = BULLET;
 
   //! We can potentially use other collision checking algorithms, by
@@ -35,34 +34,23 @@ bool BulletPhysicsManager::initPhysics(
       Magnum::BulletIntegration::DebugDraw::Mode::DrawConstraints);
   bWorld_->setDebugDrawer(&debugDrawer_);
 
-  // Copy over relevant configuration
-  fixedTimeStep_ = physicsManagerAttributes.getTimestep();
   // currently GLB meshes are y-up
-  bWorld_->setGravity(btVector3(physicsManagerAttributes.getVec3("gravity")));
+  bWorld_->setGravity(btVector3(physicsManagerAttributes->getVec3("gravity")));
 
-  physicsNode_ = node;
   //! Create new scene node
   staticSceneObject_ =
       physics::BulletRigidObject::create_unique(&physicsNode_->createChild());
 
-  initialized_ = true;
   return true;
 }
 
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
-bool BulletPhysicsManager::addScene(
-    const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+bool BulletPhysicsManager::addScene_Finalize(
+    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
-  // Test Mesh primitive is valid
-  for (const assets::CollisionMeshData& meshData : meshGroup) {
-    if (!isMeshPrimitiveValid(meshData)) {
-      return false;
-    }
-  }
-
   const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
-      physicsSceneAttributes.getCollisionMeshHandle());
+      physicsSceneAttributes->getCollisionMeshHandle());
 
   //! Initialize scene
   bool sceneSuccess = static_cast<BulletRigidObject*>(staticSceneObject_.get())

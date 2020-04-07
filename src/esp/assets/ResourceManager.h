@@ -130,8 +130,8 @@ class ResourceManager {
    * @param info The loaded @ref AssetInfo for the scene mesh.
    * @param _physicsManager The currently defined @ref physics::PhysicsManager.
    * Will be reseated to the configured physics implementation.
-   * @param physicsManagerAttributes The meta data structure storing configured
-   * physics simulation parameters.
+   * @param physicsManagerAttributes A smart pointer to meta data structure
+   * storing configured physics simulation parameters.
    * @param parent The @ref scene::SceneNode of which the scene mesh will be
    * added as a child. Typically near the root of the scene. Expected to be
    * static.
@@ -141,7 +141,7 @@ class ResourceManager {
    */
   bool loadScene(const AssetInfo& info,
                  std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-                 PhysicsManagerAttributes physicsManagerAttributes,
+                 PhysicsManagerAttributes::ptr physicsManagerAttributes,
                  scene::SceneNode* parent = nullptr,
                  DrawableGroup* drawables = nullptr,
                  const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
@@ -190,7 +190,7 @@ class ResourceManager {
    * @return The physics simulation meta data object parsed from the specified
    * configuration file.
    */
-  PhysicsManagerAttributes loadPhysicsConfig(
+  PhysicsManagerAttributes::ptr loadPhysicsConfig(
       std::string physicsFilename = ESP_DEFAULT_PHYS_SCENE_CONFIG);
 
   /**
@@ -746,13 +746,13 @@ class ResourceManager {
    * Templates are used by @ref physics::PhysicsManager to
    * initialize, reset scenes or switch contexts.
    */
-  std::map<std::string, PhysicsSceneAttributes> physicsSceneLibrary_;
+  std::map<std::string, PhysicsSceneAttributes::ptr> physicsSceneLibrary_;
 
   /**
    * @brief Library of physics scene attributes for
    * initializing/resetting/switching physics world contexts.
    */
-  std::map<std::string, PhysicsManagerAttributes> physicsManagerLibrary_;
+  std::map<std::string, PhysicsManagerAttributes::ptr> physicsManagerLibrary_;
 
   /**
    * @brief Primitive meshes available for instancing via @ref

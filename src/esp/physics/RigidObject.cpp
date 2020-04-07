@@ -13,7 +13,7 @@ RigidObject::RigidObject(scene::SceneNode* rigidBodyNode)
       visualNode_(&rigidBodyNode->createChild()) {}
 
 bool RigidObject::initializeScene(
-    const assets::PhysicsSceneAttributes&,
+    const assets::PhysicsSceneAttributes::ptr,
     const std::vector<assets::CollisionMeshData>&) {
   if (rigidObjectType_ != RigidObjectType::NONE) {
     LOG(ERROR) << "Cannot initialized a RigidObject more than once";
