@@ -6,16 +6,47 @@ Working with Lights
 .. contents::
     :class: m-block m-default
 
-A LightSetup consists of a set of LightInfo structures defining the common configuration of a set of point lights used to render objects in a scene. Once defined and registered, a LightSetup can be assigned to any subset of objects in the scene, including the scene asset itself.
+A LightSetup consists of a set of LightInfo structures defining the common configuration
+of a set of point lights used to render objects in a scene. Once defined and registered,
+a LightSetup can be assigned to any subset of objects in the scene, including the scene asset itself.
 
-The example code shown below is runnable via:
+Each LightInfo structure in a LightSetup defines the `color, position, and LightPositionModel` of a single point light source.
+The LightPositionModel defines the coordinate frame of the light and can be set to any of:
+
+.. code:: python
+
+    habitat_sim.gfx.LightPositionModel.CAMERA
+    habitat_sim.gfx.LightPositionModel.GLOBAL
+    habitat_sim.gfx.LightPositionModel.OBJECT
+
+Each LightSetup is registered in the simulator via a unique key. Two default lighting setups are pre-defined:
+
+.. code:: python
+
+    habitat_sim.gfx.DEFAULT_LIGHTING_KEY
+    habitat_sim.gfx.NO_LIGHT_KEY
+
+Additional custom setups can be created and registered via the `simulator.set_light_setup` function:
+
+.. code:: python
+
+    sim.set_light_setup(new_light_setup, "my_custom_lighting_key")
+
+Any existing LightSetup can be queried with `simulator.get_light_setup`:
+
+.. code:: python
+
+    custom_light_setup = sim.set_light_setup(n"my_custom_lighting_key")
+
+
+`Working with Lights Example:`_
+===============================
+
+The example code below demonstrates the usage of default and custom LightSetups and is runnable via:
 
 .. code:: shell-session
 
     $ python examples/tutorials/lighting_tutorial.py
-
-`Load the Scene`_
-=================
 
 First, we import modules we will need, define some convenience functions, and initialize the Simulator, Agent, and objects.
 
@@ -27,7 +58,7 @@ First, we import modules we will need, define some convenience functions, and in
 `Scene Lighting`_
 =================
 
-By default, the scene will be shaded with no lights.
+By default, the scene will be shaded with no lights using the `habitat_sim.gfx.NO_LIGHTING_KEY` setup.
 
 .. include:: ../../examples/tutorials/lighting_tutorial.py
     :code: py
@@ -37,7 +68,9 @@ By default, the scene will be shaded with no lights.
 .. image:: scene_default_lighting.png
 
 To use a custom light setup for the scene, simply use the `scene_light_setup` field of
-`habitat_sim.SimulatorConfiguration` when creating/reconfiguring your Simulator.
+`habitat_sim.SimulatorConfiguration` when creating/reconfiguring your Simulator. Note that
+while you can modify the scene's LightSetup dynamically during runtime, you will need to
+reconfigure the simulator to switch the scene's LightSetup key.
 
 .. code:: python
 

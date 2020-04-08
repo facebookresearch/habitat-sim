@@ -30,15 +30,18 @@ def remove_all_objects(sim):
         sim.remove_object(id)
 
 
-data_path = pathlib.Path(__file__).parent.absolute().joinpath("../../data/")
+def place_agent(sim):
+    # place our agent in the scene
+    agent_state = habitat_sim.AgentState()
+    agent_state.position = [5.0, 0.0, 1.0]
+    agent_state.rotation = quat_from_angle_axis(
+        math.radians(70), y_axis
+    ) * quat_from_angle_axis(math.radians(-20), x_axis)
+    agent = sim.initialize_agent(0, agent_state)
+    return agent.scene_node.transformation_matrix()
 
-x_axis = np.array([1, 0, 0])
-z_axis = np.array([0, 0, 1])
-y_axis = np.array([0, 1, 0])
 
-# This is wrapped such that it can be added to a unit test
-def main(show_imgs=True):
-
+def make_configuration():
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
     backend_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
@@ -50,11 +53,51 @@ def main(show_imgs=True):
     agent_cfg = habitat_sim.agent.AgentConfiguration()
     agent_cfg.sensor_specifications = [sensor_cfg]
 
-    # create the simulator
-    sim_cfg = habitat_sim.Configuration(backend_cfg, [agent_cfg])
-    sim = habitat_sim.Simulator(sim_cfg)
+    return habitat_sim.Configuration(backend_cfg, [agent_cfg])
 
-    # load some objects
+
+data_path = pathlib.Path(__file__).parent.absolute().joinpath("../../data/")
+
+x_axis = np.array([1, 0, 0])
+z_axis = np.array([0, 0, 1])
+y_axis = np.array([0, 1, 0])
+
+# [/setup]
+
+# This is wrapped such that it can be added to a unit test
+def main(show_imgs=True):
+
+    # [example 1]
+
+    # create the simulator
+    cfg = make_configuration()
+    sim = habitat_sim.Simulator(cfg)
+    agent_transform = place_agent(sim)
+
+    # render with default flat shaded scene
+    get_obs(sim, show_imgs)
+
+    # reconfigure with DEFAULT_LIGHTING_KEY from NO_LIGHT_KEY:
+    new_cfg = make_configuration()
+    new_cfg.sim_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
+    sim.reconfigure(new_cfg)
+    agent_transform = place_agent(sim)
+    get_obs(sim, show_imgs)
+
+    # close the simulator and re-initialize with DEFAULT_LIGHTING_KEY:
+    sim.close()
+    cfg = make_configuration()
+    cfg.sim_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
+    sim = habitat_sim.Simulator(cfg)
+    agent_transform = place_agent(sim)
+    get_obs(sim, show_imgs)
+
+    exit()
+    # [/example 1]
+
+    # [example 2]
+
+    # load some object templates
     sphere_template_id = sim.load_object_configs(
         str(data_path.joinpath("test_assets/objects/sphere"))
     )[0]
@@ -62,23 +105,6 @@ def main(show_imgs=True):
         str(data_path.joinpath("test_assets/objects/chair"))
     )[0]
 
-    # place our agent in the scene
-    agent_state = habitat_sim.AgentState()
-    agent_state.position = [5.0, 0.0, 1.0]
-    agent_state.rotation = quat_from_angle_axis(
-        math.radians(70), y_axis
-    ) * quat_from_angle_axis(math.radians(-20), x_axis)
-    agent = sim.initialize_agent(0, agent_state)
-    agent_transform = agent.scene_node.transformation_matrix()
-
-    # [/setup]
-
-    # [example 1]
-    get_obs(sim, show_imgs)
-
-    # [/example 1]
-
-    # [example 2]
     id_1 = sim.add_object(sphere_template_id)
     sim.set_translation(agent_transform.transform_point([0.3, 0.9, -1.8]), id_1)
 
