@@ -603,6 +603,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    */
   assets::PhysicsObjectAttributes::ptr initializationAttributes_;
 
+ private:
   /**
    * @brief Finalize the initialization of this @ref RigidObject as static scene
    * geometry.  This is overridden by inheriting objects
@@ -634,6 +635,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
       const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
+ protected:
   /** @brief Used to synchronize other simulator's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic
    * updates.*/
