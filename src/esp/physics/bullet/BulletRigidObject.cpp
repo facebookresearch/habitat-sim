@@ -36,11 +36,11 @@ BulletRigidObject::BulletRigidObject(
       bWorld_(bWorld) {}
 
 bool BulletRigidObject::initializeSceneFinalize(
-    const assets::ResourceManager* resMgr,
+    const assets::ResourceManager& resMgr,
     const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   const assets::MeshMetaData& metaData =
-      resMgr->getMeshMetaData(physicsSceneAttributes->getCollisionMeshHandle());
+      resMgr.getMeshMetaData(physicsSceneAttributes->getCollisionMeshHandle());
 
   constructBulletSceneFromMeshes(Magnum::Matrix4{}, meshGroup, metaData.root);
   for (auto& object : bSceneCollisionObjects_) {
@@ -53,13 +53,13 @@ bool BulletRigidObject::initializeSceneFinalize(
 }  // end BulletRigidObject::initializeScene
 
 bool BulletRigidObject::initializeObjectFinalize(
-    const assets::ResourceManager* resMgr,
+    const assets::ResourceManager& resMgr,
     const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   objectMotionType_ = MotionType::DYNAMIC;
 
-  const assets::MeshMetaData& metaData = resMgr->getMeshMetaData(
-      physicsObjectAttributes->getCollisionMeshHandle());
+  const assets::MeshMetaData& metaData =
+      resMgr.getMeshMetaData(physicsObjectAttributes->getCollisionMeshHandle());
 
   //! Physical parameters
   double margin = physicsObjectAttributes->getMargin();

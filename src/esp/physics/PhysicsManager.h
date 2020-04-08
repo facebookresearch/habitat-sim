@@ -88,9 +88,8 @@ class PhysicsManager {
    * tracks the assets this
    * @ref PhysicsManager will have access to.
    */
-  explicit PhysicsManager(assets::ResourceManager* _resourceManager) {
-    resourceManager_ = _resourceManager;
-  };
+  explicit PhysicsManager(assets::ResourceManager& _resourceManager)
+      : resourceManager_(_resourceManager){};
 
   /** @brief Destructor*/
   virtual ~PhysicsManager();
@@ -888,7 +887,7 @@ class PhysicsManager {
 
   /** @brief A pointer to a @ref esp::assets::ResourceManager which holds assets
    * that can be accessed by this @ref PhysicsManager*/
-  assets::ResourceManager* resourceManager_;
+  assets::ResourceManager& resourceManager_;
 
   /** @brief The current physics library implementation used by this
    * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager

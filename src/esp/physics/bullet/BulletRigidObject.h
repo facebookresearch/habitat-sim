@@ -407,7 +407,7 @@ class BulletRigidObject : public RigidObject,
    */
   const Magnum::Range3D getCollisionShapeAabb() const;
 
- protected:
+ private:
   /**
    * @brief Initializes this @ref BulletRigidObject as static scene geometry.
    * See @ref PhysicsManager::staticSceneObject_. Sets @ref rigidObjectType_ to
@@ -420,7 +420,7 @@ class BulletRigidObject : public RigidObject,
    * @return true if initialized successfully, false otherwise.
    */
   bool initializeSceneFinalize(
-      const assets::ResourceManager* resMgr,
+      const assets::ResourceManager& resMgr,
       const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup) override;
 
@@ -436,10 +436,11 @@ class BulletRigidObject : public RigidObject,
    * @return true if initialized successfully, false otherwise.
    */
   bool initializeObjectFinalize(
-      const assets::ResourceManager* resMgr,
+      const assets::ResourceManager& resMgr,
       const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup) override;
 
+ protected:
   /**
    * @brief Used to synchronize Bullet's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic

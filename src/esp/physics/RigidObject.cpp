@@ -13,7 +13,7 @@ RigidObject::RigidObject(scene::SceneNode* rigidBodyNode)
       visualNode_(&rigidBodyNode->createChild()) {}
 
 bool RigidObject::initializeScene(
-    const assets::ResourceManager* resMgr,
+    const assets::ResourceManager& resMgr,
     const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   if (rigidObjectType_ != RigidObjectType::NONE) {
@@ -29,14 +29,14 @@ bool RigidObject::initializeScene(
 }
 
 bool RigidObject::initializeSceneFinalize(
-    const assets::ResourceManager*,
+    const assets::ResourceManager&,
     const assets::PhysicsSceneAttributes::ptr,
     const std::vector<assets::CollisionMeshData>&) {
   return true;
 }
 
 bool RigidObject::initializeObject(
-    const assets::ResourceManager* resMgr,
+    const assets::ResourceManager& resMgr,
     const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // TODO (JH): Handling static/kinematic object type
@@ -54,7 +54,7 @@ bool RigidObject::initializeObject(
 }
 
 bool RigidObject::initializeObjectFinalize(
-    const assets::ResourceManager*,
+    const assets::ResourceManager&,
     const assets::PhysicsObjectAttributes::ptr,
     const std::vector<assets::CollisionMeshData>&) {
   // default kineamtic unless a simulator is initialized...

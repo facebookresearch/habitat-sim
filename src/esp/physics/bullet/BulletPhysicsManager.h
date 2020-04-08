@@ -47,7 +47,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * tracks the assets this
    * @ref BulletPhysicsManager will have access to.
    */
-  explicit BulletPhysicsManager(assets::ResourceManager* _resourceManager)
+  explicit BulletPhysicsManager(assets::ResourceManager& _resourceManager)
       : PhysicsManager(_resourceManager){};
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/

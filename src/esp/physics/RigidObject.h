@@ -147,6 +147,11 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
   RigidObject(scene::SceneNode* rigidBodyNode);
 
   /**
+   * @brief Virtual destructor for a @ref RigidObject.
+   */
+  virtual ~RigidObject(){};
+
+  /**
    * @brief Get the scene node being attached to.
    */
   scene::SceneNode& node() { return object(); }
@@ -172,7 +177,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @return true if initialized successfully, false otherwise.
    */
   bool initializeScene(
-      const assets::ResourceManager* resMgr,
+      const assets::ResourceManager& resMgr,
       const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
@@ -186,7 +191,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @return true if initialized successfully, false otherwise.
    */
   bool initializeObject(
-      const assets::ResourceManager* resMgr,
+      const assets::ResourceManager& resMgr,
       const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
@@ -194,11 +199,6 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @brief Finalize this object with any necessary post-creation processes.
    */
   virtual void finalizeObject() {}
-
-  /**
-   * @brief Virtual destructor for a @ref RigidObject.
-   */
-  virtual ~RigidObject(){};
 
   /**
    * @brief Check whether object is being actively simulated, or sleeping.
@@ -603,6 +603,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    */
   assets::PhysicsObjectAttributes::ptr initializationAttributes_;
 
+ private:
   /**
    * @brief Finalize the initialization of this @ref RigidObject as static scene
    * geometry.  This is overridden by inheriting objects
@@ -614,7 +615,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @return true if initialized successfully, false otherwise.
    */
   virtual bool initializeSceneFinalize(
-      const assets::ResourceManager* resMgr,
+      const assets::ResourceManager& resMgr,
       const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
@@ -630,10 +631,11 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @return true if initialized successfully, false otherwise.
    */
   virtual bool initializeObjectFinalize(
-      const assets::ResourceManager* resMgr,
+      const assets::ResourceManager& resMgr,
       const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
+ protected:
   /** @brief Used to synchronize other simulator's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic
    * updates.*/
