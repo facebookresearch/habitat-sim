@@ -323,7 +323,7 @@ class DemoRunner:
 
         if (
             not os.path.exists(scene_file)
-            and scene_file == default_sim_settings["test_scene"]
+            and scene_file == default_sim_settings["scene"]
         ):
             print(
                 "Test scenes not downloaded locally, downloading and extracting now..."

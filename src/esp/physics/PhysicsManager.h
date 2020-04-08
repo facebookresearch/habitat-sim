@@ -736,9 +736,10 @@ class PhysicsManager {
    */
   Magnum::Vector3 getAngularVelocity(const int physObjectID) const;
 
-  /**@brief Retrieves a reference to the VelocityControl struct for this object.
+  /**@brief Retrieves a shared pointer to the VelocityControl struct for this
+   * object.
    */
-  VelocityControl& getVelocityControl(const int physObjectID);
+  VelocityControl::ptr getVelocityControl(const int physObjectID);
 
   /** @brief Set bounding box rendering for the object true or false.
    * @param physObjectID The object ID and key identifying the object in @ref

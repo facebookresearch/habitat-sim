@@ -24,7 +24,7 @@ default_sim_settings = {
     "print_semantic_mask_stats": False,
     "compute_shortest_path": False,
     "compute_action_shortest_path": False,
-    "test_scene": "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb",
+    "scene": "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb",
     "test_scene_data_url": "http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip",
     "goal_position": [5.047, 0.199, 11.145],
     "enable_physics": False,

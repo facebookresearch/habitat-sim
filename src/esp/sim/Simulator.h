@@ -11,6 +11,7 @@
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/RigidObject.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
@@ -27,9 +28,6 @@ class SemanticScene;
 namespace gfx {
 class Renderer;
 }  // namespace gfx
-namespace physics {
-enum class MotionType : int;
-}  // namespace physics
 }  // namespace esp
 
 namespace esp {
@@ -203,6 +201,13 @@ class Simulator {
                            const int objectID,
                            const int sceneID = 0);
 
+  /**@brief Retrieves a shared pointer to the VelocityControl struct for this
+   * object.
+   */
+  physics::VelocityControl::ptr getObjectVelocityControl(
+      const int objectID,
+      const int sceneID = 0) const;
+
   /**
    * @brief Apply torque to an object. See @ref
    * esp::physics::PhysicsManager::applyTorque.
@@ -337,6 +342,16 @@ class Simulator {
    * by which the physical world has advanced.
    */
   double getWorldTime();
+
+  /**
+   * @brief Set the gravity in a physical scene.
+   */
+  void setGravity(const Magnum::Vector3& gravity, const int sceneID = 0);
+
+  /**
+   * @brief Get the gravity in a physical scene.
+   */
+  Magnum::Vector3 getGravity(const int sceneID = 0) const;
 
   /**
    * @brief Compute the navmesh for the simulator's current active scene and

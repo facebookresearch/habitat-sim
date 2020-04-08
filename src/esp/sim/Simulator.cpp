@@ -197,7 +197,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
 void Simulator::reset() {
   if (physicsManager_ != nullptr) {
-    // TODO: this does nothing yet... desired reset behavior?
+    // Note: only resets time to 0 by default.
     physicsManager_->reset();
   }
 
@@ -339,6 +339,15 @@ bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
   return false;
 }
 
+physics::VelocityControl::ptr Simulator::getObjectVelocityControl(
+    const int objectID,
+    const int sceneID) const {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getVelocityControl(objectID);
+  }
+  return nullptr;
+}
+
 // apply forces and torques to objects
 void Simulator::applyTorque(const Magnum::Vector3& tau,
                             const int objectID,
@@ -430,6 +439,19 @@ double Simulator::getWorldTime() {
     return physicsManager_->getWorldTime();
   }
   return NO_TIME;
+}
+
+void Simulator::setGravity(const Magnum::Vector3& gravity, const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    physicsManager_->setGravity(gravity);
+  }
+}
+
+Magnum::Vector3 Simulator::getGravity(const int sceneID) const {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getGravity();
+  }
+  return Magnum::Vector3();
 }
 
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,

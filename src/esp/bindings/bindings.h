@@ -25,6 +25,10 @@ namespace nav {
 void initShortestPathBindings(pybind11::module& m);
 }
 
+namespace physics {
+void initPhysicsBindings(pybind11::module& m);
+}
+
 namespace scene {
 void initSceneBindings(pybind11::module& m);
 }

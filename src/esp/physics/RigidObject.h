@@ -91,6 +91,8 @@ enum class RigidObjectType {
  * body. */
 struct VelocityControl {
  public:
+  virtual ~VelocityControl(){};
+
   /**@brief Constant linear velocity. */
   Magnum::Vector3 linVel;
   /**@brief Constant angular velocity. */
@@ -126,6 +128,8 @@ struct VelocityControl {
   virtual Magnum::Matrix4 integrateTransform(
       const float dt,
       const Magnum::Matrix4& objectTransform);
+
+  ESP_SMART_POINTERS(VelocityControl)
 };
 
 /**
@@ -334,7 +338,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
 
   /**@brief Retrieves a reference to the VelocityControl struct for this object.
    */
-  VelocityControl& getVelocityControl() { return velControl_; };
+  VelocityControl::ptr getVelocityControl() { return velControl_; };
 
   // ==== Transformations ===
 
@@ -587,7 +591,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @brief Convenience variable: specifies a constant control velocity (linear
    * | angular) applied to the rigid body before each step.
    */
-  VelocityControl velControl_;
+  VelocityControl::ptr velControl_;
 
   /** @brief The @ref MotionType of the object. Determines what operations can
    * be performed on this object. */

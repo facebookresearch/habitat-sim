@@ -219,10 +219,10 @@ void PhysicsManager::stepPhysics(double dt) {
 
     // kinematic velocity control intergration
     for (auto& object : existingObjects_) {
-      VelocityControl& velControl = object.second->getVelocityControl();
-      if (velControl.controllingAngVel || velControl.controllingLinVel) {
+      VelocityControl::ptr velControl = object.second->getVelocityControl();
+      if (velControl->controllingAngVel || velControl->controllingLinVel) {
         scene::SceneNode& objectSceneNode = object.second->node();
-        objectSceneNode.setTransformation(velControl.integrateTransform(
+        objectSceneNode.setTransformation(velControl->integrateTransform(
             fixedTimeStep_, objectSceneNode.transformation()));
       }
     }
@@ -398,7 +398,8 @@ Magnum::Vector3 PhysicsManager::getAngularVelocity(
   return existingObjects_.at(physObjectID)->getAngularVelocity();
 }
 
-VelocityControl& PhysicsManager::getVelocityControl(const int physObjectID) {
+VelocityControl::ptr PhysicsManager::getVelocityControl(
+    const int physObjectID) {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getVelocityControl();
 }

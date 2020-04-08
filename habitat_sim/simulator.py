@@ -329,6 +329,9 @@ class Simulator:
     def get_rotation(self, object_id, scene_id=0):
         return self._sim.get_rotation(object_id, scene_id)
 
+    def get_object_velocity_control(self, object_id, scene_id=0):
+        return self._sim.get_object_velocity_control(object_id, scene_id)
+
     def apply_force(self, force, relative_position, object_id, scene_id=0):
         self._sim.apply_force(force, relative_position, object_id, scene_id)
 
@@ -338,8 +341,17 @@ class Simulator:
     def contact_test(self, object_id, scene_id=0):
         return self._sim.contact_test(object_id, scene_id)
 
+    def step_physics(self, dt, scene_id=0):
+        self._sim.step_world(dt)
+
     def get_world_time(self, scene_id=0):
         return self._sim.get_world_time()
+
+    def get_gravity(self, scene_id=0):
+        return self._sim.get_gravity(scene_id)
+
+    def set_gravity(self, gravity, scene_id=0):
+        return self._sim.set_gravity(gravity, scene_id)
 
     def recompute_navmesh(
         self, pathfinder, navmesh_settings, include_static_objects=False
