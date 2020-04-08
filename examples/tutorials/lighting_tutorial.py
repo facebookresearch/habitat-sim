@@ -1,5 +1,6 @@
-# [import]
+# [setup]
 import math
+import pathlib
 
 import magnum as mn
 import numpy as np
@@ -9,9 +10,7 @@ import habitat_sim
 from habitat_sim.gfx import LightInfo, LightPositionModel
 from habitat_sim.utils.common import quat_from_angle_axis, quat_to_magnum
 
-# [/import]
 
-# [helpers]
 def show_img(data):
     plt.figure(figsize=(12, 12))
     plt.imshow(data, interpolation="nearest")
@@ -31,15 +30,15 @@ def remove_all_objects(sim):
         sim.remove_object(id)
 
 
+data_path = pathlib.Path(__file__).parent.absolute().joinpath("../../data/")
+
 x_axis = np.array([1, 0, 0])
 z_axis = np.array([0, 0, 1])
 y_axis = np.array([0, 1, 0])
 
-# [/helpers]
-
-# This is wrapped in a such that it can be added to a unit test
+# This is wrapped such that it can be added to a unit test
 def main(show_imgs=True):
-    # [initialization]
+
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
     backend_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
@@ -55,6 +54,14 @@ def main(show_imgs=True):
     sim_cfg = habitat_sim.Configuration(backend_cfg, [agent_cfg])
     sim = habitat_sim.Simulator(sim_cfg)
 
+    # load some objects
+    sphere_template_id = sim.load_object_configs(
+        str(data_path.joinpath("test_assets/objects/sphere"))
+    )[0]
+    chair_template_id = sim.load_object_configs(
+        str(data_path.joinpath("test_assets/objects/chair"))
+    )[0]
+
     # place our agent in the scene
     agent_state = habitat_sim.AgentState()
     agent_state.position = [5.0, 0.0, 1.0]
@@ -64,7 +71,7 @@ def main(show_imgs=True):
     agent = sim.initialize_agent(0, agent_state)
     agent_transform = agent.scene_node.transformation_matrix()
 
-    # [/initialization]
+    # [/setup]
 
     # [example 1]
     get_obs(sim, show_imgs)
@@ -72,7 +79,7 @@ def main(show_imgs=True):
     # [/example 1]
 
     # [example 2]
-    id_1 = sim.add_object(1)
+    id_1 = sim.add_object(sphere_template_id)
     sim.set_translation(agent_transform.transform_point([0.3, 0.9, -1.8]), id_1)
 
     get_obs(sim, show_imgs)
@@ -91,7 +98,7 @@ def main(show_imgs=True):
     # [/example 3]
 
     # [example 4]
-    id_2 = sim.add_object(2)
+    id_2 = sim.add_object(chair_template_id)
     sim.set_rotation(mn.Quaternion.rotation(mn.Deg(80), mn.Vector3.y_axis()), id_2)
     sim.set_translation(agent_transform.transform_point([-0.6, 0.9, -1.5]), id_2)
 
@@ -110,7 +117,7 @@ def main(show_imgs=True):
     # [example 6]
     remove_all_objects(sim)
 
-    id_1 = sim.add_object(2, light_setup_key="my_custom_lighting")
+    id_1 = sim.add_object(chair_template_id, light_setup_key="my_custom_lighting")
     sim.set_rotation(
         mn.Quaternion.rotation(mn.Deg(90), mn.Vector3.x_axis())
         * mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.z_axis()),
@@ -118,7 +125,7 @@ def main(show_imgs=True):
     )
     sim.set_translation(agent_transform.transform_point([-0.8, 1.05, -1.5]), id_1)
 
-    id_2 = sim.add_object(2, light_setup_key="my_custom_lighting")
+    id_2 = sim.add_object(chair_template_id, light_setup_key="my_custom_lighting")
     sim.set_rotation(
         mn.Quaternion.rotation(mn.Deg(90), mn.Vector3.x_axis())
         * mn.Quaternion.rotation(mn.Deg(-50), mn.Vector3.z_axis()),

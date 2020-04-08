@@ -1,40 +1,28 @@
 Working with Lights
 ###################
 
+:summary: This tutorial demonstrates the creation and manipulation of LightSetups in Habitat-sim.
+
 .. contents::
     :class: m-block m-default
 
-This tutorial shows how to create and manipulate light setups.
+A LightSetup consists of a set of LightInfo structures defining the common configuration of a set of point lights used to render objects in a scene. Once defined and registered, a LightSetup can be assigned to any subset of objects in the scene, including the scene asset itself.
 
-`Imports`_
-==========
+The example code shown below is runnable via:
 
-First, we import modules we will need.
+.. code:: shell-session
 
-.. include:: ../../examples/tutorials/lighting_tutorial.py
-    :code: py
-    :start-after: # [import]
-    :end-before: # [/import]
+    $ python examples/tutorials/lighting_tutorial.py
 
-`Helper Functions and Constants`_
-=================================
+`Load the Scene`_
+=================
 
-Next, we define some simple helper functions and constants.
+First, we import modules we will need, define some convenience functions, and initialize the Simulator, Agent, and objects.
 
 .. include:: ../../examples/tutorials/lighting_tutorial.py
     :code: py
-    :start-after: # [helpers]
-    :end-before: # [/helpers]
-
-`Simulator and Agent Configuration`_
-====================================
-
-Next, we create a simulator and place our agent in the scene.
-
-.. include:: ../../examples/tutorials/lighting_tutorial.py
-    :code: py
-    :start-after: # [initialization]
-    :end-before: # [/initialization]
+    :start-after: # [setup]
+    :end-before: # [/setup]
 
 `Scene Lighting`_
 =================
@@ -48,13 +36,19 @@ By default, the scene will be shaded with no lights.
 
 .. image:: scene_default_lighting.png
 
-To use a non-default light setup for the scene, simply use the `sceneLightSetup` field of
+To use a custom light setup for the scene, simply use the `scene_light_setup` field of
 `habitat_sim.SimulatorConfiguration` when creating/reconfiguring your Simulator.
+
+.. code:: python
+
+    backend_cfg = habitat_sim.SimulatorConfiguration()
+    backend_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
+
 
 `Default Object Lighting`_
 ==========================
 
-By default, added objects will be phong shaded with lights at the corners of the scene.
+By default, objects added to the scene will be rendered with Phong shading. This default LightSetup is initalized with one light at each corner of the scene mesh's bounding box.
 
 .. include:: ../../examples/tutorials/lighting_tutorial.py
     :code: py
