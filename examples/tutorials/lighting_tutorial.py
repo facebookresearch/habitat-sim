@@ -155,3 +155,7 @@ def main(show_imgs=True):
     get_obs(sim, show_imgs)
 
     # [/example 9]
+
+
+if __name__ == "__main__":
+    main(show_imgs=True)
