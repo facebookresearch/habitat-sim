@@ -65,9 +65,9 @@ int PhysicsManager::addObject(const int objectLibIndex,
                               const Magnum::ResourceKey& lightSetup) {
   //! Test Mesh primitive is valid
   assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
-      resourceManager_->getPhysicsObjectAttributes(objectLibIndex);
+      resourceManager_.getPhysicsObjectAttributes(objectLibIndex);
   const std::vector<assets::CollisionMeshData>& meshGroup =
-      resourceManager_->getCollisionMesh(objectLibIndex);
+      resourceManager_.getCollisionMesh(objectLibIndex);
 
   //! Make rigid object and add it to existingObjects
   int nextObjectID_ = allocateObjectID();
@@ -91,7 +91,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
 
   //! Draw object via resource manager
   //! Render node as child of physics node
-  resourceManager_->addObjectToDrawables(
+  resourceManager_.addObjectToDrawables(
       objectLibIndex, existingObjects_.at(nextObjectID_)->visualNode_,
       drawables, lightSetup);
   existingObjects_.at(nextObjectID_)->node().computeCumulativeBB();
@@ -117,7 +117,7 @@ int PhysicsManager::addObject(const std::string& configFile,
                               DrawableGroup* drawables,
                               scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
-  int resObjectID = resourceManager_->getObjectTemplateID(configFile);
+  int resObjectID = resourceManager_.getObjectTemplateID(configFile);
   //! Invoke resourceManager to draw object
   int physObjectID =
       addObject(resObjectID, drawables, attachmentNode, lightSetup);
@@ -514,7 +514,7 @@ void PhysicsManager::setObjectBBDraw(int physObjectID,
             existingObjects_[physObjectID]
                 ->visualNode_->getCumulativeBB()
                 .center());
-    resourceManager_->addPrimitiveToDrawables(
+    resourceManager_.addPrimitiveToDrawables(
         0, *existingObjects_.at(physObjectID)->BBNode_, drawables);
   }
 }
