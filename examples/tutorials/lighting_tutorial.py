@@ -1,6 +1,6 @@
 # [setup]
 import math
-import pathlib
+import os
 
 import magnum as mn
 import numpy as np
@@ -10,18 +10,29 @@ import habitat_sim
 from habitat_sim.gfx import LightInfo, LightPositionModel
 from habitat_sim.utils.common import quat_from_angle_axis, quat_to_magnum
 
+dir_path = os.path.dirname(os.path.realpath(__file__))
+data_path = os.path.join(dir_path, "../../data")
+output_path = os.path.join(dir_path, "lighting_tutorial_output/")
 
-def show_img(data):
+save_index = 0
+
+
+def show_img(data, save):
     plt.figure(figsize=(12, 12))
     plt.imshow(data, interpolation="nearest")
+    plt.axis("off")
     plt.show(block=False)
+    if save:
+        global save_index
+        plt.savefig(output_path + str(save_index) + ".png", bbox_inches="tight")
+        save_index += 1
     plt.pause(1)
 
 
-def get_obs(sim, show):
+def get_obs(sim, show, save):
     obs = sim.get_sensor_observations()["rgba_camera"]
     if show:
-        show_img(obs)
+        show_img(obs, save)
     return obs
 
 
@@ -56,8 +67,6 @@ def make_configuration():
     return habitat_sim.Configuration(backend_cfg, [agent_cfg])
 
 
-data_path = pathlib.Path(__file__).parent.absolute().joinpath("../../data/")
-
 x_axis = np.array([1, 0, 0])
 z_axis = np.array([0, 0, 1])
 y_axis = np.array([0, 1, 0])
@@ -65,24 +74,20 @@ y_axis = np.array([0, 1, 0])
 # [/setup]
 
 # This is wrapped such that it can be added to a unit test
-def main(show_imgs=True):
+def main(show_imgs=True, save_imgs=False):
+    if save_imgs:
+        if not os.path.exists(output_path):
+            os.mkdir(output_path)
 
-    # [example 1]
+    # [default scene lighting]
 
-    # create the simulator
+    # create the simulator and render flat shaded scene
     cfg = make_configuration()
     sim = habitat_sim.Simulator(cfg)
     agent_transform = place_agent(sim)
+    get_obs(sim, show_imgs, save_imgs)
 
-    # render with default flat shaded scene
-    get_obs(sim, show_imgs)
-
-    # reconfigure with DEFAULT_LIGHTING_KEY from NO_LIGHT_KEY:
-    new_cfg = make_configuration()
-    new_cfg.sim_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
-    sim.reconfigure(new_cfg)
-    agent_transform = place_agent(sim)
-    get_obs(sim, show_imgs)
+    # [scene swap shader]
 
     # close the simulator and re-initialize with DEFAULT_LIGHTING_KEY:
     sim.close()
@@ -90,45 +95,69 @@ def main(show_imgs=True):
     cfg.sim_cfg.scene_light_setup = habitat_sim.gfx.DEFAULT_LIGHTING_KEY
     sim = habitat_sim.Simulator(cfg)
     agent_transform = place_agent(sim)
-    get_obs(sim, show_imgs)
+    get_obs(sim, show_imgs, save_imgs)
 
-    exit()
-    # [/example 1]
+    # create and register new light setup:
+    my_scene_lighting_setup = [
+        LightInfo(position=np.array([0.0, 2.0, 0.6]), model=LightPositionModel.GLOBAL)
+    ]
+    sim.set_light_setup(my_scene_lighting_setup, "my_scene_lighting")
+
+    # reconfigure with custom key:
+    new_cfg = make_configuration()
+    new_cfg.sim_cfg.scene_light_setup = "my_scene_lighting"
+    sim.reconfigure(new_cfg)
+    agent_transform = place_agent(sim)
+    get_obs(sim, show_imgs, save_imgs)
+
+    # [/scene]
+
+    # reset to default scene shading
+    sim.close()
+    cfg = make_configuration()
+    sim = habitat_sim.Simulator(cfg)
+    agent_transform = place_agent(sim)
 
     # [example 2]
 
-    # load some object templates
+    # load some object templates from configuration files
     sphere_template_id = sim.load_object_configs(
-        str(data_path.joinpath("test_assets/objects/sphere"))
+        str(os.path.join(data_path, "test_assets/objects/sphere"))
     )[0]
     chair_template_id = sim.load_object_configs(
-        str(data_path.joinpath("test_assets/objects/chair"))
+        str(os.path.join(data_path, "test_assets/objects/chair"))
     )[0]
 
     id_1 = sim.add_object(sphere_template_id)
-    sim.set_translation(agent_transform.transform_point([0.3, 0.9, -1.8]), id_1)
+    sim.set_translation(np.array([3.2, 0.23, 0.03]), id_1)
 
-    get_obs(sim, show_imgs)
+    get_obs(sim, show_imgs, save_imgs)
 
     # [/example 2]
 
     # [example 3]
+
+    # create a custom LightSetup
     my_default_lighting = [
         LightInfo(position=[2.0, 2.0, 1.0], model=LightPositionModel.CAMERA)
     ]
-
+    # overwrite the default DEFAULT_LIGHTING_KEY LightSetup
     sim.set_light_setup(my_default_lighting)
 
-    get_obs(sim, show_imgs)
+    get_obs(sim, show_imgs, save_imgs)
 
     # [/example 3]
 
     # [example 4]
     id_2 = sim.add_object(chair_template_id)
-    sim.set_rotation(mn.Quaternion.rotation(mn.Deg(80), mn.Vector3.y_axis()), id_2)
-    sim.set_translation(agent_transform.transform_point([-0.6, 0.9, -1.5]), id_2)
+    sim.set_rotation(
+        mn.Quaternion.rotation(mn.Deg(90), mn.Vector3.x_axis())
+        * mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.z_axis()),
+        id_2,
+    )
+    sim.set_translation(np.array([3.06, 0.47, 1.15]), id_2)
 
-    get_obs(sim, show_imgs)
+    get_obs(sim, show_imgs, save_imgs)
 
     # [/example 4]
 
@@ -140,8 +169,9 @@ def main(show_imgs=True):
 
     # [/example 5]
 
-    # [example 6]
     remove_all_objects(sim)
+
+    # [example 6]
 
     id_1 = sim.add_object(chair_template_id, light_setup_key="my_custom_lighting")
     sim.set_rotation(
@@ -149,7 +179,7 @@ def main(show_imgs=True):
         * mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.z_axis()),
         id_1,
     )
-    sim.set_translation(agent_transform.transform_point([-0.8, 1.05, -1.5]), id_1)
+    sim.set_translation(np.array([3.06, 0.47, 1.15]), id_1)
 
     id_2 = sim.add_object(chair_template_id, light_setup_key="my_custom_lighting")
     sim.set_rotation(
@@ -157,9 +187,9 @@ def main(show_imgs=True):
         * mn.Quaternion.rotation(mn.Deg(-50), mn.Vector3.z_axis()),
         id_2,
     )
-    sim.set_translation(agent_transform.transform_point([1.0, 1.05, -1.75]), id_2)
+    sim.set_translation(np.array([3.45927, 0.47, -0.624958]), id_2)
 
-    get_obs(sim, show_imgs)
+    get_obs(sim, show_imgs, save_imgs)
 
     # [/example 6]
 
@@ -178,17 +208,17 @@ def main(show_imgs=True):
     ]
     sim.set_light_setup(new_light_setup, "my_custom_lighting")
 
-    get_obs(sim, show_imgs)
+    get_obs(sim, show_imgs, save_imgs)
 
     # [/example 8]
 
     # [example 9]
     sim.set_object_light_setup(id_1, habitat_sim.gfx.DEFAULT_LIGHTING_KEY)
 
-    get_obs(sim, show_imgs)
+    get_obs(sim, show_imgs, save_imgs)
 
     # [/example 9]
 
 
 if __name__ == "__main__":
-    main(show_imgs=True)
+    main(show_imgs=True, save_imgs=True)
