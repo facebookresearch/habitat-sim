@@ -128,7 +128,7 @@ class Viewer : public Mn::Platform::Application {
   esp::scene::SceneGraph* sceneGraph_;
   esp::scene::SceneNode* rootNode_;
 
-  esp::scene::SceneNode* navmeshVisNode_;
+  esp::scene::SceneNode* navmeshVisNode_ = nullptr;
 
   esp::gfx::RenderCamera* renderCamera_ = nullptr;
   esp::nav::PathFinder::ptr pathfinder_;
@@ -445,7 +445,7 @@ void Viewer::toggleNavMeshVisualization() {
     int nevMeshVisPrimID = resourceManager_.loadNavMeshVisualization(
         *pathfinder_, navmeshVisNode_, &sceneGraph_->getDrawables());
     navmeshVisNode_->translate({0, 0.1, 0});
-  } else {
+  } else if (navmeshVisNode_ != nullptr) {
     delete navmeshVisNode_;
     navmeshVisNode_ = nullptr;
   }
