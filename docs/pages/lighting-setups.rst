@@ -71,7 +71,7 @@ This configuration is ideal for scene assets with illumination baked into textur
     :start-after: # [default scene lighting]
     :end-before: # [scene swap shader]
 
-.. image:: images/lighting-setups-images/0.png
+.. image:: images/lighting-setups-images/0.jpg
     :width: 45%
 
 To use a custom light setup for the scene, edit the **habitat_sim.SimulatorConfiguration.scene_light_setup**
@@ -87,10 +87,10 @@ reconfigure the simulator to switch the scene's LightSetup key. Also, due to ass
 
 
 
-.. |im1| image:: images/lighting-setups-images/1.png
+.. |im1| image:: images/lighting-setups-images/1.jpg
    :width: 100%
 
-.. |im2| image:: images/lighting-setups-images/2.png
+.. |im2| image:: images/lighting-setups-images/2.jpg
    :width: 100%
 
 .. |cp1| replace:: After loading with DEFAULT_LIGHTING_KEY.
@@ -126,7 +126,7 @@ By default, new objects with Phong shading enabled are added to the scene with t
     :start-after: # [example 2]
     :end-before: # [/example 2]
 
-.. image:: images/lighting-setups-images/3.png
+.. image:: images/lighting-setups-images/3.jpg
     :width: 45%
 
 We can modify the default LightSetup by setting with an empty key.
@@ -136,7 +136,7 @@ We can modify the default LightSetup by setting with an empty key.
     :start-after: # [example 3]
     :end-before: # [/example 3]
 
-.. image:: images/lighting-setups-images/4.png
+.. image:: images/lighting-setups-images/4.jpg
     :width: 45%
 
 Newly added objects will use the current default lighting.
@@ -146,7 +146,7 @@ Newly added objects will use the current default lighting.
     :start-after: # [example 4]
     :end-before: # [/example 4]
 
-.. image:: images/lighting-setups-images/5.png
+.. image:: images/lighting-setups-images/5.jpg
     :width: 45%
 
 `Multiple Light Setups`_
@@ -166,7 +166,7 @@ To use this a light setup, pass in the name as a parameter to **Simulator.add_ob
     :start-after: # [example 6]
     :end-before: # [/example 6]
 
-.. image:: images/lighting-setups-images/6.png
+.. image:: images/lighting-setups-images/6.jpg
     :width: 45%
 
 You can get a copy of an existing configuration with **Simulator.get_light_setup**.
@@ -183,7 +183,7 @@ Updates to existing light setups will update all objects using that setup
     :start-after: # [example 8]
     :end-before: # [/example 8]
 
-.. image:: images/lighting-setups-images/7.png
+.. image:: images/lighting-setups-images/7.jpg
     :width: 45%
 
 You can change the light setup any individual object uses at any time.
@@ -193,5 +193,5 @@ You can change the light setup any individual object uses at any time.
     :start-after: # [example 9]
     :end-before: # [/example 9]
 
-.. image:: images/lighting-setups-images/8.png
+.. image:: images/lighting-setups-images/8.jpg
     :width: 45%

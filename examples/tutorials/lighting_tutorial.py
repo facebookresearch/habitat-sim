@@ -24,7 +24,9 @@ def show_img(data, save):
     plt.show(block=False)
     if save:
         global save_index
-        plt.savefig(output_path + str(save_index) + ".png", bbox_inches="tight")
+        plt.savefig(
+            output_path + str(save_index) + ".jpg", bbox_inches="tight", quality=50
+        )
         save_index += 1
     plt.pause(1)
 
