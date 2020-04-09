@@ -170,6 +170,55 @@ bool ResourceManager::loadScene(
   return meshSuccess;
 }
 
+void ResourceManager::initPhysicsManager(
+    std::shared_ptr<physics::PhysicsManager>& _physicsManager,
+    PhysicsManagerAttributes::ptr physicsManagerAttributes) {
+  //! PHYSICS INIT: Use the above config to initialize physics engine
+  bool defaultToNoneSimulator = true;
+  if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
+#ifdef ESP_BUILD_WITH_BULLET
+    _physicsManager.reset(
+        new physics::BulletPhysicsManager(*this, physicsManagerAttributes));
+    defaultToNoneSimulator = false;
+#else
+    LOG(WARNING)
+        << ":\n---\nPhysics was enabled and Bullet physics engine was "
+           "specified, but the project is built without Bullet support. "
+           "Objects added to the scene will be restricted to kinematic updates "
+           "only. Reinstall with --bullet to enable Bullet dynamics.\n---";
+#endif
+  }
+  // reset to base PhysicsManager to override previous as default behavior
+  // if the desired simulator is not supported reset to "none" in metaData
+  if (defaultToNoneSimulator) {
+    _physicsManager.reset(
+        new physics::PhysicsManager(*this, physicsManagerAttributes));
+    physicsManagerAttributes->setSimulator("none");
+  }
+  // load objects from sceneMetaData list...
+  for (auto objPhysPropertiesFilename :
+       physicsManagerAttributes->getStringGroup("objectLibraryPaths")) {
+    LOG(INFO) << "loading object: " << objPhysPropertiesFilename;
+    parseAndLoadPhysObjTemplate(objPhysPropertiesFilename);
+  }
+  LOG(INFO) << "loaded object templates: "
+            << std::to_string(physicsObjTemplateLibrary_.size());
+
+}  // ResourceManager::initPhysicsManager
+
+std::shared_ptr<physics::PhysicsManager> ResourceManager::buildPhysicsManager(
+    std::string physicsFilename /* data/default.phys_scene_config.json */) {
+  // In-memory representation of scene meta data
+  PhysicsManagerAttributes::ptr physicsManagerAttributes =
+      loadPhysicsConfig(physicsFilename);
+  physicsManagerLibrary_.emplace(physicsFilename, physicsManagerAttributes);
+  std::shared_ptr<physics::PhysicsManager> _physicsManager = nullptr;
+
+  initPhysicsManager(_physicsManager, physicsManagerAttributes);
+
+  return _physicsManager;
+}  // ResourceManager::buildPhysicsManager
+
 //! (1) Read config and set physics timestep
 //! (2) loadScene() with PhysicsSceneMetaData
 // TODO (JH): this function seems to entangle certain physicsManager functions
@@ -204,40 +253,11 @@ bool ResourceManager::loadScene(
         lightSetup /* = Mn::ResourceKey{NO_LIGHT_KEY} */) {
   // default scene mesh loading
   bool meshSuccess = loadScene(info, parent, drawables, lightSetup);
-
-  //! PHYSICS INIT: Use the above config to initialize physics engine
-  bool defaultToNoneSimulator = true;
-  if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
-#ifdef ESP_BUILD_WITH_BULLET
-    _physicsManager.reset(new physics::BulletPhysicsManager(*this));
-    defaultToNoneSimulator = false;
-#else
-    LOG(WARNING)
-        << ":\n---\nPhysics was enabled and Bullet physics engine was "
-           "specified, but the project is built without Bullet support. "
-           "Objects added to the scene will be restricted to kinematic updates "
-           "only. Reinstall with --bullet to enable Bullet dynamics.\n---";
-#endif
-  }
-
-  // reset to base PhysicsManager to override previous as default behavior
-  // if the desired simulator is not supported reset to "none" in metaData
-  if (defaultToNoneSimulator) {
-    _physicsManager.reset(new physics::PhysicsManager(*this));
-    physicsManagerAttributes->setSimulator("none");
-  }
-
-  // load objects from sceneMetaData list...
-  for (auto objPhysPropertiesFilename :
-       physicsManagerAttributes->getStringGroup("objectLibraryPaths")) {
-    LOG(INFO) << "loading object: " << objPhysPropertiesFilename;
-    parseAndLoadPhysObjTemplate(objPhysPropertiesFilename);
-  }
-  LOG(INFO) << "loaded object templates: "
-            << std::to_string(physicsObjTemplateLibrary_.size());
+  // (re)init physics manager
+  initPhysicsManager(_physicsManager, physicsManagerAttributes);
 
   // initialize the physics simulator
-  _physicsManager->initPhysics(parent, physicsManagerAttributes);
+  _physicsManager->initPhysics(parent);
 
   if (!meshSuccess) {
     LOG(ERROR) << "Physics manager loaded. Scene mesh load failed, aborting "
@@ -255,10 +275,10 @@ bool ResourceManager::loadScene(
 
   physicsSceneLibrary_.at(info.filepath)
       ->setFrictionCoefficient(
-          physicsManagerAttributes->getDouble("frictionCoefficient"));
+          physicsManagerAttributes->getFrictionCoefficient());
   physicsSceneLibrary_.at(info.filepath)
       ->setRestitutionCoefficient(
-          physicsManagerAttributes->getDouble("restitutionCoefficient"));
+          physicsManagerAttributes->getRestitutionCoefficient());
 
   physicsSceneLibrary_.at(info.filepath)->setRenderMeshHandle(info.filepath);
   physicsSceneLibrary_.at(info.filepath)->setCollisionMeshHandle(info.filepath);
@@ -377,8 +397,7 @@ PhysicsManagerAttributes::ptr ResourceManager::loadPhysicsConfig(
 
   if (scenePhysicsConfig.HasMember("friction coefficient") &&
       scenePhysicsConfig["friction coefficient"].IsNumber()) {
-    physicsManagerAttributes->setDouble(
-        "frictionCoefficient",
+    physicsManagerAttributes->setFrictionCoefficient(
         scenePhysicsConfig["friction coefficient"].GetDouble());
   } else {
     LOG(ERROR) << " Invalid value in scene config - friction coefficient";
@@ -386,8 +405,7 @@ PhysicsManagerAttributes::ptr ResourceManager::loadPhysicsConfig(
 
   if (scenePhysicsConfig.HasMember("restitution coefficient") &&
       scenePhysicsConfig["restitution coefficient"].IsNumber()) {
-    physicsManagerAttributes->setDouble(
-        "restitutionCoefficient",
+    physicsManagerAttributes->setRestitutionCoefficient(
         scenePhysicsConfig["restitution coefficient"].GetDouble());
   } else {
     LOG(ERROR) << " Invalid value in scene config - restitution coefficient";
@@ -407,7 +425,7 @@ PhysicsManagerAttributes::ptr ResourceManager::loadPhysicsConfig(
           grav[i] = scenePhysicsConfig["gravity"][i].GetDouble();
         }
       }
-      physicsManagerAttributes->setVec3("gravity", grav);
+      physicsManagerAttributes->setGravity(grav);
     }
   }
 
@@ -443,8 +461,6 @@ PhysicsManagerAttributes::ptr ResourceManager::loadPhysicsConfig(
 
 //! Only load and does not instantiate object
 //! For load-only: set parent = nullptr, drawables = nullptr
-
-// change to addObjectToDrawables, change to key by ID
 void ResourceManager::addObjectToDrawables(int objTemplateLibID,
                                            scene::SceneNode* parent,
                                            DrawableGroup* drawables,

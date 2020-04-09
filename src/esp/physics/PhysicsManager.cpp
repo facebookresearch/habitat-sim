@@ -10,21 +10,18 @@
 namespace esp {
 namespace physics {
 
-bool PhysicsManager::initPhysics(
-    scene::SceneNode* node,
-    const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes) {
+bool PhysicsManager::initPhysics(scene::SceneNode* node) {
   physicsNode_ = node;
 
   // Copy over relevant configuration
   fixedTimeStep_ = physicsManagerAttributes->getTimestep();
 
   //! Create new scene node and set up any physics-related variables
-  initialized_ = initPhysicsFinalize(physicsManagerAttributes);
+  initialized_ = initPhysicsFinalize();
   return initialized_;
 }
 
-bool PhysicsManager::initPhysicsFinalize(
-    const assets::PhysicsManagerAttributes::ptr) {
+bool PhysicsManager::initPhysicsFinalize() {
   //! Create new scene node
   staticSceneObject_ =
       physics::RigidObject::create_unique(&physicsNode_->createChild());
