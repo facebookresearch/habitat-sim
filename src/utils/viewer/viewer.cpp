@@ -76,15 +76,15 @@ class Viewer : public Mn::Platform::Application {
 
   void pokeLastObject();
   void pushLastObject();
+  void torqueLastObject();
+  void removeLastObject();
+  void wiggleLastObject();
 
   void recomputeNavMesh(const std::string& sceneFilename,
                         esp::nav::NavMeshSettings& navMeshSettings);
 
-  void torqueLastObject();
-  void removeLastObject();
   void invertGravity();
   Mn::Vector3 randomDirection();
-  void wiggleLastObject();
 
   void toggleNavMeshVisualization();
 

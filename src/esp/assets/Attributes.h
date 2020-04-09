@@ -182,6 +182,25 @@ class PhysicsManagerAttributes : public esp::core::Configuration {
   void setMaxSubsteps(int maxSubsteps) { setInt("maxSubsteps", maxSubsteps); }
   int getMaxSubsteps() const { return getInt("maxSubsteps"); }
 
+  void setGravity(const Magnum::Vector3& gravity) {
+    setVec3("gravity", gravity);
+  }
+  Magnum::Vector3 getGravity() const { return getVec3("gravity"); }
+
+  void setFrictionCoefficient(double frictionCoefficient) {
+    setDouble("frictionCoefficient", frictionCoefficient);
+  }
+  double getFrictionCoefficient() const {
+    return getDouble("frictionCoefficient");
+  }
+
+  void setRestitutionCoefficient(double restitutionCoefficient) {
+    setDouble("restitutionCoefficient", restitutionCoefficient);
+  }
+  double getRestitutionCoefficient() const {
+    return getDouble("restitutionCoefficient");
+  }
+
   ESP_SMART_POINTERS(PhysicsManagerAttributes)
 };  // end PhysicsManagerAttributes
 
