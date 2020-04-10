@@ -171,13 +171,13 @@ bool ResourceManager::loadScene(
 }
 
 void ResourceManager::initPhysicsManager(
-    std::shared_ptr<physics::PhysicsManager>& _physicsManager,
+    std::shared_ptr<physics::PhysicsManager>& physicsManager,
     PhysicsManagerAttributes::ptr physicsManagerAttributes) {
   //! PHYSICS INIT: Use the above config to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
 #ifdef ESP_BUILD_WITH_BULLET
-    _physicsManager.reset(
+    physicsManager.reset(
         new physics::BulletPhysicsManager(*this, physicsManagerAttributes));
     defaultToNoneSimulator = false;
 #else
@@ -191,11 +191,11 @@ void ResourceManager::initPhysicsManager(
   // reset to base PhysicsManager to override previous as default behavior
   // if the desired simulator is not supported reset to "none" in metaData
   if (defaultToNoneSimulator) {
-    _physicsManager.reset(
+    physicsManager.reset(
         new physics::PhysicsManager(*this, physicsManagerAttributes));
     physicsManagerAttributes->setSimulator("none");
   }
-  // load objects from sceneMetaData list...
+  // load object templates from sceneMetaData list...
   for (auto objPhysPropertiesFilename :
        physicsManagerAttributes->getStringGroup("objectLibraryPaths")) {
     LOG(INFO) << "loading object: " << objPhysPropertiesFilename;
@@ -203,6 +203,8 @@ void ResourceManager::initPhysicsManager(
   }
   LOG(INFO) << "loaded object templates: "
             << std::to_string(physicsObjTemplateLibrary_.size());
+
+  //"load" primitive physicsObjectTemplates
 
 }  // ResourceManager::initPhysicsManager
 
@@ -502,13 +504,27 @@ void ResourceManager::addObjectToDrawables(int objTemplateLibID,
 }  // addObjectToDrawables
 
 PhysicsObjectAttributes::ptr ResourceManager::getPhysicsObjectAttributes(
-    const std::string& objectName) {
-  return physicsObjTemplateLibrary_.at(objectName);
-}
-PhysicsObjectAttributes::ptr ResourceManager::getPhysicsObjectAttributes(
     const int objectTemplateID) {
   return physicsObjTemplateLibrary_.at(getObjectConfig(objectTemplateID));
 }
+
+bool ResourceManager::FileMeshLoad(AssetInfo& meshInfo,
+                                   const std::string& objectTemplateHandle,
+                                   const std::string& fileName,
+                                   const std::string& meshType,
+                                   const bool requiresLighting) {
+  bool success = false;
+  if (!fileName.empty()) {
+    meshInfo = assets::AssetInfo::fromPath(fileName);
+    meshInfo.requiresLighting = requiresLighting;
+    success = loadGeneralMeshData(meshInfo);
+    if (!success) {
+      LOG(ERROR) << "Failed to load a physical object's " << meshType
+                 << " mesh: " << objectTemplateHandle << ", " << fileName;
+    }
+  }
+  return success;
+}  // FileMeshLoad
 
 int ResourceManager::loadObjectTemplate(
     PhysicsObjectAttributes::ptr objectTemplate,
@@ -520,37 +536,41 @@ int ResourceManager::loadObjectTemplate(
   //! Get render mesh names
   std::string renderMeshFilename = objectTemplate->getRenderMeshHandle();
   std::string collisionMeshFilename = objectTemplate->getCollisionMeshHandle();
-
-  bool renderMeshSuccess = false;
-  bool collisionMeshSuccess = false;
   AssetInfo renderMeshinfo;
   AssetInfo collisionMeshinfo;
 
   bool requiresLighting = objectTemplate->getRequiresLighting();
 
-  //! Load rendering mesh
-  if (!renderMeshFilename.empty()) {
-    renderMeshinfo = assets::AssetInfo{AssetType::UNKNOWN, renderMeshFilename};
-    renderMeshinfo.requiresLighting = requiresLighting;
-    renderMeshSuccess = loadGeneralMeshData(renderMeshinfo);
-    if (!renderMeshSuccess) {
-      LOG(ERROR) << "Failed to load a physical object's render mesh: "
-                 << objectTemplateHandle << ", " << renderMeshFilename;
-    }
-  }
-  //! Load collision mesh
-  if (!collisionMeshFilename.empty()) {
-    collisionMeshinfo =
-        assets::AssetInfo{AssetType::UNKNOWN, collisionMeshFilename};
-    // if render mesh failed, might have to generate lighting data for collision
-    // mesh since we will use it to render
-    collisionMeshinfo.requiresLighting = !renderMeshSuccess && requiresLighting;
-    collisionMeshSuccess = loadGeneralMeshData(collisionMeshinfo);
-    if (!collisionMeshSuccess) {
-      LOG(ERROR) << "Failed to load a physical object's collision mesh: "
-                 << objectTemplateHandle << ", " << collisionMeshFilename;
-    }
-  }
+  bool renderMeshSuccess =
+      FileMeshLoad(renderMeshinfo, objectTemplateHandle, renderMeshFilename,
+                   "render", requiresLighting);
+  bool collisionMeshSuccess =
+      FileMeshLoad(collisionMeshinfo, objectTemplateHandle,
+                   collisionMeshFilename, "render", requiresLighting);
+
+  // //! Load rendering mesh
+  // if (!renderMeshFilename.empty()) {
+  //   renderMeshinfo = assets::AssetInfo::fromPath(renderMeshFilename);
+  //   renderMeshinfo.requiresLighting = requiresLighting;
+  //   renderMeshSuccess = loadGeneralMeshData(renderMeshinfo);
+  //   if (!renderMeshSuccess) {
+  //     LOG(ERROR) << "Failed to load a physical object's render mesh: "
+  //                << objectTemplateHandle << ", " << renderMeshFilename;
+  //   }
+  // }
+  // //! Load collision mesh
+  // if (!collisionMeshFilename.empty()) {
+  //   collisionMeshinfo = assets::AssetInfo::fromPath(collisionMeshFilename);
+  //   // if render mesh failed, might have to generate lighting data for
+  //   collision
+  //   // mesh since we will use it to render
+  //   collisionMeshinfo.requiresLighting = !renderMeshSuccess &&
+  //   requiresLighting; collisionMeshSuccess =
+  //   loadGeneralMeshData(collisionMeshinfo); if (!collisionMeshSuccess) {
+  //     LOG(ERROR) << "Failed to load a physical object's collision mesh: "
+  //                << objectTemplateHandle << ", " << collisionMeshFilename;
+  //   }
+  // }
 
   if (!renderMeshSuccess && !collisionMeshSuccess) {
     // we only allow objects with SOME mesh file. Failing
@@ -594,14 +614,14 @@ int ResourceManager::loadObjectTemplate(
   return objectTemplateID;
 }
 
-// load object from config filename
+// load object template from config filename
 int ResourceManager::parseAndLoadPhysObjTemplate(
     const std::string& objPhysConfigFilename) {
   // check for duplicate load
   const bool objTemplateExists =
       physicsObjTemplateLibrary_.count(objPhysConfigFilename) > 0;
   if (objTemplateExists) {
-    return physicsObjTemplateLibrary_[objPhysConfigFilename]
+    return physicsObjTemplateLibrary_.at(objPhysConfigFilename)
         ->getObjectTemplateID();
   }
 
@@ -623,6 +643,7 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
 
   // 2. construct a physicsObjectMetaData
   auto physicsObjectAttributes = PhysicsObjectAttributes::create();
+  physicsObjectAttributes->setOriginHandle(objPhysConfigFilename);
 
   // NOTE: these paths should be relative to the properties file
   std::string propertiesFileDirectory =
@@ -800,10 +821,16 @@ std::string ResourceManager::getObjectConfig(const int objectTemplateID) {
   const bool physObjTemplateExists =
       physicsObjTmpltLibByID_.count(objectTemplateID) > 0;
   if (!physObjTemplateExists) {
-    Corrade::Utility::Debug() << "ResourceManager::getObjectConfig - Aborting. "
-                                 "No template with index "
-                              << objectTemplateID;
-    return "";
+    const bool physPrimTemplateExists =
+        physicsPrimTmpltLibByID_.count(objectTemplateID) > 0;
+    if (!physPrimTemplateExists) {
+      Corrade::Utility::Debug()
+          << "ResourceManager::getObjectConfig - Aborting. "
+             "No loaded or primitive template with index "
+          << objectTemplateID << " exists.";
+      return "";
+    }
+    return physicsPrimTmpltLibByID_.at(objectTemplateID);
   }
   return physicsObjTmpltLibByID_.at(objectTemplateID);
 }

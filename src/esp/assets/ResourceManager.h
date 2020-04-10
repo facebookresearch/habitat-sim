@@ -327,7 +327,9 @@ class ResourceManager {
    * @return A mutable reference to the object template for the asset.
    */
   PhysicsObjectAttributes::ptr getPhysicsObjectAttributes(
-      const std::string& configFile);
+      const std::string& configFile) {
+    return physicsObjTemplateLibrary_.at(configFile);
+  }
 
   /**
    * @brief Get a reference to the physics object template for the asset
@@ -349,6 +351,24 @@ class ResourceManager {
    * @return The size of the @ref physicsObjTemplateLibrary_.
    */
   int getNumLibraryObjects() { return physicsObjTemplateLibrary_.size(); };
+
+  /**
+   * @brief Gets the number of loaded object templates stored in the @ref
+   * physicsObjTemplateLibrary_.
+   *
+   * @return The number of entries in @ref physicsObjTemplateLibrary_ that are
+   * loaded from files.
+   */
+  int getNumFileTemplateObjects() { return physicsObjTmpltLibByID_.size(); };
+
+  /**
+   * @brief Gets the number of primitive template objects stored in the @ref
+   * physicsObjTemplateLibrary_.
+   *
+   * @return The number of entries in @ref physicsObjTemplateLibrary_ that
+   * describe primitives.
+   */
+  int getNumPrimTemplateObjects() { return physicsPrimTmpltLibByID_.size(); };
 
   /**
    * @brief Retrieve the composition of all transforms applied to a mesh since
@@ -444,7 +464,7 @@ class ResourceManager {
   /**
    * @brief Instantiate, or reinstatiate, PhysicsManager defined by passed
    * attributes
-   * @param _physicsManager The currently defined @ref physics::PhysicsManager.
+   * @param physicsManager The currently defined @ref physics::PhysicsManager.
    * Will be reseted to the configured physics implementation.
    * @param physicsFilename The physics configuration file from which to
    * re-instatiate the @ref physics::PhysicsManager and parse object templates
@@ -452,8 +472,25 @@ class ResourceManager {
    * @ref physicsObjTemplateLibrary_. Defaults to the file location @ref
    * ESP_DEFAULT_PHYS_SCENE_CONFIG set by cmake.*/
   void initPhysicsManager(
-      std::shared_ptr<physics::PhysicsManager>& _physicsManager,
+      std::shared_ptr<physics::PhysicsManager>& physicsManager,
       PhysicsManagerAttributes::ptr physicsManagerAttributes);
+
+  /**
+   * @brief Load the requested mesh info into @ref meshInfo corresponding to
+   * specified @ref meshType used by @ref objectTemplateHandle
+   *
+   * @param meshInfo AssetInfo destination for desired mesh
+   * @param objectTemplateHandle the handle for the object owning this mesh
+   * @param fileName the name of the file describing this mesh
+   * @param meshType either "render" or "collision"
+   * @param requiresLighting whether or not this mesh asset responds to lighting
+   * @return whether or not the mesh was loaded successfully
+   */
+  bool FileMeshLoad(AssetInfo& meshInfo,
+                    const std::string& objectTemplateHandle,
+                    const std::string& fileName,
+                    const std::string& meshType,
+                    const bool requiresLighting);
 
  protected:
   /**
@@ -801,13 +838,15 @@ class ResourceManager {
   std::map<std::string, std::vector<CollisionMeshData>> collisionMeshGroups_;
 
   /**
-   * @brief Maps object template ID to object template file names
-   *
-   * See @ref physicsObjTemplateLibrary_, @ref collisionMeshGroups_. NOTE: can't
-   * get keys from the map (easily), so store them for iteration.
-   * TODO: remove this. Unnecessary: use an iterator to get the keys.
+   * @brief Maps loaded object template ID to object template handles (file
+   * names)
    */
   std::map<int, std::string> physicsObjTmpltLibByID_;
+
+  /**
+   * @brief Maps primitive object template IDs to primitive template handles
+   */
+  std::map<int, std::string> physicsPrimTmpltLibByID_;
 
   // ======== Rendering Utility Functions ========
 
