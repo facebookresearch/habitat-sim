@@ -126,7 +126,7 @@ class ResourceManager {
    * @brief Load and instantiate a scene including physics simulation.
    *
    * Loads a physics simulator for the world from the parameters defined in the
-   * @ref PhysicsManagerAttributes and resets the @ref physics::PhysicsManager
+   * @ref PhysicsManagerAttributes and reseats the @ref physics::PhysicsManager
    * based on the configured simulator implementation. Loads the scene mesh and
    * adds it to the specified @ref DrawableGroup as a child of the specified
    * @ref scene::SceneNode. If these are not specified, the assets are loaded,
@@ -134,7 +134,7 @@ class ResourceManager {
    * rendered).
    * @param info The loaded @ref AssetInfo for the scene mesh.
    * @param _physicsManager The currently defined @ref physics::PhysicsManager.
-   * Will be reseted to the configured physics implementation.
+   * Will be reseated to the configured physics implementation.
    * @param physicsManagerAttributes A smart pointer to meta data structure
    * storing configured physics simulation parameters.
    * @param parent The @ref scene::SceneNode of which the scene mesh will be
@@ -158,14 +158,14 @@ class ResourceManager {
    * Loads a physics simulator for the world from the parameters defined in the
    * referenced configuration file. Also attempts to parse physical objects
    * listed in this configuration file into the @ref physicsObjTemplateLibrary_.
-   * Resets the @ref physics::PhysicsManager based on the configured simulator
+   * Reseats the @ref physics::PhysicsManager based on the configured simulator
    * implementation. Loads the scene mesh and adds it to the specified @ref
    * DrawableGroup as a child of the specified @ref scene::SceneNode. If these
    * are not specified, the assets are loaded, but no new @ref gfx::Drawable is
    * added for the scene (i.e. it will not be rendered).
    * @param info The loaded @ref AssetInfo for the scene mesh.
    * @param _physicsManager The currently defined @ref physics::PhysicsManager.
-   * Will be reseted to the configured physics implementation.
+   * Will be reseated to the configured physics implementation.
    * @param parent The @ref scene::SceneNode of which the scene mesh will be
    * added as a child. Typically near the root of the scene. Expected to be
    * static.
