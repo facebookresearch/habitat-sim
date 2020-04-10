@@ -25,7 +25,10 @@ def show_img(data, save):
     if save:
         global save_index
         plt.savefig(
-            output_path + str(save_index) + ".jpg", bbox_inches="tight", quality=50
+            output_path + str(save_index) + ".jpg",
+            bbox_inches="tight",
+            pad_inches=0,
+            quality=50,
         )
         save_index += 1
     plt.pause(1)
@@ -48,8 +51,8 @@ def place_agent(sim):
     agent_state = habitat_sim.AgentState()
     agent_state.position = [5.0, 0.0, 1.0]
     agent_state.rotation = quat_from_angle_axis(
-        math.radians(70), y_axis
-    ) * quat_from_angle_axis(math.radians(-20), x_axis)
+        math.radians(70), np.array([0, 1, 0])
+    ) * quat_from_angle_axis(math.radians(-20), np.array([1, 0, 0]))
     agent = sim.initialize_agent(0, agent_state)
     return agent.scene_node.transformation_matrix()
 
@@ -68,10 +71,6 @@ def make_configuration():
 
     return habitat_sim.Configuration(backend_cfg, [agent_cfg])
 
-
-x_axis = np.array([1, 0, 0])
-z_axis = np.array([0, 0, 1])
-y_axis = np.array([0, 1, 0])
 
 # [/setup]
 
@@ -139,11 +138,11 @@ def main(show_imgs=True, save_imgs=False):
 
     # [example 3]
 
-    # create a custom LightSetup
+    # create a custom light setup
     my_default_lighting = [
         LightInfo(position=[2.0, 2.0, 1.0], model=LightPositionModel.CAMERA)
     ]
-    # overwrite the default DEFAULT_LIGHTING_KEY LightSetup
+    # overwrite the default DEFAULT_LIGHTING_KEY light setup
     sim.set_light_setup(my_default_lighting)
 
     get_obs(sim, show_imgs, save_imgs)
@@ -198,9 +197,7 @@ def main(show_imgs=True, save_imgs=False):
     # [example 7]
     existing_light_setup = sim.get_light_setup("my_custom_lighting")
 
-    # [/example 7]
-
-    # [example 8]
+    # create a new setup with an additional light
     new_light_setup = existing_light_setup + [
         LightInfo(
             position=[0.0, 0.0, 0.0],
@@ -208,6 +205,15 @@ def main(show_imgs=True, save_imgs=False):
             model=LightPositionModel.CAMERA,
         )
     ]
+
+    # register the old setup under a new name
+    sim.set_light_setup(existing_light_setup, "my_old_custom_lighting")
+
+    # [/example 7]
+
+    # [example 8]
+
+    # register the new setup overwriting the old one
     sim.set_light_setup(new_light_setup, "my_custom_lighting")
 
     get_obs(sim, show_imgs, save_imgs)
