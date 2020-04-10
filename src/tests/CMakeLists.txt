@@ -1,3 +1,6 @@
+find_package(Magnum REQUIRED DebugTools AnyImageConverter)
+find_package(MagnumPlugins REQUIRED StbImageImporter)
+
 macro(TEST TEST_NAME)
   add_executable(${TEST_NAME} "${TEST_NAME}.cpp")
   target_link_libraries(${TEST_NAME} core gtest_main)
