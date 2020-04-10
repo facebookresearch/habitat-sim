@@ -330,7 +330,7 @@ void Viewer::addObject(int ID) {
   objectIDs_.push_back(physObjectID);
 }  // addObject
 
-void Viewer::addObject(std::string configFile) {
+void Viewer::addObject(const std::string& configFile) {
   addObject(resourceManager_.getObjectTemplateID(configFile));
 }  // addObject
 
