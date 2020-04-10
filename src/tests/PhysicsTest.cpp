@@ -423,12 +423,12 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   }
 
   // test constant velocity control mechanism
-  esp::physics::VelocityControl& velControl =
+  esp::physics::VelocityControl::ptr velControl =
       physicsManager_->getVelocityControl(objectId);
-  velControl.controllingAngVel = true;
-  velControl.controllingLinVel = true;
-  velControl.linVel = Magnum::Vector3{1.0, -1.0, 1.0};
-  velControl.angVel = Magnum::Vector3{1.0, 0, 0};
+  velControl->controllingAngVel = true;
+  velControl->controllingLinVel = true;
+  velControl->linVel = Magnum::Vector3{1.0, -1.0, 1.0};
+  velControl->angVel = Magnum::Vector3{1.0, 0, 0};
 
   // first kinematic
   physicsManager_->setObjectMotionType(objectId,
@@ -448,9 +448,8 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
       errorEps);
   Magnum::Rad angleError =
       Magnum::Math::angle(physicsManager_->getRotation(objectId), qGroundTruth);
-  if (!std::isnan(float(angleError))) {  // nan results close to equality
-    ASSERT_LE(float(angleError), errorEps);
-  }
+
+  ASSERT_LE(float(angleError), errorEps);
 
   if (physicsManager_->getPhysicsSimulationLibrary() ==
       PhysicsManager::PhysicsSimulationLibrary::BULLET) {
@@ -463,7 +462,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
 
     // should closely follow kinematic result while uninhibited in 0 gravity
     float targetTime = 0.5;
-    Magnum::Matrix4 kinematicResult = velControl.integrateTransform(
+    Magnum::Matrix4 kinematicResult = velControl->integrateTransform(
         targetTime, physicsManager_->getTransformation(objectId));
     while (physicsManager_->getWorldTime() < targetTime) {
       physicsManager_->stepPhysics(physicsManager_->getTimestep());
@@ -622,10 +621,10 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
           physicsManager_->setObjectMotionType(
               instancedObjects[0], esp::physics::MotionType::KINEMATIC);
 
-          esp::physics::VelocityControl& velCon =
+          esp::physics::VelocityControl::ptr velCon =
               physicsManager_->getVelocityControl(instancedObjects[0]);
-          velCon.controllingLinVel = true;
-          velCon.linVel = {0.2, 0, 0};
+          velCon->controllingLinVel = true;
+          velCon->linVel = {0.2, 0, 0};
 
           physicsManager_->setTranslation(instancedObjects[1],
                                           {0, boxHalfExtent * 5, 0});

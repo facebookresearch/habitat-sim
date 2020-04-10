@@ -80,48 +80,14 @@ class BulletRigidObject : public RigidObject,
    * @param rigidBodyNode The @ref scene::SceneNode this feature will be
    * attached to.
    */
-  BulletRigidObject(scene::SceneNode* rigidBodyNode);
+  BulletRigidObject(scene::SceneNode* rigidBodyNode,
+                    std::shared_ptr<btMultiBodyDynamicsWorld> bWorld);
 
   /**
    * @brief Destructor cleans up simulation structures for the object.
    */
   virtual ~BulletRigidObject();
 
-  /**
-   * @brief Initializes this @ref BulletRigidObject as static scene geometry.
-   * See @ref PhysicsManager::staticSceneObject_. Sets @ref rigidObjectType_ to
-   * @ref RigidObjectType::SCENE. See @ref btCollisionObject.
-   * @param physicsSceneAttributes The template structure defining relevant
-   * phyiscal parameters for the physical scene.
-   * @param meshGroup The collision mesh data for the scene.
-   * @param bWorld The @ref btMultiBodyDynamicsWorld to which the scene should
-   * belong.
-   * @return true if initialized successfully, false otherwise.
-   */
-  bool initializeScene(
-      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
-      const assets::MeshMetaData& metaData,
-      const std::vector<assets::CollisionMeshData>& meshGroup,
-      std::shared_ptr<btMultiBodyDynamicsWorld> bWorld);
-
-  /**
-   * @brief Initializes this @ref BulletRigidObject as a @ref
-   * MotionType::DYNAMIC object. Sets @ref rigidObjectType_ to @ref
-   * RigidObjectType::OBJECT. See @ref btRigidBody.
-   * @param physicsObjectAttributes The template structure defining relevant
-   * phyiscal parameters for the object. See @ref
-   * esp::assets::ResourceManager::physicsObjectLibrary_.
-   * @param bWorld The @ref btMultiBodyDynamicsWorld to which the object should
-   * belong.
-   * @param metaData Mesh transform hierarchy information for the object.
-   * @param meshGroup The collision mesh data for the object.
-   * @return true if initialized successfully, false otherwise.
-   */
-  bool initializeObject(
-      const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-      std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
-      const assets::MeshMetaData& metaData,
-      const std::vector<assets::CollisionMeshData>& meshGroup);
   /**
    * @brief Finalize this object with any necessary post-creation processes.
    */
@@ -440,6 +406,39 @@ class BulletRigidObject : public RigidObject,
    * @return The Aabb.
    */
   const Magnum::Range3D getCollisionShapeAabb() const;
+
+ private:
+  /**
+   * @brief Initializes this @ref BulletRigidObject as static scene geometry.
+   * See @ref PhysicsManager::staticSceneObject_. Sets @ref rigidObjectType_ to
+   * @ref RigidObjectType::SCENE. See @ref btCollisionObject.
+   * @param physicsSceneAttributes The template structure defining relevant
+   * phyiscal parameters for the physical scene.
+   * @param meshGroup The collision mesh data for the scene.
+   * @param bWorld The @ref btMultiBodyDynamicsWorld to which the scene should
+   * belong.
+   * @return true if initialized successfully, false otherwise.
+   */
+  bool initializeSceneFinalize(
+      const assets::ResourceManager& resMgr,
+      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
+      const std::vector<assets::CollisionMeshData>& meshGroup) override;
+
+  /**
+   * @brief Finalize initialization of this @ref BulletRigidObject as a @ref
+   * MotionType::DYNAMIC object. See @ref btRigidBody.
+   * @param resMgr Reference to resource manager, to access relevant components
+   * pertaining to the scene object
+   * @param physicsObjectAttributes The template structure defining relevant
+   * phyiscal parameters for the object. See @ref
+   * esp::assets::ResourceManager::physicsObjectLibrary_.
+   * @param meshGroup The collision mesh data for the object.
+   * @return true if initialized successfully, false otherwise.
+   */
+  bool initializeObjectFinalize(
+      const assets::ResourceManager& resMgr,
+      const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
+      const std::vector<assets::CollisionMeshData>& meshGroup) override;
 
  protected:
   /**

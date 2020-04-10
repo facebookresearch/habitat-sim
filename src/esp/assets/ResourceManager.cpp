@@ -209,7 +209,7 @@ bool ResourceManager::loadScene(
   bool defaultToNoneSimulator = true;
   if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
 #ifdef ESP_BUILD_WITH_BULLET
-    _physicsManager.reset(new physics::BulletPhysicsManager(this));
+    _physicsManager.reset(new physics::BulletPhysicsManager(*this));
     defaultToNoneSimulator = false;
 #else
     LOG(WARNING)
@@ -223,7 +223,7 @@ bool ResourceManager::loadScene(
   // reset to base PhysicsManager to override previous as default behavior
   // if the desired simulator is not supported reset to "none" in metaData
   if (defaultToNoneSimulator) {
-    _physicsManager.reset(new physics::PhysicsManager(this));
+    _physicsManager.reset(new physics::PhysicsManager(*this));
     physicsManagerAttributes->setSimulator("none");
   }
 

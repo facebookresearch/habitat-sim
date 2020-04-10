@@ -17,6 +17,7 @@
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
+#include "esp/assets/ResourceManager.h"
 #include "esp/core/esp.h"
 #include "esp/scene/SceneNode.h"
 
@@ -24,7 +25,8 @@ namespace esp {
 
 namespace assets {
 class PhysicsObjectAttributes;
-}
+class ResourceManager;
+}  // namespace assets
 namespace physics {
 
 /**
@@ -89,6 +91,8 @@ enum class RigidObjectType {
  * body. */
 struct VelocityControl {
  public:
+  virtual ~VelocityControl(){};
+
   /**@brief Constant linear velocity. */
   Magnum::Vector3 linVel;
   /**@brief Constant angular velocity. */
@@ -124,6 +128,8 @@ struct VelocityControl {
   virtual Magnum::Matrix4 integrateTransform(
       const float dt,
       const Magnum::Matrix4& objectTransform);
+
+  ESP_SMART_POINTERS(VelocityControl)
 };
 
 /**
@@ -143,6 +149,11 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * attached to.
    */
   RigidObject(scene::SceneNode* rigidBodyNode);
+
+  /**
+   * @brief Virtual destructor for a @ref RigidObject.
+   */
+  virtual ~RigidObject(){};
 
   /**
    * @brief Get the scene node being attached to.
@@ -169,7 +180,8 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @param meshGroup The collision mesh data for the scene.
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initializeScene(
+  bool initializeScene(
+      const assets::ResourceManager& resMgr,
       const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
@@ -182,7 +194,8 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @param meshGroup The collision mesh data for the object.
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initializeObject(
+  bool initializeObject(
+      const assets::ResourceManager& resMgr,
       const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
@@ -190,11 +203,6 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @brief Finalize this object with any necessary post-creation processes.
    */
   virtual void finalizeObject() {}
-
-  /**
-   * @brief Virtual destructor for a @ref RigidObject.
-   */
-  virtual ~RigidObject(){};
 
   /**
    * @brief Check whether object is being actively simulated, or sleeping.
@@ -330,7 +338,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
 
   /**@brief Retrieves a reference to the VelocityControl struct for this object.
    */
-  VelocityControl& getVelocityControl() { return velControl_; };
+  VelocityControl::ptr getVelocityControl() { return velControl_; };
 
   // ==== Transformations ===
 
@@ -583,7 +591,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @brief Convenience variable: specifies a constant control velocity (linear
    * | angular) applied to the rigid body before each step.
    */
-  VelocityControl velControl_;
+  VelocityControl::ptr velControl_;
 
   /** @brief The @ref MotionType of the object. Determines what operations can
    * be performed on this object. */
@@ -599,6 +607,39 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    */
   assets::PhysicsObjectAttributes::ptr initializationAttributes_;
 
+ private:
+  /**
+   * @brief Finalize the initialization of this @ref RigidObject as static scene
+   * geometry.  This is overridden by inheriting objects
+   * @param resMgr Reference to resource manager, to access relevant components
+   * pertaining to the scene object
+   * @param physicsSceneAttributes The template structure defining relevant
+   * phyiscal parameters for the physical scene.
+   * @param meshGroup The collision mesh data for the scene.
+   * @return true if initialized successfully, false otherwise.
+   */
+  virtual bool initializeSceneFinalize(
+      const assets::ResourceManager& resMgr,
+      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
+      const std::vector<assets::CollisionMeshData>& meshGroup);
+
+  /**
+   * @brief Finalize initialization of this @ref RigidObject as a potentially
+   * moveable object. This is overridden by inheriting objects
+   * @param resMgr Reference to resource manager, to access relevant components
+   * pertaining to the scene object
+   * @param physicsObjectAttributes The template structure defining relevant
+   * phyiscal parameters for the object. See @ref
+   * esp::assets::ResourceManager::physicsObjectLibrary_.
+   * @param meshGroup The collision mesh data for the object.
+   * @return true if initialized successfully, false otherwise.
+   */
+  virtual bool initializeObjectFinalize(
+      const assets::ResourceManager& resMgr,
+      const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
+      const std::vector<assets::CollisionMeshData>& meshGroup);
+
+ protected:
   /** @brief Used to synchronize other simulator's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic
    * updates.*/

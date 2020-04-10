@@ -5,7 +5,6 @@
 #include "esp/bindings/bindings.h"
 
 #include "esp/core/Configuration.h"
-#include "esp/physics/PhysicsManager.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -42,19 +41,6 @@ void initCoreBindings(py::module& m) {
 }
 
 }  // namespace core
-
-namespace physics {
-
-void initPhysicsBindings(py::module& m) {
-  // ==== enum object MotionType ====
-  py::enum_<MotionType>(m, "MotionType")
-      .value("ERROR_MOTIONTYPE", MotionType::ERROR_MOTIONTYPE)
-      .value("STATIC", MotionType::STATIC)
-      .value("KINEMATIC", MotionType::KINEMATIC)
-      .value("DYNAMIC", MotionType::DYNAMIC);
-}
-
-}  // namespace physics
 }  // namespace esp
 
 PYBIND11_MODULE(habitat_sim_bindings, m) {

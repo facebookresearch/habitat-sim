@@ -38,8 +38,8 @@ bool BulletPhysicsManager::initPhysicsFinalize(
   bWorld_->setGravity(btVector3(physicsManagerAttributes->getVec3("gravity")));
 
   //! Create new scene node
-  staticSceneObject_ =
-      physics::BulletRigidObject::create_unique(&physicsNode_->createChild());
+  staticSceneObject_ = physics::BulletRigidObject::create_unique(
+      &physicsNode_->createChild(), bWorld_);
 
   return true;
 }
@@ -49,13 +49,9 @@ bool BulletPhysicsManager::initPhysicsFinalize(
 bool BulletPhysicsManager::addSceneFinalize(
     const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
-  const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
-      physicsSceneAttributes->getCollisionMeshHandle());
-
   //! Initialize scene
-  bool sceneSuccess = static_cast<BulletRigidObject*>(staticSceneObject_.get())
-                          ->initializeScene(physicsSceneAttributes, metaData,
-                                            meshGroup, bWorld_);
+  bool sceneSuccess = staticSceneObject_->initializeScene(
+      resourceManager_, physicsSceneAttributes, meshGroup);
 
   return sceneSuccess;
 }
@@ -65,11 +61,9 @@ bool BulletPhysicsManager::makeAndAddRigidObject(
     const std::vector<assets::CollisionMeshData>& meshGroup,
     assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
     scene::SceneNode* objectNode) {
-  auto ptr = physics::BulletRigidObject::create_unique(objectNode);
-  const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
-      physicsObjectAttributes->getCollisionMeshHandle());
-  bool objSuccess = ptr->initializeObject(physicsObjectAttributes, bWorld_,
-                                          metaData, meshGroup);
+  auto ptr = physics::BulletRigidObject::create_unique(objectNode, bWorld_);
+  bool objSuccess = ptr->initializeObject(resourceManager_,
+                                          physicsObjectAttributes, meshGroup);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }
@@ -135,33 +129,33 @@ void BulletPhysicsManager::stepPhysics(double dt) {
 
   // set specified control velocities
   for (auto& objectItr : existingObjects_) {
-    VelocityControl& velControl = objectItr.second->getVelocityControl();
+    VelocityControl::ptr velControl = objectItr.second->getVelocityControl();
     if (objectItr.second->getMotionType() == MotionType::KINEMATIC) {
       // kinematic velocity control intergration
-      if (velControl.controllingAngVel || velControl.controllingLinVel) {
+      if (velControl->controllingAngVel || velControl->controllingLinVel) {
         scene::SceneNode& objectSceneNode = objectItr.second->node();
-        objectSceneNode.setTransformation(velControl.integrateTransform(
+        objectSceneNode.setTransformation(velControl->integrateTransform(
             dt, objectSceneNode.transformation()));
         objectItr.second->setActive();
       }
     } else if (objectItr.second->getMotionType() == MotionType::DYNAMIC) {
-      if (velControl.controllingLinVel) {
-        if (velControl.linVelIsLocal) {
+      if (velControl->controllingLinVel) {
+        if (velControl->linVelIsLocal) {
           setLinearVelocity(objectItr.first,
                             objectItr.second->node().rotation().transformVector(
-                                velControl.linVel));
+                                velControl->linVel));
         } else {
-          setLinearVelocity(objectItr.first, velControl.linVel);
+          setLinearVelocity(objectItr.first, velControl->linVel);
         }
       }
-      if (velControl.controllingAngVel) {
-        if (velControl.angVelIsLocal) {
+      if (velControl->controllingAngVel) {
+        if (velControl->angVelIsLocal) {
           setAngularVelocity(
               objectItr.first,
               objectItr.second->node().rotation().transformVector(
-                  velControl.angVel));
+                  velControl->angVel));
         } else {
-          setAngularVelocity(objectItr.first, velControl.angVel);
+          setAngularVelocity(objectItr.first, velControl->angVel);
         }
       }
     }
