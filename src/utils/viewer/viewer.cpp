@@ -66,7 +66,7 @@ class Viewer : public Mn::Platform::Application {
   void keyPressEvent(KeyEvent& event) override;
 
   // Interactive functions
-  void addObject(std::string configFile);
+  void addObject(const std::string& configFile);
   void addObject(int objID);
 
   // add template-derived object
