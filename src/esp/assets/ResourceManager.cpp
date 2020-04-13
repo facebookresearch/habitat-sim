@@ -508,11 +508,12 @@ PhysicsObjectAttributes::ptr ResourceManager::getPhysicsObjectAttributes(
   return physicsObjTemplateLibrary_.at(getObjectConfig(objectTemplateID));
 }
 
-bool ResourceManager::FileMeshLoad(AssetInfo& meshInfo,
-                                   const std::string& objectTemplateHandle,
-                                   const std::string& fileName,
-                                   const std::string& meshType,
-                                   const bool requiresLighting) {
+bool ResourceManager::loadObjectMeshDataFromFile(
+    AssetInfo& meshInfo,
+    const std::string& objectTemplateHandle,
+    const std::string& fileName,
+    const std::string& meshType,
+    const bool requiresLighting) {
   bool success = false;
   if (!fileName.empty()) {
     meshInfo = assets::AssetInfo::fromPath(fileName);
@@ -541,12 +542,12 @@ int ResourceManager::loadObjectTemplate(
 
   bool requiresLighting = objectTemplate->getRequiresLighting();
 
-  bool renderMeshSuccess =
-      FileMeshLoad(renderMeshinfo, objectTemplateHandle, renderMeshFilename,
-                   "render", requiresLighting);
-  bool collisionMeshSuccess =
-      FileMeshLoad(collisionMeshinfo, objectTemplateHandle,
-                   collisionMeshFilename, "render", requiresLighting);
+  bool renderMeshSuccess = loadObjectMeshDataFromFile(
+      renderMeshinfo, objectTemplateHandle, renderMeshFilename, "render",
+      requiresLighting);
+  bool collisionMeshSuccess = loadObjectMeshDataFromFile(
+      collisionMeshinfo, objectTemplateHandle, collisionMeshFilename, "render",
+      requiresLighting);
 
   // //! Load rendering mesh
   // if (!renderMeshFilename.empty()) {

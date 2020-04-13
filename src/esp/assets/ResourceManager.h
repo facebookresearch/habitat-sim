@@ -486,11 +486,11 @@ class ResourceManager {
    * @param requiresLighting whether or not this mesh asset responds to lighting
    * @return whether or not the mesh was loaded successfully
    */
-  bool FileMeshLoad(AssetInfo& meshInfo,
-                    const std::string& objectTemplateHandle,
-                    const std::string& fileName,
-                    const std::string& meshType,
-                    const bool requiresLighting);
+  bool loadObjectMeshDataFromFile(AssetInfo& meshInfo,
+                                  const std::string& objectTemplateHandle,
+                                  const std::string& fileName,
+                                  const std::string& meshType,
+                                  const bool requiresLighting);
 
  protected:
   /**
