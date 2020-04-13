@@ -170,15 +170,9 @@ class Simulator:
             map(lambda cfg: len(cfg.sensor_specifications) > 0, config.agents)
         )
 
-        print("asked for reconfiguring")
-        if self.config != None:
-            print("mine: " + self.config.sim_cfg.scene_light_setup)
-        print("yours: " + config.sim_cfg.scene_light_setup)
-
         if self.config == config:
             return
 
-        print("reconfiguring")
         # NB: Configure backend last as this gives more time for python's GC
         # to delete any previous instances of the simulator
         # TODO: can't do the above, sorry -- the Agent constructor needs access
