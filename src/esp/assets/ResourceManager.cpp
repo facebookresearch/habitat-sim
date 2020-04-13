@@ -545,9 +545,11 @@ int ResourceManager::loadObjectTemplate(
   bool renderMeshSuccess = loadObjectMeshDataFromFile(
       renderMeshinfo, objectTemplateHandle, renderMeshFilename, "render",
       requiresLighting);
+  // if render mesh failed, might have to generate lighting data for collision
+  // mesh since we will use it to render
   bool collisionMeshSuccess = loadObjectMeshDataFromFile(
       collisionMeshinfo, objectTemplateHandle, collisionMeshFilename, "render",
-      requiresLighting);
+      !renderMeshSuccess && requiresLighting);
 
   // //! Load rendering mesh
   // if (!renderMeshFilename.empty()) {

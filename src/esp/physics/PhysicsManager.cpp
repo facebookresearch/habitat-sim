@@ -227,7 +227,7 @@ void PhysicsManager::stepPhysics(double dt) {
   }
 }
 
-//! Profile function. In BulletPhysics stationery objects are
+//! Profile function. In BulletPhysics stationary objects are
 //! marked as inactive to speed up simulation. This function
 //! helps checking how many objects are active/inactive at any
 //! time step
