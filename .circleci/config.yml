@@ -381,7 +381,7 @@ jobs:
               # Rebuild with all options enabled
               ./build.sh --with-cuda --with-bullet
               cd docs
-              conda install -y -c conda-forge doxygen
+              conda install -y -c conda-forge doxygen==1.8.16
               conda install -y  jinja2 pygments docutils
               conda install -y -c conda-forge pelican
               mkdir -p ../build/docs
