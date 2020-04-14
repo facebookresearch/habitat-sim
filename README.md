@@ -146,7 +146,7 @@ We provide a pre-built docker container for habitat-api and habitat-sim, refer t
 
 ### Install with Conda
 
-We provide pre-built conda binaries for convenient installation, however please note that these may not be the most up to date versions of habitat sim.
+We provide pre-built conda binaries for convenient installation, however please note that these might not be the most up to date versions of habitat sim.
 
 For systems with a display:
 
