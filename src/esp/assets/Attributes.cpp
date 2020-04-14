@@ -11,35 +11,53 @@ namespace assets {
 //  Derived attribute implementations
 //----------------------------------------//
 
-PhysicsObjectAttributes::PhysicsObjectAttributes() : Configuration() {
+AbstractPhysAttributes::AbstractPhysAttributes(const std::string& originHandle)
+    : Configuration() {
+  setOriginHandle(originHandle);
+  setFrictionCoefficient(0.5);
+  setRestitutionCoefficient(0.1);
+  setRenderMeshHandle("");
+  setCollisionMeshHandle("");
+}
+// PhysicsAttributes is abstract; virtual destructor deleted; definition
+// required so instancing class can destroy base
+AbstractPhysAttributes::~AbstractPhysAttributes() {}
+
+PhysicsObjectAttributes::PhysicsObjectAttributes(
+    const std::string& originHandle)
+    : AbstractPhysAttributes(originHandle) {
   // fill necessary attribute defaults
   setMass(1.0);
   setMargin(0.04);
   setScale({1.0, 1.0, 1.0});
   setCOM({0, 0, 0});
   setInertia({0, 0, 0});
-  setFrictionCoefficient(0.5);
-  setRestitutionCoefficient(0.1);
   setLinearDamping(0.2);
   setAngularDamping(0.2);
-  setOriginHandle("");
-  setRenderMeshHandle("");
-  setCollisionMeshHandle("");
+
   setBoundingBoxCollisions(false);
   setJoinCollisionMeshes(true);
   setRequiresLighting(true);
+  setIsVisible(true);
+  setIsCollidable(true);
 }
 
-PhysicsSceneAttributes::PhysicsSceneAttributes() : Configuration() {
+// PhysicsPrimitiveObjAttributes is abstract; virtual destructor deleted;
+// definition required so instancing class can destroy base
+AbstractPhysPrimObjAttributes::~AbstractPhysPrimObjAttributes() {}
+
+PhysicsSceneAttributes::PhysicsSceneAttributes(const std::string& originHandle)
+    : AbstractPhysAttributes(originHandle) {
   setGravity({0, -9.8, 0});
-  setFrictionCoefficient(0.4);
-  setRestitutionCoefficient(0.05);
-  setRenderMeshHandle("");
-  setCollisionMeshHandle("");
+  // setFrictionCoefficient(0.4);
+  // setRestitutionCoefficient(0.05);
 }
 
-PhysicsManagerAttributes::PhysicsManagerAttributes() : Configuration() {
+PhysicsManagerAttributes::PhysicsManagerAttributes(
+    const std::string& originHandle)
+    : Configuration() {
   setSimulator("none");
+  setOriginHandle(originHandle);
   setTimestep(0.01);
   setMaxSubsteps(10);
 }
