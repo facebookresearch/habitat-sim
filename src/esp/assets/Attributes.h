@@ -75,7 +75,8 @@ class AbstractPhysAttributes : public esp::core::Configuration {
  */
 class PhysicsObjectAttributes : public AbstractPhysAttributes {
  public:
-  PhysicsObjectAttributes(const std::string& originHandle = "");
+  PhysicsObjectAttributes() : PhysicsObjectAttributes("") {}
+  PhysicsObjectAttributes(const std::string& originHandle);
   // center of mass (COM)
   void setCOM(const Magnum::Vector3& com) { setVec3("COM", com); }
   Magnum::Vector3 getCOM() const { return getVec3("COM"); }
@@ -232,7 +233,8 @@ class PhysicsUVSpherePrimAttributes : public AbstractPhysPrimObjAttributes {
 //! attributes for a single physical scene
 class PhysicsSceneAttributes : public AbstractPhysAttributes {
  public:
-  PhysicsSceneAttributes(const std::string& originHandle = "");
+  PhysicsSceneAttributes() : PhysicsSceneAttributes("") {}
+  PhysicsSceneAttributes(const std::string& originHandle);
 
   void setGravity(const Magnum::Vector3& gravity) {
     setVec3("gravity", gravity);
@@ -246,7 +248,8 @@ class PhysicsSceneAttributes : public AbstractPhysAttributes {
 //! attributes for a single physics manager
 class PhysicsManagerAttributes : public esp::core::Configuration {
  public:
-  PhysicsManagerAttributes(const std::string& originHandle = "");
+  PhysicsManagerAttributes() : PhysicsManagerAttributes("") {}
+  PhysicsManagerAttributes(const std::string& originHandle);
 
   void setSimulator(const std::string& simulator) {
     setString("simulator", simulator);
