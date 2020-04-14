@@ -60,6 +60,67 @@ class PathFinder;
 namespace assets {
 
 /**
+ * @brief The kinds of primitive modelled objects supported.  Paired with
+ * Magnum::Primitive namespace objects
+ */
+enum class PrimObjTypes : uint32_t {
+  /**
+   * Primitive object corresponding to Magnum::Primitives::capsule3DSolid
+   */
+  CAPSULE_SOLID,
+  /**
+   * Primitive object corresponding to Magnum::Primitives::capsule3DWireframe
+   */
+  CAPSULE_WF,
+  /**
+   * Primitive object corresponding to Magnum::Primitives::coneSolid
+   */
+  CONE_SOLID,
+  /**
+   * Primitive object corresponding to Magnum::Primitives::coneWireframe
+   */
+  CONE_WF,
+  /**
+   * Primitive object corresponding to Magnum::Primitives::cubeSolid
+   */
+  CUBE_SOLID,
+  /**
+   * Primitive object corresponding to Magnum::Primitives::cubeWireframe
+   */
+  CUBE_WF,
+  /**
+   * Primitive object corresponding to Magnum::Primitives::cylinderSolid
+   */
+  CYLINDER_SOLID,
+  /**
+   * Primitive object corresponding to Magnum::Primitives::cylinderWireframe
+   */
+  CYLINDER_WF,
+  /**
+   * Primitive object corresponding to Magnum::Primitives::icosphereSolid
+   */
+  ICOSPHERE_SOLID,
+  /**
+   * Primitive object corresponding to Magnum::Primitives::icosphereWireframe
+   * DOES NOT EXIST
+   * TODO: can/should this be added?
+   */
+  // ICOSPHERE_WF,
+  /**
+   * Primitive object corresponding to Magnum::Primitives::uvSphereSolid
+   */
+  UVSPHERE_SOLID,
+  /**
+   * Primitive object corresponding to Magnum::Primitives::uvSphereWireframe
+   */
+  UVSPHERE_WF,
+  /**
+  marker for no more primitive objects
+  */
+  END_PRIM_OBJ_TYPES
+};
+
+/**
  * @brief Singleton class responsible for
  * loading and managing common simulator assets such as meshes, textures, and
  * materials.
@@ -222,7 +283,7 @@ class ResourceManager {
   std::vector<std::string> getObjectConfigPaths(std::string path);
 
   /**
-   * @brief Add an object from a spcified configuration file to the specified
+   * @brief Add an object from a specified configuration file to the specified
    * @ref DrawableGroup as a child of the specified @ref scene::SceneNode if
    * provided.
    *
@@ -267,7 +328,7 @@ class ResourceManager {
    * template.
    */
   int loadObjectTemplate(PhysicsObjectAttributes::ptr objectTemplate,
-                         const std::string objectTemplateHandle);
+                         const std::string& objectTemplateHandle);
 
   //======== Accessor functions ========
   /**
@@ -280,7 +341,7 @@ class ResourceManager {
    * individual components of the asset.
    */
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
-      const std::string configFile);
+      const std::string& configFile);
 
   /**
    * @brief Getter for all @ref assets::CollisionMeshData associated with the
@@ -479,18 +540,33 @@ class ResourceManager {
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
    * specified @ref meshType used by @ref objectTemplateHandle
    *
-   * @param meshInfo AssetInfo destination for desired mesh
-   * @param objectTemplateHandle the handle for the object owning this mesh
    * @param fileName the name of the file describing this mesh
-   * @param meshType either "render" or "collision"
+   * @param objectTemplateHandle the handle for the object attributes owning
+   * this mesh (for error log output)
+   * @param meshType either "render" or "collision" (for error log output)
    * @param requiresLighting whether or not this mesh asset responds to lighting
    * @return whether or not the mesh was loaded successfully
    */
-  bool loadObjectMeshDataFromFile(AssetInfo& meshInfo,
+  bool loadObjectMeshDataFromFile(const std::string& fileName,
                                   const std::string& objectTemplateHandle,
-                                  const std::string& fileName,
                                   const std::string& meshType,
                                   const bool requiresLighting);
+
+  /** @brief Put object template attributes in template map and in passed index
+   * list
+   *
+   * @param objectTemplate ptr to object template attributes to be added to
+   * library
+   * @param objectTemplateHandle thandle for the object attributes to be added
+   * to template library
+   * @param mapOfNames index map mapping IDs to template handles for this
+   * particular kind of object (Separate map for loaded template objects and for
+   * primitives)
+   * @return index of object template in names map
+   */
+  int putObjTemplateAttrInLibMap(PhysicsObjectAttributes::ptr objectTemplate,
+                                 const std::string& objectTemplateHandle,
+                                 std::map<int, std::string>& mapOfNames);
 
  protected:
   /**
