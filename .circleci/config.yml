@@ -32,7 +32,7 @@ jobs:
 
   cpp_lint:
     docker:
-      - image: circleci/buildpack-deps:disco
+      - image: circleci/buildpack-deps:18.04
     steps:
       - checkout
       - run:
