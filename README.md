@@ -144,6 +144,22 @@ To run the above benchmarks on your machine, see instructions in the [examples](
 
 We provide a pre-built docker container for habitat-api and habitat-sim, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-api#docker-setup).
 
+### Install with Conda
+
+We provide pre-built conda binaries for convenient installation, however please note that these may not be the most up to date versions of habitat sim.
+
+For systems with a display:
+
+```bash
+conda install -c aihabitat -c conda-forge habitat-sim
+```
+
+For headless systems:
+
+```bash
+conda install -c aihabitat -c conda-forge habitat-sim headless
+```
+
 ### From Source
 
 We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/distribution/#download-section) environment (note: python>=3.6 is required). Once you have Anaconda installed, here are the instructions.
