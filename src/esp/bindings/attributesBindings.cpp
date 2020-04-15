@@ -16,10 +16,20 @@ namespace esp {
 namespace assets {
 
 void initAttributesBindings(py::module& m) {
+  // ==== AbstractPhysAttributes ====
+  py::class_<AbstractPhysAttributes, esp::core::Configuration,
+             AbstractPhysAttributes::ptr>(m, "AbstractPhysAttributes")
+      .def(py::init(&AbstractPhysAttributes::create<>))
+      .def(py::init(&AbstractPhysAttributes::create<const std::string&>))
+      //.def(py::init<>())
+      //.def(py::init<const std::string&>())
+      ;
+
   // ==== PhysicsObjectAttributes ====
-  py::class_<PhysicsObjectAttributes, esp::core::Configuration,
+  py::class_<PhysicsObjectAttributes, AbstractPhysAttributes,
              PhysicsObjectAttributes::ptr>(m, "PhysicsObjectAttributes")
       .def(py::init(&PhysicsObjectAttributes::create<>))
+      .def(py::init(&PhysicsObjectAttributes::create<const std::string&>))
       .def("set_com", &PhysicsObjectAttributes::setCOM, "com"_a)
       .def("get_com", &PhysicsObjectAttributes::getCOM)
       .def("set_margin", &PhysicsObjectAttributes::setMargin, "margin"_a)

@@ -25,9 +25,9 @@ namespace assets {
  */
 class AbstractPhysAttributes : public esp::core::Configuration {
  public:
-  AbstractPhysAttributes(const std::string& originHandle);
+  AbstractPhysAttributes(const std::string& originHandle = "");
   // forcing this class to be abstract - note still needs definition
-  virtual ~AbstractPhysAttributes() = 0;
+  // virtual ~AbstractPhysAttributes() = 0;
   void setOriginHandle(const std::string& originHandle) {
     setString("originHandle", originHandle);
   }
@@ -75,8 +75,7 @@ class AbstractPhysAttributes : public esp::core::Configuration {
  */
 class PhysicsObjectAttributes : public AbstractPhysAttributes {
  public:
-  PhysicsObjectAttributes() : PhysicsObjectAttributes("") {}
-  PhysicsObjectAttributes(const std::string& originHandle);
+  PhysicsObjectAttributes(const std::string& originHandle = "");
   // center of mass (COM)
   void setCOM(const Magnum::Vector3& com) { setVec3("COM", com); }
   Magnum::Vector3 getCOM() const { return getVec3("COM"); }
@@ -233,8 +232,7 @@ class PhysicsUVSpherePrimAttributes : public AbstractPhysPrimObjAttributes {
 //! attributes for a single physical scene
 class PhysicsSceneAttributes : public AbstractPhysAttributes {
  public:
-  PhysicsSceneAttributes() : PhysicsSceneAttributes("") {}
-  PhysicsSceneAttributes(const std::string& originHandle);
+  PhysicsSceneAttributes(const std::string& originHandle = "");
 
   void setGravity(const Magnum::Vector3& gravity) {
     setVec3("gravity", gravity);

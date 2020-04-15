@@ -21,7 +21,7 @@ AbstractPhysAttributes::AbstractPhysAttributes(const std::string& originHandle)
 }
 // PhysicsAttributes is abstract; virtual destructor deleted; definition
 // required so instancing class can destroy base
-AbstractPhysAttributes::~AbstractPhysAttributes() {}
+// AbstractPhysAttributes::~AbstractPhysAttributes() {}
 
 PhysicsObjectAttributes::PhysicsObjectAttributes(
     const std::string& originHandle)
