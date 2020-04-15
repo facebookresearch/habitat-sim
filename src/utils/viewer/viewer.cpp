@@ -314,6 +314,12 @@ Viewer::Viewer(const Arguments& arguments)
 void Viewer::addObject(int ID) {
   if (physicsManager_ == nullptr)
     return;
+  addObject(resourceManager_.getObjectConfig(ID));
+}  // addObject
+
+void Viewer::addObject(const std::string& configFile) {
+  if (physicsManager_ == nullptr)
+    return;
 
   Mn::Matrix4 T =
       agentBodyNode_
@@ -322,16 +328,13 @@ void Viewer::addObject(int ID) {
 
   auto& drawables = sceneGraph_->getDrawables();
 
-  int physObjectID = physicsManager_->addObject(ID, &drawables);
+  int physObjectID = physicsManager_->addObject(configFile, &drawables);
   physicsManager_->setTranslation(physObjectID, new_pos);
 
   physicsManager_->setRotation(physObjectID, esp::core::randomRotation());
 
   objectIDs_.push_back(physObjectID);
-}  // addObject
 
-void Viewer::addObject(const std::string& configFile) {
-  addObject(resourceManager_.getObjectTemplateID(configFile));
 }  // addObject
 
 // add template derived object from keypress
@@ -339,8 +342,7 @@ void Viewer::addTemplateObject() {
   if (physicsManager_ != nullptr) {
     int numObjTemplates = resourceManager_.getNumFileTemplateObjects();
     if (numObjTemplates > 0) {
-      int randObjectID = rand() % numObjTemplates;
-      addObject(randObjectID);
+      addObject(resourceManager_.getRandFileTemplateHandle());
     } else
       LOG(WARNING) << "No objects loaded, can't add any";
   } else
@@ -354,8 +356,7 @@ void Viewer::addPrimitiveObject() {
   if (physicsManager_ != nullptr) {
     int numObjPrims = resourceManager_.getNumPrimTemplateObjects();
     if (numObjPrims > 0) {
-      int randPrimID = rand() % numObjPrims;
-      addObject(randPrimID);
+      addObject(resourceManager_.getRandPrimTemplateHandle());
     } else
       LOG(WARNING) << "No primitive templates available, can't add any objects";
   } else

@@ -66,7 +66,6 @@ namespace Mn = Magnum;
 
 namespace esp {
 namespace assets {
-
 // static constexpr arrays require redundant definitions until C++17
 constexpr char ResourceManager::NO_LIGHT_KEY[];
 constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
@@ -174,6 +173,20 @@ bool ResourceManager::loadScene(
   return meshSuccess;
 }
 
+void ResourceManager::loadObjectTemplates(
+    const std::vector<std::string>& tmpltFilenames) {
+  for (auto objPhysPropertiesFilename : tmpltFilenames) {
+    LOG(INFO) << "loading object: " << objPhysPropertiesFilename;
+    parseAndLoadPhysObjTemplate(objPhysPropertiesFilename);
+  }
+  LOG(INFO) << "loaded object templates: "
+            << std::to_string(physicsObjTemplateLibrary_.size());
+}
+
+void ResourceManager::buildPrimObjectTemplates() {
+  uint32_t numPrims = static_cast<uint32_t>(PrimObjTypes::END_PRIM_OBJ_TYPES);
+}  // buildPrimObjectTemplates
+
 void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
     PhysicsManagerAttributes::ptr physicsManagerAttributes) {
@@ -200,19 +213,15 @@ void ResourceManager::initPhysicsManager(
     physicsManagerAttributes->setSimulator("none");
   }
   // load object templates from sceneMetaData list...
-  for (auto objPhysPropertiesFilename :
-       physicsManagerAttributes->getStringGroup("objectLibraryPaths")) {
-    LOG(INFO) << "loading object: " << objPhysPropertiesFilename;
-    parseAndLoadPhysObjTemplate(objPhysPropertiesFilename);
-  }
-  LOG(INFO) << "loaded object templates: "
-            << std::to_string(physicsObjTemplateLibrary_.size());
+  loadObjectTemplates(
+      physicsManagerAttributes->getStringGroup("objectLibraryPaths"));
 
   //"load" primitive physicsObjectTemplates here
-
+  buildPrimObjectTemplates();
 }  // ResourceManager::initPhysicsManager
 
-// this will isntance a physics manager
+// this will instance a physics manager based on the passed physics config file
+// name
 std::shared_ptr<physics::PhysicsManager> ResourceManager::buildPhysicsManager(
     std::string physicsFilename /* data/default.phys_scene_config.json */) {
   // In-memory representation of scene meta data
@@ -220,7 +229,7 @@ std::shared_ptr<physics::PhysicsManager> ResourceManager::buildPhysicsManager(
       loadPhysicsConfig(physicsFilename);
   physicsManagerLibrary_.emplace(physicsFilename, physicsManagerAttributes);
   std::shared_ptr<physics::PhysicsManager> _physicsManager = nullptr;
-
+  // initialize physics manager with derived physics manager attributes
   initPhysicsManager(_physicsManager, physicsManagerAttributes);
 
   return _physicsManager;
@@ -240,8 +249,8 @@ bool ResourceManager::loadScene(
   PhysicsManagerAttributes::ptr physicsManagerAttributes =
       loadPhysicsConfig(physicsFilename);
   physicsManagerLibrary_.emplace(physicsFilename, physicsManagerAttributes);
-  return loadScene(info, _physicsManager, physicsManagerAttributes, parent,
-                   drawables, lightSetup);
+  return loadPhysicsScene(info, _physicsManager, physicsManagerAttributes,
+                          parent, drawables, lightSetup);
 }
 
 // TODO: kill existing scene mesh drawables, nodes, etc... (all but meshes in
@@ -250,7 +259,7 @@ bool ResourceManager::loadScene(
 //! (2) add drawable (if parent and drawables != nullptr)
 //! (3) consume PhysicsSceneMetaData to initialize physics simulator
 //! (4) create scene collision mesh if possible
-bool ResourceManager::loadScene(
+bool ResourceManager::loadPhysicsScene(
     const AssetInfo& info,
     std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     PhysicsManagerAttributes::ptr physicsManagerAttributes,
@@ -301,7 +310,7 @@ bool ResourceManager::loadScene(
 
     //! Collect collision mesh group
     std::vector<CollisionMeshData> meshGroup;
-    for (int mesh_i = start; mesh_i <= end; mesh_i++) {
+    for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
       // PLY Instance mesh
       if (info.type == AssetType::INSTANCE_MESH) {
         GenericInstanceMeshData* insMeshData =
@@ -373,7 +382,7 @@ std::vector<std::string> ResourceManager::getObjectConfigPaths(
   }
 
   return paths;
-}
+}  // getObjectConfigPaths
 
 PhysicsManagerAttributes::ptr ResourceManager::loadPhysicsConfig(
     std::string physicsFilename) {
@@ -474,39 +483,46 @@ void ResourceManager::addObjectToDrawables(int objTemplateLibID,
                                            const Mn::ResourceKey& lightSetup) {
   if (objTemplateLibID != ID_UNDEFINED) {
     const std::string& objPhysConfigFilename =
-        physicsObjTmpltLibByID_.at(objTemplateLibID);
+        physicsTemplatesLibByID_.at(objTemplateLibID);
 
-    if (parent != nullptr and drawables != nullptr) {
-      //! Add mesh to rendering stack
+    addObjectToDrawables(objPhysConfigFilename, parent, drawables, lightSetup);
+  }  // else objTemplateID does not exist - shouldn't happen
+}  // addObjectToDrawables
 
-      // Meta data and collision mesh
-      PhysicsObjectAttributes::ptr physicsObjectAttributes =
-          physicsObjTemplateLibrary_.at(objPhysConfigFilename);
-      std::vector<CollisionMeshData> meshGroup = collisionMeshGroups_.at(
-          physicsObjectAttributes->getCollisionMeshHandle());
+void ResourceManager::addObjectToDrawables(
+    const std::string& objPhysConfigFilename,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables,
+    const Mn::ResourceKey& lightSetup) {
+  if (parent != nullptr and drawables != nullptr) {
+    //! Add mesh to rendering stack
 
-      const std::string& renderMeshFileName =
-          physicsObjectAttributes->getRenderMeshHandle();
-      const LoadedAssetData& loadedAssetData =
-          resourceDict_.at(renderMeshFileName);
-      if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
-        LOG(WARNING)
-            << "Instantiating object with incompatible light setup, "
-               "object will not be correctly lit. If you need lighting "
-               "please ensure 'requires lighting' is enabled in object "
-               "config file";
-      }
+    // Meta data and collision mesh
+    PhysicsObjectAttributes::ptr physicsObjectAttributes =
+        physicsObjTemplateLibrary_.at(objPhysConfigFilename);
+    std::vector<CollisionMeshData> meshGroup = collisionMeshGroups_.at(
+        physicsObjectAttributes->getCollisionMeshHandle());
 
-      // need a new node for scaling because motion state will override scale
-      // set at the physical node
-      scene::SceneNode& scalingNode = parent->createChild();
-      Magnum::Vector3 objectScaling = physicsObjectAttributes->getScale();
-      scalingNode.setScaling(objectScaling);
+    const std::string& renderMeshFileName =
+        physicsObjectAttributes->getRenderMeshHandle();
+    const LoadedAssetData& loadedAssetData =
+        resourceDict_.at(renderMeshFileName);
+    if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
+      LOG(WARNING) << "Instantiating object with incompatible light setup, "
+                      "object will not be correctly lit. If you need lighting "
+                      "please ensure 'requires lighting' is enabled in object "
+                      "config file";
+    }
 
-      addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
-                   drawables, loadedAssetData.meshMetaData.root);
-    }  // should always be specified, otherwise won't do anything
-  }    // else objTemplateID does not exist - shouldn't happen
+    // need a new node for scaling because motion state will override scale
+    // set at the physical node
+    scene::SceneNode& scalingNode = parent->createChild();
+    Magnum::Vector3 objectScaling = physicsObjectAttributes->getScale();
+    scalingNode.setScaling(objectScaling);
+
+    addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
+                 drawables, loadedAssetData.meshMetaData.root);
+  }  // should always be specified, otherwise won't do anything
 }  // addObjectToDrawables
 
 PhysicsObjectAttributes::ptr ResourceManager::getPhysicsObjectAttributes(
@@ -541,17 +557,20 @@ int ResourceManager::putObjTemplateAttrInLibMap(
   int objectTemplateID = physicsObjTemplateLibrary_.size();
   objectTemplate->setObjectTemplateID(objectTemplateID);
 
-  // cache metaData, collision mesh Group
   physicsObjTemplateLibrary_.emplace(objectTemplateHandle, objectTemplate);
-
+  physicsTemplatesLibByID_.emplace(objectTemplateID, objectTemplateHandle);
+  // save reference of specific type of template being built
   mapOfNames.emplace(objectTemplateID, objectTemplateHandle);
   return objectTemplateID;
-}
+}  // putObjTemplateAttrInLibMap
 
 int ResourceManager::loadObjectTemplate(
     PhysicsObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle) {
-  CHECK(physicsObjTemplateLibrary_.count(objectTemplateHandle) == 0);
+  if (physicsObjTemplateLibrary_.count(objectTemplateHandle) != 0) {
+    return physicsObjTemplateLibrary_.at(objectTemplateHandle)
+        ->getObjectTemplateID();
+  }
   CHECK(objectTemplate->hasValue("renderMeshHandle"));
 
   // load/check_for render and collision mesh metadata
@@ -587,6 +606,23 @@ int ResourceManager::loadObjectTemplate(
     objectTemplate->setCollisionMeshHandle(renderMeshFilename);
   }
 
+  // set collision mesh data
+  const MeshMetaData& meshMetaData =
+      getMeshMetaData(objectTemplate->getCollisionMeshHandle());
+
+  int start = meshMetaData.meshIndex.first;
+  int end = meshMetaData.meshIndex.second;
+  //! Gather mesh components for meshGroup data
+  std::vector<CollisionMeshData> meshGroup;
+  for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
+    GltfMeshData* gltfMeshData =
+        dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
+    CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
+    meshGroup.push_back(meshData);
+  }
+  collisionMeshGroups_.emplace(objectTemplate->getCollisionMeshHandle(),
+                               meshGroup);
+
   // add object template to template library
   int objectTemplateID = putObjTemplateAttrInLibMap(
       objectTemplate, objectTemplateHandle, physicsObjTmpltLibByID_);
@@ -599,24 +635,22 @@ int ResourceManager::loadObjectTemplate(
 
   // physicsObjTmpltLibByID_.emplace(objectTemplateID, objectTemplateHandle);
 
-  const MeshMetaData& meshMetaData =
-      getMeshMetaData(objectTemplate->getCollisionMeshHandle());
-
-  int start = meshMetaData.meshIndex.first;
-  int end = meshMetaData.meshIndex.second;
-  //! Gather mesh components for meshGroup data
-  std::vector<CollisionMeshData> meshGroup;
-  for (int mesh_i = start; mesh_i <= end; mesh_i++) {
-    GltfMeshData* gltfMeshData =
-        dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
-    CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
-    meshGroup.push_back(meshData);
-  }
-  collisionMeshGroups_.emplace(objectTemplate->getCollisionMeshHandle(),
-                               meshGroup);
-
   return objectTemplateID;
 }  // loadObjectTemplate
+
+std::string ResourceManager::getRandTemplateHandle(
+    std::map<int, std::string>& mapOfHandles,
+    const std::string& type) {
+  int numVals = mapOfHandles.size();
+  if (numVals == 0) {
+    LOG(ERROR) << "Attempting to get a random " << type
+               << " object template handle but none are loaded;Aboring";
+    return "";
+  }
+  int randIDX = rand() % numVals;
+  return mapOfHandles.at(randIDX);
+
+}  // getRandTemplateHandle
 
 // load object template from config filename
 int ResourceManager::parseAndLoadPhysObjTemplate(
@@ -798,7 +832,7 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
 
   // 5. load the parsed file into the library
   return loadObjectTemplate(physicsObjectAttributes, objPhysConfigFilename);
-}
+}  // parseAndLoadPhysObjTemplate
 
 const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
     const int objectTemplateID) {
@@ -822,22 +856,16 @@ int ResourceManager::getObjectTemplateID(const std::string& configFile) {
 }
 
 std::string ResourceManager::getObjectConfig(const int objectTemplateID) {
-  const bool physObjTemplateExists =
-      physicsObjTmpltLibByID_.count(objectTemplateID) > 0;
-  if (!physObjTemplateExists) {
-    const bool physPrimTemplateExists =
-        physicsPrimTmpltLibByID_.count(objectTemplateID) > 0;
-    if (!physPrimTemplateExists) {
-      Corrade::Utility::Debug()
-          << "ResourceManager::getObjectConfig - Aborting. "
-             "No loaded or primitive template with index "
-          << objectTemplateID << " exists.";
-      return "";
-    }
-    return physicsPrimTmpltLibByID_.at(objectTemplateID);
+  const bool physTemplateExists =
+      physicsTemplatesLibByID_.count(objectTemplateID) > 0;
+  if (!physTemplateExists) {
+    Corrade::Utility::Debug() << "ResourceManager::getObjectConfig - Aborting. "
+                                 "No loaded or primitive template with index "
+                              << objectTemplateID << " exists.";
+    return "";
   }
-  return physicsObjTmpltLibByID_.at(objectTemplateID);
-}
+  return physicsTemplatesLibByID_.at(objectTemplateID);
+}  // getObjectConfig
 
 Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
@@ -880,7 +908,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
                  "transforms does not match number of drawables.", );
 
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
-    uint32_t meshID = staticDrawableInfo_[iEntry].meshID;
+    const uint32_t meshID = staticDrawableInfo_[iEntry].meshID;
 
     Corrade::Containers::Optional<Magnum::Trade::MeshData>& meshData =
         meshes_[meshID]->getMeshData();

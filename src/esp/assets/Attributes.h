@@ -27,6 +27,7 @@ class AbstractPhysAttributes : public esp::core::Configuration {
  public:
   AbstractPhysAttributes(const std::string& originHandle = "");
   // forcing this class to be abstract - note still needs definition
+  // can't do this because of pybind issues, currently
   // virtual ~AbstractPhysAttributes() = 0;
   void setOriginHandle(const std::string& originHandle) {
     setString("originHandle", originHandle);

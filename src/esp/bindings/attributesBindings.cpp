@@ -20,10 +20,7 @@ void initAttributesBindings(py::module& m) {
   py::class_<AbstractPhysAttributes, esp::core::Configuration,
              AbstractPhysAttributes::ptr>(m, "AbstractPhysAttributes")
       .def(py::init(&AbstractPhysAttributes::create<>))
-      .def(py::init(&AbstractPhysAttributes::create<const std::string&>))
-      //.def(py::init<>())
-      //.def(py::init<const std::string&>())
-      ;
+      .def(py::init(&AbstractPhysAttributes::create<const std::string&>));
 
   // ==== PhysicsObjectAttributes ====
   py::class_<PhysicsObjectAttributes, AbstractPhysAttributes,
