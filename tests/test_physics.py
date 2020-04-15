@@ -200,6 +200,22 @@ def test_dynamics(sim):
         )
         assert previous_object_states[1][1] == sim.get_rotation(object2_id)
 
+        sim.step_physics(0.1)
+
+        # test velocity get/set
+        test_lin_vel = np.array([1.0, 0.0, 0.0])
+        test_ang_vel = np.array([0.0, 1.0, 0.0])
+
+        # no velocity setting for KINEMATIC objects
+        sim.set_linear_velocity(test_lin_vel, object2_id)
+        assert sim.get_linear_velocity(object2_id) == np.array([0.0, 0.0, 0.0])
+
+        sim.set_object_motion_type(habitat_sim.physics.MotionType.DYNAMIC, object2_id)
+        sim.set_linear_velocity(test_lin_vel, object2_id)
+        assert sim.get_linear_velocity(object2_id) == test_lin_vel
+        sim.set_angular_velocity(test_ang_vel, object2_id)
+        assert sim.get_angular_velocity(object2_id) == test_ang_vel
+
         # test modifying gravity
         new_object_start = np.array([100.0, 0, 0])
         sim.set_translation(new_object_start, object_id)

@@ -310,6 +310,54 @@ class Simulator {
   Magnum::Quaternion getRotation(const int objectID, const int sceneID = 0);
 
   /**
+   * @brief Set the Linear Velocity of object.
+   * See @ref esp::phyics::PhysicsManager::setLinearVelocity.
+   * @param linVel The desired linear velocity of the object.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
+  void setLinearVelocity(const Magnum::Vector3& linVel,
+                         const int objectID,
+                         const int sceneID = 0);
+
+  /**
+   * @brief Get the Linear Velocity of object.
+   * See @ref esp::physics::PhysicsManager::getLinearVelocity.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   * @return A vector3 representation of the object's linear velocity.
+   */
+  Magnum::Vector3 getLinearVelocity(const int objectID, const int sceneID);
+
+  /**
+   * @brief Set the Angular Velocity of object.
+   * See @ref esp::phyics::PhysicsManager::setAngularVelocity.
+   * @param angVel The desired angular velocity of the object.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
+  void setAngularVelocity(const Magnum::Vector3& angVel,
+                          const int objectID,
+                          const int sceneID = 0);
+
+  /**
+   * @brief Get the Angular Velocity of object.
+   * See @ref esp::physics::PhysicsManager::getAngularVelocity.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   * @return A vector3 representation of the object's angular velocity.
+   */
+  Magnum::Vector3 getAngularVelocity(const int objectID, const int sceneID);
+
+  /**
    * @brief Discrete collision check for contact between an object and the
    * collision world.
    * @param objectID The object ID and key identifying the object in @ref
