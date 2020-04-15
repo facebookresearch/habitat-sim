@@ -60,11 +60,21 @@ int PhysicsManager::addObject(const int objectLibIndex,
                               DrawableGroup* drawables,
                               scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
+  const std::string& configFileHandle =
+      resourceManager_.getObjectConfig(objectLibIndex);
+  return addObject(configFileHandle, drawables, attachmentNode, lightSetup);
+}
+
+int PhysicsManager::addObject(const std::string& configFileHandle,
+                              DrawableGroup* drawables,
+                              scene::SceneNode* attachmentNode,
+                              const Magnum::ResourceKey& lightSetup) {
+  //! Invoke resourceManager to draw object
   //! Test Mesh primitive is valid
   assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
-      resourceManager_.getPhysicsObjectAttributes(objectLibIndex);
+      resourceManager_.getPhysicsObjectAttributes(configFileHandle);
   const std::vector<assets::CollisionMeshData>& meshGroup =
-      resourceManager_.getCollisionMesh(objectLibIndex);
+      resourceManager_.getCollisionMesh(configFileHandle);
 
   //! Make rigid object and add it to existingObjects
   int nextObjectID_ = allocateObjectID();
@@ -89,7 +99,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
   //! Draw object via resource manager
   //! Render node as child of physics node
   resourceManager_.addObjectToDrawables(
-      objectLibIndex, existingObjects_.at(nextObjectID_)->visualNode_,
+      configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
       drawables, lightSetup);
   existingObjects_.at(nextObjectID_)->node().computeCumulativeBB();
 
@@ -108,17 +118,6 @@ int PhysicsManager::addObject(const int objectLibIndex,
   existingObjects_.at(nextObjectID_)->finalizeObject();
 
   return nextObjectID_;
-}
-
-int PhysicsManager::addObject(const std::string& configFile,
-                              DrawableGroup* drawables,
-                              scene::SceneNode* attachmentNode,
-                              const Magnum::ResourceKey& lightSetup) {
-  int resObjectID = resourceManager_.getObjectTemplateID(configFile);
-  //! Invoke resourceManager to draw object
-  int physObjectID =
-      addObject(resObjectID, drawables, attachmentNode, lightSetup);
-  return physObjectID;
 }
 
 void PhysicsManager::removeObject(const int physObjectID,

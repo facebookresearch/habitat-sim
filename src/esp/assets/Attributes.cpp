@@ -49,8 +49,9 @@ AbstractPhysPrimObjAttributes::~AbstractPhysPrimObjAttributes() {}
 PhysicsSceneAttributes::PhysicsSceneAttributes(const std::string& originHandle)
     : AbstractPhysAttributes(originHandle) {
   setGravity({0, -9.8, 0});
-  // setFrictionCoefficient(0.4);
-  // setRestitutionCoefficient(0.05);
+  // TODO do these defaults need to be maintained here?
+  setFrictionCoefficient(0.4);
+  setRestitutionCoefficient(0.05);
 }
 
 PhysicsManagerAttributes::PhysicsManagerAttributes(

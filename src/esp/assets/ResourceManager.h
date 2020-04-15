@@ -239,13 +239,14 @@ class ResourceManager {
    * rendered.
    * @return Whether or not the scene load succeeded.
    */
-  bool loadScene(const AssetInfo& info,
-                 std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-                 PhysicsManagerAttributes::ptr physicsManagerAttributes,
-                 scene::SceneNode* parent = nullptr,
-                 DrawableGroup* drawables = nullptr,
-                 const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
-                     NO_LIGHT_KEY});
+  bool loadPhysicsScene(
+      const AssetInfo& info,
+      std::shared_ptr<physics::PhysicsManager>& _physicsManager,
+      PhysicsManagerAttributes::ptr physicsManagerAttributes,
+      scene::SceneNode* parent = nullptr,
+      DrawableGroup* drawables = nullptr,
+      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+          NO_LIGHT_KEY});
 
   /**
    * @brief Instantiate a shared pointer to a @ref physics::PhysicsManager for
@@ -298,6 +299,27 @@ class ResourceManager {
    * gfx::Drawable will be rendered.
    */
   void addObjectToDrawables(int objTemplateLibID,
+                            scene::SceneNode* parent,
+                            DrawableGroup* drawables,
+                            const Magnum::ResourceKey& lightSetup =
+                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY});
+
+  /**
+   * @brief Add an object from a specified configuration file to the specified
+   * @ref DrawableGroup as a child of the specified @ref scene::SceneNode if
+   * provided.
+   *
+   * If the attributes specified by objTemplateID exists in @ref
+   * physicsObjTemplateLibrary_, and both parent and drawables are
+   * specified, than an object referenced by that key is added to the scene.
+   * @param objPhysConfigFilename The name of the configuration file to parse
+   * and load.  This is expected to exist.
+   * @param parent The @ref scene::SceneNode of which the object will be a
+   * child.
+   * @param drawables The @ref DrawableGroup with which the object @ref
+   * gfx::Drawable will be rendered.
+   */
+  void addObjectToDrawables(const std::string& objPhysConfigFilename,
                             scene::SceneNode* parent,
                             DrawableGroup* drawables,
                             const Magnum::ResourceKey& lightSetup =
@@ -421,6 +443,16 @@ class ResourceManager {
    * loaded from files.
    */
   int getNumFileTemplateObjects() { return physicsObjTmpltLibByID_.size(); };
+  /**
+   * @brief Get a random loaded attribute handle for the loaded file-based
+   * object templates
+   *
+   * @return a randomly selected handle corresponding to the a file-based object
+   * attributes template, or empty string if none loaded
+   */
+  std::string getRandFileTemplateHandle() {
+    return getRandTemplateHandle(physicsObjTmpltLibByID_, "file-based");
+  }
 
   /**
    * @brief Gets the number of primitive template objects stored in the @ref
@@ -430,15 +462,37 @@ class ResourceManager {
    * describe primitives.
    */
   int getNumPrimTemplateObjects() { return physicsPrimTmpltLibByID_.size(); };
-
   /**
-   * @brief Retrieve the composition of all transforms applied to a mesh since
-   * it was loaded.
+   * @brief Get a random loaded attribute handle for the loaded primitive object
+   * templates
+   *
+   * @return a randomly selected handle corresponding to the a primitive
+   * attributes template, or empty string if none loaded
+   */
+  std::string getRandPrimTemplateHandle() {
+    return getRandTemplateHandle(physicsPrimTmpltLibByID_, "primitive");
+  }
+
+ private:
+  /**
+   * @brief return a random handle selected from the passed map - is passed
+   * either map of ids->prim handles or ids->file obj template handles
+   *
+   * @return a random template handle of the chosen type, or the empty string
+   * if none loaded
+   */
+  std::string getRandTemplateHandle(std::map<int, std::string>& mapOfHandles,
+                                    const std::string& type);
+
+ public:
+  /**
+   * @brief Retrieve the composition of all transforms applied to a mesh
+   * since it was loaded.
    *
    * See @ref translateMesh.
    * @param meshIndex Index of the mesh in @ref meshes_.
-   * @return The transformation matrix mapping from the original state to its
-   * current state.
+   * @return The transformation matrix mapping from the original state to
+   * its current state.
    */
   const Magnum::Matrix4& getMeshTransformation(const size_t meshIndex) {
     return meshes_[meshIndex]->meshTransform_;
@@ -447,8 +501,8 @@ class ResourceManager {
   /**
    * @brief Retrieve the meta data for a particular asset.
    *
-   * This includes identifiers for meshes, textures, materials, and a component
-   * heirarchy.
+   * This includes identifiers for meshes, textures, materials, and a
+   * component heirarchy.
    * @param filename The key identifying the asset in @ref resourceDict_.
    * Typically the filepath of the asset.
    * @return The asset's @ref MeshMetaData object.
@@ -476,8 +530,8 @@ class ResourceManager {
    *
    * See @ref primitive_meshes_.
    * @param primitiveID The index of the primitive in @ref primitive_meshes_.
-   * @param node The @ref scene::SceneNode to which the primitive drawable will
-   * be attached.
+   * @param node The @ref scene::SceneNode to which the primitive drawable
+   * will be attached.
    * @param drawables The @ref DrawableGroup with which the primitive will be
    * rendered.
    */
@@ -523,6 +577,21 @@ class ResourceManager {
 
  private:
   /**
+   * @brief Load object templates given string list of object template
+   * locations.
+   *
+   * This will take the list of file names currently specified in
+   * physicsManagerAttributes and load the referenced object templates.
+   * @param tmpltFilenames list of file names of object templates
+   */
+  void loadObjectTemplates(const std::vector<std::string>& tmpltFilenames);
+
+  /**
+   * @brief build templates for all primitive objects
+   */
+  void buildPrimObjectTemplates();
+
+  /**
    * @brief Instantiate, or reinstatiate, PhysicsManager defined by passed
    * attributes
    * @param physicsManager The currently defined @ref physics::PhysicsManager.
@@ -544,7 +613,8 @@ class ResourceManager {
    * @param objectTemplateHandle the handle for the object attributes owning
    * this mesh (for error log output)
    * @param meshType either "render" or "collision" (for error log output)
-   * @param requiresLighting whether or not this mesh asset responds to lighting
+   * @param requiresLighting whether or not this mesh asset responds to
+   * lighting
    * @return whether or not the mesh was loaded successfully
    */
   bool loadObjectMeshDataFromFile(const std::string& fileName,
@@ -552,16 +622,16 @@ class ResourceManager {
                                   const std::string& meshType,
                                   const bool requiresLighting);
 
-  /** @brief Put object template attributes in template map and in passed index
-   * list
+  /** @brief Put object template attributes in template map and in passed
+   * index list
    *
    * @param objectTemplate ptr to object template attributes to be added to
    * library
    * @param objectTemplateHandle thandle for the object attributes to be added
    * to template library
    * @param mapOfNames index map mapping IDs to template handles for this
-   * particular kind of object (Separate map for loaded template objects and for
-   * primitives)
+   * particular kind of object (Separate map for loaded template objects and
+   * for primitives)
    * @return index of object template in names map
    */
   int putObjTemplateAttrInLibMap(PhysicsObjectAttributes::ptr objectTemplate,
@@ -585,7 +655,8 @@ class ResourceManager {
    * @brief Recursive contruction of scene nodes for an asset.
    *
    * Creates a drawable for the component of an asset referenced by the @ref
-   * MeshTransformNode and adds it to the @ref DrawableGroup as child of parent.
+   * MeshTransformNode and adds it to the @ref DrawableGroup as child of
+   * parent.
    * @param metaData The @ref MeshMetaData object containing information about
    * the meshes, textures, materials, and component heirarchy of the asset.
    * @param parent The @ref scene::SceneNode of which the component will be a
@@ -604,10 +675,11 @@ class ResourceManager {
                     const MeshTransformNode& meshTransformNode);
 
   /**
-   * @brief Load textures from importer into assets, and update metaData for an
-   * asset to link textures to that asset.
+   * @brief Load textures from importer into assets, and update metaData for
+   * an asset to link textures to that asset.
    *
-   * @param importer The importer already loaded with information for the asset.
+   * @param importer The importer already loaded with information for the
+   * asset.
    * @param loadedAssetData The asset's @ref LoadedAssetData object.
    */
   void loadTextures(Importer& importer, LoadedAssetData& loadedAssetData);
@@ -615,9 +687,10 @@ class ResourceManager {
   /**
    * @brief Load meshes from importer into assets.
    *
-   * Compute bounding boxes, upload mesh data to GPU, and update metaData for an
-   * asset to link meshes to that asset.
-   * @param importer The importer already loaded with information for the asset.
+   * Compute bounding boxes, upload mesh data to GPU, and update metaData for
+   * an asset to link meshes to that asset.
+   * @param importer The importer already loaded with information for the
+   * asset.
    * @param loadedAssetData The asset's @ref LoadedAssetData object.
    */
   void loadMeshes(Importer& importer, LoadedAssetData& loadedAssetData);
@@ -626,7 +699,8 @@ class ResourceManager {
    * @brief Recursively parse the mesh component transformation heirarchy for
    * the imported asset.
    *
-   * @param importer The importer already loaded with information for the asset.
+   * @param importer The importer already loaded with information for the
+   * asset.
    * @param parent The root of the mesh transform heirarchy for the remaining
    * sub-tree. The generated @ref MeshTransformNode will be added as a child.
    * Typically the @ref MeshMetaData::root to begin recursion.
@@ -654,10 +728,11 @@ class ResourceManager {
                      const Magnum::Matrix4& transformFromParentToWorld);
 
   /**
-   * @brief Load materials from importer into assets, and update metaData for an
-   * asset to link materials to that asset.
+   * @brief Load materials from importer into assets, and update metaData for
+   * an asset to link materials to that asset.
    *
-   * @param importer The importer already loaded with information for the asset.
+   * @param importer The importer already loaded with information for the
+   * asset.
    * @param loadedAssetData The asset's @ref LoadedAssetData object.
    */
   void loadMaterials(Importer& importer, LoadedAssetData& loadedAssetData);
@@ -692,8 +767,8 @@ class ResourceManager {
    * graph for rendering.
    *
    * @param info The @ref AssetInfo for the mesh, already parsed from a file.
-   * @param parent The @ref scene::SceneNode to which the mesh will be added as
-   * a child.
+   * @param parent The @ref scene::SceneNode to which the mesh will be added
+   * as a child.
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered.
    */
@@ -706,8 +781,8 @@ class ResourceManager {
    * from a file and add it to the scene graph for rendering.
    *
    * @param info The @ref AssetInfo for the mesh, already parsed from a file.
-   * @param parent The @ref scene::SceneNode to which the mesh will be added as
-   * a child.
+   * @param parent The @ref scene::SceneNode to which the mesh will be added
+   * as a child.
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered.
    */
@@ -722,12 +797,12 @@ class ResourceManager {
    * If both parent and drawables are provided, add the mesh to the
    * scene graph for rendering.
    * @param info The @ref AssetInfo for the mesh, already parsed from a file.
-   * @param parent The @ref scene::SceneNode to which the mesh will be added as
-   * a child.
+   * @param parent The @ref scene::SceneNode to which the mesh will be added
+   * as a child.
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered.
-   * @param isScene Whether this asset is being loaded as a scene. If it is then
-   * it will be flat shaded for performance reasons
+   * @param isScene Whether this asset is being loaded as a scene. If it is
+   * then it will be flat shaded for performance reasons
    */
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent = nullptr,
@@ -740,8 +815,8 @@ class ResourceManager {
    * remove?
    *
    * @param info The @ref AssetInfo for the mesh, already parsed from a file.
-   * @param parent The @ref scene::SceneNode to which the mesh will be added as
-   * a child.
+   * @param parent The @ref scene::SceneNode to which the mesh will be added
+   * as a child.
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered.
    */
@@ -785,7 +860,8 @@ class ResourceManager {
   Magnum::Range3D computeMeshBB(BaseMesh* meshDataGL);
 
   /**
-   * @brief Compute the absolute AABBs for drawables in PTex mesh in world space
+   * @brief Compute the absolute AABBs for drawables in PTex mesh in world
+   * space
    * @param baseMesh: ptex mesh
    */
 #ifdef ESP_BUILD_PTEX_SUPPORT
@@ -853,11 +929,12 @@ class ResourceManager {
    */
   int nextMaterialID_ = 0;
 
-  /**
-   * @brief A pointer to render mesh data for the most recently loaded instance
-   * mesh. //TODO: remove? doesn't seem to be used anywhere.
-   */
-  Magnum::GL::Mesh* instance_mesh_;
+  //   /**
+  //    * @brief A pointer to render mesh data for the most recently loaded
+  //    instance
+  //    * mesh. //TODO: remove? doesn't seem to be used anywhere.
+  //    */
+  //   Magnum::GL::Mesh* instance_mesh_;
 
   /**
    * @brief Asset metadata linking meshes, textures, materials, and the
@@ -914,6 +991,11 @@ class ResourceManager {
   std::map<std::string, std::vector<CollisionMeshData>> collisionMeshGroups_;
 
   /**
+   * @brief Maps all attribute IDs to the config handles used by lib
+   */
+  std::map<int, std::string> physicsTemplatesLibByID_;
+
+  /**
    * @brief Maps loaded object template ID to object template handles (file
    * names)
    */
@@ -927,12 +1009,12 @@ class ResourceManager {
   // ======== Rendering Utility Functions ========
 
   /**
-   * @brief Creates a new @ref gfx::Drawable for a mesh and adds it to the scene
-   * graph @ref scene::SceneNode.
+   * @brief Creates a new @ref gfx::Drawable for a mesh and adds it to the
+   * scene graph @ref scene::SceneNode.
    *
    * @param metaData Object meta data for the asset this mesh is linked to.
-   * @param node The @ref scene::SceneNode which the new @ref gfx::Drawable will
-   * be attached to.
+   * @param node The @ref scene::SceneNode which the new @ref gfx::Drawable
+   * will be attached to.
    * @param lightSetup The @ref LightSetup key that will be used
    * for the added mesh.
    * @param drawables The @ref DrawableGroup with which the new @ref
@@ -941,8 +1023,8 @@ class ResourceManager {
    * 1->chair, 2->table, etc..) for semantic rendering of the mesh.
    * @param meshIDLocal The index of the mesh within the mesh group linked to
    * the asset via the @ref MeshMetaData.
-   * @param materialIDLocal The index of the material within the material group
-   * linked to the asset via the @ref MeshMetaData.
+   * @param materialIDLocal The index of the material within the material
+   * group linked to the asset via the @ref MeshMetaData.
    */
   void addMeshToDrawables(const MeshMetaData& metaData,
                           scene::SceneNode& node,
@@ -957,7 +1039,8 @@ class ResourceManager {
    * and @ref ShaderType.
    *
    * Add this drawable to the @ref DrawableGroup if provided.
-   * @param shaderType Indentifies the desired shader program for rendering the
+   * @param shaderType Indentifies the desired shader program for rendering
+   * the
    * @ref gfx::Drawable.
    * @param mesh The render mesh.
    * @param node The @ref scene::SceneNode to which the drawable will be
@@ -966,7 +1049,8 @@ class ResourceManager {
    * for the drawable.
    * @param material The @ref MaterialData key that will be used
    * for the drawable.
-   * @param meshID Optional, the index of this mesh component stored in meshes_
+   * @param meshID Optional, the index of this mesh component stored in
+   * meshes_
    * @param group Optional @ref DrawableGroup with which the render the @ref
    * gfx::Drawable.
    * @param texture Optional texture for the mesh.
