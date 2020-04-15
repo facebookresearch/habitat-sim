@@ -180,11 +180,20 @@ void ResourceManager::loadObjectTemplates(
     parseAndLoadPhysObjTemplate(objPhysPropertiesFilename);
   }
   LOG(INFO) << "loaded object templates: "
-            << std::to_string(physicsObjTemplateLibrary_.size());
+            << std::to_string(physicsObjTmpltLibByID_.size());
 }
 
 void ResourceManager::buildPrimObjectTemplates() {
   uint32_t numPrims = static_cast<uint32_t>(PrimObjTypes::END_PRIM_OBJ_TYPES);
+
+  // build every template for primitives
+
+  // int objectTemplateID = putObjTemplateAttrInLibMap(
+  //     objectTemplate, objectTemplateHandle, physicsPrimTmpltLibByID_);
+
+  LOG(INFO) << "built primitive templates: "
+            << std::to_string(physicsPrimTmpltLibByID_.size());
+
 }  // buildPrimObjectTemplates
 
 void ResourceManager::initPhysicsManager(
