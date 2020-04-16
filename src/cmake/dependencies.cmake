@@ -74,6 +74,11 @@ if(BUILD_ASSIMP_SUPPORT)
     set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "ASSIMP_BUILD_ASSIMP_TOOLS" FORCE)
     set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
+    # The following is important to avoid Assimp appending `d` to all our
+    # binaries. Works only with Assimp >= 5.0.0, and after 5.0.1 this option is
+    # prefixed with ASSIMP_, so better set both variants to future-proof this.
+    set(INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
+    set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
     add_subdirectory("${DEPS_DIR}/assimp")
 
     # Help FindAssimp locate everything
