@@ -232,7 +232,7 @@ void SimTest::getDefaultLightingRGBAObservation() {
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
   checkPinholeCameraRGBAObservation(
-      *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.65f);
+      *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 }
 
 void SimTest::getCustomLightingRGBAObservation() {
@@ -243,7 +243,7 @@ void SimTest::getCustomLightingRGBAObservation() {
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
   checkPinholeCameraRGBAObservation(
-      *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.65f);
+      *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
 }
 
 void SimTest::updateLightSetupRGBAObservation() {
@@ -255,11 +255,11 @@ void SimTest::updateLightSetupRGBAObservation() {
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
   checkPinholeCameraRGBAObservation(
-      *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.65f);
+      *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
   simulator->setLightSetup(lightSetup1);
   checkPinholeCameraRGBAObservation(
-      *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.65f);
+      *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
   simulator->removeObject(objectID);
 
   // update custom lighting
@@ -268,11 +268,11 @@ void SimTest::updateLightSetupRGBAObservation() {
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
   checkPinholeCameraRGBAObservation(
-      *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.65f);
+      *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
 
   simulator->setLightSetup(lightSetup2, "custom_lighting_1");
   checkPinholeCameraRGBAObservation(
-      *simulator, "SimTestExpectedCustomLighting2.png", maxThreshold, 0.65f);
+      *simulator, "SimTestExpectedCustomLighting2.png", maxThreshold, 0.71f);
 }
 
 void SimTest::updateObjectLightSetupRGBAObservation() {
@@ -282,17 +282,17 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
   checkPinholeCameraRGBAObservation(
-      *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.65f);
+      *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
   // change from default lighting to custom
   simulator->setObjectLightSetup(objectID, "custom_lighting_1");
   checkPinholeCameraRGBAObservation(
-      *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.65f);
+      *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
 
   // change from one custom lighting to another
   simulator->setObjectLightSetup(objectID, "custom_lighting_2");
   checkPinholeCameraRGBAObservation(
-      *simulator, "SimTestExpectedCustomLighting2.png", maxThreshold, 0.65f);
+      *simulator, "SimTestExpectedCustomLighting2.png", maxThreshold, 0.71f);
 }
 
 void SimTest::multipleLightingSetupsRGBAObservation() {
