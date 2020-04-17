@@ -70,6 +70,11 @@ void initSimBindings(py::module& m) {
            "attachment_node"_a, "light_setup_key"_a, "scene_id"_a = 0)
       .def("get_physics_object_library_size",
            &Simulator::getPhysicsObjectLibrarySize)
+      .def("get_object_template", &Simulator::getObjectTemplate,
+           "object_template_id"_a, pybind11::return_value_policy::reference)
+      .def("load_object_configs", &Simulator::loadObjectConfigs, "path"_a)
+      .def("load_object_template", &Simulator::loadObjectTemplate,
+           "object_template"_a, "object_template_handle"_a)
       .def("remove_object", &Simulator::removeObject, "object_id"_a,
            "delete_object_node"_a, "delete_visual_node"_a, "sceneID"_a = 0)
       .def("get_object_motion_type", &Simulator::getObjectMotionType,
@@ -80,6 +85,8 @@ void initSimBindings(py::module& m) {
            "sceneID"_a = 0)
       .def("step_world", &Simulator::stepWorld, "dt"_a = 1.0 / 60.0)
       .def("get_world_time", &Simulator::getWorldTime)
+      .def("get_gravity", &Simulator::getGravity, "sceneID"_a = 0)
+      .def("set_gravity", &Simulator::setGravity, "gravity"_a, "sceneID"_a = 0)
       .def("set_transformation", &Simulator::setTransformation, "transform"_a,
            "object_id"_a, "sceneID"_a = 0)
       .def("get_transformation", &Simulator::getTransformation, "object_id"_a,
@@ -92,6 +99,16 @@ void initSimBindings(py::module& m) {
            "sceneID"_a = 0)
       .def("get_rotation", &Simulator::getRotation, "object_id"_a,
            "sceneID"_a = 0)
+      .def("get_object_velocity_control", &Simulator::getObjectVelocityControl,
+           "object_id"_a, "sceneID"_a = 0)
+      .def("set_linear_velocity", &Simulator::setLinearVelocity, "linVel"_a,
+           "object_id"_a, "sceneID"_a = 0)
+      .def("get_linear_velocity", &Simulator::getLinearVelocity, "object_id"_a,
+           "sceneID"_a = 0)
+      .def("set_angular_velocity", &Simulator::setLinearVelocity, "linVel"_a,
+           "object_id"_a, "sceneID"_a = 0)
+      .def("get_angular_velocity", &Simulator::getLinearVelocity, "object_id"_a,
+           "sceneID"_a = 0)
       .def("apply_force", &Simulator::applyForce, "force"_a,
            "relative_position"_a, "object_id"_a, "sceneID"_a = 0)
       .def("apply_torque", &Simulator::applyTorque, "torque"_a, "object_id"_a,
@@ -99,7 +116,7 @@ void initSimBindings(py::module& m) {
       .def("contact_test", &Simulator::contactTest, "object_id"_a,
            "sceneID"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
-           "navmesh_settings"_a)
+           "navmesh_settings"_a, "include_static_objects"_a)
       .def("get_light_setup", &Simulator::getLightSetup,
            "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY)
       .def("set_light_setup", &Simulator::setLightSetup, "light_setup"_a,

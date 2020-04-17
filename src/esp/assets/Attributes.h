@@ -2,7 +2,10 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_ASSETS_ATTRIBUTES_H_
+#define ESP_ASSETS_ATTRIBUTES_H_
+
+//#pragma once  //remove since attributes.h might be found in other directories
 
 #include <Magnum/Magnum.h>
 #include <map>
@@ -10,120 +13,179 @@
 #include <vector>
 #include "Magnum/Math/Math.h"
 #include "Magnum/Types.h"
+#include "esp/core/Configuration.h"
 #include "esp/gfx/magnum.h"
 
 namespace esp {
 namespace assets {
 
 /**
- * @brief DataTypes supported by the attributes container. Complexity of non
- * type-specific operations growths wrt to number of supported types
- */
-enum DataType { DOUBLE, STRING, INT, MAGNUMVEC3, VEC_STRINGS, BOOL };
-
-/**
- * @brief Arbitrary map type container for storing and managing various types of
- * attribute data
- */
-class Attributes {
- public:
-  //! constructor initializes the maps
-  Attributes();
-
-  //! return true if any container has the key
-  bool exists(const std::string& key) const;
-
-  //! check if an attribute of a specific type exists
-  bool existsAs(const DataType t, const std::string& key) const;
-
-  //! count the number of containers with the key
-  int count(const std::string& key) const;
-
-  //! erase the key from all maps
-  void eraseAll(const std::string& key);
-
-  //! erase the key from a particular map
-  void eraseAs(const DataType t, const std::string& key);
-
-  //! clear all maps
-  void clear();
-
-  //! clear only a particular map
-  void clearAs(const DataType t);
-
-  //----------------------------------------//
-  //  Type specific getters/setters
-  //----------------------------------------//
-
-  /**
-   * @brief return the queried entry in the double map
-   * will throw an exception if the key does not exist in the double map
-   */
-  double getDouble(const std::string& key) const;
-
-  //! set a double attribute key->val
-  void setDouble(const std::string& key, const double val);
-
-  int getInt(const std::string& key) const;
-
-  void setInt(const std::string& key, const int val);
-  bool getBool(const std::string& key) const;
-
-  void setBool(const std::string& key, const bool val);
-
-  const std::string& getString(const std::string& key) const;
-
-  void setString(const std::string& key, const std::string& val);
-
-  const Magnum::Vector3& getMagnumVec3(const std::string& key) const;
-
-  void setMagnumVec3(const std::string& key, const Magnum::Vector3& val);
-  const std::vector<std::string>& getVecStrings(const std::string& key) const;
-
-  void setVecStrings(const std::string& key,
-                     const std::vector<std::string>& val);
-
-  //! add a string to a string vector (to avoid get/set copying)
-  void appendVecStrings(const std::string& key, const std::string& val);
-  //! remove a string from a string vector (to avoid get/set copying)
-  void removeFromVecString(const std::string& key, const std::string& val);
-
-  /**
-   * @brief return a formated string exposing the current contents of the
-   * attributes maps
-   */
-  std::string listAttributes();
-
- private:
-  std::map<std::string, double> doubleMap_;
-  std::map<std::string, int> intMap_;
-  std::map<std::string, bool> boolMap_;
-  std::map<std::string, std::string> stringMap_;
-  std::map<std::string, Magnum::Vector3> magnumVec3Map_;
-  std::map<std::string, std::vector<std::string> > vecStringsMap_;
-
-};  // end Attributes class
-
-/**
  * @brief Specific Attributes instance which is constructed with a base set of
  * physics object required attributes
  */
-class PhysicsObjectAttributes : public Attributes {
+class PhysicsObjectAttributes : public esp::core::Configuration {
  public:
   PhysicsObjectAttributes();
+
+  // default value getter/setter methods
+
+  // center of mass (COM)
+  void setCOM(const Magnum::Vector3& com) { setVec3("COM", com); }
+  Magnum::Vector3 getCOM() const { return getVec3("COM"); }
+
+  // collision shape inflation margin
+  void setMargin(double margin) { setDouble("margin", margin); }
+  double getMargin() const { return getDouble("margin"); }
+
+  void setMass(double mass) { setDouble("mass", mass); }
+  double getMass() const { return getDouble("mass"); }
+
+  // inertia diagonal
+  void setInertia(const Magnum::Vector3& inertia) {
+    setVec3("inertia", inertia);
+  }
+  Magnum::Vector3 getInertia() const { return getVec3("inertia"); }
+
+  void setScale(const Magnum::Vector3& scale) { setVec3("scale", scale); }
+  Magnum::Vector3 getScale() const { return getVec3("scale"); }
+
+  void setFrictionCoefficient(double frictionCoefficient) {
+    setDouble("frictionCoefficient", frictionCoefficient);
+  }
+  double getFrictionCoefficient() const {
+    return getDouble("frictionCoefficient");
+  }
+
+  void setRestitutionCoefficient(double restitutionCoefficient) {
+    setDouble("restitutionCoefficient", restitutionCoefficient);
+  }
+  double getRestitutionCoefficient() const {
+    return getDouble("restitutionCoefficient");
+  }
+
+  void setLinearDamping(double linearDamping) {
+    setDouble("linearDamping", linearDamping);
+  }
+  double getLinearDamping() const { return getDouble("linearDamping"); }
+
+  void setAngularDamping(double angularDamping) {
+    setDouble("angularDamping", angularDamping);
+  }
+  double getAngularDamping() const { return getDouble("angularDamping"); }
+
+  void setOriginHandle(const std::string& originHandle) {
+    setString("originHandle", originHandle);
+  }
+  std::string getOriginHandle() const { return getString("originHandle"); }
+
+  void setRenderMeshHandle(const std::string& renderMeshHandle) {
+    setString("renderMeshHandle", renderMeshHandle);
+  }
+  std::string getRenderMeshHandle() const {
+    return getString("renderMeshHandle");
+  }
+
+  void setCollisionMeshHandle(const std::string& collisionMeshHandle) {
+    setString("collisionMeshHandle", collisionMeshHandle);
+  }
+  std::string getCollisionMeshHandle() const {
+    return getString("collisionMeshHandle");
+  }
+
+  void setObjectTemplateID(int objectTemplateID) {
+    setInt("objectTemplateID", objectTemplateID);
+  }
+
+  int getObjectTemplateID() const { return getInt("objectTemplateID"); }
+
+  // if true override other settings and use render mesh bounding box as
+  // collision object
+  void setBoundingBoxCollisions(bool useBoundingBoxForCollision) {
+    setBool("useBoundingBoxForCollision", useBoundingBoxForCollision);
+  }
+  bool getBoundingBoxCollisions() const {
+    return getBool("useBoundingBoxForCollision");
+  }
+
+  // if true join all mesh components of an asset into a unified collision
+  // object
+  void setJoinCollisionMeshes(bool joinCollisionMeshes) {
+    setBool("joinCollisionMeshes", joinCollisionMeshes);
+  }
+  bool getJoinCollisionMeshes() const { return getBool("joinCollisionMeshes"); }
+
+  // if true use phong illumination model instead of flat shading
+  void setRequiresLighting(bool requiresLighting) {
+    setBool("requiresLighting", requiresLighting);
+  }
+  bool getRequiresLighting() const { return getBool("requiresLighting"); }
+
+  ESP_SMART_POINTERS(PhysicsObjectAttributes)
+
 };  // end PhysicsObjectAttributes class
 
 //! attributes for a single physical scene
-class PhysicsSceneAttributes : public Attributes {
+class PhysicsSceneAttributes : public esp::core::Configuration {
  public:
   PhysicsSceneAttributes();
+
+  void setGravity(const Magnum::Vector3& gravity) {
+    setVec3("gravity", gravity);
+  }
+  Magnum::Vector3 getGravity() const { return getVec3("gravity"); }
+
+  void setFrictionCoefficient(double frictionCoefficient) {
+    setDouble("frictionCoefficient", frictionCoefficient);
+  }
+  double getFrictionCoefficient() const {
+    return getDouble("frictionCoefficient");
+  }
+
+  void setRestitutionCoefficient(double restitutionCoefficient) {
+    setDouble("restitutionCoefficient", restitutionCoefficient);
+  }
+  double getRestitutionCoefficient() const {
+    return getDouble("restitutionCoefficient");
+  }
+
+  void setRenderMeshHandle(const std::string& renderMeshHandle) {
+    setString("renderMeshHandle", renderMeshHandle);
+  }
+  std::string getRenderMeshHandle() const {
+    return getString("renderMeshHandle");
+  }
+
+  void setCollisionMeshHandle(const std::string& collisionMeshHandle) {
+    setString("collisionMeshHandle", collisionMeshHandle);
+  }
+  std::string getCollisionMeshHandle() const {
+    return getString("collisionMeshHandle");
+  }
+
+  ESP_SMART_POINTERS(PhysicsSceneAttributes)
+
 };  // end PhysicsSceneAttributes
 
 //! attributes for a single physics manager
-class PhysicsManagerAttributes : public Attributes {
+class PhysicsManagerAttributes : public esp::core::Configuration {
  public:
   PhysicsManagerAttributes();
+
+  void setSimulator(const std::string& simulator) {
+    setString("simulator", simulator);
+  }
+  std::string getSimulator() const { return getString("simulator"); }
+
+  void setTimestep(double timestep) { setDouble("timestep", timestep); }
+  double getTimestep() const { return getDouble("timestep"); }
+
+  void setMaxSubsteps(int maxSubsteps) { setInt("maxSubsteps", maxSubsteps); }
+  int getMaxSubsteps() const { return getInt("maxSubsteps"); }
+
+  ESP_SMART_POINTERS(PhysicsManagerAttributes)
 };  // end PhysicsManagerAttributes
 
 }  // namespace assets
 }  // namespace esp
+
+#endif  // ESP_ASSETS_ATTRIBUTES_H_

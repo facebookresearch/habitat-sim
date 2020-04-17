@@ -9,6 +9,10 @@
 
 namespace esp {
 
+namespace assets {
+void initAttributesBindings(pybind11::module& m);
+}
+
 namespace geo {
 void initGeoBindings(pybind11::module& m);
 }
@@ -19,6 +23,10 @@ void initGfxBindings(pybind11::module& m);
 
 namespace nav {
 void initShortestPathBindings(pybind11::module& m);
+}
+
+namespace physics {
+void initPhysicsBindings(pybind11::module& m);
 }
 
 namespace scene {

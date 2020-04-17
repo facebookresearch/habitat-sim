@@ -7,27 +7,19 @@
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/ArrayViewStl.h>
+#include <Corrade/Utility/Algorithms.h>
 #include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/Functions.h>
-#include <Magnum/MeshTools/CombineIndexedArrays.h>
+#include <Magnum/Math/FunctionsBatch.h>
+#include <Magnum/Math/PackingBatch.h>
 #include <Magnum/MeshTools/Interleave.h>
-#include <Magnum/MeshTools/RemoveDuplicates.h>
 #include <Magnum/PixelFormat.h>
-#include <Magnum/Trade/Trade.h>
-
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <tinyply.h>
-#include <unistd.h>
-#include <fstream>
-#include <sophus/so3.hpp>
-#include <sstream>
-#include <vector>
+#include <Magnum/Shaders/Generic.h>
+#include <Magnum/Trade/AbstractImporter.h>
 
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
-#include "esp/gfx/PrimitiveIDShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
@@ -38,42 +30,8 @@ namespace esp {
 namespace assets {
 
 namespace {
-template <typename T>
-void copyTo(std::shared_ptr<tinyply::PlyData> data, std::vector<T>& dst) {
-  dst.resize(data->count);
-  CHECK_EQ(data->buffer.size_bytes(), sizeof(T) * dst.size());
-  std::memcpy(dst.data(), data->buffer.get(), data->buffer.size_bytes());
-}
 
-template <typename T>
-void copyVec3To(std::shared_ptr<tinyply::PlyData> data, std::vector<T>& dst) {
-  dst.resize(data->count * 3);
-  CHECK_EQ(data->buffer.size_bytes(), sizeof(T) * dst.size());
-  std::memcpy(dst.data(), data->buffer.get(), data->buffer.size_bytes());
-}
-
-// TODO(msb) move this specialization to Magnum/MeshTools/CombineIndexedArrays.h
-template <class T,
-          typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
-std::vector<Mn::UnsignedInt> removeDuplicates(std::vector<T>& data) {
-  std::vector<Mn::UnsignedInt> resultIndices;
-  resultIndices.reserve(data.size());
-
-  std::unordered_map<T, Mn::UnsignedInt> table;
-  size_t cursor = 0;
-  for (size_t i = 0; i < data.size(); ++i) {
-    auto val = data[i];
-    auto result = table.emplace(val, cursor);
-    if (result.second) {
-      data[cursor++] = val;
-    }
-    resultIndices.push_back(result.first->second);
-  }
-  data.resize(cursor);
-
-  return resultIndices;
-}
-
+// TODO: this could instead use Mn::Trade::MeshData directly
 struct InstancePlyData {
   std::vector<vec3f> cpu_vbo;
   std::vector<vec3uc> cpu_cbo;
@@ -81,112 +39,64 @@ struct InstancePlyData {
   std::vector<uint16_t> objectIds;
 };
 
-Cr::Containers::Optional<InstancePlyData> parsePly(const std::string& plyFile) {
-  std::ifstream ifs(plyFile, std::ios::binary);
-  if (!ifs.good()) {
-    LOG(ERROR) << "Cannot open file at " << plyFile;
+Cr::Containers::Optional<InstancePlyData> parsePly(
+    Mn::Trade::AbstractImporter& importer,
+    const std::string& plyFile) {
+  /* Open the file. On error the importer already prints a diagnostic message,
+     so no need to do that here. The importer implicitly converts per-face
+     attributes to per-vertex, so nothing extra needs to be done. */
+  Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
+  if (!importer.openFile(plyFile) || !(meshData = importer.mesh(0)))
+    return Cr::Containers::NullOpt;
+
+  /* Copy attributes to the vectors. Positions and indices can be copied
+     directly using the convenience APIs as we store them in the full type.
+     The importer always provides an indexed mesh with positions, so no need
+     for extra error checking. */
+  InstancePlyData data;
+  data.cpu_vbo.resize(meshData->vertexCount());
+  data.cpu_ibo.resize(meshData->indexCount());
+  meshData->positions3DInto(Cr::Containers::arrayCast<Mn::Vector3>(
+      Cr::Containers::arrayView(data.cpu_vbo)));
+  meshData->indicesInto(data.cpu_ibo);
+
+  /* Assuming colors are 8-bit RGB to avoid expanding them to float and then
+     packing back */
+  if (!meshData->hasAttribute(Mn::Trade::MeshAttribute::Color)) {
+    LOG(ERROR) << "File has no vertex colors";
     return Cr::Containers::NullOpt;
   }
-
-  tinyply::PlyFile file;
-  std::shared_ptr<tinyply::PlyData> vertices, colors, faceVertexIndices,
-      objectIds;
-
-  try {
-    if (!file.parse_header(ifs)) {
-      LOG(ERROR) << "Could not read header";
-      return Cr::Containers::NullOpt;
-    }
-
-    vertices = file.request_properties_from_element("vertex", {"x", "y", "z"});
-    colors = file.request_properties_from_element("vertex",
-                                                  {"red", "green", "blue"});
-    faceVertexIndices =
-        file.request_properties_from_element("face", {"vertex_indices"}, 0);
-    objectIds = file.request_properties_from_element("face", {"object_id"});
-  } catch (const std::exception& e) {
-    LOG(ERROR) << "tinyply exception: " << e.what();
+  if (meshData->attributeFormat(Mn::Trade::MeshAttribute::Color) !=
+      Mn::VertexFormat::Vector3ubNormalized) {
+    // TODO: output the format enum directly once glog is gone and we use Debug
+    LOG(ERROR) << "Unexpected vertex color type"
+               << Mn::UnsignedInt(meshData->attributeFormat(
+                      Mn::Trade::MeshAttribute::Color));
     return Cr::Containers::NullOpt;
   }
+  data.cpu_cbo.resize(meshData->vertexCount());
+  Cr::Utility::copy(
+      meshData->attribute<Mn::Color3ub>(Mn::Trade::MeshAttribute::Color),
+      Cr::Containers::arrayCast<Mn::Color3ub>(
+          Cr::Containers::arrayView(data.cpu_cbo)));
 
-  file.read(ifs);
-  InstancePlyData data{};
-
-  CHECK(vertices->t == tinyply::Type::FLOAT32) << "x,y,z must be floats";
-  // copyTo is a helper function to get stuff out of tinyply's format into our
-  // format it does the resize and checks to make sure everything will fit
-  copyTo(vertices, data.cpu_vbo);
-  CHECK(colors->t == tinyply::Type::UINT8) << "r,g,b must be uint8_t's";
-  copyTo(colors, data.cpu_cbo);
-
-  int vertexPerFace;
-  // We can load int32 index buffers as uint32 index buffers as they are simply
-  // indices into an array and thus can't be negative. int32 is really uint31
-  // and can be safely reinterpret_casted to uint32
-  if (faceVertexIndices->t == tinyply::Type::INT32 ||
-      faceVertexIndices->t == tinyply::Type::UINT32) {
-    // We can figure out the number of vertices per face by dividing the number
-    // of bytes needed to store the faces by the number of faces and the size of
-    // each vertex
-    vertexPerFace = faceVertexIndices->buffer.size_bytes() /
-                    (faceVertexIndices->count * sizeof(uint32_t));
-    if (vertexPerFace == 3) {
-      copyVec3To(faceVertexIndices, data.cpu_ibo);
-    } else if (vertexPerFace == 4) {
-      std::vector<vec4ui> tmp;
-      copyTo(faceVertexIndices, tmp);
-      data.cpu_ibo.reserve(tmp.size() * 2 * 3);
-      // create ibo converting quads to tris [0, 1, 2, 3] -> [0, 1, 2],[0, 2, 3]
-      for (auto& quad : tmp) {
-        constexpr int indices[] = {0, 1, 2, 0, 2, 3};
-        for (int i : indices) {
-          data.cpu_ibo.push_back(quad[i]);
-        }
-      }
-    } else {
-      LOG(ERROR) << "GenericInstanceMeshData: Only triangle or quadmeshs "
-                    "supported!";
-      return Cr::Containers::NullOpt;
-    }
-  } else {
-    LOG(ERROR) << "Cannot load vertex indices of type "
-               << tinyply::PropertyTable[faceVertexIndices->t].str;
+  /* Check we actually have object IDs before copying them, and that those are
+     in a range we expect them to be */
+  if (!meshData->hasAttribute(Mn::Trade::MeshAttribute::ObjectId)) {
+    LOG(ERROR) << "File has no object IDs";
     return Cr::Containers::NullOpt;
   }
-
-  VLOG(1) << "vertexPerFace=" << vertexPerFace;
-
-  // If the input mesh is a quad mesh, then we had to double the number of
-  // primitives, so we also need to double the size of the object IDs buffer
-  int indicesPerFace = 3 * (vertexPerFace == 4 ? 2 : 1);
-  data.objectIds.reserve(objectIds->count * indicesPerFace);
-  if (objectIds->t == tinyply::Type::INT32 ||
-      objectIds->t == tinyply::Type::UINT32) {
-    std::vector<int> tmp;
-    // This copy will be safe because for 0 <= v <= 2^31 - 1, uint32 and
-    // int32 have the same bit patterns.  We currently assume IDs are <= 2^16 -
-    // 1, so this assumption is safe.
-    copyTo(objectIds, tmp);
-
-    for (auto& id : tmp) {
-      // >= 0 to make sure we didn't overflow the int32 with the uint32
-      CORRADE_INTERNAL_ASSERT(id >= 0 && id <= ((2 << 16) - 1));
-      for (int i = 0; i < indicesPerFace; ++i)
-        data.objectIds.push_back(id);
-    }
-  } else if (objectIds->t == tinyply::Type::UINT16) {
-    std::vector<uint16_t> tmp;
-    copyTo(objectIds, tmp);
-
-    for (auto& id : tmp) {
-      for (int i = 0; i < indicesPerFace; ++i)
-        data.objectIds.push_back(id);
-    }
-  } else {
-    LOG(ERROR) << "Cannot load object_id of type "
-               << tinyply::PropertyTable[objectIds->t].str;
+  Cr::Containers::Array<Mn::UnsignedInt> objectIds =
+      meshData->objectIdsAsArray();
+  if (Mn::Math::max(objectIds) > 65535) {
+    LOG(ERROR) << "Object IDs can't fit into 16 bits";
     return Cr::Containers::NullOpt;
   }
+  data.objectIds.resize(meshData->vertexCount());
+  Mn::Math::castInto(Cr::Containers::arrayCast<2, Mn::UnsignedInt>(
+                         Cr::Containers::stridedArrayView(objectIds)),
+                     Cr::Containers::arrayCast<2, Mn::UnsignedShort>(
+                         Cr::Containers::stridedArrayView(data.objectIds)));
 
   // Generic Semantic PLY meshes have -Z gravity
   const quatf T_esp_scene =
@@ -201,8 +111,11 @@ Cr::Containers::Optional<InstancePlyData> parsePly(const std::string& plyFile) {
 }  // namespace
 
 std::vector<std::unique_ptr<GenericInstanceMeshData>>
-GenericInstanceMeshData::fromPlySplitByObjectId(const std::string& plyFile) {
-  Cr::Containers::Optional<InstancePlyData> parseResult = parsePly(plyFile);
+GenericInstanceMeshData::fromPlySplitByObjectId(
+    Mn::Trade::AbstractImporter& importer,
+    const std::string& plyFile) {
+  Cr::Containers::Optional<InstancePlyData> parseResult =
+      parsePly(importer, plyFile);
   if (!parseResult) {
     return {};
   }
@@ -211,9 +124,9 @@ GenericInstanceMeshData::fromPlySplitByObjectId(const std::string& plyFile) {
   std::vector<GenericInstanceMeshData::uptr> splitMeshData;
   std::unordered_map<uint16_t, PerObjectIdMeshBuilder> objectIdToObjectData;
 
-  for (size_t i = 0; i < data.objectIds.size(); ++i) {
-    const uint16_t objectId = data.objectIds[i];
+  for (size_t i = 0; i < data.cpu_ibo.size(); ++i) {
     const uint32_t globalIndex = data.cpu_ibo[i];
+    const uint16_t objectId = data.objectIds[globalIndex];
     if (objectIdToObjectData.find(objectId) == objectIdToObjectData.end()) {
       auto instanceMesh = GenericInstanceMeshData::create_unique();
       objectIdToObjectData.emplace(
@@ -227,8 +140,10 @@ GenericInstanceMeshData::fromPlySplitByObjectId(const std::string& plyFile) {
 }
 
 std::unique_ptr<GenericInstanceMeshData> GenericInstanceMeshData::fromPLY(
+    Mn::Trade::AbstractImporter& importer,
     const std::string& plyFile) {
-  Cr::Containers::Optional<InstancePlyData> parseResult = parsePly(plyFile);
+  Cr::Containers::Optional<InstancePlyData> parseResult =
+      parsePly(importer, plyFile);
   if (!parseResult) {
     return nullptr;
   }
@@ -256,19 +171,9 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
     return;
   }
 
-  // TODO(msb) This processing could all be done off-line allowing us to
-  // simply mmap a file with the vertex buffer and index buffer.
-  std::vector<Mn::UnsignedInt> objectIdIndices = removeDuplicates(objectIds_);
   Mn::GL::Buffer vertices, indices;
-
-  std::vector<Magnum::UnsignedInt> new_indices =
-      Mn::MeshTools::combineIndexedArrays(
-          std::make_pair(std::cref(objectIdIndices), std::ref(objectIds_)),
-          std::make_pair(std::cref(cpu_ibo_), std::ref(cpu_vbo_)),
-          std::make_pair(std::cref(cpu_ibo_), std::ref(cpu_cbo_)));
-
   indices.setTargetHint(Mn::GL::Buffer::TargetHint::ElementArray);
-  indices.setData(new_indices, Mn::GL::BufferUsage::StaticDraw);
+  indices.setData(cpu_ibo_, Mn::GL::BufferUsage::StaticDraw);
 
   vertices.setData(
       Mn::MeshTools::interleave(cpu_vbo_, cpu_cbo_, 1, objectIds_, 2),
@@ -279,18 +184,16 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
       .setCount(cpu_ibo_.size())
       .addVertexBuffer(
-          std::move(vertices), 0, gfx::PrimitiveIDShader::Position{},
-          gfx::PrimitiveIDShader::Color3{
-              gfx::PrimitiveIDShader::Color3::DataType::UnsignedByte,
-              gfx::PrimitiveIDShader::Color3::DataOption::Normalized},
+          std::move(vertices), 0, Mn::Shaders::Generic3D::Position{},
+          Mn::Shaders::Generic3D::Color3{
+              Mn::Shaders::Generic3D::Color3::DataType::UnsignedByte,
+              Mn::Shaders::Generic3D::Color3::DataOption::Normalized},
           1,
-          gfx::PrimitiveIDShader::ObjectId{
-              gfx::PrimitiveIDShader::ObjectId::DataType::UnsignedShort},
+          Mn::Shaders::Generic3D::ObjectId{
+              Mn::Shaders::Generic3D::ObjectId::DataType::UnsignedShort},
           2)
       .setIndexBuffer(std::move(indices), 0,
                       Mn::GL::MeshIndexType::UnsignedInt);
-
-  cpu_ibo_ = std::move(new_indices);
 
   updateCollisionMeshData();
 
@@ -320,11 +223,11 @@ void GenericInstanceMeshData::PerObjectIdMeshBuilder::addVertex(
   if (result.second) {
     data_.cpu_vbo_.emplace_back(position);
     data_.cpu_cbo_.emplace_back(color);
+    data_.objectIds_.emplace_back(objectId_);
   }
 
   // update index buffers with local index of vertex/color
   data_.cpu_ibo_.emplace_back(result.first->second);
-  data_.objectIds_.emplace_back(objectId_);
 }
 
 }  // namespace assets

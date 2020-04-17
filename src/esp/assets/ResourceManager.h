@@ -86,6 +86,11 @@ class ResourceManager {
   //! @brief The @ref ShaderManager key for the default @ref MaterialInfo
   static constexpr char DEFAULT_MATERIAL_KEY[] = "";
 
+  //! @brief The @ref ShaderManager key for @ref MaterialInfo with per-vertex
+  //! object ID
+  static constexpr char PER_VERTEX_OBJECT_ID_MATERIAL_KEY[] =
+      "per_vertex_object_id";
+
   /**
    * @brief Set whether textures should be compressed.
    * @param newVal New texture compression setting.
@@ -130,8 +135,8 @@ class ResourceManager {
    * @param info The loaded @ref AssetInfo for the scene mesh.
    * @param _physicsManager The currently defined @ref physics::PhysicsManager.
    * Will be reseated to the configured physics implementation.
-   * @param physicsManagerAttributes The meta data structure storing configured
-   * physics simulation parameters.
+   * @param physicsManagerAttributes A smart pointer to meta data structure
+   * storing configured physics simulation parameters.
    * @param parent The @ref scene::SceneNode of which the scene mesh will be
    * added as a child. Typically near the root of the scene. Expected to be
    * static.
@@ -141,7 +146,7 @@ class ResourceManager {
    */
   bool loadScene(const AssetInfo& info,
                  std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-                 PhysicsManagerAttributes physicsManagerAttributes,
+                 PhysicsManagerAttributes::ptr physicsManagerAttributes,
                  scene::SceneNode* parent = nullptr,
                  DrawableGroup* drawables = nullptr,
                  const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
@@ -152,7 +157,7 @@ class ResourceManager {
    *
    * Loads a physics simulator for the world from the parameters defined in the
    * referenced configuration file. Also attempts to parse physical objects
-   * listed in this configuration file into the @ref physicsObjectLibrary_.
+   * listed in this configuration file into the @ref physicsObjTemplateLibrary_.
    * Reseats the @ref physics::PhysicsManager based on the configured simulator
    * implementation. Loads the scene mesh and adds it to the specified @ref
    * DrawableGroup as a child of the specified @ref scene::SceneNode. If these
@@ -169,7 +174,7 @@ class ResourceManager {
    * @param physicsFilename The physics configuration file from which to
    * re-instatiate the @ref physics::PhysicsManager and parse object templates
    * for the
-   * @ref physicsObjectLibrary_. Defaults to the file location @ref
+   * @ref physicsObjTemplateLibrary_. Defaults to the file location @ref
    * ESP_DEFAULT_PHYS_SCENE_CONFIG set by cmake.
    * @return Whether or not the scene load succeeded.
    */
@@ -190,57 +195,65 @@ class ResourceManager {
    * @return The physics simulation meta data object parsed from the specified
    * configuration file.
    */
-  PhysicsManagerAttributes loadPhysicsConfig(
+  PhysicsManagerAttributes::ptr loadPhysicsConfig(
       std::string physicsFilename = ESP_DEFAULT_PHYS_SCENE_CONFIG);
 
   /**
-   * @brief Load an object from a spcified configuration file into the @ref
-   * physicsObjectLibrary_ and add it to the specified @ref DrawableGroup as a
-   * child of the specified @ref scene::SceneNode if provided.
+   * @brief Get all "*.phys_properties.json" files from the provided file or
+   * directory path.
    *
-   * If the configuration file is already a key for the @ref
-   * physicsObjectLibrary_, and both parent and drawables are specified, then
-   * the parse is skipped and the object referenced by that key is added to the
-   * scene.
-   * @param objPhysConfigFilename The configuration file to parse and load.
+   * @param path A global path to a physics property file or directory
+   * @return A list of valid global paths to "*.phys_properties.json" files.
+   */
+  std::vector<std::string> getObjectConfigPaths(std::string path);
+
+  /**
+   * @brief Add an object from a spcified configuration file to the specified
+   * @ref DrawableGroup as a child of the specified @ref scene::SceneNode if
+   * provided.
+   *
+   * If the attributes specified by objTemplateID exists in @ref
+   * physicsObjTemplateLibrary_, and both parent and drawables are
+   * specified, than an object referenced by that key is added to the scene.
+   * @param objTemplateLibID The ID of the configuration file to parse and
+   * load.  This is expected to exist.
    * @param parent The @ref scene::SceneNode of which the object will be a
    * child.
    * @param drawables The @ref DrawableGroup with which the object @ref
    * gfx::Drawable will be rendered.
-   * @return The index in the @ref physicsObjectLibrary_ to which the key,
-   * objPhysConfigFilename, referes. Can be used to reference the obejct
-   * template, but can change if the @ref physicsObjectLibrary_ is modified.
    */
-  int loadObject(const std::string& objPhysConfigFilename,
-                 scene::SceneNode* parent,
-                 DrawableGroup* drawables,
-                 const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
-                     DEFAULT_LIGHTING_KEY});
+  void addObjectToDrawables(int objTemplateLibID,
+                            scene::SceneNode* parent,
+                            DrawableGroup* drawables,
+                            const Magnum::ResourceKey& lightSetup =
+                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY});
 
   /**
    * @brief Load and parse a physics object template config file and generates a
    * @ref PhysicsObjectAttributes object, adding it to the @ref
-   * physicsObjectLibrary_.
+   * physicsObjTemplateLibrary_.
    *
    * @param objPhysConfigFilename The configuration file to parse and load.
-   * @return The index in the @ref physicsObjectLibrary_ to which the key,
+   * @return The index in the @ref physicsObjTemplateLibrary_ to which the key,
    * objPhysConfigFilename, referes. Can be used to reference the object
-   * template, but can change if the @ref physicsObjectLibrary_ is modified.
+   * template, but can change if the @ref physicsObjTemplateLibrary_ is
+   * modified.
    */
-  int loadObject(const std::string& objPhysConfigFilename);
+  int parseAndLoadPhysObjTemplate(const std::string& objPhysConfigFilename);
 
   /**
    * @brief Add a @ref PhysicsObjectAttributes object to the @ref
-   * physicsObjectLibrary_.
+   * physicsObjTemplateLibrary_.
    *
    * Can modify template values based on results of load.
    * @param objectTemplateHandle The key for referencing the template in the
-   * @ref physicsObjectLibrary_.
+   * @ref physicsObjTemplateLibrary_.
    * @param objectTemplate The object template.
-   * @return The index in the @ref physicsObjectLibrary_ of object template.
+   * @return The index in the @ref physicsObjTemplateLibrary_ of object
+   * template.
    */
-  int loadObject(PhysicsObjectAttributes& objectTemplate,
-                 const std::string objectTemplateHandle);
+  int loadObjectTemplate(PhysicsObjectAttributes::ptr objectTemplate,
+                         const std::string objectTemplateHandle);
 
   //======== Accessor functions ========
   /**
@@ -248,7 +261,7 @@ class ResourceManager {
    * particular asset referenced by the key, configFile.
    *
    * @param configFile The key by which the asset is referenced in @ref
-   * collisionMeshGroups_ and the @ref physicsObjectLibrary_.
+   * collisionMeshGroups_ and the @ref physicsObjTemplateLibrary_.
    * @return A vector reference to @ref assets::CollisionMeshData instances for
    * individual components of the asset.
    */
@@ -257,57 +270,71 @@ class ResourceManager {
 
   /**
    * @brief Getter for all @ref assets::CollisionMeshData associated with the
-   * particular asset referenced by the index, objectID, in @ref
-   * physicsObjectLibrary_.
+   * particular asset referenced by the index, objectTemplateID, in @ref
+   * physicsObjTemplateLibrary_.
    *
-   * @param objectID The index of the object template in @ref
-   * physicsObjectLibrary_.
+   * @param objectTemplateID The index of the object template in @ref
+   * physicsObjTemplateLibrary_.
    * @return A vector reference to @ref assets::CollisionMeshData instances for
    * individual components of the asset.
    */
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
-      const int objectID);
+      const int objectTemplateID);
 
   /**
-   * @brief Get the index in @ref physicsObjectLibrary_ for the object template
-   * asset identified by the key, configFile.
+   * @brief Get the index in @ref physicsObjTemplateLibrary_ for the object
+   * template asset identified by the key, configFile.
    *
    * @param configFile The key referencing the asset in @ref
-   * physicsObjectLibrary_.
-   * @return The index of the object template in @ref physicsObjectLibrary_.
+   * physicsObjTemplateLibrary_.
+   * @return The index of the object template in @ref
+   * physicsObjTemplateLibrary_.
    */
-  int getObjectID(const std::string& configFile);
+  int getObjectTemplateID(const std::string& configFile);
 
   /**
-   * @brief Get the key in @ref physicsObjectLibrary_ for the object template
-   * asset index.
+   * @brief Get the key in @ref physicsObjTemplateLibrary_ for the object
+   * template asset index.
    *
-   * @param objectID The index of the object template in @ref
-   * physicsObjectLibrary_.
-   * @return The key referencing the asset in @ref physicsObjectLibrary_.
+   * @param objectTemplateID The index of the object template in @ref
+   * physicsObjTemplateLibrary_.
+   * @return The key referencing the asset in @ref physicsObjTemplateLibrary_.
    */
-  std::string getObjectConfig(const int objectID);
+  std::string getObjectConfig(const int objectTemplateID);
 
   /**
    * @brief Get a reference to the physics object template for the asset
-   * identified by the key, configFile.
+   * identified by the key, configFile.  physicsObjTemplateLibrary_
    *
    * Can be used to manipulate an object
    * template before instancing new objects.
    * @param configFile The key referencing the asset in @ref
-   * physicsObjectLibrary_.
+   * physicsObjTemplateLibrary_.
    * @return A mutable reference to the object template for the asset.
    */
-  PhysicsObjectAttributes& getPhysicsObjectAttributes(
+  PhysicsObjectAttributes::ptr getPhysicsObjectAttributes(
       const std::string& configFile);
 
   /**
-   * @brief Gets the number of object templates stored in the @ref
-   * physicsObjectLibrary_.
+   * @brief Get a reference to the physics object template for the asset
+   * identified by the objectTemplateID.
    *
-   * @return The size of the @ref physicsObjectLibrary_.
+   * Can be used to manipulate an object
+   * template before instancing new objects.
+   * @param ObjTmplID The key referencing the asset in @ref
+   * physicsObjTemplateLibrary_.
+   * @return A mutable reference to the object template for the asset.
    */
-  int getNumLibraryObjects() { return physicsObjectConfigList_.size(); };
+  PhysicsObjectAttributes::ptr getPhysicsObjectAttributes(
+      const int objectTemplateID);
+
+  /**
+   * @brief Gets the number of object templates stored in the @ref
+   * physicsObjTemplateLibrary_.
+   *
+   * @return The size of the @ref physicsObjTemplateLibrary_.
+   */
+  int getNumLibraryObjects() { return physicsObjTemplateLibrary_.size(); };
 
   /**
    * @brief Retrieve the composition of all transforms applied to a mesh since
@@ -714,7 +741,8 @@ class ResourceManager {
    * new objects with common parameters. For example:
    * "data/objects/cheezit.phys_properties.json" -> physicalMetaData
    */
-  std::map<std::string, PhysicsObjectAttributes> physicsObjectLibrary_;
+  std::map<std::string, PhysicsObjectAttributes::ptr>
+      physicsObjTemplateLibrary_;
 
   /**
    * @brief Maps string keys (typically property filenames) to physical scene
@@ -723,13 +751,13 @@ class ResourceManager {
    * Templates are used by @ref physics::PhysicsManager to
    * initialize, reset scenes or switch contexts.
    */
-  std::map<std::string, PhysicsSceneAttributes> physicsSceneLibrary_;
+  std::map<std::string, PhysicsSceneAttributes::ptr> physicsSceneLibrary_;
 
   /**
    * @brief Library of physics scene attributes for
    * initializing/resetting/switching physics world contexts.
    */
-  std::map<std::string, PhysicsManagerAttributes> physicsManagerLibrary_;
+  std::map<std::string, PhysicsManagerAttributes::ptr> physicsManagerLibrary_;
 
   /**
    * @brief Primitive meshes available for instancing via @ref
@@ -744,13 +772,13 @@ class ResourceManager {
   std::map<std::string, std::vector<CollisionMeshData>> collisionMeshGroups_;
 
   /**
-   * @brief List of object library keys.
+   * @brief Maps object template ID to object template file names
    *
-   * See @ref physicsObjectLibrary_, @ref collisionMeshGroups_. NOTE: can't get
-   * keys from the map (easily), so store them for iteration.
+   * See @ref physicsObjTemplateLibrary_, @ref collisionMeshGroups_. NOTE: can't
+   * get keys from the map (easily), so store them for iteration.
    * TODO: remove this. Unnecessary: use an iterator to get the keys.
    */
-  std::vector<std::string> physicsObjectConfigList_;
+  std::map<int, std::string> physicsObjTmpltLibByID_;
 
   // ======== Rendering Utility Functions ========
 

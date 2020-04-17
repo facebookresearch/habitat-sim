@@ -74,6 +74,11 @@ if(BUILD_ASSIMP_SUPPORT)
     set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "ASSIMP_BUILD_ASSIMP_TOOLS" FORCE)
     set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
+    # The following is important to avoid Assimp appending `d` to all our
+    # binaries. Works only with Assimp >= 5.0.0, and after 5.0.1 this option is
+    # prefixed with ASSIMP_, so better set both variants to future-proof this.
+    set(INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
+    set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
     add_subdirectory("${DEPS_DIR}/assimp")
 
     # Help FindAssimp locate everything
@@ -142,6 +147,7 @@ if(NOT USE_SYSTEM_MAGNUM)
   set(WITH_TINYGLTFIMPORTER ON CACHE BOOL "WITH_TINYGLTFIMPORTER" FORCE)
   set(WITH_ANYIMAGEIMPORTER ON CACHE BOOL "WITH_ANYIMAGEIMPORTER" FORCE)
   set(WITH_ANYIMAGECONVERTER ON CACHE BOOL "WITH_ANYIMAGECONVERTER" FORCE)
+  set(WITH_STANFORDIMPORTER ON CACHE BOOL "" FORCE)
   set(WITH_STBIMAGEIMPORTER ON CACHE BOOL "WITH_STBIMAGEIMPORTER" FORCE)
   set(WITH_STBIMAGECONVERTER ON CACHE BOOL "WITH_STBIMAGECONVERTER" FORCE)
   set(WITH_EMSCRIPTENAPPLICATION OFF CACHE BOOL "WITH_EMSCRIPTENAPPLICATION" FORCE)
@@ -204,12 +210,6 @@ if(NOT USE_SYSTEM_MAGNUM)
     add_subdirectory("${DEPS_DIR}/magnum-bindings")
   endif()
 endif()
-
-
-
-# tinyply
-include_directories(SYSTEM "${DEPS_DIR}/tinyply/source")
-add_subdirectory("${DEPS_DIR}/tinyply")
 
 # gtest build
 if(BUILD_TEST)

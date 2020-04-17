@@ -19,9 +19,8 @@ BulletPhysicsManager::~BulletPhysicsManager() {
   staticSceneObject_.reset(nullptr);
 }
 
-bool BulletPhysicsManager::initPhysics(
-    scene::SceneNode* node,
-    const assets::PhysicsManagerAttributes& physicsManagerAttributes) {
+bool BulletPhysicsManager::initPhysicsFinalize(
+    const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes) {
   activePhysSimLib_ = BULLET;
 
   //! We can potentially use other collision checking algorithms, by
@@ -35,95 +34,40 @@ bool BulletPhysicsManager::initPhysics(
       Magnum::BulletIntegration::DebugDraw::Mode::DrawConstraints);
   bWorld_->setDebugDrawer(&debugDrawer_);
 
-  // Copy over relevant configuration
-  fixedTimeStep_ = physicsManagerAttributes.getDouble("timestep");
   // currently GLB meshes are y-up
-  bWorld_->setGravity(
-      btVector3(physicsManagerAttributes.getMagnumVec3("gravity")));
+  bWorld_->setGravity(btVector3(physicsManagerAttributes->getVec3("gravity")));
 
-  physicsNode_ = node;
   //! Create new scene node
-  staticSceneObject_ =
-      std::make_unique<BulletRigidObject>(&physicsNode_->createChild());
+  staticSceneObject_ = physics::BulletRigidObject::create_unique(
+      &physicsNode_->createChild(), bWorld_);
 
-  initialized_ = true;
   return true;
 }
 
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
-bool BulletPhysicsManager::addScene(
-    const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+bool BulletPhysicsManager::addSceneFinalize(
+    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
-  // Test Mesh primitive is valid
-  for (const assets::CollisionMeshData& meshData : meshGroup) {
-    if (!isMeshPrimitiveValid(meshData)) {
-      return false;
-    }
-  }
-
-  const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
-      physicsSceneAttributes.getString("collisionMeshHandle"));
-
   //! Initialize scene
-  bool sceneSuccess = static_cast<BulletRigidObject*>(staticSceneObject_.get())
-                          ->initializeScene(physicsSceneAttributes, metaData,
-                                            meshGroup, bWorld_);
+  bool sceneSuccess = staticSceneObject_->initializeScene(
+      resourceManager_, physicsSceneAttributes, meshGroup);
 
   return sceneSuccess;
 }
 
-int BulletPhysicsManager::makeRigidObject(
+bool BulletPhysicsManager::makeAndAddRigidObject(
+    int newObjectID,
     const std::vector<assets::CollisionMeshData>& meshGroup,
-    assets::PhysicsObjectAttributes physicsObjectAttributes,
-    scene::SceneNode* attachmentNode) {
-  //! Create new physics object (child node of staticSceneObject_)
-  int newObjectID = allocateObjectID();
-
-  scene::SceneNode* objectNode = attachmentNode;
-  if (attachmentNode == nullptr) {
-    objectNode = &staticSceneObject_->node().createChild();
+    assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
+    scene::SceneNode* objectNode) {
+  auto ptr = physics::BulletRigidObject::create_unique(objectNode, bWorld_);
+  bool objSuccess = ptr->initializeObject(resourceManager_,
+                                          physicsObjectAttributes, meshGroup);
+  if (objSuccess) {
+    existingObjects_.emplace(newObjectID, std::move(ptr));
   }
-
-  existingObjects_[newObjectID] =
-      std::make_unique<BulletRigidObject>(objectNode);
-
-  const assets::MeshMetaData& metaData = resourceManager_->getMeshMetaData(
-      physicsObjectAttributes.getString("collisionMeshHandle"));
-  bool objectSuccess =
-      static_cast<BulletRigidObject*>(existingObjects_.at(newObjectID).get())
-          ->initializeObject(physicsObjectAttributes, bWorld_, metaData,
-                             meshGroup);
-
-  if (!objectSuccess) {
-    LOG(ERROR) << "Object load failed";
-    deallocateObjectID(newObjectID);
-    existingObjects_.erase(newObjectID);
-    if (attachmentNode == nullptr)
-      delete objectNode;
-    return ID_UNDEFINED;
-  }
-  return newObjectID;
-}
-
-int BulletPhysicsManager::addObject(const int objectLibIndex,
-                                    DrawableGroup* drawables,
-                                    scene::SceneNode* attachmentNode,
-                                    const Magnum::ResourceKey& lightSetup) {
-  // Do default load first (adds the SceneNode to the SceneGraph and computes
-  // the cumulativeBB_)
-  int objID = PhysicsManager::addObject(objectLibIndex, drawables,
-                                        attachmentNode, lightSetup);
-
-  // Then set the collision shape to the cumulativeBB_ if necessary
-  if (objID != ID_UNDEFINED) {
-    BulletRigidObject* bro =
-        static_cast<BulletRigidObject*>(existingObjects_.at(objID).get());
-    if (bro->isUsingBBCollisionShape()) {
-      bro->setCollisionFromBB();
-    }
-  }
-  return objID;
+  return objSuccess;
 }
 
 //! Check if mesh primitive is compatible with physics
@@ -185,33 +129,33 @@ void BulletPhysicsManager::stepPhysics(double dt) {
 
   // set specified control velocities
   for (auto& objectItr : existingObjects_) {
-    VelocityControl& velControl = objectItr.second->getVelocityControl();
+    VelocityControl::ptr velControl = objectItr.second->getVelocityControl();
     if (objectItr.second->getMotionType() == MotionType::KINEMATIC) {
       // kinematic velocity control intergration
-      if (velControl.controllingAngVel || velControl.controllingLinVel) {
+      if (velControl->controllingAngVel || velControl->controllingLinVel) {
         scene::SceneNode& objectSceneNode = objectItr.second->node();
-        objectSceneNode.setTransformation(velControl.integrateTransform(
+        objectSceneNode.setTransformation(velControl->integrateTransform(
             dt, objectSceneNode.transformation()));
         objectItr.second->setActive();
       }
     } else if (objectItr.second->getMotionType() == MotionType::DYNAMIC) {
-      if (velControl.controllingLinVel) {
-        if (velControl.linVelIsLocal) {
+      if (velControl->controllingLinVel) {
+        if (velControl->linVelIsLocal) {
           setLinearVelocity(objectItr.first,
                             objectItr.second->node().rotation().transformVector(
-                                velControl.linVel));
+                                velControl->linVel));
         } else {
-          setLinearVelocity(objectItr.first, velControl.linVel);
+          setLinearVelocity(objectItr.first, velControl->linVel);
         }
       }
-      if (velControl.controllingAngVel) {
-        if (velControl.angVelIsLocal) {
+      if (velControl->controllingAngVel) {
+        if (velControl->angVelIsLocal) {
           setAngularVelocity(
               objectItr.first,
               objectItr.second->node().rotation().transformVector(
-                  velControl.angVel));
+                  velControl->angVel));
         } else {
-          setAngularVelocity(objectItr.first, velControl.angVel);
+          setAngularVelocity(objectItr.first, velControl->angVel);
         }
       }
     }

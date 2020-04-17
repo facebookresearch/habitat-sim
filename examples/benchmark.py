@@ -11,7 +11,7 @@ import demo_runner as dr
 import numpy as np
 
 parser = argparse.ArgumentParser("Running benchmarks on simulator")
-parser.add_argument("--scene", type=str, default=dr.default_sim_settings["test_scene"])
+parser.add_argument("--scene", type=str, default=dr.default_sim_settings["scene"])
 parser.add_argument(
     "--max_frames",
     type=int,

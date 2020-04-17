@@ -91,6 +91,7 @@
 #  distancefieldconverter       - magnum-distancefieldconverter executable
 #  fontconverter                - magnum-fontconverter executable
 #  imageconverter               - magnum-imageconverter executable
+#  sceneconverterter            - magnum-sceneconverter executable
 #  gl-info                      - magnum-gl-info executable
 #  al-info                      - magnum-al-info executable
 #
@@ -357,7 +358,8 @@ set(_MAGNUM_PLUGIN_COMPONENT_LIST
     MagnumFont MagnumFontConverter ObjImporter TgaImageConverter TgaImporter
     WavAudioImporter)
 set(_MAGNUM_EXECUTABLE_COMPONENT_LIST
-    distancefieldconverter fontconverter imageconverter gl-info al-info)
+    distancefieldconverter fontconverter imageconverter sceneconverter gl-info
+    al-info)
 
 # Inter-component dependencies
 set(_MAGNUM_Audio_DEPENDENCIES )
@@ -378,10 +380,9 @@ if(MAGNUM_TARGET_GL)
     set(_MAGNUM_DebugTools_GL_DEPENDENCY_IS_OPTIONAL ON)
 endif()
 
-set(_MAGNUM_MeshTools_DEPENDENCIES )
+set(_MAGNUM_MeshTools_DEPENDENCIES Trade)
 if(MAGNUM_TARGET_GL)
-    # Trade is used only in compile(), which needs GL as well
-    list(APPEND _MAGNUM_MeshTools_DEPENDENCIES Trade GL)
+    list(APPEND _MAGNUM_MeshTools_DEPENDENCIES GL)
 endif()
 
 set(_MAGNUM_OpenGLTester_DEPENDENCIES GL)

@@ -47,65 +47,11 @@ class BulletPhysicsManager : public PhysicsManager {
    * tracks the assets this
    * @ref BulletPhysicsManager will have access to.
    */
-  explicit BulletPhysicsManager(assets::ResourceManager* _resourceManager)
+  explicit BulletPhysicsManager(assets::ResourceManager& _resourceManager)
       : PhysicsManager(_resourceManager){};
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/
   virtual ~BulletPhysicsManager();
-
-  //============ Initialization =============
-
-  /**
-   * @brief Initialization: load physical properties and setup the world.
-   * @param node The scene graph node which will act as the parent of all
-   * physical scene and object nodes.
-   * @param physicsManagerAttributes A structure containing values for physical
-   * parameters necessary to initialize the physical scene and simulator.
-   */
-  bool initPhysics(scene::SceneNode* node,
-                   const assets::PhysicsManagerAttributes&
-                       physicsManagerAttributes) override;
-
-  //============ Object/Scene Instantiation =============
-
-  /**
-   * @brief Initialize static scene collision geometry from loaded mesh data.
-   * Only one 'scene' may be initialized per simulated world, but this scene may
-   * contain several components (e.g. GLB heirarchy). Checks that the collision
-   * mesh can be used by Bullet. See @ref BulletRigidObject::initializeScene.
-   * Bullet mesh conversion adapted from:
-   * https://github.com/mosra/magnum-integration/issues/20
-   * @param physicsSceneAttributes a structure defining physical properties of
-   * the scene.
-   * @param meshGroup collision meshs for the scene.
-   * @return true if successful and false otherwise
-   */
-  bool addScene(
-      const assets::PhysicsSceneAttributes& physicsSceneAttributes,
-      const std::vector<assets::CollisionMeshData>& meshGroup) override;
-
-  /**
-   * @brief Override of @ref PhysicsManager::addObject() to handle primitive
-   * collision shapes requiring a SceneNode with bounding box to be
-   * pre-computed.
-   *
-   *  @param objectLibIndex The index of the object's template in @ref
-   * esp::assets::ResourceManager::physicsObjectLibrary_
-   *  @param drawables Reference to the scene graph drawables group to enable
-   * rendering of the newly initialized object.
-   *  @param attachmentNode If supplied, attach the new physical object to an
-   * existing SceneNode.
-   *  @param lightSetup The identifier of the lighting configuration to use when
-   * rendering the new object.
-   *  @return the instanced object's ID, mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
-   */
-  virtual int addObject(
-      const int objectLibIndex,
-      DrawableGroup* drawables,
-      scene::SceneNode* attachmentNode = nullptr,
-      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
-          assets::ResourceManager::DEFAULT_LIGHTING_KEY}) override;
 
   //============ Simulator functions =============
 
@@ -218,6 +164,47 @@ class BulletPhysicsManager : public PhysicsManager {
   bool contactTest(const int physObjectID) override;
 
  protected:
+  //============ Initialization =============
+  /**
+   * @brief Finalize physics initialization: Setup staticSceneObject_ and
+   * initialize any other physics-related values.
+   * @param physicsManagerAttributes A structure containing values for physical
+   * parameters necessary to initialize the physical scene and simulator.
+   */
+  bool initPhysicsFinalize(const assets::PhysicsManagerAttributes::ptr
+                               physicsManagerAttributes) override;
+
+  //============ Object/Scene Instantiation =============
+  /**
+   * @brief Finalize scene initialization. Checks that the collision
+   * mesh can be used by Bullet. See @ref BulletRigidObject::initializeScene.
+   * Bullet mesh conversion adapted from:
+   * https://github.com/mosra/magnum-integration/issues/20
+   * @param physicsSceneAttributes a pointer to the structure defining physical
+   * properties of the scene.
+   * @param meshGroup collision meshs for the scene.
+   * @return true if successful and false otherwise
+   */
+  bool addSceneFinalize(
+      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
+      const std::vector<assets::CollisionMeshData>& meshGroup) override;
+
+  /** @brief Create and initialize an @ref RigidObject and add
+   * it to existingObjects_ map keyed with newObjectID
+   * @param newObjectID valid object ID for the new object
+   * @param meshGroup The object's mesh.
+   * @param physicsObjectAttributes The physical object's template defining its
+   * physical parameters.
+   * @param objectNode Valid, existing scene node
+   * @return whether the object has been successfully initialized and added to
+   * existingObjects_ map
+   */
+  bool makeAndAddRigidObject(
+      int newObjectID,
+      const std::vector<assets::CollisionMeshData>& meshGroup,
+      assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
+      scene::SceneNode* objectNode) override;
+
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;
 
@@ -238,19 +225,6 @@ class BulletPhysicsManager : public PhysicsManager {
    * @return true if valid, false otherwise.
    */
   bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData) override;
-
-  /** @brief Create and initialize an @ref RigidObject and assign it an ID. See
-   * @ref allocateObjectID and @ref BulletRigidObject::initializeObject.
-   * @param meshGroup The object's mesh.
-   * @param physicsObjectAttributes The physical object's template defining its
-   * physical parameters.
-   * @param attachmentNode If supplied, attach the new physical object to an
-   * existing SceneNode.
-   * @return The id of the newly allocated object in @ref existingObjects_
-   */
-  int makeRigidObject(const std::vector<assets::CollisionMeshData>& meshGroup,
-                      assets::PhysicsObjectAttributes physicsObjectAttributes,
-                      scene::SceneNode* attachmentNode = nullptr) override;
 
   ESP_SMART_POINTERS(BulletPhysicsManager)
 

@@ -83,6 +83,8 @@ class Simulator:
         del self._sim
         self._sim = None
 
+        self.config = None
+
     def seed(self, new_seed):
         self._sim.seed(new_seed)
         self.pathfinder.seed(new_seed)
@@ -273,6 +275,19 @@ class Simulator:
     def __del__(self):
         self.close()
 
+    # --- object template functions ---
+    def get_physics_object_library_size(self):
+        return self._sim.get_physics_object_library_size()
+
+    def get_object_template(self, template_id):
+        return self._sim.get_object_template(template_id)
+
+    def load_object_configs(self, path):
+        return self._sim.load_object_configs(path)
+
+    def load_object_template(self, object_template, object_template_handle):
+        return self._sim.load_object_template(object_template, object_template_handle)
+
     # --- physics functions ---
     def add_object(
         self,
@@ -281,9 +296,6 @@ class Simulator:
         light_setup_key=DEFAULT_LIGHTING_KEY,
     ):
         return self._sim.add_object(object_lib_index, attachment_node, light_setup_key)
-
-    def get_physics_object_library_size(self):
-        return self._sim.get_physics_object_library_size()
 
     def remove_object(
         self, object_id, delete_object_node=True, delete_visual_node=True
@@ -317,6 +329,21 @@ class Simulator:
     def get_rotation(self, object_id, scene_id=0):
         return self._sim.get_rotation(object_id, scene_id)
 
+    def get_object_velocity_control(self, object_id, scene_id=0):
+        return self._sim.get_object_velocity_control(object_id, scene_id)
+
+    def set_linear_velocity(self, lin_vel, object_id, scene_id=0):
+        self._sim.set_linear_velocity(lin_vel, object_id, scene_id)
+
+    def get_linear_velocity(self, object_id, scene_id=0):
+        return self._sim.get_linear_velocity(object_id, scene_id)
+
+    def set_angular_velocity(self, ang_vel, object_id, scene_id=0):
+        self._sim.set_angular_velocity(ang_vel, object_id, scene_id)
+
+    def get_angular_velocity(self, object_id, scene_id=0):
+        return self._sim.get_angular_velocity(object_id, scene_id)
+
     def apply_force(self, force, relative_position, object_id, scene_id=0):
         self._sim.apply_force(force, relative_position, object_id, scene_id)
 
@@ -326,11 +353,24 @@ class Simulator:
     def contact_test(self, object_id, scene_id=0):
         return self._sim.contact_test(object_id, scene_id)
 
+    def step_physics(self, dt, scene_id=0):
+        self._sim.step_world(dt)
+
     def get_world_time(self, scene_id=0):
         return self._sim.get_world_time()
 
-    def recompute_navmesh(self, pathfinder, navmesh_settings):
-        return self._sim.recompute_navmesh(pathfinder, navmesh_settings)
+    def get_gravity(self, scene_id=0):
+        return self._sim.get_gravity(scene_id)
+
+    def set_gravity(self, gravity, scene_id=0):
+        return self._sim.set_gravity(gravity, scene_id)
+
+    def recompute_navmesh(
+        self, pathfinder, navmesh_settings, include_static_objects=False
+    ):
+        return self._sim.recompute_navmesh(
+            pathfinder, navmesh_settings, include_static_objects
+        )
 
     # --- lighting functions ---
     def get_light_setup(self, key=DEFAULT_LIGHTING_KEY):

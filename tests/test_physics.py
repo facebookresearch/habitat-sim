@@ -1,6 +1,8 @@
+import math
 import os.path as osp
 import random
 
+import magnum as mn
 import numpy as np
 import pytest
 import quaternion
@@ -141,7 +143,7 @@ def test_dynamics(sim):
             [sim.get_translation(object_id), sim.get_rotation(object_id)],
             [sim.get_translation(object2_id), sim.get_rotation(object2_id)],
         ]
-        prev_time = 0.0
+        prev_time = sim.get_world_time()
         for _ in range(50):
             # force application at a location other than the origin should always cause angular and linear motion
             sim.apply_force(np.random.rand(3), np.random.rand(3), object2_id)
@@ -165,11 +167,15 @@ def test_dynamics(sim):
 
             # check the object states
             # 1st object should rotate, but not translate
-            assert previous_object_states[0][0] == sim.get_translation(object_id)
+            assert np.allclose(
+                previous_object_states[0][0], sim.get_translation(object_id)
+            )
             assert previous_object_states[0][1] != sim.get_rotation(object_id)
 
             # 2nd object should rotate and translate
-            assert previous_object_states[1][0] != sim.get_translation(object2_id)
+            assert not np.allclose(
+                previous_object_states[1][0], sim.get_translation(object2_id)
+            )
             assert previous_object_states[1][1] != sim.get_rotation(object2_id)
 
             previous_object_states = [
@@ -189,5 +195,108 @@ def test_dynamics(sim):
         obs = sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
 
         # 2nd object should no longer rotate or translate
-        assert previous_object_states[1][0] == sim.get_translation(object2_id)
+        assert np.allclose(
+            previous_object_states[1][0], sim.get_translation(object2_id)
+        )
         assert previous_object_states[1][1] == sim.get_rotation(object2_id)
+
+        sim.step_physics(0.1)
+
+        # test velocity get/set
+        test_lin_vel = np.array([1.0, 0.0, 0.0])
+        test_ang_vel = np.array([0.0, 1.0, 0.0])
+
+        # no velocity setting for KINEMATIC objects
+        sim.set_linear_velocity(test_lin_vel, object2_id)
+        assert sim.get_linear_velocity(object2_id) == np.array([0.0, 0.0, 0.0])
+
+        sim.set_object_motion_type(habitat_sim.physics.MotionType.DYNAMIC, object2_id)
+        sim.set_linear_velocity(test_lin_vel, object2_id)
+        assert sim.get_linear_velocity(object2_id) == test_lin_vel
+        sim.set_angular_velocity(test_ang_vel, object2_id)
+        assert sim.get_angular_velocity(object2_id) == test_ang_vel
+
+        # test modifying gravity
+        new_object_start = np.array([100.0, 0, 0])
+        sim.set_translation(new_object_start, object_id)
+        new_grav = np.array([10.0, 0, 0])
+        sim.set_gravity(new_grav)
+        assert np.allclose(sim.get_gravity(), new_grav)
+        assert np.allclose(sim.get_translation(object_id), new_object_start)
+        sim.step_physics(0.1)
+        assert sim.get_translation(object_id)[0] > new_object_start[0]
+
+
+def test_velocity_control(sim):
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "NONE"
+    cfg_settings["enable_physics"] = True
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    sim.reconfigure(hab_cfg)
+    sim.set_gravity(np.array([0, 0, 0.0]))
+
+    template_path = osp.abspath("data/test_assets/objects/nested_box")
+    template_ids = sim.load_object_configs(template_path)
+    object_template = sim.get_object_template(template_ids[0])
+    object_template.set_linear_damping(0.0)
+    object_template.set_angular_damping(0.0)
+
+    for iteration in range(2):
+        sim.reset()
+        object_id = sim.add_object(template_ids[0])
+        vel_control = sim.get_object_velocity_control(object_id)
+
+        if iteration == 0:
+            if (
+                sim.get_object_motion_type(object_id)
+                != habitat_sim.physics.MotionType.DYNAMIC
+            ):
+                # Non-dynamic simulator in use. Skip 1st pass.
+                sim.remove_object(object_id)
+                continue
+        elif iteration == 1:
+            # test KINEMATIC
+            sim.set_object_motion_type(
+                habitat_sim.physics.MotionType.KINEMATIC, object_id
+            )
+
+        # test global velocities
+        vel_control.linear_velocity = np.array([1.0, 0, 0])
+        vel_control.angular_velocity = np.array([0, 1.0, 0])
+        vel_control.controlling_lin_vel = True
+        vel_control.controlling_ang_vel = True
+
+        while sim.get_world_time() < 1.0:
+            # NOTE: stepping close to default timestep to get near-constant velocity control of DYNAMIC bodies.
+            sim.step_physics(0.00416)
+
+        ground_truth_pos = sim.get_world_time() * vel_control.linear_velocity
+        assert np.allclose(sim.get_translation(object_id), ground_truth_pos, atol=0.01)
+        ground_truth_q = mn.Quaternion([[0, 0.480551, 0], 0.876967])
+        angle_error = mn.math.angle(ground_truth_q, sim.get_rotation(object_id))
+        assert angle_error < mn.Rad(0.005)
+
+        sim.reset()
+
+        # test local velocities (turn in a half circle)
+        vel_control.lin_vel_is_local = True
+        vel_control.ang_vel_is_local = True
+        vel_control.linear_velocity = np.array([0, 0, -math.pi])
+        vel_control.angular_velocity = np.array([math.pi * 2.0, 0, 0])
+
+        sim.set_translation(np.array([0, 0, 0.0]), object_id)
+        sim.set_rotation(mn.Quaternion(), object_id)
+
+        while sim.get_world_time() < 0.5:
+            # NOTE: stepping close to default timestep to get near-constant velocity control of DYNAMIC bodies.
+            sim.step_physics(0.00416)
+
+        # NOTE: explicit integration, so expect some error
+        ground_truth_q = mn.Quaternion([[1.0, 0, 0], 0])
+        assert np.allclose(
+            sim.get_translation(object_id), np.array([0, 1.0, 0.0]), atol=0.03
+        )
+        angle_error = mn.math.angle(ground_truth_q, sim.get_rotation(object_id))
+        assert angle_error < mn.Rad(0.05)
+
+        sim.remove_object(object_id)

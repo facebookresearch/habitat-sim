@@ -32,7 +32,7 @@ jobs:
 
   cpp_lint:
     docker:
-      - image: circleci/buildpack-deps:disco
+      - image: circleci/buildpack-deps:18.04
     steps:
       - checkout
       - run:
@@ -183,7 +183,7 @@ jobs:
           command: |
               if [ ! -d ~/miniconda ]
               then
-                curl -o ~/miniconda.sh -O  https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+                curl -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
                 chmod +x ~/miniconda.sh
                 ~/miniconda.sh -b -p $HOME/miniconda
                 rm ~/miniconda.sh
@@ -369,6 +369,8 @@ jobs:
               #Uploading test coverage for C++ code
               lcov --directory . --capture --output-file coverage.info
               lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
+              lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
+              lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
               bash <(curl -s https://codecov.io/bash) -f coverage.info -cF CPP
       - run:
           name: Build documentation
@@ -379,7 +381,7 @@ jobs:
               # Rebuild with all options enabled
               ./build.sh --with-cuda --with-bullet
               cd docs
-              conda install -y -c conda-forge doxygen
+              conda install -y -c conda-forge doxygen==1.8.16
               conda install -y  jinja2 pygments docutils
               conda install -y -c conda-forge pelican
               mkdir -p ../build/docs

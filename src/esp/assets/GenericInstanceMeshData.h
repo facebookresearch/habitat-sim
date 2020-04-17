@@ -7,7 +7,6 @@
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Mesh.h>
-#include <Magnum/Trade/MeshData3D.h>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -38,7 +37,8 @@ class GenericInstanceMeshData : public BaseMesh {
    * @return Mesh data split by objectID
    */
   static std::vector<std::unique_ptr<GenericInstanceMeshData>>
-  fromPlySplitByObjectId(const std::string& plyFile);
+  fromPlySplitByObjectId(Magnum::Trade::AbstractImporter& importer,
+                         const std::string& plyFile);
 
   /**
    * @brief Load from a .ply file
@@ -46,6 +46,7 @@ class GenericInstanceMeshData : public BaseMesh {
    * @param plyFile .ply file to load
    */
   static std::unique_ptr<GenericInstanceMeshData> fromPLY(
+      Magnum::Trade::AbstractImporter& importer,
       const std::string& plyFile);
 
   // ==== rendering ====

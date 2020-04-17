@@ -3,6 +3,11 @@ import habitat_sim
 
 
 def test_random_seed(sim):
+    # reconfigure to ensure pathfinder exists
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    sim.reconfigure(hab_cfg)
+
     # Test that the same seed gives the same point
     sim.seed(1)
     point1 = sim.pathfinder.get_random_navigable_point()

@@ -5,6 +5,7 @@
 #include "GenericDrawable.h"
 
 #include <Corrade/Utility/FormatStl.h>
+#include <Magnum/Math/Matrix3.h>
 
 #include "esp/scene/SceneNode.h"
 
@@ -58,12 +59,15 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
       .setDiffuseColor(materialData_->diffuseColor)
       .setSpecularColor(materialData_->specularColor)
       .setShininess(materialData_->shininess)
-      .setObjectId(node_.getId())
+      .setObjectId(materialData_->perVertexObjectId ? 0 : node_.getId())
       .setLightPositions(lightPositions)
       .setLightColors(lightColors)
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(transformationMatrix.rotationScaling());
+
+  if (materialData_->textureMatrix != Magnum::Matrix3{})
+    shader_->setTextureMatrix(materialData_->textureMatrix);
 
   if (materialData_->ambientTexture)
     shader_->bindAmbientTexture(*(materialData_->ambientTexture));
@@ -71,20 +75,28 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
     shader_->bindDiffuseTexture(*(materialData_->diffuseTexture));
   if (materialData_->specularTexture)
     shader_->bindSpecularTexture(*(materialData_->specularTexture));
+  if (materialData_->normalTexture)
+    shader_->bindNormalTexture(*(materialData_->normalTexture));
 
-  mesh_.draw(*shader_);
+  shader_->draw(mesh_);
 }
 
 void GenericDrawable::updateShader() {
   Magnum::UnsignedInt lightCount = lightSetup_->size();
   Magnum::Shaders::Phong::Flags flags = Magnum::Shaders::Phong::Flag::ObjectId;
 
+  if (materialData_->textureMatrix != Magnum::Matrix3{})
+    flags |= Magnum::Shaders::Phong::Flag::TextureTransformation;
   if (materialData_->ambientTexture)
     flags |= Magnum::Shaders::Phong::Flag::AmbientTexture;
   if (materialData_->diffuseTexture)
     flags |= Magnum::Shaders::Phong::Flag::DiffuseTexture;
   if (materialData_->specularTexture)
     flags |= Magnum::Shaders::Phong::Flag::SpecularTexture;
+  if (materialData_->normalTexture)
+    flags |= Magnum::Shaders::Phong::Flag::NormalTexture;
+  if (materialData_->perVertexObjectId)
+    flags |= Magnum::Shaders::Phong::Flag::InstancedObjectId;
 
   if (!shader_ || shader_->lightCount() != lightCount ||
       shader_->flags() != flags) {
@@ -102,6 +114,9 @@ void GenericDrawable::updateShader() {
           Magnum::ResourceDataState::Final,
           Magnum::ResourcePolicy::ReferenceCounted);
     }
+
+    CORRADE_INTERNAL_ASSERT(shader_ && shader_->lightCount() == lightCount &&
+                            shader_->flags() == flags);
   }
 }
 

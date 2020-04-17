@@ -12,7 +12,6 @@
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/Trade/AbstractImporter.h>
-#include <Magnum/Trade/MeshData3D.h>
 
 #include "BaseMesh.h"
 #include "esp/core/esp.h"
@@ -85,6 +84,12 @@ class GltfMeshData : public BaseMesh {
   std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
 
   bool needsNormals_ = true;
+
+ private:
+  /* Internal; can store data referenced by positions / indices if the original
+     MeshData doesn't have them in desired type */
+  Corrade::Containers::Array<Magnum::Vector3> positionData_;
+  Corrade::Containers::Array<Magnum::UnsignedInt> indexData_;
 };
 }  // namespace assets
 }  // namespace esp

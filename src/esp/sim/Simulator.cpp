@@ -8,7 +8,9 @@
 
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
 
+#include "esp/assets/Attributes.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/RenderCamera.h"
@@ -195,7 +197,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
 void Simulator::reset() {
   if (physicsManager_ != nullptr) {
-    // TODO: this does nothing yet... desired reset behavior?
+    // Note: only resets time to 0 by default.
     physicsManager_->reset();
   }
 
@@ -275,6 +277,33 @@ int Simulator::getPhysicsObjectLibrarySize() {
   return resourceManager_.getNumLibraryObjects();
 }
 
+assets::PhysicsObjectAttributes::ptr Simulator::getObjectTemplate(
+    int templateId) {
+  return resourceManager_.getPhysicsObjectAttributes(templateId);
+}
+
+std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
+  std::vector<int> templateIndices;
+  std::vector<std::string> validConfigPaths =
+      resourceManager_.getObjectConfigPaths(path);
+  for (auto& validPath : validConfigPaths) {
+    templateIndices.push_back(
+        resourceManager_.parseAndLoadPhysObjTemplate(validPath));
+  }
+  return templateIndices;
+}
+
+int Simulator::loadObjectTemplate(
+    assets::PhysicsObjectAttributes::ptr objTmplPtr,
+    const std::string& objectTemplateHandle) {
+  // check for duplicate keys
+  if (resourceManager_.getObjectTemplateID(objectTemplateHandle) !=
+      ID_UNDEFINED) {
+    return ID_UNDEFINED;
+  }
+  return resourceManager_.loadObjectTemplate(objTmplPtr, objectTemplateHandle);
+}
+
 // return a list of existing objected IDs in a physical scene
 std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
@@ -308,6 +337,15 @@ bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
     return physicsManager_->setObjectMotionType(objectID, motionType);
   }
   return false;
+}
+
+physics::VelocityControl::ptr Simulator::getObjectVelocityControl(
+    const int objectID,
+    const int sceneID) const {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getVelocityControl(objectID);
+  }
+  return nullptr;
 }
 
 // apply forces and torques to objects
@@ -381,6 +419,38 @@ Magnum::Quaternion Simulator::getRotation(const int objectID,
   return Magnum::Quaternion();
 }
 
+void Simulator::setLinearVelocity(const Magnum::Vector3& linVel,
+                                  const int objectID,
+                                  const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->setLinearVelocity(objectID, linVel);
+  }
+}
+
+Magnum::Vector3 Simulator::getLinearVelocity(const int objectID,
+                                             const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getLinearVelocity(objectID);
+  }
+  return Magnum::Vector3();
+}
+
+void Simulator::setAngularVelocity(const Magnum::Vector3& angVel,
+                                   const int objectID,
+                                   const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->setAngularVelocity(objectID, angVel);
+  }
+}
+
+Magnum::Vector3 Simulator::getAngularVelocity(const int objectID,
+                                              const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getAngularVelocity(objectID);
+  }
+  return Magnum::Vector3();
+}
+
 bool Simulator::contactTest(const int objectID, const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->contactTest(objectID);
@@ -403,8 +473,22 @@ double Simulator::getWorldTime() {
   return NO_TIME;
 }
 
+void Simulator::setGravity(const Magnum::Vector3& gravity, const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    physicsManager_->setGravity(gravity);
+  }
+}
+
+Magnum::Vector3 Simulator::getGravity(const int sceneID) const {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getGravity();
+  }
+  return Magnum::Vector3();
+}
+
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
-                                 const nav::NavMeshSettings& navMeshSettings) {
+                                 const nav::NavMeshSettings& navMeshSettings,
+                                 bool includeStaticObjects) {
   CORRADE_ASSERT(
       config_.createRenderer,
       "Simulator::recomputeNavMesh: SimulatorConfiguration::createRenderer is "
@@ -414,6 +498,41 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 
   assets::MeshData::uptr joinedMesh =
       resourceManager_.createJoinedCollisionMesh(config_.scene.id);
+
+  // add STATIC collision objects
+  if (includeStaticObjects) {
+    for (auto objectID : physicsManager_->getExistingObjectIDs()) {
+      if (physicsManager_->getObjectMotionType(objectID) ==
+          physics::MotionType::STATIC) {
+        auto objectTransform = Magnum::EigenIntegration::cast<
+            Eigen::Transform<float, 3, Eigen::Affine> >(
+            physicsManager_->getObjectVisualSceneNode(objectID)
+                .absoluteTransformationMatrix());
+        const assets::PhysicsObjectAttributes::ptr initializationTemplate =
+            physicsManager_->getInitializationAttributes(objectID);
+        objectTransform.scale(Magnum::EigenIntegration::cast<vec3f>(
+            initializationTemplate->getScale()));
+        std::string meshHandle =
+            initializationTemplate->getCollisionMeshHandle();
+        if (meshHandle.empty()) {
+          meshHandle = initializationTemplate->getRenderMeshHandle();
+        }
+        assets::MeshData::uptr joinedObjectMesh =
+            resourceManager_.createJoinedCollisionMesh(meshHandle);
+        int prevNumIndices = joinedMesh->ibo.size();
+        int prevNumVerts = joinedMesh->vbo.size();
+        joinedMesh->ibo.resize(prevNumIndices + joinedObjectMesh->ibo.size());
+        for (size_t ix = 0; ix < joinedObjectMesh->ibo.size(); ++ix) {
+          joinedMesh->ibo[ix + prevNumIndices] =
+              joinedObjectMesh->ibo[ix] + prevNumVerts;
+        }
+        joinedMesh->vbo.reserve(joinedObjectMesh->vbo.size() + prevNumVerts);
+        for (auto& vert : joinedObjectMesh->vbo) {
+          joinedMesh->vbo.push_back(objectTransform * vert);
+        }
+      }
+    }
+  }
 
   if (!pathfinder.build(navMeshSettings, *joinedMesh)) {
     LOG(ERROR) << "Failed to build navmesh";

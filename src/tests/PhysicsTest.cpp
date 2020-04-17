@@ -76,20 +76,22 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
     // if we have a simulation implementation then test a joined vs. unjoined
     // object
-    esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+    // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+    esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
+        esp::assets::PhysicsObjectAttributes::create();
+    physicsObjectAttributes->setRenderMeshHandle(objectFile);
+    resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
-    esp::assets::PhysicsObjectAttributes& objectTemplate =
+    esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
         resourceManager_.getPhysicsObjectAttributes(objectFile);
 
     for (int i = 0; i < 2; i++) {
       // mark the object not joined
       if (i == 0) {
-        objectTemplate.setBool("joinCollisionMeshes", false);
+        objectTemplate->setJoinCollisionMeshes(false);
       } else {
-        objectTemplate.setBool("joinCollisionMeshes", true);
+        objectTemplate->setJoinCollisionMeshes(true);
       }
 
       physicsManager_->reset();
@@ -152,21 +154,23 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
     // if we have a simulation implementation then test bounding box vs mesh for
     // sphere object
 
-    esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-    physicsObjectAttributes.setDouble("margin", 0.0);
-    physicsObjectAttributes.setBool("joinCollisionMeshes", false);
-    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+    // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+    esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
+        esp::assets::PhysicsObjectAttributes::create();
+    physicsObjectAttributes->setRenderMeshHandle(objectFile);
+    physicsObjectAttributes->setMargin(0.0);
+    physicsObjectAttributes->setJoinCollisionMeshes(false);
+    resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
-    esp::assets::PhysicsObjectAttributes& objectTemplate =
+    esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
         resourceManager_.getPhysicsObjectAttributes(objectFile);
 
     for (int i = 0; i < 2; i++) {
       if (i == 0) {
-        objectTemplate.setBool("useBoundingBoxForCollision", false);
+        objectTemplate->setBoundingBoxCollisions(false);
       } else {
-        objectTemplate.setBool("useBoundingBoxForCollision", true);
+        objectTemplate->setBoundingBoxCollisions(true);
       }
 
       physicsManager_->reset();
@@ -222,10 +226,12 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
-    esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-    physicsObjectAttributes.setDouble("margin", 0.0);
-    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+    // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+    esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
+        esp::assets::PhysicsObjectAttributes::create();
+    physicsObjectAttributes->setRenderMeshHandle(objectFile);
+    physicsObjectAttributes->setMargin(0.0);
+    resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
     // generate two centered boxes with dimension 2x2x2
     int objectId0 = physicsManager_->addObject(objectFile, nullptr);
@@ -263,28 +269,30 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
   if (physicsManager_->getPhysicsSimulationLibrary() ==
       PhysicsManager::PhysicsSimulationLibrary::BULLET) {
     // test joined vs. unjoined
-    esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-    physicsObjectAttributes.setDouble("margin", 0.1);
+    // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+    esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
+        esp::assets::PhysicsObjectAttributes::create();
+    physicsObjectAttributes->setRenderMeshHandle(objectFile);
+    physicsObjectAttributes->setMargin(0.1);
 
-    resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+    resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
-    esp::assets::PhysicsObjectAttributes& objectTemplate =
+    esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
         resourceManager_.getPhysicsObjectAttributes(objectFile);
 
     auto* drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
     // add the unjoined object
-    objectTemplate.setBool("joinCollisionMeshes", false);
+    objectTemplate->setJoinCollisionMeshes(false);
     int objectId0 = physicsManager_->addObject(objectFile, drawables);
 
     // add the joined object
-    objectTemplate.setBool("joinCollisionMeshes", true);
+    objectTemplate->setJoinCollisionMeshes(true);
     int objectId1 = physicsManager_->addObject(objectFile, drawables);
 
     // add bounding box object
-    objectTemplate.setBool("useBoundingBoxForCollision", true);
+    objectTemplate->setBoundingBoxCollisions(true);
     int objectId2 = physicsManager_->addObject(objectFile, drawables);
 
     esp::physics::BulletPhysicsManager* bPhysManager =
@@ -321,14 +329,16 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   initScene("NONE");
 
   // test joined vs. unjoined
-  esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-  physicsObjectAttributes.setDouble("margin", 0.0);
+  // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+  esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
+      esp::assets::PhysicsObjectAttributes::create();
+  physicsObjectAttributes->setRenderMeshHandle(objectFile);
+  physicsObjectAttributes->setMargin(0.0);
 
-  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+  resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
   // get a reference to the stored template to edit
-  esp::assets::PhysicsObjectAttributes& objectTemplate =
+  esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
       resourceManager_.getPhysicsObjectAttributes(objectFile);
 
   std::vector<Magnum::Vector3> testScales{
@@ -339,7 +349,7 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
   for (auto& testScale : testScales) {
-    objectTemplate.setMagnumVec3("scale", testScale);
+    objectTemplate->setScale(testScale);
 
     Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
 
@@ -378,10 +388,12 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
 
   initScene(sceneFile);
 
-  esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-  physicsObjectAttributes.setDouble("margin", 0.0);
-  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+  // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+  esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
+      esp::assets::PhysicsObjectAttributes::create();
+  physicsObjectAttributes->setRenderMeshHandle(objectFile);
+  physicsObjectAttributes->setMargin(0.0);
+  resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
@@ -411,12 +423,12 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   }
 
   // test constant velocity control mechanism
-  esp::physics::VelocityControl& velControl =
+  esp::physics::VelocityControl::ptr velControl =
       physicsManager_->getVelocityControl(objectId);
-  velControl.controllingAngVel = true;
-  velControl.controllingLinVel = true;
-  velControl.linVel = Magnum::Vector3{1.0, -1.0, 1.0};
-  velControl.angVel = Magnum::Vector3{1.0, 0, 0};
+  velControl->controllingAngVel = true;
+  velControl->controllingLinVel = true;
+  velControl->linVel = Magnum::Vector3{1.0, -1.0, 1.0};
+  velControl->angVel = Magnum::Vector3{1.0, 0, 0};
 
   // first kinematic
   physicsManager_->setObjectMotionType(objectId,
@@ -436,9 +448,8 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
       errorEps);
   Magnum::Rad angleError =
       Magnum::Math::angle(physicsManager_->getRotation(objectId), qGroundTruth);
-  if (!std::isnan(float(angleError))) {  // nan results close to equality
-    ASSERT_LE(float(angleError), errorEps);
-  }
+
+  ASSERT_LE(float(angleError), errorEps);
 
   if (physicsManager_->getPhysicsSimulationLibrary() ==
       PhysicsManager::PhysicsSimulationLibrary::BULLET) {
@@ -451,7 +462,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
 
     // should closely follow kinematic result while uninhibited in 0 gravity
     float targetTime = 0.5;
-    Magnum::Matrix4 kinematicResult = velControl.integrateTransform(
+    Magnum::Matrix4 kinematicResult = velControl->integrateTransform(
         targetTime, physicsManager_->getTransformation(objectId));
     while (physicsManager_->getWorldTime() < targetTime) {
       physicsManager_->stepPhysics(physicsManager_->getTimestep());
@@ -486,9 +497,11 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
 
   initScene(sceneFile);
 
-  esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-  physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-  resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+  // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+  esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
+      esp::assets::PhysicsObjectAttributes::create();
+  physicsObjectAttributes->setRenderMeshHandle(objectFile);
+  resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
   esp::scene::SceneNode& root =
       sceneManager_.getSceneGraph(sceneID_).getRootNode();
@@ -539,13 +552,15 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
     float boxHalfExtent = 0.2;
-    esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
-    physicsObjectAttributes.setString("renderMeshHandle", objectFile);
-    physicsObjectAttributes.setBool("useBoundingBoxForCollision", true);
-    physicsObjectAttributes.setMagnumVec3(
-        "scale", {boxHalfExtent, boxHalfExtent, boxHalfExtent});
-    int boxId =
-        resourceManager_.loadObject(physicsObjectAttributes, objectFile);
+    // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+    esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
+        esp::assets::PhysicsObjectAttributes::create();
+    physicsObjectAttributes->setRenderMeshHandle(objectFile);
+    physicsObjectAttributes->setBoundingBoxCollisions(true);
+    physicsObjectAttributes->setScale(
+        {boxHalfExtent, boxHalfExtent, boxHalfExtent});
+    int boxId = resourceManager_.loadObjectTemplate(physicsObjectAttributes,
+                                                    objectFile);
 
     auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
@@ -606,10 +621,10 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
           physicsManager_->setObjectMotionType(
               instancedObjects[0], esp::physics::MotionType::KINEMATIC);
 
-          esp::physics::VelocityControl& velCon =
+          esp::physics::VelocityControl::ptr velCon =
               physicsManager_->getVelocityControl(instancedObjects[0]);
-          velCon.controllingLinVel = true;
-          velCon.linVel = {0.2, 0, 0};
+          velCon->controllingLinVel = true;
+          velCon->linVel = {0.2, 0, 0};
 
           physicsManager_->setTranslation(instancedObjects[1],
                                           {0, boxHalfExtent * 5, 0});

@@ -15,7 +15,6 @@
 #include <vector>
 
 /* Bullet Physics Integration */
-#include <Magnum/Trade/MeshData3D.h>
 
 #include "RigidObject.h"
 #include "esp/assets/Asset.h"
@@ -89,9 +88,8 @@ class PhysicsManager {
    * tracks the assets this
    * @ref PhysicsManager will have access to.
    */
-  explicit PhysicsManager(assets::ResourceManager* _resourceManager) {
-    resourceManager_ = _resourceManager;
-  };
+  explicit PhysicsManager(assets::ResourceManager& _resourceManager)
+      : resourceManager_(_resourceManager){};
 
   /** @brief Destructor*/
   virtual ~PhysicsManager();
@@ -105,9 +103,9 @@ class PhysicsManager {
    * @param physicsManagerAttributes A structure containing values for physical
    * parameters necessary to initialize the physical scene and simulator.
    */
-  virtual bool initPhysics(
+  bool initPhysics(
       scene::SceneNode* node,
-      const assets::PhysicsManagerAttributes& physicsManagerAttributes);
+      const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes);
 
   /**
    * @brief Reset the simulation and physical world.
@@ -126,13 +124,13 @@ class PhysicsManager {
    * Only one 'scene' may be initialized per simulated world, but this scene may
    * contain several components (e.g. GLB heirarchy).
    *
-   * @param physicsSceneAttributes a structure defining physical properties of
-   * the scene.
+   * @param physicsSceneAttributes a pointer to the structure defining physical
+   * properties of the scene.
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
-  virtual bool addScene(
-      const assets::PhysicsSceneAttributes& physicsSceneAttributes,
+  bool addScene(
+      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /** @brief Instance a physical object from an object properties template in
@@ -166,12 +164,11 @@ class PhysicsManager {
    *  @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  virtual int addObject(
-      const int objectLibIndex,
-      DrawableGroup* drawables,
-      scene::SceneNode* attachmentNode = nullptr,
-      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
-          assets::ResourceManager::DEFAULT_LIGHTING_KEY});
+  int addObject(const int objectLibIndex,
+                DrawableGroup* drawables,
+                scene::SceneNode* attachmentNode = nullptr,
+                const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+                    assets::ResourceManager::DEFAULT_LIGHTING_KEY});
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref
@@ -739,9 +736,10 @@ class PhysicsManager {
    */
   Magnum::Vector3 getAngularVelocity(const int physObjectID) const;
 
-  /**@brief Retrieves a reference to the VelocityControl struct for this object.
+  /**@brief Retrieves a shared pointer to the VelocityControl struct for this
+   * object.
    */
-  VelocityControl& getVelocityControl(const int physObjectID);
+  VelocityControl::ptr getVelocityControl(const int physObjectID);
 
   /** @brief Set bounding box rendering for the object true or false.
    * @param physObjectID The object ID and key identifying the object in @ref
@@ -762,6 +760,15 @@ class PhysicsManager {
 
   /** @overload */
   scene::SceneNode& getObjectSceneNode(int physObjectID);
+
+  /**
+   * @brief Get a const reference to the specified object's visual SceneNode for
+   * info query purposes.
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return Const reference to the object's visual scene node.
+   */
+  const scene::SceneNode& getObjectVisualSceneNode(int physObjectID) const;
 
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref
@@ -794,6 +801,16 @@ class PhysicsManager {
   const PhysicsSimulationLibrary& getPhysicsSimulationLibrary() const {
     return activePhysSimLib_;
   };
+
+  /**
+   * @brief Get the template used to initialize an object.
+   *
+   * PhysicsObjectAttributes templates are expected to be changed between
+   * instances of objects.
+   * @return The initialization settings of the specified object instance.
+   */
+  const assets::PhysicsObjectAttributes::ptr getInitializationAttributes(
+      const int physObjectID) const;
 
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
@@ -829,22 +846,49 @@ class PhysicsManager {
    */
   int deallocateObjectID(int physObjectID);
 
-  /** @brief Create and initialize an @ref RigidObject and assign it an ID.
+  /**
+   * @brief Finalize physics initialization. Setup staticSceneObject_ and
+   * initialize any other physics-related values for physics-based scenes.
+   * Overidden by instancing class if physics is supported.
+   * @param physicsManagerAttributes A structure containing values for physical
+   * parameters necessary to initialize the physical scene and simulator.
+   */
+  virtual bool initPhysicsFinalize(
+      const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes);
+
+  /**
+   * @brief Finalize scene initialization for kinematic scenes.  Overidden by
+   * instancing class if physics is supported.
+   *
+   * @param physicsSceneAttributes a pointer to the structure defining physical
+   * properties of the scene.
+   * @param meshGroup collision meshs for the scene.
+   * @return true if successful and false otherwise
+   */
+
+  virtual bool addSceneFinalize(
+      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
+      const std::vector<assets::CollisionMeshData>& meshGroup);
+
+  /** @brief Create and initialize a @ref RigidObject, assign it an ID and add
+   * it to existingObjects_ map keyed with newObjectID
+   * @param newObjectID valid object ID for the new object
    * @param meshGroup The object's mesh.
    * @param physicsObjectAttributes The physical object's template defining its
    * physical parameters.
-   * @param attachmentNode If supplied, attach the new physical object to an
-   * existing SceneNode.
-   * @return The id of the newly allocated object in @ref existingObjects_
+   * @param objectNode Valid, existing scene node
+   * @return whether the object has been successfully initialized and added to
+   * existingObjects_ map
    */
-  virtual int makeRigidObject(
+  virtual bool makeAndAddRigidObject(
+      int newObjectID,
       const std::vector<assets::CollisionMeshData>& meshGroup,
-      assets::PhysicsObjectAttributes physicsObjectAttributes,
-      scene::SceneNode* attachmentNode = nullptr);
+      assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
+      scene::SceneNode* objectNode);
 
   /** @brief A pointer to a @ref esp::assets::ResourceManager which holds assets
    * that can be accessed by this @ref PhysicsManager*/
-  assets::ResourceManager* resourceManager_;
+  assets::ResourceManager& resourceManager_;
 
   /** @brief The current physics library implementation used by this
    * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager
