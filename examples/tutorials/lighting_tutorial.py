@@ -151,11 +151,7 @@ def main(show_imgs=True, save_imgs=False):
 
     # [example 4]
     id_2 = sim.add_object(chair_template_id)
-    sim.set_rotation(
-        mn.Quaternion.rotation(mn.Deg(90), mn.Vector3.x_axis())
-        * mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.z_axis()),
-        id_2,
-    )
+    sim.set_rotation(mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis()), id_2)
     sim.set_translation(np.array([3.06, 0.47, 1.15]), id_2)
 
     get_obs(sim, show_imgs, save_imgs)
@@ -175,19 +171,11 @@ def main(show_imgs=True, save_imgs=False):
     # [example 6]
 
     id_1 = sim.add_object(chair_template_id, light_setup_key="my_custom_lighting")
-    sim.set_rotation(
-        mn.Quaternion.rotation(mn.Deg(90), mn.Vector3.x_axis())
-        * mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.z_axis()),
-        id_1,
-    )
+    sim.set_rotation(mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis()), id_1)
     sim.set_translation(np.array([3.06, 0.47, 1.15]), id_1)
 
     id_2 = sim.add_object(chair_template_id, light_setup_key="my_custom_lighting")
-    sim.set_rotation(
-        mn.Quaternion.rotation(mn.Deg(90), mn.Vector3.x_axis())
-        * mn.Quaternion.rotation(mn.Deg(-50), mn.Vector3.z_axis()),
-        id_2,
-    )
+    sim.set_rotation(mn.Quaternion.rotation(mn.Deg(50), mn.Vector3.y_axis()), id_2)
     sim.set_translation(np.array([3.45927, 0.47, -0.624958]), id_2)
 
     get_obs(sim, show_imgs, save_imgs)
