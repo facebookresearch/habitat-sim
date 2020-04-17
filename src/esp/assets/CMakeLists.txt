@@ -40,6 +40,7 @@ find_package(Magnum
 find_package(MagnumPlugins
   REQUIRED
     BasisImporter
+    PrimitiveImporter
     StanfordImporter
     StbImageImporter
     StbImageConverter
@@ -71,6 +72,7 @@ target_link_libraries(assets
     Magnum::Trade
     Magnum::Primitives
     MagnumPlugins::BasisImporter
+    MagnumPlugins::PrimitiveImporter
     MagnumPlugins::StanfordImporter
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbImageConverter

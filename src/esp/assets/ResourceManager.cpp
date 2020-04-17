@@ -187,6 +187,30 @@ void ResourceManager::buildPrimObjectTemplates() {
   uint32_t numPrims = static_cast<uint32_t>(PrimObjTypes::END_PRIM_OBJ_TYPES);
 
   // build every template for primitives
+  Magnum::PluginManager::Manager<Importer> manager{"nonexistent"};
+  std::unique_ptr<Importer> importer =
+      manager.loadAndInstantiate("PrimitiveImporter");
+
+  AssetInfo info{AssetType::PRIMITIVE, "PrimObjScene"};
+
+  importer->openData("");
+  LOG(INFO) << "# of meshes in primitive importer : " << importer->meshCount()
+            << " | # of textures : " << importer->textureCount()
+            << " | # of materials : " << importer->materialCount()
+            << " | # of scenes : " << importer->sceneCount();
+
+  LoadedAssetData loadedAssetData{info};
+  LOG(INFO) << "Try loadTextures";
+  loadTextures(*importer, loadedAssetData);
+  LOG(INFO) << "Try loadMaterials";
+  loadMaterials(*importer, loadedAssetData);
+  LOG(INFO) << "Try loadMeshes";
+  loadMeshes(*importer, loadedAssetData);
+  LOG(INFO) << "Done loadMeshes";
+
+  auto inserted =
+      resourceDict_.emplace(info.filepath, std::move(loadedAssetData));
+  MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
 
   // int objectTemplateID = putObjTemplateAttrInLibMap(
   //     objectTemplate, objectTemplateHandle, physicsPrimTmpltLibByID_);
@@ -1270,6 +1294,13 @@ bool ResourceManager::loadGeneralMeshData(
       LOG(ERROR) << "Cannot open file " << filename;
       return false;
     }
+
+    LOG(INFO) << "Filename : " << filename
+              << " | # of meshes in importer : " << importer->meshCount()
+              << " | # of textures : " << importer->textureCount()
+              << " | # of materials : " << importer->materialCount()
+              << " | # of scenes : " << importer->sceneCount();
+
     // if this is a new file, load it and add it to the dictionary
     LoadedAssetData loadedAssetData{info};
     loadTextures(*importer, loadedAssetData);
