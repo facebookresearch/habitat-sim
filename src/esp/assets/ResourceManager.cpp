@@ -514,7 +514,7 @@ int ResourceManager::loadObjectTemplate(
 
   //! Load rendering mesh
   if (!renderMeshFilename.empty()) {
-    renderMeshinfo = assets::AssetInfo::fromPath(renderMeshFilename);
+    renderMeshinfo = assets::AssetInfo{AssetType::UNKNOWN, renderMeshFilename};
     renderMeshinfo.requiresLighting = requiresLighting;
     renderMeshSuccess = loadGeneralMeshData(renderMeshinfo);
     if (!renderMeshSuccess) {
@@ -524,7 +524,8 @@ int ResourceManager::loadObjectTemplate(
   }
   //! Load collision mesh
   if (!collisionMeshFilename.empty()) {
-    collisionMeshinfo = assets::AssetInfo::fromPath(collisionMeshFilename);
+    collisionMeshinfo =
+        assets::AssetInfo{AssetType::UNKNOWN, collisionMeshFilename};
     // if render mesh failed, might have to generate lighting data for collision
     // mesh since we will use it to render
     collisionMeshinfo.requiresLighting = !renderMeshSuccess && requiresLighting;
