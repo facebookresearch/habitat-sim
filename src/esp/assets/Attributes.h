@@ -221,6 +221,9 @@ class AbstractPhysPrimObjAttributes : public PhysicsObjectAttributes {
   void setHalfLength(double halfLength) { setDouble("halfLength", halfLength); }
   double getHalfLength() const { return getDouble("halfLength"); }
 
+  Corrade::Utility::ConfigurationGroup getConfigGroup() const { return cfg; }
+
+ protected:
   void buildOriginHandle() {
     std::ostringstream oHndlStrm;
     oHndlStrm << getPrimObjType() << buildOriginHandleIndiv();
@@ -230,11 +233,13 @@ class AbstractPhysPrimObjAttributes : public PhysicsObjectAttributes {
   // underscore
   virtual std::string buildOriginHandleIndiv() { return ""; }
 
+ public:
   ESP_SMART_POINTERS(AbstractPhysPrimObjAttributes)
 };  // class PhysicsPrimitiveObjAttributes
 
 //! attributes describing primitive capsule objects
 class PhysicsCapsulePrimAttributes : public AbstractPhysPrimObjAttributes {
+ public:
   PhysicsCapsulePrimAttributes(bool isWireframe,
                                const std::string& primObjType);
 
@@ -264,6 +269,7 @@ class PhysicsCapsulePrimAttributes : public AbstractPhysPrimObjAttributes {
 };  // class PhysicsCapsulePrimAttributes
 
 class PhysicsConePrimAttributes : public AbstractPhysPrimObjAttributes {
+ public:
   PhysicsConePrimAttributes(bool isWireframe, const std::string& primObjType);
 
   // only solid cones can have end capped
@@ -290,6 +296,7 @@ class PhysicsConePrimAttributes : public AbstractPhysPrimObjAttributes {
 };  // class PhysicsConePrimAttributes
 
 class PhysicsCubePrimAttributes : public AbstractPhysPrimObjAttributes {
+ public:
   PhysicsCubePrimAttributes(bool isWireframe, const std::string& primObjType)
       : AbstractPhysPrimObjAttributes(isWireframe, primObjType) {
     buildOriginHandle();  // build handle based on config
@@ -299,6 +306,7 @@ class PhysicsCubePrimAttributes : public AbstractPhysPrimObjAttributes {
 };  // class PhysicsCubePrimAttributes
 
 class PhysicsCylinderPrimAttributes : public AbstractPhysPrimObjAttributes {
+ public:
   PhysicsCylinderPrimAttributes(bool isWireframe,
                                 const std::string& primObjType);
 
@@ -325,6 +333,7 @@ class PhysicsCylinderPrimAttributes : public AbstractPhysPrimObjAttributes {
 };  // class PhysicsCylinderPrimAttributes
 
 class PhysicsIcospherePrimAttributes : public AbstractPhysPrimObjAttributes {
+ public:
   // note there is no magnum primitive implementation of a wireframe icosphere
   PhysicsIcospherePrimAttributes(bool isWireframe,
                                  const std::string& primObjType)
@@ -355,6 +364,7 @@ class PhysicsIcospherePrimAttributes : public AbstractPhysPrimObjAttributes {
 };  // class PhysicsIcospherePrimAttributes
 
 class PhysicsUVSpherePrimAttributes : public AbstractPhysPrimObjAttributes {
+ public:
   PhysicsUVSpherePrimAttributes(bool isWireframe,
                                 const std::string& primObjType);
   virtual std::string buildOriginHandleIndiv() override {

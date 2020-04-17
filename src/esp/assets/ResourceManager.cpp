@@ -75,7 +75,54 @@ constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
 ResourceManager::ResourceManager() {
   initDefaultLightSetups();
   initDefaultMaterials();
+  initDefaultPrimAttributes();
 }
+
+void ResourceManager::initDefaultPrimAttributes() {
+  // set up primitive importer
+  Magnum::PluginManager::Manager<Importer> manager{"nonexistent"};
+  primImporter = manager.loadAndInstantiate("PrimitiveImporter");
+  primImporter->openData("");
+  // set up base primitive attributes
+  auto capSolidAttr = PhysicsCapsulePrimAttributes::create(
+      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CAPSULE_SOLID)]);
+  putPrimObjTmpltAttrInLibMap(capSolidAttr);
+  auto capWFAttr = PhysicsCapsulePrimAttributes::create(
+      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CAPSULE_WF)]);
+  putPrimObjTmpltAttrInLibMap(capWFAttr);
+  auto coneSolidAttr = PhysicsConePrimAttributes::create(
+      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CONE_SOLID)]);
+  putPrimObjTmpltAttrInLibMap(coneSolidAttr);
+  auto coneWFAttr = PhysicsConePrimAttributes::create(
+      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CONE_WF)]);
+  putPrimObjTmpltAttrInLibMap(coneWFAttr);
+  auto cubeSolidAttr = PhysicsCubePrimAttributes::create(
+      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CUBE_SOLID)]);
+  putPrimObjTmpltAttrInLibMap(cubeSolidAttr);
+  auto cubeWFAttr = PhysicsCubePrimAttributes::create(
+      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CUBE_WF)]);
+  putPrimObjTmpltAttrInLibMap(cubeWFAttr);
+  auto cylSolidAttr = PhysicsCylinderPrimAttributes::create(
+      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CYLINDER_SOLID)]);
+  putPrimObjTmpltAttrInLibMap(cylSolidAttr);
+  auto cylWFAttr = PhysicsCylinderPrimAttributes::create(
+      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CYLINDER_WF)]);
+  putPrimObjTmpltAttrInLibMap(cylWFAttr);
+  auto icoSolidAttr = PhysicsIcospherePrimAttributes::create(
+      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::ICOSPHERE_SOLID)]);
+  putPrimObjTmpltAttrInLibMap(icoSolidAttr);
+  // auto icoWFAttr = PhysicsIcospherePrimAttributes::create(
+  //     true,
+  //     PrimitiveNames3D[static_cast<int>(PrimObjTypes::ICOSPHERE_WF)]);
+  // putPrimObjTmpltAttrInLibMap(icoWFAttr);
+  auto uvSphereSolidAttr = PhysicsUVSpherePrimAttributes::create(
+      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::UVSPHERE_SOLID)]);
+  putPrimObjTmpltAttrInLibMap(uvSphereSolidAttr);
+  auto uvSphereWFAttr = PhysicsUVSpherePrimAttributes::create(
+      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::UVSPHERE_WF)]);
+  putPrimObjTmpltAttrInLibMap(uvSphereWFAttr);
+
+}  // initDefaultPrimAttributes
 
 bool ResourceManager::loadScene(
     const AssetInfo& info,
@@ -187,20 +234,19 @@ void ResourceManager::buildPrimObjectTemplates() {
   uint32_t numPrims = static_cast<uint32_t>(PrimObjTypes::END_PRIM_OBJ_TYPES);
 
   // build every template for primitives
-  Magnum::PluginManager::Manager<Importer> manager{"nonexistent"};
-  std::unique_ptr<Importer> importer =
-      manager.loadAndInstantiate("PrimitiveImporter");
-  importer->openData("");
-  auto conf = importer->configuration();
-  LOG(INFO) << "# of meshes in primitive importer : " << importer->meshCount()
-            << " | # of textures : " << importer->textureCount()
-            << " | # of materials : " << importer->materialCount()
-            << " | # of scenes : " << importer->sceneCount()
+
+  auto conf = primImporter->configuration();
+  LOG(INFO) << "# of meshes in primitive importer : "
+            << primImporter->meshCount()
+            << " | # of textures : " << primImporter->textureCount()
+            << " | # of materials : " << primImporter->materialCount()
+            << " | # of scenes : " << primImporter->sceneCount()
             << " | conf has group for cubeWireframe : "
-            << conf.hasGroup("cubeWireframe");
+            << conf.hasGroup("capsule3DSolid")
+            << " | # of these groups : " << conf.groupCount("capsule3DSolid");
 
   for (int i = 0; i < numPrims; ++i) {
-    auto meshDataContainer = importer->mesh(PrimitiveNames3D[i]);
+    auto meshDataContainer = primImporter->mesh(PrimitiveNames3D[i]);
 
     primitive_meshes_.push_back(std::make_unique<Magnum::GL::Mesh>(
         Magnum::MeshTools::compile(*meshDataContainer)));
@@ -590,14 +636,28 @@ bool ResourceManager::loadObjectMeshDataFromFile(
   return success;
 }  // loadObjectMeshDataFromFile
 
+int ResourceManager::putPrimObjTmpltAttrInLibMap(
+    AbstractPhysPrimObjAttributes::ptr objectTemplate) {
+  return putObjTemplateAttrInLibMap(objectTemplate,
+                                    objectTemplate->getOriginHandle(),
+                                    physicsPrimTmpltLibByID_);
+}
+
 int ResourceManager::putObjTemplateAttrInLibMap(
     PhysicsObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle,
     std::map<int, std::string>& mapOfNames) {
   // add object template ID to physicObjectAttribute
-  int objectTemplateID = physicsObjTemplateLibrary_.size();
-  objectTemplate->setObjectTemplateID(objectTemplateID);
-
+  bool isNotPresent =
+      (physicsObjTemplateLibrary_.count(objectTemplateHandle) == 0);
+  int objectTemplateID;
+  if (isNotPresent) {
+    objectTemplateID = physicsObjTemplateLibrary_.size();
+    objectTemplate->setObjectTemplateID(objectTemplateID);
+  } else {
+    objectTemplateID = objectTemplate->getObjectTemplateID();
+  }
+  // if is present, will replace present template with new template
   physicsObjTemplateLibrary_.emplace(objectTemplateHandle, objectTemplate);
   physicsTemplatesLibByID_.emplace(objectTemplateID, objectTemplateHandle);
   // save reference of specific type of template being built
@@ -664,6 +724,8 @@ int ResourceManager::loadObjectTemplate(
   collisionMeshGroups_.emplace(objectTemplate->getCollisionMeshHandle(),
                                meshGroup);
 
+  // set handle in case user built template
+  objectTemplate->setOriginHandle(objectTemplateHandle);
   // add object template to template library
   int objectTemplateID = putObjTemplateAttrInLibMap(
       objectTemplate, objectTemplateHandle, physicsObjTmpltLibByID_);

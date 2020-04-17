@@ -158,11 +158,7 @@ class ResourceManager {
   static constexpr char PER_VERTEX_OBJECT_ID_MATERIAL_KEY[] =
       "per_vertex_object_id";
 
-  /**
-   * @brief Set whether textures should be compressed.
-   * @param newVal New texture compression setting.
-   */
-  inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
+  void initDefaultPrimAttributes();
 
   /**
    * @brief Load a scene mesh and add it to the specified @ref DrawableGroup as
@@ -587,6 +583,12 @@ class ResourceManager {
                                scene::SceneNode* parent,
                                DrawableGroup* drawables);
 
+  /**
+   * @brief Set whether textures should be compressed.
+   * @param newVal New texture compression setting.
+   */
+  inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
+
  private:
   /**
    * @brief Load object templates given string list of object template
@@ -634,7 +636,17 @@ class ResourceManager {
                                   const std::string& meshType,
                                   const bool requiresLighting);
 
-  /** @brief Put object template attributes in template map and in passed
+  /**
+   * @brief Put primitive object template attributes in template map.
+   * Calls @ref putObjTemplateAttrInLibMap with primTemplate's set origin handle
+   * and prim map
+   * @param primTemplate the template of the primtive of interest
+   */
+  int putPrimObjTmpltAttrInLibMap(
+      AbstractPhysPrimObjAttributes::ptr primTemplate);
+
+  /**
+   * @brief Put object template attributes in template map and in passed
    * index list
    *
    * @param objectTemplate ptr to object template attributes to be added to
@@ -913,6 +925,11 @@ class ResourceManager {
     esp::scene::SceneNode& node;
     uint32_t meshID;
   };
+  /**
+   * @brief importer used to build primitives only
+   */
+  std::unique_ptr<Importer> primImporter;
+
   /**
    * @brief this helper vector contains information of the drawables on which
    * we will compute the absolute AABB pair
