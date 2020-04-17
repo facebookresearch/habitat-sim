@@ -106,17 +106,23 @@ bool SemanticScene::loadMp3dHouse(
   };
 
   auto getBBox = [&](const std::vector<std::string>& tokens, int offset) {
-    return box3f(getVec3f(tokens, offset), getVec3f(tokens, offset + 3));
+    return box3f(getVec3f(tokens, offset),
+                 getVec3f(tokens, offset + 3).array().abs().matrix());
   };
 
   auto getOBB = [&](const std::vector<std::string>& tokens, int offset) {
     const vec3f center = getVec3f(tokens, offset);
-    mat3f rotation;
-    rotation.col(0) << getVec3f(tokens, offset + 3);
-    rotation.col(1) << getVec3f(tokens, offset + 6);
-    rotation.col(2) << rotation.col(0).cross(rotation.col(1));
-    const vec3f radius = getVec3f(tokens, offset + 9);
-    return geo::OBB(center, 2 * radius, quatf(rotation));
+
+    // Don't need to apply rotation here, it'll already be added in by getVec3f
+    mat3f boxRotation;
+    boxRotation.col(0) << getVec3f(tokens, offset + 3);
+    boxRotation.col(1) << getVec3f(tokens, offset + 6);
+    boxRotation.col(2) << boxRotation.col(0).cross(boxRotation.col(1));
+
+    // Need to un-apply rotation here, that'll get added in in the boxRotation
+    const vec3f radius = rotation.inverse() * getVec3f(tokens, offset + 9);
+
+    return geo::OBB(center, 2 * radius, quatf(boxRotation));
   };
 
   // open stream and determine house format version
