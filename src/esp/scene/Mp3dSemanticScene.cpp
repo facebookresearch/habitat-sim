@@ -119,7 +119,7 @@ bool SemanticScene::loadMp3dHouse(
     boxRotation.col(1) << getVec3f(tokens, offset + 6);
     boxRotation.col(2) << boxRotation.col(0).cross(boxRotation.col(1));
 
-    // Need to un-apply rotation here, that'll get added in in the boxRotation
+    // Need to un-apply rotation here, that'll get added back by boxRotation
     const vec3f radius = rotation.inverse() * getVec3f(tokens, offset + 9);
 
     return geo::OBB(center, 2 * radius, quatf(boxRotation));
