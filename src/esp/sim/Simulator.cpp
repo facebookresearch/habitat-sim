@@ -149,6 +149,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
             assets::ResourceManager::NO_LIGHT_KEY, cfg.frustumCulling);
         LOG(INFO) << "Loaded.";
       } else {
+        activeSemanticSceneID_ = ID_UNDEFINED;
         LOG(INFO) << "Not loading semantic mesh";
       }
     } else {
