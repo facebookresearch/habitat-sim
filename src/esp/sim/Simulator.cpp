@@ -134,7 +134,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       // TODO: remove hardcoded filename change and use SceneConfiguration
       const std::string semanticMeshFilename =
           io::removeExtension(houseFilename) + "_semantic.ply";
-      if (io::exists(semanticMeshFilename)) {
+      if (cfg.loadSemanticMesh && io::exists(semanticMeshFilename)) {
         LOG(INFO) << "Loading semantic mesh " << semanticMeshFilename;
         activeSemanticSceneID_ = sceneManager_.initSceneGraph();
         sceneID_.push_back(activeSemanticSceneID_);
@@ -147,8 +147,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
         resourceManager_.loadScene(
             semanticSceneInfo, &semanticRootNode, &semanticDrawables,
             assets::ResourceManager::NO_LIGHT_KEY, cfg.frustumCulling);
+        LOG(INFO) << "Loaded.";
+      } else {
+        LOG(INFO) << "Not loading semantic mesh";
       }
-      LOG(INFO) << "Loaded.";
     } else {
       activeSemanticSceneID_ = activeSceneID_;
       // instance meshes and suncg houses contain their semantic annotations
@@ -246,7 +248,8 @@ bool operator==(const SimulatorConfiguration& a,
          a.compressTextures == b.compressTextures &&
          a.createRenderer == b.createRenderer &&
          a.enablePhysics == b.enablePhysics &&
-         a.physicsConfigFile.compare(b.physicsConfigFile) == 0;
+         a.physicsConfigFile.compare(b.physicsConfigFile) == 0 &&
+         a.loadSemanticMesh == b.loadSemanticMesh;
 }
 
 bool operator!=(const SimulatorConfiguration& a,

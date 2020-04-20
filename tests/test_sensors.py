@@ -118,7 +118,7 @@ def test_sensors(
         pytest.skip("Skipping GPU->GPU test")
 
     make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
-    make_cfg_settings["semantic_sensor"] = has_sem
+    make_cfg_settings["semantic_sensor"] = has_sem and sensor_type == "semantic_sensor"
     make_cfg_settings["scene"] = scene
     make_cfg_settings["frustum_culling"] = frustum_culling
 

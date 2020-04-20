@@ -43,6 +43,8 @@ void initSimBindings(py::module& m) {
                      &SimulatorConfiguration::physicsConfigFile)
       .def_readwrite("scene_light_setup",
                      &SimulatorConfiguration::sceneLightSetup)
+      .def_readwrite("load_semantic_mesh",
+                     &SimulatorConfiguration::loadSemanticMesh)
       .def(py::self == py::self)
       .def(py::self != py::self);
 
