@@ -94,12 +94,13 @@ bool SemanticScene::loadMp3dHouse(
 
   const bool hasWorldRotation = !rotation.isApprox(quatf::Identity());
 
-  auto getVec3f = [&](const std::vector<std::string>& tokens, int offset) {
+  auto getVec3f = [&](const std::vector<std::string>& tokens, int offset,
+                      bool applyRotation = true) {
     const float x = std::stof(tokens[offset]);
     const float y = std::stof(tokens[offset + 1]);
     const float z = std::stof(tokens[offset + 2]);
     vec3f p = vec3f(x, y, z);
-    if (hasWorldRotation) {
+    if (applyRotation && hasWorldRotation) {
       p = rotation * p;
     }
     return p;
@@ -119,8 +120,8 @@ bool SemanticScene::loadMp3dHouse(
     boxRotation.col(1) << getVec3f(tokens, offset + 6);
     boxRotation.col(2) << boxRotation.col(0).cross(boxRotation.col(1));
 
-    // Need to un-apply rotation here, that'll get added back by boxRotation
-    const vec3f radius = rotation.inverse() * getVec3f(tokens, offset + 9);
+    // Don't apply the world rotation here, that'll get added by boxRotation
+    const vec3f radius = getVec3f(tokens, offset + 9, /*applyRotation=*/false);
 
     return geo::OBB(center, 2 * radius, quatf(boxRotation));
   };
