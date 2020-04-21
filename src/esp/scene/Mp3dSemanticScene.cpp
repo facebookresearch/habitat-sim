@@ -94,29 +94,36 @@ bool SemanticScene::loadMp3dHouse(
 
   const bool hasWorldRotation = !rotation.isApprox(quatf::Identity());
 
-  auto getVec3f = [&](const std::vector<std::string>& tokens, int offset) {
+  auto getVec3f = [&](const std::vector<std::string>& tokens, int offset,
+                      bool applyRotation = true) {
     const float x = std::stof(tokens[offset]);
     const float y = std::stof(tokens[offset + 1]);
     const float z = std::stof(tokens[offset + 2]);
     vec3f p = vec3f(x, y, z);
-    if (hasWorldRotation) {
+    if (applyRotation && hasWorldRotation) {
       p = rotation * p;
     }
     return p;
   };
 
   auto getBBox = [&](const std::vector<std::string>& tokens, int offset) {
-    return box3f(getVec3f(tokens, offset), getVec3f(tokens, offset + 3));
+    return box3f(getVec3f(tokens, offset),
+                 getVec3f(tokens, offset + 3).array().abs().matrix());
   };
 
   auto getOBB = [&](const std::vector<std::string>& tokens, int offset) {
     const vec3f center = getVec3f(tokens, offset);
-    mat3f rotation;
-    rotation.col(0) << getVec3f(tokens, offset + 3);
-    rotation.col(1) << getVec3f(tokens, offset + 6);
-    rotation.col(2) << rotation.col(0).cross(rotation.col(1));
-    const vec3f radius = getVec3f(tokens, offset + 9);
-    return geo::OBB(center, 2 * radius, quatf(rotation));
+
+    // Don't need to apply rotation here, it'll already be added in by getVec3f
+    mat3f boxRotation;
+    boxRotation.col(0) << getVec3f(tokens, offset + 3);
+    boxRotation.col(1) << getVec3f(tokens, offset + 6);
+    boxRotation.col(2) << boxRotation.col(0).cross(boxRotation.col(1));
+
+    // Don't apply the world rotation here, that'll get added by boxRotation
+    const vec3f radius = getVec3f(tokens, offset + 9, /*applyRotation=*/false);
+
+    return geo::OBB(center, 2 * radius, quatf(boxRotation));
   };
 
   // open stream and determine house format version
