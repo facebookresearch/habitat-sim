@@ -18,9 +18,9 @@ struct MaterialData {};
 
 struct PhongMaterialData : public MaterialData {
   Magnum::Float shininess = 80.f;
-  Magnum::Color4 ambientColor = Magnum::Color4{1},
-                 diffuseColor = Magnum::Color4{1},
-                 specularColor = Magnum::Color4{1};
+  Magnum::Color4 ambientColor{0.1};
+  Magnum::Color4 diffuseColor{0.7};
+  Magnum::Color4 specularColor{0.2};
   Magnum::Matrix3 textureMatrix;
   Magnum::GL::Texture2D *ambientTexture = nullptr, *diffuseTexture = nullptr,
                         *specularTexture = nullptr, *normalTexture = nullptr;

@@ -1750,10 +1750,8 @@ void ResourceManager::initDefaultLightSetups() {
 }
 
 void ResourceManager::initDefaultMaterials() {
-  auto defaultMaterial = new gfx::PhongMaterialData{};
-  defaultMaterial->ambientColor = Magnum::Color4{0.1};
-  defaultMaterial->diffuseColor = Magnum::Color4{0.7};
-  shaderManager_.set<gfx::MaterialData>(DEFAULT_MATERIAL_KEY, defaultMaterial);
+  shaderManager_.set<gfx::MaterialData>(DEFAULT_MATERIAL_KEY,
+                                        new gfx::PhongMaterialData{});
 
   auto perVertexObjectId = new gfx::PhongMaterialData{};
   perVertexObjectId->perVertexObjectId = true;
