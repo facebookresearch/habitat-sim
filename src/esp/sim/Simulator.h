@@ -488,6 +488,14 @@ class Simulator {
                            const std::string& lightSetupKey,
                            int sceneID = 0);
 
+  /**
+   * @brief return ref to @ref importManager owned by ResourceManager
+   */
+  Magnum::PluginManager::Manager<assets::ResourceManager::Importer>&
+  getImportManager() {
+    return resourceManager_.getImportManager();
+  }
+
  protected:
   Simulator(){};
 

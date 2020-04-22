@@ -590,6 +590,13 @@ class ResourceManager {
    */
   inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
 
+  /**
+   * @brief return ref to @ref importManager
+   */
+  Magnum::PluginManager::Manager<Importer>& getImportManager() {
+    return importManager;
+  }
+
  private:
   /**
    * @brief return a random handle selected from the passed map - is passed
@@ -946,7 +953,8 @@ class ResourceManager {
     uint32_t meshID;
   };
   /**
-   * @brief plugin manager to handle importers
+   * @brief plugin manager to handle importers - only 1 can exist, so should
+   * access this importManager whenever plugin access is needed
    */
   Magnum::PluginManager::Manager<Importer> importManager;
   /**

@@ -207,7 +207,8 @@ void SimTest::checkPinholeCameraRGBAObservation(
           {pinholeCameraSpec->resolution[0], pinholeCameraSpec->resolution[1]},
           observation.buffer->data}),
       Cr::Utility::Directory::join(screenshotDir, groundTruthImageFile),
-      (Mn::DebugTools::CompareImageToFile{maxThreshold, meanThreshold}));
+      (Mn::DebugTools::CompareImageToFile{simulator.getImportManager(),
+                                          maxThreshold, meanThreshold}));
 }
 
 void SimTest::getSceneRGBAObservation() {
