@@ -72,7 +72,14 @@ constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
 constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
 
-ResourceManager::ResourceManager() : importManager{"nonexistent"} {
+ResourceManager::ResourceManager()
+    :
+#ifdef MAGNUM_BUILD_STATIC
+      importManager {
+  "nonexistent"
+}
+#endif
+{
   initDefaultLightSetups();
   initDefaultMaterials();
   initDefaultPrimAttributes();
@@ -119,7 +126,6 @@ void ResourceManager::initDefaultPrimAttributes() {
   putPrimObjTmpltAttrInLibMap(uvSphereWFAttr);
 
   // set up primitive importer
-  // Magnum::PluginManager::Manager<Importer> manager{"nonexistent"};
   primImporter = importManager.loadAndInstantiate("PrimitiveImporter");
   primImporter->openData("");
   // configuration for PrimitiveImporter
@@ -1260,10 +1266,10 @@ bool ResourceManager::loadInstanceMeshData(
   }
 
 #ifndef MAGNUM_BUILD_STATIC
-  Mn::PluginManager::Manager<Importer> manager;
+  Mn::PluginManager::Manager<Importer> importManager;
 #else
   // avoid using plugins that might depend on different library versions
-  // Mn::PluginManager::Manager<Importer> manager{"nonexistent"};
+  // Mn::PluginManager::Manager<Importer> importManager{"nonexistent"};
 #endif
 
   Cr::Containers::Pointer<Importer> importer;
@@ -1339,10 +1345,10 @@ bool ResourceManager::loadGeneralMeshData(
   const bool drawData = parent != nullptr && drawables != nullptr;
 
 #ifndef MAGNUM_BUILD_STATIC
-  Magnum::PluginManager::Manager<Importer> manager;
+  Magnum::PluginManager::Manager<Importer> importManager;
 #else
   // avoid using plugins that might depend on different library versions
-  // Magnum::PluginManager::Manager<Importer> manager{"nonexistent"};
+  // Magnum::PluginManager::Manager<Importer> importManager{"nonexistent"};
 #endif
 
   std::unique_ptr<Importer> importer =
