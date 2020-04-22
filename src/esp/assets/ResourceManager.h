@@ -628,11 +628,6 @@ class ResourceManager {
   void loadObjectTemplates(const std::vector<std::string>& tmpltFilenames);
 
   /**
-   * @brief build templates for all primitive objects
-   */
-  void buildPrimObjectTemplates();
-
-  /**
    * @brief Instantiate, or reinstatiate, PhysicsManager defined by passed
    * attributes
    * @param physicsManager The currently defined @ref physics::PhysicsManager.

@@ -256,52 +256,6 @@ void ResourceManager::loadObjectTemplates(
             << std::to_string(physicsObjTmpltLibByID_.size());
 }  // loadObjectTemplates
 
-void ResourceManager::buildPrimObjectTemplates() {
-  uint32_t numPrims = static_cast<uint32_t>(PrimObjTypes::END_PRIM_OBJ_TYPES);
-
-  // build every template for primitives
-
-  // auto conf = primImporter->configuration();
-  // LOG(INFO) << "# of meshes in primitive importer : "
-  //           << primImporter->meshCount()
-  //           << " | # of textures : " << primImporter->textureCount()
-  //           << " | # of materials : " << primImporter->materialCount()
-  //           << " | # of scenes : " << primImporter->sceneCount()
-  //           << " | conf has group for cubeWireframe : "
-  //           << conf.hasGroup("capsule3DSolid")
-  //           << " | # of these groups : " <<
-  //           conf.groupCount("capsule3DSolid");
-
-  // for (int i = 0; i < numPrims; ++i) {
-  //   auto meshDataContainer = primImporter->mesh(PrimitiveNames3D[i]);
-
-  //   primitive_meshes_.push_back(std::make_unique<Magnum::GL::Mesh>(
-  //       Magnum::MeshTools::compile(*meshDataContainer)));
-  // }
-
-  // AssetInfo info{AssetType::PRIMITIVE, "PrimObjScene"};
-
-  // LoadedAssetData loadedAssetData{info};
-  // LOG(INFO) << "Try loadTextures";
-  // loadTextures(*importer, loadedAssetData);
-  // LOG(INFO) << "Try loadMaterials";
-  // loadMaterials(*importer, loadedAssetData);
-  // LOG(INFO) << "Try loadMeshes";
-  // loadMeshes(*importer, loadedAssetData);
-  // LOG(INFO) << "Done loadMeshes";
-
-  // auto inserted =
-  //     resourceDict_.emplace(info.filepath, std::move(loadedAssetData));
-  // MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
-
-  // int objectTemplateID = putObjTemplateAttrInLibMap(
-  //     objectTemplate, objectTemplateHandle, physicsPrimTmpltLibByID_);
-
-  LOG(INFO) << "built primitive templates: "
-            << std::to_string(physicsPrimTmpltLibByID_.size());
-
-}  // buildPrimObjectTemplates
-
 void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
     PhysicsManagerAttributes::ptr physicsManagerAttributes) {
@@ -331,8 +285,6 @@ void ResourceManager::initPhysicsManager(
   loadObjectTemplates(
       physicsManagerAttributes->getStringGroup("objectLibraryPaths"));
 
-  //"load" primitive physicsObjectTemplates here
-  buildPrimObjectTemplates();
 }  // ResourceManager::initPhysicsManager
 
 // this will instance a physics manager based on the passed physics config file
@@ -1143,6 +1095,7 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
   meshDataGL->BB = meshDataGL->BB.translated(translation);
 }
 
+// still in progress
 void ResourceManager::buildAndSetPrimitiveAssetData(
     PhysicsPrimitiveObjectAttributes::ptr primTemplate) {
   // unique name of attributes
@@ -1181,8 +1134,10 @@ void ResourceManager::buildAndSetPrimitiveAssetData(
   std::string primClassName = primTemplate->getPrimObjType();
 
   auto primMesh = primImporter->mesh(primClassName);
-  // auto meshPtr =
-  //     std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*primMesh));
+  auto meshPtr =
+      std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*primMesh));
+
+  // TODO have to construct meshData to hold this mesh ptr
 
   // meshes_.emplace_back(std::move(meshPtr));
   // put constructed LoadedAssetData into resourceDict_
@@ -1265,13 +1220,6 @@ bool ResourceManager::loadInstanceMeshData(
     return false;
   }
 
-#ifndef MAGNUM_BUILD_STATIC
-  Mn::PluginManager::Manager<Importer> importManager;
-#else
-  // avoid using plugins that might depend on different library versions
-  // Mn::PluginManager::Manager<Importer> importManager{"nonexistent"};
-#endif
-
   Cr::Containers::Pointer<Importer> importer;
   CORRADE_INTERNAL_ASSERT(
       importer = importManager.loadAndInstantiate("StanfordImporter"));
@@ -1343,13 +1291,6 @@ bool ResourceManager::loadGeneralMeshData(
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
   const bool drawData = parent != nullptr && drawables != nullptr;
-
-#ifndef MAGNUM_BUILD_STATIC
-  Magnum::PluginManager::Manager<Importer> importManager;
-#else
-  // avoid using plugins that might depend on different library versions
-  // Magnum::PluginManager::Manager<Importer> importManager{"nonexistent"};
-#endif
 
   std::unique_ptr<Importer> importer =
       importManager.loadAndInstantiate("AnySceneImporter");
