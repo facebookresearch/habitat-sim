@@ -5,8 +5,9 @@ import subprocess
 
 import pytest
 
-import examples.new_actions
-import examples.stereo_agent
+import examples.tutorials.lighting_tutorial
+import examples.tutorials.new_actions
+import examples.tutorials.stereo_agent
 
 
 @pytest.mark.gfxtest
@@ -17,7 +18,11 @@ import examples.stereo_agent
 )
 @pytest.mark.parametrize(
     "example_module,args",
-    [(examples.stereo_agent, (False,)), (examples.new_actions, ())],
+    [
+        (examples.tutorials.stereo_agent, (False,)),
+        (examples.tutorials.new_actions, ()),
+        (examples.tutorials.lighting_tutorial, (False,)),
+    ],
 )
 def test_example_modules(example_module, args):
     # This test needs to be done in its own process as there is a potentially for
