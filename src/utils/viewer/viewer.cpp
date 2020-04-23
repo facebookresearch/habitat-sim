@@ -342,7 +342,7 @@ void Viewer::addTemplateObject() {
   if (physicsManager_ != nullptr) {
     int numObjTemplates = resourceManager_.getNumFileTemplateObjects();
     if (numObjTemplates > 0) {
-      addObject(resourceManager_.getRandFileTemplateHandle());
+      addObject(resourceManager_.getRandomFileTemplateHandle());
     } else
       LOG(WARNING) << "No objects loaded, can't add any";
   } else
@@ -356,7 +356,7 @@ void Viewer::addPrimitiveObject() {
   if (physicsManager_ != nullptr) {
     int numObjPrims = resourceManager_.getNumPrimTemplateObjects();
     if (numObjPrims > 0) {
-      addObject(resourceManager_.getRandPrimTemplateHandle());
+      addObject(resourceManager_.getRandomPrimTemplateHandle());
     } else
       LOG(WARNING) << "No primitive templates available, can't add any objects";
   } else

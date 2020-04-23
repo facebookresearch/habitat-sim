@@ -3,8 +3,8 @@
 # LICENSE file in the root directory of this source tree.
 
 from habitat_sim._ext.habitat_sim_bindings import (
-    AbstractPhysAttributes,
+    AbstractPhysicsAttributes,
     PhysicsObjectAttributes,
 )
 
-__all__ = ["AbstractPhysAttributes", "PhysicsObjectAttributes"]
+__all__ = ["AbstractPhysicsAttributes", "PhysicsObjectAttributes"]

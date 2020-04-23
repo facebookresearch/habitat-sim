@@ -11,7 +11,8 @@ namespace assets {
 //  Derived attribute implementations
 //----------------------------------------//
 
-AbstractPhysAttributes::AbstractPhysAttributes(const std::string& originHandle)
+AbstractPhysicsAttributes::AbstractPhysicsAttributes(
+    const std::string& originHandle)
     : Configuration() {
   setOriginHandle(originHandle);
   setFrictionCoefficient(0.5);
@@ -25,7 +26,7 @@ AbstractPhysAttributes::AbstractPhysAttributes(const std::string& originHandle)
 
 PhysicsObjectAttributes::PhysicsObjectAttributes(
     const std::string& originHandle)
-    : AbstractPhysAttributes(originHandle) {
+    : AbstractPhysicsAttributes(originHandle) {
   // fill necessary attribute defaults
   setMass(1.0);
   setMargin(0.04);
@@ -44,10 +45,11 @@ PhysicsObjectAttributes::PhysicsObjectAttributes(
 
 // PhysicsPrimitiveObjAttributes is abstract; virtual destructor deleted;
 // definition required so instancing class can destroy base
-AbstractPhysPrimObjAttributes::~AbstractPhysPrimObjAttributes() {}
+// REMOVED FOR PYBIND COMPATIBILITY
+// AbstractPhysPrimObjAttributes::~AbstractPhysPrimObjAttributes() {}
 
 PhysicsSceneAttributes::PhysicsSceneAttributes(const std::string& originHandle)
-    : AbstractPhysAttributes(originHandle) {
+    : AbstractPhysicsAttributes(originHandle) {
   setGravity({0, -9.8, 0});
   // TODO do these defaults need to be maintained here?
   setFrictionCoefficient(0.4);

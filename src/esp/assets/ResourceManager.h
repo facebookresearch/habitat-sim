@@ -450,8 +450,8 @@ class ResourceManager {
    * @return a randomly selected handle corresponding to the a file-based object
    * attributes template, or empty string if none loaded
    */
-  std::string getRandFileTemplateHandle() {
-    return getRandTemplateHandle(physicsObjTmpltLibByID_, "file-based");
+  std::string getRandomFileTemplateHandle() {
+    return getRandomTemplateHandle(physicsObjTmpltLibByID_, "file-based");
   }
 
   /**
@@ -469,8 +469,8 @@ class ResourceManager {
    * @return a randomly selected handle corresponding to the a primitive
    * attributes template, or empty string if none loaded
    */
-  std::string getRandPrimTemplateHandle() {
-    return getRandTemplateHandle(physicsPrimTmpltLibByID_, "primitive");
+  std::string getRandomPrimTemplateHandle() {
+    return getRandomTemplateHandle(physicsPrimTmpltLibByID_, "primitive");
   }
 
  private:
@@ -481,8 +481,8 @@ class ResourceManager {
    * @return a random template handle of the chosen type, or the empty string
    * if none loaded
    */
-  std::string getRandTemplateHandle(std::map<int, std::string>& mapOfHandles,
-                                    const std::string& type);
+  std::string getRandomTemplateHandle(std::map<int, std::string>& mapOfHandles,
+                                      const std::string& type);
 
  public:
   /**
@@ -928,13 +928,6 @@ class ResourceManager {
    * @brief The next available unique ID for loaded materials
    */
   int nextMaterialID_ = 0;
-
-  //   /**
-  //    * @brief A pointer to render mesh data for the most recently loaded
-  //    instance
-  //    * mesh. //TODO: remove? doesn't seem to be used anywhere.
-  //    */
-  //   Magnum::GL::Mesh* instance_mesh_;
 
   /**
    * @brief Asset metadata linking meshes, textures, materials, and the

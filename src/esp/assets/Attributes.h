@@ -23,9 +23,9 @@ namespace assets {
  * @brief base attributes object holding attributes shared by all
  * PhysicsXXXAttributes objects; Is abstract - should never be instanced
  */
-class AbstractPhysAttributes : public esp::core::Configuration {
+class AbstractPhysicsAttributes : public esp::core::Configuration {
  public:
-  AbstractPhysAttributes(const std::string& originHandle = "");
+  AbstractPhysicsAttributes(const std::string& originHandle = "");
   // forcing this class to be abstract - note still needs definition
   // can't do this because of pybind issues, currently
   // virtual ~AbstractPhysAttributes() = 0;
@@ -66,7 +66,7 @@ class AbstractPhysAttributes : public esp::core::Configuration {
     return getString("collisionMeshHandle");
   }
 
-  ESP_SMART_POINTERS(AbstractPhysAttributes)
+  ESP_SMART_POINTERS(AbstractPhysicsAttributes)
 
 };  // namespace assets
 
@@ -74,7 +74,7 @@ class AbstractPhysAttributes : public esp::core::Configuration {
  * @brief Specific Attributes instance which is constructed with a base set of
  * physics object required attributes
  */
-class PhysicsObjectAttributes : public AbstractPhysAttributes {
+class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
  public:
   PhysicsObjectAttributes(const std::string& originHandle = "");
   // center of mass (COM)
@@ -160,7 +160,7 @@ class AbstractPhysPrimObjAttributes : public PhysicsObjectAttributes {
   }  // ctor
   // forcing this class to be abstract - note still needs definition of
   // destructor
-  virtual ~AbstractPhysPrimObjAttributes() = 0;
+  // virtual ~AbstractPhysPrimObjAttributes() = 0;
 
   void setIsWireframe(bool isWireframe) { setBool("isWireframe", isWireframe); }
   bool getIsWireframe() { return getBool("isWireframe"); }
@@ -231,7 +231,7 @@ class PhysicsUVSpherePrimAttributes : public AbstractPhysPrimObjAttributes {
 // scene and physics manager attributes
 
 //! attributes for a single physical scene
-class PhysicsSceneAttributes : public AbstractPhysAttributes {
+class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
  public:
   PhysicsSceneAttributes(const std::string& originHandle = "");
 
