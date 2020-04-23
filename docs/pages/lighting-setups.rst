@@ -81,7 +81,7 @@ the :ref:`Simulator` **must be closed and re-initialize to swap between Flat and
 It is often desirable to add new objects (such as furniture, robots, or navigation targets) to the scene which are not part of the static environment mesh.
 These objects are handled separately from the scene and can be configured with the same or different light setups.
 
-By default, object assets are loaded with Phong shading compatability. This is not ideal for assets with illumination baked into textures.
+By default, object assets are loaded with Phong shading compatibility. This is not ideal for assets with illumination baked into textures.
 Objects can be loaded for Flat shading by using the asset template's :ref:`PhysicsObjectAttributes.set_requires_lighting` function *before* loading the asset.
 Alternatively, this option can be set in the object template's configuration file:
 
