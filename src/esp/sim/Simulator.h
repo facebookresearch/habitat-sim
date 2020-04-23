@@ -112,6 +112,25 @@ class Simulator {
                 int sceneID = 0);
 
   /**
+   * @brief Instance the expected file template-based object used for testing in
+   * @ref esp::assets::ResourceManager::physicsObjectLibrary_. See @ref
+   * esp::physics::PhysicsManager::addObject().
+   * @param attachmentNode If provided, attach the RigidObject Feature to this
+   * node instead of creating a new one.
+   * @param lightSetupKey The string key for the LightSetup to be used by this
+   * object.
+   * @param sceneID !! Not used currently !! Specifies which physical scene to
+   * add an object to.
+   * @return The ID assigned to new object which identifies it in @ref
+   * esp::physics::PhysicsManager::existingObjects_ or @ref esp::ID_UNDEFINED if
+   * instancing fails.
+   */
+  int addTestObject(scene::SceneNode* attachmentNode = nullptr,
+                    const std::string& lightSetupKey =
+                        assets::ResourceManager::DEFAULT_LIGHTING_KEY,
+                    int sceneID = 0);
+
+  /**
    * @brief Get the current size of the physics object library. Objects [0,size)
    * can be instanced with @ref addObject.
    * @return The current number of templates stored in @ref

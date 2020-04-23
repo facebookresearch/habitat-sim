@@ -172,6 +172,7 @@ void SimTest::checkPinholeCameraRGBAObservation(
     const std::string& groundTruthImageFile,
     Magnum::Float maxThreshold,
     Magnum::Float meanThreshold) {
+  LOG(INFO) << "checkPinholeCameraRGBAObservation";
   // do not rely on default SensorSpec default constructor to remain constant
   auto pinholeCameraSpec = SensorSpec::create();
   pinholeCameraSpec->sensorSubtype = "pinhole";
@@ -228,7 +229,7 @@ void SimTest::getSceneWithLightingRGBAObservation() {
 void SimTest::getDefaultLightingRGBAObservation() {
   auto simulator = getSimulator(vangogh);
 
-  int objectID = simulator->addObject(0);
+  int objectID = simulator->addTestObject();
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
@@ -239,7 +240,7 @@ void SimTest::getDefaultLightingRGBAObservation() {
 void SimTest::getCustomLightingRGBAObservation() {
   auto simulator = getSimulator(vangogh);
 
-  int objectID = simulator->addObject(0, nullptr, "custom_lighting_1");
+  int objectID = simulator->addTestObject(nullptr, "custom_lighting_1");
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
@@ -251,7 +252,7 @@ void SimTest::updateLightSetupRGBAObservation() {
   auto simulator = getSimulator(vangogh);
 
   // update default lighting
-  int objectID = simulator->addObject(0);
+  int objectID = simulator->addTestObject();
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
@@ -264,7 +265,7 @@ void SimTest::updateLightSetupRGBAObservation() {
   simulator->removeObject(objectID);
 
   // update custom lighting
-  objectID = simulator->addObject(0, nullptr, "custom_lighting_1");
+  objectID = simulator->addTestObject(nullptr, "custom_lighting_1");
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
@@ -279,7 +280,7 @@ void SimTest::updateLightSetupRGBAObservation() {
 void SimTest::updateObjectLightSetupRGBAObservation() {
   auto simulator = getSimulator(vangogh);
 
-  int objectID = simulator->addObject(0);
+  int objectID = simulator->addTestObject();
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
   checkPinholeCameraRGBAObservation(
@@ -300,11 +301,11 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
   auto simulator = getSimulator(planeScene);
 
   // make sure updates apply to all objects using the light setup
-  int objectID = simulator->addObject(0, nullptr, "custom_lighting_1");
+  int objectID = simulator->addTestObject(nullptr, "custom_lighting_1");
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   simulator->setTranslation({0.0f, 0.5f, -0.5f}, objectID);
 
-  int otherObjectID = simulator->addObject(0, nullptr, "custom_lighting_1");
+  int otherObjectID = simulator->addTestObject(nullptr, "custom_lighting_1");
   CORRADE_VERIFY(otherObjectID != esp::ID_UNDEFINED);
   simulator->setTranslation({2.0f, 0.5f, -0.5f}, otherObjectID);
 
@@ -340,7 +341,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   }
 
   // add static object at a known navigable point
-  int objectID = simulator->addObject(0);
+  int objectID = simulator->addTestObject();
   simulator->setTranslation(Magnum::Vector3{randomNavPoint}, objectID);
   simulator->setObjectMotionType(esp::physics::MotionType::STATIC, objectID);
   CORRADE_VERIFY(
@@ -362,7 +363,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
       simulator->getObjectTemplate(0);
   objectTemplate->setScale({0.5, 0.5, 0.5});
-  objectID = simulator->addObject(0);
+  objectID = simulator->addTestObject();
   simulator->setTranslation(Magnum::Vector3{randomNavPoint}, objectID);
   simulator->setTranslation(
       simulator->getTranslation(objectID) + Magnum::Vector3{0, 0.5, 0},

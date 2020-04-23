@@ -89,7 +89,7 @@ bool BulletRigidObject::initializeObjectFinalize(
   if (!physicsObjectAttributes
            ->getUseMeshCollision()) {  // if using prim collider
     // prim stuff here
-
+    LOG(INFO) << "Attempting to instance primitive as bullet rigid object";
   } else {
     // originHandle is key in maps of relelvant quantities in resource manager
     const std::string configFile = physicsObjectAttributes->getOriginHandle();

@@ -272,6 +272,22 @@ int Simulator::addObject(int objectLibIndex,
   return ID_UNDEFINED;
 }
 
+int Simulator::addTestObject(scene::SceneNode* attachmentNode,
+                             const std::string& lightSetupKey,
+                             int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    // TODO: change implementation to support multi-world and physics worlds to
+    // own reference to a sceneGraph to avoid this.
+    auto& sceneGraph_ = sceneManager_.getSceneGraph(activeSceneID_);
+    auto& drawables = sceneGraph_.getDrawables();
+    const std::string objTemplateHandle =
+        resourceManager_.getTestObjFileTemplateHandle();
+    return physicsManager_->addObject(objTemplateHandle, &drawables,
+                                      attachmentNode, lightSetupKey);
+  }
+  return ID_UNDEFINED;
+}
+
 // return the current size of the physics object library (objects [0,size) can
 // be instanced)
 int Simulator::getPhysicsObjectLibrarySize() {

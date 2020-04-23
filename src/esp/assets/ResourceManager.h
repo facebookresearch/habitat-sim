@@ -464,6 +464,16 @@ class ResourceManager {
   }
 
   /**
+   * @brief Get lowest key-value template config name - used in testing
+   *
+   * @return config file name corresponding to lowest ID valued file-based
+   * template
+   */
+  std::string getTestObjFileTemplateHandle() {
+    return physicsObjTmpltLibByID_.begin()->second;
+  }
+
+  /**
    * @brief Gets the number of primitive template objects stored in the @ref
    * physicsObjTemplateLibrary_.
    *
