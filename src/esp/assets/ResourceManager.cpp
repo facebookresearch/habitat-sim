@@ -546,8 +546,7 @@ bool ResourceManager::loadObjectMeshDataFromFile(
     const bool requiresLighting) {
   bool success = false;
   if (!fileName.empty()) {
-    AssetInfo meshInfo;
-    meshInfo = assets::AssetInfo::fromPath(fileName);
+    AssetInfo meshInfo{AssetType::UNKNOWN, fileName};
     meshInfo.requiresLighting = requiresLighting;
     success = loadGeneralMeshData(meshInfo);
     if (!success) {
