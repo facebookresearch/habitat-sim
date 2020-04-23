@@ -72,17 +72,13 @@ constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
 constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
 
-ResourceManager::ResourceManager() {
+ResourceManager::ResourceManager() : importManager{"nonexistent"} {
   initDefaultLightSetups();
   initDefaultMaterials();
   initDefaultPrimAttributes();
 }
 
 void ResourceManager::initDefaultPrimAttributes() {
-  // set up primitive importer
-  Magnum::PluginManager::Manager<Importer> manager{"nonexistent"};
-  primImporter = manager.loadAndInstantiate("PrimitiveImporter");
-  primImporter->openData("");
   // set up base primitive attributes
   auto capSolidAttr = PhysicsCapsulePrimAttributes::create(
       false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CAPSULE_SOLID)]);
@@ -122,6 +118,10 @@ void ResourceManager::initDefaultPrimAttributes() {
       true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::UVSPHERE_WF)]);
   putPrimObjTmpltAttrInLibMap(uvSphereWFAttr);
 
+  // set up primitive importer
+  // Magnum::PluginManager::Manager<Importer> manager{"nonexistent"};
+  primImporter = importManager.loadAndInstantiate("PrimitiveImporter");
+  primImporter->openData("");
   // configuration for PrimitiveImporter
   auto conf = primImporter->configuration();
 
@@ -255,22 +255,23 @@ void ResourceManager::buildPrimObjectTemplates() {
 
   // build every template for primitives
 
-  auto conf = primImporter->configuration();
-  LOG(INFO) << "# of meshes in primitive importer : "
-            << primImporter->meshCount()
-            << " | # of textures : " << primImporter->textureCount()
-            << " | # of materials : " << primImporter->materialCount()
-            << " | # of scenes : " << primImporter->sceneCount()
-            << " | conf has group for cubeWireframe : "
-            << conf.hasGroup("capsule3DSolid")
-            << " | # of these groups : " << conf.groupCount("capsule3DSolid");
+  // auto conf = primImporter->configuration();
+  // LOG(INFO) << "# of meshes in primitive importer : "
+  //           << primImporter->meshCount()
+  //           << " | # of textures : " << primImporter->textureCount()
+  //           << " | # of materials : " << primImporter->materialCount()
+  //           << " | # of scenes : " << primImporter->sceneCount()
+  //           << " | conf has group for cubeWireframe : "
+  //           << conf.hasGroup("capsule3DSolid")
+  //           << " | # of these groups : " <<
+  //           conf.groupCount("capsule3DSolid");
 
-  for (int i = 0; i < numPrims; ++i) {
-    auto meshDataContainer = primImporter->mesh(PrimitiveNames3D[i]);
+  // for (int i = 0; i < numPrims; ++i) {
+  //   auto meshDataContainer = primImporter->mesh(PrimitiveNames3D[i]);
 
-    primitive_meshes_.push_back(std::make_unique<Magnum::GL::Mesh>(
-        Magnum::MeshTools::compile(*meshDataContainer)));
-  }
+  //   primitive_meshes_.push_back(std::make_unique<Magnum::GL::Mesh>(
+  //       Magnum::MeshTools::compile(*meshDataContainer)));
+  // }
 
   // AssetInfo info{AssetType::PRIMITIVE, "PrimObjScene"};
 
@@ -1179,7 +1180,7 @@ void ResourceManager::buildAndSetPrimitiveAssetData(
 
   // meshes_.emplace_back(std::move(meshPtr));
   // put constructed LoadedAssetData into resourceDict_
-  // resourceDict_.emplace(primConfigName, primAssetData);
+  resourceDict_.emplace(primConfigName, primAssetData);
 
 }  // buildAndSetPrimitiveAssetData
 
@@ -1262,12 +1263,12 @@ bool ResourceManager::loadInstanceMeshData(
   Mn::PluginManager::Manager<Importer> manager;
 #else
   // avoid using plugins that might depend on different library versions
-  Mn::PluginManager::Manager<Importer> manager{"nonexistent"};
+  // Mn::PluginManager::Manager<Importer> manager{"nonexistent"};
 #endif
 
   Cr::Containers::Pointer<Importer> importer;
-  CORRADE_INTERNAL_ASSERT(importer =
-                              manager.loadAndInstantiate("StanfordImporter"));
+  CORRADE_INTERNAL_ASSERT(
+      importer = importManager.loadAndInstantiate("StanfordImporter"));
 
   // if this is a new file, load it and add it to the dictionary, create
   // shaders and add it to the shaderPrograms_
@@ -1341,20 +1342,20 @@ bool ResourceManager::loadGeneralMeshData(
   Magnum::PluginManager::Manager<Importer> manager;
 #else
   // avoid using plugins that might depend on different library versions
-  Magnum::PluginManager::Manager<Importer> manager{"nonexistent"};
+  // Magnum::PluginManager::Manager<Importer> manager{"nonexistent"};
 #endif
 
   std::unique_ptr<Importer> importer =
-      manager.loadAndInstantiate("AnySceneImporter");
+      importManager.loadAndInstantiate("AnySceneImporter");
 
   // Preferred plugins, Basis target GPU format
-  manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
+  importManager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
 #ifdef ESP_BUILD_ASSIMP_SUPPORT
-  manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+  importManager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
 #endif
   {
     Cr::PluginManager::PluginMetadata* const metadata =
-        manager.metadata("BasisImporter");
+        importManager.metadata("BasisImporter");
     Mn::GL::Context& context = Mn::GL::Context::current();
 #ifdef MAGNUM_TARGET_WEBGL
     if (context.isExtensionSupported<

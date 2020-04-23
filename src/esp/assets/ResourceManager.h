@@ -592,6 +592,15 @@ class ResourceManager {
 
  private:
   /**
+   * @brief return a random handle selected from the passed map - is passed
+   * either map of ids->prim handles or ids->file obj template handles
+   *
+   * @return a random template handle of the chosen type, or the empty string
+   * if none loaded
+   */
+  std::string getRandTemplateHandle(std::map<int, std::string>& mapOfHandles,
+                                    const std::string& type);
+  /**
    * @brief Load object templates given string list of object template
    * locations.
    *
@@ -668,7 +677,6 @@ class ResourceManager {
    * template if one does not already exist and place it in @ref resourceDict_
    *
    * @param primTemplate the primitive template, configured as desired
-   * @param primMesh compiled mesh constructed for the particular primitive
    *
    */
   void buildAndSetPrimitiveAssetData(
@@ -938,9 +946,13 @@ class ResourceManager {
     uint32_t meshID;
   };
   /**
+   * @brief plugin manager to handle importers
+   */
+  Magnum::PluginManager::Manager<Importer> importManager;
+  /**
    * @brief importer used to build primitives only
    */
-  std::unique_ptr<Importer> primImporter;
+  std::unique_ptr<Importer> primImporter = nullptr;
 
   /**
    * @brief this helper vector contains information of the drawables on which
