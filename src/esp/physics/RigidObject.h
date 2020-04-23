@@ -118,16 +118,18 @@ struct VelocityControl {
    * @brief Compute the result of applying constant control velocities to the
    * provided object transform.
    *
+   * For efficiency this function does not support transforms with scaling.
+   *
    * Default implementation uses explicit Euler integration.
    * @param dt The discrete timestep over which to integrate.
-   * @param objectTransformation The initial state of the object before applying
-   * velocity control.
+   * @param objectRotationTranslation The initial state of the object before
+   * applying velocity control.
    * @return The new state of the object after applying velocity control over
    * dt.
    */
   virtual Magnum::Matrix4 integrateTransform(
       const float dt,
-      const Magnum::Matrix4& objectTransform);
+      const Magnum::Matrix4& objectRotationTranslation);
 
   ESP_SMART_POINTERS(VelocityControl)
 };
@@ -583,6 +585,9 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
 
   /**
    * @brief All Drawable components are children of this node.
+   *
+   * Note that the transformation of this node is a composition of rotation and
+   * translation as scaling is applied to a child of this node.
    */
   scene::SceneNode* visualNode_ = nullptr;
 

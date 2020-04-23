@@ -483,6 +483,30 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
     }
     ASSERT_GE(physicsManager_->getTranslation(objectId)[1], 1.0 - errorEps);
   }
+
+  // test local velocity
+  velControl->linVel = Magnum::Vector3{0.0, 0.0, -1.0};
+  velControl->angVel = Magnum::Vector3{1.0, 0, 0};
+  velControl->angVelIsLocal = true;
+  velControl->linVelIsLocal = true;
+
+  targetTime = 10.0;
+  physicsManager_->reset();  // reset time to 0
+  while (physicsManager_->getWorldTime() < targetTime) {
+    physicsManager_->stepPhysics(targetTime - physicsManager_->getWorldTime());
+  }
+
+  Magnum::Vector3 posLocalGroundTruth{1.80594, 1.03977, 1.9535};
+  Magnum::Quaternion qLocalGroundTruth{{0.714892, -0.0307073, 0.0350663},
+                                       0.697679};
+
+  ASSERT_LE((physicsManager_->getTranslation(objectId) - posLocalGroundTruth)
+                .length(),
+            errorEps);
+  Magnum::Rad angleErrorLocal = Magnum::Math::angle(
+      physicsManager_->getRotation(objectId), qLocalGroundTruth);
+
+  ASSERT_LE(float(angleErrorLocal), errorEps);
 }
 
 TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {

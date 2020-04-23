@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "RigidObject.h"
+#include <Magnum/Math/Algorithms/GramSchmidt.h>
 #include <Magnum/Math/Range.h>
 
 namespace esp {
@@ -234,32 +235,36 @@ Magnum::Matrix3 RigidObject::getInertiaMatrix() {
 
 //////////////////
 // VelocityControl
+
 Magnum::Matrix4 VelocityControl::integrateTransform(
     const float dt,
-    const Magnum::Matrix4& objectTransform) {
+    const Magnum::Matrix4& objectRotationTranslation) {
+  Magnum::Matrix3 newRotation{objectRotationTranslation.rotationScaling()};
+  if (!newRotation.isOrthogonal()) {
+    Magnum::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(newRotation);
+  }
   // linear first
-  Magnum::Vector3 newTranslation = objectTransform.translation();
+  Magnum::Vector3 newTranslation = objectRotationTranslation.translation();
   if (controllingLinVel) {
     if (linVelIsLocal) {
-      newTranslation += objectTransform.rotation() *
-                        (linVel * dt);  // avoid local scaling of the velocity
+      newTranslation +=
+          newRotation * (linVel * dt);  // avoid local scaling of the velocity
     } else {
       newTranslation += linVel * dt;
     }
   }
 
-  Magnum::Matrix3 newRotationScaling = objectTransform.rotationScaling();
   // then angular
   if (controllingAngVel) {
-    Magnum::Vector3 globalAngVel = angVel;
+    Magnum::Vector3 globalAngVel{angVel};
     if (angVelIsLocal) {
-      globalAngVel = objectTransform.rotation() * angVel;
+      globalAngVel = newRotation * angVel;
     }
     Magnum::Quaternion q = Magnum::Quaternion::rotation(
         Magnum::Rad{(globalAngVel * dt).length()}, globalAngVel.normalized());
-    newRotationScaling = q.toMatrix() * newRotationScaling;
+    newRotation = (q * Magnum::Quaternion::fromMatrix(newRotation)).toMatrix();
   }
-  return Magnum::Matrix4::from(newRotationScaling, newTranslation);
+  return Magnum::Matrix4::from(newRotation, newTranslation);
 }
 
 }  // namespace physics
