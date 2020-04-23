@@ -63,6 +63,7 @@ PhysicsCapsulePrimAttributes::PhysicsCapsulePrimAttributes(
     setNumSegments(16);
     setHalfLength(1.0);
   }
+  buildOriginHandle();  // build handle based on config
 }  // PhysicsCapsulePrimAttributes
 
 PhysicsConePrimAttributes::PhysicsConePrimAttributes(
@@ -78,6 +79,7 @@ PhysicsConePrimAttributes::PhysicsConePrimAttributes(
   } else {  // wireframe
     setNumSegments(32);
   }
+  buildOriginHandle();  // build handle based on config
 }  // PhysicsConePrimAttributes
 
 PhysicsCylinderPrimAttributes::PhysicsCylinderPrimAttributes(
@@ -93,6 +95,7 @@ PhysicsCylinderPrimAttributes::PhysicsCylinderPrimAttributes(
   } else {  // wireframe
     setNumSegments(32);
   }
+  buildOriginHandle();  // build handle based on config
 }  // PhysicsCylinderPrimAttributes
 
 PhysicsUVSpherePrimAttributes::PhysicsUVSpherePrimAttributes(
@@ -106,6 +109,7 @@ PhysicsUVSpherePrimAttributes::PhysicsUVSpherePrimAttributes(
     setNumRings(16);
     setNumSegments(32);
   }
+  buildOriginHandle();  // build handle based on config
 }  // PhysicsUVSpherePrimAttributes
 
 PhysicsSceneAttributes::PhysicsSceneAttributes(const std::string& originHandle)

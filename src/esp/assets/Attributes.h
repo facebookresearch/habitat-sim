@@ -66,7 +66,10 @@ class AbstractPhysicsAttributes : public esp::core::Configuration {
     return getString("collisionMeshHandle");
   }
 
-  ESP_SMART_POINTERS(AbstractPhysicsAttributes)
+ protected:
+  std::string getBoolDispStr(bool val) { return (val ? "true" : "false"); }
+
+  ESP_SMART_POINTERS(AbstractPhysAttributes)
 
 };  // AbstractPhysAttributes
 
@@ -174,31 +177,58 @@ class AbstractPhysPrimObjAttributes : public PhysicsObjectAttributes {
 
   // only solid prims can use texture coords
   void setUseTextureCoords(bool useTextureCoords) {
-    setBool("textureCoordinates", useTextureCoords);
+    if (!getIsWireframe()) {  // check if solid
+      setBool("textureCoordinates", useTextureCoords);
+      buildOriginHandle();  // build handle based on config
+    }
   }
   bool getUseTextureCoords() const { return getBool("textureCoordinates"); }
 
   // only solid prims have option to use tangents
-  void setUseTangents(bool tangents) { setBool("tangents", tangents); }
+  void setUseTangents(bool tangents) {
+    if (!getIsWireframe()) {  // check if solid
+      setBool("tangents", tangents);
+      buildOriginHandle();  // build handle based on config
+    }
+  }
   bool getUseTangents() const { return getBool("tangents"); }
 
-  // only solid circular prims set number of rings - NOTE : capsule sets rings
+  // only circular prims set number of rings - NOTE : capsule sets rings
   // separately for hemispheres and cylinder
   // set virtual so cannot be deleted in capsule attributes
-  virtual void setNumRings(int rings) { setInt("rings", rings); }
+  virtual void setNumRings(int rings) {
+    setInt("rings", rings);
+    buildOriginHandle();  // build handle based on config
+  }
   virtual int getNumRings() const { return getInt("rings"); }
 
-  void setNumSegments(int segments) { setInt("segments", segments); }
-  int getNumSegments(int segments) const { return getInt("segments"); }
+  void setNumSegments(int segments) {
+    setInt("segments", segments);
+    buildOriginHandle();  // build handle based on config
+  }
+  int getNumSegments() const { return getInt("segments"); }
 
+ private:
+  // should never change, only set by ctor
   void setPrimObjType(std::string primObjType) {
     setString("primObjType", primObjType);
   }
+
+ public:
   std::string getPrimObjType() const { return getString("primObjType"); }
 
   // capsule, cone and cylinder use halfLength
   void setHalfLength(double halfLength) { setDouble("halfLength", halfLength); }
   double getHalfLength() const { return getDouble("halfLength"); }
+
+  void buildOriginHandle() {
+    std::ostringstream oHndlStrm;
+    oHndlStrm << getPrimObjType() << buildOriginHandleIndiv();
+    setOriginHandle(oHndlStrm.str());
+  }
+  // Overload with prim-specific quantites - always start obj-specific with
+  // underscore
+  virtual std::string buildOriginHandleIndiv() { return ""; }
 
   ESP_SMART_POINTERS(AbstractPhysPrimObjAttributes)
 };  // class PhysicsPrimitiveObjAttributes
@@ -210,14 +240,26 @@ class PhysicsCapsulePrimAttributes : public AbstractPhysPrimObjAttributes {
 
   void setHemisphereRings(int hemisphereRings) {
     setInt("hemisphereRings", hemisphereRings);
+    buildOriginHandle();  // build handle based on config
   }
   int getHemisphereRings() const { return getInt("hemisphereRings"); }
 
   void setCylinderRings(int cylinderRings) {
     setInt("cylinderRings", cylinderRings);
+    buildOriginHandle();  // build handle based on config
   }
   int getCylinderRings() const { return getInt("cylinderRings"); }
-
+  virtual std::string buildOriginHandleIndiv() override {
+    std::ostringstream oHndlStrm;
+    oHndlStrm << "_hemiRings_" << getHemisphereRings() << "_cylRings_"
+              << getCylinderRings() << "_segments_" << getNumSegments()
+              << "_halfLen_" << getHalfLength();
+    if (!getIsWireframe()) {
+      oHndlStrm << "_useTexCoords_" << getBoolDispStr(getUseTextureCoords())
+                << "_useTangents_" << getBoolDispStr(getUseTangents());
+    }
+    return oHndlStrm.str();
+  }  // buildOriginHandleIndiv
   ESP_SMART_POINTERS(PhysicsCapsulePrimAttributes)
 };  // class PhysicsCapsulePrimAttributes
 
@@ -225,15 +267,33 @@ class PhysicsConePrimAttributes : public AbstractPhysPrimObjAttributes {
   PhysicsConePrimAttributes(bool isWireframe, const std::string& primObjType);
 
   // only solid cones can have end capped
-  void setCapEnd(bool capEnd) { setBool("capEnd", capEnd); }
+  void setCapEnd(bool capEnd) {
+    setBool("capEnd", capEnd);
+    buildOriginHandle();  // build handle based on config
+  }
   bool getCapEnd() const { return getBool("capEnd"); }
+
+  virtual std::string buildOriginHandleIndiv() override {
+    std::ostringstream oHndlStrm;
+    oHndlStrm << "_segments_" << getNumSegments() << "_halfLen_"
+              << getHalfLength();
+    if (!getIsWireframe()) {
+      oHndlStrm << "_rings_" << getNumRings() << "_useTexCoords_"
+                << getBoolDispStr(getUseTextureCoords()) << "_useTangents_"
+                << getBoolDispStr(getUseTangents()) << "_capEnd_"
+                << getBoolDispStr(getCapEnd());
+    }
+    return oHndlStrm.str();
+  }  // buildOriginHandleIndiv
 
   ESP_SMART_POINTERS(PhysicsConePrimAttributes)
 };  // class PhysicsConePrimAttributes
 
 class PhysicsCubePrimAttributes : public AbstractPhysPrimObjAttributes {
   PhysicsCubePrimAttributes(bool isWireframe, const std::string& primObjType)
-      : AbstractPhysPrimObjAttributes(isWireframe, primObjType) {}
+      : AbstractPhysPrimObjAttributes(isWireframe, primObjType) {
+    buildOriginHandle();  // build handle based on config
+  }
 
   ESP_SMART_POINTERS(PhysicsCubePrimAttributes)
 };  // class PhysicsCubePrimAttributes
@@ -243,8 +303,23 @@ class PhysicsCylinderPrimAttributes : public AbstractPhysPrimObjAttributes {
                                 const std::string& primObjType);
 
   // only solid culinders can have ends capped
-  void setCapEnds(bool capEnds) { setBool("capEnds", capEnds); }
+  void setCapEnds(bool capEnds) {
+    setBool("capEnds", capEnds);
+    buildOriginHandle();  // build handle based on config
+  }
   bool getCapEnds() const { return getBool("capEnds"); }
+
+  virtual std::string buildOriginHandleIndiv() override {
+    std::ostringstream oHndlStrm;
+    oHndlStrm << "_rings_" << getNumRings() << "_segments_" << getNumSegments()
+              << "_halfLen_" << getHalfLength();
+    if (!getIsWireframe()) {
+      oHndlStrm << "_useTexCoords_" << getBoolDispStr(getUseTextureCoords())
+                << "_useTangents_" << getBoolDispStr(getUseTangents())
+                << "_capEnds_" << getBoolDispStr(getCapEnds());
+    }
+    return oHndlStrm.str();
+  }  // buildOriginHandleIndiv
 
   ESP_SMART_POINTERS(PhysicsCylinderPrimAttributes)
 };  // class PhysicsCylinderPrimAttributes
@@ -254,19 +329,43 @@ class PhysicsIcospherePrimAttributes : public AbstractPhysPrimObjAttributes {
   PhysicsIcospherePrimAttributes(bool isWireframe,
                                  const std::string& primObjType)
       : AbstractPhysPrimObjAttributes(isWireframe, primObjType) {
-    setSubdivisions(1);
+    // setting manually because wireframe icosphere does not currently support
+    // subdiv > 1 and setSubdivisions checks for wireframe
+    setInt("subdivisions", 1);
+    buildOriginHandle();  // build handle based on config
   }
   // only solid icospheres will support subdivision - wireframes default to 1
   void setSubdivisions(int subdivisions) {
-    setInt("subdivisions", subdivisions);
+    if (!getIsWireframe()) {  // check if solid
+      setInt("subdivisions", subdivisions);
+      buildOriginHandle();  // build handle based on config
+    }
   }
   int getSubdivisions() const { return getInt("subdivisions"); }
+
+  virtual std::string buildOriginHandleIndiv() override {
+    std::ostringstream oHndlStrm;
+    // wireframe subdivision currently does not change
+    // but think about the possibilities.
+    oHndlStrm << "_subdivs_" << getSubdivisions();
+    return oHndlStrm.str();
+  }  // buildOriginHandleIndiv
+
   ESP_SMART_POINTERS(PhysicsIcospherePrimAttributes)
 };  // class PhysicsIcospherePrimAttributes
 
 class PhysicsUVSpherePrimAttributes : public AbstractPhysPrimObjAttributes {
   PhysicsUVSpherePrimAttributes(bool isWireframe,
                                 const std::string& primObjType);
+  virtual std::string buildOriginHandleIndiv() override {
+    std::ostringstream oHndlStrm;
+    oHndlStrm << "_rings_" << getNumRings() << "_segments_" << getNumSegments();
+    if (!getIsWireframe()) {
+      oHndlStrm << "_useTexCoords_" << getBoolDispStr(getUseTextureCoords())
+                << "_useTangents_" << getBoolDispStr(getUseTangents());
+    }
+    return oHndlStrm.str();
+  }  // buildOriginHandleIndiv
 
   ESP_SMART_POINTERS(PhysicsUVSpherePrimAttributes)
 };  // class PhysicsUVSpherePrimAttributes
