@@ -51,8 +51,8 @@ def place_agent(sim):
     agent_state = habitat_sim.AgentState()
     agent_state.position = [5.0, 0.0, 1.0]
     agent_state.rotation = quat_from_angle_axis(
-        math.radians(70), np.array([0, 1, 0])
-    ) * quat_from_angle_axis(math.radians(-20), np.array([1, 0, 0]))
+        math.radians(70), np.array([0, 1.0, 0])
+    ) * quat_from_angle_axis(math.radians(-20), np.array([1.0, 0, 0]))
     agent = sim.initialize_agent(0, agent_state)
     return agent.scene_node.transformation_matrix()
 
@@ -100,7 +100,7 @@ def main(show_imgs=True, save_imgs=False):
 
     # create and register new light setup:
     my_scene_lighting_setup = [
-        LightInfo(position=np.array([0.0, 2.0, 0.6]), model=LightPositionModel.GLOBAL)
+        LightInfo(position=[0.0, 2.0, 0.6], model=LightPositionModel.GLOBAL)
     ]
     sim.set_light_setup(my_scene_lighting_setup, "my_scene_lighting")
 
@@ -130,7 +130,7 @@ def main(show_imgs=True, save_imgs=False):
     )[0]
 
     id_1 = sim.add_object(sphere_template_id)
-    sim.set_translation(np.array([3.2, 0.23, 0.03]), id_1)
+    sim.set_translation([3.2, 0.23, 0.03], id_1)
 
     get_obs(sim, show_imgs, save_imgs)
 
@@ -152,7 +152,7 @@ def main(show_imgs=True, save_imgs=False):
     # [example 4]
     id_2 = sim.add_object(chair_template_id)
     sim.set_rotation(mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis()), id_2)
-    sim.set_translation(np.array([3.06, 0.47, 1.15]), id_2)
+    sim.set_translation([3.06, 0.47, 1.15], id_2)
 
     get_obs(sim, show_imgs, save_imgs)
 
@@ -172,11 +172,11 @@ def main(show_imgs=True, save_imgs=False):
 
     id_1 = sim.add_object(chair_template_id, light_setup_key="my_custom_lighting")
     sim.set_rotation(mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis()), id_1)
-    sim.set_translation(np.array([3.06, 0.47, 1.15]), id_1)
+    sim.set_translation([3.06, 0.47, 1.15], id_1)
 
     id_2 = sim.add_object(chair_template_id, light_setup_key="my_custom_lighting")
     sim.set_rotation(mn.Quaternion.rotation(mn.Deg(50), mn.Vector3.y_axis()), id_2)
-    sim.set_translation(np.array([3.45927, 0.47, -0.624958]), id_2)
+    sim.set_translation([3.45927, 0.47, -0.624958], id_2)
 
     get_obs(sim, show_imgs, save_imgs)
 
