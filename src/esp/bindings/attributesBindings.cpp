@@ -16,14 +16,14 @@ namespace esp {
 namespace assets {
 
 void initAttributesBindings(py::module& m) {
-  // ==== AbstractPhysAttributes ====
-  py::class_<AbstractPhysAttributes, esp::core::Configuration,
-             AbstractPhysAttributes::ptr>(m, "AbstractPhysAttributes")
-      .def(py::init(&AbstractPhysAttributes::create<>))
-      .def(py::init(&AbstractPhysAttributes::create<const std::string&>));
+  // ==== AbstractPhysicsAttributes ====
+  py::class_<AbstractPhysicsAttributes, esp::core::Configuration,
+             AbstractPhysicsAttributes::ptr>(m, "AbstractPhysicsAttributes")
+      .def(py::init(&AbstractPhysicsAttributes::create<>))
+      .def(py::init(&AbstractPhysicsAttributes::create<const std::string&>));
 
   // ==== PhysicsObjectAttributes ====
-  py::class_<PhysicsObjectAttributes, AbstractPhysAttributes,
+  py::class_<PhysicsObjectAttributes, AbstractPhysicsAttributes,
              PhysicsObjectAttributes::ptr>(m, "PhysicsObjectAttributes")
       .def(py::init(&PhysicsObjectAttributes::create<>))
       .def(py::init(&PhysicsObjectAttributes::create<const std::string&>))

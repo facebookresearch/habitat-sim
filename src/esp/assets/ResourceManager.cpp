@@ -646,7 +646,7 @@ int ResourceManager::loadObjectTemplate(
   return objectTemplateID;
 }  // loadObjectTemplate
 
-std::string ResourceManager::getRandTemplateHandle(
+std::string ResourceManager::getRandomTemplateHandle(
     std::map<int, std::string>& mapOfHandles,
     const std::string& type) {
   int numVals = mapOfHandles.size();
