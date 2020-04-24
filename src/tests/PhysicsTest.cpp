@@ -492,6 +492,11 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   }
 
   // test local velocity
+  physicsManager_->setObjectMotionType(objectId,
+                                       esp::physics::MotionType::KINEMATIC);
+  physicsManager_->resetTransformation(objectId);
+  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
+
   velControl->linVel = Magnum::Vector3{0.0, 0.0, -1.0};
   velControl->angVel = Magnum::Vector3{1.0, 0, 0};
   velControl->angVelIsLocal = true;
@@ -500,12 +505,16 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   targetTime = 10.0;
   physicsManager_->reset();  // reset time to 0
   while (physicsManager_->getWorldTime() < targetTime) {
-    physicsManager_->stepPhysics(targetTime - physicsManager_->getWorldTime());
+    physicsManager_->stepPhysics(physicsManager_->getTimestep());
   }
 
-  Magnum::Vector3 posLocalGroundTruth{1.80594, 1.03977, 1.9535};
-  Magnum::Quaternion qLocalGroundTruth{{0.714892, -0.0307073, 0.0350663},
-                                       0.697679};
+  Corrade::Utility::Debug()
+      << "translation = " << physicsManager_->getTranslation(objectId);
+  Corrade::Utility::Debug()
+      << "rotation = " << physicsManager_->getRotation(objectId);
+
+  Magnum::Vector3 posLocalGroundTruth{0, 3.83589, 0.543553};
+  Magnum::Quaternion qLocalGroundTruth{{0.95774, 0, 0}, -0.287635};
 
   ASSERT_LE((physicsManager_->getTranslation(objectId) - posLocalGroundTruth)
                 .length(),
