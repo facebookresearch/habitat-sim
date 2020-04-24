@@ -129,8 +129,8 @@ def test_dynamics(sim):
     assert sim.get_physics_object_library_size() > 0
 
     # test adding an object to the world
-    object_id = sim.add_object(0)
-    object2_id = sim.add_object(0)
+    object_id = sim.add_object(1)
+    object2_id = sim.add_object(1)
     assert len(sim.get_existing_object_ids()) > 0
 
     # place the objects over the table in room
@@ -150,7 +150,7 @@ def test_dynamics(sim):
 
             # TODO: expose object properties (such as mass) to python
             # Counter the force of gravity on the object (it should not translate)
-            obj_mass = 0.5
+            obj_mass = 0.41
             sim.apply_force(np.array([0, obj_mass * 9.8, 0]), np.zeros(3), object_id)
 
             # apply torque to the "floating" object. It should rotate, but not translate
@@ -289,12 +289,15 @@ def test_velocity_control(sim):
 
         while sim.get_world_time() < 0.5:
             # NOTE: stepping close to default timestep to get near-constant velocity control of DYNAMIC bodies.
-            sim.step_physics(0.00416)
+            sim.step_physics(0.008)
+
+        print(sim.get_world_time())
 
         # NOTE: explicit integration, so expect some error
         ground_truth_q = mn.Quaternion([[1.0, 0, 0], 0])
+        print(sim.get_translation(object_id))
         assert np.allclose(
-            sim.get_translation(object_id), np.array([0, 1.0, 0.0]), atol=0.03
+            sim.get_translation(object_id), np.array([0, 1.0, 0.0]), atol=0.07
         )
         angle_error = mn.math.angle(ground_truth_q, sim.get_rotation(object_id))
         assert angle_error < mn.Rad(0.05)
