@@ -181,7 +181,7 @@ void ResourceManager::loadObjectTemplates(
   }
   LOG(INFO) << "loaded object templates: "
             << std::to_string(physicsObjTmpltLibByID_.size());
-}
+}  // loadObjectTemplates
 
 void ResourceManager::buildPrimObjectTemplates() {
   uint32_t numPrims = static_cast<uint32_t>(PrimObjTypes::END_PRIM_OBJ_TYPES);
@@ -190,27 +190,36 @@ void ResourceManager::buildPrimObjectTemplates() {
   Magnum::PluginManager::Manager<Importer> manager{"nonexistent"};
   std::unique_ptr<Importer> importer =
       manager.loadAndInstantiate("PrimitiveImporter");
-
-  AssetInfo info{AssetType::PRIMITIVE, "PrimObjScene"};
-
   importer->openData("");
+  auto conf = importer->configuration();
   LOG(INFO) << "# of meshes in primitive importer : " << importer->meshCount()
             << " | # of textures : " << importer->textureCount()
             << " | # of materials : " << importer->materialCount()
-            << " | # of scenes : " << importer->sceneCount();
+            << " | # of scenes : " << importer->sceneCount()
+            << " | conf has group for cubeWireframe : "
+            << conf.hasGroup("cubeWireframe");
 
-  LoadedAssetData loadedAssetData{info};
-  LOG(INFO) << "Try loadTextures";
-  loadTextures(*importer, loadedAssetData);
-  LOG(INFO) << "Try loadMaterials";
-  loadMaterials(*importer, loadedAssetData);
-  LOG(INFO) << "Try loadMeshes";
-  loadMeshes(*importer, loadedAssetData);
-  LOG(INFO) << "Done loadMeshes";
+  for (int i = 0; i < numPrims; ++i) {
+    auto meshDataContainer = importer->mesh(PrimitiveNames3D[i]);
 
-  auto inserted =
-      resourceDict_.emplace(info.filepath, std::move(loadedAssetData));
-  MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
+    primitive_meshes_.push_back(std::make_unique<Magnum::GL::Mesh>(
+        Magnum::MeshTools::compile(*meshDataContainer)));
+  }
+
+  // AssetInfo info{AssetType::PRIMITIVE, "PrimObjScene"};
+
+  // LoadedAssetData loadedAssetData{info};
+  // LOG(INFO) << "Try loadTextures";
+  // loadTextures(*importer, loadedAssetData);
+  // LOG(INFO) << "Try loadMaterials";
+  // loadMaterials(*importer, loadedAssetData);
+  // LOG(INFO) << "Try loadMeshes";
+  // loadMeshes(*importer, loadedAssetData);
+  // LOG(INFO) << "Done loadMeshes";
+
+  // auto inserted =
+  //     resourceDict_.emplace(info.filepath, std::move(loadedAssetData));
+  // MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
 
   // int objectTemplateID = putObjTemplateAttrInLibMap(
   //     objectTemplate, objectTemplateHandle, physicsPrimTmpltLibByID_);
@@ -375,10 +384,10 @@ bool ResourceManager::loadPhysicsScene(
     if (!sceneSuccess) {
       return false;
     }
-  }
+  }  // if (filename.compare(EMPTY_SCENE) != 0)
 
   return meshSuccess;
-}
+}  // loadPhysicsScene
 
 std::vector<std::string> ResourceManager::getObjectConfigPaths(
     std::string path) {
@@ -564,7 +573,7 @@ PhysicsObjectAttributes::ptr ResourceManager::getPhysicsObjectAttributes(
 }
 
 bool ResourceManager::loadObjectMeshDataFromFile(
-    const std::string& fileName,
+    const std::string& filename,
     const std::string& objectTemplateHandle,
     const std::string& meshType,
     const bool requiresLighting) {
@@ -575,7 +584,7 @@ bool ResourceManager::loadObjectMeshDataFromFile(
     success = loadGeneralMeshData(meshInfo);
     if (!success) {
       LOG(ERROR) << "Failed to load a physical object's " << meshType
-                 << " mesh: " << objectTemplateHandle << ", " << fileName;
+                 << " mesh: " << objectTemplateHandle << ", " << filename;
     }
   }
   return success;
@@ -659,14 +668,6 @@ int ResourceManager::loadObjectTemplate(
   int objectTemplateID = putObjTemplateAttrInLibMap(
       objectTemplate, objectTemplateHandle, physicsObjTmpltLibByID_);
 
-  // int objectTemplateID = physicsObjTemplateLibrary_.size();
-  // objectTemplate->setObjectTemplateID(objectTemplateID);
-
-  // // cache metaData, collision mesh Group
-  // physicsObjTemplateLibrary_.emplace(objectTemplateHandle, objectTemplate);
-
-  // physicsObjTmpltLibByID_.emplace(objectTemplateID, objectTemplateHandle);
-
   return objectTemplateID;
 }  // loadObjectTemplate
 
@@ -680,7 +681,15 @@ std::string ResourceManager::getRandomTemplateHandle(
     return "";
   }
   int randIDX = rand() % numVals;
-  return mapOfHandles.at(randIDX);
+
+  std::string res;
+  for (std::pair<std::map<int, std::string>::iterator, int> iter(
+           mapOfHandles.begin(), 0);
+       (iter.first != mapOfHandles.end() && iter.second <= randIDX);
+       ++iter.first, ++iter.second) {
+    res = iter.first->second;
+  }
+  return res;
 
 }  // getRandTemplateHandle
 

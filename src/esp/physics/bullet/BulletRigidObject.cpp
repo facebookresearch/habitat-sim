@@ -35,6 +35,20 @@ BulletRigidObject::BulletRigidObject(
       MotionState(*rigidBodyNode),
       bWorld_(bWorld) {}
 
+BulletRigidObject::~BulletRigidObject() {
+  if (rigidObjectType_ == RigidObjectType::OBJECT &&
+      objectMotionType_ != MotionType::STATIC) {
+    // remove rigid body from the world
+    bWorld_->removeRigidBody(bObjectRigidBody_.get());
+  } else if (rigidObjectType_ == RigidObjectType::SCENE ||
+             objectMotionType_ == MotionType::STATIC) {
+    // remove collision objects from the world
+    for (auto& co : bSceneCollisionObjects_) {
+      bWorld_->removeCollisionObject(co.get());
+    }
+  }
+  bWorld_.reset();
+}
 bool BulletRigidObject::initializeSceneFinalize(
     const assets::ResourceManager& resMgr,
     const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
@@ -263,21 +277,6 @@ void BulletRigidObject::setCollisionFromBB() {
 
     setInertiaVector(Magnum::Vector3(bInertia));
   }
-}
-
-BulletRigidObject::~BulletRigidObject() {
-  if (rigidObjectType_ == RigidObjectType::OBJECT &&
-      objectMotionType_ != MotionType::STATIC) {
-    // remove rigid body from the world
-    bWorld_->removeRigidBody(bObjectRigidBody_.get());
-  } else if (rigidObjectType_ == RigidObjectType::SCENE ||
-             objectMotionType_ == MotionType::STATIC) {
-    // remove collision objects from the world
-    for (auto& co : bSceneCollisionObjects_) {
-      bWorld_->removeCollisionObject(co.get());
-    }
-  }
-  bWorld_.reset();
 }
 
 bool BulletRigidObject::isActive() {

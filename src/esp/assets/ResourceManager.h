@@ -102,8 +102,7 @@ enum class PrimObjTypes : uint32_t {
   ICOSPHERE_SOLID,
   /**
    * Primitive object corresponding to Magnum::Primitives::icosphereWireframe
-   * DOES NOT EXIST
-   * TODO: can/should this be added?
+   * MAGNUM CONSTRUCTION IS IN PROGRESS
    */
   // ICOSPHERE_WF,
   /**
@@ -120,12 +119,12 @@ enum class PrimObjTypes : uint32_t {
   END_PRIM_OBJ_TYPES
 };
 
-constexpr const char* Names3D[]{"capsule3DSolid", "capsule3DWireframe",
-                                "coneSolid", "coneWireframe", "cubeSolid",
-                                "cubeWireframe", "cylinderSolid",
-                                "cylinderWireframe", "icosphereSolid",
-                                //"icosphereWireframe",
-                                "uvSphereSolid", "uvSphereWireframe"};
+constexpr const char* PrimitiveNames3D[]{
+    "capsule3DSolid", "capsule3DWireframe", "coneSolid", "coneWireframe",
+    "cubeSolid", "cubeWireframe", "cylinderSolid", "cylinderWireframe",
+    "icosphereSolid",
+    //"icosphereWireframe",
+    "uvSphereSolid", "uvSphereWireframe"};
 
 /**
  * @brief Singleton class responsible for
@@ -609,9 +608,9 @@ class ResourceManager {
    * attributes
    * @param physicsManager The currently defined @ref physics::PhysicsManager.
    * Will be reseted to the configured physics implementation.
-   * @param physicsFilename The physics configuration file from which to
-   * re-instatiate the @ref physics::PhysicsManager and parse object templates
-   * for the
+   * @param physicsManagerAttributes The physics configuration from which
+   * to re-instatiate the @ref physics::PhysicsManager and parse object
+   * templates for the
    * @ref physicsObjTemplateLibrary_. Defaults to the file location @ref
    * ESP_DEFAULT_PHYS_SCENE_CONFIG set by cmake.*/
   void initPhysicsManager(
@@ -622,7 +621,7 @@ class ResourceManager {
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
    * specified @ref meshType used by @ref objectTemplateHandle
    *
-   * @param fileName the name of the file describing this mesh
+   * @param filename the name of the file describing this mesh
    * @param objectTemplateHandle the handle for the object attributes owning
    * this mesh (for error log output)
    * @param meshType either "render" or "collision" (for error log output)
@@ -630,7 +629,7 @@ class ResourceManager {
    * lighting
    * @return whether or not the mesh was loaded successfully
    */
-  bool loadObjectMeshDataFromFile(const std::string& fileName,
+  bool loadObjectMeshDataFromFile(const std::string& filename,
                                   const std::string& objectTemplateHandle,
                                   const std::string& meshType,
                                   const bool requiresLighting);

@@ -22,6 +22,7 @@ AbstractPhysicsAttributes::AbstractPhysicsAttributes(
 }
 // PhysicsAttributes is abstract; virtual destructor deleted; definition
 // required so instancing class can destroy base
+// Removed due to pybind11 issues with abstract classes in inheritance hierarchy
 // AbstractPhysAttributes::~AbstractPhysAttributes() {}
 
 PhysicsObjectAttributes::PhysicsObjectAttributes(
@@ -45,8 +46,67 @@ PhysicsObjectAttributes::PhysicsObjectAttributes(
 
 // PhysicsPrimitiveObjAttributes is abstract; virtual destructor deleted;
 // definition required so instancing class can destroy base
-// REMOVED FOR PYBIND COMPATIBILITY
+// Removed due to pybind11 issues with abstract classes in inheritance hierarchy
 // AbstractPhysPrimObjAttributes::~AbstractPhysPrimObjAttributes() {}
+
+PhysicsCapsulePrimAttributes::PhysicsCapsulePrimAttributes(
+    bool isWireframe,
+    const std::string& primObjType)
+    : AbstractPhysPrimObjAttributes(isWireframe, primObjType) {
+  setCylinderRings(1);
+  if (!isWireframe) {  // solid
+    setHemisphereRings(4);
+    setNumSegments(12);
+    setHalfLength(0.75);
+  } else {  // wireframe
+    setHemisphereRings(8);
+    setNumSegments(16);
+    setHalfLength(1.0);
+  }
+}  // PhysicsCapsulePrimAttributes
+
+PhysicsConePrimAttributes::PhysicsConePrimAttributes(
+    bool isWireframe,
+    const std::string& primObjType)
+    : AbstractPhysPrimObjAttributes(isWireframe, primObjType) {
+  setHalfLength(1.25);
+
+  if (!isWireframe) {  // solid
+    setNumRings(1);
+    setNumSegments(12);
+    setCapEnd(true);
+  } else {  // wireframe
+    setNumSegments(32);
+  }
+}  // PhysicsConePrimAttributes
+
+PhysicsCylinderPrimAttributes::PhysicsCylinderPrimAttributes(
+    bool isWireframe,
+    const std::string& primObjType)
+    : AbstractPhysPrimObjAttributes(isWireframe, primObjType) {
+  setNumRings(1);
+  setHalfLength(1.0);
+
+  if (!isWireframe) {  // solid
+    setNumSegments(12);
+    setCapEnds(true);
+  } else {  // wireframe
+    setNumSegments(32);
+  }
+}  // PhysicsCylinderPrimAttributes
+
+PhysicsUVSpherePrimAttributes::PhysicsUVSpherePrimAttributes(
+    bool isWireframe,
+    const std::string& primObjType)
+    : AbstractPhysPrimObjAttributes(isWireframe, primObjType) {
+  if (!isWireframe) {  // solid
+    setNumRings(8);
+    setNumSegments(16);
+  } else {  // wireframe
+    setNumRings(16);
+    setNumSegments(32);
+  }
+}  // PhysicsUVSpherePrimAttributes
 
 PhysicsSceneAttributes::PhysicsSceneAttributes(const std::string& originHandle)
     : AbstractPhysicsAttributes(originHandle) {

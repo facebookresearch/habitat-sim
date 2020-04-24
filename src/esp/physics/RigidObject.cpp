@@ -40,13 +40,12 @@ bool RigidObject::initializeObject(
     const assets::ResourceManager& resMgr,
     const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
-  // TODO (JH): Handling static/kinematic object type
   if (rigidObjectType_ != RigidObjectType::NONE) {
     LOG(ERROR) << "Cannot initialize a RigidObject more than once";
     return false;
   }
 
-  //! Turn on scene flag
+  //! Turn on object type flag
   rigidObjectType_ = RigidObjectType::OBJECT;
 
   // save a copy of the template at initialization time
