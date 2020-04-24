@@ -419,10 +419,6 @@ void PhysicsManager::setInertiaVector(const int physObjectID,
   assertIDValidity(physObjectID);
   existingObjects_.at(physObjectID)->setInertiaVector(inertia);
 }
-void PhysicsManager::setScale(const int physObjectID, const double scale) {
-  assertIDValidity(physObjectID);
-  existingObjects_.at(physObjectID)->setScale(scale);
-}
 void PhysicsManager::setFrictionCoefficient(const int physObjectID,
                                             const double frictionCoefficient) {
   assertIDValidity(physObjectID);
@@ -468,7 +464,7 @@ Magnum::Matrix3 PhysicsManager::getInertiaMatrix(const int physObjectID) const {
   return existingObjects_.at(physObjectID)->getInertiaMatrix();
 }
 
-double PhysicsManager::getScale(const int physObjectID) const {
+Magnum::Vector3 PhysicsManager::getScale(const int physObjectID) const {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getScale();
 }

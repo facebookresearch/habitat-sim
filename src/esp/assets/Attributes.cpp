@@ -14,7 +14,7 @@ namespace assets {
 PhysicsObjectAttributes::PhysicsObjectAttributes() : Configuration() {
   // fill necessary attribute defaults
   setMass(1.0);
-  setMargin(0.01);
+  setMargin(0.04);
   setScale({1.0, 1.0, 1.0});
   setCOM({0, 0, 0});
   setInertia({0, 0, 0});
