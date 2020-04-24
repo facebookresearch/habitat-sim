@@ -456,12 +456,12 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual double getMass() { return 0.0; }
 
-  /** @brief Get the uniform scale of the object.
-   * @return The scalar uniform scale for the object relative to its
-   * initially loaded meshes.
-   * @todo !!! not implemented !!!
+  /** @brief Get the scale of the object set during initialization.
+   * @return The scaling for the object relative to its initially loaded meshes.
    */
-  virtual double getScale() { return 0.0; }
+  virtual Magnum::Vector3 getScale() {
+    return initializationAttributes_->getScale();
+  }
 
   /** @brief Get the scalar friction coefficient of the object. Only used for
    * dervied dynamic implementations of @ref RigidObject.
@@ -527,13 +527,6 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual void setInertiaVector(
       CORRADE_UNUSED const Magnum::Vector3& inertia){};
-
-  /** @brief Set the uniform scale of the object.
-   * @param scale The new scalar uniform scale for the object relative to its
-   * initially loaded meshes.
-   * @todo !!! not implemented !!!
-   */
-  virtual void setScale(CORRADE_UNUSED const double scale){};
 
   /** @brief Set the scalar friction coefficient of the object. Only used for
    * dervied dynamic implementations of @ref RigidObject.

@@ -45,6 +45,7 @@ struct SimulatorConfiguration {
   // enable or disable the frustum culling
   bool frustumCulling = true;
   bool enablePhysics = false;
+  bool loadSemanticMesh = true;
   std::string physicsConfigFile =
       "./data/default.phys_scene_config.json";  // should we instead link a
                                                 // PhysicsManagerConfiguration

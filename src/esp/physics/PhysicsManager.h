@@ -485,15 +485,6 @@ class PhysicsManager {
    */
   void setInertiaVector(const int physObjectID, const Magnum::Vector3& inertia);
 
-  /** @brief Set the uniform scale for an object.
-   * See @ref RigidObject::setScale.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param scale The new scalar uniform scale for the object relative to its
-   * initially loaded meshes.
-   */
-  void setScale(const int physObjectID, const double scale);
-
   /** @brief Set the scalar friction coefficient for an object.
    * See @ref RigidObject::setFrictionCoefficient.
    * @param  physObjectID The object ID and key identifying the object in @ref
@@ -565,14 +556,13 @@ class PhysicsManager {
    */
   Magnum::Matrix3 getInertiaMatrix(const int physObjectID) const;
 
-  /** @brief Get the scalar uniform scale of an object.
+  /** @brief Get the scale of an object set during initialization.
    * See @ref RigidObject::getScale.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @return The uniform scale of the object relative to its initialy loaded
-   * meshes.
+   * @return The scaling of the object relative to its initialy loaded meshes.
    */
-  double getScale(const int physObjectID) const;
+  Magnum::Vector3 getScale(const int physObjectID) const;
 
   /** @brief Get the scalar coefficient of friction of an object.
    * See @ref RigidObject::getFrictionCoefficient.
@@ -935,11 +925,6 @@ class PhysicsManager {
   /** @brief Tracks whether or not this @ref PhysicsManager has already been
    * initialized with @ref initPhysics. */
   bool initialized_ = false;
-
-  /** @brief Determines the maximum number of @ref fixedTimeStep_ allowed per
-   * each call of @ref stepPhysics only for @ref BulletPhysicsManager. Has no
-   * effect on @ref PhysicsManager base class. Candidate for removal... */
-  int maxSubSteps_ = 10;
 
   /** @brief The fixed amount of time over which to integrate the simulation in
    * discrete steps within @ref stepPhysics. Lower values result in better

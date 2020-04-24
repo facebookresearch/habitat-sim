@@ -50,7 +50,9 @@ bool RigidObject::initializeObject(
   //! Turn on scene flag
   rigidObjectType_ = RigidObjectType::OBJECT;
 
-  initializationAttributes_ = physicsObjectAttributes;
+  // save a copy of the template at initialization time
+  initializationAttributes_ = esp::assets::PhysicsObjectAttributes::create(
+      *physicsObjectAttributes.get());
 
   return initializeObjectFinalize(resMgr, physicsObjectAttributes, meshGroup);
 }
