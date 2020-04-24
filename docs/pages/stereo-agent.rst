@@ -11,9 +11,9 @@ Example is runnable via
 
 .. code:: shell-session
 
-    $ python examples/stereo_agent.py
+    $ python examples/tutorials/stereo_agent.py
 
-.. include:: ../../examples/stereo_agent.py
+.. include:: ../../examples/tutorials/stereo_agent.py
     :code: py
     :class: m-console-wrap
     :start-line: 5

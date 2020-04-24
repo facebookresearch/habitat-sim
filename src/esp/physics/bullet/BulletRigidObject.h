@@ -270,13 +270,6 @@ class BulletRigidObject : public RigidObject,
    */
   Magnum::Matrix3 getInertiaMatrix() override;
 
-  /** @brief Get the uniform scale of the object.
-   * @return The scalar uniform scale for the object relative to its
-   * initially loaded meshes.
-   * @todo !!! not implemented properly!!!
-   */
-  double getScale() override;
-
   /** @brief Get the scalar friction coefficient of the object.
    * See @ref btCollisionObject::getFriction.
    * @return The scalar friction coefficient of the object.
@@ -333,13 +326,6 @@ class BulletRigidObject : public RigidObject,
    * @param inertia The new diagonal for the object's inertia matrix.
    */
   void setInertiaVector(const Magnum::Vector3& inertia) override;
-
-  /** @brief Set the uniform scale of the object.
-   * @param scale The new scalar uniform scale for the object relative to its
-   * initially loaded meshes.
-   * @todo !!! not implemented !!!
-   */
-  void setScale(const double scale) override;
 
   /** @brief Set the scalar friction coefficient of the object.
    * See @ref btCollisionObject::setFriction.

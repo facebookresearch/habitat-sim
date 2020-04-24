@@ -164,7 +164,7 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   // ==== Physics stepforward ======
   // NOTE: worldTime_ will always be a multiple of sceneMetaData_.timestep
   int numSubStepsTaken =
-      bWorld_->stepSimulation(dt, maxSubSteps_, fixedTimeStep_);
+      bWorld_->stepSimulation(dt, /*maxSubSteps*/ 10000, fixedTimeStep_);
   worldTime_ += numSubStepsTaken * fixedTimeStep_;
 }
 

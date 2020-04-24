@@ -250,7 +250,8 @@ bool operator==(const SimulatorConfiguration& a,
          a.createRenderer == b.createRenderer &&
          a.enablePhysics == b.enablePhysics &&
          a.physicsConfigFile.compare(b.physicsConfigFile) == 0 &&
-         a.loadSemanticMesh == b.loadSemanticMesh;
+         a.loadSemanticMesh == b.loadSemanticMesh &&
+         a.sceneLightSetup.compare(b.sceneLightSetup) == 0;
 }
 
 bool operator!=(const SimulatorConfiguration& a,

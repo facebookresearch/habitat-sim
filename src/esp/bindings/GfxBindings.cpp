@@ -114,12 +114,16 @@ void initGfxBindings(py::module& m) {
       .def("render_enter", &RenderTarget::renderEnter)
       .def("render_exit", &RenderTarget::renderExit);
 
-  py::enum_<LightPositionModel>(m, "LightPositionModel")
+  py::enum_<LightPositionModel>(
+      m, "LightPositionModel",
+      R"(Defines the coordinate frame of a point light source.)")
       .value("CAMERA", LightPositionModel::CAMERA)
       .value("GLOBAL", LightPositionModel::GLOBAL)
       .value("OBJECT", LightPositionModel::OBJECT);
 
-  py::class_<LightInfo>(m, "LightInfo")
+  py::class_<LightInfo>(
+      m, "LightInfo",
+      R"(Defines the position, color and LightPositionModel of a single point light source.)")
       .def(py::init())
       .def(py::init<Magnum::Vector3, Magnum::Color4, LightPositionModel>(),
            "position"_a, "color"_a = Magnum::Color4{1},
