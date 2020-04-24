@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_ASSETS_RESOURCEMANAGER_H_
+#define ESP_ASSETS_RESOURCEMANAGER_H_
 
 /** @file
  * @brief Class @ref esp::assets::ResourceManager, enum @ref
@@ -643,7 +644,7 @@ class ResourceManager {
    * @param primTemplate the template of the primtive of interest
    */
   int putPrimObjTmpltAttrInLibMap(
-      AbstractPhysPrimObjAttributes::ptr primTemplate);
+      PhysicsPrimitiveObjectAttributes::ptr primTemplate);
 
   /**
    * @brief Put object template attributes in template map and in passed
@@ -662,6 +663,17 @@ class ResourceManager {
                                  const std::string& objectTemplateHandle,
                                  std::map<int, std::string>& mapOfNames);
 
+  /**
+   * @brief Construct a @ref LoadedAssetData structure for the passed primitive
+   * template if one does not already exist and place it in @ref resourceDict_
+   *
+   * @param primTemplate the primitive template, configured as desired
+   * @param primMesh compiled mesh constructed for the particular primitive
+   *
+   */
+  void buildAndSetPrimitiveAssetData(
+      PhysicsPrimitiveObjectAttributes::ptr primTemplate);
+  // end private
  protected:
   /**
    * @brief Data for a loaded asset
@@ -1096,3 +1108,5 @@ class ResourceManager {
 
 }  // namespace assets
 }  // namespace esp
+
+#endif  // ESP_ASSETS_RESOURCEMANAGER_H_

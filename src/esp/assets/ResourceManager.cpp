@@ -122,6 +122,26 @@ void ResourceManager::initDefaultPrimAttributes() {
       true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::UVSPHERE_WF)]);
   putPrimObjTmpltAttrInLibMap(uvSphereWFAttr);
 
+  // configuration for PrimitiveImporter
+  auto conf = primImporter->configuration();
+
+  for (std::pair<int, std::string> entry : physicsPrimTmpltLibByID_) {
+    // for every attribute, instance a mesh, and set this to be render mesh
+
+    std::string attrKey = entry.second;
+    PhysicsPrimitiveObjectAttributes& attr =
+        static_cast<PhysicsPrimitiveObjectAttributes&>(
+            *physicsObjTemplateLibrary_.at(attrKey));
+
+    LOG(INFO) << "ID : " << entry.first
+              << " : attr lib key : " << attr.getOriginHandle()
+              << " | instance class : " << attr.getPrimObjType()
+              << " | Conf has group for this obj type : "
+              << conf.hasGroup(attr.getPrimObjType());
+  }
+
+  LOG(INFO) << "built primitive templates: "
+            << std::to_string(physicsPrimTmpltLibByID_.size());
 }  // initDefaultPrimAttributes
 
 bool ResourceManager::loadScene(
@@ -588,8 +608,8 @@ void ResourceManager::addObjectToDrawables(
     // Meta data and collision mesh
     PhysicsObjectAttributes::ptr physicsObjectAttributes =
         physicsObjTemplateLibrary_.at(objPhysConfigFilename);
-    std::vector<CollisionMeshData> meshGroup = collisionMeshGroups_.at(
-        physicsObjectAttributes->getCollisionMeshHandle());
+    // std::vector<CollisionMeshData> meshGroup = collisionMeshGroups_.at(
+    //     physicsObjectAttributes->getCollisionMeshHandle());
 
     const std::string& renderMeshFileName =
         physicsObjectAttributes->getRenderMeshHandle();
@@ -637,7 +657,7 @@ bool ResourceManager::loadObjectMeshDataFromFile(
 }  // loadObjectMeshDataFromFile
 
 int ResourceManager::putPrimObjTmpltAttrInLibMap(
-    AbstractPhysPrimObjAttributes::ptr objectTemplate) {
+    PhysicsPrimitiveObjectAttributes::ptr objectTemplate) {
   return putObjTemplateAttrInLibMap(objectTemplate,
                                     objectTemplate->getOriginHandle(),
                                     physicsPrimTmpltLibByID_);
@@ -1116,6 +1136,53 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
   meshDataGL->BB = meshDataGL->BB.translated(translation);
 }
 
+void ResourceManager::buildAndSetPrimitiveAssetData(
+    PhysicsPrimitiveObjectAttributes::ptr primTemplate) {
+  // unique name of attributes
+  const std::string& primConfigName = primTemplate->getOriginHandle();
+  // check if present already TODO when editing materials, will need to include
+  // material data in name construction
+  if (resourceDict_.count(primConfigName) > 0) {
+    LOG(INFO) << "Entry for " << primConfigName
+              << " is already present in resourceDict_";
+    return;
+  }
+
+  AssetInfo primMeshInfo{.type = AssetType::PRIMITIVE,
+                         .filepath = primConfigName};
+  primMeshInfo.requiresLighting = true;
+  LoadedAssetData primAssetData{.assetInfo = primMeshInfo};
+  // set primitive material based on passed attributes template, only 1 material
+  // to set
+  int materialStart = nextMaterialID_;
+  int materialEnd = materialStart;
+  primAssetData.meshMetaData.setMaterialIndices(materialStart, materialEnd);
+
+  std::unique_ptr<gfx::MaterialData> finalMaterial =
+      gfx::PhongMaterialData::create_unique();
+
+  // TODO should change key to something more descriptive and useful
+  shaderManager_.set(std::to_string(nextMaterialID_++),
+                     finalMaterial.release());
+  // end set materials
+
+  // set primitive mesh - only 1 mesh to set
+  int meshStart = meshes_.size();
+  int meshEnd = meshStart;
+  primAssetData.meshMetaData.setMeshIndices(meshStart, meshEnd);
+
+  std::string primClassName = primTemplate->getPrimObjType();
+
+  auto primMesh = primImporter->mesh(primClassName);
+  // auto meshPtr =
+  //     std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*primMesh));
+
+  // meshes_.emplace_back(std::move(meshPtr));
+  // put constructed LoadedAssetData into resourceDict_
+  // resourceDict_.emplace(primConfigName, primAssetData);
+
+}  // buildAndSetPrimitiveAssetData
+
 bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
                                        scene::SceneNode* parent,
                                        DrawableGroup* drawables) {
@@ -1367,6 +1434,9 @@ bool ResourceManager::loadGeneralMeshData(
     }
 
     LOG(INFO) << "Filename : " << filename
+              << " | info.type : " << static_cast<int>(info.type)
+              << " | info.filepath : " << info.filepath
+              << " | frame : " << info.frame.toJson()
               << " | # of meshes in importer : " << importer->meshCount()
               << " | # of textures : " << importer->textureCount()
               << " | # of materials : " << importer->materialCount()

@@ -418,13 +418,11 @@ class BulletRigidObject : public RigidObject,
    * @param physicsObjectAttributes The template structure defining relevant
    * phyiscal parameters for the object. See @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_.
-   * @param meshGroup The collision mesh data for the object.
    * @return true if initialized successfully, false otherwise.
    */
-  bool initializeObjectFinalize(
-      const assets::ResourceManager& resMgr,
-      const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-      const std::vector<assets::CollisionMeshData>& meshGroup) override;
+  bool initializeObjectFinalize(assets::ResourceManager& resMgr,
+                                const assets::PhysicsObjectAttributes::ptr
+                                    physicsObjectAttributes) override;
 
  protected:
   /**

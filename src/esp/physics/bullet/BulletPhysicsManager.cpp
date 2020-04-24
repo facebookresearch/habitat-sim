@@ -57,12 +57,11 @@ bool BulletPhysicsManager::addSceneFinalize(
 
 bool BulletPhysicsManager::makeAndAddRigidObject(
     int newObjectID,
-    const std::vector<assets::CollisionMeshData>& meshGroup,
     assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
     scene::SceneNode* objectNode) {
   auto ptr = physics::BulletRigidObject::create_unique(objectNode, bWorld_);
-  bool objSuccess = ptr->initializeObject(resourceManager_,
-                                          physicsObjectAttributes, meshGroup);
+  bool objSuccess =
+      ptr->initializeObject(resourceManager_, physicsObjectAttributes);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }

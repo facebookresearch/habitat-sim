@@ -66,6 +66,14 @@ class AbstractPhysicsAttributes : public esp::core::Configuration {
     return getString("collisionMeshHandle");
   }
 
+  // whether this object uses mesh collision or primitive(implicit) collision
+  // shapes
+  void setUseMeshCollision(bool useMeshCollision) {
+    setBool("useMeshCollision", useMeshCollision);
+  }
+
+  bool getUseMeshCollision() const { return getBool("useMeshCollision"); }
+
  protected:
   std::string getBoolDispStr(bool val) { return (val ? "true" : "false"); }
 
@@ -154,13 +162,15 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
 //! functionality.  Should not be directly instanced.  Forced to not be abstract
 //! due to pybind11 issues with abstract class inheritance hierarchy
 //! preservation
-class AbstractPhysPrimObjAttributes : public PhysicsObjectAttributes {
+class PhysicsPrimitiveObjectAttributes : public PhysicsObjectAttributes {
  public:
-  AbstractPhysPrimObjAttributes(bool isWireframe,
-                                const std::string& primObjType)
+  PhysicsPrimitiveObjectAttributes(bool isWireframe,
+                                   const std::string& primObjType)
       : PhysicsObjectAttributes("") {
     setIsWireframe(isWireframe);
     setPrimObjType(primObjType);
+    // primitives will use implicit collisions
+    setUseMeshCollision(false);
     if (!isWireframe) {  // solid
       setUseTextureCoords(false);
       setUseTangents(false);
@@ -207,21 +217,19 @@ class AbstractPhysPrimObjAttributes : public PhysicsObjectAttributes {
     buildOriginHandle();  // build handle based on config
   }
   int getNumSegments() const { return getInt("segments"); }
+  // capsule, cone and cylinder use halfLength
+  void setHalfLength(double halfLength) { setDouble("halfLength", halfLength); }
+  double getHalfLength() const { return getDouble("halfLength"); }
+
+  Corrade::Utility::ConfigurationGroup getConfigGroup() const { return cfg; }
+
+  std::string getPrimObjType() const { return getString("primObjType"); }
 
  private:
   // should never change, only set by ctor
   void setPrimObjType(std::string primObjType) {
     setString("primObjType", primObjType);
   }
-
- public:
-  std::string getPrimObjType() const { return getString("primObjType"); }
-
-  // capsule, cone and cylinder use halfLength
-  void setHalfLength(double halfLength) { setDouble("halfLength", halfLength); }
-  double getHalfLength() const { return getDouble("halfLength"); }
-
-  Corrade::Utility::ConfigurationGroup getConfigGroup() const { return cfg; }
 
  protected:
   void buildOriginHandle() {
@@ -234,11 +242,11 @@ class AbstractPhysPrimObjAttributes : public PhysicsObjectAttributes {
   virtual std::string buildOriginHandleIndiv() { return ""; }
 
  public:
-  ESP_SMART_POINTERS(AbstractPhysPrimObjAttributes)
+  ESP_SMART_POINTERS(PhysicsPrimitiveObjectAttributes)
 };  // class PhysicsPrimitiveObjAttributes
 
 //! attributes describing primitive capsule objects
-class PhysicsCapsulePrimAttributes : public AbstractPhysPrimObjAttributes {
+class PhysicsCapsulePrimAttributes : public PhysicsPrimitiveObjectAttributes {
  public:
   PhysicsCapsulePrimAttributes(bool isWireframe,
                                const std::string& primObjType);
@@ -268,7 +276,7 @@ class PhysicsCapsulePrimAttributes : public AbstractPhysPrimObjAttributes {
   ESP_SMART_POINTERS(PhysicsCapsulePrimAttributes)
 };  // class PhysicsCapsulePrimAttributes
 
-class PhysicsConePrimAttributes : public AbstractPhysPrimObjAttributes {
+class PhysicsConePrimAttributes : public PhysicsPrimitiveObjectAttributes {
  public:
   PhysicsConePrimAttributes(bool isWireframe, const std::string& primObjType);
 
@@ -295,17 +303,17 @@ class PhysicsConePrimAttributes : public AbstractPhysPrimObjAttributes {
   ESP_SMART_POINTERS(PhysicsConePrimAttributes)
 };  // class PhysicsConePrimAttributes
 
-class PhysicsCubePrimAttributes : public AbstractPhysPrimObjAttributes {
+class PhysicsCubePrimAttributes : public PhysicsPrimitiveObjectAttributes {
  public:
   PhysicsCubePrimAttributes(bool isWireframe, const std::string& primObjType)
-      : AbstractPhysPrimObjAttributes(isWireframe, primObjType) {
+      : PhysicsPrimitiveObjectAttributes(isWireframe, primObjType) {
     buildOriginHandle();  // build handle based on config
   }
 
   ESP_SMART_POINTERS(PhysicsCubePrimAttributes)
 };  // class PhysicsCubePrimAttributes
 
-class PhysicsCylinderPrimAttributes : public AbstractPhysPrimObjAttributes {
+class PhysicsCylinderPrimAttributes : public PhysicsPrimitiveObjectAttributes {
  public:
   PhysicsCylinderPrimAttributes(bool isWireframe,
                                 const std::string& primObjType);
@@ -332,12 +340,12 @@ class PhysicsCylinderPrimAttributes : public AbstractPhysPrimObjAttributes {
   ESP_SMART_POINTERS(PhysicsCylinderPrimAttributes)
 };  // class PhysicsCylinderPrimAttributes
 
-class PhysicsIcospherePrimAttributes : public AbstractPhysPrimObjAttributes {
+class PhysicsIcospherePrimAttributes : public PhysicsPrimitiveObjectAttributes {
  public:
   // note there is no magnum primitive implementation of a wireframe icosphere
   PhysicsIcospherePrimAttributes(bool isWireframe,
                                  const std::string& primObjType)
-      : AbstractPhysPrimObjAttributes(isWireframe, primObjType) {
+      : PhysicsPrimitiveObjectAttributes(isWireframe, primObjType) {
     // setting manually because wireframe icosphere does not currently support
     // subdiv > 1 and setSubdivisions checks for wireframe
     setInt("subdivisions", 1);
@@ -363,7 +371,7 @@ class PhysicsIcospherePrimAttributes : public AbstractPhysPrimObjAttributes {
   ESP_SMART_POINTERS(PhysicsIcospherePrimAttributes)
 };  // class PhysicsIcospherePrimAttributes
 
-class PhysicsUVSpherePrimAttributes : public AbstractPhysPrimObjAttributes {
+class PhysicsUVSpherePrimAttributes : public PhysicsPrimitiveObjectAttributes {
  public:
   PhysicsUVSpherePrimAttributes(bool isWireframe,
                                 const std::string& primObjType);

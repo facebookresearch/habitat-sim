@@ -67,13 +67,9 @@ bool BulletRigidObject::initializeSceneFinalize(
 }  // end BulletRigidObject::initializeScene
 
 bool BulletRigidObject::initializeObjectFinalize(
-    const assets::ResourceManager& resMgr,
-    const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-    const std::vector<assets::CollisionMeshData>& meshGroup) {
+    assets::ResourceManager& resMgr,
+    const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes) {
   objectMotionType_ = MotionType::DYNAMIC;
-
-  const assets::MeshMetaData& metaData =
-      resMgr.getMeshMetaData(physicsObjectAttributes->getCollisionMeshHandle());
 
   //! Physical parameters
   double margin = physicsObjectAttributes->getMargin();
@@ -90,18 +86,31 @@ bool BulletRigidObject::initializeObjectFinalize(
   //! The components are combined into a convex compound shape
   bObjectShape_ = std::make_unique<btCompoundShape>();
 
-  if (!usingBBCollisionShape_) {
-    constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup,
-                                      metaData.root, joinCollisionMeshes);
+  if (!physicsObjectAttributes
+           ->getUseMeshCollision()) {  // if using prim collider
+    // prim stuff here
 
-    // add the final object after joining meshes
-    if (joinCollisionMeshes) {
-      bObjectConvexShapes_.back()->setMargin(0.0);
-      bObjectConvexShapes_.back()->recalcLocalAabb();
-      bObjectShape_->addChildShape(btTransform::getIdentity(),
-                                   bObjectConvexShapes_.back().get());
+  } else {
+    // originHandle is key in maps of relelvant quantities in resource manager
+    const std::string configFile = physicsObjectAttributes->getOriginHandle();
+
+    const std::vector<assets::CollisionMeshData>& meshGroup =
+        resMgr.getCollisionMesh(configFile);
+    const assets::MeshMetaData& metaData = resMgr.getMeshMetaData(
+        physicsObjectAttributes->getCollisionMeshHandle());
+    if (!usingBBCollisionShape_) {
+      constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup,
+                                        metaData.root, joinCollisionMeshes);
+
+      // add the final object after joining meshes
+      if (joinCollisionMeshes) {
+        bObjectConvexShapes_.back()->setMargin(0.0);
+        bObjectConvexShapes_.back()->recalcLocalAabb();
+        bObjectShape_->addChildShape(btTransform::getIdentity(),
+                                     bObjectConvexShapes_.back().get());
+      }
     }
-  }
+  }  // if using mesh collider
 
   //! Set properties
   bObjectShape_->setMargin(margin);

@@ -36,6 +36,8 @@ PhysicsObjectAttributes::PhysicsObjectAttributes(
   setInertia({0, 0, 0});
   setLinearDamping(0.2);
   setAngularDamping(0.2);
+  // default collisions will be mesh for physics objects
+  setUseMeshCollision(true);
 
   setBoundingBoxCollisions(false);
   setJoinCollisionMeshes(true);
@@ -52,7 +54,7 @@ PhysicsObjectAttributes::PhysicsObjectAttributes(
 PhysicsCapsulePrimAttributes::PhysicsCapsulePrimAttributes(
     bool isWireframe,
     const std::string& primObjType)
-    : AbstractPhysPrimObjAttributes(isWireframe, primObjType) {
+    : PhysicsPrimitiveObjectAttributes(isWireframe, primObjType) {
   setCylinderRings(1);
   if (!isWireframe) {  // solid
     setHemisphereRings(4);
@@ -69,7 +71,7 @@ PhysicsCapsulePrimAttributes::PhysicsCapsulePrimAttributes(
 PhysicsConePrimAttributes::PhysicsConePrimAttributes(
     bool isWireframe,
     const std::string& primObjType)
-    : AbstractPhysPrimObjAttributes(isWireframe, primObjType) {
+    : PhysicsPrimitiveObjectAttributes(isWireframe, primObjType) {
   setHalfLength(1.25);
 
   if (!isWireframe) {  // solid
@@ -85,7 +87,7 @@ PhysicsConePrimAttributes::PhysicsConePrimAttributes(
 PhysicsCylinderPrimAttributes::PhysicsCylinderPrimAttributes(
     bool isWireframe,
     const std::string& primObjType)
-    : AbstractPhysPrimObjAttributes(isWireframe, primObjType) {
+    : PhysicsPrimitiveObjectAttributes(isWireframe, primObjType) {
   setNumRings(1);
   setHalfLength(1.0);
 
@@ -101,7 +103,7 @@ PhysicsCylinderPrimAttributes::PhysicsCylinderPrimAttributes(
 PhysicsUVSpherePrimAttributes::PhysicsUVSpherePrimAttributes(
     bool isWireframe,
     const std::string& primObjType)
-    : AbstractPhysPrimObjAttributes(isWireframe, primObjType) {
+    : PhysicsPrimitiveObjectAttributes(isWireframe, primObjType) {
   if (!isWireframe) {  // solid
     setNumRings(8);
     setNumSegments(16);
