@@ -297,6 +297,11 @@ class Simulator:
     ):
         return self._sim.add_object(object_lib_index, attachment_node, light_setup_key)
 
+    def add_test_object(
+        self, attachment_node=None, light_setup_key=DEFAULT_LIGHTING_KEY,
+    ):
+        return self._sim.add_test_object(attachment_node, light_setup_key)
+
     def remove_object(
         self, object_id, delete_object_node=True, delete_visual_node=True
     ):

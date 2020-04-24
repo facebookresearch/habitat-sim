@@ -37,7 +37,7 @@ def test_kinematics(sim):
     assert sim.get_physics_object_library_size() > 0
 
     # test adding an object to the world
-    object_id = sim.add_object(0)
+    object_id = sim.add_test_object()
     assert len(sim.get_existing_object_ids()) > 0
 
     # test setting the motion type
@@ -77,7 +77,7 @@ def test_kinematics(sim):
     old_object_id = sim.remove_object(object_id)
     assert len(sim.get_existing_object_ids()) == 0
 
-    object_id = sim.add_object(0)
+    object_id = sim.add_test_object()
 
     prev_time = 0.0
     for _ in range(2):
@@ -96,7 +96,7 @@ def test_kinematics(sim):
 
     # test attaching/dettaching an Agent to/from physics simulation
     agent_node = sim.agents[0].scene_node
-    sim.add_object(0, agent_node)
+    sim.add_test_object(agent_node)
     sim.set_translation(np.random.rand(3), object_id)
     assert np.allclose(agent_node.translation, sim.get_translation(object_id))
     sim.remove_object(object_id, False)  # don't delete the agent's node
@@ -129,8 +129,8 @@ def test_dynamics(sim):
     assert sim.get_physics_object_library_size() > 0
 
     # test adding an object to the world
-    object_id = sim.add_object(1)
-    object2_id = sim.add_object(1)
+    object_id = sim.add_test_object()
+    object2_id = sim.add_test_object()
     assert len(sim.get_existing_object_ids()) > 0
 
     # place the objects over the table in room

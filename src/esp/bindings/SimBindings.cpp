@@ -68,6 +68,9 @@ void initSimBindings(py::module& m) {
       /* --- Physics functions --- */
       .def("add_object", &Simulator::addObject, "object_lib_index"_a,
            "attachment_node"_a, "light_setup_key"_a, "scene_id"_a = 0)
+      .def("add_test_object", &Simulator::addTestObject, "attachment_node"_a,
+           "light_setup_key"_a, "scene_id"_a = 0)
+
       .def("get_physics_object_library_size",
            &Simulator::getPhysicsObjectLibrarySize)
       .def("get_object_template", &Simulator::getObjectTemplate,

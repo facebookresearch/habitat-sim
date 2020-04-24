@@ -492,17 +492,6 @@ class ResourceManager {
     return getRandomTemplateHandle(physicsPrimTmpltLibByID_, "primitive");
   }
 
- private:
-  /**
-   * @brief return a random handle selected from the passed map - is passed
-   * either map of ids->prim handles or ids->file obj template handles
-   *
-   * @return a random template handle of the chosen type, or the empty string
-   * if none loaded
-   */
-  std::string getRandomTemplateHandle(std::map<int, std::string>& mapOfHandles,
-                                      const std::string& type);
-
  public:
   /**
    * @brief Retrieve the composition of all transforms applied to a mesh
@@ -615,8 +604,9 @@ class ResourceManager {
    * @return a random template handle of the chosen type, or the empty string
    * if none loaded
    */
-  std::string getRandTemplateHandle(std::map<int, std::string>& mapOfHandles,
-                                    const std::string& type);
+  std::string getRandomTemplateHandle(std::map<int, std::string>& mapOfHandles,
+                                      const std::string& type);
+
   /**
    * @brief Load object templates given string list of object template
    * locations.

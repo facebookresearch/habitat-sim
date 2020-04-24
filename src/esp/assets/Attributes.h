@@ -77,7 +77,7 @@ class AbstractPhysicsAttributes : public esp::core::Configuration {
  protected:
   std::string getBoolDispStr(bool val) { return (val ? "true" : "false"); }
 
-  ESP_SMART_POINTERS(AbstractPhysAttributes)
+  ESP_SMART_POINTERS(AbstractPhysicsAttributes)
 
 };  // AbstractPhysAttributes
 

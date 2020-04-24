@@ -603,8 +603,8 @@ bool ResourceManager::loadObjectMeshDataFromFile(
     const std::string& meshType,
     const bool requiresLighting) {
   bool success = false;
-  if (!fileName.empty()) {
-    AssetInfo meshInfo{AssetType::UNKNOWN, fileName};
+  if (!filename.empty()) {
+    AssetInfo meshInfo{AssetType::UNKNOWN, filename};
     meshInfo.requiresLighting = requiresLighting;
     success = loadGeneralMeshData(meshInfo);
     if (!success) {
