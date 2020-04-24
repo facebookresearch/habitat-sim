@@ -476,7 +476,7 @@ void Viewer::drawEvent() {
   if (physicsManager_ != nullptr)
     // step physics at a fixed rate
     timeSinceLastSimulation += timeline_.previousFrameDuration();
-  if (timeSinceLastSimulation > 1.0 / 60.0) {
+  if (timeSinceLastSimulation >= 1.0 / 60.0) {
     physicsManager_->stepPhysics(1.0 / 60.0);
     timeSinceLastSimulation = 0.0;
   }
