@@ -246,7 +246,8 @@ bool operator==(const SimulatorConfiguration& a,
          a.compressTextures == b.compressTextures &&
          a.createRenderer == b.createRenderer &&
          a.enablePhysics == b.enablePhysics &&
-         a.physicsConfigFile.compare(b.physicsConfigFile) == 0;
+         a.physicsConfigFile.compare(b.physicsConfigFile) == 0 &&
+         a.sceneLightSetup.compare(b.sceneLightSetup) == 0;
 }
 
 bool operator!=(const SimulatorConfiguration& a,

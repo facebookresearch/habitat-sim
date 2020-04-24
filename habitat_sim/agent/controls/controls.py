@@ -45,7 +45,7 @@ class SceneNodeControl(abc.ABC):
     that this can be done *outside* the core `habitat_sim` codebase in exactly
     the same way.)
 
-    See ``examples/new_actions.py`` for an example of how to add new actions
+    See ``examples/tutorials/new_actions.py`` for an example of how to add new actions
     *outside* the core habitat_sim package.
     """
 
