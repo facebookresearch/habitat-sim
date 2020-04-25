@@ -47,9 +47,9 @@ The example is runnable via
 
 .. code:: shell-session
 
-    $ python examples/new_actions.py
+    $ python examples/tutorials/new_actions.py
 
-.. include:: ../../examples/new_actions.py
+.. include:: ../../examples/tutorials/new_actions.py
     :code: py
     :class: m-console-wrap
     :start-line: 6

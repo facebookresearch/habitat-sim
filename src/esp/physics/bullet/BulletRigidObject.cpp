@@ -168,10 +168,13 @@ void BulletRigidObject::constructBulletSceneFromMeshes(
     std::unique_ptr<btBvhTriangleMeshShape> meshShape =
         std::make_unique<btBvhTriangleMeshShape>(indexedVertexArray.get(),
                                                  true);
-    meshShape->setMargin(0.0);
+    meshShape->setMargin(0.04);
     meshShape->setLocalScaling(
         btVector3{transformFromLocalToWorld
                       .scaling()});  // scale is a property of the shape
+
+    // re-build the bvh after setting margin
+    meshShape->buildOptimizedBvh();
     std::unique_ptr<btCollisionObject> sceneCollisionObject =
         std::make_unique<btCollisionObject>();
     sceneCollisionObject->setCollisionShape(meshShape.get());
@@ -479,14 +482,6 @@ void BulletRigidObject::setInertiaVector(const Magnum::Vector3& inertia) {
     bObjectRigidBody_->setMassProps(getMass(), btVector3(inertia));
 }
 
-void BulletRigidObject::setScale(const double) {
-  // Currently not supported
-  /*if (rigidObjectType_ == RigidObjectType::SCENE)
-    return;
-  else
-    bObjectRigidBody_->setLinearFactor(btVector3(scale, scale, scale));*/
-}
-
 void BulletRigidObject::setFrictionCoefficient(
     const double frictionCoefficient) {
   if (rigidObjectType_ == RigidObjectType::SCENE) {
@@ -573,15 +568,6 @@ Magnum::Matrix3 BulletRigidObject::getInertiaMatrix() {
     const Magnum::Vector3 vecInertia = getInertiaVector();
     const Magnum::Matrix3 inertia = Magnum::Matrix3::fromDiagonal(vecInertia);
     return inertia;
-  }
-}
-
-double BulletRigidObject::getScale() {
-  if (rigidObjectType_ == RigidObjectType::SCENE) {
-    return 1.0;
-    // Assume uniform scale for 3D objects
-  } else {
-    return bObjectRigidBody_->getLinearFactor().x();
   }
 }
 

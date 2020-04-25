@@ -12,14 +12,16 @@ import attr
 import magnum as mn
 import numpy as np
 
-import habitat_sim.bindings as hsim
 import habitat_sim.errors
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
+from habitat_sim.bindings import cuda_enabled
 from habitat_sim.gfx import DEFAULT_LIGHTING_KEY
 from habitat_sim.logging import logger
-from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings
+from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
 from habitat_sim.physics import MotionType
+from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
+from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
 
 torch = None
@@ -36,7 +38,7 @@ class Configuration(object):
     configurations `agents`.
     """
 
-    sim_cfg: Optional[hsim.SimulatorConfiguration] = None
+    sim_cfg: Optional[SimulatorConfiguration] = None
     agents: Optional[List[AgentConfiguration]] = None
 
 
@@ -52,8 +54,8 @@ class Simulator:
 
     config: Configuration
     agents: List[Agent] = attr.ib(factory=list, init=False)
-    pathfinder: hsim.PathFinder = attr.ib(default=None, init=False)
-    _sim: hsim.SimulatorBackend = attr.ib(default=None, init=False)
+    pathfinder: PathFinder = attr.ib(default=None, init=False)
+    _sim: SimulatorBackend = attr.ib(default=None, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent: Agent = attr.ib(init=False, default=None)
     _sensors: Dict = attr.ib(factory=dict, init=False)
@@ -106,7 +108,7 @@ class Simulator:
 
     def _config_backend(self, config: Configuration):
         if self._sim is None:
-            self._sim = hsim.SimulatorBackend(config.sim_cfg)
+            self._sim = SimulatorBackend(config.sim_cfg)
         else:
             self._sim.reconfigure(config.sim_cfg)
 
@@ -139,7 +141,7 @@ class Simulator:
                     osp.splitext(config.sim_cfg.scene.id)[0] + ".navmesh"
                 )
 
-        self.pathfinder = hsim.PathFinder()
+        self.pathfinder = PathFinder()
         if osp.exists(navmesh_filenname):
             self.pathfinder.load_nav_mesh(navmesh_filenname)
             logger.info(f"Loaded navmesh {navmesh_filenname}")
@@ -168,6 +170,17 @@ class Simulator:
 
         config.sim_cfg.create_renderer = any(
             map(lambda cfg: len(cfg.sensor_specifications) > 0, config.agents)
+        )
+        config.sim_cfg.load_semantic_mesh = any(
+            map(
+                lambda cfg: any(
+                    map(
+                        lambda sens_spec: sens_spec.sensor_type == SensorType.SEMANTIC,
+                        cfg.sensor_specifications,
+                    )
+                ),
+                config.agents,
+            )
         )
 
         if self.config == config:
@@ -402,9 +415,7 @@ class Sensor:
         self._sim.renderer.bind_render_target(self._sensor_object)
 
         if self._spec.gpu2gpu_transfer:
-            assert (
-                hsim.cuda_enabled
-            ), "Must build habitat sim with cuda for gpu2gpu-transfer"
+            assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
 
             if torch is None:
                 import torch
@@ -413,11 +424,11 @@ class Sensor:
             torch.cuda.set_device(device)
 
             resolution = self._spec.resolution
-            if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+            if self._spec.sensor_type == SensorType.SEMANTIC:
                 self._buffer = torch.empty(
                     resolution[0], resolution[1], dtype=torch.int32, device=device
                 )
-            elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+            elif self._spec.sensor_type == SensorType.DEPTH:
                 self._buffer = torch.empty(
                     resolution[0], resolution[1], dtype=torch.float32, device=device
                 )
@@ -426,12 +437,12 @@ class Sensor:
                     resolution[0], resolution[1], 4, dtype=torch.uint8, device=device
                 )
         else:
-            if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+            if self._spec.sensor_type == SensorType.SEMANTIC:
                 self._buffer = np.empty(
                     (self._spec.resolution[0], self._spec.resolution[1]),
                     dtype=np.uint32,
                 )
-            elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+            elif self._spec.sensor_type == SensorType.DEPTH:
                 self._buffer = np.empty(
                     (self._spec.resolution[0], self._spec.resolution[1]),
                     dtype=np.float32,
@@ -469,7 +480,7 @@ class Sensor:
             )
 
         # get the correct scene graph based on application
-        if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+        if self._spec.sensor_type == SensorType.SEMANTIC:
             if self._sim.semantic_scene is None:
                 raise RuntimeError(
                     "SemanticSensor observation requested but no SemanticScene is loaded"
@@ -499,9 +510,9 @@ class Sensor:
 
         if self._spec.gpu2gpu_transfer:
             with torch.cuda.device(self._buffer.device):
-                if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+                if self._spec.sensor_type == SensorType.SEMANTIC:
                     tgt.read_frame_object_id_gpu(self._buffer.data_ptr())
-                elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+                elif self._spec.sensor_type == SensorType.DEPTH:
                     tgt.read_frame_depth_gpu(self._buffer.data_ptr())
                 else:
                     tgt.read_frame_rgba_gpu(self._buffer.data_ptr())
@@ -510,11 +521,11 @@ class Sensor:
         else:
             size = self._sensor_object.framebuffer_size
 
-            if self._spec.sensor_type == hsim.SensorType.SEMANTIC:
+            if self._spec.sensor_type == SensorType.SEMANTIC:
                 tgt.read_frame_object_id(
                     mn.MutableImageView2D(mn.PixelFormat.R32UI, size, self._buffer)
                 )
-            elif self._spec.sensor_type == hsim.SensorType.DEPTH:
+            elif self._spec.sensor_type == SensorType.DEPTH:
                 tgt.read_frame_depth(
                     mn.MutableImageView2D(mn.PixelFormat.R32F, size, self._buffer)
                 )

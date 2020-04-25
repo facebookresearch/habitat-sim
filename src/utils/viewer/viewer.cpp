@@ -317,7 +317,7 @@ void Viewer::addObject(std::string configFile) {
   Mn::Matrix4 T =
       agentBodyNode_
           ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  Mn::Vector3 new_pos = T.transformPoint({0.1f, 2.5f, -2.0f});
+  Mn::Vector3 new_pos = T.transformPoint({0.1f, 1.5f, -2.0f});
 
   auto& drawables = sceneGraph_->getDrawables();
 
@@ -466,6 +466,7 @@ Mn::Vector3 Viewer::positionOnSphere(Mn::SceneGraph::Camera3D& camera,
   return (result * Mn::Vector3::yScale(-1.0f)).normalized();
 }
 
+float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
@@ -473,7 +474,12 @@ void Viewer::drawEvent() {
     return;
 
   if (physicsManager_ != nullptr)
-    physicsManager_->stepPhysics(timeline_.previousFrameDuration());
+    // step physics at a fixed rate
+    timeSinceLastSimulation += timeline_.previousFrameDuration();
+  if (timeSinceLastSimulation >= 1.0 / 60.0) {
+    physicsManager_->stepPhysics(1.0 / 60.0);
+    timeSinceLastSimulation = 0.0;
+  }
 
   int DEFAULT_SCENE = 0;
   int sceneID = sceneID_[DEFAULT_SCENE];

@@ -17,6 +17,7 @@ over 10,000 FPS multi-process on a single GPU!
 -   :ref:`New Actions <std:doc:new-actions>`
 -   :ref:`Notebooks <std:doc:notebooks>`
 -   :ref:`Creating a stereo agent <std:doc:stereo-agent>`
+-   :ref:`Working with light setups <std:doc:lighting-setups>`
 -   :ref:`Extracting Images <std:doc:image-extractor>`
 
 .. note-warning::

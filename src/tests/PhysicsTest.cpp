@@ -186,7 +186,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
       Magnum::Vector3 prevPosition = physicsManager_->getTranslation(objectId);
       float timeToSim = 3.0;
       while (physicsManager_->getWorldTime() < timeToSim) {
-        Magnum::Vector3 force{3.0, 0.0, 0.0};
+        Magnum::Vector3 force{2.0, 0.0, 0.0};
         physicsManager_->applyForce(objectId, force, Magnum::Vector3{});
         physicsManager_->stepPhysics(0.1);
 
@@ -309,7 +309,7 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
         bPhysManager->getCollisionShapeAabb(objectId1);
 
     Magnum::Range3D objectGroundTruth({-1.1, -1.1, -1.1}, {1.1, 1.1, 1.1});
-    Magnum::Range3D sceneGroundTruth({-1.0, -1.0, -1.0}, {1.0, 1.0, 1.0});
+    Magnum::Range3D sceneGroundTruth({-1.04, -1.04, -1.04}, {1.04, 1.04, 1.04});
 
     ASSERT_EQ(AabbScene, sceneGroundTruth);
     ASSERT_EQ(AabbOb0, objectGroundTruth);
@@ -348,12 +348,14 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
 
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
+  std::vector<int> objectIDs;
   for (auto& testScale : testScales) {
     objectTemplate->setScale(testScale);
 
     Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
 
     int objectId = physicsManager_->addObject(objectFile, &drawables);
+    objectIDs.push_back(objectId);
 
     const Magnum::Range3D& visualBounds =
         physicsManager_->getObjectSceneNode(objectId).getCumulativeBB();
@@ -373,6 +375,11 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
       ASSERT_EQ(aabb, boundsGroundTruth);
     }
 #endif
+  }
+
+  // check that scales are stored and queried correctly
+  for (size_t ix = 0; ix < objectIDs.size(); ix++) {
+    ASSERT_EQ(physicsManager_->getScale(objectIDs[ix]), testScales[ix]);
   }
 }
 
@@ -442,7 +449,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   Magnum::Vector3 posGroundTruth{2.0, 0.0, 2.0};
   Magnum::Quaternion qGroundTruth{{0.842602, 0, 0}, 0.538537};
 
-  float errorEps = 0.01;  // fairly loose due to discrete timestep
+  float errorEps = 0.015;  // fairly loose due to discrete timestep
   ASSERT_LE(
       (physicsManager_->getTranslation(objectId) - posGroundTruth).length(),
       errorEps);
@@ -548,6 +555,9 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
 
   initScene(sceneFile);
 
+  // ensure that changing default timestep does not affect results
+  physicsManager_->setTimestep(0.0041666666);
+
   // We need dynamics to test this.
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
@@ -565,6 +575,7 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
     auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
     std::vector<int> instancedObjects;
+    float sceneCollisionMargin = 0.04;
 
     for (int testId = 0; testId < 3; testId++) {
       instancedObjects.push_back(physicsManager_->addObject(boxId, &drawables));
@@ -573,22 +584,26 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
       switch (testId) {
         case 0: {
           // test 0: stacking two DYNAMIC objects
-          physicsManager_->setTranslation(instancedObjects[0],
-                                          {0, boxHalfExtent, 0});
-          physicsManager_->setTranslation(instancedObjects[1],
-                                          {0, boxHalfExtent * 3, 0});
+          physicsManager_->setTranslation(
+              instancedObjects[0],
+              {0, sceneCollisionMargin + boxHalfExtent, 0});
+          physicsManager_->setTranslation(
+              instancedObjects[1],
+              {0, sceneCollisionMargin + boxHalfExtent * 3, 0});
 
           while (physicsManager_->getWorldTime() < 6.0) {
             physicsManager_->stepPhysics(0.1);
           }
           ASSERT_FALSE(physicsManager_->isActive(instancedObjects[0]));
           ASSERT_FALSE(physicsManager_->isActive(instancedObjects[1]));
-          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[0]) -
-                     Magnum::Vector3{0.0, boxHalfExtent, 0.0})
-                        .length(),
-                    1.0e-4);
+          ASSERT_LE(
+              (physicsManager_->getTranslation(instancedObjects[0]) -
+               Magnum::Vector3{0.0, sceneCollisionMargin + boxHalfExtent, 0.0})
+                  .length(),
+              1.0e-3);
           ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
-                     Magnum::Vector3{0.0, boxHalfExtent * 3, 0.0})
+                     Magnum::Vector3{
+                         0.0, sceneCollisionMargin + boxHalfExtent * 3, 0.0})
                         .length(),
                     1.0e-3);
         } break;
@@ -637,9 +652,9 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
                         .length(),
                     1.0e-4);
           ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
-                     Magnum::Vector3{0.506, boxHalfExtent * 4, 0.0})
+                     Magnum::Vector3{0.556, boxHalfExtent * 4, 0.0})
                         .length(),
-                    1.0e-2);
+                    2.0e-2);
         } break;
       }
 
