@@ -1754,6 +1754,8 @@ void ResourceManager::initDefaultMaterials() {
                                         new gfx::PhongMaterialData{});
   auto perVertexObjectId = new gfx::PhongMaterialData{};
   perVertexObjectId->perVertexObjectId = true;
+  perVertexObjectId->vertexColored = true;
+  perVertexObjectId->ambientColor = Mn::Color4{1.0};
   shaderManager_.set<gfx::MaterialData>(PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
                                         perVertexObjectId);
   shaderManager_.setFallback<gfx::MaterialData>(new gfx::PhongMaterialData{});
