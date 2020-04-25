@@ -7,6 +7,7 @@
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Magnum.h>
+#include <Magnum/Math/Swizzle.h>
 #include <Magnum/Math/Vector3.h>
 
 #include "configure.h"
