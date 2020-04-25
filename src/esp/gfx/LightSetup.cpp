@@ -28,7 +28,7 @@ Magnum::Vector3 getLightPositionRelativeToCamera(
       return light.position;
   }
 
-  CORRADE_ASSERT_UNREACHABLE();
+  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
   return {};
 }
 
