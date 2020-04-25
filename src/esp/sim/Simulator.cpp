@@ -309,6 +309,14 @@ int Simulator::loadObjectTemplate(
   return resourceManager_.loadObjectTemplate(objTmplPtr, objectTemplateHandle);
 }
 
+const assets::PhysicsObjectAttributes::ptr
+Simulator::getObjectInitializationTemplate(int objectId, const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getInitializationAttributes(objectId);
+  }
+  return nullptr;
+}
+
 // return a list of existing objected IDs in a physical scene
 std::vector<int> Simulator::getExistingObjectIDs(const int sceneID) {
   if (sceneHasPhysics(sceneID)) {

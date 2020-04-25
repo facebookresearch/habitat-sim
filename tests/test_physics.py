@@ -139,6 +139,8 @@ def test_dynamics(sim):
 
     # get object MotionType and continue testing if MotionType::DYNAMIC (implies a physics implementation is active)
     if sim.get_object_motion_type(object_id) == habitat_sim.physics.MotionType.DYNAMIC:
+        object1_init_template = sim.get_object_initialization_template(object_id)
+        object1_mass = object1_init_template.get_mass()
         previous_object_states = [
             [sim.get_translation(object_id), sim.get_rotation(object_id)],
             [sim.get_translation(object2_id), sim.get_rotation(object2_id)],
@@ -150,8 +152,9 @@ def test_dynamics(sim):
 
             # TODO: expose object properties (such as mass) to python
             # Counter the force of gravity on the object (it should not translate)
-            obj_mass = 0.41
-            sim.apply_force(np.array([0, obj_mass * 9.8, 0]), np.zeros(3), object_id)
+            sim.apply_force(
+                np.array([0, object1_mass * 9.8, 0]), np.zeros(3), object_id
+            )
 
             # apply torque to the "floating" object. It should rotate, but not translate
             sim.apply_torque(np.random.rand(3), object_id)
