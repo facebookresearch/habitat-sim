@@ -78,7 +78,7 @@ class GenericInstanceMeshData : public BaseMesh {
 
     void addVertex(uint32_t vertexId, const vec3f& vertex, const vec3uc& color);
 
-    // private:
+   private:
     GenericInstanceMeshData& data_;
     uint16_t objectId_;
     std::unordered_map<uint32_t, size_t> vertexIdToVertexIndex_;
