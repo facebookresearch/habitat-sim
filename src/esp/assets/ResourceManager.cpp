@@ -183,19 +183,6 @@ void ResourceManager::loadObjectTemplates(
             << std::to_string(physicsObjTmpltLibByID_.size());
 }
 
-void ResourceManager::buildPrimObjectTemplates() {
-  uint32_t numPrims = static_cast<uint32_t>(PrimObjTypes::END_PRIM_OBJ_TYPES);
-
-  // build every template for primitives
-
-  // int objectTemplateID = putObjTemplateAttrInLibMap(
-  //     objectTemplate, objectTemplateHandle, physicsPrimTmpltLibByID_);
-
-  LOG(INFO) << "built primitive templates: "
-            << std::to_string(physicsPrimTmpltLibByID_.size());
-
-}  // buildPrimObjectTemplates
-
 void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
     PhysicsManagerAttributes::ptr physicsManagerAttributes) {
@@ -224,9 +211,6 @@ void ResourceManager::initPhysicsManager(
   // load object templates from sceneMetaData list...
   loadObjectTemplates(
       physicsManagerAttributes->getStringGroup("objectLibraryPaths"));
-
-  //"load" primitive physicsObjectTemplates here
-  buildPrimObjectTemplates();
 }  // ResourceManager::initPhysicsManager
 
 // this will instance a physics manager based on the passed physics config file
@@ -509,8 +493,6 @@ void ResourceManager::addObjectToDrawables(
     // Meta data and collision mesh
     PhysicsObjectAttributes::ptr physicsObjectAttributes =
         physicsObjTemplateLibrary_.at(objPhysConfigFilename);
-    std::vector<CollisionMeshData> meshGroup = collisionMeshGroups_.at(
-        physicsObjectAttributes->getCollisionMeshHandle());
 
     const std::string& renderMeshFileName =
         physicsObjectAttributes->getRenderMeshHandle();
@@ -557,7 +539,7 @@ bool ResourceManager::loadObjectMeshDataFromFile(
   return success;
 }  // loadObjectMeshDataFromFile
 
-int ResourceManager::putObjTemplateAttrInLibMap(
+int ResourceManager::addObjTemplateToLibrary(
     PhysicsObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle,
     std::map<int, std::string>& mapOfNames) {
@@ -570,7 +552,7 @@ int ResourceManager::putObjTemplateAttrInLibMap(
   // save reference of specific type of template being built
   mapOfNames.emplace(objectTemplateID, objectTemplateHandle);
   return objectTemplateID;
-}  // putObjTemplateAttrInLibMap
+}  // addObjTemplateToLibrary
 
 int ResourceManager::loadObjectTemplate(
     PhysicsObjectAttributes::ptr objectTemplate,
@@ -632,16 +614,8 @@ int ResourceManager::loadObjectTemplate(
                                meshGroup);
 
   // add object template to template library
-  int objectTemplateID = putObjTemplateAttrInLibMap(
+  int objectTemplateID = addObjTemplateToLibrary(
       objectTemplate, objectTemplateHandle, physicsObjTmpltLibByID_);
-
-  // int objectTemplateID = physicsObjTemplateLibrary_.size();
-  // objectTemplate->setObjectTemplateID(objectTemplateID);
-
-  // // cache metaData, collision mesh Group
-  // physicsObjTemplateLibrary_.emplace(objectTemplateHandle, objectTemplate);
-
-  // physicsObjTmpltLibByID_.emplace(objectTemplateID, objectTemplateHandle);
 
   return objectTemplateID;
 }  // loadObjectTemplate

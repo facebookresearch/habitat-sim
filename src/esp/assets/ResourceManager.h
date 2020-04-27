@@ -587,11 +587,6 @@ class ResourceManager {
   void loadObjectTemplates(const std::vector<std::string>& tmpltFilenames);
 
   /**
-   * @brief build templates for all primitive objects
-   */
-  void buildPrimObjectTemplates();
-
-  /**
    * @brief Instantiate, or reinstatiate, PhysicsManager defined by passed
    * attributes
    * @param physicsManager The currently defined @ref physics::PhysicsManager.
@@ -622,8 +617,8 @@ class ResourceManager {
                                   const std::string& meshType,
                                   const bool requiresLighting);
 
-  /** @brief Put object template attributes in template map and in passed
-   * index list
+  /** @brief Add object template attributes to template library map and in
+   * passed index list
    *
    * @param objectTemplate ptr to object template attributes to be added to
    * library
@@ -634,9 +629,9 @@ class ResourceManager {
    * for primitives)
    * @return index of object template in names map
    */
-  int putObjTemplateAttrInLibMap(PhysicsObjectAttributes::ptr objectTemplate,
-                                 const std::string& objectTemplateHandle,
-                                 std::map<int, std::string>& mapOfNames);
+  int addObjTemplateToLibrary(PhysicsObjectAttributes::ptr objectTemplate,
+                              const std::string& objectTemplateHandle,
+                              std::map<int, std::string>& mapOfNames);
 
  protected:
   /**

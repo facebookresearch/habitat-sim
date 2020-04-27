@@ -162,9 +162,6 @@ class AbstractPhysPrimObjAttributes : public esp::core::Configuration {
   // forcing this class to be abstract - note still needs definition of
   // destructor
   // virtual ~AbstractPhysPrimObjAttributes() = 0;
-  // forcing this class to be abstract - note still needs definition
-  // can't do this because of pybind issues, currently
-  // virtual ~AbstractPhysAttributes() = 0;
   void setOriginHandle(const std::string& originHandle) {
     setString("originHandle", originHandle);
   }
