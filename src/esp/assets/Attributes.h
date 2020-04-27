@@ -147,20 +147,32 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
 ///////////////////////////////////
 // primitive objects
 
-//! attributes describing primitve objects - abstract class without pure virtual
-//! methods
-class AbstractPhysPrimObjAttributes : public PhysicsObjectAttributes {
+//! attributes describing primitve render/collision objects - abstract class
+//! without pure virtual methods
+class AbstractPhysPrimObjAttributes : public esp::core::Configuration {
  public:
   AbstractPhysPrimObjAttributes(bool isWireframe,
                                 int primType,
-                                const std::string& originHndl)
-      : PhysicsObjectAttributes(originHndl) {
+                                const std::string& originHndl = "")
+      : Configuration() {
+    setOriginHandle(originHndl);
     setIsWireframe(isWireframe);
     setPrimObjType(primType);
   }  // ctor
   // forcing this class to be abstract - note still needs definition of
   // destructor
   // virtual ~AbstractPhysPrimObjAttributes() = 0;
+  // forcing this class to be abstract - note still needs definition
+  // can't do this because of pybind issues, currently
+  // virtual ~AbstractPhysAttributes() = 0;
+  void setOriginHandle(const std::string& originHandle) {
+    setString("originHandle", originHandle);
+  }
+  std::string getOriginHandle() const { return getString("originHandle"); }
+  void setObjectTemplateID(int objectTemplateID) {
+    setInt("objectTemplateID", objectTemplateID);
+  }
+  int getObjectTemplateID() const { return getInt("objectTemplateID"); }
 
   void setIsWireframe(bool isWireframe) { setBool("isWireframe", isWireframe); }
   bool getIsWireframe() { return getBool("isWireframe"); }
