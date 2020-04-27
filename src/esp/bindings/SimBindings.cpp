@@ -77,6 +77,9 @@ void initSimBindings(py::module& m) {
       .def("load_object_configs", &Simulator::loadObjectConfigs, "path"_a)
       .def("load_object_template", &Simulator::loadObjectTemplate,
            "object_template"_a, "object_template_handle"_a)
+      .def("get_object_initialization_template",
+           &Simulator::getObjectInitializationTemplate, "object_id"_a,
+           "sceneID"_a = 0)
       .def("remove_object", &Simulator::removeObject, "object_id"_a,
            "delete_object_node"_a, "delete_visual_node"_a, "sceneID"_a = 0)
       .def("get_object_motion_type", &Simulator::getObjectMotionType,
