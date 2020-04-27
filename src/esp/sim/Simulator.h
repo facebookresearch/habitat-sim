@@ -153,6 +153,16 @@ class Simulator {
                          const std::string& objectTemplateHandle);
 
   /**
+   * @brief Get a static view of a physics object's template when the object was
+   * instanced.
+   *
+   * Use this to query the object's properties when it was initialized.
+   */
+  const assets::PhysicsObjectAttributes::ptr getObjectInitializationTemplate(
+      int objectId,
+      const int sceneID = 0) const;
+
+  /**
    * @brief Remove an instanced object by ID. See @ref
    * esp::physics::PhysicsManager::removeObject().
    * @param objectID The ID of the object identifying it in @ref
