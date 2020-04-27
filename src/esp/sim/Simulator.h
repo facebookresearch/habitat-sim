@@ -160,7 +160,7 @@ class Simulator {
    */
   const assets::PhysicsObjectAttributes::ptr getObjectInitializationTemplate(
       int objectId,
-      const int sceneID = 0);
+      const int sceneID = 0) const;
 
   /**
    * @brief Remove an instanced object by ID. See @ref

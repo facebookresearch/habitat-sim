@@ -310,7 +310,8 @@ int Simulator::loadObjectTemplate(
 }
 
 const assets::PhysicsObjectAttributes::ptr
-Simulator::getObjectInitializationTemplate(int objectId, const int sceneID) {
+Simulator::getObjectInitializationTemplate(int objectId,
+                                           const int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
     return physicsManager_->getInitializationAttributes(objectId);
   }
