@@ -275,13 +275,13 @@ class ResourceManager {
       std::string physicsFilename = ESP_DEFAULT_PHYS_SCENE_CONFIG);
 
   /**
-   * @brief Get all "*.phys_properties.json" files from the provided file or
+   * @brief Build all "*.phys_properties.json" files from the provided file or
    * directory path.
    *
    * @param path A global path to a physics property file or directory
    * @return A list of valid global paths to "*.phys_properties.json" files.
    */
-  std::vector<std::string> getObjectConfigPaths(std::string path);
+  std::vector<std::string> buildObjectConfigPaths(const std::string& path);
 
   /**
    * @brief Add an object from a specified configuration file to the specified
@@ -363,7 +363,10 @@ class ResourceManager {
    * individual components of the asset.
    */
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
-      const std::string& configFile);
+      const std::string& configFile) const {
+    return collisionMeshGroups_.at(
+        physicsObjTemplateLibrary_.at(configFile)->getCollisionMeshHandle());
+  }
 
   /**
    * @brief Getter for all @ref assets::CollisionMeshData associated with the
@@ -376,7 +379,10 @@ class ResourceManager {
    * individual components of the asset.
    */
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
-      const int objectTemplateID);
+      const int objectTemplateID) const {
+    std::string configFile = getObjectTemplateHandle(objectTemplateID);
+    return getCollisionMesh(configFile);
+  }
 
   /**
    * @brief Get the index in @ref physicsObjTemplateLibrary_ for the object
@@ -387,7 +393,14 @@ class ResourceManager {
    * @return The index of the object template in @ref
    * physicsObjTemplateLibrary_.
    */
-  int getObjectTemplateID(const std::string& configFile);
+  int getObjectTemplateID(const std::string& configFile) const {
+    const bool objTemplateExists =
+        physicsObjTemplateLibrary_.count(configFile) > 0;
+    if (objTemplateExists) {
+      return physicsObjTemplateLibrary_.at(configFile)->getObjectTemplateID();
+    }
+    return ID_UNDEFINED;
+  }
 
   /**
    * @brief Get the key in @ref physicsObjTemplateLibrary_ for the object
@@ -397,7 +410,7 @@ class ResourceManager {
    * physicsObjTemplateLibrary_.
    * @return The key referencing the asset in @ref physicsObjTemplateLibrary_.
    */
-  std::string getObjectConfig(const int objectTemplateID);
+  std::string getObjectTemplateHandle(const int objectTemplateID) const;
 
   /**
    * @brief Get a reference to the physics object template for the asset
@@ -410,7 +423,7 @@ class ResourceManager {
    * @return A mutable reference to the object template for the asset.
    */
   PhysicsObjectAttributes::ptr getPhysicsObjectAttributes(
-      const std::string& configFile) {
+      const std::string& configFile) const {
     return physicsObjTemplateLibrary_.at(configFile);
   }
 
@@ -425,7 +438,10 @@ class ResourceManager {
    * @return A mutable reference to the object template for the asset.
    */
   PhysicsObjectAttributes::ptr getPhysicsObjectAttributes(
-      const int objectTemplateID);
+      const int objectTemplateID) const {
+    return physicsObjTemplateLibrary_.at(
+        getObjectTemplateHandle(objectTemplateID));
+  }
 
   /**
    * @brief Gets the number of object templates stored in the @ref
@@ -433,8 +449,33 @@ class ResourceManager {
    *
    * @return The size of the @ref physicsObjTemplateLibrary_.
    */
-  int getNumLibraryObjects() { return physicsObjTemplateLibrary_.size(); };
+  int getNumLibraryObjects() const {
+    return physicsObjTemplateLibrary_.size();
+  };
 
+  /**
+   * @brief Get a random object attribute handle (that could possibly describe
+   * either file-based or a primitive) for the loaded file-based object
+   * templates
+   *
+   * @return a randomly selected handle corresponding to a known object
+   * attributes template, or empty string if none found
+   */
+  std::string getRandomTemplateHandle() const {
+    return getRandomTemplateHandlePerType(physicsTemplatesLibByID_, "");
+  }
+  /**
+   * @brief Get a list of all templates whose origin handles contain @ref
+   * subStr, ignoring subStr's case
+   * @param subStr substring to search for within existing object templates
+   * @return vector of 0 or more template handles containing the passed
+   * substring
+   */
+  std::vector<std::string> getTemplateHandlesBySubstring(
+      const std::string& subStr = "") const {
+    return getTemplateHandlesBySubStringPerType(physicsTemplatesLibByID_,
+                                                subStr);
+  }
   /**
    * @brief Gets the number of loaded object templates stored in the @ref
    * physicsObjTemplateLibrary_.
@@ -442,18 +483,34 @@ class ResourceManager {
    * @return The number of entries in @ref physicsObjTemplateLibrary_ that are
    * loaded from files.
    */
-  int getNumFileTemplateObjects() { return physicsObjTmpltLibByID_.size(); };
+  int getNumFileTemplateObjects() const {
+    return physicsObjTmpltLibByID_.size();
+  };
   /**
    * @brief Get a random loaded attribute handle for the loaded file-based
    * object templates
    *
-   * @return a randomly selected handle corresponding to the a file-based object
+   * @return a randomly selected handle corresponding to a file-based object
    * attributes template, or empty string if none loaded
    */
-  std::string getRandomFileTemplateHandle() {
-    return getRandomTemplateHandle(physicsObjTmpltLibByID_, "file-based");
+  std::string getRandomFileTemplateHandle() const {
+    return getRandomTemplateHandlePerType(physicsObjTmpltLibByID_,
+                                          "file-based ");
   }
 
+  /**
+   * @brief Get a list of all file-based templates whose origin handles contain
+   * @ref subStr, ignoring subStr's case
+   * @param subStr substring to search for within existing file-based object
+   * templates
+   * @return vector of 0 or more template handles containing the passed
+   * substring
+   */
+  std::vector<std::string> getFileTemplateHandlesBySubstring(
+      const std::string& subStr = "") const {
+    return getTemplateHandlesBySubStringPerType(physicsObjTmpltLibByID_,
+                                                subStr);
+  }
   /**
    * @brief Gets the number of primitive template objects stored in the @ref
    * physicsObjTemplateLibrary_.
@@ -461,7 +518,9 @@ class ResourceManager {
    * @return The number of entries in @ref physicsObjTemplateLibrary_ that
    * describe primitives.
    */
-  int getNumPrimTemplateObjects() { return physicsPrimTmpltLibByID_.size(); };
+  int getNumPrimTemplateObjects() const {
+    return physicsPrimTmpltLibByID_.size();
+  };
   /**
    * @brief Get a random loaded attribute handle for the loaded primitive object
    * templates
@@ -469,22 +528,24 @@ class ResourceManager {
    * @return a randomly selected handle corresponding to the a primitive
    * attributes template, or empty string if none loaded
    */
-  std::string getRandomPrimTemplateHandle() {
-    return getRandomTemplateHandle(physicsPrimTmpltLibByID_, "primitive");
+  std::string getRandomPrimTemplateHandle() const {
+    return getRandomTemplateHandlePerType(physicsPrimTmpltLibByID_,
+                                          "primitive ");
+  }
+  /**
+   * @brief Get a list of all primitive templates whose origin handles contain
+   * @ref subStr, ignoring subStr's case
+   * @param subStr substring to search for within existing primitive object
+   * templates
+   * @return vector of 0 or more template handles containing the passed
+   * substring
+   */
+  std::vector<std::string> getPrimTemplateHandlesBySubstring(
+      const std::string& subStr = "") const {
+    return getTemplateHandlesBySubStringPerType(physicsPrimTmpltLibByID_,
+                                                subStr);
   }
 
- private:
-  /**
-   * @brief return a random handle selected from the passed map - is passed
-   * either map of ids->prim handles or ids->file obj template handles
-   *
-   * @return a random template handle of the chosen type, or the empty string
-   * if none loaded
-   */
-  std::string getRandomTemplateHandle(std::map<int, std::string>& mapOfHandles,
-                                      const std::string& type);
-
- public:
   /**
    * @brief Retrieve the composition of all transforms applied to a mesh
    * since it was loaded.
@@ -494,7 +555,7 @@ class ResourceManager {
    * @return The transformation matrix mapping from the original state to
    * its current state.
    */
-  const Magnum::Matrix4& getMeshTransformation(const size_t meshIndex) {
+  const Magnum::Matrix4& getMeshTransformation(const size_t meshIndex) const {
     return meshes_[meshIndex]->meshTransform_;
   }
 
@@ -585,6 +646,30 @@ class ResourceManager {
    * @param tmpltFilenames list of file names of object templates
    */
   void loadObjectTemplates(const std::vector<std::string>& tmpltFilenames);
+
+  /**
+   * @brief return a random handle selected from the passed map - is passed
+   * either map of ids->prim handles or ids->file obj template handles
+   *
+   * @return a random template handle of the chosen type, or the empty string
+   * if none loaded
+   */
+  std::string getRandomTemplateHandlePerType(
+      const std::map<int, std::string>& mapOfHandles,
+      const std::string& type) const;
+
+  /**
+   * @brief Get a list of all templates of passed type whose origin handles
+   * contain @ref subStr, ignoring subStr's case
+   * @param mapOfHandles map containing the desired object-type template handles
+   * @param subStr substring to search for within existing primitive object
+   * templates
+   * @return vector of 0 or more template handles containing the passed
+   * substring
+   */
+  std::vector<std::string> getTemplateHandlesBySubStringPerType(
+      const std::map<int, std::string>& mapOfHandles,
+      const std::string& subStr) const;
 
   /**
    * @brief Instantiate, or reinstatiate, PhysicsManager defined by passed
@@ -733,19 +818,19 @@ class ResourceManager {
   void loadMaterials(Importer& importer, LoadedAssetData& loadedAssetData);
 
   /**
-   * @brief Get a @ref PhongMaterialData for use with flat shading
+   * @brief Build a @ref PhongMaterialData for use with flat shading
    *
    * Textures must already be loaded for the asset this material belongs to
    *
    * @param material Material data with texture IDs
    * @param textureBaseIndex Base index of the assets textures in textures_
    */
-  gfx::PhongMaterialData::uptr getFlatShadedMaterialData(
+  gfx::PhongMaterialData::uptr buildFlatShadedMaterialData(
       const Magnum::Trade::PhongMaterialData& material,
       int textureBaseIndex);
 
   /**
-   * @brief Get a @ref PhongMaterialData for use with phong shading
+   * @brief Build a @ref PhongMaterialData for use with phong shading
    *
    * Textures must already be loaded for the asset this material belongs to
    *
@@ -753,7 +838,7 @@ class ResourceManager {
    * @param textureBaseIndex Base index of the assets textures in textures_
 
    */
-  gfx::PhongMaterialData::uptr getPhongShadedMaterialData(
+  gfx::PhongMaterialData::uptr buildPhongShadedMaterialData(
       const Magnum::Trade::PhongMaterialData& material,
       int textureBaseIndex);
 

@@ -276,21 +276,25 @@ int Simulator::addObject(int objectLibIndex,
   return ID_UNDEFINED;
 }
 
-// return the current size of the physics object library (objects [0,size) can
-// be instanced)
-int Simulator::getPhysicsObjectLibrarySize() {
-  return resourceManager_.getNumLibraryObjects();
-}
-
-assets::PhysicsObjectAttributes::ptr Simulator::getObjectTemplate(
-    int templateId) {
-  return resourceManager_.getPhysicsObjectAttributes(templateId);
+int Simulator::addObjectByHandle(const std::string& objectLibHandle,
+                                 scene::SceneNode* attachmentNode,
+                                 const std::string& lightSetupKey,
+                                 int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    // TODO: change implementation to support multi-world and physics worlds to
+    // own reference to a sceneGraph to avoid this.
+    auto& sceneGraph_ = sceneManager_.getSceneGraph(activeSceneID_);
+    auto& drawables = sceneGraph_.getDrawables();
+    return physicsManager_->addObject(objectLibHandle, &drawables,
+                                      attachmentNode, lightSetupKey);
+  }
+  return ID_UNDEFINED;
 }
 
 std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
   std::vector<int> templateIndices;
   std::vector<std::string> validConfigPaths =
-      resourceManager_.getObjectConfigPaths(path);
+      resourceManager_.buildObjectConfigPaths(path);
   for (auto& validPath : validConfigPaths) {
     templateIndices.push_back(
         resourceManager_.parseAndLoadPhysObjTemplate(validPath));

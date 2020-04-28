@@ -340,8 +340,8 @@ bool ResourceManager::loadPhysicsScene(
   return meshSuccess;
 }
 
-std::vector<std::string> ResourceManager::getObjectConfigPaths(
-    std::string path) {
+std::vector<std::string> ResourceManager::buildObjectConfigPaths(
+    const std::string& path) {
   std::vector<std::string> paths;
 
   namespace Directory = Cr::Utility::Directory;
@@ -375,7 +375,7 @@ std::vector<std::string> ResourceManager::getObjectConfigPaths(
   }
 
   return paths;
-}  // getObjectConfigPaths
+}  // buildObjectConfigPaths
 
 PhysicsManagerAttributes::ptr ResourceManager::loadPhysicsConfig(
     std::string physicsFilename) {
@@ -459,7 +459,7 @@ PhysicsManagerAttributes::ptr ResourceManager::loadPhysicsConfig(
     std::string absolutePath =
         Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
     std::vector<std::string> validConfigPaths =
-        getObjectConfigPaths(absolutePath);
+        buildObjectConfigPaths(absolutePath);
     for (auto& path : validConfigPaths) {
       physicsManagerAttributes->addStringToGroup("objectLibraryPaths", path);
     }
@@ -515,11 +515,6 @@ void ResourceManager::addObjectToDrawables(
                  drawables, loadedAssetData.meshMetaData.root);
   }  // should always be specified, otherwise won't do anything
 }  // addObjectToDrawables
-
-PhysicsObjectAttributes::ptr ResourceManager::getPhysicsObjectAttributes(
-    const int objectTemplateID) {
-  return physicsObjTemplateLibrary_.at(getObjectConfig(objectTemplateID));
-}
 
 bool ResourceManager::loadObjectMeshDataFromFile(
     const std::string& fileName,
@@ -620,19 +615,67 @@ int ResourceManager::loadObjectTemplate(
   return objectTemplateID;
 }  // loadObjectTemplate
 
-std::string ResourceManager::getRandomTemplateHandle(
-    std::map<int, std::string>& mapOfHandles,
-    const std::string& type) {
+std::string ResourceManager::getRandomTemplateHandlePerType(
+    const std::map<int, std::string>& mapOfHandles,
+    const std::string& type) const {
   int numVals = mapOfHandles.size();
   if (numVals == 0) {
     LOG(ERROR) << "Attempting to get a random " << type
-               << " object template handle but none are loaded;Aboring";
+               << "object template handle but none are loaded;Aboring";
     return "";
   }
   int randIDX = rand() % numVals;
-  return mapOfHandles.at(randIDX);
 
-}  // getRandTemplateHandle
+  std::string res;
+  for (std::pair<std::map<int, std::string>::const_iterator, int> iter(
+           mapOfHandles.begin(), 0);
+       (iter.first != mapOfHandles.end() && iter.second <= randIDX);
+       ++iter.first, ++iter.second) {
+    res = iter.first->second;
+  }
+  return res;
+}  // getRandomTemplateHandlePerType
+
+std::vector<std::string> ResourceManager::getTemplateHandlesBySubStringPerType(
+    const std::map<int, std::string>& mapOfHandles,
+    const std::string& subStr) const {
+  std::vector<std::string> res;
+  // if empty return empty vector
+  if (mapOfHandles.size() == 0) {
+    return res;
+  }
+  // if search string is empty, return all values
+  if (subStr.length() == 0) {
+    for (auto elem : mapOfHandles) {
+      res.push_back(elem.second);
+    }
+    return res;
+  }
+  // build search criteria
+  std::string strToLookFor(subStr);
+
+  int strSize = strToLookFor.length();
+  // force lowercase
+  std::transform(strToLookFor.begin(), strToLookFor.end(), strToLookFor.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+
+  for (std::map<int, std::string>::const_iterator iter = mapOfHandles.begin();
+       iter != mapOfHandles.end(); ++iter) {
+    std::string key(iter->second);
+    // be sure that key is big enough to search in (otherwise find has undefined
+    // behavior)
+    if (key.length() < strSize) {
+      continue;
+    }
+    // force lowercase
+    std::transform(key.begin(), key.end(), key.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+    if (std::string::npos != key.find(strToLookFor)) {
+      res.push_back(iter->second);
+    }
+  }
+  return res;
+}  // getTemplateHandlesBySubString
 
 // load object template from config filename
 int ResourceManager::parseAndLoadPhysObjTemplate(
@@ -700,8 +743,8 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
         }
       }
       physicsObjectAttributes->setCOM(COM);
-      // set a flag which we can find later so we don't override the desired COM
-      // with BB center.
+      // set a flag which we can find later so we don't override the desired
+      // COM with BB center.
       physicsObjectAttributes->setBool("COM_provided", true);
     }
   }
@@ -771,8 +814,8 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
       physicsObjectAttributes->setJoinCollisionMeshes(
           objPhysicsConfig["join collision meshes"].GetBool());
     } else {
-      LOG(ERROR)
-          << " Invalid value in object physics config - join collision meshes";
+      LOG(ERROR) << " Invalid value in object physics config - join "
+                    "collision meshes";
     }
   }
 
@@ -816,38 +859,19 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
   return loadObjectTemplate(physicsObjectAttributes, objPhysConfigFilename);
 }  // parseAndLoadPhysObjTemplate
 
-const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
-    const int objectTemplateID) {
-  std::string configFile = getObjectConfig(objectTemplateID);
-  return getCollisionMesh(configFile);
-}
-
-const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
-    const std::string& configFile) {
-  return collisionMeshGroups_.at(
-      physicsObjTemplateLibrary_.at(configFile)->getCollisionMeshHandle());
-}
-
-int ResourceManager::getObjectTemplateID(const std::string& configFile) {
-  const bool objTemplateExists =
-      physicsObjTemplateLibrary_.count(configFile) > 0;
-  if (objTemplateExists) {
-    return physicsObjTemplateLibrary_.at(configFile)->getObjectTemplateID();
-  }
-  return ID_UNDEFINED;
-}
-
-std::string ResourceManager::getObjectConfig(const int objectTemplateID) {
+std::string ResourceManager::getObjectTemplateHandle(
+    const int objectTemplateID) const {
   const bool physTemplateExists =
       physicsTemplatesLibByID_.count(objectTemplateID) > 0;
   if (!physTemplateExists) {
-    Corrade::Utility::Debug() << "ResourceManager::getObjectConfig - Aborting. "
-                                 "No loaded or primitive template with index "
-                              << objectTemplateID << " exists.";
+    Corrade::Utility::Debug()
+        << "ResourceManager::getObjectTemplateHandle - Aborting. "
+           "No loaded or primitive template with index "
+        << objectTemplateID << " exists.";
     return "";
   }
   return physicsTemplatesLibByID_.at(objectTemplateID);
-}  // getObjectConfig
+}  // getObjectTemplateHandle
 
 Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
@@ -1404,11 +1428,11 @@ void ResourceManager::loadMaterials(Importer& importer,
     int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
     if (loadedAssetData.assetInfo.requiresLighting) {
       finalMaterial =
-          getPhongShadedMaterialData(phongMaterialData, textureBaseIndex);
+          buildPhongShadedMaterialData(phongMaterialData, textureBaseIndex);
 
     } else {
       finalMaterial =
-          getFlatShadedMaterialData(phongMaterialData, textureBaseIndex);
+          buildFlatShadedMaterialData(phongMaterialData, textureBaseIndex);
     }
     // for now, just use unique ID for material key. This may change if we
     // expose materials to user for post-load modification
@@ -1417,7 +1441,7 @@ void ResourceManager::loadMaterials(Importer& importer,
   }
 }
 
-gfx::PhongMaterialData::uptr ResourceManager::getFlatShadedMaterialData(
+gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
     const Mn::Trade::PhongMaterialData& material,
     int textureBaseIndex) {
   // NOLINTNEXTLINE(google-build-using-namespace)
@@ -1443,7 +1467,7 @@ gfx::PhongMaterialData::uptr ResourceManager::getFlatShadedMaterialData(
   return finalMaterial;
 }
 
-gfx::PhongMaterialData::uptr ResourceManager::getPhongShadedMaterialData(
+gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
     const Mn::Trade::PhongMaterialData& material,
     int textureBaseIndex) {
   // NOLINTNEXTLINE(google-build-using-namespace)

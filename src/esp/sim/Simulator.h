@@ -91,6 +91,55 @@ class Simulator {
   // TODO: support multi-scene physics (default sceneID=0 currently).
 
   /**
+   * @brief Get the string handle for the object template referenced by the
+   * passed ID
+   *
+   * @param objectTemplateID The index of the object template in the @ref
+   * ResourceManager library.
+   * @return The string key referencing the asset in @ref ResourceManager.
+   */
+  std::string getObjectTemplateHandleByID(const int objectTemplateID) const {
+    return resourceManager_.getObjectTemplateHandle(objectTemplateID);
+  }
+
+  /**
+   * @brief Get a list of all templates whose origin handles contain @ref
+   * subStr, ignoring subStr's case
+   * @param subStr substring to search for within existing object templates
+   * @return vector of 0 or more template handles containing the passed
+   * substring
+   */
+  std::vector<std::string> getObjectTemplateHandles(
+      const std::string& subStr = "") {
+    return resourceManager_.getTemplateHandlesBySubstring(subStr);
+  }
+  /**
+   * @brief Get a list of all file-based templates whose origin handles contain
+   * @ref subStr, ignoring subStr's case
+   * @param subStr substring to search for within existing file-based object
+   * templates
+   * @return vector of 0 or more template handles containing the passed
+   * substring
+   */
+  std::vector<std::string> getFileBasedObjectTemplateHandles(
+      const std::string& subStr = "") {
+    return resourceManager_.getFileTemplateHandlesBySubstring(subStr);
+  }
+
+  /**
+   * @brief Get a list of all primitive templates whose origin handles contain
+   * @ref subStr, ignoring subStr's case
+   * @param subStr substring to search for within existing primitive object
+   * templates
+   * @return vector of 0 or more template handles containing the passed
+   * substring
+   */
+  std::vector<std::string> getPrimitiveTemplateHandles(
+      const std::string& subStr = "") {
+    return resourceManager_.getPrimTemplateHandlesBySubstring(subStr);
+  }
+
+  /**
    * @brief Instance an object from a template index in @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_. See @ref
    * esp::physics::PhysicsManager::addObject().
@@ -113,18 +162,43 @@ class Simulator {
                 int sceneID = 0);
 
   /**
+   * @brief Instance an object from a template index in @ref
+   * esp::assets::ResourceManager::physicsObjectLibrary_. See @ref
+   * esp::physics::PhysicsManager::addObject().
+   * @param objectLibHandle The config/origin handle of the object's template in
+   * @ref esp::assets::ResourceManager::physicsObjectLibrary_.
+   * @param attachmentNode If provided, attach the RigidObject Feature to this
+   * node instead of creating a new one.
+   * @param lightSetupKey The string key for the LightSetup to be used by this
+   * object.
+   * @param sceneID !! Not used currently !! Specifies which physical scene to
+   * add an object to.
+   * @return The ID assigned to new object which identifies it in @ref
+   * esp::physics::PhysicsManager::existingObjects_ or @ref esp::ID_UNDEFINED if
+   * instancing fails.
+   */
+  int addObjectByHandle(const std::string& objectLibHandle,
+                        scene::SceneNode* attachmentNode = nullptr,
+                        const std::string& lightSetupKey =
+                            assets::ResourceManager::DEFAULT_LIGHTING_KEY,
+                        int sceneID = 0);
+
+  /**
    * @brief Get the current size of the physics object library. Objects [0,size)
    * can be instanced with @ref addObject.
    * @return The current number of templates stored in @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_.
    */
-  int getPhysicsObjectLibrarySize();
+  int getPhysicsObjectLibrarySize() const {
+    return resourceManager_.getNumLibraryObjects();
+  }
 
   /**
    * @brief Get a smart pointer to a physics object template by index.
    */
-  assets::PhysicsObjectAttributes::ptr getObjectTemplate(int templateId);
-
+  assets::PhysicsObjectAttributes::ptr getObjectTemplate(int templateId) const {
+    return resourceManager_.getPhysicsObjectAttributes(templateId);
+  }
   /**
    * @brief Load all "*.phys_properties.json" files from the provided file or
    * directory path.
