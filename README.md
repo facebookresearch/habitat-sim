@@ -24,6 +24,7 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
    1. [Common build issues](#common-build-issues)
    1. [Testing](#testing)
    1. [Common testing issues](#common-testing-issues)
+   1. [Documentation](#documentation)
    1. [Rendering to GPU Tensors](#rendering-to-gpu-tensors)
    1. [WebGL](#webgl)
    1. [Datasets](#datasets)
@@ -299,6 +300,12 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    ```
 
     chances are your libGL is located at a non-standard location. See e.g. [this issue](https://askubuntu.com/questions/541343/problems-with-libgl-fbconfigs-swrast-through-each-update).
+
+## Documentation
+
+Habitat-Sim documentation is available [here](https://aihabitat.org/docs/habitat-sim/index.html). 
+
+For example, see [this page](https://aihabitat.org/docs/habitat-sim/lighting-setups.html) for adding new objects to existing scenes and relighting the scene & objects. See [this page](https://aihabitat.org/docs/habitat-sim/image-extractor.html) for extracting images from scenes loaded in Habitat-Sim. 
 
 ## Rendering to GPU Tensors
 
