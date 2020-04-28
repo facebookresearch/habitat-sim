@@ -40,16 +40,14 @@ def test_kinematics(sim):
     # get handle for object 0, used to test
     obj_handle = sim.get_template_handle_by_ID(0)
     object_id = sim.add_object_by_handle(obj_handle)
-    #object_id = sim.add_object(0)
+    # object_id = sim.add_object(0)
     assert len(sim.get_existing_object_ids()) > 0
 
     # test setting the motion type
 
-    assert sim.set_object_motion_type(
-        habitat_sim.physics.MotionType.STATIC, object_id)
+    assert sim.set_object_motion_type(habitat_sim.physics.MotionType.STATIC, object_id)
     assert (
-        sim.get_object_motion_type(
-            object_id) == habitat_sim.physics.MotionType.STATIC
+        sim.get_object_motion_type(object_id) == habitat_sim.physics.MotionType.STATIC
     )
     assert sim.set_object_motion_type(
         habitat_sim.physics.MotionType.KINEMATIC, object_id
@@ -84,7 +82,7 @@ def test_kinematics(sim):
 
     obj_handle = sim.get_template_handle_by_ID(0)
     object_id = sim.add_object_by_handle(obj_handle)
-    #object_id = sim.add_object(0)
+    # object_id = sim.add_object(0)
 
     prev_time = 0.0
     for _ in range(2):
@@ -105,7 +103,7 @@ def test_kinematics(sim):
     agent_node = sim.agents[0].scene_node
     obj_handle = sim.get_template_handle_by_ID(0)
     object_id = sim.add_object_by_handle(obj_handle, agent_node)
-    #sim.add_object(0, agent_node)
+    # sim.add_object(0, agent_node)
     sim.set_translation(np.random.rand(3), object_id)
     assert np.allclose(agent_node.translation, sim.get_translation(object_id))
     sim.remove_object(object_id, False)  # don't delete the agent's node
@@ -260,7 +258,7 @@ def test_velocity_control(sim):
     for iteration in range(2):
         sim.reset()
         object_id = sim.add_object_by_handle(obj_handle)
-        #object_id = sim.add_object(template_ids[0])
+        # object_id = sim.add_object(template_ids[0])
         vel_control = sim.get_object_velocity_control(object_id)
 
         if iteration == 0:

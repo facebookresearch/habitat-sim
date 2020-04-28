@@ -325,7 +325,9 @@ class Simulator:
         attachment_node=None,
         light_setup_key=DEFAULT_LIGHTING_KEY,
     ):
-        return self._sim.add_object_by_handle(object_lib_handle, attachment_node, light_setup_key)
+        return self._sim.add_object_by_handle(
+            object_lib_handle, attachment_node, light_setup_key
+        )
 
     def remove_object(
         self, object_id, delete_object_node=True, delete_visual_node=True
