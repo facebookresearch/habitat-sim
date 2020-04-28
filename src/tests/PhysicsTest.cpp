@@ -469,18 +469,20 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
 
     // should closely follow kinematic result while uninhibited in 0 gravity
     float targetTime = 0.5;
-    Magnum::Matrix4 kinematicResult = velControl->integrateTransform(
-        targetTime, physicsManager_->getTransformation(objectId));
+    esp::physics::RigidState initialObjectState(
+        physicsManager_->getRotation(objectId),
+        physicsManager_->getTranslation(objectId));
+    esp::physics::RigidState kinematicResult =
+        velControl->integrateTransform(targetTime, initialObjectState);
     while (physicsManager_->getWorldTime() < targetTime) {
       physicsManager_->stepPhysics(physicsManager_->getTimestep());
     }
     ASSERT_LE((physicsManager_->getTranslation(objectId) -
-               kinematicResult.translation())
+               kinematicResult.translation)
                   .length(),
               errorEps);
-    angleError = Magnum::Math::angle(
-        physicsManager_->getRotation(objectId),
-        Magnum::Quaternion::fromMatrix(kinematicResult.rotation()));
+    angleError = Magnum::Math::angle(physicsManager_->getRotation(objectId),
+                                     kinematicResult.rotation);
     ASSERT_LE(float(angleError), errorEps);
 
     // should then get blocked by ground plane collision
@@ -490,6 +492,35 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
     }
     ASSERT_GE(physicsManager_->getTranslation(objectId)[1], 1.0 - errorEps);
   }
+
+  // test local velocity
+  physicsManager_->setObjectMotionType(objectId,
+                                       esp::physics::MotionType::KINEMATIC);
+  physicsManager_->resetTransformation(objectId);
+  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
+
+  velControl->linVel = Magnum::Vector3{0.0, 0.0, -1.0};
+  velControl->angVel = Magnum::Vector3{1.0, 0, 0};
+  velControl->angVelIsLocal = true;
+  velControl->linVelIsLocal = true;
+
+  targetTime = 10.0;
+  physicsManager_->reset();  // reset time to 0
+  while (physicsManager_->getWorldTime() < targetTime) {
+    physicsManager_->stepPhysics(physicsManager_->getTimestep());
+  }
+
+  Magnum::Vector3 posLocalGroundTruth{0, 3.83589, 0.543553};
+  Magnum::Quaternion qLocalGroundTruth{{-0.95782, 0, 0}, 0.287495};
+  qLocalGroundTruth = qLocalGroundTruth.normalized();
+
+  ASSERT_LE((physicsManager_->getTranslation(objectId) - posLocalGroundTruth)
+                .length(),
+            errorEps);
+  Magnum::Rad angleErrorLocal = Magnum::Math::angle(
+      physicsManager_->getRotation(objectId), qLocalGroundTruth);
+
+  ASSERT_LE(float(angleErrorLocal), errorEps);
 }
 
 TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
