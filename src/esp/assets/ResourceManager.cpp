@@ -620,19 +620,67 @@ int ResourceManager::loadObjectTemplate(
   return objectTemplateID;
 }  // loadObjectTemplate
 
-std::string ResourceManager::getRandomTemplateHandle(
+std::string ResourceManager::getRandomTemplateHandlePerType(
     std::map<int, std::string>& mapOfHandles,
     const std::string& type) {
   int numVals = mapOfHandles.size();
   if (numVals == 0) {
     LOG(ERROR) << "Attempting to get a random " << type
-               << " object template handle but none are loaded;Aboring";
+               << "object template handle but none are loaded;Aboring";
     return "";
   }
   int randIDX = rand() % numVals;
-  return mapOfHandles.at(randIDX);
 
-}  // getRandTemplateHandle
+  std::string res;
+  for (std::pair<std::map<int, std::string>::iterator, int> iter(
+           mapOfHandles.begin(), 0);
+       (iter.first != mapOfHandles.end() && iter.second <= randIDX);
+       ++iter.first, ++iter.second) {
+    res = iter.first->second;
+  }
+  return res;
+}  // getRandomTemplateHandlePerType
+
+std::vector<std::string> ResourceManager::getReqTemplateHandlesBySubString(
+    std::map<int, std::string>& mapOfHandles,
+    const std::string& subStr) {
+  std::vector<std::string> res;
+  // if empty return empty vector
+  if (mapOfHandles.size() == 0) {
+    return res;
+  }
+  // if search string is empty, return all values
+  if (subStr.length() == 0) {
+    for (auto elem : mapOfHandles) {
+      res.push_back(elem.second);
+    }
+    return res;
+  }
+  // build search criteria
+  std::string strToLookFor(subStr);
+
+  int strSize = strToLookFor.length();
+  // force lowercase
+  std::transform(strToLookFor.begin(), strToLookFor.end(), strToLookFor.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+
+  for (std::map<int, std::string>::iterator iter = mapOfHandles.begin();
+       iter != mapOfHandles.end(); ++iter) {
+    std::string key(iter->second);
+    // be sure that key is big enough to search in (otherwise find has undefined
+    // behavior)
+    if (key.length() < strSize) {
+      continue;
+    }
+    // force lowercase
+    std::transform(key.begin(), key.end(), key.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+    if (std::string::npos != key.find(strToLookFor)) {
+      res.push_back(iter->second);
+    }
+  }
+  return res;
+}  // getTemplateHandlesBySubString
 
 // load object template from config filename
 int ResourceManager::parseAndLoadPhysObjTemplate(
@@ -700,8 +748,8 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
         }
       }
       physicsObjectAttributes->setCOM(COM);
-      // set a flag which we can find later so we don't override the desired COM
-      // with BB center.
+      // set a flag which we can find later so we don't override the desired
+      // COM with BB center.
       physicsObjectAttributes->setBool("COM_provided", true);
     }
   }
@@ -771,8 +819,8 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
       physicsObjectAttributes->setJoinCollisionMeshes(
           objPhysicsConfig["join collision meshes"].GetBool());
     } else {
-      LOG(ERROR)
-          << " Invalid value in object physics config - join collision meshes";
+      LOG(ERROR) << " Invalid value in object physics config - join "
+                    "collision meshes";
     }
   }
 

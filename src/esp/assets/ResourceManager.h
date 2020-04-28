@@ -436,6 +436,28 @@ class ResourceManager {
   int getNumLibraryObjects() { return physicsObjTemplateLibrary_.size(); };
 
   /**
+   * @brief Get a random object attribute handle (that could possibly describe
+   * either file-based or a primitive) for the loaded file-based object
+   * templates
+   *
+   * @return a randomly selected handle corresponding to a known object
+   * attributes template, or empty string if none found
+   */
+  std::string getRandomTemplateHandle() {
+    return getRandomTemplateHandlePerType(physicsTemplatesLibByID_, "");
+  }
+  /**
+   * @brief Get a list of all templates whose origin handles contain @ref
+   * subStr, ignoring subStr's case
+   * @param subStr substring to search for within existing object templates
+   * @return vector of 0 or more template handles containing the passed
+   * substring
+   */
+  std::vector<std::string> getTemplateHandlesBySubstring(
+      const std::string& subStr = "") {
+    return getReqTemplateHandlesBySubString(physicsTemplatesLibByID_, subStr);
+  }
+  /**
    * @brief Gets the number of loaded object templates stored in the @ref
    * physicsObjTemplateLibrary_.
    *
@@ -447,13 +469,26 @@ class ResourceManager {
    * @brief Get a random loaded attribute handle for the loaded file-based
    * object templates
    *
-   * @return a randomly selected handle corresponding to the a file-based object
+   * @return a randomly selected handle corresponding to a file-based object
    * attributes template, or empty string if none loaded
    */
   std::string getRandomFileTemplateHandle() {
-    return getRandomTemplateHandle(physicsObjTmpltLibByID_, "file-based");
+    return getRandomTemplateHandlePerType(physicsObjTmpltLibByID_,
+                                          "file-based ");
   }
 
+  /**
+   * @brief Get a list of all file-based templates whose origin handles contain
+   * @ref subStr, ignoring subStr's case
+   * @param subStr substring to search for within existing file-based object
+   * templates
+   * @return vector of 0 or more template handles containing the passed
+   * substring
+   */
+  std::vector<std::string> getFileTemplateHandlesBySubstring(
+      const std::string& subStr = "") {
+    return getReqTemplateHandlesBySubString(physicsObjTmpltLibByID_, subStr);
+  }
   /**
    * @brief Gets the number of primitive template objects stored in the @ref
    * physicsObjTemplateLibrary_.
@@ -470,21 +505,22 @@ class ResourceManager {
    * attributes template, or empty string if none loaded
    */
   std::string getRandomPrimTemplateHandle() {
-    return getRandomTemplateHandle(physicsPrimTmpltLibByID_, "primitive");
+    return getRandomTemplateHandlePerType(physicsPrimTmpltLibByID_,
+                                          "primitive ");
+  }
+  /**
+   * @brief Get a list of all primitive templates whose origin handles contain
+   * @ref subStr, ignoring subStr's case
+   * @param subStr substring to search for within existing primitive object
+   * templates
+   * @return vector of 0 or more template handles containing the passed
+   * substring
+   */
+  std::vector<std::string> getPrimTemplateHandlesBySubstring(
+      const std::string& subStr = "") {
+    return getReqTemplateHandlesBySubString(physicsPrimTmpltLibByID_, subStr);
   }
 
- private:
-  /**
-   * @brief return a random handle selected from the passed map - is passed
-   * either map of ids->prim handles or ids->file obj template handles
-   *
-   * @return a random template handle of the chosen type, or the empty string
-   * if none loaded
-   */
-  std::string getRandomTemplateHandle(std::map<int, std::string>& mapOfHandles,
-                                      const std::string& type);
-
- public:
   /**
    * @brief Retrieve the composition of all transforms applied to a mesh
    * since it was loaded.
@@ -585,6 +621,30 @@ class ResourceManager {
    * @param tmpltFilenames list of file names of object templates
    */
   void loadObjectTemplates(const std::vector<std::string>& tmpltFilenames);
+
+  /**
+   * @brief return a random handle selected from the passed map - is passed
+   * either map of ids->prim handles or ids->file obj template handles
+   *
+   * @return a random template handle of the chosen type, or the empty string
+   * if none loaded
+   */
+  std::string getRandomTemplateHandlePerType(
+      std::map<int, std::string>& mapOfHandles,
+      const std::string& type);
+
+  /**
+   * @brief Get a list of all templates of passed type whose origin handles
+   * contain @ref subStr, ignoring subStr's case
+   * @param mapOfHandles map containing the desired object-type template handles
+   * @param subStr substring to search for within existing primitive object
+   * templates
+   * @return vector of 0 or more template handles containing the passed
+   * substring
+   */
+  std::vector<std::string> getReqTemplateHandlesBySubString(
+      std::map<int, std::string>& mapOfHandles,
+      const std::string& subStr);
 
   /**
    * @brief Instantiate, or reinstatiate, PhysicsManager defined by passed
