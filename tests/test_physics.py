@@ -38,8 +38,8 @@ def test_kinematics(sim):
 
     # test adding an object to the world
     # get handle for object 0, used to test
-    obj_handle = sim.get_template_handle_by_ID(0)
-    object_id = sim.add_object_by_handle(obj_handle)
+    obj_handle_list = sim.get_template_handles("cheezit")
+    object_id = sim.add_object_by_handle(obj_handle_list[0])
     # object_id = sim.add_object(0)
     assert len(sim.get_existing_object_ids()) > 0
 
@@ -80,8 +80,8 @@ def test_kinematics(sim):
     old_object_id = sim.remove_object(object_id)
     assert len(sim.get_existing_object_ids()) == 0
 
-    obj_handle = sim.get_template_handle_by_ID(0)
-    object_id = sim.add_object_by_handle(obj_handle)
+    obj_handle_list = sim.get_template_handles("cheezit")
+    object_id = sim.add_object_by_handle(obj_handle_list[0])
     # object_id = sim.add_object(0)
 
     prev_time = 0.0
@@ -101,8 +101,8 @@ def test_kinematics(sim):
 
     # test attaching/dettaching an Agent to/from physics simulation
     agent_node = sim.agents[0].scene_node
-    obj_handle = sim.get_template_handle_by_ID(0)
-    object_id = sim.add_object_by_handle(obj_handle, agent_node)
+    obj_handle_list = sim.get_template_handles("cheezit")
+    object_id = sim.add_object_by_handle(obj_handle_list[0], agent_node)
     # sim.add_object(0, agent_node)
     sim.set_translation(np.random.rand(3), object_id)
     assert np.allclose(agent_node.translation, sim.get_translation(object_id))
@@ -136,9 +136,9 @@ def test_dynamics(sim):
     assert sim.get_physics_object_library_size() > 0
 
     # test adding an object to the world
-    obj_handle = sim.get_template_handle_by_ID(1)
-    object_id = sim.add_object_by_handle(obj_handle)
-    object2_id = sim.add_object_by_handle(obj_handle)
+    obj_handle_list = sim.get_template_handles("cheezit")
+    object_id = sim.add_object_by_handle(obj_handle_list[0])
+    object2_id = sim.add_object_by_handle(obj_handle_list[0])
     # object_id = sim.add_object(1)
     # object2_id = sim.add_object(1)
     assert len(sim.get_existing_object_ids()) > 0

@@ -627,26 +627,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       controls_(*rgbSensorNode_, "lookDown", lookSensitivity, false);
       agentMoved = true;
       break;
-    case KeyEvent::Key::Seven: {  // test getting handles
-      std::vector<std::string> loadedHandles =
-          resourceManager_.getTemplateHandlesBySubstring();
-      std::stringstream strdat("");
-      for (auto s : loadedHandles) {
-        strdat << s << " | ";
-      }
-
-      LOG(INFO) << "Loaded Object Templates : " << strdat.str();
-      loadedHandles = resourceManager_.getTemplateHandlesBySubstring("chee");
-      strdat.str("");
-      strdat.clear();
-      for (auto s : loadedHandles) {
-        strdat << s << " | ";
-      }
-
-      LOG(INFO) << "Loaded Object Templates matching 'chee' : " << strdat.str();
-
-      break;
-    }
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
       break;
