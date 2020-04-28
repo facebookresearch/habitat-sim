@@ -238,21 +238,17 @@ Magnum::Matrix3 RigidObject::getInertiaMatrix() {
 //////////////////
 // VelocityControl
 
-Magnum::Matrix4 VelocityControl::integrateTransform(
-    const float dt,
-    const Magnum::Matrix4& objectRotationTranslation) {
-  Magnum::Matrix3 newRotation{objectRotationTranslation.rotationScaling()};
-  if (!newRotation.isOrthogonal()) {
-    Magnum::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(newRotation);
-  }
+RigidState VelocityControl::integrateTransform(const float dt,
+                                               const RigidState& rigidState) {
+  RigidState newRigidState(rigidState);
   // linear first
-  Magnum::Vector3 newTranslation = objectRotationTranslation.translation();
   if (controllingLinVel) {
     if (linVelIsLocal) {
-      newTranslation +=
-          newRotation * (linVel * dt);  // avoid local scaling of the velocity
+      newRigidState.translation =
+          rigidState.translation +
+          rigidState.rotation.transformVector(linVel * dt);
     } else {
-      newTranslation += linVel * dt;
+      newRigidState.translation = rigidState.translation + (linVel * dt);
     }
   }
 
@@ -260,13 +256,13 @@ Magnum::Matrix4 VelocityControl::integrateTransform(
   if (controllingAngVel) {
     Magnum::Vector3 globalAngVel{angVel};
     if (angVelIsLocal) {
-      globalAngVel = newRotation * angVel;
+      globalAngVel = rigidState.rotation.transformVector(angVel);
     }
     Magnum::Quaternion q = Magnum::Quaternion::rotation(
         Magnum::Rad{(globalAngVel * dt).length()}, globalAngVel.normalized());
-    newRotation = (q * Magnum::Quaternion::fromMatrix(newRotation)).toMatrix();
+    newRigidState.rotation = (q * rigidState.rotation).normalized();
   }
-  return Magnum::Matrix4::from(newRotation, newTranslation);
+  return newRigidState;
 }
 
 }  // namespace physics

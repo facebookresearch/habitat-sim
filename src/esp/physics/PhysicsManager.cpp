@@ -221,9 +221,8 @@ void PhysicsManager::stepPhysics(double dt) {
     for (auto& object : existingObjects_) {
       VelocityControl::ptr velControl = object.second->getVelocityControl();
       if (velControl->controllingAngVel || velControl->controllingLinVel) {
-        scene::SceneNode& objectSceneNode = object.second->node();
-        objectSceneNode.setTransformation(velControl->integrateTransform(
-            fixedTimeStep_, objectSceneNode.transformation()));
+        object.second->setRigidState(velControl->integrateTransform(
+            fixedTimeStep_, object.second->getRigidState()));
       }
     }
     worldTime_ += fixedTimeStep_;

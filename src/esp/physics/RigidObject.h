@@ -63,6 +63,22 @@ enum class MotionType {
 };
 
 /**
+ * @brief describes the state of a rigid object as a composition of rotation
+ * (quaternion) and translation.
+ */
+struct RigidState {
+  RigidState(){};
+  RigidState(const Magnum::Quaternion& _rotation,
+             const Magnum::Vector3& _translation)
+      : rotation(_rotation), translation(_translation){};
+
+  Magnum::Quaternion rotation;
+  Magnum::Vector3 translation;
+
+  ESP_SMART_POINTERS(RigidState)
+};
+
+/**
 @brief Category of a @ref RigidObject. Defines treatment of the object in @ref
 PhysicsManager. Also denotes the status of an object as initialized or not.
 */
@@ -127,9 +143,8 @@ struct VelocityControl {
    * @return The new state of the object after applying velocity control over
    * dt.
    */
-  virtual Magnum::Matrix4 integrateTransform(
-      const float dt,
-      const Magnum::Matrix4& objectRotationTranslation);
+  virtual RigidState integrateTransform(const float dt,
+                                        const RigidState& rigidState);
 
   ESP_SMART_POINTERS(VelocityControl)
 };
@@ -364,6 +379,21 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @param quaternion The desired orientation of the object.
    */
   virtual void setRotation(const Magnum::Quaternion& quaternion);
+
+  /**
+   * @brief Set the rotation and translation of the object.
+   */
+  virtual void setRigidState(const RigidState& rigidState) {
+    setTranslation(rigidState.translation);
+    setRotation(rigidState.rotation);
+  };
+
+  /**
+   * @brief Get the rotation and translation of the object.
+   */
+  virtual RigidState getRigidState() {
+    return RigidState(node().rotation(), node().translation());
+  };
 
   /** @brief Reset the transformation of the object.
    * !!NOT IMPLEMENTED!!
