@@ -47,8 +47,10 @@ class BulletPhysicsManager : public PhysicsManager {
    * tracks the assets this
    * @ref BulletPhysicsManager will have access to.
    */
-  explicit BulletPhysicsManager(assets::ResourceManager& _resourceManager)
-      : PhysicsManager(_resourceManager){};
+  explicit BulletPhysicsManager(
+      assets::ResourceManager& _resourceManager,
+      const assets::PhysicsManagerAttributes::ptr _physicsManagerAttributes)
+      : PhysicsManager(_resourceManager, _physicsManagerAttributes){};
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/
   virtual ~BulletPhysicsManager();
@@ -171,8 +173,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param physicsManagerAttributes A structure containing values for physical
    * parameters necessary to initialize the physical scene and simulator.
    */
-  bool initPhysicsFinalize(const assets::PhysicsManagerAttributes::ptr
-                               physicsManagerAttributes) override;
+  bool initPhysicsFinalize() override;
 
   //============ Object/Scene Instantiation =============
   /**

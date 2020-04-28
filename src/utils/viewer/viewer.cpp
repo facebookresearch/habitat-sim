@@ -66,7 +66,8 @@ class Viewer : public Mn::Platform::Application {
   void keyPressEvent(KeyEvent& event) override;
 
   // Interactive functions
-  void addObject(std::string configFile);
+  void addObject(const std::string& configHandle);
+  void addObject(int objID);
 
   // add template-derived object
   void addTemplateObject();
@@ -76,15 +77,15 @@ class Viewer : public Mn::Platform::Application {
 
   void pokeLastObject();
   void pushLastObject();
+  void torqueLastObject();
+  void removeLastObject();
+  void wiggleLastObject();
 
   void recomputeNavMesh(const std::string& sceneFilename,
                         esp::nav::NavMeshSettings& navMeshSettings);
 
-  void torqueLastObject();
-  void removeLastObject();
   void invertGravity();
   Mn::Vector3 randomDirection();
-  void wiggleLastObject();
 
   void toggleNavMeshVisualization();
 
@@ -310,7 +311,13 @@ Viewer::Viewer(const Arguments& arguments)
 
 }  // end Viewer::Viewer
 
-void Viewer::addObject(std::string configFile) {
+void Viewer::addObject(int ID) {
+  if (physicsManager_ == nullptr)
+    return;
+  addObject(resourceManager_.getObjectConfig(ID));
+}  // addObject
+
+void Viewer::addObject(const std::string& configFile) {
   if (physicsManager_ == nullptr)
     return;
 
@@ -327,15 +334,15 @@ void Viewer::addObject(std::string configFile) {
   physicsManager_->setRotation(physObjectID, esp::core::randomRotation());
 
   objectIDs_.push_back(physObjectID);
+
 }  // addObject
 
 // add template derived object from keypress
 void Viewer::addTemplateObject() {
   if (physicsManager_ != nullptr) {
-    int numObjTemplates = resourceManager_.getNumLibraryObjects();
+    int numObjTemplates = resourceManager_.getNumFileTemplateObjects();
     if (numObjTemplates > 0) {
-      int randObjectID = rand() % numObjTemplates;
-      addObject(resourceManager_.getObjectConfig(randObjectID));
+      addObject(resourceManager_.getRandomFileTemplateHandle());
     } else
       LOG(WARNING) << "No objects loaded, can't add any";
   } else
@@ -347,7 +354,11 @@ void Viewer::addTemplateObject() {
 void Viewer::addPrimitiveObject() {
   // TODO : use this to implement synthesizing rendered physical objects
   if (physicsManager_ != nullptr) {
-    LOG(WARNING) << "Physically modelled primitives are not yet implemented.";
+    int numObjPrims = resourceManager_.getNumPrimTemplateObjects();
+    if (numObjPrims > 0) {
+      addObject(resourceManager_.getRandomPrimTemplateHandle());
+    } else
+      LOG(WARNING) << "No primitive templates available, can't add any objects";
   } else
     LOG(WARNING) << "Run the app with --enable-physics in order to add "
                     "physically modelled primitives";

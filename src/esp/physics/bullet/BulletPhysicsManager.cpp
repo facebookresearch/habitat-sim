@@ -19,8 +19,7 @@ BulletPhysicsManager::~BulletPhysicsManager() {
   staticSceneObject_.reset(nullptr);
 }
 
-bool BulletPhysicsManager::initPhysicsFinalize(
-    const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes) {
+bool BulletPhysicsManager::initPhysicsFinalize() {
   activePhysSimLib_ = BULLET;
 
   //! We can potentially use other collision checking algorithms, by

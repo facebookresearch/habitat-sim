@@ -88,8 +88,11 @@ class PhysicsManager {
    * tracks the assets this
    * @ref PhysicsManager will have access to.
    */
-  explicit PhysicsManager(assets::ResourceManager& _resourceManager)
-      : resourceManager_(_resourceManager){};
+  explicit PhysicsManager(
+      assets::ResourceManager& _resourceManager,
+      const assets::PhysicsManagerAttributes::ptr _physicsManagerAttributes)
+      : resourceManager_(_resourceManager),
+        physicsManagerAttributes(_physicsManagerAttributes){};
 
   /** @brief Destructor*/
   virtual ~PhysicsManager();
@@ -103,9 +106,7 @@ class PhysicsManager {
    * @param physicsManagerAttributes A structure containing values for physical
    * parameters necessary to initialize the physical scene and simulator.
    */
-  bool initPhysics(
-      scene::SceneNode* node,
-      const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes);
+  bool initPhysics(scene::SceneNode* node);
 
   /**
    * @brief Reset the simulation and physical world.
@@ -843,8 +844,7 @@ class PhysicsManager {
    * @param physicsManagerAttributes A structure containing values for physical
    * parameters necessary to initialize the physical scene and simulator.
    */
-  virtual bool initPhysicsFinalize(
-      const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes);
+  virtual bool initPhysicsFinalize();
 
   /**
    * @brief Finalize scene initialization for kinematic scenes.  Overidden by
@@ -876,9 +876,13 @@ class PhysicsManager {
       assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
       scene::SceneNode* objectNode);
 
-  /** @brief A pointer to a @ref esp::assets::ResourceManager which holds assets
-   * that can be accessed by this @ref PhysicsManager*/
+  /** @brief A reference to a @ref esp::assets::ResourceManager which holds
+   * assets that can be accessed by this @ref PhysicsManager*/
   assets::ResourceManager& resourceManager_;
+
+  /** @brief A pointer to the @ref assets::PhysicsManagerAttributes describing
+   * this physics manager */
+  const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes;
 
   /** @brief The current physics library implementation used by this
    * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager
