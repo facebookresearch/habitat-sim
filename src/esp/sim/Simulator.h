@@ -89,6 +89,19 @@ class Simulator {
 
   // === Physics Simulator Functions ===
   // TODO: support multi-scene physics (default sceneID=0 currently).
+
+  /**
+   * @brief Get the string handle for the object template referenced by the
+   * passed ID
+   *
+   * @param objectTemplateID The index of the object template in the @ref
+   * ResourceManager library.
+   * @return The string key referencing the asset in @ref ResourceManager.
+   */
+  std::string getObjectTemplateHandleByID(const int objectTemplateID) const {
+    return resourceManager_.getObjectTemplateHandle(objectTemplateID);
+  }
+
   /**
    * @brief Get a list of all templates whose origin handles contain @ref
    * subStr, ignoring subStr's case
@@ -176,13 +189,16 @@ class Simulator {
    * @return The current number of templates stored in @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_.
    */
-  int getPhysicsObjectLibrarySize();
+  int getPhysicsObjectLibrarySize() const {
+    return resourceManager_.getNumLibraryObjects();
+  }
 
   /**
    * @brief Get a smart pointer to a physics object template by index.
    */
-  assets::PhysicsObjectAttributes::ptr getObjectTemplate(int templateId);
-
+  assets::PhysicsObjectAttributes::ptr getObjectTemplate(int templateId) const {
+    return resourceManager_.getPhysicsObjectAttributes(templateId);
+  }
   /**
    * @brief Load all "*.phys_properties.json" files from the provided file or
    * directory path.

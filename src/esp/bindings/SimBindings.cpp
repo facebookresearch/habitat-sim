@@ -68,6 +68,9 @@ void initSimBindings(py::module& m) {
                     &Simulator::setFrustumCullingEnabled,
                     R"(Enable or disable the frustum culling)")
       /* --- Physics functions --- */
+
+      .def("get_template_handle_by_ID", &Simulator::getObjectTemplateHandleByID,
+           "object_id"_a)
       .def("get_template_handles", &Simulator::getObjectTemplateHandles,
            "search_str"_a = "")
       .def("get_file_template_handles",

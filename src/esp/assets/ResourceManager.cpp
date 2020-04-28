@@ -340,8 +340,8 @@ bool ResourceManager::loadPhysicsScene(
   return meshSuccess;
 }
 
-std::vector<std::string> ResourceManager::getObjectConfigPaths(
-    std::string path) {
+std::vector<std::string> ResourceManager::buildObjectConfigPaths(
+    const std::string& path) {
   std::vector<std::string> paths;
 
   namespace Directory = Cr::Utility::Directory;
@@ -375,7 +375,7 @@ std::vector<std::string> ResourceManager::getObjectConfigPaths(
   }
 
   return paths;
-}  // getObjectConfigPaths
+}  // buildObjectConfigPaths
 
 PhysicsManagerAttributes::ptr ResourceManager::loadPhysicsConfig(
     std::string physicsFilename) {
@@ -459,7 +459,7 @@ PhysicsManagerAttributes::ptr ResourceManager::loadPhysicsConfig(
     std::string absolutePath =
         Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
     std::vector<std::string> validConfigPaths =
-        getObjectConfigPaths(absolutePath);
+        buildObjectConfigPaths(absolutePath);
     for (auto& path : validConfigPaths) {
       physicsManagerAttributes->addStringToGroup("objectLibraryPaths", path);
     }
@@ -515,11 +515,6 @@ void ResourceManager::addObjectToDrawables(
                  drawables, loadedAssetData.meshMetaData.root);
   }  // should always be specified, otherwise won't do anything
 }  // addObjectToDrawables
-
-PhysicsObjectAttributes::ptr ResourceManager::getPhysicsObjectAttributes(
-    const int objectTemplateID) {
-  return physicsObjTemplateLibrary_.at(getObjectConfig(objectTemplateID));
-}
 
 bool ResourceManager::loadObjectMeshDataFromFile(
     const std::string& fileName,
@@ -621,8 +616,8 @@ int ResourceManager::loadObjectTemplate(
 }  // loadObjectTemplate
 
 std::string ResourceManager::getRandomTemplateHandlePerType(
-    std::map<int, std::string>& mapOfHandles,
-    const std::string& type) {
+    const std::map<int, std::string>& mapOfHandles,
+    const std::string& type) const {
   int numVals = mapOfHandles.size();
   if (numVals == 0) {
     LOG(ERROR) << "Attempting to get a random " << type
@@ -632,7 +627,7 @@ std::string ResourceManager::getRandomTemplateHandlePerType(
   int randIDX = rand() % numVals;
 
   std::string res;
-  for (std::pair<std::map<int, std::string>::iterator, int> iter(
+  for (std::pair<std::map<int, std::string>::const_iterator, int> iter(
            mapOfHandles.begin(), 0);
        (iter.first != mapOfHandles.end() && iter.second <= randIDX);
        ++iter.first, ++iter.second) {
@@ -641,9 +636,9 @@ std::string ResourceManager::getRandomTemplateHandlePerType(
   return res;
 }  // getRandomTemplateHandlePerType
 
-std::vector<std::string> ResourceManager::getReqTemplateHandlesBySubString(
-    std::map<int, std::string>& mapOfHandles,
-    const std::string& subStr) {
+std::vector<std::string> ResourceManager::getTemplateHandlesBySubStringPerType(
+    const std::map<int, std::string>& mapOfHandles,
+    const std::string& subStr) const {
   std::vector<std::string> res;
   // if empty return empty vector
   if (mapOfHandles.size() == 0) {
@@ -664,7 +659,7 @@ std::vector<std::string> ResourceManager::getReqTemplateHandlesBySubString(
   std::transform(strToLookFor.begin(), strToLookFor.end(), strToLookFor.begin(),
                  [](unsigned char c) { return std::tolower(c); });
 
-  for (std::map<int, std::string>::iterator iter = mapOfHandles.begin();
+  for (std::map<int, std::string>::const_iterator iter = mapOfHandles.begin();
        iter != mapOfHandles.end(); ++iter) {
     std::string key(iter->second);
     // be sure that key is big enough to search in (otherwise find has undefined
@@ -864,38 +859,19 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
   return loadObjectTemplate(physicsObjectAttributes, objPhysConfigFilename);
 }  // parseAndLoadPhysObjTemplate
 
-const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
-    const int objectTemplateID) {
-  std::string configFile = getObjectConfig(objectTemplateID);
-  return getCollisionMesh(configFile);
-}
-
-const std::vector<assets::CollisionMeshData>& ResourceManager::getCollisionMesh(
-    const std::string& configFile) {
-  return collisionMeshGroups_.at(
-      physicsObjTemplateLibrary_.at(configFile)->getCollisionMeshHandle());
-}
-
-int ResourceManager::getObjectTemplateID(const std::string& configFile) {
-  const bool objTemplateExists =
-      physicsObjTemplateLibrary_.count(configFile) > 0;
-  if (objTemplateExists) {
-    return physicsObjTemplateLibrary_.at(configFile)->getObjectTemplateID();
-  }
-  return ID_UNDEFINED;
-}
-
-std::string ResourceManager::getObjectConfig(const int objectTemplateID) {
+std::string ResourceManager::getObjectTemplateHandle(
+    const int objectTemplateID) const {
   const bool physTemplateExists =
       physicsTemplatesLibByID_.count(objectTemplateID) > 0;
   if (!physTemplateExists) {
-    Corrade::Utility::Debug() << "ResourceManager::getObjectConfig - Aborting. "
-                                 "No loaded or primitive template with index "
-                              << objectTemplateID << " exists.";
+    Corrade::Utility::Debug()
+        << "ResourceManager::getObjectTemplateHandle - Aborting. "
+           "No loaded or primitive template with index "
+        << objectTemplateID << " exists.";
     return "";
   }
   return physicsTemplatesLibByID_.at(objectTemplateID);
-}  // getObjectConfig
+}  // getObjectTemplateHandle
 
 Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
@@ -1452,11 +1428,11 @@ void ResourceManager::loadMaterials(Importer& importer,
     int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
     if (loadedAssetData.assetInfo.requiresLighting) {
       finalMaterial =
-          getPhongShadedMaterialData(phongMaterialData, textureBaseIndex);
+          buildPhongShadedMaterialData(phongMaterialData, textureBaseIndex);
 
     } else {
       finalMaterial =
-          getFlatShadedMaterialData(phongMaterialData, textureBaseIndex);
+          buildFlatShadedMaterialData(phongMaterialData, textureBaseIndex);
     }
     // for now, just use unique ID for material key. This may change if we
     // expose materials to user for post-load modification
@@ -1465,7 +1441,7 @@ void ResourceManager::loadMaterials(Importer& importer,
   }
 }
 
-gfx::PhongMaterialData::uptr ResourceManager::getFlatShadedMaterialData(
+gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
     const Mn::Trade::PhongMaterialData& material,
     int textureBaseIndex) {
   // NOLINTNEXTLINE(google-build-using-namespace)
@@ -1491,7 +1467,7 @@ gfx::PhongMaterialData::uptr ResourceManager::getFlatShadedMaterialData(
   return finalMaterial;
 }
 
-gfx::PhongMaterialData::uptr ResourceManager::getPhongShadedMaterialData(
+gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
     const Mn::Trade::PhongMaterialData& material,
     int textureBaseIndex) {
   // NOLINTNEXTLINE(google-build-using-namespace)

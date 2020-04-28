@@ -314,7 +314,7 @@ Viewer::Viewer(const Arguments& arguments)
 void Viewer::addObject(int ID) {
   if (physicsManager_ == nullptr)
     return;
-  addObject(resourceManager_.getObjectConfig(ID));
+  addObject(resourceManager_.getObjectTemplateHandle(ID));
 }  // addObject
 
 void Viewer::addObject(const std::string& configFile) {

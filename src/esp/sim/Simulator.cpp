@@ -291,21 +291,10 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
   return ID_UNDEFINED;
 }
 
-// return the current size of the physics object library (objects [0,size) can
-// be instanced)
-int Simulator::getPhysicsObjectLibrarySize() {
-  return resourceManager_.getNumLibraryObjects();
-}
-
-assets::PhysicsObjectAttributes::ptr Simulator::getObjectTemplate(
-    int templateId) {
-  return resourceManager_.getPhysicsObjectAttributes(templateId);
-}
-
 std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
   std::vector<int> templateIndices;
   std::vector<std::string> validConfigPaths =
-      resourceManager_.getObjectConfigPaths(path);
+      resourceManager_.buildObjectConfigPaths(path);
   for (auto& validPath : validConfigPaths) {
     templateIndices.push_back(
         resourceManager_.parseAndLoadPhysObjTemplate(validPath));

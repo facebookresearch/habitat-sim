@@ -37,14 +37,19 @@ def test_kinematics(sim):
     assert sim.get_physics_object_library_size() > 0
 
     # test adding an object to the world
-    object_id = sim.add_object(0)
+    # get handle for object 0, used to test
+    obj_handle = sim.get_template_handle_by_ID(0)
+    object_id = sim.add_object_by_handle(obj_handle)
+    #object_id = sim.add_object(0)
     assert len(sim.get_existing_object_ids()) > 0
 
     # test setting the motion type
 
-    assert sim.set_object_motion_type(habitat_sim.physics.MotionType.STATIC, object_id)
+    assert sim.set_object_motion_type(
+        habitat_sim.physics.MotionType.STATIC, object_id)
     assert (
-        sim.get_object_motion_type(object_id) == habitat_sim.physics.MotionType.STATIC
+        sim.get_object_motion_type(
+            object_id) == habitat_sim.physics.MotionType.STATIC
     )
     assert sim.set_object_motion_type(
         habitat_sim.physics.MotionType.KINEMATIC, object_id
@@ -77,7 +82,9 @@ def test_kinematics(sim):
     old_object_id = sim.remove_object(object_id)
     assert len(sim.get_existing_object_ids()) == 0
 
-    object_id = sim.add_object(0)
+    obj_handle = sim.get_template_handle_by_ID(0)
+    object_id = sim.add_object_by_handle(obj_handle)
+    #object_id = sim.add_object(0)
 
     prev_time = 0.0
     for _ in range(2):
@@ -96,7 +103,9 @@ def test_kinematics(sim):
 
     # test attaching/dettaching an Agent to/from physics simulation
     agent_node = sim.agents[0].scene_node
-    sim.add_object(0, agent_node)
+    obj_handle = sim.get_template_handle_by_ID(0)
+    object_id = sim.add_object_by_handle(obj_handle, agent_node)
+    #sim.add_object(0, agent_node)
     sim.set_translation(np.random.rand(3), object_id)
     assert np.allclose(agent_node.translation, sim.get_translation(object_id))
     sim.remove_object(object_id, False)  # don't delete the agent's node
@@ -129,8 +138,11 @@ def test_dynamics(sim):
     assert sim.get_physics_object_library_size() > 0
 
     # test adding an object to the world
-    object_id = sim.add_object(1)
-    object2_id = sim.add_object(1)
+    obj_handle = sim.get_template_handle_by_ID(1)
+    object_id = sim.add_object_by_handle(obj_handle)
+    object2_id = sim.add_object_by_handle(obj_handle)
+    # object_id = sim.add_object(1)
+    # object2_id = sim.add_object(1)
     assert len(sim.get_existing_object_ids()) > 0
 
     # place the objects over the table in room
@@ -243,9 +255,12 @@ def test_velocity_control(sim):
     object_template.set_linear_damping(0.0)
     object_template.set_angular_damping(0.0)
 
+    obj_handle = sim.get_template_handle_by_ID(template_ids[0])
+
     for iteration in range(2):
         sim.reset()
-        object_id = sim.add_object(template_ids[0])
+        object_id = sim.add_object_by_handle(obj_handle)
+        #object_id = sim.add_object(template_ids[0])
         vel_control = sim.get_object_velocity_control(object_id)
 
         if iteration == 0:
