@@ -10,21 +10,18 @@
 namespace esp {
 namespace physics {
 
-bool PhysicsManager::initPhysics(
-    scene::SceneNode* node,
-    const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes) {
+bool PhysicsManager::initPhysics(scene::SceneNode* node) {
   physicsNode_ = node;
 
   // Copy over relevant configuration
   fixedTimeStep_ = physicsManagerAttributes->getTimestep();
 
   //! Create new scene node and set up any physics-related variables
-  initialized_ = initPhysicsFinalize(physicsManagerAttributes);
+  initialized_ = initPhysicsFinalize();
   return initialized_;
 }
 
-bool PhysicsManager::initPhysicsFinalize(
-    const assets::PhysicsManagerAttributes::ptr) {
+bool PhysicsManager::initPhysicsFinalize() {
   //! Create new scene node
   staticSceneObject_ =
       physics::RigidObject::create_unique(&physicsNode_->createChild());
@@ -63,11 +60,21 @@ int PhysicsManager::addObject(const int objectLibIndex,
                               DrawableGroup* drawables,
                               scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
+  const std::string& configHandle =
+      resourceManager_.getObjectConfig(objectLibIndex);
+  return addObject(configHandle, drawables, attachmentNode, lightSetup);
+}
+
+int PhysicsManager::addObject(const std::string& configFileHandle,
+                              DrawableGroup* drawables,
+                              scene::SceneNode* attachmentNode,
+                              const Magnum::ResourceKey& lightSetup) {
+  //! Invoke resourceManager to draw object
   //! Test Mesh primitive is valid
   assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
-      resourceManager_.getPhysicsObjectAttributes(objectLibIndex);
+      resourceManager_.getPhysicsObjectAttributes(configFileHandle);
   const std::vector<assets::CollisionMeshData>& meshGroup =
-      resourceManager_.getCollisionMesh(objectLibIndex);
+      resourceManager_.getCollisionMesh(configFileHandle);
 
   //! Make rigid object and add it to existingObjects
   int nextObjectID_ = allocateObjectID();
@@ -92,7 +99,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
   //! Draw object via resource manager
   //! Render node as child of physics node
   resourceManager_.addObjectToDrawables(
-      objectLibIndex, existingObjects_.at(nextObjectID_)->visualNode_,
+      configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
       drawables, lightSetup);
   existingObjects_.at(nextObjectID_)->node().computeCumulativeBB();
 
@@ -111,17 +118,6 @@ int PhysicsManager::addObject(const int objectLibIndex,
   existingObjects_.at(nextObjectID_)->finalizeObject();
 
   return nextObjectID_;
-}
-
-int PhysicsManager::addObject(const std::string& configFile,
-                              DrawableGroup* drawables,
-                              scene::SceneNode* attachmentNode,
-                              const Magnum::ResourceKey& lightSetup) {
-  int resObjectID = resourceManager_.getObjectTemplateID(configFile);
-  //! Invoke resourceManager to draw object
-  int physObjectID =
-      addObject(resObjectID, drawables, attachmentNode, lightSetup);
-  return physObjectID;
 }
 
 void PhysicsManager::removeObject(const int physObjectID,
@@ -221,16 +217,15 @@ void PhysicsManager::stepPhysics(double dt) {
     for (auto& object : existingObjects_) {
       VelocityControl::ptr velControl = object.second->getVelocityControl();
       if (velControl->controllingAngVel || velControl->controllingLinVel) {
-        scene::SceneNode& objectSceneNode = object.second->node();
-        objectSceneNode.setTransformation(velControl->integrateTransform(
-            fixedTimeStep_, objectSceneNode.transformation()));
+        object.second->setRigidState(velControl->integrateTransform(
+            fixedTimeStep_, object.second->getRigidState()));
       }
     }
     worldTime_ += fixedTimeStep_;
   }
 }
 
-//! Profile function. In BulletPhysics stationery objects are
+//! Profile function. In BulletPhysics stationary objects are
 //! marked as inactive to speed up simulation. This function
 //! helps checking how many objects are active/inactive at any
 //! time step

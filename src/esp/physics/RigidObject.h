@@ -63,6 +63,22 @@ enum class MotionType {
 };
 
 /**
+ * @brief describes the state of a rigid object as a composition of rotation
+ * (quaternion) and translation.
+ */
+struct RigidState {
+  RigidState(){};
+  RigidState(const Magnum::Quaternion& _rotation,
+             const Magnum::Vector3& _translation)
+      : rotation(_rotation), translation(_translation){};
+
+  Magnum::Quaternion rotation;
+  Magnum::Vector3 translation;
+
+  ESP_SMART_POINTERS(RigidState)
+};
+
+/**
 @brief Category of a @ref RigidObject. Defines treatment of the object in @ref
 PhysicsManager. Also denotes the status of an object as initialized or not.
 */
@@ -118,16 +134,17 @@ struct VelocityControl {
    * @brief Compute the result of applying constant control velocities to the
    * provided object transform.
    *
+   * For efficiency this function does not support transforms with scaling.
+   *
    * Default implementation uses explicit Euler integration.
    * @param dt The discrete timestep over which to integrate.
-   * @param objectTransformation The initial state of the object before applying
-   * velocity control.
+   * @param objectRotationTranslation The initial state of the object before
+   * applying velocity control.
    * @return The new state of the object after applying velocity control over
    * dt.
    */
-  virtual Magnum::Matrix4 integrateTransform(
-      const float dt,
-      const Magnum::Matrix4& objectTransform);
+  virtual RigidState integrateTransform(const float dt,
+                                        const RigidState& rigidState);
 
   ESP_SMART_POINTERS(VelocityControl)
 };
@@ -363,6 +380,21 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual void setRotation(const Magnum::Quaternion& quaternion);
 
+  /**
+   * @brief Set the rotation and translation of the object.
+   */
+  virtual void setRigidState(const RigidState& rigidState) {
+    setTranslation(rigidState.translation);
+    setRotation(rigidState.rotation);
+  };
+
+  /**
+   * @brief Get the rotation and translation of the object.
+   */
+  virtual RigidState getRigidState() {
+    return RigidState(node().rotation(), node().translation());
+  };
+
   /** @brief Reset the transformation of the object.
    * !!NOT IMPLEMENTED!!
    */
@@ -576,6 +608,9 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
 
   /**
    * @brief All Drawable components are children of this node.
+   *
+   * Note that the transformation of this node is a composition of rotation and
+   * translation as scaling is applied to a child of this node.
    */
   scene::SceneNode* visualNode_ = nullptr;
 

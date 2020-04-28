@@ -320,6 +320,9 @@ class Simulator:
     def load_object_template(self, object_template, object_template_handle):
         return self._sim.load_object_template(object_template, object_template_handle)
 
+    def get_object_initialization_template(self, object_id, scene_id=0):
+        return self._sim.get_object_initialization_template(object_id, scene_id)
+
     # --- physics functions ---
     def add_object(
         self,

@@ -19,8 +19,7 @@ BulletPhysicsManager::~BulletPhysicsManager() {
   staticSceneObject_.reset(nullptr);
 }
 
-bool BulletPhysicsManager::initPhysicsFinalize(
-    const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes) {
+bool BulletPhysicsManager::initPhysicsFinalize() {
   activePhysSimLib_ = BULLET;
 
   //! We can potentially use other collision checking algorithms, by
@@ -133,9 +132,8 @@ void BulletPhysicsManager::stepPhysics(double dt) {
     if (objectItr.second->getMotionType() == MotionType::KINEMATIC) {
       // kinematic velocity control intergration
       if (velControl->controllingAngVel || velControl->controllingLinVel) {
-        scene::SceneNode& objectSceneNode = objectItr.second->node();
-        objectSceneNode.setTransformation(velControl->integrateTransform(
-            dt, objectSceneNode.transformation()));
+        objectItr.second->setRigidState(velControl->integrateTransform(
+            dt, objectItr.second->getRigidState()));
         objectItr.second->setActive();
       }
     } else if (objectItr.second->getMotionType() == MotionType::DYNAMIC) {

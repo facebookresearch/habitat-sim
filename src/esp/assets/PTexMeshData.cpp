@@ -644,7 +644,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
                          "properties following faces", );
         } else {
           // No idea what to do with properties before elements
-          CORRADE_ASSERT_UNREACHABLE();
+          CORRADE_INTERNAL_ASSERT_UNREACHABLE();
         }
 
         lastProperty = name;
@@ -656,7 +656,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
         break;
       } else {
         // Something unrecognised
-        CORRADE_ASSERT_UNREACHABLE();
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       }
     }
 
@@ -706,7 +706,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
       colorOffsetBytes = offsetSoFarBytes;
       offsetSoFarBytes += colorBytes;
     } else {
-      CORRADE_ASSERT_UNREACHABLE();
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
     }
   }
 

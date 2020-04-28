@@ -28,8 +28,7 @@ Magnum::Vector3 getLightPositionRelativeToCamera(
       return light.position;
   }
 
-  CORRADE_ASSERT_UNREACHABLE();
-  return {};
+  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
 
 LightSetup getLightsAtBoxCorners(const Magnum::Range3D& box,

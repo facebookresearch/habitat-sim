@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "RigidObject.h"
+#include <Magnum/Math/Algorithms/GramSchmidt.h>
 #include <Magnum/Math/Range.h>
 
 namespace esp {
@@ -18,7 +19,7 @@ bool RigidObject::initializeScene(
     const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   if (rigidObjectType_ != RigidObjectType::NONE) {
-    LOG(ERROR) << "Cannot initialized a RigidObject more than once";
+    LOG(ERROR) << "Cannot initialize a RigidObject Scene more than once";
     return false;
   }
 
@@ -42,7 +43,7 @@ bool RigidObject::initializeObject(
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // TODO (JH): Handling static/kinematic object type
   if (rigidObjectType_ != RigidObjectType::NONE) {
-    LOG(ERROR) << "Cannot initialized a RigidObject more than once";
+    LOG(ERROR) << "Cannot initialize a RigidObject more than once";
     return false;
   }
 
@@ -236,32 +237,32 @@ Magnum::Matrix3 RigidObject::getInertiaMatrix() {
 
 //////////////////
 // VelocityControl
-Magnum::Matrix4 VelocityControl::integrateTransform(
-    const float dt,
-    const Magnum::Matrix4& objectTransform) {
+
+RigidState VelocityControl::integrateTransform(const float dt,
+                                               const RigidState& rigidState) {
+  RigidState newRigidState(rigidState);
   // linear first
-  Magnum::Vector3 newTranslation = objectTransform.translation();
   if (controllingLinVel) {
     if (linVelIsLocal) {
-      newTranslation += objectTransform.rotation() *
-                        (linVel * dt);  // avoid local scaling of the velocity
+      newRigidState.translation =
+          rigidState.translation +
+          rigidState.rotation.transformVector(linVel * dt);
     } else {
-      newTranslation += linVel * dt;
+      newRigidState.translation = rigidState.translation + (linVel * dt);
     }
   }
 
-  Magnum::Matrix3 newRotationScaling = objectTransform.rotationScaling();
   // then angular
   if (controllingAngVel) {
-    Magnum::Vector3 globalAngVel = angVel;
+    Magnum::Vector3 globalAngVel{angVel};
     if (angVelIsLocal) {
-      globalAngVel = objectTransform.rotation() * angVel;
+      globalAngVel = rigidState.rotation.transformVector(angVel);
     }
     Magnum::Quaternion q = Magnum::Quaternion::rotation(
         Magnum::Rad{(globalAngVel * dt).length()}, globalAngVel.normalized());
-    newRotationScaling = q.toMatrix() * newRotationScaling;
+    newRigidState.rotation = (q * rigidState.rotation).normalized();
   }
-  return Magnum::Matrix4::from(newRotationScaling, newTranslation);
+  return newRigidState;
 }
 
 }  // namespace physics
