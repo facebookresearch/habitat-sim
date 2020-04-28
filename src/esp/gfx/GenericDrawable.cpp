@@ -9,14 +9,16 @@
 
 #include "esp/scene/SceneNode.h"
 
+namespace Mn = Magnum;
+
 namespace esp {
 namespace gfx {
 
 GenericDrawable::GenericDrawable(scene::SceneNode& node,
-                                 Magnum::GL::Mesh& mesh,
+                                 Mn::GL::Mesh& mesh,
                                  ShaderManager& shaderManager,
-                                 const Magnum::ResourceKey& lightSetup,
-                                 const Magnum::ResourceKey& materialData,
+                                 const Mn::ResourceKey& lightSetup,
+                                 const Mn::ResourceKey& materialData,
                                  DrawableGroup* group /* = nullptr */,
                                  int objectId /* = ID_UNDEFINED */)
     : Drawable{node, mesh, group},
@@ -29,25 +31,25 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
   updateShader();
 }
 
-void GenericDrawable::setLightSetup(const Magnum::ResourceKey& resourceKey) {
+void GenericDrawable::setLightSetup(const Mn::ResourceKey& resourceKey) {
   lightSetup_ = shaderManager_.get<LightSetup>(resourceKey);
 
   // update the shader early here to to avoid doing it during the render loop
   updateShader();
 }
 
-void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
-                           Magnum::SceneGraph::Camera3D& camera) {
+void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
+                           Mn::SceneGraph::Camera3D& camera) {
   updateShader();
 
-  const Magnum::Matrix4 cameraMatrix = camera.cameraMatrix();
+  const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();
 
-  std::vector<Magnum::Vector3> lightPositions;
+  std::vector<Mn::Vector3> lightPositions;
   lightPositions.reserve(lightSetup_->size());
-  std::vector<Magnum::Color4> lightColors;
+  std::vector<Mn::Color4> lightColors;
   lightColors.reserve(lightSetup_->size());
 
-  for (Magnum::UnsignedInt i = 0; i < lightSetup_->size(); ++i) {
+  for (Mn::UnsignedInt i = 0; i < lightSetup_->size(); ++i) {
     lightPositions.emplace_back(getLightPositionRelativeToCamera(
         (*lightSetup_)[i], transformationMatrix, cameraMatrix));
 
@@ -59,14 +61,14 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
       .setDiffuseColor(materialData_->diffuseColor)
       .setSpecularColor(materialData_->specularColor)
       .setShininess(materialData_->shininess)
-      .setObjectId(materialData_->perVertexObjectId ? 0 : node_.getId())
       .setLightPositions(lightPositions)
       .setLightColors(lightColors)
+      .setObjectId(materialData_->perVertexObjectId ? 0 : node_.getId())
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(transformationMatrix.rotationScaling());
 
-  if (materialData_->textureMatrix != Magnum::Matrix3{})
+  if (materialData_->textureMatrix != Mn::Matrix3{})
     shader_->setTextureMatrix(materialData_->textureMatrix);
 
   if (materialData_->ambientTexture)
@@ -82,37 +84,37 @@ void GenericDrawable::draw(const Magnum::Matrix4& transformationMatrix,
 }
 
 void GenericDrawable::updateShader() {
-  Magnum::UnsignedInt lightCount = lightSetup_->size();
-  Magnum::Shaders::Phong::Flags flags = Magnum::Shaders::Phong::Flag::ObjectId;
+  Mn::UnsignedInt lightCount = lightSetup_->size();
+  Mn::Shaders::Phong::Flags flags = Mn::Shaders::Phong::Flag::ObjectId;
 
-  if (materialData_->textureMatrix != Magnum::Matrix3{})
-    flags |= Magnum::Shaders::Phong::Flag::TextureTransformation;
+  if (materialData_->textureMatrix != Mn::Matrix3{})
+    flags |= Mn::Shaders::Phong::Flag::TextureTransformation;
   if (materialData_->ambientTexture)
-    flags |= Magnum::Shaders::Phong::Flag::AmbientTexture;
+    flags |= Mn::Shaders::Phong::Flag::AmbientTexture;
   if (materialData_->diffuseTexture)
-    flags |= Magnum::Shaders::Phong::Flag::DiffuseTexture;
+    flags |= Mn::Shaders::Phong::Flag::DiffuseTexture;
   if (materialData_->specularTexture)
-    flags |= Magnum::Shaders::Phong::Flag::SpecularTexture;
+    flags |= Mn::Shaders::Phong::Flag::SpecularTexture;
   if (materialData_->normalTexture)
-    flags |= Magnum::Shaders::Phong::Flag::NormalTexture;
+    flags |= Mn::Shaders::Phong::Flag::NormalTexture;
   if (materialData_->perVertexObjectId)
-    flags |= Magnum::Shaders::Phong::Flag::InstancedObjectId;
+    flags |= Mn::Shaders::Phong::Flag::InstancedObjectId;
+  if (materialData_->vertexColored)
+    flags |= Mn::Shaders::Phong::Flag::VertexColor;
 
   if (!shader_ || shader_->lightCount() != lightCount ||
       shader_->flags() != flags) {
     // if the number of lights or flags have changed, we need to fetch a
     // compatible shader
     shader_ =
-        shaderManager_
-            .get<Magnum::GL::AbstractShaderProgram, Magnum::Shaders::Phong>(
-                getShaderKey(lightCount, flags));
+        shaderManager_.get<Mn::GL::AbstractShaderProgram, Mn::Shaders::Phong>(
+            getShaderKey(lightCount, flags));
 
     // if no shader with desired number of lights and flags exists, create one
     if (!shader_) {
-      shaderManager_.set<Magnum::GL::AbstractShaderProgram>(
-          shader_.key(), new Magnum::Shaders::Phong{flags, lightCount},
-          Magnum::ResourceDataState::Final,
-          Magnum::ResourcePolicy::ReferenceCounted);
+      shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+          shader_.key(), new Mn::Shaders::Phong{flags, lightCount},
+          Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
     }
 
     CORRADE_INTERNAL_ASSERT(shader_ && shader_->lightCount() == lightCount &&
@@ -120,12 +122,12 @@ void GenericDrawable::updateShader() {
   }
 }
 
-Magnum::ResourceKey GenericDrawable::getShaderKey(
-    Magnum::UnsignedInt lightCount,
-    Magnum::Shaders::Phong::Flags flags) const {
+Mn::ResourceKey GenericDrawable::getShaderKey(
+    Mn::UnsignedInt lightCount,
+    Mn::Shaders::Phong::Flags flags) const {
   return Corrade::Utility::formatString(
       SHADER_KEY_TEMPLATE, lightCount,
-      static_cast<Magnum::Shaders::Phong::Flags::UnderlyingType>(flags));
+      static_cast<Mn::Shaders::Phong::Flags::UnderlyingType>(flags));
 }
 
 }  // namespace gfx
