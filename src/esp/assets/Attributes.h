@@ -244,11 +244,11 @@ class AbstractPrimitiveAttributes : public esp::core::Configuration {
     setString("originHandle", originHandle);
   }
   std::string getOriginHandle() const { return getString("originHandle"); }
-  void setObjectTemplateID(int objectTemplateID) {
-    setInt("objectTemplateID", objectTemplateID);
+  void setAssetTemplateID(int assetTemplateID) {
+    setInt("assetTemplateID", assetTemplateID);
   }
 
-  int getObjectTemplateID() const { return getInt("objectTemplateID"); }
+  int getAssetTemplateID() const { return getInt("assetTemplateID"); }
 
   // not used to construct prim mesh
   void setIsWireframe(bool isWireframe) { setBool("isWireframe", isWireframe); }

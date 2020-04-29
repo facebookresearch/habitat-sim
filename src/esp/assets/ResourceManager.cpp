@@ -649,9 +649,9 @@ int ResourceManager::addPrimAssetTemplateToLibrary(
   int primAssetTemplateID;
   if (isNotPresent) {
     primAssetTemplateID = primitiveAssetsTemplateLibrary_.size();
-    primTemplate->setObjectTemplateID(primAssetTemplateID);
+    primTemplate->setAssetTemplateID(primAssetTemplateID);
   } else {
-    primAssetTemplateID = primTemplate->getObjectTemplateID();
+    primAssetTemplateID = primTemplate->getAssetTemplateID();
   }
   // if is present, will replace present template with new template - templates
   // are expected to be 1-to-1 with handles (each unique handle always describes
