@@ -1268,6 +1268,13 @@ bool ResourceManager::loadGeneralMeshData(
       LOG(ERROR) << "Cannot open file " << filename;
       return false;
     }
+
+    LOG(INFO) << "Filename : " << filename
+              << " | # of meshes in importer : " << importer->meshCount()
+              << " | # of textures : " << importer->textureCount()
+              << " | # of materials : " << importer->materialCount()
+              << " | # of scenes : " << importer->sceneCount();
+
     // if this is a new file, load it and add it to the dictionary
     LoadedAssetData loadedAssetData{info};
     loadTextures(*importer, loadedAssetData);

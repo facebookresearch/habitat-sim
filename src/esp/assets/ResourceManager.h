@@ -120,6 +120,13 @@ enum class PrimObjTypes : uint32_t {
   END_PRIM_OBJ_TYPES
 };
 
+constexpr const char* Names3D[]{"capsule3DSolid", "capsule3DWireframe",
+                                "coneSolid", "coneWireframe", "cubeSolid",
+                                "cubeWireframe", "cylinderSolid",
+                                "cylinderWireframe", "icosphereSolid",
+                                //"icosphereWireframe",
+                                "uvSphereSolid", "uvSphereWireframe"};
+
 /**
  * @brief Singleton class responsible for
  * loading and managing common simulator assets such as meshes, textures, and
@@ -202,10 +209,11 @@ class ResourceManager {
    * static.
    * @param drawables The @ref DrawableGroup with which the scene mesh will be
    * rendered.
+   * @param lightSetup The @ref LightSetup key that will be used
+   * for the scene.
    * @param physicsFilename The physics configuration file from which to
    * re-instatiate the @ref physics::PhysicsManager and parse object templates
-   * for the
-   * @ref physicsObjTemplateLibrary_. Defaults to the file location @ref
+   * for the @ref physicsObjTemplateLibrary_. Defaults to the file location @ref
    * ESP_DEFAULT_PHYS_SCENE_CONFIG set by cmake.
    * @return Whether or not the scene load succeeded.
    */
@@ -237,6 +245,7 @@ class ResourceManager {
    * static.
    * @param drawables The @ref DrawableGroup with which the scene mesh will be
    * rendered.
+   * @param lightSetup The @ref LightSetup key that will be used.
    * @return Whether or not the scene load succeeded.
    */
   bool loadPhysicsScene(
@@ -297,6 +306,8 @@ class ResourceManager {
    * child.
    * @param drawables The @ref DrawableGroup with which the object @ref
    * gfx::Drawable will be rendered.
+   * @param lightSetup The @ref LightSetup key that will be used
+   * for the added component.
    */
   void addObjectToDrawables(int objTemplateLibID,
                             scene::SceneNode* parent,
@@ -318,6 +329,8 @@ class ResourceManager {
    * child.
    * @param drawables The @ref DrawableGroup with which the object @ref
    * gfx::Drawable will be rendered.
+   * @param lightSetup The @ref LightSetup key that will be used
+   * for the added component.
    */
   void addObjectToDrawables(const std::string& objPhysConfigFilename,
                             scene::SceneNode* parent,
@@ -741,12 +754,12 @@ class ResourceManager {
    * the meshes, textures, materials, and component heirarchy of the asset.
    * @param parent The @ref scene::SceneNode of which the component will be a
    * child.
+   * @param lightSetup The @ref LightSetup key that will be used
+   * for the added component.
    * @param drawables The @ref DrawableGroup with which the component will be
    * rendered.
    * @param meshTransformNode The @ref MeshTransformNode for component
    * identifying its mesh, material, transformation, and children.
-   * @param lightSetup The @ref LightSetup key that will be used
-   * for the added component.
    */
   void addComponent(const MeshMetaData& metaData,
                     scene::SceneNode& parent,
@@ -881,8 +894,8 @@ class ResourceManager {
    * as a child.
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered.
-   * @param isScene Whether this asset is being loaded as a scene. If it is
-   * then it will be flat shaded for performance reasons
+   * @param lightSetup The @ref LightSetup key that will be used
+   * for the loaded asset.
    */
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent = nullptr,
