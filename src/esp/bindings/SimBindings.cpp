@@ -118,10 +118,10 @@ void initSimBindings(py::module& m) {
            "object_id"_a, "sceneID"_a = 0)
       .def("get_linear_velocity", &Simulator::getLinearVelocity, "object_id"_a,
            "sceneID"_a = 0)
-      .def("set_angular_velocity", &Simulator::setLinearVelocity, "linVel"_a,
+      .def("set_angular_velocity", &Simulator::setAngularVelocity, "angVel"_a,
            "object_id"_a, "sceneID"_a = 0)
-      .def("get_angular_velocity", &Simulator::getLinearVelocity, "object_id"_a,
-           "sceneID"_a = 0)
+      .def("get_angular_velocity", &Simulator::getAngularVelocity,
+           "object_id"_a, "sceneID"_a = 0)
       .def("apply_force", &Simulator::applyForce, "force"_a,
            "relative_position"_a, "object_id"_a, "sceneID"_a = 0)
       .def("apply_torque", &Simulator::applyTorque, "torque"_a, "object_id"_a,

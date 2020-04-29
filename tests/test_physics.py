@@ -224,8 +224,8 @@ def test_dynamics(sim):
 
         sim.set_object_motion_type(habitat_sim.physics.MotionType.DYNAMIC, object2_id)
         sim.set_linear_velocity(test_lin_vel, object2_id)
-        assert sim.get_linear_velocity(object2_id) == test_lin_vel
         sim.set_angular_velocity(test_ang_vel, object2_id)
+        assert sim.get_linear_velocity(object2_id) == test_lin_vel
         assert sim.get_angular_velocity(object2_id) == test_ang_vel
 
         # test modifying gravity
