@@ -531,9 +531,9 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
         objectTransform.scale(Magnum::EigenIntegration::cast<vec3f>(
             initializationTemplate->getScale()));
         std::string meshHandle =
-            initializationTemplate->getCollisionMeshHandle();
+            initializationTemplate->getCollisionAssetHandle();
         if (meshHandle.empty()) {
-          meshHandle = initializationTemplate->getRenderMeshHandle();
+          meshHandle = initializationTemplate->getRenderAssetHandle();
         }
         assets::MeshData::uptr joinedObjectMesh =
             resourceManager_.createJoinedCollisionMesh(meshHandle);

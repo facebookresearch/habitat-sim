@@ -56,16 +56,16 @@ void initAttributesBindings(py::module& m) {
       .def("set_origin_handle", &PhysicsObjectAttributes::setOriginHandle,
            "origin_handle"_a)
       .def("get_origin_handle", &PhysicsObjectAttributes::getOriginHandle)
-      .def("set_render_mesh_handle",
-           &PhysicsObjectAttributes::setRenderMeshHandle,
-           "render_mesh_handle"_a)
-      .def("get_render_mesh_handle",
-           &PhysicsObjectAttributes::getRenderMeshHandle)
-      .def("set_collision_mesh_handle",
-           &PhysicsObjectAttributes::setCollisionMeshHandle,
-           "collision_mesh_handle"_a)
-      .def("get_collision_mesh_handle",
-           &PhysicsObjectAttributes::getCollisionMeshHandle)
+      .def("set_render_asset_handle",
+           &PhysicsObjectAttributes::setRenderAssetHandle,
+           "render_asset_handle"_a)
+      .def("get_render_asset_handle",
+           &PhysicsObjectAttributes::getRenderAssetHandle)
+      .def("set_collision_asset_handle",
+           &PhysicsObjectAttributes::setCollisionAssetHandle,
+           "collision_asset_handle"_a)
+      .def("get_collision_asset_handle",
+           &PhysicsObjectAttributes::getCollisionAssetHandle)
       .def("set_bounding_box_collisions",
            &PhysicsObjectAttributes::setBoundingBoxCollisions,
            "use_bounding_box_for_collision"_a)

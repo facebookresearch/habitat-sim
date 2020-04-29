@@ -136,7 +136,7 @@ def test_object_template_editing(sim):
     # test creating a new template with a test asset
     transform_box_path = osp.abspath("data/test_assets/objects/transform_box.glb")
     transform_box_template = habitat_sim.attributes.PhysicsObjectAttributes()
-    transform_box_template.set_render_mesh_handle(transform_box_path)
+    transform_box_template.set_render_asset_handle(transform_box_path)
     old_library_size = sim.get_physics_object_library_size()
     transform_box_template_id = sim.load_object_template(
         transform_box_template, "transform_box_template"
@@ -153,7 +153,7 @@ def test_object_template_editing(sim):
 
     # test getting and editing template reference
     sphere_template = sim.get_object_template(template_ids[0])
-    assert sphere_template.get_render_mesh_handle().endswith("sphere.glb")
+    assert sphere_template.get_render_asset_handle().endswith("sphere.glb")
     sphere_scale = np.array([2.0, 2.0, 2.0])
     sphere_template.set_scale(sphere_scale)
     sphere_template2 = sim.get_object_template(template_ids[0])

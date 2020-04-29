@@ -75,7 +75,88 @@ constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
 ResourceManager::ResourceManager() {
   initDefaultLightSetups();
   initDefaultMaterials();
+  initDefaultPrimAttributes();
 }
+
+void ResourceManager::initDefaultPrimAttributes() {
+  // set up base primitive asset attributes
+  auto capSolidAttr = PhysicsCapsulePrimAttributes::create(
+      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CAPSULE_SOLID)]);
+  addPrimAssetTemplateToLibrary(capSolidAttr);
+  auto capWFAttr = PhysicsCapsulePrimAttributes::create(
+      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CAPSULE_WF)]);
+  addPrimAssetTemplateToLibrary(capWFAttr);
+  auto coneSolidAttr = PhysicsConePrimAttributes::create(
+      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CONE_SOLID)]);
+  addPrimAssetTemplateToLibrary(coneSolidAttr);
+  auto coneWFAttr = PhysicsConePrimAttributes::create(
+      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CONE_WF)]);
+  addPrimAssetTemplateToLibrary(coneWFAttr);
+  auto cubeSolidAttr = PhysicsCubePrimAttributes::create(
+      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CUBE_SOLID)]);
+  addPrimAssetTemplateToLibrary(cubeSolidAttr);
+  auto cubeWFAttr = PhysicsCubePrimAttributes::create(
+      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CUBE_WF)]);
+  addPrimAssetTemplateToLibrary(cubeWFAttr);
+  auto cylSolidAttr = PhysicsCylinderPrimAttributes::create(
+      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CYLINDER_SOLID)]);
+  addPrimAssetTemplateToLibrary(cylSolidAttr);
+  auto cylWFAttr = PhysicsCylinderPrimAttributes::create(
+      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CYLINDER_WF)]);
+  addPrimAssetTemplateToLibrary(cylWFAttr);
+  auto icoSolidAttr = PhysicsIcospherePrimAttributes::create(
+      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::ICOSPHERE_SOLID)]);
+  addPrimAssetTemplateToLibrary(icoSolidAttr);
+  // TODO: enable for pending Magnum implementation of wireframe icosphere
+  // auto icoWFAttr = PhysicsIcospherePrimAttributes::create(
+  //     true,
+  //     PrimitiveNames3D[static_cast<int>(PrimObjTypes::ICOSPHERE_WF)]);
+  // addPrimAssetTemplateToLibrary(icoWFAttr);
+  auto uvSphereSolidAttr = PhysicsUVSpherePrimAttributes::create(
+      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::UVSPHERE_SOLID)]);
+  addPrimAssetTemplateToLibrary(uvSphereSolidAttr);
+  auto uvSphereWFAttr = PhysicsUVSpherePrimAttributes::create(
+      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::UVSPHERE_WF)]);
+  addPrimAssetTemplateToLibrary(uvSphereWFAttr);
+
+  // set up primitive importer
+
+#ifndef MAGNUM_BUILD_STATIC
+  Mn::PluginManager::Manager<Importer> importManager;
+#else
+  // avoid using plugins that might depend on different library versions
+  Mn::PluginManager::Manager<Importer> importManager{"nonexistent"};
+#endif
+
+  Cr::Containers::Pointer<Importer> primImporter;
+  CORRADE_INTERNAL_ASSERT(
+      primImporter = importManager.loadAndInstantiate("PrimitiveImporter"));
+  primImporter->openData("");
+  // configuration for PrimitiveImporter - replace appropriate groups before
+  // instancing prim object
+  auto conf = primImporter->configuration();
+
+  // build default primitives
+  // primitiveAssetsTemplateLibrary_
+  // primitiveAssetTmpltLibByID_
+  // for debugging
+  for (std::pair<int, std::string> entry : primitiveAssetTmpltLibByID_) {
+    // for every attribute, instance a mesh, and set this to be render mesh
+
+    std::string attrKey = entry.second;
+    auto attr = primitiveAssetsTemplateLibrary_.at(attrKey);
+
+    LOG(INFO) << "ID : " << entry.first
+              << " : attr lib key : " << attr->getOriginHandle()
+              << " | instance class : " << attr->getPrimObjType()
+              << " | Conf has group for this obj type : "
+              << conf.hasGroup(attr->getPrimObjType());
+  }
+
+  LOG(INFO) << "built primitive asset templates: "
+            << std::to_string(primitiveAssetTmpltLibByID_.size());
+
+}  // initDefaultPrimAttributes
 
 bool ResourceManager::loadScene(
     const AssetInfo& info,
@@ -121,7 +202,7 @@ bool ResourceManager::loadScene(
           physicsSceneLibrary_.emplace(info.filepath, physScenLib);
         }
         physicsSceneLibrary_.at(info.filepath)
-            ->setRenderMeshHandle(info.filepath);
+            ->setRenderAssetHandle(info.filepath);
       }
     }
   } else {
@@ -180,7 +261,7 @@ void ResourceManager::loadObjectTemplates(
     parseAndLoadPhysObjTemplate(objPhysPropertiesFilename);
   }
   LOG(INFO) << "loaded object templates: "
-            << std::to_string(physicsObjTmpltLibByID_.size());
+            << std::to_string(physicsFileObjTmpltLibByID_.size());
 }
 
 void ResourceManager::initPhysicsManager(
@@ -289,8 +370,9 @@ bool ResourceManager::loadPhysicsScene(
       ->setRestitutionCoefficient(
           physicsManagerAttributes->getRestitutionCoefficient());
 
-  physicsSceneLibrary_.at(info.filepath)->setRenderMeshHandle(info.filepath);
-  physicsSceneLibrary_.at(info.filepath)->setCollisionMeshHandle(info.filepath);
+  physicsSceneLibrary_.at(info.filepath)->setRenderAssetHandle(info.filepath);
+  physicsSceneLibrary_.at(info.filepath)
+      ->setCollisionAssetHandle(info.filepath);
 
   //! CONSTRUCT SCENE
   const std::string& filename = info.filepath;
@@ -495,7 +577,7 @@ void ResourceManager::addObjectToDrawables(
         physicsObjTemplateLibrary_.at(objPhysConfigFilename);
 
     const std::string& renderMeshFileName =
-        physicsObjectAttributes->getRenderMeshHandle();
+        physicsObjectAttributes->getRenderAssetHandle();
     const LoadedAssetData& loadedAssetData =
         resourceDict_.at(renderMeshFileName);
     if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
@@ -517,18 +599,18 @@ void ResourceManager::addObjectToDrawables(
 }  // addObjectToDrawables
 
 bool ResourceManager::loadObjectMeshDataFromFile(
-    const std::string& fileName,
+    const std::string& filename,
     const std::string& objectTemplateHandle,
     const std::string& meshType,
     const bool requiresLighting) {
   bool success = false;
-  if (!fileName.empty()) {
-    AssetInfo meshInfo{AssetType::UNKNOWN, fileName};
+  if (!filename.empty()) {
+    AssetInfo meshInfo{AssetType::UNKNOWN, filename};
     meshInfo.requiresLighting = requiresLighting;
     success = loadGeneralMeshData(meshInfo);
     if (!success) {
       LOG(ERROR) << "Failed to load a physical object's " << meshType
-                 << " mesh: " << objectTemplateHandle << ", " << fileName;
+                 << " mesh: " << objectTemplateHandle << ", " << filename;
     }
   }
   return success;
@@ -538,16 +620,47 @@ int ResourceManager::addObjTemplateToLibrary(
     PhysicsObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle,
     std::map<int, std::string>& mapOfNames) {
-  // add object template ID to physicObjectAttribute
-  int objectTemplateID = physicsObjTemplateLibrary_.size();
-  objectTemplate->setObjectTemplateID(objectTemplateID);
-
+  // add object template ID to physicsObjTemplateLibrary_
+  bool isNotPresent =
+      (physicsObjTemplateLibrary_.count(objectTemplateHandle) == 0);
+  int objectTemplateID;
+  if (isNotPresent) {
+    objectTemplateID = physicsObjTemplateLibrary_.size();
+    objectTemplate->setObjectTemplateID(objectTemplateID);
+  } else {
+    objectTemplateID = objectTemplate->getObjectTemplateID();
+  }
+  // if is present, will replace present template with new template - templates
+  // are expected to be 1-to-1 with handles (each unique handle always describes
+  // the same unique template)
   physicsObjTemplateLibrary_.emplace(objectTemplateHandle, objectTemplate);
   physicsTemplatesLibByID_.emplace(objectTemplateID, objectTemplateHandle);
   // save reference of specific type of template being built
   mapOfNames.emplace(objectTemplateID, objectTemplateHandle);
   return objectTemplateID;
 }  // addObjTemplateToLibrary
+
+int ResourceManager::addPrimAssetTemplateToLibrary(
+    AbstractPrimitiveAttributes::ptr primTemplate) {
+  // add prim asset template ID to physicsObjTemplateLibrary_
+  auto primHandle = primTemplate->getOriginHandle();
+
+  bool isNotPresent = (primitiveAssetsTemplateLibrary_.count(primHandle) == 0);
+  int primAssetTemplateID;
+  if (isNotPresent) {
+    primAssetTemplateID = primitiveAssetsTemplateLibrary_.size();
+    primTemplate->setObjectTemplateID(primAssetTemplateID);
+  } else {
+    primAssetTemplateID = primTemplate->getObjectTemplateID();
+  }
+  // if is present, will replace present template with new template - templates
+  // are expected to be 1-to-1 with handles (each unique handle always describes
+  // the same unique template)
+  primitiveAssetsTemplateLibrary_.emplace(primHandle, primTemplate);
+  primitiveAssetTmpltLibByID_.emplace(primAssetTemplateID, primHandle);
+
+  return primAssetTemplateID;
+}  // addPrimAssetTemplateToLibrary
 
 int ResourceManager::loadObjectTemplate(
     PhysicsObjectAttributes::ptr objectTemplate,
@@ -556,21 +669,21 @@ int ResourceManager::loadObjectTemplate(
     return physicsObjTemplateLibrary_.at(objectTemplateHandle)
         ->getObjectTemplateID();
   }
-  CHECK(objectTemplate->hasValue("renderMeshHandle"));
+  CHECK(objectTemplate->hasValue("renderAssetHandle"));
 
   // load/check_for render and collision mesh metadata
   bool requiresLighting = objectTemplate->getRequiresLighting();
 
   //! Get render and collision mesh names
   // AssetInfo renderMeshinfo;
-  std::string renderMeshFilename = objectTemplate->getRenderMeshHandle();
+  std::string renderMeshFilename = objectTemplate->getRenderAssetHandle();
   bool renderMeshSuccess = loadObjectMeshDataFromFile(
       renderMeshFilename, objectTemplateHandle, "render", requiresLighting);
 
   // if render mesh failed, might have to generate lighting data for collision
   // mesh since we will use it to render
   // AssetInfo collisionMeshinfo;
-  std::string collisionMeshFilename = objectTemplate->getCollisionMeshHandle();
+  std::string collisionMeshFilename = objectTemplate->getCollisionAssetHandle();
   bool collisionMeshSuccess = loadObjectMeshDataFromFile(
       collisionMeshFilename, objectTemplateHandle, "collision",
       !renderMeshSuccess && requiresLighting);
@@ -585,15 +698,16 @@ int ResourceManager::loadObjectTemplate(
 
   // handle one missing mesh
   if (!renderMeshSuccess) {
-    objectTemplate->setRenderMeshHandle(collisionMeshFilename);
+    objectTemplate->setRenderAssetHandle(collisionMeshFilename);
   }
   if (!collisionMeshSuccess) {
-    objectTemplate->setCollisionMeshHandle(renderMeshFilename);
+    objectTemplate->setCollisionAssetHandle(renderMeshFilename);
   }
 
+  const auto collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
+
   // set collision mesh data
-  const MeshMetaData& meshMetaData =
-      getMeshMetaData(objectTemplate->getCollisionMeshHandle());
+  const MeshMetaData& meshMetaData = getMeshMetaData(collisionAssetHandle);
 
   int start = meshMetaData.meshIndex.first;
   int end = meshMetaData.meshIndex.second;
@@ -605,12 +719,11 @@ int ResourceManager::loadObjectTemplate(
     CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
     meshGroup.push_back(meshData);
   }
-  collisionMeshGroups_.emplace(objectTemplate->getCollisionMeshHandle(),
-                               meshGroup);
+  collisionMeshGroups_.emplace(collisionAssetHandle, meshGroup);
 
   // add object template to template library
   int objectTemplateID = addObjTemplateToLibrary(
-      objectTemplate, objectTemplateHandle, physicsObjTmpltLibByID_);
+      objectTemplate, objectTemplateHandle, physicsFileObjTmpltLibByID_);
 
   return objectTemplateID;
 }  // loadObjectTemplate
@@ -852,8 +965,8 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
     }
   }
 
-  physicsObjectAttributes->setRenderMeshHandle(renderMeshFilename);
-  physicsObjectAttributes->setCollisionMeshHandle(collisionMeshFilename);
+  physicsObjectAttributes->setRenderAssetHandle(renderMeshFilename);
+  physicsObjectAttributes->setCollisionAssetHandle(collisionMeshFilename);
 
   // 5. load the parsed file into the library
   return loadObjectTemplate(physicsObjectAttributes, objPhysConfigFilename);
