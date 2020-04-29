@@ -384,6 +384,14 @@ void Simulator::applyForce(const Magnum::Vector3& force,
   }
 }
 
+scene::SceneNode* Simulator::getObjectSceneNode(const int objectID,
+                                                const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return &physicsManager_->getObjectSceneNode(objectID);
+  }
+  return nullptr;
+}
+
 // set object transform (kinemmatic control)
 void Simulator::setTransformation(const Magnum::Matrix4& transform,
                                   const int objectID,

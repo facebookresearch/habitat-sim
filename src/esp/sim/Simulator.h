@@ -323,6 +323,12 @@ class Simulator {
                   const int sceneID = 0);
 
   /**
+   * @brief Get a reference to the object's scene node or nullptr if failed.
+   */
+  scene::SceneNode* getObjectSceneNode(const int objectID,
+                                       const int sceneID = 0);
+
+  /**
    * @brief Get the current 4x4 transformation matrix of an object.
    * See @ref esp::physics::PhysicsManager::getTransformation.
    * @param objectID The object ID and key identifying the object in @ref

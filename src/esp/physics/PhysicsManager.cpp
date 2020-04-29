@@ -518,6 +518,7 @@ const scene::SceneNode& PhysicsManager::getObjectSceneNode(
 }
 
 scene::SceneNode& PhysicsManager::getObjectSceneNode(int physObjectID) {
+  assertIDValidity(physObjectID);
   return const_cast<scene::SceneNode&>(
       const_cast<const PhysicsManager&>(*this).getObjectSceneNode(
           physObjectID));
