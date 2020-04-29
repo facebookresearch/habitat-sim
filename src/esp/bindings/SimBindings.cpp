@@ -128,6 +128,8 @@ void initSimBindings(py::module& m) {
            "sceneID"_a = 0)
       .def("contact_test", &Simulator::contactTest, "object_id"_a,
            "sceneID"_a = 0)
+      .def("set_object_bb_draw", &Simulator::setObjectBBDraw, "draw_bb"_a,
+           "object_id"_a, "sceneID"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
            "navmesh_settings"_a, "include_static_objects"_a)
       .def("get_light_setup", &Simulator::getLightSetup,

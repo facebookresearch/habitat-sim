@@ -416,7 +416,7 @@ class Simulator {
    * the object.
    * @return A vector3 representation of the object's linear velocity.
    */
-  Magnum::Vector3 getLinearVelocity(const int objectID, const int sceneID);
+  Magnum::Vector3 getLinearVelocity(const int objectID, const int sceneID = 0);
 
   /**
    * @brief Set the Angular Velocity of object.
@@ -440,7 +440,23 @@ class Simulator {
    * the object.
    * @return A vector3 representation of the object's angular velocity.
    */
-  Magnum::Vector3 getAngularVelocity(const int objectID, const int sceneID);
+  Magnum::Vector3 getAngularVelocity(const int objectID, const int sceneID = 0);
+
+  /**
+   * @brief Turn on/off rendering for the bounding box of the object's visual
+   * component.
+   *
+   * Assumes the new @ref esp::gfx::Drawable for the bounding box should be
+   * added to the active @ref esp::gfx::SceneGraph's default drawable group. See
+   * @ref esp::gfx::SceneGraph::getDrawables().
+   *
+   * @param drawBB Whether or not the render the bounding box.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
+  void setObjectBBDraw(bool drawBB, const int objectID, const int sceneID = 0);
 
   /**
    * @brief Discrete collision check for contact between an object and the
