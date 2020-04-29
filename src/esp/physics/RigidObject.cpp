@@ -238,9 +238,10 @@ Magnum::Matrix3 RigidObject::getInertiaMatrix() {
 //////////////////
 // VelocityControl
 
-RigidState VelocityControl::integrateTransform(const float dt,
-                                               const RigidState& rigidState) {
-  RigidState newRigidState(rigidState);
+core::RigidState VelocityControl::integrateTransform(
+    const float dt,
+    const core::RigidState& rigidState) {
+  core::RigidState newRigidState(rigidState);
   // linear first
   if (controllingLinVel) {
     if (linVelIsLocal) {

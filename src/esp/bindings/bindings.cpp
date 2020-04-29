@@ -5,6 +5,7 @@
 #include "esp/bindings/bindings.h"
 
 #include "esp/core/Configuration.h"
+#include "esp/core/RigidState.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -38,6 +39,14 @@ void initCoreBindings(py::module& m) {
       .def("get_string_group", &Configuration::getStringGroup)
       .def("has_value", &Configuration::hasValue)
       .def("remove_value", &Configuration::removeValue);
+
+  // ==== struct RigidState ===
+  py::class_<RigidState, RigidState::ptr>(m, "RigidState")
+      .def(py::init(&RigidState::create<>))
+      .def(py::init(&RigidState::create<const Magnum::Quaternion&,
+                                        const Magnum::Vector3&>))
+      .def_readwrite("rotation", &RigidState::rotation)
+      .def_readwrite("translation", &RigidState::translation);
 }
 
 }  // namespace core

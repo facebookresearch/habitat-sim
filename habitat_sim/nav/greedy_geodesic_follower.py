@@ -5,7 +5,7 @@ import numpy as np
 
 from habitat_sim import agent, errors, scene
 from habitat_sim.nav import GreedyFollowerCodes, GreedyGeodesicFollowerImpl, PathFinder
-from habitat_sim.utils.common import quat_to_coeffs
+from habitat_sim.utils.common import quat_to_magnum
 
 
 @attr.s(auto_attribs=True, init=False)
@@ -70,9 +70,9 @@ class GreedyGeodesicFollower(object):
                                take the turn_right action
                                Default: The key of the action that calls
                                the turn_right actuation spec
-        :param fix_thrashing: Whether or not to attempt to fix trashing
+        :param fix_thrashing: Whether or not to attempt to fix thrashing
         :param thrashing_threshold: The number of actions in a left -> right -> left -> ..
-                                       sequence needed to be considered trashing
+                                       sequence needed to be considered thrashing
         """
 
         self.pathfinder = pathfinder
@@ -152,7 +152,7 @@ class GreedyGeodesicFollower(object):
 
         state = self.agent.state
         next_act = self.impl.next_action_along(
-            state.position, quat_to_coeffs(state.rotation), goal_pos
+            quat_to_magnum(state.rotation), state.position, goal_pos
         )
 
         if next_act == GreedyFollowerCodes.ERROR:
@@ -180,7 +180,7 @@ class GreedyGeodesicFollower(object):
 
         state = self.agent.state
         path = self.impl.find_path(
-            state.position, quat_to_coeffs(state.rotation), goal_pos
+            quat_to_magnum(state.rotation), state.position, goal_pos
         )
 
         if len(path) == 0:

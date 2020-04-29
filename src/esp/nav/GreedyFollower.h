@@ -1,5 +1,6 @@
 #pragma once
 
+#include "esp/core/RigidState.h"
 #include "esp/core/esp.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/SceneGraph.h"
@@ -48,14 +49,6 @@ class GreedyGeodesicFollowerImpl {
   typedef std::function<bool(scene::SceneNode*)> MoveFn;
 
   /**
-   * @brief Helper for a sixdof pose
-   */
-  struct SixDofPose {
-    quatf rotation;
-    vec3f translation;
-  };
-
-  /**
    * @brief Constructor
    *
    * @param[in] pathfinder Instance of the pathfinder used for calculating the
@@ -86,13 +79,13 @@ class GreedyGeodesicFollowerImpl {
   /**
    * @brief Calculates the next action to follow the path
    *
-   * @param[in] currentPos The current position
    * @param[in] currentRot The current rotation
+   * @param[in] currentPos The current position
    * @param[in] end The end location of the path
    */
-  CODES nextActionAlong(const vec3f& currentPos,
-                        const vec4f& currentRot,
-                        const vec3f& end);
+  CODES nextActionAlong(const Magnum::Quaternion& currentRot,
+                        const Magnum::Vector3& currentPos,
+                        const Magnum::Vector3& end);
 
   /**
    * @brief Finds the full path from the current agent state to the end location
@@ -101,16 +94,18 @@ class GreedyGeodesicFollowerImpl {
    * @ref nextActionAlong to calculate the next action to take, actually take
    * it, then call that method again.
    *
-   * @param[in] startPos The starting position
    * @param[in] startRot The starting rotation
+   * @param[in] startPos The starting position
    * @param[in] end The end location of the path
    */
-  std::vector<CODES> findPath(const vec3f& startPos,
-                              const vec4f& startRot,
-                              const vec3f& end);
+  std::vector<CODES> findPath(const Magnum::Quaternion& startRot,
+                              const Magnum::Vector3& startPos,
+                              const Magnum::Vector3& end);
 
-  CODES nextActionAlong(const SixDofPose& start, const vec3f& end);
-  std::vector<CODES> findPath(const SixDofPose& start, const vec3f& end);
+  CODES nextActionAlong(const core::RigidState& start,
+                        const Magnum::Vector3& end);
+  std::vector<CODES> findPath(const core::RigidState& start,
+                              const Magnum::Vector3& end);
 
   /**
    * @brief Reset the planner.
@@ -139,14 +134,15 @@ class GreedyGeodesicFollowerImpl {
       tryStepDummyNode_{dummyScene_.getRootNode()};
 
   ShortestPath geoDistPath_;
-  float geoDist(const vec3f& start, const vec3f& end);
+  float geoDist(const Magnum::Vector3& start, const Magnum::Vector3& end);
 
   struct TryStepResult {
     float postGeodesicDistance, postDistanceToClosestObstacle;
     bool didCollide;
   };
 
-  TryStepResult tryStep(const scene::SceneNode& node, const vec3f& end);
+  TryStepResult tryStep(const scene::SceneNode& node,
+                        const Magnum::Vector3& end);
 
   float computeReward(const scene::SceneNode& node,
                       const nav::ShortestPath& path,
@@ -155,7 +151,7 @@ class GreedyGeodesicFollowerImpl {
   bool isThrashing();
 
   std::vector<nav::GreedyGeodesicFollowerImpl::CODES> nextBestPrimAlong(
-      const SixDofPose& state,
+      const core::RigidState& state,
       const nav::ShortestPath& path);
 
   ESP_SMART_POINTERS(GreedyGeodesicFollowerImpl)
