@@ -323,6 +323,12 @@ class Simulator:
     def get_object_initialization_template(self, object_id, scene_id=0):
         return self._sim.get_object_initialization_template(object_id, scene_id)
 
+    def get_template_handle_by_ID(self, object_id):
+        return self._sim.get_template_handle_by_ID(object_id)
+
+    def get_template_handles(self, search_str):
+        return self._sim.get_template_handles(search_str)
+
     # --- physics functions ---
     def add_object(
         self,
@@ -331,6 +337,16 @@ class Simulator:
         light_setup_key=DEFAULT_LIGHTING_KEY,
     ):
         return self._sim.add_object(object_lib_index, attachment_node, light_setup_key)
+
+    def add_object_by_handle(
+        self,
+        object_lib_handle,
+        attachment_node=None,
+        light_setup_key=DEFAULT_LIGHTING_KEY,
+    ):
+        return self._sim.add_object_by_handle(
+            object_lib_handle, attachment_node, light_setup_key
+        )
 
     def remove_object(
         self, object_id, delete_object_node=True, delete_visual_node=True

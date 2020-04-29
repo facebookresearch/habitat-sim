@@ -68,8 +68,16 @@ void initSimBindings(py::module& m) {
                     &Simulator::setFrustumCullingEnabled,
                     R"(Enable or disable the frustum culling)")
       /* --- Physics functions --- */
+
+      .def("get_template_handle_by_ID", &Simulator::getObjectTemplateHandleByID,
+           "object_id"_a)
+      .def("get_template_handles", &Simulator::getObjectTemplateHandles,
+           "search_str"_a = "")
       .def("add_object", &Simulator::addObject, "object_lib_index"_a,
            "attachment_node"_a, "light_setup_key"_a, "scene_id"_a = 0)
+      .def("add_object_by_handle", &Simulator::addObjectByHandle,
+           "object_lib_handle"_a, "attachment_node"_a, "light_setup_key"_a,
+           "scene_id"_a = 0)
       .def("get_physics_object_library_size",
            &Simulator::getPhysicsObjectLibrarySize)
       .def("get_object_template", &Simulator::getObjectTemplate,
@@ -110,10 +118,10 @@ void initSimBindings(py::module& m) {
            "object_id"_a, "sceneID"_a = 0)
       .def("get_linear_velocity", &Simulator::getLinearVelocity, "object_id"_a,
            "sceneID"_a = 0)
-      .def("set_angular_velocity", &Simulator::setLinearVelocity, "linVel"_a,
+      .def("set_angular_velocity", &Simulator::setAngularVelocity, "angVel"_a,
            "object_id"_a, "sceneID"_a = 0)
-      .def("get_angular_velocity", &Simulator::getLinearVelocity, "object_id"_a,
-           "sceneID"_a = 0)
+      .def("get_angular_velocity", &Simulator::getAngularVelocity,
+           "object_id"_a, "sceneID"_a = 0)
       .def("apply_force", &Simulator::applyForce, "force"_a,
            "relative_position"_a, "object_id"_a, "sceneID"_a = 0)
       .def("apply_torque", &Simulator::applyTorque, "torque"_a, "object_id"_a,

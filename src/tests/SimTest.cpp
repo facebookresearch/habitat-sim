@@ -395,6 +395,26 @@ void SimTest::loadingObjectTemplates() {
       Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(templateIndices2 == templateIndices);
 
+  // test the loaded assets and accessing them by name
+  // verify that getting the template handles with empty string returns all
+  int numLoadedTemplates = templateIndices2.size();
+  std::vector<std::string> templateHandles =
+      simulator->getObjectTemplateHandles();
+  CORRADE_VERIFY(numLoadedTemplates == templateHandles.size());
+
+  // verify that querying with sub string returns template handle corresponding
+  // to that substring
+  // get full handle of an existing template
+  std::string fullTmpHndl = templateHandles[templateHandles.size() - 1];
+  // build substring
+  std::div_t len = std::div(fullTmpHndl.length(), 2);
+  // get 2nd half of handle
+  std::string tmpHndl = fullTmpHndl.substr(len.quot);
+  // get all handles that match 2nd half of known handle
+  std::vector<std::string> matchTmpltHandles =
+      simulator->getObjectTemplateHandles(tmpHndl);
+  CORRADE_VERIFY(matchTmpltHandles[0] == fullTmpHndl);
+
   // test fresh template as smart pointer
   esp::assets::PhysicsObjectAttributes::ptr newTemplate =
       esp::assets::PhysicsObjectAttributes::create();
