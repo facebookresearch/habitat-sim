@@ -303,9 +303,9 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 
 ## Documentation
 
-Habitat-Sim documentation is available [here](https://aihabitat.org/docs/habitat-sim/index.html). 
+Browse the online [Habitat-Sim documentation](https://aihabitat.org/docs/habitat-sim/index.html). 
 
-For example, see [this page](https://aihabitat.org/docs/habitat-sim/lighting-setups.html) for adding new objects to existing scenes and relighting the scene & objects. See [this page](https://aihabitat.org/docs/habitat-sim/image-extractor.html) for extracting images from scenes loaded in Habitat-Sim. 
+To get you started, see the [Lighting Setup tutorial](https://aihabitat.org/docs/habitat-sim/lighting-setups.html) for adding new objects to existing scenes and relighting the scene & objects. The [Image Extractor tutorial](https://aihabitat.org/docs/habitat-sim/image-extractor.html) shows how to get images from scenes loaded in Habitat-Sim. 
 
 ## Rendering to GPU Tensors
 
