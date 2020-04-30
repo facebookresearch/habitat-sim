@@ -484,6 +484,16 @@ bool Simulator::contactTest(const int objectID, const int sceneID) {
   return false;
 }
 
+void Simulator::setObjectBBDraw(bool drawBB,
+                                const int objectID,
+                                const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    auto& sceneGraph_ = sceneManager_.getSceneGraph(activeSceneID_);
+    auto& drawables = sceneGraph_.getDrawables();
+    physicsManager_->setObjectBBDraw(objectID, &drawables, drawBB);
+  }
+}
+
 double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
     physicsManager_->stepPhysics(dt);

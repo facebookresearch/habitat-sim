@@ -407,6 +407,9 @@ class Simulator:
     def contact_test(self, object_id, scene_id=0):
         return self._sim.contact_test(object_id, scene_id)
 
+    def set_object_bb_draw(self, draw_bb, object_id, scene_id=0):
+        return self._sim.set_object_bb_draw(draw_bb, object_id, scene_id)
+
     def step_physics(self, dt, scene_id=0):
         self._sim.step_world(dt)
 
