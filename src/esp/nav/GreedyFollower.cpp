@@ -3,189 +3,257 @@
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
 
-#include "Sophus/sophus/so3.hpp"
+#include "esp/core/esp.h"
 #include "esp/geo/geo.h"
 
+namespace Mn = Magnum;
+using Mn::EigenIntegration::cast;
+
 namespace esp {
+namespace nav {
 
-using Magnum::EigenIntegration::cast;
+GreedyGeodesicFollowerImpl::GreedyGeodesicFollowerImpl(
+    PathFinder::ptr& pathfinder,
+    MoveFn& moveForward,
+    MoveFn& turnLeft,
+    MoveFn& turnRight,
+    double goalDist,
+    double forwardAmount,
+    double turnAmount,
+    bool fixThrashing,
+    int thrashingThreshold)
+    : pathfinder_{pathfinder},
+      moveForward_{moveForward},
+      turnLeft_{turnLeft},
+      turnRight_{turnRight},
+      forwardAmount_{forwardAmount},
+      goalDist_{goalDist},
+      turnAmount_{turnAmount},
+      fixThrashing_{fixThrashing},
+      thrashingThreshold_{thrashingThreshold} {};
 
-// There are some cases were we can't perfectly align along the shortest path
-// and the agent will get stuck, so we need to check that forward will actually
-// move us forward, if it doesn't, we will check to see if either of the turn
-// directions + forward will make progress, if neither do, return an error
-nav::GreedyGeodesicFollowerImpl::CODES
-nav::GreedyGeodesicFollowerImpl::checkForward(const State& state) {
-  dummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
-  dummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
+float GreedyGeodesicFollowerImpl::geoDist(const Mn::Vector3& start,
+                                          const Mn::Vector3& end) {
+  geoDistPath_.requestedStart = cast<vec3f>(start);
+  geoDistPath_.requestedEnd = cast<vec3f>(end);
+  pathfinder_->findPath(geoDistPath_);
+  return geoDistPath_.geodesicDistance;
+}
 
-  moveForward_(&dummyNode_);
-  float dist_travelled = (Magnum::Vector3{std::get<0>(state)} -
-                          dummyNode_.absoluteTransformation().translation())
-                             .length();
+GreedyGeodesicFollowerImpl::TryStepResult GreedyGeodesicFollowerImpl::tryStep(
+    const scene::SceneNode& node,
+    const Mn::Vector3& end) {
+  tryStepDummyNode_.MagnumObject::setTransformation(
+      node.MagnumObject::transformation());
 
-  const float minTravel = 1e-1 * forwardAmount_;
+  const bool didCollide = moveForward_(&tryStepDummyNode_);
+  const Mn::Vector3 newPose = tryStepDummyNode_.MagnumObject::translation();
 
-  if (dist_travelled < minTravel) {
-    dummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
-    dummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
+  const float geoDistAfter = geoDist(newPose, end);
+  const float distToObsAfter = pathfinder_->distanceToClosestObstacle(
+      cast<vec3f>(newPose), 1.1 * closeToObsThreshold_);
 
-    turnLeft_(&dummyNode_);
-    moveForward_(&dummyNode_);
-    dist_travelled = (Magnum::Vector3{std::get<0>(state)} -
-                      dummyNode_.absoluteTransformation().translation())
-                         .length();
-    if (dist_travelled > minTravel) {
-      return CODES::LEFT;
-    }
+  return {geoDistAfter, distToObsAfter, didCollide};
+}
 
-    dummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
-    dummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
+float GreedyGeodesicFollowerImpl::computeReward(const scene::SceneNode& node,
+                                                const ShortestPath& path,
+                                                const size_t primLen) {
+  const auto tryStepRes = tryStep(node, Mn::Vector3{path.requestedEnd});
 
-    turnRight_(&dummyNode_);
-    moveForward_(&dummyNode_);
-    dist_travelled = (Magnum::Vector3{std::get<0>(state)} -
-                      dummyNode_.absoluteTransformation().translation())
-                         .length();
-    if (dist_travelled > minTravel) {
-      return CODES::RIGHT;
-    }
+  // Try to minimize geodesic distance to target
+  // Divide by forwardAmount_ to make the reward structure independent of step
+  // size
+  return (path.geodesicDistance - tryStepRes.postGeodesicDistance) /
+             forwardAmount_ +
+         (
+             // Prefer shortest primitives
+             -0.0125f * primLen
+             // Avoid collisions
+             - (tryStepRes.didCollide ? collisionCost_ : 0.0f)
+             // Avoid being close to an obstacle
+             - (tryStepRes.postDistanceToClosestObstacle < closeToObsThreshold_
+                    ? 0.05f
+                    : 0.0f));
+}
 
-    return CODES::ERROR;
+std::vector<GreedyGeodesicFollowerImpl::CODES>
+GreedyGeodesicFollowerImpl::nextBestPrimAlong(const core::RigidState& state,
+                                              const ShortestPath& path) {
+  if (path.geodesicDistance == std::numeric_limits<float>::infinity()) {
+    return {CODES::ERROR};
   }
 
-  return CODES::FORWARD;
-}
-
-nav::GreedyGeodesicFollowerImpl::CODES
-nav::GreedyGeodesicFollowerImpl::calcStepAlong(
-    const std::tuple<vec3f, quatf>& state,
-    const nav::ShortestPath& path) {
-  VLOG(1) << path.geodesicDistance;
-  if (path.geodesicDistance == std::numeric_limits<float>::infinity())
-    return CODES::ERROR;
-
-  if (path.geodesicDistance < goalDist_)
-    return CODES::STOP;
-
-  vec3f grad = path.points[1] - path.points[0];
-  // Project into x-z plane
-  grad[1] = 0;
-
-  grad.normalize();
-  // Life gets weird if the gradient is anti-parallel with forward
-  // So add a little offset in the x direction to deal with that
-  if (grad.dot(geo::ESP_FRONT) < (-1 + 1e-3))
-    grad += 1e-3 * geo::ESP_UP.cross(geo::ESP_FRONT);
-
-  const quatf gradDir = quatf::FromTwoVectors(geo::ESP_FRONT, grad);
-
-  const float alpha = gradDir.angularDistance(std::get<1>(state));
-  VLOG(1) << alpha;
-  // If the angle between the gradient direction and the current heading is less
-  // than the heading change per turn, just go forward.  This check should
-  // technically be if the angle is less than half the turn amount, but using
-  // the full turn amount helps to reduce jittering (i.e.
-  // left->forward->right->forward->left->....)
-  if (alpha <= turnAmount_ + 1e-3)
-    return CODES::FORWARD;
-
-  dummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
-  dummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
-  moveForward_(&dummyNode_);
-  const float newGeoDist = this->geoDist(
-      cast<vec3f>(dummyNode_.absoluteTransformation().translation()),
-      path.requestedEnd);
-  // There are some edge cases where the gradient doesn't line up with what
-  // makes progress the fastest, so we will always try forward.  This also helps
-  // reduce the amount of jittering in the path for small turn angles
-  if ((path.geodesicDistance - newGeoDist) > 0.95 * forwardAmount_) {
-    return CODES::FORWARD;
+  if (path.geodesicDistance < goalDist_) {
+    return {CODES::STOP};
   }
 
-  dummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
-  dummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
-  turnLeft_(&dummyNode_);
+  // Intialize bestReward to the minumum acceptable reward -- we are just
+  // constantly colliding
+  float bestReward = -collisionCost_;
+  std::vector<CODES> bestPrim, leftPrim, rightPrim;
 
-  if (gradDir.angularDistance(cast<quatf>(dummyNode_.rotation())) < alpha)
-    return CODES::LEFT;
-  else
-    return CODES::RIGHT;
+  leftDummyNode_.setTranslation(state.translation);
+  leftDummyNode_.setRotation(state.rotation);
+
+  rightDummyNode_.setTranslation(state.translation);
+  rightDummyNode_.setRotation(state.rotation);
+
+  // Plan over all primitives of the form [LEFT] * n + [FORWARD]
+  // or [RIGHT] * n + [FORWARD]
+  for (float angle = 0; angle < M_PI; angle += turnAmount_) {
+    {
+      const float reward = computeReward(leftDummyNode_, path, leftPrim.size());
+      if (reward > bestReward) {
+        bestReward = reward;
+        bestPrim = leftPrim;
+        bestPrim.emplace_back(CODES::FORWARD);
+      }
+    }
+
+    {
+      const float reward =
+          computeReward(rightDummyNode_, path, rightPrim.size());
+      if (reward > bestReward) {
+        bestReward = reward;
+        bestPrim = rightPrim;
+        bestPrim.emplace_back(CODES::FORWARD);
+      }
+    }
+
+    // If reward is within 99% of max (1.0), call it good enough and exit
+    constexpr float goodEnoughRewardThresh = 0.99f;
+    if (bestReward > goodEnoughRewardThresh)
+      break;
+
+    leftPrim.emplace_back(CODES::LEFT);
+    turnLeft_(&leftDummyNode_);
+
+    rightPrim.emplace_back(CODES::RIGHT);
+    turnRight_(&rightDummyNode_);
+  }
+
+  return bestPrim;
 }
 
-nav::GreedyGeodesicFollowerImpl::CODES
-nav::GreedyGeodesicFollowerImpl::nextActionAlong(
-    const std::tuple<vec3f, quatf>& start,
-    const vec3f& end) {
-  nav::ShortestPath path;
-  path.requestedStart = std::get<0>(start);
-  path.requestedEnd = end;
-  pathfinder_->findPath(path);
+bool GreedyGeodesicFollowerImpl::isThrashing() {
+  if (actions_.size() < thrashingThreshold_)
+    return false;
 
-  CODES action = calcStepAlong(start, path);
-  if (action == CODES::FORWARD)
-    action = checkForward(start);
+  CODES lastAct = actions_.back();
 
-  return action;
+  bool thrashing = lastAct == CODES::LEFT || lastAct == CODES::RIGHT;
+  for (int i = 2; (i < (thrashingThreshold_ + 1)) && thrashing; ++i) {
+    thrashing = (actions_[actions_.size() - i] == CODES::RIGHT &&
+                 lastAct == CODES::LEFT) ||
+                (actions_[actions_.size() - i] == CODES::LEFT &&
+                 lastAct == CODES::RIGHT);
+    lastAct = actions_[actions_.size() - i];
+  }
+
+  return thrashing;
 }
 
-std::vector<nav::GreedyGeodesicFollowerImpl::CODES>
-nav::GreedyGeodesicFollowerImpl::findPath(
-    const std::tuple<vec3f, quatf>& startState,
-    const vec3f& end) {
-  constexpr int maxActions = 1e4;
-  std::vector<CODES> actions;
-
-  std::tuple<vec3f, quatf> state = startState;
-  nav::ShortestPath path;
-  path.requestedStart = std::get<0>(state);
-  path.requestedEnd = end;
+GreedyGeodesicFollowerImpl::CODES GreedyGeodesicFollowerImpl::nextActionAlong(
+    const core::RigidState& start,
+    const Mn::Vector3& end) {
+  ShortestPath path;
+  path.requestedStart = cast<vec3f>(start.translation);
+  path.requestedEnd = cast<vec3f>(end);
   pathfinder_->findPath(path);
+
+  CODES nextAction;
+  if (fixThrashing_ && thrashingActions_.size() > 0) {
+    nextAction = thrashingActions_.back();
+    thrashingActions_.pop_back();
+  } else {
+    const auto nextActions = nextBestPrimAlong(start, path);
+    if (nextActions.size() == 0) {
+      nextAction = CODES::ERROR;
+    } else if (fixThrashing_ && isThrashing()) {
+      thrashingActions_ = {nextActions.rbegin(), nextActions.rend()};
+      nextAction = thrashingActions_.back();
+      thrashingActions_.pop_back();
+    } else {
+      nextAction = nextActions[0];
+    }
+  }
+
+  actions_.push_back(nextAction);
+
+  return actions_.back();
+}
+
+std::vector<GreedyGeodesicFollowerImpl::CODES>
+GreedyGeodesicFollowerImpl::findPath(const core::RigidState& start,
+                                     const Mn::Vector3& end) {
+  constexpr int maxActions = 5e3;
+  findPathDummyNode_.setTranslation(Mn::Vector3{start.translation});
+  findPathDummyNode_.setRotation(Mn::Quaternion{start.rotation});
 
   do {
-    CODES nextAction = calcStepAlong(state, path);
-    if (nextAction == CODES::FORWARD)
-      nextAction = checkForward(state);
+    core::RigidState state{findPathDummyNode_.rotation(),
+                           findPathDummyNode_.MagnumObject::translation()};
+    ShortestPath path;
+    path.requestedStart = cast<vec3f>(state.translation);
+    path.requestedEnd = cast<vec3f>(end);
+    pathfinder_->findPath(path);
+    const auto nextPrim = nextBestPrimAlong(state, path);
+    if (nextPrim.size() == 0) {
+      actions_.emplace_back(CODES::ERROR);
+    } else {
+      for (const auto nextAction : nextPrim) {
+        switch (nextAction) {
+          case CODES::FORWARD:
+            moveForward_(&findPathDummyNode_);
+            break;
 
-    actions.push_back(nextAction);
+          case CODES::RIGHT:
+            turnRight_(&findPathDummyNode_);
+            break;
 
-    dummyNode_.setTranslation(Magnum::Vector3{std::get<0>(state)});
-    dummyNode_.setRotation(Magnum::Quaternion{std::get<1>(state)});
+          case CODES::LEFT:
+            turnLeft_(&findPathDummyNode_);
+            break;
 
-    switch (nextAction) {
-      case CODES::FORWARD:
-        moveForward_(&dummyNode_);
+          default:
+            break;
+        }
 
-        path.requestedStart =
-            cast<vec3f>(dummyNode_.absoluteTransformation().translation());
-        pathfinder_->findPath(path);
-        break;
-
-      case CODES::LEFT:
-        turnLeft_(&dummyNode_);
-        break;
-
-      case CODES::RIGHT:
-        turnRight_(&dummyNode_);
-        break;
-
-      default:
-        break;
+        actions_.emplace_back(nextAction);
+      }
     }
 
-    state = std::make_tuple(
-        cast<vec3f>(dummyNode_.absoluteTransformation().translation()),
-        cast<quatf>(dummyNode_.rotation()));
+  } while (actions_.back() != CODES::STOP && actions_.back() != CODES::ERROR &&
+           actions_.size() < maxActions);
 
-  } while ((actions.back() != CODES::STOP && actions.back() != CODES::ERROR) &&
-           actions.size() < maxActions);
+  if (actions_.back() == CODES::ERROR)
+    return {};
 
-  if (actions.back() == CODES::ERROR)
-    actions.clear();
+  if (actions_.size() == maxActions)
+    return {};
 
-  if (actions.size() >= maxActions)
-    actions.clear();
-
-  return actions;
+  return actions_;
 }
+
+GreedyGeodesicFollowerImpl::CODES GreedyGeodesicFollowerImpl::nextActionAlong(
+    const Mn::Quaternion& currentRot,
+    const Mn::Vector3& currentPos,
+    const Mn::Vector3& end) {
+  return nextActionAlong({currentRot, currentPos}, end);
+}
+
+std::vector<GreedyGeodesicFollowerImpl::CODES>
+GreedyGeodesicFollowerImpl::findPath(const Mn::Quaternion& currentRot,
+                                     const Mn::Vector3& currentPos,
+                                     const Mn::Vector3& end) {
+  return findPath({currentRot, currentPos}, end);
+}
+
+void GreedyGeodesicFollowerImpl::reset() {
+  actions_.clear();
+  thrashingActions_.clear();
+}
+
+}  // namespace nav
 }  // namespace esp

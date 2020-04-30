@@ -16,14 +16,6 @@ void initPhysicsBindings(py::module& m) {
       .value("KINEMATIC", MotionType::KINEMATIC)
       .value("DYNAMIC", MotionType::DYNAMIC);
 
-  // ==== struct RigidState ===
-  py::class_<RigidState, RigidState::ptr>(m, "RigidState")
-      .def(py::init(&RigidState::create<>))
-      .def(py::init(&RigidState::create<const Magnum::Quaternion&,
-                                        const Magnum::Vector3&>))
-      .def_readwrite("rotation", &RigidState::rotation)
-      .def_readwrite("translation", &RigidState::translation);
-
   // ==== struct object VelocityControl ====
   py::class_<VelocityControl, VelocityControl::ptr>(m, "VelocityControl")
       .def(py::init(&VelocityControl::create<>))

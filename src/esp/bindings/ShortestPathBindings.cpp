@@ -16,6 +16,7 @@
 #include "esp/scene/ObjectControls.h"
 
 namespace py = pybind11;
+namespace Mn = Magnum;
 
 using py::literals::operator""_a;
 
@@ -121,19 +122,30 @@ void initShortestPathBindings(py::module& m) {
 
   py::class_<GreedyGeodesicFollowerImpl, GreedyGeodesicFollowerImpl::ptr>(
       m, "GreedyGeodesicFollowerImpl")
-      .def(py::init(
-          &GreedyGeodesicFollowerImpl::create<
-              PathFinder::ptr&, GreedyGeodesicFollowerImpl::MoveFn&,
-              GreedyGeodesicFollowerImpl::MoveFn&,
-              GreedyGeodesicFollowerImpl::MoveFn&, double, double, double>))
+      .def(py::init(&GreedyGeodesicFollowerImpl::create<
+                    PathFinder::ptr&, GreedyGeodesicFollowerImpl::MoveFn&,
+                    GreedyGeodesicFollowerImpl::MoveFn&,
+                    GreedyGeodesicFollowerImpl::MoveFn&, double, double, double,
+                    bool, int>))
       .def("next_action_along",
-           py::overload_cast<const vec3f&, const vec4f&, const vec3f&>(
+           py::overload_cast<const Mn::Quaternion&, const Mn::Vector3&,
+                             const Mn::Vector3&>(
+               &GreedyGeodesicFollowerImpl::nextActionAlong),
+           py::return_value_policy::move)
+      .def("next_action_along",
+           py::overload_cast<const core::RigidState&, const Mn::Vector3&>(
                &GreedyGeodesicFollowerImpl::nextActionAlong),
            py::return_value_policy::move)
       .def("find_path",
-           py::overload_cast<const vec3f&, const vec4f&, const vec3f&>(
+           py::overload_cast<const Mn::Quaternion&, const Mn::Vector3&,
+                             const Mn::Vector3&>(
                &GreedyGeodesicFollowerImpl::findPath),
-           py::return_value_policy::move);
+           py::return_value_policy::move)
+      .def("find_path",
+           py::overload_cast<const core::RigidState&, const Mn::Vector3&>(
+               &GreedyGeodesicFollowerImpl::findPath),
+           py::return_value_policy::move)
+      .def("reset", &GreedyGeodesicFollowerImpl::reset);
 }
 
 }  // namespace nav

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "esp/core/RigidState.h"
 #include "esp/core/esp.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/SceneGraph.h"
@@ -8,111 +9,150 @@
 namespace esp {
 namespace nav {
 
+/**
+ * @brief Generates actions to take to reach a goal
+ *
+ * Choose actions by running local planning over a set of motion primitives.
+ * The primitives are all sequences of action in the form `[left]*n + [forward]`
+ * or `[right]*n + [forward]` for `0 <= n < turning 180 degrees`
+ *
+ * Primitives are selected by choosing the one that best maximizes a reward
+ * function that selects the primitive that most quickly makes progress towards
+ * the goal while preferring shorter primtives and avoid obstacles.
+ *
+ * Once a primitive is selected, the first action in that primitives is selected
+ * as the next action to take and this process is repeated
+ */
 class GreedyGeodesicFollowerImpl {
  public:
   /**
-   * Ouputs from the greedy follower.  Used to specify which action to take next
-   *or that an error occured
-   **/
-  enum class CODES { ERROR = -2, STOP = -1, FORWARD = 0, LEFT = 1, RIGHT = 2 };
-
-  /**
-   * Helper typedef for function pointer to a function that manipulates a scene
-   *node These functions are used to get access to the python functions which
-   *implement the control functions
-   **/
-  typedef std::function<void(scene::SceneNode*)> MoveFn;
-
-  /**
-   * Helper typedef for a sixdof pos
-   **/
-  typedef std::tuple<vec3f, quatf> State;
-
-  /**
-   * Implements a follower that greedily fits actions to follow the geodesic
-   *shortest path
+   * @brief Ouputs from the greedy follower.
    *
-   * Params
+   * Used to specify which action to take next
+   * or that an error occured
+   */
+  enum class CODES : int {
+    ERROR = -2,
+    STOP = -1,
+    FORWARD = 0,
+    LEFT = 1,
+    RIGHT = 2
+  };
+
+  /**
+   * @brief Helper typedef for function pointer to a function that manipulates a
+   * scene node.
+   *
+   * These functions are used to get access to the python functions which
+   * implement the control functions
+   */
+  typedef std::function<bool(scene::SceneNode*)> MoveFn;
+
+  /**
+   * @brief Constructor
+   *
    * @param[in] pathfinder Instance of the pathfinder used for calculating the
-   *geodesic shortest path
+   *                       geodesic shortest path
    * @param[in] moveForward Function that implements "move_forward" on a
-   *SceneNode
+   *                        SceneNode
    * @param[in] turnLeft Function that implements "turn_left" on a SceneNode
    * @param[in] turnRight Function that implements "turn_right" on a SceneNode
    * @param[in] goalDist How close the agent needs to get to the goal before
-   *calling stop
+   *                     calling stop
    * @param[in] forwardAmount The amount "move_forward" moves the agent
    * @param[in] turnAmount The amount "turn_left"/"turn_right" turns the agent
-   *in radians
-   **/
+   *                       in radians
+   * @param[in] fixThrashing Whether or not to fix thrashing
+   * @param[in] thrashingThreshold The length of left, right, left, right
+   *                                actions needed to be considered thrashing
+   */
   GreedyGeodesicFollowerImpl(PathFinder::ptr& pathfinder,
                              MoveFn& moveForward,
                              MoveFn& turnLeft,
                              MoveFn& turnRight,
                              double goalDist,
                              double forwardAmount,
-                             double turnAmount)
-      : pathfinder_{pathfinder},
-        moveForward_{moveForward},
-        turnLeft_{turnLeft},
-        turnRight_{turnRight},
-        forwardAmount_{forwardAmount},
-        goalDist_{goalDist},
-        turnAmount_{turnAmount} {};
-
-  CODES nextActionAlong(const State& start, const vec3f& end);
+                             double turnAmount,
+                             bool fixThrashing = true,
+                             int thrashingThreshold = 16);
 
   /**
-   * Calculates the next action to follow the path
+   * @brief Calculates the next action to follow the path
    *
-   * Params
-   * @param[in] currentPos The current position
    * @param[in] currentRot The current rotation
+   * @param[in] currentPos The current position
    * @param[in] end The end location of the path
-   **/
-  inline CODES nextActionAlong(const vec3f& currentPos,
-                               const vec4f& currentRot,
-                               const vec3f& end) {
-    quatf rot = Eigen::Map<const quatf>(currentRot.data());
-    return nextActionAlong(std::make_tuple(currentPos, rot), end);
-  }
-
-  std::vector<CODES> findPath(const State& start, const vec3f& end);
+   */
+  CODES nextActionAlong(const Magnum::Quaternion& currentRot,
+                        const Magnum::Vector3& currentPos,
+                        const Magnum::Vector3& end);
 
   /**
-   * Finds the full path from the current agent state to the end location
+   * @brief Finds the full path from the current agent state to the end location
    *
-   * Params
-   * @param[in] startPos The starting position
+   * @warning Do not use this method if there is actuation noise.  Instead, use
+   * @ref nextActionAlong to calculate the next action to take, actually take
+   * it, then call that method again.
+   *
    * @param[in] startRot The starting rotation
+   * @param[in] startPos The starting position
    * @param[in] end The end location of the path
-   **/
-  inline std::vector<CODES> findPath(const vec3f& startPos,
-                                     const vec4f& startRot,
-                                     const vec3f& end) {
-    quatf rot = Eigen::Map<const quatf>(startRot.data());
-    return findPath(std::make_tuple(startPos, rot), end);
-  }
+   */
+  std::vector<CODES> findPath(const Magnum::Quaternion& startRot,
+                              const Magnum::Vector3& startPos,
+                              const Magnum::Vector3& end);
+
+  CODES nextActionAlong(const core::RigidState& start,
+                        const Magnum::Vector3& end);
+  std::vector<CODES> findPath(const core::RigidState& start,
+                              const Magnum::Vector3& end);
+
+  /**
+   * @brief Reset the planner.
+   *
+   * Should be called whenever a different goal is choosen or start state
+   * differs by more than action from the last start state
+   */
+  void reset();
 
  private:
   PathFinder::ptr pathfinder_;
   MoveFn moveForward_, turnLeft_, turnRight_;
   const double forwardAmount_, goalDist_, turnAmount_;
+  const bool fixThrashing_;
+  const int thrashingThreshold_;
+  const float closeToObsThreshold_ = 0.2f;
+  const float collisionCost_ = 0.25f;
+
+  std::vector<CODES> actions_;
+  std::vector<CODES> thrashingActions_;
 
   scene::SceneGraph dummyScene_;
-  scene::SceneNode dummyNode_{dummyScene_.getRootNode()};
+  scene::SceneNode findPathDummyNode_{dummyScene_.getRootNode()},
+      leftDummyNode_{dummyScene_.getRootNode()},
+      rightDummyNode_{dummyScene_.getRootNode()},
+      tryStepDummyNode_{dummyScene_.getRootNode()};
 
-  CODES calcStepAlong(const State& start, const ShortestPath& path);
+  ShortestPath geoDistPath_;
+  float geoDist(const Magnum::Vector3& start, const Magnum::Vector3& end);
 
-  inline float geoDist(const vec3f& start, const vec3f& end) {
-    ShortestPath path;
-    path.requestedStart = start;
-    path.requestedEnd = end;
-    pathfinder_->findPath(path);
-    return path.geodesicDistance;
-  }
+  struct TryStepResult {
+    float postGeodesicDistance, postDistanceToClosestObstacle;
+    bool didCollide;
+  };
 
-  CODES checkForward(const State& state);
+  TryStepResult tryStep(const scene::SceneNode& node,
+                        const Magnum::Vector3& end);
+
+  float computeReward(const scene::SceneNode& node,
+                      const nav::ShortestPath& path,
+                      const size_t primLen);
+
+  bool isThrashing();
+
+  std::vector<nav::GreedyGeodesicFollowerImpl::CODES> nextBestPrimAlong(
+      const core::RigidState& state,
+      const nav::ShortestPath& path);
 
   ESP_SMART_POINTERS(GreedyGeodesicFollowerImpl)
 };

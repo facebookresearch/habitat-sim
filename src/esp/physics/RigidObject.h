@@ -18,6 +18,7 @@
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/core/RigidState.h"
 #include "esp/core/esp.h"
 #include "esp/scene/SceneNode.h"
 
@@ -60,22 +61,6 @@ enum class MotionType {
    */
   DYNAMIC
 
-};
-
-/**
- * @brief describes the state of a rigid object as a composition of rotation
- * (quaternion) and translation.
- */
-struct RigidState {
-  RigidState(){};
-  RigidState(const Magnum::Quaternion& _rotation,
-             const Magnum::Vector3& _translation)
-      : rotation(_rotation), translation(_translation){};
-
-  Magnum::Quaternion rotation;
-  Magnum::Vector3 translation;
-
-  ESP_SMART_POINTERS(RigidState)
 };
 
 /**
@@ -143,8 +128,9 @@ struct VelocityControl {
    * @return The new state of the object after applying velocity control over
    * dt.
    */
-  virtual RigidState integrateTransform(const float dt,
-                                        const RigidState& rigidState);
+  virtual core::RigidState integrateTransform(
+      const float dt,
+      const core::RigidState& rigidState);
 
   ESP_SMART_POINTERS(VelocityControl)
 };
@@ -383,7 +369,7 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Set the rotation and translation of the object.
    */
-  virtual void setRigidState(const RigidState& rigidState) {
+  virtual void setRigidState(const core::RigidState& rigidState) {
     setTranslation(rigidState.translation);
     setRotation(rigidState.rotation);
   };
@@ -391,8 +377,8 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Get the rotation and translation of the object.
    */
-  virtual RigidState getRigidState() {
-    return RigidState(node().rotation(), node().translation());
+  virtual core::RigidState getRigidState() {
+    return core::RigidState(node().rotation(), node().translation());
   };
 
   /** @brief Reset the transformation of the object.

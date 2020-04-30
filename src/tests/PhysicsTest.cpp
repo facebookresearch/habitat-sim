@@ -469,10 +469,10 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
 
     // should closely follow kinematic result while uninhibited in 0 gravity
     float targetTime = 0.5;
-    esp::physics::RigidState initialObjectState(
+    esp::core::RigidState initialObjectState(
         physicsManager_->getRotation(objectId),
         physicsManager_->getTranslation(objectId));
-    esp::physics::RigidState kinematicResult =
+    esp::core::RigidState kinematicResult =
         velControl->integrateTransform(targetTime, initialObjectState);
     while (physicsManager_->getWorldTime() < targetTime) {
       physicsManager_->stepPhysics(physicsManager_->getTimestep());

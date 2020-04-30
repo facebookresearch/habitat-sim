@@ -6,7 +6,7 @@
 
 import os.path as osp
 import time
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import attr
 import magnum as mn
@@ -271,9 +271,28 @@ class Simulator:
 
         return observations
 
-    def make_greedy_follower(self, agent_id: int = 0, goal_radius: float = None):
+    def make_greedy_follower(
+        self,
+        agent_id: int = 0,
+        goal_radius: float = None,
+        *,
+        stop_key: Optional[Any] = None,
+        forward_key: Optional[Any] = None,
+        left_key: Optional[Any] = None,
+        right_key: Optional[Any] = None,
+        fix_thrashing: bool = True,
+        thrashing_threshold: int = 16,
+    ):
         return GreedyGeodesicFollower(
-            self.pathfinder, self.get_agent(agent_id), goal_radius
+            self.pathfinder,
+            self.get_agent(agent_id),
+            goal_radius,
+            stop_key=stop_key,
+            forward_key=forward_key,
+            left_key=left_key,
+            right_key=right_key,
+            fix_thrashing=fix_thrashing,
+            thrashing_threshold=thrashing_threshold,
         )
 
     def _step_filter(self, start_pos, end_pos):
