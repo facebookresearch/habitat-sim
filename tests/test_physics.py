@@ -64,6 +64,10 @@ def test_kinematics(sim):
     sim.set_translation(np.array([0, 1.0, 0]), object_id)
     assert np.allclose(sim.get_translation(object_id), np.array([0, 1.0, 0]))
 
+    # test object SceneNode
+    object_node = sim.get_object_scene_node(object_id)
+    assert np.allclose(sim.get_translation(object_id), object_node.translation)
+
     # test get and set transform
     sim.set_transformation(I, object_id)
     assert np.allclose(sim.get_transformation(object_id), I)
