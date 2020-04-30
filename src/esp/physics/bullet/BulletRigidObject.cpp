@@ -40,7 +40,7 @@ bool BulletRigidObject::initializeSceneFinalize(
     const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   const assets::MeshMetaData& metaData =
-      resMgr.getMeshMetaData(physicsSceneAttributes->getCollisionMeshHandle());
+      resMgr.getMeshMetaData(physicsSceneAttributes->getCollisionAssetHandle());
 
   constructBulletSceneFromMeshes(Magnum::Matrix4{}, meshGroup, metaData.root);
   for (auto& object : bSceneCollisionObjects_) {
@@ -58,8 +58,8 @@ bool BulletRigidObject::initializeObjectFinalize(
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   objectMotionType_ = MotionType::DYNAMIC;
 
-  const assets::MeshMetaData& metaData =
-      resMgr.getMeshMetaData(physicsObjectAttributes->getCollisionMeshHandle());
+  const assets::MeshMetaData& metaData = resMgr.getMeshMetaData(
+      physicsObjectAttributes->getCollisionAssetHandle());
 
   //! Physical parameters
   double margin = physicsObjectAttributes->getMargin();

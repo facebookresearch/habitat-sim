@@ -120,6 +120,13 @@ enum class PrimObjTypes : uint32_t {
   END_PRIM_OBJ_TYPES
 };
 
+constexpr const char* PrimitiveNames3D[]{
+    "capsule3DSolid", "capsule3DWireframe", "coneSolid", "coneWireframe",
+    "cubeSolid", "cubeWireframe", "cylinderSolid", "cylinderWireframe",
+    "icosphereSolid",
+    //"icosphereWireframe",
+    "uvSphereSolid", "uvSphereWireframe"};
+
 /**
  * @brief Singleton class responsible for
  * loading and managing common simulator assets such as meshes, textures, and
@@ -153,10 +160,10 @@ class ResourceManager {
       "per_vertex_object_id";
 
   /**
-   * @brief Set whether textures should be compressed.
-   * @param newVal New texture compression setting.
+   * @brief Build default primitive attribute files and synthesize an object of
+   * each type.
    */
-  inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
+  void initDefaultPrimAttributes();
 
   /**
    * @brief Load a scene mesh and add it to the specified @ref DrawableGroup as
@@ -202,10 +209,11 @@ class ResourceManager {
    * static.
    * @param drawables The @ref DrawableGroup with which the scene mesh will be
    * rendered.
+   * @param lightSetup The @ref LightSetup key that will be used
+   * for the scene.
    * @param physicsFilename The physics configuration file from which to
    * re-instatiate the @ref physics::PhysicsManager and parse object templates
-   * for the
-   * @ref physicsObjTemplateLibrary_. Defaults to the file location @ref
+   * for the @ref physicsObjTemplateLibrary_. Defaults to the file location @ref
    * ESP_DEFAULT_PHYS_SCENE_CONFIG set by cmake.
    * @return Whether or not the scene load succeeded.
    */
@@ -237,6 +245,7 @@ class ResourceManager {
    * static.
    * @param drawables The @ref DrawableGroup with which the scene mesh will be
    * rendered.
+   * @param lightSetup The @ref LightSetup key that will be used.
    * @return Whether or not the scene load succeeded.
    */
   bool loadPhysicsScene(
@@ -297,6 +306,8 @@ class ResourceManager {
    * child.
    * @param drawables The @ref DrawableGroup with which the object @ref
    * gfx::Drawable will be rendered.
+   * @param lightSetup The @ref LightSetup key that will be used
+   * for the added component.
    */
   void addObjectToDrawables(int objTemplateLibID,
                             scene::SceneNode* parent,
@@ -318,6 +329,8 @@ class ResourceManager {
    * child.
    * @param drawables The @ref DrawableGroup with which the object @ref
    * gfx::Drawable will be rendered.
+   * @param lightSetup The @ref LightSetup key that will be used
+   * for the added component.
    */
   void addObjectToDrawables(const std::string& objPhysConfigFilename,
                             scene::SceneNode* parent,
@@ -365,7 +378,7 @@ class ResourceManager {
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
       const std::string& configFile) const {
     return collisionMeshGroups_.at(
-        physicsObjTemplateLibrary_.at(configFile)->getCollisionMeshHandle());
+        physicsObjTemplateLibrary_.at(configFile)->getCollisionAssetHandle());
   }
 
   /**
@@ -484,7 +497,7 @@ class ResourceManager {
    * loaded from files.
    */
   int getNumFileTemplateObjects() const {
-    return physicsObjTmpltLibByID_.size();
+    return physicsFileObjTmpltLibByID_.size();
   };
   /**
    * @brief Get a random loaded attribute handle for the loaded file-based
@@ -494,7 +507,7 @@ class ResourceManager {
    * attributes template, or empty string if none loaded
    */
   std::string getRandomFileTemplateHandle() const {
-    return getRandomTemplateHandlePerType(physicsObjTmpltLibByID_,
+    return getRandomTemplateHandlePerType(physicsFileObjTmpltLibByID_,
                                           "file-based ");
   }
 
@@ -508,7 +521,7 @@ class ResourceManager {
    */
   std::vector<std::string> getFileTemplateHandlesBySubstring(
       const std::string& subStr = "") const {
-    return getTemplateHandlesBySubStringPerType(physicsObjTmpltLibByID_,
+    return getTemplateHandlesBySubStringPerType(physicsFileObjTmpltLibByID_,
                                                 subStr);
   }
   /**
@@ -519,7 +532,7 @@ class ResourceManager {
    * describe primitives.
    */
   int getNumPrimTemplateObjects() const {
-    return physicsPrimTmpltLibByID_.size();
+    return physicsSynthObjTmpltLibByID_.size();
   };
   /**
    * @brief Get a random loaded attribute handle for the loaded primitive object
@@ -529,7 +542,7 @@ class ResourceManager {
    * attributes template, or empty string if none loaded
    */
   std::string getRandomPrimTemplateHandle() const {
-    return getRandomTemplateHandlePerType(physicsPrimTmpltLibByID_,
+    return getRandomTemplateHandlePerType(physicsSynthObjTmpltLibByID_,
                                           "primitive ");
   }
   /**
@@ -542,7 +555,7 @@ class ResourceManager {
    */
   std::vector<std::string> getPrimTemplateHandlesBySubstring(
       const std::string& subStr = "") const {
-    return getTemplateHandlesBySubStringPerType(physicsPrimTmpltLibByID_,
+    return getTemplateHandlesBySubStringPerType(physicsSynthObjTmpltLibByID_,
                                                 subStr);
   }
 
@@ -636,6 +649,12 @@ class ResourceManager {
                                scene::SceneNode* parent,
                                DrawableGroup* drawables);
 
+  /**
+   * @brief Set whether textures should be compressed.
+   * @param newVal New texture compression setting.
+   */
+  inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
+
  private:
   /**
    * @brief Load object templates given string list of object template
@@ -689,7 +708,7 @@ class ResourceManager {
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
    * specified @ref meshType used by @ref objectTemplateHandle
    *
-   * @param fileName the name of the file describing this mesh
+   * @param filename the name of the file describing this mesh
    * @param objectTemplateHandle the handle for the object attributes owning
    * this mesh (for error log output)
    * @param meshType either "render" or "collision" (for error log output)
@@ -697,26 +716,55 @@ class ResourceManager {
    * lighting
    * @return whether or not the mesh was loaded successfully
    */
-  bool loadObjectMeshDataFromFile(const std::string& fileName,
+  bool loadObjectMeshDataFromFile(const std::string& filename,
                                   const std::string& objectTemplateHandle,
                                   const std::string& meshType,
                                   const bool requiresLighting);
+
+  /**
+   * @brief put primitive asset template attributes in appropriate library
+   *
+   */
+
+  /**
+   * @brief Put primitive-based synthesized object template attributes in
+   * template map. Calls @ref addObjTemplateToLibrary with primTemplate's set
+   * origin handle and prim map.  Convenience method.
+   * @param objectTemplate the template of the primtive of interest
+   * @return the index of added object template in names map
+   */
+  int addSynthObjTmpltAttrToLibrary(
+      PhysicsObjectAttributes::ptr objectTemplate) {
+    return addObjTemplateToLibrary(objectTemplate,
+                                   objectTemplate->getOriginHandle(),
+                                   physicsSynthObjTmpltLibByID_);
+  }
 
   /** @brief Add object template attributes to template library map and in
    * passed index list
    *
    * @param objectTemplate ptr to object template attributes to be added to
    * library
-   * @param objectTemplateHandle thandle for the object attributes to be added
+   * @param objectTemplateHandle handle for the object attributes to be added
    * to template library
    * @param mapOfNames index map mapping IDs to template handles for this
    * particular kind of object (Separate map for loaded template objects and
-   * for primitives)
-   * @return index of object template in names map
+   * for primitives-based synthesized objects)
+   * @return the index of added object template in names map
    */
   int addObjTemplateToLibrary(PhysicsObjectAttributes::ptr objectTemplate,
                               const std::string& objectTemplateHandle,
                               std::map<int, std::string>& mapOfNames);
+
+  /** @brief Add primitive asset template attributes to appropriate template
+   * library map and index list
+   *
+   * @param primTemplate ptr to primitive template attributes to be added to
+   * library
+   * @return the index of added primitive asset template in names map
+   */
+  int addPrimAssetTemplateToLibrary(
+      AbstractPrimitiveAttributes::ptr primTemplate);
 
  protected:
   /**
@@ -741,12 +789,12 @@ class ResourceManager {
    * the meshes, textures, materials, and component heirarchy of the asset.
    * @param parent The @ref scene::SceneNode of which the component will be a
    * child.
+   * @param lightSetup The @ref LightSetup key that will be used
+   * for the added component.
    * @param drawables The @ref DrawableGroup with which the component will be
    * rendered.
    * @param meshTransformNode The @ref MeshTransformNode for component
    * identifying its mesh, material, transformation, and children.
-   * @param lightSetup The @ref LightSetup key that will be used
-   * for the added component.
    */
   void addComponent(const MeshMetaData& metaData,
                     scene::SceneNode& parent,
@@ -881,8 +929,8 @@ class ResourceManager {
    * as a child.
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered.
-   * @param isScene Whether this asset is being loaded as a scene. If it is
-   * then it will be flat shaded for performance reasons
+   * @param lightSetup The @ref LightSetup key that will be used
+   * for the loaded asset.
    */
   bool loadGeneralMeshData(const AssetInfo& info,
                            scene::SceneNode* parent = nullptr,
@@ -1037,6 +1085,14 @@ class ResourceManager {
       physicsObjTemplateLibrary_;
 
   /**
+   * @brief Maps string keys (built from primitive attributes themselves) to
+   * primitive templates.
+   *
+   */
+  std::map<std::string, AbstractPrimitiveAttributes::ptr>
+      primitiveAssetsTemplateLibrary_;
+
+  /**
    * @brief Maps string keys (typically property filenames) to physical scene
    * templates.
    *
@@ -1064,20 +1120,24 @@ class ResourceManager {
   std::map<std::string, std::vector<CollisionMeshData>> collisionMeshGroups_;
 
   /**
-   * @brief Maps all attribute IDs to the config handles used by lib
+   * @brief Maps all object attribute IDs to the appropriate handles used by lib
    */
   std::map<int, std::string> physicsTemplatesLibByID_;
 
   /**
-   * @brief Maps loaded object template ID to object template handles (file
-   * names)
+   * @brief Maps loaded object template IDs to the appropriate template handles
    */
-  std::map<int, std::string> physicsObjTmpltLibByID_;
+  std::map<int, std::string> physicsFileObjTmpltLibByID_;
 
+  /**
+   * @brief Maps synthesized, primitive-based object template IDs to the
+   * appropriate template handles
+   */
+  std::map<int, std::string> physicsSynthObjTmpltLibByID_;
   /**
    * @brief Maps primitive object template IDs to primitive template handles
    */
-  std::map<int, std::string> physicsPrimTmpltLibByID_;
+  std::map<int, std::string> primitiveAssetTmpltLibByID_;
 
   // ======== Rendering Utility Functions ========
 

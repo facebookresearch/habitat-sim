@@ -420,7 +420,7 @@ void SimTest::loadingObjectTemplates() {
       esp::assets::PhysicsObjectAttributes::create();
   std::string boxPath =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
-  newTemplate->setRenderMeshHandle(boxPath);
+  newTemplate->setRenderAssetHandle(boxPath);
   int templateIndex = simulator->loadObjectTemplate(newTemplate, boxPath);
   CORRADE_VERIFY(templateIndex != esp::ID_UNDEFINED);
 

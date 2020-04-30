@@ -79,7 +79,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
     // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
     esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
         esp::assets::PhysicsObjectAttributes::create();
-    physicsObjectAttributes->setRenderMeshHandle(objectFile);
+    physicsObjectAttributes->setRenderAssetHandle(objectFile);
     resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
     // get a reference to the stored template to edit
@@ -157,7 +157,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
     // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
     esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
         esp::assets::PhysicsObjectAttributes::create();
-    physicsObjectAttributes->setRenderMeshHandle(objectFile);
+    physicsObjectAttributes->setRenderAssetHandle(objectFile);
     physicsObjectAttributes->setMargin(0.0);
     physicsObjectAttributes->setJoinCollisionMeshes(false);
     resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
@@ -229,7 +229,7 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
     // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
     esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
         esp::assets::PhysicsObjectAttributes::create();
-    physicsObjectAttributes->setRenderMeshHandle(objectFile);
+    physicsObjectAttributes->setRenderAssetHandle(objectFile);
     physicsObjectAttributes->setMargin(0.0);
     resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
@@ -272,7 +272,7 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
     esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
         esp::assets::PhysicsObjectAttributes::create();
-    physicsObjectAttributes->setRenderMeshHandle(objectFile);
+    physicsObjectAttributes->setRenderAssetHandle(objectFile);
     physicsObjectAttributes->setMargin(0.1);
 
     resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
@@ -332,7 +332,7 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
   esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
       esp::assets::PhysicsObjectAttributes::create();
-  physicsObjectAttributes->setRenderMeshHandle(objectFile);
+  physicsObjectAttributes->setRenderAssetHandle(objectFile);
   physicsObjectAttributes->setMargin(0.0);
 
   resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
@@ -398,7 +398,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
   esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
       esp::assets::PhysicsObjectAttributes::create();
-  physicsObjectAttributes->setRenderMeshHandle(objectFile);
+  physicsObjectAttributes->setRenderAssetHandle(objectFile);
   physicsObjectAttributes->setMargin(0.0);
   resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
@@ -538,7 +538,7 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
   // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
   esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
       esp::assets::PhysicsObjectAttributes::create();
-  physicsObjectAttributes->setRenderMeshHandle(objectFile);
+  physicsObjectAttributes->setRenderAssetHandle(objectFile);
   resourceManager_.loadObjectTemplate(physicsObjectAttributes, objectFile);
 
   esp::scene::SceneNode& root =
@@ -596,7 +596,7 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
     // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
     esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
         esp::assets::PhysicsObjectAttributes::create();
-    physicsObjectAttributes->setRenderMeshHandle(objectFile);
+    physicsObjectAttributes->setRenderAssetHandle(objectFile);
     physicsObjectAttributes->setBoundingBoxCollisions(true);
     physicsObjectAttributes->setScale(
         {boxHalfExtent, boxHalfExtent, boxHalfExtent});

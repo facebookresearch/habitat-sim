@@ -76,10 +76,10 @@ def test_physics_object_attributes():
     assert physics_object_template.get_angular_damping() == 1.678
     physics_object_template.set_origin_handle("origin")
     assert physics_object_template.get_origin_handle() == "origin"
-    physics_object_template.set_render_mesh_handle("render_mesh")
-    assert physics_object_template.get_render_mesh_handle() == "render_mesh"
-    physics_object_template.set_collision_mesh_handle("collision_mesh")
-    assert physics_object_template.get_collision_mesh_handle() == "collision_mesh"
+    physics_object_template.set_render_asset_handle("render_mesh")
+    assert physics_object_template.get_render_asset_handle() == "render_mesh"
+    physics_object_template.set_collision_asset_handle("collision_mesh")
+    assert physics_object_template.get_collision_asset_handle() == "collision_mesh"
     physics_object_template.set_bounding_box_collisions(True)
     assert physics_object_template.get_bounding_box_collisions() == True
     physics_object_template.set_join_collision_meshes(False)
