@@ -40,6 +40,8 @@ PhysicsObjectAttributes::PhysicsObjectAttributes(
   setInertia({0, 0, 0});
   setLinearDamping(0.2);
   setAngularDamping(0.2);
+  // default collisions will be mesh for physics objects
+  setUseMeshCollision(true);
 
   setBoundingBoxCollisions(false);
   setJoinCollisionMeshes(true);

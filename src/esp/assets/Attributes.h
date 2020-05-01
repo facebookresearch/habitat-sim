@@ -232,6 +232,8 @@ class AbstractPrimitiveAttributes : public esp::core::Configuration {
       : Configuration() {
     setIsWireframe(isWireframe);
     setPrimObjType(primObjType);
+    // primitives will use implicit collisions
+    setUseMeshCollision(false);
     if (!isWireframe) {  // solid
       setUseTextureCoords(false);
       setUseTangents(false);

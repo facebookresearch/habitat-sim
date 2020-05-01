@@ -73,8 +73,6 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
   //! Test Mesh primitive is valid
   assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
       resourceManager_.getPhysicsObjectAttributes(configFileHandle);
-  const std::vector<assets::CollisionMeshData>& meshGroup =
-      resourceManager_.getCollisionMesh(configFileHandle);
 
   //! Make rigid object and add it to existingObjects
   int nextObjectID_ = allocateObjectID();
@@ -83,12 +81,11 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
     objectNode = &staticSceneObject_->node().createChild();
   }
 
-  bool objectSuccess = makeAndAddRigidObject(
-      nextObjectID_, meshGroup, physicsObjectAttributes, objectNode);
+  bool objectSuccess =
+      makeAndAddRigidObject(nextObjectID_, physicsObjectAttributes, objectNode);
 
   if (!objectSuccess) {
     deallocateObjectID(nextObjectID_);
-    // existingObjects_.erase(newObjectID);
     if (attachmentNode == nullptr) {
       delete objectNode;
     }
@@ -163,12 +160,11 @@ int PhysicsManager::deallocateObjectID(int physObjectID) {
 
 bool PhysicsManager::makeAndAddRigidObject(
     int newObjectID,
-    const std::vector<assets::CollisionMeshData>& meshGroup,
     assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
     scene::SceneNode* objectNode) {
   auto ptr = physics::RigidObject::create_unique(objectNode);
-  bool objSuccess = ptr->initializeObject(resourceManager_,
-                                          physicsObjectAttributes, meshGroup);
+  bool objSuccess =
+      ptr->initializeObject(resourceManager_, physicsObjectAttributes);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }
