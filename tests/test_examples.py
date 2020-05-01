@@ -7,7 +7,7 @@ import pytest
 
 import examples.tutorials.lighting_tutorial
 import examples.tutorials.new_actions
-import examples.tutorials.rigid_obect_tutorial
+import examples.tutorials.rigid_object_tutorial
 import examples.tutorials.stereo_agent
 
 
