@@ -19,6 +19,7 @@ over 10,000 FPS multi-process on a single GPU!
 -   :ref:`Creating a stereo agent <std:doc:stereo-agent>`
 -   :ref:`Working with light setups <std:doc:lighting-setups>`
 -   :ref:`Extracting Images <std:doc:image-extractor>`
+-   :ref:`Interactive Rigid Objects <std:doc:rigid-object-tutorial>`
 
 .. note-warning::
 

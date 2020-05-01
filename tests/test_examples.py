@@ -7,6 +7,7 @@ import pytest
 
 import examples.tutorials.lighting_tutorial
 import examples.tutorials.new_actions
+import examples.tutorials.rigid_obect_tutorial
 import examples.tutorials.stereo_agent
 
 
@@ -22,6 +23,7 @@ import examples.tutorials.stereo_agent
         (examples.tutorials.stereo_agent, (False,)),
         (examples.tutorials.new_actions, ()),
         (examples.tutorials.lighting_tutorial, (False,)),
+        (examples.tutorials.rigid_object_tutorial, (False,)),
     ],
 )
 def test_example_modules(example_module, args):
