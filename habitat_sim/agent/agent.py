@@ -196,9 +196,8 @@ class Agent(object):
         r"""Sets the agents state
 
         :param state: The state to set the agent to
-        :param reset_sensors: Whether or not to reset the sensors to their
-            default intrinsic/extrinsic parameters before setting their
-            extrinsic state
+        :param reset_sensors: Whether or not to reset the sensors to their default
+            location relative to the agent base state
         :param is_initial: Whether this state is the initial state of the
             agent in the scene. Used for resetting the agent at a later time
         """
@@ -215,21 +214,21 @@ class Agent(object):
         if reset_sensors:
             for _, v in self._sensors.items():
                 v.set_transformation_from_spec()
+        else:
+            for k, v in state.sensor_states.items():
+                assert k in self._sensors
+                if isinstance(v.rotation, list):
+                    v.rotation = quat_from_coeffs(v.rotation)
 
-        for k, v in state.sensor_states.items():
-            assert k in self._sensors
-            if isinstance(v.rotation, list):
-                v.rotation = quat_from_coeffs(v.rotation)
+                s = self._sensors[k]
 
-            s = self._sensors[k]
-
-            s.node.reset_transformation()
-            s.node.translate(
-                quat_rotate_vector(
-                    state.rotation.inverse(), v.position - state.position
+                s.node.reset_transformation()
+                s.node.translate(
+                    quat_rotate_vector(
+                        state.rotation.inverse(), v.position - state.position
+                    )
                 )
-            )
-            s.node.rotation = quat_to_magnum(state.rotation.inverse() * v.rotation)
+                s.node.rotation = quat_to_magnum(state.rotation.inverse() * v.rotation)
 
         if is_initial:
             self.initial_state = state
