@@ -191,13 +191,23 @@ class Agent(object):
         return state
 
     def set_state(
-        self, state: AgentState, reset_sensors: bool = True, is_initial: bool = False
+        self,
+        state: AgentState,
+        reset_sensors: bool = True,
+        infer_sensor_states: bool = True,
+        is_initial: bool = False,
     ):
         r"""Sets the agents state
 
         :param state: The state to set the agent to
-        :param reset_sensors: Whether or not to reset the sensors to their default
-            location relative to the agent base state
+        :param reset_sensors: Whether or not to reset the sensors to their
+            default intrinsic/extrinsic parameters before setting their extrinsic state
+
+            Default: `True`
+        :param infer_sensor_states: Whether or not to infer the location of sensors based on
+            the new location of the agent base state.
+
+            Default: `True`
         :param is_initial: Whether this state is the initial state of the
             agent in the scene. Used for resetting the agent at a later time
         """
@@ -214,7 +224,8 @@ class Agent(object):
         if reset_sensors:
             for _, v in self._sensors.items():
                 v.set_transformation_from_spec()
-        else:
+
+        if not infer_sensor_states:
             for k, v in state.sensor_states.items():
                 assert k in self._sensors
                 if isinstance(v.rotation, list):
