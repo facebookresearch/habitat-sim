@@ -484,6 +484,7 @@ workflows:
               only:
                 - master
     jobs:
+      - install_and_test_ubuntu
       - update_docs:
           requires:
             - install_and_test_ubuntu
