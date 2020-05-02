@@ -201,11 +201,18 @@ class Agent(object):
 
         :param state: The state to set the agent to
         :param reset_sensors: Whether or not to reset the sensors to their
-            default intrinsic/extrinsic parameters before setting their extrinsic state
+            default intrinsic/extrinsic parameters before setting their extrinsic state.
+
+            Setting this to `False` allows the agent base state to be moved and the new
+            sensor locations inferred without changing the configuration of the sensors
+            with respect to the base state of the agent.
 
             Default: `True`
         :param infer_sensor_states: Whether or not to infer the location of sensors based on
             the new location of the agent base state.
+
+            Setting this to `False` is useful if you'd like to directly control
+            the state of a sensor instead of moving the agent.
 
             Default: `True`
         :param is_initial: Whether this state is the initial state of the
