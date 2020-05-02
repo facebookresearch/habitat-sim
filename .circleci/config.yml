@@ -475,6 +475,15 @@ workflows:
       - cpp_lint
       - js_lint
       - install_and_test_ubuntu
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
       - update_docs:
           requires:
             - install_and_test_ubuntu
