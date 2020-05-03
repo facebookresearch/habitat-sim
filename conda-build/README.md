@@ -15,7 +15,7 @@ The process is almost the same for linux; there is a corresponding python script
 
 That will create your docker container. Now run
 
-```docker run -it --ipc=host --rm -v $(pwd)../:/remote mycontainer bash```
+```docker run -it --ipc=host --rm -v $(pwd)/../:/remote mycontainer bash```
 
 From there you will have a shell within your linux container from which you can run ```python linux_matrix_build.py``` again with python >=3.6 (so you might have to create a conda environment with this version of python), which will kick off the build process. After this has finished, upload it to anaconda cloud in the same way described in the macOS section.
 
