@@ -11,7 +11,7 @@ To then download the package, run ```conda install -c aihabitat -c conda-forge h
 
 The process is almost the same for linux; there is a corresponding python script for starting things off, however we use a docker container to do the builds. There is a dockerfile in this directory that you can use to create a container.
 
-```docker build -t myContainer -f conda-build/Dockerfile .```
+```docker build -t myContainer -f Dockerfile .```
 
 That will create your docker container. Now run
 
