@@ -373,7 +373,7 @@ jobs:
               lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
               bash <(curl -s https://codecov.io/bash) -f coverage.info -cF CPP
       - run:
-          name: Build documentation
+          name: Build sim documentation
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat;
@@ -422,6 +422,25 @@ jobs:
           background: true
           paths:
             - ./habitat-api
+      - run:
+          name: Build api documentation
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat; cd habitat-api
+              # DB: I think this line below shouldn't be needed, not sure why we're rebuilding
+              python setup.py develop --all
+
+              cd docs
+              conda install -y -c conda-forge doxygen==1.8.16
+              conda install -y  jinja2 pygments docutils
+              conda install -y -c conda-forge pelican
+              mkdir -p ../build/docs
+              ./build-public.sh
+      - save_cache:
+          key: docs-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
+          background: true
+          paths:
+            - ./habitat-sim/build/docs-public
 
   update_docs:
     docker:
@@ -442,17 +461,17 @@ jobs:
               cd habitat-website
               git submodule update --init
 
-              for dir in habitat-sim habitat-cpp
+              for dir in habitat-sim habitat-cpp habitat-api
               do
                   rm -rf published/docs/${dir}
                   cp -r ../habitat-sim/build/docs-public/${dir} published/docs/.
               done
-
+              
               git config --global user.name "Habitat"
               git config --global user.email habitat@fb.com
               NOW=$(date +"%m-%d-%Y")
               git add .
-              git diff-index --quiet HEAD || git commit -m "Build habitat-sim ${NOW}"
+              git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-api ${NOW}"
               git push origin master
 
               # Deploy to public
@@ -464,7 +483,7 @@ jobs:
               rsync -a published/ ./.
               rm -rf published
               git add .
-              git diff-index --quiet HEAD || git commit -m "Build habitat-sim ${NOW}"
+              git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-api ${NOW}"
               git push origin gh-pages
 
 workflows:
