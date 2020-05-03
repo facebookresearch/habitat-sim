@@ -17,5 +17,5 @@ That will create your docker container. Now run
 
 ```docker run -it --ipc=host --rm -v $(pwd)/../:/remote mycontainer bash```
 
-From there you will have a shell within your linux container from which you can run ```python linux_matrix_build.py``` again with python >=3.6 (so you might have to create a conda environment with this version of python), which will kick off the build process. After this has finished, upload it to anaconda cloud in the same way described in the macOS section.
+From there you will have a shell within your linux container. Now, navigate to ```cd /remote/conda-build``` where habitat-sim has been mounted. Create a conda environment within the linux container with python>=3.6 (identical to that needed by habitat-sim build). And then run ```python linux_matrix_build.py```, which will kick off the build process. After this has finished, upload it to anaconda cloud in the same way described in the macOS section.
 
