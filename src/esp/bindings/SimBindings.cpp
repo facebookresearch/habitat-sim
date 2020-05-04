@@ -87,7 +87,8 @@ void initSimBindings(py::module& m) {
            "light_setup_key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY,
            "scene_id"_a = 0)
       .def("add_object_by_handle", &Simulator::addObjectByHandle,
-           "object_lib_handle"_a, "attachment_node"_a, "light_setup_key"_a,
+           "object_lib_handle"_a, "attachment_node"_a = nullptr,
+           "light_setup_key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY,
            "scene_id"_a = 0)
       .def("get_physics_object_library_size",
            &Simulator::getPhysicsObjectLibrarySize)
@@ -100,7 +101,8 @@ void initSimBindings(py::module& m) {
            &Simulator::getObjectInitializationTemplate, "object_id"_a,
            "sceneID"_a = 0)
       .def("remove_object", &Simulator::removeObject, "object_id"_a,
-           "delete_object_node"_a, "delete_visual_node"_a, "sceneID"_a = 0)
+           "delete_object_node"_a = true, "delete_visual_node"_a = true,
+           "sceneID"_a = 0)
       .def("get_object_motion_type", &Simulator::getObjectMotionType,
            "object_id"_a, "sceneID"_a = 0)
       .def("set_object_motion_type", &Simulator::setObjectMotionType,
@@ -144,7 +146,7 @@ void initSimBindings(py::module& m) {
       .def("set_object_bb_draw", &Simulator::setObjectBBDraw, "draw_bb"_a,
            "object_id"_a, "sceneID"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
-           "navmesh_settings"_a, "include_static_objects"_a)
+           "navmesh_settings"_a, "include_static_objects"_a = true)
       .def("get_light_setup", &Simulator::getLightSetup,
            "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY)
       .def("set_light_setup", &Simulator::setLightSetup, "light_setup"_a,

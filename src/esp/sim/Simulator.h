@@ -629,7 +629,7 @@ class Simulator {
   // during the deconstruction
   std::unique_ptr<assets::ResourceManager> resourceManager_ = nullptr;
 
-  std::unique_ptr<scene::SceneManager> sceneManager_ = nullptr;
+  scene::SceneManager::uptr sceneManager_ = nullptr;
   int activeSceneID_ = ID_UNDEFINED;
   int activeSemanticSceneID_ = ID_UNDEFINED;
   std::vector<int> sceneID_;

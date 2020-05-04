@@ -35,8 +35,8 @@ Simulator::Simulator(const SimulatorConfiguration& cfg) {
 }
 
 Simulator::~Simulator() {
-  close();
   LOG(INFO) << "Deconstructing Simulator";
+  close();
 }
 
 void Simulator::close() {
@@ -44,6 +44,8 @@ void Simulator::close() {
   semanticScene_ = nullptr;
   sceneManager_ = nullptr;
   resourceManager_ = nullptr;
+
+  renderer_ = nullptr;
   context_ = nullptr;
 
   pathfinder_ = nullptr;
@@ -62,7 +64,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   if (!sceneManager_) {
-    sceneManager_ = std::make_unique<scene::SceneManager>();
+    sceneManager_ = scene::SceneManager::create_unique();
   }
 
   // if configuration is unchanged, just reset and return
