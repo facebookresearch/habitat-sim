@@ -52,12 +52,12 @@ void GenericMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
      cache locality for vertex fetching) and is a no-op if the source data is
      already interleaved, so doesn't hurt to have it there always. */
 
-  CORRADE_ASSERT(
-      meshData_->primitive() == Mn::MeshPrimitive::Triangles,
-      "Cannot instance collisionMeshData_; Triangle Mesh expected.", );
+  /* TODO: Address that non-triangle meshes will have their collisionMeshData_
+   * incorrectly calculated */
+
   meshData_ = Mn::MeshTools::interleave(*std::move(meshData_));
 
-  collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
+  collisionMeshData_.primitive = meshData_->primitive();
 
   /* For collision data we need positions as Vector3 in a contiguous array.
      There's little chance the data are stored like that in MeshData, so unpack
@@ -78,7 +78,7 @@ void GenericMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
                                   const std::string& meshName) {
   // make sure name is appropriate for importer
   int meshID = importer.meshForName(meshName);
-  CORRADE_ASSERT(meshID != -1, "Unknown meshName : " << meshName, );
+  CORRADE_ASSERT(meshID != -1, "Unknown meshName :" << meshName, );
   setMeshData(importer, meshID);
 }
 

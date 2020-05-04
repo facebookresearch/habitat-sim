@@ -102,8 +102,6 @@ enum class PrimObjTypes : uint32_t {
   ICOSPHERE_SOLID,
   /**
    * Primitive object corresponding to Magnum::Primitives::icosphereWireframe
-   * DOES NOT EXIST
-   * TODO: can/should this be added?
    */
   ICOSPHERE_WF,
   /**
