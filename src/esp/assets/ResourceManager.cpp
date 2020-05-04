@@ -80,78 +80,61 @@ ResourceManager::ResourceManager() {
 
 void ResourceManager::initDefaultPrimAttributes() {
   // set up base primitive asset attributes
-  auto capSolidAttr = PhysicsCapsulePrimAttributes::create(
+  auto capSolidAttr = CapsulePrimitiveAttributes::create(
       false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CAPSULE_SOLID)]);
   addPrimAssetTemplateToLibrary(capSolidAttr);
-  auto capWFAttr = PhysicsCapsulePrimAttributes::create(
+  auto capWFAttr = CapsulePrimitiveAttributes::create(
       true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CAPSULE_WF)]);
   addPrimAssetTemplateToLibrary(capWFAttr);
-  auto coneSolidAttr = PhysicsConePrimAttributes::create(
+  auto coneSolidAttr = ConePrimitiveAttributes::create(
       false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CONE_SOLID)]);
   addPrimAssetTemplateToLibrary(coneSolidAttr);
-  auto coneWFAttr = PhysicsConePrimAttributes::create(
+  auto coneWFAttr = ConePrimitiveAttributes::create(
       true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CONE_WF)]);
   addPrimAssetTemplateToLibrary(coneWFAttr);
-  auto cubeSolidAttr = PhysicsCubePrimAttributes::create(
+  auto cubeSolidAttr = CubePrimitiveAttributes::create(
       false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CUBE_SOLID)]);
   addPrimAssetTemplateToLibrary(cubeSolidAttr);
-  auto cubeWFAttr = PhysicsCubePrimAttributes::create(
+  auto cubeWFAttr = CubePrimitiveAttributes::create(
       true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CUBE_WF)]);
   addPrimAssetTemplateToLibrary(cubeWFAttr);
-  auto cylSolidAttr = PhysicsCylinderPrimAttributes::create(
+  auto cylSolidAttr = CylinderPrimitiveAttributes::create(
       false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CYLINDER_SOLID)]);
   addPrimAssetTemplateToLibrary(cylSolidAttr);
-  auto cylWFAttr = PhysicsCylinderPrimAttributes::create(
+  auto cylWFAttr = CylinderPrimitiveAttributes::create(
       true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CYLINDER_WF)]);
   addPrimAssetTemplateToLibrary(cylWFAttr);
-  auto icoSolidAttr = PhysicsIcospherePrimAttributes::create(
+  auto icoSolidAttr = IcospherePrimitiveAttributes::create(
       false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::ICOSPHERE_SOLID)]);
   addPrimAssetTemplateToLibrary(icoSolidAttr);
-  auto icoWFAttr = PhysicsIcospherePrimAttributes::create(
+  auto icoWFAttr = IcospherePrimitiveAttributes::create(
       true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::ICOSPHERE_WF)]);
   addPrimAssetTemplateToLibrary(icoWFAttr);
-  auto uvSphereSolidAttr = PhysicsUVSpherePrimAttributes::create(
+  auto uvSphereSolidAttr = UVSpherePrimitiveAttributes::create(
       false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::UVSPHERE_SOLID)]);
   addPrimAssetTemplateToLibrary(uvSphereSolidAttr);
-  auto uvSphereWFAttr = PhysicsUVSpherePrimAttributes::create(
+  auto uvSphereWFAttr = UVSpherePrimitiveAttributes::create(
       true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::UVSPHERE_WF)]);
   addPrimAssetTemplateToLibrary(uvSphereWFAttr);
 
   // set up primitive importer
+  // TODO when PluginManager update is pushed, make importManager an instance
+  // variable
 
-#ifndef MAGNUM_BUILD_STATIC
-  Mn::PluginManager::Manager<Importer> importManager;
-#else
-  // avoid using plugins that might depend on different library versions
-  Mn::PluginManager::Manager<Importer> importManager{"nonexistent"};
-#endif
+  // #ifndef MAGNUM_BUILD_STATIC
+  //   Mn::PluginManager::Manager<Importer> importManager;
+  // #else
+  //   // avoid using plugins that might depend on different library versions
+  //   Mn::PluginManager::Manager<Importer> importManager{"nonexistent"};
+  // #endif
 
-  Cr::Containers::Pointer<Importer> primImporter;
-  CORRADE_INTERNAL_ASSERT(
-      primImporter = importManager.loadAndInstantiate("PrimitiveImporter"));
-  primImporter->openData("");
-  // configuration for PrimitiveImporter - replace appropriate groups before
-  // instancing prim object
-  auto conf = primImporter->configuration();
+  //   Cr::Containers::Pointer<Importer> primImporter;
+  //   CORRADE_INTERNAL_ASSERT(
+  //       primImporter =
+  //       importManager.loadAndInstantiate("PrimitiveImporter"));
+  //   primImporter->openData("");
 
-  // build default primitives
-  // primitiveAssetsTemplateLibrary_
-  // primitiveAssetTmpltLibByID_
-  // for debugging
-  for (std::pair<int, std::string> entry : primitiveAssetTmpltLibByID_) {
-    // for every attribute, instance a mesh, and set this to be render mesh
-
-    std::string attrKey = entry.second;
-    auto attr = primitiveAssetsTemplateLibrary_.at(attrKey);
-
-    LOG(INFO) << "ID : " << entry.first
-              << " : attr lib key : " << attr->getOriginHandle()
-              << " | instance class : " << attr->getPrimObjType()
-              << " | Conf has group for this obj type : "
-              << conf.hasGroup(attr->getPrimObjType());
-  }
-
-  LOG(INFO) << "built primitive asset templates: "
+  LOG(INFO) << "Built primitive asset templates: "
             << std::to_string(primitiveAssetTmpltLibByID_.size());
 
 }  // initDefaultPrimAttributes
@@ -574,10 +557,28 @@ void ResourceManager::addObjectToDrawables(
     PhysicsObjectAttributes::ptr physicsObjectAttributes =
         physicsObjTemplateLibrary_.at(objPhysConfigFilename);
 
-    const std::string& renderMeshFileName =
+    const std::string& renderObjectName =
         physicsObjectAttributes->getRenderAssetHandle();
-    const LoadedAssetData& loadedAssetData =
-        resourceDict_.at(renderMeshFileName);
+    // if no assets have been registered with resourceDict then do so
+    // should only happen with primitives, since all file-based resources should
+    // be loaded by now
+    if (resourceDict_.count(renderObjectName) == 0) {
+      // needs to have a primitive asset attributes with same name
+      if (primitiveAssetsTemplateLibrary_.count(renderObjectName) == 0) {
+        // this is bad, means no render primitive template exists with expected
+        // name.  should never happen
+        LOG(ERROR) << "No primitive asset attributes exists with name :"
+                   << renderObjectName
+                   << " so unable to instantiate render object.  Aborting.";
+        return;
+      }
+      // build primitive asset for this object based on defined primitive
+      // attributes
+      auto primitiveAssetAttributes =
+          primitiveAssetsTemplateLibrary_.at(renderObjectName);
+      buildPrimitiveAssetData(primitiveAssetAttributes);
+    }
+    const LoadedAssetData& loadedAssetData = resourceDict_.at(renderObjectName);
     if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
       LOG(WARNING) << "Instantiating object with incompatible light setup, "
                       "object will not be correctly lit. If you need lighting "
@@ -668,6 +669,8 @@ int ResourceManager::loadObjectTemplate(
         ->getObjectTemplateID();
   }
   CHECK(objectTemplate->hasValue("renderAssetHandle"));
+  // In case not constructed with handle as parameter
+  objectTemplate->setOriginHandle(objectTemplateHandle);
 
   // load/check_for render and collision mesh metadata
   bool requiresLighting = objectTemplate->getRequiresLighting();
@@ -1130,6 +1133,90 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
   meshDataGL->BB = meshDataGL->BB.translated(translation);
 }
 
+void ResourceManager::buildPrimitiveAssetData(
+    AbstractPrimitiveAttributes::ptr primTemplate) {
+  // check if unique name of attributes describing primitive asset is present
+  // already - don't remake if so
+  if (isPrimitiveAssetPresent(primTemplate->getOriginHandle())) {
+    return;
+  }
+#ifndef MAGNUM_BUILD_STATIC
+  Mn::PluginManager::Manager<Importer> importManager;
+#else
+  // avoid using plugins that might depend on different library versions
+  Mn::PluginManager::Manager<Importer> importManager{"nonexistent"};
+#endif
+  // instantiate primitive importer
+  Cr::Containers::Pointer<Importer> primImporter;
+  CORRADE_INTERNAL_ASSERT(
+      primImporter = importManager.loadAndInstantiate("PrimitiveImporter"));
+  // necessary for importer to be usable
+  primImporter->openData("");
+  buildPrimitiveAssetData(primTemplate, *primImporter);
+}  // buildPrimitiveAssetData
+
+void ResourceManager::buildPrimitiveAssetData(
+    AbstractPrimitiveAttributes::ptr primTemplate,
+    Importer& primImporter) {
+  auto primAssetOriginHandle = primTemplate->getOriginHandle();
+  // check if unique name of attributes describing primitive asset is present
+  // already - don't remake if so
+  if (isPrimitiveAssetPresent(primAssetOriginHandle)) {
+    return;
+  }
+
+  // class of primitive object
+  std::string primClassName = primTemplate->getPrimObjType();
+  // configuration for PrimitiveImporter - replace appropriate group's data
+  // before instancing prim object
+  auto conf = primImporter.configuration();
+  auto cfgGroup = conf.group(primClassName);
+  if (cfgGroup != nullptr) {  // ignore prims with no configuration like cubes
+    auto newCfgGroup = primTemplate->getConfigGroup();
+    // replace current conf group with passed attributes
+    *cfgGroup = newCfgGroup;
+  }
+
+  // make assetInfo
+  AssetInfo info{AssetType::PRIMITIVE};
+  // make MeshMetaData
+  int meshStart = meshes_.size();
+  int meshEnd = meshStart;
+  MeshMetaData meshMetaData{meshStart, meshEnd};
+  // make LoadedAssetData corresponding to this asset
+  LoadedAssetData loadedAssetData{info, meshMetaData};
+
+  // make  primitive mesh structure
+  auto primMeshData = std::make_unique<GenericMeshData>(false);
+
+  // populate it with primitive mesh data
+  primMeshData->setMeshData(primImporter, primClassName);
+
+  // compute the mesh bounding box
+  primMeshData->BB = computeMeshBB(primMeshData.get());
+
+  primMeshData->uploadBuffersToGPU(false);
+
+  meshes_.emplace_back(std::move(primMeshData));
+
+  auto inserted =
+      resourceDict_.emplace(primAssetOriginHandle, std::move(loadedAssetData));
+
+  // instance primitive mesh
+  // auto primMesh = primImporter.mesh(primClassName);
+  // primitiveMeshLibrary_.emplace(primAssetOriginHandle,
+  //                               std::make_unique<Magnum::GL::Mesh>(
+  //                                   Magnum::MeshTools::compile(*primMesh)));
+
+  LOG(INFO) << " Primitive Asset Added : ID : "
+            << primTemplate->getAssetTemplateID()
+            << " : attr lib key : " << primTemplate->getOriginHandle()
+            << " | instance class : " << primTemplate->getPrimObjType()
+            << " | Conf has group for this obj type : "
+            << conf.hasGroup(primClassName);
+
+}  // buildPrimitiveAssetData
+
 bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
                                        scene::SceneNode* parent,
                                        DrawableGroup* drawables) {
@@ -1379,12 +1466,6 @@ bool ResourceManager::loadGeneralMeshData(
       LOG(ERROR) << "Cannot open file " << filename;
       return false;
     }
-
-    LOG(INFO) << "Filename : " << filename
-              << " | # of meshes in importer : " << importer->meshCount()
-              << " | # of textures : " << importer->textureCount()
-              << " | # of materials : " << importer->materialCount()
-              << " | # of scenes : " << importer->sceneCount();
 
     // if this is a new file, load it and add it to the dictionary
     LoadedAssetData loadedAssetData{info};

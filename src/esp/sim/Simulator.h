@@ -127,16 +127,16 @@ class Simulator {
   }
 
   /**
-   * @brief Get a list of all primitive templates whose origin handles contain
-   * @ref subStr, ignoring subStr's case
+   * @brief Get a list of all synthesized (primitive-based) templates whose
+   * origin handles contains @ref subStr, ignoring subStr's case
    * @param subStr substring to search for within existing primitive object
    * templates
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
-  std::vector<std::string> getPrimitiveTemplateHandles(
+  std::vector<std::string> getSynthesizedObjectTemplateHandles(
       const std::string& subStr = "") {
-    return resourceManager_.getPrimTemplateHandlesBySubstring(subStr);
+    return resourceManager_.getSynthTemplateHandlesBySubstring(subStr);
   }
 
   /**

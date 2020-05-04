@@ -41,6 +41,9 @@ PhysicsObjectAttributes::PhysicsObjectAttributes(
   setLinearDamping(0.2);
   setAngularDamping(0.2);
   // default collisions will be mesh for physics objects
+  // primitive-based objects do not currently support mesh collisions, however,
+  // due to issues with how non-triangle meshes (i.e. wireframes) are handled in
+  // @ref GenericMeshData::setMeshData
   setUseMeshCollision(true);
 
   setBoundingBoxCollisions(false);
@@ -74,7 +77,7 @@ PhysicsManagerAttributes::PhysicsManagerAttributes(
  *
  * AbstractPrimitiveAttributes::~AbstractPrimitiveAttributes() {}
  */
-PhysicsCapsulePrimAttributes::PhysicsCapsulePrimAttributes(
+CapsulePrimitiveAttributes::CapsulePrimitiveAttributes(
     bool isWireframe,
     const std::string& primObjType)
     : AbstractPrimitiveAttributes(isWireframe, primObjType) {
@@ -91,9 +94,8 @@ PhysicsCapsulePrimAttributes::PhysicsCapsulePrimAttributes(
   buildOriginHandle();  // build handle based on config
 }  // PhysicsCapsulePrimAttributes
 
-PhysicsConePrimAttributes::PhysicsConePrimAttributes(
-    bool isWireframe,
-    const std::string& primObjType)
+ConePrimitiveAttributes::ConePrimitiveAttributes(bool isWireframe,
+                                                 const std::string& primObjType)
     : AbstractPrimitiveAttributes(isWireframe, primObjType) {
   setHalfLength(1.25);
 
@@ -107,7 +109,7 @@ PhysicsConePrimAttributes::PhysicsConePrimAttributes(
   buildOriginHandle();  // build handle based on config
 }  // PhysicsConePrimAttributes
 
-PhysicsCylinderPrimAttributes::PhysicsCylinderPrimAttributes(
+CylinderPrimitiveAttributes::CylinderPrimitiveAttributes(
     bool isWireframe,
     const std::string& primObjType)
     : AbstractPrimitiveAttributes(isWireframe, primObjType) {
@@ -123,7 +125,7 @@ PhysicsCylinderPrimAttributes::PhysicsCylinderPrimAttributes(
   buildOriginHandle();  // build handle based on config
 }  // PhysicsCylinderPrimAttributes
 
-PhysicsUVSpherePrimAttributes::PhysicsUVSpherePrimAttributes(
+UVSpherePrimitiveAttributes::UVSpherePrimitiveAttributes(
     bool isWireframe,
     const std::string& primObjType)
     : AbstractPrimitiveAttributes(isWireframe, primObjType) {

@@ -78,12 +78,12 @@ bool BulletRigidObject::initializeObjectFinalize(
 
   } else {
     // originHandle is key in maps of relelvant quantities in resource manager
-    const std::string configFile = physicsObjectAttributes->getOriginHandle();
+    const std::string originHandle = physicsObjectAttributes->getOriginHandle();
 
     const std::vector<assets::CollisionMeshData>& meshGroup =
-        resMgr.getCollisionMesh(configFile);
+        resMgr.getCollisionMesh(originHandle);
     const assets::MeshMetaData& metaData = resMgr.getMeshMetaData(
-        physicsObjectAttributes->getCollisionMeshHandle());
+        physicsObjectAttributes->getCollisionAssetHandle());
     if (!usingBBCollisionShape_) {
       constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup,
                                         metaData.root, joinCollisionMeshes);

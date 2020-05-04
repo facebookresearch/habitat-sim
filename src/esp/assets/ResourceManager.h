@@ -523,39 +523,79 @@ class ResourceManager {
                                                 subStr);
   }
   /**
-   * @brief Gets the number of primitive template objects stored in the @ref
-   * physicsObjTemplateLibrary_.
+   * @brief Gets the number of synthesized (primitive-based)  template objects
+   * stored in the @ref physicsObjTemplateLibrary_.
    *
    * @return The number of entries in @ref physicsObjTemplateLibrary_ that
    * describe primitives.
    */
-  int getNumPrimTemplateObjects() const {
+  int getNumSynthTemplateObjects() const {
     return physicsSynthObjTmpltLibByID_.size();
   };
   /**
-   * @brief Get a random loaded attribute handle for the loaded primitive object
-   * templates
+   * @brief Get a random loaded attribute handle for the loaded synthesized
+   * (primitive-based) object templates
    *
    * @return a randomly selected handle corresponding to the a primitive
    * attributes template, or empty string if none loaded
    */
-  std::string getRandomPrimTemplateHandle() const {
+  std::string getRandomSynthTemplateHandle() const {
     return getRandomTemplateHandlePerType(physicsSynthObjTmpltLibByID_,
-                                          "primitive ");
+                                          "synthesized ");
   }
   /**
-   * @brief Get a list of all primitive templates whose origin handles contain
-   * @ref subStr, ignoring subStr's case
+   * @brief Get a list of all synthesized (primitive-based) object templates
+   * whose origin handles contain @ref subStr, ignoring subStr's case
    * @param subStr substring to search for within existing primitive object
    * templates
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
-  std::vector<std::string> getPrimTemplateHandlesBySubstring(
+  std::vector<std::string> getSynthTemplateHandlesBySubstring(
       const std::string& subStr = "") const {
     return getTemplateHandlesBySubStringPerType(physicsSynthObjTmpltLibByID_,
                                                 subStr);
   }
+
+  /**
+   * @brief verify whether a primitive mesh matching the passed handle is
+   * present in system
+   * @param primOriginHandle handle descriptor of primitive asset attributes,
+   * which encodes all relevant parameters for primitive asset instantiation.
+   * @return whether an asset exists with the specified parameters
+   */
+  inline bool isPrimitiveAssetPresent(
+      const std::string& primOriginHandle) const {
+    if (primitiveMeshLibrary_.count(primOriginHandle) > 0) {
+      LOG(INFO) << "Entry for " << primOriginHandle
+                << " is already present in mesh library.";
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * @brief build a primitive asset based on passed template parameters.  If
+   * exists already, does nothing.  Will create a PrimitiveImporter and call
+   * appropriate method.
+   * TODO: This will become primary method once ImportManager can be an
+   * instance variable of ResoureManager
+   * @param primTemplate pointer to attributes describing primitive to
+   * instantiate
+   */
+  void buildPrimitiveAssetData(AbstractPrimitiveAttributes::ptr primTemplate);
+
+  /**
+   * @brief build a primitive asset based on passed template parameters.  If
+   * exists already, does nothing.
+   * @param primTemplate pointer to attributes describing primitive to
+   * instantiate
+   * @param primImporter the importer object used to instantiate the primitive
+   * mesh object
+   */
+  void buildPrimitiveAssetData(AbstractPrimitiveAttributes::ptr primTemplate,
+                               Importer& primImporter);
 
   /**
    * @brief Retrieve the composition of all transforms applied to a mesh
@@ -678,7 +718,8 @@ class ResourceManager {
   /**
    * @brief Get a list of all templates of passed type whose origin handles
    * contain @ref subStr, ignoring subStr's case
-   * @param mapOfHandles map containing the desired object-type template handles
+   * @param mapOfHandles map containing the desired object-type template
+   * handles
    * @param subStr substring to search for within existing primitive object
    * templates
    * @return vector of 0 or more template handles containing the passed
@@ -1112,18 +1153,28 @@ class ResourceManager {
   std::vector<std::unique_ptr<Magnum::GL::Mesh>> primitive_meshes_;
 
   /**
+   * @brief Map holding primitive meshes keyed by the
+   * primitiveAttributes-derived handle describing their parameters.
+   */
+
+  std::map<std::string, std::unique_ptr<Magnum::GL::Mesh>>
+      primitiveMeshLibrary_;
+
+  /**
    * @brief Maps string keys (typically property filenames) to @ref
    * CollisionMeshData for all components of a loaded asset.
    */
   std::map<std::string, std::vector<CollisionMeshData>> collisionMeshGroups_;
 
   /**
-   * @brief Maps all object attribute IDs to the appropriate handles used by lib
+   * @brief Maps all object attribute IDs to the appropriate handles used by
+   * lib
    */
   std::map<int, std::string> physicsTemplatesLibByID_;
 
   /**
-   * @brief Maps loaded object template IDs to the appropriate template handles
+   * @brief Maps loaded object template IDs to the appropriate template
+   * handles
    */
   std::map<int, std::string> physicsFileObjTmpltLibByID_;
 
