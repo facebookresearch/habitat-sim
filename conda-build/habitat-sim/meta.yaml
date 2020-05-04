@@ -1,6 +1,6 @@
 package:
   name: habitat-sim
-  version: 1.3.2
+  version: "{{ environ.get('VERSION') }}"
 
 source:
   path: "{{ environ.get('HSIM_SOURCE_PATH') }}"
