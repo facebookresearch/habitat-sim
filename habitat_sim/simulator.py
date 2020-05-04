@@ -43,7 +43,7 @@ class Configuration(object):
 
 
 @attr.s(auto_attribs=True)
-class Simulator:
+class Simulator(SimulatorBackend):
     r"""The core class of habitat-sim
 
     :property config: configuration for the simulator
@@ -54,12 +54,11 @@ class Simulator:
 
     config: Configuration
     agents: List[Agent] = attr.ib(factory=list, init=False)
-    pathfinder: PathFinder = attr.ib(default=None, init=False)
-    _sim: SimulatorBackend = attr.ib(default=None, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent: Agent = attr.ib(init=False, default=None)
     _sensors: Dict = attr.ib(factory=dict, init=False)
     _previous_step_time = 0.0  # track the compute time of each step
+    _initialized: bool = attr.ib(default=False, init=False)
 
     def __attrs_post_init__(self):
         config = self.config
@@ -82,17 +81,16 @@ class Simulator:
         del self._default_agent
         self._default_agent = None
 
-        del self._sim
-        self._sim = None
-
         self.config = None
 
+        super().close()
+
     def seed(self, new_seed):
-        self._sim.seed(new_seed)
+        super().seed(new_seed)
         self.pathfinder.seed(new_seed)
 
     def reset(self):
-        self._sim.reset()
+        super().reset()
         for i in range(len(self.agents)):
             self.reset_agent(i)
 
@@ -107,19 +105,18 @@ class Simulator:
         self.initialize_agent(agent_id, initial_agent_state)
 
     def _config_backend(self, config: Configuration):
-        if self._sim is None:
-            self._sim = SimulatorBackend(config.sim_cfg)
+        if not self._initialized:
+            super().__init__(config.sim_cfg)
+            self._initialized = True
         else:
-            self._sim.reconfigure(config.sim_cfg)
+            super().reconfigure(config.sim_cfg)
 
     def _config_agents(self, config: Configuration):
         if self.config is not None and self.config.agents == config.agents:
             return
 
         self.agents = [
-            Agent(
-                self._sim.get_active_scene_graph().get_root_node().create_child(), cfg
-            )
+            Agent(self.get_active_scene_graph().get_root_node().create_child(), cfg)
             for cfg in config.agents
         ]
 
@@ -193,7 +190,8 @@ class Simulator:
         self._config_backend(config)
         self._config_agents(config)
         self._config_pathfinder(config)
-        self._sim.frustum_culling = config.sim_cfg.frustum_culling
+        self.frustum_culling = config.sim_cfg.frustum_culling
+
         for i in range(len(self.agents)):
             self.agents[i].controls.move_filter_fn = self._step_filter
 
@@ -203,7 +201,7 @@ class Simulator:
         self._sensors = {}
         for spec in agent_cfg.sensor_specifications:
             self._sensors[spec.uuid] = Sensor(
-                sim=self._sim, agent=self._default_agent, sensor_id=spec.uuid
+                sim=self, agent=self._default_agent, sensor_id=spec.uuid
             )
 
         for i in range(len(self.agents)):
@@ -228,20 +226,6 @@ class Simulator:
         self._last_state = agent.state
         return agent
 
-    def sample_random_agent_state(self, state_to_return):
-        return self._sim.sample_random_agent_state(state_to_return)
-
-    @property
-    def semantic_scene(self):
-        r"""The semantic scene graph
-
-        .. note-warning::
-
-            Not avaliable for all datasets
-        """
-
-        return self._sim.semantic_scene
-
     def get_sensor_observations(self):
         for _, sensor in self._sensors.items():
             sensor.draw_observation()
@@ -262,7 +246,7 @@ class Simulator:
 
         # step physics by dt
         step_start_Time = time.time()
-        self._sim.step_world(dt)
+        super().step_world(dt)
         _previous_step_time = time.time() - step_start_Time
 
         observations = self.get_sensor_observations()
@@ -306,37 +290,6 @@ class Simulator:
 
     def __del__(self):
         self.close()
-
-    # --- object template functions ---
-    def get_physics_object_library_size(self):
-        return self._sim.get_physics_object_library_size()
-
-    def get_object_template(self, template_id):
-        return self._sim.get_object_template(template_id)
-
-    def load_object_configs(self, path):
-        return self._sim.load_object_configs(path)
-
-    def load_object_template(self, object_template, object_template_handle):
-        return self._sim.load_object_template(object_template, object_template_handle)
-
-    def get_object_initialization_template(self, object_id, scene_id=0):
-        return self._sim.get_object_initialization_template(object_id, scene_id)
-
-    def get_template_handle_by_ID(self, object_id):
-        return self._sim.get_template_handle_by_ID(object_id)
-
-    def get_template_handles(self, search_str):
-        return self._sim.get_template_handles(search_str)
-
-    # --- physics functions ---
-    def add_object(
-        self,
-        object_lib_index,
-        attachment_node=None,
-        light_setup_key=DEFAULT_LIGHTING_KEY,
-    ):
-        return self._sim.add_object(object_lib_index, attachment_node, light_setup_key)
 
     def add_object_by_handle(
         self,

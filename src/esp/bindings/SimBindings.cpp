@@ -50,7 +50,7 @@ void initSimBindings(py::module& m) {
 
   // ==== Simulator ====
   py::class_<Simulator, Simulator::ptr>(m, "Simulator")
-      .def(py::init(&Simulator::create<const SimulatorConfiguration&>))
+      .def(py::init<const SimulatorConfiguration&>())
       .def("get_active_scene_graph", &Simulator::getActiveSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            pybind11::return_value_policy::reference)
@@ -58,11 +58,20 @@ void initSimBindings(py::module& m) {
            &Simulator::getActiveSemanticSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
            pybind11::return_value_policy::reference)
-      .def_property_readonly("semantic_scene", &Simulator::getSemanticScene)
+      .def_property_readonly("semantic_scene", &Simulator::getSemanticScene, R"(
+        The semantic scene graph
+
+        .. note-warning::
+
+            Not avaliable for all datasets
+            )")
       .def_property_readonly("renderer", &Simulator::getRenderer)
       .def("seed", &Simulator::seed, "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
       .def("reset", &Simulator::reset)
+      .def("close", &Simulator::close)
+      .def_property("pathfinder", &Simulator::getPathFinder,
+                    &Simulator::setPathFinder)
       .def_property_readonly("gpu_device", &Simulator::gpuDevice)
       .def_property("frustum_culling", &Simulator::isFrustumCullingEnabled,
                     &Simulator::setFrustumCullingEnabled,
@@ -74,7 +83,9 @@ void initSimBindings(py::module& m) {
       .def("get_template_handles", &Simulator::getObjectTemplateHandles,
            "search_str"_a = "")
       .def("add_object", &Simulator::addObject, "object_lib_index"_a,
-           "attachment_node"_a, "light_setup_key"_a, "scene_id"_a = 0)
+           "attachment_node"_a = nullptr,
+           "light_setup_key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY,
+           "scene_id"_a = 0)
       .def("add_object_by_handle", &Simulator::addObjectByHandle,
            "object_lib_handle"_a, "attachment_node"_a, "light_setup_key"_a,
            "scene_id"_a = 0)
