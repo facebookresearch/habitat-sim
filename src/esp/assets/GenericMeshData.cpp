@@ -2,20 +2,20 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "GltfMeshData.h"
+#include "GenericMeshData.h"
 
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/ArrayViewStl.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Interleave.h>
-
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 namespace esp {
 namespace assets {
 
-void GltfMeshData::uploadBuffersToGPU(bool forceReload) {
+void GenericMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {
     buffersOnGPU_ = false;
   }
@@ -24,7 +24,7 @@ void GltfMeshData::uploadBuffersToGPU(bool forceReload) {
   }
 
   renderingBuffer_.reset();
-  renderingBuffer_ = std::make_unique<GltfMeshData::RenderingBuffer>();
+  renderingBuffer_ = std::make_unique<GenericMeshData::RenderingBuffer>();
   Magnum::MeshTools::CompileFlags compileFlags{};
   if (needsNormals_ &&
       !meshData_->hasAttribute(Mn::Trade::MeshAttribute::Normal)) {
@@ -36,7 +36,7 @@ void GltfMeshData::uploadBuffersToGPU(bool forceReload) {
   buffersOnGPU_ = true;
 }
 
-Magnum::GL::Mesh* GltfMeshData::getMagnumGLMesh() {
+Magnum::GL::Mesh* GenericMeshData::getMagnumGLMesh() {
   if (renderingBuffer_ == nullptr) {
     return nullptr;
   }
@@ -44,18 +44,18 @@ Magnum::GL::Mesh* GltfMeshData::getMagnumGLMesh() {
   return &(renderingBuffer_->mesh);
 }
 
-void GltfMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
-                               int meshID) {
-  ASSERT(0 <= meshID && meshID < importer.meshCount());
+void GenericMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
+                                  int meshID) {
+  /* Guarantee mesh instance success */
+  CORRADE_INTERNAL_ASSERT_OUTPUT(meshData_ = importer.mesh(meshID));
   /* Interleave the mesh, if not already. This makes the GPU happier (better
      cache locality for vertex fetching) and is a no-op if the source data is
      already interleaved, so doesn't hurt to have it there always. */
-  Cr::Containers::Optional<Mn::Trade::MeshData> meshData =
-      importer.mesh(meshID);
-  if (meshData)
-    meshData_ = Mn::MeshTools::interleave(*std::move(meshData));
-  else
-    meshData_ = Cr::Containers::NullOpt;
+
+  CORRADE_ASSERT(
+      meshData_->primitive() == Mn::MeshPrimitive::Triangles,
+      "Cannot instance collisionMeshData_; Triangle Mesh expected.", );
+  meshData_ = Mn::MeshTools::interleave(*std::move(meshData_));
 
   collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
 
@@ -72,6 +72,14 @@ void GltfMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
     collisionMeshData_.indices = meshData_->mutableIndices<Mn::UnsignedInt>();
   else
     collisionMeshData_.indices = indexData_ = meshData_->indicesAsArray();
+}
+
+void GenericMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
+                                  const std::string& meshName) {
+  // make sure name is appropriate for importer
+  int meshID = importer.meshForName(meshName);
+  CORRADE_ASSERT(meshID != -1, "Unknown meshName : " << meshName, );
+  setMeshData(importer, meshID);
 }
 
 }  // namespace assets

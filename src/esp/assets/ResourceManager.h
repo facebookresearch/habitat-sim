@@ -25,7 +25,7 @@
 #include "Attributes.h"
 #include "BaseMesh.h"
 #include "CollisionMeshData.h"
-#include "GltfMeshData.h"
+#include "GenericMeshData.h"
 #include "MeshData.h"
 #include "MeshMetaData.h"
 #include "esp/gfx/DrawableGroup.h"
@@ -105,7 +105,7 @@ enum class PrimObjTypes : uint32_t {
    * DOES NOT EXIST
    * TODO: can/should this be added?
    */
-  // ICOSPHERE_WF,
+  ICOSPHERE_WF,
   /**
    * Primitive object corresponding to Magnum::Primitives::uvSphereSolid
    */
@@ -121,11 +121,10 @@ enum class PrimObjTypes : uint32_t {
 };
 
 constexpr const char* PrimitiveNames3D[]{
-    "capsule3DSolid", "capsule3DWireframe", "coneSolid", "coneWireframe",
-    "cubeSolid", "cubeWireframe", "cylinderSolid", "cylinderWireframe",
-    "icosphereSolid",
-    //"icosphereWireframe",
-    "uvSphereSolid", "uvSphereWireframe"};
+    "capsule3DSolid",     "capsule3DWireframe", "coneSolid",
+    "coneWireframe",      "cubeSolid",          "cubeWireframe",
+    "cylinderSolid",      "cylinderWireframe",  "icosphereSolid",
+    "icosphereWireframe", "uvSphereSolid",      "uvSphereWireframe"};
 
 /**
  * @brief Singleton class responsible for

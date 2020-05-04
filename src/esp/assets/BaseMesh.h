@@ -55,10 +55,10 @@ enum SupportedMeshType {
   PTEX_MESH = 1,
 
   /**
-   * Meshes loaded from gltf format (i.e. .glb file). Object is likely
-   * type @ref GltfMeshData.
+   * Meshes loaded from gltf format (i.e. .glb file), or instances of Magnum
+   * Primitives. Object is likely type @ref GenericMeshData.
    */
-  GLTF_MESH = 2,
+  GENERIC_MESH = 2,
 
   /**
    * Number of enumerated supported types.
@@ -167,7 +167,7 @@ class BaseMesh {
   /**
    * @brief Optional storage container for mesh render data.
    *
-   * See @ref GltfMeshData::setMeshData.
+   * See @ref GenericMeshData::setMeshData.
    */
   Corrade::Containers::Optional<Magnum::Trade::MeshData> meshData_ =
       Corrade::Containers::NullOpt;
