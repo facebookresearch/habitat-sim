@@ -4,6 +4,12 @@ import argparse
 import os.path as osp
 import itertools
 import os
+import time
+
+import sys
+sys.path.append('../')
+builtins.__HSIM_SETUP__ = True
+import habitat_sim
 
 build_cmd_template = """
 conda build \
@@ -38,6 +44,7 @@ def main():
         py_vers, bullet_modes, headless_modes, cuda_vers
     ):
         env = os.environ.copy()
+        env["VERSION"] = habitat_sim.__version__ + time.strftime(".%Y.%m.%d") # including a timestamp in anticipation of nightly builds
         env["WITH_BULLET"] = "0"
         env["WITH_CUDA"] = "0"
         env["HEADLESS"] = "0"
