@@ -7,6 +7,7 @@
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/ResourceManager.h>
 
+#include "esp/gfx/Drawable.h"
 #include "esp/gfx/LightSetup.h"
 #include "esp/gfx/MaterialData.h"
 

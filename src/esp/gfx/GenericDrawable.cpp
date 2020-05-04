@@ -26,7 +26,8 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetup)},
       materialData_{
-          shaderManager.get<MaterialData, PhongMaterialData>(materialData)} {
+          shaderManager.get<MaterialData, PhongMaterialData>(materialData)},
+      originalMaterial_(materialData) {
   // update the shader early here to to avoid doing it during the render loop
   updateShader();
 }
@@ -36,6 +37,14 @@ void GenericDrawable::setLightSetup(const Mn::ResourceKey& resourceKey) {
 
   // update the shader early here to to avoid doing it during the render loop
   updateShader();
+}
+
+Magnum::ResourceKey GenericDrawable::getOriginalMaterial() {
+  return originalMaterial_;
+}
+
+void GenericDrawable::setMaterial(const Magnum::ResourceKey& material) {
+  materialData_ = shaderManager_.get<MaterialData, PhongMaterialData>(material);
 }
 
 void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,

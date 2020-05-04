@@ -13,6 +13,7 @@
 #include "esp/assets/attributes/AttributesBase.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
+#include "esp/gfx/MaterialUtil.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/io/io.h"
@@ -835,6 +836,55 @@ void Simulator::setObjectLightSetup(int objectID,
     gfx::setLightSetupForSubTree(physicsManager_->getObjectSceneNode(objectID),
                                  lightSetupKey);
   }
+}
+
+int Simulator::getNumRenderAssetMaterials(std::string renderMeshHandle) {
+  auto info = assets::AssetInfo::fromPath(renderMeshHandle);
+  return resourceManager_.getNumRenderAssetMaterials(info);
+}
+
+gfx::PythonMaterial Simulator::getRenderAssetMaterial(
+    std::string renderMeshHandle,
+    int materialIndex) {
+  auto info = assets::AssetInfo::fromPath(renderMeshHandle);
+  auto key = resourceManager_.getRenderAssetMaterial(info, materialIndex);
+  auto pythonMaterial =
+      gfx::getPythonMaterial(resourceManager_.getShaderManager(), key);
+  return pythonMaterial;
+}
+
+// Affects existing objects and future objects that use this renderMesh.
+// However, existing objects for which the material has been overridden with
+// overrideObjectRenderAssetMaterial are unaffected.
+void Simulator::setRenderAssetMaterial(
+    std::string renderMeshHandle,
+    int materialIndex,
+    const gfx::PythonMaterial& pythonMaterial) {
+  auto info = assets::AssetInfo::fromPath(renderMeshHandle);
+  auto key = resourceManager_.getRenderAssetMaterial(info, materialIndex);
+  gfx::updateMaterialFromPythonMaterial(resourceManager_.getShaderManager(),
+                                        key, pythonMaterial);
+}
+
+// materialIndex valid range is 0..getNumRenderAssetMaterials(
+//   getObjectInitializationTemplate(objectID)->getRenderAssetHandle())
+void Simulator::overrideObjectRenderAssetMaterial(
+    int objectID,
+    int materialIndex,
+    const gfx::PythonMaterial& pythonMaterial) {
+  auto renderMeshHandle =
+      getObjectInitializationTemplate(objectID)->getRenderAssetHandle();
+  auto info = assets::AssetInfo::fromPath(renderMeshHandle);
+  auto& shaderManager = resourceManager_.getShaderManager();
+
+  auto originalKey =
+      resourceManager_.getRenderAssetMaterial(info, materialIndex);
+  auto overrideKey = resourceManager_.clonePhongMaterial(originalKey);
+  gfx::updateMaterialFromPythonMaterial(shaderManager, overrideKey,
+                                        pythonMaterial);
+
+  gfx::overrideMaterialForSubTree(physicsManager_->getObjectSceneNode(objectID),
+                                  originalKey, overrideKey);
 }
 
 }  // namespace sim

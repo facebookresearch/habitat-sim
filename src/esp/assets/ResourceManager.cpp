@@ -1145,11 +1145,13 @@ void ResourceManager::loadMaterials(Importer& importer,
     int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
     if (loadedAssetData.assetInfo.requiresLighting) {
       finalMaterial =
-          buildPhongShadedMaterialData(phongMaterialData, textureBaseIndex);
+          buildPhongShadedMaterialData(phongMaterialData, textureBaseIndex,
+                                       importer.materialName(iMaterial));
 
     } else {
       finalMaterial =
-          buildFlatShadedMaterialData(phongMaterialData, textureBaseIndex);
+          buildFlatShadedMaterialData(phongMaterialData, textureBaseIndex,
+                                      importer.materialName(iMaterial));
     }
     // for now, just use unique ID for material key. This may change if we
     // expose materials to user for post-load modification
@@ -1158,9 +1160,25 @@ void ResourceManager::loadMaterials(Importer& importer,
   }
 }
 
+Mn::ResourceKey ResourceManager::clonePhongMaterial(
+    Mn::ResourceKey existingKey) {
+  const auto& existingPhongMaterial =
+      *shaderManager_.get<gfx::MaterialData, gfx::PhongMaterialData>(
+          existingKey);
+  std::unique_ptr<gfx::MaterialData> newMaterial =
+      gfx::PhongMaterialData::create_unique(existingPhongMaterial);
+
+  int currentMaterialID = nextMaterialID_++;
+
+  // for now, just use unique ID for material key. This may change if we
+  // expose materials to user for post-load modification
+  shaderManager_.set(std::to_string(currentMaterialID), newMaterial.release());
+}
+
 gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
     const Mn::Trade::PhongMaterialData& material,
-    int textureBaseIndex) {
+    int textureBaseIndex,
+    const std::string& importName) {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
 
@@ -1181,12 +1199,16 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
   } else {
     finalMaterial->ambientColor = material.ambientColor();
   }
+
+  finalMaterial->importName = importName;
+
   return finalMaterial;
 }
 
 gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
     const Mn::Trade::PhongMaterialData& material,
-    int textureBaseIndex) {
+    int textureBaseIndex,
+    const std::string& importName) {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
 
@@ -1222,6 +1244,9 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
     finalMaterial->normalTexture =
         textures_[textureBaseIndex + material.normalTexture()].get();
   }
+
+  finalMaterial->importName = importName;
+
   return finalMaterial;
 }
 
@@ -1557,6 +1582,37 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
 void ResourceManager::removePrimitiveMesh(int primitiveID) {
   CHECK(primitive_meshes_.count(primitiveID));
   primitive_meshes_.erase(primitiveID);
+}
+
+int ResourceManager::getNumRenderAssetMaterials(
+    const assets::AssetInfo& assetInfo) {
+  const std::string& filename = assetInfo.filepath;
+  CHECK(resourceDict_.count(filename) > 0);  // todo: decide error-handling
+  const MeshMetaData& metaData = getMeshMetaData(filename);
+  ASSERT(metaData.materialIndex.first != ID_UNDEFINED);
+  ASSERT(metaData.materialIndex.second != ID_UNDEFINED);
+  ASSERT(metaData.materialIndex.second >= metaData.materialIndex.first);
+  return metaData.materialIndex.second - metaData.materialIndex.first + 1;
+}
+
+Magnum::ResourceKey ResourceManager::getRenderAssetMaterial(
+    const assets::AssetInfo& assetInfo,
+    int assetMaterialIndex) {
+  const std::string& filename = assetInfo.filepath;
+  CHECK(resourceDict_.count(filename) > 0);  // todo: decide error-handling
+  const MeshMetaData& metaData = getMeshMetaData(filename);
+
+  ASSERT(metaData.materialIndex.first != ID_UNDEFINED);
+  ASSERT(assetMaterialIndex >= 0);
+  int materialID = metaData.materialIndex.first + assetMaterialIndex;
+  ASSERT(assetMaterialIndex <= metaData.materialIndex.second);
+
+  // see also material ResourceKey usage in ResourceManager::loadMaterials
+  return Magnum::ResourceKey(std::to_string(materialID));
+}
+
+gfx::ShaderManager& ResourceManager::getShaderManager() {
+  return shaderManager_;
 }
 
 void ResourceManager::createGenericDrawable(

@@ -25,6 +25,9 @@ class GenericDrawable : public Drawable {
                            DrawableGroup* group = nullptr);
 
   void setLightSetup(const Magnum::ResourceKey& lightSetup) override;
+  Magnum::ResourceKey getOriginalMaterial() override;
+  void setMaterial(const Magnum::ResourceKey& material) override;
+
   static constexpr const char* SHADER_KEY_TEMPLATE = "Phong-lights={}-flags={}";
 
  protected:
@@ -44,6 +47,7 @@ class GenericDrawable : public Drawable {
   Magnum::Resource<Magnum::GL::AbstractShaderProgram, Magnum::Shaders::Phong>
       shader_;
   Magnum::Resource<MaterialData, PhongMaterialData> materialData_;
+  Magnum::ResourceKey originalMaterial_;
   Magnum::Resource<LightSetup> lightSetup_;
 };
 

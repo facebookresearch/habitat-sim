@@ -25,6 +25,9 @@ def make_cfg_settings():
         silent=True,
         scene=_test_scene,
         frustum_culling=True,
+        # todo: enable physics only for my test, not here in the fixture
+        enable_physics=True,
+        physics_config_file="/home/eric/projects/habitat/habitat-sim/data/default.phys_scene_config.json",
     )
 
 

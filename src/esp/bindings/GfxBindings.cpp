@@ -15,6 +15,7 @@
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/LightSetup.h"
+#include "esp/gfx/MaterialData.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/scene/SemanticScene.h"
@@ -160,6 +161,18 @@ void initGfxBindings(py::module& m) {
   m.attr("DEFAULT_LIGHTING_KEY") =
       assets::ResourceManager::DEFAULT_LIGHTING_KEY;
   m.attr("NO_LIGHT_KEY") = assets::ResourceManager::NO_LIGHT_KEY;
+
+  py::class_<PythonMaterial>(
+      m, "PythonMaterial",
+      R"(Defines the properties of a material that are exposed to Python. Some properties, like textures, are excluded.)")
+      .def(py::init())
+      .def_readwrite("shininess", &PythonMaterial::shininess)
+      .def_readwrite("ambient_color", &PythonMaterial::ambientColor)
+      .def_readwrite("diffuse_color", &PythonMaterial::diffuseColor)
+      .def_readwrite("specular_color", &PythonMaterial::specularColor)
+      .def_readwrite("import_name", &PythonMaterial::importName)
+      .def(py::self == py::self)
+      .def(py::self != py::self);
 }
 
 }  // namespace gfx

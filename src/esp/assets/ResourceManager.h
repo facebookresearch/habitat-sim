@@ -389,6 +389,14 @@ class ResourceManager {
    */
   void removePrimitiveMesh(int primitiveID);
 
+  // todo: const on methods?
+  int getNumRenderAssetMaterials(const assets::AssetInfo& assetInfo);
+  Magnum::ResourceKey getRenderAssetMaterial(const assets::AssetInfo& assetInfo,
+                                             int assetMaterialIndex);
+
+  gfx::ShaderManager& getShaderManager();
+  Magnum::ResourceKey clonePhongMaterial(Magnum::ResourceKey existingKey);
+
   /**
    * @brief generate a new primitive mesh asset for the NavMesh loaded in the
    * provided PathFinder object.
@@ -594,7 +602,8 @@ class ResourceManager {
    */
   gfx::PhongMaterialData::uptr buildFlatShadedMaterialData(
       const Mn::Trade::PhongMaterialData& material,
-      int textureBaseIndex);
+      int textureBaseIndex,
+      const std::string& importName);
 
   /**
    * @brief Build a @ref PhongMaterialData for use with phong shading
@@ -607,7 +616,8 @@ class ResourceManager {
    */
   gfx::PhongMaterialData::uptr buildPhongShadedMaterialData(
       const Mn::Trade::PhongMaterialData& material,
-      int textureBaseIndex);
+      int textureBaseIndex,
+      const std::string& importName);
 
   /**
    * @brief Load a mesh describing some scene asset based on the passed

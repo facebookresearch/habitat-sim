@@ -11,7 +11,10 @@ set(gfx_SOURCES
   MeshVisualizerDrawable.h
   LightSetup.cpp
   LightSetup.h
+  MaterialData.cpp
   MaterialData.h
+  MaterialUtil.cpp
+  MaterialUtil.h
   magnum.h
   RenderCamera.cpp
   RenderCamera.h

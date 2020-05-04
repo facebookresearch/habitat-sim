@@ -25,11 +25,21 @@ struct PhongMaterialData : public MaterialData {
   Magnum::GL::Texture2D *ambientTexture = nullptr, *diffuseTexture = nullptr,
                         *specularTexture = nullptr, *normalTexture = nullptr;
   bool perVertexObjectId = false, vertexColored = false;
+  std::string importName;
 
   ESP_SMART_POINTERS(PhongMaterialData)
 };
 
-// TODO: Ptex material data
+struct PythonMaterial {
+  Magnum::Float shininess = 0.f;
+  Magnum::Color4 ambientColor{0};
+  Magnum::Color4 diffuseColor{0};
+  Magnum::Color4 specularColor{0};
+  std::string importName;
+};
+
+bool operator==(const PythonMaterial& a, const PythonMaterial& b);
+bool operator!=(const PythonMaterial& a, const PythonMaterial& b);
 
 }  // namespace gfx
 }  // namespace esp

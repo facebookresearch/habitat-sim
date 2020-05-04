@@ -646,13 +646,23 @@ class Simulator {
                            const std::string& lightSetupKey,
                            int sceneID = 0);
 
-  /**
-   * @brief Getter for PRNG.
-   *
-   * Use this where-ever possible so that habitat won't be effect by
-   * python's random or np.random modules
-   */
-  core::Random::ptr random() { return random_; }
+  int getNumRenderAssetMaterials(std::string renderMeshHandle);
+  gfx::PythonMaterial getRenderAssetMaterial(std::string renderMeshHandle,
+                                             int materialIndex);
+
+  // Affects existing objects and future objects that use this renderMesh.
+  // Existing objects for which the material has been overridden with
+  // overrideObjectRenderAssetMaterial are unaffected.
+  void setRenderAssetMaterial(std::string renderMeshHandle,
+                              int materialIndex,
+                              const gfx::PythonMaterial& pythonMaterial);
+
+  // materialIndex valid range is 0..getNumRenderAssetMaterials(
+  //   getObjectInitializationTemplate(objectID)->renderMeshHandle)
+  void overrideObjectRenderAssetMaterial(
+      int objectID,
+      int materialIndex,
+      const gfx::PythonMaterial& pythonMaterial);
 
  protected:
   Simulator(){};

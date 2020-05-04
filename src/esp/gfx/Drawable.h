@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <Magnum/Resource.h>
+
 #include "esp/core/esp.h"
 #include "magnum.h"
 
@@ -53,6 +55,11 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   virtual void setLightSetup(const Magnum::ResourceKey& lightSetup){};
 
   Magnum::GL::Mesh& getMesh() { return mesh_; }
+
+  virtual Magnum::ResourceKey getOriginalMaterial() {
+    return Magnum::ResourceKey{};
+  }
+  virtual void setMaterial(const Magnum::ResourceKey&){};
 
   /**
    * @brief Get the Magnum GL mesh for visualization, highlighting (e.g., used
