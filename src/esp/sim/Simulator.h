@@ -595,6 +595,11 @@ class Simulator {
                            const std::string& lightSetupKey,
                            int sceneID = 0);
 
+  /**
+   * @brief Getter for PRNG
+   */
+  core::Random::ptr random() { return random_; }
+
  protected:
   Simulator(){};
 
@@ -628,7 +633,7 @@ class Simulator {
 
   std::shared_ptr<physics::PhysicsManager> physicsManager_ = nullptr;
 
-  core::Random random_;
+  core::Random::ptr random_;
   SimulatorConfiguration config_;
 
   std::vector<agent::Agent::ptr> agents_;

@@ -64,6 +64,7 @@ void initSimBindings(py::module& m) {
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
       .def("reset", &Simulator::reset)
       .def_property_readonly("gpu_device", &Simulator::gpuDevice)
+      .def_property_readonly("random", &Simulator::random)
       .def_property("frustum_culling", &Simulator::isFrustumCullingEnabled,
                     &Simulator::setFrustumCullingEnabled,
                     R"(Enable or disable the frustum culling)")
