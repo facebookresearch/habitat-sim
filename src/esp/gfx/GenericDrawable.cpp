@@ -66,10 +66,10 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   (*shader_)
-      .setAmbientColor(materialData_->ambientColor)
-      .setDiffuseColor(materialData_->diffuseColor)
-      .setSpecularColor(materialData_->specularColor)
-      .setShininess(materialData_->shininess)
+      .setAmbientColor(materialData_->info.ambientColor)
+      .setDiffuseColor(materialData_->info.diffuseColor)
+      .setSpecularColor(materialData_->info.specularColor)
+      .setShininess(materialData_->info.shininess)
       .setLightPositions(lightPositions)
       .setLightColors(lightColors)
       // e.g., semantic mesh has its own per vertex annotation, which has been

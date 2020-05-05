@@ -12,15 +12,13 @@
 namespace esp {
 namespace gfx {
 
-// todo: rename PythonMaterial? to convey that it's a partial material
 // todo: pass resourceKey by value?
-gfx::PythonMaterial getPythonMaterial(ShaderManager& shaderManager,
-                                      Magnum::ResourceKey key);
+gfx::PhongMaterialInfo getPhongMaterialInfo(ShaderManager& shaderManager,
+                                            Magnum::ResourceKey key);
 
-void updateMaterialFromPythonMaterial(
-    ShaderManager& shaderManager,
-    Magnum::ResourceKey key,
-    const gfx::PythonMaterial& pythonMaterial);
+void updatePhongMaterialInfo(ShaderManager& shaderManager,
+                             Magnum::ResourceKey key,
+                             const gfx::PhongMaterialInfo& materialInfo);
 
 void overrideMaterialForSubTree(scene::SceneNode& root,
                                 const Magnum::ResourceKey& originalMaterial,

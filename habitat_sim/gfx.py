@@ -8,7 +8,7 @@ from habitat_sim._ext.habitat_sim_bindings import (
     Camera,
     LightInfo,
     LightPositionModel,
-    PythonMaterial,
+    PhongMaterialInfo,
     Renderer,
     RenderTarget,
 )
@@ -21,5 +21,5 @@ __all__ = [
     "LightInfo",
     "DEFAULT_LIGHTING_KEY",
     "NO_LIGHT_KEY",
-    "PythonMaterial",
+    "PhongMaterialInfo",
 ]

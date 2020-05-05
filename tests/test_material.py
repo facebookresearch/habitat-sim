@@ -1,6 +1,6 @@
 import magnum as mn
 
-from habitat_sim.gfx import PythonMaterial
+from habitat_sim.gfx import PhongMaterialInfo
 
 
 def test_material_api(sim):
@@ -15,7 +15,7 @@ def test_material_api(sim):
     assert num_materials
     material_index = num_materials - 1
 
-    new_material = PythonMaterial()
+    new_material = PhongMaterialInfo()
     new_material.shininess = 1.234
     new_material.diffuse_color = mn.Color4(0.1, 0.2, 0.3, 0.4)
 

@@ -647,22 +647,22 @@ class Simulator {
                            int sceneID = 0);
 
   int getNumRenderAssetMaterials(std::string renderMeshHandle);
-  gfx::PythonMaterial getRenderAssetMaterial(std::string renderMeshHandle,
-                                             int materialIndex);
+  gfx::PhongMaterialInfo getRenderAssetMaterial(std::string renderMeshHandle,
+                                                int materialIndex);
 
   // Affects existing objects and future objects that use this renderMesh.
   // Existing objects for which the material has been overridden with
   // overrideObjectRenderAssetMaterial are unaffected.
   void setRenderAssetMaterial(std::string renderMeshHandle,
                               int materialIndex,
-                              const gfx::PythonMaterial& pythonMaterial);
+                              const gfx::PhongMaterialInfo& materialInfo);
 
   // materialIndex valid range is 0..getNumRenderAssetMaterials(
   //   getObjectInitializationTemplate(objectID)->renderMeshHandle)
   void overrideObjectRenderAssetMaterial(
       int objectID,
       int materialIndex,
-      const gfx::PythonMaterial& pythonMaterial);
+      const gfx::PhongMaterialInfo& materialInfo);
 
  protected:
   Simulator(){};

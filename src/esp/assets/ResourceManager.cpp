@@ -1172,7 +1172,9 @@ Mn::ResourceKey ResourceManager::clonePhongMaterial(
 
   // for now, just use unique ID for material key. This may change if we
   // expose materials to user for post-load modification
-  shaderManager_.set(std::to_string(currentMaterialID), newMaterial.release());
+  Mn::ResourceKey key = std::to_string(currentMaterialID);
+  shaderManager_.set(key, newMaterial.release());
+  return key;
 }
 
 gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
@@ -1183,9 +1185,9 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
   using namespace Mn::Math::Literals;
 
   auto finalMaterial = gfx::PhongMaterialData::create_unique();
-  finalMaterial->ambientColor = 0xffffffff_rgbaf;
-  finalMaterial->diffuseColor = 0x00000000_rgbaf;
-  finalMaterial->specularColor = 0x00000000_rgbaf;
+  finalMaterial->info.ambientColor = 0xffffffff_rgbaf;
+  finalMaterial->info.diffuseColor = 0x00000000_rgbaf;
+  finalMaterial->info.specularColor = 0x00000000_rgbaf;
 
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::AmbientTexture)) {
     finalMaterial->ambientTexture =
@@ -1197,10 +1199,10 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
     finalMaterial->ambientTexture =
         textures_[textureBaseIndex + material.diffuseTexture()].get();
   } else {
-    finalMaterial->ambientColor = material.ambientColor();
+    finalMaterial->info.ambientColor = material.ambientColor();
   }
 
-  finalMaterial->importName = importName;
+  finalMaterial->info.importName = importName;
 
   return finalMaterial;
 }
@@ -1213,27 +1215,27 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
   using namespace Mn::Math::Literals;
 
   auto finalMaterial = gfx::PhongMaterialData::create_unique();
-  finalMaterial->shininess = material.shininess();
+  finalMaterial->info.shininess = material.shininess();
 
   // texture transform, if there's none the matrix is an identity
   finalMaterial->textureMatrix = material.commonTextureMatrix();
 
   // ambient material properties
-  finalMaterial->ambientColor = material.ambientColor();
+  finalMaterial->info.ambientColor = material.ambientColor();
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::AmbientTexture)) {
     finalMaterial->ambientTexture =
         textures_[textureBaseIndex + material.ambientTexture()].get();
   }
 
   // diffuse material properties
-  finalMaterial->diffuseColor = material.diffuseColor();
+  finalMaterial->info.diffuseColor = material.diffuseColor();
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::DiffuseTexture)) {
     finalMaterial->diffuseTexture =
         textures_[textureBaseIndex + material.diffuseTexture()].get();
   }
 
   // specular material properties
-  finalMaterial->specularColor = material.specularColor();
+  finalMaterial->info.specularColor = material.specularColor();
   if (material.hasSpecularTexture()) {
     finalMaterial->specularTexture =
         textures_[textureBaseIndex + material.specularTexture()].get();
@@ -1245,7 +1247,7 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
         textures_[textureBaseIndex + material.normalTexture()].get();
   }
 
-  finalMaterial->importName = importName;
+  finalMaterial->info.importName = importName;
 
   return finalMaterial;
 }
@@ -1726,7 +1728,7 @@ void ResourceManager::initDefaultMaterials() {
   auto perVertexObjectId = new gfx::PhongMaterialData{};
   perVertexObjectId->perVertexObjectId = true;
   perVertexObjectId->vertexColored = true;
-  perVertexObjectId->ambientColor = Mn::Color4{1.0};
+  perVertexObjectId->info.ambientColor = Mn::Color4{1.0};
   shaderManager_.set<gfx::MaterialData>(PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
                                         perVertexObjectId);
   shaderManager_.setFallback<gfx::MaterialData>(new gfx::PhongMaterialData{});

@@ -16,30 +16,29 @@ namespace gfx {
 
 struct MaterialData {};
 
-struct PhongMaterialData : public MaterialData {
+// This struct contains a subset of phong material fields (with the rest in
+// PhongMaterialData). We expose this struct to python so that scripts can
+// modify these fields at runtime.
+struct PhongMaterialInfo {
   Magnum::Float shininess = 80.f;
   Magnum::Color4 ambientColor{0.1};
   Magnum::Color4 diffuseColor{0.7};
   Magnum::Color4 specularColor{0.2};
+  std::string importName;
+};
+
+struct PhongMaterialData : public MaterialData {
+  PhongMaterialInfo info;
   Magnum::Matrix3 textureMatrix;
   Magnum::GL::Texture2D *ambientTexture = nullptr, *diffuseTexture = nullptr,
                         *specularTexture = nullptr, *normalTexture = nullptr;
   bool perVertexObjectId = false, vertexColored = false;
-  std::string importName;
 
   ESP_SMART_POINTERS(PhongMaterialData)
 };
 
-struct PythonMaterial {
-  Magnum::Float shininess = 0.f;
-  Magnum::Color4 ambientColor{0};
-  Magnum::Color4 diffuseColor{0};
-  Magnum::Color4 specularColor{0};
-  std::string importName;
-};
-
-bool operator==(const PythonMaterial& a, const PythonMaterial& b);
-bool operator!=(const PythonMaterial& a, const PythonMaterial& b);
+bool operator==(const PhongMaterialInfo& a, const PhongMaterialInfo& b);
+bool operator!=(const PhongMaterialInfo& a, const PhongMaterialInfo& b);
 
 }  // namespace gfx
 }  // namespace esp

@@ -9,46 +9,20 @@ namespace Mn = Magnum;
 namespace esp {
 namespace gfx {
 
-// todo: investigate coding standard for private free functions
-namespace {
-
-gfx::PythonMaterial toPythonMaterial(const PhongMaterialData& phongMaterial) {
-  return gfx::PythonMaterial{.shininess = phongMaterial.shininess,
-                             .ambientColor = phongMaterial.ambientColor,
-                             .diffuseColor = phongMaterial.diffuseColor,
-                             .specularColor = phongMaterial.specularColor,
-                             .importName = phongMaterial.importName};
-}
-
-// todo: investigate ref vs pointer for in/out params
-void updatePhongMaterialFromPythonMaterial(
-    PhongMaterialData& phongMaterial,
-    const gfx::PythonMaterial& pythonMaterial) {
-  phongMaterial.shininess = pythonMaterial.shininess;
-  phongMaterial.ambientColor = pythonMaterial.ambientColor;
-  phongMaterial.diffuseColor = pythonMaterial.diffuseColor;
-  phongMaterial.specularColor = pythonMaterial.specularColor;
-  phongMaterial.importName = pythonMaterial.importName;
-}
-
-}  // namespace
-
-// todo: rename PythonMaterial? to convey that it's a partial material
 // todo: consistency "material" vs "key"
-gfx::PythonMaterial getPythonMaterial(ShaderManager& shaderManager,
-                                      Mn::ResourceKey key) {
+gfx::PhongMaterialInfo getPhongMaterialInfo(ShaderManager& shaderManager,
+                                            Mn::ResourceKey key) {
   const auto& phongMaterial =
       *shaderManager.get<MaterialData, PhongMaterialData>(key);
-  return toPythonMaterial(phongMaterial);
+  return phongMaterial.info;
 }
 
-void updateMaterialFromPythonMaterial(
-    ShaderManager& shaderManager,
-    Mn::ResourceKey key,
-    const gfx::PythonMaterial& pythonMaterial) {
+void updatePhongMaterialInfo(ShaderManager& shaderManager,
+                             Mn::ResourceKey key,
+                             const gfx::PhongMaterialInfo& materialInfo) {
   auto& phongMaterial =
       *shaderManager.get<MaterialData, PhongMaterialData>(key);
-  updatePhongMaterialFromPythonMaterial(phongMaterial, pythonMaterial);
+  phongMaterial.info = materialInfo;
 }
 
 void overrideMaterialForSubTree(scene::SceneNode& root,

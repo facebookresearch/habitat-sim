@@ -843,14 +843,14 @@ int Simulator::getNumRenderAssetMaterials(std::string renderMeshHandle) {
   return resourceManager_.getNumRenderAssetMaterials(info);
 }
 
-gfx::PythonMaterial Simulator::getRenderAssetMaterial(
+gfx::PhongMaterialInfo Simulator::getRenderAssetMaterial(
     std::string renderMeshHandle,
     int materialIndex) {
   auto info = assets::AssetInfo::fromPath(renderMeshHandle);
   auto key = resourceManager_.getRenderAssetMaterial(info, materialIndex);
-  auto pythonMaterial =
-      gfx::getPythonMaterial(resourceManager_.getShaderManager(), key);
-  return pythonMaterial;
+  auto materialInfo =
+      gfx::getPhongMaterialInfo(resourceManager_.getShaderManager(), key);
+  return materialInfo;
 }
 
 // Affects existing objects and future objects that use this renderMesh.
@@ -859,11 +859,11 @@ gfx::PythonMaterial Simulator::getRenderAssetMaterial(
 void Simulator::setRenderAssetMaterial(
     std::string renderMeshHandle,
     int materialIndex,
-    const gfx::PythonMaterial& pythonMaterial) {
+    const gfx::PhongMaterialInfo& materialInfo) {
   auto info = assets::AssetInfo::fromPath(renderMeshHandle);
   auto key = resourceManager_.getRenderAssetMaterial(info, materialIndex);
-  gfx::updateMaterialFromPythonMaterial(resourceManager_.getShaderManager(),
-                                        key, pythonMaterial);
+  gfx::updatePhongMaterialInfo(resourceManager_.getShaderManager(), key,
+                               materialInfo);
 }
 
 // materialIndex valid range is 0..getNumRenderAssetMaterials(
@@ -871,7 +871,7 @@ void Simulator::setRenderAssetMaterial(
 void Simulator::overrideObjectRenderAssetMaterial(
     int objectID,
     int materialIndex,
-    const gfx::PythonMaterial& pythonMaterial) {
+    const gfx::PhongMaterialInfo& materialInfo) {
   auto renderMeshHandle =
       getObjectInitializationTemplate(objectID)->getRenderAssetHandle();
   auto info = assets::AssetInfo::fromPath(renderMeshHandle);
@@ -880,8 +880,7 @@ void Simulator::overrideObjectRenderAssetMaterial(
   auto originalKey =
       resourceManager_.getRenderAssetMaterial(info, materialIndex);
   auto overrideKey = resourceManager_.clonePhongMaterial(originalKey);
-  gfx::updateMaterialFromPythonMaterial(shaderManager, overrideKey,
-                                        pythonMaterial);
+  gfx::updatePhongMaterialInfo(shaderManager, overrideKey, materialInfo);
 
   gfx::overrideMaterialForSubTree(physicsManager_->getObjectSceneNode(objectID),
                                   originalKey, overrideKey);

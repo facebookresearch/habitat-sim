@@ -7,13 +7,13 @@
 namespace esp {
 namespace gfx {
 
-bool operator==(const PythonMaterial& a, const PythonMaterial& b) {
+bool operator==(const PhongMaterialInfo& a, const PhongMaterialInfo& b) {
   return a.shininess == b.shininess && a.ambientColor == b.ambientColor &&
          a.diffuseColor == b.diffuseColor &&
          a.specularColor == b.specularColor && a.importName == b.importName;
 }
 
-bool operator!=(const PythonMaterial& a, const PythonMaterial& b) {
+bool operator!=(const PhongMaterialInfo& a, const PhongMaterialInfo& b) {
   return !(a == b);
 }
 

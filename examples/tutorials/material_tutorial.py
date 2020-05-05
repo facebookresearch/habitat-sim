@@ -1,14 +1,15 @@
 # [setup]
 import math
 import os
+import random
 
 import magnum as mn
 import numpy as np
 from matplotlib import pyplot as plt
 
 import habitat_sim
-from habitat_sim.gfx import LightInfo, LightPositionModel
-from habitat_sim.utils.common import quat_from_angle_axis, quat_to_magnum
+from habitat_sim.gfx import PhongMaterialInfo
+from habitat_sim.utils.common import quat_from_angle_axis
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 data_path = os.path.join(dir_path, "../../data")
@@ -90,12 +91,10 @@ def main(show_imgs=True, save_imgs=False):
     sphere_template_id = sim.load_object_configs(
         str(os.path.join(data_path, "test_assets/objects/sphere"))
     )[0]
-    engine_template_id = sim.load_object_configs(
-        str(os.path.join(data_path, "test_assets/objects/2CylinderEngine"))
-    )[0]
 
-    id_1 = sim.add_object(sphere_template_id)
-    sim.set_translation([3.7, 0.23, 0.03], id_1)
+    sphere_ids = []
+    sphere_ids.append(sim.add_object(sphere_template_id))
+    sim.set_translation([3.7, 0.23, 0.0], sphere_ids[0])
 
     get_obs(sim, show_imgs, save_imgs)
 
@@ -106,7 +105,7 @@ def main(show_imgs=True, save_imgs=False):
     # could also use sim.get_object_template(sphere_template_id) instead of
     # get_object_initialization_template
     render_asset_handle = sim.get_object_initialization_template(
-        id_1
+        sphere_ids[0]
     ).get_render_asset_handle()
     num_materials = sim.get_num_render_asset_materials(render_asset_handle)
     assert num_materials == 1
@@ -118,17 +117,13 @@ def main(show_imgs=True, save_imgs=False):
     material.shininess *= 0.1
 
     # reduce the specular highlights (make them darker)
-    material.specular_color = mn.Color4(
-        material.specular_color.r * 0.3,
-        material.specular_color.g * 0.3,
-        material.specular_color.b * 0.3,
-    )
+    material.specular_color *= 0.3
 
-    # set diffuse color to blue
-    material.diffuse_color = mn.Color4(0, 0, 1, 1)
+    # set diffuse to dark green
+    material.diffuse_color = mn.Color4(r=0.2, g=0.4, b=0.2)
 
     # change material for all existing and future uses of this render asset, including
-    # object id_1
+    # the existing sphere.
     sim.set_render_asset_material(render_asset_handle, material_index, material)
 
     get_obs(sim, show_imgs, save_imgs)
@@ -137,9 +132,12 @@ def main(show_imgs=True, save_imgs=False):
 
     # [example 3]
 
-    # Create a second sphere. It will also use the modified material.
-    id_2 = sim.add_object(sphere_template_id)
-    sim.set_translation([2.7, 0.23, 0.03], id_2)
+    # create more spheres. They will also use the modified material.
+
+    for x in [3.0, 2.3, 1.6, 0.9]:
+        id = sim.add_object(sphere_template_id)
+        sim.set_translation([x, 0.23, 0.0], id)
+        sphere_ids.append(id)
 
     get_obs(sim, show_imgs, save_imgs)
 
@@ -147,11 +145,19 @@ def main(show_imgs=True, save_imgs=False):
 
     # [example 4]
 
-    # set diffuse color to green
-    material.diffuse_color = mn.Color4(0.0, 0.5, 0.0, 1)
-
-    # override the material for sphere id_2 only. Sphere id_1 will be unaffected.
-    sim.override_object_render_asset_material(id_2, material_index, material)
+    # randomize material properties of individual spheres
+    random.seed(5)
+    for id in sphere_ids:
+        randomized_material = PhongMaterialInfo(material)
+        randomized_material.specular_color *= random.uniform(0, 2)
+        randomized_material.diffuse_color = mn.Color4(
+            r=material.diffuse_color.r + random.uniform(-0.1, 0.1),
+            g=material.diffuse_color.g + random.uniform(-0.1, 0.1),
+            b=material.diffuse_color.b + random.uniform(-0.1, 0.1),
+        )
+        sim.override_object_render_asset_material(
+            id, material_index, randomized_material
+        )
 
     get_obs(sim, show_imgs, save_imgs)
 
@@ -160,9 +166,14 @@ def main(show_imgs=True, save_imgs=False):
     # [example 5]
 
     # Add a model of an engine. We don't modify any materials yet.
-    id_3 = sim.add_object(engine_template_id)
-    sim.set_rotation(mn.Quaternion.rotation(mn.Deg(-50), mn.Vector3.y_axis()), id_3)
-    sim.set_translation([2.2, 0.47, 1.15], id_3)
+    engine_template_id = sim.load_object_configs(
+        str(os.path.join(data_path, "test_assets/objects/2CylinderEngine"))
+    )[0]
+    engine_id = sim.add_object(engine_template_id)
+    sim.set_rotation(
+        mn.Quaternion.rotation(mn.Deg(-50), mn.Vector3.y_axis()), engine_id
+    )
+    sim.set_translation([2.2, 0.47, 1.15], engine_id)
 
     get_obs(sim, show_imgs, save_imgs)
 
@@ -170,8 +181,17 @@ def main(show_imgs=True, save_imgs=False):
 
     # [example 6]
 
-    render_asset_handle = sim.get_object_initialization_template(
-        id_3
+    # create a new material for use with the engine model: black with a matte
+    # orange/gold specular highlight.
+    new_material = PhongMaterialInfo(
+        ambient_color=mn.Color4(0.0, 0.0, 0.0, 1),
+        diffuse_color=mn.Color4(0.0, 0.0, 0.0, 1),
+        specular_color=mn.Color4(1, 0.7, 0, 1),
+        shininess=20.0,
+    )
+
+    render_asset_handle = sim.get_object_template(
+        engine_template_id
     ).get_render_asset_handle()
     num_materials = sim.get_num_render_asset_materials(render_asset_handle)
 
@@ -183,11 +203,7 @@ def main(show_imgs=True, save_imgs=False):
         material = sim.get_render_asset_material(render_asset_handle, i)
         if material.import_name.find("Material_23") != -1:
             found_count += 1
-            # black with a matte orange/gold specular highlight
-            material.diffuse_color = mn.Color4(0.0, 0.0, 0.0, 1)
-            material.shininess = 20
-            material.specular_color = mn.Color4(1, 0.7, 0, 1)
-            sim.set_render_asset_material(render_asset_handle, i, material)
+            sim.set_render_asset_material(render_asset_handle, i, new_material)
     assert found_count
 
     get_obs(sim, show_imgs, save_imgs)

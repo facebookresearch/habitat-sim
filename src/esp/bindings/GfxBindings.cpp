@@ -162,15 +162,20 @@ void initGfxBindings(py::module& m) {
       assets::ResourceManager::DEFAULT_LIGHTING_KEY;
   m.attr("NO_LIGHT_KEY") = assets::ResourceManager::NO_LIGHT_KEY;
 
-  py::class_<PythonMaterial>(
-      m, "PythonMaterial",
+  py::class_<PhongMaterialInfo>(
+      m, "PhongMaterialInfo",
       R"(Defines the properties of a material that are exposed to Python. Some properties, like textures, are excluded.)")
       .def(py::init())
-      .def_readwrite("shininess", &PythonMaterial::shininess)
-      .def_readwrite("ambient_color", &PythonMaterial::ambientColor)
-      .def_readwrite("diffuse_color", &PythonMaterial::diffuseColor)
-      .def_readwrite("specular_color", &PythonMaterial::specularColor)
-      .def_readwrite("import_name", &PythonMaterial::importName)
+      .def(py::init<Magnum::Float, Magnum::Color4, Magnum::Color4,
+                    Magnum::Color4, std::string>(),
+           "shininess"_a, "ambient_color"_a, "diffuse_color"_a,
+           "specular_color"_a, "import_name"_a = std::string())
+      .def(py::init<PhongMaterialInfo>(), "source"_a)
+      .def_readwrite("shininess", &PhongMaterialInfo::shininess)
+      .def_readwrite("ambient_color", &PhongMaterialInfo::ambientColor)
+      .def_readwrite("diffuse_color", &PhongMaterialInfo::diffuseColor)
+      .def_readwrite("specular_color", &PhongMaterialInfo::specularColor)
+      .def_readwrite("import_name", &PhongMaterialInfo::importName)
       .def(py::self == py::self)
       .def(py::self != py::self);
 }
