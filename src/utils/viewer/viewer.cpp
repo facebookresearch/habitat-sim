@@ -337,7 +337,7 @@ void Viewer::addObject(const std::string& configFile) {
 
 }  // addObject
 
-// add template derived object from keypress
+// add file-based template derived object from keypress
 void Viewer::addTemplateObject() {
   if (physicsManager_ != nullptr) {
     int numObjTemplates = resourceManager_.getNumFileTemplateObjects();

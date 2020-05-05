@@ -342,12 +342,23 @@ class ResourceManager {
    * physicsObjTemplateLibrary_.
    *
    * @param objPhysConfigFilename The configuration file to parse and load.
-   * @return The index in the @ref physicsObjTemplateLibrary_ to which the key,
-   * objPhysConfigFilename, referes. Can be used to reference the object
-   * template, but can change if the @ref physicsObjTemplateLibrary_ is
+   * @return The ID of the attributes in the @ref physicsObjTemplateLibrary_ to
+   * which the key, objPhysConfigFilename, referes. Can be used to reference the
+   * object template, but can change if the @ref physicsObjTemplateLibrary_ is
    * modified.
    */
   int parseAndLoadPhysObjTemplate(const std::string& objPhysConfigFilename);
+
+  /**
+   * @brief Instantiate a @ref PhysicsObjectAttributes and add to @ref
+   * physicsObjTemplateLibrary_ for a synthetic(primitive-based) object
+   *
+   * @param primAssetHandle The string name of the primitive asset used as a
+   * render asset for the desired object.
+   * @return The ID of the attributes in the @ref physicsObjTemplateLibrary_ to
+   * which the key, synthesized from primAssetHandle, refers.
+   */
+  int buildAndRegisterPrimPhysObjTemplate(const std::string& primAssetHandle);
 
   /**
    * @brief Add a @ref PhysicsObjectAttributes object to the @ref
@@ -571,7 +582,6 @@ class ResourceManager {
                 << " is already present in mesh library.";
       return true;
     }
-
     return false;
   }
 
@@ -585,17 +595,6 @@ class ResourceManager {
    * instantiate
    */
   void buildPrimitiveAssetData(AbstractPrimitiveAttributes::ptr primTemplate);
-
-  /**
-   * @brief build a primitive asset based on passed template parameters.  If
-   * exists already, does nothing.
-   * @param primTemplate pointer to attributes describing primitive to
-   * instantiate
-   * @param primImporter the importer object used to instantiate the primitive
-   * mesh object
-   */
-  void buildPrimitiveAssetData(AbstractPrimitiveAttributes::ptr primTemplate,
-                               Importer& primImporter);
 
   /**
    * @brief Retrieve the composition of all transforms applied to a mesh
