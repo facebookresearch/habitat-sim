@@ -40,17 +40,20 @@ Simulator::~Simulator() {
 }
 
 void Simulator::close() {
+  pathfinder_ = nullptr;
+  agents_.clear();
+
   physicsManager_ = nullptr;
   semanticScene_ = nullptr;
+
+  sceneID_.clear();
   sceneManager_ = nullptr;
+
   resourceManager_ = nullptr;
 
   renderer_ = nullptr;
   context_ = nullptr;
 
-  pathfinder_ = nullptr;
-  agents_.clear();
-  sceneID_.clear();
   activeSceneID_ = ID_UNDEFINED;
   activeSemanticSceneID_ = ID_UNDEFINED;
   config_ = SimulatorConfiguration{};
