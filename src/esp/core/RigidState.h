@@ -26,5 +26,5 @@ struct RigidState {
 
   ESP_SMART_POINTERS(RigidState)
 };
-};  // namespace core
-};  // namespace esp
+}  // namespace core
+}  // namespace esp

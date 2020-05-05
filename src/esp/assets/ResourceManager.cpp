@@ -52,7 +52,7 @@
 
 #include "CollisionMeshData.h"
 #include "GenericInstanceMeshData.h"
-#include "GltfMeshData.h"
+#include "GenericMeshData.h"
 #include "MeshData.h"
 
 #ifdef ESP_BUILD_PTEX_SUPPORT
@@ -107,11 +107,9 @@ void ResourceManager::initDefaultPrimAttributes() {
   auto icoSolidAttr = PhysicsIcospherePrimAttributes::create(
       false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::ICOSPHERE_SOLID)]);
   addPrimAssetTemplateToLibrary(icoSolidAttr);
-  // TODO: enable for pending Magnum implementation of wireframe icosphere
-  // auto icoWFAttr = PhysicsIcospherePrimAttributes::create(
-  //     true,
-  //     PrimitiveNames3D[static_cast<int>(PrimObjTypes::ICOSPHERE_WF)]);
-  // addPrimAssetTemplateToLibrary(icoWFAttr);
+  auto icoWFAttr = PhysicsIcospherePrimAttributes::create(
+      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::ICOSPHERE_WF)]);
+  addPrimAssetTemplateToLibrary(icoWFAttr);
   auto uvSphereSolidAttr = PhysicsUVSpherePrimAttributes::create(
       false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::UVSPHERE_SOLID)]);
   addPrimAssetTemplateToLibrary(uvSphereSolidAttr);
@@ -397,8 +395,8 @@ bool ResourceManager::loadPhysicsScene(
       // GLB Mesh
       else if (info.type == AssetType::MP3D_MESH ||
                info.type == AssetType::UNKNOWN) {
-        GltfMeshData* gltfMeshData =
-            dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
+        GenericMeshData* gltfMeshData =
+            dynamic_cast<GenericMeshData*>(meshes_[mesh_i].get());
         if (gltfMeshData == nullptr) {
           Corrade::Utility::Debug()
               << "AssetInfo::AssetType type error: unsupported physical type, "
@@ -714,8 +712,8 @@ int ResourceManager::loadObjectTemplate(
   //! Gather mesh components for meshGroup data
   std::vector<CollisionMeshData> meshGroup;
   for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
-    GltfMeshData* gltfMeshData =
-        dynamic_cast<GltfMeshData*>(meshes_[mesh_i].get());
+    GenericMeshData* gltfMeshData =
+        dynamic_cast<GenericMeshData*>(meshes_[mesh_i].get());
     CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
     meshGroup.push_back(meshData);
   }
@@ -1636,7 +1634,7 @@ void ResourceManager::loadMeshes(Importer& importer,
 
   for (int iMesh = 0; iMesh < importer.meshCount(); ++iMesh) {
     // don't need normals if we aren't using lighting
-    auto gltfMeshData = std::make_unique<GltfMeshData>(
+    auto gltfMeshData = std::make_unique<GenericMeshData>(
         loadedAssetData.assetInfo.requiresLighting);
     gltfMeshData->setMeshData(importer, iMesh);
 
