@@ -202,7 +202,6 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   bool makeAndAddRigidObject(
       int newObjectID,
-      const std::vector<assets::CollisionMeshData>& meshGroup,
       assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
       scene::SceneNode* objectNode) override;
 
