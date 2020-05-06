@@ -1165,7 +1165,7 @@ void ResourceManager::buildPrimitiveAssetData(
   // check if unique name of attributes describing primitive asset is present
   // already - don't remake if so
   auto primAssetOriginHandle = primTemplate->getOriginHandle();
-  if (isPrimitiveAssetPresent(primAssetOriginHandle)) {
+  if (resourceDict_.count(primAssetOriginHandle) > 0) {
     LOG(INFO) << " Primitive Asset exists already : " << primAssetOriginHandle;
     return;
   }

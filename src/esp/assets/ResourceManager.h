@@ -377,33 +377,17 @@ class ResourceManager {
   //======== Accessor functions ========
   /**
    * @brief Getter for all @ref assets::CollisionMeshData associated with the
-   * particular asset referenced by the key, configFile.
+   * particular asset.
    *
-   * @param configFile The key by which the asset is referenced in @ref
-   * collisionMeshGroups_ and the @ref physicsObjTemplateLibrary_.
+   * @param collisionAssetHandle The key by which the asset is referenced in
+   * @ref collisionMeshGroups_, from the @ref physicsObjTemplateLibrary_.
    * @return A vector reference to @ref assets::CollisionMeshData instances for
    * individual components of the asset.
    */
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
-      const std::string& configFile) const {
-    return collisionMeshGroups_.at(
-        physicsObjTemplateLibrary_.at(configFile)->getCollisionAssetHandle());
-  }
-
-  /**
-   * @brief Getter for all @ref assets::CollisionMeshData associated with the
-   * particular asset referenced by the index, objectTemplateID, in @ref
-   * physicsObjTemplateLibrary_.
-   *
-   * @param objectTemplateID The index of the object template in @ref
-   * physicsObjTemplateLibrary_.
-   * @return A vector reference to @ref assets::CollisionMeshData instances for
-   * individual components of the asset.
-   */
-  const std::vector<assets::CollisionMeshData>& getCollisionMesh(
-      const int objectTemplateID) const {
-    std::string configFile = getObjectTemplateHandle(objectTemplateID);
-    return getCollisionMesh(configFile);
+      const std::string& collisionAssetHandle) const {
+    CHECK(collisionMeshGroups_.count(collisionAssetHandle) > 0);
+    return collisionMeshGroups_.at(collisionAssetHandle);
   }
 
   /**
@@ -566,23 +550,6 @@ class ResourceManager {
       const std::string& subStr = "") const {
     return getTemplateHandlesBySubStringPerType(physicsSynthObjTmpltLibByID_,
                                                 subStr);
-  }
-
-  /**
-   * @brief verify whether a primitive mesh matching the passed handle is
-   * present in system
-   * @param primOriginHandle handle descriptor of primitive asset attributes,
-   * which encodes all relevant parameters for primitive asset instantiation.
-   * @return whether an asset exists with the specified parameters
-   */
-  inline bool isPrimitiveAssetPresent(
-      const std::string& primOriginHandle) const {
-    if (primitiveMeshLibrary_.count(primOriginHandle) > 0) {
-      LOG(INFO) << "Entry for " << primOriginHandle
-                << " is already present in mesh library.";
-      return true;
-    }
-    return false;
   }
 
   /**
@@ -1150,14 +1117,6 @@ class ResourceManager {
    * addPrimitiveToDrawables for debugging or visualization purposes.
    */
   std::vector<std::unique_ptr<Magnum::GL::Mesh>> primitive_meshes_;
-
-  /**
-   * @brief Map holding primitive meshes keyed by the
-   * primitiveAttributes-derived handle describing their parameters.
-   */
-
-  std::map<std::string, std::unique_ptr<Magnum::GL::Mesh>>
-      primitiveMeshLibrary_;
 
   /**
    * @brief Maps string keys (typically property filenames) to @ref
