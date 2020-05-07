@@ -146,7 +146,7 @@ void initSimBindings(py::module& m) {
       .def("set_object_bb_draw", &Simulator::setObjectBBDraw, "draw_bb"_a,
            "object_id"_a, "sceneID"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
-           "navmesh_settings"_a, "include_static_objects"_a = true)
+           "navmesh_settings"_a, "include_static_objects"_a = false)
       .def("get_light_setup", &Simulator::getLightSetup,
            "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY)
       .def("set_light_setup", &Simulator::setLightSetup, "light_setup"_a,

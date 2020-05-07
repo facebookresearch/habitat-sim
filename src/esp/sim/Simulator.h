@@ -66,10 +66,13 @@ class Simulator {
   virtual ~Simulator();
 
   /**
-   * @brief Closes the simulator and frees all loaded assets and GPU contexts
+   * @brief Closes the simulator and frees all loaded assets and GPU contexts.
    *
    * @warning Must reset the simulator to its "just after constructor" state for
-   * python inheritance to function correctly
+   * python inheritance to function correctly.  Shared/unique pointers should be
+   * set back to nullptr, any members set to their default values, etc.  If this
+   * is not done correctly, the pattern for @ref `close` then @ref `reconfigure`
+   * to create a "fresh" instance of the simulator may not work correctly
    */
   virtual void close();
 
