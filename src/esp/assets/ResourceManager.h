@@ -291,52 +291,6 @@ class ResourceManager {
   std::vector<std::string> buildObjectConfigPaths(const std::string& path);
 
   /**
-   * @brief Add an object from a specified configuration file to the specified
-   * @ref DrawableGroup as a child of the specified @ref scene::SceneNode if
-   * provided.
-   *
-   * If the attributes specified by objTemplateID exists in @ref
-   * physicsObjTemplateLibrary_, and both parent and drawables are
-   * specified, than an object referenced by that key is added to the scene.
-   * @param objTemplateLibID The ID of the configuration file to parse and
-   * load.  This is expected to exist.
-   * @param parent The @ref scene::SceneNode of which the object will be a
-   * child.
-   * @param drawables The @ref DrawableGroup with which the object @ref
-   * gfx::Drawable will be rendered.
-   * @param lightSetup The @ref LightSetup key that will be used
-   * for the added component.
-   */
-  void addObjectToDrawables(int objTemplateLibID,
-                            scene::SceneNode* parent,
-                            DrawableGroup* drawables,
-                            const Magnum::ResourceKey& lightSetup =
-                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY});
-
-  /**
-   * @brief Add an object from a specified configuration file to the specified
-   * @ref DrawableGroup as a child of the specified @ref scene::SceneNode if
-   * provided.
-   *
-   * If the attributes specified by objTemplateID exists in @ref
-   * physicsObjTemplateLibrary_, and both parent and drawables are
-   * specified, than an object referenced by that key is added to the scene.
-   * @param objPhysConfigFilename The name of the configuration file to parse
-   * and load.  This is expected to exist.
-   * @param parent The @ref scene::SceneNode of which the object will be a
-   * child.
-   * @param drawables The @ref DrawableGroup with which the object @ref
-   * gfx::Drawable will be rendered.
-   * @param lightSetup The @ref LightSetup key that will be used
-   * for the added component.
-   */
-  void addObjectToDrawables(const std::string& objPhysConfigFilename,
-                            scene::SceneNode* parent,
-                            DrawableGroup* drawables,
-                            const Magnum::ResourceKey& lightSetup =
-                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY});
-
-  /**
    * @brief Load and parse a physics object template config file and generates a
    * @ref PhysicsObjectAttributes object, adding it to the @ref
    * physicsObjTemplateLibrary_.
@@ -601,6 +555,52 @@ class ResourceManager {
    */
   std::unique_ptr<MeshData> createJoinedCollisionMesh(
       const std::string& filename);
+
+  /**
+   * @brief Add an object from a specified configuration file to the specified
+   * @ref DrawableGroup as a child of the specified @ref scene::SceneNode if
+   * provided.
+   *
+   * If the attributes specified by objTemplateID exists in @ref
+   * physicsObjTemplateLibrary_, and both parent and drawables are
+   * specified, than an object referenced by that key is added to the scene.
+   * @param objTemplateLibID The ID of the configuration file to parse and
+   * load.  This is expected to exist.
+   * @param parent The @ref scene::SceneNode of which the object will be a
+   * child.
+   * @param drawables The @ref DrawableGroup with which the object @ref
+   * gfx::Drawable will be rendered.
+   * @param lightSetup The @ref LightSetup key that will be used
+   * for the added component.
+   */
+  void addObjectToDrawables(int objTemplateLibID,
+                            scene::SceneNode* parent,
+                            DrawableGroup* drawables,
+                            const Magnum::ResourceKey& lightSetup =
+                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY});
+
+  /**
+   * @brief Add an object from a specified configuration file to the specified
+   * @ref DrawableGroup as a child of the specified @ref scene::SceneNode if
+   * provided.
+   *
+   * If the attributes specified by objTemplateID exists in @ref
+   * physicsObjTemplateLibrary_, and both parent and drawables are
+   * specified, than an object referenced by that key is added to the scene.
+   * @param objPhysConfigFilename The name of the configuration file to parse
+   * and load.  This is expected to exist.
+   * @param parent The @ref scene::SceneNode of which the object will be a
+   * child.
+   * @param drawables The @ref DrawableGroup with which the object @ref
+   * gfx::Drawable will be rendered.
+   * @param lightSetup The @ref LightSetup key that will be used
+   * for the added component.
+   */
+  void addObjectToDrawables(const std::string& objPhysConfigFilename,
+                            scene::SceneNode* parent,
+                            DrawableGroup* drawables,
+                            const Magnum::ResourceKey& lightSetup =
+                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY});
 
   /**
    * @brief Create a new drawable primitive attached to the desired @ref
