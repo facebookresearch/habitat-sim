@@ -1077,6 +1077,18 @@ class ResourceManager {
   gfx::ShaderManager shaderManager_;
 
   // ======== Physical parameter data ========
+  /**
+   * @brief Plugin Manager used to instantiate importers which in turn are used
+   * to load asset data
+   */
+  Magnum::PluginManager::Manager<Importer> importManager;
+
+  /**
+   * @brief Importer used to synthesize Magnum Primitives.  This object allows
+   * for similar usage to File-based importers, but requires no file to be
+   * available/read.
+   */
+  Corrade::Containers::Pointer<Importer> primImporter;
 
   /**
    * @brief Maps string keys (typically property filenames) to physical object
