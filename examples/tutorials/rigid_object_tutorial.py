@@ -14,15 +14,36 @@ data_path = os.path.join(dir_path, "../../data")
 output_path = os.path.join(dir_path, "rigid_object_tutorial_output/")
 
 
-def make_video_cv2(observations, prefix="", open_vid=True):
+def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False):
     videodims = (720, 540)
     fourcc = cv2.VideoWriter_fourcc("m", "p", "4", "v")
     video = cv2.VideoWriter(output_path + prefix + ".mp4", fourcc, 60, videodims)
+    thumb_size = (int(videodims[0] / 5), int(videodims[1] / 5))
+    outline_frame = np.ones((thumb_size[1] + 2, thumb_size[0] + 2, 3), np.uint8) * 150
     for ob in observations:
 
         # If in RGB/RGBA format, change first to RGB and change to BGR
-        rgb_im = ob["rgba_camera_1stperson"][..., 0:3][..., ::-1]
-        video.write(rgb_im)
+        bgr_im_1st_person = ob["rgba_camera_1stperson"][..., 0:3][..., ::-1]
+
+        if multi_obs:
+            # embed the 1st person frame into the 3rd person frame and write to video
+            bgr_im_3rd_person = ob["rgba_camera_3rdperson"][..., 0:3][..., ::-1]
+            resized_1st_person = cv2.resize(
+                bgr_im_1st_person, thumb_size, interpolation=cv2.INTER_AREA
+            )
+            x_offset = y_offset = 50
+            bgr_im_3rd_person[
+                y_offset - 1 : y_offset + outline_frame.shape[0] - 1,
+                x_offset - 1 : x_offset + outline_frame.shape[1] - 1,
+            ] = outline_frame
+            bgr_im_3rd_person[
+                y_offset : y_offset + resized_1st_person.shape[0],
+                x_offset : x_offset + resized_1st_person.shape[1],
+            ] = resized_1st_person
+            video.write(bgr_im_3rd_person)
+        else:
+            # write the 1st person observation to video
+            video.write(bgr_im_1st_person)
     video.release()
     if open_vid:
         os.system("open " + output_path + prefix + ".mp4")
@@ -58,12 +79,13 @@ def make_configuration():
             "sensor_type": habitat_sim.SensorType.COLOR,
             "resolution": camera_resolution,
             "position": [0.0, 0.6, 0.0],  #::: fix y to be 0 later
+            "orientation": [0.0, 0.0, 0.0],
         },
         "rgba_camera_3rdperson": {
             "sensor_type": habitat_sim.SensorType.COLOR,
             "resolution": camera_resolution,
             "position": [0.0, 1.0, 0.3],
-            "orientation": [-30, 0.0, 0.0],
+            "orientation": [-45, 0.0, 0.0],
         },
     }
 
@@ -74,6 +96,7 @@ def make_configuration():
         sensor_spec.sensor_type = sensor_params["sensor_type"]
         sensor_spec.resolution = sensor_params["resolution"]
         sensor_spec.position = sensor_params["position"]
+        sensor_spec.orientation = sensor_params["orientation"]
         sensor_specs.append(sensor_spec)
 
     # agent configuration
@@ -288,18 +311,54 @@ def main(make_video=True, show_video=True):
     # [robot_control]
 
     locobot_template_id = sim.load_object_configs(
-        str(os.path.join(data_path, "test_assets/objects/locobot_merged"))
+        str(os.path.join(data_path, "objects/locobot_merged"))
     )[0]
 
     # add an object to the scene with the agent/camera SceneNode attached
     id_1 = sim.add_object(locobot_template_id, sim.agents[0].scene_node)
     sim.set_translation(np.array([1.75, -1.02, 0.4]), id_1)
 
+    vel_control = sim.get_object_velocity_control(id_1)
+    vel_control.linear_velocity = np.array([0, 0, -1.0])
+    vel_control.angular_velocity = np.array([0.0, 2.0, 0])
+
     # simulate
     observations = simulate(sim, dt=1.5, get_frames=make_video)
 
+    vel_control.controlling_lin_vel = True
+    vel_control.controlling_ang_vel = True
+    vel_control.lin_vel_is_local = True
+    vel_control.ang_vel_is_local = True
+
+    # simulate
+    observations += simulate(sim, dt=1.0, get_frames=make_video)
+
+    vel_control.controlling_lin_vel = False
+    vel_control.angular_velocity = np.array([0.0, 1.0, 0])
+
+    # simulate
+    observations += simulate(sim, dt=1.5, get_frames=make_video)
+
+    vel_control.angular_velocity = np.array([0.0, 0.0, 0])
+    vel_control.controlling_lin_vel = True
+    vel_control.controlling_ang_vel = True
+
+    # simulate
+    observations += simulate(sim, dt=1.0, get_frames=make_video)
+
+    vel_control.angular_velocity = np.array([0.0, -1.25, 0])
+
+    # simulate
+    observations += simulate(sim, dt=2.0, get_frames=make_video)
+
+    vel_control.controlling_ang_vel = False
+    vel_control.controlling_lin_vel = False
+
+    # simulate
+    observations += simulate(sim, dt=3.0, get_frames=make_video)
+
     # video rendering
-    make_video_cv2(observations, prefix="robot_control", open_vid=True)
+    make_video_cv2(observations, prefix="robot_control", open_vid=True, multi_obs=True)
 
     # [/robot_control]
 
