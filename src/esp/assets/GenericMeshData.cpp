@@ -44,8 +44,7 @@ Magnum::GL::Mesh* GenericMeshData::getMagnumGLMesh() {
   return &(renderingBuffer_->mesh);
 }
 
-void GenericMeshData::setMeshData(
-    Corrade::Containers::Optional<Magnum::Trade::MeshData>& meshData) {
+void GenericMeshData::setMeshData(Magnum::Trade::MeshData&& meshData) {
   /* Interleave the mesh, if not already. This makes the GPU happier (better
      cache locality for vertex fetching) and is a no-op if the source data is
      already interleaved, so doesn't hurt to have it there always. */
@@ -53,7 +52,7 @@ void GenericMeshData::setMeshData(
   /* TODO: Address that non-triangle meshes will have their collisionMeshData_
    * incorrectly calculated */
 
-  meshData_ = Mn::MeshTools::interleave(*std::move(meshData));
+  meshData_ = Mn::MeshTools::interleave(std::move(meshData));
 
   collisionMeshData_.primitive = meshData_->primitive();
 
@@ -76,16 +75,18 @@ void GenericMeshData::importAndSetMeshData(
     Magnum::Trade::AbstractImporter& importer,
     int meshID) {
   /* Guarantee mesh instance success */
-  CORRADE_INTERNAL_ASSERT_OUTPUT(meshData_ = importer.mesh(meshID));
-  setMeshData(meshData_);
+  Cr::Containers::Optional<Mn::Trade::MeshData> mesh = importer.mesh(meshID);
+  CORRADE_INTERNAL_ASSERT(mesh);
+  setMeshData(*std::move(mesh));
 }  // importAndSetMeshData
 
 void GenericMeshData::importAndSetMeshData(
     Magnum::Trade::AbstractImporter& importer,
     const std::string& meshName) {
   /* Guarantee mesh instance success */
-  CORRADE_INTERNAL_ASSERT_OUTPUT(meshData_ = importer.mesh(meshName));
-  setMeshData(meshData_);
+  Cr::Containers::Optional<Mn::Trade::MeshData> mesh = importer.mesh(meshName);
+  CORRADE_INTERNAL_ASSERT(mesh);
+  setMeshData(*std::move(mesh));
 }  // importAndSetMeshData
 
 }  // namespace assets

@@ -58,8 +58,7 @@ class GenericMeshData : public BaseMesh {
    * as NavMesh. Sets the @ref collisionMesh_ references.
    * @param meshData the meshData to be assigned.
    */
-  void setMeshData(
-      Corrade::Containers::Optional<Magnum::Trade::MeshData>& meshData);
+  void setMeshData(Magnum::Trade::MeshData&& meshData);
 
   /**
    * @brief Load mesh data from a pre-parsed importer for a specific mesh

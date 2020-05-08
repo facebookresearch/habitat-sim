@@ -76,7 +76,7 @@ ResourceManager::ResourceManager()
     :
 #ifdef MAGNUM_BUILD_STATIC
       // avoid using plugins that might depend on different library versions
-      importManager("nonexistent")
+      importerManager_("nonexistent")
 #endif
 {
   initDefaultLightSetups();
@@ -85,10 +85,10 @@ ResourceManager::ResourceManager()
 
 void ResourceManager::initDefaultPrimAttributes() {
   // instantiate a primitive importer
-  CORRADE_INTERNAL_ASSERT(
-      primImporter = importManager.loadAndInstantiate("PrimitiveImporter"));
+  CORRADE_INTERNAL_ASSERT_OUTPUT(
+      primImporter_ = importerManager_.loadAndInstantiate("PrimitiveImporter"));
   // necessary for importer to be usable
-  primImporter->openData("");
+  primImporter_->openData("");
   // set up base primitive asset attributes
   auto capSolidAttr = CapsulePrimitiveAttributes::create(
       false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CAPSULE_SOLID)]);
@@ -1119,7 +1119,7 @@ void ResourceManager::buildPrimitiveAssetData(
   std::string primClassName = primTemplate->getPrimObjType();
   // configuration for PrimitiveImporter - replace appropriate group's data
   // before instancing prim object
-  auto conf = primImporter->configuration();
+  auto conf = primImporter_->configuration();
   auto cfgGroup = conf.group(primClassName);
   if (cfgGroup != nullptr) {  // ignore prims with no configuration like cubes
     auto newCfgGroup = primTemplate->getConfigGroup();
@@ -1138,7 +1138,7 @@ void ResourceManager::buildPrimitiveAssetData(
   // make  primitive mesh structure
   auto primMeshData = std::make_unique<GenericMeshData>(false);
   // build mesh data object
-  primMeshData->importAndSetMeshData(*primImporter, primClassName);
+  primMeshData->importAndSetMeshData(*primImporter_, primClassName);
 
   // compute the mesh bounding box
   primMeshData->BB = computeMeshBB(primMeshData.get());
@@ -1255,7 +1255,7 @@ bool ResourceManager::loadInstanceMeshData(
 
   Cr::Containers::Pointer<Importer> importer;
   CORRADE_INTERNAL_ASSERT(
-      importer = importManager.loadAndInstantiate("StanfordImporter"));
+      importer = importerManager_.loadAndInstantiate("StanfordImporter"));
 
   // if this is a new file, load it and add it to the dictionary, create
   // shaders and add it to the shaderPrograms_
@@ -1327,16 +1327,16 @@ bool ResourceManager::loadGeneralMeshData(
 
   Cr::Containers::Pointer<Importer> importer;
   CORRADE_INTERNAL_ASSERT(
-      importer = importManager.loadAndInstantiate("AnySceneImporter"));
+      importer = importerManager_.loadAndInstantiate("AnySceneImporter"));
 
   // Preferred plugins, Basis target GPU format
-  importManager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
+  importerManager_.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
 #ifdef ESP_BUILD_ASSIMP_SUPPORT
-  importManager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+  importerManager_.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
 #endif
   {
     Cr::PluginManager::PluginMetadata* const metadata =
-        importManager.metadata("BasisImporter");
+        importerManager_.metadata("BasisImporter");
     Mn::GL::Context& context = Mn::GL::Context::current();
 #ifdef MAGNUM_TARGET_WEBGL
     if (context.isExtensionSupported<

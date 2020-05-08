@@ -1081,14 +1081,14 @@ class ResourceManager {
    * @brief Plugin Manager used to instantiate importers which in turn are used
    * to load asset data
    */
-  Magnum::PluginManager::Manager<Importer> importManager;
+  Corrade::PluginManager::Manager<Importer> importerManager_;
 
   /**
    * @brief Importer used to synthesize Magnum Primitives.  This object allows
    * for similar usage to File-based importers, but requires no file to be
    * available/read.
    */
-  Corrade::Containers::Pointer<Importer> primImporter;
+  Corrade::Containers::Pointer<Importer> primImporter_;
 
   /**
    * @brief Maps string keys (typically property filenames) to physical object
