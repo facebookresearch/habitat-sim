@@ -202,21 +202,20 @@ class Agent(object):
         :param state: The state to set the agent to
         :param reset_sensors: Whether or not to reset the sensors to their
             default intrinsic/extrinsic parameters before setting their extrinsic state.
-
-            Setting this to `False` allows the agent base state to be moved and the new
-            sensor locations inferred without changing the configuration of the sensors
-            with respect to the base state of the agent.
-
-            Default: `True`
         :param infer_sensor_states: Whether or not to infer the location of sensors based on
             the new location of the agent base state.
-
-            Setting this to `False` is useful if you'd like to directly control
-            the state of a sensor instead of moving the agent.
-
-            Default: `True`
         :param is_initial: Whether this state is the initial state of the
             agent in the scene. Used for resetting the agent at a later time
+
+        Setting ``reset_sensors`` to :py:`False`
+        allows the agent base state to be moved and the new
+        sensor locations inferred without changing the configuration of the sensors
+        with respect to the base state of the agent.
+
+        Setting ``infer_sensor_states``
+        to :py:`False` is useful if you'd like to directly control
+        the state of a sensor instead of moving the agent.
+
         """
         habitat_sim.errors.assert_obj_valid(self.body)
 
@@ -258,11 +257,20 @@ class Agent(object):
 
     @property
     def state(self):
+        r"""Get/set the agent's state.
+
+        Getting the state is equivalent to :ref:`get_state`
+
+        Setting the state is equivalent calling :ref:`set_state`
+        and only providing the state.
+        """
         return self.get_state()
 
     @state.setter
     def state(self, new_state):
-        self.set_state(new_state, reset_sensors=True)
+        self.set_state(
+            new_state, reset_sensors=True, infer_sensor_states=True, is_initial=False
+        )
 
     def close(self):
         self._sensors = None
