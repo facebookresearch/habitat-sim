@@ -38,10 +38,8 @@ bool RigidObject::initializeSceneFinalize(
 }
 
 bool RigidObject::initializeObject(
-    const assets::ResourceManager& resMgr,
-    const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-    const std::vector<assets::CollisionMeshData>& meshGroup) {
-  // TODO (JH): Handling static/kinematic object type
+    assets::ResourceManager& resMgr,
+    const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes) {
   if (rigidObjectType_ != RigidObjectType::NONE) {
     LOG(ERROR) << "Cannot initialize a RigidObject more than once";
     return false;
@@ -54,13 +52,12 @@ bool RigidObject::initializeObject(
   initializationAttributes_ = esp::assets::PhysicsObjectAttributes::create(
       *physicsObjectAttributes.get());
 
-  return initializeObjectFinalize(resMgr, physicsObjectAttributes, meshGroup);
+  return initializeObjectFinalize(resMgr, physicsObjectAttributes);
 }
 
 bool RigidObject::initializeObjectFinalize(
-    const assets::ResourceManager&,
-    const assets::PhysicsObjectAttributes::ptr,
-    const std::vector<assets::CollisionMeshData>&) {
+    assets::ResourceManager&,
+    const assets::PhysicsObjectAttributes::ptr) {
   // default kineamtic unless a simulator is initialized...
   objectMotionType_ = MotionType::KINEMATIC;
   return true;
