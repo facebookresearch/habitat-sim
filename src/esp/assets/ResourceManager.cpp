@@ -72,12 +72,23 @@ constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
 constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
 
-ResourceManager::ResourceManager() {
+ResourceManager::ResourceManager()
+    :
+#ifdef MAGNUM_BUILD_STATIC
+      // avoid using plugins that might depend on different library versions
+      importerManager_("nonexistent")
+#endif
+{
   initDefaultLightSetups();
   initDefaultMaterials();
-}
+}  // namespace assets
 
 void ResourceManager::initDefaultPrimAttributes() {
+  // instantiate a primitive importer
+  CORRADE_INTERNAL_ASSERT_OUTPUT(
+      primImporter_ = importerManager_.loadAndInstantiate("PrimitiveImporter"));
+  // necessary for importer to be usable
+  primImporter_->openData("");
   // set up base primitive asset attributes
   auto capSolidAttr = CapsulePrimitiveAttributes::create(
       false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CAPSULE_SOLID)]);
@@ -521,72 +532,6 @@ PhysicsManagerAttributes::ptr ResourceManager::loadPhysicsConfig(
 
   return physicsManagerAttributes;
 }
-
-//! Only load and does not instantiate object
-//! For load-only: set parent = nullptr, drawables = nullptr
-void ResourceManager::addObjectToDrawables(int objTemplateLibID,
-                                           scene::SceneNode* parent,
-                                           DrawableGroup* drawables,
-                                           const Mn::ResourceKey& lightSetup) {
-  if (objTemplateLibID != ID_UNDEFINED) {
-    const std::string& objPhysConfigFilename =
-        physicsTemplatesLibByID_.at(objTemplateLibID);
-
-    addObjectToDrawables(objPhysConfigFilename, parent, drawables, lightSetup);
-  }  // else objTemplateID does not exist - shouldn't happen
-}  // addObjectToDrawables
-
-void ResourceManager::addObjectToDrawables(
-    const std::string& objPhysConfigFilename,
-    scene::SceneNode* parent,
-    DrawableGroup* drawables,
-    const Mn::ResourceKey& lightSetup) {
-  if (parent != nullptr and drawables != nullptr) {
-    //! Add mesh to rendering stack
-
-    // Meta data and collision mesh
-    PhysicsObjectAttributes::ptr physicsObjectAttributes =
-        physicsObjTemplateLibrary_.at(objPhysConfigFilename);
-
-    const std::string& renderObjectName =
-        physicsObjectAttributes->getRenderAssetHandle();
-    // if no assets have been registered with resourceDict then do so
-    // should only happen with primitives, since all file-based resources should
-    // be loaded by now
-    if (resourceDict_.count(renderObjectName) == 0) {
-      // needs to have a primitive asset attributes with same name
-      if (primitiveAssetsTemplateLibrary_.count(renderObjectName) == 0) {
-        // this is bad, means no render primitive template exists with expected
-        // name.  should never happen
-        LOG(ERROR) << "No primitive asset attributes exists with name :"
-                   << renderObjectName
-                   << " so unable to instantiate render object.  Aborting.";
-        return;
-      }
-      // build primitive asset for this object based on defined primitive
-      // attributes
-      auto primitiveAssetAttributes =
-          primitiveAssetsTemplateLibrary_.at(renderObjectName);
-      buildPrimitiveAssetData(primitiveAssetAttributes);
-    }
-    const LoadedAssetData& loadedAssetData = resourceDict_.at(renderObjectName);
-    if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
-      LOG(WARNING) << "Instantiating object with incompatible light setup, "
-                      "object will not be correctly lit. If you need lighting "
-                      "please ensure 'requires lighting' is enabled in object "
-                      "config file";
-    }
-
-    // need a new node for scaling because motion state will override scale
-    // set at the physical node
-    scene::SceneNode& scalingNode = parent->createChild();
-    Magnum::Vector3 objectScaling = physicsObjectAttributes->getScale();
-    scalingNode.setScaling(objectScaling);
-
-    addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
-                 drawables, loadedAssetData.meshMetaData.root);
-  }  // should always be specified, otherwise won't do anything
-}  // addObjectToDrawables
 
 bool ResourceManager::loadObjectMeshDataFromFile(
     const std::string& filename,
@@ -1165,30 +1110,16 @@ void ResourceManager::buildPrimitiveAssetData(
   // check if unique name of attributes describing primitive asset is present
   // already - don't remake if so
   auto primAssetOriginHandle = primTemplate->getOriginHandle();
-  if (isPrimitiveAssetPresent(primAssetOriginHandle)) {
+  if (resourceDict_.count(primAssetOriginHandle) > 0) {
     LOG(INFO) << " Primitive Asset exists already : " << primAssetOriginHandle;
     return;
   }
-
-  // TODO: once globals are instanced this can be removed
-#ifndef MAGNUM_BUILD_STATIC
-  Mn::PluginManager::Manager<Importer> importManager;
-#else
-  // avoid using plugins that might depend on different library versions
-  Mn::PluginManager::Manager<Importer> importManager{"nonexistent"};
-#endif
-  // instantiate primitive importer
-  Cr::Containers::Pointer<Importer> primImporter;
-  CORRADE_INTERNAL_ASSERT(
-      primImporter = importManager.loadAndInstantiate("PrimitiveImporter"));
-  // necessary for importer to be usable
-  primImporter->openData("");
 
   // class of primitive object
   std::string primClassName = primTemplate->getPrimObjType();
   // configuration for PrimitiveImporter - replace appropriate group's data
   // before instancing prim object
-  auto conf = primImporter->configuration();
+  auto conf = primImporter_->configuration();
   auto cfgGroup = conf.group(primClassName);
   if (cfgGroup != nullptr) {  // ignore prims with no configuration like cubes
     auto newCfgGroup = primTemplate->getConfigGroup();
@@ -1203,18 +1134,11 @@ void ResourceManager::buildPrimitiveAssetData(
   int meshStart = meshes_.size();
   int meshEnd = meshStart;
   MeshMetaData meshMetaData{meshStart, meshEnd};
-
-  std::unique_ptr<gfx::MaterialData> phongMaterial =
-      gfx::PhongMaterialData::create_unique();
-
-  meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
-  shaderManager_.set(std::to_string(nextMaterialID_++),
-                     phongMaterial.release());
-
+  // set up primitive mesh
   // make  primitive mesh structure
   auto primMeshData = std::make_unique<GenericMeshData>(false);
   // build mesh data object
-  primMeshData->setMeshData(*primImporter, primClassName);
+  primMeshData->importAndSetMeshData(*primImporter_, primClassName);
 
   // compute the mesh bounding box
   primMeshData->BB = computeMeshBB(primMeshData.get());
@@ -1223,9 +1147,17 @@ void ResourceManager::buildPrimitiveAssetData(
 
   meshes_.emplace_back(std::move(primMeshData));
 
+  // default material for now
+  std::unique_ptr<gfx::MaterialData> phongMaterial =
+      gfx::PhongMaterialData::create_unique();
+
+  meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
+  shaderManager_.set(std::to_string(nextMaterialID_++),
+                     phongMaterial.release());
+
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
-  // store the rotation to world frame upon load
+  // store the rotation to world frame upon load - currently superfluous
   const quatf transform = info.frame.rotationFrameToWorld();
   Magnum::Matrix4 R = Magnum::Matrix4::from(
       Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
@@ -1236,12 +1168,6 @@ void ResourceManager::buildPrimitiveAssetData(
   LoadedAssetData loadedAssetData{info, meshMetaData};
   auto inserted =
       resourceDict_.emplace(primAssetOriginHandle, std::move(loadedAssetData));
-
-  // instance primitive mesh
-  // auto primMesh = primImporter.mesh(primClassName);
-  // primitiveMeshLibrary_.emplace(primAssetOriginHandle,
-  //                               std::make_unique<Magnum::GL::Mesh>(
-  //                                   Magnum::MeshTools::compile(*primMesh)));
 
   LOG(INFO) << " Primitive Asset Added : ID : "
             << primTemplate->getAssetTemplateID()
@@ -1327,16 +1253,9 @@ bool ResourceManager::loadInstanceMeshData(
     return false;
   }
 
-#ifndef MAGNUM_BUILD_STATIC
-  Mn::PluginManager::Manager<Importer> manager;
-#else
-  // avoid using plugins that might depend on different library versions
-  Mn::PluginManager::Manager<Importer> manager{"nonexistent"};
-#endif
-
   Cr::Containers::Pointer<Importer> importer;
-  CORRADE_INTERNAL_ASSERT(importer =
-                              manager.loadAndInstantiate("StanfordImporter"));
+  CORRADE_INTERNAL_ASSERT(
+      importer = importerManager_.loadAndInstantiate("StanfordImporter"));
 
   // if this is a new file, load it and add it to the dictionary, create
   // shaders and add it to the shaderPrograms_
@@ -1406,24 +1325,18 @@ bool ResourceManager::loadGeneralMeshData(
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
   const bool drawData = parent != nullptr && drawables != nullptr;
 
-#ifndef MAGNUM_BUILD_STATIC
-  Magnum::PluginManager::Manager<Importer> manager;
-#else
-  // avoid using plugins that might depend on different library versions
-  Magnum::PluginManager::Manager<Importer> manager{"nonexistent"};
-#endif
-
-  std::unique_ptr<Importer> importer =
-      manager.loadAndInstantiate("AnySceneImporter");
+  Cr::Containers::Pointer<Importer> importer;
+  CORRADE_INTERNAL_ASSERT(
+      importer = importerManager_.loadAndInstantiate("AnySceneImporter"));
 
   // Preferred plugins, Basis target GPU format
-  manager.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
+  importerManager_.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
 #ifdef ESP_BUILD_ASSIMP_SUPPORT
-  manager.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+  importerManager_.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
 #endif
   {
     Cr::PluginManager::PluginMetadata* const metadata =
-        manager.metadata("BasisImporter");
+        importerManager_.metadata("BasisImporter");
     Mn::GL::Context& context = Mn::GL::Context::current();
 #ifdef MAGNUM_TARGET_WEBGL
     if (context.isExtensionSupported<
@@ -1752,7 +1665,7 @@ void ResourceManager::loadMeshes(Importer& importer,
     // don't need normals if we aren't using lighting
     auto gltfMeshData = std::make_unique<GenericMeshData>(
         loadedAssetData.assetInfo.requiresLighting);
-    gltfMeshData->setMeshData(importer, iMesh);
+    gltfMeshData->importAndSetMeshData(importer, iMesh);
 
     // compute the mesh bounding box
     gltfMeshData->BB = computeMeshBB(gltfMeshData.get());
@@ -1879,9 +1792,74 @@ void ResourceManager::loadTextures(Importer& importer,
   }
 }
 
+//! Only load and does not instantiate object
+//! For load-only: set parent = nullptr, drawables = nullptr
+void ResourceManager::addObjectToDrawables(int objTemplateLibID,
+                                           scene::SceneNode* parent,
+                                           DrawableGroup* drawables,
+                                           const Mn::ResourceKey& lightSetup) {
+  if (objTemplateLibID != ID_UNDEFINED) {
+    const std::string& objPhysConfigFilename =
+        physicsTemplatesLibByID_.at(objTemplateLibID);
+
+    addObjectToDrawables(objPhysConfigFilename, parent, drawables, lightSetup);
+  }  // else objTemplateID does not exist - shouldn't happen
+}  // addObjectToDrawables
+
+void ResourceManager::addObjectToDrawables(
+    const std::string& objPhysConfigFilename,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables,
+    const Mn::ResourceKey& lightSetup) {
+  if (parent != nullptr and drawables != nullptr) {
+    //! Add mesh to rendering stack
+
+    // Meta data
+    PhysicsObjectAttributes::ptr physicsObjectAttributes =
+        physicsObjTemplateLibrary_.at(objPhysConfigFilename);
+
+    const std::string& renderObjectName =
+        physicsObjectAttributes->getRenderAssetHandle();
+    // if no assets have been registered with resourceDict then do so
+    // should only happen with primitives, since all file-based resources should
+    // be loaded by now
+    if (resourceDict_.count(renderObjectName) == 0) {
+      // needs to have a primitive asset attributes with same name
+      if (primitiveAssetsTemplateLibrary_.count(renderObjectName) == 0) {
+        // this is bad, means no render primitive template exists with expected
+        // name.  should never happen
+        LOG(ERROR) << "No primitive asset attributes exists with name :"
+                   << renderObjectName
+                   << " so unable to instantiate primitive-based render "
+                      "object.  Aborting.";
+        return;
+      }
+      // build primitive asset for this object based on defined primitive
+      // attributes
+      auto primitiveAssetAttributes =
+          primitiveAssetsTemplateLibrary_.at(renderObjectName);
+      buildPrimitiveAssetData(primitiveAssetAttributes);
+    }
+    const LoadedAssetData& loadedAssetData = resourceDict_.at(renderObjectName);
+    if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
+      LOG(WARNING) << "Instantiating object with incompatible light setup, "
+                      "object will not be correctly lit. If you need lighting "
+                      "please ensure 'requires lighting' is enabled in object "
+                      "config file";
+    }
+
+    // need a new node for scaling because motion state will override scale
+    // set at the physical node
+    scene::SceneNode& scalingNode = parent->createChild();
+    Magnum::Vector3 objectScaling = physicsObjectAttributes->getScale();
+    scalingNode.setScaling(objectScaling);
+
+    addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
+                 drawables, loadedAssetData.meshMetaData.root);
+  }  // should always be specified, otherwise won't do anything
+}  // addObjectToDrawables
+
 //! Add component to rendering stack, based on importer loading
-//! TODO (JH): decouple importer part, so that objects can be
-//! instantiated any time after initial loading
 void ResourceManager::addComponent(const MeshMetaData& metaData,
                                    scene::SceneNode& parent,
                                    const Mn::ResourceKey& lightSetup,

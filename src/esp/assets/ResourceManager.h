@@ -291,52 +291,6 @@ class ResourceManager {
   std::vector<std::string> buildObjectConfigPaths(const std::string& path);
 
   /**
-   * @brief Add an object from a specified configuration file to the specified
-   * @ref DrawableGroup as a child of the specified @ref scene::SceneNode if
-   * provided.
-   *
-   * If the attributes specified by objTemplateID exists in @ref
-   * physicsObjTemplateLibrary_, and both parent and drawables are
-   * specified, than an object referenced by that key is added to the scene.
-   * @param objTemplateLibID The ID of the configuration file to parse and
-   * load.  This is expected to exist.
-   * @param parent The @ref scene::SceneNode of which the object will be a
-   * child.
-   * @param drawables The @ref DrawableGroup with which the object @ref
-   * gfx::Drawable will be rendered.
-   * @param lightSetup The @ref LightSetup key that will be used
-   * for the added component.
-   */
-  void addObjectToDrawables(int objTemplateLibID,
-                            scene::SceneNode* parent,
-                            DrawableGroup* drawables,
-                            const Magnum::ResourceKey& lightSetup =
-                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY});
-
-  /**
-   * @brief Add an object from a specified configuration file to the specified
-   * @ref DrawableGroup as a child of the specified @ref scene::SceneNode if
-   * provided.
-   *
-   * If the attributes specified by objTemplateID exists in @ref
-   * physicsObjTemplateLibrary_, and both parent and drawables are
-   * specified, than an object referenced by that key is added to the scene.
-   * @param objPhysConfigFilename The name of the configuration file to parse
-   * and load.  This is expected to exist.
-   * @param parent The @ref scene::SceneNode of which the object will be a
-   * child.
-   * @param drawables The @ref DrawableGroup with which the object @ref
-   * gfx::Drawable will be rendered.
-   * @param lightSetup The @ref LightSetup key that will be used
-   * for the added component.
-   */
-  void addObjectToDrawables(const std::string& objPhysConfigFilename,
-                            scene::SceneNode* parent,
-                            DrawableGroup* drawables,
-                            const Magnum::ResourceKey& lightSetup =
-                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY});
-
-  /**
    * @brief Load and parse a physics object template config file and generates a
    * @ref PhysicsObjectAttributes object, adding it to the @ref
    * physicsObjTemplateLibrary_.
@@ -377,33 +331,17 @@ class ResourceManager {
   //======== Accessor functions ========
   /**
    * @brief Getter for all @ref assets::CollisionMeshData associated with the
-   * particular asset referenced by the key, configFile.
+   * particular asset.
    *
-   * @param configFile The key by which the asset is referenced in @ref
-   * collisionMeshGroups_ and the @ref physicsObjTemplateLibrary_.
+   * @param collisionAssetHandle The key by which the asset is referenced in
+   * @ref collisionMeshGroups_, from the @ref physicsObjTemplateLibrary_.
    * @return A vector reference to @ref assets::CollisionMeshData instances for
    * individual components of the asset.
    */
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
-      const std::string& configFile) const {
-    return collisionMeshGroups_.at(
-        physicsObjTemplateLibrary_.at(configFile)->getCollisionAssetHandle());
-  }
-
-  /**
-   * @brief Getter for all @ref assets::CollisionMeshData associated with the
-   * particular asset referenced by the index, objectTemplateID, in @ref
-   * physicsObjTemplateLibrary_.
-   *
-   * @param objectTemplateID The index of the object template in @ref
-   * physicsObjTemplateLibrary_.
-   * @return A vector reference to @ref assets::CollisionMeshData instances for
-   * individual components of the asset.
-   */
-  const std::vector<assets::CollisionMeshData>& getCollisionMesh(
-      const int objectTemplateID) const {
-    std::string configFile = getObjectTemplateHandle(objectTemplateID);
-    return getCollisionMesh(configFile);
+      const std::string& collisionAssetHandle) const {
+    CHECK(collisionMeshGroups_.count(collisionAssetHandle) > 0);
+    return collisionMeshGroups_.at(collisionAssetHandle);
   }
 
   /**
@@ -569,23 +507,6 @@ class ResourceManager {
   }
 
   /**
-   * @brief verify whether a primitive mesh matching the passed handle is
-   * present in system
-   * @param primOriginHandle handle descriptor of primitive asset attributes,
-   * which encodes all relevant parameters for primitive asset instantiation.
-   * @return whether an asset exists with the specified parameters
-   */
-  inline bool isPrimitiveAssetPresent(
-      const std::string& primOriginHandle) const {
-    if (primitiveMeshLibrary_.count(primOriginHandle) > 0) {
-      LOG(INFO) << "Entry for " << primOriginHandle
-                << " is already present in mesh library.";
-      return true;
-    }
-    return false;
-  }
-
-  /**
    * @brief build a primitive asset based on passed template parameters.  If
    * exists already, does nothing.  Will create a PrimitiveImporter and call
    * appropriate method.
@@ -634,6 +555,52 @@ class ResourceManager {
    */
   std::unique_ptr<MeshData> createJoinedCollisionMesh(
       const std::string& filename);
+
+  /**
+   * @brief Add an object from a specified configuration file to the specified
+   * @ref DrawableGroup as a child of the specified @ref scene::SceneNode if
+   * provided.
+   *
+   * If the attributes specified by objTemplateID exists in @ref
+   * physicsObjTemplateLibrary_, and both parent and drawables are
+   * specified, than an object referenced by that key is added to the scene.
+   * @param objTemplateLibID The ID of the configuration file to parse and
+   * load.  This is expected to exist.
+   * @param parent The @ref scene::SceneNode of which the object will be a
+   * child.
+   * @param drawables The @ref DrawableGroup with which the object @ref
+   * gfx::Drawable will be rendered.
+   * @param lightSetup The @ref LightSetup key that will be used
+   * for the added component.
+   */
+  void addObjectToDrawables(int objTemplateLibID,
+                            scene::SceneNode* parent,
+                            DrawableGroup* drawables,
+                            const Magnum::ResourceKey& lightSetup =
+                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY});
+
+  /**
+   * @brief Add an object from a specified configuration file to the specified
+   * @ref DrawableGroup as a child of the specified @ref scene::SceneNode if
+   * provided.
+   *
+   * If the attributes specified by objTemplateID exists in @ref
+   * physicsObjTemplateLibrary_, and both parent and drawables are
+   * specified, than an object referenced by that key is added to the scene.
+   * @param objPhysConfigFilename The name of the configuration file to parse
+   * and load.  This is expected to exist.
+   * @param parent The @ref scene::SceneNode of which the object will be a
+   * child.
+   * @param drawables The @ref DrawableGroup with which the object @ref
+   * gfx::Drawable will be rendered.
+   * @param lightSetup The @ref LightSetup key that will be used
+   * for the added component.
+   */
+  void addObjectToDrawables(const std::string& objPhysConfigFilename,
+                            scene::SceneNode* parent,
+                            DrawableGroup* drawables,
+                            const Magnum::ResourceKey& lightSetup =
+                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY});
 
   /**
    * @brief Create a new drawable primitive attached to the desired @ref
@@ -1110,6 +1077,18 @@ class ResourceManager {
   gfx::ShaderManager shaderManager_;
 
   // ======== Physical parameter data ========
+  /**
+   * @brief Plugin Manager used to instantiate importers which in turn are used
+   * to load asset data
+   */
+  Corrade::PluginManager::Manager<Importer> importerManager_;
+
+  /**
+   * @brief Importer used to synthesize Magnum Primitives.  This object allows
+   * for similar usage to File-based importers, but requires no file to be
+   * available/read.
+   */
+  Corrade::Containers::Pointer<Importer> primImporter_;
 
   /**
    * @brief Maps string keys (typically property filenames) to physical object
@@ -1150,14 +1129,6 @@ class ResourceManager {
    * addPrimitiveToDrawables for debugging or visualization purposes.
    */
   std::vector<std::unique_ptr<Magnum::GL::Mesh>> primitive_meshes_;
-
-  /**
-   * @brief Map holding primitive meshes keyed by the
-   * primitiveAttributes-derived handle describing their parameters.
-   */
-
-  std::map<std::string, std::unique_ptr<Magnum::GL::Mesh>>
-      primitiveMeshLibrary_;
 
   /**
    * @brief Maps string keys (typically property filenames) to @ref
