@@ -394,6 +394,8 @@ bool ResourceManager::loadPhysicsScene(
       }
     }
 
+    // add meshgroup to collision mesh groups
+    collisionMeshGroups_.emplace(info.filepath, meshGroup);
     //! Initialize collision mesh
     bool sceneSuccess = _physicsManager->addScene(
         physicsSceneLibrary_.at(info.filepath), meshGroup);
