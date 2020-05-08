@@ -37,6 +37,7 @@ struct SimulatorConfiguration {
   scene::SceneConfiguration scene;
   int defaultAgentId = 0;
   int gpuDeviceId = 0;
+  unsigned int randomSeed = 0;
   std::string defaultCameraUuid = "rgba_camera";
   bool compressTextures = false;
   bool createRenderer = true;
@@ -596,7 +597,10 @@ class Simulator {
                            int sceneID = 0);
 
   /**
-   * @brief Getter for PRNG
+   * @brief Getter for PRNG.
+   *
+   * Use this where-ever possible so that habitat won't be effect by
+   * python's random or np.random modules
    */
   core::Random::ptr random() { return random_; }
 

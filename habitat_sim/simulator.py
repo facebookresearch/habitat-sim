@@ -165,6 +165,8 @@ class Simulator:
             navmesh_settings.agent_height = default_agent_config.height
             self.recompute_navmesh(self.pathfinder, navmesh_settings)
 
+        self.pathfinder.seed(config.sim_cfg.random_seed)
+
     def reconfigure(self, config: Configuration):
         assert len(config.agents) > 0
 
