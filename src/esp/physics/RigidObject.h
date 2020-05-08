@@ -194,13 +194,11 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @param physicsObjectAttributes The template structure defining relevant
    * phyiscal parameters for the object. See @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_.
-   * @param meshGroup The collision mesh data for the object.
    * @return true if initialized successfully, false otherwise.
    */
   bool initializeObject(
-      const assets::ResourceManager& resMgr,
-      const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-      const std::vector<assets::CollisionMeshData>& meshGroup);
+      assets::ResourceManager& resMgr,
+      const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes);
 
   /**
    * @brief Finalize this object with any necessary post-creation processes.
@@ -645,13 +643,11 @@ class RigidObject : public Magnum::SceneGraph::AbstractFeature3D {
    * @param physicsObjectAttributes The template structure defining relevant
    * phyiscal parameters for the object. See @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_.
-   * @param meshGroup The collision mesh data for the object.
    * @return true if initialized successfully, false otherwise.
    */
   virtual bool initializeObjectFinalize(
-      const assets::ResourceManager& resMgr,
-      const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-      const std::vector<assets::CollisionMeshData>& meshGroup);
+      assets::ResourceManager& resMgr,
+      const assets::PhysicsObjectAttributes::ptr physicsObjectAttributes);
 
  protected:
   /** @brief Used to synchronize other simulator's notion of the object state
