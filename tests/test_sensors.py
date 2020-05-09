@@ -223,10 +223,10 @@ def test_rgb_noise(scene, model_name, sim, make_cfg_settings):
 
 
 def test_borrowable(sim: habitat_sim.Simulator, make_cfg_settings):
+    make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["depth_sensor"] = True
     make_cfg_settings["color_sensor"] = True
     make_cfg_settings["semantic_sensor"] = True
-    make_cfg_settings["scene"] = _test_scenes[0]
 
     hsim_cfg = make_cfg(make_cfg_settings)
     # Order as ['depth_sensor', 'color_sensor', 'semantic_sensor']
@@ -289,10 +289,10 @@ def test_borrowable(sim: habitat_sim.Simulator, make_cfg_settings):
 
 # Test to see if a borrowable draw actually results in borrowing
 def test_borrowing(sim: habitat_sim.Simulator, make_cfg_settings):
+    make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["depth_sensor"] = True
     make_cfg_settings["color_sensor"] = True
     make_cfg_settings["semantic_sensor"] = False
-    make_cfg_settings["scene"] = _test_scenes[0]
 
     hsim_cfg = make_cfg(make_cfg_settings)
 
