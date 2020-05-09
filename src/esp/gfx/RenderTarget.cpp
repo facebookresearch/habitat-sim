@@ -118,7 +118,7 @@ struct RenderTarget::Impl {
 
   void blitRgbaToDefault() {
     framebuffer_.mapForRead(RgbaBuffer);
-    CORRADE_INTERNAL_ASSERT(other.framebuffer_.viewport() ==
+    CORRADE_INTERNAL_ASSERT(Mn::GL::defaultFramebuffer.viewport() ==
                             framebuffer_.viewport());
 
     Mn::GL::AbstractFramebuffer::blit(
