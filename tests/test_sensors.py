@@ -222,11 +222,18 @@ def test_rgb_noise(scene, model_name, sim, make_cfg_settings):
     ) > 1.5e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
 
 
-def test_borrowable(sim: habitat_sim.Simulator, make_cfg_settings):
+@pytest.mark.parametrize(
+    "scene,has_sem", [(_test_scenes[1], True), (_test_scenes[-1], False)]
+)
+def test_borrowable(scene, has_sem, sim: habitat_sim.Simulator, make_cfg_settings):
+    if not osp.exists(scene):
+        pytest.skip("Skipping {}".format(scene))
+
     make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["depth_sensor"] = True
     make_cfg_settings["color_sensor"] = True
     make_cfg_settings["semantic_sensor"] = True
+    make_cfg_settings["scene"] = scene
 
     hsim_cfg = make_cfg(make_cfg_settings)
     # Order as ['depth_sensor', 'color_sensor', 'semantic_sensor']
@@ -245,19 +252,41 @@ def test_borrowable(sim: habitat_sim.Simulator, make_cfg_settings):
         is not None
     )
 
-    # For the test scenes, semantic can't borrow or be borrowed from
-    assert (
-        sensors["semantic_sensor"]._attempt_to_borrow(
-            [sensors["color_sensor"], sensors["semantic_sensor"]]
+    # For MP3D scenes, we can't share semantic rendering
+    if has_sem:
+        assert (
+            sensors["semantic_sensor"]._attempt_to_borrow(
+                [sensors["color_sensor"], sensors["semantic_sensor"]]
+            )
+            is None
         )
-        is None
-    )
-    assert (
-        sensors["color_sensor"]._attempt_to_borrow([sensors["semantic_sensor"]]) is None
-    )
-    assert (
-        sensors["depth_sensor"]._attempt_to_borrow([sensors["semantic_sensor"]]) is None
-    )
+        assert (
+            sensors["color_sensor"]._attempt_to_borrow([sensors["semantic_sensor"]])
+            is None
+        )
+        assert (
+            sensors["depth_sensor"]._attempt_to_borrow([sensors["semantic_sensor"]])
+            is None
+        )
+
+    # For meshes without semantics, we can share semantics
+    # since that rendering is just
+    # based on node ID!
+    else:
+        assert (
+            sensors["semantic_sensor"]._attempt_to_borrow(
+                [sensors["color_sensor"], sensors["semantic_sensor"]]
+            )
+            is not None
+        )
+        assert (
+            sensors["color_sensor"]._attempt_to_borrow([sensors["semantic_sensor"]])
+            is not None
+        )
+        assert (
+            sensors["depth_sensor"]._attempt_to_borrow([sensors["semantic_sensor"]])
+            is not None
+        )
 
     hsim_cfg = make_cfg(make_cfg_settings)
     hsim_cfg.agents[0].sensor_specifications.sort(key=lambda v: v.uuid)

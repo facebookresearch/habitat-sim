@@ -521,28 +521,17 @@ class Sensor:
         if already_drawn is None or len(already_drawn) == 0:
             return None
 
-        borrowable_types = [SensorType.DEPTH, SensorType.COLOR]
-
-        # We can borrow from semantic also if all scene graphs are the same
-        if self._sim.is_semantic_scene_graph_shared:
-            borrowable_types.append(SensorType.SEMANTIC)
-
-        if self._spec.sensor_type not in borrowable_types:
-            return None
-
         for other in already_drawn:
             if (
-                other._spec.sensor_type in borrowable_types
-                and all(other._spec.resolution[0:2] == self._spec.resolution[0:2])
-                and other._spec.sensor_subtype == self._spec.sensor_subtype
-                and other._spec.parameters == self._spec.parameters
-                and (
-                    np.linalg.norm(
-                        other._sensor_object.object.absolute_transformation()
-                        - self._sensor_object.object.absolute_transformation()
-                    )
-                    <= 1e-5
+                self._spec.can_share_rendering_from(
+                    other._spec,
+                    can_share_semantic_rendering=self._sim.is_semantic_scene_graph_shared,
                 )
+                and np.linalg.norm(
+                    self._sensor_object.object.absolute_transformation()
+                    - other._sensor_object.object.absolute_transformation()
+                )
+                <= 1e-4
             ):
                 return other
 

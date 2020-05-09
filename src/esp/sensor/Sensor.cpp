@@ -47,6 +47,39 @@ void Sensor::setTransformationFromSpec() {
   node().rotateZ(Magnum::Rad(spec_->orientation[2]));
 }
 
+namespace {
+bool isShareableType(const SensorType& type, bool canShareSemanticRendering) {
+  switch (type) {
+    case SensorType::COLOR:
+      return true;
+      break;
+
+    case SensorType::DEPTH:
+      return true;
+      break;
+
+    case SensorType::SEMANTIC:
+      return canShareSemanticRendering;
+      break;
+
+    default:
+      return false;
+      break;
+  }
+}
+}  // namespace
+
+bool SensorSpec::canShareRenderingFrom(
+    const SensorSpec& other,
+    bool canShareSemanticRendering /*= false*/) const {
+  Magnum::Debug{} << canShareSemanticRendering;
+  return (isShareableType(sensorType, canShareSemanticRendering) &&
+          isShareableType(other.sensorType, canShareSemanticRendering) &&
+          sensorSubtype == other.sensorSubtype &&
+          parameters == other.parameters && position == other.position &&
+          orientation == other.orientation && resolution == other.resolution);
+}
+
 bool operator==(const SensorSpec& a, const SensorSpec& b) {
   return a.uuid == b.uuid && a.sensorType == b.sensorType &&
          a.sensorSubtype == b.sensorSubtype && a.parameters == b.parameters &&
