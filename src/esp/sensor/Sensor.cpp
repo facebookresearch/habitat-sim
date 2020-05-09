@@ -48,7 +48,7 @@ void Sensor::setTransformationFromSpec() {
 }
 
 namespace {
-bool isShareableType(const SensorType& type, bool canShareSemanticRendering) {
+bool isBorrowableType(const SensorType& type, bool canBorrowSemanticRendering) {
   switch (type) {
     case SensorType::COLOR:
       return true;
@@ -59,7 +59,7 @@ bool isShareableType(const SensorType& type, bool canShareSemanticRendering) {
       break;
 
     case SensorType::SEMANTIC:
-      return canShareSemanticRendering;
+      return canBorrowSemanticRendering;
       break;
 
     default:
@@ -69,12 +69,11 @@ bool isShareableType(const SensorType& type, bool canShareSemanticRendering) {
 }
 }  // namespace
 
-bool SensorSpec::canShareRenderingFrom(
+bool SensorSpec::canBorrowRenderingFrom(
     const SensorSpec& other,
-    bool canShareSemanticRendering /*= false*/) const {
-  Magnum::Debug{} << canShareSemanticRendering;
-  return (isShareableType(sensorType, canShareSemanticRendering) &&
-          isShareableType(other.sensorType, canShareSemanticRendering) &&
+    bool canBorrowSemanticRendering /*= false*/) const {
+  return (isBorrowableType(sensorType, canBorrowSemanticRendering) &&
+          isBorrowableType(other.sensorType, canBorrowSemanticRendering) &&
           sensorSubtype == other.sensorSubtype &&
           parameters == other.parameters && position == other.position &&
           orientation == other.orientation && resolution == other.resolution);

@@ -61,8 +61,8 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("gpu2gpu_transfer", &SensorSpec::gpu2gpuTransfer)
       .def_readwrite("observation_space", &SensorSpec::observationSpace)
       .def_readwrite("noise_model", &SensorSpec::noiseModel)
-      .def("can_share_rendering_from", &SensorSpec::canShareRenderingFrom,
-           "other"_a, "can_share_semantic_rendering"_a = false)
+      .def("can_borrow_rendering_from", &SensorSpec::canBorrowRenderingFrom,
+           "other"_a, "can_borrow_semantic_rendering"_a = false)
       .def_property(
           "noise_model_kwargs",
           [](SensorSpec& self) -> py::dict {

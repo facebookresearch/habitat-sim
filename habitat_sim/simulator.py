@@ -523,9 +523,9 @@ class Sensor:
 
         for other in already_drawn:
             if (
-                self._spec.can_share_rendering_from(
+                self._spec.can_borrow_rendering_from(
                     other._spec,
-                    can_share_semantic_rendering=self._sim.is_semantic_scene_graph_shared,
+                    can_borrow_semantic_rendering=self._sim.is_semantic_scene_graph_shared,
                 )
                 and np.linalg.norm(
                     self._sensor_object.object.absolute_transformation()
