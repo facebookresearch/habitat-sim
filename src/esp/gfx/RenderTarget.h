@@ -101,6 +101,8 @@ class RenderTarget {
    */
   void blitRgbaToDefault();
 
+  void blitFrom(RenderTarget& other);
+
   // @brief Delete copy Constructor
   RenderTarget(const RenderTarget&) = delete;
   // @brief Delete copy operator

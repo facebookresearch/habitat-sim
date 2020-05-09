@@ -4,8 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from __future__ import annotations
-
 import os.path as osp
 import time
 from collections import OrderedDict
@@ -519,7 +517,7 @@ class Sensor:
             self._spec.noise_model, self._spec.uuid
         )
 
-    def _attempt_to_borrow(self, already_drawn: Optional[List[Sensor]] = None):
+    def _attempt_to_borrow(self, already_drawn: Optional[List["Sensor"]] = None):
         if already_drawn is None or len(already_drawn) == 0:
             return None
 
@@ -550,7 +548,7 @@ class Sensor:
 
         return None
 
-    def draw_observation(self, already_drawn: Optional[List[Sensor]] = None):
+    def draw_observation(self, already_drawn: Optional[List["Sensor"]] = None):
         r"""Draw the observation for this sensor
 
         :param already_drawn: The list of sensor that have already drawn their observations.
@@ -600,9 +598,9 @@ class Sensor:
             )
 
     def get_observation(self):
-
-        if self._borrowed_render_target:
+        if self._borrowed_render_target is not None:
             tgt = self._borrowed_render_target
+            self._borrowed_render_target = None
         else:
             tgt = self._sensor_object.render_target
 
@@ -638,12 +636,9 @@ class Sensor:
 
             obs = np.flip(self._buffer, axis=0)
 
-        self._borrowed_render_target = None
-
         return self._noise_model(obs)
 
     def close(self):
         self._sim = None
         self._agent = None
         self._sensor_object = None
-        self._borrowed_render_target = None

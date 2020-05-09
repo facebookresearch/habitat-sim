@@ -118,12 +118,22 @@ struct RenderTarget::Impl {
 
   void blitRgbaToDefault() {
     framebuffer_.mapForRead(RgbaBuffer);
-    ASSERT(framebuffer_.viewport() == Mn::GL::defaultFramebuffer.viewport());
+    CORRADE_INTERNAL_ASSERT(other.framebuffer_.viewport() ==
+                            framebuffer_.viewport());
 
     Mn::GL::AbstractFramebuffer::blit(
         framebuffer_, Mn::GL::defaultFramebuffer, framebuffer_.viewport(),
         Mn::GL::defaultFramebuffer.viewport(), Mn::GL::FramebufferBlit::Color,
         Mn::GL::FramebufferBlitFilter::Nearest);
+  }
+
+  void blitFrom(RenderTarget::Impl& other) {
+    other.framebuffer_.mapForRead(RgbaBuffer);
+    other.framebuffer_.mapForRead(ObjectIdBuffer);
+    CORRADE_INTERNAL_ASSERT(other.framebuffer_.viewport() ==
+                            framebuffer_.viewport());
+    Mn::GL::AbstractFramebuffer::blit(other.framebuffer_, framebuffer_,
+                                      framebuffer_.viewport(), {});
   }
 
   void readFrameRgba(const Mn::MutableImageView2D& view) {
@@ -277,6 +287,10 @@ void RenderTarget::readFrameObjectId(const Mn::MutableImageView2D& view) {
 
 void RenderTarget::blitRgbaToDefault() {
   pimpl_->blitRgbaToDefault();
+}
+
+void RenderTarget::blitFrom(RenderTarget& other) {
+  pimpl_->blitFrom(*other.pimpl_);
 }
 
 Mn::Vector2i RenderTarget::framebufferSize() const {

@@ -82,6 +82,7 @@ void initGfxBindings(py::module& m) {
       .def("read_frame_depth", &RenderTarget::readFrameDepth)
       .def("read_frame_object_id", &RenderTarget::readFrameObjectId)
       .def("blit_rgba_to_default", &RenderTarget::blitRgbaToDefault)
+      .def("blit_from", &RenderTarget::blitFrom)
 #ifdef ESP_BUILD_WITH_CUDA
       .def("read_frame_rgba_gpu",
            [](RenderTarget& self, size_t devPtr) {
