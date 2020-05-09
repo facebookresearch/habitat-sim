@@ -220,3 +220,85 @@ def test_rgb_noise(scene, model_name, sim, make_cfg_settings):
     assert np.linalg.norm(
         obs["color_sensor"].astype(np.float) - gt.astype(np.float)
     ) > 1.5e-2 * np.linalg.norm(gt.astype(np.float)), f"Incorrect {sensor_type} output"
+
+
+def test_borrowable(sim: habitat_sim.Simulator, make_cfg_settings):
+    make_cfg_settings["depth_sensor"] = True
+    make_cfg_settings["color_sensor"] = True
+    make_cfg_settings["semantic_sensor"] = True
+    make_cfg_settings["scene"] = _test_scenes[0]
+
+    hsim_cfg = make_cfg(make_cfg_settings)
+    # Order as ['depth_sensor', 'color_sensor', 'semantic_sensor']
+    hsim_cfg.agents[0].sensor_specifications.sort(key=lambda v: v.uuid)
+
+    sim.reconfigure(hsim_cfg)
+    sensors = sim._sensors
+
+    # Color and depth can borrow from eachother
+    assert (
+        sensors["color_sensor"]._attempt_to_borrow([sensors["depth_sensor"]])
+        is not None
+    )
+    assert (
+        sensors["depth_sensor"]._attempt_to_borrow([sensors["color_sensor"]])
+        is not None
+    )
+
+    # For the test scenes, semantic can't borrow or be borrowed from
+    assert (
+        sensors["semantic_sensor"]._attempt_to_borrow(
+            [sensors["color_sensor"], sensors["semantic_sensor"]]
+        )
+        is None
+    )
+    assert (
+        sensors["color_sensor"]._attempt_to_borrow([sensors["semantic_sensor"]]) is None
+    )
+    assert (
+        sensors["depth_sensor"]._attempt_to_borrow([sensors["semantic_sensor"]]) is None
+    )
+
+    hsim_cfg = make_cfg(make_cfg_settings)
+    hsim_cfg.agents[0].sensor_specifications.sort(key=lambda v: v.uuid)
+    hsim_cfg.agents[0].sensor_specifications[0].parameters["hfov"] = "91"
+    sim.reconfigure(hsim_cfg)
+    sensors = sim._sensors
+
+    assert sensors["color_sensor"]._attempt_to_borrow([sensors["depth_sensor"]]) is None
+    assert sensors["depth_sensor"]._attempt_to_borrow([sensors["color_sensor"]]) is None
+
+    hsim_cfg = make_cfg(make_cfg_settings)
+    hsim_cfg.agents[0].sensor_specifications.sort(key=lambda v: v.uuid)
+    hsim_cfg.agents[0].sensor_specifications[0].resolution = [10, 10]
+    sim.reconfigure(hsim_cfg)
+    sensors = sim._sensors
+
+    assert sensors["color_sensor"]._attempt_to_borrow([sensors["depth_sensor"]]) is None
+    assert sensors["depth_sensor"]._attempt_to_borrow([sensors["color_sensor"]]) is None
+
+    hsim_cfg = make_cfg(make_cfg_settings)
+    hsim_cfg.agents[0].sensor_specifications.sort(key=lambda v: v.uuid)
+    hsim_cfg.agents[0].sensor_specifications[0].position = [1, 2, 1]
+    sim.reconfigure(hsim_cfg)
+    sensors = sim._sensors
+
+    assert sensors["color_sensor"]._attempt_to_borrow([sensors["depth_sensor"]]) is None
+    assert sensors["depth_sensor"]._attempt_to_borrow([sensors["color_sensor"]]) is None
+
+
+# Test to see if a borrowable draw actually results in borrowing
+def test_borrowing(sim: habitat_sim.Simulator, make_cfg_settings):
+    make_cfg_settings["depth_sensor"] = True
+    make_cfg_settings["color_sensor"] = True
+    make_cfg_settings["semantic_sensor"] = False
+    make_cfg_settings["scene"] = _test_scenes[0]
+
+    hsim_cfg = make_cfg(make_cfg_settings)
+
+    sim.reconfigure(hsim_cfg)
+    sensors = sim._sensors
+
+    sensors["color_sensor"].draw_observation()
+    sensors["depth_sensor"].draw_observation([sensors["color_sensor"]])
+    assert sensors["depth_sensor"]._borrowed_render_target is not None

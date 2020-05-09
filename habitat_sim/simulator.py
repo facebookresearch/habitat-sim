@@ -4,8 +4,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 import os.path as osp
 import time
+from collections import OrderedDict
 from typing import Any, Dict, List, Optional
 
 import attr
@@ -58,7 +61,7 @@ class Simulator:
     _sim: SimulatorBackend = attr.ib(default=None, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent: Agent = attr.ib(init=False, default=None)
-    _sensors: Dict = attr.ib(factory=dict, init=False)
+    _sensors: Dict = attr.ib(factory=OrderedDict, init=False)
     _previous_step_time = 0.0  # track the compute time of each step
 
     def __attrs_post_init__(self):
@@ -71,7 +74,7 @@ class Simulator:
             sensor.close()
             del sensor
 
-        self._sensors = {}
+        self._sensors = OrderedDict()
 
         for agent in self.agents:
             agent.close()
@@ -200,7 +203,7 @@ class Simulator:
         self._default_agent = self.get_agent(config.sim_cfg.default_agent_id)
 
         agent_cfg = config.agents[config.sim_cfg.default_agent_id]
-        self._sensors = {}
+        self._sensors = OrderedDict()
         for spec in agent_cfg.sensor_specifications:
             self._sensors[spec.uuid] = Sensor(
                 sim=self._sim, agent=self._default_agent, sensor_id=spec.uuid
@@ -243,8 +246,10 @@ class Simulator:
         return self._sim.semantic_scene
 
     def get_sensor_observations(self):
+        already_drawn = []
         for _, sensor in self._sensors.items():
-            sensor.draw_observation()
+            sensor.draw_observation(already_drawn)
+            already_drawn.append(sensor)
 
         observations = {}
         for sensor_uuid, sensor in self._sensors.items():
@@ -458,6 +463,8 @@ class Sensor:
 
         self._sim.renderer.bind_render_target(self._sensor_object)
 
+        self._borrowed_render_target = None
+
         if self._spec.gpu2gpu_transfer:
             assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
 
@@ -512,7 +519,43 @@ class Sensor:
             self._spec.noise_model, self._spec.uuid
         )
 
-    def draw_observation(self):
+    def _attempt_to_borrow(self, already_drawn: Optional[List[Sensor]] = None):
+        if already_drawn is None or len(already_drawn) == 0:
+            return None
+
+        borrowable_types = [SensorType.DEPTH, SensorType.COLOR]
+
+        # We can borrow from semantic also if all scene graphs are the same
+        if self._sim.is_semantic_scene_graph_shared:
+            borrowable_types.append(SensorType.SEMANTIC)
+
+        if self._spec.sensor_type not in borrowable_types:
+            return None
+
+        for other in already_drawn:
+            if (
+                other._spec.sensor_type in borrowable_types
+                and all(other._spec.resolution[0:2] == self._spec.resolution[0:2])
+                and other._spec.sensor_subtype == self._spec.sensor_subtype
+                and other._spec.parameters == self._spec.parameters
+                and (
+                    np.linalg.norm(
+                        other._sensor_object.object.absolute_transformation()
+                        - self._sensor_object.object.absolute_transformation()
+                    )
+                    <= 1e-5
+                )
+            ):
+                return other
+
+        return None
+
+    def draw_observation(self, already_drawn: Optional[List[Sensor]] = None):
+        r"""Draw the observation for this sensor
+
+        :param already_drawn: The list of sensor that have already drawn their observations.
+        A sensor will try to borrow the render result from another sensor if possible
+        """
         # sanity check:
 
         # see if the sensor is attached to a scene graph, otherwise it is invalid,
@@ -543,14 +586,25 @@ class Sensor:
         agent_node = self._agent.scene_node
         agent_node.parent = scene.get_root_node()
 
-        with self._sensor_object.render_target as tgt:
-            self._sim.renderer.draw(
-                self._sensor_object, scene, self._sim.frustum_culling
+        borrowable_sensor = self._attempt_to_borrow(already_drawn)
+
+        # If borrowing fails, draw for ourselves
+        if borrowable_sensor is None:
+            with self._sensor_object.render_target as tgt:
+                self._sim.renderer.draw(
+                    self._sensor_object, scene, self._sim.frustum_culling
+                )
+        else:
+            self._borrowed_render_target = (
+                borrowable_sensor._sensor_object.render_target
             )
 
     def get_observation(self):
 
-        tgt = self._sensor_object.render_target
+        if self._borrowed_render_target:
+            tgt = self._borrowed_render_target
+        else:
+            tgt = self._sensor_object.render_target
 
         if self._spec.gpu2gpu_transfer:
             with torch.cuda.device(self._buffer.device):
@@ -584,9 +638,12 @@ class Sensor:
 
             obs = np.flip(self._buffer, axis=0)
 
+        self._borrowed_render_target = None
+
         return self._noise_model(obs)
 
     def close(self):
         self._sim = None
         self._agent = None
         self._sensor_object = None
+        self._borrowed_render_target = None
