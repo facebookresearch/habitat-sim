@@ -7,9 +7,15 @@ import os
 import time
 
 import sys
-sys.path.append('../')
+
+sys.path.append("../")
+
+import builtins
+
 builtins.__HSIM_SETUP__ = True
+
 import habitat_sim
+import git
 
 build_cmd_template = """
 conda build \
@@ -40,7 +46,10 @@ def main():
 
     for py_ver, use_bullet in itertools.product(py_vers, bullet_modes):
         env = os.environ.copy()
-        env["VERSION"] = habitat_sim.__version__ + time.strftime(".%Y.%m.%d") # adding time-stamp in anticipation of nightly builds
+        # including the commit hash
+        repo = git.Repo(search_parent_directories=True)
+        sha = repo.head.object.hexsha
+        env["VERSION"] = habitat_sim.__version__ + "." + sha
         env["WITH_BULLET"] = "1" if use_bullet else "0"
         env["WITH_CUDA"] = "0"
         env["HEADLESS"] = "0"

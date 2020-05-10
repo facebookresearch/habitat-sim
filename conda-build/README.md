@@ -11,11 +11,11 @@ To then download the package, run ```conda install -c aihabitat -c conda-forge h
 
 The process is almost the same for linux; there is a corresponding python script for starting things off, however we use a docker container to do the builds. There is a dockerfile in this directory that you can use to create a container.
 
-```docker build -t mycontainer -f Dockerfile .```
+```docker build -t hsim_condabuild_dcontainer -f Dockerfile .```
 
 That will create your docker container. Now run
 
-```docker run -it --ipc=host --rm -v $(pwd)/../:/remote mycontainer bash```
+```docker run -it --ipc=host --rm -v $(pwd)/../:/remote hsim_condabuild_dcontainer bash```
 
 From there you will have a shell within your linux container. Now, navigate to ```cd /remote/conda-build``` where habitat-sim has been mounted. Create a conda environment within the linux container with python>=3.6 (identical to that needed by habitat-sim build). And then run ```python linux_matrix_build.py```, which will kick off the build process. After this has finished, upload it to anaconda cloud in the same way described in the macOS section.
 
