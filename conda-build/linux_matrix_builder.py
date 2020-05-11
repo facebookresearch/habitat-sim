@@ -1,21 +1,19 @@
-import subprocess
-import shlex
 import argparse
-import os.path as osp
+import builtins
 import itertools
 import os
+import os.path as osp
+import shlex
+import subprocess
+import sys
 import time
 
-import sys
-
-sys.path.append("../")
-
-import builtins
+import git
 
 builtins.__HSIM_SETUP__ = True
+sys.path.append("../")
 
 import habitat_sim
-import git
 
 build_cmd_template = """
 conda build \
