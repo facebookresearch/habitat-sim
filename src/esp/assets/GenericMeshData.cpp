@@ -44,10 +44,7 @@ Magnum::GL::Mesh* GenericMeshData::getMagnumGLMesh() {
   return &(renderingBuffer_->mesh);
 }
 
-void GenericMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
-                                  int meshID) {
-  /* Guarantee mesh instance success */
-  CORRADE_INTERNAL_ASSERT_OUTPUT(meshData_ = importer.mesh(meshID));
+void GenericMeshData::setMeshData(Magnum::Trade::MeshData&& meshData) {
   /* Interleave the mesh, if not already. This makes the GPU happier (better
      cache locality for vertex fetching) and is a no-op if the source data is
      already interleaved, so doesn't hurt to have it there always. */
@@ -55,7 +52,7 @@ void GenericMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
   /* TODO: Address that non-triangle meshes will have their collisionMeshData_
    * incorrectly calculated */
 
-  meshData_ = Mn::MeshTools::interleave(*std::move(meshData_));
+  meshData_ = Mn::MeshTools::interleave(std::move(meshData));
 
   collisionMeshData_.primitive = meshData_->primitive();
 
@@ -72,15 +69,25 @@ void GenericMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
     collisionMeshData_.indices = meshData_->mutableIndices<Mn::UnsignedInt>();
   else
     collisionMeshData_.indices = indexData_ = meshData_->indicesAsArray();
-}
+}  // setMeshData
 
-void GenericMeshData::setMeshData(Magnum::Trade::AbstractImporter& importer,
-                                  const std::string& meshName) {
-  // make sure name is appropriate for importer
-  int meshID = importer.meshForName(meshName);
-  CORRADE_ASSERT(meshID != -1, "Unknown meshName :" << meshName, );
-  setMeshData(importer, meshID);
-}
+void GenericMeshData::importAndSetMeshData(
+    Magnum::Trade::AbstractImporter& importer,
+    int meshID) {
+  /* Guarantee mesh instance success */
+  Cr::Containers::Optional<Mn::Trade::MeshData> mesh = importer.mesh(meshID);
+  CORRADE_INTERNAL_ASSERT(mesh);
+  setMeshData(*std::move(mesh));
+}  // importAndSetMeshData
+
+void GenericMeshData::importAndSetMeshData(
+    Magnum::Trade::AbstractImporter& importer,
+    const std::string& meshName) {
+  /* Guarantee mesh instance success */
+  Cr::Containers::Optional<Mn::Trade::MeshData> mesh = importer.mesh(meshName);
+  CORRADE_INTERNAL_ASSERT(mesh);
+  setMeshData(*std::move(mesh));
+}  // importAndSetMeshData
 
 }  // namespace assets
 }  // namespace esp
