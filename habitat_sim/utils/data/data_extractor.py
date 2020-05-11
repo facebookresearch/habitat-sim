@@ -12,7 +12,7 @@ import habitat_sim.bindings as hsim
 from habitat_sim.agent import AgentState
 from habitat_sim.utils.common import quat_from_two_vectors
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
-from habitat_sim.utils.data.pose_extractor import PoseExtractor
+from habitat_sim.utils.data.pose_extractor import *
 
 
 class ImageExtractor:
@@ -36,6 +36,7 @@ class ImageExtractor:
                 in the scene's coordinate system.
 
     :property pose_extractor: PoseExtractor object
+    :property extraction_method: String that represents the extraction method
     :property poses: list of camera poses gathered from pose_extractor
     :property train: A subset of poses used for training
     :property test: A subset of poses used for testing
@@ -53,6 +54,7 @@ class ImageExtractor:
         labels: List[float] = [0.0],
         img_size: tuple = (512, 512),
         output: List[str] = ["rgba"],
+        pose_extractor: PoseExtractor = None,
         extraction_method: str = "closest",
         sim=None,
         shuffle: bool = True,
@@ -100,12 +102,14 @@ class ImageExtractor:
                 )
             ]
 
-        self.pose_extractor = PoseExtractor(
-            self.tdv_fp_ref_triples, self.sim, self.pixels_per_meter
-        )
-        self.poses = self.pose_extractor.extract_poses(
-            labels=self.labels, extraction_method=extraction_method
-        )  # list of poses
+        # Use can give a pose extractor
+        if pose_extractor is not None:
+            self.pose_extractor = pose_extractor
+        else:
+            args = (self.tdv_fp_ref_triples, self.pixels_per_meter)
+            self.pose_extractor = self._register_pose_extractor(extraction_method, args)
+
+        self.poses = self.pose_extractor.extract_all_poses(labels=self.labels)
 
         if shuffle:
             np.random.shuffle(self.poses)
@@ -245,6 +249,18 @@ class ImageExtractor:
 
         return instance_id_to_name
 
+    def _register_pose_extractor(self, method, args):
+        if method == "closest":
+            pose_extractor = ClosestPointExtractor(*args)
+        elif method == "panorama":
+            pose_extractor = PanoramaExtractor(*args)
+        else:
+            raise Exception(
+                "Please use either 'closest' or 'panorama' for extraction method."
+            )
+
+        return pose_extractor
+
     def _config_sim(self, scene_filepath, img_size):
         settings = {
             "width": img_size[1],  # Spatial resolution of the observations
@@ -299,15 +315,6 @@ class ImageExtractor:
         agent_cfg.sensor_specifications = sensor_specs
 
         return habitat_sim.Configuration(sim_cfg, [agent_cfg])
-
-    def _get_pathfinder_reference_point(self, pf):
-        bound1, bound2 = pf.get_bounds()
-        startw = min(bound1[0], bound2[0])
-        starth = min(bound1[2], bound2[2])
-        starty = pf.get_random_navigable_point()[
-            1
-        ]  # Can't think of a better way to get a valid y-axis value
-        return (startw, starty, starth)  # width, y, height
 
 
 class TopdownView(object):
