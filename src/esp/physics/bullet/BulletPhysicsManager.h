@@ -18,6 +18,7 @@
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
 
 #include "BulletRigidObject.h"
+#include "BulletRigidScene.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletRigidObject.h"
 
@@ -183,12 +184,10 @@ class BulletPhysicsManager : public PhysicsManager {
    * https://github.com/mosra/magnum-integration/issues/20
    * @param physicsSceneAttributes a pointer to the structure defining physical
    * properties of the scene.
-   * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
-  bool addSceneFinalize(
-      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
-      const std::vector<assets::CollisionMeshData>& meshGroup) override;
+  bool addSceneFinalize(const assets::PhysicsSceneAttributes::ptr
+                            physicsSceneAttributes) override;
 
   /** @brief Create and initialize an @ref RigidObject and add
    * it to existingObjects_ map keyed with newObjectID

@@ -38,6 +38,9 @@ class AbstractPhysicsAttributes : public esp::core::Configuration {
   }
   int getObjectTemplateID() const { return getInt("objectTemplateID"); }
 
+  void setScale(const Magnum::Vector3& scale) { setVec3("scale", scale); }
+  Magnum::Vector3 getScale() const { return getVec3("scale"); }
+
   void setFrictionCoefficient(double frictionCoefficient) {
     setDouble("frictionCoefficient", frictionCoefficient);
   }
@@ -107,9 +110,6 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
     setVec3("inertia", inertia);
   }
   Magnum::Vector3 getInertia() const { return getVec3("inertia"); }
-
-  void setScale(const Magnum::Vector3& scale) { setVec3("scale", scale); }
-  Magnum::Vector3 getScale() const { return getVec3("scale"); }
 
   void setLinearDamping(double linearDamping) {
     setDouble("linearDamping", linearDamping);
