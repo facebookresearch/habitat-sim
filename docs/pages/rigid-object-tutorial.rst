@@ -12,15 +12,15 @@ Interactive Rigid Objects
 .. contents::
     :class: m-block m-default
 
-First, download the `example objects`_ and extract them into data/objects/.
+First, download the `example objects`_ and extract them into path/to/habitat-sim/data/objects/.
+
+.. _example objects: http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip
 
 The example code below is runnable via:
 
 .. code:: shell-session
 
-    $ python examples/tutorials/rigid_object_tutorial.py
-
-.. _example objects: http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip
+    $ python path/to/habitat-sim/examples/tutorials/rigid_object_tutorial.py
 
 Import necessary modules, define some convenience functions, and initialize the :ref:`Simulator` and :ref:`Agent`.
 
@@ -122,6 +122,16 @@ Velocities can also be specified in the local space of the object to easily appl
 
 .. image:: images/rigid-object-tutorial-images/local_velocity_control.gif
     :width: 20em
+
+`Embodied Agents`_
+==================
+
+For this tutorial section, you will need to download the `merged locobot asset`_ and unzip into path/to/habitat-sim/data/objects/
+
+.. _merged locobot asset: http://dl.fbaipublicfiles.com/habitat/locobot_merged.zip
+
+This tutorial has covered adding objects to the world and manipulating them by setting positions, velocity, forces, and torques.
+
 
 `Feature Detail Review`_
 ========================

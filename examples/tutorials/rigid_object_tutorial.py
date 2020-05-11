@@ -308,7 +308,7 @@ def main(make_video=True, show_video=True):
 
     # test locobot dynamic velocity control
 
-    # [robot_control]
+    # [embodied_agent]
 
     locobot_template_id = sim.load_object_configs(
         str(os.path.join(data_path, "objects/locobot_merged"))
@@ -360,7 +360,7 @@ def main(make_video=True, show_video=True):
     # video rendering
     make_video_cv2(observations, prefix="robot_control", open_vid=True, multi_obs=True)
 
-    # [/robot_control]
+    # [/embodied_agent]
 
 
 if __name__ == "__main__":
