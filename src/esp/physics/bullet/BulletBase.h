@@ -57,15 +57,19 @@ struct SimulationContactResultCallback
   }
 };
 
-class BulletBase : public Magnum::BulletIntegration::MotionState {
+/**
+ * @brief This class is intended to implement bullet-specific
+ */
+
+class BulletBase {
  public:
-  BulletBase(scene::SceneNode* rigidBodyNode,
-             std::shared_ptr<btMultiBodyDynamicsWorld> bWorld);
+  BulletBase(std::shared_ptr<btMultiBodyDynamicsWorld> bWorld)
+      : bWorld_(bWorld) {}
 
   /**
    * @brief Destructor cleans up simulation structures for the object.
    */
-  virtual ~BulletBase();
+  virtual ~BulletBase() { bWorld_.reset(); }
 
   /** @brief Get the scalar collision margin of an object. Retun 0.0 for a @ref
    * RigidObjectType::SCENE. See @ref btCompoundShape::getMargin.
@@ -87,18 +91,15 @@ class BulletBase : public Magnum::BulletIntegration::MotionState {
   virtual const Magnum::Range3D getCollisionShapeAabb() const = 0;
 
  protected:
-  //! If true, the object's bounding box will be used for collision once
-  //! computed
-  bool usingBBCollisionShape_ = false;
-
   /** @brief A pointer to the Bullet world to which this object belongs. See
    * @ref btMultiBodyDynamicsWorld.*/
   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;
 
-  /** @brief Scene data: All components of a @ref RigidObjectType::SCENE are
-   * stored here. See @ref btCollisionObject.
+  /** @brief Static data: All components of a @ref RigidObjectType::SCENE are
+   * stored here. See @ref btCollisionObject.  Also, all objects set to STATIC
+   * are stored here.
    */
-  std::vector<std::unique_ptr<btCollisionObject>> bSceneCollisionObjects_;
+  std::vector<std::unique_ptr<btCollisionObject>> bStaticCollisionObjects_;
 
  public:
   ESP_SMART_POINTERS(BulletBase)

@@ -18,11 +18,11 @@ namespace physics {
 BulletRigidScene::BulletRigidScene(
     scene::SceneNode* rigidBodyNode,
     std::shared_ptr<btMultiBodyDynamicsWorld> bWorld)
-    : BulletBase(rigidBodyNode, bWorld), RigidScene{rigidBodyNode} {}
+    : BulletBase(bWorld), RigidScene{rigidBodyNode} {}
 
 BulletRigidScene::~BulletRigidScene() {
   // remove collision objects from the world
-  for (auto& co : bSceneCollisionObjects_) {
+  for (auto& co : bStaticCollisionObjects_) {
     bWorld_->removeCollisionObject(co.get());
   }
 }
@@ -38,7 +38,7 @@ bool BulletRigidScene::initializationFinalize(
       resMgr.getMeshMetaData(collisionAssetHandle);
 
   constructBulletSceneFromMeshes(Magnum::Matrix4{}, meshGroup, metaData.root);
-  for (auto& object : bSceneCollisionObjects_) {
+  for (auto& object : bStaticCollisionObjects_) {
     object->setFriction(initializationAttributes_->getFrictionCoefficient());
     object->setRestitution(
         initializationAttributes_->getRestitutionCoefficient());
@@ -103,7 +103,7 @@ void BulletRigidScene::constructBulletSceneFromMeshes(
 
     bSceneArrays_.emplace_back(std::move(indexedVertexArray));
     bSceneShapes_.emplace_back(std::move(meshShape));
-    bSceneCollisionObjects_.emplace_back(std::move(sceneCollisionObject));
+    bStaticCollisionObjects_.emplace_back(std::move(sceneCollisionObject));
   }
 
   for (auto& child : node.children) {
@@ -113,40 +113,40 @@ void BulletRigidScene::constructBulletSceneFromMeshes(
 
 void BulletRigidScene::setFrictionCoefficient(
     const double frictionCoefficient) {
-  for (std::size_t i = 0; i < bSceneCollisionObjects_.size(); i++) {
-    bSceneCollisionObjects_[i]->setFriction(frictionCoefficient);
+  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); i++) {
+    bStaticCollisionObjects_[i]->setFriction(frictionCoefficient);
   }
 }
 
 void BulletRigidScene::setRestitutionCoefficient(
     const double restitutionCoefficient) {
-  for (std::size_t i = 0; i < bSceneCollisionObjects_.size(); i++) {
-    bSceneCollisionObjects_[i]->setRestitution(restitutionCoefficient);
+  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); i++) {
+    bStaticCollisionObjects_[i]->setRestitution(restitutionCoefficient);
   }
 }
 
 double BulletRigidScene::getFrictionCoefficient() const {
-  if (bSceneCollisionObjects_.size() == 0) {
+  if (bStaticCollisionObjects_.size() == 0) {
     return 0.0;
   } else {
     // Assume uniform friction in scene parts
-    return bSceneCollisionObjects_.back()->getFriction();
+    return bStaticCollisionObjects_.back()->getFriction();
   }
 }
 
 double BulletRigidScene::getRestitutionCoefficient() const {
   // Assume uniform restitution in scene parts
-  if (bSceneCollisionObjects_.size() == 0) {
+  if (bStaticCollisionObjects_.size() == 0) {
     return 0.0;
   } else {
-    return bSceneCollisionObjects_.back()->getRestitution();
+    return bStaticCollisionObjects_.back()->getRestitution();
   }
 }
 
 const Magnum::Range3D BulletRigidScene::getCollisionShapeAabb() const {
   Magnum::Range3D combinedAABB;
   // concatenate all component AABBs
-  for (auto& object : bSceneCollisionObjects_) {
+  for (auto& object : bStaticCollisionObjects_) {
     btVector3 localAabbMin, localAabbMax;
     object->getCollisionShape()->getAabb(object->getWorldTransform(),
                                          localAabbMin, localAabbMax);

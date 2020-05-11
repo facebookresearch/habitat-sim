@@ -38,7 +38,9 @@ Utilizes Magnum::BulletIntegration::MotionState to syncronize SceneNode state
 with internal btRigidBody state.
 
 */
-class BulletRigidObject : public BulletBase, public RigidObject {
+class BulletRigidObject : public BulletBase,
+                          public RigidObject,
+                          public Magnum::BulletIntegration::MotionState {
  public:
   /**
    * @brief Constructor for a @ref BulletRigidObject.
