@@ -1,4 +1,5 @@
 import multiprocessing
+import os
 import os.path as osp
 import shlex
 import subprocess
@@ -8,6 +9,8 @@ import pytest
 import examples.tutorials.lighting_tutorial
 import examples.tutorials.new_actions
 import examples.tutorials.stereo_agent
+
+# from examples.instance_segmentation.train import InstanceSegmentationEnvironment
 
 
 @pytest.mark.gfxtest
@@ -49,3 +52,9 @@ def test_example_modules(example_module, args):
 )
 def test_example_script(args):
     subprocess.check_call(shlex.split(f"python examples/example.py {args}"))
+
+
+def test_segmentation_pipeline(sim):
+    scene = ""
+    # env = InstanceSegmentationEnvironment(scene, sim=sim)
+    # env.train(num_epochs=1)
