@@ -44,10 +44,9 @@ def main():
 
     for py_ver, use_bullet in itertools.product(py_vers, bullet_modes):
         env = os.environ.copy()
-        # including the commit hash
-        repo = git.Repo(search_parent_directories=True)
-        sha = repo.head.object.hexsha
-        env["VERSION"] = habitat_sim.__version__ + "." + sha
+
+        # including a timestamp in anticipation of nightly builds
+        env["VERSION"] = habitat_sim.__version__ + time.strftime(".%Y.%m.%d")
         env["WITH_BULLET"] = "1" if use_bullet else "0"
         env["WITH_CUDA"] = "0"
         env["HEADLESS"] = "0"
@@ -63,6 +62,12 @@ def main():
             env["CONDA_BULLET_FEATURE"] = ""
 
         build_string += "osx"
+
+        # including the commit hash in conda build string
+        repo = git.Repo(search_parent_directories=True)
+        sha = repo.head.object.hexsha
+        build_string += "_" + sha
+
         env["HSIM_BUILD_STRING"] = build_string
 
         call(

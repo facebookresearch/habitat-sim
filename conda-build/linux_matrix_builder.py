@@ -49,10 +49,8 @@ def main():
     ):
         env = os.environ.copy()
 
-        # including the commit hash
-        repo = git.Repo(search_parent_directories=True)
-        sha = repo.head.object.hexsha
-        env["VERSION"] = habitat_sim.__version__ + "." + sha
+        # including a timestamp in anticipation of nightly builds
+        env["VERSION"] = habitat_sim.__version__ + time.strftime(".%Y.%m.%d")
         env["WITH_BULLET"] = "0"
         env["WITH_CUDA"] = "0"
         env["HEADLESS"] = "0"
@@ -85,6 +83,12 @@ def main():
                 ] = "- cudatoolkit >=9.2,<9.3 # [not osx]"
 
         build_string += "linux"
+
+        # including the commit hash in conda build string
+        repo = git.Repo(search_parent_directories=True)
+        sha = repo.head.object.hexsha
+        build_string += "_" + sha
+
         env["HSIM_BUILD_STRING"] = build_string
 
         call(
