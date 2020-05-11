@@ -23,7 +23,7 @@ if [ $(uname) == "Linux" ]; then
   export CMAKE_PREFIX_PATH=${PREFIX}:${CMAKE_PREFIX_PATH}
 fi
 
-${PYTHON} setup.py build_ext --parallel 4 install "${build_args[@]}"
+${PYTHON} setup.py install "${build_args[@]}"
 ${PYTHON} -m pip install build/deps/magnum-bindings/src/python
 
 if [ -f "build/viewer" ]; then
