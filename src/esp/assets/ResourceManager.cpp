@@ -4,9 +4,9 @@
 
 #include "ResourceManager.h"
 
-#include <functional>
+//#include <functional>
 
-#include <Corrade/Containers/ArrayViewStl.h>
+//#include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Containers/PointerStl.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/PluginManager/PluginMetadata.h>
@@ -26,7 +26,6 @@
 #include <Magnum/Math/Tags.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/PixelFormat.h>
-#include <Magnum/Primitives/Cube.h>
 #include <Magnum/SceneGraph/Object.h>
 #include <Magnum/Shaders/Flat.h>
 #include <Magnum/Trade/AbstractImporter.h>
@@ -90,42 +89,71 @@ void ResourceManager::initDefaultPrimAttributes() {
   // necessary for importer to be usable
   primImporter_->openData("");
   // set up base primitive asset attributes
+  int objIDX = static_cast<int>(PrimObjTypes::CAPSULE_SOLID);
   auto capSolidAttr = CapsulePrimitiveAttributes::create(
-      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CAPSULE_SOLID)]);
+      false, objIDX, PrimitiveNames3D[objIDX]);
   addPrimAssetTemplateToLibrary(capSolidAttr);
-  auto capWFAttr = CapsulePrimitiveAttributes::create(
-      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CAPSULE_WF)]);
+
+  objIDX = static_cast<int>(PrimObjTypes::CAPSULE_WF);
+  auto capWFAttr = CapsulePrimitiveAttributes::create(true, objIDX,
+                                                      PrimitiveNames3D[objIDX]);
   addPrimAssetTemplateToLibrary(capWFAttr);
-  auto coneSolidAttr = ConePrimitiveAttributes::create(
-      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CONE_SOLID)]);
+
+  objIDX = static_cast<int>(PrimObjTypes::CONE_SOLID);
+  auto coneSolidAttr =
+      ConePrimitiveAttributes::create(false, objIDX, PrimitiveNames3D[objIDX]);
   addPrimAssetTemplateToLibrary(coneSolidAttr);
-  auto coneWFAttr = ConePrimitiveAttributes::create(
-      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CONE_WF)]);
+
+  objIDX = static_cast<int>(PrimObjTypes::CONE_WF);
+  auto coneWFAttr =
+      ConePrimitiveAttributes::create(true, objIDX, PrimitiveNames3D[objIDX]);
   addPrimAssetTemplateToLibrary(coneWFAttr);
-  auto cubeSolidAttr = CubePrimitiveAttributes::create(
-      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CUBE_SOLID)]);
+
+  objIDX = static_cast<int>(PrimObjTypes::CUBE_SOLID);
+  auto cubeSolidAttr =
+      CubePrimitiveAttributes::create(false, objIDX, PrimitiveNames3D[objIDX]);
   addPrimAssetTemplateToLibrary(cubeSolidAttr);
-  auto cubeWFAttr = CubePrimitiveAttributes::create(
-      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CUBE_WF)]);
+
+  objIDX = static_cast<int>(PrimObjTypes::CUBE_WF);
+  auto cubeWFAttr =
+      CubePrimitiveAttributes::create(true, objIDX, PrimitiveNames3D[objIDX]);
   addPrimAssetTemplateToLibrary(cubeWFAttr);
+
+  objIDX = static_cast<int>(PrimObjTypes::CYLINDER_SOLID);
   auto cylSolidAttr = CylinderPrimitiveAttributes::create(
-      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CYLINDER_SOLID)]);
+      false, objIDX, PrimitiveNames3D[objIDX]);
   addPrimAssetTemplateToLibrary(cylSolidAttr);
+
+  objIDX = static_cast<int>(PrimObjTypes::CYLINDER_WF);
   auto cylWFAttr = CylinderPrimitiveAttributes::create(
-      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::CYLINDER_WF)]);
+      true, objIDX, PrimitiveNames3D[objIDX]);
   addPrimAssetTemplateToLibrary(cylWFAttr);
+
+  objIDX = static_cast<int>(PrimObjTypes::ICOSPHERE_SOLID);
   auto icoSolidAttr = IcospherePrimitiveAttributes::create(
-      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::ICOSPHERE_SOLID)]);
+      false, objIDX, PrimitiveNames3D[objIDX]);
   addPrimAssetTemplateToLibrary(icoSolidAttr);
+
+  objIDX = static_cast<int>(PrimObjTypes::ICOSPHERE_WF);
   auto icoWFAttr = IcospherePrimitiveAttributes::create(
-      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::ICOSPHERE_WF)]);
+      true, objIDX, PrimitiveNames3D[objIDX]);
   addPrimAssetTemplateToLibrary(icoWFAttr);
+
+  objIDX = static_cast<int>(PrimObjTypes::UVSPHERE_SOLID);
   auto uvSphereSolidAttr = UVSpherePrimitiveAttributes::create(
-      false, PrimitiveNames3D[static_cast<int>(PrimObjTypes::UVSPHERE_SOLID)]);
+      false, objIDX, PrimitiveNames3D[objIDX]);
   addPrimAssetTemplateToLibrary(uvSphereSolidAttr);
+
+  objIDX = static_cast<int>(PrimObjTypes::UVSPHERE_WF);
   auto uvSphereWFAttr = UVSpherePrimitiveAttributes::create(
-      true, PrimitiveNames3D[static_cast<int>(PrimObjTypes::UVSPHERE_WF)]);
+      true, objIDX, PrimitiveNames3D[objIDX]);
   addPrimAssetTemplateToLibrary(uvSphereWFAttr);
+
+  // by this point, we should have a GL::Context so load the bb primitive.
+  // TODO: replace this completely with standard mesh
+  auto wfCube = primImporter_->mesh(cubeWFAttr->getPrimObjClassName());
+  primitive_meshes_.push_back(
+      std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube)));
 
   // build default primtive object templates corresponding to given default
   // assets
@@ -190,15 +218,6 @@ bool ResourceManager::loadScene(
     // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
     // scene mesh): welcome to the void
   }
-
-  // once a scene is loaded, we should have a GL::Context so load the primitives
-  /**
-   * This is used to show bounding boxes on objects. See @ref
-   * PhysicsManager::setObjectBBDraw(...)
-   */
-  Magnum::Trade::MeshData cube = Magnum::Primitives::cubeWireframe();
-  primitive_meshes_.push_back(
-      std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(cube)));
 
   // compute the absolute transformation for each static drawables
   if (meshSuccess && parent && computeAbsoluteAABBs_) {
@@ -533,7 +552,7 @@ PhysicsManagerAttributes::ptr ResourceManager::loadPhysicsConfig(
   }
 
   return physicsManagerAttributes;
-}
+}  // loadPhysicsConfig
 
 bool ResourceManager::loadObjectMeshDataFromFile(
     const std::string& filename,
@@ -931,11 +950,17 @@ int ResourceManager::buildAndRegisterPrimPhysObjTemplate(
       PhysicsObjectAttributes::create(primAssetHandle);
   // set default for primitives to not use mesh collisions
   physicsObjectAttributes->setUseMeshCollision(false);
-  // NOTE to eventually use mesh collisions, a collision primitive mesh needs to
-  // be configured and set
-
   // set render mesh handle
   physicsObjectAttributes->setRenderAssetHandle(primAssetHandle);
+  // set collision mesh/primitive handle
+  physicsObjectAttributes->setCollisionAssetHandle(primAssetHandle);
+  // NOTE to eventually use mesh collisions with primitive objects, a collision
+  // primitive mesh needs to be configured and set in MeshMetaData and
+  // CollisionMesh
+
+  // set margin to be 0
+
+  physicsObjectAttributes->setMargin(0.0);
   // make smaller
   const Magnum::Vector3 scale(0.1, 0.1, 0.1);
   physicsObjectAttributes->setScale(scale);
@@ -1118,7 +1143,7 @@ void ResourceManager::buildPrimitiveAssetData(
   }
 
   // class of primitive object
-  std::string primClassName = primTemplate->getPrimObjType();
+  std::string primClassName = primTemplate->getPrimObjClassName();
   // configuration for PrimitiveImporter - replace appropriate group's data
   // before instancing prim object
   auto conf = primImporter_->configuration();
@@ -1132,10 +1157,6 @@ void ResourceManager::buildPrimitiveAssetData(
   // make assetInfo
   AssetInfo info{AssetType::PRIMITIVE};
   info.requiresLighting = true;
-  // make MeshMetaData
-  int meshStart = meshes_.size();
-  int meshEnd = meshStart;
-  MeshMetaData meshMetaData{meshStart, meshEnd};
   // set up primitive mesh
   // make  primitive mesh structure
   auto primMeshData = std::make_unique<GenericMeshData>(false);
@@ -1146,6 +1167,11 @@ void ResourceManager::buildPrimitiveAssetData(
   primMeshData->BB = computeMeshBB(primMeshData.get());
 
   primMeshData->uploadBuffersToGPU(false);
+
+  // make MeshMetaData
+  int meshStart = meshes_.size();
+  int meshEnd = meshStart;
+  MeshMetaData meshMetaData{meshStart, meshEnd};
 
   meshes_.emplace_back(std::move(primMeshData));
 
@@ -1174,7 +1200,7 @@ void ResourceManager::buildPrimitiveAssetData(
   LOG(INFO) << " Primitive Asset Added : ID : "
             << primTemplate->getAssetTemplateID()
             << " : attr lib key : " << primTemplate->getOriginHandle()
-            << " | instance class : " << primTemplate->getPrimObjType()
+            << " | instance class : " << primClassName
             << " | Conf has group for this obj type : "
             << conf.hasGroup(primClassName);
 
@@ -1794,31 +1820,16 @@ void ResourceManager::loadTextures(Importer& importer,
   }
 }
 
-//! Only load and does not instantiate object
-//! For load-only: set parent = nullptr, drawables = nullptr
-void ResourceManager::addObjectToDrawables(int objTemplateLibID,
+void ResourceManager::addObjectToDrawables(const std::string& objTemplateHandle,
                                            scene::SceneNode* parent,
                                            DrawableGroup* drawables,
                                            const Mn::ResourceKey& lightSetup) {
-  if (objTemplateLibID != ID_UNDEFINED) {
-    const std::string& objPhysConfigFilename =
-        physicsTemplatesLibByID_.at(objTemplateLibID);
-
-    addObjectToDrawables(objPhysConfigFilename, parent, drawables, lightSetup);
-  }  // else objTemplateID does not exist - shouldn't happen
-}  // addObjectToDrawables
-
-void ResourceManager::addObjectToDrawables(
-    const std::string& objPhysConfigFilename,
-    scene::SceneNode* parent,
-    DrawableGroup* drawables,
-    const Mn::ResourceKey& lightSetup) {
   if (parent != nullptr and drawables != nullptr) {
     //! Add mesh to rendering stack
 
     // Meta data
     PhysicsObjectAttributes::ptr physicsObjectAttributes =
-        physicsObjTemplateLibrary_.at(objPhysConfigFilename);
+        physicsObjTemplateLibrary_.at(objTemplateHandle);
 
     const std::string& renderObjectName =
         physicsObjectAttributes->getRenderAssetHandle();
@@ -1927,17 +1938,6 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
   CHECK(primitiveID >= 0 && primitiveID < primitive_meshes_.size());
   createGenericDrawable(*primitive_meshes_[primitiveID], node,
                         DEFAULT_LIGHTING_KEY, DEFAULT_MATERIAL_KEY, drawables);
-}
-
-void ResourceManager::setLightSetup(gfx::LightSetup setup,
-                                    const Mn::ResourceKey& key) {
-  shaderManager_.set(key, std::move(setup), Mn::ResourceDataState::Mutable,
-                     Mn::ResourcePolicy::Manual);
-}
-
-Mn::Resource<gfx::LightSetup> ResourceManager::getLightSetup(
-    const Mn::ResourceKey& key) {
-  return shaderManager_.get<gfx::LightSetup>(key);
 }
 
 void ResourceManager::createGenericDrawable(

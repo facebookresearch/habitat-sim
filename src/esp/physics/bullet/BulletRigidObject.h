@@ -28,16 +28,13 @@ namespace esp {
 namespace physics {
 
 /**
-@brief An individual rigid object instance implementing an interface with Bullet
-physics to enable @ref MotionType::DYNAMIC objects.
-
-See @ref btCollisionObject for @ref RigidObjectType::SCENE and
-@ref btRigidBody for @ref RigidObjectType::OBJECT.
-
-Utilizes Magnum::BulletIntegration::MotionState to syncronize SceneNode state
-with internal btRigidBody state.
-
-*/
+ * @brief An individual rigid object instance implementing an interface with
+ * Bullet physics to enable dynamic objects. See @ref btRigidBody for @ref
+ * RigidObjectType::OBJECT.
+ *
+ * Utilizes Magnum::BulletIntegration::MotionState to syncronize SceneNode state
+ * with internal btRigidBody states
+ */
 class BulletRigidObject : public BulletBase,
                           public RigidObject,
                           public Magnum::BulletIntegration::MotionState {
@@ -59,6 +56,16 @@ class BulletRigidObject : public BulletBase,
    * @brief Finalize this object with any necessary post-creation processes.
    */
   virtual void finalizeObject() override;
+
+  /**
+   * @brief Instantiate a bullet primtive appropriate for the passed
+   * AbstractPrimitiveAttributes object
+   * @param primAttributes the AbstractPrimitiveAttributes describing the
+   * desired object
+   * @return a unique pointer to the bullet primitive object
+   */
+  std::unique_ptr<btCollisionShape> buildPrimitiveCollisionObject(
+      assets::AbstractPrimitiveAttributes::ptr primAttributes);
 
   /**
    * @brief Recursively construct a @ref btCompoundShape for collision from
@@ -93,11 +100,11 @@ class BulletRigidObject : public BulletBase,
   void setActive() override { bObjectRigidBody_->activate(true); }
 
   /**
-   * @brief Set the @ref MotionType of the object. If the object is @ref
-   * ObjectType::SCENE it can only be @ref MotionType::STATIC. If the object is
-   * @ref ObjectType::OBJECT is can also be set to @ref MotionType::KINEMATIC or
-   * @ref MotionType::DYNAMIC. See @ref btRigidBody::setCollisionFlags and @ref
+   * @brief Set the @ref MotionType of the object. The object can be set to @ref
+   * MotionType::STATIC, @ref MotionType::KINEMATIC or @ref MotionType::DYNAMIC.
+   * See @ref btRigidBody::setCollisionFlags and @ref
    * btCollisionObject::CF_STATIC_OBJECT,CF_KINEMATIC_OBJECT.
+   *
    * @param mt The desirved @ref MotionType.
    * @return true if successfully set, false otherwise.
    */
@@ -178,36 +185,7 @@ class BulletRigidObject : public BulletBase,
     }
   }
 
-  /**
-   * @brief Linear velocity setter for an object.
-   *
-   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
-   * objects. Sets internal @ref btRigidObject state. Treated as initial
-   * velocity during simulation simulation step.
-   * @param linVel Linear velocity to set.
-   */
-  void setLinearVelocity(const Magnum::Vector3& linVel) override {
-    if (objectMotionType_ == MotionType::DYNAMIC) {
-      setActive();
-      bObjectRigidBody_->setLinearVelocity(btVector3(linVel));
-    }
-  }
-
-  /**
-   * @brief Angular velocity setter for an object.
-   *
-   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
-   * objects. Sets internal @ref btRigidObject state. Treated as initial
-   * velocity during simulation simulation step.
-   * @param angVel Angular velocity vector corresponding to world unit axis
-   * angles.
-   */
-  void setAngularVelocity(const Magnum::Vector3& angVel) override {
-    if (objectMotionType_ == MotionType::DYNAMIC) {
-      setActive();
-      bObjectRigidBody_->setAngularVelocity(btVector3(angVel));
-    }
-  }
+  //============ Getter/setter function =============
 
   /**
    * @brief Virtual linear velocity getter for an object.
@@ -225,8 +203,6 @@ class BulletRigidObject : public BulletBase,
   Magnum::Vector3 getAngularVelocity() const override {
     return Magnum::Vector3{bObjectRigidBody_->getAngularVelocity()};
   }
-
-  //============ Getter/setter function =============
 
   /** @brief Get the mass of the object. Returns 0.0 for @ref
    * RigidObjectType::SCENE. See @ref btRigidBody::getInvMass.
@@ -306,10 +282,40 @@ class BulletRigidObject : public BulletBase,
    */
   double getMargin() const override { return bObjectShape_->getMargin(); }
 
+  /**
+   * @brief Linear velocity setter for an object.
+   *
+   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects. Sets internal @ref btRigidObject state. Treated as initial
+   * velocity during simulation simulation step.
+   * @param linVel Linear velocity to set.
+   */
+  void setLinearVelocity(const Magnum::Vector3& linVel) override {
+    if (objectMotionType_ == MotionType::DYNAMIC) {
+      setActive();
+      bObjectRigidBody_->setLinearVelocity(btVector3(linVel));
+    }
+  }
+
+  /**
+   * @brief Angular velocity setter for an object.
+   *
+   * Does nothing for @ref MotionType::KINEMATIC or @ref MotionType::STATIC
+   * objects. Sets internal @ref btRigidObject state. Treated as initial
+   * velocity during simulation simulation step.
+   * @param angVel Angular velocity vector corresponding to world unit axis
+   * angles.
+   */
+  void setAngularVelocity(const Magnum::Vector3& angVel) override {
+    if (objectMotionType_ == MotionType::DYNAMIC) {
+      setActive();
+      bObjectRigidBody_->setAngularVelocity(btVector3(angVel));
+    }
+  }
+
   /** @brief Set the mass of the object.
    * See @ref btRigidBody::setMassProps. Note that changing mass should affect
-   * inertia, but this is not done automatically. Does not affect @ref
-   * RigidObjectType::SCENE.
+   * inertia, but this is not done automatically.
    * @param mass The new mass of the object.
    */
   void setMass(const double mass) override {
@@ -319,7 +325,7 @@ class BulletRigidObject : public BulletBase,
   /** @brief Set the center of mass (COM) of the object.
    * @param COM Object 3D center of mass in the local coordinate system.
    * !!! Currently not supported !!!
-   * All Bullet @ref btRigidBody objects must have a COM located at thier local
+   * All Bullet @ref btRigidBody objects must have a COM located at their local
    * origins.
    */
   void setCOM(const Magnum::Vector3& COM) override;
@@ -327,8 +333,7 @@ class BulletRigidObject : public BulletBase,
   /** @brief Set the diagonal of the inertia matrix for the object.
    * If an object is aligned with its principle axii of inertia, the 3x3 inertia
    * matrix can be reduced to a diagonal. This is the requirement for Bullet
-   * @ref btRigidBody objects. See @ref btRigidBody::setMassProps. Does not
-   * affect @ref RigidObjectType::SCENE.
+   * @ref btRigidBody objects. See @ref btRigidBody::setMassProps.
    * @param inertia The new diagonal for the object's inertia matrix.
    */
   void setInertiaVector(const Magnum::Vector3& inertia) override {
@@ -354,8 +359,7 @@ class BulletRigidObject : public BulletBase,
   }
 
   /** @brief Set the scalar linear damping coefficient of the object.
-   * See @ref btRigidBody::setDamping. Does not affect @ref
-   * RigidObjectType::SCENE.
+   * See @ref btRigidBody::setDamping.
    * @param linearDamping The new scalar linear damping coefficient of the
    * object.
    */
@@ -364,8 +368,7 @@ class BulletRigidObject : public BulletBase,
   }
 
   /** @brief Set the scalar angular damping coefficient for the object.
-   * See @ref btRigidBody::setDamping. Does not affect @ref
-   * RigidObjectType::SCENE.
+   * See @ref btRigidBody::setDamping.
    * @param angularDamping The new scalar angular damping coefficient for the
    * object.
    */
@@ -373,8 +376,8 @@ class BulletRigidObject : public BulletBase,
     bObjectRigidBody_->setDamping(getLinearDamping(), angularDamping);
   }
 
-  /** @brief Set the scalar collision margin of an object. Does not affect @ref
-   * RigidObjectType::SCENE. See @ref btCompoundShape::setMargin.
+  /** @brief Set the scalar collision margin of an object. See @ref
+   * btCompoundShape::setMargin.
    * @param margin The new scalar collision margin of the object.
    */
   void setMargin(const double margin) override {
@@ -384,7 +387,7 @@ class BulletRigidObject : public BulletBase,
     bObjectShape_->setMargin(margin);
   }
 
-  /** @brief ets the object's collision shape to its bounding box.
+  /** @brief Sets the object's collision shape to its bounding box.
    * Since the bounding hierarchy is not constructed when the object is
    * initialized, this needs to be called after loading the SceneNode.
    */
