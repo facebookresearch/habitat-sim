@@ -26,20 +26,41 @@ def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False):
         bgr_im_1st_person = ob["rgba_camera_1stperson"][..., 0:3][..., ::-1]
 
         if multi_obs:
-            # embed the 1st person frame into the 3rd person frame and write to video
+            # embed the 1st person RBG frame into the 3rd person frame
             bgr_im_3rd_person = ob["rgba_camera_3rdperson"][..., 0:3][..., ::-1]
-            resized_1st_person = cv2.resize(
+            resized_1st_person_rgb = cv2.resize(
                 bgr_im_1st_person, thumb_size, interpolation=cv2.INTER_AREA
             )
-            x_offset = y_offset = 50
+            x_offset = 50
+            y_offset_rgb = 50
             bgr_im_3rd_person[
-                y_offset - 1 : y_offset + outline_frame.shape[0] - 1,
+                y_offset_rgb - 1 : y_offset_rgb + outline_frame.shape[0] - 1,
                 x_offset - 1 : x_offset + outline_frame.shape[1] - 1,
             ] = outline_frame
             bgr_im_3rd_person[
-                y_offset : y_offset + resized_1st_person.shape[0],
-                x_offset : x_offset + resized_1st_person.shape[1],
-            ] = resized_1st_person
+                y_offset_rgb : y_offset_rgb + resized_1st_person_rgb.shape[0],
+                x_offset : x_offset + resized_1st_person_rgb.shape[1],
+            ] = resized_1st_person_rgb
+
+            # embed the 1st person DEPTH frame into the 3rd person frame
+            # manually normalize depth into [0, 1] so that images are always consistent
+            d_im = np.clip(ob["depth_camera_1stperson"], 0, 10)
+            d_im /= 10.0
+            bgr_d_im = cv2.cvtColor((d_im * 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
+            resized_1st_person_depth = cv2.resize(
+                bgr_d_im, thumb_size, interpolation=cv2.INTER_AREA
+            )
+            y_offset_d = y_offset_rgb + 10 + thumb_size[1]
+            bgr_im_3rd_person[
+                y_offset_d - 1 : y_offset_d + outline_frame.shape[0] - 1,
+                x_offset - 1 : x_offset + outline_frame.shape[1] - 1,
+            ] = outline_frame
+            bgr_im_3rd_person[
+                y_offset_d : y_offset_d + resized_1st_person_depth.shape[0],
+                x_offset : x_offset + resized_1st_person_depth.shape[1],
+            ] = resized_1st_person_depth
+
+            # write the video frame
             video.write(bgr_im_3rd_person)
         else:
             # write the 1st person observation to video
@@ -78,7 +99,13 @@ def make_configuration():
         "rgba_camera_1stperson": {
             "sensor_type": habitat_sim.SensorType.COLOR,
             "resolution": camera_resolution,
-            "position": [0.0, 0.6, 0.0],  #::: fix y to be 0 later
+            "position": [0.0, 0.6, 0.0],
+            "orientation": [0.0, 0.0, 0.0],
+        },
+        "depth_camera_1stperson": {
+            "sensor_type": habitat_sim.SensorType.DEPTH,
+            "resolution": camera_resolution,
+            "position": [0.0, 0.6, 0.0],
             "orientation": [0.0, 0.0, 0.0],
         },
         "rgba_camera_3rdperson": {
