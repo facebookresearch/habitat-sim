@@ -38,6 +38,7 @@ INPUT_PAGES = [
     "pages/lighting-setups.rst",
     "pages/notebooks.rst",
     "pages/image-extractor.rst",
+    "pages/rigid-object-tutorial.rst",
 ]
 
 PLUGINS = [

@@ -323,8 +323,11 @@ class Simulator:
     def get_object_initialization_template(self, object_id, scene_id=0):
         return self._sim.get_object_initialization_template(object_id, scene_id)
 
-    def get_template_handle_by_ID(self, object_id):
-        return self._sim.get_template_handle_by_ID(object_id)
+    def get_template_handle_by_ID(self, template_id):
+        return self._sim.get_template_handle_by_ID(template_id)
+
+    def get_template_ID_by_handle(self, template_handle):
+        return self._sim.get_template_ID_by_handle(template_handle)
 
     def get_template_handles(self, search_str):
         return self._sim.get_template_handles(search_str)
