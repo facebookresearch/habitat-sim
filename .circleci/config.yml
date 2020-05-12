@@ -419,17 +419,9 @@ jobs:
       - run:
           name: Build api documentation
           command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              
+              export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-api
               python setup.py develop --all
-
-              # NOTE: Temporary workaround for above line while https://github.com/facebookresearch/habitat-api/issues/385 is unresolved
-              # Create conda env with python 3.8 to build habitat-api documentation 
-              conda create -y -n habitat-py38 python=3.8
-              . activate habitat-py38; #cd habitat-api
-              conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
-              pip install -r requirements.txt --progress-bar off
               
               cd docs
               conda install -y -c conda-forge doxygen==1.8.16
