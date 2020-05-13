@@ -27,7 +27,8 @@ namespace Cr = Corrade;
 namespace esp {
 namespace sim {
 
-Simulator::Simulator(const SimulatorConfiguration& cfg) {
+Simulator::Simulator(const SimulatorConfiguration& cfg)
+    : random_{core::Random::create(cfg.randomSeed)} {
   // initalize members according to cfg
   // NOTE: NOT SO GREAT NOW THAT WE HAVE virtual functions
   //       Maybe better not to do this reconfigure
@@ -67,6 +68,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   } else {
     LOG(WARNING) << "Navmesh file not found, checked at " << navmeshFilename;
   }
+
+  // Calling to seeding needs to be done after the pathfinder creation
+  seed(config_.randomSeed);
 
   std::string houseFilename = io::changeExtension(sceneFilename, ".house");
   if (!io::exists(houseFilename)) {
@@ -213,7 +217,7 @@ void Simulator::reset() {
 }
 
 void Simulator::seed(uint32_t newSeed) {
-  random_.seed(newSeed);
+  random_->seed(newSeed);
   pathfinder_->seed(newSeed);
 }
 
@@ -583,7 +587,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
   if (pathfinder_->isLoaded()) {
     agentState.position = pathfinder_->getRandomNavigablePoint();
-    const float randomAngleRad = random_.uniform_float_01() * M_PI;
+    const float randomAngleRad = random_->uniform_float_01() * M_PI;
     quatf rotation(Eigen::AngleAxisf(randomAngleRad, vec3f::UnitY()));
     agentState.rotation = rotation.coeffs();
     // TODO: any other AgentState members should be randomized?
