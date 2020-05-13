@@ -14,6 +14,11 @@
 namespace esp {
 namespace physics {
 
+/**
+ * @brief An individual rigid scene instance implementing an interface with
+ * Bullet physics to enable dynamics. See @ref btCollisionObject
+ */
+
 class BulletRigidScene : public BulletBase, public RigidScene {
  public:
   BulletRigidScene(scene::SceneNode* rigidBodyNode,

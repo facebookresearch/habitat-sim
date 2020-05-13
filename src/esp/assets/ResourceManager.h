@@ -346,18 +346,19 @@ class ResourceManager {
 
   /**
    * @brief Get the index in @ref physicsObjTemplateLibrary_ for the object
-   * template asset identified by the key, configFile.
+   * template asset identified by the key, templateHandle.
    *
-   * @param configFile The key referencing the asset in @ref
+   * @param templateHandle The key referencing the asset in @ref
    * physicsObjTemplateLibrary_.
    * @return The index of the object template in @ref
    * physicsObjTemplateLibrary_.
    */
-  int getObjectTemplateID(const std::string& configFile) const {
+  int getObjectTemplateID(const std::string& templateHandle) const {
     const bool objTemplateExists =
-        physicsObjTemplateLibrary_.count(configFile) > 0;
+        physicsObjTemplateLibrary_.count(templateHandle) > 0;
     if (objTemplateExists) {
-      return physicsObjTemplateLibrary_.at(configFile)->getObjectTemplateID();
+      return physicsObjTemplateLibrary_.at(templateHandle)
+          ->getObjectTemplateID();
     }
     return ID_UNDEFINED;
   }
@@ -373,18 +374,29 @@ class ResourceManager {
   std::string getObjectTemplateHandle(const int objectTemplateID) const;
 
   /**
+   * @brief Get a ref to the primitive attributes object for the primitive
+   * identified by the string key
+   * @param primTemplateHandle the string key of the attributes desired
+   * @return the desired primitive attributes
+   */
+  AbstractPrimitiveAttributes::ptr getPrimitiveTemplateAttributes(
+      const std::string& primTemplateHandle) const {
+    return primitiveAssetsTemplateLibrary_.at(primTemplateHandle);
+  }
+
+  /**
    * @brief Get a reference to the physics object template for the asset
-   * identified by the key, configFile.  physicsObjTemplateLibrary_
+   * identified by the key, templateHandle.  physicsObjTemplateLibrary_
    *
    * Can be used to manipulate an object
    * template before instancing new objects.
-   * @param configFile The key referencing the asset in @ref
+   * @param templateHandle The key referencing the asset in @ref
    * physicsObjTemplateLibrary_.
    * @return A mutable reference to the object template for the asset.
    */
   PhysicsObjectAttributes::ptr getPhysicsObjectAttributes(
-      const std::string& configFile) const {
-    return physicsObjTemplateLibrary_.at(configFile);
+      const std::string& templateHandle) const {
+    return physicsObjTemplateLibrary_.at(templateHandle);
   }
 
   /**
@@ -535,13 +547,13 @@ class ResourceManager {
    *
    * This includes identifiers for meshes, textures, materials, and a
    * component heirarchy.
-   * @param filename The key identifying the asset in @ref resourceDict_.
-   * Typically the filepath of the asset.
+   * @param metaDataName The key identifying the asset in @ref resourceDict_.
+   * Typically the filepath of file-based assets.
    * @return The asset's @ref MeshMetaData object.
    */
-  const MeshMetaData& getMeshMetaData(const std::string& filename) const {
-    CHECK(resourceDict_.count(filename) > 0);
-    return resourceDict_.at(filename).meshMetaData;
+  const MeshMetaData& getMeshMetaData(const std::string& metaDataName) const {
+    CHECK(resourceDict_.count(metaDataName) > 0);
+    return resourceDict_.at(metaDataName).meshMetaData;
   }
 
   /**
@@ -557,15 +569,15 @@ class ResourceManager {
       const std::string& filename);
 
   /**
-   * @brief Add an object from a specified configuration file to the specified
-   * @ref DrawableGroup as a child of the specified @ref scene::SceneNode if
-   * provided.
+   * @brief Add an object from a specified object template handle to the
+   * specified @ref DrawableGroup as a child of the specified @ref
+   * scene::SceneNode if provided.
    *
    * If the attributes specified by objTemplateID exists in @ref
    * physicsObjTemplateLibrary_, and both parent and drawables are
    * specified, than an object referenced by that key is added to the scene.
-   * @param objTemplateLibID The ID of the configuration file to parse and
-   * load.  This is expected to exist.
+   * @param objTemplateLibID The ID of the object attributes in the @ref
+   * physicsObjTemplateLibrary_.  This is expected to exist
    * @param parent The @ref scene::SceneNode of which the object will be a
    * child.
    * @param drawables The @ref DrawableGroup with which the object @ref
@@ -577,18 +589,27 @@ class ResourceManager {
                             scene::SceneNode* parent,
                             DrawableGroup* drawables,
                             const Magnum::ResourceKey& lightSetup =
-                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY});
+                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY}) {
+    if (objTemplateLibID != ID_UNDEFINED) {
+      const std::string& objTemplateHandleName =
+          physicsTemplatesLibByID_.at(objTemplateLibID);
+
+      addObjectToDrawables(objTemplateHandleName, parent, drawables,
+                           lightSetup);
+    }  // else objTemplateID does not exist - shouldn't happen
+  }    // addObjectToDrawables
 
   /**
-   * @brief Add an object from a specified configuration file to the specified
-   * @ref DrawableGroup as a child of the specified @ref scene::SceneNode if
-   * provided.
+   * @brief Add an object from a specified object template handle to the
+   * specified @ref DrawableGroup as a child of the specified @ref
+   * scene::SceneNode if provided.
    *
-   * If the attributes specified by objTemplateID exists in @ref
+   * If the attributes specified by objTemplateHandle exists in @ref
    * physicsObjTemplateLibrary_, and both parent and drawables are
    * specified, than an object referenced by that key is added to the scene.
-   * @param objPhysConfigFilename The name of the configuration file to parse
-   * and load.  This is expected to exist.
+   * @param objTemplateHandle The key of the attributes in the @ref  to parse
+   * and load.  The attributes are expected to exist but will be created (in the
+   * case of synthesized objects) if it does not.
    * @param parent The @ref scene::SceneNode of which the object will be a
    * child.
    * @param drawables The @ref DrawableGroup with which the object @ref
@@ -596,7 +617,7 @@ class ResourceManager {
    * @param lightSetup The @ref LightSetup key that will be used
    * for the added component.
    */
-  void addObjectToDrawables(const std::string& objPhysConfigFilename,
+  void addObjectToDrawables(const std::string& objTemplateHandle,
                             scene::SceneNode* parent,
                             DrawableGroup* drawables,
                             const Magnum::ResourceKey& lightSetup =
@@ -628,14 +649,20 @@ class ResourceManager {
    */
   void setLightSetup(gfx::LightSetup setup,
                      const Magnum::ResourceKey& key = Magnum::ResourceKey{
-                         DEFAULT_LIGHTING_KEY});
+                         DEFAULT_LIGHTING_KEY}) {
+    shaderManager_.set(key, std::move(setup),
+                       Magnum::ResourceDataState::Mutable,
+                       Magnum::ResourcePolicy::Manual);
+  }
 
   /**
    * @brief Get a named @ref LightSetup
    */
   Magnum::Resource<gfx::LightSetup> getLightSetup(
       const Magnum::ResourceKey& key = Magnum::ResourceKey{
-          DEFAULT_LIGHTING_KEY});
+          DEFAULT_LIGHTING_KEY}) {
+    return shaderManager_.get<gfx::LightSetup>(key);
+  }
 
   /**
    * @brief generate a new primitive mesh asset for the NavMesh loaded in the
