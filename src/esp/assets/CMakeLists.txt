@@ -8,8 +8,8 @@ set(assets_SOURCES
   CollisionMeshData.h
   GenericInstanceMeshData.cpp
   GenericInstanceMeshData.h
-  GltfMeshData.cpp
-  GltfMeshData.h
+  GenericMeshData.cpp
+  GenericMeshData.h
   MeshData.h
   MeshMetaData.h
   Mp3dInstanceMeshData.cpp

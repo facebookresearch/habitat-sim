@@ -5,8 +5,8 @@
 #pragma once
 
 /** @file
- * @brief Class @ref esp::assets::GltfMeshData, Class @ref
- * esp::assets::GltfMeshData::RenderingBuffer
+ * @brief Class @ref esp::assets::GenericMeshData, Class @ref
+ * esp::assets::GenericMeshData::RenderingBuffer
  */
 
 #include <Corrade/Containers/Optional.h>
@@ -23,7 +23,7 @@ namespace assets {
  * @brief Mesh data storage and loading for gltf format assets. See @ref
  * ResourceManager::loadGeneralMeshData.
  */
-class GltfMeshData : public BaseMesh {
+class GenericMeshData : public BaseMesh {
  public:
   /**
    * @brief Stores render data for the mesh necessary for gltf format.
@@ -35,13 +35,14 @@ class GltfMeshData : public BaseMesh {
     Magnum::GL::Mesh mesh;
   };
 
-  /** @brief Constructor. Sets @ref SupportedMeshType::GLTF_MESH to identify the
-   * asset type.*/
-  GltfMeshData(bool needsNormals = true)
-      : BaseMesh(SupportedMeshType::GLTF_MESH), needsNormals_{needsNormals} {};
+  /** @brief Constructor. Sets @ref SupportedMeshType::GENERIC_MESH to identify
+   * the asset type.*/
+  GenericMeshData(bool needsNormals = true)
+      : BaseMesh(SupportedMeshType::GENERIC_MESH),
+        needsNormals_{needsNormals} {};
 
   /** @brief Destructor */
-  virtual ~GltfMeshData(){};
+  virtual ~GenericMeshData(){};
 
   /**
    * @brief Compile the @ref renderingBuffer_ if first upload or forceReload is
@@ -52,13 +53,33 @@ class GltfMeshData : public BaseMesh {
   virtual void uploadBuffersToGPU(bool forceReload = false) override;
 
   /**
+   * @brief Set mesh data from external source, and sets the @ref collisionMesh_
+   * references.  Can be used for meshDatas that are manually synthesized, such
+   * as NavMesh. Sets the @ref collisionMesh_ references.
+   * @param meshData the meshData to be assigned.
+   */
+  void setMeshData(Magnum::Trade::MeshData&& meshData);
+
+  /**
    * @brief Load mesh data from a pre-parsed importer for a specific mesh
-   * component. Sets the @ref collisionMeshData_ references.
-   * @param importer The importer pre-loaded with asset data from file.
+   * component ID. Sets the @ref collisionMeshData_ references.
+   * @param importer The importer pre-loaded with asset data from file, or a
+   * Primitive Importer.
    * @param meshID The local identifier of a specific mesh component of the
    * asset.
    */
-  void setMeshData(Magnum::Trade::AbstractImporter& importer, int meshID);
+  void importAndSetMeshData(Magnum::Trade::AbstractImporter& importer,
+                            int meshID);
+  /**
+   * @brief Load mesh data from a pre-parsed importer for a specific mesh
+   * component name. Sets the @ref collisionMeshData_ references.
+   * @param importer The importer pre-loaded with asset data from file, or a
+   * Primitive Importer.
+   * @param meshName The string identifier of a specific mesh - i.e. with
+   * PrimitiveImporter to denote which Primitive to instantiate.
+   */
+  void importAndSetMeshData(Magnum::Trade::AbstractImporter& importer,
+                            const std::string& meshName);
 
   /**
    * @brief Returns a pointer to the compiled render data storage structure.

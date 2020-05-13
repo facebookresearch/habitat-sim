@@ -39,7 +39,7 @@ def test_set_state():
     agent = habitat_sim.Agent(scene_graph.get_root_node().create_child())
 
     state = agent.state
-    agent.state = state
+    agent.set_state(state, infer_sensor_states=True)
     new_state = agent.state
 
     _check_state_same(state, new_state)
@@ -67,7 +67,7 @@ def test_change_state():
                 np.random.uniform(0, 2 * np.pi), np.array([1.0, 1.0, 1.0])
             )
 
-        agent.state = state
+        agent.set_state(state, infer_sensor_states=False)
         new_state = agent.state
 
         _check_state_same(state, new_state)

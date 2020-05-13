@@ -298,6 +298,9 @@ jobs:
                 wget http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip
                 unzip objects_v0.1.zip -d data/objects/
                 rm objects_v0.1.zip
+                wget http://dl.fbaipublicfiles.com/habitat/locobot_merged.zip
+                unzip locobot_merged.zip -d data/objects/
+                rm locobot_merged.zip
                 cd ..
               fi
       - run:
