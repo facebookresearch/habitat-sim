@@ -4,6 +4,7 @@
 
 #include "esp/bindings/bindings.h"
 
+#include "esp/core//random.h"
 #include "esp/core/Configuration.h"
 #include "esp/core/RigidState.h"
 
@@ -47,6 +48,16 @@ void initCoreBindings(py::module& m) {
                                         const Magnum::Vector3&>))
       .def_readwrite("rotation", &RigidState::rotation)
       .def_readwrite("translation", &RigidState::translation);
+
+  py::class_<Random, Random::ptr>(m, "Random")
+      .def(py::init(&Random::create<>))
+      .def("seed", &Random::seed)
+      .def("uniform_float_01", &Random::uniform_float_01)
+      .def("uniform_float", &Random::uniform_float)
+      .def("uniform_int", py::overload_cast<>(&Random::uniform_int))
+      .def("uniform_int", py::overload_cast<int, int>(&Random::uniform_int))
+      .def("uniform_uint", &Random::uniform_uint)
+      .def("normal_float_01", &Random::normal_float_01);
 }
 
 }  // namespace core

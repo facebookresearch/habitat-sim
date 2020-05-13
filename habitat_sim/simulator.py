@@ -164,6 +164,8 @@ class Simulator(SimulatorBackend):
             navmesh_settings.agent_height = default_agent_config.height
             self.recompute_navmesh(self.pathfinder, navmesh_settings)
 
+        self.pathfinder.seed(config.sim_cfg.random_seed)
+
     def reconfigure(self, config: Configuration):
         assert len(config.agents) > 0
 
@@ -221,7 +223,7 @@ class Simulator(SimulatorBackend):
             if self.pathfinder.is_loaded:
                 initial_state.position = self.pathfinder.get_random_navigable_point()
                 initial_state.rotation = quat_from_angle_axis(
-                    np.random.uniform(0, 2.0 * np.pi), np.array([0, 1, 0])
+                    self._sim.random.uniform_float(0, 2.0 * np.pi), np.array([0, 1, 0])
                 )
 
         agent.set_state(initial_state, is_initial=True)

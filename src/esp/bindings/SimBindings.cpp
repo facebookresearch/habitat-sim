@@ -28,6 +28,7 @@ void initSimBindings(py::module& m) {
       m, "SimulatorConfiguration")
       .def(py::init(&SimulatorConfiguration::create<>))
       .def_readwrite("scene", &SimulatorConfiguration::scene)
+      .def_readwrite("random_seed", &SimulatorConfiguration::randomSeed)
       .def_readwrite("default_agent_id",
                      &SimulatorConfiguration::defaultAgentId)
       .def_readwrite("default_camera_uuid",
@@ -73,6 +74,7 @@ void initSimBindings(py::module& m) {
       .def_property("pathfinder", &Simulator::getPathFinder,
                     &Simulator::setPathFinder)
       .def_property_readonly("gpu_device", &Simulator::gpuDevice)
+      .def_property_readonly("random", &Simulator::random)
       .def_property("frustum_culling", &Simulator::isFrustumCullingEnabled,
                     &Simulator::setFrustumCullingEnabled,
                     R"(Enable or disable the frustum culling)")
