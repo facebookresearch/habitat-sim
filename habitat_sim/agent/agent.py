@@ -191,16 +191,31 @@ class Agent(object):
         return state
 
     def set_state(
-        self, state: AgentState, reset_sensors: bool = True, is_initial: bool = False
+        self,
+        state: AgentState,
+        reset_sensors: bool = True,
+        infer_sensor_states: bool = True,
+        is_initial: bool = False,
     ):
         r"""Sets the agents state
 
         :param state: The state to set the agent to
         :param reset_sensors: Whether or not to reset the sensors to their
-            default intrinsic/extrinsic parameters before setting their
-            extrinsic state
+            default intrinsic/extrinsic parameters before setting their extrinsic state.
+        :param infer_sensor_states: Whether or not to infer the location of sensors based on
+            the new location of the agent base state.
         :param is_initial: Whether this state is the initial state of the
             agent in the scene. Used for resetting the agent at a later time
+
+        Setting ``reset_sensors`` to :py:`False`
+        allows the agent base state to be moved and the new
+        sensor locations inferred without changing the configuration of the sensors
+        with respect to the base state of the agent.
+
+        Setting ``infer_sensor_states``
+        to :py:`False` is useful if you'd like to directly control
+        the state of a sensor instead of moving the agent.
+
         """
         habitat_sim.errors.assert_obj_valid(self.body)
 
@@ -216,20 +231,21 @@ class Agent(object):
             for _, v in self._sensors.items():
                 v.set_transformation_from_spec()
 
-        for k, v in state.sensor_states.items():
-            assert k in self._sensors
-            if isinstance(v.rotation, list):
-                v.rotation = quat_from_coeffs(v.rotation)
+        if not infer_sensor_states:
+            for k, v in state.sensor_states.items():
+                assert k in self._sensors
+                if isinstance(v.rotation, list):
+                    v.rotation = quat_from_coeffs(v.rotation)
 
-            s = self._sensors[k]
+                s = self._sensors[k]
 
-            s.node.reset_transformation()
-            s.node.translate(
-                quat_rotate_vector(
-                    state.rotation.inverse(), v.position - state.position
+                s.node.reset_transformation()
+                s.node.translate(
+                    quat_rotate_vector(
+                        state.rotation.inverse(), v.position - state.position
+                    )
                 )
-            )
-            s.node.rotation = quat_to_magnum(state.rotation.inverse() * v.rotation)
+                s.node.rotation = quat_to_magnum(state.rotation.inverse() * v.rotation)
 
         if is_initial:
             self.initial_state = state
@@ -241,11 +257,20 @@ class Agent(object):
 
     @property
     def state(self):
+        r"""Get/set the agent's state.
+
+        Getting the state is equivalent to :ref:`get_state`
+
+        Setting the state is equivalent calling :ref:`set_state`
+        and only providing the state.
+        """
         return self.get_state()
 
     @state.setter
     def state(self, new_state):
-        self.set_state(new_state, reset_sensors=True)
+        self.set_state(
+            new_state, reset_sensors=True, infer_sensor_states=True, is_initial=False
+        )
 
     def close(self):
         self._sensors = None

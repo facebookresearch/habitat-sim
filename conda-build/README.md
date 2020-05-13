@@ -11,11 +11,17 @@ To then download the package, run ```conda install -c aihabitat -c conda-forge h
 
 The process is almost the same for linux; there is a corresponding python script for starting things off, however we use a docker container to do the builds. There is a dockerfile in this directory that you can use to create a container.
 
-```docker build -t myContainer -f conda-build/Dockerfile .```
+```docker build -t hsim_condabuild_dcontainer -f Dockerfile .```
 
 That will create your docker container. Now run
 
-```docker run -it --ipc=host --rm -v $(pwd)../:/remote myContainer bash```
+```docker run -it --ipc=host --rm -v $(pwd)/../:/remote hsim_condabuild_dcontainer bash```
 
-From there you will have a shell within your linux container from which you can run ```python linux_matrix_build.py``` again with python >=3.6 (so you might have to create a conda environment with this version of python), which will kick off the build process. After this has finished, upload it to anaconda cloud in the same way described in the macOS section.
+From there you will have a shell within your linux container. Now, navigate to ```cd /remote/conda-build``` where habitat-sim has been mounted. Create a conda environment within the linux container with python>=3.6 (identical to that needed by habitat-sim build). And then run ```python linux_matrix_build.py```, which will kick off the build process. After this has finished, upload it to anaconda cloud in the same way described in the macOS section.
+
+To download the package, run ```conda install -c aihabitat -c conda-forge habitat-sim headless ```. 
+
+Our linux conda builds currently only support ```headless``` binaries. In the command above, we are telling conda to use a feature called ```headless```. The first time you install habitat-sim in a conda env, you have to specify what features to use.  Otherwise, it throws uninterpretable errors. 
+
+
 

@@ -337,7 +337,7 @@ void Viewer::addObject(const std::string& configFile) {
 
 }  // addObject
 
-// add template derived object from keypress
+// add file-based template derived object from keypress
 void Viewer::addTemplateObject() {
   if (physicsManager_ != nullptr) {
     int numObjTemplates = resourceManager_.getNumFileTemplateObjects();
@@ -354,9 +354,9 @@ void Viewer::addTemplateObject() {
 void Viewer::addPrimitiveObject() {
   // TODO : use this to implement synthesizing rendered physical objects
   if (physicsManager_ != nullptr) {
-    int numObjPrims = resourceManager_.getNumPrimTemplateObjects();
+    int numObjPrims = resourceManager_.getNumSynthTemplateObjects();
     if (numObjPrims > 0) {
-      addObject(resourceManager_.getRandomPrimTemplateHandle());
+      addObject(resourceManager_.getRandomSynthTemplateHandle());
     } else
       LOG(WARNING) << "No primitive templates available, can't add any objects";
   } else
