@@ -16,8 +16,7 @@ namespace physics {
 
 /**
  * @brief An individual rigid scene instance implementing an interface with
- * Bullet physics to enable dynamics. See @ref btCollisionObject for @ref
- * RigidObjectType::SCENE
+ * Bullet physics to enable dynamics. See @ref btCollisionObject
  */
 
 class BulletRigidScene : public BulletBase, public RigidScene {

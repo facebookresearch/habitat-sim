@@ -32,8 +32,8 @@ namespace physics {
  * Bullet physics to enable dynamic objects. See @ref btRigidBody for @ref
  * RigidObjectType::OBJECT.
  *
- * Utilizes Magnum::BulletIntegration::MotionState to syncronize SceneNode state
- * with internal btRigidBody states
+ * Utilizes Magnum::BulletIntegration::MotionState to synchronize SceneNode
+ * state with internal btRigidBody states
  */
 class BulletRigidObject : public BulletBase,
                           public RigidObject,
@@ -204,8 +204,7 @@ class BulletRigidObject : public BulletBase,
     return Magnum::Vector3{bObjectRigidBody_->getAngularVelocity()};
   }
 
-  /** @brief Get the mass of the object. Returns 0.0 for @ref
-   * RigidObjectType::SCENE. See @ref btRigidBody::getInvMass.
+  /** @brief Get the mass of the object. See @ref btRigidBody::getInvMass.
    * @return The mass of the object.
    */
   virtual double getMass() const override {
@@ -213,8 +212,8 @@ class BulletRigidObject : public BulletBase,
   }
 
   /** @brief Get the center of mass (COM) of the object. For Bullet, COM is
-   * always the origin of the local coordinate system. Return [0,0,0] for @ref
-   * RigidObjectType::SCENE. See @ref btRigidBody::getCenterOfMassPosition.
+   * always the origin of the local coordinate system. See @ref
+   * btRigidBody::getCenterOfMassPosition.
    * @return Object 3D center of mass in the global coordinate system.
    */
   Magnum::Vector3 getCOM() const override;
@@ -260,8 +259,7 @@ class BulletRigidObject : public BulletBase,
 
   /** @brief Get the scalar linear damping coefficient of the object.
    * See @ref btRigidBody::getLinearDamping.
-   * @return The scalar linear damping coefficient of the object. 0.0 for @ref
-   * RigidObjectType::SCENE.
+   * @return The scalar linear damping coefficient of the object.
    */
   double getLinearDamping() const override {
     return bObjectRigidBody_->getLinearDamping();
@@ -269,15 +267,14 @@ class BulletRigidObject : public BulletBase,
 
   /** @brief Get the scalar angular damping coefficient of the object.
    * See @ref btRigidBody::getAngularDamping.
-   * @return The scalar angular damping coefficient of the object. 0.0 for @ref
-   * RigidObjectType::SCENE.
+   * @return The scalar angular damping coefficient of the object.
    */
   double getAngularDamping() const override {
     return bObjectRigidBody_->getAngularDamping();
   }
 
-  /** @brief Get the scalar collision margin of an object. Retun 0.0 for a @ref
-   * RigidObjectType::SCENE. See @ref btCompoundShape::getMargin.
+  /** @brief Get the scalar collision margin of an object. See @ref
+   * btCompoundShape::getMargin.
    * @return The scalar collision margin of the object.
    */
   double getMargin() const override { return bObjectShape_->getMargin(); }

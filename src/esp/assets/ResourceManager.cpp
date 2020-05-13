@@ -4,9 +4,6 @@
 
 #include "ResourceManager.h"
 
-//#include <functional>
-
-//#include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Containers/PointerStl.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/PluginManager/PluginMetadata.h>

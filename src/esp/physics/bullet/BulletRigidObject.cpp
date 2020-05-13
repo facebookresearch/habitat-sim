@@ -5,6 +5,7 @@
 #include <Magnum/BulletIntegration/DebugDraw.h>
 #include <Magnum/BulletIntegration/Integration.h>
 
+#include <Corrade/Utility/Assert.h>
 #include "BulletCollision/CollisionShapes/btCompoundShape.h"
 #include "BulletCollision/CollisionShapes/btConvexHullShape.h"
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
@@ -150,6 +151,14 @@ std::unique_ptr<btCollisionShape>
 BulletRigidObject::buildPrimitiveCollisionObject(
     assets::AbstractPrimitiveAttributes::ptr primAttributes) {
   int primTypeVal = primAttributes->getPrimObjType();
+  CORRADE_ASSERT(
+      (primTypeVal >= 0) &&
+          (primTypeVal <
+           static_cast<int>(assets::PrimObjTypes::END_PRIM_OBJ_TYPES)),
+      "BulletRigidObject::buildPrimitiveCollisionObject : Illegal primitive "
+      "value requested : "
+          << primTypeVal,
+      nullptr);
   assets::PrimObjTypes primType =
       static_cast<assets::PrimObjTypes>(primTypeVal);
   switch (primType) {
@@ -191,12 +200,10 @@ BulletRigidObject::buildPrimitiveCollisionObject(
       return std::make_unique<btSphereShape>(radius);
     }
     default: {
-      LOG(ERROR) << "Unknown PrimObjTypes value : " << primTypeVal
-                 << " | Aborting.";
+      return nullptr;
     }
   }  // switch
-  return nullptr;
-}
+}  // buildPrimitiveCollisionObject
 
 // recursively create the convex mesh shapes and add them to the compound in a
 // flat manner by accumulating transformations down the tree
@@ -357,9 +364,7 @@ void BulletRigidObject::syncPose() {
 
 void BulletRigidObject::setCOM(const Magnum::Vector3&) {
   // Current not supported
-  /*if (rigidObjectType_ == RigidObjectType::SCENE)
-    return;
-  else
+  /*
     bObjectRigidBody_->setCenterOfMassTransform(
         btTransform(Magnum::Matrix4<float>::translation(COM)));*/
 }  // setCOM
