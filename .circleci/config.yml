@@ -386,7 +386,6 @@ jobs:
               cd docs
               conda install -y -c conda-forge doxygen==1.8.16
               conda install -y  jinja2 pygments docutils
-              mkdir -p ../build/docs
               git submodule update --init
               ./build-public.sh
       - run:
@@ -429,7 +428,6 @@ jobs:
               cd docs
               conda install -y -c conda-forge doxygen==1.8.16
               conda install -y  jinja2 pygments docutils
-              mkdir -p ../build/docs
               ./build-public.sh
       - save_cache:
           key: docs-{{ .Branch }}-{{ .Environment.CIRCLE_SHA1 }}
