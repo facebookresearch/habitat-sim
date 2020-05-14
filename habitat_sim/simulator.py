@@ -223,7 +223,7 @@ class Simulator(SimulatorBackend):
             if self.pathfinder.is_loaded:
                 initial_state.position = self.pathfinder.get_random_navigable_point()
                 initial_state.rotation = quat_from_angle_axis(
-                    self._sim.random.uniform_float(0, 2.0 * np.pi), np.array([0, 1, 0])
+                    self.random.uniform_float(0, 2.0 * np.pi), np.array([0, 1, 0])
                 )
 
         agent.set_state(initial_state, is_initial=True)

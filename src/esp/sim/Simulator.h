@@ -148,7 +148,7 @@ class Simulator {
    */
   std::vector<std::string> getSynthesizedObjectTemplateHandles(
       const std::string& subStr = "") {
-    return resourceManager_.getSynthTemplateHandlesBySubstring(subStr);
+    return resourceManager_->getSynthTemplateHandlesBySubstring(subStr);
   }
 
   /**

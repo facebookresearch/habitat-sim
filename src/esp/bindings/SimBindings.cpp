@@ -101,52 +101,52 @@ void initSimBindings(py::module& m) {
            "object_template"_a, "object_template_handle"_a)
       .def("get_object_initialization_template",
            &Simulator::getObjectInitializationTemplate, "object_id"_a,
-           "sceneID"_a = 0)
+           "scene_id"_a = 0)
       .def("remove_object", &Simulator::removeObject, "object_id"_a,
            "delete_object_node"_a = true, "delete_visual_node"_a = true,
-           "sceneID"_a = 0)
+           "scene_id"_a = 0)
       .def("get_object_motion_type", &Simulator::getObjectMotionType,
-           "object_id"_a, "sceneID"_a = 0)
+           "object_id"_a, "scene_id"_a = 0)
       .def("set_object_motion_type", &Simulator::setObjectMotionType,
-           "motion_type"_a, "object_id"_a, "sceneID"_a = 0)
+           "motion_type"_a, "object_id"_a, "scene_id"_a = 0)
       .def("get_existing_object_ids", &Simulator::getExistingObjectIDs,
-           "sceneID"_a = 0)
+           "scene_id"_a = 0)
       .def("step_world", &Simulator::stepWorld, "dt"_a = 1.0 / 60.0)
       .def("get_world_time", &Simulator::getWorldTime)
-      .def("get_gravity", &Simulator::getGravity, "sceneID"_a = 0)
-      .def("set_gravity", &Simulator::setGravity, "gravity"_a, "sceneID"_a = 0)
+      .def("get_gravity", &Simulator::getGravity, "scene_id"_a = 0)
+      .def("set_gravity", &Simulator::setGravity, "gravity"_a, "scene_id"_a = 0)
       .def("get_object_scene_node", &Simulator::getObjectSceneNode,
-           "object_id"_a, "sceneID"_a = 0)
+           "object_id"_a, "scene_id"_a = 0)
       .def("set_transformation", &Simulator::setTransformation, "transform"_a,
-           "object_id"_a, "sceneID"_a = 0)
+           "object_id"_a, "scene_id"_a = 0)
       .def("get_transformation", &Simulator::getTransformation, "object_id"_a,
-           "sceneID"_a = 0)
+           "scene_id"_a = 0)
       .def("set_translation", &Simulator::setTranslation, "translation"_a,
-           "object_id"_a, "sceneID"_a = 0)
+           "object_id"_a, "scene_id"_a = 0)
       .def("get_translation", &Simulator::getTranslation, "object_id"_a,
-           "sceneID"_a = 0)
+           "scene_id"_a = 0)
       .def("set_rotation", &Simulator::setRotation, "rotation"_a, "object_id"_a,
-           "sceneID"_a = 0)
+           "scene_id"_a = 0)
       .def("get_rotation", &Simulator::getRotation, "object_id"_a,
-           "sceneID"_a = 0)
+           "scene_id"_a = 0)
       .def("get_object_velocity_control", &Simulator::getObjectVelocityControl,
-           "object_id"_a, "sceneID"_a = 0)
+           "object_id"_a, "scene_id"_a = 0)
       .def("set_linear_velocity", &Simulator::setLinearVelocity, "linVel"_a,
-           "object_id"_a, "sceneID"_a = 0)
+           "object_id"_a, "scene_id"_a = 0)
       .def("get_linear_velocity", &Simulator::getLinearVelocity, "object_id"_a,
-           "sceneID"_a = 0)
+           "scene_id"_a = 0)
       .def("set_angular_velocity", &Simulator::setAngularVelocity, "angVel"_a,
-           "object_id"_a, "sceneID"_a = 0)
+           "object_id"_a, "scene_id"_a = 0)
       .def("get_angular_velocity", &Simulator::getAngularVelocity,
-           "object_id"_a, "sceneID"_a = 0)
+           "object_id"_a, "scene_id"_a = 0)
       .def("apply_force", &Simulator::applyForce, "force"_a,
-           "relative_position"_a, "object_id"_a, "sceneID"_a = 0)
+           "relative_position"_a, "object_id"_a, "scene_id"_a = 0)
       .def("apply_torque", &Simulator::applyTorque, "torque"_a, "object_id"_a,
-           "sceneID"_a = 0)
+           "scene_id"_a = 0)
       .def("contact_test", &Simulator::contactTest, "object_id"_a,
-           "sceneID"_a = 0)
+           "scene_id"_a = 0)
       .def("set_object_bb_draw", &Simulator::setObjectBBDraw, "draw_bb"_a,
-           "object_id"_a, "sceneID"_a = 0)
+           "object_id"_a, "scene_id"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
            "navmesh_settings"_a, "include_static_objects"_a = false)
       .def("get_light_setup", &Simulator::getLightSetup,
