@@ -514,6 +514,11 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   Magnum::Quaternion qLocalGroundTruth{{-0.95782, 0, 0}, 0.287495};
   qLocalGroundTruth = qLocalGroundTruth.normalized();
 
+  // test zero velocity kinematic integration (should not change state)
+  velControl->linVel = Magnum::Vector3{0.0, 0.0, 0.0};
+  velControl->angVel = Magnum::Vector3{0.0, 0.0, 0.0};
+  physicsManager_->stepPhysics(physicsManager_->getTimestep());
+
   ASSERT_LE((physicsManager_->getTranslation(objectId) - posLocalGroundTruth)
                 .length(),
             errorEps);

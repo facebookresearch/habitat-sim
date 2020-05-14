@@ -60,7 +60,7 @@ core::RigidState VelocityControl::integrateTransform(
   }
 
   // then angular
-  if (controllingAngVel) {
+  if (controllingAngVel && angVel != Magnum::Vector3{0.0}) {
     Magnum::Vector3 globalAngVel{angVel};
     if (angVelIsLocal) {
       globalAngVel = rigidState.rotation.transformVector(angVel);
