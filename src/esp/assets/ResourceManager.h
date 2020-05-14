@@ -126,6 +126,24 @@ constexpr const char* PrimitiveNames3D[]{
     "icosphereWireframe", "uvSphereSolid",      "uvSphereWireframe"};
 
 /**
+ * @brief Build a shared pointer to the appropriate attributes for passed object
+ * type
+ */
+template <typename T, bool isWF, int idx>
+std::shared_ptr<AbstractPrimitiveAttributes> createPrimitiveAttributes() {
+  return T::create(isWF, idx, PrimitiveNames3D[idx]);
+}
+
+/**
+ * @brief Define a map referencing function pointers to @ref
+ * createPrimitiveAttributes() keyed by string names of classes being instanced
+ */
+typedef std::map<
+    std::string,
+    std::shared_ptr<esp::assets::AbstractPrimitiveAttributes> (*)()>
+    map_of_primTypes;
+
+/**
  * @brief Singleton class responsible for
  * loading and managing common simulator assets such as meshes, textures, and
  * materials.
@@ -313,6 +331,14 @@ class ResourceManager {
    * which the key, synthesized from primAssetHandle, refers.
    */
   int buildAndRegisterPrimPhysObjTemplate(const std::string& primAssetHandle);
+
+  /**
+   * @brief This function will assign the appropriately configured function
+   * pointers for @ref createPrimitiveAttributes calls for each type of
+   * supported primitive to the @ref primTypeConstructorMap, keyed by type of
+   * primtive
+   */
+  void buildMapOfPrimTypeConstructors();
 
   /**
    * @brief Add a @ref PhysicsObjectAttributes object to the @ref
@@ -754,11 +780,6 @@ class ResourceManager {
                                   const bool requiresLighting);
 
   /**
-   * @brief put primitive asset template attributes in appropriate library
-   *
-   */
-
-  /**
    * @brief Put primitive-based synthesized object template attributes in
    * template map. Calls @ref addObjTemplateToLibrary with primTemplate's set
    * origin handle and prim map.  Convenience method.
@@ -1135,6 +1156,14 @@ class ResourceManager {
    */
   std::map<std::string, AbstractPrimitiveAttributes::ptr>
       primitiveAssetsTemplateLibrary_;
+
+  /**
+   * @brief Map of function pointers to instantiate a primitive attributes
+   * object, keyed by the Magnum primitive class name as listed in @ref
+   * PrimitiveNames3D. A primitive attributes object is instanced by accessing
+   * the approrpiate function pointer.
+   */
+  map_of_primTypes primTypeConstructorMap;
 
   /**
    * @brief Maps string keys (typically property filenames) to physical scene
