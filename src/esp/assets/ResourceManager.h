@@ -114,34 +114,30 @@ enum class PrimObjTypes : uint32_t {
    */
   UVSPHERE_WF,
   /**
-  marker for no more primitive objects
-  */
+   * marker for no more primitive objects - add any new objects above this entry
+   */
   END_PRIM_OBJ_TYPES
 };
 
-constexpr const char* PrimitiveNames3D[]{
-    "capsule3DSolid",     "capsule3DWireframe", "coneSolid",
-    "coneWireframe",      "cubeSolid",          "cubeWireframe",
-    "cylinderSolid",      "cylinderWireframe",  "icosphereSolid",
-    "icosphereWireframe", "uvSphereSolid",      "uvSphereWireframe"};
-
 /**
- * @brief Build a shared pointer to the appropriate attributes for passed object
- * type
+ * @brief Constant Map holding names of all Magnum 3D primitive classes
+ * supported, keyed by @ref PrimObjTypes enum entry.  Note final entry is not
+ * valid primitive.
  */
-template <typename T, bool isWF, int idx>
-std::shared_ptr<AbstractPrimitiveAttributes> createPrimitiveAttributes() {
-  return T::create(isWF, idx, PrimitiveNames3D[idx]);
-}
-
-/**
- * @brief Define a map referencing function pointers to @ref
- * createPrimitiveAttributes() keyed by string names of classes being instanced
- */
-typedef std::map<
-    std::string,
-    std::shared_ptr<esp::assets::AbstractPrimitiveAttributes> (*)()>
-    map_of_primTypes;
+const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap = {
+    {PrimObjTypes::CAPSULE_SOLID, "capsule3DSolid"},
+    {PrimObjTypes::CAPSULE_WF, "capsule3DWireframe"},
+    {PrimObjTypes::CONE_SOLID, "coneSolid"},
+    {PrimObjTypes::CONE_WF, "coneWireframe"},
+    {PrimObjTypes::CUBE_SOLID, "cubeSolid"},
+    {PrimObjTypes::CUBE_WF, "cubeWireframe"},
+    {PrimObjTypes::CYLINDER_SOLID, "cylinderSolid"},
+    {PrimObjTypes::CYLINDER_WF, "cylinderWireframe"},
+    {PrimObjTypes::ICOSPHERE_SOLID, "icosphereSolid"},
+    {PrimObjTypes::ICOSPHERE_WF, "icosphereWireframe"},
+    {PrimObjTypes::UVSPHERE_SOLID, "uvSphereSolid"},
+    {PrimObjTypes::UVSPHERE_WF, "uvSphereWireframe"},
+    {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
 
 /**
  * @brief Singleton class responsible for
@@ -712,7 +708,69 @@ class ResourceManager {
    */
   inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
 
+  /**
+   * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
+   * with passed class name
+   */
+  AbstractPrimitiveAttributes::ptr buildPrimitiveAttributes(
+      const std::string& primTypeName) {
+    CORRADE_ASSERT(
+        primTypeConstructorMap_.count(primTypeName) > 0,
+        "ResourceManager::buildPrimitiveAttributes : No primivite of type "
+            << primTypeName << " exists.  Aborting.",
+        nullptr);
+    return (*this.*primTypeConstructorMap_[primTypeName])();
+  }  // buildPrimitiveAttributes
+
+  /**
+   * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
+   * with passed enum value, which maps to class name via @ref
+   * PrimitiveNames3DMap
+   */
+  AbstractPrimitiveAttributes::ptr buildPrimitiveAttributes(
+      PrimObjTypes& primType) {
+    CORRADE_ASSERT(
+        primType != PrimObjTypes::END_PRIM_OBJ_TYPES,
+        "ResourceManager::buildPrimitiveAttributes : Illegal primtitive type "
+        "name sPrimObjTypes::END_PRIM_OBJ_TYPES.  Aborting.",
+        nullptr);
+    return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(primType)])();
+  }  // buildPrimitiveAttributes
+
+  /**
+   * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
+   * with passed enum value, which maps to class name via @ref
+   * PrimitiveNames3DMap
+   */
+  AbstractPrimitiveAttributes::ptr buildPrimitiveAttributes(int primTypeVal) {
+    CORRADE_ASSERT(
+        (primTypeVal >= 0) &&
+            (primTypeVal < static_cast<int>(PrimObjTypes::END_PRIM_OBJ_TYPES)),
+        "ResourceManager::buildPrimitiveAttributes : Unknown PrimObjTypes "
+        "value requested : "
+            << primTypeVal,
+        nullptr);
+    return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(
+                       static_cast<PrimObjTypes>(primTypeVal))])();
+  }  // buildPrimitiveAttributes
+
  private:
+  /**
+   * @brief Build a shared pointer to the appropriate attributes for passed
+   * object type as defined in @ref PrimObjTypes, where each entry except @ref
+   * END_PRIM_OBJ_TYPES corresponds to a Magnum Primitive type
+   */
+  template <typename T, bool isWireFrame, PrimObjTypes primitiveType>
+  std::shared_ptr<AbstractPrimitiveAttributes> createPrimitiveAttributes() {
+    CORRADE_ASSERT(
+        (primitiveType != PrimObjTypes::END_PRIM_OBJ_TYPES),
+        "ResourceManager::createPrimitiveAttributes : Cannot instantiate "
+        "PrimitiveAttributes object for  PrimObjTypes::END_PRIM_OBJ_TYPES",
+        nullptr);
+    int idx = static_cast<int>(primitiveType);
+    return T::create(isWireFrame, idx, PrimitiveNames3DMap.at(primitiveType));
+  }
+
   /**
    * @brief Load object templates given string list of object template
    * locations.
@@ -793,7 +851,8 @@ class ResourceManager {
                                    physicsSynthObjTmpltLibByID_);
   }
 
-  /** @brief Add object template attributes to template library map and in
+  /**
+   * @brief Add object template attributes to template library map and in
    * passed index list
    *
    * @param objectTemplate ptr to object template attributes to be added to
@@ -809,7 +868,8 @@ class ResourceManager {
                               const std::string& objectTemplateHandle,
                               std::map<int, std::string>& mapOfNames);
 
-  /** @brief Add primitive asset template attributes to appropriate template
+  /**
+   * @brief Add primitive asset template attributes to appropriate template
    * library map and index list
    *
    * @param primTemplate ptr to primitive template attributes to be added to
@@ -1158,12 +1218,22 @@ class ResourceManager {
       primitiveAssetsTemplateLibrary_;
 
   /**
+   * @brief Define a map type referencing function pointers to @ref
+   * createPrimitiveAttributes() keyed by string names of classes being
+   * instanced, as defined in @ref PrimitiveNames3D
+   */
+  typedef std::map<std::string,
+                   std::shared_ptr<esp::assets::AbstractPrimitiveAttributes> (
+                       esp::assets::ResourceManager::*)()>
+      Map_Of_PrimTypes;
+
+  /**
    * @brief Map of function pointers to instantiate a primitive attributes
    * object, keyed by the Magnum primitive class name as listed in @ref
    * PrimitiveNames3D. A primitive attributes object is instanced by accessing
    * the approrpiate function pointer.
    */
-  map_of_primTypes primTypeConstructorMap;
+  Map_Of_PrimTypes primTypeConstructorMap_;
 
   /**
    * @brief Maps string keys (typically property filenames) to physical scene
@@ -1211,6 +1281,7 @@ class ResourceManager {
   std::map<int, std::string> physicsSynthObjTmpltLibByID_;
   /**
    * @brief Maps primitive object template IDs to primitive template handles
+   * (composite strings built from specified attributes values for primitive)
    */
   std::map<int, std::string> primitiveAssetTmpltLibByID_;
 

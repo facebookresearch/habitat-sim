@@ -165,8 +165,6 @@ BulletRigidObject::buildPrimitiveCollisionObject(
     case assets::PrimObjTypes::CAPSULE_SOLID:
     case assets::PrimObjTypes::CAPSULE_WF: {
       // use bullet capsule :  btCapsuleShape(btScalar radius,btScalar height);
-      // auto attr =
-      // std::static_pointer_cast<assets::CapsulePrimitiveAttributes::ptr>(primAttributes);
       btScalar radius = 1.0f;
       btScalar height = 2.0 * primAttributes->getHalfLength();
       return std::make_unique<btCapsuleShape>(radius, height);

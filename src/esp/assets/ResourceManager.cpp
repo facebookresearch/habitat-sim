@@ -80,32 +80,57 @@ ResourceManager::ResourceManager()
   buildMapOfPrimTypeConstructors();
 }  // namespace assets
 void ResourceManager::buildMapOfPrimTypeConstructors() {
-  primTypeConstructorMap["capsule3DSolid"] =
-      &createPrimitiveAttributes<assets::CapsulePrimitiveAttributes, false, 0>;
-  primTypeConstructorMap["capsule3DWireframe"] =
-      &createPrimitiveAttributes<assets::CapsulePrimitiveAttributes, true, 1>;
-  primTypeConstructorMap["coneSolid"] =
-      &createPrimitiveAttributes<assets::ConePrimitiveAttributes, false, 2>;
-  primTypeConstructorMap["coneWireframe"] =
-      &createPrimitiveAttributes<assets::ConePrimitiveAttributes, true, 3>;
-  primTypeConstructorMap["cubeSolid"] =
-      &createPrimitiveAttributes<assets::CubePrimitiveAttributes, false, 4>;
-  primTypeConstructorMap["cubeWireframe"] =
-      &createPrimitiveAttributes<assets::CubePrimitiveAttributes, true, 5>;
-  primTypeConstructorMap["cylinderSolid"] =
-      &createPrimitiveAttributes<assets::CylinderPrimitiveAttributes, false, 6>;
-  primTypeConstructorMap["cylinderWireframe"] =
-      &createPrimitiveAttributes<assets::CylinderPrimitiveAttributes, true, 7>;
-  primTypeConstructorMap["icosphereSolid"] =
-      &createPrimitiveAttributes<assets::IcospherePrimitiveAttributes, false,
-                                 8>;
-  primTypeConstructorMap["icosphereWireframe"] =
-      &createPrimitiveAttributes<assets::IcospherePrimitiveAttributes, true, 9>;
-  primTypeConstructorMap["uvSphereSolid"] =
-      &createPrimitiveAttributes<assets::UVSpherePrimitiveAttributes, false,
-                                 10>;
-  primTypeConstructorMap["uvSphereWireframe"] =
-      &createPrimitiveAttributes<assets::UVSpherePrimitiveAttributes, true, 11>;
+  primTypeConstructorMap_["capsule3DSolid"] =
+      &ResourceManager::createPrimitiveAttributes<
+          assets::CapsulePrimitiveAttributes, false,
+          PrimObjTypes::CAPSULE_SOLID>;
+  primTypeConstructorMap_["capsule3DWireframe"] =
+      &ResourceManager::createPrimitiveAttributes<
+          assets::CapsulePrimitiveAttributes, true, PrimObjTypes::CAPSULE_WF>;
+  primTypeConstructorMap_["coneSolid"] =
+      &ResourceManager::createPrimitiveAttributes<
+          assets::ConePrimitiveAttributes, false, PrimObjTypes::CONE_SOLID>;
+  primTypeConstructorMap_["coneWireframe"] =
+      &ResourceManager::createPrimitiveAttributes<
+          assets::ConePrimitiveAttributes, true, PrimObjTypes::CONE_WF>;
+  primTypeConstructorMap_["cubeSolid"] =
+      &ResourceManager::createPrimitiveAttributes<
+          assets::CubePrimitiveAttributes, false, PrimObjTypes::CUBE_SOLID>;
+  primTypeConstructorMap_["cubeWireframe"] =
+      &ResourceManager::createPrimitiveAttributes<
+          assets::CubePrimitiveAttributes, true, PrimObjTypes::CUBE_WF>;
+  primTypeConstructorMap_["cylinderSolid"] =
+      &ResourceManager::createPrimitiveAttributes<
+          assets::CylinderPrimitiveAttributes, false,
+          PrimObjTypes::CYLINDER_SOLID>;
+  primTypeConstructorMap_["cylinderWireframe"] =
+      &ResourceManager::createPrimitiveAttributes<
+          assets::CylinderPrimitiveAttributes, true, PrimObjTypes::CYLINDER_WF>;
+  primTypeConstructorMap_["icosphereSolid"] =
+      &ResourceManager::createPrimitiveAttributes<
+          assets::IcospherePrimitiveAttributes, false,
+          PrimObjTypes::ICOSPHERE_SOLID>;
+  primTypeConstructorMap_["icosphereWireframe"] =
+      &ResourceManager::createPrimitiveAttributes<
+          assets::IcospherePrimitiveAttributes, true,
+          PrimObjTypes::ICOSPHERE_WF>;
+  primTypeConstructorMap_["uvSphereSolid"] =
+      &ResourceManager::createPrimitiveAttributes<
+          assets::UVSpherePrimitiveAttributes, false,
+          PrimObjTypes::UVSPHERE_SOLID>;
+  primTypeConstructorMap_["uvSphereWireframe"] =
+      &ResourceManager::createPrimitiveAttributes<
+          assets::UVSpherePrimitiveAttributes, true, PrimObjTypes::UVSPHERE_WF>;
+  // no entry added for PrimObjTypes::END_PRIM_OBJ_TYPES
+
+  // build default AbstractPrimitiveAttributes objects
+  for (const std::pair<PrimObjTypes, const char*>& elem : PrimitiveNames3DMap) {
+    if (elem.first == PrimObjTypes::END_PRIM_OBJ_TYPES) {
+      continue;
+    }
+    auto attr = buildPrimitiveAttributes(elem.second);
+    addPrimAssetTemplateToLibrary(attr);
+  }
 }  // buildMapOfPrimTypeConstructors
 
 void ResourceManager::initDefaultPrimAttributes() {
@@ -115,15 +140,9 @@ void ResourceManager::initDefaultPrimAttributes() {
   // necessary for importer to be usable
   primImporter_->openData("");
 
-  for (int i = 0;
-       i < static_cast<int>(assets::PrimObjTypes::END_PRIM_OBJ_TYPES); ++i) {
-    std::string key = PrimitiveNames3D[i];
-    auto attr = primTypeConstructorMap[key]();
-    addPrimAssetTemplateToLibrary(attr);
-  }
-
   // by this point, we should have a GL::Context so load the bb primitive.
-  // TODO: replace this completely with standard mesh
+  // TODO: replace this completely with standard mesh (i.e. treat the bb
+  // wireframe cube no differently than other primivite-based rendered objects)
   auto wfCube = primImporter_->mesh(
       primitiveAssetsTemplateLibrary_["cubeWireframe"]->getPrimObjClassName());
   primitive_meshes_.push_back(
