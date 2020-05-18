@@ -79,6 +79,12 @@ class Simulator {
   scene::SceneGraph& getActiveSceneGraph();
   scene::SceneGraph& getActiveSemanticSceneGraph();
 
+  /**
+   * @brief Whether or not the active SceneGraph and active Semantic SceneGraph
+   * are the same
+   */
+  bool isSemanticSceneGraphShared();
+
   void saveFrame(const std::string& filename);
 
   /**

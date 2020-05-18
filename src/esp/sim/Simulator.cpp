@@ -246,6 +246,10 @@ scene::SceneGraph& Simulator::getActiveSemanticSceneGraph() {
   return sceneManager_.getSceneGraph(activeSemanticSceneID_);
 }
 
+bool Simulator::isSemanticSceneGraphShared() {
+  return activeSemanticSceneID_ == activeSceneID_;
+}
+
 bool operator==(const SimulatorConfiguration& a,
                 const SimulatorConfiguration& b) {
   return a.scene == b.scene && a.defaultAgentId == b.defaultAgentId &&

@@ -53,6 +53,25 @@ struct SensorSpec {
   std::string observationSpace = "";
   std::string noiseModel = "None";
   bool gpu2gpuTransfer = false;
+
+  /**
+   * @brief Whether or not this sensor spec can borrow the rendering result
+   * from the other sensor spec.
+   *
+   * This method is currently associate, i.e. this.canBorrowRenderingFrom(other)
+   * == other.canBorrowRenderingFrom(this), but the name and usage should
+   * reflect that this may not always be true
+   *
+   * @param[in] other The other sensor spec
+   * @param[in] canBorrowSemanticRendering Whether or not semantic rendering
+   * results can be borrowed. Generally should be the result of
+   * @ref sim::Simulator::isSemanticSceneGraphShared
+   *
+   * @return Whether or not this sensor spec can use rendering from the other
+   */
+  bool canBorrowRenderingFrom(const SensorSpec& other,
+                              bool canBorrowSemanticRendering = false) const;
+
   ESP_SMART_POINTERS(SensorSpec)
 };
 
