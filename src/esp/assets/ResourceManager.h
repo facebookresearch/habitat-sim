@@ -120,26 +120,6 @@ enum class PrimObjTypes : uint32_t {
 };
 
 /**
- * @brief Constant Map holding names of all Magnum 3D primitive classes
- * supported, keyed by @ref PrimObjTypes enum entry.  Note final entry is not
- * valid primitive.
- */
-const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap = {
-    {PrimObjTypes::CAPSULE_SOLID, "capsule3DSolid"},
-    {PrimObjTypes::CAPSULE_WF, "capsule3DWireframe"},
-    {PrimObjTypes::CONE_SOLID, "coneSolid"},
-    {PrimObjTypes::CONE_WF, "coneWireframe"},
-    {PrimObjTypes::CUBE_SOLID, "cubeSolid"},
-    {PrimObjTypes::CUBE_WF, "cubeWireframe"},
-    {PrimObjTypes::CYLINDER_SOLID, "cylinderSolid"},
-    {PrimObjTypes::CYLINDER_WF, "cylinderWireframe"},
-    {PrimObjTypes::ICOSPHERE_SOLID, "icosphereSolid"},
-    {PrimObjTypes::ICOSPHERE_WF, "icosphereWireframe"},
-    {PrimObjTypes::UVSPHERE_SOLID, "uvSphereSolid"},
-    {PrimObjTypes::UVSPHERE_WF, "uvSphereWireframe"},
-    {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
-
-/**
  * @brief Singleton class responsible for
  * loading and managing common simulator assets such as meshes, textures, and
  * materials.
@@ -772,14 +752,14 @@ class ResourceManager {
   }
 
   /**
-   * @brief Load object templates given string list of object template
-   * locations.
+   * @brief Load all file-based object templates given string list of object
+   * template file locations.
    *
    * This will take the list of file names currently specified in
    * physicsManagerAttributes and load the referenced object templates.
    * @param tmpltFilenames list of file names of object templates
    */
-  void loadObjectTemplates(const std::vector<std::string>& tmpltFilenames);
+  void loadAllObjectTemplates(const std::vector<std::string>& tmpltFilenames);
 
   /**
    * @brief return a random handle selected from the passed map - is passed
@@ -1196,7 +1176,7 @@ class ResourceManager {
    * for similar usage to File-based importers, but requires no file to be
    * available/read.
    */
-  Corrade::Containers::Pointer<Importer> primImporter_;
+  Corrade::Containers::Pointer<Importer> primitiveImporter_;
 
   /**
    * @brief Maps string keys (typically property filenames) to physical object
@@ -1216,7 +1196,25 @@ class ResourceManager {
    */
   std::map<std::string, AbstractPrimitiveAttributes::ptr>
       primitiveAssetsTemplateLibrary_;
-
+  /**
+   * @brief Constant Map holding names of all Magnum 3D primitive classes
+   * supported, keyed by @ref PrimObjTypes enum entry.  Note final entry is not
+   * a valid primitive.
+   */
+  const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap = {
+      {PrimObjTypes::CAPSULE_SOLID, "capsule3DSolid"},
+      {PrimObjTypes::CAPSULE_WF, "capsule3DWireframe"},
+      {PrimObjTypes::CONE_SOLID, "coneSolid"},
+      {PrimObjTypes::CONE_WF, "coneWireframe"},
+      {PrimObjTypes::CUBE_SOLID, "cubeSolid"},
+      {PrimObjTypes::CUBE_WF, "cubeWireframe"},
+      {PrimObjTypes::CYLINDER_SOLID, "cylinderSolid"},
+      {PrimObjTypes::CYLINDER_WF, "cylinderWireframe"},
+      {PrimObjTypes::ICOSPHERE_SOLID, "icosphereSolid"},
+      {PrimObjTypes::ICOSPHERE_WF, "icosphereWireframe"},
+      {PrimObjTypes::UVSPHERE_SOLID, "uvSphereSolid"},
+      {PrimObjTypes::UVSPHERE_WF, "uvSphereWireframe"},
+      {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
   /**
    * @brief Define a map type referencing function pointers to @ref
    * createPrimitiveAttributes() keyed by string names of classes being

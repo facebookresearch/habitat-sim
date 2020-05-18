@@ -4,6 +4,7 @@
 
 #ifndef ESP_PHYSICS_BULLET_BULLETRIGIDOBJECT_H_
 #define ESP_PHYSICS_BULLET_BULLETRIGIDOBJECT_H_
+
 /** @file
  * @brief Struct SimulationContactResultCallback, class @ref
  * esp::physics::BulletRigidObject

@@ -136,14 +136,15 @@ void ResourceManager::buildMapOfPrimTypeConstructors() {
 void ResourceManager::initDefaultPrimAttributes() {
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
-      primImporter_ = importerManager_.loadAndInstantiate("PrimitiveImporter"));
+      primitiveImporter_ =
+          importerManager_.loadAndInstantiate("PrimitiveImporter"));
   // necessary for importer to be usable
-  primImporter_->openData("");
+  primitiveImporter_->openData("");
 
   // by this point, we should have a GL::Context so load the bb primitive.
   // TODO: replace this completely with standard mesh (i.e. treat the bb
   // wireframe cube no differently than other primivite-based rendered objects)
-  auto wfCube = primImporter_->mesh(
+  auto wfCube = primitiveImporter_->mesh(
       primitiveAssetsTemplateLibrary_["cubeWireframe"]->getPrimObjClassName());
   primitive_meshes_.push_back(
       std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube)));
@@ -246,7 +247,7 @@ bool ResourceManager::loadScene(
   return meshSuccess;
 }  // ResourceManager::loadScene
 
-void ResourceManager::loadObjectTemplates(
+void ResourceManager::loadAllObjectTemplates(
     const std::vector<std::string>& tmpltFilenames) {
   for (auto objPhysPropertiesFilename : tmpltFilenames) {
     LOG(INFO) << "loading object: " << objPhysPropertiesFilename;
@@ -254,7 +255,7 @@ void ResourceManager::loadObjectTemplates(
   }
   LOG(INFO) << "loaded object templates: "
             << std::to_string(physicsFileObjTmpltLibByID_.size());
-}  // ResourceManager::loadObjectTemplates
+}  // ResourceManager::loadAllObjectTemplates
 
 void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
@@ -285,7 +286,7 @@ void ResourceManager::initPhysicsManager(
   // templates
   initDefaultPrimAttributes();
   // load object templates from sceneMetaData list...
-  loadObjectTemplates(
+  loadAllObjectTemplates(
       physicsManagerAttributes->getStringGroup("objectLibraryPaths"));
 }  // ResourceManager::initPhysicsManager
 
@@ -574,10 +575,14 @@ int ResourceManager::addObjTemplateToLibrary(
       (physicsObjTemplateLibrary_.count(objectTemplateHandle) == 0);
   int objectTemplateID;
   if (isNotPresent) {
+    // this will set the ID in the template
     objectTemplateID = physicsObjTemplateLibrary_.size();
     objectTemplate->setObjectTemplateID(objectTemplateID);
   } else {
-    objectTemplateID = objectTemplate->getObjectTemplateID();
+    // this means a same-named template exists in the library already, so get
+    // its ID number
+    objectTemplateID = physicsObjTemplateLibrary_.at(objectTemplateHandle)
+                           ->getObjectTemplateID();
   }
   // if is present, will replace present template with new template - templates
   // are expected to be 1-to-1 with handles (each unique handle always describes
@@ -597,10 +602,13 @@ int ResourceManager::addPrimAssetTemplateToLibrary(
   bool isNotPresent = (primitiveAssetsTemplateLibrary_.count(primHandle) == 0);
   int primAssetTemplateID;
   if (isNotPresent) {
+    // this will set the ID in the template
     primAssetTemplateID = primitiveAssetsTemplateLibrary_.size();
     primTemplate->setAssetTemplateID(primAssetTemplateID);
   } else {
-    primAssetTemplateID = primTemplate->getAssetTemplateID();
+    // set ID to be existing template's ID
+    primAssetTemplateID =
+        primitiveAssetsTemplateLibrary_.at(primHandle)->getAssetTemplateID();
   }
   // if is present, will replace present template with new template - templates
   // are expected to be 1-to-1 with handles (each unique handle always describes
@@ -1139,7 +1147,7 @@ void ResourceManager::buildPrimitiveAssetData(
   std::string primClassName = primTemplate->getPrimObjClassName();
   // configuration for PrimitiveImporter - replace appropriate group's data
   // before instancing prim object
-  auto conf = primImporter_->configuration();
+  auto conf = primitiveImporter_->configuration();
   auto cfgGroup = conf.group(primClassName);
   if (cfgGroup != nullptr) {  // ignore prims with no configuration like cubes
     auto newCfgGroup = primTemplate->getConfigGroup();
@@ -1154,7 +1162,7 @@ void ResourceManager::buildPrimitiveAssetData(
   // make  primitive mesh structure
   auto primMeshData = std::make_unique<GenericMeshData>(false);
   // build mesh data object
-  primMeshData->importAndSetMeshData(*primImporter_, primClassName);
+  primMeshData->importAndSetMeshData(*primitiveImporter_, primClassName);
 
   // compute the mesh bounding box
   primMeshData->BB = computeMeshBB(primMeshData.get());

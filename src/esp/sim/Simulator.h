@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_SIM_SIMULATOR_H_
+#define ESP_SIM_SIMULATOR_H_
 
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
@@ -671,3 +672,5 @@ class Simulator {
 
 }  // namespace sim
 }  // namespace esp
+
+#endif  // ESP_SIM_SIMULATOR_H_
