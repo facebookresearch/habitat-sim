@@ -327,8 +327,8 @@ class ResourceManager {
    * @return The index in the @ref physicsObjTemplateLibrary_ of object
    * template.
    */
-  int loadObjectTemplate(PhysicsObjectAttributes::ptr objectTemplate,
-                         const std::string& objectTemplateHandle);
+  int registerObjectTemplate(PhysicsObjectAttributes::ptr objectTemplate,
+                             const std::string& objectTemplateHandle);
 
   //======== Accessor functions ========
   /**
@@ -347,42 +347,30 @@ class ResourceManager {
   }
 
   /**
-   * @brief Get the index in @ref physicsObjTemplateLibrary_ for the object
-   * template asset identified by the key, templateHandle.
-   *
-   * @param templateHandle The key referencing the asset in @ref
-   * physicsObjTemplateLibrary_.
-   * @return The index of the object template in @ref
-   * physicsObjTemplateLibrary_.
-   */
-  int getObjectTemplateID(const std::string& templateHandle) const {
-    const bool objTemplateExists =
-        physicsObjTemplateLibrary_.count(templateHandle) > 0;
-    if (objTemplateExists) {
-      return physicsObjTemplateLibrary_.at(templateHandle)
-          ->getObjectTemplateID();
-    }
-    return ID_UNDEFINED;
-  }
-
-  /**
    * @brief Get the key in @ref physicsObjTemplateLibrary_ for the object
    * template asset index.
    *
    * @param objectTemplateID The index of the object template in @ref
    * physicsObjTemplateLibrary_.
-   * @return The key referencing the asset in @ref physicsObjTemplateLibrary_.
+   * @return The key referencing the asset in @ref physicsObjTemplateLibrary_,
+   * or an empty string if does not exist.
    */
   std::string getObjectTemplateHandle(const int objectTemplateID) const;
 
   /**
    * @brief Get a ref to the primitive attributes object for the primitive
-   * identified by the string key
+   * identified by the string key.
    * @param primTemplateHandle the string key of the attributes desired
-   * @return the desired primitive attributes
+   * @return the desired primitive attributes, or nullptr if does not exist
    */
   AbstractPrimitiveAttributes::ptr getPrimitiveTemplateAttributes(
       const std::string& primTemplateHandle) const {
+    CORRADE_ASSERT(
+        (primitiveAssetsTemplateLibrary_.count(primTemplateHandle) > 0),
+        "ResourceManager::getPrimitiveTemplateAttributes : unknown Primitive "
+        "template Handle : "
+            << primTemplateHandle,
+        nullptr);
     return primitiveAssetsTemplateLibrary_.at(primTemplateHandle);
   }
 
@@ -390,14 +378,19 @@ class ResourceManager {
    * @brief Get a reference to the physics object template for the asset
    * identified by the key, templateHandle.  physicsObjTemplateLibrary_
    *
-   * Can be used to manipulate an object
-   * template before instancing new objects.
+   * Can be used to manipulate an object template before instancing new objects.
    * @param templateHandle The key referencing the asset in @ref
    * physicsObjTemplateLibrary_.
-   * @return A mutable reference to the object template for the asset.
+   * @return A mutable reference to the object template for the asset, or
+   * nullptr if does not exist
    */
   PhysicsObjectAttributes::ptr getPhysicsObjectAttributes(
       const std::string& templateHandle) const {
+    CORRADE_ASSERT(
+        (physicsObjTemplateLibrary_.count(templateHandle) > 0),
+        "ResourceManager::getPhysicsObjectAttributes : unknown template handle "
+        ": " << templateHandle,
+        nullptr);
     return physicsObjTemplateLibrary_.at(templateHandle);
   }
 
@@ -405,16 +398,20 @@ class ResourceManager {
    * @brief Get a reference to the physics object template for the asset
    * identified by the objectTemplateID.
    *
-   * Can be used to manipulate an object
-   * template before instancing new objects.
-   * @param ObjTmplID The key referencing the asset in @ref
+   * Can be used to manipulate an object template before instancing new objects.
+   * @param objectTemplateID The key referencing the asset in @ref
    * physicsObjTemplateLibrary_.
-   * @return A mutable reference to the object template for the asset.
+   * @return A mutable reference to the object template for the asset, or
+   * nullptr if does not exist
    */
   PhysicsObjectAttributes::ptr getPhysicsObjectAttributes(
       const int objectTemplateID) const {
-    return physicsObjTemplateLibrary_.at(
-        getObjectTemplateHandle(objectTemplateID));
+    std::string key = getObjectTemplateHandle(objectTemplateID);
+    CORRADE_ASSERT((physicsObjTemplateLibrary_.count(key) > 0),
+                   "ResourceManager::getPhysicsObjectAttributes : unknown ID:"
+                       << objectTemplateID,
+                   nullptr);
+    return physicsObjTemplateLibrary_.at(key);
   }
 
   /**

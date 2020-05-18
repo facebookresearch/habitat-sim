@@ -150,7 +150,7 @@ void ResourceManager::initDefaultPrimAttributes() {
       std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube)));
 
   // build default primtive object templates corresponding to given default
-  // assets
+  // asset templates
   for (auto primAsset : primitiveAssetsTemplateLibrary_) {
     buildAndRegisterPrimPhysObjTemplate(primAsset.first);
   }
@@ -619,7 +619,8 @@ int ResourceManager::addPrimAssetTemplateToLibrary(
   return primAssetTemplateID;
 }  // addPrimAssetTemplateToLibrary
 
-int ResourceManager::loadObjectTemplate(
+// registerObjectTemplate
+int ResourceManager::registerObjectTemplate(
     PhysicsObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle) {
   if (physicsObjTemplateLibrary_.count(objectTemplateHandle) != 0) {
@@ -636,6 +637,7 @@ int ResourceManager::loadObjectTemplate(
   //! Get render and collision mesh names
   // AssetInfo renderMeshinfo;
   std::string renderMeshFilename = objectTemplate->getRenderAssetHandle();
+
   bool renderMeshSuccess = loadObjectMeshDataFromFile(
       renderMeshFilename, objectTemplateHandle, "render", requiresLighting);
 
@@ -643,6 +645,7 @@ int ResourceManager::loadObjectTemplate(
   // mesh since we will use it to render
   // AssetInfo collisionMeshinfo;
   std::string collisionMeshFilename = objectTemplate->getCollisionAssetHandle();
+
   bool collisionMeshSuccess = loadObjectMeshDataFromFile(
       collisionMeshFilename, objectTemplateHandle, "collision",
       !renderMeshSuccess && requiresLighting);
@@ -685,7 +688,7 @@ int ResourceManager::loadObjectTemplate(
       objectTemplate, objectTemplateHandle, physicsFileObjTmpltLibByID_);
 
   return objectTemplateID;
-}  // loadObjectTemplate
+}  // registerObjectTemplate
 
 std::string ResourceManager::getRandomTemplateHandlePerType(
     const std::map<int, std::string>& mapOfHandles,
@@ -928,7 +931,7 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
   physicsObjectAttributes->setCollisionAssetHandle(collisionMeshFilename);
 
   // 5. load the parsed file into the library
-  return loadObjectTemplate(physicsObjectAttributes, objPhysConfigFilename);
+  return registerObjectTemplate(physicsObjectAttributes, objPhysConfigFilename);
 }  // parseAndLoadPhysObjTemplate
 
 int ResourceManager::buildAndRegisterPrimPhysObjTemplate(
@@ -960,7 +963,6 @@ int ResourceManager::buildAndRegisterPrimPhysObjTemplate(
   // CollisionMesh
 
   // set margin to be 0
-
   physicsObjectAttributes->setMargin(0.0);
   // make smaller
   const Magnum::Vector3 scale(0.1, 0.1, 0.1);

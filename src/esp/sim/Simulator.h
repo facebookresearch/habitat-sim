@@ -213,6 +213,13 @@ class Simulator {
     return resourceManager_->getPhysicsObjectAttributes(templateId);
   }
   /**
+   * @brief Get a smart pointer to a physics object template by handle.
+   */
+  assets::PhysicsObjectAttributes::ptr getObjectTemplateByName(
+      const std::string& templateHandle) const {
+    return resourceManager_.getPhysicsObjectAttributes(templateHandle);
+  }
+  /**
    * @brief Load all "*.phys_properties.json" files from the provided file or
    * directory path.
    *
@@ -226,18 +233,17 @@ class Simulator {
   std::vector<int> loadObjectConfigs(const std::string& path);
 
   /**
-   * @brief Load the provided PhysicsObjectAttributes template into the
+   * @brief Register the provided PhysicsObjectAttributes template into the
    * Simulator.
    *
    * @param objectTemplate A new PhysicsObjectAttributes to load.
-   * @param objectTemplateHandle The desired key for referencing the new
-   * template. To register this successfully, it must not be a duplicate of an
-   * existing key.
+   * @param objectTemplateHandle The desired key for referencing the new or
+   * modified template.
    * @return A template index for instancing the loaded template or ID_UNDEFINED
    * if failed.
    */
-  int loadObjectTemplate(assets::PhysicsObjectAttributes::ptr objTmplPtr,
-                         const std::string& objectTemplateHandle);
+  int registerObjectTemplate(assets::PhysicsObjectAttributes::ptr objTmplPtr,
+                             const std::string& objectTemplateHandle);
 
   /**
    * @brief Get a static view of a physics object's template when the object was
