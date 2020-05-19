@@ -1205,6 +1205,11 @@ class ResourceManager {
   Corrade::Containers::Pointer<Importer> primitiveImporter_;
 
   /**
+   * @brief Importer used to load files
+   */
+  Corrade::Containers::Pointer<Importer> fileImporter_;
+
+  /**
    * @brief Maps string keys (typically property filenames) to physical object
    * templates.
    *

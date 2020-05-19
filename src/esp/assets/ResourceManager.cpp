@@ -131,19 +131,24 @@ void ResourceManager::buildMapOfPrimTypeConstructors() {
     auto attr = buildPrimitiveAttributes(elem.second);
     addPrimAssetTemplateToLibrary(attr);
   }
-}  // buildMapOfPrimTypeConstructors
 
-void ResourceManager::initDefaultPrimAttributes() {
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       primitiveImporter_ =
           importerManager_.loadAndInstantiate("PrimitiveImporter"));
   // necessary for importer to be usable
   primitiveImporter_->openData("");
+  // instantiate importer for file load
+  CORRADE_INTERNAL_ASSERT_OUTPUT(
+      fileImporter_ = importerManager_.loadAndInstantiate("AnySceneImporter"));
 
+}  // buildMapOfPrimTypeConstructors
+
+void ResourceManager::initDefaultPrimAttributes() {
   // by this point, we should have a GL::Context so load the bb primitive.
   // TODO: replace this completely with standard mesh (i.e. treat the bb
-  // wireframe cube no differently than other primivite-based rendered objects)
+  // wireframe cube no differently than other primivite-based rendered
+  // objects)
   auto wfCube = primitiveImporter_->mesh(
       primitiveAssetsTemplateLibrary_["cubeWireframe"]->getPrimObjClassName());
   primitive_meshes_.push_back(
@@ -621,10 +626,7 @@ int ResourceManager::addPrimAssetTemplateToLibrary(
 
 bool ResourceManager::checkIsValidFileName(const std::string& filename,
                                            const std::string& type) {
-  Cr::Containers::Pointer<Importer> importer;
-  CORRADE_INTERNAL_ASSERT_OUTPUT(
-      importer = importerManager_.loadAndInstantiate("AnySceneImporter"));
-  bool fileIsOpen = importer->openFile(filename);
+  bool fileIsOpen = fileImporter_->openFile(filename);
   return fileIsOpen;
 }
 
@@ -972,11 +974,6 @@ int ResourceManager::buildAndRegisterPrimPhysObjTemplate(
   // NOTE to eventually use mesh collisions with primitive objects, a collision
   // primitive mesh needs to be configured and set in MeshMetaData and
   // CollisionMesh
-
-  // // add object template to all appropriate libraries
-  // int objectTemplateID = addObjTemplateToLibrary(
-  //     physicsObjectAttributes, primAssetHandle,
-  //     physicsSynthObjTmpltLibByID_);
 
   return registerObjectTemplate(physicsObjectAttributes, primAssetHandle);
 }  // ResourceManager::buildAndRegisterPrimPhysObjTemplate
@@ -1350,9 +1347,9 @@ bool ResourceManager::loadGeneralMeshData(
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
   const bool drawData = parent != nullptr && drawables != nullptr;
 
-  Cr::Containers::Pointer<Importer> importer;
-  CORRADE_INTERNAL_ASSERT_OUTPUT(
-      importer = importerManager_.loadAndInstantiate("AnySceneImporter"));
+  // Cr::Containers::Pointer<Importer> importer;
+  // CORRADE_INTERNAL_ASSERT_OUTPUT(
+  //     importer = importerManager_.loadAndInstantiate("AnySceneImporter"));
 
   // Preferred plugins, Basis target GPU format
   importerManager_.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
@@ -1435,35 +1432,36 @@ bool ResourceManager::loadGeneralMeshData(
 
   // Optional File loading
   if (!fileIsLoaded) {
-    if (!importer->openFile(filename)) {
+    if (!fileImporter_->openFile(filename)) {
       LOG(ERROR) << "Cannot open file " << filename;
       return false;
     }
 
     // if this is a new file, load it and add it to the dictionary
     LoadedAssetData loadedAssetData{info};
-    loadTextures(*importer, loadedAssetData);
-    loadMaterials(*importer, loadedAssetData);
-    loadMeshes(*importer, loadedAssetData);
+    loadTextures(*fileImporter_, loadedAssetData);
+    loadMaterials(*fileImporter_, loadedAssetData);
+    loadMeshes(*fileImporter_, loadedAssetData);
     auto inserted = resourceDict_.emplace(filename, std::move(loadedAssetData));
     MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
 
     // Register magnum mesh
-    if (importer->defaultScene() != -1) {
+    if (fileImporter_->defaultScene() != -1) {
       Corrade::Containers::Optional<Magnum::Trade::SceneData> sceneData =
-          importer->scene(importer->defaultScene());
+          fileImporter_->scene(fileImporter_->defaultScene());
       if (!sceneData) {
         LOG(ERROR) << "Cannot load scene, exiting";
         return false;
       }
       for (unsigned int sceneDataID : sceneData->children3D()) {
-        loadMeshHierarchy(*importer, meshMetaData.root, sceneDataID);
+        loadMeshHierarchy(*fileImporter_, meshMetaData.root, sceneDataID);
       }
-    } else if (importer->meshCount() && meshes_[meshMetaData.meshIndex.first]) {
+    } else if (fileImporter_->meshCount() &&
+               meshes_[meshMetaData.meshIndex.first]) {
       // no default scene --- standalone OBJ/PLY files, for example
       // take a wild guess and load the first mesh with the first material
       // addMeshToDrawables(metaData, *parent, drawables, ID_UNDEFINED, 0, 0);
-      loadMeshHierarchy(*importer, meshMetaData.root, 0);
+      loadMeshHierarchy(*fileImporter_, meshMetaData.root, 0);
     } else {
       LOG(ERROR) << "No default scene available and no meshes found, exiting";
       return false;
@@ -1914,28 +1912,7 @@ void ResourceManager::addObjectToDrawables(const std::string& objTemplateHandle,
 
     const std::string& renderObjectName =
         physicsObjectAttributes->getRenderAssetHandle();
-    // // if no assets have been registered with resourceDict then do so
-    // // should only happen with primitives, since all file-based resources
-    // should
-    // // be loaded by now
-    // if (resourceDict_.count(renderObjectName) == 0) {
-    //   // needs to have a primitive asset attributes with same name
-    //   if (primitiveAssetsTemplateLibrary_.count(renderObjectName) == 0) {
-    //     // this is bad, means no render primitive template exists with
-    //     expected
-    //     // name.  should never happen
-    //     LOG(ERROR) << "No primitive asset attributes exists with name :"
-    //                << renderObjectName
-    //                << " so unable to instantiate primitive-based render "
-    //                   "object.  Aborting.";
-    //     return;
-    //   }
-    //   // build primitive asset for this object based on defined primitive
-    //   // attributes
-    //   auto primitiveAssetAttributes =
-    //       primitiveAssetsTemplateLibrary_.at(renderObjectName);
-    //   buildPrimitiveAssetData(primitiveAssetAttributes);
-    // }
+
     const LoadedAssetData& loadedAssetData = resourceDict_.at(renderObjectName);
     if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
       LOG(WARNING) << "Instantiating object with incompatible light setup, "
