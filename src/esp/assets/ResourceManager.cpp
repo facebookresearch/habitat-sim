@@ -418,7 +418,7 @@ bool ResourceManager::loadPhysicsScene(
   }
 
   return meshSuccess;
-}
+}  // ResourceManager::loadPhysicsScene
 
 std::vector<std::string> ResourceManager::buildObjectConfigPaths(
     const std::string& path) {
@@ -559,8 +559,8 @@ bool ResourceManager::loadObjectMeshDataFromFile(
     meshInfo.requiresLighting = requiresLighting;
     success = loadGeneralMeshData(meshInfo);
     if (!success) {
-      LOG(ERROR) << "Failed to load a physical object's " << meshType
-                 << " mesh: " << objectTemplateHandle << ", " << filename;
+      LOG(ERROR) << "Failed to load a physical object (" << objectTemplateHandle
+                 << ")'s " << meshType << " mesh from file : " << filename;
     }
   }
   return success;
@@ -619,76 +619,81 @@ int ResourceManager::addPrimAssetTemplateToLibrary(
   return primAssetTemplateID;
 }  // addPrimAssetTemplateToLibrary
 
-// registerObjectTemplate
+bool ResourceManager::checkIsValidFileName(const std::string& filename,
+                                           const std::string& type) {
+  Cr::Containers::Pointer<Importer> importer;
+  CORRADE_INTERNAL_ASSERT_OUTPUT(
+      importer = importerManager_.loadAndInstantiate("AnySceneImporter"));
+  bool fileIsOpen = importer->openFile(filename);
+  return fileIsOpen;
+}
+
 int ResourceManager::registerObjectTemplate(
     PhysicsObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle) {
-  if (physicsObjTemplateLibrary_.count(objectTemplateHandle) != 0) {
-    return physicsObjTemplateLibrary_.at(objectTemplateHandle)
-        ->getObjectTemplateID();
-  }
-  CHECK(objectTemplate->hasValue("renderAssetHandle"));
-  // In case not constructed with handle as parameter
+  CORRADE_ASSERT(objectTemplate->getRenderAssetHandle() != "",
+                 "ResourceManager::registerObjectTemplate : Passed attributes "
+                 "template named "
+                     << objectTemplateHandle
+                     << "does not have render asset handle specified ",
+                 ID_UNDEFINED);
+  // In case not constructed with origin handle as parameter
   objectTemplate->setOriginHandle(objectTemplateHandle);
+  std::map<int, std::string>* mapToUse;
+  // handle for rendering asset
+  std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
+  std::string collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
 
-  // load/check_for render and collision mesh metadata
-  bool requiresLighting = objectTemplate->getRequiresLighting();
-
-  //! Get render and collision mesh names
-  // AssetInfo renderMeshinfo;
-  std::string renderMeshFilename = objectTemplate->getRenderAssetHandle();
-
-  bool renderMeshSuccess = loadObjectMeshDataFromFile(
-      renderMeshFilename, objectTemplateHandle, "render", requiresLighting);
-
-  // if render mesh failed, might have to generate lighting data for collision
-  // mesh since we will use it to render
-  // AssetInfo collisionMeshinfo;
-  std::string collisionMeshFilename = objectTemplate->getCollisionAssetHandle();
-
-  bool collisionMeshSuccess = loadObjectMeshDataFromFile(
-      collisionMeshFilename, objectTemplateHandle, "collision",
-      !renderMeshSuccess && requiresLighting);
-
-  if (!renderMeshSuccess && !collisionMeshSuccess) {
-    // we only allow objects with SOME mesh file. Failing
-    // both loads or having no mesh will cancel the load.
-    LOG(ERROR) << "Failed to load a physical object: no meshes...: "
-               << objectTemplateHandle;
+  if (primitiveAssetsTemplateLibrary_.count(renderAssetHandle) > 0) {
+    // if renderAssetHandle corresponds to valid/existing primitive attributes
+    // then setRenderAssetIsPrimitive to true and set map to
+    // physicsSynthObjTmpltLibByID_
+    objectTemplate->setRenderAssetIsPrimitive(true);
+    mapToUse = &physicsSynthObjTmpltLibByID_;
+  } else if (checkIsValidFileName(renderAssetHandle, "render")) {
+    // check if renderAssetHandle is valid file name and is found in file system
+    // - if so then setRenderAssetIsPrimitive to false and map set to
+    // physicsFileObjTmpltLibByID_ - use primitiveImporter to check if file
+    // exists
+    objectTemplate->setRenderAssetIsPrimitive(false);
+    mapToUse = &physicsFileObjTmpltLibByID_;
+  } else {
+    // renderAssetHandle is neither valid file name nor existing primitive
+    // attributes template hande, so fail
+    LOG(ERROR) << "ResourceManager::registerObjectTemplate : Render asset "
+                  "template handle : "
+               << renderAssetHandle
+               << " specified in object template with handle : "
+               << objectTemplateHandle
+               << " does not correspond to existing file or primitive render "
+                  "asset.  Aborting. ";
     return ID_UNDEFINED;
   }
 
-  // handle one missing mesh
-  if (!renderMeshSuccess) {
-    objectTemplate->setRenderAssetHandle(collisionMeshFilename);
-  }
-  if (!collisionMeshSuccess) {
-    objectTemplate->setCollisionAssetHandle(renderMeshFilename);
+  if (primitiveAssetsTemplateLibrary_.count(collisionAssetHandle) > 0) {
+    // if collisionAssetHandle corresponds to valid/existing primitive
+    // attributes then setCollisionAssetIsPrimitive to true
+    objectTemplate->setCollisionAssetIsPrimitive(true);
+  } else if (checkIsValidFileName(collisionAssetHandle, "collision")) {
+    // check if collisionAssetHandle is valid file name and is found in file
+    // system - if so then setCollisionAssetIsPrimitive to false
+    objectTemplate->setCollisionAssetIsPrimitive(false);
+  } else {
+    // else, means no collision data specified, use specified render data
+    objectTemplate->setCollisionAssetHandle(renderAssetHandle);
+    objectTemplate->setCollisionAssetIsPrimitive(
+        objectTemplate->getRenderAssetIsPrimitive());
   }
 
-  const auto collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
-
-  // set collision mesh data
-  const MeshMetaData& meshMetaData = getMeshMetaData(collisionAssetHandle);
-
-  int start = meshMetaData.meshIndex.first;
-  int end = meshMetaData.meshIndex.second;
-  //! Gather mesh components for meshGroup data
-  std::vector<CollisionMeshData> meshGroup;
-  for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
-    GenericMeshData* gltfMeshData =
-        dynamic_cast<GenericMeshData*>(meshes_[mesh_i].get());
-    CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
-    meshGroup.push_back(meshData);
-  }
-  collisionMeshGroups_.emplace(collisionAssetHandle, meshGroup);
+  // clear dirty flag from when asset handles are changed
+  objectTemplate->setIsClean();
 
   // add object template to template library
-  int objectTemplateID = addObjTemplateToLibrary(
-      objectTemplate, objectTemplateHandle, physicsFileObjTmpltLibByID_);
+  int objectTemplateID =
+      addObjTemplateToLibrary(objectTemplate, objectTemplateHandle, *mapToUse);
 
   return objectTemplateID;
-}  // registerObjectTemplate
+}  // namespace assets
 
 std::string ResourceManager::getRandomTemplateHandlePerType(
     const std::map<int, std::string>& mapOfHandles,
@@ -929,6 +934,7 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
 
   physicsObjectAttributes->setRenderAssetHandle(renderMeshFilename);
   physicsObjectAttributes->setCollisionAssetHandle(collisionMeshFilename);
+  physicsObjectAttributes->setUseMeshCollision(true);
 
   // 5. load the parsed file into the library
   return registerObjectTemplate(physicsObjectAttributes, objPhysConfigFilename);
@@ -952,42 +958,28 @@ int ResourceManager::buildAndRegisterPrimPhysObjTemplate(
   // construct a physicsObjectMetaData
   auto physicsObjectAttributes =
       PhysicsObjectAttributes::create(primAssetHandle);
-  // set default for primitives to not use mesh collisions
-  physicsObjectAttributes->setUseMeshCollision(false);
+  // set margin to be 0
+  physicsObjectAttributes->setMargin(0.0);
+  // make smaller as default size
+  physicsObjectAttributes->setScale({0.1, 0.1, 0.1});
+
   // set render mesh handle
   physicsObjectAttributes->setRenderAssetHandle(primAssetHandle);
-  // set collision mesh/primitive handle
+  // set collision mesh/primitive handle and default for primitives to not use
+  // mesh collisions
   physicsObjectAttributes->setCollisionAssetHandle(primAssetHandle);
+  physicsObjectAttributes->setUseMeshCollision(false);
   // NOTE to eventually use mesh collisions with primitive objects, a collision
   // primitive mesh needs to be configured and set in MeshMetaData and
   // CollisionMesh
 
-  // set margin to be 0
-  physicsObjectAttributes->setMargin(0.0);
-  // make smaller
-  const Magnum::Vector3 scale(0.1, 0.1, 0.1);
-  physicsObjectAttributes->setScale(scale);
+  // // add object template to all appropriate libraries
+  // int objectTemplateID = addObjTemplateToLibrary(
+  //     physicsObjectAttributes, primAssetHandle,
+  //     physicsSynthObjTmpltLibByID_);
 
-  // add object template to all appropriate libraries
-  int objectTemplateID = addObjTemplateToLibrary(
-      physicsObjectAttributes, primAssetHandle, physicsSynthObjTmpltLibByID_);
-
-  return objectTemplateID;
+  return registerObjectTemplate(physicsObjectAttributes, primAssetHandle);
 }  // ResourceManager::buildAndRegisterPrimPhysObjTemplate
-
-std::string ResourceManager::getObjectTemplateHandle(
-    const int objectTemplateID) const {
-  const bool physTemplateExists =
-      physicsTemplatesLibByID_.count(objectTemplateID) > 0;
-  if (!physTemplateExists) {
-    Corrade::Utility::Debug()
-        << "ResourceManager::getObjectTemplateHandle - Aborting. "
-           "No loaded or primitive template with index "
-        << objectTemplateID << " exists.";
-    return "";
-  }
-  return physicsTemplatesLibByID_.at(objectTemplateID);
-}  // getObjectTemplateHandle
 
 Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
@@ -1147,6 +1139,8 @@ void ResourceManager::buildPrimitiveAssetData(
 
   // class of primitive object
   std::string primClassName = primTemplate->getPrimObjClassName();
+  // make sure it is open before use
+  primitiveImporter_->openData("");
   // configuration for PrimitiveImporter - replace appropriate group's data
   // before instancing prim object
   auto conf = primitiveImporter_->configuration();
@@ -1821,7 +1815,91 @@ void ResourceManager::loadTextures(Importer& importer,
     if (generateMipmap)
       texture.generateMipmap();
   }
-}
+}  // ResourceManager::loadTextures
+
+bool ResourceManager::instantiateAssetsOnDemand(
+    const std::string& objectTemplateHandle) {
+  // Meta data
+  PhysicsObjectAttributes::ptr physicsObjectAttributes =
+      physicsObjTemplateLibrary_.at(objectTemplateHandle);
+
+  // if attributes are "dirty" (values have changed since last registered)
+  // re-register
+  if (physicsObjectAttributes->getIsDirty()) {
+    int ID =
+        registerObjectTemplate(physicsObjectAttributes, objectTemplateHandle);
+    if (ID == ID_UNDEFINED) {
+      return false;
+    }
+  }
+
+  // get render asset handle
+  std::string renderAssetHandle =
+      physicsObjectAttributes->getRenderAssetHandle();
+  // whether attributes requires lighting
+  bool requiresLighting = physicsObjectAttributes->getRequiresLighting();
+  bool renderMeshSuccess = false;
+  // no resource dict entry exists for renderAssetHandle
+  if (resourceDict_.count(renderAssetHandle) == 0) {
+    if (physicsObjectAttributes->getRenderAssetIsPrimitive()) {
+      // needs to have a primitive asset attributes with same name
+      if (primitiveAssetsTemplateLibrary_.count(renderAssetHandle) == 0) {
+        // this is bad, means no render primitive template exists with expected
+        // name.  should never happen
+        LOG(ERROR) << "No primitive asset attributes exists with name :"
+                   << renderAssetHandle
+                   << " so unable to instantiate primitive-based render "
+                      "object.  Aborting.";
+        return false;
+      }
+      // build primitive asset for this object based on defined primitive
+      // attributes
+      auto primitiveAssetAttributes =
+          primitiveAssetsTemplateLibrary_.at(renderAssetHandle);
+      buildPrimitiveAssetData(primitiveAssetAttributes);
+
+    } else {
+      // load/check_for render mesh metadata and load assets
+      renderMeshSuccess = loadObjectMeshDataFromFile(
+          renderAssetHandle, objectTemplateHandle, "render", requiresLighting);
+    }
+  }  // if no render asset exists
+
+  // check if uses collision mesh
+  if (!physicsObjectAttributes->getCollisionAssetIsPrimitive()) {
+    const auto collisionAssetHandle =
+        physicsObjectAttributes->getCollisionAssetHandle();
+    if (resourceDict_.count(collisionAssetHandle) == 0) {
+      bool collisionMeshSuccess = loadObjectMeshDataFromFile(
+          collisionAssetHandle, objectTemplateHandle, "collision",
+          !renderMeshSuccess && requiresLighting);
+
+      if (!collisionMeshSuccess) {
+        return false;
+      }
+    }
+    // check if collision handle exists in collision mesh groups yet.  if not
+    // then instance
+    if (collisionMeshGroups_.count(collisionAssetHandle) == 0) {
+      // set collision mesh data
+      const MeshMetaData& meshMetaData = getMeshMetaData(collisionAssetHandle);
+
+      int start = meshMetaData.meshIndex.first;
+      int end = meshMetaData.meshIndex.second;
+      //! Gather mesh components for meshGroup data
+      std::vector<CollisionMeshData> meshGroup;
+      for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
+        GenericMeshData* gltfMeshData =
+            dynamic_cast<GenericMeshData*>(meshes_[mesh_i].get());
+        CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
+        meshGroup.push_back(meshData);
+      }
+      collisionMeshGroups_.emplace(collisionAssetHandle, meshGroup);
+    }
+  }
+
+  return true;
+}  // ResourceManager::instantiateAssetsOnDemand
 
 void ResourceManager::addObjectToDrawables(const std::string& objTemplateHandle,
                                            scene::SceneNode* parent,
@@ -1836,26 +1914,28 @@ void ResourceManager::addObjectToDrawables(const std::string& objTemplateHandle,
 
     const std::string& renderObjectName =
         physicsObjectAttributes->getRenderAssetHandle();
-    // if no assets have been registered with resourceDict then do so
-    // should only happen with primitives, since all file-based resources should
-    // be loaded by now
-    if (resourceDict_.count(renderObjectName) == 0) {
-      // needs to have a primitive asset attributes with same name
-      if (primitiveAssetsTemplateLibrary_.count(renderObjectName) == 0) {
-        // this is bad, means no render primitive template exists with expected
-        // name.  should never happen
-        LOG(ERROR) << "No primitive asset attributes exists with name :"
-                   << renderObjectName
-                   << " so unable to instantiate primitive-based render "
-                      "object.  Aborting.";
-        return;
-      }
-      // build primitive asset for this object based on defined primitive
-      // attributes
-      auto primitiveAssetAttributes =
-          primitiveAssetsTemplateLibrary_.at(renderObjectName);
-      buildPrimitiveAssetData(primitiveAssetAttributes);
-    }
+    // // if no assets have been registered with resourceDict then do so
+    // // should only happen with primitives, since all file-based resources
+    // should
+    // // be loaded by now
+    // if (resourceDict_.count(renderObjectName) == 0) {
+    //   // needs to have a primitive asset attributes with same name
+    //   if (primitiveAssetsTemplateLibrary_.count(renderObjectName) == 0) {
+    //     // this is bad, means no render primitive template exists with
+    //     expected
+    //     // name.  should never happen
+    //     LOG(ERROR) << "No primitive asset attributes exists with name :"
+    //                << renderObjectName
+    //                << " so unable to instantiate primitive-based render "
+    //                   "object.  Aborting.";
+    //     return;
+    //   }
+    //   // build primitive asset for this object based on defined primitive
+    //   // attributes
+    //   auto primitiveAssetAttributes =
+    //       primitiveAssetsTemplateLibrary_.at(renderObjectName);
+    //   buildPrimitiveAssetData(primitiveAssetAttributes);
+    // }
     const LoadedAssetData& loadedAssetData = resourceDict_.at(renderObjectName);
     if (!isLightSetupCompatible(loadedAssetData, lightSetup)) {
       LOG(WARNING) << "Instantiating object with incompatible light setup, "

@@ -79,9 +79,15 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
   if (attachmentNode == nullptr) {
     objectNode = &staticSceneObject_->node().createChild();
   }
+  // verify whether necessary assets exist, and if not, instantiate them
+  bool instanceSuccess =
+      resourceManager_.instantiateAssetsOnDemand(configFileHandle);
 
-  bool objectSuccess =
-      makeAndAddRigidObject(nextObjectID_, physicsObjectAttributes, objectNode);
+  bool objectSuccess = false;
+  if (instanceSuccess) {  // only make object if asset instantiation succeeds
+    objectSuccess = makeAndAddRigidObject(nextObjectID_,
+                                          physicsObjectAttributes, objectNode);
+  }
 
   if (!objectSuccess) {
     deallocateObjectID(nextObjectID_);

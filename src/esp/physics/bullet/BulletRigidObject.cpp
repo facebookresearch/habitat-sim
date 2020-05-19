@@ -47,6 +47,7 @@ BulletRigidObject::~BulletRigidObject() {
     }
   }
 }  //~BulletRigidObject
+
 bool BulletRigidObject::initializationFinalize(
     const assets::ResourceManager& resMgr) {
   objectMotionType_ = MotionType::DYNAMIC;

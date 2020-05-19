@@ -40,10 +40,12 @@ PhysicsObjectAttributes::PhysicsObjectAttributes(
   setInertia({0, 0, 0});
   setLinearDamping(0.2);
   setAngularDamping(0.2);
-  // default collisions will be mesh for physics objects
+  // default rendering and collisions will be mesh for physics objects
   // primitive-based objects do not currently support mesh collisions, however,
   // due to issues with how non-triangle meshes (i.e. wireframes) are handled in
   // @ref GenericMeshData::setMeshData
+  setRenderAssetIsPrimitive(false);
+  setCollisionAssetIsPrimitive(false);
   setUseMeshCollision(true);
 
   setBoundingBoxCollisions(false);

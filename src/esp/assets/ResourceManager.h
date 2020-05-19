@@ -330,6 +330,19 @@ class ResourceManager {
   int registerObjectTemplate(PhysicsObjectAttributes::ptr objectTemplate,
                              const std::string& objectTemplateHandle);
 
+  /**
+   * @brief Load/instantiate any required render and collision assets for an
+   * object, if they do not already exist in @ref resourceDict_ or @ref
+   * collisionMeshGroups_, respectively. Assumes valid render and collisions
+   * asset handles have been specified (This is checked/verified in
+   * @ref registerObjectTemplate())
+   * @param objectTemplateHandle The key for referencing the template in the
+   * @ref physicsObjTemplateLibrary_.
+   * @return whether process succeeded or not - only currently fails if
+   * registration call fails.
+   */
+  bool instantiateAssetsOnDemand(const std::string& objTemplateHandle);
+
   //======== Accessor functions ========
   /**
    * @brief Getter for all @ref assets::CollisionMeshData associated with the
@@ -355,7 +368,14 @@ class ResourceManager {
    * @return The key referencing the asset in @ref physicsObjTemplateLibrary_,
    * or an empty string if does not exist.
    */
-  std::string getObjectTemplateHandle(const int objectTemplateID) const;
+  std::string getObjectTemplateHandle(const int objectTemplateID) const {
+    CORRADE_ASSERT(physicsTemplatesLibByID_.count(objectTemplateID) > 0,
+                   "ResourceManager::getObjectTemplateHandle : No loaded or "
+                   "primitive template with index "
+                       << objectTemplateID << " exists.",
+                   "");
+    return physicsTemplatesLibByID_.at(objectTemplateID);
+  }  // getObjectTemplateHandle
 
   /**
    * @brief Get a ref to the primitive attributes object for the primitive
@@ -367,8 +387,8 @@ class ResourceManager {
       const std::string& primTemplateHandle) const {
     CORRADE_ASSERT(
         (primitiveAssetsTemplateLibrary_.count(primTemplateHandle) > 0),
-        "ResourceManager::getPrimitiveTemplateAttributes : unknown Primitive "
-        "template Handle : "
+        "ResourceManager::getPrimitiveTemplateAttributes : Unknown primitive "
+        "template handle : "
             << primTemplateHandle,
         nullptr);
     return primitiveAssetsTemplateLibrary_.at(primTemplateHandle);
@@ -388,7 +408,7 @@ class ResourceManager {
       const std::string& templateHandle) const {
     CORRADE_ASSERT(
         (physicsObjTemplateLibrary_.count(templateHandle) > 0),
-        "ResourceManager::getPhysicsObjectAttributes : unknown template handle "
+        "ResourceManager::getPhysicsObjectAttributes : Unknown template handle "
         ": " << templateHandle,
         nullptr);
     return physicsObjTemplateLibrary_.at(templateHandle);
@@ -408,11 +428,22 @@ class ResourceManager {
       const int objectTemplateID) const {
     std::string key = getObjectTemplateHandle(objectTemplateID);
     CORRADE_ASSERT((physicsObjTemplateLibrary_.count(key) > 0),
-                   "ResourceManager::getPhysicsObjectAttributes : unknown ID:"
+                   "ResourceManager::getPhysicsObjectAttributes : Unknown "
+                   "object template ID:"
                        << objectTemplateID,
                    nullptr);
     return physicsObjTemplateLibrary_.at(key);
   }
+
+  /**
+   * @brief returns whether the passed string corresponds to a valid file name
+   * that exists in file system
+   * @param filename String to check if valid file name
+   * @return whether or not filename is valid and exists in file system
+   */
+
+  bool checkIsValidFileName(const std::string& filename,
+                            const std::string& type);
 
   /**
    * @brief Gets the number of object templates stored in the @ref
@@ -420,9 +451,7 @@ class ResourceManager {
    *
    * @return The size of the @ref physicsObjTemplateLibrary_.
    */
-  int getNumLibraryObjects() const {
-    return physicsObjTemplateLibrary_.size();
-  };
+  int getNumLibraryObjects() const { return physicsObjTemplateLibrary_.size(); }
 
   /**
    * @brief Get a random object attribute handle (that could possibly describe
