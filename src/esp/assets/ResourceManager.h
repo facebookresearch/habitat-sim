@@ -371,8 +371,8 @@ class ResourceManager {
   std::string getObjectTemplateHandle(const int objectTemplateID) const {
     CORRADE_ASSERT(physicsTemplatesLibByID_.count(objectTemplateID) > 0,
                    "ResourceManager::getObjectTemplateHandle : No loaded or "
-                   "primitive template with index "
-                       << objectTemplateID << " exists.",
+                   "primitive template with index"
+                       << objectTemplateID << "exists. Aborting",
                    "");
     return physicsTemplatesLibByID_.at(objectTemplateID);
   }  // getObjectTemplateHandle
@@ -388,8 +388,8 @@ class ResourceManager {
     CORRADE_ASSERT(
         (primitiveAssetsTemplateLibrary_.count(primTemplateHandle) > 0),
         "ResourceManager::getPrimitiveTemplateAttributes : Unknown primitive "
-        "template handle : "
-            << primTemplateHandle,
+        "template handle :"
+            << primTemplateHandle << ". Aborting",
         nullptr);
     return primitiveAssetsTemplateLibrary_.at(primTemplateHandle);
   }
@@ -409,7 +409,8 @@ class ResourceManager {
     CORRADE_ASSERT(
         (physicsObjTemplateLibrary_.count(templateHandle) > 0),
         "ResourceManager::getPhysicsObjectAttributes : Unknown template handle "
-        ": " << templateHandle,
+        ":" << templateHandle
+            << ". Aborting",
         nullptr);
     return physicsObjTemplateLibrary_.at(templateHandle);
   }
@@ -430,20 +431,10 @@ class ResourceManager {
     CORRADE_ASSERT((physicsObjTemplateLibrary_.count(key) > 0),
                    "ResourceManager::getPhysicsObjectAttributes : Unknown "
                    "object template ID:"
-                       << objectTemplateID,
+                       << objectTemplateID << ". Aborting",
                    nullptr);
     return physicsObjTemplateLibrary_.at(key);
   }
-
-  /**
-   * @brief returns whether the passed string corresponds to a valid file name
-   * that exists in file system
-   * @param filename String to check if valid file name
-   * @return whether or not filename is valid and exists in file system
-   */
-
-  bool checkIsValidFileName(const std::string& filename,
-                            const std::string& type);
 
   /**
    * @brief Gets the number of object templates stored in the @ref
@@ -722,8 +713,8 @@ class ResourceManager {
       const std::string& primTypeName) {
     CORRADE_ASSERT(
         primTypeConstructorMap_.count(primTypeName) > 0,
-        "ResourceManager::buildPrimitiveAttributes : No primivite of type "
-            << primTypeName << " exists.  Aborting.",
+        "ResourceManager::buildPrimitiveAttributes : No primivite of type"
+            << primTypeName << "exists.  Aborting.",
         nullptr);
     return (*this.*primTypeConstructorMap_[primTypeName])();
   }  // buildPrimitiveAttributes
@@ -753,8 +744,8 @@ class ResourceManager {
         (primTypeVal >= 0) &&
             (primTypeVal < static_cast<int>(PrimObjTypes::END_PRIM_OBJ_TYPES)),
         "ResourceManager::buildPrimitiveAttributes : Unknown PrimObjTypes "
-        "value requested : "
-            << primTypeVal,
+        "value requested :"
+            << primTypeVal << ". Aborting",
         nullptr);
     return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(
                        static_cast<PrimObjTypes>(primTypeVal))])();
@@ -771,7 +762,8 @@ class ResourceManager {
     CORRADE_ASSERT(
         (primitiveType != PrimObjTypes::END_PRIM_OBJ_TYPES),
         "ResourceManager::createPrimitiveAttributes : Cannot instantiate "
-        "PrimitiveAttributes object for  PrimObjTypes::END_PRIM_OBJ_TYPES",
+        "PrimitiveAttributes object for PrimObjTypes::END_PRIM_OBJ_TYPES. "
+        "Aborting.",
         nullptr);
     int idx = static_cast<int>(primitiveType);
     return T::create(isWireFrame, idx, PrimitiveNames3DMap.at(primitiveType));
@@ -1232,20 +1224,8 @@ class ResourceManager {
    * supported, keyed by @ref PrimObjTypes enum entry.  Note final entry is not
    * a valid primitive.
    */
-  const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap = {
-      {PrimObjTypes::CAPSULE_SOLID, "capsule3DSolid"},
-      {PrimObjTypes::CAPSULE_WF, "capsule3DWireframe"},
-      {PrimObjTypes::CONE_SOLID, "coneSolid"},
-      {PrimObjTypes::CONE_WF, "coneWireframe"},
-      {PrimObjTypes::CUBE_SOLID, "cubeSolid"},
-      {PrimObjTypes::CUBE_WF, "cubeWireframe"},
-      {PrimObjTypes::CYLINDER_SOLID, "cylinderSolid"},
-      {PrimObjTypes::CYLINDER_WF, "cylinderWireframe"},
-      {PrimObjTypes::ICOSPHERE_SOLID, "icosphereSolid"},
-      {PrimObjTypes::ICOSPHERE_WF, "icosphereWireframe"},
-      {PrimObjTypes::UVSPHERE_SOLID, "uvSphereSolid"},
-      {PrimObjTypes::UVSPHERE_WF, "uvSphereWireframe"},
-      {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
+  static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
+
   /**
    * @brief Define a map type referencing function pointers to @ref
    * createPrimitiveAttributes() keyed by string names of classes being

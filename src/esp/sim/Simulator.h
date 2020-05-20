@@ -217,7 +217,7 @@ class Simulator {
    */
   assets::PhysicsObjectAttributes::ptr getObjectTemplateByName(
       const std::string& templateHandle) const {
-    return resourceManager_.getPhysicsObjectAttributes(templateHandle);
+    return resourceManager_->getPhysicsObjectAttributes(templateHandle);
   }
   /**
    * @brief Load all "*.phys_properties.json" files from the provided file or

@@ -68,6 +68,21 @@ constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
 constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
 
+const std::map<PrimObjTypes, const char*> ResourceManager::PrimitiveNames3DMap =
+    {{PrimObjTypes::CAPSULE_SOLID, "capsule3DSolid"},
+     {PrimObjTypes::CAPSULE_WF, "capsule3DWireframe"},
+     {PrimObjTypes::CONE_SOLID, "coneSolid"},
+     {PrimObjTypes::CONE_WF, "coneWireframe"},
+     {PrimObjTypes::CUBE_SOLID, "cubeSolid"},
+     {PrimObjTypes::CUBE_WF, "cubeWireframe"},
+     {PrimObjTypes::CYLINDER_SOLID, "cylinderSolid"},
+     {PrimObjTypes::CYLINDER_WF, "cylinderWireframe"},
+     {PrimObjTypes::ICOSPHERE_SOLID, "icosphereSolid"},
+     {PrimObjTypes::ICOSPHERE_WF, "icosphereWireframe"},
+     {PrimObjTypes::UVSPHERE_SOLID, "uvSphereSolid"},
+     {PrimObjTypes::UVSPHERE_WF, "uvSphereWireframe"},
+     {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
+
 ResourceManager::ResourceManager()
     :
 #ifdef MAGNUM_BUILD_STATIC
@@ -224,14 +239,15 @@ bool ResourceManager::loadScene(
 #ifdef ESP_BUILD_PTEX_SUPPORT
       // retrieve the ptex mesh data
       const std::string& filename = info.filepath;
-      CORRADE_ASSERT(resourceDict_.count(filename) != 0,
-                     "ResourceManager::loadScene: ptex mesh is not loaded.",
-                     false);
-      const MeshMetaData& metaData = getMeshMetaData(filename);
       CORRADE_ASSERT(
-          metaData.meshIndex.first == metaData.meshIndex.second,
-          "ResourceManager::loadScene: ptex mesh is not loaded correctly.",
+          resourceDict_.count(filename) != 0,
+          "ResourceManager::loadScene: ptex mesh is not loaded. Aborting.",
           false);
+      const MeshMetaData& metaData = getMeshMetaData(filename);
+      CORRADE_ASSERT(metaData.meshIndex.first == metaData.meshIndex.second,
+                     "ResourceManager::loadScene: ptex mesh is not loaded "
+                     "correctly. Aborting.",
+                     false);
 
       computePTexMeshAbsoluteAABBs(*meshes_[metaData.meshIndex.first]);
 #endif
@@ -624,21 +640,16 @@ int ResourceManager::addPrimAssetTemplateToLibrary(
   return primAssetTemplateID;
 }  // addPrimAssetTemplateToLibrary
 
-bool ResourceManager::checkIsValidFileName(const std::string& filename,
-                                           const std::string& type) {
-  bool fileIsOpen = fileImporter_->openFile(filename);
-  return fileIsOpen;
-}
-
 int ResourceManager::registerObjectTemplate(
     PhysicsObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle) {
-  CORRADE_ASSERT(objectTemplate->getRenderAssetHandle() != "",
-                 "ResourceManager::registerObjectTemplate : Passed attributes "
-                 "template named "
-                     << objectTemplateHandle
-                     << "does not have render asset handle specified ",
-                 ID_UNDEFINED);
+  CORRADE_ASSERT(
+      objectTemplate->getRenderAssetHandle() != "",
+      "ResourceManager::registerObjectTemplate : Passed attributes "
+      "template named"
+          << objectTemplateHandle
+          << "does not have render asset handle specified. Aborting.",
+      ID_UNDEFINED);
   // In case not constructed with origin handle as parameter
   objectTemplate->setOriginHandle(objectTemplateHandle);
   std::map<int, std::string>* mapToUse;
@@ -652,7 +663,7 @@ int ResourceManager::registerObjectTemplate(
     // physicsSynthObjTmpltLibByID_
     objectTemplate->setRenderAssetIsPrimitive(true);
     mapToUse = &physicsSynthObjTmpltLibByID_;
-  } else if (checkIsValidFileName(renderAssetHandle, "render")) {
+  } else if (Corrade::Utility::Directory::exists(renderAssetHandle)) {
     // check if renderAssetHandle is valid file name and is found in file system
     // - if so then setRenderAssetIsPrimitive to false and map set to
     // physicsFileObjTmpltLibByID_ - use primitiveImporter to check if file
@@ -676,7 +687,7 @@ int ResourceManager::registerObjectTemplate(
     // if collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     objectTemplate->setCollisionAssetIsPrimitive(true);
-  } else if (checkIsValidFileName(collisionAssetHandle, "collision")) {
+  } else if (Corrade::Utility::Directory::exists(collisionAssetHandle)) {
     // check if collisionAssetHandle is valid file name and is found in file
     // system - if so then setCollisionAssetIsPrimitive to false
     objectTemplate->setCollisionAssetIsPrimitive(false);
@@ -988,9 +999,10 @@ Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
 void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
   std::vector<Mn::Matrix4> absTransforms = computeAbsoluteTransformations();
 
-  CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo_.size(),
-                 "ResourceManager::computePTexMeshAbsoluteAABBs: number of "
-                 "transformations does not match number of drawables.", );
+  CORRADE_ASSERT(
+      absTransforms.size() == staticDrawableInfo_.size(),
+      "ResourceManager::computePTexMeshAbsoluteAABBs: number of "
+      "transformations does not match number of drawables. Aborting.", );
 
   // obtain the sub-meshes within the ptex mesh
   PTexMeshData& ptexMeshData = dynamic_cast<PTexMeshData&>(baseMesh);
@@ -1024,8 +1036,9 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
     Corrade::Containers::Optional<Magnum::Trade::MeshData>& meshData =
         meshes_[meshID]->getMeshData();
     CORRADE_ASSERT(meshData,
-                   "ResourceManager::computeGeneralMeshAbsoluteAABBs: the "
-                   "empty mesh data", );
+                   "ResourceManager::computeGeneralMeshAbsoluteAABBs: The mesh "
+                   "data specified at ID:"
+                       << meshID << "is empty/undefined. Aborting", );
 
     // a vector to store the min, max pos for the aabb of every position array
     std::vector<Mn::Vector3> bbPos;
@@ -1058,8 +1071,8 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs() {
 
   CORRADE_ASSERT(
       absTransforms.size() == staticDrawableInfo_.size(),
-      "ResourceManager::computeInstancelMeshAbsoluteAABBs: number of "
-      "transforms does not match number of drawables.", );
+      "ResourceManager::computeInstancelMeshAbsoluteAABBs: Number of "
+      "transforms does not match number of drawables. Aborting.", );
 
   for (size_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
     const uint32_t meshID = staticDrawableInfo_[iEntry].meshID;
@@ -1091,8 +1104,8 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations() {
   auto* scene = dynamic_cast<MagnumScene*>(staticDrawableInfo_[0].node.scene());
 
   CORRADE_ASSERT(scene != nullptr,
-                 "ResourceManager::computeAbsoluteTransformations: the node is "
-                 "not attached to any scene graph.",
+                 "ResourceManager::computeAbsoluteTransformations: The node is "
+                 "not attached to any scene graph. Aborting.",
                  {});
 
   // collect all drawable objects
@@ -1346,10 +1359,6 @@ bool ResourceManager::loadGeneralMeshData(
   const std::string& filename = info.filepath;
   const bool fileIsLoaded = resourceDict_.count(filename) > 0;
   const bool drawData = parent != nullptr && drawables != nullptr;
-
-  // Cr::Containers::Pointer<Importer> importer;
-  // CORRADE_INTERNAL_ASSERT_OUTPUT(
-  //     importer = importerManager_.loadAndInstantiate("AnySceneImporter"));
 
   // Preferred plugins, Basis target GPU format
   importerManager_.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
@@ -1822,13 +1831,17 @@ bool ResourceManager::instantiateAssetsOnDemand(
       physicsObjTemplateLibrary_.at(objectTemplateHandle);
 
   // if attributes are "dirty" (values have changed since last registered)
-  // re-register
+  // then re-register.  Should never return ID_UNDEFINED - this would mean
+  // something has corrupted the library.
   if (physicsObjectAttributes->getIsDirty()) {
-    int ID =
-        registerObjectTemplate(physicsObjectAttributes, objectTemplateHandle);
-    if (ID == ID_UNDEFINED) {
-      return false;
-    }
+    CORRADE_ASSERT(
+        (ID_UNDEFINED !=
+         registerObjectTemplate(physicsObjectAttributes, objectTemplateHandle)),
+        "ResourceManager::instantiateAssetsOnDemand : Unknown failure "
+        "attempting to register modified template :"
+            << objectTemplateHandle
+            << "before asset instantiation.  Aborting. ",
+        false);
   }
 
   // get render asset handle
@@ -1887,9 +1900,9 @@ bool ResourceManager::instantiateAssetsOnDemand(
       //! Gather mesh components for meshGroup data
       std::vector<CollisionMeshData> meshGroup;
       for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
-        GenericMeshData* gltfMeshData =
-            dynamic_cast<GenericMeshData*>(meshes_[mesh_i].get());
-        CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
+        GenericMeshData& gltfMeshData =
+            dynamic_cast<GenericMeshData&>(*meshes_[mesh_i].get());
+        CollisionMeshData& meshData = gltfMeshData.getCollisionMeshData();
         meshGroup.push_back(meshData);
       }
       collisionMeshGroups_.emplace(collisionAssetHandle, meshGroup);
