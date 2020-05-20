@@ -66,6 +66,17 @@ class Simulator {
   explicit Simulator(const SimulatorConfiguration& cfg);
   virtual ~Simulator();
 
+  /**
+   * @brief Closes the simulator and frees all loaded assets and GPU contexts.
+   *
+   * @warning Must reset the simulator to its "just after constructor" state for
+   * python inheritance to function correctly.  Shared/unique pointers should be
+   * set back to nullptr, any members set to their default values, etc.  If this
+   * is not done correctly, the pattern for @ref `close` then @ref `reconfigure`
+   * to create a "fresh" instance of the simulator may not work correctly
+   */
+  virtual void close();
+
   virtual void reconfigure(const SimulatorConfiguration& cfg);
 
   virtual void reset();
@@ -100,7 +111,7 @@ class Simulator {
    * @return The string key referencing the asset in @ref ResourceManager.
    */
   std::string getObjectTemplateHandleByID(const int objectTemplateID) const {
-    return resourceManager_.getObjectTemplateHandle(objectTemplateID);
+    return resourceManager_->getObjectTemplateHandle(objectTemplateID);
   }
 
   /**
@@ -112,7 +123,7 @@ class Simulator {
    */
   std::vector<std::string> getObjectTemplateHandles(
       const std::string& subStr = "") {
-    return resourceManager_.getTemplateHandlesBySubstring(subStr);
+    return resourceManager_->getTemplateHandlesBySubstring(subStr);
   }
   /**
    * @brief Get a list of all file-based templates whose origin handles contain
@@ -124,7 +135,7 @@ class Simulator {
    */
   std::vector<std::string> getFileBasedObjectTemplateHandles(
       const std::string& subStr = "") {
-    return resourceManager_.getFileTemplateHandlesBySubstring(subStr);
+    return resourceManager_->getFileTemplateHandlesBySubstring(subStr);
   }
 
   /**
@@ -137,7 +148,7 @@ class Simulator {
    */
   std::vector<std::string> getSynthesizedObjectTemplateHandles(
       const std::string& subStr = "") {
-    return resourceManager_.getSynthTemplateHandlesBySubstring(subStr);
+    return resourceManager_->getSynthTemplateHandlesBySubstring(subStr);
   }
 
   /**
@@ -191,14 +202,14 @@ class Simulator {
    * esp::assets::ResourceManager::physicsObjectLibrary_.
    */
   int getPhysicsObjectLibrarySize() const {
-    return resourceManager_.getNumLibraryObjects();
+    return resourceManager_->getNumLibraryObjects();
   }
 
   /**
    * @brief Get a smart pointer to a physics object template by index.
    */
   assets::PhysicsObjectAttributes::ptr getObjectTemplate(int templateId) const {
-    return resourceManager_.getPhysicsObjectAttributes(templateId);
+    return resourceManager_->getPhysicsObjectAttributes(templateId);
   }
   /**
    * @brief Load all "*.phys_properties.json" files from the provided file or
@@ -552,6 +563,8 @@ class Simulator {
       std::map<std::string, sensor::ObservationSpace>& spaces);
 
   nav::PathFinder::ptr getPathFinder();
+  void setPathFinder(nav::PathFinder::ptr pf);
+
   /**
    * @brief Enable or disable frustum culling (enabled by default)
    * @param val, true = enable, false = disable
@@ -626,9 +639,9 @@ class Simulator {
   // If you switch the order, you will have the error:
   // GL::Context::current(): no current context from Magnum
   // during the deconstruction
-  assets::ResourceManager resourceManager_;
+  std::unique_ptr<assets::ResourceManager> resourceManager_ = nullptr;
 
-  scene::SceneManager sceneManager_;
+  scene::SceneManager::uptr sceneManager_ = nullptr;
   int activeSceneID_ = ID_UNDEFINED;
   int activeSemanticSceneID_ = ID_UNDEFINED;
   std::vector<int> sceneID_;
