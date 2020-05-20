@@ -97,7 +97,7 @@ void initSimBindings(py::module& m) {
       .def("get_object_template", &Simulator::getObjectTemplate,
            "object_template_id"_a, pybind11::return_value_policy::reference)
       .def("load_object_configs", &Simulator::loadObjectConfigs, "path"_a)
-      .def("load_object_template", &Simulator::loadObjectTemplate,
+      .def("load_object_template", &Simulator::registerObjectTemplate,
            "object_template"_a, "object_template_handle"_a)
       .def("get_object_initialization_template",
            &Simulator::getObjectInitializationTemplate, "object_id"_a,

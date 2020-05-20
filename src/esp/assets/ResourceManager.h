@@ -120,26 +120,6 @@ enum class PrimObjTypes : uint32_t {
 };
 
 /**
- * @brief Constant Map holding names of all Magnum 3D primitive classes
- * supported, keyed by @ref PrimObjTypes enum entry.  Note final entry is not
- * valid primitive.
- */
-const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap = {
-    {PrimObjTypes::CAPSULE_SOLID, "capsule3DSolid"},
-    {PrimObjTypes::CAPSULE_WF, "capsule3DWireframe"},
-    {PrimObjTypes::CONE_SOLID, "coneSolid"},
-    {PrimObjTypes::CONE_WF, "coneWireframe"},
-    {PrimObjTypes::CUBE_SOLID, "cubeSolid"},
-    {PrimObjTypes::CUBE_WF, "cubeWireframe"},
-    {PrimObjTypes::CYLINDER_SOLID, "cylinderSolid"},
-    {PrimObjTypes::CYLINDER_WF, "cylinderWireframe"},
-    {PrimObjTypes::ICOSPHERE_SOLID, "icosphereSolid"},
-    {PrimObjTypes::ICOSPHERE_WF, "icosphereWireframe"},
-    {PrimObjTypes::UVSPHERE_SOLID, "uvSphereSolid"},
-    {PrimObjTypes::UVSPHERE_WF, "uvSphereWireframe"},
-    {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
-
-/**
  * @brief Singleton class responsible for
  * loading and managing common simulator assets such as meshes, textures, and
  * materials.
@@ -347,8 +327,21 @@ class ResourceManager {
    * @return The index in the @ref physicsObjTemplateLibrary_ of object
    * template.
    */
-  int loadObjectTemplate(PhysicsObjectAttributes::ptr objectTemplate,
-                         const std::string& objectTemplateHandle);
+  int registerObjectTemplate(PhysicsObjectAttributes::ptr objectTemplate,
+                             const std::string& objectTemplateHandle);
+
+  /**
+   * @brief Load/instantiate any required render and collision assets for an
+   * object, if they do not already exist in @ref resourceDict_ or @ref
+   * collisionMeshGroups_, respectively. Assumes valid render and collisions
+   * asset handles have been specified (This is checked/verified in
+   * @ref registerObjectTemplate())
+   * @param objectTemplateHandle The key for referencing the template in the
+   * @ref physicsObjTemplateLibrary_.
+   * @return whether process succeeded or not - only currently fails if
+   * registration call fails.
+   */
+  bool instantiateAssetsOnDemand(const std::string& objTemplateHandle);
 
   //======== Accessor functions ========
   /**
@@ -367,42 +360,37 @@ class ResourceManager {
   }
 
   /**
-   * @brief Get the index in @ref physicsObjTemplateLibrary_ for the object
-   * template asset identified by the key, templateHandle.
-   *
-   * @param templateHandle The key referencing the asset in @ref
-   * physicsObjTemplateLibrary_.
-   * @return The index of the object template in @ref
-   * physicsObjTemplateLibrary_.
-   */
-  int getObjectTemplateID(const std::string& templateHandle) const {
-    const bool objTemplateExists =
-        physicsObjTemplateLibrary_.count(templateHandle) > 0;
-    if (objTemplateExists) {
-      return physicsObjTemplateLibrary_.at(templateHandle)
-          ->getObjectTemplateID();
-    }
-    return ID_UNDEFINED;
-  }
-
-  /**
    * @brief Get the key in @ref physicsObjTemplateLibrary_ for the object
    * template asset index.
    *
    * @param objectTemplateID The index of the object template in @ref
    * physicsObjTemplateLibrary_.
-   * @return The key referencing the asset in @ref physicsObjTemplateLibrary_.
+   * @return The key referencing the asset in @ref physicsObjTemplateLibrary_,
+   * or an empty string if does not exist.
    */
-  std::string getObjectTemplateHandle(const int objectTemplateID) const;
+  std::string getObjectTemplateHandle(const int objectTemplateID) const {
+    CORRADE_ASSERT(physicsTemplatesLibByID_.count(objectTemplateID) > 0,
+                   "ResourceManager::getObjectTemplateHandle : No loaded or "
+                   "primitive template with index"
+                       << objectTemplateID << "exists. Aborting",
+                   "");
+    return physicsTemplatesLibByID_.at(objectTemplateID);
+  }  // getObjectTemplateHandle
 
   /**
    * @brief Get a ref to the primitive attributes object for the primitive
-   * identified by the string key
+   * identified by the string key.
    * @param primTemplateHandle the string key of the attributes desired
-   * @return the desired primitive attributes
+   * @return the desired primitive attributes, or nullptr if does not exist
    */
   AbstractPrimitiveAttributes::ptr getPrimitiveTemplateAttributes(
       const std::string& primTemplateHandle) const {
+    CORRADE_ASSERT(
+        (primitiveAssetsTemplateLibrary_.count(primTemplateHandle) > 0),
+        "ResourceManager::getPrimitiveTemplateAttributes : Unknown primitive "
+        "template handle :"
+            << primTemplateHandle << ". Aborting",
+        nullptr);
     return primitiveAssetsTemplateLibrary_.at(primTemplateHandle);
   }
 
@@ -410,14 +398,20 @@ class ResourceManager {
    * @brief Get a reference to the physics object template for the asset
    * identified by the key, templateHandle.  physicsObjTemplateLibrary_
    *
-   * Can be used to manipulate an object
-   * template before instancing new objects.
+   * Can be used to manipulate an object template before instancing new objects.
    * @param templateHandle The key referencing the asset in @ref
    * physicsObjTemplateLibrary_.
-   * @return A mutable reference to the object template for the asset.
+   * @return A mutable reference to the object template for the asset, or
+   * nullptr if does not exist
    */
   PhysicsObjectAttributes::ptr getPhysicsObjectAttributes(
       const std::string& templateHandle) const {
+    CORRADE_ASSERT(
+        (physicsObjTemplateLibrary_.count(templateHandle) > 0),
+        "ResourceManager::getPhysicsObjectAttributes : Unknown template handle "
+        ":" << templateHandle
+            << ". Aborting",
+        nullptr);
     return physicsObjTemplateLibrary_.at(templateHandle);
   }
 
@@ -425,16 +419,21 @@ class ResourceManager {
    * @brief Get a reference to the physics object template for the asset
    * identified by the objectTemplateID.
    *
-   * Can be used to manipulate an object
-   * template before instancing new objects.
-   * @param ObjTmplID The key referencing the asset in @ref
+   * Can be used to manipulate an object template before instancing new objects.
+   * @param objectTemplateID The key referencing the asset in @ref
    * physicsObjTemplateLibrary_.
-   * @return A mutable reference to the object template for the asset.
+   * @return A mutable reference to the object template for the asset, or
+   * nullptr if does not exist
    */
   PhysicsObjectAttributes::ptr getPhysicsObjectAttributes(
       const int objectTemplateID) const {
-    return physicsObjTemplateLibrary_.at(
-        getObjectTemplateHandle(objectTemplateID));
+    std::string key = getObjectTemplateHandle(objectTemplateID);
+    CORRADE_ASSERT((physicsObjTemplateLibrary_.count(key) > 0),
+                   "ResourceManager::getPhysicsObjectAttributes : Unknown "
+                   "object template ID:"
+                       << objectTemplateID << ". Aborting",
+                   nullptr);
+    return physicsObjTemplateLibrary_.at(key);
   }
 
   /**
@@ -443,9 +442,7 @@ class ResourceManager {
    *
    * @return The size of the @ref physicsObjTemplateLibrary_.
    */
-  int getNumLibraryObjects() const {
-    return physicsObjTemplateLibrary_.size();
-  };
+  int getNumLibraryObjects() const { return physicsObjTemplateLibrary_.size(); }
 
   /**
    * @brief Get a random object attribute handle (that could possibly describe
@@ -716,8 +713,8 @@ class ResourceManager {
       const std::string& primTypeName) {
     CORRADE_ASSERT(
         primTypeConstructorMap_.count(primTypeName) > 0,
-        "ResourceManager::buildPrimitiveAttributes : No primivite of type "
-            << primTypeName << " exists.  Aborting.",
+        "ResourceManager::buildPrimitiveAttributes : No primivite of type"
+            << primTypeName << "exists.  Aborting.",
         nullptr);
     return (*this.*primTypeConstructorMap_[primTypeName])();
   }  // buildPrimitiveAttributes
@@ -747,8 +744,8 @@ class ResourceManager {
         (primTypeVal >= 0) &&
             (primTypeVal < static_cast<int>(PrimObjTypes::END_PRIM_OBJ_TYPES)),
         "ResourceManager::buildPrimitiveAttributes : Unknown PrimObjTypes "
-        "value requested : "
-            << primTypeVal,
+        "value requested :"
+            << primTypeVal << ". Aborting",
         nullptr);
     return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(
                        static_cast<PrimObjTypes>(primTypeVal))])();
@@ -765,21 +762,22 @@ class ResourceManager {
     CORRADE_ASSERT(
         (primitiveType != PrimObjTypes::END_PRIM_OBJ_TYPES),
         "ResourceManager::createPrimitiveAttributes : Cannot instantiate "
-        "PrimitiveAttributes object for  PrimObjTypes::END_PRIM_OBJ_TYPES",
+        "PrimitiveAttributes object for PrimObjTypes::END_PRIM_OBJ_TYPES. "
+        "Aborting.",
         nullptr);
     int idx = static_cast<int>(primitiveType);
     return T::create(isWireFrame, idx, PrimitiveNames3DMap.at(primitiveType));
   }
 
   /**
-   * @brief Load object templates given string list of object template
-   * locations.
+   * @brief Load all file-based object templates given string list of object
+   * template file locations.
    *
    * This will take the list of file names currently specified in
    * physicsManagerAttributes and load the referenced object templates.
    * @param tmpltFilenames list of file names of object templates
    */
-  void loadObjectTemplates(const std::vector<std::string>& tmpltFilenames);
+  void loadAllObjectTemplates(const std::vector<std::string>& tmpltFilenames);
 
   /**
    * @brief return a random handle selected from the passed map - is passed
@@ -1196,7 +1194,12 @@ class ResourceManager {
    * for similar usage to File-based importers, but requires no file to be
    * available/read.
    */
-  Corrade::Containers::Pointer<Importer> primImporter_;
+  Corrade::Containers::Pointer<Importer> primitiveImporter_;
+
+  /**
+   * @brief Importer used to load files
+   */
+  Corrade::Containers::Pointer<Importer> fileImporter_;
 
   /**
    * @brief Maps string keys (typically property filenames) to physical object
@@ -1216,6 +1219,12 @@ class ResourceManager {
    */
   std::map<std::string, AbstractPrimitiveAttributes::ptr>
       primitiveAssetsTemplateLibrary_;
+  /**
+   * @brief Constant Map holding names of all Magnum 3D primitive classes
+   * supported, keyed by @ref PrimObjTypes enum entry.  Note final entry is not
+   * a valid primitive.
+   */
+  static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
 
   /**
    * @brief Define a map type referencing function pointers to @ref

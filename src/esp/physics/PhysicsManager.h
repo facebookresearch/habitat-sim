@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_PHYSICS_PHYSICSMANAGER_H_
+#define ESP_PHYSICS_PHYSICSMANAGER_H_
 
 /** @file
  * @brief Class @ref esp::physics::PhysicsManager, enum @ref
@@ -944,3 +945,5 @@ class PhysicsManager {
 }  // namespace physics
 
 }  // namespace esp
+
+#endif  // ESP_PHYSICS_PHYSICSMANAGER_H_

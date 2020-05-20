@@ -57,16 +57,38 @@ class AbstractPhysicsAttributes : public esp::core::Configuration {
 
   void setRenderAssetHandle(const std::string& renderAssetHandle) {
     setString("renderAssetHandle", renderAssetHandle);
+    setIsDirty();
   }
   std::string getRenderAssetHandle() const {
     return getString("renderAssetHandle");
   }
 
+  // whether this object uses file-based mesh render object or
+  // primitive(implicit) render shapes
+  void setRenderAssetIsPrimitive(bool renderAssetIsPrimitive) {
+    setBool("renderAssetIsPrimitive", renderAssetIsPrimitive);
+  }
+
+  bool getRenderAssetIsPrimitive() const {
+    return getBool("renderAssetIsPrimitive");
+  }
+
   void setCollisionAssetHandle(const std::string& collisionAssetHandle) {
     setString("collisionAssetHandle", collisionAssetHandle);
+    setIsDirty();
   }
   std::string getCollisionAssetHandle() const {
     return getString("collisionAssetHandle");
+  }
+
+  // whether this object uses file-based mesh render object or
+  // primitive(implicit) render shapes
+  void setCollisionAssetIsPrimitive(bool collisionAssetIsPrimitive) {
+    setBool("collisionAssetIsPrimitive", collisionAssetIsPrimitive);
+  }
+
+  bool getCollisionAssetIsPrimitive() const {
+    return getBool("collisionAssetIsPrimitive");
   }
 
   // whether this object uses mesh collision or primitive(implicit) collision
@@ -77,7 +99,11 @@ class AbstractPhysicsAttributes : public esp::core::Configuration {
 
   bool getUseMeshCollision() const { return getBool("useMeshCollision"); }
 
+  bool getIsDirty() const { return getBool("__isDirty"); }
+  void setIsClean() { setBool("__isDirty", false); }
+
  protected:
+  void setIsDirty() { setBool("__isDirty", true); }
   std::string getBoolDispStr(bool val) const {
     return (val ? "true" : "false");
   }

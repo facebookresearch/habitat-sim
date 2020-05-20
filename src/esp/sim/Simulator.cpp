@@ -337,15 +337,11 @@ std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
   return templateIndices;
 }
 
-int Simulator::loadObjectTemplate(
+int Simulator::registerObjectTemplate(
     assets::PhysicsObjectAttributes::ptr objTmplPtr,
     const std::string& objectTemplateHandle) {
-  // check for duplicate keys
-  if (resourceManager_->getObjectTemplateID(objectTemplateHandle) !=
-      ID_UNDEFINED) {
-    return ID_UNDEFINED;
-  }
-  return resourceManager_->loadObjectTemplate(objTmplPtr, objectTemplateHandle);
+  return resourceManager_->registerObjectTemplate(objTmplPtr,
+                                                  objectTemplateHandle);
 }
 
 const assets::PhysicsObjectAttributes::ptr
