@@ -126,31 +126,53 @@ enum class PrimObjTypes : uint32_t {
  */
 class ResourceManager {
  public:
+  /** @brief Stores references to a set of drawable elements */
+  using DrawableGroup = gfx::DrawableGroup;
+  /** @brief Convenience typedef for Importer class */
+  using Importer = Magnum::Trade::AbstractImporter;
+
+  /**
+   * @brief The @ref ShaderManager key for @ref LightInfo which has no lights
+   */
+  static constexpr char NO_LIGHT_KEY[] = "no_lights";
+
+  /**
+   *@brief The @ref ShaderManager key for the default @ref LightInfo
+   */
+  static constexpr char DEFAULT_LIGHTING_KEY[] = "";
+
+  /**
+   *@brief The @ref ShaderManager key for the default @ref MaterialInfo
+   */
+  static constexpr char DEFAULT_MATERIAL_KEY[] = "";
+
+  /**
+   *@brief The @ref ShaderManager key for @ref MaterialInfo with per-vertex
+   * object ID
+   */
+  static constexpr char PER_VERTEX_OBJECT_ID_MATERIAL_KEY[] =
+      "per_vertex_object_id";
+
+  /**
+   * @brief Constant Map holding names of all Magnum 3D primitive classes
+   * supported, keyed by @ref PrimObjTypes enum entry.  Note final entry is not
+   * a valid primitive.
+   */
+  static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
+
   /** @brief Constructor */
   explicit ResourceManager();
 
   /** @brief Destructor */
   ~ResourceManager() {}
 
-  /** @brief Stores references to a set of drawable elements */
-  using DrawableGroup = gfx::DrawableGroup;
-  /** @brief Convenience typedef for Importer class */
-  using Importer = Magnum::Trade::AbstractImporter;
-
-  //! @brief The @ref ShaderManager key for @ref LightInfo which has no lights
-  static constexpr char NO_LIGHT_KEY[] = "no_lights";
-
-  //! @brief The @ref ShaderManager key for the default @ref LightInfo
-  static constexpr char DEFAULT_LIGHTING_KEY[] = "";
-
-  //! @brief The @ref ShaderManager key for the default @ref MaterialInfo
-  static constexpr char DEFAULT_MATERIAL_KEY[] = "";
-
-  //! @brief The @ref ShaderManager key for @ref MaterialInfo with per-vertex
-  //! object ID
-  static constexpr char PER_VERTEX_OBJECT_ID_MATERIAL_KEY[] =
-      "per_vertex_object_id";
-
+  /**
+   * @brief This function will assign the appropriately configured function
+   * pointers for @ref createPrimitiveAttributes calls for each type of
+   * supported primitive to the @ref primTypeConstructorMap, keyed by type of
+   * primtive
+   */
+  void buildMapOfPrimTypeConstructors();
   /**
    * @brief Build default primitive attribute files and synthesize an object of
    * each type.
@@ -299,22 +321,15 @@ class ResourceManager {
 
   /**
    * @brief Instantiate a @ref PhysicsObjectAttributes and add to @ref
-   * physicsObjTemplateLibrary_ for a synthetic(primitive-based) object
+   * physicsObjTemplateLibrary_ for a synthetic(primitive-based render) object
    *
-   * @param primAssetHandle The string name of the primitive asset used as a
-   * render asset for the desired object.
+   * @param primAssetHandle The string name of the primitive asset attributes to
+   * be used to synthesize a render asset and solve collisions implicitly for
+   * the desired object.
    * @return The ID of the attributes in the @ref physicsObjTemplateLibrary_ to
    * which the key, synthesized from primAssetHandle, refers.
    */
   int buildAndRegisterPrimPhysObjTemplate(const std::string& primAssetHandle);
-
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointers for @ref createPrimitiveAttributes calls for each type of
-   * supported primitive to the @ref primTypeConstructorMap, keyed by type of
-   * primtive
-   */
-  void buildMapOfPrimTypeConstructors();
 
   /**
    * @brief Add a @ref PhysicsObjectAttributes object to the @ref
@@ -360,39 +375,60 @@ class ResourceManager {
   }
 
   /**
-   * @brief Get the key in @ref physicsObjTemplateLibrary_ for the object
+   * @brief Get the key in @ref primitiveAssetTmpltLibByID_ for the object
    * template asset index.
    *
    * @param objectTemplateID The index of the object template in @ref
-   * physicsObjTemplateLibrary_.
-   * @return The key referencing the asset in @ref physicsObjTemplateLibrary_,
-   * or an empty string if does not exist.
+   * primitiveAssetTmpltLibByID_.
+   * @return The key referencing the template in @ref
+   * primitiveAssetTmpltLibByID_, or an empty string if does not exist.
    */
-  std::string getObjectTemplateHandle(const int objectTemplateID) const {
-    CORRADE_ASSERT(physicsTemplatesLibByID_.count(objectTemplateID) > 0,
-                   "ResourceManager::getObjectTemplateHandle : No loaded or "
-                   "primitive template with index"
-                       << objectTemplateID << "exists. Aborting",
+  std::string getPrimitiveAssetTemplateHandle(const int primTemplateID) const {
+    CORRADE_ASSERT(primitiveAssetTemplateLibByID_.count(primTemplateID) > 0,
+                   "ResourceManager::getPrimitiveAssetTemplateHandle : No "
+                   "primitive asset template with index"
+                       << primTemplateID << "exists. Aborting",
                    "");
-    return physicsTemplatesLibByID_.at(objectTemplateID);
-  }  // getObjectTemplateHandle
+    return primitiveAssetTemplateLibByID_.at(primTemplateID);
+  }  // getPrimitiveAssetTemplateHandle
 
   /**
-   * @brief Get a ref to the primitive attributes object for the primitive
+   * @brief Get a ref to the primitive asset attributes object for the primitive
    * identified by the string key.
-   * @param primTemplateHandle the string key of the attributes desired
+   * @param primTemplateHandle the string key of the attributes desired - this
+   * key will be synthesized based on attributes values.
    * @return the desired primitive attributes, or nullptr if does not exist
    */
-  AbstractPrimitiveAttributes::ptr getPrimitiveTemplateAttributes(
+  AbstractPrimitiveAttributes::ptr getPrimitiveAssetTemplateAttributes(
       const std::string& primTemplateHandle) const {
     CORRADE_ASSERT(
-        (primitiveAssetsTemplateLibrary_.count(primTemplateHandle) > 0),
-        "ResourceManager::getPrimitiveTemplateAttributes : Unknown primitive "
-        "template handle :"
+        (primitiveAssetTemplateLibrary_.count(primTemplateHandle) > 0),
+        "ResourceManager::getPrimitiveAssetTemplateAttributes : Unknown "
+        "primitive "
+        "asset template handle :"
             << primTemplateHandle << ". Aborting",
         nullptr);
-    return primitiveAssetsTemplateLibrary_.at(primTemplateHandle);
+    return primitiveAssetTemplateLibrary_.at(primTemplateHandle);
   }
+
+  /**
+   * @brief Get the key in @ref physicsObjTemplateLibrary_ for the object
+   * template index.
+   *
+   * @param objectTemplateID The index of the object template in @ref
+   * physicsObjTemplateLibrary_.
+   * @return The key referencing the template in @ref
+   * physicsObjTemplateLibrary_, or an empty string if does not exist.
+   */
+  std::string getPhysicsObjectTemplateHandle(const int objectTemplateID) const {
+    CORRADE_ASSERT(
+        physicsObjectTemplateLibByID_.count(objectTemplateID) > 0,
+        "ResourceManager::getPhysicsObjectTemplateHandle : No file-based or "
+        "synthesized template with index"
+            << objectTemplateID << "exists. Aborting",
+        "");
+    return physicsObjectTemplateLibByID_.at(objectTemplateID);
+  }  // getPhysicsObjectTemplateHandle
 
   /**
    * @brief Get a reference to the physics object template for the asset
@@ -407,12 +443,12 @@ class ResourceManager {
   PhysicsObjectAttributes::ptr getPhysicsObjectAttributes(
       const std::string& templateHandle) const {
     CORRADE_ASSERT(
-        (physicsObjTemplateLibrary_.count(templateHandle) > 0),
+        (physicsObjectTemplateLibrary_.count(templateHandle) > 0),
         "ResourceManager::getPhysicsObjectAttributes : Unknown template handle "
         ":" << templateHandle
             << ". Aborting",
         nullptr);
-    return physicsObjTemplateLibrary_.at(templateHandle);
+    return physicsObjectTemplateLibrary_.at(templateHandle);
   }
 
   /**
@@ -427,13 +463,13 @@ class ResourceManager {
    */
   PhysicsObjectAttributes::ptr getPhysicsObjectAttributes(
       const int objectTemplateID) const {
-    std::string key = getObjectTemplateHandle(objectTemplateID);
-    CORRADE_ASSERT((physicsObjTemplateLibrary_.count(key) > 0),
+    std::string key = getPhysicsObjectTemplateHandle(objectTemplateID);
+    CORRADE_ASSERT((physicsObjectTemplateLibrary_.count(key) > 0),
                    "ResourceManager::getPhysicsObjectAttributes : Unknown "
                    "object template ID:"
                        << objectTemplateID << ". Aborting",
                    nullptr);
-    return physicsObjTemplateLibrary_.at(key);
+    return physicsObjectTemplateLibrary_.at(key);
   }
 
   /**
@@ -442,7 +478,9 @@ class ResourceManager {
    *
    * @return The size of the @ref physicsObjTemplateLibrary_.
    */
-  int getNumLibraryObjects() const { return physicsObjTemplateLibrary_.size(); }
+  int getPhysicsObjectLibrarySize() const {
+    return physicsObjectTemplateLibrary_.size();
+  }
 
   /**
    * @brief Get a random object attribute handle (that could possibly describe
@@ -453,7 +491,7 @@ class ResourceManager {
    * attributes template, or empty string if none found
    */
   std::string getRandomTemplateHandle() const {
-    return getRandomTemplateHandlePerType(physicsTemplatesLibByID_, "");
+    return getRandomTemplateHandlePerType(physicsObjectTemplateLibByID_, "");
   }
   /**
    * @brief Get a list of all templates whose origin handles contain @ref
@@ -462,9 +500,9 @@ class ResourceManager {
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
-  std::vector<std::string> getTemplateHandlesBySubstring(
+  std::vector<std::string> getPhysicsObjectTemplateHandlesBySubstring(
       const std::string& subStr = "") const {
-    return getTemplateHandlesBySubStringPerType(physicsTemplatesLibByID_,
+    return getTemplateHandlesBySubStringPerType(physicsObjectTemplateLibByID_,
                                                 subStr);
   }
   /**
@@ -538,17 +576,6 @@ class ResourceManager {
   }
 
   /**
-   * @brief build a primitive asset based on passed template parameters.  If
-   * exists already, does nothing.  Will create a PrimitiveImporter and call
-   * appropriate method.
-   * TODO: This will become primary method once ImportManager can be an
-   * instance variable of ResoureManager
-   * @param primTemplate pointer to attributes describing primitive to
-   * instantiate
-   */
-  void buildPrimitiveAssetData(AbstractPrimitiveAttributes::ptr primTemplate);
-
-  /**
    * @brief Retrieve the composition of all transforms applied to a mesh
    * since it was loaded.
    *
@@ -574,6 +601,41 @@ class ResourceManager {
     CHECK(resourceDict_.count(metaDataName) > 0);
     return resourceDict_.at(metaDataName).meshMetaData;
   }
+
+  /**
+   * @brief Get a named @ref LightSetup
+   */
+  Magnum::Resource<gfx::LightSetup> getLightSetup(
+      const Magnum::ResourceKey& key = Magnum::ResourceKey{
+          DEFAULT_LIGHTING_KEY}) {
+    return shaderManager_.get<gfx::LightSetup>(key);
+  }
+
+  /**
+   * @brief Set a named @ref LightSetup
+   *
+   * If this name already exists, the @ref LightSetup is updated and all @ref
+   * Drawables using this setup are updated.
+   *
+   * @param setup Light setup this key will now reference
+   * @param key Key to identify this @ref LightSetup
+   */
+  void setLightSetup(gfx::LightSetup setup,
+                     const Magnum::ResourceKey& key = Magnum::ResourceKey{
+                         DEFAULT_LIGHTING_KEY}) {
+    shaderManager_.set(key, std::move(setup),
+                       Magnum::ResourceDataState::Mutable,
+                       Magnum::ResourcePolicy::Manual);
+  }
+
+  /**
+   * @brief Build a primitive asset based on passed template parameters.  If
+   * exists already, does nothing.  Will use primitiveImporter_ to call
+   * appropriate method to construct asset.
+   * @param primTemplate pointer to attributes describing primitive to
+   * instantiate
+   */
+  void buildPrimitiveAssetData(AbstractPrimitiveAttributes::ptr primTemplate);
 
   /**
    * @brief Construct a unified @ref MeshData from a loaded asset's collision
@@ -611,7 +673,7 @@ class ResourceManager {
                                 Magnum::ResourceKey{DEFAULT_LIGHTING_KEY}) {
     if (objTemplateLibID != ID_UNDEFINED) {
       const std::string& objTemplateHandleName =
-          physicsTemplatesLibByID_.at(objTemplateLibID);
+          physicsObjectTemplateLibByID_.at(objTemplateLibID);
 
       addObjectToDrawables(objTemplateHandleName, parent, drawables,
                            lightSetup);
@@ -656,32 +718,6 @@ class ResourceManager {
   void addPrimitiveToDrawables(int primitiveID,
                                scene::SceneNode& node,
                                DrawableGroup* drawables);
-
-  /**
-   * @brief Set a named @ref LightSetup
-   *
-   * If this name already exists, the @ref LightSetup is updated and all @ref
-   * Drawables using this setup are updated.
-   *
-   * @param setup Light setup this key will now reference
-   * @param key Key to identify this @ref LightSetup
-   */
-  void setLightSetup(gfx::LightSetup setup,
-                     const Magnum::ResourceKey& key = Magnum::ResourceKey{
-                         DEFAULT_LIGHTING_KEY}) {
-    shaderManager_.set(key, std::move(setup),
-                       Magnum::ResourceDataState::Mutable,
-                       Magnum::ResourcePolicy::Manual);
-  }
-
-  /**
-   * @brief Get a named @ref LightSetup
-   */
-  Magnum::Resource<gfx::LightSetup> getLightSetup(
-      const Magnum::ResourceKey& key = Magnum::ResourceKey{
-          DEFAULT_LIGHTING_KEY}) {
-    return shaderManager_.get<gfx::LightSetup>(key);
-  }
 
   /**
    * @brief generate a new primitive mesh asset for the NavMesh loaded in the
@@ -836,20 +872,6 @@ class ResourceManager {
                                   const bool requiresLighting);
 
   /**
-   * @brief Put primitive-based synthesized object template attributes in
-   * template map. Calls @ref addObjTemplateToLibrary with primTemplate's set
-   * origin handle and prim map.  Convenience method.
-   * @param objectTemplate the template of the primtive of interest
-   * @return the index of added object template in names map
-   */
-  int addSynthObjTmpltAttrToLibrary(
-      PhysicsObjectAttributes::ptr objectTemplate) {
-    return addObjTemplateToLibrary(objectTemplate,
-                                   objectTemplate->getOriginHandle(),
-                                   physicsSynthObjTmpltLibByID_);
-  }
-
-  /**
    * @brief Add object template attributes to template library map and in
    * passed index list
    *
@@ -862,9 +884,10 @@ class ResourceManager {
    * for primitives-based synthesized objects)
    * @return the index of added object template in names map
    */
-  int addObjTemplateToLibrary(PhysicsObjectAttributes::ptr objectTemplate,
-                              const std::string& objectTemplateHandle,
-                              std::map<int, std::string>& mapOfNames);
+  int addPhysicsObjectTemplateToLibrary(
+      PhysicsObjectAttributes::ptr objectTemplate,
+      const std::string& objectTemplateHandle,
+      std::map<int, std::string>& mapOfNames);
 
   /**
    * @brief Add primitive asset template attributes to appropriate template
@@ -878,6 +901,7 @@ class ResourceManager {
       AbstractPrimitiveAttributes::ptr primTemplate);
 
  protected:
+  // ======== Structs and Types only used locally ========
   /**
    * @brief Data for a loaded asset
    *
@@ -887,6 +911,32 @@ class ResourceManager {
     AssetInfo assetInfo;
     MeshMetaData meshMetaData;
   };
+
+  /**
+   * node: drawable's scene node
+   *
+   * meshID:
+   * -) for non-ptex mesh:
+   * meshID is the global index into meshes_.
+   * meshes_[meshID] is the BaseMesh corresponding to the drawable;
+   *
+   * -) for ptex mesh:
+   * meshID is the index of the submesh corresponding to the drawable;
+   */
+  struct StaticDrawableInfo {
+    esp::scene::SceneNode& node;
+    uint32_t meshID;
+  };
+
+  /**
+   * @brief Define a map type referencing function pointers to @ref
+   * createPrimitiveAttributes() keyed by string names of classes being
+   * instanced, as defined in @ref PrimitiveNames3D
+   */
+  typedef std::map<std::string,
+                   std::shared_ptr<esp::assets::AbstractPrimitiveAttributes> (
+                       esp::assets::ResourceManager::*)()>
+      Map_Of_PrimTypes;
 
   //======== Scene Functions ========
 
@@ -1125,175 +1175,6 @@ class ResourceManager {
    */
   std::vector<Magnum::Matrix4> computeAbsoluteTransformations();
 
-  /**
-   * node: drawable's scene node
-   *
-   * meshID:
-   * -) for non-ptex mesh:
-   * meshID is the global index into meshes_.
-   * meshes_[meshID] is the BaseMesh corresponding to the drawable;
-   *
-   * -) for ptex mesh:
-   * meshID is the index of the submesh corresponding to the drawable;
-   */
-  struct StaticDrawableInfo {
-    esp::scene::SceneNode& node;
-    uint32_t meshID;
-  };
-  /**
-   * @brief this helper vector contains information of the drawables on which
-   * we will compute the absolute AABB pair
-   *
-   */
-  std::vector<StaticDrawableInfo> staticDrawableInfo_;
-  bool computeAbsoluteAABBs_ = false;
-
-  // ======== General geometry data ========
-  // shared_ptr is used here, instead of Corrade::Containers::Optional, or
-  // std::optional because shared_ptr is reference type, not value type, and
-  // thus we can avoiding duplicated loading
-
-  /**
-   * @brief The mesh data for loaded assets.
-   */
-  std::vector<std::shared_ptr<BaseMesh>> meshes_;
-
-  /**
-   * @brief The texture data for loaded assets.
-   */
-  std::vector<std::shared_ptr<Magnum::GL::Texture2D>> textures_;
-
-  /**
-   * @brief The next available unique ID for loaded materials
-   */
-  int nextMaterialID_ = 0;
-
-  /**
-   * @brief Asset metadata linking meshes, textures, materials, and the
-   * component transformation heirarchy for loaded assets.
-   *
-   * Maps absolute path keys to metadata.
-   */
-  std::map<std::string, LoadedAssetData> resourceDict_;
-
-  /**
-   * @brief The @ref ShaderManager used to store shader information for
-   * drawables created by this ResourceManager
-   */
-  gfx::ShaderManager shaderManager_;
-
-  // ======== Physical parameter data ========
-  /**
-   * @brief Plugin Manager used to instantiate importers which in turn are used
-   * to load asset data
-   */
-  Corrade::PluginManager::Manager<Importer> importerManager_;
-
-  /**
-   * @brief Importer used to synthesize Magnum Primitives.  This object allows
-   * for similar usage to File-based importers, but requires no file to be
-   * available/read.
-   */
-  Corrade::Containers::Pointer<Importer> primitiveImporter_;
-
-  /**
-   * @brief Importer used to load files
-   */
-  Corrade::Containers::Pointer<Importer> fileImporter_;
-
-  /**
-   * @brief Maps string keys (typically property filenames) to physical object
-   * templates.
-   *
-   * Templates are used by @ref physics::PhysicsManager to instance
-   * new objects with common parameters. For example:
-   * "data/objects/cheezit.phys_properties.json" -> physicalMetaData
-   */
-  std::map<std::string, PhysicsObjectAttributes::ptr>
-      physicsObjTemplateLibrary_;
-
-  /**
-   * @brief Maps string keys (built from primitive attributes themselves) to
-   * primitive templates.
-   *
-   */
-  std::map<std::string, AbstractPrimitiveAttributes::ptr>
-      primitiveAssetsTemplateLibrary_;
-  /**
-   * @brief Constant Map holding names of all Magnum 3D primitive classes
-   * supported, keyed by @ref PrimObjTypes enum entry.  Note final entry is not
-   * a valid primitive.
-   */
-  static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
-
-  /**
-   * @brief Define a map type referencing function pointers to @ref
-   * createPrimitiveAttributes() keyed by string names of classes being
-   * instanced, as defined in @ref PrimitiveNames3D
-   */
-  typedef std::map<std::string,
-                   std::shared_ptr<esp::assets::AbstractPrimitiveAttributes> (
-                       esp::assets::ResourceManager::*)()>
-      Map_Of_PrimTypes;
-
-  /**
-   * @brief Map of function pointers to instantiate a primitive attributes
-   * object, keyed by the Magnum primitive class name as listed in @ref
-   * PrimitiveNames3D. A primitive attributes object is instanced by accessing
-   * the approrpiate function pointer.
-   */
-  Map_Of_PrimTypes primTypeConstructorMap_;
-
-  /**
-   * @brief Maps string keys (typically property filenames) to physical scene
-   * templates.
-   *
-   * Templates are used by @ref physics::PhysicsManager to
-   * initialize, reset scenes or switch contexts.
-   */
-  std::map<std::string, PhysicsSceneAttributes::ptr> physicsSceneLibrary_;
-
-  /**
-   * @brief Library of physics scene attributes for
-   * initializing/resetting/switching physics world contexts.
-   */
-  std::map<std::string, PhysicsManagerAttributes::ptr> physicsManagerLibrary_;
-
-  /**
-   * @brief Primitive meshes available for instancing via @ref
-   * addPrimitiveToDrawables for debugging or visualization purposes.
-   */
-  std::vector<std::unique_ptr<Magnum::GL::Mesh>> primitive_meshes_;
-
-  /**
-   * @brief Maps string keys (typically property filenames) to @ref
-   * CollisionMeshData for all components of a loaded asset.
-   */
-  std::map<std::string, std::vector<CollisionMeshData>> collisionMeshGroups_;
-
-  /**
-   * @brief Maps all object attribute IDs to the appropriate handles used by
-   * lib
-   */
-  std::map<int, std::string> physicsTemplatesLibByID_;
-
-  /**
-   * @brief Maps loaded object template IDs to the appropriate template
-   * handles
-   */
-  std::map<int, std::string> physicsFileObjTmpltLibByID_;
-
-  /**
-   * @brief Maps synthesized, primitive-based object template IDs to the
-   * appropriate template handles
-   */
-  std::map<int, std::string> physicsSynthObjTmpltLibByID_;
-  /**
-   * @brief Maps primitive object template IDs to primitive template handles
-   * (composite strings built from specified attributes values for primitive)
-   */
-  std::map<int, std::string> primitiveAssetTmpltLibByID_;
-
   // ======== Rendering Utility Functions ========
 
   /**
@@ -1353,6 +1234,147 @@ class ResourceManager {
                              const Magnum::ResourceKey& material,
                              DrawableGroup* group = nullptr,
                              int objectId = ID_UNDEFINED);
+
+  // ======== Instance Variables ========
+
+  /**
+   * @brief this helper vector contains information of the drawables on which
+   * we will compute the absolute AABB pair
+   *
+   */
+  std::vector<StaticDrawableInfo> staticDrawableInfo_;
+  bool computeAbsoluteAABBs_ = false;
+
+  // ======== General geometry data ========
+  // shared_ptr is used here, instead of Corrade::Containers::Optional, or
+  // std::optional because shared_ptr is reference type, not value type, and
+  // thus we can avoiding duplicated loading
+
+  /**
+   * @brief The mesh data for loaded assets.
+   */
+  std::vector<std::shared_ptr<BaseMesh>> meshes_;
+
+  /**
+   * @brief The texture data for loaded assets.
+   */
+  std::vector<std::shared_ptr<Magnum::GL::Texture2D>> textures_;
+
+  /**
+   * @brief The next available unique ID for loaded materials
+   */
+  int nextMaterialID_ = 0;
+
+  /**
+   * @brief Asset metadata linking meshes, textures, materials, and the
+   * component transformation heirarchy for loaded assets.
+   *
+   * Maps absolute path keys to metadata.
+   */
+  std::map<std::string, LoadedAssetData> resourceDict_;
+
+  /**
+   * @brief The @ref ShaderManager used to store shader information for
+   * drawables created by this ResourceManager
+   */
+  gfx::ShaderManager shaderManager_;
+
+  // ======== File and primitive importers ========
+  /**
+   * @brief Plugin Manager used to instantiate importers which in turn are used
+   * to load asset data
+   */
+  Corrade::PluginManager::Manager<Importer> importerManager_;
+
+  /**
+   * @brief Importer used to synthesize Magnum Primitives (PrimitiveImporter).
+   * This object allows for similar usage to File-based importers, but requires
+   * no file to be available/read.
+   */
+  Corrade::Containers::Pointer<Importer> primitiveImporter_;
+
+  /**
+   * @brief Importer used to load generic mesh files (AnySceneImporter)
+   */
+  Corrade::Containers::Pointer<Importer> fileImporter_;
+
+  // ======== Physical parameter data ========
+  /**
+   * @brief Maps string keys (typically property filenames) to physical object
+   * templates.
+   *
+   * Templates are used by @ref physics::PhysicsManager to instance
+   * new objects with common parameters. For example:
+   * "data/objects/cheezit.phys_properties.json" -> physicalMetaData
+   */
+  std::map<std::string, PhysicsObjectAttributes::ptr>
+      physicsObjectTemplateLibrary_;
+
+  /**
+   * @brief Maps string keys (built from primitive attributes themselves) to
+   * primitive templates.
+   *
+   */
+  std::map<std::string, AbstractPrimitiveAttributes::ptr>
+      primitiveAssetTemplateLibrary_;
+
+  /**
+   * @brief Map of function pointers to instantiate a primitive attributes
+   * object, keyed by the Magnum primitive class name as listed in @ref
+   * PrimitiveNames3D. A primitive attributes object is instanced by accessing
+   * the approrpiate function pointer.
+   */
+  Map_Of_PrimTypes primTypeConstructorMap_;
+
+  /**
+   * @brief Maps string keys (typically property filenames) to physical scene
+   * templates.
+   *
+   * Templates are used by @ref physics::PhysicsManager to
+   * initialize, reset scenes or switch contexts.
+   */
+  std::map<std::string, PhysicsSceneAttributes::ptr> physicsSceneLibrary_;
+
+  /**
+   * @brief Library of physics scene attributes for
+   * initializing/resetting/switching physics world contexts.
+   */
+  std::map<std::string, PhysicsManagerAttributes::ptr> physicsManagerLibrary_;
+
+  /**
+   * @brief Primitive meshes available for instancing via @ref
+   * addPrimitiveToDrawables for debugging or visualization purposes.
+   */
+  std::vector<std::unique_ptr<Magnum::GL::Mesh>> primitive_meshes_;
+
+  /**
+   * @brief Maps string keys (typically property filenames) to @ref
+   * CollisionMeshData for all components of a loaded asset.
+   */
+  std::map<std::string, std::vector<CollisionMeshData>> collisionMeshGroups_;
+
+  /**
+   * @brief Maps all object attribute IDs to the appropriate handles used by
+   * lib
+   */
+  std::map<int, std::string> physicsObjectTemplateLibByID_;
+
+  /**
+   * @brief Maps loaded object template IDs to the appropriate template
+   * handles
+   */
+  std::map<int, std::string> physicsFileObjTmpltLibByID_;
+
+  /**
+   * @brief Maps synthesized, primitive-based object template IDs to the
+   * appropriate template handles
+   */
+  std::map<int, std::string> physicsSynthObjTmpltLibByID_;
+  /**
+   * @brief Maps primitive object template IDs to primitive template handles
+   * (composite strings built from specified attributes values for primitive)
+   */
+  std::map<int, std::string> primitiveAssetTemplateLibByID_;
 
   /**
    * @brief Flag to denote the desire to compress textures. TODO: unused?

@@ -112,7 +112,7 @@ class Simulator {
    * @return The string key referencing the asset in @ref ResourceManager.
    */
   std::string getObjectTemplateHandleByID(const int objectTemplateID) const {
-    return resourceManager_->getObjectTemplateHandle(objectTemplateID);
+    return resourceManager_->getPhysicsObjectTemplateHandle(objectTemplateID);
   }
 
   /**
@@ -124,7 +124,7 @@ class Simulator {
    */
   std::vector<std::string> getObjectTemplateHandles(
       const std::string& subStr = "") {
-    return resourceManager_->getTemplateHandlesBySubstring(subStr);
+    return resourceManager_->getPhysicsObjectTemplateHandlesBySubstring(subStr);
   }
   /**
    * @brief Get a list of all file-based templates whose origin handles contain
@@ -203,7 +203,7 @@ class Simulator {
    * esp::assets::ResourceManager::physicsObjectLibrary_.
    */
   int getPhysicsObjectLibrarySize() const {
-    return resourceManager_->getNumLibraryObjects();
+    return resourceManager_->getPhysicsObjectLibrarySize();
   }
 
   /**

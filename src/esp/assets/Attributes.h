@@ -267,21 +267,19 @@ class AbstractPrimitiveAttributes : public esp::core::Configuration {
       setUseTangents(false);
     }
   }  // ctor
+
   // forcing this class to be abstract - note still needs definition of
-  // destructor
+  // destructor : Cannot use this due to pybind issues
   // virtual ~AbstractPrimitiveAttributes() = 0;
-  void setOriginHandle(const std::string& originHandle) {
-    setString("originHandle", originHandle);
-  }
+
+  // originHandle is set internally based on attributes configuration
   std::string getOriginHandle() const { return getString("originHandle"); }
+
   void setAssetTemplateID(int assetTemplateID) {
     setInt("assetTemplateID", assetTemplateID);
   }
-
   int getAssetTemplateID() const { return getInt("assetTemplateID"); }
 
-  // not used to construct prim mesh
-  void setIsWireframe(bool isWireframe) { setBool("isWireframe", isWireframe); }
   bool getIsWireframe() const { return getBool("isWireframe"); }
 
   // only solid prims can use texture coords
@@ -336,11 +334,17 @@ class AbstractPrimitiveAttributes : public esp::core::Configuration {
   int getPrimObjType() const { return getInt("primObjType"); }
 
  private:
-  // should never change, only set by ctor
+  // Should never change, only set by ctor
   void setPrimObjClassName(std::string primObjClassName) {
     setString("primObjClassName", primObjClassName);
   }
+
+  // Should never change, only set by ctor
   void setPrimObjType(int primObjType) { setInt("primObjType", primObjType); }
+
+  // not used to construct prim mesh, so setting this does not require
+  // modification to origin handle.  Should never change, only set by ctor
+  void setIsWireframe(bool isWireframe) { setBool("isWireframe", isWireframe); }
 
  protected:
   /**
@@ -351,7 +355,7 @@ class AbstractPrimitiveAttributes : public esp::core::Configuration {
   void buildOriginHandle() {
     std::ostringstream oHndlStrm;
     oHndlStrm << getPrimObjClassName() << buildOriginHandleDetail();
-    setOriginHandle(oHndlStrm.str());
+    setString("originHandle", oHndlStrm.str());
   }
   // helper for origin handle construction
   std::string getBoolDispStr(bool val) const {

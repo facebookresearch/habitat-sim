@@ -60,7 +60,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
                               scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
   const std::string& configHandle =
-      resourceManager_.getObjectTemplateHandle(objectLibIndex);
+      resourceManager_.getPhysicsObjectTemplateHandle(objectLibIndex);
   return addObject(configHandle, drawables, attachmentNode, lightSetup);
 }
 

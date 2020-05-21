@@ -165,18 +165,18 @@ void ResourceManager::initDefaultPrimAttributes() {
   // wireframe cube no differently than other primivite-based rendered
   // objects)
   auto wfCube = primitiveImporter_->mesh(
-      primitiveAssetsTemplateLibrary_["cubeWireframe"]->getPrimObjClassName());
+      primitiveAssetTemplateLibrary_["cubeWireframe"]->getPrimObjClassName());
   primitive_meshes_.push_back(
       std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube)));
 
   // build default primtive object templates corresponding to given default
   // asset templates
-  for (auto primAsset : primitiveAssetsTemplateLibrary_) {
+  for (auto primAsset : primitiveAssetTemplateLibrary_) {
     buildAndRegisterPrimPhysObjTemplate(primAsset.first);
   }
 
   LOG(INFO) << "Built primitive asset templates: "
-            << std::to_string(primitiveAssetTmpltLibByID_.size());
+            << std::to_string(primitiveAssetTemplateLibByID_.size());
 
 }  // initDefaultPrimAttributes
 
@@ -198,7 +198,7 @@ bool ResourceManager::loadScene(
   // scene mesh loading
   bool meshSuccess = true;
   if (info.filepath.compare(EMPTY_SCENE) != 0) {
-    if (!io::exists(info.filepath)) {
+    if (!Corrade::Utility::Directory::exists(info.filepath)) {
       LOG(ERROR) << "Cannot load from file " << info.filepath;
       meshSuccess = false;
     } else {
@@ -587,55 +587,55 @@ bool ResourceManager::loadObjectMeshDataFromFile(
   return success;
 }  // loadObjectMeshDataFromFile
 
-int ResourceManager::addObjTemplateToLibrary(
+int ResourceManager::addPhysicsObjectTemplateToLibrary(
     PhysicsObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle,
     std::map<int, std::string>& mapOfNames) {
   // add object template ID to physicsObjTemplateLibrary_
   bool isNotPresent =
-      (physicsObjTemplateLibrary_.count(objectTemplateHandle) == 0);
+      (physicsObjectTemplateLibrary_.count(objectTemplateHandle) == 0);
   int objectTemplateID;
   if (isNotPresent) {
     // this will set the ID in the template
-    objectTemplateID = physicsObjTemplateLibrary_.size();
+    objectTemplateID = physicsObjectTemplateLibrary_.size();
     objectTemplate->setObjectTemplateID(objectTemplateID);
   } else {
     // this means a same-named template exists in the library already, so get
     // its ID number
-    objectTemplateID = physicsObjTemplateLibrary_.at(objectTemplateHandle)
+    objectTemplateID = physicsObjectTemplateLibrary_.at(objectTemplateHandle)
                            ->getObjectTemplateID();
   }
   // if is present, will replace present template with new template - templates
   // are expected to be 1-to-1 with handles (each unique handle always describes
   // the same unique template)
-  physicsObjTemplateLibrary_.emplace(objectTemplateHandle, objectTemplate);
-  physicsTemplatesLibByID_.emplace(objectTemplateID, objectTemplateHandle);
+  physicsObjectTemplateLibrary_.emplace(objectTemplateHandle, objectTemplate);
+  physicsObjectTemplateLibByID_.emplace(objectTemplateID, objectTemplateHandle);
   // save reference of specific type of template being built
   mapOfNames.emplace(objectTemplateID, objectTemplateHandle);
   return objectTemplateID;
-}  // addObjTemplateToLibrary
+}  // addPhysicsObjectTemplateToLibrary
 
 int ResourceManager::addPrimAssetTemplateToLibrary(
     AbstractPrimitiveAttributes::ptr primTemplate) {
   // add prim asset template ID to physicsObjTemplateLibrary_
   auto primHandle = primTemplate->getOriginHandle();
 
-  bool isNotPresent = (primitiveAssetsTemplateLibrary_.count(primHandle) == 0);
+  bool isNotPresent = (primitiveAssetTemplateLibrary_.count(primHandle) == 0);
   int primAssetTemplateID;
   if (isNotPresent) {
     // this will set the ID in the template
-    primAssetTemplateID = primitiveAssetsTemplateLibrary_.size();
+    primAssetTemplateID = primitiveAssetTemplateLibrary_.size();
     primTemplate->setAssetTemplateID(primAssetTemplateID);
   } else {
     // set ID to be existing template's ID
     primAssetTemplateID =
-        primitiveAssetsTemplateLibrary_.at(primHandle)->getAssetTemplateID();
+        primitiveAssetTemplateLibrary_.at(primHandle)->getAssetTemplateID();
   }
   // if is present, will replace present template with new template - templates
   // are expected to be 1-to-1 with handles (each unique handle always describes
   // the same unique template)
-  primitiveAssetsTemplateLibrary_.emplace(primHandle, primTemplate);
-  primitiveAssetTmpltLibByID_.emplace(primAssetTemplateID, primHandle);
+  primitiveAssetTemplateLibrary_.emplace(primHandle, primTemplate);
+  primitiveAssetTemplateLibByID_.emplace(primAssetTemplateID, primHandle);
 
   return primAssetTemplateID;
 }  // addPrimAssetTemplateToLibrary
@@ -657,7 +657,7 @@ int ResourceManager::registerObjectTemplate(
   std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
   std::string collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
 
-  if (primitiveAssetsTemplateLibrary_.count(renderAssetHandle) > 0) {
+  if (primitiveAssetTemplateLibrary_.count(renderAssetHandle) > 0) {
     // if renderAssetHandle corresponds to valid/existing primitive attributes
     // then setRenderAssetIsPrimitive to true and set map to
     // physicsSynthObjTmpltLibByID_
@@ -683,7 +683,7 @@ int ResourceManager::registerObjectTemplate(
     return ID_UNDEFINED;
   }
 
-  if (primitiveAssetsTemplateLibrary_.count(collisionAssetHandle) > 0) {
+  if (primitiveAssetTemplateLibrary_.count(collisionAssetHandle) > 0) {
     // if collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     objectTemplate->setCollisionAssetIsPrimitive(true);
@@ -702,8 +702,8 @@ int ResourceManager::registerObjectTemplate(
   objectTemplate->setIsClean();
 
   // add object template to template library
-  int objectTemplateID =
-      addObjTemplateToLibrary(objectTemplate, objectTemplateHandle, *mapToUse);
+  int objectTemplateID = addPhysicsObjectTemplateToLibrary(
+      objectTemplate, objectTemplateHandle, *mapToUse);
 
   return objectTemplateID;
 }  // namespace assets
@@ -768,22 +768,22 @@ std::vector<std::string> ResourceManager::getTemplateHandlesBySubStringPerType(
     }
   }
   return res;
-}  // getTemplateHandlesBySubString
+}  // getTemplateHandlesBySubStringPerType
 
 // load object template from config filename
 int ResourceManager::parseAndLoadPhysObjTemplate(
     const std::string& objPhysConfigFilename) {
   // check for duplicate load
   const bool objTemplateExists =
-      physicsObjTemplateLibrary_.count(objPhysConfigFilename) > 0;
+      physicsObjectTemplateLibrary_.count(objPhysConfigFilename) > 0;
   if (objTemplateExists) {
-    return physicsObjTemplateLibrary_.at(objPhysConfigFilename)
+    return physicsObjectTemplateLibrary_.at(objPhysConfigFilename)
         ->getObjectTemplateID();
   }
 
   // 1. parse the config file
   io::JsonDocument objPhysicsConfig;
-  if (io::exists(objPhysConfigFilename)) {
+  if (Corrade::Utility::Directory::exists(objPhysConfigFilename)) {
     try {
       objPhysicsConfig = io::parseJsonFile(objPhysConfigFilename);
     } catch (...) {
@@ -956,15 +956,15 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
 int ResourceManager::buildAndRegisterPrimPhysObjTemplate(
     const std::string& primAssetHandle) {
   // verify that a primitive asset with the given handle exists
-  if (primitiveAssetsTemplateLibrary_.count(primAssetHandle) == 0) {
+  if (primitiveAssetTemplateLibrary_.count(primAssetHandle) == 0) {
     LOG(WARNING) << " No primitive with handle '" << primAssetHandle
                  << "' exists so cannot build physical object.  Aborting.";
     return ID_UNDEFINED;
   }
 
   // verify that a template with this asset does not exist
-  if (physicsObjTemplateLibrary_.count(primAssetHandle) > 0) {
-    return physicsObjTemplateLibrary_.at(primAssetHandle)
+  if (physicsObjectTemplateLibrary_.count(primAssetHandle) > 0) {
+    return physicsObjectTemplateLibrary_.at(primAssetHandle)
         ->getObjectTemplateID();
   }
 
@@ -1828,7 +1828,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
     const std::string& objectTemplateHandle) {
   // Meta data
   PhysicsObjectAttributes::ptr physicsObjectAttributes =
-      physicsObjTemplateLibrary_.at(objectTemplateHandle);
+      physicsObjectTemplateLibrary_.at(objectTemplateHandle);
 
   // if attributes are "dirty" (values have changed since last registered)
   // then re-register.  Should never return ID_UNDEFINED - this would mean
@@ -1854,7 +1854,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   if (resourceDict_.count(renderAssetHandle) == 0) {
     if (physicsObjectAttributes->getRenderAssetIsPrimitive()) {
       // needs to have a primitive asset attributes with same name
-      if (primitiveAssetsTemplateLibrary_.count(renderAssetHandle) == 0) {
+      if (primitiveAssetTemplateLibrary_.count(renderAssetHandle) == 0) {
         // this is bad, means no render primitive template exists with expected
         // name.  should never happen
         LOG(ERROR) << "No primitive asset attributes exists with name :"
@@ -1866,7 +1866,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
       // build primitive asset for this object based on defined primitive
       // attributes
       auto primitiveAssetAttributes =
-          primitiveAssetsTemplateLibrary_.at(renderAssetHandle);
+          primitiveAssetTemplateLibrary_.at(renderAssetHandle);
       buildPrimitiveAssetData(primitiveAssetAttributes);
 
     } else {
@@ -1921,7 +1921,7 @@ void ResourceManager::addObjectToDrawables(const std::string& objTemplateHandle,
 
     // Meta data
     PhysicsObjectAttributes::ptr physicsObjectAttributes =
-        physicsObjTemplateLibrary_.at(objTemplateHandle);
+        physicsObjectTemplateLibrary_.at(objTemplateHandle);
 
     const std::string& renderObjectName =
         physicsObjectAttributes->getRenderAssetHandle();
