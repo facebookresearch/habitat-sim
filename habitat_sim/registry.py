@@ -109,7 +109,7 @@ class _Registry:
 
     @classmethod
     def register_pose_extractor(
-        cls, pose_extractor: Optional[Type] = None, name: Optional[str] = None
+        cls, pose_extractor: Optional[Type] = None, *, name: Optional[str] = None
     ):
         r"""Registers a new pose extractor model with Habitat-Sim
 

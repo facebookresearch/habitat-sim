@@ -16,19 +16,18 @@ from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 from habitat_sim.utils.data.pose_extractor import PoseExtractor
 
 
-def make_pose_extractor(name: str) -> PoseExtractor:
-    r"""Constructs a pose_extractor using the given name and keyword arguments
+def get_pose_extractor(name: str) -> PoseExtractor:
+    r"""Fetches the correct pose_extractor using the given name and keyword arguments
 
     :param name: The name of the pose_extractor in the `habitat_sim.registry`
-    :param kwargs: The keyword arguments to be passed to the constructor of the pose extractor
     """
 
-    model = registry.get_pose_extractor(name)
-    assert model is not None, "Could not find a pose extractor for name '{}'".format(
-        name
-    )
+    extractor = registry.get_pose_extractor(name)
+    assert (
+        extractor is not None
+    ), "Could not find a pose extractor for name '{}'".format(name)
 
-    return model
+    return extractor
 
 
 class ImageExtractor:
@@ -79,7 +78,6 @@ class ImageExtractor:
         if sum(split) != 100:
             raise Exception("Train/test split must sum to 100.")
 
-        # assert extraction_method in ["closest", "panorama"]
         self.scene_filepaths = None
         self.cur_fp = None
         if type(scene_filepath) == list:
@@ -117,7 +115,7 @@ class ImageExtractor:
             ]
 
         args = (self.tdv_fp_ref_triples, self.pixels_per_meter)
-        self.pose_extractor = make_pose_extractor(pose_extractor_name)(*args)
+        self.pose_extractor = get_pose_extractor(pose_extractor_name)(*args)
         self.poses = self.pose_extractor.extract_all_poses(labels=self.labels)
 
         if shuffle:
