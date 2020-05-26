@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import habitat_sim
+import habitat_sim.registry as registry
 from habitat_sim.utils.common import quat_from_two_vectors
 
 
@@ -98,6 +99,7 @@ class PoseExtractor:
         return poses
 
 
+@registry.register_pose_extractor(name="closest_point_extractor")
 class ClosestPointExtractor(PoseExtractor):
     def __init__(self, topdown_views, pixels_per_meter=0.1):
         super().__init__(topdown_views, pixels_per_meter)
@@ -183,6 +185,7 @@ class ClosestPointExtractor(PoseExtractor):
         return None, None
 
 
+@registry.register_pose_extractor(name="panorama_extractor")
 class PanoramaExtractor(PoseExtractor):
     def __init__(self, topdown_views, pixels_per_meter=0.1):
         super().__init__(topdown_views, pixels_per_meter)

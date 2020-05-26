@@ -9,10 +9,26 @@ import numpy as np
 
 import habitat_sim
 import habitat_sim.bindings as hsim
+import habitat_sim.registry as registry
 from habitat_sim.agent import AgentState
 from habitat_sim.utils.common import quat_from_two_vectors
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
-from habitat_sim.utils.data.pose_extractor import *
+from habitat_sim.utils.data.pose_extractor import PoseExtractor
+
+
+def make_pose_extractor(name: str) -> PoseExtractor:
+    r"""Constructs a pose_extractor using the given name and keyword arguments
+
+    :param name: The name of the pose_extractor in the `habitat_sim.registry`
+    :param kwargs: The keyword arguments to be passed to the constructor of the pose extractor
+    """
+
+    model = registry.get_pose_extractor(name)
+    assert model is not None, "Could not find a pose extractor for name '{}'".format(
+        name
+    )
+
+    return model
 
 
 class ImageExtractor:
@@ -35,8 +51,7 @@ class ImageExtractor:
             reference point: A reference point from the coordinate system of the scene. Necessary for specifying poses
                 in the scene's coordinate system.
 
-    :property pose_extractor: PoseExtractor object
-    :property extraction_method: String that represents the extraction method
+    :property pose_extractor_name: name of the pose_extractor in habitat.registry
     :property poses: list of camera poses gathered from pose_extractor
     :property train: A subset of poses used for training
     :property test: A subset of poses used for testing
@@ -54,8 +69,7 @@ class ImageExtractor:
         labels: List[float] = [0.0],
         img_size: tuple = (512, 512),
         output: List[str] = ["rgba"],
-        pose_extractor: PoseExtractor = None,
-        extraction_method: str = "closest",
+        pose_extractor_name: str = "closest_point_extractor",
         sim=None,
         shuffle: bool = True,
         split: tuple = (70, 30),
@@ -65,7 +79,7 @@ class ImageExtractor:
         if sum(split) != 100:
             raise Exception("Train/test split must sum to 100.")
 
-        assert extraction_method in ["closest", "panorama"]
+        # assert extraction_method in ["closest", "panorama"]
         self.scene_filepaths = None
         self.cur_fp = None
         if type(scene_filepath) == list:
@@ -102,13 +116,8 @@ class ImageExtractor:
                 )
             ]
 
-        # Use can give a pose extractor
-        if pose_extractor is not None:
-            self.pose_extractor = pose_extractor
-        else:
-            args = (self.tdv_fp_ref_triples, self.pixels_per_meter)
-            self.pose_extractor = self._register_pose_extractor(extraction_method, args)
-
+        args = (self.tdv_fp_ref_triples, self.pixels_per_meter)
+        self.pose_extractor = make_pose_extractor(pose_extractor_name)(*args)
         self.poses = self.pose_extractor.extract_all_poses(labels=self.labels)
 
         if shuffle:
@@ -182,7 +191,7 @@ class ImageExtractor:
         return sample
 
     def close(self) -> None:
-        r"""Deletes the instance of the simulator. Necessary for instatiating a different ImageExtractor.
+        r"""Deletes the instance of the simulator. Necessary for instantiating a different ImageExtractor.
         """
         if self.sim is not None:
             self.sim.close()
@@ -248,18 +257,6 @@ class ImageExtractor:
                 instance_id_to_name[obj_id] = obj.category.name()
 
         return instance_id_to_name
-
-    def _register_pose_extractor(self, method, args):
-        if method == "closest":
-            pose_extractor = ClosestPointExtractor(*args)
-        elif method == "panorama":
-            pose_extractor = PanoramaExtractor(*args)
-        else:
-            raise Exception(
-                "Please use either 'closest' or 'panorama' for extraction method."
-            )
-
-        return pose_extractor
 
     def _config_sim(self, scene_filepath, img_size):
         settings = {

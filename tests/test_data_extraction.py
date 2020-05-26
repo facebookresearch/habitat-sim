@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
+import habitat_sim.utils.data
 from habitat_sim.utils.data.data_extractor import ImageExtractor, TopdownView
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 
@@ -64,11 +65,11 @@ def test_extractor_cache():
     assert 1 not in cache
 
 
-def test_extractor_all_modes(sim):
+def test_pose_extractors(sim):
     scene_filepath = ""
-    methods = ["closest", "panorama"]
-    for method in methods:
+    pose_extractor_names = ["closest_point_extractor", "panorama_extractor"]
+    for name in pose_extractor_names:
         extractor = ImageExtractor(
-            scene_filepath, img_size=(32, 32), sim=sim, extraction_method=method
+            scene_filepath, img_size=(32, 32), sim=sim, pose_extractor_name=name
         )
         assert len(extractor) > 1
