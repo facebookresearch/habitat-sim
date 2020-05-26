@@ -37,7 +37,7 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   bWorld_->setGravity(btVector3(physicsManagerAttributes->getVec3("gravity")));
 
   //! Create new scene node
-  staticSceneObject_ = physics::BulletRigidObject::create_unique(
+  staticSceneObject_ = physics::BulletRigidScene::create_unique(
       &physicsNode_->createChild(), bWorld_);
 
   return true;
@@ -46,11 +46,10 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
 bool BulletPhysicsManager::addSceneFinalize(
-    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
-    const std::vector<assets::CollisionMeshData>& meshGroup) {
+    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes) {
   //! Initialize scene
-  bool sceneSuccess = staticSceneObject_->initializeScene(
-      resourceManager_, physicsSceneAttributes, meshGroup);
+  bool sceneSuccess =
+      staticSceneObject_->initialize(resourceManager_, physicsSceneAttributes);
 
   return sceneSuccess;
 }
@@ -60,8 +59,7 @@ bool BulletPhysicsManager::makeAndAddRigidObject(
     assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
     scene::SceneNode* objectNode) {
   auto ptr = physics::BulletRigidObject::create_unique(objectNode, bWorld_);
-  bool objSuccess =
-      ptr->initializeObject(resourceManager_, physicsObjectAttributes);
+  bool objSuccess = ptr->initialize(resourceManager_, physicsObjectAttributes);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }
@@ -206,7 +204,7 @@ const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
 }
 
 const Magnum::Range3D BulletPhysicsManager::getSceneCollisionShapeAabb() const {
-  return static_cast<BulletRigidObject*>(staticSceneObject_.get())
+  return static_cast<BulletRigidScene*>(staticSceneObject_.get())
       ->getCollisionShapeAabb();
 }
 

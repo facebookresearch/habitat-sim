@@ -40,10 +40,12 @@ PhysicsObjectAttributes::PhysicsObjectAttributes(
   setInertia({0, 0, 0});
   setLinearDamping(0.2);
   setAngularDamping(0.2);
-  // default collisions will be mesh for physics objects
+  // default rendering and collisions will be mesh for physics objects
   // primitive-based objects do not currently support mesh collisions, however,
   // due to issues with how non-triangle meshes (i.e. wireframes) are handled in
   // @ref GenericMeshData::setMeshData
+  setRenderAssetIsPrimitive(false);
+  setCollisionAssetIsPrimitive(false);
   setUseMeshCollision(true);
 
   setBoundingBoxCollisions(false);
@@ -79,8 +81,9 @@ PhysicsManagerAttributes::PhysicsManagerAttributes(
  */
 CapsulePrimitiveAttributes::CapsulePrimitiveAttributes(
     bool isWireframe,
-    const std::string& primObjType)
-    : AbstractPrimitiveAttributes(isWireframe, primObjType) {
+    int primObjType,
+    const std::string& primObjClassName)
+    : AbstractPrimitiveAttributes(isWireframe, primObjType, primObjClassName) {
   setCylinderRings(1);
   if (!isWireframe) {  // solid
     setHemisphereRings(4);
@@ -94,9 +97,11 @@ CapsulePrimitiveAttributes::CapsulePrimitiveAttributes(
   buildOriginHandle();  // build handle based on config
 }  // PhysicsCapsulePrimAttributes
 
-ConePrimitiveAttributes::ConePrimitiveAttributes(bool isWireframe,
-                                                 const std::string& primObjType)
-    : AbstractPrimitiveAttributes(isWireframe, primObjType) {
+ConePrimitiveAttributes::ConePrimitiveAttributes(
+    bool isWireframe,
+    int primObjType,
+    const std::string& primObjClassName)
+    : AbstractPrimitiveAttributes(isWireframe, primObjType, primObjClassName) {
   setHalfLength(1.25);
 
   if (!isWireframe) {  // solid
@@ -111,8 +116,9 @@ ConePrimitiveAttributes::ConePrimitiveAttributes(bool isWireframe,
 
 CylinderPrimitiveAttributes::CylinderPrimitiveAttributes(
     bool isWireframe,
-    const std::string& primObjType)
-    : AbstractPrimitiveAttributes(isWireframe, primObjType) {
+    int primObjType,
+    const std::string& primObjClassName)
+    : AbstractPrimitiveAttributes(isWireframe, primObjType, primObjClassName) {
   setNumRings(1);
   setHalfLength(1.0);
 
@@ -127,8 +133,9 @@ CylinderPrimitiveAttributes::CylinderPrimitiveAttributes(
 
 UVSpherePrimitiveAttributes::UVSpherePrimitiveAttributes(
     bool isWireframe,
-    const std::string& primObjType)
-    : AbstractPrimitiveAttributes(isWireframe, primObjType) {
+    int primObjType,
+    const std::string& primObjClassName)
+    : AbstractPrimitiveAttributes(isWireframe, primObjType, primObjClassName) {
   if (!isWireframe) {  // solid
     setNumRings(8);
     setNumSegments(16);

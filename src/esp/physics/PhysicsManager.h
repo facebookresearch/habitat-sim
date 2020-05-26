@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_PHYSICS_PHYSICSMANAGER_H_
+#define ESP_PHYSICS_PHYSICSMANAGER_H_
 
 /** @file
  * @brief Class @ref esp::physics::PhysicsManager, enum @ref
@@ -17,6 +18,7 @@
 /* Bullet Physics Integration */
 
 #include "RigidObject.h"
+#include "RigidScene.h"
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/CollisionMeshData.h"
@@ -857,8 +859,7 @@ class PhysicsManager {
    */
 
   virtual bool addSceneFinalize(
-      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
-      const std::vector<assets::CollisionMeshData>& meshGroup);
+      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes);
 
   /** @brief Create and initialize a @ref RigidObject, assign it an ID and add
    * it to existingObjects_ map keyed with newObjectID
@@ -898,12 +899,12 @@ class PhysicsManager {
   /**
    * @brief The @ref scene::SceneNode which represents the static collision
    * geometry of the physical world. Only one @ref staticSceneObject_ may exist
-   * in a physical world. This @ref RigidObject can only have @ref
+   * in a physical world. This @ref RigidScene can only have @ref
    * MotionType::STATIC as it is loaded as static geometry with simulation
    * efficiency in mind. See
    * @ref addScene.
    * */
-  physics::RigidObject::uptr staticSceneObject_ = nullptr;
+  physics::RigidScene::uptr staticSceneObject_ = nullptr;
 
   //! ==== Rigid object memory management ====
 
@@ -944,3 +945,5 @@ class PhysicsManager {
 }  // namespace physics
 
 }  // namespace esp
+
+#endif  // ESP_PHYSICS_PHYSICSMANAGER_H_

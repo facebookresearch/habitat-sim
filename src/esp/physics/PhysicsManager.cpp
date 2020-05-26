@@ -24,7 +24,7 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node) {
 bool PhysicsManager::initPhysicsFinalize() {
   //! Create new scene node
   staticSceneObject_ =
-      physics::RigidObject::create_unique(&physicsNode_->createChild());
+      physics::RigidScene::create_unique(&physicsNode_->createChild());
   return true;
 }
 
@@ -43,16 +43,15 @@ bool PhysicsManager::addScene(
   }
 
   //! Initialize scene
-  bool sceneSuccess = addSceneFinalize(physicsSceneAttributes, meshGroup);
+  bool sceneSuccess = addSceneFinalize(physicsSceneAttributes);
   return sceneSuccess;
 }
 
 bool PhysicsManager::addSceneFinalize(
-    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
-    const std::vector<assets::CollisionMeshData>& meshGroup) {
+    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes) {
   //! Initialize scene
-  bool sceneSuccess = staticSceneObject_->initializeScene(
-      resourceManager_, physicsSceneAttributes, meshGroup);
+  bool sceneSuccess =
+      staticSceneObject_->initialize(resourceManager_, physicsSceneAttributes);
   return sceneSuccess;
 }
 
@@ -61,7 +60,7 @@ int PhysicsManager::addObject(const int objectLibIndex,
                               scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
   const std::string& configHandle =
-      resourceManager_.getObjectTemplateHandle(objectLibIndex);
+      resourceManager_.getPhysicsObjectTemplateHandle(objectLibIndex);
   return addObject(configHandle, drawables, attachmentNode, lightSetup);
 }
 
@@ -80,8 +79,10 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
   if (attachmentNode == nullptr) {
     objectNode = &staticSceneObject_->node().createChild();
   }
-
+  // verify whether necessary assets exist, and if not, instantiate them
+  // only make object if asset instantiation succeeds (short circuit)
   bool objectSuccess =
+      resourceManager_.instantiateAssetsOnDemand(configFileHandle) &&
       makeAndAddRigidObject(nextObjectID_, physicsObjectAttributes, objectNode);
 
   if (!objectSuccess) {
@@ -163,8 +164,7 @@ bool PhysicsManager::makeAndAddRigidObject(
     assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
     scene::SceneNode* objectNode) {
   auto ptr = physics::RigidObject::create_unique(objectNode);
-  bool objSuccess =
-      ptr->initializeObject(resourceManager_, physicsObjectAttributes);
+  bool objSuccess = ptr->initialize(resourceManager_, physicsObjectAttributes);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }
@@ -529,7 +529,8 @@ const scene::SceneNode& PhysicsManager::getObjectVisualSceneNode(
 const assets::PhysicsObjectAttributes::ptr
 PhysicsManager::getInitializationAttributes(const int physObjectID) const {
   assertIDValidity(physObjectID);
-  return existingObjects_.at(physObjectID)->getInitializationAttributes();
+  return std::static_pointer_cast<assets::PhysicsObjectAttributes>(
+      existingObjects_.at(physObjectID)->getInitializationAttributes());
 }
 
 }  // namespace physics

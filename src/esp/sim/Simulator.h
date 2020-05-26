@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_SIM_SIMULATOR_H_
+#define ESP_SIM_SIMULATOR_H_
 
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
@@ -37,6 +38,7 @@ struct SimulatorConfiguration {
   scene::SceneConfiguration scene;
   int defaultAgentId = 0;
   int gpuDeviceId = 0;
+  unsigned int randomSeed = 0;
   std::string defaultCameraUuid = "rgba_camera";
   bool compressTextures = false;
   bool createRenderer = true;
@@ -64,6 +66,17 @@ class Simulator {
  public:
   explicit Simulator(const SimulatorConfiguration& cfg);
   virtual ~Simulator();
+
+  /**
+   * @brief Closes the simulator and frees all loaded assets and GPU contexts.
+   *
+   * @warning Must reset the simulator to its "just after constructor" state for
+   * python inheritance to function correctly.  Shared/unique pointers should be
+   * set back to nullptr, any members set to their default values, etc.  If this
+   * is not done correctly, the pattern for @ref `close` then @ref `reconfigure`
+   * to create a "fresh" instance of the simulator may not work correctly
+   */
+  virtual void close();
 
   virtual void reconfigure(const SimulatorConfiguration& cfg);
 
@@ -99,7 +112,7 @@ class Simulator {
    * @return The string key referencing the asset in @ref ResourceManager.
    */
   std::string getObjectTemplateHandleByID(const int objectTemplateID) const {
-    return resourceManager_.getObjectTemplateHandle(objectTemplateID);
+    return resourceManager_->getPhysicsObjectTemplateHandle(objectTemplateID);
   }
 
   /**
@@ -111,7 +124,7 @@ class Simulator {
    */
   std::vector<std::string> getObjectTemplateHandles(
       const std::string& subStr = "") {
-    return resourceManager_.getTemplateHandlesBySubstring(subStr);
+    return resourceManager_->getPhysicsObjectTemplateHandlesBySubstring(subStr);
   }
   /**
    * @brief Get a list of all file-based templates whose origin handles contain
@@ -123,7 +136,7 @@ class Simulator {
    */
   std::vector<std::string> getFileBasedObjectTemplateHandles(
       const std::string& subStr = "") {
-    return resourceManager_.getFileTemplateHandlesBySubstring(subStr);
+    return resourceManager_->getFileTemplateHandlesBySubstring(subStr);
   }
 
   /**
@@ -136,7 +149,7 @@ class Simulator {
    */
   std::vector<std::string> getSynthesizedObjectTemplateHandles(
       const std::string& subStr = "") {
-    return resourceManager_.getSynthTemplateHandlesBySubstring(subStr);
+    return resourceManager_->getSynthTemplateHandlesBySubstring(subStr);
   }
 
   /**
@@ -190,14 +203,21 @@ class Simulator {
    * esp::assets::ResourceManager::physicsObjectLibrary_.
    */
   int getPhysicsObjectLibrarySize() const {
-    return resourceManager_.getNumLibraryObjects();
+    return resourceManager_->getPhysicsObjectLibrarySize();
   }
 
   /**
    * @brief Get a smart pointer to a physics object template by index.
    */
   assets::PhysicsObjectAttributes::ptr getObjectTemplate(int templateId) const {
-    return resourceManager_.getPhysicsObjectAttributes(templateId);
+    return resourceManager_->getPhysicsObjectAttributes(templateId);
+  }
+  /**
+   * @brief Get a smart pointer to a physics object template by handle.
+   */
+  assets::PhysicsObjectAttributes::ptr getObjectTemplateByName(
+      const std::string& templateHandle) const {
+    return resourceManager_->getPhysicsObjectAttributes(templateHandle);
   }
   /**
    * @brief Load all "*.phys_properties.json" files from the provided file or
@@ -213,18 +233,17 @@ class Simulator {
   std::vector<int> loadObjectConfigs(const std::string& path);
 
   /**
-   * @brief Load the provided PhysicsObjectAttributes template into the
+   * @brief Register the provided PhysicsObjectAttributes template into the
    * Simulator.
    *
    * @param objectTemplate A new PhysicsObjectAttributes to load.
-   * @param objectTemplateHandle The desired key for referencing the new
-   * template. To register this successfully, it must not be a duplicate of an
-   * existing key.
+   * @param objectTemplateHandle The desired key for referencing the new or
+   * modified template.
    * @return A template index for instancing the loaded template or ID_UNDEFINED
    * if failed.
    */
-  int loadObjectTemplate(assets::PhysicsObjectAttributes::ptr objTmplPtr,
-                         const std::string& objectTemplateHandle);
+  int registerObjectTemplate(assets::PhysicsObjectAttributes::ptr objTmplPtr,
+                             const std::string& objectTemplateHandle);
 
   /**
    * @brief Get a static view of a physics object's template when the object was
@@ -551,6 +570,8 @@ class Simulator {
       std::map<std::string, sensor::ObservationSpace>& spaces);
 
   nav::PathFinder::ptr getPathFinder();
+  void setPathFinder(nav::PathFinder::ptr pf);
+
   /**
    * @brief Enable or disable frustum culling (enabled by default)
    * @param val, true = enable, false = disable
@@ -595,6 +616,14 @@ class Simulator {
                            const std::string& lightSetupKey,
                            int sceneID = 0);
 
+  /**
+   * @brief Getter for PRNG.
+   *
+   * Use this where-ever possible so that habitat won't be effect by
+   * python's random or np.random modules
+   */
+  core::Random::ptr random() { return random_; }
+
  protected:
   Simulator(){};
 
@@ -617,9 +646,9 @@ class Simulator {
   // If you switch the order, you will have the error:
   // GL::Context::current(): no current context from Magnum
   // during the deconstruction
-  assets::ResourceManager resourceManager_;
+  std::unique_ptr<assets::ResourceManager> resourceManager_ = nullptr;
 
-  scene::SceneManager sceneManager_;
+  scene::SceneManager::uptr sceneManager_ = nullptr;
   int activeSceneID_ = ID_UNDEFINED;
   int activeSemanticSceneID_ = ID_UNDEFINED;
   std::vector<int> sceneID_;
@@ -628,7 +657,7 @@ class Simulator {
 
   std::shared_ptr<physics::PhysicsManager> physicsManager_ = nullptr;
 
-  core::Random random_;
+  core::Random::ptr random_;
   SimulatorConfiguration config_;
 
   std::vector<agent::Agent::ptr> agents_;
@@ -649,3 +678,5 @@ class Simulator {
 
 }  // namespace sim
 }  // namespace esp
+
+#endif  // ESP_SIM_SIMULATOR_H_

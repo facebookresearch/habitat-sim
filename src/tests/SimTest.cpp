@@ -428,12 +428,19 @@ void SimTest::loadingObjectTemplates() {
   std::string boxPath =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
   newTemplate->setRenderAssetHandle(boxPath);
-  int templateIndex = simulator->loadObjectTemplate(newTemplate, boxPath);
+  int templateIndex = simulator->registerObjectTemplate(newTemplate, boxPath);
   CORRADE_VERIFY(templateIndex != esp::ID_UNDEFINED);
+  // change render asset for object template named boxPath
+  std::string chairPath =
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/chair.glb");
+  newTemplate->setRenderAssetHandle(chairPath);
+  int templateIndex2 = simulator->registerObjectTemplate(newTemplate, boxPath);
 
-  // test double load
-  templateIndex = simulator->loadObjectTemplate(newTemplate, boxPath);
-  CORRADE_VERIFY(templateIndex == esp::ID_UNDEFINED);
+  CORRADE_VERIFY(templateIndex2 != esp::ID_UNDEFINED);
+  CORRADE_VERIFY(templateIndex2 == templateIndex);
+  esp::assets::PhysicsObjectAttributes::ptr newTemplate2 =
+      simulator->getObjectTemplateByName(boxPath);
+  CORRADE_VERIFY(newTemplate2->getRenderAssetHandle() == chairPath);
 }
 
 }  // namespace

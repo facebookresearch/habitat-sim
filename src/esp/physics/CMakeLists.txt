@@ -8,8 +8,11 @@ find_package(MagnumPlugins
 add_library(physics STATIC
   PhysicsManager.cpp
   PhysicsManager.h
+  RigidBase.h
   RigidObject.cpp
   RigidObject.h
+  RigidScene.cpp
+  RigidScene.h
 )
 
 if(BUILD_WITH_BULLET)

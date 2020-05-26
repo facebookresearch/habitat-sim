@@ -38,6 +38,9 @@ class AbstractPhysicsAttributes : public esp::core::Configuration {
   }
   int getObjectTemplateID() const { return getInt("objectTemplateID"); }
 
+  void setScale(const Magnum::Vector3& scale) { setVec3("scale", scale); }
+  Magnum::Vector3 getScale() const { return getVec3("scale"); }
+
   void setFrictionCoefficient(double frictionCoefficient) {
     setDouble("frictionCoefficient", frictionCoefficient);
   }
@@ -54,16 +57,38 @@ class AbstractPhysicsAttributes : public esp::core::Configuration {
 
   void setRenderAssetHandle(const std::string& renderAssetHandle) {
     setString("renderAssetHandle", renderAssetHandle);
+    setIsDirty();
   }
   std::string getRenderAssetHandle() const {
     return getString("renderAssetHandle");
   }
 
+  // whether this object uses file-based mesh render object or
+  // primitive(implicit) render shapes
+  void setRenderAssetIsPrimitive(bool renderAssetIsPrimitive) {
+    setBool("renderAssetIsPrimitive", renderAssetIsPrimitive);
+  }
+
+  bool getRenderAssetIsPrimitive() const {
+    return getBool("renderAssetIsPrimitive");
+  }
+
   void setCollisionAssetHandle(const std::string& collisionAssetHandle) {
     setString("collisionAssetHandle", collisionAssetHandle);
+    setIsDirty();
   }
   std::string getCollisionAssetHandle() const {
     return getString("collisionAssetHandle");
+  }
+
+  // whether this object uses file-based mesh render object or
+  // primitive(implicit) render shapes
+  void setCollisionAssetIsPrimitive(bool collisionAssetIsPrimitive) {
+    setBool("collisionAssetIsPrimitive", collisionAssetIsPrimitive);
+  }
+
+  bool getCollisionAssetIsPrimitive() const {
+    return getBool("collisionAssetIsPrimitive");
   }
 
   // whether this object uses mesh collision or primitive(implicit) collision
@@ -74,7 +99,11 @@ class AbstractPhysicsAttributes : public esp::core::Configuration {
 
   bool getUseMeshCollision() const { return getBool("useMeshCollision"); }
 
+  bool getIsDirty() const { return getBool("__isDirty"); }
+  void setIsClean() { setBool("__isDirty", false); }
+
  protected:
+  void setIsDirty() { setBool("__isDirty", true); }
   std::string getBoolDispStr(bool val) const {
     return (val ? "true" : "false");
   }
@@ -107,9 +136,6 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
     setVec3("inertia", inertia);
   }
   Magnum::Vector3 getInertia() const { return getVec3("inertia"); }
-
-  void setScale(const Magnum::Vector3& scale) { setVec3("scale", scale); }
-  Magnum::Vector3 getScale() const { return getVec3("scale"); }
 
   void setLinearDamping(double linearDamping) {
     setDouble("linearDamping", linearDamping);
@@ -228,31 +254,32 @@ class PhysicsManagerAttributes : public esp::core::Configuration {
 //! without pure virtual methods
 class AbstractPrimitiveAttributes : public esp::core::Configuration {
  public:
-  AbstractPrimitiveAttributes(bool isWireframe, const std::string& primObjType)
+  AbstractPrimitiveAttributes(bool isWireframe,
+                              int primObjType,
+                              const std::string& primObjClassName)
       : Configuration() {
     setIsWireframe(isWireframe);
     setPrimObjType(primObjType);
+    setPrimObjClassName(primObjClassName);
 
     if (!isWireframe) {  // solid
       setUseTextureCoords(false);
       setUseTangents(false);
     }
   }  // ctor
+
   // forcing this class to be abstract - note still needs definition of
-  // destructor
+  // destructor : Cannot use this due to pybind issues
   // virtual ~AbstractPrimitiveAttributes() = 0;
-  void setOriginHandle(const std::string& originHandle) {
-    setString("originHandle", originHandle);
-  }
+
+  // originHandle is set internally based on attributes configuration
   std::string getOriginHandle() const { return getString("originHandle"); }
+
   void setAssetTemplateID(int assetTemplateID) {
     setInt("assetTemplateID", assetTemplateID);
   }
-
   int getAssetTemplateID() const { return getInt("assetTemplateID"); }
 
-  // not used to construct prim mesh
-  void setIsWireframe(bool isWireframe) { setBool("isWireframe", isWireframe); }
   bool getIsWireframe() const { return getBool("isWireframe"); }
 
   // only solid prims can use texture coords
@@ -300,13 +327,24 @@ class AbstractPrimitiveAttributes : public esp::core::Configuration {
    */
   Corrade::Utility::ConfigurationGroup getConfigGroup() const { return cfg; }
 
-  std::string getPrimObjType() const { return getString("primObjType"); }
+  std::string getPrimObjClassName() const {
+    return getString("primObjClassName");
+  }
+
+  int getPrimObjType() const { return getInt("primObjType"); }
 
  private:
-  // should never change, only set by ctor
-  void setPrimObjType(std::string primObjType) {
-    setString("primObjType", primObjType);
+  // Should never change, only set by ctor
+  void setPrimObjClassName(std::string primObjClassName) {
+    setString("primObjClassName", primObjClassName);
   }
+
+  // Should never change, only set by ctor
+  void setPrimObjType(int primObjType) { setInt("primObjType", primObjType); }
+
+  // not used to construct prim mesh, so setting this does not require
+  // modification to origin handle.  Should never change, only set by ctor
+  void setIsWireframe(bool isWireframe) { setBool("isWireframe", isWireframe); }
 
  protected:
   /**
@@ -316,8 +354,8 @@ class AbstractPrimitiveAttributes : public esp::core::Configuration {
    */
   void buildOriginHandle() {
     std::ostringstream oHndlStrm;
-    oHndlStrm << getPrimObjType() << buildOriginHandleDetail();
-    setOriginHandle(oHndlStrm.str());
+    oHndlStrm << getPrimObjClassName() << buildOriginHandleDetail();
+    setString("originHandle", oHndlStrm.str());
   }
   // helper for origin handle construction
   std::string getBoolDispStr(bool val) const {
@@ -332,7 +370,9 @@ class AbstractPrimitiveAttributes : public esp::core::Configuration {
 //! attributes describing primitive capsule objects
 class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
  public:
-  CapsulePrimitiveAttributes(bool isWireframe, const std::string& primObjType);
+  CapsulePrimitiveAttributes(bool isWireframe,
+                             int primObjType,
+                             const std::string& primObjClassName);
 
   void setHemisphereRings(int hemisphereRings) {
     setInt("hemisphereRings", hemisphereRings);
@@ -362,7 +402,9 @@ class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
 
 class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
  public:
-  ConePrimitiveAttributes(bool isWireframe, const std::string& primObjType);
+  ConePrimitiveAttributes(bool isWireframe,
+                          int primObjType,
+                          const std::string& primObjClassName);
 
   // only solid cones can have end capped
   void setCapEnd(bool capEnd) {
@@ -389,8 +431,12 @@ class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
 
 class CubePrimitiveAttributes : public AbstractPrimitiveAttributes {
  public:
-  CubePrimitiveAttributes(bool isWireframe, const std::string& primObjType)
-      : AbstractPrimitiveAttributes(isWireframe, primObjType) {
+  CubePrimitiveAttributes(bool isWireframe,
+                          int primObjType,
+                          const std::string& primObjClassName)
+      : AbstractPrimitiveAttributes(isWireframe,
+                                    primObjType,
+                                    primObjClassName) {
     buildOriginHandle();  // build handle based on config
   }
 
@@ -399,7 +445,9 @@ class CubePrimitiveAttributes : public AbstractPrimitiveAttributes {
 
 class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
  public:
-  CylinderPrimitiveAttributes(bool isWireframe, const std::string& primObjType);
+  CylinderPrimitiveAttributes(bool isWireframe,
+                              int primObjType,
+                              const std::string& primObjClassName);
 
   // only solid culinders can have ends capped
   void setCapEnds(bool capEnds) {
@@ -426,8 +474,12 @@ class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
 class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
  public:
   // note there is no magnum primitive implementation of a wireframe icosphere
-  IcospherePrimitiveAttributes(bool isWireframe, const std::string& primObjType)
-      : AbstractPrimitiveAttributes(isWireframe, primObjType) {
+  IcospherePrimitiveAttributes(bool isWireframe,
+                               int primObjType,
+                               const std::string& primObjClassName)
+      : AbstractPrimitiveAttributes(isWireframe,
+                                    primObjType,
+                                    primObjClassName) {
     // setting manually because wireframe icosphere does not currently support
     // subdiv > 1 and setSubdivisions checks for wireframe
     setInt("subdivisions", 1);
@@ -455,7 +507,9 @@ class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
 
 class UVSpherePrimitiveAttributes : public AbstractPrimitiveAttributes {
  public:
-  UVSpherePrimitiveAttributes(bool isWireframe, const std::string& primObjType);
+  UVSpherePrimitiveAttributes(bool isWireframe,
+                              int primObjType,
+                              const std::string& primObjClassName);
   virtual std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_rings_" << getNumRings() << "_segments_" << getNumSegments();

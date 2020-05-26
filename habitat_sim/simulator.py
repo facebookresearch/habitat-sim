@@ -43,7 +43,7 @@ class Configuration(object):
 
 
 @attr.s(auto_attribs=True)
-class Simulator:
+class Simulator(SimulatorBackend):
     r"""The core class of habitat-sim
 
     :property config: configuration for the simulator
@@ -54,12 +54,13 @@ class Simulator:
 
     config: Configuration
     agents: List[Agent] = attr.ib(factory=list, init=False)
-    pathfinder: PathFinder = attr.ib(default=None, init=False)
-    _sim: SimulatorBackend = attr.ib(default=None, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent: Agent = attr.ib(init=False, default=None)
     _sensors: Dict = attr.ib(factory=dict, init=False)
-    _previous_step_time = 0.0  # track the compute time of each step
+    _initialized: bool = attr.ib(default=False, init=False)
+    _previous_step_time: float = attr.ib(
+        default=0.0, init=False
+    )  # track the compute time of each step
 
     def __attrs_post_init__(self):
         config = self.config
@@ -82,17 +83,16 @@ class Simulator:
         del self._default_agent
         self._default_agent = None
 
-        del self._sim
-        self._sim = None
-
         self.config = None
 
+        super().close()
+
     def seed(self, new_seed):
-        self._sim.seed(new_seed)
+        super().seed(new_seed)
         self.pathfinder.seed(new_seed)
 
     def reset(self):
-        self._sim.reset()
+        super().reset()
         for i in range(len(self.agents)):
             self.reset_agent(i)
 
@@ -107,19 +107,18 @@ class Simulator:
         self.initialize_agent(agent_id, initial_agent_state)
 
     def _config_backend(self, config: Configuration):
-        if self._sim is None:
-            self._sim = SimulatorBackend(config.sim_cfg)
+        if not self._initialized:
+            super().__init__(config.sim_cfg)
+            self._initialized = True
         else:
-            self._sim.reconfigure(config.sim_cfg)
+            super().reconfigure(config.sim_cfg)
 
     def _config_agents(self, config: Configuration):
         if self.config is not None and self.config.agents == config.agents:
             return
 
         self.agents = [
-            Agent(
-                self._sim.get_active_scene_graph().get_root_node().create_child(), cfg
-            )
+            Agent(self.get_active_scene_graph().get_root_node().create_child(), cfg)
             for cfg in config.agents
         ]
 
@@ -165,6 +164,8 @@ class Simulator:
             navmesh_settings.agent_height = default_agent_config.height
             self.recompute_navmesh(self.pathfinder, navmesh_settings)
 
+        self.pathfinder.seed(config.sim_cfg.random_seed)
+
     def reconfigure(self, config: Configuration):
         assert len(config.agents) > 0
 
@@ -193,7 +194,8 @@ class Simulator:
         self._config_backend(config)
         self._config_agents(config)
         self._config_pathfinder(config)
-        self._sim.frustum_culling = config.sim_cfg.frustum_culling
+        self.frustum_culling = config.sim_cfg.frustum_culling
+
         for i in range(len(self.agents)):
             self.agents[i].controls.move_filter_fn = self._step_filter
 
@@ -203,7 +205,7 @@ class Simulator:
         self._sensors = {}
         for spec in agent_cfg.sensor_specifications:
             self._sensors[spec.uuid] = Sensor(
-                sim=self._sim, agent=self._default_agent, sensor_id=spec.uuid
+                sim=self, agent=self._default_agent, sensor_id=spec.uuid
             )
 
         for i in range(len(self.agents)):
@@ -221,26 +223,12 @@ class Simulator:
             if self.pathfinder.is_loaded:
                 initial_state.position = self.pathfinder.get_random_navigable_point()
                 initial_state.rotation = quat_from_angle_axis(
-                    np.random.uniform(0, 2.0 * np.pi), np.array([0, 1, 0])
+                    self.random.uniform_float(0, 2.0 * np.pi), np.array([0, 1, 0])
                 )
 
         agent.set_state(initial_state, is_initial=True)
         self._last_state = agent.state
         return agent
-
-    def sample_random_agent_state(self, state_to_return):
-        return self._sim.sample_random_agent_state(state_to_return)
-
-    @property
-    def semantic_scene(self):
-        r"""The semantic scene graph
-
-        .. note-warning::
-
-            Not avaliable for all datasets
-        """
-
-        return self._sim.semantic_scene
 
     def get_sensor_observations(self):
         for _, sensor in self._sensors.items():
@@ -262,7 +250,7 @@ class Simulator:
 
         # step physics by dt
         step_start_Time = time.time()
-        self._sim.step_world(dt)
+        super().step_world(dt)
         _previous_step_time = time.time() - step_start_Time
 
         observations = self.get_sensor_observations()
@@ -307,137 +295,8 @@ class Simulator:
     def __del__(self):
         self.close()
 
-    # --- object template functions ---
-    def get_physics_object_library_size(self):
-        return self._sim.get_physics_object_library_size()
-
-    def get_object_template(self, template_id):
-        return self._sim.get_object_template(template_id)
-
-    def load_object_configs(self, path):
-        return self._sim.load_object_configs(path)
-
-    def load_object_template(self, object_template, object_template_handle):
-        return self._sim.load_object_template(object_template, object_template_handle)
-
-    def get_object_initialization_template(self, object_id, scene_id=0):
-        return self._sim.get_object_initialization_template(object_id, scene_id)
-
-    def get_template_handle_by_ID(self, object_id):
-        return self._sim.get_template_handle_by_ID(object_id)
-
-    def get_template_handles(self, search_str):
-        return self._sim.get_template_handles(search_str)
-
-    # --- physics functions ---
-    def add_object(
-        self,
-        object_lib_index,
-        attachment_node=None,
-        light_setup_key=DEFAULT_LIGHTING_KEY,
-    ):
-        return self._sim.add_object(object_lib_index, attachment_node, light_setup_key)
-
-    def add_object_by_handle(
-        self,
-        object_lib_handle,
-        attachment_node=None,
-        light_setup_key=DEFAULT_LIGHTING_KEY,
-    ):
-        return self._sim.add_object_by_handle(
-            object_lib_handle, attachment_node, light_setup_key
-        )
-
-    def remove_object(
-        self, object_id, delete_object_node=True, delete_visual_node=True
-    ):
-        self._sim.remove_object(object_id, delete_object_node, delete_visual_node)
-
-    def get_existing_object_ids(self, scene_id=0):
-        return self._sim.get_existing_object_ids(scene_id)
-
-    def get_object_motion_type(self, object_id, scene_id=0):
-        return self._sim.get_object_motion_type(object_id, scene_id)
-
-    def set_object_motion_type(self, motion_type, object_id, scene_id=0):
-        return self._sim.set_object_motion_type(motion_type, object_id, scene_id)
-
-    def get_object_scene_node(self, object_id, scene_id=0):
-        return self._sim.get_object_scene_node(object_id, scene_id)
-
-    def set_transformation(self, transform, object_id, scene_id=0):
-        self._sim.set_transformation(transform, object_id, scene_id)
-
-    def get_transformation(self, object_id, scene_id=0):
-        return self._sim.get_transformation(object_id, scene_id)
-
-    def set_translation(self, translation, object_id, scene_id=0):
-        self._sim.set_translation(translation, object_id, scene_id)
-
-    def get_translation(self, object_id, scene_id=0):
-        return self._sim.get_translation(object_id, scene_id)
-
-    def set_rotation(self, rotation, object_id, scene_id=0):
-        self._sim.set_rotation(rotation, object_id, scene_id)
-
-    def get_rotation(self, object_id, scene_id=0):
-        return self._sim.get_rotation(object_id, scene_id)
-
-    def get_object_velocity_control(self, object_id, scene_id=0):
-        return self._sim.get_object_velocity_control(object_id, scene_id)
-
-    def set_linear_velocity(self, lin_vel, object_id, scene_id=0):
-        self._sim.set_linear_velocity(lin_vel, object_id, scene_id)
-
-    def get_linear_velocity(self, object_id, scene_id=0):
-        return self._sim.get_linear_velocity(object_id, scene_id)
-
-    def set_angular_velocity(self, ang_vel, object_id, scene_id=0):
-        self._sim.set_angular_velocity(ang_vel, object_id, scene_id)
-
-    def get_angular_velocity(self, object_id, scene_id=0):
-        return self._sim.get_angular_velocity(object_id, scene_id)
-
-    def apply_force(self, force, relative_position, object_id, scene_id=0):
-        self._sim.apply_force(force, relative_position, object_id, scene_id)
-
-    def apply_torque(self, torque, object_id, scene_id=0):
-        self._sim.apply_torque(torque, object_id, scene_id)
-
-    def contact_test(self, object_id, scene_id=0):
-        return self._sim.contact_test(object_id, scene_id)
-
-    def set_object_bb_draw(self, draw_bb, object_id, scene_id=0):
-        return self._sim.set_object_bb_draw(draw_bb, object_id, scene_id)
-
     def step_physics(self, dt, scene_id=0):
-        self._sim.step_world(dt)
-
-    def get_world_time(self, scene_id=0):
-        return self._sim.get_world_time()
-
-    def get_gravity(self, scene_id=0):
-        return self._sim.get_gravity(scene_id)
-
-    def set_gravity(self, gravity, scene_id=0):
-        return self._sim.set_gravity(gravity, scene_id)
-
-    def recompute_navmesh(
-        self, pathfinder, navmesh_settings, include_static_objects=False
-    ):
-        return self._sim.recompute_navmesh(
-            pathfinder, navmesh_settings, include_static_objects
-        )
-
-    # --- lighting functions ---
-    def get_light_setup(self, key=DEFAULT_LIGHTING_KEY):
-        return self._sim.get_light_setup(key)
-
-    def set_light_setup(self, light_setup, key=DEFAULT_LIGHTING_KEY):
-        self._sim.set_light_setup(light_setup, key)
-
-    def set_object_light_setup(self, object_id, light_setup_key, scene_id=0):
-        self._sim.set_object_light_setup(object_id, light_setup_key, scene_id)
+        self.step_world(dt)
 
 
 class Sensor:

@@ -116,7 +116,7 @@ def test_scene_bounding_boxes(sim):
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     sim.reconfigure(hab_cfg)
-    scene_graph = sim._sim.get_active_scene_graph()
+    scene_graph = sim.get_active_scene_graph()
     root_node = scene_graph.get_root_node()
     root_node.compute_cumulative_bb()
     scene_bb = root_node.cumulative_bb
