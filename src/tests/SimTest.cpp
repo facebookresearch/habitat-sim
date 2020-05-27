@@ -366,7 +366,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
 
   // test scaling
   esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
-      simulator->getObjectTemplate(0);
+      simulator->getObjectTemplateByID(0);
   objectTemplate->setScale({0.5, 0.5, 0.5});
   objectID = simulator->addObjectByHandle(objs[0]);
   simulator->setTranslation(Magnum::Vector3{randomNavPoint}, objectID);
@@ -428,19 +428,26 @@ void SimTest::loadingObjectTemplates() {
   std::string boxPath =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
   newTemplate->setRenderAssetHandle(boxPath);
+  newTemplate->setString("testname", "newTemplate");
   int templateIndex = simulator->registerObjectTemplate(newTemplate, boxPath);
   CORRADE_VERIFY(templateIndex != esp::ID_UNDEFINED);
-  // change render asset for object template named boxPath
+
+  // replace object template with one with different render asset
+  esp::assets::PhysicsObjectAttributes::ptr newTemplate2 =
+      esp::assets::PhysicsObjectAttributes::create();
   std::string chairPath =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/chair.glb");
-  newTemplate->setRenderAssetHandle(chairPath);
-  int templateIndex2 = simulator->registerObjectTemplate(newTemplate, boxPath);
-
+  newTemplate2->setRenderAssetHandle(chairPath);
+  newTemplate2->setString("testname", "newTemplate2");
+  int templateIndex2 = simulator->registerObjectTemplate(newTemplate2, boxPath);
   CORRADE_VERIFY(templateIndex2 != esp::ID_UNDEFINED);
+
   CORRADE_VERIFY(templateIndex2 == templateIndex);
-  esp::assets::PhysicsObjectAttributes::ptr newTemplate2 =
-      simulator->getObjectTemplateByName(boxPath);
-  CORRADE_VERIFY(newTemplate2->getRenderAssetHandle() == chairPath);
+  esp::assets::PhysicsObjectAttributes::ptr newTemplate3 =
+      simulator->getObjectTemplateByHandle(boxPath);
+  CORRADE_VERIFY(newTemplate3->getRenderAssetHandle() == chairPath);
+  // verify user-specified data is set appropriately
+  CORRADE_VERIFY(newTemplate3->getString("testname") == "newTemplate2");
 }
 
 }  // namespace

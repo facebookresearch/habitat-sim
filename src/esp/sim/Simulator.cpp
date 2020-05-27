@@ -337,13 +337,6 @@ std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
   return templateIndices;
 }
 
-int Simulator::registerObjectTemplate(
-    assets::PhysicsObjectAttributes::ptr objTmplPtr,
-    const std::string& objectTemplateHandle) {
-  return resourceManager_->registerObjectTemplate(objTmplPtr,
-                                                  objectTemplateHandle);
-}
-
 const assets::PhysicsObjectAttributes::ptr
 Simulator::getObjectInitializationTemplate(int objectId,
                                            const int sceneID) const {

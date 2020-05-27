@@ -114,16 +114,97 @@ class Simulator {
   std::string getObjectTemplateHandleByID(const int objectTemplateID) const {
     return resourceManager_->getPhysicsObjectTemplateHandle(objectTemplateID);
   }
+  /**
+   * @brief Get list of primitive asset template handles used as keys in @ref
+   * primitiveAssetTemplateLibrary_ containing passed substring
+   *
+   * @param subStr the desired substring all returned handles should contain
+   * @param contains whether to search for keys containing, or not containing,
+   * @ref subStr
+   * @return list containing 0 or more string keys corresponding to templates in
+   * @ref primitiveAssetTemplateLibrary_ that contain/do not contain the passed
+   * substring
+   */
+  std::vector<std::string> getPrimitiveAssetTemplateHandles(
+      const std::string& subStr = "",
+      bool contains = true) {
+    return resourceManager_->getPrimitiveAssetTemplateHandlesBySubstring(
+        subStr);
+  }
+
+  /**
+   * @brief Get a ref to the primitive asset attributes object for the primitive
+   * identified by the string key.
+   * @param primTemplateHandle the string key of the attributes desired - this
+   * key will be synthesized based on attributes values.
+   * @return the desired primitive attributes, or nullptr if does not exist
+   */
+  assets::AbstractPrimitiveAttributes::ptr getPrimitiveAssetAttributes(
+      const std::string& primTemplateHandle) const {
+    return resourceManager_->getPrimitiveAssetAttributes(primTemplateHandle);
+  }
+
+  /**
+   * @brief Instantiate a @ref PhysicsObjectAttributes for a
+   * synthetic(primitive-based render) object. NOTE : Must be registered to be
+   * available for use via @ref registerObjectTemplate.  This method is provided
+   * so the user can modify a specified physics object template before
+   * registering it.
+   *
+   * @param primAssetHandle The string name of the primitive asset attributes to
+   * be used to synthesize a render asset and solve collisions implicitly for
+   * the desired object.  Will also become the default handle of the resultant
+   * @ref physicsObjectAttributes template
+   * @return The @ref physicsObjectAttributes template based on the passed
+   * primitive
+   */
+  assets::PhysicsObjectAttributes::ptr buildPrimitiveBasedPhysObjTemplate(
+      const std::string& primAssetHandle) {
+    return resourceManager_->buildPrimitiveBasedPhysObjTemplate(
+        primAssetHandle);
+  }
+
+  /**
+   * @brief Instantiate a @ref PhysicsObjectAttributes and add to @ref
+   * physicsObjTemplateLibrary_ for a synthetic(primitive-based render) object.
+   *
+   * @param primAssetHandle The string name of the primitive asset attributes to
+   * be used to synthesize a render asset and solve collisions implicitly for
+   * the desired object.
+   * @return The ID of the attributes in the @ref physicsObjTemplateLibrary_ to
+   * which the key, synthesized from primAssetHandle, refers.
+   */
+  int buildAndRegisterPrimPhysObjTemplate(const std::string& primAssetHandle) {
+    return resourceManager_->buildAndRegisterPrimPhysObjTemplate(
+        primAssetHandle);
+  }
+
+  /**
+   * @brief register the passed primitive asset template with the library of
+   * available primitive assets in ResourceManager.
+   * @param primitiveAssetTemplate the template to be registered.  If a template
+   * exists with the same generated origin handle, it is replaced with this one.
+   * @return the handle of the primitive template, synthesized from the values
+   * set in template
+   */
+  std::string registerPrimitiveAssetTemplate(
+      assets::AbstractPrimitiveAttributes::ptr primitiveAssetTemplate) {
+    return resourceManager_->registerPrimitiveAssetTemplate(
+        primitiveAssetTemplate);
+  }
 
   /**
    * @brief Get a list of all templates whose origin handles contain @ref
    * subStr, ignoring subStr's case
    * @param subStr substring to search for within existing object templates
-   * @return vector of 0 or more template handles containing the passed
-   * substring
+   * @param contains whether to search for keys containing, or not containing,
+   * @ref subStr
+   * @return vector of 0 or more template handles containing/not containing the
+   * passed substring
    */
   std::vector<std::string> getObjectTemplateHandles(
-      const std::string& subStr = "") {
+      const std::string& subStr = "",
+      bool contains = true) {
     return resourceManager_->getPhysicsObjectTemplateHandlesBySubstring(subStr);
   }
   /**
@@ -131,11 +212,14 @@ class Simulator {
    * @ref subStr, ignoring subStr's case
    * @param subStr substring to search for within existing file-based object
    * templates
-   * @return vector of 0 or more template handles containing the passed
-   * substring
+   * @param contains whether to search for keys containing, or not containing,
+   * @ref subStr
+   * @return vector of 0 or more template handles containing/not containing the
+   * passed substring
    */
   std::vector<std::string> getFileBasedObjectTemplateHandles(
-      const std::string& subStr = "") {
+      const std::string& subStr = "",
+      bool contains = true) {
     return resourceManager_->getFileTemplateHandlesBySubstring(subStr);
   }
 
@@ -144,11 +228,14 @@ class Simulator {
    * origin handles contains @ref subStr, ignoring subStr's case
    * @param subStr substring to search for within existing primitive object
    * templates
-   * @return vector of 0 or more template handles containing the passed
-   * substring
+   * @param contains whether to search for keys containing, or not containing,
+   * @ref subStr
+   * @return vector of 0 or more template handles containing/not containing the
+   * passed substring
    */
   std::vector<std::string> getSynthesizedObjectTemplateHandles(
-      const std::string& subStr = "") {
+      const std::string& subStr = "",
+      bool contains = true) {
     return resourceManager_->getSynthTemplateHandlesBySubstring(subStr);
   }
 
@@ -202,20 +289,21 @@ class Simulator {
    * @return The current number of templates stored in @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_.
    */
-  int getPhysicsObjectLibrarySize() const {
-    return resourceManager_->getPhysicsObjectLibrarySize();
+  int getNumPhysicsObjectTemplates() const {
+    return resourceManager_->getNumPhysicsObjectTemplates();
   }
 
   /**
    * @brief Get a smart pointer to a physics object template by index.
    */
-  assets::PhysicsObjectAttributes::ptr getObjectTemplate(int templateId) const {
+  assets::PhysicsObjectAttributes::ptr getObjectTemplateByID(
+      int templateId) const {
     return resourceManager_->getPhysicsObjectAttributes(templateId);
   }
   /**
    * @brief Get a smart pointer to a physics object template by handle.
    */
-  assets::PhysicsObjectAttributes::ptr getObjectTemplateByName(
+  assets::PhysicsObjectAttributes::ptr getObjectTemplateByHandle(
       const std::string& templateHandle) const {
     return resourceManager_->getPhysicsObjectAttributes(templateHandle);
   }
@@ -243,7 +331,10 @@ class Simulator {
    * if failed.
    */
   int registerObjectTemplate(assets::PhysicsObjectAttributes::ptr objTmplPtr,
-                             const std::string& objectTemplateHandle);
+                             const std::string& objectTemplateHandle) {
+    return resourceManager_->registerObjectTemplate(objTmplPtr,
+                                                    objectTemplateHandle);
+  }
 
   /**
    * @brief Get a static view of a physics object's template when the object was

@@ -320,8 +320,25 @@ class ResourceManager {
   int parseAndLoadPhysObjTemplate(const std::string& objPhysConfigFilename);
 
   /**
+   * @brief Instantiate a @ref PhysicsObjectAttributes for a
+   * synthetic(primitive-based render) object. NOTE : Must be registered to be
+   * available for use via @ref registerObjectTemplate.  This method is provided
+   * so the user can modify a specified physics object template before
+   * registering it.
+   *
+   * @param primAssetHandle The string name of the primitive asset attributes to
+   * be used to synthesize a render asset and solve collisions implicitly for
+   * the desired object.  Will also become the default handle of the resultant
+   * @ref physicsObjectAttributes template
+   * @return The @ref physicsObjectAttributes template based on the passed
+   * primitive
+   */
+  PhysicsObjectAttributes::ptr buildPrimitiveBasedPhysObjTemplate(
+      const std::string& primAssetHandle);
+
+  /**
    * @brief Instantiate a @ref PhysicsObjectAttributes and add to @ref
-   * physicsObjTemplateLibrary_ for a synthetic(primitive-based render) object
+   * physicsObjTemplateLibrary_ for a synthetic(primitive-based render) object.
    *
    * @param primAssetHandle The string name of the primitive asset attributes to
    * be used to synthesize a render asset and solve collisions implicitly for
@@ -359,29 +376,15 @@ class ResourceManager {
   bool instantiateAssetsOnDemand(const std::string& objTemplateHandle);
 
   //======== Accessor functions ========
-  /**
-   * @brief Getter for all @ref assets::CollisionMeshData associated with the
-   * particular asset.
-   *
-   * @param collisionAssetHandle The key by which the asset is referenced in
-   * @ref collisionMeshGroups_, from the @ref physicsObjTemplateLibrary_.
-   * @return A vector reference to @ref assets::CollisionMeshData instances for
-   * individual components of the asset.
-   */
-  const std::vector<assets::CollisionMeshData>& getCollisionMesh(
-      const std::string& collisionAssetHandle) const {
-    CHECK(collisionMeshGroups_.count(collisionAssetHandle) > 0);
-    return collisionMeshGroups_.at(collisionAssetHandle);
-  }
 
   /**
-   * @brief Get the key in @ref primitiveAssetTmpltLibByID_ for the object
-   * template asset index.
+   * @brief Get the key in @ref primitiveAssetTemplateLibrary_ for the passed
+   * object template asset ID.
    *
-   * @param objectTemplateID The index of the object template in @ref
+   * @param objectTemplateID The key of the object template handle in @ref
    * primitiveAssetTmpltLibByID_.
    * @return The key referencing the template in @ref
-   * primitiveAssetTmpltLibByID_, or an empty string if does not exist.
+   * primitiveAssetTemplateLibrary_, or an empty string if does not exist.
    */
   std::string getPrimitiveAssetTemplateHandle(const int primTemplateID) const {
     CORRADE_ASSERT(primitiveAssetTemplateLibByID_.count(primTemplateID) > 0,
@@ -393,23 +396,50 @@ class ResourceManager {
   }  // getPrimitiveAssetTemplateHandle
 
   /**
+   * @brief Get list of primitive asset template handles used as keys in @ref
+   * primitiveAssetTemplateLibrary_ containing passed substring
+   *
+   * @param subStr the desired substring all returned handles should contain
+   * @param contains whether to search for keys containing, or not containing,
+   * @ref subStr
+   * @return list containing 0 or more string keys corresponding to templates in
+   * @ref primitiveAssetTemplateLibrary_ that contain the passed substring
+   */
+  std::vector<std::string> getPrimitiveAssetTemplateHandlesBySubstring(
+      const std::string& subStr = "",
+      bool contains = true) const {
+    return getTemplateHandlesBySubStringPerType(primitiveAssetTemplateLibByID_,
+                                                subStr, contains);
+  }  // getPrimitiveAssetTemplateHandlesByPrimType
+
+  /**
    * @brief Get a ref to the primitive asset attributes object for the primitive
    * identified by the string key.
    * @param primTemplateHandle the string key of the attributes desired - this
    * key will be synthesized based on attributes values.
    * @return the desired primitive attributes, or nullptr if does not exist
    */
-  AbstractPrimitiveAttributes::ptr getPrimitiveAssetTemplateAttributes(
+  AbstractPrimitiveAttributes::ptr getPrimitiveAssetAttributes(
       const std::string& primTemplateHandle) const {
     CORRADE_ASSERT(
         (primitiveAssetTemplateLibrary_.count(primTemplateHandle) > 0),
         "ResourceManager::getPrimitiveAssetTemplateAttributes : Unknown "
-        "primitive "
-        "asset template handle :"
+        "template handle :"
             << primTemplateHandle << ". Aborting",
         nullptr);
     return primitiveAssetTemplateLibrary_.at(primTemplateHandle);
   }
+
+  /**
+   * @brief register the passed primitive asset template with the library of
+   * available primitive assets.
+   * @param primitiveAssetTemplate the template to be registered.  If a template
+   * exists with the same generated origin handle, it is replaced with this one.
+   * @return the handle of the primitive asset attributes object, or empty
+   * string if not successful
+   */
+  std::string registerPrimitiveAssetTemplate(
+      assets::AbstractPrimitiveAttributes::ptr primitiveAssetTemplate);
 
   /**
    * @brief Get the key in @ref physicsObjTemplateLibrary_ for the object
@@ -478,7 +508,7 @@ class ResourceManager {
    *
    * @return The size of the @ref physicsObjTemplateLibrary_.
    */
-  int getPhysicsObjectLibrarySize() const {
+  int getNumPhysicsObjectTemplates() const {
     return physicsObjectTemplateLibrary_.size();
   }
 
@@ -497,17 +527,20 @@ class ResourceManager {
    * @brief Get a list of all templates whose origin handles contain @ref
    * subStr, ignoring subStr's case
    * @param subStr substring to search for within existing object templates
+   * @param contains whether to search for keys containing, or not containing,
+   * @ref subStr
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
   std::vector<std::string> getPhysicsObjectTemplateHandlesBySubstring(
-      const std::string& subStr = "") const {
+      const std::string& subStr = "",
+      bool contains = true) const {
     return getTemplateHandlesBySubStringPerType(physicsObjectTemplateLibByID_,
-                                                subStr);
+                                                subStr, contains);
   }
   /**
-   * @brief Gets the number of loaded object templates stored in the @ref
-   * physicsObjTemplateLibrary_.
+   * @brief Gets the number of file-based loaded object templates stored in the
+   * @ref physicsObjTemplateLibrary_.
    *
    * @return The number of entries in @ref physicsObjTemplateLibrary_ that are
    * loaded from files.
@@ -532,13 +565,16 @@ class ResourceManager {
    * @ref subStr, ignoring subStr's case
    * @param subStr substring to search for within existing file-based object
    * templates
+   * @param contains whether to search for keys containing, or not containing,
+   * @ref subStr
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
   std::vector<std::string> getFileTemplateHandlesBySubstring(
-      const std::string& subStr = "") const {
+      const std::string& subStr = "",
+      bool contains = true) const {
     return getTemplateHandlesBySubStringPerType(physicsFileObjTmpltLibByID_,
-                                                subStr);
+                                                subStr, contains);
   }
   /**
    * @brief Gets the number of synthesized (primitive-based)  template objects
@@ -566,13 +602,31 @@ class ResourceManager {
    * whose origin handles contain @ref subStr, ignoring subStr's case
    * @param subStr substring to search for within existing primitive object
    * templates
+   * @param contains whether to search for keys containing, or not containing,
+   * @ref subStr
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
   std::vector<std::string> getSynthTemplateHandlesBySubstring(
-      const std::string& subStr = "") const {
+      const std::string& subStr = "",
+      bool contains = true) const {
     return getTemplateHandlesBySubStringPerType(physicsSynthObjTmpltLibByID_,
-                                                subStr);
+                                                subStr, contains);
+  }
+
+  /**
+   * @brief Getter for all @ref assets::CollisionMeshData associated with the
+   * particular asset.
+   *
+   * @param collisionAssetHandle The key by which the asset is referenced in
+   * @ref collisionMeshGroups_, from the @ref physicsObjTemplateLibrary_.
+   * @return A vector reference to @ref assets::CollisionMeshData instances for
+   * individual components of the asset.
+   */
+  const std::vector<assets::CollisionMeshData>& getCollisionMesh(
+      const std::string& collisionAssetHandle) const {
+    CHECK(collisionMeshGroups_.count(collisionAssetHandle) > 0);
+    return collisionMeshGroups_.at(collisionAssetHandle);
   }
 
   /**
@@ -627,15 +681,6 @@ class ResourceManager {
                        Magnum::ResourceDataState::Mutable,
                        Magnum::ResourcePolicy::Manual);
   }
-
-  /**
-   * @brief Build a primitive asset based on passed template parameters.  If
-   * exists already, does nothing.  Will use primitiveImporter_ to call
-   * appropriate method to construct asset.
-   * @param primTemplate pointer to attributes describing primitive to
-   * instantiate
-   */
-  void buildPrimitiveAssetData(AbstractPrimitiveAttributes::ptr primTemplate);
 
   /**
    * @brief Construct a unified @ref MeshData from a loaded asset's collision
@@ -765,7 +810,7 @@ class ResourceManager {
     CORRADE_ASSERT(
         primType != PrimObjTypes::END_PRIM_OBJ_TYPES,
         "ResourceManager::buildPrimitiveAttributes : Illegal primtitive type "
-        "name sPrimObjTypes::END_PRIM_OBJ_TYPES.  Aborting.",
+        "name PrimObjTypes::END_PRIM_OBJ_TYPES.  Aborting.",
         nullptr);
     return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(primType)])();
   }  // buildPrimitiveAttributes
@@ -833,12 +878,15 @@ class ResourceManager {
    * handles
    * @param subStr substring to search for within existing primitive object
    * templates
-   * @return vector of 0 or more template handles containing the passed
-   * substring
+   * @param contains Whether to search for handles containing, or not
+   * containting, @ref subStr
+   * @return vector of 0 or more template handles containing/not containing the
+   * passed substring
    */
   std::vector<std::string> getTemplateHandlesBySubStringPerType(
       const std::map<int, std::string>& mapOfHandles,
-      const std::string& subStr) const;
+      const std::string& subStr,
+      bool contains) const;
 
   /**
    * @brief Instantiate, or reinstatiate, PhysicsManager defined by passed
@@ -890,14 +938,24 @@ class ResourceManager {
       std::map<int, std::string>& mapOfNames);
 
   /**
+   * @brief Build a primitive asset on demand based on passed template
+   * parameters.  If exists already, does nothing.  Will use primitiveImporter_
+   * to call appropriate method to construct asset.
+   * @param primTemplate pointer to attributes describing primitive to
+   * instantiate
+   */
+  void buildPrimitiveAssetData(AbstractPrimitiveAttributes::ptr primTemplate);
+
+  /**
    * @brief Add primitive asset template attributes to appropriate template
    * library map and index list
    *
    * @param primTemplate ptr to primitive template attributes to be added to
    * library
-   * @return the index of added primitive asset template in names map
+   * @return the handle of the primitive template, synthesized from the values
+   * set in template
    */
-  int addPrimAssetTemplateToLibrary(
+  std::string addPrimitiveAssetTemplateToLibrary(
       AbstractPrimitiveAttributes::ptr primTemplate);
 
  protected:
@@ -1333,10 +1391,11 @@ class ResourceManager {
    * Templates are used by @ref physics::PhysicsManager to
    * initialize, reset scenes or switch contexts.
    */
-  std::map<std::string, PhysicsSceneAttributes::ptr> physicsSceneLibrary_;
+  std::map<std::string, PhysicsSceneAttributes::ptr>
+      physicsSceneTemplateLibrary_;
 
   /**
-   * @brief Library of physics scene attributes for
+   * @brief Library of physics scene attribute templates for
    * initializing/resetting/switching physics world contexts.
    */
   std::map<std::string, PhysicsManagerAttributes::ptr> physicsManagerLibrary_;
@@ -1370,6 +1429,7 @@ class ResourceManager {
    * appropriate template handles
    */
   std::map<int, std::string> physicsSynthObjTmpltLibByID_;
+
   /**
    * @brief Maps primitive object template IDs to primitive template handles
    * (composite strings built from specified attributes values for primitive)

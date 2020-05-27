@@ -332,6 +332,15 @@ class AbstractPrimitiveAttributes : public esp::core::Configuration {
   }
 
   int getPrimObjType() const { return getInt("primObjType"); }
+  /**
+   * @brief This will determine if the stated template has the required
+   * quantities needed to instantiate a primitive properly of desired type.
+   * AbstractPrimitiveAttributes is never valid for any primitive - should be
+   * overridden in prim-specific class.
+   * @return whether or not the template holds valid data for desired primitive
+   * type.
+   */
+  virtual bool isValidTemplate() { return false; }
 
  private:
   // Should never change, only set by ctor
@@ -347,6 +356,18 @@ class AbstractPrimitiveAttributes : public esp::core::Configuration {
   void setIsWireframe(bool isWireframe) { setBool("isWireframe", isWireframe); }
 
  protected:
+  /**
+   * @brief Verifies that @ref val is larger than, and a multiple of, divisor
+   * div
+   * @param val the value to check
+   * @param div the divsior (value to verify is greater than and a multiple of)
+   * - will be either 2 or 4 for primitives value checking
+   * @return whether check passes
+   */
+  bool isValMultOfDiv(int val, int div) {
+    return (val >= div) && (val % div == 0);
+  }
+
   /**
    * @brief Origin handle for primitive attribute-based templates should reflect
    * the parameters used to construct the primitive, and so should only be set
@@ -385,6 +406,22 @@ class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
     buildOriginHandle();  // build handle based on config
   }
   int getCylinderRings() const { return getInt("cylinderRings"); }
+
+  /**
+   * @brief This will determine if the stated template has the required
+   * quantities needed to instantiate a primitive properly of desired type
+   * @return whether or not the template holds valid data for desired primitive
+   * type
+   */
+  virtual bool isValidTemplate() override {
+    bool wfCheck = ((getIsWireframe() && isValMultOfDiv(getNumSegments(), 4)) ||
+                    (!getIsWireframe() && getNumSegments() > 2));
+
+    return (getCylinderRings() > 0 && getHemisphereRings() > 0 && wfCheck &&
+            getHalfLength() > 0);
+  }
+
+ protected:
   virtual std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_hemiRings_" << getHemisphereRings() << "_cylRings_"
@@ -413,6 +450,21 @@ class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
   }
   bool getCapEnd() const { return getBool("capEnd"); }
 
+  /**
+   * @brief This will determine if the stated template has the required
+   * quantities needed to instantiate a primitive properly of desired type
+   * @return whether or not the template holds valid data for desired primitive
+   * type
+   */
+  virtual bool isValidTemplate() override {
+    bool wfCheck =
+        ((getIsWireframe() && isValMultOfDiv(getNumSegments(), 4)) ||
+         (!getIsWireframe() && getNumSegments() > 2 && getNumRings() > 0));
+
+    return (getHalfLength() > 0 && wfCheck);
+  }
+
+ protected:
   virtual std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_segments_" << getNumSegments() << "_halfLen_"
@@ -440,6 +492,15 @@ class CubePrimitiveAttributes : public AbstractPrimitiveAttributes {
     buildOriginHandle();  // build handle based on config
   }
 
+  /**
+   * @brief This will determine if the stated template has the required
+   * quantities needed to instantiate a primitive properly of desired type. Cube
+   * primitives require no values and so this attributes is always valid.
+   * @return whether or not the template holds valid data for desired primitive
+   * type
+   */
+  virtual bool isValidTemplate() override { return true; }
+
   ESP_SMART_POINTERS(CubePrimitiveAttributes)
 };  // class CubePrimitiveAttributes
 
@@ -456,6 +517,19 @@ class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
   }
   bool getCapEnds() const { return getBool("capEnds"); }
 
+  /**
+   * @brief This will determine if the stated template has the required
+   * quantities needed to instantiate a primitive properly of desired type
+   * @return whether or not the template holds valid data for desired primitive
+   * type
+   */
+  virtual bool isValidTemplate() override {
+    bool wfCheck = ((getIsWireframe() && isValMultOfDiv(getNumSegments(), 4)) ||
+                    (!getIsWireframe() && getNumSegments() > 2));
+    return getNumRings() > 0 && getHalfLength() > 0 && wfCheck;
+  }
+
+ protected:
   virtual std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_rings_" << getNumRings() << "_segments_" << getNumSegments()
@@ -480,9 +554,7 @@ class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
       : AbstractPrimitiveAttributes(isWireframe,
                                     primObjType,
                                     primObjClassName) {
-    // setting manually because wireframe icosphere does not currently support
-    // subdiv > 1 and setSubdivisions checks for wireframe
-    setInt("subdivisions", 1);
+    setSubdivisions(1);
     buildOriginHandle();  // build handle based on config
   }
   // only solid icospheres will support subdivision - wireframes default to 1
@@ -494,6 +566,17 @@ class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
   }
   int getSubdivisions() const { return getInt("subdivisions"); }
 
+  /**
+   * @brief This will determine if the stated template has the required
+   * quantities needed to instantiate a primitive properly of desired type
+   * @return whether or not the template holds valid data for desired primitive
+   * type
+   */
+  virtual bool isValidTemplate() override {
+    return (getIsWireframe() || (!getIsWireframe() && getSubdivisions() >= 0));
+  }
+
+ protected:
   virtual std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     // wireframe subdivision currently does not change
@@ -510,6 +593,20 @@ class UVSpherePrimitiveAttributes : public AbstractPrimitiveAttributes {
   UVSpherePrimitiveAttributes(bool isWireframe,
                               int primObjType,
                               const std::string& primObjClassName);
+
+  /**
+   * @brief This will determine if the stated template has the required
+   * quantities needed to instantiate a primitive properly of desired type
+   * @return whether or not the template holds valid data for desired primitive
+   * type
+   */
+  virtual bool isValidTemplate() override {
+    return ((getIsWireframe() && isValMultOfDiv(getNumSegments(), 4) &&
+             isValMultOfDiv(getNumRings(), 2)) ||
+            (!getIsWireframe() && getNumRings() > 1 && getNumSegments() > 2));
+  }
+
+ protected:
   virtual std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_rings_" << getNumRings() << "_segments_" << getNumSegments();

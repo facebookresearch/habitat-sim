@@ -79,25 +79,61 @@ void initSimBindings(py::module& m) {
                     &Simulator::setFrustumCullingEnabled,
                     R"(Enable or disable the frustum culling)")
       /* --- Physics functions --- */
-
-      .def("get_template_handle_by_ID", &Simulator::getObjectTemplateHandleByID,
-           "object_id"_a)
-      .def("get_template_handles", &Simulator::getObjectTemplateHandles,
-           "search_str"_a = "")
+      // DEPRECATE THIS BINDING? : removing may cause breaking change
       .def("add_object", &Simulator::addObject, "object_lib_index"_a,
            "attachment_node"_a = nullptr,
            "light_setup_key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY,
            "scene_id"_a = 0)
+
+      .def("add_object_by_ID", &Simulator::addObject, "object_lib_index"_a,
+           "attachment_node"_a = nullptr,
+           "light_setup_key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY,
+           "scene_id"_a = 0)
+
       .def("add_object_by_handle", &Simulator::addObjectByHandle,
            "object_lib_handle"_a, "attachment_node"_a = nullptr,
            "light_setup_key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY,
            "scene_id"_a = 0)
+
       .def("get_physics_object_library_size",
-           &Simulator::getPhysicsObjectLibrarySize)
-      .def("get_object_template", &Simulator::getObjectTemplate,
-           "object_template_id"_a, pybind11::return_value_policy::reference)
+           &Simulator::getNumPhysicsObjectTemplates)
+      .def("get_template_handle_by_ID", &Simulator::getObjectTemplateHandleByID,
+           "object_id"_a)
+      .def("get_template_handles", &Simulator::getObjectTemplateHandles,
+           "search_str"_a = "", "search_contains"_a = true)
+      .def("get_file_template_handles",
+           &Simulator::getFileBasedObjectTemplateHandles, "search_str"_a = "",
+           "search_contains"_a = true)
+      .def("get_synth_template_handles",
+           &Simulator::getSynthesizedObjectTemplateHandles, "search_str"_a = "",
+           "search_contains"_a = true)
+
+      .def("get_prim_asset_template_handles",
+           &Simulator::getPrimitiveAssetTemplateHandles, "search_str"_a = "",
+           "search_contains"_a = true)
+      .def("get_primitive_asset_template_by_handle",
+           &Simulator::getPrimitiveAssetAttributes, "prim_template_handle"_a)
+      .def("register_primitive_asset_template",
+           &Simulator::registerPrimitiveAssetTemplate, "prim_asset_template"_a)
+      .def("build_prim_based_object_template",
+           &Simulator::buildPrimitiveBasedPhysObjTemplate,
+           "prim_asset_template"_a)
+
+      // DEPRECATE THIS BINDING? : removing may cause breaking change
+      .def("get_object_template", &Simulator::getObjectTemplateByID,
+           "object_template_id"_a)
+
+      .def("get_object_template_by_ID", &Simulator::getObjectTemplateByID,
+           "object_template_id"_a)
+      .def("get_object_template_by_handle",
+           &Simulator::getObjectTemplateByHandle, "object_template_handle"_a)
       .def("load_object_configs", &Simulator::loadObjectConfigs, "path"_a)
+
+      // DEPRECATE THIS BINDING? : removing may cause breaking change
       .def("load_object_template", &Simulator::registerObjectTemplate,
+           "object_template"_a, "object_template_handle"_a)
+
+      .def("register_object_template", &Simulator::registerObjectTemplate,
            "object_template"_a, "object_template_handle"_a)
       .def("get_object_initialization_template",
            &Simulator::getObjectInitializationTemplate, "object_id"_a,
