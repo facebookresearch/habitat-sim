@@ -9,10 +9,25 @@ import numpy as np
 
 import habitat_sim
 import habitat_sim.bindings as hsim
+import habitat_sim.registry as registry
 from habitat_sim.agent import AgentState
 from habitat_sim.utils.common import quat_from_two_vectors
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 from habitat_sim.utils.data.pose_extractor import PoseExtractor
+
+
+def get_pose_extractor(name: str) -> PoseExtractor:
+    r"""Fetches the correct pose_extractor using the given name and keyword arguments
+
+    :param name: The name of the pose_extractor in the `habitat_sim.registry`
+    """
+
+    extractor = registry.get_pose_extractor(name)
+    assert (
+        extractor is not None
+    ), "Could not find a pose extractor for name '{}'".format(name)
+
+    return extractor
 
 
 class ImageExtractor:
@@ -35,7 +50,7 @@ class ImageExtractor:
             reference point: A reference point from the coordinate system of the scene. Necessary for specifying poses
                 in the scene's coordinate system.
 
-    :property pose_extractor: PoseExtractor object
+    :property pose_extractor_name: name of the pose_extractor in habitat.registry
     :property poses: list of camera poses gathered from pose_extractor
     :property train: A subset of poses used for training
     :property test: A subset of poses used for testing
@@ -53,7 +68,7 @@ class ImageExtractor:
         labels: List[float] = [0.0],
         img_size: tuple = (512, 512),
         output: List[str] = ["rgba"],
-        extraction_method: str = "closest",
+        pose_extractor_name: str = "closest_point_extractor",
         sim=None,
         shuffle: bool = True,
         split: tuple = (70, 30),
@@ -63,7 +78,6 @@ class ImageExtractor:
         if sum(split) != 100:
             raise Exception("Train/test split must sum to 100.")
 
-        assert extraction_method in ["closest", "panorama"]
         self.scene_filepaths = None
         self.cur_fp = None
         if type(scene_filepath) == list:
@@ -100,12 +114,9 @@ class ImageExtractor:
                 )
             ]
 
-        self.pose_extractor = PoseExtractor(
-            self.tdv_fp_ref_triples, self.sim, self.pixels_per_meter
-        )
-        self.poses = self.pose_extractor.extract_poses(
-            labels=self.labels, extraction_method=extraction_method
-        )  # list of poses
+        args = (self.tdv_fp_ref_triples, self.pixels_per_meter)
+        self.pose_extractor = get_pose_extractor(pose_extractor_name)(*args)
+        self.poses = self.pose_extractor.extract_all_poses(labels=self.labels)
 
         if shuffle:
             np.random.shuffle(self.poses)
@@ -178,7 +189,7 @@ class ImageExtractor:
         return sample
 
     def close(self) -> None:
-        r"""Deletes the instance of the simulator. Necessary for instatiating a different ImageExtractor.
+        r"""Deletes the instance of the simulator. Necessary for instantiating a different ImageExtractor.
         """
         if self.sim is not None:
             self.sim.close()
@@ -299,15 +310,6 @@ class ImageExtractor:
         agent_cfg.sensor_specifications = sensor_specs
 
         return habitat_sim.Configuration(sim_cfg, [agent_cfg])
-
-    def _get_pathfinder_reference_point(self, pf):
-        bound1, bound2 = pf.get_bounds()
-        startw = min(bound1[0], bound2[0])
-        starth = min(bound1[2], bound2[2])
-        starty = pf.get_random_navigable_point()[
-            1
-        ]  # Can't think of a better way to get a valid y-axis value
-        return (startw, starty, starth)  # width, y, height
 
 
 class TopdownView(object):

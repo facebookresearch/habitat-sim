@@ -1,88 +1,78 @@
 import collections
 import copy
 import math
+from typing import List, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 import habitat_sim
+import habitat_sim.registry as registry
 from habitat_sim.utils.common import quat_from_two_vectors
 
 
 class PoseExtractor:
-    r"""Class that takes in a topdown view and pathfinder and determines a list of reasonable camera poses
+    r"""Abstract class that represents a method for extracting camera poses given a list of topdown view(s).
 
     :property tdv_fp_ref_triples: List of tuples containing (TopdownView Object, scene_filepath, reference point)
         information for each scene. Each scene requires:
             TopdownView: To extract poses
             scene_filepath: The file path to the mesh file. Necessary for scene switches.
-            reference point: A reference point from the coordinate system of the scene. Necessary for specifying poses
-                in the scene's coordinate system.
+            reference point: A reference point from the coordinate system of the scene. Necessary for specifying poses in the scene's coordinate system.
 
-    :property sim: Simulator object used for pose extraction
     :property pixels_per_meter: Resolution of topdown map. 0.1 means each pixel in the topdown map
-        represents 0.1 x 0.1 meters in the coordinate system of the pathfinder
+        represents 0.1 x 0.1 meters in the coordinate system of the scene that the map represents.
     """
 
-    def __init__(self, topdown_views, sim, pixels_per_meter=0.1):
+    def __init__(self, topdown_views, pixels_per_meter=0.1):
         self.tdv_fp_ref_triples = topdown_views
-        self.sim = sim
         self.pixels_per_meter = pixels_per_meter
 
-    def extract_poses(self, labels: list, extraction_method: str) -> np.ndarray:
-        r"""Returns a numpy array of camera poses. If extraction method is "closest", this method will
-        use bfs to find the closest point of interest to each camera position. If the extraction method
-        is "panorama", it will extract a full panorama of camera poses for each camera position, meaning
-        several distinct images from each camera position.
+    def extract_all_poses(self, labels: List[float]) -> np.ndarray:
+        r"""Returns a numpy array of camera poses. For each scene, this method extends the list of poses according to the extraction rule defined in extract_poses.
+
+        :property labels: A list of labels that we are interesting in extacting images of.
         """
         poses = []
         for tdv, fp, ref_point in self.tdv_fp_ref_triples:
-            view = tdv.topdown_view
-            # Determine the physical spacing between each camera position
-            x, z = view.shape
-            dist = min(x, z) // 10
-            poses.extend(
-                self._extract_poses_single_scene(
-                    labels, view, fp, dist, ref_point, extraction_method
-                )
+            view = (
+                tdv.topdown_view
+            )  # 2D numpy array representing the topdown view of the scene
+            _poses = self._convert_to_scene_coordinate_system(
+                self.extract_poses(labels, view, fp), ref_point
             )
+            poses.extend(_poses)
 
         return np.array(poses)
 
-    def _extract_poses_single_scene(
-        self, labels, view, fp, dist, ref_point, extraction_method
-    ):
-        height, width = view.shape
-        n_gridpoints_width, n_gridpoints_height = (
-            width // dist - 1,
-            height // dist - 1,
-        )
-        gridpoints = []
-        for h in range(n_gridpoints_height):
-            for w in range(n_gridpoints_width):
-                point = (dist + h * dist, dist + w * dist)
-                if self._valid_point(*point, view):
-                    gridpoints.append(point)
+    def extract_poses(
+        self, labels: List[float], view: np.ndarray, fp: str
+    ) -> List[tuple]:
+        r"""Extracts poses according to a programatic rule.
 
-        # Find the closest point of the target class to each gridpoint
-        poses = []
-        points_of_interest = []
-        for point in gridpoints:
-            if extraction_method == "closest":
-                closest_point_of_interest, label = self._bfs(point, labels, view, dist)
-                if closest_point_of_interest is None:
-                    continue
+        :property labels: A list of labels that we are interesting in extacting images of.
+        :property view: 2D numpy array representing the topdown view of the scene.
+        :property fp: filepath to the scene (necessary to return to the ImageExtractor).
+        """
+        raise NotImplementedError
 
-                poses.append((point, closest_point_of_interest, label, fp))
-                points_of_interest.append(closest_point_of_interest)
-            elif extraction_method == "panorama":
-                point_label_pairs = self._panorama_extraction(point, view, dist)
-                poses.extend(
-                    [(point, point_, label, fp) for point_, label in point_label_pairs]
-                )
-                points_of_interest.extend([point_ for point_, _ in point_label_pairs])
+    def _valid_point(self, row, col, view):
+        return view[row][col] == 1.0
 
-        # Convert from topdown map coordinate system to that of the pathfinder
+    def _is_point_of_interest(self, point, labels, view):
+        r, c = point
+        is_interesting = False
+        if view[r][c] in labels:
+            is_interesting = True
+
+        return is_interesting, view[r][c]
+
+    def _compute_quat(self, cam_normal):
+        """Rotations start from -z axis"""
+        return quat_from_two_vectors(habitat_sim.geo.FRONT, cam_normal)
+
+    def _convert_to_scene_coordinate_system(self, poses, ref_point):
+        # Convert from topdown map coordinate system to that of the scene
         startw, starty, starth = ref_point
         for i, pose in enumerate(poses):
             pos, cpi, label, filepath = pose
@@ -108,36 +98,42 @@ class PoseExtractor:
 
         return poses
 
-    def _valid_point(self, row, col, view):
-        return view[row][col] == 1.0
 
-    def _is_point_of_interest(self, point, labels, view):
-        r, c = point
-        is_interesting = False
-        if view[r][c] in labels:
-            is_interesting = True
+@registry.register_pose_extractor(name="closest_point_extractor")
+class ClosestPointExtractor(PoseExtractor):
+    def __init__(self, topdown_views, pixels_per_meter=0.1):
+        super().__init__(topdown_views, pixels_per_meter)
 
-        return is_interesting, view[r][c]
+    def extract_poses(self, labels, view, fp):
+        # Determine the physical spacing between each camera position
+        height, width = view.shape
+        dist = min(height, width) // 10  # We can modify this to be user-defined later
 
-    def _show_topdown_view(self, cmap="seismic_r"):
-        fig = plt.figure(figsize=(12.0, 12.0))
-        columns = 4
-        rows = math.ceil(len(self.tdv_fp_ref_triples) / columns)
-        for i in range(1, columns * rows + 1):
-            if i > len(self.tdv_fp_ref_triples):
-                break
+        # Create a grid of camera positions
+        n_gridpoints_width, n_gridpoints_height = (
+            width // dist - 1,
+            height // dist - 1,
+        )
 
-            img = self.tdv_fp_ref_triples[i - 1][0].topdown_view
-            fig.add_subplot(rows, columns, i)
-            plt.xticks([])
-            plt.yticks([])
-            plt.imshow(img, cmap=cmap)
+        # Exclude camera positions at invalid positions
+        gridpoints = []
+        for h in range(n_gridpoints_height):
+            for w in range(n_gridpoints_width):
+                point = (dist + h * dist, dist + w * dist)
+                if self._valid_point(*point, view):
+                    gridpoints.append(point)
 
-        plt.show()
+        # Find the closest point of the target class to each gridpoint
+        poses = []
+        for point in gridpoints:
+            closest_point_of_interest, label = self._bfs(point, labels, view, dist)
+            if closest_point_of_interest is None:
+                continue
 
-    def _compute_quat(self, cam_normal):
-        """Rotations start from -z axis"""
-        return quat_from_two_vectors(np.array([0, 0, -1]), cam_normal)
+            poses.append((point, closest_point_of_interest, label, fp))
+
+        # Returns poses in the coordinate system of the topdown view
+        return poses
 
     def _bfs(self, point, labels, view, dist):
         step = 3  # making this larger really speeds up BFS
@@ -167,9 +163,7 @@ class PoseExtractor:
             and bounding_box[2] <= col <= bounding_box[3]
         )
         is_valid = lambda row, col: 0 <= row < len(view) and 0 <= col < len(view[0])
-        visited = (
-            set()
-        )  # Can use the topdown view as visited set to save space at cost of time to reset it for each bfs
+        visited = set()
         q = collections.deque([(point, 0)])
         while q:
             cur, layer = q.popleft()
@@ -189,6 +183,42 @@ class PoseExtractor:
                     q.append((n, layer + step))
 
         return None, None
+
+
+@registry.register_pose_extractor(name="panorama_extractor")
+class PanoramaExtractor(PoseExtractor):
+    def __init__(self, topdown_views, pixels_per_meter=0.1):
+        super().__init__(topdown_views, pixels_per_meter)
+
+    def extract_poses(self, labels, view, fp):
+        # Determine the physical spacing between each camera position
+        height, width = view.shape
+        dist = min(height, width) // 10  # We can modify this to be user-defined later
+
+        # Create a grid of camera positions
+        n_gridpoints_width, n_gridpoints_height = (
+            width // dist - 1,
+            height // dist - 1,
+        )
+
+        # Exclude camera positions at invalid positions
+        gridpoints = []
+        for h in range(n_gridpoints_height):
+            for w in range(n_gridpoints_width):
+                point = (dist + h * dist, dist + w * dist)
+                if self._valid_point(*point, view):
+                    gridpoints.append(point)
+
+        # Find the closest point of the target class to each gridpoint
+        poses = []
+        for point in gridpoints:
+            point_label_pairs = self._panorama_extraction(point, view, dist)
+            poses.extend(
+                [(point, point_, label, fp) for point_, label in point_label_pairs]
+            )
+
+        # Returns poses in the coordinate system of the topdown view
+        return poses
 
     def _panorama_extraction(self, point, view, dist):
         in_bounds_of_topdown_view = lambda row, col: 0 <= row < len(
