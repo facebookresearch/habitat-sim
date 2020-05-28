@@ -133,16 +133,47 @@ class Simulator {
   }
 
   /**
-   * @brief Get a ref to the primitive asset attributes object for the primitive
-   * identified by the string key.
+   * @brief Return a copy of the primitive asset attributes object specified by
+   * passed handle.
    * @param primTemplateHandle the string key of the attributes desired - this
    * key will be synthesized based on attributes values.
-   * @return the desired primitive attributes, or nullptr if does not exist
+   * @return a copy of the desired primitive attributes, or nullptr if does not
+   * exist
    */
-  assets::AbstractPrimitiveAttributes::ptr getPrimitiveAssetAttributes(
+  assets::AbstractPrimitiveAttributes::ptr getPrimitiveAssetAttributesCopy(
       const std::string& primTemplateHandle) const {
-    return resourceManager_->getPrimitiveAssetAttributes(primTemplateHandle);
+    return resourceManager_->getPrimitiveAssetAttributesCopy(
+        primTemplateHandle);
   }
+
+  /**
+   * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
+   * with passed class name
+   */
+  assets::AbstractPrimitiveAttributes::ptr buildPrimitiveAttributes(
+      const std::string& primTypeName) {
+    return resourceManager_->buildPrimitiveAttributes(primTypeName);
+  }  // buildPrimitiveAttributes
+
+  /**
+   * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
+   * with passed enum value, which maps to class name via @ref
+   * PrimitiveNames3DMap
+   */
+  assets::AbstractPrimitiveAttributes::ptr buildPrimitiveAttributes(
+      assets::PrimObjTypes& primType) {
+    return resourceManager_->buildPrimitiveAttributes(primType);
+  }  // buildPrimitiveAttributes
+
+  /**
+   * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
+   * with passed integer value, which maps to an enum that in turn maps to class
+   * name via @ref PrimitiveNames3DMap
+   */
+  assets::AbstractPrimitiveAttributes::ptr buildPrimitiveAttributes(
+      int primTypeVal) {
+    return resourceManager_->buildPrimitiveAttributes(primTypeVal);
+  }  // buildPrimitiveAttributes
 
   /**
    * @brief Instantiate a @ref PhysicsObjectAttributes for a

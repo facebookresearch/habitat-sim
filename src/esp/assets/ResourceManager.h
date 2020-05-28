@@ -413,11 +413,12 @@ class ResourceManager {
   }  // getPrimitiveAssetTemplateHandlesByPrimType
 
   /**
-   * @brief Get a ref to the primitive asset attributes object for the primitive
-   * identified by the string key.
+   * @brief Return the primitive asset attributes object specified by
+   * passed handle.
    * @param primTemplateHandle the string key of the attributes desired - this
    * key will be synthesized based on attributes values.
-   * @return the desired primitive attributes, or nullptr if does not exist
+   * @return the desired primitive attributes, or nullptr if does not
+   * exist
    */
   AbstractPrimitiveAttributes::ptr getPrimitiveAssetAttributes(
       const std::string& primTemplateHandle) const {
@@ -429,6 +430,18 @@ class ResourceManager {
         nullptr);
     return primitiveAssetTemplateLibrary_.at(primTemplateHandle);
   }
+
+  /**
+   * @brief Return a copy of the primitive asset attributes object specified by
+   * passed handle.
+   * @param primTemplateHandle the string key of the attributes desired - this
+   * key will be synthesized based on attributes values.
+   * @return a copy of the desired primitive attributes, or nullptr if does not
+   * exist
+   */
+
+  AbstractPrimitiveAttributes::ptr getPrimitiveAssetAttributesCopy(
+      const std::string& primTemplateHandle);
 
   /**
    * @brief register the passed primitive asset template with the library of
@@ -832,6 +845,16 @@ class ResourceManager {
                        static_cast<PrimObjTypes>(primTypeVal))])();
   }  // buildPrimitiveAttributes
 
+  /**
+   * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
+   * with passed class name
+   */
+  AbstractPrimitiveAttributes::ptr copyPrimitiveAttributes(
+      const AbstractPrimitiveAttributes::ptr& origAttr) {
+    std::string primTypeName = origAttr->getPrimObjClassName();
+    return (*this.*primTypeCopyConstructorMap_[primTypeName])(origAttr);
+  }  // buildPrimitiveAttributes
+
  private:
   /**
    * @brief Build a shared pointer to the appropriate attributes for passed
@@ -848,6 +871,18 @@ class ResourceManager {
         nullptr);
     int idx = static_cast<int>(primitiveType);
     return T::create(isWireFrame, idx, PrimitiveNames3DMap.at(primitiveType));
+  }
+
+  /**
+   * @brief Build a shared pointer to the appropriate attributes for passed
+   * object type as defined in @ref PrimObjTypes, where each entry except @ref
+   * END_PRIM_OBJ_TYPES corresponds to a Magnum Primitive type
+   * @param orig original object of type t being copied
+   */
+  template <typename T>
+  std::shared_ptr<AbstractPrimitiveAttributes> createPrimitiveAttributesCopy(
+      const AbstractPrimitiveAttributes::ptr& orig) {
+    return T::create(*(static_cast<T*>(orig.get())));
   }
 
   /**
@@ -988,13 +1023,26 @@ class ResourceManager {
 
   /**
    * @brief Define a map type referencing function pointers to @ref
-   * createPrimitiveAttributes() keyed by string names of classes being
-   * instanced, as defined in @ref PrimitiveNames3D
+   * createPrimitiveAttributes() and @ref createPrimitiveAttributesCopy keyed by
+   * string names of classes being instanced, as defined in @ref
+   * PrimitiveNames3D
    */
   typedef std::map<std::string,
                    std::shared_ptr<esp::assets::AbstractPrimitiveAttributes> (
                        esp::assets::ResourceManager::*)()>
-      Map_Of_PrimTypes;
+      Map_Of_PrimTypeCtors;
+
+  /**
+   * @brief Define a map type referencing function pointers to @ref
+   * createPrimitiveAttributes() and @ref createPrimitiveAttributesCopy keyed by
+   * string names of classes being instanced, as defined in @ref
+   * PrimitiveNames3D
+   */
+  typedef std::map<std::string,
+                   std::shared_ptr<esp::assets::AbstractPrimitiveAttributes> (
+                       esp::assets::ResourceManager::*)(
+                       const AbstractPrimitiveAttributes::ptr&)>
+      Map_Of_PrimTypeCopyCtors;
 
   //======== Scene Functions ========
 
@@ -1004,14 +1052,15 @@ class ResourceManager {
    * Creates a drawable for the component of an asset referenced by the @ref
    * MeshTransformNode and adds it to the @ref DrawableGroup as child of
    * parent.
-   * @param metaData The @ref MeshMetaData object containing information about
-   * the meshes, textures, materials, and component heirarchy of the asset.
-   * @param parent The @ref scene::SceneNode of which the component will be a
-   * child.
+   * @param metaData The @ref MeshMetaData object containing information
+   * about the meshes, textures, materials, and component heirarchy of the
+   * asset.
+   * @param parent The @ref scene::SceneNode of which the component will be
+   * a child.
    * @param lightSetup The @ref LightSetup key that will be used
    * for the added component.
-   * @param drawables The @ref DrawableGroup with which the component will be
-   * rendered.
+   * @param drawables The @ref DrawableGroup with which the component will
+   * be rendered.
    * @param meshTransformNode The @ref MeshTransformNode for component
    * identifying its mesh, material, transformation, and children.
    */
@@ -1382,7 +1431,15 @@ class ResourceManager {
    * PrimitiveNames3D. A primitive attributes object is instanced by accessing
    * the approrpiate function pointer.
    */
-  Map_Of_PrimTypes primTypeConstructorMap_;
+  Map_Of_PrimTypeCtors primTypeConstructorMap_;
+
+  /**
+   * @brief Map of function pointers to instantiate a primitive attributes
+   * object, keyed by the Magnum primitive class name as listed in @ref
+   * PrimitiveNames3D. A primitive attributes object is instanced by accessing
+   * the approrpiate function pointer.
+   */
+  Map_Of_PrimTypeCopyCtors primTypeCopyConstructorMap_;
 
   /**
    * @brief Maps string keys (typically property filenames) to physical scene

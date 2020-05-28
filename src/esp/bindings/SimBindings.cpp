@@ -112,11 +112,15 @@ void initSimBindings(py::module& m) {
            &Simulator::getPrimitiveAssetTemplateHandles, "search_str"_a = "",
            "search_contains"_a = true)
       .def("get_primitive_asset_template_by_handle",
-           &Simulator::getPrimitiveAssetAttributes, "prim_template_handle"_a)
+           &Simulator::getPrimitiveAssetAttributesCopy,
+           "prim_template_handle"_a)
       .def("register_primitive_asset_template",
            &Simulator::registerPrimitiveAssetTemplate, "prim_asset_template"_a)
-      .def("build_prim_based_object_template",
+      .def("build_prim_object_template",
            &Simulator::buildPrimitiveBasedPhysObjTemplate,
+           "prim_asset_template"_a)
+      .def("build_and_register_prim_object_template",
+           &Simulator::buildAndRegisterPrimPhysObjTemplate,
            "prim_asset_template"_a)
 
       // DEPRECATE THIS BINDING? : removing may cause breaking change

@@ -554,7 +554,7 @@ class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
       : AbstractPrimitiveAttributes(isWireframe,
                                     primObjType,
                                     primObjClassName) {
-    setSubdivisions(1);
+    setSubdivisions(0);
     buildOriginHandle();  // build handle based on config
   }
   // only solid icospheres will support subdivision - wireframes default to 1
