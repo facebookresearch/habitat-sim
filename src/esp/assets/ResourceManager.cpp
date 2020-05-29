@@ -68,20 +68,20 @@ constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
 constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
 
-const std::map<PrimObjTypes, const char*> ResourceManager::PrimitiveNames3DMap =
-    {{PrimObjTypes::CAPSULE_SOLID, "capsule3DSolid"},
-     {PrimObjTypes::CAPSULE_WF, "capsule3DWireframe"},
-     {PrimObjTypes::CONE_SOLID, "coneSolid"},
-     {PrimObjTypes::CONE_WF, "coneWireframe"},
-     {PrimObjTypes::CUBE_SOLID, "cubeSolid"},
-     {PrimObjTypes::CUBE_WF, "cubeWireframe"},
-     {PrimObjTypes::CYLINDER_SOLID, "cylinderSolid"},
-     {PrimObjTypes::CYLINDER_WF, "cylinderWireframe"},
-     {PrimObjTypes::ICOSPHERE_SOLID, "icosphereSolid"},
-     {PrimObjTypes::ICOSPHERE_WF, "icosphereWireframe"},
-     {PrimObjTypes::UVSPHERE_SOLID, "uvSphereSolid"},
-     {PrimObjTypes::UVSPHERE_WF, "uvSphereWireframe"},
-     {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
+const std::map<PrimObjTypes, const char*> ResourceManager::PrimNames3DMap = {
+    {PrimObjTypes::CAPSULE_SOLID, "capsule3DSolid"},
+    {PrimObjTypes::CAPSULE_WF, "capsule3DWireframe"},
+    {PrimObjTypes::CONE_SOLID, "coneSolid"},
+    {PrimObjTypes::CONE_WF, "coneWireframe"},
+    {PrimObjTypes::CUBE_SOLID, "cubeSolid"},
+    {PrimObjTypes::CUBE_WF, "cubeWireframe"},
+    {PrimObjTypes::CYLINDER_SOLID, "cylinderSolid"},
+    {PrimObjTypes::CYLINDER_WF, "cylinderWireframe"},
+    {PrimObjTypes::ICOSPHERE_SOLID, "icosphereSolid"},
+    {PrimObjTypes::ICOSPHERE_WF, "icosphereWireframe"},
+    {PrimObjTypes::UVSPHERE_SOLID, "uvSphereSolid"},
+    {PrimObjTypes::UVSPHERE_WF, "uvSphereWireframe"},
+    {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
 
 ResourceManager::ResourceManager()
     :
@@ -97,95 +97,95 @@ ResourceManager::ResourceManager()
 void ResourceManager::buildMapOfPrimTypeConstructors() {
   // function pointers to asset attributes constructors
   primTypeConstructorMap_["capsule3DSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CapsulePrimitiveAttributes, false,
-          PrimObjTypes::CAPSULE_SOLID>;
+      &ResourceManager::createPrimAttributes<assets::CapsulePrimitiveAttributes,
+                                             false,
+                                             PrimObjTypes::CAPSULE_SOLID>;
   primTypeConstructorMap_["capsule3DWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CapsulePrimitiveAttributes, true, PrimObjTypes::CAPSULE_WF>;
+      &ResourceManager::createPrimAttributes<assets::CapsulePrimitiveAttributes,
+                                             true, PrimObjTypes::CAPSULE_WF>;
   primTypeConstructorMap_["coneSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::ConePrimitiveAttributes, false, PrimObjTypes::CONE_SOLID>;
+      &ResourceManager::createPrimAttributes<assets::ConePrimitiveAttributes,
+                                             false, PrimObjTypes::CONE_SOLID>;
   primTypeConstructorMap_["coneWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::ConePrimitiveAttributes, true, PrimObjTypes::CONE_WF>;
+      &ResourceManager::createPrimAttributes<assets::ConePrimitiveAttributes,
+                                             true, PrimObjTypes::CONE_WF>;
   primTypeConstructorMap_["cubeSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CubePrimitiveAttributes, false, PrimObjTypes::CUBE_SOLID>;
+      &ResourceManager::createPrimAttributes<assets::CubePrimitiveAttributes,
+                                             false, PrimObjTypes::CUBE_SOLID>;
   primTypeConstructorMap_["cubeWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CubePrimitiveAttributes, true, PrimObjTypes::CUBE_WF>;
+      &ResourceManager::createPrimAttributes<assets::CubePrimitiveAttributes,
+                                             true, PrimObjTypes::CUBE_WF>;
   primTypeConstructorMap_["cylinderSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
+      &ResourceManager::createPrimAttributes<
           assets::CylinderPrimitiveAttributes, false,
           PrimObjTypes::CYLINDER_SOLID>;
   primTypeConstructorMap_["cylinderWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
+      &ResourceManager::createPrimAttributes<
           assets::CylinderPrimitiveAttributes, true, PrimObjTypes::CYLINDER_WF>;
   primTypeConstructorMap_["icosphereSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
+      &ResourceManager::createPrimAttributes<
           assets::IcospherePrimitiveAttributes, false,
           PrimObjTypes::ICOSPHERE_SOLID>;
   primTypeConstructorMap_["icosphereWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
+      &ResourceManager::createPrimAttributes<
           assets::IcospherePrimitiveAttributes, true,
           PrimObjTypes::ICOSPHERE_WF>;
   primTypeConstructorMap_["uvSphereSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
+      &ResourceManager::createPrimAttributes<
           assets::UVSpherePrimitiveAttributes, false,
           PrimObjTypes::UVSPHERE_SOLID>;
   primTypeConstructorMap_["uvSphereWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
+      &ResourceManager::createPrimAttributes<
           assets::UVSpherePrimitiveAttributes, true, PrimObjTypes::UVSPHERE_WF>;
 
   // function pointers to asset attributes copy constructors
   primTypeCopyConstructorMap_["capsule3DSolid"] =
-      &ResourceManager::createPrimitiveAttributesCopy<
+      &ResourceManager::createPrimAttributesCopy<
           assets::CapsulePrimitiveAttributes>;
   primTypeCopyConstructorMap_["capsule3DWireframe"] =
-      &ResourceManager::createPrimitiveAttributesCopy<
+      &ResourceManager::createPrimAttributesCopy<
           assets::CapsulePrimitiveAttributes>;
   primTypeCopyConstructorMap_["coneSolid"] =
-      &ResourceManager::createPrimitiveAttributesCopy<
+      &ResourceManager::createPrimAttributesCopy<
           assets::ConePrimitiveAttributes>;
   primTypeCopyConstructorMap_["coneWireframe"] =
-      &ResourceManager::createPrimitiveAttributesCopy<
+      &ResourceManager::createPrimAttributesCopy<
           assets::ConePrimitiveAttributes>;
   primTypeCopyConstructorMap_["cubeSolid"] =
-      &ResourceManager::createPrimitiveAttributesCopy<
+      &ResourceManager::createPrimAttributesCopy<
           assets::CubePrimitiveAttributes>;
   primTypeCopyConstructorMap_["cubeWireframe"] =
-      &ResourceManager::createPrimitiveAttributesCopy<
+      &ResourceManager::createPrimAttributesCopy<
           assets::CubePrimitiveAttributes>;
   primTypeCopyConstructorMap_["cylinderSolid"] =
-      &ResourceManager::createPrimitiveAttributesCopy<
+      &ResourceManager::createPrimAttributesCopy<
           assets::CylinderPrimitiveAttributes>;
   primTypeCopyConstructorMap_["cylinderWireframe"] =
-      &ResourceManager::createPrimitiveAttributesCopy<
+      &ResourceManager::createPrimAttributesCopy<
           assets::CylinderPrimitiveAttributes>;
   primTypeCopyConstructorMap_["icosphereSolid"] =
-      &ResourceManager::createPrimitiveAttributesCopy<
+      &ResourceManager::createPrimAttributesCopy<
           assets::IcospherePrimitiveAttributes>;
   primTypeCopyConstructorMap_["icosphereWireframe"] =
-      &ResourceManager::createPrimitiveAttributesCopy<
+      &ResourceManager::createPrimAttributesCopy<
           assets::IcospherePrimitiveAttributes>;
   primTypeCopyConstructorMap_["uvSphereSolid"] =
-      &ResourceManager::createPrimitiveAttributesCopy<
+      &ResourceManager::createPrimAttributesCopy<
           assets::UVSpherePrimitiveAttributes>;
   primTypeCopyConstructorMap_["uvSphereWireframe"] =
-      &ResourceManager::createPrimitiveAttributesCopy<
+      &ResourceManager::createPrimAttributesCopy<
           assets::UVSpherePrimitiveAttributes>;
 
   // no entry added for PrimObjTypes::END_PRIM_OBJ_TYPES
 
   // build default AbstractPrimitiveAttributes objects
-  for (const std::pair<PrimObjTypes, const char*>& elem : PrimitiveNames3DMap) {
+  for (const std::pair<PrimObjTypes, const char*>& elem : PrimNames3DMap) {
     if (elem.first == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       continue;
     }
 
-    auto attr = buildPrimitiveAttributes(elem.second);
-    addPrimitiveAssetTemplateToLibrary(attr);
+    auto attr = buildPrimAttributes(elem.second);
+    addPrimAssetTemplateToLibrary(attr);
   }
 
   // instantiate a primitive importer
@@ -659,7 +659,7 @@ int ResourceManager::addPhysicsObjectTemplateToLibrary(
   return objectTemplateID;
 }  // addPhysicsObjectTemplateToLibrary
 
-std::string ResourceManager::addPrimitiveAssetTemplateToLibrary(
+std::string ResourceManager::addPrimAssetTemplateToLibrary(
     AbstractPrimitiveAttributes::ptr primTemplate) {
   // Prim asset template handle encodes all relevant information about primitive
   // asset construction
@@ -687,18 +687,18 @@ std::string ResourceManager::addPrimitiveAssetTemplateToLibrary(
   return primHandle;
 }  // addPrimitiveAssetTemplateToLibrary
 
-std::string ResourceManager::registerPrimitiveAssetTemplate(
+std::string ResourceManager::registerPrimAssetTemplate(
     assets::AbstractPrimitiveAttributes::ptr primitiveAssetTemplate) {
   // verify that attributes has been edited in a legal manner
   CORRADE_ASSERT(primitiveAssetTemplate->isValidTemplate(),
-                 "ResourceManager::registerPrimitiveAssetTemplate : Primitive "
+                 "ResourceManager::registerPrimAssetTemplate : Primitive "
                  "asset attributes template named"
                      << primitiveAssetTemplate->getOriginHandle()
                      << "is not configured properly for specified prmitive"
                      << primitiveAssetTemplate->getPrimObjClassName()
                      << ". Aborting.",
                  "");
-  return addPrimitiveAssetTemplateToLibrary(primitiveAssetTemplate);
+  return addPrimAssetTemplateToLibrary(primitiveAssetTemplate);
 }  // ResourceManager::registerPrimitiveAssetTemplate
 
 int ResourceManager::registerObjectTemplate(
@@ -1017,8 +1017,7 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
   return registerObjectTemplate(physicsObjectAttributes, objPhysConfigFilename);
 }  // parseAndLoadPhysObjTemplate
 
-PhysicsObjectAttributes::ptr
-ResourceManager::buildPrimitiveBasedPhysObjTemplate(
+PhysicsObjectAttributes::ptr ResourceManager::buildPrimBasedPhysObjTemplate(
     const std::string& primAssetHandle) {
   // verify that a primitive asset with the given handle exists
   if (primitiveAssetTemplateLibrary_.count(primAssetHandle) == 0) {
@@ -1050,7 +1049,7 @@ ResourceManager::buildPrimitiveBasedPhysObjTemplate(
   // primitive mesh needs to be configured and set in MeshMetaData and
   // CollisionMesh
   return physicsObjectAttributes;
-}  // ResourceManager::buildPrimitiveBasedPhysObjTemplate
+}  // ResourceManager::buildPrimBasedPhysObjTemplate
 
 int ResourceManager::buildAndRegisterPrimPhysObjTemplate(
     const std::string& primAssetHandle) {
@@ -1069,27 +1068,24 @@ int ResourceManager::buildAndRegisterPrimPhysObjTemplate(
 
   // construct a PhysicsObjectAttributes using specified primitive as render and
   // collision meshes
-  auto physicsObjectAttributes =
-      buildPrimitiveBasedPhysObjTemplate(primAssetHandle);
+  auto physicsObjectAttributes = buildPrimBasedPhysObjTemplate(primAssetHandle);
 
   return registerObjectTemplate(physicsObjectAttributes, primAssetHandle);
 }  // ResourceManager::buildAndRegisterPrimPhysObjTemplate
 
-AbstractPrimitiveAttributes::ptr
-ResourceManager::getPrimitiveAssetAttributesCopy(
+AbstractPrimitiveAttributes::ptr ResourceManager::getPrimAssetAttributesCopy(
     const std::string& primTemplateHandle) {
-  CORRADE_ASSERT(
-      (primitiveAssetTemplateLibrary_.count(primTemplateHandle) > 0),
-      "ResourceManager::getPrimitiveAssetTemplateAttributes : Unknown "
-      "template handle :"
-          << primTemplateHandle << ". Aborting",
-      nullptr);
+  CORRADE_ASSERT((primitiveAssetTemplateLibrary_.count(primTemplateHandle) > 0),
+                 "ResourceManager::getPrimAssetTemplateAttributes : Unknown "
+                 "template handle :"
+                     << primTemplateHandle << ". Aborting",
+                 nullptr);
   // need to return copy so that user mods do not modify existing
   // asset template
   auto orig = primitiveAssetTemplateLibrary_.at(primTemplateHandle);
   // build a copy of existing template
-  return copyPrimitiveAttributes(orig);
-}  // ResourceManager::getPrimitiveAssetAttributesCopy
+  return copyPrimAttributes(orig);
+}  // ResourceManager::getPrimAssetAttributesCopy
 
 Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
@@ -1239,7 +1235,7 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
   meshDataGL->BB = meshDataGL->BB.translated(translation);
 }
 
-void ResourceManager::buildPrimitiveAssetData(
+void ResourceManager::buildPrimAssetData(
     AbstractPrimitiveAttributes::ptr primTemplate) {
   // check if unique name of attributes describing primitive asset is present
   // already - don't remake if so
@@ -1313,7 +1309,7 @@ void ResourceManager::buildPrimitiveAssetData(
             << " | Conf has group for this obj type : "
             << conf.hasGroup(primClassName);
 
-}  // buildPrimitiveAssetData
+}  // buildPrimAssetData
 
 bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
                                        scene::SceneNode* parent,
@@ -1969,7 +1965,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
       // attributes
       auto primitiveAssetAttributes =
           primitiveAssetTemplateLibrary_.at(renderAssetHandle);
-      buildPrimitiveAssetData(primitiveAssetAttributes);
+      buildPrimAssetData(primitiveAssetAttributes);
 
     } else {
       // load/check_for render mesh metadata and load assets

@@ -109,16 +109,18 @@ void initSimBindings(py::module& m) {
            "search_contains"_a = true)
 
       .def("get_prim_asset_template_handles",
-           &Simulator::getPrimitiveAssetTemplateHandles, "search_str"_a = "",
-           "search_contains"_a = true)
-      .def("get_primitive_asset_template_by_handle",
-           &Simulator::getPrimitiveAssetAttributesCopy,
-           "prim_template_handle"_a)
-      .def("register_primitive_asset_template",
-           &Simulator::registerPrimitiveAssetTemplate, "prim_asset_template"_a)
+           &Simulator::getPrimAssetTemplateHandlesBySubstring,
+           "search_str"_a = "", "contains_str"_a = true)
+      .def("get_prim_asset_template_handles_by_type",
+           &Simulator::getPrimAssetTemplateHandlesByPrimType,
+           "prim_type_enum"_a = "", "includes_enum"_a = true)
+
+      .def("get_prim_asset_template_by_handle",
+           &Simulator::getPrimAssetAttributesCopy, "prim_template_handle"_a)
+      .def("register_prim_asset_template",
+           &Simulator::registerPrimAssetTemplate, "prim_asset_template"_a)
       .def("build_prim_object_template",
-           &Simulator::buildPrimitiveBasedPhysObjTemplate,
-           "prim_asset_template"_a)
+           &Simulator::buildPrimBasedPhysObjTemplate, "prim_asset_template"_a)
       .def("build_and_register_prim_object_template",
            &Simulator::buildAndRegisterPrimPhysObjTemplate,
            "prim_asset_template"_a)

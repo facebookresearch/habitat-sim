@@ -92,6 +92,7 @@ struct SimTest : Cr::TestSuite::Tester {
   void multipleLightingSetupsRGBAObservation();
   void recomputeNavmeshWithStaticObjects();
   void loadingObjectTemplates();
+  void buildingPrimAssetObjectTemplates();
 
   // TODO: remove outlier pixels from image and lower maxThreshold
   const Magnum::Float maxThreshold = 255.f;
@@ -115,7 +116,8 @@ SimTest::SimTest() {
             &SimTest::updateObjectLightSetupRGBAObservation,
             &SimTest::multipleLightingSetupsRGBAObservation,
             &SimTest::recomputeNavmeshWithStaticObjects,
-            &SimTest::loadingObjectTemplates});
+            &SimTest::loadingObjectTemplates,
+            &SimTest::buildingPrimAssetObjectTemplates});
   // clang-format on
 }
 
@@ -428,6 +430,7 @@ void SimTest::loadingObjectTemplates() {
   std::string boxPath =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
   newTemplate->setRenderAssetHandle(boxPath);
+  // set value representing user-set data
   newTemplate->setString("testname", "newTemplate");
   int templateIndex = simulator->registerObjectTemplate(newTemplate, boxPath);
   CORRADE_VERIFY(templateIndex != esp::ID_UNDEFINED);
@@ -438,6 +441,7 @@ void SimTest::loadingObjectTemplates() {
   std::string chairPath =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/chair.glb");
   newTemplate2->setRenderAssetHandle(chairPath);
+  // set value representing user-set data
   newTemplate2->setString("testname", "newTemplate2");
   int templateIndex2 = simulator->registerObjectTemplate(newTemplate2, boxPath);
   CORRADE_VERIFY(templateIndex2 != esp::ID_UNDEFINED);
@@ -448,7 +452,93 @@ void SimTest::loadingObjectTemplates() {
   CORRADE_VERIFY(newTemplate3->getRenderAssetHandle() == chairPath);
   // verify user-specified data is set appropriately
   CORRADE_VERIFY(newTemplate3->getString("testname") == "newTemplate2");
-}
+}  // SimTest::loadingObjectTemplates
+
+void SimTest::buildingPrimAssetObjectTemplates() {
+  Corrade::Utility::Debug()
+      << "Starting Test : buildingPrimAssetObjectTemplates ";
+  auto sim = getSimulator(planeScene);
+
+  // test that the correct number of default primitive assets are available as
+  // render/collision targets
+  std::vector<std::string> primAssetHandles =
+      sim->getPrimAssetTemplateHandlesBySubstring("");
+  int numPrimsExpected =
+      static_cast<int>(esp::assets::PrimObjTypes::END_PRIM_OBJ_TYPES);
+  CORRADE_VERIFY(numPrimsExpected == primAssetHandles.size());
+  esp::assets::AbstractPrimitiveAttributes::ptr primAttr;
+  // test that there are existing templates for each key, and that they have
+  // valid values to be used to construct magnum primitives
+  for (int i = 0; i < numPrimsExpected; ++i) {
+    std::string handle = primAssetHandles[i];
+    CORRADE_VERIFY(handle != "");
+    primAttr = sim->getPrimAssetAttributesCopy(handle);
+    CORRADE_VERIFY(primAttr != nullptr);
+    CORRADE_VERIFY(primAttr->isValidTemplate());
+    // verify that the attributes contains the handle, and the handle contains
+    // the expected class name
+    std::string className = esp::assets::ResourceManager::PrimNames3DMap.at(
+        static_cast<esp::assets::PrimObjTypes>(i));
+    CORRADE_VERIFY((primAttr->getOriginHandle() == handle) &&
+                   (handle.find(className) != std::string::npos));
+  }
+
+  // test that existing template handles can be accessed via name string and
+  // this access is case insensitive
+  primAssetHandles = sim->getPrimAssetTemplateHandlesBySubstring("CONESOLID");
+  // should only be one handle in this vector
+  CORRADE_VERIFY(1 == primAssetHandles.size());
+  // handle should not be empty and be long enough to hold class name prefix
+  CORRADE_VERIFY(9 < primAssetHandles[0].length());
+  // coneSolid should appear in handle
+  std::string checkStr("coneSolid");
+  CORRADE_VERIFY(primAssetHandles[0].find(checkStr) != std::string::npos);
+
+  // test that existing template handles can be accessed via primitive type enum
+  primAssetHandles = sim->getPrimAssetTemplateHandlesByPrimType(
+      esp::assets::PrimObjTypes::CYLINDER_SOLID);
+  // should only be one handle in this vector
+  CORRADE_VERIFY(1 == primAssetHandles.size());
+  // handle should not be empty and be long enough to hold class name prefix
+  CORRADE_VERIFY(9 < primAssetHandles[0].length());
+  // cylinderSolid should appear in handle
+  std::string checkStr2("cylinderSolid");
+  CORRADE_VERIFY(primAssetHandles[0].find(checkStr2) != std::string::npos);
+
+  // test that primitive asset attributes are able to be modified and saved and
+  // the changes persist, while the old templates are not removed
+  // get existing default cylinder handle
+  primAssetHandles = sim->getPrimAssetTemplateHandlesByPrimType(
+      esp::assets::PrimObjTypes::CYLINDER_SOLID);
+  // should only be one handle in this vector
+  CORRADE_VERIFY(1 == primAssetHandles.size());
+
+  std::string origCylinderHandle = primAssetHandles[0];
+  primAttr = sim->getPrimAssetAttributesCopy(origCylinderHandle);
+  // verify that the origin handle matches what is expected
+  CORRADE_VERIFY(primAttr->getOriginHandle() == origCylinderHandle);
+  // get original number of rings for this cylinder
+  int origNumRings = primAttr->getNumRings();
+  // modify attributes
+  primAttr->setNumRings(2 * origNumRings);
+  // register new attributes
+  sim->registerPrimAssetTemplate(primAttr);
+
+  // now acquire all prim asset handles - verify there are now 2
+  primAssetHandles = sim->getPrimAssetTemplateHandlesByPrimType(
+      esp::assets::PrimObjTypes::CYLINDER_SOLID);
+  // should now be two handles in this vector
+  CORRADE_VERIFY(2 == primAssetHandles.size());
+  // verify that each has appropriate number of rings
+  for (int i = 0; i < primAssetHandles.size(); ++i) {
+    primAttr = sim->getPrimAssetAttributesCopy(primAssetHandles[i]);
+    // handles should match in order
+    CORRADE_VERIFY(primAttr->getOriginHandle() == primAssetHandles[i]);
+    // second should have 2x the number of rings specified as the first does
+    CORRADE_VERIFY(((i + 1) * origNumRings) == primAttr->getNumRings());
+  }
+
+}  // SimTest::buildingPrimAssetObjectTemplates
 
 }  // namespace
 

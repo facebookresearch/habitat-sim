@@ -125,11 +125,28 @@ class Simulator {
    * @ref primitiveAssetTemplateLibrary_ that contain/do not contain the passed
    * substring
    */
-  std::vector<std::string> getPrimitiveAssetTemplateHandles(
+  std::vector<std::string> getPrimAssetTemplateHandlesBySubstring(
       const std::string& subStr = "",
       bool contains = true) {
-    return resourceManager_->getPrimitiveAssetTemplateHandlesBySubstring(
-        subStr);
+    return resourceManager_->getPrimAssetTemplateHandlesBySubstring(subStr,
+                                                                    contains);
+  }
+
+  /**
+   * @brief Get list of primitive asset template handles used as keys in @ref
+   * primitiveAssetTemplateLibrary_ related to passed primitive descriptor enum.
+   *
+   * @param primType Enum
+   * @param contains whether to search for keys containing, or not containing,
+   * string references to @ref primType
+   * @return list containing 0 or more string keys corresponding to templates in
+   * @ref primitiveAssetTemplateLibrary_ that contain the passed substring
+   */
+  std::vector<std::string> getPrimAssetTemplateHandlesByPrimType(
+      assets::PrimObjTypes primType,
+      bool contains = true) const {
+    return resourceManager_->getPrimAssetTemplateHandlesByPrimType(primType,
+                                                                   contains);
   }
 
   /**
@@ -140,40 +157,39 @@ class Simulator {
    * @return a copy of the desired primitive attributes, or nullptr if does not
    * exist
    */
-  assets::AbstractPrimitiveAttributes::ptr getPrimitiveAssetAttributesCopy(
+  assets::AbstractPrimitiveAttributes::ptr getPrimAssetAttributesCopy(
       const std::string& primTemplateHandle) const {
-    return resourceManager_->getPrimitiveAssetAttributesCopy(
-        primTemplateHandle);
+    return resourceManager_->getPrimAssetAttributesCopy(primTemplateHandle);
   }
 
   /**
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
    * with passed class name
    */
-  assets::AbstractPrimitiveAttributes::ptr buildPrimitiveAttributes(
+  assets::AbstractPrimitiveAttributes::ptr buildPrimAttributes(
       const std::string& primTypeName) {
-    return resourceManager_->buildPrimitiveAttributes(primTypeName);
-  }  // buildPrimitiveAttributes
+    return resourceManager_->buildPrimAttributes(primTypeName);
+  }  // buildPrimAttributes
 
   /**
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
    * with passed enum value, which maps to class name via @ref
-   * PrimitiveNames3DMap
+   * PrimNames3DMap
    */
-  assets::AbstractPrimitiveAttributes::ptr buildPrimitiveAttributes(
-      assets::PrimObjTypes& primType) {
-    return resourceManager_->buildPrimitiveAttributes(primType);
-  }  // buildPrimitiveAttributes
+  assets::AbstractPrimitiveAttributes::ptr buildPrimAttributes(
+      assets::PrimObjTypes primType) {
+    return resourceManager_->buildPrimAttributes(primType);
+  }  // buildPrimAttributes
 
   /**
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
    * with passed integer value, which maps to an enum that in turn maps to class
-   * name via @ref PrimitiveNames3DMap
+   * name via @ref PrimNames3DMap
    */
-  assets::AbstractPrimitiveAttributes::ptr buildPrimitiveAttributes(
+  assets::AbstractPrimitiveAttributes::ptr buildPrimAttributes(
       int primTypeVal) {
-    return resourceManager_->buildPrimitiveAttributes(primTypeVal);
-  }  // buildPrimitiveAttributes
+    return resourceManager_->buildPrimAttributes(primTypeVal);
+  }  // buildPrimAttributes
 
   /**
    * @brief Instantiate a @ref PhysicsObjectAttributes for a
@@ -189,10 +205,9 @@ class Simulator {
    * @return The @ref physicsObjectAttributes template based on the passed
    * primitive
    */
-  assets::PhysicsObjectAttributes::ptr buildPrimitiveBasedPhysObjTemplate(
+  assets::PhysicsObjectAttributes::ptr buildPrimBasedPhysObjTemplate(
       const std::string& primAssetHandle) {
-    return resourceManager_->buildPrimitiveBasedPhysObjTemplate(
-        primAssetHandle);
+    return resourceManager_->buildPrimBasedPhysObjTemplate(primAssetHandle);
   }
 
   /**
@@ -218,10 +233,9 @@ class Simulator {
    * @return the handle of the primitive template, synthesized from the values
    * set in template
    */
-  std::string registerPrimitiveAssetTemplate(
+  std::string registerPrimAssetTemplate(
       assets::AbstractPrimitiveAttributes::ptr primitiveAssetTemplate) {
-    return resourceManager_->registerPrimitiveAssetTemplate(
-        primitiveAssetTemplate);
+    return resourceManager_->registerPrimAssetTemplate(primitiveAssetTemplate);
   }
 
   /**

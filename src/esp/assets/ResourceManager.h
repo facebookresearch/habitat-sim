@@ -158,7 +158,7 @@ class ResourceManager {
    * supported, keyed by @ref PrimObjTypes enum entry.  Note final entry is not
    * a valid primitive.
    */
-  static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
+  static const std::map<PrimObjTypes, const char*> PrimNames3DMap;
 
   /** @brief Constructor */
   explicit ResourceManager();
@@ -168,7 +168,7 @@ class ResourceManager {
 
   /**
    * @brief This function will assign the appropriately configured function
-   * pointers for @ref createPrimitiveAttributes calls for each type of
+   * pointers for @ref createPrimAttributes calls for each type of
    * supported primitive to the @ref primTypeConstructorMap, keyed by type of
    * primtive
    */
@@ -333,7 +333,7 @@ class ResourceManager {
    * @return The @ref physicsObjectAttributes template based on the passed
    * primitive
    */
-  PhysicsObjectAttributes::ptr buildPrimitiveBasedPhysObjTemplate(
+  PhysicsObjectAttributes::ptr buildPrimBasedPhysObjTemplate(
       const std::string& primAssetHandle);
 
   /**
@@ -386,14 +386,14 @@ class ResourceManager {
    * @return The key referencing the template in @ref
    * primitiveAssetTemplateLibrary_, or an empty string if does not exist.
    */
-  std::string getPrimitiveAssetTemplateHandle(const int primTemplateID) const {
+  std::string getPrimAssetTemplateHandle(const int primTemplateID) const {
     CORRADE_ASSERT(primitiveAssetTemplateLibByID_.count(primTemplateID) > 0,
-                   "ResourceManager::getPrimitiveAssetTemplateHandle : No "
+                   "ResourceManager::getPrimAssetTemplateHandle : No "
                    "primitive asset template with index"
                        << primTemplateID << "exists. Aborting",
                    "");
     return primitiveAssetTemplateLibByID_.at(primTemplateID);
-  }  // getPrimitiveAssetTemplateHandle
+  }  // getPrimAssetTemplateHandle
 
   /**
    * @brief Get list of primitive asset template handles used as keys in @ref
@@ -405,12 +405,35 @@ class ResourceManager {
    * @return list containing 0 or more string keys corresponding to templates in
    * @ref primitiveAssetTemplateLibrary_ that contain the passed substring
    */
-  std::vector<std::string> getPrimitiveAssetTemplateHandlesBySubstring(
+  std::vector<std::string> getPrimAssetTemplateHandlesBySubstring(
       const std::string& subStr = "",
       bool contains = true) const {
     return getTemplateHandlesBySubStringPerType(primitiveAssetTemplateLibByID_,
                                                 subStr, contains);
-  }  // getPrimitiveAssetTemplateHandlesByPrimType
+  }  // getPrimAssetTemplateHandlesBySubstring
+
+  /**
+   * @brief Get list of primitive asset template handles used as keys in @ref
+   * primitiveAssetTemplateLibrary_ related to passed primitive descriptor enum.
+   *
+   * @param primType Enum
+   * @param contains whether to search for keys containing, or not containing,
+   * @ref subStr
+   * @return list containing 0 or more string keys corresponding to templates in
+   * @ref primitiveAssetTemplateLibrary_ that contain the passed substring
+   */
+  std::vector<std::string> getPrimAssetTemplateHandlesByPrimType(
+      PrimObjTypes primType,
+      bool contains = true) const {
+    CORRADE_ASSERT(primType != PrimObjTypes::END_PRIM_OBJ_TYPES,
+                   "ResourceManager::getPrimAssetTemplateHandlesByPrimType : "
+                   "Illegal primtitive type "
+                   "name PrimObjTypes::END_PRIM_OBJ_TYPES.  Aborting.",
+                   {});
+    std::string subStr = PrimNames3DMap.at(primType);
+    return getTemplateHandlesBySubStringPerType(primitiveAssetTemplateLibByID_,
+                                                subStr, contains);
+  }  // getPrimAssetTemplateHandlesByPrimType
 
   /**
    * @brief Return the primitive asset attributes object specified by
@@ -420,16 +443,16 @@ class ResourceManager {
    * @return the desired primitive attributes, or nullptr if does not
    * exist
    */
-  AbstractPrimitiveAttributes::ptr getPrimitiveAssetAttributes(
+  AbstractPrimitiveAttributes::ptr getPrimAssetAttributes(
       const std::string& primTemplateHandle) const {
     CORRADE_ASSERT(
         (primitiveAssetTemplateLibrary_.count(primTemplateHandle) > 0),
-        "ResourceManager::getPrimitiveAssetTemplateAttributes : Unknown "
+        "ResourceManager::getPrimAssetTemplateAttributes : Unknown "
         "template handle :"
             << primTemplateHandle << ". Aborting",
         nullptr);
     return primitiveAssetTemplateLibrary_.at(primTemplateHandle);
-  }
+  }  // getPrimAssetAttributes
 
   /**
    * @brief Return a copy of the primitive asset attributes object specified by
@@ -440,7 +463,7 @@ class ResourceManager {
    * exist
    */
 
-  AbstractPrimitiveAttributes::ptr getPrimitiveAssetAttributesCopy(
+  AbstractPrimitiveAttributes::ptr getPrimAssetAttributesCopy(
       const std::string& primTemplateHandle);
 
   /**
@@ -451,7 +474,7 @@ class ResourceManager {
    * @return the handle of the primitive asset attributes object, or empty
    * string if not successful
    */
-  std::string registerPrimitiveAssetTemplate(
+  std::string registerPrimAssetTemplate(
       assets::AbstractPrimitiveAttributes::ptr primitiveAssetTemplate);
 
   /**
@@ -803,57 +826,55 @@ class ResourceManager {
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
    * with passed class name
    */
-  AbstractPrimitiveAttributes::ptr buildPrimitiveAttributes(
+  AbstractPrimitiveAttributes::ptr buildPrimAttributes(
       const std::string& primTypeName) {
-    CORRADE_ASSERT(
-        primTypeConstructorMap_.count(primTypeName) > 0,
-        "ResourceManager::buildPrimitiveAttributes : No primivite of type"
-            << primTypeName << "exists.  Aborting.",
-        nullptr);
+    CORRADE_ASSERT(primTypeConstructorMap_.count(primTypeName) > 0,
+                   "ResourceManager::buildPrimAttributes : No primivite of type"
+                       << primTypeName << "exists.  Aborting.",
+                   nullptr);
     return (*this.*primTypeConstructorMap_[primTypeName])();
-  }  // buildPrimitiveAttributes
+  }  // buildPrimAttributes
 
   /**
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
    * with passed enum value, which maps to class name via @ref
-   * PrimitiveNames3DMap
+   * PrimNames3DMap
    */
-  AbstractPrimitiveAttributes::ptr buildPrimitiveAttributes(
-      PrimObjTypes& primType) {
+  AbstractPrimitiveAttributes::ptr buildPrimAttributes(PrimObjTypes primType) {
     CORRADE_ASSERT(
         primType != PrimObjTypes::END_PRIM_OBJ_TYPES,
-        "ResourceManager::buildPrimitiveAttributes : Illegal primtitive type "
+        "ResourceManager::buildPrimAttributes : Illegal primtitive type "
         "name PrimObjTypes::END_PRIM_OBJ_TYPES.  Aborting.",
         nullptr);
-    return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(primType)])();
-  }  // buildPrimitiveAttributes
+    return (*this.*primTypeConstructorMap_[PrimNames3DMap.at(primType)])();
+  }  // buildPrimAttributes
 
   /**
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
    * with passed enum value, which maps to class name via @ref
-   * PrimitiveNames3DMap
+   * PrimNames3DMap
    */
-  AbstractPrimitiveAttributes::ptr buildPrimitiveAttributes(int primTypeVal) {
+  AbstractPrimitiveAttributes::ptr buildPrimAttributes(int primTypeVal) {
     CORRADE_ASSERT(
         (primTypeVal >= 0) &&
             (primTypeVal < static_cast<int>(PrimObjTypes::END_PRIM_OBJ_TYPES)),
-        "ResourceManager::buildPrimitiveAttributes : Unknown PrimObjTypes "
+        "ResourceManager::buildPrimAttributes : Unknown PrimObjTypes "
         "value requested :"
             << primTypeVal << ". Aborting",
         nullptr);
-    return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(
+    return (*this.*primTypeConstructorMap_[PrimNames3DMap.at(
                        static_cast<PrimObjTypes>(primTypeVal))])();
-  }  // buildPrimitiveAttributes
+  }  // buildPrimAttributes
 
   /**
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
    * with passed class name
    */
-  AbstractPrimitiveAttributes::ptr copyPrimitiveAttributes(
+  AbstractPrimitiveAttributes::ptr copyPrimAttributes(
       const AbstractPrimitiveAttributes::ptr& origAttr) {
     std::string primTypeName = origAttr->getPrimObjClassName();
     return (*this.*primTypeCopyConstructorMap_[primTypeName])(origAttr);
-  }  // buildPrimitiveAttributes
+  }  // buildPrimAttributes
 
  private:
   /**
@@ -862,15 +883,15 @@ class ResourceManager {
    * END_PRIM_OBJ_TYPES corresponds to a Magnum Primitive type
    */
   template <typename T, bool isWireFrame, PrimObjTypes primitiveType>
-  std::shared_ptr<AbstractPrimitiveAttributes> createPrimitiveAttributes() {
-    CORRADE_ASSERT(
-        (primitiveType != PrimObjTypes::END_PRIM_OBJ_TYPES),
-        "ResourceManager::createPrimitiveAttributes : Cannot instantiate "
-        "PrimitiveAttributes object for PrimObjTypes::END_PRIM_OBJ_TYPES. "
-        "Aborting.",
-        nullptr);
+  std::shared_ptr<AbstractPrimitiveAttributes> createPrimAttributes() {
+    CORRADE_ASSERT((primitiveType != PrimObjTypes::END_PRIM_OBJ_TYPES),
+                   "ResourceManager::createPrimAttributes : Cannot instantiate "
+                   "AbstractPrimitiveAttributes object for "
+                   "PrimObjTypes::END_PRIM_OBJ_TYPES. "
+                   "Aborting.",
+                   nullptr);
     int idx = static_cast<int>(primitiveType);
-    return T::create(isWireFrame, idx, PrimitiveNames3DMap.at(primitiveType));
+    return T::create(isWireFrame, idx, PrimNames3DMap.at(primitiveType));
   }
 
   /**
@@ -880,7 +901,7 @@ class ResourceManager {
    * @param orig original object of type t being copied
    */
   template <typename T>
-  std::shared_ptr<AbstractPrimitiveAttributes> createPrimitiveAttributesCopy(
+  std::shared_ptr<AbstractPrimitiveAttributes> createPrimAttributesCopy(
       const AbstractPrimitiveAttributes::ptr& orig) {
     return T::create(*(static_cast<T*>(orig.get())));
   }
@@ -979,7 +1000,7 @@ class ResourceManager {
    * @param primTemplate pointer to attributes describing primitive to
    * instantiate
    */
-  void buildPrimitiveAssetData(AbstractPrimitiveAttributes::ptr primTemplate);
+  void buildPrimAssetData(AbstractPrimitiveAttributes::ptr primTemplate);
 
   /**
    * @brief Add primitive asset template attributes to appropriate template
@@ -990,7 +1011,7 @@ class ResourceManager {
    * @return the handle of the primitive template, synthesized from the values
    * set in template
    */
-  std::string addPrimitiveAssetTemplateToLibrary(
+  std::string addPrimAssetTemplateToLibrary(
       AbstractPrimitiveAttributes::ptr primTemplate);
 
  protected:
@@ -1023,9 +1044,9 @@ class ResourceManager {
 
   /**
    * @brief Define a map type referencing function pointers to @ref
-   * createPrimitiveAttributes() and @ref createPrimitiveAttributesCopy keyed by
+   * createPrimAttributes() and @ref createPrimAttributesCopy keyed by
    * string names of classes being instanced, as defined in @ref
-   * PrimitiveNames3D
+   * PrimNames3D
    */
   typedef std::map<std::string,
                    std::shared_ptr<esp::assets::AbstractPrimitiveAttributes> (
@@ -1034,9 +1055,9 @@ class ResourceManager {
 
   /**
    * @brief Define a map type referencing function pointers to @ref
-   * createPrimitiveAttributes() and @ref createPrimitiveAttributesCopy keyed by
+   * createPrimAttributes() and @ref createPrimAttributesCopy keyed by
    * string names of classes being instanced, as defined in @ref
-   * PrimitiveNames3D
+   * PrimNames3D
    */
   typedef std::map<std::string,
                    std::shared_ptr<esp::assets::AbstractPrimitiveAttributes> (
@@ -1428,7 +1449,7 @@ class ResourceManager {
   /**
    * @brief Map of function pointers to instantiate a primitive attributes
    * object, keyed by the Magnum primitive class name as listed in @ref
-   * PrimitiveNames3D. A primitive attributes object is instanced by accessing
+   * PrimNames3D. A primitive attributes object is instanced by accessing
    * the approrpiate function pointer.
    */
   Map_Of_PrimTypeCtors primTypeConstructorMap_;
@@ -1436,7 +1457,7 @@ class ResourceManager {
   /**
    * @brief Map of function pointers to instantiate a primitive attributes
    * object, keyed by the Magnum primitive class name as listed in @ref
-   * PrimitiveNames3D. A primitive attributes object is instanced by accessing
+   * PrimNames3D. A primitive attributes object is instanced by accessing
    * the approrpiate function pointer.
    */
   Map_Of_PrimTypeCopyCtors primTypeCopyConstructorMap_;
