@@ -13,7 +13,7 @@ TURN_DEGREE = 30.0
 ACCEPTABLE_SPLS = {
     ("try_step", False): 0.97,
     ("try_step_no_sliding", False): 0.925,
-    ("try_step", True): 0.82,
+    ("try_step", True): 0.825,
     ("try_step_no_sliding", True): 0.60,
 }
 
@@ -67,7 +67,6 @@ def test_greedy_follower(test_navmesh, move_filter_fn, action_noise, pbar):
     pathfinder.load_nav_mesh(test_navmesh)
     assert pathfinder.is_loaded
     pathfinder.seed(0)
-    np.random.seed(seed=0)
 
     scene_graph = habitat_sim.SceneGraph()
     agent = habitat_sim.Agent(scene_graph.get_root_node().create_child())
