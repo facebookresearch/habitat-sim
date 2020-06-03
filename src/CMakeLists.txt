@@ -65,6 +65,7 @@ if(BUILD_TEST)
 endif()
 
 # include source dirs
+message(STATUS "============ SOURCE ++++ " ${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR})
 
 # Physics
