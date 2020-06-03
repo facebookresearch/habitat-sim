@@ -135,11 +135,6 @@ class Viewer : public Mn::Platform::Application {
   esp::gfx::RenderCamera* renderCamera_ = nullptr;
   esp::nav::PathFinder::ptr pathfinder_;
   esp::scene::ObjectControls controls_;
-  // TODO: not needed anymore, will be depricated in next PR.
-  Mn::Vector3 previousPosition_;
-
-  Mn::Vector2i mousePreviousPosition2D_{-1};
-
   std::vector<int> objectIDs_;
 
   bool drawObjectBBs = false;
@@ -162,8 +157,7 @@ Viewer::Viewer(const Arguments& arguments)
                                         Mn::Vector4i(8, 8, 8, 8))
                                     .setSampleCount(4)},
       pathfinder_(esp::nav::PathFinder::create()),
-      controls_(),
-      previousPosition_() {
+      controls_() {
   Cr::Utility::Arguments args;
 #ifdef CORRADE_TARGET_EMSCRIPTEN
   args.addNamedArgument("scene")
@@ -559,18 +553,10 @@ void Viewer::viewportEvent(ViewportEvent& event) {
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
-  mousePreviousPosition2D_ = event.position();
-
-  if (event.button() == MouseEvent::Button::Left)
-    previousPosition_ = positionOnSphere(*renderCamera_, event.position());
-
   event.setAccepted();
 }
 
 void Viewer::mouseReleaseEvent(MouseEvent& event) {
-  if (event.button() == MouseEvent::Button::Left)
-    previousPosition_ = Mn::Vector3();
-
   event.setAccepted();
 }
 
@@ -583,29 +569,22 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   const float distance =
       renderCamera_->node().transformation().translation().z();
 
-  // TODO:
-  // Any motion should NOT be directly applied to render camera, but to
-  // an agent or sensor node in the scene graph. Will fix in following PR.
-
   /* Move 15% of the distance back or forward */
-  renderCamera_->node().translateLocal(
-      {0.0f, 0.0f,
-       distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f))});
+  controls_(*agentBodyNode_, "moveForward",
+            distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f)));
+
+  logAgentStateMsg(true, true);
+  updateRenderCamera();
+  redraw();
 
   event.setAccepted();
 }
 
 void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
-  if (mousePreviousPosition2D_ == Mn::Vector2i{-1})
-    mousePreviousPosition2D_ = event.position();
-
-  const Mn::Vector2i delta = event.position() - mousePreviousPosition2D_;
-  mousePreviousPosition2D_ = event.position();
-
   if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
     return;
   }
-
+  const Mn::Vector2i delta = event.relativePosition();
   controls_(*agentBodyNode_, "turnRight", delta.x());
   controls_(*rgbSensorNode_, "lookDown", delta.y(), false);
 
