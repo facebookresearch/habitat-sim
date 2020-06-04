@@ -33,11 +33,32 @@ void initAttributesBindings(py::module& m) {
       .value("UVSPHERE_WF", assets::PrimObjTypes::UVSPHERE_WF)
       .value("END_PRIM_OBJ_TYPE", assets::PrimObjTypes::END_PRIM_OBJ_TYPES);
 
+  // ==== AbstractAttributes ====
+  py::class_<AbstractAttributes, esp::core::Configuration,
+             AbstractAttributes::ptr>(m, "AbstractAttributes")
+      .def(py::init(&AbstractAttributes::create<>))
+      .def(py::init(&AbstractAttributes::create<const std::string&>))
+      .def("set_origin_handle", &AbstractAttributes::setOriginHandle,
+           "origin_handle"_a)
+      .def("get_origin_handle", &AbstractAttributes::getOriginHandle);
+
   // ==== AbstractPhysicsAttributes ====
-  py::class_<AbstractPhysicsAttributes, esp::core::Configuration,
+  py::class_<AbstractPhysicsAttributes, AbstractAttributes,
              AbstractPhysicsAttributes::ptr>(m, "AbstractPhysicsAttributes")
       .def(py::init(&AbstractPhysicsAttributes::create<>))
-      .def(py::init(&AbstractPhysicsAttributes::create<const std::string&>));
+      .def(py::init(&AbstractPhysicsAttributes::create<const std::string&>))
+      .def("set_scale", &AbstractPhysicsAttributes::setScale, "scale"_a)
+      .def("get_scale", &AbstractPhysicsAttributes::getScale)
+      .def("set_friction_coefficient",
+           &AbstractPhysicsAttributes::setFrictionCoefficient,
+           "friction_coefficient"_a)
+      .def("get_friction_coefficient",
+           &AbstractPhysicsAttributes::getFrictionCoefficient)
+      .def("set_restitution_coefficient",
+           &AbstractPhysicsAttributes::setRestitutionCoefficient,
+           "restitution_coefficient"_a)
+      .def("get_restitution_coefficient",
+           &AbstractPhysicsAttributes::getRestitutionCoefficient);
 
   // ==== PhysicsObjectAttributes ====
   py::class_<PhysicsObjectAttributes, AbstractPhysicsAttributes,
@@ -52,27 +73,13 @@ void initAttributesBindings(py::module& m) {
       .def("get_mass", &PhysicsObjectAttributes::getMass)
       .def("set_inertia", &PhysicsObjectAttributes::setInertia, "inertia"_a)
       .def("get_inertia", &PhysicsObjectAttributes::getInertia)
-      .def("set_scale", &PhysicsObjectAttributes::setScale, "scale"_a)
-      .def("get_scale", &PhysicsObjectAttributes::getScale)
-      .def("set_friction_coefficient",
-           &PhysicsObjectAttributes::setFrictionCoefficient,
-           "friction_coefficient"_a)
-      .def("get_friction_coefficient",
-           &PhysicsObjectAttributes::getFrictionCoefficient)
-      .def("set_restitution_coefficient",
-           &PhysicsObjectAttributes::setRestitutionCoefficient,
-           "restitution_coefficient"_a)
-      .def("get_restitution_coefficient",
-           &PhysicsObjectAttributes::getRestitutionCoefficient)
+
       .def("set_linear_damping", &PhysicsObjectAttributes::setLinearDamping,
            "linear_damping"_a)
       .def("get_linear_damping", &PhysicsObjectAttributes::getLinearDamping)
       .def("set_angular_damping", &PhysicsObjectAttributes::setAngularDamping,
            "angular_damping"_a)
       .def("get_angular_damping", &PhysicsObjectAttributes::getAngularDamping)
-      .def("set_origin_handle", &PhysicsObjectAttributes::setOriginHandle,
-           "origin_handle"_a)
-      .def("get_origin_handle", &PhysicsObjectAttributes::getOriginHandle)
       .def("set_render_asset_handle",
            &PhysicsObjectAttributes::setRenderAssetHandle,
            "render_asset_handle"_a)
@@ -99,11 +106,10 @@ void initAttributesBindings(py::module& m) {
            &PhysicsObjectAttributes::getRequiresLighting);
 
   // ==== AbstractPrimitiveAttributes ====
-  py::class_<AbstractPrimitiveAttributes, esp::core::Configuration,
+  py::class_<AbstractPrimitiveAttributes, AbstractAttributes,
              AbstractPrimitiveAttributes::ptr>(m, "AbstractPrimitiveAttributes")
       .def(py::init(
           &AbstractPrimitiveAttributes::create<bool, int, const std::string&>))
-      .def("get_origin_handle", &AbstractPrimitiveAttributes::getOriginHandle)
       .def("get_is_wireframe", &AbstractPrimitiveAttributes::getIsWireframe)
       .def("set_use_texture_coords",
            &AbstractPrimitiveAttributes::setUseTextureCoords,

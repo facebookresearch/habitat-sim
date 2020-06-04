@@ -13,8 +13,7 @@ namespace assets {
 
 AbstractPhysicsAttributes::AbstractPhysicsAttributes(
     const std::string& originHandle)
-    : Configuration() {
-  setOriginHandle(originHandle);
+    : AbstractAttributes(originHandle) {
   setFrictionCoefficient(0.5);
   setRestitutionCoefficient(0.1);
   setRenderAssetHandle("");
@@ -65,9 +64,8 @@ PhysicsSceneAttributes::PhysicsSceneAttributes(const std::string& originHandle)
 
 PhysicsManagerAttributes::PhysicsManagerAttributes(
     const std::string& originHandle)
-    : Configuration() {
+    : AbstractAttributes(originHandle) {
   setSimulator("none");
-  setOriginHandle(originHandle);
   setTimestep(0.01);
   setMaxSubsteps(10);
 }  // PhysicsManagerAttributes ctor

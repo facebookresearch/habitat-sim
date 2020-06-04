@@ -35,6 +35,11 @@
 #include "esp/gfx/configure.h"
 #include "esp/scene/SceneNode.h"
 
+// #include "managers/AssetAttributesManager.h"
+// #include "managers/ObjectAttributesManager.h"
+#include "managers/PhysicsAttributesManager.h"
+#include "managers/SceneAttributesManager.h"
+
 // forward declarations
 namespace Magnum {
 namespace Trade {
@@ -272,41 +277,6 @@ class ResourceManager {
           NO_LIGHT_KEY});
 
   /**
-   * @brief Instantiate a shared pointer to a @ref physics::PhysicsManager for
-   * the world from the parameters defined in the referenced configuration file.
-   *
-   * @param physicsFilename The physics configuration file from which to
-   * re-instatiate the @ref physics::PhysicsManager and parse object templates
-   * for the
-   * @ref physicsObjTemplateLibrary_. Defaults to the file location @ref
-   * ESP_DEFAULT_PHYS_SCENE_CONFIG set by cmake. @return The created @ref
-   * physics::PhysicsManager
-   */
-  std::shared_ptr<physics::PhysicsManager> buildPhysicsManager(
-      std::string physicsFilename = ESP_DEFAULT_PHYS_SCENE_CONFIG);
-
-  /**
-   * @brief Parses global physics simulation parameters (such as timestep,
-   * gravity, simulator implementation) from the specified configuration file.
-   *
-   * @param physicsFilename The configuration file to parse. Defaults to the
-   * file location @ref ESP_DEFAULT_PHYS_SCENE_CONFIG set by cmake.
-   * @return The physics simulation meta data object parsed from the specified
-   * configuration file.
-   */
-  PhysicsManagerAttributes::ptr loadPhysicsConfig(
-      std::string physicsFilename = ESP_DEFAULT_PHYS_SCENE_CONFIG);
-
-  /**
-   * @brief Build all "*.phys_properties.json" files from the provided file or
-   * directory path.
-   *
-   * @param path A global path to a physics property file or directory
-   * @return A list of valid global paths to "*.phys_properties.json" files.
-   */
-  std::vector<std::string> buildObjectConfigPaths(const std::string& path);
-
-  /**
    * @brief Load and parse a physics object template config file and generates a
    * @ref PhysicsObjectAttributes object, adding it to the @ref
    * physicsObjTemplateLibrary_.
@@ -374,9 +344,35 @@ class ResourceManager {
     return collisionMeshGroups_.at(collisionAssetHandle);
   }
 
+  // /**
+  //  * @brief Return manager for construction and access to asset attributes.
+  //  */
+  // managers::AssetAttributesManager::ptr getAssetAttributesManager() {
+  //   return assetAttributesManager_;
+  // }
+  // /**
+  //  * @brief Return manager for construction and access to object attributes.
+  //  */
+  // managers::ObjectAttributesManager::ptr getObjectAttributesManager() {
+  //   return objectAttributesManager_;
+  // }
   /**
-   * @brief Get the key in @ref primitiveAssetTmpltLibByID_ for the object
-   * template asset index.
+   * @brief Return manager for construction and access to physics world
+   * attributes.
+   */
+  managers::PhysicsAttributesManager::ptr getPhysicsAttributesManager() {
+    return physicsAttributesManager_;
+  }
+  /**
+   * @brief Return manager for construction and access to scene attributes.
+   */
+  managers::SceneAttributesManager::ptr getsceneAttributesManager() {
+    return sceneAttributesManager_;
+  }
+
+  /**
+   * @brief Get the key in @ref primitiveAssetTemplateLibrary_ for the passed
+   * object template asset ID.
    *
    * @param objectTemplateID The index of the object template in @ref
    * primitiveAssetTmpltLibByID_.
@@ -1299,6 +1295,24 @@ class ResourceManager {
   Corrade::Containers::Pointer<Importer> fileImporter_;
 
   // ======== Physical parameter data ========
+
+  // /**
+  //  * @brief Manages all construction and access to asset attributes.
+  //  */
+  // managers::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
+  // /**
+  //  * @brief Manages all construction and access to object attributes.
+  //  */
+  // managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
+  /**
+   * @brief Manages all construction and access to physics world attributes.
+   */
+  managers::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
+  /**
+   * @brief Manages all construction and access to scene attributes.
+   */
+  managers::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
+
   /**
    * @brief Maps string keys (typically property filenames) to physical object
    * templates.
@@ -1325,21 +1339,6 @@ class ResourceManager {
    * the approrpiate function pointer.
    */
   Map_Of_PrimTypes primTypeConstructorMap_;
-
-  /**
-   * @brief Maps string keys (typically property filenames) to physical scene
-   * templates.
-   *
-   * Templates are used by @ref physics::PhysicsManager to
-   * initialize, reset scenes or switch contexts.
-   */
-  std::map<std::string, PhysicsSceneAttributes::ptr> physicsSceneLibrary_;
-
-  /**
-   * @brief Library of physics scene attributes for
-   * initializing/resetting/switching physics world contexts.
-   */
-  std::map<std::string, PhysicsManagerAttributes::ptr> physicsManagerLibrary_;
 
   /**
    * @brief Primitive meshes available for instancing via @ref

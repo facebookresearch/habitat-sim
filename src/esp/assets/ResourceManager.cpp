@@ -90,10 +90,12 @@ ResourceManager::ResourceManager()
       importerManager_("nonexistent")
 #endif
 {
+
   initDefaultLightSetups();
   initDefaultMaterials();
   buildMapOfPrimTypeConstructors();
 }  // namespace assets
+
 void ResourceManager::buildMapOfPrimTypeConstructors() {
   primTypeConstructorMap_["capsule3DSolid"] =
       &ResourceManager::createPrimitiveAttributes<
@@ -146,6 +148,15 @@ void ResourceManager::buildMapOfPrimTypeConstructors() {
     auto attr = buildPrimitiveAttributes(elem.second);
     addPrimAssetTemplateToLibrary(attr);
   }
+
+  // assetAttributesManager_ = managers::AssetAttributesManager::create();
+  // objectAttributesManager_ = managers::ObjectAttributesManager::create();
+  // objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
+  physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
+  sceneAttributesManager_ = managers::SceneAttributesManager::create();
+
+  LOG(INFO) << "Scene attr mgr query : "
+            << sceneAttributesManager_->getNumTemplates();
 
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
@@ -217,14 +228,7 @@ bool ResourceManager::loadScene(
       }
       // add a scene attributes for this filename or modify the existing one
       if (meshSuccess) {
-        const bool physSceneExists =
-            physicsSceneLibrary_.count(info.filepath) > 0;
-        if (!physSceneExists) {
-          auto physScenLib = PhysicsSceneAttributes::create(info.filepath);
-          physicsSceneLibrary_.emplace(info.filepath, physScenLib);
-        }
-        physicsSceneLibrary_.at(info.filepath)
-            ->setRenderAssetHandle(info.filepath);
+        sceneAttributesManager_->createAttributesTemplate(info.filepath, true);
       }
     }
   } else {
@@ -311,20 +315,8 @@ void ResourceManager::initPhysicsManager(
       physicsManagerAttributes->getStringGroup("objectLibraryPaths"));
 }  // ResourceManager::initPhysicsManager
 
-// this will instance a physics manager based on the passed physics config file
-// name
-std::shared_ptr<physics::PhysicsManager> ResourceManager::buildPhysicsManager(
-    std::string physicsFilename /* data/default.phys_scene_config.json */) {
-  // In-memory representation of scene meta data
-  PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      loadPhysicsConfig(physicsFilename);
-  physicsManagerLibrary_.emplace(physicsFilename, physicsManagerAttributes);
-  std::shared_ptr<physics::PhysicsManager> _physicsManager = nullptr;
-  // initialize physics manager with derived physics manager attributes
-  initPhysicsManager(_physicsManager, physicsManagerAttributes);
-
-  return _physicsManager;
-}  // ResourceManager::buildPhysicsManager
+//   return _physicsManager;
+// }  // ResourceManager::buildPhysicsManager
 
 //! (1) Read config and set physics timestep
 //! (2) loadScene() with PhysicsSceneMetaData
@@ -337,9 +329,13 @@ bool ResourceManager::loadScene(
     const Magnum::ResourceKey& lightSetup, /* = Mn::ResourceKey{NO_LIGHT_KEY} */
     std::string physicsFilename /* data/default.phys_scene_config.json */) {
   // In-memory representation of scene meta data
+
   PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      loadPhysicsConfig(physicsFilename);
-  physicsManagerLibrary_.emplace(physicsFilename, physicsManagerAttributes);
+      physicsAttributesManager_->createAttributesTemplate(physicsFilename,
+                                                          true);
+
+  // loadPhysicsConfig(physicsFilename);
+  // physicsManagerLibrary_.emplace(physicsFilename, physicsManagerAttributes);
   return loadPhysicsScene(info, _physicsManager, physicsManagerAttributes,
                           parent, drawables, lightSetup);
 }
@@ -372,27 +368,17 @@ bool ResourceManager::loadPhysicsScene(
     return meshSuccess;
   }
 
-  const bool physSceneExists = physicsSceneLibrary_.count(info.filepath) > 0;
-  if (!physSceneExists) {
-    auto physScenLib = PhysicsSceneAttributes::create(info.filepath);
-    physicsSceneLibrary_.emplace(info.filepath, physScenLib);
-  }
+  const std::string& filename = info.filepath;
+
+  PhysicsSceneAttributes::ptr physSceneLib =
+      sceneAttributesManager_->createAttributesTemplate(filename, true);
   // TODO: enable loading of multiple scenes from file and storing individual
   // parameters instead of scene properties in manager global config
-
-  physicsSceneLibrary_.at(info.filepath)
-      ->setFrictionCoefficient(
-          physicsManagerAttributes->getFrictionCoefficient());
-  physicsSceneLibrary_.at(info.filepath)
-      ->setRestitutionCoefficient(
-          physicsManagerAttributes->getRestitutionCoefficient());
-
-  physicsSceneLibrary_.at(info.filepath)->setRenderAssetHandle(info.filepath);
-  physicsSceneLibrary_.at(info.filepath)
-      ->setCollisionAssetHandle(info.filepath);
+  sceneAttributesManager_->setSceneValsFromPhysicsAttributes(
+      physicsManagerAttributes);
 
   //! CONSTRUCT SCENE
-  const std::string& filename = info.filepath;
+
   // if we have a scene mesh, add it as a collision object
   if (filename.compare(EMPTY_SCENE) != 0) {
     const MeshMetaData& metaData = getMeshMetaData(filename);
@@ -428,11 +414,10 @@ bool ResourceManager::loadPhysicsScene(
       }
     }
 
-    // add meshgroup to collision mesh groups
-    collisionMeshGroups_.emplace(info.filepath, meshGroup);
+    //! Add scene meshgroup to collision mesh groups
+    collisionMeshGroups_.emplace(filename, meshGroup);
     //! Initialize collision mesh
-    bool sceneSuccess = _physicsManager->addScene(
-        physicsSceneLibrary_.at(info.filepath), meshGroup);
+    bool sceneSuccess = _physicsManager->addScene(physSceneLib, meshGroup);
     if (!sceneSuccess) {
       return false;
     }
@@ -440,134 +425,6 @@ bool ResourceManager::loadPhysicsScene(
 
   return meshSuccess;
 }  // ResourceManager::loadPhysicsScene
-
-std::vector<std::string> ResourceManager::buildObjectConfigPaths(
-    const std::string& path) {
-  std::vector<std::string> paths;
-
-  namespace Directory = Cr::Utility::Directory;
-  std::string objPhysPropertiesFilename = path;
-  if (!Corrade::Utility::String::endsWith(objPhysPropertiesFilename,
-                                          ".phys_properties.json")) {
-    objPhysPropertiesFilename = path + ".phys_properties.json";
-  }
-  const bool dirExists = Directory::isDirectory(path);
-  const bool fileExists = Directory::exists(objPhysPropertiesFilename);
-
-  if (!dirExists && !fileExists) {
-    LOG(WARNING) << "Cannot find " << path << " or "
-                 << objPhysPropertiesFilename << ". Aborting parse.";
-    return paths;
-  }
-
-  if (fileExists) {
-    paths.push_back(objPhysPropertiesFilename);
-  }
-
-  if (dirExists) {
-    LOG(INFO) << "Parsing object library directory: " + path;
-    for (auto& file : Directory::list(path, Directory::Flag::SortAscending)) {
-      std::string absoluteSubfilePath = Directory::join(path, file);
-      if (Cr::Utility::String::endsWith(absoluteSubfilePath,
-                                        ".phys_properties.json")) {
-        paths.push_back(absoluteSubfilePath);
-      }
-    }
-  }
-
-  return paths;
-}  // buildObjectConfigPaths
-
-PhysicsManagerAttributes::ptr ResourceManager::loadPhysicsConfig(
-    std::string physicsFilename) {
-  CHECK(Cr::Utility::Directory::exists(physicsFilename));
-
-  // Load the global scene config JSON here
-  io::JsonDocument scenePhysicsConfig = io::parseJsonFile(physicsFilename);
-  // In-memory representation of scene meta data
-  PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      PhysicsManagerAttributes::create(physicsFilename);
-
-  // load the simulator preference
-  // default is "none" simulator
-  if (scenePhysicsConfig.HasMember("physics simulator")) {
-    if (scenePhysicsConfig["physics simulator"].IsString()) {
-      physicsManagerAttributes->setSimulator(
-          scenePhysicsConfig["physics simulator"].GetString());
-    }
-  }
-
-  // load the physics timestep
-  if (scenePhysicsConfig.HasMember("timestep")) {
-    if (scenePhysicsConfig["timestep"].IsNumber()) {
-      physicsManagerAttributes->setTimestep(
-          scenePhysicsConfig["timestep"].GetDouble());
-    }
-  }
-
-  if (scenePhysicsConfig.HasMember("friction coefficient") &&
-      scenePhysicsConfig["friction coefficient"].IsNumber()) {
-    physicsManagerAttributes->setFrictionCoefficient(
-        scenePhysicsConfig["friction coefficient"].GetDouble());
-  } else {
-    LOG(ERROR) << " Invalid value in scene config - friction coefficient";
-  }
-
-  if (scenePhysicsConfig.HasMember("restitution coefficient") &&
-      scenePhysicsConfig["restitution coefficient"].IsNumber()) {
-    physicsManagerAttributes->setRestitutionCoefficient(
-        scenePhysicsConfig["restitution coefficient"].GetDouble());
-  } else {
-    LOG(ERROR) << " Invalid value in scene config - restitution coefficient";
-  }
-
-  // load gravity
-  if (scenePhysicsConfig.HasMember("gravity")) {
-    if (scenePhysicsConfig["gravity"].IsArray()) {
-      Magnum::Vector3 grav;
-      for (rapidjson::SizeType i = 0; i < scenePhysicsConfig["gravity"].Size();
-           i++) {
-        if (!scenePhysicsConfig["gravity"][i].IsNumber()) {
-          // invalid config
-          LOG(ERROR) << "Invalid value in physics gravity array";
-          break;
-        } else {
-          grav[i] = scenePhysicsConfig["gravity"][i].GetDouble();
-        }
-      }
-      physicsManagerAttributes->setGravity(grav);
-    }
-  }
-
-  // load the rigid object library metadata (no physics init yet...)
-  if (!scenePhysicsConfig.HasMember("rigid object paths") ||
-      !scenePhysicsConfig["rigid object paths"].IsArray()) {
-    return physicsManagerAttributes;
-  }
-
-  std::string configDirectory =
-      physicsFilename.substr(0, physicsFilename.find_last_of("/"));
-
-  const auto& paths = scenePhysicsConfig["rigid object paths"];
-  for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
-    if (!paths[i].IsString()) {
-      LOG(ERROR) << "Invalid value in physics scene config -rigid object "
-                    "library- array "
-                 << i;
-      continue;
-    }
-
-    std::string absolutePath =
-        Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
-    std::vector<std::string> validConfigPaths =
-        buildObjectConfigPaths(absolutePath);
-    for (auto& path : validConfigPaths) {
-      physicsManagerAttributes->addStringToGroup("objectLibraryPaths", path);
-    }
-  }
-
-  return physicsManagerAttributes;
-}  // loadPhysicsConfig
 
 bool ResourceManager::loadObjectMeshDataFromFile(
     const std::string& filename,
@@ -625,16 +482,17 @@ int ResourceManager::addPrimAssetTemplateToLibrary(
   if (isNotPresent) {
     // this will set the ID in the template
     primAssetTemplateID = primitiveAssetTemplateLibrary_.size();
-    primTemplate->setAssetTemplateID(primAssetTemplateID);
   } else {
     // set ID to be existing template's ID
     primAssetTemplateID =
-        primitiveAssetTemplateLibrary_.at(primHandle)->getAssetTemplateID();
+        primitiveAssetTemplateLibrary_.at(primHandle)->getObjectTemplateID();
   }
-  // if is present, will replace present template with new template - templates
-  // are expected to be 1-to-1 with handles (each unique handle always describes
-  // the same unique template)
-  primitiveAssetTemplateLibrary_.emplace(primHandle, primTemplate);
+  primTemplate->setObjectTemplateID(primAssetTemplateID);
+
+  // If template is present, will replace with new template - templates are
+  // expected to be 1-to-1 with handles (each unique handle always describes the
+  // same unique template).
+  primitiveAssetTemplateLibrary_[primHandle] = primTemplate;
   primitiveAssetTemplateLibByID_.emplace(primAssetTemplateID, primHandle);
 
   return primAssetTemplateID;
@@ -1205,7 +1063,7 @@ void ResourceManager::buildPrimitiveAssetData(
       resourceDict_.emplace(primAssetOriginHandle, std::move(loadedAssetData));
 
   LOG(INFO) << " Primitive Asset Added : ID : "
-            << primTemplate->getAssetTemplateID()
+            << primTemplate->getObjectTemplateID()
             << " : attr lib key : " << primTemplate->getOriginHandle()
             << " | instance class : " << primClassName
             << " | Conf has group for this obj type : "
