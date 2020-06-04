@@ -315,9 +315,6 @@ void ResourceManager::initPhysicsManager(
       physicsManagerAttributes->getStringGroup("objectLibraryPaths"));
 }  // ResourceManager::initPhysicsManager
 
-//   return _physicsManager;
-// }  // ResourceManager::buildPhysicsManager
-
 //! (1) Read config and set physics timestep
 //! (2) loadScene() with PhysicsSceneMetaData
 // TODO (JH): this function seems to entangle certain physicsManager functions

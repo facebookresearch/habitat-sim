@@ -20,6 +20,8 @@
 
 #include "esp/assets/Attributes.h"
 
+namespace Cr = Corrade;
+
 namespace esp {
 namespace assets {
 
@@ -35,9 +37,6 @@ namespace managers {
 template <class T>
 class AttributesManager {
  public:
-  AttributesManager() {}
-  ~AttributesManager() {}
-
   //   //======== Accessor functions ========
 
   /**
@@ -253,11 +252,6 @@ class AttributesManager {
 
 /////////////////////////////
 // Class Template Definitions
-// template <typename T>
-// AttributesManager<T>::AttributesManager() {}
-
-// template <typename T>
-// AttributesManager<T>::~AttributesManager() {}
 
 template <typename T>
 std::string AttributesManager<T>::getRandomTemplateHandlePerType(
@@ -300,24 +294,18 @@ AttributesManager<T>::getTemplateHandlesBySubStringPerType(
     return res;
   }
   // build search criteria
-  std::string strToLookFor(subStr);
+  std::string strToLookFor = Cr::Utility::String::lowercase(subStr);
 
   int strSize = strToLookFor.length();
-  // force lowercase
-  std::transform(strToLookFor.begin(), strToLookFor.end(), strToLookFor.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
 
   for (std::map<int, std::string>::const_iterator iter = mapOfHandles.begin();
        iter != mapOfHandles.end(); ++iter) {
-    std::string key(iter->second);
+    std::string key = Cr::Utility::String::lowercase(iter->second);
     // be sure that key is big enough to search in (otherwise find has undefined
     // behavior)
     if (key.length() < strSize) {
       continue;
     }
-    // force lowercase - search is case insensitive
-    std::transform(key.begin(), key.end(), key.begin(),
-                   [](unsigned char c) { return std::tolower(c); });
     bool found = (std::string::npos != key.find(strToLookFor));
     if (found == contains) {
       // if found and searching for contains, or not found and searching for not

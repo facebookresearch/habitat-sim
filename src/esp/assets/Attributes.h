@@ -383,7 +383,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
    * - will be either 2 or 4 for primitives value checking
    * @return whether check passes
    */
-  bool isValMultOfDiv(int val, int div) {
+  bool isValueMultipleOfDivisor(int val, int div) {
     return (val >= div) && (val % div == 0);
   }
 
@@ -433,8 +433,9 @@ class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
    * type
    */
   virtual bool isValidTemplate() override {
-    bool wfCheck = ((getIsWireframe() && isValMultOfDiv(getNumSegments(), 4)) ||
-                    (!getIsWireframe() && getNumSegments() > 2));
+    bool wfCheck =
+        ((getIsWireframe() && isValueMultipleOfDivisor(getNumSegments(), 4)) ||
+         (!getIsWireframe() && getNumSegments() > 2));
 
     return (getCylinderRings() > 0 && getHemisphereRings() > 0 && wfCheck &&
             getHalfLength() > 0);
@@ -477,7 +478,7 @@ class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
    */
   virtual bool isValidTemplate() override {
     bool wfCheck =
-        ((getIsWireframe() && isValMultOfDiv(getNumSegments(), 4)) ||
+        ((getIsWireframe() && isValueMultipleOfDivisor(getNumSegments(), 4)) ||
          (!getIsWireframe() && getNumSegments() > 2 && getNumRings() > 0));
 
     return (getHalfLength() > 0 && wfCheck);
@@ -543,8 +544,9 @@ class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
    * type
    */
   virtual bool isValidTemplate() override {
-    bool wfCheck = ((getIsWireframe() && isValMultOfDiv(getNumSegments(), 4)) ||
-                    (!getIsWireframe() && getNumSegments() > 2));
+    bool wfCheck =
+        ((getIsWireframe() && isValueMultipleOfDivisor(getNumSegments(), 4)) ||
+         (!getIsWireframe() && getNumSegments() > 2));
     return getNumRings() > 0 && getHalfLength() > 0 && wfCheck;
   }
 
@@ -622,8 +624,9 @@ class UVSpherePrimitiveAttributes : public AbstractPrimitiveAttributes {
    * type
    */
   virtual bool isValidTemplate() override {
-    return ((getIsWireframe() && isValMultOfDiv(getNumSegments(), 4) &&
-             isValMultOfDiv(getNumRings(), 2)) ||
+    return ((getIsWireframe() &&
+             isValueMultipleOfDivisor(getNumSegments(), 4) &&
+             isValueMultipleOfDivisor(getNumRings(), 2)) ||
             (!getIsWireframe() && getNumRings() > 1 && getNumSegments() > 2));
   }
 
