@@ -64,6 +64,7 @@ class Viewer : public Mn::Platform::Application {
   void mouseMoveEvent(MouseMoveEvent& event) override;
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
+  void updateRenderCamera();
 
   // Interactive functions
   void addObject(const std::string& configHandle);
@@ -134,8 +135,6 @@ class Viewer : public Mn::Platform::Application {
   esp::gfx::RenderCamera* renderCamera_ = nullptr;
   esp::nav::PathFinder::ptr pathfinder_;
   esp::scene::ObjectControls controls_;
-  Mn::Vector3 previousPosition_;
-
   std::vector<int> objectIDs_;
 
   bool drawObjectBBs = false;
@@ -158,8 +157,7 @@ Viewer::Viewer(const Arguments& arguments)
                                         Mn::Vector4i(8, 8, 8, 8))
                                     .setSampleCount(4)},
       pathfinder_(esp::nav::PathFinder::create()),
-      controls_(),
-      previousPosition_() {
+      controls_() {
   Cr::Utility::Arguments args;
 #ifdef CORRADE_TARGET_EMSCRIPTEN
   args.addNamedArgument("scene")
@@ -555,16 +553,10 @@ void Viewer::viewportEvent(ViewportEvent& event) {
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
-  if (event.button() == MouseEvent::Button::Left)
-    previousPosition_ = positionOnSphere(*renderCamera_, event.position());
-
   event.setAccepted();
 }
 
 void Viewer::mouseReleaseEvent(MouseEvent& event) {
-  if (event.button() == MouseEvent::Button::Left)
-    previousPosition_ = Mn::Vector3();
-
   event.setAccepted();
 }
 
@@ -578,9 +570,12 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
       renderCamera_->node().transformation().translation().z();
 
   /* Move 15% of the distance back or forward */
-  renderCamera_->node().translateLocal(
-      {0.0f, 0.0f,
-       distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f))});
+  controls_(*agentBodyNode_, "moveForward",
+            distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f)));
+
+  logAgentStateMsg(true, true);
+  updateRenderCamera();
+  redraw();
 
   event.setAccepted();
 }
@@ -589,17 +584,13 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
     return;
   }
+  const Mn::Vector2i delta = event.relativePosition();
+  controls_(*agentBodyNode_, "turnRight", delta.x());
+  controls_(*rgbSensorNode_, "lookDown", delta.y(), false);
 
-  const Mn::Vector3 currentPosition =
-      positionOnSphere(*renderCamera_, event.position());
-  const Mn::Vector3 axis = Mn::Math::cross(previousPosition_, currentPosition);
-
-  if (previousPosition_.length() < 0.001f || axis.length() < 0.001f) {
-    return;
-  }
-  const auto angle = Mn::Math::angle(previousPosition_, currentPosition);
-  renderCamera_->node().rotate(-angle, axis.normalized());
-  previousPosition_ = currentPosition;
+  logAgentStateMsg(true, true);
+  updateRenderCamera();
+  redraw();
 
   event.setAccepted();
 }
@@ -709,9 +700,13 @@ void Viewer::keyPressEvent(KeyEvent& event) {
   if (agentMoved) {
     logAgentStateMsg(true, true);
   }
+  updateRenderCamera();
+  redraw();
+}
+
+void Viewer::updateRenderCamera() {
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
-  redraw();
 }
 
 }  // namespace
