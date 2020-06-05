@@ -188,7 +188,7 @@ class Simulator(SimulatorBackend):
         self._sanitize_config(config)
 
         if self.config != config:
-            self.__init_from_config(config)
+            self.__set_from_config(config)
             self.config = config
 
     def __set_from_config(self, config: Configuration):
