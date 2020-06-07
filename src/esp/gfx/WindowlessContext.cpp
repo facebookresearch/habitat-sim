@@ -60,16 +60,6 @@ const int MAX_DEVICES = 128;
     CHECK(err == EGL_SUCCESS) << "EGL error:" << err; \
   } while (0)
 
-bool isNvidiaGpuReadable(int device) {
-  const std::string dev = "/dev/nvidia" + std::to_string(device);
-  const int retval = open(dev.c_str(), O_RDONLY);
-  if (retval == -1) {
-    return false;
-  }
-  close(retval);
-  return true;
-}
-
 struct ESPEGLContext : ESPContext {
   explicit ESPEGLContext(int device)
       : magnumGlContext_{Mn::NoCreate}, gpuDevice_{device} {
@@ -101,22 +91,22 @@ struct ESPEGLContext : ESPContext {
 
       int eglDevId;
       for (eglDevId = 0; eglDevId < numDevices; ++eglDevId) {
+        VLOG(1) << "[EGL] device " << eglDevId << " extensions: "
+                << eglQueryDeviceStringEXT(eglDevices[eglDevId],
+                                           EGL_EXTENSIONS);
         EGLAttrib cudaDevNumber;
 
         if (eglQueryDeviceAttribEXT(eglDevices[eglDevId], EGL_CUDA_DEVICE_NV,
-                                    &cudaDevNumber) == EGL_FALSE)
-          continue;
-
-        if (cudaDevNumber == device)
+                                    &cudaDevNumber) == EGL_FALSE) {
+          VLOG(1) << "[EGL] eglQueryDeviceAttribEXT error code: "
+                  << eglGetError();
+        } else if (cudaDevNumber == device) {
           break;
+        }
       }
 
       CHECK(eglDevId < numDevices)
           << "[EGL] Could not find an EGL device for CUDA device " << device;
-
-      CHECK(isNvidiaGpuReadable(eglDevId))
-          << "[EGL] EGL device " << eglDevId << ", CUDA device " << device
-          << " is not readable";
 
       LOG(INFO) << "[EGL] Selected EGL device " << eglDevId
                 << " for CUDA device " << device;
