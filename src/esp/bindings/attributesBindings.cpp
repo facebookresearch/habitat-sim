@@ -40,7 +40,8 @@ void initAttributesBindings(py::module& m) {
       .def(py::init(&AbstractAttributes::create<const std::string&>))
       .def("set_origin_handle", &AbstractAttributes::setOriginHandle,
            "origin_handle"_a)
-      .def("get_origin_handle", &AbstractAttributes::getOriginHandle);
+      .def("get_origin_handle", &AbstractAttributes::getOriginHandle)
+      .def("get_object_template_ID", &AbstractAttributes::getObjectTemplateID);
 
   // ==== AbstractPhysicsAttributes ====
   py::class_<AbstractPhysicsAttributes, AbstractAttributes,
@@ -110,6 +111,8 @@ void initAttributesBindings(py::module& m) {
              AbstractPrimitiveAttributes::ptr>(m, "AbstractPrimitiveAttributes")
       .def(py::init(
           &AbstractPrimitiveAttributes::create<bool, int, const std::string&>))
+      .def("set_origin_handle", &AbstractPrimitiveAttributes::setOriginHandle,
+           "do_not_use"_a)
       .def("get_is_wireframe", &AbstractPrimitiveAttributes::getIsWireframe)
       .def("set_use_texture_coords",
            &AbstractPrimitiveAttributes::setUseTextureCoords,

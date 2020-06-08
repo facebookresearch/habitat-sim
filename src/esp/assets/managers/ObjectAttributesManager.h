@@ -19,9 +19,9 @@ namespace managers {
  * @brief single instance class managing templates describing physical objects
  */
 class ObjectAttributesManager
-    : public AttributesManager<PhysicsObjectAttributes> {
+    : public AttributesManager<PhysicsObjectAttributes::ptr> {
  public:
-  using AttributesManager<PhysicsObjectAttributes>::AttributesManager;
+  using AttributesManager<PhysicsObjectAttributes::ptr>::AttributesManager;
   void setAssetAttributesManager(
       AssetAttributesManager::ptr assetAttributesMgr) {
     assetAttributesMgr_ = assetAttributesMgr;

@@ -125,29 +125,6 @@ void AssetAttributesManager::buildMapOfPrimTypeConstructors() {
   }
 }  // buildMapOfPrimTypeConstructors
 
-std::shared_ptr<AbstractPrimitiveAttributes>
-AssetAttributesManager::createAttributesTemplate(
-    const std::string& primClassName,
-    bool registerTemplate) {
-  auto primAssetAttributes = buildPrimAttributes(primClassName);
-
-  if (registerTemplate) {
-    registerAttributesTemplate(primAssetAttributes, "");
-  }
-  return primAssetAttributes;
-}  // AssetAttributesManager::createAttributesTemplate
-
-std::shared_ptr<AbstractPrimitiveAttributes>
-AssetAttributesManager::createAttributesTemplate(PrimObjTypes primObjType,
-                                                 bool registerTemplate) {
-  auto primAssetAttributes = buildPrimAttributes(primObjType);
-
-  if (registerTemplate) {
-    registerAttributesTemplate(primAssetAttributes, "");
-  }
-  return primAssetAttributes;
-}  // AssetAttributesManager::createAttributesTemplate
-
 int AssetAttributesManager::registerAttributesTemplate(
     std::shared_ptr<AbstractPrimitiveAttributes> primAttributesTemplate,
     const std::string&) {
@@ -165,21 +142,21 @@ int AssetAttributesManager::registerAttributesTemplate(
   // return either the ID of the existing template referenced by
   // primAttributesHandle, or the next available ID if not found.
   int primTemplateID =
-      addTemplateToLibrary(primAttributesTemplate, primAttributesHandle);
+      this->addTemplateToLibrary(primAttributesTemplate, primAttributesHandle);
   return primTemplateID;
 }  // AssetAttributesManager::registerAttributesTemplate
 
 std::shared_ptr<AbstractPrimitiveAttributes>
 AssetAttributesManager::getAttributesTemplateCopy(
     const std::string& primTemplateHandle) {
-  CORRADE_ASSERT((templateLibrary_.count(primTemplateHandle) > 0),
+  CORRADE_ASSERT((this->templateLibrary_.count(primTemplateHandle) > 0),
                  "AssetAttributesManager::getAttributesCopy : Unknown "
                  "template handle :"
                      << primTemplateHandle << ". Aborting",
                  nullptr);
   // need to return copy so that user mods do not modify existing
   // asset template
-  auto orig = templateLibrary_.at(primTemplateHandle);
+  auto orig = this->templateLibrary_.at(primTemplateHandle);
   // build a copy of existing template
   return copyPrimAttributes(orig);
 }  // AssetAttributesManager::getPrimAssetAttributesCopy

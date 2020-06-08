@@ -93,10 +93,10 @@ ResourceManager::ResourceManager()
 
   initDefaultLightSetups();
   initDefaultMaterials();
-  buildMapOfPrimTypeConstructors();
+  buildImportersAndAttributesManagers();
 }  // namespace assets
 
-void ResourceManager::buildMapOfPrimTypeConstructors() {
+void ResourceManager::buildImportersAndAttributesManagers() {
   primTypeConstructorMap_["capsule3DSolid"] =
       &ResourceManager::createPrimitiveAttributes<
           assets::CapsulePrimitiveAttributes, false,
@@ -149,12 +149,18 @@ void ResourceManager::buildMapOfPrimTypeConstructors() {
     addPrimAssetTemplateToLibrary(attr);
   }
 
-  // assetAttributesManager_ = managers::AssetAttributesManager::create();
-  // objectAttributesManager_ = managers::ObjectAttributesManager::create();
-  // objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
+  assetAttributesManager_ = managers::AssetAttributesManager::create();
+  objectAttributesManager_ = managers::ObjectAttributesManager::create();
+  objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
   physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
   sceneAttributesManager_ = managers::SceneAttributesManager::create();
 
+  LOG(INFO) << "asset attr mgr query : "
+            << assetAttributesManager_->getNumTemplates();
+  LOG(INFO) << "object attr mgr query : "
+            << objectAttributesManager_->getNumTemplates();
+  LOG(INFO) << "physics attr mgr query : "
+            << physicsAttributesManager_->getNumTemplates();
   LOG(INFO) << "Scene attr mgr query : "
             << sceneAttributesManager_->getNumTemplates();
 
@@ -168,7 +174,7 @@ void ResourceManager::buildMapOfPrimTypeConstructors() {
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       fileImporter_ = importerManager_.loadAndInstantiate("AnySceneImporter"));
 
-}  // buildMapOfPrimTypeConstructors
+}  // buildImportersAndAttributesManagers
 
 void ResourceManager::initDefaultPrimAttributes() {
   // by this point, we should have a GL::Context so load the bb primitive.

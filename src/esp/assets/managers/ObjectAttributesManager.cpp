@@ -26,9 +26,17 @@ PhysicsObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
     bool registerTemplate) {
   PhysicsObjectAttributes::ptr objAttributes;
   if (assetAttributesMgr_->getTemplateLibHasHandle(attributesTemplateHandle)) {
+    // if attributesTemplateHandle == some existing primitive attributes, then
+    // this is a primitive-based object we are building
     objAttributes = buildPrimBasedPhysObjTemplate(attributesTemplateHandle);
   } else {
+    // if attributesTemplateHandle != some existing primitive attributes, then
+    // assume this is a file-based object we are building.
     objAttributes = parseAndLoadPhysObjTemplate(attributesTemplateHandle);
+  }
+  // some error occurred
+  if (nullptr == objAttributes) {
+    return nullptr;
   }
   if (registerTemplate) {
     registerAttributesTemplate(objAttributes, attributesTemplateHandle);
@@ -41,7 +49,8 @@ int ObjectAttributesManager::registerAttributesTemplate(
     const std::string& objectTemplateHandle) {
   CORRADE_ASSERT(
       objectTemplate->getRenderAssetHandle() != "",
-      "ResourceManager::registerObjectTemplate : Attributes template named"
+      "ObjectAttributesManager::registerAttributesTemplate : Attributes "
+      "template named"
           << objectTemplateHandle
           << "does not have a valid render asset handle specified. Aborting.",
       ID_UNDEFINED);
@@ -52,7 +61,7 @@ int ObjectAttributesManager::registerAttributesTemplate(
   std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
   std::string collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
 
-  if (templateLibrary_.count(renderAssetHandle) > 0) {
+  if (assetAttributesMgr_->getTemplateLibHasHandle(renderAssetHandle) > 0) {
     // If renderAssetHandle corresponds to valid/existing primitive attributes
     // then setRenderAssetIsPrimitive to true and set map to
     // physicsSynthObjTmpltLibByID_
@@ -68,17 +77,17 @@ int ObjectAttributesManager::registerAttributesTemplate(
   } else {
     // If renderAssetHandle is neither valid file name nor existing primitive
     // attributes template hande, fail
-    LOG(ERROR) << "ResourceManager::registerObjectTemplate : Render asset "
-                  "template handle : "
-               << renderAssetHandle
-               << " specified in object template with handle : "
-               << objectTemplateHandle
-               << " does not correspond to existing file or primitive render "
-                  "asset.  Aborting. ";
+    LOG(ERROR)
+        << "ObjectAttributesManager::registerAttributesTemplate : Render asset "
+           "template handle : "
+        << renderAssetHandle << " specified in object template with handle : "
+        << objectTemplateHandle
+        << " does not correspond to existing file or primitive render "
+           "asset.  Aborting. ";
     return ID_UNDEFINED;
   }
 
-  if (templateLibrary_.count(collisionAssetHandle) > 0) {
+  if (assetAttributesMgr_->getTemplateLibHasHandle(collisionAssetHandle) > 0) {
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     objectTemplate->setCollisionAssetIsPrimitive(true);
@@ -98,7 +107,7 @@ int ObjectAttributesManager::registerAttributesTemplate(
 
   // Add object template to template library
   int objectTemplateID =
-      addTemplateToLibrary(objectTemplate, objectTemplateHandle);
+      this->addTemplateToLibrary(objectTemplate, objectTemplateHandle);
 
   mapToUse->emplace(objectTemplateID, objectTemplateHandle);
 
@@ -110,9 +119,9 @@ ObjectAttributesManager::parseAndLoadPhysObjTemplate(
     const std::string& objPhysConfigFilename) {
   // check for duplicate load
   const bool objTemplateExists =
-      templateLibrary_.count(objPhysConfigFilename) > 0;
+      this->templateLibrary_.count(objPhysConfigFilename) > 0;
   if (objTemplateExists) {
-    return templateLibrary_.at(objPhysConfigFilename);
+    return this->templateLibrary_.at(objPhysConfigFilename);
   }
 
   // 1. parse the config file
@@ -292,14 +301,15 @@ ObjectAttributesManager::buildPrimBasedPhysObjTemplate(
   // verify that a primitive asset with the given handle exists
 
   CORRADE_ASSERT(assetAttributesMgr_->getTemplateLibHasHandle(primAssetHandle),
-                 " No primitive with handle '"
+                 "ObjectAttributesManager::buildPrimBasedPhysObjTemplate : No "
+                 "primitive with handle '"
                      << primAssetHandle
                      << "' exists so cannot build physical object.  Aborting.",
                  nullptr);
 
   // verify that a template with this asset's name does not exist
-  if (templateLibrary_.count(primAssetHandle) > 0) {
-    return templateLibrary_.at(primAssetHandle);
+  if (this->templateLibrary_.count(primAssetHandle) > 0) {
+    return this->templateLibrary_.at(primAssetHandle);
   }
 
   // construct a PhysicsObjectAttributes

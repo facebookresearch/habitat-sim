@@ -22,9 +22,9 @@ namespace assets {
 namespace managers {
 
 class PhysicsAttributesManager
-    : public AttributesManager<PhysicsManagerAttributes> {
+    : public AttributesManager<PhysicsManagerAttributes::ptr> {
  public:
-  using AttributesManager<PhysicsManagerAttributes>::AttributesManager;
+  using AttributesManager<PhysicsManagerAttributes::ptr>::AttributesManager;
   /**
    * @brief Creates an instance of a physics world template described by passed
    * string. For physics templates, this a file name. Parses global physics
@@ -57,8 +57,8 @@ class PhysicsAttributesManager
       const std::string& physicsAttributesHandle) {
     // return either the ID of the existing template referenced by
     // physicsAttributesHandle, or the next available ID if not found.
-    int physicsTemplateID = addTemplateToLibrary(physicsAttributesTemplate,
-                                                 physicsAttributesHandle);
+    int physicsTemplateID = this->addTemplateToLibrary(
+        physicsAttributesTemplate, physicsAttributesHandle);
     return physicsTemplateID;
   }  // PhysicsAttributesManager::registerAttributesTemplate
 

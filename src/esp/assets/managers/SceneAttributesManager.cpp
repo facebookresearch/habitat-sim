@@ -22,13 +22,13 @@ SceneAttributesManager::createAttributesTemplate(
     const std::string& sceneAttributesHandle,
     bool registerTemplate) {
   const bool physSceneExists =
-      templateLibrary_.count(sceneAttributesHandle) > 0;
+      this->templateLibrary_.count(sceneAttributesHandle) > 0;
   PhysicsSceneAttributes::ptr sceneAttributesTemplate;
   if (!physSceneExists) {
     sceneAttributesTemplate =
         PhysicsSceneAttributes::create(sceneAttributesHandle);
   } else {
-    sceneAttributesTemplate = templateLibrary_.at(sceneAttributesHandle);
+    sceneAttributesTemplate = this->templateLibrary_.at(sceneAttributesHandle);
   }
   sceneAttributesTemplate->setRenderAssetHandle(sceneAttributesHandle);
   sceneAttributesTemplate->setCollisionAssetHandle(sceneAttributesHandle);

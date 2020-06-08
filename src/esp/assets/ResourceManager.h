@@ -35,8 +35,8 @@
 #include "esp/gfx/configure.h"
 #include "esp/scene/SceneNode.h"
 
-// #include "managers/AssetAttributesManager.h"
-// #include "managers/ObjectAttributesManager.h"
+#include "managers/AssetAttributesManager.h"
+#include "managers/ObjectAttributesManager.h"
 #include "managers/PhysicsAttributesManager.h"
 #include "managers/SceneAttributesManager.h"
 
@@ -64,65 +64,6 @@ namespace nav {
 class PathFinder;
 }
 namespace assets {
-
-/**
- * @brief The kinds of primitive modelled objects supported.  Paired with
- * Magnum::Primitive namespace objects
- */
-enum class PrimObjTypes : uint32_t {
-  /**
-   * Primitive object corresponding to Magnum::Primitives::capsule3DSolid
-   */
-  CAPSULE_SOLID,
-  /**
-   * Primitive object corresponding to Magnum::Primitives::capsule3DWireframe
-   */
-  CAPSULE_WF,
-  /**
-   * Primitive object corresponding to Magnum::Primitives::coneSolid
-   */
-  CONE_SOLID,
-  /**
-   * Primitive object corresponding to Magnum::Primitives::coneWireframe
-   */
-  CONE_WF,
-  /**
-   * Primitive object corresponding to Magnum::Primitives::cubeSolid
-   */
-  CUBE_SOLID,
-  /**
-   * Primitive object corresponding to Magnum::Primitives::cubeWireframe
-   */
-  CUBE_WF,
-  /**
-   * Primitive object corresponding to Magnum::Primitives::cylinderSolid
-   */
-  CYLINDER_SOLID,
-  /**
-   * Primitive object corresponding to Magnum::Primitives::cylinderWireframe
-   */
-  CYLINDER_WF,
-  /**
-   * Primitive object corresponding to Magnum::Primitives::icosphereSolid
-   */
-  ICOSPHERE_SOLID,
-  /**
-   * Primitive object corresponding to Magnum::Primitives::icosphereWireframe
-   */
-  ICOSPHERE_WF,
-  /**
-   * Primitive object corresponding to Magnum::Primitives::uvSphereSolid
-   */
-  UVSPHERE_SOLID,
-  /**
-   * Primitive object corresponding to Magnum::Primitives::uvSphereWireframe
-   */
-  UVSPHERE_WF,
-  /**
-   * marker for no more primitive objects - add any new objects above this entry
-   */
-  END_PRIM_OBJ_TYPES
-};
 
 /**
  * @brief Singleton class responsible for
@@ -172,12 +113,11 @@ class ResourceManager {
   ~ResourceManager() {}
 
   /**
-   * @brief This function will assign the appropriately configured function
-   * pointers for @ref createPrimitiveAttributes calls for each type of
-   * supported primitive to the @ref primTypeConstructorMap, keyed by type of
-   * primtive
+   * @brief This function will build the various @ref Importers and @ref
+   * AttributesManagers used by the system.
    */
-  void buildMapOfPrimTypeConstructors();
+  void buildImportersAndAttributesManagers();
+
   /**
    * @brief Build default primitive attribute files and synthesize an object of
    * each type.
@@ -344,18 +284,18 @@ class ResourceManager {
     return collisionMeshGroups_.at(collisionAssetHandle);
   }
 
-  // /**
-  //  * @brief Return manager for construction and access to asset attributes.
-  //  */
-  // managers::AssetAttributesManager::ptr getAssetAttributesManager() {
-  //   return assetAttributesManager_;
-  // }
-  // /**
-  //  * @brief Return manager for construction and access to object attributes.
-  //  */
-  // managers::ObjectAttributesManager::ptr getObjectAttributesManager() {
-  //   return objectAttributesManager_;
-  // }
+  /**
+   * @brief Return manager for construction and access to asset attributes.
+   */
+  managers::AssetAttributesManager::ptr getAssetAttributesManager() {
+    return assetAttributesManager_;
+  }
+  /**
+   * @brief Return manager for construction and access to object attributes.
+   */
+  managers::ObjectAttributesManager::ptr getObjectAttributesManager() {
+    return objectAttributesManager_;
+  }
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
@@ -1296,14 +1236,14 @@ class ResourceManager {
 
   // ======== Physical parameter data ========
 
-  // /**
-  //  * @brief Manages all construction and access to asset attributes.
-  //  */
-  // managers::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
-  // /**
-  //  * @brief Manages all construction and access to object attributes.
-  //  */
-  // managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
+  /**
+   * @brief Manages all construction and access to asset attributes.
+   */
+  managers::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
+  /**
+   * @brief Manages all construction and access to object attributes.
+   */
+  managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
   /**
    * @brief Manages all construction and access to physics world attributes.
    */

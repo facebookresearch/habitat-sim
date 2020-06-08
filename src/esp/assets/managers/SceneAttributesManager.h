@@ -11,9 +11,9 @@ namespace assets {
 
 namespace managers {
 class SceneAttributesManager
-    : public AttributesManager<PhysicsSceneAttributes> {
+    : public AttributesManager<PhysicsSceneAttributes::ptr> {
  public:
-  using AttributesManager<PhysicsSceneAttributes>::AttributesManager;
+  using AttributesManager<PhysicsSceneAttributes::ptr>::AttributesManager;
   /**
    * @brief Creates an instance of a scene template described by passed
    string.
@@ -58,7 +58,7 @@ class SceneAttributesManager
    */
   void setSceneValsFromPhysicsAttributes(
       PhysicsManagerAttributes::ptr physicsManagerAttributes) {
-    for (auto sceneAttr : templateLibrary_) {
+    for (auto sceneAttr : this->templateLibrary_) {
       sceneAttr.second->setFrictionCoefficient(
           physicsManagerAttributes->getFrictionCoefficient());
       sceneAttr.second->setRestitutionCoefficient(

@@ -69,7 +69,7 @@ enum class PrimObjTypes : uint32_t {
 namespace managers {
 
 class AssetAttributesManager
-    : public AttributesManager<AbstractPrimitiveAttributes> {
+    : public AttributesManager<AbstractPrimitiveAttributes::ptr> {
  public:
   /**
    * @brief Constant Map holding names of all Magnum 3D primitive classes
@@ -78,7 +78,8 @@ class AssetAttributesManager
    */
   static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
   AssetAttributesManager()
-      : AttributesManager<AbstractPrimitiveAttributes>::AttributesManager() {
+      : AttributesManager<
+            AbstractPrimitiveAttributes::ptr>::AttributesManager() {
     buildMapOfPrimTypeConstructors();
   }
 
@@ -97,7 +98,13 @@ class AssetAttributesManager
 
   std::shared_ptr<AbstractPrimitiveAttributes> createAttributesTemplate(
       const std::string& primClassName,
-      bool registerTemplate = true);
+      bool registerTemplate = true) {
+    auto primAssetAttributes = buildPrimAttributes(primClassName);
+    if (registerTemplate) {
+      registerAttributesTemplate(primAssetAttributes, "");
+    }
+    return primAssetAttributes;
+  }  // AssetAttributesManager::createAttributesTemplate
 
   /**
    * @brief Creates an instance of a primtive asset attributes template
@@ -112,7 +119,13 @@ class AssetAttributesManager
    */
   std::shared_ptr<AbstractPrimitiveAttributes> createAttributesTemplate(
       PrimObjTypes primObjType,
-      bool registerTemplate = true);
+      bool registerTemplate = true) {
+    auto primAssetAttributes = buildPrimAttributes(primObjType);
+    if (registerTemplate) {
+      registerAttributesTemplate(primAssetAttributes, "");
+    }
+    return primAssetAttributes;
+  }  // AssetAttributesManager::createAttributesTemplate
 
   /**
    * @brief Add an @ref AbstractPrimitiveAttributes object to the @ref
@@ -147,8 +160,8 @@ class AssetAttributesManager
                    "name PrimObjTypes::END_PRIM_OBJ_TYPES.  Aborting.",
                    {});
     std::string subStr = PrimitiveNames3DMap.at(primType);
-    return getTemplateHandlesBySubStringPerType(templateLibKeyByID_, subStr,
-                                                contains);
+    return this->getTemplateHandlesBySubStringPerType(this->templateLibKeyByID_,
+                                                      subStr, contains);
   }  // getTemplateHandlesByPrimType
 
   /**
@@ -164,6 +177,7 @@ class AssetAttributesManager
   std::shared_ptr<AbstractPrimitiveAttributes> getAttributesTemplateCopy(
       const std::string& primTemplateHandle);
 
+ protected:
   /**
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
    * with passed class name
@@ -174,7 +188,6 @@ class AssetAttributesManager
     return (*this.*primTypeCopyConstructorMap_[primTypeName])(origAttr);
   }  // buildPrimAttributes
 
- protected:
   /**
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
    * with passed class name

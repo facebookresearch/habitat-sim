@@ -34,7 +34,7 @@ namespace managers {
  * @tparam T the type of attributes object this class references
  */
 
-template <class T>
+template <class AttribsPtr>
 class AttributesManager {
  public:
   //   //======== Accessor functions ========
@@ -67,7 +67,7 @@ class AttributesManager {
    not
    * exist
    */
-  std::shared_ptr<T> getAttributesTemplate(const int objectTemplateID) const {
+  AttribsPtr getAttributesTemplate(const int objectTemplateID) const {
     std::string key = getTemplateHandleByID(objectTemplateID);
     CORRADE_ASSERT(getTemplateLibHasHandle(key),
                    "AttributesManager::getAttributesTemplate : Unknown "
@@ -88,8 +88,7 @@ class AttributesManager {
    not
    * exist
    */
-  std::shared_ptr<T> getAttributesTemplate(
-      const std::string& templateHandle) const {
+  AttribsPtr getAttributesTemplate(const std::string& templateHandle) const {
     CORRADE_ASSERT(getTemplateLibHasHandle(templateHandle),
                    "AttributesManager::getAttributesTemplate : Unknown "
                    "object template Handle:"
@@ -178,7 +177,7 @@ class AttributesManager {
                                                 contains);
   }
 
-  // protected:
+ protected:
   /**
    * @brief add passed template to library, setting objectTemplateID
    * appropriately.  Called internally by registerTemplate.
@@ -189,7 +188,7 @@ class AttributesManager {
    */
 
   int addTemplateToLibrary(
-      std::shared_ptr<T> attributesTemplate,
+      AttribsPtr attributesTemplate,
       const std::string& attributesHandle) {  // return either the ID of the
                                               // existing template referenced by
     // attributesHandle, or the next available ID if not found.
@@ -236,7 +235,7 @@ class AttributesManager {
   /**
    * @brief Maps string keys to attributes templates
    */
-  std::map<std::string, std::shared_ptr<T>> templateLibrary_;
+  std::map<std::string, AttribsPtr> templateLibrary_;
 
   /**
    * @brief Maps all object attribute IDs to the appropriate handles used
@@ -246,7 +245,7 @@ class AttributesManager {
   std::map<int, std::string> templateLibKeyByID_;
 
  public:
-  ESP_SMART_POINTERS(AttributesManager)
+  ESP_SMART_POINTERS(AttributesManager<AttribsPtr>)
 
 };  // class AttributesManager
 
