@@ -155,7 +155,6 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
     // if we have a simulation implementation then test bounding box vs mesh for
     // sphere object
 
-    // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
     esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
         esp::assets::PhysicsObjectAttributes::create();
     physicsObjectAttributes->setRenderAssetHandle(objectFile);
@@ -228,7 +227,6 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
-    // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
     esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
         esp::assets::PhysicsObjectAttributes::create();
     physicsObjectAttributes->setRenderAssetHandle(objectFile);
@@ -272,7 +270,6 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
   if (physicsManager_->getPhysicsSimulationLibrary() ==
       PhysicsManager::PhysicsSimulationLibrary::BULLET) {
     // test joined vs. unjoined
-    // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
     esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
         esp::assets::PhysicsObjectAttributes::create();
     physicsObjectAttributes->setRenderAssetHandle(objectFile);
@@ -310,7 +307,7 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     const Magnum::Range3D AabbOb1 =
         bPhysManager->getCollisionShapeAabb(objectId1);
     const Magnum::Range3D AabbOb2 =
-        bPhysManager->getCollisionShapeAabb(objectId1);
+        bPhysManager->getCollisionShapeAabb(objectId2);
 
     Magnum::Range3D objectGroundTruth({-1.1, -1.1, -1.1}, {1.1, 1.1, 1.1});
     Magnum::Range3D sceneGroundTruth({-1.04, -1.04, -1.04}, {1.04, 1.04, 1.04});
@@ -333,7 +330,6 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   initScene("NONE");
 
   // test joined vs. unjoined
-  // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
   esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
       esp::assets::PhysicsObjectAttributes::create();
   physicsObjectAttributes->setRenderAssetHandle(objectFile);
@@ -399,7 +395,6 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
 
   initScene(sceneFile);
 
-  // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
   esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
       esp::assets::PhysicsObjectAttributes::create();
   physicsObjectAttributes->setRenderAssetHandle(objectFile);
@@ -544,7 +539,6 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
 
   initScene(sceneFile);
 
-  // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
   esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
       esp::assets::PhysicsObjectAttributes::create();
   physicsObjectAttributes->setRenderAssetHandle(objectFile);
@@ -602,7 +596,7 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NONE) {
     float boxHalfExtent = 0.2;
-    // esp::assets::PhysicsObjectAttributes physicsObjectAttributes;
+
     esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
         esp::assets::PhysicsObjectAttributes::create();
     physicsObjectAttributes->setRenderAssetHandle(objectFile);

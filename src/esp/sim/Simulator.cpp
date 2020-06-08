@@ -328,8 +328,10 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
 
 std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
   std::vector<int> templateIndices;
+  auto physicsAttributesManager =
+      resourceManager_->getPhysicsAttributesManager();
   std::vector<std::string> validConfigPaths =
-      resourceManager_->buildObjectConfigPaths(path);
+      physicsAttributesManager->buildObjectConfigPaths(path);
   for (auto& validPath : validConfigPaths) {
     templateIndices.push_back(
         resourceManager_->parseAndLoadPhysObjTemplate(validPath));
