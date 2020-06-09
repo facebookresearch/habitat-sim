@@ -67,22 +67,6 @@ constexpr char ResourceManager::NO_LIGHT_KEY[];
 constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
 constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
-
-const std::map<PrimObjTypes, const char*> ResourceManager::PrimitiveNames3DMap =
-    {{PrimObjTypes::CAPSULE_SOLID, "capsule3DSolid"},
-     {PrimObjTypes::CAPSULE_WF, "capsule3DWireframe"},
-     {PrimObjTypes::CONE_SOLID, "coneSolid"},
-     {PrimObjTypes::CONE_WF, "coneWireframe"},
-     {PrimObjTypes::CUBE_SOLID, "cubeSolid"},
-     {PrimObjTypes::CUBE_WF, "cubeWireframe"},
-     {PrimObjTypes::CYLINDER_SOLID, "cylinderSolid"},
-     {PrimObjTypes::CYLINDER_WF, "cylinderWireframe"},
-     {PrimObjTypes::ICOSPHERE_SOLID, "icosphereSolid"},
-     {PrimObjTypes::ICOSPHERE_WF, "icosphereWireframe"},
-     {PrimObjTypes::UVSPHERE_SOLID, "uvSphereSolid"},
-     {PrimObjTypes::UVSPHERE_WF, "uvSphereWireframe"},
-     {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
-
 ResourceManager::ResourceManager()
     :
 #ifdef MAGNUM_BUILD_STATIC
@@ -97,58 +81,6 @@ ResourceManager::ResourceManager()
 }  // namespace assets
 
 void ResourceManager::buildImportersAndAttributesManagers() {
-  primTypeConstructorMap_["capsule3DSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CapsulePrimitiveAttributes, false,
-          PrimObjTypes::CAPSULE_SOLID>;
-  primTypeConstructorMap_["capsule3DWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CapsulePrimitiveAttributes, true, PrimObjTypes::CAPSULE_WF>;
-  primTypeConstructorMap_["coneSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::ConePrimitiveAttributes, false, PrimObjTypes::CONE_SOLID>;
-  primTypeConstructorMap_["coneWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::ConePrimitiveAttributes, true, PrimObjTypes::CONE_WF>;
-  primTypeConstructorMap_["cubeSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CubePrimitiveAttributes, false, PrimObjTypes::CUBE_SOLID>;
-  primTypeConstructorMap_["cubeWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CubePrimitiveAttributes, true, PrimObjTypes::CUBE_WF>;
-  primTypeConstructorMap_["cylinderSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CylinderPrimitiveAttributes, false,
-          PrimObjTypes::CYLINDER_SOLID>;
-  primTypeConstructorMap_["cylinderWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CylinderPrimitiveAttributes, true, PrimObjTypes::CYLINDER_WF>;
-  primTypeConstructorMap_["icosphereSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::IcospherePrimitiveAttributes, false,
-          PrimObjTypes::ICOSPHERE_SOLID>;
-  primTypeConstructorMap_["icosphereWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::IcospherePrimitiveAttributes, true,
-          PrimObjTypes::ICOSPHERE_WF>;
-  primTypeConstructorMap_["uvSphereSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::UVSpherePrimitiveAttributes, false,
-          PrimObjTypes::UVSPHERE_SOLID>;
-  primTypeConstructorMap_["uvSphereWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::UVSpherePrimitiveAttributes, true, PrimObjTypes::UVSPHERE_WF>;
-  // no entry added for PrimObjTypes::END_PRIM_OBJ_TYPES
-
-  // build default AbstractPrimitiveAttributes objects
-  for (const std::pair<PrimObjTypes, const char*>& elem : PrimitiveNames3DMap) {
-    if (elem.first == PrimObjTypes::END_PRIM_OBJ_TYPES) {
-      continue;
-    }
-    auto attr = buildPrimitiveAttributes(elem.second);
-    addPrimAssetTemplateToLibrary(attr);
-  }
-
   assetAttributesManager_ = managers::AssetAttributesManager::create();
   objectAttributesManager_ = managers::ObjectAttributesManager::create();
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
@@ -181,19 +113,23 @@ void ResourceManager::initDefaultPrimAttributes() {
   // TODO: replace this completely with standard mesh (i.e. treat the bb
   // wireframe cube no differently than other primivite-based rendered
   // objects)
-  auto wfCube = primitiveImporter_->mesh(
-      primitiveAssetTemplateLibrary_["cubeWireframe"]->getPrimObjClassName());
+  auto cubeMeshName =
+      assetAttributesManager_->getAttributesTemplate("cubeWireframe")
+          ->getPrimObjClassName();
+
+  auto wfCube = primitiveImporter_->mesh(cubeMeshName);
   primitive_meshes_.push_back(
       std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube)));
 
   // build default primtive object templates corresponding to given default
   // asset templates
-  for (auto primAsset : primitiveAssetTemplateLibrary_) {
+  auto lib = assetAttributesManager_->getTemplateLibrary_();
+  for (auto primAsset : lib) {
     buildAndRegisterPrimPhysObjTemplate(primAsset.first);
   }
 
   LOG(INFO) << "Built primitive asset templates: "
-            << std::to_string(primitiveAssetTemplateLibByID_.size());
+            << std::to_string(assetAttributesManager_->getNumTemplates());
 
 }  // initDefaultPrimAttributes
 
@@ -475,32 +411,6 @@ int ResourceManager::addPhysicsObjectTemplateToLibrary(
   return objectTemplateID;
 }  // addPhysicsObjectTemplateToLibrary
 
-int ResourceManager::addPrimAssetTemplateToLibrary(
-    AbstractPrimitiveAttributes::ptr primTemplate) {
-  // add prim asset template ID to physicsObjTemplateLibrary_
-  auto primHandle = primTemplate->getOriginHandle();
-
-  bool isNotPresent = (primitiveAssetTemplateLibrary_.count(primHandle) == 0);
-  int primAssetTemplateID;
-  if (isNotPresent) {
-    // this will set the ID in the template
-    primAssetTemplateID = primitiveAssetTemplateLibrary_.size();
-  } else {
-    // set ID to be existing template's ID
-    primAssetTemplateID =
-        primitiveAssetTemplateLibrary_.at(primHandle)->getObjectTemplateID();
-  }
-  primTemplate->setObjectTemplateID(primAssetTemplateID);
-
-  // If template is present, will replace with new template - templates are
-  // expected to be 1-to-1 with handles (each unique handle always describes the
-  // same unique template).
-  primitiveAssetTemplateLibrary_[primHandle] = primTemplate;
-  primitiveAssetTemplateLibByID_.emplace(primAssetTemplateID, primHandle);
-
-  return primAssetTemplateID;
-}  // addPrimAssetTemplateToLibrary
-
 int ResourceManager::registerObjectTemplate(
     PhysicsObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle) {
@@ -517,8 +427,7 @@ int ResourceManager::registerObjectTemplate(
   // handle for rendering asset
   std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
   std::string collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
-
-  if (primitiveAssetTemplateLibrary_.count(renderAssetHandle) > 0) {
+  if (assetAttributesManager_->getTemplateLibHasHandle(renderAssetHandle)) {
     // if renderAssetHandle corresponds to valid/existing primitive attributes
     // then setRenderAssetIsPrimitive to true and set map to
     // physicsSynthObjTmpltLibByID_
@@ -543,8 +452,7 @@ int ResourceManager::registerObjectTemplate(
                   "asset.  Aborting. ";
     return ID_UNDEFINED;
   }
-
-  if (primitiveAssetTemplateLibrary_.count(collisionAssetHandle) > 0) {
+  if (assetAttributesManager_->getTemplateLibHasHandle(collisionAssetHandle)) {
     // if collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     objectTemplate->setCollisionAssetIsPrimitive(true);
@@ -817,7 +725,7 @@ int ResourceManager::parseAndLoadPhysObjTemplate(
 int ResourceManager::buildAndRegisterPrimPhysObjTemplate(
     const std::string& primAssetHandle) {
   // verify that a primitive asset with the given handle exists
-  if (primitiveAssetTemplateLibrary_.count(primAssetHandle) == 0) {
+  if (!assetAttributesManager_->getTemplateLibHasHandle(primAssetHandle)) {
     LOG(WARNING) << " No primitive with handle '" << primAssetHandle
                  << "' exists so cannot build physical object.  Aborting.";
     return ID_UNDEFINED;
@@ -848,7 +756,7 @@ int ResourceManager::buildAndRegisterPrimPhysObjTemplate(
   // CollisionMesh
 
   return registerObjectTemplate(physicsObjectAttributes, primAssetHandle);
-}  // ResourceManager::buildAndRegisterPrimPhysObjTemplate
+}  // namespace assets
 
 Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
@@ -1715,7 +1623,8 @@ bool ResourceManager::instantiateAssetsOnDemand(
   if (resourceDict_.count(renderAssetHandle) == 0) {
     if (physicsObjectAttributes->getRenderAssetIsPrimitive()) {
       // needs to have a primitive asset attributes with same name
-      if (primitiveAssetTemplateLibrary_.count(renderAssetHandle) == 0) {
+      if (!assetAttributesManager_->getTemplateLibHasHandle(
+              renderAssetHandle)) {
         // this is bad, means no render primitive template exists with expected
         // name.  should never happen
         LOG(ERROR) << "No primitive asset attributes exists with name :"
@@ -1727,7 +1636,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
       // build primitive asset for this object based on defined primitive
       // attributes
       auto primitiveAssetAttributes =
-          primitiveAssetTemplateLibrary_.at(renderAssetHandle);
+          assetAttributesManager_->getAttributesTemplate(renderAssetHandle);
       buildPrimitiveAssetData(primitiveAssetAttributes);
 
     } else {

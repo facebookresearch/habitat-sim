@@ -99,13 +99,6 @@ class ResourceManager {
   static constexpr char PER_VERTEX_OBJECT_ID_MATERIAL_KEY[] =
       "per_vertex_object_id";
 
-  /**
-   * @brief Constant Map holding names of all Magnum 3D primitive classes
-   * supported, keyed by @ref PrimObjTypes enum entry.  Note final entry is not
-   * a valid primitive.
-   */
-  static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
-
   /** @brief Constructor */
   explicit ResourceManager();
 
@@ -287,66 +280,28 @@ class ResourceManager {
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
-  managers::AssetAttributesManager::ptr getAssetAttributesManager() {
+  managers::AssetAttributesManager::ptr getAssetAttributesManager() const {
     return assetAttributesManager_;
   }
   /**
    * @brief Return manager for construction and access to object attributes.
    */
-  managers::ObjectAttributesManager::ptr getObjectAttributesManager() {
+  managers::ObjectAttributesManager::ptr getObjectAttributesManager() const {
     return objectAttributesManager_;
   }
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
-  managers::PhysicsAttributesManager::ptr getPhysicsAttributesManager() {
+  managers::PhysicsAttributesManager::ptr getPhysicsAttributesManager() const {
     return physicsAttributesManager_;
   }
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  managers::SceneAttributesManager::ptr getsceneAttributesManager() {
+  managers::SceneAttributesManager::ptr getsceneAttributesManager() const {
     return sceneAttributesManager_;
   }
-
-  /**
-   * @brief Get the key in @ref primitiveAssetTemplateLibrary_ for the passed
-   * object template asset ID.
-   *
-   * @param objectTemplateID The index of the object template in @ref
-   * primitiveAssetTmpltLibByID_.
-   * @return The key referencing the template in @ref
-   * primitiveAssetTmpltLibByID_, or an empty string if does not exist.
-   */
-  std::string getPrimitiveAssetTemplateHandle(const int primTemplateID) const {
-    CORRADE_ASSERT(primitiveAssetTemplateLibByID_.count(primTemplateID) > 0,
-                   "ResourceManager::getPrimitiveAssetTemplateHandle : No "
-                   "primitive asset template with index"
-                       << primTemplateID << "exists. Aborting",
-                   "");
-    return primitiveAssetTemplateLibByID_.at(primTemplateID);
-  }  // getPrimitiveAssetTemplateHandle
-
-  /**
-   * @brief Get a ref to the primitive asset attributes object for the primitive
-   * identified by the string key.
-   * @param primTemplateHandle the string key of the attributes desired - this
-   * key will be synthesized based on attributes values.
-   * @return the desired primitive attributes, or nullptr if does not exist
-   */
-  AbstractPrimitiveAttributes::ptr getPrimitiveAssetTemplateAttributes(
-      const std::string& primTemplateHandle) const {
-    CORRADE_ASSERT(
-        (primitiveAssetTemplateLibrary_.count(primTemplateHandle) > 0),
-        "ResourceManager::getPrimitiveAssetTemplateAttributes : Unknown "
-        "primitive "
-        "asset template handle :"
-            << primTemplateHandle << ". Aborting",
-        nullptr);
-    return primitiveAssetTemplateLibrary_.at(primTemplateHandle);
-  }
-
   /**
    * @brief Get the key in @ref physicsObjTemplateLibrary_ for the object
    * template index.
@@ -677,70 +632,7 @@ class ResourceManager {
    */
   inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
 
-  /**
-   * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
-   * with passed class name
-   */
-  AbstractPrimitiveAttributes::ptr buildPrimitiveAttributes(
-      const std::string& primTypeName) {
-    CORRADE_ASSERT(
-        primTypeConstructorMap_.count(primTypeName) > 0,
-        "ResourceManager::buildPrimitiveAttributes : No primivite of type"
-            << primTypeName << "exists.  Aborting.",
-        nullptr);
-    return (*this.*primTypeConstructorMap_[primTypeName])();
-  }  // buildPrimitiveAttributes
-
-  /**
-   * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
-   * with passed enum value, which maps to class name via @ref
-   * PrimitiveNames3DMap
-   */
-  AbstractPrimitiveAttributes::ptr buildPrimitiveAttributes(
-      PrimObjTypes& primType) {
-    CORRADE_ASSERT(
-        primType != PrimObjTypes::END_PRIM_OBJ_TYPES,
-        "ResourceManager::buildPrimitiveAttributes : Illegal primtitive type "
-        "name sPrimObjTypes::END_PRIM_OBJ_TYPES.  Aborting.",
-        nullptr);
-    return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(primType)])();
-  }  // buildPrimitiveAttributes
-
-  /**
-   * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
-   * with passed enum value, which maps to class name via @ref
-   * PrimitiveNames3DMap
-   */
-  AbstractPrimitiveAttributes::ptr buildPrimitiveAttributes(int primTypeVal) {
-    CORRADE_ASSERT(
-        (primTypeVal >= 0) &&
-            (primTypeVal < static_cast<int>(PrimObjTypes::END_PRIM_OBJ_TYPES)),
-        "ResourceManager::buildPrimitiveAttributes : Unknown PrimObjTypes "
-        "value requested :"
-            << primTypeVal << ". Aborting",
-        nullptr);
-    return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(
-                       static_cast<PrimObjTypes>(primTypeVal))])();
-  }  // buildPrimitiveAttributes
-
  private:
-  /**
-   * @brief Build a shared pointer to the appropriate attributes for passed
-   * object type as defined in @ref PrimObjTypes, where each entry except @ref
-   * END_PRIM_OBJ_TYPES corresponds to a Magnum Primitive type
-   */
-  template <typename T, bool isWireFrame, PrimObjTypes primitiveType>
-  std::shared_ptr<AbstractPrimitiveAttributes> createPrimitiveAttributes() {
-    CORRADE_ASSERT(
-        (primitiveType != PrimObjTypes::END_PRIM_OBJ_TYPES),
-        "ResourceManager::createPrimitiveAttributes : Cannot instantiate "
-        "PrimitiveAttributes object for PrimObjTypes::END_PRIM_OBJ_TYPES. "
-        "Aborting.",
-        nullptr);
-    int idx = static_cast<int>(primitiveType);
-    return T::create(isWireFrame, idx, PrimitiveNames3DMap.at(primitiveType));
-  }
-
   /**
    * @brief Load all file-based object templates given string list of object
    * template file locations.
@@ -824,17 +716,6 @@ class ResourceManager {
       PhysicsObjectAttributes::ptr objectTemplate,
       const std::string& objectTemplateHandle,
       std::map<int, std::string>& mapOfNames);
-
-  /**
-   * @brief Add primitive asset template attributes to appropriate template
-   * library map and index list
-   *
-   * @param primTemplate ptr to primitive template attributes to be added to
-   * library
-   * @return the index of added primitive asset template in names map
-   */
-  int addPrimAssetTemplateToLibrary(
-      AbstractPrimitiveAttributes::ptr primTemplate);
 
  protected:
   // ======== Structs and Types only used locally ========
@@ -1265,22 +1146,6 @@ class ResourceManager {
       physicsObjectTemplateLibrary_;
 
   /**
-   * @brief Maps string keys (built from primitive attributes themselves) to
-   * primitive templates.
-   *
-   */
-  std::map<std::string, AbstractPrimitiveAttributes::ptr>
-      primitiveAssetTemplateLibrary_;
-
-  /**
-   * @brief Map of function pointers to instantiate a primitive attributes
-   * object, keyed by the Magnum primitive class name as listed in @ref
-   * PrimitiveNames3D. A primitive attributes object is instanced by accessing
-   * the approrpiate function pointer.
-   */
-  Map_Of_PrimTypes primTypeConstructorMap_;
-
-  /**
    * @brief Primitive meshes available for instancing via @ref
    * addPrimitiveToDrawables for debugging or visualization purposes.
    */
@@ -1309,12 +1174,6 @@ class ResourceManager {
    * appropriate template handles
    */
   std::map<int, std::string> physicsSynthObjTmpltLibByID_;
-  /**
-   * @brief Maps primitive object template IDs to primitive template handles
-   * (composite strings built from specified attributes values for primitive)
-   */
-  std::map<int, std::string> primitiveAssetTemplateLibByID_;
-
   /**
    * @brief Flag to denote the desire to compress textures. TODO: unused?
    */

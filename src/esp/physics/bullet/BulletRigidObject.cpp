@@ -75,8 +75,10 @@ bool BulletRigidObject::initializationFinalize(
            ->getUseMeshCollision()) {  // if using prim collider
     // prim stuff here
     // get appropriate bullet collision primitive attributes
+    auto primAttrMgr = resMgr.getAssetAttributesManager();
+
     auto primAttributes =
-        resMgr.getPrimitiveAssetTemplateAttributes(collisionAssetHandle);
+        primAttrMgr->getAttributesTemplate(collisionAssetHandle);
     // primitive object pointer construction
     auto primObjPtr = buildPrimitiveCollisionObject(primAttributes);
     bGenericShapes_.clear();

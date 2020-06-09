@@ -177,6 +177,10 @@ class AttributesManager {
                                                 contains);
   }
 
+  std::map<std::string, AttribsPtr> getTemplateLibrary_() const {
+    return templateLibrary_;
+  }
+
  protected:
   /**
    * @brief add passed template to library, setting objectTemplateID

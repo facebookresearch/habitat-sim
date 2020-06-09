@@ -196,7 +196,7 @@ class AssetAttributesManager
       const std::string& primTypeName) {
     CORRADE_ASSERT(
         primTypeConstructorMap_.count(primTypeName) > 0,
-        "AssetAttributesManager::buildPrimAttributes : No primivite of type"
+        "AssetAttributesManager::buildPrimAttributes : No primitive of type"
             << primTypeName << "exists.  Aborting.",
         nullptr);
     return (*this.*primTypeConstructorMap_[primTypeName])();
