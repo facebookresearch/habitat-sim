@@ -63,13 +63,13 @@ const int MAX_DEVICES = 128;
 struct ESPEGLContext : ESPContext {
   explicit ESPEGLContext(int device)
       : magnumGlContext_{Mn::NoCreate},
-        eglContext_{Mn::Platform::WindowlessEglContext::Configuration{}
-                        .setDevice(device)
-                        .setDeviceIsCuda(true),
-                    &magnumGlContext_},
+        eglContext_{
+            Mn::Platform::WindowlessEglContext::Configuration{}.setCudaDevice(
+                device),
+            &magnumGlContext_},
         gpuDevice_{device} {
     CHECK(eglContext_.isCreated())
-        << "[EGL] Failed to created headless EGL context";
+        << "[EGL] Failed to create headless EGL context";
 
     makeCurrent();
 
