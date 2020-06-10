@@ -31,7 +31,8 @@ namespace managers {
  * @brief Template Class defining responsibilities for managing attributes for
  * different types of objects, such as scenes, primitive assets, physical
  * objects, etc.
- * @tparam T the type of attributes object this class references
+ * @tparam AttribsPtr the type of attributes shared pointer object this class
+ * references
  */
 
 template <class AttribsPtr>
@@ -61,21 +62,19 @@ class AttributesManager {
    *
    * Can be used to manipulate a template before instancing new objects.
    * @param objectTemplateID The ID of the template.  Is mapped to the key
-   * referencing the asset in @ref templateLibrary_ by @ref
-   templateLibKeyByID_.
-   * @return A mutable reference to the object template, or nullptr if does
-   not
+   * referencing the asset in @ref templateLibrary_ by @ref templateLibKeyByID_.
+   * @return A mutable reference to the object template, or nullptr if does not
    * exist
    */
-  AttribsPtr getAttributesTemplate(const int objectTemplateID) const {
+  const AttribsPtr getTemplateByID(int objectTemplateID) const {
     std::string key = getTemplateHandleByID(objectTemplateID);
     CORRADE_ASSERT(getTemplateLibHasHandle(key),
-                   "AttributesManager::getAttributesTemplate : Unknown "
+                   "AttributesManager::getTemplateByID : Unknown "
                    "object template ID:"
                        << objectTemplateID << ". Aborting",
                    nullptr);
     return templateLibrary_.at(key);
-  }  // getAttributesTemplate
+  }  // getTemplateByID
 
   /**
    * @brief Get a reference to the attributes template for the asset
@@ -84,18 +83,36 @@ class AttributesManager {
    * Can be used to manipulate a template before instancing new objects.
    * @param templateHandle The key referencing the asset in @ref
    * templateLibrary_.
-   * @return A mutable reference to the object template, or nullptr if does
-   not
+   * @return A mutable reference to the object template, or nullptr if does not
    * exist
    */
-  AttribsPtr getAttributesTemplate(const std::string& templateHandle) const {
+  const AttribsPtr getTemplateByHandle(
+      const std::string& templateHandle) const {
     CORRADE_ASSERT(getTemplateLibHasHandle(templateHandle),
-                   "AttributesManager::getAttributesTemplate : Unknown "
+                   "AttributesManager::getTemplateByHandle : Unknown "
                    "object template Handle:"
                        << templateHandle << ". Aborting",
                    nullptr);
     return templateLibrary_.at(templateHandle);
   }  // getAttributesTemplate
+
+  /**
+   * @brief Return a reference to a copy of the object specified
+   * by passed handle.  This is the version that should be accessed by the
+   * user.
+   * @param templateHandle the string key of the attributes desired.
+   * @return a copy of the desired attributes, or nullptr if does
+   * not exist
+   */
+  AttribsPtr getTemplateCopyByHandle(const std::string& templateHandle) {
+    CORRADE_ASSERT((this->templateLibrary_.count(templateHandle) > 0),
+                   "AssetAttributesManager::getAttributesCopy : Unknown "
+                   "template handle :"
+                       << templateHandle << ". Aborting",
+                   nullptr);
+    auto orig = this->templateLibrary_.at(templateHandle);
+    return this->copyAttributes(orig);
+  }  // AssetAttributesManager::getPrimAssetAttributesCopy
 
   /**
    * @brief Get the key in @ref templateLibrary_ for the object
@@ -147,8 +164,7 @@ class AttributesManager {
   }  // getTemplateIDByHandle
 
   /**
-   * @brief Get a random object attribute handle (that could possibly
-   describe
+   * @brief Get a random object attribute handle (that could possibly describe
    * either file-based or a primitive) for the loaded file-based object
    * templates
    *
@@ -164,8 +180,7 @@ class AttributesManager {
    * subStr, ignoring subStr's case
    * @param subStr substring to search for within existing primitive object
    * templates
-   * @param contains whether to search for keys containing, or not
-   containing,
+   * @param contains whether to search for keys containing, or not containing,
    * @ref subStr
    * @return vector of 0 or more template handles containing the passed
    * substring
@@ -177,11 +192,62 @@ class AttributesManager {
                                                 contains);
   }
 
-  std::map<std::string, AttribsPtr> getTemplateLibrary_() const {
+  /**
+   * @brief return a read-only reference to the template library managed by this
+   * object.
+   */
+  const std::map<std::string, AttribsPtr>& getTemplateLibrary_() const {
     return templateLibrary_;
   }
 
  protected:
+  /**
+   * @brief Build a shared pointer to the appropriate attributes for passed
+   * object type.
+   * @tparam T Type of attributes being created - must be a derived class of
+   * AttribsPtr
+   * @param orig original object of type AttribsPtr being copied
+   */
+  template <typename T>
+  const AttribsPtr createAttributesCopy(const AttribsPtr& orig) {
+    return T::create(*(static_cast<T*>(orig.get())));
+  }
+
+  /**
+   * @brief This function will build the appropriate function pointer map for
+   * this object's attributes, keyed on its attributes' class type.
+   */
+  virtual void buildCtorFuncPtrMaps() = 0;
+
+  /**
+   * @brief Build an @ref Attributes object of type associated
+   * with passed object.
+   * @param origAttr The original attributes object to copy
+   */
+  const AttribsPtr copyAttributes(const AttribsPtr& origAttr) {
+    const std::string ctorKey = origAttr->getClassKey();
+    return (*this.*(this->copyConstructorMap_[ctorKey]))(origAttr);
+  }  // copyAttributes
+
+  /**
+   * @brief Define a map type referencing function pointers to @ref
+   * createAttributesCopy keyed by string names of classes being instanced,
+   * (for asset attributes these are the names of of classes being instanced
+   * defined in @ref AssetAttributesManager::PrimNames3D.)
+   */
+  typedef std::map<std::string,
+                   const AttribsPtr (AttributesManager<AttribsPtr>::*)(
+                       const AttribsPtr&)>
+      Map_Of_CopyCtors;
+
+  /**
+   * @brief Map of function pointers to instantiate a primitive attributes
+   * object, keyed by the Magnum primitive class name as listed in @ref
+   * PrimNames3D. A primitive attributes object is instanced by accessing
+   * the approrpiate function pointer.
+   */
+  Map_Of_CopyCtors copyConstructorMap_;
+
   /**
    * @brief add passed template to library, setting objectTemplateID
    * appropriately.  Called internally by registerTemplate.
@@ -192,7 +258,7 @@ class AttributesManager {
    */
 
   int addTemplateToLibrary(
-      AttribsPtr attributesTemplate,
+      const AttribsPtr attributesTemplate,
       const std::string& attributesHandle) {  // return either the ID of the
                                               // existing template referenced by
     // attributesHandle, or the next available ID if not found.
@@ -226,8 +292,7 @@ class AttributesManager {
    * @param contains Whether to search for handles containing, or not
    * containting, @ref subStr
    * @return vector of 0 or more template handles containing/not containing
-   the
-   * passed substring
+   * the passed substring
    */
   std::vector<std::string> getTemplateHandlesBySubStringPerType(
       const std::map<int, std::string>& mapOfHandles,
@@ -243,8 +308,7 @@ class AttributesManager {
 
   /**
    * @brief Maps all object attribute IDs to the appropriate handles used
-   by
-   * lib
+   * by lib
    */
   std::map<int, std::string> templateLibKeyByID_;
 
@@ -260,7 +324,7 @@ template <typename T>
 std::string AttributesManager<T>::getRandomTemplateHandlePerType(
     const std::map<int, std::string>& mapOfHandles,
     const std::string& type) const {
-  int numVals = mapOfHandles.size();
+  std::size_t numVals = mapOfHandles.size();
   if (numVals == 0) {
     LOG(ERROR) << "Attempting to get a random " << type
                << "object template handle but none are loaded; Aboring";
@@ -299,7 +363,7 @@ AttributesManager<T>::getTemplateHandlesBySubStringPerType(
   // build search criteria
   std::string strToLookFor = Cr::Utility::String::lowercase(subStr);
 
-  int strSize = strToLookFor.length();
+  std::size_t strSize = strToLookFor.length();
 
   for (std::map<int, std::string>::const_iterator iter = mapOfHandles.begin();
        iter != mapOfHandles.end(); ++iter) {

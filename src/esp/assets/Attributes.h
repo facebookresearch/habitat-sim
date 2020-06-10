@@ -24,9 +24,17 @@ namespace assets {
  */
 class AbstractAttributes : public esp::core::Configuration {
  public:
-  AbstractAttributes(const std::string& originHandle = "") : Configuration() {
+  AbstractAttributes(const std::string& classKey,
+                     const std::string& originHandle)
+      : Configuration() {
+    setClassKey(classKey);
     setOriginHandle(originHandle);
   }
+  /**
+   * @brief Get this attributes' class.  Should only be set from constructor.
+   * Used as key in constructor function pointer maps in AttributesManagers.
+   */
+  std::string getClassKey() const { return getString("classKey"); }
 
   /**
    * @brief Set this attributes name/origin.  Some attributes derive their own
@@ -43,6 +51,17 @@ class AbstractAttributes : public esp::core::Configuration {
   }
   int getObjectTemplateID() const { return getInt("objectTemplateID"); }
 
+ protected:
+  /**
+   * @brief Set this attributes' class.  Should only be set from constructor.
+   * Used as key in constructor function pointer maps in AttributesManagers.
+   * @param classKey the string handle corresponding to the constructors used to
+   * make copies of this object in copy constructor map.
+   */
+  void setClassKey(const std::string& classKey) {
+    setString("classKey", classKey);
+  }
+
  public:
   ESP_SMART_POINTERS(AbstractAttributes)
 };  // class AbstractAttributes
@@ -54,7 +73,8 @@ class AbstractAttributes : public esp::core::Configuration {
  */
 class AbstractPhysicsAttributes : public AbstractAttributes {
  public:
-  AbstractPhysicsAttributes(const std::string& originHandle = "");
+  AbstractPhysicsAttributes(const std::string& classKey,
+                            const std::string& originHandle);
   // forcing this class to be abstract - note still needs definition
   // can't do this because of pybind issues, currently
   // virtual ~AbstractPhysAttributes() = 0;
@@ -280,7 +300,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   AbstractPrimitiveAttributes(bool isWireframe,
                               int primObjType,
                               const std::string& primObjClassName)
-      : AbstractAttributes("") {
+      : AbstractAttributes(primObjClassName, "") {
     setIsWireframe(isWireframe);
     setPrimObjType(primObjType);
     setPrimObjClassName(primObjClassName);

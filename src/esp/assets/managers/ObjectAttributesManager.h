@@ -21,9 +21,13 @@ namespace managers {
 class ObjectAttributesManager
     : public AttributesManager<PhysicsObjectAttributes::ptr> {
  public:
-  using AttributesManager<PhysicsObjectAttributes::ptr>::AttributesManager;
+  ObjectAttributesManager()
+      : AttributesManager<PhysicsObjectAttributes::ptr>::AttributesManager() {
+    buildCtorFuncPtrMaps();
+  }
+
   void setAssetAttributesManager(
-      AssetAttributesManager::ptr assetAttributesMgr) {
+      AssetAttributesManager::cptr assetAttributesMgr) {
     assetAttributesMgr_ = assetAttributesMgr;
   }
 
@@ -41,8 +45,40 @@ class ObjectAttributesManager
    * @return a reference to the desired template.
    */
 
-  std::shared_ptr<PhysicsObjectAttributes> createAttributesTemplate(
+  const PhysicsObjectAttributes::ptr createAttributesTemplate(
       const std::string& attributesTemplateHandle,
+      bool registerTemplate = true);
+
+  /**
+   * @brief Creates an instance of an object template described by passed
+   * string, which is reference to a primitive template used in the construction
+   * of the object (as render and collision mesh).  It returns existing instance
+   * if there is one, and nullptr if fails
+   *
+   * @param primAttrTemplateHandle the handle to an existing primitive asset
+   * template.  Assumes it exists already, fails if does not.
+   * @param registerTemplate whether to add this template to the library or not.
+   * If the user is going to edit this template, this should be false.
+   * @return a reference to the desired template, or nullptr if fails.
+   */
+
+  const PhysicsObjectAttributes::ptr createPrimBasedAttributesTemplate(
+      const std::string& primAttrTemplateHandle,
+      bool registerTemplate = true);
+
+  /**
+   * @brief Creates an instance of a template from a file using passed filename.
+   * It returns existing instance if there is one, and nullptr if fails
+   *
+   * @param filename the name of the file describing the object attributes.
+   * Assumes it exists and fails if it does not.
+   * @param registerTemplate whether to add this template to the library or not.
+   * If the user is going to edit this template, this should be false.
+   * @return a reference to the desired template, or nullptr if fails.
+   */
+
+  const PhysicsObjectAttributes::ptr createFileBasedAttributesTemplate(
+      const std::string& filename,
       bool registerTemplate = true);
 
   /**
@@ -56,8 +92,22 @@ class ObjectAttributesManager
    * template.
    */
   int registerAttributesTemplate(
-      std::shared_ptr<PhysicsObjectAttributes> objectTemplate,
+      const PhysicsObjectAttributes::ptr objectTemplate,
       const std::string& objectTemplateHandle);
+
+  /**
+   * @brief Load all file-based object templates given string list of object
+   * template file locations.
+   *
+   * This will take the list of file names currently specified in
+   * physicsManagerAttributes and load the referenced object templates.
+   * @param tmpltFilenames list of file names of object templates
+   * @return vector holding IDs of templates that have been added
+   */
+  std::vector<int> loadAllFileBasedTemplates(
+      const std::vector<std::string>& tmpltFilenames);
+
+  // ======== File-based and primitive-based partition functions ========
 
   /**
    * @brief Gets the number of file-based loaded object templates stored in the
@@ -135,7 +185,19 @@ class ObjectAttributesManager
         physicsSynthObjTmpltLibByID_, subStr, contains);
   }
 
+  // ======== End File-based and primitive-based partition functions ========
+
  protected:
+  /**
+   * @brief This function will assign the appropriately configured function
+   * pointer for the copy constructor as defined in
+   * AttributesManager<PhysicsObjectAttributes::ptr>
+   */
+  void buildCtorFuncPtrMaps() override {
+    this->copyConstructorMap_["PhysicsObjectAttributes"] =
+        &AttributesManager<PhysicsObjectAttributes::ptr>::createAttributesCopy<
+            assets::PhysicsObjectAttributes>;
+  }
   /**
    * @brief Load and parse a physics object template config file and generate a
    * @ref PhysicsObjectAttributes object.
@@ -167,7 +229,7 @@ class ObjectAttributesManager
    * @brief Reference to AssetAttributesManager to give access to primitive
    * attributes for object construction
    */
-  AssetAttributesManager::ptr assetAttributesMgr_ = nullptr;
+  AssetAttributesManager::cptr assetAttributesMgr_ = nullptr;
 
   /**
    * @brief Maps loaded object template IDs to the appropriate template

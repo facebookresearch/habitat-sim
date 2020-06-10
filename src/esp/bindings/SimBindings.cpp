@@ -54,11 +54,11 @@ void initSimBindings(py::module& m) {
       .def(py::init<const SimulatorConfiguration&>())
       .def("get_active_scene_graph", &Simulator::getActiveSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
-           pybind11::return_value_policy::reference)
+           py::return_value_policy::reference)
       .def("get_active_semantic_scene_graph",
            &Simulator::getActiveSemanticSceneGraph,
            R"(PYTHON DOES NOT GET OWNERSHIP)",
-           pybind11::return_value_policy::reference)
+           py::return_value_policy::reference)
       .def_property_readonly("semantic_scene", &Simulator::getSemanticScene, R"(
         The semantic scene graph
 
@@ -83,7 +83,7 @@ void initSimBindings(py::module& m) {
       .def("get_template_handle_by_ID", &Simulator::getObjectTemplateHandleByID,
            "object_id"_a)
       .def("get_template_handles", &Simulator::getObjectTemplateHandles,
-           "search_str"_a = "")
+           "search_str"_a = "", "contains"_a = true)
       .def("add_object", &Simulator::addObject, "object_lib_index"_a,
            "attachment_node"_a = nullptr,
            "light_setup_key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY,
@@ -95,7 +95,7 @@ void initSimBindings(py::module& m) {
       .def("get_physics_object_library_size",
            &Simulator::getPhysicsObjectLibrarySize)
       .def("get_object_template", &Simulator::getObjectTemplate,
-           "object_template_id"_a, pybind11::return_value_policy::reference)
+           "object_template_id"_a, py::return_value_policy::reference)
       .def("load_object_configs", &Simulator::loadObjectConfigs, "path"_a)
       .def("load_object_template", &Simulator::registerObjectTemplate,
            "object_template"_a, "object_template_handle"_a)

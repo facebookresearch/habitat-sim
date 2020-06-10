@@ -24,7 +24,11 @@ namespace managers {
 class PhysicsAttributesManager
     : public AttributesManager<PhysicsManagerAttributes::ptr> {
  public:
-  using AttributesManager<PhysicsManagerAttributes::ptr>::AttributesManager;
+  PhysicsAttributesManager()
+      : AttributesManager<PhysicsManagerAttributes::ptr>::AttributesManager() {
+    buildCtorFuncPtrMaps();
+  }
+
   /**
    * @brief Creates an instance of a physics world template described by passed
    * string. For physics templates, this a file name. Parses global physics
@@ -38,7 +42,7 @@ class PhysicsAttributesManager
    * @return a reference to the physics simulation meta data object parsed from
    * the specified configuration file.
    */
-  PhysicsManagerAttributes::ptr createAttributesTemplate(
+  const PhysicsManagerAttributes::ptr createAttributesTemplate(
       const std::string& physicsFilename = ESP_DEFAULT_PHYS_SCENE_CONFIG,
       bool registerTemplate = true);
 
@@ -53,7 +57,7 @@ class PhysicsAttributesManager
    * template.
    */
   int registerAttributesTemplate(
-      PhysicsManagerAttributes::ptr physicsAttributesTemplate,
+      const PhysicsManagerAttributes::ptr physicsAttributesTemplate,
       const std::string& physicsAttributesHandle) {
     // return either the ID of the existing template referenced by
     // physicsAttributesHandle, or the next available ID if not found.
@@ -72,6 +76,16 @@ class PhysicsAttributesManager
   std::vector<std::string> buildObjectConfigPaths(const std::string& path);
 
  protected:
+  /**
+   * @brief This function will assign the appropriately configured function
+   * pointer for the copy constructor as required by
+   * AttributesManager<PhysicsSceneAttributes::ptr>
+   */
+  void buildCtorFuncPtrMaps() override {
+    this->copyConstructorMap_["PhysicsManagerAttributes"] =
+        &AttributesManager<PhysicsManagerAttributes::ptr>::createAttributesCopy<
+            assets::PhysicsManagerAttributes>;
+  }
   // instance vars
 
  public:

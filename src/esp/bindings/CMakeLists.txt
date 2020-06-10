@@ -3,6 +3,7 @@ find_package(MagnumBindings REQUIRED Python)
 pybind11_add_module(habitat_sim_bindings
   bindings.cpp
   attributesBindings.cpp
+  attributesManagersBindings.cpp
   geoBindings.cpp
   GfxBindings.cpp
   OpaqueTypes.h

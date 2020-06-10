@@ -8,7 +8,6 @@
 #include <Magnum/Python.h>
 
 #include "esp/assets/Attributes.h"
-#include "esp/assets/ResourceManager.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -17,37 +16,22 @@ namespace esp {
 namespace assets {
 
 void initAttributesBindings(py::module& m) {
-  // ==== PrimObjTypes enum describing types of primitives supported ====
-  py::enum_<assets::PrimObjTypes>(m, "PrimObjTypes")
-      .value("CAPSULE_SOLID", assets::PrimObjTypes::CAPSULE_SOLID)
-      .value("CAPSULE_WF", assets::PrimObjTypes::CAPSULE_WF)
-      .value("CONE_SOLID", assets::PrimObjTypes::CONE_SOLID)
-      .value("CONE_WF", assets::PrimObjTypes::CONE_WF)
-      .value("CUBE_SOLID", assets::PrimObjTypes::CUBE_SOLID)
-      .value("CUBE_WF", assets::PrimObjTypes::CUBE_WF)
-      .value("CYLINDER_SOLID", assets::PrimObjTypes::CYLINDER_SOLID)
-      .value("CYLINDER_WF", assets::PrimObjTypes::CYLINDER_WF)
-      .value("ICOSPHERE_SOLID", assets::PrimObjTypes::ICOSPHERE_SOLID)
-      .value("ICOSPHERE_WF", assets::PrimObjTypes::ICOSPHERE_WF)
-      .value("UVSPHERE_SOLID", assets::PrimObjTypes::UVSPHERE_SOLID)
-      .value("UVSPHERE_WF", assets::PrimObjTypes::UVSPHERE_WF)
-      .value("END_PRIM_OBJ_TYPE", assets::PrimObjTypes::END_PRIM_OBJ_TYPES);
-
   // ==== AbstractAttributes ====
   py::class_<AbstractAttributes, esp::core::Configuration,
              AbstractAttributes::ptr>(m, "AbstractAttributes")
-      .def(py::init(&AbstractAttributes::create<>))
-      .def(py::init(&AbstractAttributes::create<const std::string&>))
+      .def(py::init(
+          &AbstractAttributes::create<const std::string&, const std::string&>))
       .def("set_origin_handle", &AbstractAttributes::setOriginHandle,
            "origin_handle"_a)
       .def("get_origin_handle", &AbstractAttributes::getOriginHandle)
-      .def("get_object_template_ID", &AbstractAttributes::getObjectTemplateID);
+      .def("get_object_template_ID", &AbstractAttributes::getObjectTemplateID)
+      .def("get_template_class", &AbstractAttributes::getClassKey);
 
   // ==== AbstractPhysicsAttributes ====
   py::class_<AbstractPhysicsAttributes, AbstractAttributes,
              AbstractPhysicsAttributes::ptr>(m, "AbstractPhysicsAttributes")
-      .def(py::init(&AbstractPhysicsAttributes::create<>))
-      .def(py::init(&AbstractPhysicsAttributes::create<const std::string&>))
+      .def(py::init(&AbstractPhysicsAttributes::create<const std::string&,
+                                                       const std::string&>))
       .def("set_scale", &AbstractPhysicsAttributes::setScale, "scale"_a)
       .def("get_scale", &AbstractPhysicsAttributes::getScale)
       .def("set_friction_coefficient",

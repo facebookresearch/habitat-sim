@@ -11,7 +11,10 @@ namespace esp {
 
 namespace assets {
 void initAttributesBindings(pybind11::module& m);
-}
+namespace managers {
+void initAttributesManagersBindings(pybind11::module& m);
+}  // namespace managers
+}  // namespace assets
 
 namespace geo {
 void initGeoBindings(pybind11::module& m);

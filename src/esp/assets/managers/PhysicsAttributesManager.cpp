@@ -21,7 +21,7 @@ namespace assets {
 
 namespace managers {
 
-PhysicsManagerAttributes::ptr
+const PhysicsManagerAttributes::ptr
 PhysicsAttributesManager::createAttributesTemplate(
     const std::string& physicsFilename,
     bool registerTemplate) {

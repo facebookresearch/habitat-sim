@@ -17,7 +17,7 @@ namespace assets {
 
 namespace managers {
 
-std::shared_ptr<PhysicsSceneAttributes>
+const PhysicsSceneAttributes::ptr
 SceneAttributesManager::createAttributesTemplate(
     const std::string& sceneAttributesHandle,
     bool registerTemplate) {

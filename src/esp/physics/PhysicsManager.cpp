@@ -60,7 +60,9 @@ int PhysicsManager::addObject(const int objectLibIndex,
                               scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
   const std::string& configHandle =
-      resourceManager_.getPhysicsObjectTemplateHandle(objectLibIndex);
+      resourceManager_.getObjectAttributesManager()->getTemplateHandleByID(
+          objectLibIndex);
+
   return addObject(configHandle, drawables, attachmentNode, lightSetup);
 }
 
@@ -71,7 +73,8 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
   //! Invoke resourceManager to draw object
   //! Test Mesh primitive is valid
   assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
-      resourceManager_.getPhysicsObjectAttributes(configFileHandle);
+      resourceManager_.getObjectAttributesManager()->getTemplateByHandle(
+          configFileHandle);
 
   //! Make rigid object and add it to existingObjects
   int nextObjectID_ = allocateObjectID();
@@ -526,10 +529,10 @@ const scene::SceneNode& PhysicsManager::getObjectVisualSceneNode(
   return *existingObjects_.at(physObjectID)->visualNode_;
 }
 
-const assets::PhysicsObjectAttributes::ptr
+const assets::PhysicsObjectAttributes::cptr
 PhysicsManager::getInitializationAttributes(const int physObjectID) const {
   assertIDValidity(physObjectID);
-  return std::static_pointer_cast<assets::PhysicsObjectAttributes>(
+  return std::static_pointer_cast<const assets::PhysicsObjectAttributes>(
       existingObjects_.at(physObjectID)->getInitializationAttributes());
 }
 

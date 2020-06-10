@@ -21,31 +21,53 @@ namespace esp {
 namespace assets {
 
 namespace managers {
-PhysicsObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
+const PhysicsObjectAttributes::ptr
+ObjectAttributesManager::createAttributesTemplate(
     const std::string& attributesTemplateHandle,
     bool registerTemplate) {
-  PhysicsObjectAttributes::ptr objAttributes;
   if (assetAttributesMgr_->getTemplateLibHasHandle(attributesTemplateHandle)) {
     // if attributesTemplateHandle == some existing primitive attributes, then
     // this is a primitive-based object we are building
-    objAttributes = buildPrimBasedPhysObjTemplate(attributesTemplateHandle);
+    return createPrimBasedAttributesTemplate(attributesTemplateHandle,
+                                             registerTemplate);
   } else {
     // if attributesTemplateHandle != some existing primitive attributes, then
-    // assume this is a file-based object we are building.
-    objAttributes = parseAndLoadPhysObjTemplate(attributesTemplateHandle);
+    // assume this is a file-based object template we are building.
+    return createFileBasedAttributesTemplate(attributesTemplateHandle,
+                                             registerTemplate);
   }
-  // some error occurred
-  if (nullptr == objAttributes) {
-    return nullptr;
-  }
-  if (registerTemplate) {
-    registerAttributesTemplate(objAttributes, attributesTemplateHandle);
-  }
-  return objAttributes;
 }  // ObjectAttributesManager::createAttributesTemplate
 
+const PhysicsObjectAttributes::ptr
+ObjectAttributesManager::createPrimBasedAttributesTemplate(
+    const std::string& primAttrTemplateHandle,
+    bool registerTemplate) {
+  PhysicsObjectAttributes::ptr objAttributes =
+      buildPrimBasedPhysObjTemplate(primAttrTemplateHandle);
+  // some error occurred
+  if (nullptr != objAttributes && registerTemplate) {
+    registerAttributesTemplate(objAttributes, primAttrTemplateHandle);
+  }
+  return objAttributes;
+}  // ObjectAttributesManager::createPrimBasedAttributesTemplate
+
+const PhysicsObjectAttributes::ptr
+ObjectAttributesManager::createFileBasedAttributesTemplate(
+    const std::string& filename,
+    bool registerTemplate) {
+  // this is a file-based object template we are building.
+  PhysicsObjectAttributes::ptr objAttributes =
+      parseAndLoadPhysObjTemplate(filename);
+
+  // some error occurred
+  if (nullptr != objAttributes && registerTemplate) {
+    registerAttributesTemplate(objAttributes, filename);
+  }
+  return objAttributes;
+}  // ObjectAttributesManager::createFileBasedAttributesTemplate
+
 int ObjectAttributesManager::registerAttributesTemplate(
-    PhysicsObjectAttributes::ptr objectTemplate,
+    const PhysicsObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle) {
   CORRADE_ASSERT(
       objectTemplate->getRenderAssetHandle() != "",
@@ -63,28 +85,30 @@ int ObjectAttributesManager::registerAttributesTemplate(
 
   if (assetAttributesMgr_->getTemplateLibHasHandle(renderAssetHandle) > 0) {
     // If renderAssetHandle corresponds to valid/existing primitive attributes
-    // then setRenderAssetIsPrimitive to true and set map to
+    // then setRenderAssetIsPrimitive to true and set map of IDs->Names to
     // physicsSynthObjTmpltLibByID_
     objectTemplate->setRenderAssetIsPrimitive(true);
     mapToUse = &physicsSynthObjTmpltLibByID_;
   } else if (Corrade::Utility::Directory::exists(renderAssetHandle)) {
     // Check if renderAssetHandle is valid file name and is found in file system
-    // - if so then setRenderAssetIsPrimitive to false and map set to
-    // physicsFileObjTmpltLibByID_ - use primitiveImporter to check if file
-    // exists
+    // - if so then setRenderAssetIsPrimitive to false and set map of IDs->Names
+    // to physicsFileObjTmpltLibByID_ - verify file  exists
     objectTemplate->setRenderAssetIsPrimitive(false);
     mapToUse = &physicsFileObjTmpltLibByID_;
   } else {
     // If renderAssetHandle is neither valid file name nor existing primitive
     // attributes template hande, fail
-    LOG(ERROR)
-        << "ObjectAttributesManager::registerAttributesTemplate : Render asset "
-           "template handle : "
-        << renderAssetHandle << " specified in object template with handle : "
-        << objectTemplateHandle
-        << " does not correspond to existing file or primitive render "
-           "asset.  Aborting. ";
-    return ID_UNDEFINED;
+    // by here always fail
+    CORRADE_ASSERT(
+        false,
+        "ObjectAttributesManager::registerAttributesTemplate : Render asset "
+        "template handle : "
+            << renderAssetHandle
+            << " specified in object template with handle : "
+            << objectTemplateHandle
+            << " does not correspond to existing file or primitive render "
+               "asset.  Aborting. ",
+        ID_UNDEFINED);
   }
 
   if (assetAttributesMgr_->getTemplateLibHasHandle(collisionAssetHandle) > 0) {
@@ -130,14 +154,20 @@ ObjectAttributesManager::parseAndLoadPhysObjTemplate(
     try {
       objPhysicsConfig = io::parseJsonFile(objPhysConfigFilename);
     } catch (...) {
-      LOG(ERROR) << "Failed to parse JSON: " << objPhysConfigFilename
-                 << ". Aborting parseAndLoadPhysObjTemplate.";
-      return nullptr;
+      // by here always fail
+      CORRADE_ASSERT(
+          false,
+          "Failed to parse JSON: " << objPhysConfigFilename
+                                   << ". Aborting parseAndLoadPhysObjTemplate.",
+          nullptr);
     }
   } else {
-    LOG(ERROR) << "File " << objPhysConfigFilename
-               << " does not exist. Aborting parseAndLoadPhysObjTemplate.";
-    return nullptr;
+    // by here always fail
+    CORRADE_ASSERT(
+        false,
+        "File " << objPhysConfigFilename
+                << " does not exist. Aborting parseAndLoadPhysObjTemplate.",
+        nullptr);
   }
 
   // 2. construct a physicsObjectMetaData
@@ -293,7 +323,7 @@ ObjectAttributesManager::parseAndLoadPhysObjTemplate(
   physicsObjectAttributes->setUseMeshCollision(true);
 
   return physicsObjectAttributes;
-}  // parseAndLoadPhysObjTemplate
+}  // ObjectAttributesManager::parseAndLoadPhysObjTemplate
 
 PhysicsObjectAttributes::ptr
 ObjectAttributesManager::buildPrimBasedPhysObjTemplate(
@@ -330,7 +360,23 @@ ObjectAttributesManager::buildPrimBasedPhysObjTemplate(
   // primitive mesh needs to be configured and set in MeshMetaData and
   // CollisionMesh
   return physicsObjectAttributes;
-}  // ResourceManager::buildPrimBasedPhysObjTemplate
+}  // ObjectAttributesManager::buildPrimBasedPhysObjTemplate
+
+std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
+    const std::vector<std::string>& tmpltFilenames) {
+  std::vector<int> resIDs(tmpltFilenames.size(), ID_UNDEFINED);
+  for (int i = 0; i < tmpltFilenames.size(); ++i) {
+    auto objPhysPropertiesFilename = tmpltFilenames[i];
+    LOG(INFO) << "Loading file-based object template: "
+              << objPhysPropertiesFilename;
+    auto tmplt =
+        createFileBasedAttributesTemplate(objPhysPropertiesFilename, true);
+    resIDs[i] = tmplt->getObjectTemplateID();
+  }
+  LOG(INFO) << "Loaded file-based object templates: "
+            << std::to_string(physicsFileObjTmpltLibByID_.size());
+  return resIDs;
+}  // ResourceManager::loadAllObjectTemplates
 
 }  // namespace managers
 }  // namespace assets
