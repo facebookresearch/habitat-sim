@@ -41,7 +41,7 @@ struct WindowlessContext::Impl {
     Mn::Platform::WindowlessGLContext::Configuration config;
 
 #if defined(CORRADE_TARGET_UNIX) && !defined(CORRADE_TARGET_APPLE)
-#if ESP_BUILD_EGL_SUPPORT
+#ifdef ESP_BUILD_EGL_SUPPORT
     config.setCudaDevice(device);
 #else  // NO ESP_BUILD_EGL_SUPPORT
     if (device != 0)
