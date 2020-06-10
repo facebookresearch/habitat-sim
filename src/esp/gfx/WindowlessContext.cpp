@@ -14,7 +14,7 @@
 #include <Magnum/Platform/GLContext.h>
 
 #ifdef ESP_BUILD_EGL_SUPPORT
-#include <glad/glad_egl.h>
+#include <Magnum/Platform/WindowlessEglApplication.h>
 #else
 #include <Magnum/Platform/WindowlessGlxApplication.h>
 #endif
@@ -62,120 +62,33 @@ const int MAX_DEVICES = 128;
 
 struct ESPEGLContext : ESPContext {
   explicit ESPEGLContext(int device)
-      : magnumGlContext_{Mn::NoCreate}, gpuDevice_{device} {
-    CHECK(gladLoadEGL()) << "Failed to load EGL";
+      : magnumGlContext_{Mn::NoCreate},
+        eglContext_{
+            Mn::Platform::WindowlessEglContext::Configuration{}.setCudaDevice(
+                device),
+            &magnumGlContext_},
+        gpuDevice_{device} {
+    CHECK(eglContext_.isCreated())
+        << "[EGL] Failed to create headless EGL context";
 
-    static const EGLint configAttribs[] = {EGL_SURFACE_TYPE,
-                                           EGL_PBUFFER_BIT,
-                                           EGL_BLUE_SIZE,
-                                           8,
-                                           EGL_GREEN_SIZE,
-                                           8,
-                                           EGL_RED_SIZE,
-                                           8,
-                                           EGL_DEPTH_SIZE,
-                                           24,
-                                           EGL_RENDERABLE_TYPE,
-                                           EGL_OPENGL_BIT,
-                                           EGL_NONE};
-
-    // 1. Initialize EGL
-    {
-      EGLDeviceEXT eglDevices[MAX_DEVICES];
-      EGLint numDevices;
-      eglQueryDevicesEXT(MAX_DEVICES, eglDevices, &numDevices);
-      CHECK_EGL_ERROR();
-
-      CHECK(numDevices > 0) << "[EGL] No devices detected";
-      LOG(INFO) << "[EGL] Detected " << numDevices << " EGL devices";
-
-      int eglDevId;
-      for (eglDevId = 0; eglDevId < numDevices; ++eglDevId) {
-        VLOG(1) << "[EGL] device " << eglDevId << " extensions: "
-                << eglQueryDeviceStringEXT(eglDevices[eglDevId],
-                                           EGL_EXTENSIONS);
-        EGLAttrib cudaDevNumber;
-
-        if (eglQueryDeviceAttribEXT(eglDevices[eglDevId], EGL_CUDA_DEVICE_NV,
-                                    &cudaDevNumber) == EGL_FALSE) {
-          VLOG(1) << "[EGL] eglQueryDeviceAttribEXT error code: "
-                  << eglGetError();
-        } else if (cudaDevNumber == device) {
-          break;
-        }
-      }
-
-      CHECK(eglDevId < numDevices)
-          << "[EGL] Could not find an EGL device for CUDA device " << device;
-
-      LOG(INFO) << "[EGL] Selected EGL device " << eglDevId
-                << " for CUDA device " << device;
-      display_ = eglGetPlatformDisplayEXT(EGL_PLATFORM_DEVICE_EXT,
-                                          eglDevices[eglDevId], 0);
-      CHECK_EGL_ERROR();
-    }
-
-    EGLint major, minor;
-    EGLBoolean retval = eglInitialize(display_, &major, &minor);
-    if (!retval) {
-      LOG(ERROR) << "[EGL] Failed to initialize.";
-    }
-    CHECK_EGL_ERROR();
-
-    LOG(INFO) << "[EGL] Version: " << eglQueryString(display_, EGL_VERSION);
-    LOG(INFO) << "[EGL] Vendor: " << eglQueryString(display_, EGL_VENDOR);
-
-    // 2. Select an appropriate configuration
-    EGLint numConfigs;
-    EGLConfig eglConfig;
-    eglChooseConfig(display_, configAttribs, &eglConfig, 1, &numConfigs);
-    if (numConfigs != 1) {
-      LOG(ERROR)
-          << "[EGL] Cannot create EGL config. Your driver may not support EGL.";
-    }
-    CHECK_EGL_ERROR();
-
-    // 3. Bind the API
-    retval = eglBindAPI(EGL_OPENGL_API);
-    if (!retval) {
-      LOG(ERROR) << "[EGL] failed to bind OpenGL API";
-    }
-    CHECK_EGL_ERROR();
-
-    // 4. Create a context
-    context_ = eglCreateContext(display_, eglConfig, EGL_NO_CONTEXT, NULL);
-    CHECK_EGL_ERROR();
-
-    // 5. Make context current and create Magnum context
     makeCurrent();
 
     CHECK(magnumGlContext_.tryCreate())
-        << "[EGL] Failed to create OpenGL context";
+        << "[EGL] Failed to create OpenGL Context";
     isValid_ = true;
-  };
+  }
 
-  void makeCurrent() {
-    EGLBoolean retval =
-        eglMakeCurrent(display_, EGL_NO_SURFACE, EGL_NO_SURFACE, context_);
-    if (!retval) {
-      LOG(ERROR) << "[EGL] Failed to make EGL context current";
-    }
-    CHECK_EGL_ERROR();
-  };
+  void makeCurrent() { eglContext_.makeCurrent(); };
 
   bool isValid() { return isValid_; };
 
   int gpuDevice() const { return gpuDevice_; }
 
-  ~ESPEGLContext() {
-    eglDestroyContext(display_, context_);
-    eglTerminate(display_);
-  }
+  ~ESPEGLContext() {}
 
  private:
-  EGLDisplay display_;
-  EGLContext context_;
   Mn::Platform::GLContext magnumGlContext_;
+  Mn::Platform::WindowlessEglContext eglContext_;
   bool isValid_ = false;
   int gpuDevice_;
 
@@ -186,8 +99,9 @@ struct ESPEGLContext : ESPContext {
 
 struct ESPGLXContext : ESPContext {
   ESPGLXContext()
-      : glxCtx_{Mn::Platform::WindowlessGlxContext::Configuration()},
-        magnumGlContext_{Mn::NoCreate} {
+      : magnumGlContext_{Mn::NoCreate},
+        glxCtx_{Mn::Platform::WindowlessGlxContext::Configuration{},
+                &magnumGlContext_} {
     CHECK(glxCtx_.isCreated())
         << "[GLX] Failed to created headless glX context";
 
@@ -203,8 +117,8 @@ struct ESPGLXContext : ESPContext {
   int gpuDevice() const { return 0; }
 
  private:
-  Mn::Platform::WindowlessGlxContext glxCtx_;
   Mn::Platform::GLContext magnumGlContext_;
+  Mn::Platform::WindowlessGlxContext glxCtx_;
   bool isValid_ = false;
 
   ESP_SMART_POINTERS(ESPGLXContext);
