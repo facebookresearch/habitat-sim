@@ -22,6 +22,7 @@
 namespace Cr = Corrade;
 
 using esp::assets::ResourceManager;
+using esp::assets::managers::ObjectAttributesManager;
 using esp::physics::PhysicsManager;
 using esp::scene::SceneManager;
 
@@ -80,12 +81,14 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
     esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
         esp::assets::PhysicsObjectAttributes::create();
     physicsObjectAttributes->setRenderAssetHandle(objectFile);
-    resourceManager_.registerObjectTemplate(physicsObjectAttributes,
-                                            objectFile);
+    auto objectAttributesManager =
+        resourceManager_.getObjectAttributesManager();
+    objectAttributesManager->registerAttributesTemplate(physicsObjectAttributes,
+                                                        objectFile);
 
     // get a reference to the stored template to edit
     esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
-        resourceManager_.getPhysicsObjectAttributes(objectFile);
+        objectAttributesManager->getTemplateByHandle(objectFile);
 
     for (int i = 0; i < 2; i++) {
       // mark the object not joined
@@ -160,12 +163,15 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
     physicsObjectAttributes->setRenderAssetHandle(objectFile);
     physicsObjectAttributes->setMargin(0.0);
     physicsObjectAttributes->setJoinCollisionMeshes(false);
-    resourceManager_.registerObjectTemplate(physicsObjectAttributes,
-                                            objectFile);
+
+    auto objectAttributesManager =
+        resourceManager_.getObjectAttributesManager();
+    objectAttributesManager->registerAttributesTemplate(physicsObjectAttributes,
+                                                        objectFile);
 
     // get a reference to the stored template to edit
     esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
-        resourceManager_.getPhysicsObjectAttributes(objectFile);
+        objectAttributesManager->getTemplateByHandle(objectFile);
 
     for (int i = 0; i < 2; i++) {
       if (i == 0) {
@@ -231,8 +237,10 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
         esp::assets::PhysicsObjectAttributes::create();
     physicsObjectAttributes->setRenderAssetHandle(objectFile);
     physicsObjectAttributes->setMargin(0.0);
-    resourceManager_.registerObjectTemplate(physicsObjectAttributes,
-                                            objectFile);
+    auto objectAttributesManager =
+        resourceManager_.getObjectAttributesManager();
+    objectAttributesManager->registerAttributesTemplate(physicsObjectAttributes,
+                                                        objectFile);
 
     // generate two centered boxes with dimension 2x2x2
     int objectId0 = physicsManager_->addObject(objectFile, nullptr);
@@ -275,12 +283,14 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     physicsObjectAttributes->setRenderAssetHandle(objectFile);
     physicsObjectAttributes->setMargin(0.1);
 
-    resourceManager_.registerObjectTemplate(physicsObjectAttributes,
-                                            objectFile);
+    auto objectAttributesManager =
+        resourceManager_.getObjectAttributesManager();
+    objectAttributesManager->registerAttributesTemplate(physicsObjectAttributes,
+                                                        objectFile);
 
     // get a reference to the stored template to edit
     esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
-        resourceManager_.getPhysicsObjectAttributes(objectFile);
+        objectAttributesManager->getTemplateByHandle(objectFile);
 
     auto* drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
@@ -335,11 +345,13 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   physicsObjectAttributes->setRenderAssetHandle(objectFile);
   physicsObjectAttributes->setMargin(0.0);
 
-  resourceManager_.registerObjectTemplate(physicsObjectAttributes, objectFile);
+  auto objectAttributesManager = resourceManager_.getObjectAttributesManager();
+  objectAttributesManager->registerAttributesTemplate(physicsObjectAttributes,
+                                                      objectFile);
 
   // get a reference to the stored template to edit
   esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
-      resourceManager_.getPhysicsObjectAttributes(objectFile);
+      objectAttributesManager->getTemplateByHandle(objectFile);
 
   std::vector<Magnum::Vector3> testScales{
       {1.0, 1.0, 1.0},  {4.0, 3.0, 2.0},    {0.1, 0.2, 0.3},
@@ -399,7 +411,9 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
       esp::assets::PhysicsObjectAttributes::create();
   physicsObjectAttributes->setRenderAssetHandle(objectFile);
   physicsObjectAttributes->setMargin(0.0);
-  resourceManager_.registerObjectTemplate(physicsObjectAttributes, objectFile);
+  auto objectAttributesManager = resourceManager_.getObjectAttributesManager();
+  objectAttributesManager->registerAttributesTemplate(physicsObjectAttributes,
+                                                      objectFile);
 
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
@@ -542,7 +556,9 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
   esp::assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
       esp::assets::PhysicsObjectAttributes::create();
   physicsObjectAttributes->setRenderAssetHandle(objectFile);
-  resourceManager_.registerObjectTemplate(physicsObjectAttributes, objectFile);
+  auto objectAttributesManager = resourceManager_.getObjectAttributesManager();
+  objectAttributesManager->registerAttributesTemplate(physicsObjectAttributes,
+                                                      objectFile);
 
   esp::scene::SceneNode& root =
       sceneManager_.getSceneGraph(sceneID_).getRootNode();
@@ -603,8 +619,11 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
     physicsObjectAttributes->setBoundingBoxCollisions(true);
     physicsObjectAttributes->setScale(
         {boxHalfExtent, boxHalfExtent, boxHalfExtent});
-    int boxId = resourceManager_.registerObjectTemplate(physicsObjectAttributes,
-                                                        objectFile);
+    auto objectAttributesManager =
+        resourceManager_.getObjectAttributesManager();
+
+    int boxId = objectAttributesManager->registerAttributesTemplate(
+        physicsObjectAttributes, objectFile);
 
     auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 

@@ -92,7 +92,7 @@ class PhysicsManager {
    */
   explicit PhysicsManager(
       assets::ResourceManager& _resourceManager,
-      const assets::PhysicsManagerAttributes::ptr _physicsManagerAttributes)
+      const assets::PhysicsManagerAttributes::cptr _physicsManagerAttributes)
       : resourceManager_(_resourceManager),
         physicsManagerAttributes(_physicsManagerAttributes){};
 
@@ -802,7 +802,7 @@ class PhysicsManager {
    * instances of objects.
    * @return The initialization settings of the specified object instance.
    */
-  const assets::PhysicsObjectAttributes::ptr getInitializationAttributes(
+  const assets::PhysicsObjectAttributes::cptr getInitializationAttributes(
       const int physObjectID) const;
 
  protected:
@@ -882,7 +882,7 @@ class PhysicsManager {
 
   /** @brief A pointer to the @ref assets::PhysicsManagerAttributes describing
    * this physics manager */
-  const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes;
+  const assets::PhysicsManagerAttributes::cptr physicsManagerAttributes;
 
   /** @brief The current physics library implementation used by this
    * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager

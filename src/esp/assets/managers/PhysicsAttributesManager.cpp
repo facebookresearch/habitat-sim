@@ -21,16 +21,16 @@ namespace assets {
 
 namespace managers {
 
-PhysicsManagerAttributes::ptr
+const PhysicsManagerAttributes::ptr
 PhysicsAttributesManager::createAttributesTemplate(
     const std::string& physicsFilename,
     bool registerTemplate) {
-  CORRADE_ASSERT(
-      Cr::Utility::Directory::exists(physicsFilename),
-      "PhysicsAttributesManager::createAttributesTemplate : Specified Filename "
-      ":" << physicsFilename
-          << "cannot be found.  Aborting",
-      nullptr);
+  if (!Cr::Utility::Directory::exists(physicsFilename)) {
+    LOG(ERROR) << "PhysicsAttributesManager::createAttributesTemplate : "
+                  "Specified Filename :"
+               << physicsFilename << "cannot be found.  Aborting";
+    return nullptr;
+  }
 
   // Load the global scene config JSON here
   io::JsonDocument scenePhysicsConfig = io::parseJsonFile(physicsFilename);

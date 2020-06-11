@@ -569,7 +569,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * instances of objects.
    * @return The initialization settings of this object instance.
    */
-  const assets::AbstractPhysicsAttributes::ptr getInitializationAttributes()
+  const assets::AbstractPhysicsAttributes::cptr getInitializationAttributes()
       const {
     return initializationAttributes_;
   };

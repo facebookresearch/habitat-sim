@@ -50,7 +50,7 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   explicit BulletPhysicsManager(
       assets::ResourceManager& _resourceManager,
-      const assets::PhysicsManagerAttributes::ptr _physicsManagerAttributes)
+      const assets::PhysicsManagerAttributes::cptr _physicsManagerAttributes)
       : PhysicsManager(_resourceManager, _physicsManagerAttributes){};
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/

@@ -33,7 +33,7 @@ const std::map<PrimObjTypes, const char*>
         {PrimObjTypes::UVSPHERE_WF, "uvSphereWireframe"},
         {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
 
-void AssetAttributesManager::buildMapOfPrimTypeConstructors() {
+void AssetAttributesManager::buildCtorFuncPtrMaps() {
   // function pointers to asset attributes constructors
   primTypeConstructorMap_["capsule3DSolid"] =
       &AssetAttributesManager::createPrimAttributes<
@@ -78,41 +78,41 @@ void AssetAttributesManager::buildMapOfPrimTypeConstructors() {
           assets::UVSpherePrimitiveAttributes, true, PrimObjTypes::UVSPHERE_WF>;
 
   // function pointers to asset attributes copy constructors
-  primTypeCopyConstructorMap_["capsule3DSolid"] =
-      &AssetAttributesManager::createPrimAttributesCopy<
+  this->copyConstructorMap_["capsule3DSolid"] =
+      &AssetAttributesManager::createAttributesCopy<
           assets::CapsulePrimitiveAttributes>;
-  primTypeCopyConstructorMap_["capsule3DWireframe"] =
-      &AssetAttributesManager::createPrimAttributesCopy<
+  this->copyConstructorMap_["capsule3DWireframe"] =
+      &AssetAttributesManager::createAttributesCopy<
           assets::CapsulePrimitiveAttributes>;
-  primTypeCopyConstructorMap_["coneSolid"] =
-      &AssetAttributesManager::createPrimAttributesCopy<
+  this->copyConstructorMap_["coneSolid"] =
+      &AssetAttributesManager::createAttributesCopy<
           assets::ConePrimitiveAttributes>;
-  primTypeCopyConstructorMap_["coneWireframe"] =
-      &AssetAttributesManager::createPrimAttributesCopy<
+  this->copyConstructorMap_["coneWireframe"] =
+      &AssetAttributesManager::createAttributesCopy<
           assets::ConePrimitiveAttributes>;
-  primTypeCopyConstructorMap_["cubeSolid"] =
-      &AssetAttributesManager::createPrimAttributesCopy<
+  this->copyConstructorMap_["cubeSolid"] =
+      &AssetAttributesManager::createAttributesCopy<
           assets::CubePrimitiveAttributes>;
-  primTypeCopyConstructorMap_["cubeWireframe"] =
-      &AssetAttributesManager::createPrimAttributesCopy<
+  this->copyConstructorMap_["cubeWireframe"] =
+      &AssetAttributesManager::createAttributesCopy<
           assets::CubePrimitiveAttributes>;
-  primTypeCopyConstructorMap_["cylinderSolid"] =
-      &AssetAttributesManager::createPrimAttributesCopy<
+  this->copyConstructorMap_["cylinderSolid"] =
+      &AssetAttributesManager::createAttributesCopy<
           assets::CylinderPrimitiveAttributes>;
-  primTypeCopyConstructorMap_["cylinderWireframe"] =
-      &AssetAttributesManager::createPrimAttributesCopy<
+  this->copyConstructorMap_["cylinderWireframe"] =
+      &AssetAttributesManager::createAttributesCopy<
           assets::CylinderPrimitiveAttributes>;
-  primTypeCopyConstructorMap_["icosphereSolid"] =
-      &AssetAttributesManager::createPrimAttributesCopy<
+  this->copyConstructorMap_["icosphereSolid"] =
+      &AssetAttributesManager::createAttributesCopy<
           assets::IcospherePrimitiveAttributes>;
-  primTypeCopyConstructorMap_["icosphereWireframe"] =
-      &AssetAttributesManager::createPrimAttributesCopy<
+  this->copyConstructorMap_["icosphereWireframe"] =
+      &AssetAttributesManager::createAttributesCopy<
           assets::IcospherePrimitiveAttributes>;
-  primTypeCopyConstructorMap_["uvSphereSolid"] =
-      &AssetAttributesManager::createPrimAttributesCopy<
+  this->copyConstructorMap_["uvSphereSolid"] =
+      &AssetAttributesManager::createAttributesCopy<
           assets::UVSpherePrimitiveAttributes>;
-  primTypeCopyConstructorMap_["uvSphereWireframe"] =
-      &AssetAttributesManager::createPrimAttributesCopy<
+  this->copyConstructorMap_["uvSphereWireframe"] =
+      &AssetAttributesManager::createAttributesCopy<
           assets::UVSpherePrimitiveAttributes>;
   // no entry added for PrimObjTypes::END_PRIM_OBJ_TYPES
 
@@ -125,64 +125,27 @@ void AssetAttributesManager::buildMapOfPrimTypeConstructors() {
   }
 }  // buildMapOfPrimTypeConstructors
 
-std::shared_ptr<AbstractPrimitiveAttributes>
-AssetAttributesManager::createAttributesTemplate(
-    const std::string& primClassName,
-    bool registerTemplate) {
-  auto primAssetAttributes = buildPrimAttributes(primClassName);
-
-  if (registerTemplate) {
-    registerAttributesTemplate(primAssetAttributes, "");
-  }
-  return primAssetAttributes;
-}  // AssetAttributesManager::createAttributesTemplate
-
-std::shared_ptr<AbstractPrimitiveAttributes>
-AssetAttributesManager::createAttributesTemplate(PrimObjTypes primObjType,
-                                                 bool registerTemplate) {
-  auto primAssetAttributes = buildPrimAttributes(primObjType);
-
-  if (registerTemplate) {
-    registerAttributesTemplate(primAssetAttributes, "");
-  }
-  return primAssetAttributes;
-}  // AssetAttributesManager::createAttributesTemplate
-
 int AssetAttributesManager::registerAttributesTemplate(
-    std::shared_ptr<AbstractPrimitiveAttributes> primAttributesTemplate,
+    const AbstractPrimitiveAttributes::ptr primAttributesTemplate,
     const std::string&) {
   std::string primAttributesHandle = primAttributesTemplate->getOriginHandle();
   // verify that attributes has been edited in a legal manner
-  CORRADE_ASSERT(
-      primAttributesTemplate->isValidTemplate(),
-      "AssetAttributesManager::registerAttributesTemplate : Primitive "
-      "asset attributes template named"
-          << primAttributesHandle
-          << "is not configured properly for specified prmitive"
-          << primAttributesTemplate->getPrimObjClassName() << ". Aborting.",
-      ID_UNDEFINED);
+  if (!primAttributesTemplate->isValidTemplate()) {
+    LOG(ERROR)
+        << "AssetAttributesManager::registerAttributesTemplate : Primitive "
+           "asset attributes template named"
+        << primAttributesHandle
+        << "is not configured properly for specified prmitive"
+        << primAttributesTemplate->getPrimObjClassName() << ". Aborting.";
+    return ID_UNDEFINED;
+  }
 
   // return either the ID of the existing template referenced by
   // primAttributesHandle, or the next available ID if not found.
   int primTemplateID =
-      addTemplateToLibrary(primAttributesTemplate, primAttributesHandle);
+      this->addTemplateToLibrary(primAttributesTemplate, primAttributesHandle);
   return primTemplateID;
 }  // AssetAttributesManager::registerAttributesTemplate
-
-std::shared_ptr<AbstractPrimitiveAttributes>
-AssetAttributesManager::getAttributesTemplateCopy(
-    const std::string& primTemplateHandle) {
-  CORRADE_ASSERT((templateLibrary_.count(primTemplateHandle) > 0),
-                 "AssetAttributesManager::getAttributesCopy : Unknown "
-                 "template handle :"
-                     << primTemplateHandle << ". Aborting",
-                 nullptr);
-  // need to return copy so that user mods do not modify existing
-  // asset template
-  auto orig = templateLibrary_.at(primTemplateHandle);
-  // build a copy of existing template
-  return copyPrimAttributes(orig);
-}  // AssetAttributesManager::getPrimAssetAttributesCopy
 
 }  // namespace managers
 }  // namespace assets

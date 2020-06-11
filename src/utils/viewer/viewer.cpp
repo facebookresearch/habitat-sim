@@ -97,9 +97,6 @@ class Viewer : public Mn::Platform::Application {
 
   void toggleNavMeshVisualization();
 
-  Mn::Vector3 positionOnSphere(Mn::SceneGraph::Camera3D& camera,
-                               const Mn::Vector2i& position);
-
   // single inline for logging agent state msgs, so can be easily modified
   inline void logAgentStateMsg(bool showPos, bool showOrient) {
     std::stringstream strDat("");
@@ -342,14 +339,18 @@ Viewer::Viewer(const Arguments& arguments)
 }  // end Viewer::Viewer
 
 void Viewer::addObject(int ID) {
-  if (physicsManager_ == nullptr)
+  if (physicsManager_ == nullptr) {
     return;
-  addObject(resourceManager_.getPhysicsObjectTemplateHandle(ID));
+  }
+  const std::string& configHandle =
+      resourceManager_.getObjectAttributesManager()->getTemplateHandleByID(ID);
+  addObject(configHandle);
 }  // addObject
 
 void Viewer::addObject(const std::string& configFile) {
-  if (physicsManager_ == nullptr)
+  if (physicsManager_ == nullptr) {
     return;
+  }
 
   Mn::Matrix4 T =
       agentBodyNode_
@@ -370,9 +371,11 @@ void Viewer::addObject(const std::string& configFile) {
 // add file-based template derived object from keypress
 void Viewer::addTemplateObject() {
   if (physicsManager_ != nullptr) {
-    int numObjTemplates = resourceManager_.getNumFileTemplateObjects();
+    int numObjTemplates = resourceManager_.getObjectAttributesManager()
+                              ->getNumFileTemplateObjects();
     if (numObjTemplates > 0) {
-      addObject(resourceManager_.getRandomFileTemplateHandle());
+      addObject(resourceManager_.getObjectAttributesManager()
+                    ->getRandomFileTemplateHandle());
     } else
       LOG(WARNING) << "No objects loaded, can't add any";
   } else
@@ -384,9 +387,11 @@ void Viewer::addTemplateObject() {
 void Viewer::addPrimitiveObject() {
   // TODO : use this to implement synthesizing rendered physical objects
   if (physicsManager_ != nullptr) {
-    int numObjPrims = resourceManager_.getNumSynthTemplateObjects();
+    int numObjPrims = resourceManager_.getObjectAttributesManager()
+                          ->getNumSynthTemplateObjects();
     if (numObjPrims > 0) {
-      addObject(resourceManager_.getRandomSynthTemplateHandle());
+      addObject(resourceManager_.getObjectAttributesManager()
+                    ->getRandomSynthTemplateHandle());
     } else
       LOG(WARNING) << "No primitive templates available, can't add any objects";
   } else
@@ -395,15 +400,17 @@ void Viewer::addPrimitiveObject() {
 }  // addPrimitiveObject
 
 void Viewer::removeLastObject() {
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+  if (physicsManager_ == nullptr || objectIDs_.size() == 0) {
     return;
+  }
   physicsManager_->removeObject(objectIDs_.back());
   objectIDs_.pop_back();
 }
 
 void Viewer::invertGravity() {
-  if (physicsManager_ == nullptr)
+  if (physicsManager_ == nullptr) {
     return;
+  }
   const Mn::Vector3& gravity = physicsManager_->getGravity();
   const Mn::Vector3 invGravity = -1 * gravity;
   physicsManager_->setGravity(invGravity);
@@ -490,21 +497,6 @@ void Viewer::toggleNavMeshVisualization() {
     delete navmeshVisNode_;
     navmeshVisNode_ = nullptr;
   }
-}
-
-Mn::Vector3 Viewer::positionOnSphere(Mn::SceneGraph::Camera3D& camera,
-                                     const Mn::Vector2i& position) {
-  // Convert from window to frame coordinates.
-  Mn::Vector2 framePosition =
-      (Mn::Vector2{position} * Mn::Vector2{framebufferSize()}) /
-      Mn::Vector2{windowSize()};
-  const Mn::Vector2 positionNormalized =
-      framePosition / Mn::Vector2{camera.viewport()} - Mn::Vector2{0.5f};
-  const Mn::Float length = positionNormalized.length();
-  const Mn::Vector3 result(
-      length > 1.0f ? Mn::Vector3(positionNormalized, 0.0f)
-                    : Mn::Vector3(positionNormalized, 1.0f - length));
-  return (result * Mn::Vector3::yScale(-1.0f)).normalized();
 }
 
 float timeSinceLastSimulation = 0.0;

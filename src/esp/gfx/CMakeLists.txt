@@ -32,9 +32,6 @@ if(BUILD_PTEX_SUPPORT)
   )
 endif()
 
-if ((UNIX AND NOT APPLE) AND (NOT BUILD_GUI_VIEWERS))
-  list(APPEND gfx_SOURCES "${DEPS_DIR}/glad/src/glad_egl.c")
-endif()
 
 find_package(Magnum
   REQUIRED
@@ -69,10 +66,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
 
 add_library(gfx STATIC ${gfx_SOURCES})
 
-target_include_directories(gfx
-  PRIVATE
-    "${DEPS_DIR}/glad/include"
-)
 
 if(BUILD_WITH_CUDA)
   target_include_directories(gfx
