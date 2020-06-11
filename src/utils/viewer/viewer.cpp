@@ -14,6 +14,12 @@
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Timeline.h>
 
+#include <Magnum/GL/Framebuffer.h>
+#include <Magnum/GL/Renderbuffer.h>
+#include <Magnum/GL/RenderbufferFormat.h>
+#include <Magnum/Shaders/Generic.h>
+#include <Magnum/Shaders/Shaders.h>
+
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/nav/PathFinder.h"
@@ -64,6 +70,7 @@ class Viewer : public Mn::Platform::Application {
   void mouseMoveEvent(MouseMoveEvent& event) override;
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
+  void keyReleaseEvent(KeyEvent& event) override;
   void updateRenderCamera();
 
   // Interactive functions
@@ -144,6 +151,12 @@ class Viewer : public Mn::Platform::Application {
   Mn::ImGuiIntegration::Context imgui_{Mn::NoCreate};
   bool showFPS_ = true;
   bool frustumCullingEnabled_ = true;
+
+  // framebuffer for drawable selection
+  Mn::GL::Framebuffer selectionFramebuffer_{Mn::NoCreate};
+  Mn::GL::Renderbuffer selectionDepth_;
+  Mn::GL::Renderbuffer selectionDrawableID_;
+  bool objectSelectionOn_ = false;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -304,6 +317,25 @@ Viewer::Viewer(const Arguments& arguments)
 
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
+
+  // setup an offscreen frame buffer for object selection
+  selectionDepth_.setStorage(Mn::GL::RenderbufferFormat::DepthComponent24,
+                             framebufferSize());
+  selectionDrawableID_.setStorage(Mn::GL::RenderbufferFormat::R16UI,
+                                  framebufferSize());
+  selectionFramebuffer_ = Mn::GL::Framebuffer{{{}, framebufferSize()}};
+  selectionFramebuffer_
+      .attachRenderbuffer(Mn::GL::Framebuffer::BufferAttachment::Depth,
+                          selectionDepth_)
+      .attachRenderbuffer(Mn::GL::Framebuffer::ColorAttachment{1},
+                          selectionDrawableID_);
+  selectionFramebuffer_.mapForDraw({{Mn::Shaders::Generic3D::ColorOutput,
+                                     Mn::GL::Framebuffer::DrawAttachment::None},
+                                    {Mn::Shaders::Generic3D::ObjectIdOutput,
+                                     Mn::GL::Framebuffer::ColorAttachment{1}}});
+  CORRADE_INTERNAL_ASSERT(
+      selectionFramebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
+      Mn::GL::Framebuffer::Status::Complete);
 
   timeline_.start();
 
@@ -553,6 +585,20 @@ void Viewer::viewportEvent(ViewportEvent& event) {
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
+  if (event.button() == MouseEvent::Button::Right && objectSelectionOn_) {
+    selectionFramebuffer_
+        .bind(); /** @todo mapForDraw() should bind implicitly */
+    selectionFramebuffer_
+        .mapForDraw({{Mn::Shaders::Generic3D::ColorOutput,
+                      Mn::GL::Framebuffer::DrawAttachment::None},
+                     {Mn::Shaders::Generic3D::ObjectIdOutput,
+                      Mn::GL::Framebuffer::ColorAttachment{1}}})
+        .clearDepth(1.0f)
+        .clearColor(1, Mn::Vector4ui{0xffff});
+    CORRADE_INTERNAL_ASSERT(
+        selectionFramebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
+        Mn::GL::Framebuffer::Status::Complete);
+  }
   event.setAccepted();
 }
 
@@ -601,6 +647,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
   switch (key) {
     case KeyEvent::Key::Esc:
       std::exit(0);
+      break;
+    case KeyEvent::Key::LeftShift:
+      objectSelectionOn_ = true;
       break;
     case KeyEvent::Key::Left:
       controls_(*agentBodyNode_, "turnLeft", lookSensitivity);
@@ -707,6 +756,15 @@ void Viewer::keyPressEvent(KeyEvent& event) {
 void Viewer::updateRenderCamera() {
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
+}
+
+void Viewer::keyReleaseEvent(KeyEvent& event) {
+  const auto key = event.key();
+  switch (key) {
+    case KeyEvent::Key::LeftShift:
+      objectSelectionOn_ = false;
+      break;
+  }
 }
 
 }  // namespace
