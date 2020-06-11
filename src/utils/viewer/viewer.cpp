@@ -90,9 +90,6 @@ class Viewer : public Mn::Platform::Application {
 
   void toggleNavMeshVisualization();
 
-  Mn::Vector3 positionOnSphere(Mn::SceneGraph::Camera3D& camera,
-                               const Mn::Vector2i& position);
-
   // single inline for logging agent state msgs, so can be easily modified
   inline void logAgentStateMsg(bool showPos, bool showOrient) {
     std::stringstream strDat("");
@@ -458,21 +455,6 @@ void Viewer::toggleNavMeshVisualization() {
     delete navmeshVisNode_;
     navmeshVisNode_ = nullptr;
   }
-}
-
-Mn::Vector3 Viewer::positionOnSphere(Mn::SceneGraph::Camera3D& camera,
-                                     const Mn::Vector2i& position) {
-  // Convert from window to frame coordinates.
-  Mn::Vector2 framePosition =
-      (Mn::Vector2{position} * Mn::Vector2{framebufferSize()}) /
-      Mn::Vector2{windowSize()};
-  const Mn::Vector2 positionNormalized =
-      framePosition / Mn::Vector2{camera.viewport()} - Mn::Vector2{0.5f};
-  const Mn::Float length = positionNormalized.length();
-  const Mn::Vector3 result(
-      length > 1.0f ? Mn::Vector3(positionNormalized, 0.0f)
-                    : Mn::Vector3(positionNormalized, 1.0f - length));
-  return (result * Mn::Vector3::yScale(-1.0f)).normalized();
 }
 
 float timeSinceLastSimulation = 0.0;
