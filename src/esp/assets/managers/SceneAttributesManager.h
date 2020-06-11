@@ -11,9 +11,12 @@ namespace assets {
 
 namespace managers {
 class SceneAttributesManager
-    : public AttributesManager<PhysicsSceneAttributes> {
+    : public AttributesManager<PhysicsSceneAttributes::ptr> {
  public:
-  using AttributesManager<PhysicsSceneAttributes>::AttributesManager;
+  SceneAttributesManager()
+      : AttributesManager<PhysicsSceneAttributes::ptr>::AttributesManager() {
+    buildCtorFuncPtrMaps();
+  }
   /**
    * @brief Creates an instance of a scene template described by passed
    string.
@@ -26,7 +29,7 @@ class SceneAttributesManager
    * @return a reference to the desired template.
    */
 
-  PhysicsSceneAttributes::ptr createAttributesTemplate(
+  const PhysicsSceneAttributes::ptr createAttributesTemplate(
       const std::string& sceneAttributesHandle,
       bool registerTemplate = true);
   /**
@@ -40,7 +43,7 @@ class SceneAttributesManager
    * template.
    */
   int registerAttributesTemplate(
-      PhysicsSceneAttributes::ptr sceneAttributesTemplate,
+      const PhysicsSceneAttributes::ptr sceneAttributesTemplate,
       const std::string& sceneAttributesHandle) {
     // return either the ID of the existing template referenced by
     // sceneAttributesHandle, or the next available ID if not found.
@@ -57,8 +60,8 @@ class SceneAttributesManager
    * this scene lives in.
    */
   void setSceneValsFromPhysicsAttributes(
-      PhysicsManagerAttributes::ptr physicsManagerAttributes) {
-    for (auto sceneAttr : templateLibrary_) {
+      const PhysicsManagerAttributes::cptr physicsManagerAttributes) {
+    for (auto sceneAttr : this->templateLibrary_) {
       sceneAttr.second->setFrictionCoefficient(
           physicsManagerAttributes->getFrictionCoefficient());
       sceneAttr.second->setRestitutionCoefficient(
@@ -67,6 +70,17 @@ class SceneAttributesManager
   }  // SceneAttributesManager::setSceneValsFromPhysicsAttributes
 
  protected:
+  /**
+   * @brief This function will assign the appropriately configured function
+   * pointer for the copy constructor as required by
+   * AttributesManager<PhysicsSceneAttributes::ptr>
+   */
+  void buildCtorFuncPtrMaps() override {
+    this->copyConstructorMap_["PhysicsSceneAttributes"] =
+        &SceneAttributesManager::createAttributesCopy<
+            assets::PhysicsSceneAttributes>;
+  }
+
   // instance vars
 
  public:

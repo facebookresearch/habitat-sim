@@ -15,10 +15,10 @@ set(assets_SOURCES
   Mp3dInstanceMeshData.cpp
   Mp3dInstanceMeshData.h
   managers/AttributesManagerBase.h
-  # managers/AssetAttributesManager.h
-  # managers/AssetAttributesManager.cpp
-  # managers/ObjectAttributesManager.h
-  # managers/ObjectAttributesManager.cpp
+  managers/AssetAttributesManager.h
+  managers/AssetAttributesManager.cpp
+  managers/ObjectAttributesManager.h
+  managers/ObjectAttributesManager.cpp
   managers/PhysicsAttributesManager.h
   managers/PhysicsAttributesManager.cpp
   managers/SceneAttributesManager.h

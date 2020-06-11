@@ -69,7 +69,7 @@ enum class PrimObjTypes : uint32_t {
 namespace managers {
 
 class AssetAttributesManager
-    : public AttributesManager<AbstractPrimitiveAttributes> {
+    : public AttributesManager<AbstractPrimitiveAttributes::ptr> {
  public:
   /**
    * @brief Constant Map holding names of all Magnum 3D primitive classes
@@ -78,8 +78,9 @@ class AssetAttributesManager
    */
   static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
   AssetAttributesManager()
-      : AttributesManager<AbstractPrimitiveAttributes>::AttributesManager() {
-    buildMapOfPrimTypeConstructors();
+      : AttributesManager<
+            AbstractPrimitiveAttributes::ptr>::AttributesManager() {
+    buildCtorFuncPtrMaps();
   }
 
   /**
@@ -95,9 +96,15 @@ class AssetAttributesManager
    * @return a reference to the desired template.
    */
 
-  std::shared_ptr<AbstractPrimitiveAttributes> createAttributesTemplate(
+  const AbstractPrimitiveAttributes::ptr createAttributesTemplate(
       const std::string& primClassName,
-      bool registerTemplate = true);
+      bool registerTemplate = true) {
+    auto primAssetAttributes = buildPrimAttributes(primClassName);
+    if (registerTemplate) {
+      registerAttributesTemplate(primAssetAttributes, "");
+    }
+    return primAssetAttributes;
+  }  // AssetAttributesManager::createAttributesTemplate
 
   /**
    * @brief Creates an instance of a primtive asset attributes template
@@ -110,9 +117,15 @@ class AssetAttributesManager
    * not. If the user is going to edit this template, this should be false.
    * @return a reference to the desired template.
    */
-  std::shared_ptr<AbstractPrimitiveAttributes> createAttributesTemplate(
+  const AbstractPrimitiveAttributes::ptr createAttributesTemplate(
       PrimObjTypes primObjType,
-      bool registerTemplate = true);
+      bool registerTemplate = true) {
+    auto primAssetAttributes = buildPrimAttributes(primObjType);
+    if (registerTemplate) {
+      registerAttributesTemplate(primAssetAttributes, "");
+    }
+    return primAssetAttributes;
+  }  // AssetAttributesManager::createAttributesTemplate
 
   /**
    * @brief Add an @ref AbstractPrimitiveAttributes object to the @ref
@@ -125,7 +138,7 @@ class AssetAttributesManager
    * template.
    */
   int registerAttributesTemplate(
-      std::shared_ptr<AbstractPrimitiveAttributes> attributesTemplate,
+      const AbstractPrimitiveAttributes::ptr attributesTemplate,
       const std::string& attributesTemplateHandle);
 
   /**
@@ -141,51 +154,30 @@ class AssetAttributesManager
   std::vector<std::string> getTemplateHandlesByPrimType(
       PrimObjTypes primType,
       bool contains = true) const {
-    CORRADE_ASSERT(primType != PrimObjTypes::END_PRIM_OBJ_TYPES,
-                   "AssetAttributesManager::getTemplateHandlesByPrimType : "
-                   "Illegal primtitive type "
-                   "name PrimObjTypes::END_PRIM_OBJ_TYPES.  Aborting.",
-                   {});
+    if (primType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
+      LOG(ERROR) << "AssetAttributesManager::getTemplateHandlesByPrimType : "
+                    "Illegal primtitive type "
+                    "name PrimObjTypes::END_PRIM_OBJ_TYPES.  Aborting.";
+      return {};
+    }
     std::string subStr = PrimitiveNames3DMap.at(primType);
-    return getTemplateHandlesBySubStringPerType(templateLibKeyByID_, subStr,
-                                                contains);
+    return this->getTemplateHandlesBySubStringPerType(this->templateLibKeyByID_,
+                                                      subStr, contains);
   }  // getTemplateHandlesByPrimType
-
-  /**
-   * @brief Return a copy of the primitive asset attributes object specified
-   * by passed handle.  This is the version that should be accessed by the
-   * user.
-   * @param primTemplateHandle the string key of the attributes desired -
-   * this key will be synthesized based on attributes values.
-   * @return a copy of the desired primitive attributes, or nullptr if does
-   * not exist
-   */
-
-  std::shared_ptr<AbstractPrimitiveAttributes> getAttributesTemplateCopy(
-      const std::string& primTemplateHandle);
-
-  /**
-   * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
-   * with passed class name
-   */
-  std::shared_ptr<AbstractPrimitiveAttributes> copyPrimAttributes(
-      const std::shared_ptr<AbstractPrimitiveAttributes>& origAttr) {
-    std::string primTypeName = origAttr->getPrimObjClassName();
-    return (*this.*primTypeCopyConstructorMap_[primTypeName])(origAttr);
-  }  // buildPrimAttributes
 
  protected:
   /**
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
    * with passed class name
    */
-  std::shared_ptr<AbstractPrimitiveAttributes> buildPrimAttributes(
+  const AbstractPrimitiveAttributes::ptr buildPrimAttributes(
       const std::string& primTypeName) {
-    CORRADE_ASSERT(
-        primTypeConstructorMap_.count(primTypeName) > 0,
-        "AssetAttributesManager::buildPrimAttributes : No primivite of type"
-            << primTypeName << "exists.  Aborting.",
-        nullptr);
+    if (primTypeConstructorMap_.count(primTypeName) == 0) {
+      LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : No "
+                    "primitive of type"
+                 << primTypeName << "exists.  Aborting.";
+      return nullptr;
+    }
     return (*this.*primTypeConstructorMap_[primTypeName])();
   }  // buildPrimAttributes
 
@@ -194,13 +186,14 @@ class AssetAttributesManager
    * with passed enum value, which maps to class name via @ref
    * PrimitiveNames3DMap
    */
-  std::shared_ptr<AbstractPrimitiveAttributes> buildPrimAttributes(
+  const AbstractPrimitiveAttributes::ptr buildPrimAttributes(
       PrimObjTypes primType) {
-    CORRADE_ASSERT(
-        primType != PrimObjTypes::END_PRIM_OBJ_TYPES,
-        "AssetAttributesManager::buildPrimAttributes : Illegal primtitive type "
-        "name PrimObjTypes::END_PRIM_OBJ_TYPES.  Aborting.",
-        nullptr);
+    if (primType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
+      LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : Illegal "
+                    "primtitive type name PrimObjTypes::END_PRIM_OBJ_TYPES.  "
+                    "Aborting.";
+      return nullptr;
+    }
     return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(primType)])();
   }  // buildPrimAttributes
 
@@ -209,15 +202,14 @@ class AssetAttributesManager
    * with passed enum value, which maps to class name via @ref
    * PrimitiveNames3DMap
    */
-  std::shared_ptr<AbstractPrimitiveAttributes> buildPrimAttributes(
-      int primTypeVal) {
-    CORRADE_ASSERT(
-        (primTypeVal >= 0) &&
-            (primTypeVal < static_cast<int>(PrimObjTypes::END_PRIM_OBJ_TYPES)),
-        "AssetAttributesManager::buildPrimAttributes : Unknown PrimObjTypes "
-        "value requested :"
-            << primTypeVal << ". Aborting",
-        nullptr);
+  const AbstractPrimitiveAttributes::ptr buildPrimAttributes(int primTypeVal) {
+    if ((primTypeVal < 0) ||
+        (primTypeVal > static_cast<int>(PrimObjTypes::END_PRIM_OBJ_TYPES))) {
+      LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : Unknown "
+                    "PrimObjTypes value requested :"
+                 << primTypeVal << ". Aborting";
+      return nullptr;
+    }
     return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(
                        static_cast<PrimObjTypes>(primTypeVal))])();
   }  // buildPrimAttributes
@@ -228,61 +220,35 @@ class AssetAttributesManager
    * END_PRIM_OBJ_TYPES corresponds to a Magnum Primitive type
    */
   template <typename T, bool isWireFrame, PrimObjTypes primitiveType>
-  std::shared_ptr<AbstractPrimitiveAttributes> createPrimAttributes() {
-    CORRADE_ASSERT(
-        (primitiveType != PrimObjTypes::END_PRIM_OBJ_TYPES),
-        "AssetAttributeManager::createPrimAttributes : Cannot instantiate "
-        "AbstractPrimitiveAttributes object for "
-        "PrimObjTypes::END_PRIM_OBJ_TYPES. "
-        "Aborting.",
-        nullptr);
+  const AbstractPrimitiveAttributes::ptr createPrimAttributes() {
+    if (primitiveType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
+      LOG(ERROR)
+          << "AssetAttributeManager::createPrimAttributes : Cannot instantiate "
+             "AbstractPrimitiveAttributes object for "
+             "PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
+      return nullptr;
+    }
     int idx = static_cast<int>(primitiveType);
     return T::create(isWireFrame, idx, PrimitiveNames3DMap.at(primitiveType));
   }
 
-  /**
-   * @brief Build a shared pointer to the appropriate attributes for passed
-   * object type as defined in @ref PrimObjTypes, where each entry except @ref
-   * END_PRIM_OBJ_TYPES corresponds to a Magnum Primitive type
-   * @param orig original object of type t being copied
-   */
-  template <typename T>
-  std::shared_ptr<AbstractPrimitiveAttributes> createPrimAttributesCopy(
-      const std::shared_ptr<AbstractPrimitiveAttributes>& orig) {
-    return T::create(*(static_cast<T*>(orig.get())));
-  }
-
- protected:
   /**
    * @brief This function will assign the appropriately configured function
    * pointers for @ref createPrimAttributes calls for each type of
    * supported primitive to the @ref primTypeConstructorMap, keyed by type of
    * primtive
    */
-  void buildMapOfPrimTypeConstructors();
+  void buildCtorFuncPtrMaps() override;
 
   /**
    * @brief Define a map type referencing function pointers to @ref
-   * createPrimAttributes() and @ref createPrimAttributesCopy keyed by
-   * string names of classes being instanced, as defined in @ref
-   * PrimNames3D
+   * createPrimAttributes() keyed by string names of classes being instanced,
+   * as defined in @ref PrimNames3D
    */
   typedef std::map<std::string,
-                   std::shared_ptr<esp::assets::AbstractPrimitiveAttributes> (
+                   const AbstractPrimitiveAttributes::ptr (
                        AssetAttributesManager::*)()>
       Map_Of_PrimTypeCtors;
-
-  /**
-   * @brief Define a map type referencing function pointers to @ref
-   * createPrimAttributes() and @ref createPrimAttributesCopy keyed by
-   * string names of classes being instanced, as defined in @ref
-   * PrimNames3D
-   */
-  typedef std::map<std::string,
-                   std::shared_ptr<esp::assets::AbstractPrimitiveAttributes> (
-                       AssetAttributesManager::*)(
-                       const std::shared_ptr<AbstractPrimitiveAttributes>&)>
-      Map_Of_PrimTypeCopyCtors;
 
   /**
    * @brief Map of function pointers to instantiate a primitive attributes
@@ -291,14 +257,6 @@ class AssetAttributesManager
    * the approrpiate function pointer.
    */
   Map_Of_PrimTypeCtors primTypeConstructorMap_;
-
-  /**
-   * @brief Map of function pointers to instantiate a primitive attributes
-   * object, keyed by the Magnum primitive class name as listed in @ref
-   * PrimNames3D. A primitive attributes object is instanced by accessing
-   * the approrpiate function pointer.
-   */
-  Map_Of_PrimTypeCopyCtors primTypeCopyConstructorMap_;
 
  public:
   ESP_SMART_POINTERS(AssetAttributesManager)

@@ -19,9 +19,9 @@ bool RigidObject::initialize(
   }
 
   // save a copy of the template at initialization time
-  initializationAttributes_ = esp::assets::PhysicsObjectAttributes::create(
-      *(static_cast<esp::assets::PhysicsObjectAttributes*>(
-          physicsAttributes.get())));
+  initializationAttributes_ =
+      resMgr.getObjectAttributesManager()->getTemplateCopyByHandle(
+          physicsAttributes->getOriginHandle());
 
   return initializationFinalize(resMgr);
 }
