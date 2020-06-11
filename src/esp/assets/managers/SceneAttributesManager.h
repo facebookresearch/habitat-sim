@@ -77,7 +77,7 @@ class SceneAttributesManager
    */
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["PhysicsSceneAttributes"] =
-        &AttributesManager<PhysicsSceneAttributes::ptr>::createAttributesCopy<
+        &SceneAttributesManager::createAttributesCopy<
             assets::PhysicsSceneAttributes>;
   }
 

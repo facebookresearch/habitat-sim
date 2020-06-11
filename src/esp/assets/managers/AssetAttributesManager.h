@@ -154,11 +154,12 @@ class AssetAttributesManager
   std::vector<std::string> getTemplateHandlesByPrimType(
       PrimObjTypes primType,
       bool contains = true) const {
-    CORRADE_ASSERT(primType != PrimObjTypes::END_PRIM_OBJ_TYPES,
-                   "AssetAttributesManager::getTemplateHandlesByPrimType : "
-                   "Illegal primtitive type "
-                   "name PrimObjTypes::END_PRIM_OBJ_TYPES.  Aborting.",
-                   {});
+    if (primType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
+      LOG(ERROR) << "AssetAttributesManager::getTemplateHandlesByPrimType : "
+                    "Illegal primtitive type "
+                    "name PrimObjTypes::END_PRIM_OBJ_TYPES.  Aborting.";
+      return {};
+    }
     std::string subStr = PrimitiveNames3DMap.at(primType);
     return this->getTemplateHandlesBySubStringPerType(this->templateLibKeyByID_,
                                                       subStr, contains);
@@ -171,11 +172,12 @@ class AssetAttributesManager
    */
   const AbstractPrimitiveAttributes::ptr buildPrimAttributes(
       const std::string& primTypeName) {
-    CORRADE_ASSERT(
-        primTypeConstructorMap_.count(primTypeName) > 0,
-        "AssetAttributesManager::buildPrimAttributes : No primitive of type"
-            << primTypeName << "exists.  Aborting.",
-        nullptr);
+    if (primTypeConstructorMap_.count(primTypeName) == 0) {
+      LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : No "
+                    "primitive of type"
+                 << primTypeName << "exists.  Aborting.";
+      return nullptr;
+    }
     return (*this.*primTypeConstructorMap_[primTypeName])();
   }  // buildPrimAttributes
 
@@ -186,11 +188,12 @@ class AssetAttributesManager
    */
   const AbstractPrimitiveAttributes::ptr buildPrimAttributes(
       PrimObjTypes primType) {
-    CORRADE_ASSERT(
-        primType != PrimObjTypes::END_PRIM_OBJ_TYPES,
-        "AssetAttributesManager::buildPrimAttributes : Illegal primtitive type "
-        "name PrimObjTypes::END_PRIM_OBJ_TYPES.  Aborting.",
-        nullptr);
+    if (primType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
+      LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : Illegal "
+                    "primtitive type name PrimObjTypes::END_PRIM_OBJ_TYPES.  "
+                    "Aborting.";
+      return nullptr;
+    }
     return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(primType)])();
   }  // buildPrimAttributes
 
@@ -200,13 +203,13 @@ class AssetAttributesManager
    * PrimitiveNames3DMap
    */
   const AbstractPrimitiveAttributes::ptr buildPrimAttributes(int primTypeVal) {
-    CORRADE_ASSERT(
-        (primTypeVal >= 0) &&
-            (primTypeVal < static_cast<int>(PrimObjTypes::END_PRIM_OBJ_TYPES)),
-        "AssetAttributesManager::buildPrimAttributes : Unknown PrimObjTypes "
-        "value requested :"
-            << primTypeVal << ". Aborting",
-        nullptr);
+    if ((primTypeVal < 0) ||
+        (primTypeVal > static_cast<int>(PrimObjTypes::END_PRIM_OBJ_TYPES))) {
+      LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : Unknown "
+                    "PrimObjTypes value requested :"
+                 << primTypeVal << ". Aborting";
+      return nullptr;
+    }
     return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(
                        static_cast<PrimObjTypes>(primTypeVal))])();
   }  // buildPrimAttributes
@@ -218,13 +221,13 @@ class AssetAttributesManager
    */
   template <typename T, bool isWireFrame, PrimObjTypes primitiveType>
   const AbstractPrimitiveAttributes::ptr createPrimAttributes() {
-    CORRADE_ASSERT(
-        (primitiveType != PrimObjTypes::END_PRIM_OBJ_TYPES),
-        "AssetAttributeManager::createPrimAttributes : Cannot instantiate "
-        "AbstractPrimitiveAttributes object for "
-        "PrimObjTypes::END_PRIM_OBJ_TYPES. "
-        "Aborting.",
-        nullptr);
+    if (primitiveType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
+      LOG(ERROR)
+          << "AssetAttributeManager::createPrimAttributes : Cannot instantiate "
+             "AbstractPrimitiveAttributes object for "
+             "PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
+      return nullptr;
+    }
     int idx = static_cast<int>(primitiveType);
     return T::create(isWireFrame, idx, PrimitiveNames3DMap.at(primitiveType));
   }
@@ -239,8 +242,8 @@ class AssetAttributesManager
 
   /**
    * @brief Define a map type referencing function pointers to @ref
-   * createPrimAttributes() keyed by string names of classes being instanced, as
-   * defined in @ref PrimNames3D
+   * createPrimAttributes() keyed by string names of classes being instanced,
+   * as defined in @ref PrimNames3D
    */
   typedef std::map<std::string,
                    const AbstractPrimitiveAttributes::ptr (

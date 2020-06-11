@@ -46,7 +46,11 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
       buildPrimBasedPhysObjTemplate(primAttrTemplateHandle);
   // some error occurred
   if (nullptr != objAttributes && registerTemplate) {
-    registerAttributesTemplate(objAttributes, primAttrTemplateHandle);
+    auto attrID =
+        registerAttributesTemplate(objAttributes, primAttrTemplateHandle);
+    if (attrID == ID_UNDEFINED) {
+      return nullptr;
+    }
   }
   return objAttributes;
 }  // ObjectAttributesManager::createPrimBasedAttributesTemplate
@@ -61,7 +65,10 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
 
   // some error occurred
   if (nullptr != objAttributes && registerTemplate) {
-    registerAttributesTemplate(objAttributes, filename);
+    auto attrID = registerAttributesTemplate(objAttributes, filename);
+    if (attrID == ID_UNDEFINED) {
+      return nullptr;
+    }
   }
   return objAttributes;
 }  // ObjectAttributesManager::createFileBasedAttributesTemplate
@@ -69,13 +76,14 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
 int ObjectAttributesManager::registerAttributesTemplate(
     const PhysicsObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle) {
-  CORRADE_ASSERT(
-      objectTemplate->getRenderAssetHandle() != "",
-      "ObjectAttributesManager::registerAttributesTemplate : Attributes "
-      "template named"
-          << objectTemplateHandle
-          << "does not have a valid render asset handle specified. Aborting.",
-      ID_UNDEFINED);
+  if (objectTemplate->getRenderAssetHandle() == "") {
+    LOG(ERROR)
+        << "ObjectAttributesManager::registerAttributesTemplate : Attributes "
+           "template named"
+        << objectTemplateHandle
+        << "does not have a valid render asset handle specified. Aborting.";
+    return ID_UNDEFINED;
+  }
   // In case not constructed with origin handle as parameter
   objectTemplate->setOriginHandle(objectTemplateHandle);
   std::map<int, std::string>* mapToUse;
@@ -99,16 +107,14 @@ int ObjectAttributesManager::registerAttributesTemplate(
     // If renderAssetHandle is neither valid file name nor existing primitive
     // attributes template hande, fail
     // by here always fail
-    CORRADE_ASSERT(
-        false,
-        "ObjectAttributesManager::registerAttributesTemplate : Render asset "
-        "template handle : "
-            << renderAssetHandle
-            << " specified in object template with handle : "
-            << objectTemplateHandle
-            << " does not correspond to existing file or primitive render "
-               "asset.  Aborting. ",
-        ID_UNDEFINED);
+    LOG(ERROR)
+        << "ObjectAttributesManager::registerAttributesTemplate : Render asset "
+           "template handle : "
+        << renderAssetHandle << " specified in object template with handle : "
+        << objectTemplateHandle
+        << " does not correspond to existing file or primitive render "
+           "asset.  Aborting. ";
+    return ID_UNDEFINED;
   }
 
   if (assetAttributesMgr_->getTemplateLibHasHandle(collisionAssetHandle) > 0) {
@@ -155,19 +161,16 @@ ObjectAttributesManager::parseAndLoadPhysObjTemplate(
       objPhysicsConfig = io::parseJsonFile(objPhysConfigFilename);
     } catch (...) {
       // by here always fail
-      CORRADE_ASSERT(
-          false,
-          "Failed to parse JSON: " << objPhysConfigFilename
-                                   << ". Aborting parseAndLoadPhysObjTemplate.",
-          nullptr);
+
+      LOG(ERROR) << "Failed to parse JSON: " << objPhysConfigFilename
+                 << ". Aborting parseAndLoadPhysObjTemplate.";
+      return nullptr;
     }
   } else {
     // by here always fail
-    CORRADE_ASSERT(
-        false,
-        "File " << objPhysConfigFilename
-                << " does not exist. Aborting parseAndLoadPhysObjTemplate.",
-        nullptr);
+    LOG(ERROR) << "File " << objPhysConfigFilename
+               << " does not exist. Aborting parseAndLoadPhysObjTemplate.";
+    return nullptr;
   }
 
   // 2. construct a physicsObjectMetaData
@@ -330,13 +333,13 @@ ObjectAttributesManager::buildPrimBasedPhysObjTemplate(
     const std::string& primAssetHandle) {
   // verify that a primitive asset with the given handle exists
 
-  CORRADE_ASSERT(assetAttributesMgr_->getTemplateLibHasHandle(primAssetHandle),
-                 "ObjectAttributesManager::buildPrimBasedPhysObjTemplate : No "
-                 "primitive with handle '"
-                     << primAssetHandle
-                     << "' exists so cannot build physical object.  Aborting.",
-                 nullptr);
-
+  if (!assetAttributesMgr_->getTemplateLibHasHandle(primAssetHandle)) {
+    LOG(ERROR) << "ObjectAttributesManager::buildPrimBasedPhysObjTemplate : No "
+                  "primitive with handle '"
+               << primAssetHandle
+               << "' exists so cannot build physical object.  Aborting.";
+    return nullptr;
+  }
   // verify that a template with this asset's name does not exist
   if (this->templateLibrary_.count(primAssetHandle) > 0) {
     return this->templateLibrary_.at(primAssetHandle);
@@ -356,9 +359,9 @@ ObjectAttributesManager::buildPrimBasedPhysObjTemplate(
   // mesh collisions
   physicsObjectAttributes->setCollisionAssetHandle(primAssetHandle);
   physicsObjectAttributes->setUseMeshCollision(false);
-  // NOTE to eventually use mesh collisions with primitive objects, a collision
-  // primitive mesh needs to be configured and set in MeshMetaData and
-  // CollisionMesh
+  // NOTE to eventually use mesh collisions with primitive objects, a
+  // collision primitive mesh needs to be configured and set in MeshMetaData
+  // and CollisionMesh
   return physicsObjectAttributes;
 }  // ObjectAttributesManager::buildPrimBasedPhysObjTemplate
 

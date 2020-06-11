@@ -11,10 +11,7 @@
 
 #include <map>
 
-#include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/ConfigurationGroup.h>
-#include <Corrade/Utility/Debug.h>
-#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 
@@ -68,11 +65,12 @@ class AttributesManager {
    */
   const AttribsPtr getTemplateByID(int objectTemplateID) const {
     std::string key = getTemplateHandleByID(objectTemplateID);
-    CORRADE_ASSERT(getTemplateLibHasHandle(key),
-                   "AttributesManager::getTemplateByID : Unknown "
-                   "object template ID:"
-                       << objectTemplateID << ". Aborting",
-                   nullptr);
+    if (!getTemplateLibHasHandle(key)) {
+      LOG(ERROR) << "AttributesManager::getTemplateByID : Unknown "
+                    "object template ID:"
+                 << objectTemplateID << ". Aborting";
+      return nullptr;
+    }
     return templateLibrary_.at(key);
   }  // getTemplateByID
 
@@ -88,11 +86,12 @@ class AttributesManager {
    */
   const AttribsPtr getTemplateByHandle(
       const std::string& templateHandle) const {
-    CORRADE_ASSERT(getTemplateLibHasHandle(templateHandle),
-                   "AttributesManager::getTemplateByHandle : Unknown "
-                   "object template Handle:"
-                       << templateHandle << ". Aborting",
-                   nullptr);
+    if (!getTemplateLibHasHandle(templateHandle)) {
+      LOG(ERROR) << "AttributesManager::getTemplateByHandle : Unknown "
+                    "object template Handle:"
+                 << templateHandle << ". Aborting";
+      return nullptr;
+    }
     return templateLibrary_.at(templateHandle);
   }  // getAttributesTemplate
 
@@ -105,11 +104,12 @@ class AttributesManager {
    * not exist
    */
   AttribsPtr getTemplateCopyByHandle(const std::string& templateHandle) {
-    CORRADE_ASSERT((this->templateLibrary_.count(templateHandle) > 0),
-                   "AssetAttributesManager::getAttributesCopy : Unknown "
-                   "template handle :"
-                       << templateHandle << ". Aborting",
-                   nullptr);
+    if (this->templateLibrary_.count(templateHandle) == 0) {
+      LOG(ERROR) << "AssetAttributesManager::getAttributesCopy : Unknown "
+                    "template handle :"
+                 << templateHandle << ". Aborting";
+      return nullptr;
+    }
     auto orig = this->templateLibrary_.at(templateHandle);
     return this->copyAttributes(orig);
   }  // AssetAttributesManager::getPrimAssetAttributesCopy
@@ -123,11 +123,12 @@ class AttributesManager {
    * templateLibrary_, or an empty string if does not exist.
    */
   std::string getTemplateHandleByID(const int templateID) const {
-    CORRADE_ASSERT(templateLibKeyByID_.count(templateID) > 0,
-                   "AttributesManager::getTemplateHandleByID : Unknown "
-                   "object template ID:"
-                       << templateID << ". Aborting",
-                   nullptr);
+    if (templateLibKeyByID_.count(templateID) == 0) {
+      LOG(ERROR) << "AttributesManager::getTemplateHandleByID : Unknown "
+                    "object template ID:"
+                 << templateID << ". Aborting";
+      return nullptr;
+    }
     return templateLibKeyByID_.at(templateID);
   }  // getTemplateHandleByID
 
@@ -149,11 +150,10 @@ class AttributesManager {
       return templateLibrary_.at(templateHandle)->getObjectTemplateID();
     } else {
       if (!getNext) {
-        CORRADE_ASSERT(false,
-                       "AttributesManager::getTemplateIDByHandle : No template "
-                       " with handle "
-                           << templateHandle << "exists. Aborting",
-                       ID_UNDEFINED);
+        LOG(ERROR) << "AttributesManager::getTemplateIDByHandle : No template "
+                      " with handle "
+                   << templateHandle << "exists. Aborting";
+        return ID_UNDEFINED;
 
       } else {
         // TODO : This needs to return an unused ID number, to support deleting

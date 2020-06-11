@@ -83,7 +83,7 @@ class PhysicsAttributesManager
    */
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["PhysicsManagerAttributes"] =
-        &AttributesManager<PhysicsManagerAttributes::ptr>::createAttributesCopy<
+        &PhysicsAttributesManager::createAttributesCopy<
             assets::PhysicsManagerAttributes>;
   }
   // instance vars

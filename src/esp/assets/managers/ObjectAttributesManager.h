@@ -195,7 +195,7 @@ class ObjectAttributesManager
    */
   void buildCtorFuncPtrMaps() override {
     this->copyConstructorMap_["PhysicsObjectAttributes"] =
-        &AttributesManager<PhysicsObjectAttributes::ptr>::createAttributesCopy<
+        &ObjectAttributesManager::createAttributesCopy<
             assets::PhysicsObjectAttributes>;
   }
   /**
