@@ -45,7 +45,7 @@ PinholeCamera& PinholeCamera::setTransformationMatrix(
   Magnum::Matrix3 rotation = absTransform.rotationScaling();
   Magnum::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(rotation);
 
-  VLOG(1) << "||R - GS(R)|| = "
+  VLOG(2) << "||R - GS(R)|| = "
           << Eigen::Map<mat3f>((rotation - absTransform.rotationShear()).data())
                  .norm();
 
