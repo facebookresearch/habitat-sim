@@ -342,7 +342,12 @@ jobs:
 
               export PYTHONPATH=$PYTHONPATH:$(pwd)
               # run tests with code coverage
-              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless --bullet --with-cuda --run-tests --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
+              CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
+                --bullet \
+                --with-cuda \
+                --build--datatool \
+                --run-tests \
+                --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               pytest --cov-report=xml --cov=./
@@ -424,7 +429,7 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-api
               python setup.py develop --all
-              
+
               cd docs
               conda install -y -c conda-forge doxygen==1.8.16
               conda install -y  jinja2 pygments docutils
@@ -459,7 +464,7 @@ jobs:
                   rm -rf published/docs/${dir}
                   cp -r ../habitat-sim/build/docs-public/${dir} published/docs/.
               done
-              
+
               git config --global user.name "Habitat"
               git config --global user.email habitat@fb.com
               NOW=$(date +"%m-%d-%Y")
