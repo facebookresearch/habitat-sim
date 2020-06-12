@@ -1,0 +1,462 @@
+<?xml version="1.0" ?>
+<robot name="kitchen_counter">
+  <link name="root">
+  </link>
+  <joint name="body_transform" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="root"/>
+    <child link="body"/>
+  </joint>
+  <link name="body">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="120"/>
+      <!-- Warning: dummy inertia. Expect that inertia diagonal will be computed during load. -->
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 -0.0 0"/>
+      <geometry>
+        <mesh filename="kitchen_counter.glb" scale="1, 1, 1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.174709 0.813111 -0.713353"/>
+      <geometry>
+        <box size="0.651332 0.065814 1.60911"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.174709 0.021857 0.027346"/>
+      <geometry>
+        <box size="0.651332 0.065814 3.06211"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.174709 0.813111 1.06493"/>
+      <geometry>
+        <box size="0.651332 0.065814 1.01883"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.38961 0.77396 0.323204"/>
+      <geometry>
+        <box size="0.221029 0.148622 0.471716"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.174709 0.378449 0.329216"/>
+      <geometry>
+        <box size="0.651332 0.623832 0.530862"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.069136 0.771529 0.326153"/>
+      <geometry>
+        <box size="0.157531 0.153898 0.467331"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.145731 0.771529 0.092164"/>
+      <geometry>
+        <box size="0.261102 0.153898 0.064278"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.145731 0.771529 0.550025"/>
+      <geometry>
+        <box size="0.261102 0.153898 0.064278"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.175036 0.412533 -1.48868"/>
+      <geometry>
+        <box size="0.635316 0.747243 0.027076"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.175036 0.412533 1.53842"/>
+      <geometry>
+        <box size="0.635316 0.747243 0.027076"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.287345 0.905674 0.306415"/>
+      <geometry>
+        <box size="0.109908 0.109315 0.027927"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="left_slide_top" type="prismatic">
+    <origin rpy="0 0 0" xyz="-0.159398 0.6 1.0705"/>
+    <parent link="body"/>
+    <child link="drawer1_top"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.01" friction="0.01"/>
+    <limit effort="44.4" lower="0" upper="0.5" velocity="1.0"/>
+  </joint>
+  <link name="drawer1_top">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="5"/>
+      <!-- Warning: dummy inertia. Expect that inertia diagonal will be computed during load. -->
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="drawer1.glb" scale="1, 1, 1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.129193 0"/>
+      <geometry>
+        <box size="0.615496 0.045658 0.888124"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.271664 -0.009973 0"/>
+      <geometry>
+        <box size="0.063383 0.313737 0.888124"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.290127 -0.00996 0"/>
+      <geometry>
+        <box size="0.041759 0.332276 0.888124"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.420406"/>
+      <geometry>
+        <box size="0.615496 0.328675 0.03569"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.420406"/>
+      <geometry>
+        <box size="0.615496 0.328675 0.03569"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="left_slide_bottom" type="prismatic">
+    <origin rpy="0 0 0" xyz="-0.159398 0.232 1.0705"/>
+    <parent link="body"/>
+    <child link="drawer1_bottom"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.01" friction="0.01"/>
+    <limit effort="44.4" lower="0" upper="0.5" velocity="1.0"/>
+  </joint>
+  <link name="drawer1_bottom">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="5"/>
+      <!-- Warning: dummy inertia. Expect that inertia diagonal will be computed during load. -->
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="drawer1.glb" scale="1, 1, 1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.129193 0"/>
+      <geometry>
+        <box size="0.615496 0.045658 0.888124"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.271664 -0.009973 0"/>
+      <geometry>
+        <box size="0.063383 0.313737 0.888124"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.290127 -0.00996 0"/>
+      <geometry>
+        <box size="0.041759 0.332276 0.888124"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.420406"/>
+      <geometry>
+        <box size="0.615496 0.328675 0.03569"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.420406"/>
+      <geometry>
+        <box size="0.615496 0.328675 0.03569"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+  <joint name="middle_slide_top" type="prismatic">
+    <origin rpy="0 0 0" xyz="-0.156649 0.664 -0.28605"/>
+    <parent link="body"/>
+    <child link="drawer2_top"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.01" friction="0.01"/>
+    <limit effort="44.4" lower="0" upper="0.5" velocity="1.0"/>
+  </joint>
+  <link name="drawer2_top">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="4"/>
+      <!-- Warning: dummy inertia. Expect that inertia diagonal will be computed during load. -->
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="drawer2.glb" scale="1, 1, 1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.069318 0"/>
+      <geometry>
+        <box size="0.615496 0.026889 0.576193"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.276502 -0.00073 0"/>
+      <geometry>
+        <box size="0.04861 0.22013 0.58896"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.290127 -0.001676 0"/>
+      <geometry>
+        <box size="0.041759 0.228061 0.572851"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.27725"/>
+      <geometry>
+        <box size="0.600043 0.225867 0.024556"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.27725"/>
+      <geometry>
+        <box size="0.600043 0.225867 0.024556"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="middle_slide_middle" type="prismatic">
+    <origin rpy="0 0 0" xyz="-0.156649 0.42 -0.28605"/>
+    <parent link="body"/>
+    <child link="drawer2_middle"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.01" friction="0.01"/>
+    <limit effort="44.4" lower="0" upper="0.5" velocity="1.0"/>
+  </joint>
+  <link name="drawer2_middle">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="4"/>
+      <!-- Warning: dummy inertia. Expect that inertia diagonal will be computed during load. -->
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="drawer2.glb" scale="1, 1, 1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.069318 0"/>
+      <geometry>
+        <box size="0.615496 0.026889 0.576193"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.276502 -0.00073 0"/>
+      <geometry>
+        <box size="0.04861 0.22013 0.58896"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.290127 -0.001676 0"/>
+      <geometry>
+        <box size="0.041759 0.228061 0.572851"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.27725"/>
+      <geometry>
+        <box size="0.600043 0.225867 0.024556"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.27725"/>
+      <geometry>
+        <box size="0.600043 0.225867 0.024556"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="middle_slide_bottom" type="prismatic">
+    <origin rpy="0 0 0" xyz="-0.156649 0.18 -0.28605"/>
+    <parent link="body"/>
+    <child link="drawer2_bottom"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.01" friction="0.01"/>
+    <limit effort="44.4" lower="0" upper="0.5" velocity="1.0"/>
+  </joint>
+  <link name="drawer2_bottom">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="4"/>
+      <!-- Warning: dummy inertia. Expect that inertia diagonal will be computed during load. -->
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="drawer2.glb" scale="1, 1, 1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.069318 0"/>
+      <geometry>
+        <box size="0.615496 0.026889 0.576193"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.276502 -0.00073 0"/>
+      <geometry>
+        <box size="0.04861 0.22013 0.58896"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.290127 -0.001676 0"/>
+      <geometry>
+        <box size="0.041759 0.228061 0.572851"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.27725"/>
+      <geometry>
+        <box size="0.600043 0.225867 0.024556"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.27725"/>
+      <geometry>
+        <box size="0.600043 0.225867 0.024556"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="right_slide_top" type="prismatic">
+    <origin rpy="0 0 0" xyz="-0.167635 0.53 -1.0264"/>
+    <parent link="body"/>
+    <child link="drawer3"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.01" friction="0.01"/>
+    <limit effort="44.4" lower="0" upper="0.5" velocity="1.0"/>
+  </joint>
+  <link name="drawer3">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="4"/>
+      <!-- Warning: dummy inertia. Expect that inertia diagonal will be computed during load. -->
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="drawer3.glb" scale="1, 1, 1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.077087 0.005074"/>
+      <geometry>
+        <box size="0.615496 0.026889 0.842617"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.276502 -0.00073 0.007159"/>
+      <geometry>
+        <box size="0.0486 0.186823 0.840294"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.287658 -0.001676 0"/>
+      <geometry>
+        <box size="0.035706 0.184979 0.855567"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.434571"/>
+      <geometry>
+        <box size="0.600043 0.195092 0.024556"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.42472"/>
+      <geometry>
+        <box size="0.600043 0.195092 0.024556"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="right_slide_bottom" type="prismatic">
+    <origin rpy="0 0 0" xyz="-0.167635 0.236 -1.0264"/>
+    <parent link="body"/>
+    <child link="drawer4"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.01" friction="0.01"/>
+    <limit effort="44.4" lower="0" upper="0.5" velocity="1.0"/>
+  </joint>
+  <link name="drawer4">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="6"/>
+      <!-- Warning: dummy inertia. Expect that inertia diagonal will be computed during load. -->
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="drawer4.glb" scale="1, 1, 1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.127441 0.005074"/>
+      <geometry>
+        <box size="0.615496 0.026889 0.842617"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.276502 -0.00073 0.007159"/>
+      <geometry>
+        <box size="0.0486 0.31 0.840294"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.287658 -0.001676 0"/>
+      <geometry>
+        <box size="0.035706 0.294 0.855567"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.434571"/>
+      <geometry>
+        <box size="0.600043 0.313244 0.024556"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.42472"/>
+      <geometry>
+        <box size="0.600043 0.306 0.024556"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>

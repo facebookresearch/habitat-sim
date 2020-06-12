@@ -36,17 +36,409 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
 
+#include "esp/physics/bullet/BulletArticulatedObject.h"
+#include "esp/physics/bullet/BulletPhysicsManager.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/sim/Simulator.h"
 
 #include "esp/gfx/configure.h"
 
-constexpr float moveSensitivity = 0.1f;
-constexpr float lookSensitivity = 11.25f;
-constexpr float rgbSensorHeight = 1.5f;
 // for ease of access
 namespace Cr = Corrade;
 namespace Mn = Magnum;
+
+constexpr float moveSensitivity = 0.1f;
+constexpr float lookSensitivity = 11.25f;
+constexpr float rgbSensorHeight = 1.5f;
+
+struct Openable {
+  int articulatedObjectId, linkId, dofIx;
+  float dofOpen, dofClosed;
+
+  esp::physics::BulletPhysicsManager* bpm;
+
+  Openable(esp::physics::BulletPhysicsManager* _bpm,
+           int _articulatedObjectId,
+           int _linkId,
+           int _dofIx,
+           float _dofOpen,
+           float _dofClosed)
+      : articulatedObjectId(_articulatedObjectId),
+        linkId(_linkId),
+        dofIx(_dofIx),
+        dofOpen(_dofOpen),
+        dofClosed(_dofClosed) {
+    bpm = _bpm;
+  }
+
+  virtual void openClose() {
+    std::vector<float> pose =
+        bpm->getArticulatedObjectPositions(articulatedObjectId);
+    Corrade::Utility::Debug() << "openClose: " << pose;
+
+    if (abs(pose[dofIx] - dofClosed) > 0.1) {
+      Corrade::Utility::Debug() << "close = " << dofClosed;
+      // count this as open and close it
+      pose[dofIx] = dofClosed;
+    } else {
+      Corrade::Utility::Debug() << "open = " << dofOpen;
+      pose[dofIx] = dofOpen;
+    }
+    bpm->setArticulatedObjectPositions(articulatedObjectId, pose);
+  }
+};
+
+// locobot demo
+enum LocobotControlMode {
+  NO_OP,
+  FORWARD,
+  BACK,
+  RIGHT,
+  LEFT,
+  RANDOM,
+};
+
+std::string getEnumName(LocobotControlMode mode) {
+  switch (mode) {
+    case (NO_OP):
+      return "NO_OP";
+      break;
+    case (FORWARD):
+      return "FORWARD";
+      break;
+    case (BACK):
+      return "BACK";
+      break;
+    case (RIGHT):
+      return "RIGHT";
+      break;
+    case (RANDOM):
+      return "RANDOM";
+      break;
+  }
+  return "NONE";
+}
+
+// controls a locobot
+struct LocobotController {
+  std::map<int, int> dofsToMotorIds;
+  LocobotControlMode mode = NO_OP;
+  esp::physics::BulletPhysicsManager* bpm;
+  int objectId;
+  int lWheelDof;
+  int rWheelDof;
+
+  int lWheelMotorId, rWheelMotorId;
+
+  LocobotController(esp::physics::BulletPhysicsManager* _bpm,
+                    int _articulatedObjectId,
+                    int _lWheelDof = 2,
+                    int _rWheelDof = 3)
+      : bpm(_bpm), objectId(_articulatedObjectId) {
+    Corrade::Utility::Debug() << "LocobotController constructor.";
+    esp::physics::BulletArticulatedObject& bao =
+        *(static_cast<esp::physics::BulletArticulatedObject*>(
+            &_bpm->getArticulatedObject(objectId)));
+    dofsToMotorIds = bao.createMotorsForAllDofs();
+    Corrade::Utility::Debug() << "dofsToMotorIds = " << dofsToMotorIds;
+    std::vector<float> pose = bao.getPositions();
+    for (auto id : dofsToMotorIds) {
+      bao.updateJointMotorParams(id.second, 0, 0.0, pose[id.first], 1.0, 1.0);
+    }
+    lWheelDof = _lWheelDof;
+    rWheelDof = _rWheelDof;
+    lWheelMotorId = dofsToMotorIds.at(lWheelDof);
+    rWheelMotorId = dofsToMotorIds.at(rWheelDof);
+    bao.updateJointMotorParams(lWheelMotorId, 0, 0.0, 0, 0.0, 10.0);
+    bao.updateJointMotorParams(rWheelMotorId, 0, 0.0, 0, 0.0, 10.0);
+  }
+
+  ~LocobotController() {
+    esp::physics::BulletArticulatedObject& bao =
+        *(static_cast<esp::physics::BulletArticulatedObject*>(
+            &bpm->getArticulatedObject(objectId)));
+    for (auto id : dofsToMotorIds) {
+      bao.removeJointMotor(id.second);
+    }
+  }
+
+  void toggle() {
+    esp::physics::BulletArticulatedObject& bao =
+        *(static_cast<esp::physics::BulletArticulatedObject*>(
+            &bpm->getArticulatedObject(objectId)));
+
+    // toggle the mode
+    mode = LocobotControlMode(int(mode + 1) % 6);
+    Corrade::Utility::Debug() << "Set Locobot mode: " << mode;
+
+    float wheelVel = 10.0;
+    float maxImpulse = 10.0;
+    switch (mode) {
+      case NO_OP: {
+        bao.updateJointMotorParams(lWheelMotorId, 0, 0.0, 0, 0, maxImpulse);
+        bao.updateJointMotorParams(rWheelMotorId, 0, 0.0, 0, 0, maxImpulse);
+        return;
+      } break;
+      case FORWARD: {
+        bao.updateJointMotorParams(lWheelMotorId, wheelVel * 2, 1.0, 0, 0,
+                                   maxImpulse);
+        bao.updateJointMotorParams(rWheelMotorId, wheelVel * 2, 1.0, 0, 0,
+                                   maxImpulse);
+      } break;
+      case BACK: {
+        bao.updateJointMotorParams(lWheelMotorId, -wheelVel * 2, 1.0, 0, 0,
+                                   maxImpulse);
+        bao.updateJointMotorParams(rWheelMotorId, -wheelVel * 2, 1.0, 0, 0,
+                                   maxImpulse);
+      } break;
+      case LEFT: {
+        bao.updateJointMotorParams(lWheelMotorId, -wheelVel, 1.0, 0, 0,
+                                   maxImpulse);
+        bao.updateJointMotorParams(rWheelMotorId, wheelVel, 1.0, 0, 0,
+                                   maxImpulse);
+      } break;
+      case RIGHT: {
+        bao.updateJointMotorParams(lWheelMotorId, wheelVel, 1.0, 0, 0,
+                                   maxImpulse);
+        bao.updateJointMotorParams(rWheelMotorId, -wheelVel, 1.0, 0, 0,
+                                   maxImpulse);
+      } break;
+      case RANDOM: {
+        float randL = (float)((rand() % 2000 - 1000) / 1000.0);
+        float randR = (float)((rand() % 2000 - 1000) / 1000.0);
+        bao.updateJointMotorParams(lWheelMotorId, wheelVel * randL, 1.0, 0, 0,
+                                   1.0);
+        bao.updateJointMotorParams(rWheelMotorId, wheelVel * randR, 1.0, 0, 0,
+                                   1.0);
+      } break;
+
+      default:
+        break;
+    }
+  }
+};
+
+struct AliengoController {
+  std::map<int, int> dofsToMotorIds;
+  esp::physics::BulletPhysicsManager* bpm;
+  int objectId;
+
+  std::vector<float> initialPose;
+  std::vector<float> cyclePose;
+
+  int mode = 0;
+  float cycleTime = 0;
+  float maxImpulse = 0.45;
+
+  AliengoController(esp::physics::BulletPhysicsManager* _bpm,
+                    int _articulatedObjectId)
+      : bpm(_bpm), objectId(_articulatedObjectId) {
+    Corrade::Utility::Debug() << "AliengoController constructor.";
+    esp::physics::BulletArticulatedObject& bao =
+        *(static_cast<esp::physics::BulletArticulatedObject*>(
+            &_bpm->getArticulatedObject(objectId)));
+    dofsToMotorIds = bao.createMotorsForAllDofs();
+    Corrade::Utility::Debug() << "dofsToMotorIds = " << dofsToMotorIds;
+    initialPose = bao.getPositions();
+    cyclePose = bao.getPositions();
+  }
+
+  ~AliengoController() {
+    esp::physics::BulletArticulatedObject& bao =
+        *(static_cast<esp::physics::BulletArticulatedObject*>(
+            &bpm->getArticulatedObject(objectId)));
+    for (auto id : dofsToMotorIds) {
+      bao.removeJointMotor(id.second);
+    }
+  }
+
+  void toggle() {
+    mode = (mode + 1) % 3;
+    Corrade::Utility::Debug() << "AliengoController toggle mode = " << mode;
+    float positionGain = 0.0;
+    if (mode != 0) {
+      positionGain = 1.0;
+    }
+    esp::physics::BulletArticulatedObject& bao =
+        *(static_cast<esp::physics::BulletArticulatedObject*>(
+            &bpm->getArticulatedObject(objectId)));
+    for (auto id : dofsToMotorIds) {
+      if (mode != 2) {
+        bao.updateJointMotorParams(id.second, 0, maxImpulse / 2.0,
+                                   initialPose[id.first], positionGain,
+                                   maxImpulse);
+      } else {
+        bao.updateJointMotorParams(id.second, 0, maxImpulse / 2.0,
+                                   cyclePose[id.first], positionGain,
+                                   maxImpulse);
+      }
+    }
+  }
+
+  void cycleUpdate(float dt) {
+    if (mode == 2) {
+      cycleTime += dt / 2.0;
+      float sinDof = sin(cycleTime);
+      std::vector<int> shoulderDofs = {1, 4, 7, 10};
+      for (auto dof : shoulderDofs) {
+        cyclePose[dof] = sinDof;
+      }
+      // Corrade::Utility::Debug() << " cyclePose = " << cyclePose;
+      esp::physics::BulletArticulatedObject& bao =
+          *(static_cast<esp::physics::BulletArticulatedObject*>(
+              &bpm->getArticulatedObject(objectId)));
+      for (auto id : dofsToMotorIds) {
+        bao.updateJointMotorParams(id.second, 0, maxImpulse / 2.0,
+                                   cyclePose[id.first], 1.0, maxImpulse);
+      }
+    }
+  }
+};
+
+enum MouseInteractionMode {
+  OPENCLOSE,
+  GRAB,
+  THROW,
+  DOF,
+
+  NUM_MODES
+};
+
+// dof controlled by the mouse
+int mouseControlDof = 0;
+
+std::string getEnumName(MouseInteractionMode mode) {
+  switch (mode) {
+    case (OPENCLOSE):
+      return "OPEN|CLOSE";
+      break;
+    case (GRAB):
+      return "GRAB";
+      break;
+    case (THROW):
+      return "THROW";
+      break;
+    case (DOF):
+      return "DOF (" + std::to_string(mouseControlDof) + ")";
+      break;
+  }
+  return "NONE";
+}
+
+struct MouseGrabber {
+  Magnum::Vector3 target;
+  int p2pId;
+  esp::physics::BulletPhysicsManager* bpm;
+
+  float gripDepth;
+
+  MouseGrabber(const Magnum::Vector3& clickPos,
+               float _gripDepth,
+               esp::physics::BulletPhysicsManager* _bpm) {
+    bpm = _bpm;
+    target = clickPos;
+    gripDepth = _gripDepth;
+  }
+
+  virtual ~MouseGrabber() { bpm->removeP2PConstraint(p2pId); }
+
+  virtual void updatePivotB(Magnum::Vector3 pos) {
+    bpm->updateP2PConstraintPivot(p2pId, pos);
+  }
+};
+
+struct MouseLinkGrabber : public MouseGrabber {
+  int articulatedObjectId, linkId;
+
+  MouseLinkGrabber(const Magnum::Vector3& clickPos,
+                   float _gripDepth,
+                   int _articulatedObjectId,
+                   int _linkId,
+                   esp::physics::BulletPhysicsManager* _bpm)
+      : MouseGrabber(clickPos, _gripDepth, _bpm) {
+    articulatedObjectId = _articulatedObjectId;
+    linkId = _linkId;
+    Corrade::Utility::Debug()
+        << "MouseLinkGrabber init: articulatedObjectId=" << articulatedObjectId
+        << ", linkId=" << linkId;
+    p2pId = _bpm->createArticulatedP2PConstraint(articulatedObjectId, linkId,
+                                                 clickPos);
+  }
+};
+
+//! kinematically transform the root of the selected articulated object
+struct MouseArticulatedBaseGrabber : public MouseGrabber {
+  int articulatedObjectId;
+  Magnum::Vector3 rootClickOffset;
+  MouseArticulatedBaseGrabber(const Magnum::Vector3& clickPos,
+                              float _gripDepth,
+                              int _articulatedObjectId,
+                              esp::physics::BulletPhysicsManager* _bpm)
+      : MouseGrabber(clickPos, _gripDepth, _bpm) {
+    articulatedObjectId = _articulatedObjectId;
+    Magnum::Vector3 root =
+        bpm->getArticulatedObjectRootState(articulatedObjectId).translation();
+    rootClickOffset = root - clickPos;
+  }
+
+  virtual ~MouseArticulatedBaseGrabber() override {
+    Corrade::Utility::Debug()
+        << "~MouseArticulatedBaseGrabber final root pos: "
+        << bpm->getArticulatedObjectRootState(articulatedObjectId)
+               .translation();
+  }
+
+  virtual void updatePivotB(Magnum::Vector3 pos) override {
+    Magnum::Matrix4 rootState =
+        bpm->getArticulatedObjectRootState(articulatedObjectId);
+    rootState.translation() = pos + rootClickOffset;
+    Corrade::Utility::Debug() << "newRootState = " << rootState;
+    bpm->setArticulatedObjectSleep(articulatedObjectId, false);
+    bpm->setArticulatedObjectRootState(articulatedObjectId, rootState);
+  }
+};
+
+struct MouseObjectGrabber : public MouseGrabber {
+  int objectId;
+
+  MouseObjectGrabber(const Magnum::Vector3& clickPos,
+                     float _gripDepth,
+                     int _objectId,
+                     esp::physics::BulletPhysicsManager* _bpm)
+      : MouseGrabber(clickPos, _gripDepth, _bpm) {
+    objectId = _objectId;
+    bpm->setObjectMotionType(objectId, esp::physics::MotionType::DYNAMIC);
+    Corrade::Utility::Debug()
+        << "MouseObjectGrabber init: objectId=" << objectId;
+    p2pId = _bpm->createRigidP2PConstraintFromPickPoint(objectId, clickPos);
+  }
+};
+
+struct MouseObjectKinematicGrabber : public MouseGrabber {
+  int objectId;
+  Magnum::Vector3 clickOffset;
+  MouseObjectKinematicGrabber(const Magnum::Vector3& clickPos,
+                              float _gripDepth,
+                              int _objectId,
+                              esp::physics::BulletPhysicsManager* _bpm)
+      : MouseGrabber(clickPos, _gripDepth, _bpm) {
+    objectId = _objectId;
+    Magnum::Vector3 origin = bpm->getTranslation(objectId);
+    clickOffset = origin - clickPos;
+    bpm->setObjectMotionType(objectId, esp::physics::MotionType::KINEMATIC);
+  }
+
+  virtual ~MouseObjectKinematicGrabber() override {
+    Corrade::Utility::Debug()
+        << "~MouseObjectKinematicGrabber final origin pos: "
+        << bpm->getTranslation(objectId);
+  }
+
+  virtual void updatePivotB(Magnum::Vector3 pos) override {
+    Magnum::Vector3 objectOrigin = bpm->getTranslation(objectId);
+    bpm->setTranslation(objectId, clickOffset + pos);
+  }
+};
 
 namespace {
 
@@ -66,15 +458,40 @@ class Viewer : public Mn::Platform::Application {
   void keyPressEvent(KeyEvent& event) override;
   void updateRenderCamera();
 
+  Mn::Vector3 unproject(const Mn::Vector2i& windowPosition, float depth) const;
+
+  esp::scene::SceneNode* clickNode_ = nullptr;
+
+  std::unique_ptr<MouseGrabber> mouseGrabber_ = nullptr;
+
+  MouseInteractionMode mouseInteractionMode = GRAB;
+
+  std::vector<Openable> openableObjects;
+  std::vector<std::unique_ptr<LocobotController>> locobotControllers;
+  std::vector<std::unique_ptr<AliengoController>> aliengoControllers;
+
   // Interactive functions
   void addObject(const std::string& configHandle);
   void addObject(int objID);
+
+  void throwSphere(Magnum::Vector3 direction);
 
   // add template-derived object
   void addTemplateObject();
 
   // add primiitive object
   void addPrimitiveObject();
+
+  void addArticulatedObject(std::string urdfFilename, bool fixedBase = false);
+
+  void clearAllObjects();
+
+  void placeArticulatedObjectAgentFront(int objectId);
+
+  void toggleArticulatedMotionType(int objectId);
+
+  // DEMO setup functions
+  void setupDemoFurniture();
 
   void pokeLastObject();
   void pushLastObject();
@@ -134,12 +551,14 @@ class Viewer : public Mn::Platform::Application {
   esp::scene::ObjectControls controls_;
   std::vector<int> objectIDs_;
 
+  std::vector<int> articulatedObjectIDs_;
+
   bool drawObjectBBs = false;
 
   Mn::Timeline timeline_;
 
   Mn::ImGuiIntegration::Context imgui_{Mn::NoCreate};
-  bool showFPS_ = true;
+  bool showFPS_ = false;
   bool frustumCullingEnabled_ = true;
 };
 
@@ -299,6 +718,11 @@ Viewer::Viewer(const Arguments& arguments)
     });
   }
 
+  // Setting manual agent position
+  // middle of room
+  agentBodyNode_->setTranslation({2.8141, -1.44123, 2.61645});
+  agentBodyNode_->setRotation({{0, -0.7071, 0}, -0.707107});
+
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
 
@@ -367,12 +791,96 @@ void Viewer::addPrimitiveObject() {
                     "physically modelled primitives";
 }  // addPrimitiveObject
 
+void Viewer::throwSphere(Mn::Vector3 direction) {
+  if (physicsManager_ == nullptr)
+    return;
+
+  Mn::Matrix4 T =
+      agentBodyNode_
+          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+  Mn::Vector3 new_pos = T.transformPoint({0.0f, 1.5f, -0.5f});
+
+  esp::assets::PrimObjTypes icoSphere =
+      esp::assets::PrimObjTypes::ICOSPHERE_SOLID;
+  esp::assets::AbstractPrimitiveAttributes::ptr sphereAttributes =
+      resourceManager_.getAssetAttributesManager()->createAttributesTemplate(
+          icoSphere);
+  int sphereObjectTemplateId =
+      resourceManager_.getObjectAttributesManager()
+          ->createPrimBasedAttributesTemplate(
+              sphereAttributes->getOriginHandle(), true)
+          ->getObjectTemplateID();
+
+  int physObjectID = physicsManager_->addObject(sphereObjectTemplateId,
+                                                &sceneGraph_->getDrawables());
+  physicsManager_->setTranslation(physObjectID, new_pos);
+
+  objectIDs_.push_back(physObjectID);
+
+  // throw the object
+  Mn::Vector3 impulse = direction;
+  Mn::Vector3 rel_pos = Mn::Vector3(0.0f, 0.0f, 0.0f);
+  physicsManager_->applyImpulse(objectIDs_.back(), impulse, rel_pos);
+}
+
+void Viewer::addArticulatedObject(std::string urdfFilename, bool fixedBase) {
+  int articulatedObjectId = physicsManager_->addArticulatedObjectFromURDF(
+      urdfFilename, &sceneGraph_->getDrawables(), fixedBase);
+  articulatedObjectIDs_.push_back(articulatedObjectId);
+  placeArticulatedObjectAgentFront(articulatedObjectId);
+}
+
+void Viewer::placeArticulatedObjectAgentFront(int objectId) {
+  Mn::Vector3 localBasePos{0.0f, 1.0f, -2.0f};
+  Mn::Matrix4 T =
+      agentBodyNode_
+          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+  // rotate the object
+  Mn::Matrix4 initialArticulatedObjectTransform;
+  // = Mn::Matrix4::rotationX(Mn::Rad(-3.14 / 2.0));
+  initialArticulatedObjectTransform.translation() =
+      T.transformPoint(localBasePos);
+  esp::physics::BulletPhysicsManager* bpm =
+      static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
+  bpm->setArticulatedObjectRootState(objectId,
+                                     initialArticulatedObjectTransform);
+}
+
+void Viewer::toggleArticulatedMotionType(int objectId) {
+  esp::physics::BulletPhysicsManager* bpm =
+      static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
+  if (bpm->getArticulatedObjectMotionType(objectId) ==
+      esp::physics::MotionType::DYNAMIC) {
+    bpm->setArticulatedObjectMotionType(objectId,
+                                        esp::physics::MotionType::KINEMATIC);
+    Corrade::Utility::Debug() << "setting MotionType::KINEMATIC";
+  } else {
+    bpm->setArticulatedObjectMotionType(objectId,
+                                        esp::physics::MotionType::DYNAMIC);
+    Corrade::Utility::Debug() << "setting MotionType::DYNAMIC";
+  }
+}
+
 void Viewer::removeLastObject() {
   if (physicsManager_ == nullptr || objectIDs_.size() == 0) {
     return;
   }
   physicsManager_->removeObject(objectIDs_.back());
   objectIDs_.pop_back();
+}
+
+void Viewer::clearAllObjects() {
+  locobotControllers.clear();
+  aliengoControllers.clear();
+  for (auto id : objectIDs_) {
+    physicsManager_->removeObject(id);
+  }
+  for (auto id : articulatedObjectIDs_) {
+    physicsManager_->removeArticulatedObject(id);
+  }
+  objectIDs_.clear();
+  articulatedObjectIDs_.clear();
+  openableObjects.clear();
 }
 
 void Viewer::invertGravity() {
@@ -474,12 +982,19 @@ void Viewer::drawEvent() {
   if (sceneID_.size() <= 0)
     return;
 
-  if (physicsManager_ != nullptr)
+  if (physicsManager_ != nullptr) {
+    esp::physics::BulletPhysicsManager* bpm =
+        static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
+
     // step physics at a fixed rate
     timeSinceLastSimulation += timeline_.previousFrameDuration();
-  if (timeSinceLastSimulation >= 1.0 / 60.0) {
-    physicsManager_->stepPhysics(1.0 / 60.0);
-    timeSinceLastSimulation = 0.0;
+    if (timeSinceLastSimulation >= 1.0 / 60.0) {
+      for (auto& aliengoController : aliengoControllers) {
+        aliengoController->cycleUpdate(1.0 / 60.0);
+      }
+      physicsManager_->stepPhysics(1.0 / 60.0);
+      timeSinceLastSimulation = 0.0;
+    }
   }
 
   int DEFAULT_SCENE = 0;
@@ -516,6 +1031,16 @@ void Viewer::drawEvent() {
     ImGui::End();
   }
 
+  ImGui::SetNextWindowPos(ImVec2(10, 10));
+  ImGui::Begin("main", NULL,
+               ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
+                   ImGuiWindowFlags_AlwaysAutoResize);
+  ImGui::SetWindowFontScale(2.0);
+  std::string modeText =
+      "Mouse Ineraction Mode: " + getEnumName(mouseInteractionMode);
+  ImGui::Text("%s", modeText.c_str());
+  ImGui::End();
+
   /* Set appropriate states. If you only draw ImGui, it is sufficient to
      just enable blending and scissor test in the constructor. */
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
@@ -545,10 +1070,150 @@ void Viewer::viewportEvent(ViewportEvent& event) {
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
+  if (event.button() == MouseEvent::Button::Left ||
+      event.button() == MouseEvent::Button::Right) {
+    // Corrade::Utility::Debug() << "mousePressEvent :
+    // MouseEvent::Button::Left";
+    // previousPosition_ = positionOnSphere(*renderCamera_, event.position());
+    // TODO: get depth from buffer
+    Magnum::Vector3 clickPoint = unproject(event.position(), 1.0);
+
+    // create the clickNode primitive if not present
+    if (clickNode_ == nullptr) {
+      clickNode_ = &rootNode_->createChild();
+      resourceManager_.addPrimitiveToDrawables(0, *clickNode_,
+                                               &sceneGraph_->getDrawables());
+      clickNode_->setScaling({0.1, 0.1, 0.1});
+    }
+
+    // Bullet physics raycast
+    Magnum::Vector3 cast =
+        (clickPoint - renderCamera_->node().absoluteTranslation()).normalized();
+    clickNode_->setTranslation(renderCamera_->node().absoluteTranslation() +
+                               cast * 1.0);
+
+    esp::physics::BulletPhysicsManager* bpm =
+        static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
+
+    btCollisionWorld::AllHitsRayResultCallback hit =
+        bpm->castRay(renderCamera_->node().absoluteTranslation(), cast);
+    float best_fraction = 99999.0;
+    int hitID = esp::ID_UNDEFINED;
+    Magnum::Vector3 hitPoint;
+    int bestHitIx = esp::ID_UNDEFINED;
+
+    for (int hitIx = 0; hitIx < hit.m_hitPointWorld.size(); hitIx++) {
+      if (hit.m_hitFractions.at(hitIx) < best_fraction) {
+        best_fraction = hit.m_hitFractions.at(hitIx);
+        clickNode_->setTranslation(
+            Magnum::Vector3{hit.m_hitPointWorld.at(hitIx)});
+        hitID = bpm->getObjectIDFromCollisionObject(
+            hit.m_collisionObjects.at(hitIx));
+        bestHitIx = hitIx;
+        hitPoint = Magnum::Vector3{hit.m_hitPointWorld.at(hitIx)};
+      }
+    }
+
+    if (bestHitIx != esp::ID_UNDEFINED) {
+      Corrade::Utility::Debug() << " hitPoint = " << hitPoint;
+    }
+
+    // then check articulated objects
+    int hitArticulatedObjectId = esp::ID_UNDEFINED;
+    if (hitID == esp::ID_UNDEFINED && bestHitIx != esp::ID_UNDEFINED) {
+      for (auto id : bpm->getArticulatedObjectIds()) {
+        hitID = bpm->getLinkIDFromCollisionObject(
+            id, hit.m_collisionObjects.at(bestHitIx));
+        if (hitID != esp::ID_UNDEFINED) {
+          hitArticulatedObjectId = id;
+          break;
+        }
+      }
+    }
+
+    if (hitID != esp::ID_UNDEFINED) {
+      if (mouseInteractionMode == GRAB) {
+        if (hitArticulatedObjectId != esp::ID_UNDEFINED) {
+          if (event.button() == MouseEvent::Button::Right) {
+            mouseGrabber_ = std::make_unique<MouseArticulatedBaseGrabber>(
+                hitPoint,
+                (hitPoint - renderCamera_->node().translation()).length(),
+                hitArticulatedObjectId, bpm);
+          } else if (event.button() == MouseEvent::Button::Left) {
+            mouseGrabber_ = std::make_unique<MouseLinkGrabber>(
+                hitPoint,
+                (hitPoint - renderCamera_->node().translation()).length(),
+                hitArticulatedObjectId, hitID, bpm);
+          }
+        } else {
+          if (event.button() == MouseEvent::Button::Right) {
+            mouseGrabber_ = std::make_unique<MouseObjectKinematicGrabber>(
+                hitPoint,
+                (hitPoint - renderCamera_->node().translation()).length(),
+                hitID, bpm);
+          } else if (event.button() == MouseEvent::Button::Left) {
+            mouseGrabber_ = std::make_unique<MouseObjectGrabber>(
+                hitPoint,
+                (hitPoint - renderCamera_->node().translation()).length(),
+                hitID, bpm);
+          }
+        }
+      } else if (mouseInteractionMode == OPENCLOSE) {
+        if (hitArticulatedObjectId != esp::ID_UNDEFINED) {
+          Corrade::Utility::Debug()
+              << "OPENCLOSE: aoid = " << hitArticulatedObjectId
+              << ", linkId = " << hitID;
+          for (auto openable : openableObjects) {
+            if (openable.articulatedObjectId == hitArticulatedObjectId) {
+              if (openable.linkId == hitID) {
+                openable.openClose();
+              }
+            }
+          }
+          for (auto& locobotController : locobotControllers) {
+            if (locobotController->objectId == hitArticulatedObjectId) {
+              locobotController->toggle();
+            }
+          }
+          for (auto& aliengoController : aliengoControllers) {
+            if (aliengoController->objectId == hitArticulatedObjectId) {
+              aliengoController->toggle();
+            }
+          }
+        }
+      }
+      // TODO: more click logic
+    }
+    if (mouseInteractionMode == THROW) {
+      throwSphere(cast * 10);
+    }
+  }  // end (event.button() == MouseEvent::Button::Left)
+
   event.setAccepted();
 }
 
+int mouseDofDelta = 0;
 void Viewer::mouseReleaseEvent(MouseEvent& event) {
+  // reset the mouse delta for dof selection
+  mouseDofDelta = 0;
+  if (event.button() == MouseEvent::Button::Left ||
+      event.button() == MouseEvent::Button::Right) {
+    mouseGrabber_ = nullptr;
+
+    // print the DOF
+    if (mouseInteractionMode == DOF) {
+      if (articulatedObjectIDs_.size()) {
+        esp::physics::BulletPhysicsManager* bpm =
+            static_cast<esp::physics::BulletPhysicsManager*>(
+                physicsManager_.get());
+        std::vector<float> pose =
+            bpm->getArticulatedObjectPositions(articulatedObjectIDs_.back());
+        Corrade::Utility::Debug()
+            << "DOF(" << mouseControlDof << ") = " << pose[mouseControlDof];
+      }
+    }
+  }
+
   event.setAccepted();
 }
 
@@ -557,39 +1222,98 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
     return;
   }
 
-  /* Distance to origin */
-  const float distance =
-      renderCamera_->node().transformation().translation().z();
-
-  /* Move 15% of the distance back or forward */
-  controls_(*agentBodyNode_, "moveForward",
-            distance * (1.0f - (event.offset().y() > 0 ? 1 / 0.85f : 0.85f)));
-
-  logAgentStateMsg(true, true);
-  updateRenderCamera();
-  redraw();
+  if (mouseGrabber_ != nullptr) {
+    // adjust the depth
+    mouseGrabber_->gripDepth += event.offset().y() * 0.01;
+    Magnum::Vector3 point = unproject(event.position(), 1.0);
+    Magnum::Vector3 cast =
+        (point - renderCamera_->node().absoluteTranslation()).normalized();
+    mouseGrabber_->target = renderCamera_->node().absoluteTranslation() +
+                            cast * mouseGrabber_->gripDepth;
+    mouseGrabber_->updatePivotB(mouseGrabber_->target);
+    clickNode_->setTranslation(mouseGrabber_->target);
+  } else {
+    // change the mouse interaction mode
+    int delta = 1;
+    if (event.offset().y() < 0)
+      delta = -1;
+    mouseInteractionMode = MouseInteractionMode(
+        (int(mouseInteractionMode) + delta) % int(NUM_MODES));
+    if (mouseInteractionMode < 0)
+      mouseInteractionMode = MouseInteractionMode(int(NUM_MODES) - 1);
+  }
 
   event.setAccepted();
 }
 
 void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
-  if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
-    return;
+  if (mouseGrabber_ != nullptr) {
+    Magnum::Vector3 point = unproject(event.position(), 1.0);
+    Magnum::Vector3 cast =
+        (point - renderCamera_->node().absoluteTranslation()).normalized();
+    mouseGrabber_->target = renderCamera_->node().absoluteTranslation() +
+                            cast * mouseGrabber_->gripDepth;
+    mouseGrabber_->updatePivotB(mouseGrabber_->target);
+    clickNode_->setTranslation(mouseGrabber_->target);
+  } else if (mouseInteractionMode == DOF) {
+    if (articulatedObjectIDs_.size()) {
+      esp::physics::BulletPhysicsManager* bpm =
+          static_cast<esp::physics::BulletPhysicsManager*>(
+              physicsManager_.get());
+      if (event.buttons() & MouseMoveEvent::Button::Left) {
+        std::vector<float> pose =
+            bpm->getArticulatedObjectPositions(articulatedObjectIDs_.back());
+        mouseControlDof = mouseControlDof % pose.size();
+        if (mouseControlDof < 0)
+          mouseControlDof = pose.size() - 1;
+        pose[mouseControlDof] += event.relativePosition()[0] * 0.02;
+        bpm->setArticulatedObjectPositions(articulatedObjectIDs_.back(), pose);
+      } else if (event.buttons() & MouseMoveEvent::Button::Right) {
+        mouseDofDelta += event.relativePosition()[0];
+        if (abs(mouseDofDelta) > 20) {
+          mouseControlDof += mouseDofDelta / abs(mouseDofDelta);
+          mouseDofDelta = 0;
+        }
+        if (mouseControlDof < 0)
+          mouseControlDof =
+              bpm->getArticulatedObjectPositions(articulatedObjectIDs_.back())
+                  .size() -
+              1;
+        mouseControlDof = mouseControlDof % bpm->getArticulatedObjectPositions(
+                                                   articulatedObjectIDs_.back())
+                                                .size();
+      }
+    }
   }
-  const Mn::Vector2i delta = event.relativePosition();
-  controls_(*agentBodyNode_, "turnRight", delta.x());
-  controls_(*rgbSensorNode_, "lookDown", delta.y(), false);
-
-  logAgentStateMsg(true, true);
-  updateRenderCamera();
-  redraw();
 
   event.setAccepted();
+}
+
+Mn::Vector3 Viewer::unproject(const Mn::Vector2i& windowPosition,
+                              float depth) const {
+  /* We have to take window size, not framebuffer size, since the position is
+     in window coordinates and the two can be different on HiDPI systems */
+  const Mn::Vector2i viewSize = windowSize();
+  const Mn::Vector2i viewPosition{windowPosition.x(),
+                                  viewSize.y() - windowPosition.y() - 1};
+  const Mn::Vector3 in{
+      2 * Mn::Vector2{viewPosition} / Mn::Vector2{viewSize} - Mn::Vector2{1.0f},
+      depth};
+
+  // global
+  return (renderCamera_->node().absoluteTransformationMatrix() *
+          renderCamera_->projectionMatrix().inverted())
+      .transformPoint(in);
+  // camera local
+  // return renderCamera_->projectionMatrix().inverted().transformPoint(in);
 }
 
 void Viewer::keyPressEvent(KeyEvent& event) {
   const auto key = event.key();
   bool agentMoved = false;
+  // TODO: placeholder until full API is established.
+  esp::physics::BulletPhysicsManager* bpm =
+      static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
   switch (key) {
     case KeyEvent::Key::Esc:
       std::exit(0);
@@ -674,6 +1398,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::N:
       toggleNavMeshVisualization();
       break;
+    case KeyEvent::Key::M:
+      toggleArticulatedMotionType(articulatedObjectIDs_.back());
+      break;
     case KeyEvent::Key::I:
       Mn::DebugTools::screenshot(Mn::GL::defaultFramebuffer,
                                  "test_image_save.png");
@@ -684,6 +1411,124 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       for (auto id : physicsManager_->getExistingObjectIDs()) {
         physicsManager_->setObjectBBDraw(id, &sceneGraph_->getDrawables(),
                                          drawObjectBBs);
+      }
+    } break;
+    case KeyEvent::Key::Zero: {
+      std::string urdfFilePath =
+          "data/URDF_demo_assets/aliengo/urdf/aliengo.urdf";
+      addArticulatedObject(urdfFilePath);
+      auto R = Magnum::Matrix4::rotationX(Magnum::Rad(-1.56));
+      R.translation() =
+          bpm->getArticulatedObjectRootState(articulatedObjectIDs_.back())
+              .translation();
+      bpm->setArticulatedObjectRootState(articulatedObjectIDs_.back(), R);
+      // manually set joint damping
+      auto bao = static_cast<esp::physics::BulletArticulatedObject*>(
+          &bpm->getArticulatedObject(articulatedObjectIDs_.back()));
+      for (int motorId = 0; motorId < bao->nextJointMotorId_; ++motorId) {
+        bao->updateJointMotorParams(motorId, 0, 1.0, 0, 0, 0.1);
+      }
+      // modify the pose to account for joint limits
+      std::vector<float> pose = bao->getPositions();
+      std::vector<int> calfDofs = {2, 5, 8, 11};
+      for (auto dof : calfDofs) {
+        pose[dof] = -1.0;
+        pose[dof - 1] = 0.45;  // also set a thigh
+      }
+      bao->setPositions(pose);
+      auto aliengoController = std::make_unique<AliengoController>(
+          bpm, articulatedObjectIDs_.back());
+      aliengoControllers.push_back(std::move(aliengoController));
+    } break;
+    case KeyEvent::Key::One: {
+      std::string urdfFilePath =
+          "data/test_assets/URDF/kuka_iiwa/model_free_base.urdf";
+      addArticulatedObject(urdfFilePath, true);
+      // manually adjust joint damping
+      auto bao = static_cast<esp::physics::BulletArticulatedObject*>(
+          &bpm->getArticulatedObject(articulatedObjectIDs_.back()));
+      for (int motorId = 0; motorId < bao->nextJointMotorId_; ++motorId) {
+        bao->updateJointMotorParams(
+            motorId, 0, 1.0, 0, 0, bao->getJointMotorMaxImpulse(motorId) / 2.0);
+      }
+    } break;
+    case KeyEvent::Key::Two: {
+      // TODO: open
+    } break;
+    case KeyEvent::Key::Three: {
+      std::string urdfFilePath =
+          "data/URDF_demo_assets/locobot/urdf/"
+          "locobot_description_lite2.urdf";
+      addArticulatedObject(urdfFilePath);
+      auto R = Magnum::Matrix4::rotationX(Magnum::Rad(-1.56));
+      R.translation() =
+          bpm->getArticulatedObjectRootState(articulatedObjectIDs_.back())
+              .translation();
+      bpm->setArticulatedObjectRootState(articulatedObjectIDs_.back(), R);
+      auto locobotController = std::make_unique<LocobotController>(
+          bpm, articulatedObjectIDs_.back());
+      locobotControllers.push_back(std::move(locobotController));
+    } break;
+    case KeyEvent::Key::Four: {
+      // Locobot with arm: dynamics don't work very well
+      std::string urdfFilePath =
+          "data/URDF_demo_assets/locobot/urdf/"
+          "locobot_description2.urdf";
+      addArticulatedObject(urdfFilePath);
+      auto R = Magnum::Matrix4::rotationX(Magnum::Rad(-1.56));
+      R.translation() =
+          bpm->getArticulatedObjectRootState(articulatedObjectIDs_.back())
+              .translation();
+      bpm->setArticulatedObjectRootState(articulatedObjectIDs_.back(), R);
+      // manually set joint damping
+      auto bao = static_cast<esp::physics::BulletArticulatedObject*>(
+          &bpm->getArticulatedObject(articulatedObjectIDs_.back()));
+      for (int motorId = 0; motorId < bao->nextJointMotorId_; ++motorId) {
+        bao->updateJointMotorParams(motorId, 0, 1.0, 0, 0, 0.1);
+      }
+      std::vector<float> pose = bao->getPositions();
+      pose[4] = -1.7;
+      bao->setPositions(pose);
+      auto locobotController = std::make_unique<LocobotController>(
+          bpm, articulatedObjectIDs_.back(), 9, 10);
+      locobotControllers.push_back(std::move(locobotController));
+    } break;
+    case KeyEvent::Key::Five: {
+      // reset the scene
+      clearAllObjects();
+      Corrade::Utility::Debug() << "done clearing, now generating";
+      setupDemoFurniture();
+    } break;
+    case KeyEvent::Key::Space: {
+      if (articulatedObjectIDs_.size() > 0) {
+        Corrade::Utility::Debug()
+            << "setArticulatedObjectSleep: "
+            << !bpm->getArticulatedObjectSleep(articulatedObjectIDs_.back());
+        bpm->setArticulatedObjectSleep(
+            articulatedObjectIDs_.back(),
+            !bpm->getArticulatedObjectSleep(articulatedObjectIDs_.back()));
+      }
+    } break;
+    case KeyEvent::Key::R: {
+      bpm->setArticulatedObjectSleep(articulatedObjectIDs_.back(), false);
+      placeArticulatedObjectAgentFront(articulatedObjectIDs_.back());
+      bpm->resetArticulatedObject(articulatedObjectIDs_.back());
+      bpm->setArticulatedObjectSleep(articulatedObjectIDs_.back(), true);
+    } break;
+    case KeyEvent::Key::Minus: {
+      if (articulatedObjectIDs_.size()) {
+        for (auto& controller : locobotControllers) {
+          if (controller->objectId == articulatedObjectIDs_.back()) {
+            locobotControllers.pop_back();
+          }
+        }
+        for (auto& controller : aliengoControllers) {
+          if (controller->objectId == articulatedObjectIDs_.back()) {
+            aliengoControllers.pop_back();
+          }
+        }
+        physicsManager_->removeArticulatedObject(articulatedObjectIDs_.back());
+        articulatedObjectIDs_.pop_back();
       }
     } break;
     default:
@@ -699,6 +1544,170 @@ void Viewer::keyPressEvent(KeyEvent& event) {
 void Viewer::updateRenderCamera() {
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
+}
+
+void Viewer::setupDemoFurniture() {
+  esp::physics::BulletPhysicsManager* bpm =
+      static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
+  Magnum::Matrix4 T;
+  // add the articualted objects
+  {
+    std::vector<Mn::Vector3> objectPositions = {
+        {1.68198, -1.5831, 5.50846},     // door1 (kitchen)
+        {1.08896, 0.856144, -1.20688},   // door2 (1st hall closet)
+        {1.08632, 0.527348, -1.87166},   // door3 (hall stairway closet)
+        {-0.550399, 0.478112, -2.6035},  // doubledoor
+        {-0.533, -0.5, 4.7},             // fridge
+        {2.93748, -1.52348, 3.11267},    // cabinet
+        {-0.4, -1.53703, 2.7}            // kitchen_counter
+    };
+    std::vector<std::string> objectFilenames = {
+        "data/test_assets/URDF/doors/door1.urdf",
+        "data/test_assets/URDF/doors/door2.urdf",
+        "data/test_assets/URDF/doors/door3.urdf",
+        "data/test_assets/URDF/doors/doubledoor.urdf",
+        "data/test_assets/URDF/fridge/fridge.urdf",
+        "data/test_assets/URDF/cabinet/cabinet.urdf",
+        "data/test_assets/URDF/kitchen_counter/kitchen_counter.urdf",
+    };
+
+    int initialArticulatedObjectCount = articulatedObjectIDs_.size();
+    for (size_t i = 0; i < objectFilenames.size(); ++i) {
+      addArticulatedObject(objectFilenames[i], true);
+      T = bpm->getArticulatedObjectRootState(articulatedObjectIDs_.back());
+      T.translation() = objectPositions[i];
+      bpm->setArticulatedObjectRootState(articulatedObjectIDs_.back(), T);
+      bpm->resetArticulatedObject(articulatedObjectIDs_.back());
+      bpm->setArticulatedObjectSleep(articulatedObjectIDs_.back(), true);
+    }
+
+    for (auto objectId : articulatedObjectIDs_) {
+      bpm->resetArticulatedObject(articulatedObjectIDs_.back());
+      bpm->setArticulatedObjectSleep(articulatedObjectIDs_.back(), true);
+    }
+
+    // setup the openable entries
+    openableObjects = {
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount++], 0,
+                 0, 2.5, 0),
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount++], 0,
+                 0, -1.5, 0),
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount++], 0,
+                 0, 2.4, 0),
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount], 1,
+                 0, -1.2, 0),  // doubledoor
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount++], 2,
+                 1, 1.0, 0),
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount], 1,
+                 0, 2.3, 0),  // fridge
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount++], 2,
+                 1, 2.3, 0),
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount], 1,
+                 0, 0.8, 0),  // cabinet
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount++], 2,
+                 1, -0.76, 0),
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount], 1,
+                 0, 0.5, 0),  // kitchen counter
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount], 2,
+                 1, 0.5, 0),
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount], 3,
+                 2, 0.5, 0),
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount], 4,
+                 3, 0.5, 0),
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount], 5,
+                 4, 0.5, 0),
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount], 6,
+                 5, 0.5, 0),
+        Openable(bpm, articulatedObjectIDs_[initialArticulatedObjectCount++], 7,
+                 6, 0.5, 0),
+    };
+  }
+
+  {
+    // TODO: change these paths for your local directories or download the
+    // assets these folders.
+    std::string zatunObjectsPath = "data/objects/zatun_objects/";
+    std::string ycbObjectsPath = "data/objects/ycb_google_16k/";
+    std::vector<std::string> objectFilenames = {
+        zatunObjectsPath +
+            "configs_convex/"
+            "frl_apartment_lamp.phys_properties.json",
+        zatunObjectsPath +
+            "configs_convex/"
+            "frl_apartment_small_appliance_01.phys_properties.json",
+        zatunObjectsPath +
+            "configs_convex/"
+            "frl_apartment_picture_03.phys_properties.json",
+        zatunObjectsPath +
+            "configs_convex/"
+            "frl_apartment_basket.phys_properties.json",
+        zatunObjectsPath +
+            "configs_convex/"
+            "frl_apartment_knifeblock.phys_properties.json",
+        zatunObjectsPath +
+            "configs_convex/"
+            "frl_apartment_kitchen_utensil_08.phys_properties.json",
+        zatunObjectsPath +
+            "configs_convex/"
+            "frl_apartment_kitchen_utensil_09.phys_properties.json",
+        zatunObjectsPath +
+            "configs_convex/"
+            "frl_apartment_kitchen_utensil_06.phys_properties.json",
+        zatunObjectsPath +
+            "configs_convex/"
+            "frl_apartment_choppingboard_02.phys_properties.json",
+        zatunObjectsPath +
+            "configs_convex/"
+            "frl_apartment_bowl_06.phys_properties.json",
+        zatunObjectsPath +
+            "configs_convex/"
+            "frl_apartment_cup_02.phys_properties.json",
+        zatunObjectsPath +
+            "configs_convex/"
+            "frl_apartment_kitchen_utensil_02.phys_properties.json",
+        zatunObjectsPath +
+            "configs_convex/"
+            "frl_apartment_cup_03.phys_properties.json",
+        zatunObjectsPath +
+            "configs_convex/"
+            "frl_apartment_cup_01.phys_properties.json",
+        ycbObjectsPath +
+            "configs/"
+            "006_mustard_bottle.phys_properties.json",
+    };
+    std::vector<int> parsedObjectIds;
+    for (auto filename : objectFilenames) {
+      parsedObjectIds.push_back(
+          resourceManager_.getObjectAttributesManager()
+              ->createFileBasedAttributesTemplate(filename)
+              ->getObjectTemplateID());
+    }
+    std::vector<std::pair<int, Mn::Vector3>> objectPositions = {
+        {0, {2.2311, -0.425956, 3.58849}},      // lamp 1
+        {0, {2.76, -0.425956, 3.85}},           // lamp 1
+        {1, {-0.468548, -0.507495, 2.59997}},   // mixer
+        {2, {-0.660318, -0.523204, 1.89543}},   // picture
+        {3, {-0.379807, -0.476218, 1.5544}},    // basket
+        {4, {-0.776413, -0.551627, 1.86241}},   // knife block
+        {5, {-0.622869, -0.568486, 1.77434}},   // untensil 8 (canister)
+        {6, {-0.661958, -0.56693, 1.68653}},    // untensil 9 (canister)
+        {7, {-0.795027, -0.590883, 2.00284}},   // untensil 6 (canister)
+        {8, {-0.944428, -0.505018, 1.75193}},   // chopping board (canister)
+        {9, {-0.384167, -0.565578, 3.38958}},   // bowl 6
+        {10, {-0.604808, -0.557711, 3.5138}},   // cup 2
+        {11, {-0.785562, -0.539605, 3.38024}},  // utensil 2 (canister)
+        {12, {-0.379722, -0.557321, 4.05498}},  // cup 3
+        {13, {-0.612517, -0.553776, 4.00046}},  // cup 1
+        {14, {-0.504227, -0.250771, 4.67401}},  // mustard
+    };
+
+    auto& drawables = sceneGraph_->getDrawables();
+    for (auto& objPlacement : objectPositions) {
+      objectIDs_.push_back(physicsManager_->addObject(
+          parsedObjectIds[objPlacement.first], &drawables));
+      physicsManager_->setTranslation(objectIDs_.back(), objPlacement.second);
+    }
+  }
 }
 
 }  // namespace

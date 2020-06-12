@@ -2,11 +2,15 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/Utility/Directory.h>
 #include <gtest/gtest.h>
 #include "esp/core/esp.h"
+#include "esp/io/URDFParser.h"
 #include "esp/io/io.h"
 
 #include "configure.h"
+
+namespace Cr = Corrade;
 
 using namespace esp::io;
 
@@ -93,4 +97,14 @@ TEST(IOTest, tokenizeTest) {
   EXPECT_EQ((std::vector<std::string>{",a,", ",bb", "c"}), t2);
   const auto& t3 = tokenize(file, ",|", 0, true);
   EXPECT_EQ((std::vector<std::string>{"", "a", "bb", "c"}), t3);
+}
+
+TEST(IOTest, parseURDF) {
+  const std::string iiwaURDF = Cr::Utility::Directory::join(
+      TEST_ASSETS, "URDF/kuka_iiwa/model_free_base.urdf");
+
+  URDFParser parser;
+
+  parser.loadURDF(iiwaURDF);
+  parser.loadURDF(iiwaURDF);
 }

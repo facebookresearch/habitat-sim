@@ -1065,6 +1065,8 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
     finalMaterial->specularTexture =
         textures_[textureBaseIndex + material.specularTexture()].get();
   }
+  // TODO: remove this de-shining hack once materials are converted properly
+  finalMaterial->specularColor *= 0.1;
 
   // normal mapping
   if (material.flags() & Mn::Trade::PhongMaterialData::Flag::NormalTexture) {
@@ -1397,6 +1399,97 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
   CHECK(primitiveID >= 0 && primitiveID < primitive_meshes_.size());
   createGenericDrawable(*primitive_meshes_[primitiveID], node,
                         DEFAULT_LIGHTING_KEY, DEFAULT_MATERIAL_KEY, drawables);
+}
+
+bool ResourceManager::importAsset(const std::string& filename,
+                                  std::shared_ptr<io::UrdfMaterial> material) {
+  if (resourceDict_.count(filename) > 0) {
+    return true;
+  }
+  esp::assets::AssetInfo meshinfo{AssetType::UNKNOWN, filename};
+  if (Corrade::Utility::String::endsWith(filename, ".dae")) {
+    meshinfo = esp::assets::AssetInfo::fromPath(filename);
+  }
+  meshinfo.requiresLighting = true;
+  bool meshSuccess =
+      loadGeneralMeshData(meshinfo, nullptr, nullptr, DEFAULT_LIGHTING_KEY);
+
+  // create/set a new PhongMaterialData
+  if (meshSuccess) {
+    auto& meshMetaData = resourceDict_.at(filename).meshMetaData;
+
+    int numMaterials = meshMetaData.materialIndex.second -
+                       meshMetaData.materialIndex.first + 1;
+    if (meshMetaData.materialIndex.first == ID_UNDEFINED) {
+      numMaterials = 0;
+    }
+
+    Corrade::Utility::Debug() << "Handling materials...";
+    Corrade::Utility::Debug() << "numMaterials = " << numMaterials;
+    Corrade::Utility::Debug() << "meshMetaData.materialIndex.second = "
+                              << meshMetaData.materialIndex.second;
+    Corrade::Utility::Debug() << "meshMetaData.materialIndex.first = "
+                              << meshMetaData.materialIndex.first;
+
+    std::vector<MeshTransformNode*> nodeQueue;
+    nodeQueue.push_back(&meshMetaData.root);
+
+    while (!nodeQueue.empty()) {
+      MeshTransformNode* node = nodeQueue.back();
+      nodeQueue.pop_back();
+      for (auto& child : node->children) {
+        nodeQueue.push_back(&child);
+      }
+      if (node->meshIDLocal != ID_UNDEFINED) {
+        Corrade::Utility::Debug()
+            << "node materialLocalID: " << node->materialIDLocal;
+        if (node->materialIDLocal == ID_UNDEFINED || material) {
+          Cr::Utility::Debug() << "generating a URDF material";
+          gfx::PhongMaterialData::uptr phongMaterial =
+              gfx::PhongMaterialData::create_unique();
+          int newMaterialIndex = nextMaterialID_++;
+          meshMetaData.materialIndex.second = newMaterialIndex;
+          if (meshMetaData.materialIndex.first == ID_UNDEFINED) {
+            meshMetaData.materialIndex.first = newMaterialIndex;
+          }
+          node->materialIDLocal = numMaterials++;
+
+          Corrade::Utility::Debug()
+              << "mat index after: "
+              << resourceDict_.at(filename).meshMetaData.materialIndex;
+
+          if (material) {
+            io::UrdfMaterialColor& color = material->m_matColor;
+            phongMaterial->ambientColor = color.m_rgbaColor * 0.2;
+            phongMaterial->diffuseColor = color.m_rgbaColor * 0.8;
+            phongMaterial->specularColor = color.m_specularColor;
+          }
+          std::unique_ptr<gfx::MaterialData> finalMaterial(
+              phongMaterial.release());
+          shaderManager_.set(std::to_string(newMaterialIndex),
+                             finalMaterial.release());
+        }
+      }
+    }
+  }
+
+  return meshSuccess;
+}
+
+bool ResourceManager::attachAsset(const std::string& filename,
+                                  scene::SceneNode& node,
+                                  DrawableGroup* drawables) {
+  if (drawables != nullptr && resourceDict_.count(filename)) {
+    MeshMetaData& meshMetaData = resourceDict_[filename].meshMetaData;
+
+    addComponent(meshMetaData, node, DEFAULT_LIGHTING_KEY, drawables,
+                 meshMetaData.root);
+    // compute the full BB hierarchy for the new tree.
+    node.computeCumulativeBB();
+  } else {
+    return false;
+  }
+  return true;
 }
 
 void ResourceManager::createGenericDrawable(

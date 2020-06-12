@@ -136,6 +136,15 @@ void PhysicsManager::removeObject(const int physObjectID,
   }
 }
 
+void PhysicsManager::removeArticulatedObject(int physObjectID) {
+  CHECK(existingArticulatedObjects_.count(physObjectID));
+  scene::SceneNode* objectNode =
+      &existingArticulatedObjects_.at(physObjectID)->node();
+  existingArticulatedObjects_.erase(physObjectID);
+  deallocateObjectID(physObjectID);
+  delete objectNode;
+}
+
 bool PhysicsManager::setObjectMotionType(const int physObjectID,
                                          MotionType mt) {
   assertIDValidity(physObjectID);

@@ -1,0 +1,114 @@
+<?xml version="1.0" ?>
+<robot name="cabinet">
+  <link name="root">
+  </link>
+  <joint name="body_transform" type="fixed">
+    <origin rpy="0 2.5 0" xyz="0 0 0"/>
+    <parent link="root"/>
+    <child link="body"/>
+  </joint>
+  <link name="body">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="25.0"/>
+      <!-- Warning: dummy inertia. Expect that inertia diagonal will be computed during load. -->
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="cabinet.glb" scale="1, 1, 1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.0348 0.743779 0"/>
+      <geometry>
+        <box size="1.58 0.036 0.43"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.0348 0.180406 0"/>
+      <geometry>
+        <box size="1.58 0.036 0.43"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.746944 0.458928 0"/>
+      <geometry>
+        <box size="0.033891 0.518524 0.43"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.822905 0.458928 0"/>
+      <geometry>
+        <box size="0.033891 0.518524 0.43"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.034815 0.466524 -0.208891"/>
+      <geometry>
+        <box size="1.57884 0.562595 0.037426"/>
+      </geometry>
+    </collision>
+
+  </link>
+  <joint name="left_slide" type="prismatic">
+    <origin rpy="0 0 0" xyz="-0.43573 0.46828 0.18"/>
+    <parent link="body"/>
+    <child link="left_door"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.01" friction="0.01"/>
+    <limit effort="44.4" lower="0" upper="0.8" velocity="1.0"/>
+  </joint>
+
+  <link name="left_door">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="2.0"/>
+      <!-- Warning: dummy inertia. Expect that inertia diagonal will be computed during load. -->
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="door.glb" scale="1, 1, 1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.774 0.552 0.026"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="right_slide" type="prismatic">
+    <origin rpy="0 0 0" xyz="0.34 0.46828 0.2"/>
+    <parent link="body"/>
+    <child link="right_door"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.01" friction="0.01"/>
+    <limit effort="44.4" lower="-0.76" upper="0" velocity="1.0"/>
+  </joint>
+
+  <link name="right_door">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="2.0"/>
+      <!-- Warning: dummy inertia. Expect that inertia diagonal will be computed during load. -->
+      <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="door.glb" scale="1, 1, 1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.774 0.552 0.026"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>

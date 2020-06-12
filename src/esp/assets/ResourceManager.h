@@ -33,6 +33,7 @@
 #include "esp/gfx/MaterialData.h"
 #include "esp/gfx/ShaderManager.h"
 #include "esp/gfx/configure.h"
+#include "esp/io/URDFParser.h"
 #include "esp/scene/SceneNode.h"
 
 #include "managers/AssetAttributesManager.h"
@@ -425,6 +426,15 @@ class ResourceManager {
    * @param newVal New texture compression setting.
    */
   inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
+
+  bool importAsset(const std::string& filename,
+                   std::shared_ptr<esp::io::UrdfMaterial> material = nullptr);
+
+  // TODO: refactor this to use current pipeline
+  //! Attach a visual asset to a SceneNode as part of a DrawableGroup
+  bool attachAsset(const std::string& filename,
+                   scene::SceneNode& node,
+                   DrawableGroup* drawables);
 
  private:
   /**

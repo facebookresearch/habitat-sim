@@ -17,6 +17,7 @@
 
 /* Bullet Physics Integration */
 
+#include "ArticulatedObject.h"
 #include "RigidObject.h"
 #include "RigidScene.h"
 #include "esp/assets/Asset.h"
@@ -221,6 +222,45 @@ class PhysicsManager {
    * @return The object's @ref MotionType
    */
   MotionType getObjectMotionType(const int physObjectID) const;
+
+  //============= ArticulatedObject functions =============
+  // TODO: think more about how these should be incorporated into the existing
+  // framework
+  /**
+   * @brief Load, parse, and import a URDF file instantiating an @ref
+   * ArticulatedObject in the world.
+   *
+   * Not implemented in base PhysicsManager.
+   *
+   * @return A unique id for the @ref ArticulatedObject, allocated from the same
+   * id set as rigid objects.
+   */
+  virtual int addArticulatedObjectFromURDF(
+      std::string filepath,
+      CORRADE_UNUSED DrawableGroup* drawables,
+      CORRADE_UNUSED bool fixedBase = false) {
+    return ID_UNDEFINED;
+  };
+
+  //! remove an @ref ArticulatedObject from the world by unique id.
+  virtual void removeArticulatedObject(int id);
+
+  int getNumArticulatedObjects() { return existingArticulatedObjects_.size(); };
+
+  //! return a list of ids for all existing @ref ArticulatedObjects in the world
+  std::vector<int> getArticulatedObjectIds() {
+    std::vector<int> ids;
+    for (auto it = existingArticulatedObjects_.begin();
+         it != existingArticulatedObjects_.end(); ++it) {
+      ids.push_back(it->first);
+    }
+    return ids;
+  };
+
+  ArticulatedObject& getArticulatedObject(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return *existingArticulatedObjects_.at(objectId).get();
+  };
 
   //============ Simulator functions =============
 
@@ -904,14 +944,20 @@ class PhysicsManager {
    * efficiency in mind. See
    * @ref addScene.
    * */
-  physics::RigidScene::uptr staticSceneObject_ = nullptr;
+  RigidScene::uptr staticSceneObject_ = nullptr;
 
   //! ==== Rigid object memory management ====
 
   /** @brief Maps object IDs to all existing physical object instances in the
    * world.
    */
-  std::map<int, physics::RigidObject::uptr> existingObjects_;
+  std::map<int, RigidObject::uptr> existingObjects_;
+
+  // TODO: should these be separate maps or somehow combined? What about ids?
+  /** @brief Maps articulated object IDs to all existing physical object
+   * instances in the world.
+   */
+  std::map<int, ArticulatedObject::uptr> existingArticulatedObjects_;
 
   /** @brief A counter of unique object ID's allocated thus far. Used to
    * allocate new IDs when  @ref recycledObjectIDs_ is empty without needing to

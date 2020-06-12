@@ -415,6 +415,17 @@ class BulletRigidObject : public BulletBase,
    */
   const Magnum::Range3D getCollisionShapeAabb() const override;
 
+  /**
+   * @brief Check whether a specific @ref btCollisionObject belongs to this
+   * object.
+   */
+  bool isMe(const btCollisionObject* collisionObject);
+
+  /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
+   * wrapped into one @ref btRigidBody.
+   */
+  std::unique_ptr<btRigidBody> bObjectRigidBody_;
+
  private:
   /**
    * @brief Finalize initialization of this @ref BulletRigidObject as a @ref
@@ -448,11 +459,6 @@ class BulletRigidObject : public BulletBase,
 
   //! Object data: All components of the collision shape
   std::unique_ptr<btCompoundShape> bObjectShape_;
-
-  /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
-   * wrapped into one @ref btRigidBody.
-   */
-  std::unique_ptr<btRigidBody> bObjectRigidBody_;
 
   ESP_SMART_POINTERS(BulletRigidObject)
 };

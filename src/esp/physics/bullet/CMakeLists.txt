@@ -8,6 +8,10 @@ add_library(bulletphysics STATIC
   BulletRigidObject.h
   BulletRigidScene.cpp
   BulletRigidScene.h
+  BulletURDFImporter.h
+  BulletURDFImporter.cpp
+  BulletArticulatedObject.h
+  BulletArticulatedObject.cpp
 )
 
 target_link_libraries(bulletphysics

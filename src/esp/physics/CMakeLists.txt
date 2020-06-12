@@ -13,6 +13,9 @@ add_library(physics STATIC
   RigidObject.h
   RigidScene.cpp
   RigidScene.h
+  URDFImporter.h
+  URDFImporter.cpp
+  ArticulatedObject.h
 )
 
 if(BUILD_WITH_BULLET)
@@ -29,6 +32,7 @@ target_link_libraries(physics
     core
     scene
     assets
+    io
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbImageConverter
     MagnumPlugins::TinyGltfImporter

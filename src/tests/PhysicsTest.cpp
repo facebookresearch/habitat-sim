@@ -720,3 +720,27 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
     }
   }
 }
+
+TEST_F(PhysicsManagerTest, TestURDF) {
+  // test loading URDF and simulating an ArticulatedObject
+  LOG(INFO) << "Starting physics test: TestURDF";
+
+  std::string robotFile = Cr::Utility::Directory::join(
+      TEST_ASSETS, "URDF/kuka_iiwa/model_free_base.urdf");
+
+  std::string sceneFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/scenes/simple_room.glb");
+
+  initScene(sceneFile);
+
+  // need a library to try loading a URDF
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
+      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+    int robotId = physicsManager_->addArticulatedObjectFromURDF(
+        robotFile, &sceneManager_.getSceneGraph(sceneID_).getDrawables());
+
+    ASSERT_NE(robotId, esp::ID_UNDEFINED);
+
+    physicsManager_->stepPhysics(1.0 / 60.0);
+  }
+}

@@ -14,7 +14,11 @@
 #include <Magnum/BulletIntegration/MotionState.h>
 #include <btBulletDynamicsCommon.h>
 
+#include "BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h"
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
+#include "BulletDynamics/Featherstone/btMultiBodyJointMotor.h"
+#include "BulletDynamics/Featherstone/btMultiBodyPoint2Point.h"
+
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
 
 #include "BulletRigidObject.h"
@@ -57,6 +61,17 @@ class BulletPhysicsManager : public PhysicsManager {
   virtual ~BulletPhysicsManager();
 
   //============ Simulator functions =============
+
+  /**
+   * @brief Load, parse, and import a URDF file instantiating an @ref
+   * BulletArticulatedObject in the world.
+   *
+   * @return A unique id for the @ref BulletArticulatedObject, allocated from
+   * the same id set as rigid objects.
+   */
+  virtual int addArticulatedObjectFromURDF(std::string filepath,
+                                           DrawableGroup* drawables,
+                                           bool fixedBase = false) override;
 
   /** @brief Step the physical world forward in time. Time may only advance in
    * increments of @ref fixedTimeStep_. See @ref
@@ -165,6 +180,130 @@ class BulletPhysicsManager : public PhysicsManager {
    * enabled objects.
    */
   bool contactTest(const int physObjectID) override;
+
+  /**
+   * @brief Cast a ray into the collision world and return the result.
+   */
+  btCollisionWorld::AllHitsRayResultCallback castRay(Magnum::Vector3 origin,
+                                                     Magnum::Vector3 direction);
+
+  int getObjectIDFromCollisionObject(const btCollisionObject* collisionObject);
+
+  int getLinkIDFromCollisionObject(int objectId,
+                                   const btCollisionObject* collisionObject);
+
+  Magnum::Vector3 getArticulatedLinkCOM(int objectId, int linkId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)
+        ->getLink(linkId)
+        .node()
+        .translation();
+  }
+
+  void addArticulatedLinkForce(int objectId,
+                               int linkId,
+                               Magnum::Vector3 force) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->addArticulatedLinkForce(linkId,
+                                                                      force);
+  }
+
+  void setArticulatedObjectRootState(int objectId,
+                                     const Magnum::Matrix4& state) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->setRootState(state);
+  };
+
+  const Magnum::Matrix4 getArticulatedObjectRootState(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getRootState();
+  };
+
+  void setArticulatedObjectForces(int objectId, std::vector<float> forces) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->setForces(forces);
+  };
+
+  void setArticulatedObjectVelocities(int objectId, std::vector<float> vels) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->setVelocities(vels);
+  };
+
+  void setArticulatedObjectPositions(int objectId,
+                                     std::vector<float> positions) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->setPositions(positions);
+  };
+
+  std::vector<float> getArticulatedObjectPositions(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getPositions();
+  };
+
+  std::vector<float> getArticulatedObjectVelocities(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getVelocities();
+  };
+
+  std::vector<float> getArticulatedObjectForces(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getForces();
+  };
+
+  void resetArticulatedObject(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->reset();
+  };
+
+  void setArticulatedObjectSleep(int objectId, bool sleep) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->setSleep(sleep);
+  };
+
+  bool getArticulatedObjectSleep(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getSleep();
+  }
+
+  void setArticulatedObjectMotionType(int objectId, MotionType mt) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->setMotionType(mt);
+  };
+
+  MotionType getArticulatedObjectMotionType(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getMotionType();
+  };
+
+  //============ Point To Point Constraints =============
+
+  //! Create a ball&socket joint to constrain a DYNAMIC RigidObject provided a
+  //! local offset
+  int createRigidP2PConstraint(int objectId, Magnum::Vector3 localOffset);
+
+  //! Create a ball&socket joint to constrain a DYNAMIC RigidObject provided a
+  //! global "pick" position
+  int createRigidP2PConstraintFromPickPoint(int objectId,
+                                            Magnum::Vector3 pickPoint);
+
+  // point2point constraint at specific local link offset
+  int createArticulatedP2PConstraint(int articulatedObjectId,
+                                     int linkId,
+                                     Magnum::Vector3 linkOffset,
+                                     Magnum::Vector3 pickPos);
+
+  // point2point constraint at pick position
+  int createArticulatedP2PConstraint(int articulatedObjectId,
+                                     int linkId,
+                                     Magnum::Vector3 pickPos);
+
+  void updateP2PConstraintPivot(int p2pId, Magnum::Vector3 pivot);
+
+  void removeP2PConstraint(int p2pId);
+
+  int nextP2PId_ = 0;
+  std::map<int, btMultiBodyPoint2Point*> articulatedP2ps;
+  std::map<int, btPoint2PointConstraint*> rigidP2ps;
 
  protected:
   //============ Initialization =============
