@@ -105,6 +105,6 @@ TEST(IOTest, parseURDF) {
 
   URDFParser parser;
 
-  parser.loadURDF(iiwaURDF);
-  parser.loadURDF(iiwaURDF);
+  parser.parseURDF(iiwaURDF);
+  parser.parseURDF(iiwaURDF);
 }

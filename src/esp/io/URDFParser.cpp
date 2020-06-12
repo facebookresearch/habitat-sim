@@ -21,7 +21,7 @@ namespace Mn = Magnum;
 namespace esp {
 namespace io {
 
-bool URDFParser::loadURDF(const std::string& filename) {
+bool URDFParser::parseURDF(const std::string& filename) {
   UrdfModel newURDFModel = UrdfModel();
   sourceFilePath_ = filename;
 
@@ -31,11 +31,11 @@ bool URDFParser::loadURDF(const std::string& filename) {
   xml_doc.Parse(xmlString.c_str());
   if (xml_doc.Error()) {
     Corrade::Utility::Debug()
-        << "URDFParser::loadURDF - XML parse error, aborting URDF parse/load.";
+        << "URDFParser::parseURDF - XML parse error, aborting URDF parse/load.";
     return false;
   }
   Corrade::Utility::Debug()
-      << "URDFParser::loadURDF - XML parsed starting URDF parse/load.";
+      << "URDFParser::parseURDF - XML parsed starting URDF parse/load.";
 
   XMLElement* robot_xml = xml_doc.FirstChildElement("robot");
   if (!robot_xml) {
@@ -125,14 +125,14 @@ bool URDFParser::loadURDF(const std::string& filename) {
     }
   }
 
-  // TODO: sensors
+  // TODO: parse sensors here
 
   if (!initTreeAndRoot(newURDFModel)) {
     return false;
   }
   m_urdfModel = newURDFModel;
 
-  Corrade::Utility::Debug() << "Done parsing";
+  Corrade::Utility::Debug() << "Done parsing URDF";
 
   return true;
 }
@@ -180,16 +180,11 @@ static bool parseVector3(Mn::Vector3& vec3,
 }
 
 bool URDFParser::parseMaterial(UrdfMaterial& material, XMLElement* config) {
-  Corrade::Utility::Debug() << "URDFParser::parseMaterial";
-  Corrade::Utility::Debug() << "config = " << config;
   if (!config->Attribute("name")) {
     Corrade::Utility::Debug() << "E - Material must contain a name attribute";
     return false;
   }
-  Corrade::Utility::Debug() << "material problem = " << &material;
   material.m_name = config->Attribute("name");
-  Corrade::Utility::Debug()
-      << "config->Attribute(\"name\") = " << config->Attribute("name");
 
   // texture
   XMLElement* t = config->FirstChildElement("texture");
@@ -199,11 +194,6 @@ bool URDFParser::parseMaterial(UrdfMaterial& material, XMLElement* config) {
     }
   }
 
-  if (material.m_textureFilename.length() == 0) {
-    // logger->reportWarning("material has no texture file name");
-  }
-
-  Corrade::Utility::Debug() << "  doing color";
   // color
   {
     XMLElement* c = config->FirstChildElement("color");
@@ -217,7 +207,6 @@ bool URDFParser::parseMaterial(UrdfMaterial& material, XMLElement* config) {
       }
     }
   }
-  Corrade::Utility::Debug() << "  done doing color";
 
   {
     // specular (non-standard)
@@ -241,7 +230,7 @@ bool URDFParser::parseLink(UrdfModel& model,
     Corrade::Utility::Debug() << "E - Link with no name";
     return false;
   }
-  Corrade::Utility::Debug() << "----------------------------";
+  Corrade::Utility::Debug() << "------------------------------------";
   Corrade::Utility::Debug() << "URDFParser::parseLink: " << linkName;
   link.m_name = linkName;
 
@@ -399,8 +388,6 @@ bool URDFParser::parseLink(UrdfModel& model,
     }
   }
 
-  Corrade::Utility::Debug() << "collision time";
-
   // Multiple Collisions (optional)
   for (XMLElement* col_xml = config->FirstChildElement("collision"); col_xml;
        col_xml = col_xml->NextSiblingElement("collision")) {
@@ -419,7 +406,6 @@ bool URDFParser::parseLink(UrdfModel& model,
 }
 
 bool URDFParser::parseCollision(UrdfCollision& collision, XMLElement* config) {
-  Corrade::Utility::Debug() << "URDFParser::parseCollision";
   collision.m_linkLocalFrame = Mn::Matrix4();  // Identity
 
   // Origin
@@ -427,8 +413,6 @@ bool URDFParser::parseCollision(UrdfCollision& collision, XMLElement* config) {
   if (o) {
     if (!parseTransform(collision.m_linkLocalFrame, o))
       return false;
-    Corrade::Utility::Debug() << " parsed collision transform: "
-                              << Magnum::Matrix4{collision.m_linkLocalFrame};
   }
   // Geometry
   XMLElement* geom = config->FirstChildElement("geometry");
@@ -460,16 +444,12 @@ bool URDFParser::parseCollision(UrdfCollision& collision, XMLElement* config) {
   if (concave_char)
     collision.m_flags |= URDF_FORCE_CONCAVE_TRIMESH;
 
-  Corrade::Utility::Debug() << "URDFParser::parseCollision - done";
-
   return true;
 }
 
 bool URDFParser::parseVisual(UrdfModel& model,
                              UrdfVisual& visual,
                              XMLElement* config) {
-  Corrade::Utility::Debug() << "URDFParser::parseVisual";
-
   visual.m_linkLocalFrame = Mn::Matrix4();  // Identity
 
   // Origin
@@ -490,7 +470,6 @@ bool URDFParser::parseVisual(UrdfModel& model,
 
   visual.m_geometry.m_hasLocalMaterial = false;
 
-  Corrade::Utility::Debug() << "URDFParser::parseVisual: material";
   // Material
   XMLElement* mat = config->FirstChildElement("material");
   // todo(erwincoumans) skip materials in SDF for now (due to complexity)
@@ -502,30 +481,24 @@ bool URDFParser::parseVisual(UrdfModel& model,
       return false;
     }
     visual.m_materialName = mat->Attribute("name");
-    Corrade::Utility::Debug() << "Material name: " << mat->Attribute("name");
 
     // try to parse material element in place
-
     XMLElement* t = mat->FirstChildElement("texture");
     XMLElement* c = mat->FirstChildElement("color");
     XMLElement* s = mat->FirstChildElement("specular");
     if (t || c || s) {
-      Corrade::Utility::Debug() << "parsing material";
       if (!visual.m_geometry.m_localMaterial.get()) {
         // create a new material
         visual.m_geometry.m_localMaterial = std::make_shared<UrdfMaterial>();
       }
       if (parseMaterial(*visual.m_geometry.m_localMaterial.get(), mat)) {
         // override if not new
-        Corrade::Utility::Debug() << "replacing material";
         model.m_materials[visual.m_materialName] =
             visual.m_geometry.m_localMaterial;
         visual.m_geometry.m_hasLocalMaterial = true;
       }
     }
   }
-
-  Corrade::Utility::Debug() << "URDFParser::parseVisual - done";
 
   return true;
 }
@@ -570,8 +543,6 @@ bool URDFParser::parseTransform(Mn::Matrix4& tr, XMLElement* xml) {
 }
 
 bool URDFParser::parseGeometry(UrdfGeometry& geom, XMLElement* g) {
-  Corrade::Utility::Debug() << "URDFParser::parseGeometry";
-
   if (g == 0)
     return false;
 
@@ -664,7 +635,7 @@ bool URDFParser::parseGeometry(UrdfGeometry& geom, XMLElement* g) {
 
     // load the mesh and modify the filename to full path to reference loaded
     // asset
-    bool success = UrdfLoadMeshFile(geom.m_meshFileName);
+    bool success = validateMeshFile(geom.m_meshFileName);
 
     if (!success) {
       // warning already printed
@@ -685,8 +656,6 @@ bool URDFParser::parseGeometry(UrdfGeometry& geom, XMLElement* g) {
       return false;
     }
   }
-
-  Corrade::Utility::Debug() << "URDFParser::parseGeometry - done";
 
   return true;
 }
@@ -753,10 +722,7 @@ bool URDFParser::parseInertia(UrdfInertia& inertia, XMLElement* config) {
   return true;
 }
 
-bool URDFParser::UrdfLoadMeshFile(std::string& meshFilename) {
-  Corrade::Utility::Debug()
-      << "URDFParser::UrdfLoadMeshFile(" << meshFilename << ")";
-
+bool URDFParser::validateMeshFile(std::string& meshFilename) {
   std::string urdfDirectory =
       sourceFilePath_.substr(0, sourceFilePath_.find_last_of("/"));
 
@@ -764,8 +730,7 @@ bool URDFParser::UrdfLoadMeshFile(std::string& meshFilename) {
       Corrade::Utility::Directory::join(urdfDirectory, meshFilename);
 
   bool meshSuccess = false;
-  // TODO: load the asset here or defer to instancing time?
-  // bool meshSuccess = resourceManager_.importAsset(meshFilePath);
+  // defer asset loading to instancing time. Check asset file existance here.
   meshSuccess = Corrade::Utility::Directory::exists(meshFilePath);
 
   if (meshSuccess) {
@@ -776,8 +741,6 @@ bool URDFParser::UrdfLoadMeshFile(std::string& meshFilename) {
     Corrade::Utility::Debug()
         << "Mesh file \"" << meshFilePath << "\"does not exist.";
   }
-
-  Corrade::Utility::Debug() << "URDFParser::UrdfLoadMeshFile done";
 
   return meshSuccess;
 }
@@ -817,11 +780,11 @@ bool URDFParser::initTreeAndRoot(UrdfModel& model) {
     }
     auto parentLink = model.m_links.at(joint->m_parentLinkName);
 
-    childLink->m_parentLink = parentLink.get();
+    childLink->m_parentLink = parentLink;
 
-    childLink->m_parentJoint = joint.get();
-    parentLink->m_childJoints.push_back(joint.get());
-    parentLink->m_childLinks.push_back(childLink.get());
+    childLink->m_parentJoint = joint;
+    parentLink->m_childJoints.push_back(joint);
+    parentLink->m_childLinks.push_back(childLink);
     parentLinkTree[childLink->m_name] = parentLink->m_name;
   }
 
@@ -992,7 +955,7 @@ bool URDFParser::parseJoint(UrdfJoint& joint, tinyxml2::XMLElement* config) {
     joint.m_type = URDFFixedJoint;
   else {
     Corrade::Utility::Debug()
-        << "E - Joint " << joint.m_name << " have unkown type: " << type_str;
+        << "E - Joint " << joint.m_name << " has unkown type: " << type_str;
     return false;
   }
 

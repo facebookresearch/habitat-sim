@@ -73,8 +73,6 @@ struct UrdfGeometry {
   Magnum::Vector3 m_capsuleTo;
 
   Magnum::Vector3 m_planeNormal;
-
-  int m_meshFileType;
   std::string m_meshFileName;
   Magnum::Vector3 m_meshScale;
 
@@ -91,7 +89,6 @@ struct UrdfGeometry {
         m_capsuleFrom(0, 1, 0),
         m_capsuleTo(1, 0, 0),
         m_planeNormal(0, 0, 1),
-        m_meshFileType(0),
         m_meshScale(1, 1, 1),
         m_hasLocalMaterial(false) {}
 };
@@ -206,11 +203,11 @@ struct UrdfLink {
   Magnum::Matrix4 m_linkTransformInWorld;
   std::vector<UrdfVisual> m_visualArray;
   std::vector<UrdfCollision> m_collisionArray;
-  UrdfLink* m_parentLink;
-  UrdfJoint* m_parentJoint;
+  std::shared_ptr<UrdfLink> m_parentLink;
+  std::shared_ptr<UrdfJoint> m_parentJoint;
 
-  std::vector<UrdfJoint*> m_childJoints;
-  std::vector<UrdfLink*> m_childLinks;
+  std::vector<std::shared_ptr<UrdfJoint>> m_childJoints;
+  std::vector<std::shared_ptr<UrdfLink>> m_childLinks;
 
   int m_linkIndex;
 
@@ -223,11 +220,11 @@ struct UrdfModel {
   std::string m_name;
   std::string m_sourceFile;
   Magnum::Matrix4 m_rootTransformInWorld(Magnum::Math::IdentityInitT);
-  std::map<std::string, std::shared_ptr<UrdfMaterial> > m_materials;
-  std::map<std::string, std::shared_ptr<UrdfLink> > m_links;
-  std::map<std::string, std::shared_ptr<UrdfJoint> > m_joints;
+  std::map<std::string, std::shared_ptr<UrdfMaterial>> m_materials;
+  std::map<std::string, std::shared_ptr<UrdfLink>> m_links;
+  std::map<std::string, std::shared_ptr<UrdfJoint>> m_joints;
 
-  std::vector<std::shared_ptr<UrdfLink> > m_rootLinks;
+  std::vector<std::shared_ptr<UrdfLink>> m_rootLinks;
   bool m_overrideFixedBase;
 
   void printKinematicChain() const;
@@ -264,16 +261,17 @@ class URDFParser {
                    UrdfJoint& joint,
                    tinyxml2::XMLElement* config);
 
-  bool UrdfLoadMeshFile(std::string& filename);
+  bool validateMeshFile(std::string& filename);
 
  public:
   URDFParser(){};
 
   // parse a loaded URDF string into relevant general data structures
   // return false if the string is not a valid urdf or other error causes abort
-  bool loadURDF(const std::string& meshFilename);
+  bool parseURDF(const std::string& meshFilename);
 
   void setGlobalScaling(float scaling) { m_urdfScaling = scaling; }
+  float getGlobalScaling() { return m_urdfScaling; }
 
   const UrdfModel& getModel() const { return m_urdfModel; }
 

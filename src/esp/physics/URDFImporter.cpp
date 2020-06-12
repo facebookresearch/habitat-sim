@@ -21,7 +21,7 @@ bool URDFImporter::loadURDF(const std::string& filename) {
     return false;
   }
 
-  bool success = urdfParser_.loadURDF(filename);
+  bool success = urdfParser_.parseURDF(filename);
 
   Corrade::Utility::Debug() << "Done loading";
 
@@ -119,7 +119,7 @@ bool URDFImporter::getJointInfo2(int linkIndex,
     linkTransformInWorld = link->m_linkTransformInWorld;
 
     if (link->m_parentJoint) {
-      io::UrdfJoint* pj = link->m_parentJoint;
+      auto& pj = link->m_parentJoint;
       parent2joint = pj->m_parentLinkToJointTransform;
       jointType = pj->m_type;
       jointAxisInJointSpace = pj->m_localJointAxis;
