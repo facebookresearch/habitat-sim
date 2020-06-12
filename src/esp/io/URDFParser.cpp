@@ -94,6 +94,7 @@ bool URDFParser::parseURDF(const std::string& filename) {
           }
         }
 
+        // register the new link
         newURDFModel.m_links[link->m_name] = link;
       }
     } else {
@@ -794,6 +795,7 @@ bool URDFParser::initTreeAndRoot(UrdfModel& model) {
     auto link = itr->second;
 
     link->m_linkIndex = index;
+    model.m_linkIndicesToNames[link->m_linkIndex] = link->m_name;
 
     if (!link->m_parentLink) {
       model.m_rootLinks.push_back(link);

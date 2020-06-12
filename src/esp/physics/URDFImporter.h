@@ -64,12 +64,8 @@ class URDFImporter {
   virtual void getLinkChildIndices(int linkIndex,
                                    std::vector<int>& childLinkIndices) const;
 
-  virtual std::string getLinkName(int linkIndex) const;
-
   virtual bool getLinkContactInfo(int linkIndex,
                                   io::URDFLinkContactInfo& contactInfo) const;
-
-  virtual std::string getJointName(int linkIndex) const;
 
   // TODO: refactor this nonsense
   virtual bool getJointInfo(int linkIndex,

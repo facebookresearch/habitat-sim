@@ -328,7 +328,6 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
       urdfLinkIndex, parent2joint, linkTransformInWorldSpace,
       jointAxisInJointSpace, jointType, jointLowerLimit, jointUpperLimit,
       jointDamping, jointFriction, jointMaxForce, jointMaxVelocity);
-  std::string linkName = getLinkName(urdfLinkIndex);
 
   if (flags & CUF_USE_MJCF) {
     linkTransformInWorldSpace =

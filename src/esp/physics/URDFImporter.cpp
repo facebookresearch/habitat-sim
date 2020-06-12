@@ -41,54 +41,14 @@ void URDFImporter::getLinkChildIndices(
     int linkIndex,
     std::vector<int>& childLinkIndices) const {
   childLinkIndices.resize(0);
-  auto itr = urdfParser_.getModel().m_links.begin();
-  for (int i = 0;
-       (i < linkIndex && itr != urdfParser_.getModel().m_links.end()); i++) {
-    itr++;
-  }
-  if (itr != urdfParser_.getModel().m_links.end()) {
-    std::shared_ptr<io::UrdfLink> link = itr->second;
+  auto link = urdfParser_.getModel().getLink(linkIndex);
 
+  if (link != nullptr) {
     for (size_t i = 0; i < link->m_childLinks.size(); i++) {
       int childIndex = link->m_childLinks[i]->m_linkIndex;
       childLinkIndices.push_back(childIndex);
     }
   }
-}
-
-std::string URDFImporter::getLinkName(int linkIndex) const {
-  auto itr = urdfParser_.getModel().m_links.begin();
-  for (int i = 0;
-       (i < linkIndex && itr != urdfParser_.getModel().m_links.end()); i++) {
-    itr++;
-  }
-  if (itr == urdfParser_.getModel().m_links.end()) {
-    Corrade::Utility::Debug() << "E - No link with index = " << linkIndex;
-    return "";
-  }
-
-  return itr->second->m_name;
-}
-
-std::string URDFImporter::getJointName(int linkIndex) const {
-  auto itr = urdfParser_.getModel().m_links.begin();
-  for (int i = 0;
-       (i < linkIndex && itr != urdfParser_.getModel().m_links.end()); i++) {
-    itr++;
-  }
-  if (itr == urdfParser_.getModel().m_links.end()) {
-    Corrade::Utility::Debug() << "E - No link with index = " << linkIndex;
-    return "";
-  }
-
-  if (itr->second->m_parentJoint) {
-    return itr->second->m_parentJoint->m_name;
-  }
-
-  Corrade::Utility::Debug()
-      << "E - No joint for link with index = " << linkIndex << " named "
-      << itr->second->m_name;
-  return "";
 }
 
 bool URDFImporter::getJointInfo2(int linkIndex,
@@ -109,13 +69,8 @@ bool URDFImporter::getJointInfo2(int linkIndex,
   jointMaxForce = 0.f;
   jointMaxVelocity = 0.f;
 
-  auto itr = urdfParser_.getModel().m_links.begin();
-  for (int i = 0;
-       (i < linkIndex && itr != urdfParser_.getModel().m_links.end()); i++) {
-    itr++;
-  }
-  if (itr != urdfParser_.getModel().m_links.end()) {
-    std::shared_ptr<io::UrdfLink> link = itr->second;
+  auto link = urdfParser_.getModel().getLink(linkIndex);
+  if (link != nullptr) {
     linkTransformInWorld = link->m_linkTransformInWorld;
 
     if (link->m_parentJoint) {
@@ -169,13 +124,8 @@ void URDFImporter::getMassAndInertia2(int linkIndex,
   } else {
     // the link->m_inertia is NOT necessarily aligned with the inertial frame
     // so an additional transform might need to be computed
-    auto itr = urdfParser_.getModel().m_links.begin();
-    for (int i = 0;
-         (i < linkIndex && itr != urdfParser_.getModel().m_links.end()); i++) {
-      itr++;
-    }
-    if (itr != urdfParser_.getModel().m_links.end()) {
-      std::shared_ptr<io::UrdfLink> link = itr->second;
+    auto link = urdfParser_.getModel().getLink(linkIndex);
+    if (link != nullptr) {
       float linkMass;
       if (link->m_parentJoint == 0 &&
           urdfParser_.getModel().m_overrideFixedBase) {
@@ -202,13 +152,8 @@ void URDFImporter::getMassAndInertia(int linkIndex,
                                      Mn::Matrix4& inertialFrame) const {
   // the link->m_inertia is NOT necessarily aligned with the inertial frame
   // so an additional transform might need to be computed
-  auto itr = urdfParser_.getModel().m_links.begin();
-  for (int i = 0;
-       (i < linkIndex && itr != urdfParser_.getModel().m_links.end()); i++) {
-    itr++;
-  }
-  if (itr != urdfParser_.getModel().m_links.end()) {
-    std::shared_ptr<io::UrdfLink> link = itr->second;
+  auto link = urdfParser_.getModel().getLink(linkIndex);
+  if (link != nullptr) {
     Mn::Matrix3 linkInertiaBasis;  // Identity
     float linkMass, principalInertiaX, principalInertiaY, principalInertiaZ;
     if (link->m_parentJoint == 0 &&
@@ -276,17 +221,13 @@ void URDFImporter::getMassAndInertia(int linkIndex,
 bool URDFImporter::getLinkContactInfo(
     int linkIndex,
     io::URDFLinkContactInfo& contactInfo) const {
-  auto itr = urdfParser_.getModel().m_links.begin();
-  for (int i = 0;
-       (i < linkIndex && itr != urdfParser_.getModel().m_links.end()); i++) {
-    itr++;
-  }
-  if (itr == urdfParser_.getModel().m_links.end()) {
+  auto link = urdfParser_.getModel().getLink(linkIndex);
+  if (link == nullptr) {
     Corrade::Utility::Debug() << "E - No link with index = " << linkIndex;
     return false;
   }
 
-  contactInfo = itr->second->m_contactInfo;
+  contactInfo = link->m_contactInfo;
   return true;
 }
 

@@ -220,14 +220,45 @@ struct UrdfModel {
   std::string m_name;
   std::string m_sourceFile;
   Magnum::Matrix4 m_rootTransformInWorld(Magnum::Math::IdentityInitT);
+
+  //! map of names to materials
   std::map<std::string, std::shared_ptr<UrdfMaterial>> m_materials;
+
+  //! map of names to links
   std::map<std::string, std::shared_ptr<UrdfLink>> m_links;
+
+  //! map of link indices to names
+  std::map<int, std::string> m_linkIndicesToNames;
+
+  //! map of names to joints
   std::map<std::string, std::shared_ptr<UrdfJoint>> m_joints;
 
+  //! list of root links (usually 1)
   std::vector<std::shared_ptr<UrdfLink>> m_rootLinks;
   bool m_overrideFixedBase;
 
   void printKinematicChain() const;
+
+  std::shared_ptr<UrdfLink> getLink(std::string linkName) const {
+    if (m_links.count(linkName)) {
+      return m_links.at(linkName);
+    }
+    return nullptr;
+  }
+  std::shared_ptr<UrdfLink> getLink(int linkIndex) const {
+    if (m_linkIndicesToNames.count(linkIndex)) {
+      return getLink(m_linkIndicesToNames.at(linkIndex));
+    }
+    return nullptr;
+  }
+
+  //! get the parent joint of a link
+  std::shared_ptr<UrdfJoint> getJoint(int linkIndex) const {
+    if (m_linkIndicesToNames.count(linkIndex)) {
+      return getLink(m_linkIndicesToNames.at(linkIndex))->m_parentJoint;
+    }
+    return nullptr;
+  }
 
   UrdfModel() : m_overrideFixedBase(false) {}
 };
