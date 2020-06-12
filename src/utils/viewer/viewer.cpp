@@ -1072,9 +1072,6 @@ void Viewer::viewportEvent(ViewportEvent& event) {
 void Viewer::mousePressEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Left ||
       event.button() == MouseEvent::Button::Right) {
-    // Corrade::Utility::Debug() << "mousePressEvent :
-    // MouseEvent::Button::Left";
-    // previousPosition_ = positionOnSphere(*renderCamera_, event.position());
     // TODO: get depth from buffer
     Magnum::Vector3 clickPoint = unproject(event.position(), 1.0);
 
@@ -1182,12 +1179,11 @@ void Viewer::mousePressEvent(MouseEvent& event) {
           }
         }
       }
-      // TODO: more click logic
     }
     if (mouseInteractionMode == THROW) {
       throwSphere(cast * 10);
     }
-  }  // end (event.button() == MouseEvent::Button::Left)
+  }  // end MouseEvent::Button::Left || Right
 
   event.setAccepted();
 }

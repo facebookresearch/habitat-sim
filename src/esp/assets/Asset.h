@@ -23,7 +23,6 @@ enum class AssetType {
   UNKNOWN2,
   NAVMESH,
   PRIMITIVE,
-
   COLLADA,
 };
 

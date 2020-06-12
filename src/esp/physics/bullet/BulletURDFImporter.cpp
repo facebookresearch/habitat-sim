@@ -347,55 +347,8 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
     compoundShape = tmpShape->getChildShape(0);
   }
 
-  // TODO: VISUAL SHAPES
-  /*
-      int graphicsIndex;
-      {
-              B3_PROFILE("convertLinkVisualShapes");
-              if (cachedLinkGraphicsShapesIn &&
-     cachedLinkGraphicsShapesIn->m_cachedUrdfLinkVisualShapeIndices.size() >
-     (mbLinkIndex + 1))
-              {
-                      graphicsIndex =
-     cachedLinkGraphicsShapesIn->m_cachedUrdfLinkVisualShapeIndices[mbLinkIndex
-     + 1]; UrdfMaterialColor matColor =
-     cachedLinkGraphicsShapesIn->m_cachedUrdfLinkColors[mbLinkIndex + 1];
-                      u2b.setLinkColor2(urdfLinkIndex, matColor);
-              }
-              else
-              {
-                      graphicsIndex = u2b.convertLinkVisualShapes(urdfLinkIndex,
-     localInertialFrame); if (cachedLinkGraphicsShapesOut)
-                      {
-                              cachedLinkGraphicsShapesOut->m_cachedUrdfLinkVisualShapeIndices.push_back(graphicsIndex);
-                              UrdfMaterialColor matColor;
-                              u2b.getLinkColor2(urdfLinkIndex, matColor);
-                              cachedLinkGraphicsShapesOut->m_cachedUrdfLinkColors.push_back(matColor);
-                      }
-              }
-      }
-  */
-
   Corrade::Utility::Debug() << "  about to deal with compoundShape";
   if (compoundShape) {
-    // TODO: VISUAL SHAPES
-    /*
-            UrdfMaterialColor matColor;
-            btVector4 color2 = selectColor2();
-            btVector3 specular(0.5, 0.5, 0.5);
-            if (u2b.getLinkColor2(urdfLinkIndex, matColor))
-            {
-                    color2 = matColor.m_rgbaColor;
-                    specular = matColor.m_specularColor;
-            }
-     */
-
-    /*
-if (visual->material.get())
-{
-color.setValue(visual->material->color.r,visual->material->color.g,visual->material->color.b);//,visual->material->color.a);
-}
-*/
     if (mass) {
       if (!(flags & CUF_USE_URDF_INERTIA)) {
         btVector3 btLocalIntertiaDiagonal;
@@ -418,9 +371,7 @@ color.setValue(visual->material->color.r,visual->material->color.g,visual->mater
     bool canSleep = (flags & CUF_ENABLE_SLEEPING) != 0;
 
     if (cache.m_bulletMultiBody == 0) {
-      // TODO: mass=0 no longer means fixed base. Problem?
-      bool isFixedBase = (mass == 0);  // todo: figure out when base is fixed
-      // bool isFixedBase = fixedBase;  // todo: figure out when base is fixed
+      bool isFixedBase = (mass == 0);
       int totalNumJoints = cache.m_totalNumJoints1;
       cache.m_bulletMultiBody =
           new btMultiBody(totalNumJoints, mass, btVector3(localInertiaDiagonal),
@@ -524,10 +475,6 @@ color.setValue(visual->material->color.r,visual->material->color.g,visual->mater
 
           if (jointType == io::URDFRevoluteJoint &&
               jointLowerLimit <= jointUpperLimit) {
-            // std::string name = u2b.getLinkName(urdfLinkIndex);
-            // printf("create btMultiBodyJointLimitConstraint for revolute link
-            // name=%s urdf link index=%d (low=%f, up=%f)\n", name.c_str(),
-            // urdfLinkIndex, jointLowerLimit, jointUpperLimit);
             btMultiBodyConstraint* con = new btMultiBodyJointLimitConstraint(
                 cache.m_bulletMultiBody, mbLinkIndex, jointLowerLimit,
                 jointUpperLimit);
@@ -550,25 +497,16 @@ color.setValue(visual->material->color.r,visual->material->color.g,visual->mater
               btVector3(-offsetInB.translation()), disableParentCollision);
 
           if (jointLowerLimit <= jointUpperLimit) {
-            // std::string name = u2b.getLinkName(urdfLinkIndex);
-            // printf("create btMultiBodyJointLimitConstraint for prismatic link
-            // name=%s urdf link index=%d (low=%f, up=%f)\n", name.c_str(),
-            // urdfLinkIndex, jointLowerLimit,jointUpperLimit);
-
             btMultiBodyConstraint* con = new btMultiBodyJointLimitConstraint(
                 cache.m_bulletMultiBody, mbLinkIndex, jointLowerLimit,
                 jointUpperLimit);
             world1->addMultiBodyConstraint(con);
           }
-          // printf("joint lower limit=%d, upper limit = %f\n", jointLowerLimit,
-          // jointUpperLimit);
 
           break;
         }
         default: {
-          // b3Printf("Error: unsupported joint type in URDF (%d)\n",
-          // jointType);
-          btAssert(0);
+          Corrade::Utility::Debug() << "Invalid joint type." btAssert(0);
         }
       }
     }
@@ -639,27 +577,6 @@ color.setValue(visual->material->color.r,visual->material->color.g,visual->mater
       // world1->addCollisionObject(col, 2, 1+2);
       // TODO: fix this collision issue
 
-      // TODO: VISUAL SHAPES
-      /*
-      btVector4 color2 = selectColor2();  //(0.0,0.0,0.5);
-      btVector3 specularColor(1, 1, 1);
-      UrdfMaterialColor matCol;
-      if (u2b.getLinkColor2(urdfLinkIndex, matCol))
-      {
-          color2 = matCol.m_rgbaColor;
-          specularColor = matCol.m_specularColor;
-      }
-      {
-          B3_PROFILE("createCollisionObjectGraphicsInstance2");
-          creation.createCollisionObjectGraphicsInstance2(urdfLinkIndex, col,
-      color2, specularColor);
-      }
-      {
-          B3_PROFILE("convertLinkVisualShapes2");
-          u2b.convertLinkVisualShapes2(mbLinkIndex, urdfLinkIndex, pathPrefix,
-      localInertialFrame, col, u2b.getBodyUniqueId());
-      }
-       */
       io::URDFLinkContactInfo contactInfo;
       getLinkContactInfo(urdfLinkIndex, contactInfo);
 
@@ -727,8 +644,6 @@ color.setValue(visual->material->color.r,visual->material->color.g,visual->mater
                                linkTransformInWorldSpace, world1, flags,
                                linkCollisionShapes);
   }
-  Corrade::Utility::Debug() << linkName << " linkTransformInWorldSpace: "
-                            << Magnum::Matrix4{linkTransformInWorldSpace};
   return linkTransformInWorldSpace;
 }
 

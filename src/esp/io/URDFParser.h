@@ -74,14 +74,6 @@ struct UrdfGeometry {
 
   Magnum::Vector3 m_planeNormal;
 
-  enum {
-    FILE_STL = 1,
-    FILE_COLLADA = 2,
-    FILE_OBJ = 3,
-    FILE_CDF = 4,
-    MEMORY_VERTICES = 5,
-
-  };
   int m_meshFileType;
   std::string m_meshFileName;
   Magnum::Vector3 m_meshScale;

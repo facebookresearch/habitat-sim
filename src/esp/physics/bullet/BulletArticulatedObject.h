@@ -16,51 +16,6 @@ namespace esp {
 
 namespace physics {
 
-// SPD control
-/*
-class SPDController:
-    def __init__(self, env, skel, target=None, timestep=0.01, startDof=6,
-ckp=30000.0, ckd=100.0):
-
-        self.target = target
-        if self.target is None:
-            self.target = np.array(skel.q)
-        self.startDof = startDof
-        self.env = env
-        self.skel = skel
-
-        self.h = timestep
-        ndofs = self.skel.ndofs-startDof
-        self.qhat = self.skel.q
-
-        self.Kp = np.diagflat([ckp] * (ndofs))
-        self.Kd = np.diagflat([ckd] * (ndofs))
-
-        self.preoffset = 0.0
-
-    def query(self, skel=None):
-
-        #override which skeleton is controlled if necessary
-        if skel is None:
-            skel = self.skel
-
-        #SPD
-        self.qhat = self.target
-        p = -self.Kp.dot(skel.q[self.startDof:] + skel.dq[self.startDof:] *
-self.h - self.qhat) d = -self.Kd.dot(skel.dq[self.startDof:]) b =
--skel.c[self.startDof:] + p + d# + skel.constraint_forces()[self.startDof:] A =
-skel.M[self.startDof:, self.startDof:] + self.Kd * self.h
-
-        #near singular matrix check ... remove for speed
-        #if not np.linalg.cond(A) < 1/sys.float_info.epsilon:
-        #    print("Near singular...")
-
-        x = np.linalg.solve(A, b)
-
-        tau = p + d - self.Kd.dot(x) * self.h
-        return tau
- */
-
 ////////////////////////////////////
 // Link
 ////////////////////////////////////
