@@ -11,10 +11,25 @@
 namespace esp {
 namespace gfx {
 
+uint64_t Drawable::drawableIdCounter = 0;
 Drawable::Drawable(scene::SceneNode& node,
                    Magnum::GL::Mesh& mesh,
                    DrawableGroup* group /* = nullptr */)
-    : Magnum::SceneGraph::Drawable3D{node, group}, node_(node), mesh_(mesh) {}
+    : Magnum::SceneGraph::Drawable3D{node, group},
+      node_(node),
+      mesh_(mesh),
+      drawableId_(drawableIdCounter++) {
+  if (group) {
+    group->drawableLookUp_.insert({drawableId_, this});
+  }
+}
+
+Drawable::~Drawable() {
+  DrawableGroup* group = drawables();
+  if (group) {
+    group->drawableLookUp_.erase(drawableId_);
+  }
+}
 
 DrawableGroup* Drawable::drawables() {
   CORRADE_ASSERT(

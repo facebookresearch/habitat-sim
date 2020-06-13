@@ -766,7 +766,6 @@ class ResourceManager {
                           scene::SceneNode& node,
                           const Magnum::ResourceKey& lightSetup,
                           DrawableGroup* drawables,
-                          int objectID,
                           int meshIDLocal,
                           int materialIDLocal);
 
@@ -799,8 +798,7 @@ class ResourceManager {
                              scene::SceneNode& node,
                              const Magnum::ResourceKey& lightSetup,
                              const Magnum::ResourceKey& material,
-                             DrawableGroup* group = nullptr,
-                             int objectId = ID_UNDEFINED);
+                             DrawableGroup* group = nullptr);
 
   // ======== Instance Variables ========
 

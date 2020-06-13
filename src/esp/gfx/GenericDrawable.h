@@ -22,8 +22,7 @@ class GenericDrawable : public Drawable {
                            ShaderManager& shaderManager,
                            const Magnum::ResourceKey& lightSetup,
                            const Magnum::ResourceKey& materialData,
-                           DrawableGroup* group = nullptr,
-                           int objectId = ID_UNDEFINED);
+                           DrawableGroup* group = nullptr);
 
   void setLightSetup(const Magnum::ResourceKey& lightSetup) override;
 
@@ -39,7 +38,6 @@ class GenericDrawable : public Drawable {
                                    Magnum::Shaders::Phong::Flags flags) const;
 
   Magnum::GL::Texture2D* texture_;
-  int objectId_;
   Magnum::Color4 color_;
 
   // shader parameters

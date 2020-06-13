@@ -11,12 +11,14 @@
 #else
 #include <Magnum/Platform/GlfwApplication.h>
 #endif
+#include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Timeline.h>
 
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/GL/RenderbufferFormat.h>
+#include <Magnum/Image.h>
 #include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
 
@@ -152,8 +154,9 @@ class Viewer : public Mn::Platform::Application {
   // framebuffer for drawable selection
   Mn::GL::Framebuffer selectionFramebuffer_{Mn::NoCreate};
   Mn::GL::Renderbuffer selectionDepth_;
-  Mn::GL::Renderbuffer selectionDrawableID_;
+  Mn::GL::Renderbuffer selectionDrawableId_;
   bool objectSelectionOn_ = false;
+  int64_t selectedDrawableId_ = -1;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -318,14 +321,14 @@ Viewer::Viewer(const Arguments& arguments)
   // setup an offscreen frame buffer for object selection
   selectionDepth_.setStorage(Mn::GL::RenderbufferFormat::DepthComponent24,
                              framebufferSize());
-  selectionDrawableID_.setStorage(Mn::GL::RenderbufferFormat::R16UI,
+  selectionDrawableId_.setStorage(Mn::GL::RenderbufferFormat::R32UI,
                                   framebufferSize());
   selectionFramebuffer_ = Mn::GL::Framebuffer{{{}, framebufferSize()}};
   selectionFramebuffer_
       .attachRenderbuffer(Mn::GL::Framebuffer::BufferAttachment::Depth,
                           selectionDepth_)
       .attachRenderbuffer(Mn::GL::Framebuffer::ColorAttachment{1},
-                          selectionDrawableID_);
+                          selectionDrawableId_);
   selectionFramebuffer_.mapForDraw({{Mn::Shaders::Generic3D::ColorOutput,
                                      Mn::GL::Framebuffer::DrawAttachment::None},
                                     {Mn::Shaders::Generic3D::ObjectIdOutput,
@@ -519,7 +522,8 @@ void Viewer::drawEvent() {
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   uint32_t visibles = 0;
 
-  for (auto& it : sceneGraph.getDrawableGroups()) {
+  for (std::pair<std::string, esp::gfx::DrawableGroup>&& it :
+       sceneGraph.getDrawableGroups()) {
     // TODO: remove || true
     if (it.second.prepareForDraw(*renderCamera_) || true) {
       visibles += renderCamera_->draw(it.second, frustumCullingEnabled_);
@@ -574,12 +578,25 @@ void Viewer::viewportEvent(ViewportEvent& event) {
   renderCamera_->setViewport(event.windowSize());
   imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
+
+  /* Recreate object ID reading renderbuffers that depend on viewport size */
+  selectionDepth_ = Mn::GL::Renderbuffer{};
+  selectionDepth_.setStorage(Mn::GL::RenderbufferFormat::DepthComponent24,
+                             event.framebufferSize());
+  selectionDrawableId_ = Mn::GL::Renderbuffer{};
+  selectionDrawableId_.setStorage(Mn::GL::RenderbufferFormat::R32UI,
+                                  event.framebufferSize());
+  selectionFramebuffer_
+      .attachRenderbuffer(Mn::GL::Framebuffer::BufferAttachment::Depth,
+                          selectionDepth_)
+      .attachRenderbuffer(Mn::GL::Framebuffer::ColorAttachment{1},
+                          selectionDrawableId_)
+      .setViewport({{}, event.framebufferSize()});
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Right && objectSelectionOn_) {
-    selectionFramebuffer_
-        .bind(); /** @todo mapForDraw() should bind implicitly */
+    selectionFramebuffer_.bind();
     selectionFramebuffer_
         .mapForDraw({{Mn::Shaders::Generic3D::ColorOutput,
                       Mn::GL::Framebuffer::DrawAttachment::None},
@@ -590,9 +607,61 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     CORRADE_INTERNAL_ASSERT(
         selectionFramebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
         Mn::GL::Framebuffer::Status::Complete);
-  }
+
+    int DEFAULT_SCENE = 0;
+    auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_[DEFAULT_SCENE]);
+
+    // if there is a selected object, remove it first
+    if (selectedDrawableId_ >= 0) {
+      for (std::pair<std::string, esp::gfx::DrawableGroup>&& it :
+           sceneGraph.getDrawableGroups()) {
+        esp::gfx::Drawable* d = it.second.getDrawable(selectedDrawableId_);
+        if (d != nullptr) {
+          d->setSelected(false);
+          break;  // the selected object is found and processed
+        }
+      }
+      selectedDrawableId_ = -1;
+    }
+    for (std::pair<std::string, esp::gfx::DrawableGroup>&& it :
+         sceneGraph.getDrawableGroups()) {
+      renderCamera_->draw(it.second, frustumCullingEnabled_);
+    }
+
+    // Read the ID back
+    selectionFramebuffer_.mapForRead(Mn::GL::Framebuffer::ColorAttachment{1});
+    CORRADE_INTERNAL_ASSERT(
+        selectionFramebuffer_.checkStatus(Mn::GL::FramebufferTarget::Read) ==
+        Mn::GL::Framebuffer::Status::Complete);
+
+    /* First scale the position from being relative to window size to being
+       relative to framebuffer size as those two can be different on HiDPI
+       systems */
+    const Mn::Vector2i position = event.position() *
+                                  Mn::Vector2{framebufferSize()} /
+                                  Mn::Vector2{windowSize()};
+    const Mn::Vector2i fbPosition{
+        position.x(),
+        selectionFramebuffer_.viewport().sizeY() - position.y() - 1};
+    const Mn::Range2Di area =
+        Mn::Range2Di::fromSize(fbPosition, Mn::Vector2i{1});
+
+    const Mn::UnsignedInt selectedObject =
+        selectionFramebuffer_.read(area, {Mn::PixelFormat::R32UI})
+            .pixels<Mn::UnsignedInt>()[0][0];
+
+    for (std::pair<std::string, esp::gfx::DrawableGroup>&& it :
+         sceneGraph.getDrawableGroups()) {
+      if (it.second.hasDrawable(selectedObject)) {
+        selectedDrawableId_ = selectedObject;
+        it.second.getDrawable(selectedDrawableId_)->setSelected(true);
+        break;
+      }
+    }  // for
+  }    // drawable selection
   event.setAccepted();
-}
+  redraw();
+}  // namespace
 
 void Viewer::mouseReleaseEvent(MouseEvent& event) {
   event.setAccepted();

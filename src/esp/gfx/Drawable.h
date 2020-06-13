@@ -32,7 +32,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   Drawable(scene::SceneNode& node,
            Magnum::GL::Mesh& mesh,
            DrawableGroup* group = nullptr);
-  virtual ~Drawable() {}
+  virtual ~Drawable();
 
   virtual scene::SceneNode& getSceneNode() { return node_; }
 
@@ -43,6 +43,25 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * DrawableGroup can be used
    */
   DrawableGroup* drawables();
+
+  /**
+   * @brief Get the drawable id
+   */
+  uint64_t getDrawableId() { return drawableId_; }
+
+  /**
+   * @brief Return if this drawable object is selected in the editor (e.g.,
+   * viewer)
+   * @return the drawable object state, if it is selected
+   */
+  bool selected() { return selected_; }
+
+  /**
+   *  @brief Set the state of the drawable, whether it is selected in the editor
+   * (e.g., viewer)
+   *  @param selected true if selected, otherwise false
+   */
+  void setSelected(bool selected) { selected_ = selected; }
 
   virtual void setLightSetup(const Magnum::ResourceKey& lightSetup){};
 
@@ -58,6 +77,10 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    */
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
                     Magnum::SceneGraph::Camera3D& camera) = 0;
+
+  static uint64_t drawableIdCounter;
+  uint64_t drawableId_;
+  bool selected_ = false;
 
   scene::SceneNode& node_;
   Magnum::GL::Mesh& mesh_;
