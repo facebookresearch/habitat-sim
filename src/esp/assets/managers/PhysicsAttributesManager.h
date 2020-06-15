@@ -77,6 +77,21 @@ class PhysicsAttributesManager
 
  protected:
   /**
+   * @brief Whether template described by passed handle is read only, or can be
+   * deleted.  All PhysicsAttributes templates are removable, by default
+   * @param templateHandle the handle to the template to verify removability.
+   * Assumes template exists.
+   * @return Whether the template is read-only or not
+   */
+  bool isTemplateReadOnly(const std::string& templateHandle) override {
+    return false;
+  };
+  /**
+   * @brief Any physics-attributes-specific resetting that needs to happen on
+   * reset.
+   */
+  void resetFinalize() override {}
+  /**
    * @brief This function will assign the appropriately configured function
    * pointer for the copy constructor as required by
    * AttributesManager<PhysicsSceneAttributes::ptr>

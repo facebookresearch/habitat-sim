@@ -37,7 +37,7 @@ void initAttributesManagersBindings(py::module& m) {
       .value("UVSPHERE_WF", assets::PrimObjTypes::UVSPHERE_WF)
       .value("END_PRIM_OBJ_TYPE", assets::PrimObjTypes::END_PRIM_OBJ_TYPES);
 
-  // ==== Primitive Asset Attributes template manager ====
+  // ==== Primitive Asset Attributes Template manager ====
   py::class_<AssetAttributesManager, AssetAttributesManager::ptr>(
       m, "AssetAttributesManager")
       .def("get_template_handle_by_ID",
@@ -53,11 +53,7 @@ void initAttributesManagersBindings(py::module& m) {
            "search_str"_a = "", "contains"_a = true)
       .def("get_library_has_handle",
            &AssetAttributesManager::getTemplateLibHasHandle)
-      // only ever return a copy of primitive asset template to user, so
-      // that name used as map key and internal name do not get out of synch
-      .def("get_template_by_handle",
-           &AssetAttributesManager::getTemplateCopyByHandle, "template_name"_a,
-           py::return_value_policy::reference)
+
       .def("create_template",
            py::overload_cast<const std::string&, bool>(
                &AssetAttributesManager::createAttributesTemplate),
@@ -72,10 +68,13 @@ void initAttributesManagersBindings(py::module& m) {
       .def("register_template",
            &AssetAttributesManager::registerAttributesTemplate, "template"_a,
            "template_handle"_a)
+      // only ever return a copy of primitive asset template to user, so
+      // that name used as map key and internal name do not get out of synch
+      .def("get_template_by_handle",
+           &AssetAttributesManager::getTemplateCopyByHandle, "template_name"_a,
+           py::return_value_policy::reference);
 
-      ;
-
-  // ==== Primitive Asset Attributes template manager ====
+  // ==== Physical Object Attributes Template manager ====
   py::class_<ObjectAttributesManager, ObjectAttributesManager::ptr>(
       m, "ObjectAttributesManager")
       .def("get_template_handle_by_ID",
@@ -93,9 +92,6 @@ void initAttributesManagersBindings(py::module& m) {
            &ObjectAttributesManager::getTemplateLibHasHandle)
       .def("get_template_by_id", &ObjectAttributesManager::getTemplateByID,
            "template_id"_a, py::return_value_policy::reference)
-      .def("get_template_by_handle",
-           &ObjectAttributesManager::getTemplateByHandle, "template_name"_a,
-           py::return_value_policy::reference)
 
       .def("create_template",
            &ObjectAttributesManager::createAttributesTemplate,
@@ -118,7 +114,13 @@ void initAttributesManagersBindings(py::module& m) {
            &ObjectAttributesManager::getRandomSynthTemplateHandle)
       .def("get_synth_template_handles",
            &ObjectAttributesManager::getSynthTemplateHandlesBySubstring,
-           "search_str"_a = "", "contains"_a = true);
+           "search_str"_a = "", "contains"_a = true)
+
+      .def("get_template_by_handle",
+           &ObjectAttributesManager::getTemplateByHandle, "template_name"_a,
+           py::return_value_policy::reference)
+
+      ;
 
   /**
    * TODO: Add bindings for PhysicsAttributesManager and SceneAttributesManager?

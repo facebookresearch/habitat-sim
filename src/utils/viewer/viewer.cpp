@@ -218,9 +218,20 @@ Viewer::Viewer(const Arguments& arguments)
           << physicsConfigFilename
           << " was not found, specify an existing file in --physics-config";
     }
-    if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
-                                    &drawables, sceneLightSetup,
-                                    physicsConfigFilename)) {
+    // use physics world attributes manager to get physics manager attributes
+    // described by config file
+    auto physicsManagerAttributes =
+        resourceManager_.getPhysicsAttributesManager()
+            ->createAttributesTemplate(physicsConfigFilename, true);
+    CORRADE_ASSERT(physicsManagerAttributes != nullptr,
+                   "Viewer::ctor : Error attempting to load world described by"
+                       << physicsConfigFilename << ". Aborting", );
+
+    bool loadSuccess = resourceManager_.loadPhysicsScene(
+        info, physicsManager_, physicsManagerAttributes, navSceneNode_,
+        &drawables, sceneLightSetup);
+
+    if (!loadSuccess) {
       LOG(FATAL) << "cannot load " << file;
     }
     if (args.isSet("debug-bullet")) {
@@ -321,8 +332,8 @@ void Viewer::addObject(const std::string& configFile) {
   }
 
   Mn::Matrix4 T =
-      agentBodyNode_
-          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+      agentBodyNode_->MagnumObject::transformationMatrix();  // Relative to
+                                                             // agent bodynode
   Mn::Vector3 new_pos = T.transformPoint({0.1f, 1.5f, -2.0f});
 
   auto& drawables = sceneGraph_->getDrawables();
@@ -388,8 +399,8 @@ void Viewer::pokeLastObject() {
   if (physicsManager_ == nullptr || objectIDs_.size() == 0)
     return;
   Mn::Matrix4 T =
-      agentBodyNode_
-          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+      agentBodyNode_->MagnumObject::transformationMatrix();  // Relative to
+                                                             // agent bodynode
   Mn::Vector3 impulse = T.transformVector({0.0f, 0.0f, -3.0f});
   Mn::Vector3 rel_pos = Mn::Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyImpulse(objectIDs_.back(), impulse, rel_pos);
@@ -399,8 +410,8 @@ void Viewer::pushLastObject() {
   if (physicsManager_ == nullptr || objectIDs_.size() == 0)
     return;
   Mn::Matrix4 T =
-      agentBodyNode_
-          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
+      agentBodyNode_->MagnumObject::transformationMatrix();  // Relative to
+                                                             // agent bodynode
   Mn::Vector3 force = T.transformVector({0.0f, 0.0f, -40.0f});
   Mn::Vector3 rel_pos = Mn::Vector3(0.0f, 0.0f, 0.0f);
   physicsManager_->applyForce(objectIDs_.back(), force, rel_pos);

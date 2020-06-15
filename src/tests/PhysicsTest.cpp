@@ -23,6 +23,7 @@ namespace Cr = Corrade;
 
 using esp::assets::ResourceManager;
 using esp::assets::managers::ObjectAttributesManager;
+using esp::assets::managers::PhysicsAttributesManager;
 using esp::physics::PhysicsManager;
 using esp::scene::SceneManager;
 
@@ -38,6 +39,8 @@ class PhysicsManagerTest : public testing::Test {
     renderer_ = esp::gfx::Renderer::create();
 
     sceneID_ = sceneManager_.initSceneGraph();
+    // get attributes manager for physics world attributes
+    physicsAttributesManager_ = resourceManager_.getPhysicsAttributesManager();
   };
 
   void initScene(const std::string sceneFile) {
@@ -48,8 +51,17 @@ class PhysicsManagerTest : public testing::Test {
     esp::scene::SceneNode* navSceneNode =
         &sceneGraph.getRootNode().createChild();
     auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
-    resourceManager_.loadScene(info, physicsManager_, navSceneNode, &drawables,
-                               physicsConfigFile);
+
+    // construct appropriate physics attributes based on config file
+    auto physicsManagerAttributes =
+        physicsAttributesManager_->createAttributesTemplate(physicsConfigFile,
+                                                            true);
+    resourceManager_.loadPhysicsScene(info, physicsManager_,
+                                      physicsManagerAttributes, navSceneNode,
+                                      &drawables);
+
+    // resourceManager_.loadScene(info, physicsManager_, navSceneNode,
+    // &drawables, physicsConfigFile);
   }
 
   // must declare these in this order due to avoid deallocation errors
@@ -57,6 +69,8 @@ class PhysicsManagerTest : public testing::Test {
   esp::gfx::Renderer::ptr renderer_;
 
   ResourceManager resourceManager_;
+
+  AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_;
   SceneManager sceneManager_;
   PhysicsManager::ptr physicsManager_;
 

@@ -81,7 +81,7 @@ class AssetAttributesManager
       : AttributesManager<
             AbstractPrimitiveAttributes::ptr>::AttributesManager() {
     buildCtorFuncPtrMaps();
-  }
+  }  // AssetAttributesManager::ctor
 
   /**
    * @brief Creates an instance of a primtive asset attributes template
@@ -163,9 +163,31 @@ class AssetAttributesManager
     std::string subStr = PrimitiveNames3DMap.at(primType);
     return this->getTemplateHandlesBySubStringPerType(this->templateLibKeyByID_,
                                                       subStr, contains);
-  }  // getTemplateHandlesByPrimType
+  }  // AssetAttributeManager::getTemplateHandlesByPrimType
 
  protected:
+  /**
+   * @brief Whether template described by passed handle is read only, or can be
+   * deleted.  Default primitive asset templates should not be removed.
+   * @param templateHandle the handle to the template to verify removability.
+   * Assumes template exists.
+   * @return Whether the template is read-only or not
+   */
+  bool isTemplateReadOnly(const std::string& templateHandle) override {
+    for (auto handle : defaultTemplateNames) {
+      if (handle.compare(templateHandle) == 0) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  /**
+   * @brief vector holding string template handles of all default primitive
+   * asset templates, to make sure they are never deleted.
+   */
+  std::vector<std::string> defaultTemplateNames;
+
   /**
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
    * with passed class name
@@ -179,7 +201,7 @@ class AssetAttributesManager
       return nullptr;
     }
     return (*this.*primTypeConstructorMap_[primTypeName])();
-  }  // buildPrimAttributes
+  }  // AssetAttributeManager::buildPrimAttributes
 
   /**
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
@@ -195,7 +217,7 @@ class AssetAttributesManager
       return nullptr;
     }
     return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(primType)])();
-  }  // buildPrimAttributes
+  }  // AssetAttributeManager::buildPrimAttributes
 
   /**
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
@@ -212,7 +234,7 @@ class AssetAttributesManager
     }
     return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(
                        static_cast<PrimObjTypes>(primTypeVal))])();
-  }  // buildPrimAttributes
+  }  // AssetAttributeManager::buildPrimAttributes
 
   /**
    * @brief Build a shared pointer to the appropriate attributes for passed
@@ -230,7 +252,23 @@ class AssetAttributesManager
     }
     int idx = static_cast<int>(primitiveType);
     return T::create(isWireFrame, idx, PrimitiveNames3DMap.at(primitiveType));
-  }
+  }  // AssetAttributeManager::createPrimAttributes
+
+  /**
+   * @brief Any Assset-attributes-specific resetting that needs to happen on
+   * reset.
+   */
+  void resetFinalize() override {
+    // build default AbstractPrimitiveAttributes objects - reset does not remove
+    // constructor mappings;
+    for (const std::pair<PrimObjTypes, const char*>& elem :
+         PrimitiveNames3DMap) {
+      if (elem.first == PrimObjTypes::END_PRIM_OBJ_TYPES) {
+        continue;
+      }
+      createAttributesTemplate(elem.second, true);
+    }
+  }  // AssetAttributesManager::resetFinalize()
 
   /**
    * @brief This function will assign the appropriately configured function

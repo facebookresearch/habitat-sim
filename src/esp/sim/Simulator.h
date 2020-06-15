@@ -7,6 +7,10 @@
 
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/assets/managers/AssetAttributesManager.h"
+#include "esp/assets/managers/ObjectAttributesManager.h"
+#include "esp/assets/managers/PhysicsAttributesManager.h"
+#include "esp/assets/managers/SceneAttributesManager.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
 #include "esp/gfx/RenderTarget.h"
@@ -16,6 +20,8 @@
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
+
+namespace AttrMgrs = esp::assets::managers;
 
 namespace esp {
 namespace nav {
@@ -102,6 +108,36 @@ class Simulator {
 
   // === Physics Simulator Functions ===
   // TODO: support multi-scene physics (default sceneID=0 currently).
+
+  /**
+   * @brief Return manager for construction and access to asset attributes.
+   */
+  const AttrMgrs::AssetAttributesManager::ptr getAssetAttributesManager()
+      const {
+    return resourceManager_->getAssetAttributesManager();
+  }
+  /**
+   * @brief Return manager for construction and access to object attributes.
+   */
+  const AttrMgrs::ObjectAttributesManager::ptr getObjectAttributesManager()
+      const {
+    return resourceManager_->getObjectAttributesManager();
+  }
+  /**
+   * @brief Return manager for construction and access to physics world
+   * attributes.
+   */
+  const AttrMgrs::PhysicsAttributesManager::ptr getPhysicsAttributesManager()
+      const {
+    return resourceManager_->getPhysicsAttributesManager();
+  }
+  /**
+   * @brief Return manager for construction and access to scene attributes.
+   */
+  const AttrMgrs::SceneAttributesManager::ptr getSceneAttributesManager()
+      const {
+    return resourceManager_->getSceneAttributesManager();
+  }
 
   /**
    * @brief Get the string handle for the object template referenced by the

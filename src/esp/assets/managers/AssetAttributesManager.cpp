@@ -115,13 +115,14 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
       &AssetAttributesManager::createAttributesCopy<
           assets::UVSpherePrimitiveAttributes>;
   // no entry added for PrimObjTypes::END_PRIM_OBJ_TYPES
-
+  defaultTemplateNames.clear();
   // build default AbstractPrimitiveAttributes objects
   for (const std::pair<PrimObjTypes, const char*>& elem : PrimitiveNames3DMap) {
     if (elem.first == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       continue;
     }
-    createAttributesTemplate(elem.second, true);
+    auto tmplt = createAttributesTemplate(elem.second, true);
+    defaultTemplateNames.push_back(tmplt->getOriginHandle());
   }
 }  // buildMapOfPrimTypeConstructors
 

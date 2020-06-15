@@ -79,11 +79,35 @@ void initSimBindings(py::module& m) {
                     &Simulator::setFrustumCullingEnabled,
                     R"(Enable or disable the frustum culling)")
       /* --- Physics functions --- */
+      /* --- Template Manager accessors --- */
+      .def("get_asset_template_manager", &Simulator::getAssetAttributesManager,
+           pybind11::return_value_policy::reference)
+      .def("get_object_template_manager",
+           &Simulator::getObjectAttributesManager,
+           pybind11::return_value_policy::reference)
+      .def("get_physics_template_manager",
+           &Simulator::getPhysicsAttributesManager,
+           pybind11::return_value_policy::reference)
+      .def("get_scene_template_manager", &Simulator::getSceneAttributesManager,
+           pybind11::return_value_policy::reference)
 
+      /* --- DEPRECATED - all sim-pass-through access to raw templates is being
+         removed--- */
       .def("get_template_handle_by_ID", &Simulator::getObjectTemplateHandleByID,
            "object_id"_a)
       .def("get_template_handles", &Simulator::getObjectTemplateHandles,
            "search_str"_a = "", "contains"_a = true)
+      .def("get_physics_object_library_size",
+           &Simulator::getPhysicsObjectLibrarySize)
+      .def("get_object_template", &Simulator::getObjectTemplate,
+           "object_template_id"_a, py::return_value_policy::reference)
+      .def("load_object_configs", &Simulator::loadObjectConfigs, "path"_a)
+      .def("load_object_template", &Simulator::registerObjectTemplate,
+           "object_template"_a, "object_template_handle"_a)
+
+      /* --- END DEPRECATED --- */
+
+      /* --- Object instancing and access --- */
       .def("add_object", &Simulator::addObject, "object_lib_index"_a,
            "attachment_node"_a = nullptr,
            "light_setup_key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY,
@@ -92,18 +116,11 @@ void initSimBindings(py::module& m) {
            "object_lib_handle"_a, "attachment_node"_a = nullptr,
            "light_setup_key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY,
            "scene_id"_a = 0)
-      .def("get_physics_object_library_size",
-           &Simulator::getPhysicsObjectLibrarySize)
-      .def("get_object_template", &Simulator::getObjectTemplate,
-           "object_template_id"_a, py::return_value_policy::reference)
-      .def("load_object_configs", &Simulator::loadObjectConfigs, "path"_a)
-      .def("load_object_template", &Simulator::registerObjectTemplate,
-           "object_template"_a, "object_template_handle"_a)
-      .def("get_object_initialization_template",
-           &Simulator::getObjectInitializationTemplate, "object_id"_a,
-           "scene_id"_a = 0)
       .def("remove_object", &Simulator::removeObject, "object_id"_a,
            "delete_object_node"_a = true, "delete_visual_node"_a = true,
+           "scene_id"_a = 0)
+      .def("get_object_initialization_template",
+           &Simulator::getObjectInitializationTemplate, "object_id"_a,
            "scene_id"_a = 0)
       .def("get_object_motion_type", &Simulator::getObjectMotionType,
            "object_id"_a, "scene_id"_a = 0)
@@ -111,6 +128,8 @@ void initSimBindings(py::module& m) {
            "motion_type"_a, "object_id"_a, "scene_id"_a = 0)
       .def("get_existing_object_ids", &Simulator::getExistingObjectIDs,
            "scene_id"_a = 0)
+
+      /* --- Kinematics and dynamics --- */
       .def("step_world", &Simulator::stepWorld, "dt"_a = 1.0 / 60.0)
       .def("get_world_time", &Simulator::getWorldTime)
       .def("get_gravity", &Simulator::getGravity, "scene_id"_a = 0)
