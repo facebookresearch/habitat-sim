@@ -19,14 +19,12 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
                                  ShaderManager& shaderManager,
                                  const Mn::ResourceKey& lightSetup,
                                  const Mn::ResourceKey& materialData,
-                                 DrawableGroup* group /* = nullptr */,
-                                 int objectId /* = ID_UNDEFINED */)
+                                 DrawableGroup* group /* = nullptr */)
     : Drawable{node, mesh, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetup)},
       materialData_{
-          shaderManager.get<MaterialData, PhongMaterialData>(materialData)},
-      objectId_(objectId) {
+          shaderManager.get<MaterialData, PhongMaterialData>(materialData)} {
   // update the shader early here to to avoid doing it during the render loop
   updateShader();
 }
