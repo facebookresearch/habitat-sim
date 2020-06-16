@@ -4,6 +4,7 @@ add_library(bulletphysics STATIC
   BulletPhysicsManager.cpp
   BulletPhysicsManager.h
   BulletBase.h
+  BulletBase.cpp
   BulletRigidObject.cpp
   BulletRigidObject.h
   BulletRigidScene.cpp

@@ -69,25 +69,6 @@ class BulletRigidObject : public BulletBase,
       assets::AbstractPrimitiveAttributes::ptr primAttributes);
 
   /**
-   * @brief Recursively construct a @ref btCompoundShape for collision from
-   * loaded mesh assets. A @ref btConvexHullShape is constructed for each
-   * sub-component, transformed to object-local space and added to the compound
-   * in a flat manner for efficiency.
-   * @param transformFromParentToWorld The cumulative parent-to-world
-   * transformation matrix constructed by composition down the @ref
-   * MeshTransformNode tree to the current node.
-   * @param meshGroup Access structure for collision mesh data.
-   * @param node The current @ref MeshTransformNode in the recursion.
-   * @param join Whether or not to join sub-meshes into a single con convex
-   * shape, rather than creating individual convexes under the compound.
-   */
-  void constructBulletCompoundFromMeshes(
-      const Magnum::Matrix4& transformFromParentToWorld,
-      const std::vector<assets::CollisionMeshData>& meshGroup,
-      const assets::MeshTransformNode& node,
-      bool join);
-
-  /**
    * @brief Check whether object is being actively simulated, or sleeping.
    * See @ref btCollisionObject::isActive.
    * @return true if active, false otherwise.
@@ -450,12 +431,6 @@ class BulletRigidObject : public BulletBase,
   //! If true, the object's bounding box will be used for collision once
   //! computed
   bool usingBBCollisionShape_ = false;
-  //! Object data: Composite convex collision shape
-  std::vector<std::unique_ptr<btConvexHullShape>> bObjectConvexShapes_;
-
-  //! list of @ref btCollisionShape for storing arbitrary collision shapes
-  //! referenced within the @ref bObjectShape_.
-  std::vector<std::unique_ptr<btCollisionShape>> bGenericShapes_;
 
   //! Object data: All components of the collision shape
   std::unique_ptr<btCompoundShape> bObjectShape_;

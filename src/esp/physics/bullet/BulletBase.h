@@ -91,6 +91,26 @@ class BulletBase {
   virtual const Magnum::Range3D getCollisionShapeAabb() const = 0;
 
  protected:
+  /**
+   * @brief Recursively construct a @ref btCompoundShape for collision from
+   * loaded mesh assets. A @ref btConvexHullShape is constructed for each
+   * sub-component, transformed to object-local space and added to the compound
+   * in a flat manner for efficiency.
+   * @param transformFromParentToWorld The cumulative parent-to-world
+   * transformation matrix constructed by composition down the @ref
+   * MeshTransformNode tree to the current node.
+   * @param meshGroup Access structure for collision mesh data.
+   * @param node The current @ref MeshTransformNode in the recursion.
+   * @param join Whether or not to join sub-meshes into a single con convex
+   * shape, rather than creating individual convexes under the compound.
+   */
+  void constructConvexShapesFromMeshes(
+      const Magnum::Matrix4& transformFromParentToWorld,
+      const std::vector<assets::CollisionMeshData>& meshGroup,
+      const assets::MeshTransformNode& node,
+      bool join,
+      btCompoundShape* bObjectShape = nullptr);
+
   /** @brief A pointer to the Bullet world to which this object belongs. See
    * @ref btMultiBodyDynamicsWorld.*/
   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;
@@ -100,6 +120,13 @@ class BulletBase {
    * are stored here.
    */
   std::vector<std::unique_ptr<btCollisionObject>> bStaticCollisionObjects_;
+
+  //! Object data: Composite convex collision shape
+  std::vector<std::unique_ptr<btConvexHullShape>> bObjectConvexShapes_;
+
+  //! list of @ref btCollisionShape for storing arbitrary collision shapes
+  //! referenced within the @ref bObjectShape_.
+  std::vector<std::unique_ptr<btCollisionShape>> bGenericShapes_;
 
  public:
   ESP_SMART_POINTERS(BulletBase)
