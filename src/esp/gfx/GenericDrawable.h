@@ -15,8 +15,8 @@ namespace gfx {
 class GenericDrawable : public Drawable {
  public:
   //! Create a GenericDrawable for the given object using shader and mesh.
-  //! Adds drawable to given group and uses provided texture, objectId, and
-  //! color for textured, object id buffer and color shader output respectively
+  //! Adds drawable to given group and uses provided texture, and
+  //! color for textured buffer and color shader output respectively
   explicit GenericDrawable(scene::SceneNode& node,
                            Magnum::GL::Mesh& mesh,
                            ShaderManager& shaderManager,

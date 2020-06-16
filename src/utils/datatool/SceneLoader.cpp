@@ -19,8 +19,20 @@
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 
+#include <Magnum/Trade/AbstractImporter.h>
+
+namespace Cr = Corrade;
+
 namespace esp {
 namespace assets {
+
+SceneLoader::SceneLoader()
+    :
+#ifdef MAGNUM_BUILD_STATIC
+      // avoid using plugins that might depend on different library versions
+      importerManager_("nonexistent")
+#endif
+          {};
 
 MeshData SceneLoader::load(const AssetInfo& info) {
   MeshData mesh;
@@ -30,12 +42,15 @@ MeshData SceneLoader::load(const AssetInfo& info) {
   }
 
   if (info.type == AssetType::INSTANCE_MESH) {
-    GenericInstanceMeshData instanceMeshData;
-    instanceMeshData.loadPLY(info.filepath);
+    Cr::Containers::Pointer<Importer> importer;
+    CORRADE_INTERNAL_ASSERT_OUTPUT(
+        importer = importerManager_.loadAndInstantiate("StanfordImporter"));
+    GenericInstanceMeshData::ptr instanceMeshData =
+        GenericInstanceMeshData::fromPLY(*importer, info.filepath);
 
-    const auto& vbo = instanceMeshData.getVertexBufferObjectCPU();
-    const auto& cbo = instanceMeshData.getColorBufferObjectCPU();
-    const auto& ibo = instanceMeshData.getIndexBufferObjectCPU();
+    const auto& vbo = instanceMeshData->getVertexBufferObjectCPU();
+    const auto& cbo = instanceMeshData->getColorBufferObjectCPU();
+    const auto& ibo = instanceMeshData->getIndexBufferObjectCPU();
     mesh.vbo = vbo;
     mesh.ibo = ibo;
     for (const auto& c : cbo) {

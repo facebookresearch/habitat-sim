@@ -755,8 +755,6 @@ class ResourceManager {
    * for the added mesh.
    * @param drawables The @ref DrawableGroup with which the new @ref
    * gfx::Drawable will be rendered.
-   * @param objectID The object type identifier or semantic group (e.g.
-   * 1->chair, 2->table, etc..) for semantic rendering of the mesh.
    * @param meshIDLocal The index of the mesh within the mesh group linked to
    * the asset via the @ref MeshMetaData.
    * @param materialIDLocal The index of the material within the material
@@ -789,8 +787,6 @@ class ResourceManager {
    * @param group Optional @ref DrawableGroup with which the render the @ref
    * gfx::Drawable.
    * @param texture Optional texture for the mesh.
-   * @param objectId Optional object type indentifier or semantic type for the
-   * mesh (e.g. 1->table, 2->chair, etc...).
    * @param color Optional color parameter for the shader program. Defaults to
    * white.
    */
