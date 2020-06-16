@@ -7,13 +7,13 @@
 namespace esp {
 namespace gfx {
 
-bool DrawableGroup::hasDrawable(uint64_t id) {
+bool DrawableGroup::hasDrawable(uint64_t id) const {
   return (idToDrawable_.find(id) != idToDrawable_.end());
 }
 
-Drawable* DrawableGroup::getDrawable(uint64_t id) {
+Drawable* DrawableGroup::getDrawable(uint64_t id) const {
   if (hasDrawable(id)) {
-    return idToDrawable_[id];
+    return idToDrawable_.at(id);
   }
 
   return nullptr;
