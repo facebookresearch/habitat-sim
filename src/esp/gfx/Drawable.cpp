@@ -24,10 +24,13 @@ Drawable::Drawable(scene::SceneNode& node,
 }
 
 Drawable::~Drawable() {
+  LOG(INFO) << "Deconstructing drawable";  // XXX
+  /*
   DrawableGroup* group = drawables();
   if (group) {
     group->idToDrawable_.erase(drawableId_);
   }
+  */
 }
 
 DrawableGroup* Drawable::drawables() {
