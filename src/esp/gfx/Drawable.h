@@ -32,7 +32,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   Drawable(scene::SceneNode& node,
            Magnum::GL::Mesh& mesh,
            DrawableGroup* group = nullptr);
-  virtual ~Drawable() {}
+  virtual ~Drawable();
 
   virtual scene::SceneNode& getSceneNode() { return node_; }
 
@@ -58,6 +58,9 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    */
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
                     Magnum::SceneGraph::Camera3D& camera) = 0;
+
+  static uint64_t drawableIdCounter;
+  uint64_t drawableId_;
 
   scene::SceneNode& node_;
   Magnum::GL::Mesh& mesh_;
