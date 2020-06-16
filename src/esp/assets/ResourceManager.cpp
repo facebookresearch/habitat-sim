@@ -856,7 +856,7 @@ bool ResourceManager::loadGeneralMeshData(
                meshes_[meshMetaData.meshIndex.first]) {
       // no default scene --- standalone OBJ/PLY files, for example
       // take a wild guess and load the first mesh with the first material
-      // addMeshToDrawables(metaData, *parent, drawables, ID_UNDEFINED, 0, 0);
+      // addMeshToDrawables(metaData, *parent, drawables, 0, 0);
       loadMeshHierarchy(*fileImporter_, meshMetaData.root, 0);
     } else {
       LOG(ERROR) << "No default scene available and no meshes found, exiting";
@@ -1347,8 +1347,7 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
   // Add a drawable if the object has a mesh and the mesh is loaded
   if (meshIDLocal != ID_UNDEFINED) {
     const int materialIDLocal = meshTransformNode.materialIDLocal;
-    addMeshToDrawables(metaData, node, lightSetup, drawables,
-                       meshTransformNode.componentID, meshIDLocal,
+    addMeshToDrawables(metaData, node, lightSetup, drawables, meshIDLocal,
                        materialIDLocal);
 
     // compute the bounding box for the mesh we are adding
@@ -1367,7 +1366,6 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                                          scene::SceneNode& node,
                                          const Mn::ResourceKey& lightSetup,
                                          DrawableGroup* drawables,
-                                         int objectID,
                                          int meshIDLocal,
                                          int materialIDLocal) {
   const int meshStart = metaData.meshIndex.first;
@@ -1383,8 +1381,7 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
         std::to_string(metaData.materialIndex.first + materialIDLocal);
   }
 
-  createGenericDrawable(mesh, node, lightSetup, materialKey, drawables,
-                        objectID);
+  createGenericDrawable(mesh, node, lightSetup, materialKey, drawables);
 
   if (computeAbsoluteAABBs_) {
     staticDrawableInfo_.emplace_back(StaticDrawableInfo{node, meshID});
@@ -1404,11 +1401,10 @@ void ResourceManager::createGenericDrawable(
     scene::SceneNode& node,
     const Mn::ResourceKey& lightSetup,
     const Mn::ResourceKey& material,
-    DrawableGroup* group /* = nullptr */,
-    int objectId /* = ID_UNDEFINED */) {
+    DrawableGroup* group /* = nullptr */) {
   node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetup,
-                                        material, group, objectId);
-}
+                                        material, group);
+}  // namespace assets
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
                                          scene::SceneNode* parent,
