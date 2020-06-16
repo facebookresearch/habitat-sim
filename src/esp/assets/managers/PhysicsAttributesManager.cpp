@@ -21,7 +21,7 @@ namespace assets {
 
 namespace managers {
 
-const PhysicsManagerAttributes::ptr
+PhysicsManagerAttributes::ptr
 PhysicsAttributesManager::createAttributesTemplate(
     const std::string& physicsFilename,
     bool registerTemplate) {
@@ -115,7 +115,7 @@ PhysicsAttributesManager::createAttributesTemplate(
   }  // if load rigid object library metadata
 
   if (registerTemplate) {
-    registerAttributesTemplate(physicsManagerAttributes, physicsFilename);
+    this->registerAttributesTemplate(physicsManagerAttributes, physicsFilename);
   }
 
   return physicsManagerAttributes;

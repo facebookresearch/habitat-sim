@@ -87,15 +87,6 @@ void ResourceManager::buildImportersAndAttributesManagers() {
   physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
   sceneAttributesManager_ = managers::SceneAttributesManager::create();
 
-  LOG(INFO) << "asset attr mgr query : "
-            << assetAttributesManager_->getNumTemplates();
-  LOG(INFO) << "object attr mgr query : "
-            << objectAttributesManager_->getNumTemplates();
-  LOG(INFO) << "physics attr mgr query : "
-            << physicsAttributesManager_->getNumTemplates();
-  LOG(INFO) << "Scene attr mgr query : "
-            << sceneAttributesManager_->getNumTemplates();
-
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       primitiveImporter_ =

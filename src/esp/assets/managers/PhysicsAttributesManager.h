@@ -35,6 +35,9 @@ class PhysicsAttributesManager
    * simulation parameters (such as timestep, gravity, simulator implementation)
    * from the specified configuration file.
    *
+   * If a template exists with this handle, this existing template will be
+   * overwritten with the newly created one if @ref registerTemplate is true.
+   *
    * @param physicsFilename The configuration file to parse. Defaults to the
    * file location @ref ESP_DEFAULT_PHYS_SCENE_CONFIG set by cmake.
    * @param registerTemplate whether to add this template to the library or not.
@@ -42,29 +45,9 @@ class PhysicsAttributesManager
    * @return a reference to the physics simulation meta data object parsed from
    * the specified configuration file.
    */
-  const PhysicsManagerAttributes::ptr createAttributesTemplate(
+  PhysicsManagerAttributes::ptr createAttributesTemplate(
       const std::string& physicsFilename = ESP_DEFAULT_PHYS_SCENE_CONFIG,
-      bool registerTemplate = true);
-
-  /**
-   * @brief Add a @ref PhysicsManagerAttributes::ptr object to the @ref
-   * templateLibrary_.
-   *
-   * @param physicsAttributesTemplate The attributes template.
-   * @param physicsAttributesHandle The key for referencing the template in the
-   * @ref templateLibrary_.
-   * @return The index in the @ref templateLibrary_ of object
-   * template.
-   */
-  int registerAttributesTemplate(
-      const PhysicsManagerAttributes::ptr physicsAttributesTemplate,
-      const std::string& physicsAttributesHandle) {
-    // return either the ID of the existing template referenced by
-    // physicsAttributesHandle, or the next available ID if not found.
-    int physicsTemplateID = this->addTemplateToLibrary(
-        physicsAttributesTemplate, physicsAttributesHandle);
-    return physicsTemplateID;
-  }  // PhysicsAttributesManager::registerAttributesTemplate
+      bool registerTemplate = true) override;
 
   /**
    * @brief Build all "*.phys_properties.json" files from the provided file or
@@ -77,15 +60,31 @@ class PhysicsAttributesManager
 
  protected:
   /**
+   * @brief Add a @ref PhysicsManagerAttributes::ptr object to the @ref
+   * templateLibrary_.
+   *
+   * @param physicsAttributesTemplate The attributes template.
+   * @param physicsAttributesHandle The key for referencing the template in the
+   * @ref templateLibrary_.
+   * @return The index in the @ref templateLibrary_ of object
+   * template.
+   */
+  int registerAttributesTemplateFinalize(
+      PhysicsManagerAttributes::ptr physicsAttributesTemplate,
+      const std::string& physicsAttributesHandle) override {
+    // adds template to library, and returns either the ID of the existing
+    // template referenced by physicsAttributesHandle, or the next available ID
+    // if not found.
+    int physicsTemplateID = this->addTemplateToLibrary(
+        physicsAttributesTemplate, physicsAttributesHandle);
+    return physicsTemplateID;
+  }  // PhysicsAttributesManager::registerAttributesTemplate
+
+  /**
    * @brief Whether template described by passed handle is read only, or can be
    * deleted.  All PhysicsAttributes templates are removable, by default
-   * @param templateHandle the handle to the template to verify removability.
-   * Assumes template exists.
-   * @return Whether the template is read-only or not
    */
-  bool isTemplateReadOnly(const std::string& templateHandle) override {
-    return false;
-  };
+  bool isTemplateReadOnly(const std::string&) override { return false; };
   /**
    * @brief Any physics-attributes-specific resetting that needs to happen on
    * reset.

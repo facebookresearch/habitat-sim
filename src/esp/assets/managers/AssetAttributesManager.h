@@ -96,9 +96,9 @@ class AssetAttributesManager
    * @return a reference to the desired template.
    */
 
-  const AbstractPrimitiveAttributes::ptr createAttributesTemplate(
+  AbstractPrimitiveAttributes::ptr createAttributesTemplate(
       const std::string& primClassName,
-      bool registerTemplate = true) {
+      bool registerTemplate = true) override {
     auto primAssetAttributes = buildPrimAttributes(primClassName);
     if (registerTemplate) {
       registerAttributesTemplate(primAssetAttributes, "");
@@ -117,7 +117,7 @@ class AssetAttributesManager
    * not. If the user is going to edit this template, this should be false.
    * @return a reference to the desired template.
    */
-  const AbstractPrimitiveAttributes::ptr createAttributesTemplate(
+  AbstractPrimitiveAttributes::ptr createAttributesTemplate(
       PrimObjTypes primObjType,
       bool registerTemplate = true) {
     auto primAssetAttributes = buildPrimAttributes(primObjType);
@@ -126,20 +126,6 @@ class AssetAttributesManager
     }
     return primAssetAttributes;
   }  // AssetAttributesManager::createAttributesTemplate
-
-  /**
-   * @brief Add an @ref AbstractPrimitiveAttributes object to the @ref
-   * templateLibrary_.
-   *
-   * @param attributesTemplate The attributes template.
-   * @param attributesTemplateHandle The key for referencing the template in the
-   * @ref templateLibrary_.
-   * @return The index in the @ref templateLibrary_ of object
-   * template.
-   */
-  int registerAttributesTemplate(
-      const AbstractPrimitiveAttributes::ptr attributesTemplate,
-      const std::string& attributesTemplateHandle);
 
   /**
    * @brief Get list of primitive asset template handles used as keys in @ref
@@ -167,6 +153,20 @@ class AssetAttributesManager
 
  protected:
   /**
+   * @brief Add an @ref AbstractPrimitiveAttributes object to the @ref
+   * templateLibrary_.
+   *
+   * @param attributesTemplate The attributes template.
+   * @param ignored Not used for asset attributes templates - handle is derived
+   * by configuration.
+   * @return The index in the @ref templateLibrary_ of object
+   * template.
+   */
+  int registerAttributesTemplateFinalize(
+      AbstractPrimitiveAttributes::ptr attributesTemplate,
+      const std::string& ignored = "") override;
+
+  /**
    * @brief Whether template described by passed handle is read only, or can be
    * deleted.  Default primitive asset templates should not be removed.
    * @param templateHandle the handle to the template to verify removability.
@@ -192,7 +192,7 @@ class AssetAttributesManager
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
    * with passed class name
    */
-  const AbstractPrimitiveAttributes::ptr buildPrimAttributes(
+  AbstractPrimitiveAttributes::ptr buildPrimAttributes(
       const std::string& primTypeName) {
     if (primTypeConstructorMap_.count(primTypeName) == 0) {
       LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : No "
@@ -208,8 +208,7 @@ class AssetAttributesManager
    * with passed enum value, which maps to class name via @ref
    * PrimitiveNames3DMap
    */
-  const AbstractPrimitiveAttributes::ptr buildPrimAttributes(
-      PrimObjTypes primType) {
+  AbstractPrimitiveAttributes::ptr buildPrimAttributes(PrimObjTypes primType) {
     if (primType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : Illegal "
                     "primtitive type name PrimObjTypes::END_PRIM_OBJ_TYPES.  "
@@ -224,7 +223,7 @@ class AssetAttributesManager
    * with passed enum value, which maps to class name via @ref
    * PrimitiveNames3DMap
    */
-  const AbstractPrimitiveAttributes::ptr buildPrimAttributes(int primTypeVal) {
+  AbstractPrimitiveAttributes::ptr buildPrimAttributes(int primTypeVal) {
     if ((primTypeVal < 0) ||
         (primTypeVal > static_cast<int>(PrimObjTypes::END_PRIM_OBJ_TYPES))) {
       LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : Unknown "
@@ -242,7 +241,7 @@ class AssetAttributesManager
    * END_PRIM_OBJ_TYPES corresponds to a Magnum Primitive type
    */
   template <typename T, bool isWireFrame, PrimObjTypes primitiveType>
-  const AbstractPrimitiveAttributes::ptr createPrimAttributes() {
+  AbstractPrimitiveAttributes::ptr createPrimAttributes() {
     if (primitiveType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       LOG(ERROR)
           << "AssetAttributeManager::createPrimAttributes : Cannot instantiate "
@@ -284,7 +283,7 @@ class AssetAttributesManager
    * as defined in @ref PrimNames3D
    */
   typedef std::map<std::string,
-                   const AbstractPrimitiveAttributes::ptr (
+                   AbstractPrimitiveAttributes::ptr (
                        AssetAttributesManager::*)()>
       Map_Of_PrimTypeCtors;
 

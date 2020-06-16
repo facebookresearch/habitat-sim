@@ -21,8 +21,7 @@ namespace esp {
 namespace assets {
 
 namespace managers {
-const PhysicsObjectAttributes::ptr
-ObjectAttributesManager::createAttributesTemplate(
+PhysicsObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
     const std::string& attributesTemplateHandle,
     bool registerTemplate) {
   if (assetAttributesMgr_->getTemplateLibHasHandle(attributesTemplateHandle)) {
@@ -30,15 +29,21 @@ ObjectAttributesManager::createAttributesTemplate(
     // this is a primitive-based object we are building
     return createPrimBasedAttributesTemplate(attributesTemplateHandle,
                                              registerTemplate);
-  } else {
-    // if attributesTemplateHandle != some existing primitive attributes, then
+  } else if (Corrade::Utility::Directory::exists(attributesTemplateHandle)) {
+    // if attributesTemplateHandle == some existing file thne
     // assume this is a file-based object template we are building.
     return createFileBasedAttributesTemplate(attributesTemplateHandle,
                                              registerTemplate);
+  } else {
+    // if neither of these is true, then build an empty template and assign the
+    // passed handle to its origin handle and its render asset handle
+    return createEmptyAttributesTemplate(attributesTemplateHandle,
+                                         registerTemplate);
   }
+
 }  // ObjectAttributesManager::createAttributesTemplate
 
-const PhysicsObjectAttributes::ptr
+PhysicsObjectAttributes::ptr
 ObjectAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAttrTemplateHandle,
     bool registerTemplate) {
@@ -55,7 +60,7 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
   return objAttributes;
 }  // ObjectAttributesManager::createPrimBasedAttributesTemplate
 
-const PhysicsObjectAttributes::ptr
+PhysicsObjectAttributes::ptr
 ObjectAttributesManager::createFileBasedAttributesTemplate(
     const std::string& filename,
     bool registerTemplate) {
@@ -63,9 +68,9 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
   PhysicsObjectAttributes::ptr objAttributes =
       parseAndLoadPhysObjTemplate(filename);
 
-  // some error occurred
   if (nullptr != objAttributes && registerTemplate) {
     auto attrID = registerAttributesTemplate(objAttributes, filename);
+    // some error occurred
     if (attrID == ID_UNDEFINED) {
       return nullptr;
     }
@@ -73,8 +78,27 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
   return objAttributes;
 }  // ObjectAttributesManager::createFileBasedAttributesTemplate
 
-int ObjectAttributesManager::registerAttributesTemplate(
-    const PhysicsObjectAttributes::ptr objectTemplate,
+PhysicsObjectAttributes::ptr
+ObjectAttributesManager::createEmptyAttributesTemplate(
+    const std::string& templateName,
+    bool registerTemplate) {
+  // construct a PhysicsObjectAttributes
+  auto physicsObjectAttributes = PhysicsObjectAttributes::create(templateName);
+  // set render mesh handle
+  physicsObjectAttributes->setRenderAssetHandle(templateName);
+  // some error occurred
+  if (nullptr != physicsObjectAttributes && registerTemplate) {
+    auto attrID =
+        registerAttributesTemplate(physicsObjectAttributes, templateName);
+    if (attrID == ID_UNDEFINED) {
+      return nullptr;
+    }
+  }
+  return physicsObjectAttributes;
+}
+
+int ObjectAttributesManager::registerAttributesTemplateFinalize(
+    PhysicsObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle) {
   if (objectTemplate->getRenderAssetHandle() == "") {
     LOG(ERROR)
@@ -84,8 +108,7 @@ int ObjectAttributesManager::registerAttributesTemplate(
         << "does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
   }
-  // In case not constructed with origin handle as parameter
-  objectTemplate->setOriginHandle(objectTemplateHandle);
+
   std::map<int, std::string>* mapToUse;
   // Handles for rendering and collision assets
   std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
@@ -147,13 +170,6 @@ int ObjectAttributesManager::registerAttributesTemplate(
 PhysicsObjectAttributes::ptr
 ObjectAttributesManager::parseAndLoadPhysObjTemplate(
     const std::string& objPhysConfigFilename) {
-  // check for duplicate load
-  const bool objTemplateExists =
-      this->templateLibrary_.count(objPhysConfigFilename) > 0;
-  if (objTemplateExists) {
-    return this->templateLibrary_.at(objPhysConfigFilename);
-  }
-
   // 1. parse the config file
   io::JsonDocument objPhysicsConfig;
   if (Corrade::Utility::Directory::exists(objPhysConfigFilename)) {
@@ -332,17 +348,12 @@ PhysicsObjectAttributes::ptr
 ObjectAttributesManager::buildPrimBasedPhysObjTemplate(
     const std::string& primAssetHandle) {
   // verify that a primitive asset with the given handle exists
-
   if (!assetAttributesMgr_->getTemplateLibHasHandle(primAssetHandle)) {
     LOG(ERROR) << "ObjectAttributesManager::buildPrimBasedPhysObjTemplate : No "
                   "primitive with handle '"
                << primAssetHandle
                << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
-  }
-  // verify that a template with this asset's name does not exist
-  if (this->templateLibrary_.count(primAssetHandle) > 0) {
-    return this->templateLibrary_.at(primAssetHandle);
   }
 
   // construct a PhysicsObjectAttributes

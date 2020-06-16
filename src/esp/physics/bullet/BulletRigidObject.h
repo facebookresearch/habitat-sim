@@ -66,7 +66,7 @@ class BulletRigidObject : public BulletBase,
    * @return a unique pointer to the bullet primitive object
    */
   std::unique_ptr<btCollisionShape> buildPrimitiveCollisionObject(
-      assets::AbstractPrimitiveAttributes::ptr primAttributes);
+      const assets::AbstractPrimitiveAttributes& primAttributes);
 
   /**
    * @brief Recursively construct a @ref btCompoundShape for collision from

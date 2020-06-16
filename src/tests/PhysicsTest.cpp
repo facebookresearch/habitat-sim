@@ -9,7 +9,6 @@
 #include "esp/sim/Simulator.h"
 
 #include "esp/assets/ResourceManager.h"
-#include "esp/gfx/Renderer.h"
 #include "esp/scene/SceneManager.h"
 
 #include "esp/physics/PhysicsManager.h"
@@ -21,6 +20,7 @@
 
 namespace Cr = Corrade;
 
+namespace AttrMgrs = esp::assets::managers;
 using esp::assets::ResourceManager;
 using esp::assets::managers::ObjectAttributesManager;
 using esp::assets::managers::PhysicsAttributesManager;
@@ -36,7 +36,6 @@ class PhysicsManagerTest : public testing::Test {
  protected:
   void SetUp() override {
     context_ = esp::gfx::WindowlessContext::create_unique(0);
-    renderer_ = esp::gfx::Renderer::create();
 
     sceneID_ = sceneManager_.initSceneGraph();
     // get attributes manager for physics world attributes
@@ -59,14 +58,10 @@ class PhysicsManagerTest : public testing::Test {
     resourceManager_.loadPhysicsScene(info, physicsManager_,
                                       physicsManagerAttributes, navSceneNode,
                                       &drawables);
-
-    // resourceManager_.loadScene(info, physicsManager_, navSceneNode,
-    // &drawables, physicsConfigFile);
   }
 
   // must declare these in this order due to avoid deallocation errors
   esp::gfx::WindowlessContext::uptr context_;
-  esp::gfx::Renderer::ptr renderer_;
 
   ResourceManager resourceManager_;
 

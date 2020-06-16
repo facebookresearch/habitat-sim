@@ -32,10 +32,12 @@ class ObjectAttributesManager
   }
 
   /**
-   * @brief Creates an instance of a template described by passed string, or
-   * returns existing instance if there is one. For physical objects, this is
-   * either a file name or a reference to a primitive template used in the
-   * construction of the object.
+   * @brief Creates an instance of a template described by passed string. For
+   * physical objects, this is either a file name or a reference to a primitive
+   * template used in the construction of the object.
+   *
+   * If a template exists with this handle, this existing template will be
+   * overwritten with the newly created one if @ref registerTemplate is true.
    *
    * @param attributesTemplateHandle the origin of the desired template to be
    * created, either a file name or an existing primitive asset template. If is
@@ -45,9 +47,9 @@ class ObjectAttributesManager
    * @return a reference to the desired template.
    */
 
-  const PhysicsObjectAttributes::ptr createAttributesTemplate(
+  PhysicsObjectAttributes::ptr createAttributesTemplate(
       const std::string& attributesTemplateHandle,
-      bool registerTemplate = true);
+      bool registerTemplate = true) override;
 
   /**
    * @brief Creates an instance of an object template described by passed
@@ -62,7 +64,7 @@ class ObjectAttributesManager
    * @return a reference to the desired template, or nullptr if fails.
    */
 
-  const PhysicsObjectAttributes::ptr createPrimBasedAttributesTemplate(
+  PhysicsObjectAttributes::ptr createPrimBasedAttributesTemplate(
       const std::string& primAttrTemplateHandle,
       bool registerTemplate = true);
 
@@ -77,23 +79,25 @@ class ObjectAttributesManager
    * @return a reference to the desired template, or nullptr if fails.
    */
 
-  const PhysicsObjectAttributes::ptr createFileBasedAttributesTemplate(
+  PhysicsObjectAttributes::ptr createFileBasedAttributesTemplate(
       const std::string& filename,
       bool registerTemplate = true);
 
   /**
-   * @brief Add a @ref AbstractAttributes object to the @ref
-   * templateLibrary_.
+   * @brief Creates an instance of an empty object template populated with
+   * default values.  Assigns the templateName as the origin handle and as the
+   * renderAssetHandle.
    *
-   * @param objectTemplate The attributes template.
-   * @param objectTemplateHandle The key for referencing the template in the
-   * @ref templateLibrary_. Will be set as origin handle for template.
-   * @return The index in the @ref templateLibrary_ of object
-   * template.
+   * @param templateName the name of the file describing the object attributes.
+   * Assumes it exists and fails if it does not.
+   * @param registerTemplate whether to add this template to the library or not.
+   * If the user is going to edit this template, this should be false.
+   * @return a reference to the desired template, or nullptr if fails.
    */
-  int registerAttributesTemplate(
-      const PhysicsObjectAttributes::ptr objectTemplate,
-      const std::string& objectTemplateHandle);
+
+  PhysicsObjectAttributes::ptr createEmptyAttributesTemplate(
+      const std::string& templateName,
+      bool registerTemplate = true);
 
   /**
    * @brief Load all file-based object templates given string list of object
@@ -189,15 +193,24 @@ class ObjectAttributesManager
 
  protected:
   /**
+   * @brief Add a copy of @ref AbstractAttributes object to the @ref
+   * templateLibrary_.
+   *
+   * @param objectTemplate The attributes template.
+   * @param objectTemplateHandle The key for referencing the template in the
+   * @ref templateLibrary_. Will be set as origin handle for template.
+   * @return The index in the @ref templateLibrary_ of object
+   * template.
+   */
+  int registerAttributesTemplateFinalize(
+      PhysicsObjectAttributes::ptr objectTemplate,
+      const std::string& objectTemplateHandle) override;
+
+  /**
    * @brief Whether template described by passed handle is read only, or can be
    * deleted.  All objectAttributes templates are removable, by default
-   * @param templateHandle the handle to the template to verify removability.
-   * Assumes template exists.
-   * @return Whether the template is read-only or not
    */
-  bool isTemplateReadOnly(const std::string& templateHandle) override {
-    return false;
-  };
+  bool isTemplateReadOnly(const std::string&) override { return false; };
   /**
    * @brief Any object-attributes-specific resetting that needs to happen on
    * reset.
@@ -218,7 +231,9 @@ class ObjectAttributesManager
   }
   /**
    * @brief Load and parse a physics object template config file and generate a
-   * @ref PhysicsObjectAttributes object.
+   * @ref PhysicsObjectAttributes object.  Will always reload from file, since
+   * existing attributes may have been changed; the user would use this pathway
+   * to return to original config.
    *
    * @param objPhysConfigFilename The configuration file to parse and load.
    * @return The object attributes specified by the config file.

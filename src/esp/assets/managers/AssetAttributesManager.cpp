@@ -124,10 +124,14 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
     auto tmplt = createAttributesTemplate(elem.second, true);
     defaultTemplateNames.push_back(tmplt->getOriginHandle());
   }
+
+  LOG(INFO) << "AssetAttributesManager::buildCtorFuncPtrMaps : Built default "
+               "primitive asset templates : "
+            << std::to_string(defaultTemplateNames.size());
 }  // buildMapOfPrimTypeConstructors
 
-int AssetAttributesManager::registerAttributesTemplate(
-    const AbstractPrimitiveAttributes::ptr primAttributesTemplate,
+int AssetAttributesManager::registerAttributesTemplateFinalize(
+    AbstractPrimitiveAttributes::ptr primAttributesTemplate,
     const std::string&) {
   std::string primAttributesHandle = primAttributesTemplate->getOriginHandle();
   // verify that attributes has been edited in a legal manner
