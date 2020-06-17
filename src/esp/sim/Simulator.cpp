@@ -140,6 +140,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       renderer_ = gfx::Renderer::create();
     }
 
+    setFrustumCullingEnabled(cfg.frustumCulling);
+
     auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
 
     auto& rootNode = sceneGraph.getRootNode();
