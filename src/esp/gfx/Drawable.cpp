@@ -3,9 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "Drawable.h"
-
 #include <Corrade/Utility/Assert.h>
-
+#include "DrawableGroup.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -17,20 +16,21 @@ Drawable::Drawable(scene::SceneNode& node,
     : Magnum::SceneGraph::Drawable3D{node, group},
       node_(node),
       mesh_(mesh),
-      drawableId_(drawableIdCounter++) {
+      drawableId_(drawableIdCounter++),
+      groupIsNull_(nullptr == group ? false : true) {
   if (group) {
     group->idToDrawable_.insert({drawableId_, this});
   }
 }
 
 Drawable::~Drawable() {
-  LOG(INFO) << "Deconstructing drawable";  // XXX
-  /*
-  DrawableGroup* group = drawables();
-  if (group) {
-    group->idToDrawable_.erase(drawableId_);
+  // if the belonging group exists and has not been deconstructed eariler
+  if (!groupIsNull_) {
+    DrawableGroup* group = drawables();
+    if (group) {
+      group->idToDrawable_.erase(drawableId_);
+    }
   }
-  */
 }
 
 DrawableGroup* Drawable::drawables() {

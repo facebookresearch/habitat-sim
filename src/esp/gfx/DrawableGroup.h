@@ -22,9 +22,7 @@ class Drawable;
  */
 class DrawableGroup : public Magnum::SceneGraph::DrawableGroup3D {
  public:
-  virtual ~DrawableGroup() {
-    LOG(INFO) << "Haha, Deconstructing drawableGroup";  // XXX
-  };
+  virtual ~DrawableGroup();
 
   /**
    * @brief Given drawable id, returns if drawable is in the group
