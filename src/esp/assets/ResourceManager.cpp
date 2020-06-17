@@ -67,22 +67,6 @@ constexpr char ResourceManager::NO_LIGHT_KEY[];
 constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
 constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
-
-const std::map<PrimObjTypes, const char*> ResourceManager::PrimitiveNames3DMap =
-    {{PrimObjTypes::CAPSULE_SOLID, "capsule3DSolid"},
-     {PrimObjTypes::CAPSULE_WF, "capsule3DWireframe"},
-     {PrimObjTypes::CONE_SOLID, "coneSolid"},
-     {PrimObjTypes::CONE_WF, "coneWireframe"},
-     {PrimObjTypes::CUBE_SOLID, "cubeSolid"},
-     {PrimObjTypes::CUBE_WF, "cubeWireframe"},
-     {PrimObjTypes::CYLINDER_SOLID, "cylinderSolid"},
-     {PrimObjTypes::CYLINDER_WF, "cylinderWireframe"},
-     {PrimObjTypes::ICOSPHERE_SOLID, "icosphereSolid"},
-     {PrimObjTypes::ICOSPHERE_WF, "icosphereWireframe"},
-     {PrimObjTypes::UVSPHERE_SOLID, "uvSphereSolid"},
-     {PrimObjTypes::UVSPHERE_WF, "uvSphereWireframe"},
-     {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
-
 ResourceManager::ResourceManager()
     :
 #ifdef MAGNUM_BUILD_STATIC
@@ -90,62 +74,27 @@ ResourceManager::ResourceManager()
       importerManager_("nonexistent")
 #endif
 {
+
   initDefaultLightSetups();
   initDefaultMaterials();
-  buildMapOfPrimTypeConstructors();
+  buildImportersAndAttributesManagers();
 }  // namespace assets
-void ResourceManager::buildMapOfPrimTypeConstructors() {
-  primTypeConstructorMap_["capsule3DSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CapsulePrimitiveAttributes, false,
-          PrimObjTypes::CAPSULE_SOLID>;
-  primTypeConstructorMap_["capsule3DWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CapsulePrimitiveAttributes, true, PrimObjTypes::CAPSULE_WF>;
-  primTypeConstructorMap_["coneSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::ConePrimitiveAttributes, false, PrimObjTypes::CONE_SOLID>;
-  primTypeConstructorMap_["coneWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::ConePrimitiveAttributes, true, PrimObjTypes::CONE_WF>;
-  primTypeConstructorMap_["cubeSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CubePrimitiveAttributes, false, PrimObjTypes::CUBE_SOLID>;
-  primTypeConstructorMap_["cubeWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CubePrimitiveAttributes, true, PrimObjTypes::CUBE_WF>;
-  primTypeConstructorMap_["cylinderSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CylinderPrimitiveAttributes, false,
-          PrimObjTypes::CYLINDER_SOLID>;
-  primTypeConstructorMap_["cylinderWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::CylinderPrimitiveAttributes, true, PrimObjTypes::CYLINDER_WF>;
-  primTypeConstructorMap_["icosphereSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::IcospherePrimitiveAttributes, false,
-          PrimObjTypes::ICOSPHERE_SOLID>;
-  primTypeConstructorMap_["icosphereWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::IcospherePrimitiveAttributes, true,
-          PrimObjTypes::ICOSPHERE_WF>;
-  primTypeConstructorMap_["uvSphereSolid"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::UVSpherePrimitiveAttributes, false,
-          PrimObjTypes::UVSPHERE_SOLID>;
-  primTypeConstructorMap_["uvSphereWireframe"] =
-      &ResourceManager::createPrimitiveAttributes<
-          assets::UVSpherePrimitiveAttributes, true, PrimObjTypes::UVSPHERE_WF>;
-  // no entry added for PrimObjTypes::END_PRIM_OBJ_TYPES
 
-  // build default AbstractPrimitiveAttributes objects
-  for (const std::pair<PrimObjTypes, const char*>& elem : PrimitiveNames3DMap) {
-    if (elem.first == PrimObjTypes::END_PRIM_OBJ_TYPES) {
-      continue;
-    }
-    auto attr = buildPrimitiveAttributes(elem.second);
-    addPrimAssetTemplateToLibrary(attr);
-  }
+void ResourceManager::buildImportersAndAttributesManagers() {
+  assetAttributesManager_ = managers::AssetAttributesManager::create();
+  objectAttributesManager_ = managers::ObjectAttributesManager::create();
+  objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
+  physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
+  sceneAttributesManager_ = managers::SceneAttributesManager::create();
+
+  LOG(INFO) << "asset attr mgr query : "
+            << assetAttributesManager_->getNumTemplates();
+  LOG(INFO) << "object attr mgr query : "
+            << objectAttributesManager_->getNumTemplates();
+  LOG(INFO) << "physics attr mgr query : "
+            << physicsAttributesManager_->getNumTemplates();
+  LOG(INFO) << "Scene attr mgr query : "
+            << sceneAttributesManager_->getNumTemplates();
 
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
@@ -157,26 +106,31 @@ void ResourceManager::buildMapOfPrimTypeConstructors() {
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       fileImporter_ = importerManager_.loadAndInstantiate("AnySceneImporter"));
 
-}  // buildMapOfPrimTypeConstructors
+}  // buildImportersAndAttributesManagers
 
 void ResourceManager::initDefaultPrimAttributes() {
   // by this point, we should have a GL::Context so load the bb primitive.
   // TODO: replace this completely with standard mesh (i.e. treat the bb
   // wireframe cube no differently than other primivite-based rendered
   // objects)
-  auto wfCube = primitiveImporter_->mesh(
-      primitiveAssetTemplateLibrary_["cubeWireframe"]->getPrimObjClassName());
+  auto cubeMeshName =
+      assetAttributesManager_->getTemplateByHandle("cubeWireframe")
+          ->getPrimObjClassName();
+
+  auto wfCube = primitiveImporter_->mesh(cubeMeshName);
   primitive_meshes_.push_back(
       std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube)));
 
   // build default primtive object templates corresponding to given default
   // asset templates
-  for (auto primAsset : primitiveAssetTemplateLibrary_) {
-    buildAndRegisterPrimPhysObjTemplate(primAsset.first);
+  auto lib = assetAttributesManager_->getTemplateLibrary_();
+  for (auto primAsset : lib) {
+    objectAttributesManager_->createPrimBasedAttributesTemplate(primAsset.first,
+                                                                true);
   }
 
   LOG(INFO) << "Built primitive asset templates: "
-            << std::to_string(primitiveAssetTemplateLibByID_.size());
+            << std::to_string(assetAttributesManager_->getNumTemplates());
 
 }  // initDefaultPrimAttributes
 
@@ -217,14 +171,7 @@ bool ResourceManager::loadScene(
       }
       // add a scene attributes for this filename or modify the existing one
       if (meshSuccess) {
-        const bool physSceneExists =
-            physicsSceneLibrary_.count(info.filepath) > 0;
-        if (!physSceneExists) {
-          auto physScenLib = PhysicsSceneAttributes::create(info.filepath);
-          physicsSceneLibrary_.emplace(info.filepath, physScenLib);
-        }
-        physicsSceneLibrary_.at(info.filepath)
-            ->setRenderAssetHandle(info.filepath);
+        sceneAttributesManager_->createAttributesTemplate(info.filepath, true);
       }
     }
   } else {
@@ -268,19 +215,9 @@ bool ResourceManager::loadScene(
   return meshSuccess;
 }  // ResourceManager::loadScene
 
-void ResourceManager::loadAllObjectTemplates(
-    const std::vector<std::string>& tmpltFilenames) {
-  for (auto objPhysPropertiesFilename : tmpltFilenames) {
-    LOG(INFO) << "loading object: " << objPhysPropertiesFilename;
-    parseAndLoadPhysObjTemplate(objPhysPropertiesFilename);
-  }
-  LOG(INFO) << "loaded object templates: "
-            << std::to_string(physicsFileObjTmpltLibByID_.size());
-}  // ResourceManager::loadAllObjectTemplates
-
 void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
-    PhysicsManagerAttributes::ptr physicsManagerAttributes) {
+    const PhysicsManagerAttributes::ptr& physicsManagerAttributes) {
   //! PHYSICS INIT: Use the above config to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
@@ -307,24 +244,9 @@ void ResourceManager::initPhysicsManager(
   // templates
   initDefaultPrimAttributes();
   // load object templates from sceneMetaData list...
-  loadAllObjectTemplates(
+  objectAttributesManager_->loadAllFileBasedTemplates(
       physicsManagerAttributes->getStringGroup("objectLibraryPaths"));
 }  // ResourceManager::initPhysicsManager
-
-// this will instance a physics manager based on the passed physics config file
-// name
-std::shared_ptr<physics::PhysicsManager> ResourceManager::buildPhysicsManager(
-    std::string physicsFilename /* data/default.phys_scene_config.json */) {
-  // In-memory representation of scene meta data
-  PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      loadPhysicsConfig(physicsFilename);
-  physicsManagerLibrary_.emplace(physicsFilename, physicsManagerAttributes);
-  std::shared_ptr<physics::PhysicsManager> _physicsManager = nullptr;
-  // initialize physics manager with derived physics manager attributes
-  initPhysicsManager(_physicsManager, physicsManagerAttributes);
-
-  return _physicsManager;
-}  // ResourceManager::buildPhysicsManager
 
 //! (1) Read config and set physics timestep
 //! (2) loadScene() with PhysicsSceneMetaData
@@ -337,9 +259,13 @@ bool ResourceManager::loadScene(
     const Magnum::ResourceKey& lightSetup, /* = Mn::ResourceKey{NO_LIGHT_KEY} */
     std::string physicsFilename /* data/default.phys_scene_config.json */) {
   // In-memory representation of scene meta data
+
   PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      loadPhysicsConfig(physicsFilename);
-  physicsManagerLibrary_.emplace(physicsFilename, physicsManagerAttributes);
+      physicsAttributesManager_->createAttributesTemplate(physicsFilename,
+                                                          true);
+
+  // loadPhysicsConfig(physicsFilename);
+  // physicsManagerLibrary_.emplace(physicsFilename, physicsManagerAttributes);
   return loadPhysicsScene(info, _physicsManager, physicsManagerAttributes,
                           parent, drawables, lightSetup);
 }
@@ -353,7 +279,7 @@ bool ResourceManager::loadScene(
 bool ResourceManager::loadPhysicsScene(
     const AssetInfo& info,
     std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-    PhysicsManagerAttributes::ptr physicsManagerAttributes,
+    const PhysicsManagerAttributes::ptr physicsManagerAttributes,
     scene::SceneNode* parent, /* = nullptr */
     DrawableGroup* drawables, /* = nullptr */
     const Magnum::ResourceKey&
@@ -372,27 +298,17 @@ bool ResourceManager::loadPhysicsScene(
     return meshSuccess;
   }
 
-  const bool physSceneExists = physicsSceneLibrary_.count(info.filepath) > 0;
-  if (!physSceneExists) {
-    auto physScenLib = PhysicsSceneAttributes::create(info.filepath);
-    physicsSceneLibrary_.emplace(info.filepath, physScenLib);
-  }
+  const std::string& filename = info.filepath;
+
+  PhysicsSceneAttributes::ptr physSceneLib =
+      sceneAttributesManager_->createAttributesTemplate(filename, true);
   // TODO: enable loading of multiple scenes from file and storing individual
   // parameters instead of scene properties in manager global config
-
-  physicsSceneLibrary_.at(info.filepath)
-      ->setFrictionCoefficient(
-          physicsManagerAttributes->getFrictionCoefficient());
-  physicsSceneLibrary_.at(info.filepath)
-      ->setRestitutionCoefficient(
-          physicsManagerAttributes->getRestitutionCoefficient());
-
-  physicsSceneLibrary_.at(info.filepath)->setRenderAssetHandle(info.filepath);
-  physicsSceneLibrary_.at(info.filepath)
-      ->setCollisionAssetHandle(info.filepath);
+  sceneAttributesManager_->setSceneValsFromPhysicsAttributes(
+      physicsManagerAttributes);
 
   //! CONSTRUCT SCENE
-  const std::string& filename = info.filepath;
+
   // if we have a scene mesh, add it as a collision object
   if (filename.compare(EMPTY_SCENE) != 0) {
     const MeshMetaData& metaData = getMeshMetaData(filename);
@@ -428,11 +344,10 @@ bool ResourceManager::loadPhysicsScene(
       }
     }
 
-    // add meshgroup to collision mesh groups
-    collisionMeshGroups_.emplace(info.filepath, meshGroup);
+    //! Add scene meshgroup to collision mesh groups
+    collisionMeshGroups_.emplace(filename, meshGroup);
     //! Initialize collision mesh
-    bool sceneSuccess = _physicsManager->addScene(
-        physicsSceneLibrary_.at(info.filepath), meshGroup);
+    bool sceneSuccess = _physicsManager->addScene(physSceneLib, meshGroup);
     if (!sceneSuccess) {
       return false;
     }
@@ -440,134 +355,6 @@ bool ResourceManager::loadPhysicsScene(
 
   return meshSuccess;
 }  // ResourceManager::loadPhysicsScene
-
-std::vector<std::string> ResourceManager::buildObjectConfigPaths(
-    const std::string& path) {
-  std::vector<std::string> paths;
-
-  namespace Directory = Cr::Utility::Directory;
-  std::string objPhysPropertiesFilename = path;
-  if (!Corrade::Utility::String::endsWith(objPhysPropertiesFilename,
-                                          ".phys_properties.json")) {
-    objPhysPropertiesFilename = path + ".phys_properties.json";
-  }
-  const bool dirExists = Directory::isDirectory(path);
-  const bool fileExists = Directory::exists(objPhysPropertiesFilename);
-
-  if (!dirExists && !fileExists) {
-    LOG(WARNING) << "Cannot find " << path << " or "
-                 << objPhysPropertiesFilename << ". Aborting parse.";
-    return paths;
-  }
-
-  if (fileExists) {
-    paths.push_back(objPhysPropertiesFilename);
-  }
-
-  if (dirExists) {
-    LOG(INFO) << "Parsing object library directory: " + path;
-    for (auto& file : Directory::list(path, Directory::Flag::SortAscending)) {
-      std::string absoluteSubfilePath = Directory::join(path, file);
-      if (Cr::Utility::String::endsWith(absoluteSubfilePath,
-                                        ".phys_properties.json")) {
-        paths.push_back(absoluteSubfilePath);
-      }
-    }
-  }
-
-  return paths;
-}  // buildObjectConfigPaths
-
-PhysicsManagerAttributes::ptr ResourceManager::loadPhysicsConfig(
-    std::string physicsFilename) {
-  CHECK(Cr::Utility::Directory::exists(physicsFilename));
-
-  // Load the global scene config JSON here
-  io::JsonDocument scenePhysicsConfig = io::parseJsonFile(physicsFilename);
-  // In-memory representation of scene meta data
-  PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      PhysicsManagerAttributes::create(physicsFilename);
-
-  // load the simulator preference
-  // default is "none" simulator
-  if (scenePhysicsConfig.HasMember("physics simulator")) {
-    if (scenePhysicsConfig["physics simulator"].IsString()) {
-      physicsManagerAttributes->setSimulator(
-          scenePhysicsConfig["physics simulator"].GetString());
-    }
-  }
-
-  // load the physics timestep
-  if (scenePhysicsConfig.HasMember("timestep")) {
-    if (scenePhysicsConfig["timestep"].IsNumber()) {
-      physicsManagerAttributes->setTimestep(
-          scenePhysicsConfig["timestep"].GetDouble());
-    }
-  }
-
-  if (scenePhysicsConfig.HasMember("friction coefficient") &&
-      scenePhysicsConfig["friction coefficient"].IsNumber()) {
-    physicsManagerAttributes->setFrictionCoefficient(
-        scenePhysicsConfig["friction coefficient"].GetDouble());
-  } else {
-    LOG(ERROR) << " Invalid value in scene config - friction coefficient";
-  }
-
-  if (scenePhysicsConfig.HasMember("restitution coefficient") &&
-      scenePhysicsConfig["restitution coefficient"].IsNumber()) {
-    physicsManagerAttributes->setRestitutionCoefficient(
-        scenePhysicsConfig["restitution coefficient"].GetDouble());
-  } else {
-    LOG(ERROR) << " Invalid value in scene config - restitution coefficient";
-  }
-
-  // load gravity
-  if (scenePhysicsConfig.HasMember("gravity")) {
-    if (scenePhysicsConfig["gravity"].IsArray()) {
-      Magnum::Vector3 grav;
-      for (rapidjson::SizeType i = 0; i < scenePhysicsConfig["gravity"].Size();
-           i++) {
-        if (!scenePhysicsConfig["gravity"][i].IsNumber()) {
-          // invalid config
-          LOG(ERROR) << "Invalid value in physics gravity array";
-          break;
-        } else {
-          grav[i] = scenePhysicsConfig["gravity"][i].GetDouble();
-        }
-      }
-      physicsManagerAttributes->setGravity(grav);
-    }
-  }
-
-  // load the rigid object library metadata (no physics init yet...)
-  if (!scenePhysicsConfig.HasMember("rigid object paths") ||
-      !scenePhysicsConfig["rigid object paths"].IsArray()) {
-    return physicsManagerAttributes;
-  }
-
-  std::string configDirectory =
-      physicsFilename.substr(0, physicsFilename.find_last_of("/"));
-
-  const auto& paths = scenePhysicsConfig["rigid object paths"];
-  for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
-    if (!paths[i].IsString()) {
-      LOG(ERROR) << "Invalid value in physics scene config -rigid object "
-                    "library- array "
-                 << i;
-      continue;
-    }
-
-    std::string absolutePath =
-        Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
-    std::vector<std::string> validConfigPaths =
-        buildObjectConfigPaths(absolutePath);
-    for (auto& path : validConfigPaths) {
-      physicsManagerAttributes->addStringToGroup("objectLibraryPaths", path);
-    }
-  }
-
-  return physicsManagerAttributes;
-}  // loadPhysicsConfig
 
 bool ResourceManager::loadObjectMeshDataFromFile(
     const std::string& filename,
@@ -586,408 +373,6 @@ bool ResourceManager::loadObjectMeshDataFromFile(
   }
   return success;
 }  // loadObjectMeshDataFromFile
-
-int ResourceManager::addPhysicsObjectTemplateToLibrary(
-    PhysicsObjectAttributes::ptr objectTemplate,
-    const std::string& objectTemplateHandle,
-    std::map<int, std::string>& mapOfNames) {
-  // add object template ID to physicsObjTemplateLibrary_
-  bool isNotPresent =
-      (physicsObjectTemplateLibrary_.count(objectTemplateHandle) == 0);
-  int objectTemplateID;
-  if (isNotPresent) {
-    // this will set the ID in the template
-    objectTemplateID = physicsObjectTemplateLibrary_.size();
-    objectTemplate->setObjectTemplateID(objectTemplateID);
-  } else {
-    // this means a same-named template exists in the library already, so get
-    // its ID number
-    objectTemplateID = physicsObjectTemplateLibrary_.at(objectTemplateHandle)
-                           ->getObjectTemplateID();
-  }
-  // if is present, will replace present template with new template - templates
-  // are expected to be 1-to-1 with handles (each unique handle always describes
-  // the same unique template)
-  physicsObjectTemplateLibrary_.emplace(objectTemplateHandle, objectTemplate);
-  physicsObjectTemplateLibByID_.emplace(objectTemplateID, objectTemplateHandle);
-  // save reference of specific type of template being built
-  mapOfNames.emplace(objectTemplateID, objectTemplateHandle);
-  return objectTemplateID;
-}  // addPhysicsObjectTemplateToLibrary
-
-int ResourceManager::addPrimAssetTemplateToLibrary(
-    AbstractPrimitiveAttributes::ptr primTemplate) {
-  // add prim asset template ID to physicsObjTemplateLibrary_
-  auto primHandle = primTemplate->getOriginHandle();
-
-  bool isNotPresent = (primitiveAssetTemplateLibrary_.count(primHandle) == 0);
-  int primAssetTemplateID;
-  if (isNotPresent) {
-    // this will set the ID in the template
-    primAssetTemplateID = primitiveAssetTemplateLibrary_.size();
-    primTemplate->setAssetTemplateID(primAssetTemplateID);
-  } else {
-    // set ID to be existing template's ID
-    primAssetTemplateID =
-        primitiveAssetTemplateLibrary_.at(primHandle)->getAssetTemplateID();
-  }
-  // if is present, will replace present template with new template - templates
-  // are expected to be 1-to-1 with handles (each unique handle always describes
-  // the same unique template)
-  primitiveAssetTemplateLibrary_.emplace(primHandle, primTemplate);
-  primitiveAssetTemplateLibByID_.emplace(primAssetTemplateID, primHandle);
-
-  return primAssetTemplateID;
-}  // addPrimAssetTemplateToLibrary
-
-int ResourceManager::registerObjectTemplate(
-    PhysicsObjectAttributes::ptr objectTemplate,
-    const std::string& objectTemplateHandle) {
-  CORRADE_ASSERT(
-      objectTemplate->getRenderAssetHandle() != "",
-      "ResourceManager::registerObjectTemplate : Passed attributes "
-      "template named"
-          << objectTemplateHandle
-          << "does not have render asset handle specified. Aborting.",
-      ID_UNDEFINED);
-  // In case not constructed with origin handle as parameter
-  objectTemplate->setOriginHandle(objectTemplateHandle);
-  std::map<int, std::string>* mapToUse;
-  // handle for rendering asset
-  std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
-  std::string collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
-
-  if (primitiveAssetTemplateLibrary_.count(renderAssetHandle) > 0) {
-    // if renderAssetHandle corresponds to valid/existing primitive attributes
-    // then setRenderAssetIsPrimitive to true and set map to
-    // physicsSynthObjTmpltLibByID_
-    objectTemplate->setRenderAssetIsPrimitive(true);
-    mapToUse = &physicsSynthObjTmpltLibByID_;
-  } else if (Corrade::Utility::Directory::exists(renderAssetHandle)) {
-    // check if renderAssetHandle is valid file name and is found in file system
-    // - if so then setRenderAssetIsPrimitive to false and map set to
-    // physicsFileObjTmpltLibByID_ - use primitiveImporter to check if file
-    // exists
-    objectTemplate->setRenderAssetIsPrimitive(false);
-    mapToUse = &physicsFileObjTmpltLibByID_;
-  } else {
-    // renderAssetHandle is neither valid file name nor existing primitive
-    // attributes template hande, so fail
-    LOG(ERROR) << "ResourceManager::registerObjectTemplate : Render asset "
-                  "template handle : "
-               << renderAssetHandle
-               << " specified in object template with handle : "
-               << objectTemplateHandle
-               << " does not correspond to existing file or primitive render "
-                  "asset.  Aborting. ";
-    return ID_UNDEFINED;
-  }
-
-  if (primitiveAssetTemplateLibrary_.count(collisionAssetHandle) > 0) {
-    // if collisionAssetHandle corresponds to valid/existing primitive
-    // attributes then setCollisionAssetIsPrimitive to true
-    objectTemplate->setCollisionAssetIsPrimitive(true);
-  } else if (Corrade::Utility::Directory::exists(collisionAssetHandle)) {
-    // check if collisionAssetHandle is valid file name and is found in file
-    // system - if so then setCollisionAssetIsPrimitive to false
-    objectTemplate->setCollisionAssetIsPrimitive(false);
-  } else {
-    // else, means no collision data specified, use specified render data
-    objectTemplate->setCollisionAssetHandle(renderAssetHandle);
-    objectTemplate->setCollisionAssetIsPrimitive(
-        objectTemplate->getRenderAssetIsPrimitive());
-  }
-
-  // clear dirty flag from when asset handles are changed
-  objectTemplate->setIsClean();
-
-  // add object template to template library
-  int objectTemplateID = addPhysicsObjectTemplateToLibrary(
-      objectTemplate, objectTemplateHandle, *mapToUse);
-
-  return objectTemplateID;
-}  // namespace assets
-
-std::string ResourceManager::getRandomTemplateHandlePerType(
-    const std::map<int, std::string>& mapOfHandles,
-    const std::string& type) const {
-  int numVals = mapOfHandles.size();
-  if (numVals == 0) {
-    LOG(ERROR) << "Attempting to get a random " << type
-               << "object template handle but none are loaded;Aboring";
-    return "";
-  }
-  int randIDX = rand() % numVals;
-
-  std::string res;
-  for (std::pair<std::map<int, std::string>::const_iterator, int> iter(
-           mapOfHandles.begin(), 0);
-       (iter.first != mapOfHandles.end() && iter.second <= randIDX);
-       ++iter.first, ++iter.second) {
-    res = iter.first->second;
-  }
-  return res;
-}  // getRandomTemplateHandlePerType
-
-std::vector<std::string> ResourceManager::getTemplateHandlesBySubStringPerType(
-    const std::map<int, std::string>& mapOfHandles,
-    const std::string& subStr) const {
-  std::vector<std::string> res;
-  // if empty return empty vector
-  if (mapOfHandles.size() == 0) {
-    return res;
-  }
-  // if search string is empty, return all values
-  if (subStr.length() == 0) {
-    for (auto elem : mapOfHandles) {
-      res.push_back(elem.second);
-    }
-    return res;
-  }
-  // build search criteria
-  std::string strToLookFor(subStr);
-
-  int strSize = strToLookFor.length();
-  // force lowercase
-  std::transform(strToLookFor.begin(), strToLookFor.end(), strToLookFor.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
-
-  for (std::map<int, std::string>::const_iterator iter = mapOfHandles.begin();
-       iter != mapOfHandles.end(); ++iter) {
-    std::string key(iter->second);
-    // be sure that key is big enough to search in (otherwise find has undefined
-    // behavior)
-    if (key.length() < strSize) {
-      continue;
-    }
-    // force lowercase
-    std::transform(key.begin(), key.end(), key.begin(),
-                   [](unsigned char c) { return std::tolower(c); });
-    if (std::string::npos != key.find(strToLookFor)) {
-      res.push_back(iter->second);
-    }
-  }
-  return res;
-}  // getTemplateHandlesBySubStringPerType
-
-// load object template from config filename
-int ResourceManager::parseAndLoadPhysObjTemplate(
-    const std::string& objPhysConfigFilename) {
-  // check for duplicate load
-  const bool objTemplateExists =
-      physicsObjectTemplateLibrary_.count(objPhysConfigFilename) > 0;
-  if (objTemplateExists) {
-    return physicsObjectTemplateLibrary_.at(objPhysConfigFilename)
-        ->getObjectTemplateID();
-  }
-
-  // 1. parse the config file
-  io::JsonDocument objPhysicsConfig;
-  if (Corrade::Utility::Directory::exists(objPhysConfigFilename)) {
-    try {
-      objPhysicsConfig = io::parseJsonFile(objPhysConfigFilename);
-    } catch (...) {
-      LOG(ERROR) << "Failed to parse JSON: " << objPhysConfigFilename
-                 << ". Aborting loadObject.";
-      return ID_UNDEFINED;
-    }
-  } else {
-    LOG(ERROR) << "File " << objPhysConfigFilename
-               << " does not exist. Aborting loadObject.";
-    return ID_UNDEFINED;
-  }
-
-  // 2. construct a physicsObjectMetaData
-  auto physicsObjectAttributes =
-      PhysicsObjectAttributes::create(objPhysConfigFilename);
-
-  // NOTE: these paths should be relative to the properties file
-  std::string propertiesFileDirectory =
-      objPhysConfigFilename.substr(0, objPhysConfigFilename.find_last_of("/"));
-
-  // 3. load physical properties to override defaults (set in
-  // PhysicsObjectMetaData.h) load the mass
-  if (objPhysicsConfig.HasMember("mass")) {
-    if (objPhysicsConfig["mass"].IsNumber()) {
-      physicsObjectAttributes->setMass(objPhysicsConfig["mass"].GetDouble());
-    }
-  }
-
-  // optional set bounding box as collision object
-  if (objPhysicsConfig.HasMember("use bounding box for collision")) {
-    if (objPhysicsConfig["use bounding box for collision"].IsBool()) {
-      physicsObjectAttributes->setBoundingBoxCollisions(
-          objPhysicsConfig["use bounding box for collision"].GetBool());
-    }
-  }
-
-  // load the center of mass (in the local frame of the object)
-  // if COM is provided, use it for mesh shift
-  if (objPhysicsConfig.HasMember("COM")) {
-    if (objPhysicsConfig["COM"].IsArray()) {
-      Magnum::Vector3 COM;
-      for (rapidjson::SizeType i = 0; i < objPhysicsConfig["COM"].Size(); i++) {
-        if (!objPhysicsConfig["COM"][i].IsNumber()) {
-          // invalid config
-          LOG(ERROR) << " Invalid value in object physics config - COM array";
-          break;
-        } else {
-          COM[i] = objPhysicsConfig["COM"][i].GetDouble();
-        }
-      }
-      physicsObjectAttributes->setCOM(COM);
-      // set a flag which we can find later so we don't override the desired
-      // COM with BB center.
-      physicsObjectAttributes->setBool("COM_provided", true);
-    }
-  }
-
-  // scaling
-  if (objPhysicsConfig.HasMember("scale")) {
-    if (objPhysicsConfig["scale"].IsArray()) {
-      Magnum::Vector3 scale;
-      for (rapidjson::SizeType i = 0; i < objPhysicsConfig["scale"].Size();
-           i++) {
-        if (!objPhysicsConfig["scale"][i].IsNumber()) {
-          // invalid config
-          LOG(ERROR) << " Invalid value in object physics config - scale array";
-          break;
-        } else {
-          scale[i] = objPhysicsConfig["scale"][i].GetDouble();
-        }
-      }
-      physicsObjectAttributes->setScale(scale);
-    }
-  }
-
-  // load the inertia diagonal
-  if (objPhysicsConfig.HasMember("inertia")) {
-    if (objPhysicsConfig["inertia"].IsArray()) {
-      Magnum::Vector3 inertia;
-      for (rapidjson::SizeType i = 0; i < objPhysicsConfig["inertia"].Size();
-           i++) {
-        if (!objPhysicsConfig["inertia"][i].IsNumber()) {
-          // invalid config
-          LOG(ERROR)
-              << " Invalid value in object physics config - inertia array";
-          break;
-        } else {
-          inertia[i] = objPhysicsConfig["inertia"][i].GetDouble();
-        }
-      }
-      physicsObjectAttributes->setInertia(inertia);
-    }
-  }
-
-  // load the friction coefficient
-  if (objPhysicsConfig.HasMember("friction coefficient")) {
-    if (objPhysicsConfig["friction coefficient"].IsNumber()) {
-      physicsObjectAttributes->setFrictionCoefficient(
-          objPhysicsConfig["friction coefficient"].GetDouble());
-    } else {
-      LOG(ERROR)
-          << " Invalid value in object physics config - friction coefficient";
-    }
-  }
-
-  // load the restitution coefficient
-  if (objPhysicsConfig.HasMember("restitution coefficient")) {
-    if (objPhysicsConfig["restitution coefficient"].IsNumber()) {
-      physicsObjectAttributes->setRestitutionCoefficient(
-          objPhysicsConfig["restitution coefficient"].GetDouble());
-    } else {
-      LOG(ERROR) << " Invalid value in object physics config - restitution "
-                    "coefficient";
-    }
-  }
-
-  //! Get collision configuration options if specified
-  if (objPhysicsConfig.HasMember("join collision meshes")) {
-    if (objPhysicsConfig["join collision meshes"].IsBool()) {
-      physicsObjectAttributes->setJoinCollisionMeshes(
-          objPhysicsConfig["join collision meshes"].GetBool());
-    } else {
-      LOG(ERROR) << " Invalid value in object physics config - join "
-                    "collision meshes";
-    }
-  }
-
-  // if object will be flat or phong shaded
-  if (objPhysicsConfig.HasMember("requires lighting")) {
-    if (objPhysicsConfig["requires lighting"].IsBool()) {
-      physicsObjectAttributes->setRequiresLighting(
-          objPhysicsConfig["requires lighting"].GetBool());
-    } else {
-      LOG(ERROR)
-          << " Invalid value in object physics config - requires lighting";
-    }
-  }
-
-  // 4. parse render and collision mesh filepaths
-  std::string renderMeshFilename = "";
-  std::string collisionMeshFilename = "";
-
-  if (objPhysicsConfig.HasMember("render mesh")) {
-    if (objPhysicsConfig["render mesh"].IsString()) {
-      renderMeshFilename = Cr::Utility::Directory::join(
-          propertiesFileDirectory, objPhysicsConfig["render mesh"].GetString());
-    } else {
-      LOG(ERROR) << " Invalid value in object physics config - render mesh";
-    }
-  }
-  if (objPhysicsConfig.HasMember("collision mesh")) {
-    if (objPhysicsConfig["collision mesh"].IsString()) {
-      collisionMeshFilename = Cr::Utility::Directory::join(
-          propertiesFileDirectory,
-          objPhysicsConfig["collision mesh"].GetString());
-    } else {
-      LOG(ERROR) << " Invalid value in object physics config - collision mesh";
-    }
-  }
-
-  physicsObjectAttributes->setRenderAssetHandle(renderMeshFilename);
-  physicsObjectAttributes->setCollisionAssetHandle(collisionMeshFilename);
-  physicsObjectAttributes->setUseMeshCollision(true);
-
-  // 5. load the parsed file into the library
-  return registerObjectTemplate(physicsObjectAttributes, objPhysConfigFilename);
-}  // parseAndLoadPhysObjTemplate
-
-int ResourceManager::buildAndRegisterPrimPhysObjTemplate(
-    const std::string& primAssetHandle) {
-  // verify that a primitive asset with the given handle exists
-  if (primitiveAssetTemplateLibrary_.count(primAssetHandle) == 0) {
-    LOG(WARNING) << " No primitive with handle '" << primAssetHandle
-                 << "' exists so cannot build physical object.  Aborting.";
-    return ID_UNDEFINED;
-  }
-
-  // verify that a template with this asset does not exist
-  if (physicsObjectTemplateLibrary_.count(primAssetHandle) > 0) {
-    return physicsObjectTemplateLibrary_.at(primAssetHandle)
-        ->getObjectTemplateID();
-  }
-
-  // construct a physicsObjectMetaData
-  auto physicsObjectAttributes =
-      PhysicsObjectAttributes::create(primAssetHandle);
-  // set margin to be 0
-  physicsObjectAttributes->setMargin(0.0);
-  // make smaller as default size
-  physicsObjectAttributes->setScale({0.1, 0.1, 0.1});
-
-  // set render mesh handle
-  physicsObjectAttributes->setRenderAssetHandle(primAssetHandle);
-  // set collision mesh/primitive handle and default for primitives to not use
-  // mesh collisions
-  physicsObjectAttributes->setCollisionAssetHandle(primAssetHandle);
-  physicsObjectAttributes->setUseMeshCollision(false);
-  // NOTE to eventually use mesh collisions with primitive objects, a collision
-  // primitive mesh needs to be configured and set in MeshMetaData and
-  // CollisionMesh
-
-  return registerObjectTemplate(physicsObjectAttributes, primAssetHandle);
-}  // ResourceManager::buildAndRegisterPrimPhysObjTemplate
 
 Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
@@ -1138,7 +523,9 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
 }
 
 void ResourceManager::buildPrimitiveAssetData(
-    AbstractPrimitiveAttributes::ptr primTemplate) {
+    const std::string& primTemplateHandle) {
+  auto primTemplate =
+      assetAttributesManager_->getTemplateByHandle(primTemplateHandle);
   // check if unique name of attributes describing primitive asset is present
   // already - don't remake if so
   auto primAssetOriginHandle = primTemplate->getOriginHandle();
@@ -1205,7 +592,7 @@ void ResourceManager::buildPrimitiveAssetData(
       resourceDict_.emplace(primAssetOriginHandle, std::move(loadedAssetData));
 
   LOG(INFO) << " Primitive Asset Added : ID : "
-            << primTemplate->getAssetTemplateID()
+            << primTemplate->getObjectTemplateID()
             << " : attr lib key : " << primTemplate->getOriginHandle()
             << " | instance class : " << primClassName
             << " | Conf has group for this obj type : "
@@ -1469,7 +856,7 @@ bool ResourceManager::loadGeneralMeshData(
                meshes_[meshMetaData.meshIndex.first]) {
       // no default scene --- standalone OBJ/PLY files, for example
       // take a wild guess and load the first mesh with the first material
-      // addMeshToDrawables(metaData, *parent, drawables, ID_UNDEFINED, 0, 0);
+      // addMeshToDrawables(metaData, *parent, drawables, 0, 0);
       loadMeshHierarchy(*fileImporter_, meshMetaData.root, 0);
     } else {
       LOG(ERROR) << "No default scene available and no meshes found, exiting";
@@ -1828,15 +1215,15 @@ bool ResourceManager::instantiateAssetsOnDemand(
     const std::string& objectTemplateHandle) {
   // Meta data
   PhysicsObjectAttributes::ptr physicsObjectAttributes =
-      physicsObjectTemplateLibrary_.at(objectTemplateHandle);
+      objectAttributesManager_->getTemplateByHandle(objectTemplateHandle);
 
   // if attributes are "dirty" (values have changed since last registered)
   // then re-register.  Should never return ID_UNDEFINED - this would mean
   // something has corrupted the library.
   if (physicsObjectAttributes->getIsDirty()) {
     CORRADE_ASSERT(
-        (ID_UNDEFINED !=
-         registerObjectTemplate(physicsObjectAttributes, objectTemplateHandle)),
+        (ID_UNDEFINED != objectAttributesManager_->registerAttributesTemplate(
+                             physicsObjectAttributes, objectTemplateHandle)),
         "ResourceManager::instantiateAssetsOnDemand : Unknown failure "
         "attempting to register modified template :"
             << objectTemplateHandle
@@ -1854,7 +1241,8 @@ bool ResourceManager::instantiateAssetsOnDemand(
   if (resourceDict_.count(renderAssetHandle) == 0) {
     if (physicsObjectAttributes->getRenderAssetIsPrimitive()) {
       // needs to have a primitive asset attributes with same name
-      if (primitiveAssetTemplateLibrary_.count(renderAssetHandle) == 0) {
+      if (!assetAttributesManager_->getTemplateLibHasHandle(
+              renderAssetHandle)) {
         // this is bad, means no render primitive template exists with expected
         // name.  should never happen
         LOG(ERROR) << "No primitive asset attributes exists with name :"
@@ -1865,9 +1253,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
       }
       // build primitive asset for this object based on defined primitive
       // attributes
-      auto primitiveAssetAttributes =
-          primitiveAssetTemplateLibrary_.at(renderAssetHandle);
-      buildPrimitiveAssetData(primitiveAssetAttributes);
+      buildPrimitiveAssetData(renderAssetHandle);
 
     } else {
       // load/check_for render mesh metadata and load assets
@@ -1921,7 +1307,7 @@ void ResourceManager::addObjectToDrawables(const std::string& objTemplateHandle,
 
     // Meta data
     PhysicsObjectAttributes::ptr physicsObjectAttributes =
-        physicsObjectTemplateLibrary_.at(objTemplateHandle);
+        objectAttributesManager_->getTemplateByHandle(objTemplateHandle);
 
     const std::string& renderObjectName =
         physicsObjectAttributes->getRenderAssetHandle();
@@ -1961,8 +1347,7 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
   // Add a drawable if the object has a mesh and the mesh is loaded
   if (meshIDLocal != ID_UNDEFINED) {
     const int materialIDLocal = meshTransformNode.materialIDLocal;
-    addMeshToDrawables(metaData, node, lightSetup, drawables,
-                       meshTransformNode.componentID, meshIDLocal,
+    addMeshToDrawables(metaData, node, lightSetup, drawables, meshIDLocal,
                        materialIDLocal);
 
     // compute the bounding box for the mesh we are adding
@@ -1981,7 +1366,6 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
                                          scene::SceneNode& node,
                                          const Mn::ResourceKey& lightSetup,
                                          DrawableGroup* drawables,
-                                         int objectID,
                                          int meshIDLocal,
                                          int materialIDLocal) {
   const int meshStart = metaData.meshIndex.first;
@@ -1997,8 +1381,7 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
         std::to_string(metaData.materialIndex.first + materialIDLocal);
   }
 
-  createGenericDrawable(mesh, node, lightSetup, materialKey, drawables,
-                        objectID);
+  createGenericDrawable(mesh, node, lightSetup, materialKey, drawables);
 
   if (computeAbsoluteAABBs_) {
     staticDrawableInfo_.emplace_back(StaticDrawableInfo{node, meshID});
@@ -2018,11 +1401,10 @@ void ResourceManager::createGenericDrawable(
     scene::SceneNode& node,
     const Mn::ResourceKey& lightSetup,
     const Mn::ResourceKey& material,
-    DrawableGroup* group /* = nullptr */,
-    int objectId /* = ID_UNDEFINED */) {
+    DrawableGroup* group /* = nullptr */) {
   node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetup,
-                                        material, group, objectId);
-}
+                                        material, group);
+}  // namespace assets
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
                                          scene::SceneNode* parent,

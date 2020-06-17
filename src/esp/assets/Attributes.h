@@ -20,15 +20,28 @@ namespace esp {
 namespace assets {
 
 /**
- * @brief base attributes object holding attributes shared by all
- * PhysicsXXXAttributes objects; Is abstract - should never be instanced
+ * @brief Base class for all implemented attributes.
  */
-class AbstractPhysicsAttributes : public esp::core::Configuration {
+class AbstractAttributes : public esp::core::Configuration {
  public:
-  AbstractPhysicsAttributes(const std::string& originHandle = "");
-  // forcing this class to be abstract - note still needs definition
-  // can't do this because of pybind issues, currently
-  // virtual ~AbstractPhysAttributes() = 0;
+  AbstractAttributes(const std::string& classKey,
+                     const std::string& originHandle)
+      : Configuration() {
+    setClassKey(classKey);
+    setOriginHandle(originHandle);
+  }
+  /**
+   * @brief Get this attributes' class.  Should only be set from constructor.
+   * Used as key in constructor function pointer maps in AttributesManagers.
+   */
+  std::string getClassKey() const { return getString("classKey"); }
+
+  /**
+   * @brief Set this attributes name/origin.  Some attributes derive their own
+   * names based on their state, such as @ref AbstractPrimitiveAttributes;  in
+   * such cases this should be overridden with NOP.
+   * @param originHandle the handle to set.
+   */
   void setOriginHandle(const std::string& originHandle) {
     setString("originHandle", originHandle);
   }
@@ -37,6 +50,34 @@ class AbstractPhysicsAttributes : public esp::core::Configuration {
     setInt("objectTemplateID", objectTemplateID);
   }
   int getObjectTemplateID() const { return getInt("objectTemplateID"); }
+
+ protected:
+  /**
+   * @brief Set this attributes' class.  Should only be set from constructor.
+   * Used as key in constructor function pointer maps in AttributesManagers.
+   * @param classKey the string handle corresponding to the constructors used to
+   * make copies of this object in copy constructor map.
+   */
+  void setClassKey(const std::string& classKey) {
+    setString("classKey", classKey);
+  }
+
+ public:
+  ESP_SMART_POINTERS(AbstractAttributes)
+};  // class AbstractAttributes
+
+/**
+ * @brief base attributes object holding attributes shared by all
+ * PhysicsObjectAttributes and PhysicsSceneAttributes objects; Should be treated
+ * as if is abstract - should never be instanced directly
+ */
+class AbstractPhysicsAttributes : public AbstractAttributes {
+ public:
+  AbstractPhysicsAttributes(const std::string& classKey,
+                            const std::string& originHandle);
+  // forcing this class to be abstract - note still needs definition
+  // can't do this because of pybind issues, currently
+  // virtual ~AbstractPhysAttributes() = 0;
 
   void setScale(const Magnum::Vector3& scale) { setVec3("scale", scale); }
   Magnum::Vector3 getScale() const { return getVec3("scale"); }
@@ -63,8 +104,12 @@ class AbstractPhysicsAttributes : public esp::core::Configuration {
     return getString("renderAssetHandle");
   }
 
-  // whether this object uses file-based mesh render object or
-  // primitive(implicit) render shapes
+  /**
+   * @brief Sets whether this object uses file-based mesh render object or
+   * primitive render shapes
+   * @param renderAssetIsPrimitive whether this object's render asset is a
+   * primitive or not
+   */
   void setRenderAssetIsPrimitive(bool renderAssetIsPrimitive) {
     setBool("renderAssetIsPrimitive", renderAssetIsPrimitive);
   }
@@ -81,8 +126,12 @@ class AbstractPhysicsAttributes : public esp::core::Configuration {
     return getString("collisionAssetHandle");
   }
 
-  // whether this object uses file-based mesh render object or
-  // primitive(implicit) render shapes
+  /**
+   * @brief Sets whether this object uses file-based mesh collision object or
+   * primitive(implicit) collision shapes
+   * @param collisionAssetIsPrimitive whether this object's collision asset is a
+   * primitive (implicitly calculated) or a mesh
+   */
   void setCollisionAssetIsPrimitive(bool collisionAssetIsPrimitive) {
     setBool("collisionAssetIsPrimitive", collisionAssetIsPrimitive);
   }
@@ -91,8 +140,10 @@ class AbstractPhysicsAttributes : public esp::core::Configuration {
     return getBool("collisionAssetIsPrimitive");
   }
 
-  // whether this object uses mesh collision or primitive(implicit) collision
-  // shapes
+  /**
+   * @brief whether this object uses mesh collision or primitive(implicit)
+   * collision calculation.
+   */
   void setUseMeshCollision(bool useMeshCollision) {
     setBool("useMeshCollision", useMeshCollision);
   }
@@ -202,7 +253,7 @@ class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
 };  // end PhysicsSceneAttributes
 
 //! attributes for a single physics manager
-class PhysicsManagerAttributes : public esp::core::Configuration {
+class PhysicsManagerAttributes : public AbstractAttributes {
  public:
   PhysicsManagerAttributes() : PhysicsManagerAttributes("") {}
   PhysicsManagerAttributes(const std::string& originHandle);
@@ -221,14 +272,6 @@ class PhysicsManagerAttributes : public esp::core::Configuration {
   void setGravity(const Magnum::Vector3& gravity) {
     setVec3("gravity", gravity);
   }
-  void setOriginHandle(const std::string& originHandle) {
-    setString("originHandle", originHandle);
-  }
-  std::string getOriginHandle() const { return getString("originHandle"); }
-  void setObjectTemplateID(int objectTemplateID) {
-    setInt("objectTemplateID", objectTemplateID);
-  }
-  int getObjectTemplateID() const { return getInt("objectTemplateID"); }
 
   void setFrictionCoefficient(double frictionCoefficient) {
     setDouble("frictionCoefficient", frictionCoefficient);
@@ -252,12 +295,12 @@ class PhysicsManagerAttributes : public esp::core::Configuration {
 
 //! attributes describing primitve render/collision objects - abstract class
 //! without pure virtual methods
-class AbstractPrimitiveAttributes : public esp::core::Configuration {
+class AbstractPrimitiveAttributes : public AbstractAttributes {
  public:
   AbstractPrimitiveAttributes(bool isWireframe,
                               int primObjType,
                               const std::string& primObjClassName)
-      : Configuration() {
+      : AbstractAttributes(primObjClassName, "") {
     setIsWireframe(isWireframe);
     setPrimObjType(primObjType);
     setPrimObjClassName(primObjClassName);
@@ -273,12 +316,8 @@ class AbstractPrimitiveAttributes : public esp::core::Configuration {
   // virtual ~AbstractPrimitiveAttributes() = 0;
 
   // originHandle is set internally based on attributes configuration
-  std::string getOriginHandle() const { return getString("originHandle"); }
-
-  void setAssetTemplateID(int assetTemplateID) {
-    setInt("assetTemplateID", assetTemplateID);
-  }
-  int getAssetTemplateID() const { return getInt("assetTemplateID"); }
+  // setting externally is prohibited
+  void setOriginHandle(const std::string&) {}
 
   bool getIsWireframe() const { return getBool("isWireframe"); }
 
@@ -303,11 +342,11 @@ class AbstractPrimitiveAttributes : public esp::core::Configuration {
   // only circular prims set number of rings - NOTE : capsule sets rings
   // separately for hemispheres and cylinder
   // set virtual so cannot be deleted in capsule attributes
-  virtual void setNumRings(int rings) {
+  void setNumRings(int rings) {
     setInt("rings", rings);
     buildOriginHandle();  // build handle based on config
   }
-  virtual int getNumRings() const { return getInt("rings"); }
+  int getNumRings() const { return getInt("rings"); }
 
   void setNumSegments(int segments) {
     setInt("segments", segments);
@@ -332,6 +371,15 @@ class AbstractPrimitiveAttributes : public esp::core::Configuration {
   }
 
   int getPrimObjType() const { return getInt("primObjType"); }
+  /**
+   * @brief This will determine if the stated template has the required
+   * quantities needed to instantiate a primitive properly of desired type.
+   * AbstractPrimitiveAttributes is never valid for any primitive - should be
+   * overridden in prim-specific class.
+   * @return whether or not the template holds valid data for desired primitive
+   * type.
+   */
+  virtual bool isValidTemplate() { return false; }
 
  private:
   // Should never change, only set by ctor
@@ -347,6 +395,18 @@ class AbstractPrimitiveAttributes : public esp::core::Configuration {
   void setIsWireframe(bool isWireframe) { setBool("isWireframe", isWireframe); }
 
  protected:
+  /**
+   * @brief Verifies that @ref val is larger than, and a multiple of, divisor
+   * div
+   * @param val the value to check
+   * @param div the divsior (value to verify is greater than and a multiple of)
+   * - will be either 2 or 4 for primitives value checking
+   * @return whether check passes
+   */
+  bool isValueMultipleOfDivisor(int val, int div) {
+    return (val >= div) && (val % div == 0);
+  }
+
   /**
    * @brief Origin handle for primitive attribute-based templates should reflect
    * the parameters used to construct the primitive, and so should only be set
@@ -385,6 +445,23 @@ class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
     buildOriginHandle();  // build handle based on config
   }
   int getCylinderRings() const { return getInt("cylinderRings"); }
+
+  /**
+   * @brief This will determine if the stated template has the required
+   * quantities needed to instantiate a primitive properly of desired type
+   * @return whether or not the template holds valid data for desired primitive
+   * type
+   */
+  virtual bool isValidTemplate() override {
+    bool wfCheck =
+        ((getIsWireframe() && isValueMultipleOfDivisor(getNumSegments(), 4)) ||
+         (!getIsWireframe() && getNumSegments() > 2));
+
+    return (getCylinderRings() > 0 && getHemisphereRings() > 0 && wfCheck &&
+            getHalfLength() > 0);
+  }
+
+ protected:
   virtual std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_hemiRings_" << getHemisphereRings() << "_cylRings_"
@@ -413,6 +490,21 @@ class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
   }
   bool getCapEnd() const { return getBool("capEnd"); }
 
+  /**
+   * @brief This will determine if the stated template has the required
+   * quantities needed to instantiate a primitive properly of desired type
+   * @return whether or not the template holds valid data for desired primitive
+   * type
+   */
+  virtual bool isValidTemplate() override {
+    bool wfCheck =
+        ((getIsWireframe() && isValueMultipleOfDivisor(getNumSegments(), 4)) ||
+         (!getIsWireframe() && getNumSegments() > 2 && getNumRings() > 0));
+
+    return (getHalfLength() > 0 && wfCheck);
+  }
+
+ protected:
   virtual std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_segments_" << getNumSegments() << "_halfLen_"
@@ -440,6 +532,15 @@ class CubePrimitiveAttributes : public AbstractPrimitiveAttributes {
     buildOriginHandle();  // build handle based on config
   }
 
+  /**
+   * @brief This will determine if the stated template has the required
+   * quantities needed to instantiate a primitive properly of desired type. Cube
+   * primitives require no values and so this attributes is always valid.
+   * @return whether or not the template holds valid data for desired primitive
+   * type
+   */
+  virtual bool isValidTemplate() override { return true; }
+
   ESP_SMART_POINTERS(CubePrimitiveAttributes)
 };  // class CubePrimitiveAttributes
 
@@ -456,6 +557,20 @@ class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
   }
   bool getCapEnds() const { return getBool("capEnds"); }
 
+  /**
+   * @brief This will determine if the stated template has the required
+   * quantities needed to instantiate a primitive properly of desired type
+   * @return whether or not the template holds valid data for desired primitive
+   * type
+   */
+  virtual bool isValidTemplate() override {
+    bool wfCheck =
+        ((getIsWireframe() && isValueMultipleOfDivisor(getNumSegments(), 4)) ||
+         (!getIsWireframe() && getNumSegments() > 2));
+    return getNumRings() > 0 && getHalfLength() > 0 && wfCheck;
+  }
+
+ protected:
   virtual std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_rings_" << getNumRings() << "_segments_" << getNumSegments()
@@ -487,13 +602,24 @@ class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
   }
   // only solid icospheres will support subdivision - wireframes default to 1
   void setSubdivisions(int subdivisions) {
-    if (!getIsWireframe()) {  // check if solid
+    if (!getIsWireframe()) {
       setInt("subdivisions", subdivisions);
       buildOriginHandle();  // build handle based on config
     }
   }
   int getSubdivisions() const { return getInt("subdivisions"); }
 
+  /**
+   * @brief This will determine if the stated template has the required
+   * quantities needed to instantiate a primitive properly of desired type
+   * @return whether or not the template holds valid data for desired primitive
+   * type
+   */
+  virtual bool isValidTemplate() override {
+    return (getIsWireframe() || (!getIsWireframe() && getSubdivisions() >= 0));
+  }
+
+ protected:
   virtual std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     // wireframe subdivision currently does not change
@@ -510,6 +636,21 @@ class UVSpherePrimitiveAttributes : public AbstractPrimitiveAttributes {
   UVSpherePrimitiveAttributes(bool isWireframe,
                               int primObjType,
                               const std::string& primObjClassName);
+
+  /**
+   * @brief This will determine if the stated template has the required
+   * quantities needed to instantiate a primitive properly of desired type
+   * @return whether or not the template holds valid data for desired primitive
+   * type
+   */
+  virtual bool isValidTemplate() override {
+    return ((getIsWireframe() &&
+             isValueMultipleOfDivisor(getNumSegments(), 4) &&
+             isValueMultipleOfDivisor(getNumRings(), 2)) ||
+            (!getIsWireframe() && getNumRings() > 1 && getNumSegments() > 2));
+  }
+
+ protected:
   virtual std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_rings_" << getNumRings() << "_segments_" << getNumSegments();

@@ -327,24 +327,17 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
 }
 
 std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
-  std::vector<int> templateIndices;
   std::vector<std::string> validConfigPaths =
-      resourceManager_->buildObjectConfigPaths(path);
-  for (auto& validPath : validConfigPaths) {
-    templateIndices.push_back(
-        resourceManager_->parseAndLoadPhysObjTemplate(validPath));
-  }
+      resourceManager_->getPhysicsAttributesManager()->buildObjectConfigPaths(
+          path);
+
+  std::vector<int> templateIndices =
+      resourceManager_->getObjectAttributesManager()->loadAllFileBasedTemplates(
+          validConfigPaths);
   return templateIndices;
-}
+}  // Simulator::loadObjectConfigs
 
-int Simulator::registerObjectTemplate(
-    assets::PhysicsObjectAttributes::ptr objTmplPtr,
-    const std::string& objectTemplateHandle) {
-  return resourceManager_->registerObjectTemplate(objTmplPtr,
-                                                  objectTemplateHandle);
-}
-
-const assets::PhysicsObjectAttributes::ptr
+const assets::PhysicsObjectAttributes::cptr
 Simulator::getObjectInitializationTemplate(int objectId,
                                            const int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
@@ -575,7 +568,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
             Eigen::Transform<float, 3, Eigen::Affine> >(
             physicsManager_->getObjectVisualSceneNode(objectID)
                 .absoluteTransformationMatrix());
-        const assets::PhysicsObjectAttributes::ptr initializationTemplate =
+        const assets::PhysicsObjectAttributes::cptr initializationTemplate =
             physicsManager_->getInitializationAttributes(objectID);
         objectTransform.scale(Magnum::EigenIntegration::cast<vec3f>(
             initializationTemplate->getScale()));

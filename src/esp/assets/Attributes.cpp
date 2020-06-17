@@ -12,9 +12,9 @@ namespace assets {
 //----------------------------------------//
 
 AbstractPhysicsAttributes::AbstractPhysicsAttributes(
+    const std::string& classKey,
     const std::string& originHandle)
-    : Configuration() {
-  setOriginHandle(originHandle);
+    : AbstractAttributes(classKey, originHandle) {
   setFrictionCoefficient(0.5);
   setRestitutionCoefficient(0.1);
   setRenderAssetHandle("");
@@ -31,7 +31,7 @@ AbstractPhysicsAttributes::AbstractPhysicsAttributes(
 
 PhysicsObjectAttributes::PhysicsObjectAttributes(
     const std::string& originHandle)
-    : AbstractPhysicsAttributes(originHandle) {
+    : AbstractPhysicsAttributes("PhysicsObjectAttributes", originHandle) {
   // fill necessary attribute defaults
   setMass(1.0);
   setMargin(0.04);
@@ -56,7 +56,7 @@ PhysicsObjectAttributes::PhysicsObjectAttributes(
 }  // PhysicsObjectAttributes ctor
 
 PhysicsSceneAttributes::PhysicsSceneAttributes(const std::string& originHandle)
-    : AbstractPhysicsAttributes(originHandle) {
+    : AbstractPhysicsAttributes("PhysicsSceneAttributes", originHandle) {
   setGravity({0, -9.8, 0});
   // TODO do these defaults need to be maintained here?
   setFrictionCoefficient(0.4);
@@ -65,9 +65,8 @@ PhysicsSceneAttributes::PhysicsSceneAttributes(const std::string& originHandle)
 
 PhysicsManagerAttributes::PhysicsManagerAttributes(
     const std::string& originHandle)
-    : Configuration() {
+    : AbstractAttributes("PhysicsManagerAttributes", originHandle) {
   setSimulator("none");
-  setOriginHandle(originHandle);
   setTimestep(0.01);
   setMaxSubsteps(10);
 }  // PhysicsManagerAttributes ctor

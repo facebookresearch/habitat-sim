@@ -18,9 +18,9 @@ bool RigidScene::initialize(
     return false;
   }
   objectMotionType_ = MotionType::STATIC;
-  initializationAttributes_ = esp::assets::PhysicsSceneAttributes::create(
-      *(static_cast<esp::assets::PhysicsSceneAttributes*>(
-          physicsAttributes.get())));
+  initializationAttributes_ =
+      resMgr.getSceneAttributesManager()->getTemplateCopyByHandle(
+          physicsAttributes->getOriginHandle());
 
   return initializationFinalize(resMgr);
 }

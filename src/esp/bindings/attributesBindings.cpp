@@ -16,11 +16,34 @@ namespace esp {
 namespace assets {
 
 void initAttributesBindings(py::module& m) {
+  // ==== AbstractAttributes ====
+  py::class_<AbstractAttributes, esp::core::Configuration,
+             AbstractAttributes::ptr>(m, "AbstractAttributes")
+      .def(py::init(
+          &AbstractAttributes::create<const std::string&, const std::string&>))
+      .def("set_origin_handle", &AbstractAttributes::setOriginHandle,
+           "origin_handle"_a)
+      .def("get_origin_handle", &AbstractAttributes::getOriginHandle)
+      .def("get_object_template_ID", &AbstractAttributes::getObjectTemplateID)
+      .def("get_template_class", &AbstractAttributes::getClassKey);
+
   // ==== AbstractPhysicsAttributes ====
-  py::class_<AbstractPhysicsAttributes, esp::core::Configuration,
+  py::class_<AbstractPhysicsAttributes, AbstractAttributes,
              AbstractPhysicsAttributes::ptr>(m, "AbstractPhysicsAttributes")
-      .def(py::init(&AbstractPhysicsAttributes::create<>))
-      .def(py::init(&AbstractPhysicsAttributes::create<const std::string&>));
+      .def(py::init(&AbstractPhysicsAttributes::create<const std::string&,
+                                                       const std::string&>))
+      .def("set_scale", &AbstractPhysicsAttributes::setScale, "scale"_a)
+      .def("get_scale", &AbstractPhysicsAttributes::getScale)
+      .def("set_friction_coefficient",
+           &AbstractPhysicsAttributes::setFrictionCoefficient,
+           "friction_coefficient"_a)
+      .def("get_friction_coefficient",
+           &AbstractPhysicsAttributes::getFrictionCoefficient)
+      .def("set_restitution_coefficient",
+           &AbstractPhysicsAttributes::setRestitutionCoefficient,
+           "restitution_coefficient"_a)
+      .def("get_restitution_coefficient",
+           &AbstractPhysicsAttributes::getRestitutionCoefficient);
 
   // ==== PhysicsObjectAttributes ====
   py::class_<PhysicsObjectAttributes, AbstractPhysicsAttributes,
@@ -35,27 +58,13 @@ void initAttributesBindings(py::module& m) {
       .def("get_mass", &PhysicsObjectAttributes::getMass)
       .def("set_inertia", &PhysicsObjectAttributes::setInertia, "inertia"_a)
       .def("get_inertia", &PhysicsObjectAttributes::getInertia)
-      .def("set_scale", &PhysicsObjectAttributes::setScale, "scale"_a)
-      .def("get_scale", &PhysicsObjectAttributes::getScale)
-      .def("set_friction_coefficient",
-           &PhysicsObjectAttributes::setFrictionCoefficient,
-           "friction_coefficient"_a)
-      .def("get_friction_coefficient",
-           &PhysicsObjectAttributes::getFrictionCoefficient)
-      .def("set_restitution_coefficient",
-           &PhysicsObjectAttributes::setRestitutionCoefficient,
-           "restitution_coefficient"_a)
-      .def("get_restitution_coefficient",
-           &PhysicsObjectAttributes::getRestitutionCoefficient)
+
       .def("set_linear_damping", &PhysicsObjectAttributes::setLinearDamping,
            "linear_damping"_a)
       .def("get_linear_damping", &PhysicsObjectAttributes::getLinearDamping)
       .def("set_angular_damping", &PhysicsObjectAttributes::setAngularDamping,
            "angular_damping"_a)
       .def("get_angular_damping", &PhysicsObjectAttributes::getAngularDamping)
-      .def("set_origin_handle", &PhysicsObjectAttributes::setOriginHandle,
-           "origin_handle"_a)
-      .def("get_origin_handle", &PhysicsObjectAttributes::getOriginHandle)
       .def("set_render_asset_handle",
            &PhysicsObjectAttributes::setRenderAssetHandle,
            "render_asset_handle"_a)
@@ -80,7 +89,91 @@ void initAttributesBindings(py::module& m) {
            &PhysicsObjectAttributes::setRequiresLighting, "requires_lighting"_a)
       .def("get_requires_lighting",
            &PhysicsObjectAttributes::getRequiresLighting);
-}
+
+  // ==== AbstractPrimitiveAttributes ====
+  py::class_<AbstractPrimitiveAttributes, AbstractAttributes,
+             AbstractPrimitiveAttributes::ptr>(m, "AbstractPrimitiveAttributes")
+      .def(py::init(
+          &AbstractPrimitiveAttributes::create<bool, int, const std::string&>))
+      .def("set_origin_handle", &AbstractPrimitiveAttributes::setOriginHandle,
+           "do_not_use"_a)
+      .def("get_is_wireframe", &AbstractPrimitiveAttributes::getIsWireframe)
+      .def("set_use_texture_coords",
+           &AbstractPrimitiveAttributes::setUseTextureCoords,
+           "use_texture_coords"_a)
+      .def("get_use_texture_coords",
+           &AbstractPrimitiveAttributes::getUseTextureCoords)
+      .def("set_use_tangents", &AbstractPrimitiveAttributes::setUseTangents,
+           "use_tangents"_a)
+      .def("get_use_tangents", &AbstractPrimitiveAttributes::getUseTangents)
+
+      .def("set_num_rings", &AbstractPrimitiveAttributes::setNumRings,
+           "num_rings"_a)
+      .def("get_num_rings", &AbstractPrimitiveAttributes::getNumRings)
+      .def("set_num_segments", &AbstractPrimitiveAttributes::setNumSegments,
+           "num_segments"_a)
+      .def("get_num_segments", &AbstractPrimitiveAttributes::getNumSegments)
+      .def("set_half_length", &AbstractPrimitiveAttributes::setHalfLength,
+           "half_length"_a)
+      .def("get_half_length", &AbstractPrimitiveAttributes::getHalfLength)
+      .def("get_prim_obj_class_name",
+           &AbstractPrimitiveAttributes::getPrimObjClassName)
+      .def("get_prim_obj_type", &AbstractPrimitiveAttributes::getPrimObjType);
+
+  // ==== CapsulePrimitiveAttributes ====
+  py::class_<CapsulePrimitiveAttributes, AbstractPrimitiveAttributes,
+             CapsulePrimitiveAttributes::ptr>(m, "CapsulePrimitiveAttributes")
+      .def(py::init(
+          &CapsulePrimitiveAttributes::create<bool, int, const std::string&>))
+      .def("set_hemisphere_rings",
+           &CapsulePrimitiveAttributes::setHemisphereRings,
+           "hemisphere_rings"_a)
+      .def("get_hemisphere_rings",
+           &CapsulePrimitiveAttributes::getHemisphereRings)
+      .def("set_cylinder_rings", &CapsulePrimitiveAttributes::setCylinderRings,
+           "cylinder_rings"_a)
+      .def("get_cylinder_rings", &CapsulePrimitiveAttributes::getCylinderRings);
+
+  // ==== ConePrimitiveAttributes ====
+  py::class_<ConePrimitiveAttributes, AbstractPrimitiveAttributes,
+             ConePrimitiveAttributes::ptr>(m, "ConePrimitiveAttributes")
+      .def(py::init(
+          &ConePrimitiveAttributes::create<bool, int, const std::string&>))
+      .def("set_cap_end", &ConePrimitiveAttributes::setCapEnd, "cap_end"_a)
+      .def("get_cap_end", &ConePrimitiveAttributes::getCapEnd);
+
+  // ==== CubePrimitiveAttributes ====
+  py::class_<CubePrimitiveAttributes, AbstractPrimitiveAttributes,
+             CubePrimitiveAttributes::ptr>(m, "CubePrimitiveAttributes")
+      .def(py::init(
+          &CubePrimitiveAttributes::create<bool, int, const std::string&>));
+
+  // ==== CylinderPrimitiveAttributes ====
+  py::class_<CylinderPrimitiveAttributes, AbstractPrimitiveAttributes,
+             CylinderPrimitiveAttributes::ptr>(m, "CylinderPrimitiveAttributes")
+      .def(py::init(
+          &CylinderPrimitiveAttributes::create<bool, int, const std::string&>))
+      .def("set_cap_ends", &CylinderPrimitiveAttributes::setCapEnds,
+           "cap_ends"_a)
+      .def("get_cap_ends", &CylinderPrimitiveAttributes::getCapEnds);
+
+  // ==== IcospherePrimitiveAttributes ====
+  py::class_<IcospherePrimitiveAttributes, AbstractPrimitiveAttributes,
+             IcospherePrimitiveAttributes::ptr>(m,
+                                                "IcospherePrimitiveAttributes")
+      .def(py::init(
+          &IcospherePrimitiveAttributes::create<bool, int, const std::string&>))
+      .def("set_subdivisions", &IcospherePrimitiveAttributes::setSubdivisions,
+           "subdivisions"_a)
+      .def("get_subdivisions", &IcospherePrimitiveAttributes::getSubdivisions);
+
+  // ==== UVSpherePrimitiveAttributes ====
+  py::class_<UVSpherePrimitiveAttributes, AbstractPrimitiveAttributes,
+             UVSpherePrimitiveAttributes::ptr>(m, "UVSpherePrimitiveAttributes")
+      .def(py::init(
+          &UVSpherePrimitiveAttributes::create<bool, int, const std::string&>));
+
+}  // initAttributesBindings
 
 }  // namespace assets
 }  // namespace esp
