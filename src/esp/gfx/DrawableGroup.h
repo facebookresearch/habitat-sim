@@ -25,6 +25,21 @@ class DrawableGroup : public Magnum::SceneGraph::DrawableGroup3D {
   virtual ~DrawableGroup();
 
   /**
+   * @brief Add a drawable to the group.
+   * @return Reference to self (for method chaining)
+   *
+   * If the drawable is part of another group, it is removed from it.
+   */
+  DrawableGroup& add(Drawable& drawable);
+  /**
+   * @brief Remove a drawable from the group.
+   * @return Reference to self (for method chaining)
+   *
+   * The feature must be part of the group.
+   */
+  DrawableGroup& remove(Drawable& drawable);
+
+  /**
    * @brief Given drawable id, returns if drawable is in the group
    * @param id, drawable id
    * @return true if the drawable is in the group, otherwise false

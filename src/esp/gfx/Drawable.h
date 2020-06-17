@@ -45,6 +45,11 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    */
   DrawableGroup* drawables();
 
+  /**
+   * @brief Get the drawable id
+   */
+  uint64_t getDrawableId() { return drawableId_; }
+
   virtual void setLightSetup(const Magnum::ResourceKey& lightSetup){};
 
  protected:
@@ -54,8 +59,8 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * @param transformationMatrix  Transformation relative to camera.
    * @param camera                Camera to draw from.
    *
-   * Each derived drawable class needs to implement this draw() function. It's
-   * nothing more than drawing itself with its group's shader.
+   * Each derived drawable class needs to implement this draw() function.
+   * It's nothing more than drawing itself with its group's shader.
    */
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
                     Magnum::SceneGraph::Camera3D& camera) = 0;

@@ -8,6 +8,27 @@ namespace esp {
 namespace gfx {
 
 class Drawable;
+DrawableGroup& DrawableGroup::add(Drawable& drawable) {
+  uint64_t id = drawable.getDrawableId();
+  // if it is already in this group, return directly
+  if (!hasDrawable(id)) {
+    return *this;
+  }
+  idToDrawable_.insert({id, &drawable});
+  this->Magnum::SceneGraph::DrawableGroup3D::add(drawable);
+  return *this;
+}
+
+DrawableGroup& DrawableGroup::remove(Drawable& drawable) {
+  uint64_t id = drawable.getDrawableId();
+  // if it is NOT in this group, return directly
+  if (!hasDrawable(id)) {
+    return *this;
+  }
+  idToDrawable_.erase(id);
+  this->Magnum::SceneGraph::DrawableGroup3D::remove(drawable);
+  return *this;
+}
 
 DrawableGroup::~DrawableGroup() {
   // has to inform any currently existing drawables, do not query anything
