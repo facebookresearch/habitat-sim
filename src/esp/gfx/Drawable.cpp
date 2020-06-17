@@ -17,7 +17,7 @@ Drawable::Drawable(scene::SceneNode& node,
       node_(node),
       mesh_(mesh),
       drawableId_(drawableIdCounter++),
-      groupIsNull_(nullptr == group ? false : true) {
+      groupIsNull_(nullptr == group ? true : false) {
   if (group) {
     group->idToDrawable_.insert({drawableId_, this});
   }
