@@ -77,6 +77,10 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * directly, and ONLY this class can do it
    */
   friend class DrawableGroup;
+
+  // system needs to make sure a Drawable is attaching to
+  // esp::gfx::DrawableGroup (a sub-class of magnum base class),
+  // not the magnum base drawable group
   bool attachedToGroup_ = false;
 };
 

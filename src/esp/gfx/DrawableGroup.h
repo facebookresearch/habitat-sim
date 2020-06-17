@@ -5,8 +5,6 @@
 #pragma once
 #include <Magnum/SceneGraph/Drawable.h>
 #include <Magnum/SceneGraph/FeatureGroup.h>
-#include <Magnum/SceneGraph/SceneGraph.h>
-#include <functional>
 #include <unordered_map>
 
 #include "esp/core/esp.h"

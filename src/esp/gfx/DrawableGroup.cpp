@@ -32,8 +32,9 @@ bool DrawableGroup::hasDrawable(uint64_t id) const {
 }
 
 Drawable* DrawableGroup::getDrawable(uint64_t id) const {
-  if (hasDrawable(id)) {
-    return idToDrawable_.at(id);
+  auto it = idToDrawable_.find(id);
+  if (it != idToDrawable_.end()) {
+    return it->second;
   }
 
   return nullptr;
@@ -41,24 +42,19 @@ Drawable* DrawableGroup::getDrawable(uint64_t id) const {
 
 DrawableGroup& DrawableGroup::registerDrawable(Drawable& drawable) {
   uint64_t id = drawable.getDrawableId();
-  // it is already registered, return directly
-  if (hasDrawable(id)) {
-    return *this;
-  }
 
-  idToDrawable_.insert({id, &drawable});
-  drawable.attachedToGroup_ = true;
+  // if it is already registered, emplace will do nothing
+  if (idToDrawable_.emplace(id, &drawable).second) {
+    drawable.attachedToGroup_ = true;
+  }
   return *this;
 }
 DrawableGroup& DrawableGroup::unregisterDrawable(Drawable& drawable) {
   uint64_t id = drawable.getDrawableId();
-  // if this id is not in this group, return directly
-  if (!hasDrawable(id)) {
-    return *this;
-  }
 
-  idToDrawable_.erase(id);
-  drawable.attachedToGroup_ = false;
+  if (idToDrawable_.erase(id) != 0) {
+    drawable.attachedToGroup_ = false;
+  }
   return *this;
 }
 
