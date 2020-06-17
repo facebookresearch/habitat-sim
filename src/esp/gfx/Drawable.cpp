@@ -17,7 +17,7 @@ Drawable::Drawable(scene::SceneNode& node,
       node_(node),
       mesh_(mesh),
       drawableId_(drawableIdCounter++),
-      groupIsNull_(nullptr == group ? true : false) {
+      groupExists_(group ? true : false) {
   if (group) {
     group->idToDrawable_.insert({drawableId_, this});
   }
@@ -25,7 +25,7 @@ Drawable::Drawable(scene::SceneNode& node,
 
 Drawable::~Drawable() {
   // if the belonging group exists and has not been deconstructed eariler
-  if (!groupIsNull_) {
+  if (groupExists_) {
     DrawableGroup* group = drawables();
     if (group) {
       group->idToDrawable_.erase(drawableId_);

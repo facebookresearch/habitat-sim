@@ -68,12 +68,12 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
 
   friend class DrawableGroup;
   /**
-   * if the group is destroyed, it will be set as true by the DrawableGroup
+   * if the group is destroyed, it will be set as false by the DrawableGroup
    * class;
    * if the group is set as nullptr during the construction, it will be
-   * set by the ctor as true, otherwise false
+   * set by the ctor as false, otherwise true
    */
-  bool groupIsNull_ = true;
+  bool groupExists_ = false;
 };
 
 }  // namespace gfx

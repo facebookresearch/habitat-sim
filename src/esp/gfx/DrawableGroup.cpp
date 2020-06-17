@@ -13,7 +13,7 @@ DrawableGroup::~DrawableGroup() {
   // has to inform any currently existing drawables, do not query anything
   // regarding this group
   for (int iDrawable = 0; iDrawable < this->size(); ++iDrawable) {
-    static_cast<Drawable&>((*this)[iDrawable]).groupIsNull_ = true;
+    static_cast<Drawable&>((*this)[iDrawable]).groupExists_ = false;
   }
 }
 
