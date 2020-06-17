@@ -20,8 +20,6 @@ namespace managers {
 PhysicsSceneAttributes::ptr SceneAttributesManager::createAttributesTemplate(
     const std::string& sceneAttributesHandle,
     bool registerTemplate) {
-  const bool physSceneExists =
-      this->templateLibrary_.count(sceneAttributesHandle) > 0;
   PhysicsSceneAttributes::ptr sceneAttributesTemplate =
       PhysicsSceneAttributes::create(sceneAttributesHandle);
 
