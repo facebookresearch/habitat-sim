@@ -195,6 +195,7 @@ class Simulator(SimulatorBackend):
         self._config_backend(config)
         self._config_agents(config)
         self._config_pathfinder(config)
+        self.frustum_culling = config.sim_cfg.frustum_culling
 
         for i in range(len(self.agents)):
             self.agents[i].controls.move_filter_fn = self._step_filter
