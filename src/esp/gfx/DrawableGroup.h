@@ -69,6 +69,8 @@ class DrawableGroup : public Magnum::SceneGraph::DrawableGroup3D {
    * can do it.
    */
   friend class Drawable;
+  DrawableGroup& registerDrawable(Drawable& drawable);
+  DrawableGroup& unregisterDrawable(Drawable& drawable);
   /**
    * a map, that maps a drawable id to the drawable object
    * NOTE: operations on this structure are all in the class Drawable

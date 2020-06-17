@@ -9,32 +9,21 @@ namespace gfx {
 
 class Drawable;
 DrawableGroup& DrawableGroup::add(Drawable& drawable) {
-  uint64_t id = drawable.getDrawableId();
-  // if it is already in this group, return directly
-  if (!hasDrawable(id)) {
-    return *this;
-  }
-  idToDrawable_.insert({id, &drawable});
+  registerDrawable(drawable);
   this->Magnum::SceneGraph::DrawableGroup3D::add(drawable);
   return *this;
 }
 
 DrawableGroup& DrawableGroup::remove(Drawable& drawable) {
-  uint64_t id = drawable.getDrawableId();
-  // if it is NOT in this group, return directly
-  if (!hasDrawable(id)) {
-    return *this;
-  }
-  idToDrawable_.erase(id);
+  unregisterDrawable(drawable);
   this->Magnum::SceneGraph::DrawableGroup3D::remove(drawable);
   return *this;
 }
 
 DrawableGroup::~DrawableGroup() {
-  // has to inform any currently existing drawables, do not query anything
-  // regarding this group
+  // has to unregister any currently existing drawables
   for (int iDrawable = 0; iDrawable < this->size(); ++iDrawable) {
-    static_cast<Drawable&>((*this)[iDrawable]).groupExists_ = false;
+    unregisterDrawable(static_cast<Drawable&>((*this)[iDrawable]));
   }
 }
 
@@ -48,6 +37,29 @@ Drawable* DrawableGroup::getDrawable(uint64_t id) const {
   }
 
   return nullptr;
+}
+
+DrawableGroup& DrawableGroup::registerDrawable(Drawable& drawable) {
+  uint64_t id = drawable.getDrawableId();
+  // it is already registered, return directly
+  if (hasDrawable(id)) {
+    return *this;
+  }
+
+  idToDrawable_.insert({id, &drawable});
+  drawable.attachedToGroup_ = true;
+  return *this;
+}
+DrawableGroup& DrawableGroup::unregisterDrawable(Drawable& drawable) {
+  uint64_t id = drawable.getDrawableId();
+  // if this id is not in this group, return directly
+  if (!hasDrawable(id)) {
+    return *this;
+  }
+
+  idToDrawable_.erase(id);
+  drawable.attachedToGroup_ = false;
+  return *this;
 }
 
 }  // namespace gfx

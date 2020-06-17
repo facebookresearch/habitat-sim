@@ -17,17 +17,16 @@ Drawable::Drawable(scene::SceneNode& node,
       node_(node),
       mesh_(mesh),
       drawableId_(drawableIdCounter++),
-      groupExists_(group ? true : false) {
-  if (groupExists_) {
-    group->idToDrawable_.insert({drawableId_, this});
+      attachedToGroup_(false) {
+  if (group) {
+    group->registerDrawable(*this);
   }
 }
 
 Drawable::~Drawable() {
-  // if the belonging group exists and has not been deconstructed eariler
-  if (groupExists_) {
+  if (attachedToGroup_) {
     DrawableGroup* group = drawables();
-    group->idToDrawable_.erase(drawableId_);
+    group->unregisterDrawable(*this);
   }
 }
 
@@ -38,6 +37,5 @@ DrawableGroup* Drawable::drawables() {
   return static_cast<DrawableGroup*>(
       Magnum::SceneGraph::Drawable3D::drawables());
 }
-
 }  // namespace gfx
 }  // namespace esp
