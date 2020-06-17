@@ -62,10 +62,31 @@ class Simulator(SimulatorBackend):
         default=0.0, init=False
     )  # track the compute time of each step
 
+    @staticmethod
+    def _sanitize_config(config: Configuration):
+        if not len(config.agents) > 0:
+            raise RuntimeError(
+                "Config has not agents specified.  Must specify at least 1 agent"
+            )
+
+        config.sim_cfg.create_renderer = any(
+            map(lambda cfg: len(cfg.sensor_specifications) > 0, config.agents)
+        )
+        config.sim_cfg.load_semantic_mesh = any(
+            map(
+                lambda cfg: any(
+                    map(
+                        lambda sens_spec: sens_spec.sensor_type == SensorType.SEMANTIC,
+                        cfg.sensor_specifications,
+                    )
+                ),
+                config.agents,
+            )
+        )
+
     def __attrs_post_init__(self):
-        config = self.config
-        self.config = None
-        self.reconfigure(config)
+        self._sanitize_config(self.config)
+        self.__set_from_config(self.config)
 
     def close(self):
         for sensor in self._sensors.values():
@@ -114,9 +135,6 @@ class Simulator(SimulatorBackend):
             super().reconfigure(config.sim_cfg)
 
     def _config_agents(self, config: Configuration):
-        if self.config is not None and self.config.agents == config.agents:
-            return
-
         self.agents = [
             Agent(self.get_active_scene_graph().get_root_node().create_child(), cfg)
             for cfg in config.agents
@@ -167,30 +185,13 @@ class Simulator(SimulatorBackend):
         self.pathfinder.seed(config.sim_cfg.random_seed)
 
     def reconfigure(self, config: Configuration):
-        assert len(config.agents) > 0
+        self._sanitize_config(config)
 
-        config.sim_cfg.create_renderer = any(
-            map(lambda cfg: len(cfg.sensor_specifications) > 0, config.agents)
-        )
-        config.sim_cfg.load_semantic_mesh = any(
-            map(
-                lambda cfg: any(
-                    map(
-                        lambda sens_spec: sens_spec.sensor_type == SensorType.SEMANTIC,
-                        cfg.sensor_specifications,
-                    )
-                ),
-                config.agents,
-            )
-        )
+        if self.config != config:
+            self.__set_from_config(config)
+            self.config = config
 
-        if self.config == config:
-            return
-
-        # NB: Configure backend last as this gives more time for python's GC
-        # to delete any previous instances of the simulator
-        # TODO: can't do the above, sorry -- the Agent constructor needs access
-        # to self._sim.get_active_scene_graph()
+    def __set_from_config(self, config: Configuration):
         self._config_backend(config)
         self._config_agents(config)
         self._config_pathfinder(config)
@@ -210,8 +211,6 @@ class Simulator(SimulatorBackend):
 
         for i in range(len(self.agents)):
             self.initialize_agent(i)
-
-        self.config = config
 
     def get_agent(self, agent_id):
         return self.agents[agent_id]
