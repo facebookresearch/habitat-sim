@@ -401,16 +401,17 @@ def main(make_video=True, show_video=True):
     # set the agent's body to kinematic since we will be updating position manually
     sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, id_1)
 
-    # configure the VelcoityControl structure
-    vel_control = sim.get_object_velocity_control(id_1)
-
+    # create and configure a new VelocityControl structure
+    # Note: this is NOT the object's VelocityControl, so it will not be consumed automatically in sim.step_physics
+    vel_control = habitat_sim.physics.VelocityControl()
     vel_control.controlling_lin_vel = True
     vel_control.lin_vel_is_local = True
     vel_control.controlling_ang_vel = True
     vel_control.ang_vel_is_local = True
     vel_control.linear_velocity = np.array([0, 0, -1.0])
 
-    for i in range(2):
+    # try 2 variations of the control experiment
+    for iteration in range(2):
         # reset observations and robot state
         observations = []
         sim.set_translation(np.array([1.75, -1.02, 0.4]), id_1)
@@ -419,7 +420,7 @@ def main(make_video=True, show_video=True):
 
         video_prefix = "robot_control_sliding"
         # turn sliding off for the 2nd pass
-        if i == 1:
+        if iteration == 1:
             sim.config.sim_cfg.allow_sliding = False
             video_prefix = "robot_control_no_sliding"
 
@@ -427,19 +428,30 @@ def main(make_video=True, show_video=True):
         start_time = sim.get_world_time()
         last_velocity_set = 0
         dt = 6.0
+        time_step = 1.0 / 60.0
         while sim.get_world_time() < start_time + dt:
-            previousRigidState = sim.get_rigid_state(id_1)
-            # run any dynamics simulation and integrate the transform
-            sim.step_physics(1.0 / 60.0)
-            # snap to navmesh
+            previous_rigid_state = sim.get_rigid_state(id_1)
+
+            # manually integrate the rigid state
+            target_rigid_state = vel_control.integrate_transform(
+                time_step, previous_rigid_state
+            )
+
+            # snap rigid state to navmesh and set to object
             end_pos = sim._step_filter(
-                previousRigidState.translation, sim.get_translation(id_1)
+                previous_rigid_state.translation, target_rigid_state.translation
             )
             sim.set_translation(end_pos, id_1)
+            sim.set_rotation(target_rigid_state.rotation, id_1)
+
+            # run any dynamics simulation
+            sim.step_physics(time_step)
+
+            # render observation
             observations.append(sim.get_sensor_observations())
 
             # randomize velocities
-            last_velocity_set += 1.0 / 60.0
+            last_velocity_set += time_step
             if last_velocity_set >= 1.0:
                 vel_control.angular_velocity = np.array(
                     [0, (random.random() - 0.5) * 2.0, 0]
