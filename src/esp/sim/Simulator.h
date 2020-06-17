@@ -384,6 +384,28 @@ class Simulator {
   void setTransformation(const Magnum::Matrix4& transform,
                          const int objectID,
                          const int sceneID = 0);
+  /**
+   * @brief Get the current @ref esp::core::RigidState of an object.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   * @return The @ref esp::core::RigidState transform of the object.
+   */
+  esp::core::RigidState getRigidState(const int objectID,
+                                      const int sceneID = 0) const;
+
+  /**
+   * @brief Set the @ref esp::core::RigidState of an object kinematically.
+   * @param transform The desired @ref esp::core::RigidState of the object.
+   * @param  objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
+  void setRigidState(const esp::core::RigidState& rigidState,
+                     const int objectID,
+                     const int sceneID = 0);
 
   /**
    * @brief Set the 3D position of an object kinematically.

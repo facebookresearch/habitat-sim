@@ -1,6 +1,7 @@
 # [setup]
 import math
 import os
+import random
 
 import cv2
 import magnum as mn
@@ -378,10 +379,77 @@ def main(make_video=True, show_video=True):
     # simulate settling
     observations += simulate(sim, dt=3.0, get_frames=make_video)
 
+    # remove the agent's body while preserving the SceneNode
+    sim.remove_object(id_1, False)
+
     # video rendering with embedded 1st person view
     make_video_cv2(observations, prefix="robot_control", open_vid=True, multi_obs=True)
 
     # [/embodied_agent]
+
+    # [embodied_agent_navmesh]
+
+    # load the lobot_merged asset
+    locobot_template_id = sim.load_object_configs(
+        str(os.path.join(data_path, "objects/locobot_merged"))
+    )[0]
+
+    # add robot object to the scene with the agent/camera SceneNode attached
+    id_1 = sim.add_object(locobot_template_id, sim.agents[0].scene_node)
+    initial_rotation = sim.get_rotation(id_1)
+
+    # set the agent's body to kinematic since we will be updating position manually
+    sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, id_1)
+
+    # configure the VelcoityControl structure
+    vel_control = sim.get_object_velocity_control(id_1)
+
+    vel_control.controlling_lin_vel = True
+    vel_control.lin_vel_is_local = True
+    vel_control.controlling_ang_vel = True
+    vel_control.ang_vel_is_local = True
+    vel_control.linear_velocity = np.array([0, 0, -1.0])
+
+    for i in range(2):
+        # reset observations and robot state
+        observations = []
+        sim.set_translation(np.array([1.75, -1.02, 0.4]), id_1)
+        sim.set_rotation(initial_rotation, id_1)
+        vel_control.angular_velocity = np.array([0.0, 0, 0])
+
+        video_prefix = "robot_control_sliding"
+        # turn sliding off for the 2nd pass
+        if i == 1:
+            sim.config.sim_cfg.allow_sliding = False
+            video_prefix = "robot_control_no_sliding"
+
+        # manually control the object's kinematic state via velocity integration
+        start_time = sim.get_world_time()
+        last_velocity_set = 0
+        dt = 6.0
+        while sim.get_world_time() < start_time + dt:
+            previousRigidState = sim.get_rigid_state(id_1)
+            # run any dynamics simulation and integrate the transform
+            sim.step_physics(1.0 / 60.0)
+            # snap to navmesh
+            end_pos = sim._step_filter(
+                previousRigidState.translation, sim.get_translation(id_1)
+            )
+            sim.set_translation(end_pos, id_1)
+            observations.append(sim.get_sensor_observations())
+
+            # randomize velocities
+            last_velocity_set += 1.0 / 60.0
+            if last_velocity_set >= 1.0:
+                vel_control.angular_velocity = np.array(
+                    [0, (random.random() - 0.5) * 2.0, 0]
+                )
+                last_velocity_set = 0
+
+        # video rendering with embedded 1st person view
+        make_video_cv2(observations, prefix=video_prefix, open_vid=True, multi_obs=True)
+
+    # [/embodied_agent_navmesh]
 
 
 if __name__ == "__main__":
