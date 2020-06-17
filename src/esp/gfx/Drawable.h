@@ -72,7 +72,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   Magnum::GL::Mesh& mesh_;
 
   /**
-   * Why a frind class?
+   * Why a friend class?
    * because DrawableGroup will have to update the state, attachedToGroup
    * directly, and ONLY this class can do it
    */

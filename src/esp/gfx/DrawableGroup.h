@@ -69,12 +69,18 @@ class DrawableGroup : public Magnum::SceneGraph::DrawableGroup3D {
    * can do it.
    */
   friend class Drawable;
+  /**
+   * @brief Add the drawable to the lookup table, and update the state in the
+   * drawable
+   */
   DrawableGroup& registerDrawable(Drawable& drawable);
+  /**
+   * @brief Remove the drawable from the lookup table, and update the state in
+   * the drawable
+   */
   DrawableGroup& unregisterDrawable(Drawable& drawable);
   /**
-   * a map, that maps a drawable id to the drawable object
-   * NOTE: operations on this structure are all in the class Drawable
-   *
+   * a lookup table, that maps a drawable id to the drawable object
    */
   std::unordered_map<uint64_t, Drawable*> idToDrawable_;
   ESP_SMART_POINTERS(DrawableGroup)
