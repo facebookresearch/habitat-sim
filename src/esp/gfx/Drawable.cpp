@@ -16,26 +16,28 @@ Drawable::Drawable(scene::SceneNode& node,
     : Magnum::SceneGraph::Drawable3D{node, group},
       node_(node),
       mesh_(mesh),
-      drawableId_(drawableIdCounter++),
-      attachedToGroup_(false) {
+      drawableId_(drawableIdCounter++) {
   if (group) {
     group->registerDrawable(*this);
   }
 }
 
 Drawable::~Drawable() {
-  if (attachedToGroup_) {
-    DrawableGroup* group = drawables();
+  DrawableGroup* group = drawables();
+  if (group) {
     group->unregisterDrawable(*this);
   }
 }
 
 DrawableGroup* Drawable::drawables() {
-  CORRADE_ASSERT(
-      dynamic_cast<DrawableGroup*>(Magnum::SceneGraph::Drawable3D::drawables()),
-      "Drawable must only be used with esp::gfx::DrawableGroup!", {});
-  return static_cast<DrawableGroup*>(
-      Magnum::SceneGraph::Drawable3D::drawables());
+  auto* group = Magnum::SceneGraph::Drawable3D::drawables();
+  if (!group) {
+    return nullptr;
+  }
+  CORRADE_ASSERT(dynamic_cast<DrawableGroup*>(group),
+                 "Drawable must only be used with esp::gfx::DrawableGroup!",
+                 {});
+  return static_cast<DrawableGroup*>(group);
 }
 }  // namespace gfx
 }  // namespace esp

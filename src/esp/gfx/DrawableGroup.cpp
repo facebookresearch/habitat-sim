@@ -20,12 +20,7 @@ DrawableGroup& DrawableGroup::remove(Drawable& drawable) {
   return *this;
 }
 
-DrawableGroup::~DrawableGroup() {
-  // has to unregister any currently existing drawables
-  for (int iDrawable = 0; iDrawable < this->size(); ++iDrawable) {
-    unregisterDrawable(static_cast<Drawable&>((*this)[iDrawable]));
-  }
-}
+DrawableGroup::~DrawableGroup() {}
 
 bool DrawableGroup::hasDrawable(uint64_t id) const {
   return (idToDrawable_.find(id) != idToDrawable_.end());
@@ -41,20 +36,13 @@ Drawable* DrawableGroup::getDrawable(uint64_t id) const {
 }
 
 DrawableGroup& DrawableGroup::registerDrawable(Drawable& drawable) {
-  uint64_t id = drawable.getDrawableId();
-
   // if it is already registered, emplace will do nothing
-  if (idToDrawable_.emplace(id, &drawable).second) {
-    drawable.attachedToGroup_ = true;
-  }
+  idToDrawable_.emplace(drawable.getDrawableId(), &drawable);
   return *this;
 }
 DrawableGroup& DrawableGroup::unregisterDrawable(Drawable& drawable) {
-  uint64_t id = drawable.getDrawableId();
-
-  if (idToDrawable_.erase(id) != 0) {
-    drawable.attachedToGroup_ = false;
-  }
+  // if it is not registered, erase will do nothing
+  idToDrawable_.erase(drawable.getDrawableId());
   return *this;
 }
 
