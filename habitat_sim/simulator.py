@@ -197,7 +197,7 @@ class Simulator(SimulatorBackend):
         self.frustum_culling = config.sim_cfg.frustum_culling
 
         for i in range(len(self.agents)):
-            self.agents[i].controls.move_filter_fn = self._step_filter
+            self.agents[i].controls.move_filter_fn = self.step_filter
 
         self._default_agent = self.get_agent(config.sim_cfg.default_agent_id)
 
@@ -283,7 +283,13 @@ class Simulator(SimulatorBackend):
             thrashing_threshold=thrashing_threshold,
         )
 
-    def _step_filter(self, start_pos, end_pos):
+    def step_filter(self, start_pos, end_pos):
+        r"""Computes a valid navigable end point given a target translation on the NavMesh.
+        Uses the configured sliding flag.
+
+        :param start_pos: The valid initial position of a translation.
+        :param end_pos: The target end position of a translation.
+        """
         if self.pathfinder.is_loaded:
             if self.config.sim_cfg.allow_sliding:
                 end_pos = self.pathfinder.try_step(start_pos, end_pos)

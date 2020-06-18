@@ -311,7 +311,8 @@ def main(make_video=True, show_video=True):
 
     observations += simulate(sim, dt=1.0, get_frames=True)
 
-    make_video_cv2(observations, prefix="velocity_control", open_vid=True)
+    if make_video:
+        make_video_cv2(observations, prefix="velocity_control", open_vid=True)
 
     # [/velocity_control]
 
@@ -325,7 +326,8 @@ def main(make_video=True, show_video=True):
     observations = simulate(sim, dt=1.5, get_frames=True)
 
     # video rendering
-    make_video_cv2(observations, prefix="local_velocity_control", open_vid=True)
+    if make_video:
+        make_video_cv2(observations, prefix="local_velocity_control", open_vid=True)
 
     # [/local_velocity_control]
 
@@ -383,7 +385,10 @@ def main(make_video=True, show_video=True):
     sim.remove_object(id_1, False)
 
     # video rendering with embedded 1st person view
-    make_video_cv2(observations, prefix="robot_control", open_vid=True, multi_obs=True)
+    if make_video:
+        make_video_cv2(
+            observations, prefix="robot_control", open_vid=True, multi_obs=True
+        )
 
     # [/embodied_agent]
 
@@ -437,12 +442,25 @@ def main(make_video=True, show_video=True):
                 time_step, previous_rigid_state
             )
 
-            # snap rigid state to navmesh and set to object
-            end_pos = sim._step_filter(
+            # snap rigid state to navmesh and set state to object/agent
+            end_pos = sim.step_filter(
                 previous_rigid_state.translation, target_rigid_state.translation
             )
             sim.set_translation(end_pos, id_1)
             sim.set_rotation(target_rigid_state.rotation, id_1)
+
+            # Check if a collision occured
+            dist_moved_before_filter = (
+                target_rigid_state.translation - previous_rigid_state.translation
+            ).dot()
+            dist_moved_after_filter = (end_pos - previous_rigid_state.translation).dot()
+
+            # NB: There are some cases where ||filter_end - end_pos|| > 0 when a
+            # collision _didn't_ happen. One such case is going up stairs.  Instead,
+            # we check to see if the the amount moved after the application of the filter
+            # is _less_ than the amount moved before the application of the filter
+            EPS = 1e-5
+            collided = (dist_moved_after_filter + EPS) < dist_moved_before_filter
 
             # run any dynamics simulation
             sim.step_physics(time_step)
@@ -450,7 +468,7 @@ def main(make_video=True, show_video=True):
             # render observation
             observations.append(sim.get_sensor_observations())
 
-            # randomize velocities
+            # randomize angular velocity
             last_velocity_set += time_step
             if last_velocity_set >= 1.0:
                 vel_control.angular_velocity = np.array(
@@ -459,7 +477,10 @@ def main(make_video=True, show_video=True):
                 last_velocity_set = 0
 
         # video rendering with embedded 1st person view
-        make_video_cv2(observations, prefix=video_prefix, open_vid=True, multi_obs=True)
+        if make_video:
+            make_video_cv2(
+                observations, prefix=video_prefix, open_vid=True, multi_obs=True
+            )
 
     # [/embodied_agent_navmesh]
 
