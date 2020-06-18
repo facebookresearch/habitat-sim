@@ -121,6 +121,10 @@ void initSimBindings(py::module& m) {
            "object_id"_a, "scene_id"_a = 0)
       .def("get_transformation", &Simulator::getTransformation, "object_id"_a,
            "scene_id"_a = 0)
+      .def("set_rigid_state", &Simulator::setRigidState, "rigid_state"_a,
+           "object_id"_a, "scene_id"_a = 0)
+      .def("get_rigid_state", &Simulator::getRigidState, "object_id"_a,
+           "scene_id"_a = 0)
       .def("set_translation", &Simulator::setTranslation, "translation"_a,
            "object_id"_a, "scene_id"_a = 0)
       .def("get_translation", &Simulator::getTranslation, "object_id"_a,

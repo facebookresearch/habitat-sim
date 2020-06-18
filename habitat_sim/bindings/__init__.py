@@ -23,6 +23,7 @@ modules = [
     "ShortestPath",
     "SimulatorConfiguration",
     "ConfigurationGroup",
+    "RigidState",
 ]
 
 from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
