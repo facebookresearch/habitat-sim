@@ -319,7 +319,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
 
   // forcing this class to be abstract - note still needs definition of
   // destructor : Cannot use this due to pybind issues
-  // virtual ~AbstractPrimitiveAttributes() = 0;
+  virtual ~AbstractPrimitiveAttributes() {}
 
   // originHandle is set internally based on attributes configuration
   // setting externally is prohibited
