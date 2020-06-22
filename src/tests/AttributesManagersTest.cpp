@@ -112,7 +112,6 @@ class AttributesManagersTest : public testing::Test {
    * @brief Test creation, copying and removal of templates for Object, Physics
    * and Scene Attributes Managers
    * @tparam Class of attributes being managed
-   * @tparam Class of constructor field that impacts template handle
    * @param defaultAttribs the default template of the passed type T
    * @param ctorModField the name of the modified field of type @ref U that
    * impacts the constructor.
@@ -121,11 +120,11 @@ class AttributesManagersTest : public testing::Test {
    * @param illegalVal a legal value of ctorModField.  If null ptr then no
    * illegal values possible.
    */
-  template <class T, class U>
+  template <class T>
   void testAssetAttributesModRegRemove(std::shared_ptr<T> defaultAttribs,
                                        const std::string& ctorModField,
-                                       U legalVal,
-                                       U const* illegalVal) {
+                                       int legalVal,
+                                       int const* illegalVal) {
     // get starting number of templates
     int orignNumTemplates = assetAttributesManager_->getNumTemplates();
 
@@ -169,7 +168,7 @@ class AttributesManagersTest : public testing::Test {
     std::shared_ptr<T> newAttribs =
         assetAttributesManager_->getTemplateCopyByHandle<T>(newHandle);
     // verify template has modified values
-    U newValue = newAttribs->template get<U>(ctorModField);
+    int newValue = newAttribs->template get<int>(ctorModField);
     ASSERT_EQ(legalVal, newValue);
     // remove modified template via handle
     auto oldTemplate2 =
@@ -248,18 +247,16 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     ASSERT_NE(nullptr, dfltCapsAttribs);
 
     // for solid primitives, and value > 2 for segments is legal
-    testAssetAttributesModRegRemove<esp::assets::CapsulePrimitiveAttributes,
-                                    int>(dfltCapsAttribs, "segments",
-                                         legalModValSolid, &illegalModValSolid);
+    testAssetAttributesModRegRemove<esp::assets::CapsulePrimitiveAttributes>(
+        dfltCapsAttribs, "segments", legalModValSolid, &illegalModValSolid);
 
     // test wireframe version
     dfltCapsAttribs = assetAttributesManager_->getDefaultCapsuleTemplate(true);
     // verify it exists
     ASSERT_NE(nullptr, dfltCapsAttribs);
     // segments must be mult of 4 for wireframe primtives
-    testAssetAttributesModRegRemove<esp::assets::CapsulePrimitiveAttributes,
-                                    int>(dfltCapsAttribs, "segments",
-                                         legalModValWF, &illegalModValWF);
+    testAssetAttributesModRegRemove<esp::assets::CapsulePrimitiveAttributes>(
+        dfltCapsAttribs, "segments", legalModValWF, &illegalModValWF);
   }
   //////////////////////////
   // get default template for solid cone
@@ -273,7 +270,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     ASSERT_NE(nullptr, dfltConeAttribs);
 
     // for solid primitives, and value > 2 for segments is legal
-    testAssetAttributesModRegRemove<esp::assets::ConePrimitiveAttributes, int>(
+    testAssetAttributesModRegRemove<esp::assets::ConePrimitiveAttributes>(
         dfltConeAttribs, "segments", legalModValSolid, &illegalModValSolid);
 
     // test wireframe version
@@ -281,7 +278,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     // verify it exists
     ASSERT_NE(nullptr, dfltConeAttribs);
     // segments must be mult of 4 for wireframe primtives
-    testAssetAttributesModRegRemove<esp::assets::ConePrimitiveAttributes, int>(
+    testAssetAttributesModRegRemove<esp::assets::ConePrimitiveAttributes>(
         dfltConeAttribs, "segments", legalModValWF, &illegalModValWF);
   }
   //////////////////////////
@@ -296,18 +293,16 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     ASSERT_NE(nullptr, dfltCylAttribs);
 
     // for solid primitives, and value > 2 for segments is legal
-    testAssetAttributesModRegRemove<esp::assets::CylinderPrimitiveAttributes,
-                                    int>(dfltCylAttribs, "segments", 5,
-                                         &illegalModValSolid);
+    testAssetAttributesModRegRemove<esp::assets::CylinderPrimitiveAttributes>(
+        dfltCylAttribs, "segments", 5, &illegalModValSolid);
 
     // test wireframe version
     dfltCylAttribs = assetAttributesManager_->getDefaultCylinderTemplate(true);
     // verify it exists
     ASSERT_NE(nullptr, dfltCylAttribs);
     // segments must be mult of 4 for wireframe primtives
-    testAssetAttributesModRegRemove<esp::assets::CylinderPrimitiveAttributes,
-                                    int>(dfltCylAttribs, "segments",
-                                         legalModValWF, &illegalModValWF);
+    testAssetAttributesModRegRemove<esp::assets::CylinderPrimitiveAttributes>(
+        dfltCylAttribs, "segments", legalModValWF, &illegalModValWF);
   }
   //////////////////////////
   // get default template for solid UV Sphere
@@ -321,9 +316,8 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     ASSERT_NE(nullptr, dfltUVSphereAttribs);
 
     // for solid primitives, and value > 2 for segments is legal
-    testAssetAttributesModRegRemove<esp::assets::UVSpherePrimitiveAttributes,
-                                    int>(dfltUVSphereAttribs, "segments", 5,
-                                         &illegalModValSolid);
+    testAssetAttributesModRegRemove<esp::assets::UVSpherePrimitiveAttributes>(
+        dfltUVSphereAttribs, "segments", 5, &illegalModValSolid);
 
     // test wireframe version
     dfltUVSphereAttribs =
@@ -331,8 +325,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     // verify it exists
     ASSERT_NE(nullptr, dfltUVSphereAttribs);
     // segments must be mult of 4 for wireframe primtives
-    testAssetAttributesModRegRemove<esp::assets::UVSpherePrimitiveAttributes,
-                                    int>(dfltUVSphereAttribs, "segments",
-                                         legalModValWF, &illegalModValWF);
+    testAssetAttributesModRegRemove<esp::assets::UVSpherePrimitiveAttributes>(
+        dfltUVSphereAttribs, "segments", legalModValWF, &illegalModValWF);
   }
 }  // AttributesManagersTest::AsssetAttributesManagerGetAndModify test
