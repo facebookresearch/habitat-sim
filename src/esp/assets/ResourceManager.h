@@ -398,7 +398,7 @@ class ResourceManager {
    * @param physicsManager The currently defined @ref physics::PhysicsManager.
    * Will be reseated to the configured physics implementation.
    * @param physicsManagerAttributes A smart pointer to meta data structure
-   * storing configured physics simulation parameters.\
+   * storing configured physics simulation parameters.
    */
   void initPhysicsManager(
       std::shared_ptr<physics::PhysicsManager>& physicsManager,

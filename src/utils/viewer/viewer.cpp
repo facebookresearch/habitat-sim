@@ -331,9 +331,8 @@ void Viewer::addObject(const std::string& configFile) {
     return;
   }
 
-  Mn::Matrix4 T =
-      agentBodyNode_->MagnumObject::transformationMatrix();  // Relative to
-                                                             // agent bodynode
+  // Relative to agent bodynode
+  Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
   Mn::Vector3 new_pos = T.transformPoint({0.1f, 1.5f, -2.0f});
 
   auto& drawables = sceneGraph_->getDrawables();

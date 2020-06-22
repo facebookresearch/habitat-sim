@@ -30,7 +30,7 @@ PhysicsObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
     return createPrimBasedAttributesTemplate(attributesTemplateHandle,
                                              registerTemplate);
   } else if (Corrade::Utility::Directory::exists(attributesTemplateHandle)) {
-    // if attributesTemplateHandle == some existing file thne
+    // if attributesTemplateHandle == some existing file then
     // assume this is a file-based object template we are building.
     return createFileBasedAttributesTemplate(attributesTemplateHandle,
                                              registerTemplate);
@@ -49,11 +49,12 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
     bool registerTemplate) {
   PhysicsObjectAttributes::ptr objAttributes =
       buildPrimBasedPhysObjTemplate(primAttrTemplateHandle);
-  // some error occurred
+
   if (nullptr != objAttributes && registerTemplate) {
     auto attrID =
         registerAttributesTemplate(objAttributes, primAttrTemplateHandle);
     if (attrID == ID_UNDEFINED) {
+      // some error occurred
       return nullptr;
     }
   }

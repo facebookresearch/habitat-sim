@@ -69,7 +69,7 @@ class SceneAttributesManager
       PhysicsSceneAttributes::ptr sceneAttributesTemplate,
       const std::string& sceneAttributesHandle) override {
     // adds template to library, and returns either the ID of the existing
-    // template referenced by physicsAttributesHandle, or the next available ID
+    // template referenced by sceneAttributesHandle, or the next available ID
     // if not found.
     int sceneTemplateID = this->addTemplateToLibrary(sceneAttributesTemplate,
                                                      sceneAttributesHandle);
@@ -81,7 +81,7 @@ class SceneAttributesManager
    */
   bool isTemplateReadOnly(const std::string&) override { return false; };
   /**
-   * @brief Any physics-attributes-specific resetting that needs to happen on
+   * @brief Any scene-attributes-specific resetting that needs to happen on
    * reset.
    */
   void resetFinalize() override {}

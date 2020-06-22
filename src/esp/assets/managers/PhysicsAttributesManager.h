@@ -50,8 +50,8 @@ class PhysicsAttributesManager
       bool registerTemplate = true) override;
 
   /**
-   * @brief Build all "*.phys_properties.json" files from the provided file or
-   * directory path.
+   * @brief Build templates for all "*.phys_properties.json" files from the
+   * provided file or directory path.
    *
    * @param path A global path to a physics property file or directory
    * @return A list of valid global paths to "*.phys_properties.json" files.

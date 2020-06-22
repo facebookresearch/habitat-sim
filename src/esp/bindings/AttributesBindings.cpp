@@ -93,8 +93,6 @@ void initAttributesBindings(py::module& m) {
   // ==== AbstractPrimitiveAttributes ====
   py::class_<AbstractPrimitiveAttributes, AbstractAttributes,
              AbstractPrimitiveAttributes::ptr>(m, "AbstractPrimitiveAttributes")
-      .def(py::init(
-          &AbstractPrimitiveAttributes::create<bool, int, const std::string&>))
       .def("set_origin_handle", &AbstractPrimitiveAttributes::setOriginHandle,
            "do_not_use"_a)
       .def("get_is_wireframe", &AbstractPrimitiveAttributes::getIsWireframe)

@@ -24,17 +24,17 @@ namespace assets {
  */
 class AbstractAttributes : public esp::core::Configuration {
  public:
-  AbstractAttributes(const std::string& classKey,
+  AbstractAttributes(const std::string& attributesClassKey,
                      const std::string& originHandle)
       : Configuration() {
-    setClassKey(classKey);
+    setAttributesClassKey(attributesClassKey);
     setOriginHandle(originHandle);
   }
   /**
    * @brief Get this attributes' class.  Should only be set from constructor.
    * Used as key in constructor function pointer maps in AttributesManagers.
    */
-  std::string getClassKey() const { return getString("classKey"); }
+  std::string getClassKey() const { return getString("attributesClassKey"); }
 
   /**
    * @brief Set this attributes name/origin.  Some attributes derive their own
@@ -46,6 +46,7 @@ class AbstractAttributes : public esp::core::Configuration {
     setString("originHandle", originHandle);
   }
   std::string getOriginHandle() const { return getString("originHandle"); }
+
   void setObjectTemplateID(int objectTemplateID) {
     setInt("objectTemplateID", objectTemplateID);
   }
@@ -55,11 +56,11 @@ class AbstractAttributes : public esp::core::Configuration {
   /**
    * @brief Set this attributes' class.  Should only be set from constructor.
    * Used as key in constructor function pointer maps in AttributesManagers.
-   * @param classKey the string handle corresponding to the constructors used to
-   * make copies of this object in copy constructor map.
+   * @param attributesClassKey the string handle corresponding to the
+   * constructors used to make copies of this object in copy constructor map.
    */
-  void setClassKey(const std::string& classKey) {
-    setString("classKey", classKey);
+  void setAttributesClassKey(const std::string& attributesClassKey) {
+    setString("attributesClassKey", attributesClassKey);
   }
 
  public:
@@ -231,6 +232,7 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
   }
   bool getIsCollidable() { return getBool("isCollidable"); }
 
+ public:
   ESP_SMART_POINTERS(PhysicsObjectAttributes)
 
 };  // end PhysicsObjectAttributes class
@@ -248,6 +250,7 @@ class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
   }
   Magnum::Vector3 getGravity() const { return getVec3("gravity"); }
 
+ public:
   ESP_SMART_POINTERS(PhysicsSceneAttributes)
 
 };  // end PhysicsSceneAttributes
@@ -255,8 +258,7 @@ class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
 //! attributes for a single physics manager
 class PhysicsManagerAttributes : public AbstractAttributes {
  public:
-  PhysicsManagerAttributes() : PhysicsManagerAttributes("") {}
-  PhysicsManagerAttributes(const std::string& originHandle);
+  PhysicsManagerAttributes(const std::string& originHandle = "");
 
   void setSimulator(const std::string& simulator) {
     setString("simulator", simulator);
@@ -287,6 +289,7 @@ class PhysicsManagerAttributes : public AbstractAttributes {
     return getDouble("restitutionCoefficient");
   }
 
+ public:
   ESP_SMART_POINTERS(PhysicsManagerAttributes)
 };  // end PhysicsManagerAttributes
 
@@ -299,15 +302,18 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
  public:
   AbstractPrimitiveAttributes(bool isWireframe,
                               int primObjType,
-                              const std::string& primObjClassName)
-      : AbstractAttributes(primObjClassName, "") {
+                              const std::string& primObjClassName,
+                              const std::string& attributesClassKey)
+      : AbstractAttributes(attributesClassKey, "") {
     setIsWireframe(isWireframe);
     setPrimObjType(primObjType);
     setPrimObjClassName(primObjClassName);
 
     if (!isWireframe) {  // solid
-      setUseTextureCoords(false);
-      setUseTangents(false);
+      // do not call setters since they call buildOriginHandle, which does not
+      // exist abstract base class
+      setBool("textureCoordinates", false);
+      setBool("tangents", false);
     }
   }  // ctor
 
@@ -381,18 +387,16 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
    */
   virtual bool isValidTemplate() { return false; }
 
- private:
-  // Should never change, only set by ctor
-  void setPrimObjClassName(std::string primObjClassName) {
-    setString("primObjClassName", primObjClassName);
+  /**
+   * @brief Origin handle for primitive attribute-based templates should reflect
+   * the parameters used to construct the primitive, and so should only be set
+   * internally or when relevant values are set manually.
+   */
+  void buildOriginHandle() {
+    std::ostringstream oHndlStrm;
+    oHndlStrm << getPrimObjClassName() << buildOriginHandleDetail();
+    setString("originHandle", oHndlStrm.str());
   }
-
-  // Should never change, only set by ctor
-  void setPrimObjType(int primObjType) { setInt("primObjType", primObjType); }
-
-  // not used to construct prim mesh, so setting this does not require
-  // modification to origin handle.  Should never change, only set by ctor
-  void setIsWireframe(bool isWireframe) { setBool("isWireframe", isWireframe); }
 
  protected:
   /**
@@ -407,21 +411,24 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     return (val >= div) && (val % div == 0);
   }
 
-  /**
-   * @brief Origin handle for primitive attribute-based templates should reflect
-   * the parameters used to construct the primitive, and so should only be set
-   * internally
-   */
-  void buildOriginHandle() {
-    std::ostringstream oHndlStrm;
-    oHndlStrm << getPrimObjClassName() << buildOriginHandleDetail();
-    setString("originHandle", oHndlStrm.str());
-  }
   // helper for origin handle construction
   std::string getBoolDispStr(bool val) const {
     return (val ? "true" : "false");
   }
-  virtual std::string buildOriginHandleDetail() { return ""; }
+  virtual std::string buildOriginHandleDetail() = 0;
+
+ private:
+  // Should never change, only set by ctor
+  void setPrimObjClassName(std::string primObjClassName) {
+    setString("primObjClassName", primObjClassName);
+  }
+
+  // Should never change, only set by ctor
+  void setPrimObjType(int primObjType) { setInt("primObjType", primObjType); }
+
+  // not used to construct prim mesh, so setting this does not require
+  // modification to origin handle.  Should never change, only set by ctor
+  void setIsWireframe(bool isWireframe) { setBool("isWireframe", isWireframe); }
 
  public:
   ESP_SMART_POINTERS(AbstractPrimitiveAttributes)
@@ -474,6 +481,7 @@ class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
     return oHndlStrm.str();
   }  // buildOriginHandleDetail
 
+ public:
   ESP_SMART_POINTERS(CapsulePrimitiveAttributes)
 };  // class CapsulePrimitiveAttributes
 
@@ -518,6 +526,7 @@ class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
     return oHndlStrm.str();
   }  // buildOriginHandleDetail
 
+ public:
   ESP_SMART_POINTERS(ConePrimitiveAttributes)
 };  // class ConePrimitiveAttributes
 
@@ -528,7 +537,8 @@ class CubePrimitiveAttributes : public AbstractPrimitiveAttributes {
                           const std::string& primObjClassName)
       : AbstractPrimitiveAttributes(isWireframe,
                                     primObjType,
-                                    primObjClassName) {
+                                    primObjClassName,
+                                    "CubePrimitiveAttributes") {
     buildOriginHandle();  // build handle based on config
   }
 
@@ -541,6 +551,10 @@ class CubePrimitiveAttributes : public AbstractPrimitiveAttributes {
    */
   virtual bool isValidTemplate() override { return true; }
 
+ protected:
+  virtual std::string buildOriginHandleDetail() override { return ""; }
+
+ public:
   ESP_SMART_POINTERS(CubePrimitiveAttributes)
 };  // class CubePrimitiveAttributes
 
@@ -583,6 +597,7 @@ class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
     return oHndlStrm.str();
   }  // buildOriginHandleDetail
 
+ public:
   ESP_SMART_POINTERS(CylinderPrimitiveAttributes)
 };  // class CylinderPrimitiveAttributes
 
@@ -594,7 +609,8 @@ class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
                                const std::string& primObjClassName)
       : AbstractPrimitiveAttributes(isWireframe,
                                     primObjType,
-                                    primObjClassName) {
+                                    primObjClassName,
+                                    "IcospherePrimitiveAttributes") {
     // setting manually because wireframe icosphere does not currently support
     // subdiv > 1 and setSubdivisions checks for wireframe
     setInt("subdivisions", 1);
@@ -628,6 +644,7 @@ class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
     return oHndlStrm.str();
   }  // buildOriginHandleDetail
 
+ public:
   ESP_SMART_POINTERS(IcospherePrimitiveAttributes)
 };  // class IcospherePrimitiveAttributes
 
@@ -661,6 +678,7 @@ class UVSpherePrimitiveAttributes : public AbstractPrimitiveAttributes {
     return oHndlStrm.str();
   }  // buildOriginHandleDetail
 
+ public:
   ESP_SMART_POINTERS(UVSpherePrimitiveAttributes)
 };  // class UVSpherePrimitiveAttributes
 

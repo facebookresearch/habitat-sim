@@ -78,40 +78,22 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
           assets::UVSpherePrimitiveAttributes, true, PrimObjTypes::UVSPHERE_WF>;
 
   // function pointers to asset attributes copy constructors
-  this->copyConstructorMap_["capsule3DSolid"] =
+  this->copyConstructorMap_["CapsulePrimitiveAttributes"] =
       &AssetAttributesManager::createAttributesCopy<
           assets::CapsulePrimitiveAttributes>;
-  this->copyConstructorMap_["capsule3DWireframe"] =
-      &AssetAttributesManager::createAttributesCopy<
-          assets::CapsulePrimitiveAttributes>;
-  this->copyConstructorMap_["coneSolid"] =
+  this->copyConstructorMap_["ConePrimitiveAttributes"] =
       &AssetAttributesManager::createAttributesCopy<
           assets::ConePrimitiveAttributes>;
-  this->copyConstructorMap_["coneWireframe"] =
-      &AssetAttributesManager::createAttributesCopy<
-          assets::ConePrimitiveAttributes>;
-  this->copyConstructorMap_["cubeSolid"] =
+  this->copyConstructorMap_["CubePrimitiveAttributes"] =
       &AssetAttributesManager::createAttributesCopy<
           assets::CubePrimitiveAttributes>;
-  this->copyConstructorMap_["cubeWireframe"] =
-      &AssetAttributesManager::createAttributesCopy<
-          assets::CubePrimitiveAttributes>;
-  this->copyConstructorMap_["cylinderSolid"] =
+  this->copyConstructorMap_["CylinderPrimitiveAttributes"] =
       &AssetAttributesManager::createAttributesCopy<
           assets::CylinderPrimitiveAttributes>;
-  this->copyConstructorMap_["cylinderWireframe"] =
-      &AssetAttributesManager::createAttributesCopy<
-          assets::CylinderPrimitiveAttributes>;
-  this->copyConstructorMap_["icosphereSolid"] =
+  this->copyConstructorMap_["IcospherePrimitiveAttributes"] =
       &AssetAttributesManager::createAttributesCopy<
           assets::IcospherePrimitiveAttributes>;
-  this->copyConstructorMap_["icosphereWireframe"] =
-      &AssetAttributesManager::createAttributesCopy<
-          assets::IcospherePrimitiveAttributes>;
-  this->copyConstructorMap_["uvSphereSolid"] =
-      &AssetAttributesManager::createAttributesCopy<
-          assets::UVSpherePrimitiveAttributes>;
-  this->copyConstructorMap_["uvSphereWireframe"] =
+  this->copyConstructorMap_["UVSpherePrimitiveAttributes"] =
       &AssetAttributesManager::createAttributesCopy<
           assets::UVSpherePrimitiveAttributes>;
   // no entry added for PrimObjTypes::END_PRIM_OBJ_TYPES
@@ -122,7 +104,9 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
       continue;
     }
     auto tmplt = createAttributesTemplate(elem.second, true);
-    defaultTemplateNames.push_back(tmplt->getOriginHandle());
+    std::string tmpltHandle = tmplt->getOriginHandle();
+    defaultPrimAttributeHandles_[elem.second] = tmpltHandle;
+    defaultTemplateNames.push_back(tmpltHandle);
   }
 
   LOG(INFO) << "AssetAttributesManager::buildCtorFuncPtrMaps : Built default "

@@ -89,7 +89,7 @@ class ObjectAttributesManager
    * renderAssetHandle.
    *
    * @param templateName the name of the file describing the object attributes.
-   * Assumes it exists and fails if it does not.
+   * Registration fails if this is not a valid asset handle.
    * @param registerTemplate whether to add this template to the library or not.
    * If the user is going to edit this template, this should be false.
    * @return a reference to the desired template, or nullptr if fails.
@@ -196,15 +196,15 @@ class ObjectAttributesManager
    * @brief Add a copy of @ref AbstractAttributes object to the @ref
    * templateLibrary_.
    *
-   * @param objectTemplate The attributes template.
-   * @param objectTemplateHandle The key for referencing the template in the
+   * @param attributesTemplate The attributes template.
+   * @param attributesTemplateHandle The key for referencing the template in the
    * @ref templateLibrary_. Will be set as origin handle for template.
    * @return The index in the @ref templateLibrary_ of object
    * template.
    */
   int registerAttributesTemplateFinalize(
-      PhysicsObjectAttributes::ptr objectTemplate,
-      const std::string& objectTemplateHandle) override;
+      PhysicsObjectAttributes::ptr attributesTemplate,
+      const std::string& attributesTemplateHandle) override;
 
   /**
    * @brief Whether template described by passed handle is read only, or can be
