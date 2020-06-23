@@ -105,11 +105,20 @@ def test_kinematics(sim):
     agent_node = sim.agents[0].scene_node
     obj_handle_list = sim.get_template_handles("cheezit")
     object_id = sim.add_object_by_handle(obj_handle_list[0], agent_node)
-    # sim.add_object(0, agent_node)
     sim.set_translation(np.random.rand(3), object_id)
     assert np.allclose(agent_node.translation, sim.get_translation(object_id))
     sim.remove_object(object_id, False)  # don't delete the agent's node
     assert agent_node.translation
+
+    # test get/set RigidState
+    object_id = sim.add_object_by_handle(obj_handle_list[0])
+    targetRigidState = habitat_sim.bindings.RigidState(
+        mn.Quaternion(), np.array([1.0, 2.0, 3.0])
+    )
+    sim.set_rigid_state(targetRigidState, object_id)
+    objectRigidState = sim.get_rigid_state(object_id)
+    assert np.allclose(objectRigidState.translation, targetRigidState.translation)
+    assert objectRigidState.rotation == targetRigidState.rotation
 
 
 @pytest.mark.skipif(

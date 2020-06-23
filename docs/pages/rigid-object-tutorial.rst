@@ -146,6 +146,32 @@ In this example, the agent is embodied by a rigid robot asset and the :ref:`habi
 .. image:: images/rigid-object-tutorial-images/robot_control.gif
     :width: 20em
 
+`Continuous Control on NavMesh`_
+================================
+
+For this tutorial section, if you have not done so, you will need to download the `merged locobot asset`_ and extract it into path/to/habitat-sim/data/objects/
+
+.. _merged locobot asset: http://dl.fbaipublicfiles.com/habitat/locobot_merged.zip
+
+Instead of full dynamic simulation, kinematic state setting and the NavMesh can be used to simulate constrained, continuous navigation tasks.
+In this example the agent is embodied by a robot asset with :ref:`habitat_sim.physics.MotionType.KINEMATIC`. We use a :ref:`habitat_sim.physics.VelocityControl` structure to manually integrate a control velocity and snap the resulting state to the NavMesh before running dynamic simulation.
+We run this example scenario twice. The first iteration we configure the NavMesh to allow sliding, while the second iteration is configured to dis-allow sliding.
+
+.. include:: ../../examples/tutorials/rigid_object_tutorial.py
+    :code: py
+    :start-after: # [embodied_agent_navmesh]
+    :end-before: # [/embodied_agent_navmesh]
+
+With NavMesh sliding allowed:
+
+.. image:: images/rigid-object-tutorial-images/robot_control_sliding.gif
+    :width: 20em
+
+With NavMesh sliding dis-allowed:
+
+.. image:: images/rigid-object-tutorial-images/robot_control_no_sliding.gif
+    :width: 20em
+
 `Feature Detail Review`_
 ========================
 
