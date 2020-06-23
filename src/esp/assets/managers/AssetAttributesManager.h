@@ -163,7 +163,8 @@ class AssetAttributesManager
     } else {
       templateHndle = defaultPrimAttributeHandles_.at("capsule3DSolid");
     }
-    return getTemplateCopyByHandle<CapsulePrimitiveAttributes>(templateHndle);
+    return this->getTemplateCopyByHandle<CapsulePrimitiveAttributes>(
+        templateHndle);
   }  // AssetAttributeManager::getDefaultCapsuleTemplate
 
   /**
@@ -178,7 +179,8 @@ class AssetAttributesManager
     if (!verifyTemplateHandle(templateHndle, "capsule")) {
       return nullptr;
     }
-    return getTemplateCopyByHandle<CapsulePrimitiveAttributes>(templateHndle);
+    return this->getTemplateCopyByHandle<CapsulePrimitiveAttributes>(
+        templateHndle);
   }  // AssetAttributeManager::getCapsuleTemplate
 
   /**
@@ -193,7 +195,8 @@ class AssetAttributesManager
     } else {
       templateHndle = defaultPrimAttributeHandles_.at("coneSolid");
     }
-    return getTemplateCopyByHandle<ConePrimitiveAttributes>(templateHndle);
+    return this->getTemplateCopyByHandle<ConePrimitiveAttributes>(
+        templateHndle);
   }  // AssetAttributeManager::getDefaultConeTemplate
 
   /**
@@ -208,7 +211,8 @@ class AssetAttributesManager
     if (!verifyTemplateHandle(templateHndle, "cone")) {
       return nullptr;
     }
-    return getTemplateCopyByHandle<ConePrimitiveAttributes>(templateHndle);
+    return this->getTemplateCopyByHandle<ConePrimitiveAttributes>(
+        templateHndle);
   }  // AssetAttributeManager::getConeTemplate
 
   /**
@@ -223,7 +227,8 @@ class AssetAttributesManager
     } else {
       templateHndle = defaultPrimAttributeHandles_.at("cubeSolid");
     }
-    return getTemplateCopyByHandle<CubePrimitiveAttributes>(templateHndle);
+    return this->getTemplateCopyByHandle<CubePrimitiveAttributes>(
+        templateHndle);
   }  // AssetAttributeManager::getDefaultCubeTemplate
 
   /**
@@ -238,7 +243,8 @@ class AssetAttributesManager
     if (!verifyTemplateHandle(templateHndle, "cube")) {
       return nullptr;
     }
-    return getTemplateCopyByHandle<CubePrimitiveAttributes>(templateHndle);
+    return this->getTemplateCopyByHandle<CubePrimitiveAttributes>(
+        templateHndle);
   }  // AssetAttributeManager::getCubeTemplate
 
   /**
@@ -254,7 +260,8 @@ class AssetAttributesManager
     } else {
       templateHndle = defaultPrimAttributeHandles_.at("cylinderSolid");
     }
-    return getTemplateCopyByHandle<CylinderPrimitiveAttributes>(templateHndle);
+    return this->getTemplateCopyByHandle<CylinderPrimitiveAttributes>(
+        templateHndle);
   }  // AssetAttributeManager::getDefaultCylinderTemplate
 
   /**
@@ -269,7 +276,8 @@ class AssetAttributesManager
     if (!verifyTemplateHandle(templateHndle, "cylinder")) {
       return nullptr;
     }
-    return getTemplateCopyByHandle<CylinderPrimitiveAttributes>(templateHndle);
+    return this->getTemplateCopyByHandle<CylinderPrimitiveAttributes>(
+        templateHndle);
   }  // AssetAttributeManager::getCylinderTemplate
 
   /**
@@ -285,7 +293,8 @@ class AssetAttributesManager
     } else {
       templateHndle = defaultPrimAttributeHandles_.at("icosphereSolid");
     }
-    return getTemplateCopyByHandle<IcospherePrimitiveAttributes>(templateHndle);
+    return this->getTemplateCopyByHandle<IcospherePrimitiveAttributes>(
+        templateHndle);
   }  // AssetAttributeManager::getDefaultIcosphereTemplate
 
   /**
@@ -300,7 +309,8 @@ class AssetAttributesManager
     if (!verifyTemplateHandle(templateHndle, "icosphere")) {
       return nullptr;
     }
-    return getTemplateCopyByHandle<IcospherePrimitiveAttributes>(templateHndle);
+    return this->getTemplateCopyByHandle<IcospherePrimitiveAttributes>(
+        templateHndle);
   }  // AssetAttributeManager::getIcosphereTemplate
 
   /**
@@ -316,7 +326,8 @@ class AssetAttributesManager
     } else {
       templateHndle = defaultPrimAttributeHandles_.at("uvSphereSolid");
     }
-    return getTemplateCopyByHandle<UVSpherePrimitiveAttributes>(templateHndle);
+    return this->getTemplateCopyByHandle<UVSpherePrimitiveAttributes>(
+        templateHndle);
   }  // AssetAttributeManager::getDefaultUVSphereTemplate
 
   /**
@@ -331,49 +342,9 @@ class AssetAttributesManager
     if (!verifyTemplateHandle(templateHndle, "uvSphere")) {
       return nullptr;
     }
-    return getTemplateCopyByHandle<UVSpherePrimitiveAttributes>(templateHndle);
+    return this->getTemplateCopyByHandle<UVSpherePrimitiveAttributes>(
+        templateHndle);
   }  // AssetAttributeManager::getUVSphereTemplate
-
-  /**
-   * @brief Get a copy of the attributes template identified by the
-   * attributesTemplateID, casted to the appropriate derived asset attributes
-   * class
-   *
-   * Can be used to manipulate a template before instancing new objects.
-   * @param attributesTemplateID The ID of the template.  Is mapped to the key
-   * referencing the asset in @ref templateLibrary_ by @ref templateLibKeyByID_.
-   * @return A mutable reference to the object template, or nullptr if does not
-   * exist
-   */
-  template <class U>
-  std::shared_ptr<U> getTemplateCopyByID(int attributesTemplateID) {
-    std::string templateHandle = getTemplateHandleByID(attributesTemplateID);
-    auto res = AttributesManager<AbstractPrimitiveAttributes::ptr>::
-        getTemplateCopyByID(attributesTemplateID);
-    if (nullptr == res) {
-      return nullptr;
-    }
-    return std::dynamic_pointer_cast<U>(res);
-  }  // AttributesManager::getTemplateCopyByID
-
-  /**
-   * @brief Return a reference to a copy of the object specified
-   * by passed handle, casted to the appropriate derived asset attributes class
-   * This is the version that should be accessed by the user
-   * @param templateHandle the string key of the attributes desired.
-   * @return a copy of the desired attributes, or nullptr if does
-   * not exist
-   */
-  template <class U>
-  std::shared_ptr<U> getTemplateCopyByHandle(
-      const std::string& templateHandle) {
-    auto res = AttributesManager<AbstractPrimitiveAttributes::ptr>::
-        getTemplateCopyByHandle(templateHandle);
-    if (nullptr == res) {
-      return nullptr;
-    }
-    return std::dynamic_pointer_cast<U>(res);
-  }  // AttributesManager::getTemplateCopyByHandle
 
  protected:
   /**

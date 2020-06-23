@@ -36,6 +36,8 @@ namespace managers {
 template <class AttribsPtr>
 class AttributesManager {
  public:
+  virtual ~AttributesManager() = default;
+
   /**
    * @brief Creates an instance of a template described by passed string. For
    * physical objects, this is either a file name or a reference to a primitive
@@ -182,6 +184,45 @@ class AttributesManager {
     }
     auto orig = this->templateLibrary_.at(templateHandle);
     return this->copyAttributes(orig);
+  }  // AttributesManager::getTemplateCopyByHandle
+
+  /**
+   * @brief Get a copy of the attributes template identified by the
+   * attributesTemplateID, casted to the appropriate derived asset attributes
+   * class
+   *
+   * Can be used to manipulate a template before instancing new objects.
+   * @param attributesTemplateID The ID of the template.  Is mapped to the key
+   * referencing the asset in @ref templateLibrary_ by @ref templateLibKeyByID_.
+   * @return A mutable reference to the object template, or nullptr if does not
+   * exist
+   */
+  template <class U>
+  std::shared_ptr<U> getTemplateCopyByID(int attributesTemplateID) {
+    std::string templateHandle = getTemplateHandleByID(attributesTemplateID);
+    auto res = getTemplateCopyByID(attributesTemplateID);
+    if (nullptr == res) {
+      return nullptr;
+    }
+    return std::dynamic_pointer_cast<U>(res);
+  }  // AttributesManager::getTemplateCopyByID
+
+  /**
+   * @brief Return a reference to a copy of the object specified
+   * by passed handle, casted to the appropriate derived asset attributes class
+   * This is the version that should be accessed by the user
+   * @param templateHandle the string key of the attributes desired.
+   * @return a copy of the desired attributes, or nullptr if does
+   * not exist
+   */
+  template <class U>
+  std::shared_ptr<U> getTemplateCopyByHandle(
+      const std::string& templateHandle) {
+    auto res = getTemplateCopyByHandle(templateHandle);
+    if (nullptr == res) {
+      return nullptr;
+    }
+    return std::dynamic_pointer_cast<U>(res);
   }  // AttributesManager::getTemplateCopyByHandle
 
   /**

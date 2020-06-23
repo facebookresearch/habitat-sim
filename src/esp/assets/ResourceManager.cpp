@@ -105,7 +105,8 @@ void ResourceManager::initDefaultPrimAttributes() {
   // wireframe cube no differently than other primivite-based rendered
   // objects)
   auto cubeMeshName =
-      assetAttributesManager_->getTemplateByHandle("cubeWireframe")
+      assetAttributesManager_
+          ->getTemplateCopyByHandle<CubePrimitiveAttributes>("cubeWireframe")
           ->getPrimObjClassName();
 
   auto wfCube = primitiveImporter_->mesh(cubeMeshName);
