@@ -5,8 +5,10 @@
 #pragma once
 
 #include <Corrade/Containers/Optional.h>
+#include <Magnum/SceneGraph/Drawable.h>
 #include <Magnum/SceneGraph/FeatureGroup.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
+#include <unordered_map>
 
 #include <functional>
 #include <unordered_map>
@@ -23,21 +25,38 @@ class Drawable;
  */
 class DrawableGroup : public Magnum::SceneGraph::DrawableGroup3D {
  public:
-  /*
-  disable the dctor as it trigues weird error saying that:
-  FeatureGroup.h:
-In instantiation of ‘Magnum::SceneGraph::FeatureGroup<<anonymous>,
-<template-parameter-1-2>, <template-parameter-1-3> >::~FeatureGroup() [with
-unsigned int dimensions = 3; Feature = Magnum::SceneGraph::Drawable<3, float>; T
-= float]’: habitat-sim/src/esp/gfx/DrawableGroup.h:25:27:   required
-from here
-habitat-sim/src/deps/magnum/src/Magnum/SceneGraph/FeatureGroup.h:177:65:
-error: invalid static_cast from type ‘Magnum::SceneGraph::AbstractFeature<3,
-float>’ to type ‘Magnum::SceneGraph::Drawable<3, float>&’ for(auto i:
-AbstractFeatureGroup<dimensions, T>::_features)
-static_cast<Feature&>(i.get())._group = nullptr;
-  */
-  // virtual ~DrawableGroup(){};
+  virtual ~DrawableGroup();
+
+  /**
+   * @brief Add a drawable to the group.
+   * @return Reference to self (for method chaining)
+   *
+   * If the drawable is part of another group, it is removed from it.
+   */
+  DrawableGroup& add(Drawable& drawable);
+  /**
+   * @brief Remove a drawable from the group.
+   * @return Reference to self (for method chaining)
+   *
+   * The feature must be part of the group.
+   */
+  DrawableGroup& remove(Drawable& drawable);
+
+  /**
+   * @brief Given drawable id, returns if drawable is in the group
+   * @param id, drawable id
+   * @return true if the drawable is in the group, otherwise false
+   */
+  bool hasDrawable(uint64_t id) const;
+
+  /**
+   * @brief Given drawable id, returns nullptr if the id is not in this
+   * drawable group, otherwise the raw pointer to the object
+   *
+   * @param id, drawable id
+   * @return raw pointer to the drawable, or nullptr
+   */
+  Drawable* getDrawable(uint64_t id) const;
 
   /**
    * @brief Prepare to draw group with given @ref RenderCamera
@@ -46,24 +65,27 @@ static_cast<Feature&>(i.get())._group = nullptr;
    */
   virtual bool prepareForDraw(const RenderCamera&) { return true; }
 
-  /**
-   * @brief Given drawable object id, returns if drawable is in the group
-   */
-  bool hasDrawable(uint64_t id);
-
-  // Corrade::Containers::Optional<std::reference_wrapper<Drawable>>
-  // getDrawable(uint64_t id);
-  Drawable* getDrawable(uint64_t id);
-
  protected:
+  /**
+   * Why a friend class here?
+   * class Drawable has to update idToDrawable_, and it is the ONLY class that
+   * can do it.
+   */
   friend class Drawable;
   /**
-   * a map, that maps a drawable id to the drawable object
-   *
-   * NOTE: operations on this structure are all in the class Drawable
+   * @brief Add the drawable to the lookup table, and update the state in the
+   * drawable
    */
-  std::unordered_map<uint64_t, Drawable*> drawableLookUp_;
-
+  DrawableGroup& registerDrawable(Drawable& drawable);
+  /**
+   * @brief Remove the drawable from the lookup table, and update the state in
+   * the drawable
+   */
+  DrawableGroup& unregisterDrawable(Drawable& drawable);
+  /**
+   * a lookup table, that maps a drawable id to the drawable object
+   */
+  std::unordered_map<uint64_t, Drawable*> idToDrawable_;
   ESP_SMART_POINTERS(DrawableGroup)
 };
 

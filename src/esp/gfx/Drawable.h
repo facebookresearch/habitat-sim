@@ -5,7 +5,6 @@
 #pragma once
 
 #include "esp/core/esp.h"
-#include "esp/gfx/DrawableGroup.h"
 #include "magnum.h"
 
 namespace esp {
@@ -13,6 +12,8 @@ namespace scene {
 class SceneNode;
 }
 namespace gfx {
+
+class DrawableGroup;
 
 /**
  * @brief Drawable for use with @ref DrawableGroup.
@@ -72,8 +73,8 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * @param transformationMatrix  Transformation relative to camera.
    * @param camera                Camera to draw from.
    *
-   * Each derived drawable class needs to implement this draw() function. It's
-   * nothing more than drawing itself with its group's shader.
+   * Each derived drawable class needs to implement this draw() function.
+   * It's nothing more than drawing itself with its group's shader.
    */
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
                     Magnum::SceneGraph::Camera3D& camera) = 0;
