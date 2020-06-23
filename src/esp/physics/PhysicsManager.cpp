@@ -283,6 +283,11 @@ void PhysicsManager::setTransformation(const int physObjectID,
   assertIDValidity(physObjectID);
   existingObjects_.at(physObjectID)->setTransformation(trans);
 }
+void PhysicsManager::setRigidState(const int physObjectID,
+                                   const esp::core::RigidState& rigidState) {
+  assertIDValidity(physObjectID);
+  existingObjects_.at(physObjectID)->setRigidState(rigidState);
+}
 void PhysicsManager::setTranslation(const int physObjectID,
                                     const Magnum::Vector3& vector) {
   assertIDValidity(physObjectID);
@@ -356,6 +361,12 @@ Magnum::Matrix4 PhysicsManager::getTransformation(
     const int physObjectID) const {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->node().transformation();
+}
+
+esp::core::RigidState PhysicsManager::getRigidState(
+    const int physObjectID) const {
+  assertIDValidity(physObjectID);
+  return existingObjects_.at(physObjectID)->getRigidState();
 }
 
 Magnum::Vector3 PhysicsManager::getTranslation(const int physObjectID) const {

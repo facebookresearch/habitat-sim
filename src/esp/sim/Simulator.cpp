@@ -433,6 +433,22 @@ Magnum::Matrix4 Simulator::getTransformation(const int objectID,
   return Magnum::Matrix4::fromDiagonal(Magnum::Vector4(1));
 }
 
+esp::core::RigidState Simulator::getRigidState(const int objectID,
+                                               const int sceneID) const {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getRigidState(objectID);
+  }
+  return esp::core::RigidState();
+}
+
+void Simulator::setRigidState(const esp::core::RigidState& rigidState,
+                              const int objectID,
+                              const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    physicsManager_->setRigidState(objectID, rigidState);
+  }
+}
+
 // set object translation directly
 void Simulator::setTranslation(const Magnum::Vector3& translation,
                                const int objectID,

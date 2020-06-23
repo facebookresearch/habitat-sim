@@ -311,6 +311,16 @@ class PhysicsManager {
    */
   void setTransformation(const int physObjectID, const Magnum::Matrix4& trans);
 
+  /** @brief Set the @ref esp::core::RigidState of an object kinematically.
+   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
+   * recommended.
+   * @param  physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param trans The desired @ref esp::core::RigidState of the object.
+   */
+  void setRigidState(const int physObjectID,
+                     const esp::core::RigidState& rigidState);
+
   /** @brief Set the 3D position of an object kinematically.
    * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
    * recommended.
@@ -441,6 +451,13 @@ class PhysicsManager {
    * @return The 4x4 transform of the object.
    */
   Magnum::Matrix4 getTransformation(const int physObjectID) const;
+
+  /** @brief Get the current @ref esp::core::RigidState of an object.
+   * @param  physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return The @ref esp::core::RigidState of the object.
+   */
+  esp::core::RigidState getRigidState(const int objectID) const;
 
   /** @brief Get the current 3D position of an object.
    * @param  physObjectID The object ID and key identifying the object in @ref
