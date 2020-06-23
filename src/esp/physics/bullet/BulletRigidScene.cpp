@@ -26,7 +26,7 @@ BulletRigidScene::~BulletRigidScene() {
     bWorld_->removeCollisionObject(co.get());
   }
 }
-bool BulletRigidScene::initializationFinalize(
+bool BulletRigidScene::initialization_LibSpecific(
     const assets::ResourceManager& resMgr) {
   const auto collisionAssetHandle =
       initializationAttributes_->getCollisionAssetHandle();
@@ -47,7 +47,7 @@ bool BulletRigidScene::initializationFinalize(
 
   return true;
 
-}  // initializationFinalize
+}  // initialization_LibSpecific
 
 void BulletRigidScene::constructBulletSceneFromMeshes(
     const Magnum::Matrix4& transformFromParentToWorld,

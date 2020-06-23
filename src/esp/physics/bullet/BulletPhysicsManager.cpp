@@ -45,21 +45,18 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
 
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
-bool BulletPhysicsManager::addSceneFinalize(
-    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes) {
+bool BulletPhysicsManager::addSceneFinalize(const std::string& handle) {
   //! Initialize scene
-  bool sceneSuccess =
-      staticSceneObject_->initialize(resourceManager_, physicsSceneAttributes);
+  bool sceneSuccess = staticSceneObject_->initialize(resourceManager_, handle);
 
   return sceneSuccess;
 }
 
-bool BulletPhysicsManager::makeAndAddRigidObject(
-    int newObjectID,
-    assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-    scene::SceneNode* objectNode) {
+bool BulletPhysicsManager::makeAndAddRigidObject(int newObjectID,
+                                                 const std::string& handle,
+                                                 scene::SceneNode* objectNode) {
   auto ptr = physics::BulletRigidObject::create_unique(objectNode, bWorld_);
-  bool objSuccess = ptr->initialize(resourceManager_, physicsObjectAttributes);
+  bool objSuccess = ptr->initialize(resourceManager_, handle);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }

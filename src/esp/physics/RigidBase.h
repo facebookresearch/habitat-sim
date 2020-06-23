@@ -70,7 +70,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Virtual destructor for a @ref RigidBase.
    */
-  virtual ~RigidBase(){};
+  virtual ~RigidBase() {}
 
   /**
    * @brief Get the scene node being attached to.
@@ -89,14 +89,20 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   }
   /**
    * @brief Initializes the @ref RigidObject or @ref RigidScene that inherits
-   * from this class
-   * @param physicsAttributes The template structure defining relevant
+   * from this class.  This is overridden
+   * @param resMgr a reference to ResourceManager object
+   * @param handle The handle for the template structure defining relevant
    * phyiscal parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initialize(
-      const assets::ResourceManager& resMgr,
-      const assets::AbstractPhysicsAttributes::ptr physicsAttributes) = 0;
+  virtual bool initialize(const assets::ResourceManager& resMgr,
+                          const std::string& handle) = 0;
+
+  /**
+   * @brief Finalize the creation of @ref RigidObject or @ref RigidScene that
+   * inherits from this class.
+   */
+  virtual void finalizeObject() = 0;
 
  private:
   /**
@@ -106,14 +112,15 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * pertaining to the object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initializationFinalize(
+  virtual bool initialization_LibSpecific(
       const assets::ResourceManager& resMgr) = 0;
+  /**
+   * @brief any physics-lib-specific finalization code that needs to be run
+   * after @ref RigidObject or @ref RigidScene is created.
+   */
+  virtual void finalizeObject_LibSpecifc() = 0;
 
  public:
-  /**
-   * @brief Finalize this object with any necessary post-creation processes.
-   */
-  virtual void finalizeObject() {}
   /**
    * @brief Set the @ref MotionType of the object. If the object is @ref
    * ObjectType::SCENE it can only be @ref MotionType::STATIC. If the object is
@@ -138,7 +145,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * Kinematic objects are always active, but derived dynamics implementations
    * may not be.
    */
-  virtual void setActive(){};
+  virtual void setActive() {}
 
   /**
    * @brief Get the @ref MotionType of the object. See @ref setMotionType.
@@ -217,8 +224,8 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * MotionType::STATIC objects.
    * @param linVel Linear velocity to set.
    */
-  virtual void setLinearVelocity(
-      CORRADE_UNUSED const Magnum::Vector3& linVel){};
+  virtual void setLinearVelocity(CORRADE_UNUSED const Magnum::Vector3& linVel) {
+  }
 
   /**
    * @brief Virtual angular velocity setter for an object.
@@ -229,7 +236,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * angles.
    */
   virtual void setAngularVelocity(
-      CORRADE_UNUSED const Magnum::Vector3& angVel){};
+      CORRADE_UNUSED const Magnum::Vector3& angVel) {}
 
   /**
    * @brief Virtual linear velocity getter for an object.
@@ -517,21 +524,21 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * implementations of @ref RigidObject.
    * @param mass The new mass of the object.
    */
-  virtual void setMass(CORRADE_UNUSED const double mass){};
+  virtual void setMass(CORRADE_UNUSED const double mass) {}
 
   /** @brief Set the center of mass (COM) of the object.
    * @param COM Object 3D center of mass in the local coordinate system.
    * @todo necessary for @ref MotionType::KINEMATIC?
    */
-  virtual void setCOM(CORRADE_UNUSED const Magnum::Vector3& COM){};
+  virtual void setCOM(CORRADE_UNUSED const Magnum::Vector3& COM) {}
 
   /** @brief Set the diagonal of the inertia matrix for the object.
    * If an object is aligned with its principle axii of inertia, the 3x3 inertia
    * matrix can be reduced to a diagonal.
    * @param inertia The new diagonal for the object's inertia matrix.
    */
-  virtual void setInertiaVector(
-      CORRADE_UNUSED const Magnum::Vector3& inertia){};
+  virtual void setInertiaVector(CORRADE_UNUSED const Magnum::Vector3& inertia) {
+  }
 
   /** @brief Set the scalar friction coefficient of the object. Only used for
    * dervied dynamic implementations of @ref RigidObject.
@@ -539,7 +546,7 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * object.
    */
   virtual void setFrictionCoefficient(
-      CORRADE_UNUSED const double frictionCoefficient){};
+      CORRADE_UNUSED const double frictionCoefficient) {}
 
   /** @brief Set the scalar coefficient of restitution of the object. Only used
    * for dervied dynamic implementations of @ref RigidObject.
@@ -547,20 +554,20 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * the object.
    */
   virtual void setRestitutionCoefficient(
-      CORRADE_UNUSED const double restitutionCoefficient){};
+      CORRADE_UNUSED const double restitutionCoefficient) {}
 
   /** @brief Set the scalar linear damping coefficient of the object. Only used
    * for dervied dynamic implementations of @ref RigidObject.
    * @param linDamping The new scalar linear damping coefficient of the object.
    */
-  virtual void setLinearDamping(CORRADE_UNUSED const double linDamping){};
+  virtual void setLinearDamping(CORRADE_UNUSED const double linDamping) {}
 
   /** @brief Set the scalar angular damping coefficient for the object. Only
    * used for dervied dynamic implementations of @ref RigidObject.
    * @param angDamping The new scalar angular damping coefficient for the
    * object.
    */
-  virtual void setAngularDamping(CORRADE_UNUSED const double angDamping){};
+  virtual void setAngularDamping(CORRADE_UNUSED const double angDamping) {}
 
   /**
    * @brief Get the template used to initialize this object or scene.
@@ -569,10 +576,10 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * instances of objects.
    * @return The initialization settings of this object instance.
    */
-  const assets::AbstractPhysicsAttributes::cptr getInitializationAttributes()
-      const {
-    return initializationAttributes_;
-  };
+  template <class T>
+  const std::shared_ptr<const T> getInitializationAttributes() const {
+    return std::dynamic_pointer_cast<T>(initializationAttributes_);
+  }
 
   /** @brief Store whatever object attributes you want here! */
   esp::core::Configuration attributes_;

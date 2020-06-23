@@ -101,29 +101,57 @@ class RigidObject : public RigidBase {
   /**
    * @brief Virtual destructor for a @ref RigidObject.
    */
-  virtual ~RigidObject(){};
+  virtual ~RigidObject() {}
 
   /**
-   * @brief Initializes the @ref RigidObject or @ref RigidScene that inherits
-   * from this class
-   * @param physicsAttributes The template structure defining relevant
+   * @brief Initializes the @ref RigidObject that inheritsfrom this class
+   * @param resMgr a reference to ResourceManager object
+   * @param handle The handle for the template structure defining relevant
    * phyiscal parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initialize(
-      const assets::ResourceManager& resMgr,
-      const assets::AbstractPhysicsAttributes::ptr physicsAttributes) override;
+  bool initialize(const assets::ResourceManager& resMgr,
+                  const std::string& handle) override;
+
+  /**
+   * @brief Finalize the creation of @ref RigidObject or @ref RigidScene that
+   * inherits from this class.
+   */
+  void finalizeObject() override;
+
+  /**
+   * @brief Get the template used to initialize this object or scene.
+   *
+   * AbstractPhysicsAttributes templates are expected to be changed between
+   * instances of objects.
+   * @return The initialization settings of this object instance.
+   */
+  const std::shared_ptr<const assets::PhysicsObjectAttributes>
+  getInitializationAttributes() const {
+    return RigidBase::getInitializationAttributes<
+        assets::PhysicsObjectAttributes>();
+  };
 
  private:
   /**
    * @brief Finalize the initialization of this @ref RigidScene
-   * geometry.  This is overridden by inheriting objects
-   * @param resMgr Reference to resource manager, to access relevant components
-   * pertaining to the scene object
+   * geometry.  This is overridden by inheriting class specific to certain
+   * physics libraries.  Necessary to support kinematic objects without any
+   * dynamics support.
+   * @param resMgr Reference to resource manager, to access relevant
+   * components pertaining to the scene object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initializationFinalize(
+  bool initialization_LibSpecific(
       const assets::ResourceManager& resMgr) override;
+
+  /**
+   * @brief any physics-lib-specific finalization code that needs to be run
+   * after @ref RigidObject is created.Overridden
+   * by inheriting class specific to certain physics libraries.Necessary to
+   * support kinematic objects without any dynamics support.
+   */
+  void finalizeObject_LibSpecifc() override {}
 
  public:
   /**
@@ -137,7 +165,7 @@ class RigidObject : public RigidBase {
    * @param mt The desirved @ref MotionType.
    * @return true if successfully set, false otherwise.
    */
-  virtual bool setMotionType(MotionType mt) override;
+  bool setMotionType(MotionType mt) override;
 
   /**@brief Retrieves a reference to the VelocityControl struct for this object.
    */
@@ -152,7 +180,7 @@ class RigidObject : public RigidBase {
 
  public:
   ESP_SMART_POINTERS(RigidObject)
-};
+};  // namespace physics
 
 }  // namespace physics
 }  // namespace esp

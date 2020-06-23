@@ -323,7 +323,6 @@ class ResourceManager {
     if (objTemplateLibID != ID_UNDEFINED) {
       const std::string& objTemplateHandleName =
           objectAttributesManager_->getTemplateHandleByID(objTemplateLibID);
-      // physicsObjectTemplateLibByID_.at(objTemplateLibID);
 
       addObjectToDrawables(objTemplateHandleName, parent, drawables,
                            lightSetup);
