@@ -9,7 +9,6 @@
 #include "esp/sim/Simulator.h"
 
 #include "esp/assets/ResourceManager.h"
-#include "esp/gfx/Renderer.h"
 #include "esp/scene/SceneManager.h"
 
 #include "esp/physics/PhysicsManager.h"
@@ -21,8 +20,10 @@
 
 namespace Cr = Corrade;
 
+namespace AttrMgrs = esp::assets::managers;
 using esp::assets::ResourceManager;
 using esp::assets::managers::ObjectAttributesManager;
+using esp::assets::managers::PhysicsAttributesManager;
 using esp::physics::PhysicsManager;
 using esp::scene::SceneManager;
 
@@ -35,9 +36,10 @@ class PhysicsManagerTest : public testing::Test {
  protected:
   void SetUp() override {
     context_ = esp::gfx::WindowlessContext::create_unique(0);
-    renderer_ = esp::gfx::Renderer::create();
 
     sceneID_ = sceneManager_.initSceneGraph();
+    // get attributes manager for physics world attributes
+    physicsAttributesManager_ = resourceManager_.getPhysicsAttributesManager();
   };
 
   void initScene(const std::string sceneFile) {
@@ -48,15 +50,22 @@ class PhysicsManagerTest : public testing::Test {
     esp::scene::SceneNode* navSceneNode =
         &sceneGraph.getRootNode().createChild();
     auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
-    resourceManager_.loadScene(info, physicsManager_, navSceneNode, &drawables,
-                               physicsConfigFile);
+
+    // construct appropriate physics attributes based on config file
+    auto physicsManagerAttributes =
+        physicsAttributesManager_->createAttributesTemplate(physicsConfigFile,
+                                                            true);
+    resourceManager_.loadPhysicsScene(info, physicsManager_,
+                                      physicsManagerAttributes, navSceneNode,
+                                      &drawables);
   }
 
   // must declare these in this order due to avoid deallocation errors
   esp::gfx::WindowlessContext::uptr context_;
-  esp::gfx::Renderer::ptr renderer_;
 
   ResourceManager resourceManager_;
+
+  AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_;
   SceneManager sceneManager_;
   PhysicsManager::ptr physicsManager_;
 

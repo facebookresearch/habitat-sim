@@ -21,22 +21,26 @@ namespace assets {
 
 namespace managers {
 
-const PhysicsManagerAttributes::ptr
+PhysicsManagerAttributes::ptr
 PhysicsAttributesManager::createAttributesTemplate(
     const std::string& physicsFilename,
     bool registerTemplate) {
+  // Attributes descriptor for physics world
+  PhysicsManagerAttributes::ptr physicsManagerAttributes =
+      PhysicsManagerAttributes::create(physicsFilename);
+  // check if this corresponds to actual file descriptor, otherwise return
+  // default manager.
   if (!Cr::Utility::Directory::exists(physicsFilename)) {
-    LOG(ERROR) << "PhysicsAttributesManager::createAttributesTemplate : "
-                  "Specified Filename :"
-               << physicsFilename << "cannot be found.  Aborting";
-    return nullptr;
+    LOG(ERROR)
+        << "PhysicsAttributesManager::createAttributesTemplate : "
+           "Specified Filename :"
+        << physicsFilename
+        << "cannot be found.  Returning default physics manager attributes.";
+    return physicsManagerAttributes;
   }
 
   // Load the global scene config JSON here
   io::JsonDocument scenePhysicsConfig = io::parseJsonFile(physicsFilename);
-  // In-memory representation of scene meta data
-  PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      PhysicsManagerAttributes::create(physicsFilename);
 
   // load the simulator preference
   // default is "none" simulator
@@ -115,7 +119,7 @@ PhysicsAttributesManager::createAttributesTemplate(
   }  // if load rigid object library metadata
 
   if (registerTemplate) {
-    registerAttributesTemplate(physicsManagerAttributes, physicsFilename);
+    this->registerAttributesTemplate(physicsManagerAttributes, physicsFilename);
   }
 
   return physicsManagerAttributes;

@@ -87,15 +87,6 @@ void ResourceManager::buildImportersAndAttributesManagers() {
   physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
   sceneAttributesManager_ = managers::SceneAttributesManager::create();
 
-  LOG(INFO) << "asset attr mgr query : "
-            << assetAttributesManager_->getNumTemplates();
-  LOG(INFO) << "object attr mgr query : "
-            << objectAttributesManager_->getNumTemplates();
-  LOG(INFO) << "physics attr mgr query : "
-            << physicsAttributesManager_->getNumTemplates();
-  LOG(INFO) << "Scene attr mgr query : "
-            << sceneAttributesManager_->getNumTemplates();
-
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       primitiveImporter_ =
@@ -123,7 +114,7 @@ void ResourceManager::initDefaultPrimAttributes() {
 
   // build default primtive object templates corresponding to given default
   // asset templates
-  auto lib = assetAttributesManager_->getTemplateLibrary_();
+  auto lib = assetAttributesManager_->getTemplateLibrary();
   for (auto primAsset : lib) {
     objectAttributesManager_->createPrimBasedAttributesTemplate(primAsset.first,
                                                                 true);
@@ -236,9 +227,9 @@ void ResourceManager::initPhysicsManager(
   // reset to base PhysicsManager to override previous as default behavior
   // if the desired simulator is not supported reset to "none" in metaData
   if (defaultToNoneSimulator) {
+    physicsManagerAttributes->setSimulator("none");
     physicsManager.reset(
         new physics::PhysicsManager(*this, physicsManagerAttributes));
-    physicsManagerAttributes->setSimulator("none");
   }
   // build default primitive asset templates, and default primitive object
   // templates
@@ -247,28 +238,6 @@ void ResourceManager::initPhysicsManager(
   objectAttributesManager_->loadAllFileBasedTemplates(
       physicsManagerAttributes->getStringGroup("objectLibraryPaths"));
 }  // ResourceManager::initPhysicsManager
-
-//! (1) Read config and set physics timestep
-//! (2) loadScene() with PhysicsSceneMetaData
-// TODO (JH): this function seems to entangle certain physicsManager functions
-bool ResourceManager::loadScene(
-    const AssetInfo& info,
-    std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-    scene::SceneNode* parent,              /* = nullptr */
-    DrawableGroup* drawables,              /* = nullptr */
-    const Magnum::ResourceKey& lightSetup, /* = Mn::ResourceKey{NO_LIGHT_KEY} */
-    std::string physicsFilename /* data/default.phys_scene_config.json */) {
-  // In-memory representation of scene meta data
-
-  PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      physicsAttributesManager_->createAttributesTemplate(physicsFilename,
-                                                          true);
-
-  // loadPhysicsConfig(physicsFilename);
-  // physicsManagerLibrary_.emplace(physicsFilename, physicsManagerAttributes);
-  return loadPhysicsScene(info, _physicsManager, physicsManagerAttributes,
-                          parent, drawables, lightSetup);
-}
 
 // TODO: kill existing scene mesh drawables, nodes, etc... (all but meshes in
 // memory?)

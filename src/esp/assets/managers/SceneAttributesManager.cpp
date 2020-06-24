@@ -17,19 +17,12 @@ namespace assets {
 
 namespace managers {
 
-const PhysicsSceneAttributes::ptr
-SceneAttributesManager::createAttributesTemplate(
+PhysicsSceneAttributes::ptr SceneAttributesManager::createAttributesTemplate(
     const std::string& sceneAttributesHandle,
     bool registerTemplate) {
-  const bool physSceneExists =
-      this->templateLibrary_.count(sceneAttributesHandle) > 0;
-  PhysicsSceneAttributes::ptr sceneAttributesTemplate;
-  if (!physSceneExists) {
-    sceneAttributesTemplate =
-        PhysicsSceneAttributes::create(sceneAttributesHandle);
-  } else {
-    sceneAttributesTemplate = this->templateLibrary_.at(sceneAttributesHandle);
-  }
+  PhysicsSceneAttributes::ptr sceneAttributesTemplate =
+      PhysicsSceneAttributes::create(sceneAttributesHandle);
+
   sceneAttributesTemplate->setRenderAssetHandle(sceneAttributesHandle);
   sceneAttributesTemplate->setCollisionAssetHandle(sceneAttributesHandle);
 
