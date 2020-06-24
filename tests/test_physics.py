@@ -161,7 +161,7 @@ def test_dynamics(sim):
     # get object MotionType and continue testing if MotionType::DYNAMIC (implies a physics implementation is active)
     if sim.get_object_motion_type(object_id) == habitat_sim.physics.MotionType.DYNAMIC:
         object1_init_template = sim.get_object_initialization_template(object_id)
-        object1_mass = object1_init_template.get_mass()
+        object1_mass = object1_init_template.mass
         grav = sim.get_gravity()
         previous_object_states = [
             [sim.get_translation(object_id), sim.get_rotation(object_id)],
@@ -261,8 +261,8 @@ def test_velocity_control(sim):
     template_path = osp.abspath("data/test_assets/objects/nested_box")
     template_ids = sim.load_object_configs(template_path)
     object_template = sim.get_object_template(template_ids[0])
-    object_template.set_linear_damping(0.0)
-    object_template.set_angular_damping(0.0)
+    object_template.linear_damping = 0.0
+    object_template.angular_damping = 0.0
 
     obj_handle = sim.get_template_handle_by_ID(template_ids[0])
 
