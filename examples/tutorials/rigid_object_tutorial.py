@@ -209,11 +209,11 @@ def main(make_video=True, show_video=True):
     # get the object's initialization attributes (all boxes initialized with same mass)
     object_init_template = sim.get_object_initialization_template(box_ids[0])
     # anti-gravity force f=m(-g)
-    anti_grav_force = -1.0 * sim.get_gravity() * object_init_template.get_mass()
+    anti_grav_force = -1.0 * sim.get_gravity() * object_init_template.mass
 
     # throw a sphere at the boxes from the agent position
     sphere_template = sim.get_object_template(sphere_template_id)
-    sphere_template.set_scale(np.array([0.5, 0.5, 0.5]))
+    sphere_template.scale = np.array([0.5, 0.5, 0.5])
     sphere_id = sim.add_object(sphere_template_id)
     sim.set_translation(
         sim.agents[0].get_state().position + np.array([0, 1.0, 0]), sphere_id
