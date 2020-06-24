@@ -24,22 +24,32 @@ namespace managers {
 PhysicsObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
     const std::string& attributesTemplateHandle,
     bool registerTemplate) {
+  PhysicsObjectAttributes::ptr attrs;
+  std::string msg;
   if (assetAttributesMgr_->getTemplateLibHasHandle(attributesTemplateHandle)) {
     // if attributesTemplateHandle == some existing primitive attributes, then
     // this is a primitive-based object we are building
-    return createPrimBasedAttributesTemplate(attributesTemplateHandle,
-                                             registerTemplate);
+    attrs = createPrimBasedAttributesTemplate(attributesTemplateHandle,
+                                              registerTemplate);
+    msg = "Primitive Asset Based";
   } else if (Corrade::Utility::Directory::exists(attributesTemplateHandle)) {
     // if attributesTemplateHandle == some existing file then
     // assume this is a file-based object template we are building.
-    return createFileBasedAttributesTemplate(attributesTemplateHandle,
-                                             registerTemplate);
+    attrs = createFileBasedAttributesTemplate(attributesTemplateHandle,
+                                              registerTemplate);
+    msg = "File Based";
   } else {
     // if neither of these is true, then build an empty template and assign the
     // passed handle to its origin handle and its render asset handle
-    return createEmptyAttributesTemplate(attributesTemplateHandle,
-                                         registerTemplate);
+    attrs = createEmptyAttributesTemplate(attributesTemplateHandle,
+                                          registerTemplate);
+    msg = "New blank";
   }
+  if (nullptr != attrs) {
+    LOG(INFO) << msg << " object attributes created "
+              << (registerTemplate ? " and registered." : ".");
+  }
+  return attrs;
 
 }  // ObjectAttributesManager::createAttributesTemplate
 
@@ -85,18 +95,18 @@ ObjectAttributesManager::createEmptyAttributesTemplate(
     bool registerTemplate) {
   // construct a PhysicsObjectAttributes
   auto physicsObjectAttributes = PhysicsObjectAttributes::create(templateName);
-  // set render mesh handle
+  // set render mesh handle as a default
   physicsObjectAttributes->setRenderAssetHandle(templateName);
-  // some error occurred
-  if (nullptr != physicsObjectAttributes && registerTemplate) {
+  if (registerTemplate) {
     auto attrID =
         registerAttributesTemplate(physicsObjectAttributes, templateName);
     if (attrID == ID_UNDEFINED) {
+      // some error occurred
       return nullptr;
     }
   }
   return physicsObjectAttributes;
-}
+}  // ObjectAttributesManager::createEmptyAttributesTemplate
 
 int ObjectAttributesManager::registerAttributesTemplateFinalize(
     PhysicsObjectAttributes::ptr objectTemplate,

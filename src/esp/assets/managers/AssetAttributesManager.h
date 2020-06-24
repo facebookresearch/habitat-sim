@@ -100,7 +100,7 @@ class AssetAttributesManager
       const std::string& primClassName,
       bool registerTemplate = true) override {
     auto primAssetAttributes = buildPrimAttributes(primClassName);
-    if (registerTemplate) {
+    if (nullptr != primAssetAttributes && registerTemplate) {
       registerAttributesTemplate(primAssetAttributes, "");
     }
     return primAssetAttributes;
@@ -121,7 +121,7 @@ class AssetAttributesManager
       PrimObjTypes primObjType,
       bool registerTemplate = true) {
     auto primAssetAttributes = buildPrimAttributes(primObjType);
-    if (registerTemplate) {
+    if (nullptr != primAssetAttributes && registerTemplate) {
       registerAttributesTemplate(primAssetAttributes, "");
     }
     return primAssetAttributes;
