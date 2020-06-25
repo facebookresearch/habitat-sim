@@ -15,8 +15,9 @@ DrawableGroup& DrawableGroup::add(Drawable& drawable) {
 }
 
 DrawableGroup& DrawableGroup::remove(Drawable& drawable) {
-  unregisterDrawable(drawable);
-  this->Magnum::SceneGraph::DrawableGroup3D::remove(drawable);
+  if (unregisterDrawable(drawable)) {
+    this->Magnum::SceneGraph::DrawableGroup3D::remove(drawable);
+  }
   return *this;
 }
 
@@ -40,10 +41,12 @@ DrawableGroup& DrawableGroup::registerDrawable(Drawable& drawable) {
   idToDrawable_.emplace(drawable.getDrawableId(), &drawable);
   return *this;
 }
-DrawableGroup& DrawableGroup::unregisterDrawable(Drawable& drawable) {
+bool DrawableGroup::unregisterDrawable(Drawable& drawable) {
   // if it is not registered, erase will do nothing
-  idToDrawable_.erase(drawable.getDrawableId());
-  return *this;
+  if (idToDrawable_.erase(drawable.getDrawableId()) == 0) {
+    return false;
+  }
+  return true;
 }
 
 }  // namespace gfx
