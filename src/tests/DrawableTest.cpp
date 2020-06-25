@@ -39,12 +39,12 @@ struct DrawableTest : Cr::TestSuite::Tester {
   void addRemoveDrawables();
 
  protected:
+  esp::gfx::WindowlessContext::uptr context_ =
+      esp::gfx::WindowlessContext::create_unique(0);
   // must declare these in this order due to avoid deallocation errors
   ResourceManagerExtended resourceManager_;
   SceneManager sceneManager_;
   // must create a GL context which will be used in the resource manager
-  esp::gfx::WindowlessContext::uptr context_ =
-      esp::gfx::WindowlessContext::create_unique(0);
   int sceneID_ = -1;
   esp::gfx::DrawableGroup* drawableGroup_;
 };
