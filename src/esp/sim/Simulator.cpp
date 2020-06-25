@@ -148,9 +148,21 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
     bool loadSuccess = false;
     if (config_.enablePhysics) {
-      loadSuccess = resourceManager_->loadScene(
-          sceneInfo, physicsManager_, &rootNode, &drawables,
-          cfg.sceneLightSetup, cfg.physicsConfigFile);
+      // use physics world attributes manager to get physics manager attributes
+      // described by config file
+      auto physicsManagerAttributes =
+          resourceManager_->getPhysicsAttributesManager()
+              ->createAttributesTemplate(cfg.physicsConfigFile, true);
+
+      CORRADE_ASSERT(
+          physicsManagerAttributes != nullptr,
+          "Simulator::reconfigure : Error attempting to load world described by"
+              << cfg.physicsConfigFile << ". Aborting", );
+
+      loadSuccess = resourceManager_->loadPhysicsScene(
+          sceneInfo, physicsManager_, physicsManagerAttributes, &rootNode,
+          &drawables, cfg.sceneLightSetup);
+
     } else {
       loadSuccess = resourceManager_->loadScene(
           sceneInfo, &rootNode, &drawables, cfg.sceneLightSetup);

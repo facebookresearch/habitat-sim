@@ -80,7 +80,7 @@ bool BulletRigidObject::initializationFinalize(
     auto primAttributes =
         primAttrMgr->getTemplateByHandle(collisionAssetHandle);
     // primitive object pointer construction
-    auto primObjPtr = buildPrimitiveCollisionObject(primAttributes);
+    auto primObjPtr = buildPrimitiveCollisionObject(*primAttributes.get());
     bGenericShapes_.clear();
     bGenericShapes_.emplace_back(std::move(primObjPtr));
     bObjectShape_->addChildShape(btTransform::getIdentity(),
@@ -118,8 +118,6 @@ bool BulletRigidObject::initializationFinalize(
       // allow bullet to compute the inertia tensor if we don't have one
       bObjectShape_->calculateLocalInertia(tmpAttr->getMass(),
                                            bInertia);  // overrides bInertia
-      LOG(INFO) << "Automatic object inertia computed: " << bInertia.x() << " "
-                << bInertia.y() << " " << bInertia.z();
     }
   }
 
@@ -151,8 +149,8 @@ void BulletRigidObject::finalizeObject() {
 
 std::unique_ptr<btCollisionShape>
 BulletRigidObject::buildPrimitiveCollisionObject(
-    assets::AbstractPrimitiveAttributes::ptr primAttributes) {
-  int primTypeVal = primAttributes->getPrimObjType();
+    const assets::AbstractPrimitiveAttributes& primAttributes) {
+  int primTypeVal = primAttributes.getPrimObjType();
   CORRADE_ASSERT(
       (primTypeVal >= 0) &&
           (primTypeVal <
@@ -170,7 +168,7 @@ BulletRigidObject::buildPrimitiveCollisionObject(
     case assets::PrimObjTypes::CAPSULE_WF: {
       // use bullet capsule :  btCapsuleShape(btScalar radius,btScalar height);
       btScalar radius = 1.0f;
-      btScalar height = 2.0 * primAttributes->getHalfLength();
+      btScalar height = 2.0 * primAttributes.getHalfLength();
       obj = std::make_unique<btCapsuleShape>(radius, height);
       break;
     }
@@ -178,7 +176,7 @@ BulletRigidObject::buildPrimitiveCollisionObject(
     case assets::PrimObjTypes::CONE_WF: {
       // use bullet cone : btConeShape(btScalar radius,btScalar height);
       btScalar radius = 1.0f;
-      btScalar height = 2.0 * primAttributes->getHalfLength();
+      btScalar height = 2.0 * primAttributes.getHalfLength();
       obj = std::make_unique<btConeShape>(radius, height);
       break;
     }
@@ -281,9 +279,6 @@ void BulletRigidObject::setCollisionFromBB() {
     bObjectShape_->calculateLocalInertia(getMass(),
                                          bInertia);  // overrides bInertia
 
-    LOG(INFO) << "Automatic BB object inertia computed: " << bInertia.x() << " "
-              << bInertia.y() << " " << bInertia.z();
-
     setInertiaVector(Magnum::Vector3(bInertia));
   }
 }  // setCollisionFromBB
@@ -349,8 +344,6 @@ bool BulletRigidObject::setMotionType(MotionType mt) {
 }  // setMotionType
 
 void BulletRigidObject::shiftOrigin(const Magnum::Vector3& shift) {
-  Corrade::Utility::Debug() << "shiftOrigin: " << shift;
-
   if (visualNode_)
     visualNode_->translate(shift);
 

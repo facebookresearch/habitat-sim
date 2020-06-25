@@ -13,6 +13,9 @@ endmacro(TEST)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
                ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
+               
+TEST(AttributesManagersTest assets)
+target_include_directories(AttributesManagersTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 TEST(CoreTest io)
 
@@ -34,6 +37,10 @@ target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(GeoTest GeoTest.cpp LIBRARIES
   geo)
+
+corrade_add_test(DrawableTest DrawableTest.cpp LIBRARIES
+  gfx)
+target_include_directories(DrawableTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 TEST(PhysicsTest physics)
 target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})

@@ -3,20 +3,22 @@
 // LICENSE file in the root directory of this source tree.
 #include "DrawableGroup.h"
 #include "Drawable.h"
-namespace Cr = Corrade;
+
 namespace esp {
 namespace gfx {
 
 class Drawable;
 DrawableGroup& DrawableGroup::add(Drawable& drawable) {
-  registerDrawable(drawable);
-  this->Magnum::SceneGraph::DrawableGroup3D::add(drawable);
+  if (registerDrawable(drawable)) {
+    this->Magnum::SceneGraph::DrawableGroup3D::add(drawable);
+  }
   return *this;
 }
 
 DrawableGroup& DrawableGroup::remove(Drawable& drawable) {
-  unregisterDrawable(drawable);
-  this->Magnum::SceneGraph::DrawableGroup3D::remove(drawable);
+  if (unregisterDrawable(drawable)) {
+    this->Magnum::SceneGraph::DrawableGroup3D::remove(drawable);
+  }
   return *this;
 }
 
@@ -35,15 +37,19 @@ Drawable* DrawableGroup::getDrawable(uint64_t id) const {
   return nullptr;
 }
 
-DrawableGroup& DrawableGroup::registerDrawable(Drawable& drawable) {
+bool DrawableGroup::registerDrawable(Drawable& drawable) {
   // if it is already registered, emplace will do nothing
-  idToDrawable_.emplace(drawable.getDrawableId(), &drawable);
-  return *this;
+  if (idToDrawable_.emplace(drawable.getDrawableId(), &drawable).second) {
+    return true;
+  }
+  return false;
 }
-DrawableGroup& DrawableGroup::unregisterDrawable(Drawable& drawable) {
+bool DrawableGroup::unregisterDrawable(Drawable& drawable) {
   // if it is not registered, erase will do nothing
-  idToDrawable_.erase(drawable.getDrawableId());
-  return *this;
+  if (idToDrawable_.erase(drawable.getDrawableId()) == 0) {
+    return false;
+  }
+  return true;
 }
 
 }  // namespace gfx

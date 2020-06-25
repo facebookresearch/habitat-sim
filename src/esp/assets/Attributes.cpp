@@ -12,9 +12,9 @@ namespace assets {
 //----------------------------------------//
 
 AbstractPhysicsAttributes::AbstractPhysicsAttributes(
-    const std::string& classKey,
+    const std::string& attributesClassKey,
     const std::string& originHandle)
-    : AbstractAttributes(classKey, originHandle) {
+    : AbstractAttributes(attributesClassKey, originHandle) {
   setFrictionCoefficient(0.5);
   setRestitutionCoefficient(0.1);
   setRenderAssetHandle("");
@@ -82,7 +82,10 @@ CapsulePrimitiveAttributes::CapsulePrimitiveAttributes(
     bool isWireframe,
     int primObjType,
     const std::string& primObjClassName)
-    : AbstractPrimitiveAttributes(isWireframe, primObjType, primObjClassName) {
+    : AbstractPrimitiveAttributes(isWireframe,
+                                  primObjType,
+                                  primObjClassName,
+                                  "CapsulePrimitiveAttributes") {
   setCylinderRings(1);
   if (!isWireframe) {  // solid
     setHemisphereRings(4);
@@ -100,7 +103,10 @@ ConePrimitiveAttributes::ConePrimitiveAttributes(
     bool isWireframe,
     int primObjType,
     const std::string& primObjClassName)
-    : AbstractPrimitiveAttributes(isWireframe, primObjType, primObjClassName) {
+    : AbstractPrimitiveAttributes(isWireframe,
+                                  primObjType,
+                                  primObjClassName,
+                                  "ConePrimitiveAttributes") {
   setHalfLength(1.25);
 
   if (!isWireframe) {  // solid
@@ -117,7 +123,10 @@ CylinderPrimitiveAttributes::CylinderPrimitiveAttributes(
     bool isWireframe,
     int primObjType,
     const std::string& primObjClassName)
-    : AbstractPrimitiveAttributes(isWireframe, primObjType, primObjClassName) {
+    : AbstractPrimitiveAttributes(isWireframe,
+                                  primObjType,
+                                  primObjClassName,
+                                  "CylinderPrimitiveAttributes") {
   setNumRings(1);
   setHalfLength(1.0);
 
@@ -134,7 +143,10 @@ UVSpherePrimitiveAttributes::UVSpherePrimitiveAttributes(
     bool isWireframe,
     int primObjType,
     const std::string& primObjClassName)
-    : AbstractPrimitiveAttributes(isWireframe, primObjType, primObjClassName) {
+    : AbstractPrimitiveAttributes(isWireframe,
+                                  primObjType,
+                                  primObjClassName,
+                                  "UVSpherePrimitiveAttributes") {
   if (!isWireframe) {  // solid
     setNumRings(8);
     setNumSegments(16);

@@ -35,6 +35,9 @@ class PhysicsAttributesManager
    * simulation parameters (such as timestep, gravity, simulator implementation)
    * from the specified configuration file.
    *
+   * If a template exists with this handle, this existing template will be
+   * overwritten with the newly created one if @ref registerTemplate is true.
+   *
    * @param physicsFilename The configuration file to parse. Defaults to the
    * file location @ref ESP_DEFAULT_PHYS_SCENE_CONFIG set by cmake.
    * @param registerTemplate whether to add this template to the library or not.
@@ -42,10 +45,20 @@ class PhysicsAttributesManager
    * @return a reference to the physics simulation meta data object parsed from
    * the specified configuration file.
    */
-  const PhysicsManagerAttributes::ptr createAttributesTemplate(
+  PhysicsManagerAttributes::ptr createAttributesTemplate(
       const std::string& physicsFilename = ESP_DEFAULT_PHYS_SCENE_CONFIG,
-      bool registerTemplate = true);
+      bool registerTemplate = true) override;
 
+  /**
+   * @brief Build templates for all "*.phys_properties.json" files from the
+   * provided file or directory path.
+   *
+   * @param path A global path to a physics property file or directory
+   * @return A list of valid global paths to "*.phys_properties.json" files.
+   */
+  std::vector<std::string> buildObjectConfigPaths(const std::string& path);
+
+ protected:
   /**
    * @brief Add a @ref PhysicsManagerAttributes::ptr object to the @ref
    * templateLibrary_.
@@ -56,26 +69,27 @@ class PhysicsAttributesManager
    * @return The index in the @ref templateLibrary_ of object
    * template.
    */
-  int registerAttributesTemplate(
-      const PhysicsManagerAttributes::ptr physicsAttributesTemplate,
-      const std::string& physicsAttributesHandle) {
-    // return either the ID of the existing template referenced by
-    // physicsAttributesHandle, or the next available ID if not found.
+  int registerAttributesTemplateFinalize(
+      PhysicsManagerAttributes::ptr physicsAttributesTemplate,
+      const std::string& physicsAttributesHandle) override {
+    // adds template to library, and returns either the ID of the existing
+    // template referenced by physicsAttributesHandle, or the next available ID
+    // if not found.
     int physicsTemplateID = this->addTemplateToLibrary(
         physicsAttributesTemplate, physicsAttributesHandle);
     return physicsTemplateID;
   }  // PhysicsAttributesManager::registerAttributesTemplate
 
   /**
-   * @brief Build all "*.phys_properties.json" files from the provided file or
-   * directory path.
-   *
-   * @param path A global path to a physics property file or directory
-   * @return A list of valid global paths to "*.phys_properties.json" files.
+   * @brief Whether template described by passed handle is read only, or can be
+   * deleted.  All PhysicsAttributes templates are removable, by default
    */
-  std::vector<std::string> buildObjectConfigPaths(const std::string& path);
-
- protected:
+  bool isTemplateReadOnly(const std::string&) override { return false; };
+  /**
+   * @brief Any physics-attributes-specific resetting that needs to happen on
+   * reset.
+   */
+  void resetFinalize() override {}
   /**
    * @brief This function will assign the appropriately configured function
    * pointer for the copy constructor as required by

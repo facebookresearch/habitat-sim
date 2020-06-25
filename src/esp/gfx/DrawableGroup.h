@@ -75,13 +75,15 @@ class DrawableGroup : public Magnum::SceneGraph::DrawableGroup3D {
   /**
    * @brief Add the drawable to the lookup table, and update the state in the
    * drawable
+   * @return return true, if the drawable was newly registered, otherwise false
    */
-  DrawableGroup& registerDrawable(Drawable& drawable);
+  bool registerDrawable(Drawable& drawable);
   /**
    * @brief Remove the drawable from the lookup table, and update the state in
    * the drawable
+   * @return return true, if the drawable was in the group, otherwise false
    */
-  DrawableGroup& unregisterDrawable(Drawable& drawable);
+  bool unregisterDrawable(Drawable& drawable);
   /**
    * a lookup table, that maps a drawable id to the drawable object
    */
