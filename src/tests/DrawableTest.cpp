@@ -137,6 +137,7 @@ void DrawableTest::addRemoveDrawables() {
       esp::assets::ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
       nullptr};
   drawableGroup_->remove(*dr);
+  CORRADE_VERIFY(!drawableGroup_->hasDrawable(dr->getDrawableId()));
 }
 
 }  // namespace
