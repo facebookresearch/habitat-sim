@@ -1373,7 +1373,7 @@ void ResourceManager::createGenericDrawable(
     DrawableGroup* group /* = nullptr */) {
   node.addFeature<gfx::GenericDrawable>(mesh, shaderManager_, lightSetup,
                                         material, group);
-}  // namespace assets
+}
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
                                          scene::SceneNode* parent,
