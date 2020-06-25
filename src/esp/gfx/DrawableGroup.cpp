@@ -9,8 +9,9 @@ namespace gfx {
 
 class Drawable;
 DrawableGroup& DrawableGroup::add(Drawable& drawable) {
-  registerDrawable(drawable);
-  this->Magnum::SceneGraph::DrawableGroup3D::add(drawable);
+  if (registerDrawable(drawable)) {
+    this->Magnum::SceneGraph::DrawableGroup3D::add(drawable);
+  }
   return *this;
 }
 
@@ -36,10 +37,12 @@ Drawable* DrawableGroup::getDrawable(uint64_t id) const {
   return nullptr;
 }
 
-DrawableGroup& DrawableGroup::registerDrawable(Drawable& drawable) {
+bool DrawableGroup::registerDrawable(Drawable& drawable) {
   // if it is already registered, emplace will do nothing
-  idToDrawable_.emplace(drawable.getDrawableId(), &drawable);
-  return *this;
+  if (idToDrawable_.emplace(drawable.getDrawableId(), &drawable).second) {
+    return true;
+  }
+  return false;
 }
 bool DrawableGroup::unregisterDrawable(Drawable& drawable) {
   // if it is not registered, erase will do nothing
