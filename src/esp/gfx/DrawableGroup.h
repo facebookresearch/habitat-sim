@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <Corrade/Containers/Optional.h>
 #include <Magnum/SceneGraph/Drawable.h>
 #include <Magnum/SceneGraph/FeatureGroup.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
