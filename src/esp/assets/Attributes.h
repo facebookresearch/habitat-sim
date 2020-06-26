@@ -30,6 +30,8 @@ class AbstractAttributes : public esp::core::Configuration {
     setAttributesClassKey(attributesClassKey);
     setOriginHandle(originHandle);
   }
+
+  virtual ~AbstractAttributes() = default;
   /**
    * @brief Get this attributes' class.  Should only be set from constructor.
    * Used as key in constructor function pointer maps in AttributesManagers.
@@ -42,7 +44,7 @@ class AbstractAttributes : public esp::core::Configuration {
    * such cases this should be overridden with NOP.
    * @param originHandle the handle to set.
    */
-  void setOriginHandle(const std::string& originHandle) {
+  virtual void setOriginHandle(const std::string& originHandle) {
     setString("originHandle", originHandle);
   }
   std::string getOriginHandle() const { return getString("originHandle"); }
@@ -51,6 +53,18 @@ class AbstractAttributes : public esp::core::Configuration {
     setInt("objectTemplateID", objectTemplateID);
   }
   int getObjectTemplateID() const { return getInt("objectTemplateID"); }
+
+  /**
+   * @brief Returns configuration to be used with PrimitiveImporter to
+   * instantiate Primitives.  Names in getter/setters chosen to match parameter
+   * name expectations in PrimitiveImporter.
+   *
+   * @return a reference to the underlying configuration group for this
+   * attributes object
+   */
+  const Corrade::Utility::ConfigurationGroup& getConfigGroup() const {
+    return cfg;
+  }
 
  protected:
   /**
@@ -76,9 +90,8 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
  public:
   AbstractPhysicsAttributes(const std::string& classKey,
                             const std::string& originHandle);
-  // forcing this class to be abstract - note still needs definition
-  // can't do this because of pybind issues, currently
-  // virtual ~AbstractPhysAttributes() = 0;
+
+  virtual ~AbstractPhysicsAttributes() = default;
 
   void setScale(const Magnum::Vector3& scale) { setVec3("scale", scale); }
   Magnum::Vector3 getScale() const { return getVec3("scale"); }
@@ -175,6 +188,12 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
   // center of mass (COM)
   void setCOM(const Magnum::Vector3& com) { setVec3("COM", com); }
   Magnum::Vector3 getCOM() const { return getVec3("COM"); }
+
+  // whether com is provided or not
+  void setComputeCOMFromShape(bool computeCOMFromShape) {
+    setBool("computeCOMFromShape", computeCOMFromShape);
+  }
+  bool getComputeCOMFromShape() const { return getBool("computeCOMFromShape"); }
 
   // collision shape inflation margin
   void setMargin(double margin) { setDouble("margin", margin); }
@@ -317,13 +336,12 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     }
   }  // ctor
 
-  // forcing this class to be abstract - note still needs definition of
-  // destructor : Cannot use this due to pybind issues
-  virtual ~AbstractPrimitiveAttributes() {}
+  // necessary since abstract
+  virtual ~AbstractPrimitiveAttributes() = default;
 
   // originHandle is set internally based on attributes configuration
   // setting externally is prohibited
-  void setOriginHandle(const std::string&) {}
+  void setOriginHandle(const std::string&) override {}
 
   bool getIsWireframe() const { return getBool("isWireframe"); }
 
@@ -362,15 +380,6 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   // capsule, cone and cylinder use halfLength
   void setHalfLength(double halfLength) { setDouble("halfLength", halfLength); }
   double getHalfLength() const { return getDouble("halfLength"); }
-
-  /**
-   * @brief Returns configuration to be used with PrimitiveImporter to
-   * instantiate Primitives.  Names in getter/setters chosen to match parameter
-   * name expectations in PrimitiveImporter.
-   *
-   * @return the underlying configuration group for this attributes object
-   */
-  Corrade::Utility::ConfigurationGroup getConfigGroup() const { return cfg; }
 
   std::string getPrimObjClassName() const {
     return getString("primObjClassName");
@@ -459,7 +468,7 @@ class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
    * @return whether or not the template holds valid data for desired primitive
    * type
    */
-  virtual bool isValidTemplate() override {
+  bool isValidTemplate() override {
     bool wfCheck =
         ((getIsWireframe() && isValueMultipleOfDivisor(getNumSegments(), 4)) ||
          (!getIsWireframe() && getNumSegments() > 2));
@@ -469,7 +478,7 @@ class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
   }
 
  protected:
-  virtual std::string buildOriginHandleDetail() override {
+  std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_hemiRings_" << getHemisphereRings() << "_cylRings_"
               << getCylinderRings() << "_segments_" << getNumSegments()
@@ -504,7 +513,7 @@ class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
    * @return whether or not the template holds valid data for desired primitive
    * type
    */
-  virtual bool isValidTemplate() override {
+  bool isValidTemplate() override {
     bool wfCheck =
         ((getIsWireframe() && isValueMultipleOfDivisor(getNumSegments(), 4)) ||
          (!getIsWireframe() && getNumSegments() > 2 && getNumRings() > 0));
@@ -513,7 +522,7 @@ class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
   }
 
  protected:
-  virtual std::string buildOriginHandleDetail() override {
+  std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_segments_" << getNumSegments() << "_halfLen_"
               << getHalfLength();
@@ -549,10 +558,10 @@ class CubePrimitiveAttributes : public AbstractPrimitiveAttributes {
    * @return whether or not the template holds valid data for desired primitive
    * type
    */
-  virtual bool isValidTemplate() override { return true; }
+  bool isValidTemplate() override { return true; }
 
  protected:
-  virtual std::string buildOriginHandleDetail() override { return ""; }
+  std::string buildOriginHandleDetail() override { return ""; }
 
  public:
   ESP_SMART_POINTERS(CubePrimitiveAttributes)
@@ -577,7 +586,7 @@ class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
    * @return whether or not the template holds valid data for desired primitive
    * type
    */
-  virtual bool isValidTemplate() override {
+  bool isValidTemplate() override {
     bool wfCheck =
         ((getIsWireframe() && isValueMultipleOfDivisor(getNumSegments(), 4)) ||
          (!getIsWireframe() && getNumSegments() > 2));
@@ -585,7 +594,7 @@ class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
   }
 
  protected:
-  virtual std::string buildOriginHandleDetail() override {
+  std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_rings_" << getNumRings() << "_segments_" << getNumSegments()
               << "_halfLen_" << getHalfLength();
@@ -631,12 +640,12 @@ class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
    * @return whether or not the template holds valid data for desired primitive
    * type
    */
-  virtual bool isValidTemplate() override {
+  bool isValidTemplate() override {
     return (getIsWireframe() || (!getIsWireframe() && getSubdivisions() >= 0));
   }
 
  protected:
-  virtual std::string buildOriginHandleDetail() override {
+  std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     // wireframe subdivision currently does not change
     // but think about the possibilities.
@@ -660,7 +669,7 @@ class UVSpherePrimitiveAttributes : public AbstractPrimitiveAttributes {
    * @return whether or not the template holds valid data for desired primitive
    * type
    */
-  virtual bool isValidTemplate() override {
+  bool isValidTemplate() override {
     return ((getIsWireframe() &&
              isValueMultipleOfDivisor(getNumSegments(), 4) &&
              isValueMultipleOfDivisor(getNumRings(), 2)) ||
@@ -668,7 +677,7 @@ class UVSpherePrimitiveAttributes : public AbstractPrimitiveAttributes {
   }
 
  protected:
-  virtual std::string buildOriginHandleDetail() override {
+  std::string buildOriginHandleDetail() override {
     std::ostringstream oHndlStrm;
     oHndlStrm << "_rings_" << getNumRings() << "_segments_" << getNumSegments();
     if (!getIsWireframe()) {

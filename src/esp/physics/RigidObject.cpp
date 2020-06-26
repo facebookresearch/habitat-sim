@@ -10,9 +10,8 @@ namespace physics {
 RigidObject::RigidObject(scene::SceneNode* rigidBodyNode)
     : RigidBase(rigidBodyNode), velControl_(VelocityControl::create()) {}
 
-bool RigidObject::initialize(
-    const assets::ResourceManager& resMgr,
-    const assets::AbstractPhysicsAttributes::ptr physicsAttributes) {
+bool RigidObject::initialize(const assets::ResourceManager& resMgr,
+                             const std::string& handle) {
   if (initializationAttributes_ != nullptr) {
     LOG(ERROR) << "Cannot initialize a RigidObject more than once";
     return false;
@@ -20,17 +19,38 @@ bool RigidObject::initialize(
 
   // save a copy of the template at initialization time
   initializationAttributes_ =
-      resMgr.getObjectAttributesManager()->getTemplateCopyByHandle(
-          physicsAttributes->getOriginHandle());
+      resMgr.getObjectAttributesManager()->getTemplateCopyByHandle(handle);
 
-  return initializationFinalize(resMgr);
-}
+  return initialization_LibSpecific(resMgr);
+}  // RigidObject::initialize
 
-bool RigidObject::initializationFinalize(const assets::ResourceManager&) {
+bool RigidObject::finalizeObject() {
+  node().computeCumulativeBB();
+
+  // cast initialization attributes
+  assets::PhysicsObjectAttributes::cptr physicsObjectAttributes =
+      std::dynamic_pointer_cast<const assets::PhysicsObjectAttributes>(
+          initializationAttributes_);
+
+  if (!physicsObjectAttributes->getComputeCOMFromShape()) {
+    // will be false if the COM is provided; shift by that COM
+    Magnum::Vector3 comShift = -physicsObjectAttributes->getCOM();
+    // first apply scale
+    comShift = physicsObjectAttributes->getScale() * comShift;
+    shiftOrigin(comShift);
+  } else {
+    // otherwise use the bounding box center
+    shiftOriginToBBCenter();
+  }
+  // finish object by instancing any dynamics library-specific code required
+  return finalizeObject_LibSpecific();
+}  // RigidObject::finalizeObject
+
+bool RigidObject::initialization_LibSpecific(const assets::ResourceManager&) {
   // default kineamtic unless a simulator is initialized...
   objectMotionType_ = MotionType::KINEMATIC;
   return true;
-}
+}  // RigidObject::initialization_LibSpecific
 
 bool RigidObject::setMotionType(MotionType mt) {
   if (mt != MotionType::DYNAMIC) {

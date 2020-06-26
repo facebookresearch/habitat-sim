@@ -17,9 +17,7 @@
 #include <btBulletDynamicsCommon.h>
 
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
-//#include "esp/assets/Asset.h"
-//#include "esp/assets/BaseMesh.h"
-//#include "esp/assets/MeshMetaData.h"
+
 #include "esp/core/esp.h"
 
 #include "esp/physics/RigidObject.h"
@@ -55,18 +53,22 @@ class BulletRigidObject : public BulletBase,
 
   /**
    * @brief Finalize this object with any necessary post-creation processes.
+   * @return whether successful finalization.
    */
-  virtual void finalizeObject() override;
+  bool finalizeObject_LibSpecific() override;
 
   /**
    * @brief Instantiate a bullet primtive appropriate for the passed
    * AbstractPrimitiveAttributes object
-   * @param primAttributes the AbstractPrimitiveAttributes describing the
-   * desired object
+   * @param primTypeVal int value corresponding to assets::PrimObjTypes enum
+   * describing primitive collision shape.
+   * @param halfLength half length of object, for primitives using this value
    * @return a unique pointer to the bullet primitive object
    */
   std::unique_ptr<btCollisionShape> buildPrimitiveCollisionObject(
-      const assets::AbstractPrimitiveAttributes& primAttributes);
+      int primTypeVal,
+      double halfLength);
+  // const assets::AbstractPrimitiveAttributes& primAttributes);
 
   /**
    * @brief Recursively construct a @ref btCompoundShape for collision from
@@ -109,7 +111,7 @@ class BulletRigidObject : public BulletBase,
    * @param mt The desirved @ref MotionType.
    * @return true if successfully set, false otherwise.
    */
-  virtual bool setMotionType(MotionType mt) override;
+  bool setMotionType(MotionType mt) override;
 
   /**
    * @brief Shift the object's local origin by translating all children of this
@@ -418,13 +420,13 @@ class BulletRigidObject : public BulletBase,
  private:
   /**
    * @brief Finalize initialization of this @ref BulletRigidObject as a @ref
-   * MotionType::DYNAMIC object. See @ref btRigidBody.
+   * MotionType::DYNAMIC object. See @ref btRigidBody. This holds
+   * bullet-specific functionality for objects.
    * @param resMgr Reference to resource manager, to access relevant components
    * pertaining to the scene object
    * @return true if initialized successfully, false otherwise.
    */
-
-  virtual bool initializationFinalize(
+  bool initialization_LibSpecific(
       const assets::ResourceManager& resMgr) override;
 
  protected:

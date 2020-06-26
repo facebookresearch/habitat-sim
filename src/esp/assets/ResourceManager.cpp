@@ -105,7 +105,8 @@ void ResourceManager::initDefaultPrimAttributes() {
   // wireframe cube no differently than other primivite-based rendered
   // objects)
   auto cubeMeshName =
-      assetAttributesManager_->getTemplateByHandle("cubeWireframe")
+      assetAttributesManager_
+          ->getTemplateCopyByHandle<CubePrimitiveAttributes>("cubeWireframe")
           ->getPrimObjClassName();
 
   auto wfCube = primitiveImporter_->mesh(cubeMeshName);
@@ -316,7 +317,7 @@ bool ResourceManager::loadPhysicsScene(
     //! Add scene meshgroup to collision mesh groups
     collisionMeshGroups_.emplace(filename, meshGroup);
     //! Initialize collision mesh
-    bool sceneSuccess = _physicsManager->addScene(physSceneLib, meshGroup);
+    bool sceneSuccess = _physicsManager->addScene(filename, meshGroup);
     if (!sceneSuccess) {
       return false;
     }
@@ -1186,9 +1187,13 @@ bool ResourceManager::instantiateAssetsOnDemand(
   PhysicsObjectAttributes::ptr physicsObjectAttributes =
       objectAttributesManager_->getTemplateByHandle(objectTemplateHandle);
 
-  // if attributes are "dirty" (values have changed since last registered)
-  // then re-register.  Should never return ID_UNDEFINED - this would mean
-  // something has corrupted the library.
+  // if attributes are "dirty" (important values have changed since last
+  // registered) then re-register.  Should never return ID_UNDEFINED - this
+  // would mean something has corrupted the library.
+  // NOTE : this is called when an new object is being made, but before the
+  // object has acquired a copy of its parent attributes.  No object should ever
+  // have a copy of attributes with isDirty == true - any editing of attributes
+  // for objects requires object rebuilding.
   if (physicsObjectAttributes->getIsDirty()) {
     CORRADE_ASSERT(
         (ID_UNDEFINED != objectAttributesManager_->registerAttributesTemplate(

@@ -97,7 +97,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
 
     // get a reference to the stored template to edit
     esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
-        objectAttributesManager->getTemplateByHandle(objectFile);
+        objectAttributesManager->getTemplateCopyByHandle(objectFile);
 
     for (int i = 0; i < 2; i++) {
       // mark the object not joined
@@ -106,7 +106,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
       } else {
         objectTemplate->setJoinCollisionMeshes(true);
       }
-
+      objectAttributesManager->registerAttributesTemplate(objectTemplate);
       physicsManager_->reset();
 
       std::vector<int> objectIds;
@@ -180,7 +180,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
 
     // get a reference to the stored template to edit
     esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
-        objectAttributesManager->getTemplateByHandle(objectFile);
+        objectAttributesManager->getTemplateCopyByHandle(objectFile);
 
     for (int i = 0; i < 2; i++) {
       if (i == 0) {
@@ -188,7 +188,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
       } else {
         objectTemplate->setBoundingBoxCollisions(true);
       }
-
+      objectAttributesManager->registerAttributesTemplate(objectTemplate);
       physicsManager_->reset();
 
       int objectId = physicsManager_->addObject(
@@ -299,20 +299,23 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
 
     // get a reference to the stored template to edit
     esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
-        objectAttributesManager->getTemplateByHandle(objectFile);
+        objectAttributesManager->getTemplateCopyByHandle(objectFile);
 
     auto* drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
     // add the unjoined object
     objectTemplate->setJoinCollisionMeshes(false);
+    objectAttributesManager->registerAttributesTemplate(objectTemplate);
     int objectId0 = physicsManager_->addObject(objectFile, drawables);
 
     // add the joined object
     objectTemplate->setJoinCollisionMeshes(true);
+    objectAttributesManager->registerAttributesTemplate(objectTemplate);
     int objectId1 = physicsManager_->addObject(objectFile, drawables);
 
     // add bounding box object
     objectTemplate->setBoundingBoxCollisions(true);
+    objectAttributesManager->registerAttributesTemplate(objectTemplate);
     int objectId2 = physicsManager_->addObject(objectFile, drawables);
 
     esp::physics::BulletPhysicsManager* bPhysManager =
@@ -360,7 +363,7 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
 
   // get a reference to the stored template to edit
   esp::assets::PhysicsObjectAttributes::ptr objectTemplate =
-      objectAttributesManager->getTemplateByHandle(objectFile);
+      objectAttributesManager->getTemplateCopyByHandle(objectFile);
 
   std::vector<Magnum::Vector3> testScales{
       {1.0, 1.0, 1.0},  {4.0, 3.0, 2.0},    {0.1, 0.2, 0.3},
@@ -372,6 +375,7 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   std::vector<int> objectIDs;
   for (auto& testScale : testScales) {
     objectTemplate->setScale(testScale);
+    objectAttributesManager->registerAttributesTemplate(objectTemplate);
 
     Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
 

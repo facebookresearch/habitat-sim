@@ -127,14 +127,13 @@ class PhysicsManager {
    * Only one 'scene' may be initialized per simulated world, but this scene may
    * contain several components (e.g. GLB heirarchy).
    *
-   * @param physicsSceneAttributes a pointer to the structure defining physical
+   * @param handle The handle to the attributes structure defining physical
    * properties of the scene.
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
-  bool addScene(
-      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
-      const std::vector<assets::CollisionMeshData>& meshGroup);
+  bool addScene(const std::string& handle,
+                const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::assets::ResourceManager::physicsObjectLibrary_.
@@ -869,29 +868,27 @@ class PhysicsManager {
    * @brief Finalize scene initialization for kinematic scenes.  Overidden by
    * instancing class if physics is supported.
    *
-   * @param physicsSceneAttributes a pointer to the structure defining physical
+   * @param handle the handle to the attributes structure defining physical
    * properties of the scene.
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
 
-  virtual bool addSceneFinalize(
-      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes);
+  virtual bool addSceneFinalize(const std::string& handle);
 
   /** @brief Create and initialize a @ref RigidObject, assign it an ID and add
    * it to existingObjects_ map keyed with newObjectID
    * @param newObjectID valid object ID for the new object
    * @param meshGroup The object's mesh.
-   * @param physicsObjectAttributes The physical object's template defining its
+   * @param handle The handle to the physical object's template defining its
    * physical parameters.
    * @param objectNode Valid, existing scene node
    * @return whether the object has been successfully initialized and added to
    * existingObjects_ map
    */
-  virtual bool makeAndAddRigidObject(
-      int newObjectID,
-      assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-      scene::SceneNode* objectNode);
+  virtual bool makeAndAddRigidObject(int newObjectID,
+                                     const std::string& handle,
+                                     scene::SceneNode* objectNode);
 
   /** @brief A reference to a @ref esp::assets::ResourceManager which holds
    * assets that can be accessed by this @ref PhysicsManager*/

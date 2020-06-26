@@ -33,7 +33,7 @@ PhysicsManager::~PhysicsManager() {
 }
 
 bool PhysicsManager::addScene(
-    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
+    const std::string& handle,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
   for (const assets::CollisionMeshData& meshData : meshGroup) {
@@ -43,15 +43,13 @@ bool PhysicsManager::addScene(
   }
 
   //! Initialize scene
-  bool sceneSuccess = addSceneFinalize(physicsSceneAttributes);
+  bool sceneSuccess = addSceneFinalize(handle);
   return sceneSuccess;
 }
 
-bool PhysicsManager::addSceneFinalize(
-    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes) {
+bool PhysicsManager::addSceneFinalize(const std::string& handle) {
   //! Initialize scene
-  bool sceneSuccess =
-      staticSceneObject_->initialize(resourceManager_, physicsSceneAttributes);
+  bool sceneSuccess = staticSceneObject_->initialize(resourceManager_, handle);
   return sceneSuccess;
 }
 
@@ -72,9 +70,6 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
                               const Magnum::ResourceKey& lightSetup) {
   //! Invoke resourceManager to draw object
   //! Test Mesh primitive is valid
-  assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
-      resourceManager_.getObjectAttributesManager()->getTemplateByHandle(
-          configFileHandle);
 
   //! Make rigid object and add it to existingObjects
   int nextObjectID_ = allocateObjectID();
@@ -85,15 +80,24 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
   // verify whether necessary assets exist, and if not, instantiate them
   // only make object if asset instantiation succeeds (short circuit)
   bool objectSuccess =
-      resourceManager_.instantiateAssetsOnDemand(configFileHandle) &&
-      makeAndAddRigidObject(nextObjectID_, physicsObjectAttributes, objectNode);
+      resourceManager_.instantiateAssetsOnDemand(configFileHandle);
+  if (!objectSuccess) {
+    LOG(ERROR) << "PhysicsManager::addObject : "
+                  "ResourceManager::instantiateAssetsOnDemand unsuccessful. "
+                  "Aborting.";
+    return ID_UNDEFINED;
+  }
+
+  objectSuccess =
+      makeAndAddRigidObject(nextObjectID_, configFileHandle, objectNode);
 
   if (!objectSuccess) {
     deallocateObjectID(nextObjectID_);
     if (attachmentNode == nullptr) {
       delete objectNode;
     }
-    LOG(ERROR) << "makeRigidObject unsuccessful";
+    LOG(ERROR) << "PhysicsManager::addObject : PhysicsManager::makeRigidObject "
+                  "unsuccessful.  Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -102,21 +106,15 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
   resourceManager_.addObjectToDrawables(
       configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
       drawables, lightSetup);
-  existingObjects_.at(nextObjectID_)->node().computeCumulativeBB();
-
-  if (physicsObjectAttributes->hasValue("COM_provided")) {
-    // if the COM is provided, shift by that
-    Magnum::Vector3 comShift = -physicsObjectAttributes->getCOM();
-    // first apply scale
-    comShift = physicsObjectAttributes->getScale() * comShift;
-    existingObjects_.at(nextObjectID_)->shiftOrigin(comShift);
-  } else {
-    // otherwise use the bounding box center
-    existingObjects_.at(nextObjectID_)->shiftOriginToBBCenter();
-  }
 
   // finalize rigid object creation
-  existingObjects_.at(nextObjectID_)->finalizeObject();
+  objectSuccess = existingObjects_.at(nextObjectID_)->finalizeObject();
+  if (!objectSuccess) {
+    removeObject(nextObjectID_, true, true);
+    LOG(ERROR) << "PhysicsManager::addObject : PhysicsManager::finalizeObject "
+                  "unsuccessful.  Aborting.";
+    return ID_UNDEFINED;
+  }
 
   return nextObjectID_;
 }
@@ -162,12 +160,11 @@ int PhysicsManager::deallocateObjectID(int physObjectID) {
   return physObjectID;
 }
 
-bool PhysicsManager::makeAndAddRigidObject(
-    int newObjectID,
-    assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-    scene::SceneNode* objectNode) {
+bool PhysicsManager::makeAndAddRigidObject(int newObjectID,
+                                           const std::string& handle,
+                                           scene::SceneNode* objectNode) {
   auto ptr = physics::RigidObject::create_unique(objectNode);
-  bool objSuccess = ptr->initialize(resourceManager_, physicsObjectAttributes);
+  bool objSuccess = ptr->initialize(resourceManager_, handle);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }
@@ -543,8 +540,7 @@ const scene::SceneNode& PhysicsManager::getObjectVisualSceneNode(
 const assets::PhysicsObjectAttributes::cptr
 PhysicsManager::getInitializationAttributes(const int physObjectID) const {
   assertIDValidity(physObjectID);
-  return std::static_pointer_cast<const assets::PhysicsObjectAttributes>(
-      existingObjects_.at(physObjectID)->getInitializationAttributes());
+  return existingObjects_.at(physObjectID)->getInitializationAttributes();
 }
 
 }  // namespace physics

@@ -47,6 +47,7 @@ PhysicsObjectAttributes::PhysicsObjectAttributes(
   setRenderAssetIsPrimitive(false);
   setCollisionAssetIsPrimitive(false);
   setUseMeshCollision(true);
+  setComputeCOMFromShape(true);
 
   setBoundingBoxCollisions(false);
   setJoinCollisionMeshes(true);
