@@ -36,6 +36,7 @@ namespace managers {
 template <class AttribsPtr>
 class AttributesManager {
  public:
+  explicit AttributesManager() {}
   virtual ~AttributesManager() = default;
 
   /**
@@ -68,14 +69,14 @@ class AttributesManager {
    * @param attributesTemplateHandle The key for referencing the template in the
    * @ref templateLibrary_. Will be set as origin handle for template.  If empty
    * string, use existing origin handle.
-   * @return The index in the @ref templateLibrary_ of object template.
+   * @return The index the template.
    */
   int registerAttributesTemplate(
       AttribsPtr attributesTemplate,
       const std::string& attributesTemplateHandle = "") {
     std::string handleToSet = attributesTemplateHandle;
     if ("" == handleToSet) {
-      handleToSet = attributesTemplate->getOriginHandle();
+      handleToSet = attributesTemplate->getHandle();
       if ("" == handleToSet) {
         LOG(ERROR) << "AttributesManager::registerAttributesTemplate : No "
                       "valid handle specified for attributes template to "
@@ -85,6 +86,22 @@ class AttributesManager {
     }
     return registerAttributesTemplateFinalize(attributesTemplate, handleToSet);
   }  // AttributesManager::registerAttributesTemplate
+
+  /**
+   * @brief Register template and call ResourceManager method to execute
+   * post-registration processes on attributes. Use if user wishes to update
+   * existing objects built by attributes with new attributes data.  Requires
+   * the use of Attributes' assigned handle in order to reference existing
+   * constructions built from the original version of this attributes.
+   * @param attributesTemplate The attributes template.
+   * @return The index the template.
+   */
+  int registerAttributesTemplateAndUpdate(AttribsPtr attributesTemplate) {
+    int ID = registerAttributesTemplate(attributesTemplate,
+                                        attributesTemplate->getHandle());
+
+    return ID;
+  }
 
   /**
    * @brief clears maps of handle-keyed attributes and ID-keyed handles.
@@ -348,7 +365,7 @@ class AttributesManager {
   int getTemplateIDByHandle(const std::string& templateHandle,
                             bool getNext = false) {
     if (getTemplateLibHasHandle(templateHandle)) {
-      return templateLibrary_.at(templateHandle)->getObjectTemplateID();
+      return templateLibrary_.at(templateHandle)->getID();
     } else {
       if (!getNext) {
         LOG(ERROR) << "AttributesManager::getTemplateIDByHandle : No template "
@@ -449,11 +466,11 @@ class AttributesManager {
   int addTemplateToLibrary(AttribsPtr attributesTemplate,
                            const std::string& attributesHandle) {
     // set handle for template - might not have been set during construction
-    attributesTemplate->setOriginHandle(attributesHandle);
+    attributesTemplate->setHandle(attributesHandle);
     // return either the ID of the existing template referenced by
     // attributesHandle, or the next available ID if not found.
     int attributesTemplateID = getTemplateIDByHandle(attributesHandle, true);
-    attributesTemplate->setObjectTemplateID(attributesTemplateID);
+    attributesTemplate->setID(attributesTemplateID);
     // make a copy of this attributes so that user can continue to edit original
     AttribsPtr attributesTemplateCopy = copyAttributes(attributesTemplate);
     // add to libraries
@@ -554,7 +571,7 @@ T AttributesManager<T>::_removeTemplateInternal(
   }
 
   T attribsTemplate = getTemplateCopyByHandle(templateHandle);
-  int templateID = attribsTemplate->getObjectTemplateID();
+  int templateID = attribsTemplate->getID();
   templateLibKeyByID_.erase(templateID);
   templateLibrary_.erase(templateHandle);
   availableTemplateIDs_.emplace_front(templateID);

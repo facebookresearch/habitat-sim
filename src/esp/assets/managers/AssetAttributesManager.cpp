@@ -104,7 +104,7 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
       continue;
     }
     auto tmplt = createAttributesTemplate(elem.second, true);
-    std::string tmpltHandle = tmplt->getOriginHandle();
+    std::string tmpltHandle = tmplt->getHandle();
     defaultPrimAttributeHandles_[elem.second] = tmpltHandle;
     defaultTemplateNames.push_back(tmpltHandle);
   }
@@ -117,7 +117,7 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
 int AssetAttributesManager::registerAttributesTemplateFinalize(
     AbstractPrimitiveAttributes::ptr primAttributesTemplate,
     const std::string&) {
-  std::string primAttributesHandle = primAttributesTemplate->getOriginHandle();
+  std::string primAttributesHandle = primAttributesTemplate->getHandle();
   // verify that attributes has been edited in a legal manner
   if (!primAttributesTemplate->isValidTemplate()) {
     LOG(ERROR)

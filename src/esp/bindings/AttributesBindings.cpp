@@ -21,10 +21,9 @@ void initAttributesBindings(py::module& m) {
              AbstractAttributes::ptr>(m, "AbstractAttributes")
       .def(py::init(
           &AbstractAttributes::create<const std::string&, const std::string&>))
-      .def_property("origin_handle", &AbstractAttributes::getOriginHandle,
-                    &AbstractAttributes::setOriginHandle)
-      .def_property_readonly("template_ID",
-                             &AbstractAttributes::getObjectTemplateID)
+      .def_property("handle", &AbstractAttributes::getHandle,
+                    &AbstractAttributes::setHandle)
+      .def_property_readonly("ID", &AbstractAttributes::getID)
       .def_property_readonly("template_class",
                              &AbstractAttributes::getClassKey);
 
