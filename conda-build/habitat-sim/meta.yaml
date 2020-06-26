@@ -23,6 +23,7 @@ requirements:
     - attrs>=19.1.0
     - numba
     - numpy>=1.13
+    - gitpython
     - quaternion
     - pillow
     - scipy>=1.3.0
@@ -41,6 +42,7 @@ requirements:
 
   run:
     - python x.x
+    - gitpython
     - attrs>=19.1.0
     - numba
     - numpy>=1.13

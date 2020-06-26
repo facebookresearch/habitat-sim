@@ -40,8 +40,8 @@ def build_parser():
 def main():
     args = build_parser().parse_args()
     py_vers = ["3.6"]
-    bullet_modes = [True, False][1:]
-    headless_modes = [True, False][0:1]
+    bullet_modes = [True, False]
+    headless_modes = [True, False]
     cuda_vers = [None, "9.2", "10.0"][0:1]
 
     for py_ver, use_bullet, headless, cuda_ver in itertools.product(
@@ -65,9 +65,8 @@ def main():
         if use_bullet:
             build_string += "bullet_"
             env["CONDA_BULLET"] = "- bullet"
+            env["CONDA_BULLET_FEATURE"] = "- withbullet"
             env["WITH_BULLET"] = "1"
-        else:
-            env["CONDA_BULLET"] = ""
 
         if cuda_ver is not None:
             build_string += f"cuda{cuda_ver}_"
