@@ -396,7 +396,7 @@ std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
               << objPhysPropertiesFilename;
     auto tmplt =
         createFileBasedAttributesTemplate(objPhysPropertiesFilename, true);
-    resIDs[i] = tmplt->getObjectTemplateID();
+    resIDs[i] = tmplt->getID();
   }
   LOG(INFO) << "Loaded file-based object templates: "
             << std::to_string(physicsFileObjTmpltLibByID_.size());

@@ -74,8 +74,8 @@ def test_physics_object_attributes():
     assert physics_object_template.linear_damping == 1.567
     physics_object_template.angular_damping = 1.678
     assert physics_object_template.angular_damping == 1.678
-    physics_object_template.origin_handle = "origin"
-    assert physics_object_template.origin_handle == "origin"
+    physics_object_template.handle = "origin"
+    assert physics_object_template.handle == "origin"
     physics_object_template.render_asset_handle = "render_mesh"
     assert physics_object_template.render_asset_handle == "render_mesh"
     physics_object_template.collision_asset_handle="collision_mesh"
