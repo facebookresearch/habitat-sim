@@ -24,7 +24,7 @@ bool RigidObject::initialize(const assets::ResourceManager& resMgr,
   return initialization_LibSpecific(resMgr);
 }  // RigidObject::initialize
 
-void RigidObject::finalizeObject() {
+bool RigidObject::finalizeObject() {
   node().computeCumulativeBB();
 
   // cast initialization attributes
@@ -32,8 +32,8 @@ void RigidObject::finalizeObject() {
       std::dynamic_pointer_cast<const assets::PhysicsObjectAttributes>(
           initializationAttributes_);
 
-  if (physicsObjectAttributes->getCOMIsProvided()) {
-    // if the COM is provided, shift by that
+  if (!physicsObjectAttributes->getComputeCOMFromShape()) {
+    // will be false if the COM is provided; shift by that COM
     Magnum::Vector3 comShift = -physicsObjectAttributes->getCOM();
     // first apply scale
     comShift = physicsObjectAttributes->getScale() * comShift;
@@ -43,7 +43,7 @@ void RigidObject::finalizeObject() {
     shiftOriginToBBCenter();
   }
   // finish object by instancing any dynamics library-specific code required
-  finalizeObject_LibSpecifc();
+  return finalizeObject_LibSpecific();
 }  // RigidObject::finalizeObject
 
 bool RigidObject::initialization_LibSpecific(const assets::ResourceManager&) {

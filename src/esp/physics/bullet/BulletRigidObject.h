@@ -53,8 +53,9 @@ class BulletRigidObject : public BulletBase,
 
   /**
    * @brief Finalize this object with any necessary post-creation processes.
+   * @return whether successful finalization.
    */
-  void finalizeObject_LibSpecifc() override;
+  bool finalizeObject_LibSpecific() override;
 
   /**
    * @brief Instantiate a bullet primtive appropriate for the passed

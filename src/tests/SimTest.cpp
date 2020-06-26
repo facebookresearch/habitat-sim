@@ -576,7 +576,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
   // empty vector of handles
   primObjAssetHandles.clear();
   {
-    // test creation off new object, using edited attributes
+    // test creation of new object, using edited attributes
     // get existing default cylinder handle
     primObjAssetHandles = assetAttribsMgr->getTemplateHandlesByPrimType(
         esp::assets::PrimObjTypes::CYLINDER_SOLID);

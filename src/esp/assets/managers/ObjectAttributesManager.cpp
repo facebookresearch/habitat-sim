@@ -241,7 +241,7 @@ ObjectAttributesManager::parseAndLoadPhysObjTemplate(
       physicsObjectAttributes->setCOM(COM);
       // set a flag which we can find later so we don't override the desired
       // COM with BB center.
-      physicsObjectAttributes->setCOMIsProvided(true);
+      physicsObjectAttributes->setComputeCOMFromShape(false);
     }
   }
 

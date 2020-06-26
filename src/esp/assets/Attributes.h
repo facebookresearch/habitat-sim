@@ -190,10 +190,10 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
   Magnum::Vector3 getCOM() const { return getVec3("COM"); }
 
   // whether com is provided or not
-  void setCOMIsProvided(bool COMIsProvided) {
-    setBool("COMIsProvided", COMIsProvided);
+  void setComputeCOMFromShape(bool computeCOMFromShape) {
+    setBool("computeCOMFromShape", computeCOMFromShape);
   }
-  bool getCOMIsProvided() const { return getBool("COMIsProvided"); }
+  bool getComputeCOMFromShape() const { return getBool("computeCOMFromShape"); }
 
   // collision shape inflation margin
   void setMargin(double margin) { setDouble("margin", margin); }

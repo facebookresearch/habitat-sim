@@ -143,10 +143,11 @@ bool BulletRigidObject::initialization_LibSpecific(
   return true;
 }  // initialization_LibSpecific
 
-void BulletRigidObject::finalizeObject_LibSpecifc() {
+bool BulletRigidObject::finalizeObject_LibSpecific() {
   if (usingBBCollisionShape_) {
     setCollisionFromBB();
   }
+  return true;
 }  // finalizeObject_LibSpecifc
 
 std::unique_ptr<btCollisionShape>

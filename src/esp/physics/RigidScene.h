@@ -47,8 +47,9 @@ class RigidScene : public RigidBase {
   };
   /**
    * @brief Finalize the creation of this @ref RigidScene
+   * @return whether successful finalization.
    */
-  void finalizeObject() override { finalizeObject_LibSpecifc(); }
+  bool finalizeObject() override { return finalizeObject_LibSpecific(); }
 
  private:
   /**
@@ -69,8 +70,9 @@ class RigidScene : public RigidBase {
    * after@ref RigidScene is created.  Called from finalizeObject.  Overridden
    * by inheriting class specific to certain physics libraries. Necessary to
    * support kinematic objects without any dynamics support.
+   * @return whether successful finalization.
    */
-  void finalizeObject_LibSpecifc() override {}
+  bool finalizeObject_LibSpecific() override { return true; }
 
  public:
   /**

@@ -107,8 +107,14 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
       configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
       drawables, lightSetup);
 
-  // // finalize rigid object creation
-  existingObjects_.at(nextObjectID_)->finalizeObject();
+  // finalize rigid object creation
+  objectSuccess = existingObjects_.at(nextObjectID_)->finalizeObject();
+  if (!objectSuccess) {
+    removeObject(nextObjectID_, true, true);
+    LOG(ERROR) << "PhysicsManager::addObject : PhysicsManager::finalizeObject "
+                  "unsuccessful.  Aborting.";
+    return ID_UNDEFINED;
+  }
 
   return nextObjectID_;
 }

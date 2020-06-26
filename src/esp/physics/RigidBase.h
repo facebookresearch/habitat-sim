@@ -101,8 +101,9 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Finalize the creation of @ref RigidObject or @ref RigidScene that
    * inherits from this class.
+   * @return whether successful finalization.
    */
-  virtual void finalizeObject() = 0;
+  virtual bool finalizeObject() = 0;
 
  private:
   /**
@@ -117,8 +118,9 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief any physics-lib-specific finalization code that needs to be run
    * after @ref RigidObject or @ref RigidScene is created.
+   * @return whether successful finalization.
    */
-  virtual void finalizeObject_LibSpecifc() = 0;
+  virtual bool finalizeObject_LibSpecific() = 0;
 
  public:
   /**
