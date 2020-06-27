@@ -91,6 +91,7 @@ def main():
         build_string += "_" + sha
 
         env["HSIM_BUILD_STRING"] = build_string
+        print(f"ENVIRONMENT VARIABLES: {env}")
 
         call(
             build_cmd_template.format(PY_VER=py_ver, OUTPUT_FOLDER="hsim-linux"),

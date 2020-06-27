@@ -260,17 +260,6 @@ jobs:
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
               python setup.py install --headless
-    # Will be moved to nightly runs
-      - run:
-          name: Build conda Linux packages
-          command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat;
-              cd habitat-sim
-              conda install -y anaconda-client git ninja conda-build=3.18.9 # last version that works with our setup
-              rm -rf build
-              cd conda-build
-              python linux_matrix_builder.py
       - run:
           name: run clang-tidy
           command: |
@@ -450,6 +439,17 @@ jobs:
           background: true
           paths:
             - ./habitat-sim/build/docs-public
+    # Will be moved to nightly runs
+      - run:
+          name: Build conda Linux packages
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              conda install -y anaconda-client git ninja conda-build=3.18.9 # last version that works with our setup
+              rm -rf build
+              cd conda-build
+              python linux_matrix_builder.py
 
   update_docs:
     docker:
