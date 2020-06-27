@@ -92,7 +92,7 @@ jobs:
               sudo mkdir /opt/cmake
               sudo sh ./cmake-3.10.3-Linux-x86_64.sh --prefix=/opt/cmake --skip-license
               sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
-      - run:
+      - run: &install_deps
           name: Install dependencies
           no_output_timeout: 20m
           command: |
@@ -163,7 +163,7 @@ jobs:
                   lsb-release \
                   xdg-utils \
                   wget
-      - run:
+      - run: &install_conda
           name: Install cuda
           no_output_timeout: 20m
           background: true
@@ -458,21 +458,8 @@ jobs:
       - restore_cache:
           keys:
             - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
-      - run:
-          name: Install conda and dependencies
-          no_output_timeout: 20m
-          command: |
-              if [ ! -d ~/miniconda ]
-              then
-                curl -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-                chmod +x ~/miniconda.sh
-                ~/miniconda.sh -b -p $HOME/miniconda
-                rm ~/miniconda.sh
-                export PATH=$HOME/miniconda/bin:$PATH
-                conda create -y -n habitat python=3.6
-                . activate habitat
-                conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
-              fi
+      - <<: *install_conda
+      - <<: *install_deps
       - run:
           name: Build conda Linux packages
           command: |
@@ -482,8 +469,8 @@ jobs:
 
               rm -rf build
               cd conda-build
-              sudo sh common/install_conda.sh
-              python linux_matrix_builder.py --ci_test
+              conda install -y anaconda-client git gitpython ninja conda-build=3.18.9 # last version that works with our setup
+              python linux_matrix_builder.py
 
   update_docs:
     docker:
