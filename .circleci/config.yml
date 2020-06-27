@@ -439,9 +439,8 @@ jobs:
           background: true
           paths:
             - ./habitat-sim/build/docs-public
-    # Will be moved to nightly runs
       - run:
-          name: Build conda Linux packages
+          name: Build conda Linux packages for CI
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
@@ -449,7 +448,42 @@ jobs:
               conda install -y anaconda-client git ninja conda-build=3.18.9 # last version that works with our setup
               rm -rf build
               cd conda-build
-              python linux_matrix_builder.py
+              python linux_matrix_builder.py --ci_test
+
+  build_conda_binaries:
+    <<: *gpu
+    steps:
+      - checkout:
+          path: ./habitat-sim
+      - restore_cache:
+          keys:
+            - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
+      - run:
+          name: Install conda and dependencies
+          no_output_timeout: 20m
+          command: |
+              if [ ! -d ~/miniconda ]
+              then
+                curl -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+                chmod +x ~/miniconda.sh
+                ~/miniconda.sh -b -p $HOME/miniconda
+                rm ~/miniconda.sh
+                export PATH=$HOME/miniconda/bin:$PATH
+                conda create -y -n habitat python=3.6
+                . activate habitat
+                conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
+              fi
+      - run:
+          name: Build conda Linux packages
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+
+              rm -rf build
+              cd conda-build
+              sudo sh common/install_conda.sh
+              python linux_matrix_builder.py --ci_test
 
   update_docs:
     docker:
@@ -503,6 +537,7 @@ workflows:
       - cpp_lint
       - js_lint
       - install_and_test_ubuntu
+      - build_conda_binaries
   nightly:
     triggers:
       - schedule:
@@ -514,6 +549,12 @@ workflows:
     jobs:
       - install_and_test_ubuntu
       - update_docs:
+          requires:
+            - install_and_test_ubuntu
+          filters:
+            branches:
+              only: master
+      - build_conda_binaries:
           requires:
             - install_and_test_ubuntu
           filters:

@@ -33,6 +33,7 @@ def call(cmd, env=None):
 
 def build_parser():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--ci_test', help="Test package conda build during continues integration test.", action='store_false')
 
     return parser
 
@@ -43,6 +44,11 @@ def main():
     bullet_modes = [True, False]
     headless_modes = [True, False]
     cuda_vers = [None, "9.2", "10.0"][0:1]
+
+    # For CI test only one package build for test speed interest
+    if args.ci_test:
+        bullet_modes = [True]
+        headless_modes = [True]
 
     for py_ver, use_bullet, headless, cuda_ver in itertools.product(
         py_vers, bullet_modes, headless_modes, cuda_vers
@@ -91,7 +97,6 @@ def main():
         build_string += "_" + sha
 
         env["HSIM_BUILD_STRING"] = build_string
-        print(f"ENVIRONMENT VARIABLES: {env}")
 
         call(
             build_cmd_template.format(PY_VER=py_ver, OUTPUT_FOLDER="hsim-linux"),
