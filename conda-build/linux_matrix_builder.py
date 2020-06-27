@@ -67,6 +67,8 @@ def main():
             env["CONDA_BULLET"] = "- bullet"
             env["CONDA_BULLET_FEATURE"] = "- withbullet"
             env["WITH_BULLET"] = "1"
+        else:
+            env["CONDA_BULLET"] = ""
 
         if cuda_ver is not None:
             build_string += f"cuda{cuda_ver}_"
