@@ -458,8 +458,8 @@ jobs:
       - restore_cache:
           keys:
             - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
-      - <<: *install_conda
-      - <<: *install_deps
+      - run: *install_conda
+      - run: *install_deps
       - run:
           name: Build conda Linux packages
           command: |
