@@ -163,7 +163,7 @@ jobs:
                   lsb-release \
                   xdg-utils \
                   wget
-      - run: &install_conda
+      - run:
           name: Install cuda
           no_output_timeout: 20m
           background: true
@@ -177,7 +177,7 @@ jobs:
       - restore_cache:
           keys:
             - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
-      - run:
+      - run: &install_conda
           name: Install conda and dependencies
           no_output_timeout: 20m
           command: |
