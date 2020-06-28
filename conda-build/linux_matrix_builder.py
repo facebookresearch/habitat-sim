@@ -33,7 +33,7 @@ def call(cmd, env=None):
 
 def build_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ci_test', help="Test package conda build during continues integration test.", action='store_false')
+    parser.add_argument('--ci_test', help="Test package conda build during continues integration test.", action='store_true')
 
     return parser
 
