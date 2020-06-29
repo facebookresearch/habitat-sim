@@ -78,7 +78,7 @@ def test_physics_object_attributes():
     assert physics_object_template.handle == "origin"
     physics_object_template.render_asset_handle = "render_mesh"
     assert physics_object_template.render_asset_handle == "render_mesh"
-    physics_object_template.collision_asset_handle="collision_mesh"
+    physics_object_template.collision_asset_handle = "collision_mesh"
     assert physics_object_template.collision_asset_handle == "collision_mesh"
     physics_object_template.bounding_box_collisions = True
     assert physics_object_template.bounding_box_collisions == True
