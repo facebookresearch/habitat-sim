@@ -72,6 +72,8 @@ void initSceneBindings(py::module& m) {
       .def(py::init_alias<std::reference_wrapper<SceneNode>>(),
            R"(Constructor: creates a scene node, and sets its parent.)")
       .def_property("type", &SceneNode::getType, &SceneNode::setType)
+      .def_property("semantic_id", &SceneNode::getSemanticId,
+                    &SceneNode::setSemanticId)
       .def(
           "create_child", [](SceneNode& self) { return &self.createChild(); },
           R"(Creates a child node, and sets its parent to the current node.)")

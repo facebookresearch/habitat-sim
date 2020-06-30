@@ -1272,10 +1272,12 @@ bool ResourceManager::instantiateAssetsOnDemand(
   return true;
 }  // ResourceManager::instantiateAssetsOnDemand
 
-void ResourceManager::addObjectToDrawables(const std::string& objTemplateHandle,
-                                           scene::SceneNode* parent,
-                                           DrawableGroup* drawables,
-                                           const Mn::ResourceKey& lightSetup) {
+std::vector<scene::SceneNode*> ResourceManager::addObjectToDrawables(
+    const std::string& objTemplateHandle,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables,
+    const Mn::ResourceKey& lightSetup) {
+  std::vector<scene::SceneNode*> newNodes;
   if (parent != nullptr and drawables != nullptr) {
     //! Add mesh to rendering stack
 
@@ -1297,22 +1299,32 @@ void ResourceManager::addObjectToDrawables(const std::string& objTemplateHandle,
     // need a new node for scaling because motion state will override scale
     // set at the physical node
     scene::SceneNode& scalingNode = parent->createChild();
+    newNodes.push_back(&scalingNode);
     Magnum::Vector3 objectScaling = physicsObjectAttributes->getScale();
     scalingNode.setScaling(objectScaling);
 
-    addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
-                 drawables, loadedAssetData.meshMetaData.root);
+    std::vector<scene::SceneNode*> componentNodes =
+        addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
+                     drawables, loadedAssetData.meshMetaData.root);
+
+    for (auto node : componentNodes) {
+      newNodes.push_back(node);
+    }
   }  // should always be specified, otherwise won't do anything
+  return newNodes;
 }  // addObjectToDrawables
 
 //! Add component to rendering stack, based on importer loading
-void ResourceManager::addComponent(const MeshMetaData& metaData,
-                                   scene::SceneNode& parent,
-                                   const Mn::ResourceKey& lightSetup,
-                                   DrawableGroup* drawables,
-                                   const MeshTransformNode& meshTransformNode) {
+std::vector<scene::SceneNode*> ResourceManager::addComponent(
+    const MeshMetaData& metaData,
+    scene::SceneNode& parent,
+    const Mn::ResourceKey& lightSetup,
+    DrawableGroup* drawables,
+    const MeshTransformNode& meshTransformNode) {
+  std::vector<scene::SceneNode*> newNodes;
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
+  newNodes.push_back(&node);
   node.MagnumObject::setTransformation(
       meshTransformNode.transformFromLocalToParent);
 
@@ -1332,8 +1344,13 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
 
   // Recursively add children
   for (auto& child : meshTransformNode.children) {
-    addComponent(metaData, node, lightSetup, drawables, child);
+    std::vector<scene::SceneNode*> childNodes =
+        addComponent(metaData, node, lightSetup, drawables, child);
+    for (auto node : childNodes) {
+      newNodes.push_back(node);
+    }
   }
+  return newNodes;
 }  // addComponent
 
 void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,

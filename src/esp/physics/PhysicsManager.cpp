@@ -103,9 +103,16 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
 
   //! Draw object via resource manager
   //! Render node as child of physics node
-  resourceManager_.addObjectToDrawables(
-      configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
-      drawables, lightSetup);
+  std::vector<scene::SceneNode*> newNodes =
+      resourceManager_.addObjectToDrawables(
+          configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
+          drawables, lightSetup);
+
+  existingObjects_.at(nextObjectID_)
+      ->visualNodes_.push_back(existingObjects_.at(nextObjectID_)->visualNode_);
+  for (auto node : newNodes) {
+    existingObjects_.at(nextObjectID_)->visualNodes_.push_back(node);
+  }
 
   // finalize rigid object creation
   objectSuccess = existingObjects_.at(nextObjectID_)->finalizeObject();
@@ -535,6 +542,12 @@ const scene::SceneNode& PhysicsManager::getObjectVisualSceneNode(
     int physObjectID) const {
   assertIDValidity(physObjectID);
   return *existingObjects_.at(physObjectID)->visualNode_;
+}
+
+void PhysicsManager::setSemanticId(const int physObjectID,
+                                   uint32_t semanticId) {
+  assertIDValidity(physObjectID);
+  existingObjects_.at(physObjectID)->setSemanticId(semanticId);
 }
 
 const assets::PhysicsObjectAttributes::cptr

@@ -170,6 +170,8 @@ void initSimBindings(py::module& m) {
            "scene_id"_a = 0)
       .def("set_object_bb_draw", &Simulator::setObjectBBDraw, "draw_bb"_a,
            "object_id"_a, "scene_id"_a = 0)
+      .def("set_object_semantic_id", &Simulator::setObjectSemanticId,
+           "semantic_id"_a, "object_id"_a, "scene_id"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
            "navmesh_settings"_a, "include_static_objects"_a = false)
       .def("get_light_setup", &Simulator::getLightSetup,

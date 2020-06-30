@@ -315,19 +315,21 @@ class ResourceManager {
    * @param lightSetup The @ref LightSetup key that will be used
    * for the added component.
    */
-  void addObjectToDrawables(int objTemplateLibID,
-                            scene::SceneNode* parent,
-                            DrawableGroup* drawables,
-                            const Magnum::ResourceKey& lightSetup =
-                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY}) {
+  std::vector<scene::SceneNode*> addObjectToDrawables(
+      int objTemplateLibID,
+      scene::SceneNode* parent,
+      DrawableGroup* drawables,
+      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+          DEFAULT_LIGHTING_KEY}) {
     if (objTemplateLibID != ID_UNDEFINED) {
       const std::string& objTemplateHandleName =
           objectAttributesManager_->getTemplateHandleByID(objTemplateLibID);
 
-      addObjectToDrawables(objTemplateHandleName, parent, drawables,
-                           lightSetup);
+      return addObjectToDrawables(objTemplateHandleName, parent, drawables,
+                                  lightSetup);
     }  // else objTemplateID does not exist - shouldn't happen
-  }    // addObjectToDrawables
+    return std::vector<scene::SceneNode*>();
+  }  // addObjectToDrawables
 
   /**
    * @brief Add an object from a specified object template handle to the
@@ -347,11 +349,12 @@ class ResourceManager {
    * @param lightSetup The @ref LightSetup key that will be used
    * for the added component.
    */
-  void addObjectToDrawables(const std::string& objTemplateHandle,
-                            scene::SceneNode* parent,
-                            DrawableGroup* drawables,
-                            const Magnum::ResourceKey& lightSetup =
-                                Magnum::ResourceKey{DEFAULT_LIGHTING_KEY});
+  std::vector<scene::SceneNode*> addObjectToDrawables(
+      const std::string& objTemplateHandle,
+      scene::SceneNode* parent,
+      DrawableGroup* drawables,
+      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
+          DEFAULT_LIGHTING_KEY});
 
   /**
    * @brief Create a new drawable primitive attached to the desired @ref
@@ -486,11 +489,12 @@ class ResourceManager {
    * @param meshTransformNode The @ref MeshTransformNode for component
    * identifying its mesh, material, transformation, and children.
    */
-  void addComponent(const MeshMetaData& metaData,
-                    scene::SceneNode& parent,
-                    const Magnum::ResourceKey& lightSetup,
-                    DrawableGroup* drawables,
-                    const MeshTransformNode& meshTransformNode);
+  std::vector<scene::SceneNode*> addComponent(
+      const MeshMetaData& metaData,
+      scene::SceneNode& parent,
+      const Magnum::ResourceKey& lightSetup,
+      DrawableGroup* drawables,
+      const MeshTransformNode& meshTransformNode);
 
   /**
    * @brief Load textures from importer into assets, and update metaData for

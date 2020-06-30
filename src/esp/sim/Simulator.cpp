@@ -546,6 +546,14 @@ void Simulator::setObjectBBDraw(bool drawBB,
   }
 }
 
+void Simulator::setObjectSemanticId(uint32_t semanticId,
+                                    const int objectID,
+                                    const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    physicsManager_->setSemanticId(objectID, semanticId);
+  }
+}
+
 double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
     physicsManager_->stepPhysics(dt);

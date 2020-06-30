@@ -555,6 +555,11 @@ class Simulator {
    */
   void setObjectBBDraw(bool drawBB, const int objectID, const int sceneID = 0);
 
+  //! set semanticId for all nodes belonging to an object
+  void setObjectSemanticId(uint32_t semanticId,
+                           const int objectID,
+                           const int sceneID);
+
   /**
    * @brief Discrete collision check for contact between an object and the
    * collision world.

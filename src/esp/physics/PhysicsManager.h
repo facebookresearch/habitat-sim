@@ -811,6 +811,8 @@ class PhysicsManager {
     return activePhysSimLib_;
   };
 
+  void setSemanticId(const int physObjectID, uint32_t semanticId);
+
   /**
    * @brief Get the template used to initialize an object.
    *

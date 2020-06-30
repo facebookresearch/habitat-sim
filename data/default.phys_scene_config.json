@@ -1,5 +1,5 @@
 {
-    "physics simulator": "bullet",
+    "physics simulator": "none",
     "timestep": 0.008,
     "gravity": [0,-9.8,0],
     "friction coefficient": 0.4,
