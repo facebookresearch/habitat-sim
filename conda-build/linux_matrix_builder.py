@@ -20,7 +20,7 @@ conda build \
   --python {PY_VER} \
   --channel conda-forge \
   --no-test \
-  --no-anaconda-upload \
+  {ANACONDA_UPLOAD_MODE} \
   --output-folder {OUTPUT_FOLDER} \
   habitat-sim
 """
@@ -34,6 +34,8 @@ def call(cmd, env=None):
 def build_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--ci_test', help="Test package conda build during continues integration test.", action='store_true')
+    parser.add_argument('--conda_upload', help="Upload conda binaries as package to authenticated Anaconda cloud account.",
+                        action='store_true')
 
     return parser
 
@@ -99,7 +101,7 @@ def main():
         env["HSIM_BUILD_STRING"] = build_string
 
         call(
-            build_cmd_template.format(PY_VER=py_ver, OUTPUT_FOLDER="hsim-linux"),
+            build_cmd_template.format(PY_VER=py_ver, OUTPUT_FOLDER="hsim-linux", ANACONDA_UPLOAD_MODE="--no-anaconda-upload" if args.conda_upload else ""),
             env=env,
         )
 

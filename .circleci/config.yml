@@ -470,9 +470,10 @@ jobs:
               rm -rf build
               cd conda-build
               conda install -y anaconda-client git gitpython ninja conda-build=3.18.9 # last version that works with our setup
-              python linux_matrix_builder.py
+              anaconda login --username aihabitat-nightly --password $AIHABITAT_NIGHTLY_CONDA_PWD
+              python linux_matrix_builder.py --conda_upload
       - store_artifacts:
-          path: .habitat-sim/conda-build/hsim-linux/linux-64
+          path: habitat-sim/conda-build/hsim-linux/linux-64
 
   update_docs:
     docker:
