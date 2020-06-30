@@ -254,6 +254,8 @@ struct PathFinder::Impl {
 
   bool isNavigable(const vec3f& pt, const float maxYDelta = 0.5) const;
 
+  float computeNavigableArea();
+
   std::pair<vec3f, vec3f> bounds() const { return bounds_; };
 
   Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
@@ -282,6 +284,7 @@ struct PathFinder::Impl {
   std::pair<vec3f, vec3f> bounds_;
 
   void removeZeroAreaPolys();
+
   bool initNavQuery();
 
   Cr::Containers::Optional<std::tuple<float, std::vector<vec3f>>>
@@ -748,6 +751,32 @@ float polyArea(const dtPoly* poly, const dtMeshTile* tile) {
   return area;
 }
 }  // namespace
+
+float PathFinder::Impl::computeNavigableArea() {
+  float navigableArea = 0;
+  // Iterate over all tiles
+  for (int iTile = 0; iTile < navMesh_->getMaxTiles(); ++iTile) {
+    const dtMeshTile* tile =
+        const_cast<const dtNavMesh*>(navMesh_.get())->getTile(iTile);
+    if (!tile)
+      continue;
+
+    // Iterate over all polygons in a tile
+    for (int jPoly = 0; jPoly < tile->header->polyCount; ++jPoly) {
+      // Get the polygon reference from the tile and polygon id
+      dtPolyRef polyRef = navMesh_->encodePolyId(iTile, tile->salt, jPoly);
+      const dtPoly* poly = nullptr;
+      const dtMeshTile* tmp = nullptr;
+      navMesh_->getTileAndPolyByRefUnsafe(polyRef, &tmp, &poly);
+
+      CORRADE_INTERNAL_ASSERT(poly != nullptr);
+      CORRADE_INTERNAL_ASSERT(tmp != nullptr);
+
+      navigableArea += polyArea(poly, tile);
+    }
+  }
+  return navigableArea;
+}
 
 // Some polygons have zero area for some reason.  When we navigate into a zero
 // area polygon, things crash.  So we find all zero area polygons and mark
@@ -1389,6 +1418,10 @@ HitRecord PathFinder::closestObstacleSurfacePoint(
 
 bool PathFinder::isNavigable(const vec3f& pt, const float maxYDelta) const {
   return pimpl_->isNavigable(pt);
+}
+
+float PathFinder::computeNavigableArea() const {
+  return pimpl_->computeNavigableArea();
 }
 
 std::pair<vec3f, vec3f> PathFinder::bounds() const {
