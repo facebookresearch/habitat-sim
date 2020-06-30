@@ -161,6 +161,12 @@ def main(make_video=True, show_video=True):
     sim = habitat_sim.Simulator(cfg)
     agent_transform = place_agent(sim)
 
+    # get the primitive assets attributes manager
+    prim_templates_mgr = sim.get_asset_template_manager()
+
+    # get the physics object attributes manager
+    obj_templates_mgr = sim.get_object_template_manager()
+
     # [/initialize]
 
     # [basics]
@@ -188,7 +194,9 @@ def main(make_video=True, show_video=True):
 
     observations = []
     # search for an object template by key sub-string
-    cheezit_template_handle = sim.get_template_handles("data/objects/cheezit")[0]
+    cheezit_template_handle = obj_templates_mgr.get_template_handles(
+        "data/objects/cheezit"
+    )[0]
     box_positions = [
         np.array([2.39, -0.37, 0]),
         np.array([2.39, -0.64, 0]),
@@ -212,7 +220,7 @@ def main(make_video=True, show_video=True):
     anti_grav_force = -1.0 * sim.get_gravity() * object_init_template.mass
 
     # throw a sphere at the boxes from the agent position
-    sphere_template = sim.get_object_template(sphere_template_id)
+    sphere_template = obj_templates_mgr.get_template_by_ID(sphere_template_id)
     sphere_template.scale = np.array([0.5, 0.5, 0.5])
     sphere_id = sim.add_object(sphere_template_id)
     sim.set_translation(
@@ -243,7 +251,9 @@ def main(make_video=True, show_video=True):
 
     # [kinematic_interactions]
 
-    chefcan_template_handle = sim.get_template_handles("data/objects/chefcan")[0]
+    chefcan_template_handle = obj_templates_mgr.get_template_handles(
+        "data/objects/chefcan"
+    )[0]
     id_1 = sim.add_object_by_handle(chefcan_template_handle)
     sim.set_translation(np.array([2.4, -0.64, 0]), id_1)
     # set one object to kinematic
@@ -272,7 +282,9 @@ def main(make_video=True, show_video=True):
     # [kinematic_update]
     observations = []
 
-    clamp_template_handle = sim.get_template_handles("data/objects/largeclamp")[0]
+    clamp_template_handle = obj_templates_mgr.get_template_handles(
+        "data/objects/largeclamp"
+    )[0]
     id_1 = sim.add_object_by_handle(clamp_template_handle)
     sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, id_1)
     sim.set_translation(np.array([0.8, 0, 0.5]), id_1)

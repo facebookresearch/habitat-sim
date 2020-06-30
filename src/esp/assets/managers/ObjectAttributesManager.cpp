@@ -61,7 +61,7 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
       buildPrimBasedPhysObjTemplate(primAttrTemplateHandle);
 
   if (nullptr != objAttributes && registerTemplate) {
-    auto attrID =
+    int attrID =
         registerAttributesTemplate(objAttributes, primAttrTemplateHandle);
     if (attrID == ID_UNDEFINED) {
       // some error occurred
@@ -80,7 +80,7 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
       parseAndLoadPhysObjTemplate(filename);
 
   if (nullptr != objAttributes && registerTemplate) {
-    auto attrID = registerAttributesTemplate(objAttributes, filename);
+    int attrID = registerAttributesTemplate(objAttributes, filename);
     // some error occurred
     if (attrID == ID_UNDEFINED) {
       return nullptr;
@@ -94,18 +94,18 @@ ObjectAttributesManager::createEmptyAttributesTemplate(
     const std::string& templateName,
     bool registerTemplate) {
   // construct a PhysicsObjectAttributes
-  auto physicsObjectAttributes = PhysicsObjectAttributes::create(templateName);
+  PhysicsObjectAttributes::ptr objAttributes =
+      PhysicsObjectAttributes::create(templateName);
   // set render mesh handle as a default
-  physicsObjectAttributes->setRenderAssetHandle(templateName);
+  objAttributes->setRenderAssetHandle(templateName);
   if (registerTemplate) {
-    auto attrID =
-        registerAttributesTemplate(physicsObjectAttributes, templateName);
+    int attrID = registerAttributesTemplate(objAttributes, templateName);
     if (attrID == ID_UNDEFINED) {
       // some error occurred
       return nullptr;
     }
   }
-  return physicsObjectAttributes;
+  return objAttributes;
 }  // ObjectAttributesManager::createEmptyAttributesTemplate
 
 int ObjectAttributesManager::registerAttributesTemplateFinalize(

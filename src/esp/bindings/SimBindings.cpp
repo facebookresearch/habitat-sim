@@ -93,17 +93,20 @@ void initSimBindings(py::module& m) {
 
       /* --- DEPRECATED - all sim-pass-through access to raw templates is being
          removed--- */
-      .def("get_template_handle_by_ID", &Simulator::getObjectTemplateHandleByID,
-           "object_id"_a)
-      .def("get_template_handles", &Simulator::getObjectTemplateHandles,
-           "search_str"_a = "", "contains"_a = true)
-      .def("get_physics_object_library_size",
-           &Simulator::getPhysicsObjectLibrarySize)
-      .def("get_object_template", &Simulator::getObjectTemplate,
-           "object_template_id"_a, py::return_value_policy::reference)
+      // .def("get_template_handle_by_ID",
+      // &Simulator::getObjectTemplateHandleByID,
+      //      "object_id"_a)
+      // .def("get_template_handles", &Simulator::getObjectTemplateHandles,
+      //      "search_str"_a = "", "contains"_a = true)
+      // .def("get_physics_object_library_size",
+      //      &Simulator::getPhysicsObjectLibrarySize)
+      // .def("get_object_template", &Simulator::getObjectTemplate,
+      //      "object_template_id"_a, py::return_value_policy::reference)
+      // TODO: need to pass reference to object attributes manager to physics
+      // attribute manager (or vice versa)
       .def("load_object_configs", &Simulator::loadObjectConfigs, "path"_a)
-      .def("load_object_template", &Simulator::registerObjectTemplate,
-           "object_template"_a, "object_template_handle"_a)
+      // .def("load_object_template", &Simulator::registerObjectTemplate,
+      //      "object_template"_a, "object_template_handle"_a)
 
       /* --- END DEPRECATED --- */
 

@@ -109,21 +109,21 @@ def main(make_video=True, show_video=True):
         sim, pos=[-0.15, -0.7, 1.0], rot=np.quaternion(-0.83147, 0, 0.55557, 0)
     )
 
+    # get the primitive assets attributes manager
+    prim_templates_mgr = sim.get_asset_template_manager()
+
+    # get the physics object attributes manager
+    obj_templates_mgr = sim.get_object_template_manager()
+
     # [/initialize]
 
     # [basics]
 
-    # get the primitive attributes manager
-    prim_templates_mgr = sim.get_asset_template_manager()
-    obj_templates_mgr = sim.get_object_template_manager()
-
     # get the handles of the default object template for solid Cylinders
-    primitive_template_handles = obj_templates_mgr.get_synth_template_handles(
+    # only a single template will have been made
+    cylinder_template_handle = obj_templates_mgr.get_synth_template_handles(
         "CylinderSolid"
-    )
-
-    # only a single template will have been made with this
-    cylinder_template_handle = primitive_template_handles[0]
+    )[0]
 
     # add a default cylinder to the scene
     id_1 = sim.add_object_by_handle(cylinder_template_handle)

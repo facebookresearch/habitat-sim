@@ -87,9 +87,10 @@ void initAttributesManagersBindings(py::module& m) {
   // ==== Primitive Asset Attributes Template manager ====
   declareBaseAttributesManager<AbstractPrimitiveAttributes::ptr>(m,
                                                                  "BaseAsset");
-  py::class_<AssetAttributesManager, AssetAttributesManager::ptr>(
-      m, "AssetAttributesManager", "BaseAssetAttributesManager")
-
+  py::class_<AssetAttributesManager,
+             AttributesManager<AbstractPrimitiveAttributes::ptr>,
+             AssetAttributesManager::ptr>(m, "AssetAttributesManager")
+      // AssetAttributesMangaer-specific bindings
       // return appropriately cast capsule templates
       .def("get_default_capsule_template",
            &AssetAttributesManager::getDefaultCapsuleTemplate, "is_wireframe"_a)
@@ -126,8 +127,10 @@ void initAttributesManagersBindings(py::module& m) {
 
   // ==== Physical Object Attributes Template manager ====
   declareBaseAttributesManager<PhysicsObjectAttributes::ptr>(m, "BaseObject");
-  py::class_<ObjectAttributesManager, ObjectAttributesManager::ptr>(
-      m, "ObjectAttributesManager", "BaseObjectAttributesManager")
+  py::class_<ObjectAttributesManager,
+             AttributesManager<PhysicsObjectAttributes::ptr>,
+             ObjectAttributesManager::ptr>(m, "ObjectAttributesManager")
+      // ObjectAttributesManager-specific bindings
       // manage file-based templates access
       .def("get_num_file_templates",
            &ObjectAttributesManager::getNumFileTemplateObjects)
@@ -152,14 +155,16 @@ void initAttributesManagersBindings(py::module& m) {
 
   // ==== Scene Attributes Template manager ====
   declareBaseAttributesManager<PhysicsSceneAttributes::ptr>(m, "BaseScene");
-  py::class_<SceneAttributesManager, SceneAttributesManager::ptr>(
-      m, "SceneAttributesManager", "BaseSceneAttributesManager");
+  py::class_<SceneAttributesManager,
+             AttributesManager<PhysicsSceneAttributes::ptr>,
+             SceneAttributesManager::ptr>(m, "SceneAttributesManager");
 
   // ==== Physics World/Manager Template manager ====
 
   declareBaseAttributesManager<PhysicsManagerAttributes::ptr>(m, "BasePhysics");
-  py::class_<PhysicsAttributesManager, PhysicsAttributesManager::ptr>(
-      m, "PhysicsAttributesManager", "BasePhysicsAttributesManager");
+  py::class_<PhysicsAttributesManager,
+             AttributesManager<PhysicsManagerAttributes::ptr>,
+             PhysicsAttributesManager::ptr>(m, "PhysicsAttributesManager");
 
 }  // namespace managers
 

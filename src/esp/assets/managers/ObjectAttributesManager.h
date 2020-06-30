@@ -12,9 +12,7 @@
 
 namespace esp {
 namespace assets {
-
 namespace managers {
-
 /**
  * @brief single instance class managing templates describing physical objects
  */
@@ -32,18 +30,21 @@ class ObjectAttributesManager
   }
 
   /**
-   * @brief Creates an instance of a template described by passed string. For
-   * physical objects, this is either a file name or a reference to a primitive
-   * template used in the construction of the object.
+   * @brief Creates an instance of an object template.  The passed string should
+   * be either a file name or a reference to a primitive asset template that
+   * should be used in the construction of the object; any other strings will
+   * result in a new template being created.
    *
    * If a template exists with this handle, this existing template will be
    * overwritten with the newly created one if @ref registerTemplate is true.
    *
    * @param attributesTemplateHandle the origin of the desired template to be
-   * created, either a file name or an existing primitive asset template. If is
-   * not an origin handle to an existing primitive, assumes is file name.
+   * created, either a file name or an existing primitive asset template. If
+   * this is neither a recognized file name nor the handle of an existing
+   * primitive asset, a new template will be created.
    * @param registerTemplate whether to add this template to the library or not.
-   * If the user is going to edit this template, this should be false.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration.
    * @return a reference to the desired template.
    */
 
@@ -53,12 +54,12 @@ class ObjectAttributesManager
 
   /**
    * @brief Creates an instance of an object template described by passed
-   * string, which is reference to a primitive template used in the construction
-   * of the object (as render and collision mesh).  It returns existing instance
-   * if there is one, and nullptr if fails
+   * string, which should be a reference to an existing primitive asset template
+   * to be used in the construction of the object (as render and collision
+   * mesh).  It returns existing instance if there is one, and nullptr if fails.
    *
-   * @param primAttrTemplateHandle the handle to an existing primitive asset
-   * template.  Assumes it exists already, fails if does not.
+   * @param primAttrTemplateHandle The handle to an existing primitive asset
+   * template.  Fails if does not.
    * @param registerTemplate whether to add this template to the library or not.
    * If the user is going to edit this template, this should be false.
    * @return a reference to the desired template, or nullptr if fails.
@@ -219,6 +220,7 @@ class ObjectAttributesManager
     physicsFileObjTmpltLibByID_.clear();
     physicsSynthObjTmpltLibByID_.clear();
   }
+
   /**
    * @brief This function will assign the appropriately configured function
    * pointer for the copy constructor as defined in
@@ -228,7 +230,7 @@ class ObjectAttributesManager
     this->copyConstructorMap_["PhysicsObjectAttributes"] =
         &ObjectAttributesManager::createAttributesCopy<
             assets::PhysicsObjectAttributes>;
-  }
+  }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
   /**
    * @brief Load and parse a physics object template config file and generate a
    * @ref PhysicsObjectAttributes object.  Will always reload from file, since
