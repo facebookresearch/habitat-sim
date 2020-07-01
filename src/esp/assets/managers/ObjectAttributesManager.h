@@ -61,7 +61,8 @@ class ObjectAttributesManager
    * @param primAttrTemplateHandle The handle to an existing primitive asset
    * template.  Fails if does not.
    * @param registerTemplate whether to add this template to the library or not.
-   * If the user is going to edit this template, this should be false.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration.  Defaults to true.
    * @return a reference to the desired template, or nullptr if fails.
    */
 
@@ -76,7 +77,8 @@ class ObjectAttributesManager
    * @param filename the name of the file describing the object attributes.
    * Assumes it exists and fails if it does not.
    * @param registerTemplate whether to add this template to the library or not.
-   * If the user is going to edit this template, this should be false.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration.  Defaults to true.
    * @return a reference to the desired template, or nullptr if fails.
    */
 
@@ -86,19 +88,20 @@ class ObjectAttributesManager
 
   /**
    * @brief Creates an instance of an empty object template populated with
-   * default values.  Assigns the templateName as the origin handle and as the
-   * renderAssetHandle.
+   * default values.  Assigns the @ref templateName as the origin handle and as
+   * the renderAssetHandle.
    *
    * @param templateName the name of the file describing the object attributes.
    * Registration fails if this is not a valid asset handle.
    * @param registerTemplate whether to add this template to the library or not.
-   * If the user is going to edit this template, this should be false.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration.  Defaults to false.
    * @return a reference to the desired template, or nullptr if fails.
    */
 
-  PhysicsObjectAttributes::ptr createEmptyAttributesTemplate(
+  PhysicsObjectAttributes::ptr createDefaultAttributesTemplate(
       const std::string& templateName,
-      bool registerTemplate = true);
+      bool registerTemplate = false);
 
   /**
    * @brief Load all file-based object templates given string list of object

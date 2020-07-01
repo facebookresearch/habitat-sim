@@ -41,8 +41,8 @@ PhysicsObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
   } else {
     // if neither of these is true, then build an empty template and assign the
     // passed handle to its origin handle and its render asset handle
-    attrs = createEmptyAttributesTemplate(attributesTemplateHandle,
-                                          registerTemplate);
+    attrs = createDefaultAttributesTemplate(attributesTemplateHandle,
+                                            registerTemplate);
     msg = "New blank";
   }
   if (nullptr != attrs) {
@@ -90,7 +90,7 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
 }  // ObjectAttributesManager::createFileBasedAttributesTemplate
 
 PhysicsObjectAttributes::ptr
-ObjectAttributesManager::createEmptyAttributesTemplate(
+ObjectAttributesManager::createDefaultAttributesTemplate(
     const std::string& templateName,
     bool registerTemplate) {
   // construct a PhysicsObjectAttributes

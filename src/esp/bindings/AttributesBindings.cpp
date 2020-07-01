@@ -48,6 +48,9 @@ void initAttributesBindings(py::module& m) {
       .def(py::init(&PhysicsObjectAttributes::create<const std::string&>))
       .def_property("com", &PhysicsObjectAttributes::getCOM,
                     &PhysicsObjectAttributes::setCOM)
+      .def_property("compute_COM_from_shape",
+                    &PhysicsObjectAttributes::getComputeCOMFromShape,
+                    &PhysicsObjectAttributes::setComputeCOMFromShape)
       .def_property("margin", &PhysicsObjectAttributes::getMargin,
                     &PhysicsObjectAttributes::setMargin)
       .def_property("mass", &PhysicsObjectAttributes::getMass,
@@ -89,8 +92,8 @@ void initAttributesBindings(py::module& m) {
              PhysicsManagerAttributes::ptr>(m, "PhysicsManagerAttributes")
       .def(py::init(&PhysicsManagerAttributes::create<>))
       .def(py::init(&PhysicsManagerAttributes::create<const std::string&>))
-      .def_property("simulator", &PhysicsManagerAttributes::getSimulator,
-                    &PhysicsManagerAttributes::setSimulator)
+      .def_property_readonly("simulator",
+                             &PhysicsManagerAttributes::getSimulator)
       .def_property("timestep", &PhysicsManagerAttributes::getTimestep,
                     &PhysicsManagerAttributes::setTimestep)
       .def_property("max_substeps", &PhysicsManagerAttributes::getMaxSubsteps,
@@ -126,7 +129,10 @@ void initAttributesBindings(py::module& m) {
       .def_property_readonly("prim_obj_class_name",
                              &AbstractPrimitiveAttributes::getPrimObjClassName)
       .def_property_readonly("prim_obj_type",
-                             &AbstractPrimitiveAttributes::getPrimObjType);
+                             &AbstractPrimitiveAttributes::getPrimObjType)
+      .def("build_handle", &AbstractPrimitiveAttributes::buildHandle)
+      .def_property_readonly("is_valid_template",
+                             &AbstractPrimitiveAttributes::isValidTemplate);
 
   // ==== CapsulePrimitiveAttributes ====
   py::class_<CapsulePrimitiveAttributes, AbstractPrimitiveAttributes,

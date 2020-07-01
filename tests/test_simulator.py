@@ -157,7 +157,7 @@ def test_object_template_editing(sim):
     assert sphere_template.render_asset_handle.endswith("sphere.glb")
     sphere_scale = np.array([2.0, 2.0, 2.0])
     sphere_template.scale = sphere_scale
-    new_id = obj_mgr.register_template(sphere_template, sphere_template.handle)
+    obj_mgr.register_template(sphere_template, sphere_template.handle)
     sphere_template2 = obj_mgr.get_template_by_ID(template_ids[0])
     assert sphere_template2.scale == sphere_scale
 
