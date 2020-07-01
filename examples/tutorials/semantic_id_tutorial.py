@@ -18,6 +18,7 @@ save_index = 0
 
 
 def show_img(data, save):
+    # display rgb and semantic images side-by-side
     fig = plt.figure(figsize=(12, 12))
     ax1 = fig.add_subplot(1, 2, 1)
     ax1.axis("off")
@@ -40,6 +41,7 @@ def show_img(data, save):
 
 
 def get_obs(sim, show, save):
+    # render sensor ouputs and optionally show them
     rgb_obs = sim.get_sensor_observations()["rgba_camera"]
     semantic_obs = sim.get_sensor_observations()["semantic_camera"]
     if show:
@@ -65,7 +67,7 @@ def make_configuration(scene_file):
 
     # sensor configurations
     # Note: all sensors must have the same resolution
-    # setup rgb and depth sensors with slight offset
+    # setup rgb and semantic sensors
     camera_resolution = [1080, 960]
     sensors = {
         "rgba_camera": {
@@ -97,11 +99,12 @@ def make_configuration(scene_file):
 
 
 def add_chairs(sim):
-    # load some object templates from configuration files
+    # load some chair object template from configuration file
     chair_template_id = sim.load_object_configs(
         str(os.path.join(data_path, "test_assets/objects/chair"))
     )[0]
 
+    # add 2 chairs and arrange them
     ids = []
     ids.append(sim.add_object(chair_template_id))
     ids.append(sim.add_object(chair_template_id))

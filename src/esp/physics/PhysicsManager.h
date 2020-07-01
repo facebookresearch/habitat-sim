@@ -811,6 +811,14 @@ class PhysicsManager {
     return activePhysSimLib_;
   };
 
+  /**
+   * @brief Set the @ref esp::scene:SceneNode::semanticId_ for all visual nodes
+   * belonging to an object.
+   *
+   * @param objectID The object ID and key identifying the object in @ref
+   * existingObjects_.
+   * @param semanticId The desired semantic id for the object.
+   */
   void setSemanticId(const int physObjectID, uint32_t semanticId);
 
   /**

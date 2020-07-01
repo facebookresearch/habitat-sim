@@ -555,7 +555,16 @@ class Simulator {
    */
   void setObjectBBDraw(bool drawBB, const int objectID, const int sceneID = 0);
 
-  //! set semanticId for all nodes belonging to an object
+  /**
+   * @brief Set the @ref esp::scene:SceneNode::semanticId_ for all visual nodes
+   * belonging to an object.
+   *
+   * @param semanticId The desired semantic id for the object.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
   void setObjectSemanticId(uint32_t semanticId,
                            const int objectID,
                            const int sceneID);

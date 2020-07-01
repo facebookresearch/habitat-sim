@@ -314,6 +314,7 @@ class ResourceManager {
    * gfx::Drawable will be rendered.
    * @param lightSetup The @ref LightSetup key that will be used
    * for the added component.
+   * @return Pointers to all nodes created as the result of this process.
    */
   std::vector<scene::SceneNode*> addObjectToDrawables(
       int objTemplateLibID,
@@ -348,6 +349,7 @@ class ResourceManager {
    * gfx::Drawable will be rendered.
    * @param lightSetup The @ref LightSetup key that will be used
    * for the added component.
+   * @return Pointers to all nodes created as the result of this process.
    */
   std::vector<scene::SceneNode*> addObjectToDrawables(
       const std::string& objTemplateHandle,
@@ -488,6 +490,8 @@ class ResourceManager {
    * rendered.
    * @param meshTransformNode The @ref MeshTransformNode for component
    * identifying its mesh, material, transformation, and children.
+   * @return Pointers to all nodes created as the result of this recursive
+   * process.
    */
   std::vector<scene::SceneNode*> addComponent(
       const MeshMetaData& metaData,
