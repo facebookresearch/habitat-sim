@@ -102,8 +102,6 @@ void initSimBindings(py::module& m) {
       //      &Simulator::getPhysicsObjectLibrarySize)
       // .def("get_object_template", &Simulator::getObjectTemplate,
       //      "object_template_id"_a, py::return_value_policy::reference)
-      // TODO: need to pass reference to object attributes manager to physics
-      // attribute manager (or vice versa)
       .def("load_object_configs", &Simulator::loadObjectConfigs, "path"_a)
       // .def("load_object_template", &Simulator::registerObjectTemplate,
       //      "object_template"_a, "object_template_handle"_a)

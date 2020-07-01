@@ -99,6 +99,8 @@ class AttributesManager {
   int registerAttributesTemplateAndUpdate(AttribsPtr attributesTemplate) {
     int ID = registerAttributesTemplate(attributesTemplate,
                                         attributesTemplate->getHandle());
+    // TODO : call Resource Manager for post-registration processing of this
+    // template
 
     return ID;
   }
@@ -200,7 +202,7 @@ class AttributesManager {
    *
    * @param templateID The index of the template in @ref templateLibrary_.
    * @return The key referencing the template in @ref
-   * templateLibrary_, or an empty string if does not exist.
+   * templateLibrary_, or nullptr if does not exist.
    */
   std::string getTemplateHandleByID(const int templateID) const {
     if (templateLibKeyByID_.count(templateID) == 0) {
