@@ -1307,9 +1307,8 @@ std::vector<scene::SceneNode*> ResourceManager::addObjectToDrawables(
         addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
                      drawables, loadedAssetData.meshMetaData.root);
 
-    for (auto node : componentNodes) {
-      newNodes.push_back(node);
-    }
+    newNodes.insert(newNodes.end(), componentNodes.begin(),
+                    componentNodes.end());
   }  // should always be specified, otherwise won't do anything
   return newNodes;
 }  // addObjectToDrawables
@@ -1346,9 +1345,7 @@ std::vector<scene::SceneNode*> ResourceManager::addComponent(
   for (auto& child : meshTransformNode.children) {
     std::vector<scene::SceneNode*> childNodes =
         addComponent(metaData, node, lightSetup, drawables, child);
-    for (auto node : childNodes) {
-      newNodes.push_back(node);
-    }
+    newNodes.insert(newNodes.end(), childNodes.begin(), childNodes.end());
   }
   return newNodes;
 }  // addComponent

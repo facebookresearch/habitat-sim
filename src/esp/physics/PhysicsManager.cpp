@@ -110,9 +110,10 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
 
   existingObjects_.at(nextObjectID_)
       ->visualNodes_.push_back(existingObjects_.at(nextObjectID_)->visualNode_);
-  for (auto node : newNodes) {
-    existingObjects_.at(nextObjectID_)->visualNodes_.push_back(node);
-  }
+  existingObjects_.at(nextObjectID_)
+      ->visualNodes_.insert(
+          existingObjects_.at(nextObjectID_)->visualNodes_.end(),
+          newNodes.begin(), newNodes.end());
 
   // finalize rigid object creation
   objectSuccess = existingObjects_.at(nextObjectID_)->finalizeObject();
