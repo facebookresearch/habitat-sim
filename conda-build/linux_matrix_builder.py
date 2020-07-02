@@ -20,7 +20,7 @@ conda build \
   --python {PY_VER} \
   --channel conda-forge \
   --no-test \
-  --no-anaconda-upload \
+  {ANACONDA_UPLOAD_MODE} \
   --output-folder {OUTPUT_FOLDER} \
   habitat-sim
 """
@@ -33,6 +33,9 @@ def call(cmd, env=None):
 
 def build_parser():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--ci_test', help="Test package conda build during continues integration test.", action='store_true')
+    parser.add_argument('--conda_upload', help="Upload conda binaries as package to authenticated Anaconda cloud account.",
+                        action='store_true')
 
     return parser
 
@@ -40,9 +43,14 @@ def build_parser():
 def main():
     args = build_parser().parse_args()
     py_vers = ["3.6"]
-    bullet_modes = [True, False][1:]
-    headless_modes = [True, False][0:1]
+    bullet_modes = [True, False]
+    headless_modes = [True, False]
     cuda_vers = [None, "9.2", "10.0"][0:1]
+
+    # For CI test only one package build for test speed interest
+    if args.ci_test:
+        bullet_modes = [True]
+        headless_modes = [True]
 
     for py_ver, use_bullet, headless, cuda_ver in itertools.product(
         py_vers, bullet_modes, headless_modes, cuda_vers
@@ -65,6 +73,7 @@ def main():
         if use_bullet:
             build_string += "bullet_"
             env["CONDA_BULLET"] = "- bullet"
+            env["CONDA_BULLET_FEATURE"] = "- withbullet"
             env["WITH_BULLET"] = "1"
         else:
             env["CONDA_BULLET"] = ""
@@ -92,7 +101,7 @@ def main():
         env["HSIM_BUILD_STRING"] = build_string
 
         call(
-            build_cmd_template.format(PY_VER=py_ver, OUTPUT_FOLDER="hsim-linux"),
+            build_cmd_template.format(PY_VER=py_ver, OUTPUT_FOLDER="hsim-linux", ANACONDA_UPLOAD_MODE="" if args.conda_upload else "--no-anaconda-upload"),
             env=env,
         )
 
