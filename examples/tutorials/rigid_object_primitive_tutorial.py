@@ -2,13 +2,14 @@
 import math
 import os
 from pathlib import Path
+
 import cv2
 import magnum as mn
 import numpy as np
 
+import examples.tutorials.tutorial_functions as tutFuncs
 import habitat_sim
 import habitat_sim.utils.common as ut
-import examples.tutorials.tutorial_functions as tutFuncs
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 data_path = os.path.join(dir_path, "../../data")

@@ -7,9 +7,9 @@ import pytest
 
 import examples.tutorials.lighting_tutorial
 import examples.tutorials.new_actions
+import examples.tutorials.rigid_object_primitive_tutorial
 import examples.tutorials.rigid_object_tutorial
 import examples.tutorials.stereo_agent
-import examples.tutorials.rigid_object_primitive_tutorial
 
 
 @pytest.mark.gfxtest
