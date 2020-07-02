@@ -47,14 +47,15 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
              Returns integer ID for the template with the passed handle.)",
            "handle"_a)
       .def("get_template_handles",
-           (std::vector<std::string>(AttrClass::*)(const std::string&, bool))(
+           static_cast<std::vector<std::string> (AttrClass::*)(
+               const std::string&, bool) const>(
                &AttrClass::getTemplateHandlesBySubstring),
            R"(
             Returns a list of template handles that either contain or explicitly do not 
             contain the passed search_str, based on the value of boolean contains.)",
            "search_str"_a = "", "contains"_a = true)
       .def("create_template",
-           (T(AttrClass::*)(const std::string&, bool))(
+           static_cast<T (AttrClass::*)(const std::string&, bool)>(
                &AttrClass::createAttributesTemplate),
            R"(
             Creates a template based on passed handle, and registers it in 
@@ -87,12 +88,13 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
              returns the template's integer ID.)",
            "template"_a, "specified_handle"_a = "")
       .def("get_template_by_ID",
-           (T(AttrClass::*)(int))(&AttrClass::getTemplateCopyByID), R"(
+           static_cast<T (AttrClass::*)(int)>(&AttrClass::getTemplateCopyByID),
+           R"(
              This returns a copy of the template specified by the passed 
              ID if it exists, and NULL if it does not.)",
            "ID"_a)
       .def("get_template_by_handle",
-           (T(AttrClass::*)(const std::string&))(
+           static_cast<T (AttrClass::*)(const std::string&)>(
                &AttrClass::getTemplateCopyByHandle),
            R"(
              This returns a copy of the template specified by the passed 
@@ -228,8 +230,8 @@ void initAttributesManagersBindings(py::module& m) {
            &ObjectAttributesManager::getNumFileTemplateObjects, R"(
              Returns the number of existing file-based templates being managed.)")
       .def("get_file_template_handles",
-           (std::vector<std::string>(ObjectAttributesManager::*)(
-               const std::string&, bool))(
+           static_cast<std::vector<std::string> (ObjectAttributesManager::*)(
+               const std::string&, bool) const>(
                &ObjectAttributesManager::getFileTemplateHandlesBySubstring),
            R"(
             Returns a list of file-based template handles that either contain or explicitly do not 
@@ -246,8 +248,8 @@ void initAttributesManagersBindings(py::module& m) {
            &ObjectAttributesManager::getNumSynthTemplateObjects, R"(
              Returns the number of existing synthesized(primitive asset)-based templates being managed.)")
       .def("get_synth_template_handles",
-           (std::vector<std::string>(ObjectAttributesManager::*)(
-               const std::string&, bool))(
+           static_cast<std::vector<std::string> (ObjectAttributesManager::*)(
+               const std::string&, bool) const>(
                &ObjectAttributesManager::getSynthTemplateHandlesBySubstring),
            R"(
             Returns a list of template synthesized(primitive asset)-based handles that either contain or explicitly do not 
