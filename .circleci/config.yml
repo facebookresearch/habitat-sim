@@ -461,6 +461,8 @@ jobs:
             - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
       - run: *install_conda
       - run: *install_deps
+      - setup_remote_docker:
+          docker_layer_caching: true
       - run:
           name: Build conda Linux packages
           command: |
@@ -473,6 +475,8 @@ jobs:
               conda install -y anaconda-client git gitpython ninja conda-build=3.18.9 # last version that works with our setup
               anaconda login --username aihabitat-nightly --password $AIHABITAT_NIGHTLY_CONDA_PWD
               conda config --set anaconda_upload yes
+              docker build -t hsim_condabuild_dcontainer -f Dockerfile .
+              docker run -it --ipc=host --rm -v $(pwd)/../:/remote hsim_condabuild_dcontainer bash
               python linux_matrix_builder.py --conda_upload
 
   update_docs:
@@ -523,10 +527,7 @@ workflows:
   version: 2
   install_and_test:
     jobs:
-      - python_lint
-      - cpp_lint
-      - js_lint
-      - install_and_test_ubuntu
+      - build_conda_binaries
   nightly:
     triggers:
       - schedule:
