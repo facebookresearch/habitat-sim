@@ -461,14 +461,20 @@ jobs:
             - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
       - run: *install_conda
       - run: *install_deps
-      - setup_remote_docker:
-          docker_layer_caching: true
       - run:
           name: Build conda Linux packages
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               cd habitat-sim
+
+              # install Docker
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+              sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+              sudo apt-get update
+              apt-cache policy docker-ce
+              sudo apt-get install -y docker-ce
+              sudo systemctl status docker
 
               rm -rf build
               cd conda-build
