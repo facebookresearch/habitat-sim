@@ -22,7 +22,7 @@ From there you will have a shell within your linux container. Now, navigate to `
 
 To download the package, run ```conda install -c aihabitat -c conda-forge habitat-sim headless ```. 
 
-Our linux conda builds currently only support ```{head/headless} x {with bullet/without bullet}``` binaries. In the command above, we are telling conda to use a feature called ```headless```.  
+Our linux conda builds currently only support ```{head / headless} x {with bullet / without bullet}``` binaries. In the command above, we are telling conda to use a feature called ```headless```.  
 
 
 
