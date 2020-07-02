@@ -16,6 +16,7 @@ sys.path.append("../")
 import habitat_sim
 
 build_cmd_template = """
+{PREFIX} \
 conda build \
   --python {PY_VER} \
   --channel conda-forge \
@@ -101,7 +102,8 @@ def main():
         env["HSIM_BUILD_STRING"] = build_string
 
         call(
-            build_cmd_template.format(PY_VER=py_ver, OUTPUT_FOLDER="hsim-linux", ANACONDA_UPLOAD_MODE="--no-anaconda-upload" if args.conda_upload else ""),
+            build_cmd_template.format(PY_VER=py_ver, OUTPUT_FOLDER="hsim-linux", ANACONDA_UPLOAD_MODE="--no-anaconda-upload" if args.conda_upload else "",
+                                      PREFIX="conda config --set anaconda_upload yes;" if args.conda_upload else ""),
             env=env,
         )
 
