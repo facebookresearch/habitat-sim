@@ -783,7 +783,7 @@ void PathFinder::Impl::removeZeroAreaPolys() {
       float polygonArea = polyArea(poly, tile);
       if (polygonArea < 1e-5) {
         navMesh_->setPolyFlags(polyRef, POLYFLAGS_DISABLED);
-      } else {
+      } else if (poly->flags & POLYFLAGS_WALK) {
         navMeshArea_ += polygonArea;
       }
     }
