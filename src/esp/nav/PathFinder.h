@@ -324,7 +324,7 @@ class PathFinder {
   /**
    * Compute and return the total area of all NavMesh polygons
    */
-  float computeNavigableArea() const;
+  float getNavigableArea() const;
 
   /**
    * @return The axis aligned bounding box containing the navigation mesh.

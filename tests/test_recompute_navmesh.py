@@ -43,6 +43,9 @@ def test_recompute_navmesh(test_scene, sim):
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     sim.reconfigure(hab_cfg)
 
+    # get the initial navmesh area
+    loadedNavMeshArea = sim.pathfinder.navigable_area
+
     # generate random point pairs
     num_samples = 100
     samples = []
@@ -69,11 +72,19 @@ def test_recompute_navmesh(test_scene, sim):
     assert sim.recompute_navmesh(sim.pathfinder, navmesh_settings)
     assert sim.pathfinder.is_loaded
 
+    # get the re-computed navmesh area
+    recomputedNavMeshArea1 = sim.pathfinder.navigable_area
+    assert loadedNavMeshArea == recomputedNavMeshArea1
+
     recomputed_navmesh_results = get_shortest_path(sim, samples)
 
     navmesh_settings.agent_radius *= 2.0
     assert sim.recompute_navmesh(sim.pathfinder, navmesh_settings)
     assert sim.pathfinder.is_loaded  # this may not always be viable...
+
+    # get the re-computed navmesh area with radius 2
+    recomputedNavMeshArea2 = sim.pathfinder.navigable_area
+    assert loadedNavMeshArea != recomputedNavMeshArea2
 
     recomputed_2rad_navmesh_results = get_shortest_path(sim, samples)
 
@@ -81,19 +92,23 @@ def test_recompute_navmesh(test_scene, sim):
     for i in range(num_samples):
         assert loaded_navmesh_path_results[i][0] == recomputed_navmesh_results[i][0]
         assert (
-            recomputed_2rad_navmesh_results[i][0]
+            loaded_navmesh_2rad_path_results[i][0]
             == recomputed_2rad_navmesh_results[i][0]
         )
         if loaded_navmesh_path_results[i][0]:
             assert (
-                loaded_navmesh_path_results[i][1] - recomputed_navmesh_results[i][1]
+                abs(
+                    loaded_navmesh_path_results[i][1] - recomputed_navmesh_results[i][1]
+                )
                 < EPS
             )
 
         if recomputed_2rad_navmesh_results[i][0]:
             assert (
-                recomputed_2rad_navmesh_results[i][1]
-                - recomputed_2rad_navmesh_results[i][1]
+                abs(
+                    loaded_navmesh_2rad_path_results[i][1]
+                    - recomputed_2rad_navmesh_results[i][1]
+                )
                 < EPS
             )
 
