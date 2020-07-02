@@ -114,11 +114,6 @@ jobs:
                   libbullet-dev\
                   lcov\
                   unzip || true
-              sudo apt install --allow-change-held-packages \
-                  texlive-base \
-                  texlive-latex-extra \
-                  texlive-fonts-extra \
-                  texlive-fonts-recommended
       - run:
           name: Install Headless Chrome dependencies
           command: |
@@ -383,6 +378,12 @@ jobs:
       - run:
           name: Build sim documentation
           command: |
+              sudo apt install --allow-change-held-packages \
+                  texlive-base \
+                  texlive-latex-extra \
+                  texlive-fonts-extra \
+                  texlive-fonts-recommended
+
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat;
               cd habitat-sim
@@ -473,8 +474,6 @@ jobs:
               anaconda login --username aihabitat-nightly --password $AIHABITAT_NIGHTLY_CONDA_PWD
               conda config --set anaconda_upload yes
               python linux_matrix_builder.py --conda_upload
-      - store_artifacts:
-          path: habitat-sim/conda-build/hsim-linux/linux-64
 
   update_docs:
     docker:
