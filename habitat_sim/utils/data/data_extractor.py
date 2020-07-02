@@ -118,7 +118,7 @@ class ImageExtractor:
 
         args = (self.tdv_fp_ref_triples, self.pixels_per_meter)
         self.pose_extractor = make_pose_extractor(pose_extractor_name)(*args)
-        self.poses = self.pose_extractor.extract_all_poses(labels=self.labels)
+        self.poses = self.pose_extractor.extract_all_poses()
 
         if shuffle:
             np.random.shuffle(self.poses)
@@ -168,7 +168,7 @@ class ImageExtractor:
                 return self.cache[cache_entry]
 
         poses = self.mode_to_data[mymode]
-        pos, rot, label, fp = poses[idx]
+        pos, rot, fp = poses[idx]
 
         # Only switch scene if it is different from the last one accessed
         if fp != self.cur_fp:
@@ -184,7 +184,7 @@ class ImageExtractor:
             out_name: obs[self.out_name_to_sensor_name[out_name]]
             for out_name in self.output
         }
-        sample["label"] = label
+
         if self.use_caching:
             self.cache.add(cache_entry, sample)
 

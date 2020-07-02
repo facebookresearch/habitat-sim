@@ -22,16 +22,16 @@ class PoseExtractor:
 
     :property pixels_per_meter: Resolution of topdown map. 0.1 means each pixel in the topdown map
         represents 0.1 x 0.1 meters in the coordinate system of the scene that the map represents.
+    :property labels: List of class labels to extract images of.
     """
 
     def __init__(self, topdown_views, pixels_per_meter=0.1):
         self.tdv_fp_ref_triples = topdown_views
         self.pixels_per_meter = pixels_per_meter
+        self.labels = [0.0]
 
-    def extract_all_poses(self, labels: List[float]) -> np.ndarray:
+    def extract_all_poses(self) -> np.ndarray:
         r"""Returns a numpy array of camera poses. For each scene, this method extends the list of poses according to the extraction rule defined in extract_poses.
-
-        :property labels: A list of labels that we are interesting in extacting images of.
         """
         poses = []
         for tdv, fp, ref_point in self.tdv_fp_ref_triples:
@@ -39,18 +39,15 @@ class PoseExtractor:
                 tdv.topdown_view
             )  # 2D numpy array representing the topdown view of the scene
             _poses = self._convert_to_scene_coordinate_system(
-                self.extract_poses(labels, view, fp), ref_point
+                self.extract_poses(view, fp), ref_point
             )
             poses.extend(_poses)
 
         return np.array(poses)
 
-    def extract_poses(
-        self, labels: List[float], view: np.ndarray, fp: str
-    ) -> List[tuple]:
+    def extract_poses(self, view: np.ndarray, fp: str) -> List[tuple]:
         r"""Extracts poses according to a programatic rule.
 
-        :property labels: A list of labels that we are interesting in extacting images of.
         :property view: 2D numpy array representing the topdown view of the scene.
         :property fp: filepath to the scene (necessary to return to the ImageExtractor).
         """
@@ -75,7 +72,7 @@ class PoseExtractor:
         # Convert from topdown map coordinate system to that of the scene
         startw, starty, starth = ref_point
         for i, pose in enumerate(poses):
-            pos, cpi, label, filepath = pose
+            pos, cpi, filepath = pose
             r1, c1 = pos
             r2, c2 = cpi
             new_pos = np.array(
@@ -94,7 +91,7 @@ class PoseExtractor:
             )
             cam_normal = new_cpi - new_pos
             new_rot = self._compute_quat(cam_normal)
-            poses[i] = (new_pos, new_rot, label, filepath)
+            poses[i] = (new_pos, new_rot, filepath)
 
         return poses
 
@@ -104,7 +101,7 @@ class ClosestPointExtractor(PoseExtractor):
     def __init__(self, topdown_views, pixels_per_meter=0.1):
         super().__init__(topdown_views, pixels_per_meter)
 
-    def extract_poses(self, labels, view, fp):
+    def extract_poses(self, view, fp):
         # Determine the physical spacing between each camera position
         height, width = view.shape
         dist = min(height, width) // 10  # We can modify this to be user-defined later
@@ -126,11 +123,11 @@ class ClosestPointExtractor(PoseExtractor):
         # Find the closest point of the target class to each gridpoint
         poses = []
         for point in gridpoints:
-            closest_point_of_interest, label = self._bfs(point, labels, view, dist)
+            closest_point_of_interest, label = self._bfs(point, self.labels, view, dist)
             if closest_point_of_interest is None:
                 continue
 
-            poses.append((point, closest_point_of_interest, label, fp))
+            poses.append((point, closest_point_of_interest, fp))
 
         # Returns poses in the coordinate system of the topdown view
         return poses
@@ -190,7 +187,7 @@ class PanoramaExtractor(PoseExtractor):
     def __init__(self, topdown_views, pixels_per_meter=0.1):
         super().__init__(topdown_views, pixels_per_meter)
 
-    def extract_poses(self, labels, view, fp):
+    def extract_poses(self, view, fp):
         # Determine the physical spacing between each camera position
         height, width = view.shape
         dist = min(height, width) // 10  # We can modify this to be user-defined later
@@ -213,9 +210,7 @@ class PanoramaExtractor(PoseExtractor):
         poses = []
         for point in gridpoints:
             point_label_pairs = self._panorama_extraction(point, view, dist)
-            poses.extend(
-                [(point, point_, label, fp) for point_, label in point_label_pairs]
-            )
+            poses.extend([(point, point_, fp) for point_, label in point_label_pairs])
 
         # Returns poses in the coordinate system of the topdown view
         return poses
