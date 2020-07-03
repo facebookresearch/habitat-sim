@@ -20,10 +20,18 @@ ADD ./common/install_patchelf.sh install_patchelf.sh
 RUN bash ./install_patchelf.sh && rm install_patchelf.sh
 
 # Install CUDA
-ADD ./common/install_cuda.sh install_cuda.sh
-RUN bash ./install_cuda.sh 9.2 10.0 10.1 && rm install_cuda.sh
+# ADD ./common/install_cuda.sh install_cuda.sh
+# RUN bash ./install_cuda.sh 9.2 10.0 10.1 && rm install_cuda.sh
 
 # Install Anaconda
 ENV PATH /opt/conda/bin:$PATH
 ADD ./common/install_conda.sh install_conda.sh
 RUN bash ./install_conda.sh && rm install_conda.sh
+
+RUN conda install -y anaconda-client git gitpython ninja conda-build=3.18.9 # last version that works with our setup
+RUN anaconda login --username aihabitat-nightly --password $AIHABITAT_NIGHTLY_CONDA_PWD
+RUN conda config --set anaconda_upload yes
+RUN conda create --name py36 python=3.6 -y
+RUN conda init bash
+RUN conda activate py36
+
