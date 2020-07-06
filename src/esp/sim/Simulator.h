@@ -566,8 +566,8 @@ class Simulator {
    * the object.
    */
   void setObjectSemanticId(uint32_t semanticId,
-                           const int objectID,
-                           const int sceneID);
+                           int objectID,
+                           int sceneID);
 
   /**
    * @brief Discrete collision check for contact between an object and the
