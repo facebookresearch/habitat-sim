@@ -136,6 +136,9 @@ void initSimBindings(py::module& m) {
       .def("set_gravity", &Simulator::setGravity, "gravity"_a, "scene_id"_a = 0)
       .def("get_object_scene_node", &Simulator::getObjectSceneNode,
            "object_id"_a, "scene_id"_a = 0)
+      .def("get_object_visual_scene_nodes",
+           &Simulator::getObjectVisualSceneNodes, "object_id"_a,
+           "scene_id"_a = 0)
       .def("set_transformation", &Simulator::setTransformation, "transform"_a,
            "object_id"_a, "scene_id"_a = 0)
       .def("get_transformation", &Simulator::getTransformation, "object_id"_a,

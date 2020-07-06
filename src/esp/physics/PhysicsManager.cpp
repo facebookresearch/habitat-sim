@@ -540,6 +540,12 @@ const scene::SceneNode& PhysicsManager::getObjectVisualSceneNode(
   return *existingObjects_.at(physObjectID)->visualNode_;
 }
 
+std::vector<scene::SceneNode*> PhysicsManager::getObjectVisualSceneNodes(
+    const int physObjectID) const {
+  assertIDValidity(physObjectID);
+  return existingObjects_.at(physObjectID)->visualNodes_;
+}
+
 void PhysicsManager::setSemanticId(const int physObjectID,
                                    uint32_t semanticId) {
   assertIDValidity(physObjectID);

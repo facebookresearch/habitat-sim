@@ -428,6 +428,15 @@ scene::SceneNode* Simulator::getObjectSceneNode(const int objectID,
   return nullptr;
 }
 
+std::vector<scene::SceneNode*> Simulator::getObjectVisualSceneNodes(
+    const int objectID,
+    const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getObjectVisualSceneNodes(objectID);
+  }
+  return std::vector<scene::SceneNode*>();
+}
+
 // set object transform (kinemmatic control)
 void Simulator::setTransformation(const Magnum::Matrix4& transform,
                                   const int objectID,

@@ -42,6 +42,10 @@ bool RigidObject::finalizeObject() {
     // otherwise use the bounding box center
     shiftOriginToBBCenter();
   }
+
+  // set the visualization semantic id
+  setSemanticId(physicsObjectAttributes->getSemanticId());
+
   // finish object by instancing any dynamics library-specific code required
   return finalizeObject_LibSpecific();
 }  // RigidObject::finalizeObject

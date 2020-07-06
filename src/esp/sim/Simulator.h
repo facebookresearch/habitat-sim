@@ -398,6 +398,14 @@ class Simulator {
                                        const int sceneID = 0);
 
   /**
+   * @brief Get references to the object's visual scene nodes or empty if
+   * failed.
+   */
+  std::vector<scene::SceneNode*> getObjectVisualSceneNodes(
+      const int objectID,
+      const int sceneID = 0);
+
+  /**
    * @brief Get the current 4x4 transformation matrix of an object.
    * See @ref esp::physics::PhysicsManager::getTransformation.
    * @param objectID The object ID and key identifying the object in @ref
@@ -565,7 +573,7 @@ class Simulator {
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    */
-  void setObjectSemanticId(uint32_t semanticId, int objectID, int sceneID);
+  void setObjectSemanticId(uint32_t semanticId, int objectID, int sceneID = 0);
 
   /**
    * @brief Discrete collision check for contact between an object and the

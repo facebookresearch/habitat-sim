@@ -98,25 +98,6 @@ def make_configuration(scene_file):
     return habitat_sim.Configuration(backend_cfg, [agent_cfg])
 
 
-def add_chairs(sim):
-    # load some chair object template from configuration file
-    chair_template_id = sim.load_object_configs(
-        str(os.path.join(data_path, "test_assets/objects/chair"))
-    )[0]
-
-    # add 2 chairs and arrange them
-    ids = []
-    ids.append(sim.add_object(chair_template_id))
-    ids.append(sim.add_object(chair_template_id))
-
-    sim.set_rotation(mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis()), ids[0])
-    sim.set_translation([2.0, 0.47, 0.9], ids[0])
-
-    sim.set_translation([2.9, 0.47, 0.0], ids[1])
-
-    return ids
-
-
 # [/setup]
 
 # This is wrapped such that it can be added to a unit test
@@ -141,19 +122,56 @@ def main(show_imgs=True, save_imgs=False):
         cfg = make_configuration(scene_file=scene)
         sim.reconfigure(cfg)
         agent_transform = place_agent(sim)
-        get_obs(sim, show_imgs, save_imgs)
+        # get_obs(sim, show_imgs, save_imgs)
 
-        # add new chair objects to the scene with default semanticId == 0
-        chair_ids = add_chairs(sim)
-        get_obs(sim, show_imgs, save_imgs)
+        # load some chair object template from configuration file
+        chair_template_id = sim.load_object_configs(
+            str(os.path.join(data_path, "test_assets/objects/chair"))
+        )[0]
+
+        # add 2 chairs with default semanticId == 0 and arrange them
+        chair_ids = []
+        chair_ids.append(sim.add_object(chair_template_id))
+        chair_ids.append(sim.add_object(chair_template_id))
+
+        sim.set_rotation(
+            mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis()), chair_ids[0]
+        )
+        sim.set_translation([2.0, 0.47, 0.9], chair_ids[0])
+
+        sim.set_translation([2.9, 0.47, 0.0], chair_ids[1])
+        # get_obs(sim, show_imgs, save_imgs)
 
         # set the semanticId for both chairs
-        sim.set_object_semantic_id(20, chair_ids[0])
-        sim.set_object_semantic_id(20, chair_ids[1])
-        get_obs(sim, show_imgs, save_imgs)
+        sim.set_object_semantic_id(2, chair_ids[0])
+        sim.set_object_semantic_id(2, chair_ids[1])
+        # get_obs(sim, show_imgs, save_imgs)
 
         # set the semanticId for one chair
-        sim.set_object_semantic_id(10, chair_ids[1])
+        sim.set_object_semantic_id(1, chair_ids[1])
+        # get_obs(sim, show_imgs, save_imgs)
+
+        # add a box with default semanticId configured in the template
+        box_template = habitat_sim.attributes.PhysicsObjectAttributes()
+        box_template.set_render_asset_handle(
+            str(os.path.join(data_path, "test_assets/objects/transform_box.glb"))
+        )
+        box_template.set_scale(np.array([0.2, 0.2, 0.2]))
+        # set the default semantic id for this object template
+        box_template.semantic_id = 10
+        box_template_id = sim.load_object_template(box_template, "box")
+        box_id = sim.add_object(box_template_id)
+        sim.set_translation([3.5, 0.47, 0.9], box_id)
+        sim.set_rotation(
+            mn.Quaternion.rotation(mn.Deg(-30), mn.Vector3.y_axis()), box_id
+        )
+
+        get_obs(sim, show_imgs, save_imgs)
+
+        # set semantic id for specific SceneNode components of the box object
+        box_visual_nodes = sim.get_object_visual_scene_nodes(box_id)
+        box_visual_nodes[6].semantic_id = 3
+        box_visual_nodes[7].semantic_id = 4
         get_obs(sim, show_imgs, save_imgs)
 
     # [/semantic id]

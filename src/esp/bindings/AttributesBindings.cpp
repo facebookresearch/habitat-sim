@@ -88,7 +88,9 @@ void initAttributesBindings(py::module& m) {
       .def("set_requires_lighting",
            &PhysicsObjectAttributes::setRequiresLighting, "requires_lighting"_a)
       .def("get_requires_lighting",
-           &PhysicsObjectAttributes::getRequiresLighting);
+           &PhysicsObjectAttributes::getRequiresLighting)
+      .def_property("semantic_id", &PhysicsObjectAttributes::getSemanticId,
+                    &PhysicsObjectAttributes::setSemanticId);
 
   // ==== AbstractPrimitiveAttributes ====
   py::class_<AbstractPrimitiveAttributes, AbstractAttributes,
