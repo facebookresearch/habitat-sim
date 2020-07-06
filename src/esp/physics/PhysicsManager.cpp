@@ -101,19 +101,14 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
     return ID_UNDEFINED;
   }
 
-  //! Draw object via resource manager
-  //! Render node as child of physics node
-  std::vector<scene::SceneNode*> newNodes =
-      resourceManager_.addObjectToDrawables(
-          configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
-          drawables, lightSetup);
-
   existingObjects_.at(nextObjectID_)
       ->visualNodes_.push_back(existingObjects_.at(nextObjectID_)->visualNode_);
-  existingObjects_.at(nextObjectID_)
-      ->visualNodes_.insert(
-          existingObjects_.at(nextObjectID_)->visualNodes_.end(),
-          newNodes.begin(), newNodes.end());
+
+  //! Draw object via resource manager
+  //! Render node as child of physics node
+  resourceManager_.addObjectToDrawables(
+      configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
+      drawables, existingObjects_.at(nextObjectID_)->visualNodes_, lightSetup);
 
   // finalize rigid object creation
   objectSuccess = existingObjects_.at(nextObjectID_)->finalizeObject();
