@@ -33,7 +33,7 @@ class ObjectAttributesManager
    * @brief Creates an instance of an object template.  The passed string should
    * be either a file name or a reference to a primitive asset template that
    * should be used in the construction of the object; any other strings will
-   * result in a new template being created.
+   * result in a new default template being created.
    *
    * If a template exists with this handle, this existing template will be
    * overwritten with the newly created one if @ref registerTemplate is true.
@@ -41,7 +41,7 @@ class ObjectAttributesManager
    * @param attributesTemplateHandle the origin of the desired template to be
    * created, either a file name or an existing primitive asset template. If
    * this is neither a recognized file name nor the handle of an existing
-   * primitive asset, a new template will be created.
+   * primitive asset, a new default template will be created.
    * @param registerTemplate whether to add this template to the library or not.
    * If the user is going to edit this template, this should be false - any
    * subsequent editing will require re-registration.
@@ -88,8 +88,8 @@ class ObjectAttributesManager
 
   /**
    * @brief Creates an instance of an empty object template populated with
-   * default values.  Assigns the @ref templateName as the origin handle and as
-   * the renderAssetHandle.
+   * default values.  Assigns the @ref templateName as the template's handle and
+   * as the renderAssetHandle.
    *
    * @param templateName the name of the file describing the object attributes.
    * Registration fails if this is not a valid asset handle.

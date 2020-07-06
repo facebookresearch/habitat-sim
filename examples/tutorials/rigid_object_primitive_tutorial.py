@@ -3,93 +3,67 @@ import math
 import os
 from pathlib import Path
 
-import cv2
 import magnum as mn
 import numpy as np
 
-import examples.tutorials.tutorial_functions as tutFuncs
+
 import habitat_sim
 import habitat_sim.utils.common as ut
+import habitat_sim.utils.tutorial_functions as tutFuncs
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 data_path = os.path.join(dir_path, "../../data")
 output_path = os.path.join(dir_path, "rigid_object_primitive_tutorial_output/")
 
 
-def make_video_cv2(
-    observations, camera_res=[540, 720], prefix="", open_vid=True, multi_obs=False
-):
-    videodims = (camera_res[1], camera_res[0])
-    fourcc = cv2.VideoWriter_fourcc("m", "p", "4", "v")
-    video = cv2.VideoWriter(output_path + prefix + ".mp4", fourcc, 60, videodims)
-    thumb_size = (int(videodims[0] / 5), int(videodims[1] / 5))
-    outline_frame = np.ones((thumb_size[1] + 2, thumb_size[0] + 2, 3), np.uint8) * 150
+def make_tutorial_configuration(camera_list, camera_resolution=[540, 720]):
+    """
+    Set sensor configuration specific to this tutorial and 
+    then build simulator, sensor and agent configurations. 
 
-    if multi_obs:
-        for ob in observations:
-            embed_image_data_list = [
-                (ob["rgba_camera_1stperson"], False),
-                (ob["depth_camera_1stperson"], True),
-            ]
+    Parameters
+    ----------
+    camera_list : list of tuples
+        Each tuple value holds :
+          idx 0 : name of camera
+          idx 1 : whether camera is depth or not
+          idx 2 : whether camera is 1st person or 3rd person
 
-            res_image = tutFuncs.build_multi_obs_image(
-                ob["rgba_camera_3rdperson"],
-                embed_image_data_list,
-                thumb_size,
-                outline_frame,
-            )
-            # write the desired image to video
-            video.write(res_image)
-    else:
-        for ob in observations:
-            res_image = ob["rgba_camera_1stperson"][..., 0:3][..., ::-1]
-
-            # write the desired image to video
-            video.write(res_image)
-    video.release()
-    if open_vid:
-        os.system("open " + output_path + prefix + ".mp4")
+    camera_resolution : list of ints
+            Y,X resolution of sensor image.
 
 
-def make_tutorial_configuration(camera_resolution=[540, 720]):
+    Returns
+    -------
+    cfg : habitat_sim.Configuration
+        Configuration required to instance necessary Habitat components.
+
+    """
+
     # sensor configurations
     # Note: all sensors must have the same resolution
     # setup 2 rgb sensors for 1st and 3rd person views
-    sensors_config_dict = {
-        "rgba_camera_1stperson": {
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "resolution": camera_resolution,
-            "position": [0.0, 0.6, 0.0],
-            "orientation": [0.0, 0.0, 0.0],
-        },
-        "depth_camera_1stperson": {
-            "sensor_type": habitat_sim.SensorType.DEPTH,
-            "resolution": camera_resolution,
-            "position": [0.0, 0.6, 0.0],
-            "orientation": [0.0, 0.0, 0.0],
-        },
-        "rgba_camera_3rdperson": {
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "resolution": camera_resolution,
-            "position": [0.0, 1.0, 0.3],
-            "orientation": [-45, 0.0, 0.0],
-        },
-    }
+    sensors_config_dict = {}
+    for camera in camera_list:
+        camera_name = camera[0]
+        temp_dict = {}
+        # if depth else color
+        temp_dict["sensor_type"] = (
+            habitat_sim.SensorType.DEPTH
+            if "depth" in camera[1].lower()
+            else habitat_sim.SensorType.COLOR
+        )
+        temp_dict["resolution"] = camera_resolution
+        # check if 1st or 3rd person camera
+        if "firstperson" in camera[2].lower():
+            temp_dict["position"] = [0.0, 0.6, 0.0]
+            temp_dict["orientation"] = [0.0, 0.0, 0.0]
+        else:
+            temp_dict["position"] = [0.0, 1.0, 0.3]
+            temp_dict["orientation"] = [-45, 0.0, 0.0]
+        sensors_config_dict[camera_name] = temp_dict
 
     return tutFuncs.make_configuration("apartment_1.glb", True, sensors_config_dict)
-
-
-def simulate(sim, dt=1.0, get_frames=True):
-    # simulate dt seconds at 60Hz to the nearest fixed timestep
-    print("Simulating " + str(dt) + " world seconds.")
-    observations = []
-    start_time = sim.get_world_time()
-    while sim.get_world_time() < start_time + dt:
-        sim.step_physics(1.0 / 60.0)
-        if get_frames:
-            observations.append(sim.get_sensor_observations())
-
-    return observations
 
 
 # [/setup]
@@ -104,7 +78,17 @@ def main(make_video=True, show_video=True):
     # create the simulator
     # camera y by x
     camera_resolution = [720, 1024]
-    cfg = make_tutorial_configuration(camera_resolution)
+
+    # camera names and povs to use
+    camera_list = [
+        ("rgba_camera_1stperson", "Color", "FirstPerson"),
+        ("depth_camera_1stperson", "Depth", "FirstPerson"),
+        ("rgba_camera_3rdperson", "Color", "ThirdPerson"),
+    ]
+
+    # build tutorial simulator configuration
+    cfg = make_tutorial_configuration(camera_list, camera_resolution)
+    # construct an instance of simulator with desired configuration
     sim = habitat_sim.Simulator(cfg)
     agent_transform = tutFuncs.place_agent(
         sim, pos=[-0.15, -0.7, 1.0], rot=np.quaternion(-0.83147, 0, 0.55557, 0)
@@ -131,13 +115,15 @@ def main(make_video=True, show_video=True):
     sim.set_translation(np.array([2.50, 0, 0.2]), id_1)
 
     # simulate
-    observations = simulate(sim, dt=1.5, get_frames=make_video)
+    observations = tutFuncs.simulate(sim, dt=1.5, get_frames=make_video)
 
     if make_video:
-        make_video_cv2(
+        tutFuncs.make_video_cv2(
             observations,
-            camera_resolution,
-            prefix="prim_obj_basics",
+            camera_list[0][0],
+            output_path=output_path,
+            file_name="prim_obj_basics",
+            camera_res=camera_resolution,
             open_vid=show_video,
         )
 
@@ -178,13 +164,15 @@ def main(make_video=True, show_video=True):
     sim.set_translation(np.array([1.80, 0, 0.0]), id_1)
 
     # simulate
-    observations = simulate(sim, dt=1.5, get_frames=make_video)
+    observations = tutFuncs.simulate(sim, dt=1.5, get_frames=make_video)
 
     if make_video:
-        make_video_cv2(
+        tutFuncs.make_video_cv2(
             observations,
-            camera_resolution,
-            prefix="prim_obj_asset_customization",
+            camera_list[0][0],
+            output_path=output_path,
+            file_name="prim_obj_asset_customization",
+            camera_res=camera_resolution,
             open_vid=show_video,
         )
 

@@ -4,6 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
+
 import cv2
 import numpy as np
 
@@ -24,10 +26,10 @@ def make_configuration(test_scene, enable_physics, sensors_config_dict):
     ----------
     test_scene : string
         Name of file in habitat-test-scenes directory describing scene
-        
+
     enable_physics : boolean
         Whether physics is enabled or not.
-    
+
     sensors_config_dict : dictionary
          Dictionary keyed by sensor name that contains sensor specifications :
         "sensor_type" : habitat_sim.SensorType enum
@@ -38,7 +40,7 @@ def make_configuration(test_scene, enable_physics, sensors_config_dict):
             Position of sensor relative to agent.
         "orientation" : list of 3 values
             Orientation of sensor relative to agent (no roll).
-        
+
     Returns
     -------
     cfg : habitat_sim.Configuration
@@ -66,6 +68,113 @@ def make_configuration(test_scene, enable_physics, sensors_config_dict):
     agent_cfg.sensor_specifications = sensor_specs
 
     return habitat_sim.Configuration(backend_cfg, [agent_cfg])
+
+
+def make_video_cv2(
+    observations,
+    primary_pov,
+    output_path,
+    file_name,
+    camera_res=[540, 720],
+    open_vid=True,
+    multi_obs=False,
+    pov_list=[],
+):
+    """
+    Build a video of passed observations array, with embedded images if desired
+
+    Parameters
+    ----------
+    observations : list
+        List of observations from which the video should be constructed
+
+    primary_pov : string
+        Primary camera name in observations to be used for image.
+
+    output_path : string
+        location where to save resultant .mp4 video.
+
+    file_name : string
+        File name to use to save resultant .mp4 video.
+
+    camera_res : list, optional
+        Height by Width of camera for image. Default is [540, 720]
+
+    open_vid : boolean, optional
+        Whether to open video upon creation.  Default is True
+
+    multi_obs : boolean, optional
+        Whether to embed images from POVs listed in pov_list.
+        Defaults to False
+
+    pov_list : List of tuples, optional
+        If present, each tuple holds :
+            idx 0 is camera name in observations
+            idx 1 is boolean whether is depth canera or not.
+        List of strings denoting specific camera types and POVs to consume
+        from observations list.  Ignored if multi_obs is False
+
+    Returns
+    -------
+    None.
+
+    """
+    videodims = (camera_res[1], camera_res[0])
+    fourcc = cv2.VideoWriter_fourcc("m", "p", "4", "v")
+    video_file_name = output_path + file_name + ".mp4"
+    video = cv2.VideoWriter(video_file_name, fourcc, 60, videodims)
+    thumb_size = (int(videodims[0] / 5), int(videodims[1] / 5))
+    outline_frame = np.ones((thumb_size[1] + 2, thumb_size[0] + 2, 3), np.uint8) * 150
+
+    if multi_obs and len(pov_list) > 1:
+        for ob in observations:
+            embed_image_data_list = [
+                (ob[pov_list[i][0]], "depth" in pov_list[i][1].lower())
+                for i in range(0, len(pov_list))
+            ]
+
+            res_image = build_multi_obs_image(
+                ob[primary_pov], embed_image_data_list, thumb_size, outline_frame,
+            )
+            # write the desired image to video
+            video.write(res_image)
+    else:
+        for ob in observations:
+            res_image = ob[primary_pov][..., 0:3][..., ::-1]
+
+            # write the desired image to video
+            video.write(res_image)
+    video.release()
+    if open_vid:
+        launch_vid(video_file_name)
+
+
+def launch_vid(video_file_name):
+    """
+    Platform-independent (mac/linux) method to programmatically launch video at passed file location
+
+    Parameters
+    ----------
+    video_file_name : string
+        Name of video file to launch
+
+    Returns
+    -------
+    None.
+
+    """
+    from sys import platform
+
+    if "linux" in platform:
+        # linux
+        import subprocess
+
+        subprocess.Popen("xdg-open " + video_file_name, shell=True).wait()
+    elif "darwin" in platform:
+        # OS X
+        import subprocess
+
+        subprocess.Popen("open " + video_file_name, shell=True).wait()
 
 
 def build_multi_obs_image(
@@ -144,7 +253,7 @@ def clip_depth_image(depth_image, clip_max=10.0):
     return bgr_d_im
 
 
-def get_obs(sim, camera, show=True, save=False, output_path=""):
+def get_obs(sim, camera, show=True, save=False, output_path="", file_name=""):
     """
     Get an agent observation for a specified camera.
 
@@ -152,20 +261,24 @@ def get_obs(sim, camera, show=True, save=False, output_path=""):
     ----------
     sim : Simulator, 
         Reference to the habitat simulator object
-        
+
     camera : string
         Camera name to get observation from.
-        
+
     show : boolean, optional
         Whether to display an image of the observation. 
         The default is True
-        
+
     save : boolean optional
         Whether to save image to path specified.  
         The default is False
-        
+
     output_path : string, optional
         Where to save the image. The default is "".
+
+    file_name : string, optional
+        File name to use to save the .jpg image.  
+        Default is "".
 
     Returns
     -------
@@ -175,11 +288,11 @@ def get_obs(sim, camera, show=True, save=False, output_path=""):
     """
     obs = sim.get_sensor_observations()[camera]
     if show:
-        show_img(obs, save, output_path)
+        show_img(obs, save=save, output_path=output_path, file_name=file_name)
     return obs
 
 
-def show_img(data, save=False, output_path=""):
+def show_img(data, fig_size=(12, 12), save=False, output_path="", file_name=""):
     """
     Display an image of the passed data
 
@@ -188,10 +301,20 @@ def show_img(data, save=False, output_path=""):
     data : list
         Array-like structure of image data.  
         See matplotlib.pyplot.imshow for more.
+
+    fig_size : (float, float), optional, default: (12, 12)
+        width, height in inches if resultant image.
+
     save : boolean optional
-        Whether to save image to path specified
+        Whether to save image to path and file name 
+        specified. Default is False
+
     output_path : string, optional
-        DESCRIPTION. The default is "".
+        Where to save the .jpg image. The default is "".
+
+    file_name : string, optional
+        File name to use to save the .jpg image.  
+        Default is "".
 
     Returns
     -------
@@ -200,26 +323,24 @@ def show_img(data, save=False, output_path=""):
     """
     from matplotlib import pyplot as plt
 
-    plt.figure(figsize=(12, 12))
+    plt.figure(figsize=fig_size)
     plt.imshow(data, interpolation="nearest")
     plt.axis("off")
     plt.show(block=False)
     if save:
-        global save_index
         plt.savefig(
-            output_path + str(save_index) + ".jpg",
+            output_path + file_name + ".jpg",
             bbox_inches="tight",
             pad_inches=0,
             quality=50,
         )
-        save_index += 1
     plt.pause(1)
 
 
 def place_agent(sim, pos=[0.0, 0.0, 0.0], rot=np.quaternion(-1, 0, 0, 0)):
     """    
     Places our agent in the scene using specified position and orientation parameters
-    
+
     Parameters
     ----------
     sim : Simulator, 
@@ -228,11 +349,10 @@ def place_agent(sim, pos=[0.0, 0.0, 0.0], rot=np.quaternion(-1, 0, 0, 0)):
         Location in scene to place agent. The default is [0.0,0.0,0.0].
     rot : numpy quaternion, optional
         Orientation of agent in scene.  The default is np.quaternion(-1, 0, 0, 0)
-        
+
     Returns
     -------
-    TYPE
-        DESCRIPTION.
+    agent's scene_node transformation matrix
 
     """
     agent_state = habitat_sim.AgentState()
@@ -259,3 +379,39 @@ def remove_all_objects(sim):
 
     for id in sim.get_existing_object_ids():
         sim.remove_object(id)
+
+
+def simulate(sim, dt=1.0, get_frames=True):
+    """
+    Forward simulate world physics by requested duration, 
+    returning observations if requested
+
+
+    Parameters
+    ----------
+    sim : Simulator, 
+        Reference to the habitat simulator object
+
+    dt : float, optional, default
+        Duration of simulation in seconds, Defaults to 1.0
+
+    get_frames : boolean, optional, default
+        Whether to return observations from specified sensors 
+
+    Returns
+    -------
+    observations : list
+        list of 2d numpy array of ints or floats representing observation 
+        per sensor per step.
+    """
+
+    # simulate dt seconds at 60Hz to the nearest fixed timestep
+    print("Simulating " + str(dt) + " world seconds.")
+    observations = []
+    start_time = sim.get_world_time()
+    while sim.get_world_time() < start_time + dt:
+        sim.step_physics(1.0 / 60.0)
+        if get_frames:
+            observations.append(sim.get_sensor_observations())
+
+    return observations

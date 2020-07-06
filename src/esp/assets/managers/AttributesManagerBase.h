@@ -69,36 +69,45 @@ class AttributesManager {
    * @param attributesTemplateHandle The key for referencing the template in the
    * @ref templateLibrary_. Will be set as origin handle for template.  If empty
    * string, use existing origin handle.
-   * @return The index the template.
+   * @return The unique ID of the template being registered, or ID_UNDEFINED if
+   * failed
    */
   int registerAttributesTemplate(
       AttribsPtr attributesTemplate,
       const std::string& attributesTemplateHandle = "") {
-    std::string handleToSet = attributesTemplateHandle;
+    if ("" != attributesTemplateHandle) {
+      return registerAttributesTemplateFinalize(attributesTemplate,
+                                                attributesTemplateHandle);
+    }
+    std::string handleToSet = attributesTemplate->getHandle();
     if ("" == handleToSet) {
-      handleToSet = attributesTemplate->getHandle();
-      if ("" == handleToSet) {
-        LOG(ERROR) << "AttributesManager::registerAttributesTemplate : No "
-                      "valid handle specified for attributes template to "
-                      "register. Aborting.";
-        return ID_UNDEFINED;
-      }
+      LOG(ERROR) << "AttributesManager::registerAttributesTemplate : No "
+                    "valid handle specified for attributes template to "
+                    "register. Aborting.";
+      return ID_UNDEFINED;
     }
     return registerAttributesTemplateFinalize(attributesTemplate, handleToSet);
   }  // AttributesManager::registerAttributesTemplate
 
   /**
-   * @brief Register template and call ResourceManager method to execute
-   * post-registration processes on attributes. Use if user wishes to update
-   * existing objects built by attributes with new attributes data.  Requires
-   * the use of Attributes' assigned handle in order to reference existing
-   * constructions built from the original version of this attributes.
+   * @brief Register template and call appropriate ResourceManager method to
+   * execute appropriate post-registration processes due to change in
+   * attributes. Use if user wishes to update existing objects built by
+   * attributes with new attributes data and such objects support this kind of
+   * update. Requires the use of Attributes' assigned handle in order to
+   * reference existing constructions built from the original version of this
+   * attributes.
    * @param attributesTemplate The attributes template.
-   * @return The index the template.
+   * @return The unique ID of the template being registered, or ID_UNDEFINED if
+   * failed
    */
   int registerAttributesTemplateAndUpdate(AttribsPtr attributesTemplate) {
-    int ID = registerAttributesTemplate(attributesTemplate,
-                                        attributesTemplate->getHandle());
+    std::string originalHandle = attributesTemplate->getHandle();
+    int ID = registerAttributesTemplate(attributesTemplate, originalHandle);
+    // If undefined then some error occurred.
+    if (ID_UNDEFINED == ID) {
+      return ID_UNDEFINED;
+    }
     // TODO : call Resource Manager for post-registration processing of this
     // template
 
@@ -168,6 +177,7 @@ class AttributesManager {
     }
     return templateLibrary_.at(templateHandle);
   }  // AttributesManager::getAttributesTemplate
+
   /**
    * @brief Remove the template referenced by the passed string handle.  Will
    * emplace template ID within deque of usable IDs and return the template
@@ -197,10 +207,10 @@ class AttributesManager {
                                    "AttributesManager::removeTemplateByHandle");
   }
   /**
-   * @brief Get the key in @ref templateLibrary_ for the object
-   * template index.
+   * @brief Get the key in @ref templateLibrary_ for the object template with
+   * the given unique ID.
    *
-   * @param templateID The index of the template in @ref templateLibrary_.
+   * @param templateID The unique ID of the desired template.
    * @return The key referencing the template in @ref
    * templateLibrary_, or nullptr if does not exist.
    */
@@ -245,9 +255,8 @@ class AttributesManager {
   }  // AttributesManager::getTemplateHandlesBySubstring
 
   /**
-   * @brief Get a random object attribute handle (that could possibly describe
-   * either file-based or a primitive) for the loaded file-based object
-   * templates
+   * @brief Get the handle for a random attributes template registered to this
+   * manager.
    *
    * @return a randomly selected handle corresponding to a known object
    * attributes template, or empty string if none found
@@ -275,6 +284,7 @@ class AttributesManager {
     auto orig = this->templateLibrary_.at(templateHandle);
     return this->copyAttributes(orig);
   }  // AttributesManager::getTemplateCopyByID
+
   /**
    * @brief Return a reference to a copy of the object specified
    * by passed handle.  This is the version that should be accessed by the
@@ -387,11 +397,12 @@ class AttributesManager {
   }  // AttributesManager::getTemplateIDByHandle
 
   /**
-   * @brief implementation of attributes-specific registration
+   * @brief implementation of attributes type-specific registration
    * @param attributesTemplate the attributes template to be registered
    * @param attributesTemplateHandle the name to register the template with.
    * Expected to be valid.
-   * @return The index in the @ref templateLibrary_ of object template.
+   * @return The unique ID of the template being registered, or ID_UNDEFINED if
+   * failed
    */
   virtual int registerAttributesTemplateFinalize(
       AttribsPtr attributesTemplate,

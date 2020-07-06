@@ -62,7 +62,7 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
 
   if (nullptr != objAttributes && registerTemplate) {
     int attrID =
-        registerAttributesTemplate(objAttributes, primAttrTemplateHandle);
+        this->registerAttributesTemplate(objAttributes, primAttrTemplateHandle);
     if (attrID == ID_UNDEFINED) {
       // some error occurred
       return nullptr;
@@ -80,7 +80,7 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
       parseAndLoadPhysObjTemplate(filename);
 
   if (nullptr != objAttributes && registerTemplate) {
-    int attrID = registerAttributesTemplate(objAttributes, filename);
+    int attrID = this->registerAttributesTemplate(objAttributes, filename);
     // some error occurred
     if (attrID == ID_UNDEFINED) {
       return nullptr;
@@ -99,7 +99,7 @@ ObjectAttributesManager::createDefaultAttributesTemplate(
   // set render mesh handle as a default
   objAttributes->setRenderAssetHandle(templateName);
   if (registerTemplate) {
-    int attrID = registerAttributesTemplate(objAttributes, templateName);
+    int attrID = this->registerAttributesTemplate(objAttributes, templateName);
     if (attrID == ID_UNDEFINED) {
       // some error occurred
       return nullptr;
@@ -113,7 +113,8 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
     const std::string& objectTemplateHandle) {
   if (objectTemplate->getRenderAssetHandle() == "") {
     LOG(ERROR)
-        << "ObjectAttributesManager::registerAttributesTemplate : Attributes "
+        << "ObjectAttributesManager::registerAttributesTemplateFinalize : "
+           "Attributes "
            "template named"
         << objectTemplateHandle
         << "does not have a valid render asset handle specified. Aborting.";
@@ -141,13 +142,13 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
     // If renderAssetHandle is neither valid file name nor existing primitive
     // attributes template hande, fail
     // by here always fail
-    LOG(ERROR)
-        << "ObjectAttributesManager::registerAttributesTemplate : Render asset "
-           "template handle : "
-        << renderAssetHandle << " specified in object template with handle : "
-        << objectTemplateHandle
-        << " does not correspond to existing file or primitive render "
-           "asset.  Aborting. ";
+    LOG(ERROR) << "ObjectAttributesManager::registerAttributesTemplateFinalize "
+                  ": Render asset template handle : "
+               << renderAssetHandle
+               << " specified in object template with handle : "
+               << objectTemplateHandle
+               << " does not correspond to existing file or primitive render "
+                  "asset.  Aborting. ";
     return ID_UNDEFINED;
   }
 
@@ -176,7 +177,7 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
   mapToUse->emplace(objectTemplateID, objectTemplateHandle);
 
   return objectTemplateID;
-}  // ObjectAttributesManager::registerAttributesTemplate
+}  // ObjectAttributesManager::registerAttributesTemplateFinalize
 
 PhysicsObjectAttributes::ptr
 ObjectAttributesManager::parseAndLoadPhysObjTemplate(
