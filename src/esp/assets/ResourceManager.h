@@ -314,8 +314,8 @@ class ResourceManager {
    * gfx::Drawable will be rendered.
    * @param lightSetup The @ref LightSetup key that will be used
    * for the added component.
-   * @param visNodeCache Cache for pointers to all nodes created as the result
-   * of this process.
+   * @param[out] visNodeCache Cache for pointers to all nodes created as the
+   * result of this process.
    */
   void addObjectToDrawables(int objTemplateLibID,
                             scene::SceneNode* parent,
@@ -349,8 +349,8 @@ class ResourceManager {
    * gfx::Drawable will be rendered.
    * @param lightSetup The @ref LightSetup key that will be used
    * for the added component.
-   * @param visNodeCache Cache for pointers to all nodes created as the result
-   * of this process.
+   * @param[out] visNodeCache Cache for pointers to all nodes created as the
+   * result of this process.
    */
   void addObjectToDrawables(const std::string& objTemplateHandle,
                             scene::SceneNode* parent,
@@ -491,8 +491,8 @@ class ResourceManager {
    * rendered.
    * @param meshTransformNode The @ref MeshTransformNode for component
    * identifying its mesh, material, transformation, and children.
-   * @param visNodeCache Cache for pointers to all nodes created as the result
-   * of this recursive process.
+   * @param[out] visNodeCache Cache for pointers to all nodes created as the
+   * result of this recursive process.
    */
   void addComponent(const MeshMetaData& metaData,
                     scene::SceneNode& parent,
