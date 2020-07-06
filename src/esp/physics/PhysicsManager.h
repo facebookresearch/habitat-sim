@@ -819,7 +819,7 @@ class PhysicsManager {
    * existingObjects_.
    * @param semanticId The desired semantic id for the object.
    */
-  void setSemanticId(const int physObjectID, uint32_t semanticId);
+  void setSemanticId(int physObjectID, uint32_t semanticId);
 
   /**
    * @brief Get the template used to initialize an object.
