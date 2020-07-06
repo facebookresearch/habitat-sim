@@ -565,9 +565,7 @@ class Simulator {
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    */
-  void setObjectSemanticId(uint32_t semanticId,
-                           int objectID,
-                           int sceneID);
+  void setObjectSemanticId(uint32_t semanticId, int objectID, int sceneID);
 
   /**
    * @brief Discrete collision check for contact between an object and the
