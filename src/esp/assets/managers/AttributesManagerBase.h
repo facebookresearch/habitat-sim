@@ -36,7 +36,7 @@ namespace managers {
 template <class AttribsPtr>
 class AttributesManager {
  public:
-  explicit AttributesManager() {}
+  AttributesManager() {}
   virtual ~AttributesManager() = default;
 
   /**
@@ -311,7 +311,7 @@ class AttributesManager {
    */
   std::string getRandomTemplateHandle() const {
     return getRandomTemplateHandlePerType(templateLibKeyByID_, "");
-  }
+  }  // AttributesManager::getRandomTemplateHandle
 
   /**
    * @brief Get a list of all templates whose origin handles contain @ref
@@ -328,7 +328,7 @@ class AttributesManager {
       bool contains = true) const {
     return getTemplateHandlesBySubStringPerType(templateLibKeyByID_, subStr,
                                                 contains);
-  }
+  }  // AttributesManager::getTemplateHandlesBySubstring
 
   /**
    * @brief return a read-only reference to the template library managed by this
@@ -362,8 +362,7 @@ class AttributesManager {
    * @return The template's ID if found. The next available ID if not found and
    * getNext is true. Otherwise ID_UNDEFINED.
    */
-  int getTemplateIDByHandle(const std::string& templateHandle,
-                            bool getNext = false) {
+  int getTemplateIDByHandle(const std::string& templateHandle, bool getNext) {
     if (getTemplateLibHasHandle(templateHandle)) {
       return templateLibrary_.at(templateHandle)->getID();
     } else {
