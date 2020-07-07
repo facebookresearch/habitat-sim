@@ -6,6 +6,7 @@
 #define ESP_ASSETS_MANAGERS_ASSETATTRIBUTEMANAGER_H_
 
 #include "AttributesManagerBase.h"
+
 namespace esp {
 namespace assets {
 /**
@@ -77,9 +78,10 @@ class AssetAttributesManager
    * a valid primitive.
    */
   static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
-  AssetAttributesManager()
-      : AttributesManager<
-            AbstractPrimitiveAttributes::ptr>::AttributesManager() {
+
+  AssetAttributesManager(assets::ResourceManager& resourceManager)
+      : AttributesManager<AbstractPrimitiveAttributes::ptr>::AttributesManager(
+            resourceManager) {
     buildCtorFuncPtrMaps();
   }  // AssetAttributesManager::ctor
 

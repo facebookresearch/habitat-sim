@@ -23,6 +23,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace assets {
 
+class ResourceManager;
 namespace managers {
 
 /**
@@ -36,7 +37,8 @@ namespace managers {
 template <class AttribsPtr>
 class AttributesManager {
  public:
-  AttributesManager() {}
+  AttributesManager(assets::ResourceManager& resourceManager)
+      : resourceManager_(resourceManager) {}
   virtual ~AttributesManager() = default;
 
   /**
@@ -541,6 +543,10 @@ class AttributesManager {
    * the approrpiate function pointer.
    */
   Map_Of_CopyCtors copyConstructorMap_;
+
+  /** @brief A reference to a @ref esp::assets::ResourceManager which holds
+   * assets that can be accessed by this @ref PhysicsManager*/
+  assets::ResourceManager& resourceManager_;
 
   /**
    * @brief Maps string keys to attributes templates
