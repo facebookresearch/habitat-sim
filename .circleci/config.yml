@@ -463,7 +463,7 @@ jobs:
       - run: *install_deps
       - run:
           name: Build conda Linux packages
-          no_output_timeout: 120m
+          no_output_timeout: 240m
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
