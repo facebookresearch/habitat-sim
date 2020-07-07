@@ -779,6 +779,16 @@ class PhysicsManager {
    */
   const scene::SceneNode& getObjectVisualSceneNode(int physObjectID) const;
 
+  /**
+   * @brief Get pointers to an object's visual SceneNodes.
+   *
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return pointers to the object's visual scene nodes.
+   */
+  std::vector<scene::SceneNode*> getObjectVisualSceneNodes(
+      const int objectID) const;
+
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref
    * BulletPhysicsManager::debugDraw.
@@ -810,6 +820,16 @@ class PhysicsManager {
   const PhysicsSimulationLibrary& getPhysicsSimulationLibrary() const {
     return activePhysSimLib_;
   };
+
+  /**
+   * @brief Set the @ref esp::scene:SceneNode::semanticId_ for all visual nodes
+   * belonging to an object.
+   *
+   * @param objectID The object ID and key identifying the object in @ref
+   * existingObjects_.
+   * @param semanticId The desired semantic id for the object.
+   */
+  void setSemanticId(int physObjectID, uint32_t semanticId);
 
   /**
    * @brief Get the template used to initialize an object.

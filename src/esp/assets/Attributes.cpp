@@ -52,6 +52,7 @@ PhysicsObjectAttributes::PhysicsObjectAttributes(const std::string& handle)
   setJoinCollisionMeshes(true);
   setRequiresLighting(true);
   setIsVisible(true);
+  setSemanticId(0);
   setIsCollidable(true);
 }  // PhysicsObjectAttributes ctor
 

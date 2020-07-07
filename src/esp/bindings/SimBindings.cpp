@@ -124,6 +124,9 @@ void initSimBindings(py::module& m) {
       .def("set_gravity", &Simulator::setGravity, "gravity"_a, "scene_id"_a = 0)
       .def("get_object_scene_node", &Simulator::getObjectSceneNode,
            "object_id"_a, "scene_id"_a = 0)
+      .def("get_object_visual_scene_nodes",
+           &Simulator::getObjectVisualSceneNodes, "object_id"_a,
+           "scene_id"_a = 0)
       .def("set_transformation", &Simulator::setTransformation, "transform"_a,
            "object_id"_a, "scene_id"_a = 0)
       .def("get_transformation", &Simulator::getTransformation, "object_id"_a,
@@ -158,6 +161,8 @@ void initSimBindings(py::module& m) {
            "scene_id"_a = 0)
       .def("set_object_bb_draw", &Simulator::setObjectBBDraw, "draw_bb"_a,
            "object_id"_a, "scene_id"_a = 0)
+      .def("set_object_semantic_id", &Simulator::setObjectSemanticId,
+           "semantic_id"_a, "object_id"_a, "scene_id"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
            "navmesh_settings"_a, "include_static_objects"_a = false)
       .def("get_light_setup", &Simulator::getLightSetup,

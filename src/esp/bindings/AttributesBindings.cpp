@@ -106,7 +106,9 @@ void initAttributesBindings(py::module& m) {
       .def_property("restitution_coefficient",
                     &PhysicsManagerAttributes::getRestitutionCoefficient,
                     &PhysicsManagerAttributes::setRestitutionCoefficient);
-
+      .def_property("semantic_id", &PhysicsObjectAttributes::getSemanticId,
+                    &PhysicsObjectAttributes::setSemanticId);
+  
   // ==== AbstractPrimitiveAttributes ====
   py::class_<AbstractPrimitiveAttributes, AbstractAttributes,
              AbstractPrimitiveAttributes::ptr>(m, "AbstractPrimitiveAttributes")

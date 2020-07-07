@@ -61,7 +61,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setShininess(materialData_->shininess)
       .setLightPositions(lightPositions)
       .setLightColors(lightColors)
-      .setObjectId(materialData_->perVertexObjectId ? 0 : node_.getId())
+      .setObjectId(materialData_->perVertexObjectId ? 0 : node_.getSemanticId())
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(transformationMatrix.rotationScaling());

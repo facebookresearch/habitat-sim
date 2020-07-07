@@ -314,10 +314,13 @@ class ResourceManager {
    * gfx::Drawable will be rendered.
    * @param lightSetup The @ref LightSetup key that will be used
    * for the added component.
+   * @param[out] visNodeCache Cache for pointers to all nodes created as the
+   * result of this process.
    */
   void addObjectToDrawables(int objTemplateLibID,
                             scene::SceneNode* parent,
                             DrawableGroup* drawables,
+                            std::vector<scene::SceneNode*>& visNodeCache,
                             const Magnum::ResourceKey& lightSetup =
                                 Magnum::ResourceKey{DEFAULT_LIGHTING_KEY}) {
     if (objTemplateLibID != ID_UNDEFINED) {
@@ -325,7 +328,7 @@ class ResourceManager {
           objectAttributesManager_->getTemplateHandleByID(objTemplateLibID);
 
       addObjectToDrawables(objTemplateHandleName, parent, drawables,
-                           lightSetup);
+                           visNodeCache, lightSetup);
     }  // else objTemplateID does not exist - shouldn't happen
   }    // addObjectToDrawables
 
@@ -346,10 +349,13 @@ class ResourceManager {
    * gfx::Drawable will be rendered.
    * @param lightSetup The @ref LightSetup key that will be used
    * for the added component.
+   * @param[out] visNodeCache Cache for pointers to all nodes created as the
+   * result of this process.
    */
   void addObjectToDrawables(const std::string& objTemplateHandle,
                             scene::SceneNode* parent,
                             DrawableGroup* drawables,
+                            std::vector<scene::SceneNode*>& visNodeCache,
                             const Magnum::ResourceKey& lightSetup =
                                 Magnum::ResourceKey{DEFAULT_LIGHTING_KEY});
 
@@ -485,12 +491,15 @@ class ResourceManager {
    * rendered.
    * @param meshTransformNode The @ref MeshTransformNode for component
    * identifying its mesh, material, transformation, and children.
+   * @param[out] visNodeCache Cache for pointers to all nodes created as the
+   * result of this recursive process.
    */
   void addComponent(const MeshMetaData& metaData,
                     scene::SceneNode& parent,
                     const Magnum::ResourceKey& lightSetup,
                     DrawableGroup* drawables,
-                    const MeshTransformNode& meshTransformNode);
+                    const MeshTransformNode& meshTransformNode,
+                    std::vector<scene::SceneNode*>& visNodeCache);
 
   /**
    * @brief Load textures from importer into assets, and update metaData for

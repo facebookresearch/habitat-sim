@@ -242,6 +242,10 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
   void setIsVisible(bool isVisible) { setBool("isVisible", isVisible); }
   bool getIsVisible() const { return getBool("isVisible"); }
 
+  void setSemanticId(uint32_t semanticId) { setInt("semanticId", semanticId); }
+
+  uint32_t getSemanticId() const { return getInt("semanticId"); }
+
   // if object should be checked for collisions - if other objects can collide
   // with this object
   void setIsCollidable(bool isCollidable) {
