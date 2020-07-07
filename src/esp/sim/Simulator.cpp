@@ -428,6 +428,15 @@ scene::SceneNode* Simulator::getObjectSceneNode(const int objectID,
   return nullptr;
 }
 
+std::vector<scene::SceneNode*> Simulator::getObjectVisualSceneNodes(
+    const int objectID,
+    const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getObjectVisualSceneNodes(objectID);
+  }
+  return std::vector<scene::SceneNode*>();
+}
+
 // set object transform (kinemmatic control)
 void Simulator::setTransformation(const Magnum::Matrix4& transform,
                                   const int objectID,
@@ -543,6 +552,14 @@ void Simulator::setObjectBBDraw(bool drawBB,
     auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
     auto& drawables = sceneGraph_.getDrawables();
     physicsManager_->setObjectBBDraw(objectID, &drawables, drawBB);
+  }
+}
+
+void Simulator::setObjectSemanticId(uint32_t semanticId,
+                                    const int objectID,
+                                    const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    physicsManager_->setSemanticId(objectID, semanticId);
   }
 }
 

@@ -572,6 +572,18 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   virtual void setAngularDamping(CORRADE_UNUSED const double angDamping) {}
 
   /**
+   * @brief Set the @ref esp::scene:SceneNode::semanticId_ for all visual nodes
+   * belonging to the object.
+   *
+   * @param semanticId The desired semantic id for the object.
+   */
+  void setSemanticId(uint32_t semanticId) {
+    for (auto node : visualNodes_) {
+      node->setSemanticId(semanticId);
+    }
+  }
+
+  /**
    * @brief Get the template used to initialize this object or scene.
    *
    * AbstractPhysicsAttributes templates are expected to be changed between
@@ -597,6 +609,10 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    * translation as scaling is applied to a child of this node.
    */
   scene::SceneNode* visualNode_ = nullptr;
+
+  //! all nodes created when this object's render asset was added to the
+  //! SceneGraph
+  std::vector<esp::scene::SceneNode*> visualNodes_;
 
  protected:
   /** @brief Used to synchronize other simulator's notion of the object state
