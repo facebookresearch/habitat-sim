@@ -77,7 +77,9 @@ void initAttributesBindings(py::module& m) {
                     &PhysicsObjectAttributes::setJoinCollisionMeshes)
       .def_property("requires_lighting",
                     &PhysicsObjectAttributes::getRequiresLighting,
-                    &PhysicsObjectAttributes::setRequiresLighting);
+                    &PhysicsObjectAttributes::setRequiresLighting)
+      .def_property("semantic_id", &PhysicsObjectAttributes::getSemanticId,
+                    &PhysicsObjectAttributes::setSemanticId);
 
   // ==== PhysicsSceneAttributes ====
   py::class_<PhysicsSceneAttributes, AbstractPhysicsAttributes,
@@ -105,10 +107,8 @@ void initAttributesBindings(py::module& m) {
                     &PhysicsManagerAttributes::setFrictionCoefficient)
       .def_property("restitution_coefficient",
                     &PhysicsManagerAttributes::getRestitutionCoefficient,
-                    &PhysicsManagerAttributes::setRestitutionCoefficient)
-      .def_property("semantic_id", &PhysicsObjectAttributes::getSemanticId,
-                    &PhysicsObjectAttributes::setSemanticId);
-  
+                    &PhysicsManagerAttributes::setRestitutionCoefficient);
+
   // ==== AbstractPrimitiveAttributes ====
   py::class_<AbstractPrimitiveAttributes, AbstractAttributes,
              AbstractPrimitiveAttributes::ptr>(m, "AbstractPrimitiveAttributes")
