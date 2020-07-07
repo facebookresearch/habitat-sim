@@ -273,6 +273,7 @@ def test_velocity_control(sim):
     object_template = obj_mgr.get_template_by_ID(template_ids[0])
     object_template.linear_damping = 0.0
     object_template.angular_damping = 0.0
+    obj_mgr.register_template(object_template)
 
     obj_handle = obj_mgr.get_template_handle_by_ID(template_ids[0])
 

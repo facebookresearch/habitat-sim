@@ -120,12 +120,13 @@ int AssetAttributesManager::registerAttributesTemplateFinalize(
   std::string primAttributesHandle = primAttributesTemplate->getHandle();
   // verify that attributes has been edited in a legal manner
   if (!primAttributesTemplate->isValidTemplate()) {
-    LOG(ERROR)
-        << "AssetAttributesManager::registerAttributesTemplate : Primitive "
-           "asset attributes template named"
-        << primAttributesHandle
-        << "is not configured properly for specified prmitive"
-        << primAttributesTemplate->getPrimObjClassName() << ". Aborting.";
+    LOG(ERROR) << "AssetAttributesManager::registerAttributesTemplateFinalize "
+                  ": Primitive "
+                  "asset attributes template named"
+               << primAttributesHandle
+               << "is not configured properly for specified prmitive"
+               << primAttributesTemplate->getPrimObjClassName()
+               << ". Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -134,7 +135,7 @@ int AssetAttributesManager::registerAttributesTemplateFinalize(
   int primTemplateID =
       this->addTemplateToLibrary(primAttributesTemplate, primAttributesHandle);
   return primTemplateID;
-}  // AssetAttributesManager::registerAttributesTemplate
+}  // AssetAttributesManager::registerAttributesTemplateFinalize
 
 }  // namespace managers
 }  // namespace assets

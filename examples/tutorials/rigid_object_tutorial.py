@@ -222,6 +222,8 @@ def main(make_video=True, show_video=True):
     # throw a sphere at the boxes from the agent position
     sphere_template = obj_templates_mgr.get_template_by_ID(sphere_template_id)
     sphere_template.scale = np.array([0.5, 0.5, 0.5])
+    obj_templates_mgr.register_template(sphere_template)
+
     sphere_id = sim.add_object(sphere_template_id)
     sim.set_translation(
         sim.agents[0].get_state().position + np.array([0, 1.0, 0]), sphere_id

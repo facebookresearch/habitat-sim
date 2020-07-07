@@ -86,7 +86,7 @@ def test_physics_attributes_managers(sim):
     # get attribute managers
     phys_attr_manager = sim.get_physics_template_manager()
 
-    # perform general tests for this attirbutes manager
+    # perform general tests for this attributes manager
     template0, _ = perform_general_tests(
         phys_attr_manager, cfg_settings["physics_config_file"]
     )
@@ -106,7 +106,7 @@ def test_scene_attributes_managers(sim):
     # get attribute managers
     scene_attr_manager = sim.get_scene_template_manager()
 
-    # perform general tests for this attirbutes manager
+    # perform general tests for this attributes manager
     template0, _ = perform_general_tests(scene_attr_manager, cfg_settings["scene"])
 
     # verify gravity in template is as expected
