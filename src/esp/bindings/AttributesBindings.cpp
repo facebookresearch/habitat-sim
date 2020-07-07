@@ -76,10 +76,37 @@ void initAttributesBindings(py::module& m) {
                     &PhysicsObjectAttributes::getRequiresLighting,
                     &PhysicsObjectAttributes::setRequiresLighting);
 
+  // ==== PhysicsSceneAttributes ====
+  py::class_<PhysicsSceneAttributes, AbstractPhysicsAttributes,
+             PhysicsSceneAttributes::ptr>(m, "PhysicsSceneAttributes")
+      .def(py::init(&PhysicsSceneAttributes::create<>))
+      .def(py::init(&PhysicsSceneAttributes::create<const std::string&>))
+      .def_property("gravity", &PhysicsSceneAttributes::getGravity,
+                    &PhysicsSceneAttributes::setGravity);
+
+  // ==== PhysicsManagerAttributes ====
+  py::class_<PhysicsManagerAttributes, AbstractAttributes,
+             PhysicsManagerAttributes::ptr>(m, "PhysicsManagerAttributes")
+      .def(py::init(&PhysicsManagerAttributes::create<>))
+      .def(py::init(&PhysicsManagerAttributes::create<const std::string&>))
+      .def_property("simulator", &PhysicsManagerAttributes::getSimulator,
+                    &PhysicsManagerAttributes::setSimulator)
+      .def_property("timestep", &PhysicsManagerAttributes::getTimestep,
+                    &PhysicsManagerAttributes::setTimestep)
+      .def_property("max_substeps", &PhysicsManagerAttributes::getMaxSubsteps,
+                    &PhysicsManagerAttributes::setMaxSubsteps)
+      .def_property("gravity", &PhysicsManagerAttributes::getGravity,
+                    &PhysicsManagerAttributes::setGravity)
+      .def_property("friction_coefficient",
+                    &PhysicsManagerAttributes::getFrictionCoefficient,
+                    &PhysicsManagerAttributes::setFrictionCoefficient)
+      .def_property("restitution_coefficient",
+                    &PhysicsManagerAttributes::getRestitutionCoefficient,
+                    &PhysicsManagerAttributes::setRestitutionCoefficient);
+
   // ==== AbstractPrimitiveAttributes ====
   py::class_<AbstractPrimitiveAttributes, AbstractAttributes,
              AbstractPrimitiveAttributes::ptr>(m, "AbstractPrimitiveAttributes")
-
       .def_property_readonly("is_wireframe",
                              &AbstractPrimitiveAttributes::getIsWireframe)
       .def_property("use_texture_coords",

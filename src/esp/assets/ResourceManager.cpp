@@ -84,7 +84,8 @@ void ResourceManager::buildImportersAndAttributesManagers() {
   assetAttributesManager_ = managers::AssetAttributesManager::create();
   objectAttributesManager_ = managers::ObjectAttributesManager::create();
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
-  physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
+  physicsAttributesManager_ =
+      managers::PhysicsAttributesManager::create(objectAttributesManager_);
   sceneAttributesManager_ = managers::SceneAttributesManager::create();
 
   // instantiate a primitive importer
@@ -235,9 +236,6 @@ void ResourceManager::initPhysicsManager(
   // build default primitive asset templates, and default primitive object
   // templates
   initDefaultPrimAttributes();
-  // load object templates from sceneMetaData list...
-  objectAttributesManager_->loadAllFileBasedTemplates(
-      physicsManagerAttributes->getStringGroup("objectLibraryPaths"));
 }  // ResourceManager::initPhysicsManager
 
 // TODO: kill existing scene mesh drawables, nodes, etc... (all but meshes in

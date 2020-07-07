@@ -339,14 +339,8 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
 }
 
 std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
-  std::vector<std::string> validConfigPaths =
-      resourceManager_->getPhysicsAttributesManager()->buildObjectConfigPaths(
-          path);
-
-  std::vector<int> templateIndices =
-      resourceManager_->getObjectAttributesManager()->loadAllFileBasedTemplates(
-          validConfigPaths);
-  return templateIndices;
+  return resourceManager_->getPhysicsAttributesManager()->loadObjectConfigs(
+      path);
 }  // Simulator::loadObjectConfigs
 
 const assets::PhysicsObjectAttributes::cptr

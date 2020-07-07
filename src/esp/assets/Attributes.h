@@ -291,6 +291,7 @@ class PhysicsManagerAttributes : public AbstractAttributes {
   void setGravity(const Magnum::Vector3& gravity) {
     setVec3("gravity", gravity);
   }
+  Magnum::Vector3 getGravity() const { return getVec3("gravity"); }
 
   void setFrictionCoefficient(double frictionCoefficient) {
     setDouble("frictionCoefficient", frictionCoefficient);

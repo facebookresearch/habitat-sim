@@ -110,11 +110,8 @@ PhysicsAttributesManager::createAttributesTemplate(
 
       std::string absolutePath =
           Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
-      std::vector<std::string> validConfigPaths =
-          buildObjectConfigPaths(absolutePath);
-      for (auto& path : validConfigPaths) {
-        physicsManagerAttributes->addStringToGroup("objectLibraryPaths", path);
-      }
+      // load all object templates available as configs in absolutePath
+      loadObjectConfigs(absolutePath);
     }
   }  // if load rigid object library metadata
 
@@ -125,9 +122,10 @@ PhysicsAttributesManager::createAttributesTemplate(
   return physicsManagerAttributes;
 }  // PhysicsAttributesManager::createAttributesTemplate
 
-std::vector<std::string> PhysicsAttributesManager::buildObjectConfigPaths(
+std::vector<int> PhysicsAttributesManager::loadObjectConfigs(
     const std::string& path) {
   std::vector<std::string> paths;
+  std::vector<int> templateIndices;
 
   namespace Directory = Cr::Utility::Directory;
   std::string objPhysPropertiesFilename = path;
@@ -141,7 +139,7 @@ std::vector<std::string> PhysicsAttributesManager::buildObjectConfigPaths(
   if (!dirExists && !fileExists) {
     LOG(WARNING) << "Cannot find " << path << " or "
                  << objPhysPropertiesFilename << ". Aborting parse.";
-    return paths;
+    return templateIndices;
   }
 
   if (fileExists) {
@@ -158,8 +156,10 @@ std::vector<std::string> PhysicsAttributesManager::buildObjectConfigPaths(
       }
     }
   }
+  // build templates from aggregated paths
+  templateIndices = objectAttributesMgr_->loadAllFileBasedTemplates(paths);
 
-  return paths;
+  return templateIndices;
 }  // PhysicsAttributesManager::buildObjectConfigPaths
 
 }  // namespace managers

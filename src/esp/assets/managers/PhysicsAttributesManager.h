@@ -10,6 +10,8 @@
 
 #include "AttributesManagerBase.h"
 
+#include "ObjectAttributesManager.h"
+
 #include "esp/gfx/configure.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
@@ -20,12 +22,12 @@ namespace esp {
 namespace assets {
 
 namespace managers {
-
 class PhysicsAttributesManager
     : public AttributesManager<PhysicsManagerAttributes::ptr> {
  public:
-  PhysicsAttributesManager()
-      : AttributesManager<PhysicsManagerAttributes::ptr>::AttributesManager() {
+  PhysicsAttributesManager(ObjectAttributesManager::ptr objectAttributesMgr)
+      : AttributesManager<PhysicsManagerAttributes::ptr>::AttributesManager(),
+        objectAttributesMgr_(objectAttributesMgr) {
     buildCtorFuncPtrMaps();
   }
 
@@ -39,14 +41,15 @@ class PhysicsAttributesManager
    * overwritten with the newly created one if @ref registerTemplate is true.
    *
    * @param physicsFilename The configuration file to parse. Defaults to the
-   * file location @ref ESP_DEFAULT_PHYS_SCENE_CONFIG set by cmake.
+   * file location @ref ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH set by cmake.
    * @param registerTemplate whether to add this template to the library or not.
    * If the user is going to edit this template, this should be false.
    * @return a reference to the physics simulation meta data object parsed from
    * the specified configuration file.
    */
   PhysicsManagerAttributes::ptr createAttributesTemplate(
-      const std::string& physicsFilename = ESP_DEFAULT_PHYS_SCENE_CONFIG,
+      const std::string& physicsFilename =
+          ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH,
       bool registerTemplate = true) override;
 
   /**
@@ -54,9 +57,9 @@ class PhysicsAttributesManager
    * provided file or directory path.
    *
    * @param path A global path to a physics property file or directory
-   * @return A list of valid global paths to "*.phys_properties.json" files.
+   * @return A list of template indices for loaded valid object configs
    */
-  std::vector<std::string> buildObjectConfigPaths(const std::string& path);
+  std::vector<int> loadObjectConfigs(const std::string& path);
 
  protected:
   /**
@@ -101,6 +104,12 @@ class PhysicsAttributesManager
             assets::PhysicsManagerAttributes>;
   }
   // instance vars
+
+  /**
+   * @brief Reference to ObjectAttributesManager to give access to setting
+   * object template library using paths specified in PhysicsAttributes json
+   */
+  ObjectAttributesManager::ptr objectAttributesMgr_ = nullptr;
 
  public:
   ESP_SMART_POINTERS(PhysicsAttributesManager)

@@ -389,7 +389,7 @@ class AssetAttributesManager
    * @return Whether the template is read-only or not
    */
   bool isTemplateReadOnly(const std::string& templateHandle) override {
-    for (auto handle : defaultTemplateNames) {
+    for (auto handle : defaultTemplateNames_) {
       if (handle.compare(templateHandle) == 0) {
         return true;
       }
@@ -512,7 +512,7 @@ class AssetAttributesManager
    * @brief vector holding string template handles of all default primitive
    * asset templates, to make sure they are never deleted.
    */
-  std::vector<std::string> defaultTemplateNames;
+  std::vector<std::string> defaultTemplateNames_;
   /**
    * @brief Map relating primitive class name to default attributes template
    * handle.  There should always be a template for each of these handles.
