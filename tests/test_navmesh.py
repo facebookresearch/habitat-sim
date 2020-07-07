@@ -43,13 +43,6 @@ def test_recompute_navmesh(test_scene, sim):
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     sim.reconfigure(hab_cfg)
 
-    # get the initial navmesh area. This test assumes default navmesh assets.
-    loadedNavMeshArea = sim.pathfinder.navigable_area
-    if test_scene.endswith("skokloster-castle.glb"):
-        assert loadedNavMeshArea == 226.65673828125
-    elif test_scene.endswith("van-gogh-room.glb"):
-        assert loadedNavMeshArea == 9.17772102355957
-
     # generate random point pairs
     num_samples = 100
     samples = []
@@ -75,13 +68,6 @@ def test_recompute_navmesh(test_scene, sim):
     navmesh_settings.set_defaults()
     assert sim.recompute_navmesh(sim.pathfinder, navmesh_settings)
     assert sim.pathfinder.is_loaded
-
-    # get the re-computed navmesh area. This test assumes NavMeshSettings default values.
-    recomputedNavMeshArea1 = sim.pathfinder.navigable_area
-    if test_scene.endswith("skokloster-castle.glb"):
-        assert recomputedNavMeshArea1 == 565.1781616210938
-    elif test_scene.endswith("van-gogh-room.glb"):
-        assert recomputedNavMeshArea1 == 9.17772102355957
 
     recomputed_navmesh_results = get_shortest_path(sim, samples)
 
@@ -123,3 +109,33 @@ def test_recompute_navmesh(test_scene, sim):
             some_diff = True
 
     assert some_diff
+
+
+@pytest.mark.parametrize("test_scene", test_scenes)
+def test_navmesh_area(test_scene, sim):
+    if not osp.exists(test_scene):
+        pytest.skip(f"{test_scene} not found")
+
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = test_scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    sim.reconfigure(hab_cfg)
+
+    # get the initial navmesh area. This test assumes default navmesh assets.
+    loadedNavMeshArea = sim.pathfinder.navigable_area
+    if test_scene.endswith("skokloster-castle.glb"):
+        assert loadedNavMeshArea == 226.65673828125
+    elif test_scene.endswith("van-gogh-room.glb"):
+        assert loadedNavMeshArea == 9.17772102355957
+
+    navmesh_settings = habitat_sim.NavMeshSettings()
+    navmesh_settings.set_defaults()
+    assert sim.recompute_navmesh(sim.pathfinder, navmesh_settings)
+    assert sim.pathfinder.is_loaded
+
+    # get the re-computed navmesh area. This test assumes NavMeshSettings default values.
+    recomputedNavMeshArea1 = sim.pathfinder.navigable_area
+    if test_scene.endswith("skokloster-castle.glb"):
+        assert recomputedNavMeshArea1 == 565.1781616210938
+    elif test_scene.endswith("van-gogh-room.glb"):
+        assert recomputedNavMeshArea1 == 9.17772102355957
