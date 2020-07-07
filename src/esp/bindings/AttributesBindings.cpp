@@ -105,7 +105,7 @@ void initAttributesBindings(py::module& m) {
                     &PhysicsManagerAttributes::setFrictionCoefficient)
       .def_property("restitution_coefficient",
                     &PhysicsManagerAttributes::getRestitutionCoefficient,
-                    &PhysicsManagerAttributes::setRestitutionCoefficient);
+                    &PhysicsManagerAttributes::setRestitutionCoefficient)
       .def_property("semantic_id", &PhysicsObjectAttributes::getSemanticId,
                     &PhysicsObjectAttributes::setSemanticId);
   
