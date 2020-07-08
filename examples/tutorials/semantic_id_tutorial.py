@@ -113,9 +113,8 @@ def main(show_imgs=True, save_imgs=False):
     sim = habitat_sim.Simulator(cfg)
 
     test_scenes = [
-        # "data/scene_datasets/habitat-test-scenes/apartment_1.glb",
-        # "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb",
-        "/Users/alexclegg/Documents/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"
+        "data/scene_datasets/habitat-test-scenes/apartment_1.glb",
+        "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb",
     ]
 
     for scene in test_scenes:
