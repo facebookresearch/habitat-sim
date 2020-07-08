@@ -23,6 +23,9 @@ PhysicsSceneAttributes::ptr SceneAttributesManager::createAttributesTemplate(
   PhysicsSceneAttributes::ptr sceneAttributesTemplate =
       PhysicsSceneAttributes::create(sceneAttributesHandle);
 
+  // TODO: Support scene file existence validation?  Does default scene
+  // attributes have use/meaning?
+
   sceneAttributesTemplate->setRenderAssetHandle(sceneAttributesHandle);
   sceneAttributesTemplate->setCollisionAssetHandle(sceneAttributesHandle);
 

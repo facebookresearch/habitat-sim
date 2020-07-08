@@ -81,11 +81,12 @@ ResourceManager::ResourceManager()
 }  // namespace assets
 
 void ResourceManager::buildImportersAndAttributesManagers() {
-  assetAttributesManager_ = managers::AssetAttributesManager::create();
-  objectAttributesManager_ = managers::ObjectAttributesManager::create();
+  assetAttributesManager_ = managers::AssetAttributesManager::create(*this);
+  objectAttributesManager_ = managers::ObjectAttributesManager::create(*this);
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
-  physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
-  sceneAttributesManager_ = managers::SceneAttributesManager::create();
+  physicsAttributesManager_ = managers::PhysicsAttributesManager::create(
+      *this, objectAttributesManager_);
+  sceneAttributesManager_ = managers::SceneAttributesManager::create(*this);
 
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
@@ -235,9 +236,6 @@ void ResourceManager::initPhysicsManager(
   // build default primitive asset templates, and default primitive object
   // templates
   initDefaultPrimAttributes();
-  // load object templates from sceneMetaData list...
-  objectAttributesManager_->loadAllFileBasedTemplates(
-      physicsManagerAttributes->getStringGroup("objectLibraryPaths"));
 }  // ResourceManager::initPhysicsManager
 
 // TODO: kill existing scene mesh drawables, nodes, etc... (all but meshes in
@@ -498,9 +496,9 @@ void ResourceManager::buildPrimitiveAssetData(
       assetAttributesManager_->getTemplateByHandle(primTemplateHandle);
   // check if unique name of attributes describing primitive asset is present
   // already - don't remake if so
-  auto primAssetOriginHandle = primTemplate->getOriginHandle();
-  if (resourceDict_.count(primAssetOriginHandle) > 0) {
-    LOG(INFO) << " Primitive Asset exists already : " << primAssetOriginHandle;
+  auto primAssetHandle = primTemplate->getHandle();
+  if (resourceDict_.count(primAssetHandle) > 0) {
+    LOG(INFO) << " Primitive Asset exists already : " << primAssetHandle;
     return;
   }
 
@@ -559,11 +557,10 @@ void ResourceManager::buildPrimitiveAssetData(
   // make LoadedAssetData corresponding to this asset
   LoadedAssetData loadedAssetData{info, meshMetaData};
   auto inserted =
-      resourceDict_.emplace(primAssetOriginHandle, std::move(loadedAssetData));
+      resourceDict_.emplace(primAssetHandle, std::move(loadedAssetData));
 
-  LOG(INFO) << " Primitive Asset Added : ID : "
-            << primTemplate->getObjectTemplateID()
-            << " : attr lib key : " << primTemplate->getOriginHandle()
+  LOG(INFO) << " Primitive Asset Added : ID : " << primTemplate->getID()
+            << " : attr lib key : " << primTemplate->getHandle()
             << " | instance class : " << primClassName
             << " | Conf has group for this obj type : "
             << conf.hasGroup(primClassName);

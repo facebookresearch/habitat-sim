@@ -6,6 +6,7 @@
 #define ESP_ASSETS_MANAGERS_SCENEATTRIBUTEMANAGER_H_
 
 #include "AttributesManagerBase.h"
+
 namespace esp {
 namespace assets {
 
@@ -13,8 +14,9 @@ namespace managers {
 class SceneAttributesManager
     : public AttributesManager<PhysicsSceneAttributes::ptr> {
  public:
-  SceneAttributesManager()
-      : AttributesManager<PhysicsSceneAttributes::ptr>::AttributesManager() {
+  SceneAttributesManager(assets::ResourceManager& resourceManager)
+      : AttributesManager<PhysicsSceneAttributes::ptr>::AttributesManager(
+            resourceManager) {
     buildCtorFuncPtrMaps();
   }
   /**

@@ -41,8 +41,8 @@ PhysicsObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
   } else {
     // if neither of these is true, then build an empty template and assign the
     // passed handle to its origin handle and its render asset handle
-    attrs = createEmptyAttributesTemplate(attributesTemplateHandle,
-                                          registerTemplate);
+    attrs = createDefaultAttributesTemplate(attributesTemplateHandle,
+                                            registerTemplate);
     msg = "New blank";
   }
   if (nullptr != attrs) {
@@ -61,8 +61,8 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
       buildPrimBasedPhysObjTemplate(primAttrTemplateHandle);
 
   if (nullptr != objAttributes && registerTemplate) {
-    auto attrID =
-        registerAttributesTemplate(objAttributes, primAttrTemplateHandle);
+    int attrID =
+        this->registerAttributesTemplate(objAttributes, primAttrTemplateHandle);
     if (attrID == ID_UNDEFINED) {
       // some error occurred
       return nullptr;
@@ -80,7 +80,7 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
       parseAndLoadPhysObjTemplate(filename);
 
   if (nullptr != objAttributes && registerTemplate) {
-    auto attrID = registerAttributesTemplate(objAttributes, filename);
+    int attrID = this->registerAttributesTemplate(objAttributes, filename);
     // some error occurred
     if (attrID == ID_UNDEFINED) {
       return nullptr;
@@ -90,22 +90,22 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
 }  // ObjectAttributesManager::createFileBasedAttributesTemplate
 
 PhysicsObjectAttributes::ptr
-ObjectAttributesManager::createEmptyAttributesTemplate(
+ObjectAttributesManager::createDefaultAttributesTemplate(
     const std::string& templateName,
     bool registerTemplate) {
   // construct a PhysicsObjectAttributes
-  auto physicsObjectAttributes = PhysicsObjectAttributes::create(templateName);
+  PhysicsObjectAttributes::ptr objAttributes =
+      PhysicsObjectAttributes::create(templateName);
   // set render mesh handle as a default
-  physicsObjectAttributes->setRenderAssetHandle(templateName);
+  objAttributes->setRenderAssetHandle(templateName);
   if (registerTemplate) {
-    auto attrID =
-        registerAttributesTemplate(physicsObjectAttributes, templateName);
+    int attrID = this->registerAttributesTemplate(objAttributes, templateName);
     if (attrID == ID_UNDEFINED) {
       // some error occurred
       return nullptr;
     }
   }
-  return physicsObjectAttributes;
+  return objAttributes;
 }  // ObjectAttributesManager::createEmptyAttributesTemplate
 
 int ObjectAttributesManager::registerAttributesTemplateFinalize(
@@ -113,7 +113,8 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
     const std::string& objectTemplateHandle) {
   if (objectTemplate->getRenderAssetHandle() == "") {
     LOG(ERROR)
-        << "ObjectAttributesManager::registerAttributesTemplate : Attributes "
+        << "ObjectAttributesManager::registerAttributesTemplateFinalize : "
+           "Attributes "
            "template named"
         << objectTemplateHandle
         << "does not have a valid render asset handle specified. Aborting.";
@@ -141,13 +142,13 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
     // If renderAssetHandle is neither valid file name nor existing primitive
     // attributes template hande, fail
     // by here always fail
-    LOG(ERROR)
-        << "ObjectAttributesManager::registerAttributesTemplate : Render asset "
-           "template handle : "
-        << renderAssetHandle << " specified in object template with handle : "
-        << objectTemplateHandle
-        << " does not correspond to existing file or primitive render "
-           "asset.  Aborting. ";
+    LOG(ERROR) << "ObjectAttributesManager::registerAttributesTemplateFinalize "
+                  ": Render asset template handle : "
+               << renderAssetHandle
+               << " specified in object template with handle : "
+               << objectTemplateHandle
+               << " does not correspond to existing file or primitive render "
+                  "asset.  Aborting. ";
     return ID_UNDEFINED;
   }
 
@@ -176,7 +177,7 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
   mapToUse->emplace(objectTemplateID, objectTemplateHandle);
 
   return objectTemplateID;
-}  // ObjectAttributesManager::registerAttributesTemplate
+}  // ObjectAttributesManager::registerAttributesTemplateFinalize
 
 PhysicsObjectAttributes::ptr
 ObjectAttributesManager::parseAndLoadPhysObjTemplate(
@@ -396,7 +397,7 @@ std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
               << objPhysPropertiesFilename;
     auto tmplt =
         createFileBasedAttributesTemplate(objPhysPropertiesFilename, true);
-    resIDs[i] = tmplt->getObjectTemplateID();
+    resIDs[i] = tmplt->getID();
   }
   LOG(INFO) << "Loaded file-based object templates: "
             << std::to_string(physicsFileObjTmpltLibByID_.size());

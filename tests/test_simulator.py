@@ -136,28 +136,30 @@ def test_object_template_editing(sim):
     # test creating a new template with a test asset
     transform_box_path = osp.abspath("data/test_assets/objects/transform_box.glb")
     transform_box_template = habitat_sim.attributes.PhysicsObjectAttributes()
-    transform_box_template.set_render_asset_handle(transform_box_path)
-    old_library_size = sim.get_physics_object_library_size()
-    transform_box_template_id = sim.load_object_template(
+    transform_box_template.render_asset_handle = transform_box_path
+    obj_mgr = sim.get_object_template_manager()
+    old_library_size = obj_mgr.get_num_templates()
+    transform_box_template_id = obj_mgr.register_template(
         transform_box_template, "transform_box_template"
     )
-    assert sim.get_physics_object_library_size() > old_library_size
+    assert obj_mgr.get_num_templates() > old_library_size
     assert transform_box_template_id != -1
 
     # test loading a test asset template from file
     sphere_path = osp.abspath("data/test_assets/objects/sphere")
-    old_library_size = sim.get_physics_object_library_size()
+    old_library_size = obj_mgr.get_num_templates()
     template_ids = sim.load_object_configs(sphere_path)
     assert len(template_ids) > 0
-    assert sim.get_physics_object_library_size() > old_library_size
+    assert obj_mgr.get_num_templates() > old_library_size
 
-    # test getting and editing template reference
-    sphere_template = sim.get_object_template(template_ids[0])
-    assert sphere_template.get_render_asset_handle().endswith("sphere.glb")
+    # test getting and editing template reference - changes underlying template
+    sphere_template = obj_mgr.get_template_by_ID(template_ids[0])
+    assert sphere_template.render_asset_handle.endswith("sphere.glb")
     sphere_scale = np.array([2.0, 2.0, 2.0])
-    sphere_template.set_scale(sphere_scale)
-    sphere_template2 = sim.get_object_template(template_ids[0])
-    assert sphere_template2.get_scale() == sphere_scale
+    sphere_template.scale = sphere_scale
+    obj_mgr.register_template(sphere_template, sphere_template.handle)
+    sphere_template2 = obj_mgr.get_template_by_ID(template_ids[0])
+    assert sphere_template2.scale == sphere_scale
 
     # test adding a new object
     object_id = sim.add_object(template_ids[0])

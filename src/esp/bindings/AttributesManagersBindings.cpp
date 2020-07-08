@@ -23,6 +23,85 @@ using py::literals::operator""_a;
 namespace esp {
 namespace assets {
 namespace managers {
+
+/**
+ * @brief instance class template base classes for attributes managers.
+ * @tparam The type used to specialize class template for each attributes
+ * manager.  Will be a smart pointer to an attributes
+ * @param m pybind module reference.
+ * @param classStrPrefix string prefix for python class name specification.
+ */
+
+template <class T>
+void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
+  using AttrClass = AttributesManager<T>;
+  std::string pyclass_name = classStrPrefix + std::string("AttributesManager");
+  py::class_<AttrClass, std::shared_ptr<AttrClass>>(m, pyclass_name.c_str())
+      .def("get_template_handle_by_ID", &AttrClass::getTemplateHandleByID, R"(
+        Returns string handle for the template corresponding to passed ID.)",
+           "ID"_a)
+      .def("get_template_ID_by_handle",
+           py::overload_cast<const std::string&>(
+               &AttrClass::getTemplateIDByHandle),
+           R"(
+             Returns integer ID for the template with the passed handle.)",
+           "handle"_a)
+      .def("get_template_handles",
+           static_cast<std::vector<std::string> (AttrClass::*)(
+               const std::string&, bool) const>(
+               &AttrClass::getTemplateHandlesBySubstring),
+           R"(
+            Returns a list of template handles that either contain or explicitly do not 
+            contain the passed search_str, based on the value of boolean contains.)",
+           "search_str"_a = "", "contains"_a = true)
+      .def("create_template",
+           static_cast<T (AttrClass::*)(const std::string&, bool)>(
+               &AttrClass::createAttributesTemplate),
+           R"(
+            Creates a template based on passed handle, and registers it in 
+            the library if register_template is True.)",
+           "handle"_a, "register_template"_a = true)
+      .def("get_num_templates", &AttrClass::getNumTemplates, R"(
+             Returns the number of existing templates being managed.)")
+      .def("get_random_template_handle", &AttrClass::getRandomTemplateHandle,
+           R"(
+             Returns the handle for a random template chosen from the 
+             existing templates being managed.)")
+      .def("get_library_has_handle", &AttrClass::getTemplateLibHasHandle,
+           R"(
+             Returns whether the passed handle describes an existing template 
+             in the library.)",
+           "handle"_a)
+      .def("remove_template_by_ID", &AttrClass::removeTemplateByID,
+           R"(
+             This removes, and returns the template referenced by the passed ID 
+             from the library.)",
+           "ID"_a)
+      .def("remove_template_by_handle", &AttrClass::removeTemplateByHandle,
+           R"(
+             This removes, and returns the template referenced by the passed handle 
+             from the library.)",
+           "handle"_a)
+      .def("register_template", &AttrClass::registerAttributesTemplate,
+           R"(
+             This registers a copy of the passed template in the library, and 
+             returns the template's integer ID.)",
+           "template"_a, "specified_handle"_a = "")
+      .def("get_template_by_ID",
+           static_cast<T (AttrClass::*)(int)>(&AttrClass::getTemplateCopyByID),
+           R"(
+             This returns a copy of the template specified by the passed 
+             ID if it exists, and NULL if it does not.)",
+           "ID"_a)
+      .def("get_template_by_handle",
+           static_cast<T (AttrClass::*)(const std::string&)>(
+               &AttrClass::getTemplateCopyByHandle),
+           R"(
+             This returns a copy of the template specified by the passed 
+             handle if it exists, and NULL if it does not.)",
+           "handle"_a);
+}  // declareBaseAttributesManager
+
 void initAttributesManagersBindings(py::module& m) {
   // ==== PrimObjTypes enum describing types of primitives supported ====
   py::enum_<assets::PrimObjTypes>(m, "PrimObjTypes")
@@ -40,118 +119,167 @@ void initAttributesManagersBindings(py::module& m) {
       .value("UVSPHERE_WF", assets::PrimObjTypes::UVSPHERE_WF)
       .value("END_PRIM_OBJ_TYPE", assets::PrimObjTypes::END_PRIM_OBJ_TYPES);
 
-  // // ==== Primitive Asset Attributes Template manager ====
-  // py::class_<AssetAttributesManager,
-  //            AttributesManager<AbstractPrimitiveAttributes::ptr>,
-  //            AssetAttributesManager::ptr>(m, "AssetAttributesManager")
-  //     .def("get_template_handle_by_ID",
-  //          &AttributesManager<
-  //              AbstractPrimitiveAttributes::ptr>::getTemplateHandleByID,
-  //          "object_id"_a)
-  //     .def("get_template_ID_by_handle",
-  //          &AttributesManager<
-  //              AbstractPrimitiveAttributes::ptr>::getTemplateIDByHandle,
-  //          "object_id"_a)
-  //     .def(
-  //         "get_num_templates",
-  //         &AttributesManager<AbstractPrimitiveAttributes::ptr>::getNumTemplates)
-  //     .def("get_random_template_handle",
-  //          &AttributesManager<
-  //              AbstractPrimitiveAttributes::ptr>::getRandomTemplateHandle)
-  //     .def("get_template_handles",
-  //          &AttributesManager<
-  //              AbstractPrimitiveAttributes::ptr>::getTemplateHandlesBySubstring,
-  //          "search_str"_a = "", "contains"_a = true)
-  //     .def("get_library_has_handle",
-  //          &AttributesManager<
-  //              AbstractPrimitiveAttributes::ptr>::getTemplateLibHasHandle)
+  // ==== Primitive Asset Attributes Template manager ====
+  declareBaseAttributesManager<AbstractPrimitiveAttributes::ptr>(m,
+                                                                 "BaseAsset");
+  py::class_<AssetAttributesManager,
+             AttributesManager<AbstractPrimitiveAttributes::ptr>,
+             AssetAttributesManager::ptr>(m, "AssetAttributesManager")
+      // AssetAttributesMangaer-specific bindings
+      // return appropriately cast capsule templates
+      .def("get_default_capsule_template",
+           &AssetAttributesManager::getDefaultCapsuleTemplate,
+           R"(
+             This returns an appropriately cast copy of the default Capsule 
+             primitive template in the library, either solid or wireframe 
+             based on is_wireframe.)",
+           "is_wireframe"_a)
+      .def("get_capsule_template", &AssetAttributesManager::getCapsuleTemplate,
+           R"(
+             This returns an appropriately cast copy of the Capsule primitive 
+             template in the library that is referenced by the passed handle, or
+             NULL if none exists.)",
+           "handle"_a)
+      // return appropriately cast cone templates
+      .def("get_default_cone_template",
+           &AssetAttributesManager::getDefaultConeTemplate,
+           R"(
+             This returns an appropriately cast copy of the default Cone 
+             primitive template in the library, either solid or wireframe 
+             based on is_wireframe.)",
+           "is_wireframe"_a)
+      .def("get_cone_template", &AssetAttributesManager::getConeTemplate,
+           R"(
+             This returns an appropriately cast copy of the Cone primitive 
+             template in the library that is referenced by the passed handle, or
+             NULL if none exists.)",
+           "handle"_a)
+      // return appropriately cast cube templates
+      .def("get_default_cube_template",
+           &AssetAttributesManager::getDefaultCubeTemplate,
+           R"(
+             This returns an appropriately cast copy of the default Cube 
+             primitive template in the library, either solid or wireframe 
+             based on is_wireframe.)",
+           "is_wireframe"_a)
+      .def("get_cube_template", &AssetAttributesManager::getCubeTemplate,
+           R"(
+             This returns an appropriately cast copy of the Cube primitive 
+             template in the library that is referenced by the passed handle, or
+             NULL if none exists.)",
+           "handle"_a)
+      // return appropriately cast cylinder templates
+      .def("get_default_cylinder_template",
+           &AssetAttributesManager::getDefaultCylinderTemplate,
+           R"(
+             This returns an appropriately cast copy of the default Cylinder 
+             primitive template in the library, either solid or wireframe 
+             based on is_wireframe.)",
+           "is_wireframe"_a)
+      .def("get_cylinder_template",
+           &AssetAttributesManager::getCylinderTemplate, R"(
+             This returns an appropriately cast copy of the Cylinder primitive 
+             template in the library that is referenced by the passed handle, or
+             NULL if none exists.)",
+           "handle"_a)
+      // return appropriately cast icosphere templates
+      .def("get_default_icosphere_template",
+           &AssetAttributesManager::getDefaultIcosphereTemplate,
+           R"(
+             This returns an appropriately cast copy of the default Icosphere 
+             primitive template in the library, either solid or wireframe 
+             based on is_wireframe.)",
+           "is_wireframe"_a)
+      .def("get_icosphere_template",
+           &AssetAttributesManager::getIcosphereTemplate, R"(
+             This returns an appropriately cast copy of the Icosphere primitive 
+             template in the library that is referenced by the passed handle, or
+             NULL if none exists.)",
+           "handle"_a)
+      // return appropriately cast UVSphere templates
+      .def("get_default_UVsphere_template",
+           &AssetAttributesManager::getDefaultUVSphereTemplate,
+           R"(
+             This returns an appropriately cast copy of the default UVSphere 
+             primitive template in the library, either solid or wireframe 
+             based on is_wireframe.)",
+           "is_wireframe"_a)
+      .def("get_UVsphere_template",
+           &AssetAttributesManager::getUVSphereTemplate, R"(
+             This returns an appropriately cast copy of the UVSphere primitive 
+             template in the library that is referenced by the passed handle, or
+             NULL if none exists.)",
+           "handle"_a);
 
-  //     .def("create_template",
-  //          py::overload_cast<const std::string&, bool>(
-  //              &AssetAttributesManager::createAttributesTemplate),
-  //          "primitive_class_name"_a, "register_template"_a = true,
-  //          py::return_value_policy::reference)
-  //     .def("create_template",
-  //          py::overload_cast<assets::PrimObjTypes, bool>(
-  //              &AssetAttributesManager::createAttributesTemplate),
-  //          "primitive_object_type_enum"_a, "register_template"_a = true,
-  //          py::return_value_policy::reference)
+  // ==== Physical Object Attributes Template manager ====
+  declareBaseAttributesManager<PhysicsObjectAttributes::ptr>(m, "BaseObject");
+  py::class_<ObjectAttributesManager,
+             AttributesManager<PhysicsObjectAttributes::ptr>,
+             ObjectAttributesManager::ptr>(m, "ObjectAttributesManager")
+      // ObjectAttributesManager-specific bindings
+      .def("create_new_template",
+           &ObjectAttributesManager::createDefaultAttributesTemplate,
+           R"(
+             This returns a PhysicsObjectAttributes populated with default 
+             values, using the passed handle as both the handle and render 
+             asset handle.)",
+           "handle"_a, "register_template"_a = false)
 
-  //     .def("register_template",
-  //          &AttributesManager<
-  //              AbstractPrimitiveAttributes::ptr>::registerAttributesTemplate,
-  //          "template"_a, "template_handle"_a)
-  //     // only ever return a copy of primitive asset template to user, so
-  //     // that name used as map key and internal name do not get out of synch
-  //     .def("get_template_by_handle",
-  //          &AttributesManager<
-  //              AbstractPrimitiveAttributes::ptr>::getTemplateCopyByHandle,
-  //          "template_name"_a);
+      // manage file-based templates access
+      .def("get_num_file_templates",
+           &ObjectAttributesManager::getNumFileTemplateObjects, R"(
+             Returns the number of existing file-based templates being managed.)")
+      .def("get_file_template_handles",
+           static_cast<std::vector<std::string> (ObjectAttributesManager::*)(
+               const std::string&, bool) const>(
+               &ObjectAttributesManager::getFileTemplateHandlesBySubstring),
+           R"(
+            Returns a list of file-based template handles that either contain or explicitly do not 
+            contain the passed search_str, based on the value of contains.)",
+           "search_str"_a = "", "contains"_a = true)
+      .def("get_random_file_template_handle",
+           &ObjectAttributesManager::getRandomFileTemplateHandle,
+           R"(
+             Returns the handle for a random file-based template chosen from the 
+             existing templates being managed.)")
 
-  // // ==== Physical Object Attributes Template manager ====
-  // py::class_<ObjectAttributesManager,
-  //            AttributesManager<PhysicsObjectAttributes::ptr>,
-  //            ObjectAttributesManager::ptr>(m, "ObjectAttributesManager")
-  //     .def("get_template_handle_by_ID",
-  //          &AttributesManager<
-  //              PhysicsObjectAttributes::ptr>::getTemplateHandleByID,
-  //          "object_id"_a)
-  //     .def("get_template_ID_by_handle",
-  //          &AttributesManager<
-  //              PhysicsObjectAttributes::ptr>::getTemplateIDByHandle,
-  //          "object_id"_a)
-  //     .def("get_num_templates",
-  //          &AttributesManager<PhysicsObjectAttributes::ptr>::getNumTemplates)
-  //     .def("get_random_template_handle",
-  //          &AttributesManager<
-  //              PhysicsObjectAttributes::ptr>::getRandomTemplateHandle)
-  //     .def("get_template_handles",
-  //          &AttributesManager<
-  //              PhysicsObjectAttributes::ptr>::getTemplateHandlesBySubstring,
-  //          "search_str"_a = "", "contains"_a = true)
-  //     .def("get_library_has_handle",
-  //          &AttributesManager<
-  //              PhysicsObjectAttributes::ptr>::getTemplateLibHasHandle)
-  //     .def("get_template_by_id",
-  //          &AttributesManager<PhysicsObjectAttributes::ptr>::getTemplateByID,
-  //          "template_id"_a, py::return_value_policy::reference)
+      // manage synthesized/primitive asset-based templates access
+      .def("get_num_synth_templates",
+           &ObjectAttributesManager::getNumSynthTemplateObjects, R"(
+             Returns the number of existing synthesized(primitive asset)-based templates being managed.)")
+      .def("get_synth_template_handles",
+           static_cast<std::vector<std::string> (ObjectAttributesManager::*)(
+               const std::string&, bool) const>(
+               &ObjectAttributesManager::getSynthTemplateHandlesBySubstring),
+           R"(
+            Returns a list of template synthesized(primitive asset)-based handles that either contain or explicitly do not 
+            contain the passed search_str, based on the value of contains.)",
+           "search_str"_a = "", "contains"_a = true)
+      .def("get_random_synth_template_handle",
+           &ObjectAttributesManager::getRandomSynthTemplateHandle,
+           R"(
+             Returns the handle for a random synthesized(primitive asset)-based template chosen from the 
+             existing templates being managed.)");
 
-  //     .def("create_template",
-  //          &ObjectAttributesManager::createAttributesTemplate,
-  //          "primitive_object_type_enum"_a, "register_template"_a = true,
-  //          py::return_value_policy::reference)
-  //     .def("register_template",
-  //          &AttributesManager<
-  //              PhysicsObjectAttributes::ptr>::registerAttributesTemplate,
-  //          "template"_a, "template_handle"_a)
+  // ==== Scene Attributes Template manager ====
+  declareBaseAttributesManager<PhysicsSceneAttributes::ptr>(m, "BaseScene");
+  py::class_<SceneAttributesManager,
+             AttributesManager<PhysicsSceneAttributes::ptr>,
+             SceneAttributesManager::ptr>(m, "SceneAttributesManager");
 
-  //     .def("get_num_file_templates",
-  //          &ObjectAttributesManager::getNumFileTemplateObjects)
-  //     .def("get_random_file_template_handle",
-  //          &ObjectAttributesManager::getRandomFileTemplateHandle)
-  //     .def("get_file_template_handles",
-  //          &ObjectAttributesManager::getFileTemplateHandlesBySubstring,
-  //          "search_str"_a = "", "contains"_a = true)
-  //     .def("get_num_synth_templates",
-  //          &ObjectAttributesManager::getNumSynthTemplateObjects)
-  //     .def("get_random_synth_template_handle",
-  //          &ObjectAttributesManager::getRandomSynthTemplateHandle)
-  //     .def("get_synth_template_handles",
-  //          &ObjectAttributesManager::getSynthTemplateHandlesBySubstring,
-  //          "search_str"_a = "", "contains"_a = true)
+  // ==== Physics World/Manager Template manager ====
 
-  //     .def("get_template_by_handle",
-  //          &AttributesManager<
-  //              PhysicsObjectAttributes::ptr>::getTemplateCopyByHandle,
-  //          "template_name"_a)
+  declareBaseAttributesManager<PhysicsManagerAttributes::ptr>(m, "BasePhysics");
+  py::class_<PhysicsAttributesManager,
+             AttributesManager<PhysicsManagerAttributes::ptr>,
+             PhysicsAttributesManager::ptr>(m, "PhysicsAttributesManager")
+      .def("load_object_configs", &PhysicsAttributesManager::loadObjectConfigs,
+           R"(
+         Build templates for all "*.phys_properties.json" files that exist in 
+         the provided file or directory path.)"
+           "path"_a);
 
-  //     ;
-
-  /**
-   * TODO: Add bindings for PhysicsAttributesManager and SceneAttributesManager?
-   */
-
-}  // initAttributesBindings
+}  // namespace managers
 
 }  // namespace managers
 

@@ -56,36 +56,36 @@ def test_physics_object_attributes():
     physics_object_template = habitat_sim.attributes.PhysicsObjectAttributes()
 
     my_test_vec = np.array([1.0, 2.0, 3.0])
-    physics_object_template.set_com(my_test_vec)
-    assert physics_object_template.get_com() == my_test_vec
-    physics_object_template.set_margin(1.123)
-    assert physics_object_template.get_margin() == 1.123
-    physics_object_template.set_mass(1.234)
-    assert physics_object_template.get_mass() == 1.234
-    physics_object_template.set_inertia(my_test_vec)
-    assert physics_object_template.get_inertia() == my_test_vec
-    physics_object_template.set_scale(my_test_vec)
-    assert physics_object_template.get_scale() == my_test_vec
-    physics_object_template.set_friction_coefficient(1.345)
-    assert physics_object_template.get_friction_coefficient() == 1.345
-    physics_object_template.set_restitution_coefficient(1.456)
-    assert physics_object_template.get_restitution_coefficient() == 1.456
-    physics_object_template.set_linear_damping(1.567)
-    assert physics_object_template.get_linear_damping() == 1.567
-    physics_object_template.set_angular_damping(1.678)
-    assert physics_object_template.get_angular_damping() == 1.678
-    physics_object_template.set_origin_handle("origin")
-    assert physics_object_template.get_origin_handle() == "origin"
-    physics_object_template.set_render_asset_handle("render_mesh")
-    assert physics_object_template.get_render_asset_handle() == "render_mesh"
-    physics_object_template.set_collision_asset_handle("collision_mesh")
-    assert physics_object_template.get_collision_asset_handle() == "collision_mesh"
-    physics_object_template.set_bounding_box_collisions(True)
-    assert physics_object_template.get_bounding_box_collisions() == True
-    physics_object_template.set_join_collision_meshes(False)
-    assert physics_object_template.get_join_collision_meshes() == False
-    physics_object_template.set_requires_lighting(False)
-    assert physics_object_template.get_requires_lighting() == False
+    physics_object_template.com = my_test_vec
+    assert physics_object_template.com == my_test_vec
+    physics_object_template.margin = 1.123
+    assert physics_object_template.margin == 1.123
+    physics_object_template.mass = 1.234
+    assert physics_object_template.mass == 1.234
+    physics_object_template.inertia = my_test_vec
+    assert physics_object_template.inertia == my_test_vec
+    physics_object_template.scale = my_test_vec
+    assert physics_object_template.scale == my_test_vec
+    physics_object_template.friction_coefficient = 1.345
+    assert physics_object_template.friction_coefficient == 1.345
+    physics_object_template.restitution_coefficient = 1.456
+    assert physics_object_template.restitution_coefficient == 1.456
+    physics_object_template.linear_damping = 1.567
+    assert physics_object_template.linear_damping == 1.567
+    physics_object_template.angular_damping = 1.678
+    assert physics_object_template.angular_damping == 1.678
+    physics_object_template.handle = "origin"
+    assert physics_object_template.handle == "origin"
+    physics_object_template.render_asset_handle = "render_mesh"
+    assert physics_object_template.render_asset_handle == "render_mesh"
+    physics_object_template.collision_asset_handle = "collision_mesh"
+    assert physics_object_template.collision_asset_handle == "collision_mesh"
+    physics_object_template.bounding_box_collisions = True
+    assert physics_object_template.bounding_box_collisions == True
+    physics_object_template.join_collision_meshes = False
+    assert physics_object_template.join_collision_meshes == False
+    physics_object_template.requires_lighting = False
+    assert physics_object_template.requires_lighting == False
 
     # test that inheritance is correctly configured
     physics_object_template.set("test_key", "test_string")
