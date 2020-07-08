@@ -1305,6 +1305,11 @@ void ResourceManager::addObjectToDrawables(
 
     addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
                  drawables, loadedAssetData.meshMetaData.root, visNodeCache);
+
+    // set the node type for all cached visual nodes
+    for (auto node : visNodeCache) {
+      node->setType(scene::SceneNodeType::OBJECT);
+    }
   }  // should always be specified, otherwise won't do anything
 }  // addObjectToDrawables
 

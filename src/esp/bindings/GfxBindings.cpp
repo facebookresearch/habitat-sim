@@ -57,12 +57,12 @@ void initGfxBindings(py::module& m) {
   py::class_<Renderer, Renderer::ptr>(m, "Renderer")
       .def(py::init(&Renderer::create<>))
       .def("draw",
-           py::overload_cast<sensor::VisualSensor&, scene::SceneGraph&, bool>(
-               &Renderer::draw),
+           py::overload_cast<sensor::VisualSensor&, scene::SceneGraph&, bool,
+                             bool>(&Renderer::draw),
            R"(Draw given scene using the visual sensor)", "visualSensor"_a,
            "scene"_a, "frustumCulling"_a = true, "objectsOnly"_a = false)
       .def("draw",
-           py::overload_cast<RenderCamera&, scene::SceneGraph&, bool>(
+           py::overload_cast<RenderCamera&, scene::SceneGraph&, bool, bool>(
                &Renderer::draw),
            R"(Draw given scene using the camera)", "camera"_a, "scene"_a,
            "frustumCulling"_a = true, "objectsOnly"_a = false)

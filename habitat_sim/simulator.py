@@ -412,6 +412,19 @@ class Sensor:
                 self._sensor_object, scene, self._sim.frustum_culling
             )
 
+        # add an OBJECT only 2nd pass on the standard SceneGraph if SEMANTIC sensor with separate semantic SceneGraph
+        if (
+            self._spec.sensor_type == SensorType.SEMANTIC
+            and self._sim.get_active_scene_graph()
+            is not self._sim.get_active_semantic_scene_graph()
+        ):
+            self._sim.renderer.draw(
+                self._sensor_object,
+                self._sim.get_active_scene_graph(),
+                self._sim.frustum_culling,
+                True,
+            )
+
     def get_observation(self):
 
         tgt = self._sensor_object.render_target
