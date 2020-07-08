@@ -26,19 +26,12 @@ import examples.tutorials.stereo_agent
         ('python', 'examples/tutorials/new_actions.py'),
         ('python', 'examples/tutorials/rigid_object_tutorial.py'),
         ('python', 'examples/tutorials/semantic_id_tutorial.py', '--no-show-images'),
-        #(examples.tutorials.lighting_tutorial, (False,)),
-        #(examples.tutorials.rigid_object_tutorial, (False,)),
-        #(examples.tutorials.semantic_id_tutorial, (False,)),
     ],
 )
 def test_example_modules(args):
     # This test needs to be done in its own process as there is a potentially for
     # an OpenGL context clash otherwise
     mp_ctx = multiprocessing.get_context("spawn")
-    #proc = mp_ctx.Process(target=example_module.main, args=args)
-    #proc.start()
-    #proc.join()
-    print(args)
     exitcode = subprocess.call(args)
 
     assert exitcode == 0

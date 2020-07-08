@@ -55,8 +55,10 @@ def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False):
     videodims = (720, 544)
     video_file=output_path + prefix + ".mp4"
     print('Encoding the video: %s ' % video_file)
-    writer = imageio.get_writer(video_file, fps=60, codec='h264_nvenc', mode='I', bitrate='1000k',  format='FFMPEG', ffmpeg_log_level='info', output_params=['-minrate', '500k', '-maxrate', '5000k'])
-    #writer = imageio.get_writer(video_file, fps=60, output_params=['-preset', 'ultrafast'])
+    if 'google.colab' in sys.modules:
+      writer = imageio.get_writer(video_file, fps=60, codec='h264_nvenc', mode='I', bitrate='1000k',  format='FFMPEG', ffmpeg_log_level='info', output_params=['-minrate', '500k', '-maxrate', '5000k'])
+    else:
+      writer = imageio.get_writer(video_file, fps=60, output_params=['-preset', 'ultrafast'])
 
     thumb_size = (int(videodims[0] / 5), int(videodims[1] / 5))
     outline_frame = np.ones((thumb_size[1] + 2, thumb_size[0] + 2, 3), np.uint8) * 150
@@ -121,7 +123,7 @@ def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False):
           from IPython.display import HTML
           print('Displaying video: %s' % video_file)
           video = io.open(video_file, 'r+b').read()
-          ipythondisplay.display(HTML(data='''<video alt="test" autoplay 
+          ipythondisplay.display(HTML(data='''<video alt="test" autoplay
               loop controls style="height: {2}px;">
               <source src="data:video/{1}';base64,{0}" type="video/{1}" />
               </video>'''.format(base64.b64encode(video).decode('ascii'), ext, height)))
@@ -215,10 +217,10 @@ if __name__ == "__main__":
             os.mkdir(output_path)
 
 # %%
-    
+
     # [initialize]
     # create the simulators AND resets the simulator
-    
+
     cfg = make_configuration()
     try: #Got to make initialization idiot proof
       sim.close()
@@ -237,7 +239,7 @@ if __name__ == "__main__":
 
 # %%
     # [basics]
-    
+
     # load some object templates from configuration files
     sphere_template_id = sim.load_object_configs(
         str(os.path.join(data_path, "test_assets/objects/sphere"))
@@ -254,7 +256,7 @@ if __name__ == "__main__":
         make_video_cv2(observations, prefix="sim_basics", open_vid=show_video)
 
     # [/basics]
-    
+
     remove_all_objects(sim)
 # %%
     # [dynamic_control]
@@ -263,7 +265,7 @@ if __name__ == "__main__":
     # search for an object template by key sub-string
     cheezit_template_handle = obj_templates_mgr.get_template_handles(
         "data/objects/cheezit"
-    )[0]    
+    )[0]
     box_positions = [
         np.array([2.39, -0.37, 0]),
         np.array([2.39, -0.64, 0]),

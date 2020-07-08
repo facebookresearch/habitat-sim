@@ -223,4 +223,4 @@ if __name__ == "__main__":
     parser.add_argument('--no-save-images', dest='save_images', action='store_false')
     parser.set_defaults(show_images=True, save_images=True)
     args = parser.parse_args()
-    main(show_imgs=args.show_images, save_imgs=args.save_imgs)
+    main(show_imgs=args.show_images, save_imgs=args.save_images)
