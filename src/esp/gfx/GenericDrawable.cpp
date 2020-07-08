@@ -67,7 +67,8 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       // e.g., semantic mesh has its own per vertex annotation, which has been
       // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
       // fragment shader
-      .setObjectId(materialData_->perVertexObjectId ? 0 : drawableId_)
+      //.setObjectId(materialData_->perVertexObjectId ? 0 : drawableId_)
+      .setObjectId(materialData_->perVertexObjectId ? 0 : node_.getSemanticId())
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(transformationMatrix.rotationScaling());

@@ -182,27 +182,25 @@ class BulletPhysicsManager : public PhysicsManager {
    * mesh can be used by Bullet. See @ref BulletRigidObject::initializeScene.
    * Bullet mesh conversion adapted from:
    * https://github.com/mosra/magnum-integration/issues/20
-   * @param physicsSceneAttributes a pointer to the structure defining physical
+   * @param handle The handle of the attributes structure defining physical
    * properties of the scene.
    * @return true if successful and false otherwise
    */
-  bool addSceneFinalize(const assets::PhysicsSceneAttributes::ptr
-                            physicsSceneAttributes) override;
+  bool addSceneFinalize(const std::string& handle) override;
 
   /** @brief Create and initialize an @ref RigidObject and add
    * it to existingObjects_ map keyed with newObjectID
    * @param newObjectID valid object ID for the new object
    * @param meshGroup The object's mesh.
-   * @param physicsObjectAttributes The physical object's template defining its
+   * @param handle The handle to the physical object's template defining its
    * physical parameters.
    * @param objectNode Valid, existing scene node
    * @return whether the object has been successfully initialized and added to
    * existingObjects_ map
    */
-  bool makeAndAddRigidObject(
-      int newObjectID,
-      assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-      scene::SceneNode* objectNode) override;
+  bool makeAndAddRigidObject(int newObjectID,
+                             const std::string& handle,
+                             scene::SceneNode* objectNode) override;
 
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;

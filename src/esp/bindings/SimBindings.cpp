@@ -91,19 +91,7 @@ void initSimBindings(py::module& m) {
       .def("get_scene_template_manager", &Simulator::getSceneAttributesManager,
            pybind11::return_value_policy::reference)
 
-      /* --- DEPRECATED - all sim-pass-through access to raw templates is being
-         removed--- */
-      .def("get_template_handle_by_ID", &Simulator::getObjectTemplateHandleByID,
-           "object_id"_a)
-      .def("get_template_handles", &Simulator::getObjectTemplateHandles,
-           "search_str"_a = "", "contains"_a = true)
-      .def("get_physics_object_library_size",
-           &Simulator::getPhysicsObjectLibrarySize)
-      .def("get_object_template", &Simulator::getObjectTemplate,
-           "object_template_id"_a, py::return_value_policy::reference)
       .def("load_object_configs", &Simulator::loadObjectConfigs, "path"_a)
-      .def("load_object_template", &Simulator::registerObjectTemplate,
-           "object_template"_a, "object_template_handle"_a)
 
       /* --- END DEPRECATED --- */
 
@@ -136,6 +124,9 @@ void initSimBindings(py::module& m) {
       .def("set_gravity", &Simulator::setGravity, "gravity"_a, "scene_id"_a = 0)
       .def("get_object_scene_node", &Simulator::getObjectSceneNode,
            "object_id"_a, "scene_id"_a = 0)
+      .def("get_object_visual_scene_nodes",
+           &Simulator::getObjectVisualSceneNodes, "object_id"_a,
+           "scene_id"_a = 0)
       .def("set_transformation", &Simulator::setTransformation, "transform"_a,
            "object_id"_a, "scene_id"_a = 0)
       .def("get_transformation", &Simulator::getTransformation, "object_id"_a,
@@ -170,6 +161,8 @@ void initSimBindings(py::module& m) {
            "scene_id"_a = 0)
       .def("set_object_bb_draw", &Simulator::setObjectBBDraw, "draw_bb"_a,
            "object_id"_a, "scene_id"_a = 0)
+      .def("set_object_semantic_id", &Simulator::setObjectSemanticId,
+           "semantic_id"_a, "object_id"_a, "scene_id"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
            "navmesh_settings"_a, "include_static_objects"_a = false)
       .def("get_light_setup", &Simulator::getLightSetup,

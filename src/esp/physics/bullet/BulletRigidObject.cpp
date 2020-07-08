@@ -48,16 +48,15 @@ BulletRigidObject::~BulletRigidObject() {
   }
 }  //~BulletRigidObject
 
-bool BulletRigidObject::initializationFinalize(
+bool BulletRigidObject::initialization_LibSpecific(
     const assets::ResourceManager& resMgr) {
   objectMotionType_ = MotionType::DYNAMIC;
-  auto tmpAttr = static_cast<esp::assets::PhysicsObjectAttributes*>(
-      initializationAttributes_.get());
+  // get this object's creation template, appropriately cast
+  auto tmpAttr = getInitializationAttributes();
+
   //! Physical parameters
   double margin = tmpAttr->getMargin();
-
   bool joinCollisionMeshes = tmpAttr->getJoinCollisionMeshes();
-
   usingBBCollisionShape_ = tmpAttr->getBoundingBoxCollisions();
 
   // TODO(alexanderwclegg): should provide the option for joinCollisionMeshes
@@ -71,22 +70,25 @@ bool BulletRigidObject::initializationFinalize(
   const std::string collisionAssetHandle =
       initializationAttributes_->getCollisionAssetHandle();
 
-  if (!initializationAttributes_
-           ->getUseMeshCollision()) {  // if using prim collider
-    // prim stuff here
-    // get appropriate bullet collision primitive attributes
-    auto primAttrMgr = resMgr.getAssetAttributesManager();
-
+  if (!initializationAttributes_->getUseMeshCollision()) {
+    // if using prim collider get appropriate bullet collision primitive
+    // attributes and build bullet collision shape
     auto primAttributes =
-        primAttrMgr->getTemplateByHandle(collisionAssetHandle);
+        resMgr.getAssetAttributesManager()->getTemplateCopyByHandle(
+            collisionAssetHandle);
     // primitive object pointer construction
-    auto primObjPtr = buildPrimitiveCollisionObject(*primAttributes.get());
+    auto primObjPtr = buildPrimitiveCollisionObject(
+        primAttributes->getPrimObjType(), primAttributes->getHalfLength());
+    if (nullptr == primObjPtr) {
+      return false;
+    }
     bGenericShapes_.clear();
     bGenericShapes_.emplace_back(std::move(primObjPtr));
     bObjectShape_->addChildShape(btTransform::getIdentity(),
                                  bGenericShapes_.back().get());
     bObjectShape_->recalculateLocalAabb();
   } else {
+    // mesh collider
     const std::vector<assets::CollisionMeshData>& meshGroup =
         resMgr.getCollisionMesh(collisionAssetHandle);
     const assets::MeshMetaData& metaData =
@@ -104,7 +106,7 @@ bool BulletRigidObject::initializationFinalize(
                                      bObjectConvexShapes_.back().get());
       }
     }
-  }  // if using mesh collider
+  }  // if using prim collider else use mesh collider
 
   //! Set properties
   bObjectShape_->setMargin(margin);
@@ -139,18 +141,19 @@ bool BulletRigidObject::initializationFinalize(
   //! Sync render pose with physics
   syncPose();
   return true;
-}  // initializeObjectFinalize
+}  // initialization_LibSpecific
 
-void BulletRigidObject::finalizeObject() {
+bool BulletRigidObject::finalizeObject_LibSpecific() {
   if (usingBBCollisionShape_) {
     setCollisionFromBB();
   }
-}  // finalizeObject
+  return true;
+}  // finalizeObject_LibSpecifc
 
 std::unique_ptr<btCollisionShape>
-BulletRigidObject::buildPrimitiveCollisionObject(
-    const assets::AbstractPrimitiveAttributes& primAttributes) {
-  int primTypeVal = primAttributes.getPrimObjType();
+BulletRigidObject::buildPrimitiveCollisionObject(int primTypeVal,
+                                                 double halfLength) {
+  // int primTypeVal = primAttributes.getPrimObjType();
   CORRADE_ASSERT(
       (primTypeVal >= 0) &&
           (primTypeVal <
@@ -168,7 +171,7 @@ BulletRigidObject::buildPrimitiveCollisionObject(
     case assets::PrimObjTypes::CAPSULE_WF: {
       // use bullet capsule :  btCapsuleShape(btScalar radius,btScalar height);
       btScalar radius = 1.0f;
-      btScalar height = 2.0 * primAttributes.getHalfLength();
+      btScalar height = 2.0 * halfLength;
       obj = std::make_unique<btCapsuleShape>(radius, height);
       break;
     }
@@ -176,7 +179,7 @@ BulletRigidObject::buildPrimitiveCollisionObject(
     case assets::PrimObjTypes::CONE_WF: {
       // use bullet cone : btConeShape(btScalar radius,btScalar height);
       btScalar radius = 1.0f;
-      btScalar height = 2.0 * primAttributes.getHalfLength();
+      btScalar height = 2.0 * halfLength;
       obj = std::make_unique<btConeShape>(radius, height);
       break;
     }

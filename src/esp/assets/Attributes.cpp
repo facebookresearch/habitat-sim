@@ -13,8 +13,8 @@ namespace assets {
 
 AbstractPhysicsAttributes::AbstractPhysicsAttributes(
     const std::string& attributesClassKey,
-    const std::string& originHandle)
-    : AbstractAttributes(attributesClassKey, originHandle) {
+    const std::string& handle)
+    : AbstractAttributes(attributesClassKey, handle) {
   setFrictionCoefficient(0.5);
   setRestitutionCoefficient(0.1);
   setRenderAssetHandle("");
@@ -29,9 +29,8 @@ AbstractPhysicsAttributes::AbstractPhysicsAttributes(
  * AbstractPhysicsAttributes::~AbstractPhysicsAttributes() {}
  */
 
-PhysicsObjectAttributes::PhysicsObjectAttributes(
-    const std::string& originHandle)
-    : AbstractPhysicsAttributes("PhysicsObjectAttributes", originHandle) {
+PhysicsObjectAttributes::PhysicsObjectAttributes(const std::string& handle)
+    : AbstractPhysicsAttributes("PhysicsObjectAttributes", handle) {
   // fill necessary attribute defaults
   setMass(1.0);
   setMargin(0.04);
@@ -47,25 +46,26 @@ PhysicsObjectAttributes::PhysicsObjectAttributes(
   setRenderAssetIsPrimitive(false);
   setCollisionAssetIsPrimitive(false);
   setUseMeshCollision(true);
+  setComputeCOMFromShape(true);
 
   setBoundingBoxCollisions(false);
   setJoinCollisionMeshes(true);
   setRequiresLighting(true);
   setIsVisible(true);
+  setSemanticId(0);
   setIsCollidable(true);
 }  // PhysicsObjectAttributes ctor
 
-PhysicsSceneAttributes::PhysicsSceneAttributes(const std::string& originHandle)
-    : AbstractPhysicsAttributes("PhysicsSceneAttributes", originHandle) {
+PhysicsSceneAttributes::PhysicsSceneAttributes(const std::string& handle)
+    : AbstractPhysicsAttributes("PhysicsSceneAttributes", handle) {
   setGravity({0, -9.8, 0});
   // TODO do these defaults need to be maintained here?
   setFrictionCoefficient(0.4);
   setRestitutionCoefficient(0.05);
 }  // PhysicsSceneAttributes ctor
 
-PhysicsManagerAttributes::PhysicsManagerAttributes(
-    const std::string& originHandle)
-    : AbstractAttributes("PhysicsManagerAttributes", originHandle) {
+PhysicsManagerAttributes::PhysicsManagerAttributes(const std::string& handle)
+    : AbstractAttributes("PhysicsManagerAttributes", handle) {
   setSimulator("none");
   setTimestep(0.01);
   setMaxSubsteps(10);
@@ -96,7 +96,7 @@ CapsulePrimitiveAttributes::CapsulePrimitiveAttributes(
     setNumSegments(16);
     setHalfLength(1.0);
   }
-  buildOriginHandle();  // build handle based on config
+  buildHandle();  // build handle based on config
 }  // PhysicsCapsulePrimAttributes
 
 ConePrimitiveAttributes::ConePrimitiveAttributes(
@@ -116,7 +116,7 @@ ConePrimitiveAttributes::ConePrimitiveAttributes(
   } else {  // wireframe
     setNumSegments(32);
   }
-  buildOriginHandle();  // build handle based on config
+  buildHandle();  // build handle based on config
 }  // PhysicsConePrimAttributes
 
 CylinderPrimitiveAttributes::CylinderPrimitiveAttributes(
@@ -136,7 +136,7 @@ CylinderPrimitiveAttributes::CylinderPrimitiveAttributes(
   } else {  // wireframe
     setNumSegments(32);
   }
-  buildOriginHandle();  // build handle based on config
+  buildHandle();  // build handle based on config
 }  // PhysicsCylinderPrimAttributes
 
 UVSpherePrimitiveAttributes::UVSpherePrimitiveAttributes(
@@ -154,7 +154,7 @@ UVSpherePrimitiveAttributes::UVSpherePrimitiveAttributes(
     setNumRings(16);
     setNumSegments(32);
   }
-  buildOriginHandle();  // build handle based on config
+  buildHandle();  // build handle based on config
 }  // PhysicsUVSpherePrimAttributes
 
 }  // namespace assets

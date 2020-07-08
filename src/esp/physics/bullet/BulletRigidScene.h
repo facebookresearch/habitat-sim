@@ -32,12 +32,12 @@ class BulletRigidScene : public BulletBase, public RigidScene {
  private:
   /**
    * @brief Finalize the initialization of this @ref RigidScene
-   * geometry.  This is overridden by inheriting objects
+   * geometry.  This holds bullet-specific functionality for scenes.
    * @param resMgr Reference to resource manager, to access relevant components
    * pertaining to the scene object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initializationFinalize(
+  bool initialization_LibSpecific(
       const assets::ResourceManager& resMgr) override;
 
   /**

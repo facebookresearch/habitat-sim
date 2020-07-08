@@ -81,11 +81,12 @@ ResourceManager::ResourceManager()
 }  // namespace assets
 
 void ResourceManager::buildImportersAndAttributesManagers() {
-  assetAttributesManager_ = managers::AssetAttributesManager::create();
-  objectAttributesManager_ = managers::ObjectAttributesManager::create();
+  assetAttributesManager_ = managers::AssetAttributesManager::create(*this);
+  objectAttributesManager_ = managers::ObjectAttributesManager::create(*this);
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
-  physicsAttributesManager_ = managers::PhysicsAttributesManager::create();
-  sceneAttributesManager_ = managers::SceneAttributesManager::create();
+  physicsAttributesManager_ = managers::PhysicsAttributesManager::create(
+      *this, objectAttributesManager_);
+  sceneAttributesManager_ = managers::SceneAttributesManager::create(*this);
 
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
@@ -105,7 +106,8 @@ void ResourceManager::initDefaultPrimAttributes() {
   // wireframe cube no differently than other primivite-based rendered
   // objects)
   auto cubeMeshName =
-      assetAttributesManager_->getTemplateByHandle("cubeWireframe")
+      assetAttributesManager_
+          ->getTemplateCopyByHandle<CubePrimitiveAttributes>("cubeWireframe")
           ->getPrimObjClassName();
 
   auto wfCube = primitiveImporter_->mesh(cubeMeshName);
@@ -234,9 +236,6 @@ void ResourceManager::initPhysicsManager(
   // build default primitive asset templates, and default primitive object
   // templates
   initDefaultPrimAttributes();
-  // load object templates from sceneMetaData list...
-  objectAttributesManager_->loadAllFileBasedTemplates(
-      physicsManagerAttributes->getStringGroup("objectLibraryPaths"));
 }  // ResourceManager::initPhysicsManager
 
 // TODO: kill existing scene mesh drawables, nodes, etc... (all but meshes in
@@ -316,7 +315,7 @@ bool ResourceManager::loadPhysicsScene(
     //! Add scene meshgroup to collision mesh groups
     collisionMeshGroups_.emplace(filename, meshGroup);
     //! Initialize collision mesh
-    bool sceneSuccess = _physicsManager->addScene(physSceneLib, meshGroup);
+    bool sceneSuccess = _physicsManager->addScene(filename, meshGroup);
     if (!sceneSuccess) {
       return false;
     }
@@ -497,9 +496,9 @@ void ResourceManager::buildPrimitiveAssetData(
       assetAttributesManager_->getTemplateByHandle(primTemplateHandle);
   // check if unique name of attributes describing primitive asset is present
   // already - don't remake if so
-  auto primAssetOriginHandle = primTemplate->getOriginHandle();
-  if (resourceDict_.count(primAssetOriginHandle) > 0) {
-    LOG(INFO) << " Primitive Asset exists already : " << primAssetOriginHandle;
+  auto primAssetHandle = primTemplate->getHandle();
+  if (resourceDict_.count(primAssetHandle) > 0) {
+    LOG(INFO) << " Primitive Asset exists already : " << primAssetHandle;
     return;
   }
 
@@ -558,11 +557,10 @@ void ResourceManager::buildPrimitiveAssetData(
   // make LoadedAssetData corresponding to this asset
   LoadedAssetData loadedAssetData{info, meshMetaData};
   auto inserted =
-      resourceDict_.emplace(primAssetOriginHandle, std::move(loadedAssetData));
+      resourceDict_.emplace(primAssetHandle, std::move(loadedAssetData));
 
-  LOG(INFO) << " Primitive Asset Added : ID : "
-            << primTemplate->getObjectTemplateID()
-            << " : attr lib key : " << primTemplate->getOriginHandle()
+  LOG(INFO) << " Primitive Asset Added : ID : " << primTemplate->getID()
+            << " : attr lib key : " << primTemplate->getHandle()
             << " | instance class : " << primClassName
             << " | Conf has group for this obj type : "
             << conf.hasGroup(primClassName);
@@ -875,7 +873,10 @@ bool ResourceManager::loadGeneralMeshData(
     }
   }  // forceReload
 
-  addComponent(meshMetaData, newNode, lightSetup, drawables, meshMetaData.root);
+  std::vector<scene::SceneNode*>
+      visNodeCache;  // TODO: cache visual nodes added by this process
+  addComponent(meshMetaData, newNode, lightSetup, drawables, meshMetaData.root,
+               visNodeCache);
   return true;
 }  // loadGeneralMeshData
 
@@ -1186,9 +1187,13 @@ bool ResourceManager::instantiateAssetsOnDemand(
   PhysicsObjectAttributes::ptr physicsObjectAttributes =
       objectAttributesManager_->getTemplateByHandle(objectTemplateHandle);
 
-  // if attributes are "dirty" (values have changed since last registered)
-  // then re-register.  Should never return ID_UNDEFINED - this would mean
-  // something has corrupted the library.
+  // if attributes are "dirty" (important values have changed since last
+  // registered) then re-register.  Should never return ID_UNDEFINED - this
+  // would mean something has corrupted the library.
+  // NOTE : this is called when an new object is being made, but before the
+  // object has acquired a copy of its parent attributes.  No object should ever
+  // have a copy of attributes with isDirty == true - any editing of attributes
+  // for objects requires object rebuilding.
   if (physicsObjectAttributes->getIsDirty()) {
     CORRADE_ASSERT(
         (ID_UNDEFINED != objectAttributesManager_->registerAttributesTemplate(
@@ -1267,10 +1272,12 @@ bool ResourceManager::instantiateAssetsOnDemand(
   return true;
 }  // ResourceManager::instantiateAssetsOnDemand
 
-void ResourceManager::addObjectToDrawables(const std::string& objTemplateHandle,
-                                           scene::SceneNode* parent,
-                                           DrawableGroup* drawables,
-                                           const Mn::ResourceKey& lightSetup) {
+void ResourceManager::addObjectToDrawables(
+    const std::string& objTemplateHandle,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables,
+    std::vector<scene::SceneNode*>& visNodeCache,
+    const Mn::ResourceKey& lightSetup) {
   if (parent != nullptr and drawables != nullptr) {
     //! Add mesh to rendering stack
 
@@ -1292,22 +1299,26 @@ void ResourceManager::addObjectToDrawables(const std::string& objTemplateHandle,
     // need a new node for scaling because motion state will override scale
     // set at the physical node
     scene::SceneNode& scalingNode = parent->createChild();
+    visNodeCache.push_back(&scalingNode);
     Magnum::Vector3 objectScaling = physicsObjectAttributes->getScale();
     scalingNode.setScaling(objectScaling);
 
     addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
-                 drawables, loadedAssetData.meshMetaData.root);
+                 drawables, loadedAssetData.meshMetaData.root, visNodeCache);
   }  // should always be specified, otherwise won't do anything
 }  // addObjectToDrawables
 
 //! Add component to rendering stack, based on importer loading
-void ResourceManager::addComponent(const MeshMetaData& metaData,
-                                   scene::SceneNode& parent,
-                                   const Mn::ResourceKey& lightSetup,
-                                   DrawableGroup* drawables,
-                                   const MeshTransformNode& meshTransformNode) {
+void ResourceManager::addComponent(
+    const MeshMetaData& metaData,
+    scene::SceneNode& parent,
+    const Mn::ResourceKey& lightSetup,
+    DrawableGroup* drawables,
+    const MeshTransformNode& meshTransformNode,
+    std::vector<scene::SceneNode*>& visNodeCache) {
   // Add the object to the scene and set its transformation
   scene::SceneNode& node = parent.createChild();
+  visNodeCache.push_back(&node);
   node.MagnumObject::setTransformation(
       meshTransformNode.transformFromLocalToParent);
 
@@ -1327,7 +1338,7 @@ void ResourceManager::addComponent(const MeshMetaData& metaData,
 
   // Recursively add children
   for (auto& child : meshTransformNode.children) {
-    addComponent(metaData, node, lightSetup, drawables, child);
+    addComponent(metaData, node, lightSetup, drawables, child, visNodeCache);
   }
 }  // addComponent
 

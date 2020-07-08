@@ -97,35 +97,36 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
       &AssetAttributesManager::createAttributesCopy<
           assets::UVSpherePrimitiveAttributes>;
   // no entry added for PrimObjTypes::END_PRIM_OBJ_TYPES
-  defaultTemplateNames.clear();
+  defaultTemplateNames_.clear();
   // build default AbstractPrimitiveAttributes objects
   for (const std::pair<PrimObjTypes, const char*>& elem : PrimitiveNames3DMap) {
     if (elem.first == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       continue;
     }
     auto tmplt = createAttributesTemplate(elem.second, true);
-    std::string tmpltHandle = tmplt->getOriginHandle();
+    std::string tmpltHandle = tmplt->getHandle();
     defaultPrimAttributeHandles_[elem.second] = tmpltHandle;
-    defaultTemplateNames.push_back(tmpltHandle);
+    defaultTemplateNames_.push_back(tmpltHandle);
   }
 
   LOG(INFO) << "AssetAttributesManager::buildCtorFuncPtrMaps : Built default "
                "primitive asset templates : "
-            << std::to_string(defaultTemplateNames.size());
+            << std::to_string(defaultTemplateNames_.size());
 }  // buildMapOfPrimTypeConstructors
 
 int AssetAttributesManager::registerAttributesTemplateFinalize(
     AbstractPrimitiveAttributes::ptr primAttributesTemplate,
     const std::string&) {
-  std::string primAttributesHandle = primAttributesTemplate->getOriginHandle();
+  std::string primAttributesHandle = primAttributesTemplate->getHandle();
   // verify that attributes has been edited in a legal manner
   if (!primAttributesTemplate->isValidTemplate()) {
-    LOG(ERROR)
-        << "AssetAttributesManager::registerAttributesTemplate : Primitive "
-           "asset attributes template named"
-        << primAttributesHandle
-        << "is not configured properly for specified prmitive"
-        << primAttributesTemplate->getPrimObjClassName() << ". Aborting.";
+    LOG(ERROR) << "AssetAttributesManager::registerAttributesTemplateFinalize "
+                  ": Primitive "
+                  "asset attributes template named"
+               << primAttributesHandle
+               << "is not configured properly for specified prmitive"
+               << primAttributesTemplate->getPrimObjClassName()
+               << ". Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -134,7 +135,7 @@ int AssetAttributesManager::registerAttributesTemplateFinalize(
   int primTemplateID =
       this->addTemplateToLibrary(primAttributesTemplate, primAttributesHandle);
   return primTemplateID;
-}  // AssetAttributesManager::registerAttributesTemplate
+}  // AssetAttributesManager::registerAttributesTemplateFinalize
 
 }  // namespace managers
 }  // namespace assets

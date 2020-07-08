@@ -92,7 +92,7 @@ jobs:
               sudo mkdir /opt/cmake
               sudo sh ./cmake-3.10.3-Linux-x86_64.sh --prefix=/opt/cmake --skip-license
               sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
-      - run:
+      - run: &install_deps
           name: Install dependencies
           no_output_timeout: 20m
           command: |
@@ -114,11 +114,6 @@ jobs:
                   libbullet-dev\
                   lcov\
                   unzip || true
-              sudo apt install --allow-change-held-packages \
-                  texlive-base \
-                  texlive-latex-extra \
-                  texlive-fonts-extra \
-                  texlive-fonts-recommended
       - run:
           name: Install Headless Chrome dependencies
           command: |
@@ -177,7 +172,7 @@ jobs:
       - restore_cache:
           keys:
             - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
-      - run:
+      - run: &install_conda
           name: Install conda and dependencies
           no_output_timeout: 20m
           command: |
@@ -383,6 +378,12 @@ jobs:
       - run:
           name: Build sim documentation
           command: |
+              sudo apt install --allow-change-held-packages \
+                  texlive-base \
+                  texlive-latex-extra \
+                  texlive-fonts-extra \
+                  texlive-fonts-recommended
+
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat;
               cd habitat-sim
@@ -439,6 +440,40 @@ jobs:
           background: true
           paths:
             - ./habitat-sim/build/docs-public
+      - run:
+          name: Build conda Linux packages for CI
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              conda install -y anaconda-client git ninja conda-build=3.18.9 # last version that works with our setup
+              rm -rf build
+              cd conda-build
+              python linux_matrix_builder.py --ci_test
+
+  build_conda_binaries:
+    <<: *gpu
+    steps:
+      - checkout:
+          path: ./habitat-sim
+      - restore_cache:
+          keys:
+            - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
+      - run: *install_conda
+      - run: *install_deps
+      - run:
+          name: Build conda Linux packages
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+
+              rm -rf build
+              cd conda-build
+              conda install -y anaconda-client git gitpython ninja conda-build=3.18.9 # last version that works with our setup
+              anaconda login --username aihabitat-nightly --password $AIHABITAT_NIGHTLY_CONDA_PWD
+              conda config --set anaconda_upload yes
+              python linux_matrix_builder.py --conda_upload
 
   update_docs:
     docker:
@@ -503,6 +538,12 @@ workflows:
     jobs:
       - install_and_test_ubuntu
       - update_docs:
+          requires:
+            - install_and_test_ubuntu
+          filters:
+            branches:
+              only: master
+      - build_conda_binaries:
           requires:
             - install_and_test_ubuntu
           filters:

@@ -1,6 +1,8 @@
 [![CircleCI](https://circleci.com/gh/facebookresearch/habitat-sim.svg?style=shield)](https://circleci.com/gh/facebookresearch/habitat-sim)
 [![codecov](https://codecov.io/gh/facebookresearch/habitat-sim/branch/master/graph/badge.svg)](https://codecov.io/gh/facebookresearch/habitat-sim)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebookresearch/habitat-sim/blob/master/LICENSE)
+[![Anaconda-Server Badge](https://anaconda.org/aihabitat/habitat-sim/badges/version.svg)](https://anaconda.org/aihabitat/habitat-sim)
+[![Anaconda-Server Badge](https://anaconda.org/aihabitat/habitat-sim/badges/platforms.svg)](https://anaconda.org/aihabitat/habitat-sim)
 
 # Habitat-Sim
 
@@ -303,9 +305,9 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 
 ## Documentation
 
-Browse the online [Habitat-Sim documentation](https://aihabitat.org/docs/habitat-sim/index.html). 
+Browse the online [Habitat-Sim documentation](https://aihabitat.org/docs/habitat-sim/index.html).
 
-To get you started, see the [Lighting Setup tutorial](https://aihabitat.org/docs/habitat-sim/lighting-setups.html) for adding new objects to existing scenes and relighting the scene & objects. The [Image Extractor tutorial](https://aihabitat.org/docs/habitat-sim/image-extractor.html) shows how to get images from scenes loaded in Habitat-Sim. 
+To get you started, see the [Lighting Setup tutorial](https://aihabitat.org/docs/habitat-sim/lighting-setups.html) for adding new objects to existing scenes and relighting the scene & objects. The [Image Extractor tutorial](https://aihabitat.org/docs/habitat-sim/image-extractor.html) shows how to get images from scenes loaded in Habitat-Sim.
 
 ## Rendering to GPU Tensors
 
