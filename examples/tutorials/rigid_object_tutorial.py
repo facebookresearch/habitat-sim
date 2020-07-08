@@ -40,6 +40,7 @@ import numpy as np
 
 import habitat_sim
 import habitat_sim.utils.common as ut
+import habitat_sim.utils.viz_utils as vut
 
 import git
 import time
@@ -113,23 +114,7 @@ def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False):
     writer.close()
 
     if open_vid:
-        #Check if in notebook
-        if 'ipykernel' in sys.modules:
-          ext = os.path.splitext(video_file)[-1][1:]
-          height = 400
-          import io
-          import base64
-          from IPython import display as ipythondisplay
-          from IPython.display import HTML
-          print('Displaying video: %s' % video_file)
-          video = io.open(video_file, 'r+b').read()
-          ipythondisplay.display(HTML(data='''<video alt="test" autoplay
-              loop controls style="height: {2}px;">
-              <source src="data:video/{1}';base64,{0}" type="video/{1}" />
-              </video>'''.format(base64.b64encode(video).decode('ascii'), ext, height)))
-        else:
-          os.system("open " + video_file)
-
+      vut.display_video(video_file)
 
 def remove_all_objects(sim):
     for id in sim.get_existing_object_ids():
@@ -210,8 +195,14 @@ def simulate(sim, dt=1.0, get_frames=True):
 
 # [/setup]
 if __name__ == "__main__":
-    make_video=True
-    show_video=True
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--no-show-video', dest='show_video', action='store_false')
+    parser.add_argument('--no-make-video', dest='make_video', action='store_false')
+    parser.set_defaults(show_video=True, make_video=True)
+    args, _  = parser.parse_known_args()
+    show_video = args.show_video
+    make_video = args.make_video
     if make_video:
         if not os.path.exists(output_path):
             os.mkdir(output_path)
@@ -393,7 +384,7 @@ if __name__ == "__main__":
     observations += simulate(sim, dt=1.0, get_frames=True)
 
     if make_video:
-        make_video_cv2(observations, prefix="velocity_control", open_vid=True)
+        make_video_cv2(observations, prefix="velocity_control", open_vid=show_video)
 
     # [/velocity_control]
 # %%
@@ -408,7 +399,7 @@ if __name__ == "__main__":
 
     # video rendering
     if make_video:
-        make_video_cv2(observations, prefix="local_velocity_control", open_vid=True)
+        make_video_cv2(observations, prefix="local_velocity_control", open_vid=show_video)
 
     # [/local_velocity_control]
 # %%
@@ -468,7 +459,7 @@ if __name__ == "__main__":
     # video rendering with embedded 1st person view
     if make_video:
         make_video_cv2(
-            observations, prefix="robot_control", open_vid=True, multi_obs=True
+            observations, prefix="robot_control", open_vid=show_video, multi_obs=True
         )
 
     # [/embodied_agent]
@@ -561,7 +552,7 @@ if __name__ == "__main__":
         # video rendering with embedded 1st person view
         if make_video:
             make_video_cv2(
-                observations, prefix=video_prefix, open_vid=True, multi_obs=True
+                observations, prefix=video_prefix, open_vid=show_video, multi_obs=True
             )
 
     # [/embodied_agent_navmesh]

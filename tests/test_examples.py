@@ -24,7 +24,7 @@ import examples.tutorials.stereo_agent
         ('python', 'examples/tutorials/stereo_agent.py', '--no-display'),
         ('python', 'examples/tutorials/lighting_tutorial.py', '--no-show-images'),
         ('python', 'examples/tutorials/new_actions.py'),
-        ('python', 'examples/tutorials/rigid_object_tutorial.py'),
+        ('python', 'examples/tutorials/rigid_object_tutorial.py', '--no-show-video', '--no-make-video'),
         ('python', 'examples/tutorials/semantic_id_tutorial.py', '--no-show-images'),
     ],
 )
