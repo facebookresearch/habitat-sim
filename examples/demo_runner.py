@@ -157,7 +157,8 @@ class DemoRunner:
         max_union_bb_dim = np.array([0.125, 0.19, 0.26])
 
         # add some objects in a grid
-        object_lib_size = self._sim.get_physics_object_library_size()
+        object_library = self._sim.get_object_template_manager()
+        object_lib_size = object_library.get_num_templates()
         object_init_grid_dim = (3, 1, 3)
         object_init_grid = {}
         assert (

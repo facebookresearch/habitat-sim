@@ -54,6 +54,7 @@ def test_example_modules(args):
     [
         "--compute_shortest_path",
         "--compute_shortest_path --compute_action_shortest_path",
+        "--enable_physics",
     ],
 )
 def test_example_script(args):

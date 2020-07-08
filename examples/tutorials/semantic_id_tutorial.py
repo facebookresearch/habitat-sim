@@ -73,7 +73,7 @@ def make_configuration(scene_file):
         "rgba_camera": {
             "sensor_type": habitat_sim.SensorType.COLOR,
             "resolution": camera_resolution,
-            "position": [0.0, 1.5, 0.0],  #::: fix y to be 0 later
+            "position": [0.0, 1.5, 0.0],  # ::: fix y to be 0 later
         },
         "semantic_camera": {
             "sensor_type": habitat_sim.SensorType.SEMANTIC,
@@ -153,13 +153,15 @@ def main(show_imgs=True, save_imgs=False):
 
         # add a box with default semanticId configured in the template
         box_template = habitat_sim.attributes.PhysicsObjectAttributes()
-        box_template.set_render_asset_handle(
-            str(os.path.join(data_path, "test_assets/objects/transform_box.glb"))
+        box_template.render_asset_handle = str(
+            os.path.join(data_path, "test_assets/objects/transform_box.glb")
         )
-        box_template.set_scale(np.array([0.2, 0.2, 0.2]))
+
+        box_template.scale = np.array([0.2, 0.2, 0.2])
         # set the default semantic id for this object template
         box_template.semantic_id = 10
-        box_template_id = sim.load_object_template(box_template, "box")
+        obj_templates_mgr = sim.get_object_template_manager()
+        box_template_id = obj_templates_mgr.register_template(box_template, "box")
         box_id = sim.add_object(box_template_id)
         sim.set_translation([3.5, 0.47, 0.9], box_id)
         sim.set_rotation(

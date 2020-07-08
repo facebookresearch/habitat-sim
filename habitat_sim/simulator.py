@@ -108,6 +108,12 @@ class Simulator(SimulatorBackend):
 
         super().close()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     def seed(self, new_seed):
         super().seed(new_seed)
         self.pathfinder.seed(new_seed)
