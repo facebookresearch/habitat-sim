@@ -108,6 +108,6 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--no-display', dest='display', action='store_false')
-    parser.set_defaults(feature=True)
+    parser.set_defaults(display=True)
     args = parser.parse_args()
     main(display=args.display)
