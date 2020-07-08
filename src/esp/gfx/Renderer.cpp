@@ -34,24 +34,27 @@ struct Renderer::Impl {
 
   void draw(RenderCamera& camera,
             scene::SceneGraph& sceneGraph,
-            bool frustumCulling) {
+            bool frustumCulling,
+            bool objectsOnly) {
     for (auto& it : sceneGraph.getDrawableGroups()) {
       // TODO: remove || true
       if (it.second.prepareForDraw(camera) || true) {
-        camera.draw(it.second, frustumCulling);
+        camera.draw(it.second, frustumCulling, objectsOnly);
       }
     }
   }
 
   void draw(sensor::VisualSensor& visualSensor,
             scene::SceneGraph& sceneGraph,
-            bool frustumCulling) {
+            bool frustumCulling,
+            bool objectsOnly) {
     ASSERT(visualSensor.isVisualSensor());
 
     // set the modelview matrix, projection matrix of the render camera;
     sceneGraph.setDefaultRenderCamera(visualSensor);
 
-    draw(sceneGraph.getDefaultRenderCamera(), sceneGraph, frustumCulling);
+    draw(sceneGraph.getDefaultRenderCamera(), sceneGraph, frustumCulling,
+         objectsOnly);
   }
 
   void bindRenderTarget(sensor::VisualSensor& sensor) {
@@ -78,14 +81,16 @@ Renderer::Renderer() : pimpl_(spimpl::make_unique_impl<Impl>()) {}
 
 void Renderer::draw(RenderCamera& camera,
                     scene::SceneGraph& sceneGraph,
-                    bool frustumCulling) {
-  pimpl_->draw(camera, sceneGraph, frustumCulling);
+                    bool frustumCulling,
+                    bool objectsOnly) {
+  pimpl_->draw(camera, sceneGraph, frustumCulling, objectsOnly);
 }
 
 void Renderer::draw(sensor::VisualSensor& visualSensor,
                     scene::SceneGraph& sceneGraph,
-                    bool frustumCulling) {
-  pimpl_->draw(visualSensor, sceneGraph, frustumCulling);
+                    bool frustumCulling,
+                    bool objectsOnly) {
+  pimpl_->draw(visualSensor, sceneGraph, frustumCulling, objectsOnly);
 }
 
 void Renderer::bindRenderTarget(sensor::VisualSensor& sensor) {

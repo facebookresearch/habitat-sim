@@ -9,6 +9,8 @@
 #include <Magnum/Math/Intersection.h>
 #include <Magnum/Math/Range.h>
 #include <Magnum/SceneGraph/Drawable.h>
+#include "esp/gfx/Drawable.h"
+#include "esp/gfx/DrawableGroup.h"
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
@@ -107,9 +109,30 @@ size_t RenderCamera::cull(
   return (newEndIter - drawableTransforms.begin());
 }
 
+size_t RenderCamera::cullNonObjects(
+    std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                          Mn::Matrix4>>& drawableTransforms) {
+  auto newEndIter = std::remove_if(
+      drawableTransforms.begin(), drawableTransforms.end(),
+      [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
+                          Mn::Matrix4>& a) {
+        // obtain the absolute aabb
+        auto& node = static_cast<scene::SceneNode&>(a.first.get().object());
+        Corrade::Containers::Optional<Mn::Range3D> aabb =
+            node.getAbsoluteAABB();
+        if (node.getType() == scene::SceneNodeType::OBJECT) {
+          // don't cull OBJECT types
+          return false;
+        }
+        return true;
+      });
+  return (newEndIter - drawableTransforms.begin());
+}
+
 uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables,
-                            bool frustumCulling) {
-  if (!frustumCulling) {
+                            bool frustumCulling,
+                            bool objectsOnly) {
+  if (!frustumCulling && !objectsOnly) {
     MagnumCamera::draw(drawables);
     return drawables.size();
   }
@@ -118,11 +141,21 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables,
                         Mn::Matrix4>>
       drawableTransforms = drawableTransformations(drawables);
 
-  // draw just the visible part
-  size_t numVisibles = cull(drawableTransforms);
-  // erase all items that did not pass the frustum visibility test
-  drawableTransforms.erase(drawableTransforms.begin() + numVisibles,
-                           drawableTransforms.end());
+  if (objectsOnly) {
+    // draw just the OBJECTS
+    size_t numObjects = cullNonObjects(drawableTransforms);
+    // erase all items that did not pass the frustum visibility test
+    drawableTransforms.erase(drawableTransforms.begin() + numObjects,
+                             drawableTransforms.end());
+  }
+
+  if (frustumCulling) {
+    // draw just the visible part
+    size_t numVisibles = cull(drawableTransforms);
+    // erase all items that did not pass the frustum visibility test
+    drawableTransforms.erase(drawableTransforms.begin() + numVisibles,
+                             drawableTransforms.end());
+  }
 
   MagnumCamera::draw(drawableTransforms);
   return drawableTransforms.size();

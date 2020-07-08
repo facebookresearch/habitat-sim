@@ -19,12 +19,14 @@ class Renderer {
   // draw the scene graph with the camera specified by user
   void draw(RenderCamera& camera,
             scene::SceneGraph& sceneGraph,
-            bool frustumCulling = true);
+            bool frustumCulling = true,
+            bool objectsOnly = false);
 
   // draw the scene graph with the visual sensor provided by user
   void draw(sensor::VisualSensor& visualSensor,
             scene::SceneGraph& sceneGraph,
-            bool frustumCulling = true);
+            bool frustumCulling = true,
+            bool objectsOnly = false);
 
   /**
    * @brief Binds a @ref RenderTarget to the sensor

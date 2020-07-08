@@ -28,6 +28,7 @@ enum class SceneNodeType {
   SENSOR = 1,
   AGENT = 2,
   CAMERA = 3,
+  OBJECT = 4,  // objects added via physics api
 };
 
 class SceneNode : public MagnumObject {

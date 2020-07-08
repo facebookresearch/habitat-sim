@@ -47,7 +47,10 @@ class RenderCamera : public MagnumCamera {
    * @param frustumCulling, whether do frustum culling or not, default: false
    * @return the number of drawables that are drawn
    */
-  uint32_t draw(MagnumDrawableGroup& drawables, bool frustumCulling = false);
+  uint32_t draw(MagnumDrawableGroup& drawables,
+                bool frustumCulling = false,
+                bool objectsOnly = false);
+
   /**
    * @brief performs the frustum culling
    * @param drawableTransforms, a vector of pairs of Drawable3D object and its
@@ -61,6 +64,14 @@ class RenderCamera : public MagnumCamera {
   size_t cull(std::vector<
               std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
                         Magnum::Matrix4>>& drawableTransforms);
+
+  /**
+   * @brief Cull Drawables for SceneNodes which are not OBJECT type.
+   */
+  size_t cullNonObjects(
+      std::vector<
+          std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
+                    Magnum::Matrix4>>& drawableTransforms);
 
  protected:
   ESP_SMART_POINTERS(RenderCamera)
