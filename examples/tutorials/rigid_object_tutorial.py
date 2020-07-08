@@ -229,7 +229,7 @@ if __name__ == "__main__":
         if not os.path.exists(output_path):
             os.mkdir(output_path)
 
-    # %%
+# %%
 
     # [initialize]
     # create the simulators AND resets the simulator
@@ -249,7 +249,7 @@ if __name__ == "__main__":
     obj_templates_mgr = sim.get_object_template_manager()
     # [/initialize]
 
-    # %%
+# %%
     # [basics]
 
     # load some object templates from configuration files
@@ -270,7 +270,7 @@ if __name__ == "__main__":
     # [/basics]
 
     remove_all_objects(sim)
-    # %%
+# %%
     # [dynamic_control]
 
     observations = []
@@ -328,7 +328,7 @@ if __name__ == "__main__":
     if make_video:
         make_video_cv2(observations, prefix="dynamic_control", open_vid=show_video)
 
-    # %%
+# %%
     # [kinematic_interactions]
 
     chefcan_template_handle = obj_templates_mgr.get_template_handles(
@@ -358,7 +358,7 @@ if __name__ == "__main__":
     # [/kinematic_interactions]
 
     remove_all_objects(sim)
-    # %%
+# %%
     # [kinematic_update]
     observations = []
 
@@ -386,7 +386,7 @@ if __name__ == "__main__":
         make_video_cv2(observations, prefix="kinematic_update", open_vid=show_video)
 
     # [/kinematic_update]
-    # %%
+# %%
     # [velocity_control]
 
     # get object VelocityControl structure and setup control
@@ -407,7 +407,7 @@ if __name__ == "__main__":
         make_video_cv2(observations, prefix="velocity_control", open_vid=show_video)
 
     # [/velocity_control]
-    # %%
+# %%
     # [local_velocity_control]
 
     vel_control.linear_velocity = np.array([0, 0, 2.3])
@@ -424,7 +424,7 @@ if __name__ == "__main__":
         )
 
     # [/local_velocity_control]
-    # %%
+# %%
     # [embodied_agent]
 
     # load the lobot_merged asset
@@ -486,7 +486,7 @@ if __name__ == "__main__":
 
     # [/embodied_agent]
 
-    # %%
+# %%
     # [embodied_agent_navmesh]
 
     # load the lobot_merged asset
