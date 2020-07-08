@@ -75,11 +75,10 @@ def _test_keep_agent_tgt():
     agents = []
 
     for _ in range(3):
-        sim = habitat_sim.Simulator(habitat_sim.Configuration(sim_cfg, [agent_config]))
-
-        agents.append(sim.get_agent(0))
-
-        sim.close()
+        with habitat_sim.Simulator(
+            habitat_sim.Configuration(sim_cfg, [agent_config])
+        ) as sim:
+            agents.append(sim.get_agent(0))
 
 
 # Make sure you can construct and destruct the simulator multiple times
@@ -90,9 +89,10 @@ def _test_multiple_construct_destroy_tgt():
     sim_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
 
     for _ in range(3):
-        sim = habitat_sim.Simulator(habitat_sim.Configuration(sim_cfg, [agent_config]))
-
-        sim.close()
+        with habitat_sim.Simulator(
+            habitat_sim.Configuration(sim_cfg, [agent_config])
+        ) as sim:
+            pass
 
 
 @pytest.mark.parametrize(
