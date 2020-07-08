@@ -19,24 +19,29 @@ import examples.tutorials.stereo_agent
     reason="Requires the habitat-test-scenes",
 )
 @pytest.mark.parametrize(
-    "example_module,args",
+    "args",
     [
-        (examples.tutorials.stereo_agent, (False,)),
-        (examples.tutorials.new_actions, ()),
-        (examples.tutorials.lighting_tutorial, (False,)),
-        (examples.tutorials.rigid_object_tutorial, (False,)),
-        (examples.tutorials.semantic_id_tutorial, (False,)),
+        ('python', 'examples/tutorials/stereo_agent.py', '--no-display'),
+        ('python', 'examples/tutorials/lighting_tutorial.py', '--no-show-images'),
+        ('python', 'examples/tutorials/new_actions.py'),
+        ('python', 'examples/tutorials/rigid_object_tutorial.py'),
+        ('python', 'examples/tutorials/semantic_id_tutorial.py', '--no-show-images'),
+        #(examples.tutorials.lighting_tutorial, (False,)),
+        #(examples.tutorials.rigid_object_tutorial, (False,)),
+        #(examples.tutorials.semantic_id_tutorial, (False,)),
     ],
 )
-def test_example_modules(example_module, args):
+def test_example_modules(args):
     # This test needs to be done in its own process as there is a potentially for
     # an OpenGL context clash otherwise
     mp_ctx = multiprocessing.get_context("spawn")
-    proc = mp_ctx.Process(target=example_module.main, args=args)
-    proc.start()
-    proc.join()
+    #proc = mp_ctx.Process(target=example_module.main, args=args)
+    #proc.start()
+    #proc.join()
+    print(args)
+    exitcode = subprocess.call(args)
 
-    assert proc.exitcode == 0
+    assert exitcode == 0
 
 
 @pytest.mark.gfxtest
