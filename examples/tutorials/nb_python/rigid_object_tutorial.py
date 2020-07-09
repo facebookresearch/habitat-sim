@@ -19,27 +19,26 @@
 # %cd /content/habitat-sim
 ## [setup]
 import math
-import os, sys
+import os
+import random
+import sys
+import time
 
 import cv2
+import git
 import imageio
-import magnum as mn 
+import magnum as mn
 import numpy as np
 
 import habitat_sim
 import habitat_sim.utils.common as ut
 import habitat_sim.utils.viz_utils as vut
 
-import git
-import time
-import random
-
 repo = git.Repo('.', search_parent_directories=True)
 dir_path = repo.working_tree_dir
 data_path = os.path.join(dir_path, "data")
 output_path = os.path.join(dir_path, "examples/tutorials/rigid_object_tutorial_output/")
 
-#TODO, we should display the videos in matplotlib so that they work locally and on collab
 def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False):
     videodims = (720, 544)
     video_file=output_path + prefix + ".mp4"

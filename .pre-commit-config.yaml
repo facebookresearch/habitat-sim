@@ -29,6 +29,17 @@ repos:
     rev: 19.3b0
     hooks:
     - id: black
+      exclude: ^examples/tutorials/(nb_python|colabs)
+
+
+-   repo: local
+    hooks:
+    -   id: jupytext
+        name: jupytext
+        files: '^examples/tutorials/nb_python/.*\.py$'
+        entry: jupytext  --pipe black --pipe "sed s/[[:space:]]*\#[[:space:]]\%\%/\#\%\%/g" --to ../colabs//ipynb
+        pass_filenames: true
+        language: python
 
 -   repo: local
     hooks:

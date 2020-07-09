@@ -218,9 +218,10 @@ def main(show_imgs=True, save_imgs=False):
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('--no-show-images', dest='show_images', action='store_false')
-    parser.add_argument('--no-save-images', dest='save_images', action='store_false')
+    parser.add_argument("--no-show-images", dest="show_images", action="store_false")
+    parser.add_argument("--no-save-images", dest="save_images", action="store_false")
     parser.set_defaults(show_images=True, save_images=True)
     args = parser.parse_args()
     main(show_imgs=args.show_images, save_imgs=args.save_images)

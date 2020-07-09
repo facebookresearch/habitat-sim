@@ -21,11 +21,16 @@ import examples.tutorials.stereo_agent
 @pytest.mark.parametrize(
     "args",
     [
-        ('python', 'examples/tutorials/stereo_agent.py', '--no-display'),
-        ('python', 'examples/tutorials/lighting_tutorial.py', '--no-show-images'),
-        ('python', 'examples/tutorials/new_actions.py'),
-        ('python', 'examples/tutorials/rigid_object_tutorial.py', '--no-show-video', '--no-make-video'),
-        ('python', 'examples/tutorials/semantic_id_tutorial.py', '--no-show-images'),
+        ("python", "examples/tutorials/stereo_agent.py", "--no-display"),
+        ("python", "examples/tutorials/lighting_tutorial.py", "--no-show-images"),
+        ("python", "examples/tutorials/new_actions.py"),
+        (
+            "python",
+            "examples/tutorials/nb_python/rigid_object_tutorial.py",
+            "--no-show-video",
+            "--no-make-video",
+        ),
+        ("python", "examples/tutorials/semantic_id_tutorial.py", "--no-show-images"),
     ],
 )
 def test_example_modules(args):
