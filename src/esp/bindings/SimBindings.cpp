@@ -154,7 +154,41 @@ void initSimBindings(py::module& m) {
       .def("set_light_setup", &Simulator::setLightSetup, "light_setup"_a,
            "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY)
       .def("set_object_light_setup", &Simulator::setObjectLightSetup,
-           "object_id"_a, "light_setup_key"_a, "scene_id"_a = 0);
+           "object_id"_a, "light_setup_key"_a, "scene_id"_a = 0)
+
+      /* --- URDF and ArticualtedObject API functions --- */
+      .def("add_articulated_object_from_urdf",
+           &Simulator::addArticulatedObjectFromURDF, "object_id"_a,
+           "fixed_base"_a = false)
+      .def("set_articulated_object_root_state",
+           &Simulator::setArticulatedObjectRootState, "object_id"_a, "state"_a)
+      .def("get_articulated_object_root_state",
+           &Simulator::getArticulatedObjectRootState, "object_id"_a)
+      .def("set_articulated_object_forces",
+           &Simulator::setArticulatedObjectForces, "object_id"_a, "forces"_a)
+      .def("set_articulated_object_velocities",
+           &Simulator::setArticulatedObjectVelocities, "object_id"_a, "vels"_a)
+      .def("set_articulated_object_positions",
+           &Simulator::setArticulatedObjectPositions, "object_id"_a,
+           "positions"_a)
+      .def("get_articulated_object_positions",
+           &Simulator::getArticulatedObjectPositions, "object_id"_a)
+      .def("get_articulated_object_velocities",
+           &Simulator::getArticulatedObjectVelocities, "object_id"_a)
+      .def("get_articulated_object_forces",
+           &Simulator::getArticulatedObjectForces, "object_id"_a)
+      .def("reset_articulated_object", &Simulator::resetArticulatedObject,
+           "object_id"_a)
+      .def("set_articulated_object_sleep",
+           &Simulator::setArticulatedObjectSleep, "object_id"_a,
+           "sleep"_a = true)
+      .def("get_articulated_object_sleep",
+           &Simulator::getArticulatedObjectSleep, "object_id"_a)
+      .def("set_articulated_object_motion_type",
+           &Simulator::setArticulatedObjectMotionType, "object_id"_a,
+           "motion_type"_a)
+      .def("get_articulated_object_motion_type",
+           &Simulator::getArticulatedObjectMotionType, "object_id"_a);
 }
 
 }  // namespace sim

@@ -497,6 +497,51 @@ class Simulator {
    */
   void setObjectBBDraw(bool drawBB, const int objectID, const int sceneID = 0);
 
+  //===============================================================================//
+  // Articulated Object API (UNSTABLE!)
+
+  /**
+   * @brief Parse a URDF and instantiate the defined robot if successful.
+   *
+   * This will always re-parse the URDF. Edits to URDF parameters between calls
+   * will be reflected. Edits to linked and imported assets between calls will
+   * NOT be reflected (e.g. modifying the geometry of a part between loads).
+   */
+  int addArticulatedObjectFromURDF(std::string filepath,
+                                   bool fixedBase = false);
+
+  void setArticulatedObjectRootState(int objectId,
+                                     const Magnum::Matrix4& state);
+
+  const Magnum::Matrix4 getArticulatedObjectRootState(int objectId);
+
+  void setArticulatedObjectForces(int objectId, std::vector<float> forces);
+
+  void setArticulatedObjectVelocities(int objectId, std::vector<float> vels);
+
+  void setArticulatedObjectPositions(int objectId,
+                                     std::vector<float> positions);
+
+  std::vector<float> getArticulatedObjectPositions(int objectId);
+
+  std::vector<float> getArticulatedObjectVelocities(int objectId);
+
+  std::vector<float> getArticulatedObjectForces(int objectId);
+
+  void resetArticulatedObject(int objectId);
+
+  void setArticulatedObjectSleep(int objectId, bool sleep);
+
+  bool getArticulatedObjectSleep(int objectId);
+
+  void setArticulatedObjectMotionType(int objectId,
+                                      esp::physics::MotionType mt);
+
+  esp::physics::MotionType getArticulatedObjectMotionType(int objectId);
+
+  // END: Articulated Object API (UNSTABLE!)
+  //===============================================================================//
+
   /**
    * @brief Discrete collision check for contact between an object and the
    * collision world.

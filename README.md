@@ -79,10 +79,10 @@ Want to play with robots? Try the demo in viewer.
 
 
 Also try the python API via the tutorial script (after download/install as above):
-TODO: python API and script coming soon
 ```
-python path-to-habitat-sim/examples/tutorials/TODO
+python path-to-habitat-sim/examples/tutorials/URDF_robotics_tutorial.py
 ```
+**Note: this script will save and open a video file. On OSX you must close QuickTime Player between runs to see the updated video.**
 
 
 ## Motivation ##

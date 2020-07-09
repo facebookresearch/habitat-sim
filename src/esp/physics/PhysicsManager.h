@@ -845,6 +845,89 @@ class PhysicsManager {
   const assets::PhysicsObjectAttributes::cptr getInitializationAttributes(
       const int physObjectID) const;
 
+  Magnum::Vector3 getArticulatedLinkCOM(int objectId, int linkId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)
+        ->getLink(linkId)
+        .node()
+        .translation();
+  }
+
+  void addArticulatedLinkForce(int objectId,
+                               int linkId,
+                               Magnum::Vector3 force) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->addArticulatedLinkForce(linkId,
+                                                                      force);
+  }
+
+  void setArticulatedObjectRootState(int objectId,
+                                     const Magnum::Matrix4& state) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->setRootState(state);
+  };
+
+  const Magnum::Matrix4 getArticulatedObjectRootState(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getRootState();
+  };
+
+  void setArticulatedObjectForces(int objectId, std::vector<float> forces) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->setForces(forces);
+  };
+
+  void setArticulatedObjectVelocities(int objectId, std::vector<float> vels) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->setVelocities(vels);
+  };
+
+  void setArticulatedObjectPositions(int objectId,
+                                     std::vector<float> positions) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->setPositions(positions);
+  };
+
+  std::vector<float> getArticulatedObjectPositions(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getPositions();
+  };
+
+  std::vector<float> getArticulatedObjectVelocities(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getVelocities();
+  };
+
+  std::vector<float> getArticulatedObjectForces(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getForces();
+  };
+
+  void resetArticulatedObject(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->reset();
+  };
+
+  void setArticulatedObjectSleep(int objectId, bool sleep) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->setSleep(sleep);
+  };
+
+  bool getArticulatedObjectSleep(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getSleep();
+  }
+
+  void setArticulatedObjectMotionType(int objectId, MotionType mt) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    existingArticulatedObjects_.at(objectId)->setMotionType(mt);
+  };
+
+  MotionType getArticulatedObjectMotionType(int objectId) {
+    CHECK(existingArticulatedObjects_.count(objectId));
+    return existingArticulatedObjects_.at(objectId)->getMotionType();
+  };
+
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
    * existing object). Terminate the program and report an error if not. This

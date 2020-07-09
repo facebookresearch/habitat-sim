@@ -761,5 +761,113 @@ void Simulator::setObjectLightSetup(int objectID,
   }
 }
 
+//===============================================================================//
+// Articulated Object API (UNSTABLE!)
+
+int Simulator::addArticulatedObjectFromURDF(std::string filepath,
+                                            bool fixedBase) {
+  if (sceneHasPhysics(0)) {
+    auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
+    auto& drawables = sceneGraph_.getDrawables();
+    return physicsManager_->addArticulatedObjectFromURDF(filepath, &drawables,
+                                                         fixedBase);
+  }
+  Corrade::Utility::Debug()
+      << "Simulator::loadURDF : failed - physics not enabled.";
+  return esp::ID_UNDEFINED;
+}
+
+void Simulator::setArticulatedObjectRootState(int objectId,
+                                              const Magnum::Matrix4& state) {
+  if (sceneHasPhysics(0)) {
+    physicsManager_->setArticulatedObjectRootState(objectId, state);
+  }
+};
+
+const Magnum::Matrix4 Simulator::getArticulatedObjectRootState(int objectId) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->getArticulatedObjectRootState(objectId);
+  }
+};
+
+void Simulator::setArticulatedObjectForces(int objectId,
+                                           std::vector<float> forces) {
+  if (sceneHasPhysics(0)) {
+    physicsManager_->setArticulatedObjectForces(objectId, forces);
+  }
+};
+
+void Simulator::setArticulatedObjectVelocities(int objectId,
+                                               std::vector<float> vels) {
+  if (sceneHasPhysics(0)) {
+    physicsManager_->setArticulatedObjectVelocities(objectId, vels);
+  }
+};
+
+void Simulator::setArticulatedObjectPositions(int objectId,
+                                              std::vector<float> positions) {
+  if (sceneHasPhysics(0)) {
+    physicsManager_->setArticulatedObjectPositions(objectId, positions);
+  }
+};
+
+std::vector<float> Simulator::getArticulatedObjectPositions(int objectId) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->getArticulatedObjectPositions(objectId);
+  }
+  return std::vector<float>();
+};
+
+std::vector<float> Simulator::getArticulatedObjectVelocities(int objectId) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->getArticulatedObjectVelocities(objectId);
+  }
+  return std::vector<float>();
+};
+
+std::vector<float> Simulator::getArticulatedObjectForces(int objectId) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->getArticulatedObjectForces(objectId);
+  }
+  return std::vector<float>();
+};
+
+void Simulator::resetArticulatedObject(int objectId) {
+  if (sceneHasPhysics(0)) {
+    physicsManager_->resetArticulatedObject(objectId);
+  }
+};
+
+void Simulator::setArticulatedObjectSleep(int objectId, bool sleep) {
+  if (sceneHasPhysics(0)) {
+    physicsManager_->setArticulatedObjectSleep(objectId, sleep);
+  }
+};
+
+bool Simulator::getArticulatedObjectSleep(int objectId) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->getArticulatedObjectSleep(objectId);
+  }
+  return false;
+}
+
+void Simulator::setArticulatedObjectMotionType(int objectId,
+                                               esp::physics::MotionType mt) {
+  if (sceneHasPhysics(0)) {
+    physicsManager_->setArticulatedObjectMotionType(objectId, mt);
+  }
+};
+
+esp::physics::MotionType Simulator::getArticulatedObjectMotionType(
+    int objectId) {
+  if (sceneHasPhysics(0)) {
+    return physicsManager_->getArticulatedObjectMotionType(objectId);
+  }
+  return esp::physics::MotionType::ERROR_MOTIONTYPE;
+};
+
+// END: Articulated Object API (UNSTABLE!)
+//===============================================================================//
+
 }  // namespace sim
 }  // namespace esp
