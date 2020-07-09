@@ -118,8 +118,6 @@ size_t RenderCamera::cullNonObjects(
                           Mn::Matrix4>& a) {
         // obtain the absolute aabb
         auto& node = static_cast<scene::SceneNode&>(a.first.get().object());
-        Corrade::Containers::Optional<Mn::Range3D> aabb =
-            node.getAbsoluteAABB();
         if (node.getType() == scene::SceneNodeType::OBJECT) {
           // don't cull OBJECT types
           return false;
