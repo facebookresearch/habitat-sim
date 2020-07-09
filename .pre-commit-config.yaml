@@ -37,9 +37,13 @@ repos:
     -   id: jupytext
         name: jupytext
         files: '^examples/tutorials/nb_python/.*\.py$'
-        entry: jupytext  --pipe black --pipe "sed s/[[:space:]]*\#[[:space:]]\%\%/\#\%\%/g" --to ../colabs//ipynb
+        entry: jupytext  --pipe black --pipe "sed s/[[:space:]]*\#[[:space:]]\%\%/\#\%\%/g" --pipe-fmt py:percent --update-metadata '{"jupytext":{"notebook_metadata_filter":"all"}, "accelerator":"GPU"}' --to ../colabs//ipynb
         pass_filenames: true
         language: python
+        always_run: true
+
+
+
 
 -   repo: local
     hooks:

@@ -101,6 +101,7 @@ def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False):
     writer.close()
 
     if open_vid:
+      print("Displaying video")
       vut.display_video(video_file)
 
 def remove_all_objects(sim):
