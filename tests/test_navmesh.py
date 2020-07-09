@@ -1,4 +1,5 @@
 import glob
+import math
 import os
 import os.path as osp
 
@@ -124,9 +125,9 @@ def test_navmesh_area(test_scene, sim):
     # get the initial navmesh area. This test assumes default navmesh assets.
     loadedNavMeshArea = sim.pathfinder.navigable_area
     if test_scene.endswith("skokloster-castle.glb"):
-        assert loadedNavMeshArea == 226.65673828125
+        assert math.isclose(loadedNavMeshArea, 226.65673828125)
     elif test_scene.endswith("van-gogh-room.glb"):
-        assert loadedNavMeshArea == 9.17772102355957
+        assert math.isclose(loadedNavMeshArea, 9.17772102355957)
 
     navmesh_settings = habitat_sim.NavMeshSettings()
     navmesh_settings.set_defaults()
@@ -136,6 +137,6 @@ def test_navmesh_area(test_scene, sim):
     # get the re-computed navmesh area. This test assumes NavMeshSettings default values.
     recomputedNavMeshArea1 = sim.pathfinder.navigable_area
     if test_scene.endswith("skokloster-castle.glb"):
-        assert recomputedNavMeshArea1 == 565.1781616210938
+        assert math.isclose(recomputedNavMeshArea1, 565.1781616210938)
     elif test_scene.endswith("van-gogh-room.glb"):
-        assert recomputedNavMeshArea1 == 9.17772102355957
+        assert math.isclose(recomputedNavMeshArea1, 9.17772102355957)
