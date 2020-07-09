@@ -5,12 +5,6 @@ import subprocess
 
 import pytest
 
-import examples.tutorials.lighting_tutorial
-import examples.tutorials.new_actions
-import examples.tutorials.rigid_object_tutorial
-import examples.tutorials.semantic_id_tutorial
-import examples.tutorials.stereo_agent
-
 
 @pytest.mark.gfxtest
 @pytest.mark.skipif(
