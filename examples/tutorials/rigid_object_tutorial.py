@@ -17,6 +17,7 @@
 
 # %%
 # %cd /content/habitat-sim
+## [setup]
 import math
 import os, sys
 
