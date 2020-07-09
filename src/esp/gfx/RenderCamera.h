@@ -14,6 +14,25 @@ namespace gfx {
 
 class RenderCamera : public MagnumCamera {
  public:
+  /**
+   * @brief Rendering Flags
+   */
+  enum class Flag : unsigned int {
+    /**
+     * Cull Drawables with bounding boxes not intersecting the camera frustum.
+     */
+    FrustumCulling = 1 << 0,
+
+    /**
+     * Cull Drawables not attached to @ref SceneNodes with @ref
+     * scene::SceneNodeType::OBJECT.
+     */
+    ObjectsOnly = 1 << 1,
+  };
+
+  typedef Corrade::Containers::EnumSet<Flag> Flags;
+  CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
+
   RenderCamera(scene::SceneNode& node);
   RenderCamera(scene::SceneNode& node,
                const vec3f& eye,
@@ -47,9 +66,7 @@ class RenderCamera : public MagnumCamera {
    * @param frustumCulling, whether do frustum culling or not, default: false
    * @return the number of drawables that are drawn
    */
-  uint32_t draw(MagnumDrawableGroup& drawables,
-                bool frustumCulling = false,
-                bool objectsOnly = false);
+  uint32_t draw(MagnumDrawableGroup& drawables, Flags flags = {});
 
   /**
    * @brief performs the frustum culling

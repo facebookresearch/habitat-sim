@@ -500,7 +500,10 @@ void Viewer::drawEvent() {
   for (auto& it : sceneGraph.getDrawableGroups()) {
     // TODO: remove || true
     if (it.second.prepareForDraw(*renderCamera_) || true) {
-      visibles += renderCamera_->draw(it.second, frustumCullingEnabled_);
+      esp::gfx::RenderCamera::Flags flags;
+      if (frustumCullingEnabled_)
+        flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+      visibles += renderCamera_->draw(it.second, flags);
     }
   }
 

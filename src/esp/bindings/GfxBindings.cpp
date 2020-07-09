@@ -11,6 +11,8 @@
 #include <Magnum/Python.h>
 #include <Magnum/SceneGraph/Python.h>
 
+#include "python/corrade/EnumOperators.h"
+
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/LightSetup.h"
 #include "esp/gfx/RenderCamera.h"
@@ -38,10 +40,20 @@ void initGfxBindings(py::module& m) {
   // ==== RenderCamera ====
   py::class_<RenderCamera, Magnum::SceneGraph::PyFeature<RenderCamera>,
              Magnum::SceneGraph::Camera3D,
-             Magnum::SceneGraph::PyFeatureHolder<RenderCamera>>(
-      m, "Camera",
-      R"(RenderCamera: The object of this class is a camera attached
-      to the scene node for rendering.)")
+             Magnum::SceneGraph::PyFeatureHolder<RenderCamera>>
+      render_camera(
+          m, "Camera",
+          R"(RenderCamera: The object of this class is a camera attached
+      to the scene node for rendering.)");
+
+  py::enum_<RenderCamera::Flag> flags{render_camera, "Flags", "Flags"};
+
+  flags.value("FRUSTUM_CULLING", RenderCamera::Flag::FrustumCulling)
+      .value("OBJECTS_ONLY", RenderCamera::Flag::ObjectsOnly)
+      .value("NONE", RenderCamera::Flag{});
+  corrade::enumOperators(flags);
+
+  render_camera
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
                           const vec3f&, const vec3f&, const vec3f&>())
       .def("set_projection_matrix", &RenderCamera::setProjectionMatrix, R"(
@@ -57,15 +69,16 @@ void initGfxBindings(py::module& m) {
   py::class_<Renderer, Renderer::ptr>(m, "Renderer")
       .def(py::init(&Renderer::create<>))
       .def("draw",
-           py::overload_cast<sensor::VisualSensor&, scene::SceneGraph&, bool,
-                             bool>(&Renderer::draw),
+           py::overload_cast<sensor::VisualSensor&, scene::SceneGraph&,
+                             RenderCamera::Flags>(&Renderer::draw),
            R"(Draw given scene using the visual sensor)", "visualSensor"_a,
-           "scene"_a, "frustumCulling"_a = true, "objectsOnly"_a = false)
+           "scene"_a,
+           "flags"_a = RenderCamera::Flags{RenderCamera::Flag::FrustumCulling})
       .def("draw",
-           py::overload_cast<RenderCamera&, scene::SceneGraph&, bool, bool>(
-               &Renderer::draw),
+           py::overload_cast<RenderCamera&, scene::SceneGraph&,
+                             RenderCamera::Flags>(&Renderer::draw),
            R"(Draw given scene using the camera)", "camera"_a, "scene"_a,
-           "frustumCulling"_a = true, "objectsOnly"_a = false)
+           "flags"_a = RenderCamera::Flags{RenderCamera::Flag::FrustumCulling})
       .def("bind_render_target", &Renderer::bindRenderTarget);
 
   py::class_<RenderTarget>(m, "RenderTarget")

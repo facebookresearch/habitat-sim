@@ -127,10 +127,8 @@ size_t RenderCamera::cullNonObjects(
   return (newEndIter - drawableTransforms.begin());
 }
 
-uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables,
-                            bool frustumCulling,
-                            bool objectsOnly) {
-  if (!frustumCulling && !objectsOnly) {
+uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
+  if (flags == Flags()) {  // empty set
     MagnumCamera::draw(drawables);
     return drawables.size();
   }
@@ -139,7 +137,7 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables,
                         Mn::Matrix4>>
       drawableTransforms = drawableTransformations(drawables);
 
-  if (objectsOnly) {
+  if (flags & Flag::ObjectsOnly) {
     // draw just the OBJECTS
     size_t numObjects = cullNonObjects(drawableTransforms);
     // erase all items that did not pass the frustum visibility test
@@ -147,7 +145,7 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables,
                              drawableTransforms.end());
   }
 
-  if (frustumCulling) {
+  if (flags & Flag::FrustumCulling) {
     // draw just the visible part
     size_t numVisibles = cull(drawableTransforms);
     // erase all items that did not pass the frustum visibility test
