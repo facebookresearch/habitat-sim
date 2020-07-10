@@ -212,7 +212,7 @@ jobs:
               then
                 export PATH=$HOME/miniconda/bin:$PATH
                 . activate habitat;
-                conda install -c  conda-forge opencv imageio imageio-ffmpeg -y
+                conda install -c  conda-forge opencv -y
                 conda install -y pytorch torchvision  cudatoolkit=10.0 -c pytorch
               fi
               touch ~/miniconda/pytorch_installed
@@ -254,6 +254,7 @@ jobs:
               . activate habitat;
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
+              pip install imageio imageio-ffmpeg
               python setup.py install --headless
       - run:
           name: run clang-tidy
