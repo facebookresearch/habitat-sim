@@ -60,8 +60,8 @@ def display_video(video_file: str, height: int = 400):
     """
     # Check if in notebook
     if is_notebook():
-        from IPython.display import HTML
         from IPython import display as ipythondisplay
+        from IPython.display import HTML
 
         ext = os.path.splitext(video_file)[-1][1:]
         video = io.open(video_file, "r+b").read()
