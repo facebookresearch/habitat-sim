@@ -1,12 +1,15 @@
 # ---
 # jupyter:
+#   accelerator: GPU
 #   jupytext:
 #     cell_metadata_filter: -all
+#     formats: nb_python//py:percent,colabs//ipynb
+#     notebook_metadata_filter: all
 #     text_representation:
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.5.1
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -34,30 +37,46 @@ import habitat_sim
 import habitat_sim.utils.common as ut
 import habitat_sim.utils.viz_utils as vut
 
-repo = git.Repo('.', search_parent_directories=True)
+repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
 data_path = os.path.join(dir_path, "data")
 output_path = os.path.join(dir_path, "examples/tutorials/rigid_object_tutorial_output/")
 
+
 def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False):
     videodims = (720, 544)
-    video_file=output_path + prefix + ".mp4"
-    print('Encoding the video: %s ' % video_file)
-    if 'google.colab' in sys.modules:
-      writer = imageio.get_writer(video_file, fps=60, codec='h264_nvenc', mode='I', bitrate='1000k',  format='FFMPEG', ffmpeg_log_level='info', output_params=['-minrate', '500k', '-maxrate', '5000k'])
+    video_file = output_path + prefix + ".mp4"
+    print("Encoding the video: %s " % video_file)
+    if "google.colab" in sys.modules:
+        writer = imageio.get_writer(
+            video_file,
+            fps=60,
+            codec="h264_nvenc",
+            mode="I",
+            bitrate="1000k",
+            format="FFMPEG",
+            ffmpeg_log_level="info",
+            output_params=["-minrate", "500k", "-maxrate", "5000k"],
+        )
     else:
-      writer = imageio.get_writer(video_file, fps=60, output_params=['-preset', 'ultrafast'])
+        writer = imageio.get_writer(
+            video_file, fps=60, output_params=["-preset", "ultrafast"]
+        )
 
     thumb_size = (int(videodims[0] / 5), int(videodims[1] / 5))
     outline_frame = np.ones((thumb_size[1] + 2, thumb_size[0] + 2, 3), np.uint8) * 150
     for ob in observations:
 
         # If in RGB/RGBA format, remove the alpha channel
-        rgb_im_1st_person = cv2.cvtColor(ob["rgba_camera_1stperson"], cv2.COLOR_RGBA2RGB)
+        rgb_im_1st_person = cv2.cvtColor(
+            ob["rgba_camera_1stperson"], cv2.COLOR_RGBA2RGB
+        )
 
         if multi_obs:
             # embed the 1st person RBG frame into the 3rd person frame
-            rgb_im_3rd_person = cv2.cvtColor(ob["rgba_camera_3rdperson"], cv2.COLOR_RGBA2RGB)
+            rgb_im_3rd_person = cv2.cvtColor(
+                ob["rgba_camera_3rdperson"], cv2.COLOR_RGBA2RGB
+            )
             resized_1st_person_rgb = cv2.resize(
                 rgb_im_1st_person, thumb_size, interpolation=cv2.INTER_AREA
             )
@@ -90,19 +109,24 @@ def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False):
                 x_offset : x_offset + resized_1st_person_depth.shape[1],
             ] = resized_1st_person_depth
             if rgb_im_3rd_person.shape[:2] != videodims:
-              rgb_im_3rd_person = cv2.resize(rgb_im_3rd_person, videodims, interpolation=cv2.INTER_AREA)
+                rgb_im_3rd_person = cv2.resize(
+                    rgb_im_3rd_person, videodims, interpolation=cv2.INTER_AREA
+                )
             # write the video frame
             writer.append_data(rgb_im_3rd_person)
         else:
             if rgb_im_1st_person.shape[:2] != videodims:
-              rgb_im_1st_person = cv2.resize(rgb_im_1st_person, videodims, interpolation=cv2.INTER_AREA)
+                rgb_im_1st_person = cv2.resize(
+                    rgb_im_1st_person, videodims, interpolation=cv2.INTER_AREA
+                )
             # write the 1st person observation to video
             writer.append_data(rgb_im_1st_person)
     writer.close()
 
     if open_vid:
-      print("Displaying video")
-      vut.display_video(video_file)
+        print("Displaying video")
+        vut.display_video(video_file)
+
 
 def remove_all_objects(sim):
     for id in sim.get_existing_object_ids():
@@ -122,7 +146,9 @@ def place_agent(sim):
 def make_configuration():
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
-    backend_cfg.scene.id = os.path.join(data_path, "scene_datasets/habitat-test-scenes/apartment_1.glb")
+    backend_cfg.scene.id = os.path.join(
+        data_path, "scene_datasets/habitat-test-scenes/apartment_1.glb"
+    )
     assert os.path.exists(backend_cfg.scene.id)
     backend_cfg.enable_physics = True
 
@@ -184,11 +210,12 @@ def simulate(sim, dt=1.0, get_frames=True):
 # [/setup]
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('--no-show-video', dest='show_video', action='store_false')
-    parser.add_argument('--no-make-video', dest='make_video', action='store_false')
+    parser.add_argument("--no-show-video", dest="show_video", action="store_false")
+    parser.add_argument("--no-make-video", dest="make_video", action="store_false")
     parser.set_defaults(show_video=True, make_video=True)
-    args, _  = parser.parse_known_args()
+    args, _ = parser.parse_known_args()
     show_video = args.show_video
     make_video = args.make_video
     if make_video:
@@ -201,10 +228,10 @@ if __name__ == "__main__":
     # create the simulators AND resets the simulator
 
     cfg = make_configuration()
-    try: #Got to make initialization idiot proof
-      sim.close()
+    try:  # Got to make initialization idiot proof
+        sim.close()
     except NameError:
-      pass
+        pass
     sim = habitat_sim.Simulator(cfg)
     agent_transform = place_agent(sim)
 
@@ -214,7 +241,6 @@ if __name__ == "__main__":
     # get the physics object attributes manager
     obj_templates_mgr = sim.get_object_template_manager()
     # [/initialize]
-
 
 # %%
     # [basics]
@@ -267,7 +293,6 @@ if __name__ == "__main__":
     # anti-gravity force f=m(-g)
     anti_grav_force = -1.0 * sim.get_gravity() * object_init_template.mass
 
-
     # throw a sphere at the boxes from the agent position
     sphere_template = obj_templates_mgr.get_template_by_ID(sphere_template_id)
     sphere_template.scale = np.array([0.5, 0.5, 0.5])
@@ -296,6 +321,7 @@ if __name__ == "__main__":
     if make_video:
         make_video_cv2(observations, prefix="dynamic_control", open_vid=show_video)
 
+    # [/dynamic_control]
 # %%
     # [kinematic_interactions]
 
@@ -387,7 +413,9 @@ if __name__ == "__main__":
 
     # video rendering
     if make_video:
-        make_video_cv2(observations, prefix="local_velocity_control", open_vid=show_video)
+        make_video_cv2(
+            observations, prefix="local_velocity_control", open_vid=show_video
+        )
 
     # [/local_velocity_control]
 # %%
