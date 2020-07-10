@@ -8,7 +8,7 @@ import magnum as mn
 import numpy as np
 
 import habitat_sim
-import habitat_sim.utils.common as ut
+from habitat_sim.utils import common as ut
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 data_path = os.path.join(dir_path, "../../data")

@@ -10,7 +10,7 @@ import magnum as mn
 import numpy as np
 import scipy.stats
 
-import habitat_sim.bindings as hsim
+from habitat_sim import bindings as hsim
 from habitat_sim.agent.controls.controls import ActuationSpec, SceneNodeControl
 from habitat_sim.registry import registry
 

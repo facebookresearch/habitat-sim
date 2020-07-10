@@ -1,7 +1,7 @@
 import glob
 import math
 import os
-import os.path as osp
+from os import path as osp
 
 import numpy as np
 import pytest
