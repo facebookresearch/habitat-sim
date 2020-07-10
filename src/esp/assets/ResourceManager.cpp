@@ -66,6 +66,7 @@ namespace assets {
 constexpr char ResourceManager::NO_LIGHT_KEY[];
 constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
+constexpr char ResourceManager::WHITE_MATERIAL_KEY[];
 constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
 ResourceManager::ResourceManager()
     :
@@ -111,8 +112,8 @@ void ResourceManager::initDefaultPrimAttributes() {
           ->getPrimObjClassName();
 
   auto wfCube = primitiveImporter_->mesh(cubeMeshName);
-  primitive_meshes_.push_back(
-      std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube)));
+  primitive_meshes_[nextPrimitiveMeshId++] =
+      std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube));
 
   // build default primtive object templates corresponding to given default
   // asset templates
@@ -924,10 +925,10 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
                                     Cr::Containers::arrayView(positions)}}};
 
   // compile and add the new mesh to the structure
-  primitive_meshes_.push_back(std::make_unique<Magnum::GL::Mesh>(
-      Magnum::MeshTools::compile(visualNavMesh)));
+  primitive_meshes_[nextPrimitiveMeshId++] = std::make_unique<Magnum::GL::Mesh>(
+      Magnum::MeshTools::compile(visualNavMesh));
 
-  navMeshPrimitiveID = primitive_meshes_.size() - 1;
+  navMeshPrimitiveID = nextPrimitiveMeshId - 1;
 
   if (parent != nullptr && drawables != nullptr &&
       navMeshPrimitiveID != ID_UNDEFINED) {
@@ -1371,9 +1372,14 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
 void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
                                               DrawableGroup* drawables) {
-  CHECK(primitiveID >= 0 && primitiveID < primitive_meshes_.size());
-  createGenericDrawable(*primitive_meshes_[primitiveID], node,
-                        DEFAULT_LIGHTING_KEY, DEFAULT_MATERIAL_KEY, drawables);
+  CHECK(primitive_meshes_.count(primitiveID));
+  createGenericDrawable(*primitive_meshes_.at(primitiveID), node, NO_LIGHT_KEY,
+                        WHITE_MATERIAL_KEY, drawables);
+}
+
+void ResourceManager::removePrimitiveMesh(int primitiveID) {
+  CHECK(primitive_meshes_.count(primitiveID));
+  primitive_meshes_.erase(primitiveID);
 }
 
 void ResourceManager::createGenericDrawable(
@@ -1482,6 +1488,9 @@ void ResourceManager::initDefaultLightSetups() {
 void ResourceManager::initDefaultMaterials() {
   shaderManager_.set<gfx::MaterialData>(DEFAULT_MATERIAL_KEY,
                                         new gfx::PhongMaterialData{});
+  auto whiteMaterialData = new gfx::PhongMaterialData;
+  whiteMaterialData->ambientColor = Magnum::Color4{1.0};
+  shaderManager_.set<gfx::MaterialData>(WHITE_MATERIAL_KEY, whiteMaterialData);
   auto perVertexObjectId = new gfx::PhongMaterialData{};
   perVertexObjectId->perVertexObjectId = true;
   perVertexObjectId->vertexColored = true;
