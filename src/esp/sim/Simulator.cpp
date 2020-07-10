@@ -42,6 +42,8 @@ Simulator::~Simulator() {
 
 void Simulator::close() {
   pathfinder_ = nullptr;
+  navMeshVisPrimID_ = esp::ID_UNDEFINED;
+  navMeshVisNode_ = nullptr;
   agents_.clear();
 
   physicsManager_ = nullptr;
