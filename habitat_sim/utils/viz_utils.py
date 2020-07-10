@@ -1,6 +1,7 @@
 import base64
 import io
 import os
+import subprocess
 import sys
 
 import imageio
@@ -76,5 +77,8 @@ def display_video(video_file: str, height: int = 400):
             )
         )
     else:
-        # Opens the video in the system default viewer.
-        os.startfile(video_file)
+        if sys.platform == "win32":
+            os.startfile(video_file)
+        else:
+            opener = "open" if sys.platform == "darwin" else "xdg-open"
+            subprocess.call([opener, video_file])
