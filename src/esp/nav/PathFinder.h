@@ -322,6 +322,11 @@ class PathFinder {
   bool isNavigable(const vec3f& pt, const float maxYDelta = 0.5) const;
 
   /**
+   * Compute and return the total area of all NavMesh polygons
+   */
+  float getNavigableArea() const;
+
+  /**
    * @return The axis aligned bounding box containing the navigation mesh.
    */
   std::pair<vec3f, vec3f> bounds() const;
