@@ -1,7 +1,7 @@
 import magnum as mn
 import magnum.scenegraph
 
-import habitat_sim.bindings as hsim
+from habitat_sim import bindings as hsim
 
 
 class InvalidAttachedObject(RuntimeError):

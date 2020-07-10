@@ -1,6 +1,6 @@
 import multiprocessing
-import os.path as osp
 import random
+from os import path as osp
 
 import magnum as mn
 import numpy as np

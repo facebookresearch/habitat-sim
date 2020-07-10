@@ -16,7 +16,7 @@ from settings import default_sim_settings, make_cfg
 
 import habitat_sim
 import habitat_sim.agent
-import habitat_sim.bindings as hsim
+from habitat_sim import bindings as hsim
 from habitat_sim.physics import MotionType
 from habitat_sim.utils.common import (
     d3_40_colors_rgb,
