@@ -34,8 +34,8 @@ import magnum as mn
 import numpy as np
 
 import habitat_sim
-import habitat_sim.utils.common as ut
-import habitat_sim.utils.viz_utils as vut
+from habitat_sim.utils import common as ut
+from habitat_sim.utils import viz_utils as vut
 
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir

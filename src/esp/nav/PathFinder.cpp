@@ -242,6 +242,8 @@ struct PathFinder::Impl {
 
   bool isLoaded() const { return navMesh_ != nullptr; };
 
+  float getNavigableArea() const { return navMeshArea_; };
+
   void seed(uint32_t newSeed);
 
   float islandRadius(const vec3f& pt) const;
@@ -279,9 +281,14 @@ struct PathFinder::Impl {
   //! navQuery_.
   assets::MeshData::ptr meshData_ = nullptr;
 
+  //! Sum of all NavMesh polygons. Computed on NavMesh load/recompute. See
+  //! removeZeroAreaPolys.
+  float navMeshArea_ = 0;
+
   std::pair<vec3f, vec3f> bounds_;
 
   void removeZeroAreaPolys();
+
   bool initNavQuery();
 
   Cr::Containers::Optional<std::tuple<float, std::vector<vec3f>>>
@@ -752,7 +759,9 @@ float polyArea(const dtPoly* poly, const dtMeshTile* tile) {
 // Some polygons have zero area for some reason.  When we navigate into a zero
 // area polygon, things crash.  So we find all zero area polygons and mark
 // them as disabled/not navigable.
+// Also compute the total NavMesh area for later query.
 void PathFinder::Impl::removeZeroAreaPolys() {
+  navMeshArea_ = 0;
   // Iterate over all tiles
   for (int iTile = 0; iTile < navMesh_->getMaxTiles(); ++iTile) {
     const dtMeshTile* tile =
@@ -771,8 +780,11 @@ void PathFinder::Impl::removeZeroAreaPolys() {
       CORRADE_INTERNAL_ASSERT(poly != nullptr);
       CORRADE_INTERNAL_ASSERT(tmp != nullptr);
 
-      if (polyArea(poly, tile) < 1e-5) {
+      float polygonArea = polyArea(poly, tile);
+      if (polygonArea < 1e-5) {
         navMesh_->setPolyFlags(polyRef, POLYFLAGS_DISABLED);
+      } else if (poly->flags & POLYFLAGS_WALK) {
+        navMeshArea_ += polygonArea;
       }
     }
   }
@@ -1389,6 +1401,10 @@ HitRecord PathFinder::closestObstacleSurfacePoint(
 
 bool PathFinder::isNavigable(const vec3f& pt, const float maxYDelta) const {
   return pimpl_->isNavigable(pt);
+}
+
+float PathFinder::getNavigableArea() const {
+  return pimpl_->getNavigableArea();
 }
 
 std::pair<vec3f, vec3f> PathFinder::bounds() const {
