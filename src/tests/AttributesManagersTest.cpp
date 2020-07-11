@@ -58,8 +58,7 @@ class AttributesManagersTest : public testing::Test {
     // retrieve a copy of the named attributes template
     auto attrTemplate2 = mgr->getTemplateCopyByHandle(handle);
     // verify copy has same quantities and values as original
-    ASSERT_EQ(attrTemplate1->getOriginHandle(),
-              attrTemplate2->getOriginHandle());
+    ASSERT_EQ(attrTemplate1->getHandle(), attrTemplate2->getHandle());
 
     // test changing a user-defined field in each template, verify the templates
     // are not now the same
@@ -68,7 +67,7 @@ class AttributesManagersTest : public testing::Test {
     ASSERT_NE(attrTemplate1->getString(keyStr),
               attrTemplate2->getString(keyStr));
     // get original template ID
-    int oldID = attrTemplate1->getObjectTemplateID();
+    int oldID = attrTemplate1->getID();
 
     // register modified template and verify that this is the template now
     // stored
@@ -88,7 +87,7 @@ class AttributesManagersTest : public testing::Test {
               attrTemplate2->getString(keyStr));
 
     // test removal
-    int removeID = attrTemplate2->getObjectTemplateID();
+    int removeID = attrTemplate2->getID();
     // remove template by ID, acquire copy of removed template
     auto oldTemplate = mgr->removeTemplateByID(removeID);
     // verify it exists
@@ -129,7 +128,7 @@ class AttributesManagersTest : public testing::Test {
     int orignNumTemplates = assetAttributesManager_->getNumTemplates();
 
     // get name of default template
-    std::string oldHandle = defaultAttribs->getOriginHandle();
+    std::string oldHandle = defaultAttribs->getHandle();
 
     // verify default template is valid
     bool isTemplateValid = defaultAttribs->isValidTemplate();
@@ -149,11 +148,11 @@ class AttributesManagersTest : public testing::Test {
     // verify template is valid
     isTemplateValid = defaultAttribs->isValidTemplate();
     ASSERT_EQ(isTemplateValid, true);
-    // rebuild origin handle to reflect new parameters
-    defaultAttribs->buildOriginHandle();
+    // rebuild handle to reflect new parameters
+    defaultAttribs->buildHandle();
 
     // get synthesized handle
-    std::string newHandle = defaultAttribs->getOriginHandle();
+    std::string newHandle = defaultAttribs->getHandle();
     LOG(INFO) << "Modified Template Handle : " << newHandle;
     // register modified template
     assetAttributesManager_->registerAttributesTemplate(defaultAttribs);

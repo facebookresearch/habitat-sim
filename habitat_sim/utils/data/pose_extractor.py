@@ -3,11 +3,11 @@ import copy
 import math
 from typing import List, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import pyplot as plt
 
 import habitat_sim
-import habitat_sim.registry as registry
+from habitat_sim import registry as registry
 from habitat_sim.utils.common import quat_from_two_vectors
 
 

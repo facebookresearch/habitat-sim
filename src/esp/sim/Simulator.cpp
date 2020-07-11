@@ -339,14 +339,8 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
 }
 
 std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
-  std::vector<std::string> validConfigPaths =
-      resourceManager_->getPhysicsAttributesManager()->buildObjectConfigPaths(
-          path);
-
-  std::vector<int> templateIndices =
-      resourceManager_->getObjectAttributesManager()->loadAllFileBasedTemplates(
-          validConfigPaths);
-  return templateIndices;
+  return resourceManager_->getPhysicsAttributesManager()->loadObjectConfigs(
+      path);
 }  // Simulator::loadObjectConfigs
 
 const assets::PhysicsObjectAttributes::cptr
@@ -426,6 +420,15 @@ scene::SceneNode* Simulator::getObjectSceneNode(const int objectID,
     return &physicsManager_->getObjectSceneNode(objectID);
   }
   return nullptr;
+}
+
+std::vector<scene::SceneNode*> Simulator::getObjectVisualSceneNodes(
+    const int objectID,
+    const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getObjectVisualSceneNodes(objectID);
+  }
+  return std::vector<scene::SceneNode*>();
 }
 
 // set object transform (kinemmatic control)
@@ -543,6 +546,14 @@ void Simulator::setObjectBBDraw(bool drawBB,
     auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
     auto& drawables = sceneGraph_.getDrawables();
     physicsManager_->setObjectBBDraw(objectID, &drawables, drawBB);
+  }
+}
+
+void Simulator::setObjectSemanticId(uint32_t semanticId,
+                                    const int objectID,
+                                    const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    physicsManager_->setSemanticId(objectID, semanticId);
   }
 }
 

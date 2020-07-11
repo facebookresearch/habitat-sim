@@ -23,6 +23,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace assets {
 
+class ResourceManager;
 namespace managers {
 
 /**
@@ -36,6 +37,8 @@ namespace managers {
 template <class AttribsPtr>
 class AttributesManager {
  public:
+  AttributesManager(assets::ResourceManager& resourceManager)
+      : resourceManager_(resourceManager) {}
   virtual ~AttributesManager() = default;
 
   /**
@@ -68,23 +71,50 @@ class AttributesManager {
    * @param attributesTemplateHandle The key for referencing the template in the
    * @ref templateLibrary_. Will be set as origin handle for template.  If empty
    * string, use existing origin handle.
-   * @return The index in the @ref templateLibrary_ of object template.
+   * @return The unique ID of the template being registered, or ID_UNDEFINED if
+   * failed
    */
   int registerAttributesTemplate(
       AttribsPtr attributesTemplate,
       const std::string& attributesTemplateHandle = "") {
-    std::string handleToSet = attributesTemplateHandle;
+    if ("" != attributesTemplateHandle) {
+      return registerAttributesTemplateFinalize(attributesTemplate,
+                                                attributesTemplateHandle);
+    }
+    std::string handleToSet = attributesTemplate->getHandle();
     if ("" == handleToSet) {
-      handleToSet = attributesTemplate->getOriginHandle();
-      if ("" == handleToSet) {
-        LOG(ERROR) << "AttributesManager::registerAttributesTemplate : No "
-                      "valid handle specified for attributes template to "
-                      "register. Aborting.";
-        return ID_UNDEFINED;
-      }
+      LOG(ERROR) << "AttributesManager::registerAttributesTemplate : No "
+                    "valid handle specified for attributes template to "
+                    "register. Aborting.";
+      return ID_UNDEFINED;
     }
     return registerAttributesTemplateFinalize(attributesTemplate, handleToSet);
   }  // AttributesManager::registerAttributesTemplate
+
+  /**
+   * @brief Register template and call appropriate ResourceManager method to
+   * execute appropriate post-registration processes due to change in
+   * attributes. Use if user wishes to update existing objects built by
+   * attributes with new attributes data and such objects support this kind of
+   * update. Requires the use of Attributes' assigned handle in order to
+   * reference existing constructions built from the original version of this
+   * attributes.
+   * @param attributesTemplate The attributes template.
+   * @return The unique ID of the template being registered, or ID_UNDEFINED if
+   * failed
+   */
+  int registerAttributesTemplateAndUpdate(AttribsPtr attributesTemplate) {
+    std::string originalHandle = attributesTemplate->getHandle();
+    int ID = registerAttributesTemplate(attributesTemplate, originalHandle);
+    // If undefined then some error occurred.
+    if (ID_UNDEFINED == ID) {
+      return ID_UNDEFINED;
+    }
+    // TODO : call Resource Manager for post-registration processing of this
+    // template
+
+    return ID;
+  }
 
   /**
    * @brief clears maps of handle-keyed attributes and ID-keyed handles.
@@ -151,6 +181,93 @@ class AttributesManager {
   }  // AttributesManager::getAttributesTemplate
 
   /**
+   * @brief Remove the template referenced by the passed string handle.  Will
+   * emplace template ID within deque of usable IDs and return the template
+   * being removed.
+   * @param templateHandle the string key of the attributes desired.
+   * @return the desired attributes being deleted, or nullptr if does not exist
+   */
+  AttribsPtr removeTemplateByID(int attributesTemplateID) {
+    std::string templateHandle = getTemplateHandleByID(attributesTemplateID);
+    if (!checkExistsWithMessage(templateHandle,
+                                "AttributesManager::removeTemplateByID")) {
+      return nullptr;
+    }
+    return _removeTemplateInternal(templateHandle,
+                                   "AttributesManager::removeTemplateByID");
+  }
+
+  /**
+   * @brief  Remove the template referenced by the passed string handle.  Will
+   * emplace template ID within deque of usable IDs and return the template
+   * being removed.
+   * @param templateHandle the string key of the attributes desired.
+   * @return the desired attributes being deleted, or nullptr if does not exist
+   */
+  AttribsPtr removeTemplateByHandle(const std::string& templateHandle) {
+    return _removeTemplateInternal(templateHandle,
+                                   "AttributesManager::removeTemplateByHandle");
+  }
+  /**
+   * @brief Get the key in @ref templateLibrary_ for the object template with
+   * the given unique ID.
+   *
+   * @param templateID The unique ID of the desired template.
+   * @return The key referencing the template in @ref
+   * templateLibrary_, or nullptr if does not exist.
+   */
+  std::string getTemplateHandleByID(const int templateID) const {
+    if (templateLibKeyByID_.count(templateID) == 0) {
+      LOG(ERROR) << "AttributesManager::getTemplateHandleByID : Unknown "
+                    "object template ID:"
+                 << templateID << ". Aborting";
+      return nullptr;
+    }
+    return templateLibKeyByID_.at(templateID);
+  }  // AttributesManager::getTemplateHandleByID
+
+  /**
+   * @brief Get the ID of the template in @ref templateLibrary_ for the given
+   * template Handle, if exists.
+   *
+   * @param templateHandle The string key referencing the template in @ref
+   * templateLibrary_.  Usually the origin handle.
+   * @return The object ID for the template with the passed handle, or
+   * ID_UNDEFINED if none exists.
+   */
+  int getTemplateIDByHandle(const std::string& templateHandle) {
+    return getTemplateIDByHandleOrNew(templateHandle, false);
+  }  // AttributesManager::getTemplateIDByHandle
+
+  /**
+   * @brief Get a list of all templates whose origin handles contain @ref
+   * subStr, ignoring subStr's case
+   * @param subStr substring to search for within existing primitive object
+   * templates
+   * @param contains whether to search for keys containing, or excluding,
+   * @ref subStr
+   * @return vector of 0 or more template handles containing the passed
+   * substring
+   */
+  std::vector<std::string> getTemplateHandlesBySubstring(
+      const std::string& subStr = "",
+      bool contains = true) const {
+    return getTemplateHandlesBySubStringPerType(templateLibKeyByID_, subStr,
+                                                contains);
+  }  // AttributesManager::getTemplateHandlesBySubstring
+
+  /**
+   * @brief Get the handle for a random attributes template registered to this
+   * manager.
+   *
+   * @return a randomly selected handle corresponding to a known object
+   * attributes template, or empty string if none found
+   */
+  std::string getRandomTemplateHandle() const {
+    return getRandomTemplateHandlePerType(templateLibKeyByID_, "");
+  }  // AttributesManager::getRandomTemplateHandle
+
+  /**
    * @brief Get a copy of the attributes template identified by the
    * attributesTemplateID.
    *
@@ -169,6 +286,7 @@ class AttributesManager {
     auto orig = this->templateLibrary_.at(templateHandle);
     return this->copyAttributes(orig);
   }  // AttributesManager::getTemplateCopyByID
+
   /**
    * @brief Return a reference to a copy of the object specified
    * by passed handle.  This is the version that should be accessed by the
@@ -226,94 +344,6 @@ class AttributesManager {
   }  // AttributesManager::getTemplateCopyByHandle
 
   /**
-   * @brief Remove the template referenced by the passed string handle.  Will
-   * emplace template ID within deque of usable IDs and return the template
-   * being removed.
-   * @param templateHandle the string key of the attributes desired.
-   * @return the desired attributes being deleted, or nullptr if does not exist
-   */
-  AttribsPtr removeTemplateByID(int attributesTemplateID) {
-    std::string templateHandle = getTemplateHandleByID(attributesTemplateID);
-    if (!checkExistsWithMessage(templateHandle,
-                                "AttributesManager::removeTemplateByID")) {
-      return nullptr;
-    }
-    return _removeTemplateInternal(templateHandle,
-                                   "AttributesManager::removeTemplateByID");
-  }
-
-  /**
-   * @brief  Remove the template referenced by the passed string handle.  Will
-   * emplace template ID within deque of usable IDs and return the template
-   * being removed.
-   * @param templateHandle the string key of the attributes desired.
-   * @return the desired attributes being deleted, or nullptr if does not exist
-   */
-  AttribsPtr removeTemplateByHandle(const std::string& templateHandle) {
-    return _removeTemplateInternal(templateHandle,
-                                   "AttributesManager::removeTemplateByHandle");
-  }
-  /**
-   * @brief Get the key in @ref templateLibrary_ for the object
-   * template index.
-   *
-   * @param templateID The index of the template in @ref templateLibrary_.
-   * @return The key referencing the template in @ref
-   * templateLibrary_, or an empty string if does not exist.
-   */
-  std::string getTemplateHandleByID(const int templateID) const {
-    if (templateLibKeyByID_.count(templateID) == 0) {
-      LOG(ERROR) << "AttributesManager::getTemplateHandleByID : Unknown "
-                    "object template ID:"
-                 << templateID << ". Aborting";
-      return nullptr;
-    }
-    return templateLibKeyByID_.at(templateID);
-  }  // AttributesManager::getTemplateHandleByID
-
-  /**
-   * @brief Get the ID of the template in @ref templateLibrary_ for the given
-   * template Handle, if exists.
-   *
-   * @param templateHandle The string key referencing the template in @ref
-   * templateLibrary_.  Usually the origin handle.
-   * @return The object ID for the template with the passed handle, or
-   * ID_UNDEFINED if none exists.
-   */
-  int getTemplateIDByHandle(const std::string& templateHandle) {
-    return getTemplateIDByHandle(templateHandle, false);
-  }  // AttributesManager::getTemplateIDByHandle
-
-  /**
-   * @brief Get a random object attribute handle (that could possibly describe
-   * either file-based or a primitive) for the loaded file-based object
-   * templates
-   *
-   * @return a randomly selected handle corresponding to a known object
-   * attributes template, or empty string if none found
-   */
-  std::string getRandomTemplateHandle() const {
-    return getRandomTemplateHandlePerType(templateLibKeyByID_, "");
-  }
-
-  /**
-   * @brief Get a list of all templates whose origin handles contain @ref
-   * subStr, ignoring subStr's case
-   * @param subStr substring to search for within existing primitive object
-   * templates
-   * @param contains whether to search for keys containing, or excluding,
-   * @ref subStr
-   * @return vector of 0 or more template handles containing the passed
-   * substring
-   */
-  std::vector<std::string> getTemplateHandlesBySubstring(
-      const std::string& subStr = "",
-      bool contains = true) const {
-    return getTemplateHandlesBySubStringPerType(templateLibKeyByID_, subStr,
-                                                contains);
-  }
-
-  /**
    * @brief return a read-only reference to the template library managed by this
    * object.
    */
@@ -345,10 +375,10 @@ class AttributesManager {
    * @return The template's ID if found. The next available ID if not found and
    * getNext is true. Otherwise ID_UNDEFINED.
    */
-  int getTemplateIDByHandle(const std::string& templateHandle,
-                            bool getNext = false) {
+  int getTemplateIDByHandleOrNew(const std::string& templateHandle,
+                                 bool getNext) {
     if (getTemplateLibHasHandle(templateHandle)) {
-      return templateLibrary_.at(templateHandle)->getObjectTemplateID();
+      return templateLibrary_.at(templateHandle)->getID();
     } else {
       if (!getNext) {
         LOG(ERROR) << "AttributesManager::getTemplateIDByHandle : No template "
@@ -369,11 +399,12 @@ class AttributesManager {
   }  // AttributesManager::getTemplateIDByHandle
 
   /**
-   * @brief implementation of attributes-specific registration
+   * @brief implementation of attributes type-specific registration
    * @param attributesTemplate the attributes template to be registered
    * @param attributesTemplateHandle the name to register the template with.
    * Expected to be valid.
-   * @return The index in the @ref templateLibrary_ of object template.
+   * @return The unique ID of the template being registered, or ID_UNDEFINED if
+   * failed
    */
   virtual int registerAttributesTemplateFinalize(
       AttribsPtr attributesTemplate,
@@ -449,11 +480,12 @@ class AttributesManager {
   int addTemplateToLibrary(AttribsPtr attributesTemplate,
                            const std::string& attributesHandle) {
     // set handle for template - might not have been set during construction
-    attributesTemplate->setOriginHandle(attributesHandle);
+    attributesTemplate->setHandle(attributesHandle);
     // return either the ID of the existing template referenced by
     // attributesHandle, or the next available ID if not found.
-    int attributesTemplateID = getTemplateIDByHandle(attributesHandle, true);
-    attributesTemplate->setObjectTemplateID(attributesTemplateID);
+    int attributesTemplateID =
+        getTemplateIDByHandleOrNew(attributesHandle, true);
+    attributesTemplate->setID(attributesTemplateID);
     // make a copy of this attributes so that user can continue to edit original
     AttribsPtr attributesTemplateCopy = copyAttributes(attributesTemplate);
     // add to libraries
@@ -512,6 +544,10 @@ class AttributesManager {
    */
   Map_Of_CopyCtors copyConstructorMap_;
 
+  /** @brief A reference to a @ref esp::assets::ResourceManager which holds
+   * assets that can be accessed by this @ref PhysicsManager*/
+  assets::ResourceManager& resourceManager_;
+
   /**
    * @brief Maps string keys to attributes templates
    */
@@ -537,7 +573,7 @@ class AttributesManager {
 /////////////////////////////
 // Class Template Method Definitions
 
-template <typename T>
+template <class T>
 T AttributesManager<T>::_removeTemplateInternal(
     const std::string& templateHandle,
     const std::string& sourceStr) {
@@ -554,14 +590,14 @@ T AttributesManager<T>::_removeTemplateInternal(
   }
 
   T attribsTemplate = getTemplateCopyByHandle(templateHandle);
-  int templateID = attribsTemplate->getObjectTemplateID();
+  int templateID = attribsTemplate->getID();
   templateLibKeyByID_.erase(templateID);
   templateLibrary_.erase(templateHandle);
   availableTemplateIDs_.emplace_front(templateID);
   return attribsTemplate;
 }  // AttributesManager::removeTemplateByHandle
 
-template <typename T>
+template <class T>
 std::string AttributesManager<T>::getRandomTemplateHandlePerType(
     const std::map<int, std::string>& mapOfHandles,
     const std::string& type) const {
@@ -583,7 +619,7 @@ std::string AttributesManager<T>::getRandomTemplateHandlePerType(
   return res;
 }  // AttributesManager::getRandomTemplateHandlePerType
 
-template <typename T>
+template <class T>
 std::vector<std::string>
 AttributesManager<T>::getTemplateHandlesBySubStringPerType(
     const std::map<int, std::string>& mapOfHandles,

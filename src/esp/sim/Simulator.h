@@ -55,9 +55,9 @@ struct SimulatorConfiguration {
   bool enablePhysics = false;
   bool loadSemanticMesh = true;
   std::string physicsConfigFile =
-      "./data/default.phys_scene_config.json";  // should we instead link a
-                                                // PhysicsManagerConfiguration
-                                                // object here?
+      ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH;  // should we instead link a
+                                               // PhysicsManagerConfiguration
+                                               // object here?
   /** @brief Light setup key for scene */
   std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
 
@@ -398,6 +398,14 @@ class Simulator {
                                        const int sceneID = 0);
 
   /**
+   * @brief Get references to the object's visual scene nodes or empty if
+   * failed.
+   */
+  std::vector<scene::SceneNode*> getObjectVisualSceneNodes(
+      const int objectID,
+      const int sceneID = 0);
+
+  /**
    * @brief Get the current 4x4 transformation matrix of an object.
    * See @ref esp::physics::PhysicsManager::getTransformation.
    * @param objectID The object ID and key identifying the object in @ref
@@ -554,6 +562,18 @@ class Simulator {
    * the object.
    */
   void setObjectBBDraw(bool drawBB, const int objectID, const int sceneID = 0);
+
+  /**
+   * @brief Set the @ref esp::scene:SceneNode::semanticId_ for all visual nodes
+   * belonging to an object.
+   *
+   * @param semanticId The desired semantic id for the object.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
+  void setObjectSemanticId(uint32_t semanticId, int objectID, int sceneID = 0);
 
   /**
    * @brief Discrete collision check for contact between an object and the

@@ -1,6 +1,12 @@
+#!/usr/bin/env python3
+
+# Copyright (c) Facebook, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import math
-import os.path as osp
 import random
+from os import path as osp
 
 import magnum as mn
 import numpy as np
@@ -34,11 +40,13 @@ def test_kinematics(sim):
     # test loading the physical scene
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     sim.reconfigure(hab_cfg)
-    assert sim.get_physics_object_library_size() > 0
+    obj_mgr = sim.get_object_template_manager()
+
+    assert obj_mgr.get_num_templates() > 0
 
     # test adding an object to the world
     # get handle for object 0, used to test
-    obj_handle_list = sim.get_template_handles("cheezit")
+    obj_handle_list = obj_mgr.get_template_handles("cheezit")
     object_id = sim.add_object_by_handle(obj_handle_list[0])
     assert len(sim.get_existing_object_ids()) > 0
 
@@ -83,7 +91,7 @@ def test_kinematics(sim):
     old_object_id = sim.remove_object(object_id)
     assert len(sim.get_existing_object_ids()) == 0
 
-    obj_handle_list = sim.get_template_handles("cheezit")
+    obj_handle_list = obj_mgr.get_template_handles("cheezit")
     object_id = sim.add_object_by_handle(obj_handle_list[0])
 
     prev_time = 0.0
@@ -103,7 +111,7 @@ def test_kinematics(sim):
 
     # test attaching/dettaching an Agent to/from physics simulation
     agent_node = sim.agents[0].scene_node
-    obj_handle_list = sim.get_template_handles("cheezit")
+    obj_handle_list = obj_mgr.get_template_handles("cheezit")
     object_id = sim.add_object_by_handle(obj_handle_list[0], agent_node)
     sim.set_translation(np.random.rand(3), object_id)
     assert np.allclose(agent_node.translation, sim.get_translation(object_id))
@@ -142,12 +150,13 @@ def test_dynamics(sim):
     # test loading the physical scene
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     sim.reconfigure(hab_cfg)
+    obj_mgr = sim.get_object_template_manager()
     # make the simulation deterministic (C++ seed is set in reconfigure)
     np.random.seed(cfg_settings["seed"])
-    assert sim.get_physics_object_library_size() > 0
+    assert obj_mgr.get_num_templates() > 0
 
     # test adding an object to the world
-    obj_handle_list = sim.get_template_handles("cheezit")
+    obj_handle_list = obj_mgr.get_template_handles("cheezit")
     object_id = sim.add_object_by_handle(obj_handle_list[0])
     object2_id = sim.add_object_by_handle(obj_handle_list[0])
     # object_id = sim.add_object(1)
@@ -161,7 +170,7 @@ def test_dynamics(sim):
     # get object MotionType and continue testing if MotionType::DYNAMIC (implies a physics implementation is active)
     if sim.get_object_motion_type(object_id) == habitat_sim.physics.MotionType.DYNAMIC:
         object1_init_template = sim.get_object_initialization_template(object_id)
-        object1_mass = object1_init_template.get_mass()
+        object1_mass = object1_init_template.mass
         grav = sim.get_gravity()
         previous_object_states = [
             [sim.get_translation(object_id), sim.get_rotation(object_id)],
@@ -257,14 +266,16 @@ def test_velocity_control(sim):
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     sim.reconfigure(hab_cfg)
     sim.set_gravity(np.array([0, 0, 0.0]))
+    obj_mgr = sim.get_object_template_manager()
 
     template_path = osp.abspath("data/test_assets/objects/nested_box")
     template_ids = sim.load_object_configs(template_path)
-    object_template = sim.get_object_template(template_ids[0])
-    object_template.set_linear_damping(0.0)
-    object_template.set_angular_damping(0.0)
+    object_template = obj_mgr.get_template_by_ID(template_ids[0])
+    object_template.linear_damping = 0.0
+    object_template.angular_damping = 0.0
+    obj_mgr.register_template(object_template)
 
-    obj_handle = sim.get_template_handle_by_ID(template_ids[0])
+    obj_handle = obj_mgr.get_template_handle_by_ID(template_ids[0])
 
     for iteration in range(2):
         sim.reset()

@@ -1,13 +1,14 @@
 import multiprocessing
-import os.path as osp
 import shlex
 import subprocess
+from os import path as osp
 
 import pytest
 
 import examples.tutorials.lighting_tutorial
 import examples.tutorials.new_actions
 import examples.tutorials.rigid_object_tutorial
+import examples.tutorials.semantic_id_tutorial
 import examples.tutorials.stereo_agent
 
 
@@ -24,6 +25,7 @@ import examples.tutorials.stereo_agent
         (examples.tutorials.new_actions, ()),
         (examples.tutorials.lighting_tutorial, (False,)),
         (examples.tutorials.rigid_object_tutorial, (False,)),
+        (examples.tutorials.semantic_id_tutorial, (False,)),
     ],
 )
 def test_example_modules(example_module, args):
@@ -47,6 +49,7 @@ def test_example_modules(example_module, args):
     [
         "--compute_shortest_path",
         "--compute_shortest_path --compute_action_shortest_path",
+        "--enable_physics",
     ],
 )
 def test_example_script(args):

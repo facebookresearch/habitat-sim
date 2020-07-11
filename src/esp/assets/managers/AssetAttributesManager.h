@@ -6,6 +6,7 @@
 #define ESP_ASSETS_MANAGERS_ASSETATTRIBUTEMANAGER_H_
 
 #include "AttributesManagerBase.h"
+
 namespace esp {
 namespace assets {
 /**
@@ -77,9 +78,10 @@ class AssetAttributesManager
    * a valid primitive.
    */
   static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
-  AssetAttributesManager()
-      : AttributesManager<
-            AbstractPrimitiveAttributes::ptr>::AttributesManager() {
+
+  AssetAttributesManager(assets::ResourceManager& resourceManager)
+      : AttributesManager<AbstractPrimitiveAttributes::ptr>::AttributesManager(
+            resourceManager) {
     buildCtorFuncPtrMaps();
   }  // AssetAttributesManager::ctor
 
@@ -389,7 +391,7 @@ class AssetAttributesManager
    * @return Whether the template is read-only or not
    */
   bool isTemplateReadOnly(const std::string& templateHandle) override {
-    for (auto handle : defaultTemplateNames) {
+    for (auto handle : defaultTemplateNames_) {
       if (handle.compare(templateHandle) == 0) {
         return true;
       }
@@ -512,7 +514,7 @@ class AssetAttributesManager
    * @brief vector holding string template handles of all default primitive
    * asset templates, to make sure they are never deleted.
    */
-  std::vector<std::string> defaultTemplateNames;
+  std::vector<std::string> defaultTemplateNames_;
   /**
    * @brief Map relating primitive class name to default attributes template
    * handle.  There should always be a template for each of these handles.
