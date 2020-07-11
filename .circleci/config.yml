@@ -483,7 +483,7 @@ jobs:
               anaconda login --username aihabitat-nightly --password $AIHABITAT_NIGHTLY_CONDA_PWD
               conda config --set anaconda_upload yes
               docker build -t hsim_condabuild_dcontainer -f Dockerfile .
-              docker run -it --ipc=host --rm -v $(pwd)/../:/remote hsim_condabuild_dcontainer /bin/bash -c "cd /remote/habitat-sim/conda-build && python linux_matrix_builder.py --conda_upload"
+              docker run -it --ipc=host --rm -v $(pwd)/../../:/remote hsim_condabuild_dcontainer /bin/bash -c "activate py36;cd /remote/habitat-sim/conda-build && python linux_matrix_builder.py --conda_upload"
 
   update_docs:
     docker:

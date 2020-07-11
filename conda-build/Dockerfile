@@ -3,6 +3,7 @@ FROM nvidia/cudagl:10.0-devel-centos7
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
+ARG AIHABITAT_NIGHTLY_CONDA_PWD $AIHABITAT_NIGHTLY_CONDA_PWD
 
 RUN yum install -y wget curl perl cmake util-linux xz bzip2 git patch which unzip
 RUN yum install -y yum-utils centos-release-scl
@@ -19,7 +20,7 @@ RUN yum install -y mesa-libEGL-devel
 ADD ./common/install_patchelf.sh install_patchelf.sh
 RUN bash ./install_patchelf.sh && rm install_patchelf.sh
 
-# Install CUDA
+# Install CUDA (we don't build with cuda support for now)
 # ADD ./common/install_cuda.sh install_cuda.sh
 # RUN bash ./install_cuda.sh 9.2 10.0 10.1 && rm install_cuda.sh
 
@@ -33,5 +34,4 @@ RUN anaconda login --username aihabitat-nightly --password $AIHABITAT_NIGHTLY_CO
 RUN conda config --set anaconda_upload yes
 RUN conda create --name py36 python=3.6 -y
 RUN conda init bash
-RUN conda activate py36
 
