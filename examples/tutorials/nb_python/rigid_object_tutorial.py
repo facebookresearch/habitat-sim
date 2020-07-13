@@ -29,7 +29,6 @@ import time
 
 import cv2
 import git
-import imageio
 import magnum as mn
 import numpy as np
 
