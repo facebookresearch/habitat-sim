@@ -47,22 +47,7 @@ def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False):
     videodims = (720, 544)
     video_file = output_path + prefix + ".mp4"
     print("Encoding the video: %s " % video_file)
-    if "google.colab" in sys.modules:
-        writer = imageio.get_writer(
-            video_file,
-            fps=60,
-            codec="h264_nvenc",
-            mode="I",
-            bitrate="1000k",
-            format="FFMPEG",
-            ffmpeg_log_level="info",
-            output_params=["-minrate", "500k", "-maxrate", "5000k"],
-        )
-    else:
-        writer = imageio.get_writer(
-            video_file, fps=60, output_params=["-preset", "ultrafast"]
-        )
-
+    writer = vut.get_fast_video_writer(video_file, fps=60)
     thumb_size = (int(videodims[0] / 5), int(videodims[1] / 5))
     outline_frame = np.ones((thumb_size[1] + 2, thumb_size[0] + 2, 3), np.uint8) * 150
     for ob in observations:

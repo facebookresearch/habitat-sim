@@ -23,15 +23,8 @@ def is_notebook():
         return True
 
 
-def save_video(video_file: str, frames, fps: int = 60):
-    """Saves the video using imageio. Will try to use GPU hardware encoding on
-    Google Colab for faster video encoding. Will also display a progressbar.
-
-    :param video_file: the file name of where to save the video
-    :param frames: the actual frame objects to save
-    :param fps: the fps of the video (default 60)
-    """
-    if "google.colab" in sys.modules and os.splitext(video_file)[-1] == ".mp4":
+def get_fast_video_writer(video_file: str, fps: int = 60):
+    if "google.colab" in sys.modules and os.path.splitext(video_file)[-1] == ".mp4":
         # USE GPU Accelerated Hardware Encoding
         writer = imageio.get_writer(
             video_file,
@@ -46,7 +39,19 @@ def save_video(video_file: str, frames, fps: int = 60):
     else:
         # Use software encoding
         writer = imageio.get_writer(video_file, fps=fps)
-    for ob in tqdm(observations, desc="Encoding video:%s" % video_file):
+    return writer
+
+
+def save_video(video_file: str, frames, fps: int = 60):
+    """Saves the video using imageio. Will try to use GPU hardware encoding on
+    Google Colab for faster video encoding. Will also display a progressbar.
+
+    :param video_file: the file name of where to save the video
+    :param frames: the actual frame objects to save
+    :param fps: the fps of the video (default 60)
+    """
+    writer = get_fast_video_writer(video_file, fps=fps)
+    for ob in tqdm(frames, desc="Encoding video:%s" % video_file):
         writer.append_data(ob)
     writer.close()
 
