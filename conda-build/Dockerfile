@@ -32,6 +32,6 @@ RUN bash ./install_conda.sh && rm install_conda.sh
 RUN anaconda login --username aihabitat-nightly --password $AIHABITAT_NIGHTLY_CONDA_PWD
 RUN conda install -y anaconda-client git gitpython ninja conda-build=3.18.9 # last version that works with our setup
 RUN conda config --set anaconda_upload yes
-RUN conda create --name py36 python=3.6 -y
+#RUN conda create --name py36 python=3.6 -y
 RUN conda init bash
 
