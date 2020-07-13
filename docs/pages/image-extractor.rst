@@ -58,7 +58,7 @@ Optional Args:
 * output (List): A list of the different output image types the user can obtain. The options are any of 'rgba', 'depth', and 'semantic'. Default is rgba.
 * shuffle (Boolean): Whether or not to shuffle the extracted images.
 * use_caching (Boolean): Whether or not to cache (up to capacity) images in memory rather than generating them from the simulator on the fly.
-* pixels_per_meter (Float): Granularity of the topdown view used for setting the camera positions in the pose extractor.
+* meters_per_pixel (Float): Granularity of the topdown view used for setting the camera positions in the pose extractor.
 
 
 Habitat Sim does not currently support multiple instances of extractors, so if you're done using

@@ -332,7 +332,7 @@ class PathFinder {
   std::pair<vec3f, vec3f> bounds() const;
 
   Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
-      const float pixelsPerMeter,
+      const float metersPerPixel,
       const float height);
 
   /**

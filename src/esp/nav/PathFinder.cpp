@@ -106,7 +106,7 @@ class IslandSystem {
       // Iterate over all polygons in a tile
       for (int jPoly = 0; jPoly < tile->header->polyCount; ++jPoly) {
         // Get the polygon reference from the tile and polygon id
-        dtPolyRef startRef = navMesh->encodePolyId(iTile, tile->salt, jPoly);
+        dtPolyRef startRef = navMesh->encodePolyId(tile->salt, iTile, jPoly);
 
         // If the polygon ref is valid, and we haven't seen it yet,
         // start connected component analysis from this polygon
@@ -259,7 +259,7 @@ struct PathFinder::Impl {
   std::pair<vec3f, vec3f> bounds() const { return bounds_; };
 
   Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
-      const float pixelsPerMeter,
+      const float metersPerPixel,
       const float height);
 
   const assets::MeshData::ptr getNavMeshData();
@@ -772,7 +772,7 @@ void PathFinder::Impl::removeZeroAreaPolys() {
     // Iterate over all polygons in a tile
     for (int jPoly = 0; jPoly < tile->header->polyCount; ++jPoly) {
       // Get the polygon reference from the tile and polygon id
-      dtPolyRef polyRef = navMesh_->encodePolyId(iTile, tile->salt, jPoly);
+      dtPolyRef polyRef = navMesh_->encodePolyId(tile->salt, iTile, jPoly);
       const dtPoly* poly = nullptr;
       const dtMeshTile* tmp = nullptr;
       navMesh_->getTileAndPolyByRefUnsafe(polyRef, &tmp, &poly);
@@ -1246,7 +1246,7 @@ bool PathFinder::Impl::isNavigable(const vec3f& pt,
 typedef Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> MatrixXb;
 
 Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>
-PathFinder::Impl::getTopDownView(const float pixelsPerMeter,
+PathFinder::Impl::getTopDownView(const float metersPerPixel,
                                  const float height) {
   std::pair<vec3f, vec3f> mapBounds = bounds();
   vec3f bound1 = mapBounds.first;
@@ -1254,8 +1254,8 @@ PathFinder::Impl::getTopDownView(const float pixelsPerMeter,
 
   float xspan = std::abs(bound1[0] - bound2[0]);
   float zspan = std::abs(bound1[2] - bound2[2]);
-  int xResolution = xspan / pixelsPerMeter;
-  int zResolution = zspan / pixelsPerMeter;
+  int xResolution = xspan / metersPerPixel;
+  int zResolution = zspan / metersPerPixel;
   float startx = fmin(bound1[0], bound2[0]);
   float startz = fmin(bound1[2], bound2[2]);
   MatrixXb topdownMap(zResolution, xResolution);
@@ -1266,9 +1266,9 @@ PathFinder::Impl::getTopDownView(const float pixelsPerMeter,
     for (int w = 0; w < xResolution; w++) {
       vec3f point = vec3f(curx, height, curz);
       topdownMap(h, w) = isNavigable(point, 0.5);
-      curx = curx + pixelsPerMeter;
+      curx = curx + metersPerPixel;
     }
-    curz = curz + pixelsPerMeter;
+    curz = curz + metersPerPixel;
     curx = startx;
   }
 
@@ -1291,7 +1291,7 @@ const assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
       // Iterate over all polygons in a tile
       for (int jPoly = 0; jPoly < tile->header->polyCount; ++jPoly) {
         // Get the polygon reference from the tile and polygon id
-        dtPolyRef polyRef = navMesh_->encodePolyId(iTile, tile->salt, jPoly);
+        dtPolyRef polyRef = navMesh_->encodePolyId(tile->salt, iTile, jPoly);
         const dtPoly* poly = nullptr;
         const dtMeshTile* tmp = nullptr;
         navMesh_->getTileAndPolyByRefUnsafe(polyRef, &tmp, &poly);
@@ -1412,9 +1412,9 @@ std::pair<vec3f, vec3f> PathFinder::bounds() const {
 }
 
 Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::getTopDownView(
-    const float pixelsPerMeter,
+    const float metersPerPixel,
     const float height) {
-  return pimpl_->getTopDownView(pixelsPerMeter, height);
+  return pimpl_->getTopDownView(metersPerPixel, height);
 }
 
 const assets::MeshData::ptr PathFinder::getNavMeshData() {
