@@ -21,7 +21,12 @@ ln -s /usr/local/lib/python3.6/dist-packages /usr/local/lib/python3.6/site-packa
 
 ##Install Habitat-Sim and Magnum binaries
 conda config --set default_threads 4 #Enables multithread conda installation
-conda install -y --prefix /usr/local -c aihabitat -c conda-forge habitat-sim headless withbullet python=3.6
+NIGHTLY="${NIGHTLY:-false}" #setting the ENV $NIGHTLY to true will install the nightly version from conda
+if [ "$NIGHTLY" = true ]; then
+  conda install -y --prefix /usr/local -c aihabitat-nightly -c conda-forge habitat-sim headless withbullet python=3.6
+else
+  conda install -y --prefix /usr/local -c aihabitat -c conda-forge habitat-sim headless withbullet python=3.6
+fi
 
 #Shallow GIT clone for speed
 git clone https://github.com/facebookresearch/habitat-api --depth 1
