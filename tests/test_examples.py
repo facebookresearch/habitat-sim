@@ -1,3 +1,4 @@
+import itertools
 import multiprocessing
 import os
 import runpy
@@ -7,7 +8,7 @@ from os import path as osp
 import pytest
 
 
-def run_main_method(*args):
+def run_main(*args):
     # patch sys.args
     sys.argv = list(args)
     target = args[0]
@@ -18,6 +19,23 @@ def run_main_method(*args):
     if osp.isfile(target):
         sys.path.insert(0, osp.dirname(target))
     runpy.run_path(target, run_name="__main__")
+
+
+def powerset(iterable):
+    s = list(iterable)
+    return itertools.chain.from_iterable(
+        itertools.combinations(s, r) for r in range(len(s) + 1)
+    )
+
+
+def run_main_subproc(args):
+    # This test needs to be done in its own process as there is a potentially for
+    # an OpenGL context clash otherwise
+    mp_ctx = multiprocessing.get_context("spawn")
+    proc = mp_ctx.Process(target=run_main, args=args)
+    proc.start()
+    proc.join()
+    assert proc.exitcode == 0
 
 
 @pytest.mark.gfxtest
@@ -38,20 +56,32 @@ def run_main_method(*args):
             "--no-make-video",
         ),
         ("examples/tutorials/semantic_id_tutorial.py", "--no-show-images"),
-        ("examples/example.py", "--compute_shortest_path"),
-        (
-            "examples/example.py",
-            "--compute_shortest_path",
-            "--compute_action_shortest_path",
-        ),
-        ("examples/example.py", "--enable_physics"),
     ],
 )
 def test_example_modules(args):
-    # This test needs to be done in its own process as there is a potentially for
-    # an OpenGL context clash otherwise
-    mp_ctx = multiprocessing.get_context("spawn")
-    proc = mp_ctx.Process(target=run_main_method, args=args)
-    proc.start()
-    proc.join()
-    assert proc.exitcode == 0
+    run_main_subproc(args)
+
+
+@pytest.mark.gfxtest
+@pytest.mark.skipif(
+    not osp.exists("data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"),
+    reason="Requires the habitat-test-scenes",
+)
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["examples/example.py"] + list(p)
+        for p in powerset(
+            [
+                "--compute_shortest_path",
+                "--compute_action_shortest_path",
+                "--enable_physics",
+                "--semantic_sensor",
+                "--depth_sensor",
+            ]
+        )
+        if not (("--compute_action_shortest_path" in p) and ("--enable_physics" in p))
+    ],
+)
+def test_example_script(args):
+    run_main_subproc(args)
