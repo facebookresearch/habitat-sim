@@ -9,7 +9,7 @@ set -e
 shopt -s extglob
 
 #Checks if in Google Colab and does not run installation if it is not
-python -c 'import google.colab' 2>/dev/null || echo "Google Colab not detected: skipping installation" >&2  &&  exit
+python -c 'import google.colab' 2>/dev/null || (echo "Google Colab not detected: skipping installation" >&2  &&  exit)
 #Don't run again if it's already installed
 [ -f /content/habitat_sim_installed ] && exit
 #Install Miniconda
