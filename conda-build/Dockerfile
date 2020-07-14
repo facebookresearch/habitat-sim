@@ -13,7 +13,7 @@ ENV PATH=/opt/rh/devtoolset-7/root/usr/bin:$PATH
 ENV LD_LIBRARY_PATH=/opt/rh/devtoolset-7/root/usr/lib64:/opt/rh/devtoolset-7/root/usr/lib:$LD_LIBRARY_PATH
 
 RUN yum install -y autoconf aclocal automake make
-RUN yum install -y mesa-libEGL-devel
+RUN yum install -y mesa-libEGL-devel mesa-libGL-devel
 
 
 # Install patchelf
@@ -24,14 +24,15 @@ RUN bash ./install_patchelf.sh && rm install_patchelf.sh
 # ADD ./common/install_cuda.sh install_cuda.sh
 # RUN bash ./install_cuda.sh 9.2 10.0 10.1 && rm install_cuda.sh
 
+# switch shell sh (default in Linux) to bash
+SHELL ["/bin/bash", "-c"]
+
 # Install Anaconda
 ENV PATH /opt/conda/bin:$PATH
 ADD ./common/install_conda.sh install_conda.sh
 RUN bash ./install_conda.sh && rm install_conda.sh
 
 RUN anaconda login --username aihabitat-nightly --password $AIHABITAT_NIGHTLY_CONDA_PWD
-RUN conda install -y anaconda-client git gitpython ninja conda-build=3.18.9 # last version that works with our setup
+RUN source ~/.bashrc && conda create --name py36 python=3.6 -y && conda init bash && conda activate py36 && conda install -y anaconda-client git gitpython ninja conda-build=3.18.9 # last version that works with our setup
 RUN conda config --set anaconda_upload yes
-#RUN conda create --name py36 python=3.6 -y
-RUN conda init bash
 
