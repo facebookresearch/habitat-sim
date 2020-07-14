@@ -36,7 +36,8 @@ import habitat_sim
 from habitat_sim.utils import common as ut
 from habitat_sim.utils import viz_utils as vut
 
-os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
+if "google.colab" in sys.modules:
+    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
 
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
