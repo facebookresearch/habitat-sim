@@ -16,7 +16,7 @@
 # ---
 
 # %%
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | bash -s
+# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 
 # %%
 # %cd /content/habitat-sim
@@ -35,6 +35,9 @@ import numpy as np
 import habitat_sim
 from habitat_sim.utils import common as ut
 from habitat_sim.utils import viz_utils as vut
+
+if "google.colab" in sys.modules:
+    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
 
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
@@ -207,7 +210,6 @@ if __name__ == "__main__":
             os.mkdir(output_path)
 
 # %%
-
     # [initialize]
     # create the simulators AND resets the simulator
 
