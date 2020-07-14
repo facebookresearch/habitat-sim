@@ -170,6 +170,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    conda create -n habitat python=3.6 cmake=3.14.0
    conda activate habitat
    pip install -r requirements.txt
+   pip install imageio imageio-ffmpeg
    ```
 
     Linux (Tested with Ubuntu 18.04 with gcc 7.4.0)
