@@ -4,6 +4,10 @@ import os
 import subprocess
 import sys
 
+
+if "google.colab" in sys.modules:
+    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
+
 import imageio
 from tqdm.auto import tqdm
 
@@ -24,7 +28,11 @@ def is_notebook():
 
 
 def get_fast_video_writer(video_file: str, fps: int = 60):
-    if "google.colab" in sys.modules and os.path.splitext(video_file)[-1] == ".mp4":
+    if (
+        "google.colab" in sys.modules
+        and os.path.splitext(video_file)[-1] == ".mp4"
+        and os.environ.get("IMAGEIO_FFMPEG_EXE") == "/usr/bin/ffmpeg"
+    ):
         # USE GPU Accelerated Hardware Encoding
         writer = imageio.get_writer(
             video_file,
