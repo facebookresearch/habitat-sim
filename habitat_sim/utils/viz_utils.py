@@ -4,7 +4,6 @@ import os
 import subprocess
 import sys
 
-
 if "google.colab" in sys.modules:
     os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
 
