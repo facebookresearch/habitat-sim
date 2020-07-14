@@ -467,7 +467,7 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
-              cd habitat-sim
+              cd habitat-sim/conda-build
 
               # install Docker
               curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
