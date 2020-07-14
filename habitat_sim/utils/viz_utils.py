@@ -1,6 +1,9 @@
 import base64
 import io
 import os
+
+os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
+
 import subprocess
 import sys
 
@@ -24,7 +27,11 @@ def is_notebook():
 
 
 def get_fast_video_writer(video_file: str, fps: int = 60):
-    if "google.colab" in sys.modules and os.path.splitext(video_file)[-1] == ".mp4":
+    if (
+        "google.colab" in sys.modules
+        and os.path.splitext(video_file)[-1] == ".mp4"
+        and os.environ.get("IMAGEIO_FFMPEG_EXE") == "/usr/bin/ffmpeg"
+    ):
         # USE GPU Accelerated Hardware Encoding
         writer = imageio.get_writer(
             video_file,
