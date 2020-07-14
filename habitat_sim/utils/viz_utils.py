@@ -1,11 +1,11 @@
 import base64
 import io
 import os
-
-os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
-
 import subprocess
 import sys
+
+if "google.colab" in sys.modules:
+    os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
 
 import imageio
 from tqdm.auto import tqdm
