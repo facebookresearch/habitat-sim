@@ -282,7 +282,7 @@ bool ResourceManager::loadPhysicsScene(
   if (filename.compare(EMPTY_SCENE) != 0) {
     //! Collect collision mesh group
     std::vector<CollisionMeshData> meshGroup;
-    bool colMeshSuccess;
+    bool colMeshSuccess = false;
     if (info.type == AssetType::INSTANCE_MESH) {
       // PLY Instance mesh
       colMeshSuccess = buildSceneCollisionMeshGroup<GenericInstanceMeshData>(
