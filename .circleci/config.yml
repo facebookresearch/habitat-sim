@@ -527,6 +527,10 @@ workflows:
   version: 2
   install_and_test:
     jobs:
+      - python_lint
+      - cpp_lint
+      - js_lint
+      - install_and_test_ubuntu
       - build_conda_binaries
   nightly:
     triggers:
