@@ -1,44 +1,76 @@
-# [setup]
+# ---
+# jupyter:
+#   accelerator: GPU
+#   jupytext:
+#     cell_metadata_filter: -all
+#     formats: nb_python//py:percent,colabs//ipynb
+#     notebook_metadata_filter: all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.5.1
+#   kernelspec:
+#     display_name: Python 3
+#     name: python3
+# ---
+
+# %%
+# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | bash -s
+
+# %%
+# %cd /content/habitat-sim
+## [setup]
 import math
 import os
 import random
+import sys
+import time
 
 import cv2
+import git
 import magnum as mn
 import numpy as np
 
 import habitat_sim
 from habitat_sim.utils import common as ut
+from habitat_sim.utils import viz_utils as vut
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
-data_path = os.path.join(dir_path, "../../data")
-output_path = os.path.join(dir_path, "rigid_object_tutorial_output/")
+repo = git.Repo(".", search_parent_directories=True)
+dir_path = repo.working_tree_dir
+data_path = os.path.join(dir_path, "data")
+output_path = os.path.join(dir_path, "examples/tutorials/rigid_object_tutorial_output/")
 
 
 def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False):
-    videodims = (720, 540)
-    fourcc = cv2.VideoWriter_fourcc("m", "p", "4", "v")
-    video = cv2.VideoWriter(output_path + prefix + ".mp4", fourcc, 60, videodims)
+    videodims = (720, 544)
+    video_file = output_path + prefix + ".mp4"
+    print("Encoding the video: %s " % video_file)
+    writer = vut.get_fast_video_writer(video_file, fps=60)
     thumb_size = (int(videodims[0] / 5), int(videodims[1] / 5))
     outline_frame = np.ones((thumb_size[1] + 2, thumb_size[0] + 2, 3), np.uint8) * 150
     for ob in observations:
 
-        # If in RGB/RGBA format, change first to RGB and change to BGR
-        bgr_im_1st_person = ob["rgba_camera_1stperson"][..., 0:3][..., ::-1]
+        # If in RGB/RGBA format, remove the alpha channel
+        rgb_im_1st_person = cv2.cvtColor(
+            ob["rgba_camera_1stperson"], cv2.COLOR_RGBA2RGB
+        )
 
         if multi_obs:
             # embed the 1st person RBG frame into the 3rd person frame
-            bgr_im_3rd_person = ob["rgba_camera_3rdperson"][..., 0:3][..., ::-1]
+            rgb_im_3rd_person = cv2.cvtColor(
+                ob["rgba_camera_3rdperson"], cv2.COLOR_RGBA2RGB
+            )
             resized_1st_person_rgb = cv2.resize(
-                bgr_im_1st_person, thumb_size, interpolation=cv2.INTER_AREA
+                rgb_im_1st_person, thumb_size, interpolation=cv2.INTER_AREA
             )
             x_offset = 50
             y_offset_rgb = 50
-            bgr_im_3rd_person[
+            rgb_im_3rd_person[
                 y_offset_rgb - 1 : y_offset_rgb + outline_frame.shape[0] - 1,
                 x_offset - 1 : x_offset + outline_frame.shape[1] - 1,
             ] = outline_frame
-            bgr_im_3rd_person[
+            rgb_im_3rd_person[
                 y_offset_rgb : y_offset_rgb + resized_1st_person_rgb.shape[0],
                 x_offset : x_offset + resized_1st_person_rgb.shape[1],
             ] = resized_1st_person_rgb
@@ -47,28 +79,37 @@ def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False):
             # manually normalize depth into [0, 1] so that images are always consistent
             d_im = np.clip(ob["depth_camera_1stperson"], 0, 10)
             d_im /= 10.0
-            bgr_d_im = cv2.cvtColor((d_im * 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
+            bgr_d_im = cv2.cvtColor((d_im * 255).astype(np.uint8), cv2.COLOR_GRAY2RGB)
             resized_1st_person_depth = cv2.resize(
                 bgr_d_im, thumb_size, interpolation=cv2.INTER_AREA
             )
             y_offset_d = y_offset_rgb + 10 + thumb_size[1]
-            bgr_im_3rd_person[
+            rgb_im_3rd_person[
                 y_offset_d - 1 : y_offset_d + outline_frame.shape[0] - 1,
                 x_offset - 1 : x_offset + outline_frame.shape[1] - 1,
             ] = outline_frame
-            bgr_im_3rd_person[
+            rgb_im_3rd_person[
                 y_offset_d : y_offset_d + resized_1st_person_depth.shape[0],
                 x_offset : x_offset + resized_1st_person_depth.shape[1],
             ] = resized_1st_person_depth
-
+            if rgb_im_3rd_person.shape[:2] != videodims:
+                rgb_im_3rd_person = cv2.resize(
+                    rgb_im_3rd_person, videodims, interpolation=cv2.INTER_AREA
+                )
             # write the video frame
-            video.write(bgr_im_3rd_person)
+            writer.append_data(rgb_im_3rd_person)
         else:
+            if rgb_im_1st_person.shape[:2] != videodims:
+                rgb_im_1st_person = cv2.resize(
+                    rgb_im_1st_person, videodims, interpolation=cv2.INTER_AREA
+                )
             # write the 1st person observation to video
-            video.write(bgr_im_1st_person)
-    video.release()
+            writer.append_data(rgb_im_1st_person)
+    writer.close()
+
     if open_vid:
-        os.system("open " + output_path + prefix + ".mp4")
+        print("Displaying video")
+        vut.display_video(video_file)
 
 
 def remove_all_objects(sim):
@@ -89,13 +130,16 @@ def place_agent(sim):
 def make_configuration():
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
-    backend_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+    backend_cfg.scene.id = os.path.join(
+        data_path, "scene_datasets/habitat-test-scenes/apartment_1.glb"
+    )
+    assert os.path.exists(backend_cfg.scene.id)
     backend_cfg.enable_physics = True
 
     # sensor configurations
     # Note: all sensors must have the same resolution
     # setup 2 rgb sensors for 1st and 3rd person views
-    camera_resolution = [540, 720]
+    camera_resolution = [544, 720]
     sensors = {
         "rgba_camera_1stperson": {
             "sensor_type": habitat_sim.SensorType.COLOR,
@@ -148,16 +192,30 @@ def simulate(sim, dt=1.0, get_frames=True):
 
 
 # [/setup]
+if __name__ == "__main__":
+    import argparse
 
-# This is wrapped such that it can be added to a unit test
-def main(make_video=True, show_video=True):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-show-video", dest="show_video", action="store_false")
+    parser.add_argument("--no-make-video", dest="make_video", action="store_false")
+    parser.set_defaults(show_video=True, make_video=True)
+    args, _ = parser.parse_known_args()
+    show_video = args.show_video
+    make_video = args.make_video
     if make_video:
         if not os.path.exists(output_path):
             os.mkdir(output_path)
 
+# %%
+
     # [initialize]
-    # create the simulator
+    # create the simulators AND resets the simulator
+
     cfg = make_configuration()
+    try:  # Got to make initialization idiot proof
+        sim.close()
+    except NameError:
+        pass
     sim = habitat_sim.Simulator(cfg)
     agent_transform = place_agent(sim)
 
@@ -166,9 +224,9 @@ def main(make_video=True, show_video=True):
 
     # get the physics object attributes manager
     obj_templates_mgr = sim.get_object_template_manager()
-
     # [/initialize]
 
+# %%
     # [basics]
 
     # load some object templates from configuration files
@@ -189,7 +247,7 @@ def main(make_video=True, show_video=True):
     # [/basics]
 
     remove_all_objects(sim)
-
+# %%
     # [dynamic_control]
 
     observations = []
@@ -248,9 +306,7 @@ def main(make_video=True, show_video=True):
         make_video_cv2(observations, prefix="dynamic_control", open_vid=show_video)
 
     # [/dynamic_control]
-
-    remove_all_objects(sim)
-
+# %%
     # [kinematic_interactions]
 
     chefcan_template_handle = obj_templates_mgr.get_template_handles(
@@ -280,7 +336,7 @@ def main(make_video=True, show_video=True):
     # [/kinematic_interactions]
 
     remove_all_objects(sim)
-
+# %%
     # [kinematic_update]
     observations = []
 
@@ -308,7 +364,7 @@ def main(make_video=True, show_video=True):
         make_video_cv2(observations, prefix="kinematic_update", open_vid=show_video)
 
     # [/kinematic_update]
-
+# %%
     # [velocity_control]
 
     # get object VelocityControl structure and setup control
@@ -326,10 +382,10 @@ def main(make_video=True, show_video=True):
     observations += simulate(sim, dt=1.0, get_frames=True)
 
     if make_video:
-        make_video_cv2(observations, prefix="velocity_control", open_vid=True)
+        make_video_cv2(observations, prefix="velocity_control", open_vid=show_video)
 
     # [/velocity_control]
-
+# %%
     # [local_velocity_control]
 
     vel_control.linear_velocity = np.array([0, 0, 2.3])
@@ -341,10 +397,12 @@ def main(make_video=True, show_video=True):
 
     # video rendering
     if make_video:
-        make_video_cv2(observations, prefix="local_velocity_control", open_vid=True)
+        make_video_cv2(
+            observations, prefix="local_velocity_control", open_vid=show_video
+        )
 
     # [/local_velocity_control]
-
+# %%
     # [embodied_agent]
 
     # load the lobot_merged asset
@@ -401,11 +459,12 @@ def main(make_video=True, show_video=True):
     # video rendering with embedded 1st person view
     if make_video:
         make_video_cv2(
-            observations, prefix="robot_control", open_vid=True, multi_obs=True
+            observations, prefix="robot_control", open_vid=show_video, multi_obs=True
         )
 
     # [/embodied_agent]
 
+# %%
     # [embodied_agent_navmesh]
 
     # load the lobot_merged asset
@@ -493,11 +552,7 @@ def main(make_video=True, show_video=True):
         # video rendering with embedded 1st person view
         if make_video:
             make_video_cv2(
-                observations, prefix=video_prefix, open_vid=True, multi_obs=True
+                observations, prefix=video_prefix, open_vid=show_video, multi_obs=True
             )
 
     # [/embodied_agent_navmesh]
-
-
-if __name__ == "__main__":
-    main(make_video=True, show_video=True)
