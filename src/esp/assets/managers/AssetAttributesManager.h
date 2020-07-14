@@ -10,7 +10,7 @@
 namespace esp {
 namespace assets {
 /**
- * @brief The kinds of primitive modelled objects supported.  Paired with
+ * @brief The kinds of primitive modelled objects supported. Paired with
  * Magnum::Primitive namespace objects
  */
 enum class PrimObjTypes : uint32_t {
@@ -74,7 +74,7 @@ class AssetAttributesManager
  public:
   /**
    * @brief Constant Map holding names of all Magnum 3D primitive classes
-   * supported, keyed by @ref PrimObjTypes enum entry.  Note final entry is not
+   * supported, keyed by @ref PrimObjTypes enum entry. Note final entry is not
    * a valid primitive.
    */
   static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
@@ -86,15 +86,18 @@ class AssetAttributesManager
   }  // AssetAttributesManager::ctor
 
   /**
-   * @brief Should only be called internally.  Creates an instance of a primtive
+   * @brief Should only be called internally. Creates an instance of a primtive
    * asset attributes template described by passed string. For primitive assets
    * this is the Magnum primitive class name
    *
-   * @param primClassName a string descriptor of the primitive asset
+   * @param primClassName A string descriptor of the primitive asset
    * template to be created, corresponding to the Magnum Primitive class
    * name.
-   * @param registerTemplate whether to add this template to the library or
-   * not. If the user is going to edit this template, this should be false.
+   * @param registerTemplate whether to add this template to the library.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration. Defaults to true. If
+   * specified as true, then this function returns a copy of the registered
+   * template.
    * @return a reference to the desired template.
    */
 
@@ -103,15 +106,39 @@ class AssetAttributesManager
       bool registerTemplate = true) override {
     auto primAssetAttributes = buildPrimAttributes(primClassName);
     if (nullptr != primAssetAttributes && registerTemplate) {
-      registerAttributesTemplate(primAssetAttributes, "");
+      int attrID = this->registerAttributesTemplate(primAssetAttributes, "");
+      if (attrID == ID_UNDEFINED) {
+        // some error occurred
+        return nullptr;
+      }
     }
     return primAssetAttributes;
   }  // AssetAttributesManager::createAttributesTemplate
 
   /**
-   * @brief Should only be called internally.  Creates an instance of a primtive
-   * asset attributes template described by passed enum value. For primitive
-   * assets this mapes to the Magnum primitive class name
+   * @brief Creates an instance of a template holding default values. For asset
+   * attributes this is the same functionality as @ref createAttributesTemplate.
+   *
+   * @param primClassName A string descriptor of the primitive asset
+   * template to be created, corresponding to the Magnum Primitive class
+   * name.
+   * @param registerTemplate whether to add this template to the library.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration. Defaults to false. If
+   * specified as true, then this function returns a copy of the registered
+   * template.
+   * @return a reference to the desired template.
+   */
+  AbstractPrimitiveAttributes::ptr createDefaultAttributesTemplate(
+      const std::string& primClassName,
+      bool registerTemplate = false) override {
+    return createAttributesTemplate(primClassName, registerTemplate);
+  }  // AbstractPrimitiveAttributes::ptr createDefaultAttributesTemplate
+
+  /**
+   * @brief Should only be called internally. Creates an instance of a
+   * primtive asset attributes template described by passed enum value. For
+   * primitive assets this mapes to the Magnum primitive class name
    *
    * @param primObjType an enum value denoting the class of the primitive to
    * instantiate
@@ -124,7 +151,11 @@ class AssetAttributesManager
       bool registerTemplate = true) {
     auto primAssetAttributes = buildPrimAttributes(primObjType);
     if (nullptr != primAssetAttributes && registerTemplate) {
-      registerAttributesTemplate(primAssetAttributes, "");
+      int attrID = this->registerAttributesTemplate(primAssetAttributes, "");
+      if (attrID == ID_UNDEFINED) {
+        // some error occurred
+        return nullptr;
+      }
     }
     return primAssetAttributes;
   }  // AssetAttributesManager::createAttributesTemplate
@@ -145,7 +176,7 @@ class AssetAttributesManager
     if (primType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       LOG(ERROR) << "AssetAttributesManager::getTemplateHandlesByPrimType : "
                     "Illegal primtitive type "
-                    "name PrimObjTypes::END_PRIM_OBJ_TYPES.  Aborting.";
+                    "name PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
       return {};
     }
     std::string subStr = PrimitiveNames3DMap.at(primType);
@@ -363,7 +394,7 @@ class AssetAttributesManager
     if (std::string::npos == templateHandle.find(attrType)) {
       LOG(ERROR) << "AssetAttributesManager::verifyTemplateHandle : Handle : "
                  << templateHandle << " is not of appropriate type for desired "
-                 << attrType << " primitives.  Aborting.";
+                 << attrType << " primitives. Aborting.";
       return false;
     }
     return true;
@@ -385,7 +416,7 @@ class AssetAttributesManager
 
   /**
    * @brief Whether template described by passed handle is read only, or can be
-   * deleted.  Default primitive asset templates should not be removed.
+   * deleted. Default primitive asset templates should not be removed.
    * @param templateHandle the handle to the template to verify removability.
    * Assumes template exists.
    * @return Whether the template is read-only or not
@@ -410,7 +441,7 @@ class AssetAttributesManager
     if (primTypeConstructorMap_.count(primClassName) == 0) {
       LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : No "
                     "primitive class"
-                 << primClassName << "exists in Magnum::Primitives.  Aborting.";
+                 << primClassName << "exists in Magnum::Primitives. Aborting.";
       return nullptr;
     }
     return (*this.*primTypeConstructorMap_[primClassName])();
@@ -424,7 +455,7 @@ class AssetAttributesManager
   AbstractPrimitiveAttributes::ptr buildPrimAttributes(PrimObjTypes primType) {
     if (primType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : Illegal "
-                    "primtitive type name PrimObjTypes::END_PRIM_OBJ_TYPES.  "
+                    "primtitive type name PrimObjTypes::END_PRIM_OBJ_TYPES. "
                     "Aborting.";
       return nullptr;
     }
@@ -517,7 +548,7 @@ class AssetAttributesManager
   std::vector<std::string> defaultTemplateNames_;
   /**
    * @brief Map relating primitive class name to default attributes template
-   * handle.  There should always be a template for each of these handles.
+   * handle. There should always be a template for each of these handles.
    */
   std::map<std::string, std::string> defaultPrimAttributeHandles_;
 

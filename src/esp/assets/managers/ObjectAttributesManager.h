@@ -31,7 +31,7 @@ class ObjectAttributesManager
   }
 
   /**
-   * @brief Creates an instance of an object template.  The passed string should
+   * @brief Creates an instance of an object template. The passed string should
    * be either a file name or a reference to a primitive asset template that
    * should be used in the construction of the object; any other strings will
    * result in a new default template being created.
@@ -43,27 +43,50 @@ class ObjectAttributesManager
    * created, either a file name or an existing primitive asset template. If
    * this is neither a recognized file name nor the handle of an existing
    * primitive asset, a new default template will be created.
-   * @param registerTemplate whether to add this template to the library or not.
+   * @param registerTemplate whether to add this template to the library.
    * If the user is going to edit this template, this should be false - any
-   * subsequent editing will require re-registration.
+   * subsequent editing will require re-registration. Defaults to true. If
+   * specified as true, then this function returns a copy of the registered
+   * template.
    * @return a reference to the desired template.
    */
-
   PhysicsObjectAttributes::ptr createAttributesTemplate(
       const std::string& attributesTemplateHandle,
       bool registerTemplate = true) override;
 
   /**
+   * @brief Creates an instance of an empty object template populated with
+   * default values. Assigns the @ref templateName as the template's handle and
+   * as the renderAssetHandle.
+   *
+   * If a template exists with this handle, the existing template will be
+   * overwritten with the newly created one if @ref registerTemplate is true.
+   * This method is specifically intended to directly construct an attributes
+   * template for editing, and so defaults to false for @ref registerTemplate.
+   *
+   * @param templateName The desired name for this template.
+   * @param registerTemplate whether to add this template to the library.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration. Defaults to false. If
+   * specified as true, then this function returns a copy of the registered
+   * template.
+   * @return a reference to the desired template, or nullptr if fails.
+   */
+  PhysicsObjectAttributes::ptr createDefaultAttributesTemplate(
+      const std::string& templateName,
+      bool registerTemplate = false) override;
+
+  /**
    * @brief Creates an instance of an object template described by passed
    * string, which should be a reference to an existing primitive asset template
    * to be used in the construction of the object (as render and collision
-   * mesh).  It returns existing instance if there is one, and nullptr if fails.
+   * mesh). It returns existing instance if there is one, and nullptr if fails.
    *
    * @param primAttrTemplateHandle The handle to an existing primitive asset
-   * template.  Fails if does not.
-   * @param registerTemplate whether to add this template to the library or not.
+   * template. Fails if does not.
+   * @param registerTemplate whether to add this template to the library.
    * If the user is going to edit this template, this should be false - any
-   * subsequent editing will require re-registration.  Defaults to true.
+   * subsequent editing will require re-registration. Defaults to true.
    * @return a reference to the desired template, or nullptr if fails.
    */
 
@@ -77,32 +100,31 @@ class ObjectAttributesManager
    *
    * @param filename the name of the file describing the object attributes.
    * Assumes it exists and fails if it does not.
-   * @param registerTemplate whether to add this template to the library or not.
+   * @param registerTemplate whether to add this template to the library.
    * If the user is going to edit this template, this should be false - any
-   * subsequent editing will require re-registration.  Defaults to true.
+   * subsequent editing will require re-registration. Defaults to true.
    * @return a reference to the desired template, or nullptr if fails.
    */
-
   PhysicsObjectAttributes::ptr createFileBasedAttributesTemplate(
       const std::string& filename,
       bool registerTemplate = true);
 
   /**
-   * @brief Creates an instance of an empty object template populated with
-   * default values.  Assigns the @ref templateName as the template's handle and
-   * as the renderAssetHandle.
+   * @brief Load file-based object templates for all "*.phys_properties.json"
+   * files from the provided file or directory path.
    *
-   * @param templateName the name of the file describing the object attributes.
-   * Registration fails if this is not a valid asset handle.
-   * @param registerTemplate whether to add this template to the library or not.
-   * If the user is going to edit this template, this should be false - any
-   * subsequent editing will require re-registration.  Defaults to false.
-   * @return a reference to the desired template, or nullptr if fails.
+   * This will take the passed @ref path string and either treat it as a file
+   * name or a directory, depending on what is found in the filesystem. If @ref
+   * path does not end with ".phys_properties.json", it will append this and
+   * check to see if such a file exists, and load it. It will also check if @ref
+   * path exists as a directory, and if so will perform a shallow search to find
+   * any files ending in "*.phys_properties.json" and load those that are found.
+   *
+   * @param path A global path to a physics property file or directory
+   * containing such files.
+   * @return A list of template indices for loaded valid object configs
    */
-
-  PhysicsObjectAttributes::ptr createDefaultAttributesTemplate(
-      const std::string& templateName,
-      bool registerTemplate = false);
+  std::vector<int> loadObjectConfigs(const std::string& path);
 
   /**
    * @brief Load all file-based object templates given string list of object
@@ -127,7 +149,8 @@ class ObjectAttributesManager
    */
   int getNumFileTemplateObjects() const {
     return physicsFileObjTmpltLibByID_.size();
-  };
+  }
+
   /**
    * @brief Get a random loaded attribute handle for the loaded file-based
    * object templates
@@ -156,6 +179,7 @@ class ObjectAttributesManager
     return this->getTemplateHandlesBySubStringPerType(
         physicsFileObjTmpltLibByID_, subStr, contains);
   }
+
   /**
    * @brief Gets the number of synthesized (primitive-based)  template objects
    * stored in the @ref physicsObjTemplateLibrary_.
@@ -165,7 +189,8 @@ class ObjectAttributesManager
    */
   int getNumSynthTemplateObjects() const {
     return physicsSynthObjTmpltLibByID_.size();
-  };
+  }
+
   /**
    * @brief Get a random loaded attribute handle for the loaded synthesized
    * (primitive-based) object templates
@@ -177,6 +202,7 @@ class ObjectAttributesManager
     return this->getRandomTemplateHandlePerType(physicsSynthObjTmpltLibByID_,
                                                 "synthesized ");
   }
+
   /**
    * @brief Get a list of all synthesized (primitive-based) object templates
    * whose origin handles contain @ref subStr, ignoring subStr's case
@@ -213,7 +239,7 @@ class ObjectAttributesManager
 
   /**
    * @brief Whether template described by passed handle is read only, or can be
-   * deleted.  All objectAttributes templates are removable, by default
+   * deleted. All objectAttributes templates are removable, by default
    */
   bool isTemplateReadOnly(const std::string&) override { return false; };
   /**
@@ -237,7 +263,7 @@ class ObjectAttributesManager
   }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
   /**
    * @brief Load and parse a physics object template config file and generate a
-   * @ref PhysicsObjectAttributes object.  Will always reload from file, since
+   * @ref PhysicsObjectAttributes object. Will always reload from file, since
    * existing attributes may have been changed; the user would use this pathway
    * to return to original config.
    *
@@ -250,13 +276,13 @@ class ObjectAttributesManager
   /**
    * @brief Instantiate a @ref PhysicsObjectAttributes for a
    * synthetic(primitive-based render) object. NOTE : Must be registered to be
-   * available for use via @ref registerObjectTemplate.  This method is provided
+   * available for use via @ref registerObjectTemplate. This method is provided
    * so the user can modify a specified physics object template before
    * registering it.
    *
    * @param primAssetHandle The string name of the primitive asset attributes to
    * be used to synthesize a render asset and solve collisions implicitly for
-   * the desired object.  Will also become the default handle of the resultant
+   * the desired object. Will also become the default handle of the resultant
    * @ref physicsObjectAttributes template
    * @return The @ref physicsObjectAttributes template based on the passed
    * primitive

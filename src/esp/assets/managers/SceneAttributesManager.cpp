@@ -12,6 +12,9 @@
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 
+#include "esp/io/io.h"
+#include "esp/io/json.h"
+
 namespace esp {
 namespace assets {
 
@@ -20,21 +23,81 @@ namespace managers {
 PhysicsSceneAttributes::ptr SceneAttributesManager::createAttributesTemplate(
     const std::string& sceneAttributesHandle,
     bool registerTemplate) {
+  PhysicsSceneAttributes::ptr attrs;
+  std::string msg;
+  std::string strHandle = Cr::Utility::String::lowercase(sceneAttributesHandle);
+
+  if ((strHandle.find(".json") != std::string::npos) &&
+      (Cr::Utility::Directory::exists(sceneAttributesHandle))) {
+    // check if sceneAttributesHandle corresponds to an actual, existing json
+    // scene file descriptor.
+    attrs = createFileBasedAttributesTemplate(sceneAttributesHandle,
+                                              registerTemplate);
+    msg = "File Based";
+  } else {
+    // if name is not file descriptor, return default attributes.
+    attrs = createDefaultAttributesTemplate(sceneAttributesHandle,
+                                            registerTemplate);
+    msg = "New default";
+  }
+
+  if (nullptr != attrs) {
+    LOG(INFO) << msg << " scene attributes created"
+              << (registerTemplate ? " and registered." : ".");
+  }
+  return attrs;
+
+}  // SceneAttributesManager::createAttributesTemplate
+
+PhysicsSceneAttributes::ptr
+SceneAttributesManager::createDefaultAttributesTemplate(
+    const std::string& sceneFilename,
+    bool registerTemplate) {
+  // Attributes descriptor for scene
   PhysicsSceneAttributes::ptr sceneAttributesTemplate =
-      PhysicsSceneAttributes::create(sceneAttributesHandle);
+      PhysicsSceneAttributes::create(sceneFilename);
 
-  // TODO: Support scene file existence validation?  Does default scene
-  // attributes have use/meaning?
-
-  sceneAttributesTemplate->setRenderAssetHandle(sceneAttributesHandle);
-  sceneAttributesTemplate->setCollisionAssetHandle(sceneAttributesHandle);
+  sceneAttributesTemplate->setRenderAssetHandle(sceneFilename);
+  sceneAttributesTemplate->setCollisionAssetHandle(sceneFilename);
 
   if (registerTemplate) {
-    registerAttributesTemplate(sceneAttributesTemplate, sceneAttributesHandle);
+    int attrID = this->registerAttributesTemplate(sceneAttributesTemplate,
+                                                  sceneFilename);
+    if (attrID == ID_UNDEFINED) {
+      // some error occurred
+      return nullptr;
+    }
+  }
+  return sceneAttributesTemplate;
+}  // SceneAttributesManager::createDefaultAttributesTemplate
+
+PhysicsSceneAttributes::ptr
+SceneAttributesManager::createFileBasedAttributesTemplate(
+    const std::string& sceneFilename,
+    bool registerTemplate) {
+  // Attributes descriptor for scene
+  PhysicsSceneAttributes::ptr sceneAttributesTemplate =
+      PhysicsSceneAttributes::create(sceneFilename);
+
+  sceneAttributesTemplate->setRenderAssetHandle(sceneFilename);
+  sceneAttributesTemplate->setCollisionAssetHandle(sceneFilename);
+
+  // Load the scene config JSON here
+  io::JsonDocument scenePhysicsConfig = io::parseJsonFile(sceneFilename);
+
+  // TODO JSON parsing here
+
+  if (registerTemplate) {
+    int attrID = this->registerAttributesTemplate(sceneAttributesTemplate,
+                                                  sceneFilename);
+    if (attrID == ID_UNDEFINED) {
+      // some error occurred
+      return nullptr;
+    }
   }
 
   return sceneAttributesTemplate;
-}  // SceneAttributesManager::createAttributesTemplate
+}  // SceneAttributesManager::createFileBasedAttributesTemplate
 
 // template class AttributesManager<PhysicsSceneAttributes>;
 

@@ -32,7 +32,7 @@
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/MaterialData.h"
 #include "esp/gfx/ShaderManager.h"
-#include "esp/gfx/configure.h"
+#include "esp/physics/configure.h"
 #include "esp/scene/SceneNode.h"
 
 #include "managers/AssetAttributesManager.h"
@@ -173,6 +173,18 @@ class ResourceManager {
       DrawableGroup* drawables = nullptr,
       const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
           NO_LIGHT_KEY});
+
+  /**
+   * @brief Construct scene collision mesh group based on name and type of
+   * scene.
+   * @tparam T type of meshdata desired based on scene type.
+   * @param filename The name of the file holding the mesh data
+   * @param meshGroup The meshgroup to build
+   * @return whether built successfully or not
+   */
+  template <class T>
+  bool buildSceneCollisionMeshGroup(const std::string& filename,
+                                    std::vector<CollisionMeshData>& meshGroup);
 
   /**
    * @brief Load/instantiate any required render and collision assets for an

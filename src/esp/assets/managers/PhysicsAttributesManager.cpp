@@ -25,68 +25,105 @@ PhysicsManagerAttributes::ptr
 PhysicsAttributesManager::createAttributesTemplate(
     const std::string& physicsFilename,
     bool registerTemplate) {
+  PhysicsManagerAttributes::ptr attrs;
+  std::string msg;
+  if (Cr::Utility::Directory::exists(physicsFilename)) {
+    // check if physicsFilename corresponds to an actual file descriptor
+    attrs =
+        createFileBasedAttributesTemplate(physicsFilename, registerTemplate);
+    msg = "File Based";
+  } else {
+    // if name is not file descriptor, return default attributes.
+    attrs = createDefaultAttributesTemplate(physicsFilename, registerTemplate);
+    msg = "New default";
+  }
+
+  if (nullptr != attrs) {
+    LOG(INFO) << msg << " physics manager attributes created"
+              << (registerTemplate ? " and registered." : ".");
+  }
+  return attrs;
+}  // PhysicsAttributesManager::createAttributesTemplate
+
+PhysicsManagerAttributes::ptr
+PhysicsAttributesManager::createDefaultAttributesTemplate(
+    const std::string& physicsFilename,
+    bool registerTemplate) {
   // Attributes descriptor for physics world
   PhysicsManagerAttributes::ptr physicsManagerAttributes =
       PhysicsManagerAttributes::create(physicsFilename);
-  // check if this corresponds to actual file descriptor, otherwise return
-  // default manager.
-  if (!Cr::Utility::Directory::exists(physicsFilename)) {
-    LOG(ERROR)
-        << "PhysicsAttributesManager::createAttributesTemplate : "
-           "Specified Filename :"
-        << physicsFilename
-        << "cannot be found.  Returning default physics manager attributes.";
-    return physicsManagerAttributes;
-  }
 
-  // Load the global scene config JSON here
-  io::JsonDocument scenePhysicsConfig = io::parseJsonFile(physicsFilename);
+  if (registerTemplate) {
+    int attrID = this->registerAttributesTemplate(physicsManagerAttributes,
+                                                  physicsFilename);
+    if (attrID == ID_UNDEFINED) {
+      // some error occurred
+      return nullptr;
+    }
+  }
+  return physicsManagerAttributes;
+}  // PhysicsAttributesManager::createDefaultAttributesTemplate
+
+PhysicsManagerAttributes::ptr
+PhysicsAttributesManager::createFileBasedAttributesTemplate(
+    const std::string& physicsFilename,
+    bool registerTemplate) {
+  // Attributes descriptor for physics world
+  PhysicsManagerAttributes::ptr physicsManagerAttributes =
+      PhysicsManagerAttributes::create(physicsFilename);
+
+  // Load the global physics manager config JSON here
+  io::JsonDocument physicsWorldConfig = io::parseJsonFile(physicsFilename);
 
   // load the simulator preference
   // default is "none" simulator
-  if (scenePhysicsConfig.HasMember("physics simulator")) {
-    if (scenePhysicsConfig["physics simulator"].IsString()) {
+  if (physicsWorldConfig.HasMember("physics simulator")) {
+    if (physicsWorldConfig["physics simulator"].IsString()) {
       physicsManagerAttributes->setSimulator(
-          scenePhysicsConfig["physics simulator"].GetString());
+          physicsWorldConfig["physics simulator"].GetString());
     }
   }
 
   // load the physics timestep
-  if (scenePhysicsConfig.HasMember("timestep")) {
-    if (scenePhysicsConfig["timestep"].IsNumber()) {
+  if (physicsWorldConfig.HasMember("timestep")) {
+    if (physicsWorldConfig["timestep"].IsNumber()) {
       physicsManagerAttributes->setTimestep(
-          scenePhysicsConfig["timestep"].GetDouble());
+          physicsWorldConfig["timestep"].GetDouble());
     }
   }
 
-  if (scenePhysicsConfig.HasMember("friction coefficient") &&
-      scenePhysicsConfig["friction coefficient"].IsNumber()) {
+  if (physicsWorldConfig.HasMember("friction coefficient") &&
+      physicsWorldConfig["friction coefficient"].IsNumber()) {
     physicsManagerAttributes->setFrictionCoefficient(
-        scenePhysicsConfig["friction coefficient"].GetDouble());
+        physicsWorldConfig["friction coefficient"].GetDouble());
   } else {
-    LOG(ERROR) << " Invalid value in scene config - friction coefficient";
+    LOG(ERROR) << "PhysicsAttributesManager::createAttributesTemplate : "
+                  "Invalid value "
+                  "in physics manager config - friction coefficient";
   }
 
-  if (scenePhysicsConfig.HasMember("restitution coefficient") &&
-      scenePhysicsConfig["restitution coefficient"].IsNumber()) {
+  if (physicsWorldConfig.HasMember("restitution coefficient") &&
+      physicsWorldConfig["restitution coefficient"].IsNumber()) {
     physicsManagerAttributes->setRestitutionCoefficient(
-        scenePhysicsConfig["restitution coefficient"].GetDouble());
+        physicsWorldConfig["restitution coefficient"].GetDouble());
   } else {
-    LOG(ERROR) << " Invalid value in scene config - restitution coefficient";
+    LOG(ERROR) << "PhysicsAttributesManager::createAttributesTemplate : "
+                  "Invalid value "
+                  "in physics manager config - restitution coefficient";
   }
 
   // load gravity
-  if (scenePhysicsConfig.HasMember("gravity")) {
-    if (scenePhysicsConfig["gravity"].IsArray()) {
+  if (physicsWorldConfig.HasMember("gravity")) {
+    if (physicsWorldConfig["gravity"].IsArray()) {
       Magnum::Vector3 grav;
-      for (rapidjson::SizeType i = 0; i < scenePhysicsConfig["gravity"].Size();
+      for (rapidjson::SizeType i = 0; i < physicsWorldConfig["gravity"].Size();
            i++) {
-        if (!scenePhysicsConfig["gravity"][i].IsNumber()) {
+        if (!physicsWorldConfig["gravity"][i].IsNumber()) {
           // invalid config
           LOG(ERROR) << "Invalid value in physics gravity array";
           break;
         } else {
-          grav[i] = scenePhysicsConfig["gravity"][i].GetDouble();
+          grav[i] = physicsWorldConfig["gravity"][i].GetDouble();
         }
       }
       physicsManagerAttributes->setGravity(grav);
@@ -94,15 +131,16 @@ PhysicsAttributesManager::createAttributesTemplate(
   }
 
   // load the rigid object library metadata (no physics init yet...)
-  if (scenePhysicsConfig.HasMember("rigid object paths") &&
-      scenePhysicsConfig["rigid object paths"].IsArray()) {
+  if (physicsWorldConfig.HasMember("rigid object paths") &&
+      physicsWorldConfig["rigid object paths"].IsArray()) {
     std::string configDirectory =
         physicsFilename.substr(0, physicsFilename.find_last_of("/"));
 
-    const auto& paths = scenePhysicsConfig["rigid object paths"];
+    const auto& paths = physicsWorldConfig["rigid object paths"];
     for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
       if (!paths[i].IsString()) {
-        LOG(ERROR) << "Invalid value in physics scene config -rigid object "
+        LOG(ERROR) << "PhysicsAttributesManager::createAttributesTemplate "
+                      ":Invalid value in physics scene config -rigid object "
                       "library- array "
                    << i;
         continue;
@@ -111,56 +149,21 @@ PhysicsAttributesManager::createAttributesTemplate(
       std::string absolutePath =
           Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
       // load all object templates available as configs in absolutePath
-      loadObjectConfigs(absolutePath);
+      objectAttributesMgr_->loadObjectConfigs(absolutePath);
     }
   }  // if load rigid object library metadata
 
   if (registerTemplate) {
-    this->registerAttributesTemplate(physicsManagerAttributes, physicsFilename);
+    int attrID = this->registerAttributesTemplate(physicsManagerAttributes,
+                                                  physicsFilename);
+    if (attrID == ID_UNDEFINED) {
+      // some error occurred
+      return nullptr;
+    }
   }
 
   return physicsManagerAttributes;
-}  // PhysicsAttributesManager::createAttributesTemplate
-
-std::vector<int> PhysicsAttributesManager::loadObjectConfigs(
-    const std::string& path) {
-  std::vector<std::string> paths;
-  std::vector<int> templateIndices;
-
-  namespace Directory = Cr::Utility::Directory;
-  std::string objPhysPropertiesFilename = path;
-  if (!Corrade::Utility::String::endsWith(objPhysPropertiesFilename,
-                                          ".phys_properties.json")) {
-    objPhysPropertiesFilename = path + ".phys_properties.json";
-  }
-  const bool dirExists = Directory::isDirectory(path);
-  const bool fileExists = Directory::exists(objPhysPropertiesFilename);
-
-  if (!dirExists && !fileExists) {
-    LOG(WARNING) << "Cannot find " << path << " or "
-                 << objPhysPropertiesFilename << ". Aborting parse.";
-    return templateIndices;
-  }
-
-  if (fileExists) {
-    paths.push_back(objPhysPropertiesFilename);
-  }
-
-  if (dirExists) {
-    LOG(INFO) << "Parsing object library directory: " + path;
-    for (auto& file : Directory::list(path, Directory::Flag::SortAscending)) {
-      std::string absoluteSubfilePath = Directory::join(path, file);
-      if (Cr::Utility::String::endsWith(absoluteSubfilePath,
-                                        ".phys_properties.json")) {
-        paths.push_back(absoluteSubfilePath);
-      }
-    }
-  }
-  // build templates from aggregated paths
-  templateIndices = objectAttributesMgr_->loadAllFileBasedTemplates(paths);
-
-  return templateIndices;
-}  // PhysicsAttributesManager::buildObjectConfigPaths
+}  // PhysicsAttributesManager::createFileBasedAttributesTemplate
 
 }  // namespace managers
 }  // namespace assets

@@ -112,7 +112,7 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
   LOG(INFO) << "AssetAttributesManager::buildCtorFuncPtrMaps : Built default "
                "primitive asset templates : "
             << std::to_string(defaultTemplateNames_.size());
-}  // buildMapOfPrimTypeConstructors
+}  // AssetAttributesManager::buildMapOfPrimTypeConstructors
 
 int AssetAttributesManager::registerAttributesTemplateFinalize(
     AbstractPrimitiveAttributes::ptr primAttributesTemplate,

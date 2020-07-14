@@ -43,10 +43,10 @@ PhysicsObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
     // passed handle to its origin handle and its render asset handle
     attrs = createDefaultAttributesTemplate(attributesTemplateHandle,
                                             registerTemplate);
-    msg = "New blank";
+    msg = "New default";
   }
   if (nullptr != attrs) {
-    LOG(INFO) << msg << " object attributes created "
+    LOG(INFO) << msg << " object attributes created"
               << (registerTemplate ? " and registered." : ".");
   }
   return attrs;
@@ -402,7 +402,47 @@ std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
   LOG(INFO) << "Loaded file-based object templates: "
             << std::to_string(physicsFileObjTmpltLibByID_.size());
   return resIDs;
-}  // ResourceManager::loadAllObjectTemplates
+}  // ObjectAttributesManager::loadAllObjectTemplates
+
+std::vector<int> ObjectAttributesManager::loadObjectConfigs(
+    const std::string& path) {
+  std::vector<std::string> paths;
+  std::vector<int> templateIndices;
+
+  namespace Directory = Cr::Utility::Directory;
+  std::string objPhysPropertiesFilename = path;
+  if (!Corrade::Utility::String::endsWith(objPhysPropertiesFilename,
+                                          ".phys_properties.json")) {
+    objPhysPropertiesFilename = path + ".phys_properties.json";
+  }
+  const bool dirExists = Directory::isDirectory(path);
+  const bool fileExists = Directory::exists(objPhysPropertiesFilename);
+
+  if (!dirExists && !fileExists) {
+    LOG(WARNING) << "Cannot find " << path << " or "
+                 << objPhysPropertiesFilename << ". Aborting parse.";
+    return templateIndices;
+  }
+
+  if (fileExists) {
+    paths.push_back(objPhysPropertiesFilename);
+  }
+
+  if (dirExists) {
+    LOG(INFO) << "Parsing object library directory: " + path;
+    for (auto& file : Directory::list(path, Directory::Flag::SortAscending)) {
+      std::string absoluteSubfilePath = Directory::join(path, file);
+      if (Cr::Utility::String::endsWith(absoluteSubfilePath,
+                                        ".phys_properties.json")) {
+        paths.push_back(absoluteSubfilePath);
+      }
+    }
+  }
+  // build templates from aggregated paths
+  templateIndices = loadAllFileBasedTemplates(paths);
+
+  return templateIndices;
+}  // ObjectAttributesManager::buildObjectConfigPaths
 
 }  // namespace managers
 }  // namespace assets

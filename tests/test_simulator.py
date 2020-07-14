@@ -148,7 +148,7 @@ def test_object_template_editing(sim):
     # test loading a test asset template from file
     sphere_path = osp.abspath("data/test_assets/objects/sphere")
     old_library_size = obj_mgr.get_num_templates()
-    template_ids = sim.load_object_configs(sphere_path)
+    template_ids = obj_mgr.load_object_configs(sphere_path)
     assert len(template_ids) > 0
     assert obj_mgr.get_num_templates() > old_library_size
 

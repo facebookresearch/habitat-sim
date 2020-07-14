@@ -17,6 +17,7 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node) {
   fixedTimeStep_ = physicsManagerAttributes->getTimestep();
 
   //! Create new scene node and set up any physics-related variables
+  // Overridden by specific physics-library-based class
   initialized_ = initPhysicsFinalize();
   return initialized_;
 }
@@ -68,9 +69,6 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
                               DrawableGroup* drawables,
                               scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
-  //! Invoke resourceManager to draw object
-  //! Test Mesh primitive is valid
-
   //! Make rigid object and add it to existingObjects
   int nextObjectID_ = allocateObjectID();
   scene::SceneNode* objectNode = attachmentNode;
