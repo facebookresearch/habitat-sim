@@ -53,6 +53,8 @@ cmake ../src \
 cmake --build . -- -j 4
 cmake --build . --target install -- -j 4
 
+cp -v Release/bin/hsim_bindings.* esp/bindings_js/
+
 echo "Done building."
 echo "Run:"
 echo "python2 -m SimpleHTTPServer 8000"

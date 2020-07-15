@@ -63,6 +63,18 @@ class SimEnv {
   }
 
   /**
+   * Add a random primitive object to the simulation.
+   */
+  addPrimitiveObject() {
+    console.log("info");
+    console.log(this.sim.getObjectTemplateHandleByID(0));
+    console.log("infor");
+    let x = this.sim.addObject(0, null, "", 0);
+    console.log(x);
+    return;
+  }
+
+  /**
    * Get the observation space for a given sensorId.
    * @param {number} sensorId - id of sensor
    * @returns {ObservationSpace} observation space of sensor

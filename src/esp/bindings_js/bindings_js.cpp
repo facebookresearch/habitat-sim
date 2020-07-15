@@ -11,10 +11,12 @@ namespace em = emscripten;
 
 using namespace esp;
 using namespace esp::agent;
+using namespace esp::assets;
 using namespace esp::core;
 using namespace esp::geo;
 using namespace esp::gfx;
 using namespace esp::nav;
+using namespace esp::physics;
 using namespace esp::scene;
 using namespace esp::sensor;
 using namespace esp::sim;
@@ -215,6 +217,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .smart_ptr<SemanticScene::ptr>("SemanticScene::ptr")
       .property("categories", &SemanticScene::categories)
       .property("objects", &SemanticScene::objects);
+  
+  em::class_<SceneNode>("SceneNode")
+      .property("getSemanticId", &SceneNode::getSemanticId)
+      .property("getId", &SceneNode::getId);
 
   em::class_<Simulator>("Simulator")
       .smart_ptr_constructor("Simulator",
@@ -237,5 +243,18 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("addAgentToNode",
                 em::select_overload<Agent::ptr(const AgentConfiguration&,
                                                scene::SceneNode&)>(
-                    &Simulator::addAgent));
+                    &Simulator::addAgent))
+      .function("addObject", &Simulator::addObject, em::allow_raw_pointers())
+      .function("removeObject", &Simulator::removeObject, em::allow_raw_pointers())
+      .function("getObjectAttributesManager", &Simulator::getObjectAttributesManager, em::allow_raw_pointers())
+      .function("getPhysicsManager", &Simulator::getPhysicsManager, em::allow_raw_pointers())
+      .function("getObjectTemplateHandleByID", &Simulator::getObjectTemplateHandleByID);
+    
+//   em::class_<esp::assets::ResourceManager>("ResourceManager");
+
+  em::class_<PhysicsManagerAttributes>("PhysicsManagerAttributes")
+        .smart_ptr_constructor("PhysicsManagerAttributes",
+                                &PhysicsManagerAttributes::create<const std::string&>);
+
+  em::class_<esp::physics::PhysicsManager>("PhysicsManager");
 }
