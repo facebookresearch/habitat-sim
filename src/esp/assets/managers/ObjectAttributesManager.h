@@ -225,7 +225,9 @@ class ObjectAttributesManager
  protected:
   /**
    * @brief Add a copy of @ref AbstractAttributes object to the @ref
-   * templateLibrary_.
+   * templateLibrary_. Verify that render and collision handles have been
+   * set properly.  We are doing this since these values can be modified by the
+   * user.
    *
    * @param attributesTemplate The attributes template.
    * @param attributesTemplateHandle The key for referencing the template in the

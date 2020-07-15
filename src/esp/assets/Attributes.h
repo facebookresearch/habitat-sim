@@ -5,8 +5,6 @@
 #ifndef ESP_ASSETS_ATTRIBUTES_H_
 #define ESP_ASSETS_ATTRIBUTES_H_
 
-//#pragma once  //remove since attributes.h might be found in other directories
-
 #include <Magnum/Magnum.h>
 #include <map>
 #include <string>
@@ -14,7 +12,6 @@
 #include "Magnum/Math/Math.h"
 #include "Magnum/Types.h"
 #include "esp/core/Configuration.h"
-#include "esp/gfx/magnum.h"
 
 namespace esp {
 namespace assets {
@@ -174,7 +171,7 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
  public:
   ESP_SMART_POINTERS(AbstractPhysicsAttributes)
 
-};  // namespace assets
+};  // class AbstractPhysicsAttributes
 
 /**
  * @brief Specific Attributes instance which is constructed with a base set of
@@ -256,7 +253,7 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
  public:
   ESP_SMART_POINTERS(PhysicsObjectAttributes)
 
-};  // end PhysicsObjectAttributes class
+};  // class PhysicsObjectAttributes
 
 ///////////////////////////////////////
 // scene and physics manager attributes
@@ -274,7 +271,7 @@ class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
  public:
   ESP_SMART_POINTERS(PhysicsSceneAttributes)
 
-};  // end PhysicsSceneAttributes
+};  // class PhysicsSceneAttributes
 
 //! attributes for a single physics manager
 class PhysicsManagerAttributes : public AbstractAttributes {
@@ -313,7 +310,7 @@ class PhysicsManagerAttributes : public AbstractAttributes {
 
  public:
   ESP_SMART_POINTERS(PhysicsManagerAttributes)
-};  // end PhysicsManagerAttributes
+};  // class PhysicsManagerAttributes
 
 ///////////////////////////////////
 // primitive object attributes

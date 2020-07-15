@@ -86,7 +86,7 @@ class SceneAttributesManager
 
  protected:
   /**
-   * @brief Read and parse the json file @ref sceneFilename and populate a
+   * @brief Scene is file-based, described by @ref sceneFilename; populate a
    * returned scene attributes with appropriate data.
    *
    * @param sceneFilename The configuration file to parse.
@@ -96,11 +96,26 @@ class SceneAttributesManager
    */
   PhysicsSceneAttributes::ptr createFileBasedAttributesTemplate(
       const std::string& sceneFilename,
-      bool registerTemplate);
+      bool registerTemplate = true);
+
+  /**
+   * @brief Read and parse the json file @ref sceneFilename and populate a
+   * returned scene attributes with appropriate data.
+   *
+   * @param sceneFilename The configuration file to parse.
+   * @param registerTemplate whether to add this template to the library or not.
+   * @return a reference to the physics simulation meta data object parsed from
+   * the specified configuration file, or nullptr if fails.
+   */
+  PhysicsSceneAttributes::ptr createJSONFileBasedAttributesTemplate(
+      const std::string& sceneFilename,
+      bool registerTemplate = true);
 
   /**
    * @brief Add a @ref std::shared_ptr<attributesType> object to the
-   * @ref templateLibrary_.
+   * @ref templateLibrary_.  Verify that render and collision handles have been
+   * set properly.  We are doing this since these values can be modified by the
+   * user.
    *
    * @param sceneAttributesTemplate The attributes template.
    * @param sceneAttributesHandle The key for referencing the template in the
@@ -110,14 +125,7 @@ class SceneAttributesManager
    */
   int registerAttributesTemplateFinalize(
       PhysicsSceneAttributes::ptr sceneAttributesTemplate,
-      const std::string& sceneAttributesHandle) override {
-    // adds template to library, and returns either the ID of the existing
-    // template referenced by sceneAttributesHandle, or the next available ID
-    // if not found.
-    int sceneTemplateID = this->addTemplateToLibrary(sceneAttributesTemplate,
-                                                     sceneAttributesHandle);
-    return sceneTemplateID;
-  }  // SceneAttributesManager::registerAttributesTemplate
+      const std::string& sceneAttributesHandle) override;
 
   /**
    * @brief Whether template described by passed handle is read only, or can be

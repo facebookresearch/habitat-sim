@@ -146,6 +146,19 @@ class AttributesManager {
     resetFinalize();
   }  // AttributesManager::reset
 
+  // ======== Utility functions ========
+
+  /**
+   * @brief Utility function to check if passed string represents an existing,
+   * user-accessible file
+   * @param handle the string to check
+   * @return whether the file exists in the file system and whether the user has
+   * access
+   */
+  bool isValidFileName(const std::string& handle) const {
+    return (Corrade::Utility::Directory::exists(handle));
+  }  // isValidFileName
+
   // ======== Accessor functions ========
   /**
    * @brief Gets the number of object templates stored in the @ref

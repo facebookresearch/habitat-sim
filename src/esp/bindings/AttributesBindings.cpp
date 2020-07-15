@@ -39,7 +39,13 @@ void initAttributesBindings(py::module& m) {
                     &AbstractPhysicsAttributes::setFrictionCoefficient)
       .def_property("restitution_coefficient",
                     &AbstractPhysicsAttributes::getRestitutionCoefficient,
-                    &AbstractPhysicsAttributes::setRestitutionCoefficient);
+                    &AbstractPhysicsAttributes::setRestitutionCoefficient)
+      .def_property("render_asset_handle",
+                    &AbstractPhysicsAttributes::getRenderAssetHandle,
+                    &AbstractPhysicsAttributes::setRenderAssetHandle)
+      .def_property("collision_asset_handle",
+                    &AbstractPhysicsAttributes::getCollisionAssetHandle,
+                    &AbstractPhysicsAttributes::setCollisionAssetHandle);
 
   // ==== PhysicsObjectAttributes ====
   py::class_<PhysicsObjectAttributes, AbstractPhysicsAttributes,

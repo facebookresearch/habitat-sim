@@ -5,11 +5,6 @@
 #include "ObjectAttributesManager.h"
 #include "AttributesManagerBase.h"
 
-#include <Corrade/Utility/Assert.h>
-#include <Corrade/Utility/ConfigurationGroup.h>
-#include <Corrade/Utility/Debug.h>
-#include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 
 #include "esp/io/io.h"
@@ -31,13 +26,13 @@ PhysicsObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
     // this is a primitive-based object we are building
     attrs = createPrimBasedAttributesTemplate(attributesTemplateHandle,
                                               registerTemplate);
-    msg = "Primitive Asset Based";
-  } else if (Corrade::Utility::Directory::exists(attributesTemplateHandle)) {
+    msg = "Primitive Asset (" + attributesTemplateHandle + ") Based";
+  } else if (this->isValidFileName(attributesTemplateHandle)) {
     // if attributesTemplateHandle == some existing file then
     // assume this is a file-based object template we are building.
     attrs = createFileBasedAttributesTemplate(attributesTemplateHandle,
                                               registerTemplate);
-    msg = "File Based";
+    msg = "File (" + attributesTemplateHandle + ") Based";
   } else {
     // if neither of these is true, then build an empty template and assign the
     // passed handle to its origin handle and its render asset handle
@@ -114,8 +109,7 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
   if (objectTemplate->getRenderAssetHandle() == "") {
     LOG(ERROR)
         << "ObjectAttributesManager::registerAttributesTemplateFinalize : "
-           "Attributes "
-           "template named"
+           "Attributes template named"
         << objectTemplateHandle
         << "does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
@@ -132,7 +126,7 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
     // physicsSynthObjTmpltLibByID_
     objectTemplate->setRenderAssetIsPrimitive(true);
     mapToUse = &physicsSynthObjTmpltLibByID_;
-  } else if (Corrade::Utility::Directory::exists(renderAssetHandle)) {
+  } else if (this->isValidFileName(renderAssetHandle)) {
     // Check if renderAssetHandle is valid file name and is found in file system
     // - if so then setRenderAssetIsPrimitive to false and set map of IDs->Names
     // to physicsFileObjTmpltLibByID_ - verify file  exists
@@ -142,13 +136,13 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
     // If renderAssetHandle is neither valid file name nor existing primitive
     // attributes template hande, fail
     // by here always fail
-    LOG(ERROR) << "ObjectAttributesManager::registerAttributesTemplateFinalize "
-                  ": Render asset template handle : "
-               << renderAssetHandle
-               << " specified in object template with handle : "
-               << objectTemplateHandle
-               << " does not correspond to existing file or primitive render "
-                  "asset.  Aborting. ";
+    LOG(ERROR)
+        << "ObjectAttributesManager::registerAttributesTemplateFinalize "
+           ": Render asset template handle : "
+        << renderAssetHandle << " specified in object template with handle : "
+        << objectTemplateHandle
+        << " does not correspond to any existing file or primitive render "
+           "asset.  Aborting. ";
     return ID_UNDEFINED;
   }
 
@@ -156,7 +150,7 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     objectTemplate->setCollisionAssetIsPrimitive(true);
-  } else if (Corrade::Utility::Directory::exists(collisionAssetHandle)) {
+  } else if (this->isValidFileName(collisionAssetHandle)) {
     // Check if collisionAssetHandle is valid file name and is found in file
     // system - if so then setCollisionAssetIsPrimitive to false
     objectTemplate->setCollisionAssetIsPrimitive(false);
@@ -184,7 +178,7 @@ ObjectAttributesManager::parseAndLoadPhysObjTemplate(
     const std::string& objPhysConfigFilename) {
   // 1. parse the config file
   io::JsonDocument objPhysicsConfig;
-  if (Corrade::Utility::Directory::exists(objPhysConfigFilename)) {
+  if (this->isValidFileName(objPhysConfigFilename)) {
     try {
       objPhysicsConfig = io::parseJsonFile(objPhysConfigFilename);
     } catch (...) {
@@ -411,8 +405,8 @@ std::vector<int> ObjectAttributesManager::loadObjectConfigs(
 
   namespace Directory = Cr::Utility::Directory;
   std::string objPhysPropertiesFilename = path;
-  if (!Corrade::Utility::String::endsWith(objPhysPropertiesFilename,
-                                          ".phys_properties.json")) {
+  if (!Cr::Utility::String::endsWith(objPhysPropertiesFilename,
+                                     ".phys_properties.json")) {
     objPhysPropertiesFilename = path + ".phys_properties.json";
   }
   const bool dirExists = Directory::isDirectory(path);

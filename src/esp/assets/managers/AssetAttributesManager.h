@@ -103,17 +103,7 @@ class AssetAttributesManager
 
   AbstractPrimitiveAttributes::ptr createAttributesTemplate(
       const std::string& primClassName,
-      bool registerTemplate = true) override {
-    auto primAssetAttributes = buildPrimAttributes(primClassName);
-    if (nullptr != primAssetAttributes && registerTemplate) {
-      int attrID = this->registerAttributesTemplate(primAssetAttributes, "");
-      if (attrID == ID_UNDEFINED) {
-        // some error occurred
-        return nullptr;
-      }
-    }
-    return primAssetAttributes;
-  }  // AssetAttributesManager::createAttributesTemplate
+      bool registerTemplate = true) override;
 
   /**
    * @brief Creates an instance of a template holding default values. For asset

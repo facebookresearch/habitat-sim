@@ -5,13 +5,6 @@
 #include "PhysicsAttributesManager.h"
 #include "AttributesManagerBase.h"
 
-#include <Corrade/Utility/Assert.h>
-#include <Corrade/Utility/ConfigurationGroup.h>
-#include <Corrade/Utility/Debug.h>
-#include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
-#include <Corrade/Utility/String.h>
-
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
@@ -27,11 +20,11 @@ PhysicsAttributesManager::createAttributesTemplate(
     bool registerTemplate) {
   PhysicsManagerAttributes::ptr attrs;
   std::string msg;
-  if (Cr::Utility::Directory::exists(physicsFilename)) {
+  if (this->isValidFileName(physicsFilename)) {
     // check if physicsFilename corresponds to an actual file descriptor
     attrs =
         createFileBasedAttributesTemplate(physicsFilename, registerTemplate);
-    msg = "File Based";
+    msg = "File (" + physicsFilename + ") Based";
   } else {
     // if name is not file descriptor, return default attributes.
     attrs = createDefaultAttributesTemplate(physicsFilename, registerTemplate);

@@ -68,6 +68,9 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
             Creates a template built with default values, and registers it in 
             the library if register_template is True.)",
            "handle"_a, "register_template"_a = false)
+      .def("is_valid_filename", &AttrClass::isValidFileName, R"(
+             Returns whether the passed handle exists and the user has access.)",
+           "handle"_a)
       .def("get_num_templates", &AttrClass::getNumTemplates, R"(
              Returns the number of existing templates being managed.)")
       .def("get_random_template_handle", &AttrClass::getRandomTemplateHandle,
