@@ -124,8 +124,11 @@ def main(show_imgs=True, save_imgs=False):
         agent_transform = place_agent(sim)
         # get_obs(sim, show_imgs, save_imgs)
 
+        # get the physics object attributes manager
+        obj_templates_mgr = sim.get_object_template_manager()
+
         # load some chair object template from configuration file
-        chair_template_id = sim.load_object_configs(
+        chair_template_id = obj_templates_mgr.load_object_configs(
             str(os.path.join(data_path, "test_assets/objects/chair"))
         )[0]
 

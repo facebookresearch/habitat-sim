@@ -108,8 +108,61 @@ class AttributesManagersTest : public testing::Test {
   }  // AttributesManagersTest::testCreateAndRemove
 
   /**
-   * @brief Test creation, copying and removal of templates for Object, Physics
-   * and Scene Attributes Managers
+   * @brief Test creation, copying and removal of new default/empty templates
+   * for Object, Physics and Scene Attributes Managers
+   * @tparam Class of attributes manager
+   * @param mgr the Attributes Manager being tested,
+   * @param renderHandle a legal render handle to set for the new template so
+   * that registration won't fail.
+   */
+  template <class T>
+  void testCreateAndRemoveDefault(std::shared_ptr<T> mgr,
+                                  const std::string& handle,
+                                  bool setRenderHandle) {
+    // meaningless key to modify attributes for verifcation of behavior
+    std::string keyStr = "tempKey";
+    // get starting number of templates
+    int orignNumTemplates = mgr->getNumTemplates();
+    // assign template a handle
+    std::string newHandle = "newTemplateHandle";
+
+    // create new template but do not register it
+    auto newAttrTemplate0 =
+        mgr->createDefaultAttributesTemplate(newHandle, false);
+    // verify real template was returned
+    ASSERT_NE(nullptr, newAttrTemplate0);
+
+    // create template from source handle, register it and retrieve it
+    // Note: registration of template means this is a copy of registered
+    // template
+    if (setRenderHandle) {
+      auto attrTemplate1 = mgr->createAttributesTemplate(handle, false);
+      // set legitimate render handle in template
+      newAttrTemplate0->set(
+          "renderAssetHandle",
+          attrTemplate1->template get<std::string>("renderAssetHandle"));
+    }
+
+    // register modified template and verify that this is the template now
+    // stored
+    int newID = mgr->registerAttributesTemplate(newAttrTemplate0, newHandle);
+
+    // get a copy of added template
+    auto attrTemplate3 = mgr->getTemplateCopyByHandle(newHandle);
+
+    // remove new template by name
+    auto newAttrTemplate1 = mgr->removeTemplateByHandle(newHandle);
+
+    // verify it exists
+    ASSERT_NE(nullptr, newAttrTemplate1);
+    // verify there are same number of templates as when we started
+    ASSERT_EQ(orignNumTemplates, mgr->getNumTemplates());
+
+  }  // AttributesManagersTest::testCreateAndRemoveDefault
+
+  /**
+   * @brief Test creation, copying and removal of templates for Object,
+   * Physics and Scene Attributes Managers
    * @tparam Class of attributes being managed
    * @param defaultAttribs the default template of the passed type T
    * @param ctorModField the name of the modified field of type @ref U that
@@ -136,8 +189,8 @@ class AttributesManagersTest : public testing::Test {
 
     // if illegal values are possible
     if (nullptr != illegalVal) {
-      // modify template value used by primitive constructor (will change name)
-      // illegal modification
+      // modify template value used by primitive constructor (will change
+      // name) illegal modification
       defaultAttribs->set(ctorModField, *illegalVal);
       // verify template is not valid
       bool isTemplateValid = defaultAttribs->isValidTemplate();
@@ -186,7 +239,6 @@ class AttributesManagersTest : public testing::Test {
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
   AttrMgrs::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
-
 };  // class AttributesManagersTest
 
 TEST_F(AttributesManagersTest, AttributesManagersCreate) {
@@ -200,9 +252,13 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "PhysicsAttributesManager @ "
             << physicsConfigFile;
+
   // physics attributes manager attributes verifcation
   testCreateAndRemove<AttrMgrs::PhysicsAttributesManager>(
       physicsAttributesManager_, physicsConfigFile);
+  testCreateAndRemoveDefault<AttrMgrs::PhysicsAttributesManager>(
+      physicsAttributesManager_, sceneFile, false);
+
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "SceneAttributesManager @ "
             << sceneFile;
@@ -210,6 +266,8 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   // scene attributes manager attributes verifcation
   testCreateAndRemove<AttrMgrs::SceneAttributesManager>(sceneAttributesManager_,
                                                         sceneFile);
+  testCreateAndRemoveDefault<AttrMgrs::SceneAttributesManager>(
+      sceneAttributesManager_, sceneFile, true);
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "ObjectAttributesManager @ "
@@ -217,6 +275,8 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   // object attributes manager attributes verifcation
   testCreateAndRemove<AttrMgrs::ObjectAttributesManager>(
       objectAttributesManager_, objectFile);
+  testCreateAndRemoveDefault<AttrMgrs::ObjectAttributesManager>(
+      objectAttributesManager_, objectFile, true);
 
 }  // AttributesManagersTest::AttributesManagersCreate test
 
@@ -226,9 +286,9 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
   /**
    * primitive asset attributes require slightly different testing since a
    * default set of attributes are created on program load and are always
-   * present.  User modification of asset attributes always starts by modifying
-   * an existing default template - users will never create an attributes
-   * template from scratch.
+   * present.  User modification of asset attributes always starts by
+   * modifying an existing default template - users will never create an
+   * attributes template from scratch.
    */
   int legalModValWF = 64;
   int illegalModValWF = 25;

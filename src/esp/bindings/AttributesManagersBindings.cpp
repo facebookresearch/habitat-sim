@@ -61,6 +61,16 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
             Creates a template based on passed handle, and registers it in 
             the library if register_template is True.)",
            "handle"_a, "register_template"_a = true)
+      .def("create_new_template",
+           static_cast<T (AttrClass::*)(const std::string&, bool)>(
+               &AttrClass::createDefaultAttributesTemplate),
+           R"(
+            Creates a template built with default values, and registers it in 
+            the library if register_template is True.)",
+           "handle"_a, "register_template"_a = false)
+      .def("is_valid_filename", &AttrClass::isValidFileName, R"(
+             Returns whether the passed handle exists and the user has access.)",
+           "handle"_a)
       .def("get_num_templates", &AttrClass::getNumTemplates, R"(
              Returns the number of existing templates being managed.)")
       .def("get_random_template_handle", &AttrClass::getRandomTemplateHandle,
@@ -216,14 +226,13 @@ void initAttributesManagersBindings(py::module& m) {
   py::class_<ObjectAttributesManager,
              AttributesManager<PhysicsObjectAttributes::ptr>,
              ObjectAttributesManager::ptr>(m, "ObjectAttributesManager")
+
       // ObjectAttributesManager-specific bindings
-      .def("create_new_template",
-           &ObjectAttributesManager::createDefaultAttributesTemplate,
+      .def("load_object_configs", &ObjectAttributesManager::loadObjectConfigs,
            R"(
-             This returns a PhysicsObjectAttributes populated with default 
-             values, using the passed handle as both the handle and render 
-             asset handle.)",
-           "handle"_a, "register_template"_a = false)
+         Build templates for all "*.phys_properties.json" files that exist in 
+         the provided file or directory path.)"
+           "path"_a)
 
       // manage file-based templates access
       .def("get_num_file_templates",
@@ -272,12 +281,7 @@ void initAttributesManagersBindings(py::module& m) {
   declareBaseAttributesManager<PhysicsManagerAttributes::ptr>(m, "BasePhysics");
   py::class_<PhysicsAttributesManager,
              AttributesManager<PhysicsManagerAttributes::ptr>,
-             PhysicsAttributesManager::ptr>(m, "PhysicsAttributesManager")
-      .def("load_object_configs", &PhysicsAttributesManager::loadObjectConfigs,
-           R"(
-         Build templates for all "*.phys_properties.json" files that exist in 
-         the provided file or directory path.)"
-           "path"_a);
+             PhysicsAttributesManager::ptr>(m, "PhysicsAttributesManager");
 
 }  // namespace managers
 
