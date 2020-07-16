@@ -46,7 +46,7 @@ void initGfxBindings(py::module& m) {
           R"(RenderCamera: The object of this class is a camera attached
       to the scene node for rendering.)");
 
-  py::enum_<RenderCamera::Flag> flags{render_camera, "Flags", "Flags"};
+  py::enum_<RenderCamera::Flag> flags{m, "Flags", "Flags"};
 
   flags.value("FRUSTUM_CULLING", RenderCamera::Flag::FrustumCulling)
       .value("OBJECTS_ONLY", RenderCamera::Flag::ObjectsOnly)
@@ -68,17 +68,23 @@ void initGfxBindings(py::module& m) {
   // ==== Renderer ====
   py::class_<Renderer, Renderer::ptr>(m, "Renderer")
       .def(py::init(&Renderer::create<>))
-      .def("draw",
-           py::overload_cast<sensor::VisualSensor&, scene::SceneGraph&,
-                             RenderCamera::Flags>(&Renderer::draw),
-           R"(Draw given scene using the visual sensor)", "visualSensor"_a,
-           "scene"_a,
-           "flags"_a = RenderCamera::Flags{RenderCamera::Flag::FrustumCulling})
-      .def("draw",
-           py::overload_cast<RenderCamera&, scene::SceneGraph&,
-                             RenderCamera::Flags>(&Renderer::draw),
-           R"(Draw given scene using the camera)", "camera"_a, "scene"_a,
-           "flags"_a = RenderCamera::Flags{RenderCamera::Flag::FrustumCulling})
+      .def(
+          "draw",
+          [](Renderer& self, sensor::VisualSensor& visualSensor,
+             scene::SceneGraph& sceneGraph, RenderCamera::Flag flags) {
+            self.draw(visualSensor, sceneGraph, RenderCamera::Flags{flags});
+          },
+          R"(Draw given scene using the visual sensor)", "visualSensor"_a,
+          "scene"_a,
+          "flags"_a = RenderCamera::Flag{RenderCamera::Flag::FrustumCulling})
+      .def(
+          "draw",
+          [](Renderer& self, RenderCamera& camera,
+             scene::SceneGraph& sceneGraph, RenderCamera::Flag flags) {
+            self.draw(camera, sceneGraph, RenderCamera::Flags{flags});
+          },
+          R"(Draw given scene using the camera)", "camera"_a, "scene"_a,
+          "flags"_a = RenderCamera::Flag{RenderCamera::Flag::FrustumCulling})
       .def("bind_render_target", &Renderer::bindRenderTarget);
 
   py::class_<RenderTarget>(m, "RenderTarget")

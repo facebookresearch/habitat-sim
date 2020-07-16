@@ -407,10 +407,13 @@ class Sensor:
         agent_node = self._agent.scene_node
         agent_node.parent = scene.get_root_node()
 
+        render_flags = habitat_sim.gfx.Flags.NONE
+
+        if self._sim.frustum_culling:
+            render_flags |= habitat_sim.gfx.Flags.FRUSTUM_CULLING
+
         with self._sensor_object.render_target as tgt:
-            self._sim.renderer.draw(
-                self._sensor_object, scene, self._sim.frustum_culling
-            )
+            self._sim.renderer.draw(self._sensor_object, scene, render_flags)
 
         # add an OBJECT only 2nd pass on the standard SceneGraph if SEMANTIC sensor with separate semantic SceneGraph
         if (
@@ -418,11 +421,9 @@ class Sensor:
             and self._sim.get_active_scene_graph()
             is not self._sim.get_active_semantic_scene_graph()
         ):
+            render_flags |= habitat_sim.gfx.Flags.OBJECTS_ONLY
             self._sim.renderer.draw(
-                self._sensor_object,
-                self._sim.get_active_scene_graph(),
-                self._sim.frustum_culling,
-                True,
+                self._sensor_object, self._sim.get_active_scene_graph(), render_flags
             )
 
     def get_observation(self):
