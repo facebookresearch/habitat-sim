@@ -109,17 +109,16 @@ size_t RenderCamera::cull(
   return (newEndIter - drawableTransforms.begin());
 }
 
-size_t RenderCamera::cullNonObjects(
+size_t RenderCamera::removeNonObjects(
     std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
                           Mn::Matrix4>>& drawableTransforms) {
   auto newEndIter = std::remove_if(
       drawableTransforms.begin(), drawableTransforms.end(),
       [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
                           Mn::Matrix4>& a) {
-        // obtain the absolute aabb
         auto& node = static_cast<scene::SceneNode&>(a.first.get().object());
         if (node.getType() == scene::SceneNodeType::OBJECT) {
-          // don't cull OBJECT types
+          // don't remove OBJECT types
           return false;
         }
         return true;
@@ -139,8 +138,7 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
 
   if (flags & Flag::ObjectsOnly) {
     // draw just the OBJECTS
-    size_t numObjects = cullNonObjects(drawableTransforms);
-    // erase all items that did not pass the frustum visibility test
+    size_t numObjects = removeNonObjects(drawableTransforms);
     drawableTransforms.erase(drawableTransforms.begin() + numObjects,
                              drawableTransforms.end());
   }

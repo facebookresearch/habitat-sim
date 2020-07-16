@@ -84,8 +84,12 @@ class RenderCamera : public MagnumCamera {
 
   /**
    * @brief Cull Drawables for SceneNodes which are not OBJECT type.
+   *
+   * @param drawableTransforms, a vector of pairs of Drawable3D object and its
+   * absolute transformation
+   * @return the number of drawables that are not culled
    */
-  size_t cullNonObjects(
+  size_t removeNonObjects(
       std::vector<
           std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
                     Magnum::Matrix4>>& drawableTransforms);
