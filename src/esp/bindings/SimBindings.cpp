@@ -91,10 +91,6 @@ void initSimBindings(py::module& m) {
       .def("get_scene_template_manager", &Simulator::getSceneAttributesManager,
            pybind11::return_value_policy::reference)
 
-      .def("load_object_configs", &Simulator::loadObjectConfigs, "path"_a)
-
-      /* --- END DEPRECATED --- */
-
       /* --- Object instancing and access --- */
       .def("add_object", &Simulator::addObject, "object_lib_index"_a,
            "attachment_node"_a = nullptr,

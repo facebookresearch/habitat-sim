@@ -264,18 +264,6 @@ void Simulator::seed(uint32_t newSeed) {
   pathfinder_->seed(newSeed);
 }
 
-std::shared_ptr<gfx::Renderer> Simulator::getRenderer() {
-  return renderer_;
-}
-
-std::shared_ptr<physics::PhysicsManager> Simulator::getPhysicsManager() {
-  return physicsManager_;
-}
-
-std::shared_ptr<scene::SemanticScene> Simulator::getSemanticScene() {
-  return semanticScene_;
-}
-
 scene::SceneGraph& Simulator::getActiveSceneGraph() {
   CHECK_GE(activeSceneID_, 0);
   CHECK_LT(activeSceneID_, sceneID_.size());
@@ -337,11 +325,6 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
   }
   return ID_UNDEFINED;
 }
-
-std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
-  return resourceManager_->getPhysicsAttributesManager()->loadObjectConfigs(
-      path);
-}  // Simulator::loadObjectConfigs
 
 const assets::PhysicsObjectAttributes::cptr
 Simulator::getObjectInitializationTemplate(int objectId,

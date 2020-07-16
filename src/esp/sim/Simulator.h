@@ -90,9 +90,10 @@ class Simulator {
 
   virtual void seed(uint32_t newSeed);
 
-  std::shared_ptr<gfx::Renderer> getRenderer();
-  std::shared_ptr<physics::PhysicsManager> getPhysicsManager();
-  std::shared_ptr<scene::SemanticScene> getSemanticScene();
+  std::shared_ptr<gfx::Renderer> getRenderer() { return renderer_; }
+  std::shared_ptr<scene::SemanticScene> getSemanticScene() {
+    return semanticScene_;
+  }
 
   scene::SceneGraph& getActiveSceneGraph();
   scene::SceneGraph& getActiveSemanticSceneGraph();
@@ -140,61 +141,6 @@ class Simulator {
   }
 
   /**
-   * @brief Get the string handle for the object template referenced by the
-   * passed ID
-   *
-   * @param objectTemplateID The index of the object template in the @ref
-   * ResourceManager library.
-   * @return The string key referencing the asset in @ref ResourceManager.
-   */
-  std::string getObjectTemplateHandleByID(const int objectTemplateID) const {
-    return resourceManager_->getObjectAttributesManager()
-        ->getTemplateHandleByID(objectTemplateID);
-  }
-
-  /**
-   * @brief Get a list of all templates whose origin handles contain @ref
-   * subStr, ignoring subStr's case
-   * @param subStr substring to search for within existing object templates
-   * @param contains whether search should be inclusive or exclusive of substr
-   * @return vector of 0 or more template handles containing the passed
-   * substring
-   */
-  std::vector<std::string> getObjectTemplateHandles(
-      const std::string& subStr = "",
-      bool contains = true) {
-    return resourceManager_->getObjectAttributesManager()
-        ->getTemplateHandlesBySubstring(subStr, contains);
-  }
-  /**
-   * @brief Get a list of all file-based templates whose origin handles contain
-   * @ref subStr, ignoring subStr's case
-   * @param subStr substring to search for within existing file-based object
-   * templates
-   * @return vector of 0 or more template handles containing the passed
-   * substring
-   */
-  std::vector<std::string> getFileBasedObjectTemplateHandles(
-      const std::string& subStr = "") {
-    return resourceManager_->getObjectAttributesManager()
-        ->getFileTemplateHandlesBySubstring(subStr);
-  }
-
-  /**
-   * @brief Get a list of all synthesized (primitive-based) templates whose
-   * origin handles contains @ref subStr, ignoring subStr's case
-   * @param subStr substring to search for within existing primitive object
-   * templates
-   * @return vector of 0 or more template handles containing the passed
-   * substring
-   */
-  std::vector<std::string> getSynthesizedObjectTemplateHandles(
-      const std::string& subStr = "") {
-    return resourceManager_->getObjectAttributesManager()
-        ->getSynthTemplateHandlesBySubstring(subStr);
-  }
-
-  /**
    * @brief Instance an object from a template index in @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_. See @ref
    * esp::physics::PhysicsManager::addObject().
@@ -237,62 +183,6 @@ class Simulator {
                         const std::string& lightSetupKey =
                             assets::ResourceManager::DEFAULT_LIGHTING_KEY,
                         int sceneID = 0);
-
-  /**
-   * @brief Get the current size of the physics object library. Objects [0,size)
-   * can be instanced with @ref addObject.
-   * @return The current number of templates stored in @ref
-   * esp::assets::ResourceManager::physicsObjectLibrary_.
-   */
-  int getPhysicsObjectLibrarySize() const {
-    return resourceManager_->getObjectAttributesManager()->getNumTemplates();
-  }
-
-  /**
-   * @brief Get a smart pointer to a physics object template by index.
-   */
-  const assets::PhysicsObjectAttributes::ptr getObjectTemplate(
-      int templateId) const {
-    return resourceManager_->getObjectAttributesManager()->getTemplateByID(
-        templateId);
-  }
-  /**
-   * @brief Get a smart pointer to a physics object template by handle.
-   */
-  const assets::PhysicsObjectAttributes::ptr getObjectTemplateByName(
-      const std::string& templateHandle) const {
-    return resourceManager_->getObjectAttributesManager()->getTemplateByHandle(
-        templateHandle);
-  }
-  /**
-   * @brief Load all "*.phys_properties.json" files from the provided file or
-   * directory path.
-   *
-   * Note that duplicate loads will return the index of the existing template
-   * rather than reloading.
-   *
-   * @param path A global path to a physics property file or directory
-   * @return A list of template indices for loaded valid configs for object
-   * instancing.
-   */
-  std::vector<int> loadObjectConfigs(const std::string& path);
-
-  /**
-   * @brief Register the provided PhysicsObjectAttributes template into the
-   * Simulator.
-   *
-   * @param objectTemplate A new PhysicsObjectAttributes to load.
-   * @param objectTemplateHandle The desired key for referencing the new or
-   * modified template.
-   * @return A template index for instancing the loaded template or ID_UNDEFINED
-   * if failed.
-   */
-  int registerObjectTemplate(
-      const assets::PhysicsObjectAttributes::ptr& objTmplPtr,
-      const std::string& objectTemplateHandle) {
-    return resourceManager_->getObjectAttributesManager()
-        ->registerAttributesTemplate(objTmplPtr, objectTemplateHandle);
-  }
 
   /**
    * @brief Get a static view of a physics object's template when the object was

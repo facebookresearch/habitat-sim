@@ -5,16 +5,11 @@
 #ifndef ESP_ASSETS_MANAGERS_PHYSICSATTRIBUTEMANAGER_H_
 #define ESP_ASSETS_MANAGERS_PHYSICSATTRIBUTEMANAGER_H_
 
-#include <Corrade/Utility/Directory.h>
-#include <Corrade/Utility/String.h>
-
 #include "AttributesManagerBase.h"
 
 #include "ObjectAttributesManager.h"
 
-#include "esp/gfx/configure.h"
-#include "esp/io/io.h"
-#include "esp/io/json.h"
+#include "esp/physics/configure.h"
 
 namespace Cr = Corrade;
 
@@ -44,8 +39,11 @@ class PhysicsAttributesManager
    *
    * @param physicsFilename The configuration file to parse. Defaults to the
    * file location @ref ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH set by cmake.
-   * @param registerTemplate whether to add this template to the library or not.
-   * If the user is going to edit this template, this should be false.
+   * @param registerTemplate whether to add this template to the library.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration. Defaults to true. If
+   * specified as true, then this function returns a copy of the registered
+   * template.
    * @return a reference to the physics simulation meta data object parsed from
    * the specified configuration file.
    */
@@ -55,13 +53,39 @@ class PhysicsAttributesManager
       bool registerTemplate = true) override;
 
   /**
-   * @brief Build templates for all "*.phys_properties.json" files from the
-   * provided file or directory path.
+   * @brief Creates a an instance of physics manager attributes template
+   * populated with default values. Assigns the @ref templateName as the
+   * template's handle.
    *
-   * @param path A global path to a physics property file or directory
-   * @return A list of template indices for loaded valid object configs
+   * If a template exists with this handle, the existing template will be
+   * overwritten with the newly created one if @ref registerTemplate is true.
+   * This method is specifically intended to directly construct an attributes
+   * template for editing, and so defaults to false for @ref registerTemplate
+
+   * @param templateName Name to use for the attributes handle.
+   * @param registerTemplate whether to add this template to the library.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration. Defaults to false. If
+   * specified as true, then this function returns a copy of the registered
+   * template.
+   * @return a reference to the desired template, or nullptr if fails.
    */
-  std::vector<int> loadObjectConfigs(const std::string& path);
+  PhysicsManagerAttributes::ptr createDefaultAttributesTemplate(
+      const std::string& templateName,
+      bool registerTemplate = false) override;
+
+  /**
+   * @brief Read and parse the json file @ref physicsFileName and populate a
+   * returned physics manager attributes with appropriate data.
+   *
+   * @param physicsFilename The configuration file to parse.
+   * @param registerTemplate whether to add this template to the library.
+   * @return a reference to the physics simulation meta data object parsed from
+   * the specified configuration file, or nullptr if fails.
+   */
+  PhysicsManagerAttributes::ptr createFileBasedAttributesTemplate(
+      const std::string& physicsFilename,
+      bool registerTemplate);
 
  protected:
   /**
@@ -87,14 +111,16 @@ class PhysicsAttributesManager
 
   /**
    * @brief Whether template described by passed handle is read only, or can be
-   * deleted.  All PhysicsAttributes templates are removable, by default
+   * deleted. All PhysicsAttributes templates are removable, by default
    */
-  bool isTemplateReadOnly(const std::string&) override { return false; };
+  bool isTemplateReadOnly(const std::string&) override { return false; }
+
   /**
    * @brief Any physics-attributes-specific resetting that needs to happen on
    * reset.
    */
   void resetFinalize() override {}
+
   /**
    * @brief This function will assign the appropriately configured function
    * pointer for the copy constructor as required by
@@ -104,7 +130,8 @@ class PhysicsAttributesManager
     this->copyConstructorMap_["PhysicsManagerAttributes"] =
         &PhysicsAttributesManager::createAttributesCopy<
             assets::PhysicsManagerAttributes>;
-  }
+  }  // PhysicsAttributesManager::buildCtorFuncPtrMaps
+
   // instance vars
 
   /**

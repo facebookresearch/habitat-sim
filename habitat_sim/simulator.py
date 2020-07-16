@@ -4,8 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os.path as osp
 import time
+from os import path as osp
 from typing import Any, Dict, List, Optional
 
 import attr
@@ -107,6 +107,12 @@ class Simulator(SimulatorBackend):
         self.config = None
 
         super().close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def seed(self, new_seed):
         super().seed(new_seed)

@@ -1,6 +1,6 @@
 import multiprocessing
-import os.path as osp
 import random
+from os import path as osp
 
 import magnum as mn
 import numpy as np
@@ -75,11 +75,10 @@ def _test_keep_agent_tgt():
     agents = []
 
     for _ in range(3):
-        sim = habitat_sim.Simulator(habitat_sim.Configuration(sim_cfg, [agent_config]))
-
-        agents.append(sim.get_agent(0))
-
-        sim.close()
+        with habitat_sim.Simulator(
+            habitat_sim.Configuration(sim_cfg, [agent_config])
+        ) as sim:
+            agents.append(sim.get_agent(0))
 
 
 # Make sure you can construct and destruct the simulator multiple times
@@ -90,9 +89,10 @@ def _test_multiple_construct_destroy_tgt():
     sim_cfg.scene.id = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
 
     for _ in range(3):
-        sim = habitat_sim.Simulator(habitat_sim.Configuration(sim_cfg, [agent_config]))
-
-        sim.close()
+        with habitat_sim.Simulator(
+            habitat_sim.Configuration(sim_cfg, [agent_config])
+        ) as sim:
+            pass
 
 
 @pytest.mark.parametrize(
@@ -148,7 +148,7 @@ def test_object_template_editing(sim):
     # test loading a test asset template from file
     sphere_path = osp.abspath("data/test_assets/objects/sphere")
     old_library_size = obj_mgr.get_num_templates()
-    template_ids = sim.load_object_configs(sphere_path)
+    template_ids = obj_mgr.load_object_configs(sphere_path)
     assert len(template_ids) > 0
     assert obj_mgr.get_num_templates() > old_library_size
 

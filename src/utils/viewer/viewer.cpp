@@ -39,7 +39,7 @@
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/sim/Simulator.h"
 
-#include "esp/gfx/configure.h"
+#include "esp/physics/configure.h"
 
 constexpr float moveSensitivity = 0.1f;
 constexpr float lookSensitivity = 11.25f;

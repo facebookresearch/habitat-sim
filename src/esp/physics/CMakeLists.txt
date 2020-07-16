@@ -5,6 +5,11 @@ find_package(MagnumPlugins
     TinyGltfImporter
 )
 
+set(ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH ./data/default.phys_scene_config.json)
+set(ESP_DEFAULT_PHYS_SCENE_CONFIG ${PROJECT_SOURCE_DIR}/.${ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH})
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
+                ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
+
 add_library(physics STATIC
   PhysicsManager.cpp
   PhysicsManager.h

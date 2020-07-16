@@ -406,7 +406,7 @@ void SimTest::loadingObjectTemplates() {
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
 
   // test directory of templates
-  std::vector<int> templateIndices = simulator->loadObjectConfigs(
+  std::vector<int> templateIndices = objectAttribsMgr->loadObjectConfigs(
       Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(!templateIndices.empty());
   for (auto index : templateIndices) {
@@ -414,7 +414,7 @@ void SimTest::loadingObjectTemplates() {
   }
 
   // reload again and ensure that old loaded indices are returned
-  std::vector<int> templateIndices2 = simulator->loadObjectConfigs(
+  std::vector<int> templateIndices2 = objectAttribsMgr->loadObjectConfigs(
       Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(templateIndices2 == templateIndices);
 

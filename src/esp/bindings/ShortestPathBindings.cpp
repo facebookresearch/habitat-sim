@@ -76,7 +76,7 @@ void initShortestPathBindings(py::module& m) {
       .def("seed", &PathFinder::seed)
       .def("get_topdown_view", &PathFinder::getTopDownView,
            R"(Returns the topdown view of the PathFinder's navmesh.)",
-           "pixelsPerMeter"_a, "height"_a)
+           "meters_per_pixel"_a, "height"_a)
       .def("get_random_navigable_point", &PathFinder::getRandomNavigablePoint)
       .def("find_path", py::overload_cast<ShortestPath&>(&PathFinder::findPath),
            "path"_a)
@@ -94,6 +94,7 @@ void initShortestPathBindings(py::module& m) {
       .def("snap_point", &PathFinder::snapPoint<vec3f>)
       .def("island_radius", &PathFinder::islandRadius, "pt"_a)
       .def_property_readonly("is_loaded", &PathFinder::isLoaded)
+      .def_property_readonly("navigable_area", &PathFinder::getNavigableArea)
       .def("load_nav_mesh", &PathFinder::loadNavMesh)
       .def("save_nav_mesh", &PathFinder::saveNavMesh, "path"_a)
       .def("distance_to_closest_obstacle",
