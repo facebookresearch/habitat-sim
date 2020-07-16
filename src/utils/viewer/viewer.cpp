@@ -479,7 +479,11 @@ void Viewer::toggleNavMeshVisualization() {
     navMeshVisPrimID_ = resourceManager_.loadNavMeshVisualization(
         *pathfinder_, navMeshVisNode_, &sceneGraph_->getDrawables());
     Corrade::Utility::Debug() << "navMeshVisPrimID_ = " << navMeshVisPrimID_;
-    navMeshVisNode_->translate({0, 0.1, 0});
+    if (navMeshVisPrimID_ == esp::ID_UNDEFINED) {
+      LOG(ERROR) << "Viewer::toggleNavMeshVisualization : Failed to load "
+                    "navmesh visualization.";
+      delete navMeshVisNode_;
+    }
   } else if (navMeshVisNode_ != nullptr) {
     delete navMeshVisNode_;
     navMeshVisNode_ = nullptr;
