@@ -662,7 +662,11 @@ void Simulator::toggleNavMeshVisualization() {
     navMeshVisNode_ = &rootNode.createChild();
     navMeshVisPrimID_ = resourceManager_->loadNavMeshVisualization(
         *pathfinder_, navMeshVisNode_, &drawables);
-    // navMeshVisNode_->translate({0, 0.1, 0}); //hover above the floor
+    if (navMeshVisPrimID_ == ID_UNDEFINED) {
+      LOG(ERROR) << "Simulator::toggleNavMeshVisualization : Failed to load "
+                    "navmesh visualization.";
+      delete navMeshVisNode_;
+    }
   } else if (navMeshVisNode_ != nullptr) {
     delete navMeshVisNode_;
     navMeshVisNode_ = nullptr;
