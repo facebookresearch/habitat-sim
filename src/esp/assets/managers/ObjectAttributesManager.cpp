@@ -21,7 +21,7 @@ PhysicsObjectAttributes::ptr ObjectAttributesManager::createAttributesTemplate(
     bool registerTemplate) {
   PhysicsObjectAttributes::ptr attrs;
   std::string msg;
-  if (assetAttributesMgr_->getTemplateLibHasHandle(attributesTemplateHandle)) {
+  if (isValidPrimitiveAttributes(attributesTemplateHandle)) {
     // if attributesTemplateHandle == some existing primitive attributes, then
     // this is a primitive-based object we are building
     attrs = createPrimBasedAttributesTemplate(attributesTemplateHandle,
@@ -120,7 +120,7 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
   std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
   std::string collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
 
-  if (assetAttributesMgr_->getTemplateLibHasHandle(renderAssetHandle) > 0) {
+  if (isValidPrimitiveAttributes(renderAssetHandle)) {
     // If renderAssetHandle corresponds to valid/existing primitive attributes
     // then setRenderAssetIsPrimitive to true and set map of IDs->Names to
     // physicsSynthObjTmpltLibByID_
@@ -146,7 +146,7 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
     return ID_UNDEFINED;
   }
 
-  if (assetAttributesMgr_->getTemplateLibHasHandle(collisionAssetHandle) > 0) {
+  if (isValidPrimitiveAttributes(collisionAssetHandle)) {
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     objectTemplate->setCollisionAssetIsPrimitive(true);
@@ -156,6 +156,16 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
     objectTemplate->setCollisionAssetIsPrimitive(false);
   } else {
     // Else, means no collision data specified, use specified render data
+    LOG(INFO)
+        << "ObjectAttributesManager::registerAttributesTemplateFinalize "
+           ": Collision asset template handle : "
+        << collisionAssetHandle
+        << " specified in object template with handle : "
+        << objectTemplateHandle
+        << " does not correspond to any existing file or primitive render "
+           "asset.  Overriding with given render asset handle : "
+        << renderAssetHandle << ". ";
+
     objectTemplate->setCollisionAssetHandle(renderAssetHandle);
     objectTemplate->setCollisionAssetIsPrimitive(
         objectTemplate->getRenderAssetIsPrimitive());
@@ -354,7 +364,7 @@ PhysicsObjectAttributes::ptr
 ObjectAttributesManager::buildPrimBasedPhysObjTemplate(
     const std::string& primAssetHandle) {
   // verify that a primitive asset with the given handle exists
-  if (!assetAttributesMgr_->getTemplateLibHasHandle(primAssetHandle)) {
+  if (!isValidPrimitiveAttributes(primAssetHandle)) {
     LOG(ERROR) << "ObjectAttributesManager::buildPrimBasedPhysObjTemplate : No "
                   "primitive with handle '"
                << primAssetHandle

@@ -226,8 +226,8 @@ class AttributesManager {
                                 "AttributesManager::removeTemplateByID")) {
       return nullptr;
     }
-    return _removeTemplateInternal(templateHandle,
-                                   "AttributesManager::removeTemplateByID");
+    return removeTemplateInternal(templateHandle,
+                                  "AttributesManager::removeTemplateByID");
   }
 
   /**
@@ -238,8 +238,8 @@ class AttributesManager {
    * @return the desired attributes being deleted, or nullptr if does not exist
    */
   AttribsPtr removeTemplateByHandle(const std::string& templateHandle) {
-    return _removeTemplateInternal(templateHandle,
-                                   "AttributesManager::removeTemplateByHandle");
+    return removeTemplateInternal(templateHandle,
+                                  "AttributesManager::removeTemplateByHandle");
   }
   /**
    * @brief Get the key in @ref templateLibrary_ for the object template with
@@ -269,7 +269,7 @@ class AttributesManager {
    * ID_UNDEFINED if none exists.
    */
   int getTemplateIDByHandle(const std::string& templateHandle) {
-    return _getTemplateIDByHandleOrNew(templateHandle, false);
+    return getTemplateIDByHandleOrNew(templateHandle, false);
   }  // AttributesManager::getTemplateIDByHandle
 
   /**
@@ -393,8 +393,8 @@ class AttributesManager {
    * @param src String denoting the source of the remove request.
    * @return the desired attributes being deleted, or nullptr if does not exist
    */
-  AttribsPtr _removeTemplateInternal(const std::string& templateHandle,
-                                     const std::string& src);
+  AttribsPtr removeTemplateInternal(const std::string& templateHandle,
+                                    const std::string& src);
   /**
    * @brief Used Internally. Get the ID of the template in @ref templateLibrary_
    * for the given template Handle, if exists. If the template is not in the
@@ -408,8 +408,8 @@ class AttributesManager {
    * @return The template's ID if found. The next available ID if not found and
    * getNext is true. Otherwise ID_UNDEFINED.
    */
-  int _getTemplateIDByHandleOrNew(const std::string& templateHandle,
-                                  bool getNext) {
+  int getTemplateIDByHandleOrNew(const std::string& templateHandle,
+                                 bool getNext) {
     if (getTemplateLibHasHandle(templateHandle)) {
       return templateLibrary_.at(templateHandle)->getID();
     } else {
@@ -517,7 +517,7 @@ class AttributesManager {
     // return either the ID of the existing template referenced by
     // attributesHandle, or the next available ID if not found.
     int attributesTemplateID =
-        _getTemplateIDByHandleOrNew(attributesHandle, true);
+        getTemplateIDByHandleOrNew(attributesHandle, true);
     attributesTemplate->setID(attributesTemplateID);
     // make a copy of this attributes so that user can continue to edit original
     AttribsPtr attributesTemplateCopy = copyAttributes(attributesTemplate);
@@ -607,7 +607,7 @@ class AttributesManager {
 // Class Template Method Definitions
 
 template <class T>
-T AttributesManager<T>::_removeTemplateInternal(
+T AttributesManager<T>::removeTemplateInternal(
     const std::string& templateHandle,
     const std::string& sourceStr) {
   std::string msg;

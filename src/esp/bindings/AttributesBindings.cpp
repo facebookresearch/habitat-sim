@@ -34,6 +34,8 @@ void initAttributesBindings(py::module& m) {
                                                        const std::string&>))
       .def_property("scale", &AbstractPhysicsAttributes::getScale,
                     &AbstractPhysicsAttributes::setScale)
+      .def_property("margin", &AbstractPhysicsAttributes::getMargin,
+                    &AbstractPhysicsAttributes::setMargin)
       .def_property("friction_coefficient",
                     &AbstractPhysicsAttributes::getFrictionCoefficient,
                     &AbstractPhysicsAttributes::setFrictionCoefficient)
@@ -57,8 +59,6 @@ void initAttributesBindings(py::module& m) {
       .def_property("compute_COM_from_shape",
                     &PhysicsObjectAttributes::getComputeCOMFromShape,
                     &PhysicsObjectAttributes::setComputeCOMFromShape)
-      .def_property("margin", &PhysicsObjectAttributes::getMargin,
-                    &PhysicsObjectAttributes::setMargin)
       .def_property("mass", &PhysicsObjectAttributes::getMass,
                     &PhysicsObjectAttributes::setMass)
       .def_property("inertia", &PhysicsObjectAttributes::getInertia,

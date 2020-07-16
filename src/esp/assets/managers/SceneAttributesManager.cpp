@@ -20,13 +20,19 @@ PhysicsSceneAttributes::ptr SceneAttributesManager::createAttributesTemplate(
   std::string msg;
   std::string strHandle = Cr::Utility::String::lowercase(sceneAttributesHandle);
   bool fileExists = (this->isValidFileName(sceneAttributesHandle));
+  if (objectAttributesMgr_->isValidPrimitiveAttributes(sceneAttributesHandle)) {
+    // if sceneAttributesHandle == some existing primitive attributes, then
+    // this is a primitive-based scene (i.e. a plane) we are building
+    attrs = createPrimBasedAttributesTemplate(sceneAttributesHandle,
+                                              registerTemplate);
+    msg = "Primitive Asset (" + sceneAttributesHandle + ") Based";
 
-  if (fileExists) {
+  } else if (fileExists) {
     if ((strHandle.find(".json") != std::string::npos) && fileExists) {
       // check if sceneAttributesHandle corresponds to an actual, existing json
       // scene file descriptor.
-      attrs = createFileBasedAttributesTemplate(sceneAttributesHandle,
-                                                registerTemplate);
+      attrs = createJSONFileBasedAttributesTemplate(sceneAttributesHandle,
+                                                    registerTemplate);
       msg = "JSON File (" + sceneAttributesHandle + ") Based";
     } else {
       // if name is not json file descriptor but still appropriate file
@@ -69,7 +75,12 @@ int SceneAttributesManager::registerAttributesTemplateFinalize(
       sceneAttributesTemplate->getCollisionAssetHandle();
 
   // verify these represent legitimate assets
-  if (this->isValidFileName(renderAssetHandle)) {
+  if (objectAttributesMgr_->isValidPrimitiveAttributes(renderAssetHandle)) {
+    // If renderAssetHandle corresponds to valid/existing primitive attributes
+    // then setRenderAssetIsPrimitive to true and set map of IDs->Names to
+    // physicsSynthObjTmpltLibByID_
+    sceneAttributesTemplate->setRenderAssetIsPrimitive(true);
+  } else if (this->isValidFileName(renderAssetHandle)) {
     // Check if renderAssetHandle is valid file name and is found in file system
     // - if so then setRenderAssetIsPrimitive to false and set map of IDs->Names
     // to physicsFileObjTmpltLibByID_ - verify file  exists
@@ -86,17 +97,30 @@ int SceneAttributesManager::registerAttributesTemplateFinalize(
     return ID_UNDEFINED;
   }
 
-  if (this->isValidFileName(collisionAssetHandle)) {
+  if (objectAttributesMgr_->isValidPrimitiveAttributes(collisionAssetHandle)) {
+    // If collisionAssetHandle corresponds to valid/existing primitive
+    // attributes then setCollisionAssetIsPrimitive to true
+    sceneAttributesTemplate->setCollisionAssetIsPrimitive(true);
+  } else if (this->isValidFileName(collisionAssetHandle)) {
     // Check if collisionAssetHandle is valid file name and is found in file
     // system - if so then setCollisionAssetIsPrimitive to false
     sceneAttributesTemplate->setCollisionAssetIsPrimitive(false);
   } else {
     // Else, means no collision data specified, use specified render data
+    // Else, means no collision data specified, use specified render data
+    LOG(INFO)
+        << "SceneAttributesManager::registerAttributesTemplateFinalize "
+           ": Collision asset template handle : "
+        << collisionAssetHandle << " specified in scene template with handle : "
+        << sceneAttributesHandle
+        << " does not correspond to any existing file or primitive render "
+           "asset.  Overriding with given render asset handle : "
+        << renderAssetHandle << ". ";
+
     sceneAttributesTemplate->setCollisionAssetHandle(renderAssetHandle);
     sceneAttributesTemplate->setCollisionAssetIsPrimitive(
         sceneAttributesTemplate->getRenderAssetIsPrimitive());
   }
-
   // Clear dirty flag from when asset handles are changed
   sceneAttributesTemplate->setIsClean();
 
@@ -129,6 +153,55 @@ SceneAttributesManager::createDefaultAttributesTemplate(
   }
   return sceneAttributesTemplate;
 }  // SceneAttributesManager::createDefaultAttributesTemplate
+
+PhysicsSceneAttributes::ptr
+SceneAttributesManager::createPrimBasedAttributesTemplate(
+    const std::string& primAttrTemplateHandle,
+    bool registerTemplate) {
+  PhysicsSceneAttributes::ptr sceneAttributes =
+      buildPrimBasedPhysObjTemplate(primAttrTemplateHandle);
+
+  if (nullptr != sceneAttributes && registerTemplate) {
+    int attrID = this->registerAttributesTemplate(sceneAttributes,
+                                                  primAttrTemplateHandle);
+    if (attrID == ID_UNDEFINED) {
+      // some error occurred
+      return nullptr;
+    }
+  }
+  return sceneAttributes;
+}  // SceneAttributesManager::createPrimBasedAttributesTemplate
+
+PhysicsSceneAttributes::ptr
+SceneAttributesManager::buildPrimBasedPhysObjTemplate(
+    const std::string& primAssetHandle) {
+  // verify that a primitive asset with the given handle exists
+  if (!objectAttributesMgr_->isValidPrimitiveAttributes(primAssetHandle)) {
+    LOG(ERROR) << "SceneAttributesManager::buildPrimBasedPhysObjTemplate : No "
+                  "primitive with handle '"
+               << primAssetHandle
+               << "' exists so cannot build physical object.  Aborting.";
+    return nullptr;
+  }
+
+  // construct a physicsSceneAttributes
+  auto physicsSceneAttributes = PhysicsSceneAttributes::create(primAssetHandle);
+  // set margin to be 0
+  physicsSceneAttributes->setMargin(0.0);
+  // make smaller as default size - prims are approx meter in size
+  physicsSceneAttributes->setScale({0.1, 0.1, 0.1});
+
+  // set render mesh handle
+  physicsSceneAttributes->setRenderAssetHandle(primAssetHandle);
+  // set collision mesh/primitive handle and default for primitives to not use
+  // mesh collisions
+  physicsSceneAttributes->setCollisionAssetHandle(primAssetHandle);
+  physicsSceneAttributes->setUseMeshCollision(false);
+  // NOTE to eventually use mesh collisions with primitive objects, a
+  // collision primitive mesh needs to be configured and set in MeshMetaData
+  // and CollisionMesh
+  return physicsSceneAttributes;
+}  // SceneAttributesManager::buildPrimBasedPhysObjTemplate
 
 PhysicsSceneAttributes::ptr
 SceneAttributesManager::createFileBasedAttributesTemplate(

@@ -138,6 +138,16 @@ class ObjectAttributesManager
   std::vector<int> loadAllFileBasedTemplates(
       const std::vector<std::string>& tmpltFilenames);
 
+  /**
+   * @brief Check if currently configured primitive asset template library has
+   * passed handle.
+   * @param handle String name of primitive asset attributes desired
+   * @return whether handle exists or not in asset attributes library
+   */
+  bool isValidPrimitiveAttributes(const std::string& handle) {
+    return assetAttributesMgr_->getTemplateLibHasHandle(handle);
+  }
+
   // ======== File-based and primitive-based partition functions ========
 
   /**

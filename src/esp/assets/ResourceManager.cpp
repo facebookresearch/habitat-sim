@@ -293,6 +293,8 @@ bool ResourceManager::loadPhysicsScene(
       colMeshSuccess =
           buildSceneCollisionMeshGroup<GenericMeshData>(filename, meshGroup);
     }
+    // TODO : PTEX collision support
+
     // failure during build of collision mesh group
     if (!colMeshSuccess) {
       return false;
@@ -313,6 +315,8 @@ template <class T>
 bool ResourceManager::buildSceneCollisionMeshGroup(
     const std::string& filename,
     std::vector<CollisionMeshData>& meshGroup) {
+  // TODO : refactor to manage any mesh groups, not just scene
+
   //! Collect collision mesh group
   const MeshMetaData& metaData = getMeshMetaData(filename);
   auto indexPair = metaData.meshIndex;

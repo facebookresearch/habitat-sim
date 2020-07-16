@@ -91,6 +91,10 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
   void setScale(const Magnum::Vector3& scale) { setVec3("scale", scale); }
   Magnum::Vector3 getScale() const { return getVec3("scale"); }
 
+  // collision shape inflation margin
+  void setMargin(double margin) { setDouble("margin", margin); }
+  double getMargin() const { return getDouble("margin"); }
+
   void setFrictionCoefficient(double frictionCoefficient) {
     setDouble("frictionCoefficient", frictionCoefficient);
   }
@@ -189,10 +193,6 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
     setBool("computeCOMFromShape", computeCOMFromShape);
   }
   bool getComputeCOMFromShape() const { return getBool("computeCOMFromShape"); }
-
-  // collision shape inflation margin
-  void setMargin(double margin) { setDouble("margin", margin); }
-  double getMargin() const { return getDouble("margin"); }
 
   void setMass(double mass) { setDouble("mass", mass); }
   double getMass() const { return getDouble("mass"); }

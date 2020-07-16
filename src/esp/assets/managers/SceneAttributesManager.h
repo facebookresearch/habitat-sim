@@ -84,15 +84,33 @@ class SceneAttributesManager
     }
   }  // SceneAttributesManager::setSceneValsFromPhysicsAttributes
 
+  /**
+   * @brief Creates an instance of a scene template described by passed
+   * string, which should be a reference to an existing primitive asset template
+   * to be used in the construction of the scene (as render and collision
+   * mesh). It returns existing instance if there is one, and nullptr if fails.
+   *
+   * @param primAttrTemplateHandle The handle to an existing primitive asset
+   * template. Fails if does not.
+   * @param registerTemplate whether to add this template to the library.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration. Defaults to true.
+   * @return a reference to the desired scene template, or nullptr if fails.
+   */
+  PhysicsSceneAttributes::ptr createPrimBasedAttributesTemplate(
+      const std::string& primAttrTemplateHandle,
+      bool registerTemplate = true);
+
  protected:
   /**
    * @brief Scene is file-based, described by @ref sceneFilename; populate a
-   * returned scene attributes with appropriate data.
+   * returned scene attributes with appropriate data.  This method's intended
+   * use is to support backwards compatibility for when scene meshes are loaded
+   * without JSON files.
    *
-   * @param sceneFilename The configuration file to parse.
+   * @param sceneFilename The mesh file name
    * @param registerTemplate whether to add this template to the library or not.
-   * @return a reference to the physics simulation meta data object parsed from
-   * the specified configuration file, or nullptr if fails.
+   * @return a reference to the desired scene template, or nullptr if fails.
    */
   PhysicsSceneAttributes::ptr createFileBasedAttributesTemplate(
       const std::string& sceneFilename,
@@ -104,12 +122,28 @@ class SceneAttributesManager
    *
    * @param sceneFilename The configuration file to parse.
    * @param registerTemplate whether to add this template to the library or not.
-   * @return a reference to the physics simulation meta data object parsed from
-   * the specified configuration file, or nullptr if fails.
+   * @return a reference to the desired scene template, or nullptr if fails.
    */
   PhysicsSceneAttributes::ptr createJSONFileBasedAttributesTemplate(
       const std::string& sceneFilename,
       bool registerTemplate = true);
+
+  /**
+   * @brief Instantiate a @ref PhysicsSceneAttributes for a
+   * synthetic(primitive-based render) scene. NOTE : Must be registered to be
+   * available for use via @ref registerObjectTemplate. This method is provided
+   * so the user can modify a specified physics scene template before
+   * registering it.
+   *
+   * @param primAssetHandle The string name of the primitive asset attributes to
+   * be used to synthesize a render asset and solve collisions implicitly for
+   * the desired scene. Will also become the default handle of the resultant
+   * @ref PhysicsSceneAttributes template
+   * @return The @ref PhysicsSceneAttributes template based on the passed
+   * primitive
+   */
+  PhysicsSceneAttributes::ptr buildPrimBasedPhysObjTemplate(
+      const std::string& primAssetHandle);
 
   /**
    * @brief Add a @ref std::shared_ptr<attributesType> object to the
