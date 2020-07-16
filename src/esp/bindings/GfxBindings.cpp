@@ -46,7 +46,7 @@ void initGfxBindings(py::module& m) {
           R"(RenderCamera: The object of this class is a camera attached
       to the scene node for rendering.)");
 
-  py::enum_<RenderCamera::Flag> flags{m, "Flags", "Flags"};
+  py::enum_<RenderCamera::Flag> flags{render_camera, "Flags", "Flags"};
 
   flags.value("FRUSTUM_CULLING", RenderCamera::Flag::FrustumCulling)
       .value("OBJECTS_ONLY", RenderCamera::Flag::ObjectsOnly)

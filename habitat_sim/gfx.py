@@ -6,7 +6,6 @@ from habitat_sim._ext.habitat_sim_bindings import (
     DEFAULT_LIGHTING_KEY,
     NO_LIGHT_KEY,
     Camera,
-    Flags,
     LightInfo,
     LightPositionModel,
     Renderer,
@@ -15,7 +14,6 @@ from habitat_sim._ext.habitat_sim_bindings import (
 
 __all__ = [
     "Camera",
-    "Flags",
     "Renderer",
     "RenderTarget",
     "LightPositionModel",
