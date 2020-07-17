@@ -56,6 +56,12 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
     lightColors.emplace_back((*lightSetup_)[i].color);
   }
 
+  bool usingDrawableId = false;
+  {
+    RenderCamera& cam = static_cast<RenderCamera&>(camera);
+    usingDrawableId = cam.isRenderingForObjectPicking();
+  }
+
   Mn::Color3 highLightColor = 0xa5c9ea_rgbf * 0.5;
   (*shader_)
       .setAmbientColor(selected_ ? highLightColor : materialData_->ambientColor)
@@ -67,8 +73,10 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       // e.g., semantic mesh has its own per vertex annotation, which has been
       // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
       // fragment shader
-      //.setObjectId(materialData_->perVertexObjectId ? 0 : drawableId_)
-      .setObjectId(materialData_->perVertexObjectId ? 0 : node_.getSemanticId())
+      .setObjectId(
+          usingDrawableId
+              ? drawableId_
+              : (materialData_->perVertexObjectId ? 0 : node_.getSemanticId()))
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(transformationMatrix.rotationScaling());

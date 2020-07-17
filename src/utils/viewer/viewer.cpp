@@ -651,9 +651,13 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       }
       selectedDrawableId_ = -1;
     }
+    esp::gfx::RenderCamera::Flags flags =
+        esp::gfx::RenderCamera::Flag::ObjectPicking;
+    if (frustumCullingEnabled_)
+      flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
     for (std::pair<std::string, esp::gfx::DrawableGroup>&& it :
          sceneGraph.getDrawableGroups()) {
-      renderCamera_->draw(it.second, frustumCullingEnabled_);
+      renderCamera_->draw(it.second, flags);
     }
 
     // Read the ID back

@@ -28,6 +28,10 @@ class RenderCamera : public MagnumCamera {
      * scene::SceneNodeType::OBJECT.
      */
     ObjectsOnly = 1 << 1,
+    /**
+     * Render the drawables for object (drawable) picking purpose
+     */
+    ObjectPicking = 1 << 2,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
@@ -94,7 +98,10 @@ class RenderCamera : public MagnumCamera {
           std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
                     Magnum::Matrix4>>& drawableTransforms);
 
+  bool isRenderingForObjectPicking() { return renderingForObjectPicking_; }
+
  protected:
+  bool renderingForObjectPicking_ = false;
   ESP_SMART_POINTERS(RenderCamera)
 };
 
