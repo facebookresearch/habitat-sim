@@ -3,6 +3,7 @@
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebookresearch/habitat-sim/blob/master/LICENSE)
 [![Anaconda-Server Badge](https://anaconda.org/aihabitat/habitat-sim/badges/version.svg)](https://anaconda.org/aihabitat/habitat-sim)
 [![Anaconda-Server Badge](https://anaconda.org/aihabitat/habitat-sim/badges/platforms.svg)](https://anaconda.org/aihabitat/habitat-sim)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 
 # Habitat-Sim
 

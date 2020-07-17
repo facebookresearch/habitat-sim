@@ -32,7 +32,7 @@
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/MaterialData.h"
 #include "esp/gfx/ShaderManager.h"
-#include "esp/gfx/configure.h"
+#include "esp/physics/configure.h"
 #include "esp/scene/SceneNode.h"
 
 #include "managers/AssetAttributesManager.h"
@@ -91,6 +91,12 @@ class ResourceManager {
    *@brief The @ref ShaderManager key for the default @ref MaterialInfo
    */
   static constexpr char DEFAULT_MATERIAL_KEY[] = "";
+
+  /**
+   *@brief The @ref ShaderManager key for full ambient white @ref MaterialInfo
+   *used for primitive wire-meshes
+   */
+  static constexpr char WHITE_MATERIAL_KEY[] = "ambient_white";
 
   /**
    *@brief The @ref ShaderManager key for @ref MaterialInfo with per-vertex
@@ -173,6 +179,18 @@ class ResourceManager {
       DrawableGroup* drawables = nullptr,
       const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
           NO_LIGHT_KEY});
+
+  /**
+   * @brief Construct scene collision mesh group based on name and type of
+   * scene.
+   * @tparam T type of meshdata desired based on scene type.
+   * @param filename The name of the file holding the mesh data
+   * @param meshGroup The meshgroup to build
+   * @return whether built successfully or not
+   */
+  template <class T>
+  bool buildSceneCollisionMeshGroup(const std::string& filename,
+                                    std::vector<CollisionMeshData>& meshGroup);
 
   /**
    * @brief Load/instantiate any required render and collision assets for an
@@ -364,7 +382,7 @@ class ResourceManager {
    * scene::SceneNode.
    *
    * See @ref primitive_meshes_.
-   * @param primitiveID The index of the primitive in @ref primitive_meshes_.
+   * @param primitiveID The key of the primitive in @ref primitive_meshes_.
    * @param node The @ref scene::SceneNode to which the primitive drawable
    * will be attached.
    * @param drawables The @ref DrawableGroup with which the primitive will be
@@ -373,6 +391,13 @@ class ResourceManager {
   void addPrimitiveToDrawables(int primitiveID,
                                scene::SceneNode& node,
                                DrawableGroup* drawables);
+
+  /**
+   * @brief Remove the specified primitive mesh.
+   *
+   * @param primitiveID The key of the primitive in @ref primitive_meshes_.
+   */
+  void removePrimitiveMesh(int primitiveID);
 
   /**
    * @brief generate a new primitive mesh asset for the NavMesh loaded in the
@@ -852,11 +877,13 @@ class ResourceManager {
    */
   managers::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
 
+  //! tracks primitive mesh ids
+  int nextPrimitiveMeshId = 0;
   /**
    * @brief Primitive meshes available for instancing via @ref
    * addPrimitiveToDrawables for debugging or visualization purposes.
    */
-  std::vector<std::unique_ptr<Magnum::GL::Mesh>> primitive_meshes_;
+  std::map<int, std::unique_ptr<Magnum::GL::Mesh>> primitive_meshes_;
 
   /**
    * @brief Maps string keys (typically property filenames) to @ref

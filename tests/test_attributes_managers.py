@@ -17,6 +17,7 @@ def perform_general_tests(attr_mgr, search_string):
     assert len(template_handles) > 0
 
     template_handle = template_handles[0]
+    # get id from handle
     template_ID = attr_mgr.get_template_ID_by_handle(template_handle)
     assert search_string in template_handle
 
@@ -24,7 +25,7 @@ def perform_general_tests(attr_mgr, search_string):
     template0 = attr_mgr.get_template_by_handle(template_handle)
     template1 = attr_mgr.get_template_by_ID(template_ID)
 
-    # verify templates have the same identifiers
+    # verify template 0 and template 1 are copies of the same template
     assert template0.handle == template1.handle
     assert template0.ID == template1.ID
 
@@ -58,10 +59,11 @@ def perform_general_tests(attr_mgr, search_string):
     # add new template
     attr_mgr.register_template(template0, "new_template_0")
 
-    # remove new template and verify size returns to old size
+    # register new template and verify size is greater than original
     curr_num_templates = attr_mgr.get_num_templates()
     assert curr_num_templates != orig_num_templates
 
+    # get template that is removed
     template3 = attr_mgr.remove_template_by_handle("new_template_0")
 
     # verify not NONE
@@ -76,6 +78,51 @@ def perform_general_tests(attr_mgr, search_string):
     return template0, template3
 
 
+def perform_add_blank_template_test(attr_mgr, valid_render_handle=None):
+    # get size of template library
+    orig_num_templates = attr_mgr.get_num_templates()
+
+    # add new blank template
+    new_template_handle = "new template"
+
+    # create new default template, do not register it
+    new_template0 = attr_mgr.create_new_template(new_template_handle, False)
+
+    # change new template field
+    new_template0.set("test_key", "new_template_test")
+
+    # give new template valid render asset handle, otherwise registration might fail
+    if valid_render_handle is not None:
+        new_template0.render_asset_handle = valid_render_handle
+
+    # add new template
+    attr_mgr.register_template(new_template0, new_template_handle)
+
+    # get new size of library after remove and verify not same as original
+    curr_num_templates = attr_mgr.get_num_templates()
+    assert curr_num_templates > orig_num_templates
+
+    # verify new template added properly
+    new_template1 = attr_mgr.get_template_by_handle(new_template_handle)
+
+    # verify template 0 and template 1 are copies of the same template
+    assert new_template0.handle == new_template1.handle
+    assert new_template0.ID == new_template1.ID
+    assert new_template0.get_string("test_key") == new_template1.get_string("test_key")
+
+    # remove newly added default template
+    new_template2 = attr_mgr.remove_template_by_handle(new_template_handle)
+
+    # verify added template was one removed
+    assert new_template0.handle == new_template2.handle
+    assert new_template0.ID == new_template2.ID
+    assert new_template0.get_string("test_key") == new_template2.get_string("test_key")
+
+    # get new size of library after remove and verify same as original
+    curr_num_templates = attr_mgr.get_num_templates()
+    assert curr_num_templates == orig_num_templates
+
+
 def test_physics_attributes_managers(sim):
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
@@ -84,16 +131,19 @@ def test_physics_attributes_managers(sim):
     sim.reconfigure(hab_cfg)
 
     # get attribute managers
-    phys_attr_manager = sim.get_physics_template_manager()
+    phys_attr_mgr = sim.get_physics_template_manager()
 
     # perform general tests for this attributes manager
     template0, _ = perform_general_tests(
-        phys_attr_manager, cfg_settings["physics_config_file"]
+        phys_attr_mgr, cfg_settings["physics_config_file"]
     )
 
     # verify that physics template matches expected values in file
     assert template0.timestep == 0.008
     assert template0.simulator == "bullet"
+
+    # verify creating new template
+    perform_add_blank_template_test(phys_attr_mgr)
 
 
 def test_scene_attributes_managers(sim):
@@ -103,14 +153,19 @@ def test_scene_attributes_managers(sim):
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     sim.reconfigure(hab_cfg)
 
+    scene_name = cfg_settings["scene"]
+
     # get attribute managers
-    scene_attr_manager = sim.get_scene_template_manager()
+    scene_mgr = sim.get_scene_template_manager()
 
     # perform general tests for this attributes manager
-    template0, _ = perform_general_tests(scene_attr_manager, cfg_settings["scene"])
+    template0, _ = perform_general_tests(scene_mgr, scene_name)
 
     # verify gravity in template is as expected
     assert template0.gravity == mn.Vector3(0.0, -9.8, 0.0)
+
+    # verify creating new template
+    perform_add_blank_template_test(scene_mgr, template0.render_asset_handle)
 
 
 def test_object_attributes_managers(sim):
@@ -127,7 +182,10 @@ def test_object_attributes_managers(sim):
     rand_obj_handle = obj_mgr.get_random_template_handle()
 
     # perform general tests for object attribute manager
-    perform_general_tests(obj_mgr, rand_obj_handle)
+    template0, _ = perform_general_tests(obj_mgr, rand_obj_handle)
+
+    # verify creating new template
+    perform_add_blank_template_test(obj_mgr, template0.render_asset_handle)
 
 
 def perform_asset_attrib_mgr_tests(

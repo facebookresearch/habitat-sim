@@ -4,7 +4,7 @@
 
 import habitat_sim
 import habitat_sim.agent
-import habitat_sim.bindings as hsim
+from habitat_sim import bindings as hsim
 
 default_sim_settings = {
     # settings shared by example.py and benchmark.py

@@ -255,8 +255,9 @@ void CullingTest::frustumCulling() {
   // ============== Test 3 ==================
   // draw using the RenderCamera overload draw()
   target->renderEnter();
-  size_t numVisibleObjects =
-      renderCamera.draw(drawables, true /* enable frustum culling */);
+  size_t numVisibleObjects = renderCamera.draw(
+      drawables, {esp::gfx::RenderCamera::Flag::
+                      FrustumCulling} /* enable frustum culling */);
   target->renderExit();
   CORRADE_COMPARE(numVisibleObjects, numVisibleObjectsGroundTruth);
 }

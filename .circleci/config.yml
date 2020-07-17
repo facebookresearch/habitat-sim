@@ -21,8 +21,8 @@ jobs:
           name: run black
           command: |
               black --version
-              black habitat_sim/. examples/. tests/. setup.py --diff
-              black habitat_sim/. examples/. tests/. setup.py --check
+              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  habitat_sim/. examples/. tests/. setup.py --diff
+              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  habitat_sim/. examples/. tests/. setup.py --check
       - run:
           name: run isort
           command: |
@@ -254,6 +254,7 @@ jobs:
               . activate habitat;
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
+              pip install imageio imageio-ffmpeg
               python setup.py install --headless
       - run:
           name: run clang-tidy
@@ -463,17 +464,21 @@ jobs:
       - run: *install_deps
       - run:
           name: Build conda Linux packages
+          no_output_timeout: 240m
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
-              cd habitat-sim
+              cd habitat-sim/conda-build
 
-              rm -rf build
-              cd conda-build
-              conda install -y anaconda-client git gitpython ninja conda-build=3.18.9 # last version that works with our setup
-              anaconda login --username aihabitat-nightly --password $AIHABITAT_NIGHTLY_CONDA_PWD
-              conda config --set anaconda_upload yes
-              python linux_matrix_builder.py --conda_upload
+              # install Docker
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+              sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+              sudo apt-get update
+              apt-cache policy docker-ce
+              sudo apt-get install -y docker-ce
+
+              docker build -t hsim_condabuild_dcontainer -f Dockerfile . --build-arg AIHABITAT_NIGHTLY_CONDA_PWD=$AIHABITAT_NIGHTLY_CONDA_PWD
+              docker run -it --ipc=host --rm -v $(pwd)/../../:/remote hsim_condabuild_dcontainer /bin/bash -c "source ~/.bashrc && conda activate py36 && cd /remote/habitat-sim/conda-build && python linux_matrix_builder.py --conda_upload"
 
   update_docs:
     docker:

@@ -91,10 +91,6 @@ void initSimBindings(py::module& m) {
       .def("get_scene_template_manager", &Simulator::getSceneAttributesManager,
            pybind11::return_value_policy::reference)
 
-      .def("load_object_configs", &Simulator::loadObjectConfigs, "path"_a)
-
-      /* --- END DEPRECATED --- */
-
       /* --- Object instancing and access --- */
       .def("add_object", &Simulator::addObject, "object_lib_index"_a,
            "attachment_node"_a = nullptr,
@@ -165,6 +161,8 @@ void initSimBindings(py::module& m) {
            "semantic_id"_a, "object_id"_a, "scene_id"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
            "navmesh_settings"_a, "include_static_objects"_a = false)
+      .def("toggle_navmesh_visualization",
+           &Simulator::toggleNavMeshVisualization)
       .def("get_light_setup", &Simulator::getLightSetup,
            "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY)
       .def("set_light_setup", &Simulator::setLightSetup, "light_setup"_a,

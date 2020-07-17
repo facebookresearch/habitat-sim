@@ -66,6 +66,7 @@ namespace assets {
 constexpr char ResourceManager::NO_LIGHT_KEY[];
 constexpr char ResourceManager::DEFAULT_LIGHTING_KEY[];
 constexpr char ResourceManager::DEFAULT_MATERIAL_KEY[];
+constexpr char ResourceManager::WHITE_MATERIAL_KEY[];
 constexpr char ResourceManager::PER_VERTEX_OBJECT_ID_MATERIAL_KEY[];
 ResourceManager::ResourceManager()
     :
@@ -86,7 +87,8 @@ void ResourceManager::buildImportersAndAttributesManagers() {
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
   physicsAttributesManager_ = managers::PhysicsAttributesManager::create(
       *this, objectAttributesManager_);
-  sceneAttributesManager_ = managers::SceneAttributesManager::create(*this);
+  sceneAttributesManager_ =
+      managers::SceneAttributesManager::create(*this, objectAttributesManager_);
 
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
@@ -111,8 +113,8 @@ void ResourceManager::initDefaultPrimAttributes() {
           ->getPrimObjClassName();
 
   auto wfCube = primitiveImporter_->mesh(cubeMeshName);
-  primitive_meshes_.push_back(
-      std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube)));
+  primitive_meshes_[nextPrimitiveMeshId++] =
+      std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube));
 
   // build default primtive object templates corresponding to given default
   // asset templates
@@ -162,15 +164,15 @@ bool ResourceManager::loadScene(
         // Unknown type, just load general mesh data
         meshSuccess = loadGeneralMeshData(info, parent, drawables, lightSetup);
       }
-      // add a scene attributes for this filename or modify the existing one
-      if (meshSuccess) {
-        sceneAttributesManager_->createAttributesTemplate(info.filepath, true);
-      }
     }
   } else {
     LOG(INFO) << "Loading empty scene";
     // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
     // scene mesh): welcome to the void
+  }
+  // add a scene attributes for this filename or modify the existing one
+  if (meshSuccess) {
+    sceneAttributesManager_->createAttributesTemplate(info.filepath, true);
   }
 
   // compute the absolute transformation for each static drawables
@@ -211,7 +213,7 @@ bool ResourceManager::loadScene(
 void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
     const PhysicsManagerAttributes::ptr& physicsManagerAttributes) {
-  //! PHYSICS INIT: Use the above config to initialize physics engine
+  //! PHYSICS INIT: Use the passed attributes to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
 #ifdef ESP_BUILD_WITH_BULLET
@@ -261,9 +263,9 @@ bool ResourceManager::loadPhysicsScene(
   _physicsManager->initPhysics(parent);
 
   if (!meshSuccess) {
-    LOG(ERROR) << "Physics manager loaded. Scene mesh load failed, aborting "
-                  "scene initialization.";
-    return meshSuccess;
+    LOG(ERROR) << "ResourceManager::loadPhysicsScene : Physics manager loaded. "
+                  "Scene mesh load failed, Aborting scene initialization.";
+    return false;
   }
 
   const std::string& filename = info.filepath;
@@ -279,39 +281,25 @@ bool ResourceManager::loadPhysicsScene(
 
   // if we have a scene mesh, add it as a collision object
   if (filename.compare(EMPTY_SCENE) != 0) {
-    const MeshMetaData& metaData = getMeshMetaData(filename);
-    auto indexPair = metaData.meshIndex;
-    int start = indexPair.first;
-    int end = indexPair.second;
-
     //! Collect collision mesh group
     std::vector<CollisionMeshData> meshGroup;
-    for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
+    bool colMeshSuccess = false;
+    if (info.type == AssetType::INSTANCE_MESH) {
       // PLY Instance mesh
-      if (info.type == AssetType::INSTANCE_MESH) {
-        GenericInstanceMeshData* insMeshData =
-            dynamic_cast<GenericInstanceMeshData*>(meshes_[mesh_i].get());
-        CollisionMeshData& meshData = insMeshData->getCollisionMeshData();
-        meshGroup.push_back(meshData);
-      }
-
-      // GLB Mesh
-      else if (info.type == AssetType::MP3D_MESH ||
+      colMeshSuccess = buildSceneCollisionMeshGroup<GenericInstanceMeshData>(
+          filename, meshGroup);
+    } else if (info.type == AssetType::MP3D_MESH ||
                info.type == AssetType::UNKNOWN) {
-        GenericMeshData* gltfMeshData =
-            dynamic_cast<GenericMeshData*>(meshes_[mesh_i].get());
-        if (gltfMeshData == nullptr) {
-          Corrade::Utility::Debug()
-              << "AssetInfo::AssetType type error: unsupported physical type, "
-                 "aborting. Try running without \"--enable-physics\" and "
-                 "consider logging an issue.";
-          return false;
-        }
-        CollisionMeshData& meshData = gltfMeshData->getCollisionMeshData();
-        meshGroup.push_back(meshData);
-      }
+      // GLB Mesh
+      colMeshSuccess =
+          buildSceneCollisionMeshGroup<GenericMeshData>(filename, meshGroup);
     }
+    // TODO : PTEX collision support
 
+    // failure during build of collision mesh group
+    if (!colMeshSuccess) {
+      return false;
+    }
     //! Add scene meshgroup to collision mesh groups
     collisionMeshGroups_.emplace(filename, meshGroup);
     //! Initialize collision mesh
@@ -323,6 +311,34 @@ bool ResourceManager::loadPhysicsScene(
 
   return meshSuccess;
 }  // ResourceManager::loadPhysicsScene
+
+template <class T>
+bool ResourceManager::buildSceneCollisionMeshGroup(
+    const std::string& filename,
+    std::vector<CollisionMeshData>& meshGroup) {
+  // TODO : refactor to manage any mesh groups, not just scene
+
+  //! Collect collision mesh group
+  const MeshMetaData& metaData = getMeshMetaData(filename);
+  auto indexPair = metaData.meshIndex;
+  int start = indexPair.first;
+  int end = indexPair.second;
+  for (int mesh_i = start; mesh_i <= end; ++mesh_i) {
+    T* rawMeshData = dynamic_cast<T*>(meshes_[mesh_i].get());
+    if (rawMeshData == nullptr) {
+      // means dynamic cast failed
+      Corrade::Utility::Debug()
+          << "ResourceManager::loadPhysicsScene : AssetInfo::AssetType "
+             "type error: unsupported mesh type, aborting. Try running "
+             "without \"--enable-physics\" and consider logging an issue.";
+      return false;
+    }
+    CollisionMeshData& colMeshData = rawMeshData->getCollisionMeshData();
+    meshGroup.push_back(colMeshData);
+  }  // for each mesh
+
+  return true;
+}  // ResourceManager::buildSceneCollisionMeshGroup
 
 bool ResourceManager::loadObjectMeshDataFromFile(
     const std::string& filename,
@@ -373,7 +389,7 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
     scene::SceneNode& node = staticDrawableInfo_[iEntry].node;
     node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(pos)});
   }
-}
+}  // ResourceManager::computePTexMeshAbsoluteAABBs
 #endif
 
 void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
@@ -924,10 +940,10 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
                                     Cr::Containers::arrayView(positions)}}};
 
   // compile and add the new mesh to the structure
-  primitive_meshes_.push_back(std::make_unique<Magnum::GL::Mesh>(
-      Magnum::MeshTools::compile(visualNavMesh)));
+  primitive_meshes_[nextPrimitiveMeshId++] = std::make_unique<Magnum::GL::Mesh>(
+      Magnum::MeshTools::compile(visualNavMesh));
 
-  navMeshPrimitiveID = primitive_meshes_.size() - 1;
+  navMeshPrimitiveID = nextPrimitiveMeshId - 1;
 
   if (parent != nullptr && drawables != nullptr &&
       navMeshPrimitiveID != ID_UNDEFINED) {
@@ -1191,9 +1207,9 @@ bool ResourceManager::instantiateAssetsOnDemand(
   // registered) then re-register.  Should never return ID_UNDEFINED - this
   // would mean something has corrupted the library.
   // NOTE : this is called when an new object is being made, but before the
-  // object has acquired a copy of its parent attributes.  No object should ever
-  // have a copy of attributes with isDirty == true - any editing of attributes
-  // for objects requires object rebuilding.
+  // object has acquired a copy of its parent attributes.  No object should
+  // ever have a copy of attributes with isDirty == true - any editing of
+  // attributes for objects requires object rebuilding.
   if (physicsObjectAttributes->getIsDirty()) {
     CORRADE_ASSERT(
         (ID_UNDEFINED != objectAttributesManager_->registerAttributesTemplate(
@@ -1217,8 +1233,8 @@ bool ResourceManager::instantiateAssetsOnDemand(
       // needs to have a primitive asset attributes with same name
       if (!assetAttributesManager_->getTemplateLibHasHandle(
               renderAssetHandle)) {
-        // this is bad, means no render primitive template exists with expected
-        // name.  should never happen
+        // this is bad, means no render primitive template exists with
+        // expected name.  should never happen
         LOG(ERROR) << "No primitive asset attributes exists with name :"
                    << renderAssetHandle
                    << " so unable to instantiate primitive-based render "
@@ -1305,6 +1321,11 @@ void ResourceManager::addObjectToDrawables(
 
     addComponent(loadedAssetData.meshMetaData, scalingNode, lightSetup,
                  drawables, loadedAssetData.meshMetaData.root, visNodeCache);
+
+    // set the node type for all cached visual nodes
+    for (auto node : visNodeCache) {
+      node->setType(scene::SceneNodeType::OBJECT);
+    }
   }  // should always be specified, otherwise won't do anything
 }  // addObjectToDrawables
 
@@ -1371,9 +1392,14 @@ void ResourceManager::addMeshToDrawables(const MeshMetaData& metaData,
 void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
                                               DrawableGroup* drawables) {
-  CHECK(primitiveID >= 0 && primitiveID < primitive_meshes_.size());
-  createGenericDrawable(*primitive_meshes_[primitiveID], node,
-                        DEFAULT_LIGHTING_KEY, DEFAULT_MATERIAL_KEY, drawables);
+  CHECK(primitive_meshes_.count(primitiveID));
+  createGenericDrawable(*primitive_meshes_.at(primitiveID), node, NO_LIGHT_KEY,
+                        WHITE_MATERIAL_KEY, drawables);
+}
+
+void ResourceManager::removePrimitiveMesh(int primitiveID) {
+  CHECK(primitive_meshes_.count(primitiveID));
+  primitive_meshes_.erase(primitiveID);
 }
 
 void ResourceManager::createGenericDrawable(
@@ -1482,6 +1508,9 @@ void ResourceManager::initDefaultLightSetups() {
 void ResourceManager::initDefaultMaterials() {
   shaderManager_.set<gfx::MaterialData>(DEFAULT_MATERIAL_KEY,
                                         new gfx::PhongMaterialData{});
+  auto whiteMaterialData = new gfx::PhongMaterialData;
+  whiteMaterialData->ambientColor = Magnum::Color4{1.0};
+  shaderManager_.set<gfx::MaterialData>(WHITE_MATERIAL_KEY, whiteMaterialData);
   auto perVertexObjectId = new gfx::PhongMaterialData{};
   perVertexObjectId->perVertexObjectId = true;
   perVertexObjectId->vertexColored = true;

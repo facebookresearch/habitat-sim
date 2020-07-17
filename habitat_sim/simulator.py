@@ -4,8 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os.path as osp
 import time
+from os import path as osp
 from typing import Any, Dict, List, Optional
 
 import attr
@@ -413,9 +413,23 @@ class Sensor:
         agent_node = self._agent.scene_node
         agent_node.parent = scene.get_root_node()
 
+        render_flags = habitat_sim.gfx.Camera.Flags.NONE
+
+        if self._sim.frustum_culling:
+            render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
+
         with self._sensor_object.render_target as tgt:
+            self._sim.renderer.draw(self._sensor_object, scene, render_flags)
+
+        # add an OBJECT only 2nd pass on the standard SceneGraph if SEMANTIC sensor with separate semantic SceneGraph
+        if (
+            self._spec.sensor_type == SensorType.SEMANTIC
+            and self._sim.get_active_scene_graph()
+            is not self._sim.get_active_semantic_scene_graph()
+        ):
+            render_flags |= habitat_sim.gfx.Camera.Flags.OBJECTS_ONLY
             self._sim.renderer.draw(
-                self._sensor_object, scene, self._sim.frustum_culling
+                self._sensor_object, self._sim.get_active_scene_graph(), render_flags
             )
 
     def get_observation(self):

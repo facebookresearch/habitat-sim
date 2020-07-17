@@ -5,13 +5,6 @@
 #include "AssetAttributesManager.h"
 #include "AttributesManagerBase.h"
 
-#include <Corrade/Utility/Assert.h>
-#include <Corrade/Utility/ConfigurationGroup.h>
-#include <Corrade/Utility/Debug.h>
-#include <Corrade/Utility/DebugStl.h>
-#include <Corrade/Utility/Directory.h>
-#include <Corrade/Utility/String.h>
-
 namespace esp {
 namespace assets {
 
@@ -112,7 +105,26 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
   LOG(INFO) << "AssetAttributesManager::buildCtorFuncPtrMaps : Built default "
                "primitive asset templates : "
             << std::to_string(defaultTemplateNames_.size());
-}  // buildMapOfPrimTypeConstructors
+}  // AssetAttributesManager::buildMapOfPrimTypeConstructors
+
+AbstractPrimitiveAttributes::ptr
+AssetAttributesManager::createAttributesTemplate(
+    const std::string& primClassName,
+    bool registerTemplate) {
+  auto primAssetAttributes = buildPrimAttributes(primClassName);
+  if (nullptr != primAssetAttributes && registerTemplate) {
+    int attrID = this->registerAttributesTemplate(primAssetAttributes, "");
+    if (attrID == ID_UNDEFINED) {
+      // some error occurred
+      return nullptr;
+    }
+  }
+  if (nullptr != primAssetAttributes) {
+    LOG(INFO) << "Asset attributes (" << primClassName << ") created"
+              << (registerTemplate ? " and registered." : ".");
+  }
+  return primAssetAttributes;
+}  // AssetAttributesManager::createAttributesTemplate
 
 int AssetAttributesManager::registerAttributesTemplateFinalize(
     AbstractPrimitiveAttributes::ptr primAttributesTemplate,

@@ -13,13 +13,13 @@ repos:
     -   id: end-of-file-fixer
 
 -   repo: https://github.com/asottile/seed-isort-config
-    rev: v1.9.2
+    rev: v2.2.0
     hooks:
     -   id: seed-isort-config
-        language_version: python3.6
+        language_version: python3
 
 -   repo: https://github.com/pre-commit/mirrors-isort
-    rev: v4.3.20
+    rev: v5.0.7
     hooks:
     -   id: isort
         exclude: docs/
@@ -29,6 +29,25 @@ repos:
     rev: 19.3b0
     hooks:
     - id: black
+      exclude: ^examples/tutorials/(nb_python|colabs)
+
+-   repo: https://github.com/kynan/nbstripout
+    rev: master
+    hooks:
+    -   id: nbstripout
+        files: ".ipynb"
+
+-   repo: local
+    hooks:
+    -   id: jupytext-sync
+        name: Sync scripts and notebooks
+        files: '^examples/tutorials/(colabs|nb_python)/(.*\.py|.*\.ipynb)$'
+        entry: jupytext --update-metadata '{"jupytext":{"notebook_metadata_filter":"all", "cell_metadata_filter":"-all"}, "accelerator":"GPU"}' --set-formats 'nb_python//py:percent,colabs//ipynb' --pipe black --pipe "sed s/[[:space:]]*\#[[:space:]]\%\%/\#\%\%/g"  --pipe-fmt py:percent --sync
+        pass_filenames: true
+        additional_dependencies:
+            - 'jupytext==1.5.1'
+        always_run: false
+        language: python
 
 -   repo: local
     hooks:

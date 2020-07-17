@@ -122,10 +122,13 @@ def main(show_imgs=True, save_imgs=False):
         cfg = make_configuration(scene_file=scene)
         sim.reconfigure(cfg)
         agent_transform = place_agent(sim)
-        # get_obs(sim, show_imgs, save_imgs)
+        get_obs(sim, show_imgs, save_imgs)
+
+        # get the physics object attributes manager
+        obj_templates_mgr = sim.get_object_template_manager()
 
         # load some chair object template from configuration file
-        chair_template_id = sim.load_object_configs(
+        chair_template_id = obj_templates_mgr.load_object_configs(
             str(os.path.join(data_path, "test_assets/objects/chair"))
         )[0]
 
@@ -140,16 +143,16 @@ def main(show_imgs=True, save_imgs=False):
         sim.set_translation([2.0, 0.47, 0.9], chair_ids[0])
 
         sim.set_translation([2.9, 0.47, 0.0], chair_ids[1])
-        # get_obs(sim, show_imgs, save_imgs)
+        get_obs(sim, show_imgs, save_imgs)
 
         # set the semanticId for both chairs
         sim.set_object_semantic_id(2, chair_ids[0])
         sim.set_object_semantic_id(2, chair_ids[1])
-        # get_obs(sim, show_imgs, save_imgs)
+        get_obs(sim, show_imgs, save_imgs)
 
         # set the semanticId for one chair
         sim.set_object_semantic_id(1, chair_ids[1])
-        # get_obs(sim, show_imgs, save_imgs)
+        get_obs(sim, show_imgs, save_imgs)
 
         # add a box with default semanticId configured in the template
         box_template = habitat_sim.attributes.PhysicsObjectAttributes()
@@ -180,4 +183,11 @@ def main(show_imgs=True, save_imgs=False):
 
 
 if __name__ == "__main__":
-    main(show_imgs=True, save_imgs=True)
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-show-images", dest="show_images", action="store_false")
+    parser.add_argument("--no-save-images", dest="save_images", action="store_false")
+    parser.set_defaults(show_images=True, save_images=True)
+    args = parser.parse_args()
+    main(show_imgs=args.show_images, save_imgs=args.save_images)
