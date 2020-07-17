@@ -124,10 +124,12 @@ class Viewer : public Mn::Platform::Application {
 
   esp::scene::SceneNode* navSceneNode_ = nullptr;
 
+  std::string sceneFileName;
   esp::scene::SceneGraph* sceneGraph_;
   esp::scene::SceneNode* rootNode_;
 
-  esp::scene::SceneNode* navmeshVisNode_ = nullptr;
+  int navMeshVisPrimID_ = esp::ID_UNDEFINED;
+  esp::scene::SceneNode* navMeshVisNode_ = nullptr;
 
   esp::gfx::RenderCamera* renderCamera_ = nullptr;
   esp::nav::PathFinder::ptr pathfinder_;
@@ -203,8 +205,8 @@ Viewer::Viewer(const Arguments& arguments)
   navSceneNode_ = &rootNode_->createChild();
 
   auto& drawables = sceneGraph_->getDrawables();
-  const std::string& file = args.value("scene");
-  esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(file);
+  sceneFileName = args.value("scene");
+  esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(sceneFileName);
   std::string sceneLightSetup = esp::assets::ResourceManager::NO_LIGHT_KEY;
   if (args.isSet("scene-requires-lighting")) {
     info.requiresLighting = true;
@@ -232,7 +234,7 @@ Viewer::Viewer(const Arguments& arguments)
         &drawables, sceneLightSetup);
 
     if (!loadSuccess) {
-      LOG(FATAL) << "cannot load " << file;
+      LOG(FATAL) << "cannot load " << sceneFileName;
     }
     if (args.isSet("debug-bullet")) {
       debugBullet_ = true;
@@ -240,7 +242,7 @@ Viewer::Viewer(const Arguments& arguments)
   } else {
     if (!resourceManager_.loadScene(info, navSceneNode_, &drawables,
                                     sceneLightSetup)) {
-      LOG(FATAL) << "cannot load " << file;
+      LOG(FATAL) << "cannot load " << sceneFileName;
     }
   }
 
@@ -268,16 +270,16 @@ Viewer::Viewer(const Arguments& arguments)
   if (!args.value("navmesh-file").empty()) {
     navmeshFilename = Corrade::Utility::Directory::join(
         Corrade::Utility::Directory::current(), args.value("navmesh-file"));
-  } else if (file.compare(esp::assets::EMPTY_SCENE)) {
-    navmeshFilename = esp::io::changeExtension(file, ".navmesh");
+  } else if (sceneFileName.compare(esp::assets::EMPTY_SCENE)) {
+    navmeshFilename = esp::io::changeExtension(sceneFileName, ".navmesh");
 
     // TODO: short term solution to mitigate issue #430
     // we load the pre-computed navmesh for the ptex mesh to avoid
     // online computation.
     // for long term solution, see issue #430
-    if (Cr::Utility::String::endsWith(file, "mesh.ply")) {
+    if (Cr::Utility::String::endsWith(sceneFileName, "mesh.ply")) {
       navmeshFilename = Corrade::Utility::Directory::join(
-          Corrade::Utility::Directory::path(file) + "/habitat",
+          Corrade::Utility::Directory::path(sceneFileName) + "/habitat",
           "mesh_semantic.navmesh");
     }
   }
@@ -285,10 +287,10 @@ Viewer::Viewer(const Arguments& arguments)
   if (esp::io::exists(navmeshFilename) && !args.isSet("recompute-navmesh")) {
     LOG(INFO) << "Loading navmesh from " << navmeshFilename;
     pathfinder_->loadNavMesh(navmeshFilename);
-  } else if (file.compare(esp::assets::EMPTY_SCENE)) {
+  } else if (sceneFileName.compare(esp::assets::EMPTY_SCENE)) {
     esp::nav::NavMeshSettings navMeshSettings;
     navMeshSettings.setDefaults();
-    recomputeNavMesh(file, navMeshSettings);
+    recomputeNavMesh(sceneFileName, navMeshSettings);
   }
 
   // connect controls to navmesh if loaded
@@ -430,6 +432,12 @@ void Viewer::recomputeNavMesh(const std::string& sceneFilename,
 
   LOG(INFO) << "reconstruct navmesh successful";
   pathfinder_ = pf;
+
+  // reset the visualization if necessary
+  if (navMeshVisNode_ != nullptr) {
+    toggleNavMeshVisualization();  // first clear old vis
+    toggleNavMeshVisualization();
+  }
 }
 
 void Viewer::torqueLastObject() {
@@ -465,15 +473,22 @@ void Viewer::wiggleLastObject() {
 }
 
 void Viewer::toggleNavMeshVisualization() {
-  if (navmeshVisNode_ == nullptr && pathfinder_->isLoaded()) {
+  if (navMeshVisNode_ == nullptr && pathfinder_->isLoaded()) {
     // test navmesh visualization
-    navmeshVisNode_ = &rootNode_->createChild();
-    int nevMeshVisPrimID = resourceManager_.loadNavMeshVisualization(
-        *pathfinder_, navmeshVisNode_, &sceneGraph_->getDrawables());
-    navmeshVisNode_->translate({0, 0.1, 0});
-  } else if (navmeshVisNode_ != nullptr) {
-    delete navmeshVisNode_;
-    navmeshVisNode_ = nullptr;
+    navMeshVisNode_ = &rootNode_->createChild();
+    navMeshVisPrimID_ = resourceManager_.loadNavMeshVisualization(
+        *pathfinder_, navMeshVisNode_, &sceneGraph_->getDrawables());
+    Corrade::Utility::Debug() << "navMeshVisPrimID_ = " << navMeshVisPrimID_;
+    if (navMeshVisPrimID_ == esp::ID_UNDEFINED) {
+      LOG(ERROR) << "Viewer::toggleNavMeshVisualization : Failed to load "
+                    "navmesh visualization.";
+      delete navMeshVisNode_;
+    }
+  } else if (navMeshVisNode_ != nullptr) {
+    delete navMeshVisNode_;
+    navMeshVisNode_ = nullptr;
+    resourceManager_.removePrimitiveMesh(navMeshVisPrimID_);
+    navMeshVisPrimID_ = esp::ID_UNDEFINED;
   }
 }
 

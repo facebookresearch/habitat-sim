@@ -522,6 +522,11 @@ class Simulator {
                         const nav::NavMeshSettings& navMeshSettings,
                         bool includeStaticObjects = false);
 
+  /**
+   * @brief Toggle visualization of the current NavMesh @ref pathfinder_.
+   */
+  void toggleNavMeshVisualization();
+
   agent::Agent::ptr getAgent(int agentId);
 
   agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig,
@@ -654,6 +659,10 @@ class Simulator {
   // Currently, we need it defined here, because sensor., e.g., PinholeCamera
   // rquires it when drawing the observation
   bool frustumCulling_ = true;
+
+  //! NavMesh visualization variables
+  int navMeshVisPrimID_ = esp::ID_UNDEFINED;
+  esp::scene::SceneNode* navMeshVisNode_ = nullptr;
 
   ESP_SMART_POINTERS(Simulator)
 };

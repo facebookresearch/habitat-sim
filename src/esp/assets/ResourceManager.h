@@ -93,6 +93,12 @@ class ResourceManager {
   static constexpr char DEFAULT_MATERIAL_KEY[] = "";
 
   /**
+   *@brief The @ref ShaderManager key for full ambient white @ref MaterialInfo
+   *used for primitive wire-meshes
+   */
+  static constexpr char WHITE_MATERIAL_KEY[] = "ambient_white";
+
+  /**
    *@brief The @ref ShaderManager key for @ref MaterialInfo with per-vertex
    * object ID
    */
@@ -376,7 +382,7 @@ class ResourceManager {
    * scene::SceneNode.
    *
    * See @ref primitive_meshes_.
-   * @param primitiveID The index of the primitive in @ref primitive_meshes_.
+   * @param primitiveID The key of the primitive in @ref primitive_meshes_.
    * @param node The @ref scene::SceneNode to which the primitive drawable
    * will be attached.
    * @param drawables The @ref DrawableGroup with which the primitive will be
@@ -385,6 +391,13 @@ class ResourceManager {
   void addPrimitiveToDrawables(int primitiveID,
                                scene::SceneNode& node,
                                DrawableGroup* drawables);
+
+  /**
+   * @brief Remove the specified primitive mesh.
+   *
+   * @param primitiveID The key of the primitive in @ref primitive_meshes_.
+   */
+  void removePrimitiveMesh(int primitiveID);
 
   /**
    * @brief generate a new primitive mesh asset for the NavMesh loaded in the
@@ -864,11 +877,13 @@ class ResourceManager {
    */
   managers::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
 
+  //! tracks primitive mesh ids
+  int nextPrimitiveMeshId = 0;
   /**
    * @brief Primitive meshes available for instancing via @ref
    * addPrimitiveToDrawables for debugging or visualization purposes.
    */
-  std::vector<std::unique_ptr<Magnum::GL::Mesh>> primitive_meshes_;
+  std::map<int, std::unique_ptr<Magnum::GL::Mesh>> primitive_meshes_;
 
   /**
    * @brief Maps string keys (typically property filenames) to @ref

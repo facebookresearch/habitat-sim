@@ -42,6 +42,8 @@ Simulator::~Simulator() {
 
 void Simulator::close() {
   pathfinder_ = nullptr;
+  navMeshVisPrimID_ = esp::ID_UNDEFINED;
+  navMeshVisNode_ = nullptr;
   agents_.clear();
 
   physicsManager_ = nullptr;
@@ -621,8 +623,39 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
     return false;
   }
 
+  if (&pathfinder == pathfinder_.get()) {
+    if (navMeshVisNode_ != nullptr) {
+      // if updating pathfinder_ instance, reset the visualization if necessary.
+      toggleNavMeshVisualization();  // clear old version
+      toggleNavMeshVisualization();
+    }
+  }
+
   LOG(INFO) << "reconstruct navmesh successful";
   return true;
+}
+
+void Simulator::toggleNavMeshVisualization() {
+  if (pathfinder_ == nullptr)
+    return;
+  if (navMeshVisNode_ == nullptr && pathfinder_->isLoaded()) {
+    auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
+    auto& rootNode = sceneGraph.getRootNode();
+    auto& drawables = sceneGraph.getDrawables();
+    navMeshVisNode_ = &rootNode.createChild();
+    navMeshVisPrimID_ = resourceManager_->loadNavMeshVisualization(
+        *pathfinder_, navMeshVisNode_, &drawables);
+    if (navMeshVisPrimID_ == ID_UNDEFINED) {
+      LOG(ERROR) << "Simulator::toggleNavMeshVisualization : Failed to load "
+                    "navmesh visualization.";
+      delete navMeshVisNode_;
+    }
+  } else if (navMeshVisNode_ != nullptr) {
+    delete navMeshVisNode_;
+    navMeshVisNode_ = nullptr;
+    resourceManager_->removePrimitiveMesh(navMeshVisPrimID_);
+    navMeshVisPrimID_ = esp::ID_UNDEFINED;
+  }
 }
 
 // Agents
