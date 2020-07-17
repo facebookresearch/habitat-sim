@@ -35,3 +35,5 @@ export const defaultScene =
     : "skokloster-castle.glb";
 
 export const infoSemanticFileName = "info_semantic.json";
+
+export const dataHome = "data/";

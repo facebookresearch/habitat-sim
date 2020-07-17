@@ -28,12 +28,12 @@ popd
 mkdir -p build_js
 cd build_js
 
-
 EXE_LINKER_FLAGS="-s USE_WEBGL2=1"
 
 if ${BULLET}; 
     then EXE_LINKER_FLAGS="${EXE_LINKER_FLAGS} -s USE_BULLET=1"
 fi
+
 cmake ../src \
     -DCORRADE_RC_EXECUTABLE=../build_corrade-rc/RelWithDebInfo/bin/corrade-rc \
     -DBUILD_GUI_VIEWERS=ON \
@@ -43,15 +43,16 @@ cmake ../src \
     -DBUILD_PTEX_SUPPORT=OFF \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH="$EMSCRIPTEN" \
-    -DCMAKE_TOOLCHAIN_FILE="../src/deps/corrade/toolchains/generic/Emscripten-wasm.cmake" \
+    -DCMAKE_TOOLCHAIN_FILE="../src/deps/magnum-integration/toolchains/generic/Emscripten-wasm.cmake" \
+    -DCMAKE_FIND_ROOT_PATH=$(pwd) \
     -DCMAKE_INSTALL_PREFIX="." \
     -DCMAKE_CXX_FLAGS="-s FORCE_FILESYSTEM=1 -s ALLOW_MEMORY_GROWTH=1" \
     -DCMAKE_EXE_LINKER_FLAGS="${EXE_LINKER_FLAGS}" \
     -DBUILD_WITH_BULLET="$( if ${BULLET} ; then echo ON ; else echo OFF; fi )" \
     -DUSE_EMSCRIPTEN_PORTS_BULLET="$( if ${BULLET} ; then echo ON ; else echo OFF; fi )"
 
-cmake --build . -- -j 4
-cmake --build . --target install -- -j 4
+cmake --build . -- -j 80
+cmake --build . --target install -- -j 80
 
 cp -v Release/bin/hsim_bindings.* esp/bindings_js/
 
