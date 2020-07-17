@@ -63,6 +63,39 @@ class SimEnv {
   }
 
   /**
+   * Adds an instance of the specified object mesh to the environment.
+   * @param {number} objectLibIndex - index of the object's template
+   * @returns {number} object ID or -1 if object was unable to be added
+   */
+  addObject(objectLibIndex) {
+    // using default values for rest of the params
+    return this.sim.addObject(objectLibIndex, null, "", 0);
+  }
+
+  /**
+   * Adds an instance of the specified object mesh to the environment.
+   * @param {number} objectLibHandle - object's template config/origin handle
+   * @returns {number} object ID or -1 if object was unable to be added
+   */
+  addObjectByHandle(objectLibHandle) {
+    // using default values for rest of the params
+    return this.sim.addObjectByHandle(objectLibHandle, null, "", 0);
+  }
+
+  /**
+   * Add a random primitive object to the environment.
+   * @returns {number} object ID or -1 if object was unable to be added
+   */
+  addPrimitiveObject() {
+    let objId = this.addObjectByHandle(
+      "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_useTangents_false_capEnds_true"
+    );
+    this.setTranslation([3.004, 1.5, 7.0], objId, 0);
+    console.log(objId);
+    return objId;
+  }
+
+  /**
    * Get the observation space for a given sensorId.
    * @param {number} sensorId - id of sensor
    * @returns {ObservationSpace} observation space of sensor
@@ -87,6 +120,95 @@ class SimEnv {
    */
   getPathFinder() {
     return this.sim.getPathFinder();
+  }
+
+  /**
+   * Get the motion type of an object.
+   * @param {number} objectID - object id identifying the object in sim.existingObjects_
+   * @param {number} sceneID - scene id
+   * @returns {MotionType} object MotionType or ERROR_MOTIONTYPE if query failed
+   */
+  getObjectMotionType(objectID, sceneID) {
+    return this.sim.getObjectMotionType(objectID, sceneID);
+  }
+
+  /**
+   * Set the motion type of an object.
+   * * @param {MotionType} motionType - desired motion type of the object
+   * @param {number} objectID - object id identifying the object in sim.existingObjects_
+   * @param {number} sceneID - scene id
+   * @returns {bool} object MotionType or ERROR_MOTIONTYPE if query failed
+   */
+  setObjectMotionType(motionType, objectID, sceneID) {
+    return this.sim.setObjectMotionType(motionType, objectID, sceneID);
+  }
+
+  /**
+   * Get the IDs of the physics objects instanced in a physical scene.
+   * @returns {Array} list of existing object Ids in the scene
+   */
+  getExistingObjectIDs() {
+    return this.sim.getExistingObjectIDs();
+  }
+
+  /**
+   * Set the 4x4 transformation matrix of an object kinematically.
+   * @param {Magnum::Matrix4} transform - desired 4x4 transform of the object.
+   * @param {number} objectID - object id identifying the object in sim.existingObjects_
+   * @param {number} sceneID - scene id
+   */
+  setTransformation(transform, objectID, sceneID) {
+    this.sim.setTransformation(transform, objectID, sceneID);
+  }
+
+  /**
+   * Get the current 4x4 transformation matrix of an object.
+   * @param {number} objectID - object id identifying the object in sim.existingObjects_
+   * @param {number} sceneID - scene id
+   * @returns {Magnum::Matrix4} 4x4 transform of the object
+   */
+  getTransformation(objectID, sceneID) {
+    return this.sim.getTransformation(objectID, sceneID);
+  }
+
+  /**
+   * Get the current 3D position of an object.
+   * @param {number} objectID - object id identifying the object in sim.existingObjects_
+   * @param {number} sceneID - scene id
+   * @returns {Magnum::Vector3} 3D position of the object
+   */
+  getTranslation(objectID, sceneID) {
+    return this.sim.getTranslation(objectID, sceneID);
+  }
+
+  /**
+   * Set the 3D position of an object kinematically.
+   * @param {Magnum::Vector3} translation - 3D position of the object
+   * @param {number} objectID - object id identifying the object in sim.existingObjects_
+   * @param {number} sceneID - scene id
+   */
+  setTranslation(translation, objectID, sceneID) {
+    this.sim.setTranslation(translation, objectID, sceneID);
+  }
+
+  /**
+   * Get the current orientation of an object.
+   * @param {number} objectID - object id identifying the object in sim.existingObjects_
+   * @param {number} sceneID - scene id
+   * @returns {Magnum::Vector3} quaternion representation of the object's orientation
+   */
+  getRotation(objectID, sceneID) {
+    return this.sim.getRotation(objectID, sceneID);
+  }
+
+  /**
+   * Set the orientation of an object kinematically.
+   * @param {Magnum::Vector3} rotation - desired orientation of the object
+   * @param {number} objectID - object id identifying the object in sim.existingObjects_
+   * @param {number} sceneID - scene id
+   */
+  setRotation(rotation, objectID, sceneID) {
+    this.sim.setRotation(rotation, objectID, sceneID);
   }
 
   /**

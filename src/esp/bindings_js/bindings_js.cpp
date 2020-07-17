@@ -98,6 +98,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
 
   em::register_vector<SensorSpec::ptr>("VectorSensorSpec");
   em::register_vector<size_t>("VectorSizeT");
+  em::register_vector<int>("VectorInt");
   em::register_vector<std::string>("VectorString");
   em::register_vector<std::shared_ptr<SemanticCategory>>(
       "VectorSemanticCategories");
@@ -139,6 +140,11 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .element(em::index<1>())
       .element(em::index<2>())
       .element(em::index<3>());
+
+  em::value_array<Magnum::Vector3>("Vector3")
+      .element(em::index<0>())
+      .element(em::index<1>())
+      .element(em::index<2>());
 
   em::value_object<std::pair<vec3f, vec3f>>("aabb")
       .field("min", &std::pair<vec3f, vec3f>::first)
@@ -245,7 +251,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("defaultAgentId", &SimulatorConfiguration::defaultAgentId)
       .property("defaultCameraUuid", &SimulatorConfiguration::defaultCameraUuid)
       .property("gpuDeviceId", &SimulatorConfiguration::gpuDeviceId)
-      .property("compressTextures", &SimulatorConfiguration::compressTextures);
+      .property("compressTextures", &SimulatorConfiguration::compressTextures)
+      .property("enablePhysics", &SimulatorConfiguration::enablePhysics)
+      .property("physicsConfigFile",
+                &SimulatorConfiguration::physicsConfigFile);
 
   em::class_<AgentState>("AgentState")
       .smart_ptr_constructor("AgentState", &AgentState::create<>)
@@ -291,6 +300,12 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("categories", &SemanticScene::categories)
       .property("objects", &SemanticScene::objects);
 
+  em::enum_<MotionType>("MotionType")
+      .value("ERROR_MOTIONTYPE", MotionType::ERROR_MOTIONTYPE)
+      .value("STATIC", MotionType::STATIC)
+      .value("KINEMATIC", MotionType::KINEMATIC)
+      .value("DYNAMIC", MotionType::DYNAMIC);
+
   em::class_<Simulator>("Simulator")
       .smart_ptr_constructor("Simulator",
                              &Simulator::create<const SimulatorConfiguration&>)
@@ -312,5 +327,19 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("addAgentToNode",
                 em::select_overload<Agent::ptr(const AgentConfiguration&,
                                                scene::SceneNode&)>(
-                    &Simulator::addAgent));
+                    &Simulator::addAgent))
+      .function("getExistingObjectIDs", &Simulator::getExistingObjectIDs)
+      .function("setObjectMotionType", &Simulator::setObjectMotionType)
+      .function("getObjectMotionType", &Simulator::getObjectMotionType)
+      .function("addObject", &Simulator::addObject, em::allow_raw_pointers())
+      .function("addObjectByHandle", &Simulator::addObjectByHandle,
+                em::allow_raw_pointers())
+      .function("removeObject", &Simulator::removeObject)
+      .function("setTranslation", &Simulator::setTranslation)
+      .function("getTranslation", &Simulator::getTranslation)
+      .function("setRotation", &Simulator::setRotation)
+      .function("getRotation", &Simulator::getRotation)
+      .function("setObjectLightSetup", &Simulator::setObjectLightSetup)
+      .function("getLightSetup", &Simulator::getLightSetup)
+      .function("setLightSetup", &Simulator::setLightSetup);
 }
