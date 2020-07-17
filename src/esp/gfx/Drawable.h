@@ -55,7 +55,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * viewer)
    * @return the drawable object state, if it is selected
    */
-  bool selected() { return selected_; }
+  bool isSelected() { return selected_; }
 
   /**
    *  @brief Set the state of the drawable, whether it is selected in the editor
