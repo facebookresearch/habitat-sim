@@ -91,6 +91,7 @@ class SimEnv {
       "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_useTangents_false_capEnds_true"
     );
     this.setTranslation([3.004, 1.5, 7.0], objId, 0);
+    this.stepWorld(10);
     console.log(objId);
     return objId;
   }
@@ -209,6 +210,14 @@ class SimEnv {
    */
   setRotation(rotation, objectID, sceneID) {
     this.sim.setRotation(rotation, objectID, sceneID);
+  }
+
+  /**
+   * @param {double} dt - step the physical world forward in time by a desired duration.
+   * @returns {double} world time after step
+   */
+  stepWorld(dt = 1.0 / 60.0) {
+    return this.sim.stepWorld(dt);
   }
 
   /**

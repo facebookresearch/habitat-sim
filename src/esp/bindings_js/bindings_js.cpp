@@ -226,7 +226,11 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("categories", &SemanticScene::categories)
       .property("objects", &SemanticScene::objects);
 
-    em::enum_<MotionType>("MotionType")
+  em::class_<SceneNode>("SceneNode")
+      .function("getId", &SceneNode::getId)
+      .function("getSemanticId", &SceneNode::getSemanticId);
+
+  em::enum_<MotionType>("MotionType")
       .value("ERROR_MOTIONTYPE", MotionType::ERROR_MOTIONTYPE)
       .value("STATIC", MotionType::STATIC)
       .value("KINEMATIC", MotionType::KINEMATIC)
@@ -266,5 +270,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("getRotation", &Simulator::getRotation)
       .function("setObjectLightSetup", &Simulator::setObjectLightSetup)
       .function("getLightSetup", &Simulator::getLightSetup)
-      .function("setLightSetup", &Simulator::setLightSetup);
+      .function("setLightSetup", &Simulator::setLightSetup)
+      .function("stepWorld", &Simulator::stepWorld);
 }
