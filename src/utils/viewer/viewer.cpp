@@ -547,8 +547,7 @@ void Viewer::drawEvent() {
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   uint32_t visibles = 0;
 
-  for (std::pair<std::string, esp::gfx::DrawableGroup>&& it :
-       sceneGraph.getDrawableGroups()) {
+  for (auto& it : sceneGraph.getDrawableGroups()) {
     // TODO: remove || true
     if (it.second.prepareForDraw(*renderCamera_) || true) {
       esp::gfx::RenderCamera::Flags flags;
@@ -641,8 +640,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
 
     // if there is a selected object, remove it first
     if (selectedDrawableId_ >= 0) {
-      for (std::pair<std::string, esp::gfx::DrawableGroup>&& it :
-           sceneGraph.getDrawableGroups()) {
+      for (auto& it : sceneGraph.getDrawableGroups()) {
         esp::gfx::Drawable* d = it.second.getDrawable(selectedDrawableId_);
         if (d != nullptr) {
           d->setSelected(false);
@@ -655,8 +653,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
         esp::gfx::RenderCamera::Flag::ObjectPicking;
     if (frustumCullingEnabled_)
       flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
-    for (std::pair<std::string, esp::gfx::DrawableGroup>&& it :
-         sceneGraph.getDrawableGroups()) {
+    for (auto& it : sceneGraph.getDrawableGroups()) {
       renderCamera_->draw(it.second, flags);
     }
 
@@ -681,9 +678,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     const Mn::UnsignedInt selectedObject =
         selectionFramebuffer_.read(area, {Mn::PixelFormat::R32UI})
             .pixels<Mn::UnsignedInt>()[0][0];
-
-    for (std::pair<std::string, esp::gfx::DrawableGroup>&& it :
-         sceneGraph.getDrawableGroups()) {
+    for (auto& it : sceneGraph.getDrawableGroups()) {
       if (it.second.hasDrawable(selectedObject)) {
         selectedDrawableId_ = selectedObject;
         it.second.getDrawable(selectedDrawableId_)->setSelected(true);
