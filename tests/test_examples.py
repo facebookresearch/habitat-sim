@@ -78,6 +78,7 @@ def test_example_modules(args):
                 "--enable_physics",
                 "--semantic_sensor",
                 "--depth_sensor",
+                "--recompute_navmesh",
             ]
         )
         if not (("--compute_action_shortest_path" in p) and ("--enable_physics" in p))
