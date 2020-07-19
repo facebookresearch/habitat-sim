@@ -73,7 +73,8 @@ class NavigateTask {
       { name: "turnRight", key: "d" },
       { name: "lookUp", key: "ArrowUp" },
       { name: "lookDown", key: "ArrowDown" },
-      { name: "addPrimitiveObject", key: "8" }
+      { name: "addPrimitiveObject", key: "8" },
+      { name: "removeLastObject", key: "9" }
     ];
   }
 
@@ -219,6 +220,8 @@ class NavigateTask {
   handleAction(action) {
     if (action === "addPrimitiveObject") {
       this.sim.addPrimitiveObject();
+    } else if (action === "removeLastObject") {
+      this.sim.removeLastObject();
     } else {
       this.sim.step(action);
     }

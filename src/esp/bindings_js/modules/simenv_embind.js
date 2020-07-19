@@ -65,11 +65,24 @@ class SimEnv {
   /**
    * Adds an instance of the specified object mesh to the environment.
    * @param {number} objectLibIndex - index of the object's template
+   * @param {number} sceneId - specifies which physical scene to add an object to
    * @returns {number} object ID or -1 if object was unable to be added
    */
   addObject(objectLibIndex) {
     // using default values for rest of the params
     return this.sim.addObject(objectLibIndex, null, "", 0);
+  }
+
+  /**
+   * Remove an instanced object by ID
+   * @param {number} objectID - index of the object's template
+   * @param {boolean} deleteObjectNode - if true, deletes the object's scene node
+   * @param {boolean} deleteVisualNode - if true, deletes the object's visual node
+   * @param {number} sceneId - specifies which physical scene to remove an object from
+   */
+  removeObject(objectId) {
+    // using default values for rest of the params
+    return this.sim.removeObject(objectId, true, true, 0);
   }
 
   /**
@@ -91,9 +104,17 @@ class SimEnv {
       "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_useTangents_false_capEnds_true"
     );
     this.setTranslation([3.004, 1.5, 7.0], objId, 0);
-    this.stepWorld(10);
     console.log(objId);
     return objId;
+  }
+
+  /**
+   * Add a random primitive object to the environment.
+   * @returns {number} object ID or -1 if object was unable to be added
+   */
+  removeLastObject() {
+    let exsitingObjectIds = this.getExistingObjectIDs();
+    this.removeObject(exsitingObjectIds.get(exsitingObjectIds.size() - 1));
   }
 
   /**
@@ -146,10 +167,11 @@ class SimEnv {
 
   /**
    * Get the IDs of the physics objects instanced in a physical scene.
+   * @param {number} sceneID - scene id
    * @returns {Array} list of existing object Ids in the scene
    */
-  getExistingObjectIDs() {
-    return this.sim.getExistingObjectIDs();
+  getExistingObjectIDs(sceneId = 0) {
+    return this.sim.getExistingObjectIDs(sceneId);
   }
 
   /**
