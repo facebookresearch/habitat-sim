@@ -550,11 +550,5 @@ void PhysicsManager::setSemanticId(const int physObjectID,
   existingObjects_.at(physObjectID)->setSemanticId(semanticId);
 }
 
-const assets::PhysicsObjectAttributes::cptr
-PhysicsManager::getInitializationAttributes(const int physObjectID) const {
-  assertIDValidity(physObjectID);
-  return existingObjects_.at(physObjectID)->getInitializationAttributes();
-}
-
 }  // namespace physics
 }  // namespace esp

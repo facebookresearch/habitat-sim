@@ -832,14 +832,15 @@ class PhysicsManager {
   void setSemanticId(int physObjectID, uint32_t semanticId);
 
   /**
-   * @brief Get the template used to initialize an object.
+   * @brief Get a copy of the template used to initialize an object.
    *
-   * PhysicsObjectAttributes templates are expected to be changed between
-   * instances of objects.
    * @return The initialization settings of the specified object instance.
    */
-  const assets::PhysicsObjectAttributes::cptr getInitializationAttributes(
-      const int physObjectID) const;
+  assets::PhysicsObjectAttributes::ptr getObjectInitAttributes(
+      const int physObjectID) const {
+    assertIDValidity(physObjectID);
+    return existingObjects_.at(physObjectID)->getInitializationAttributes();
+  }
 
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an

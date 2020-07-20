@@ -33,15 +33,13 @@ class RigidScene : public RigidBase {
                   const std::string& handle) override;
 
   /**
-   * @brief Get the template used to initialize this object or scene.
+   * @brief Get a copy of the template used to initialize this scene object.
    *
-   * AbstractPhysicsAttributes templates are able to be changed between
-   * instances of objects.
-   * @return The initialization settings of this object instance, casted to the
-   * appropriate value.
+   * @return A copy of the @ref PhysicsSceneAttributes template used to create
+   * this scene object.
    */
-  const std::shared_ptr<const assets::PhysicsSceneAttributes>
-  getInitializationAttributes() const {
+  std::shared_ptr<assets::PhysicsSceneAttributes> getInitializationAttributes()
+      const {
     return RigidBase::getInitializationAttributes<
         assets::PhysicsSceneAttributes>();
   };

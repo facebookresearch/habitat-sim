@@ -332,7 +332,7 @@ const assets::PhysicsObjectAttributes::cptr
 Simulator::getObjectInitializationTemplate(int objectId,
                                            const int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
-    return physicsManager_->getInitializationAttributes(objectId);
+    return physicsManager_->getObjectInitAttributes(objectId);
   }
   return nullptr;
 }
@@ -593,7 +593,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
             physicsManager_->getObjectVisualSceneNode(objectID)
                 .absoluteTransformationMatrix());
         const assets::PhysicsObjectAttributes::cptr initializationTemplate =
-            physicsManager_->getInitializationAttributes(objectID);
+            physicsManager_->getObjectInitAttributes(objectID);
         objectTransform.scale(Magnum::EigenIntegration::cast<vec3f>(
             initializationTemplate->getScale()));
         std::string meshHandle =
