@@ -584,15 +584,14 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
   }
 
   /**
-   * @brief Get the template used to initialize this object or scene.
-   *
-   * AbstractPhysicsAttributes templates are expected to be changed between
-   * instances of objects.
-   * @return The initialization settings of this object instance.
+   * @brief Get a copy of the template used to initialize this object
+   * or scene.
+   * @return A copy of the initialization template used to create this object
+   * instance.
    */
   template <class T>
-  const std::shared_ptr<const T> getInitializationAttributes() const {
-    return std::dynamic_pointer_cast<T>(initializationAttributes_);
+  std::shared_ptr<T> getInitializationAttributes() const {
+    return T::create(*(static_cast<T*>(initializationAttributes_.get())));
   }
 
   /** @brief Store whatever object attributes you want here! */
