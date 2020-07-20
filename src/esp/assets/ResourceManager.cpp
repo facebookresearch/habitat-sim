@@ -124,17 +124,58 @@ void ResourceManager::initDefaultPrimAttributes() {
                                                                 true);
   }
 
-  LOG(INFO) << "Built primitive asset templates: "
-            << std::to_string(assetAttributesManager_->getNumTemplates());
-
 }  // initDefaultPrimAttributes
+
+void ResourceManager::initPhysicsManager(
+    std::shared_ptr<physics::PhysicsManager>& physicsManager,
+    bool isEnabled,
+    scene::SceneNode* parent,
+    const PhysicsManagerAttributes::ptr& physicsManagerAttributes) {
+  //! PHYSICS INIT: Use the passed attributes to initialize physics engine
+  bool defaultToNoneSimulator = true;
+  if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
+#ifdef ESP_BUILD_WITH_BULLET
+    physicsManager.reset(
+        new physics::BulletPhysicsManager(*this, physicsManagerAttributes));
+    defaultToNoneSimulator = false;
+#else
+    LOG(WARNING)
+        << ":\n---\nPhysics was enabled and Bullet physics engine was "
+           "specified, but the project is built without Bullet support. "
+           "Objects added to the scene will be restricted to kinematic updates "
+           "only. Reinstall with --bullet to enable Bullet dynamics.\n---";
+#endif
+  }
+  // reset to base PhysicsManager to override previous as default behavior
+  // if the desired simulator is not supported reset to "none" in metaData
+  if (defaultToNoneSimulator) {
+    physicsManagerAttributes->setSimulator("none");
+    physicsManager.reset(
+        new physics::PhysicsManager(*this, physicsManagerAttributes));
+  }
+
+  physicsManager->setIsEnabled(isEnabled);
+  if (!isEnabled) {
+    return;
+  }
+  // build default primitive asset templates, and default primitive object
+  // templates
+  initDefaultPrimAttributes();
+
+  // initialize the physics simulator
+  physicsManager->initPhysics(parent);
+}  // ResourceManager::initPhysicsManager
 
 bool ResourceManager::loadScene(
     const AssetInfo& info,
+    std::shared_ptr<physics::PhysicsManager> _physicsManager,
     scene::SceneNode* parent, /* = nullptr */
     DrawableGroup* drawables, /* = nullptr */
     const Magnum::ResourceKey& lightSetup /* = Mn::ResourceKey{NO_LIGHT_KEY} */,
     bool splitSemanticMesh /* = true */) {
+  // add a scene attributes for this filename or modify the existing one
+  sceneAttributesManager_->createAttributesTemplate(info.filepath, true);
+
   // we only compute absolute AABB for every mesh component when loading ptex
   // mesh, or general mesh (e.g., MP3D)
   staticDrawableInfo_.clear();
@@ -170,10 +211,6 @@ bool ResourceManager::loadScene(
     // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
     // scene mesh): welcome to the void
   }
-  // add a scene attributes for this filename or modify the existing one
-  if (meshSuccess) {
-    sceneAttributesManager_->createAttributesTemplate(info.filepath, true);
-  }
 
   // compute the absolute transformation for each static drawables
   if (meshSuccess && parent && computeAbsoluteAABBs_) {
@@ -207,110 +244,64 @@ bool ResourceManager::loadScene(
     staticDrawableInfo_.clear();
   }
 
-  return meshSuccess;
-}  // ResourceManager::loadScene
-
-void ResourceManager::initPhysicsManager(
-    std::shared_ptr<physics::PhysicsManager>& physicsManager,
-    const PhysicsManagerAttributes::ptr& physicsManagerAttributes) {
-  //! PHYSICS INIT: Use the passed attributes to initialize physics engine
-  bool defaultToNoneSimulator = true;
-  if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
-#ifdef ESP_BUILD_WITH_BULLET
-    physicsManager.reset(
-        new physics::BulletPhysicsManager(*this, physicsManagerAttributes));
-    defaultToNoneSimulator = false;
-#else
-    LOG(WARNING)
-        << ":\n---\nPhysics was enabled and Bullet physics engine was "
-           "specified, but the project is built without Bullet support. "
-           "Objects added to the scene will be restricted to kinematic updates "
-           "only. Reinstall with --bullet to enable Bullet dynamics.\n---";
-#endif
-  }
-  // reset to base PhysicsManager to override previous as default behavior
-  // if the desired simulator is not supported reset to "none" in metaData
-  if (defaultToNoneSimulator) {
-    physicsManagerAttributes->setSimulator("none");
-    physicsManager.reset(
-        new physics::PhysicsManager(*this, physicsManagerAttributes));
-  }
-  // build default primitive asset templates, and default primitive object
-  // templates
-  initDefaultPrimAttributes();
-}  // ResourceManager::initPhysicsManager
-
-// TODO: kill existing scene mesh drawables, nodes, etc... (all but meshes in
-// memory?)
-//! (1) load scene mesh
-//! (2) add drawable (if parent and drawables != nullptr)
-//! (3) consume PhysicsSceneMetaData to initialize physics simulator
-//! (4) create scene collision mesh if possible
-bool ResourceManager::loadPhysicsScene(
-    const AssetInfo& info,
-    std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-    const PhysicsManagerAttributes::ptr physicsManagerAttributes,
-    scene::SceneNode* parent, /* = nullptr */
-    DrawableGroup* drawables, /* = nullptr */
-    const Magnum::ResourceKey&
-        lightSetup /* = Mn::ResourceKey{NO_LIGHT_KEY} */) {
-  // default scene mesh loading
-  bool meshSuccess = loadScene(info, parent, drawables, lightSetup);
-  // (re)init physics manager
-  initPhysicsManager(_physicsManager, physicsManagerAttributes);
-
-  // initialize the physics simulator
-  _physicsManager->initPhysics(parent);
-
   if (!meshSuccess) {
-    LOG(ERROR) << "ResourceManager::loadPhysicsScene : Physics manager loaded. "
-                  "Scene mesh load failed, Aborting scene initialization.";
+    LOG(ERROR) << " ResourceManager::loadScene : Scene mesh load failed, "
+                  "Aborting scene initialization.";
     return false;
   }
 
-  const std::string& filename = info.filepath;
+  // old loadPhysicsScene code
+  if ((_physicsManager) && _physicsManager->isEnabled()) {
+    const std::string& filename = info.filepath;
 
-  PhysicsSceneAttributes::ptr physSceneLib =
-      sceneAttributesManager_->createAttributesTemplate(filename, true);
-  // TODO: enable loading of multiple scenes from file and storing individual
-  // parameters instead of scene properties in manager global config
-  sceneAttributesManager_->setSceneValsFromPhysicsAttributes(
-      physicsManagerAttributes);
+    // Done already in load scene
+    // PhysicsSceneAttributes::ptr physSceneLib =
+    //     sceneAttributesManager_->createAttributesTemplate(filename, true);
+    // TODO: enable loading of multiple scenes from file and storing individual
+    // parameters instead of scene properties in manager global config
+    sceneAttributesManager_->setSceneValsFromPhysicsAttributes(
+        _physicsManager->getInitializationAttributes());
 
-  //! CONSTRUCT SCENE
+    //! CONSTRUCT SCENE
 
-  // if we have a scene mesh, add it as a collision object
-  if (filename.compare(EMPTY_SCENE) != 0) {
-    //! Collect collision mesh group
-    std::vector<CollisionMeshData> meshGroup;
-    bool colMeshSuccess = false;
-    if (info.type == AssetType::INSTANCE_MESH) {
-      // PLY Instance mesh
-      colMeshSuccess = buildSceneCollisionMeshGroup<GenericInstanceMeshData>(
-          filename, meshGroup);
-    } else if (info.type == AssetType::MP3D_MESH ||
-               info.type == AssetType::UNKNOWN) {
-      // GLB Mesh
-      colMeshSuccess =
-          buildSceneCollisionMeshGroup<GenericMeshData>(filename, meshGroup);
-    }
-    // TODO : PTEX collision support
+    // if we have a scene mesh, add it as a collision object
+    if (filename.compare(EMPTY_SCENE) != 0) {
+      //! Collect collision mesh group
+      std::vector<CollisionMeshData> meshGroup;
+      bool colMeshSuccess = false;
+      if (info.type == AssetType::INSTANCE_MESH) {
+        // PLY Instance mesh
+        colMeshSuccess = buildSceneCollisionMeshGroup<GenericInstanceMeshData>(
+            filename, meshGroup);
+      } else if (info.type == AssetType::MP3D_MESH ||
+                 info.type == AssetType::UNKNOWN) {
+        // GLB Mesh
+        colMeshSuccess =
+            buildSceneCollisionMeshGroup<GenericMeshData>(filename, meshGroup);
+      }
+      // TODO : PTEX collision support
 
-    // failure during build of collision mesh group
-    if (!colMeshSuccess) {
-      return false;
-    }
-    //! Add scene meshgroup to collision mesh groups
-    collisionMeshGroups_.emplace(filename, meshGroup);
-    //! Initialize collision mesh
-    bool sceneSuccess = _physicsManager->addScene(filename, meshGroup);
-    if (!sceneSuccess) {
-      return false;
+      // failure during build of collision mesh group
+      if (!colMeshSuccess) {
+        LOG(ERROR) << " ResourceManager::loadScene : Scene Collision mesh load "
+                      "failed. Aborting scene initialization.";
+        return false;
+      }
+      //! Add scene meshgroup to collision mesh groups
+      collisionMeshGroups_.emplace(filename, meshGroup);
+      //! Initialize collision mesh
+      bool sceneSuccess = _physicsManager->addScene(filename, meshGroup);
+      if (!sceneSuccess) {
+        LOG(ERROR)
+            << " ResourceManager::loadScene : Adding Scene to PhysicsManager "
+               "failed. Aborting scene initialization.";
+        return false;
+      }
     }
   }
 
   return meshSuccess;
-}  // ResourceManager::loadPhysicsScene
+}  // ResourceManager::loadScene
 
 template <class T>
 bool ResourceManager::buildSceneCollisionMeshGroup(

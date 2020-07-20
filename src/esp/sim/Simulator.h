@@ -16,6 +16,7 @@
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/PhysicsManager.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
@@ -24,6 +25,9 @@
 namespace AttrMgrs = esp::assets::managers;
 
 namespace esp {
+// namespace physics {
+// class PhysicsManager;
+// }
 namespace nav {
 class PathFinder;
 class NavMeshSettings;
@@ -88,6 +92,25 @@ class Simulator {
 
   virtual void reset();
 
+ protected:
+  /**
+   * @brief (Re)builds @ref semanticScene_ upon reconfigure.
+   *
+   * @param sceneType The type of the scene mesh.
+   * @param sceneFileName The file name of the scene mesh
+   */
+  void rebuildSemanticScene(const assets::AssetType sceneType,
+                            const std::string& sceneFilename,
+                            std::string& houseFilename);
+
+  /**
+   * @brief (Re)builds @ref pathfinder_ upon reconfigure.
+   *
+   * @param navmeshFilename The file name of the navmesh
+   */
+  void rebuildPathFinder(const std::string& navmeshFilename);
+
+ public:
   virtual void seed(uint32_t newSeed);
 
   std::shared_ptr<gfx::Renderer> getRenderer() { return renderer_; }
@@ -622,7 +645,7 @@ class Simulator {
   }
 
   bool sceneHasPhysics(int sceneID) const {
-    return isValidScene(sceneID) && physicsManager_ != nullptr;
+    return isValidScene(sceneID) && physicsManager_ != nullptr && physicsManager_->isEnabled();
   }
 
   gfx::WindowlessContext::uptr context_ = nullptr;

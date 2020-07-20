@@ -216,6 +216,8 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
 
   // TODO : any specific non-json file-based parsing required
 
+  //
+
   if (registerTemplate) {
     int attrID = this->registerAttributesTemplate(sceneAttributesTemplate,
                                                   sceneFilename);

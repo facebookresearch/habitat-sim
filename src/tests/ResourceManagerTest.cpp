@@ -39,7 +39,7 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   esp::scene::SceneNode* navSceneNode = &sceneGraph.getRootNode().createChild();
   const esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(boxFile);
-  resourceManager.loadScene(info, navSceneNode, nullptr);
+  resourceManager.loadScene(info, nullptr, navSceneNode, nullptr);
 
   esp::assets::MeshData::uptr joinedBox =
       resourceManager.createJoinedCollisionMesh(boxFile);

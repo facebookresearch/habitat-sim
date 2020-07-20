@@ -87,7 +87,6 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
                             const std::string& handle);
 
   virtual ~AbstractPhysicsAttributes() = default;
-
   void setScale(const Magnum::Vector3& scale) { setVec3("scale", scale); }
   Magnum::Vector3 getScale() const { return getVec3("scale"); }
 
@@ -163,6 +162,12 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
 
   bool getUseMeshCollision() const { return getBool("useMeshCollision"); }
 
+  // if true use phong illumination model instead of flat shading
+  void setRequiresLighting(bool requiresLighting) {
+    setBool("requiresLighting", requiresLighting);
+  }
+  bool getRequiresLighting() const { return getBool("requiresLighting"); }
+
   bool getIsDirty() const { return getBool("__isDirty"); }
   void setIsClean() { setBool("__isDirty", false); }
 
@@ -229,13 +234,10 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
   }
   bool getJoinCollisionMeshes() const { return getBool("joinCollisionMeshes"); }
 
-  // if true use phong illumination model instead of flat shading
-  void setRequiresLighting(bool requiresLighting) {
-    setBool("requiresLighting", requiresLighting);
-  }
-  bool getRequiresLighting() const { return getBool("requiresLighting"); }
-
-  // if object is visible
+  /**
+   * @brief If not visible can add dynamic non-rendered object into a scene
+   * object.  If is not visible then should not add object to drawables.
+   */
   void setIsVisible(bool isVisible) { setBool("isVisible", isVisible); }
   bool getIsVisible() const { return getBool("isVisible"); }
 
@@ -267,6 +269,14 @@ class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
     setVec3("gravity", gravity);
   }
   Magnum::Vector3 getGravity() const { return getVec3("gravity"); }
+
+  void setSemanticAssetHandle(const std::string& semanticAssetHandle) {
+    setString("semanticAssetHandle", semanticAssetHandle);
+    setIsDirty();
+  }
+  std::string getSemanticAssetHandle() const {
+    return getString("semanticAssetHandle");
+  }
 
  public:
   ESP_SMART_POINTERS(PhysicsSceneAttributes)

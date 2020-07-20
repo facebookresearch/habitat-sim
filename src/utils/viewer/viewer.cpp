@@ -213,38 +213,66 @@ Viewer::Viewer(const Arguments& arguments)
     sceneLightSetup = esp::assets::ResourceManager::DEFAULT_LIGHTING_KEY;
   }
 
-  if (args.isSet("enable-physics")) {
-    std::string physicsConfigFilename = args.value("physics-config");
-    if (!Cr::Utility::Directory::exists(physicsConfigFilename)) {
-      LOG(FATAL)
-          << physicsConfigFilename
-          << " was not found, specify an existing file in --physics-config";
-    }
-    // use physics world attributes manager to get physics manager attributes
-    // described by config file
-    auto physicsManagerAttributes =
-        resourceManager_.getPhysicsAttributesManager()
-            ->createAttributesTemplate(physicsConfigFilename, true);
-    CORRADE_ASSERT(physicsManagerAttributes != nullptr,
-                   "Viewer::ctor : Error attempting to load world described by"
-                       << physicsConfigFilename << ". Aborting", );
-
-    bool loadSuccess = resourceManager_.loadPhysicsScene(
-        info, physicsManager_, physicsManagerAttributes, navSceneNode_,
-        &drawables, sceneLightSetup);
-
-    if (!loadSuccess) {
-      LOG(FATAL) << "cannot load " << sceneFileName;
-    }
-    if (args.isSet("debug-bullet")) {
-      debugBullet_ = true;
-    }
-  } else {
-    if (!resourceManager_.loadScene(info, navSceneNode_, &drawables,
-                                    sceneLightSetup)) {
-      LOG(FATAL) << "cannot load " << sceneFileName;
-    }
+  std::string physicsConfigFilename = args.value("physics-config");
+  if (!Cr::Utility::Directory::exists(physicsConfigFilename)) {
+    LOG(FATAL)
+        << physicsConfigFilename
+        << " was not found, specify an existing file in --physics-config";
   }
+  // use physics world attributes manager to get physics manager attributes
+  // described by config file
+  auto physicsManagerAttributes =
+      resourceManager_.getPhysicsAttributesManager()->createAttributesTemplate(
+          physicsConfigFilename, true);
+  CORRADE_ASSERT(physicsManagerAttributes != nullptr,
+                 "Viewer::ctor : Error attempting to load world described by"
+                     << physicsConfigFilename << ". Aborting", );
+
+  bool useCollisions = args.isSet("enable-physics");
+  // construct physics manager based on specifications in attributes
+  resourceManager_.initPhysicsManager(physicsManager_, useCollisions,
+                                      navSceneNode_, physicsManagerAttributes);
+
+  // if (args.isSet("enable-physics")) {
+  // std::string physicsConfigFilename = args.value("physics-config");
+  // if (!Cr::Utility::Directory::exists(physicsConfigFilename)) {
+  //   LOG(FATAL)
+  //       << physicsConfigFilename
+  //       << " was not found, specify an existing file in --physics-config";
+  // }
+  // // // use physics world attributes manager to get physics manager
+  // attributes
+  // // described by config file
+  // auto physicsManagerAttributes =
+  //     resourceManager_.getPhysicsAttributesManager()
+  //         ->createAttributesTemplate(physicsConfigFilename, true);
+  // CORRADE_ASSERT(physicsManagerAttributes != nullptr,
+  //                "Viewer::ctor : Error attempting to load world described
+  //                by"
+  //                    << physicsConfigFilename << ". Aborting", );
+
+  // // construct physics manager based on specifications in attributes
+  // resourceManager_.initPhysicsManager(physicsManager_, navSceneNode_,
+  //                                     physicsManagerAttributes);
+
+  // bool loadSuccess = resourceManager_.loadPhysicsScene(
+  //     info, physicsManager_, navSceneNode_, &drawables, sceneLightSetup);
+
+  // if (!loadSuccess) {
+  //   LOG(FATAL) << "cannot load " << sceneFileName;
+  // }
+  // if (args.isSet("debug-bullet")) {
+  //   debugBullet_ = true;
+  // }
+  //} else {
+  if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
+                                  &drawables, sceneLightSetup)) {
+    LOG(FATAL) << "cannot load " << sceneFileName;
+  }
+  if (useCollisions && (args.isSet("debug-bullet"))) {
+    debugBullet_ = true;
+  }
+  //}
 
   const Mn::Range3D& sceneBB = rootNode_->computeCumulativeBB();
   resourceManager_.setLightSetup(esp::gfx::getLightsAtBoxCorners(sceneBB));
@@ -320,7 +348,7 @@ Viewer::Viewer(const Arguments& arguments)
 }  // end Viewer::Viewer
 
 void Viewer::addObject(int ID) {
-  if (physicsManager_ == nullptr) {
+  if (!physicsManager_->isEnabled()) {
     return;
   }
   const std::string& configHandle =
@@ -329,7 +357,7 @@ void Viewer::addObject(int ID) {
 }  // addObject
 
 void Viewer::addObject(const std::string& configFile) {
-  if (physicsManager_ == nullptr) {
+  if (!physicsManager_->isEnabled()) {
     return;
   }
 
@@ -350,7 +378,7 @@ void Viewer::addObject(const std::string& configFile) {
 
 // add file-based template derived object from keypress
 void Viewer::addTemplateObject() {
-  if (physicsManager_ != nullptr) {
+  if (physicsManager_->isEnabled()) {
     int numObjTemplates = resourceManager_.getObjectAttributesManager()
                               ->getNumFileTemplateObjects();
     if (numObjTemplates > 0) {
@@ -366,7 +394,7 @@ void Viewer::addTemplateObject() {
 // add synthesized primiitive object from keypress
 void Viewer::addPrimitiveObject() {
   // TODO : use this to implement synthesizing rendered physical objects
-  if (physicsManager_ != nullptr) {
+  if (physicsManager_->isEnabled()) {
     int numObjPrims = resourceManager_.getObjectAttributesManager()
                           ->getNumSynthTemplateObjects();
     if (numObjPrims > 0) {
@@ -380,7 +408,7 @@ void Viewer::addPrimitiveObject() {
 }  // addPrimitiveObject
 
 void Viewer::removeLastObject() {
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0) {
+  if (!physicsManager_->isEnabled() || objectIDs_.size() == 0) {
     return;
   }
   physicsManager_->removeObject(objectIDs_.back());
@@ -388,7 +416,7 @@ void Viewer::removeLastObject() {
 }
 
 void Viewer::invertGravity() {
-  if (physicsManager_ == nullptr) {
+  if (!physicsManager_->isEnabled()) {
     return;
   }
   const Mn::Vector3& gravity = physicsManager_->getGravity();
@@ -397,7 +425,7 @@ void Viewer::invertGravity() {
 }
 
 void Viewer::pokeLastObject() {
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+  if (!physicsManager_->isEnabled() || objectIDs_.size() == 0)
     return;
   Mn::Matrix4 T =
       agentBodyNode_->MagnumObject::transformationMatrix();  // Relative to
@@ -408,7 +436,7 @@ void Viewer::pokeLastObject() {
 }
 
 void Viewer::pushLastObject() {
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+  if (!physicsManager_->isEnabled() || objectIDs_.size() == 0)
     return;
   Mn::Matrix4 T =
       agentBodyNode_->MagnumObject::transformationMatrix();  // Relative to
@@ -441,7 +469,7 @@ void Viewer::recomputeNavMesh(const std::string& sceneFilename,
 }
 
 void Viewer::torqueLastObject() {
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+  if (!physicsManager_->isEnabled() || objectIDs_.size() == 0)
     return;
   Mn::Vector3 torque = randomDirection() * 30;
   physicsManager_->applyTorque(objectIDs_.back(), torque);
@@ -462,7 +490,7 @@ Mn::Vector3 Viewer::randomDirection() {
 void Viewer::wiggleLastObject() {
   // demo of kinematic motion capability
   // randomly translate last added object
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+  if (!physicsManager_->isEnabled() || objectIDs_.size() == 0)
     return;
 
   Mn::Vector3 randDir = randomDirection();
@@ -499,7 +527,7 @@ void Viewer::drawEvent() {
   if (sceneID_.size() <= 0)
     return;
 
-  if (physicsManager_ != nullptr)
+  if (physicsManager_->isEnabled())
     // step physics at a fixed rate
     timeSinceLastSimulation += timeline_.previousFrameDuration();
   if (timeSinceLastSimulation >= 1.0 / 60.0) {

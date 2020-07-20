@@ -64,7 +64,8 @@ void CullingTest::computeAbsoluteAABB() {
   auto& drawables = sceneGraph.getDrawables();
   const esp::assets::AssetInfo info =
       esp::assets::AssetInfo::fromPath(sceneFile);
-  CORRADE_VERIFY(resourceManager.loadScene(info, &sceneRootNode, &drawables));
+  CORRADE_VERIFY(
+      resourceManager.loadScene(info, nullptr, &sceneRootNode, &drawables));
 
   std::vector<Mn::Range3D> aabbs;
   for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
@@ -136,7 +137,8 @@ void CullingTest::frustumCulling() {
   auto& drawables = sceneGraph.getDrawables();
   const esp::assets::AssetInfo info =
       esp::assets::AssetInfo::fromPath(sceneFile);
-  CORRADE_VERIFY(resourceManager.loadScene(info, &sceneRootNode, &drawables));
+  CORRADE_VERIFY(
+      resourceManager.loadScene(info, nullptr, &sceneRootNode, &drawables));
 
   // set the camera
   esp::gfx::RenderCamera& renderCamera = sceneGraph.getDefaultRenderCamera();

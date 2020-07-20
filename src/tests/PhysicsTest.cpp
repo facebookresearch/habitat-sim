@@ -55,9 +55,11 @@ class PhysicsManagerTest : public testing::Test {
     auto physicsManagerAttributes =
         physicsAttributesManager_->createAttributesTemplate(physicsConfigFile,
                                                             true);
-    resourceManager_.loadPhysicsScene(info, physicsManager_,
-                                      physicsManagerAttributes, navSceneNode,
-                                      &drawables);
+    // construct physics manager based on specifications in attributes
+    resourceManager_.initPhysicsManager(physicsManager_, true, navSceneNode,
+                                        physicsManagerAttributes);
+    // load scene
+    resourceManager_.loadScene(info, physicsManager_, navSceneNode, &drawables);
   }
 
   // must declare these in this order due to avoid deallocation errors

@@ -28,7 +28,7 @@ PhysicsAttributesManager::createAttributesTemplate(
   } else {
     // if name is not file descriptor, return default attributes.
     attrs = createDefaultAttributesTemplate(physicsFilename, registerTemplate);
-    msg = "New default";
+    msg = "File (" + physicsFilename + ") not found so new, default";
   }
 
   if (nullptr != attrs) {

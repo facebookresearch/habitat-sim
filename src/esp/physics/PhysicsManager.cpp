@@ -14,7 +14,7 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node) {
   physicsNode_ = node;
 
   // Copy over relevant configuration
-  fixedTimeStep_ = physicsManagerAttributes->getTimestep();
+  fixedTimeStep_ = physicsManagerAttributes_->getTimestep();
 
   //! Create new scene node and set up any physics-related variables
   // Overridden by specific physics-library-based class
@@ -104,9 +104,15 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
 
   //! Draw object via resource manager
   //! Render node as child of physics node
-  resourceManager_.addObjectToDrawables(
-      configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
-      drawables, existingObjects_.at(nextObjectID_)->visualNodes_, lightSetup);
+  //! Verify we should make the object drawable
+  if (existingObjects_.at(nextObjectID_)
+          ->getInitializationAttributes()
+          ->getIsVisible()) {
+    resourceManager_.addObjectToDrawables(
+        configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
+        drawables, existingObjects_.at(nextObjectID_)->visualNodes_,
+        lightSetup);
+  }
 
   // finalize rigid object creation
   objectSuccess = existingObjects_.at(nextObjectID_)->finalizeObject();

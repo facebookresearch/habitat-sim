@@ -171,8 +171,6 @@ class BulletPhysicsManager : public PhysicsManager {
   /**
    * @brief Finalize physics initialization: Setup staticSceneObject_ and
    * initialize any other physics-related values.
-   * @param physicsManagerAttributes A structure containing values for physical
-   * parameters necessary to initialize the physical scene and simulator.
    */
   bool initPhysicsFinalize() override;
 
