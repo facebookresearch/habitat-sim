@@ -182,6 +182,16 @@ class BulletPhysicsManager : public PhysicsManager {
   virtual RaycastResults castRay(const esp::geo::Ray& ray,
                                  double maxDistance = 100.0) override;
 
+   /**
+   * @brief 
+   *
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param active boolean flag to set active status
+   */
+  virtual void setActive(const int physObjectID, bool active) override;
+
+
  protected:
   //============ Initialization =============
   /**

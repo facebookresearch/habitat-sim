@@ -10,6 +10,12 @@
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
+
+#include <Magnum/GL/Buffer.h>
+#include <Magnum/Image.h>
+#include <Magnum/GL/DefaultFramebuffer.h>
+#include <Magnum/GL/PixelFormat.h>
+#include <Magnum/GL/Renderer.h>
 #include <Magnum/GL/Context.h>
 
 #include "esp/assets/attributes/AttributesBase.h"
@@ -20,6 +26,7 @@
 #include "esp/io/io.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
+#include "esp/physics/bullet/BulletPhysicsManager.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/PinholeCamera.h"
@@ -889,6 +896,129 @@ void Simulator::setObjectLightSetup(const int objectID,
     gfx::setLightSetupForSubTree(physicsManager_->getObjectSceneNode(objectID),
                                  lightSetupKey);
   }
+}
+
+int Simulator::findNearestObject(int refObjectID, float distance) {
+  float minDist = 1.0;
+  int nearestObjectID = -1; 
+  if (refObjectID >= 0) {
+    Magnum::Vector3 refPosition = 
+        physicsManager_->getTranslation(refObjectID);
+    Magnum::Vector2 agentPos_xz(refPosition.x(), refPosition.z());
+
+    for(int objectID : physicsManager_->getExistingObjectIDs()) {
+      if (objectID != refObjectID) {
+        Magnum::Vector3 objectPos = physicsManager_->getTranslation(objectID);
+        Magnum::Vector2 objectPosXZ(objectPos.x(), objectPos.z());
+        
+        float d = Magnum::Vector2(agentPos_xz - objectPosXZ).length();
+        
+        // float ax = agentPosition[0] - objPosition[0];
+        // float az = agentPosition[2] - objPosition[2];
+        // float d = ax*ax + az*az;
+        
+        if (d <= minDist) {
+          minDist = d;
+          nearestObjectID = objectID;
+        }
+      }
+    }
+  }
+  return nearestObjectID;
+}
+
+int Simulator::findNearestObjectUnderCrosshair(int refObjectID, 
+    Magnum::Vector3 point, Magnum::Vector3 refPoint, const Magnum::Vector2i& viewSize, 
+    float distance) {
+  float best_fraction = 99999.0;
+  int nearestObjId = ID_UNDEFINED;
+  scene::SceneGraph& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
+  gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
+
+  // try a ray test
+  // physics::BulletPhysicsManager* bpm =
+  //     static_cast<physics::BulletPhysicsManager*>(physicsManager_.get());
+  Magnum::Vector3 cast =
+      (point - renderCamera_.node().absoluteTranslation()).normalized();
+  // btCollisionWorld::AllHitsRayResultCallback hit =
+  //     bpm->castRay(renderCamera_.node().absoluteTranslation(), cast);
+  
+  const esp::geo::Ray ray{renderCamera_.node().absoluteTranslation(), cast};
+  RaycastResults results = castRay(ray);
+  Magnum::Vector3 hitPoint;
+
+  // for (int hitIx = 0; hitIx < hit.m_hitPointWorld.size(); hitIx++) {
+  //   // Corrade::Utility::Debug()
+  //   //     << " hit fraction: " << hit.m_hitFractions.at(hitIx);
+  //   if (hit.m_hitFractions.at(hitIx) < best_fraction) {
+  //     best_fraction = hit.m_hitFractions.at(hitIx);
+      
+  //     nearestObjId = bpm->getObjectIDFromCollisionObject(
+  //         hit.m_collisionObjects.at(hitIx));
+  //     hitPoint = Magnum::Vector3{hit.m_hitPointWorld.at(hitIx)};
+  //   }
+  // }
+
+  for (int rayIdx = 0; rayIdx < results.hits.size(); rayIdx++) {
+      nearestObjId = results[rayIdx].objectId;
+      hitPoint = results[rayIdx].point;
+  }
+  // Corrade::Utility::Debug() << " hitID = " << nearestObjId;
+  // Corrade::Utility::Debug()
+  //       << "object select distance = "
+  //       << (hitPoint - getAgent(0)->node().absoluteTranslation()).length();
+
+  if ((hitPoint - refPoint).length() > distance) {
+    return -1;
+  }
+
+  return nearestObjId;
+}
+
+// float Simulator::depthAt(const Magnum::Vector2i& crosshairPos,
+//     const Magnum::Vector2i& viewSize) {
+//   // None of this should be working. Fix it. 
+//   // Use the sensor frameBuffer to get the information. 
+//   // Negate the y coordinate 
+//   const Magnum::Vector2i fbPosition{
+//       crosshairPos.x(), viewSize.y() - crosshairPos.y() - 1};
+
+//   Magnum::GL::defaultFramebuffer.mapForRead(
+//       Magnum::GL::DefaultFramebuffer::ReadAttachment::Front);
+//   Magnum::Image2D data = Magnum::GL::defaultFramebuffer.read(
+//       Magnum::Range2Di::fromSize(fbPosition, Magnum::Vector2i{1}).padded(Magnum::Vector2i{2}),
+//       {Magnum::GL::PixelFormat::DepthComponent, Magnum::GL::PixelType::Float});
+
+//   Corrade::Utility::Debug() << "data: " << data.data();
+
+//   float min = data.data()[0];
+//   for (auto d : data.data()) {
+//     if (d < min) {
+//       min = d;
+//     }
+//   }
+  
+//   return min;
+
+//   // return Magnum::Math::min<Float>(Containers::arrayCast<const
+//   // Float>(data.data()));
+// }
+
+Magnum::Vector3 Simulator::unproject(const Magnum::Vector2i& crosshairPos,
+    const Magnum::Vector2i& viewSize, float depth) {
+  // Read this: http://antongerdelan.net/opengl/raycasting.html
+  const Magnum::Vector2i viewPos{crosshairPos.x(),
+                                      viewSize.y() - crosshairPos.y() - 1};
+  const Magnum::Vector3 normalizedPos{
+      2 * Magnum::Vector2{viewPos} / Magnum::Vector2{viewSize} -
+          Magnum::Vector2{1.0f},
+      depth * 2.0f - 1.0f};
+
+  scene::SceneGraph& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
+  gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
+
+  return (renderCamera_.node().absoluteTransformationMatrix() *
+      renderCamera_.projectionMatrix().inverted()).transformPoint(normalizedPos);
 }
 
 }  // namespace sim

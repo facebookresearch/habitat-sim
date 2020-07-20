@@ -105,25 +105,21 @@ Mouse Functions:
     (With 'enable-physics') Click a surface to instance a random primitive object at that location.
   SHIFT-RIGHT:
     Click a mesh to highlight it.
-
 Key Commands:
 -------------
   esc: Exit the application.
   'H': Display this help message.
-
   Agent Controls:
   'wasd': Move the agent's body forward/backward, left/right.
   'zx': Move the agent's body up/down.
   arrow keys: Turn the agent's body left/right and camera look up/down.
   '9': Randomly place agent on NavMesh (if loaded).
   'q': Query the agent's state and print to terminal.
-
   Utilities:
   'e' enable/disable frustum culling.
   'c' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
   'i' Save a screenshot to \"test_image_save.png\"
-
   Object Interactions:
   '8': Instance a random primitive object in front of the agent.
   'o': Instance a random file-based object in front of the agent.

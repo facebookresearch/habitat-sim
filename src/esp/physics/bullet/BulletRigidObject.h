@@ -420,6 +420,8 @@ class BulletRigidObject : public BulletBase,
    */
   const Magnum::Range3D getCollisionShapeAabb() const override;
 
+  bool isMe(const btCollisionObject* collisionObject);
+
  private:
   /**
    * @brief Finalize initialization of this @ref BulletRigidObject as a @ref

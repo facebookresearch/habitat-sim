@@ -683,6 +683,8 @@ class PhysicsManager {
    */
   bool isActive(const int physObjectID) const;
 
+  virtual void setActive(const int physObjectID, CORRADE_UNUSED bool active){};
+
   //============ Interact with objects =============
   // NOTE: engine specifics handled by objects themselves...
 
