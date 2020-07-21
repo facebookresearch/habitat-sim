@@ -228,6 +228,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
         }
       }
     }  // if ID has changed - needs to be reset
+    crossHairNode_ = &rootNode.createChild();
+    resourceManager_->addPrimitiveToDrawables(0, *crossHairNode_,
+                                              &sceneGraph.getDrawables());
+    crossHairNode_->setScaling({0.03, 0.03, 0.03});
   }    // if (config_.createRenderer)
 
   semanticScene_ = nullptr;
@@ -388,7 +392,9 @@ esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
 bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
                                     const int objectID,
                                     const int sceneID) {
+  LOG(WARNING) << "no physics";
   if (sceneHasPhysics(sceneID)) {
+    LOG(WARNING) << "update motion: " << objectID<< " " << sceneID;
     return physicsManager_->setObjectMotionType(objectID, motionType);
   }
   return false;
@@ -975,34 +981,55 @@ int Simulator::findNearestObjectUnderCrosshair(int refObjectID,
   return nearestObjId;
 }
 
-// float Simulator::depthAt(const Magnum::Vector2i& crosshairPos,
-//     const Magnum::Vector2i& viewSize) {
-//   // None of this should be working. Fix it. 
-//   // Use the sensor frameBuffer to get the information. 
-//   // Negate the y coordinate 
-//   const Magnum::Vector2i fbPosition{
-//       crosshairPos.x(), viewSize.y() - crosshairPos.y() - 1};
+void Simulator::grabReleaseObjectUsingCrossHair(Magnum::Vector2i windowSize) {
+  Magnum::Vector2i crossHairPos = Magnum::Vector2i{windowSize * 0.5};
+  Magnum::Vector3 point = unproject(crossHairPos, windowSize, 0);
+  Magnum::Vector3 refPoint = getAgent(0)->node().absoluteTranslation();
+  int nearestObjId = findNearestObjectUnderCrosshair(0, point, refPoint, windowSize);
 
-//   Magnum::GL::defaultFramebuffer.mapForRead(
-//       Magnum::GL::DefaultFramebuffer::ReadAttachment::Front);
-//   Magnum::Image2D data = Magnum::GL::defaultFramebuffer.read(
-//       Magnum::Range2Di::fromSize(fbPosition, Magnum::Vector2i{1}).padded(Magnum::Vector2i{2}),
-//       {Magnum::GL::PixelFormat::DepthComponent, Magnum::GL::PixelType::Float});
+  auto agentBodyNode_ = &getAgent(0)->node();
+    
+  if (grippedObjectId != -1) {
+    // already gripped, so let it go
+    Magnum::Matrix4 agentT =
+        agentBodyNode_->MagnumObject::transformationMatrix();
+    physicsManager_->setTransformation(
+        grippedObjectId, agentT * gripOffset);
 
-//   Corrade::Utility::Debug() << "data: " << data.data();
+    Magnum::Vector3 position = physicsManager_->getTranslation(grippedObjectId);
+    bool isNav = pathfinder_->isNavigable(Eigen::Map<esp::vec3f>(position.data()));
 
-//   float min = data.data()[0];
-//   for (auto d : data.data()) {
-//     if (d < min) {
-//       min = d;
-//     }
-//   }
-  
-//   return min;
+    //check for collision (apparently this is always true)
+    if (
+      //(physicsManager_->contactTest(grippedObjectId)) && 
+      (!isNav)) {
+      LOG(INFO) << "Colliding with object or position is not navigable";
+      return;
+    }
+    
+    physicsManager_->setObjectMotionType(grippedObjectId,
+        esp::physics::MotionType::STATIC);
+    //physicsManager_->setActive(agentObjectId, true);
+    grippedObjectId = -1;
+  } else if (nearestObjId != -1) {
+    Magnum::Matrix4 agentT =
+        agentBodyNode_->MagnumObject::transformationMatrix();
+    gripOffset = agentT.inverted() *
+        physicsManager_->getObjectSceneNode(nearestObjId)
+        .transformation();
+    physicsManager_->setObjectMotionType(nearestObjId,
+        esp::physics::MotionType::KINEMATIC);
+    grippedObjectId = nearestObjId;
+  }
 
-//   // return Magnum::Math::min<Float>(Containers::arrayCast<const
-//   // Float>(data.data()));
-// }
+  esp::nav::NavMeshSettings navMeshSettings;
+  navMeshSettings.setDefaults();
+  navMeshSettings.agentRadius = 0.3f;
+
+  recomputeNavMesh(*getPathFinder().get(), navMeshSettings, true);
+  toggleNavMeshVisualization();
+  toggleNavMeshVisualization();
+}
 
 Magnum::Vector3 Simulator::unproject(const Magnum::Vector2i& crosshairPos,
     const Magnum::Vector2i& viewSize, float depth) {
@@ -1019,6 +1046,43 @@ Magnum::Vector3 Simulator::unproject(const Magnum::Vector2i& crosshairPos,
 
   return (renderCamera_.node().absoluteTransformationMatrix() *
       renderCamera_.projectionMatrix().inverted()).transformPoint(normalizedPos);
+}
+
+void Simulator::createCrossHairNode(Magnum::Vector2i windowSize) {
+  scene::SceneGraph& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
+  gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
+
+  Magnum::Vector2i crossHairPos = Magnum::Vector2i{windowSize * 0.5};
+  //LOG(WARNING) << "crossHairPos: " << crossHairPos;
+  Magnum::Vector3 point = unproject(crossHairPos, windowSize, 1.0);
+  //LOG(WARNING) << "unproject point: " << point;
+  Magnum::Vector3 cast =
+      (point - renderCamera_.node().absoluteTranslation()).normalized();
+  //LOG(WARNING) << "cast: " << cast;
+  crossHairNode_->setTranslation(renderCamera_.node().absoluteTranslation() +
+                              cast * 1.0);
+  // LOG(WARNING) << "new crosshair point: " << (renderCamera_.node().absoluteTranslation() + cast * 1.0);
+  // LOG(WARNING) << "\n";
+}
+
+void Simulator::syncGrippedObject() {
+  if (grippedObjectId != -1) {
+      auto agentBodyNode_ = &getAgent(0)->node();
+      Magnum::Matrix4 agentT =
+          agentBodyNode_->MagnumObject::transformationMatrix();
+      //physicsManager_->setTransformation(grippedObjectId, agentT * gripOffset);
+      physicsManager_->setTranslation(
+        grippedObjectId, agentT.transformPoint(Magnum::Vector3{0.0, 0.0, 0.0}));
+  }
+  //LOG(WARNING) << "grippedObject:" << grippedObjectId;
+}
+
+void Simulator::syncGrippedObjects() {
+  auto agentBodyNode_ = &getAgent(0)->node();
+  Magnum::Matrix4 agentT = agentBodyNode_->MagnumObject::transformationMatrix();
+  for (auto& grip : gripOffsets) {
+    physicsManager_->setTransformation(grip.first, agentT * grip.second);
+  }
 }
 
 }  // namespace sim

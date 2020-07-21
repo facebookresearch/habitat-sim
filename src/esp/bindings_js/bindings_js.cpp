@@ -100,6 +100,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .element(em::index<1>())
       .element(em::index<2>());
 
+  em::value_array<Magnum::Vector2i>("Vector2i")
+      .element(em::index<0>())
+      .element(em::index<1>());
+
   em::value_object<std::pair<vec3f, vec3f>>("aabb")
       .field("min", &std::pair<vec3f, vec3f>::first)
       .field("max", &std::pair<vec3f, vec3f>::second);
@@ -271,5 +275,9 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("setObjectLightSetup", &Simulator::setObjectLightSetup)
       .function("getLightSetup", &Simulator::getLightSetup)
       .function("setLightSetup", &Simulator::setLightSetup)
-      .function("stepWorld", &Simulator::stepWorld);
+      .function("stepWorld", &Simulator::stepWorld)
+      .function("grabReleaseObjectUsingCrossHair", &Simulator::grabReleaseObjectUsingCrossHair)
+      .function("syncGrippedObject", &Simulator::syncGrippedObject)
+      .function("syncGrippedObjects", &Simulator::syncGrippedObjects)
+      .function("createCrossHairNode", &Simulator::createCrossHairNode);
 }

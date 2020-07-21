@@ -69,12 +69,14 @@ class NavigateTask {
 
     this.actions = [
       { name: "moveForward", key: "w" },
+      { name: "moveBackward", key: "s" },
       { name: "turnLeft", key: "a" },
       { name: "turnRight", key: "d" },
       { name: "lookUp", key: "ArrowUp" },
       { name: "lookDown", key: "ArrowDown" },
       { name: "addPrimitiveObject", key: "8" },
-      { name: "removeLastObject", key: "9" }
+      { name: "removeLastObject", key: "9" },
+      { name: "grabReleaseObject", key: "h" }
     ];
   }
 
@@ -213,6 +215,12 @@ class NavigateTask {
 
   render(options = { renderTopDown: true }) {
     this.renderImage();
+
+    this.sim.createCrossHairNode(this.sim.resolution);
+    this.sim.syncObjects();
+    this.sim.stepWorld();
+
+    this.renderImage();
     this.renderSemanticImage();
     this.renderTopDown(options);
   }
@@ -222,6 +230,8 @@ class NavigateTask {
       this.sim.addPrimitiveObject();
     } else if (action === "removeLastObject") {
       this.sim.removeLastObject();
+    } else if (action == "grabReleaseObject") {
+      this.sim.grabReleaseObject();
     } else {
       this.sim.step(action);
     }

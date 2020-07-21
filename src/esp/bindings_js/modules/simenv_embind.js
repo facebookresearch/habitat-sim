@@ -23,6 +23,7 @@ class SimEnv {
     this.sim = new Module.Simulator(config);
     this.episode = episode;
     this.initialAgentState = null;
+    this.resolution = null;
 
     if (Object.keys(episode).length > 0) {
       this.initialAgentState = this.createAgentState(episode.startState);
@@ -38,11 +39,22 @@ class SimEnv {
     if (this.initialAgentState !== null) {
       const agent = this.sim.getAgent(this.selectedAgentId);
       agent.setState(this.initialAgentState, true);
+      this.createCrossHairNode(this.resolution);
+      this.syncObjects();
     }
   }
 
   changeAgent(agentId) {
     this.selectedAgentId = agentId;
+  }
+
+  createCrossHairNode(windowSize) {
+    this.sim.createCrossHairNode(windowSize);
+  }
+
+  syncObjects() {
+    this.sim.syncGrippedObject();
+    this.sim.syncGrippedObjects();
   }
 
   /**
@@ -59,7 +71,9 @@ class SimEnv {
    * @param {Object} config - agent config
    */
   addAgent(config) {
-    return this.sim.addAgent(this.createAgentConfig(config));
+    let agentConfig = this.createAgentConfig(config);
+    this.resolution = agentConfig.sensorSpecifications.get(0).resolution;
+    return this.sim.addAgent(agentConfig);
   }
 
   /**
@@ -103,7 +117,8 @@ class SimEnv {
     let objId = this.addObjectByHandle(
       "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_useTangents_false_capEnds_true"
     );
-    this.setTranslation([3.004, 1.5, 7.0], objId, 0);
+    this.setTranslation([3.004, 1.5, 10.0], objId, 0);
+    //this.setObjectMotionType(Module.MotionType.STATIC, objId, 0);
     console.log(objId);
     return objId;
   }
@@ -115,6 +130,14 @@ class SimEnv {
   removeLastObject() {
     let exsitingObjectIds = this.getExistingObjectIDs();
     this.removeObject(exsitingObjectIds.get(exsitingObjectIds.size() - 1));
+  }
+
+  /**
+   * Grab or release object under cross hair.
+   * @returns {number} object ID or -1 if object was unable to be added
+   */
+  grabReleaseObject() {
+    this.sim.grabReleaseObjectUsingCrossHair(this.resolution);
   }
 
   /**
