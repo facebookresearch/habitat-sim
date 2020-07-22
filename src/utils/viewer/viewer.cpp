@@ -240,7 +240,7 @@ Viewer::Viewer(const Arguments& arguments)
   if (useCollisions && (args.isSet("debug-bullet"))) {
     debugBullet_ = true;
   }
-  
+
   const Mn::Range3D& sceneBB = rootNode_->computeCumulativeBB();
   resourceManager_.setLightSetup(esp::gfx::getLightsAtBoxCorners(sceneBB));
 
