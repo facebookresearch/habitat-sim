@@ -850,15 +850,6 @@ class PhysicsManager {
         *physicsManagerAttributes_.get());
   }
 
-  /**@brief whether this physics manager is supporting any kind of
-   * object/collision handling
-   */
-  bool isEnabled() { return enabled_; }
-  /**@brief whether this physics manager is supporting any kind of
-   * object/collision handling
-   */
-  void setIsEnabled(bool _enabled) { enabled_ = _enabled; }
-
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
    * existing object). Terminate the program and report an error if not. This
@@ -975,12 +966,6 @@ class PhysicsManager {
   std::vector<int> recycledObjectIDs_;
 
   //! Utilities
-
-  /**
-   * @brief Whether this physicsManager is enabled or not.  If not enabled then
-   * should not support adding objects or collision calcs.
-   */
-  bool enabled_ = false;
 
   /** @brief Tracks whether or not this @ref PhysicsManager has already been
    * initialized with @ref initPhysics. */

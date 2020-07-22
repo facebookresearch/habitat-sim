@@ -241,7 +241,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 }  // Simulator::reconfigure
 
 void Simulator::reset() {
-  if (physicsManager_ != nullptr && physicsManager_->isEnabled()) {
+  if (physicsManager_ != nullptr) {
     // Note: only resets time to 0 by default.
     physicsManager_->reset();
   }
@@ -536,7 +536,7 @@ void Simulator::setObjectSemanticId(uint32_t semanticId,
 }
 
 double Simulator::stepWorld(const double dt) {
-  if (physicsManager_ != nullptr && physicsManager_->isEnabled()) {
+  if (physicsManager_ != nullptr) {
     physicsManager_->stepPhysics(dt);
   }
   return getWorldTime();
@@ -544,7 +544,7 @@ double Simulator::stepWorld(const double dt) {
 
 // get the simulated world time (0 if no physics enabled)
 double Simulator::getWorldTime() {
-  if (physicsManager_ != nullptr && physicsManager_->isEnabled()) {
+  if (physicsManager_ != nullptr) {
     return physicsManager_->getWorldTime();
   }
   return NO_TIME;

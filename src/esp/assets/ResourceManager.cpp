@@ -133,18 +133,21 @@ void ResourceManager::initPhysicsManager(
     const PhysicsManagerAttributes::ptr& physicsManagerAttributes) {
   //! PHYSICS INIT: Use the passed attributes to initialize physics engine
   bool defaultToNoneSimulator = true;
-  if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
+  if (isEnabled) {
+    if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
 #ifdef ESP_BUILD_WITH_BULLET
-    physicsManager.reset(
-        new physics::BulletPhysicsManager(*this, physicsManagerAttributes));
-    defaultToNoneSimulator = false;
+      physicsManager.reset(
+          new physics::BulletPhysicsManager(*this, physicsManagerAttributes));
+      defaultToNoneSimulator = false;
 #else
-    LOG(WARNING)
-        << ":\n---\nPhysics was enabled and Bullet physics engine was "
-           "specified, but the project is built without Bullet support. "
-           "Objects added to the scene will be restricted to kinematic updates "
-           "only. Reinstall with --bullet to enable Bullet dynamics.\n---";
+      LOG(WARNING)
+          << ":\n---\nPhysics was enabled and Bullet physics engine was "
+             "specified, but the project is built without Bullet support. "
+             "Objects added to the scene will be restricted to kinematic "
+             "updates "
+             "only. Reinstall with --bullet to enable Bullet dynamics.\n---";
 #endif
+    }
   }
   // reset to base PhysicsManager to override previous as default behavior
   // if the desired simulator is not supported reset to "none" in metaData
@@ -154,10 +157,6 @@ void ResourceManager::initPhysicsManager(
         new physics::PhysicsManager(*this, physicsManagerAttributes));
   }
 
-  physicsManager->setIsEnabled(isEnabled);
-  if (!isEnabled) {
-    return;
-  }
   // build default primitive asset templates, and default primitive object
   // templates
   initDefaultPrimAttributes();
@@ -251,7 +250,7 @@ bool ResourceManager::loadScene(
   }
 
   // old loadPhysicsScene code
-  if ((_physicsManager) && _physicsManager->isEnabled()) {
+  if (_physicsManager) {
     const std::string& filename = info.filepath;
     // TODO: enable loading of multiple scenes from file and storing individual
     // parameters instead of scene properties in manager global config

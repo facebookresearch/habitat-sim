@@ -56,6 +56,10 @@ struct SimulatorConfiguration {
   bool allowSliding = true;
   // enable or disable the frustum culling
   bool frustumCulling = true;
+  /**
+   * @brief This flags specifies whether or not dynamics is supported by the
+   * simulation, if a suitable library (i.e. Bullet) has been installed.
+   */
   bool enablePhysics = false;
   bool loadSemanticMesh = true;
   std::string physicsConfigFile =
@@ -627,8 +631,7 @@ class Simulator {
   }
 
   bool sceneHasPhysics(int sceneID) const {
-    return isValidScene(sceneID) && physicsManager_ != nullptr &&
-           physicsManager_->isEnabled();
+    return isValidScene(sceneID) && physicsManager_ != nullptr;
   }
 
   gfx::WindowlessContext::uptr context_ = nullptr;
