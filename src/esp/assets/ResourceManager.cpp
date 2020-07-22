@@ -253,10 +253,6 @@ bool ResourceManager::loadScene(
   // old loadPhysicsScene code
   if ((_physicsManager) && _physicsManager->isEnabled()) {
     const std::string& filename = info.filepath;
-
-    // Done already in load scene
-    // PhysicsSceneAttributes::ptr physSceneLib =
-    //     sceneAttributesManager_->createAttributesTemplate(filename, true);
     // TODO: enable loading of multiple scenes from file and storing individual
     // parameters instead of scene properties in manager global config
     sceneAttributesManager_->setSceneValsFromPhysicsAttributes(

@@ -233,38 +233,6 @@ Viewer::Viewer(const Arguments& arguments)
   resourceManager_.initPhysicsManager(physicsManager_, useCollisions,
                                       navSceneNode_, physicsManagerAttributes);
 
-  // if (args.isSet("enable-physics")) {
-  // std::string physicsConfigFilename = args.value("physics-config");
-  // if (!Cr::Utility::Directory::exists(physicsConfigFilename)) {
-  //   LOG(FATAL)
-  //       << physicsConfigFilename
-  //       << " was not found, specify an existing file in --physics-config";
-  // }
-  // // // use physics world attributes manager to get physics manager
-  // attributes
-  // // described by config file
-  // auto physicsManagerAttributes =
-  //     resourceManager_.getPhysicsAttributesManager()
-  //         ->createAttributesTemplate(physicsConfigFilename, true);
-  // CORRADE_ASSERT(physicsManagerAttributes != nullptr,
-  //                "Viewer::ctor : Error attempting to load world described
-  //                by"
-  //                    << physicsConfigFilename << ". Aborting", );
-
-  // // construct physics manager based on specifications in attributes
-  // resourceManager_.initPhysicsManager(physicsManager_, navSceneNode_,
-  //                                     physicsManagerAttributes);
-
-  // bool loadSuccess = resourceManager_.loadPhysicsScene(
-  //     info, physicsManager_, navSceneNode_, &drawables, sceneLightSetup);
-
-  // if (!loadSuccess) {
-  //   LOG(FATAL) << "cannot load " << sceneFileName;
-  // }
-  // if (args.isSet("debug-bullet")) {
-  //   debugBullet_ = true;
-  // }
-  //} else {
   if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
                                   &drawables, sceneLightSetup)) {
     LOG(FATAL) << "cannot load " << sceneFileName;
@@ -272,8 +240,7 @@ Viewer::Viewer(const Arguments& arguments)
   if (useCollisions && (args.isSet("debug-bullet"))) {
     debugBullet_ = true;
   }
-  //}
-
+  
   const Mn::Range3D& sceneBB = rootNode_->computeCumulativeBB();
   resourceManager_.setLightSetup(esp::gfx::getLightsAtBoxCorners(sceneBB));
 
