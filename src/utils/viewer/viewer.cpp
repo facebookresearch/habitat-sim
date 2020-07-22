@@ -230,8 +230,8 @@ Viewer::Viewer(const Arguments& arguments)
 
   bool useBullet = args.isSet("enable-physics");
   // construct physics manager based on specifications in attributes
-  resourceManager_.initPhysicsManager(physicsManager_, useCollisions,
-                                      navSceneNode_, physicsManagerAttributes);
+  resourceManager_.initPhysicsManager(physicsManager_, useBullet, navSceneNode_,
+                                      physicsManagerAttributes);
 
   if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
                                   &drawables, sceneLightSetup)) {
