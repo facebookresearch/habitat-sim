@@ -857,9 +857,7 @@ class PhysicsManager {
   /**@brief whether this physics manager is supporting any kind of
    * object/collision handling
    */
-  void setIsEnabled(bool _enabled) {
-    enabled_ = _enabled;
-  }
+  void setIsEnabled(bool _enabled) { enabled_ = _enabled; }
 
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an

@@ -240,49 +240,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   reset();
 }  // Simulator::reconfigure
 
-void Simulator::rebuildPathFinder(const std::string& navmeshFilename) {
-  pathfinder_ = nav::PathFinder::create();
-  if (io::exists(navmeshFilename)) {
-    LOG(INFO) << "Loading navmesh from " << navmeshFilename;
-    pathfinder_->loadNavMesh(navmeshFilename);
-    LOG(INFO) << "Loaded.";
-  } else {
-    LOG(WARNING) << "Navmesh file not found, checked at " << navmeshFilename;
-  }
-}  // Simulator::rebuildPathFinder
-
-void Simulator::rebuildSemanticScene(const assets::AssetType sceneType,
-                                     const std::string& sceneFilename,
-                                     std::string& houseFilename) {
-  semanticScene_ = nullptr;
-  semanticScene_ = scene::SemanticScene::create();
-  switch (sceneType) {
-    case assets::AssetType::INSTANCE_MESH:
-      houseFilename = Cr::Utility::Directory::join(
-          Cr::Utility::Directory::path(houseFilename), "info_semantic.json");
-      if (io::exists(houseFilename)) {
-        scene::SemanticScene::loadReplicaHouse(houseFilename, *semanticScene_);
-      }
-      break;
-    case assets::AssetType::MP3D_MESH:
-      // TODO(msb) Fix AssetType determination logic.
-      if (io::exists(houseFilename)) {
-        using Corrade::Utility::String::endsWith;
-        if (endsWith(houseFilename, ".house")) {
-          scene::SemanticScene::loadMp3dHouse(houseFilename, *semanticScene_);
-        } else if (endsWith(houseFilename, ".scn")) {
-          scene::SemanticScene::loadGibsonHouse(houseFilename, *semanticScene_);
-        }
-      }
-      break;
-    case assets::AssetType::SUNCG_SCENE:
-      scene::SemanticScene::loadSuncgHouse(sceneFilename, *semanticScene_);
-      break;
-    default:
-      break;
-  }
-}  // Simulator::reloadSemanticScene
-
 void Simulator::reset() {
   if (physicsManager_ != nullptr && physicsManager_->isEnabled()) {
     // Note: only resets time to 0 by default.

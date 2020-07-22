@@ -92,24 +92,6 @@ class Simulator {
 
   virtual void reset();
 
- protected:
-  /**
-   * @brief (Re)builds @ref semanticScene_ upon reconfigure.
-   *
-   * @param sceneType The type of the scene mesh.
-   * @param sceneFileName The file name of the scene mesh
-   */
-  void rebuildSemanticScene(const assets::AssetType sceneType,
-                            const std::string& sceneFilename,
-                            std::string& houseFilename);
-
-  /**
-   * @brief (Re)builds @ref pathfinder_ upon reconfigure.
-   *
-   * @param navmeshFilename The file name of the navmesh
-   */
-  void rebuildPathFinder(const std::string& navmeshFilename);
-
  public:
   virtual void seed(uint32_t newSeed);
 
@@ -645,7 +627,8 @@ class Simulator {
   }
 
   bool sceneHasPhysics(int sceneID) const {
-    return isValidScene(sceneID) && physicsManager_ != nullptr && physicsManager_->isEnabled();
+    return isValidScene(sceneID) && physicsManager_ != nullptr &&
+           physicsManager_->isEnabled();
   }
 
   gfx::WindowlessContext::uptr context_ = nullptr;
