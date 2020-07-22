@@ -25,9 +25,6 @@
 namespace AttrMgrs = esp::assets::managers;
 
 namespace esp {
-// namespace physics {
-// class PhysicsManager;
-// }
 namespace nav {
 class PathFinder;
 class NavMeshSettings;
