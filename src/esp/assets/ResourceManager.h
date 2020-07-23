@@ -124,6 +124,25 @@ class ResourceManager {
   void initDefaultPrimAttributes();
 
   /**
+   * @brief Instantiate, or reinstantiate, PhysicsManager defined by passed
+   * attributes
+   * @param physicsManager The currently defined @ref physics::PhysicsManager.
+   * Will be reseated to the specified physics implementation.
+   * @param isEnabled Whether this PhysicsManager is enabled or not.  Takes the
+   * place of old checks for nullptr.
+   * @param parent The @ref scene::SceneNode of which the scene mesh will be
+   * added as a child. Typically near the root of the scene. Expected to be
+   * static.
+   * @param physicsManagerAttributes A smart pointer to meta data structure
+   * storing configured physics simulation parameters.
+   */
+  void initPhysicsManager(
+      std::shared_ptr<physics::PhysicsManager>& physicsManager,
+      bool isEnabled,
+      scene::SceneNode* parent,
+      const PhysicsManagerAttributes::ptr& physicsManagerAttributes);
+
+  /**
    * @brief Load a scene mesh and add it to the specified @ref DrawableGroup as
    * a child of the specified @ref scene::SceneNode.
    *
@@ -131,6 +150,8 @@ class ResourceManager {
    * new @ref gfx::Drawable is added for the scene (i.e. it will not be
    * rendered).
    * @param info The loaded @ref AssetInfo for the scene mesh.
+   * @param _physicsManager The currently defined @ref physics::PhysicsManager.
+   * @param buildCollisionMesh Whether to build collision meshes for the scene.
    * @param parent The @ref scene::SceneNode of which the scene mesh will be
    * added as a child. Typically near the root of the scene. Expected to be
    * static.
@@ -143,42 +164,11 @@ class ResourceManager {
    */
   bool loadScene(
       const AssetInfo& info,
+      std::shared_ptr<physics::PhysicsManager> _physicsManager,
       scene::SceneNode* parent = nullptr,
       DrawableGroup* drawables = nullptr,
       const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{NO_LIGHT_KEY},
       bool splitSemanticMesh = true);
-
-  /**
-   * @brief Load and instantiate a scene including physics simulation.
-   *
-   * Loads a physics simulator for the world from the parameters defined in the
-   * @ref PhysicsManagerAttributes and reseats the @ref physics::PhysicsManager
-   * based on the configured simulator implementation. Loads the scene mesh and
-   * adds it to the specified @ref DrawableGroup as a child of the specified
-   * @ref scene::SceneNode. If these are not specified, the assets are loaded,
-   * but no new @ref gfx::Drawable is added for the scene (i.e. it will not be
-   * rendered).
-   * @param info The loaded @ref AssetInfo for the scene mesh.
-   * @param _physicsManager The currently defined @ref physics::PhysicsManager.
-   * Will be reseated to the configured physics implementation.
-   * @param physicsManagerAttributes A smart pointer to meta data structure
-   * storing configured physics simulation parameters.
-   * @param parent The @ref scene::SceneNode of which the scene mesh will be
-   * added as a child. Typically near the root of the scene. Expected to be
-   * static.
-   * @param drawables The @ref DrawableGroup with which the scene mesh will be
-   * rendered.
-   * @param lightSetup The @ref LightSetup key that will be used.
-   * @return Whether or not the scene load succeeded.
-   */
-  bool loadPhysicsScene(
-      const AssetInfo& info,
-      std::shared_ptr<physics::PhysicsManager>& _physicsManager,
-      const PhysicsManagerAttributes::ptr physicsManagerAttributes,
-      scene::SceneNode* parent = nullptr,
-      DrawableGroup* drawables = nullptr,
-      const Magnum::ResourceKey& lightSetup = Magnum::ResourceKey{
-          NO_LIGHT_KEY});
 
   /**
    * @brief Construct scene collision mesh group based on name and type of
@@ -422,18 +412,6 @@ class ResourceManager {
   inline void compressTextures(bool newVal) { compressTextures_ = newVal; };
 
  private:
-  /**
-   * @brief Instantiate, or reinstatiate, PhysicsManager defined by passed
-   * attributes
-   * @param physicsManager The currently defined @ref physics::PhysicsManager.
-   * Will be reseated to the configured physics implementation.
-   * @param physicsManagerAttributes A smart pointer to meta data structure
-   * storing configured physics simulation parameters.
-   */
-  void initPhysicsManager(
-      std::shared_ptr<physics::PhysicsManager>& physicsManager,
-      const PhysicsManagerAttributes::ptr& physicsManagerAttributes);
-
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
    * specified @ref meshType used by @ref objectTemplateHandle

@@ -47,7 +47,20 @@ void initAttributesBindings(py::module& m) {
                     &AbstractPhysicsAttributes::setRenderAssetHandle)
       .def_property("collision_asset_handle",
                     &AbstractPhysicsAttributes::getCollisionAssetHandle,
-                    &AbstractPhysicsAttributes::setCollisionAssetHandle);
+                    &AbstractPhysicsAttributes::setCollisionAssetHandle)
+      .def_property("requires_lighting",
+                    &AbstractPhysicsAttributes::getRequiresLighting,
+                    &AbstractPhysicsAttributes::setRequiresLighting)
+      .def_property_readonly(
+          "render_asset_is_primitive",
+          &AbstractPhysicsAttributes::getRenderAssetIsPrimitive)
+      .def_property_readonly(
+          "collision_asset_is_primitive",
+          &AbstractPhysicsAttributes::getCollisionAssetIsPrimitive)
+      .def_property_readonly("use_mesh_for_collision",
+                             &AbstractPhysicsAttributes::getUseMeshCollision)
+      .def_property_readonly("is_dirty",
+                             &AbstractPhysicsAttributes::getIsDirty);
 
   // ==== PhysicsObjectAttributes ====
   py::class_<PhysicsObjectAttributes, AbstractPhysicsAttributes,
@@ -69,21 +82,16 @@ void initAttributesBindings(py::module& m) {
       .def_property("angular_damping",
                     &PhysicsObjectAttributes::getAngularDamping,
                     &PhysicsObjectAttributes::setAngularDamping)
-      .def_property("render_asset_handle",
-                    &PhysicsObjectAttributes::getRenderAssetHandle,
-                    &PhysicsObjectAttributes::setRenderAssetHandle)
-      .def_property("collision_asset_handle",
-                    &PhysicsObjectAttributes::getCollisionAssetHandle,
-                    &PhysicsObjectAttributes::setCollisionAssetHandle)
       .def_property("bounding_box_collisions",
                     &PhysicsObjectAttributes::getBoundingBoxCollisions,
                     &PhysicsObjectAttributes::setBoundingBoxCollisions)
       .def_property("join_collision_meshes",
                     &PhysicsObjectAttributes::getJoinCollisionMeshes,
                     &PhysicsObjectAttributes::setJoinCollisionMeshes)
-      .def_property("requires_lighting",
-                    &PhysicsObjectAttributes::getRequiresLighting,
-                    &PhysicsObjectAttributes::setRequiresLighting)
+      .def_property("is_visibile", &PhysicsObjectAttributes::getIsVisible,
+                    &PhysicsObjectAttributes::setIsVisible)
+      .def_property("is_collidable", &PhysicsObjectAttributes::getIsCollidable,
+                    &PhysicsObjectAttributes::setIsCollidable)
       .def_property("semantic_id", &PhysicsObjectAttributes::getSemanticId,
                     &PhysicsObjectAttributes::setSemanticId);
 

@@ -34,7 +34,7 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   bWorld_->setDebugDrawer(&debugDrawer_);
 
   // currently GLB meshes are y-up
-  bWorld_->setGravity(btVector3(physicsManagerAttributes->getVec3("gravity")));
+  bWorld_->setGravity(btVector3(physicsManagerAttributes_->getVec3("gravity")));
 
   //! Create new scene node
   staticSceneObject_ = physics::BulletRigidScene::create_unique(

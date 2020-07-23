@@ -17,6 +17,14 @@ AbstractPhysicsAttributes::AbstractPhysicsAttributes(
     : AbstractAttributes(attributesClassKey, handle) {
   setFrictionCoefficient(0.5);
   setRestitutionCoefficient(0.1);
+  // default rendering and collisions will be mesh for physics objects and
+  // scenes. Primitive-based objects do not currently support mesh collisions,
+  // however, due to issues with how non-triangle meshes (i.e. wireframes) are
+  // handled in @ref GenericMeshData::setMeshData
+  setRenderAssetIsPrimitive(false);
+  setCollisionAssetIsPrimitive(false);
+  setUseMeshCollision(true);
+
   setRenderAssetHandle("");
   setCollisionAssetHandle("");
 }  // AbstractPhysicsAttributes ctor
@@ -39,13 +47,7 @@ PhysicsObjectAttributes::PhysicsObjectAttributes(const std::string& handle)
   setInertia({0, 0, 0});
   setLinearDamping(0.2);
   setAngularDamping(0.2);
-  // default rendering and collisions will be mesh for physics objects
-  // primitive-based objects do not currently support mesh collisions, however,
-  // due to issues with how non-triangle meshes (i.e. wireframes) are handled in
-  // @ref GenericMeshData::setMeshData
-  setRenderAssetIsPrimitive(false);
-  setCollisionAssetIsPrimitive(false);
-  setUseMeshCollision(true);
+
   setComputeCOMFromShape(true);
 
   setBoundingBoxCollisions(false);
@@ -62,6 +64,8 @@ PhysicsSceneAttributes::PhysicsSceneAttributes(const std::string& handle)
   // TODO do these defaults need to be maintained here?
   setFrictionCoefficient(0.4);
   setRestitutionCoefficient(0.05);
+
+  setRequiresLighting(false);
 }  // PhysicsSceneAttributes ctor
 
 PhysicsManagerAttributes::PhysicsManagerAttributes(const std::string& handle)

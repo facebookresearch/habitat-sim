@@ -94,7 +94,7 @@ class PhysicsManager {
       assets::ResourceManager& _resourceManager,
       const assets::PhysicsManagerAttributes::cptr _physicsManagerAttributes)
       : resourceManager_(_resourceManager),
-        physicsManagerAttributes(_physicsManagerAttributes){};
+        physicsManagerAttributes_(_physicsManagerAttributes){};
 
   /** @brief Destructor*/
   virtual ~PhysicsManager();
@@ -105,8 +105,6 @@ class PhysicsManager {
    *
    * @param node    The scene graph node which will act as the parent of all
    * physical scene and object nodes.
-   * @param physicsManagerAttributes A structure containing values for physical
-   * parameters necessary to initialize the physical scene and simulator.
    */
   bool initPhysics(scene::SceneNode* node);
 
@@ -117,7 +115,7 @@ class PhysicsManager {
   virtual void reset() {
     /* TODO: reset object states or clear them? Other? */
     worldTime_ = 0.0;
-  };
+  }
 
   /** @brief Stores references to a set of drawable elements. */
   using DrawableGroup = gfx::DrawableGroup;
@@ -842,6 +840,16 @@ class PhysicsManager {
     return existingObjects_.at(physObjectID)->getInitializationAttributes();
   }
 
+  /**
+   * @brief Get a copy of the template used to initialize this physics manager
+   *
+   * @return The initialization settings for this physics manager
+   */
+  assets::PhysicsManagerAttributes::ptr getInitializationAttributes() const {
+    return assets::PhysicsManagerAttributes::create(
+        *physicsManagerAttributes_.get());
+  }
+
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
    * existing object). Terminate the program and report an error if not. This
@@ -880,8 +888,6 @@ class PhysicsManager {
    * @brief Finalize physics initialization. Setup staticSceneObject_ and
    * initialize any other physics-related values for physics-based scenes.
    * Overidden by instancing class if physics is supported.
-   * @param physicsManagerAttributes A structure containing values for physical
-   * parameters necessary to initialize the physical scene and simulator.
    */
   virtual bool initPhysicsFinalize();
 
@@ -917,7 +923,7 @@ class PhysicsManager {
 
   /** @brief A pointer to the @ref assets::PhysicsManagerAttributes describing
    * this physics manager */
-  const assets::PhysicsManagerAttributes::cptr physicsManagerAttributes;
+  const assets::PhysicsManagerAttributes::cptr physicsManagerAttributes_;
 
   /** @brief The current physics library implementation used by this
    * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager

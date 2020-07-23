@@ -63,7 +63,8 @@ DrawableTest::DrawableTest() {
   esp::scene::SceneNode& sceneRootNode = sceneGraph.getRootNode();
   const esp::assets::AssetInfo info =
       esp::assets::AssetInfo::fromPath(sceneFile);
-  resourceManager_.loadScene(info, &sceneRootNode, drawableGroup_);
+
+  resourceManager_.loadScene(info, nullptr, &sceneRootNode, drawableGroup_);
 }
 
 void DrawableTest::addRemoveDrawables() {

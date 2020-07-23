@@ -16,6 +16,7 @@
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/PhysicsManager.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
@@ -52,6 +53,10 @@ struct SimulatorConfiguration {
   bool allowSliding = true;
   // enable or disable the frustum culling
   bool frustumCulling = true;
+  /**
+   * @brief This flags specifies whether or not dynamics is supported by the
+   * simulation, if a suitable library (i.e. Bullet) has been installed.
+   */
   bool enablePhysics = false;
   bool loadSemanticMesh = true;
   std::string physicsConfigFile =
@@ -88,6 +93,7 @@ class Simulator {
 
   virtual void reset();
 
+ public:
   virtual void seed(uint32_t newSeed);
 
   std::shared_ptr<gfx::Renderer> getRenderer() { return renderer_; }

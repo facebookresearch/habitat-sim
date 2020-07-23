@@ -89,11 +89,11 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   // create pathfinder and load navmesh if available
-  pathfinder_ = nav::PathFinder::create();
   std::string navmeshFilename = io::changeExtension(sceneFilename, ".navmesh");
   if (cfg.scene.filepaths.count("navmesh")) {
     navmeshFilename = cfg.scene.filepaths.at("navmesh");
   }
+  pathfinder_ = nav::PathFinder::create();
   if (io::exists(navmeshFilename)) {
     LOG(INFO) << "Loading navmesh from " << navmeshFilename;
     pathfinder_->loadNavMesh(navmeshFilename);
@@ -106,9 +106,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   seed(config_.randomSeed);
 
   std::string houseFilename = io::changeExtension(sceneFilename, ".house");
-  if (!io::exists(houseFilename)) {
-    houseFilename = io::changeExtension(sceneFilename, ".scn");
-  }
   if (cfg.scene.filepaths.count("house")) {
     houseFilename = cfg.scene.filepaths.at("house");
   }
@@ -117,6 +114,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     houseFilename = io::changeExtension(sceneFilename, ".scn");
   }
 
+  // TODO : replace with PhysicsSceneAttributes?
   assets::AssetInfo sceneInfo = assets::AssetInfo::fromPath(sceneFilename);
   sceneInfo.requiresLighting =
       cfg.sceneLightSetup != assets::ResourceManager::NO_LIGHT_KEY;
@@ -149,28 +147,23 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     resourceManager_->compressTextures(cfg.compressTextures);
 
     bool loadSuccess = false;
-    if (config_.enablePhysics) {
-      // use physics world attributes manager to get physics manager attributes
-      // described by config file
-      auto physicsManagerAttributes =
-          resourceManager_->getPhysicsAttributesManager()
-              ->createAttributesTemplate(cfg.physicsConfigFile, true);
 
-      CORRADE_ASSERT(
-          physicsManagerAttributes != nullptr,
-          "Simulator::reconfigure : Error attempting to load world described by"
-              << cfg.physicsConfigFile << ". Aborting", );
+    // use physics world attributes manager to get physics manager attributes
+    // described by config file
+    auto physicsManagerAttributes =
+        resourceManager_->getPhysicsAttributesManager()
+            ->createAttributesTemplate(cfg.physicsConfigFile, true);
 
-      loadSuccess = resourceManager_->loadPhysicsScene(
-          sceneInfo, physicsManager_, physicsManagerAttributes, &rootNode,
-          &drawables, cfg.sceneLightSetup);
+    // (re)init physics manager
+    resourceManager_->initPhysicsManager(physicsManager_, config_.enablePhysics,
+                                         &rootNode, physicsManagerAttributes);
 
-    } else {
-      loadSuccess = resourceManager_->loadScene(
-          sceneInfo, &rootNode, &drawables, cfg.sceneLightSetup);
-    }
+    // Load scene
+    loadSuccess = resourceManager_->loadScene(
+        sceneInfo, physicsManager_, &rootNode, &drawables, cfg.sceneLightSetup);
+
     if (!loadSuccess) {
-      LOG(ERROR) << "cannot load " << sceneFilename;
+      LOG(ERROR) << "Cannot load " << sceneFilename;
       // Pass the error to the python through pybind11 allowing graceful exit
       throw std::invalid_argument("Cannot load: " + sceneFilename);
     }
@@ -194,7 +187,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
         const assets::AssetInfo semanticSceneInfo =
             assets::AssetInfo::fromPath(semanticMeshFilename);
         resourceManager_->loadScene(
-            semanticSceneInfo, &semanticRootNode, &semanticDrawables,
+            semanticSceneInfo, nullptr, &semanticRootNode, &semanticDrawables,
             assets::ResourceManager::NO_LIGHT_KEY, cfg.frustumCulling);
         LOG(INFO) << "Loaded.";
       } else {
@@ -214,7 +207,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
                         "annotations. \n---";
       }
     }
-  }
+  }  // if (cfg.createRenderer)
 
   semanticScene_ = nullptr;
   semanticScene_ = scene::SemanticScene::create();
@@ -245,7 +238,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   reset();
-}
+}  // Simulator::reconfigure
 
 void Simulator::reset() {
   if (physicsManager_ != nullptr) {
@@ -259,7 +252,7 @@ void Simulator::reset() {
   const Magnum::Range3D& sceneBB =
       getActiveSceneGraph().getRootNode().computeCumulativeBB();
   resourceManager_->setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
-}
+}  // Simulator::reset()
 
 void Simulator::seed(uint32_t newSeed) {
   random_->seed(newSeed);
