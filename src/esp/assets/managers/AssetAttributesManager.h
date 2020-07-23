@@ -5,6 +5,12 @@
 #ifndef ESP_ASSETS_MANAGERS_ASSETATTRIBUTEMANAGER_H_
 #define ESP_ASSETS_MANAGERS_ASSETATTRIBUTEMANAGER_H_
 
+/** @file
+ * @brief Class Template @ref esp::assets::AssetAttributesManager
+ * This class manages attributes describing/configuring magnum mesh
+ * primitives.
+ */
+
 #include "AttributesManagerBase.h"
 
 namespace esp {
@@ -81,7 +87,8 @@ class AssetAttributesManager
 
   AssetAttributesManager(assets::ResourceManager& resourceManager)
       : AttributesManager<AbstractPrimitiveAttributes::ptr>::AttributesManager(
-            resourceManager) {
+            resourceManager,
+            "Primitive Asset") {
     buildCtorFuncPtrMaps();
   }  // AssetAttributesManager::ctor
 

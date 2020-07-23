@@ -21,7 +21,8 @@ class ObjectAttributesManager
  public:
   ObjectAttributesManager(assets::ResourceManager& resourceManager)
       : AttributesManager<PhysicsObjectAttributes::ptr>::AttributesManager(
-            resourceManager) {
+            resourceManager,
+            "Physical Object") {
     buildCtorFuncPtrMaps();
   }
 
@@ -80,7 +81,7 @@ class ObjectAttributesManager
    * @brief Creates an instance of an object template described by passed
    * string, which should be a reference to an existing primitive asset template
    * to be used in the construction of the object (as render and collision
-   * mesh). It returns existing instance if there is one, and nullptr if fails.
+   * mesh). It returns created instance if successful, and nullptr if fails.
    *
    * @param primAttrTemplateHandle The handle to an existing primitive asset
    * template. Fails if does not.
@@ -95,8 +96,10 @@ class ObjectAttributesManager
       bool registerTemplate = true);
 
   /**
-   * @brief Creates an instance of a template from a file using passed filename.
-   * It returns existing instance if there is one, and nullptr if fails
+   * @brief Creates an instance of a template from a JSON file using passed
+   * filename by loading and parsing the loaded JSON and generating a @ref
+   * PhysicsObjectAttributes object. It returns created instance if successful,
+   * and nullptr if fails.
    *
    * @param filename the name of the file describing the object attributes.
    * Assumes it exists and fails if it does not.
@@ -273,34 +276,6 @@ class ObjectAttributesManager
         &ObjectAttributesManager::createAttributesCopy<
             assets::PhysicsObjectAttributes>;
   }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
-  /**
-   * @brief Load and parse a physics object template config file and generate a
-   * @ref PhysicsObjectAttributes object. Will always reload from file, since
-   * existing attributes may have been changed; the user would use this pathway
-   * to return to original config.
-   *
-   * @param objPhysConfigFilename The configuration file to parse and load.
-   * @return The object attributes specified by the config file.
-   */
-  PhysicsObjectAttributes::ptr parseAndLoadPhysObjTemplate(
-      const std::string& objPhysConfigFilename);
-
-  /**
-   * @brief Instantiate a @ref PhysicsObjectAttributes for a
-   * synthetic(primitive-based render) object. NOTE : Must be registered to be
-   * available for use via @ref registerObjectTemplate. This method is provided
-   * so the user can modify a specified physics object template before
-   * registering it.
-   *
-   * @param primAssetHandle The string name of the primitive asset attributes to
-   * be used to synthesize a render asset and solve collisions implicitly for
-   * the desired object. Will also become the default handle of the resultant
-   * @ref physicsObjectAttributes template
-   * @return The @ref physicsObjectAttributes template based on the passed
-   * primitive
-   */
-  PhysicsObjectAttributes::ptr buildPrimBasedPhysObjTemplate(
-      const std::string& primAssetHandle);
 
   /**
    * @brief Reference to AssetAttributesManager to give access to primitive

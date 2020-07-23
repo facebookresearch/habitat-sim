@@ -19,7 +19,8 @@ class SceneAttributesManager
   SceneAttributesManager(assets::ResourceManager& resourceManager,
                          ObjectAttributesManager::ptr objectAttributesMgr)
       : AttributesManager<PhysicsSceneAttributes::ptr>::AttributesManager(
-            resourceManager),
+            resourceManager,
+            "Physical Scene"),
         objectAttributesMgr_(objectAttributesMgr) {
     buildCtorFuncPtrMaps();
   }
@@ -103,16 +104,16 @@ class SceneAttributesManager
 
  protected:
   /**
-   * @brief Scene is file-based, described by @ref sceneFilename; populate a
-   * returned scene attributes with appropriate data.  This method's intended
-   * use is to support backwards compatibility for when scene meshes are loaded
-   * without JSON files.
+   * @brief Scene is file-based lacking a descriptive .json, described by @ref
+   * sceneFilename; populate a returned scene attributes with appropriate data.
+   * This method's intended use is to support backwards compatibility for when
+   * scene meshes are loaded without JSON files.
    *
    * @param sceneFilename The mesh file name
    * @param registerTemplate whether to add this template to the library or not.
    * @return a reference to the desired scene template, or nullptr if fails.
    */
-  PhysicsSceneAttributes::ptr createFileBasedAttributesTemplate(
+  PhysicsSceneAttributes::ptr createBackCompatAttributesTemplate(
       const std::string& sceneFilename,
       bool registerTemplate = true);
 
@@ -124,26 +125,9 @@ class SceneAttributesManager
    * @param registerTemplate whether to add this template to the library or not.
    * @return a reference to the desired scene template, or nullptr if fails.
    */
-  PhysicsSceneAttributes::ptr createJSONFileBasedAttributesTemplate(
+  PhysicsSceneAttributes::ptr createFileBasedAttributesTemplate(
       const std::string& sceneFilename,
       bool registerTemplate = true);
-
-  /**
-   * @brief Instantiate a @ref PhysicsSceneAttributes for a
-   * synthetic(primitive-based render) scene. NOTE : Must be registered to be
-   * available for use via @ref registerObjectTemplate. This method is provided
-   * so the user can modify a specified physics scene template before
-   * registering it.
-   *
-   * @param primAssetHandle The string name of the primitive asset attributes to
-   * be used to synthesize a render asset and solve collisions implicitly for
-   * the desired scene. Will also become the default handle of the resultant
-   * @ref PhysicsSceneAttributes template
-   * @return The @ref PhysicsSceneAttributes template based on the passed
-   * primitive
-   */
-  PhysicsSceneAttributes::ptr buildPrimBasedPhysObjTemplate(
-      const std::string& primAssetHandle);
 
   /**
    * @brief Add a @ref std::shared_ptr<attributesType> object to the

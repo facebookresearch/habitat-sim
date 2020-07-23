@@ -10,6 +10,7 @@
  */
 
 #include <deque>
+#include <functional>
 #include <map>
 
 #include <Corrade/Utility/ConfigurationGroup.h>
@@ -17,6 +18,8 @@
 #include <Corrade/Utility/String.h>
 
 #include "esp/assets/Attributes.h"
+
+#include "esp/io/json.h"
 
 namespace Cr = Corrade;
 
@@ -37,8 +40,9 @@ namespace managers {
 template <class AttribsPtr>
 class AttributesManager {
  public:
-  AttributesManager(assets::ResourceManager& resourceManager)
-      : resourceManager_(resourceManager) {}
+  AttributesManager(assets::ResourceManager& resourceManager,
+                    const std::string& attrType)
+      : resourceManager_(resourceManager), attrType_(attrType) {}
   virtual ~AttributesManager() = default;
 
   /**
@@ -104,8 +108,8 @@ class AttributesManager {
     std::string handleToSet = attributesTemplate->getHandle();
     if ("" == handleToSet) {
       LOG(ERROR) << "AttributesManager::registerAttributesTemplate : No "
-                    "valid handle specified for attributes template to "
-                    "register. Aborting.";
+                    "valid handle specified for "
+                 << attrType_ << " attributes template to register. Aborting.";
       return ID_UNDEFINED;
     }
     return registerAttributesTemplateFinalize(attributesTemplate, handleToSet);
@@ -252,8 +256,7 @@ class AttributesManager {
   std::string getTemplateHandleByID(const int templateID) const {
     if (templateLibKeyByID_.count(templateID) == 0) {
       LOG(ERROR) << "AttributesManager::getTemplateHandleByID : Unknown "
-                    "object template ID:"
-                 << templateID << ". Aborting";
+                 << attrType_ << " template ID:" << templateID << ". Aborting";
       return nullptr;
     }
     return templateLibKeyByID_.at(templateID);
@@ -385,13 +388,157 @@ class AttributesManager {
   }
 
  protected:
+  //======== Common JSON import functions ========
+
+  /**
+   * @brief Verify passed @ref filename is legal json document, return loaded
+   * document or nullptr if fails
+   *
+   * @param filename name of potential json document to load
+   * @param jsonDoc a reference to the json document to be parsed
+   * @return whether document has been loaded successfully or not
+   */
+  bool verifyLoadJson(const std::string& filename, io::JsonDocument& jsonDoc) {
+    if (isValidFileName(filename)) {
+      try {
+        jsonDoc = io::parseJsonFile(filename);
+      } catch (...) {
+        LOG(ERROR) << "Failed to parse " << filename << "as JSON.";
+        return false;
+      }
+      return true;
+    } else {
+      // by here always fail
+      LOG(ERROR) << "File " << filename << " does not exist";
+      return false;
+    }
+  }  // AttributesManager::verifyLoadJson
+
+  /**
+   * @brief Create either an object or a scene attributes from a json config.
+   * Since both object attributes and scene attributes inherit from @ref
+   * AbstractPhysicsAttributes, the functionality to populate these fields from
+   * json can be shared.  Also will will populate render mesh and collision mesh
+   * handles in object and scene attributes with value(s) specified in json.  If
+   * one is blank will use other for both.
+   *
+   * @tparam type of attributes to create : MUST INHERIT FROM @ref
+   * AbstractPhysicsAttributes
+   * @param filename name of json descriptor file
+   * @param jsonDoc json document to parse
+   * @return an appropriately cast attributes pointer with base class fields
+   * filled in.
+   */
+  template <typename U>
+  AttribsPtr createPhysicsAttributesFromJson(const std::string& filename,
+                                             const io::JsonDocument& jsonDoc);
+
+  /**
+   * @brief Check passed json doc for existence of passed @ref jsonTag as
+   * 3D vector of doubles. If present, populate passed @ref attribSetter with
+   * value. Returns whether tag is found and successfully populated, or not.
+   *
+   * @param jsonDoc json document to parse
+   * @param jsonTag string tag to look for in json doc
+   * @param attribSetter Setter in attributes to populate with the data from
+   * json.
+   * @return whether successful or not
+   */
+  bool parseJsonToDoubleArray(
+      const io::JsonDocument& jsonDoc,
+      const char* jsonTag,
+      std::function<void(const Magnum::Vector3&)> attribSetter);
+
+  /**
+   * @brief Check passed json doc for existence of passed @ref jsonTag as
+   * double. If present, populate passed @ref attribSetter with
+   * value. Returns whether tag is found and successfully populated, or not.
+   *
+   * @param jsonDoc json document to parse
+   * @param jsonTag string tag to look for in json doc
+   * @param attribSetter Setter in attributes to populate with the data from
+   * json.
+   * @return whether successful or not
+   */
+  bool parseJsonToDouble(const io::JsonDocument& jsonDoc,
+                         const char* jsonTag,
+                         std::function<void(double)> attribSetter) {
+    if (jsonDoc.HasMember(jsonTag)) {
+      if (jsonDoc[jsonTag].IsNumber()) {
+        attribSetter(jsonDoc[jsonTag].GetDouble());
+        return true;
+      } else {
+        LOG(ERROR) << " Invalid value in " << attrType_ << " JSON config - "
+                   << jsonTag;
+        return false;
+      }
+    }
+    return false;
+  }  // AttributesManager::parseJsonToDouble
+
+  /**
+   * @brief Check passed json doc for existence of passed @ref jsonTag as
+   * boolean. If present, populate passed @ref attribSetter with
+   * value. Returns whether tag is found and successfully populated, or not.
+   *
+   * @param jsonDoc json document to parse
+   * @param jsonTag string tag to look for in json doc
+   * @param attribSetter Setter in attributes to populate with the data from
+   * json.
+   * @return whether successful or not
+   */
+  bool parseJsonToBool(const io::JsonDocument& jsonDoc,
+                       const char* jsonTag,
+                       std::function<void(bool)> attribSetter) {
+    if (jsonDoc.HasMember(jsonTag)) {
+      if (jsonDoc[jsonTag].IsBool()) {
+        attribSetter(jsonDoc[jsonTag].GetBool());
+        return true;
+      } else {
+        LOG(ERROR) << " Invalid value in " << attrType_ << " JSON config - "
+                   << jsonTag;
+        return false;
+      }
+    }
+    return false;
+  }  // AttributesManager::parseJsonToBool
+
+  /**
+   * @brief Check passed json doc for existence of passed @ref jsonTag as
+   * string. If present, populate passed @ref attribSetter with
+   * value. Returns whether tag is found and successfully populated, or not.
+   *
+   * @param jsonDoc json document to parse
+   * @param jsonTag string tag to look for in json doc
+   * @param attribSetter Setter in attributes to populate with the data from
+   * json.
+   * @return whether successful or not
+   */
+  bool parseJsonToString(const io::JsonDocument& jsonDoc,
+                         const char* jsonTag,
+                         std::function<void(const std::string&)> attribSetter) {
+    if (jsonDoc.HasMember(jsonTag)) {
+      if (jsonDoc[jsonTag].IsString()) {
+        attribSetter(jsonDoc[jsonTag].GetString());
+        return true;
+      } else {
+        LOG(ERROR) << " Invalid value in " << attrType_ << " JSON config - "
+                   << jsonTag;
+        return false;
+      }
+    }
+    return false;
+  }  // AttributesManager::parseJsonToBool
+
+  //======== Internally accessed functions ========
   /**
    * @brief Used Internally. Remove the template referenced by the passed
    * string handle. Will emplace template ID within deque of usable IDs and
    * return the template being removed.
    * @param templateHandle the string key of the attributes desired.
    * @param src String denoting the source of the remove request.
-   * @return the desired attributes being deleted, or nullptr if does not exist
+   * @return the desired attributes being deleted, or nullptr if does not
+   * exist
    */
   AttribsPtr removeTemplateInternal(const std::string& templateHandle,
                                     const std::string& src);
@@ -414,9 +561,9 @@ class AttributesManager {
       return templateLibrary_.at(templateHandle)->getID();
     } else {
       if (!getNext) {
-        LOG(ERROR) << "AttributesManager::getTemplateIDByHandle : No template "
-                      " with handle "
-                   << templateHandle << "exists. Aborting";
+        LOG(ERROR) << "AttributesManager::getTemplateIDByHandle : No "
+                   << attrType_ << " template with handle " << templateHandle
+                   << "exists. Aborting";
         return ID_UNDEFINED;
       } else {
         // return next available template ID (from previously deleted template)
@@ -450,8 +597,8 @@ class AttributesManager {
   bool checkExistsWithMessage(const std::string& templateHandle,
                               const std::string& src) const {
     if (!getTemplateLibHasHandle(templateHandle)) {
-      LOG(ERROR) << src << " : Unknown template handle :" << templateHandle
-                 << ". Aborting";
+      LOG(ERROR) << src << " : Unknown " << attrType_
+                 << " template handle :" << templateHandle << ". Aborting";
       return false;
     }
     return true;
@@ -581,6 +728,10 @@ class AttributesManager {
    * assets that can be accessed by this @ref PhysicsManager*/
   assets::ResourceManager& resourceManager_;
 
+  /** @brief A descriptive name of the attributes being managed by this manager.
+   */
+  const std::string attrType_;
+
   /**
    * @brief Maps string keys to attributes templates
    */
@@ -601,10 +752,99 @@ class AttributesManager {
  public:
   ESP_SMART_POINTERS(AttributesManager<AttribsPtr>)
 
-};  // class AttributesManager
+};  // namespace managers
 
 /////////////////////////////
 // Class Template Method Definitions
+template <class T>
+bool AttributesManager<T>::parseJsonToDoubleArray(
+    const io::JsonDocument& jsonDoc,
+    const char* jsonTag,
+    std::function<void(const Magnum::Vector3&)> attribSetter) {
+  if (jsonDoc.HasMember(jsonTag) && jsonDoc[jsonTag].IsArray() &&
+      (jsonDoc[jsonTag].Size() == 3)) {
+    Magnum::Vector3 value;
+    for (rapidjson::SizeType i = 0; i < 3; ++i) {
+      if (jsonDoc[jsonTag][i].IsNumber()) {
+        value[i] = jsonDoc[jsonTag][i].GetDouble();
+      } else {
+        // invalid config
+        LOG(ERROR) << " Invalid array value" << attrType_ << " JSON config - "
+                   << jsonTag;
+        return false;
+      }
+    }  // build array
+    attribSetter(value);
+    return true;
+  }  // if tag is present, tag is appropriate format and length
+  return false;
+}  // AttributesManager::parseJsonToDoubleArray
+
+template <class AttribsPtr>
+template <class U>
+AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
+    const std::string& configFilename,
+    const io::JsonDocument& jsonDoc) {
+  auto attributes = U::create(configFilename);
+  using namespace std::placeholders;
+  // scale
+  this->parseJsonToDoubleArray(
+      jsonDoc, "scale",
+      std::bind(&AbstractPhysicsAttributes::setScale, attributes, _1));
+
+  // load the friction coefficient
+  this->parseJsonToDouble(
+      jsonDoc, "friction coefficient",
+      std::bind(&AbstractPhysicsAttributes::setFrictionCoefficient, attributes,
+                _1));
+
+  // load the restitution coefficient
+  this->parseJsonToDouble(
+      jsonDoc, "restitution coefficient",
+      std::bind(&AbstractPhysicsAttributes::setRestitutionCoefficient,
+                attributes, _1));
+
+  // if object will be flat or phong shaded
+  this->parseJsonToBool(
+      jsonDoc, "requires lighting",
+      std::bind(&AbstractPhysicsAttributes::setRequiresLighting, attributes,
+                _1));
+
+  // 4. parse render and collision mesh filepaths
+  std::string propertiesFileDirectory =
+      configFilename.substr(0, configFilename.find_last_of("/"));
+
+  std::string rndrFName = "";
+  std::string colFName = "";
+
+  if (jsonDoc.HasMember("render mesh")) {
+    if (jsonDoc["render mesh"].IsString()) {
+      rndrFName = Cr::Utility::Directory::join(
+          propertiesFileDirectory, jsonDoc["render mesh"].GetString());
+    } else {
+      LOG(ERROR) << " Invalid value in " << attrType_
+                 << " JSON config - render mesh";
+    }
+  }
+
+  if (jsonDoc.HasMember("collision mesh")) {
+    if (jsonDoc["collision mesh"].IsString()) {
+      colFName = Cr::Utility::Directory::join(
+          propertiesFileDirectory, jsonDoc["collision mesh"].GetString());
+    } else {
+      LOG(ERROR) << " Invalid value in " << attrType_
+                 << " JSON config - collision mesh";
+    }
+  }
+  // use non-empty result if either result is empty
+  attributes->setRenderAssetHandle(rndrFName.compare("") == 0 ? colFName
+                                                              : rndrFName);
+  attributes->setCollisionAssetHandle(colFName.compare("") == 0 ? rndrFName
+                                                                : colFName);
+  attributes->setUseMeshCollision(true);
+
+  return attributes;
+}  // AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson
 
 template <class T>
 T AttributesManager<T>::removeTemplateInternal(
@@ -617,8 +857,8 @@ T AttributesManager<T>::removeTemplateInternal(
     msg = "Required Default Template";
   }
   if (msg.length() != 0) {
-    LOG(INFO) << sourceStr << " : Unable to remove template " << templateHandle
-              << " : " << msg << ".";
+    LOG(INFO) << sourceStr << " : Unable to remove " << attrType_
+              << " template " << templateHandle << " : " << msg << ".";
     return nullptr;
   }
 
@@ -636,8 +876,8 @@ std::string AttributesManager<T>::getRandomTemplateHandlePerType(
     const std::string& type) const {
   std::size_t numVals = mapOfHandles.size();
   if (numVals == 0) {
-    LOG(ERROR) << "Attempting to get a random " << type
-               << "object template handle but none are loaded; Aboring";
+    LOG(ERROR) << "Attempting to get a random " << type << attrType_
+               << " template handle but none are loaded; Aboring";
     return "";
   }
   int randIDX = rand() % numVals;
