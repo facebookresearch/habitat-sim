@@ -786,7 +786,7 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
     const std::string& configFilename,
     const io::JsonDocument& jsonDoc) {
   auto attributes = U::create(configFilename);
-  using namespace std::placeholders;
+  using std::placeholders::_1;
   // scale
   this->parseJsonToDoubleArray(
       jsonDoc, "scale",
