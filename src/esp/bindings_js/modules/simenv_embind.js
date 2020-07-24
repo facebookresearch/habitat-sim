@@ -146,7 +146,9 @@ class SimEnv {
    * @param {number} objectLibHandle - object's template config/origin handle
    * @returns {number} object ID or -1 if object was unable to be added
    */
-  addPrimitiveObject(objectLibHandle = "capsule3DSolid") {
+  addPrimitiveObject(
+    objectLibHandle = "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_useTangents_false_capEnds_true"
+  ) {
     let objectId = this.addObjectByHandle(objectLibHandle);
     let newPosition = this.pathfinder.getRandomNavigablePoint();
     this.setTranslation(newPosition, objectId, 0);
