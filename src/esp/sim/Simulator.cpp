@@ -167,6 +167,15 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       // Pass the error to the python through pybind11 allowing graceful exit
       throw std::invalid_argument("Cannot load: " + sceneFilename);
     }
+
+    // refresh the NavMesh visualization if necessary after loading a new
+    // SceneGraph
+    if (isNavMeshVisualizationActive()) {
+      // if updating pathfinder_ instance, refresh the visualization.
+      setNavMeshVisualization(false);  // first clear the old instance
+      setNavMeshVisualization(true);
+    }
+
     const Magnum::Range3D& sceneBB = rootNode.computeCumulativeBB();
     resourceManager_->setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
 
@@ -617,10 +626,10 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
   }
 
   if (&pathfinder == pathfinder_.get()) {
-    if (navMeshVisNode_ != nullptr) {
-      // if updating pathfinder_ instance, reset the visualization if necessary.
-      toggleNavMeshVisualization();  // clear old version
-      toggleNavMeshVisualization();
+    if (isNavMeshVisualizationActive()) {
+      // if updating pathfinder_ instance, refresh the visualization.
+      setNavMeshVisualization(false);  // first clear the old instance
+      setNavMeshVisualization(true);
     }
   }
 
@@ -628,10 +637,19 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
   return true;
 }
 
-void Simulator::toggleNavMeshVisualization() {
-  if (pathfinder_ == nullptr)
-    return;
-  if (navMeshVisNode_ == nullptr && pathfinder_->isLoaded()) {
+bool Simulator::setNavMeshVisualization(bool visualize) {
+  // clean-up the NavMesh visualization if necessary
+  if (!visualize && navMeshVisNode_ != nullptr) {
+    delete navMeshVisNode_;
+    navMeshVisNode_ = nullptr;
+    if (navMeshVisPrimID_ != ID_UNDEFINED)
+      resourceManager_->removePrimitiveMesh(navMeshVisPrimID_);
+    navMeshVisPrimID_ = ID_UNDEFINED;
+  }
+
+  // Create new visualization asset and SceneNode
+  if (visualize && pathfinder_ != nullptr && navMeshVisNode_ == nullptr &&
+      pathfinder_->isLoaded()) {
     auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
     auto& rootNode = sceneGraph.getRootNode();
     auto& drawables = sceneGraph.getDrawables();
@@ -643,12 +661,12 @@ void Simulator::toggleNavMeshVisualization() {
                     "navmesh visualization.";
       delete navMeshVisNode_;
     }
-  } else if (navMeshVisNode_ != nullptr) {
-    delete navMeshVisNode_;
-    navMeshVisNode_ = nullptr;
-    resourceManager_->removePrimitiveMesh(navMeshVisPrimID_);
-    navMeshVisPrimID_ = esp::ID_UNDEFINED;
   }
+  return isNavMeshVisualizationActive();
+}
+
+bool Simulator::isNavMeshVisualizationActive() {
+  return (navMeshVisNode_ != nullptr && navMeshVisPrimID_ != ID_UNDEFINED);
 }
 
 // Agents

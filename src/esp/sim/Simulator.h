@@ -529,9 +529,18 @@ class Simulator {
                         bool includeStaticObjects = false);
 
   /**
-   * @brief Toggle visualization of the current NavMesh @ref pathfinder_.
+   * @brief Set visualization of the current NavMesh @ref pathfinder_ on or off.
+   *
+   * @param visualize Whether or not to visualize the navmesh.
+   * @return Whether or not the NavMesh visualization is active.
    */
-  void toggleNavMeshVisualization();
+  bool setNavMeshVisualization(bool visualize);
+
+  /**
+   * @brief Query active state of the current NavMesh @ref pathfinder_
+   * visualization.
+   */
+  bool isNavMeshVisualizationActive();
 
   agent::Agent::ptr getAgent(int agentId);
 
