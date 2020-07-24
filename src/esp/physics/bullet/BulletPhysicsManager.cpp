@@ -257,11 +257,5 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
   return results;
 }
 
-void BulletPhysicsManager::setActive(const int physObjectID, bool active) {
-  assertIDValidity(physObjectID);
-  static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID).get())
-      ->setActive();
-}
-
 }  // namespace physics
 }  // namespace esp
