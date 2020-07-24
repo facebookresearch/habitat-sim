@@ -73,6 +73,10 @@ void initSimBindings(py::module& m) {
       .def("close", &Simulator::close)
       .def_property("pathfinder", &Simulator::getPathFinder,
                     &Simulator::setPathFinder)
+      .def_property(
+          "navmesh_visualization", &Simulator::isNavMeshVisualizationActive,
+          &Simulator::setNavMeshVisualization,
+          R"(Enable or disable wireframe visualization of current pathfinder's NavMesh.)")
       .def_property_readonly("gpu_device", &Simulator::gpuDevice)
       .def_property_readonly("random", &Simulator::random)
       .def_property("frustum_culling", &Simulator::isFrustumCullingEnabled,
@@ -161,8 +165,6 @@ void initSimBindings(py::module& m) {
            "semantic_id"_a, "object_id"_a, "scene_id"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
            "navmesh_settings"_a, "include_static_objects"_a = false)
-      .def("toggle_navmesh_visualization",
-           &Simulator::toggleNavMeshVisualization)
       .def("get_light_setup", &Simulator::getLightSetup,
            "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY)
       .def("set_light_setup", &Simulator::setLightSetup, "light_setup"_a,
