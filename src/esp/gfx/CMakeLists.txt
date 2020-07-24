@@ -7,6 +7,8 @@ set(gfx_SOURCES
   DrawableGroup.h
   GenericDrawable.cpp
   GenericDrawable.h
+  MeshVisualizerDrawable.cpp
+  MeshVisualizerDrawable.h
   LightSetup.cpp
   LightSetup.h
   MaterialData.h

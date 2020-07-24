@@ -47,6 +47,7 @@
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/sim/Simulator.h"
 
+#include "ObjectPickingHelper.h"
 #include "esp/physics/configure.h"
 
 constexpr float moveSensitivity = 0.1f;
@@ -153,12 +154,10 @@ class Viewer : public Mn::Platform::Application {
   bool showFPS_ = true;
   bool frustumCullingEnabled_ = true;
 
-  // framebuffer for drawable selection
-  Mn::GL::Framebuffer selectionFramebuffer_{Mn::NoCreate};
-  Mn::GL::Renderbuffer selectionDepth_;
-  Mn::GL::Renderbuffer selectionDrawableId_;
   bool objectSelectionOn_ = false;
   int64_t selectedDrawableId_ = -1;
+  void unselectObject();
+  std::unique_ptr<ObjectPickingHelper> objectPickingHelper;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -331,24 +330,7 @@ Viewer::Viewer(const Arguments& arguments)
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
 
-  // setup an offscreen frame buffer for object selection
-  selectionDepth_.setStorage(Mn::GL::RenderbufferFormat::DepthComponent24,
-                             framebufferSize());
-  selectionDrawableId_.setStorage(Mn::GL::RenderbufferFormat::R32UI,
-                                  framebufferSize());
-  selectionFramebuffer_ = Mn::GL::Framebuffer{{{}, framebufferSize()}};
-  selectionFramebuffer_
-      .attachRenderbuffer(Mn::GL::Framebuffer::BufferAttachment::Depth,
-                          selectionDepth_)
-      .attachRenderbuffer(Mn::GL::Framebuffer::ColorAttachment{1},
-                          selectionDrawableId_);
-  selectionFramebuffer_.mapForDraw({{Mn::Shaders::Generic3D::ColorOutput,
-                                     Mn::GL::Framebuffer::DrawAttachment::None},
-                                    {Mn::Shaders::Generic3D::ObjectIdOutput,
-                                     Mn::GL::Framebuffer::ColorAttachment{1}}});
-  CORRADE_INTERNAL_ASSERT(
-      selectionFramebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
-      Mn::GL::Framebuffer::Status::Complete);
+  objectPickingHelper = std::make_unique<ObjectPickingHelper>(viewportSize);
 
   timeline_.start();
 
@@ -606,49 +588,29 @@ void Viewer::viewportEvent(ViewportEvent& event) {
   imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
 
-  /* Recreate object ID reading renderbuffers that depend on viewport size */
-  selectionDepth_ = Mn::GL::Renderbuffer{};
-  selectionDepth_.setStorage(Mn::GL::RenderbufferFormat::DepthComponent24,
-                             event.framebufferSize());
-  selectionDrawableId_ = Mn::GL::Renderbuffer{};
-  selectionDrawableId_.setStorage(Mn::GL::RenderbufferFormat::R32UI,
-                                  event.framebufferSize());
-  selectionFramebuffer_
-      .attachRenderbuffer(Mn::GL::Framebuffer::BufferAttachment::Depth,
-                          selectionDepth_)
-      .attachRenderbuffer(Mn::GL::Framebuffer::ColorAttachment{1},
-                          selectionDrawableId_)
-      .setViewport({{}, event.framebufferSize()});
+  objectPickingHelper->setViewport(event.framebufferSize());
+}
+void Viewer::unselectObject() {
+  if (selectedDrawableId_ >= 0) {
+    for (auto& it : sceneGraph.getDrawableGroups()) {
+      esp::gfx::Drawable* d = it.second.getDrawable(selectedDrawableId_);
+      if (d != nullptr) {
+        d->setSelected(false);
+        break;  // the selected object is found and processed
+      }
+    }
+    selectedDrawableId_ = -1;
+  }
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Right && objectSelectionOn_) {
-    selectionFramebuffer_.bind();
-    selectionFramebuffer_
-        .mapForDraw({{Mn::Shaders::Generic3D::ColorOutput,
-                      Mn::GL::Framebuffer::DrawAttachment::None},
-                     {Mn::Shaders::Generic3D::ObjectIdOutput,
-                      Mn::GL::Framebuffer::ColorAttachment{1}}})
-        .clearDepth(1.0f)
-        .clearColor(1, Mn::Vector4ui{0xffff});
-    CORRADE_INTERNAL_ASSERT(
-        selectionFramebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
-        Mn::GL::Framebuffer::Status::Complete);
-
+    // cannot use the default framebuffer, so setup another framebuffer, and
+    // color attachment for rendering
+    objectPickingHelper->prepareToDraw();
     int DEFAULT_SCENE = 0;
     auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_[DEFAULT_SCENE]);
 
-    // if there is a selected object, remove it first
-    if (selectedDrawableId_ >= 0) {
-      for (auto& it : sceneGraph.getDrawableGroups()) {
-        esp::gfx::Drawable* d = it.second.getDrawable(selectedDrawableId_);
-        if (d != nullptr) {
-          d->setSelected(false);
-          break;  // the selected object is found and processed
-        }
-      }
-      selectedDrawableId_ = -1;
-    }
     esp::gfx::RenderCamera::Flags flags =
         esp::gfx::RenderCamera::Flag::ObjectPicking;
     if (frustumCullingEnabled_)
@@ -657,27 +619,13 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       renderCamera_->draw(it.second, flags);
     }
 
+    // if there is a selected object, remove it first
+    unselectObject();
+
     // Read the ID back
-    selectionFramebuffer_.mapForRead(Mn::GL::Framebuffer::ColorAttachment{1});
-    CORRADE_INTERNAL_ASSERT(
-        selectionFramebuffer_.checkStatus(Mn::GL::FramebufferTarget::Read) ==
-        Mn::GL::Framebuffer::Status::Complete);
+    unsigned int selectedObject =
+        objectPickingHelper->getObjectId(event.position(), windowSize());
 
-    /* First scale the position from being relative to window size to being
-       relative to framebuffer size as those two can be different on HiDPI
-       systems */
-    const Mn::Vector2i position = event.position() *
-                                  Mn::Vector2{framebufferSize()} /
-                                  Mn::Vector2{windowSize()};
-    const Mn::Vector2i fbPosition{
-        position.x(),
-        selectionFramebuffer_.viewport().sizeY() - position.y() - 1};
-    const Mn::Range2Di area =
-        Mn::Range2Di::fromSize(fbPosition, Mn::Vector2i{1});
-
-    const Mn::UnsignedInt selectedObject =
-        selectionFramebuffer_.read(area, {Mn::PixelFormat::R32UI})
-            .pixels<Mn::UnsignedInt>()[0][0];
     for (auto& it : sceneGraph.getDrawableGroups()) {
       if (it.second.hasDrawable(selectedObject)) {
         selectedDrawableId_ = selectedObject;
@@ -688,7 +636,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
   }    // drawable selection
   event.setAccepted();
   redraw();
-}  // namespace
+}
 
 void Viewer::mouseReleaseEvent(MouseEvent& event) {
   event.setAccepted();
