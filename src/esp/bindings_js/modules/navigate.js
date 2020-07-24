@@ -69,7 +69,6 @@ class NavigateTask {
 
     this.actions = [
       { name: "moveForward", key: "w" },
-      { name: "moveBackward", key: "s" },
       { name: "turnLeft", key: "a" },
       { name: "turnRight", key: "d" },
       { name: "lookUp", key: "ArrowUp" },
@@ -105,20 +104,6 @@ class NavigateTask {
     this.setStatus("Ready");
     this.render();
   }
-
-  // /**
-  //  * Initialize n random objects at random navigable points.
-  //  */
-  // initializeRandomObjects(numberOfObjects = 4) {
-  //   for (let object = 0; object < numberOfObjects; object++) {
-  //     if (object % 2 == 0) {
-  //       this.sim.addTemplateObject();
-  //     } else {
-  //       this.sim.addPrimitiveObject();
-  //     }
-  //   }
-  //   this.render();
-  // }
 
   // PRIVATE methods.
 
