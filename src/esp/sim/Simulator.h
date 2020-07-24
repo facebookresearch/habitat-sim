@@ -717,7 +717,7 @@ class Simulator {
       const Magnum::Vector2i& viewSize,
       float depth);
   
-  void createCrossHairNode(Magnum::Vector2i windowSize);
+  void updateCrossHairNode(Magnum::Vector2i windowSize);
 
   void syncGrippedObject();
 

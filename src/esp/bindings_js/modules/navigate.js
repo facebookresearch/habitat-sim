@@ -75,6 +75,7 @@ class NavigateTask {
       { name: "lookUp", key: "ArrowUp" },
       { name: "lookDown", key: "ArrowDown" },
       { name: "addPrimitiveObject", key: "8" },
+      { name: "addTemplateObject", key: "o" },
       { name: "removeLastObject", key: "9" },
       { name: "grabReleaseObject", key: "h" }
     ];
@@ -104,6 +105,20 @@ class NavigateTask {
     this.setStatus("Ready");
     this.render();
   }
+
+  // /**
+  //  * Initialize n random objects at random navigable points.
+  //  */
+  // initializeRandomObjects(numberOfObjects = 4) {
+  //   for (let object = 0; object < numberOfObjects; object++) {
+  //     if (object % 2 == 0) {
+  //       this.sim.addTemplateObject();
+  //     } else {
+  //       this.sim.addPrimitiveObject();
+  //     }
+  //   }
+  //   this.render();
+  // }
 
   // PRIVATE methods.
 
@@ -216,9 +231,9 @@ class NavigateTask {
   render(options = { renderTopDown: true }) {
     this.renderImage();
 
-    this.sim.createCrossHairNode(this.sim.resolution);
+    this.sim.updateCrossHairNode(this.sim.resolution);
     this.sim.syncObjects();
-    this.sim.stepWorld();
+    //this.sim.stepWorld();
 
     this.renderImage();
     this.renderSemanticImage();
@@ -228,6 +243,8 @@ class NavigateTask {
   handleAction(action) {
     if (action === "addPrimitiveObject") {
       this.sim.addPrimitiveObject();
+    } else if (action === "addTemplateObject") {
+      this.sim.addTemplateObject();
     } else if (action === "removeLastObject") {
       this.sim.removeLastObject();
     } else if (action == "grabReleaseObject") {

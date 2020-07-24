@@ -392,9 +392,7 @@ esp::physics::MotionType Simulator::getObjectMotionType(const int objectID,
 bool Simulator::setObjectMotionType(const esp::physics::MotionType& motionType,
                                     const int objectID,
                                     const int sceneID) {
-  LOG(WARNING) << "no physics";
   if (sceneHasPhysics(sceneID)) {
-    LOG(WARNING) << "update motion: " << objectID<< " " << sceneID;
     return physicsManager_->setObjectMotionType(objectID, motionType);
   }
   return false;
@@ -957,8 +955,7 @@ int Simulator::findNearestObjectUnderCrosshair(int refObjectID,
   //   // Corrade::Utility::Debug()
   //   //     << " hit fraction: " << hit.m_hitFractions.at(hitIx);
   //   if (hit.m_hitFractions.at(hitIx) < best_fraction) {
-  //     best_fraction = hit.m_hitFractions.at(hitIx);
-      
+  //     best_fraction = hit.m_hitFractions.at(hitIx);      
   //     nearestObjId = bpm->getObjectIDFromCollisionObject(
   //         hit.m_collisionObjects.at(hitIx));
   //     hitPoint = Magnum::Vector3{hit.m_hitPointWorld.at(hitIx)};
@@ -969,10 +966,6 @@ int Simulator::findNearestObjectUnderCrosshair(int refObjectID,
       nearestObjId = results[rayIdx].objectId;
       hitPoint = results[rayIdx].point;
   }
-  // Corrade::Utility::Debug() << " hitID = " << nearestObjId;
-  // Corrade::Utility::Debug()
-  //       << "object select distance = "
-  //       << (hitPoint - getAgent(0)->node().absoluteTranslation()).length();
 
   if ((hitPoint - refPoint).length() > distance) {
     return -1;
@@ -1020,6 +1013,8 @@ void Simulator::grabReleaseObjectUsingCrossHair(Magnum::Vector2i windowSize) {
     physicsManager_->setObjectMotionType(nearestObjId,
         esp::physics::MotionType::KINEMATIC);
     grippedObjectId = nearestObjId;
+  } else {
+    return;
   }
 
   esp::nav::NavMeshSettings navMeshSettings;
@@ -1048,21 +1043,16 @@ Magnum::Vector3 Simulator::unproject(const Magnum::Vector2i& crosshairPos,
       renderCamera_.projectionMatrix().inverted()).transformPoint(normalizedPos);
 }
 
-void Simulator::createCrossHairNode(Magnum::Vector2i windowSize) {
+void Simulator::updateCrossHairNode(Magnum::Vector2i windowSize) {
   scene::SceneGraph& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
   gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
 
   Magnum::Vector2i crossHairPos = Magnum::Vector2i{windowSize * 0.5};
-  //LOG(WARNING) << "crossHairPos: " << crossHairPos;
   Magnum::Vector3 point = unproject(crossHairPos, windowSize, 1.0);
-  //LOG(WARNING) << "unproject point: " << point;
   Magnum::Vector3 cast =
       (point - renderCamera_.node().absoluteTranslation()).normalized();
-  //LOG(WARNING) << "cast: " << cast;
   crossHairNode_->setTranslation(renderCamera_.node().absoluteTranslation() +
                               cast * 1.0);
-  // LOG(WARNING) << "new crosshair point: " << (renderCamera_.node().absoluteTranslation() + cast * 1.0);
-  // LOG(WARNING) << "\n";
 }
 
 void Simulator::syncGrippedObject() {

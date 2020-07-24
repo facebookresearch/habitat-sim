@@ -4,6 +4,8 @@
 
 /*global Module */
 
+import { primitiveObjectHandles, fileBasedObjectHandles } from "./defaults";
+
 /**
  * SimEnv class
  *
@@ -22,6 +24,7 @@ class SimEnv {
   constructor(config, episode = {}, agentId = 0) {
     this.sim = new Module.Simulator(config);
     this.episode = episode;
+    this.pathfinder = this.sim.getPathFinder();
     this.initialAgentState = null;
     this.resolution = null;
 
@@ -39,22 +42,47 @@ class SimEnv {
     if (this.initialAgentState !== null) {
       const agent = this.sim.getAgent(this.selectedAgentId);
       agent.setState(this.initialAgentState, true);
-      this.createCrossHairNode(this.resolution);
-      this.syncObjects();
     }
+    this.updateCrossHairNode(this.resolution);
+    this.syncObjects();
+    this.addRandomObjects();
   }
 
+  /**
+   * Change selected agent in the simulation.
+   * @param {number} agentId - agent id
+   */
   changeAgent(agentId) {
     this.selectedAgentId = agentId;
   }
 
-  createCrossHairNode(windowSize) {
-    this.sim.createCrossHairNode(windowSize);
+  /**
+   * Update cross hair node position.
+   */
+  updateCrossHairNode(windowSize) {
+    this.sim.updateCrossHairNode(windowSize);
   }
 
+  /**
+   * Sync objects grabbed by agent to agent body.
+   */
   syncObjects() {
     this.sim.syncGrippedObject();
     this.sim.syncGrippedObjects();
+  }
+
+  /**
+   * Adds n random objects at random navigable points in simulation.
+   */
+  addRandomObjects(numberOfObjects = 4) {
+    for (let object = 0; object < numberOfObjects; object++) {
+      if (object % 2 == 0) {
+        this.addTemplateObject(fileBasedObjectHandles[0]);
+      } else {
+        this.addPrimitiveObject(primitiveObjectHandles[0]);
+      }
+    }
+    this.recomputeNavMesh();
   }
 
   /**
@@ -101,7 +129,7 @@ class SimEnv {
 
   /**
    * Adds an instance of the specified object mesh to the environment.
-   * @param {number} objectLibHandle - object's template config/origin handle
+   * @param {string} objectLibHandle - object's template config/origin handle
    * @returns {number} object ID or -1 if object was unable to be added
    */
   addObjectByHandle(objectLibHandle) {
@@ -111,16 +139,30 @@ class SimEnv {
 
   /**
    * Add a random primitive object to the environment.
+   * @param {number} objectLibHandle - object's template config/origin handle
    * @returns {number} object ID or -1 if object was unable to be added
    */
-  addPrimitiveObject() {
-    let objId = this.addObjectByHandle(
-      "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_useTangents_false_capEnds_true"
-    );
-    this.setTranslation([3.004, 1.5, 10.0], objId, 0);
-    //this.setObjectMotionType(Module.MotionType.STATIC, objId, 0);
-    console.log(objId);
-    return objId;
+  addPrimitiveObject(objectLibHandle = "capsule3DSolid") {
+    let objectId = this.addObjectByHandle(objectLibHandle);
+    let newPosition = this.pathfinder.getRandomNavigablePoint();
+    this.setTranslation(newPosition, objectId, 0);
+    this.setObjectMotionType(Module.MotionType.STATIC, objectId, 0);
+    return objectId;
+  }
+
+  /**
+   * Add a random file based object to the environment.
+   * @param {number} objectLibHandle - object's template config/origin handle
+   * @returns {number} object ID or -1 if object was unable to be added
+   */
+  addTemplateObject(
+    objectLibHandle = "/data/objects/sphere.phys_properties.json"
+  ) {
+    let objectId = this.addObjectByHandle(objectLibHandle);
+    let newPosition = this.pathfinder.getRandomNavigablePoint();
+    this.setTranslation(newPosition, objectId, 0);
+    this.setObjectMotionType(Module.MotionType.STATIC, objectId, 0);
+    return objectId;
   }
 
   /**
@@ -287,6 +329,17 @@ class SimEnv {
     const agent = this.sim.getAgent(this.selectedAgentId);
     agent.getState(state);
     return state;
+  }
+
+  recomputeNavMesh() {
+    let navMeshSettings = new Module.NavMeshSettings();
+    navMeshSettings.setDefaults();
+    navMeshSettings.agentRadius = 0.3;
+    this.sim.recomputeNavMesh(this.getPathFinder(), navMeshSettings, true);
+  }
+
+  toggleNavMeshVisualization() {
+    this.sim.toggleNavMeshVisualization();
   }
 
   /**

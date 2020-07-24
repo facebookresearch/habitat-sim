@@ -37,3 +37,10 @@ export const defaultScene =
 export const infoSemanticFileName = "info_semantic.json";
 
 export const dataHome = "data/";
+export const primitiveObjectHandles = [
+  "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_useTangents_false_capEnds_true"
+];
+export const fileBasedObjectHandles = [
+  "/data/objects/sphere.phys_properties.json",
+  "/data/objects/chair.phys_properties.json"
+];

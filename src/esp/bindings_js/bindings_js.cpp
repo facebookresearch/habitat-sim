@@ -107,6 +107,12 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::value_object<std::pair<vec3f, vec3f>>("aabb")
       .field("min", &std::pair<vec3f, vec3f>::first)
       .field("max", &std::pair<vec3f, vec3f>::second);
+    
+  em::class_<NavMeshSettings>("NavMeshSettings")
+      .smart_ptr_constructor("NavMeshSettings",
+                             &NavMeshSettings::create<>)
+      .property("agentRadius", &NavMeshSettings::agentRadius)
+      .function("setDefaults", &NavMeshSettings::setDefaults);
 
   em::class_<AgentConfiguration>("AgentConfiguration")
       .smart_ptr_constructor("AgentConfiguration",
@@ -133,7 +139,8 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::class_<PathFinder>("PathFinder")
       .smart_ptr<PathFinder::ptr>("PathFinder::ptr")
       .property("bounds", &PathFinder::bounds)
-      .function("isNavigable", &PathFinder::isNavigable);
+      .function("isNavigable", &PathFinder::isNavigable)
+      .function("getRandomNavigablePoint", &PathFinder::getRandomNavigablePoint);
 
   em::class_<SensorSuite>("SensorSuite")
       .smart_ptr_constructor("SensorSuite", &SensorSuite::create<>)
@@ -279,5 +286,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("grabReleaseObjectUsingCrossHair", &Simulator::grabReleaseObjectUsingCrossHair)
       .function("syncGrippedObject", &Simulator::syncGrippedObject)
       .function("syncGrippedObjects", &Simulator::syncGrippedObjects)
-      .function("createCrossHairNode", &Simulator::createCrossHairNode);
+      .function("updateCrossHairNode", &Simulator::updateCrossHairNode)
+      .function("recomputeNavMesh", &Simulator::recomputeNavMesh)
+      .function("toggleNavMeshVisualization", &Simulator::toggleNavMeshVisualization);
 }
