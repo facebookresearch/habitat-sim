@@ -156,11 +156,8 @@ class Viewer : public Mn::Platform::Application {
   bool frustumCullingEnabled_ = true;
 
   bool objectPickingOn_ = false;
-  int64_t pickedDrawableId_ = -1;
-  void unselectObject();
   void createPickedObjectVisualizer(unsigned int objectId);
-  std::unique_ptr<ObjectPickingHelper> objectPickingHelper;
-  esp::gfx::MeshVisualizerDrawable* pickedObjectVisualizer_ = nullptr;
+  std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -333,7 +330,7 @@ Viewer::Viewer(const Arguments& arguments)
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
 
-  objectPickingHelper = std::make_unique<ObjectPickingHelper>(viewportSize);
+  objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
 
   timeline_.start();
 
@@ -588,55 +585,27 @@ void Viewer::viewportEvent(ViewportEvent& event) {
   imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
 
-  objectPickingHelper->setViewport(event.framebufferSize());
+  objectPickingHelper_->setViewport(event.framebufferSize());
 }
-void Viewer::unselectObject() {
-  if (pickedDrawableId_ >= 0) {
-    for (auto& it : sceneGraph_->getDrawableGroups()) {
-      esp::gfx::Drawable* d = it.second.getDrawable(pickedDrawableId_);
-      if (d != nullptr) {
-        d->setSelected(false);
-        break;  // the selected object is found and processed
-      }
-    }
-    pickedDrawableId_ = -1;
-  }
-}
+
 void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
   for (auto& it : sceneGraph_->getDrawableGroups()) {
     if (it.second.hasDrawable(objectId)) {
-      pickedDrawableId_ = objectId;
-      auto* pickedDrawable = it.second.getDrawable(pickedDrawableId_);
-      pickedDrawable->setSelected(true);
-
-      delete pickedObjectVisualizer_;
-      /*
-      pickedObjectVisualizer_ =
-          new esp::gfx::MeshVisualizerDrawable(pickedDrawable->object()),
-      Mn::Shaders::MeshVisualizer3D{}
-      */
-
+      auto* pickedDrawable = it.second.getDrawable(objectId);
+      objectPickingHelper_->createPickedObjectVisualizer(pickedDrawable);
       break;
     }
-  }
-
-  if (pickedDrawableId_ >= 0) {
-    /*
-    _data->selectedObject = new MeshVisualizerDrawable{ *objectInfo.object,
-    meshVisualizerShader(flags), *meshInfo.mesh,
-    _data->objects[selectedId].meshId, meshInfo.objectIdCount,
-    meshInfo.vertices, meshInfo.primitives, _shadeless,
-    _data->selectedObjectDrawables};
-    */
   }
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
   if (event.button() == MouseEvent::Button::Right && objectPickingOn_) {
-    // cannot use the default framebuffer, so setup another framebuffer, and
-    // color attachment for rendering
-    objectPickingHelper->prepareToDraw();
+    // cannot use the default framebuffer, so setup another framebuffer,
+    // also, setup the color attachment for rendering, and remove the visualizer
+    // for the previously picked object
+    objectPickingHelper_->prepareToDraw();
 
+    // redraw the scene on the object picking framebuffer
     esp::gfx::RenderCamera::Flags flags =
         esp::gfx::RenderCamera::Flag::ObjectPicking;
     if (frustumCullingEnabled_)
@@ -645,17 +614,14 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       renderCamera_->draw(it.second, flags);
     }
 
-    // if there is a selected object, remove it first
-    unselectObject();
-
-    // Read the ID back
+    // Read the object Id
     unsigned int pickedObject =
-        objectPickingHelper->getObjectId(event.position(), windowSize());
-
-    createPickedObjectVisualizer(pickedObject);
+        objectPickingHelper_->getObjectId(event.position(), windowSize());
 
     // if an object is selected, create a visualizer
+    createPickedObjectVisualizer(pickedObject);
   }  // drawable selection
+
   event.setAccepted();
   redraw();
 }

@@ -62,9 +62,8 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
     usingDrawableId = cam.isRenderingForObjectPicking();
   }
 
-  Mn::Color3 highLightColor = 0xa5c9ea_rgbf * 0.5;
   (*shader_)
-      .setAmbientColor(selected_ ? highLightColor : materialData_->ambientColor)
+      .setAmbientColor(materialData_->ambientColor)
       .setDiffuseColor(materialData_->diffuseColor)
       .setSpecularColor(materialData_->specularColor)
       .setShininess(materialData_->shininess)

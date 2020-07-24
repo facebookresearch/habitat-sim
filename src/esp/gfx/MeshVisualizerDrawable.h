@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #pragma once
-#include <Magnum/Shaders/Shaders.h>
+#include <Magnum/Shaders/MeshVisualizer.h>
 #include "Drawable.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/ShaderManager.h"
@@ -36,7 +36,7 @@ class MeshVisualizerDrawable : public Drawable {
    */
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
                     Magnum::SceneGraph::Camera3D& camera) override;
-  Magnum::Shaders::MeshVisualizer3D* shader_;
+  Magnum::Shaders::MeshVisualizer3D* shader_ = nullptr;
 };
 
 }  // namespace gfx

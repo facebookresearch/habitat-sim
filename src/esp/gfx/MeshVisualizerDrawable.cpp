@@ -3,9 +3,11 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "MeshVisualizerDrawable.h"
+#include "Magnum/GL/Renderer.h"
 #include "esp/scene/SceneNode.h"
 
 namespace Mn = Magnum;
+using Mn::Math::Literals::operator""_rgbf;
 
 namespace esp {
 namespace gfx {
@@ -16,5 +18,20 @@ MeshVisualizerDrawable::MeshVisualizerDrawable(
     Magnum::GL::Mesh& mesh,
     DrawableGroup* group)
     : Drawable{node, mesh, group}, shader_(shader) {}
+
+void MeshVisualizerDrawable::draw(const Magnum::Matrix4& transformationMatrix,
+                                  Magnum::SceneGraph::Camera3D& camera) {
+  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
+  Mn::GL::Renderer::setPolygonOffset(-5.0f, -5.0f);
+
+  (*shader_)
+      .setProjectionMatrix(camera.projectionMatrix())
+      .setTransformationMatrix(transformationMatrix);
+
+  shader_->draw(mesh_);
+
+  Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
+  Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
+}
 }  // namespace gfx
 }  // namespace esp

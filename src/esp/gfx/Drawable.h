@@ -50,21 +50,9 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    */
   uint64_t getDrawableId() { return drawableId_; }
 
-  /**
-   * @brief Return if this drawable object is selected in the editor (e.g.,
-   * viewer)
-   * @return the drawable object state, if it is selected
-   */
-  bool isSelected() { return selected_; }
-
-  /**
-   *  @brief Set the state of the drawable, whether it is selected in the editor
-   * (e.g., viewer)
-   *  @param selected true if selected, otherwise false
-   */
-  void setSelected(bool selected) { selected_ = selected; }
-
   virtual void setLightSetup(const Magnum::ResourceKey& lightSetup){};
+
+  Magnum::GL::Mesh& getMesh() { return mesh_; }
 
  protected:
   /**
@@ -81,7 +69,6 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
 
   static uint64_t drawableIdCounter;
   uint64_t drawableId_;
-  bool selected_ = false;
 
   scene::SceneNode& node_;
   Magnum::GL::Mesh& mesh_;

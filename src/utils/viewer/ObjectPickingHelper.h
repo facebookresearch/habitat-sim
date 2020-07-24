@@ -2,6 +2,8 @@
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/Renderbuffer.h>
 #include <Magnum/Magnum.h>
+#include <memory>
+#include "esp/gfx/Drawable.h"
 #include "esp/gfx/MeshVisualizerDrawable.h"
 
 class ObjectPickingHelper {
@@ -25,10 +27,10 @@ class ObjectPickingHelper {
    *clear depth, background color
    */
   ObjectPickingHelper& prepareToDraw();
+
   /**
    * @brief set viewport for framebuffer, which must be called in viewport event
    */
-
   ObjectPickingHelper& setViewport(Magnum::Vector2i viewportSize);
   /**
    * @brief get the object id, aka, the drawable id defined in Drawable class
@@ -38,12 +40,20 @@ class ObjectPickingHelper {
   unsigned int getObjectId(Magnum::Vector2i mouseEventPosition,
                            Magnum::Vector2i windowSize);
 
+  /**
+   * @brief create a mesh visualizer (a drawable) for the picked object
+   * @param pickedObject, the picked object (drawable)
+   */
+  ObjectPickingHelper& createPickedObjectVisualizer(
+      esp::gfx::Drawable* pickedObject);
+
  protected:
   // framebuffer for drawable selection
   Magnum::GL::Framebuffer selectionFramebuffer_{Magnum::NoCreate};
   Magnum::GL::Renderbuffer selectionDepth_;
   Magnum::GL::Renderbuffer selectionDrawableId_;
 
-  esp::gfx::MeshVisualizerDrawable* meshVisualizerDrawable{};
+  std::unique_ptr<Magnum::Shaders::MeshVisualizer3D> shader_;
+  esp::gfx::MeshVisualizerDrawable* meshVisualizerDrawable_ = nullptr;
   ObjectPickingHelper& mapForDraw();
 };

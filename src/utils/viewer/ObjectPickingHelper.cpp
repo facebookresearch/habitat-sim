@@ -8,15 +8,28 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Shaders/Generic.h>
+#include <Magnum/Shaders/MeshVisualizer.h>
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
+using Mn::Math::Literals::operator""_rgbaf;
 
 ObjectPickingHelper::ObjectPickingHelper(Mn::Vector2i viewportSize) {
+  // create the framebuffer and set the color attachment
   recreateFramebuffer(viewportSize).mapForDraw();
   CORRADE_INTERNAL_ASSERT(
       selectionFramebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
       Mn::GL::Framebuffer::Status::Complete);
+
+  // create a shader
+  Mn::Shaders::MeshVisualizer3D::Flags flags =
+      Mn::Shaders::MeshVisualizer3D::Flag::Wireframe;
+  shader_ = std::make_unique<Mn::Shaders::MeshVisualizer3D>(flags);
+
+  shader_->setViewportSize(Mn::Vector2{viewportSize});
+
+  if (flags & Mn::Shaders::MeshVisualizer3D::Flag::Wireframe)
+    shader_->setWireframeColor(0xdcdcdcff_rgbaf);
 }
 
 ObjectPickingHelper& ObjectPickingHelper::recreateFramebuffer(
@@ -42,6 +55,13 @@ ObjectPickingHelper& ObjectPickingHelper::prepareToDraw() {
   CORRADE_INTERNAL_ASSERT(
       selectionFramebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
       Mn::GL::Framebuffer::Status::Complete);
+
+  // remove any visualized object that is picked before
+  if (meshVisualizerDrawable_) {
+    delete meshVisualizerDrawable_;
+    meshVisualizerDrawable_ = nullptr;
+  }
+
   return *this;
 }
 
@@ -81,9 +101,29 @@ unsigned int ObjectPickingHelper::getObjectId(
       selectionFramebuffer_.viewport().sizeY() - position.y() - 1};
   const Mn::Range2Di area = Mn::Range2Di::fromSize(fbPosition, Mn::Vector2i{1});
 
-  const Mn::UnsignedInt selectedObject =
+  const Mn::UnsignedInt pickedObject =
       selectionFramebuffer_.read(area, {Mn::PixelFormat::R32UI})
           .pixels<Mn::UnsignedInt>()[0][0];
 
-  return selectedObject;
+  return pickedObject;
+}
+
+ObjectPickingHelper& ObjectPickingHelper::createPickedObjectVisualizer(
+    esp::gfx::Drawable* pickedObject) {
+  if (meshVisualizerDrawable_) {
+    delete meshVisualizerDrawable_;
+    meshVisualizerDrawable_ = nullptr;
+  }
+
+  if (!pickedObject) {
+    return *this;
+  }
+
+  // magnum scene graph will handle the recycling even we did not recycle it by
+  // the end of the simulation
+  meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
+      static_cast<esp::scene::SceneNode&>(pickedObject->object()),
+      shader_.get(), pickedObject->getMesh(), pickedObject->drawables());
+
+  return *this;
 }
