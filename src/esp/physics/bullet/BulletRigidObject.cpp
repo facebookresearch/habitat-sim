@@ -423,7 +423,7 @@ bool BulletRigidObject::isMe(const btCollisionObject* collisionObject) {
   }
 
   return false;
-} // isMe
+}  // isMe
 
 }  // namespace physics
 }  // namespace esp

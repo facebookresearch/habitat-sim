@@ -12,11 +12,11 @@
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 
 #include <Magnum/GL/Buffer.h>
-#include <Magnum/Image.h>
+#include <Magnum/GL/Context.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/PixelFormat.h>
 #include <Magnum/GL/Renderer.h>
-#include <Magnum/GL/Context.h>
+#include <Magnum/Image.h>
 
 #include "esp/assets/attributes/AttributesBase.h"
 #include "esp/core/esp.h"
@@ -904,23 +904,17 @@ void Simulator::setObjectLightSetup(const int objectID,
 
 int Simulator::findNearestObject(int refObjectID, float distance) {
   float minDist = 1.0;
-  int nearestObjectID = -1; 
+  int nearestObjectID = -1;
   if (refObjectID >= 0) {
-    Magnum::Vector3 refPosition = 
-        physicsManager_->getTranslation(refObjectID);
+    Magnum::Vector3 refPosition = physicsManager_->getTranslation(refObjectID);
     Magnum::Vector2 agentPos_xz(refPosition.x(), refPosition.z());
 
-    for(int objectID : physicsManager_->getExistingObjectIDs()) {
+    for (int objectID : physicsManager_->getExistingObjectIDs()) {
       if (objectID != refObjectID) {
         Magnum::Vector3 objectPos = physicsManager_->getTranslation(objectID);
         Magnum::Vector2 objectPosXZ(objectPos.x(), objectPos.z());
-        
+
         float d = Magnum::Vector2(agentPos_xz - objectPosXZ).length();
-        
-        // float ax = agentPosition[0] - objPosition[0];
-        // float az = agentPosition[2] - objPosition[2];
-        // float d = ax*ax + az*az;
-        
         if (d <= minDist) {
           minDist = d;
           nearestObjectID = objectID;
@@ -931,9 +925,11 @@ int Simulator::findNearestObject(int refObjectID, float distance) {
   return nearestObjectID;
 }
 
-int Simulator::findNearestObjectUnderCrosshair(int refObjectID, 
-    Magnum::Vector3 point, Magnum::Vector3 refPoint, const Magnum::Vector2i& viewSize, 
-    float distance) {
+int Simulator::findNearestObjectUnderCrosshair(int refObjectID,
+                                               Magnum::Vector3 point,
+                                               Magnum::Vector3 refPoint,
+                                               const Magnum::Vector2i& viewSize,
+                                               float distance) {
   float best_fraction = 99999.0;
   int nearestObjId = ID_UNDEFINED;
   scene::SceneGraph& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
@@ -978,39 +974,40 @@ void Simulator::grabReleaseObjectUsingCrossHair(Magnum::Vector2i windowSize) {
   Magnum::Vector2i crossHairPos = Magnum::Vector2i{windowSize * 0.5};
   Magnum::Vector3 point = unproject(crossHairPos, windowSize, 0);
   Magnum::Vector3 refPoint = getAgent(0)->node().absoluteTranslation();
-  int nearestObjId = findNearestObjectUnderCrosshair(0, point, refPoint, windowSize);
+  int nearestObjId =
+      findNearestObjectUnderCrosshair(0, point, refPoint, windowSize);
 
   auto agentBodyNode_ = &getAgent(0)->node();
-    
+
   if (grippedObjectId != -1) {
     // already gripped, so let it go
     Magnum::Matrix4 agentT =
         agentBodyNode_->MagnumObject::transformationMatrix();
-    physicsManager_->setTransformation(
-        grippedObjectId, agentT * gripOffset);
+    physicsManager_->setTransformation(grippedObjectId, agentT * gripOffset);
 
     Magnum::Vector3 position = physicsManager_->getTranslation(grippedObjectId);
-    bool isNav = pathfinder_->isNavigable(Eigen::Map<esp::vec3f>(position.data()));
+    bool isNav =
+        pathfinder_->isNavigable(Eigen::Map<esp::vec3f>(position.data()));
 
-    //check for collision (apparently this is always true)
+    // check for collision (apparently this is always true)
     if (
-      //(physicsManager_->contactTest(grippedObjectId)) && 
-      (!isNav)) {
+        //(physicsManager_->contactTest(grippedObjectId)) &&
+        (!isNav)) {
       LOG(INFO) << "Colliding with object or position is not navigable";
       return;
     }
-    
+
     physicsManager_->setObjectMotionType(grippedObjectId,
-        esp::physics::MotionType::STATIC);
+                                         esp::physics::MotionType::STATIC);
     grippedObjectId = -1;
   } else if (nearestObjId != -1) {
     Magnum::Matrix4 agentT =
         agentBodyNode_->MagnumObject::transformationMatrix();
-    gripOffset = agentT.inverted() *
-        physicsManager_->getObjectSceneNode(nearestObjId)
-        .transformation();
+    gripOffset =
+        agentT.inverted() *
+        physicsManager_->getObjectSceneNode(nearestObjId).transformation();
     physicsManager_->setObjectMotionType(nearestObjId,
-        esp::physics::MotionType::KINEMATIC);
+                                         esp::physics::MotionType::KINEMATIC);
     grippedObjectId = nearestObjId;
   } else {
     return;
@@ -1021,15 +1018,14 @@ void Simulator::grabReleaseObjectUsingCrossHair(Magnum::Vector2i windowSize) {
   navMeshSettings.agentRadius = 0.3f;
 
   recomputeNavMesh(*getPathFinder().get(), navMeshSettings, true);
-  toggleNavMeshVisualization();
-  toggleNavMeshVisualization();
 }
 
 Magnum::Vector3 Simulator::unproject(const Magnum::Vector2i& crosshairPos,
-    const Magnum::Vector2i& viewSize, float depth) {
+                                     const Magnum::Vector2i& viewSize,
+                                     float depth) {
   // Read this: http://antongerdelan.net/opengl/raycasting.html
   const Magnum::Vector2i viewPos{crosshairPos.x(),
-                                      viewSize.y() - crosshairPos.y() - 1};
+                                 viewSize.y() - crosshairPos.y() - 1};
   const Magnum::Vector3 normalizedPos{
       2 * Magnum::Vector2{viewPos} / Magnum::Vector2{viewSize} -
           Magnum::Vector2{1.0f},
@@ -1039,7 +1035,8 @@ Magnum::Vector3 Simulator::unproject(const Magnum::Vector2i& crosshairPos,
   gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
 
   return (renderCamera_.node().absoluteTransformationMatrix() *
-      renderCamera_.projectionMatrix().inverted()).transformPoint(normalizedPos);
+          renderCamera_.projectionMatrix().inverted())
+      .transformPoint(normalizedPos);
 }
 
 void Simulator::updateCrossHairNode(Magnum::Vector2i windowSize) {
@@ -1051,19 +1048,17 @@ void Simulator::updateCrossHairNode(Magnum::Vector2i windowSize) {
   Magnum::Vector3 cast =
       (point - renderCamera_.node().absoluteTranslation()).normalized();
   crossHairNode_->setTranslation(renderCamera_.node().absoluteTranslation() +
-                              cast * 1.0);
+                                 cast * 1.0);
 }
 
 void Simulator::syncGrippedObject() {
   if (grippedObjectId != -1) {
-      auto agentBodyNode_ = &getAgent(0)->node();
-      Magnum::Matrix4 agentT =
-          agentBodyNode_->MagnumObject::transformationMatrix();
-      //physicsManager_->setTransformation(grippedObjectId, agentT * gripOffset);
-      physicsManager_->setTranslation(
+    auto agentBodyNode_ = &getAgent(0)->node();
+    Magnum::Matrix4 agentT =
+        agentBodyNode_->MagnumObject::transformationMatrix();
+    physicsManager_->setTranslation(
         grippedObjectId, agentT.transformPoint(Magnum::Vector3{0.0, 0.0, 0.0}));
   }
-  //LOG(WARNING) << "grippedObject:" << grippedObjectId;
 }
 
 void Simulator::syncGrippedObjects() {

@@ -107,10 +107,9 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::value_object<std::pair<vec3f, vec3f>>("aabb")
       .field("min", &std::pair<vec3f, vec3f>::first)
       .field("max", &std::pair<vec3f, vec3f>::second);
-    
+
   em::class_<NavMeshSettings>("NavMeshSettings")
-      .smart_ptr_constructor("NavMeshSettings",
-                             &NavMeshSettings::create<>)
+      .smart_ptr_constructor("NavMeshSettings", &NavMeshSettings::create<>)
       .property("agentRadius", &NavMeshSettings::agentRadius)
       .function("setDefaults", &NavMeshSettings::setDefaults);
 
@@ -140,7 +139,8 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .smart_ptr<PathFinder::ptr>("PathFinder::ptr")
       .property("bounds", &PathFinder::bounds)
       .function("isNavigable", &PathFinder::isNavigable)
-      .function("getRandomNavigablePoint", &PathFinder::getRandomNavigablePoint);
+      .function("getRandomNavigablePoint",
+                &PathFinder::getRandomNavigablePoint);
 
   em::class_<SensorSuite>("SensorSuite")
       .smart_ptr_constructor("SensorSuite", &SensorSuite::create<>)
@@ -191,7 +191,8 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("gpuDeviceId", &SimulatorConfiguration::gpuDeviceId)
       .property("compressTextures", &SimulatorConfiguration::compressTextures)
       .property("enablePhysics", &SimulatorConfiguration::enablePhysics)
-      .property("physicsConfigFile", &SimulatorConfiguration::physicsConfigFile);
+      .property("physicsConfigFile",
+                &SimulatorConfiguration::physicsConfigFile);
 
   em::class_<AgentState>("AgentState")
       .smart_ptr_constructor("AgentState", &AgentState::create<>)
@@ -273,7 +274,8 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("setObjectMotionType", &Simulator::setObjectMotionType)
       .function("getObjectMotionType", &Simulator::getObjectMotionType)
       .function("addObject", &Simulator::addObject, em::allow_raw_pointers())
-      .function("addObjectByHandle", &Simulator::addObjectByHandle, em::allow_raw_pointers())
+      .function("addObjectByHandle", &Simulator::addObjectByHandle,
+                em::allow_raw_pointers())
       .function("removeObject", &Simulator::removeObject)
       .function("setTranslation", &Simulator::setTranslation)
       .function("getTranslation", &Simulator::getTranslation)
@@ -283,10 +285,12 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("getLightSetup", &Simulator::getLightSetup)
       .function("setLightSetup", &Simulator::setLightSetup)
       .function("stepWorld", &Simulator::stepWorld)
-      .function("grabReleaseObjectUsingCrossHair", &Simulator::grabReleaseObjectUsingCrossHair)
+      .function("grabReleaseObjectUsingCrossHair",
+                &Simulator::grabReleaseObjectUsingCrossHair)
       .function("syncGrippedObject", &Simulator::syncGrippedObject)
       .function("syncGrippedObjects", &Simulator::syncGrippedObjects)
       .function("updateCrossHairNode", &Simulator::updateCrossHairNode)
       .function("recomputeNavMesh", &Simulator::recomputeNavMesh)
-      .function("toggleNavMeshVisualization", &Simulator::toggleNavMeshVisualization);
+      .function("toggleNavMeshVisualization",
+                &Simulator::toggleNavMeshVisualization);
 }
