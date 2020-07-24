@@ -56,6 +56,21 @@ function preloadPhysConfig(url) {
     false
   );
 
+  FS.createPreloadedFile(
+    emObjHome,
+    "chair.glb",
+    dataHome.concat("test_assets/objects/chair.glb"),
+    true,
+    false
+  );
+  FS.createPreloadedFile(
+    emObjHome,
+    "chair.phys_properties.json",
+    dataHome.concat("test_assets/objects/chair.phys_properties.json"),
+    true,
+    false
+  );
+
   return emDataHome.concat("/".concat(file));
 }
 

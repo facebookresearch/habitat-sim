@@ -75,11 +75,15 @@ class SimEnv {
    * Adds n random objects at random navigable points in simulation.
    */
   addRandomObjects(numberOfObjects = 4) {
+    let primitiveObjectIdx = 0;
+    let fileBaseObjectIdx = 0;
     for (let object = 0; object < numberOfObjects; object++) {
       if (object % 2 == 0) {
-        this.addTemplateObject(fileBasedObjectHandles[0]);
+        this.addTemplateObject(fileBasedObjectHandles[fileBaseObjectIdx]);
+        fileBaseObjectIdx++;
       } else {
-        this.addPrimitiveObject(primitiveObjectHandles[0]);
+        this.addPrimitiveObject(primitiveObjectHandles[primitiveObjectIdx]);
+        //primitiveObjectIdx++;
       }
     }
     this.recomputeNavMesh();
