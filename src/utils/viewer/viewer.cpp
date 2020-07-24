@@ -155,7 +155,6 @@ class Viewer : public Mn::Platform::Application {
   bool showFPS_ = true;
   bool frustumCullingEnabled_ = true;
 
-  bool objectPickingOn_ = false;
   void createPickedObjectVisualizer(unsigned int objectId);
   std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
 };
@@ -585,7 +584,7 @@ void Viewer::viewportEvent(ViewportEvent& event) {
   imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
 
-  objectPickingHelper_->setViewport(event.framebufferSize());
+  objectPickingHelper_->handleViewportChange(event.framebufferSize());
 }
 
 void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
@@ -599,7 +598,8 @@ void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
-  if (event.button() == MouseEvent::Button::Right && objectPickingOn_) {
+  if (event.button() == MouseEvent::Button::Right &&
+      (event.modifiers() & MouseEvent::Modifier::Shift)) {
     // cannot use the default framebuffer, so setup another framebuffer,
     // also, setup the color attachment for rendering, and remove the visualizer
     // for the previously picked object
@@ -671,9 +671,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
   switch (key) {
     case KeyEvent::Key::Esc:
       std::exit(0);
-      break;
-    case KeyEvent::Key::LeftShift:
-      objectPickingOn_ = true;
       break;
     case KeyEvent::Key::Left:
       controls_(*agentBodyNode_, "turnLeft", lookSensitivity);
@@ -782,15 +779,7 @@ void Viewer::updateRenderCamera() {
       rgbSensorNode_->absoluteTransformation());
 }
 
-void Viewer::keyReleaseEvent(KeyEvent& event) {
-  const auto key = event.key();
-  switch (key) {
-    case KeyEvent::Key::LeftShift:
-      objectPickingOn_ = false;
-      break;
-  }
-}
-
+void Viewer::keyReleaseEvent(KeyEvent& event) {}
 }  // namespace
 
 MAGNUM_APPLICATION_MAIN(Viewer)

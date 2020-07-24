@@ -16,10 +16,10 @@ class MeshVisualizerDrawable : public Drawable {
   /**
    * @brief Constructor
    *
-   * @param node Node which will be made drawable.
-   * @param shader the mesh visualizer shader
-   * @param mesh Mesh to draw when on render.
-   * @param group Drawable group this drawable will be added to.
+   * @param node   Node, to which the drawable is attached
+   * @param shader Shader for the mesh visualizer
+   * @param mesh   Mesh to draw when on render.
+   * @param group  Drawable group this drawable will be added to.
    */
   explicit MeshVisualizerDrawable(scene::SceneNode& node,
                                   Magnum::Shaders::MeshVisualizer3D* shader,

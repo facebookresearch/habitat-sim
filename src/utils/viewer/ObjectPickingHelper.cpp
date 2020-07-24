@@ -73,10 +73,12 @@ ObjectPickingHelper& ObjectPickingHelper::mapForDraw() {
   return *this;
 }
 
-ObjectPickingHelper& ObjectPickingHelper::setViewport(
+ObjectPickingHelper& ObjectPickingHelper::handleViewportChange(
     Mn::Vector2i viewportSize) {
   recreateFramebuffer(viewportSize);
   selectionFramebuffer_.setViewport({{}, viewportSize});
+
+  shader_->setViewportSize(Mn::Vector2{viewportSize});
   return *this;
 }
 

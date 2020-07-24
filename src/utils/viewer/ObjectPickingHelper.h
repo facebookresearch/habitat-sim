@@ -31,7 +31,7 @@ class ObjectPickingHelper {
   /**
    * @brief set viewport for framebuffer, which must be called in viewport event
    */
-  ObjectPickingHelper& setViewport(Magnum::Vector2i viewportSize);
+  ObjectPickingHelper& handleViewportChange(Magnum::Vector2i viewportSize);
   /**
    * @brief get the object id, aka, the drawable id defined in Drawable class
    * @param eventPosition, mouse event position
