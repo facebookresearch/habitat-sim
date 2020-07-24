@@ -167,6 +167,15 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       // Pass the error to the python through pybind11 allowing graceful exit
       throw std::invalid_argument("Cannot load: " + sceneFilename);
     }
+
+    // refresh the NavMesh visualization if necessary after loading a new
+    // SceneGraph
+    if (isNavMeshVisualizationActive()) {
+      // if updating pathfinder_ instance, refresh the visualization.
+      setNavMeshVisualization(false);  // first clear the old instance
+      setNavMeshVisualization(true);
+    }
+
     const Magnum::Range3D& sceneBB = rootNode.computeCumulativeBB();
     resourceManager_->setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
 
