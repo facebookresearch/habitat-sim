@@ -42,6 +42,7 @@
 #include "esp/core/Utility.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
+#include "esp/gfx/MeshVisualizerDrawable.h"
 #include "esp/io/io.h"
 
 #include "esp/scene/SceneConfiguration.h"
@@ -154,10 +155,12 @@ class Viewer : public Mn::Platform::Application {
   bool showFPS_ = true;
   bool frustumCullingEnabled_ = true;
 
-  bool objectSelectionOn_ = false;
-  int64_t selectedDrawableId_ = -1;
+  bool objectPickingOn_ = false;
+  int64_t pickedDrawableId_ = -1;
   void unselectObject();
+  void createPickedObjectVisualizer(unsigned int objectId);
   std::unique_ptr<ObjectPickingHelper> objectPickingHelper;
+  esp::gfx::MeshVisualizerDrawable* pickedObjectVisualizer_ = nullptr;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -524,12 +527,9 @@ void Viewer::drawEvent() {
     timeSinceLastSimulation = 0.0;
   }
 
-  int DEFAULT_SCENE = 0;
-  int sceneID = sceneID_[DEFAULT_SCENE];
-  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   uint32_t visibles = 0;
 
-  for (auto& it : sceneGraph.getDrawableGroups()) {
+  for (auto& it : sceneGraph_->getDrawableGroups()) {
     // TODO: remove || true
     if (it.second.prepareForDraw(*renderCamera_) || true) {
       esp::gfx::RenderCamera::Flags flags;
@@ -555,7 +555,7 @@ void Viewer::drawEvent() {
                      ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(2.0);
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
-    uint32_t total = sceneGraph.getDrawables().size();
+    uint32_t total = sceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
     ImGui::Text("%u culled", total - visibles);
     ImGui::End();
@@ -591,31 +591,57 @@ void Viewer::viewportEvent(ViewportEvent& event) {
   objectPickingHelper->setViewport(event.framebufferSize());
 }
 void Viewer::unselectObject() {
-  if (selectedDrawableId_ >= 0) {
-    for (auto& it : sceneGraph.getDrawableGroups()) {
-      esp::gfx::Drawable* d = it.second.getDrawable(selectedDrawableId_);
+  if (pickedDrawableId_ >= 0) {
+    for (auto& it : sceneGraph_->getDrawableGroups()) {
+      esp::gfx::Drawable* d = it.second.getDrawable(pickedDrawableId_);
       if (d != nullptr) {
         d->setSelected(false);
         break;  // the selected object is found and processed
       }
     }
-    selectedDrawableId_ = -1;
+    pickedDrawableId_ = -1;
+  }
+}
+void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
+  for (auto& it : sceneGraph_->getDrawableGroups()) {
+    if (it.second.hasDrawable(objectId)) {
+      pickedDrawableId_ = objectId;
+      auto* pickedDrawable = it.second.getDrawable(pickedDrawableId_);
+      pickedDrawable->setSelected(true);
+
+      delete pickedObjectVisualizer_;
+      /*
+      pickedObjectVisualizer_ =
+          new esp::gfx::MeshVisualizerDrawable(pickedDrawable->object()),
+      Mn::Shaders::MeshVisualizer3D{}
+      */
+
+      break;
+    }
+  }
+
+  if (pickedDrawableId_ >= 0) {
+    /*
+    _data->selectedObject = new MeshVisualizerDrawable{ *objectInfo.object,
+    meshVisualizerShader(flags), *meshInfo.mesh,
+    _data->objects[selectedId].meshId, meshInfo.objectIdCount,
+    meshInfo.vertices, meshInfo.primitives, _shadeless,
+    _data->selectedObjectDrawables};
+    */
   }
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
-  if (event.button() == MouseEvent::Button::Right && objectSelectionOn_) {
+  if (event.button() == MouseEvent::Button::Right && objectPickingOn_) {
     // cannot use the default framebuffer, so setup another framebuffer, and
     // color attachment for rendering
     objectPickingHelper->prepareToDraw();
-    int DEFAULT_SCENE = 0;
-    auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_[DEFAULT_SCENE]);
 
     esp::gfx::RenderCamera::Flags flags =
         esp::gfx::RenderCamera::Flag::ObjectPicking;
     if (frustumCullingEnabled_)
       flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
-    for (auto& it : sceneGraph.getDrawableGroups()) {
+    for (auto& it : sceneGraph_->getDrawableGroups()) {
       renderCamera_->draw(it.second, flags);
     }
 
@@ -623,17 +649,13 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     unselectObject();
 
     // Read the ID back
-    unsigned int selectedObject =
+    unsigned int pickedObject =
         objectPickingHelper->getObjectId(event.position(), windowSize());
 
-    for (auto& it : sceneGraph.getDrawableGroups()) {
-      if (it.second.hasDrawable(selectedObject)) {
-        selectedDrawableId_ = selectedObject;
-        it.second.getDrawable(selectedDrawableId_)->setSelected(true);
-        break;
-      }
-    }  // for
-  }    // drawable selection
+    createPickedObjectVisualizer(pickedObject);
+
+    // if an object is selected, create a visualizer
+  }  // drawable selection
   event.setAccepted();
   redraw();
 }
@@ -685,7 +707,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       std::exit(0);
       break;
     case KeyEvent::Key::LeftShift:
-      objectSelectionOn_ = true;
+      objectPickingOn_ = true;
       break;
     case KeyEvent::Key::Left:
       controls_(*agentBodyNode_, "turnLeft", lookSensitivity);
@@ -798,7 +820,7 @@ void Viewer::keyReleaseEvent(KeyEvent& event) {
   const auto key = event.key();
   switch (key) {
     case KeyEvent::Key::LeftShift:
-      objectSelectionOn_ = false;
+      objectPickingOn_ = false;
       break;
   }
 }

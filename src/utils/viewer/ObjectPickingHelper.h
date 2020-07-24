@@ -26,8 +26,9 @@ class ObjectPickingHelper {
    */
   ObjectPickingHelper& prepareToDraw();
   /**
-   * @brief set viewport for framebuffer, which must be called in viewportEvent
+   * @brief set viewport for framebuffer, which must be called in viewport event
    */
+
   ObjectPickingHelper& setViewport(Magnum::Vector2i viewportSize);
   /**
    * @brief get the object id, aka, the drawable id defined in Drawable class
@@ -38,8 +39,6 @@ class ObjectPickingHelper {
                            Magnum::Vector2i windowSize);
 
  protected:
-  int64_t selectedDrawableId_ = -1;
-
   // framebuffer for drawable selection
   Magnum::GL::Framebuffer selectionFramebuffer_{Magnum::NoCreate};
   Magnum::GL::Renderbuffer selectionDepth_;
