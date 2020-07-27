@@ -667,6 +667,7 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
     const io::JsonDocument& jsonDoc) {
   auto attributes = U::create(configFilename);
   using std::placeholders::_1;
+
   // scale
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonDoc, "scale",
@@ -694,6 +695,11 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
       jsonDoc, "requires lighting",
       std::bind(&AbstractPhysicsAttributes::setRequiresLighting, attributes,
                 _1));
+
+  // units to meters
+  io::jsonIntoSetter<double>(
+      jsonDoc, "units to meters",
+      std::bind(&AbstractPhysicsAttributes::setUnitsToMeters, attributes, _1));
 
   // 4. parse render and collision mesh filepaths
   std::string propertiesFileDirectory =

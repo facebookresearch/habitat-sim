@@ -94,6 +94,12 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
   void setMargin(double margin) { setDouble("margin", margin); }
   double getMargin() const { return getDouble("margin"); }
 
+  // units to meters mapping
+  void setUnitsToMeters(double unitsToMeters) {
+    setDouble("unitsToMeters", unitsToMeters);
+  }
+  double getUnitsToMeters() const { return getDouble("unitsToMeters"); }
+
   void setFrictionCoefficient(double frictionCoefficient) {
     setDouble("frictionCoefficient", frictionCoefficient);
   }
@@ -264,6 +270,9 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
 class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
  public:
   PhysicsSceneAttributes(const std::string& handle = "");
+
+  void setOrigin(const Magnum::Vector3& origin) { setVec3("origin", origin); }
+  Magnum::Vector3 getOrigin() const { return getVec3("origin"); }
 
   void setGravity(const Magnum::Vector3& gravity) {
     setVec3("gravity", gravity);

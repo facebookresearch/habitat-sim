@@ -248,6 +248,11 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
       jsonConfig, "gravity",
       std::bind(&PhysicsSceneAttributes::setGravity, sceneAttributes, _1));
 
+  // load scene specific origin
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "origin",
+      std::bind(&PhysicsSceneAttributes::setOrigin, sceneAttributes, _1));
+
   // semantic asset handle for scene
   io::jsonIntoSetter<std::string>(
       jsonConfig, "semantic asset handle",
