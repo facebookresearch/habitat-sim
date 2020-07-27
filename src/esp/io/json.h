@@ -115,7 +115,7 @@ template <>
 inline bool jsonIntoVal(const JsonDocument& d, const char* tag, bool& val) {
   if (d.HasMember(tag)) {
     if (d[tag].IsBool()) {
-      val = d[tag].IsBool();
+      val = d[tag].GetBool();
       return true;
     }
     LOG(ERROR) << "Invalid boolean value specified in JSON config at " << tag;

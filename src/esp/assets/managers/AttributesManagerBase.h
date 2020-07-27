@@ -672,6 +672,11 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
       jsonDoc, "scale",
       std::bind(&AbstractPhysicsAttributes::setScale, attributes, _1));
 
+  // margin
+  io::jsonIntoSetter<double>(
+      jsonDoc, "margin",
+      std::bind(&AbstractPhysicsAttributes::setMargin, attributes, _1));
+
   // load the friction coefficient
   io::jsonIntoSetter<double>(
       jsonDoc, "friction coefficient",
