@@ -433,103 +433,6 @@ class AttributesManager {
   AttribsPtr createPhysicsAttributesFromJson(const std::string& filename,
                                              const io::JsonDocument& jsonDoc);
 
-  /**
-   * @brief Check passed json doc for existence of passed @ref jsonTag as
-   * 3D vector of doubles. If present, populate passed @ref attribSetter with
-   * value. Returns whether tag is found and successfully populated, or not.
-   *
-   * @param jsonDoc json document to parse
-   * @param jsonTag string tag to look for in json doc
-   * @param attribSetter Setter in attributes to populate with the data from
-   * json.
-   * @return whether successful or not
-   */
-  bool parseJsonToDoubleArray(
-      const io::JsonDocument& jsonDoc,
-      const char* jsonTag,
-      std::function<void(const Magnum::Vector3&)> attribSetter);
-
-  /**
-   * @brief Check passed json doc for existence of passed @ref jsonTag as
-   * double. If present, populate passed @ref attribSetter with
-   * value. Returns whether tag is found and successfully populated, or not.
-   *
-   * @param jsonDoc json document to parse
-   * @param jsonTag string tag to look for in json doc
-   * @param attribSetter Setter in attributes to populate with the data from
-   * json.
-   * @return whether successful or not
-   */
-  bool parseJsonToDouble(const io::JsonDocument& jsonDoc,
-                         const char* jsonTag,
-                         std::function<void(double)> attribSetter) {
-    if (jsonDoc.HasMember(jsonTag)) {
-      if (jsonDoc[jsonTag].IsNumber()) {
-        attribSetter(jsonDoc[jsonTag].GetDouble());
-        return true;
-      } else {
-        LOG(ERROR) << " Invalid value in " << attrType_ << " JSON config - "
-                   << jsonTag;
-        return false;
-      }
-    }
-    return false;
-  }  // AttributesManager::parseJsonToDouble
-
-  /**
-   * @brief Check passed json doc for existence of passed @ref jsonTag as
-   * boolean. If present, populate passed @ref attribSetter with
-   * value. Returns whether tag is found and successfully populated, or not.
-   *
-   * @param jsonDoc json document to parse
-   * @param jsonTag string tag to look for in json doc
-   * @param attribSetter Setter in attributes to populate with the data from
-   * json.
-   * @return whether successful or not
-   */
-  bool parseJsonToBool(const io::JsonDocument& jsonDoc,
-                       const char* jsonTag,
-                       std::function<void(bool)> attribSetter) {
-    if (jsonDoc.HasMember(jsonTag)) {
-      if (jsonDoc[jsonTag].IsBool()) {
-        attribSetter(jsonDoc[jsonTag].GetBool());
-        return true;
-      } else {
-        LOG(ERROR) << " Invalid value in " << attrType_ << " JSON config - "
-                   << jsonTag;
-        return false;
-      }
-    }
-    return false;
-  }  // AttributesManager::parseJsonToBool
-
-  /**
-   * @brief Check passed json doc for existence of passed @ref jsonTag as
-   * string. If present, populate passed @ref attribSetter with
-   * value. Returns whether tag is found and successfully populated, or not.
-   *
-   * @param jsonDoc json document to parse
-   * @param jsonTag string tag to look for in json doc
-   * @param attribSetter Setter in attributes to populate with the data from
-   * json.
-   * @return whether successful or not
-   */
-  bool parseJsonToString(const io::JsonDocument& jsonDoc,
-                         const char* jsonTag,
-                         std::function<void(const std::string&)> attribSetter) {
-    if (jsonDoc.HasMember(jsonTag)) {
-      if (jsonDoc[jsonTag].IsString()) {
-        attribSetter(jsonDoc[jsonTag].GetString());
-        return true;
-      } else {
-        LOG(ERROR) << " Invalid value in " << attrType_ << " JSON config - "
-                   << jsonTag;
-        return false;
-      }
-    }
-    return false;
-  }  // AttributesManager::parseJsonToBool
-
   //======== Internally accessed functions ========
   /**
    * @brief Used Internally. Remove the template referenced by the passed
@@ -756,29 +659,6 @@ class AttributesManager {
 
 /////////////////////////////
 // Class Template Method Definitions
-template <class T>
-bool AttributesManager<T>::parseJsonToDoubleArray(
-    const io::JsonDocument& jsonDoc,
-    const char* jsonTag,
-    std::function<void(const Magnum::Vector3&)> attribSetter) {
-  if (jsonDoc.HasMember(jsonTag) && jsonDoc[jsonTag].IsArray() &&
-      (jsonDoc[jsonTag].Size() == 3)) {
-    Magnum::Vector3 value;
-    for (rapidjson::SizeType i = 0; i < 3; ++i) {
-      if (jsonDoc[jsonTag][i].IsNumber()) {
-        value[i] = jsonDoc[jsonTag][i].GetDouble();
-      } else {
-        // invalid config
-        LOG(ERROR) << " Invalid array value" << attrType_ << " JSON config - "
-                   << jsonTag;
-        return false;
-      }
-    }  // build array
-    attribSetter(value);
-    return true;
-  }  // if tag is present, tag is appropriate format and length
-  return false;
-}  // AttributesManager::parseJsonToDoubleArray
 
 template <class AttribsPtr>
 template <class U>
@@ -787,25 +667,26 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
     const io::JsonDocument& jsonDoc) {
   auto attributes = U::create(configFilename);
   using std::placeholders::_1;
+  bool success = false;
   // scale
-  this->parseJsonToDoubleArray(
+  success = io::jsonIntoArraySetter<Magnum::Vector3>(
       jsonDoc, "scale",
       std::bind(&AbstractPhysicsAttributes::setScale, attributes, _1));
 
   // load the friction coefficient
-  this->parseJsonToDouble(
+  success = io::jsonIntoSetter<double>(
       jsonDoc, "friction coefficient",
       std::bind(&AbstractPhysicsAttributes::setFrictionCoefficient, attributes,
                 _1));
 
   // load the restitution coefficient
-  this->parseJsonToDouble(
+  success = io::jsonIntoSetter<double>(
       jsonDoc, "restitution coefficient",
       std::bind(&AbstractPhysicsAttributes::setRestitutionCoefficient,
                 attributes, _1));
 
   // if object will be flat or phong shaded
-  this->parseJsonToBool(
+  success = io::jsonIntoSetter<bool>(
       jsonDoc, "requires lighting",
       std::bind(&AbstractPhysicsAttributes::setRequiresLighting, attributes,
                 _1));
@@ -816,26 +697,15 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
 
   std::string rndrFName = "";
   std::string colFName = "";
-
-  if (jsonDoc.HasMember("render mesh")) {
-    if (jsonDoc["render mesh"].IsString()) {
-      rndrFName = Cr::Utility::Directory::join(
-          propertiesFileDirectory, jsonDoc["render mesh"].GetString());
-    } else {
-      LOG(ERROR) << " Invalid value in " << attrType_
-                 << " JSON config - render mesh";
-    }
+  if (io::jsonIntoVal<std::string>(jsonDoc, "render mesh", rndrFName)) {
+    rndrFName =
+        Cr::Utility::Directory::join(propertiesFileDirectory, rndrFName);
   }
 
-  if (jsonDoc.HasMember("collision mesh")) {
-    if (jsonDoc["collision mesh"].IsString()) {
-      colFName = Cr::Utility::Directory::join(
-          propertiesFileDirectory, jsonDoc["collision mesh"].GetString());
-    } else {
-      LOG(ERROR) << " Invalid value in " << attrType_
-                 << " JSON config - collision mesh";
-    }
+  if (io::jsonIntoVal<std::string>(jsonDoc, "collision mesh", colFName)) {
+    colFName = Cr::Utility::Directory::join(propertiesFileDirectory, colFName);
   }
+
   // use non-empty result if either result is empty
   attributes->setRenderAssetHandle(rndrFName.compare("") == 0 ? colFName
                                                               : rndrFName);

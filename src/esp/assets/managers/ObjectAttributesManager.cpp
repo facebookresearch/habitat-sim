@@ -113,30 +113,30 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
 
   // Populate with object-specific fields found in json, if any are there
   // object mass
-  this->parseJsonToDouble(
+  success = io::jsonIntoSetter<double>(
       jsonConfig, "mass",
       std::bind(&PhysicsObjectAttributes::setMass, objAttributes, _1));
 
   // optional set bounding box as collision object
-  this->parseJsonToBool(
+  success = io::jsonIntoSetter<bool>(
       jsonConfig, "use bounding box for collision",
       std::bind(&PhysicsObjectAttributes::setBoundingBoxCollisions,
                 objAttributes, _1));
 
   //! Get collision configuration options if specified
-  this->parseJsonToBool(
+  success = io::jsonIntoSetter<bool>(
       jsonConfig, "join collision meshes",
       std::bind(&PhysicsObjectAttributes::setJoinCollisionMeshes, objAttributes,
                 _1));
 
   // object's interia matrix diag
-  this->parseJsonToDoubleArray(
+  success = io::jsonIntoArraySetter<Magnum::Vector3>(
       jsonConfig, "inertia",
       std::bind(&PhysicsObjectAttributes::setInertia, objAttributes, _1));
 
   // the center of mass (in the local frame of the object)
   // if COM is provided, use it for mesh shift
-  bool comIsSet = this->parseJsonToDoubleArray(
+  bool comIsSet = io::jsonIntoArraySetter<Magnum::Vector3>(
       jsonConfig, "COM",
       std::bind(&PhysicsObjectAttributes::setCOM, objAttributes, _1));
   // if com is set from json, don't compute from shape, and vice versa

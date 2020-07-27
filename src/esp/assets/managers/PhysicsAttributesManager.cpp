@@ -79,31 +79,34 @@ PhysicsAttributesManager::createFileBasedAttributesTemplate(
 
   // load the simulator preference - default is "none" simulator, set in
   // attributes ctor.
-  this->parseJsonToString(jsonConfig, "physics simulator",
-                          std::bind(&PhysicsManagerAttributes::setSimulator,
-                                    physicsManagerAttributes, _1));
+  success = io::jsonIntoSetter<std::string>(
+      jsonConfig, "physics simulator",
+      std::bind(&PhysicsManagerAttributes::setSimulator,
+                physicsManagerAttributes, _1));
 
   // load the physics timestep
-  this->parseJsonToDouble(jsonConfig, "timestep",
-                          std::bind(&PhysicsManagerAttributes::setTimestep,
-                                    physicsManagerAttributes, _1));
+  success = io::jsonIntoSetter<double>(
+      jsonConfig, "timestep",
+      std::bind(&PhysicsManagerAttributes::setTimestep,
+                physicsManagerAttributes, _1));
 
   // load the friction coefficient
-  this->parseJsonToDouble(
+  success = io::jsonIntoSetter<double>(
       jsonConfig, "friction coefficient",
       std::bind(&PhysicsManagerAttributes::setFrictionCoefficient,
                 physicsManagerAttributes, _1));
 
   // load the restitution coefficient
-  this->parseJsonToDouble(
+  success = io::jsonIntoSetter<double>(
       jsonConfig, "restitution coefficient",
       std::bind(&PhysicsManagerAttributes::setRestitutionCoefficient,
                 physicsManagerAttributes, _1));
 
   // load world gravity
-  this->parseJsonToDoubleArray(jsonConfig, "gravity",
-                               std::bind(&PhysicsManagerAttributes::setGravity,
-                                         physicsManagerAttributes, _1));
+  success = io::jsonIntoArraySetter<Magnum::Vector3>(
+      jsonConfig, "gravity",
+      std::bind(&PhysicsManagerAttributes::setGravity, physicsManagerAttributes,
+                _1));
 
   // load the rigid object library metadata (no physics init yet...)
   if (jsonConfig.HasMember("rigid object paths") &&
