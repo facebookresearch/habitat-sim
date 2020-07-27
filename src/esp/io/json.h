@@ -208,10 +208,11 @@ bool jsonIntoSetter(const JsonDocument& d,
 
 /**
  * @brief Check passed json doc for existence of passed @ref jsonTag as value of
- * type @ref T, where T is an array. If present, populate passed @ref setter
- * with value. Returns whether tag is found and successfully populated, or not.
- * Logs an error if tag is found but is inappropriate type.  Should use explicit
- * type cast on function call if @ref setter is specified using std::bind()
+ * type @ref T, where the consuming setter will treat the value as const. If
+ * present, populate passed @ref setter with value. Returns whether tag is found
+ * and successfully populated, or not. Logs an error if tag is found but is
+ * inappropriate type.  Should use explicit type cast on function call if @ref
+ * setter is specified using std::bind()
  *
  * @tparam T type of destination variable - must be supported type.
  * @param d json document to parse
@@ -221,7 +222,7 @@ bool jsonIntoSetter(const JsonDocument& d,
  * @return whether successful or not
  */
 template <typename T>
-bool jsonIntoArraySetter(const JsonDocument& d,
+bool jsonIntoConstSetter(const JsonDocument& d,
                          const char* tag,
                          std::function<void(const T)> setter) {
   T val;

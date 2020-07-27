@@ -130,13 +130,13 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
                 _1));
 
   // object's interia matrix diag
-  io::jsonIntoArraySetter<Magnum::Vector3>(
+  io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "inertia",
       std::bind(&PhysicsObjectAttributes::setInertia, objAttributes, _1));
 
   // the center of mass (in the local frame of the object)
   // if COM is provided, use it for mesh shift
-  bool comIsSet = io::jsonIntoArraySetter<Magnum::Vector3>(
+  bool comIsSet = io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "COM",
       std::bind(&PhysicsObjectAttributes::setCOM, objAttributes, _1));
   // if com is set from json, don't compute from shape, and vice versa

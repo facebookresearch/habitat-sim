@@ -668,7 +668,7 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
   auto attributes = U::create(configFilename);
   using std::placeholders::_1;
   // scale
-  io::jsonIntoArraySetter<Magnum::Vector3>(
+  io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonDoc, "scale",
       std::bind(&AbstractPhysicsAttributes::setScale, attributes, _1));
 

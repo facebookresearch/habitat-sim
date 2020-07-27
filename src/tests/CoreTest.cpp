@@ -46,7 +46,7 @@ TEST(CoreTest, JsonTest) {
 
   bool success = false;
   // test vector
-  success = esp::io::jsonIntoArraySetter<Magnum::Vector3>(
+  success = esp::io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonDoc, "scale",
       std::bind(&AbstractPhysicsAttributes::setScale, attributes, _1));
   EXPECT_EQ(success, true);
@@ -60,14 +60,10 @@ TEST(CoreTest, JsonTest) {
   EXPECT_EQ(attributes->getMass(), 0.066);
 
   // test bool
-  LOG(INFO) << "Before setting attributes join collision meshes : "
-            << attributes->getJoinCollisionMeshes();
   success = esp::io::jsonIntoSetter<bool>(
       jsonDoc, "join collision meshes",
       std::bind(&PhysicsObjectAttributes::setJoinCollisionMeshes, attributes,
                 _1));
-  LOG(INFO) << "After setting attributes join collision meshes : "
-            << attributes->getJoinCollisionMeshes();
   EXPECT_EQ(success, true);
   EXPECT_EQ(attributes->getJoinCollisionMeshes(), false);
 

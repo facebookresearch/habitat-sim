@@ -102,7 +102,7 @@ PhysicsAttributesManager::createFileBasedAttributesTemplate(
                 physicsManagerAttributes, _1));
 
   // load world gravity
-  io::jsonIntoArraySetter<Magnum::Vector3>(
+  io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "gravity",
       std::bind(&PhysicsManagerAttributes::setGravity, physicsManagerAttributes,
                 _1));
