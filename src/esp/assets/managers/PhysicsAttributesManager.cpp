@@ -79,31 +79,30 @@ PhysicsAttributesManager::createFileBasedAttributesTemplate(
 
   // load the simulator preference - default is "none" simulator, set in
   // attributes ctor.
-  success = io::jsonIntoSetter<std::string>(
+  io::jsonIntoSetter<std::string>(
       jsonConfig, "physics simulator",
       std::bind(&PhysicsManagerAttributes::setSimulator,
                 physicsManagerAttributes, _1));
 
   // load the physics timestep
-  success = io::jsonIntoSetter<double>(
-      jsonConfig, "timestep",
-      std::bind(&PhysicsManagerAttributes::setTimestep,
-                physicsManagerAttributes, _1));
+  io::jsonIntoSetter<double>(jsonConfig, "timestep",
+                             std::bind(&PhysicsManagerAttributes::setTimestep,
+                                       physicsManagerAttributes, _1));
 
   // load the friction coefficient
-  success = io::jsonIntoSetter<double>(
+  io::jsonIntoSetter<double>(
       jsonConfig, "friction coefficient",
       std::bind(&PhysicsManagerAttributes::setFrictionCoefficient,
                 physicsManagerAttributes, _1));
 
   // load the restitution coefficient
-  success = io::jsonIntoSetter<double>(
+  io::jsonIntoSetter<double>(
       jsonConfig, "restitution coefficient",
       std::bind(&PhysicsManagerAttributes::setRestitutionCoefficient,
                 physicsManagerAttributes, _1));
 
   // load world gravity
-  success = io::jsonIntoArraySetter<Magnum::Vector3>(
+  io::jsonIntoArraySetter<Magnum::Vector3>(
       jsonConfig, "gravity",
       std::bind(&PhysicsManagerAttributes::setGravity, physicsManagerAttributes,
                 _1));

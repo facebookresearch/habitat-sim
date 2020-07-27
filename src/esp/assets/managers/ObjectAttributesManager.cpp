@@ -113,24 +113,24 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
 
   // Populate with object-specific fields found in json, if any are there
   // object mass
-  success = io::jsonIntoSetter<double>(
+  io::jsonIntoSetter<double>(
       jsonConfig, "mass",
       std::bind(&PhysicsObjectAttributes::setMass, objAttributes, _1));
 
   // optional set bounding box as collision object
-  success = io::jsonIntoSetter<bool>(
+  io::jsonIntoSetter<bool>(
       jsonConfig, "use bounding box for collision",
       std::bind(&PhysicsObjectAttributes::setBoundingBoxCollisions,
                 objAttributes, _1));
 
   //! Get collision configuration options if specified
-  success = io::jsonIntoSetter<bool>(
+  io::jsonIntoSetter<bool>(
       jsonConfig, "join collision meshes",
       std::bind(&PhysicsObjectAttributes::setJoinCollisionMeshes, objAttributes,
                 _1));
 
   // object's interia matrix diag
-  success = io::jsonIntoArraySetter<Magnum::Vector3>(
+  io::jsonIntoArraySetter<Magnum::Vector3>(
       jsonConfig, "inertia",
       std::bind(&PhysicsObjectAttributes::setInertia, objAttributes, _1));
 

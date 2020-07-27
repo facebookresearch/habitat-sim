@@ -667,26 +667,25 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
     const io::JsonDocument& jsonDoc) {
   auto attributes = U::create(configFilename);
   using std::placeholders::_1;
-  bool success = false;
   // scale
-  success = io::jsonIntoArraySetter<Magnum::Vector3>(
+  io::jsonIntoArraySetter<Magnum::Vector3>(
       jsonDoc, "scale",
       std::bind(&AbstractPhysicsAttributes::setScale, attributes, _1));
 
   // load the friction coefficient
-  success = io::jsonIntoSetter<double>(
+  io::jsonIntoSetter<double>(
       jsonDoc, "friction coefficient",
       std::bind(&AbstractPhysicsAttributes::setFrictionCoefficient, attributes,
                 _1));
 
   // load the restitution coefficient
-  success = io::jsonIntoSetter<double>(
+  io::jsonIntoSetter<double>(
       jsonDoc, "restitution coefficient",
       std::bind(&AbstractPhysicsAttributes::setRestitutionCoefficient,
                 attributes, _1));
 
   // if object will be flat or phong shaded
-  success = io::jsonIntoSetter<bool>(
+  io::jsonIntoSetter<bool>(
       jsonDoc, "requires lighting",
       std::bind(&AbstractPhysicsAttributes::setRequiresLighting, attributes,
                 _1));

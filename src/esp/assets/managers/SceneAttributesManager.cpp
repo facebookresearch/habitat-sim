@@ -244,12 +244,12 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
 
   // now parse scene-specific fields
   // load scene specific gravity
-  success = io::jsonIntoArraySetter<Magnum::Vector3>(
+  io::jsonIntoArraySetter<Magnum::Vector3>(
       jsonConfig, "gravity",
       std::bind(&PhysicsSceneAttributes::setGravity, sceneAttributes, _1));
 
   // semantic asset handle for scene
-  success = io::jsonIntoSetter<std::string>(
+  io::jsonIntoSetter<std::string>(
       jsonConfig, "semantic asset handle",
       std::bind(&PhysicsSceneAttributes::setSemanticAssetHandle,
                 sceneAttributes, _1));

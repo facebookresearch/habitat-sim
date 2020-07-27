@@ -184,7 +184,8 @@ inline bool jsonIntoVal(const JsonDocument& d,
  * @brief Check passed json doc for existence of passed @ref jsonTag as value of
  * type @ref T. If present, populate passed @ref setter with value. Returns
  * whether tag is found and successfully populated, or not. Logs an error if tag
- * is found but is inappropriate type.
+ * is found but is inappropriate type.  Should use explicit type cast on
+ * function call if @ref setter is specified using std::bind()
  *
  * @tparam T type of destination variable - must be supported type.
  * @param d json document to parse
@@ -209,7 +210,8 @@ bool jsonIntoSetter(const JsonDocument& d,
  * @brief Check passed json doc for existence of passed @ref jsonTag as value of
  * type @ref T, where T is an array. If present, populate passed @ref setter
  * with value. Returns whether tag is found and successfully populated, or not.
- * Logs an error if tag is found but is inappropriate type.
+ * Logs an error if tag is found but is inappropriate type.  Should use explicit
+ * type cast on function call if @ref setter is specified using std::bind()
  *
  * @tparam T type of destination variable - must be supported type.
  * @param d json document to parse
