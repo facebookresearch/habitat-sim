@@ -20,8 +20,8 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
-#             Vladimír Vondruš <mosra@centrum.cz>
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,
+#               2020 Vladimír Vondruš <mosra@centrum.cz>
 #   Copyright © 2016 Jonathan Hale <squareys@googlemail.com>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,11 +43,17 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
-# GLFW installs cmake package config files to shared/ folder which handles
-# dependencies in case GLFW is built statically. Try to find first, quietly, so
-# it doesn't print loud messages when it's not found, since that's okay.
-find_package(glfw3 CONFIG QUIET)
+# GLFW installs cmake package config files which handles dependencies in case
+# GLFW is built statically. Try to find first, quietly, so it doesn't print
+# loud messages when it's not found, since that's okay. If the glfw target
+# already exists, it means we're using it through a CMake subproject -- don't
+# attempt to find the package in that case.
+if(NOT TARGET glfw)
+    find_package(glfw3 CONFIG QUIET)
+endif()
 
+# If either a glfw config file was found or we have a subproject, point
+# GLFW::GLFW to that and exit -- nothing else to do here.
 if(TARGET glfw)
     if(NOT TARGET GLFW::GLFW)
         # Aliases of (global) targets are only supported in CMake 3.11, so we

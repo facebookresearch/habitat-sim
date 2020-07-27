@@ -8,8 +8,8 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
 
-#include <Magnum/Python.h>
-#include <Magnum/SceneGraph/Python.h>
+#include <Magnum/PythonBindings.h>
+#include <Magnum/SceneGraph/PythonBindings.h>
 
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"

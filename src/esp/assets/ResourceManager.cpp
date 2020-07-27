@@ -4,6 +4,7 @@
 
 #include "ResourceManager.h"
 
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Containers/PointerStl.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/PluginManager/PluginMetadata.h>
@@ -346,8 +347,7 @@ bool ResourceManager::loadObjectMeshDataFromFile(
 
 Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
-  return Magnum::Range3D{
-      Magnum::Math::minmax<Magnum::Vector3>(meshData.positions)};
+  return Mn::Math::minmax(meshData.positions);
 }
 
 #ifdef ESP_BUILD_PTEX_SUPPORT
@@ -373,7 +373,7 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(BaseMesh& baseMesh) {
     Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry], pos);
 
     scene::SceneNode& node = staticDrawableInfo_[iEntry].node;
-    node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(pos)});
+    node.setAbsoluteAABB(Mn::Math::minmax(pos));
   }
 }  // ResourceManager::computePTexMeshAbsoluteAABBs
 #endif
@@ -416,7 +416,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs() {
     scene::SceneNode& node = staticDrawableInfo_[iEntry].node;
 
     // set the absolute axis aligned bounding box
-    node.setAbsoluteAABB(Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(bbPos)});
+    node.setAbsoluteAABB(Mn::Math::minmax(bbPos));
 
   }  // iEntry
 }
@@ -443,8 +443,7 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs() {
                                           transformedPositions);
 
     scene::SceneNode& node = staticDrawableInfo_[iEntry].node;
-    node.setAbsoluteAABB(
-        Mn::Range3D{Mn::Math::minmax<Mn::Vector3>(transformedPositions)});
+    node.setAbsoluteAABB(Mn::Math::minmax(transformedPositions));
   }  // iEntry
 }
 
