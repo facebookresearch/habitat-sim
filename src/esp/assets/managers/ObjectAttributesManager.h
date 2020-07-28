@@ -237,6 +237,21 @@ class ObjectAttributesManager
 
  protected:
   /**
+   * @brief This method will perform any necessary updating that is
+   * attributesManager-specific upon template removal, such as removing a
+   * specific template handle from the list of file-based template handles in
+   * ObjectAttributesManager.  This should only be called internally.
+   *
+   * @param templateID the ID of the template to remove
+   * @param templateHandle the string key of the attributes desired.
+   */
+  void updateTemplateHandleLists(int templateID,
+                                 const std::string& templateHandle) override {
+    physicsFileObjTmpltLibByID_.erase(templateID);
+    physicsSynthObjTmpltLibByID_.erase(templateID);
+  }
+
+  /**
    * @brief Add a copy of @ref AbstractAttributes object to the @ref
    * templateLibrary_. Verify that render and collision handles have been
    * set properly.  We are doing this since these values can be modified by the

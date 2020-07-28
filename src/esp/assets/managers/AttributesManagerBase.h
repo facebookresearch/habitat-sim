@@ -245,9 +245,10 @@ class AttributesManager {
     return removeTemplateInternal(templateHandle,
                                   "AttributesManager::removeTemplateByHandle");
   }
+
   /**
-   * @brief Get the key in @ref templateLibrary_ for the object template with
-   * the given unique ID.
+   * @brief Get the key in @ref templateLibrary_ for the object template
+   * with the given unique ID.
    *
    * @param templateID The unique ID of the desired template.
    * @return The key referencing the template in @ref
@@ -445,6 +446,19 @@ class AttributesManager {
    */
   AttribsPtr removeTemplateInternal(const std::string& templateHandle,
                                     const std::string& src);
+
+  /**
+   * @brief This method will perform any necessary updating that is
+   * attributesManager-specific upon template removal, such as removing a
+   * specific template handle from the list of file-based template handles in
+   * ObjectAttributesManager.  This should only be called internally.
+   *
+   * @param templateID the ID of the template to remove
+   * @param templateHandle the string key of the attributes to remove.
+   */
+  virtual void updateTemplateHandleLists(int templateID,
+                                         const std::string& templateHandle) = 0;
+
   /**
    * @brief Used Internally. Get the ID of the template in @ref templateLibrary_
    * for the given template Handle, if exists. If the template is not in the
@@ -747,6 +761,9 @@ T AttributesManager<T>::removeTemplateInternal(
   templateLibKeyByID_.erase(templateID);
   templateLibrary_.erase(templateHandle);
   availableTemplateIDs_.emplace_front(templateID);
+  // call instance-specific update to remove template handle from any local
+  // lists
+  updateTemplateHandleLists(templateID, templateHandle);
   return attribsTemplate;
 }  // AttributesManager::removeTemplateByHandle
 
