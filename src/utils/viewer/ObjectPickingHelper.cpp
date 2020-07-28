@@ -12,7 +12,6 @@
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
-using Mn::Math::Literals::operator""_rgbaf;
 using Mn::Math::Literals::operator""_rgbf;
 
 ObjectPickingHelper::ObjectPickingHelper(Mn::Vector2i viewportSize) {
