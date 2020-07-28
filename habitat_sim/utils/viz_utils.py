@@ -1,10 +1,11 @@
 import base64
-import cv2
 import io
-import numpy as np
 import os
 import subprocess
 import sys
+
+import cv2
+import numpy as np
 
 import habitat_sim
 
