@@ -39,6 +39,5 @@ DrawableGroup* Drawable::drawables() {
                  {});
   return static_cast<DrawableGroup*>(group);
 }
-
 }  // namespace gfx
 }  // namespace esp

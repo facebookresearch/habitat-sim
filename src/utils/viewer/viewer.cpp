@@ -74,7 +74,6 @@ class Viewer : public Mn::Platform::Application {
   void mouseMoveEvent(MouseMoveEvent& event) override;
   void mouseScrollEvent(MouseScrollEvent& event) override;
   void keyPressEvent(KeyEvent& event) override;
-  void keyReleaseEvent(KeyEvent& event) override;
   void updateRenderCamera();
 
   // Interactive functions
@@ -808,7 +807,6 @@ void Viewer::updateRenderCamera() {
       rgbSensorNode_->absoluteTransformation());
 }
 
-void Viewer::keyReleaseEvent(KeyEvent& event) {}
 }  // namespace
 
 MAGNUM_APPLICATION_MAIN(Viewer)

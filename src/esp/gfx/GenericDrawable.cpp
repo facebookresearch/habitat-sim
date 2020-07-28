@@ -11,7 +11,6 @@
 #include "esp/scene/SceneNode.h"
 
 namespace Mn = Magnum;
-using Mn::Math::Literals::operator""_rgbf;
 
 namespace esp {
 namespace gfx {
