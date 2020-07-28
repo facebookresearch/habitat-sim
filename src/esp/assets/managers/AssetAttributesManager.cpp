@@ -92,7 +92,8 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
   // no entry added for PrimObjTypes::END_PRIM_OBJ_TYPES
   defaultTemplateNames_.clear();
   // build default AbstractPrimitiveAttributes objects
-  for (const std::pair<PrimObjTypes, const char*>& elem : PrimitiveNames3DMap) {
+  for (const std::pair<const PrimObjTypes, const char*>& elem :
+       PrimitiveNames3DMap) {
     if (elem.first == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       continue;
     }
