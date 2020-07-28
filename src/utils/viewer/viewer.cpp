@@ -42,7 +42,6 @@
 #include "esp/core/Utility.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
-#include "esp/gfx/MeshVisualizerDrawable.h"
 #include "esp/io/io.h"
 
 #include "esp/scene/SceneConfiguration.h"
