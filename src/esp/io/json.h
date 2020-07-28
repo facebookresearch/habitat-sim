@@ -13,6 +13,9 @@
 #include <string>
 #include <vector>
 
+#include <Magnum/Magnum.h>
+#include <Magnum/Math/Vector3.h>
+
 namespace esp {
 namespace io {
 
@@ -30,6 +33,205 @@ std::string jsonToString(const JsonDocument& d);
 
 //! Return Vec3f coordinates representation of given JsonObject of array type
 esp::vec3f jsonToVec3f(const JsonGenericValue& jsonArray);
+
+/**
+ * @brief Check passed json doc for existence of passed @ref tag as @tparam T.
+ * MUST BE SPECIALIZED due to json tag queries relying on named, type-specific
+ * getters.
+ *
+ * @tparam T type of value to be populated.
+ * @param d json document to parse
+ * @param tag string tag to look for in json doc
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+template <typename T>
+bool jsonIntoVal(const JsonDocument& d, const char* tag, T& val) {
+  LOG(ERROR) << "Unsupported typename specified for JSON tag " << tag
+             << ". Aborting.";
+  return false;
+}  // jsonIntoVal template definition
+
+/**
+ * @brief Check passed json doc for existence of passed @ref tag as
+ * float. If present, populate passed @ref val with
+ * value. Returns whether tag is found and successfully populated, or not. Logs
+ * an error if tag is found but is inappropriate type.
+ *
+ * @param d json document to parse
+ * @param tag string tag to look for in json doc
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+template <>
+inline bool jsonIntoVal(const JsonDocument& d, const char* tag, float& val) {
+  if (d.HasMember(tag)) {
+    if (d[tag].IsNumber()) {
+      val = d[tag].GetFloat();
+      return true;
+    }
+    LOG(ERROR) << "Invalid float value specified in JSON config at " << tag;
+  }
+  return false;
+}  // jsonIntoFloat
+
+/**
+ * @brief Check passed json doc for existence of passed @ref tag as
+ * double. If present, populate passed @ref val with
+ * value. Returns whether tag is found and successfully populated, or not. Logs
+ * an error if tag is found but is inappropriate type.
+ *
+ * @param d json document to parse
+ * @param tag string tag to look for in json doc
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+
+template <>
+inline bool jsonIntoVal(const JsonDocument& d, const char* tag, double& val) {
+  if (d.HasMember(tag)) {
+    if (d[tag].IsNumber()) {
+      val = d[tag].GetDouble();
+      return true;
+    }
+    LOG(ERROR) << "Invalid double value specified in JSON config at " << tag;
+  }
+  return false;
+}  // jsonIntoDouble
+
+/**
+ * @brief Check passed json doc for existence of passed @ref tag as
+ * double. If present, populate passed @ref val with
+ * value. Returns whether tag is found and successfully populated, or not. Logs
+ * an error if tag is found but is inappropriate type.
+ *
+ * @param d json document to parse
+ * @param tag string tag to look for in json doc
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+
+template <>
+inline bool jsonIntoVal(const JsonDocument& d, const char* tag, bool& val) {
+  if (d.HasMember(tag)) {
+    if (d[tag].IsBool()) {
+      val = d[tag].GetBool();
+      return true;
+    }
+    LOG(ERROR) << "Invalid boolean value specified in JSON config at " << tag;
+  }
+  return false;
+}  // jsonIntoBool
+
+/**
+ * @brief Check passed json doc for existence of passed @ref tag as
+ * double. If present, populate passed @ref val with
+ * value. Returns whether tag is found and successfully populated, or not. Logs
+ * an error if tag is found but is inappropriate type.
+ *
+ * @param d json document to parse
+ * @param tag string tag to look for in json doc
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+
+template <>
+inline bool jsonIntoVal(const JsonDocument& d,
+                        const char* tag,
+                        std::string& val) {
+  if (d.HasMember(tag)) {
+    if (d[tag].IsString()) {
+      val = d[tag].GetString();
+      return true;
+    }
+    LOG(ERROR) << "Invalid string value specified in JSON config at " << tag;
+  }
+  return false;
+}  // jsonIntoString
+
+/**
+ * @brief Specialization to handle Magnum::Vector3 values.  Check passed json
+ * doc for existence of passed @ref tag as Magnum::Vector3. If present, populate
+ * passed @ref val with value. Returns whether tag is found and successfully
+ * populated, or not. Logs an error if tag is found but is inappropriate type.
+ *
+ * @param d json document to parse
+ * @param tag string tag to look for in json doc
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+
+template <>
+inline bool jsonIntoVal(const JsonDocument& d,
+                        const char* tag,
+                        Magnum::Vector3& val) {
+  if (d.HasMember(tag) && d[tag].IsArray() && d[tag].Size() == 3) {
+    for (rapidjson::SizeType i = 0; i < 3; ++i) {
+      if (d[tag][i].IsNumber()) {
+        val[i] = d[tag][i].GetDouble();
+      } else {
+        LOG(ERROR) << " Invalid array value specified in JSON config at "
+                   << tag;
+        return false;
+      }
+    }  // build array
+    return true;
+  }
+  return false;
+}  // jsonIntoString
+
+/**
+ * @brief Check passed json doc for existence of passed @ref jsonTag as value of
+ * type @ref T. If present, populate passed @ref setter with value. Returns
+ * whether tag is found and successfully populated, or not. Logs an error if tag
+ * is found but is inappropriate type.  Should use explicit type cast on
+ * function call if @ref setter is specified using std::bind()
+ *
+ * @tparam T type of destination variable - must be supported type.
+ * @param d json document to parse
+ * @param tag string tag to look for in json doc
+ * @param setter value setter in some object to populate with the data from
+ * json.
+ * @return whether successful or not
+ */
+template <typename T>
+bool jsonIntoSetter(const JsonDocument& d,
+                    const char* tag,
+                    std::function<void(T)> setter) {
+  T val;
+  if (jsonIntoVal(d, tag, val)) {
+    setter(val);
+    return true;
+  }
+  return false;
+}  // jsonIntoSetter
+
+/**
+ * @brief Check passed json doc for existence of passed @ref jsonTag as value of
+ * type @ref T, where the consuming setter will treat the value as const. If
+ * present, populate passed @ref setter with value. Returns whether tag is found
+ * and successfully populated, or not. Logs an error if tag is found but is
+ * inappropriate type.  Should use explicit type cast on function call if @ref
+ * setter is specified using std::bind()
+ *
+ * @tparam T type of destination variable - must be supported type.
+ * @param d json document to parse
+ * @param tag string tag to look for in json doc
+ * @param setter value setter in some object to populate with the data from
+ * json.
+ * @return whether successful or not
+ */
+template <typename T>
+bool jsonIntoConstSetter(const JsonDocument& d,
+                         const char* tag,
+                         std::function<void(const T)> setter) {
+  T val;
+  if (jsonIntoVal(d, tag, val)) {
+    setter(val);
+    return true;
+  }
+  return false;
+}  // jsonIntoArraySetter
 
 template <typename GV, typename T>
 void toVector(const GV& arr,

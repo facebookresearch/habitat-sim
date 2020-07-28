@@ -8,6 +8,7 @@
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
+using std::placeholders::_1;
 namespace esp {
 namespace assets {
 
@@ -31,13 +32,13 @@ PhysicsSceneAttributes::ptr SceneAttributesManager::createAttributesTemplate(
     if ((strHandle.find(".json") != std::string::npos) && fileExists) {
       // check if sceneAttributesHandle corresponds to an actual, existing json
       // scene file descriptor.
-      attrs = createJSONFileBasedAttributesTemplate(sceneAttributesHandle,
-                                                    registerTemplate);
+      attrs = createFileBasedAttributesTemplate(sceneAttributesHandle,
+                                                registerTemplate);
       msg = "JSON File (" + sceneAttributesHandle + ") Based";
     } else {
       // if name is not json file descriptor but still appropriate file
-      attrs = createFileBasedAttributesTemplate(sceneAttributesHandle,
-                                                registerTemplate);
+      attrs = createBackCompatAttributesTemplate(sceneAttributesHandle,
+                                                 registerTemplate);
       msg = "File (" + sceneAttributesHandle + ") Based";
     }
 
@@ -156,14 +157,38 @@ SceneAttributesManager::createDefaultAttributesTemplate(
 
 PhysicsSceneAttributes::ptr
 SceneAttributesManager::createPrimBasedAttributesTemplate(
-    const std::string& primAttrTemplateHandle,
+    const std::string& primAssetHandle,
     bool registerTemplate) {
-  PhysicsSceneAttributes::ptr sceneAttributes =
-      buildPrimBasedPhysObjTemplate(primAttrTemplateHandle);
+  // verify that a primitive asset with the given handle exists
+  if (!objectAttributesMgr_->isValidPrimitiveAttributes(primAssetHandle)) {
+    LOG(ERROR)
+        << "SceneAttributesManager::createPrimBasedAttributesTemplate : No "
+           "primitive with handle '"
+        << primAssetHandle
+        << "' exists so cannot build physical object.  Aborting.";
+    return nullptr;
+  }
+
+  // construct a sceneAttributes
+  auto sceneAttributes = PhysicsSceneAttributes::create(primAssetHandle);
+  // set margin to be 0
+  sceneAttributes->setMargin(0.0);
+  // make smaller as default size - prims are approx meter in size
+  sceneAttributes->setScale({0.1, 0.1, 0.1});
+
+  // set render mesh handle
+  sceneAttributes->setRenderAssetHandle(primAssetHandle);
+  // set collision mesh/primitive handle and default for primitives to not use
+  // mesh collisions
+  sceneAttributes->setCollisionAssetHandle(primAssetHandle);
+  sceneAttributes->setUseMeshCollision(false);
+  // NOTE to eventually use mesh collisions with primitive objects, a
+  // collision primitive mesh needs to be configured and set in MeshMetaData
+  // and CollisionMesh
 
   if (nullptr != sceneAttributes && registerTemplate) {
-    int attrID = this->registerAttributesTemplate(sceneAttributes,
-                                                  primAttrTemplateHandle);
+    int attrID =
+        this->registerAttributesTemplate(sceneAttributes, primAssetHandle);
     if (attrID == ID_UNDEFINED) {
       // some error occurred
       return nullptr;
@@ -173,90 +198,78 @@ SceneAttributesManager::createPrimBasedAttributesTemplate(
 }  // SceneAttributesManager::createPrimBasedAttributesTemplate
 
 PhysicsSceneAttributes::ptr
-SceneAttributesManager::buildPrimBasedPhysObjTemplate(
-    const std::string& primAssetHandle) {
-  // verify that a primitive asset with the given handle exists
-  if (!objectAttributesMgr_->isValidPrimitiveAttributes(primAssetHandle)) {
-    LOG(ERROR) << "SceneAttributesManager::buildPrimBasedPhysObjTemplate : No "
-                  "primitive with handle '"
-               << primAssetHandle
-               << "' exists so cannot build physical object.  Aborting.";
-    return nullptr;
+SceneAttributesManager::createBackCompatAttributesTemplate(
+    const std::string& sceneFilename,
+    bool registerTemplate) {
+  // Attributes descriptor for scene
+  PhysicsSceneAttributes::ptr sceneAttributes =
+      PhysicsSceneAttributes::create(sceneFilename);
+
+  sceneAttributes->setRenderAssetHandle(sceneFilename);
+  sceneAttributes->setCollisionAssetHandle(sceneFilename);
+  sceneAttributes->setUseMeshCollision(true);
+
+  // TODO : any specific non-json file-based parsing required
+
+  if (registerTemplate) {
+    int attrID =
+        this->registerAttributesTemplate(sceneAttributes, sceneFilename);
+    if (attrID == ID_UNDEFINED) {
+      // some error occurred
+      return nullptr;
+    }
   }
 
-  // construct a physicsSceneAttributes
-  auto physicsSceneAttributes = PhysicsSceneAttributes::create(primAssetHandle);
-  // set margin to be 0
-  physicsSceneAttributes->setMargin(0.0);
-  // make smaller as default size - prims are approx meter in size
-  physicsSceneAttributes->setScale({0.1, 0.1, 0.1});
-
-  // set render mesh handle
-  physicsSceneAttributes->setRenderAssetHandle(primAssetHandle);
-  // set collision mesh/primitive handle and default for primitives to not use
-  // mesh collisions
-  physicsSceneAttributes->setCollisionAssetHandle(primAssetHandle);
-  physicsSceneAttributes->setUseMeshCollision(false);
-  // NOTE to eventually use mesh collisions with primitive objects, a
-  // collision primitive mesh needs to be configured and set in MeshMetaData
-  // and CollisionMesh
-  return physicsSceneAttributes;
-}  // SceneAttributesManager::buildPrimBasedPhysObjTemplate
+  return sceneAttributes;
+}  // SceneAttributesManager::createBackCompatAttributesTemplate
 
 PhysicsSceneAttributes::ptr
 SceneAttributesManager::createFileBasedAttributesTemplate(
     const std::string& sceneFilename,
     bool registerTemplate) {
-  // Attributes descriptor for scene
-  PhysicsSceneAttributes::ptr sceneAttributesTemplate =
-      PhysicsSceneAttributes::create(sceneFilename);
-
-  sceneAttributesTemplate->setRenderAssetHandle(sceneFilename);
-  sceneAttributesTemplate->setCollisionAssetHandle(sceneFilename);
-
-  // TODO : any specific non-json file-based parsing required
-
-  if (registerTemplate) {
-    int attrID = this->registerAttributesTemplate(sceneAttributesTemplate,
-                                                  sceneFilename);
-    if (attrID == ID_UNDEFINED) {
-      // some error occurred
-      return nullptr;
-    }
-  }
-
-  return sceneAttributesTemplate;
-}  // SceneAttributesManager::createFileBasedAttributesTemplate
-
-PhysicsSceneAttributes::ptr
-SceneAttributesManager::createJSONFileBasedAttributesTemplate(
-    const std::string& sceneFilename,
-    bool registerTemplate) {
-  // Attributes descriptor for scene
-  PhysicsSceneAttributes::ptr sceneAttributesTemplate =
-      PhysicsSceneAttributes::create(sceneFilename);
-
-  sceneAttributesTemplate->setRenderAssetHandle(sceneFilename);
-  sceneAttributesTemplate->setCollisionAssetHandle(sceneFilename);
-
   // Load the scene config JSON here
-  io::JsonDocument scenePhysicsConfig = io::parseJsonFile(sceneFilename);
+  io::JsonDocument jsonConfig;
+  bool success = this->verifyLoadJson(sceneFilename, jsonConfig);
+  if (!success) {
+    LOG(ERROR) << " Aborting "
+                  "SceneAttributesManager::createBackCompatAttributesTemplate.";
+    return nullptr;
+  }
 
-  // TODO JSON parsing here
+  // construct a PhysicsSceneAttributes and populate with any
+  // AbstractPhysicsAttributes fields found in json.
+  auto sceneAttributes =
+      this->createPhysicsAttributesFromJson<PhysicsSceneAttributes>(
+          sceneFilename, jsonConfig);
+
+  // now parse scene-specific fields
+  // load scene specific gravity
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "gravity",
+      std::bind(&PhysicsSceneAttributes::setGravity, sceneAttributes, _1));
+
+  // load scene specific origin
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "origin",
+      std::bind(&PhysicsSceneAttributes::setOrigin, sceneAttributes, _1));
+
+  // semantic asset handle for scene
+  io::jsonIntoSetter<std::string>(
+      jsonConfig, "semantic asset handle",
+      std::bind(&PhysicsSceneAttributes::setSemanticAssetHandle,
+                sceneAttributes, _1));
 
   if (registerTemplate) {
-    int attrID = this->registerAttributesTemplate(sceneAttributesTemplate,
-                                                  sceneFilename);
+    int attrID =
+        this->registerAttributesTemplate(sceneAttributes, sceneFilename);
     if (attrID == ID_UNDEFINED) {
       // some error occurred
       return nullptr;
     }
   }
 
-  return sceneAttributesTemplate;
-}  // SceneAttributesManager::createFileBasedAttributesTemplate
-
-// template class AttributesManager<PhysicsSceneAttributes>;
+  return sceneAttributes;
+}  // SceneAttributesManager::createBackCompatAttributesTemplate
 
 }  // namespace managers
 }  // namespace assets

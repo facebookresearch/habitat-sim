@@ -34,6 +34,9 @@ void initAttributesBindings(py::module& m) {
                                                        const std::string&>))
       .def_property("scale", &AbstractPhysicsAttributes::getScale,
                     &AbstractPhysicsAttributes::setScale)
+      .def_property("unitsToMeters",
+                    &AbstractPhysicsAttributes::getUnitsToMeters,
+                    &AbstractPhysicsAttributes::setUnitsToMeters)
       .def_property("margin", &AbstractPhysicsAttributes::getMargin,
                     &AbstractPhysicsAttributes::setMargin)
       .def_property("friction_coefficient",
@@ -101,7 +104,9 @@ void initAttributesBindings(py::module& m) {
       .def(py::init(&PhysicsSceneAttributes::create<>))
       .def(py::init(&PhysicsSceneAttributes::create<const std::string&>))
       .def_property("gravity", &PhysicsSceneAttributes::getGravity,
-                    &PhysicsSceneAttributes::setGravity);
+                    &PhysicsSceneAttributes::setGravity)
+      .def_property("origin", &PhysicsSceneAttributes::getOrigin,
+                    &PhysicsSceneAttributes::setOrigin);
 
   // ==== PhysicsManagerAttributes ====
   py::class_<PhysicsManagerAttributes, AbstractAttributes,

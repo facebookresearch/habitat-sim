@@ -23,7 +23,8 @@ class PhysicsAttributesManager
   PhysicsAttributesManager(assets::ResourceManager& resourceManager,
                            ObjectAttributesManager::ptr objectAttributesMgr)
       : AttributesManager<PhysicsManagerAttributes::ptr>::AttributesManager(
-            resourceManager),
+            resourceManager,
+            "Physics Manager"),
         objectAttributesMgr_(objectAttributesMgr) {
     buildCtorFuncPtrMaps();
   }
