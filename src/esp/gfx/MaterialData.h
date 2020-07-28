@@ -29,5 +29,7 @@ struct PhongMaterialData : public MaterialData {
   ESP_SMART_POINTERS(PhongMaterialData)
 };
 
+// TODO: Ptex material data
+
 }  // namespace gfx
 }  // namespace esp

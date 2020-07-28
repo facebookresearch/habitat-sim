@@ -157,6 +157,7 @@ class Viewer : public Mn::Platform::Application {
 
   void createPickedObjectVisualizer(unsigned int objectId);
   std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
+  void drawPickedObject();
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -330,7 +331,6 @@ Viewer::Viewer(const Arguments& arguments)
       rgbSensorNode_->absoluteTransformation());
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
-
   timeline_.start();
 
 }  // end Viewer::Viewer
@@ -508,6 +508,33 @@ void Viewer::toggleNavMeshVisualization() {
   }
 }
 
+void Viewer::drawPickedObject() {
+  if (!objectPickingHelper_->objectPicked()) {
+    // nothing is picked, return directly
+    return;
+  }
+  // setup blending function
+  Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
+  Mn::GL::Renderer::setBlendColor(Magnum::Color4{0.0, 0.0, 0.0, 0.5});
+  Mn::GL::Renderer::setBlendFunction(
+      Mn::GL::Renderer::BlendFunction::ConstantAlpha,
+      Mn::GL::Renderer::BlendFunction::OneMinusConstantAlpha);
+
+  // rendering
+  esp::gfx::RenderCamera::Flags flags;
+  if (frustumCullingEnabled_) {
+    flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+  }
+  renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+
+  // restore the "blending" status before imgui draw
+  Mn::GL::Renderer::setBlendEquation(Mn::GL::Renderer::BlendEquation::Add,
+                                     Mn::GL::Renderer::BlendEquation::Add);
+  Mn::GL::Renderer::setBlendFunction(
+      Mn::GL::Renderer::BlendFunction::SourceAlpha,
+      Mn::GL::Renderer::BlendFunction::OneMinusSourceAlpha);
+}
+
 float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
@@ -524,7 +551,6 @@ void Viewer::drawEvent() {
   }
 
   uint32_t visibles = 0;
-
   for (auto& it : sceneGraph_->getDrawableGroups()) {
     // TODO: remove || true
     if (it.second.prepareForDraw(*renderCamera_) || true) {
@@ -541,6 +567,8 @@ void Viewer::drawEvent() {
 
     physicsManager_->debugDraw(projM * camM);
   }
+
+  drawPickedObject();
 
   imgui_.newFrame();
 
@@ -568,6 +596,7 @@ void Viewer::drawEvent() {
 
   /* Reset state. Only needed if you want to draw something else with
      different state after. */
+
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::ScissorTest);

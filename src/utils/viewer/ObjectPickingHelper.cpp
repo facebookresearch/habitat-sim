@@ -13,6 +13,7 @@
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 using Mn::Math::Literals::operator""_rgbaf;
+using Mn::Math::Literals::operator""_rgbf;
 
 ObjectPickingHelper::ObjectPickingHelper(Mn::Vector2i viewportSize) {
   // create the framebuffer and set the color attachment
@@ -28,8 +29,9 @@ ObjectPickingHelper::ObjectPickingHelper(Mn::Vector2i viewportSize) {
 
   shader_->setViewportSize(Mn::Vector2{viewportSize});
 
-  if (flags & Mn::Shaders::MeshVisualizer3D::Flag::Wireframe)
-    shader_->setWireframeColor(0xdcdcdcff_rgbaf);
+  if (flags & Mn::Shaders::MeshVisualizer3D::Flag::Wireframe) {
+    (*shader_).setColor(0x2f83cc_rgbf).setWireframeColor(0xdcdcdc_rgbf);
+  }
 }
 
 ObjectPickingHelper& ObjectPickingHelper::recreateFramebuffer(
@@ -125,7 +127,7 @@ ObjectPickingHelper& ObjectPickingHelper::createPickedObjectVisualizer(
   // the end of the simulation
   meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
       static_cast<esp::scene::SceneNode&>(pickedObject->object()),
-      shader_.get(), pickedObject->getMesh(), pickedObject->drawables());
+      shader_.get(), pickedObject->getMesh(), &pickedObjectDrawbles_);
 
   return *this;
 }

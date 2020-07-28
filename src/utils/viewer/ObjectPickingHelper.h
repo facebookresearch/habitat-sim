@@ -47,6 +47,13 @@ class ObjectPickingHelper {
   ObjectPickingHelper& createPickedObjectVisualizer(
       esp::gfx::Drawable* pickedObject);
 
+  /**
+   * @brief return true if an object is picked at the moment
+   */
+  bool objectPicked() { return meshVisualizerDrawable_ != nullptr; }
+
+  esp::gfx::DrawableGroup& getDrawables() { return pickedObjectDrawbles_; }
+
  protected:
   // framebuffer for drawable selection
   Magnum::GL::Framebuffer selectionFramebuffer_{Magnum::NoCreate};
@@ -55,5 +62,6 @@ class ObjectPickingHelper {
 
   std::unique_ptr<Magnum::Shaders::MeshVisualizer3D> shader_;
   esp::gfx::MeshVisualizerDrawable* meshVisualizerDrawable_ = nullptr;
+  esp::gfx::DrawableGroup pickedObjectDrawbles_;
   ObjectPickingHelper& mapForDraw();
 };

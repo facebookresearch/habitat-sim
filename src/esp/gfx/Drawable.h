@@ -65,7 +65,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * It's nothing more than drawing itself with its group's shader.
    */
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
-                    Magnum::SceneGraph::Camera3D& camera) = 0;
+                    Magnum::SceneGraph::Camera3D& camera){};
 
   static uint64_t drawableIdCounter;
   uint64_t drawableId_;

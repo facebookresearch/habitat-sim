@@ -25,7 +25,6 @@ class GenericDrawable : public Drawable {
                            DrawableGroup* group = nullptr);
 
   void setLightSetup(const Magnum::ResourceKey& lightSetup) override;
-
   static constexpr const char* SHADER_KEY_TEMPLATE = "Phong-lights={}-flags={}";
 
  protected:
