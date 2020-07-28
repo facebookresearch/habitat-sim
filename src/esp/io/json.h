@@ -46,7 +46,9 @@ esp::vec3f jsonToVec3f(const JsonGenericValue& jsonArray);
  * @return whether successful or not
  */
 template <typename T>
-bool jsonIntoVal(const JsonDocument& d, const char* tag, T& val) {
+bool jsonIntoVal(CORRADE_UNUSED const JsonDocument& d,
+                 const char* tag,
+                 CORRADE_UNUSED T& val) {
   LOG(ERROR) << "Unsupported typename specified for JSON tag " << tag
              << ". Aborting.";
   return false;
