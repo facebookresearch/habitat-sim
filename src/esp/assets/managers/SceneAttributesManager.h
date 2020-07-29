@@ -112,8 +112,9 @@ class SceneAttributesManager
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateTemplateHandleLists(int templateID,
-                                 const std::string& templateHandle) override {}
+  void updateTemplateHandleLists(
+      CORRADE_UNUSED int templateID,
+      CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
    * @brief Scene is file-based lacking a descriptive .json, described by @ref

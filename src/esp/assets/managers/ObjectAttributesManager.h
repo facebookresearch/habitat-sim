@@ -245,8 +245,9 @@ class ObjectAttributesManager
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateTemplateHandleLists(int templateID,
-                                 const std::string& templateHandle) override {
+  void updateTemplateHandleLists(
+      int templateID,
+      CORRADE_UNUSED const std::string& templateHandle) override {
     physicsFileObjTmpltLibByID_.erase(templateID);
     physicsSynthObjTmpltLibByID_.erase(templateID);
   }

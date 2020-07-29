@@ -386,8 +386,9 @@ class AssetAttributesManager
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateTemplateHandleLists(int templateID,
-                                 const std::string& templateHandle) override {}
+  void updateTemplateHandleLists(
+      CORRADE_UNUSED int templateID,
+      CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
    * @brief Verify that passed template handle describes attributes of type
