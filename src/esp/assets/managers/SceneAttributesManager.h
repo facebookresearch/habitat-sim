@@ -104,6 +104,18 @@ class SceneAttributesManager
 
  protected:
   /**
+   * @brief This method will perform any necessary updating that is
+   * attributesManager-specific upon template removal, such as removing a
+   * specific template handle from the list of file-based template handles in
+   * ObjectAttributesManager.  This should only be called internally.
+   *
+   * @param templateID the ID of the template to remove
+   * @param templateHandle the string key of the attributes desired.
+   */
+  void updateTemplateHandleLists(int templateID,
+                                 const std::string& templateHandle) override {}
+
+  /**
    * @brief Scene is file-based lacking a descriptive .json, described by @ref
    * sceneFilename; populate a returned scene attributes with appropriate data.
    * This method's intended use is to support backwards compatibility for when

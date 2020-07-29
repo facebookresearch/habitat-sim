@@ -272,11 +272,25 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "ObjectAttributesManager @ "
             << objectFile;
+  int origNumFileBased = objectAttributesManager_->getNumFileTemplateObjects();
+  int origNumPrimBased = objectAttributesManager_->getNumSynthTemplateObjects();
   // object attributes manager attributes verifcation
   testCreateAndRemove<AttrMgrs::ObjectAttributesManager>(
       objectAttributesManager_, objectFile);
+  // verify that no new file-based and no new synth based template objects
+  // remain
+  int newNumFileBased1 = objectAttributesManager_->getNumFileTemplateObjects();
+  int newNumPrimBased1 = objectAttributesManager_->getNumSynthTemplateObjects();
+  ASSERT_EQ(origNumFileBased, newNumFileBased1);
+  ASSERT_EQ(origNumPrimBased, newNumPrimBased1);
   testCreateAndRemoveDefault<AttrMgrs::ObjectAttributesManager>(
       objectAttributesManager_, objectFile, true);
+  // verify that no new file-based and no new synth based template objects
+  // remain
+  int newNumFileBased2 = objectAttributesManager_->getNumFileTemplateObjects();
+  int newNumPrimBased2 = objectAttributesManager_->getNumSynthTemplateObjects();
+  ASSERT_EQ(origNumFileBased, newNumFileBased2);
+  ASSERT_EQ(origNumPrimBased, newNumPrimBased2);
 
 }  // AttributesManagersTest::AttributesManagersCreate test
 
