@@ -435,6 +435,15 @@ class AttributesManager {
                                              const io::JsonDocument& jsonDoc);
 
   //======== Internally accessed functions ========
+
+  /**
+   * @brief Used Internally.  Configure newly-created attributes with any
+   * default values, before any specific values are set.
+   *
+   * @param newAttributes Newly created attributes.
+   */
+  virtual AttribsPtr initNewAttribsInternal(AttribsPtr newAttributes) = 0;
+
   /**
    * @brief Used Internally. Remove the template referenced by the passed
    * string handle. Will emplace template ID within deque of usable IDs and
@@ -545,6 +554,7 @@ class AttributesManager {
    */
   template <typename U>
   AttribsPtr createAttributesCopy(AttribsPtr& orig) {
+    // don't call init on copy - assume copy is already properly initialized.
     return U::create(*(static_cast<U*>(orig.get())));
   }  // AttributesManager::
 
@@ -679,7 +689,8 @@ template <class U>
 AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
     const std::string& configFilename,
     const io::JsonDocument& jsonDoc) {
-  auto attributes = U::create(configFilename);
+  auto attributes = initNewAttribsInternal(U::create(configFilename));
+
   using std::placeholders::_1;
 
   // scale

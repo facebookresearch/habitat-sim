@@ -17,6 +17,7 @@ AssetInfo AssetInfo::fromPath(const std::string& path) {
     info.type = AssetType::INSTANCE_MESH;
   } else if (endsWith(path, "mesh.ply")) {
     info.type = AssetType::FRL_PTEX_MESH;
+    // below is same as {geo::ESP_BACK, geo::ESP_UP};
     info.frame = {quatf::FromTwoVectors(geo::ESP_GRAVITY, -vec3f::UnitZ())};
   } else if (endsWith(path, "house.json")) {
     info.type = AssetType::SUNCG_SCENE;
@@ -25,7 +26,7 @@ AssetInfo AssetInfo::fromPath(const std::string& path) {
     info.type = AssetType::MP3D_MESH;
     // Create a coordinate for the mesh by rotating the default ESP
     // coordinate frame to -Z gravity
-    info.frame = {quatf::FromTwoVectors(geo::ESP_GRAVITY, -vec3f::UnitZ())};
+    info.frame = {geo::ESP_BACK, geo::ESP_UP};
   }
 
   return info;

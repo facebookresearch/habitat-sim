@@ -8,6 +8,7 @@
 #include "AttributesManagerBase.h"
 
 #include "ObjectAttributesManager.h"
+#include "PhysicsAttributesManager.h"
 
 namespace esp {
 namespace assets {
@@ -17,13 +18,30 @@ class SceneAttributesManager
     : public AttributesManager<PhysicsSceneAttributes::ptr> {
  public:
   SceneAttributesManager(assets::ResourceManager& resourceManager,
-                         ObjectAttributesManager::ptr objectAttributesMgr)
+                         ObjectAttributesManager::ptr objectAttributesMgr,
+                         PhysicsAttributesManager::ptr physicsAttributesManager)
       : AttributesManager<PhysicsSceneAttributes::ptr>::AttributesManager(
             resourceManager,
             "Physical Scene"),
-        objectAttributesMgr_(objectAttributesMgr) {
+        objectAttributesMgr_(objectAttributesMgr),
+        physicsAttributesManager_(physicsAttributesManager) {
     buildCtorFuncPtrMaps();
   }
+
+  /**
+   * @brief This will set the current physics manager attributes that is
+   * governing the world that this sceneAttributesManager's scenes will be
+   * created in.  This is used so that upon creation of new sceneAttributes,
+   * PhysicsManagerAttributes defaults can be set in the sceneAttributes before
+   * any scene-specific values are set.
+   *
+   * @param handle The string handle referencing the physicsManagerAttributes
+   * governing the current physicsManager.
+   */
+  void setCurrPhysicsManagerAttributesHandle(const std::string& handle) {
+    physicsManagerAttributesHandle_ = handle;
+  }
+
   /**
    * @brief Creates an instance of a scene template described by passed string.
    * For scene templates, this a file name.
@@ -67,25 +85,6 @@ class SceneAttributesManager
       bool registerTemplate = false) override;
 
   /**
-   * @brief Sets all relevant attributes to all scenes based on passed @ref
-   * physicsManagerAttributes.
-   *
-   * @param physicsManagerAttributes The attributes describing the physics world
-   * this scene lives in.
-   */
-  void setSceneValsFromPhysicsAttributes(
-      const PhysicsManagerAttributes::cptr physicsManagerAttributes) {
-    for (auto sceneAttrPair : this->templateLibrary_) {
-      auto sceneAttr = this->getTemplateCopyByHandle(sceneAttrPair.first);
-      sceneAttr->setFrictionCoefficient(
-          physicsManagerAttributes->getFrictionCoefficient());
-      sceneAttr->setRestitutionCoefficient(
-          physicsManagerAttributes->getRestitutionCoefficient());
-      this->addTemplateToLibrary(sceneAttr, sceneAttrPair.first);
-    }
-  }  // SceneAttributesManager::setSceneValsFromPhysicsAttributes
-
-  /**
    * @brief Creates an instance of a scene template described by passed
    * string, which should be a reference to an existing primitive asset template
    * to be used in the construction of the scene (as render and collision
@@ -103,6 +102,15 @@ class SceneAttributesManager
       bool registerTemplate = true);
 
  protected:
+  /**
+   * @brief Used Internally.  Configure newly-created attributes with any
+   * default values, before any specific values are set.
+   *
+   * @param newAttributes Newly created attributes.
+   */
+  PhysicsSceneAttributes::ptr initNewAttribsInternal(
+      PhysicsSceneAttributes::ptr newAttributes) override;
+
   /**
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
@@ -188,6 +196,15 @@ class SceneAttributesManager
    * object template library using paths specified in SceneAttributes json
    */
   ObjectAttributesManager::ptr objectAttributesMgr_ = nullptr;
+  /**
+   * @brief Reference to PhysicsAttributesManager to give access to default
+   * physics manager attributes settings when sceneAttributes are created.
+   */
+  PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
+  /**
+   * @brief Name of currently used physicsManagerAttributes
+   */
+  std::string physicsManagerAttributesHandle_ = "";
 
  public:
   ESP_SMART_POINTERS(SceneAttributesManager)

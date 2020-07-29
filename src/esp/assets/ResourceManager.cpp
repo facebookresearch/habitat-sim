@@ -88,8 +88,8 @@ void ResourceManager::buildImportersAndAttributesManagers() {
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
   physicsAttributesManager_ = managers::PhysicsAttributesManager::create(
       *this, objectAttributesManager_);
-  sceneAttributesManager_ =
-      managers::SceneAttributesManager::create(*this, objectAttributesManager_);
+  sceneAttributesManager_ = managers::SceneAttributesManager::create(
+      *this, objectAttributesManager_, physicsAttributesManager_);
 
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
@@ -176,6 +176,9 @@ bool ResourceManager::loadScene(
   // add a scene attributes for this filename or modify the existing one
   sceneAttributesManager_->createAttributesTemplate(info.filepath, true);
 
+  // create AssetInfos here for each potential mesh file for the scene, if they
+  // are unique.
+
   // we only compute absolute AABB for every mesh component when loading ptex
   // mesh, or general mesh (e.g., MP3D)
   staticDrawableInfo_.clear();
@@ -253,10 +256,6 @@ bool ResourceManager::loadScene(
   // old loadPhysicsScene code
   if (_physicsManager) {
     const std::string& filename = info.filepath;
-    // TODO: enable loading of multiple scenes from file and storing individual
-    // parameters instead of scene properties in manager global config
-    sceneAttributesManager_->setSceneValsFromPhysicsAttributes(
-        _physicsManager->getInitializationAttributes());
 
     //! CONSTRUCT SCENE
 

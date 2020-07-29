@@ -82,17 +82,38 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // TODO can optimize to do partial re-initialization instead of from-scratch
   config_ = cfg;
 
-  // load scene
+  // use physics world attributes manager to get physics manager attributes
+  // described by config file
+  auto physicsManagerAttributes =
+      resourceManager_->getPhysicsAttributesManager()->createAttributesTemplate(
+          cfg.physicsConfigFile, true);
+  // if physicsManagerAttributes have been successfully created, inform
+  // sceneAttributesManager of the config handle of the attributes, so that
+  // sceneAttributes initialization can be performed.
+  if (physicsManagerAttributes != nullptr) {
+    resourceManager_->getSceneAttributesManager()
+        ->setCurrPhysicsManagerAttributesHandle(
+            physicsManagerAttributes->getHandle());
+  }
+
+  // load scene - configure scene file names
   std::string sceneFilename = cfg.scene.id;
   if (cfg.scene.filepaths.count("mesh")) {
     sceneFilename = cfg.scene.filepaths.at("mesh");
   }
-
   // create pathfinder and load navmesh if available
   std::string navmeshFilename = io::changeExtension(sceneFilename, ".navmesh");
   if (cfg.scene.filepaths.count("navmesh")) {
     navmeshFilename = cfg.scene.filepaths.at("navmesh");
   }
+  std::string houseFilename = io::changeExtension(sceneFilename, ".house");
+  if (cfg.scene.filepaths.count("house")) {
+    houseFilename = cfg.scene.filepaths.at("house");
+  }
+  if (!io::exists(houseFilename)) {
+    houseFilename = io::changeExtension(sceneFilename, ".scn");
+  }
+
   pathfinder_ = nav::PathFinder::create();
   if (io::exists(navmeshFilename)) {
     LOG(INFO) << "Loading navmesh from " << navmeshFilename;
@@ -105,16 +126,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // Calling to seeding needs to be done after the pathfinder creation
   seed(config_.randomSeed);
 
-  std::string houseFilename = io::changeExtension(sceneFilename, ".house");
-  if (cfg.scene.filepaths.count("house")) {
-    houseFilename = cfg.scene.filepaths.at("house");
-  }
-
-  if (!io::exists(houseFilename)) {
-    houseFilename = io::changeExtension(sceneFilename, ".scn");
-  }
-
-  // TODO : replace with PhysicsSceneAttributes?
+  // TODO : replace with PhysicsSceneAttributes
   assets::AssetInfo sceneInfo = assets::AssetInfo::fromPath(sceneFilename);
   sceneInfo.requiresLighting =
       cfg.sceneLightSetup != assets::ResourceManager::NO_LIGHT_KEY;
@@ -147,12 +159,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     resourceManager_->compressTextures(cfg.compressTextures);
 
     bool loadSuccess = false;
-
-    // use physics world attributes manager to get physics manager attributes
-    // described by config file
-    auto physicsManagerAttributes =
-        resourceManager_->getPhysicsAttributesManager()
-            ->createAttributesTemplate(cfg.physicsConfigFile, true);
 
     // (re)init physics manager
     resourceManager_->initPhysicsManager(physicsManager_, config_.enablePhysics,

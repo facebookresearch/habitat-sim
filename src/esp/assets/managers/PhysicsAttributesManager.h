@@ -90,6 +90,16 @@ class PhysicsAttributesManager
 
  protected:
   /**
+   * @brief Used Internally.  Configure newly-created attributes with any
+   * default values, before any specific values are set.
+   *
+   * @param newAttributes Newly created attributes.
+   */
+  PhysicsManagerAttributes::ptr initNewAttribsInternal(
+      PhysicsManagerAttributes::ptr newAttributes) override {
+    return newAttributes;
+  }
+  /**
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in

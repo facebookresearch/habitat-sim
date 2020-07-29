@@ -46,7 +46,7 @@ PhysicsAttributesManager::createDefaultAttributesTemplate(
     bool registerTemplate) {
   // Attributes descriptor for physics world
   PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      PhysicsManagerAttributes::create(physicsFilename);
+      initNewAttribsInternal(PhysicsManagerAttributes::create(physicsFilename));
 
   if (registerTemplate) {
     int attrID = this->registerAttributesTemplate(physicsManagerAttributes,
@@ -65,7 +65,7 @@ PhysicsAttributesManager::createFileBasedAttributesTemplate(
     bool registerTemplate) {
   // Attributes descriptor for physics world
   PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      PhysicsManagerAttributes::create(physicsFilename);
+      initNewAttribsInternal(PhysicsManagerAttributes::create(physicsFilename));
 
   // Load the global physics manager config JSON here
   io::JsonDocument jsonConfig;
