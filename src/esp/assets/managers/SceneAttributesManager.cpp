@@ -2,8 +2,10 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "SceneAttributesManager.h"
+#include <Corrade/Utility/String.h>
+
 #include "AttributesManagerBase.h"
+#include "SceneAttributesManager.h"
 
 #include "esp/assets/Asset.h"
 #include "esp/io/io.h"
@@ -230,13 +232,63 @@ SceneAttributesManager::createBackCompatAttributesTemplate(
 
 PhysicsSceneAttributes::ptr SceneAttributesManager::initNewAttribsInternal(
     PhysicsSceneAttributes::ptr newAttributes) {
+  this->setFileDirectoryFromHandle(newAttributes);
   std::string sceneFilename = newAttributes->getHandle();
-  // set defaults that files or other processes might override
+
+  // set defaults that config files or other constructive processes might
+  // override
   newAttributes->setRenderAssetHandle(sceneFilename);
   newAttributes->setCollisionAssetHandle(sceneFilename);
   newAttributes->setUseMeshCollision(true);
-  // set default orientation values
 
+  // set defaults for navmesh default handles and semantic mesh default handles
+  std::string navmeshFilename = io::changeExtension(sceneFilename, ".navmesh");
+  if (cfgFilepaths_.count("navmesh")) {
+    navmeshFilename = cfgFilepaths_.at("navmesh");
+  }
+  if (Corrade::Utility::Directory::exists(navmeshFilename)) {
+    newAttributes->setNavmeshAssetHandle(navmeshFilename);
+  }
+
+  std::string houseFilename = io::changeExtension(sceneFilename, ".house");
+  if (cfgFilepaths_.count("house")) {
+    houseFilename = cfgFilepaths_.at("house");
+  }
+  if (!Corrade::Utility::Directory::exists(houseFilename)) {
+    houseFilename = io::changeExtension(sceneFilename, ".scn");
+  }
+  if (Corrade::Utility::Directory::exists(houseFilename)) {
+    const std::string semanticMeshFilename =
+        io::removeExtension(houseFilename) + "_semantic.ply";
+    if (Corrade::Utility::Directory::exists(houseFilename)) {
+      newAttributes->setSemanticAssetHandle(semanticMeshFilename);
+    }
+  }
+
+  using Corrade::Utility::String::endsWith;
+  // set default origin and orientation values based on file name
+  // from AssetInfo::fromPath
+  newAttributes->setOrientUp({0, 1, 0});
+  newAttributes->setOrientFront({0, 0, -1});
+  if (endsWith(sceneFilename, "_semantic.ply")) {
+    newAttributes->setRenderAssetType(
+        static_cast<int>(AssetType::INSTANCE_MESH));
+  } else if (endsWith(sceneFilename, "mesh.ply")) {
+    newAttributes->setRenderAssetType(
+        static_cast<int>(AssetType::FRL_PTEX_MESH));
+    newAttributes->setOrientUp({0, 0, 1});
+    newAttributes->setOrientFront({0, 1, 0});
+  } else if (endsWith(sceneFilename, "house.json")) {
+    newAttributes->setRenderAssetType(static_cast<int>(AssetType::SUNCG_SCENE));
+  } else if (endsWith(sceneFilename, ".glb")) {
+    // assumes MP3D glb with gravity = -Z
+    newAttributes->setRenderAssetType(static_cast<int>(AssetType::MP3D_MESH));
+    // Create a coordinate for the mesh by rotating the default ESP
+    // coordinate frame to -Z gravity
+    newAttributes->setOrientUp({0, 0, 1});
+    newAttributes->setOrientFront({0, 1, 0});
+  }
+  // set default physical quantities specified in physics manager attributes
   if (physicsAttributesManager_->getTemplateLibHasHandle(
           physicsManagerAttributesHandle_)) {
     auto physMgrAttributes = physicsAttributesManager_->getTemplateByHandle(
@@ -269,6 +321,9 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
       this->createPhysicsAttributesFromJson<PhysicsSceneAttributes>(
           sceneFilename, jsonConfig);
 
+  // directory location where scene files are found
+  std::string sceneLocFileDir = sceneAttributes->getFileDirectory();
+
   // now parse scene-specific fields
   // load scene specific gravity
   io::jsonIntoConstSetter<Magnum::Vector3>(
@@ -280,11 +335,48 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
       jsonConfig, "origin",
       std::bind(&PhysicsSceneAttributes::setOrigin, sceneAttributes, _1));
 
-  // semantic asset handle for scene
-  io::jsonIntoSetter<std::string>(
-      jsonConfig, "semantic asset handle",
-      std::bind(&PhysicsSceneAttributes::setSemanticAssetHandle,
-                sceneAttributes, _1));
+  // load scene specific up orientation
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "up",
+      std::bind(&PhysicsSceneAttributes::setOrientUp, sceneAttributes, _1));
+
+  // load scene specific front orientation
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "front",
+      std::bind(&PhysicsSceneAttributes::setOrientFront, sceneAttributes, _1));
+
+  // populate specified semantic file name if specified in json
+  std::string semanticFName = "";
+  std::string navmeshFName = "";
+  if (io::jsonIntoVal<std::string>(jsonConfig, "semantic mesh",
+                                   semanticFName)) {
+    semanticFName =
+        Cr::Utility::Directory::join(sceneLocFileDir, semanticFName);
+  }
+  if (semanticFName != "") {
+    sceneAttributes->setSemanticAssetHandle(semanticFName);
+  }
+
+  if (io::jsonIntoVal<std::string>(jsonConfig, "nav mesh", navmeshFName)) {
+    navmeshFName = Cr::Utility::Directory::join(sceneLocFileDir, navmeshFName);
+  }
+  if (navmeshFName != "") {
+    sceneAttributes->setNavmeshAssetHandle(navmeshFName);
+  }
+
+  // populate mesh types if present
+  int val = convertJsonStringToAssetType(jsonConfig, "render mesh type");
+  if (val != -1) {  // if not found do not override current value
+    sceneAttributes->setRenderAssetType(val);
+  }
+  val = convertJsonStringToAssetType(jsonConfig, "collision mesh type");
+  if (val != -1) {  // if not found do not override current value
+    sceneAttributes->setCollisionAssetType(val);
+  }
+  val = convertJsonStringToAssetType(jsonConfig, "semantic mesh type type");
+  if (val != -1) {  // if not found do not override current value
+    sceneAttributes->setSemanticAssetType(val);
+  }
 
   if (registerTemplate) {
     int attrID =
@@ -297,6 +389,24 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
 
   return sceneAttributes;
 }  // SceneAttributesManager::createBackCompatAttributesTemplate
+
+int SceneAttributesManager::convertJsonStringToAssetType(
+    io::JsonDocument& jsonDoc,
+    const char* jsonTag) {
+  std::string tmpVal = "";
+  io::jsonIntoVal<std::string>(jsonDoc, jsonTag, tmpVal);
+  if (tmpVal.length() != 0) {
+    std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
+    if (AssetTypeNamesMap.count(tmpVal)) {
+      return static_cast<int>(AssetTypeNamesMap.at(tmpVal));
+    } else {
+      return static_cast<int>(AssetType::UNKNOWN);
+    }
+  }
+  // -1 i
+  return -1;
+
+}  // SceneAttributesManager::convertJsonStringToAssetType
 
 }  // namespace managers
 }  // namespace assets

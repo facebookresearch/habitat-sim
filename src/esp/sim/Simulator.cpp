@@ -90,18 +90,24 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // if physicsManagerAttributes have been successfully created, inform
   // sceneAttributesManager of the config handle of the attributes, so that
   // sceneAttributes initialization can be performed.
+  auto sceneAttributesMgr = resourceManager_->getSceneAttributesManager();
   if (physicsManagerAttributes != nullptr) {
-    resourceManager_->getSceneAttributesManager()
-        ->setCurrPhysicsManagerAttributesHandle(
-            physicsManagerAttributes->getHandle());
+    sceneAttributesMgr->setCurrPhysicsManagerAttributesHandle(
+        physicsManagerAttributes->getHandle());
   }
+  // set file paths to construct semantic and navmesh file names, if they exist
+  sceneAttributesMgr->setCurrCfgFilePaths(cfg.scene.filepaths);
 
   // load scene - configure scene file names
   std::string sceneFilename = cfg.scene.id;
   if (cfg.scene.filepaths.count("mesh")) {
     sceneFilename = cfg.scene.filepaths.at("mesh");
   }
-  // create pathfinder and load navmesh if available
+
+  // TODO : create scene attributes here
+  auto sceneAttributes =
+      sceneAttributesMgr->createAttributesTemplate(sceneFilename);
+
   std::string navmeshFilename = io::changeExtension(sceneFilename, ".navmesh");
   if (cfg.scene.filepaths.count("navmesh")) {
     navmeshFilename = cfg.scene.filepaths.at("navmesh");
@@ -114,6 +120,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     houseFilename = io::changeExtension(sceneFilename, ".scn");
   }
 
+  // create pathfinder and load navmesh if available
   pathfinder_ = nav::PathFinder::create();
   if (io::exists(navmeshFilename)) {
     LOG(INFO) << "Loading navmesh from " << navmeshFilename;

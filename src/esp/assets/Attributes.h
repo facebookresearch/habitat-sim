@@ -46,6 +46,14 @@ class AbstractAttributes : public esp::core::Configuration {
   }
   std::string getHandle() const { return getString("handle"); }
 
+  /**
+   * @brief directory where files used to construct attributes can be found.
+   */
+  virtual void setFileDirectory(const std::string& fileDirectory) {
+    setString("fileDirectory", fileDirectory);
+  }
+  std::string getFileDirectory() const { return getString("fileDirectory"); }
+
   void setID(int ID) { setInt("ID", ID); }
   int getID() const { return getInt("ID"); }
 
@@ -378,6 +386,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     setIsWireframe(isWireframe);
     setPrimObjType(primObjType);
     setPrimObjClassName(primObjClassName);
+    setFileDirectory("none");
 
     if (!isWireframe) {  // solid
       // do not call setters since they call buildHandle, which does not

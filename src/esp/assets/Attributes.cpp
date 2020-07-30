@@ -29,14 +29,6 @@ AbstractPhysicsAttributes::AbstractPhysicsAttributes(
   setCollisionAssetHandle("");
 }  // AbstractPhysicsAttributes ctor
 
-/**
- * AbstractPhysicsAttributes is abstract; virtual destructor deleted;
- * definition required so instancing class can destroy base  REMOVED FOR PYBIND
- * COMPATIBILITY TODO: Find a pybind-friendly way to implement this
- *
- * AbstractPhysicsAttributes::~AbstractPhysicsAttributes() {}
- */
-
 PhysicsObjectAttributes::PhysicsObjectAttributes(const std::string& handle)
     : AbstractPhysicsAttributes("PhysicsObjectAttributes", handle) {
   // fill necessary attribute defaults
@@ -64,6 +56,9 @@ PhysicsSceneAttributes::PhysicsSceneAttributes(const std::string& handle)
   // TODO do these defaults need to be maintained here?
   setFrictionCoefficient(0.4);
   setRestitutionCoefficient(0.05);
+  setOrigin({0, 0, 0});
+  setOrientUp({0, 1, 0});
+  setOrientFront({0, 0, -1});
 
   setRequiresLighting(false);
   // 0 corresponds to esp::assets::AssetType::UNKNOWN->treated as general mesh
@@ -80,13 +75,6 @@ PhysicsManagerAttributes::PhysicsManagerAttributes(const std::string& handle)
   setMaxSubsteps(10);
 }  // PhysicsManagerAttributes ctor
 
-/**
- * AbstractPrimitiveAttributes is abstract; virtual destructor deleted;
- * definition required so instancing class can destroy base  REMOVED FOR PYBIND
- * COMPATIBILITY TODO: Find a pybind-friendly way to implement this
- *
- * AbstractPrimitiveAttributes::~AbstractPrimitiveAttributes() {}
- */
 CapsulePrimitiveAttributes::CapsulePrimitiveAttributes(
     bool isWireframe,
     int primObjType,

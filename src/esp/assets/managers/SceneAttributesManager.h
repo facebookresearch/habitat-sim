@@ -49,6 +49,17 @@ class SceneAttributesManager
   void setCurrPhysicsManagerAttributesHandle(const std::string& handle) {
     physicsManagerAttributesHandle_ = handle;
   }
+  /**
+   * @brief copy current configuration-driven file paths to make them available
+   * for scene attributes default handle derivations.
+   *
+   * @param filepaths the map of file paths from the configuration object
+   */
+  void setCurrCfgFilePaths(
+      const std::map<std::string, std::string>& filepaths) {
+    cfgFilepaths_.clear();
+    cfgFilepaths_.insert(filepaths.begin(), filepaths.end());
+  }
 
   /**
    * @brief Creates an instance of a scene template described by passed string.
@@ -159,6 +170,20 @@ class SceneAttributesManager
       bool registerTemplate = true);
 
   /**
+   * @brief Convert a json string value to its corresponding AssetType, cast to
+   * int, based on mappings in @ref SceneAttributesManager::AssetTypeNamesMap.
+   * Returns an int cast of the @ref esp::AssetType enum value if found and
+   * understood, 0 (AssetType::UNKNOWN) if found but not understood, and -1 if
+   * tag is not found in json.
+   *
+   * @param jsonDoc json document to query
+   * @param jsonTag the tag containing the data
+   * @return the appropriate value.
+   */
+  int convertJsonStringToAssetType(io::JsonDocument& jsonDoc,
+                                   const char* jsonTag);
+
+  /**
    * @brief Add a @ref std::shared_ptr<attributesType> object to the
    * @ref templateLibrary_.  Verify that render and collision handles have been
    * set properly.  We are doing this since these values can be modified by the
@@ -170,6 +195,7 @@ class SceneAttributesManager
    * @return The index in the @ref templateLibrary_ of object
    * template.
    */
+
   int registerAttributesTemplateFinalize(
       PhysicsSceneAttributes::ptr sceneAttributesTemplate,
       const std::string& sceneAttributesHandle) override;
@@ -209,6 +235,13 @@ class SceneAttributesManager
    * physics manager attributes settings when sceneAttributes are created.
    */
   PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
+
+  /**
+   * @brief Current file paths based on config settings
+   */
+
+  std::map<std::string, std::string> cfgFilepaths_;
+
   /**
    * @brief Name of currently used physicsManagerAttributes
    */
