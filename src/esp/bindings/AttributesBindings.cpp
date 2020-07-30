@@ -106,7 +106,26 @@ void initAttributesBindings(py::module& m) {
       .def_property("gravity", &PhysicsSceneAttributes::getGravity,
                     &PhysicsSceneAttributes::setGravity)
       .def_property("origin", &PhysicsSceneAttributes::getOrigin,
-                    &PhysicsSceneAttributes::setOrigin);
+                    &PhysicsSceneAttributes::setOrigin)
+      .def_property("orient_up", &PhysicsSceneAttributes::getOrientUp,
+                    &PhysicsSceneAttributes::setOrientUp)
+      .def_property("orient_front", &PhysicsSceneAttributes::getOrientFront,
+                    &PhysicsSceneAttributes::setOrientFront)
+      .def_property("render_asset_type",
+                    &PhysicsSceneAttributes::getRenderAssetType,
+                    &PhysicsSceneAttributes::setRenderAssetType)
+      .def_property("collision_asset_type",
+                    &PhysicsSceneAttributes::getCollisionAssetType,
+                    &PhysicsSceneAttributes::setCollisionAssetType)
+      .def_property("semantic_asset_handle",
+                    &PhysicsSceneAttributes::getSemanticAssetHandle,
+                    &PhysicsSceneAttributes::setSemanticAssetHandle)
+      .def_property("semantic_asset_type",
+                    &PhysicsSceneAttributes::getSemanticAssetType,
+                    &PhysicsSceneAttributes::setSemanticAssetType)
+      .def_property("navmesh_asset_handle",
+                    &PhysicsSceneAttributes::getNavmeshAssetHandle,
+                    &PhysicsSceneAttributes::setNavmeshAssetHandle);
 
   // ==== PhysicsManagerAttributes ====
   py::class_<PhysicsManagerAttributes, AbstractAttributes,

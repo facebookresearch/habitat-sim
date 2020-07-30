@@ -195,7 +195,7 @@ bool ResourceManager::loadScene(
       LOG(ERROR) << "Cannot load from file " << info.filepath;
       meshSuccess = false;
     } else {
-      if (info.type == AssetType::INSTANCE_MESH) {
+      if (info.type == AssetType::INSTANCE_MESH) {  // semantic
         meshSuccess =
             loadInstanceMeshData(info, parent, drawables, splitSemanticMesh);
       } else if (info.type == AssetType::FRL_PTEX_MESH) {

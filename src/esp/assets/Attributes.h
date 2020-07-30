@@ -274,10 +274,30 @@ class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
   void setOrigin(const Magnum::Vector3& origin) { setVec3("origin", origin); }
   Magnum::Vector3 getOrigin() const { return getVec3("origin"); }
 
+  void setOrientUp(const Magnum::Vector3& orientUp) {
+    setVec3("orientUp", orientUp);
+  }
+  Magnum::Vector3 getOrientUp() const { return getVec3("orientUp"); }
+
+  void setOrientFront(const Magnum::Vector3& orientFront) {
+    setVec3("orientFront", orientFront);
+  }
+  Magnum::Vector3 getOrientFront() const { return getVec3("orientFront"); }
+
   void setGravity(const Magnum::Vector3& gravity) {
     setVec3("gravity", gravity);
   }
   Magnum::Vector3 getGravity() const { return getVec3("gravity"); }
+
+  void setRenderAssetType(int renderAssetType) {
+    setInt("renderAssetType", renderAssetType);
+  }
+  int getRenderAssetType() { return getInt("renderAssetType"); }
+
+  void setCollisionAssetType(int collisionAssetType) {
+    setInt("collisionAssetType", collisionAssetType);
+  }
+  int getCollisionAssetType() { return getInt("collisionAssetType"); }
 
   void setSemanticAssetHandle(const std::string& semanticAssetHandle) {
     setString("semanticAssetHandle", semanticAssetHandle);
@@ -285,6 +305,18 @@ class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
   }
   std::string getSemanticAssetHandle() const {
     return getString("semanticAssetHandle");
+  }
+  void setSemanticAssetType(int semanticAssetType) {
+    setInt("semanticAssetType", semanticAssetType);
+  }
+  int getSemanticAssetType() { return getInt("semanticAssetType"); }
+
+  void setNavmeshAssetHandle(const std::string& navmeshAssetHandle) {
+    setString("navmeshAssetHandle", navmeshAssetHandle);
+    setIsDirty();
+  }
+  std::string getNavmeshAssetHandle() const {
+    return getString("navmeshAssetHandle");
   }
 
  public:

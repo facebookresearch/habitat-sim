@@ -149,7 +149,7 @@ SceneAttributesManager::createDefaultAttributesTemplate(
     bool registerTemplate) {
   // Attributes descriptor for scene
   PhysicsSceneAttributes::ptr sceneAttributesTemplate =
-      PhysicsSceneAttributes::create(sceneFilename);
+      initNewAttribsInternal(PhysicsSceneAttributes::create(sceneFilename));
 
   sceneAttributesTemplate->setRenderAssetHandle(sceneFilename);
   sceneAttributesTemplate->setCollisionAssetHandle(sceneFilename);
@@ -180,7 +180,8 @@ SceneAttributesManager::createPrimBasedAttributesTemplate(
   }
 
   // construct a sceneAttributes
-  auto sceneAttributes = PhysicsSceneAttributes::create(primAssetHandle);
+  auto sceneAttributes =
+      initNewAttribsInternal(PhysicsSceneAttributes::create(primAssetHandle));
   // set margin to be 0
   sceneAttributes->setMargin(0.0);
   // make smaller as default size - prims are approx meter in size
@@ -213,13 +214,7 @@ SceneAttributesManager::createBackCompatAttributesTemplate(
     bool registerTemplate) {
   // Attributes descriptor for scene
   PhysicsSceneAttributes::ptr sceneAttributes =
-      PhysicsSceneAttributes::create(sceneFilename);
-
-  sceneAttributes->setRenderAssetHandle(sceneFilename);
-  sceneAttributes->setCollisionAssetHandle(sceneFilename);
-  sceneAttributes->setUseMeshCollision(true);
-
-  // TODO : any specific non-json file-based parsing required
+      initNewAttribsInternal(PhysicsSceneAttributes::create(sceneFilename));
 
   if (registerTemplate) {
     int attrID =
@@ -235,6 +230,13 @@ SceneAttributesManager::createBackCompatAttributesTemplate(
 
 PhysicsSceneAttributes::ptr SceneAttributesManager::initNewAttribsInternal(
     PhysicsSceneAttributes::ptr newAttributes) {
+  std::string sceneFilename = newAttributes->getHandle();
+  // set defaults that files or other processes might override
+  newAttributes->setRenderAssetHandle(sceneFilename);
+  newAttributes->setCollisionAssetHandle(sceneFilename);
+  newAttributes->setUseMeshCollision(true);
+  // set default orientation values
+
   if (physicsAttributesManager_->getTemplateLibHasHandle(
           physicsManagerAttributesHandle_)) {
     auto physMgrAttributes = physicsAttributesManager_->getTemplateByHandle(

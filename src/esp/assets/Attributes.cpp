@@ -66,6 +66,11 @@ PhysicsSceneAttributes::PhysicsSceneAttributes(const std::string& handle)
   setRestitutionCoefficient(0.05);
 
   setRequiresLighting(false);
+  // 0 corresponds to esp::assets::AssetType::UNKNOWN->treated as general mesh
+  setCollisionAssetType(0);
+  // 4 corresponds to esp::assets::AssetType::INSTANCE_MESH
+  setSemanticAssetType(4);
+
 }  // PhysicsSceneAttributes ctor
 
 PhysicsManagerAttributes::PhysicsManagerAttributes(const std::string& handle)
