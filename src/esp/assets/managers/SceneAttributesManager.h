@@ -12,11 +12,19 @@
 
 namespace esp {
 namespace assets {
+enum class AssetType;
 
 namespace managers {
 class SceneAttributesManager
     : public AttributesManager<PhysicsSceneAttributes::ptr> {
  public:
+  /**
+   * @brief Constant Map holding names of all Magnum 3D primitive classes
+   * supported, keyed by @ref PrimObjTypes enum entry. Note final entry is not
+   * a valid primitive.
+   */
+  static const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
+
   SceneAttributesManager(assets::ResourceManager& resourceManager,
                          ObjectAttributesManager::ptr objectAttributesMgr,
                          PhysicsAttributesManager::ptr physicsAttributesManager)

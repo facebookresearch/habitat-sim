@@ -5,6 +5,7 @@
 #include "SceneAttributesManager.h"
 #include "AttributesManagerBase.h"
 
+#include "esp/assets/Asset.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
@@ -13,6 +14,15 @@ namespace esp {
 namespace assets {
 
 namespace managers {
+
+const std::map<std::string, esp::assets::AssetType>
+    SceneAttributesManager::AssetTypeNamesMap = {
+        {"mp3d", AssetType::MP3D_MESH},
+        {"navmesh", AssetType::NAVMESH},
+        {"ptex", AssetType::FRL_PTEX_MESH},
+        {"semantic", AssetType::INSTANCE_MESH},
+        {"suncg", AssetType::SUNCG_SCENE},
+};
 
 PhysicsSceneAttributes::ptr SceneAttributesManager::createAttributesTemplate(
     const std::string& sceneAttributesHandle,

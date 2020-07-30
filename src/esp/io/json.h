@@ -172,8 +172,8 @@ inline bool jsonIntoVal(const JsonDocument& d,
       if (d[tag][i].IsNumber()) {
         val[i] = d[tag][i].GetDouble();
       } else {
-        LOG(ERROR) << " Invalid array value specified in JSON config at "
-                   << tag;
+        LOG(ERROR) << " Invalid numeric value specified in JSON config at "
+                   << tag << " index :" << i;
         return false;
       }
     }  // build array
