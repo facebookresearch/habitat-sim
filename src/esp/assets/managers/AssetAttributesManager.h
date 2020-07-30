@@ -386,8 +386,9 @@ class AssetAttributesManager
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateTemplateHandleLists(int templateID,
-                                 const std::string& templateHandle) override {}
+  void updateTemplateHandleLists(
+      CORRADE_UNUSED int templateID,
+      CORRADE_UNUSED const std::string& templateHandle) override {}
 
   /**
    * @brief Verify that passed template handle describes attributes of type
@@ -440,6 +441,17 @@ class AssetAttributesManager
   };
 
   /**
+   * @brief Used Internally.  Configure newly-created attributes with any
+   * default values, before any specific values are set.
+   *
+   * @param newAttributes Newly created attributes.
+   */
+  AbstractPrimitiveAttributes::ptr initNewAttribsInternal(
+      AbstractPrimitiveAttributes::ptr newAttributes) override {
+    return newAttributes;
+  }
+
+  /**
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
    * with passed class name
    * @param primClassName Magnum::Primitives class name of primitive being
@@ -453,7 +465,8 @@ class AssetAttributesManager
                  << primClassName << "exists in Magnum::Primitives. Aborting.";
       return nullptr;
     }
-    return (*this.*primTypeConstructorMap_[primClassName])();
+    return initNewAttribsInternal(
+        (*this.*primTypeConstructorMap_[primClassName])());
   }  // AssetAttributeManager::buildPrimAttributes
 
   /**
@@ -468,7 +481,8 @@ class AssetAttributesManager
                     "Aborting.";
       return nullptr;
     }
-    return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(primType)])();
+    return initNewAttribsInternal(
+        (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(primType)])());
   }  // AssetAttributeManager::buildPrimAttributes
 
   /**
@@ -484,8 +498,9 @@ class AssetAttributesManager
                  << primTypeVal << ". Aborting";
       return nullptr;
     }
-    return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(
-                       static_cast<PrimObjTypes>(primTypeVal))])();
+    return initNewAttribsInternal(
+        (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(
+                    static_cast<PrimObjTypes>(primTypeVal))])());
   }  // AssetAttributeManager::buildPrimAttributes
 
   /**

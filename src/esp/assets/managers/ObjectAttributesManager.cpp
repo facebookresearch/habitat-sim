@@ -64,8 +64,8 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
   }
 
   // construct a PhysicsObjectAttributes
-  auto primObjectAttributes =
-      PhysicsObjectAttributes::create(primAttrTemplateHandle);
+  auto primObjectAttributes = initNewAttribsInternal(
+      PhysicsObjectAttributes::create(primAttrTemplateHandle));
   // set margin to be 0
   primObjectAttributes->setMargin(0.0);
   // make smaller as default size - prims are approx meter in size
@@ -159,7 +159,7 @@ ObjectAttributesManager::createDefaultAttributesTemplate(
     bool registerTemplate) {
   // construct a PhysicsObjectAttributes
   PhysicsObjectAttributes::ptr objAttributes =
-      PhysicsObjectAttributes::create(templateName);
+      initNewAttribsInternal(PhysicsObjectAttributes::create(templateName));
   // set render mesh handle as a default
   objAttributes->setRenderAssetHandle(templateName);
   if (registerTemplate) {

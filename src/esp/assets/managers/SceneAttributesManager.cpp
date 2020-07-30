@@ -223,6 +223,21 @@ SceneAttributesManager::createBackCompatAttributesTemplate(
   return sceneAttributes;
 }  // SceneAttributesManager::createBackCompatAttributesTemplate
 
+PhysicsSceneAttributes::ptr SceneAttributesManager::initNewAttribsInternal(
+    PhysicsSceneAttributes::ptr newAttributes) {
+  if (physicsAttributesManager_->getTemplateLibHasHandle(
+          physicsManagerAttributesHandle_)) {
+    auto physMgrAttributes = physicsAttributesManager_->getTemplateByHandle(
+        physicsManagerAttributesHandle_);
+    newAttributes->setGravity(physMgrAttributes->getGravity());
+    newAttributes->setFrictionCoefficient(
+        physMgrAttributes->getFrictionCoefficient());
+    newAttributes->setRestitutionCoefficient(
+        physMgrAttributes->getRestitutionCoefficient());
+  }
+  return newAttributes;
+}  // SceneAttributesManager::initNewAttribsInternal
+
 PhysicsSceneAttributes::ptr
 SceneAttributesManager::createFileBasedAttributesTemplate(
     const std::string& sceneFilename,
