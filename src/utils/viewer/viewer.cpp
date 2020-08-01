@@ -2,6 +2,10 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+//custom addition
+#include <iostream>
+//end
+
 #include <stdlib.h>
 
 #include <Magnum/configure.h>
@@ -106,9 +110,10 @@ class Viewer : public Mn::Platform::Application {
     }
 
     auto str = strDat.str();
-    if (str.size() > 0) {
-      LOG(INFO) << str;
-    }
+    //commented this out
+    //if (str.size() > 0) {
+    //  LOG(INFO) << str;
+    //}
   }
 
   esp::assets::ResourceManager resourceManager_;
@@ -295,10 +300,13 @@ Viewer::Viewer(const Arguments& arguments)
     controls_.setMoveFilterFunction([&](const esp::vec3f& start,
                                         const esp::vec3f& end) {
       esp::vec3f currentPosition = pathfinder_->tryStep(start, end);
-      LOG(INFO) << "position=" << currentPosition.transpose() << " rotation="
+      LOG(INFO) << "position=" << currentPosition.transpose() << "\nrotation="
                 << esp::quatf(agentBodyNode_->rotation()).coeffs().transpose();
-      LOG(INFO) << "Distance to closest obstacle: "
-                << pathfinder_->distanceToClosestObstacle(currentPosition);
+      std::cout << "position=" << currentPosition.transpose() << "\nrotation="
+                << esp::quatf(agentBodyNode_->rotation()).coeffs().transpose() << std::endl; //custom addition
+      //commented this out
+      //LOG(INFO) << "Distance to closest obstacle: "
+      //          << pathfinder_->distanceToClosestObstacle(currentPosition);
 
       return currentPosition;
     });
