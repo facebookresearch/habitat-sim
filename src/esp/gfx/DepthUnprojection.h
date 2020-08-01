@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/GL/Version.h>
