@@ -50,8 +50,7 @@ class DepthShader : public Magnum::GL::AbstractShaderProgram {
 
   /** @brief  Attempt to construct the shader.  Will return nullptr if the
    * maximum supported GL version is too low
-   *
-   **/
+   */
   static std::unique_ptr<DepthShader> TryCreate(Flags flags = {});
 
   /**
@@ -90,6 +89,8 @@ class DepthShader : public Magnum::GL::AbstractShaderProgram {
  private:
   explicit DepthShader(Flags flags, Magnum::GL::Version version);
 
+  /** @brief Get the OpenGL version required by the shader
+   */
   static Magnum::GL::Version getVersion();
 
   const Flags flags_;

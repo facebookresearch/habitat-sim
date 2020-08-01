@@ -6,6 +6,7 @@
 
 #include <Corrade/Containers/StridedArrayView.h>
 #include <Magnum/GL/Buffer.h>
+#include <Magnum/GL/Context.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Framebuffer.h>
 #include <Magnum/GL/PixelFormat.h>
@@ -29,6 +30,14 @@ struct Renderer::Impl {
   Impl() {
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
     Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
+
+    depthShader_ =
+        DepthShader::TryCreate(DepthShader::Flag::UnprojectExistingDepth);
+    if (!depthShader_) {
+      LOG(WARNING)
+          << "Failed to create to GPU-accelerated Depth Unprojection "
+             "Shader (OpenGL version too low).  Falling back to CPU Version";
+    }
   }
   ~Impl() { LOG(INFO) << "Deconstructing Renderer"; }
 
@@ -59,11 +68,6 @@ struct Renderer::Impl {
     if (!depthUnprojection) {
       throw std::runtime_error(
           "Sensor does not have a depthUnprojection matrix");
-    }
-
-    if (!depthShader_) {
-      depthShader_ =
-          DepthShader::TryCreate(DepthShader::Flag::UnprojectExistingDepth);
     }
 
     sensor.bindRenderTarget(RenderTarget::create_unique(
