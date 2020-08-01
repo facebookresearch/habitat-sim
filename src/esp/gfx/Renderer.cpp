@@ -62,8 +62,8 @@ struct Renderer::Impl {
     }
 
     if (!depthShader_) {
-      depthShader_ = std::make_unique<DepthShader>(
-          DepthShader::Flag::UnprojectExistingDepth);
+      depthShader_ =
+          DepthShader::TryCreate(DepthShader::Flag::UnprojectExistingDepth);
     }
 
     sensor.bindRenderTarget(RenderTarget::create_unique(

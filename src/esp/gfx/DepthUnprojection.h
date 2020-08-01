@@ -6,6 +6,7 @@
 
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
+#include <Magnum/GL/Version.h>
 
 namespace esp {
 namespace gfx {
@@ -45,6 +46,12 @@ class DepthShader : public Magnum::GL::AbstractShaderProgram {
   /** @brief Constructor */
   explicit DepthShader(Flags flags = {});
 
+  /** @brief  Attempt to construct the shader.  Will return nullptr if the
+   * maximum supported GL version is too low
+   *
+   **/
+  static std::unique_ptr<DepthShader> TryCreate(Flags flags = {});
+
   /**
    * @brief Set transformation and projection matrix
    * @return Reference to self (for method chaining)
@@ -79,6 +86,10 @@ class DepthShader : public Magnum::GL::AbstractShaderProgram {
   Flags flags() const { return flags_; }
 
  private:
+  explicit DepthShader(Flags flags, Magnum::GL::Version version);
+
+  static Magnum::GL::Version getVersion();
+
   const Flags flags_;
   int transformationMatrixUniform_, projectionMatrixOrDepthUnprojectionUniform_;
 };

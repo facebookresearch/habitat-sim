@@ -7,6 +7,7 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/Reference.h>
 #include <Corrade/Utility/Resource.h>
+#include <Magnum/GL/Context.h>
 #include <Magnum/GL/Shader.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/Version.h>
@@ -27,21 +28,35 @@ namespace {
 enum { DepthTextureUnit = 1 };
 }
 
-DepthShader::DepthShader(Flags flags) : flags_{flags} {
+Mn::GL::Version DepthShader::getVersion() {
+#ifdef MAGNUM_TARGET_WEBGL
+  return Mn::GL::Version::GLES300;
+#else
+  return Mn::GL::Version::GL410;
+#endif
+}
+
+std::unique_ptr<DepthShader> DepthShader::TryCreate(Flags flags) {
+  Mn::GL::Version version = getVersion();
+
+  if (Mn::GL::Context::current().isVersionSupported(version)) {
+    return std::unique_ptr<DepthShader>(new DepthShader{flags, version});
+  } else {
+    return nullptr;
+  }
+}
+
+DepthShader::DepthShader(Flags flags) : DepthShader{flags, getVersion()} {};
+
+DepthShader::DepthShader(Flags flags, Mn::GL::Version version) : flags_{flags} {
   if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
   }
 
   const Corrade::Utility::Resource rs{"default-shaders"};
 
-#ifdef MAGNUM_TARGET_WEBGL
-  Mn::GL::Version glVersion = Mn::GL::Version::GLES300;
-#else
-  Mn::GL::Version glVersion = Mn::GL::Version::GL410;
-#endif
-
-  Mn::GL::Shader vert{glVersion, Mn::GL::Shader::Type::Vertex};
-  Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
+  Mn::GL::Shader vert{version, Mn::GL::Shader::Type::Vertex};
+  Mn::GL::Shader frag{version, Mn::GL::Shader::Type::Fragment};
 
   if (flags & Flag::UnprojectExistingDepth) {
     vert.addSource("#define UNPROJECT_EXISTING_DEPTH\n");
