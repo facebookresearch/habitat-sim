@@ -775,6 +775,16 @@ agent::Agent::ptr Simulator::getAgent(const int agentId) {
   return agents_[agentId];
 }
 
+Magnum::Matrix4 Simulator::getAgentTransformation(int agentId) {
+  auto agentBodyNode = &getAgent(0)->node();
+  return agentBodyNode->transformation();
+}
+
+Magnum::Vector3 Simulator::getAgentAbsoluteTranslation(int agentId) {
+  auto agentBodyNode = &getAgent(0)->node();
+  return agentBodyNode->absoluteTranslation();
+}
+
 nav::PathFinder::ptr Simulator::getPathFinder() {
   return pathfinder_;
 }
@@ -902,29 +912,6 @@ void Simulator::setObjectLightSetup(const int objectID,
   }
 }
 
-int Simulator::findNearestObject(int refObjectID, float distance) {
-  float minDist = 1.0;
-  int nearestObjectID = -1;
-  if (refObjectID >= 0) {
-    Magnum::Vector3 refPosition = physicsManager_->getTranslation(refObjectID);
-    Magnum::Vector2 agentPos_xz(refPosition.x(), refPosition.z());
-
-    for (int objectID : physicsManager_->getExistingObjectIDs()) {
-      if (objectID != refObjectID) {
-        Magnum::Vector3 objectPos = physicsManager_->getTranslation(objectID);
-        Magnum::Vector2 objectPosXZ(objectPos.x(), objectPos.z());
-
-        float d = Magnum::Vector2(agentPos_xz - objectPosXZ).length();
-        if (d <= minDist) {
-          minDist = d;
-          nearestObjectID = objectID;
-        }
-      }
-    }
-  }
-  return nearestObjectID;
-}
-
 int Simulator::findNearestObjectUnderCrosshair(int refObjectID,
                                                Magnum::Vector3 point,
                                                Magnum::Vector3 refPoint,
@@ -970,56 +957,6 @@ int Simulator::findNearestObjectUnderCrosshair(int refObjectID,
   return nearestObjId;
 }
 
-void Simulator::grabReleaseObjectUsingCrossHair(Magnum::Vector2i windowSize) {
-  Magnum::Vector2i crossHairPos = Magnum::Vector2i{windowSize * 0.5};
-  Magnum::Vector3 point = unproject(crossHairPos, windowSize, 0);
-  Magnum::Vector3 refPoint = getAgent(0)->node().absoluteTranslation();
-  int nearestObjId =
-      findNearestObjectUnderCrosshair(0, point, refPoint, windowSize);
-
-  auto agentBodyNode_ = &getAgent(0)->node();
-
-  if (grippedObjectId != -1) {
-    // already gripped, so let it go
-    Magnum::Matrix4 agentT =
-        agentBodyNode_->MagnumObject::transformationMatrix();
-    physicsManager_->setTransformation(grippedObjectId, agentT * gripOffset);
-
-    Magnum::Vector3 position = physicsManager_->getTranslation(grippedObjectId);
-    bool isNav =
-        pathfinder_->isNavigable(Eigen::Map<esp::vec3f>(position.data()));
-
-    // check for collision (apparently this is always true)
-    if (
-        //(physicsManager_->contactTest(grippedObjectId)) &&
-        (!isNav)) {
-      LOG(INFO) << "Colliding with object or position is not navigable";
-      return;
-    }
-
-    physicsManager_->setObjectMotionType(grippedObjectId,
-                                         esp::physics::MotionType::STATIC);
-    grippedObjectId = -1;
-  } else if (nearestObjId != -1) {
-    Magnum::Matrix4 agentT =
-        agentBodyNode_->MagnumObject::transformationMatrix();
-    gripOffset =
-        agentT.inverted() *
-        physicsManager_->getObjectSceneNode(nearestObjId).transformation();
-    physicsManager_->setObjectMotionType(nearestObjId,
-                                         esp::physics::MotionType::KINEMATIC);
-    grippedObjectId = nearestObjId;
-  } else {
-    return;
-  }
-
-  esp::nav::NavMeshSettings navMeshSettings;
-  navMeshSettings.setDefaults();
-  navMeshSettings.agentRadius = 0.3f;
-
-  recomputeNavMesh(*getPathFinder().get(), navMeshSettings, true);
-}
-
 Magnum::Vector3 Simulator::unproject(const Magnum::Vector2i& crosshairPos,
                                      const Magnum::Vector2i& viewSize,
                                      float depth) {
@@ -1051,21 +988,13 @@ void Simulator::updateCrossHairNode(Magnum::Vector2i windowSize) {
                                  cast * 1.0);
 }
 
-void Simulator::syncGrippedObject() {
+void Simulator::syncGrippedObject(int grippedObjectId) {
   if (grippedObjectId != -1) {
     auto agentBodyNode_ = &getAgent(0)->node();
     Magnum::Matrix4 agentT =
         agentBodyNode_->MagnumObject::transformationMatrix();
     physicsManager_->setTranslation(
         grippedObjectId, agentT.transformPoint(Magnum::Vector3{0.0, 0.0, 0.0}));
-  }
-}
-
-void Simulator::syncGrippedObjects() {
-  auto agentBodyNode_ = &getAgent(0)->node();
-  Magnum::Matrix4 agentT = agentBodyNode_->MagnumObject::transformationMatrix();
-  for (auto& grip : gripOffsets) {
-    physicsManager_->setTransformation(grip.first, agentT * grip.second);
   }
 }
 

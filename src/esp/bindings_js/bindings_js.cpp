@@ -6,6 +6,7 @@
 
 namespace em = emscripten;
 
+#include "esp/gfx/magnum.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sim/Simulator.h"
 
@@ -95,14 +96,35 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .element(em::index<2>())
       .element(em::index<3>());
 
-  em::value_array<Magnum::Vector3>("Vector3")
-      .element(em::index<0>())
-      .element(em::index<1>())
-      .element(em::index<2>());
-
   em::value_array<Magnum::Vector2i>("Vector2i")
       .element(em::index<0>())
       .element(em::index<1>());
+
+  em::class_<Magnum::Matrix4>("Matrix4")
+      .constructor<Magnum::Matrix4>()
+      .function("inverted", &Magnum::Matrix4::inverted)
+      .function("mul",
+                em::optional_override(
+                    [](const Magnum::Matrix4& self, const Magnum::Matrix4 rhs) {
+                      return new Magnum::Matrix4(self * rhs);
+                    }),
+                em::allow_raw_pointers())
+      .function(
+          "toString", em::optional_override([](const Magnum::Matrix4& self) {
+            std::ostringstream out;
+            Magnum::Debug{&out, Magnum::Debug::Flag::NoNewlineAtTheEnd} << self;
+            return out.str();
+          }));
+
+  em::class_<Magnum::Vector3>("Vector3")
+      .constructor<Magnum::Vector3>()
+      .constructor<float, float, float>()
+      .function("x", em::select_overload<float&()>(&Magnum::Vector3::x))
+      .function("y", em::select_overload<float&()>(&Magnum::Vector3::y))
+      .function("z", em::select_overload<float&()>(&Magnum::Vector3::z))
+      .class_function("xAxis", &Magnum::Vector3::xAxis)
+      .class_function("yAxis", &Magnum::Vector3::yAxis)
+      .class_function("zAxis", &Magnum::Vector3::zAxis);
 
   em::value_object<std::pair<vec3f, vec3f>>("aabb")
       .field("min", &std::pair<vec3f, vec3f>::first)
@@ -239,6 +261,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("objects", &SemanticScene::objects);
 
   em::class_<SceneNode>("SceneNode")
+      .constructor<scene::SceneNode&>(em::allow_raw_pointers())
       .function("getId", &SceneNode::getId)
       .function("getSemanticId", &SceneNode::getSemanticId);
 
@@ -277,6 +300,8 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("addObjectByHandle", &Simulator::addObjectByHandle,
                 em::allow_raw_pointers())
       .function("removeObject", &Simulator::removeObject)
+      .function("setTransformation", &Simulator::setTransformation)
+      .function("getTransformation", &Simulator::getTransformation)
       .function("setTranslation", &Simulator::setTranslation)
       .function("getTranslation", &Simulator::getTranslation)
       .function("setRotation", &Simulator::setRotation)
@@ -285,12 +310,13 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("getLightSetup", &Simulator::getLightSetup)
       .function("setLightSetup", &Simulator::setLightSetup)
       .function("stepWorld", &Simulator::stepWorld)
-      .function("grabReleaseObjectUsingCrossHair",
-                &Simulator::grabReleaseObjectUsingCrossHair)
       .function("syncGrippedObject", &Simulator::syncGrippedObject)
-      .function("syncGrippedObjects", &Simulator::syncGrippedObjects)
       .function("updateCrossHairNode", &Simulator::updateCrossHairNode)
       .function("recomputeNavMesh", &Simulator::recomputeNavMesh)
-      .function("toggleNavMeshVisualization",
-                &Simulator::toggleNavMeshVisualization);
+      .function("findNearestObjectUnderCrosshair",
+                &Simulator::findNearestObjectUnderCrosshair)
+      .function("unproject", &Simulator::unproject)
+      .function("getAgentTransformation", &Simulator::getAgentTransformation)
+      .function("getAgentAbsoluteTranslation",
+                &Simulator::getAgentAbsoluteTranslation);
 }

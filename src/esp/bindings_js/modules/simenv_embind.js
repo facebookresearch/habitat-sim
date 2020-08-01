@@ -27,6 +27,8 @@ class SimEnv {
     this.pathfinder = this.sim.getPathFinder();
     this.initialAgentState = null;
     this.resolution = null;
+    this.grippedObjectId = -1;
+    this.gripOffset = null;
 
     if (Object.keys(episode).length > 0) {
       this.initialAgentState = this.createAgentState(episode.startState);
@@ -67,8 +69,7 @@ class SimEnv {
    * Sync objects grabbed by agent to agent body.
    */
   syncObjects() {
-    this.sim.syncGrippedObject();
-    this.sim.syncGrippedObjects();
+    this.sim.syncGrippedObject(this.grippedObjectId);
   }
 
   /**
@@ -151,7 +152,8 @@ class SimEnv {
   ) {
     let objectId = this.addObjectByHandle(objectLibHandle);
     let newPosition = this.pathfinder.getRandomNavigablePoint();
-    this.setTranslation(newPosition, objectId, 0);
+    let position = this.convertVec3fToVector3(newPosition);
+    this.setTranslation(position, objectId, 0);
     this.setObjectMotionType(Module.MotionType.STATIC, objectId, 0);
     return objectId;
   }
@@ -166,7 +168,8 @@ class SimEnv {
   ) {
     let objectId = this.addObjectByHandle(objectLibHandle);
     let newPosition = this.pathfinder.getRandomNavigablePoint();
-    this.setTranslation(newPosition, objectId, 0);
+    let position = this.convertVec3fToVector3(newPosition);
+    this.setTranslation(position, objectId, 0);
     this.setObjectMotionType(Module.MotionType.STATIC, objectId, 0);
     return objectId;
   }
@@ -185,7 +188,64 @@ class SimEnv {
    * @returns {number} object ID or -1 if object was unable to be added
    */
   grabReleaseObject() {
-    this.sim.grabReleaseObjectUsingCrossHair(this.resolution);
+    let halfResolution = this.resolution.map(function(element) {
+      return element * 0.5;
+    });
+
+    let crossHairPosition = halfResolution;
+    let crossHairPoint = this.sim.unproject(
+      crossHairPosition,
+      this.resolution,
+      0
+    );
+    let refPoint = this.getAgentAbsoluteTranslation(0);
+
+    let nearestObjectId = this.findNearestObjectUnderCrosshair(
+      0,
+      crossHairPoint,
+      refPoint,
+      this.resolution
+    );
+
+    let agentTransform = this.getAgentTransformation(0);
+
+    if (this.grippedObjectId != -1) {
+      // already gripped, so let it go
+      this.setTransformation(
+        agentTransform.mul(this.gripOffset),
+        this.grippedObjectId,
+        0
+      );
+
+      let position = this.getTranslation(this.grippedObjectId, 0);
+      let isNav = this.pathfinder.isNavigable(
+        this.convertVector3ToVec3f(position),
+        0.5
+      );
+      // check for collision (apparently this is always true)
+      if (!isNav) {
+        console.log("Colliding with object or position is not navigable");
+        return;
+      }
+
+      this.setObjectMotionType(
+        Module.MotionType.STATIC,
+        this.grippedObjectId,
+        0
+      );
+      this.grippedObjectId = -1;
+    } else if (nearestObjectId != -1) {
+      this.gripOffset = agentTransform
+        .inverted()
+        .mul(this.getTransformation(nearestObjectId, 0));
+
+      this.setObjectMotionType(Module.MotionType.KINEMATIC, nearestObjectId, 0);
+      this.grippedObjectId = nearestObjectId;
+    } else {
+      return;
+    }
+
+    this.recomputeNavMesh();
   }
 
   /**
@@ -330,6 +390,18 @@ class SimEnv {
     return this.sim.getSemanticScene();
   }
 
+  getAgent(agentId) {
+    return this.sim.getAgent(agentId);
+  }
+
+  getAgentTransformation(agentId) {
+    return this.sim.getAgentTransformation(agentId);
+  }
+
+  getAgentAbsoluteTranslation(agentId) {
+    return this.sim.getAgentAbsoluteTranslation(agentId);
+  }
+
   getAgentState() {
     let state = new Module.AgentState();
     const agent = this.sim.getAgent(this.selectedAgentId);
@@ -346,6 +418,35 @@ class SimEnv {
 
   toggleNavMeshVisualization() {
     this.sim.toggleNavMeshVisualization();
+  }
+
+  findNearestObjectUnderCrosshair(
+    refObjectId,
+    crossHairPoint,
+    refPoint,
+    windowSize
+  ) {
+    return this.sim.findNearestObjectUnderCrosshair(
+      refObjectId,
+      crossHairPoint,
+      refPoint,
+      windowSize,
+      1.0
+    );
+  }
+
+  convertVector3ToVec3f(position) {
+    let vec3fPosition = [position.x(), position.y(), position.z()];
+    return vec3fPosition;
+  }
+
+  convertVec3fToVector3(position) {
+    let vector3Position = new Module.Vector3(
+      position[0],
+      position[1],
+      position[2]
+    );
+    return vector3Position;
   }
 
   /**

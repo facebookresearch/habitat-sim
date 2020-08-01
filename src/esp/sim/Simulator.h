@@ -704,15 +704,11 @@ class Simulator {
                            const std::string& lightSetupKey,
                            int sceneID = 0);
 
-  int findNearestObject(int refObjectID, float distance = 1.0);
-
   int findNearestObjectUnderCrosshair(int refObjectID,
                                       Magnum::Vector3 point,
                                       Magnum::Vector3 refPoint,
                                       const Magnum::Vector2i& viewSize,
                                       float distance = 1.0);
-
-  void grabReleaseObjectUsingCrossHair(Magnum::Vector2i windowSize);
 
   Magnum::Vector3 unproject(const Magnum::Vector2i& crosshairPos,
                             const Magnum::Vector2i& viewSize,
@@ -720,9 +716,11 @@ class Simulator {
 
   void updateCrossHairNode(Magnum::Vector2i windowSize);
 
-  void syncGrippedObject();
+  void syncGrippedObject(int grippedObjectId);
 
-  void syncGrippedObjects();
+  Magnum::Matrix4 getAgentTransformation(int agentId);
+
+  Magnum::Vector3 getAgentAbsoluteTranslation(int agentId);
 
   /**
    * @brief Getter for PRNG.
@@ -787,7 +785,6 @@ class Simulator {
 
   int grippedObjectId = -1;
   Magnum::Matrix4 gripOffset;
-  std::map<int, Magnum::Matrix4> gripOffsets;
 
   esp::scene::SceneNode* crossHairNode_ = nullptr;
 
