@@ -22,7 +22,7 @@ class MeshVisualizerDrawable : public Drawable {
    * @param group  Drawable group this drawable will be added to.
    */
   explicit MeshVisualizerDrawable(scene::SceneNode& node,
-                                  Magnum::Shaders::MeshVisualizer3D* shader,
+                                  Magnum::Shaders::MeshVisualizer3D& shader,
                                   Magnum::GL::Mesh& mesh,
                                   gfx::DrawableGroup* group);
 
@@ -36,7 +36,7 @@ class MeshVisualizerDrawable : public Drawable {
    */
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
                     Magnum::SceneGraph::Camera3D& camera) override;
-  Magnum::Shaders::MeshVisualizer3D* shader_ = nullptr;
+  Magnum::Shaders::MeshVisualizer3D& shader_;
 };
 
 }  // namespace gfx

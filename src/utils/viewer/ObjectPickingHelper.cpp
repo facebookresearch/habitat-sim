@@ -13,28 +13,21 @@
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 using Mn::Math::Literals::operator""_rgbf;
+using Mn::Math::Literals::operator""_rgbaf;
 
 ObjectPickingHelper::ObjectPickingHelper(Mn::Vector2i viewportSize) {
   // create the framebuffer and set the color attachment
-  recreateFramebuffer(viewportSize).mapForDraw();
+  recreateFramebuffer(viewportSize);
+  mapForDraw();
   CORRADE_INTERNAL_ASSERT(
       selectionFramebuffer_.checkStatus(Mn::GL::FramebufferTarget::Draw) ==
       Mn::GL::Framebuffer::Status::Complete);
 
-  // create a shader
-  Mn::Shaders::MeshVisualizer3D::Flags flags =
-      Mn::Shaders::MeshVisualizer3D::Flag::Wireframe;
-  shader_ = std::make_unique<Mn::Shaders::MeshVisualizer3D>(flags);
-
-  shader_->setViewportSize(Mn::Vector2{viewportSize});
-
-  if (flags & Mn::Shaders::MeshVisualizer3D::Flag::Wireframe) {
-    (*shader_).setColor(0x2f83cc_rgbf).setWireframeColor(0xdcdcdc_rgbf);
-  }
+  shader_.setViewportSize(Mn::Vector2{viewportSize});
+  shader_.setColor(0x2f83cc7f_rgbaf).setWireframeColor(0xdcdcdc_rgbf);
 }
 
-ObjectPickingHelper& ObjectPickingHelper::recreateFramebuffer(
-    Mn::Vector2i viewportSize) {
+void ObjectPickingHelper::recreateFramebuffer(Mn::Vector2i viewportSize) {
   // setup an offscreen frame buffer for object selection
   selectionDepth_.setStorage(Mn::GL::RenderbufferFormat::DepthComponent24,
                              viewportSize);
@@ -46,7 +39,6 @@ ObjectPickingHelper& ObjectPickingHelper::recreateFramebuffer(
                           selectionDepth_)
       .attachRenderbuffer(Mn::GL::Framebuffer::ColorAttachment{1},
                           selectionDrawableId_);
-  return *this;
 }
 
 ObjectPickingHelper& ObjectPickingHelper::prepareToDraw() {
@@ -79,13 +71,13 @@ ObjectPickingHelper& ObjectPickingHelper::handleViewportChange(
   recreateFramebuffer(viewportSize);
   selectionFramebuffer_.setViewport({{}, viewportSize});
 
-  shader_->setViewportSize(Mn::Vector2{viewportSize});
+  shader_.setViewportSize(Mn::Vector2{viewportSize});
   return *this;
 }
 
 unsigned int ObjectPickingHelper::getObjectId(
-    Magnum::Vector2i mouseEventPosition,
-    Magnum::Vector2i windowSize) {
+    const Mn::Vector2i& mouseEventPosition,
+    const Mn::Vector2i& windowSize) {
   selectionFramebuffer_.mapForRead(Mn::GL::Framebuffer::ColorAttachment{1});
   CORRADE_INTERNAL_ASSERT(
       selectionFramebuffer_.checkStatus(Mn::GL::FramebufferTarget::Read) ==
@@ -111,7 +103,7 @@ unsigned int ObjectPickingHelper::getObjectId(
   return pickedObject;
 }
 
-ObjectPickingHelper& ObjectPickingHelper::createPickedObjectVisualizer(
+void ObjectPickingHelper::createPickedObjectVisualizer(
     esp::gfx::Drawable* pickedObject) {
   if (meshVisualizerDrawable_) {
     delete meshVisualizerDrawable_;
@@ -119,14 +111,14 @@ ObjectPickingHelper& ObjectPickingHelper::createPickedObjectVisualizer(
   }
 
   if (!pickedObject) {
-    return *this;
+    return;
   }
 
   // magnum scene graph will handle the recycling even we did not recycle it by
   // the end of the simulation
   meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
-      static_cast<esp::scene::SceneNode&>(pickedObject->object()),
-      shader_.get(), pickedObject->getMesh(), &pickedObjectDrawbles_);
+      static_cast<esp::scene::SceneNode&>(pickedObject->object()), shader_,
+      pickedObject->getMesh(), &pickedObjectDrawbles_);
 
-  return *this;
+  return;
 }

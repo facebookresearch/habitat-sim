@@ -13,7 +13,7 @@ namespace gfx {
 
 MeshVisualizerDrawable::MeshVisualizerDrawable(
     scene::SceneNode& node,
-    Magnum::Shaders::MeshVisualizer3D* shader,
+    Magnum::Shaders::MeshVisualizer3D& shader,
     Magnum::GL::Mesh& mesh,
     DrawableGroup* group)
     : Drawable{node, mesh, group}, shader_(shader) {}
@@ -23,11 +23,10 @@ void MeshVisualizerDrawable::draw(const Magnum::Matrix4& transformationMatrix,
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
   Mn::GL::Renderer::setPolygonOffset(-5.0f, -5.0f);
 
-  (*shader_)
-      .setProjectionMatrix(camera.projectionMatrix())
+  shader_.setProjectionMatrix(camera.projectionMatrix())
       .setTransformationMatrix(transformationMatrix);
 
-  shader_->draw(mesh_);
+  shader_.draw(mesh_);
 
   Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);

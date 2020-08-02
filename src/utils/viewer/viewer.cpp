@@ -153,9 +153,10 @@ class Viewer : public Mn::Platform::Application {
   bool showFPS_ = true;
   bool frustumCullingEnabled_ = true;
 
+  // NOTE: Mouse + shift is to select object on the screen!!
   void createPickedObjectVisualizer(unsigned int objectId);
   std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
-  void drawPickedObject();
+  inline void drawPickedObject();
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -507,16 +508,12 @@ void Viewer::toggleNavMeshVisualization() {
 }
 
 void Viewer::drawPickedObject() {
-  if (!objectPickingHelper_->objectPicked()) {
+  if (!objectPickingHelper_->isObjectPicked()) {
     // nothing is picked, return directly
     return;
   }
   // setup blending function
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
-  Mn::GL::Renderer::setBlendColor(Magnum::Color4{0.0, 0.0, 0.0, 0.5});
-  Mn::GL::Renderer::setBlendFunction(
-      Mn::GL::Renderer::BlendFunction::ConstantAlpha,
-      Mn::GL::Renderer::BlendFunction::OneMinusConstantAlpha);
 
   // rendering
   esp::gfx::RenderCamera::Flags flags;
@@ -525,12 +522,17 @@ void Viewer::drawPickedObject() {
   }
   renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
 
-  // restore the "blending" status before imgui draw
+  // Neither the blend equation, nor the blend function is changed,
+  // so no need to restore the "blending" status before the imgui draw
+  /*
+  // The following is to make imgui work properly:
   Mn::GL::Renderer::setBlendEquation(Mn::GL::Renderer::BlendEquation::Add,
                                      Mn::GL::Renderer::BlendEquation::Add);
   Mn::GL::Renderer::setBlendFunction(
       Mn::GL::Renderer::BlendFunction::SourceAlpha,
       Mn::GL::Renderer::BlendFunction::OneMinusSourceAlpha);
+  */
+  Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
 }
 
 float timeSinceLastSimulation = 0.0;
@@ -692,6 +694,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   event.setAccepted();
 }
 
+// NOTE: Mouse + shift is to select object on the screen!!
 void Viewer::keyPressEvent(KeyEvent& event) {
   const auto key = event.key();
   bool agentMoved = false;

@@ -10,7 +10,6 @@
 #include <unordered_map>
 
 #include <functional>
-#include <unordered_map>
 #include "esp/core/esp.h"
 
 namespace esp {

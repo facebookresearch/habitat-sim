@@ -20,7 +20,7 @@ class ObjectPickingHelper {
    * size
    * @param viewportSize the size of the viewport in w x h format
    */
-  ObjectPickingHelper& recreateFramebuffer(Magnum::Vector2i viewportSize);
+  void recreateFramebuffer(Magnum::Vector2i viewportSize);
 
   /**
    *@brief Prepare to draw: it will bind the framebuffer, map color attachement,
@@ -37,20 +37,21 @@ class ObjectPickingHelper {
    * @param eventPosition, mouse event position
    * @param windowSize, the size of the GUI window
    */
-  unsigned int getObjectId(Magnum::Vector2i mouseEventPosition,
-                           Magnum::Vector2i windowSize);
+  unsigned int getObjectId(const Magnum::Vector2i& mouseEventPosition,
+                           const Magnum::Vector2i& windowSize);
 
   /**
-   * @brief create a mesh visualizer (a drawable) for the picked object
-   * @param pickedObject, the picked object (drawable)
+   * @brief create a mesh visualizer (a drawable) for the picked object (a
+   * drawable), if there is any
+   * @param pickedObject, the picked object (drawable), if nullptr is passed,
+   * function will delete any previously created visualizer object
    */
-  ObjectPickingHelper& createPickedObjectVisualizer(
-      esp::gfx::Drawable* pickedObject);
+  void createPickedObjectVisualizer(esp::gfx::Drawable* pickedObject);
 
   /**
    * @brief return true if an object is picked at the moment
    */
-  bool objectPicked() { return meshVisualizerDrawable_ != nullptr; }
+  bool isObjectPicked() const { return meshVisualizerDrawable_ != nullptr; }
 
   esp::gfx::DrawableGroup& getDrawables() { return pickedObjectDrawbles_; }
 
@@ -60,7 +61,8 @@ class ObjectPickingHelper {
   Magnum::GL::Renderbuffer selectionDepth_;
   Magnum::GL::Renderbuffer selectionDrawableId_;
 
-  std::unique_ptr<Magnum::Shaders::MeshVisualizer3D> shader_;
+  Magnum::Shaders::MeshVisualizer3D shader_{
+      Magnum::Shaders::MeshVisualizer3D::Flag::Wireframe};
   esp::gfx::MeshVisualizerDrawable* meshVisualizerDrawable_ = nullptr;
   esp::gfx::DrawableGroup pickedObjectDrawbles_;
   ObjectPickingHelper& mapForDraw();
