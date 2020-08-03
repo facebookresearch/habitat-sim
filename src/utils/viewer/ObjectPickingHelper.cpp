@@ -114,8 +114,8 @@ void ObjectPickingHelper::createPickedObjectVisualizer(
     return;
   }
 
-  // magnum scene graph will handle the recycling even we did not recycle it by
-  // the end of the simulation
+  // magnum scene graph will handle the garbage collection even we did not
+  // recycle it by the end of the simulation
   meshVisualizerDrawable_ = new esp::gfx::MeshVisualizerDrawable(
       static_cast<esp::scene::SceneNode&>(pickedObject->object()), shader_,
       pickedObject->getMesh(), &pickedObjectDrawbles_);
