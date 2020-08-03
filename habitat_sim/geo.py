@@ -11,6 +11,7 @@ from habitat_sim._ext.habitat_sim_bindings.geo import (
     RIGHT,
     UP,
     compute_gravity_aligned_MOBB,
+    get_transformed_bb,
 )
 
 __all__ = [
@@ -23,4 +24,5 @@ __all__ = [
     "LEFT",
     "RIGHT",
     "compute_gravity_aligned_MOBB",
+    "get_transformed_bb",
 ]

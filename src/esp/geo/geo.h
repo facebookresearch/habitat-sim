@@ -28,6 +28,14 @@ typedef Eigen::Transform<float, 3, Eigen::Affine, Eigen::DontAlign> Transform;
 // compute convex hull of 2D points and return as vector of vertices
 std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points);
 
+/**
+ * @brief Compute the axis-aligned bounding box which results from applying a
+ * transform to an existing bounding box.
+ *
+ * @param range The initial axis-aligned bounding box.
+ * @param xform The desired transform to apply.
+ * @return The resulting, transformed axis-aligned bounding box.
+ */
 Magnum::Range3D getTransformedBB(const Magnum::Range3D& range,
                                  const Magnum::Matrix4& xform);
 
