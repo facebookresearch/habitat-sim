@@ -24,7 +24,7 @@ AbstractPhysicsAttributes::AbstractPhysicsAttributes(
   setRenderAssetIsPrimitive(false);
   setCollisionAssetIsPrimitive(false);
   setUseMeshCollision(true);
-
+  setUnitsToMeters(1.0);
   setRenderAssetHandle("");
   setCollisionAssetHandle("");
 }  // AbstractPhysicsAttributes ctor

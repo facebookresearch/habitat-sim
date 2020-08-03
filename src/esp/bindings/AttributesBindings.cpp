@@ -125,7 +125,14 @@ void initAttributesBindings(py::module& m) {
                     &PhysicsSceneAttributes::setSemanticAssetType)
       .def_property("navmesh_asset_handle",
                     &PhysicsSceneAttributes::getNavmeshAssetHandle,
-                    &PhysicsSceneAttributes::setNavmeshAssetHandle);
+                    &PhysicsSceneAttributes::setNavmeshAssetHandle)
+      .def_property("house_filename", &PhysicsSceneAttributes::getHouseFilename,
+                    &PhysicsSceneAttributes::setHouseFilename)
+      .def_property("light_setup", &PhysicsSceneAttributes::getLightSetup,
+                    &PhysicsSceneAttributes::setLightSetup)
+      .def_property("frustrum_culling",
+                    &PhysicsSceneAttributes::getFrustrumCulling,
+                    &PhysicsSceneAttributes::setFrustrumCulling);
 
   // ==== PhysicsManagerAttributes ====
   py::class_<PhysicsManagerAttributes, AbstractAttributes,

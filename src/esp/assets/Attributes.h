@@ -307,6 +307,11 @@ class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
   }
   int getCollisionAssetType() { return getInt("collisionAssetType"); }
 
+  void setHouseFilename(const std::string& houseFilename) {
+    setString("houseFilename", houseFilename);
+    setIsDirty();
+  }
+  std::string getHouseFilename() const { return getString("houseFilename"); }
   void setSemanticAssetHandle(const std::string& semanticAssetHandle) {
     setString("semanticAssetHandle", semanticAssetHandle);
     setIsDirty();
@@ -319,6 +324,11 @@ class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
   }
   int getSemanticAssetType() { return getInt("semanticAssetType"); }
 
+  void setLoadSemanticMesh(bool loadSemanticMesh) {
+    setBool("loadSemanticMesh", loadSemanticMesh);
+  }
+  bool getLoadSemanticMesh() { return getBool("loadSemanticMesh"); }
+
   void setNavmeshAssetHandle(const std::string& navmeshAssetHandle) {
     setString("navmeshAssetHandle", navmeshAssetHandle);
     setIsDirty();
@@ -326,6 +336,21 @@ class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
   std::string getNavmeshAssetHandle() const {
     return getString("navmeshAssetHandle");
   }
+
+  /**
+   * @brief set lighting setup for scene.  Default value comes from
+   * @ref SimulatorConfiguration, is overridden by any value set in json, if
+   * exists.
+   */
+  void setLightSetup(const std::string& lightSetup) {
+    setString("lightSetup", lightSetup);
+  }
+  std::string getLightSetup() { return getString("lightSetup"); }
+
+  void setFrustrumCulling(bool frustrumCulling) {
+    setBool("frustrumCulling", frustrumCulling);
+  }
+  bool getFrustrumCulling() const { return getBool("frustrumCulling"); }
 
  public:
   ESP_SMART_POINTERS(PhysicsSceneAttributes)
