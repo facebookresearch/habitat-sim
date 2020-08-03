@@ -54,18 +54,20 @@ void CullingTest::computeAbsoluteAABB() {
   // must declare these in this order due to avoid deallocation errors
   ResourceManager resourceManager;
   SceneManager sceneManager;
-
+  auto sceneAttributesMgr = resourceManager.getSceneAttributesManager();
   std::string sceneFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
+  // create scene attributes file
+  auto sceneAttributes =
+      sceneAttributesMgr->createAttributesTemplate(sceneFile, true);
 
   int sceneID = sceneManager.initSceneGraph();
   auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
-  esp::scene::SceneNode& sceneRootNode = sceneGraph.getRootNode();
   auto& drawables = sceneGraph.getDrawables();
-  const esp::assets::AssetInfo info =
-      esp::assets::AssetInfo::fromPath(sceneFile);
-  CORRADE_VERIFY(
-      resourceManager.loadScene(info, nullptr, &sceneRootNode, &drawables));
+  std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
+  bool result = resourceManager.loadScene(sceneAttributes, nullptr,
+                                          &sceneManager, tempIDs, false);
+  CORRADE_VERIFY(result);
 
   std::vector<Mn::Range3D> aabbs;
   for (unsigned int iDrawable = 0; iDrawable < drawables.size(); ++iDrawable) {
@@ -126,20 +128,28 @@ void CullingTest::frustumCulling() {
   // must declare these in this order due to avoid deallocation errors
   ResourceManager resourceManager;
   SceneManager sceneManager;
-
+  auto sceneAttributesMgr = resourceManager.getSceneAttributesManager();
   std::string sceneFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
+  // create scene attributes file
+  auto sceneAttributes =
+      sceneAttributesMgr->createAttributesTemplate(sceneFile, true);
 
   // load the scene
   int sceneID = sceneManager.initSceneGraph();
-  auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
-  esp::scene::SceneNode& sceneRootNode = sceneGraph.getRootNode();
-  auto& drawables = sceneGraph.getDrawables();
-  const esp::assets::AssetInfo info =
-      esp::assets::AssetInfo::fromPath(sceneFile);
-  CORRADE_VERIFY(
-      resourceManager.loadScene(info, nullptr, &sceneRootNode, &drawables));
 
+  auto& sceneGraph = sceneManager.getSceneGraph(sceneID);
+  // esp::scene::SceneNode& sceneRootNode = sceneGraph.getRootNode();
+  auto& drawables = sceneGraph.getDrawables();
+  // const esp::assets::AssetInfo info =
+  //     esp::assets::AssetInfo::fromPath(sceneFile);
+
+  std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
+  // CORRADE_VERIFY(
+  //     resourceManager.loadScene(info, nullptr, &sceneRootNode, &drawables));
+  bool result = resourceManager.loadScene(sceneAttributes, nullptr,
+                                          &sceneManager, tempIDs, false);
+  CORRADE_VERIFY(result);
   // set the camera
   esp::gfx::RenderCamera& renderCamera = sceneGraph.getDefaultRenderCamera();
 

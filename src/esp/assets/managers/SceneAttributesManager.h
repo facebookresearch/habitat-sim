@@ -25,16 +25,10 @@ class SceneAttributesManager
    */
   static const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
 
-  SceneAttributesManager(assets::ResourceManager& resourceManager,
-                         ObjectAttributesManager::ptr objectAttributesMgr,
-                         PhysicsAttributesManager::ptr physicsAttributesManager)
-      : AttributesManager<PhysicsSceneAttributes::ptr>::AttributesManager(
-            resourceManager,
-            "Physical Scene"),
-        objectAttributesMgr_(objectAttributesMgr),
-        physicsAttributesManager_(physicsAttributesManager) {
-    buildCtorFuncPtrMaps();
-  }
+  SceneAttributesManager(
+      assets::ResourceManager& resourceManager,
+      ObjectAttributesManager::ptr objectAttributesMgr,
+      PhysicsAttributesManager::ptr physicsAttributesManager);
 
   /**
    * @brief This will set the current physics manager attributes that is
@@ -50,16 +44,24 @@ class SceneAttributesManager
     physicsManagerAttributesHandle_ = handle;
   }
   /**
-   * @brief copy current configuration-driven file paths to make them available
-   * for scene attributes default handle derivations.
+   * @brief copy current @ref SimulatorConfiguration-driven values, such as file
+   * paths, to make them available for scene attributes defaults.
    *
    * @param filepaths the map of file paths from the configuration object
+   * @param lightSetup the config-specified light setup
+   * @param frustrumCulling whether or not (semantic) scene should be
+   * partitioned for culling.
    */
-  void setCurrCfgFilePaths(
-      const std::map<std::string, std::string>& filepaths) {
+  void setCurrCfgVals(const std::map<std::string, std::string>& filepaths,
+                      const std::string& lightSetup,
+                      bool frustrumCulling) {
     cfgFilepaths_.clear();
     cfgFilepaths_.insert(filepaths.begin(), filepaths.end());
-  }
+    // set lightsetup default from configuration
+    cfgLightSetup_ = lightSetup;
+    // set frustrum culling default from configuration
+    cfgFrustrumCulling_ = frustrumCulling;
+  }  // SceneAttributesManager::setCurrCfgVals
 
   /**
    * @brief Creates an instance of a scene template described by passed string.
@@ -237,10 +239,24 @@ class SceneAttributesManager
   PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
 
   /**
-   * @brief Current file paths based on config settings
+   * @brief Current file paths based on @ref SimulatorConfiguration settings.
+   * Paths can be overridden by json-specified values.
    */
-
   std::map<std::string, std::string> cfgFilepaths_;
+
+  /**
+   * @brief Current lighting default value based on current @ref
+   * SimulatorConfiguration settings. Potentially overridden by scene-specific
+   * json.
+   */
+  std::string cfgLightSetup_;
+
+  /**
+   * @brief Current frustrum culling setting based on current @ref
+   * SimulatorConfiguration settings. Potentially overridden by scene-specific
+   * json.
+   */
+  bool cfgFrustrumCulling_ = false;
 
   /**
    * @brief Name of currently used physicsManagerAttributes
