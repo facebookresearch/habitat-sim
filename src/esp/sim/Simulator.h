@@ -710,9 +710,7 @@ class Simulator {
                                       const Magnum::Vector2i& viewSize,
                                       float distance = 1.0);
 
-  Magnum::Vector3 unproject(const Magnum::Vector2i& crosshairPos,
-                            const Magnum::Vector2i& viewSize,
-                            float depth);
+  esp::geo::Ray unproject(const Magnum::Vector2i& crosshairPos);
 
   void updateCrossHairNode(Magnum::Vector2i windowSize);
 

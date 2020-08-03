@@ -179,8 +179,8 @@ class SimEnv {
    * @returns {number} object ID or -1 if object was unable to be added
    */
   removeLastObject() {
-    let exsitingObjectIds = this.getExistingObjectIDs();
-    this.removeObject(exsitingObjectIds.get(exsitingObjectIds.size() - 1));
+    let existingObjectIds = this.getExistingObjectIDs();
+    this.removeObject(existingObjectIds.get(existingObjectIds.size() - 1));
   }
 
   /**
@@ -193,11 +193,7 @@ class SimEnv {
     });
 
     let crossHairPosition = halfResolution;
-    let crossHairPoint = this.sim.unproject(
-      crossHairPosition,
-      this.resolution,
-      0
-    );
+    let crossHairPoint = this.unproject(crossHairPosition, this.resolution, 0);
     let refPoint = this.getAgentAbsoluteTranslation(0);
 
     let nearestObjectId = this.findNearestObjectUnderCrosshair(
@@ -433,6 +429,10 @@ class SimEnv {
       windowSize,
       1.0
     );
+  }
+
+  unproject(crossHairPosition, viewSize, depth = 1.0) {
+    return this.sim.unproject(crossHairPosition, viewSize, depth);
   }
 
   convertVector3ToVec3f(position) {

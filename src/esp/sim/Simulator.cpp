@@ -957,23 +957,13 @@ int Simulator::findNearestObjectUnderCrosshair(int refObjectID,
   return nearestObjId;
 }
 
-Magnum::Vector3 Simulator::unproject(const Magnum::Vector2i& crosshairPos,
+esp::geo::Ray Simulator::unproject(const Magnum::Vector2i& crossHairPos,
                                      const Magnum::Vector2i& viewSize,
                                      float depth) {
-  // Read this: http://antongerdelan.net/opengl/raycasting.html
-  const Magnum::Vector2i viewPos{crosshairPos.x(),
-                                 viewSize.y() - crosshairPos.y() - 1};
-  const Magnum::Vector3 normalizedPos{
-      2 * Magnum::Vector2{viewPos} / Magnum::Vector2{viewSize} -
-          Magnum::Vector2{1.0f},
-      depth * 2.0f - 1.0f};
-
   scene::SceneGraph& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
   gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
 
-  return (renderCamera_.node().absoluteTransformationMatrix() *
-          renderCamera_.projectionMatrix().inverted())
-      .transformPoint(normalizedPos);
+  return renderCamera_.unproject(crossHairPos);
 }
 
 void Simulator::updateCrossHairNode(Magnum::Vector2i windowSize) {
@@ -981,7 +971,7 @@ void Simulator::updateCrossHairNode(Magnum::Vector2i windowSize) {
   gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
 
   Magnum::Vector2i crossHairPos = Magnum::Vector2i{windowSize * 0.5};
-  Magnum::Vector3 point = unproject(crossHairPos, windowSize, 1.0);
+  Magnum::Vector3 point = unproject(crossHairPos);
   Magnum::Vector3 cast =
       (point - renderCamera_.node().absoluteTranslation()).normalized();
   crossHairNode_->setTranslation(renderCamera_.node().absoluteTranslation() +
