@@ -34,17 +34,27 @@ void initAttributesBindings(py::module& m) {
                                                        const std::string&>))
       .def_property("scale", &AbstractPhysicsAttributes::getScale,
                     &AbstractPhysicsAttributes::setScale)
+      .def_property("margin", &AbstractPhysicsAttributes::getMargin,
+                    &AbstractPhysicsAttributes::setMargin)
+      .def_property("orient_up", &AbstractPhysicsAttributes::getOrientUp,
+                    &AbstractPhysicsAttributes::setOrientUp)
+      .def_property("orient_front", &AbstractPhysicsAttributes::getOrientFront,
+                    &AbstractPhysicsAttributes::setOrientFront)
       .def_property("unitsToMeters",
                     &AbstractPhysicsAttributes::getUnitsToMeters,
                     &AbstractPhysicsAttributes::setUnitsToMeters)
-      .def_property("margin", &AbstractPhysicsAttributes::getMargin,
-                    &AbstractPhysicsAttributes::setMargin)
       .def_property("friction_coefficient",
                     &AbstractPhysicsAttributes::getFrictionCoefficient,
                     &AbstractPhysicsAttributes::setFrictionCoefficient)
       .def_property("restitution_coefficient",
                     &AbstractPhysicsAttributes::getRestitutionCoefficient,
                     &AbstractPhysicsAttributes::setRestitutionCoefficient)
+      .def_property("render_asset_type",
+                    &AbstractPhysicsAttributes::getRenderAssetType,
+                    &AbstractPhysicsAttributes::setRenderAssetType)
+      .def_property("collision_asset_type",
+                    &AbstractPhysicsAttributes::getCollisionAssetType,
+                    &AbstractPhysicsAttributes::setCollisionAssetType)
       .def_property("render_asset_handle",
                     &AbstractPhysicsAttributes::getRenderAssetHandle,
                     &AbstractPhysicsAttributes::setRenderAssetHandle)
@@ -107,16 +117,6 @@ void initAttributesBindings(py::module& m) {
                     &PhysicsSceneAttributes::setGravity)
       .def_property("origin", &PhysicsSceneAttributes::getOrigin,
                     &PhysicsSceneAttributes::setOrigin)
-      .def_property("orient_up", &PhysicsSceneAttributes::getOrientUp,
-                    &PhysicsSceneAttributes::setOrientUp)
-      .def_property("orient_front", &PhysicsSceneAttributes::getOrientFront,
-                    &PhysicsSceneAttributes::setOrientFront)
-      .def_property("render_asset_type",
-                    &PhysicsSceneAttributes::getRenderAssetType,
-                    &PhysicsSceneAttributes::setRenderAssetType)
-      .def_property("collision_asset_type",
-                    &PhysicsSceneAttributes::getCollisionAssetType,
-                    &PhysicsSceneAttributes::setCollisionAssetType)
       .def_property("semantic_asset_handle",
                     &PhysicsSceneAttributes::getSemanticAssetHandle,
                     &PhysicsSceneAttributes::setSemanticAssetHandle)

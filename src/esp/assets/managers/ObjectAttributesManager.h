@@ -243,10 +243,7 @@ class ObjectAttributesManager
    * @param newAttributes Newly created attributes.
    */
   PhysicsObjectAttributes::ptr initNewAttribsInternal(
-      PhysicsObjectAttributes::ptr newAttributes) override {
-    this->setFileDirectoryFromHandle(newAttributes);
-    return newAttributes;
-  }
+      PhysicsObjectAttributes::ptr newAttributes) override;
 
   /**
    * @brief This method will perform any necessary updating that is

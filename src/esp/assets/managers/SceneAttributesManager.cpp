@@ -371,16 +371,6 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
       jsonConfig, "origin",
       std::bind(&PhysicsSceneAttributes::setOrigin, sceneAttributes, _1));
 
-  // load scene specific up orientation
-  io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "up",
-      std::bind(&PhysicsSceneAttributes::setOrientUp, sceneAttributes, _1));
-
-  // load scene specific front orientation
-  io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "front",
-      std::bind(&PhysicsSceneAttributes::setOrientFront, sceneAttributes, _1));
-
   // populate specified semantic file name if specified in json - defaults
   // are overridden only if specified in json.
   std::string semanticFName = "";

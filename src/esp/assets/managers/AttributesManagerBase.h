@@ -739,6 +739,16 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
       jsonDoc, "units to meters",
       std::bind(&AbstractPhysicsAttributes::setUnitsToMeters, attributes, _1));
 
+  // load object/scene specific up orientation
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonDoc, "up",
+      std::bind(&AbstractPhysicsAttributes::setOrientUp, attributes, _1));
+
+  // load object/scene specific front orientation
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonDoc, "front",
+      std::bind(&AbstractPhysicsAttributes::setOrientFront, attributes, _1));
+
   // 4. parse render and collision mesh filepaths
   std::string propertiesFileDirectory = attributes->getFileDirectory();
   std::string rndrFName = "";

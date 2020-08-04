@@ -7,6 +7,7 @@
 
 #include <Corrade/Utility/String.h>
 
+#include "esp/assets/Asset.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
@@ -171,6 +172,39 @@ ObjectAttributesManager::createDefaultAttributesTemplate(
   }
   return objAttributes;
 }  // ObjectAttributesManager::createEmptyAttributesTemplate
+
+PhysicsObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
+    PhysicsObjectAttributes::ptr newAttributes) {
+  this->setFileDirectoryFromHandle(newAttributes);
+  using Corrade::Utility::String::endsWith;
+  const std::string objFileName = newAttributes->getHandle();
+  // set default origin and orientation values based on file name
+  // from AssetInfo::fromPath
+  newAttributes->setOrientUp({0, 1, 0});
+  newAttributes->setOrientFront({0, 0, -1});
+  if (endsWith(objFileName, "_semantic.ply")) {
+    newAttributes->setRenderAssetType(
+        static_cast<int>(AssetType::INSTANCE_MESH));
+  } else if (endsWith(objFileName, "mesh.ply")) {
+    newAttributes->setRenderAssetType(
+        static_cast<int>(AssetType::FRL_PTEX_MESH));
+    newAttributes->setOrientUp({0, 0, 1});
+    newAttributes->setOrientFront({0, 1, 0});
+  } else if (endsWith(objFileName, "house.json")) {
+    newAttributes->setRenderAssetType(
+        static_cast<int>(AssetType::SUNCG_OBJECT));
+  } else if (endsWith(objFileName, ".glb")) {
+    // assumes MP3D glb with gravity = -Z
+    newAttributes->setRenderAssetType(static_cast<int>(AssetType::MP3D_MESH));
+    // Create a coordinate for the mesh by rotating the default ESP
+    // coordinate frame to -Z gravity
+    newAttributes->setOrientUp({0, 0, 1});
+    newAttributes->setOrientFront({0, 1, 0});
+  } else {
+    newAttributes->setRenderAssetType(static_cast<int>(AssetType::UNKNOWN));
+  }
+  return newAttributes;
+}  // ObjectAttributesManager::initNewAttribsInternal
 
 int ObjectAttributesManager::registerAttributesTemplateFinalize(
     PhysicsObjectAttributes::ptr objectTemplate,

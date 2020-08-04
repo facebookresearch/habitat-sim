@@ -98,9 +98,32 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
   void setScale(const Magnum::Vector3& scale) { setVec3("scale", scale); }
   Magnum::Vector3 getScale() const { return getVec3("scale"); }
 
-  // collision shape inflation margin
+  /**
+   * @brief collision shape inflation margin
+   */
   void setMargin(double margin) { setDouble("margin", margin); }
   double getMargin() const { return getDouble("margin"); }
+
+  /**
+   * @brief set default up orientation for object/scene mesh
+   */
+  void setOrientUp(const Magnum::Vector3& orientUp) {
+    setVec3("orientUp", orientUp);
+  }
+  /**
+   * @brief get default up orientation for object/scene mesh
+   */
+  Magnum::Vector3 getOrientUp() const { return getVec3("orientUp"); }
+  /**
+   * @brief set default forwardd orientation for object/scene mesh
+   */
+  void setOrientFront(const Magnum::Vector3& orientFront) {
+    setVec3("orientFront", orientFront);
+  }
+  /**
+   * @brief get default forwardd orientation for object/scene mesh
+   */
+  Magnum::Vector3 getOrientFront() const { return getVec3("orientFront"); }
 
   // units to meters mapping
   void setUnitsToMeters(double unitsToMeters) {
@@ -121,6 +144,10 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
   double getRestitutionCoefficient() const {
     return getDouble("restitutionCoefficient");
   }
+  void setRenderAssetType(int renderAssetType) {
+    setInt("renderAssetType", renderAssetType);
+  }
+  int getRenderAssetType() { return getInt("renderAssetType"); }
 
   void setRenderAssetHandle(const std::string& renderAssetHandle) {
     setString("renderAssetHandle", renderAssetHandle);
@@ -139,6 +166,11 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
   void setRenderAssetIsPrimitive(bool renderAssetIsPrimitive) {
     setBool("renderAssetIsPrimitive", renderAssetIsPrimitive);
   }
+
+  void setCollisionAssetType(int collisionAssetType) {
+    setInt("collisionAssetType", collisionAssetType);
+  }
+  int getCollisionAssetType() { return getInt("collisionAssetType"); }
 
   bool getRenderAssetIsPrimitive() const {
     return getBool("renderAssetIsPrimitive");
@@ -282,31 +314,10 @@ class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
   void setOrigin(const Magnum::Vector3& origin) { setVec3("origin", origin); }
   Magnum::Vector3 getOrigin() const { return getVec3("origin"); }
 
-  void setOrientUp(const Magnum::Vector3& orientUp) {
-    setVec3("orientUp", orientUp);
-  }
-  Magnum::Vector3 getOrientUp() const { return getVec3("orientUp"); }
-
-  void setOrientFront(const Magnum::Vector3& orientFront) {
-    setVec3("orientFront", orientFront);
-  }
-  Magnum::Vector3 getOrientFront() const { return getVec3("orientFront"); }
-
   void setGravity(const Magnum::Vector3& gravity) {
     setVec3("gravity", gravity);
   }
   Magnum::Vector3 getGravity() const { return getVec3("gravity"); }
-
-  void setRenderAssetType(int renderAssetType) {
-    setInt("renderAssetType", renderAssetType);
-  }
-  int getRenderAssetType() { return getInt("renderAssetType"); }
-
-  void setCollisionAssetType(int collisionAssetType) {
-    setInt("collisionAssetType", collisionAssetType);
-  }
-  int getCollisionAssetType() { return getInt("collisionAssetType"); }
-
   void setHouseFilename(const std::string& houseFilename) {
     setString("houseFilename", houseFilename);
     setIsDirty();
