@@ -435,6 +435,19 @@ class AttributesManager {
                                              const io::JsonDocument& jsonDoc);
 
   //======== Internally accessed functions ========
+  /**
+   * @brief Get directory component of attributes handle and call @ref
+   * attributes->setFileDirectory legitimate directory exists in handle.
+   *
+   * @param attributes pointer to attributes to set
+   */
+  void setFileDirectoryFromHandle(AttribsPtr attributes) {
+    std::string handleName = attributes->getHandle();
+    auto loc = handleName.find_last_of("/");
+    if (loc != std::string::npos) {
+      attributes->setFileDirectory(handleName.substr(0, loc));
+    }
+  }  // setFileDirectoryFromHandle
 
   /**
    * @brief Used Internally.  Configure newly-created attributes with any
@@ -726,10 +739,18 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
       jsonDoc, "units to meters",
       std::bind(&AbstractPhysicsAttributes::setUnitsToMeters, attributes, _1));
 
-  // 4. parse render and collision mesh filepaths
-  std::string propertiesFileDirectory =
-      configFilename.substr(0, configFilename.find_last_of("/"));
+  // load object/scene specific up orientation
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonDoc, "up",
+      std::bind(&AbstractPhysicsAttributes::setOrientUp, attributes, _1));
 
+  // load object/scene specific front orientation
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonDoc, "front",
+      std::bind(&AbstractPhysicsAttributes::setOrientFront, attributes, _1));
+
+  // 4. parse render and collision mesh filepaths
+  std::string propertiesFileDirectory = attributes->getFileDirectory();
   std::string rndrFName = "";
   std::string colFName = "";
   if (io::jsonIntoVal<std::string>(jsonDoc, "render mesh", rndrFName)) {

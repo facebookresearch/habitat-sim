@@ -7,6 +7,7 @@
 
 #include <Corrade/Utility/String.h>
 
+#include "esp/assets/Asset.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
@@ -100,8 +101,10 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
   io::JsonDocument jsonConfig;
   bool success = this->verifyLoadJson(objPhysConfigFilename, jsonConfig);
   if (!success) {
-    LOG(ERROR) << " Aborting "
-                  "ObjectAttributesManager::createFileBasedAttributesTemplate.";
+    LOG(ERROR)
+        << "ObjectAttributesManager::createFileBasedAttributesTemplate : "
+           "Failure reading json : "
+        << objPhysConfigFilename << ". Aborting.";
     return nullptr;
   }
 
@@ -171,6 +174,22 @@ ObjectAttributesManager::createDefaultAttributesTemplate(
   }
   return objAttributes;
 }  // ObjectAttributesManager::createEmptyAttributesTemplate
+
+PhysicsObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
+    PhysicsObjectAttributes::ptr newAttributes) {
+  this->setFileDirectoryFromHandle(newAttributes);
+  using Corrade::Utility::String::endsWith;
+  const std::string objFileName = newAttributes->getHandle();
+  // set default origin and orientation values based on file name
+
+  newAttributes->setOrientUp({0, 1, 0});
+  newAttributes->setOrientFront({0, 0, -1});
+
+  newAttributes->setRenderAssetType(static_cast<int>(AssetType::UNKNOWN));
+  newAttributes->setCollisionAssetType(static_cast<int>(AssetType::UNKNOWN));
+
+  return newAttributes;
+}  // ObjectAttributesManager::initNewAttribsInternal
 
 int ObjectAttributesManager::registerAttributesTemplateFinalize(
     PhysicsObjectAttributes::ptr objectTemplate,

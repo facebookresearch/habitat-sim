@@ -97,6 +97,7 @@ class PhysicsAttributesManager
    */
   PhysicsManagerAttributes::ptr initNewAttribsInternal(
       PhysicsManagerAttributes::ptr newAttributes) override {
+    this->setFileDirectoryFromHandle(newAttributes);
     return newAttributes;
   }
   /**

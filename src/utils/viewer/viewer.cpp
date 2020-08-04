@@ -122,8 +122,6 @@ class Viewer : public Mn::Platform::Application {
   esp::scene::SceneNode* agentBodyNode_ = nullptr;
   esp::scene::SceneNode* rgbSensorNode_ = nullptr;
 
-  esp::scene::SceneNode* navSceneNode_ = nullptr;
-
   std::string sceneFileName;
   esp::scene::SceneGraph* sceneGraph_;
   esp::scene::SceneNode* rootNode_;
@@ -202,9 +200,7 @@ Viewer::Viewer(const Arguments& arguments)
   sceneID_.push_back(sceneID);
   sceneGraph_ = &sceneManager_.getSceneGraph(sceneID);
   rootNode_ = &sceneGraph_->getRootNode();
-  navSceneNode_ = &rootNode_->createChild();
 
-  auto& drawables = sceneGraph_->getDrawables();
   sceneFileName = args.value("scene");
   esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(sceneFileName);
   std::string sceneLightSetup = esp::assets::ResourceManager::NO_LIGHT_KEY;
@@ -228,13 +224,27 @@ Viewer::Viewer(const Arguments& arguments)
                  "Viewer::ctor : Error attempting to load world described by"
                      << physicsConfigFilename << ". Aborting", );
 
+  auto sceneAttributesMgr = resourceManager_.getSceneAttributesManager();
+  sceneAttributesMgr->setCurrPhysicsManagerAttributesHandle(
+      physicsManagerAttributes->getHandle());
+
+  auto sceneAttributes =
+      sceneAttributesMgr->createAttributesTemplate(sceneFileName, true);
+
+  sceneAttributes->setLightSetup(sceneLightSetup);
+  sceneAttributes->setRequiresLighting(info.requiresLighting);
+
   bool useBullet = args.isSet("enable-physics");
   // construct physics manager based on specifications in attributes
-  resourceManager_.initPhysicsManager(physicsManager_, useBullet, navSceneNode_,
+  resourceManager_.initPhysicsManager(physicsManager_, useBullet, rootNode_,
                                       physicsManagerAttributes);
 
-  if (!resourceManager_.loadScene(info, physicsManager_, navSceneNode_,
-                                  &drawables, sceneLightSetup)) {
+  // bool sceneLoadSuccess = resourceManager_.loadScene(
+  //     info, physicsManager_, &drawables, sceneLightSetup);
+  std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
+  bool sceneLoadSuccess = resourceManager_.loadScene(
+      sceneAttributes, physicsManager_, &sceneManager_, tempIDs, false);
+  if (!sceneLoadSuccess) {
     LOG(FATAL) << "cannot load " << sceneFileName;
   }
   if (useBullet && (args.isSet("debug-bullet"))) {

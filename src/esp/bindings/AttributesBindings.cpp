@@ -23,6 +23,8 @@ void initAttributesBindings(py::module& m) {
           &AbstractAttributes::create<const std::string&, const std::string&>))
       .def_property("handle", &AbstractAttributes::getHandle,
                     &AbstractAttributes::setHandle)
+      .def_property_readonly("file_directory",
+                             &AbstractAttributes::getFileDirectory)
       .def_property_readonly("ID", &AbstractAttributes::getID)
       .def_property_readonly("template_class",
                              &AbstractAttributes::getClassKey);
@@ -34,17 +36,27 @@ void initAttributesBindings(py::module& m) {
                                                        const std::string&>))
       .def_property("scale", &AbstractPhysicsAttributes::getScale,
                     &AbstractPhysicsAttributes::setScale)
-      .def_property("unitsToMeters",
-                    &AbstractPhysicsAttributes::getUnitsToMeters,
-                    &AbstractPhysicsAttributes::setUnitsToMeters)
       .def_property("margin", &AbstractPhysicsAttributes::getMargin,
                     &AbstractPhysicsAttributes::setMargin)
+      .def_property("orient_up", &AbstractPhysicsAttributes::getOrientUp,
+                    &AbstractPhysicsAttributes::setOrientUp)
+      .def_property("orient_front", &AbstractPhysicsAttributes::getOrientFront,
+                    &AbstractPhysicsAttributes::setOrientFront)
+      .def_property("units_to_meters",
+                    &AbstractPhysicsAttributes::getUnitsToMeters,
+                    &AbstractPhysicsAttributes::setUnitsToMeters)
       .def_property("friction_coefficient",
                     &AbstractPhysicsAttributes::getFrictionCoefficient,
                     &AbstractPhysicsAttributes::setFrictionCoefficient)
       .def_property("restitution_coefficient",
                     &AbstractPhysicsAttributes::getRestitutionCoefficient,
                     &AbstractPhysicsAttributes::setRestitutionCoefficient)
+      .def_property("render_asset_type",
+                    &AbstractPhysicsAttributes::getRenderAssetType,
+                    &AbstractPhysicsAttributes::setRenderAssetType)
+      .def_property("collision_asset_type",
+                    &AbstractPhysicsAttributes::getCollisionAssetType,
+                    &AbstractPhysicsAttributes::setCollisionAssetType)
       .def_property("render_asset_handle",
                     &AbstractPhysicsAttributes::getRenderAssetHandle,
                     &AbstractPhysicsAttributes::setRenderAssetHandle)
@@ -106,7 +118,23 @@ void initAttributesBindings(py::module& m) {
       .def_property("gravity", &PhysicsSceneAttributes::getGravity,
                     &PhysicsSceneAttributes::setGravity)
       .def_property("origin", &PhysicsSceneAttributes::getOrigin,
-                    &PhysicsSceneAttributes::setOrigin);
+                    &PhysicsSceneAttributes::setOrigin)
+      .def_property("semantic_asset_handle",
+                    &PhysicsSceneAttributes::getSemanticAssetHandle,
+                    &PhysicsSceneAttributes::setSemanticAssetHandle)
+      .def_property("semantic_asset_type",
+                    &PhysicsSceneAttributes::getSemanticAssetType,
+                    &PhysicsSceneAttributes::setSemanticAssetType)
+      .def_property("navmesh_asset_handle",
+                    &PhysicsSceneAttributes::getNavmeshAssetHandle,
+                    &PhysicsSceneAttributes::setNavmeshAssetHandle)
+      .def_property("house_filename", &PhysicsSceneAttributes::getHouseFilename,
+                    &PhysicsSceneAttributes::setHouseFilename)
+      .def_property("light_setup", &PhysicsSceneAttributes::getLightSetup,
+                    &PhysicsSceneAttributes::setLightSetup)
+      .def_property("frustrum_culling",
+                    &PhysicsSceneAttributes::getFrustrumCulling,
+                    &PhysicsSceneAttributes::setFrustrumCulling);
 
   // ==== PhysicsManagerAttributes ====
   py::class_<PhysicsManagerAttributes, AbstractAttributes,
@@ -144,8 +172,7 @@ void initAttributesBindings(py::module& m) {
       .def_property("num_segments",
                     &AbstractPrimitiveAttributes::getNumSegments,
                     &AbstractPrimitiveAttributes::setNumSegments)
-      .def_property("get_half_length",
-                    &AbstractPrimitiveAttributes::getHalfLength,
+      .def_property("half_length", &AbstractPrimitiveAttributes::getHalfLength,
                     &AbstractPrimitiveAttributes::setHalfLength)
       .def_property_readonly("prim_obj_class_name",
                              &AbstractPrimitiveAttributes::getPrimObjClassName)
