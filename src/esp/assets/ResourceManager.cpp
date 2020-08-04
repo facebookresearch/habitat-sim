@@ -218,16 +218,18 @@ bool ResourceManager::loadScene(
   }
 
   bool semanticSceneSuccess = false;
-  int activeSemanticSceneID = activeSceneIDs[0];
+  // set equal to current Simulator::activeSemanticSceneID_ value
+  int activeSemanticSceneID = activeSceneIDs[1];
+  // if semantic scene load is requested and possible
   if ((loadSemanticMesh) && (assetInfoMap.count("semantic"))) {
     auto houseFile = sceneAttributes->getHouseFilename();
     if (Corrade::Utility::Directory::exists(houseFile)) {
-      // only create semantic mesh info and load semantic mesh scene if file
-      // names exist
+      // check if file names exist
       AssetInfo semanticInfo = assetInfoMap.at("semantic");
       auto semanticSceneFilename = semanticInfo.filepath;
       if (Corrade::Utility::Directory::exists(semanticSceneFilename)) {
-        LOG(INFO) << "Loading semantic mesh " << semanticInfo.filepath;
+        LOG(INFO) << "ResourceManager::loadScene : Loading semantic mesh "
+                  << semanticSceneFilename;
         activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
         bool splitSemanticMesh = sceneAttributes->getFrustrumCulling();
 
@@ -239,22 +241,31 @@ bool ResourceManager::loadScene(
         semanticSceneSuccess = loadSceneInternal(
             semanticInfo, _physicsManager, &semanticRootNode,
             &semanticDrawables, computeSemanticAABBs, splitSemanticMesh);
+        // regardless of load failure, original code still changed
+        // activeSemanticSceneID_
+        activeSceneIDs[1] = activeSemanticSceneID;
         if (!semanticSceneSuccess) {
           LOG(ERROR) << " ResourceManager::loadScene : Semantic scene mesh "
-                        "load failed, "
-                        "Aborting scene initialization.";
-          return false;
+                        "load failed.";
+        } else {
+          LOG(INFO) << "ResourceManager::loadScene : Semantic Scene Mesh : "
+                    << semanticSceneFilename << " loaded.";
         }
-        // light setup is ignored
-      } else {  // semantic file name does not exist
-        activeSemanticSceneID = ID_UNDEFINED;
-        LOG(INFO) << "Not loading semantic mesh - File Name : "
-                  << semanticSceneFilename << " does not exist.";
+      } else {  // semantic file name does not exist but house does
+        LOG(WARNING)
+            << "ResourceManager::loadScene : Not loading semantic mesh - "
+               "File Name : "
+            << semanticSceneFilename << " does not exist.";
       }
-    }       // if house does not exist, ID should be activeSceneIDs[0]
+    } else {  // if houseFile does not exist, ID should be activeSceneIDs[0]
+      LOG(WARNING)
+          << "ResourceManager::loadScene : Not loading semantic mesh - "
+             "File Name : "
+          << houseFile << " does not exist.";
+      activeSemanticSceneID = activeSceneIDs[0];
+    }
   } else {  // not wanting to create semantic mesh
-    LOG(INFO) << "Not loading semantic mesh";
-    activeSemanticSceneID = ID_UNDEFINED;
+    LOG(INFO) << "ResourceManager::loadScene : Not loading semantic mesh";
   }
   // save active semantic scene ID so that simulator can consume
   activeSceneIDs[1] = activeSemanticSceneID;

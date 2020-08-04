@@ -165,7 +165,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     resourceManager_->initPhysicsManager(physicsManager_, config_.enablePhysics,
                                          &rootNode, physicsManagerAttributes);
 
-    std::vector<int> tempIDs{activeSceneID_, ID_UNDEFINED};
+    std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
     // Load scene
     loadSuccess = resourceManager_->loadScene(sceneAttributes, physicsManager_,
                                               sceneManager_.get(), tempIDs,
@@ -189,10 +189,16 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     resourceManager_->setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
 
     // set activeSemanticSceneID_ values and push onto sceneID vector if
-    // appropriate
-    if (tempIDs[1] != ID_UNDEFINED) {
+    // appropriate - tempIDs[1] will either be old activeSemanticSceneID_ (if
+    // no semantic mesh was requested in loadScene); ID_UNDEFINED if desired was
+    // not found; activeSceneID_, or a unique value, the last of which means the
+    // semantic scene mesh is loaded.
+
+    if (activeSemanticSceneID_ != tempIDs[1]) {
+      // id has changed so act - if ID has not changed, do nothing
       activeSemanticSceneID_ = tempIDs[1];
-      if (activeSemanticSceneID_ != activeSceneID_) {
+      if ((activeSemanticSceneID_ != ID_UNDEFINED) &&
+          (activeSemanticSceneID_ != activeSceneID_)) {
         sceneID_.push_back(activeSemanticSceneID_);
       } else {  // activeSemanticSceneID_ = activeSceneID_;
         // instance meshes and suncg houses contain their semantic annotations
@@ -206,7 +212,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
                           "annotations. \n---";
         }
       }
-    }  // loadScene returned with activeSemanticSceneID_ == ID_UNDEFINED
+    }  // if ID has changed - needs to be reset
   }    // if (config_.createRenderer)
 
   semanticScene_ = nullptr;
