@@ -55,7 +55,8 @@ PhysicsSceneAttributes::ptr SceneAttributesManager::createAttributesTemplate(
     msg = "Primitive Asset (" + sceneAttributesHandle + ") Based";
 
   } else if (fileExists) {
-    if ((strHandle.find(".json") != std::string::npos) && fileExists) {
+    if ((strHandle.find("scene_config.json") != std::string::npos) &&
+        fileExists) {
       // check if sceneAttributesHandle corresponds to an actual, existing json
       // scene file descriptor.
       attrs = createFileBasedAttributesTemplate(sceneAttributesHandle,
@@ -176,9 +177,6 @@ SceneAttributesManager::createDefaultAttributesTemplate(
   // Attributes descriptor for scene
   PhysicsSceneAttributes::ptr sceneAttributesTemplate =
       initNewAttribsInternal(PhysicsSceneAttributes::create(sceneFilename));
-
-  sceneAttributesTemplate->setRenderAssetHandle(sceneFilename);
-  sceneAttributesTemplate->setCollisionAssetHandle(sceneFilename);
 
   if (registerTemplate) {
     int attrID = this->registerAttributesTemplate(sceneAttributesTemplate,
@@ -323,6 +321,9 @@ PhysicsSceneAttributes::ptr SceneAttributesManager::initNewAttribsInternal(
   } else {
     newAttributes->setRenderAssetType(static_cast<int>(AssetType::UNKNOWN));
   }
+  newAttributes->setCollisionAssetType(static_cast<int>(AssetType::UNKNOWN));
+  newAttributes->setSemanticAssetType(
+      static_cast<int>(AssetType::INSTANCE_MESH));
 
   // set default physical quantities specified in physics manager attributes
   if (physicsAttributesManager_->getTemplateLibHasHandle(
@@ -346,8 +347,9 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
   io::JsonDocument jsonConfig;
   bool success = this->verifyLoadJson(sceneFilename, jsonConfig);
   if (!success) {
-    LOG(ERROR) << " Aborting "
-                  "SceneAttributesManager::createBackCompatAttributesTemplate.";
+    LOG(ERROR) << "SceneAttributesManager::createFileBasedAttributesTemplate : "
+                  "Failure reading json "
+               << sceneFilename << ". Aborting.";
     return nullptr;
   }
 
@@ -409,17 +411,7 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
   if (io::jsonIntoVal<std::string>(jsonConfig, "lighting setup", lightSetup)) {
     // if lighting is specified in scene json to non-empty value, set value
     // (override default).
-    if (lightSetup != "") {
-      sceneAttributes->setLightSetup(lightSetup);
-    } else {
-      // if lighting is specified in scene json to empty value, set value to
-      // NO_LIGHT_KEY
-      sceneAttributes->setLightSetup(assets::ResourceManager::NO_LIGHT_KEY);
-    }
-    // // TODO: should potentially json-set "requires lighting" be overridden
-    // // existence of "lighting setup" specification?
-    // sceneAttributes->setRequiresLighting(
-    //     lightSetup != assets::ResourceManager::NO_LIGHT_KEY);
+    sceneAttributes->setLightSetup(lightSetup);
   }
 
   // populate mesh types if present
@@ -458,12 +450,15 @@ int SceneAttributesManager::convertJsonStringToAssetType(
     if (AssetTypeNamesMap.count(tmpVal)) {
       return static_cast<int>(AssetTypeNamesMap.at(tmpVal));
     } else {
+      LOG(WARNING) << "SceneAttributesManager::convertJsonStringToAssetType : "
+                      "Value in json : "
+                   << tmpVal
+                   << " does not map to a valid AssetType value, so defaulting "
+                      "to AssetType::UNKNOWN.";
       return static_cast<int>(AssetType::UNKNOWN);
     }
   }
-  // -1 i
   return -1;
-
 }  // SceneAttributesManager::convertJsonStringToAssetType
 
 }  // namespace managers

@@ -206,7 +206,7 @@ bool ResourceManager::loadScene(
     AssetInfo colInfo = assetInfoMap.at("collision");
     // should this be checked to make sure we do not reload?
     bool collisionMeshSuccess =
-        loadSceneInternal(colInfo, _physicsManager, &rootNode, &drawables, true,
+        loadSceneInternal(colInfo, _physicsManager, nullptr, nullptr, false,
                           false, renderLightSetup);
 
     if (!collisionMeshSuccess) {
@@ -214,55 +214,88 @@ bool ResourceManager::loadScene(
           << " ResourceManager::loadScene : Scene collision mesh load failed, "
              "Aborting scene initialization.";
       return false;
-    }
-  }
+    } else {
+      // if we have a collision mesh, and it does not exist already as a
+      // collision object, add it
+      if ((collisionMeshGroups_.count(colInfo.filepath) == 0) &&
+          (colInfo.filepath.compare(EMPTY_SCENE) != 0)) {
+        //! Collect collision mesh group
+        std::vector<CollisionMeshData> meshGroup;
+        bool colMeshGroupSuccess = false;
+        if (colInfo.type == AssetType::INSTANCE_MESH) {
+          // PLY Instance mesh
+          colMeshGroupSuccess =
+              buildSceneCollisionMeshGroup<GenericInstanceMeshData>(
+                  colInfo.filepath, meshGroup);
+        } else if (colInfo.type == AssetType::MP3D_MESH ||
+                   colInfo.type == AssetType::UNKNOWN) {
+          // GLB Mesh
+          colMeshGroupSuccess = buildSceneCollisionMeshGroup<GenericMeshData>(
+              colInfo.filepath, meshGroup);
+        }
+        // TODO : PTEX collision support
+
+        // failure during build of collision mesh group
+        if (!colMeshGroupSuccess) {
+          LOG(ERROR)
+              << "ResourceManager::loadScene : Scene" << colInfo.filepath
+              << " Collision mesh load failed. Aborting scene initialization.";
+          return false;
+        }
+        //! Add scene meshgroup to collision mesh groups
+        collisionMeshGroups_.emplace(colInfo.filepath, meshGroup);
+        //! Add to physics manager
+        bool sceneSuccess =
+            _physicsManager->addScene(colInfo.filepath, meshGroup);
+        if (!sceneSuccess) {
+          LOG(ERROR)
+              << "ResourceManager::loadScene : Adding Scene "
+              << colInfo.filepath
+              << " to PhysicsManager failed. Aborting scene initialization.";
+          return false;
+        }
+      }  // if not empty scene
+    }    // if collisionMeshSuccess
+  }      // if collision mesh desired
 
   bool semanticSceneSuccess = false;
   // set equal to current Simulator::activeSemanticSceneID_ value
-  int activeSemanticSceneID = activeSceneIDs[1];
+  int activeSemanticSceneID = activeSceneIDs[0];
   // if semantic scene load is requested and possible
-  if ((loadSemanticMesh) && (assetInfoMap.count("semantic"))) {
-    auto houseFile = sceneAttributes->getHouseFilename();
-    if (Corrade::Utility::Directory::exists(houseFile)) {
-      // check if file names exist
-      AssetInfo semanticInfo = assetInfoMap.at("semantic");
-      auto semanticSceneFilename = semanticInfo.filepath;
-      if (Corrade::Utility::Directory::exists(semanticSceneFilename)) {
-        LOG(INFO) << "ResourceManager::loadScene : Loading semantic mesh "
-                  << semanticSceneFilename;
-        activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
-        bool splitSemanticMesh = sceneAttributes->getFrustrumCulling();
+  if (assetInfoMap.count("semantic")) {
+    // check if file names exist
+    AssetInfo semanticInfo = assetInfoMap.at("semantic");
+    auto semanticSceneFilename = semanticInfo.filepath;
+    if (Corrade::Utility::Directory::exists(semanticSceneFilename)) {
+      LOG(INFO) << "ResourceManager::loadScene : Loading semantic mesh "
+                << semanticSceneFilename;
+      activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
+      bool splitSemanticMesh = sceneAttributes->getFrustrumCulling();
 
-        auto& semanticSceneGraph =
-            sceneManagerPtr->getSceneGraph(activeSemanticSceneID);
-        auto& semanticRootNode = semanticSceneGraph.getRootNode();
-        auto& semanticDrawables = semanticSceneGraph.getDrawables();
-        bool computeSemanticAABBs = splitSemanticMesh;
-        semanticSceneSuccess = loadSceneInternal(
-            semanticInfo, _physicsManager, &semanticRootNode,
-            &semanticDrawables, computeSemanticAABBs, splitSemanticMesh);
-        // regardless of load failure, original code still changed
-        // activeSemanticSceneID_
-        activeSceneIDs[1] = activeSemanticSceneID;
-        if (!semanticSceneSuccess) {
-          LOG(ERROR) << " ResourceManager::loadScene : Semantic scene mesh "
-                        "load failed.";
-        } else {
-          LOG(INFO) << "ResourceManager::loadScene : Semantic Scene Mesh : "
-                    << semanticSceneFilename << " loaded.";
-        }
-      } else {  // semantic file name does not exist but house does
-        LOG(WARNING)
-            << "ResourceManager::loadScene : Not loading semantic mesh - "
-               "File Name : "
-            << semanticSceneFilename << " does not exist.";
+      auto& semanticSceneGraph =
+          sceneManagerPtr->getSceneGraph(activeSemanticSceneID);
+      auto& semanticRootNode = semanticSceneGraph.getRootNode();
+      auto& semanticDrawables = semanticSceneGraph.getDrawables();
+      bool computeSemanticAABBs = splitSemanticMesh;
+      semanticSceneSuccess = loadSceneInternal(
+          semanticInfo, nullptr, &semanticRootNode, &semanticDrawables,
+          computeSemanticAABBs, splitSemanticMesh);
+      // regardless of load failure, original code still changed
+      // activeSemanticSceneID_
+      activeSceneIDs[1] = activeSemanticSceneID;
+      if (!semanticSceneSuccess) {
+        LOG(ERROR) << " ResourceManager::loadScene : Semantic scene mesh "
+                      "load failed.";
+        return false;
+      } else {
+        LOG(INFO) << "ResourceManager::loadScene : Semantic Scene Mesh : "
+                  << semanticSceneFilename << " loaded.";
       }
-    } else {  // if houseFile does not exist, ID should be activeSceneIDs[0]
+    } else {  // semantic file name does not exist but house does
       LOG(WARNING)
           << "ResourceManager::loadScene : Not loading semantic mesh - "
              "File Name : "
-          << houseFile << " does not exist.";
-      activeSemanticSceneID = activeSceneIDs[0];
+          << semanticSceneFilename << " does not exist.";
     }
   } else {  // not wanting to create semantic mesh
     LOG(INFO) << "ResourceManager::loadScene : Not loading semantic mesh";
@@ -279,7 +312,8 @@ ResourceManager::createSceneAssetInfosFromAttributes(
     bool createCollisionInfo,
     bool createSemanticInfo) {
   std::map<std::string, AssetInfo> resMap;
-  auto frame = buildFrameFromAttributes(sceneAttributes);
+  auto frame =
+      buildFrameFromAttributes(sceneAttributes, sceneAttributes->getOrigin());
   float virtualUnitToMeters = sceneAttributes->getUnitsToMeters();
   // create render asset info
   auto renderType =
@@ -323,20 +357,20 @@ ResourceManager::createSceneAssetInfosFromAttributes(
 }  // ResourceManager::createSceneAssetInfosFromAttributes
 
 esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
-    const PhysicsSceneAttributes::ptr& sceneAttribs) {
-  const vec3f up{
-      Mn::EigenIntegration::cast<vec3f>(sceneAttribs->getOrientUp())};
-  const vec3f front{
-      Mn::EigenIntegration::cast<vec3f>(sceneAttribs->getOrientFront())};
-  if (up.isOrthogonal(front)) {
-    const vec3f origin{
-        Mn::EigenIntegration::cast<vec3f>(sceneAttribs->getOrigin())};
-    esp::geo::CoordinateFrame frame{up, front, origin};
+    const AbstractPhysicsAttributes::ptr& attribs,
+    const Magnum::Vector3& origin) {
+  const vec3f upEigen{
+      Mn::EigenIntegration::cast<vec3f>(attribs->getOrientUp())};
+  const vec3f frontEigen{
+      Mn::EigenIntegration::cast<vec3f>(attribs->getOrientFront())};
+  if (upEigen.isOrthogonal(frontEigen)) {
+    const vec3f originEigen{Mn::EigenIntegration::cast<vec3f>(origin)};
+    esp::geo::CoordinateFrame frame{upEigen, frontEigen, originEigen};
     return frame;
   } else {
     LOG(INFO) << "ResourceManager::buildFrameFromAttributes : Specified frame "
-                 "in scene Attributes : "
-              << sceneAttribs->getHandle()
+                 "in Attributes : "
+              << attribs->getHandle()
               << " is not orthogonal, so returning default frame.";
     esp::geo::CoordinateFrame frame;
     return frame;
@@ -351,18 +385,6 @@ bool ResourceManager::loadSceneInternal(
     bool computeAbsoluteAABBs /*  = false */,
     bool splitSemanticMesh /* = true */,
     const Mn::ResourceKey& lightSetup /* = Mn::ResourceKey{NO_LIGHT_KEY})*/) {
-  // we only compute absolute AABB for every mesh component when loading ptex
-  // mesh, or general mesh (e.g., MP3D)
-  // staticDrawableInfo_.clear();
-  // bool computeAbsoluteAABBs =
-  //     (info.type == AssetType::FRL_PTEX_MESH ||
-  //      info.type == AssetType::MP3D_MESH || info.type == AssetType::UNKNOWN
-  //      || (info.type == AssetType::INSTANCE_MESH && splitSemanticMesh));
-  //     {
-  //   // true for all meshes except semantic if not split and suncg
-  //   computeAbsoluteAABBs_ = true;
-  // }
-
   // scene mesh loading
   const std::string& filename = info.filepath;
   bool meshSuccess = true;
@@ -395,45 +417,6 @@ bool ResourceManager::loadSceneInternal(
               << filename;
     // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
     // scene mesh): welcome to the void
-  }
-
-  // old loadPhysicsScene code
-  if (meshSuccess && _physicsManager) {
-    // if we have a scene mesh, add it as a collision object
-    if (filename.compare(EMPTY_SCENE) != 0) {
-      //! Collect collision mesh group
-      std::vector<CollisionMeshData> meshGroup;
-      bool colMeshSuccess = false;
-      if (info.type == AssetType::INSTANCE_MESH) {
-        // PLY Instance mesh
-        colMeshSuccess = buildSceneCollisionMeshGroup<GenericInstanceMeshData>(
-            filename, meshGroup);
-      } else if (info.type == AssetType::MP3D_MESH ||
-                 info.type == AssetType::UNKNOWN) {
-        // GLB Mesh
-        colMeshSuccess =
-            buildSceneCollisionMeshGroup<GenericMeshData>(filename, meshGroup);
-      }
-      // TODO : PTEX collision support
-
-      // failure during build of collision mesh group
-      if (!colMeshSuccess) {
-        LOG(ERROR)
-            << "ResourceManager::loadSceneInternal : Scene" << filename
-            << " Collision mesh load failed. Aborting scene initialization.";
-        return false;
-      }
-      //! Add scene meshgroup to collision mesh groups
-      collisionMeshGroups_.emplace(filename, meshGroup);
-      //! Add to physics manager
-      bool sceneSuccess = _physicsManager->addScene(filename, meshGroup);
-      if (!sceneSuccess) {
-        LOG(ERROR)
-            << "ResourceManager::loadSceneInternal : Adding Scene " << filename
-            << " to PhysicsManager failed. Aborting scene initialization.";
-        return false;
-      }
-    }
   }
 
   return meshSuccess;
@@ -1055,9 +1038,10 @@ bool ResourceManager::loadGeneralMeshData(
   std::vector<StaticDrawableInfo> staticDrawableInfo;
   addComponent(meshMetaData, newNode, lightSetup, drawables, meshMetaData.root,
                visNodeCache, computeAbsoluteAABBs, staticDrawableInfo);
-
-  // now compute aabbs by constructed statidDrawableInfo
-  computeGeneralMeshAbsoluteAABBs(staticDrawableInfo);
+  if (computeAbsoluteAABBs) {
+    // now compute aabbs by constructed staticDrawableInfo
+    computeGeneralMeshAbsoluteAABBs(staticDrawableInfo);
+  }
 
   return true;
 }  // loadGeneralMeshData

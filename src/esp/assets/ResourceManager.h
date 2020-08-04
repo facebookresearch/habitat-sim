@@ -404,14 +404,17 @@ class ResourceManager {
                                DrawableGroup* drawables);
 
   /**
-   * @brief Build a configuration frame from scene attributes values and return
-   * it
+   * @brief Build a configuration frame from scene or object attributes values
+   * and return it
    *
-   * @param sceneAttribs the attributes to query for the information.
+   * @param attribs the attributes to query for the information.
+   * @param origin Either the origin of the sceneAttributes or the COM value of
+   * the objectAttributes.
    * @return the coordinate frame of the assets the passed attributes describes.
    */
   esp::geo::CoordinateFrame buildFrameFromAttributes(
-      const PhysicsSceneAttributes::ptr& sceneAttribs);
+      const AbstractPhysicsAttributes::ptr& attribs,
+      const Magnum::Vector3& origin);
 
   /**
    * @brief Set whether textures should be compressed.
