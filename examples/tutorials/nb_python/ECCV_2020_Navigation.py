@@ -14,7 +14,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.5.1
+#       jupytext_version: 1.5.2
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -53,19 +53,20 @@ import sys
 import cv2
 import git
 import magnum as mn
-# %matplotlib inline
-import matplotlib.pyplot as plt
 import numpy as np
+# %matplotlib inline
+from matplotlib import pyplot as plt
 # function to display the topdown map
 from PIL import Image
 
-import habitat_sim.utils.common as utils
+from habitat_sim.utils import common as utils
 from habitat_sim.utils import viz_utils as vut
 
 try:
     import habitat_sim
 except ImportError:
-    import sys, os
+    import os
+    import sys
 
     if "google.colab" in sys.modules:
         # ADDS conda installed libraries to the PYTHONPATH
@@ -73,10 +74,7 @@ except ImportError:
         user_path = "/root/.local/lib/python3.6/site-packages/"
         sys.path.insert(0, conda_path)
         sys.path.insert(0, user_path)
-# %cd /content/habitat-sim 
-
-
-
+# %cd /content/habitat-sim
 
 
 if "google.colab" in sys.modules:
@@ -462,8 +460,6 @@ def convert_points_to_topdown(pathfinder, points, meters_per_pixel):
         py = (point[2] - bounds[0][2]) / meters_per_pixel
         points_topdown.append(np.array([px, py]))
     return points_topdown
-
-
 
 
 def display_topdown_map(topdown_map, trajectory=None, key_points=None):
