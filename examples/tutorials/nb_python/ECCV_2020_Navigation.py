@@ -45,22 +45,7 @@
 # @title Colab Setup and Imports { display-mode: "form" }
 # @markdown (double click to see the code)
 
-import math
-import os
-import random
-import sys
-
-import cv2
-import git
-import magnum as mn
-# %matplotlib inline
-import matplotlib.pyplot as plt
-import numpy as np
-# function to display the topdown map
-from PIL import Image
-
-import habitat_sim.utils.common as utils
-from habitat_sim.utils import viz_utils as vut
+import os, sys
 
 try:
     import habitat_sim
@@ -73,11 +58,19 @@ except ImportError:
         user_path = "/root/.local/lib/python3.6/site-packages/"
         sys.path.insert(0, conda_path)
         sys.path.insert(0, user_path)
-# %cd /content/habitat-sim 
+os.chdir("/content/habitat-sim")
 
+import habitat_sim.utils.common as utils
+from habitat_sim.utils import viz_utils as vut
+import magnum as mn
+import math
 
+import random
 
+# %matplotlib inline
+import matplotlib.pyplot as plt
 
+import numpy as np
 
 if "google.colab" in sys.modules:
     # This tells imageio to use the system FFMPEG that has hardware acceleration.
@@ -91,6 +84,7 @@ if "google.colab" in sys.modules:
 
 # @markdown (double click to see the code)
 
+from PIL import Image
 
 # Change to do something like this maybe: https://stackoverflow.com/a/41432704
 def display_sample(rgb_obs, semantic_obs=np.array([]), depth_obs=np.array([])):
@@ -464,6 +458,8 @@ def convert_points_to_topdown(pathfinder, points, meters_per_pixel):
     return points_topdown
 
 
+# function to display the topdown map
+from PIL import Image
 
 
 def display_topdown_map(topdown_map, trajectory=None, key_points=None):
@@ -752,36 +748,25 @@ sim.navmesh_visualization = True  # @param {type:"boolean"}
 if not use_custom_settings:
     navmesh_settings.set_defaults()
 else:
-    # @markdown ## Configure custom settings (if use_custom_settings):
-    # @markdown Configure the following NavMeshSettings for customized NavMesh recomputation.
-    # @markdown **Voxelization parameters**:
-    navmesh_settings.cell_size = (
-        0.05
-    )  # @param {type:"slider", min:0.01, max:0.2, step:0.01}
-    # default = 0.05
-    navmesh_settings.cell_height = (
-        0.2
-    )  # @param {type:"slider", min:0.01, max:0.4, step:0.01}
-    # default = 0.2
+    # fmt: off
+    #@markdown ## Configure custom settings (if use_custom_settings):
+    #@markdown Configure the following NavMeshSettings for customized NavMesh recomputation.
+    #@markdown **Voxelization parameters**:
+    navmesh_settings.cell_size = 0.05 #@param {type:"slider", min:0.01, max:0.2, step:0.01}
+    #default = 0.05
+    navmesh_settings.cell_height = 0.2 #@param {type:"slider", min:0.01, max:0.4, step:0.01}
+    #default = 0.2
 
-    # @markdown **Agent parameters**:
-    navmesh_settings.agent_height = (
-        1.5
-    )  # @param {type:"slider", min:0.01, max:3.0, step:0.01}
-    # default = 1.5
-    navmesh_settings.agent_radius = (
-        0.1
-    )  # @param {type:"slider", min:0.01, max:0.5, step:0.01}
-    # default = 0.1
-    navmesh_settings.agent_max_climb = (
-        0.2
-    )  # @param {type:"slider", min:0.01, max:0.5, step:0.01}
-    # default = 0.2
-    navmesh_settings.agent_max_slope = (
-        45
-    )  # @param {type:"slider", min:0, max:85, step:1.0}
+    #@markdown **Agent parameters**:
+    navmesh_settings.agent_height = 1.5 #@param {type:"slider", min:0.01, max:3.0, step:0.01}
+    #default = 1.5
+    navmesh_settings.agent_radius = 0.1 #@param {type:"slider", min:0.01, max:0.5, step:0.01}
+    #default = 0.1
+    navmesh_settings.agent_max_climb = 0.2 #@param {type:"slider", min:0.01, max:0.5, step:0.01}
+    #default = 0.2
+    navmesh_settings.agent_max_slope = 45 #@param {type:"slider", min:0, max:85, step:1.0}
     # default = 45.0
-
+    # fmt: on
     # @markdown **Navigable area filtering options**:
     navmesh_settings.filter_low_hanging_obstacles = True  # @param {type:"boolean"}
     # default = True
@@ -790,36 +775,24 @@ else:
     navmesh_settings.filter_walkable_low_height_spans = True  # @param {type:"boolean"}
     # default = True
 
-    # @markdown **Detail mesh generation parameters**:
-    # @markdown For more details on the effects
-    navmesh_settings.region_min_size = (
-        20
-    )  # @param {type:"slider", min:0, max:50, step:1}
-    # default = 20
-    navmesh_settings.region_merge_size = (
-        20
-    )  # @param {type:"slider", min:0, max:50, step:1}
-    # default = 20
-    navmesh_settings.edge_max_len = (
-        12.0
-    )  # @param {type:"slider", min:0, max:50, step:1}
-    # default = 12.0
-    navmesh_settings.edge_max_error = (
-        1.3
-    )  # @param {type:"slider", min:0, max:5, step:0.1}
-    # default = 1.3
-    navmesh_settings.verts_per_poly = (
-        6.0
-    )  # @param {type:"slider", min:3, max:6, step:1}
-    # default = 6.0
-    navmesh_settings.detail_sample_dist = (
-        6.0
-    )  # @param {type:"slider", min:0, max:10.0, step:0.1}
-    # default = 6.0
-    navmesh_settings.detail_sample_max_error = (
-        1.0
-    )  # @param {type:"slider", min:0, max:10.0, step:0.1}
+    # fmt: off
+    #@markdown **Detail mesh generation parameters**:
+    #@markdown For more details on the effects
+    navmesh_settings.region_min_size = 20 #@param {type:"slider", min:0, max:50, step:1}
+    #default = 20
+    navmesh_settings.region_merge_size = 20 #@param {type:"slider", min:0, max:50, step:1}
+    #default = 20
+    navmesh_settings.edge_max_len = 12.0 #@param {type:"slider", min:0, max:50, step:1}
+    #default = 12.0
+    navmesh_settings.edge_max_error = 1.3 #@param {type:"slider", min:0, max:5, step:0.1}
+    #default = 1.3
+    navmesh_settings.verts_per_poly = 6.0 #@param {type:"slider", min:3, max:6, step:1}
+    #default = 6.0
+    navmesh_settings.detail_sample_dist = 6.0 #@param {type:"slider", min:0, max:10.0, step:0.1}
+    #default = 6.0
+    navmesh_settings.detail_sample_max_error = 1.0 #@param {type:"slider", min:0, max:10.0, step:0.1}
     # default = 1.0
+    # fmt: on
 
 # @markdown ---
 # @markdown You can also include MotionType::STATIC objects as NavMesh obstacles:
@@ -841,18 +814,20 @@ display_sample(rgb, semantic, depth)
 # %%
 # @markdown ##Saving the NavMesh
 
+# fmt: off
 # @markdown An existing NavMesh can be saved with *Pathfinder.save_nav_mesh(filename)*
 if sim.pathfinder.is_loaded:
-    navmesh_save_path = (
-        "/content/habitat-sim/data/test_saving.navmesh"
-    )  # @param {type:"string"}
+    navmesh_save_path = "/content/habitat-sim/data/test_saving.navmesh" #@param {type:"string"}
     sim.pathfinder.save_nav_mesh(navmesh_save_path)
     print('Saved NavMesh to "' + navmesh_save_path + '"')
     sim.pathfinder.load_nav_mesh(navmesh_save_path)
+# fmt: on
 
 # %%
 # @title Define Simulation and Video Utlities { display-mode: "form" }
 
+import cv2
+import git
 
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
