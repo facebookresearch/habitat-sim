@@ -229,7 +229,7 @@ def main(make_video=True, show_video=True):
     )
     assert (
         sim.get_articulated_object_motion_type(robot_id)
-        is habitat_sim.physics.MotionType.KINEMATIC
+        == habitat_sim.physics.MotionType.KINEMATIC
     )
 
     sim.set_articulated_object_motion_type(
@@ -237,7 +237,7 @@ def main(make_video=True, show_video=True):
     )
     assert (
         sim.get_articulated_object_motion_type(robot_id)
-        is habitat_sim.physics.MotionType.DYNAMIC
+        == habitat_sim.physics.MotionType.DYNAMIC
     )
 
     if make_video:
