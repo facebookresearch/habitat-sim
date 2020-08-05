@@ -73,24 +73,17 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
   primObjectAttributes->setScale({0.1, 0.1, 0.1});
 
   // set render mesh handle
-  primObjectAttributes->setRenderAssetHandle(primAttrTemplateHandle);
+  int primType = static_cast<int>(AssetType::PRIMITIVE);
+  primObjectAttributes->setRenderAssetType(primType);
   // set collision mesh/primitive handle and default for primitives to not use
   // mesh collisions
-  primObjectAttributes->setCollisionAssetHandle(primAttrTemplateHandle);
+  primObjectAttributes->setCollisionAssetType(primType);
   primObjectAttributes->setUseMeshCollision(false);
   // NOTE to eventually use mesh collisions with primitive objects, a
   // collision primitive mesh needs to be configured and set in MeshMetaData
   // and CollisionMesh
 
-  if (nullptr != primObjectAttributes && registerTemplate) {
-    int attrID = this->registerAttributesTemplate(primObjectAttributes,
-                                                  primAttrTemplateHandle);
-    if (attrID == ID_UNDEFINED) {
-      // some error occurred
-      return nullptr;
-    }
-  }
-  return primObjectAttributes;
+  return this->postCreateRegister(primObjectAttributes, registerTemplate);
 }  // ObjectAttributesManager::createPrimBasedAttributesTemplate
 
 PhysicsObjectAttributes::ptr
@@ -145,15 +138,7 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
   // if com is set from json, don't compute from shape, and vice versa
   objAttributes->setComputeCOMFromShape(!comIsSet);
 
-  if (nullptr != objAttributes && registerTemplate) {
-    int attrID =
-        this->registerAttributesTemplate(objAttributes, objPhysConfigFilename);
-    // some error occurred
-    if (attrID == ID_UNDEFINED) {
-      return nullptr;
-    }
-  }
-  return objAttributes;
+  return this->postCreateRegister(objAttributes, registerTemplate);
 }  // ObjectAttributesManager::createFileBasedAttributesTemplate
 
 PhysicsObjectAttributes::ptr
@@ -163,33 +148,47 @@ ObjectAttributesManager::createDefaultAttributesTemplate(
   // construct a PhysicsObjectAttributes
   PhysicsObjectAttributes::ptr objAttributes =
       initNewAttribsInternal(PhysicsObjectAttributes::create(templateName));
-  // set render mesh handle as a default
-  objAttributes->setRenderAssetHandle(templateName);
-  if (registerTemplate) {
-    int attrID = this->registerAttributesTemplate(objAttributes, templateName);
-    if (attrID == ID_UNDEFINED) {
-      // some error occurred
-      return nullptr;
-    }
-  }
-  return objAttributes;
+
+  return this->postCreateRegister(objAttributes, registerTemplate);
 }  // ObjectAttributesManager::createEmptyAttributesTemplate
 
 PhysicsObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
     PhysicsObjectAttributes::ptr newAttributes) {
   this->setFileDirectoryFromHandle(newAttributes);
-  using Corrade::Utility::String::endsWith;
-  const std::string objFileName = newAttributes->getHandle();
-  // set default origin and orientation values based on file name
-
-  newAttributes->setOrientUp({0, 1, 0});
-  newAttributes->setOrientFront({0, 0, -1});
-
-  newAttributes->setRenderAssetType(static_cast<int>(AssetType::UNKNOWN));
-  newAttributes->setCollisionAssetType(static_cast<int>(AssetType::UNKNOWN));
+  const std::string attributesHandle = newAttributes->getHandle();
+  // set default render asset handle
+  newAttributes->setRenderAssetHandle(attributesHandle);
+  // set default collision asset handle
+  newAttributes->setCollisionAssetHandle(attributesHandle);
+  // set defaults for passed render asset handles
+  setDefaultFileNameBasedAttributes(
+      newAttributes, true, newAttributes->getRenderAssetHandle(),
+      std::bind(&AbstractPhysicsAttributes::setRenderAssetType, newAttributes,
+                _1));
+  // set defaults for passed collision asset handles
+  setDefaultFileNameBasedAttributes(
+      newAttributes, false, newAttributes->getCollisionAssetHandle(),
+      std::bind(&AbstractPhysicsAttributes::setCollisionAssetType,
+                newAttributes, _1));
 
   return newAttributes;
 }  // ObjectAttributesManager::initNewAttribsInternal
+
+// Eventually support explicitly configuring desirable defaults/file-name
+// base settings.
+void ObjectAttributesManager::setDefaultFileNameBasedAttributes(
+    PhysicsObjectAttributes::ptr attributes,
+    bool setFrame,
+    const std::string&,
+    std::function<void(int)> meshTypeSetter) {
+  // TODO : support future mesh-name specific type setting?
+  meshTypeSetter(static_cast<int>(AssetType::UNKNOWN));
+
+  if (setFrame) {
+    attributes->setOrientUp({0, 1, 0});
+    attributes->setOrientFront({0, 0, -1});
+  }
+}  // SceneAttributesManager::setDefaultFileNameBasedAttributes
 
 int ObjectAttributesManager::registerAttributesTemplateFinalize(
     PhysicsObjectAttributes::ptr objectTemplate,
