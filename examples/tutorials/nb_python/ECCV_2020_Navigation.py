@@ -144,7 +144,7 @@ test_scene = "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"
 
 sim_settings = {
     "scene": test_scene,  # Scene path
-    "default_agent": 0,  # index of the default agent
+    "default_agent": 0,  # Index of the default agent
     "sensor_height": 1.5,  # Height of sensors in meters, relative to the agent
     "width": 256,  # Spatial resolution of the observations
     "height": 256,

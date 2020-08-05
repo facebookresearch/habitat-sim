@@ -55,7 +55,7 @@ def run_main_subproc(args):
             "--no-show-video",
             "--no-make-video",
         ),
-        ("examples/tutorials/nb_python/ECCV_2020_Navigation.py", "--no-show-images"),
+        ("examples/tutorials/nb_python/ECCV_2020_Navigation.py",),
         ("examples/tutorials/semantic_id_tutorial.py", "--no-show-images"),
     ],
 )
