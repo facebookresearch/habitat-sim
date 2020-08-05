@@ -45,7 +45,22 @@
 # @title Colab Setup and Imports { display-mode: "form" }
 # @markdown (double click to see the code)
 
-import os, sys
+import math
+import os
+import random
+import sys
+
+import cv2
+import git
+import magnum as mn
+# %matplotlib inline
+import matplotlib.pyplot as plt
+import numpy as np
+# function to display the topdown map
+from PIL import Image
+
+import habitat_sim.utils.common as utils
+from habitat_sim.utils import viz_utils as vut
 
 try:
     import habitat_sim
@@ -58,19 +73,11 @@ except ImportError:
         user_path = "/root/.local/lib/python3.6/site-packages/"
         sys.path.insert(0, conda_path)
         sys.path.insert(0, user_path)
-os.chdir("/content/habitat-sim")
+# %cd /content/habitat-sim 
 
-import habitat_sim.utils.common as utils
-from habitat_sim.utils import viz_utils as vut
-import magnum as mn
-import math
 
-import random
 
-# %matplotlib inline
-import matplotlib.pyplot as plt
 
-import numpy as np
 
 if "google.colab" in sys.modules:
     # This tells imageio to use the system FFMPEG that has hardware acceleration.
@@ -84,7 +91,6 @@ if "google.colab" in sys.modules:
 
 # @markdown (double click to see the code)
 
-from PIL import Image
 
 # Change to do something like this maybe: https://stackoverflow.com/a/41432704
 def display_sample(rgb_obs, semantic_obs=np.array([]), depth_obs=np.array([])):
@@ -458,8 +464,6 @@ def convert_points_to_topdown(pathfinder, points, meters_per_pixel):
     return points_topdown
 
 
-# function to display the topdown map
-from PIL import Image
 
 
 def display_topdown_map(topdown_map, trajectory=None, key_points=None):
@@ -715,7 +719,7 @@ sim.pathfinder.load_nav_mesh(
 #
 # - **Agent parameters**:
 #
-#   - **agent_height** - Hieght of the agent. Used to cull navigable cells with obstructions.
+#   - **agent_height** - Height of the agent. Used to cull navigable cells with obstructions.
 #   - **agent_radius** - Radius of the agent. Used as distance to erode/shrink the computed heightfield. [Limit: >=0]
 #   - **agent_max_climb** - Maximum ledge height that is considered to still be traversable. [Limit: >=0]
 #   - **agent_max_slope** - The maximum slope that is considered navigable. [Limits: 0 <= value < 85] [Units: Degrees]
@@ -826,8 +830,6 @@ if sim.pathfinder.is_loaded:
 # %%
 # @title Define Simulation and Video Utlities { display-mode: "form" }
 
-import cv2
-import git
 
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
