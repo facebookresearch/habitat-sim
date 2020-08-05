@@ -118,7 +118,7 @@ def display_topdown_map(
     plt.figure(figsize=(12, 8))
     ax = plt.subplot(1, 1, 1)
     ax.axis("off")
-    if plot_title:
+    if plot_title is not None:
         ax.set_title(plot_title)
     # plot a trajectory (image space) on the map
     if trajectory is not None:
