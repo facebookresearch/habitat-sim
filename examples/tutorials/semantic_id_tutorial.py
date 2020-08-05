@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 
 import habitat_sim
 from habitat_sim.gfx import LightInfo, LightPositionModel
+from habitat_sim.utils import viz_utils as vut
 from habitat_sim.utils.common import quat_from_angle_axis, quat_to_magnum
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
