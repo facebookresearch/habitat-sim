@@ -59,21 +59,10 @@ from matplotlib import pyplot as plt
 # function to display the topdown map
 from PIL import Image
 
+import habitat_sim
 from habitat_sim.utils import common as utils
 from habitat_sim.utils import viz_utils as vut
 
-try:
-    import habitat_sim
-except ImportError:
-    import os
-    import sys
-
-    if "google.colab" in sys.modules:
-        # ADDS conda installed libraries to the PYTHONPATH
-        conda_path = "/usr/local/lib/python3.6/site-packages/"
-        user_path = "/root/.local/lib/python3.6/site-packages/"
-        sys.path.insert(0, conda_path)
-        sys.path.insert(0, user_path)
 # %cd /content/habitat-sim
 
 
