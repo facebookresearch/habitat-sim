@@ -10,6 +10,7 @@
 
 #include <Magnum/Math/Range.h>
 #include "esp/gfx/magnum.h"
+namespace Mn = Magnum;
 
 namespace esp {
 namespace geo {
@@ -43,6 +44,20 @@ template <typename T>
 T clamp(const T& n, const T& low, const T& high) {
   return std::max(low, std::min(n, high));
 }
+
+//! A simple 3D ray defined by an origin point and direction (not necessarily
+//! unit length)
+struct Ray {
+  Mn::Vector3 origin;
+  Mn::Vector3 direction;
+
+  Ray(){};
+
+  Ray(Mn::Vector3 _origin, Mn::Vector3 _direction)
+      : origin(_origin), direction(_direction){};
+
+  ESP_SMART_POINTERS(Ray)
+};
 
 }  // namespace geo
 }  // namespace esp

@@ -217,33 +217,38 @@ bool ResourceManager::loadScene(
     } else {
       // if we have a collision mesh, and it does not exist already as a
       // collision object, add it
-      if ((collisionMeshGroups_.count(colInfo.filepath) == 0) &&
-          (colInfo.filepath.compare(EMPTY_SCENE) != 0)) {
-        //! Collect collision mesh group
+      if (colInfo.filepath.compare(EMPTY_SCENE) != 0) {
         std::vector<CollisionMeshData> meshGroup;
-        bool colMeshGroupSuccess = false;
-        if (colInfo.type == AssetType::INSTANCE_MESH) {
-          // PLY Instance mesh
-          colMeshGroupSuccess =
-              buildSceneCollisionMeshGroup<GenericInstanceMeshData>(
-                  colInfo.filepath, meshGroup);
-        } else if (colInfo.type == AssetType::MP3D_MESH ||
-                   colInfo.type == AssetType::UNKNOWN) {
-          // GLB Mesh
-          colMeshGroupSuccess = buildSceneCollisionMeshGroup<GenericMeshData>(
-              colInfo.filepath, meshGroup);
-        }
-        // TODO : PTEX collision support
+        if (collisionMeshGroups_.count(colInfo.filepath) == 0) {
+          //! Collect collision mesh group
+          bool colMeshGroupSuccess = false;
+          if (colInfo.type == AssetType::INSTANCE_MESH) {
+            // PLY Instance mesh
+            colMeshGroupSuccess =
+                buildSceneCollisionMeshGroup<GenericInstanceMeshData>(
+                    colInfo.filepath, meshGroup);
+          } else if (colInfo.type == AssetType::MP3D_MESH ||
+                     colInfo.type == AssetType::UNKNOWN) {
+            // GLB Mesh
+            colMeshGroupSuccess = buildSceneCollisionMeshGroup<GenericMeshData>(
+                colInfo.filepath, meshGroup);
+          }
+          // TODO : PTEX collision support
 
-        // failure during build of collision mesh group
-        if (!colMeshGroupSuccess) {
-          LOG(ERROR)
-              << "ResourceManager::loadScene : Scene" << colInfo.filepath
-              << " Collision mesh load failed. Aborting scene initialization.";
-          return false;
+          // failure during build of collision mesh group
+          if (!colMeshGroupSuccess) {
+            LOG(ERROR) << "ResourceManager::loadScene : Scene"
+                       << colInfo.filepath
+                       << " Collision mesh load failed. Aborting scene "
+                          "initialization.";
+            return false;
+          }
+          //! Add scene meshgroup to collision mesh groups
+          collisionMeshGroups_.emplace(colInfo.filepath, meshGroup);
+        } else {
+          // collision meshGroup already exists from prior load
+          meshGroup = collisionMeshGroups_.at(colInfo.filepath);
         }
-        //! Add scene meshgroup to collision mesh groups
-        collisionMeshGroups_.emplace(colInfo.filepath, meshGroup);
         //! Add to physics manager
         bool sceneSuccess =
             _physicsManager->addScene(colInfo.filepath, meshGroup);
@@ -254,7 +259,7 @@ bool ResourceManager::loadScene(
               << " to PhysicsManager failed. Aborting scene initialization.";
           return false;
         }
-      }  // if not empty scene
+      }  // if not empty collision scene
     }    // if collisionMeshSuccess
   }      // if collision mesh desired
 

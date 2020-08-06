@@ -339,3 +339,64 @@ def test_velocity_control(sim):
         assert angle_error < mn.Rad(0.05)
 
         sim.remove_object(object_id)
+
+
+@pytest.mark.skipif(
+    not osp.exists("data/scene_datasets/habitat-test-scenes/apartment_1.glb"),
+    reason="Requires the habitat-test-scenes",
+)
+def test_raycast(sim):
+    cfg_settings = examples.settings.default_sim_settings.copy()
+
+    # configure some settings in case defaults change
+    cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+
+    # enable the physics simulator
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    sim.reconfigure(hab_cfg)
+    obj_mgr = sim.get_object_template_manager()
+
+    if (
+        sim.get_physics_simulation_library()
+        != habitat_sim.physics.PhysicsSimulationLibrary.NONE
+    ):
+        # only test this if we have a physics simulator and therefore a collision world
+        test_ray_1 = habitat_sim.geo.Ray()
+        test_ray_1.direction = mn.Vector3(1.0, 0, 0)
+        raycast_results = sim.cast_ray(test_ray_1)
+        assert raycast_results.ray.direction == test_ray_1.direction
+        assert raycast_results.has_hits()
+        assert len(raycast_results.hits) == 1
+        assert np.allclose(
+            raycast_results.hits[0].point, np.array([6.83063, 0, 0]), atol=0.07
+        )
+        assert np.allclose(
+            raycast_results.hits[0].normal,
+            np.array([-0.999587, 0.0222882, -0.0181424]),
+            atol=0.07,
+        )
+        assert abs(raycast_results.hits[0].ray_distance - 6.831) < 0.001
+        assert raycast_results.hits[0].object_id == -1
+
+        # add a primitive object to the world
+        cube_prim_handle = obj_mgr.get_template_handles("cube")[0]
+        cube_obj_id = sim.add_object_by_handle(cube_prim_handle)
+        sim.set_translation(mn.Vector3(3.0, 0, 0), cube_obj_id)
+
+        raycast_results = sim.cast_ray(test_ray_1)
+
+        assert raycast_results.has_hits()
+        assert len(raycast_results.hits) == 2
+        assert np.allclose(
+            raycast_results.hits[0].point, np.array([2.89355, 0, 0]), atol=0.07
+        )
+        assert np.allclose(
+            raycast_results.hits[0].normal,
+            np.array([-0.998961, -0.0322245, -0.0322245]),
+            atol=0.07,
+        )
+        assert abs(raycast_results.hits[0].ray_distance - 2.8935) < 0.001
+        assert raycast_results.hits[0].object_id == 0

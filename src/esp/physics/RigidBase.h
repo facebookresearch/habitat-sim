@@ -628,6 +628,9 @@ class RigidBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   assets::AbstractPhysicsAttributes::ptr initializationAttributes_ = nullptr;
 
+  //! Access for the object to its own PhysicsManager id. Scene will keep -1.
+  int objectId_ = -1;
+
  public:
   ESP_SMART_POINTERS(RigidBase)
 };  // class RigidBase
