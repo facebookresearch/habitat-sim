@@ -1120,3 +1120,5 @@ for iteration in range(2):
     sim.reset()
 
 # [/embodied_agent_navmesh]
+if __name__ == "__main__":
+    sys.exit(0)
