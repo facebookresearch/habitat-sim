@@ -272,7 +272,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("objects", &SemanticScene::objects);
 
   em::class_<SceneNode>("SceneNode")
-      .constructor<scene::SceneNode&>(em::allow_raw_pointers())
       .function("getId", &SceneNode::getId)
       .function("getSemanticId", &SceneNode::getSemanticId);
 
