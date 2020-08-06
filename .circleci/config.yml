@@ -347,6 +347,9 @@ jobs:
               . activate habitat; cd habitat-sim
 
               export PYTHONPATH=$PYTHONPATH:$(pwd)
+              #This way, pytest shows partial progress
+              export PYTHONUNBUFFERED=1
+
               # run tests with code coverage
               CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
                 --bullet \
