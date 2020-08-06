@@ -106,8 +106,7 @@ def display_sample(rgb_obs, semantic_obs=np.array([]), depth_obs=np.array([])):
         ax.axis("off")
         ax.set_title(titles[i])
         plt.imshow(data)
-    plt.show()
-    plt.close()
+    plt.show(block=False)
 
 
 if __name__ == "__main__":
@@ -511,8 +510,7 @@ def display_topdown_map(topdown_map, trajectory=None, key_points=None):
     # ax.plot(y,x, linewidth=2, color='green')
 
     plt.imshow(topdown_img)
-    plt.show()
-    plt.close()
+    plt.show(block=False)
 
 
 try:
