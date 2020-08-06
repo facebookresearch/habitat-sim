@@ -845,7 +845,7 @@ data_path = os.path.join(dir_path, "data")
 # @markdown Optionally configure the save path for video output:
 output_directory = "examples/tutorials/nav_output/"  # @param {type:"string"}
 output_path = os.path.join(dir_path, output_directory)
-if not os.path.exists(output_path):
+if make_video and not os.path.exists(output_path):
     os.mkdir(output_path)
 
 
@@ -1120,5 +1120,3 @@ for iteration in range(2):
     sim.reset()
 
 # [/embodied_agent_navmesh]
-if __name__ == "__main__":
-    sys.exit(0)
