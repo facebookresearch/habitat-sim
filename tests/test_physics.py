@@ -342,7 +342,7 @@ def test_velocity_control(sim):
 
 
 @pytest.mark.skipif(
-    not osp.exists("data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"),
+    not osp.exists("data/scene_datasets/habitat-test-scenes/apartment_1.glb"),
     reason="Requires the habitat-test-scenes",
 )
 def test_raycast(sim):
