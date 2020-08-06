@@ -158,11 +158,6 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
 esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition) {
   esp::geo::Ray ray;
   ray.origin = object().absoluteTranslation();
-  if (viewportPosition.min() < 0 || (viewport() - viewportPosition).min() < 0) {
-    LOG(WARNING) << "RenderCamera::unproject : viewportPosition outside of "
-                    "viewport, aborting.";
-    return ray;  // ray with 0 direction
-  }
 
   const Magnum::Vector2i viewPos{viewportPosition.x(),
                                  viewport().y() - viewportPosition.y() - 1};
