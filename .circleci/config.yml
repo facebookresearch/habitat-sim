@@ -342,7 +342,6 @@ jobs:
             npm run test
       - run:
           name: Run sim tests
-          no_output_timeout: 20m
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
@@ -360,12 +359,12 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              python -u -m pytest --cov-report=xml --cov=./
+              pytest --cov-report=xml --cov=./
 
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
-              python -u -m pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+              pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
