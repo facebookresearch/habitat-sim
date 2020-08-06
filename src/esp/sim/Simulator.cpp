@@ -523,6 +523,15 @@ bool Simulator::contactTest(const int objectID, const int sceneID) {
   return false;
 }
 
+esp::physics::RaycastResults Simulator::castRay(const esp::geo::Ray& ray,
+                                                float maxDistance,
+                                                const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->castRay(ray, maxDistance);
+  }
+  return esp::physics::RaycastResults();
+}
+
 void Simulator::setObjectBBDraw(bool drawBB,
                                 const int objectID,
                                 const int sceneID) {

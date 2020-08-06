@@ -146,6 +146,15 @@ class Simulator {
     return resourceManager_->getSceneAttributesManager();
   }
 
+  /** @brief Return the library implementation type for the simulator currently
+   * in use. Use to check for a particular implementation.
+   * @return The implementation type of this simulator.
+   */
+  const esp::physics::PhysicsManager::PhysicsSimulationLibrary&
+  getPhysicsSimulationLibrary() const {
+    return physicsManager_->getPhysicsSimulationLibrary();
+  };
+
   /**
    * @brief Instance an object from a template index in @ref
    * esp::assets::ResourceManager::physicsObjectLibrary_. See @ref
@@ -482,6 +491,24 @@ class Simulator {
    * enabled objects.
    */
   bool contactTest(const int objectID, const int sceneID = 0);
+
+  /**
+   * @brief Raycast into the collision world of a scene.
+   *
+   * Note: A default @ref physics::PhysicsManager has no collision world, so
+   * physics must be enabled for this feature.
+   *
+   * @param ray The ray to cast. Need not be unit length, but returned hit
+   * distances will be in units of ray length.
+   * @param maxDistance The maximum distance along the ray direction to search.
+   * In units of ray length.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   * @return Raycast results sorted by distance.
+   */
+  esp::physics::RaycastResults castRay(const esp::geo::Ray& ray,
+                                       float maxDistance = 100.0,
+                                       const int sceneID = 0);
 
   /**
    * @brief the physical world has a notion of time which passes during

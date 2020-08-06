@@ -34,6 +34,38 @@ namespace esp {
 //! core physics simulation namespace
 namespace physics {
 
+//! Holds information about one ray hit instance.
+struct RayHitInfo {
+  //! The id of the object hit by this ray. Scene hits are -1.
+  int objectId;
+  //! The first impact point of the ray in world space.
+  Magnum::Vector3 point;
+  //! The collision object normal at the point of impact.
+  Magnum::Vector3 normal;
+  //! Distance along the ray direction from the ray origin (in units of ray
+  //! length).
+  double rayDistance;
+
+  ESP_SMART_POINTERS(RayHitInfo)
+};
+
+//! Holds information about all ray hit instances from a ray cast.
+struct RaycastResults {
+  std::vector<RayHitInfo> hits;
+  esp::geo::Ray ray;
+
+  bool hasHits() { return hits.size() > 0; }
+
+  void sortByDistance() {
+    std::sort(hits.begin(), hits.end(),
+              [](const RayHitInfo& A, const RayHitInfo& B) {
+                return A.rayDistance < B.rayDistance;
+              });
+  }
+
+  ESP_SMART_POINTERS(RaycastResults)
+};
+
 // TODO: repurpose to manage multiple physical worlds. Currently represents
 // exactly one world.
 
@@ -848,6 +880,26 @@ class PhysicsManager {
   assets::PhysicsManagerAttributes::ptr getInitializationAttributes() const {
     return assets::PhysicsManagerAttributes::create(
         *physicsManagerAttributes_.get());
+  }
+
+  /**
+   * @brief Cast a ray into the collision world and return a @ref RaycastResults
+   * with hit information.
+   *
+   * Note: not implemented here in default PhysicsManager as there are no
+   * collision objects without a simulation implementation.
+   *
+   * @param ray The ray to cast. Need not be unit length, but returned hit
+   * distances will be in units of ray length.
+   * @param maxDistance The maximum distance along the ray direction to search.
+   * In units of ray length.
+   * @return The raycast results sorted by distance.
+   */
+  virtual RaycastResults castRay(const esp::geo::Ray& ray,
+                                 double maxDistance = 100.0) {
+    RaycastResults results;
+    results.ray = ray;
+    return results;
   }
 
  protected:

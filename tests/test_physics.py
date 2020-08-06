@@ -339,3 +339,117 @@ def test_velocity_control(sim):
         assert angle_error < mn.Rad(0.05)
 
         sim.remove_object(object_id)
+
+
+@pytest.mark.skipif(
+    not osp.exists("data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"),
+    reason="Requires the habitat-test-scenes",
+)
+def test_raycast(sim):
+    cfg_settings = examples.settings.default_sim_settings.copy()
+
+    # configure some settings in case defaults change
+    cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+    cfg_settings["width"] = 101
+    cfg_settings["height"] = 101
+    cfg_settings["default_agent"] = 0
+    cfg_settings["sensor_height"] = 0
+    cfg_settings["color_sensor"] = True
+    cfg_settings["semantic_sensor"] = False
+    cfg_settings["depth_sensor"] = False
+
+    # enable the physics simulator
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    sim.reconfigure(hab_cfg)
+    obj_mgr = sim.get_object_template_manager()
+
+    if (
+        sim.get_physics_simulation_library()
+        != habitat_sim.physics.PhysicsSimulationLibrary.NONE
+    ):
+        # only test this if we have a physics simulator and therefore a collision world
+        test_ray_1 = habitat_sim.geo.Ray()
+        test_ray_1.direction = mn.Vector3(1.0, 0, 0)
+        raycast_results = sim.cast_ray(test_ray_1)
+        assert raycast_results.ray.direction == test_ray_1.direction
+        assert raycast_results.has_hits()
+        assert len(raycast_results.hits) == 1
+        assert np.allclose(
+            raycast_results.hits[0].point, np.array([6.83063, 0, 0]), atol=0.07
+        )
+        assert np.allclose(
+            raycast_results.hits[0].normal,
+            np.array([-0.999587, 0.0222882, -0.0181424]),
+            atol=0.07,
+        )
+        assert abs(raycast_results.hits[0].ray_distance - 6.831) < 0.001
+        assert raycast_results.hits[0].object_id == -1
+
+        # add a primitive object to the world
+        cube_prim_handle = obj_mgr.get_template_handles("cube")[0]
+        cube_obj_id = sim.add_object_by_handle(cube_prim_handle)
+        sim.set_translation(mn.Vector3(3.0, 0, 0), cube_obj_id)
+
+        raycast_results = sim.cast_ray(test_ray_1)
+
+        assert raycast_results.has_hits()
+        assert len(raycast_results.hits) == 2
+        assert np.allclose(
+            raycast_results.hits[0].point, np.array([2.89355, 0, 0]), atol=0.07
+        )
+        assert np.allclose(
+            raycast_results.hits[0].normal,
+            np.array([-0.998961, -0.0322245, -0.0322245]),
+            atol=0.07,
+        )
+        assert abs(raycast_results.hits[0].ray_distance - 2.8935) < 0.001
+        assert raycast_results.hits[0].object_id == 0
+
+        # test unprojection here since it is related
+        sim.agents[0].scene_node.rotation = mn.Quaternion()
+        sim.agents[0].scene_node.translation = mn.Vector3(0.5, 0, 0)
+        visual_sensor = sim._sensors["color_sensor"]
+        scene_graph = sim.get_active_scene_graph()
+        scene_graph.set_default_render_camera_parameters(visual_sensor._sensor_object)
+        render_camera = scene_graph.get_default_render_camera()
+        center_ray = render_camera.unproject(
+            mn.Vector2i(50, 50)
+        )  # middle of the viewport
+        assert np.allclose(center_ray.origin, np.array([0.5, 0, 0]), atol=0.07)
+        assert np.allclose(center_ray.direction, np.array([0, 0, -1.0]), atol=0.02)
+
+        test_bad_ray = render_camera.unproject(mn.Vector2i(-1, -1))  # out of viewport
+        # out of bounds ray returns 0 direction and camera origin
+        assert np.allclose(test_bad_ray.origin, np.array([0.5, 0, 0]), atol=0.07)
+        assert np.allclose(test_bad_ray.direction, np.zeros(3), atol=0.07)
+
+        test_ray_2 = render_camera.unproject(
+            mn.Vector2i(100, 100)
+        )  # bottom right of the viewport
+        assert np.allclose(
+            test_ray_2.direction, np.array([0.569653, -0.581161, -0.581161]), atol=0.07
+        )
+
+        raycast_results = sim.cast_ray(test_ray_2)
+
+        assert raycast_results.has_hits()
+        assert len(raycast_results.hits) == 3
+        # verify sorted
+        for hix, hit in enumerate(raycast_results.hits):
+            if hix > 0:
+                assert hit.ray_distance > raycast_results.hits[hix - 1].ray_distance
+        assert np.allclose(
+            raycast_results.hits[0].point,
+            np.array([1.57961, -1.10142, -1.10142]),
+            atol=0.07,
+        )
+        assert np.allclose(
+            raycast_results.hits[0].normal,
+            np.array([-0.864284, 0.376244, -0.333846]),
+            atol=0.07,
+        )
+        assert abs(raycast_results.hits[0].ray_distance - 1.895) < 0.001
+        assert raycast_results.hits[0].object_id == -1

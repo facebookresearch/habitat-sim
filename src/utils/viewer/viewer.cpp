@@ -562,6 +562,57 @@ void Viewer::viewportEvent(ViewportEvent& event) {
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
+  // DEBUGGING/DEMO code TODO: remove this
+  auto viewportPoint = event.position();
+  auto ray = renderCamera_->unproject(viewportPoint);
+  Corrade::Utility::Debug()
+      << "Ray: (org=" << ray.origin << ", dir=" << ray.direction << ")";
+
+  esp::physics::RaycastResults raycastResults = physicsManager_->castRay(ray);
+
+  for (auto& hit : raycastResults.hits) {
+    Corrade::Utility::Debug() << "Hit: ";
+    Corrade::Utility::Debug() << "  distance: " << hit.rayDistance;
+    Corrade::Utility::Debug() << "  object: " << hit.objectId;
+    Corrade::Utility::Debug() << "  point: " << hit.point;
+    Corrade::Utility::Debug() << "  normal: " << hit.normal;
+  }
+
+  if (event.button() == MouseEvent::Button::Left) {
+    if (raycastResults.hasHits()) {
+      if (raycastResults.hits[0].objectId != -1) {
+        Mn::Vector3 relativeContactPoint =
+            raycastResults.hits[0].point -
+            physicsManager_->getTranslation(raycastResults.hits[0].objectId);
+        physicsManager_->applyImpulse(raycastResults.hits[0].objectId,
+                                      ray.direction * 5.0,
+                                      relativeContactPoint);
+      }
+    }
+  } else if (event.button() == MouseEvent::Button::Right) {
+    addPrimitiveObject();
+    if (raycastResults.hasHits()) {
+      // use the bounding box to create a safety margin for adding the object
+      float boundingBuffer =
+          physicsManager_->getObjectSceneNode(objectIDs_.back())
+                  .computeCumulativeBB()
+                  .size()
+                  .max() /
+              2.0 +
+          0.04;
+      physicsManager_->setTranslation(
+          objectIDs_.back(),
+          raycastResults.hits[0].point +
+              raycastResults.hits[0].normal * boundingBuffer);
+    } else {
+      physicsManager_->setTranslation(objectIDs_.back(),
+                                      ray.origin + ray.direction);
+    }
+    physicsManager_->setRotation(objectIDs_.back(),
+                                 esp::core::randomRotation());
+  }
+  // DEBUGGING/DEMO code end TODO: remove above this
+
   event.setAccepted();
 }
 

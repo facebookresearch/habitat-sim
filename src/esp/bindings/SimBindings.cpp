@@ -95,6 +95,8 @@ void initSimBindings(py::module& m) {
       .def("get_scene_template_manager", &Simulator::getSceneAttributesManager,
            pybind11::return_value_policy::reference)
 
+      .def("get_physics_simulation_library",
+           &Simulator::getPhysicsSimulationLibrary)
       /* --- Object instancing and access --- */
       .def("add_object", &Simulator::addObject, "object_lib_index"_a,
            "attachment_node"_a = nullptr,
@@ -158,6 +160,8 @@ void initSimBindings(py::module& m) {
       .def("apply_torque", &Simulator::applyTorque, "torque"_a, "object_id"_a,
            "scene_id"_a = 0)
       .def("contact_test", &Simulator::contactTest, "object_id"_a,
+           "scene_id"_a = 0)
+      .def("cast_ray", &Simulator::castRay, "ray"_a, "max_distance"_a = 100.0,
            "scene_id"_a = 0)
       .def("set_object_bb_draw", &Simulator::setObjectBBDraw, "draw_bb"_a,
            "object_id"_a, "scene_id"_a = 0)
