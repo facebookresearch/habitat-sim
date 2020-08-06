@@ -23,11 +23,12 @@
 # %% [markdown]
 # #Habitat-sim Basics for Navigation
 #
-# The Habitat platform relies on a number of key abstractions that model the domain of embodied agents and tasks that can be carried out in three-dimensional indoor environments.
+# The Habitat platform relies on a number of key abstractions that model the domain of embodied agents and tasks that can be carried out in three-dimensional indoor simulation environments.
 #
-# - **Agent**: a physically embodied agent (e.g., a robot) with a suite of Sensors. Can observe the environment and is capable of taking actions that change agent or environment state.
+# - **Agent**: a virtually embodied agent (e.g., a robot) with a suite of Sensors. Can observe the environment and is capable of taking actions that change agent or environment state.
 # - **Sensor**: associated with a specific Agent, capable of returning observation data from the environment at a specified frequency.
-# - **SceneGraph**: a hierarchical representation of a 3D environment that organizes the environment into regions and objects. Can be programmatically manipulated. The scene mesh, objects, agents, and sensors are all present on the SceneGraph.
+# - **Scene**: a 3D environment containing a scene mesh, objects, Agents, and Sensors.
+# - **SceneGraph**: a hierarchical representation of a Scene that organizes the environment into regions and objects. Can be programmatically manipulated. All Scene components are present on the SceneGraph.
 # - **Simulator**: an instance of a simulator backend. Given actions for a set of configured Agents and SceneGraphs, can update the state of the Agents and SceneGraphs, and provide observations for all active Sensors possessed by the Agents.
 #
 # This tutorial covers the basics of using Habitat-sim for navigation tasks, including:
@@ -131,7 +132,7 @@ else:
 # Habitat simulator for navigation consists of **3** important concepts:
 # - configurable embodied agents
 # - multiple sensors
-# - generic 3D dataset handling (e.g., Matterport, Gibson, and Replica datasets).
+# - Scene: generic 3D dataset handling (e.g., Matterport, Gibson, and Replica datasets).
 #
 # In the 1st example, we demonstrate how to setup 1 agent with only 1 sensor (RGB visual sensor), place it in a scene, instruct it to navigate and collect the observations.
 
@@ -282,7 +283,7 @@ sim_settings = {
     "depth_sensor": depth_sensor,  # Depth sensor
     "semantic_sensor": semantic_sensor,  # Semantic sensor
     "seed": 1,  # used in the random navigation
-    "enable_physics": True,
+    "enable_physics": False,  # kinematics only
 }
 
 
@@ -423,9 +424,14 @@ while total_frames < max_frames:
 # # Working with the NavMesh
 
 # %% [markdown]
-# Habitat-sim provides pathfinding and navigability constraints via intergration with [Recast Navigation | Detour](https://masagroup.github.io/recastdetour/) through the [nav module](https://aihabitat.org/docs/habitat-sim/habitat_sim.nav.html).
+# ###Why do we need the navMesh?
 #
-# This tutorial section demonstrates loading/recomputing/saving a NavMesh for a static scene and using it for a discrete navigation task. This module can also be applied to continuous navigation tasks, which is covered in the [advanced features tutorial (TODO: link this)](https://).
+# In the previous sections, we took navigation constraints and collision response for granted. By default, this is enabled in the discrete Habitat-sim action space we demonstrated. However, when directly modifying the agent state, the agent will sense neither the obstacles nor the boundary of the scene when taking actions. We need to introduce a mechanism, light and fast, to enforce such constraints. This section will provide more details on that method
+
+# %% [markdown]
+# Habitat-sim provides pathfinding and navigability constraints via integration with [Recast Navigation | Detour](https://masagroup.github.io/recastdetour/) through the [nav module](https://aihabitat.org/docs/habitat-sim/habitat_sim.nav.html).
+#
+# This tutorial section demonstrates loading, recomputing, and saving a NavMesh for a static scene as well as using it explicitly for discrete and continuous navigation tasks.
 #
 #
 #
@@ -434,12 +440,12 @@ while total_frames < max_frames:
 # ##What is a NavMesh?
 
 # %% [markdown]
-# A navigation mesh (navmesh) is a collection of two-dimensional convex polygons (i.e., a polygon mesh) that define which areas of an environment are traversable by an agent with a particular embodiement. In other words, an agent could freely navigate around within these areas unobstructed by objects, walls, furniture, or other barriers that are part of the environment. Adjacent polygons are connected to each other in a graph enabling efficient pathfinding algorithms to chart routes between points on the navmesh as visualized below.
+# A navigation mesh (NavMesh) is a collection of two-dimensional convex polygons (i.e., a polygon mesh) that define which areas of an environment are traversable by an agent with a particular embodiement. In other words, an agent could freely navigate around within these areas unobstructed by objects, walls, gaps, overhangs, or other barriers that are part of the environment. Adjacent polygons are connected to each other in a graph enabling efficient pathfinding algorithms to chart routes between points on the NavMesh as visualized below.
 # <div>
 # <img src="https://masagroup.github.io/recastdetour/recast_intro.png" width="300"/>
 # </div>
 #
-# Using a NavMesh approximation of navigability, an agent is embodied as a rigid cylinder aligned with the gravity direction. The NavMesh is then computed by voxelizing the static scene and generating polygons on the top surfaces of solid voxels where the cylinder would sit without intersection or overhanging and respecting configured constraints such as maximum climeable slope and step-height.
+# Using a NavMesh approximation of navigability, an agent is embodied as a rigid cylinder aligned with the gravity direction. The NavMesh is then computed by voxelizing the static scene and generating polygons on the top surfaces of solid voxels where the cylinder would sit without intersection or overhanging and respecting configured constraints such as maximum climbable slope and step-height.
 
 # %% [markdown]
 # ##NavMesh utilities:
@@ -447,9 +453,9 @@ while total_frames < max_frames:
 # %% [markdown]
 # ## Visualizing the NavMesh: Topdown Map
 #
-# The PathFinder API makes it easy to produce a topdown map of navigability in a scene. Since the NavMesh is a 3D mesh, and scenes can have multiple floor or levels vertically, we need to slice the NavMesh at specific world height (y coordinate). The map is then generated by sampling the NavMesh at a configurable resolution (meters_per_pixel) with 0.5 meters of vertical slack.
+# The PathFinder API makes it easy to produce a topdown map of navigability in a scene. Since the NavMesh is a 3D mesh, and scenes can have multiple floors or levels vertically, we need to slice the NavMesh at specific world height (y coordinate). The map is then generated by sampling the NavMesh at a configurable resolution (meters_per_pixel) with 0.5 meters of vertical slack.
 #
-# The following example cell defines a matplotlib function to display top down map with optional key points and trajectory overlay. It then generates a topdown map of the current scene using the minimum y coordinate of the scene bounding box as the height, or an optionally configured custom height. Note that this height is in scene global coordinates, so we cannot assume that 0 is the bottom floor.
+# The following example cell defines a matplotlib function to display a top down map with optional key points and trajectory overlay. It then generates a topdown map of the current scene using the minimum y coordinate of the scene bounding box as the height, or an optionally configured custom height. Note that this height is in scene global coordinates, so we cannot assume that 0 is the bottom floor.
 
 # %%
 # small utilities for convenience
@@ -558,8 +564,7 @@ else:
     print("Is point navigable? " + str(sim.pathfinder.is_navigable(nav_point)))
 
     # @markdown The radius of the minimum containing circle (with vertex centroid origin) for the isolated navigable island of a point can be queried with *island_radius*.
-    # @markdown This is analogous to the size of the point's connected component and
-    # @markdown can be used to check that a queried navigable point is on an interesting surface (e.g. the floor), rather than a small surface (e.g. a table-top).
+    # @markdown This is analogous to the size of the point's connected component and can be used to check that a queried navigable point is on an interesting surface (e.g. the floor), rather than a small surface (e.g. a table-top).
     print("Nav island radius : " + str(sim.pathfinder.island_radius(nav_point)))
 
     # @markdown The closest boundary point can also be queried (within some radius).
@@ -609,8 +614,7 @@ else:
 # %%
 # @markdown ## Pathfinding Queries on NavMesh
 
-# @markdown The shortest path between valid points on the NavMesh can be queried
-# @markdown as shown in this example.
+# @markdown The shortest path between valid points on the NavMesh can be queried as shown in this example.
 
 # @markdown With a valid PathFinder instance:
 if sim.pathfinder.is_loaded:
@@ -751,6 +755,8 @@ sim.pathfinder.load_nav_mesh(
 
 # %%
 # @markdown ## Recompute NavMesh:
+
+# @markdown Take a moment to edit some parameters and visualize the resulting NavMesh. Consider agent_radius and agent_height as the most impactful starting point. Note that large variations from the defaults for these parameters (e.g. in the case of very small agents) may be better supported by additional changes to cell_size and cell_height.
 navmesh_settings = habitat_sim.NavMeshSettings()
 
 # @markdown Choose Habitat-sim defaults (e.g. for point-nav tasks), or custom settings.
@@ -948,7 +954,7 @@ def simulate(sim, dt=1.0, get_frames=True):
 # %%
 # @title Discrete and Continuous Navigation:
 
-# @markdown Running this cell
+# @markdown Take moment to run this cell a couple times and note the differences between discrete and continuous navigation with and without sliding.
 
 # @markdown ---
 # @markdown ### Set example parameters:
