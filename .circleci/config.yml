@@ -360,12 +360,12 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest --cov-report=xml --cov=./
+              python -u pytest --cov-report=xml --cov=./
 
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless
-              pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+              python -u pytest --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               export EMSCRIPTEN=$HOME/emsdk/fastcomp/emscripten
