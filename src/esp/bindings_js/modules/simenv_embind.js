@@ -5,6 +5,7 @@
 /*global Module */
 
 import { primitiveObjectHandles, fileBasedObjectHandles } from "./defaults";
+import { getRandomInt } from "./utils";
 
 /**
  * SimEnv class
@@ -23,16 +24,13 @@ class SimEnv {
    */
   constructor(config, episode = {}, agentId = 0) {
     this.sim = new Module.Simulator(config);
-    this.episode = episode;
     this.pathfinder = this.sim.getPathFinder();
-    this.initialAgentState = null;
+
+    this.setEpisode(episode);
+
     this.resolution = null;
     this.grippedObjectId = -1;
     this.gripOffset = null;
-
-    if (Object.keys(episode).length > 0) {
-      this.initialAgentState = this.createAgentState(episode.startState);
-    }
     this.selectedAgentId = agentId;
   }
 
@@ -48,6 +46,9 @@ class SimEnv {
     this.updateCrossHairNode(this.resolution);
     this.syncObjects();
     this.addRandomObjects();
+
+    this.grippedObjectId = -1;
+    this.gripOffset = null;
   }
 
   /**
@@ -56,6 +57,19 @@ class SimEnv {
    */
   changeAgent(agentId) {
     this.selectedAgentId = agentId;
+  }
+
+  /**
+   * Set episode and initialize agent state.
+   * @param {Object} episode - episode config
+   */
+  setEpisode(episode = {}) {
+    this.episode = episode;
+    this.initialAgentState = null;
+
+    if (Object.keys(episode).length > 0) {
+      this.initialAgentState = this.createAgentState(episode.startState);
+    }
   }
 
   /**
@@ -76,15 +90,11 @@ class SimEnv {
    * Adds n random objects at random navigable points in simulation.
    */
   addRandomObjects(numberOfObjects = 4) {
-    let primitiveObjectIdx = 0;
-    let fileBaseObjectIdx = 0;
     for (let object = 0; object < numberOfObjects; object++) {
       if (object % 2 == 0) {
-        this.addTemplateObject(fileBasedObjectHandles[fileBaseObjectIdx]);
-        fileBaseObjectIdx++;
+        this.addTemplateObject();
       } else {
-        this.addPrimitiveObject(primitiveObjectHandles[primitiveObjectIdx]);
-        //primitiveObjectIdx++;
+        this.addPrimitiveObject();
       }
     }
     this.recomputeNavMesh();
@@ -144,12 +154,11 @@ class SimEnv {
 
   /**
    * Add a random primitive object to the environment.
-   * @param {number} objectLibHandle - object's template config/origin handle
    * @returns {number} object ID or -1 if object was unable to be added
    */
-  addPrimitiveObject(
-    objectLibHandle = "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_useTangents_false_capEnds_true"
-  ) {
+  addPrimitiveObject() {
+    let primitiveObjectIdx = getRandomInt(primitiveObjectHandles.length);
+    let objectLibHandle = primitiveObjectHandles[primitiveObjectIdx];
     let objectId = this.addObjectByHandle(objectLibHandle);
     let newPosition = this.pathfinder.getRandomNavigablePoint();
     let position = this.convertVec3fToVector3(newPosition);
@@ -160,12 +169,11 @@ class SimEnv {
 
   /**
    * Add a random file based object to the environment.
-   * @param {number} objectLibHandle - object's template config/origin handle
    * @returns {number} object ID or -1 if object was unable to be added
    */
-  addTemplateObject(
-    objectLibHandle = "/data/objects/sphere.phys_properties.json"
-  ) {
+  addTemplateObject() {
+    let fileBasedObjectIdx = getRandomInt(fileBasedObjectHandles.length);
+    let objectLibHandle = fileBasedObjectHandles[fileBasedObjectIdx];
     let objectId = this.addObjectByHandle(objectLibHandle);
     let newPosition = this.pathfinder.getRandomNavigablePoint();
     let position = this.convertVec3fToVector3(newPosition);

@@ -157,6 +157,13 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("name", &ActionSpec::name)
       .property("actuation", &ActionSpec::actuation);
 
+  em::class_<ShortestPath>("ShortestPath")
+      .smart_ptr_constructor("ShortestPath", &ShortestPath::create<>)
+      .property("requestedStart", &ShortestPath::requestedStart)
+      .property("requestedEnd", &ShortestPath::requestedEnd)
+      .property("points", &ShortestPath::points)
+      .property("geodesicDistance", &ShortestPath::geodesicDistance);
+
   em::class_<PathFinder>("PathFinder")
       .smart_ptr<PathFinder::ptr>("PathFinder::ptr")
       .property("bounds", &PathFinder::bounds)

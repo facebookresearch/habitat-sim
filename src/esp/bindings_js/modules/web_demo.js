@@ -105,7 +105,6 @@ class WebDemo {
 
     this.task.init();
     this.task.reset();
-    //this.task.initializeRandomObjects();
   }
 }
 

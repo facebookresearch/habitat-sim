@@ -218,7 +218,6 @@ class NavigateTask {
 
     this.sim.updateCrossHairNode(this.sim.resolution);
     this.sim.syncObjects();
-    //this.sim.stepWorld();
 
     this.renderImage();
     this.renderSemanticImage();
