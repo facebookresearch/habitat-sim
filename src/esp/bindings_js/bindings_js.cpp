@@ -130,6 +130,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .field("min", &std::pair<vec3f, vec3f>::first)
       .field("max", &std::pair<vec3f, vec3f>::second);
 
+  em::value_object<esp::geo::Ray>("Ray")
+      .field("origin", &esp::geo::Ray::origin)
+      .field("direction", &esp::geo::Ray::direction);
+
   em::class_<NavMeshSettings>("NavMeshSettings")
       .smart_ptr_constructor("NavMeshSettings", &NavMeshSettings::create<>)
       .property("agentRadius", &NavMeshSettings::agentRadius)

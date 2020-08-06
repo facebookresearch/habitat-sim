@@ -201,7 +201,8 @@ class SimEnv {
     });
 
     let crossHairPosition = halfResolution;
-    let crossHairPoint = this.unproject(crossHairPosition, this.resolution, 0);
+    let crossHairPoint = this.unproject(crossHairPosition, this.resolution, 0)
+      .direction;
     let refPoint = this.getAgentAbsoluteTranslation(0);
 
     let nearestObjectId = this.findNearestObjectUnderCrosshair(
