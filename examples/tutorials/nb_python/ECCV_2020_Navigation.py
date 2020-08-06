@@ -109,6 +109,22 @@ def display_sample(rgb_obs, semantic_obs=np.array([]), depth_obs=np.array([])):
     plt.show()
 
 
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-display", dest="display", action="store_false")
+    parser.add_argument("--no-make-video", dest="make_video", action="store_false")
+    parser.set_defaults(show_video=True, make_video=True)
+    args, _ = parser.parse_known_args()
+    show_video = args.display
+    display = args.display
+    make_video = args.make_video
+else:
+    show_video = False
+    make_video = False
+    display = False
+
 # %% [markdown]
 # # "Hello, World!"
 #
@@ -216,7 +232,8 @@ def navigateAndSee(action=""):
     if action in action_names:
         observations = sim.step(action)
         print("action: ", action)
-        display_sample(observations["color_sensor"])
+        if display:
+            display_sample(observations["color_sensor"])
 
 
 action = "turn_right"
@@ -396,7 +413,8 @@ while total_frames < max_frames:
     semantic = observations["semantic_sensor"]
     depth = observations["depth_sensor"]
 
-    display_sample(rgb, semantic, depth)
+    if display:
+        display_sample(rgb, semantic, depth)
 
     total_frames += 1
 
@@ -515,7 +533,8 @@ try:
 
     # This map is a 2D boolean array
     topdown_map = sim.pathfinder.get_topdown_view(meters_per_pixel, height)
-    display_topdown_map(topdown_map)
+    if display:
+        display_topdown_map(topdown_map)
 
 except:
     print("Error - aborting")
@@ -584,7 +603,8 @@ else:
     xy_vis_points = convert_points_to_topdown(
         sim.pathfinder, vis_points, meters_per_pixel
     )
-    display_topdown_map(topdown_map, key_points=xy_vis_points)
+    if display:
+        display_topdown_map(topdown_map, key_points=xy_vis_points)
 
 # %%
 # @markdown ## Pathfinding Queries on NavMesh
@@ -623,7 +643,8 @@ if sim.pathfinder.is_loaded:
         trajectory = convert_points_to_topdown(
             sim.pathfinder, path_points, meters_per_pixel
         )
-        display_topdown_map(topdown_map, trajectory)
+        if display:
+            display_topdown_map(topdown_map, trajectory)
 
         display_path_agent_renders = False  # @param{type:"boolean"}
         # @markdown 4. (optional) Place agent and render images at trajectory points (if found).
@@ -649,7 +670,8 @@ if sim.pathfinder.is_loaded:
                     semantic = observations["semantic_sensor"]
                     depth = observations["depth_sensor"]
 
-                    display_sample(rgb, semantic, depth)
+                    if display:
+                        display_sample(rgb, semantic, depth)
 
 
 else:
@@ -797,7 +819,8 @@ rgb = observations["color_sensor"]
 semantic = observations["semantic_sensor"]
 depth = observations["depth_sensor"]
 
-display_sample(rgb, semantic, depth)
+if display:
+    display_sample(rgb, semantic, depth)
 
 
 # %%
@@ -822,21 +845,8 @@ data_path = os.path.join(dir_path, "data")
 # @markdown Optionally configure the save path for video output:
 output_directory = "examples/tutorials/nav_output/"  # @param {type:"string"}
 output_path = os.path.join(dir_path, output_directory)
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--no-show-video", dest="show_video", action="store_false")
-    parser.add_argument("--no-make-video", dest="make_video", action="store_false")
-    parser.set_defaults(show_video=True, make_video=True)
-    args, _ = parser.parse_known_args()
-    show_video = args.show_video
-    make_video = args.make_video
-    if not os.path.exists(output_path):
-        os.mkdir(output_path)
-else:
-    show_video = False
-    make_video = False
+if not os.path.exists(output_path):
+    os.mkdir(output_path)
 
 
 def make_video_cv2(observations, prefix="", open_vid=True, fps=60, multi_obs=False):
