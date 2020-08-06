@@ -822,8 +822,21 @@ data_path = os.path.join(dir_path, "data")
 # @markdown Optionally configure the save path for video output:
 output_directory = "examples/tutorials/nav_output/"  # @param {type:"string"}
 output_path = os.path.join(dir_path, output_directory)
-if not os.path.exists(output_path):
-    os.mkdir(output_path)
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-show-video", dest="show_video", action="store_false")
+    parser.add_argument("--no-make-video", dest="make_video", action="store_false")
+    parser.set_defaults(show_video=True, make_video=True)
+    args, _ = parser.parse_known_args()
+    show_video = args.show_video
+    make_video = args.make_video
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
+else:
+    show_video = False
+    make_video = False
 
 
 def make_video_cv2(observations, prefix="", open_vid=True, fps=60, multi_obs=False):
@@ -1086,9 +1099,14 @@ for iteration in range(2):
 
     print("frames = " + str(len(observations)))
     # video rendering with embedded 1st person view
-    make_video_cv2(
-        observations, prefix=video_prefix, open_vid=True, fps=fps, multi_obs=False
-    )
+    if make_video:
+        make_video_cv2(
+            observations,
+            prefix=video_prefix,
+            open_vid=show_video,
+            fps=fps,
+            multi_obs=False,
+        )
     sim.reset()
 
 # [/embodied_agent_navmesh]
