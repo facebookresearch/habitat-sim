@@ -914,7 +914,7 @@ elif "Primitive" in object_type:
     obj_template_handle = sel_prim_obj_handle
 else:
     # Unknown - defaults to file-based
-    obj_template_handle = "./data/objects/banana.phys_properties.json"
+    pass
 
 # @markdown Configure the initial object location (local offset from the agent body node):
 # default : offset=np.array([0,2.0,-1.5]), orientation=np.quaternion(1,0,0,0)
