@@ -949,8 +949,7 @@ esp::geo::Ray Simulator::unproject(const Magnum::Vector2i& crossHairPosition) {
 void Simulator::updateCrossHairNode(Magnum::Vector2i crossHairPosition) {
   scene::SceneGraph& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
   gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
-  LOG(WARNING) << "crossHairPosition";
-  LOG(WARNING) << crossHairPosition;
+
   esp::geo::Ray ray = unproject(crossHairPosition);
   Magnum::Vector3 point = ray.direction;
   crossHairNode_->setTranslation(renderCamera_.node().absoluteTranslation() +
