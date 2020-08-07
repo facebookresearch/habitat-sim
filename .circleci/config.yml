@@ -301,6 +301,14 @@ jobs:
                 rm locobot_merged.zip
                 cd ..
               fi
+              if [ ! -d ./habitat-sim/data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb ]
+              then
+                cd habitat-sim
+                wget http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip
+                unzip mp3d_example.zip -d data/scene_datasets/mp3d/
+                rm mp3d_example.zip
+                cd ..
+              fi
       - run:
           name: Build Javascript bindings
           command: |
@@ -339,6 +347,9 @@ jobs:
               . activate habitat; cd habitat-sim
 
               export PYTHONPATH=$PYTHONPATH:$(pwd)
+              #This way, pytest shows partial progress
+              export PYTHONUNBUFFERED=1
+
               # run tests with code coverage
               CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
                 --bullet \
