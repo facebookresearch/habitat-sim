@@ -5,6 +5,7 @@
 #     collapsed_sections: []
 #     name: 'ECCV 2020: Interactivity.ipynb'
 #     provenance: []
+#     toc_visible: true
 #   jupytext:
 #     cell_metadata_filter: -all
 #     formats: nb_python//py:percent,colabs//ipynb
@@ -978,7 +979,11 @@ if scenario_is_kinematic:
 
 # simulate and collect observations
 example_type = "kinematic vs dynamic"
-simulate_and_make_vid(prefix=example_type, dt=2.0)
+observations = simulate(sim, dt=2.0)
+if make_video:
+    make_video_cv2(
+        observations, prefix=example_type, open_vid=show_video, multi_obs=False
+    )
 remove_all_objects(sim)
 
 
@@ -1710,9 +1715,12 @@ set_object_state_from_agent(sim, obj_id, offset=offset)
 
 example_type = "Adding customized objects"
 # Either
-simulate_and_make_vid(example_type, dt=2.5)
-# or
-# make_sim_and_vid_button(example_type, dt=2.5)
+
+observations = simulate(sim, dt=2.5)
+if make_video:
+    make_video_cv2(
+        observations, prefix=example_type, open_vid=show_video, multi_obs=False
+    )
 make_clear_all_objects_button()
 
 # %%
@@ -1744,9 +1752,11 @@ for i in range(6):
 
 example_type = "Adding primitive-basedd objects"
 # Either
-simulate_and_make_vid(example_type)
-# or
-# make_sim_and_vid_button(example_type, dt=1.5)
+observations = simulate(sim, dt=1.0)
+if make_video:
+    make_video_cv2(
+        observations, prefix=example_type, open_vid=show_video, multi_obs=False
+    )
 make_clear_all_objects_button()
 
 # %% [markdown]
