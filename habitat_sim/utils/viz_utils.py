@@ -112,7 +112,7 @@ def make_cfg(settings):
     return habitat_sim.Configuration(backend_cfg, [agent_cfg])
 
 
-def make_video_cv2(
+def make_video(
     observations,
     primary_pov,
     output_path,
