@@ -44,3 +44,20 @@ export const fileBasedObjectHandles = [
   "/data/objects/sphere.phys_properties.json",
   "/data/objects/chair.phys_properties.json"
 ];
+
+export const fileBasedObjects = {
+  objects: [
+    {
+      objectName: "sphere.glb",
+      objectHandle: "sphere.phys_properties.json",
+      physicsProperties: "test_assets/objects/sphere.phys_properties.json",
+      renderMesh: "test_assets/objects/sphere.glb"
+    },
+    {
+      objectName: "chair.glb",
+      objectHandle: "chair.phys_properties.json",
+      physicsProperties: "test_assets/objects/chair.phys_properties.json",
+      renderMesh: "test_assets/objects/chair.glb"
+    }
+  ]
+};

@@ -7,7 +7,7 @@
 import WebDemo from "./modules/web_demo";
 import VRDemo from "./modules/vr_demo";
 import ViewerDemo from "./modules/viewer_demo";
-import { defaultScene, dataHome } from "./modules/defaults";
+import { defaultScene, dataHome, fileBasedObjects } from "./modules/defaults";
 import "./bindings.css";
 import {
   checkWebAssemblySupport,
@@ -41,35 +41,28 @@ function preloadPhysConfig(url) {
   FS.mkdir(emObjHome);
 
   // TODO Need to loop through the objects directory on the server (`phys/objects/*`) and put all of the glbs onto the client
-  FS.createPreloadedFile(
-    emObjHome,
-    "sphere.glb",
-    dataHome.concat("test_assets/objects/sphere.glb"),
-    true,
-    false
-  );
-  FS.createPreloadedFile(
-    emObjHome,
-    "sphere.phys_properties.json",
-    dataHome.concat("test_assets/objects/sphere.phys_properties.json"),
-    true,
-    false
-  );
+  var objects = fileBasedObjects["objects"];
+  for (let objectIdx in objects) {
+    let objectName = objects[objectIdx]["objectName"];
+    let objectHandle = objects[objectIdx]["objectHandle"];
+    let physicsProperties = objects[objectIdx]["physicsProperties"];
+    let renderMesh = objects[objectIdx]["renderMesh"];
 
-  FS.createPreloadedFile(
-    emObjHome,
-    "chair.glb",
-    dataHome.concat("test_assets/objects/chair.glb"),
-    true,
-    false
-  );
-  FS.createPreloadedFile(
-    emObjHome,
-    "chair.phys_properties.json",
-    dataHome.concat("test_assets/objects/chair.phys_properties.json"),
-    true,
-    false
-  );
+    FS.createPreloadedFile(
+      emObjHome,
+      objectName,
+      dataHome.concat(renderMesh),
+      true,
+      false
+    );
+    FS.createPreloadedFile(
+      emObjHome,
+      objectHandle,
+      dataHome.concat(physicsProperties),
+      true,
+      false
+    );
+  }
 
   return emDataHome.concat("/".concat(file));
 }
