@@ -554,7 +554,7 @@ class AssetAttributesManager
  public:
   ESP_SMART_POINTERS(AssetAttributesManager)
 
-};  // namespace managers
+};  // AssetAttributesManager
 }  // namespace managers
 }  // namespace assets
 }  // namespace esp

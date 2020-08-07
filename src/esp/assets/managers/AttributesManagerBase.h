@@ -838,8 +838,7 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
     colFName = cTmpFName;
     // TODO eventually remove this, but currently collision mesh must be UNKNOWN
     attributes->setCollisionAssetType(static_cast<int>(AssetType::UNKNOWN));
-  };
-  // TODO for now force collision mesh types to be
+  }
 
   // use non-empty result if either result is empty
   attributes->setRenderAssetHandle(rndrFName.compare("") == 0 ? colFName
