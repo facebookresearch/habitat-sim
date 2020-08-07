@@ -52,12 +52,18 @@ import time
 
 import cv2
 import git
-import ipywidgets as widgets
 import magnum as mn
 import numpy as np
-from IPython.display import display as ipydisplay
-# For using jupyter/ipywidget IO components
-from ipywidgets import fixed, interact, interact_manual, interactive
+
+try:
+    import ipywidgets as widgets
+    from IPython.display import display as ipydisplay
+    # For using jupyter/ipywidget IO components
+    from ipywidgets import fixed, interact, interact_manual, interactive
+
+    HAS_WIDGETS = True
+except ImportError:
+    HAS_WIDGETS = False
 # %matplotlib inline
 from matplotlib import pyplot as plt
 from PIL import Image
@@ -772,6 +778,9 @@ def set_button_launcher(desc):
 
 
 def make_sim_and_vid_button(prefix, dt=1.0):
+    if not HAS_WIDGETS:
+        return
+
     def on_sim_click(b):
         observations = simulate(sim, dt=dt)
         make_video_cv2(observations, prefix=prefix, open_vid=True, multi_obs=False)
@@ -782,6 +791,9 @@ def make_sim_and_vid_button(prefix, dt=1.0):
 
 
 def make_clear_all_objects_button():
+    if not HAS_WIDGETS:
+        return
+
     def on_clear_click(b):
         remove_all_objects(sim)
 
@@ -807,22 +819,27 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
     # Construct DDLs and assign event handlers
     # All file-based object template handles
     file_obj_handles = obj_attr_mgr.get_file_template_handles()
+    # All primitive asset-based object template handles
+    prim_obj_handles = obj_attr_mgr.get_synth_template_handles()
+    # All primitive asset handles template handles
+    prim_asset_handles = prim_attr_mgr.get_template_handles()
+    if not HAS_WIDGETS:
+        sel_file_obj_handle = file_obj_handles[0]
+        sel_prim_obj_handle = prim_obj_handles[0]
+        sel_prim_obj_handle = prim_asset_handles[0]
+        return
     file_obj_ddl, sel_file_obj_handle = set_handle_ddl_widget(
         file_obj_handles,
         "File-based Object",
         sel_file_obj_handle,
         on_file_obj_ddl_change,
     )
-    # All primitive asset-based object template handles
-    prim_obj_handles = obj_attr_mgr.get_synth_template_handles()
     prim_obj_ddl, sel_prim_obj_handle = set_handle_ddl_widget(
         prim_obj_handles,
         "Primitive-based Object",
         sel_prim_obj_handle,
         on_prim_obj_ddl_change,
     )
-    # All primitive asset handles template handles
-    prim_asset_handles = prim_attr_mgr.get_template_handles()
     prim_asset_ddl, sel_asset_handle = set_handle_ddl_widget(
         prim_asset_handles, "Primitive Asset", sel_asset_handle, on_prim_ddl_change
     )
@@ -897,7 +914,7 @@ elif "Primitive" in object_type:
     obj_template_handle = sel_prim_obj_handle
 else:
     # Unknown - defaults to file-based
-    pass
+    obj_template_handle = "./data/objects/banana.phys_properties.json"
 
 # @markdown Configure the initial object location (local offset from the agent body node):
 # default : offset=np.array([0,2.0,-1.5]), orientation=np.quaternion(1,0,0,0)
