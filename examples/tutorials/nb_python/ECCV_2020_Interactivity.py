@@ -1058,7 +1058,9 @@ while sim.get_world_time() < start_time + dt:
 
 example_type = "object permanence"
 if make_video:
-    make_video_cv2(observations, prefix=example_type, open_vid=True, multi_obs=False)
+    make_video_cv2(
+        observations, prefix=example_type, open_vid=show_video, multi_obs=False
+    )
 remove_all_objects(sim)
 
 
@@ -1382,9 +1384,9 @@ faulthandler.enable()
 # @markdown - a 3rd person camera view
 # @markdown - modified 1st person sensor placement
 sim_settings = make_default_settings()
-sim_settings[
-    "scene"
-] = "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"  # @param{type:"string"}
+# fmt: off
+sim_settings["scene"] = "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"  # @param{type:"string"}
+# fmt: on
 sim_settings["sensor_pitch"] = 0
 sim_settings["sensor_height"] = 0.6
 sim_settings["color_sensor_3rd_person"] = True
@@ -1532,7 +1534,7 @@ if make_video:
     make_video_cv2(
         observations,
         prefix=video_prefix,
-        open_vid=True,
+        open_vid=show_vid,
         multi_obs=True,
         fps=1.0 / time_step,
     )
@@ -1831,7 +1833,11 @@ while sim.get_world_time() - start_time < 2.0:
 video_prefix = "motion tracking"
 if make_video:
     make_video_cv2(
-        observations, prefix=video_prefix, open_vid=True, multi_obs=False, fps=60.0
+        observations,
+        prefix=video_prefix,
+        open_vid=show_video,
+        multi_obs=False,
+        fps=60.0,
     )
 
 # reset the sensor state for other examples
