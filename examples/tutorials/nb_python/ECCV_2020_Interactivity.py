@@ -709,7 +709,7 @@ def display_sample(
                 plt.plot(point[0], point[1], marker="o", markersize=10, alpha=0.8)
         plt.imshow(data)
 
-    plt.show()
+    plt.show(block=False)
 
 
 if __name__ == "__main__":
@@ -1057,7 +1057,8 @@ while sim.get_world_time() < start_time + dt:
     observations.append(sim.get_sensor_observations())
 
 example_type = "object permanence"
-make_video_cv2(observations, prefix=example_type, open_vid=True, multi_obs=False)
+if make_video:
+    make_video_cv2(observations, prefix=example_type, open_vid=True, multi_obs=False)
 remove_all_objects(sim)
 
 
@@ -1827,9 +1828,10 @@ while sim.get_world_time() - start_time < 2.0:
 
 # video rendering with embedded 1st person view
 video_prefix = "motion tracking"
-make_video_cv2(
-    observations, prefix=video_prefix, open_vid=True, multi_obs=False, fps=60.0
-)
+if make_video:
+    make_video_cv2(
+        observations, prefix=video_prefix, open_vid=True, multi_obs=False, fps=60.0
+    )
 
 # reset the sensor state for other examples
 visual_sensor._spec.position = initial_sensor_position
