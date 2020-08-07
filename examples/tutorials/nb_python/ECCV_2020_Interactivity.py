@@ -80,7 +80,7 @@ dir_path = repo.working_tree_dir
 data_path = os.path.join(dir_path, "data")
 output_directory = "examples/tutorials/interactivity_output/"  # @param {type:"string"}
 output_path = os.path.join(dir_path, output_directory)
-if not os.path.exists(output_path):
+if os.path.exists(output_path):
     os.mkdir(output_path)
 
 # define some globals the first time we run.
@@ -1528,13 +1528,14 @@ while sim.get_world_time() - start_time < 2.0:
 
 # video rendering with embedded 1st person view
 video_prefix = "fetch"
-make_video_cv2(
-    observations,
-    prefix=video_prefix,
-    open_vid=True,
-    multi_obs=True,
-    fps=1.0 / time_step,
-)
+if make_video:
+    make_video_cv2(
+        observations,
+        prefix=video_prefix,
+        open_vid=True,
+        multi_obs=True,
+        fps=1.0 / time_step,
+    )
 
 # remove locobot while leaving the agent node for later use
 sim.remove_object(locobot_id, delete_object_node=False)
