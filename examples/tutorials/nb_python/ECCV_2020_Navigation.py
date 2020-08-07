@@ -535,7 +535,7 @@ else:
 
     if display:
         print("Displaying the raw map from get_topdown_view:")
-        display_map(topdown_map)
+        display_map(sim_topdown_map)
         print("Displaying the map from the Habitat-Lab maps module:")
         display_map(hablab_topdown_map)
 
