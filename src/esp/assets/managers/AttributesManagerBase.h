@@ -101,6 +101,11 @@ class AttributesManager {
   int registerAttributesTemplate(
       AttribsPtr attributesTemplate,
       const std::string& attributesTemplateHandle = "") {
+    if (nullptr == attributesTemplate) {
+      LOG(ERROR) << "AttributesManager::registerAttributesTemplate : Invalid "
+                    "(null) template passed to registration. Aborting.";
+      return ID_UNDEFINED;
+    }
     if ("" != attributesTemplateHandle) {
       return registerAttributesTemplateFinalize(attributesTemplate,
                                                 attributesTemplateHandle);
