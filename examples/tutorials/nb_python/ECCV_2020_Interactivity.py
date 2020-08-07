@@ -1202,7 +1202,7 @@ remove_all_objects(sim)
 # %% [markdown]
 # The following example demonstrates setup and excecution of an embodied navigation and interaction scenario. An object and an agent embodied by a rigid locobot mesh are placed randomly on the NavMesh. A path is computed for the agent to reach the object which is executed by a continuous path-following controller. The object is then kinematically gripped by the agent and a second path is computed for the agent to reach a goal location, also executed by a continuous controller. The gripped object is then released and thrown in front of the agent.
 #
-# Note: for a more detailed explanation of the NavMesh see [this(TODO: link)]() tutorial.
+# Note: for a more detailed explanation of the NavMesh see [this (link)](https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/ECCV_2020_Navigation.ipynb) tutorial.
 
 # %%
 # @title Select target object from the GUI: { display-mode: "form" }
