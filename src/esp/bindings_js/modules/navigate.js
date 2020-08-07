@@ -216,7 +216,7 @@ class NavigateTask {
   render(options = { renderTopDown: true }) {
     this.renderImage();
 
-    this.sim.updateCrossHairNode(this.sim.resolution);
+    this.sim.updateCrossHairNode(this.sim.getCrosshairPosition());
     this.sim.syncObjects();
 
     this.renderImage();

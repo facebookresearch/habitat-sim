@@ -43,7 +43,7 @@ class SimEnv {
       const agent = this.sim.getAgent(this.selectedAgentId);
       agent.setState(this.initialAgentState, true);
     }
-    this.updateCrossHairNode(this.resolution);
+    this.updateCrossHairNode(this.getCrosshairPosition());
     this.syncObjects();
     this.addRandomObjects();
 
@@ -75,8 +75,8 @@ class SimEnv {
   /**
    * Update cross hair node position.
    */
-  updateCrossHairNode(windowSize) {
-    this.sim.updateCrossHairNode(windowSize);
+  updateCrossHairNode(postion) {
+    this.sim.updateCrossHairNode(postion);
   }
 
   /**
@@ -115,7 +115,9 @@ class SimEnv {
    */
   addAgent(config) {
     let agentConfig = this.createAgentConfig(config);
-    this.resolution = agentConfig.sensorSpecifications.get(0).resolution;
+    this.resolution = this.flipVec2i(
+      agentConfig.sensorSpecifications.get(0).resolution
+    );
     return this.sim.addAgent(agentConfig);
   }
 
@@ -196,13 +198,9 @@ class SimEnv {
    * @returns {number} object ID or -1 if object was unable to be added
    */
   grabReleaseObject() {
-    let halfResolution = this.resolution.map(function(element) {
-      return element * 0.5;
-    });
-
-    let crossHairPosition = halfResolution;
-    let crossHairPoint = this.unproject(crossHairPosition, this.resolution, 0)
-      .direction;
+    let crossHairPosition = this.getCrosshairPosition();
+    let ray = this.unproject(crossHairPosition);
+    let crossHairPoint = ray.direction;
     let refPoint = this.getAgentAbsoluteTranslation(0);
 
     let nearestObjectId = this.findNearestObjectUnderCrosshair(
@@ -414,6 +412,13 @@ class SimEnv {
     return state;
   }
 
+  getCrosshairPosition() {
+    let center = this.resolution.map(function(element) {
+      return element * 0.5;
+    });
+    return center;
+  }
+
   recomputeNavMesh() {
     let navMeshSettings = new Module.NavMeshSettings();
     navMeshSettings.setDefaults();
@@ -440,8 +445,8 @@ class SimEnv {
     );
   }
 
-  unproject(crossHairPosition, viewSize, depth = 1.0) {
-    return this.sim.unproject(crossHairPosition, viewSize, depth);
+  unproject(crossHairPosition) {
+    return this.sim.unproject(crossHairPosition);
   }
 
   convertVector3ToVec3f(position) {
@@ -456,6 +461,10 @@ class SimEnv {
       position[2]
     );
     return vector3Position;
+  }
+
+  flipVec2i(position) {
+    return [position[1], position[0]];
   }
 
   /**

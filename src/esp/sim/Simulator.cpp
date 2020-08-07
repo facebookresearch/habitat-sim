@@ -917,37 +917,19 @@ int Simulator::findNearestObjectUnderCrosshair(int refObjectID,
                                                Magnum::Vector3 refPoint,
                                                const Magnum::Vector2i& viewSize,
                                                float distance) {
-  float best_fraction = 99999.0;
   int nearestObjId = ID_UNDEFINED;
   scene::SceneGraph& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
   gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
 
-  // try a ray test
-  // physics::BulletPhysicsManager* bpm =
-  //     static_cast<physics::BulletPhysicsManager*>(physicsManager_.get());
-  Magnum::Vector3 cast =
-      (point - renderCamera_.node().absoluteTranslation()).normalized();
-  // btCollisionWorld::AllHitsRayResultCallback hit =
-  //     bpm->castRay(renderCamera_.node().absoluteTranslation(), cast);
-
-  const esp::geo::Ray ray{renderCamera_.node().absoluteTranslation(), cast};
+  const esp::geo::Ray ray{renderCamera_.node().absoluteTranslation(), point};
   physics::RaycastResults results = castRay(ray);
   Magnum::Vector3 hitPoint;
 
-  // for (int hitIx = 0; hitIx < hit.m_hitPointWorld.size(); hitIx++) {
-  //   // Corrade::Utility::Debug()
-  //   //     << " hit fraction: " << hit.m_hitFractions.at(hitIx);
-  //   if (hit.m_hitFractions.at(hitIx) < best_fraction) {
-  //     best_fraction = hit.m_hitFractions.at(hitIx);
-  //     nearestObjId = bpm->getObjectIDFromCollisionObject(
-  //         hit.m_collisionObjects.at(hitIx));
-  //     hitPoint = Magnum::Vector3{hit.m_hitPointWorld.at(hitIx)};
-  //   }
-  // }
-
   for (int rayIdx = 0; rayIdx < results.hits.size(); rayIdx++) {
-    nearestObjId = results.hits[rayIdx].objectId;
-    hitPoint = results.hits[rayIdx].point;
+    if (results.hits[rayIdx].objectId != -1) {
+      nearestObjId = results.hits[rayIdx].objectId;
+      hitPoint = results.hits[rayIdx].point;
+    }
   }
 
   if ((hitPoint - refPoint).length() > distance) {
@@ -957,26 +939,22 @@ int Simulator::findNearestObjectUnderCrosshair(int refObjectID,
   return nearestObjId;
 }
 
-esp::geo::Ray Simulator::unproject(const Magnum::Vector2i& crossHairPos,
-                                   const Magnum::Vector2i& viewSize,
-                                   float depth) {
+esp::geo::Ray Simulator::unproject(const Magnum::Vector2i& crossHairPosition) {
   scene::SceneGraph& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
   gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
 
-  return renderCamera_.unproject(crossHairPos);
+  return renderCamera_.unproject(crossHairPosition);
 }
 
-void Simulator::updateCrossHairNode(Magnum::Vector2i windowSize) {
+void Simulator::updateCrossHairNode(Magnum::Vector2i crossHairPosition) {
   scene::SceneGraph& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
   gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
-
-  Magnum::Vector2i crossHairPos = Magnum::Vector2i{windowSize * 0.5};
-  esp::geo::Ray ray = unproject(crossHairPos, windowSize, 1.0);
+  LOG(WARNING) << "crossHairPosition";
+  LOG(WARNING) << crossHairPosition;
+  esp::geo::Ray ray = unproject(crossHairPosition);
   Magnum::Vector3 point = ray.direction;
-  Magnum::Vector3 cast =
-      (point - renderCamera_.node().absoluteTranslation()).normalized();
   crossHairNode_->setTranslation(renderCamera_.node().absoluteTranslation() +
-                                 cast * 1.0);
+                                 point * 1.0);
 }
 
 void Simulator::syncGrippedObject(int grippedObjectId) {
