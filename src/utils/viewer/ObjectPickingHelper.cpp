@@ -24,7 +24,9 @@ ObjectPickingHelper::ObjectPickingHelper(Mn::Vector2i viewportSize) {
       Mn::GL::Framebuffer::Status::Complete);
 
   shader_.setViewportSize(Mn::Vector2{viewportSize});
-  shader_.setColor(0x2f83cc7f_rgbaf).setWireframeColor(0xdcdcdc_rgbf);
+  shader_.setColor(0x2f83cc7f_rgbaf)
+      .setWireframeColor(0xdcdcdc_rgbf)
+      .setWireframeWidth(2.0);
 }
 
 void ObjectPickingHelper::recreateFramebuffer(Mn::Vector2i viewportSize) {
