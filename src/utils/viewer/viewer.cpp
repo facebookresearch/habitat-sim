@@ -11,8 +11,16 @@
 #else
 #include <Magnum/Platform/GlfwApplication.h>
 #endif
+#include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Camera.h>
 #include <Magnum/Timeline.h>
+
+#include <Magnum/GL/Framebuffer.h>
+#include <Magnum/GL/Renderbuffer.h>
+#include <Magnum/GL/RenderbufferFormat.h>
+#include <Magnum/Image.h>
+#include <Magnum/Shaders/Generic.h>
+#include <Magnum/Shaders/Shaders.h>
 
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/RenderCamera.h"
@@ -39,6 +47,7 @@
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/sim/Simulator.h"
 
+#include "ObjectPickingHelper.h"
 #include "esp/physics/configure.h"
 
 constexpr float moveSensitivity = 0.1f;
@@ -141,6 +150,10 @@ class Viewer : public Mn::Platform::Application {
   Mn::ImGuiIntegration::Context imgui_{Mn::NoCreate};
   bool showFPS_ = true;
   bool frustumCullingEnabled_ = true;
+
+  // NOTE: Mouse + shift is to select object on the screen!!
+  void createPickedObjectVisualizer(unsigned int objectId);
+  std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
 };
 
 Viewer::Viewer(const Arguments& arguments)
@@ -320,6 +333,7 @@ Viewer::Viewer(const Arguments& arguments)
   renderCamera_->node().setTransformation(
       rgbSensorNode_->absoluteTransformation());
 
+  objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
   timeline_.start();
 
 }  // end Viewer::Viewer
@@ -496,12 +510,8 @@ void Viewer::drawEvent() {
     timeSinceLastSimulation = 0.0;
   }
 
-  int DEFAULT_SCENE = 0;
-  int sceneID = sceneID_[DEFAULT_SCENE];
-  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
   uint32_t visibles = 0;
-
-  for (auto& it : sceneGraph.getDrawableGroups()) {
+  for (auto& it : sceneGraph_->getDrawableGroups()) {
     // TODO: remove || true
     if (it.second.prepareForDraw(*renderCamera_) || true) {
       esp::gfx::RenderCamera::Flags flags;
@@ -518,6 +528,31 @@ void Viewer::drawEvent() {
     physicsManager_->debugDraw(projM * camM);
   }
 
+  // draw picked object
+  if (objectPickingHelper_->isObjectPicked()) {
+    // setup blending function
+    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
+
+    // rendering
+    esp::gfx::RenderCamera::Flags flags;
+    if (frustumCullingEnabled_) {
+      flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+    }
+    renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+
+    // Neither the blend equation, nor the blend function is changed,
+    // so no need to restore the "blending" status before the imgui draw
+    /*
+    // The following is to make imgui work properly:
+    Mn::GL::Renderer::setBlendEquation(Mn::GL::Renderer::BlendEquation::Add,
+                                       Mn::GL::Renderer::BlendEquation::Add);
+    Mn::GL::Renderer::setBlendFunction(
+        Mn::GL::Renderer::BlendFunction::SourceAlpha,
+        Mn::GL::Renderer::BlendFunction::OneMinusSourceAlpha);
+    */
+    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
+  }
+
   imgui_.newFrame();
 
   if (showFPS_) {
@@ -527,7 +562,7 @@ void Viewer::drawEvent() {
                      ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(2.0);
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
-    uint32_t total = sceneGraph.getDrawables().size();
+    uint32_t total = sceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
     ImGui::Text("%u culled", total - visibles);
     ImGui::End();
@@ -544,6 +579,7 @@ void Viewer::drawEvent() {
 
   /* Reset state. Only needed if you want to draw something else with
      different state after. */
+
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::ScissorTest);
@@ -559,9 +595,46 @@ void Viewer::viewportEvent(ViewportEvent& event) {
   renderCamera_->setViewport(event.windowSize());
   imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
+
+  objectPickingHelper_->handleViewportChange(event.framebufferSize());
+}
+
+void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
+  for (auto& it : sceneGraph_->getDrawableGroups()) {
+    if (it.second.hasDrawable(objectId)) {
+      auto* pickedDrawable = it.second.getDrawable(objectId);
+      objectPickingHelper_->createPickedObjectVisualizer(pickedDrawable);
+      break;
+    }
+  }
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
+  if (event.button() == MouseEvent::Button::Right &&
+      (event.modifiers() & MouseEvent::Modifier::Shift)) {
+    // cannot use the default framebuffer, so setup another framebuffer,
+    // also, setup the color attachment for rendering, and remove the visualizer
+    // for the previously picked object
+    objectPickingHelper_->prepareToDraw();
+
+    // redraw the scene on the object picking framebuffer
+    esp::gfx::RenderCamera::Flags flags =
+        esp::gfx::RenderCamera::Flag::ObjectPicking;
+    if (frustumCullingEnabled_)
+      flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+    for (auto& it : sceneGraph_->getDrawableGroups()) {
+      renderCamera_->draw(it.second, flags);
+    }
+
+    // Read the object Id
+    unsigned int pickedObject =
+        objectPickingHelper_->getObjectId(event.position(), windowSize());
+
+    // if an object is selected, create a visualizer
+    createPickedObjectVisualizer(pickedObject);
+    return;
+  }  // drawable selection
+
   // DEBUGGING/DEMO code TODO: remove this
   auto viewportPoint = event.position();
   auto ray = renderCamera_->unproject(viewportPoint);
@@ -614,6 +687,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
   // DEBUGGING/DEMO code end TODO: remove above this
 
   event.setAccepted();
+  redraw();
 }
 
 void Viewer::mouseReleaseEvent(MouseEvent& event) {
@@ -655,6 +729,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   event.setAccepted();
 }
 
+// NOTE: Mouse + shift is to select object on the screen!!
 void Viewer::keyPressEvent(KeyEvent& event) {
   const auto key = event.key();
   bool agentMoved = false;
