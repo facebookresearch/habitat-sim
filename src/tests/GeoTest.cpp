@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/DebugStl.h>
@@ -35,7 +36,7 @@ Mn::Range3D getTransformedBB_standard(const Mn::Range3D& range,
   corners.push_back(xform.transformPoint(range.backBottomLeft()));
   corners.push_back(xform.transformPoint(range.backBottomRight()));
 
-  Mn::Range3D transformedBB{Mn::Math::minmax<Mn::Vector3>(corners)};
+  Mn::Range3D transformedBB{Mn::Math::minmax(corners)};
 
   return transformedBB;
 }

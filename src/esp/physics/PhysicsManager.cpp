@@ -14,7 +14,7 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node) {
   physicsNode_ = node;
 
   // Copy over relevant configuration
-  fixedTimeStep_ = physicsManagerAttributes->getTimestep();
+  fixedTimeStep_ = physicsManagerAttributes_->getTimestep();
 
   //! Create new scene node and set up any physics-related variables
   // Overridden by specific physics-library-based class
@@ -104,9 +104,15 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
 
   //! Draw object via resource manager
   //! Render node as child of physics node
-  resourceManager_.addObjectToDrawables(
-      configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
-      drawables, existingObjects_.at(nextObjectID_)->visualNodes_, lightSetup);
+  //! Verify we should make the object drawable
+  if (existingObjects_.at(nextObjectID_)
+          ->getInitializationAttributes()
+          ->getIsVisible()) {
+    resourceManager_.addObjectToDrawables(
+        configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
+        drawables, existingObjects_.at(nextObjectID_)->visualNodes_,
+        lightSetup);
+  }
 
   // finalize rigid object creation
   objectSuccess = existingObjects_.at(nextObjectID_)->finalizeObject();
@@ -164,7 +170,7 @@ int PhysicsManager::deallocateObjectID(int physObjectID) {
 bool PhysicsManager::makeAndAddRigidObject(int newObjectID,
                                            const std::string& handle,
                                            scene::SceneNode* objectNode) {
-  auto ptr = physics::RigidObject::create_unique(objectNode);
+  auto ptr = physics::RigidObject::create_unique(objectNode, newObjectID);
   bool objSuccess = ptr->initialize(resourceManager_, handle);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
@@ -548,12 +554,6 @@ void PhysicsManager::setSemanticId(const int physObjectID,
                                    uint32_t semanticId) {
   assertIDValidity(physObjectID);
   existingObjects_.at(physObjectID)->setSemanticId(semanticId);
-}
-
-const assets::PhysicsObjectAttributes::cptr
-PhysicsManager::getInitializationAttributes(const int physObjectID) const {
-  assertIDValidity(physObjectID);
-  return existingObjects_.at(physObjectID)->getInitializationAttributes();
 }
 
 }  // namespace physics

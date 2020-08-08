@@ -46,6 +46,14 @@ class AbstractAttributes : public esp::core::Configuration {
   }
   std::string getHandle() const { return getString("handle"); }
 
+  /**
+   * @brief directory where files used to construct attributes can be found.
+   */
+  virtual void setFileDirectory(const std::string& fileDirectory) {
+    setString("fileDirectory", fileDirectory);
+  }
+  std::string getFileDirectory() const { return getString("fileDirectory"); }
+
   void setID(int ID) { setInt("ID", ID); }
   int getID() const { return getInt("ID"); }
 
@@ -87,13 +95,41 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
                             const std::string& handle);
 
   virtual ~AbstractPhysicsAttributes() = default;
-
   void setScale(const Magnum::Vector3& scale) { setVec3("scale", scale); }
   Magnum::Vector3 getScale() const { return getVec3("scale"); }
 
-  // collision shape inflation margin
+  /**
+   * @brief collision shape inflation margin
+   */
   void setMargin(double margin) { setDouble("margin", margin); }
   double getMargin() const { return getDouble("margin"); }
+
+  /**
+   * @brief set default up orientation for object/scene mesh
+   */
+  void setOrientUp(const Magnum::Vector3& orientUp) {
+    setVec3("orientUp", orientUp);
+  }
+  /**
+   * @brief get default up orientation for object/scene mesh
+   */
+  Magnum::Vector3 getOrientUp() const { return getVec3("orientUp"); }
+  /**
+   * @brief set default forwardd orientation for object/scene mesh
+   */
+  void setOrientFront(const Magnum::Vector3& orientFront) {
+    setVec3("orientFront", orientFront);
+  }
+  /**
+   * @brief get default forwardd orientation for object/scene mesh
+   */
+  Magnum::Vector3 getOrientFront() const { return getVec3("orientFront"); }
+
+  // units to meters mapping
+  void setUnitsToMeters(double unitsToMeters) {
+    setDouble("unitsToMeters", unitsToMeters);
+  }
+  double getUnitsToMeters() const { return getDouble("unitsToMeters"); }
 
   void setFrictionCoefficient(double frictionCoefficient) {
     setDouble("frictionCoefficient", frictionCoefficient);
@@ -108,6 +144,10 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
   double getRestitutionCoefficient() const {
     return getDouble("restitutionCoefficient");
   }
+  void setRenderAssetType(int renderAssetType) {
+    setInt("renderAssetType", renderAssetType);
+  }
+  int getRenderAssetType() { return getInt("renderAssetType"); }
 
   void setRenderAssetHandle(const std::string& renderAssetHandle) {
     setString("renderAssetHandle", renderAssetHandle);
@@ -126,6 +166,11 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
   void setRenderAssetIsPrimitive(bool renderAssetIsPrimitive) {
     setBool("renderAssetIsPrimitive", renderAssetIsPrimitive);
   }
+
+  void setCollisionAssetType(int collisionAssetType) {
+    setInt("collisionAssetType", collisionAssetType);
+  }
+  int getCollisionAssetType() { return getInt("collisionAssetType"); }
 
   bool getRenderAssetIsPrimitive() const {
     return getBool("renderAssetIsPrimitive");
@@ -162,6 +207,12 @@ class AbstractPhysicsAttributes : public AbstractAttributes {
   }
 
   bool getUseMeshCollision() const { return getBool("useMeshCollision"); }
+
+  // if true use phong illumination model instead of flat shading
+  void setRequiresLighting(bool requiresLighting) {
+    setBool("requiresLighting", requiresLighting);
+  }
+  bool getRequiresLighting() const { return getBool("requiresLighting"); }
 
   bool getIsDirty() const { return getBool("__isDirty"); }
   void setIsClean() { setBool("__isDirty", false); }
@@ -229,13 +280,10 @@ class PhysicsObjectAttributes : public AbstractPhysicsAttributes {
   }
   bool getJoinCollisionMeshes() const { return getBool("joinCollisionMeshes"); }
 
-  // if true use phong illumination model instead of flat shading
-  void setRequiresLighting(bool requiresLighting) {
-    setBool("requiresLighting", requiresLighting);
-  }
-  bool getRequiresLighting() const { return getBool("requiresLighting"); }
-
-  // if object is visible
+  /**
+   * @brief If not visible can add dynamic non-rendered object into a scene
+   * object.  If is not visible then should not add object to drawables.
+   */
   void setIsVisible(bool isVisible) { setBool("isVisible", isVisible); }
   bool getIsVisible() const { return getBool("isVisible"); }
 
@@ -263,10 +311,57 @@ class PhysicsSceneAttributes : public AbstractPhysicsAttributes {
  public:
   PhysicsSceneAttributes(const std::string& handle = "");
 
+  void setOrigin(const Magnum::Vector3& origin) { setVec3("origin", origin); }
+  Magnum::Vector3 getOrigin() const { return getVec3("origin"); }
+
   void setGravity(const Magnum::Vector3& gravity) {
     setVec3("gravity", gravity);
   }
   Magnum::Vector3 getGravity() const { return getVec3("gravity"); }
+  void setHouseFilename(const std::string& houseFilename) {
+    setString("houseFilename", houseFilename);
+    setIsDirty();
+  }
+  std::string getHouseFilename() const { return getString("houseFilename"); }
+  void setSemanticAssetHandle(const std::string& semanticAssetHandle) {
+    setString("semanticAssetHandle", semanticAssetHandle);
+    setIsDirty();
+  }
+  std::string getSemanticAssetHandle() const {
+    return getString("semanticAssetHandle");
+  }
+  void setSemanticAssetType(int semanticAssetType) {
+    setInt("semanticAssetType", semanticAssetType);
+  }
+  int getSemanticAssetType() { return getInt("semanticAssetType"); }
+
+  void setLoadSemanticMesh(bool loadSemanticMesh) {
+    setBool("loadSemanticMesh", loadSemanticMesh);
+  }
+  bool getLoadSemanticMesh() { return getBool("loadSemanticMesh"); }
+
+  void setNavmeshAssetHandle(const std::string& navmeshAssetHandle) {
+    setString("navmeshAssetHandle", navmeshAssetHandle);
+    setIsDirty();
+  }
+  std::string getNavmeshAssetHandle() const {
+    return getString("navmeshAssetHandle");
+  }
+
+  /**
+   * @brief set lighting setup for scene.  Default value comes from
+   * @ref SimulatorConfiguration, is overridden by any value set in json, if
+   * exists.
+   */
+  void setLightSetup(const std::string& lightSetup) {
+    setString("lightSetup", lightSetup);
+  }
+  std::string getLightSetup() { return getString("lightSetup"); }
+
+  void setFrustrumCulling(bool frustrumCulling) {
+    setBool("frustrumCulling", frustrumCulling);
+  }
+  bool getFrustrumCulling() const { return getBool("frustrumCulling"); }
 
  public:
   ESP_SMART_POINTERS(PhysicsSceneAttributes)
@@ -327,6 +422,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     setIsWireframe(isWireframe);
     setPrimObjType(primObjType);
     setPrimObjClassName(primObjClassName);
+    setFileDirectory("none");
 
     if (!isWireframe) {  // solid
       // do not call setters since they call buildHandle, which does not

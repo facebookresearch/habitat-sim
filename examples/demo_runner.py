@@ -7,6 +7,7 @@ import math
 import multiprocessing
 import os
 import random
+import sys
 import time
 from enum import Enum
 
@@ -337,6 +338,14 @@ class DemoRunner:
 
         random.seed(self._sim_settings["seed"])
         self._sim.seed(self._sim_settings["seed"])
+
+        recompute_navmesh = self._sim_settings.get("recompute_navmesh")
+        if recompute_navmesh or not self._sim.pathfinder.is_loaded:
+            if not self._sim_settings["silent"]:
+                print("Recomputing navmesh")
+            navmesh_settings = habitat_sim.NavMeshSettings()
+            navmesh_settings.set_defaults()
+            self._sim.recompute_navmesh(self._sim.pathfinder, navmesh_settings)
 
         # initialize the agent at a random start state
         start_state = self.init_agent_state(self._sim_settings["default_agent"])

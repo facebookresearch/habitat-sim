@@ -47,8 +47,8 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
-#             Vladimír Vondruš <mosra@centrum.cz>
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,
+#               2020 Vladimír Vondruš <mosra@centrum.cz>
 #   Copyright © 2018 Konstantinos Chatzilygeroudis <costashatz@gmail.com>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -78,7 +78,7 @@ foreach(_component ${MagnumIntegration_FIND_COMPONENTS})
     elseif(_component STREQUAL Dart)
         set(_MAGNUMINTEGRATION_${_component}_MAGNUM_DEPENDENCIES SceneGraph Primitives MeshTools GL)
     elseif(_component STREQUAL ImGui)
-        set(_MAGNUMINTEGRATION_${_component}_MAGNUM_DEPENDENCIES GL)
+        set(_MAGNUMINTEGRATION_${_component}_MAGNUM_DEPENDENCIES GL Shaders)
     endif()
 
     list(APPEND _MAGNUMINTEGRATION_DEPENDENCIES ${_MAGNUMINTEGRATION_${_component}_MAGNUM_DEPENDENCIES})

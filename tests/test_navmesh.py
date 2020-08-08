@@ -44,7 +44,10 @@ def test_recompute_navmesh(test_scene, sim):
     hab_cfg = examples.settings.make_cfg(cfg_settings)
     sim.reconfigure(hab_cfg)
 
-    sim.toggle_navmesh_visualization()
+    sim.navmesh_visualization = True
+    assert sim.navmesh_visualization
+    sim.navmesh_visualization = False
+    assert not sim.navmesh_visualization
 
     # generate random point pairs
     num_samples = 100

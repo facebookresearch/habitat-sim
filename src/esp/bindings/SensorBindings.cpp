@@ -7,8 +7,8 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
 
-#include <Magnum/Python.h>
-#include <Magnum/SceneGraph/Python.h>
+#include <Magnum/PythonBindings.h>
+#include <Magnum/SceneGraph/PythonBindings.h>
 
 #include "esp/sensor/PinholeCamera.h"
 #ifdef ESP_BUILD_WITH_CUDA

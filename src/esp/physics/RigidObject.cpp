@@ -7,8 +7,10 @@
 namespace esp {
 namespace physics {
 
-RigidObject::RigidObject(scene::SceneNode* rigidBodyNode)
-    : RigidBase(rigidBodyNode), velControl_(VelocityControl::create()) {}
+RigidObject::RigidObject(scene::SceneNode* rigidBodyNode, int objectId)
+    : RigidBase(rigidBodyNode), velControl_(VelocityControl::create()) {
+  objectId_ = objectId;
+}
 
 bool RigidObject::initialize(const assets::ResourceManager& resMgr,
                              const std::string& handle) {

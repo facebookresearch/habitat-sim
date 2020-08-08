@@ -44,7 +44,10 @@ class BulletRigidObject : public BulletBase,
    * attached to.
    */
   BulletRigidObject(scene::SceneNode* rigidBodyNode,
-                    std::shared_ptr<btMultiBodyDynamicsWorld> bWorld);
+                    int objectId,
+                    std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
+                    std::shared_ptr<std::map<const btCollisionObject*, int>>
+                        collisionObjToObjIds);
 
   /**
    * @brief Destructor cleans up simulation structures for the object.

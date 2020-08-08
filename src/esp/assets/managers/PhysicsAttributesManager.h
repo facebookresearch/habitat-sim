@@ -23,7 +23,8 @@ class PhysicsAttributesManager
   PhysicsAttributesManager(assets::ResourceManager& resourceManager,
                            ObjectAttributesManager::ptr objectAttributesMgr)
       : AttributesManager<PhysicsManagerAttributes::ptr>::AttributesManager(
-            resourceManager),
+            resourceManager,
+            "Physics Manager"),
         objectAttributesMgr_(objectAttributesMgr) {
     buildCtorFuncPtrMaps();
   }
@@ -88,6 +89,30 @@ class PhysicsAttributesManager
       bool registerTemplate);
 
  protected:
+  /**
+   * @brief Used Internally.  Configure newly-created attributes with any
+   * default values, before any specific values are set.
+   *
+   * @param newAttributes Newly created attributes.
+   */
+  PhysicsManagerAttributes::ptr initNewAttribsInternal(
+      PhysicsManagerAttributes::ptr newAttributes) override {
+    this->setFileDirectoryFromHandle(newAttributes);
+    return newAttributes;
+  }
+  /**
+   * @brief This method will perform any necessary updating that is
+   * attributesManager-specific upon template removal, such as removing a
+   * specific template handle from the list of file-based template handles in
+   * ObjectAttributesManager.  This should only be called internally.
+   *
+   * @param templateID the ID of the template to remove
+   * @param templateHandle the string key of the attributes desired.
+   */
+  void updateTemplateHandleLists(
+      CORRADE_UNUSED int templateID,
+      CORRADE_UNUSED const std::string& templateHandle) override {}
+
   /**
    * @brief Add a @ref PhysicsManagerAttributes::ptr object to the @ref
    * templateLibrary_.

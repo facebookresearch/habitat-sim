@@ -10,6 +10,7 @@
  */
 
 #include <deque>
+#include <functional>
 #include <map>
 
 #include <Corrade/Utility/ConfigurationGroup.h>
@@ -17,6 +18,8 @@
 #include <Corrade/Utility/String.h>
 
 #include "esp/assets/Attributes.h"
+
+#include "esp/io/json.h"
 
 namespace Cr = Corrade;
 
@@ -37,8 +40,9 @@ namespace managers {
 template <class AttribsPtr>
 class AttributesManager {
  public:
-  AttributesManager(assets::ResourceManager& resourceManager)
-      : resourceManager_(resourceManager) {}
+  AttributesManager(assets::ResourceManager& resourceManager,
+                    const std::string& attrType)
+      : resourceManager_(resourceManager), attrType_(attrType) {}
   virtual ~AttributesManager() = default;
 
   /**
@@ -104,8 +108,8 @@ class AttributesManager {
     std::string handleToSet = attributesTemplate->getHandle();
     if ("" == handleToSet) {
       LOG(ERROR) << "AttributesManager::registerAttributesTemplate : No "
-                    "valid handle specified for attributes template to "
-                    "register. Aborting.";
+                    "valid handle specified for "
+                 << attrType_ << " attributes template to register. Aborting.";
       return ID_UNDEFINED;
     }
     return registerAttributesTemplateFinalize(attributesTemplate, handleToSet);
@@ -241,9 +245,10 @@ class AttributesManager {
     return removeTemplateInternal(templateHandle,
                                   "AttributesManager::removeTemplateByHandle");
   }
+
   /**
-   * @brief Get the key in @ref templateLibrary_ for the object template with
-   * the given unique ID.
+   * @brief Get the key in @ref templateLibrary_ for the object template
+   * with the given unique ID.
    *
    * @param templateID The unique ID of the desired template.
    * @return The key referencing the template in @ref
@@ -252,8 +257,7 @@ class AttributesManager {
   std::string getTemplateHandleByID(const int templateID) const {
     if (templateLibKeyByID_.count(templateID) == 0) {
       LOG(ERROR) << "AttributesManager::getTemplateHandleByID : Unknown "
-                    "object template ID:"
-                 << templateID << ". Aborting";
+                 << attrType_ << " template ID:" << templateID << ". Aborting";
       return nullptr;
     }
     return templateLibKeyByID_.at(templateID);
@@ -385,16 +389,98 @@ class AttributesManager {
   }
 
  protected:
+  //======== Common JSON import functions ========
+
+  /**
+   * @brief Verify passed @ref filename is legal json document, return loaded
+   * document or nullptr if fails
+   *
+   * @param filename name of potential json document to load
+   * @param jsonDoc a reference to the json document to be parsed
+   * @return whether document has been loaded successfully or not
+   */
+  bool verifyLoadJson(const std::string& filename, io::JsonDocument& jsonDoc) {
+    if (isValidFileName(filename)) {
+      try {
+        jsonDoc = io::parseJsonFile(filename);
+      } catch (...) {
+        LOG(ERROR) << "Failed to parse " << filename << "as JSON.";
+        return false;
+      }
+      return true;
+    } else {
+      // by here always fail
+      LOG(ERROR) << "File " << filename << " does not exist";
+      return false;
+    }
+  }  // AttributesManager::verifyLoadJson
+
+  /**
+   * @brief Create either an object or a scene attributes from a json config.
+   * Since both object attributes and scene attributes inherit from @ref
+   * AbstractPhysicsAttributes, the functionality to populate these fields from
+   * json can be shared.  Also will will populate render mesh and collision mesh
+   * handles in object and scene attributes with value(s) specified in json.  If
+   * one is blank will use other for both.
+   *
+   * @tparam type of attributes to create : MUST INHERIT FROM @ref
+   * AbstractPhysicsAttributes
+   * @param filename name of json descriptor file
+   * @param jsonDoc json document to parse
+   * @return an appropriately cast attributes pointer with base class fields
+   * filled in.
+   */
+  template <typename U>
+  AttribsPtr createPhysicsAttributesFromJson(const std::string& filename,
+                                             const io::JsonDocument& jsonDoc);
+
+  //======== Internally accessed functions ========
+  /**
+   * @brief Get directory component of attributes handle and call @ref
+   * attributes->setFileDirectory legitimate directory exists in handle.
+   *
+   * @param attributes pointer to attributes to set
+   */
+  void setFileDirectoryFromHandle(AttribsPtr attributes) {
+    std::string handleName = attributes->getHandle();
+    auto loc = handleName.find_last_of("/");
+    if (loc != std::string::npos) {
+      attributes->setFileDirectory(handleName.substr(0, loc));
+    }
+  }  // setFileDirectoryFromHandle
+
+  /**
+   * @brief Used Internally.  Configure newly-created attributes with any
+   * default values, before any specific values are set.
+   *
+   * @param newAttributes Newly created attributes.
+   */
+  virtual AttribsPtr initNewAttribsInternal(AttribsPtr newAttributes) = 0;
+
   /**
    * @brief Used Internally. Remove the template referenced by the passed
    * string handle. Will emplace template ID within deque of usable IDs and
    * return the template being removed.
    * @param templateHandle the string key of the attributes desired.
    * @param src String denoting the source of the remove request.
-   * @return the desired attributes being deleted, or nullptr if does not exist
+   * @return the desired attributes being deleted, or nullptr if does not
+   * exist
    */
   AttribsPtr removeTemplateInternal(const std::string& templateHandle,
                                     const std::string& src);
+
+  /**
+   * @brief This method will perform any necessary updating that is
+   * attributesManager-specific upon template removal, such as removing a
+   * specific template handle from the list of file-based template handles in
+   * ObjectAttributesManager.  This should only be called internally.
+   *
+   * @param templateID the ID of the template to remove
+   * @param templateHandle the string key of the attributes to remove.
+   */
+  virtual void updateTemplateHandleLists(int templateID,
+                                         const std::string& templateHandle) = 0;
+
   /**
    * @brief Used Internally. Get the ID of the template in @ref templateLibrary_
    * for the given template Handle, if exists. If the template is not in the
@@ -414,9 +500,9 @@ class AttributesManager {
       return templateLibrary_.at(templateHandle)->getID();
     } else {
       if (!getNext) {
-        LOG(ERROR) << "AttributesManager::getTemplateIDByHandle : No template "
-                      " with handle "
-                   << templateHandle << "exists. Aborting";
+        LOG(ERROR) << "AttributesManager::getTemplateIDByHandle : No "
+                   << attrType_ << " template with handle " << templateHandle
+                   << "exists. Aborting";
         return ID_UNDEFINED;
       } else {
         // return next available template ID (from previously deleted template)
@@ -450,8 +536,8 @@ class AttributesManager {
   bool checkExistsWithMessage(const std::string& templateHandle,
                               const std::string& src) const {
     if (!getTemplateLibHasHandle(templateHandle)) {
-      LOG(ERROR) << src << " : Unknown template handle :" << templateHandle
-                 << ". Aborting";
+      LOG(ERROR) << src << " : Unknown " << attrType_
+                 << " template handle :" << templateHandle << ". Aborting";
       return false;
     }
     return true;
@@ -481,6 +567,7 @@ class AttributesManager {
    */
   template <typename U>
   AttribsPtr createAttributesCopy(AttribsPtr& orig) {
+    // don't call init on copy - assume copy is already properly initialized.
     return U::create(*(static_cast<U*>(orig.get())));
   }  // AttributesManager::
 
@@ -581,6 +668,10 @@ class AttributesManager {
    * assets that can be accessed by this @ref PhysicsManager*/
   assets::ResourceManager& resourceManager_;
 
+  /** @brief A descriptive name of the attributes being managed by this manager.
+   */
+  const std::string attrType_;
+
   /**
    * @brief Maps string keys to attributes templates
    */
@@ -601,10 +692,85 @@ class AttributesManager {
  public:
   ESP_SMART_POINTERS(AttributesManager<AttribsPtr>)
 
-};  // class AttributesManager
+};  // namespace managers
 
 /////////////////////////////
 // Class Template Method Definitions
+
+template <class AttribsPtr>
+template <class U>
+AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
+    const std::string& configFilename,
+    const io::JsonDocument& jsonDoc) {
+  auto attributes = initNewAttribsInternal(U::create(configFilename));
+
+  using std::placeholders::_1;
+
+  // scale
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonDoc, "scale",
+      std::bind(&AbstractPhysicsAttributes::setScale, attributes, _1));
+
+  // margin
+  io::jsonIntoSetter<double>(
+      jsonDoc, "margin",
+      std::bind(&AbstractPhysicsAttributes::setMargin, attributes, _1));
+
+  // load the friction coefficient
+  io::jsonIntoSetter<double>(
+      jsonDoc, "friction coefficient",
+      std::bind(&AbstractPhysicsAttributes::setFrictionCoefficient, attributes,
+                _1));
+
+  // load the restitution coefficient
+  io::jsonIntoSetter<double>(
+      jsonDoc, "restitution coefficient",
+      std::bind(&AbstractPhysicsAttributes::setRestitutionCoefficient,
+                attributes, _1));
+
+  // if object will be flat or phong shaded
+  io::jsonIntoSetter<bool>(
+      jsonDoc, "requires lighting",
+      std::bind(&AbstractPhysicsAttributes::setRequiresLighting, attributes,
+                _1));
+
+  // units to meters
+  io::jsonIntoSetter<double>(
+      jsonDoc, "units to meters",
+      std::bind(&AbstractPhysicsAttributes::setUnitsToMeters, attributes, _1));
+
+  // load object/scene specific up orientation
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonDoc, "up",
+      std::bind(&AbstractPhysicsAttributes::setOrientUp, attributes, _1));
+
+  // load object/scene specific front orientation
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonDoc, "front",
+      std::bind(&AbstractPhysicsAttributes::setOrientFront, attributes, _1));
+
+  // 4. parse render and collision mesh filepaths
+  std::string propertiesFileDirectory = attributes->getFileDirectory();
+  std::string rndrFName = "";
+  std::string colFName = "";
+  if (io::jsonIntoVal<std::string>(jsonDoc, "render mesh", rndrFName)) {
+    rndrFName =
+        Cr::Utility::Directory::join(propertiesFileDirectory, rndrFName);
+  }
+
+  if (io::jsonIntoVal<std::string>(jsonDoc, "collision mesh", colFName)) {
+    colFName = Cr::Utility::Directory::join(propertiesFileDirectory, colFName);
+  }
+
+  // use non-empty result if either result is empty
+  attributes->setRenderAssetHandle(rndrFName.compare("") == 0 ? colFName
+                                                              : rndrFName);
+  attributes->setCollisionAssetHandle(colFName.compare("") == 0 ? rndrFName
+                                                                : colFName);
+  attributes->setUseMeshCollision(true);
+
+  return attributes;
+}  // AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson
 
 template <class T>
 T AttributesManager<T>::removeTemplateInternal(
@@ -617,8 +783,8 @@ T AttributesManager<T>::removeTemplateInternal(
     msg = "Required Default Template";
   }
   if (msg.length() != 0) {
-    LOG(INFO) << sourceStr << " : Unable to remove template " << templateHandle
-              << " : " << msg << ".";
+    LOG(INFO) << sourceStr << " : Unable to remove " << attrType_
+              << " template " << templateHandle << " : " << msg << ".";
     return nullptr;
   }
 
@@ -627,6 +793,9 @@ T AttributesManager<T>::removeTemplateInternal(
   templateLibKeyByID_.erase(templateID);
   templateLibrary_.erase(templateHandle);
   availableTemplateIDs_.emplace_front(templateID);
+  // call instance-specific update to remove template handle from any local
+  // lists
+  updateTemplateHandleLists(templateID, templateHandle);
   return attribsTemplate;
 }  // AttributesManager::removeTemplateByHandle
 
@@ -636,8 +805,8 @@ std::string AttributesManager<T>::getRandomTemplateHandlePerType(
     const std::string& type) const {
   std::size_t numVals = mapOfHandles.size();
   if (numVals == 0) {
-    LOG(ERROR) << "Attempting to get a random " << type
-               << "object template handle but none are loaded; Aboring";
+    LOG(ERROR) << "Attempting to get a random " << type << attrType_
+               << " template handle but none are loaded; Aboring";
     return "";
   }
   int randIDX = rand() % numVals;

@@ -427,6 +427,7 @@ class Sensor:
             and self._sim.get_active_scene_graph()
             is not self._sim.get_active_semantic_scene_graph()
         ):
+            agent_node.parent = self._sim.get_active_scene_graph().get_root_node()
             render_flags |= habitat_sim.gfx.Camera.Flags.OBJECTS_ONLY
             self._sim.renderer.draw(
                 self._sensor_object, self._sim.get_active_scene_graph(), render_flags

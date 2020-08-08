@@ -199,8 +199,10 @@ jobs:
                 git clone -q https://github.com/emscripten-core/emsdk.git ~/emsdk
                 cd ~/emsdk
                 git checkout 6a4c0f98
-                ./emsdk install 1.38.38
-                ./emsdk activate 1.38.38
+                # Use 1.38.42 that has the following integrated:
+                # https://github.com/emscripten-core/emscripten/pull/9220
+                ./emsdk install 1.38.42
+                ./emsdk activate 1.38.42
                 touch ~/emscripten_installed
               fi
       - run:
@@ -535,7 +537,7 @@ workflows:
   nightly:
     triggers:
       - schedule:
-          cron: "0 0 * * *"
+          cron: "0 7 * * *"
           filters:
             branches:
               only:

@@ -5,6 +5,12 @@
 #ifndef ESP_ASSETS_MANAGERS_ASSETATTRIBUTEMANAGER_H_
 #define ESP_ASSETS_MANAGERS_ASSETATTRIBUTEMANAGER_H_
 
+/** @file
+ * @brief Class Template @ref esp::assets::AssetAttributesManager
+ * This class manages attributes describing/configuring magnum mesh
+ * primitives.
+ */
+
 #include "AttributesManagerBase.h"
 
 namespace esp {
@@ -81,7 +87,8 @@ class AssetAttributesManager
 
   AssetAttributesManager(assets::ResourceManager& resourceManager)
       : AttributesManager<AbstractPrimitiveAttributes::ptr>::AttributesManager(
-            resourceManager) {
+            resourceManager,
+            "Primitive Asset") {
     buildCtorFuncPtrMaps();
   }  // AssetAttributesManager::ctor
 
@@ -371,6 +378,19 @@ class AssetAttributesManager
 
  protected:
   /**
+   * @brief This method will perform any necessary updating that is
+   * attributesManager-specific upon template removal, such as removing a
+   * specific template handle from the list of file-based template handles in
+   * ObjectAttributesManager.  This should only be called internally.
+   *
+   * @param templateID the ID of the template to remove
+   * @param templateHandle the string key of the attributes desired.
+   */
+  void updateTemplateHandleLists(
+      CORRADE_UNUSED int templateID,
+      CORRADE_UNUSED const std::string& templateHandle) override {}
+
+  /**
    * @brief Verify that passed template handle describes attributes of type
    * specified by passed primtive name (ie "cube", "capsule")
    * @param templateHandle The handle to test.
@@ -421,6 +441,17 @@ class AssetAttributesManager
   };
 
   /**
+   * @brief Used Internally.  Configure newly-created attributes with any
+   * default values, before any specific values are set.
+   *
+   * @param newAttributes Newly created attributes.
+   */
+  AbstractPrimitiveAttributes::ptr initNewAttribsInternal(
+      AbstractPrimitiveAttributes::ptr newAttributes) override {
+    return newAttributes;
+  }
+
+  /**
    * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
    * with passed class name
    * @param primClassName Magnum::Primitives class name of primitive being
@@ -434,7 +465,8 @@ class AssetAttributesManager
                  << primClassName << "exists in Magnum::Primitives. Aborting.";
       return nullptr;
     }
-    return (*this.*primTypeConstructorMap_[primClassName])();
+    return initNewAttribsInternal(
+        (*this.*primTypeConstructorMap_[primClassName])());
   }  // AssetAttributeManager::buildPrimAttributes
 
   /**
@@ -449,7 +481,8 @@ class AssetAttributesManager
                     "Aborting.";
       return nullptr;
     }
-    return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(primType)])();
+    return initNewAttribsInternal(
+        (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(primType)])());
   }  // AssetAttributeManager::buildPrimAttributes
 
   /**
@@ -465,8 +498,9 @@ class AssetAttributesManager
                  << primTypeVal << ". Aborting";
       return nullptr;
     }
-    return (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(
-                       static_cast<PrimObjTypes>(primTypeVal))])();
+    return initNewAttribsInternal(
+        (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(
+                    static_cast<PrimObjTypes>(primTypeVal))])());
   }  // AssetAttributeManager::buildPrimAttributes
 
   /**

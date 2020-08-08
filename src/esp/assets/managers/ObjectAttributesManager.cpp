@@ -7,9 +7,11 @@
 
 #include <Corrade/Utility/String.h>
 
+#include "esp/assets/Asset.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
+using std::placeholders::_1;
 namespace Cr = Corrade;
 
 namespace esp {
@@ -52,30 +54,100 @@ PhysicsObjectAttributes::ptr
 ObjectAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAttrTemplateHandle,
     bool registerTemplate) {
-  PhysicsObjectAttributes::ptr objAttributes =
-      buildPrimBasedPhysObjTemplate(primAttrTemplateHandle);
+  // verify that a primitive asset with the given handle exists
+  if (!isValidPrimitiveAttributes(primAttrTemplateHandle)) {
+    LOG(ERROR)
+        << "ObjectAttributesManager::createPrimBasedAttributesTemplate : No "
+           "primitive with handle '"
+        << primAttrTemplateHandle
+        << "' exists so cannot build physical object.  Aborting.";
+    return nullptr;
+  }
 
-  if (nullptr != objAttributes && registerTemplate) {
-    int attrID =
-        this->registerAttributesTemplate(objAttributes, primAttrTemplateHandle);
+  // construct a PhysicsObjectAttributes
+  auto primObjectAttributes = initNewAttribsInternal(
+      PhysicsObjectAttributes::create(primAttrTemplateHandle));
+  // set margin to be 0
+  primObjectAttributes->setMargin(0.0);
+  // make smaller as default size - prims are approx meter in size
+  primObjectAttributes->setScale({0.1, 0.1, 0.1});
+
+  // set render mesh handle
+  primObjectAttributes->setRenderAssetHandle(primAttrTemplateHandle);
+  // set collision mesh/primitive handle and default for primitives to not use
+  // mesh collisions
+  primObjectAttributes->setCollisionAssetHandle(primAttrTemplateHandle);
+  primObjectAttributes->setUseMeshCollision(false);
+  // NOTE to eventually use mesh collisions with primitive objects, a
+  // collision primitive mesh needs to be configured and set in MeshMetaData
+  // and CollisionMesh
+
+  if (nullptr != primObjectAttributes && registerTemplate) {
+    int attrID = this->registerAttributesTemplate(primObjectAttributes,
+                                                  primAttrTemplateHandle);
     if (attrID == ID_UNDEFINED) {
       // some error occurred
       return nullptr;
     }
   }
-  return objAttributes;
+  return primObjectAttributes;
 }  // ObjectAttributesManager::createPrimBasedAttributesTemplate
 
 PhysicsObjectAttributes::ptr
 ObjectAttributesManager::createFileBasedAttributesTemplate(
-    const std::string& filename,
+    const std::string& objPhysConfigFilename,
     bool registerTemplate) {
-  // this is a file-based object template we are building.
-  PhysicsObjectAttributes::ptr objAttributes =
-      parseAndLoadPhysObjTemplate(filename);
+  // Load JSON config file
+  io::JsonDocument jsonConfig;
+  bool success = this->verifyLoadJson(objPhysConfigFilename, jsonConfig);
+  if (!success) {
+    LOG(ERROR)
+        << "ObjectAttributesManager::createFileBasedAttributesTemplate : "
+           "Failure reading json : "
+        << objPhysConfigFilename << ". Aborting.";
+    return nullptr;
+  }
+
+  // Construct a physicsObjectAttributes and populate with any
+  // AbstractPhysicsAttributes fields found in json.
+  auto objAttributes =
+      this->createPhysicsAttributesFromJson<PhysicsObjectAttributes>(
+          objPhysConfigFilename, jsonConfig);
+
+  // Populate with object-specific fields found in json, if any are there
+  // object mass
+  io::jsonIntoSetter<double>(
+      jsonConfig, "mass",
+      std::bind(&PhysicsObjectAttributes::setMass, objAttributes, _1));
+
+  // optional set bounding box as collision object
+  io::jsonIntoSetter<bool>(
+      jsonConfig, "use bounding box for collision",
+      std::bind(&PhysicsObjectAttributes::setBoundingBoxCollisions,
+                objAttributes, _1));
+
+  //! Get collision configuration options if specified
+  io::jsonIntoSetter<bool>(
+      jsonConfig, "join collision meshes",
+      std::bind(&PhysicsObjectAttributes::setJoinCollisionMeshes, objAttributes,
+                _1));
+
+  // object's interia matrix diag
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "inertia",
+      std::bind(&PhysicsObjectAttributes::setInertia, objAttributes, _1));
+
+  // the center of mass (in the local frame of the object)
+  // if COM is provided, use it for mesh shift
+  bool comIsSet = io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "COM",
+      std::bind(&PhysicsObjectAttributes::setCOM, objAttributes, _1));
+  // if com is set from json, don't compute from shape, and vice versa
+  objAttributes->setComputeCOMFromShape(!comIsSet);
 
   if (nullptr != objAttributes && registerTemplate) {
-    int attrID = this->registerAttributesTemplate(objAttributes, filename);
+    int attrID =
+        this->registerAttributesTemplate(objAttributes, objPhysConfigFilename);
     // some error occurred
     if (attrID == ID_UNDEFINED) {
       return nullptr;
@@ -90,7 +162,7 @@ ObjectAttributesManager::createDefaultAttributesTemplate(
     bool registerTemplate) {
   // construct a PhysicsObjectAttributes
   PhysicsObjectAttributes::ptr objAttributes =
-      PhysicsObjectAttributes::create(templateName);
+      initNewAttribsInternal(PhysicsObjectAttributes::create(templateName));
   // set render mesh handle as a default
   objAttributes->setRenderAssetHandle(templateName);
   if (registerTemplate) {
@@ -102,6 +174,22 @@ ObjectAttributesManager::createDefaultAttributesTemplate(
   }
   return objAttributes;
 }  // ObjectAttributesManager::createEmptyAttributesTemplate
+
+PhysicsObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
+    PhysicsObjectAttributes::ptr newAttributes) {
+  this->setFileDirectoryFromHandle(newAttributes);
+  using Corrade::Utility::String::endsWith;
+  const std::string objFileName = newAttributes->getHandle();
+  // set default origin and orientation values based on file name
+
+  newAttributes->setOrientUp({0, 1, 0});
+  newAttributes->setOrientFront({0, 0, -1});
+
+  newAttributes->setRenderAssetType(static_cast<int>(AssetType::UNKNOWN));
+  newAttributes->setCollisionAssetType(static_cast<int>(AssetType::UNKNOWN));
+
+  return newAttributes;
+}  // ObjectAttributesManager::initNewAttribsInternal
 
 int ObjectAttributesManager::registerAttributesTemplateFinalize(
     PhysicsObjectAttributes::ptr objectTemplate,
@@ -183,215 +271,6 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
   return objectTemplateID;
 }  // ObjectAttributesManager::registerAttributesTemplateFinalize
 
-PhysicsObjectAttributes::ptr
-ObjectAttributesManager::parseAndLoadPhysObjTemplate(
-    const std::string& objPhysConfigFilename) {
-  // 1. parse the config file
-  io::JsonDocument objPhysicsConfig;
-  if (this->isValidFileName(objPhysConfigFilename)) {
-    try {
-      objPhysicsConfig = io::parseJsonFile(objPhysConfigFilename);
-    } catch (...) {
-      // by here always fail
-
-      LOG(ERROR) << "Failed to parse JSON: " << objPhysConfigFilename
-                 << ". Aborting parseAndLoadPhysObjTemplate.";
-      return nullptr;
-    }
-  } else {
-    // by here always fail
-    LOG(ERROR) << "File " << objPhysConfigFilename
-               << " does not exist. Aborting parseAndLoadPhysObjTemplate.";
-    return nullptr;
-  }
-
-  // 2. construct a physicsObjectMetaData
-  auto physicsObjectAttributes =
-      PhysicsObjectAttributes::create(objPhysConfigFilename);
-
-  // NOTE: these paths should be relative to the properties file
-  std::string propertiesFileDirectory =
-      objPhysConfigFilename.substr(0, objPhysConfigFilename.find_last_of("/"));
-
-  // 3. load physical properties to override defaults (set in
-  // PhysicsObjectMetaData.h) load the mass
-  if (objPhysicsConfig.HasMember("mass")) {
-    if (objPhysicsConfig["mass"].IsNumber()) {
-      physicsObjectAttributes->setMass(objPhysicsConfig["mass"].GetDouble());
-    }
-  }
-
-  // optional set bounding box as collision object
-  if (objPhysicsConfig.HasMember("use bounding box for collision")) {
-    if (objPhysicsConfig["use bounding box for collision"].IsBool()) {
-      physicsObjectAttributes->setBoundingBoxCollisions(
-          objPhysicsConfig["use bounding box for collision"].GetBool());
-    }
-  }
-
-  // load the center of mass (in the local frame of the object)
-  // if COM is provided, use it for mesh shift
-  if (objPhysicsConfig.HasMember("COM")) {
-    if (objPhysicsConfig["COM"].IsArray()) {
-      Magnum::Vector3 COM;
-      for (rapidjson::SizeType i = 0; i < objPhysicsConfig["COM"].Size(); i++) {
-        if (!objPhysicsConfig["COM"][i].IsNumber()) {
-          // invalid config
-          LOG(ERROR) << " Invalid value in object physics config - COM array";
-          break;
-        } else {
-          COM[i] = objPhysicsConfig["COM"][i].GetDouble();
-        }
-      }
-      physicsObjectAttributes->setCOM(COM);
-      // set a flag which we can find later so we don't override the desired
-      // COM with BB center.
-      physicsObjectAttributes->setComputeCOMFromShape(false);
-    }
-  }
-
-  // scaling
-  if (objPhysicsConfig.HasMember("scale")) {
-    if (objPhysicsConfig["scale"].IsArray()) {
-      Magnum::Vector3 scale;
-      for (rapidjson::SizeType i = 0; i < objPhysicsConfig["scale"].Size();
-           i++) {
-        if (!objPhysicsConfig["scale"][i].IsNumber()) {
-          // invalid config
-          LOG(ERROR) << " Invalid value in object physics config - scale array";
-          break;
-        } else {
-          scale[i] = objPhysicsConfig["scale"][i].GetDouble();
-        }
-      }
-      physicsObjectAttributes->setScale(scale);
-    }
-  }
-
-  // load the inertia diagonal
-  if (objPhysicsConfig.HasMember("inertia")) {
-    if (objPhysicsConfig["inertia"].IsArray()) {
-      Magnum::Vector3 inertia;
-      for (rapidjson::SizeType i = 0; i < objPhysicsConfig["inertia"].Size();
-           i++) {
-        if (!objPhysicsConfig["inertia"][i].IsNumber()) {
-          // invalid config
-          LOG(ERROR)
-              << " Invalid value in object physics config - inertia array";
-          break;
-        } else {
-          inertia[i] = objPhysicsConfig["inertia"][i].GetDouble();
-        }
-      }
-      physicsObjectAttributes->setInertia(inertia);
-    }
-  }
-
-  // load the friction coefficient
-  if (objPhysicsConfig.HasMember("friction coefficient")) {
-    if (objPhysicsConfig["friction coefficient"].IsNumber()) {
-      physicsObjectAttributes->setFrictionCoefficient(
-          objPhysicsConfig["friction coefficient"].GetDouble());
-    } else {
-      LOG(ERROR)
-          << " Invalid value in object physics config - friction coefficient";
-    }
-  }
-
-  // load the restitution coefficient
-  if (objPhysicsConfig.HasMember("restitution coefficient")) {
-    if (objPhysicsConfig["restitution coefficient"].IsNumber()) {
-      physicsObjectAttributes->setRestitutionCoefficient(
-          objPhysicsConfig["restitution coefficient"].GetDouble());
-    } else {
-      LOG(ERROR) << " Invalid value in object physics config - restitution "
-                    "coefficient";
-    }
-  }
-
-  //! Get collision configuration options if specified
-  if (objPhysicsConfig.HasMember("join collision meshes")) {
-    if (objPhysicsConfig["join collision meshes"].IsBool()) {
-      physicsObjectAttributes->setJoinCollisionMeshes(
-          objPhysicsConfig["join collision meshes"].GetBool());
-    } else {
-      LOG(ERROR) << " Invalid value in object physics config - join "
-                    "collision meshes";
-    }
-  }
-
-  // if object will be flat or phong shaded
-  if (objPhysicsConfig.HasMember("requires lighting")) {
-    if (objPhysicsConfig["requires lighting"].IsBool()) {
-      physicsObjectAttributes->setRequiresLighting(
-          objPhysicsConfig["requires lighting"].GetBool());
-    } else {
-      LOG(ERROR)
-          << " Invalid value in object physics config - requires lighting";
-    }
-  }
-
-  // 4. parse render and collision mesh filepaths
-  std::string renderMeshFilename = "";
-  std::string collisionMeshFilename = "";
-
-  if (objPhysicsConfig.HasMember("render mesh")) {
-    if (objPhysicsConfig["render mesh"].IsString()) {
-      renderMeshFilename = Cr::Utility::Directory::join(
-          propertiesFileDirectory, objPhysicsConfig["render mesh"].GetString());
-    } else {
-      LOG(ERROR) << " Invalid value in object physics config - render mesh";
-    }
-  }
-  if (objPhysicsConfig.HasMember("collision mesh")) {
-    if (objPhysicsConfig["collision mesh"].IsString()) {
-      collisionMeshFilename = Cr::Utility::Directory::join(
-          propertiesFileDirectory,
-          objPhysicsConfig["collision mesh"].GetString());
-    } else {
-      LOG(ERROR) << " Invalid value in object physics config - collision mesh";
-    }
-  }
-
-  physicsObjectAttributes->setRenderAssetHandle(renderMeshFilename);
-  physicsObjectAttributes->setCollisionAssetHandle(collisionMeshFilename);
-  physicsObjectAttributes->setUseMeshCollision(true);
-
-  return physicsObjectAttributes;
-}  // ObjectAttributesManager::parseAndLoadPhysObjTemplate
-
-PhysicsObjectAttributes::ptr
-ObjectAttributesManager::buildPrimBasedPhysObjTemplate(
-    const std::string& primAssetHandle) {
-  // verify that a primitive asset with the given handle exists
-  if (!isValidPrimitiveAttributes(primAssetHandle)) {
-    LOG(ERROR) << "ObjectAttributesManager::buildPrimBasedPhysObjTemplate : No "
-                  "primitive with handle '"
-               << primAssetHandle
-               << "' exists so cannot build physical object.  Aborting.";
-    return nullptr;
-  }
-
-  // construct a PhysicsObjectAttributes
-  auto physicsObjectAttributes =
-      PhysicsObjectAttributes::create(primAssetHandle);
-  // set margin to be 0
-  physicsObjectAttributes->setMargin(0.0);
-  // make smaller as default size - prims are approx meter in size
-  physicsObjectAttributes->setScale({0.1, 0.1, 0.1});
-
-  // set render mesh handle
-  physicsObjectAttributes->setRenderAssetHandle(primAssetHandle);
-  // set collision mesh/primitive handle and default for primitives to not use
-  // mesh collisions
-  physicsObjectAttributes->setCollisionAssetHandle(primAssetHandle);
-  physicsObjectAttributes->setUseMeshCollision(false);
-  // NOTE to eventually use mesh collisions with primitive objects, a
-  // collision primitive mesh needs to be configured and set in MeshMetaData
-  // and CollisionMesh
-  return physicsObjectAttributes;
-}  // ObjectAttributesManager::buildPrimBasedPhysObjTemplate
-
 std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
     const std::vector<std::string>& tmpltFilenames) {
   std::vector<int> resIDs(tmpltFilenames.size(), ID_UNDEFINED);
@@ -412,7 +291,6 @@ std::vector<int> ObjectAttributesManager::loadObjectConfigs(
     const std::string& path) {
   std::vector<std::string> paths;
   std::vector<int> templateIndices;
-
   namespace Directory = Cr::Utility::Directory;
   std::string objPhysPropertiesFilename = path;
   if (!Cr::Utility::String::endsWith(objPhysPropertiesFilename,

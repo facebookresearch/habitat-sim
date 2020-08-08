@@ -8,8 +8,10 @@
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
+using std::placeholders::_1;
 namespace Cr = Corrade;
 namespace esp {
+
 namespace assets {
 
 namespace managers {
@@ -28,7 +30,7 @@ PhysicsAttributesManager::createAttributesTemplate(
   } else {
     // if name is not file descriptor, return default attributes.
     attrs = createDefaultAttributesTemplate(physicsFilename, registerTemplate);
-    msg = "New default";
+    msg = "File (" + physicsFilename + ") not found so new, default";
   }
 
   if (nullptr != attrs) {
@@ -44,7 +46,7 @@ PhysicsAttributesManager::createDefaultAttributesTemplate(
     bool registerTemplate) {
   // Attributes descriptor for physics world
   PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      PhysicsManagerAttributes::create(physicsFilename);
+      initNewAttribsInternal(PhysicsManagerAttributes::create(physicsFilename));
 
   if (registerTemplate) {
     int attrID = this->registerAttributesTemplate(physicsManagerAttributes,
@@ -63,73 +65,55 @@ PhysicsAttributesManager::createFileBasedAttributesTemplate(
     bool registerTemplate) {
   // Attributes descriptor for physics world
   PhysicsManagerAttributes::ptr physicsManagerAttributes =
-      PhysicsManagerAttributes::create(physicsFilename);
+      initNewAttribsInternal(PhysicsManagerAttributes::create(physicsFilename));
 
   // Load the global physics manager config JSON here
-  io::JsonDocument physicsWorldConfig = io::parseJsonFile(physicsFilename);
-
-  // load the simulator preference
-  // default is "none" simulator
-  if (physicsWorldConfig.HasMember("physics simulator")) {
-    if (physicsWorldConfig["physics simulator"].IsString()) {
-      physicsManagerAttributes->setSimulator(
-          physicsWorldConfig["physics simulator"].GetString());
-    }
+  io::JsonDocument jsonConfig;
+  bool success = this->verifyLoadJson(physicsFilename, jsonConfig);
+  if (!success) {
+    LOG(ERROR)
+        << " Aborting "
+           "PhysicsAttributesManager::createFileBasedAttributesTemplate.";
+    return nullptr;
   }
+
+  // load the simulator preference - default is "none" simulator, set in
+  // attributes ctor.
+  io::jsonIntoSetter<std::string>(
+      jsonConfig, "physics simulator",
+      std::bind(&PhysicsManagerAttributes::setSimulator,
+                physicsManagerAttributes, _1));
 
   // load the physics timestep
-  if (physicsWorldConfig.HasMember("timestep")) {
-    if (physicsWorldConfig["timestep"].IsNumber()) {
-      physicsManagerAttributes->setTimestep(
-          physicsWorldConfig["timestep"].GetDouble());
-    }
-  }
+  io::jsonIntoSetter<double>(jsonConfig, "timestep",
+                             std::bind(&PhysicsManagerAttributes::setTimestep,
+                                       physicsManagerAttributes, _1));
 
-  if (physicsWorldConfig.HasMember("friction coefficient") &&
-      physicsWorldConfig["friction coefficient"].IsNumber()) {
-    physicsManagerAttributes->setFrictionCoefficient(
-        physicsWorldConfig["friction coefficient"].GetDouble());
-  } else {
-    LOG(ERROR) << "PhysicsAttributesManager::createAttributesTemplate : "
-                  "Invalid value "
-                  "in physics manager config - friction coefficient";
-  }
+  // load the friction coefficient
+  io::jsonIntoSetter<double>(
+      jsonConfig, "friction coefficient",
+      std::bind(&PhysicsManagerAttributes::setFrictionCoefficient,
+                physicsManagerAttributes, _1));
 
-  if (physicsWorldConfig.HasMember("restitution coefficient") &&
-      physicsWorldConfig["restitution coefficient"].IsNumber()) {
-    physicsManagerAttributes->setRestitutionCoefficient(
-        physicsWorldConfig["restitution coefficient"].GetDouble());
-  } else {
-    LOG(ERROR) << "PhysicsAttributesManager::createAttributesTemplate : "
-                  "Invalid value "
-                  "in physics manager config - restitution coefficient";
-  }
+  // load the restitution coefficient
+  io::jsonIntoSetter<double>(
+      jsonConfig, "restitution coefficient",
+      std::bind(&PhysicsManagerAttributes::setRestitutionCoefficient,
+                physicsManagerAttributes, _1));
 
-  // load gravity
-  if (physicsWorldConfig.HasMember("gravity")) {
-    if (physicsWorldConfig["gravity"].IsArray()) {
-      Magnum::Vector3 grav;
-      for (rapidjson::SizeType i = 0; i < physicsWorldConfig["gravity"].Size();
-           i++) {
-        if (!physicsWorldConfig["gravity"][i].IsNumber()) {
-          // invalid config
-          LOG(ERROR) << "Invalid value in physics gravity array";
-          break;
-        } else {
-          grav[i] = physicsWorldConfig["gravity"][i].GetDouble();
-        }
-      }
-      physicsManagerAttributes->setGravity(grav);
-    }
-  }
+  // load world gravity
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "gravity",
+      std::bind(&PhysicsManagerAttributes::setGravity, physicsManagerAttributes,
+                _1));
 
   // load the rigid object library metadata (no physics init yet...)
-  if (physicsWorldConfig.HasMember("rigid object paths") &&
-      physicsWorldConfig["rigid object paths"].IsArray()) {
+  if (jsonConfig.HasMember("rigid object paths") &&
+      jsonConfig["rigid object paths"].IsArray()) {
     std::string configDirectory =
         physicsFilename.substr(0, physicsFilename.find_last_of("/"));
 
-    const auto& paths = physicsWorldConfig["rigid object paths"];
+    const auto& paths = jsonConfig["rigid object paths"];
     for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
       if (!paths[i].IsString()) {
         LOG(ERROR) << "PhysicsAttributesManager::createAttributesTemplate "

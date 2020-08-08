@@ -16,6 +16,7 @@
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/PhysicsManager.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
@@ -52,6 +53,10 @@ struct SimulatorConfiguration {
   bool allowSliding = true;
   // enable or disable the frustum culling
   bool frustumCulling = true;
+  /**
+   * @brief This flags specifies whether or not dynamics is supported by the
+   * simulation, if a suitable library (i.e. Bullet) has been installed.
+   */
   bool enablePhysics = false;
   bool loadSemanticMesh = true;
   std::string physicsConfigFile =
@@ -88,6 +93,7 @@ class Simulator {
 
   virtual void reset();
 
+ public:
   virtual void seed(uint32_t newSeed);
 
   std::shared_ptr<gfx::Renderer> getRenderer() { return renderer_; }
@@ -139,6 +145,15 @@ class Simulator {
       const {
     return resourceManager_->getSceneAttributesManager();
   }
+
+  /** @brief Return the library implementation type for the simulator currently
+   * in use. Use to check for a particular implementation.
+   * @return The implementation type of this simulator.
+   */
+  const esp::physics::PhysicsManager::PhysicsSimulationLibrary&
+  getPhysicsSimulationLibrary() const {
+    return physicsManager_->getPhysicsSimulationLibrary();
+  };
 
   /**
    * @brief Instance an object from a template index in @ref
@@ -478,6 +493,24 @@ class Simulator {
   bool contactTest(const int objectID, const int sceneID = 0);
 
   /**
+   * @brief Raycast into the collision world of a scene.
+   *
+   * Note: A default @ref physics::PhysicsManager has no collision world, so
+   * physics must be enabled for this feature.
+   *
+   * @param ray The ray to cast. Need not be unit length, but returned hit
+   * distances will be in units of ray length.
+   * @param maxDistance The maximum distance along the ray direction to search.
+   * In units of ray length.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   * @return Raycast results sorted by distance.
+   */
+  esp::physics::RaycastResults castRay(const esp::geo::Ray& ray,
+                                       float maxDistance = 100.0,
+                                       const int sceneID = 0);
+
+  /**
    * @brief the physical world has a notion of time which passes during
    * animation/simulation/action/etc... Step the physical world forward in time
    * by a desired duration. Note that the actual duration of time passed by this
@@ -523,9 +556,18 @@ class Simulator {
                         bool includeStaticObjects = false);
 
   /**
-   * @brief Toggle visualization of the current NavMesh @ref pathfinder_.
+   * @brief Set visualization of the current NavMesh @ref pathfinder_ on or off.
+   *
+   * @param visualize Whether or not to visualize the navmesh.
+   * @return Whether or not the NavMesh visualization is active.
    */
-  void toggleNavMeshVisualization();
+  bool setNavMeshVisualization(bool visualize);
+
+  /**
+   * @brief Query active state of the current NavMesh @ref pathfinder_
+   * visualization.
+   */
+  bool isNavMeshVisualizationActive();
 
   agent::Agent::ptr getAgent(int agentId);
 

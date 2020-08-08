@@ -6,7 +6,7 @@
 #include "esp/bindings/bindings.h"
 
 #include <Magnum/Magnum.h>
-#include <Magnum/Python.h>
+#include <Magnum/PythonBindings.h>
 
 #include "esp/assets/Attributes.h"
 

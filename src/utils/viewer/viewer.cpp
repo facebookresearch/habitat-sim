@@ -131,8 +131,6 @@ class Viewer : public Mn::Platform::Application {
   esp::scene::SceneNode* agentBodyNode_ = nullptr;
   esp::scene::SceneNode* rgbSensorNode_ = nullptr;
 
-  esp::scene::SceneNode* navSceneNode_ = nullptr;
-
   std::string sceneFileName;
   esp::scene::SceneGraph* sceneGraph_;
   esp::scene::SceneNode* rootNode_;
@@ -215,9 +213,7 @@ Viewer::Viewer(const Arguments& arguments)
   sceneID_.push_back(sceneID);
   sceneGraph_ = &sceneManager_.getSceneGraph(sceneID);
   rootNode_ = &sceneGraph_->getRootNode();
-  navSceneNode_ = &rootNode_->createChild();
 
-  auto& drawables = sceneGraph_->getDrawables();
   sceneFileName = args.value("scene");
   esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(sceneFileName);
   std::string sceneLightSetup = esp::assets::ResourceManager::NO_LIGHT_KEY;
@@ -226,37 +222,46 @@ Viewer::Viewer(const Arguments& arguments)
     sceneLightSetup = esp::assets::ResourceManager::DEFAULT_LIGHTING_KEY;
   }
 
-  if (args.isSet("enable-physics")) {
-    std::string physicsConfigFilename = args.value("physics-config");
-    if (!Cr::Utility::Directory::exists(physicsConfigFilename)) {
-      LOG(FATAL)
-          << physicsConfigFilename
-          << " was not found, specify an existing file in --physics-config";
-    }
-    // use physics world attributes manager to get physics manager attributes
-    // described by config file
-    auto physicsManagerAttributes =
-        resourceManager_.getPhysicsAttributesManager()
-            ->createAttributesTemplate(physicsConfigFilename, true);
-    CORRADE_ASSERT(physicsManagerAttributes != nullptr,
-                   "Viewer::ctor : Error attempting to load world described by"
-                       << physicsConfigFilename << ". Aborting", );
+  std::string physicsConfigFilename = args.value("physics-config");
+  if (!Cr::Utility::Directory::exists(physicsConfigFilename)) {
+    LOG(FATAL)
+        << physicsConfigFilename
+        << " was not found, specify an existing file in --physics-config";
+  }
+  // use physics world attributes manager to get physics manager attributes
+  // described by config file
+  auto physicsManagerAttributes =
+      resourceManager_.getPhysicsAttributesManager()->createAttributesTemplate(
+          physicsConfigFilename, true);
+  CORRADE_ASSERT(physicsManagerAttributes != nullptr,
+                 "Viewer::ctor : Error attempting to load world described by"
+                     << physicsConfigFilename << ". Aborting", );
 
-    bool loadSuccess = resourceManager_.loadPhysicsScene(
-        info, physicsManager_, physicsManagerAttributes, navSceneNode_,
-        &drawables, sceneLightSetup);
+  auto sceneAttributesMgr = resourceManager_.getSceneAttributesManager();
+  sceneAttributesMgr->setCurrPhysicsManagerAttributesHandle(
+      physicsManagerAttributes->getHandle());
 
-    if (!loadSuccess) {
-      LOG(FATAL) << "cannot load " << sceneFileName;
-    }
-    if (args.isSet("debug-bullet")) {
-      debugBullet_ = true;
-    }
-  } else {
-    if (!resourceManager_.loadScene(info, navSceneNode_, &drawables,
-                                    sceneLightSetup)) {
-      LOG(FATAL) << "cannot load " << sceneFileName;
-    }
+  auto sceneAttributes =
+      sceneAttributesMgr->createAttributesTemplate(sceneFileName, true);
+
+  sceneAttributes->setLightSetup(sceneLightSetup);
+  sceneAttributes->setRequiresLighting(info.requiresLighting);
+
+  bool useBullet = args.isSet("enable-physics");
+  // construct physics manager based on specifications in attributes
+  resourceManager_.initPhysicsManager(physicsManager_, useBullet, rootNode_,
+                                      physicsManagerAttributes);
+
+  // bool sceneLoadSuccess = resourceManager_.loadScene(
+  //     info, physicsManager_, &drawables, sceneLightSetup);
+  std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
+  bool sceneLoadSuccess = resourceManager_.loadScene(
+      sceneAttributes, physicsManager_, &sceneManager_, tempIDs, false);
+  if (!sceneLoadSuccess) {
+    LOG(FATAL) << "cannot load " << sceneFileName;
+  }
+  if (useBullet && (args.isSet("debug-bullet"))) {
+    debugBullet_ = true;
   }
 
   const Mn::Range3D& sceneBB = rootNode_->computeCumulativeBB();
@@ -334,19 +339,12 @@ Viewer::Viewer(const Arguments& arguments)
 }  // end Viewer::Viewer
 
 void Viewer::addObject(int ID) {
-  if (physicsManager_ == nullptr) {
-    return;
-  }
   const std::string& configHandle =
       resourceManager_.getObjectAttributesManager()->getTemplateHandleByID(ID);
   addObject(configHandle);
 }  // addObject
 
 void Viewer::addObject(const std::string& configFile) {
-  if (physicsManager_ == nullptr) {
-    return;
-  }
-
   // Relative to agent bodynode
   Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
   Mn::Vector3 new_pos = T.transformPoint({0.1f, 1.5f, -2.0f});
@@ -364,37 +362,32 @@ void Viewer::addObject(const std::string& configFile) {
 
 // add file-based template derived object from keypress
 void Viewer::addTemplateObject() {
-  if (physicsManager_ != nullptr) {
-    int numObjTemplates = resourceManager_.getObjectAttributesManager()
-                              ->getNumFileTemplateObjects();
-    if (numObjTemplates > 0) {
-      addObject(resourceManager_.getObjectAttributesManager()
-                    ->getRandomFileTemplateHandle());
-    } else
-      LOG(WARNING) << "No objects loaded, can't add any";
+  int numObjTemplates = resourceManager_.getObjectAttributesManager()
+                            ->getNumFileTemplateObjects();
+  if (numObjTemplates > 0) {
+    addObject(resourceManager_.getObjectAttributesManager()
+                  ->getRandomFileTemplateHandle());
   } else
-    LOG(WARNING) << "Run the app with --enable-physics in order to add "
-                    "templated-based physically modeled objects";
+    LOG(WARNING) << "No objects loaded, can't add any";
+
 }  // addTemplateObject
 
 // add synthesized primiitive object from keypress
 void Viewer::addPrimitiveObject() {
   // TODO : use this to implement synthesizing rendered physical objects
-  if (physicsManager_ != nullptr) {
-    int numObjPrims = resourceManager_.getObjectAttributesManager()
-                          ->getNumSynthTemplateObjects();
-    if (numObjPrims > 0) {
-      addObject(resourceManager_.getObjectAttributesManager()
-                    ->getRandomSynthTemplateHandle());
-    } else
-      LOG(WARNING) << "No primitive templates available, can't add any objects";
+
+  int numObjPrims = resourceManager_.getObjectAttributesManager()
+                        ->getNumSynthTemplateObjects();
+  if (numObjPrims > 0) {
+    addObject(resourceManager_.getObjectAttributesManager()
+                  ->getRandomSynthTemplateHandle());
   } else
-    LOG(WARNING) << "Run the app with --enable-physics in order to add "
-                    "physically modelled primitives";
+    LOG(WARNING) << "No primitive templates available, can't add any objects";
+
 }  // addPrimitiveObject
 
 void Viewer::removeLastObject() {
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0) {
+  if (objectIDs_.size() == 0) {
     return;
   }
   physicsManager_->removeObject(objectIDs_.back());
@@ -402,16 +395,13 @@ void Viewer::removeLastObject() {
 }
 
 void Viewer::invertGravity() {
-  if (physicsManager_ == nullptr) {
-    return;
-  }
   const Mn::Vector3& gravity = physicsManager_->getGravity();
   const Mn::Vector3 invGravity = -1 * gravity;
   physicsManager_->setGravity(invGravity);
 }
 
 void Viewer::pokeLastObject() {
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+  if (objectIDs_.size() == 0)
     return;
   Mn::Matrix4 T =
       agentBodyNode_->MagnumObject::transformationMatrix();  // Relative to
@@ -422,7 +412,7 @@ void Viewer::pokeLastObject() {
 }
 
 void Viewer::pushLastObject() {
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+  if (objectIDs_.size() == 0)
     return;
   Mn::Matrix4 T =
       agentBodyNode_->MagnumObject::transformationMatrix();  // Relative to
@@ -455,7 +445,7 @@ void Viewer::recomputeNavMesh(const std::string& sceneFilename,
 }
 
 void Viewer::torqueLastObject() {
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+  if (objectIDs_.size() == 0)
     return;
   Mn::Vector3 torque = randomDirection() * 30;
   physicsManager_->applyTorque(objectIDs_.back(), torque);
@@ -476,7 +466,7 @@ Mn::Vector3 Viewer::randomDirection() {
 void Viewer::wiggleLastObject() {
   // demo of kinematic motion capability
   // randomly translate last added object
-  if (physicsManager_ == nullptr || objectIDs_.size() == 0)
+  if (objectIDs_.size() == 0)
     return;
 
   Mn::Vector3 randDir = randomDirection();
@@ -513,9 +503,8 @@ void Viewer::drawEvent() {
   if (sceneID_.size() <= 0)
     return;
 
-  if (physicsManager_ != nullptr)
-    // step physics at a fixed rate
-    timeSinceLastSimulation += timeline_.previousFrameDuration();
+  // step physics at a fixed rate
+  timeSinceLastSimulation += timeline_.previousFrameDuration();
   if (timeSinceLastSimulation >= 1.0 / 60.0) {
     physicsManager_->stepPhysics(1.0 / 60.0);
     timeSinceLastSimulation = 0.0;
@@ -643,7 +632,59 @@ void Viewer::mousePressEvent(MouseEvent& event) {
 
     // if an object is selected, create a visualizer
     createPickedObjectVisualizer(pickedObject);
+    return;
   }  // drawable selection
+
+  // DEBUGGING/DEMO code TODO: remove this
+  auto viewportPoint = event.position();
+  auto ray = renderCamera_->unproject(viewportPoint);
+  Corrade::Utility::Debug()
+      << "Ray: (org=" << ray.origin << ", dir=" << ray.direction << ")";
+
+  esp::physics::RaycastResults raycastResults = physicsManager_->castRay(ray);
+
+  for (auto& hit : raycastResults.hits) {
+    Corrade::Utility::Debug() << "Hit: ";
+    Corrade::Utility::Debug() << "  distance: " << hit.rayDistance;
+    Corrade::Utility::Debug() << "  object: " << hit.objectId;
+    Corrade::Utility::Debug() << "  point: " << hit.point;
+    Corrade::Utility::Debug() << "  normal: " << hit.normal;
+  }
+
+  if (event.button() == MouseEvent::Button::Left) {
+    if (raycastResults.hasHits()) {
+      if (raycastResults.hits[0].objectId != -1) {
+        Mn::Vector3 relativeContactPoint =
+            raycastResults.hits[0].point -
+            physicsManager_->getTranslation(raycastResults.hits[0].objectId);
+        physicsManager_->applyImpulse(raycastResults.hits[0].objectId,
+                                      ray.direction * 5.0,
+                                      relativeContactPoint);
+      }
+    }
+  } else if (event.button() == MouseEvent::Button::Right) {
+    addPrimitiveObject();
+    if (raycastResults.hasHits()) {
+      // use the bounding box to create a safety margin for adding the object
+      float boundingBuffer =
+          physicsManager_->getObjectSceneNode(objectIDs_.back())
+                  .computeCumulativeBB()
+                  .size()
+                  .max() /
+              2.0 +
+          0.04;
+      physicsManager_->setTranslation(
+          objectIDs_.back(),
+          raycastResults.hits[0].point +
+              raycastResults.hits[0].normal * boundingBuffer);
+    } else {
+      physicsManager_->setTranslation(objectIDs_.back(),
+                                      ray.origin + ray.direction);
+    }
+    physicsManager_->setRotation(objectIDs_.back(),
+                                 esp::core::randomRotation());
+  }
+  // DEBUGGING/DEMO code end TODO: remove above this
 
   event.setAccepted();
   redraw();

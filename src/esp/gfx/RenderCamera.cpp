@@ -164,5 +164,25 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
   return drawableTransforms.size();
 }
 
+esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition) {
+  esp::geo::Ray ray;
+  ray.origin = object().absoluteTranslation();
+
+  const Magnum::Vector2i viewPos{viewportPosition.x(),
+                                 viewport().y() - viewportPosition.y() - 1};
+
+  const Magnum::Vector3 normalizedPos{
+      2 * Magnum::Vector2{viewPos} / Magnum::Vector2{viewport()} -
+          Magnum::Vector2{1.0f},
+      1.0};
+
+  ray.direction =
+      ((object().absoluteTransformationMatrix() * projectionMatrix().inverted())
+           .transformPoint(normalizedPos) -
+       ray.origin)
+          .normalized();
+  return ray;
+}
+
 }  // namespace gfx
 }  // namespace esp

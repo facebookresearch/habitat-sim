@@ -8,8 +8,8 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
 
-#include <Magnum/Python.h>
-#include <Magnum/SceneGraph/Python.h>
+#include <Magnum/PythonBindings.h>
+#include <Magnum/SceneGraph/PythonBindings.h>
 
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
@@ -73,6 +73,10 @@ void initSimBindings(py::module& m) {
       .def("close", &Simulator::close)
       .def_property("pathfinder", &Simulator::getPathFinder,
                     &Simulator::setPathFinder)
+      .def_property(
+          "navmesh_visualization", &Simulator::isNavMeshVisualizationActive,
+          &Simulator::setNavMeshVisualization,
+          R"(Enable or disable wireframe visualization of current pathfinder's NavMesh.)")
       .def_property_readonly("gpu_device", &Simulator::gpuDevice)
       .def_property_readonly("random", &Simulator::random)
       .def_property("frustum_culling", &Simulator::isFrustumCullingEnabled,
@@ -91,6 +95,8 @@ void initSimBindings(py::module& m) {
       .def("get_scene_template_manager", &Simulator::getSceneAttributesManager,
            pybind11::return_value_policy::reference)
 
+      .def("get_physics_simulation_library",
+           &Simulator::getPhysicsSimulationLibrary)
       /* --- Object instancing and access --- */
       .def("add_object", &Simulator::addObject, "object_lib_index"_a,
            "attachment_node"_a = nullptr,
@@ -155,14 +161,14 @@ void initSimBindings(py::module& m) {
            "scene_id"_a = 0)
       .def("contact_test", &Simulator::contactTest, "object_id"_a,
            "scene_id"_a = 0)
+      .def("cast_ray", &Simulator::castRay, "ray"_a, "max_distance"_a = 100.0,
+           "scene_id"_a = 0)
       .def("set_object_bb_draw", &Simulator::setObjectBBDraw, "draw_bb"_a,
            "object_id"_a, "scene_id"_a = 0)
       .def("set_object_semantic_id", &Simulator::setObjectSemanticId,
            "semantic_id"_a, "object_id"_a, "scene_id"_a = 0)
       .def("recompute_navmesh", &Simulator::recomputeNavMesh, "pathfinder"_a,
            "navmesh_settings"_a, "include_static_objects"_a = false)
-      .def("toggle_navmesh_visualization",
-           &Simulator::toggleNavMeshVisualization)
       .def("get_light_setup", &Simulator::getLightSetup,
            "key"_a = assets::ResourceManager::DEFAULT_LIGHTING_KEY)
       .def("set_light_setup", &Simulator::setLightSetup, "light_setup"_a,

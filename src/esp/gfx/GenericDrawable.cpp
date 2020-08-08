@@ -4,6 +4,7 @@
 
 #include "GenericDrawable.h"
 
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
