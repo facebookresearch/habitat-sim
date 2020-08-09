@@ -9,6 +9,7 @@
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/GL/Context.h>
 
 #include "esp/assets/Attributes.h"
 #include "esp/core/esp.h"
@@ -145,7 +146,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   sceneID_.push_back(activeSceneID_);
 
   if (config_.createRenderer) {
-    if (!context_) {
+    if (!context_ && !Magnum::GL::Context::hasCurrent()) {
       context_ = gfx::WindowlessContext::create_unique(config_.gpuDeviceId);
     }
 
@@ -153,6 +154,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     if (!renderer_) {
       renderer_ = gfx::Renderer::create();
     }
+
+    flextGLInit(Magnum::GL::Context::current());
 
     auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
     auto& rootNode = sceneGraph.getRootNode();

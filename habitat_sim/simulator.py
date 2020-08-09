@@ -40,6 +40,7 @@ class Configuration(object):
 
     sim_cfg: Optional[SimulatorConfiguration] = None
     agents: Optional[List[AgentConfiguration]] = None
+    render_to_ui: bool = False
 
 
 @attr.s(auto_attribs=True)
@@ -237,11 +238,14 @@ class Simulator(SimulatorBackend):
 
     def get_sensor_observations(self):
         for _, sensor in self._sensors.items():
-            sensor.draw_observation()
+            sensor.draw_observation(self.config.render_to_ui)
 
         observations = {}
         for sensor_uuid, sensor in self._sensors.items():
-            observations[sensor_uuid] = sensor.get_observation()
+            if self.config.render_to_ui:
+                observations[sensor_uuid] = None
+            else:
+                observations[sensor_uuid] = sensor.get_observation()
 
         return observations
 
@@ -382,7 +386,7 @@ class Sensor:
             self._spec.noise_model, self._spec.uuid
         )
 
-    def draw_observation(self):
+    def draw_observation(self, render_to_ui):
         # sanity check:
 
         # see if the sensor is attached to a scene graph, otherwise it is invalid,
@@ -418,8 +422,11 @@ class Sensor:
         if self._sim.frustum_culling:
             render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
 
-        with self._sensor_object.render_target as tgt:
+        if render_to_ui:
             self._sim.renderer.draw(self._sensor_object, scene, render_flags)
+        else:
+            with self._sensor_object.render_target as tgt:
+                self._sim.renderer.draw(self._sensor_object, scene, render_flags)
 
         # add an OBJECT only 2nd pass on the standard SceneGraph if SEMANTIC sensor with separate semantic SceneGraph
         if (
