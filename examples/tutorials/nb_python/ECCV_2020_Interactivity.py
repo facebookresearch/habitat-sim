@@ -3,7 +3,7 @@
 #   accelerator: GPU
 #   colab:
 #     collapsed_sections: []
-#     name: ECCV_2020_Interactivity.ipynb
+#     name: 'ECCV 2020: Interactivity.ipynb'
 #     provenance: []
 #     toc_visible: true
 #   jupytext:
@@ -52,12 +52,18 @@ import time
 
 import cv2
 import git
-import ipywidgets as widgets
 import magnum as mn
 import numpy as np
-from IPython.display import display as ipydisplay
-# For using jupyter/ipywidget IO components
-from ipywidgets import fixed, interact, interact_manual, interactive
+
+try:
+    import ipywidgets as widgets
+    from IPython.display import display as ipydisplay
+    # For using jupyter/ipywidget IO components
+    from ipywidgets import fixed, interact, interact_manual, interactive
+
+    HAS_WIDGETS = True
+except ImportError:
+    HAS_WIDGETS = False
 # %matplotlib inline
 from matplotlib import pyplot as plt
 from PIL import Image
@@ -703,7 +709,7 @@ def display_sample(
                 plt.plot(point[0], point[1], marker="o", markersize=10, alpha=0.8)
         plt.imshow(data)
 
-    plt.show()
+    plt.show(block=False)
 
 
 if __name__ == "__main__":
@@ -772,6 +778,9 @@ def set_button_launcher(desc):
 
 
 def make_sim_and_vid_button(prefix, dt=1.0):
+    if not HAS_WIDGETS:
+        return
+
     def on_sim_click(b):
         observations = simulate(sim, dt=dt)
         make_video_cv2(observations, prefix=prefix, open_vid=True, multi_obs=False)
@@ -782,6 +791,9 @@ def make_sim_and_vid_button(prefix, dt=1.0):
 
 
 def make_clear_all_objects_button():
+    if not HAS_WIDGETS:
+        return
+
     def on_clear_click(b):
         remove_all_objects(sim)
 
@@ -807,6 +819,11 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
     # Construct DDLs and assign event handlers
     # All file-based object template handles
     file_obj_handles = obj_attr_mgr.get_file_template_handles()
+    if not HAS_WIDGETS:
+        sel_file_obj_handle = file_obj_handles[0]
+        sel_prim_obj_handle = prim_obj_handles[0]
+        sel_prim_obj_handle = prim_asset_handles[0]
+        return
     file_obj_ddl, sel_file_obj_handle = set_handle_ddl_widget(
         file_obj_handles,
         "File-based Object",
@@ -1032,7 +1049,10 @@ while sim.get_world_time() < start_time + dt:
     observations.append(sim.get_sensor_observations())
 
 example_type = "object permanence"
-make_video_cv2(observations, prefix=example_type, open_vid=True, multi_obs=False)
+if make_video:
+    make_video_cv2(
+        observations, prefix=example_type, open_vid=show_video, multi_obs=False
+    )
 remove_all_objects(sim)
 
 
@@ -1356,9 +1376,9 @@ faulthandler.enable()
 # @markdown - a 3rd person camera view
 # @markdown - modified 1st person sensor placement
 sim_settings = make_default_settings()
-sim_settings[
-    "scene"
-] = "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"  # @param{type:"string"}
+# fmt: off
+sim_settings["scene"] = "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"  # @param{type:"string"}
+# fmt: on
 sim_settings["sensor_pitch"] = 0
 sim_settings["sensor_height"] = 0.6
 sim_settings["color_sensor_3rd_person"] = True
@@ -1502,13 +1522,14 @@ while sim.get_world_time() - start_time < 2.0:
 
 # video rendering with embedded 1st person view
 video_prefix = "fetch"
-make_video_cv2(
-    observations,
-    prefix=video_prefix,
-    open_vid=True,
-    multi_obs=True,
-    fps=1.0 / time_step,
-)
+if make_video:
+    make_video_cv2(
+        observations,
+        prefix=video_prefix,
+        open_vid=show_vid,
+        multi_obs=True,
+        fps=1.0 / time_step,
+    )
 
 # remove locobot while leaving the agent node for later use
 sim.remove_object(locobot_id, delete_object_node=False)
@@ -2188,9 +2209,14 @@ while sim.get_world_time() - start_time < 2.0:
 
 # video rendering with embedded 1st person view
 video_prefix = "motion tracking"
-make_video_cv2(
-    observations, prefix=video_prefix, open_vid=True, multi_obs=False, fps=60.0
-)
+if make_video:
+    make_video_cv2(
+        observations,
+        prefix=video_prefix,
+        open_vid=show_video,
+        multi_obs=False,
+        fps=60.0,
+    )
 
 # reset the sensor state for other examples
 visual_sensor._spec.position = initial_sensor_position
