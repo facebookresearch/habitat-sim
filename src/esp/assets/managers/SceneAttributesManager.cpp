@@ -414,8 +414,31 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
     sceneAttributes->setLightSetup(lightSetup);
   }
 
+  // load the rigid object library metadata (no physics init yet...)
+  if (jsonConfig.HasMember("rigid object paths") &&
+      jsonConfig["rigid object paths"].IsArray()) {
+    std::string configDirectory =
+        sceneFilename.substr(0, sceneFilename.find_last_of("/"));
+
+    const auto& paths = jsonConfig["rigid object paths"];
+    for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
+      if (!paths[i].IsString()) {
+        LOG(ERROR)
+            << "SceneAttributesManager::createAttributesTemplate "
+               ":Invalid value in scene config 'rigid object paths'- array "
+            << i;
+        continue;
+      }
+
+      std::string absolutePath =
+          Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
+      // load all object templates available as configs in absolutePath
+      objectAttributesMgr_->loadObjectConfigs(absolutePath);
+    }
+  }  // if load rigid object library metadata
+
   return this->postCreateRegister(sceneAttributes, registerTemplate);
-}  // SceneAttributesManager::createBackCompatAttributesTemplate
+}  // SceneAttributesManager::createFileBasedAttributesTemplate
 
 }  // namespace managers
 }  // namespace assets
