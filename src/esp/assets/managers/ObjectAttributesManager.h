@@ -237,6 +237,26 @@ class ObjectAttributesManager
 
  protected:
   /**
+   * @brief Perform file-name-based attributes initialization. This is to
+   * take the place of the AssetInfo::fromPath functionality, and is only
+   * intended to provide default values and other help if certain mistakes
+   * are made by the user, such as specifying an asset handle in json but not
+   * specifying the asset type corresponding to that handle.  These settings
+   * should not restrict anything, only provide defaults.
+   *
+   * @param attributes The AbstractPhysicsAttributes object to be configured
+   * @param setFrame whether the frame should be set or not (only for render
+   * assets in scenes)
+   * @param fileName Mesh Handle to check.
+   * @param meshTypeSetter Setter for mesh type.
+   */
+  void setDefaultFileNameBasedAttributes(
+      PhysicsObjectAttributes::ptr attributes,
+      bool setFrame,
+      const std::string& meshHandle,
+      std::function<void(int)> meshTypeSetter) override;
+
+  /**
    * @brief Used Internally.  Configure newly-created attributes with any
    * default values, before any specific values are set.
    *

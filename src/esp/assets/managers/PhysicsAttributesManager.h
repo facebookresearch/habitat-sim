@@ -90,6 +90,15 @@ class PhysicsAttributesManager
 
  protected:
   /**
+   * @brief Not used by PhysicsManagerAttributes.
+   */
+  void setDefaultFileNameBasedAttributes(
+      CORRADE_UNUSED PhysicsManagerAttributes::ptr attributes,
+      CORRADE_UNUSED bool setFrame,
+      CORRADE_UNUSED const std::string& meshHandle,
+      CORRADE_UNUSED std::function<void(int)> meshTypeSetter) override {}
+
+  /**
    * @brief Used Internally.  Configure newly-created attributes with any
    * default values, before any specific values are set.
    *

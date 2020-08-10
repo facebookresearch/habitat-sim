@@ -113,18 +113,13 @@ AssetAttributesManager::createAttributesTemplate(
     const std::string& primClassName,
     bool registerTemplate) {
   auto primAssetAttributes = buildPrimAttributes(primClassName);
-  if (nullptr != primAssetAttributes && registerTemplate) {
-    int attrID = this->registerAttributesTemplate(primAssetAttributes, "");
-    if (attrID == ID_UNDEFINED) {
-      // some error occurred
-      return nullptr;
-    }
+  if (nullptr == primAssetAttributes) {
+    return primAssetAttributes;
   }
-  if (nullptr != primAssetAttributes) {
-    LOG(INFO) << "Asset attributes (" << primClassName << ") created"
-              << (registerTemplate ? " and registered." : ".");
-  }
-  return primAssetAttributes;
+  LOG(INFO) << "Asset attributes (" << primClassName << ") created"
+            << (registerTemplate ? " and registered." : ".");
+
+  return this->postCreateRegister(primAssetAttributes, registerTemplate);
 }  // AssetAttributesManager::createAttributesTemplate
 
 int AssetAttributesManager::registerAttributesTemplateFinalize(
@@ -134,8 +129,7 @@ int AssetAttributesManager::registerAttributesTemplateFinalize(
   // verify that attributes has been edited in a legal manner
   if (!primAttributesTemplate->isValidTemplate()) {
     LOG(ERROR) << "AssetAttributesManager::registerAttributesTemplateFinalize "
-                  ": Primitive "
-                  "asset attributes template named"
+                  ": Primitive asset attributes template named"
                << primAttributesHandle
                << "is not configured properly for specified prmitive"
                << primAttributesTemplate->getPrimObjClassName()
