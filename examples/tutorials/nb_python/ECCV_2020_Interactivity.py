@@ -3,7 +3,7 @@
 #   accelerator: GPU
 #   colab:
 #     collapsed_sections: []
-#     name: 'ECCV 2020: Interactivity.ipynb'
+#     name: ECCV_2020_Interactivity.ipynb
 #     provenance: []
 #     toc_visible: true
 #   jupytext:
@@ -52,18 +52,12 @@ import time
 
 import cv2
 import git
+import ipywidgets as widgets
 import magnum as mn
 import numpy as np
-
-try:
-    import ipywidgets as widgets
-    from IPython.display import display as ipydisplay
-    # For using jupyter/ipywidget IO components
-    from ipywidgets import fixed, interact, interact_manual, interactive
-
-    HAS_WIDGETS = True
-except ImportError:
-    HAS_WIDGETS = False
+from IPython.display import display as ipydisplay
+# For using jupyter/ipywidget IO components
+from ipywidgets import fixed, interact, interact_manual, interactive
 # %matplotlib inline
 from matplotlib import pyplot as plt
 from PIL import Image
@@ -80,7 +74,7 @@ dir_path = repo.working_tree_dir
 data_path = os.path.join(dir_path, "data")
 output_directory = "examples/tutorials/interactivity_output/"  # @param {type:"string"}
 output_path = os.path.join(dir_path, output_directory)
-if os.path.exists(output_path):
+if not os.path.exists(output_path):
     os.mkdir(output_path)
 
 # define some globals the first time we run.
@@ -709,7 +703,7 @@ def display_sample(
                 plt.plot(point[0], point[1], marker="o", markersize=10, alpha=0.8)
         plt.imshow(data)
 
-    plt.show(block=False)
+    plt.show()
 
 
 if __name__ == "__main__":
@@ -778,9 +772,6 @@ def set_button_launcher(desc):
 
 
 def make_sim_and_vid_button(prefix, dt=1.0):
-    if not HAS_WIDGETS:
-        return
-
     def on_sim_click(b):
         observations = simulate(sim, dt=dt)
         make_video_cv2(observations, prefix=prefix, open_vid=True, multi_obs=False)
@@ -791,9 +782,6 @@ def make_sim_and_vid_button(prefix, dt=1.0):
 
 
 def make_clear_all_objects_button():
-    if not HAS_WIDGETS:
-        return
-
     def on_clear_click(b):
         remove_all_objects(sim)
 
@@ -819,27 +807,22 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
     # Construct DDLs and assign event handlers
     # All file-based object template handles
     file_obj_handles = obj_attr_mgr.get_file_template_handles()
-    # All primitive asset-based object template handles
-    prim_obj_handles = obj_attr_mgr.get_synth_template_handles()
-    # All primitive asset handles template handles
-    prim_asset_handles = prim_attr_mgr.get_template_handles()
-    if not HAS_WIDGETS:
-        sel_file_obj_handle = file_obj_handles[0]
-        sel_prim_obj_handle = prim_obj_handles[0]
-        sel_prim_obj_handle = prim_asset_handles[0]
-        return
     file_obj_ddl, sel_file_obj_handle = set_handle_ddl_widget(
         file_obj_handles,
         "File-based Object",
         sel_file_obj_handle,
         on_file_obj_ddl_change,
     )
+    # All primitive asset-based object template handles
+    prim_obj_handles = obj_attr_mgr.get_synth_template_handles()
     prim_obj_ddl, sel_prim_obj_handle = set_handle_ddl_widget(
         prim_obj_handles,
         "Primitive-based Object",
         sel_prim_obj_handle,
         on_prim_obj_ddl_change,
     )
+    # All primitive asset handles template handles
+    prim_asset_handles = prim_attr_mgr.get_template_handles()
     prim_asset_ddl, sel_asset_handle = set_handle_ddl_widget(
         prim_asset_handles, "Primitive Asset", sel_asset_handle, on_prim_ddl_change
     )
@@ -882,27 +865,20 @@ make_simulator_from_settings(sim_settings)
 #
 
 # %%
-# @title Select a Simulation Object: { display-mode: "form" }
-# @markdown Use the dropdown menu below to select an object for use in the
-# @markdown following examples.
+# @title Select a Simulation Object Template: { display-mode: "form" }
+# @markdown Use the dropdown menu below to select an object template for use in the following examples.
 
-# @markdown File-based objects are loaded from and named after an asset file (e.g. banana.glb).
+# @markdown File-based object templates are loaded from and named after an asset file (e.g. banana.glb), while Primitive-based object templates are generated programmatically (e.g. uv_sphere) with handles (name/key for reference) uniquely generated from a specific parameterization.
 
-# @markdown Primitive objects are generated programmatically (e.g. uv_sphere) with
-# @markdown handles (name/key for reference) uniquely generated from a specific parameterization.
-
-# @markdown See the [Advanced Features](https://colab.research.google.com/drive/10iSSLQZiKJi86intkenN53iOQ-w5By1z?authuser=1#scrollTo=JSrIT5nz-1Os)
-# @markdown section for more details about asset configuration.
+# @markdown See the [Advanced Features](https://colab.research.google.com/drive/10iSSLQZiKJi86intkenN53iOQ-w5By1z?authuser=1#scrollTo=JSrIT5nz-1Os) section for more details about asset configuration.
 
 build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 
 # %%
-# @title Add either a File-based or Primitive Asset-based object to the scene at a user-specified location.
-# @markdown Running this will add a physically-modelled object of the selected
-# @markdown type to the scene at the location specified by user, simulate forward for a few seconds and save a
-# @markdown movie of the results.
+# @title Add either a File-based or Primitive Asset-based object to the scene at a user-specified location.{ display-mode: "form" }
+# @markdown Running this will add a physically-modelled object of the selected type to the scene at the location specified by user, simulate forward for a few seconds and save a movie of the results.
 
-# @markdown Choose either the primitive or file-based asset recently selected in the dropdown:
+# @markdown Choose either the primitive or file-based template recently selected in the dropdown:
 obj_template_handle = sel_file_obj_handle
 asset_tempalte_handle = sel_asset_handle
 object_type = "File-based"  # @param ["File-based","Primitive-based"]
@@ -967,14 +943,13 @@ make_clear_all_objects_button()
 # - [Trajectory Prediction]()
 
 # %%
-# @title Select objects from the GUI: { display-mode: "form" }
+# @title Select object templates from the GUI: { display-mode: "form" }
 
 build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 
 # %%
-# @title Scripted vs. Dynamic Motion
-# @markdown A quick script to generate video data for AI classification of
-# @markdown dynamically dropping vs. kinematically moving objects.
+# @title Scripted vs. Dynamic Motion { display-mode: "form" }
+# @markdown A quick script to generate video data for AI classification of dynamically dropping vs. kinematically moving objects.
 remove_all_objects(sim)
 # @markdown Set the scene as dynamic or kinematic:
 scenario_is_kinematic = False  # @param {type:"boolean"}
@@ -1005,7 +980,7 @@ remove_all_objects(sim)
 
 
 # %%
-# @title Object Permanence
+# @title Object Permanence { display-mode: "form" }
 # @markdown This example script demonstrates a possible object permanence task.
 # @markdown Two objects are dropped behind an occluder. One is removed while occluded.
 remove_all_objects(sim)
@@ -1057,15 +1032,12 @@ while sim.get_world_time() < start_time + dt:
     observations.append(sim.get_sensor_observations())
 
 example_type = "object permanence"
-if make_video:
-    make_video_cv2(
-        observations, prefix=example_type, open_vid=show_video, multi_obs=False
-    )
+make_video_cv2(observations, prefix=example_type, open_vid=True, multi_obs=False)
 remove_all_objects(sim)
 
 
 # %%
-# @title Physical Plausibility Classification
+# @title Physical Plausibility Classification { display-mode: "form" }
 # @markdown This example demonstrates a physical plausibility expirement. A sphere
 # @markdown is dropped onto the back of a couch to roll onto the floor. Optionally,
 # @markdown an invisible plane is introduced for the sphere to roll onto producing
@@ -1108,7 +1080,7 @@ remove_all_objects(sim)
 
 
 # %%
-# @title Trajectory Prediction
+# @title Trajectory Prediction { display-mode: "form" }
 # @markdown This example demonstrates setup of a trajectory prediction task.
 # @markdown Boxes are placed in a target zone and a sphere is given an initial
 # @markdown velocity with the goal of knocking the boxes off the counter.
@@ -1202,7 +1174,7 @@ remove_all_objects(sim)
 # %% [markdown]
 # The following example demonstrates setup and excecution of an embodied navigation and interaction scenario. An object and an agent embodied by a rigid locobot mesh are placed randomly on the NavMesh. A path is computed for the agent to reach the object which is executed by a continuous path-following controller. The object is then kinematically gripped by the agent and a second path is computed for the agent to reach a goal location, also executed by a continuous controller. The gripped object is then released and thrown in front of the agent.
 #
-# Note: for a more detailed explanation of the NavMesh see [this (link)](https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/ECCV_2020_Navigation.ipynb) tutorial.
+# Note: for a more detailed explanation of the NavMesh see [this(TODO: link)]() tutorial.
 
 # %%
 # @title Select target object from the GUI: { display-mode: "form" }
@@ -1211,7 +1183,7 @@ build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 
 
 # %%
-# @title Continuous Path Follower Example
+# @title Continuous Path Follower Example { display-mode: "form" }
 # @markdown A python Class to provide waypoints along a path given agent states
 
 
@@ -1373,7 +1345,7 @@ class ObjectGripper(object):
 
 
 # %%
-# @title Embodied Continuous Navigation Example
+# @title Embodied Continuous Navigation Example { display-mode: "form" }
 # @markdown This example cell runs the object retrieval task.
 
 import faulthandler
@@ -1384,9 +1356,9 @@ faulthandler.enable()
 # @markdown - a 3rd person camera view
 # @markdown - modified 1st person sensor placement
 sim_settings = make_default_settings()
-# fmt: off
-sim_settings["scene"] = "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"  # @param{type:"string"}
-# fmt: on
+sim_settings[
+    "scene"
+] = "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"  # @param{type:"string"}
 sim_settings["sensor_pitch"] = 0
 sim_settings["sensor_height"] = 0.6
 sim_settings["color_sensor_3rd_person"] = True
@@ -1530,14 +1502,13 @@ while sim.get_world_time() - start_time < 2.0:
 
 # video rendering with embedded 1st person view
 video_prefix = "fetch"
-if make_video:
-    make_video_cv2(
-        observations,
-        prefix=video_prefix,
-        open_vid=show_vid,
-        multi_obs=True,
-        fps=1.0 / time_step,
-    )
+make_video_cv2(
+    observations,
+    prefix=video_prefix,
+    open_vid=True,
+    multi_obs=True,
+    fps=1.0 / time_step,
+)
 
 # remove locobot while leaving the agent node for later use
 sim.remove_object(locobot_id, delete_object_node=False)
@@ -1566,11 +1537,11 @@ make_simulator_from_settings(sim_settings)
 build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 
 # %%
-# @title 1. Simple File-based Object Template modification. { display-mode: "form" }
+# @title 1 Simple File-based Object Template modification. { display-mode: "form" }
 # @markdown Running this will demonstrate how to create objects of varying size from a file-based template by iteratively modifying the template's scale value.  This will also demonstrate how to delete unwanted templates from the library.
 
 # Get File-based template for banana using its handle
-obj_template_handle = "./data/objects/banana.phys_properties.json"
+obj_template_handle = sel_file_obj_handle
 
 obj_template = obj_attr_mgr.get_template_by_handle(obj_template_handle)
 
@@ -1578,7 +1549,7 @@ obj_template = obj_attr_mgr.get_template_by_handle(obj_template_handle)
 obj_id = sim.add_object_by_handle(obj_template_handle)
 
 # Set desired offset from agent location to place object
-offset = np.array([-1.2, 1.4, -1.5])
+offset = np.array([-1.2, 1.6, -1.5])
 # Move object to be in front of the agent
 set_object_state_from_agent(sim, obj_id, offset=offset)
 
@@ -1637,17 +1608,17 @@ make_clear_all_objects_button()
 
 
 # %%
-# @title 2. All Possible File-based Object Template fields modification. { display-mode: "form" }
-# @markdown This lists all the possible modifiable fields available in an object template, allows for them to be edited and enables creating an object with the new template.
+# @title 2 Object Template Modification in Detail. { display-mode: "form" }
+# @markdown The following example lists all the fields available in an object template that can be modified, allows for them to be edited and enables creating an object with the newly modified template.
 
-# @markdown ###2.1 Fields to edit for a new template
+# @markdown ###2.1 Editable fields in Object Templates
 # Get a new template
 new_template = obj_attr_mgr.get_template_by_handle(sel_file_obj_handle)
 
 new_template_orig_map = build_dict_of_attrs(new_template)
 
 # @markdown The desired mass of the object
-mass = 1  # @param {type:"slider", min:0.1, max:50, step:0.1}
+mass = 5.9  # @param {type:"slider", min:0.1, max:50, step:0.1}
 new_template.mass = mass
 
 # @markdown The x,y,z components for the scale of the object.
@@ -1715,13 +1686,14 @@ new_template_ID = obj_attr_mgr.register_template(new_template, new_template_hand
 
 
 # %%
-# @markdown ###2.2 Create an object and display it with the edited template.
+# @markdown ###2.2 Create an object and display it with the edited template. { display-mode: "form" }
+# @markdown Two objects will be created, one with the original template and one with the edited configuration.
 # Add object instantiated by original template using template handle
 original_template = obj_attr_mgr.get_template_by_handle(sel_file_obj_handle)
 orig_obj_id = sim.add_object_by_handle(original_template.handle)
 
 # Set desired offset from agent location to place object
-offset = np.array([-0.5, 1.5, -1.5])
+offset = np.array([-0.5, 1.6, -1.5])
 # Move object to be in front of the agent
 set_object_state_from_agent(sim, orig_obj_id, offset=offset)
 
@@ -1745,9 +1717,10 @@ if make_video:
 make_clear_all_objects_button()
 
 # %%
-# @title 3.0 Simple Primitive-based Object instantiation. { display-mode: "form" }
-# @markdown Habitat-Sim has 6 built-in primitives available (Capsule, Cone, Cube, Cylinder, Icosphere and UVSphere), which are available as both solid and wireframe meshes.  Default objects are synthesized from these primitives automatically and are always available.
+# @title 3 Simple Primitive-based Object instantiation. { display-mode: "form" }
+# @markdown Habitat-Sim has 6 built-in primitives available (Capsule, Cone, Cube, Cylinder, Icosphere and UVSphere), which are available as both solid and wireframe meshes.  Default objects are synthesized from these primitives automatically and are always available. Primitives are desirable due to being very fast to simulate.
 
+# @markdown This example shows the primitives that are available.  One of each type is instanced and simulated.
 # Get Primitive-based solid object template handles
 prim_solid_obj_handles = obj_attr_mgr.get_synth_template_handles("solid")
 # Get Primitive-based wireframe object template handles
@@ -1771,9 +1744,393 @@ for i in range(6):
     offset_wf[0] += 0.4
 
 
-example_type = "Adding primitive-basedd objects"
+example_type = "Adding primitive-based objects"
 # Either
 observations = simulate(sim, dt=1.0)
+if make_video:
+    make_video_cv2(
+        observations, prefix=example_type, open_vid=show_video, multi_obs=False
+    )
+make_clear_all_objects_button()
+
+
+# %%
+# @title 4 Modifying Primitive Asset Templates to Customize Objects.
+# @markdown Many of the geometric properties of the available primitive meshes can be controlled by modifying the Primitive Asset Attributes templates that describe them.  Any objects instantiated with these modified template will then exhibit these properties.
+# @markdown Note 1 : Solid and Wireframe Cubes and Wireframe Icospheres do not have any editable geometric properties.
+# @markdown Note 2 : Since many of the modifiable parameters controlling primitives are restricted in what values they can be, each Primitive Asset Template has a read-only boolean property, "is_valid_template", which describes whether or not the template is in a valid state.  If it is invalid, it will not be able to be used to create primitives.
+# @markdown Note 3 : Primitive Asset Templates name themselves based on their settings, so an edited template does not have to be actively renamed by the user.
+# @markdown Note 4 : There often are different modifiable properties available for solid and wireframe versions of the same primitive.
+
+# @markdown ###Primitive Asset Template Properties
+# @markdown The flollowing examples will illustrate all the modifiable properties for each of the different types of primitives, and allow for their synthesis.
+
+# This will register a primitive template if valid, and add it to a passed
+# dictionary of handles; If not valid it will give a message
+def register_prim_template_if_valid(
+    make_modified, template, dict_of_handles, handle_key
+):
+    if make_modified:
+        if template.is_valid_template:
+            prim_attr_mgr.register_template(template)
+            dict_of_handles[handle_key] = template.handle
+            print(
+                "Primitive Template named {} is registered for {}.".format(
+                    template.handle, handle_key
+                )
+            )
+        else:
+            print(
+                "Primitive Template configuration is invalid for {}, so unable to register.".format(
+                    handle_key
+                )
+            )
+    else:
+        dict_of_handles[handle_key] = prim_attr_mgr.get_template_handles(handle_key)[0]
+        print("Default Primitive Template used at key {}.".format(handle_key))
+
+
+# Build a dictionary of templates to use to construct objects
+
+# Configure dictionaries to hold handles of attributes to use to build objects
+solid_handles_to_use = {}
+solid_handles_to_use["cubeSolid"] = prim_attr_mgr.get_template_handles("cubeSolid")[0]
+wireframe_handles_to_use = {}
+wireframe_handles_to_use["cubeWireframe"] = prim_attr_mgr.get_template_handles(
+    "cubeWireframe"
+)[0]
+wireframe_handles_to_use["icosphereWireframe"] = prim_attr_mgr.get_template_handles(
+    "icosphereWireframe"
+)[0]
+
+
+# %%
+# @title ###4.1 Capsule : Cylinder with hemispherical caps of radius 1.0, oriented along y axis, centered at origin.
+# @markdown ####4.1.1 Solid Capsule
+# Acquire default template
+capsule_solid_template = prim_attr_mgr.get_default_capsule_template(False)
+
+
+def edit_solid_capsule(edit_template):
+    # Whether to build with texture coordinate support
+    use_texture_coords = False  # @param {type:"boolean"}
+    edit_template.use_texture_coords = use_texture_coords
+    # Whether to build tangents
+    use_tangents = False  # @param {type:"boolean"}
+    edit_template.use_tangents = use_tangents
+    # Number of (face) rings for each hemisphere. Must be larger or equal to 1
+    hemisphere_rings = 5  # @param {type:"slider", min:1, max:10, step:1}
+    edit_template.hemisphere_rings = hemisphere_rings
+    # Number of (face) rings for cylinder. Must be larger or equal to 1.
+    cylinder_rings = 3  # @param {type:"slider", min:1, max:10, step:1}
+    edit_template.cylinder_rings = cylinder_rings
+    # Number of (face) segments. Must be larger or equal to 3.
+    num_segments = 16  # @param {type:"slider", min:3, max:30, step:1}
+    edit_template.num_segments = num_segments
+    # Half the length of cylinder part.
+    half_length = 0.45  # @param {type:"slider", min:0.05, max:2.0, step:0.05}
+    edit_template.half_length = half_length
+    # @markdown Do you want to make a solid capsule using your above modifications?
+    make_modified_solid_capsule = True  # @param {type:"boolean"}
+    # if make is set to true, save modified template.
+    register_prim_template_if_valid(
+        make_modified_solid_capsule,
+        edit_template,
+        solid_handles_to_use,
+        "capsule3DSolid",
+    )
+
+
+edit_solid_capsule(capsule_solid_template)
+
+# @markdown ####4.1.2 Wireframe Capsule :
+# Acquire default template
+capsule_wireframe_template = prim_attr_mgr.get_default_capsule_template(True)
+
+
+def edit_wf_capsule(edit_template):
+    # Number of (line) rings for each hemisphere. Must be larger or equal to 1
+    hemisphere_rings = 4  # @param {type:"slider", min:1, max:10, step:1}
+    edit_template.hemisphere_rings = hemisphere_rings
+
+    # Number of (line) rings for cylinder. Must be larger or equal to 1.
+    cylinder_rings = 2  # @param {type:"slider", min:1, max:10, step:1}
+    edit_template.cylinder_rings = cylinder_rings
+
+    # Number of line segments. Must be larger or equal to 4 and multiple of 4
+    num_segments = 16  # @param {type:"slider", min:4, max:40, step:4}
+    edit_template.num_segments = num_segments
+
+    # Half the length of cylinder part.
+    half_length = 0.1  # @param {type:"slider", min:0.05, max:2.0, step:0.05}
+    edit_template.half_length = half_length
+
+    # @markdown Do you want to make a wireframe capsule using your above modifications?
+    make_modified_wireframe_capsule = False  # @param {type:"boolean"}
+    # if make is set to true, save modified template.
+    register_prim_template_if_valid(
+        make_modified_wireframe_capsule,
+        edit_template,
+        wireframe_handles_to_use,
+        "capsule3DWireframe",
+    )
+
+
+edit_wf_capsule(capsule_wireframe_template)
+
+
+# %%
+# @title ###4.2 Cone : Cone of radius 1.0f along the Y axis, centered at origin.
+
+# @markdown ####4.2.1 Solid Cone
+# Acquire default template
+cone_solid_template = prim_attr_mgr.get_default_cone_template(False)
+
+
+def edit_solid_cone(edit_template):
+    # Whether to build with texture coordinate support
+    use_texture_coords = False  # @param {type:"boolean"}
+    edit_template.use_texture_coords = use_texture_coords
+    # Whether to build tangents
+    use_tangents = False  # @param {type:"boolean"}
+    edit_template.use_tangents = use_tangents
+    # Number of (face) rings. Must be larger or equal to 1.
+    num_rings = 1  # @param {type:"slider", min:1, max:10, step:1}
+    edit_template.num_rings = num_rings
+    # Number of (face) segments. Must be larger or equal to 3.
+    num_segments = 12  # @param {type:"slider", min:3, max:30, step:1}
+    edit_template.num_segments = num_segments
+    # Half the cone length
+    half_length = 1.25  # @param {type:"slider", min:0.05, max:2.0, step:0.05}
+    edit_template.half_length = half_length
+    # Whether to cap the base of the cone
+    use_cap_end = True  # @param {type:"boolean"}
+    edit_template.use_cap_end = use_cap_end
+    # @markdown Do you want to make a solid cone using your above modifications?
+    make_modified_solid_cone = False  # @param {type:"boolean"}
+    # if make is set to true, save modified template.
+    register_prim_template_if_valid(
+        make_modified_solid_cone, edit_template, solid_handles_to_use, "coneSolid"
+    )
+
+
+edit_solid_cone(cone_solid_template)
+
+# @markdown ####4.2.2 Wireframe Cone
+# Acquire default template
+cone_wireframe_template = prim_attr_mgr.get_default_cone_template(True)
+
+
+def edit_wireframe_cone(edit_template):
+    # Number of (line) segments. Must be larger or equal to 4 and multiple of 4.
+    num_segments = 32  # @param {type:"slider", min:4, max:40, step:4}
+    edit_template.num_segments = num_segments
+    # Half the cone length
+    half_length = 1.25  # @param {type:"slider", min:0.05, max:2.0, step:0.05}
+    edit_template.half_length = half_length
+    # @markdown Do you want to make a wireframe cone using your above modifications?
+    make_modified_wireframe_cone = True  # @param {type:"boolean"}
+    # if make is set to true, save modified template.
+    register_prim_template_if_valid(
+        make_modified_wireframe_cone,
+        edit_template,
+        wireframe_handles_to_use,
+        "coneWireframe",
+    )
+
+
+edit_wireframe_cone(cone_wireframe_template)
+
+
+# %%
+# @title ###4.3 Cylinders : Cylinder of radius 1.0f along the Y axis, centered at origin.
+
+# @markdown ####4.3.1 Solid Cylinder
+# Acquire default template
+cylinder_solid_template = prim_attr_mgr.get_default_cylinder_template(False)
+
+
+def edit_solid_cylinder(edit_template):
+    # Whether to build with texture coordinate support
+    use_texture_coords = False  # @param {type:"boolean"}
+    edit_template.use_texture_coords = use_texture_coords
+    # Whether to build tangents
+    use_tangents = False  # @param {type:"boolean"}
+    edit_template.use_tangents = use_tangents
+    # Number of (face) rings. Must be larger or equal to 1.
+    num_rings = 1  # @param {type:"slider", min:1, max:10, step:1}
+    edit_template.num_rings = num_rings
+    # Number of (face) segments. Must be larger or equal to 3.
+    num_segments = 12  # @param {type:"slider", min:3, max:30, step:1}
+    edit_template.num_segments = num_segments
+    # Half the cylinder length
+    half_length = 1  # @param {type:"slider", min:0.05, max:2.0, step:0.05}
+    edit_template.half_length = half_length
+    # Whether to cap each end of the cylinder
+    use_cap_ends = True  # @param {type:"boolean"}
+    edit_template.use_cap_ends = use_cap_ends
+    # @markdown Do you want to make a solid cylinder using your above modifications?
+    make_modified_solid_cylinder = True  # @param {type:"boolean"}
+    # if make is set to true, save modified template.
+    register_prim_template_if_valid(
+        make_modified_solid_cylinder,
+        edit_template,
+        solid_handles_to_use,
+        "cylinderSolid",
+    )
+
+
+edit_solid_cylinder(cylinder_solid_template)
+
+# @markdown ####4.3.2 Wireframe Cylinder
+# Acquire default template
+cylinder_wireframe_template = prim_attr_mgr.get_default_cylinder_template(True)
+
+
+def edit_wireframe_cylinder(edit_template):
+    # Number of (face) rings. Must be larger or equal to 1.
+    num_rings = 1  # @param {type:"slider", min:1, max:10, step:1}
+    # Number of (line) segments. Must be larger or equal to 4 and multiple of 4.
+    num_segments = 32  # @param {type:"slider", min:4, max:64, step:4}
+    edit_template.num_segments = num_segments
+    # Half the cylinder length
+    half_length = 1.0  # @param {type:"slider", min:0.05, max:2.0, step:0.05}
+    edit_template.half_length = half_length
+    # @markdown Do you want to make a wireframe cylinder using your above modifications?
+    make_modified_wireframe_cylinder = True  # @param {type:"boolean"}
+    # if make is set to true, save modified template.
+    register_prim_template_if_valid(
+        make_modified_wireframe_cylinder,
+        edit_template,
+        wireframe_handles_to_use,
+        "cylinderWireframe",
+    )
+
+
+edit_wireframe_cylinder(cylinder_wireframe_template)
+
+# %%
+# @title ###4.4 Icosphere : Sphere of radius 1.0f, centered at the origin.
+# @markdown Only solid icospheres have any editable geometric parameters.
+
+# @markdown ####4.3.1 Solid Icosphere
+# Acquire default template
+icosphere_solid_template = prim_attr_mgr.get_default_icosphere_template(False)
+
+
+def edit_solid_icosphere(edit_template):
+    # Describes the depth of recursive subdivision for each icosphere triangle.
+    subdivisions = 4  # @param {type:"slider", min:1, max:10, step:1}
+    edit_template.subdivisions = subdivisions
+    # @markdown Do you want to make a solid icosphere using your above modifications?
+    make_modified_solid_icosphere = True  # @param {type:"boolean"}
+    # if make is set to true, save modified template.
+    register_prim_template_if_valid(
+        make_modified_solid_icosphere,
+        edit_template,
+        solid_handles_to_use,
+        "icosphereSolid",
+    )
+
+
+edit_solid_icosphere(icosphere_solid_template)
+
+# %%
+# @title ###4.5 UVSpheres : Sphere of radius 1.0f, centered at the origin.
+
+# @markdown ####4.5.1 Solid UVSphere
+# Acquire default template
+UVSphere_solid_template = prim_attr_mgr.get_default_UVsphere_template(False)
+
+
+def edit_solid_UVSphere(edit_template):
+    # Whether to build with texture coordinate support
+    use_texture_coords = False  # @param {type:"boolean"}
+    edit_template.use_texture_coords = use_texture_coords
+    # Whether to build tangents
+    use_tangents = False  # @param {type:"boolean"}
+    edit_template.use_tangents = use_tangents
+    # Number of (face) rings. Must be larger or equal to 2.
+    num_rings = 8  # @param {type:"slider", min:2, max:30, step:1}
+    edit_template.num_rings = num_rings
+    # Number of (face) segments. Must be larger or equal to 3.
+    num_segments = 8  # @param {type:"slider", min:3, max:30, step:1}
+    edit_template.num_segments = num_segments
+
+    # @markdown Do you want to make a solid UVSphere using your above modifications?
+    make_modified_solid_UVSphere = True  # @param {type:"boolean"}
+    # if make is set to true, save modified template.
+    register_prim_template_if_valid(
+        make_modified_solid_UVSphere,
+        edit_template,
+        solid_handles_to_use,
+        "uvSphereSolid",
+    )
+
+
+edit_solid_UVSphere(UVSphere_solid_template)
+
+# @markdown ####4.5.2 Wireframe UVSphere
+# Acquire default template
+UVSphere_wireframe_template = prim_attr_mgr.get_default_UVsphere_template(True)
+
+
+def edit_wireframe_UVSphere(edit_template):
+    # Number of (line) rings. Must be larger or equal to 2 and multiple of 2.
+    num_rings = 16  # @param {type:"slider", min:2, max:64, step:2}
+    # Number of (line) segments. Must be larger or equal to 4 and multiple of 4.
+    num_segments = 32  # @param {type:"slider", min:4, max:64, step:4}
+    edit_template.num_segments = num_segments
+    # @markdown Do you want to make a UVSphere cylinder using your above modifications?
+    make_modified_wireframe_UVSphere = True  # @param {type:"boolean"}
+    # if make is set to true, save modified template.
+    register_prim_template_if_valid(
+        make_modified_wireframe_UVSphere,
+        edit_template,
+        wireframe_handles_to_use,
+        "uvSphereWireframe",
+    )
+
+
+edit_wireframe_UVSphere(UVSphere_wireframe_template)
+
+# %%
+# @title ###4.6 Instancing objects with modified primitive attributes templates.
+# @markdown Using the modifications set in the previous examples in section 4,
+
+# Previous cells configured solid_handles_to_use and wireframe_handles_to_use
+
+# Set desired offset from agent location to place object
+offset_solid = np.array([-1.1, 1.6, -1.8])
+
+# Create primitive-attributes based object templates for solid and wireframe objects
+for k, solidHandle in solid_handles_to_use.items():
+    # Create object template with passed handle
+    obj_template = obj_attr_mgr.create_template(solidHandle)
+    # Create object from object template handle
+    print("Solid Object being made using handle :{}".format(solidHandle))
+    obj_solid_id = sim.add_object_by_handle(solidHandle)
+    # Place object in scene relative to agent
+    set_object_state_from_agent(sim, obj_solid_id, offset=offset_solid)
+    # Move offset for next object
+    offset_solid[0] += 0.4
+
+offset_wf = np.array([-1.1, 1.6, -1.0])
+
+for k, wireframeHandle in new_prim_wf_obj_handles.items():
+    # Create object template with passed handle
+    obj_template = obj_attr_mgr.create_template(wireframeHandle)
+    # Create object from object template handle
+    print("Wireframe Object being made using handle :{}".format(wireframeHandle))
+    obj_wf_id = sim.add_object_by_handle(wireframeHandle)
+    # Place object in scene relative to agent
+    set_object_state_from_agent(sim, obj_wf_id, offset=offset_wf)
+    # Move offset for next object
+    offset_wf[0] += 0.4
+
+example_type = "Adding customized primitive-based objects"
+# Either
+observations = simulate(sim, dt=2.0)
 if make_video:
     make_video_cv2(
         observations, prefix=example_type, open_vid=show_video, multi_obs=False
@@ -1831,14 +2188,9 @@ while sim.get_world_time() - start_time < 2.0:
 
 # video rendering with embedded 1st person view
 video_prefix = "motion tracking"
-if make_video:
-    make_video_cv2(
-        observations,
-        prefix=video_prefix,
-        open_vid=show_video,
-        multi_obs=False,
-        fps=60.0,
-    )
+make_video_cv2(
+    observations, prefix=video_prefix, open_vid=True, multi_obs=False, fps=60.0
+)
 
 # reset the sensor state for other examples
 visual_sensor._spec.position = initial_sensor_position
