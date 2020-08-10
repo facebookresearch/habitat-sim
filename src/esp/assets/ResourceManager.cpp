@@ -271,7 +271,7 @@ bool ResourceManager::loadScene(
     // check if file names exist
     AssetInfo semanticInfo = assetInfoMap.at("semantic");
     auto semanticSceneFilename = semanticInfo.filepath;
-    if (Corrade::Utility::Directory::exists(semanticSceneFilename)) {
+    if (Cr::Utility::Directory::exists(semanticSceneFilename)) {
       LOG(INFO) << "ResourceManager::loadScene : Loading semantic mesh "
                 << semanticSceneFilename;
       activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
@@ -394,7 +394,7 @@ bool ResourceManager::loadSceneInternal(
   const std::string& filename = info.filepath;
   bool meshSuccess = true;
   if (info.filepath.compare(EMPTY_SCENE) != 0) {
-    if (!Corrade::Utility::Directory::exists(filename)) {
+    if (!Cr::Utility::Directory::exists(filename)) {
       LOG(ERROR)
           << "ResourceManager::loadSceneInternal : Cannot find scene file "
           << filename;
@@ -443,7 +443,7 @@ bool ResourceManager::buildSceneCollisionMeshGroup(
     T* rawMeshData = dynamic_cast<T*>(meshes_[mesh_i].get());
     if (rawMeshData == nullptr) {
       // means dynamic cast failed
-      Corrade::Utility::Debug()
+      Cr::Utility::Debug()
           << "ResourceManager::loadPhysicsScene : AssetInfo::AssetType "
              "type error: unsupported mesh type, aborting. Try running "
              "without \"--enable-physics\" and consider logging an issue.";
@@ -522,7 +522,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs(
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
     const uint32_t meshID = staticDrawableInfo[iEntry].meshID;
 
-    Corrade::Containers::Optional<Magnum::Trade::MeshData>& meshData =
+    Cr::Containers::Optional<Magnum::Trade::MeshData>& meshData =
         meshes_[meshID]->getMeshData();
     CORRADE_ASSERT(meshData,
                    "ResourceManager::computeGeneralMeshAbsoluteAABBs: The mesh "
@@ -646,8 +646,8 @@ void ResourceManager::buildPrimitiveAssetData(
   primitiveImporter_->openData("");
   // configuration for PrimitiveImporter - replace appropriate group's data
   // before instancing prim object
-  auto conf = primitiveImporter_->configuration();
-  auto cfgGroup = conf.group(primClassName);
+  Cr::Utility::ConfigurationGroup& conf = primitiveImporter_->configuration();
+  Cr::Utility::ConfigurationGroup* cfgGroup = conf.group(primClassName);
   if (cfgGroup != nullptr) {  // ignore prims with no configuration like cubes
     auto newCfgGroup = primTemplate->getConfigGroup();
     // replace current conf group with passed attributes
@@ -713,8 +713,8 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
   // if this is a new file, load it and add it to the dictionary
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
-    const auto atlasDir = Corrade::Utility::Directory::join(
-        Corrade::Utility::Directory::path(filename), "textures");
+    const auto atlasDir = Cr::Utility::Directory::join(
+        Cr::Utility::Directory::path(filename), "textures");
 
     meshes_.emplace_back(std::make_unique<PTexMeshData>());
     int index = meshes_.size() - 1;
@@ -975,7 +975,7 @@ bool ResourceManager::loadGeneralMeshData(
 
     // Register magnum mesh
     if (fileImporter_->defaultScene() != -1) {
-      Corrade::Containers::Optional<Magnum::Trade::SceneData> sceneData =
+      Cr::Containers::Optional<Magnum::Trade::SceneData> sceneData =
           fileImporter_->scene(fileImporter_->defaultScene());
       if (!sceneData) {
         LOG(ERROR) << "Cannot load scene, exiting";
@@ -1574,7 +1574,7 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
   const std::string houseId = pathTokens.back();
   pathTokens.pop_back();  // <houseId>
   pathTokens.pop_back();  // house
-  const std::string basePath = Corrade::Utility::String::join(pathTokens, '/');
+  const std::string basePath = Cr::Utility::String::join(pathTokens, '/');
 
   // store nodeIds to obtain linearized index for semantic masks
   std::vector<std::string> nodeIds;
