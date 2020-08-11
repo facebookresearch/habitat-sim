@@ -5,7 +5,6 @@
 #     collapsed_sections: []
 #     name: 'ECCV 2020: Navigation'
 #     provenance: []
-#     toc_visible: true
 #   jupytext:
 #     cell_metadata_filter: -all
 #     formats: nb_python//py:percent,colabs//ipynb
@@ -508,12 +507,10 @@ height = 1  # @param {type:"slider", min:-10, max:10, step:0.1}
 # @markdown If not using custom height, default to scene lower limit.
 # @markdown (Cell output provides scene height range from bounding box for reference.)
 
-# get scene bounding box for specified height slice
-scene_bb = sim.get_active_scene_graph().get_root_node().cumulative_bb
-print("The Scene asset height range is: " + str(scene_bb.y()))
-
+print("The NavMesh bounds are: " + str(sim.pathfinder.get_bounds()))
 if not custom_height:
-    height = scene_bb.y().min
+    # get bounding box minumum elevation for automatic height
+    height = sim.pathfinder.get_bounds()[0][1]
 
 if not sim.pathfinder.is_loaded:
     print("Pathfinder not initialized, aborting.")
@@ -625,8 +622,9 @@ else:
     seed = 4  # @param {type:"integer"}
     sim.pathfinder.seed(seed)
 
-    # @markdown 1. Sample valid points on the NavMesh for agent spawn location and
-    # @markdown pathfinding goal.
+    # fmt off
+    # @markdown 1. Sample valid points on the NavMesh for agent spawn location and pathfinding goal.
+    # fmt on
     sample1 = sim.pathfinder.get_random_navigable_point()
     sample2 = sim.pathfinder.get_random_navigable_point()
 
@@ -680,7 +678,7 @@ else:
             display_map(top_down_map)
 
         # @markdown 4. (optional) Place agent and render images at trajectory points (if found).
-        display_path_agent_renders = False  # @param{type:"boolean"}
+        display_path_agent_renders = True  # @param{type:"boolean"}
         if display_path_agent_renders:
             print("Rendering observations at path points:")
             tangent = path_points[1] - path_points[0]
@@ -785,7 +783,7 @@ sim.pathfinder.load_nav_mesh(
 navmesh_settings = habitat_sim.NavMeshSettings()
 
 # @markdown Choose Habitat-sim defaults (e.g. for point-nav tasks), or custom settings.
-use_custom_settings = True  # @param {type:"boolean"}
+use_custom_settings = False  # @param {type:"boolean"}
 sim.navmesh_visualization = True  # @param {type:"boolean"}
 navmesh_settings.set_defaults()
 if use_custom_settings:
@@ -889,10 +887,10 @@ else:
     if display:
         display_sample(rgb, semantic, depth)
         # @markdown **Map parameters**:
-        meters_per_pixel = (
-            0.025  # @param {type:"slider", min:0.01, max:0.1, step:0.005}
-        )
-        agent_pos = sim.agents[0].get_state().position
+        # fmt: off
+        meters_per_pixel = 0.025  # @param {type:"slider", min:0.01, max:0.1, step:0.005}
+        # fmt: on
+        agent_pos = agent_state.position
         # topdown map at agent position
         top_down_map = maps.get_topdown_map(
             sim.pathfinder, height=agent_pos[1], meters_per_pixel=meters_per_pixel
