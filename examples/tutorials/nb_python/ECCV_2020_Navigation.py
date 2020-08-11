@@ -64,11 +64,6 @@ import habitat_sim
 from habitat_sim.utils import common as utils
 from habitat_sim.utils import viz_utils as vut
 
-# import the maps module alone for topdown mapping
-if display:
-    sys.path.insert(1, "/content/habitat-api/")
-    from habitat.utils.visualizations import maps
-
 # %cd /content/habitat-sim
 
 if "google.colab" in sys.modules:
@@ -138,6 +133,11 @@ else:
     show_video = False
     make_video = False
     display = False
+
+# import the maps module alone for topdown mapping
+if display:
+    sys.path.insert(1, "/content/habitat-api/")
+    from habitat.utils.visualizations import maps
 
 # %% [markdown]
 # # "Hello, World!"
