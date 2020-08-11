@@ -2,11 +2,16 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/Utility/DebugStl.h>
+#include <Corrade/Utility/Directory.h>
 #include <gtest/gtest.h>
 #include "esp/core/esp.h"
+#include "esp/io/URDFParser.h"
 #include "esp/io/io.h"
 
 #include "configure.h"
+
+namespace Cr = Corrade;
 
 using namespace esp::io;
 
@@ -93,4 +98,30 @@ TEST(IOTest, tokenizeTest) {
   EXPECT_EQ((std::vector<std::string>{",a,", ",bb", "c"}), t2);
   const auto& t3 = tokenize(file, ",|", 0, true);
   EXPECT_EQ((std::vector<std::string>{"", "a", "bb", "c"}), t3);
+}
+
+TEST(IOTest, parseURDF) {
+  const std::string iiwaURDF = Cr::Utility::Directory::join(
+      TEST_ASSETS, "URDF/kuka_iiwa/model_free_base.urdf");
+
+  URDFParser parser;
+
+  // load the iiwa test asset
+  parser.parseURDF(iiwaURDF);
+  auto& model = parser.getModel();
+  Cr::Utility::Debug() << "name: " << model.m_name;
+  EXPECT_EQ(model.m_name, "lbr_iiwa");
+  Cr::Utility::Debug() << "file: " << model.m_sourceFile;
+  EXPECT_EQ(model.m_sourceFile, iiwaURDF);
+  Cr::Utility::Debug() << "links: " << model.m_links;
+  EXPECT_EQ(model.m_links.size(), 8);
+  Cr::Utility::Debug() << "root links: " << model.m_rootLinks;
+  EXPECT_EQ(model.m_rootLinks.size(), 1);
+  Cr::Utility::Debug() << "joints: " << model.m_joints;
+  EXPECT_EQ(model.m_joints.size(), 7);
+  Cr::Utility::Debug() << "materials: " << model.m_materials;
+  EXPECT_EQ(model.m_materials.size(), 3);
+
+  // test overwrite re-load
+  parser.parseURDF(iiwaURDF);
 }
