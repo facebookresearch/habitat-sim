@@ -195,7 +195,6 @@ def make_video(
 
     writer.close()
     if open_vid:
-        print("Displaying video")
         display_video(video_file)
 
 
@@ -253,7 +252,7 @@ def observation_to_image(
         rgb_image = semantic_to_rgb(observation_image)
     else:
         print(
-            "semantic_to_rgb : Aborting, unsupported observation type: "
+            "semantic_to_rgb : Failed, unsupported observation type: "
             + primary_obs_type
         )
     return rgb_image
