@@ -178,15 +178,15 @@ def make_video(
                         + '".'
                     )
                     return
-            overlay_rgb_img = overlay_rgb_img.resize(overlay["dims"])
-            image_frame.paste(
-                border_frames[ov_ix],
-                box=(
-                    overlay["pos"][0] - overlay["border"],
-                    overlay["pos"][1] - overlay["border"],
-                ),
-            )
-            image_frame.paste(overlay_rgb_img, box=overlay["pos"])
+                overlay_rgb_img = overlay_rgb_img.resize(overlay["dims"])
+                image_frame.paste(
+                    border_frames[ov_ix],
+                    box=(
+                        overlay["pos"][0] - overlay["border"],
+                        overlay["pos"][1] - overlay["border"],
+                    ),
+                )
+                image_frame.paste(overlay_rgb_img, box=overlay["pos"])
 
         if video_dims is not None:
             image_frame = image_frame.resize(video_dims)
