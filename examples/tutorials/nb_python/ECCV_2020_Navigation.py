@@ -128,15 +128,14 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     show_video = args.display
     display = args.display
-    make_video = args.make_video
+    do_make_video = args.make_video
 else:
     show_video = False
-    make_video = False
+    do_make_video = False
     display = False
 
 # import the maps module alone for topdown mapping
 if display:
-    sys.path.insert(1, "/content/habitat-api/")
     from habitat.utils.visualizations import maps
 
 # %% [markdown]
@@ -928,92 +927,6 @@ if sim.pathfinder.is_loaded:
     sim.pathfinder.load_nav_mesh(navmesh_save_path)
 # fmt: on
 
-# %%
-# @title Define Simulation and Video Utlities { display-mode: "form" }
-
-
-def make_video_cv2(observations, prefix="", open_vid=True, fps=60, multi_obs=False):
-    videodims = (720, 544)
-    video_file = output_path + prefix + ".mp4"
-    print("Encoding the video: %s " % video_file)
-    writer = vut.get_fast_video_writer(video_file, fps=fps)
-
-    thumb_size = (int(videodims[0] / 5), int(videodims[1] / 5))
-    outline_frame = np.ones((thumb_size[1] + 2, thumb_size[0] + 2, 3), np.uint8) * 150
-    for ob in observations:
-
-        # If in RGB/RGBA format, remove the alpha channel
-        rgb_im_1st_person = cv2.cvtColor(ob["color_sensor"], cv2.COLOR_RGBA2RGB)
-
-        if multi_obs:
-            # embed the 1st person RBG frame into the 3rd person frame
-            rgb_im_3rd_person = cv2.cvtColor(
-                ob["rgba_camera_3rdperson"], cv2.COLOR_RGBA2RGB
-            )
-            resized_1st_person_rgb = cv2.resize(
-                rgb_im_1st_person, thumb_size, interpolation=cv2.INTER_AREA
-            )
-            x_offset = 50
-            y_offset_rgb = 50
-            rgb_im_3rd_person[
-                y_offset_rgb - 1 : y_offset_rgb + outline_frame.shape[0] - 1,
-                x_offset - 1 : x_offset + outline_frame.shape[1] - 1,
-            ] = outline_frame
-            rgb_im_3rd_person[
-                y_offset_rgb : y_offset_rgb + resized_1st_person_rgb.shape[0],
-                x_offset : x_offset + resized_1st_person_rgb.shape[1],
-            ] = resized_1st_person_rgb
-
-            # embed the 1st person DEPTH frame into the 3rd person frame
-            # manually normalize depth into [0, 1] so that images are always consistent
-            d_im = np.clip(ob["depth_camera_1stperson"], 0, 10)
-            d_im /= 10.0
-            bgr_d_im = cv2.cvtColor((d_im * 255).astype(np.uint8), cv2.COLOR_GRAY2RGB)
-            resized_1st_person_depth = cv2.resize(
-                bgr_d_im, thumb_size, interpolation=cv2.INTER_AREA
-            )
-            y_offset_d = y_offset_rgb + 10 + thumb_size[1]
-            rgb_im_3rd_person[
-                y_offset_d - 1 : y_offset_d + outline_frame.shape[0] - 1,
-                x_offset - 1 : x_offset + outline_frame.shape[1] - 1,
-            ] = outline_frame
-            rgb_im_3rd_person[
-                y_offset_d : y_offset_d + resized_1st_person_depth.shape[0],
-                x_offset : x_offset + resized_1st_person_depth.shape[1],
-            ] = resized_1st_person_depth
-            if rgb_im_3rd_person.shape[:2] != videodims:
-                rgb_im_3rd_person = cv2.resize(
-                    rgb_im_3rd_person, videodims, interpolation=cv2.INTER_AREA
-                )
-            # write the video frame
-            writer.append_data(rgb_im_3rd_person)
-        else:
-            if rgb_im_1st_person.shape[:2] != videodims:
-                rgb_im_1st_person = cv2.resize(
-                    rgb_im_1st_person, videodims, interpolation=cv2.INTER_AREA
-                )
-            # write the 1st person observation to video
-            writer.append_data(rgb_im_1st_person)
-    writer.close()
-
-    if open_vid:
-        print("Displaying video")
-        vut.display_video(video_file)
-
-
-def simulate(sim, dt=1.0, get_frames=True):
-    # simulate dt seconds at 60Hz to the nearest fixed timestep
-    print("Simulating " + str(dt) + " world seconds.")
-    observations = []
-    start_time = sim.get_world_time()
-    while sim.get_world_time() < start_time + dt:
-        sim.step_physics(1.0 / 60.0)
-        if get_frames:
-            observations.append(sim.get_sensor_observations())
-
-    return observations
-
-
 # %% [markdown]
 # #Taking Actions on the NavMesh:
 #
@@ -1193,14 +1106,17 @@ for iteration in range(2):
 
     print("frames = " + str(len(observations)))
     # video rendering with embedded 1st person view
-    if make_video:
-        make_video_cv2(
-            observations,
-            prefix=video_prefix,
-            open_vid=show_video,
+    if do_make_video:
+        # use the vieo utility to render the observations
+        vut.make_video(
+            observations=observations,
+            primary_obs="color_sensor",
+            primary_obs_type="color",
+            video_file=output_directory + "continuous_nav",
             fps=fps,
-            multi_obs=False,
+            open_vid=True,
         )
+
     sim.reset()
 
 # [/embodied_agent_navmesh]
