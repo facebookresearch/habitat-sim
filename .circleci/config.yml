@@ -86,8 +86,8 @@ jobs:
           # has 3.5, so once tinyply is removed, we could go lower (well, if
           # anybody actually needs that)
           command: |
-              echo $(git ls-remote https://github.com/facebookresearch/habitat-lab.git HEAD | awk '{ print $1}') > ./hapi_sha
-              cat ./hapi_sha
+              echo $(git ls-remote https://github.com/facebookresearch/habitat-lab.git HEAD | awk '{ print $1}') > ./hablab_sha
+              cat ./hablab_sha
               wget https://cmake.org/files/v3.10/cmake-3.10.3-Linux-x86_64.sh
               sudo mkdir /opt/cmake
               sudo sh ./cmake-3.10.3-Linux-x86_64.sh --prefix=/opt/cmake --skip-license
@@ -233,7 +233,7 @@ jobs:
               fi
       - restore_cache:
           keys:
-            - habitat-lab-{{ checksum "./hapi_sha" }}
+            - habitat-lab-{{ checksum "./hablab_sha" }}
       - restore_cache:
           keys:
             - ccache-{{ arch }}-master
@@ -398,7 +398,7 @@ jobs:
               git submodule update --init
               ./build-public.sh
       - run:
-          name: Install api
+          name: Install Habitat Lab
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
@@ -416,19 +416,19 @@ jobs:
           paths:
             - ~/miniconda
       - run:
-          name: Run api tests
+          name: Run Habitat Lab tests
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat; cd habitat-lab
               python setup.py develop --all
               python setup.py test
       - save_cache:
-          key: habitat-lab-{{ checksum "./hapi_sha" }}
+          key: habitat-lab-{{ checksum "./hablab_sha" }}
           background: true
           paths:
             - ./habitat-lab
       - run:
-          name: Build api documentation
+          name: Build Habitat Lab documentation
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-lab
