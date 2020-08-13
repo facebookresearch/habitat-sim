@@ -87,6 +87,10 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
              This removes, and returns the template referenced by the passed ID 
              from the library.)",
            "ID"_a)
+      .def("remove_all_templates", &AttrClass::removeAllTemplates,
+           R"( 
+             This removes, and returns, a list of all the user-added templates 
+             referenced in the library.)")
       .def("remove_template_by_handle", &AttrClass::removeTemplateByHandle,
            R"(
              This removes, and returns the template referenced by the passed handle 
@@ -231,8 +235,10 @@ void initAttributesManagersBindings(py::module& m) {
       .def("load_object_configs", &ObjectAttributesManager::loadObjectConfigs,
            R"(
          Build templates for all "*.phys_properties.json" files that exist in 
-         the provided file or directory path.)"
-           "path"_a)
+         the provided file or directory path. If save_as_defaults is true, then
+         these templates will be unable to be deleted)"
+           "path"_a,
+           "save_as_defaults"_a = false)
 
       // manage file-based templates access
       .def("get_num_file_templates",

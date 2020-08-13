@@ -118,7 +118,7 @@ PhysicsAttributesManager::createFileBasedAttributesTemplate(
       std::string absolutePath =
           Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
       // load all object templates available as configs in absolutePath
-      objectAttributesMgr_->loadObjectConfigs(absolutePath);
+      objectAttributesMgr_->loadObjectConfigs(absolutePath, true);
     }
   }  // if load rigid object library metadata
 

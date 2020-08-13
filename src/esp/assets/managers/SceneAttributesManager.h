@@ -201,12 +201,6 @@ class SceneAttributesManager
       const std::string& sceneAttributesHandle) override;
 
   /**
-   * @brief Whether template described by passed handle is read only, or can be
-   * deleted. All SceneAttributes templates are removable, by default
-   */
-  bool isTemplateReadOnly(const std::string&) override { return false; };
-
-  /**
    * @brief Any scene-attributes-specific resetting that needs to happen on
    * reset.
    */

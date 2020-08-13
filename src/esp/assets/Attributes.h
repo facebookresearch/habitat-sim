@@ -482,7 +482,10 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   }
   int getNumSegments() const { return getInt("segments"); }
   // capsule, cone and cylinder use halfLength
-  void setHalfLength(double halfLength) { setDouble("halfLength", halfLength); }
+  void setHalfLength(double halfLength) {
+    setDouble("halfLength", halfLength);
+    buildHandle();
+  }
   double getHalfLength() const { return getDouble("halfLength"); }
 
   std::string getPrimObjClassName() const {
