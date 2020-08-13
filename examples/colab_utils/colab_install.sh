@@ -30,15 +30,15 @@ fi
 conda install -y --prefix /usr/local -c "${CHANNEL}" -c conda-forge habitat-sim headless withbullet python=3.6
 
 #Shallow GIT clone for speed
-git clone https://github.com/facebookresearch/habitat-api --depth 1
+git clone https://github.com/facebookresearch/habitat-lab --depth 1
 git clone https://github.com/facebookresearch/habitat-sim --depth 1
 
 #Install Requirements.
 source /usr/local/bin/activate #Activate Conda Environment in Bash
-cd /content/habitat-api/
+cd /content/habitat-lab/
 set +e
-pip install -r /content/habitat-api/requirements.txt
-reqs=(/content/habitat-api/habitat_baselines/**/requirements.txt)
+pip install -r /content/habitat-lab/requirements.txt
+reqs=(/content/habitat-lab/habitat_baselines/**/requirements.txt)
 pip install "${reqs[@]/#/-r}"
 set -e
 python setup.py develop --all
@@ -51,7 +51,7 @@ wget -c http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip && unzip -
 wget -c http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip && unzip -o objects_v0.1.zip -d data/objects/
 wget -c http://dl.fbaipublicfiles.com/habitat/locobot_merged.zip && unzip -o locobot_merged.zip -d data/objects
 
-#symlink assets appear in habitat-api folder
-ln -s /content/habitat-sim/data /content/habitat-api/.
+#symlink assets appear in habitat-lab folder
+ln -s /content/habitat-sim/data /content/habitat-lab/.
 
 touch /content/habitat_sim_installed
