@@ -196,7 +196,7 @@ jobs:
               then
                 export PATH=$HOME/miniconda/bin:$PATH
                 . activate habitat;
-                git clone -q https://github.com/emscripten-core/emsdk.git ~/emsdk
+                git clone -q --depth 1 https://github.com/emscripten-core/emsdk.git ~/emsdk
                 cd ~/emsdk
                 git checkout 6a4c0f98
                 # Use 1.38.42 that has the following integrated:
@@ -404,7 +404,7 @@ jobs:
               . activate habitat;
               if [ ! -d ./habitat-lab ]
               then
-                git clone -q https://github.com/facebookresearch/habitat-lab.git
+                git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
               fi
               cd habitat-lab
               git checkout lab_rename # debug delete
@@ -498,7 +498,7 @@ jobs:
           no_output_timeout: 30m
           command: |
               # Update website
-              git clone git@github.com:facebookmicrosites/habitat-website.git
+              git clone --depth 1 git@github.com:facebookmicrosites/habitat-website.git
               cd habitat-website
               git submodule update --init
 
