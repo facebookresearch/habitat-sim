@@ -534,7 +534,9 @@ workflows:
       - cpp_lint
       - js_lint
       - install_and_test_ubuntu
-      - update_docs # need to be removed
+      - update_docs: # need to be removed
+          requires:
+            - install_and_test_ubuntu
   nightly:
     triggers:
       - schedule:
