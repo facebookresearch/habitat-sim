@@ -2,9 +2,11 @@
 # jupyter:
 #   accelerator: GPU
 #   colab:
-#     name: 'ECCV 2020: Advanced Features'
+#     collapsed_sections: []
+#     name: ECCV_2020_Advanced_Features.ipynb
 #     private_outputs: true
 #     provenance: []
+#     toc_visible: true
 #   jupytext:
 #     cell_metadata_filter: -all
 #     formats: nb_python//py:percent,colabs//ipynb
@@ -39,7 +41,6 @@
 # @title Path Setup and Imports { display-mode: "form" }
 # @markdown (double click to show code).
 
-import functools
 # %cd /content/habitat-sim
 ## [setup]
 import math
@@ -76,9 +77,11 @@ if "google.colab" in sys.modules:
 repo = git.Repo(".", search_parent_directories=True)
 dir_path = repo.working_tree_dir
 data_path = os.path.join(dir_path, "data")
+# fmt off
 output_directory = (
     "examples/tutorials/advanced_features_output/"  # @param {type:"string"}
 )
+# fmt on
 output_path = os.path.join(dir_path, output_directory)
 if not os.path.exists(output_path):
     os.mkdir(output_path)
@@ -99,7 +102,7 @@ if not "sim" in globals():
 # @title Define Template Dictionary Utility Functions { display-mode: "form" }
 # @markdown (double click to show code)
 
-# @markdown This cell defines utility functions to easily peak into Attribute template contents.
+# @markdown This cell defines utility functions that expose Attribute template object properties.
 
 # This method builds a dictionary of k-v pairs of attribute property names and
 # values shared by all attribute template types.  The values are tuples with the
@@ -111,7 +114,6 @@ def build_dict_of_Default_attrs(template):
     # Read-only values
     res_dict["ID"] = (template.ID, False, "int")
     res_dict["template_class"] = (template.template_class, False, "string")
-    # New fields, uncomment upon updating conda 8/4/20
     res_dict["file_directory"] = (template.file_directory, False, "string")
     return res_dict
 
@@ -159,7 +161,6 @@ def build_dict_of_PhyObj_attrs(phys_obj_template):
         True,
         "int",
     )
-
     # Read-only values
     res_dict["render_asset_is_primitive"] = (
         phys_obj_template.render_asset_is_primitive,
@@ -206,7 +207,6 @@ def build_dict_of_Object_attrs(obj_template):
         True,
         "boolean",
     )
-    # New fields, uncomment upon updating conda 8/4/20
     # res_dict["is_visible"] = (obj_template.is_visible, True, "boolean")
     # res_dict["is_collidable"] = (obj_template.is_collidable, True, "boolean")
     res_dict["semantic_id"] = (obj_template.semantic_id, True, "int")
@@ -221,7 +221,6 @@ def build_dict_of_Scene_attrs(scene_template):
     res_dict = build_dict_of_PhyObj_attrs(scene_template)
     res_dict["gravity"] = (scene_template.gravity, True, "vector")
     res_dict["origin"] = (scene_template.origin, True, "vector")
-    # New fields, uncomment upon updating conda 8/4/20
     res_dict["semantic_asset_handle"] = (
         scene_template.semantic_asset_handle,
         True,
@@ -258,7 +257,6 @@ def build_dict_of_PhysicsSim_attrs(physics_template):
         True,
         "double",
     )
-
     # Read-only values
     res_dict["simulator"] = (physics_template.simulator, False, "string")
     return res_dict
@@ -275,7 +273,6 @@ def build_dict_of_prim_attrs(prim_template):
     res_dict["num_rings"] = (prim_template.num_rings, True, "int")
     res_dict["num_segments"] = (prim_template.num_segments, True, "int")
     res_dict["half_length"] = (prim_template.half_length, True)
-
     # Read-only values
     res_dict["prim_obj_class_name"] = (
         prim_template.prim_obj_class_name,
@@ -347,11 +344,11 @@ def build_dict_of_UVSphere_prim_attrs(uvsphere_template):
 
 
 # This method will deduce the appropriate template type and build the subsequent
-# dictionary containing containing k-v pairs of attribute property names
+# dictionary containing containing k-v pairs of template property names
 # and values for the passed template. The values are tuples with
 # the first entry being the value,the second being whether the property is
 # editable and the third being the type.
-def build_dict_of_attrs(template):
+def build_dict_from_template(template):
     template_class = template.template_class
     if "PhysicsObjectAttributes" in template_class:
         return build_dict_of_Object_attrs(template)
@@ -375,20 +372,20 @@ def build_dict_of_attrs(template):
     return None
 
 
-# This will set a template's attributes from the passed map
-def set_template_vals_from_map(template, template_map):
-    for k, v in template_map.items():
+# This will set a template's attributes from the passed dictionary
+def set_template_properties_from_dict(template, template_dict):
+    for k, v in template_dict.items():
         setattr(template, k, v[0])
     return template
 
 
-# This will display all the known values of an attributes template
-def show_template_map_vals(template):
-    template_map = build_dict_of_attrs(template)
+# This will display all the properties of an attributes template
+def show_template_properties(template):
+    template_dict = build_dict_from_template(template)
     print("Template {} has : ".format(template.handle))
     for k, v in template_map.items():
         print(
-            "\t key {} with value {} of type {} that is editable : {}".format(
+            "\tProperty {} has value {} of type {} that is editable : {}".format(
                 k, v[0], v[2], v[1]
             )
         )
@@ -461,7 +458,7 @@ def make_cfg(settings):
 def make_default_settings():
     settings = {
         "width": 720,  # Spatial resolution of the observations
-        "height": 540,
+        "height": 544,
         "scene": "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
         "default_agent": 0,
         "sensor_height": 1.5,  # Height of sensors in meters
@@ -491,6 +488,17 @@ def make_simulator_from_settings(sim_settings):
     obj_attr_mgr = sim.get_object_template_manager()
     prim_attr_mgr = sim.get_asset_template_manager()
     scene_attr_mgr = sim.get_scene_template_manager()
+    # UI-populated handles used in various cells.  Need to initialize to valid
+    # value in case IPyWidgets are not available.
+    # Holds the user's desired file-based object template handle
+    global sel_file_obj_handle
+    sel_file_obj_handle = obj_attr_mgr.get_file_template_handles()[0]
+    # Holds the user's desired primitive-based object template handle
+    global sel_prim_obj_handle
+    sel_prim_obj_handle = obj_attr_mgr.get_synth_template_handles()[0]
+    # Holds the user's desired primitive asset template handle
+    global sel_asset_handle
+    sel_asset_handle = prim_attr_mgr.get_template_handles()[0]
 
 
 # %%
@@ -499,6 +507,9 @@ def make_simulator_from_settings(sim_settings):
 
 # @markdown - remove_all_objects
 # @markdown - simulate
+# @markdown - init_camera_track_config
+# @markdown - restore_camera_track_config
+# @markdown - camera_track_simulate
 # @markdown - sample_object_state
 
 
@@ -519,6 +530,72 @@ def simulate(sim, dt=1.0, get_frames=True):
     return observations
 
 
+# Save sensor and agent state to a dictionary, so that initial values can be reset
+# Used at beginning of cell that directly modifies camera (i.e. tracking an object)
+def init_camera_track_config(sim, sensor_name="color_sensor_1st_person", agent_ID=0):
+    init_state = {}
+    visual_sensor = sim._sensors[sensor_name]
+    # save ref to sensor being used
+    init_state["visual_sensor"] = visual_sensor
+    init_state["position"] = np.array(visual_sensor._spec.position)
+    init_state["orientation"] = np.array(visual_sensor._spec.orientation)
+    # set the color sensor transform to be the agent transform
+    visual_sensor._spec.position = np.array([0, 0, 0])
+    visual_sensor._spec.orientation = np.array([0, 0, 0])
+    visual_sensor._sensor_object.set_transformation_from_spec()
+    # save ID of agent being modified
+    init_state["agent_ID"] = agent_ID
+    # save agent initial state
+    init_state["agent_state"] = sim.get_agent(agent_ID).get_state()
+    # boost the agent off the floor
+    sim.get_agent(agent_ID).scene_node.translation += np.array([0, 1.5, 0])
+    return init_state
+
+
+# Reset sensor and agent state using dictionary built in init_camera_track_config
+# Used at end of cell that directly modifies camera (i.e. tracking an object)
+def restore_camera_track_config(sim, init_state):
+    visual_sensor = init_state["visual_sensor"]
+    agent_ID = init_state["agent_ID"]
+    # reset the sensor state for other examples
+    visual_sensor._spec.position = init_state["position"]
+    visual_sensor._spec.orientation = init_state["orientation"]
+    visual_sensor._sensor_object.set_transformation_from_spec()
+    # restore the agent's state to what was savedd in init_camera_track_config
+    sim.get_agent(agent_ID).set_state(init_state["agent_state"])
+
+
+# Simulate scene while having camera track COM of objects of interest
+def camera_track_simulate(sim, obj_ids, dt=2.0, get_frames=True, agent_ID=0):
+    start_time = sim.get_world_time()
+    observations = []
+    num_objs = len(obj_ids)
+    if 0 == num_objs:
+        print("camera_track_simulate : Aborting, no objects sent to track")
+        return observations
+    agent = sim.get_agent(agent_ID)
+    # define up vector for tracking calc
+    up_vec = np.array([0, 1.0, 0])
+    # partition to speed up
+    time_step = 1.0 / 60.0
+    # process for multiple objects
+    while sim.get_world_time() - start_time < dt:
+        sim.step_physics(time_step)
+        # set agent state to look at object
+        camera_position = agent.scene_node.translation
+        camera_look_at = sim.get_translation(obj_ids[0])
+        for i in range(1, num_objs):
+            camera_look_at += sim.get_translation(obj_ids[i])
+        camera_look_at /= len(obj_ids)
+        agent.scene_node.rotation = mn.Quaternion.from_matrix(
+            mn.Matrix4.look_at(camera_position, camera_look_at, up_vec).rotation()  # up
+        )
+        if get_frames:
+            observations.append(sim.get_sensor_observations())
+
+    return observations
+
+
 # Set an object transform relative to the agent state
 def set_object_state_from_agent(
     sim,
@@ -532,148 +609,10 @@ def set_object_state_from_agent(
     sim.set_rotation(orientation, ob_id)
 
 
-# sample a random valid state for the object from the scene bounding box or navmesh
-def sample_object_state(
-    sim, object_id, from_navmesh, maintain_object_up=True, max_tries=100, bb=None
-):
-    # check that the object is not STATIC
-    if sim.get_object_motion_type(object_id) is habitat_sim.physics.MotionType.STATIC:
-        print("sample_object_state : Object is STATIC, aborting.")
-    if from_navmesh:
-        if not sim.pathfinder.is_loaded:
-            print("sample_object_state : No pathfinder, aborting.")
-            return False
-    elif not bb:
-        print(
-            "sample_object_state : from_navmesh not specified and no bounding box provided, aborting."
-        )
-        return False
-    tries = 0
-    valid_placement = False
-    # get scene bounding box
-    # scene_bb = sim.get_active_scene_graph().get_root_node().cumulative_bb
-    while not valid_placement and tries < max_tries:
-        tries += 1
-        # initialize sample location to random point in scene bounding box
-        sample_location = np.array([0, 0, 0])
-        if from_navmesh:
-            # query random navigable point
-            sample_location = sim.pathfinder.get_random_navigable_point()
-        else:
-            sample_location = np.random.uniform(bb.min, bb.max)
-        # set the test state
-        sim.set_translation(sample_location, object_id)
-        if maintain_object_up:
-            # random rotation only on the Y axis
-            y_rotation = mn.Quaternion.rotation(
-                mn.Rad(random.random() * 2 * math.pi), mn.Vector3(0, 1.0, 0)
-            )
-            sim.set_rotation(y_rotation * sim.get_rotation(object_id), object_id)
-        else:
-            # unconstrained random rotation
-            sim.set_rotation(ut.random_quaternion(), object_id)
-
-        # raise object such that lowest bounding box corner is above the navmesh sample point.
-        if from_navmesh:
-            obj_node = sim.get_object_scene_node(object_id)
-            xform_bb = habitat_sim.geo.get_transformed_bb(
-                obj_node.cumulative_bb, obj_node.transformation
-            )
-            # also account for collision margin of the scene
-            scene_collision_margin = 0.04
-            y_translation = mn.Vector3(
-                0, xform_bb.size_y() / 2.0 + scene_collision_margin, 0
-            )
-            sim.set_translation(
-                y_translation + sim.get_translation(object_id), object_id
-            )
-
-        # test for penetration with the environment
-        if not sim.contact_test(object_id):
-            valid_placement = True
-
-    if not valid_placement:
-        return False
-    return True
-
-
 # %%
 # @title Define Visualization Utility Functions { display-mode: "form" }
 # @markdown (double click to show code)
-# @markdown - make_video_cv2
 # @markdown - display_sample
-def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False, fps=60):
-    sensor_keys = list(observations[0])
-    videodims = observations[0][sensor_keys[0]].shape
-    videodims = (videodims[1], videodims[0])  # flip to w,h order
-    print(videodims)
-    video_file = output_path + prefix + ".mp4"
-    print("Encoding the video: %s " % video_file)
-    writer = vut.get_fast_video_writer(video_file, fps=fps)
-    thumb_size = (int(videodims[0] / 5), int(videodims[1] / 5))
-    outline_frame = np.ones((thumb_size[1] + 2, thumb_size[0] + 2, 3), np.uint8) * 150
-    for ob in observations:
-
-        # If in RGB/RGBA format, remove the alpha channel
-        rgb_im_1st_person = cv2.cvtColor(
-            ob["color_sensor_1st_person"], cv2.COLOR_RGBA2RGB
-        )
-
-        if multi_obs:
-            # embed the 1st person RBG frame into the 3rd person frame
-            rgb_im_3rd_person = cv2.cvtColor(
-                ob["color_sensor_3rd_person"], cv2.COLOR_RGBA2RGB
-            )
-            resized_1st_person_rgb = cv2.resize(
-                rgb_im_1st_person, thumb_size, interpolation=cv2.INTER_AREA
-            )
-            x_offset = 50
-            y_offset_rgb = 50
-            rgb_im_3rd_person[
-                y_offset_rgb - 1 : y_offset_rgb + outline_frame.shape[0] - 1,
-                x_offset - 1 : x_offset + outline_frame.shape[1] - 1,
-            ] = outline_frame
-            rgb_im_3rd_person[
-                y_offset_rgb : y_offset_rgb + resized_1st_person_rgb.shape[0],
-                x_offset : x_offset + resized_1st_person_rgb.shape[1],
-            ] = resized_1st_person_rgb
-
-            # embed the 1st person DEPTH frame into the 3rd person frame
-            # manually normalize depth into [0, 1] so that images are always consistent
-            d_im = np.clip(ob["depth_sensor_1st_person"], 0, 10)
-            d_im /= 10.0
-            bgr_d_im = cv2.cvtColor((d_im * 255).astype(np.uint8), cv2.COLOR_GRAY2RGB)
-            resized_1st_person_depth = cv2.resize(
-                bgr_d_im, thumb_size, interpolation=cv2.INTER_AREA
-            )
-            y_offset_d = y_offset_rgb + 10 + thumb_size[1]
-            rgb_im_3rd_person[
-                y_offset_d - 1 : y_offset_d + outline_frame.shape[0] - 1,
-                x_offset - 1 : x_offset + outline_frame.shape[1] - 1,
-            ] = outline_frame
-            rgb_im_3rd_person[
-                y_offset_d : y_offset_d + resized_1st_person_depth.shape[0],
-                x_offset : x_offset + resized_1st_person_depth.shape[1],
-            ] = resized_1st_person_depth
-            if rgb_im_3rd_person.shape[:2] != videodims:
-                rgb_im_3rd_person = cv2.resize(
-                    rgb_im_3rd_person, videodims, interpolation=cv2.INTER_AREA
-                )
-            # write the video frame
-            writer.append_data(rgb_im_3rd_person)
-        else:
-            if rgb_im_1st_person.shape[:2] != videodims:
-                rgb_im_1st_person = cv2.resize(
-                    rgb_im_1st_person, videodims, interpolation=cv2.INTER_AREA
-                )
-            # write the 1st person observation to video
-            writer.append_data(rgb_im_1st_person)
-    writer.close()
-
-    if open_vid:
-        print("Displaying video")
-        vut.display_video(video_file)
-
 
 # Change to do something like this maybe: https://stackoverflow.com/a/41432704
 def display_sample(
@@ -732,6 +671,8 @@ else:
 # %%
 # @title Define Colab GUI Utility Functions { display-mode: "form" }
 # @markdown (double click to show code)
+
+# @markdown This cell provides utility functions to build and manage IPyWidget interactive components.
 
 # Event handler for dropdowns displaying file-based object handles
 def on_file_obj_ddl_change(ddl_values):
@@ -819,27 +760,30 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
     # Construct DDLs and assign event handlers
     # All file-based object template handles
     file_obj_handles = obj_attr_mgr.get_file_template_handles()
+    # All primitive asset-based object template handles
+    prim_obj_handles = obj_attr_mgr.get_synth_template_handles()
+    # All primitive asset handles template handles
+    prim_asset_handles = prim_attr_mgr.get_template_handles()
+    # If not using widgets, set as first available handle
     if not HAS_WIDGETS:
         sel_file_obj_handle = file_obj_handles[0]
         sel_prim_obj_handle = prim_obj_handles[0]
         sel_prim_obj_handle = prim_asset_handles[0]
         return
+
+    # Build widgets
     file_obj_ddl, sel_file_obj_handle = set_handle_ddl_widget(
         file_obj_handles,
         "File-based Object",
         sel_file_obj_handle,
         on_file_obj_ddl_change,
     )
-    # All primitive asset-based object template handles
-    prim_obj_handles = obj_attr_mgr.get_synth_template_handles()
     prim_obj_ddl, sel_prim_obj_handle = set_handle_ddl_widget(
         prim_obj_handles,
         "Primitive-based Object",
         sel_prim_obj_handle,
         on_prim_obj_ddl_change,
     )
-    # All primitive asset handles template handles
-    prim_asset_handles = prim_attr_mgr.get_template_handles()
     prim_asset_ddl, sel_asset_handle = set_handle_ddl_widget(
         prim_asset_handles, "Primitive Asset", sel_asset_handle, on_prim_ddl_change
     )
@@ -848,10 +792,6 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
     ipydisplay(prim_obj_ddl)
     ipydisplay(prim_asset_ddl)
 
-
-# %% [markdown]
-# # Advanced Features
-# This section contains advanced examples/demos of Habitat-sim interactivity.
 
 # %%
 # @title Initialize Simulator and Load Scene { display-mode: "form" }
@@ -918,12 +858,8 @@ while sim.get_world_time() - start_time < 2.0:
 # video rendering with embedded 1st person view
 video_prefix = "motion tracking"
 if make_video:
-    make_video_cv2(
-        observations,
-        prefix=video_prefix,
-        open_vid=show_video,
-        multi_obs=False,
-        fps=60.0,
+    vut.make_video(
+        observations, "color_sensor_1st_person", "color", output_path + video_prefix
     )
 
 # reset the sensor state for other examples
@@ -1084,89 +1020,20 @@ if display:
 remove_all_objects(sim)
 
 # %% [markdown]
-# ## Advanced Topic : Generating Clutter with STATIC objects included in NavMesh
+# ## Advanced Topic : Asset and Object Customization
 #
-# The NavMesh can be used to place objects on surfaces in the scene. Once objects are placed they can be set to MotionType::STATIC, indiciating that they are not moveable (kinematics and dynamics are disabled for STATIC objects). The NavMesh can then be recomputed including STATIC object meshes in the voxelization.
 #
-# This example demonstrates using the NavMesh to generate a cluttered scene for navigation. In this script we will:
 #
-# - Place objects off the NavMesh
-# - Set them to MotionType::STATIC
-# - Recompute the NavMesh including STATIC objects
-# - Visualize the results
+#
 
 # %%
 # @title Initialize Simulator and Load Scene { display-mode: "form" }
-# @markdown (load the apartment_1 scene for clutter generation in an open space)
+# @markdown (load the apartment_1 scene for primitive asset and object customization in an open space)
 sim_settings = make_default_settings()
 sim_settings["scene"] = "./data/scene_datasets/habitat-test-scenes/apartment_1.glb"
 sim_settings["sensor_pitch"] = 0
 
 make_simulator_from_settings(sim_settings)
-
-# %%
-# @title Select clutter object from the GUI: { display-mode: "form" }
-
-build_widget_ui(obj_attr_mgr, prim_attr_mgr)
-
-# %%
-# @title Clutter Generation Script
-# @markdown Configure some example parameters:
-
-# position the agent
-sim.agents[0].scene_node.translation = mn.Vector3(0.5, -1.60025, 6.15)
-print(sim.agents[0].scene_node.rotation)
-agent_orientation_y = -23  # @param{type:"integer"}
-sim.agents[0].scene_node.rotation = mn.Quaternion.rotation(
-    mn.Deg(agent_orientation_y), mn.Vector3(0, 1.0, 0)
-)
-
-num_objects = 10  # @param {type:"slider", min:0, max:20, step:1}
-object_scale = 5  # @param {type:"slider", min:1.0, max:10.0, step:0.1}
-
-# scale up the selected object
-sel_obj_template_cpy = obj_attr_mgr.get_template_by_handle(sel_file_obj_handle)
-sel_obj_template_cpy.scale = mn.Vector3(object_scale)
-obj_attr_mgr.register_template(sel_obj_template_cpy, "scaled_sel_obj")
-
-# add the selected object
-sim.navmesh_visualization = True
-remove_all_objects(sim)
-fails = 0
-for obj in range(num_objects):
-    obj_id_1 = sim.add_object_by_handle("scaled_sel_obj")
-
-    # place the object
-    placement_success = sample_object_state(
-        sim, obj_id_1, from_navmesh=True, maintain_object_up=True, max_tries=100
-    )
-    if not placement_success:
-        fails += 1
-        sim.remove_object(obj_id_1)
-    else:
-        # set the objects to STATIC so they can be added to the NavMesh
-        sim.set_object_motion_type(habitat_sim.MotionType.STATIC, obj_id_1)
-
-print("Placement fails = " + str(fails) + "/" + str(num_objects))
-
-# recompute the NavMesh with STATIC objects
-navmesh_settings = habitat_sim.NavMeshSettings()
-navmesh_settings.set_defaults()
-navmesh_success = sim.recompute_navmesh(sim.pathfinder, navmesh_settings, True)
-
-# simulate and collect observations
-example_type = "clutter generation"
-observations = simulate(sim, dt=2.0)
-if make_video:
-    make_video_cv2(
-        observations, prefix=example_type, open_vid=show_video, multi_obs=False
-    )
-remove_all_objects(sim)
-sim.navmesh_visualization = False
-
-# %% [markdown]
-# ## Advanced Topic : Asset and Object Customization
-#
 
 # %%
 # @title Select target object from the GUI: { display-mode: "form" }
@@ -1177,6 +1044,11 @@ build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 # @title 1 Simple File-based Object Template modification. { display-mode: "form" }
 # @markdown Running this will demonstrate how to create objects of varying size from a file-based template by iteratively modifying the template's scale value.  This will also demonstrate how to delete unwanted templates from the library.
 
+# clear all objects and observations
+remove_all_objects(sim)
+observations = []
+# save initial camera state
+init_config = init_camera_track_config(sim)
 # Get File-based template for banana using its handle
 obj_template_handle = sel_file_obj_handle
 
@@ -1186,7 +1058,7 @@ obj_template = obj_attr_mgr.get_template_by_handle(obj_template_handle)
 obj_id = sim.add_object_by_handle(obj_template_handle)
 
 # Set desired offset from agent location to place object
-offset = np.array([-1.2, 1.6, -1.5])
+offset = np.array([-1.2, 0.1, -1.5])
 # Move object to be in front of the agent
 set_object_state_from_agent(sim, obj_id, offset=offset)
 
@@ -1194,6 +1066,7 @@ set_object_state_from_agent(sim, obj_id, offset=offset)
 # objects built from them.  Here we iteratively modify and re-register the
 # template, instancing a new object each time.
 # Bigger Bananas!
+obj_ids = [obj_id]
 for i in range(5):
     # Increase the template scale value (object size)
     obj_template.scale *= 1.5
@@ -1210,6 +1083,7 @@ for i in range(5):
         new_obj = sim.add_object_by_handle(new_obj_template_handle)
     # Move object to the right of previous object
     offset[0] += 0.4
+    obj_ids.append(new_obj)
     set_object_state_from_agent(sim, new_obj, offset=offset)
 
 # Clean-up - remove modified templates from template library
@@ -1236,32 +1110,42 @@ print(
 print(*mod_template_handles, sep="\n")
 
 example_type = "Adding edited objects"
-observations = simulate(sim, dt=1.0)
+
+observations = camera_track_simulate(sim, obj_ids, dt=3.0)
+
 if make_video:
-    make_video_cv2(
-        observations, prefix=example_type, open_vid=show_video, multi_obs=False
+    vut.make_video(
+        observations, "color_sensor_1st_person", "color", output_path + example_type
     )
+
+# restore camera tracking position
+restore_camera_track_config(sim, init_config)
 make_clear_all_objects_button()
 
 
 # %%
 # @title 2 Object Template Modification in Detail. { display-mode: "form" }
 # @markdown The following example lists all the fields available in an object template that can be modified, allows for them to be edited and enables creating an object with the newly modified template.
+# @markdown Two objects will be created in this cell, one to the left with the original template and one to the right with the edited configuration.
 
-# @markdown ###2.1 Editable fields in Object Templates
+# clear all objects and observations
+remove_all_objects(sim)
+observations = []
+# save initial camera state for tracking
+init_config = init_camera_track_config(sim)
+
+# @markdown ###Editable fields in Object Templates :
 # Get a new template
 new_template = obj_attr_mgr.get_template_by_handle(sel_file_obj_handle)
-
-new_template_orig_map = build_dict_of_attrs(new_template)
 
 # @markdown The desired mass of the object
 mass = 5.9  # @param {type:"slider", min:0.1, max:50, step:0.1}
 new_template.mass = mass
 
 # @markdown The x,y,z components for the scale of the object.
-scale_X = 10  # @param {type:"slider", min:0.1, max:10, step:0.1}
+scale_X = 5  # @param {type:"slider", min:0.1, max:10, step:0.1}
 scale_Y = 10  # @param {type:"slider", min:0.1, max:10, step:0.1}
-scale_Z = 10  # @param {type:"slider", min:0.1, max:10, step:0.1}
+scale_Z = 5  # @param {type:"slider", min:0.1, max:10, step:0.1}
 new_template.scale = mn.Vector3(scale_X, scale_Y, scale_Z)
 
 # @markdown The x,y,z components for the desired location of the center of mass.
@@ -1322,15 +1206,12 @@ new_template_handle = sel_file_obj_handle + "_new"
 new_template_ID = obj_attr_mgr.register_template(new_template, new_template_handle)
 
 
-# %%
-# @markdown ###2.2 Create an object and display it with the edited template. { display-mode: "form" }
-# @markdown Two objects will be created, one with the original template and one with the edited configuration.
 # Add object instantiated by original template using template handle
 original_template = obj_attr_mgr.get_template_by_handle(sel_file_obj_handle)
 orig_obj_id = sim.add_object_by_handle(original_template.handle)
 
 # Set desired offset from agent location to place object
-offset = np.array([-0.5, 1.6, -1.5])
+offset = np.array([-0.5, 0.3, -1.5])
 # Move object to be in front of the agent
 set_object_state_from_agent(sim, orig_obj_id, offset=offset)
 
@@ -1342,35 +1223,45 @@ offset[0] += 1.0
 # Move object to be in front of the agent
 set_object_state_from_agent(sim, obj_id, offset=offset)
 
-
 example_type = "Adding customized objects"
-# Either
+observations = camera_track_simulate(sim, [orig_obj_id, obj_id], dt=2.5)
 
-observations = simulate(sim, dt=2.5)
 if make_video:
-    make_video_cv2(
-        observations, prefix=example_type, open_vid=show_video, multi_obs=False
+    vut.make_video(
+        observations, "color_sensor_1st_person", "color", output_path + example_type
     )
+
+# restore camera tracking position
+restore_camera_track_config(sim, init_config)
 make_clear_all_objects_button()
+
 
 # %%
 # @title 3 Simple Primitive-based Object instantiation. { display-mode: "form" }
 # @markdown Habitat-Sim has 6 built-in primitives available (Capsule, Cone, Cube, Cylinder, Icosphere and UVSphere), which are available as both solid and wireframe meshes.  Default objects are synthesized from these primitives automatically and are always available. Primitives are desirable due to being very fast to simulate.
 
-# @markdown This example shows the primitives that are available.  One of each type is instanced and simulated.
+# @markdown This example shows the primitives that are available.  One of each type is instanced with default values and simulated.
+
+# clear all objects and observations
+remove_all_objects(sim)
+observations = []
+# save initial camera state for tracking
+init_config = init_camera_track_config(sim)
 # Get Primitive-based solid object template handles
 prim_solid_obj_handles = obj_attr_mgr.get_synth_template_handles("solid")
 # Get Primitive-based wireframe object template handles
 prim_wf_obj_handles = obj_attr_mgr.get_synth_template_handles("wireframe")
 
 # Set desired offset from agent location to place object
-offset_solid = np.array([-1.1, 1.6, -1.8])
-offset_wf = np.array([-1.1, 1.6, -1.0])
-
+offset_solid = np.array([-1.1, 0.6, -1.8])
+offset_wf = np.array([-1.1, 0.6, -1.0])
+objs_to_sim = []
 for i in range(6):
     # Create object from template handle
     obj_solid_id = sim.add_object_by_handle(prim_solid_obj_handles[i])
     obj_wf_id = sim.add_object_by_handle(prim_wf_obj_handles[i])
+    objs_to_sim.append(obj_solid_id)
+    objs_to_sim.append(obj_wf_id)
 
     # Place object in scene relative to agent
     set_object_state_from_agent(sim, obj_solid_id, offset=offset_solid)
@@ -1382,17 +1273,21 @@ for i in range(6):
 
 
 example_type = "Adding primitive-based objects"
-# Either
-observations = simulate(sim, dt=1.0)
+
+observations = camera_track_simulate(sim, objs_to_sim, dt=2.0)
 if make_video:
-    make_video_cv2(
-        observations, prefix=example_type, open_vid=show_video, multi_obs=False
+    vut.make_video(
+        observations, "color_sensor_1st_person", "color", output_path + example_type
     )
+# restore camera tracking position
+restore_camera_track_config(sim, init_config)
 make_clear_all_objects_button()
 
 
+# %% [markdown]
+# ### 4 Modifying Primitive Asset Templates to Customize Objects.
+
 # %%
-# @title 4 Modifying Primitive Asset Templates to Customize Objects.
 # @markdown Many of the geometric properties of the available primitive meshes can be controlled by modifying the Primitive Asset Attributes templates that describe them.  Any objects instantiated with these modified template will then exhibit these properties.
 # @markdown Note 1 : Solid and Wireframe Cubes and Wireframe Icospheres do not have any editable geometric properties.
 # @markdown Note 2 : Since many of the modifiable parameters controlling primitives are restricted in what values they can be, each Primitive Asset Template has a read-only boolean property, "is_valid_template", which describes whether or not the template is in a valid state.  If it is invalid, it will not be able to be used to create primitives.
@@ -1441,9 +1336,12 @@ wireframe_handles_to_use["icosphereWireframe"] = prim_attr_mgr.get_template_hand
 )[0]
 
 
+# %% [markdown]
+# #### 4.1 Capsule : Cylinder with hemispherical caps of radius 1.0, oriented along y axis, centered at origin.
+#
+
 # %%
-# @title ###4.1 Capsule : Cylinder with hemispherical caps of radius 1.0, oriented along y axis, centered at origin.
-# @markdown ####4.1.1 Solid Capsule
+# @title ####4.1.1 Solid Capsule :{ display-mode: "form" }
 # Acquire default template
 capsule_solid_template = prim_attr_mgr.get_default_capsule_template(False)
 
@@ -1456,16 +1354,16 @@ def edit_solid_capsule(edit_template):
     use_tangents = False  # @param {type:"boolean"}
     edit_template.use_tangents = use_tangents
     # Number of (face) rings for each hemisphere. Must be larger or equal to 1
-    hemisphere_rings = 5  # @param {type:"slider", min:1, max:10, step:1}
+    hemisphere_rings = 6  # @param {type:"slider", min:1, max:10, step:1}
     edit_template.hemisphere_rings = hemisphere_rings
     # Number of (face) rings for cylinder. Must be larger or equal to 1.
-    cylinder_rings = 3  # @param {type:"slider", min:1, max:10, step:1}
+    cylinder_rings = 1  # @param {type:"slider", min:1, max:10, step:1}
     edit_template.cylinder_rings = cylinder_rings
     # Number of (face) segments. Must be larger or equal to 3.
     num_segments = 16  # @param {type:"slider", min:3, max:30, step:1}
     edit_template.num_segments = num_segments
     # Half the length of cylinder part.
-    half_length = 0.45  # @param {type:"slider", min:0.05, max:2.0, step:0.05}
+    half_length = 0.95  # @param {type:"slider", min:0.05, max:2.0, step:0.05}
     edit_template.half_length = half_length
     # @markdown Do you want to make a solid capsule using your above modifications?
     make_modified_solid_capsule = True  # @param {type:"boolean"}
@@ -1480,7 +1378,13 @@ def edit_solid_capsule(edit_template):
 
 edit_solid_capsule(capsule_solid_template)
 
-# @markdown ####4.1.2 Wireframe Capsule :
+# @title ####4.1.2 Wireframe Capsule :
+# Acquire default template
+capsule_wireframe_template = prim_attr_mgr.get_default_capsule_template(True)
+
+
+# %%
+# @title ####4.1.2 Wireframe Capsule :{ display-mode: "form" }
 # Acquire default template
 capsule_wireframe_template = prim_attr_mgr.get_default_capsule_template(True)
 
@@ -1491,7 +1395,7 @@ def edit_wf_capsule(edit_template):
     edit_template.hemisphere_rings = hemisphere_rings
 
     # Number of (line) rings for cylinder. Must be larger or equal to 1.
-    cylinder_rings = 2  # @param {type:"slider", min:1, max:10, step:1}
+    cylinder_rings = 4  # @param {type:"slider", min:1, max:10, step:1}
     edit_template.cylinder_rings = cylinder_rings
 
     # Number of line segments. Must be larger or equal to 4 and multiple of 4
@@ -1499,11 +1403,11 @@ def edit_wf_capsule(edit_template):
     edit_template.num_segments = num_segments
 
     # Half the length of cylinder part.
-    half_length = 0.1  # @param {type:"slider", min:0.05, max:2.0, step:0.05}
+    half_length = 0.85  # @param {type:"slider", min:0.05, max:2.0, step:0.05}
     edit_template.half_length = half_length
 
     # @markdown Do you want to make a wireframe capsule using your above modifications?
-    make_modified_wireframe_capsule = False  # @param {type:"boolean"}
+    make_modified_wireframe_capsule = True  # @param {type:"boolean"}
     # if make is set to true, save modified template.
     register_prim_template_if_valid(
         make_modified_wireframe_capsule,
@@ -1515,11 +1419,12 @@ def edit_wf_capsule(edit_template):
 
 edit_wf_capsule(capsule_wireframe_template)
 
+# %% [markdown]
+# #### 4.2 Cone : Cone of radius 1.0f along the Y axis, centered at origin.
+#
 
 # %%
-# @title ###4.2 Cone : Cone of radius 1.0f along the Y axis, centered at origin.
-
-# @markdown ####4.2.1 Solid Cone
+# @title ####4.2.1 Solid Cone :{ display-mode: "form" }
 # Acquire default template
 cone_solid_template = prim_attr_mgr.get_default_cone_template(False)
 
@@ -1532,10 +1437,10 @@ def edit_solid_cone(edit_template):
     use_tangents = False  # @param {type:"boolean"}
     edit_template.use_tangents = use_tangents
     # Number of (face) rings. Must be larger or equal to 1.
-    num_rings = 1  # @param {type:"slider", min:1, max:10, step:1}
+    num_rings = 6  # @param {type:"slider", min:1, max:10, step:1}
     edit_template.num_rings = num_rings
     # Number of (face) segments. Must be larger or equal to 3.
-    num_segments = 12  # @param {type:"slider", min:3, max:30, step:1}
+    num_segments = 20  # @param {type:"slider", min:3, max:40, step:1}
     edit_template.num_segments = num_segments
     # Half the cone length
     half_length = 1.25  # @param {type:"slider", min:0.05, max:2.0, step:0.05}
@@ -1544,7 +1449,7 @@ def edit_solid_cone(edit_template):
     use_cap_end = True  # @param {type:"boolean"}
     edit_template.use_cap_end = use_cap_end
     # @markdown Do you want to make a solid cone using your above modifications?
-    make_modified_solid_cone = False  # @param {type:"boolean"}
+    make_modified_solid_cone = True  # @param {type:"boolean"}
     # if make is set to true, save modified template.
     register_prim_template_if_valid(
         make_modified_solid_cone, edit_template, solid_handles_to_use, "coneSolid"
@@ -1553,7 +1458,9 @@ def edit_solid_cone(edit_template):
 
 edit_solid_cone(cone_solid_template)
 
-# @markdown ####4.2.2 Wireframe Cone
+
+# %%
+# @title ####4.2.2 Wireframe Cone :{ display-mode: "form" }
 # Acquire default template
 cone_wireframe_template = prim_attr_mgr.get_default_cone_template(True)
 
@@ -1578,11 +1485,11 @@ def edit_wireframe_cone(edit_template):
 
 edit_wireframe_cone(cone_wireframe_template)
 
+# %% [markdown]
+# #### 4.3 Cylinders : Cylinder of radius 1.0f along the Y axis, centered at origin.
 
 # %%
-# @title ###4.3 Cylinders : Cylinder of radius 1.0f along the Y axis, centered at origin.
-
-# @markdown ####4.3.1 Solid Cylinder
+# @title ####4.3.1 Solid Cylinder : { display-mode: "form" }
 # Acquire default template
 cylinder_solid_template = prim_attr_mgr.get_default_cylinder_template(False)
 
@@ -1595,10 +1502,10 @@ def edit_solid_cylinder(edit_template):
     use_tangents = False  # @param {type:"boolean"}
     edit_template.use_tangents = use_tangents
     # Number of (face) rings. Must be larger or equal to 1.
-    num_rings = 1  # @param {type:"slider", min:1, max:10, step:1}
+    num_rings = 4  # @param {type:"slider", min:1, max:10, step:1}
     edit_template.num_rings = num_rings
     # Number of (face) segments. Must be larger or equal to 3.
-    num_segments = 12  # @param {type:"slider", min:3, max:30, step:1}
+    num_segments = 16  # @param {type:"slider", min:3, max:30, step:1}
     edit_template.num_segments = num_segments
     # Half the cylinder length
     half_length = 1  # @param {type:"slider", min:0.05, max:2.0, step:0.05}
@@ -1619,14 +1526,16 @@ def edit_solid_cylinder(edit_template):
 
 edit_solid_cylinder(cylinder_solid_template)
 
-# @markdown ####4.3.2 Wireframe Cylinder
+
+# %%
+# @title ####4.3.2 Wireframe Cylinder : { display-mode: "form" }
 # Acquire default template
 cylinder_wireframe_template = prim_attr_mgr.get_default_cylinder_template(True)
 
 
 def edit_wireframe_cylinder(edit_template):
     # Number of (face) rings. Must be larger or equal to 1.
-    num_rings = 1  # @param {type:"slider", min:1, max:10, step:1}
+    num_rings = 4  # @param {type:"slider", min:1, max:10, step:1}
     # Number of (line) segments. Must be larger or equal to 4 and multiple of 4.
     num_segments = 32  # @param {type:"slider", min:4, max:64, step:4}
     edit_template.num_segments = num_segments
@@ -1646,11 +1555,12 @@ def edit_wireframe_cylinder(edit_template):
 
 edit_wireframe_cylinder(cylinder_wireframe_template)
 
-# %%
-# @title ###4.4 Icosphere : Sphere of radius 1.0f, centered at the origin.
-# @markdown Only solid icospheres have any editable geometric parameters.
+# %% [markdown]
+# #### 4.4 Icosphere : Sphere of radius 1.0f, centered at the origin.
 
-# @markdown ####4.3.1 Solid Icosphere
+# %%
+# @title ####4.4.1 Solid Icosphere : { display-mode: "form" }
+# @markdown Only solid icospheres have any editable geometric parameters.
 # Acquire default template
 icosphere_solid_template = prim_attr_mgr.get_default_icosphere_template(False)
 
@@ -1672,10 +1582,11 @@ def edit_solid_icosphere(edit_template):
 
 edit_solid_icosphere(icosphere_solid_template)
 
-# %%
-# @title ###4.5 UVSpheres : Sphere of radius 1.0f, centered at the origin.
+# %% [markdown]
+# #### 4.5 UVSpheres : Sphere of radius 1.0f, centered at the origin.
 
-# @markdown ####4.5.1 Solid UVSphere
+# %%
+# @title ####4.5.1 Solid UVSphere : { display-mode: "form" }
 # Acquire default template
 UVSphere_solid_template = prim_attr_mgr.get_default_UVsphere_template(False)
 
@@ -1688,7 +1599,7 @@ def edit_solid_UVSphere(edit_template):
     use_tangents = False  # @param {type:"boolean"}
     edit_template.use_tangents = use_tangents
     # Number of (face) rings. Must be larger or equal to 2.
-    num_rings = 16  # @param {type:"slider", min:2, max:30, step:1}
+    num_rings = 13  # @param {type:"slider", min:2, max:30, step:1}
     edit_template.num_rings = num_rings
     # Number of (face) segments. Must be larger or equal to 3.
     num_segments = 8  # @param {type:"slider", min:3, max:30, step:1}
@@ -1707,14 +1618,16 @@ def edit_solid_UVSphere(edit_template):
 
 edit_solid_UVSphere(UVSphere_solid_template)
 
-# @markdown ####4.5.2 Wireframe UVSphere
+
+# %%
+# @title ####4.5.2 Wireframe UVSphere : { display-mode: "form" }
 # Acquire default template
 UVSphere_wireframe_template = prim_attr_mgr.get_default_UVsphere_template(True)
 
 
 def edit_wireframe_UVSphere(edit_template):
     # Number of (line) rings. Must be larger or equal to 2 and multiple of 2.
-    num_rings = 16  # @param {type:"slider", min:2, max:64, step:2}
+    num_rings = 20  # @param {type:"slider", min:2, max:64, step:2}
     # Number of (line) segments. Must be larger or equal to 4 and multiple of 4.
     num_segments = 32  # @param {type:"slider", min:4, max:64, step:4}
     edit_template.num_segments = num_segments
@@ -1731,15 +1644,23 @@ def edit_wireframe_UVSphere(edit_template):
 
 edit_wireframe_UVSphere(UVSphere_wireframe_template)
 
+# %% [markdown]
+# #### 4.6 Instancing objects with modified primitive attributes templates.
+
 # %%
-# @title ###4.6 Instancing objects with modified primitive attributes templates.
+# @title Instantiate primitive-based objects { display-mode: "form" }
 # @markdown Using the modifications set in the previous examples in section 4,
 
+# clear all objects and observations
+remove_all_objects(sim)
+observations = []
+# save initial camera state for tracking
+init_config = init_camera_track_config(sim)
 # Previous cells configured solid_handles_to_use and wireframe_handles_to_use
 
 # Set desired offset from agent location to place object
-offset_solid = np.array([-1.1, 1.6, -1.8])
-
+offset_solid = np.array([-1.1, 0.6, -1.8])
+objs_to_sim = []
 # Create primitive-attributes based object templates for solid and wireframe objects
 for k, solidHandle in solid_handles_to_use.items():
     # Create object template with passed handle
@@ -1747,12 +1668,13 @@ for k, solidHandle in solid_handles_to_use.items():
     # Create object from object template handle
     print("Solid Object being made using handle :{}".format(solidHandle))
     obj_solid_id = sim.add_object_by_handle(solidHandle)
+    objs_to_sim.append(obj_solid_id)
     # Place object in scene relative to agent
     set_object_state_from_agent(sim, obj_solid_id, offset=offset_solid)
     # Move offset for next object
     offset_solid[0] += 0.4
 
-offset_wf = np.array([-1.1, 1.6, -1.0])
+offset_wf = np.array([-1.1, 0.6, -1.0])
 
 for k, wireframeHandle in wireframe_handles_to_use.items():
     # Create object template with passed handle
@@ -1760,18 +1682,21 @@ for k, wireframeHandle in wireframe_handles_to_use.items():
     # Create object from object template handle
     print("Wireframe Object being made using handle :{}".format(wireframeHandle))
     obj_wf_id = sim.add_object_by_handle(wireframeHandle)
+    objs_to_sim.append(obj_wf_id)
     # Place object in scene relative to agent
     set_object_state_from_agent(sim, obj_wf_id, offset=offset_wf)
     # Move offset for next object
     offset_wf[0] += 0.4
 
 example_type = "Adding customized primitive-based objects"
-# Either
-observations = simulate(sim, dt=2.0)
+observations = camera_track_simulate(sim, objs_to_sim, dt=2.0)
 if make_video:
-    make_video_cv2(
-        observations, prefix=example_type, open_vid=show_video, multi_obs=False
+    vut.make_video(
+        observations, "color_sensor_1st_person", "color", output_path + example_type
     )
+
+# restore camera tracking position
+restore_camera_track_config(sim, init_config)
 make_clear_all_objects_button()
 
 # %% [markdown]
