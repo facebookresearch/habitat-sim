@@ -407,6 +407,7 @@ jobs:
                 git clone -q https://github.com/facebookresearch/habitat-lab.git
               fi
               cd habitat-lab
+              git checkout lab_rename # debug delete
               pip install -r requirements.txt --progress-bar off
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
