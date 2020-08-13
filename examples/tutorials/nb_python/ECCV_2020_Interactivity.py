@@ -26,6 +26,8 @@
 # - Adding new objects to a scene
 # - Kinematic object manipulation
 # - Physics simulation API
+# - Sampling valid object locations
+# - Generating a NavMesh including STATIC objects
 # - Agent embodiment and continuous control
 
 # %%
@@ -160,7 +162,7 @@ def make_cfg(settings):
 def make_default_settings():
     settings = {
         "width": 720,  # Spatial resolution of the observations
-        "height": 540,
+        "height": 544,
         "scene": "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
         "default_agent": 0,
         "sensor_height": 1.5,  # Height of sensors in meters
@@ -233,7 +235,7 @@ def set_object_state_from_agent(
 
 # sample a random valid state for the object from the scene bounding box or navmesh
 def sample_object_state(
-    sim, object_id, from_navmesh, maintain_object_up=True, max_tries=100, bb=None
+    sim, object_id, from_navmesh=True, maintain_object_up=True, max_tries=100, bb=None
 ):
     # check that the object is not STATIC
     if sim.get_object_motion_type(object_id) is habitat_sim.physics.MotionType.STATIC:
@@ -249,8 +251,8 @@ def sample_object_state(
         return False
     tries = 0
     valid_placement = False
-    # get scene bounding box
-    # scene_bb = sim.get_active_scene_graph().get_root_node().cumulative_bb
+    # Note: following assumes sim was not reconfigured without close
+    scene_collision_margin = scene_attr_mgr.get_template_by_ID(0).margin
     while not valid_placement and tries < max_tries:
         tries += 1
         # initialize sample location to random point in scene bounding box
@@ -279,7 +281,6 @@ def sample_object_state(
                 obj_node.cumulative_bb, obj_node.transformation
             )
             # also account for collision margin of the scene
-            scene_collision_margin = 0.04
             y_translation = mn.Vector3(
                 0, xform_bb.size_y() / 2.0 + scene_collision_margin, 0
             )
@@ -297,82 +298,9 @@ def sample_object_state(
 
 
 # %%
-# @title Define Visualization Utility Functions { display-mode: "form" }
+# @title Define Visualization Utility Function { display-mode: "form" }
 # @markdown (double click to show code)
-# @markdown - make_video_cv2
 # @markdown - display_sample
-def make_video_cv2(observations, prefix="", open_vid=True, multi_obs=False, fps=60):
-    sensor_keys = list(observations[0])
-    videodims = observations[0][sensor_keys[0]].shape
-    videodims = (videodims[1], videodims[0])  # flip to w,h order
-    print(videodims)
-    video_file = output_path + prefix + ".mp4"
-    print("Encoding the video: %s " % video_file)
-    writer = vut.get_fast_video_writer(video_file, fps=fps)
-    thumb_size = (int(videodims[0] / 5), int(videodims[1] / 5))
-    outline_frame = np.ones((thumb_size[1] + 2, thumb_size[0] + 2, 3), np.uint8) * 150
-    for ob in observations:
-
-        # If in RGB/RGBA format, remove the alpha channel
-        rgb_im_1st_person = cv2.cvtColor(
-            ob["color_sensor_1st_person"], cv2.COLOR_RGBA2RGB
-        )
-
-        if multi_obs:
-            # embed the 1st person RBG frame into the 3rd person frame
-            rgb_im_3rd_person = cv2.cvtColor(
-                ob["color_sensor_3rd_person"], cv2.COLOR_RGBA2RGB
-            )
-            resized_1st_person_rgb = cv2.resize(
-                rgb_im_1st_person, thumb_size, interpolation=cv2.INTER_AREA
-            )
-            x_offset = 50
-            y_offset_rgb = 50
-            rgb_im_3rd_person[
-                y_offset_rgb - 1 : y_offset_rgb + outline_frame.shape[0] - 1,
-                x_offset - 1 : x_offset + outline_frame.shape[1] - 1,
-            ] = outline_frame
-            rgb_im_3rd_person[
-                y_offset_rgb : y_offset_rgb + resized_1st_person_rgb.shape[0],
-                x_offset : x_offset + resized_1st_person_rgb.shape[1],
-            ] = resized_1st_person_rgb
-
-            # embed the 1st person DEPTH frame into the 3rd person frame
-            # manually normalize depth into [0, 1] so that images are always consistent
-            d_im = np.clip(ob["depth_sensor_1st_person"], 0, 10)
-            d_im /= 10.0
-            bgr_d_im = cv2.cvtColor((d_im * 255).astype(np.uint8), cv2.COLOR_GRAY2RGB)
-            resized_1st_person_depth = cv2.resize(
-                bgr_d_im, thumb_size, interpolation=cv2.INTER_AREA
-            )
-            y_offset_d = y_offset_rgb + 10 + thumb_size[1]
-            rgb_im_3rd_person[
-                y_offset_d - 1 : y_offset_d + outline_frame.shape[0] - 1,
-                x_offset - 1 : x_offset + outline_frame.shape[1] - 1,
-            ] = outline_frame
-            rgb_im_3rd_person[
-                y_offset_d : y_offset_d + resized_1st_person_depth.shape[0],
-                x_offset : x_offset + resized_1st_person_depth.shape[1],
-            ] = resized_1st_person_depth
-            if rgb_im_3rd_person.shape[:2] != videodims:
-                rgb_im_3rd_person = cv2.resize(
-                    rgb_im_3rd_person, videodims, interpolation=cv2.INTER_AREA
-                )
-            # write the video frame
-            writer.append_data(rgb_im_3rd_person)
-        else:
-            if rgb_im_1st_person.shape[:2] != videodims:
-                rgb_im_1st_person = cv2.resize(
-                    rgb_im_1st_person, videodims, interpolation=cv2.INTER_AREA
-                )
-            # write the 1st person observation to video
-            writer.append_data(rgb_im_1st_person)
-    writer.close()
-
-    if open_vid:
-        print("Displaying video")
-        vut.display_video(video_file)
-
 
 # Change to do something like this maybe: https://stackoverflow.com/a/41432704
 def display_sample(
@@ -482,7 +410,9 @@ def make_sim_and_vid_button(prefix, dt=1.0):
 
     def on_sim_click(b):
         observations = simulate(sim, dt=dt)
-        make_video_cv2(observations, prefix=prefix, open_vid=True, multi_obs=False)
+        vut.make_video(
+            observations, "color_sensor_1st_person", "color", output_path + prefix
+        )
 
     sim_and_vid_btn = set_button_launcher("Simulate and Make Video")
     sim_and_vid_btn.on_click(on_sim_click)
@@ -565,7 +495,8 @@ make_simulator_from_settings(sim_settings)
 # This section is divided into three use-case driven sub-sections:
 # 1.   Introduction to Interactivity
 # 2.   Physical Reasoning
-# 3.   Continuous Embodied Navigation
+# 3.   Generating Scene Clutter on the NavMesh
+# 4.   Continuous Embodied Navigation
 #
 # For more tutorial examples and details see the [Interactive Rigid Objects tutorial](https://aihabitat.org/docs/habitat-sim/rigid-object-tutorial.html) also available for Colab [here](https://github.com/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/rigid_object_tutorial.ipynb).
 #
@@ -689,9 +620,10 @@ if scenario_is_kinematic:
 example_type = "kinematic vs dynamic"
 observations = simulate(sim, dt=2.0)
 if make_video:
-    make_video_cv2(
-        observations, prefix=example_type, open_vid=show_video, multi_obs=False
+    vut.make_video(
+        observations, "color_sensor_1st_person", "color", output_path + example_type
     )
+
 remove_all_objects(sim)
 
 
@@ -749,8 +681,8 @@ while sim.get_world_time() < start_time + dt:
 
 example_type = "object permanence"
 if make_video:
-    make_video_cv2(
-        observations, prefix=example_type, open_vid=show_video, multi_obs=False
+    vut.make_video(
+        observations, "color_sensor_1st_person", "color", output_path + example_type
     )
 remove_all_objects(sim)
 
@@ -792,8 +724,8 @@ if introduce_surface:
 example_type = "physical plausibility"
 observations = simulate(sim, dt=3.0)
 if make_video:
-    make_video_cv2(
-        observations, prefix=example_type, open_vid=show_video, multi_obs=False
+    vut.make_video(
+        observations, "color_sensor_1st_person", "color", output_path + example_type
     )
 remove_all_objects(sim)
 
@@ -882,10 +814,96 @@ sim.set_angular_velocity(initial_angular_velocity, ball_id)
 example_type = "trajectory prediction"
 observations = simulate(sim, dt=3.0)
 if make_video:
-    make_video_cv2(
-        observations, prefix=example_type, open_vid=show_video, multi_obs=False
+    vut.make_video(
+        observations, "color_sensor_1st_person", "color", output_path + example_type
     )
 remove_all_objects(sim)
+
+# %% [markdown]
+# ## Generating Scene Clutter on the NavMesh
+#
+# The NavMesh can be used to place objects on surfaces in the scene. Once objects are placed they can be set to MotionType::STATIC, indiciating that they are not moveable (kinematics and dynamics are disabled for STATIC objects). The NavMesh can then be recomputed including STATIC object meshes in the voxelization.
+#
+# This example demonstrates using the NavMesh to generate a cluttered scene for navigation. In this script we will:
+#
+# - Place objects off the NavMesh
+# - Set them to MotionType::STATIC
+# - Recompute the NavMesh including STATIC objects
+# - Visualize the results
+
+# %%
+# @title Initialize Simulator and Load Scene { display-mode: "form" }
+# @markdown (load the apartment_1 scene for clutter generation in an open space)
+sim_settings = make_default_settings()
+sim_settings["scene"] = "./data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+sim_settings["sensor_pitch"] = 0
+
+make_simulator_from_settings(sim_settings)
+
+# %%
+# @title Select clutter object from the GUI: { display-mode: "form" }
+
+build_widget_ui(obj_attr_mgr, prim_attr_mgr)
+
+# %%
+# @title Clutter Generation Script
+# @markdown Configure some example parameters:
+
+seed = 1  # @param {type:"integer"}
+random.seed(seed)
+sim.seed(seed)
+np.random.seed(seed)
+
+# position the agent
+sim.agents[0].scene_node.translation = mn.Vector3(0.5, -1.60025, 6.15)
+print(sim.agents[0].scene_node.rotation)
+agent_orientation_y = -23  # @param{type:"integer"}
+sim.agents[0].scene_node.rotation = mn.Quaternion.rotation(
+    mn.Deg(agent_orientation_y), mn.Vector3(0, 1.0, 0)
+)
+
+num_objects = 10  # @param {type:"slider", min:0, max:20, step:1}
+object_scale = 5  # @param {type:"slider", min:1.0, max:10.0, step:0.1}
+
+# scale up the selected object
+sel_obj_template_cpy = obj_attr_mgr.get_template_by_handle(sel_file_obj_handle)
+sel_obj_template_cpy.scale = mn.Vector3(object_scale)
+obj_attr_mgr.register_template(sel_obj_template_cpy, "scaled_sel_obj")
+
+# add the selected object
+sim.navmesh_visualization = True
+remove_all_objects(sim)
+fails = 0
+for obj in range(num_objects):
+    obj_id_1 = sim.add_object_by_handle("scaled_sel_obj")
+
+    # place the object
+    placement_success = sample_object_state(
+        sim, obj_id_1, from_navmesh=True, maintain_object_up=True, max_tries=100
+    )
+    if not placement_success:
+        fails += 1
+        sim.remove_object(obj_id_1)
+    else:
+        # set the objects to STATIC so they can be added to the NavMesh
+        sim.set_object_motion_type(habitat_sim.MotionType.STATIC, obj_id_1)
+
+print("Placement fails = " + str(fails) + "/" + str(num_objects))
+
+# recompute the NavMesh with STATIC objects
+navmesh_settings = habitat_sim.NavMeshSettings()
+navmesh_settings.set_defaults()
+navmesh_success = sim.recompute_navmesh(sim.pathfinder, navmesh_settings, True)
+
+# simulate and collect observations
+example_type = "clutter generation"
+observations = simulate(sim, dt=2.0)
+if make_video:
+    vut.make_video(
+        observations, "color_sensor_1st_person", "color", output_path + example_type
+    )
+remove_all_objects(sim)
+sim.navmesh_visualization = False
 
 # %% [markdown]
 # ## Embodied Continuous Navigation
@@ -976,25 +994,42 @@ class ContinuousPathFollower(object):
                 wp_dist = np.linalg.norm(wp_disp)
 
 
-def setup_path_visualization(sim, path_follower, vis_ids, vis_samples=100):
+def setup_path_visualization(sim, path_follower, vis_samples=100):
+    vis_ids = []
     sphere_handle = obj_attr_mgr.get_template_handles("uvSphereSolid")[0]
     sphere_template_cpy = obj_attr_mgr.get_template_by_handle(sphere_handle)
     sphere_template_cpy.scale *= 0.2
-    obj_attr_mgr.register_template(sphere_template_cpy, "mini-sphere")
+    template_id = obj_attr_mgr.register_template(sphere_template_cpy, "mini-sphere")
+    print("template_id = " + str(template_id))
+    if template_id < 0:
+        return None
     vis_ids.append(sim.add_object_by_handle(sphere_handle))
 
     for point in path_follower._points:
         cp_id = sim.add_object_by_handle(sphere_handle)
+        if cp_id < 0:
+            print(cp_id)
+            return None
         sim.set_translation(point, cp_id)
         vis_ids.append(cp_id)
 
     for i in range(vis_samples):
         cp_id = sim.add_object_by_handle("mini-sphere")
+        if cp_id < 0:
+            print(cp_id)
+            return None
         sim.set_translation(path_follower.pos_at(float(i / vis_samples)), cp_id)
         vis_ids.append(cp_id)
 
     for id in vis_ids:
+        if id < 0:
+            print(id)
+            return None
+
+    for id in vis_ids:
         sim.set_object_motion_type(habitat_sim.MotionType.KINEMATIC, id)
+
+    return vis_ids
 
 
 def track_waypoint(waypoint, rs, vc, dt=1.0 / 60.0):
@@ -1006,20 +1041,29 @@ def track_waypoint(waypoint, rs, vc, dt=1.0 / 60.0):
     to_waypoint = mn.Vector3(waypoint) - rs.translation
     u_to_waypoint = to_waypoint.normalized()
     angle_error = float(mn.math.angle(glob_forward, u_to_waypoint))
+
+    new_velocity = 0
     if angle_error < angular_error_threshold:
-        # move forward
-        vc.linear_velocity = mn.Vector3(0, 0, -max_linear_speed)
+        # speed up to max
+        new_velocity = (vc.linear_velocity[2] - max_linear_speed) / 2.0
     else:
-        vc.linear_velocity = mn.Vector3(0)
-    if angle_error > 0.2:
-        rot_dir = 1.0
-        if mn.math.dot(glob_right, u_to_waypoint) < 0:
-            rot_dir = -1.0
-        vc.angular_velocity = mn.Vector3(
-            0, np.clip(rot_dir * angle_error / dt, -max_turn_speed, max_turn_speed), 0
-        )
+        # slow down to 0
+        new_velocity = (vc.linear_velocity[2]) / 2.0
+    vc.linear_velocity = mn.Vector3(0, 0, new_velocity)
+
+    # angular part
+    rot_dir = 1.0
+    if mn.math.dot(glob_right, u_to_waypoint) < 0:
+        rot_dir = -1.0
+    angular_correction = 0.0
+    if angle_error > (max_turn_speed * 10.0 * dt):
+        angular_correction = max_turn_speed
     else:
-        vc.angular_velocity = mn.Vector3(0)
+        angular_correction = angle_error / 2.0
+
+    vc.angular_velocity = mn.Vector3(
+        0, np.clip(rot_dir * angular_correction, -max_turn_speed, max_turn_speed), 0
+    )
 
 
 # grip/release and sync gripped object state kineamtically
@@ -1052,6 +1096,9 @@ class ObjectGripper(object):
         self.sync_states()
 
     def release(self):
+        if self._gripped_obj_id == -1:
+            print("Oops, can't release nothing.")
+            return
         sim.set_object_motion_type(habitat_sim.MotionType.DYNAMIC, self._gripped_obj_id)
         sim.set_linear_velocity(
             self._node.absolute_transformation_matrix().transform_vector(
@@ -1078,12 +1125,23 @@ sim_settings["sensor_pitch"] = 0
 sim_settings["sensor_height"] = 0.6
 sim_settings["color_sensor_3rd_person"] = True
 sim_settings["depth_sensor_1st_person"] = True
+sim_settings["semantic_sensor_1st_person"] = True
 
 make_simulator_from_settings(sim_settings)
 
+default_nav_mesh_settings = habitat_sim.NavMeshSettings()
+default_nav_mesh_settings.set_defaults()
+inflated_nav_mesh_settings = habitat_sim.NavMeshSettings()
+inflated_nav_mesh_settings.set_defaults()
+inflated_nav_mesh_settings.agent_radius = 0.2
+inflated_nav_mesh_settings.agent_height = 1.5
+recompute_successful = sim.recompute_navmesh(sim.pathfinder, inflated_nav_mesh_settings)
+if not recompute_successful:
+    print("Failed to recompute navmesh!")
+
 # @markdown ---
 # @markdown ### Set other example parameters:
-seed = 14  # @param {type:"integer"}
+seed = 24  # @param {type:"integer"}
 random.seed(seed)
 sim.seed(seed)
 np.random.seed(seed)
@@ -1093,11 +1151,6 @@ sim.config.sim_cfg.allow_sliding = True  # @param {type:"boolean"}
 print(sel_file_obj_handle)
 # load a selected target object and place it on the NavMesh
 obj_id_1 = sim.add_object_by_handle(sel_file_obj_handle)
-
-if not sample_object_state(
-    sim, obj_id_1, from_navmesh=True, maintain_object_up=True, max_tries=1000
-):
-    print("Couldn't find an initial object placement. Aborting.")
 
 # load the locobot_merged asset
 locobot_template_handle = obj_attr_mgr.get_file_template_handles("locobot")[0]
@@ -1121,39 +1174,51 @@ sim.set_translation(sim.pathfinder.get_random_navigable_point(), locobot_id)
 observations = []
 
 # get shortest path to the object from the agent position
+found_path = False
 path1 = habitat_sim.ShortestPath()
-path1.requested_start = sim.get_translation(locobot_id)
-path1.requested_end = sim.get_translation(obj_id_1)
 path2 = habitat_sim.ShortestPath()
-path2.requested_start = path1.requested_end
-path2.requested_end = sim.pathfinder.get_random_navigable_point()
+while not found_path:
+    if not sample_object_state(
+        sim, obj_id_1, from_navmesh=True, maintain_object_up=True, max_tries=1000
+    ):
+        print("Couldn't find an initial object placement. Aborting.")
+        break
+    path1.requested_start = sim.get_translation(locobot_id)
+    path1.requested_end = sim.get_translation(obj_id_1)
+    path2.requested_start = path1.requested_end
+    path2.requested_end = sim.pathfinder.get_random_navigable_point()
 
-found_path = sim.pathfinder.find_path(path1) and sim.pathfinder.find_path(path2)
+    found_path = sim.pathfinder.find_path(path1) and sim.pathfinder.find_path(path2)
 
 if not found_path:
     print("Could not find path to object, aborting!")
+
 vis_ids = []
+
+recompute_successful = sim.recompute_navmesh(sim.pathfinder, default_nav_mesh_settings)
+if not recompute_successful:
+    print("Failed to recompute navmesh 2!")
 
 gripper = ObjectGripper(
     sim, sim.get_object_scene_node(locobot_id), np.array([0.0, 0.6, 0.0])
 )
 continuous_path_follower = ContinuousPathFollower(
-    sim, path1, sim.get_object_scene_node(locobot_id), waypoint_threshold=0.3
+    sim, path1, sim.get_object_scene_node(locobot_id), waypoint_threshold=0.4
 )
 
+show_waypoint_indicators = False  # @param {type:"boolean"}
 time_step = 1.0 / 30.0
 for i in range(2):
     if i == 1:
         gripper.grip(obj_id_1)
         continuous_path_follower = ContinuousPathFollower(
-            sim, path2, sim.get_object_scene_node(locobot_id), waypoint_threshold=0.3
+            sim, path2, sim.get_object_scene_node(locobot_id), waypoint_threshold=0.4
         )
 
-    show_waypoint_indicators = False  # @param {type:"boolean"}
     if show_waypoint_indicators:
         for id in vis_ids:
             sim.remove_object(id)
-        setup_path_visualization(sim, continuous_path_follower, vis_ids)
+        vis_ids = setup_path_visualization(sim, continuous_path_follower)
 
     # manually control the object's kinematic state via velocity integration
     start_time = sim.get_world_time()
@@ -1165,6 +1230,10 @@ for i in range(2):
         continuous_path_follower.update_waypoint()
         if show_waypoint_indicators:
             sim.set_translation(continuous_path_follower.waypoint, vis_ids[0])
+
+        if locobot_id < 0:
+            print("locobot_id " + str(locobot_id))
+            break
 
         previous_rigid_state = sim.get_rigid_state(locobot_id)
 
@@ -1218,12 +1287,42 @@ while sim.get_world_time() - start_time < 2.0:
 # video rendering with embedded 1st person view
 video_prefix = "fetch"
 if make_video:
-    make_video_cv2(
-        observations,
-        prefix=video_prefix,
+    overlay_dims = (int(sim_settings["width"] / 5), int(sim_settings["height"] / 5))
+    print("overlay_dims = " + str(overlay_dims))
+    overlay_settings = [
+        {
+            "obs": "color_sensor_1st_person",
+            "type": "color",
+            "dims": overlay_dims,
+            "pos": (10, 10),
+            "border": 2,
+        },
+        {
+            "obs": "depth_sensor_1st_person",
+            "type": "depth",
+            "dims": overlay_dims,
+            "pos": (10, 30 + overlay_dims[1]),
+            "border": 2,
+        },
+        {
+            "obs": "semantic_sensor_1st_person",
+            "type": "semantic",
+            "dims": overlay_dims,
+            "pos": (10, 50 + overlay_dims[1] * 2),
+            "border": 2,
+        },
+    ]
+    print("overlay_settings = " + str(overlay_settings))
+
+    vut.make_video(
+        observations=observations,
+        primary_obs="color_sensor_3rd_person",
+        primary_obs_type="color",
+        video_file=output_path + example_type,
+        fps=int(1.0 / time_step),
         open_vid=True,
-        multi_obs=True,
-        fps=1.0 / time_step,
+        overlay_settings=overlay_settings,
+        depth_clip=10.0,
     )
 
 # remove locobot while leaving the agent node for later use
