@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Tuple
 
 import imageio
 import numpy as np
+from PIL import Image
 from tqdm.auto import tqdm
 
 from habitat_sim.utils.common import d3_40_colors_rgb
