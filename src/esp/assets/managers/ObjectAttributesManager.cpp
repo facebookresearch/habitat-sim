@@ -86,6 +86,20 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
   return this->postCreateRegister(primObjectAttributes, registerTemplate);
 }  // ObjectAttributesManager::createPrimBasedAttributesTemplate
 
+void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
+  this->defaultTemplateNames_.clear();
+  // build default primtive object templates corresponding to given default
+  // asset templates
+  const std::vector<std::string> lib =
+      assetAttributesMgr_->getDefaultTemplateHandles();
+  for (std::string primAssetHandle : lib) {
+    auto tmplt = createPrimBasedAttributesTemplate(primAssetHandle, true);
+    // save handles in list of defaults, so they are not removed
+    std::string tmpltHandle = tmplt->getHandle();
+    this->defaultTemplateNames_.push_back(tmpltHandle);
+  }
+}  // ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates
+
 PhysicsObjectAttributes::ptr
 ObjectAttributesManager::createFileBasedAttributesTemplate(
     const std::string& objPhysConfigFilename,
@@ -271,7 +285,8 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
 }  // ObjectAttributesManager::registerAttributesTemplateFinalize
 
 std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
-    const std::vector<std::string>& tmpltFilenames) {
+    const std::vector<std::string>& tmpltFilenames,
+    bool saveAsDefaults) {
   std::vector<int> resIDs(tmpltFilenames.size(), ID_UNDEFINED);
   for (int i = 0; i < tmpltFilenames.size(); ++i) {
     auto objPhysPropertiesFilename = tmpltFilenames[i];
@@ -279,6 +294,11 @@ std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
               << objPhysPropertiesFilename;
     auto tmplt =
         createFileBasedAttributesTemplate(objPhysPropertiesFilename, true);
+
+    // save handles in list of defaults, so they are not removed
+    std::string tmpltHandle = tmplt->getHandle();
+    this->defaultTemplateNames_.push_back(tmpltHandle);
+
     resIDs[i] = tmplt->getID();
   }
   LOG(INFO) << "Loaded file-based object templates: "
@@ -287,7 +307,8 @@ std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
 }  // ObjectAttributesManager::loadAllObjectTemplates
 
 std::vector<int> ObjectAttributesManager::loadObjectConfigs(
-    const std::string& path) {
+    const std::string& path,
+    bool saveAsDefaults) {
   std::vector<std::string> paths;
   std::vector<int> templateIndices;
   namespace Directory = Cr::Utility::Directory;
@@ -320,7 +341,7 @@ std::vector<int> ObjectAttributesManager::loadObjectConfigs(
     }
   }
   // build templates from aggregated paths
-  templateIndices = loadAllFileBasedTemplates(paths);
+  templateIndices = loadAllFileBasedTemplates(paths, saveAsDefaults);
 
   return templateIndices;
 }  // ObjectAttributesManager::buildObjectConfigPaths

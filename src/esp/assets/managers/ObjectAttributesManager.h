@@ -29,6 +29,8 @@ class ObjectAttributesManager
   void setAssetAttributesManager(
       AssetAttributesManager::cptr assetAttributesMgr) {
     assetAttributesMgr_ = assetAttributesMgr;
+    // Create default primitive-based object attributess
+    createDefaultPrimBasedAttributesTemplates();
   }
 
   /**
@@ -125,9 +127,12 @@ class ObjectAttributesManager
    *
    * @param path A global path to a physics property file or directory
    * containing such files.
+   * @param saveAsDefaults Set the templates loaded as undeleteable default
+   * templates.
    * @return A list of template indices for loaded valid object configs
    */
-  std::vector<int> loadObjectConfigs(const std::string& path);
+  std::vector<int> loadObjectConfigs(const std::string& path,
+                                     bool saveAsDefaults = false);
 
   /**
    * @brief Load all file-based object templates given string list of object
@@ -136,10 +141,12 @@ class ObjectAttributesManager
    * This will take the list of file names currently specified in
    * physicsManagerAttributes and load the referenced object templates.
    * @param tmpltFilenames list of file names of object templates
+   * @param saveAsDefaults Set these templates as un-deletable from library.
    * @return vector holding IDs of templates that have been added
    */
   std::vector<int> loadAllFileBasedTemplates(
-      const std::vector<std::string>& tmpltFilenames);
+      const std::vector<std::string>& tmpltFilenames,
+      bool saveAsDefaults);
 
   /**
    * @brief Check if currently configured primitive asset template library has
@@ -237,6 +244,12 @@ class ObjectAttributesManager
 
  protected:
   /**
+   * @brief Create and save default primitive asset-based object templates,
+   * saving their handles as non-deletable default handles.
+   */
+  void createDefaultPrimBasedAttributesTemplates();
+
+  /**
    * @brief Perform file-name-based attributes initialization. This is to
    * take the place of the AssetInfo::fromPath functionality, and is only
    * intended to provide default values and other help if certain mistakes
@@ -298,11 +311,6 @@ class ObjectAttributesManager
       const std::string& attributesTemplateHandle) override;
 
   /**
-   * @brief Whether template described by passed handle is read only, or can be
-   * deleted. All objectAttributes templates are removable, by default
-   */
-  bool isTemplateReadOnly(const std::string&) override { return false; };
-  /**
    * @brief Any object-attributes-specific resetting that needs to happen on
    * reset.
    */
@@ -321,6 +329,8 @@ class ObjectAttributesManager
         &ObjectAttributesManager::createAttributesCopy<
             assets::PhysicsObjectAttributes>;
   }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
+
+  // ======== Typedefs and Instance Variables ========
 
   /**
    * @brief Reference to AssetAttributesManager to give access to primitive

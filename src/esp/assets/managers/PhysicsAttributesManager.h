@@ -144,12 +144,6 @@ class PhysicsAttributesManager
   }  // PhysicsAttributesManager::registerAttributesTemplate
 
   /**
-   * @brief Whether template described by passed handle is read only, or can be
-   * deleted. All PhysicsAttributes templates are removable, by default
-   */
-  bool isTemplateReadOnly(const std::string&) override { return false; }
-
-  /**
    * @brief Any physics-attributes-specific resetting that needs to happen on
    * reset.
    */

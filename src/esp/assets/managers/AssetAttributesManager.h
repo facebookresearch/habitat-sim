@@ -434,22 +434,6 @@ class AssetAttributesManager
       const std::string& ignored = "") override;
 
   /**
-   * @brief Whether template described by passed handle is read only, or can be
-   * deleted. Default primitive asset templates should not be removed.
-   * @param templateHandle the handle to the template to verify removability.
-   * Assumes template exists.
-   * @return Whether the template is read-only or not
-   */
-  bool isTemplateReadOnly(const std::string& templateHandle) override {
-    for (auto handle : defaultTemplateNames_) {
-      if (handle.compare(templateHandle) == 0) {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  /**
    * @brief Used Internally.  Configure newly-created attributes with any
    * default values, before any specific values are set.
    *
@@ -540,11 +524,6 @@ class AssetAttributesManager
    */
   Map_Of_PrimTypeCtors primTypeConstructorMap_;
 
-  /**
-   * @brief vector holding string template handles of all default primitive
-   * asset templates, to make sure they are never deleted.
-   */
-  std::vector<std::string> defaultTemplateNames_;
   /**
    * @brief Map relating primitive class name to default attributes template
    * handle. There should always be a template for each of these handles.

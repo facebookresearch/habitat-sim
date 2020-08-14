@@ -42,7 +42,9 @@ class AttributesManager {
  public:
   AttributesManager(assets::ResourceManager& resourceManager,
                     const std::string& attrType)
-      : resourceManager_(resourceManager), attrType_(attrType) {}
+      : resourceManager_(resourceManager), attrType_(attrType) {
+    this->defaultTemplateNames_.clear();
+  }
   virtual ~AttributesManager() = default;
 
   /**
@@ -252,6 +254,26 @@ class AttributesManager {
   }
 
   /**
+   * @brief Remove all templates that have not been marked as
+   * default/non-removable, and return a vector of the templates removed.
+   * @return A vector containing all the templates that have been removed from
+   * the library.
+   */
+  std::vector<AttribsPtr> removeAllTemplates() {
+    std::vector<AttribsPtr> res;
+    // get all handles first
+    std::vector<std::string> handles = getTemplateHandlesBySubstring("");
+    for (std::string templateHandle : handles) {
+      AttribsPtr ptr = removeTemplateInternal(
+          templateHandle, "AttributesManager::removeAllTemplates");
+      if (nullptr != ptr) {
+        res.push_back(ptr);
+      }
+    }
+    return res;
+  }  // removeAllTemplates
+
+  /**
    * @brief Get the key in @ref templateLibrary_ for the object template
    * with the given unique ID.
    *
@@ -386,11 +408,11 @@ class AttributesManager {
   }  // AttributesManager::getTemplateCopyByHandle
 
   /**
-   * @brief return a read-only reference to the template library managed by this
-   * object.
+   * @brief return a read-only reference to the default primitive asset template
+   * handles managed by this object.
    */
-  const std::map<std::string, AttribsPtr>& getTemplateLibrary() const {
-    return templateLibrary_;
+  const std::vector<std::string>& getDefaultTemplateHandles() const {
+    return this->defaultTemplateNames_;
   }
 
  protected:
@@ -625,7 +647,14 @@ class AttributesManager {
    * Assumes template exists.
    * @return Whether the template is read-only or not
    */
-  virtual bool isTemplateReadOnly(const std::string& templateHandle) = 0;
+  bool isTemplateReadOnly(const std::string& templateHandle) {
+    for (auto handle : this->defaultTemplateNames_) {
+      if (handle.compare(templateHandle) == 0) {
+        return true;
+      }
+    }
+    return false;
+  }  // isTemplateReadOnly
 
   /**
    * @brief Build a shared pointer to the appropriate attributes for passed
@@ -757,6 +786,11 @@ class AttributesManager {
    * recycled before using map-size-based IDs
    */
   std::deque<int> availableTemplateIDs_;
+  /**
+   * @brief vector holding string template handles of all default templates, to
+   * make sure they are never deleted.
+   */
+  std::vector<std::string> defaultTemplateNames_;
 
  public:
   ESP_SMART_POINTERS(AttributesManager<AttribsPtr>)

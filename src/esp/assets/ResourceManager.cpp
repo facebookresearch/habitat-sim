@@ -117,14 +117,6 @@ void ResourceManager::initDefaultPrimAttributes() {
   primitive_meshes_[nextPrimitiveMeshId++] =
       std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube));
 
-  // build default primtive object templates corresponding to given default
-  // asset templates
-  auto lib = assetAttributesManager_->getTemplateLibrary();
-  for (auto primAsset : lib) {
-    objectAttributesManager_->createPrimBasedAttributesTemplate(primAsset.first,
-                                                                true);
-  }
-
 }  // initDefaultPrimAttributes
 
 void ResourceManager::initPhysicsManager(
