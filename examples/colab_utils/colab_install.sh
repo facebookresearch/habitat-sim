@@ -1,6 +1,4 @@
 #!/bin/bash
-%%writefile /content/install.sh
-#!/bin/bash
 trap 'catch $? $LINENO' EXIT
 catch() {
   if [ "$1" != "0" ]; then
