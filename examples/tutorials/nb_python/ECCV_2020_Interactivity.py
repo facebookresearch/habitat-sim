@@ -448,6 +448,8 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
     # Construct DDLs and assign event handlers
     # All file-based object template handles
     file_obj_handles = obj_attr_mgr.get_file_template_handles()
+    prim_obj_handles = obj_attr_mgr.get_synth_template_handles()
+    prim_asset_handles = prim_attr_mgr.get_template_handles()
     if not HAS_WIDGETS:
         sel_file_obj_handle = file_obj_handles[0]
         sel_prim_obj_handle = prim_obj_handles[0]
@@ -460,7 +462,6 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
         on_file_obj_ddl_change,
     )
     # All primitive asset-based object template handles
-    prim_obj_handles = obj_attr_mgr.get_synth_template_handles()
     prim_obj_ddl, sel_prim_obj_handle = set_handle_ddl_widget(
         prim_obj_handles,
         "Primitive-based Object",
@@ -468,7 +469,6 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
         on_prim_obj_ddl_change,
     )
     # All primitive asset handles template handles
-    prim_asset_handles = prim_attr_mgr.get_template_handles()
     prim_asset_ddl, sel_asset_handle = set_handle_ddl_widget(
         prim_asset_handles, "Primitive Asset", sel_asset_handle, on_prim_ddl_change
     )
