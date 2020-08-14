@@ -489,10 +489,10 @@ make_simulator_from_settings(sim_settings)
 # %% [markdown]
 # #Interactivity in Habitat-sim
 #
-# This tutorial section covers how to configure and use the Habitat-sim object manipulation API to setup and run physical interaction simulations.
+# This tutorial covers how to configure and use the Habitat-sim object manipulation API to setup and run physical interaction simulations.
 #
 # ## Outline:
-# This section is divided into three use-case driven sub-sections:
+# This section is divided into four use-case driven sub-sections:
 # 1.   Introduction to Interactivity
 # 2.   Physical Reasoning
 # 3.   Generating Scene Clutter on the NavMesh
@@ -517,7 +517,7 @@ make_simulator_from_settings(sim_settings)
 
 # @markdown File-based object templates are loaded from and named after an asset file (e.g. banana.glb), while Primitive-based object templates are generated programmatically (e.g. uv_sphere) with handles (name/key for reference) uniquely generated from a specific parameterization.
 
-# @markdown See the [Advanced Features](https://colab.research.google.com/drive/10iSSLQZiKJi86intkenN53iOQ-w5By1z?authuser=1#scrollTo=JSrIT5nz-1Os) section for more details about asset configuration.
+# @markdown See the Advanced Features tutorial for more details about asset configuration.
 
 build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 
@@ -584,10 +584,10 @@ make_clear_all_objects_button()
 
 # %% [markdown]
 # This section demonstrates simple setups for physical reasoning tasks in Habitat-sim with a fixed camera position collecting data:
-# - [Scripted vs. Dynamic Motion](https://colab.research.google.com/drive/10iSSLQZiKJi86intkenN53iOQ-w5By1z?authuser=1#scrollTo=oUlgE5P-_F65&line=1&uniqifier=1)
-# - [Object Permanence](https://colab.research.google.com/drive/10iSSLQZiKJi86intkenN53iOQ-w5By1z?authuser=1#scrollTo=GTPL4fzY_GZt&line=1&uniqifier=1)
-# - [Physical plausibility classification](https://colab.research.google.com/drive/10iSSLQZiKJi86intkenN53iOQ-w5By1z?authuser=1#scrollTo=DH3mLjq5PabM&line=1&uniqifier=1)
-# - [Trajectory Prediction]()
+# - Scripted vs. Dynamic Motion
+# - Object Permanence
+# - Physical plausibility classification
+# - Trajectory Prediction
 
 # %%
 # @title Select object templates from the GUI: { display-mode: "form" }
@@ -599,7 +599,7 @@ build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 # @markdown A quick script to generate video data for AI classification of dynamically dropping vs. kinematically moving objects.
 remove_all_objects(sim)
 # @markdown Set the scene as dynamic or kinematic:
-scenario_is_kinematic = False  # @param {type:"boolean"}
+scenario_is_kinematic = True  # @param {type:"boolean"}
 
 # add the selected object
 obj_id_1 = sim.add_object_by_handle(sel_file_obj_handle)
@@ -662,9 +662,9 @@ obj_attr_mgr.register_template(cube_template_cpy, "occluder_cube")
 occluder_id = sim.add_object_by_handle("occluder_cube")
 set_object_state_from_agent(sim, occluder_id, offset=np.array([0.0, 1.4, -0.4]))
 sim.set_object_motion_type(habitat_sim.MotionType.KINEMATIC, occluder_id)
-
-# @markdown 3. Simulate at 60Hz, removing one object when it's center of mass
-# @markdown drops below that of the occluder.
+# fmt off
+# @markdown 3. Simulate at 60Hz, removing one object when it's center of mass drops below that of the occluder.
+# fmt on
 # Simulate and remove object when it passes the midpoint of the occluder
 dt = 2.0
 print("Simulating " + str(dt) + " world seconds.")
@@ -762,6 +762,7 @@ target_zone = mn.Range3D.from_center(
 num_targets = 9  # @param{type:"integer"}
 for target in range(num_targets):
     obj_id = sim.add_object_by_handle(cheezit_handle)
+    # rotate boxes off of their sides
     rotate = mn.Quaternion.rotation(mn.Rad(-mn.math.pi_half), mn.Vector3(1.0, 0, 0))
     sim.set_rotation(rotate, obj_id)
     # sample state from the target zone
@@ -798,7 +799,7 @@ ball_id = sim.add_object_by_handle("ball")
 set_object_state_from_agent(sim, ball_id, offset=np.array([0, 1.4, 0]))
 
 # @markdown Initial linear velocity (m/sec):
-lin_vel_x = -1  # @param {type:"slider", min:-10, max:10, step:0.1}
+lin_vel_x = 0  # @param {type:"slider", min:-10, max:10, step:0.1}
 lin_vel_y = 1  # @param {type:"slider", min:-10, max:10, step:0.1}
 lin_vel_z = 5  # @param {type:"slider", min:0, max:10, step:0.1}
 initial_linear_velocity = mn.Vector3(lin_vel_x, lin_vel_y, lin_vel_z)
@@ -849,7 +850,7 @@ build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 # @title Clutter Generation Script
 # @markdown Configure some example parameters:
 
-seed = 1  # @param {type:"integer"}
+seed = 2  # @param {type:"integer"}
 random.seed(seed)
 sim.seed(seed)
 np.random.seed(seed)
@@ -893,7 +894,9 @@ print("Placement fails = " + str(fails) + "/" + str(num_objects))
 # recompute the NavMesh with STATIC objects
 navmesh_settings = habitat_sim.NavMeshSettings()
 navmesh_settings.set_defaults()
-navmesh_success = sim.recompute_navmesh(sim.pathfinder, navmesh_settings, True)
+navmesh_success = sim.recompute_navmesh(
+    sim.pathfinder, navmesh_settings, include_static_objects=True
+)
 
 # simulate and collect observations
 example_type = "clutter generation"
@@ -911,7 +914,7 @@ sim.navmesh_visualization = False
 # %% [markdown]
 # The following example demonstrates setup and excecution of an embodied navigation and interaction scenario. An object and an agent embodied by a rigid locobot mesh are placed randomly on the NavMesh. A path is computed for the agent to reach the object which is executed by a continuous path-following controller. The object is then kinematically gripped by the agent and a second path is computed for the agent to reach a goal location, also executed by a continuous controller. The gripped object is then released and thrown in front of the agent.
 #
-# Note: for a more detailed explanation of the NavMesh see [this(TODO: link)]() tutorial.
+# Note: for a more detailed explanation of the NavMesh see Habitat-sim Basics tutorial.
 
 # %%
 # @title Select target object from the GUI: { display-mode: "form" }
@@ -1318,7 +1321,7 @@ if make_video:
         observations=observations,
         primary_obs="color_sensor_3rd_person",
         primary_obs_type="color",
-        video_file=output_path + example_type,
+        video_file=output_path + video_prefix,
         fps=int(1.0 / time_step),
         open_vid=True,
         overlay_settings=overlay_settings,
