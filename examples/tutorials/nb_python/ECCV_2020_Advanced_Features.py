@@ -6,7 +6,6 @@
 #     name: ECCV_2020_Advanced_Features.ipynb
 #     private_outputs: true
 #     provenance: []
-#     toc_visible: true
 #   jupytext:
 #     cell_metadata_filter: -all
 #     formats: nb_python//py:percent,colabs//ipynb
@@ -25,10 +24,12 @@
 # #Habitat-sim Advanced Features
 #
 # This tutorial presents a number of advanced feature examples for using Habitat-sim, including:
-# - Object configuration via template libraries
+#
 # - Tracking object motion with a camera
+# - Projecting 3D points into 2D
 # - Configuring semantic ids for objects
-# - Generating a cluttered scene from the NavMesh
+# - Object/Asset configuration via template libraries
+#
 
 # %%
 # @title Installation { display-mode: "form" }
@@ -876,8 +877,9 @@ remove_all_objects(sim)
 
 # %%
 # @markdown ###Display 2D Projection of Object COMs
-# @markdown First define the projection function using the current state of a chosen
-# @markdown VisualSensor to set camera parameters and then projects the 3D point.
+# fmt: off
+# @markdown First define the projection function using the current state of a chosen VisualSensor to set camera parameters and then projects the 3D point.
+# fmt: on
 # project a 3D point into 2D image space for a particular sensor
 def get_2d_point(sim, sensor_name, point_3d):
     # get the scene render camera and sensor object
@@ -898,8 +900,9 @@ def get_2d_point(sim, sensor_name, point_3d):
     return mn.Vector2i(point_2d)
 
 
-# @markdown Use this function to compute the projected object center of mass (COM)
-# @markdown 2D projection and display on the image.
+# fmt: off
+# @markdown Use this function to compute the projected object center of mass (COM) 2D projection and display on the image.
+# fmt: on
 
 # @markdown ---
 # @markdown ### Set example parameters:
