@@ -4,7 +4,9 @@ Habitat Sim Image Extractor Tutorial
 .. contents::
     :class: m-block m-default
 
-In this tutorial we will learn how to use the image extraction API in Habitat Sim by working through an example use case - training a semantic segmentation model. The tutorial will be structured as follows. We will first provide an overview of how to use the image extraction API. Next we will show how to use the API to train a semantic segmentation model. Finally, we will show how to define a custom pose extraction method, which is how a user programmatically defines the camera poses for image extraction.
+In this tutorial we will learn how to use the image extraction API in Habitat Sim by working through an example use case - training a semantic segmentation model on images and segmentation ground-truth extracted from environments loaded into Habitat Sim. The tutorial will be structured as follows.
+
+We will first provide an overview of how to use the image extraction API. Next we will show how to use the API to train a semantic segmentation model. Finally, we will show how to define a custom pose extraction method, which is how a user programmatically defines the camera poses for image extraction.
 
 `Overview of Image Extraction`_
 ===============================
@@ -184,7 +186,7 @@ Make sure you have Habitat Sim correctly installed and the data downloaded (see 
             truth_mask = self.get_class_labels(raw_semantic_output)
 
             output = {
-                'rgb': sample['rgba'][:, :, :3].astype(int),
+                'rgb': sample['rgba'][:, :, :3],
                 'truth': truth_mask.astype(int),
             }
 
@@ -220,7 +222,7 @@ Now let's view some of the data to make sure it looks good.
                 ax.axis("off")
                 if img_type == 'rgb':
                     plt.imshow(img.numpy().transpose(1, 2, 0))
-                elif img_type == 'semantic':
+                elif img_type == 'truth':
                     plt.imshow(img.numpy())
 
             plt.show()
@@ -234,10 +236,9 @@ Now let's view some of the data to make sure it looks good.
     show_batch(sample_batch)
 
 
+.. image:: ../images/pytorch-dataset-example-output.png
 
-<Add an image here>
-
-Now that we can extract and view data using the ImageExtractor, let's define out model. A popular model for semantic segmentation is `UNET`_, originally developed by Olaf Ronneberger et al. for medical image segmentation. This implementation of UNET was taken from `this github repo`_.
+Now that we can extract and view data using the ImageExtractor, let's define our model. A popular model for semantic segmentation is `UNET`_, originally developed by Olaf Ronneberger et al. for medical image segmentation. This implementation of UNET was taken from `this github repo`_.
 
 .. code:: py
 
@@ -369,10 +370,8 @@ We have a model now - Great! For the loss function we'll use cross entropy becau
     val_check = 5
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
     optimizer = optim.RMSprop(model.parameters(), lr=lr, weight_decay=1e-8, momentum=0.9)
-    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-    #     optimizer, 'min' if model.n_classes > 1 else 'max', patience=2
-    # )
     criterion = nn.CrossEntropyLoss()
 
     for epoch in range(num_epochs):
@@ -407,7 +406,48 @@ We have a model now - Great! For the loss function we'll use cross entropy becau
 `Results`_
 ----------
 
-Placeholder
+After training for a short time on a small training dataset, we are able to see some pretty good results, indicating that our model is learning the way we expect. We can visualize the output.
+
+.. code:: py
+
+    import torch.nn.functional as F
+
+    def show_batch(sample_batch):
+        def show_row(imgs, batch_size, img_type):
+            plt.figure(figsize=(12, 8))
+            for i, img in enumerate(imgs):
+                ax = plt.subplot(1, batch_size, i + 1)
+                ax.axis("off")
+                if img_type == 'rgb':
+                    plt.imshow(img.numpy().transpose(1, 2, 0))
+                elif img_type in ['truth', 'prediction']:
+                    plt.imshow(img.numpy())
+
+            plt.show()
+
+        batch_size = len(sample_batch['rgb'])
+        for k in sample_batch.keys():
+            show_row(sample_batch[k], batch_size, k)
+
+
+    with torch.no_grad():
+        model.to('cpu')
+        model.eval()
+        _, batch = next(enumerate(dataloader))
+        mask_pred = model(batch['rgb'])
+        mask_pred = F.softmax(mask_pred, dim=1)
+        mask_pred = torch.argmax(mask_pred, dim=1)
+
+        batch['prediction'] = mask_pred
+
+        show_batch(batch)
+
+
+.. image:: ../images/semantic-segmentation-results.png
+
+
+On the top row we see the input to the model which is the batch of RGB images. On the middle row is the grouth truth masks. On the bottom row are the masks that the model predicted.
+
 
 
 .. _Replica dataset: https://github.com/facebookresearch/Replica-Dataset
@@ -424,10 +464,26 @@ Placeholder
 =================================
 
 Each instance of an ImageExtractor has a pose extractor (an instance of PoseExtractor). The pose extractor defines how camera poses are programmatically determined so that the image
-extractor knows how to manipulate the camera position and angle to extract an image from habitat
-sim. Uses can write their over subclass of PoseExtractor to define custom ways of getting these camera poses. All custom pose extractors must inherit from the PoseExtractor abstract class and
+extractor knows how to manipulate the camera position and angle to extract an image from Habitat
+Sim. Users can write their own subclass of PoseExtractor to define custom ways of getting these camera poses. All custom pose extractors must inherit from the PoseExtractor abstract class and
 override the extract_poses method. Further, the user must register the pose extractor using
-habitat_sim.registry (i.e. adding the @registry.register_pose_extractor(name) decorator). This allows you to pass the name of your custom pose extractor to the ImageExtractor constructor. For more detailed examples of using the habitat registry, see `this code`_.
+habitat_sim.registry (i.e. adding the @registry.register_pose_extractor(name) decorator). This allows you to pass the name of your custom pose extractor to the ImageExtractor constructor. For more detailed examples of using the Habitat registry, see `this code`_.
+
+`Default Behavior`_
+-------------------
+
+The default behavior is reliant on something called the topdown view of a scene, which is just a two-dimensional birds-eye representation of the scene. The topdown view is a two-dimensional array of 1s and 0s where 1 means that pixel is "navigable" in the scene (i.e. an agent can walk on top of that point) and 0 means that pixel is "unnavigable".
+
+The default pose extractor is the ClosestPointExtractor, which behaves as follows. For each camera poisition, the pose extractor will aim the camera pose at the closest point that is "unnvaigable". For example, if the camera position is right next to a chair in the scene, and that chair is the closest point that an agent in the environment cannot walk on top of, the camera will point at the chair.
+
+The ClosestPointExtractor will use the topdown view of the scene, which is given to it in its constructor, and create a grid of evenly spaced points. Each of those points will then yield a closest point as described above, which is used to define a camera angle, and subsequently a camera pose.
+
+
+.. image:: ../images/apt0-topdown.png
+
+
+With this method, the total number of images extracted is low compared to the PanoramaExtractor, which is another type of extractor we provide. The PanoramaExtractor has no notion of closest point, rather it extracts multiple camera poses from each camera position by turning all the way around.
+
 
 `Overriding required methods`_
 ------------------------------
@@ -489,7 +545,7 @@ is an example of a pose extractor that simply chooses some random navigable poin
 .. image:: ../images/random-images.png
 
 
-In the above code, we registered a new pose extractor with habitat sim and then used the name of
+In the above code, we registered a new pose extractor with Habitat Sim and then used the name of
 the new pose extractor in the ImageExtractor constructor.
 
 
