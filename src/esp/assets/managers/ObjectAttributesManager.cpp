@@ -73,25 +73,32 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
   primObjectAttributes->setScale({0.1, 0.1, 0.1});
 
   // set render mesh handle
-  primObjectAttributes->setRenderAssetHandle(primAttrTemplateHandle);
+  int primType = static_cast<int>(AssetType::PRIMITIVE);
+  primObjectAttributes->setRenderAssetType(primType);
   // set collision mesh/primitive handle and default for primitives to not use
   // mesh collisions
-  primObjectAttributes->setCollisionAssetHandle(primAttrTemplateHandle);
+  primObjectAttributes->setCollisionAssetType(primType);
   primObjectAttributes->setUseMeshCollision(false);
   // NOTE to eventually use mesh collisions with primitive objects, a
   // collision primitive mesh needs to be configured and set in MeshMetaData
   // and CollisionMesh
 
-  if (nullptr != primObjectAttributes && registerTemplate) {
-    int attrID = this->registerAttributesTemplate(primObjectAttributes,
-                                                  primAttrTemplateHandle);
-    if (attrID == ID_UNDEFINED) {
-      // some error occurred
-      return nullptr;
-    }
-  }
-  return primObjectAttributes;
+  return this->postCreateRegister(primObjectAttributes, registerTemplate);
 }  // ObjectAttributesManager::createPrimBasedAttributesTemplate
+
+void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
+  this->defaultTemplateNames_.clear();
+  // build default primtive object templates corresponding to given default
+  // asset templates
+  const std::vector<std::string> lib =
+      assetAttributesMgr_->getDefaultTemplateHandles();
+  for (std::string primAssetHandle : lib) {
+    auto tmplt = createPrimBasedAttributesTemplate(primAssetHandle, true);
+    // save handles in list of defaults, so they are not removed
+    std::string tmpltHandle = tmplt->getHandle();
+    this->defaultTemplateNames_.push_back(tmpltHandle);
+  }
+}  // ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates
 
 PhysicsObjectAttributes::ptr
 ObjectAttributesManager::createFileBasedAttributesTemplate(
@@ -145,15 +152,7 @@ ObjectAttributesManager::createFileBasedAttributesTemplate(
   // if com is set from json, don't compute from shape, and vice versa
   objAttributes->setComputeCOMFromShape(!comIsSet);
 
-  if (nullptr != objAttributes && registerTemplate) {
-    int attrID =
-        this->registerAttributesTemplate(objAttributes, objPhysConfigFilename);
-    // some error occurred
-    if (attrID == ID_UNDEFINED) {
-      return nullptr;
-    }
-  }
-  return objAttributes;
+  return this->postCreateRegister(objAttributes, registerTemplate);
 }  // ObjectAttributesManager::createFileBasedAttributesTemplate
 
 PhysicsObjectAttributes::ptr
@@ -163,33 +162,47 @@ ObjectAttributesManager::createDefaultAttributesTemplate(
   // construct a PhysicsObjectAttributes
   PhysicsObjectAttributes::ptr objAttributes =
       initNewAttribsInternal(PhysicsObjectAttributes::create(templateName));
-  // set render mesh handle as a default
-  objAttributes->setRenderAssetHandle(templateName);
-  if (registerTemplate) {
-    int attrID = this->registerAttributesTemplate(objAttributes, templateName);
-    if (attrID == ID_UNDEFINED) {
-      // some error occurred
-      return nullptr;
-    }
-  }
-  return objAttributes;
+
+  return this->postCreateRegister(objAttributes, registerTemplate);
 }  // ObjectAttributesManager::createEmptyAttributesTemplate
 
 PhysicsObjectAttributes::ptr ObjectAttributesManager::initNewAttribsInternal(
     PhysicsObjectAttributes::ptr newAttributes) {
   this->setFileDirectoryFromHandle(newAttributes);
-  using Corrade::Utility::String::endsWith;
-  const std::string objFileName = newAttributes->getHandle();
-  // set default origin and orientation values based on file name
-
-  newAttributes->setOrientUp({0, 1, 0});
-  newAttributes->setOrientFront({0, 0, -1});
-
-  newAttributes->setRenderAssetType(static_cast<int>(AssetType::UNKNOWN));
-  newAttributes->setCollisionAssetType(static_cast<int>(AssetType::UNKNOWN));
+  const std::string attributesHandle = newAttributes->getHandle();
+  // set default render asset handle
+  newAttributes->setRenderAssetHandle(attributesHandle);
+  // set default collision asset handle
+  newAttributes->setCollisionAssetHandle(attributesHandle);
+  // set defaults for passed render asset handles
+  setDefaultFileNameBasedAttributes(
+      newAttributes, true, newAttributes->getRenderAssetHandle(),
+      std::bind(&AbstractPhysicsAttributes::setRenderAssetType, newAttributes,
+                _1));
+  // set defaults for passed collision asset handles
+  setDefaultFileNameBasedAttributes(
+      newAttributes, false, newAttributes->getCollisionAssetHandle(),
+      std::bind(&AbstractPhysicsAttributes::setCollisionAssetType,
+                newAttributes, _1));
 
   return newAttributes;
 }  // ObjectAttributesManager::initNewAttribsInternal
+
+// Eventually support explicitly configuring desirable defaults/file-name
+// base settings.
+void ObjectAttributesManager::setDefaultFileNameBasedAttributes(
+    PhysicsObjectAttributes::ptr attributes,
+    bool setFrame,
+    const std::string&,
+    std::function<void(int)> meshTypeSetter) {
+  // TODO : support future mesh-name specific type setting?
+  meshTypeSetter(static_cast<int>(AssetType::UNKNOWN));
+
+  if (setFrame) {
+    attributes->setOrientUp({0, 1, 0});
+    attributes->setOrientFront({0, 0, -1});
+  }
+}  // SceneAttributesManager::setDefaultFileNameBasedAttributes
 
 int ObjectAttributesManager::registerAttributesTemplateFinalize(
     PhysicsObjectAttributes::ptr objectTemplate,
@@ -272,7 +285,8 @@ int ObjectAttributesManager::registerAttributesTemplateFinalize(
 }  // ObjectAttributesManager::registerAttributesTemplateFinalize
 
 std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
-    const std::vector<std::string>& tmpltFilenames) {
+    const std::vector<std::string>& tmpltFilenames,
+    bool saveAsDefaults) {
   std::vector<int> resIDs(tmpltFilenames.size(), ID_UNDEFINED);
   for (int i = 0; i < tmpltFilenames.size(); ++i) {
     auto objPhysPropertiesFilename = tmpltFilenames[i];
@@ -280,6 +294,11 @@ std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
               << objPhysPropertiesFilename;
     auto tmplt =
         createFileBasedAttributesTemplate(objPhysPropertiesFilename, true);
+
+    // save handles in list of defaults, so they are not removed
+    std::string tmpltHandle = tmplt->getHandle();
+    this->defaultTemplateNames_.push_back(tmpltHandle);
+
     resIDs[i] = tmplt->getID();
   }
   LOG(INFO) << "Loaded file-based object templates: "
@@ -288,7 +307,8 @@ std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
 }  // ObjectAttributesManager::loadAllObjectTemplates
 
 std::vector<int> ObjectAttributesManager::loadObjectConfigs(
-    const std::string& path) {
+    const std::string& path,
+    bool saveAsDefaults) {
   std::vector<std::string> paths;
   std::vector<int> templateIndices;
   namespace Directory = Cr::Utility::Directory;
@@ -321,7 +341,7 @@ std::vector<int> ObjectAttributesManager::loadObjectConfigs(
     }
   }
   // build templates from aggregated paths
-  templateIndices = loadAllFileBasedTemplates(paths);
+  templateIndices = loadAllFileBasedTemplates(paths, saveAsDefaults);
 
   return templateIndices;
 }  // ObjectAttributesManager::buildObjectConfigPaths

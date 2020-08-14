@@ -52,6 +52,8 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
 
   virtual void setLightSetup(const Magnum::ResourceKey& lightSetup){};
 
+  Magnum::GL::Mesh& getMesh() { return mesh_; }
+
  protected:
   /**
    * @brief Draw the object using given camera

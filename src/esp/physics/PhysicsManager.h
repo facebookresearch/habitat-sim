@@ -896,7 +896,7 @@ class PhysicsManager {
    * @return The raycast results sorted by distance.
    */
   virtual RaycastResults castRay(const esp::geo::Ray& ray,
-                                 double maxDistance = 100.0) {
+                                 CORRADE_UNUSED double maxDistance = 100.0) {
     RaycastResults results;
     results.ray = ray;
     return results;

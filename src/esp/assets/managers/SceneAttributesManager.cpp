@@ -18,15 +18,6 @@ namespace assets {
 
 namespace managers {
 
-const std::map<std::string, esp::assets::AssetType>
-    SceneAttributesManager::AssetTypeNamesMap = {
-        {"mp3d", AssetType::MP3D_MESH},
-        {"navmesh", AssetType::NAVMESH},
-        {"ptex", AssetType::FRL_PTEX_MESH},
-        {"semantic", AssetType::INSTANCE_MESH},
-        {"suncg", AssetType::SUNCG_SCENE},
-};
-
 SceneAttributesManager::SceneAttributesManager(
     assets::ResourceManager& resourceManager,
     ObjectAttributesManager::ptr objectAttributesMgr,
@@ -210,24 +201,17 @@ SceneAttributesManager::createPrimBasedAttributesTemplate(
   sceneAttributes->setMargin(0.0);
 
   // set render mesh handle
-  sceneAttributes->setRenderAssetHandle(primAssetHandle);
+  int primType = static_cast<int>(AssetType::PRIMITIVE);
+  sceneAttributes->setRenderAssetType(primType);
   // set collision mesh/primitive handle and default for primitives to not use
   // mesh collisions
-  sceneAttributes->setCollisionAssetHandle(primAssetHandle);
+  sceneAttributes->setCollisionAssetType(primType);
   sceneAttributes->setUseMeshCollision(false);
   // NOTE to eventually use mesh collisions with primitive objects, a
   // collision primitive mesh needs to be configured and set in MeshMetaData
   // and CollisionMesh
 
-  if (nullptr != sceneAttributes && registerTemplate) {
-    int attrID =
-        this->registerAttributesTemplate(sceneAttributes, primAssetHandle);
-    if (attrID == ID_UNDEFINED) {
-      // some error occurred
-      return nullptr;
-    }
-  }
-  return sceneAttributes;
+  return this->postCreateRegister(sceneAttributes, registerTemplate);
 }  // SceneAttributesManager::createPrimBasedAttributesTemplate
 
 PhysicsSceneAttributes::ptr
@@ -238,23 +222,13 @@ SceneAttributesManager::createBackCompatAttributesTemplate(
   PhysicsSceneAttributes::ptr sceneAttributes =
       initNewAttribsInternal(PhysicsSceneAttributes::create(sceneFilename));
 
-  if (registerTemplate) {
-    int attrID =
-        this->registerAttributesTemplate(sceneAttributes, sceneFilename);
-    if (attrID == ID_UNDEFINED) {
-      // some error occurred
-      return nullptr;
-    }
-  }
-
-  return sceneAttributes;
+  return this->postCreateRegister(sceneAttributes, registerTemplate);
 }  // SceneAttributesManager::createBackCompatAttributesTemplate
 
 PhysicsSceneAttributes::ptr SceneAttributesManager::initNewAttribsInternal(
     PhysicsSceneAttributes::ptr newAttributes) {
   this->setFileDirectoryFromHandle(newAttributes);
 
-  using Corrade::Utility::String::endsWith;
   std::string sceneFilename = newAttributes->getHandle();
 
   // set defaults that config files or other constructive processes might
@@ -279,7 +253,7 @@ PhysicsSceneAttributes::ptr SceneAttributesManager::initNewAttribsInternal(
   if (Corrade::Utility::Directory::exists(navmeshFilename)) {
     newAttributes->setNavmeshAssetHandle(navmeshFilename);
   }
-
+  // Build default semantic descriptor file name
   std::string houseFilename = io::changeExtension(sceneFilename, ".house");
   if (cfgFilepaths_.count("house")) {
     houseFilename = cfgFilepaths_.at("house");
@@ -288,42 +262,29 @@ PhysicsSceneAttributes::ptr SceneAttributesManager::initNewAttribsInternal(
     houseFilename = io::changeExtension(sceneFilename, ".scn");
   }
   newAttributes->setHouseFilename(houseFilename);
-
-  if (Corrade::Utility::Directory::exists(houseFilename)) {
-    const std::string semanticMeshFilename =
-        io::removeExtension(houseFilename) + "_semantic.ply";
-    if (Corrade::Utility::Directory::exists(houseFilename)) {
-      newAttributes->setSemanticAssetHandle(semanticMeshFilename);
-    }
-  }
+  // Build default semantic mesh file name
+  const std::string semanticMeshFilename =
+      io::removeExtension(houseFilename) + "_semantic.ply";
+  newAttributes->setSemanticAssetHandle(semanticMeshFilename);
 
   // set default origin and orientation values based on file name
   // from AssetInfo::fromPath
-  newAttributes->setOrientUp({0, 1, 0});
-  newAttributes->setOrientFront({0, 0, -1});
-  if (endsWith(sceneFilename, "_semantic.ply")) {
-    newAttributes->setRenderAssetType(
-        static_cast<int>(AssetType::INSTANCE_MESH));
-  } else if (endsWith(sceneFilename, "mesh.ply")) {
-    newAttributes->setRenderAssetType(
-        static_cast<int>(AssetType::FRL_PTEX_MESH));
-    newAttributes->setOrientUp({0, 0, 1});
-    newAttributes->setOrientFront({0, 1, 0});
-  } else if (endsWith(sceneFilename, "house.json")) {
-    newAttributes->setRenderAssetType(static_cast<int>(AssetType::SUNCG_SCENE));
-  } else if (endsWith(sceneFilename, ".glb")) {
-    // assumes MP3D glb with gravity = -Z
-    newAttributes->setRenderAssetType(static_cast<int>(AssetType::MP3D_MESH));
-    // Create a coordinate for the mesh by rotating the default ESP
-    // coordinate frame to -Z gravity
-    newAttributes->setOrientUp({0, 0, 1});
-    newAttributes->setOrientFront({0, 1, 0});
-  } else {
-    newAttributes->setRenderAssetType(static_cast<int>(AssetType::UNKNOWN));
-  }
-  newAttributes->setCollisionAssetType(static_cast<int>(AssetType::UNKNOWN));
-  newAttributes->setSemanticAssetType(
-      static_cast<int>(AssetType::INSTANCE_MESH));
+  // set defaults for passed render asset handles
+  setDefaultFileNameBasedAttributes(
+      newAttributes, true, newAttributes->getRenderAssetHandle(),
+      std::bind(&AbstractPhysicsAttributes::setRenderAssetType, newAttributes,
+                _1));
+  // set defaults for passed collision asset handles
+  setDefaultFileNameBasedAttributes(
+      newAttributes, false, newAttributes->getCollisionAssetHandle(),
+      std::bind(&AbstractPhysicsAttributes::setCollisionAssetType,
+                newAttributes, _1));
+
+  // set defaults for passed semantic asset handles
+  setDefaultFileNameBasedAttributes(
+      newAttributes, false, newAttributes->getSemanticAssetHandle(),
+      std::bind(&PhysicsSceneAttributes::setSemanticAssetType, newAttributes,
+                _1));
 
   // set default physical quantities specified in physics manager attributes
   if (physicsAttributesManager_->getTemplateLibHasHandle(
@@ -338,6 +299,45 @@ PhysicsSceneAttributes::ptr SceneAttributesManager::initNewAttribsInternal(
   }
   return newAttributes;
 }  // SceneAttributesManager::initNewAttribsInternal
+
+void SceneAttributesManager::setDefaultFileNameBasedAttributes(
+    PhysicsSceneAttributes::ptr attributes,
+    bool setFrame,
+    const std::string& fileName,
+    std::function<void(int)> meshTypeSetter) {
+  // TODO : support future mesh-name specific type setting?
+  using Corrade::Utility::String::endsWith;
+
+  Magnum::Vector3 up, up1{0, 1, 0}, up2{0, 0, 1};
+  Magnum::Vector3 fwd, fwd1{0, 0, -1}, fwd2{0, 1, 0};
+
+  // set default origin and orientation values based on file name
+  // from AssetInfo::fromPath
+  up = up1;
+  fwd = fwd1;
+  if (endsWith(fileName, "_semantic.ply")) {
+    meshTypeSetter(static_cast<int>(AssetType::INSTANCE_MESH));
+  } else if (endsWith(fileName, "mesh.ply")) {
+    meshTypeSetter(static_cast<int>(AssetType::FRL_PTEX_MESH));
+    up = up2;
+    fwd = fwd2;
+  } else if (endsWith(fileName, "house.json")) {
+    meshTypeSetter(static_cast<int>(AssetType::SUNCG_SCENE));
+  } else if (endsWith(fileName, ".glb")) {
+    // assumes MP3D glb with gravity = -Z
+    meshTypeSetter(static_cast<int>(AssetType::MP3D_MESH));
+    // Create a coordinate for the mesh by rotating the default ESP
+    // coordinate frame to -Z gravity
+    up = up2;
+    fwd = fwd2;
+  } else {
+    meshTypeSetter(static_cast<int>(AssetType::UNKNOWN));
+  }
+  if (setFrame) {
+    attributes->setOrientUp(up);
+    attributes->setOrientFront(fwd);
+  }
+}  // SceneAttributesManager::setDefaultFileNameBasedAttributes
 
 PhysicsSceneAttributes::ptr
 SceneAttributesManager::createFileBasedAttributesTemplate(
@@ -375,36 +375,36 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
 
   // populate specified semantic file name if specified in json - defaults
   // are overridden only if specified in json.
-  std::string semanticFName = "";
+
   std::string navmeshFName = "";
   std::string houseFName = "";
   std::string lightSetup = "";
-  if (io::jsonIntoVal<std::string>(jsonConfig, "semantic mesh",
-                                   semanticFName)) {
-    semanticFName =
-        Cr::Utility::Directory::join(sceneLocFileDir, semanticFName);
-  }
-  if (semanticFName != "") {
+
+  // populate semantic mesh type if present
+  std::string semanticFName = sceneAttributes->getSemanticAssetHandle();
+  if (this->setJSONAssetHandleAndType(
+          sceneAttributes, jsonConfig, "semantic mesh type", "semantic mesh",
+          semanticFName,
+          std::bind(&PhysicsSceneAttributes::setSemanticAssetType,
+                    sceneAttributes, _1))) {
     // if "semantic mesh" is specified in scene json to non-empty value, set
     // value (override default).
     sceneAttributes->setSemanticAssetHandle(semanticFName);
+    // TODO eventually remove this, but currently semantic mesh must be instance
+    sceneAttributes->setSemanticAssetType(
+        static_cast<int>(AssetType::INSTANCE_MESH));
   }
 
   if (io::jsonIntoVal<std::string>(jsonConfig, "nav mesh", navmeshFName)) {
     navmeshFName = Cr::Utility::Directory::join(sceneLocFileDir, navmeshFName);
-  }
-  if (navmeshFName != "") {
-    // if "nav mesh" is specified in scene json to non-empty value, set value
-    // (override default).
+    // if "nav mesh" is specified in scene json set value (override default).
     sceneAttributes->setNavmeshAssetHandle(navmeshFName);
   }
 
   if (io::jsonIntoVal<std::string>(jsonConfig, "house filename", houseFName)) {
     houseFName = Cr::Utility::Directory::join(sceneLocFileDir, houseFName);
-  }
-  if (houseFName != "") {
-    // if "house filename" is specified in scene json to non-empty value, set
-    // value (override default).
+    // if "house filename" is specified in scene json, set value (override
+    // default).
     sceneAttributes->setHouseFilename(houseFName);
   }
 
@@ -414,52 +414,31 @@ SceneAttributesManager::createFileBasedAttributesTemplate(
     sceneAttributes->setLightSetup(lightSetup);
   }
 
-  // populate mesh types if present
-  int val = convertJsonStringToAssetType(jsonConfig, "render mesh type");
-  if (val != -1) {  // if not found do not override current value
-    sceneAttributes->setRenderAssetType(val);
-  }
-  val = convertJsonStringToAssetType(jsonConfig, "collision mesh type");
-  if (val != -1) {  // if not found do not override current value
-    sceneAttributes->setCollisionAssetType(val);
-  }
-  val = convertJsonStringToAssetType(jsonConfig, "semantic mesh type type");
-  if (val != -1) {  // if not found do not override current value
-    sceneAttributes->setSemanticAssetType(val);
-  }
+  // load the rigid object library metadata (no physics init yet...)
+  if (jsonConfig.HasMember("rigid object paths") &&
+      jsonConfig["rigid object paths"].IsArray()) {
+    std::string configDirectory =
+        sceneFilename.substr(0, sceneFilename.find_last_of("/"));
 
-  if (registerTemplate) {
-    int attrID =
-        this->registerAttributesTemplate(sceneAttributes, sceneFilename);
-    if (attrID == ID_UNDEFINED) {
-      // some error occurred
-      return nullptr;
+    const auto& paths = jsonConfig["rigid object paths"];
+    for (rapidjson::SizeType i = 0; i < paths.Size(); i++) {
+      if (!paths[i].IsString()) {
+        LOG(ERROR)
+            << "SceneAttributesManager::createAttributesTemplate "
+               ":Invalid value in scene config 'rigid object paths'- array "
+            << i;
+        continue;
+      }
+
+      std::string absolutePath =
+          Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
+      // load all object templates available as configs in absolutePath
+      objectAttributesMgr_->loadObjectConfigs(absolutePath, true);
     }
-  }
+  }  // if load rigid object library metadata
 
-  return sceneAttributes;
-}  // SceneAttributesManager::createBackCompatAttributesTemplate
-
-int SceneAttributesManager::convertJsonStringToAssetType(
-    io::JsonDocument& jsonDoc,
-    const char* jsonTag) {
-  std::string tmpVal = "";
-  io::jsonIntoVal<std::string>(jsonDoc, jsonTag, tmpVal);
-  if (tmpVal.length() != 0) {
-    std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
-    if (AssetTypeNamesMap.count(tmpVal)) {
-      return static_cast<int>(AssetTypeNamesMap.at(tmpVal));
-    } else {
-      LOG(WARNING) << "SceneAttributesManager::convertJsonStringToAssetType : "
-                      "Value in json : "
-                   << tmpVal
-                   << " does not map to a valid AssetType value, so defaulting "
-                      "to AssetType::UNKNOWN.";
-      return static_cast<int>(AssetType::UNKNOWN);
-    }
-  }
-  return -1;
-}  // SceneAttributesManager::convertJsonStringToAssetType
+  return this->postCreateRegister(sceneAttributes, registerTemplate);
+}  // SceneAttributesManager::createFileBasedAttributesTemplate
 
 }  // namespace managers
 }  // namespace assets

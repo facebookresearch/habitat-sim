@@ -29,6 +29,10 @@ class RenderCamera : public MagnumCamera {
      * scene::SceneNodeType::OBJECT.
      */
     ObjectsOnly = 1 << 1,
+    /**
+     * Render the drawables for object (drawable) picking purpose
+     */
+    ObjectPicking = 1 << 2,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
@@ -96,6 +100,10 @@ class RenderCamera : public MagnumCamera {
                     Magnum::Matrix4>>& drawableTransforms);
 
   /**
+   *@brief if the rendering pass is for picking the object (drawable)
+   */
+  bool isRenderingForObjectPicking() { return renderingForObjectPicking_; }
+  /**
    * @brief Unproject a 2D viewport point to a 3D ray with origin at camera
    * position.
    *
@@ -107,6 +115,7 @@ class RenderCamera : public MagnumCamera {
   esp::geo::Ray unproject(const Mn::Vector2i& viewportPosition);
 
  protected:
+  bool renderingForObjectPicking_ = false;
   ESP_SMART_POINTERS(RenderCamera)
 };
 

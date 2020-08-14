@@ -48,15 +48,7 @@ PhysicsAttributesManager::createDefaultAttributesTemplate(
   PhysicsManagerAttributes::ptr physicsManagerAttributes =
       initNewAttribsInternal(PhysicsManagerAttributes::create(physicsFilename));
 
-  if (registerTemplate) {
-    int attrID = this->registerAttributesTemplate(physicsManagerAttributes,
-                                                  physicsFilename);
-    if (attrID == ID_UNDEFINED) {
-      // some error occurred
-      return nullptr;
-    }
-  }
-  return physicsManagerAttributes;
+  return this->postCreateRegister(physicsManagerAttributes, registerTemplate);
 }  // PhysicsAttributesManager::createDefaultAttributesTemplate
 
 PhysicsManagerAttributes::ptr
@@ -126,20 +118,11 @@ PhysicsAttributesManager::createFileBasedAttributesTemplate(
       std::string absolutePath =
           Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
       // load all object templates available as configs in absolutePath
-      objectAttributesMgr_->loadObjectConfigs(absolutePath);
+      objectAttributesMgr_->loadObjectConfigs(absolutePath, true);
     }
   }  // if load rigid object library metadata
 
-  if (registerTemplate) {
-    int attrID = this->registerAttributesTemplate(physicsManagerAttributes,
-                                                  physicsFilename);
-    if (attrID == ID_UNDEFINED) {
-      // some error occurred
-      return nullptr;
-    }
-  }
-
-  return physicsManagerAttributes;
+  return this->postCreateRegister(physicsManagerAttributes, registerTemplate);
 }  // PhysicsAttributesManager::createFileBasedAttributesTemplate
 
 }  // namespace managers

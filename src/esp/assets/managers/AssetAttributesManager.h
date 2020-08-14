@@ -146,15 +146,15 @@ class AssetAttributesManager
   AbstractPrimitiveAttributes::ptr createAttributesTemplate(
       PrimObjTypes primObjType,
       bool registerTemplate = true) {
-    auto primAssetAttributes = buildPrimAttributes(primObjType);
-    if (nullptr != primAssetAttributes && registerTemplate) {
-      int attrID = this->registerAttributesTemplate(primAssetAttributes, "");
-      if (attrID == ID_UNDEFINED) {
-        // some error occurred
-        return nullptr;
-      }
+    if (primObjType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
+      LOG(ERROR)
+          << "AssetAttributesManager::createAttributesTemplate : Illegal "
+             "primtitive type name PrimObjTypes::END_PRIM_OBJ_TYPES. "
+             "Aborting.";
+      return nullptr;
     }
-    return primAssetAttributes;
+    return createAttributesTemplate(PrimitiveNames3DMap.at(primObjType),
+                                    registerTemplate);
   }  // AssetAttributesManager::createAttributesTemplate
 
   /**
@@ -378,6 +378,15 @@ class AssetAttributesManager
 
  protected:
   /**
+   * @brief Not used by AbstractPrimitiveAttributes.
+   */
+  void setDefaultFileNameBasedAttributes(
+      CORRADE_UNUSED AbstractPrimitiveAttributes::ptr attributes,
+      CORRADE_UNUSED bool setFrame,
+      CORRADE_UNUSED const std::string& meshHandle,
+      CORRADE_UNUSED std::function<void(int)> meshTypeSetter) override {}
+
+  /**
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in
@@ -425,22 +434,6 @@ class AssetAttributesManager
       const std::string& ignored = "") override;
 
   /**
-   * @brief Whether template described by passed handle is read only, or can be
-   * deleted. Default primitive asset templates should not be removed.
-   * @param templateHandle the handle to the template to verify removability.
-   * Assumes template exists.
-   * @return Whether the template is read-only or not
-   */
-  bool isTemplateReadOnly(const std::string& templateHandle) override {
-    for (auto handle : defaultTemplateNames_) {
-      if (handle.compare(templateHandle) == 0) {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  /**
    * @brief Used Internally.  Configure newly-created attributes with any
    * default values, before any specific values are set.
    *
@@ -467,40 +460,6 @@ class AssetAttributesManager
     }
     return initNewAttribsInternal(
         (*this.*primTypeConstructorMap_[primClassName])());
-  }  // AssetAttributeManager::buildPrimAttributes
-
-  /**
-   * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
-   * with passed enum value, which maps to class name via @ref
-   * PrimitiveNames3DMap
-   */
-  AbstractPrimitiveAttributes::ptr buildPrimAttributes(PrimObjTypes primType) {
-    if (primType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
-      LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : Illegal "
-                    "primtitive type name PrimObjTypes::END_PRIM_OBJ_TYPES. "
-                    "Aborting.";
-      return nullptr;
-    }
-    return initNewAttribsInternal(
-        (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(primType)])());
-  }  // AssetAttributeManager::buildPrimAttributes
-
-  /**
-   * @brief Build an @ref AbstractPrimtiveAttributes object of type associated
-   * with passed enum value, which maps to class name via @ref
-   * PrimitiveNames3DMap
-   */
-  AbstractPrimitiveAttributes::ptr buildPrimAttributes(int primTypeVal) {
-    if ((primTypeVal < 0) ||
-        (primTypeVal > static_cast<int>(PrimObjTypes::END_PRIM_OBJ_TYPES))) {
-      LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : Unknown "
-                    "PrimObjTypes value requested :"
-                 << primTypeVal << ". Aborting";
-      return nullptr;
-    }
-    return initNewAttribsInternal(
-        (*this.*primTypeConstructorMap_[PrimitiveNames3DMap.at(
-                    static_cast<PrimObjTypes>(primTypeVal))])());
   }  // AssetAttributeManager::buildPrimAttributes
 
   /**
@@ -565,11 +524,6 @@ class AssetAttributesManager
    */
   Map_Of_PrimTypeCtors primTypeConstructorMap_;
 
-  /**
-   * @brief vector holding string template handles of all default primitive
-   * asset templates, to make sure they are never deleted.
-   */
-  std::vector<std::string> defaultTemplateNames_;
   /**
    * @brief Map relating primitive class name to default attributes template
    * handle. There should always be a template for each of these handles.

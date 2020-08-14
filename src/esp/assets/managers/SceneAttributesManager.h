@@ -18,13 +18,6 @@ namespace managers {
 class SceneAttributesManager
     : public AttributesManager<PhysicsSceneAttributes::ptr> {
  public:
-  /**
-   * @brief Constant Map holding names of all Magnum 3D primitive classes
-   * supported, keyed by @ref PrimObjTypes enum entry. Note final entry is not
-   * a valid primitive.
-   */
-  static const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
-
   SceneAttributesManager(
       assets::ResourceManager& resourceManager,
       ObjectAttributesManager::ptr objectAttributesMgr,
@@ -124,6 +117,25 @@ class SceneAttributesManager
 
  protected:
   /**
+   * @brief Perform file-name-based attributes initialization. This is to
+   * take the place of the AssetInfo::fromPath functionality, and is only
+   * intended to provide default values and other help if certain mistakes
+   * are made by the user, such as specifying an asset handle in json but not
+   * specifying the asset type corresponding to that handle.  These settings
+   * should not restrict anything, only provide defaults.
+   *
+   * @param attributes The AbstractPhysicsAttributes object to be configured
+   * @param setFrame whether the frame should be set or not (only for render
+   * assets in scenes)
+   * @param fileName Mesh Handle to check.
+   * @param meshTypeSetter Setter for mesh type.
+   */
+  void setDefaultFileNameBasedAttributes(
+      PhysicsSceneAttributes::ptr attributes,
+      bool setFrame,
+      const std::string& meshHandle,
+      std::function<void(int)> meshTypeSetter) override;
+  /**
    * @brief Used Internally.  Configure newly-created attributes with any
    * default values, before any specific values are set.
    *
@@ -172,20 +184,6 @@ class SceneAttributesManager
       bool registerTemplate = true);
 
   /**
-   * @brief Convert a json string value to its corresponding AssetType, cast to
-   * int, based on mappings in @ref SceneAttributesManager::AssetTypeNamesMap.
-   * Returns an int cast of the @ref esp::AssetType enum value if found and
-   * understood, 0 (AssetType::UNKNOWN) if found but not understood, and -1 if
-   * tag is not found in json.
-   *
-   * @param jsonDoc json document to query
-   * @param jsonTag the tag containing the data
-   * @return the appropriate value.
-   */
-  int convertJsonStringToAssetType(io::JsonDocument& jsonDoc,
-                                   const char* jsonTag);
-
-  /**
    * @brief Add a @ref std::shared_ptr<attributesType> object to the
    * @ref templateLibrary_.  Verify that render and collision handles have been
    * set properly.  We are doing this since these values can be modified by the
@@ -201,12 +199,6 @@ class SceneAttributesManager
   int registerAttributesTemplateFinalize(
       PhysicsSceneAttributes::ptr sceneAttributesTemplate,
       const std::string& sceneAttributesHandle) override;
-
-  /**
-   * @brief Whether template described by passed handle is read only, or can be
-   * deleted. All SceneAttributes templates are removable, by default
-   */
-  bool isTemplateReadOnly(const std::string&) override { return false; };
 
   /**
    * @brief Any scene-attributes-specific resetting that needs to happen on

@@ -151,7 +151,7 @@ To run the above benchmarks on your machine, see instructions in the [examples](
 
 ### Docker Image
 
-We provide a pre-built docker container for habitat-api and habitat-sim, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-api#docker-setup).
+We provide a pre-built docker container for habitat-lab and habitat-sim, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
 
 ### From Source
 
@@ -231,7 +231,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    Note3: for active development in Habitat, you might find `./build.sh` instead of `python setup.py install` more useful.
 
 
-1. [Only if using `build.sh`] For use with [Habitat-API](https://github.com/facebookresearch/habitat-api) and your own python code, add habitat-sim to your `PYTHONPATH`. For example modify your `.bashrc` (or `.bash_profile` in Mac OS X) file by adding the line:
+1. [Only if using `build.sh`] For use with [Habitat Lab](https://github.com/facebookresearch/habitat-lab) and your own python code, add habitat-sim to your `PYTHONPATH`. For example modify your `.bashrc` (or `.bash_profile` in Mac OS X) file by adding the line:
    ```bash
    export PYTHONPATH=$PYTHONPATH:/path/to/habitat-sim/
    ```
@@ -281,7 +281,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
   `640 x 480, total time: 3.208 sec. FPS: 311.7`.
   Note that the test scenes do not provide semantic meshes.
   If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)).
-  We have also provided an [example demo](https://aihabitat.org/docs/habitat-api/habitat-api-demo.html) for reference.
+  We have also provided an [example demo](https://aihabitat.org/docs/habitat-lab/habitat-lab-demo.html) for reference.
 
     To run a physics example in python (after building with "Physics simulation via Bullet"):
     ```bash
