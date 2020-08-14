@@ -7,15 +7,22 @@
 
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/assets/managers/AssetAttributesManager.h"
+#include "esp/assets/managers/ObjectAttributesManager.h"
+#include "esp/assets/managers/PhysicsAttributesManager.h"
+#include "esp/assets/managers/SceneAttributesManager.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/PhysicsManager.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/scene/SceneConfiguration.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
+
+namespace AttrMgrs = esp::assets::managers;
 
 namespace esp {
 namespace nav {
@@ -46,12 +53,16 @@ struct SimulatorConfiguration {
   bool allowSliding = true;
   // enable or disable the frustum culling
   bool frustumCulling = true;
+  /**
+   * @brief This flags specifies whether or not dynamics is supported by the
+   * simulation, if a suitable library (i.e. Bullet) has been installed.
+   */
   bool enablePhysics = false;
   bool loadSemanticMesh = true;
   std::string physicsConfigFile =
-      "./data/default.phys_scene_config.json";  // should we instead link a
-                                                // PhysicsManagerConfiguration
-                                                // object here?
+      ESP_DEFAULT_PHYS_SCENE_CONFIG_REL_PATH;  // should we instead link a
+                                               // PhysicsManagerConfiguration
+                                               // object here?
   /** @brief Light setup key for scene */
   std::string sceneLightSetup = assets::ResourceManager::NO_LIGHT_KEY;
 
@@ -82,11 +93,13 @@ class Simulator {
 
   virtual void reset();
 
+ public:
   virtual void seed(uint32_t newSeed);
 
-  std::shared_ptr<gfx::Renderer> getRenderer();
-  std::shared_ptr<physics::PhysicsManager> getPhysicsManager();
-  std::shared_ptr<scene::SemanticScene> getSemanticScene();
+  std::shared_ptr<gfx::Renderer> getRenderer() { return renderer_; }
+  std::shared_ptr<scene::SemanticScene> getSemanticScene() {
+    return semanticScene_;
+  }
 
   scene::SceneGraph& getActiveSceneGraph();
   scene::SceneGraph& getActiveSemanticSceneGraph();
@@ -104,53 +117,43 @@ class Simulator {
   // TODO: support multi-scene physics (default sceneID=0 currently).
 
   /**
-   * @brief Get the string handle for the object template referenced by the
-   * passed ID
-   *
-   * @param objectTemplateID The index of the object template in the @ref
-   * ResourceManager library.
-   * @return The string key referencing the asset in @ref ResourceManager.
+   * @brief Return manager for construction and access to asset attributes.
    */
-  std::string getObjectTemplateHandleByID(const int objectTemplateID) const {
-    return resourceManager_->getPhysicsObjectTemplateHandle(objectTemplateID);
+  const AttrMgrs::AssetAttributesManager::ptr getAssetAttributesManager()
+      const {
+    return resourceManager_->getAssetAttributesManager();
+  }
+  /**
+   * @brief Return manager for construction and access to object attributes.
+   */
+  const AttrMgrs::ObjectAttributesManager::ptr getObjectAttributesManager()
+      const {
+    return resourceManager_->getObjectAttributesManager();
+  }
+  /**
+   * @brief Return manager for construction and access to physics world
+   * attributes.
+   */
+  const AttrMgrs::PhysicsAttributesManager::ptr getPhysicsAttributesManager()
+      const {
+    return resourceManager_->getPhysicsAttributesManager();
+  }
+  /**
+   * @brief Return manager for construction and access to scene attributes.
+   */
+  const AttrMgrs::SceneAttributesManager::ptr getSceneAttributesManager()
+      const {
+    return resourceManager_->getSceneAttributesManager();
   }
 
-  /**
-   * @brief Get a list of all templates whose origin handles contain @ref
-   * subStr, ignoring subStr's case
-   * @param subStr substring to search for within existing object templates
-   * @return vector of 0 or more template handles containing the passed
-   * substring
+  /** @brief Return the library implementation type for the simulator currently
+   * in use. Use to check for a particular implementation.
+   * @return The implementation type of this simulator.
    */
-  std::vector<std::string> getObjectTemplateHandles(
-      const std::string& subStr = "") {
-    return resourceManager_->getPhysicsObjectTemplateHandlesBySubstring(subStr);
-  }
-  /**
-   * @brief Get a list of all file-based templates whose origin handles contain
-   * @ref subStr, ignoring subStr's case
-   * @param subStr substring to search for within existing file-based object
-   * templates
-   * @return vector of 0 or more template handles containing the passed
-   * substring
-   */
-  std::vector<std::string> getFileBasedObjectTemplateHandles(
-      const std::string& subStr = "") {
-    return resourceManager_->getFileTemplateHandlesBySubstring(subStr);
-  }
-
-  /**
-   * @brief Get a list of all synthesized (primitive-based) templates whose
-   * origin handles contains @ref subStr, ignoring subStr's case
-   * @param subStr substring to search for within existing primitive object
-   * templates
-   * @return vector of 0 or more template handles containing the passed
-   * substring
-   */
-  std::vector<std::string> getSynthesizedObjectTemplateHandles(
-      const std::string& subStr = "") {
-    return resourceManager_->getSynthTemplateHandlesBySubstring(subStr);
-  }
+  const esp::physics::PhysicsManager::PhysicsSimulationLibrary&
+  getPhysicsSimulationLibrary() const {
+    return physicsManager_->getPhysicsSimulationLibrary();
+  };
 
   /**
    * @brief Instance an object from a template index in @ref
@@ -197,61 +200,13 @@ class Simulator {
                         int sceneID = 0);
 
   /**
-   * @brief Get the current size of the physics object library. Objects [0,size)
-   * can be instanced with @ref addObject.
-   * @return The current number of templates stored in @ref
-   * esp::assets::ResourceManager::physicsObjectLibrary_.
-   */
-  int getPhysicsObjectLibrarySize() const {
-    return resourceManager_->getPhysicsObjectLibrarySize();
-  }
-
-  /**
-   * @brief Get a smart pointer to a physics object template by index.
-   */
-  assets::PhysicsObjectAttributes::ptr getObjectTemplate(int templateId) const {
-    return resourceManager_->getPhysicsObjectAttributes(templateId);
-  }
-  /**
-   * @brief Get a smart pointer to a physics object template by handle.
-   */
-  assets::PhysicsObjectAttributes::ptr getObjectTemplateByName(
-      const std::string& templateHandle) const {
-    return resourceManager_->getPhysicsObjectAttributes(templateHandle);
-  }
-  /**
-   * @brief Load all "*.phys_properties.json" files from the provided file or
-   * directory path.
-   *
-   * Note that duplicate loads will return the index of the existing template
-   * rather than reloading.
-   *
-   * @param path A global path to a physics property file or directory
-   * @return A list of template indices for loaded valid configs for object
-   * instancing.
-   */
-  std::vector<int> loadObjectConfigs(const std::string& path);
-
-  /**
-   * @brief Register the provided PhysicsObjectAttributes template into the
-   * Simulator.
-   *
-   * @param objectTemplate A new PhysicsObjectAttributes to load.
-   * @param objectTemplateHandle The desired key for referencing the new or
-   * modified template.
-   * @return A template index for instancing the loaded template or ID_UNDEFINED
-   * if failed.
-   */
-  int registerObjectTemplate(assets::PhysicsObjectAttributes::ptr objTmplPtr,
-                             const std::string& objectTemplateHandle);
-
-  /**
    * @brief Get a static view of a physics object's template when the object was
    * instanced.
    *
-   * Use this to query the object's properties when it was initialized.
+   * Use this to query the object's properties when it was initialized.  Object
+   * pointed at by pointer is const, and can not be modified.
    */
-  const assets::PhysicsObjectAttributes::ptr getObjectInitializationTemplate(
+  const assets::PhysicsObjectAttributes::cptr getObjectInitializationTemplate(
       int objectId,
       const int sceneID = 0) const;
 
@@ -348,6 +303,14 @@ class Simulator {
                                        const int sceneID = 0);
 
   /**
+   * @brief Get references to the object's visual scene nodes or empty if
+   * failed.
+   */
+  std::vector<scene::SceneNode*> getObjectVisualSceneNodes(
+      const int objectID,
+      const int sceneID = 0);
+
+  /**
    * @brief Get the current 4x4 transformation matrix of an object.
    * See @ref esp::physics::PhysicsManager::getTransformation.
    * @param objectID The object ID and key identifying the object in @ref
@@ -370,6 +333,28 @@ class Simulator {
   void setTransformation(const Magnum::Matrix4& transform,
                          const int objectID,
                          const int sceneID = 0);
+  /**
+   * @brief Get the current @ref esp::core::RigidState of an object.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   * @return The @ref esp::core::RigidState transform of the object.
+   */
+  esp::core::RigidState getRigidState(const int objectID,
+                                      const int sceneID = 0) const;
+
+  /**
+   * @brief Set the @ref esp::core::RigidState of an object kinematically.
+   * @param transform The desired @ref esp::core::RigidState of the object.
+   * @param  objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
+  void setRigidState(const esp::core::RigidState& rigidState,
+                     const int objectID,
+                     const int sceneID = 0);
 
   /**
    * @brief Set the 3D position of an object kinematically.
@@ -484,6 +469,18 @@ class Simulator {
   void setObjectBBDraw(bool drawBB, const int objectID, const int sceneID = 0);
 
   /**
+   * @brief Set the @ref esp::scene:SceneNode::semanticId_ for all visual nodes
+   * belonging to an object.
+   *
+   * @param semanticId The desired semantic id for the object.
+   * @param objectID The object ID and key identifying the object in @ref
+   * esp::physics::PhysicsManager::existingObjects_.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   */
+  void setObjectSemanticId(uint32_t semanticId, int objectID, int sceneID = 0);
+
+  /**
    * @brief Discrete collision check for contact between an object and the
    * collision world.
    * @param objectID The object ID and key identifying the object in @ref
@@ -494,6 +491,24 @@ class Simulator {
    * enabled objects.
    */
   bool contactTest(const int objectID, const int sceneID = 0);
+
+  /**
+   * @brief Raycast into the collision world of a scene.
+   *
+   * Note: A default @ref physics::PhysicsManager has no collision world, so
+   * physics must be enabled for this feature.
+   *
+   * @param ray The ray to cast. Need not be unit length, but returned hit
+   * distances will be in units of ray length.
+   * @param maxDistance The maximum distance along the ray direction to search.
+   * In units of ray length.
+   * @param sceneID !! Not used currently !! Specifies which physical scene of
+   * the object.
+   * @return Raycast results sorted by distance.
+   */
+  esp::physics::RaycastResults castRay(const esp::geo::Ray& ray,
+                                       float maxDistance = 100.0,
+                                       const int sceneID = 0);
 
   /**
    * @brief the physical world has a notion of time which passes during
@@ -539,6 +554,20 @@ class Simulator {
   bool recomputeNavMesh(nav::PathFinder& pathfinder,
                         const nav::NavMeshSettings& navMeshSettings,
                         bool includeStaticObjects = false);
+
+  /**
+   * @brief Set visualization of the current NavMesh @ref pathfinder_ on or off.
+   *
+   * @param visualize Whether or not to visualize the navmesh.
+   * @return Whether or not the NavMesh visualization is active.
+   */
+  bool setNavMeshVisualization(bool visualize);
+
+  /**
+   * @brief Query active state of the current NavMesh @ref pathfinder_
+   * visualization.
+   */
+  bool isNavMeshVisualizationActive();
 
   agent::Agent::ptr getAgent(int agentId);
 
@@ -672,6 +701,10 @@ class Simulator {
   // Currently, we need it defined here, because sensor., e.g., PinholeCamera
   // rquires it when drawing the observation
   bool frustumCulling_ = true;
+
+  //! NavMesh visualization variables
+  int navMeshVisPrimID_ = esp::ID_UNDEFINED;
+  esp::scene::SceneNode* navMeshVisNode_ = nullptr;
 
   ESP_SMART_POINTERS(Simulator)
 };

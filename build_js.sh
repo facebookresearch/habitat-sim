@@ -3,6 +3,15 @@
 # Propagate failures properly
 set -e
 
+BULLET=false
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --bullet) BULLET=true ;;
+        *) echo "Unknown parameter passed: $1"; exit 1 ;;
+    esac
+    shift
+done
 git submodule update --init --recursive
 
 mkdir -p build_corrade-rc
@@ -19,6 +28,12 @@ popd
 mkdir -p build_js
 cd build_js
 
+
+EXE_LINKER_FLAGS="-s USE_WEBGL2=1"
+
+if ${BULLET}; 
+    then EXE_LINKER_FLAGS="${EXE_LINKER_FLAGS} -s USE_BULLET=1"
+fi
 cmake ../src \
     -DCORRADE_RC_EXECUTABLE=../build_corrade-rc/RelWithDebInfo/bin/corrade-rc \
     -DBUILD_GUI_VIEWERS=ON \
@@ -31,7 +46,9 @@ cmake ../src \
     -DCMAKE_TOOLCHAIN_FILE="../src/deps/corrade/toolchains/generic/Emscripten-wasm.cmake" \
     -DCMAKE_INSTALL_PREFIX="." \
     -DCMAKE_CXX_FLAGS="-s FORCE_FILESYSTEM=1 -s ALLOW_MEMORY_GROWTH=1" \
-    -DCMAKE_EXE_LINKER_FLAGS="-s USE_WEBGL2=1"
+    -DCMAKE_EXE_LINKER_FLAGS="${EXE_LINKER_FLAGS}" \
+    -DBUILD_WITH_BULLET=$( if ${BULLET} ; then echo ON ; else echo OFF; fi ) \
+    -DUSE_EMSCRIPTEN_PORTS_BULLET=$( if ${BULLET} ; then echo ON ; else echo OFF; fi )
 
 cmake --build . -- -j 4
 cmake --build . --target install -- -j 4

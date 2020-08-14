@@ -1,10 +1,10 @@
 import collections
 import random
 
-import matplotlib.patches as patches
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from matplotlib import patches as patches
+from matplotlib import pyplot as plt
 from scipy import stats
 
 

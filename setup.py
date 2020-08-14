@@ -13,12 +13,12 @@ import builtins
 import glob
 import json
 import os
-import os.path as osp
 import re
 import shlex
 import subprocess
 import sys
 from distutils.version import StrictVersion
+from os import path as osp
 
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext

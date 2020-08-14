@@ -14,9 +14,10 @@ bool PhysicsManager::initPhysics(scene::SceneNode* node) {
   physicsNode_ = node;
 
   // Copy over relevant configuration
-  fixedTimeStep_ = physicsManagerAttributes->getTimestep();
+  fixedTimeStep_ = physicsManagerAttributes_->getTimestep();
 
   //! Create new scene node and set up any physics-related variables
+  // Overridden by specific physics-library-based class
   initialized_ = initPhysicsFinalize();
   return initialized_;
 }
@@ -33,7 +34,7 @@ PhysicsManager::~PhysicsManager() {
 }
 
 bool PhysicsManager::addScene(
-    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
+    const std::string& handle,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
   for (const assets::CollisionMeshData& meshData : meshGroup) {
@@ -43,15 +44,13 @@ bool PhysicsManager::addScene(
   }
 
   //! Initialize scene
-  bool sceneSuccess = addSceneFinalize(physicsSceneAttributes);
+  bool sceneSuccess = addSceneFinalize(handle);
   return sceneSuccess;
 }
 
-bool PhysicsManager::addSceneFinalize(
-    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes) {
+bool PhysicsManager::addSceneFinalize(const std::string& handle) {
   //! Initialize scene
-  bool sceneSuccess =
-      staticSceneObject_->initialize(resourceManager_, physicsSceneAttributes);
+  bool sceneSuccess = staticSceneObject_->initialize(resourceManager_, handle);
   return sceneSuccess;
 }
 
@@ -60,7 +59,9 @@ int PhysicsManager::addObject(const int objectLibIndex,
                               scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
   const std::string& configHandle =
-      resourceManager_.getPhysicsObjectTemplateHandle(objectLibIndex);
+      resourceManager_.getObjectAttributesManager()->getTemplateHandleByID(
+          objectLibIndex);
+
   return addObject(configHandle, drawables, attachmentNode, lightSetup);
 }
 
@@ -68,11 +69,6 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
                               DrawableGroup* drawables,
                               scene::SceneNode* attachmentNode,
                               const Magnum::ResourceKey& lightSetup) {
-  //! Invoke resourceManager to draw object
-  //! Test Mesh primitive is valid
-  assets::PhysicsObjectAttributes::ptr physicsObjectAttributes =
-      resourceManager_.getPhysicsObjectAttributes(configFileHandle);
-
   //! Make rigid object and add it to existingObjects
   int nextObjectID_ = allocateObjectID();
   scene::SceneNode* objectNode = attachmentNode;
@@ -82,38 +78,50 @@ int PhysicsManager::addObject(const std::string& configFileHandle,
   // verify whether necessary assets exist, and if not, instantiate them
   // only make object if asset instantiation succeeds (short circuit)
   bool objectSuccess =
-      resourceManager_.instantiateAssetsOnDemand(configFileHandle) &&
-      makeAndAddRigidObject(nextObjectID_, physicsObjectAttributes, objectNode);
+      resourceManager_.instantiateAssetsOnDemand(configFileHandle);
+  if (!objectSuccess) {
+    LOG(ERROR) << "PhysicsManager::addObject : "
+                  "ResourceManager::instantiateAssetsOnDemand unsuccessful. "
+                  "Aborting.";
+    return ID_UNDEFINED;
+  }
+
+  objectSuccess =
+      makeAndAddRigidObject(nextObjectID_, configFileHandle, objectNode);
 
   if (!objectSuccess) {
     deallocateObjectID(nextObjectID_);
     if (attachmentNode == nullptr) {
       delete objectNode;
     }
-    LOG(ERROR) << "makeRigidObject unsuccessful";
+    LOG(ERROR) << "PhysicsManager::addObject : PhysicsManager::makeRigidObject "
+                  "unsuccessful.  Aborting.";
     return ID_UNDEFINED;
   }
 
+  existingObjects_.at(nextObjectID_)
+      ->visualNodes_.push_back(existingObjects_.at(nextObjectID_)->visualNode_);
+
   //! Draw object via resource manager
   //! Render node as child of physics node
-  resourceManager_.addObjectToDrawables(
-      configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
-      drawables, lightSetup);
-  existingObjects_.at(nextObjectID_)->node().computeCumulativeBB();
-
-  if (physicsObjectAttributes->hasValue("COM_provided")) {
-    // if the COM is provided, shift by that
-    Magnum::Vector3 comShift = -physicsObjectAttributes->getCOM();
-    // first apply scale
-    comShift = physicsObjectAttributes->getScale() * comShift;
-    existingObjects_.at(nextObjectID_)->shiftOrigin(comShift);
-  } else {
-    // otherwise use the bounding box center
-    existingObjects_.at(nextObjectID_)->shiftOriginToBBCenter();
+  //! Verify we should make the object drawable
+  if (existingObjects_.at(nextObjectID_)
+          ->getInitializationAttributes()
+          ->getIsVisible()) {
+    resourceManager_.addObjectToDrawables(
+        configFileHandle, existingObjects_.at(nextObjectID_)->visualNode_,
+        drawables, existingObjects_.at(nextObjectID_)->visualNodes_,
+        lightSetup);
   }
 
   // finalize rigid object creation
-  existingObjects_.at(nextObjectID_)->finalizeObject();
+  objectSuccess = existingObjects_.at(nextObjectID_)->finalizeObject();
+  if (!objectSuccess) {
+    removeObject(nextObjectID_, true, true);
+    LOG(ERROR) << "PhysicsManager::addObject : PhysicsManager::finalizeObject "
+                  "unsuccessful.  Aborting.";
+    return ID_UNDEFINED;
+  }
 
   return nextObjectID_;
 }
@@ -159,12 +167,11 @@ int PhysicsManager::deallocateObjectID(int physObjectID) {
   return physObjectID;
 }
 
-bool PhysicsManager::makeAndAddRigidObject(
-    int newObjectID,
-    assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-    scene::SceneNode* objectNode) {
-  auto ptr = physics::RigidObject::create_unique(objectNode);
-  bool objSuccess = ptr->initialize(resourceManager_, physicsObjectAttributes);
+bool PhysicsManager::makeAndAddRigidObject(int newObjectID,
+                                           const std::string& handle,
+                                           scene::SceneNode* objectNode) {
+  auto ptr = physics::RigidObject::create_unique(objectNode, newObjectID);
+  bool objSuccess = ptr->initialize(resourceManager_, handle);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }
@@ -280,6 +287,11 @@ void PhysicsManager::setTransformation(const int physObjectID,
   assertIDValidity(physObjectID);
   existingObjects_.at(physObjectID)->setTransformation(trans);
 }
+void PhysicsManager::setRigidState(const int physObjectID,
+                                   const esp::core::RigidState& rigidState) {
+  assertIDValidity(physObjectID);
+  existingObjects_.at(physObjectID)->setRigidState(rigidState);
+}
 void PhysicsManager::setTranslation(const int physObjectID,
                                     const Magnum::Vector3& vector) {
   assertIDValidity(physObjectID);
@@ -353,6 +365,12 @@ Magnum::Matrix4 PhysicsManager::getTransformation(
     const int physObjectID) const {
   assertIDValidity(physObjectID);
   return existingObjects_.at(physObjectID)->node().transformation();
+}
+
+esp::core::RigidState PhysicsManager::getRigidState(
+    const int physObjectID) const {
+  assertIDValidity(physObjectID);
+  return existingObjects_.at(physObjectID)->getRigidState();
 }
 
 Magnum::Vector3 PhysicsManager::getTranslation(const int physObjectID) const {
@@ -526,11 +544,16 @@ const scene::SceneNode& PhysicsManager::getObjectVisualSceneNode(
   return *existingObjects_.at(physObjectID)->visualNode_;
 }
 
-const assets::PhysicsObjectAttributes::ptr
-PhysicsManager::getInitializationAttributes(const int physObjectID) const {
+std::vector<scene::SceneNode*> PhysicsManager::getObjectVisualSceneNodes(
+    const int physObjectID) const {
   assertIDValidity(physObjectID);
-  return std::static_pointer_cast<assets::PhysicsObjectAttributes>(
-      existingObjects_.at(physObjectID)->getInitializationAttributes());
+  return existingObjects_.at(physObjectID)->visualNodes_;
+}
+
+void PhysicsManager::setSemanticId(const int physObjectID,
+                                   uint32_t semanticId) {
+  assertIDValidity(physObjectID);
+  existingObjects_.at(physObjectID)->setSemanticId(semanticId);
 }
 
 }  // namespace physics

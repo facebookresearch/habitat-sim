@@ -24,6 +24,7 @@ parser.add_argument("--print_semantic_scene", action="store_true")
 parser.add_argument("--print_semantic_mask_stats", action="store_true")
 parser.add_argument("--compute_shortest_path", action="store_true")
 parser.add_argument("--compute_action_shortest_path", action="store_true")
+parser.add_argument("--recompute_navmesh", action="store_true")
 parser.add_argument("--seed", type=int, default=1)
 parser.add_argument("--silent", action="store_true")
 parser.add_argument("--test_fps_regression", type=int, default=0)
@@ -57,6 +58,7 @@ def make_settings():
     settings["enable_physics"] = args.enable_physics
     settings["physics_config_file"] = args.physics_config_file
     settings["frustum_culling"] = not args.disable_frustum_culling
+    settings["recompute_navmesh"] = args.recompute_navmesh
 
     return settings
 

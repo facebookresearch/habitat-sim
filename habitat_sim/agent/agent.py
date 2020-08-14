@@ -10,8 +10,8 @@ import attr
 import magnum as mn
 import numpy as np
 
-import habitat_sim.bindings as hsim
 import habitat_sim.errors
+from habitat_sim import bindings as hsim
 from habitat_sim.sensors.sensor_suite import SensorSuite
 from habitat_sim.utils.common import (
     quat_from_coeffs,

@@ -16,6 +16,10 @@ namespace core {
 
 class Configuration {
  public:
+  // virtual destructor set to that pybind11 recognizes attributes inheritance
+  // from configuration to be polymorphic
+  virtual ~Configuration() = default;
+
   template <typename T>
   bool set(const std::string& key, const T& value) {
     return cfg.setValue(key, value);

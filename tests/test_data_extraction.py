@@ -3,8 +3,8 @@
 
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
+from torch import nn as nn
+from torch.nn import functional as F
 from torch.utils.data import DataLoader, Dataset
 
 import habitat_sim.utils.data
@@ -35,7 +35,7 @@ class MyDataset(Dataset):
 
 
 def test_topdown_view(sim):
-    tdv = TopdownView(sim, height=0.0, pixels_per_meter=0.1)
+    tdv = TopdownView(sim, height=0.0, meters_per_pixel=0.1)
     topdown_view = tdv.topdown_view
     assert type(topdown_view) == np.ndarray
 

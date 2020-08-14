@@ -3,11 +3,11 @@ import copy
 import math
 from typing import List, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import pyplot as plt
 
 import habitat_sim
-import habitat_sim.registry as registry
+from habitat_sim import registry as registry
 from habitat_sim.utils.common import quat_from_two_vectors
 
 
@@ -77,16 +77,16 @@ class PoseExtractor:
             r2, c2 = cpi
             new_pos = np.array(
                 [
-                    startw + c1 * self.pixels_per_meter,
+                    startw + c1 * self.meters_per_pixel,
                     starty,
-                    starth + r1 * self.pixels_per_meter,
+                    starth + r1 * self.meters_per_pixel,
                 ]
             )
             new_cpi = np.array(
                 [
-                    startw + c2 * self.pixels_per_meter,
+                    startw + c2 * self.meters_per_pixel,
                     starty,
-                    starth + r2 * self.pixels_per_meter,
+                    starth + r2 * self.meters_per_pixel,
                 ]
             )
             cam_normal = new_cpi - new_pos

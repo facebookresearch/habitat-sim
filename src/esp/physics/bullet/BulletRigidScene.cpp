@@ -17,16 +17,19 @@ namespace physics {
 
 BulletRigidScene::BulletRigidScene(
     scene::SceneNode* rigidBodyNode,
-    std::shared_ptr<btMultiBodyDynamicsWorld> bWorld)
-    : BulletBase(bWorld), RigidScene{rigidBodyNode} {}
+    std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
+    std::shared_ptr<std::map<const btCollisionObject*, int> >
+        collisionObjToObjIds)
+    : BulletBase(bWorld, collisionObjToObjIds), RigidScene{rigidBodyNode} {}
 
 BulletRigidScene::~BulletRigidScene() {
   // remove collision objects from the world
   for (auto& co : bStaticCollisionObjects_) {
     bWorld_->removeCollisionObject(co.get());
+    collisionObjToObjIds_->erase(co.get());
   }
 }
-bool BulletRigidScene::initializationFinalize(
+bool BulletRigidScene::initialization_LibSpecific(
     const assets::ResourceManager& resMgr) {
   const auto collisionAssetHandle =
       initializationAttributes_->getCollisionAssetHandle();
@@ -43,11 +46,12 @@ bool BulletRigidScene::initializationFinalize(
     object->setRestitution(
         initializationAttributes_->getRestitutionCoefficient());
     bWorld_->addCollisionObject(object.get());
+    collisionObjToObjIds_->emplace(object.get(), objectId_);
   }
 
   return true;
 
-}  // initializationFinalize
+}  // initialization_LibSpecific
 
 void BulletRigidScene::constructBulletSceneFromMeshes(
     const Magnum::Matrix4& transformFromParentToWorld,

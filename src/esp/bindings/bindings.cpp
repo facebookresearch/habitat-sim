@@ -81,6 +81,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   esp::initEspBindings(m);
   esp::core::initCoreBindings(m);
   esp::assets::initAttributesBindings(m);
+  esp::assets::managers::initAttributesManagersBindings(m);
   esp::geo::initGeoBindings(m);
   esp::physics::initPhysicsBindings(m);
   esp::scene::initSceneBindings(m);

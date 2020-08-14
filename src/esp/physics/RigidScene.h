@@ -19,31 +19,58 @@ class RigidScene : public RigidBase {
   /**
    * @brief Virtual destructor for a @ref RigidScene.
    */
-  virtual ~RigidScene(){};
+  virtual ~RigidScene() {}
 
   /**
-   * @brief Initializes the @ref RigidObject or @ref RigidScene that inherits
+   * @brief Initializes the @ref RigidScene that inherits
    * from this class
-   * @param physicsAttributes The template structure defining relevant
+   * @param resMgr a reference to ResourceManager object
+   * @param handle The handle for the template structure defining relevant
    * phyiscal parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initialize(
-      const assets::ResourceManager& resMgr,
-      const assets::AbstractPhysicsAttributes::ptr physicsAttributes) override;
+  bool initialize(const assets::ResourceManager& resMgr,
+                  const std::string& handle) override;
+
+  /**
+   * @brief Get a copy of the template used to initialize this scene object.
+   *
+   * @return A copy of the @ref PhysicsSceneAttributes template used to create
+   * this scene object.
+   */
+  std::shared_ptr<assets::PhysicsSceneAttributes> getInitializationAttributes()
+      const {
+    return RigidBase::getInitializationAttributes<
+        assets::PhysicsSceneAttributes>();
+  };
+  /**
+   * @brief Finalize the creation of this @ref RigidScene
+   * @return whether successful finalization.
+   */
+  bool finalizeObject() override { return finalizeObject_LibSpecific(); }
 
  private:
   /**
    * @brief Finalize the initialization of this @ref RigidScene
-   * geometry.  This is overridden by inheriting objects
+   * geometry.  This is overridden by inheriting class specific to certain
+   * physics libraries.Necessary to support kinematic objects without any
+   * dynamics support.
    * @param resMgr Reference to resource manager, to access relevant components
    * pertaining to the scene object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initializationFinalize(
+  bool initialization_LibSpecific(
       CORRADE_UNUSED const assets::ResourceManager& resMgr) override {
     return true;
   }
+  /**
+   * @brief any physics-lib-specific finalization code that needs to be run
+   * after@ref RigidScene is created.  Called from finalizeObject.  Overridden
+   * by inheriting class specific to certain physics libraries. Necessary to
+   * support kinematic objects without any dynamics support.
+   * @return whether successful finalization.
+   */
+  bool finalizeObject_LibSpecific() override { return true; }
 
  public:
   /**
@@ -55,7 +82,7 @@ class RigidScene : public RigidBase {
    * @param mt The desirved @ref MotionType.
    * @return true if successfully set, false otherwise.
    */
-  virtual bool setMotionType(MotionType mt) override {
+  bool setMotionType(MotionType mt) override {
     return mt == MotionType::STATIC;  // only option and default option
   }
 

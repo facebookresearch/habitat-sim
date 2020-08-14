@@ -10,19 +10,17 @@ namespace physics {
 RigidScene::RigidScene(scene::SceneNode* rigidBodyNode)
     : RigidBase(rigidBodyNode) {}
 
-bool RigidScene::initialize(
-    const assets::ResourceManager& resMgr,
-    const assets::AbstractPhysicsAttributes::ptr physicsAttributes) {
+bool RigidScene::initialize(const assets::ResourceManager& resMgr,
+                            const std::string& handle) {
   if (initializationAttributes_ != nullptr) {
     LOG(ERROR) << "Cannot initialize a RigidScene more than once";
     return false;
   }
   objectMotionType_ = MotionType::STATIC;
-  initializationAttributes_ = esp::assets::PhysicsSceneAttributes::create(
-      *(static_cast<esp::assets::PhysicsSceneAttributes*>(
-          physicsAttributes.get())));
+  initializationAttributes_ =
+      resMgr.getSceneAttributesManager()->getTemplateCopyByHandle(handle);
 
-  return initializationFinalize(resMgr);
+  return initialization_LibSpecific(resMgr);
 }
 
 }  // namespace physics

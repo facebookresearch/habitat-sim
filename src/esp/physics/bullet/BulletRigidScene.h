@@ -22,7 +22,9 @@ namespace physics {
 class BulletRigidScene : public BulletBase, public RigidScene {
  public:
   BulletRigidScene(scene::SceneNode* rigidBodyNode,
-                   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld);
+                   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
+                   std::shared_ptr<std::map<const btCollisionObject*, int>>
+                       collisionObjToObjIds);
 
   /**
    * @brief Destructor cleans up simulation structures for the object.
@@ -32,12 +34,12 @@ class BulletRigidScene : public BulletBase, public RigidScene {
  private:
   /**
    * @brief Finalize the initialization of this @ref RigidScene
-   * geometry.  This is overridden by inheriting objects
+   * geometry.  This holds bullet-specific functionality for scenes.
    * @param resMgr Reference to resource manager, to access relevant components
    * pertaining to the scene object
    * @return true if initialized successfully, false otherwise.
    */
-  virtual bool initializationFinalize(
+  bool initialization_LibSpecific(
       const assets::ResourceManager& resMgr) override;
 
   /**
