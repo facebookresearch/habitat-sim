@@ -2,7 +2,7 @@
 trap 'catch $? $LINENO' EXIT
 catch() {
   if [ "$1" != "0" ]; then
-    echo "An error occured during the installation of Habitat-sim or Habitat-API." >&2
+    echo "An error occured during the installation of Habitat-sim or Habitat-Lab." >&2
   fi
 }
 set -e
@@ -30,19 +30,19 @@ fi
 conda install -y --prefix /usr/local -c "${CHANNEL}" -c conda-forge habitat-sim headless withbullet python=3.6
 
 #Shallow GIT clone for speed
-git clone https://github.com/facebookresearch/habitat-api --depth 1
+git clone https://github.com/facebookresearch/habitat-lab --depth 1
 git clone https://github.com/facebookresearch/habitat-sim --depth 1
 
 #Install Requirements.
-source /usr/local/bin/activate #Activate Conda Environment in Bash
-cd /content/habitat-api/
+cd /content/habitat-lab/
 set +e
-pip install -r /content/habitat-api/requirements.txt
-reqs=(/content/habitat-api/habitat_baselines/**/requirements.txt)
+pip install -r ./requirements.txt
+reqs=(./habitat_baselines/**/requirements.txt)
 pip install "${reqs[@]/#/-r}"
 set -e
 python setup.py develop --all
 pip install . #Reinstall to trigger sys.path update
+pip install -U --force-reinstall cffi #Fix bug with CFFI version issue
 cd /content/habitat-sim/
 rm -rf habitat_sim/ # Deletes the habitat_sim folder so it doesn't interfere with import path
 
@@ -52,6 +52,6 @@ wget -c http://dl.fbaipublicfiles.com/habitat/objects_v0.1.zip && unzip -o objec
 wget -c http://dl.fbaipublicfiles.com/habitat/locobot_merged.zip && unzip -o locobot_merged.zip -d data/objects
 
 #symlink assets appear in habitat-api folder
-ln -s /content/habitat-sim/data /content/habitat-api/.
+ln -s /content/habitat-sim/data /content/habitat-lab/.
 
 touch /content/habitat_sim_installed
