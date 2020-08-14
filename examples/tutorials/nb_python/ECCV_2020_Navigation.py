@@ -275,7 +275,7 @@ navigateAndSee(action)
 #     - how to define and config the **action space**
 
 # %% [markdown]
-# # Full Config
+# #How to Take your ~~Dragon~~ [Agent] for a (Random) Walk
 
 # %%
 # @title Configure Sim Settings
