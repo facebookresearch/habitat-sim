@@ -20,14 +20,14 @@ class PoseExtractor:
             scene_filepath: The file path to the mesh file. Necessary for scene switches.
             reference point: A reference point from the coordinate system of the scene. Necessary for specifying poses in the scene's coordinate system.
 
-    :property pixels_per_meter: Resolution of topdown map. 0.1 means each pixel in the topdown map
+    :property meters_per_pixel: Resolution of topdown map. 0.1 means each pixel in the topdown map
         represents 0.1 x 0.1 meters in the coordinate system of the scene that the map represents.
     :property labels: List of class labels to extract images of.
     """
 
-    def __init__(self, topdown_views, pixels_per_meter=0.1):
+    def __init__(self, topdown_views, meters_per_pixel=0.1):
         self.tdv_fp_ref_triples = topdown_views
-        self.pixels_per_meter = pixels_per_meter
+        self.meters_per_pixel = meters_per_pixel
         self.labels = [0.0]
 
     def extract_all_poses(self) -> np.ndarray:
@@ -98,8 +98,8 @@ class PoseExtractor:
 
 @registry.register_pose_extractor(name="closest_point_extractor")
 class ClosestPointExtractor(PoseExtractor):
-    def __init__(self, topdown_views, pixels_per_meter=0.1):
-        super().__init__(topdown_views, pixels_per_meter)
+    def __init__(self, topdown_views, meters_per_pixel=0.1):
+        super().__init__(topdown_views, meters_per_pixel)
 
     def extract_poses(self, view, fp):
         # Determine the physical spacing between each camera position
@@ -184,8 +184,8 @@ class ClosestPointExtractor(PoseExtractor):
 
 @registry.register_pose_extractor(name="panorama_extractor")
 class PanoramaExtractor(PoseExtractor):
-    def __init__(self, topdown_views, pixels_per_meter=0.1):
-        super().__init__(topdown_views, pixels_per_meter)
+    def __init__(self, topdown_views, meters_per_pixel=0.1):
+        super().__init__(topdown_views, meters_per_pixel)
 
     def extract_poses(self, view, fp):
         # Determine the physical spacing between each camera position
