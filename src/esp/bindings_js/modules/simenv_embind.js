@@ -43,7 +43,7 @@ class SimEnv {
       const agent = this.sim.getAgent(this.selectedAgentId);
       agent.setState(this.initialAgentState, true);
     }
-    this.updateCrossHairNode(this.getCrosshairPosition());
+    this.initOrUpdateCrossHairNode(this.getCrosshairPosition());
     this.syncObjects();
     this.addRandomObjects();
 
@@ -75,8 +75,8 @@ class SimEnv {
   /**
    * Update cross hair node position.
    */
-  updateCrossHairNode(postion) {
-    this.sim.updateCrossHairNode(postion);
+  initOrUpdateCrossHairNode(postion) {
+    this.sim.initOrUpdateCrossHairNode(postion);
   }
 
   /**

@@ -710,9 +710,9 @@ class Simulator {
                                       const Magnum::Vector2i& viewSize,
                                       float distance = 1.0);
 
-  esp::geo::Ray unproject(const Magnum::Vector2i& crossHairPosition);
+  esp::geo::Ray unproject(const Magnum::Vector2i& position);
 
-  void updateCrossHairNode(Magnum::Vector2i crossHairPosition);
+  void initOrUpdateCrossHairNode(Magnum::Vector2i crossHairPosition);
 
   void syncGrippedObject(int grippedObjectId);
 

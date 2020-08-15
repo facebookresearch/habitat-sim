@@ -321,7 +321,8 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("setLightSetup", &Simulator::setLightSetup)
       .function("stepWorld", &Simulator::stepWorld)
       .function("syncGrippedObject", &Simulator::syncGrippedObject)
-      .function("updateCrossHairNode", &Simulator::updateCrossHairNode)
+      .function("initOrUpdateCrossHairNode",
+                &Simulator::initOrUpdateCrossHairNode)
       .function("recomputeNavMesh", &Simulator::recomputeNavMesh)
       .function("findNearestObjectUnderCrosshair",
                 &Simulator::findNearestObjectUnderCrosshair)

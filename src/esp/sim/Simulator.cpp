@@ -26,7 +26,6 @@
 #include "esp/io/io.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
-#include "esp/physics/bullet/BulletPhysicsManager.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/PinholeCamera.h"
@@ -228,11 +227,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
         }
       }
     }  // if ID has changed - needs to be reset
-    crossHairNode_ = &rootNode.createChild();
-    resourceManager_->addPrimitiveToDrawables(0, *crossHairNode_,
-                                              &sceneGraph.getDrawables());
-    crossHairNode_->setScaling({0.03, 0.03, 0.03});
-  }  // if (config_.createRenderer)
+  }    // if (config_.createRenderer)
 
   semanticScene_ = nullptr;
   semanticScene_ = scene::SemanticScene::create();
@@ -939,16 +934,23 @@ int Simulator::findNearestObjectUnderCrosshair(int refObjectID,
   return nearestObjId;
 }
 
-esp::geo::Ray Simulator::unproject(const Magnum::Vector2i& crossHairPosition) {
+esp::geo::Ray Simulator::unproject(const Magnum::Vector2i& position) {
   scene::SceneGraph& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
   gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
 
-  return renderCamera_.unproject(crossHairPosition);
+  return renderCamera_.unproject(position);
 }
 
-void Simulator::updateCrossHairNode(Magnum::Vector2i crossHairPosition) {
+void Simulator::initOrUpdateCrossHairNode(Magnum::Vector2i crossHairPosition) {
   scene::SceneGraph& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
   gfx::RenderCamera& renderCamera_ = sceneGraph.getDefaultRenderCamera();
+
+  if (crossHairNode_ == nullptr) {
+    crossHairNode_ = &sceneGraph.getRootNode().createChild();
+    resourceManager_->addPrimitiveToDrawables(0, *crossHairNode_,
+                                              &sceneGraph.getDrawables());
+    crossHairNode_->setScaling({0.03, 0.03, 0.03});
+  }
 
   esp::geo::Ray ray = unproject(crossHairPosition);
   Magnum::Vector3 point = ray.direction;
