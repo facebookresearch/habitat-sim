@@ -22,14 +22,14 @@ set_target_properties(hsim_bindings PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 # copy JS/HTML/CSS resources for WebGL build
-set(
-  resources
-  ${SCENE_DATASETS}/habitat-test-scenes/skokloster-castle.glb
-  ${SCENE_DATASETS}/habitat-test-scenes/skokloster-castle.navmesh
-  ${SCENE_DATASETS}/habitat-test-scenes/van-gogh-room.glb
-  ${SCENE_DATASETS}/habitat-test-scenes/van-gogh-room.navmesh
-  ${MAGNUM_WINDOWLESSEMSCRIPTENAPPLICATION_JS}
-  ${MAGNUM_WEBAPPLICATION_CSS}
+set(resources
+    ${SCENE_DATASETS}/habitat-test-scenes/skokloster-castle.glb
+    ${SCENE_DATASETS}/habitat-test-scenes/skokloster-castle.navmesh
+    ${SCENE_DATASETS}/habitat-test-scenes/van-gogh-room.glb
+    ${SCENE_DATASETS}/habitat-test-scenes/van-gogh-room.navmesh
+    ${MAGNUM_WINDOWLESSEMSCRIPTENAPPLICATION_JS}
+    ${MAGNUM_WEBAPPLICATION_CSS}
+    ${DATASETS}
 )
 
 foreach(resource ${resources})

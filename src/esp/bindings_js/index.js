@@ -7,7 +7,12 @@
 import WebDemo from "./modules/web_demo";
 import VRDemo from "./modules/vr_demo";
 import ViewerDemo from "./modules/viewer_demo";
-import { defaultScene, dataHome, fileBasedObjects } from "./modules/defaults";
+import {
+  defaultScene,
+  dataHome,
+  fileBasedObjects,
+  defaulPhysicsConfig
+} from "./modules/defaults";
 import "./bindings.css";
 import {
   checkWebAssemblySupport,
@@ -75,9 +80,12 @@ Module.preRun.push(() => {
   const scene = config.scene;
   Module.scene = preload(scene);
 
-  const physicsConfigFile = window.config.defaultPhysConfig;
-  Module.physicsConfigFile = preloadPhysConfig(physicsConfigFile);
+  var physicsConfigFile = window.config.defaultPhysConfig;
+  if (physicsConfigFile === undefined) {
+    physicsConfigFile = defaulPhysicsConfig;
+  }
 
+  Module.physicsConfigFile = preloadPhysConfig(physicsConfigFile);
   Module.enablePhysics = window.config.enablePhysics === "true";
 
   const fileNoExtension = scene.substr(0, scene.lastIndexOf("."));
