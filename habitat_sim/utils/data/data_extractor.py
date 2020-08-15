@@ -115,7 +115,7 @@ class ImageExtractor:
                 )
             ]
 
-        args = (self.tdv_fp_ref_triples, self.pixels_per_meter)
+        args = (self.tdv_fp_ref_triples, self.meters_per_pixel)
         self.pose_extractor = make_pose_extractor(pose_extractor_name)(*args)
         self.poses = self.pose_extractor.extract_all_poses()
 
