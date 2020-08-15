@@ -34,32 +34,32 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   bWorld_->setDebugDrawer(&debugDrawer_);
 
   // currently GLB meshes are y-up
-  bWorld_->setGravity(btVector3(physicsManagerAttributes->getVec3("gravity")));
+  bWorld_->setGravity(btVector3(physicsManagerAttributes_->getVec3("gravity")));
 
+  Corrade::Utility::Debug() << "creating staticSceneObject_";
   //! Create new scene node
   staticSceneObject_ = physics::BulletRigidScene::create_unique(
-      &physicsNode_->createChild(), bWorld_);
+      &physicsNode_->createChild(), bWorld_, collisionObjToObjIds_);
+  Corrade::Utility::Debug() << "creating staticSceneObject_ .. done";
 
   return true;
 }
 
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
-bool BulletPhysicsManager::addSceneFinalize(
-    const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes) {
+bool BulletPhysicsManager::addSceneFinalize(const std::string& handle) {
   //! Initialize scene
-  bool sceneSuccess =
-      staticSceneObject_->initialize(resourceManager_, physicsSceneAttributes);
+  bool sceneSuccess = staticSceneObject_->initialize(resourceManager_, handle);
 
   return sceneSuccess;
 }
 
-bool BulletPhysicsManager::makeAndAddRigidObject(
-    int newObjectID,
-    assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-    scene::SceneNode* objectNode) {
-  auto ptr = physics::BulletRigidObject::create_unique(objectNode, bWorld_);
-  bool objSuccess = ptr->initialize(resourceManager_, physicsObjectAttributes);
+bool BulletPhysicsManager::makeAndAddRigidObject(int newObjectID,
+                                                 const std::string& handle,
+                                                 scene::SceneNode* objectNode) {
+  auto ptr = physics::BulletRigidObject::create_unique(
+      objectNode, newObjectID, bWorld_, collisionObjToObjIds_);
+  bool objSuccess = ptr->initialize(resourceManager_, handle);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }
@@ -219,6 +219,42 @@ bool BulletPhysicsManager::contactTest(const int physObjectID) {
   return static_cast<BulletRigidObject*>(
              existingObjects_.at(physObjectID).get())
       ->contactTest();
+}
+
+RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
+                                             double maxDistance) {
+  RaycastResults results;
+  results.ray = ray;
+  double rayLength = ray.direction.length();
+  if (rayLength == 0) {
+    LOG(ERROR) << "BulletPhysicsManager::castRay : Cannot case ray with zero "
+                  "length, aborting. ";
+    return results;
+  }
+  btVector3 from(ray.origin);
+  btVector3 to(ray.origin + ray.direction * maxDistance);
+
+  btCollisionWorld::AllHitsRayResultCallback allResults(from, to);
+  bWorld_->rayTest(from, to, allResults);
+
+  // convert to RaycastResults
+  for (int i = 0; i < allResults.m_hitPointWorld.size(); ++i) {
+    RayHitInfo hit;
+
+    hit.normal = Magnum::Vector3{allResults.m_hitNormalWorld[i]};
+    hit.point = Magnum::Vector3{allResults.m_hitPointWorld[i]};
+    hit.rayDistance = (allResults.m_hitFractions[i] * maxDistance) / rayLength;
+    // default to -1 for "scene collision" if we don't know which object was
+    // involved
+    hit.objectId = -1;
+    if (collisionObjToObjIds_->count(allResults.m_collisionObjects[i]) > 0) {
+      hit.objectId =
+          collisionObjToObjIds_->at(allResults.m_collisionObjects[i]);
+    }
+    results.hits.push_back(hit);
+  }
+  results.sortByDistance();
+  return results;
 }
 
 }  // namespace physics

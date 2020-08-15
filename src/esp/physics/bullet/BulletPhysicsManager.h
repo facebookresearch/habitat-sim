@@ -50,8 +50,11 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   explicit BulletPhysicsManager(
       assets::ResourceManager& _resourceManager,
-      const assets::PhysicsManagerAttributes::ptr _physicsManagerAttributes)
-      : PhysicsManager(_resourceManager, _physicsManagerAttributes){};
+      const assets::PhysicsManagerAttributes::cptr _physicsManagerAttributes)
+      : PhysicsManager(_resourceManager, _physicsManagerAttributes) {
+    collisionObjToObjIds_ =
+        std::make_shared<std::map<const btCollisionObject*, int>>();
+  };
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/
   virtual ~BulletPhysicsManager();
@@ -166,13 +169,24 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   bool contactTest(const int physObjectID) override;
 
+  /**
+   * @brief Cast a ray into the collision world and return a @ref RaycastResults
+   * with hit information.
+   *
+   * @param ray The ray to cast. Need not be unit length, but returned hit
+   * distances will be in units of ray length.
+   * @param maxDistance The maximum distance along the ray direction to search.
+   * In units of ray length.
+   * @return The raycast results sorted by distance.
+   */
+  virtual RaycastResults castRay(const esp::geo::Ray& ray,
+                                 double maxDistance = 100.0) override;
+
  protected:
   //============ Initialization =============
   /**
    * @brief Finalize physics initialization: Setup staticSceneObject_ and
    * initialize any other physics-related values.
-   * @param physicsManagerAttributes A structure containing values for physical
-   * parameters necessary to initialize the physical scene and simulator.
    */
   bool initPhysicsFinalize() override;
 
@@ -182,27 +196,25 @@ class BulletPhysicsManager : public PhysicsManager {
    * mesh can be used by Bullet. See @ref BulletRigidObject::initializeScene.
    * Bullet mesh conversion adapted from:
    * https://github.com/mosra/magnum-integration/issues/20
-   * @param physicsSceneAttributes a pointer to the structure defining physical
+   * @param handle The handle of the attributes structure defining physical
    * properties of the scene.
    * @return true if successful and false otherwise
    */
-  bool addSceneFinalize(const assets::PhysicsSceneAttributes::ptr
-                            physicsSceneAttributes) override;
+  bool addSceneFinalize(const std::string& handle) override;
 
   /** @brief Create and initialize an @ref RigidObject and add
    * it to existingObjects_ map keyed with newObjectID
    * @param newObjectID valid object ID for the new object
    * @param meshGroup The object's mesh.
-   * @param physicsObjectAttributes The physical object's template defining its
+   * @param handle The handle to the physical object's template defining its
    * physical parameters.
    * @param objectNode Valid, existing scene node
    * @return whether the object has been successfully initialized and added to
    * existingObjects_ map
    */
-  bool makeAndAddRigidObject(
-      int newObjectID,
-      assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-      scene::SceneNode* objectNode) override;
+  bool makeAndAddRigidObject(int newObjectID,
+                             const std::string& handle,
+                             scene::SceneNode* objectNode) override;
 
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;
@@ -214,6 +226,11 @@ class BulletPhysicsManager : public PhysicsManager {
   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;
 
   mutable Magnum::BulletIntegration::DebugDraw debugDrawer_;
+
+  //! keep a map of collision objects to object ids for quick lookups from
+  //! Bullet collision checking.
+  std::shared_ptr<std::map<const btCollisionObject*, int>>
+      collisionObjToObjIds_;
 
  private:
   /** @brief Check if a particular mesh can be used as a collision mesh for

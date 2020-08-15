@@ -6,7 +6,7 @@
 
 import itertools
 import json
-import os.path as osp
+from os import path as osp
 
 import numpy as np
 import pytest

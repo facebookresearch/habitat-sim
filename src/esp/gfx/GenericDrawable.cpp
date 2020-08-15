@@ -4,7 +4,9 @@
 
 #include "GenericDrawable.h"
 
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
 
 #include "esp/scene/SceneNode.h"
@@ -19,14 +21,12 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
                                  ShaderManager& shaderManager,
                                  const Mn::ResourceKey& lightSetup,
                                  const Mn::ResourceKey& materialData,
-                                 DrawableGroup* group /* = nullptr */,
-                                 int objectId /* = ID_UNDEFINED */)
+                                 DrawableGroup* group /* = nullptr */)
     : Drawable{node, mesh, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetup)},
       materialData_{
-          shaderManager.get<MaterialData, PhongMaterialData>(materialData)},
-      objectId_(objectId) {
+          shaderManager.get<MaterialData, PhongMaterialData>(materialData)} {
   // update the shader early here to to avoid doing it during the render loop
   updateShader();
 }
@@ -56,6 +56,9 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
     lightColors.emplace_back((*lightSetup_)[i].color);
   }
 
+  bool usingDrawableId =
+      static_cast<RenderCamera&>(camera).isRenderingForObjectPicking();
+
   (*shader_)
       .setAmbientColor(materialData_->ambientColor)
       .setDiffuseColor(materialData_->diffuseColor)
@@ -63,7 +66,13 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setShininess(materialData_->shininess)
       .setLightPositions(lightPositions)
       .setLightColors(lightColors)
-      .setObjectId(materialData_->perVertexObjectId ? 0 : node_.getId())
+      // e.g., semantic mesh has its own per vertex annotation, which has been
+      // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
+      // fragment shader
+      .setObjectId(
+          usingDrawableId
+              ? drawableId_
+              : (materialData_->perVertexObjectId ? 0 : node_.getSemanticId()))
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(transformationMatrix.rotationScaling());

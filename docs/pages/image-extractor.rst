@@ -464,8 +464,9 @@ On the top row we see the input to the model which is the batch of RGB images. O
 =================================
 
 Each instance of an ImageExtractor has a pose extractor (an instance of PoseExtractor). The pose extractor defines how camera poses are programmatically determined so that the image
-extractor knows how to manipulate the camera position and angle to extract an image from Habitat
-Sim. Users can write their own subclass of PoseExtractor to define custom ways of getting these camera poses. All custom pose extractors must inherit from the PoseExtractor abstract class and
+extractor knows how to manipulate the camera position and angle to extract an image from habitat
+
+Users can write their over subclass of PoseExtractor to define custom ways of getting these camera poses. All custom pose extractors must inherit from the PoseExtractor abstract class and
 override the extract_poses method. Further, the user must register the pose extractor using
 habitat_sim.registry (i.e. adding the @registry.register_pose_extractor(name) decorator). This allows you to pass the name of your custom pose extractor to the ImageExtractor constructor. For more detailed examples of using the Habitat registry, see `this code`_.
 

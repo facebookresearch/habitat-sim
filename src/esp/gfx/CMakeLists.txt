@@ -3,9 +3,12 @@ set(gfx_SOURCES
   DepthUnprojection.h
   Drawable.cpp
   Drawable.h
+  DrawableGroup.cpp
   DrawableGroup.h
   GenericDrawable.cpp
   GenericDrawable.h
+  MeshVisualizerDrawable.cpp
+  MeshVisualizerDrawable.h
   LightSetup.cpp
   LightSetup.h
   MaterialData.h
@@ -32,9 +35,6 @@ if(BUILD_PTEX_SUPPORT)
   )
 endif()
 
-if ((UNIX AND NOT APPLE) AND (NOT BUILD_GUI_VIEWERS))
-  list(APPEND gfx_SOURCES "${DEPS_DIR}/glad/src/glad_egl.c")
-endif()
 
 find_package(Magnum
   REQUIRED
@@ -63,16 +63,8 @@ find_package(Corrade REQUIRED Utility)
 corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)
 list(APPEND gfx_SOURCES ${ShaderResources})
 
-set(ESP_DEFAULT_PHYS_SCENE_CONFIG ${PROJECT_SOURCE_DIR}/../data/default.phys_scene_config.json)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
-                ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
-
 add_library(gfx STATIC ${gfx_SOURCES})
 
-target_include_directories(gfx
-  PRIVATE
-    "${DEPS_DIR}/glad/include"
-)
 
 if(BUILD_WITH_CUDA)
   target_include_directories(gfx

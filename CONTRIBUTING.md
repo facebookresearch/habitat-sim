@@ -30,7 +30,7 @@ We use [semantic versioning](https://semver.org/). To prepare a release:
 Stable versions are regularly assigned by Habitat core team after rigorous testing.
 
 ## Issues
-We use [GitHub issues](../../issues) to track public bugs. Please ensure your description is
+We use [GitHub issues](https://github.com/facebookresearch/habitat-sim/issues) to track public bugs. Please ensure your description is
 clear and has sufficient instructions to be able to reproduce the issue.
 
 
@@ -38,7 +38,7 @@ clear and has sufficient instructions to be able to reproduce the issue.
 
 - C++
   - In general, we follow [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) and [Google C++ guidelines](https://google.github.io/styleguide/cppguide.html)
-  - Use `clang-format`(clang-format-8) for style enforcement and linting. Install clang-format through `brew install clang-format` on MacOS, or using `apt-get install -y clang-format-8` as we do for [the testing environment setup](./.circleci/config.yml) or by downloading [binaries or sources](http://releases.llvm.org/download.html) for Ubuntu etc.
+  - Use `clang-format`(clang-format-8) for style enforcement and linting. Install clang-format through `brew install clang-format` on MacOS, or using `apt-get install -y clang-format-8` as we do for [the testing environment setup](https://github.com/facebookresearch/habitat-sim/blob/master/.circleci/config.yml) or by downloading [binaries or sources](http://releases.llvm.org/download.html) for Ubuntu etc.
 - Python
   - We follow PEP8 and use [typing](https://docs.python.org/3/library/typing.html).
   - Use `black` for style enforcement and linting. Install black through `pip install black`.
@@ -57,4 +57,4 @@ We also use pre-commit hooks to ensure linting and style enforcement. Install th
 
 ## License
 By contributing to habitat-sim, you agree that your contributions will be licensed
-under [the LICENSE file](/LICENSE).
+under [the LICENSE file](https://github.com/facebookresearch/habitat-sim/blob/master/LICENSE).

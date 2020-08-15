@@ -8,6 +8,7 @@
 #include "esp/geo/geo.h"
 
 namespace py = pybind11;
+using py::literals::operator""_a;
 
 namespace esp {
 namespace geo {
@@ -42,6 +43,14 @@ void initGeoBindings(py::module& m) {
       });
 
   geo.def("compute_gravity_aligned_MOBB", &geo::computeGravityAlignedMOBB);
+  geo.def("get_transformed_bb", &geo::getTransformedBB, "range"_a, "xform"_a);
+
+  // ==== Ray ====
+  py::class_<Ray>(m, "Ray")
+      .def(py::init<Magnum::Vector3, Magnum::Vector3>())
+      .def(py::init<>())
+      .def_readwrite("origin", &Ray::origin)
+      .def_readwrite("direction", &Ray::direction);
 }
 
 }  // namespace geo

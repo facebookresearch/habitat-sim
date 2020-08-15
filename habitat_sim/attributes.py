@@ -3,8 +3,27 @@
 # LICENSE file in the root directory of this source tree.
 
 from habitat_sim._ext.habitat_sim_bindings import (
+    AbstractAttributes,
     AbstractPhysicsAttributes,
+    AbstractPrimitiveAttributes,
+    CapsulePrimitiveAttributes,
+    ConePrimitiveAttributes,
+    CubePrimitiveAttributes,
+    CylinderPrimitiveAttributes,
+    IcospherePrimitiveAttributes,
     PhysicsObjectAttributes,
+    UVSpherePrimitiveAttributes,
 )
 
-__all__ = ["AbstractPhysicsAttributes", "PhysicsObjectAttributes"]
+__all__ = [
+    "AbstractAttributes",
+    "AbstractPhysicsAttributes",
+    "AbstractPrimitiveAttributes",
+    "CapsulePrimitiveAttributes",
+    "ConePrimitiveAttributes",
+    "CubePrimitiveAttributes",
+    "CylinderPrimitiveAttributes",
+    "IcospherePrimitiveAttributes",
+    "PhysicsObjectAttributes",
+    "UVSpherePrimitiveAttributes",
+]

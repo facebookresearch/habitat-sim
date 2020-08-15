@@ -42,6 +42,8 @@ Simulator::~Simulator() {
 
 void Simulator::close() {
   pathfinder_ = nullptr;
+  navMeshVisPrimID_ = esp::ID_UNDEFINED;
+  navMeshVisNode_ = nullptr;
   agents_.clear();
 
   physicsManager_ = nullptr;
@@ -80,18 +82,45 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // TODO can optimize to do partial re-initialization instead of from-scratch
   config_ = cfg;
 
-  // load scene
-  std::string sceneFilename = cfg.scene.id;
-  if (cfg.scene.filepaths.count("mesh")) {
-    sceneFilename = cfg.scene.filepaths.at("mesh");
+  // use physics attributes manager to get physics manager attributes
+  // described by config file - this always exists to configure scene
+  // attributes
+  auto physicsManagerAttributes =
+      resourceManager_->getPhysicsAttributesManager()->createAttributesTemplate(
+          config_.physicsConfigFile, true);
+  // if physicsManagerAttributes have been successfully created, inform
+  // sceneAttributesManager of the config handle of the attributes, so that
+  // sceneAttributes initialization can use phys Mgr Attr values as defaults
+  auto sceneAttributesMgr = resourceManager_->getSceneAttributesManager();
+  if (physicsManagerAttributes != nullptr) {
+    sceneAttributesMgr->setCurrPhysicsManagerAttributesHandle(
+        physicsManagerAttributes->getHandle());
   }
+  // set scene attributes defaults to cfg-based values, i.e. to construct
+  // default semantic and navmesh file names, if they exist.  All values
+  // set/built from these default values may be overridden by values in scene
+  // json file, if present.
+  sceneAttributesMgr->setCurrCfgVals(
+      config_.scene.filepaths, config_.sceneLightSetup, config_.frustumCulling);
+
+  // Build scene file name based on config specification
+  std::string sceneFilename = config_.scene.id;
+  if (config_.scene.filepaths.count("mesh")) {
+    sceneFilename = config_.scene.filepaths.at("mesh");
+  }
+
+  // Create scene attributes with values based on sceneFilename
+  auto sceneAttributes =
+      sceneAttributesMgr->createAttributesTemplate(sceneFilename, true);
+
+  std::string navmeshFilename = sceneAttributes->getNavmeshAssetHandle();
+  std::string houseFilename = sceneAttributes->getHouseFilename();
+
+  esp::assets::AssetType sceneType = static_cast<esp::assets::AssetType>(
+      sceneAttributes->getRenderAssetType());
 
   // create pathfinder and load navmesh if available
   pathfinder_ = nav::PathFinder::create();
-  std::string navmeshFilename = io::changeExtension(sceneFilename, ".navmesh");
-  if (cfg.scene.filepaths.count("navmesh")) {
-    navmeshFilename = cfg.scene.filepaths.at("navmesh");
-  }
   if (io::exists(navmeshFilename)) {
     LOG(INFO) << "Loading navmesh from " << navmeshFilename;
     pathfinder_->loadNavMesh(navmeshFilename);
@@ -103,34 +132,19 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // Calling to seeding needs to be done after the pathfinder creation
   seed(config_.randomSeed);
 
-  std::string houseFilename = io::changeExtension(sceneFilename, ".house");
-  if (!io::exists(houseFilename)) {
-    houseFilename = io::changeExtension(sceneFilename, ".scn");
-  }
-  if (cfg.scene.filepaths.count("house")) {
-    houseFilename = cfg.scene.filepaths.at("house");
-  }
-
-  if (!io::exists(houseFilename)) {
-    houseFilename = io::changeExtension(sceneFilename, ".scn");
-  }
-
-  assets::AssetInfo sceneInfo = assets::AssetInfo::fromPath(sceneFilename);
-  sceneInfo.requiresLighting =
-      cfg.sceneLightSetup != assets::ResourceManager::NO_LIGHT_KEY;
-
   // initalize scene graph
   // CAREFUL!
   // previous scene graph is not deleted!
   // TODO:
   // We need to make a design decision here:
   // when doing reconfigure, shall we delete all of the previous scene graphs
+
   activeSceneID_ = sceneManager_->initSceneGraph();
 
   // LOG(INFO) << "Active scene graph ID = " << activeSceneID_;
   sceneID_.push_back(activeSceneID_);
 
-  if (cfg.createRenderer) {
+  if (config_.createRenderer) {
     if (!context_) {
       context_ = gfx::WindowlessContext::create_unique(config_.gpuDeviceId);
     }
@@ -141,70 +155,69 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     }
 
     auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
-
     auto& rootNode = sceneGraph.getRootNode();
-    auto& drawables = sceneGraph.getDrawables();
-    resourceManager_->compressTextures(cfg.compressTextures);
+    // auto& drawables = sceneGraph.getDrawables();
+    resourceManager_->compressTextures(config_.compressTextures);
 
     bool loadSuccess = false;
-    if (config_.enablePhysics) {
-      loadSuccess = resourceManager_->loadScene(
-          sceneInfo, physicsManager_, &rootNode, &drawables,
-          cfg.sceneLightSetup, cfg.physicsConfigFile);
-    } else {
-      loadSuccess = resourceManager_->loadScene(
-          sceneInfo, &rootNode, &drawables, cfg.sceneLightSetup);
-    }
+
+    // (re)seat & (re)init physics manager
+    resourceManager_->initPhysicsManager(physicsManager_, config_.enablePhysics,
+                                         &rootNode, physicsManagerAttributes);
+
+    std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
+    // Load scene
+    loadSuccess = resourceManager_->loadScene(sceneAttributes, physicsManager_,
+                                              sceneManager_.get(), tempIDs,
+                                              config_.loadSemanticMesh);
+
     if (!loadSuccess) {
-      LOG(ERROR) << "cannot load " << sceneFilename;
+      LOG(ERROR) << "Cannot load " << sceneFilename;
       // Pass the error to the python through pybind11 allowing graceful exit
       throw std::invalid_argument("Cannot load: " + sceneFilename);
     }
+
+    // refresh the NavMesh visualization if necessary after loading a new
+    // SceneGraph
+    if (isNavMeshVisualizationActive()) {
+      // if updating pathfinder_ instance, refresh the visualization.
+      setNavMeshVisualization(false);  // first clear the old instance
+      setNavMeshVisualization(true);
+    }
+
     const Magnum::Range3D& sceneBB = rootNode.computeCumulativeBB();
     resourceManager_->setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
 
-    if (io::exists(houseFilename)) {
-      LOG(INFO) << "Loading house from " << houseFilename;
-      // if semantic mesh exists, load it as well
-      // TODO: remove hardcoded filename change and use SceneConfiguration
-      const std::string semanticMeshFilename =
-          io::removeExtension(houseFilename) + "_semantic.ply";
-      if (cfg.loadSemanticMesh && io::exists(semanticMeshFilename)) {
-        LOG(INFO) << "Loading semantic mesh " << semanticMeshFilename;
-        activeSemanticSceneID_ = sceneManager_->initSceneGraph();
+    // set activeSemanticSceneID_ values and push onto sceneID vector if
+    // appropriate - tempIDs[1] will either be old activeSemanticSceneID_ (if
+    // no semantic mesh was requested in loadScene); ID_UNDEFINED if desired was
+    // not found; activeSceneID_, or a unique value, the last of which means the
+    // semantic scene mesh is loaded.
+
+    if (activeSemanticSceneID_ != tempIDs[1]) {
+      // id has changed so act - if ID has not changed, do nothing
+      activeSemanticSceneID_ = tempIDs[1];
+      if ((activeSemanticSceneID_ != ID_UNDEFINED) &&
+          (activeSemanticSceneID_ != activeSceneID_)) {
         sceneID_.push_back(activeSemanticSceneID_);
-        auto& semanticSceneGraph =
-            sceneManager_->getSceneGraph(activeSemanticSceneID_);
-        auto& semanticRootNode = semanticSceneGraph.getRootNode();
-        auto& semanticDrawables = semanticSceneGraph.getDrawables();
-        const assets::AssetInfo semanticSceneInfo =
-            assets::AssetInfo::fromPath(semanticMeshFilename);
-        resourceManager_->loadScene(
-            semanticSceneInfo, &semanticRootNode, &semanticDrawables,
-            assets::ResourceManager::NO_LIGHT_KEY, cfg.frustumCulling);
-        LOG(INFO) << "Loaded.";
-      } else {
-        activeSemanticSceneID_ = ID_UNDEFINED;
-        LOG(INFO) << "Not loading semantic mesh";
+      } else {  // activeSemanticSceneID_ = activeSceneID_;
+        // instance meshes and suncg houses contain their semantic annotations
+        // empty scene has none to worry about
+        if (!(sceneType == assets::AssetType::SUNCG_SCENE ||
+              sceneType == assets::AssetType::INSTANCE_MESH ||
+              sceneFilename.compare(assets::EMPTY_SCENE) == 0)) {
+          // TODO: programmatic generation of semantic meshes when no
+          // annotations are provided.
+          LOG(WARNING) << ":\n---\n The active scene does not contain semantic "
+                          "annotations. \n---";
+        }
       }
-    } else {
-      activeSemanticSceneID_ = activeSceneID_;
-      // instance meshes and suncg houses contain their semantic annotations
-      // empty scene has none to worry about
-      if (!(sceneInfo.type == assets::AssetType::SUNCG_SCENE ||
-            sceneInfo.type == assets::AssetType::INSTANCE_MESH ||
-            sceneFilename.compare(assets::EMPTY_SCENE) == 0)) {
-        // TODO: programmatic generation of semantic meshes when no annotations
-        // are provided.
-        LOG(WARNING) << ":\n---\n The active scene does not contain semantic "
-                        "annotations. \n---";
-      }
-    }
-  }
+    }  // if ID has changed - needs to be reset
+  }    // if (config_.createRenderer)
 
   semanticScene_ = nullptr;
   semanticScene_ = scene::SemanticScene::create();
-  switch (sceneInfo.type) {
+  switch (sceneType) {
     case assets::AssetType::INSTANCE_MESH:
       houseFilename = Cr::Utility::Directory::join(
           Cr::Utility::Directory::path(houseFilename), "info_semantic.json");
@@ -231,7 +244,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   reset();
-}
+}  // Simulator::reconfigure
 
 void Simulator::reset() {
   if (physicsManager_ != nullptr) {
@@ -245,23 +258,11 @@ void Simulator::reset() {
   const Magnum::Range3D& sceneBB =
       getActiveSceneGraph().getRootNode().computeCumulativeBB();
   resourceManager_->setLightSetup(gfx::getLightsAtBoxCorners(sceneBB));
-}
+}  // Simulator::reset()
 
 void Simulator::seed(uint32_t newSeed) {
   random_->seed(newSeed);
   pathfinder_->seed(newSeed);
-}
-
-std::shared_ptr<gfx::Renderer> Simulator::getRenderer() {
-  return renderer_;
-}
-
-std::shared_ptr<physics::PhysicsManager> Simulator::getPhysicsManager() {
-  return physicsManager_;
-}
-
-std::shared_ptr<scene::SemanticScene> Simulator::getSemanticScene() {
-  return semanticScene_;
 }
 
 scene::SceneGraph& Simulator::getActiveSceneGraph() {
@@ -301,8 +302,8 @@ int Simulator::addObject(int objectLibIndex,
                          const std::string& lightSetupKey,
                          int sceneID) {
   if (sceneHasPhysics(sceneID)) {
-    // TODO: change implementation to support multi-world and physics worlds to
-    // own reference to a sceneGraph to avoid this.
+    // TODO: change implementation to support multi-world and physics worlds
+    // to own reference to a sceneGraph to avoid this.
     auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
     auto& drawables = sceneGraph_.getDrawables();
     return physicsManager_->addObject(objectLibIndex, &drawables,
@@ -316,8 +317,8 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
                                  const std::string& lightSetupKey,
                                  int sceneID) {
   if (sceneHasPhysics(sceneID)) {
-    // TODO: change implementation to support multi-world and physics worlds to
-    // own reference to a sceneGraph to avoid this.
+    // TODO: change implementation to support multi-world and physics worlds
+    // to own reference to a sceneGraph to avoid this.
     auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
     auto& drawables = sceneGraph_.getDrawables();
     return physicsManager_->addObject(objectLibHandle, &drawables,
@@ -326,29 +327,11 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
   return ID_UNDEFINED;
 }
 
-std::vector<int> Simulator::loadObjectConfigs(const std::string& path) {
-  std::vector<int> templateIndices;
-  std::vector<std::string> validConfigPaths =
-      resourceManager_->buildObjectConfigPaths(path);
-  for (auto& validPath : validConfigPaths) {
-    templateIndices.push_back(
-        resourceManager_->parseAndLoadPhysObjTemplate(validPath));
-  }
-  return templateIndices;
-}
-
-int Simulator::registerObjectTemplate(
-    assets::PhysicsObjectAttributes::ptr objTmplPtr,
-    const std::string& objectTemplateHandle) {
-  return resourceManager_->registerObjectTemplate(objTmplPtr,
-                                                  objectTemplateHandle);
-}
-
-const assets::PhysicsObjectAttributes::ptr
+const assets::PhysicsObjectAttributes::cptr
 Simulator::getObjectInitializationTemplate(int objectId,
                                            const int sceneID) const {
   if (sceneHasPhysics(sceneID)) {
-    return physicsManager_->getInitializationAttributes(objectId);
+    return physicsManager_->getObjectInitAttributes(objectId);
   }
   return nullptr;
 }
@@ -423,6 +406,15 @@ scene::SceneNode* Simulator::getObjectSceneNode(const int objectID,
   return nullptr;
 }
 
+std::vector<scene::SceneNode*> Simulator::getObjectVisualSceneNodes(
+    const int objectID,
+    const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getObjectVisualSceneNodes(objectID);
+  }
+  return std::vector<scene::SceneNode*>();
+}
+
 // set object transform (kinemmatic control)
 void Simulator::setTransformation(const Magnum::Matrix4& transform,
                                   const int objectID,
@@ -438,6 +430,22 @@ Magnum::Matrix4 Simulator::getTransformation(const int objectID,
     return physicsManager_->getTransformation(objectID);
   }
   return Magnum::Matrix4::fromDiagonal(Magnum::Vector4(1));
+}
+
+esp::core::RigidState Simulator::getRigidState(const int objectID,
+                                               const int sceneID) const {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->getRigidState(objectID);
+  }
+  return esp::core::RigidState();
+}
+
+void Simulator::setRigidState(const esp::core::RigidState& rigidState,
+                              const int objectID,
+                              const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    physicsManager_->setRigidState(objectID, rigidState);
+  }
 }
 
 // set object translation directly
@@ -515,6 +523,15 @@ bool Simulator::contactTest(const int objectID, const int sceneID) {
   return false;
 }
 
+esp::physics::RaycastResults Simulator::castRay(const esp::geo::Ray& ray,
+                                                float maxDistance,
+                                                const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    return physicsManager_->castRay(ray, maxDistance);
+  }
+  return esp::physics::RaycastResults();
+}
+
 void Simulator::setObjectBBDraw(bool drawBB,
                                 const int objectID,
                                 const int sceneID) {
@@ -522,6 +539,14 @@ void Simulator::setObjectBBDraw(bool drawBB,
     auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
     auto& drawables = sceneGraph_.getDrawables();
     physicsManager_->setObjectBBDraw(objectID, &drawables, drawBB);
+  }
+}
+
+void Simulator::setObjectSemanticId(uint32_t semanticId,
+                                    const int objectID,
+                                    const int sceneID) {
+  if (sceneHasPhysics(sceneID)) {
+    physicsManager_->setSemanticId(objectID, semanticId);
   }
 }
 
@@ -556,12 +581,13 @@ Magnum::Vector3 Simulator::getGravity(const int sceneID) const {
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
                                  const nav::NavMeshSettings& navMeshSettings,
                                  bool includeStaticObjects) {
-  CORRADE_ASSERT(
-      config_.createRenderer,
-      "Simulator::recomputeNavMesh: SimulatorConfiguration::createRenderer is "
-      "false. Scene geometry is required to recompute navmesh. No geometry is "
-      "loaded without renderer initialization.",
-      false);
+  CORRADE_ASSERT(config_.createRenderer,
+                 "Simulator::recomputeNavMesh: "
+                 "SimulatorConfiguration::createRenderer is "
+                 "false. Scene geometry is required to recompute navmesh. No "
+                 "geometry is "
+                 "loaded without renderer initialization.",
+                 false);
 
   assets::MeshData::uptr joinedMesh =
       resourceManager_->createJoinedCollisionMesh(config_.scene.id);
@@ -575,8 +601,8 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
             Eigen::Transform<float, 3, Eigen::Affine> >(
             physicsManager_->getObjectVisualSceneNode(objectID)
                 .absoluteTransformationMatrix());
-        const assets::PhysicsObjectAttributes::ptr initializationTemplate =
-            physicsManager_->getInitializationAttributes(objectID);
+        const assets::PhysicsObjectAttributes::cptr initializationTemplate =
+            physicsManager_->getObjectInitAttributes(objectID);
         objectTransform.scale(Magnum::EigenIntegration::cast<vec3f>(
             initializationTemplate->getScale()));
         std::string meshHandle =
@@ -606,8 +632,48 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
     return false;
   }
 
+  if (&pathfinder == pathfinder_.get()) {
+    if (isNavMeshVisualizationActive()) {
+      // if updating pathfinder_ instance, refresh the visualization.
+      setNavMeshVisualization(false);  // first clear the old instance
+      setNavMeshVisualization(true);
+    }
+  }
+
   LOG(INFO) << "reconstruct navmesh successful";
   return true;
+}
+
+bool Simulator::setNavMeshVisualization(bool visualize) {
+  // clean-up the NavMesh visualization if necessary
+  if (!visualize && navMeshVisNode_ != nullptr) {
+    delete navMeshVisNode_;
+    navMeshVisNode_ = nullptr;
+    if (navMeshVisPrimID_ != ID_UNDEFINED)
+      resourceManager_->removePrimitiveMesh(navMeshVisPrimID_);
+    navMeshVisPrimID_ = ID_UNDEFINED;
+  }
+
+  // Create new visualization asset and SceneNode
+  if (visualize && pathfinder_ != nullptr && navMeshVisNode_ == nullptr &&
+      pathfinder_->isLoaded()) {
+    auto& sceneGraph = sceneManager_->getSceneGraph(activeSceneID_);
+    auto& rootNode = sceneGraph.getRootNode();
+    auto& drawables = sceneGraph.getDrawables();
+    navMeshVisNode_ = &rootNode.createChild();
+    navMeshVisPrimID_ = resourceManager_->loadNavMeshVisualization(
+        *pathfinder_, navMeshVisNode_, &drawables);
+    if (navMeshVisPrimID_ == ID_UNDEFINED) {
+      LOG(ERROR) << "Simulator::toggleNavMeshVisualization : Failed to load "
+                    "navmesh visualization.";
+      delete navMeshVisNode_;
+    }
+  }
+  return isNavMeshVisualizationActive();
+}
+
+bool Simulator::isNavMeshVisualizationActive() {
+  return (navMeshVisNode_ != nullptr && navMeshVisPrimID_ != ID_UNDEFINED);
 }
 
 // Agents

@@ -5,7 +5,11 @@ find_package(Magnum
 
 find_package(MagnumIntegration REQUIRED ImGui)
 
-set(viewer_SOURCES viewer.cpp)
+set(viewer_SOURCES
+viewer.cpp
+ObjectPickingHelper.cpp
+ObjectPickingHelper.h
+)
 
 #set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 add_executable(viewer ${viewer_SOURCES})

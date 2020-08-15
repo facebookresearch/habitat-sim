@@ -34,6 +34,38 @@ namespace esp {
 //! core physics simulation namespace
 namespace physics {
 
+//! Holds information about one ray hit instance.
+struct RayHitInfo {
+  //! The id of the object hit by this ray. Scene hits are -1.
+  int objectId;
+  //! The first impact point of the ray in world space.
+  Magnum::Vector3 point;
+  //! The collision object normal at the point of impact.
+  Magnum::Vector3 normal;
+  //! Distance along the ray direction from the ray origin (in units of ray
+  //! length).
+  double rayDistance;
+
+  ESP_SMART_POINTERS(RayHitInfo)
+};
+
+//! Holds information about all ray hit instances from a ray cast.
+struct RaycastResults {
+  std::vector<RayHitInfo> hits;
+  esp::geo::Ray ray;
+
+  bool hasHits() { return hits.size() > 0; }
+
+  void sortByDistance() {
+    std::sort(hits.begin(), hits.end(),
+              [](const RayHitInfo& A, const RayHitInfo& B) {
+                return A.rayDistance < B.rayDistance;
+              });
+  }
+
+  ESP_SMART_POINTERS(RaycastResults)
+};
+
 // TODO: repurpose to manage multiple physical worlds. Currently represents
 // exactly one world.
 
@@ -92,9 +124,9 @@ class PhysicsManager {
    */
   explicit PhysicsManager(
       assets::ResourceManager& _resourceManager,
-      const assets::PhysicsManagerAttributes::ptr _physicsManagerAttributes)
+      const assets::PhysicsManagerAttributes::cptr _physicsManagerAttributes)
       : resourceManager_(_resourceManager),
-        physicsManagerAttributes(_physicsManagerAttributes){};
+        physicsManagerAttributes_(_physicsManagerAttributes){};
 
   /** @brief Destructor*/
   virtual ~PhysicsManager();
@@ -105,8 +137,6 @@ class PhysicsManager {
    *
    * @param node    The scene graph node which will act as the parent of all
    * physical scene and object nodes.
-   * @param physicsManagerAttributes A structure containing values for physical
-   * parameters necessary to initialize the physical scene and simulator.
    */
   bool initPhysics(scene::SceneNode* node);
 
@@ -117,7 +147,7 @@ class PhysicsManager {
   virtual void reset() {
     /* TODO: reset object states or clear them? Other? */
     worldTime_ = 0.0;
-  };
+  }
 
   /** @brief Stores references to a set of drawable elements. */
   using DrawableGroup = gfx::DrawableGroup;
@@ -127,14 +157,13 @@ class PhysicsManager {
    * Only one 'scene' may be initialized per simulated world, but this scene may
    * contain several components (e.g. GLB heirarchy).
    *
-   * @param physicsSceneAttributes a pointer to the structure defining physical
+   * @param handle The handle to the attributes structure defining physical
    * properties of the scene.
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
-  bool addScene(
-      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes,
-      const std::vector<assets::CollisionMeshData>& meshGroup);
+  bool addScene(const std::string& handle,
+                const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::assets::ResourceManager::physicsObjectLibrary_.
@@ -311,6 +340,16 @@ class PhysicsManager {
    */
   void setTransformation(const int physObjectID, const Magnum::Matrix4& trans);
 
+  /** @brief Set the @ref esp::core::RigidState of an object kinematically.
+   * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
+   * recommended.
+   * @param  physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @param trans The desired @ref esp::core::RigidState of the object.
+   */
+  void setRigidState(const int physObjectID,
+                     const esp::core::RigidState& rigidState);
+
   /** @brief Set the 3D position of an object kinematically.
    * Calling this during simulation of a @ref MotionType::DYNAMIC object is not
    * recommended.
@@ -441,6 +480,13 @@ class PhysicsManager {
    * @return The 4x4 transform of the object.
    */
   Magnum::Matrix4 getTransformation(const int physObjectID) const;
+
+  /** @brief Get the current @ref esp::core::RigidState of an object.
+   * @param  physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return The @ref esp::core::RigidState of the object.
+   */
+  esp::core::RigidState getRigidState(const int objectID) const;
 
   /** @brief Get the current 3D position of an object.
    * @param  physObjectID The object ID and key identifying the object in @ref
@@ -763,6 +809,16 @@ class PhysicsManager {
    */
   const scene::SceneNode& getObjectVisualSceneNode(int physObjectID) const;
 
+  /**
+   * @brief Get pointers to an object's visual SceneNodes.
+   *
+   * @param physObjectID The object ID and key identifying the object in @ref
+   * PhysicsManager::existingObjects_.
+   * @return pointers to the object's visual scene nodes.
+   */
+  std::vector<scene::SceneNode*> getObjectVisualSceneNodes(
+      const int objectID) const;
+
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref
    * BulletPhysicsManager::debugDraw.
@@ -796,14 +852,55 @@ class PhysicsManager {
   };
 
   /**
-   * @brief Get the template used to initialize an object.
+   * @brief Set the @ref esp::scene:SceneNode::semanticId_ for all visual nodes
+   * belonging to an object.
    *
-   * PhysicsObjectAttributes templates are expected to be changed between
-   * instances of objects.
+   * @param objectID The object ID and key identifying the object in @ref
+   * existingObjects_.
+   * @param semanticId The desired semantic id for the object.
+   */
+  void setSemanticId(int physObjectID, uint32_t semanticId);
+
+  /**
+   * @brief Get a copy of the template used to initialize an object.
+   *
    * @return The initialization settings of the specified object instance.
    */
-  const assets::PhysicsObjectAttributes::ptr getInitializationAttributes(
-      const int physObjectID) const;
+  assets::PhysicsObjectAttributes::ptr getObjectInitAttributes(
+      const int physObjectID) const {
+    assertIDValidity(physObjectID);
+    return existingObjects_.at(physObjectID)->getInitializationAttributes();
+  }
+
+  /**
+   * @brief Get a copy of the template used to initialize this physics manager
+   *
+   * @return The initialization settings for this physics manager
+   */
+  assets::PhysicsManagerAttributes::ptr getInitializationAttributes() const {
+    return assets::PhysicsManagerAttributes::create(
+        *physicsManagerAttributes_.get());
+  }
+
+  /**
+   * @brief Cast a ray into the collision world and return a @ref RaycastResults
+   * with hit information.
+   *
+   * Note: not implemented here in default PhysicsManager as there are no
+   * collision objects without a simulation implementation.
+   *
+   * @param ray The ray to cast. Need not be unit length, but returned hit
+   * distances will be in units of ray length.
+   * @param maxDistance The maximum distance along the ray direction to search.
+   * In units of ray length.
+   * @return The raycast results sorted by distance.
+   */
+  virtual RaycastResults castRay(const esp::geo::Ray& ray,
+                                 CORRADE_UNUSED double maxDistance = 100.0) {
+    RaycastResults results;
+    results.ray = ray;
+    return results;
+  }
 
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
@@ -843,8 +940,6 @@ class PhysicsManager {
    * @brief Finalize physics initialization. Setup staticSceneObject_ and
    * initialize any other physics-related values for physics-based scenes.
    * Overidden by instancing class if physics is supported.
-   * @param physicsManagerAttributes A structure containing values for physical
-   * parameters necessary to initialize the physical scene and simulator.
    */
   virtual bool initPhysicsFinalize();
 
@@ -852,29 +947,27 @@ class PhysicsManager {
    * @brief Finalize scene initialization for kinematic scenes.  Overidden by
    * instancing class if physics is supported.
    *
-   * @param physicsSceneAttributes a pointer to the structure defining physical
+   * @param handle the handle to the attributes structure defining physical
    * properties of the scene.
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
 
-  virtual bool addSceneFinalize(
-      const assets::PhysicsSceneAttributes::ptr physicsSceneAttributes);
+  virtual bool addSceneFinalize(const std::string& handle);
 
   /** @brief Create and initialize a @ref RigidObject, assign it an ID and add
    * it to existingObjects_ map keyed with newObjectID
    * @param newObjectID valid object ID for the new object
    * @param meshGroup The object's mesh.
-   * @param physicsObjectAttributes The physical object's template defining its
+   * @param handle The handle to the physical object's template defining its
    * physical parameters.
    * @param objectNode Valid, existing scene node
    * @return whether the object has been successfully initialized and added to
    * existingObjects_ map
    */
-  virtual bool makeAndAddRigidObject(
-      int newObjectID,
-      assets::PhysicsObjectAttributes::ptr physicsObjectAttributes,
-      scene::SceneNode* objectNode);
+  virtual bool makeAndAddRigidObject(int newObjectID,
+                                     const std::string& handle,
+                                     scene::SceneNode* objectNode);
 
   /** @brief A reference to a @ref esp::assets::ResourceManager which holds
    * assets that can be accessed by this @ref PhysicsManager*/
@@ -882,7 +975,7 @@ class PhysicsManager {
 
   /** @brief A pointer to the @ref assets::PhysicsManagerAttributes describing
    * this physics manager */
-  const assets::PhysicsManagerAttributes::ptr physicsManagerAttributes;
+  const assets::PhysicsManagerAttributes::cptr physicsManagerAttributes_;
 
   /** @brief The current physics library implementation used by this
    * @ref PhysicsManager. Can be used to correctly cast the @ref PhysicsManager
