@@ -5,12 +5,17 @@ default_language_version:
 
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.2.3
+    rev: v3.2.0
     hooks:
     -   id: trailing-whitespace
     -   id: check-added-large-files
         args: ['--maxkb=2000']
     -   id: end-of-file-fixer
+    -   id: check-executables-have-shebangs
+    -   id: check-case-conflict
+    -   id: check-merge-conflict
+    -   id: check-toml
+
 
 -   repo: https://github.com/asottile/seed-isort-config
     rev: v2.2.0
