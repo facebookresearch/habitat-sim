@@ -1114,7 +1114,7 @@ for iteration in range(2):
             primary_obs_type="color",
             video_file=output_directory + "continuous_nav",
             fps=fps,
-            open_vid=True,
+            open_vid=show_video,
         )
 
     sim.reset()
