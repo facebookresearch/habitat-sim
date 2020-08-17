@@ -71,3 +71,8 @@ repos:
         - eslint-plugin-prettier@3.1.0
         - eslint-plugin-html@6.0.0
         - prettier@1.18.2
+
+-   repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.7.1.1
+    hooks:
+    -   id: shellcheck
