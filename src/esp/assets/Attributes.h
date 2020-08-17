@@ -11,6 +11,8 @@
 #include <vector>
 #include "Magnum/Math/Math.h"
 #include "Magnum/Types.h"
+
+#include "esp/assets/Asset.h"
 #include "esp/core/Configuration.h"
 
 namespace esp {
@@ -91,6 +93,12 @@ class AbstractAttributes : public esp::core::Configuration {
  */
 class AbstractPhysicsAttributes : public AbstractAttributes {
  public:
+  /**
+   * @brief Constant static map to provide mappings from string tags to @ref
+   * AssetType values.  This will be used to map values set in json for mesh
+   * type to @ref AssetTypes.  Keys must be lowercase.
+   */
+  static const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
   AbstractPhysicsAttributes(const std::string& classKey,
                             const std::string& handle);
 
@@ -474,7 +482,10 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   }
   int getNumSegments() const { return getInt("segments"); }
   // capsule, cone and cylinder use halfLength
-  void setHalfLength(double halfLength) { setDouble("halfLength", halfLength); }
+  void setHalfLength(double halfLength) {
+    setDouble("halfLength", halfLength);
+    buildHandle();
+  }
   double getHalfLength() const { return getDouble("halfLength"); }
 
   std::string getPrimObjClassName() const {

@@ -117,14 +117,6 @@ void ResourceManager::initDefaultPrimAttributes() {
   primitive_meshes_[nextPrimitiveMeshId++] =
       std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube));
 
-  // build default primtive object templates corresponding to given default
-  // asset templates
-  auto lib = assetAttributesManager_->getTemplateLibrary();
-  for (auto primAsset : lib) {
-    objectAttributesManager_->createPrimBasedAttributesTemplate(primAsset.first,
-                                                                true);
-  }
-
 }  // initDefaultPrimAttributes
 
 void ResourceManager::initPhysicsManager(
@@ -217,33 +209,38 @@ bool ResourceManager::loadScene(
     } else {
       // if we have a collision mesh, and it does not exist already as a
       // collision object, add it
-      if ((collisionMeshGroups_.count(colInfo.filepath) == 0) &&
-          (colInfo.filepath.compare(EMPTY_SCENE) != 0)) {
-        //! Collect collision mesh group
+      if (colInfo.filepath.compare(EMPTY_SCENE) != 0) {
         std::vector<CollisionMeshData> meshGroup;
-        bool colMeshGroupSuccess = false;
-        if (colInfo.type == AssetType::INSTANCE_MESH) {
-          // PLY Instance mesh
-          colMeshGroupSuccess =
-              buildSceneCollisionMeshGroup<GenericInstanceMeshData>(
-                  colInfo.filepath, meshGroup);
-        } else if (colInfo.type == AssetType::MP3D_MESH ||
-                   colInfo.type == AssetType::UNKNOWN) {
-          // GLB Mesh
-          colMeshGroupSuccess = buildSceneCollisionMeshGroup<GenericMeshData>(
-              colInfo.filepath, meshGroup);
-        }
-        // TODO : PTEX collision support
+        if (collisionMeshGroups_.count(colInfo.filepath) == 0) {
+          //! Collect collision mesh group
+          bool colMeshGroupSuccess = false;
+          if (colInfo.type == AssetType::INSTANCE_MESH) {
+            // PLY Instance mesh
+            colMeshGroupSuccess =
+                buildSceneCollisionMeshGroup<GenericInstanceMeshData>(
+                    colInfo.filepath, meshGroup);
+          } else if (colInfo.type == AssetType::MP3D_MESH ||
+                     colInfo.type == AssetType::UNKNOWN) {
+            // GLB Mesh
+            colMeshGroupSuccess = buildSceneCollisionMeshGroup<GenericMeshData>(
+                colInfo.filepath, meshGroup);
+          }
+          // TODO : PTEX collision support
 
-        // failure during build of collision mesh group
-        if (!colMeshGroupSuccess) {
-          LOG(ERROR)
-              << "ResourceManager::loadScene : Scene" << colInfo.filepath
-              << " Collision mesh load failed. Aborting scene initialization.";
-          return false;
+          // failure during build of collision mesh group
+          if (!colMeshGroupSuccess) {
+            LOG(ERROR) << "ResourceManager::loadScene : Scene"
+                       << colInfo.filepath
+                       << " Collision mesh load failed. Aborting scene "
+                          "initialization.";
+            return false;
+          }
+          //! Add scene meshgroup to collision mesh groups
+          collisionMeshGroups_.emplace(colInfo.filepath, meshGroup);
+        } else {
+          // collision meshGroup already exists from prior load
+          meshGroup = collisionMeshGroups_.at(colInfo.filepath);
         }
-        //! Add scene meshgroup to collision mesh groups
-        collisionMeshGroups_.emplace(colInfo.filepath, meshGroup);
         //! Add to physics manager
         bool sceneSuccess =
             _physicsManager->addScene(colInfo.filepath, meshGroup);
@@ -254,7 +251,7 @@ bool ResourceManager::loadScene(
               << " to PhysicsManager failed. Aborting scene initialization.";
           return false;
         }
-      }  // if not empty scene
+      }  // if not empty collision scene
     }    // if collisionMeshSuccess
   }      // if collision mesh desired
 
@@ -266,7 +263,7 @@ bool ResourceManager::loadScene(
     // check if file names exist
     AssetInfo semanticInfo = assetInfoMap.at("semantic");
     auto semanticSceneFilename = semanticInfo.filepath;
-    if (Corrade::Utility::Directory::exists(semanticSceneFilename)) {
+    if (Cr::Utility::Directory::exists(semanticSceneFilename)) {
       LOG(INFO) << "ResourceManager::loadScene : Loading semantic mesh "
                 << semanticSceneFilename;
       activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
@@ -389,7 +386,7 @@ bool ResourceManager::loadSceneInternal(
   const std::string& filename = info.filepath;
   bool meshSuccess = true;
   if (info.filepath.compare(EMPTY_SCENE) != 0) {
-    if (!Corrade::Utility::Directory::exists(filename)) {
+    if (!Cr::Utility::Directory::exists(filename)) {
       LOG(ERROR)
           << "ResourceManager::loadSceneInternal : Cannot find scene file "
           << filename;
@@ -438,7 +435,7 @@ bool ResourceManager::buildSceneCollisionMeshGroup(
     T* rawMeshData = dynamic_cast<T*>(meshes_[mesh_i].get());
     if (rawMeshData == nullptr) {
       // means dynamic cast failed
-      Corrade::Utility::Debug()
+      Cr::Utility::Debug()
           << "ResourceManager::loadPhysicsScene : AssetInfo::AssetType "
              "type error: unsupported mesh type, aborting. Try running "
              "without \"--enable-physics\" and consider logging an issue.";
@@ -517,7 +514,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs(
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
     const uint32_t meshID = staticDrawableInfo[iEntry].meshID;
 
-    Corrade::Containers::Optional<Magnum::Trade::MeshData>& meshData =
+    Cr::Containers::Optional<Magnum::Trade::MeshData>& meshData =
         meshes_[meshID]->getMeshData();
     CORRADE_ASSERT(meshData,
                    "ResourceManager::computeGeneralMeshAbsoluteAABBs: The mesh "
@@ -641,8 +638,8 @@ void ResourceManager::buildPrimitiveAssetData(
   primitiveImporter_->openData("");
   // configuration for PrimitiveImporter - replace appropriate group's data
   // before instancing prim object
-  auto conf = primitiveImporter_->configuration();
-  auto cfgGroup = conf.group(primClassName);
+  Cr::Utility::ConfigurationGroup& conf = primitiveImporter_->configuration();
+  Cr::Utility::ConfigurationGroup* cfgGroup = conf.group(primClassName);
   if (cfgGroup != nullptr) {  // ignore prims with no configuration like cubes
     auto newCfgGroup = primTemplate->getConfigGroup();
     // replace current conf group with passed attributes
@@ -708,8 +705,8 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
   // if this is a new file, load it and add it to the dictionary
   const std::string& filename = info.filepath;
   if (resourceDict_.count(filename) == 0) {
-    const auto atlasDir = Corrade::Utility::Directory::join(
-        Corrade::Utility::Directory::path(filename), "textures");
+    const auto atlasDir = Cr::Utility::Directory::join(
+        Cr::Utility::Directory::path(filename), "textures");
 
     meshes_.emplace_back(std::make_unique<PTexMeshData>());
     int index = meshes_.size() - 1;
@@ -970,7 +967,7 @@ bool ResourceManager::loadGeneralMeshData(
 
     // Register magnum mesh
     if (fileImporter_->defaultScene() != -1) {
-      Corrade::Containers::Optional<Magnum::Trade::SceneData> sceneData =
+      Cr::Containers::Optional<Magnum::Trade::SceneData> sceneData =
           fileImporter_->scene(fileImporter_->defaultScene());
       if (!sceneData) {
         LOG(ERROR) << "Cannot load scene, exiting";
@@ -1569,7 +1566,7 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
   const std::string houseId = pathTokens.back();
   pathTokens.pop_back();  // <houseId>
   pathTokens.pop_back();  // house
-  const std::string basePath = Corrade::Utility::String::join(pathTokens, '/');
+  const std::string basePath = Cr::Utility::String::join(pathTokens, '/');
 
   // store nodeIds to obtain linearized index for semantic masks
   std::vector<std::string> nodeIds;

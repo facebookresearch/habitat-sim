@@ -132,6 +132,10 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
     return drawables.size();
   }
 
+  if (flags & Flag::ObjectPicking) {
+    renderingForObjectPicking_ = true;
+  }
+
   std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
                         Mn::Matrix4>>
       drawableTransforms = drawableTransformations(drawables);
@@ -152,7 +156,32 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
   }
 
   MagnumCamera::draw(drawableTransforms);
+
+  // reset
+  if (renderingForObjectPicking_) {
+    renderingForObjectPicking_ = false;
+  }
   return drawableTransforms.size();
+}
+
+esp::geo::Ray RenderCamera::unproject(const Mn::Vector2i& viewportPosition) {
+  esp::geo::Ray ray;
+  ray.origin = object().absoluteTranslation();
+
+  const Magnum::Vector2i viewPos{viewportPosition.x(),
+                                 viewport().y() - viewportPosition.y() - 1};
+
+  const Magnum::Vector3 normalizedPos{
+      2 * Magnum::Vector2{viewPos} / Magnum::Vector2{viewport()} -
+          Magnum::Vector2{1.0f},
+      1.0};
+
+  ray.direction =
+      ((object().absoluteTransformationMatrix() * projectionMatrix().inverted())
+           .transformPoint(normalizedPos) -
+       ray.origin)
+          .normalized();
+  return ray;
 }
 
 }  // namespace gfx

@@ -96,7 +96,7 @@ class RigidObject : public RigidBase {
    * @param rigidBodyNode The @ref scene::SceneNode this feature will be
    * attached to.
    */
-  RigidObject(scene::SceneNode* rigidBodyNode);
+  RigidObject(scene::SceneNode* rigidBodyNode, int objectId);
 
   /**
    * @brief Virtual destructor for a @ref RigidObject.

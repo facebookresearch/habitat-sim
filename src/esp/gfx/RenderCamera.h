@@ -7,6 +7,7 @@
 #include "magnum.h"
 
 #include "esp/core/esp.h"
+#include "esp/geo/geo.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -28,6 +29,10 @@ class RenderCamera : public MagnumCamera {
      * scene::SceneNodeType::OBJECT.
      */
     ObjectsOnly = 1 << 1,
+    /**
+     * Render the drawables for object (drawable) picking purpose
+     */
+    ObjectPicking = 1 << 2,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
@@ -94,7 +99,23 @@ class RenderCamera : public MagnumCamera {
           std::pair<std::reference_wrapper<Magnum::SceneGraph::Drawable3D>,
                     Magnum::Matrix4>>& drawableTransforms);
 
+  /**
+   *@brief if the rendering pass is for picking the object (drawable)
+   */
+  bool isRenderingForObjectPicking() { return renderingForObjectPicking_; }
+  /**
+   * @brief Unproject a 2D viewport point to a 3D ray with origin at camera
+   * position.
+   *
+   * @param viewportPosition The 2D point on the viewport to unproject
+   * ([0,width], [0,height]).
+   * @return a @ref esp::geo::Ray with unit length direction or zero direction
+   * if failed.
+   */
+  esp::geo::Ray unproject(const Mn::Vector2i& viewportPosition);
+
  protected:
+  bool renderingForObjectPicking_ = false;
   ESP_SMART_POINTERS(RenderCamera)
 };
 

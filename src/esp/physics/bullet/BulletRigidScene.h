@@ -22,7 +22,9 @@ namespace physics {
 class BulletRigidScene : public BulletBase, public RigidScene {
  public:
   BulletRigidScene(scene::SceneNode* rigidBodyNode,
-                   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld);
+                   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld,
+                   std::shared_ptr<std::map<const btCollisionObject*, int>>
+                       collisionObjToObjIds);
 
   /**
    * @brief Destructor cleans up simulation structures for the object.

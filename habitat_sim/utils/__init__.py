@@ -5,12 +5,12 @@
 # LICENSE file in the root directory of this source tree.
 
 # quat_from_angle_axis and quat_rotate_vector imports
-# added for backward compatibility with Habitat-API
-# TODO @maksymets: remove after habitat-api/examples/new_actions.py will be
+# added for backward compatibility with Habitat Lab
+# TODO @maksymets: remove after habitat-lab/examples/new_actions.py will be
 # fixed
 
 
-from habitat_sim.utils import common
+from habitat_sim.utils import common, viz_utils
 from habitat_sim.utils.common import quat_from_angle_axis, quat_rotate_vector
 
-__all__ = ["quat_from_angle_axis", "quat_rotate_vector", "common"]
+__all__ = ["quat_from_angle_axis", "quat_rotate_vector", "common", "viz_utils"]

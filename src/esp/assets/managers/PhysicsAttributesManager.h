@@ -90,6 +90,15 @@ class PhysicsAttributesManager
 
  protected:
   /**
+   * @brief Not used by PhysicsManagerAttributes.
+   */
+  void setDefaultFileNameBasedAttributes(
+      CORRADE_UNUSED PhysicsManagerAttributes::ptr attributes,
+      CORRADE_UNUSED bool setFrame,
+      CORRADE_UNUSED const std::string& meshHandle,
+      CORRADE_UNUSED std::function<void(int)> meshTypeSetter) override {}
+
+  /**
    * @brief Used Internally.  Configure newly-created attributes with any
    * default values, before any specific values are set.
    *
@@ -133,12 +142,6 @@ class PhysicsAttributesManager
         physicsAttributesTemplate, physicsAttributesHandle);
     return physicsTemplateID;
   }  // PhysicsAttributesManager::registerAttributesTemplate
-
-  /**
-   * @brief Whether template described by passed handle is read only, or can be
-   * deleted. All PhysicsAttributes templates are removable, by default
-   */
-  bool isTemplateReadOnly(const std::string&) override { return false; }
 
   /**
    * @brief Any physics-attributes-specific resetting that needs to happen on

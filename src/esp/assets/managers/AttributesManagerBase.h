@@ -42,7 +42,9 @@ class AttributesManager {
  public:
   AttributesManager(assets::ResourceManager& resourceManager,
                     const std::string& attrType)
-      : resourceManager_(resourceManager), attrType_(attrType) {}
+      : resourceManager_(resourceManager), attrType_(attrType) {
+    this->defaultTemplateNames_.clear();
+  }
   virtual ~AttributesManager() = default;
 
   /**
@@ -101,6 +103,11 @@ class AttributesManager {
   int registerAttributesTemplate(
       AttribsPtr attributesTemplate,
       const std::string& attributesTemplateHandle = "") {
+    if (nullptr == attributesTemplate) {
+      LOG(ERROR) << "AttributesManager::registerAttributesTemplate : Invalid "
+                    "(null) template passed to registration. Aborting.";
+      return ID_UNDEFINED;
+    }
     if ("" != attributesTemplateHandle) {
       return registerAttributesTemplateFinalize(attributesTemplate,
                                                 attributesTemplateHandle);
@@ -247,6 +254,26 @@ class AttributesManager {
   }
 
   /**
+   * @brief Remove all templates that have not been marked as
+   * default/non-removable, and return a vector of the templates removed.
+   * @return A vector containing all the templates that have been removed from
+   * the library.
+   */
+  std::vector<AttribsPtr> removeAllTemplates() {
+    std::vector<AttribsPtr> res;
+    // get all handles first
+    std::vector<std::string> handles = getTemplateHandlesBySubstring("");
+    for (std::string templateHandle : handles) {
+      AttribsPtr ptr = removeTemplateInternal(
+          templateHandle, "AttributesManager::removeAllTemplates");
+      if (nullptr != ptr) {
+        res.push_back(ptr);
+      }
+    }
+    return res;
+  }  // removeAllTemplates
+
+  /**
    * @brief Get the key in @ref templateLibrary_ for the object template
    * with the given unique ID.
    *
@@ -381,11 +408,11 @@ class AttributesManager {
   }  // AttributesManager::getTemplateCopyByHandle
 
   /**
-   * @brief return a read-only reference to the template library managed by this
-   * object.
+   * @brief return a read-only reference to the default primitive asset template
+   * handles managed by this object.
    */
-  const std::map<std::string, AttribsPtr>& getTemplateLibrary() const {
-    return templateLibrary_;
+  const std::vector<std::string>& getDefaultTemplateHandles() const {
+    return this->defaultTemplateNames_;
   }
 
  protected:
@@ -434,7 +461,71 @@ class AttributesManager {
   AttribsPtr createPhysicsAttributesFromJson(const std::string& filename,
                                              const io::JsonDocument& jsonDoc);
 
+  /**
+   * @brief Only used by @ref AbstractPhysicsAttributes derived-attributes. Set
+   * the asset type and mesh asset filename from json file. If mesh asset
+   * filename has changed in json, but type has not been specified in json,
+   * re-run file-path-driven configuration to get asset type and possibly
+   * orientation frame, if appropriate.
+   *
+   * @param attributes The AbstractPhysicsAttributes object to be populated
+   * @param jsonDoc The json document
+   * @param jsonMeshTypeTag The string tag denoting the desired mesh type in the
+   * json.
+   * @param jsonMeshHandleTag The string for the mesh asset handle.
+   * @param fileName [in/out] On entry this is old mesh file handle, on exit is
+   * new mesh file handle, or empty.
+   * @param meshTypeSetter Function pointer to the appropriate mesh type setter
+   * in the Attributes object.
+   * @return Whether the render asset name was specified in the json and should
+   * be set from fileName variable.
+   */
+  bool setJSONAssetHandleAndType(AttribsPtr attributes,
+                                 const io::JsonDocument& jsonDoc,
+                                 const char* jsonMeshTypeTag,
+                                 const char* jsonMeshHandleTag,
+                                 std::string& fileName,
+                                 std::function<void(int)> meshTypeSetter);
+
   //======== Internally accessed functions ========
+  /**
+   * @brief Perform post creation registration if specified.
+   *
+   * @param attributes Attributes template
+   * @param registerTemplate If template should be registered
+   * @return attributes template, or null ptr if registration failed.
+   */
+  inline AttribsPtr postCreateRegister(AttribsPtr attributes,
+                                       bool registerTemplate) {
+    if (!registerTemplate) {
+      return attributes;
+    }
+    int attrID =
+        registerAttributesTemplate(attributes, attributes->getHandle());
+    // return nullptr if registration error occurs.
+    return (attrID == ID_UNDEFINED) ? nullptr : attributes;
+  }  // postCreateRegister
+
+  /**
+   * @brief Perform file-name-based attributes initialization. This is to
+   * take the place of the AssetInfo::fromPath functionality, and is only
+   * intended to provide default values and other help if certain mistakes
+   * are made by the user, such as specifying an asset handle in json but not
+   * specifying the asset type corresponding to that handle.  These settings
+   * should not restrict anything, only provide defaults.
+   *
+   * @param attributes The AbstractPhysicsAttributes object to be configured
+   * @param setFrame whether the frame should be set or not (only for render
+   * assets in scenes)
+   * @param fileName Mesh Handle to check.
+   * @param meshTypeSetter Setter for mesh type.
+   */
+  virtual void setDefaultFileNameBasedAttributes(
+      AttribsPtr attributes,
+      bool setFrame,
+      const std::string& fileName,
+      std::function<void(int)> meshTypeSetter) = 0;
+
   /**
    * @brief Get directory component of attributes handle and call @ref
    * attributes->setFileDirectory legitimate directory exists in handle.
@@ -556,7 +647,14 @@ class AttributesManager {
    * Assumes template exists.
    * @return Whether the template is read-only or not
    */
-  virtual bool isTemplateReadOnly(const std::string& templateHandle) = 0;
+  bool isTemplateReadOnly(const std::string& templateHandle) {
+    for (auto handle : this->defaultTemplateNames_) {
+      if (handle.compare(templateHandle) == 0) {
+        return true;
+      }
+    }
+    return false;
+  }  // isTemplateReadOnly
 
   /**
    * @brief Build a shared pointer to the appropriate attributes for passed
@@ -688,6 +786,11 @@ class AttributesManager {
    * recycled before using map-size-based IDs
    */
   std::deque<int> availableTemplateIDs_;
+  /**
+   * @brief vector holding string template handles of all default templates, to
+   * make sure they are never deleted.
+   */
+  std::vector<std::string> defaultTemplateNames_;
 
  public:
   ESP_SMART_POINTERS(AttributesManager<AttribsPtr>)
@@ -750,16 +853,25 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
       std::bind(&AbstractPhysicsAttributes::setOrientFront, attributes, _1));
 
   // 4. parse render and collision mesh filepaths
-  std::string propertiesFileDirectory = attributes->getFileDirectory();
   std::string rndrFName = "";
-  std::string colFName = "";
-  if (io::jsonIntoVal<std::string>(jsonDoc, "render mesh", rndrFName)) {
-    rndrFName =
-        Cr::Utility::Directory::join(propertiesFileDirectory, rndrFName);
+  std::string rTmpFName = attributes->getRenderAssetHandle();
+  if (setJSONAssetHandleAndType(
+          attributes, jsonDoc, "render mesh type", "render mesh", rTmpFName,
+          std::bind(&AbstractPhysicsAttributes::setRenderAssetType, attributes,
+                    _1))) {
+    rndrFName = rTmpFName;
   }
 
-  if (io::jsonIntoVal<std::string>(jsonDoc, "collision mesh", colFName)) {
-    colFName = Cr::Utility::Directory::join(propertiesFileDirectory, colFName);
+  std::string colFName = "";
+  std::string cTmpFName = attributes->getCollisionAssetHandle();
+  if (setJSONAssetHandleAndType(
+          attributes, jsonDoc, "collision mesh type", "collision mesh",
+          cTmpFName,
+          std::bind(&AbstractPhysicsAttributes::setCollisionAssetType,
+                    attributes, _1))) {
+    colFName = cTmpFName;
+    // TODO eventually remove this, but currently collision mesh must be UNKNOWN
+    attributes->setCollisionAssetType(static_cast<int>(AssetType::UNKNOWN));
   }
 
   // use non-empty result if either result is empty
@@ -771,6 +883,62 @@ AttribsPtr AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson(
 
   return attributes;
 }  // AttributesManager<AttribsPtr>::createPhysicsAttributesFromJson
+
+template <class T>
+bool AttributesManager<T>::setJSONAssetHandleAndType(
+    T attributes,
+    const io::JsonDocument& jsonDoc,
+    const char* jsonMeshTypeTag,
+    const char* jsonMeshHandleTag,
+    std::string& fileName,
+    std::function<void(int)> meshTypeSetter) {
+  std::string propertiesFileDirectory = attributes->getFileDirectory();
+  // save current file name
+  const std::string oldFName(fileName);
+  // clear var to get new value
+  fileName = "";
+  // Map a json string value to its corresponding AssetType if found and cast to
+  // int, based on @ref AbstractPhysicsAttributes::AssetTypeNamesMap mappings.
+  // Casts an int of the @ref esp::AssetType enum value if found and understood,
+  // 0 (AssetType::UNKNOWN) if found but not understood, and
+  //-1 if tag is not found in json.
+  int typeVal = -1;
+  std::string tmpVal = "";
+  if (io::jsonIntoVal<std::string>(jsonDoc, jsonMeshTypeTag, tmpVal)) {
+    // tag was found, perform check
+    std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
+    if (AbstractPhysicsAttributes::AssetTypeNamesMap.count(tmpVal)) {
+      typeVal = static_cast<int>(
+          AbstractPhysicsAttributes::AssetTypeNamesMap.at(tmpVal));
+    } else {
+      LOG(WARNING) << "AttributesManager::convertJsonStringToAssetType : "
+                      "Value in json @ tag : "
+                   << jsonMeshTypeTag << " : `" << tmpVal
+                   << "` does not map to a valid "
+                      "AbstractPhysicsAttributes::AssetTypeNamesMap value, so "
+                      "defaulting mesh type to AssetType::UNKNOWN.";
+      typeVal = static_cast<int>(AssetType::UNKNOWN);
+    }
+    // value found so override current value, otherwise do not.
+    meshTypeSetter(typeVal);
+  }  // if type is found in json.  If not typeVal is -1
+
+  // Read json for new mesh handle
+  if (io::jsonIntoVal<std::string>(jsonDoc, jsonMeshHandleTag, fileName)) {
+    // value has changed
+    fileName = Cr::Utility::Directory::join(propertiesFileDirectory, fileName);
+    if ((typeVal == -1) && (oldFName.compare(fileName) != 0)) {
+      std::string strToFind(jsonMeshTypeTag);
+      // if file name is different, and type val has not been specified, perform
+      // name-specific mesh type config
+      // do not override orientation - should be specified in json.
+      setDefaultFileNameBasedAttributes(attributes, false, fileName,
+                                        meshTypeSetter);
+    }
+    return true;
+  }
+  return false;
+}  // AttributesManager<AttribsPtr>::setAssetHandleAndType
 
 template <class T>
 T AttributesManager<T>::removeTemplateInternal(
