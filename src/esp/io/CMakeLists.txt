@@ -7,10 +7,14 @@ add_library(io STATIC
   URDFParser.cpp
 )
 
-add_subdirectory(tinyxml2)
+target_include_directories(io
+  PRIVATE
+    "${DEPS_DIR}/tinyxml2"
+)
 
 target_link_libraries(io
   PUBLIC
     core
+  PRIVATE
     tinyxml2
 )
