@@ -105,7 +105,47 @@ class AttributesManagersTest : public testing::Test {
     ASSERT_NE(nullptr, oldTemplate2);
     // verify there are same number of templates as when we started
     ASSERT_EQ(orignNumTemplates, mgr->getNumTemplates());
+
   }  // AttributesManagersTest::testCreateAndRemove
+
+  /**
+   * @brief Test creation many templates and removing all but defaults.
+   * @tparam Class of attributes manager
+   * @param mgr the Attributes Manager being tested,
+   * @param renderHandle a legal render handle to set for the new template so
+   * that registration won't fail.
+   */
+  template <class T>
+  void testRemoveAllButDefault(std::shared_ptr<T> mgr,
+                               const std::string& handle,
+                               bool setRenderHandle) {
+    // get starting number of templates
+    int orignNumTemplates = mgr->getNumTemplates();
+    // create multiple new templates, and then test deleting all those created
+    // using single command.
+    int numToAdd = 10;
+    for (int i = 0; i < numToAdd; ++i) {
+      // assign template a handle
+      std::string newHandleIter("newTemplateHandle_" + std::to_string(i));
+      // create a template with a legal handle
+      auto attrTemplate1 = mgr->createAttributesTemplate(handle, false);
+      // register template with new handle
+      int tmpltID =
+          mgr->registerAttributesTemplate(attrTemplate1, newHandleIter);
+      // verify template added
+      ASSERT_NE(tmpltID, -1);
+      auto attrTemplate2 = mgr->getTemplateCopyByHandle(newHandleIter);
+      // verify added template  exists
+      ASSERT_NE(nullptr, attrTemplate2);
+    }
+    // now delete all templates that have just been added
+    auto removedTemplates = mgr->removeAllTemplates();
+    // verify that the number removed == the number added
+    ASSERT_EQ(removedTemplates.size(), numToAdd);
+    // verify there are same number of templates as when we started
+    ASSERT_EQ(orignNumTemplates, mgr->getNumTemplates());
+
+  }  // AttributesManagersTest::testRemoveAllButDefault
 
   /**
    * @brief Test creation, copying and removal of new default/empty templates
@@ -119,8 +159,6 @@ class AttributesManagersTest : public testing::Test {
   void testCreateAndRemoveDefault(std::shared_ptr<T> mgr,
                                   const std::string& handle,
                                   bool setRenderHandle) {
-    // meaningless key to modify attributes for verifcation of behavior
-    std::string keyStr = "tempKey";
     // get starting number of templates
     int orignNumTemplates = mgr->getNumTemplates();
     // assign template a handle
@@ -161,8 +199,8 @@ class AttributesManagersTest : public testing::Test {
   }  // AttributesManagersTest::testCreateAndRemoveDefault
 
   /**
-   * @brief Test creation, copying and removal of templates for Object,
-   * Physics and Scene Attributes Managers
+   * @brief Test creation, copying and removal of templates for primitive
+   * assets.
    * @tparam Class of attributes being managed
    * @param defaultAttribs the default template of the passed type T
    * @param ctorModField the name of the modified field of type @ref U that
@@ -272,8 +310,10 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "ObjectAttributesManager @ "
             << objectFile;
+
   int origNumFileBased = objectAttributesManager_->getNumFileTemplateObjects();
   int origNumPrimBased = objectAttributesManager_->getNumSynthTemplateObjects();
+
   // object attributes manager attributes verifcation
   testCreateAndRemove<AttrMgrs::ObjectAttributesManager>(
       objectAttributesManager_, objectFile);
@@ -292,6 +332,15 @@ TEST_F(AttributesManagersTest, AttributesManagersCreate) {
   ASSERT_EQ(origNumFileBased, newNumFileBased2);
   ASSERT_EQ(origNumPrimBased, newNumPrimBased2);
 
+  // test adding many and removing all but defaults
+  testRemoveAllButDefault<AttrMgrs::ObjectAttributesManager>(
+      objectAttributesManager_, objectFile, true);
+  // verify that no new file-based and no new synth based template objects
+  // remain
+  int newNumFileBased3 = objectAttributesManager_->getNumFileTemplateObjects();
+  int newNumPrimBased3 = objectAttributesManager_->getNumSynthTemplateObjects();
+  ASSERT_EQ(origNumFileBased, newNumFileBased3);
+  ASSERT_EQ(origNumPrimBased, newNumPrimBased3);
 }  // AttributesManagersTest::AttributesManagersCreate test
 
 TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {

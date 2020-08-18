@@ -86,8 +86,8 @@ jobs:
           # has 3.5, so once tinyply is removed, we could go lower (well, if
           # anybody actually needs that)
           command: |
-              echo $(git ls-remote https://github.com/facebookresearch/habitat-api.git HEAD | awk '{ print $1}') > ./hapi_sha
-              cat ./hapi_sha
+              echo $(git ls-remote https://github.com/facebookresearch/habitat-lab.git HEAD | awk '{ print $1}') > ./hablab_sha
+              cat ./hablab_sha
               wget https://cmake.org/files/v3.10/cmake-3.10.3-Linux-x86_64.sh
               sudo mkdir /opt/cmake
               sudo sh ./cmake-3.10.3-Linux-x86_64.sh --prefix=/opt/cmake --skip-license
@@ -233,7 +233,7 @@ jobs:
               fi
       - restore_cache:
           keys:
-            - habitat-api-{{ checksum "./hapi_sha" }}
+            - habitat-lab-{{ checksum "./hablab_sha" }}
       - restore_cache:
           keys:
             - ccache-{{ arch }}-master
@@ -301,6 +301,14 @@ jobs:
                 rm locobot_merged.zip
                 cd ..
               fi
+              if [ ! -d ./habitat-sim/data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb ]
+              then
+                cd habitat-sim
+                wget http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip
+                unzip mp3d_example.zip -d data/scene_datasets/mp3d/
+                rm mp3d_example.zip
+                cd ..
+              fi
       - run:
           name: Build Javascript bindings
           command: |
@@ -339,6 +347,9 @@ jobs:
               . activate habitat; cd habitat-sim
 
               export PYTHONPATH=$PYTHONPATH:$(pwd)
+              #This way, pytest shows partial progress
+              export PYTHONUNBUFFERED=1
+
               # run tests with code coverage
               CORRADE_TEST_COLOR=ON GTEST_COLOR=yes ./build.sh --headless \
                 --bullet \
@@ -398,15 +409,15 @@ jobs:
               git submodule update --init
               ./build-public.sh
       - run:
-          name: Install api
+          name: Install Habitat Lab
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
-              if [ ! -d ./habitat-api ]
+              if [ ! -d ./habitat-lab ]
               then
-                git clone -q https://github.com/facebookresearch/habitat-api.git
+                git clone -q --depth 1 https://github.com/facebookresearch/habitat-lab.git
               fi
-              cd habitat-api
+              cd habitat-lab
               pip install -r requirements.txt --progress-bar off
               ln -s ../habitat-sim/data data
               touch ~/miniconda/pip_deps_installed
@@ -416,22 +427,22 @@ jobs:
           paths:
             - ~/miniconda
       - run:
-          name: Run api tests
+          name: Run Habitat Lab tests
           command: |
               export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat; cd habitat-api
+              . activate habitat; cd habitat-lab
               python setup.py develop --all
               python setup.py test
       - save_cache:
-          key: habitat-api-{{ checksum "./hapi_sha" }}
+          key: habitat-lab-{{ checksum "./hablab_sha" }}
           background: true
           paths:
-            - ./habitat-api
+            - ./habitat-lab
       - run:
-          name: Build api documentation
+          name: Build Habitat Lab documentation
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
-              . activate habitat; cd habitat-api
+              . activate habitat; cd habitat-lab
               python setup.py develop --all
 
               cd docs
@@ -501,7 +512,7 @@ jobs:
               cd habitat-website
               git submodule update --init
 
-              for dir in habitat-sim habitat-cpp habitat-api
+              for dir in habitat-sim habitat-cpp habitat-lab
               do
                   rm -rf published/docs/${dir}
                   cp -r ../habitat-sim/build/docs-public/${dir} published/docs/.
@@ -511,7 +522,7 @@ jobs:
               git config --global user.email habitat@fb.com
               NOW=$(date +"%m-%d-%Y")
               git add .
-              git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-api ${NOW}"
+              git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-lab ${NOW}"
               git push origin master
 
               # Deploy to public
@@ -523,7 +534,7 @@ jobs:
               rsync -a published/ ./.
               rm -rf published
               git add .
-              git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-api ${NOW}"
+              git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-lab ${NOW}"
               git push origin gh-pages
 
 workflows:
