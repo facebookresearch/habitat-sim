@@ -87,6 +87,12 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
              This removes, and returns the template referenced by the passed ID 
              from the library.)",
            "ID"_a)
+      .def("set_template_lock", &AttrClass::setTemplateLock,
+           R"(
+             This sets the lock state for the template that has the passed name.
+             Lock == True makes the template unable to be deleted.
+             Note : Locked templates can still be edited.)",
+           "handle"_a, "lock"_a)
       .def("remove_all_templates", &AttrClass::removeAllTemplates,
            R"( 
              This removes, and returns, a list of all the user-added templates 

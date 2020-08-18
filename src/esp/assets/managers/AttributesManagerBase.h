@@ -42,9 +42,7 @@ class AttributesManager {
  public:
   AttributesManager(assets::ResourceManager& resourceManager,
                     const std::string& attrType)
-      : resourceManager_(resourceManager), attrType_(attrType) {
-    this->defaultTemplateNames_.clear();
-  }
+      : resourceManager_(resourceManager), attrType_(attrType) {}
   virtual ~AttributesManager() = default;
 
   /**
@@ -169,6 +167,28 @@ class AttributesManager {
   bool isValidFileName(const std::string& handle) const {
     return (Corrade::Utility::Directory::exists(handle));
   }  // isValidFileName
+
+  /**
+   * @brief Sets/Clears lock state for a template, preventing or allowing
+   * deletion of template.
+   * @param templateHandle handle of template to set state of
+   * @param lock boolean to set or clear lock
+   */
+  void setTemplateLock(const std::string& templateHandle, bool lock) {
+    // if template does not currently exist then do not attempt to modify its
+    // lock state
+    if (!checkExistsWithMessage(templateHandle,
+                                "AttributesManager::setTemplateLock")) {
+      return;
+    }
+    // if setting lock else clearing lock
+    if (lock) {
+      userLockedTemplateNames_[templateHandle] = templateHandle;
+    } else if (userLockedTemplateNames_.count(templateHandle) > 0) {
+      // if clearing, verify exists
+      userLockedTemplateNames_.erase(templateHandle);
+    }
+  }  // setTemplateLock
 
   // ======== Accessor functions ========
   /**
@@ -411,8 +431,9 @@ class AttributesManager {
    * @brief return a read-only reference to the default primitive asset template
    * handles managed by this object.
    */
-  const std::vector<std::string>& getDefaultTemplateHandles() const {
-    return this->defaultTemplateNames_;
+  const std::map<std::string, std::string>& getUndeletableTemplateHandles()
+      const {
+    return this->undeletableTemplateNames_;
   }
 
  protected:
@@ -640,23 +661,6 @@ class AttributesManager {
   virtual void resetFinalize() = 0;
 
   /**
-   * @brief Whether template described by passed handle is read only, or can be
-   * deleted. Do not wish to remove certain default templates, such as
-   * primitive asset templates.
-   * @param templateHandle the handle to the template to verify removability.
-   * Assumes template exists.
-   * @return Whether the template is read-only or not
-   */
-  bool isTemplateReadOnly(const std::string& templateHandle) {
-    for (auto handle : this->defaultTemplateNames_) {
-      if (handle.compare(templateHandle) == 0) {
-        return true;
-      }
-    }
-    return false;
-  }  // isTemplateReadOnly
-
-  /**
    * @brief Build a shared pointer to the appropriate attributes for passed
    * object type.
    * @tparam U Type of attributes being created - must be a derived class of
@@ -787,10 +791,16 @@ class AttributesManager {
    */
   std::deque<int> availableTemplateIDs_;
   /**
-   * @brief vector holding string template handles of all default templates, to
-   * make sure they are never deleted.
+   * @brief map holding k,v string template handles of all system-locked
+   * templates, to make sure they are never deleted.
    */
-  std::vector<std::string> defaultTemplateNames_;
+  std::map<std::string, std::string> undeletableTemplateNames_;
+
+  /**
+   * @brief map holding k,v string template handles of all system-locked
+   * templates, to make sure they are never deleted.
+   */
+  std::map<std::string, std::string> userLockedTemplateNames_;
 
  public:
   ESP_SMART_POINTERS(AttributesManager<AttribsPtr>)
@@ -944,19 +954,24 @@ template <class T>
 T AttributesManager<T>::removeTemplateInternal(
     const std::string& templateHandle,
     const std::string& sourceStr) {
-  std::string msg;
   if (!checkExistsWithMessage(templateHandle, sourceStr)) {
-    msg = "Does not exist";
-  } else if (isTemplateReadOnly(templateHandle)) {
-    msg = "Required Default Template";
+    LOG(INFO) << sourceStr << " : Unable to remove " << attrType_
+              << " template " << templateHandle << " : Does not exist.";
+    return nullptr;
+  }
+
+  T attribsTemplate = getTemplateCopyByHandle(templateHandle);
+  std::string msg;
+  if (this->undeletableTemplateNames_.count(templateHandle) > 0) {
+    msg = "Required Undeletable Template";
+  } else if (this->userLockedTemplateNames_.count(templateHandle) > 0) {
+    msg = "User-locked Template.  To delete template, unlock it.";
   }
   if (msg.length() != 0) {
     LOG(INFO) << sourceStr << " : Unable to remove " << attrType_
               << " template " << templateHandle << " : " << msg << ".";
     return nullptr;
   }
-
-  T attribsTemplate = getTemplateCopyByHandle(templateHandle);
   int templateID = attribsTemplate->getID();
   templateLibKeyByID_.erase(templateID);
   templateLibrary_.erase(templateHandle);

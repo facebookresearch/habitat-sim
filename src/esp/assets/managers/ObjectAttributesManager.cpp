@@ -87,16 +87,16 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
 }  // ObjectAttributesManager::createPrimBasedAttributesTemplate
 
 void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
-  this->defaultTemplateNames_.clear();
+  this->undeletableTemplateNames_.clear();
   // build default primtive object templates corresponding to given default
   // asset templates
-  const std::vector<std::string> lib =
-      assetAttributesMgr_->getDefaultTemplateHandles();
-  for (std::string primAssetHandle : lib) {
-    auto tmplt = createPrimBasedAttributesTemplate(primAssetHandle, true);
+  const std::map<std::string, std::string>& lib =
+      assetAttributesMgr_->getUndeletableTemplateHandles();
+  for (const std::pair<std::string, std::string>& elem : lib) {
+    auto tmplt = createPrimBasedAttributesTemplate(elem.first, true);
     // save handles in list of defaults, so they are not removed
     std::string tmpltHandle = tmplt->getHandle();
-    this->defaultTemplateNames_.push_back(tmpltHandle);
+    this->undeletableTemplateNames_[tmpltHandle] = tmpltHandle;
   }
 }  // ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates
 
@@ -295,10 +295,11 @@ std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
     auto tmplt =
         createFileBasedAttributesTemplate(objPhysPropertiesFilename, true);
 
-    // save handles in list of defaults, so they are not removed
-    std::string tmpltHandle = tmplt->getHandle();
-    this->defaultTemplateNames_.push_back(tmpltHandle);
-
+    // save handles in list of defaults, so they are not removed, if desired.
+    if (saveAsDefaults) {
+      std::string tmpltHandle = tmplt->getHandle();
+      this->undeletableTemplateNames_[tmpltHandle] = tmpltHandle;
+    }
     resIDs[i] = tmplt->getID();
   }
   LOG(INFO) << "Loaded file-based object templates: "
