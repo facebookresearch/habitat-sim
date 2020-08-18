@@ -104,7 +104,7 @@ TEST(IOTest, parseURDF) {
   const std::string iiwaURDF = Cr::Utility::Directory::join(
       TEST_ASSETS, "URDF/kuka_iiwa/model_free_base.urdf");
 
-  URDFParser parser;
+  URDF::Parser parser;
 
   // load the iiwa test asset
   parser.parseURDF(iiwaURDF);
