@@ -166,11 +166,14 @@ bool ResourceManager::loadScene(
     bool loadSemanticMesh) {
   // create AssetInfos here for each potential mesh file for the scene, if they
   // are unique.
-
+  bool buildCollisionMesh =
+      ((_physicsManager != nullptr) &&
+       (_physicsManager->getInitializationAttributes()->getSimulator().compare(
+            "none") != 0));
   const Magnum::ResourceKey& renderLightSetup(sceneAttributes->getLightSetup());
   std::map<std::string, AssetInfo> assetInfoMap =
-      createSceneAssetInfosFromAttributes(
-          sceneAttributes, (_physicsManager != nullptr), loadSemanticMesh);
+      createSceneAssetInfosFromAttributes(sceneAttributes, buildCollisionMesh,
+                                          loadSemanticMesh);
 
   auto& sceneGraph = sceneManagerPtr->getSceneGraph(activeSceneIDs[0]);
   auto& rootNode = sceneGraph.getRootNode();
@@ -334,7 +337,7 @@ ResourceManager::createSceneAssetInfosFromAttributes(
         virtualUnitToMeters,                         // virtualUnitToMeters
         false                                        // requiresLighting
     };
-    resMap["collision"] = renderInfo;
+    resMap["collision"] = collisionInfo;
   }
   if (createSemanticInfo) {
     // create semantic asset info if requested
