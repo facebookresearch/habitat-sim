@@ -41,12 +41,18 @@ PTexMeshDrawable::PTexMeshDrawable(scene::SceneNode& node,
 
 void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                             Magnum::SceneGraph::Camera3D& camera) {
+  bool usingDrawableId =
+      static_cast<RenderCamera&>(camera).isRenderingForObjectPicking();
   (*shader_)
       .setExposure(exposure_)
       .setGamma(gamma_)
       .setSaturation(saturation_)
       .setAtlasTextureSize(atlasTexture_, tileSize_)
       .bindAtlasTexture(atlasTexture_)
+      // e.g., semantic mesh has its own per vertex annotation, which has been
+      // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
+      // fragment shader
+      .setObjectId(usingDrawableId ? drawableId_ : node_.getSemanticId())
 #ifndef CORRADE_TARGET_APPLE
       .bindAdjFacesBufferTexture(adjFacesBufferTexture_)
 #endif
