@@ -12,6 +12,7 @@
 #include <deque>
 #include <functional>
 #include <map>
+#include <set>
 
 #include <Corrade/Utility/ConfigurationGroup.h>
 #include <Corrade/Utility/Directory.h>
@@ -42,9 +43,7 @@ class AttributesManager {
  public:
   AttributesManager(assets::ResourceManager& resourceManager,
                     const std::string& attrType)
-      : resourceManager_(resourceManager), attrType_(attrType) {
-    this->defaultTemplateNames_.clear();
-  }
+      : resourceManager_(resourceManager), attrType_(attrType) {}
   virtual ~AttributesManager() = default;
 
   /**
@@ -168,7 +167,54 @@ class AttributesManager {
    */
   bool isValidFileName(const std::string& handle) const {
     return (Corrade::Utility::Directory::exists(handle));
-  }  // isValidFileName
+  }  // AttributesManager::isValidFileName
+
+  /**
+   * @brief Sets/Clears lock state for a template, preventing or allowing
+   * deletion of template.
+   * @param templateHandle handle of template to set state of
+   * @param lock boolean to set or clear lock
+   * @return whether successful or not.
+   */
+  bool setTemplateLock(const std::string& templateHandle, bool lock);
+
+  /**
+   * @brief Sets/Clears lock state for a template, preventing or allowing
+   * deletion of template.
+   * @param templateHandles Vector of handles of templates to set state of
+   * @param lock boolean to set or clear lock for all templates
+   * @return the list of handles actually set to desired lock state.
+   */
+  std::vector<std::string> setTemplateLockByHandles(
+      const std::vector<std::string>& templateHandles,
+      bool lock) {
+    std::vector<std::string> res;
+    for (std::string templateHandle : templateHandles) {
+      if (setTemplateLock(templateHandle, lock)) {
+        res.push_back(templateHandle);
+      }
+    }
+    return res;
+  }  // AttributesManager::setTemplateLockByHandles
+
+  /**
+   * @brief set lock state on all templates that contain passed substring.
+   * @param lock boolean to set or clear lock on templates
+   * @param subStr substring to search for within existing primitive object
+   * templates
+   * @param contains whether to search for keys containing, or excluding,
+   * @ref subStr
+   * @return A vector containing the template handles of templates whose lock
+   * state has been set to passed state.
+   */
+  std::vector<std::string> setTemplatesLockBySubstring(
+      bool lock,
+      const std::string& subStr = "",
+      bool contains = true) {
+    std::vector<std::string> handles =
+        getTemplateHandlesBySubstring(subStr, contains);
+    return this->setTemplateLockByHandles(handles, lock);
+  }  // AttributesManager::setTemplatesLockBySubstring
 
   // ======== Accessor functions ========
   /**
@@ -189,7 +235,8 @@ class AttributesManager {
 
   /**
    * @brief Get a reference to the attributes template identified by the
-   * attributesTemplateID.
+   * attributesTemplateID.  Should only be used internally. Users should
+   * only ever access copies of templates.
    *
    * Can be used to manipulate a template before instancing new objects.
    * @param attributesTemplateID The ID of the template. Is mapped to the key
@@ -208,7 +255,8 @@ class AttributesManager {
 
   /**
    * @brief Get a reference to the attributes template for the asset
-   * identified by the passed templateHandle.
+   * identified by the passed templateHandle.  Should only be used
+   * internally. Users should only ever access copies of templates.
    *
    * Can be used to manipulate a template before instancing new objects.
    * @param templateHandle The key referencing the asset in @ref
@@ -260,18 +308,23 @@ class AttributesManager {
    * the library.
    */
   std::vector<AttribsPtr> removeAllTemplates() {
-    std::vector<AttribsPtr> res;
-    // get all handles first
-    std::vector<std::string> handles = getTemplateHandlesBySubstring("");
-    for (std::string templateHandle : handles) {
-      AttribsPtr ptr = removeTemplateInternal(
-          templateHandle, "AttributesManager::removeAllTemplates");
-      if (nullptr != ptr) {
-        res.push_back(ptr);
-      }
-    }
-    return res;
+    return removeTemplatesBySubstring();
   }  // removeAllTemplates
+
+  /**
+   * @brief remove templates that contain passed substring and that have not
+   * been marked as default/non-removable, and return a vector of the templates
+   * removed.
+   * @param subStr substring to search for within existing primitive object
+   * templates
+   * @param contains whether to search for keys containing, or excluding,
+   * @ref subStr
+   * @return A vector containing all the templates that have been removed from
+   * the library.
+   */
+  std::vector<AttribsPtr> removeTemplatesBySubstring(
+      const std::string& subStr = "",
+      bool contains = true);
 
   /**
    * @brief Get the key in @ref templateLibrary_ for the object template
@@ -306,10 +359,9 @@ class AttributesManager {
   /**
    * @brief Get a list of all templates whose origin handles contain @ref
    * subStr, ignoring subStr's case
-   * @param subStr substring to search for within existing primitive object
-   * templates
+   * @param subStr substring to search for within existing templates.
    * @param contains whether to search for keys containing, or excluding,
-   * @ref subStr
+   * passed @ref subStr
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
@@ -408,12 +460,26 @@ class AttributesManager {
   }  // AttributesManager::getTemplateCopyByHandle
 
   /**
-   * @brief return a read-only reference to the default primitive asset template
-   * handles managed by this object.
+   * @brief returns a vector of template handles representing the
+   * system-specified undeletable templates this manager manages. These
+   * templates cannot be deleted, although they can be edited.
    */
-  const std::vector<std::string>& getDefaultTemplateHandles() const {
-    return this->defaultTemplateNames_;
-  }
+  std::vector<std::string> getUndeletableTemplateHandles() const {
+    std::vector<std::string> res(this->undeletableTemplateNames_.begin(),
+                                 this->undeletableTemplateNames_.end());
+    return res;
+  }  // AttributesManager::getUndeletableTemplateHandles
+
+  /**
+   * @brief returns a vector of template handles representing templates that
+   * have been locked by the user.  These templates cannot be deleted until
+   * they have been unlocked, although they can be edited while locked.
+   */
+  std::vector<std::string> getUserLockedTemplateHandles() const {
+    std::vector<std::string> res(this->userLockedTemplateNames_.begin(),
+                                 this->userLockedTemplateNames_.end());
+    return res;
+  }  // AttributesManager::
 
  protected:
   //======== Common JSON import functions ========
@@ -640,23 +706,6 @@ class AttributesManager {
   virtual void resetFinalize() = 0;
 
   /**
-   * @brief Whether template described by passed handle is read only, or can be
-   * deleted. Do not wish to remove certain default templates, such as
-   * primitive asset templates.
-   * @param templateHandle the handle to the template to verify removability.
-   * Assumes template exists.
-   * @return Whether the template is read-only or not
-   */
-  bool isTemplateReadOnly(const std::string& templateHandle) {
-    for (auto handle : this->defaultTemplateNames_) {
-      if (handle.compare(templateHandle) == 0) {
-        return true;
-      }
-    }
-    return false;
-  }  // isTemplateReadOnly
-
-  /**
    * @brief Build a shared pointer to the appropriate attributes for passed
    * object type.
    * @tparam U Type of attributes being created - must be a derived class of
@@ -786,11 +835,19 @@ class AttributesManager {
    * recycled before using map-size-based IDs
    */
   std::deque<int> availableTemplateIDs_;
+
   /**
-   * @brief vector holding string template handles of all default templates, to
-   * make sure they are never deleted.
+   * @brief set holding string template handles of all system-locked templates,
+   * to make sure they are never deleted.  Should not be overridden by user.
    */
-  std::vector<std::string> defaultTemplateNames_;
+  std::set<std::string> undeletableTemplateNames_;
+
+  /**
+   * @brief set holding string template handles of all user-locked
+   * templates, to make sure they are not deleted unless the user
+   * unlocks them.
+   */
+  std::set<std::string> userLockedTemplateNames_;
 
  public:
   ESP_SMART_POINTERS(AttributesManager<AttribsPtr>)
@@ -940,23 +997,67 @@ bool AttributesManager<T>::setJSONAssetHandleAndType(
   return false;
 }  // AttributesManager<AttribsPtr>::setAssetHandleAndType
 
+template <class AttribsPtr>
+bool AttributesManager<AttribsPtr>::setTemplateLock(
+    const std::string& templateHandle,
+    bool lock) {
+  // if template does not currently exist then do not attempt to modify its
+  // lock state
+  if (!checkExistsWithMessage(templateHandle,
+                              "AttributesManager::setTemplateLock")) {
+    return false;
+  }
+  // if setting lock else clearing lock
+  if (lock) {
+    userLockedTemplateNames_.insert(templateHandle);
+  } else if (userLockedTemplateNames_.count(templateHandle) > 0) {
+    // if clearing, verify exists
+    userLockedTemplateNames_.erase(templateHandle);
+  }
+  return true;
+}  // AttributesManager::setTemplateLock
+
+template <class AttribsPtr>
+std::vector<AttribsPtr>
+AttributesManager<AttribsPtr>::removeTemplatesBySubstring(
+    const std::string& subStr,
+    bool contains) {
+  std::vector<AttribsPtr> res;
+  // get all handles that match query elements first
+  std::vector<std::string> handles =
+      getTemplateHandlesBySubstring(subStr, contains);
+  for (std::string templateHandle : handles) {
+    AttribsPtr ptr = removeTemplateInternal(
+        templateHandle, "AttributesManager::removeTemplatesBySubstring");
+    if (nullptr != ptr) {
+      res.push_back(ptr);
+    }
+  }
+  return res;
+}  // removeAllTemplates
+
 template <class T>
 T AttributesManager<T>::removeTemplateInternal(
     const std::string& templateHandle,
     const std::string& sourceStr) {
-  std::string msg;
   if (!checkExistsWithMessage(templateHandle, sourceStr)) {
-    msg = "Does not exist";
-  } else if (isTemplateReadOnly(templateHandle)) {
-    msg = "Required Default Template";
+    LOG(INFO) << sourceStr << " : Unable to remove " << attrType_
+              << " template " << templateHandle << " : Does not exist.";
+    return nullptr;
+  }
+
+  T attribsTemplate = getTemplateCopyByHandle(templateHandle);
+  std::string msg;
+  if (this->undeletableTemplateNames_.count(templateHandle) > 0) {
+    msg = "Required Undeletable Template";
+  } else if (this->userLockedTemplateNames_.count(templateHandle) > 0) {
+    msg = "User-locked Template.  To delete template, unlock it.";
   }
   if (msg.length() != 0) {
     LOG(INFO) << sourceStr << " : Unable to remove " << attrType_
               << " template " << templateHandle << " : " << msg << ".";
     return nullptr;
   }
-
-  T attribsTemplate = getTemplateCopyByHandle(templateHandle);
   int templateID = attribsTemplate->getID();
   templateLibKeyByID_.erase(templateID);
   templateLibrary_.erase(templateHandle);

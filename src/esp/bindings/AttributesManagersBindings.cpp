@@ -27,7 +27,7 @@ namespace managers {
 /**
  * @brief instance class template base classes for attributes managers.
  * @tparam The type used to specialize class template for each attributes
- * manager.  Will be a smart pointer to an attributes
+ * manager. Will be a smart pointer to an attributes
  * @param m pybind module reference.
  * @param classStrPrefix string prefix for python class name specification.
  */
@@ -77,20 +77,58 @@ void declareBaseAttributesManager(py::module& m, std::string classStrPrefix) {
            R"(
              Returns the handle for a random template chosen from the 
              existing templates being managed.)")
+      .def("get_undeletable_handles", &AttrClass::getUndeletableTemplateHandles,
+           R"(
+            Returns a list of template handles for templates that have been marked
+            undeletable by the system. These templates can still be edited.)")
+      .def("get_user_locked_handles", &AttrClass::getUserLockedTemplateHandles,
+           R"(
+            Returns a list of template handles for templates that have been marked
+            locked by the user. These will be undeletable until unlocked by the user.
+            These templates can still be edited.)")
       .def("get_library_has_handle", &AttrClass::getTemplateLibHasHandle,
            R"(
              Returns whether the passed handle describes an existing template 
              in the library.)",
            "handle"_a)
+      .def("set_template_lock", &AttrClass::setTemplateLock,
+           R"(
+             This sets the lock state for the template that has the passed name.
+             Lock == True makes the template unable to be deleted.
+             Note : Locked templates can still be edited.)",
+           "handle"_a, "lock"_a)
+      .def("set_lock_by_substring", &AttrClass::setTemplatesLockBySubstring,
+           R"(
+             This sets the lock state for all templates whose handles either 
+             contain or explictly do not contain the passed search_str.
+             Returns a list of handles for templates locked by this function 
+             call. Lock == True makes the template unable to be deleted.
+             Note : Locked templates can still be edited.)",
+           "lock"_a, "search_str"_a = "", "contains"_a = true)
+      .def("set_template_list_lock", &AttrClass::setTemplateLockByHandles,
+           R"(
+             This sets the lock state for all templates whose handles
+             are passed in list. Returns a list of handles for templates 
+             locked by this function call. Lock == True makes the template unable 
+             to be deleted. Note : Locked templates can still be edited.)",
+           "handles"_a, "lock"_a)
+      .def("remove_all_templates", &AttrClass::removeAllTemplates,
+           R"( 
+             This removes, and returns, a list of all the templates referenced 
+             in the library that have not been marked undeletable by the system 
+             or read-only by the user.)")
+      .def("remove_templates_by_str", &AttrClass::removeTemplatesBySubstring,
+           R"( 
+             This removes, and returns, a list of all the templates referenced 
+             in the library that have not been marked undeletable by the system 
+             or read-only by the user and whose handles either contain or explictly 
+             do not contain the passed search_str.)",
+           "search_str"_a = "", "contains"_a = true)
       .def("remove_template_by_ID", &AttrClass::removeTemplateByID,
            R"(
              This removes, and returns the template referenced by the passed ID 
              from the library.)",
            "ID"_a)
-      .def("remove_all_templates", &AttrClass::removeAllTemplates,
-           R"( 
-             This removes, and returns, a list of all the user-added templates 
-             referenced in the library.)")
       .def("remove_template_by_handle", &AttrClass::removeTemplateByHandle,
            R"(
              This removes, and returns the template referenced by the passed handle 

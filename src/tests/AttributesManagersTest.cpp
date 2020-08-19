@@ -99,10 +99,19 @@ class AttributesManagersTest : public testing::Test {
     // verify IDs are the same
     ASSERT_EQ(removeID, newAddID);
 
-    // remove  attributes via handle
+    // lock template referenced by handle
+    bool success = mgr->setTemplateLock(handle, true);
+    // attempt to remove attributes via handle
     auto oldTemplate2 = mgr->removeTemplateByHandle(handle);
+    // verify no template was deleted
+    ASSERT_EQ(nullptr, oldTemplate2);
+    // unlock template
+    success = mgr->setTemplateLock(handle, false);
+
+    // remove  attributes via handle
+    auto oldTemplate3 = mgr->removeTemplateByHandle(handle);
     // verify deleted template  exists
-    ASSERT_NE(nullptr, oldTemplate2);
+    ASSERT_NE(nullptr, oldTemplate3);
     // verify there are same number of templates as when we started
     ASSERT_EQ(orignNumTemplates, mgr->getNumTemplates());
 
@@ -121,6 +130,12 @@ class AttributesManagersTest : public testing::Test {
                                bool setRenderHandle) {
     // get starting number of templates
     int orignNumTemplates = mgr->getNumTemplates();
+    // lock all current handles
+    std::vector<std::string> origHandles =
+        mgr->setTemplatesLockBySubstring(true, "", true);
+    // make sure we have locked all original handles
+    ASSERT_EQ(orignNumTemplates, origHandles.size());
+
     // create multiple new templates, and then test deleting all those created
     // using single command.
     int numToAdd = 10;
@@ -138,12 +153,38 @@ class AttributesManagersTest : public testing::Test {
       // verify added template  exists
       ASSERT_NE(nullptr, attrTemplate2);
     }
+
+    // now delete all templates that
+    auto removedNamedTemplates =
+        mgr->removeTemplatesBySubstring("newTemplateHandle_", true);
+    // verify that the number removed == the number added
+    ASSERT_EQ(removedNamedTemplates.size(), numToAdd);
+
+    // re-add templates
+    for (auto& tmplt : removedNamedTemplates) {
+      // register template with new handle
+      int tmpltID = mgr->registerAttributesTemplate(tmplt);
+      // verify template added
+      ASSERT_NE(tmpltID, -1);
+      auto attrTemplate2 = mgr->getTemplateCopyByHandle(tmplt->getHandle());
+      // verify added template  exists
+      ASSERT_NE(nullptr, attrTemplate2);
+    }
+
     // now delete all templates that have just been added
     auto removedTemplates = mgr->removeAllTemplates();
     // verify that the number removed == the number added
     ASSERT_EQ(removedTemplates.size(), numToAdd);
     // verify there are same number of templates as when we started
     ASSERT_EQ(orignNumTemplates, mgr->getNumTemplates());
+
+    // unlock all original handles
+    std::vector<std::string> newOrigHandles =
+        mgr->setTemplateLockByHandles(origHandles, false);
+    // verify orig handles are those that have been unlocked
+    ASSERT_EQ(newOrigHandles, origHandles);
+    // make sure we have unlocked all original handles
+    ASSERT_EQ(orignNumTemplates, newOrigHandles.size());
 
   }  // AttributesManagersTest::testRemoveAllButDefault
 
