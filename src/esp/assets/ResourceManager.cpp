@@ -304,7 +304,7 @@ bool ResourceManager::loadScene(
   activeSceneIDs[1] = activeSemanticSceneID;
 
   return true;
-}  // namespace assets
+}  // ResourceManager::loadScene
 
 std::map<std::string, AssetInfo>
 ResourceManager::createSceneAssetInfosFromAttributes(
