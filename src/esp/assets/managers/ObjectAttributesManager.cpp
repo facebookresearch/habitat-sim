@@ -90,13 +90,13 @@ void ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates() {
   this->undeletableTemplateNames_.clear();
   // build default primtive object templates corresponding to given default
   // asset templates
-  const std::map<std::string, std::string>& lib =
+  std::vector<std::string> lib =
       assetAttributesMgr_->getUndeletableTemplateHandles();
-  for (const std::pair<std::string, std::string>& elem : lib) {
-    auto tmplt = createPrimBasedAttributesTemplate(elem.first, true);
+  for (const std::string& elem : lib) {
+    auto tmplt = createPrimBasedAttributesTemplate(elem, true);
     // save handles in list of defaults, so they are not removed
     std::string tmpltHandle = tmplt->getHandle();
-    this->undeletableTemplateNames_[tmpltHandle] = tmpltHandle;
+    this->undeletableTemplateNames_.insert(tmpltHandle);
   }
 }  // ObjectAttributesManager::createDefaultPrimBasedAttributesTemplates
 
@@ -298,7 +298,7 @@ std::vector<int> ObjectAttributesManager::loadAllFileBasedTemplates(
     // save handles in list of defaults, so they are not removed, if desired.
     if (saveAsDefaults) {
       std::string tmpltHandle = tmplt->getHandle();
-      this->undeletableTemplateNames_[tmpltHandle] = tmpltHandle;
+      this->undeletableTemplateNames_.insert(tmpltHandle);
     }
     resIDs[i] = tmplt->getID();
   }

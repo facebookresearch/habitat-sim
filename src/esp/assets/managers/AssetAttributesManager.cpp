@@ -100,7 +100,7 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
     auto tmplt = createAttributesTemplate(elem.second, true);
     std::string tmpltHandle = tmplt->getHandle();
     defaultPrimAttributeHandles_[elem.second] = tmpltHandle;
-    this->undeletableTemplateNames_[tmpltHandle] = tmpltHandle;
+    this->undeletableTemplateNames_.insert(tmpltHandle);
   }
 
   LOG(INFO) << "AssetAttributesManager::buildCtorFuncPtrMaps : Built default "

@@ -56,20 +56,66 @@ def perform_general_tests(attr_mgr, search_string):
     # same object
     assert template0.get_string("test_key") != template2.get_string("test_key")
 
-    # add new template
-    attr_mgr.register_template(template0, "new_template_0")
+    # add new template with specified handle
+    new_template_handle = "new_template_0"
+
+    attr_mgr.register_template(template0, new_template_handle)
 
     # register new template and verify size is greater than original
     curr_num_templates = attr_mgr.get_num_templates()
     assert curr_num_templates != orig_num_templates
 
-    # get template that is removed
-    template3 = attr_mgr.remove_template_by_handle("new_template_0")
+    # lock template
+    attr_mgr.set_template_lock(new_template_handle, True)
+    # attempt to delete
+    template3 = attr_mgr.remove_template_by_handle(new_template_handle)
+    # verify that template was not deleted
+    assert template3 == None
+    # unlock template
+    attr_mgr.set_template_lock(new_template_handle, False)
 
+    # remove template that has been unlocked; retrieves removed template
+    template3 = attr_mgr.remove_template_by_handle(new_template_handle)
     # verify not NONE
     assert template3 != None
     # verify has expected handle
-    assert template3.handle == "new_template_0"
+    assert template3.handle == new_template_handle
+
+    # get new size of library after remove and verify same as original
+    curr_num_templates = attr_mgr.get_num_templates()
+    assert curr_num_templates == orig_num_templates
+
+    # add many templates with specified handles, then remove them
+    new_handle_stub = "new_template_"
+    num_to_add = 10
+    for i in range(num_to_add):
+        new_iter_handle = new_handle_stub + str(i)
+        tmplt_id = attr_mgr.register_template(template3, new_iter_handle)
+        assert tmplt_id != -1
+
+    # lock all added templates
+    locked_template_handles = attr_mgr.set_lock_by_substring(
+        True, new_handle_stub, True
+    )
+    # verify that the number of added and locked templates are equal
+    assert num_to_add == len(locked_template_handles)
+    # attempt to remove templates that are locked
+    removed_templates = attr_mgr.remove_templates_by_str(new_handle_stub, True)
+    # verify that no templates were removed that have the new handle stub
+    assert 0 == len(removed_templates)
+    # unlock all added templates
+    unlocked_template_handles = attr_mgr.set_lock_by_substring(
+        False, new_handle_stub, True
+    )
+    # verify that the number of added and unlocked templates are equal
+    assert num_to_add == len(unlocked_template_handles)
+    # verify lists of names are same
+    assert sorted(unlocked_template_handles) == sorted(locked_template_handles)
+
+    # now delete all templates with handle stub
+    removed_templates = attr_mgr.remove_templates_by_str(new_handle_stub, True)
+    # verify that the number of added and removed templates are equal
+    assert num_to_add == len(removed_templates)
 
     # get new size of library after remove and verify same as original
     curr_num_templates = attr_mgr.get_num_templates()
