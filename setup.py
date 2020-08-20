@@ -265,7 +265,6 @@ class CMakeBuild(build_ext):
         )
 
         if self.run_cmake(cmake_args):
-            print(self.build_temp)
             subprocess.check_call(
                 shlex.split(
                     'cmake -H"{}" -B"{}"'.format(ext.sourcedir, self.build_temp)
