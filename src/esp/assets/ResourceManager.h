@@ -822,16 +822,6 @@ class ResourceManager {
                              const Mn::ResourceKey& material,
                              DrawableGroup* group = nullptr);
 
-  // ======== Instance Variables ========
-
-  /**
-   * @brief this helper vector contains information of the drawables on which
-   * we will compute the absolute AABB pair
-   *
-   */
-  // std::vector<StaticDrawableInfo> staticDrawableInfo_;
-  bool computeAbsoluteAABBs_ = false;
-
   // ======== General geometry data ========
   // shared_ptr is used here, instead of Corrade::Containers::Optional, or
   // std::optional because shared_ptr is reference type, not value type, and

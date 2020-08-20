@@ -188,8 +188,13 @@ bool ResourceManager::loadScene(
   // pass nullptr as physics manager for render mesh, since we are loading
   // collision mesh next
   bool renderMeshSuccess =
-      loadSceneInternal(renderInfo, nullptr, &rootNode, &drawables, true, false,
-                        renderLightSetup);
+      loadSceneInternal(renderInfo,         // AssetInfo
+                        nullptr,            // physics manager
+                        &rootNode,          // parent scene node
+                        &drawables,         //  drawable group
+                        true,               // compute Absolute AABBs or not
+                        false,              // split semantic mesh or not
+                        renderLightSetup);  // light setup
 
   if (!renderMeshSuccess) {
     LOG(ERROR)
@@ -201,8 +206,13 @@ bool ResourceManager::loadScene(
     AssetInfo colInfo = assetInfoMap.at("collision");
     // should this be checked to make sure we do not reload?
     bool collisionMeshSuccess =
-        loadSceneInternal(colInfo, _physicsManager, nullptr, nullptr, false,
-                          false, renderLightSetup);
+        loadSceneInternal(colInfo,            // AssetInfo
+                          _physicsManager,    // physics manager
+                          nullptr,            // parent scene node
+                          nullptr,            // drawable group
+                          false,              // compute absolute AABBs or not
+                          false,              // split semantic mesh or not
+                          renderLightSetup);  // light setup
 
     if (!collisionMeshSuccess) {
       LOG(ERROR)
@@ -277,9 +287,14 @@ bool ResourceManager::loadScene(
       auto& semanticRootNode = semanticSceneGraph.getRootNode();
       auto& semanticDrawables = semanticSceneGraph.getDrawables();
       bool computeSemanticAABBs = splitSemanticMesh;
+
       semanticSceneSuccess = loadSceneInternal(
-          semanticInfo, nullptr, &semanticRootNode, &semanticDrawables,
-          computeSemanticAABBs, splitSemanticMesh);
+          semanticInfo,          // AssetInfo
+          nullptr,               // physics manager
+          &semanticRootNode,     // parent scene node
+          &semanticDrawables,    // drawable group
+          computeSemanticAABBs,  // compute absolute AABBs or not
+          splitSemanticMesh);    // split semantic mesh or not
       // regardless of load failure, original code still changed
       // activeSemanticSceneID_
       activeSceneIDs[1] = activeSemanticSceneID;
@@ -750,29 +765,24 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
         node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
                                                shaderManager_, drawables);
 
-        if (computeAbsoluteAABBs_) {
-          staticDrawableInfo.emplace_back(
-              StaticDrawableInfo{node, static_cast<uint32_t>(jSubmesh)});
-        }
+        staticDrawableInfo.emplace_back(
+            StaticDrawableInfo{node, static_cast<uint32_t>(jSubmesh)});
       }
     }
-    if (computeAbsoluteAABBs_) {
-      // compute aabb if appropriate here - always done if parent exists
-      // retrieve the ptex mesh data
-      CORRADE_ASSERT(
-          resourceDict_.count(filename) != 0,
-          "ResourceManager::loadScene: ptex mesh is not loaded. Aborting.",
-          false);
-      const MeshMetaData& metaData = getMeshMetaData(filename);
-      CORRADE_ASSERT(metaData.meshIndex.first == metaData.meshIndex.second,
-                     "ResourceManager::loadScene: ptex mesh is not loaded "
-                     "correctly. Aborting.",
-                     false);
+    // compute aabb if appropriate here - always done if parent exists
+    // retrieve the ptex mesh data
+    CORRADE_ASSERT(
+        resourceDict_.count(filename) != 0,
+        "ResourceManager::loadScene: ptex mesh is not loaded. Aborting.",
+        false);
+    const MeshMetaData& metaData = getMeshMetaData(filename);
+    CORRADE_ASSERT(metaData.meshIndex.first == metaData.meshIndex.second,
+                   "ResourceManager::loadScene: ptex mesh is not loaded "
+                   "correctly. Aborting.",
+                   false);
 
-      computePTexMeshAbsoluteAABBs(*meshes_[metaData.meshIndex.first],
-                                   staticDrawableInfo);
-    }
-
+    computePTexMeshAbsoluteAABBs(*meshes_[metaData.meshIndex.first],
+                                 staticDrawableInfo);
   }  // if parent
 
   return true;
