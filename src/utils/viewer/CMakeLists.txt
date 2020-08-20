@@ -11,6 +11,12 @@ ObjectPickingHelper.cpp
 ObjectPickingHelper.h
 )
 
+set(simviewer_SOURCES
+simviewer.cpp
+ObjectPickingHelper.cpp
+ObjectPickingHelper.h
+)
+
 #set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 add_executable(viewer ${viewer_SOURCES})
 
@@ -20,6 +26,19 @@ target_link_libraries(viewer
     gfx
     nav
     scene
+    Magnum::DebugTools
+    MagnumIntegration::ImGui
+)
+
+add_executable(simviewer ${simviewer_SOURCES})
+
+target_link_libraries(simviewer
+  PRIVATE
+    assets
+    gfx
+    nav
+    scene
+    sim
     Magnum::DebugTools
     MagnumIntegration::ImGui
 )

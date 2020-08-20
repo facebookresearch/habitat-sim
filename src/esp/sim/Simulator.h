@@ -111,7 +111,12 @@ class Simulator {
    * simulator.  This will only be nonzero if the simulator is built in
    * --headless mode on linux
    */
-  int gpuDevice() const { return context_->gpuDevice(); }
+  int gpuDevice() const {
+    if (context_ == nullptr) {
+      return 0;
+    }
+    return context_->gpuDevice();
+  }
 
   // === Physics Simulator Functions ===
   // TODO: support multi-scene physics (default sceneID=0 currently).
