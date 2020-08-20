@@ -34,6 +34,8 @@ corrade_add_test(SimTest SimTest.cpp LIBRARIES
   Magnum::AnyImageConverter
   MagnumPlugins::StbImageImporter)
 target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+set_tests_properties(SimTest PROPERTIES
+  ENVIRONMENT "GLOG_minloglevel=1;MAGNUM_LOG=QUIET")
 
 corrade_add_test(GeoTest GeoTest.cpp LIBRARIES
   geo)
@@ -66,5 +68,3 @@ set_tests_properties(
   SuncgTest
   PROPERTIES ENVIRONMENT GLOG_minloglevel=1
 )
-set_tests_properties(SimTest PROPERTIES
-  ENVIRONMENT "GLOG_minloglevel=1;MAGNUM_LOG=QUIET")

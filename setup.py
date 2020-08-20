@@ -76,6 +76,14 @@ will generally not be parsed correctly
 You may need to use --force-cmake to ensure cmake is rerun with new args.
 Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
     )
+    parser.add_argument(
+        "--cmake-cfg",
+        type=str,
+        default="",
+        help="""Enables setting option to pass to cmake --config.
+Otherwise, we'll automatically use Debug or Release.
+This option is useful for use a sanitizer config such as ASAN""",
+    )
 
     parser.add_argument(
         "--no-update-submodules",
@@ -220,7 +228,9 @@ class CMakeBuild(build_ext):
         ]
         cmake_args += shlex.split(args.cmake_args)
 
-        cfg = "Debug" if self.debug else "RelWithDebInfo"
+        cfg = args.cmake_cfg
+        if not cfg:
+            cfg = "Debug" if self.debug else "RelWithDebInfo"
         build_args = ["--config", cfg]
 
         cmake_args += ["-DCMAKE_BUILD_TYPE=" + cfg]
