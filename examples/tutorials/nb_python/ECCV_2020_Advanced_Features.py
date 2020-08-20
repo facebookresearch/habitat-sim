@@ -1589,6 +1589,9 @@ cylinder_wireframe_template = prim_attr_mgr.get_default_cylinder_template(True)
 
 
 def edit_wireframe_cylinder(edit_template):
+    # @markdown Number of (line) rings. Must be larger or equal to 2 and multiple of 2.
+    num_rings = 16  # @param {type:"slider", min:2, max:64, step:2}
+    edit_template.num_rings = num_rings
     # @markdown Number of (line) segments. Must be larger or equal to 4 and multiple of 4.
     num_segments = 28  # @param {type:"slider", min:4, max:64, step:4}
     edit_template.num_segments = num_segments
@@ -1681,7 +1684,8 @@ UVSphere_wireframe_template = prim_attr_mgr.get_default_UVsphere_template(True)
 
 def edit_wireframe_UVSphere(edit_template):
     # @markdown Number of (line) rings. Must be larger or equal to 2 and multiple of 2.
-    num_rings = 16  # @param {type:"slider", min:2, max:64, step:2} # noqa: F841
+    num_rings = 16  # @param {type:"slider", min:2, max:64, step:2}
+    edit_template.num_rings = num_rings
     # @markdown Number of (line) segments. Must be larger or equal to 4 and multiple of 4.
     num_segments = 40  # @param {type:"slider", min:4, max:64, step:4}
     edit_template.num_segments = num_segments
