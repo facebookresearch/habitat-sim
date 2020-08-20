@@ -55,12 +55,13 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   Magnum::GL::Mesh& getMesh() { return mesh_; }
 
   /**
-   * @brief Get the Magnum GL mesh for visualization (e.g., used in object
-   * picking)
+   * @brief Get the Magnum GL mesh for visualization, highlighting (e.g., used
+   * in object picking)
+   * See MeshVisualizer3D in Magnum library for more details.
    *
    * @return mesh_ by default.
-   * NOTE: sub-class should override this function if the visualizer mesh is
-   * different from mesh_
+   * NOTE: sub-class should override this function if the "visualizer mesh" is
+   * different from mesh_ (check the example in the PTexMeshDrawable class)
    */
   virtual Magnum::GL::Mesh& getVisualizerMesh() { return mesh_; }
 

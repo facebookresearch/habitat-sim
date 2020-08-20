@@ -630,9 +630,6 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     unsigned int pickedObject =
         objectPickingHelper_->getObjectId(event.position(), windowSize());
 
-    // XXX
-    // std::cout << "picked object = " << pickedObject << std::endl;
-
     // if an object is selected, create a visualizer
     createPickedObjectVisualizer(pickedObject);
     return;
