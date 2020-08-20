@@ -1116,10 +1116,10 @@ void ResourceManager::loadMaterials(Importer& importer,
     // TODO:
     // it seems we have a way to just load the material once in this case,
     // as long as the materialName includes the full path to the material
-    std::unique_ptr<Magnum::Trade::AbstractMaterialData> materialData =
+    Cr::Containers::Optional<Mn::Trade::MaterialData> materialData =
         importer.material(iMaterial);
     if (!materialData ||
-        materialData->type() != Magnum::Trade::MaterialType::Phong) {
+        !(materialData->types() & Magnum::Trade::MaterialType::Phong)) {
       LOG(ERROR) << "Cannot load material, skipping";
       continue;
     }
@@ -1154,11 +1154,11 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
   finalMaterial->diffuseColor = 0x00000000_rgbaf;
   finalMaterial->specularColor = 0x00000000_rgbaf;
 
-  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::AmbientTexture) {
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::AmbientTexture)) {
     finalMaterial->ambientTexture =
         textures_[textureBaseIndex + material.ambientTexture()].get();
-  } else if (material.flags() &
-             Mn::Trade::PhongMaterialData::Flag::DiffuseTexture) {
+  } else if (material.hasAttribute(
+                 Mn::Trade::MaterialAttribute::DiffuseTexture)) {
     // if we want to force flat shading, but we don't have ambient texture,
     // check for diffuse texture and use that instead
     finalMaterial->ambientTexture =
@@ -1179,31 +1179,31 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
   finalMaterial->shininess = material.shininess();
 
   // texture transform, if there's none the matrix is an identity
-  finalMaterial->textureMatrix = material.textureMatrix();
+  finalMaterial->textureMatrix = material.commonTextureMatrix();
 
   // ambient material properties
   finalMaterial->ambientColor = material.ambientColor();
-  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::AmbientTexture) {
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::AmbientTexture)) {
     finalMaterial->ambientTexture =
         textures_[textureBaseIndex + material.ambientTexture()].get();
   }
 
   // diffuse material properties
   finalMaterial->diffuseColor = material.diffuseColor();
-  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::DiffuseTexture) {
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::DiffuseTexture)) {
     finalMaterial->diffuseTexture =
         textures_[textureBaseIndex + material.diffuseTexture()].get();
   }
 
   // specular material properties
   finalMaterial->specularColor = material.specularColor();
-  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::SpecularTexture) {
+  if (material.hasSpecularTexture()) {
     finalMaterial->specularTexture =
         textures_[textureBaseIndex + material.specularTexture()].get();
   }
 
   // normal mapping
-  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::NormalTexture) {
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
     finalMaterial->normalTexture =
         textures_[textureBaseIndex + material.normalTexture()].get();
   }
