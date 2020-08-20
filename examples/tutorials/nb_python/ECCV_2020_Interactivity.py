@@ -1323,7 +1323,7 @@ if make_video:
         primary_obs_type="color",
         video_file=output_path + video_prefix,
         fps=int(1.0 / time_step),
-        open_vid=show_vid,
+        open_vid=show_video,
         overlay_settings=overlay_settings,
         depth_clip=10.0,
     )
