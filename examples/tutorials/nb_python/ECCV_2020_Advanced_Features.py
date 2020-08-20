@@ -1589,8 +1589,6 @@ cylinder_wireframe_template = prim_attr_mgr.get_default_cylinder_template(True)
 
 
 def edit_wireframe_cylinder(edit_template):
-    # @markdown Number of (face) rings. Must be larger or equal to 1.
-    num_rings = 1  # @param {type:"slider", min:1, max:10, step:1} # noqa: F841
     # @markdown Number of (line) segments. Must be larger or equal to 4 and multiple of 4.
     num_segments = 28  # @param {type:"slider", min:4, max:64, step:4}
     edit_template.num_segments = num_segments
