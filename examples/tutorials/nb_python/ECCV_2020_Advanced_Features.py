@@ -53,7 +53,6 @@ import random
 import sys
 import time
 
-import cv2
 import git
 import magnum as mn
 import numpy as np
@@ -725,7 +724,13 @@ def make_sim_and_vid_button(prefix, dt=1.0):
 
     def on_sim_click(b):
         observations = simulate(sim, dt=dt)
-        make_video_cv2(observations, prefix=prefix, open_vid=True, multi_obs=False)
+        vut.make_video(
+            observations,
+            "color_sensor_1st_person",
+            "color",
+            output_path + prefix,
+            open_vid=show_video,
+        )
 
     sim_and_vid_btn = set_button_launcher("Simulate and Make Video")
     sim_and_vid_btn.on_click(on_sim_click)
