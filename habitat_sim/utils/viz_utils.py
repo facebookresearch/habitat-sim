@@ -254,6 +254,6 @@ def observation_to_image(
     else:
         print(
             "semantic_to_rgb : Failed, unsupported observation type: "
-            + primary_obs_type
+            + observation_type
         )
     return rgb_image
