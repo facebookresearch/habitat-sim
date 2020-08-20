@@ -654,7 +654,7 @@ class ResourceManager {
   /**
    * @brief Load a PTex mesh into assets from a file and add it to the scene
    * graph for rendering.
-   * @return True if the mesh is loaded, otherwise false
+   * @return true if the mesh is loaded, otherwise false
    *
    * @param info The @ref AssetInfo for the mesh, already parsed from a
    * file.
