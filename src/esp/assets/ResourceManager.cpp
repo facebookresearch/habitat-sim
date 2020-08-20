@@ -188,8 +188,13 @@ bool ResourceManager::loadScene(
   // pass nullptr as physics manager for render mesh, since we are loading
   // collision mesh next
   bool renderMeshSuccess =
-      loadSceneInternal(renderInfo, nullptr, &rootNode, &drawables, true, false,
-                        renderLightSetup);
+      loadSceneInternal(renderInfo,         // AssetInfo
+                        nullptr,            // physics manager
+                        &rootNode,          // parent scene node
+                        &drawables,         //  drawable group
+                        true,               // compute Absolute AABBs or not
+                        false,              // split semantic mesh or not
+                        renderLightSetup);  // light setup
 
   if (!renderMeshSuccess) {
     LOG(ERROR)
@@ -201,8 +206,13 @@ bool ResourceManager::loadScene(
     AssetInfo colInfo = assetInfoMap.at("collision");
     // should this be checked to make sure we do not reload?
     bool collisionMeshSuccess =
-        loadSceneInternal(colInfo, _physicsManager, nullptr, nullptr, false,
-                          false, renderLightSetup);
+        loadSceneInternal(colInfo,            // AssetInfo
+                          _physicsManager,    // physics manager
+                          nullptr,            // parent scene node
+                          nullptr,            // drawable group
+                          false,              // compute absolute AABBs or not
+                          false,              // split semantic mesh or not
+                          renderLightSetup);  // light setup
 
     if (!collisionMeshSuccess) {
       LOG(ERROR)
@@ -277,9 +287,14 @@ bool ResourceManager::loadScene(
       auto& semanticRootNode = semanticSceneGraph.getRootNode();
       auto& semanticDrawables = semanticSceneGraph.getDrawables();
       bool computeSemanticAABBs = splitSemanticMesh;
+
       semanticSceneSuccess = loadSceneInternal(
-          semanticInfo, nullptr, &semanticRootNode, &semanticDrawables,
-          computeSemanticAABBs, splitSemanticMesh);
+          semanticInfo,          // AssetInfo
+          nullptr,               // physics manager
+          &semanticRootNode,     // parent scene node
+          &semanticDrawables,    // drawable group
+          computeSemanticAABBs,  // compute absolute AABBs or not
+          splitSemanticMesh);    // split semantic mesh or not
       // regardless of load failure, original code still changed
       // activeSemanticSceneID_
       activeSceneIDs[1] = activeSemanticSceneID;
@@ -399,8 +414,7 @@ bool ResourceManager::loadSceneInternal(
         meshSuccess = loadInstanceMeshData(
             info, parent, drawables, computeAbsoluteAABBs, splitSemanticMesh);
       } else if (info.type == AssetType::FRL_PTEX_MESH) {
-        meshSuccess =
-            loadPTexMeshData(info, parent, drawables, computeAbsoluteAABBs);
+        meshSuccess = loadPTexMeshData(info, parent, drawables);
       } else if (info.type == AssetType::SUNCG_SCENE) {
         meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
       } else if (info.type == AssetType::MP3D_MESH) {
@@ -702,8 +716,7 @@ void ResourceManager::buildPrimitiveAssetData(
 
 bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
                                        scene::SceneNode* parent,
-                                       DrawableGroup* drawables,
-                                       bool computeAbsoluteAABBs) {
+                                       DrawableGroup* drawables) {
 #ifdef ESP_BUILD_PTEX_SUPPORT
   // if this is a new file, load it and add it to the dictionary
   const std::string& filename = info.filepath;
@@ -750,29 +763,24 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
         node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
                                                shaderManager_, drawables);
 
-        if (computeAbsoluteAABBs_) {
-          staticDrawableInfo.emplace_back(
-              StaticDrawableInfo{node, static_cast<uint32_t>(jSubmesh)});
-        }
+        staticDrawableInfo.emplace_back(
+            StaticDrawableInfo{node, static_cast<uint32_t>(jSubmesh)});
       }
     }
-    if (computeAbsoluteAABBs_) {
-      // compute aabb if appropriate here - always done if parent exists
-      // retrieve the ptex mesh data
-      CORRADE_ASSERT(
-          resourceDict_.count(filename) != 0,
-          "ResourceManager::loadScene: ptex mesh is not loaded. Aborting.",
-          false);
-      const MeshMetaData& metaData = getMeshMetaData(filename);
-      CORRADE_ASSERT(metaData.meshIndex.first == metaData.meshIndex.second,
-                     "ResourceManager::loadScene: ptex mesh is not loaded "
-                     "correctly. Aborting.",
-                     false);
+    // always compute absolute aabb for the PTEX mesh if parent exists
+    // because the ptex mesh is for sure a static scene.
+    CORRADE_ASSERT(
+        resourceDict_.count(filename) != 0,
+        "ResourceManager::loadScene: ptex mesh is not loaded. Aborting.",
+        false);
+    const MeshMetaData& metaData = getMeshMetaData(filename);
+    CORRADE_ASSERT(metaData.meshIndex.first == metaData.meshIndex.second,
+                   "ResourceManager::loadScene: ptex mesh is not loaded "
+                   "correctly. Aborting.",
+                   false);
 
-      computePTexMeshAbsoluteAABBs(*meshes_[metaData.meshIndex.first],
-                                   staticDrawableInfo);
-    }
-
+    computePTexMeshAbsoluteAABBs(*meshes_[metaData.meshIndex.first],
+                                 staticDrawableInfo);
   }  // if parent
 
   return true;
@@ -1116,10 +1124,10 @@ void ResourceManager::loadMaterials(Importer& importer,
     // TODO:
     // it seems we have a way to just load the material once in this case,
     // as long as the materialName includes the full path to the material
-    std::unique_ptr<Magnum::Trade::AbstractMaterialData> materialData =
+    Cr::Containers::Optional<Mn::Trade::MaterialData> materialData =
         importer.material(iMaterial);
     if (!materialData ||
-        materialData->type() != Magnum::Trade::MaterialType::Phong) {
+        !(materialData->types() & Magnum::Trade::MaterialType::Phong)) {
       LOG(ERROR) << "Cannot load material, skipping";
       continue;
     }
@@ -1154,11 +1162,11 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
   finalMaterial->diffuseColor = 0x00000000_rgbaf;
   finalMaterial->specularColor = 0x00000000_rgbaf;
 
-  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::AmbientTexture) {
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::AmbientTexture)) {
     finalMaterial->ambientTexture =
         textures_[textureBaseIndex + material.ambientTexture()].get();
-  } else if (material.flags() &
-             Mn::Trade::PhongMaterialData::Flag::DiffuseTexture) {
+  } else if (material.hasAttribute(
+                 Mn::Trade::MaterialAttribute::DiffuseTexture)) {
     // if we want to force flat shading, but we don't have ambient texture,
     // check for diffuse texture and use that instead
     finalMaterial->ambientTexture =
@@ -1179,31 +1187,31 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
   finalMaterial->shininess = material.shininess();
 
   // texture transform, if there's none the matrix is an identity
-  finalMaterial->textureMatrix = material.textureMatrix();
+  finalMaterial->textureMatrix = material.commonTextureMatrix();
 
   // ambient material properties
   finalMaterial->ambientColor = material.ambientColor();
-  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::AmbientTexture) {
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::AmbientTexture)) {
     finalMaterial->ambientTexture =
         textures_[textureBaseIndex + material.ambientTexture()].get();
   }
 
   // diffuse material properties
   finalMaterial->diffuseColor = material.diffuseColor();
-  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::DiffuseTexture) {
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::DiffuseTexture)) {
     finalMaterial->diffuseTexture =
         textures_[textureBaseIndex + material.diffuseTexture()].get();
   }
 
   // specular material properties
   finalMaterial->specularColor = material.specularColor();
-  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::SpecularTexture) {
+  if (material.hasSpecularTexture()) {
     finalMaterial->specularTexture =
         textures_[textureBaseIndex + material.specularTexture()].get();
   }
 
   // normal mapping
-  if (material.flags() & Mn::Trade::PhongMaterialData::Flag::NormalTexture) {
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
     finalMaterial->normalTexture =
         textures_[textureBaseIndex + material.normalTexture()].get();
   }
