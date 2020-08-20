@@ -414,8 +414,7 @@ bool ResourceManager::loadSceneInternal(
         meshSuccess = loadInstanceMeshData(
             info, parent, drawables, computeAbsoluteAABBs, splitSemanticMesh);
       } else if (info.type == AssetType::FRL_PTEX_MESH) {
-        meshSuccess =
-            loadPTexMeshData(info, parent, drawables, computeAbsoluteAABBs);
+        meshSuccess = loadPTexMeshData(info, parent, drawables);
       } else if (info.type == AssetType::SUNCG_SCENE) {
         meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
       } else if (info.type == AssetType::MP3D_MESH) {
@@ -717,8 +716,7 @@ void ResourceManager::buildPrimitiveAssetData(
 
 bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
                                        scene::SceneNode* parent,
-                                       DrawableGroup* drawables,
-                                       bool computeAbsoluteAABBs) {
+                                       DrawableGroup* drawables) {
 #ifdef ESP_BUILD_PTEX_SUPPORT
   // if this is a new file, load it and add it to the dictionary
   const std::string& filename = info.filepath;
@@ -769,8 +767,8 @@ bool ResourceManager::loadPTexMeshData(const AssetInfo& info,
             StaticDrawableInfo{node, static_cast<uint32_t>(jSubmesh)});
       }
     }
-    // compute aabb if appropriate here - always done if parent exists
-    // retrieve the ptex mesh data
+    // always compute absolute aabb for the PTEX mesh if parent exists
+    // because the ptex mesh is for sure a static scene.
     CORRADE_ASSERT(
         resourceDict_.count(filename) != 0,
         "ResourceManager::loadScene: ptex mesh is not loaded. Aborting.",

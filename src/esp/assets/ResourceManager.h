@@ -654,6 +654,7 @@ class ResourceManager {
   /**
    * @brief Load a PTex mesh into assets from a file and add it to the scene
    * graph for rendering.
+   * @return True if the mesh is loaded, otherwise false
    *
    * @param info The @ref AssetInfo for the mesh, already parsed from a
    * file.
@@ -661,13 +662,10 @@ class ResourceManager {
    * as a child.
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered.
-   * @param computeAbsoluteAABBs Whether absolute bounding boxes should be
-   * computed
    */
   bool loadPTexMeshData(const AssetInfo& info,
                         scene::SceneNode* parent,
-                        DrawableGroup* drawables,
-                        bool computeAbsoluteAABBs);
+                        DrawableGroup* drawables);
 
   /**
    * @brief Load an instance mesh (e.g. Matterport reconstruction) into assets
