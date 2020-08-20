@@ -184,6 +184,8 @@ class CMakeBuild(build_ext):
             with open(args_cache_file, "w") as f:
                 json.dump(cache, f, indent=4, sort_keys=True)
 
+        if not os.path.exists(self.build_temp):
+            os.makedirs(self.build_temp)
         # Save the CMake build directory -- that's where the generated setup.py
         # for magnum-bindings will appear which we need to run later
         global _cmake_build_dir
@@ -263,8 +265,12 @@ class CMakeBuild(build_ext):
         )
 
         if self.run_cmake(cmake_args):
+            print(self.build_temp)
             subprocess.check_call(
-                ["cmake", "-H", ext.sourcedir, "-B", self.build_tmp] + cmake_args,
+                shlex.split(
+                    'cmake -H"{}" -B"{}"'.format(ext.sourcedir, self.build_temp)
+                )
+                + cmake_args,
                 env=env,
             )
 
@@ -369,6 +375,9 @@ if __name__ == "__main__":
         long_description="",
         packages=find_packages(),
         install_requires=requirements,
+        setup_requires=["pytest-runner"],
+        tests_require=["pytest", "pytest-cov"],
+        python_requires=">=3.6",
         # add extension module
         ext_modules=[CMakeExtension("habitat_sim._ext.habitat_sim_bindings", "src")],
         # add custom build_ext command
