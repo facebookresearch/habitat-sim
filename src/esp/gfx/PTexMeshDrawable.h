@@ -24,6 +24,9 @@ class PTexMeshDrawable : public Drawable {
                             DrawableGroup* group = nullptr);
 
   static constexpr char SHADER_KEY[] = "PTexMeshShader";
+  virtual Magnum::GL::Mesh& getVisualizerMesh() override {
+    return visualizerTriangleMesh_;
+  }
 
  protected:
   virtual void draw(const Magnum::Matrix4& transformationMatrix,
@@ -37,6 +40,7 @@ class PTexMeshDrawable : public Drawable {
   float exposure_;
   float gamma_;
   float saturation_;
+  Magnum::GL::Mesh& visualizerTriangleMesh_;
   PTexMeshShader* shader_ = nullptr;
 };
 

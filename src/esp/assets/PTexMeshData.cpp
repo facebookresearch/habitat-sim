@@ -91,6 +91,22 @@ const std::vector<PTexMeshData::MeshData>& PTexMeshData::meshes() const {
 std::string PTexMeshData::atlasFolder() const {
   return atlasFolder_;
 }
+// this is to break the quad into 2 triangles
+// we need this triangle mesh to do object picking
+void computeTriangleMeshIndices(uint64_t numFaces,
+                                PTexMeshData::MeshData& currentSubMesh) {
+  for (size_t jFace = 0; jFace < numFaces; ++jFace) {
+    size_t offset = jFace * 4;
+    // 1st triangle is (0, 1, 2)
+    currentSubMesh.ibo_tri.push_back(currentSubMesh.ibo[offset + 0]);
+    currentSubMesh.ibo_tri.push_back(currentSubMesh.ibo[offset + 1]);
+    currentSubMesh.ibo_tri.push_back(currentSubMesh.ibo[offset + 2]);
+    // 2nd triangle is (0, 2, 3)
+    currentSubMesh.ibo_tri.push_back(currentSubMesh.ibo[offset + 0]);
+    currentSubMesh.ibo_tri.push_back(currentSubMesh.ibo[offset + 2]);
+    currentSubMesh.ibo_tri.push_back(currentSubMesh.ibo[offset + 3]);
+  }
+}
 
 // split the original ptex mesh into sub-meshes.
 //
@@ -240,6 +256,8 @@ std::vector<PTexMeshData::MeshData> splitMesh(
       }
     }
 
+    computeTriangleMeshIndices(chunkSize, subMeshes[i]);
+
     // add referenced vertices to submesh
     subMeshes[i].vbo.resize(refdVerts.size());
     subMeshes[i].nbo.resize(refdVerts.size());
@@ -333,6 +351,10 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
         ibo[idx++] = local;
       }
     }  // for jFace
+
+    // this is to break the quad into 2 triangles
+    // we need this triangle mesh to do object picking
+    computeTriangleMeshIndices(numFaces, subMeshes[iMesh]);
 
     // compute the vbo, nbo for the current sub-mesh
     uint64_t numVertices = localToGlobal.size();
@@ -798,6 +820,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
                                       Magnum::GL::BufferUsage::StaticDraw);
     currentMesh->indexBuffer.setData(submeshes_[iMesh].ibo,
                                      Magnum::GL::BufferUsage::StaticDraw);
+    currentMesh->triangleMeshIndexBuffer.setData(
+        submeshes_[iMesh].ibo_tri, Magnum::GL::BufferUsage::StaticDraw);
   }
 #ifndef CORRADE_TARGET_APPLE
   LOG(INFO) << "Calculating mesh adjacency... ";
@@ -823,13 +847,26 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     currentMesh->mesh
         .setPrimitive(Magnum::GL::MeshPrimitive::LinesAdjacency)
         // Warning:
-        // CANNOT use currentMesh.ibo.size() when calling
+        // CANNOT use currentMesh->indexBuffer.size() when calling
         // setCount because that returns the number of bytes of the buffer,
         // NOT the index counts
         .setCount(submeshes_[iMesh].ibo.size())
         .addVertexBuffer(currentMesh->vertexBuffer, offset,
                          gfx::PTexMeshShader::Position{})
         .setIndexBuffer(currentMesh->indexBuffer, offset,
+                        Magnum::GL::MeshIndexType::UnsignedInt);
+
+    // this triangle mesh will be used for object picking
+    currentMesh->triangleMesh
+        .setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
+        // Warning:
+        // CANNOT use currentMesh->indexBuffer.size() when calling
+        // setCount because that returns the number of bytes of the buffer,
+        // NOT the index counts
+        .setCount(submeshes_[iMesh].ibo_tri.size())
+        .addVertexBuffer(currentMesh->vertexBuffer, offset,
+                         gfx::PTexMeshShader::Position{})
+        .setIndexBuffer(currentMesh->triangleMeshIndexBuffer, offset,
                         Magnum::GL::MeshIndexType::UnsignedInt);
   }
 

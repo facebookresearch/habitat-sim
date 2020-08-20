@@ -54,6 +54,16 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
 
   Magnum::GL::Mesh& getMesh() { return mesh_; }
 
+  /**
+   * @brief Get the Magnum GL mesh for visualization (e.g., used in object
+   * picking)
+   *
+   * @return mesh_ by default.
+   * NOTE: sub-class should override this function if the visualizer mesh is
+   * different from mesh_
+   */
+  virtual Magnum::GL::Mesh& getVisualizerMesh() { return mesh_; }
+
  protected:
   /**
    * @brief Draw the object using given camera

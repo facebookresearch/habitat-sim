@@ -26,13 +26,16 @@ class PTexMeshData : public BaseMesh {
     std::vector<vec4f> nbo;
     std::vector<vec4uc> cbo;
     std::vector<uint32_t> ibo;
+    std::vector<uint32_t> ibo_tri;
   };
 
   struct RenderingBuffer {
     Magnum::GL::Mesh mesh;
+    Magnum::GL::Mesh triangleMesh;
     Magnum::GL::Texture2D atlasTexture;
     Magnum::GL::Buffer vertexBuffer;
     Magnum::GL::Buffer indexBuffer;
+    Magnum::GL::Buffer triangleMeshIndexBuffer;
     Magnum::GL::Buffer adjFacesBuffer;
     Magnum::GL::BufferTexture adjFacesBufferTexture;
 

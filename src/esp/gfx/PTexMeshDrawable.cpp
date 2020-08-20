@@ -27,7 +27,9 @@ PTexMeshDrawable::PTexMeshDrawable(scene::SceneNode& node,
       tileSize_(ptexMeshData.tileSize()),
       exposure_(ptexMeshData.exposure()),
       gamma_(ptexMeshData.gamma()),
-      saturation_(ptexMeshData.saturation()) {
+      saturation_(ptexMeshData.saturation()),
+      visualizerTriangleMesh_(
+          ptexMeshData.getRenderingBuffer(submeshID)->triangleMesh) {
   auto shaderResource =
       shaderManager.get<Magnum::GL::AbstractShaderProgram, PTexMeshShader>(
           SHADER_KEY);
