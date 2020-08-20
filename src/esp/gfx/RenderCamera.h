@@ -104,12 +104,12 @@ class RenderCamera : public MagnumCamera {
                     Magnum::Matrix4>>& drawableTransforms);
 
   /**
-   * @brief if the following rendering pass is to use drawable ids as the object
-   * ids. By default,
-   * it uses the semantic_id, stored in the drawable's scene
-   * graph node, if no "per-vertex" object id is used.
-   * @return true, if it is to use drawable ids as the object ids, otherwise
-   * false
+   * @brief if the "immediate" following rendering pass is to use drawable ids
+   * as the object ids.
+   * By default, it uses the semantic_id, stored in the drawable's scene graph
+   * node, if no "per-vertex" object id is used.
+   * @return true, if it is to use drawable ids as the object ids in the
+   * following rendering pass, otherwise false
    */
   bool useDrawableIds() { return useDrawableIds_; }
   /**
