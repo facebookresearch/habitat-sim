@@ -132,8 +132,8 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
     return drawables.size();
   }
 
-  if (flags & Flag::ObjectPicking) {
-    renderingForObjectPicking_ = true;
+  if (flags & Flag::UseDrawableIdAsObjectId) {
+    useDrawableIds_ = true;
   }
 
   std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
@@ -158,8 +158,8 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
   MagnumCamera::draw(drawableTransforms);
 
   // reset
-  if (renderingForObjectPicking_) {
-    renderingForObjectPicking_ = false;
+  if (useDrawableIds_) {
+    useDrawableIds_ = false;
   }
   return drawableTransforms.size();
 }

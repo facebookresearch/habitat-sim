@@ -56,8 +56,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
     lightColors.emplace_back((*lightSetup_)[i].color);
   }
 
-  bool usingDrawableId =
-      static_cast<RenderCamera&>(camera).isRenderingForObjectPicking();
+  bool usingDrawableId = static_cast<RenderCamera&>(camera).useDrawableIds();
 
   (*shader_)
       .setAmbientColor(materialData_->ambientColor)

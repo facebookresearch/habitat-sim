@@ -43,8 +43,7 @@ PTexMeshDrawable::PTexMeshDrawable(scene::SceneNode& node,
 
 void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                             Magnum::SceneGraph::Camera3D& camera) {
-  bool usingDrawableId =
-      static_cast<RenderCamera&>(camera).isRenderingForObjectPicking();
+  bool usingDrawableId = static_cast<RenderCamera&>(camera).useDrawableIds();
   (*shader_)
       .setExposure(exposure_)
       .setGamma(gamma_)
