@@ -43,7 +43,6 @@ PTexMeshDrawable::PTexMeshDrawable(scene::SceneNode& node,
 
 void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                             Magnum::SceneGraph::Camera3D& camera) {
-  bool usingDrawableId = static_cast<RenderCamera&>(camera).useDrawableIds();
   (*shader_)
       .setExposure(exposure_)
       .setGamma(gamma_)
@@ -53,7 +52,9 @@ void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
       // e.g., semantic mesh has its own per vertex annotation, which has been
       // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
       // fragment shader
-      .setObjectId(usingDrawableId ? drawableId_ : node_.getSemanticId())
+      .setObjectId(static_cast<RenderCamera&>(camera).useDrawableIds()
+                       ? drawableId_
+                       : node_.getSemanticId())
 #ifndef CORRADE_TARGET_APPLE
       .bindAdjFacesBufferTexture(adjFacesBufferTexture_)
 #endif
