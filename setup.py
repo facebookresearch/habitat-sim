@@ -25,7 +25,7 @@ from setuptools.command.build_ext import build_ext
 
 ARG_CACHE_BLACKLIST = {"force_cmake", "cache_args", "inplace"}
 
-
+# TODO refactor to the proper way to pass options to setup.py so pip can do so.
 def build_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -264,19 +264,14 @@ class CMakeBuild(build_ext):
 
         if self.run_cmake(cmake_args):
             subprocess.check_call(
-                shlex.split(
-                    'cmake -H"{}" -B"{}"'.format(ext.sourcedir, self.build_temp)
-                )
-                + cmake_args,
+                ["cmake", "-H", ext.sourcedir, "-B", self.build_tmp] + cmake_args,
                 env=env,
             )
 
         if not is_pip():
             self.create_compile_commands()
 
-        subprocess.check_call(
-            shlex.split('cmake --build "{}"'.format(self.build_temp)) + build_args
-        )
+        subprocess.check_call(["cmake", "--build", self.build_temp] + build_args)
         print()  # Add an empty line for cleaner output
 
         # The things following this don't work with pip
@@ -387,9 +382,13 @@ if __name__ == "__main__":
     )
 
     if not args.skip_install_magnum and not is_pip():
-        subprocess.check_call(shlex.split(f"pip install {pymagnum_build_dir}"))
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", pymagnum_build_dir]
+        )
     else:
         print(
             "Assuming magnum bindings are already installed (or we're inside pip and ¯\\_('-')_/¯)"
         )
-        print(f"Run 'pip install {pymagnum_build_dir}' if this assumption is incorrect")
+        print(
+            f"Run '{sys.executable} -m pip install {pymagnum_build_dir}' if this assumption is incorrect"
+        )
