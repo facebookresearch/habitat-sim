@@ -8,7 +8,6 @@
 import argparse
 import csv
 import distutils
-from distutils import util
 
 import demo_runner as dr
 import numpy as np

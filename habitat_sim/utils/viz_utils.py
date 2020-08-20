@@ -7,7 +7,7 @@ import sys
 if "google.colab" in sys.modules:
     os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
 
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import imageio
 import numpy as np

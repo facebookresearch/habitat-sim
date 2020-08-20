@@ -36,6 +36,12 @@ repos:
     - id: black
       exclude: ^examples/tutorials/(nb_python|colabs)
 
+-   repo: https://github.com/myint/autoflake
+    rev: master
+    hooks:
+    -   id: autoflake
+        exclude: docs/
+
 -   repo: https://github.com/kynan/nbstripout
     rev: master
     hooks:

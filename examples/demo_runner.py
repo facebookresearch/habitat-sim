@@ -7,7 +7,6 @@ import math
 import multiprocessing
 import os
 import random
-import sys
 import time
 from enum import Enum
 
