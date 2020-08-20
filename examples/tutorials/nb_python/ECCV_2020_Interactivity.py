@@ -41,16 +41,13 @@
 # @title Path Setup and Imports { display-mode: "form" }
 # @markdown (double click to show code).
 
-import functools
 # %cd /content/habitat-sim
 ## [setup]
 import math
 import os
 import random
 import sys
-import time
 
-import cv2
 import git
 import magnum as mn
 import numpy as np
@@ -58,8 +55,8 @@ import numpy as np
 try:
     import ipywidgets as widgets
     from IPython.display import display as ipydisplay
+
     # For using jupyter/ipywidget IO components
-    from ipywidgets import fixed, interact, interact_manual, interactive
 
     HAS_WIDGETS = True
 except ImportError:

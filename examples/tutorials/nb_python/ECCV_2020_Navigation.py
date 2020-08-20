@@ -50,7 +50,6 @@ import os
 import random
 import sys
 
-import cv2
 import git
 import imageio
 import magnum as mn
