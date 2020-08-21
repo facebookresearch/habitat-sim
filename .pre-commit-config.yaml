@@ -47,6 +47,12 @@ repos:
         args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place']
         exclude: docs/
 
+-   repo: https://gitlab.com/pycqa/flake8
+    rev: '3.8.3'  # pick a git hash / tag to point to
+    hooks:
+    -   id: flake8
+        args: ['--select', 'F']
+
 -   repo: https://github.com/kynan/nbstripout
     rev: master
     hooks:
