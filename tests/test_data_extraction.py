@@ -46,7 +46,7 @@ def test_data_extractor_end_to_end(sim):
 
     # Run data through network
     for i, sample_batch in enumerate(dataloader):
-        img = sample_batch["rgba"]
+        img, _ = sample_batch["rgba"], sample_batch["label"]
         img = img.permute(0, 3, 2, 1).float()
         net(img)
 
