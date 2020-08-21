@@ -12,7 +12,6 @@ import pytest
 import quaternion
 
 import examples.settings
-import habitat_sim.physics
 from habitat_sim.utils.common import (
     quat_from_angle_axis,
     quat_from_magnum,

@@ -9,7 +9,7 @@ import hypothesis
 import magnum as mn
 import numpy as np
 import pytest
-import quaternion
+import quaternion  # noqa: F401
 from hypothesis import strategies as st
 
 import habitat_sim

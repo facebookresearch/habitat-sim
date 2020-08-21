@@ -15,10 +15,8 @@ import numpy as np
 import habitat_sim.errors
 from habitat_sim.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
-from habitat_sim.gfx import DEFAULT_LIGHTING_KEY
 from habitat_sim.logging import logger
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
-from habitat_sim.physics import MotionType
 from habitat_sim.sensor import SensorType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration

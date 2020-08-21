@@ -5,7 +5,6 @@ import time
 
 import torch
 import torchvision.models.detection.mask_rcnn
-from torch.utils.tensorboard import SummaryWriter
 
 from examples.instance_segmentation import utils
 from examples.instance_segmentation.coco_eval import CocoEvaluator

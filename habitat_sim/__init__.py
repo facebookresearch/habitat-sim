@@ -29,8 +29,9 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
     from habitat_sim.agent import *
     from habitat_sim.bindings import *
     from habitat_sim.nav import *
+    from habitat_sim.physics import MotionType  # TODO remove
     from habitat_sim.registry import registry
-    from habitat_sim.simulator import *
+    from habitat_sim.simulator import Configuration, Simulator
 
     __all__ = [
         "agent",

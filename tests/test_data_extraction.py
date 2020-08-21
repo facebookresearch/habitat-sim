@@ -2,12 +2,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
-import torch
 from torch import nn as nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, Dataset
 
-import habitat_sim.utils.data
 from habitat_sim.utils.data.data_extractor import ImageExtractor, TopdownView
 from habitat_sim.utils.data.data_structures import ExtractorLRUCache
 

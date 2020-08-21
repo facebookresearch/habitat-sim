@@ -1,9 +1,7 @@
 import math
 from os import path as osp
 
-import numpy as np
 import pytest
-import tqdm
 
 import examples.settings
 import habitat_sim

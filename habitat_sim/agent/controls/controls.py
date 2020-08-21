@@ -8,7 +8,6 @@ import abc
 from typing import Optional
 
 import attr
-import numpy as np
 import quaternion
 
 from habitat_sim import bindings as hsim
