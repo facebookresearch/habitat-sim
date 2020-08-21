@@ -250,6 +250,11 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
 
 - Build is tested on Tested with Ubuntu 18.04 with gcc 7.4.0 and MacOS 10.13.6 with Xcode 10 and clang-1000.10.25.5. If you experience compilation issues, please open an issue with the details of your OS and compiler versions.
 
+- Submodules content modified: if after pulling from master content remains modified in `src/deps` you can force submodules recursive update:
+  ```bash
+     git submodule update -f --init --recursive
+  ```
+
   We also have a dev slack channel, please follow this [link](https://join.slack.com/t/ai-habitat/shared_invite/enQtNjY1MzM1NDE4MTk2LTZhMzdmYWMwODZlNjg5MjZiZjExOTBjOTg5MmRiZTVhOWQyNzk0OTMyN2E1ZTEzZTNjMWM0MjBkN2VhMjQxMDI) to get added to the channel.
 
 ## Testing
