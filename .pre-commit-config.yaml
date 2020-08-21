@@ -11,10 +11,14 @@ repos:
     -   id: check-added-large-files
         args: ['--maxkb=2000']
     -   id: end-of-file-fixer
-    -   id: check-executables-have-shebangs
     -   id: check-case-conflict
+    -   id: check-docstring-first
+    -   id: check-executables-have-shebangs
     -   id: check-merge-conflict
     -   id: check-toml
+    -   id: debug-statements
+    -   id: mixed-line-ending
+        args: ['--fix=lf']
 
 
 -   repo: https://github.com/asottile/seed-isort-config
@@ -35,6 +39,13 @@ repos:
     hooks:
     - id: black
       exclude: ^examples/tutorials/(nb_python|colabs)
+
+-   repo: https://github.com/myint/autoflake
+    rev: master
+    hooks:
+    -   id: autoflake
+        args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place']
+        exclude: docs/
 
 -   repo: https://github.com/kynan/nbstripout
     rev: master
