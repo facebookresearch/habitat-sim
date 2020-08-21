@@ -30,12 +30,13 @@ $mcss_path/css/postprocess.py \
 # Build C++ docs first so the Python docs can make use of the tag file
 $mcss_path/documentation/doxygen.py Doxyfile-mcss
 
+mv ../build/docs/habitat-sim/annotated.html ../build/docs/habitat-sim/classes-cpp.html
+
 $mcss_path/documentation/python.py conf.py
 
 # The file:// URLs are usually clickable in the terminal, directly opening a
 # browser
 echo "------------------------------------------------------------------------"
-echo "Docs were successfully generated. Open the following links to view them:"
+echo "Docs were successfully generated. Open the following link to view them:"
 echo
-echo "file://$(pwd)/../build/docs/habitat-cpp/index.html"
 echo "file://$(pwd)/../build/docs/habitat-sim/index.html"

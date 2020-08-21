@@ -13,6 +13,5 @@ After a successful build, the `build.sh` script will show clickable links
 pointing to the output. The output for C++ and Python docs is located at:
 
 ```
-../build/docs-public/habitat-cpp/index.html
 ../build/docs-public/habitat-sim/index.html
 ```

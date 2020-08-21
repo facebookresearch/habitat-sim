@@ -25,7 +25,7 @@ habitat_sim.utils.__all__.remove("quat_from_angle_axis")
 habitat_sim.utils.__all__.remove("quat_rotate_vector")
 
 PROJECT_TITLE = "Habitat"
-PROJECT_SUBTITLE = "Sim Python Docs"
+PROJECT_SUBTITLE = "Sim Docs"
 PROJECT_LOGO = "habitat.svg"
 FAVICON = "habitat-blue.png"
 MAIN_PROJECT_URL = "/"
@@ -83,7 +83,7 @@ LINKS_NAVBAR1 = [
     ("Classes", "classes", []),
 ]
 LINKS_NAVBAR2 = [
-    ("C++ Docs", "../habitat-cpp/index.html", []),
+    ("C++ API", "./classes-cpp.html", []),
     ("Habitat Lab Docs", "../habitat-lab/index.html", []),
 ]
 
@@ -143,5 +143,5 @@ M_DOX_TAGFILES = [
         ["Magnum::"],
         ["m-doc-external"],
     ),
-    ("../build/docs/habitat-cpp.tag", "../habitat-cpp/", [], ["m-doc-external"]),
+    ("../build/docs/habitat-cpp.tag", "../habitat-sim/", [], ["m-doc-external"]),
 ]
